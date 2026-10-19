@@ -7,3 +7,8 @@
 {"ts":"2026-10-07T10:07:29.858726Z","category":"worktree_correction","source":"sample","session_id":"1e74ef05-2abe-486d-9a3d-2b5e78b6a0f0","session_role":"agent-working-designer","batch":null,"count":1}
 {"ts":"2026-10-07T10:08:39.540486Z","category":"handover_recovery","source":"sample","session_id":"fb51565f-677d-46b6-a385-d8b7c686c0af","session_role":"agent-working-planner","batch":null,"count":1}
 {"ts":"2026-10-07T15:41:51.612250Z","category":"handover_recovery","source":"sample","session_id":"14a6e17a-0825-4cbe-b60e-1676cd7b42d6","session_role":"agent-working-implementer","batch":null,"count":1}
+{"ts":"2026-10-08T03:08:51.470375Z","category":"handover_recovery","source":"sample","session_id":"9a765a23-815a-4a01-bb8f-6e6515e6bf18","session_role":"rpg-planner","batch":null,"count":1}
+{"ts":"2026-10-08T03:08:53.173316Z","category":"handover_recovery","source":"sample","session_id":"9a765a23-815a-4a01-bb8f-6e6515e6bf18","session_role":"rpg-planner","batch":null,"count":1}
+{"ts":"2026-10-08T08:14:38.216814Z","category":"handover_recovery","source":"sample","session_id":"bd743d95-fb9d-40c5-b557-47eb409ba9fe","session_role":"rpg-planner","batch":null,"count":1}
+{"ts":"2026-10-09T04:00:22.275364Z","category":"handover_recovery","source":"sample","session_id":"1984f4db-456e-4184-b538-f3769b8465e7","session_role":"rpg-planner","batch":null,"count":1}
+{"ts":"2026-10-11T13:53:57.797122Z","category":"manual_wake","source":"sample","session_id":"1984f4db-456e-4184-b538-f3769b8465e7","session_role":"rpg-planner","batch":null,"count":1}
