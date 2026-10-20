@@ -42,7 +42,12 @@ The designer's ruling (2026-10-21): a defect independent of the corpse fix, sinc
   - (a) the flee or retreat check isn't evaluated while pursuing or committed to ATTACK;
   - (b) it is evaluated, but the engagement's score beats retreat;
   - (c) appraisal rates the opponent as beatable.
-  Cause letter: <pending>.
+  Cause letter: (a), from Lane A's read-only probes (2026-10-21; /mnt/data/scratch-rpg-implementer/probes_hs/m12_cause.py and m12_cause2.py, output in paired_cn/).
+  - Merchant 12 holds an ATTACK order on raider 35 from t1855. `TacticalDecisionSystem.evaluate_entity_intent` ran once in t2030-2066 (at t2048), so the panic gate, which is the first gate in the tactical pass, was never reached. (b) and (c) do not apply.
+  - The panic line: merchant 12 has bravery 0.914. Its appraisal says is_fleeing is True at hp 9 of 80 (panic 0.583, destination (35,24)), so the line is about hp 10-12. It was crossed around t2036-2040, but no tactical pass ran then.
+  - What ends it: the single tactical pass at t2048 returned SLEEP. Sleep debt was 92-97, and the collapse gate (decision 41, must_collapse) runs before the panic gate. The merchant falls asleep beside the raider at hp 1 and dies at t2066.
+  - Who started the pursuit: merchant 12 (a SHOPKEEPER role, hp 80/80, aggression_mod 1.5 above 80% hp). At t1851 it was in PURSUE on raider 35 with no project and no objective. The engagement is the default tactical branch for any perceived tactical hostile, and there is no exemption for non-combat roles. Raider 35 had just ended a PANIC_RETREAT at hp 24-25.
+  - Related pattern: a held move that is never re-decided (divergence 2.106, where a pressing need wakes the brain of an entity holding a move). Here it is a held ATTACK, and the panic line does not wake the tactical pass.
 - Also: who started the pursuit, and why a merchant pursues a raider at all (which goal or scorer).
 - The designer rules the shape, together with TCK-20261020-HUNGER-AND-RETREAT-ON-ONE-ESCALATION-SCALE and the D32 pursuing-hostile wake.
 - Implement, add real-kernel tests (a subject in a chosen fight crosses its flee line and disengages), and measure paired against v1 (seeds 42-46, D76).
