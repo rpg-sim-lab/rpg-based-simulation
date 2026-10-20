@@ -66,6 +66,8 @@ All of these pass when run serially, and CI's unit-infra lane passes.
 ## Implementation Notes
 After v1. Not a blocker.
 
+2026-10-20 testing-implementer ran a full `pytest tests/unit -n 2 --dist loadgroup -m "not slow and not extra_slow"` on main: 8347 passed, 5 skipped, 1 failed. The failure was test_run_manifest_signal_contract.py::test_a_canonical_run_records_its_contract_and_work_model, `FileNotFoundError: Manifest not found for run_id: sc_manifest_canonical`, the same fixed-id race. The harness-hash setup ERROR did not reproduce in 16 runs. Testing reads the moving setup ERROR (harness-hash on main, schema_unified on the branch) as worker-level and has given it to this ticket. Testing's half is fixed in #676 (test-only).
+
 ## Test Summary
 
 ## Files Changed
