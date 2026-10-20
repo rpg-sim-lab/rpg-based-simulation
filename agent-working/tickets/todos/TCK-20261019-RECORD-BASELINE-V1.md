@@ -42,6 +42,11 @@ Milestone 0 ends with the baseline v1 record, and milestone 1 measures against i
    - V8.
    Each one cites a fold sha and a test path. Anything not folded is either listed in v1_disclosure.md or blocks v1.
 1. The commit is main after #654 (R2) and the designer's docs batch (v1_disclosure.md must be on main).
+1b. Cumulative D76 tool reading BEFORE recording (designer 2026-10-20). The pre-v1 fix steps (V1/V2/V4 observer fixes, V3 (b) a49896e1c and (ii) 29d4d3d07) were measured with hand runs, not paired.py, so the D76 watch table has no tool verdict for them, and crowded_frontier is at the cumulative stop edge (W2).
+   - Run: `python -m tools.rpg_measure.paired --base 903239fbe --new <v1 candidate sha> --step "pre-v1 fixes cumulative"`, with seeds 42-51 (the same 10 as W2), audit_mode, `--self-check full`.
+   - If the verdict fires in any world, it goes to the OWNER before v1 is recorded (D76).
+   - W2's row then takes this reading's numbers; the designer updates it from the report.
+   - The new arm's cached runs are the same 3 × 42-51 × 5000t runs as step 2's base, because paired.py's cache makes step N's child arm step N+1's parent. So step 2 reuses them and is not re-run.
 2. Paired fingerprints become the new D76 cumulative base, replacing 903239fbe:
    - 3 gate worlds × seeds 42-51 (10) × 5000t;
    - audit_mode, signals zeroed, full self-check.
@@ -64,6 +69,9 @@ Milestone 0 ends with the baseline v1 record, and milestone 1 measures against i
 
 ## Acceptance Criteria
 - Every precondition row has a sha and test path, or is named in v1_disclosure.md.
+- The cumulative paired.py reading (1b) from 903239fbe to the v1 candidate shows no drift in any world, or the owner's ruling on it is cited.
+- Testing's PR #680 (row-set and share contract, report and candidate side) is merged before the gate run, along with the rpg module's declared-domain rows (TCK-20261020-RPG-GATE-ROWS-COME-FROM-DECLARED-DOMAINS).
+- behavioral_5k builds its world with the content context (TCK-20261020-BEHAVIORAL-5K-BUILDS-ITS-WORLD-WITHOUT-THE-CONTENT-CONTEXT) before it is rebaselined.
 - The paired base is recorded on the v1 commit (10 seeds, self-check spread 0) and the D76 table points at it.
 - The gate baseline JSON comes from a main run, is committed in the v1 PR, and is cited to this ticket.
 - behavioral_5k is green on the v1 commit after the rebaseline.
