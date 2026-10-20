@@ -61,6 +61,7 @@ P3
 
 ## Implementation Notes
 After v1 (it moves the state hash).
+- Lead's review note on #686: read_model_service_contract.md should say that the detail's live quests and blockers are only bounded because cognition caps live projects. Add that sentence when this ticket defines the lifecycle, or as a one-line doc fix sooner.
 
 ## Test Summary
 
