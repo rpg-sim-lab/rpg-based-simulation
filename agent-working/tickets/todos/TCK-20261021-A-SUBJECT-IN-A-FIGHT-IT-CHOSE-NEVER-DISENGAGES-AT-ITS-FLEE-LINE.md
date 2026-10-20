@@ -48,7 +48,9 @@ The designer's ruling (2026-10-21): a defect independent of the corpse fix, sinc
   - What ends it: the single tactical pass at t2048 returned SLEEP. Sleep debt was 92-97, and the collapse gate (decision 41, must_collapse) runs before the panic gate. The merchant falls asleep beside the raider at hp 1 and dies at t2066.
   - Who started the pursuit: merchant 12 (a SHOPKEEPER role, hp 80/80, aggression_mod 1.5 above 80% hp). At t1851 it was in PURSUE on raider 35 with no project and no objective. The engagement is the default tactical branch for any perceived tactical hostile, and there is no exemption for non-combat roles. Raider 35 had just ended a PANIC_RETREAT at hp 24-25.
   - Related pattern: a held move that is never re-decided (divergence 2.106, where a pressing need wakes the brain of an entity holding a move). Here it is a held ATTACK, and the panic line does not wake the tactical pass.
-- Also: who started the pursuit, and why a merchant pursues a raider at all (which goal or scorer).
+- Framing (designer, 2026-10-21): this is the 2.106 held-order pattern applied to ATTACK. The likely fix shape is the same as 2.106: the panic line wakes a held ATTACK at strategic cadence. It is its own measured step after v1.
+- Context only, not in scope: engagement is the default tactical branch for any perceived hostile, with no exemption for non-combat roles, so a shopkeeper at full hp pursues a raider. Whether a shopkeeper should start fights at all is a design question for the M-series role and temperament work.
+- Split out: collapse being ordered before panic (D41), which lets a merchant sleep beside its attacker, is its own after-v1 item (ticket pending the t2048 sleep_debt reading).
 - The designer rules the shape, together with TCK-20261020-HUNGER-AND-RETREAT-ON-ONE-ESCALATION-SCALE and the D32 pursuing-hostile wake.
 - Implement, add real-kernel tests (a subject in a chosen fight crosses its flee line and disengages), and measure paired against v1 (seeds 42-46, D76).
 
