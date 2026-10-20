@@ -30,7 +30,7 @@ P3
 Split from TCK-20261021-A-SUBJECT-IN-A-FIGHT-IT-CHOSE-NEVER-DISENGAGES-AT-ITS-FLEE-LINE (crowded s44, merchant 12, corpse-fix new arm), following the designer's ruling of 2026-10-21.
 
 At t2048 merchant 12's single tactical pass returned `{'action': 'SLEEP', 'collapse': True}`:
-- sleep_debt was 100.0 (it had been at 100.0 since t2036 or earlier);
+- sleep_debt was 100.0 (measured 92.5 at t1851 and 100.0 from t2036, with nothing sampled between);
 - the collapse line is 98.0 (`SLEEP_DEBT.collapse_line`, src/engine/sleep_debt.py:34; `must_collapse` at lines 52-54);
 - the gate is src/engine/tactical.py:166-167, the first gate after legality, before the panic gate.
 
@@ -40,7 +40,7 @@ The open design question for the OWNER: should a present attacker (a perceived l
 
 It is not a defect, so no disclosure row: the designer adds C7 only for a defect.
 
-Note: the debt was at 98 or above for many ticks before t2048, but no tactical pass ran to apply the collapse. That part belongs to the disengage ticket (a held ATTACK bypasses the tactical pass), not to this one.
+Note: the debt was at 100.0 from at least t2036 (when it first crossed 98 is not measured), but no tactical pass ran until t2048 to apply the collapse. That part belongs to the disengage ticket (a held ATTACK bypasses the tactical pass), not to this one.
 
 ## Scope
 - Designer framing, then the owner's ruling: keep D41 as it is, or let a present attacker push the line (rule and bound).
