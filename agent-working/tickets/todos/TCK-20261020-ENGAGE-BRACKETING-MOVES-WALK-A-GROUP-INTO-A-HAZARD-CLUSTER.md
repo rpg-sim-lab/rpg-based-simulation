@@ -39,6 +39,9 @@ Files:
 - Find out why several members enter the cluster in the same window: the group following the leader, a shared bracket target, or something else.
 - Fix it so that combat movement respects hazards the way travel does, if it doesn't. Measure it as its own step: paired 3 × 42-46, crowded first.
 
+- Second finding (designer 2026-10-20): the group keeps its engagement after its leader leaves. Leader 30 dropped proj_combat_engage_530 at t991 to eat, which is the rule working as written, but the members stayed on proj_combat_engage_* and bracketed on without it. Find out whether a group engagement should end or re-plan when the leader leaves.
+- Measure it together with H1 (COMBAT-ENGAGEMENT-HOSTILITY) and the owner's after-v1 hazard-avoidance item (the D75 gap), one measured step, so the three combat-movement changes are not stacked unmeasured.
+
 ## Out of Scope
 - V3 step (ii) and the hunger/threat gate.
 
@@ -49,6 +52,9 @@ Files:
 ## Related Tickets
 - V3 step (ii) ticket on rpg-v3-starvation-threat
 - D72 terrain cost
+- H1 TCK-20261006-COMBAT-ENGAGEMENT-HOSTILITY-PROJECTION-COST-STEP (measure together)
+- the owner's after-v1 hazard-avoidance item (D75 gap)
+- disclosure N3 (designer 8e4071cc2) carries this attribution
 
 ## Related Docs
 - docs/mechanics/02_combat_laws.md (tactical modifiers)
