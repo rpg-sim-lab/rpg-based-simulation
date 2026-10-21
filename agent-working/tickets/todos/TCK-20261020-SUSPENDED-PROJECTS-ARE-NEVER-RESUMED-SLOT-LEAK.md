@@ -67,6 +67,12 @@ Before v1, the designer's step 2 (TCK for "an escalated need is never refused fo
 - src/core/strategic.py (is_live_project, has_project_capacity)
 
 ## Assumptions / Open Questions
+- Checked before v1 (Lane C, 2026-10-21, step 2 at a634dcfd0; designer's terminal-record question): NOT a step-2 hole.
+  - `existing` (intelligence.py ~L1609) is the first project of the kind in any status. resume_project (L1139-1151) is a no-op on a COMPLETED or ABANDONED project.
+  - A stored terminal hunger record makes `not existing` False, so the capacity gate (L1772) is skipped and a NEW project is built.
+  - Real-kernel check (crowded s45, blacksmith 13, cap full plus a COMPLETED hunger record first): proj_hunger_47 is ACTIVE at t48 and the subject eats by t58.
+  - The same bypass applies BELOW onset (hunger 40). The cap is enforced only for kinds with no stored record (documented, Bible 04 L225), so step 2's escalated_need_wins matters only for a subject that has never held a project of that kind. Rule this together with the lifecycle.
+  - interpret_near_death (events.py L138) has no production caller (only tests/unit/strategic/test_event_interpretation.py). Its suspend path cannot occur in a real run today, and a staged equivalent behaves the same way.
 - Context (designer, 2026-10-21): after step 2, `has_project_capacity` still counts the 1-2 exempt need projects. So ordinary-project admission sees them as used slots. That is acceptable before v1, because ordinary goals yield to escalated needs anyway. Revisit it with the slot-leak rule.
 - Context (designer, 2026-10-21, from the step-2 paired run, crowded s46): the same bound is seen from the other side. An exempt need project leaves room for an ordinary project that the pre-step-2 trim would have removed: blacksmith 13's suspended fatigue project is exempt, so its combat_engage project against leader 30 survives and is resumed at t547 (live 4 of 3). This is the designed bound (ordinary projects up to the cap, plus at most one exempt project per need), not a leak. The slot-leak rule must keep it consistent.
 - What suspends a resolve_blocker project, and does anything resume any project kind today?
