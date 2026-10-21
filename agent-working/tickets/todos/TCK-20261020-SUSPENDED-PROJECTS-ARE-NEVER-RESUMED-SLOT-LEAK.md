@@ -67,6 +67,7 @@ Before v1, the designer's step 2 (TCK for "an escalated need is never refused fo
 - src/core/strategic.py (is_live_project, has_project_capacity)
 
 ## Assumptions / Open Questions
+- Context (designer, 2026-10-21): after step 2, `has_project_capacity` still counts the 1-2 exempt need projects. So ordinary-project admission sees them as used slots. That is acceptable before v1, because ordinary goals yield to escalated needs anyway. Revisit it with the slot-leak rule.
 - What suspends a resolve_blocker project, and does anything resume any project kind today?
 
 ## Implementation Notes
