@@ -100,6 +100,7 @@ Milestone 0 ends with the baseline v1 record, and milestone 1 measures against i
 - Whether main after 6d7bd1509 (the #645 tip) has moved simulation behaviour (deps window, R1, R2, other domains). A hash-identity check answers this before the record.
 
 ## Implementation Notes
+- 2026-10-21 OWNER CUTOFF (user): v1 is the corpse fix (TCK-20261020-A-DEAD-BODY-IS-NOT-A-PERCEIVED-THREAT), plus step 2 (TCK-20261020-A-ESCALATED-NEED-IS-NEVER-REFUSED-FOR-CAPACITY) and its per-kind correction, plus any in-family V3 left after the 3-case rerun. In-family (designer's test) means an escalated need that is admitted or wins scoring but is never served by a decision-side step. Any OUT-OF-FAMILY V3 left at v1 is an owned known red: it gets a disclosure row and a ticket, and its rpg_gate_known.yaml entry (--known tools/test_architecture/rpg_gate_known.yaml) MUST cite this cutoff (user, 2026-10-21) so it is not read as a silent D54 narrowing. That file belongs to testing, so coordinate the entry with testing-planner.
 
 ## Test Summary
 
