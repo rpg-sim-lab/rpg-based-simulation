@@ -72,6 +72,9 @@ Open before v1, tracked elsewhere: whether the hold is a hole in the pre-v1 (b) 
 - scheduler.py (`_throttled`, strategic cadence)
 
 ## Assumptions / Open Questions
+- A held subject still lands hits (designer, 2026-10-21; DeathLedger, Lane A probe hp_multi_probe.py, paired_en2/pp/). Guard 11 (crowded s43, f9b21b55b) struck raider 37 at t1990, 1996 and 2007 while its tactical result was an own-tile PANIC_RETREAT hold. Which path issues the attack, and is the hold actually the action on those ticks? Not yet traced; after v1.
+- Method (designer, 2026-10-21): every "attacks / never attacks" claim comes from DeathLedger HIT entries with attacker ids, never from the post-tick task payload, because an attack that resolves inside a tick leaves no payload behind.
+- The oscillation definition chosen for v1 rows N7/N9/§7 is (4), decisions only: a flee decision, then 1-2 non-flee decisions, then a flee decision, independent of cadence, with raw (1) shown beside it. This ticket adopts (4).
 - Cross-link: the definition of "a hostile acting on the subject" (today a state test, see guard 11) is ruled in TCK-20261020-HUNGER-AND-RETREAT-ON-ONE-ESCALATION-SCALE, not here. Here, (b) of the scope follows that definition.
 - Does the same counting artefact inflate N7's frontier oscillation (235 -> 190)? The recompute answers it.
 
