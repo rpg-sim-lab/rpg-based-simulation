@@ -82,6 +82,7 @@ The designer's ruling (2026-10-21): a defect independent of the corpse fix, sinc
 - the combat engagement and pursuit scorers
 
 ## Assumptions / Open Questions
+- Pointer (designer, 2026-10-21): a second case of a non-combat role picking fights, in the context bullet. Crowded s42 on step 2 (f9b21b55b): merchant 12 attacks goblin leader 30 on 24 ticks and flees it 103 times from t946 to t4998, while the leader never attacks it (v1 row C4, N9; Lane A dump paired_en2/f4/, probe pair_probe.py).
 - Does sleep debt 92.5 change the flee line or the appraisal?
 
 ## Implementation Notes
