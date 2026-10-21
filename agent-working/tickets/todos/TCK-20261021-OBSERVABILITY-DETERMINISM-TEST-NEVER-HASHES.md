@@ -30,9 +30,11 @@ P3
 Lead-planner-u24's read-only pass on origin/main (2026-10-21): the test is named for the same authoritative hash across observability modes, but it only toggles the mode and never hashes. This is a test-strength gap. Testing-planner was copied and may take it; tests/integration is rpg-planner's path, so either lane can do it with the other's OK. After v1.
 
 ## Scope
-- Run the same world, seed and ticks under each observability mode.
+- Use testing-planner's suggested shape. Run the same world and seed through build_kernel for N ticks, under OFF and under FULL.
 - Assert that the final authoritative state hash is identical, using the existing hash helper.
+- Add a mutation check: make one mode write authoritative state, and the test goes red.
 - Keep the test's name, so the frozen-name rule holds if it applies.
+- Testing-planner reviews the test on the PR.
 
 ## Out of Scope
 - Anything before v1. The simulation-behaviour freeze holds until the v1 record lands.
@@ -54,7 +56,8 @@ Lead-planner-u24's read-only pass on origin/main (2026-10-21): the test is named
 - tests/integration/observability/test_phase28_observability_determinism.py
 
 ## Assumptions / Open Questions
-- Lead-planner-u24 reported this; it has not been re-verified here yet.
+- Confirmed on origin/main by testing-planner (2026-10-21). test_observability_off_and_full_have_same_authoritative_hash only flips ObservabilityConfig OFF -> FULL and asserts get_mode(). It never runs the kernel and never computes a hash.
+- It is cited as determinism evidence in docs/simulation_quality/quality_scoring_contract.md:1217 and docs/testing/observability_coverage.md:85. Check whether any parity-ledger entry leans on it; testing found none by name.
 
 ## Implementation Notes
 
