@@ -72,6 +72,7 @@ Open before v1, tracked elsewhere: whether the hold is a hole in the pre-v1 (b) 
 - scheduler.py (`_throttled`, strategic cadence)
 
 ## Assumptions / Open Questions
+- Cross-link: the definition of "a hostile acting on the subject" (today a state test, see guard 11) is ruled in TCK-20261020-HUNGER-AND-RETREAT-ON-ONE-ESCALATION-SCALE, not here. Here, (b) of the scope follows that definition.
 - Does the same counting artefact inflate N7's frontier oscillation (235 -> 190)? The recompute answers it.
 
 ## Implementation Notes

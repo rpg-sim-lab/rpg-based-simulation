@@ -70,6 +70,10 @@ V3 step (ii), on rpg-v3-starvation-threat at 70402779d, keeps the escalated hung
 - scorers.py CombatRetreatScorer (~213-240)
 
 ## Assumptions / Open Questions
+- Design point to rule here (designer, 2026-10-21): "a hostile acting on the subject" (owner_decision_memo rows 83 and 84, N3) is read today by `present_threat_to` (src/ai/goals/present_threat.py:23-26), whose terms in src/engine/tactical_threat.py:60-78 are states: WOUNDED (hp < 0.7), ADJACENT (≤ 1.0), CLOSING, OUTMATCHED (≥ 1.5×) or TARGETED. Any one term counts. So a hostile resting beside a wounded subject counts as acting.
+  - Evidence: crowded s43 guard 11 on step 2 (f9b21b55b). present_threat_to is True on every sample from t1984 to t2140 with only WOUNDED, ADJACENT and OUTMATCHED held, while raider 35 rests and raider 37 sleeps. The guard holds in place for about 180 ticks, starving (hunger 100, -1 hp per 24 ticks), and its hunger project is never served (probe probes_hs/ptt_probe.py).
+  - The designer will rule here that "acting" becomes an act (targeted, attacking or moving at the subject), not a state. The tactical hold (tactical.py:209) and the goal-level weighing (SURV-07 (ii)) must share that one definition.
+  - Disclosed in v1 in C4's row.
 - The trigger is evidence of a fatal eat-under-attack. Without it, this stays parked.
 
 ## Implementation Notes
