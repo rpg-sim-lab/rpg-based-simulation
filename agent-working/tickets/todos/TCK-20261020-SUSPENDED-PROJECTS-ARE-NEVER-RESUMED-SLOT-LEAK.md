@@ -68,6 +68,7 @@ Before v1, the designer's step 2 (TCK for "an escalated need is never refused fo
 
 ## Assumptions / Open Questions
 - Context (designer, 2026-10-21): after step 2, `has_project_capacity` still counts the 1-2 exempt need projects. So ordinary-project admission sees them as used slots. That is acceptable before v1, because ordinary goals yield to escalated needs anyway. Revisit it with the slot-leak rule.
+- Context (designer, 2026-10-21, from the step-2 paired run, crowded s46): the same bound is seen from the other side. An exempt need project leaves room for an ordinary project that the pre-step-2 trim would have removed: blacksmith 13's suspended fatigue project is exempt, so its combat_engage project against leader 30 survives and is resumed at t547 (live 4 of 3). This is the designed bound (ordinary projects up to the cap, plus at most one exempt project per need), not a leak. The slot-leak rule must keep it consistent.
 - What suspends a resolve_blocker project, and does anything resume any project kind today?
 
 ## Implementation Notes
