@@ -67,6 +67,7 @@ src/engine/apply_plan.py (corpse apply order); src/engine/economy.py (`_without_
 ## Assumptions / Open Questions
 - Timing vs v1 is the OWNER's choice: (a) fix before v1 (v1 sha moves; 1b + gate re-run) or (b) disclose as N16 (false record + one-tick-late decay, conservation verified) and fix after v1. Designer recommends (b).
 - Zero-meat decay record convention to be confirmed in code at investigation.
+- Designer 2026-10-22 recommends SPLIT to the owner: (a1) emitter-only filter before v1 (separate ticket; no apply_plan/world change; proof = 3-world hashes + paired counters equal vs e6a6a3e10 except MEAT_DECAYED down by exactly 3.0 + 1.0) and (b1) = THIS ticket after v1. If (a1) lands first, its filter ("body in corpses_remove AND re-added in corpses_add_or_update -> no decay record") becomes unreachable under shape (ii) and is REMOVED in this ticket.
 
 ## Implementation Notes
 
