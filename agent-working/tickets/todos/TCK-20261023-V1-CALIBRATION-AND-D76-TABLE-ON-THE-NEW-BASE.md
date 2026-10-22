@@ -54,6 +54,7 @@ Makefile (evaluate-full); src/observability/reporting/run_determinism.py.
 
 ## Assumptions / Open Questions
 - The location of the D76 table is to be confirmed (owner memo D76 row / roadmap).
+- DUE 2026-10-30 (lead, #725 review): testing's SimQ re-anchor on the v1 sha needs this calibration before 2026-10-31.
 
 ## Implementation Notes
 
