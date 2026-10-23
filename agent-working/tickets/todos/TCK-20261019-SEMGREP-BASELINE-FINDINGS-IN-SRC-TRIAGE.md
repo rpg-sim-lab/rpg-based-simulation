@@ -71,6 +71,12 @@ The findings, with the first read:
 ## Assumptions / Open Questions
 - After v1, unless a finding turns out to be a real exposure, in which case it's raised at once.
 
+- 2026-10-23 lead-planner-u24 triage of the 14 open code-scanning alerts (all first seen 10-19; https://github.com/ttnhan18062000/rpg-based-simulation/security/code-scanning). Low priority: after HUNGER, H1/H2 and F3/F4.
+  - REAL: #228 src/api/server.py:110 CORSMiddleware allow_origins=["*"] (plus methods/headers *). Read the allowed origins from config, defaulting to the local dev origins. COORDINATE with the codebase M7 refactor of server.py (#697): land after it, or on top of it.
+  - FALSE POSITIVE, fix in code with usedforsecurity=False: hash output unchanged, so hash-neutral; prove it with the 3-world check where hashed state is touched. MD5 at #241 src/replay/fingerprint.py, #242 src/systems/lifecycle_systems/genetics.py, #229/#230/#231 src/domains/world_emergence/services.py, #233 src/lab/mutation.py, #237 src/observability/warehouse/clickhouse.py.
+  - DISMISS on GitHub with a reason (the user's action, logged on #715): #236 propose_simulation_enhancements.py:184 (yaml.dump writes, not load); #235 prepare_simulation_execution.py:174 (chmod 0o755 on a generated script, intended); #238/#240 watchdog.py (http to Loki on the internal Docker network).
+  - TO READ: #232 src/lab/context.py (request-data-write); #234 src/lab/workflows/generate_simulation_setup.py (directly returned format string).
+
 ## Implementation Notes
 
 ## Test Summary
