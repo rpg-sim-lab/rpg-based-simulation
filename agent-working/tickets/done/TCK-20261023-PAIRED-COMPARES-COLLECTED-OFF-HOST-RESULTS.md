@@ -1,10 +1,10 @@
 ---
-status: active
+status: historical
 layer: testing
 authority: P1
 audience: agent
 ticket_id: TCK-20261023-PAIRED-COMPARES-COLLECTED-OFF-HOST-RESULTS
-phase: open
+phase: done
 date: 2026-10-23
 tags: []
 ---
@@ -15,7 +15,7 @@ tags: []
 paired.py can compare arm results collected from the off-host workflow instead of running them (rpg child of T2)
 
 ## Status
-OPEN
+DONE
 
 ## Tier
 standard
@@ -62,3 +62,18 @@ Depends on T2's workflow. Testing reviews.
 ## Files Changed
 
 ## Completion Summary
+
+Closed 2026-10-26 by rpg-planner as SUPERSEDED (duplicate). The same work was filed again by mistake as
+TCK-20261026-PAIRED-COMPARES-COLLECTED-OFF-HOST-RESULTS. rpg-implementer-2 implemented and closed it, on PR #752
+(branch rpg-paired-collected). The CLI contract was agreed with testing-implementer for T2's aggregate step.
+Scope mapping:
+- (1) `--collected DIR`: done.
+- (2) The audit checks, --legacy-base, the STOP rule and the report: unchanged. The collected table is byte-identical to the
+  local one except one `- runners:` line.
+- (3) Refusing python/OS identity drift: done, and image is also checked.
+- Refusing a (world, seed) whose base and new did not come from the SAME job: NOT implemented.
+  - Determinism is already guarded by the identity refusal.
+  - Same-job pairing matters only for comparing wall time, and testing's matrix runs both arms in one job by design.
+  - If wall-time pairing must be enforced, it needs a job id in cost.json: a follow-up, agreed with testing, not opened.
+Staging artifacts: none under this ID. The standard-tier plan/investigation/test_plan live under TCK-20261026-PAIRED-COMPARES-COLLECTED-OFF-HOST-RESULTS (PR #752). done_checker_static's migration_complete therefore FAILS for this ID, and that is reported, not worked around.
+Duplicate filed because the context scan missed this ticket; noted for the next filing.

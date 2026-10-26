@@ -7851,6 +7851,20 @@
   artifact_files: []
   tags: []
 - type: ticket
+  path: agent-working/tickets/todos/TCK-20261026-COMBAT-ENGAGEMENT-CONSIDER-PER-PAIR-COST-AFTER-H1.md
+  ticket_id: TCK-20261026-COMBAT-ENGAGEMENT-CONSIDER-PER-PAIR-COST-AFTER-H1
+  title: Profile and name what is left of combat_engagement's per-pair `_consider`
+    cost after H1 (~1.6 s per tick, 70 % of the tick at 1000 entities)
+  tier: standard
+  ticket_type: refactor
+  date: '2026-10-26'
+  related_code_areas:
+  - _consider
+  - src/content_semantics/
+  artifact_files: []
+  tags:
+  - performance
+- type: ticket
   path: agent-working/tickets/done/TCK-20261025-CROSS-HOST-LEADS-TALK-OVER-REMOTE-CONTROL.md
   ticket_id: TCK-20261025-CROSS-HOST-LEADS-TALK-OVER-REMOTE-CONTROL
   title: The two leads message each other across hosts over Remote Control, and every
@@ -8208,6 +8222,18 @@
   - architecture
   - determinism
 - type: ticket
+  path: agent-working/tickets/done/TCK-20261023-PAIRED-COMPARES-COLLECTED-OFF-HOST-RESULTS.md
+  ticket_id: TCK-20261023-PAIRED-COMPARES-COLLECTED-OFF-HOST-RESULTS
+  title: paired.py can compare arm results collected from the off-host workflow instead
+    of running them (rpg child of T2)
+  tier: standard
+  ticket_type: feature
+  date: '2026-10-23'
+  related_code_areas:
+  - tools/rpg_measure/paired.py
+  artifact_files: []
+  tags: []
+- type: ticket
   path: agent-working/tickets/done/TCK-20261023-SEMGREP-SEARCH-DOCKERFILE-USER-AND-TRANSIT-SHA1.md
   ticket_id: TCK-20261023-SEMGREP-SEARCH-DOCKERFILE-USER-AND-TRANSIT-SHA1
   title: 'The two open Semgrep alerts on agent-working paths are resolved: the search
@@ -8236,18 +8262,6 @@
   tags:
   - ai
   - governance
-- type: ticket
-  path: agent-working/tickets/todos/TCK-20261023-CHECKPOINT-RESTORE-DRAWS-STATELESS-RANDOMS-FROM-SEED-ZERO.md
-  ticket_id: TCK-20261023-CHECKPOINT-RESTORE-DRAWS-STATELESS-RANDOMS-FROM-SEED-ZERO
-  title: A restored checkpoint rebuilds DeterministicRNG with base_seed=0, so stateless
-    draws after a restore differ from the unbroken run (#593 F3)
-  tier: standard
-  ticket_type: bug
-  date: '2026-10-23'
-  related_code_areas:
-  - src/engine/scenario_checkpoint.py; src/platform/rng.py; src/engine/scenario_runtime.py
-  artifact_files: []
-  tags: []
 - type: ticket
   path: agent-working/tickets/todos/TCK-20261023-COOPERATION-CANDIDATES-ENUMERATED-PER-ENTITY-PER-TICK.md
   ticket_id: TCK-20261023-COOPERATION-CANDIDATES-ENUMERATED-PER-ENTITY-PER-TICK
@@ -8318,18 +8332,6 @@
   related_code_areas:
   - tools/rpg_measure/arm_child.py; tools/rpg_measure/paired.py; src/engine/replay_manager.py
     (read)
-  artifact_files: []
-  tags: []
-- type: ticket
-  path: agent-working/tickets/todos/TCK-20261023-PAIRED-COMPARES-COLLECTED-OFF-HOST-RESULTS.md
-  ticket_id: TCK-20261023-PAIRED-COMPARES-COLLECTED-OFF-HOST-RESULTS
-  title: paired.py can compare arm results collected from the off-host workflow instead
-    of running them (rpg child of T2)
-  tier: standard
-  ticket_type: feature
-  date: '2026-10-23'
-  related_code_areas:
-  - tools/rpg_measure/paired.py
   artifact_files: []
   tags: []
 - type: ticket
@@ -10051,17 +10053,6 @@
   date: '2026-10-19'
   related_code_areas:
   - src/engine/tactical_destinations.py:38, :80+; src/engine/tactical.py:107.
-  artifact_files: []
-  tags: []
-- type: ticket
-  path: agent-working/tickets/todos/TCK-20261019-SEMGREP-BASELINE-FINDINGS-IN-SRC-TRIAGE.md
-  ticket_id: TCK-20261019-SEMGREP-BASELINE-FINDINGS-IN-SRC-TRIAGE
-  title: 'Triage the baseline Semgrep findings in src/** from the new security-scan
-    workflow (#665): fix the real ones, mark the false positives in code'
-  tier: hotfix
-  ticket_type: chore
-  date: '2026-10-19'
-  related_code_areas: []
   artifact_files: []
   tags: []
 - type: ticket
