@@ -8212,6 +8212,21 @@
   - architecture
   - determinism
 - type: ticket
+  path: agent-working/tickets/done/TCK-20261023-CHECKPOINT-RESTORE-DRAWS-STATELESS-RANDOMS-FROM-SEED-ZERO.md
+  ticket_id: TCK-20261023-CHECKPOINT-RESTORE-DRAWS-STATELESS-RANDOMS-FROM-SEED-ZERO
+  title: A restored checkpoint rebuilds DeterministicRNG with base_seed=0, so stateless
+    draws after a restore differ from the unbroken run (#593 F3)
+  tier: standard
+  ticket_type: bug
+  date: '2026-10-23'
+  related_code_areas:
+  - src/engine/scenario_checkpoint.py; src/platform/rng.py; src/engine/scenario_runtime.py
+  artifact_files:
+  - agent-working/stored_artifacts/TCK-20261023-CHECKPOINT-RESTORE-DRAWS-STATELESS-RANDOMS-FROM-SEED-ZERO/investigation.md
+  - agent-working/stored_artifacts/TCK-20261023-CHECKPOINT-RESTORE-DRAWS-STATELESS-RANDOMS-FROM-SEED-ZERO/plan.md
+  - agent-working/stored_artifacts/TCK-20261023-CHECKPOINT-RESTORE-DRAWS-STATELESS-RANDOMS-FROM-SEED-ZERO/test_plan.md
+  tags: []
+- type: ticket
   path: agent-working/tickets/done/TCK-20261023-SEMGREP-SEARCH-DOCKERFILE-USER-AND-TRANSIT-SHA1.md
   ticket_id: TCK-20261023-SEMGREP-SEARCH-DOCKERFILE-USER-AND-TRANSIT-SHA1
   title: 'The two open Semgrep alerts on agent-working paths are resolved: the search

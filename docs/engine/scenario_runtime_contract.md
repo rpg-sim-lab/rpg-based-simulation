@@ -61,7 +61,7 @@ Behaviour:
 - `ScenarioCheckpointer.restore(path, spec)` raises `FileNotFoundError` if the checkpoint file does not exist.
 - `ScenarioCheckpointer.restore(path, spec)` raises `ValueError` if `checkpoint.spec_id != spec.id`.
 - The restored service's `_tick` counter is set to the checkpoint tick.
-- RNG stream is restored via `DeterministicRNG.set_state(rng_checkpoint)`.
+- RNG stream is restored via `DeterministicRNG.set_state(rng_checkpoint)` on a `DeterministicRNG` built with the episode's base seed (`state.seed`). `set_state` restores only the stateful per-domain streams; the stateless draws (`get_int`, `get_float`, `choice`, `weighted_choice`, `sample`) and any domain first used after the restore are derived from the base seed, so a restore at tick N followed by K ticks equals the unbroken N+K run.
 - `spec_path` must be provided in the restore POST body when calling via REST (see below). If omitted, a sentinel spec is constructed from the `scenario_id` path parameter.
 
 ---

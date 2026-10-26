@@ -155,3 +155,75 @@ def test_rng_checkpoint_populated_after_tick():
         )
     finally:
         svc.abort()
+
+
+# ── F3: a restored episode keeps its real base seed (#593 F3) ─────────────────
+# The checkpoint stores only the stateful per-domain streams; the stateless draws
+# (get_int/get_float/choice/sample) and any domain first used after the restore
+# derive from the base seed, so restore must rebuild the RNG with state.seed.
+
+_SEED = 12345
+
+
+def _seeded_service(spec_id="f3_seeded", entity_count=30, seed=_SEED):
+    from src.engine.scenario_runtime import ScenarioRuntimeService
+    from src.perf.scenarios import build_movement_state
+
+    state = build_movement_state(entity_count=entity_count, seed=seed)
+    return ScenarioRuntimeService(_make_spec(id=spec_id), initial_state=state)
+
+
+def test_restore_rebuilds_rng_with_the_episode_seed(tmp_path):
+    """Restored RNG answers stateless draws and fresh domains like a RNG with the episode seed."""
+    from src.core.enums import Domain
+    from src.engine.scenario_checkpoint import ScenarioCheckpointer
+    from src.platform.rng import DeterministicRNG
+
+    svc = _seeded_service()
+    svc.step()
+    path = tmp_path / "ckpt.bin"
+    ScenarioCheckpointer.save(svc, path)
+    svc.abort()
+
+    restored = ScenarioCheckpointer.restore(path, _make_spec(id="f3_seeded"))
+    rng = restored._kernel._rng
+    reference = DeterministicRNG(base_seed=_SEED)
+
+    assert rng.seed == _SEED
+    assert rng.get_int(Domain.DEFAULT, 7, 3, 0, 10**6) == reference.get_int(Domain.DEFAULT, 7, 3, 0, 10**6)
+    assert rng.get_float(Domain.TACTICAL, 7, 3, 1) == reference.get_float(Domain.TACTICAL, 7, 3, 1)
+    # a domain absent from the checkpoint is seeded lazily from the base seed
+    fresh = [d for d in Domain if d.value not in (restored._kernel.state.rng_checkpoint or {})][0]
+    assert rng.next_float(fresh) == reference.next_float(fresh)
+    restored.abort()
+
+
+@pytest.mark.slow
+def test_restore_at_n_then_k_ticks_equals_unbroken_n_plus_k(tmp_path):
+    """Restore at tick N + K more ticks reaches the unbroken N+K run's state hash and draws."""
+    from src.core.enums import Domain
+    from src.engine.checkpoint import CanonicalStateHasher
+    from src.engine.scenario_checkpoint import ScenarioCheckpointer
+
+    n, k = 5, 5
+    unbroken = _seeded_service()
+    for _ in range(n + k):
+        unbroken.step()
+
+    first = _seeded_service()
+    for _ in range(n):
+        first.step()
+    path = tmp_path / "ckpt.bin"
+    ScenarioCheckpointer.save(first, path)
+    first.abort()
+    restored = ScenarioCheckpointer.restore(path, _make_spec(id="f3_seeded"))
+    for _ in range(k):
+        restored.step()
+
+    assert restored.tick == unbroken.tick == n + k
+    assert CanonicalStateHasher.get_hash(restored._kernel.state) == CanonicalStateHasher.get_hash(unbroken._kernel.state)
+    a, b = restored._kernel._rng, unbroken._kernel._rng
+    for entity_id in (1, 7, 19):
+        assert a.get_float(Domain.TACTICAL, n + k, entity_id, 0) == b.get_float(Domain.TACTICAL, n + k, entity_id, 0)
+    unbroken.abort()
+    restored.abort()

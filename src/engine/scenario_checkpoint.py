@@ -80,9 +80,11 @@ class ScenarioCheckpointer:
             )
 
         # Reconstruct RNG from the checkpoint embedded in state.
-        # base_seed=0 matches _build_kernel(); the stream is immediately
-        # overwritten by set_state() so base_seed is irrelevant post-restore.
-        rng = DeterministicRNG(base_seed=0)
+        # The base seed must be the episode seed (state.seed, as _build_kernel()
+        # uses it): set_state() restores only the stateful per-domain streams, while
+        # the stateless draws (get_int/get_float/choice/sample) and any domain first
+        # used after the restore are derived from the base seed.
+        rng = DeterministicRNG(base_seed=state.seed)
         if state.rng_checkpoint is not None:
             rng.set_state(state.rng_checkpoint)
 
