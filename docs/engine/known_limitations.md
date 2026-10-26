@@ -32,17 +32,22 @@ This document records the current technical limitations, unsupported features, a
 
 ### 1.5 Feature Flag Defaults (Phase 10 Rollout Gates)
 
-All 11 Phase 10 feature flags in `src/domains/optimization/feature_flags.py` default to
-`FeatureMode.OFF`. The flags are:
+Eight of the 11 Phase 10 feature flags in `src/domains/optimization/feature_flags.py` default to
+`FeatureMode.OFF`. Three default to `FeatureMode.ON`: `ENABLE_COMBAT_ENGAGEMENT`
+(`TCK-20260914-COMBAT-ENGAGEMENT-PERCEIVED-POWER`), `ENABLE_BELIEF_ASSIMILATION` and
+`ENABLE_SOCIAL_COOPERATION` (both `TCK-20260824-ROLLOUT-FLAG-DECISIONS`, DEV-003). Each was
+flipped deliberately, with its reason in the comment block at the flag's definition, and is
+named in the allowlist of intended ON defaults in
+`tests/integration/test_scenario_feature_flag_defaults.py`. The flags are:
 
 - `ENABLE_WORLD_CAPABILITY_LAYER`
 - `ENABLE_SELF_MODEL_COGNITION`
 - `ENABLE_ADVENTURE_ROUTING`
-- `ENABLE_COMBAT_ENGAGEMENT`
-- `ENABLE_BELIEF_ASSIMILATION`
+- `ENABLE_COMBAT_ENGAGEMENT` (default ON)
+- `ENABLE_BELIEF_ASSIMILATION` (default ON)
 - `ENABLE_INFORMATION_INTENT_EXECUTION`
 - `ENABLE_PROGRESSION_EVOLUTION`
-- `ENABLE_SOCIAL_COOPERATION`
+- `ENABLE_SOCIAL_COOPERATION` (default ON)
 - `ENABLE_WORLD_EMERGENCE`
 - `ENABLE_LIFE_ARC_CAMPAIGNS`
 - `ENABLE_ENHANCED_TRACE_EVENTS`
@@ -112,7 +117,7 @@ Source: D09 Finding 5 (Risk 11/15). Ticket: TCK-20260627-P1G-STABILITY-GUARD.
 
 `_phase_persistence()` in `src/engine/kernel.py` records a per-tick digest value under the payload
 key `"hash"` of the `TICK_END` replay event. Whether that value is a real SHA-256 (the proof
-digest, `flat-sha256-v1`; see `docs/engine/deterministic_execution.md`) or not computed (`null` with a
+digest, `flat-sha256-v2`; see `docs/engine/deterministic_execution.md`) or not computed (`null` with a
 `digest_status`) depends on the active `GovernorPolicy`, and on `audit_mode`. Replays recorded before
 `TCK-20261006-PERF-M1-KERNEL-DIGESTS-VIA-SCHEDULER` carry the string `"SKIPPED"` instead; see the `TICK_END` schema note in `deterministic_execution.md`:
 

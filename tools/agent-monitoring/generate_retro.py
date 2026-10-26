@@ -801,7 +801,11 @@ def compute_retro_metrics(
     avg_dur = int(sum(durations) / len(durations)) if durations else 0
     avg_dur_min = avg_dur // 60
 
-    agent_counts = [r.get("agent_count", 0) for r in runs if r.get("agent_count")]
+    # TCK-20261020-HAND-CLOSURE-AGENT-COUNT-UNKNOWN: a null agent_count is unknown (hand closures), never 0 in the
+    # average; the row reports how many runs the average covers. Legacy 0 / missing keep the old exclusion.
+    agent_counts = [r["agent_count"] for r in runs if r.get("agent_count")]
+    # `avg_agents` stays a number (0 when no run has a count): the agent-ops dashboard's RunSummaryStats takes it as a float.
+    # The retro row reads `avg_agents_n` to print n/a instead of that 0.
     avg_agents = round(sum(agent_counts) / len(agent_counts), 1) if agent_counts else 0
 
     # Execution-mode split (TCK-20260929-RUN-EXECUTION-MODE-FIELD, extended by
@@ -828,7 +832,7 @@ def compute_retro_metrics(
         group_durations = [r["duration_s"] for r in group if r.get("duration_s") and not retro_provenance.is_derived(r)]
         execution_mode_summary[mode] = {
             "count": len(group),
-            "unknown": sum(1 for r in group if r.get("duration_source") == "unknown"),
+            "unknown": sum(1 for r in group if retro_provenance.source_of(r) == "unknown"),
             "done_count": sum(1 for r in group if _resolve_status(r) == "DONE"),
             "avg_duration_min": (
                 (int(sum(group_durations) / len(group_durations)) // 60)
@@ -1069,6 +1073,7 @@ def compute_retro_metrics(
             "gate_fail_count": len(gate_fails),
             "avg_duration_min": avg_dur_min,
             "avg_agents": avg_agents,
+            "avg_agents_n": len(agent_counts),
             "total_agent_calls": len(events),
             "execution_mode": execution_mode_summary,
             "provenance": retro_provenance.summary(runs, events),
@@ -1368,7 +1373,7 @@ def compute_tool_safety_metrics(events: list[dict], tools: list[dict]) -> dict:
 
 def generate(
     runs, events, label, week_str=None, tickets_root=None, tools=None, all_tools=None,
-    raw_run_count=None, deduped_run_count=None, real_token_report=None, session_layer=None, gates=None, paths=None,
+    raw_run_count=None, deduped_run_count=None, real_token_report=None, session_layer=None, gates=None, paths=None, failures=None, ledger_blocks=None, reset_declarations=None,
 ):
     """Render `compute_retro_metrics()`'s result to the retro report's Markdown text — the sole
     rendering consumer of that function. Signature/behavior unchanged by the
@@ -1443,12 +1448,28 @@ def generate(
     lines.append("|---|---|")
     lines.append(f"| Total runs | {rs['total']} |")
     lines.append(f"| Completed (DONE) | {rs['done_count']} ({fmt_pct(rs['done_count'], rs['total'])}) |")
-    lines.append(f"| Gate failures | {rs['gate_fail_count']} |")
+    if ledger_blocks is not None:
+        # TCK-20261018-RETRO-GATE-FAILURES-ROW-CITES-LEDGER: runs almost never END in a gate failure (a hand closure fixes
+        # and reruns, or overrides), so the run-based count read "0" while the ledger held tens of blocking verdicts. The
+        # row cites the ledger; the run count follows as a trailing clause.
+        lines.append(f"| Gate failures | {ledger_blocks['blocking']} blocking verdicts of {ledger_blocks['verdicts']} "
+                     f"(ledger: {ledger_blocks['overridden']} overridden, {ledger_blocks['unresolved']} without an outcome); "
+                     f"{rs['gate_fail_count']} runs ended in a gate failure |")
+    else:
+        lines.append(f"| Gate failures (runs; no gate ledger for this window) | {rs['gate_fail_count']} |")
+    if reset_declarations is not None:
+        # TCK-20261015-SESSION-LAYER-MEASURES-SEAT-SUFFIX-RESET-RECORD-NOTE-CAP: a count, 0 included, from the first week
+        # the declaration command exists; earlier weeks are not instrumented, so they show no row
+        lines.append(f"| Reset-boundary declarations | {reset_declarations['total']} "
+                     f"(HARD {reset_declarations['HARD']}, SOFT {reset_declarations['SOFT']}, NEVER {reset_declarations['NEVER']}) |")
     if prov:
         lines.extend(retro_provenance.run_summary_rows(prov))
     else:
         lines.append(f"| Avg duration | {rs['avg_duration_min']} min |")
-    lines.append(f"| Avg agents per run | {rs['avg_agents']} |")
+    n_known, n_runs = rs["avg_agents_n"], rs["total"]
+    unknown_note = "; hand closures record unknown" if n_known < n_runs else ""
+    avg_agents_cell = "n/a" if n_known == 0 else rs["avg_agents"]
+    lines.append(f"| Avg agents per run (n={n_known} of {n_runs}{unknown_note}) | {avg_agents_cell} |")
     lines.append(f"| Total agent calls | {rs['total_agent_calls']} |")
     lines.append("")
 
@@ -1496,6 +1517,12 @@ def generate(
     else:
         lines.append("_No gate failures this period._")
     lines.append("")
+
+    # Failures (TCK-20261007-RETRO-FAILURES-SECTION): non-DONE runs, failed/blocked events, recurring failing tests.
+    # Right after the gate breakdown so a reader finds failures first; omitted entirely when the caller passes none.
+    if failures:
+        lines.append(failures.rstrip("\n"))
+        lines.append("")
 
     # Reason-code breakdown — only rendered when at least one event carries one, so weeks with
     # no reason_code data (or runs predating this field) don't get an empty/zero-value section.
@@ -2090,7 +2117,7 @@ def _extract_notes_section(existing_text: str) -> "str | None":
     return existing_text[idx:]
 
 
-def _write_report_preserving_notes(report: str, out_path: Path, force: bool) -> str:
+def _write_report_preserving_notes(report: str, out_path: Path, force: bool, run_count=None) -> str:
     """Writes `report` to `out_path`, preserving any existing `## Notes` content unless `force` is
     set (TCK-20260915-RETRO-CLI-OVERWRITES-HAND-AUTHORED-NOTES: `out_path.write_text(report)`
     used to run unconditionally, silently destroying hand-authored notes the project's own
@@ -2100,7 +2127,12 @@ def _write_report_preserving_notes(report: str, out_path: Path, force: bool) -> 
     Acceptance Criteria ("a regeneration that would discard content must say so").
 
     `--force` still allows a deliberate full rewrite (AC #3) -- this function's only job is making
-    the DEFAULT path safe, not removing the escape hatch."""
+    the DEFAULT path safe, not removing the escape hatch.
+
+    TCK-20261007-RETRO-NOTES-ACCUMULATION-COLLAPSE: preserved Notes go through `retro_notes.process_notes` -- stamped
+    addenda older than a `final` entry collapse to one history line (full text archived first), and a status line
+    flags a final note older than the data (`run_count`). Unmarked text is untouched; any failure there keeps the
+    Notes verbatim."""
     had_existing_file = out_path.exists()
     if force or not had_existing_file:
         out_path.write_text(report)
@@ -2114,15 +2146,26 @@ def _write_report_preserving_notes(report: str, out_path: Path, force: bool) -> 
         out_path.write_text(report)
         return f"Written: {out_path}"
 
+    notes_info = []
+    try:
+        import retro_notes
+
+        archive_path = out_path.parent / "archive" / f"{out_path.stem}-notes-history.md"
+        processed, notes_info = retro_notes.process_notes(
+            preserved_notes, run_count, archive_path, out_path.stem, f"archive/{archive_path.name}")
+    except Exception as exc:  # noqa: BLE001
+        processed, notes_info = preserved_notes, [f"WARNING: notes convention not applied: {exc}"]
+
     fresh_notes_idx = report.find("## Notes")
     if fresh_notes_idx != -1:
-        merged = report[:fresh_notes_idx] + preserved_notes
+        merged = report[:fresh_notes_idx] + processed
     else:
-        merged = report.rstrip("\n") + "\n\n" + preserved_notes
+        merged = report.rstrip("\n") + "\n\n" + processed
     out_path.write_text(merged)
+    extra = f"; {'; '.join(notes_info)}" if notes_info else ""
     return (
         f"Written: {out_path} (preserved {len(preserved_notes)} chars of existing ## Notes "
-        f"content -- pass --force to discard it instead)"
+        f"content -- pass --force to discard it instead{extra})"
     )
 
 
@@ -2144,6 +2187,57 @@ def _session_layer_section(runs, week_str, cutoff, latency_prs):
             except Exception:  # noqa: BLE001 - an unavailable PR is `unknown`, not a failed retro
                 rows.append((f"#{n}", batch_latency.latencies(None, None, None) | {"dispatch_source": "unavailable"}))
         return slr.render(manual, runs, boundary, rows or None, len(all_manual), len(all_boundary))
+    except Exception:  # noqa: BLE001
+        return None
+
+
+_RESET_DECLARATIONS_FROM = "2026-W42"
+
+
+def _reset_declarations(week_str):
+    """{"total", "HARD", "SOFT", "NEVER"} of the week's `reset_boundary.jsonl` (0s when none), or None for a report that is
+    not one week, or a week before the command existed (never fails the retro)."""
+    try:
+        if not week_str or week_str < _RESET_DECLARATIONS_FROM:
+            return None
+        data_dir = DEFAULT_TOOLS_FILE if DEFAULT_TOOLS_FILE.is_dir() else DEFAULT_TOOLS_FILE.parent
+        path = Path(data_dir) / week_str / "reset_boundary.jsonl"
+        counts = {"HARD": 0, "SOFT": 0, "NEVER": 0}
+        if path.is_file():
+            for line in path.read_text(encoding="utf-8").splitlines():
+                try:
+                    kind = json.loads(line).get("kind")
+                except ValueError:
+                    continue
+                if kind in counts:
+                    counts[kind] += 1
+        return {"total": sum(counts.values()), **counts}
+    except Exception:  # noqa: BLE001
+        return None
+
+
+def _ledger_blocks(week_str):
+    """{"verdicts", "blocking", "overridden", "unresolved"} over the gate ledger's verdicts of the ISO week `week_str`, or
+    None when the report has no ledger window: no week (`--all`/`--days`), no ledger rows at all, a week before the
+    ledger's first verdict, or a ledger that cannot be read (never fails the retro).
+
+    A ledger that exists but holds no verdict for this week is a real reading, zeros included
+    (TCK-20261018-RETRO-GATE-FAILURES-ROW-CITES-LEDGER): "0 blocking verdicts of 0" is not "no gate ledger"."""
+    if not week_str:
+        return None
+    try:
+        import gate_ledger
+
+        data_dir = DEFAULT_TOOLS_FILE if DEFAULT_TOOLS_FILE.is_dir() else DEFAULT_TOOLS_FILE.parent
+        view = gate_ledger.resolved_view(gate_ledger.load_rows(data_dir))
+        weeks = {w for w in (gate_ledger.week_of(v.get("ts")) for v in view) if w}
+        if not weeks or week_str < min(weeks):
+            return None
+        inside = [v for v in view if gate_ledger.week_of(v.get("ts")) == week_str]
+        blocking = [v for v in inside if v.get("blocking")]
+        return {"verdicts": len(inside), "blocking": len(blocking),
+                "overridden": sum(1 for v in blocking if v["outcome"] == "overridden"),
+                "unresolved": sum(1 for v in blocking if v["outcome"] is None)}
     except Exception:  # noqa: BLE001
         return None
 
@@ -2170,6 +2264,18 @@ def _paths_section(runs, events, all_runs):
         import path_report
 
         return path_report.render_section(runs, events, sum(1 for r in dedupe_to_latest_per_execution(all_runs) if path_report.has_path_fields(r)))
+    except Exception:  # noqa: BLE001
+        return None
+
+
+def _failures_section(runs, events):
+    """The rendered Failures section (TCK-20261007-RETRO-FAILURES-SECTION), or None when it cannot be built (never fails
+    the retro). The sibling takes this module's predicates as arguments, so it never imports this file."""
+    try:
+        import retro_failures
+
+        return retro_failures.render_section(dedupe_to_latest_per_execution(runs), events, _is_gate_fail, _normalize_agent,
+                                             resolve_status=_resolve_status)
     except Exception:  # noqa: BLE001
         return None
 
@@ -2253,17 +2359,20 @@ def main():
 
     session_layer = _session_layer_section(runs, week_str, cutoff if args.days else None, args.latency_prs)
     gates = _gates_section(None if (args.all or args.days) else week_str)
+    ledger_blocks = _ledger_blocks(None if (args.all or args.days) else week_str)
+    reset_declarations = _reset_declarations(None if (args.all or args.days) else week_str)
     paths = _paths_section(runs, events, all_runs)
+    failures = _failures_section(runs, events)
 
     report = generate(
         runs, events, label, week_str, tools=tools, all_tools=all_tools,
         raw_run_count=raw_run_count, deduped_run_count=deduped_run_count,
-        real_token_report=real_token_report, session_layer=session_layer, gates=gates, paths=paths,
+        real_token_report=real_token_report, session_layer=session_layer, gates=gates, paths=paths, failures=failures, ledger_blocks=ledger_blocks, reset_declarations=reset_declarations,
     )
 
     RETRO_DIR.mkdir(parents=True, exist_ok=True)
     out_path = RETRO_DIR / out_name
-    print(_write_report_preserving_notes(report, out_path, args.force))
+    print(_write_report_preserving_notes(report, out_path, args.force, run_count=deduped_run_count))
     print(f"Runs: {len(runs)}, Events: {len(events)}")
 
     # Update index
@@ -2301,6 +2410,9 @@ def _resolve_report_run_population(name, all_runs, runs_by_week):
     return dedupe_to_latest_per_execution(pop)
 
 
+_ISO_WEEK_RE = re.compile(r"^\d{4}-W\d{2}$")
+
+
 def _update_index(all_runs, all_tools=None):
     all_tools = all_tools or []
 
@@ -2336,11 +2448,16 @@ def _update_index(all_runs, all_tools=None):
         read_calls = build_raw_investigation_count_section(week_tools)["total"]
         skill_invocations = build_skill_usage_section(week_tools)["total_skill_invocations"]
 
+        ledger = _ledger_blocks(name) if _ISO_WEEK_RE.match(name) else None
+        gate_cell = f"{ledger['blocking']}L" if ledger is not None else str(fails)
         lines.append(
-            f"| [{name}]({f.name}) | {n} | {done} | {fails} | {search_calls} | {read_calls} | "
+            f"| [{name}]({f.name}) | {n} | {done} | {gate_cell} | {search_calls} | {read_calls} | "
             f"{skill_invocations} |"
         )
 
+    lines.append("")
+    lines.append("Gate failures: `NL` is the number of blocking verdicts in the gate ledger for that week; a plain number counts "
+                 "runs that ended in a gate failure (no gate ledger for that window).")
     (RETRO_DIR / "index.md").write_text("\n".join(lines) + "\n")
 
 

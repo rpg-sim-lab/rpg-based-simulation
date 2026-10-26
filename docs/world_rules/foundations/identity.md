@@ -51,12 +51,28 @@ precondition for durable state existing at all (the key everything else attaches
 
 **Disposition: ACCEPT.**
 
-**Repository evidence: SUPPORTED.** `EvolutionSystem._get_evolved_kind()` remaps `kind` strings
+**Repository evidence: SUPERSEDED (D79 step 3, divergence 2.133, TCK-20261014-LEVEL-UP-NO-LONGER-RENAMES-AN-ENTITY-KIND-D79): a level-up no longer renames the kind and `_get_evolved_kind()` is deleted.** It used to remap `kind` strings
 (`WOLF→DIRE_WOLF`, `HERO→LEGEND_HERO`) on the same `entity_id` — the clearest possible repository
 proof that kind and identity are already architecturally separate fields, not the same concept
 wearing two names. Confirmed independently earlier this session that nothing currently *reads*
 the evolved kind, which is a Reach/Cross-cutting-Layer finding (see `simulation-rule-world-law-
 design-preparation.md` §4), not an Identity-family problem — the identity boundary itself holds.
+
+- **Amendment, a hero is a person doing a kind of work (decided by the owner directly,
+  2026-10-11; row 63 of `docs/plans/systemic_world/owner_decision_memo.md`).** There is no hero
+  kind and no hero role. A hero is a person of a people-kind (human, elf, dwarf and the others)
+  with that kind's needs, who takes up adventuring work: quests, bounties, exploring, clearing
+  dens. It is an adventurer for as long as it does that work, and it may stop, settle, or take
+  other work, while a farmer may take adventuring up. What it can do comes from its skill, gear
+  and traits (decision 46), not from the label, and it earns as anyone does, from the real giver
+  of a quest or bounty (EXCH-02, decision 61). The guild is an organization people join and
+  leave, not a faction a kind is born into. **Alternatives not taken:** a starting job set when
+  the person appears (the world would not decide who becomes one); heroes as a separate role
+  with their own rules (against decision 46).
+  - **Repository evidence: CONFLICTING** (rpg-designer's count, 2026-10-11, on `rpg-designer-next`,
+    base main `39f353b95`): `EntityRole.HERO` is read in 26 places across 17 files under
+    `src/`, and `Faction.HERO_GUILD` in 30. The kind string `HERO` no longer evolves to `LEGEND_HERO`
+    (divergence 2.133). Retired in milestone 1 with the other name branches, in measured stages.
 
 **Scenarios:** [FND-S01](../scenarios/foundational-batch-01.md#fnd-s01), [FND-S13](../scenarios/foundational-batch-01.md#fnd-s13) (adversarial expansion — repeated-exposure form change).
 

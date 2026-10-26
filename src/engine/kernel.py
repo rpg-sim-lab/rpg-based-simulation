@@ -13,13 +13,19 @@ from pathlib import Path
 
 from src.engine.phases import get_authoritative_phases
 from src.core.updates import StateUpdate, EntityUpdate
-from src.core.governance import PressureSignals, RuntimeMode
+from src.core.grief_triggers import pending_grief_triggers
+from src.core.concurrency_law import ConcurrencyLaw
+from src.core.governance import RuntimeMode
 from src.core.diagnostic import TraceEvent
 from src.core.lifecycle import LifecycleOutcome, ShutdownResult
-from src.core.enums import Domain
 
+from src.engine.signal_source import HostReadings, MeasuredCosts, select_signal_source, signal_contract_record, signals_are_zeroed
+from src.engine.run_identity import create_run_directory, new_run_id
 from src.engine.executor import IWorkExecutor, LocalSequentialExecutor, ConcurrentExecutionAdapter
 from src.engine.cache_registry import CacheRegistry, CacheBudgetPolicy
+from src.engine.cadence import should_run
+from src.engine.need_pull import ESCALATION_ONSET, HUNGER_LINE
+from src.engine.starvation import STARVING_LINE
 
 if TYPE_CHECKING:
     from src.config.profiles import RuntimeProfile
@@ -40,14 +46,13 @@ class Kernel:
 
     __slots__ = (
         "_profile", "_state", "_rng", "_phases", 
-        "_scheduler", "_governor", "_status", "_replay", "_collector",
+        "_scheduler", "_governor", "_signals_zeroed", "_status", "_replay", "_collector",
         "_worker_manager", "_executor", "_stopped",
         "_start_perf_ts", "_current_world_time", "_platform_signals",
         "_current_signals", "_current_policy", "_current_work_items",
         "_source_packets", "_source_work_items", "_final_results", "_final_compute_ms",
-        "_pending_grief_triggers",
         "_phase_costs", "_metrics", "_audit_mode", "_no_frame_pacing", "_no_replay", "_audit_dirty_set", "_perf_tracker", "_force_full_scan", "_current_update", "_cache_registry", "_cache_policy", "_opt_profile", "_event_listeners", "_event_recorder", "_entity_timeline_store",
-        "_run_id", "_artifact_repo", "_metric_recorder", "_current_tick_event_count", "_current_tick_violation_count", "_cognition_recorder", "_decision_trace_writer", "_personality_recorder",
+        "_run_id", "_run_id_is_default", "_artifact_repo", "_metric_recorder", "_current_tick_event_count", "_current_tick_violation_count", "_cognition_recorder", "_decision_trace_writer", "_personality_recorder",
         "_workers_started", "_last_shutdown_report",
         "_quality_hub", "_quality_feed",
     )
@@ -120,12 +125,13 @@ class Kernel:
         from src.engine.scheduler import DeterministicScheduler as DefaultScheduler
         from src.engine.governor import ResourceGovernor as DefaultGovernor
         from src.engine.runtime_status import RuntimeStatus as DefaultStatus
-        from src.engine.replay_manager import ReplayManager as DefaultReplayManager
         from src.engine.observability import SignalCollector
         from src.engine.worker_manager import WorkerManager
         
         self._scheduler = scheduler or DefaultScheduler()
         self._governor = governor or DefaultGovernor()
+        # audit_mode, or a governor that pins itself (the test pin), feeds the governors zeroed signals: no wall-clock reader can change what a run computes.
+        self._signals_zeroed = signals_are_zeroed(self._audit_mode, self._governor)
         self._status = status or DefaultStatus()
         self._status.force_full_scan = self._force_full_scan
         self._collector = SignalCollector(profile.name)
@@ -139,9 +145,9 @@ class Kernel:
         obs_mode = ObservabilityConfig.get_mode()
 
         self._run_id = run_id
+        self._run_id_is_default = run_id is None
         if self._run_id is None:
-            _run_suffix = self._rng.get_int(Domain.INIT, 0, 0, 1000, 9999)
-            self._run_id = f"run_{int(time.time())}_{_run_suffix}"
+            self._run_id = new_run_id(self._rng)
 
         self._artifact_repo = None
         if obs_mode != ObservabilityMode.OFF:
@@ -150,31 +156,9 @@ class Kernel:
             from src.observability.reporting.artifact_repository import RunArtifactRepository, RunManifest
             self._artifact_repo = RunArtifactRepository()
             
-            # Load metadata from provenance manifest if available
-            prov_manifest_data = None
-            if provenance_manifest_path and os.path.exists(provenance_manifest_path):
-                try:
-                    with open(provenance_manifest_path, "r", encoding="utf-8") as f:
-                        prov_manifest_data = json.load(f)
-                except (OSError, ValueError) as prov_err:
-                    # ValueError covers json.JSONDecodeError. A missing/corrupt manifest degrades the
-                    # RunManifest's fingerprints but must not abort the run, so log it instead of hiding it.
-                    logger.warning(
-                        "Could not load provenance manifest %s (non-fatal): %s",
-                        provenance_manifest_path, prov_err,
-                    )
-
-            catalog_fp = catalog_fingerprint
-            if not catalog_fp and prov_manifest_data:
-                catalog_fp = prov_manifest_data.get("catalog_fingerprint")
-            
-            module_fps = module_fingerprints
-            if not module_fps and prov_manifest_data:
-                module_fps = prov_manifest_data.get("module_fingerprints")
-
-            from src.core.registries import runtime_content_source as registries_source, catalog_fingerprint as registries_fingerprint
-            actual_content_source = runtime_content_source or registries_source
-            actual_catalog_fp = catalog_fp or registries_fingerprint
+            actual_content_source, actual_catalog_fp, module_fps = self._resolve_manifest_fingerprints(
+                provenance_manifest_path, catalog_fingerprint, module_fingerprints, runtime_content_source,
+            )
 
             # Create standard manifest
             manifest = RunManifest(
@@ -196,21 +180,15 @@ class Kernel:
                 runtime_content_source=actual_content_source,
                 catalog_fingerprint=actual_catalog_fp,
                 module_fingerprints=module_fps,
-                state_hash=None
+                state_hash=None,
+                signal_contract=signal_contract_record(profile, self._signals_zeroed),
+                audit_mode=bool(self._audit_mode),
+                signals_zeroed=self._signals_zeroed,
             )
-            self._artifact_repo.create_run(self._run_id, manifest, overwrite=True)
+            self._run_id = create_run_directory(self._artifact_repo, str(self._run_id), manifest, is_default=self._run_id_is_default, rng=self._rng)
             self._artifact_repo.update_manifest(self._run_id, status="RUNNING")
 
-        if replay is None:
-            import os
-            run_dir = Path(self._artifact_repo.resolve_path(self._run_id, "manifest")).parent if self._artifact_repo else Path(f"data/runs/{self._run_id}")
-            self._replay = DefaultReplayManager(
-                run_dir=run_dir,
-                profile_name=profile.name,
-                buffer_capacity_kb=profile.max_replay_buffer_kb
-            )
-        else:
-            self._replay = replay
+        self._replay = self._init_replay(profile, replay, self._run_id)
 
         if executor:
             self._executor = executor
@@ -233,13 +211,6 @@ class Kernel:
         self._source_packets = {}
         self._source_work_items = {}
         self._final_results = []
-        # Kernel-run-scoped relay for grief triggers detected mid-tick by
-        # EventExtractor.detect_grief_triggers() (Observability phase, which runs after
-        # that tick's ApplyPath pass) — drained into a later tick's _phase_resolution, or
-        # at episode teardown for a death on the run's final tick. NOT durable simulation
-        # state: not part of AuthoritativeState, not serialized, does not survive process
-        # restart (TCK-20260824-GRIEF-NEMESIS-REACHABILITY).
-        self._pending_grief_triggers = []
         self._final_compute_ms = 0.0
         self._phase_costs = {}
         self._metrics = {}
@@ -248,7 +219,7 @@ class Kernel:
         self._no_replay = flags.get("no_replay", False) if flags else False
         self._event_listeners = []
 
-        from src.observability.event_recorder import EventRecorder
+        from src.observability.event_recorder import EventRecorder, reset_run_state
         from src.observability.entity_timeline import EntityTimelineStore
 
         run_dir_str = None
@@ -340,13 +311,8 @@ class Kernel:
         self._workers_started = 2 if (obs_mode != ObservabilityMode.OFF) else 0
         self._last_shutdown_report = None
 
-        from src.observability.event_extractor import EventExtractor
-        EventExtractor.reset_run_state()
-        from src.observability.event_shapers import StrategyShaper, ProgressionShaper, SocialShaper, FactionShaper
-        StrategyShaper.reset_run_state()
-        ProgressionShaper.reset_run_state()
-        SocialShaper.reset_run_state()
-        FactionShaper.reset_run_state()
+        reset_run_state(profile.cadence.strategic_intelligence, ESCALATION_ONSET * HUNGER_LINE, should_run, profile.max_observability_budget_percent > 0,
+                        starving_line=STARVING_LINE)
 
         self.validate(flags)
 
@@ -373,6 +339,57 @@ class Kernel:
         if flags:
              ProfileValidator.validate_flags(flags, self._profile)
 
+    @staticmethod
+    def _resolve_manifest_fingerprints(
+        provenance_manifest_path: Optional[str],
+        catalog_fingerprint: Optional[str],
+        module_fingerprints: Optional[Dict[str, str]],
+        runtime_content_source: Optional[str],
+    ) -> tuple[Optional[str], Optional[str], Optional[Dict[str, str]]]:
+        """Content source, catalog fingerprint and module fingerprints for the run manifest.
+
+        Explicit arguments win, then the provenance manifest when it loads, then the registries.
+        """
+        import os
+        prov_manifest_data = None
+        if provenance_manifest_path and os.path.exists(provenance_manifest_path):
+            try:
+                with open(provenance_manifest_path, "r", encoding="utf-8") as f:
+                    prov_manifest_data = json.load(f)
+            except (OSError, ValueError) as prov_err:
+                # ValueError covers json.JSONDecodeError. A missing/corrupt manifest degrades the
+                # RunManifest's fingerprints but must not abort the run, so log it instead of hiding it.
+                logger.warning(
+                    "Could not load provenance manifest %s (non-fatal): %s",
+                    provenance_manifest_path, prov_err,
+                )
+
+        catalog_fp = catalog_fingerprint
+        if not catalog_fp and prov_manifest_data:
+            catalog_fp = prov_manifest_data.get("catalog_fingerprint")
+
+        module_fps = module_fingerprints
+        if not module_fps and prov_manifest_data:
+            module_fps = prov_manifest_data.get("module_fingerprints")
+
+        from src.core.registries import runtime_content_source as registries_source, catalog_fingerprint as registries_fingerprint
+        return runtime_content_source or registries_source, catalog_fp or registries_fingerprint, module_fps
+
+    def _init_replay(self, profile: RuntimeProfile, replay: Optional[ReplayManager], run_id: str) -> ReplayManager:
+        """The injected replay manager, or a default one writing next to the run's manifest."""
+        if replay is not None:
+            return replay
+        from src.engine.replay_manager import ReplayManager as DefaultReplayManager
+        run_dir = Path(self._artifact_repo.resolve_path(run_id, "manifest")).parent if self._artifact_repo else Path(f"data/runs/{run_id}")
+        return DefaultReplayManager(
+            run_dir=run_dir,
+            profile_name=profile.name,
+            buffer_capacity_kb=profile.max_replay_buffer_kb,
+            signal_contract=signal_contract_record(profile, self._signals_zeroed),
+            audit_mode=bool(self._audit_mode),
+            signals_zeroed=self._signals_zeroed,
+        )
+
     def tick_once(self) -> None:
         """
         Main simulation loop.
@@ -395,6 +412,7 @@ class Kernel:
         t0 = time.perf_counter_ns()
         self._start_perf_ts = t0
         tick_no = self._state.tick  # advancement moves state.tick on; the overrun belongs to this tick
+        self._phase_costs.clear()  # a key this tick does not record must not carry last tick's value into the sum
         self._phase_init()
         t1 = time.perf_counter_ns()
         self._phase_costs["init"] = (t1 - t0) / 1e6
@@ -431,7 +449,8 @@ class Kernel:
         self._phase_resolution()
         t4 = time.perf_counter_ns()
         res_total = (t4 - t3) / 1e6
-        sub_sum = sum(v for k, v in self._phase_costs.items() if k.startswith("res_") or k in ["trust_validity", "contracts_production", "locomotion", "interaction", "governance_ecology", "economy", "final_integrity"])
+        # Every sub-phase cost the pipeline recorded already sits under its own key, so subtract all of them (TCK-20261008).
+        sub_sum = sum((getattr(self._current_update, "sub_phase_costs", None) or {}).values())
         self._phase_costs["resolution_overhead"] = max(0.0, res_total - sub_sum)
         
         self._phase_cleanup()
@@ -527,37 +546,11 @@ class Kernel:
             interval_override=self._profile.sampling_interval_ticks
         )
         
-        if self._audit_mode:
-            self._current_signals = PressureSignals(
-                work_debt_total=sum(self._state.work_debt.values()),
-                tick_compute_ms=0.0,
-                worker_utilization=0.0,
-                queue_utilization=0.0,
-                memory_estimate_mb=0.0,
-                replay_backlog_kb=0,
-                active_workers=0,
-                dropped_work_delta=self._status.dropped_work_delta,
-                phase_costs_ms={},
-                metrics=self._metrics.copy()
-            )
-        else:
-            compute_ms = self._status.signal_history[-1].tick_compute_ms if self._status.signal_history else 0.0
-            if not self._audit_mode and self._state.tick <= 5:
-                compute_ms = min(compute_ms, self._profile.max_tick_budget_ms * 0.5)
-            self._current_signals = PressureSignals(
-                work_debt_total=sum(self._state.work_debt.values()),
-                tick_compute_ms=compute_ms,
-                worker_utilization=worker_stats["worker_utilization"],
-                queue_utilization=worker_stats["queue_utilization"],
-                memory_estimate_mb=self._platform_signals["rss_mb"],
-                replay_backlog_kb=replay_stats["backlog_kb"],
-                active_workers=worker_stats["active_workers"],
-                dropped_work_delta=self._status.dropped_work_delta,
-                phase_costs_ms=(self._status.signal_history[-1].phase_costs_ms 
-                                if self._status.signal_history else {}),
-                metrics=self._metrics.copy()
-            )
-        
+        self._current_signals = select_signal_source(self._profile, self._signals_zeroed).tick_start_signals(
+            state=self._state, profile=self._profile, status=self._status,
+            host=HostReadings(worker_stats, replay_stats, self._platform_signals, self._metrics),
+        )
+
         prior_mode = self._status.current_mode
         self._current_policy = self._governor.evaluate(
             self._profile, 
@@ -610,10 +603,8 @@ class Kernel:
         from src.core.updates import StateUpdate, EntityUpdate
         from src.core.protocol_validator import ProtocolViolationError
         from src.engine.pipeline import AuthoritativeApplyPipeline
+        self._final_results.sort(key=ConcurrencyLaw.commit_key)
         
-        self._final_results.sort(key=lambda r: (r.class_priority, -r.local_priority, r.entity_id))
-        
-        work_debt_updates: Dict[str, int] = {}
         entity_updates: Dict[int, EntityUpdate] = {}
         overrun_reported = False
         for i, res in enumerate(self._final_results):
@@ -625,10 +616,6 @@ class Kernel:
                     overrun_reported = True
                     self._report_budget_overrun(elapsed, self._profile.max_tick_budget_ms, "mid_tick", self._state.tick)
 
-            if res.work_debt_update is not None and res.subsystem_id:
-                work_debt_updates[res.subsystem_id] = res.work_debt_update
-                continue
-
             if res.entity_id in entity_updates:
                 raise ProtocolViolationError(f"Duplicate authoritative result for entity {res.entity_id}")
             
@@ -637,14 +624,15 @@ class Kernel:
             else:
                 entity_updates[res.entity_id] = EntityUpdate(entity_id=res.entity_id)
 
-        entity_updates = self._drain_pending_grief_triggers(entity_updates)
+        grief_triggers = pending_grief_triggers(self._state)
+        entity_updates = self._drain_pending_grief_triggers(entity_updates, grief_triggers)
 
         # No gameplay-facing pressure signal is derived here: the measured compute time (`tick_compute_ms`) is a
         # control signal for the governor, not an input to authoritative state (PERF-D1 amendment A1,
         # TCK-20261003-SALIENCE-WALL-CLOCK-PRICE-COUPLING).
         raw_update = StateUpdate(
             entity_updates=entity_updates,
-            work_debt_updates=work_debt_updates,
+            grief_drained_tick_set=self._state.tick - 1 if grief_triggers else None,
             current_mode_set=self._current_policy.mode,
             current_policy_set=self._current_policy
         )
@@ -683,21 +671,18 @@ class Kernel:
         self._current_update = refined_update
 
     def _drain_pending_grief_triggers(
-        self, entity_updates: Dict[int, EntityUpdate]
+        self, entity_updates: Dict[int, EntityUpdate], triggers: List[Any]
     ) -> Dict[int, EntityUpdate]:
-        """Drain self._pending_grief_triggers into entity_updates as StrategicUpdates.
+        """Turn the owed grief triggers (read from state, `pending_grief_triggers`) into StrategicUpdates on `entity_updates`.
 
-        Shared by _phase_resolution() (normal tick, called with the tick's own
-        entity_updates so a decision system's own strategic update for the same entity
-        is preserved via EntityUpdate.merge()) and
-        drain_pending_triggers_at_teardown() (episode-teardown flush, called with {}).
-        Clears self._pending_grief_triggers before returning
-        (TCK-20260824-GRIEF-NEMESIS-REACHABILITY).
+        Shared by _phase_resolution() (normal tick, called with the tick's own entity_updates so a decision system's own strategic update for
+        the same entity is preserved via EntityUpdate.merge()) and drain_pending_triggers_at_teardown() (episode-teardown flush, called with {}).
+        The caller records `grief_drained_tick_set` in the same StateUpdate (TCK-20260824-GRIEF-NEMESIS-REACHABILITY, decision 80).
         """
         from src.domains.campaigns.grief_urgency import GriefUrgencyImporter
         from src.domains.campaigns.state import GriefUrgencyModifier
 
-        for griever_id, dead_id, urgency in self._pending_grief_triggers:
+        for griever_id, dead_id, urgency in triggers:
             # episode= is meaningful at the CampaignState layer (a real episode index);
             # Kernel only has tick. This substitute is transient — used only to keep the
             # source= string on the resulting ConcernState informative — and is never
@@ -719,7 +704,6 @@ class Kernel:
                 else new_eu
             )
 
-        self._pending_grief_triggers = []
         return entity_updates
 
     def drain_pending_triggers_at_teardown(self) -> None:
@@ -734,14 +718,15 @@ class Kernel:
         and does NOT advance self._state.tick or world_time -- a narrow resolution+apply flush
         against the CURRENT (final) state, not a disguised extra tick. No-op if nothing queued.
         """
-        if not self._pending_grief_triggers:
+        triggers = pending_grief_triggers(self._state)
+        if not triggers:
             return
         from src.core.updates import StateUpdate
         from src.engine.pipeline import AuthoritativeApplyPipeline
         from src.engine.apply import ApplyPath
 
-        entity_updates = self._drain_pending_grief_triggers({})
-        raw_update = StateUpdate(entity_updates=entity_updates)
+        entity_updates = self._drain_pending_grief_triggers({}, triggers)
+        raw_update = StateUpdate(entity_updates=entity_updates, grief_drained_tick_set=self._state.tick - 1)
         refined_update = AuthoritativeApplyPipeline.refine(
             self._state, raw_update,
             cadence=self._profile.cadence,
@@ -776,17 +761,10 @@ class Kernel:
     def _record_runtime_signals(self) -> None:
         terminal_worker_stats = self._worker_manager.get_stats()
         terminal_replay_stats = self._replay.get_stats()
-        self._status.record_signals(PressureSignals(
-            work_debt_total=sum(self._state.work_debt.values()),
-            tick_compute_ms=self._final_compute_ms,
-            worker_utilization=terminal_worker_stats["worker_utilization"],
-            queue_utilization=terminal_worker_stats["queue_utilization"],
-            memory_estimate_mb=self._platform_signals["rss_mb"],
-            replay_backlog_kb=terminal_replay_stats["backlog_kb"],
-            active_workers=terminal_worker_stats["active_workers"],
-            dropped_work_delta=self._status.dropped_work_delta,
-            phase_costs_ms=self._phase_costs.copy(),
-            metrics=self._metrics.copy()
+        self._status.record_signals(select_signal_source(self._profile, self._signals_zeroed).tick_end_signals(
+            state=self._state, profile=self._profile, status=self._status,
+            measured=MeasuredCosts(self._final_compute_ms, self._phase_costs),
+            host=HostReadings(terminal_worker_stats, terminal_replay_stats, self._platform_signals, self._metrics),
         ))
 
     def _phase_advancement(self) -> None:
@@ -982,26 +960,21 @@ class Kernel:
         if obs_mode == ObservabilityMode.OFF:
             return
 
-        from src.observability.event_extractor import EventExtractor
+        from src.observability.event_recorder import extract_events
         from src.observability.events import SimulationEvent
 
         tick = self._state.tick
         
         # 1. Extract domain events
-        generated_events = EventExtractor.extract(prior_state, self._state, update, obs_mode)
+        generated_events = extract_events(prior_state, self._state, update, obs_mode)
 
-        # 1a. Mid-tick grief triggers (TCK-20260824-GRIEF-NEMESIS-REACHABILITY): a live
-        # ally's death detected this tick. This phase runs after this tick's ApplyPath
-        # pass (see docs/engine/kernel.md's 7-phase ordering), so the resulting
-        # StrategicUpdate cannot be applied until a later tick's _phase_resolution (or,
-        # for a death on the run's final tick, at episode teardown — see
-        # drain_pending_triggers_at_teardown()). The event itself is recorded now.
+        # 1a. Grief triggers (TCK-20260824-GRIEF-NEMESIS-REACHABILITY, decision 80): report the triggers the authoritative state owes for
+        # this tick's deaths; the next tick's _phase_resolution applies them whatever the observability mode (src/core/grief_triggers.py).
         from src.observability.events import GriefUrgencyTriggeredEvent
-        for griever_id, dead_id, urgency in EventExtractor.detect_grief_triggers(prior_state, self._state):
+        for griever_id, dead_id, urgency in pending_grief_triggers(self._state):
             generated_events.append(GriefUrgencyTriggeredEvent(
                 tick=tick, entity_id=griever_id, dead_ally_id=dead_id, urgency=urgency,
             ))
-            self._pending_grief_triggers.append((griever_id, dead_id, urgency))
 
         # 1b. Push-based event shapers (src/observability/event_shapers.py) — the live default
         # path for COMBAT/ECONOMY/FACTION as of TCK-20260806-PUSH-CUTOVER-COMBAT-ECONOMY-FACTION.

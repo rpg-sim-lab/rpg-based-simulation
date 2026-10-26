@@ -88,8 +88,15 @@ def test_snapshot_round_trips_and_rejects_a_malformed_dict():
 
 # ---- the hook ----------------------------------------------------------------------------------
 
+_PLENTY_FREE = 500 * 1024**3
+
+
 @pytest.fixture
-def world(tmp_path):
+def world(tmp_path, monkeypatch):
+    """TCK-20261024-SESSION-HOOK-TEST-STUBS-DISK-HEADROOM: the real runner's free space must not reach the context
+    (below 10 GB it embeds "only 6.8 GB free", which differs between two calls), so the probe reports plenty."""
+    from tools.sessions import disk_headroom as dh
+    monkeypatch.setattr(dh, "free_bytes", lambda _root: _PLENTY_FREE)
     root = tmp_path / "root"
     shutil.copytree(REAL_ROOT / "registries", root / "registries",
                     ignore=shutil.ignore_patterns("*.jsonl"))
@@ -111,15 +118,42 @@ def _payload(repo, **kw):
             "agent_type": f"session-{WRITER}", **kw}
 
 
+def _manifest_wt(world, role_id):
+    """The role's manifest worktree `<main>/.claude/worktrees/<placement>`, created as a real git worktree (idempotent)."""
+    _, repo, _ = world
+    path = repo / ".claude" / "worktrees" / ROSTER.role(role_id).worktree
+    if not path.exists():
+        subprocess.run(["git", "worktree", "add", "-q", "-b", f"wt-{path.name}", str(path)], cwd=repo, check=True, env=_ENV)
+    return path
+
+
 def _ctx(world, payload, env=None):
     root, repo, state_root = world
     return hook.build_context(payload, env or {}, root, state_root)
+
+
+def test_the_disk_line_appears_when_the_probe_reports_low_space(world, monkeypatch):
+    from tools.sessions import disk_headroom as dh
+    assert "disk-headroom:" not in _ctx(world, _payload(world[1]))
+    monkeypatch.setattr(dh, "free_bytes", lambda _root: 3 * 1024**3)
+    assert "disk-headroom: only 3.0 GB free" in _ctx(world, _payload(world[1]))
 
 
 def test_resolved_role_gets_its_card_and_only_its_own_handover(world):
     out = _ctx(world, _payload(world[1]))
     assert f"You are `{WRITER}`" in out and "SECRET-WRITER-NOTE" in out
     assert "SECRET-OTHER-NOTE" not in out and f"Handover {OTHER}" not in out
+
+
+def test_an_instance_gets_its_own_handover_note_not_the_roles(world):
+    """TCK-20261009-PER-INSTANCE-HANDOVER-NOTE: rpg-implementer-3 reads rpg-implementer-3.md."""
+    root, repo, _ = world
+    (root / ".claude" / "handover" / "rpg-implementer.md").write_text("# first\nFIRST-INSTANCE-NOTE\n")
+    (root / ".claude" / "handover" / "rpg-implementer-3.md").write_text("# third\nTHIRD-INSTANCE-NOTE\n")
+    out = _ctx(world, _payload(repo, agent_type="session-rpg-implementer", session_title="rpg-implementer-3"),
+               {"SESSION_ROLE": "rpg-implementer-3"})
+    assert "THIRD-INSTANCE-NOTE" in out and "FIRST-INSTANCE-NOTE" not in out
+    assert "Your handover note (.claude/handover/rpg-implementer-3.md)" in out
 
 
 def test_unresolved_gets_the_fallback_listing_and_one_launch_hint_and_nothing_privileged(world):
@@ -146,34 +180,38 @@ def test_each_start_appends_a_binding_and_updates_the_instance(world):
 
 def test_the_writer_role_takes_the_lease_and_another_role_cannot_take_a_held_one(world):
     root, repo, state_root = world
-    _ctx(world, _payload(repo))
-    assert st.read_lease(state_root, repo).role == WRITER
-    _ctx(world, _payload(repo, agent_type=f"session-{OTHER}", session_id="d"))
-    assert st.read_lease(state_root, repo).role == WRITER  # the designer did not take it
+    wt = _manifest_wt(world, WRITER)
+    _ctx(world, _payload(repo, cwd=str(wt)))
+    assert st.read_lease(state_root, wt).role == WRITER
+    _ctx(world, _payload(repo, agent_type=f"session-{OTHER}", session_id="d", cwd=str(wt)))
+    assert st.read_lease(state_root, wt).role == WRITER  # the designer did not take it
 
 
 @pytest.mark.parametrize("role_id", ["rpg-designer", "agent-working-planner", "testing-planner", "codebase-designer"])
 def test_a_designer_or_planner_takes_the_lease_in_its_own_worktree(world, role_id):
     """TCK-20261007-SESSION-PER-ROLE-WORKTREES: each designer/planner is the writer of its own worktree."""
     root, repo, state_root = world
-    out = _ctx(world, _payload(repo, agent_type=f"session-{role_id}"))
-    assert "WRITER LEASE NOT TAKEN" not in out and st.read_lease(state_root, repo).role == role_id
+    wt = _manifest_wt(world, role_id)
+    out = _ctx(world, _payload(repo, agent_type=f"session-{role_id}", cwd=str(wt)))
+    assert "WRITER LEASE NOT TAKEN" not in out and st.read_lease(state_root, wt).role == role_id
 
 
 def test_a_planners_second_instance_does_not_take_the_planners_lease(world):
     root, repo, state_root = world
-    _ctx(world, _payload(repo, agent_type="session-agent-working-planner"))
-    out = _ctx(world, _payload(repo, agent_type="session-agent-working-planner", session_id="s2"),
+    wt = _manifest_wt(world, "agent-working-planner")
+    _ctx(world, _payload(repo, agent_type="session-agent-working-planner", cwd=str(wt)))
+    out = _ctx(world, _payload(repo, agent_type="session-agent-working-planner", session_id="s2", cwd=str(wt)),
                env={"SESSION_ROLE": "agent-working-planner-2"})
-    assert "WRITER LEASE NOT TAKEN" not in out and st.read_lease(state_root, repo).role == "agent-working-planner"
+    assert "WRITER LEASE NOT TAKEN" not in out and st.read_lease(state_root, wt).role == "agent-working-planner"
 
 
 def test_another_roles_lease_is_reported_not_stolen(world):
     root, repo, state_root = world
-    st.take_lease(state_root, repo, "someone-else", "s0", None)
-    out = _ctx(world, _payload(repo))
+    wt = _manifest_wt(world, WRITER)
+    st.take_lease(state_root, wt, "someone-else", "s0", None)
+    out = _ctx(world, _payload(repo, cwd=str(wt)))
     assert "WRITER LEASE NOT TAKEN" in out and "someone-else" in out
-    assert st.read_lease(state_root, repo).role == "someone-else"
+    assert st.read_lease(state_root, wt).role == "someone-else"
     assert f"You are `{WRITER}`" in out  # still bound and carded
 
 
@@ -343,9 +381,285 @@ def test_an_instance_id_beyond_max_sessions_is_unknown_and_two_different_instanc
 def test_a_second_instance_neither_takes_nor_complains_about_the_writer_lease(world):
     """Launcher fix D: `<role>-2` has a different id from the lease holder; it skips the lease silently."""
     root, repo, state_root = world
-    first = _ctx(world, _payload(repo, agent_type="session-rpg-implementer"), {"SESSION_ROLE": "rpg-implementer"})
-    assert "WRITER LEASE NOT TAKEN" not in first and st.read_lease(state_root, repo).role == "rpg-implementer"
-    second = _ctx(world, _payload(repo, agent_type="session-rpg-implementer", session_id="sess-2"),
+    wt = _manifest_wt(world, "rpg-implementer")
+    first = _ctx(world, _payload(repo, agent_type="session-rpg-implementer", cwd=str(wt)), {"SESSION_ROLE": "rpg-implementer"})
+    assert "WRITER LEASE NOT TAKEN" not in first and st.read_lease(state_root, wt).role == "rpg-implementer"
+    second = _ctx(world, _payload(repo, agent_type="session-rpg-implementer", session_id="sess-2", cwd=str(wt)),
                   {"SESSION_ROLE": "rpg-implementer-2"})
     assert "WRITER LEASE NOT TAKEN" not in second
-    assert st.read_lease(state_root, repo).role == "rpg-implementer"
+    assert st.read_lease(state_root, wt).role == "rpg-implementer"
+
+
+# ---- TCK-20261010-SESSION-LEASE-TAKEN-ON-LAUNCH-CWD-NOT-MANIFEST-WORKTREE -----------------------
+
+def test_a_writer_launched_in_the_main_checkout_takes_no_lease_and_says_why(world):
+    root, repo, state_root = world
+    out = _ctx(world, _payload(repo, agent_type="session-rpg-implementer"), {"SESSION_ROLE": "rpg-implementer"})
+    assert st.read_lease(state_root, repo) is None
+    assert "writer lease not taken: launched outside" in out and "WRITER LEASE NOT TAKEN" not in out
+    assert "You are `rpg-implementer`" in out  # still bound and carded
+
+
+def test_a_writer_launched_in_a_foreign_path_takes_no_lease(world, tmp_path):
+    root, repo, state_root = world
+    foreign = tmp_path / "foreign"
+    subprocess.run(["git", "worktree", "add", "-q", "-b", "foreign", str(foreign)], cwd=repo, check=True, env=_ENV)
+    out = _ctx(world, _payload(repo, agent_type="session-rpg-implementer", cwd=str(foreign)), {"SESSION_ROLE": "rpg-implementer"})
+    assert st.read_lease(state_root, foreign) is None and "launched outside" in out
+
+
+def test_seven_seats_launched_in_the_main_checkout_leave_it_unleased(world):
+    root, repo, state_root = world
+    for i, role_id in enumerate(("rpg-implementer", "agent-working-implementer", "testing-implementer", "codebase-implementer",
+                                 "rpg-planner", "agent-working-planner", "testing-planner")):
+        _ctx(world, _payload(repo, agent_type=f"session-{role_id}", session_id=f"s{i}"), {"SESSION_ROLE": role_id})
+    assert st.read_lease(state_root, repo) is None
+
+
+# --- TCK-20261011-SESSION-START-FOR-ROLE-ISSUES: the role's open `for:<role>` issues, fail open ---------------
+
+import time  # noqa: E402
+
+
+def _gh(tmp_path, monkeypatch, body: str):
+    """Put a stub `gh` first on PATH (git stays reachable); returns the file the stub appends its arguments to."""
+    bindir = tmp_path / "ghbin"
+    bindir.mkdir(exist_ok=True)
+    log = tmp_path / "gh.args"
+    stub = bindir / "gh"
+    stub.write_text(f'#!/bin/sh\necho "$@" >> "{log}"\n{body}\n')
+    stub.chmod(0o755)
+    monkeypatch.setenv("PATH", f"{bindir}{os.pathsep}{os.environ['PATH']}")
+    monkeypatch.delenv("SESSION_START_ISSUES", raising=False)
+    return log
+
+
+def _issues_json(n, label_for=None):
+    return json.dumps([{"number": 100 + i, "title": f"issue {i}", "createdAt": "2026-10-01T00:00:00Z"} for i in range(n)])
+
+
+def test_issues_for_the_role_follow_the_handover_note_and_only_that_label_is_requested(world, tmp_path, monkeypatch):
+    log = _gh(tmp_path, monkeypatch, f"echo '{_issues_json(1)}'")
+    out = _ctx(world, _payload(world[1]))
+    assert "#100 issue 0 (" in out
+    assert out.index("Your handover note") < out.index("Open GitHub issues")
+    args = log.read_text()
+    assert f"--label for:{WRITER}" in args and "for:rpg-planner" not in args
+    assert "--limit 11" in args and "body" not in args
+
+
+def test_a_second_instance_uses_its_roles_label(world, tmp_path, monkeypatch):
+    log = _gh(tmp_path, monkeypatch, "echo '[]'")
+    _ctx(world, _payload(world[1], agent_type="session-rpg-implementer", session_title="rpg-implementer-3"),
+         {"SESSION_ROLE": "rpg-implementer-3"})
+    assert "--label for:rpg-implementer " in log.read_text()
+
+
+@pytest.mark.parametrize("body", ["exit 1", "echo 'not json'", "echo '{\"a\": 1}'", "echo '[]'"])
+def test_a_failing_or_empty_gh_leaves_the_output_unchanged(world, tmp_path, monkeypatch, body):
+    monkeypatch.setenv("SESSION_START_ISSUES", "off")
+    baseline = _ctx(world, _payload(world[1]))
+    _gh(tmp_path, monkeypatch, body)
+    assert _ctx(world, _payload(world[1])) == baseline
+
+
+def test_a_missing_gh_leaves_the_output_unchanged(world, tmp_path, monkeypatch):
+    monkeypatch.setenv("SESSION_START_ISSUES", "off")
+    baseline = _ctx(world, _payload(world[1]))
+    bindir = tmp_path / "gitonly"
+    bindir.mkdir()
+    (bindir / "git").symlink_to(shutil.which("git"))
+    monkeypatch.setenv("PATH", str(bindir))
+    monkeypatch.delenv("SESSION_START_ISSUES", raising=False)
+    assert _ctx(world, _payload(world[1])) == baseline
+
+
+def test_a_hanging_gh_is_cut_off_at_the_timeout(world, tmp_path, monkeypatch):
+    monkeypatch.setenv("SESSION_START_ISSUES", "off")
+    start = time.monotonic()
+    baseline = _ctx(world, _payload(world[1]))
+    baseline_s = time.monotonic() - start
+    _gh(tmp_path, monkeypatch, "exec sleep 30")
+    monkeypatch.setattr(hook, "ISSUE_TIMEOUT_S", 0.5)
+    start = time.monotonic()
+    out = _ctx(world, _payload(world[1]))
+    hanging_s = time.monotonic() - start
+    # The hook's own work under machine load was ~4.5 s once (TCK-20261025-HANGING-GH-TEST-BOUND-RELATIVE-TO-BASELINE),
+    # so bound what the cut-off adds: the timeout plus 2 s of process-spawn slack over the same call without gh. The
+    # absolute ceiling stays well under the 30 s sleep, so a cut-off that never fires still fails.
+    assert hanging_s <= baseline_s + hook.ISSUE_TIMEOUT_S + 2
+    assert hanging_s < 20
+    assert out == baseline
+
+
+def test_more_than_ten_issues_show_ten_and_an_and_more_line(world, tmp_path, monkeypatch):
+    _gh(tmp_path, monkeypatch, f"echo '{_issues_json(11)}'")
+    out = _ctx(world, _payload(world[1]))
+    assert "#109 " in out and "#110 " not in out and "... and more" in out
+
+
+def test_compact_does_not_call_gh(world, tmp_path, monkeypatch):
+    log = _gh(tmp_path, monkeypatch, f"echo '{_issues_json(2)}'")
+    out = _ctx(world, _payload(world[1], source="compact"))
+    assert not log.exists() and "Open GitHub issues" not in out
+
+
+def test_issue_ages_and_hostile_titles_are_rendered_as_one_short_line(monkeypatch):
+    from datetime import datetime, timezone
+
+    monkeypatch.delenv("SESSION_START_ISSUES", raising=False)
+    now = datetime(2026, 10, 11, 12, 0, tzinfo=timezone.utc)
+    assert [hook._age(t, now) for t in ("2026-10-08T12:00:00Z", "2026-10-11T07:00:00Z", "2026-10-11T11:48:00Z", "junk")] == ["3d", "5h", "12m", "?"]
+
+
+# --- TCK-20261010-SESSION-MAIN-CHECKOUT-LAUNCH-AND-BATCH-WORKTREE-RECORD ----------------------------------------
+
+def _batch_wt(world, tmp_path, name="rpg-batch"):
+    _, repo, _ = world
+    path = tmp_path / name
+    subprocess.run(["git", "worktree", "add", "-q", "-b", f"b-{name}", str(path)], cwd=repo, check=True, env=_ENV)
+    return path
+
+
+def test_the_recorded_batch_worktree_takes_the_lease_not_the_main_checkout(world, tmp_path):
+    batch = _batch_wt(world, tmp_path)
+    st.write_bound_worktree(world[2], WRITER, batch, True)
+    out = _ctx(world, _payload(world[1], cwd=str(batch)))
+    assert "writer lease not taken" not in out
+    lease = st.read_lease(world[2], batch)
+    assert lease is not None and lease.role == WRITER
+    assert st.read_lease(world[2], world[1]) is None
+
+
+def test_a_placement_outside_claude_worktrees_leases_where_the_seat_writes(world, tmp_path):
+    """asset and perf on host ubuntu write in ~/Work/rpg-*: launch.py --worktree records that path."""
+    batch = _batch_wt(world, tmp_path, "rpg-perf")
+    st.write_bound_worktree(world[2], "perf-implementer", batch, True)
+    out = _ctx(world, _payload(world[1], agent_type="session-perf-implementer", cwd=str(batch)), {"SESSION_ROLE": "perf-implementer"})
+    assert "writer lease not taken" not in out
+    assert st.read_lease(world[2], batch).role == "perf-implementer"
+
+
+def test_a_session_outside_both_the_manifest_and_the_recorded_worktree_takes_no_lease_and_names_both(world, tmp_path):
+    batch = _batch_wt(world, tmp_path)
+    other = _batch_wt(world, tmp_path, "elsewhere")
+    st.write_bound_worktree(world[2], WRITER, batch, True)
+    out = _ctx(world, _payload(world[1], cwd=str(other)))
+    assert "writer lease not taken: launched outside" in out and str(batch.resolve()) in out
+    assert st.read_lease(world[2], other) is None
+
+
+def test_without_a_record_the_manifest_worktree_still_takes_the_lease(world):
+    wt = _manifest_wt(world, WRITER)
+    _ctx(world, _payload(world[1], cwd=str(wt)))
+    assert st.read_lease(world[2], wt).role == WRITER
+
+
+def test_a_main_checkout_seat_takes_no_lease_and_says_nothing_about_one(world):
+    out = _ctx(world, _payload(world[1], agent_type="session-lead-planner"), {"SESSION_ROLE": "lead-planner"})
+    assert "Launches from the main checkout, no lease" in out
+    assert "writer lease not taken" not in out and "WRITER LEASE" not in out
+    assert st.read_lease(world[2], world[1]) is None
+
+
+def test_a_torn_bindings_tail_still_gives_card_and_note_and_one_warning(world):
+    """TCK-20261015-SESSION-BINDINGS-TORN-TAIL: the rpg-implementer file was torn by a full disk and the next
+    start was silent; now the card and the note arrive with one warning."""
+    root, repo, state_root = world
+    _ctx(world, _payload(repo, session_id="a"))
+    path = state_root / WRITER / st.BINDINGS
+    with path.open("ab") as fh:
+        fh.write(b'{"session_id": "torn", "role"')
+    out = _ctx(world, _payload(repo, session_id="b", source="clear"))
+    assert f"You are `{WRITER}`" in out and "SECRET-WRITER-NOTE" in out
+    assert out.count("unparseable last line") == 1
+    # the start's own append moved the fragment aside, so the NEXT start is clean (the tolerance does not wear off)
+    again = _ctx(world, _payload(repo, session_id="c", source="clear"))
+    assert "unparseable last line" not in again and "could not be read" not in again
+
+
+def test_an_unreadable_bindings_history_still_gives_card_and_note_and_says_so(world):
+    root, repo, state_root = world
+    _ctx(world, _payload(repo, session_id="a"))
+    path = state_root / WRITER / st.BINDINGS
+    good = path.read_text()
+    path.write_text('{"torn": \n' + good)
+    out = _ctx(world, _payload(repo, session_id="b", source="clear"))
+    assert f"You are `{WRITER}`" in out and "SECRET-WRITER-NOTE" in out
+    assert out.count("the bindings history could not be read") == 1
+
+
+def test_the_start_hook_adds_the_stale_code_line_on_startup_and_clear_not_compact(world, monkeypatch):
+    """TCK-20261015-SESSION-CODE-FRESHNESS-AT-SESSION-START."""
+    from tools.sessions import settings_freshness as sf
+    root, repo, state_root = world
+    monkeypatch.setattr(sf, "session_code_line", lambda *_a, **_k: "session-roles: STALE SESSION CODE: test line")
+    for source in ("startup", "resume", "clear"):
+        assert _ctx(world, _payload(repo, source=source, session_title=WRITER)).count("STALE SESSION CODE") == 1
+    assert "STALE SESSION CODE" not in _ctx(world, _payload(repo, source="compact", session_title=WRITER))
+
+
+def test_session_start_carries_the_monitoring_lines_on_the_same_sources(world, monkeypatch):
+    """TCK-20261016-TOOLS-HOOK-LOADED-AND-LATE-ROWS-FLUSH."""
+    from tools.sessions import settings_freshness as sf
+    root, repo, state_root = world
+    monkeypatch.setattr(sf, "session_code_line", lambda *_a, **_k: "")
+    monkeypatch.setattr(sf, "monitoring_hook_line", lambda *_a, **_k: "monitoring: NO TOOL-ROW HOOK test")
+    monkeypatch.setattr(sf, "unstaged_tool_rows_line", lambda *_a, **_k: "monitoring: 5 tool row(s) test")
+    ctx = _ctx(world, _payload(repo, source="startup", session_title=WRITER))
+    assert ctx.count("NO TOOL-ROW HOOK") == 1 and ctx.count("5 tool row(s)") == 1
+    assert "NO TOOL-ROW HOOK" not in _ctx(world, _payload(repo, source="compact", session_title=WRITER))
+
+
+# ---- TCK-20261015-SESSION-LAYER-MEASURES-SEAT-SUFFIX-RESET-RECORD-NOTE-CAP -----------------------------------------
+
+def _declare(world, session_id, kind="HARD", row="r"):
+    from tools.sessions import reset_boundary as rb
+
+    root, _repo, _ = world
+    record = rb.build_row(kind, row, session_id, WRITER, root)
+    assert rb.append_row(record, root)
+    return record
+
+
+def test_a_clear_after_a_session_that_declared_no_hard_gets_one_advisory_line(world):
+    root, repo, _ = world
+    _ctx(world, _payload(repo, session_id="first"))
+    out = _ctx(world, _payload(repo, session_id="second", source="clear", session_title=WRITER))
+    assert out.count("declared no HARD boundary before this /clear") == 1
+
+
+def test_a_clear_after_a_declared_hard_with_an_unchanged_note_gets_no_line(world):
+    root, repo, _ = world
+    _ctx(world, _payload(repo, session_id="first"))
+    _declare(world, "first")
+    out = _ctx(world, _payload(repo, session_id="second", source="clear", session_title=WRITER))
+    assert "reset-boundary:" not in out
+
+
+def test_a_handover_edited_after_the_hard_declaration_is_called_out(world):
+    root, repo, _ = world
+    _ctx(world, _payload(repo, session_id="first"))
+    _declare(world, "first")
+    (root / ".claude" / "handover" / f"{WRITER}.md").write_text("# edited after the declaration\n")
+    out = _ctx(world, _payload(repo, session_id="second", source="clear", session_title=WRITER))
+    assert out.count("changed after the previous session's HARD declaration") == 1
+
+
+def test_a_startup_never_gets_the_clear_advisory(world):
+    root, repo, _ = world
+    _ctx(world, _payload(repo, session_id="first"))
+    assert "reset-boundary:" not in _ctx(world, _payload(repo, session_id="second", source="startup"))
+
+
+def test_an_over_cap_handover_note_says_its_size_and_the_cap_instead_of_cutting_silently(world):
+    root, repo, _ = world
+    (root / ".claude" / "handover" / f"{WRITER}.md").write_text("x" * (hook.HANDOVER_CAP_CHARS + 500))
+    out = _ctx(world, _payload(repo))
+    assert f"your handover note is {hook.HANDOVER_CAP_CHARS + 500} chars, over the {hook.HANDOVER_CAP_CHARS} cap" in out
+    assert out.count("over the") >= 1 and "note cut at" in out
+
+
+def test_a_note_under_the_cap_has_no_size_line(world):
+    root, repo, _ = world
+    assert "over the" not in _ctx(world, _payload(repo))

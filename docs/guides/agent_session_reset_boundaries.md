@@ -13,6 +13,9 @@ purpose.
 
 **HARD** — everything that matters is durable (ticket/artifact files, a pushed branch, the PR,
 memory) and nothing is in flight. Write the handover note, then say "safe to `/clear`."
+Say it AND record it: `python3 tools/sessions/reset_boundary.py declare --kind HARD --row "<the boundary-map row>"` (same for
+SOFT and NEVER; it appends to `reset_boundary.jsonl` and never fails). The next SessionStart after a `/clear` adds one advisory
+line if the previous session declared no HARD, or if its handover note changed after the declaration; the retro counts declarations.
 
 **SOFT** — durable artifacts already hold the working state, so compaction is harmless. Don't
 propose a full `/clear`.
@@ -72,7 +75,7 @@ Updated: <date>
 
 ## Reachability
 
-`.claude/handover/*.md` (gitignored, one file per role, so it exists only in the **main checkout**; the launcher,
+`.claude/handover/*.md` (gitignored, one file per role, plus `<stem>-N.md` for each numbered instance (`rpg-implementer-2` reads `rpg-implementer-2.md`), so it exists only in the **main checkout**; a note over the hook's 8000-character cap is cut, and SessionStart says so with its size; the launcher,
 the hooks and `tools/handover_transit.py` resolve it there via `tools/handover_home.py`, never against a worktree's cwd). The `SessionStart` hook
 `tools/sessions/session_start_hook.py` (`startup`, `resume`, `clear`, `compact`) resolves the session's role
 from the harness signals, binds the session to it and injects that role's card and **only that role's**
@@ -123,12 +126,26 @@ commit distance, so a branch that itself edits `.claude/settings.json` reports a
 overrides that, but never a directory outside the repo. **A `/clear` resume note should include this check** (run it,
 and relaunch through the launcher if it reports a mismatch).
 
+The launcher is not the only check. On `startup`, `resume` and `clear` (not `compact`) the SessionStart hook itself adds one
+`STALE SESSION CODE` line when `tools/sessions/**`, `tools/handover_home.py`, `session_start_handover_hook.py` or
+`registries/session_{roles,authority}.yaml` changed on the local `origin/main` ref since this worktree diverged from it
+(one `merge-base` and one `diff`, offline, never a fetch; `settings_freshness.stale_session_code`). A plain `claude --resume` and
+a `/clear` therefore no longer start silently on old session code, which is how a lagging worktree injected another instance's
+handover note (2026-10-15, TCK-20261015-SESSION-CODE-FRESHNESS-AT-SESSION-START). It compares against the merge base, so a
+branch that edits session code itself is not called stale; the fix for a real warning is to sync that worktree to
+`origin/main` (each seat syncs its own). If the check cannot run it says so in one line instead of failing the session.
+
 ## Moving sessions between machines
 
 A transcript does not cross machines; the handover note is the only continuity that can.
 `tools/handover_transit.py` carries notes, the untracked `.claude/handover/drafts/` tree and the
 project memory through `agent-working/handover-transit/<host>/` (one rolling bundle per source
 host; files stored with a `.txt` suffix so registry and validators ignore them).
+
+**This is the only place the export is prescribed, and it is for a machine move, not for a ticket batch or a PR.** Run it
+in its own commit or PR, never inside a ticket batch. The repository is public: the bundle publishes every role's
+handover note, all open drafts and the project memory files. (PR #459 once carried 78 such files, +5,099/-1,438 lines,
+unrelated to its tickets, because a PR checklist told it to export.)
 
 **A transit bundle carries only OPEN handover state:** role notes, unmerged drafts and memory. Completed
 work, merged drafts and probe evidence are never exported. `export` skips a draft whose ticket is in
@@ -140,8 +157,8 @@ the work, so the next export has nothing stale to skip. Every manifest row recor
 from the launcher, never guessed: unresolved is listed as `unattributed`).
 
 1. On the machine being left: `python3 tools/handover_transit.py export` (`--roles a,b`,
-   `--no-drafts`, `--no-memory`, `--role <role>` narrow or attribute it), commit and push the branch (a
-   PR's own export step does this already — see `delivery_process.md`). **An export replaces the host's whole
+   `--no-drafts`, `--no-memory`, `--role <role>` narrow or attribute it), then commit and push it in its own
+   commit or PR, apart from any ticket work. **An export replaces the host's whole
    bundle, so it has two guards.** Memory is read from the one candidate `~/.claude/projects/<slug>/memory` that
    holds files (the resolved checkout path, the path a session started through a symlink such as `~/Working`
    would use, and home-symlink aliases); two non-empty candidates refuse with both named, and `--memory-dir <dir>`
@@ -163,3 +180,21 @@ Export on the machine you are leaving, then import on the new one; importing an 
 a newer local note is the one way to lose work, which is why differing files are backed up.
 
 Message conventions between sessions: `docs/guides/cross_session_messages.md`.
+
+### Disk headroom
+
+On 2026-10-08 the data disk filled mid-day (about 15 GB of `data/runs/` across ~50 worktrees plus ~25 GB of
+merged-branch worktrees) and sessions only learned of it from a failed write. The launcher and the SessionStart hook
+now say so when free space is below 10 GB (`SESSION_DISK_THRESHOLD_GB` overrides; warn only, never refuse). Before
+a batch of N measurement runs, look: `python3 tools/sessions/disk_headroom.py` (free space, run data per worktree;
+`--json` for a stable shape). After the numbers are stored, clean that batch's own run directories by run id with
+`python3 tools/gate_checks/done_checker_static.py --clean-data-runs --path <run_id>`; never `rm -rf data/runs/*`.
+
+On 2026-10-14 the disk reached 0 bytes free in the middle of a working day, after sessions that had started long
+before. So the PostToolUse hook (`tools/agent-monitoring/post_tool_hook.py`, the same settings entry, no new one)
+also calls `tools/sessions/disk_warning.py`: one `statvfs` per 10 minutes per session, one line when free space is
+below the threshold, repeated at most every 30 minutes, and at once when it first drops below 2 GB. It never fails a
+tool call. `python3 tools/sessions/disk_headroom.py` now ends with "Removable worktrees": the worktrees
+`prune_branches --worktrees` classifies as removable (branch tip equals a merged PR head, clean, no seat, no process
+inside) with their sizes, and detached clean worktrees as "detached, check". Report only: removing them is
+`python3 -m tools.sessions.prune_branches --worktrees --execute --backup <path>` and needs the user's yes.

@@ -107,7 +107,7 @@
         ]
       ],
       "archetype_id": null,
-      "species_id": null,
+      "species_id": "human",
       "role_id": null,
       "faction_id": null,
       "traits": [],
@@ -172,6 +172,9 @@
     },
     "spirit_court": {
       "starting_gold": 1000.0
+    },
+    "wild_fauna": {
+      "starting_gold": 1000.0
     }
   },
   "region_ownership": {},
@@ -221,5 +224,6 @@
         ]
       }
     }
-  }
+  },
+  "tax_share": 0.1
 }

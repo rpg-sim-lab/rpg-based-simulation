@@ -30,13 +30,15 @@ Before damage is calculated, the base `Atk` and `Def` values are modified by the
 
 | Modifier | Impact | Condition |
 | :--- | :--- | :--- |
-| **High Ground** | `+0.20` Atk | Attacker is at a higher elevation than the target. |
+| **High Ground** | `+0.20` Atk | Attacker stands on a terrain declared `high_ground` in content (mountain only) and the target does not. |
 | **Flanking** | `+0.15` Atk | Attacker is behind the target's current focus. |
 | **Surrounded** | `+0.25` Atk | Target is surrounded by multiple enemies. |
-| **Cover** | `+0.30` Def | Target is behind environmental cover relative to the attacker. |
+| **Cover** | `+0.30` Def | The tile next to the target on the attacker's side (an obstacle between a non-adjacent attacker and the target; on an exact diagonal, the tile on the vertical axis) is a terrain declared `gives_cover` in content (forest, mountain, ruin, cave). |
 | **Shatter** | `x1.50` Atk | Target is currently in the `Frozen` state. |
 | **Exhaustion** | `x0.80` Atk | Attacker's `Sleep Debt` is greater than 80. |
 | **Bond Synergy** | `+0.10` Atk | Adjacent ally has >0.5 Familiarity with the attacker. |
+
+*Terrain declares both flags (owner/designer application of D33/D56/D72, divergence 2.129).* `gives_cover` and `high_ground` are required fields of each terrain in `data/content/world/terrain.yaml`; a terrain that omits either fails to load, and code names no terrain. Before this change the two checks named upper-case `WALL`, `FOREST`, `MOUNTAIN` and `HILL`, so on the lower-case catalog ids neither modifier ever fired (this table described behavior that did not run). The modifier sizes are unchanged.
 
 ---
 
@@ -120,6 +122,18 @@ Every non-opportunity `ATTACK` requires the attacker's `readiness` to be at **ex
 higher** (`LegalityServiceV2.verify_attack_legality`). Opportunity attacks (triggered by
 disengaging while adjacent to a hostile) bypass this specific check.
 
+**Between blows the fighter holds (CONFLICT-04).** A fighter adjacent to an engaged hostile whose
+attack is not yet legal only because its readiness is under 100 does not step: it queues the swing
+(a held `ATTACK`, reason `HOLD_BETWEEN_BLOWS`) and strikes when readiness reaches 100, so it
+provokes no opportunity attack. It leaves only by a decision (flight, panic retreat, a declared
+ability, a goal that outranks the fight), and that decision pays the opportunity attack.
+The same holds for every walk, not only the fighter's own: an entity with an engaged, perceived, hostile entity orthogonally
+adjacent takes no step from a stored navigation target (an idle walk toward an objective, a held move); it steps only on a target
+a decision sets that tick (`MovementCandidateSelector.movement_target`).
+A hostile it is not engaged with, coming adjacent, prompts a fresh decision within two ticks (owner decision 32, "notice and decide"): the scheduler wakes the
+subject's brain ahead of its cadence and the decision follows its own combat-engagement verdict toward that hostile (ignore keeps walking, avoid steps away, watch stands and observes as a typed wait, anything else as the
+tactical pass has always chosen).
+
 *   **Consumption**: A successful attack resets readiness by **-100.0** (a full reset). Movement
     does **not** cost readiness (`TCK-20260809-COMBAT-PACING-READINESS-MOVEMENT-DECOUPLE`) — it
     costs `stamina` instead (`StaminaComponent.MOVE_COST`, a flat per-move cost, separately
@@ -182,6 +196,30 @@ disengaging while adjacent to a hostile) bypass this specific check.
     one run. Clearing it returns the entity to the brain, whose tactical pass pursues whenever an
     attack is not legal. `INSUFFICIENT_READINESS` is deliberately **not** reset: readiness regens
     and the same swing can then land.
+    The same law ends a held gathering task: an `INTERACT` on a resource node that is missing or has no
+    charges left is reset the same way (see Bible 03 section 3, `TCK-20261008-A-HELD-INTERACT-ON-A-DEPLETED-OR-MISSING-NODE-IS-NEVER-RE-DECIDED`).
+*   **Whole-Tile Reach Distance**: positions are whole tiles (world rule MOV-07, Decision 25), and
+    every reach check measures one distance: the Manhattan distance between the tiles the two
+    positions stand on (`LegalityServiceV2.get_manhattan_dist`, each coordinate read as `int(pos)`,
+    as occupancy, terrain and building lookups read it). Attack legality (`verify_attack_legality`)
+    and pursuit completion (`MovementCandidateSelector._target_in_attack_reach`) both call it, so
+    a pursuer stops exactly when the swing is legal. The long-distance flow-field step toward the
+    town centre (`NavigationSystem.get_next_step`) is a one-tile step along the flow vector's
+    dominant axis (a tie takes the y axis, as the local step does); it used to add a unit vector
+    and leave the entity between tiles, where the truncated legality distance and the float
+    pursuit distance disagreed (`TCK-20261006-ATTACK-LEGALITY-TRUNCATES-MANHATTAN-DISTANCE-BUT-PURSUIT-REACH-DOES-NOT`).
+*   **The World Has an Edge; a Chase Leads Only a Destination**: a tile outside every declared region is not part of the world (Bible 06): `verify_occupancy` refuses it (`OUT_OF_BOUNDS`) and the hard law `LAW-POSITION-IN-WORLD` names any committed position outside the union of the region bounds. An intercept leads a target that is walking to a destination (2 tiles along its path); a target that is itself pursuing is aimed at where it is, because its own aim point is another intercept point and two chasers leading each other's leads never converge. A held task whose target the entity can no longer perceive is let go. (The chase-duration limit waits for Phase B: `chase_ticks` is never incremented.)
+*   **An Action Task Does Not Walk**: movement runs on `navigation.target`, whatever the task kind, so an entity that holds an
+    action task (`ENTITY_ACT` with a payload: ATTACK, SKILL, INTERACT, HOLD) must not keep walking on a target an earlier
+    decision left behind. The ATTACK and SKILL emissions clear the navigation target (`tactical.py`); an entity holding an action
+    task is neither offered a move (`MovementCandidateSelector.select`) nor moved (`MovementPhase.route_movement_intent`) unless
+    that tick sets a target of its own (`MovementCandidateSelector.holds_action_task`); and live retargeting onto the entity named
+    in `payload["target_id"]` applies only to entity-tracking moves (pursuit, intercept, bracketing, kiting, guard), never to an
+    action holder (`resolve_live_tracking_target`). Before this an adjacent ATTACK holder was live-retargeted onto its target's
+    occupied tile, the refused step fell to the sidestep ladder (`MovementSystem._find_sidestep`) and the attacker stepped off
+    adjacency and took an opportunity attack (COMB-009/272). The cost: an attacker whose target steps away no longer closes the gap
+    through live tracking; it closes after OUT_OF_RANGE returns it to the brain, which for an idle entity runs once per
+    `strategic_intelligence` cadence (10 in the live NORMAL policy, `policy.py:92`).
 *   **Withheld-Action Task Reset**: The action router (`ActionRouter.execute_action`,
     `src/engine/domain/action_router.py`) reports `ReasonCode.ACTION_WITHHELD_BY_POSTURE` when its
     combat-posture gate withholds an `ATTACK`/`SKILL` (the attacker's recorded
@@ -197,3 +235,33 @@ disengaging while adjacent to a hostile) bypass this specific check.
     `outcome` is an earlier annotation and is dropped before the new one is written
     (`TCK-20261005-SILENT-NO-OP-RETURNS-IN-ACTIONROUTER-HOLD-THE-TASK-AND-ANNOTATE-FALSE-SUCCESS`).
     The gate's policy is unchanged; only its return shape and the resulting annotation.
+
+## 8. Terrain Movement Cost (D72, divergence 2.124; time, D75, divergence 2.126)
+Each terrain declares its own movement cost in content: `move_cost_multiplier` on its entry in
+`data/content/world/terrain.yaml` (`TerrainDefinition`, required, greater than zero). A terrain with no
+declared cost is a compile-time content error, never a silent 1.0. The factor is TIME (D75): a step
+onto a tile of cost N holds the entity's next step back N ticks (`MovementSystem.resolve_move` sets
+`NavigationComponent.step_ready_tick` to the carried previous value, or the step's tick, plus N, and holds
+the entity, with no failure and no wait count, while the tick is earlier). A position swap and a yield
+displacement pay the cost of the tile they move the entity onto and respect the hold. An entity takes at most one
+step per tick, so a cost below 1.0 (road 0.5) is no faster than plain until route weighting or multi-step
+ticks exist; forest, cave and ruin (1.5) alternate one and two ticks. The legality pre-check no longer
+reads the factor: it stays the plain `move_cost / speed` readiness check. The cost is looked up by exact catalog id through
+`src/content/terrain_cost.py` (`terrain_cost`); there is no name table in code and no case folding
+(D56). `WorldCompiler` refuses a world whose terrain holds an id the catalog does not declare
+(`InvalidWorldSpecError`, naming each one), and its base fill is the catalog id `plain`.
+
+| Terrain | Cost | | Terrain | Cost |
+|---|---|---|---|---|
+| plain, grass | 1.0 | | road | 0.5 |
+| forest, cave, ruin | 1.5 | | swamp, river | 3.0 |
+| mountain | 4.0 | | snow 1.6, volcanic 1.4 | (kept as declared; no owner ruling) |
+
+A river stays walkable (3.0). Cave, ruin and river are D33 placeholders. Per-body movement styles
+are a later change (M1). The numbers `terrain.yaml` declared before D72 were read by nothing; they
+are replaced by the ruled values above.
+
+**Routes weigh the cost (D75 route step, divergence 2.128).** The route toward a target is the greedy axis-dominant walk unless a bounded A* over the declared
+terrain cost (`src/engine/route_search.py`, node cap `ROUTE_NODE_CAP`) finds a cheaper one, in which case the entity takes the first tile of that route. A road
+(0.5) therefore draws a walk toward it when it saves cost. The search reads the true terrain map as common knowledge of the land, weighs terrain cost only (no hazard;
+walls, buildings and other entities stay with the sidestep and reroute ladder), and a search over its cap falls back to the greedy step and is counted.

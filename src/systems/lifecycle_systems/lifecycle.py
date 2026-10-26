@@ -3,7 +3,9 @@ from typing import TYPE_CHECKING, List, Optional
 from dataclasses import replace
 from src.core.updates import StateUpdate, EntityUpdate, LifecycleUpdate, InventoryUpdate, IdentityUpdate
 from src.core.state import LifeStage
+from src.core.death_cause import DeathCause, DeathRecord, death_cause_of
 from src.core.enums import EntityRole
+from src.core.region_resolution import resolve_region_among
 from src.ai.life_stage import LifeStageService
 from src.ai.coming_of_age import choose_archetype, is_excluded_no_birth_record
 from src.domains.demographics.cohort import compute_elder_attribute_update
@@ -23,6 +25,25 @@ class LifecycleSystem:
     # Idea 55 (Feuds Outlive the Feuders): the heir's inherited hostility is weaker
     # than the deceased's own -- a starting grudge, not a full transfer.
     INHERITED_NEMESIS_SEVERITY_MULTIPLIER = 0.5
+
+    @staticmethod
+    def _estate_transfers(entity: EntityState) -> list:
+        """The transfers that settle a dead entity's estate on its heir (EXCH-02). INHERIT moves the items and coin it carries, atomically: it
+        debits the dead entity's inventory with the heir's receipt, so the body built afterwards holds only what no heir took and nothing is
+        copied. entity.inventory.items is a list on a live/authoritative entity but a tuple on a to_readonly() view (src/core/state.py's
+        immutability optimization), hence the list() (TCK-20260829-LIFECYCLE-HEIRLOOM-INVENTORY-TUPLE-TYPEERROR). The named heirlooms are the
+        entity's declared heirloom list, not inventory: they keep their own CHEST grant, unchanged."""
+        from src.core.state import ItemStack
+        from src.core.updates import ResourceTransferIntent
+        carried = [s for s in entity.inventory.items if s.quantity > 0]
+        transfers = []
+        if carried or entity.inventory.gold > 0:
+            transfers.append(ResourceTransferIntent(source_id=entity.id, source_kind="INHERIT", items_add=list(carried), gold_delta=entity.inventory.gold,
+                                                    transfer_kind="INHERIT", transaction_id=f"inherit:{entity.id}"))
+        heirlooms = [ItemStack(item_id=hid, quantity=1) for hid in entity.lifecycle.heirlooms]
+        if heirlooms:
+            transfers.append(ResourceTransferIntent(source_id=entity.id, source_kind="CHEST", items_add=heirlooms, transfer_kind="AUTO"))
+        return transfers
 
     @staticmethod
     def _transfer_inherited_feud(deceased: EntityState, heir_upd: EntityUpdate) -> EntityUpdate:
@@ -116,6 +137,19 @@ class LifecycleSystem:
         new_motivation = replace(base_cognition.motivation, named_intention=new_intention)
         new_cognition = replace(base_cognition, motivation=new_motivation)
         return replace(heir_upd, cognition_bundle_set=new_cognition)
+
+    @staticmethod
+    def _death_record(state: AuthoritativeState, entity: EntityState, ent_upd: EntityUpdate, death_reason: Optional[str]) -> DeathRecord:
+        """The typed record of this death: the cause, the tick, who last hit the body (this tick's damaging attacker, else the one it remembers) and, for a hazard death, the hazard kind of the region it stood in."""
+        cause = death_cause_of(death_reason)
+        combat = ent_upd.combat if ent_upd else None
+        attacker = combat.attacker_id if (combat is not None and combat.attacker_id is not None and combat.damage_taken > 0) else entity.combat.last_attacker_id
+        hazard_kind = None
+        if cause is DeathCause.HAZARD:
+            x, y = entity.navigation.position
+            region = resolve_region_among(state.regions.values(), x, y)
+            hazard_kind = getattr(region, "hazard_kind", None)
+        return DeathRecord(cause=cause, tick=state.tick, last_attacker_id=attacker, hazard_kind=hazard_kind)
 
     @staticmethod
     def _select_default_heir(state: AuthoritativeState, deceased: EntityState) -> Optional[int]:
@@ -239,7 +273,8 @@ class LifecycleSystem:
                     lifecycle=replace(life_upd,
                         is_permadeath_set=True,
                         death_tick_set=state.tick,
-                        death_reason_set=death_reason
+                        death_reason_set=death_reason,
+                        death_record_set=LifecycleSystem._death_record(state, entity, ent_upd, death_reason),
                     )
                 )
                 
@@ -264,46 +299,21 @@ class LifecycleSystem:
                         heir_upd = LifecycleSystem._transfer_inherited_feud(entity, heir_upd)
                         heir_upd = LifecycleSystem._seed_dying_wish(entity, heir, heir_upd, state.tick)
 
-                        # Transactional Heirloom Transfer
-                        from src.core.updates import ResourceTransferIntent
-                        from src.core.state import ItemStack
-
-                        # Combine inventory and specific heirlooms. entity.inventory.items is a
-                        # list on a live/authoritative entity but a tuple when entity is a
-                        # to_readonly() view (src/core/state.py's immutability optimization) --
-                        # normalize to list before concatenating with heirloom_stacks (always a
-                        # list) so this works for either source (TCK-20260829-LIFECYCLE-HEIRLOOM-
-                        # INVENTORY-TUPLE-TYPEERROR).
-                        heirloom_stacks = [ItemStack(item_id=hid, quantity=1) for hid in entity.lifecycle.heirlooms]
-                        all_transfer_items = list(entity.inventory.items) + heirloom_stacks
-
-                        if all_transfer_items:
-                            intent = ResourceTransferIntent(
-                                source_id=entity.id,
-                                source_kind="CHEST", # Use CHEST or similar source kind that allows items
-                                items_add=all_transfer_items,
-                                transfer_kind="AUTO"
-                            )
-                            heir_upd = replace(heir_upd,
-                                resource_transfers=heir_upd.resource_transfers + [intent]
-                            )
+                        # The estate: what the dead entity carries MOVES to the heir (INHERIT), and the named heirlooms arrive as before.
+                        heir_upd = replace(heir_upd, resource_transfers=heir_upd.resource_transfers + LifecycleSystem._estate_transfers(entity))
 
                         refined_entity_updates[heir_id] = heir_upd
 
-        # Apply Influence Shifts and Conquest Lifecycle
+        # Apply Influence Shifts
         if recent_deaths:
             from src.world.influence import FactionInfluenceService
             from src.economy.vacancy import EconomicVacancyService
             # Influence Shift
             inf_update = FactionInfluenceService.process_influence_shift(state, recent_deaths)
-            # Conquest/Stronghold Lifecycle (Requires generator)
-            from src.systems.world_systems.generator import EntityGenerator
-            generator = EntityGenerator(state.seed + state.tick)
-            inf_update = FactionInfluenceService.process_conquest_lifecycle(state, inf_update, generator)
             # Economic Vacancy Signal (TCK-20260903-ECONOMIC-VACANCY-SIGNAL)
             vac_update = EconomicVacancyService.check_and_emit(state, recent_deaths)
 
-            # Merge world updates and new entities
+            # Merge world updates (a conquest flips ownership only; it adds no entity, D71)
             new_world_updates = dict(update.world_updates)
             for r_id, extra_upd in inf_update.world_updates.items():
                 if r_id in new_world_updates:
@@ -313,8 +323,6 @@ class LifecycleSystem:
 
             update = replace(update,
                 world_updates=new_world_updates,
-                entities_add=list(update.entities_add) + list(inf_update.entities_add),
-                entities_remove=list(update.entities_remove) + list(inf_update.entities_remove),
                 world_events_add=list(update.world_events_add) + list(vac_update.world_events_add),
             )
                         

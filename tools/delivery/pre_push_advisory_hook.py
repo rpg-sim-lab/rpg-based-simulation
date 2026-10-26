@@ -18,7 +18,7 @@ confirmed false-positive shape in the corpus (`git push` inside a `grep` pattern
 -n "git commit\\|git push\\|..."`) does not follow any of those three anchors and is excluded by
 construction, not by a special case.
 
-Three checks, each read-only against local refs (no network call — an offline-first design so this
+Five checks, each read-only against local refs (no network call — an offline-first design so this
 hook cannot itself become a source of the Fortiguard TLS-block failure mode this epic elsewhere
 defends against):
 
@@ -38,6 +38,17 @@ defends against):
   reliable discriminator this repo's own CLAUDE.md prose describes, operationalized as code. A
   branch merely behind `main` (no squash-merge involved) fails the ancestor/content conditions and
   is correctly never flagged.
+
+- **D — CI lanes this push touches (advisory).** `tools/delivery/ci_lanes.py` reads `.github/workflows/test.yml`
+  and, for `git diff --name-only <base>...HEAD`, names the path-filtered lanes that will run and the always-on lanes
+  whose pytest paths hold a changed file, plus the one command that runs them. It never runs a test (hook
+  timeouts) and says nothing when no lane is specifically touched.
+
+- **E — `docs/REGISTRY.yaml` is stale (advisory, TCK-20261024-PRE-PUSH-WARNS-ON-A-STALE-DOCS-REGISTRY).** Only when
+  the branch diff touches a registry source (a `.md` under `docs/`, `agent-working/tickets/` or
+  `agent-working/stored_artifacts/`, the trees `tools/generate_registry.py` reads) does it run
+  `python3 tools/generate_registry.py --check` (offline, a few seconds); exit 2 means stale and yields one line naming
+  `make docs-registry`. A push that touches none of those pays nothing; any other exit or a timeout says nothing.
 
 Every check degrades to "no finding" on any git-command failure (detached HEAD, no local
 `origin/main` ref, non-tracking branch) rather than raising — this hook must never traceback, and
@@ -59,7 +70,7 @@ from typing import List, NamedTuple
 _REPO_ROOT_STR = str(Path(__file__).resolve().parents[2])
 if _REPO_ROOT_STR not in sys.path:
     sys.path.append(_REPO_ROOT_STR)
-from tools.agent_working_paths import AGENT_MONITORING, TICKETS, posix  # noqa: E402
+from tools.agent_working_paths import AGENT_MONITORING, STORED_ARTIFACTS, TICKETS, posix  # noqa: E402
 
 _GIT_PUSH_RE = re.compile(r"(?:^|&&|;)\s*git\s+push\b", re.MULTILINE)
 _TICKET_ID_RE = re.compile(r"TCK-[0-9]{8}-[A-Z0-9-]+")
@@ -166,6 +177,54 @@ def check_squash_merged_finished(run_command=default_run_command, base_ref: str 
     ]
 
 
+def check_ci_lanes(run_command=default_run_command, base_ref: str = "origin/main") -> List[str]:
+    try:
+        diff = run_command(["git", "diff", "--name-only", f"{base_ref}...HEAD"])
+        if diff.returncode != 0:
+            return []
+        changed = [p for p in diff.stdout.splitlines() if p.strip()]
+        if not changed:
+            return []
+        from tools.delivery import ci_lanes
+
+        workflow = ci_lanes.load_workflow()
+        names = [v.lane for v in ci_lanes.touched(workflow, ci_lanes.resolve(workflow, changed))]
+    except Exception:
+        return []  # an uncertain check says nothing
+    if not names:
+        return []
+    return [
+        f"pre-push: this push touches CI lane(s) {', '.join(names)} (CI also runs every unfiltered lane on a PR). "
+        "Run the touched ones first: `python3 -m tools.delivery.ci_lanes --run` "
+        "(`--list` shows the commands and hints)."
+    ]
+
+
+_REGISTRY_SOURCE_ROOTS = ("docs/", f"{posix(TICKETS)}/", f"{posix(STORED_ARTIFACTS)}/")
+_REGISTRY_STALE_EXIT = 2  # generate_registry.py --check: on-disk output differs from a fresh regeneration
+
+
+def check_registry_fresh(run_command=default_run_command, base_ref: str = "origin/main") -> List[str]:
+    try:
+        diff = run_command(["git", "diff", "--name-only", f"{base_ref}...HEAD"])
+        if diff.returncode != 0:
+            return []
+        feeds = [p for p in diff.stdout.splitlines() if p.endswith(".md") and p.startswith(_REGISTRY_SOURCE_ROOTS)]
+        if not feeds:
+            return []
+        # default 30 s timeout on purpose: the hook entry sets none, so Claude Code's 60 s covers ALL checks (A-E);
+        # a longer budget here could get the whole hook killed and drop checks A-D with it
+        result = run_command([sys.executable, "tools/generate_registry.py", "--check"])
+    except Exception:
+        return []  # an uncertain check says nothing (includes a timeout)
+    if result.returncode != _REGISTRY_STALE_EXIT:
+        return []
+    return [
+        "pre-push: this branch changes docs or tickets and docs/REGISTRY.yaml is stale (CI's Registry re-sync gate "
+        "will fail). Run `make docs-registry`, then `git add docs/REGISTRY.yaml` and commit it."
+    ]
+
+
 def run_all_checks(
     run_command=default_run_command,
     base_ref: str = "origin/main",
@@ -175,6 +234,8 @@ def run_all_checks(
     findings.extend(check_commit_subjects(run_command, base_ref, tickets_root))
     findings.extend(check_monitoring_shard_staged(run_command))
     findings.extend(check_squash_merged_finished(run_command, base_ref))
+    findings.extend(check_ci_lanes(run_command, base_ref))
+    findings.extend(check_registry_fresh(run_command, base_ref))
     return findings
 
 

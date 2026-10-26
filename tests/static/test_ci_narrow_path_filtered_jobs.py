@@ -180,6 +180,16 @@ def test_frontend_if_references_changed_files_gate_output() -> None:
     assert "run_frontend" in condition
 
 
+# 5d. docker-build's if: references its own distinct output (TCK-20261008-CI-BACKEND-IMAGE-BUILD-CHECK).
+def test_docker_build_if_references_changed_files_gate_output() -> None:
+    jobs = _jobs()
+    condition = jobs["docker-build"]["if"]
+    assert "needs." in condition
+    assert ".outputs." in condition
+    assert "run_docker_build" in condition
+    assert "pr_content_unchanged" in condition
+
+
 # 6. Non-pull_request events force both outputs true before any git diff is attempted.
 def test_gate_job_fails_open_on_non_pull_request_events() -> None:
     jobs = _jobs()
@@ -200,6 +210,7 @@ def test_gate_job_fails_open_on_non_pull_request_events() -> None:
     assert "run_perf_cert_arena=true" in branch_text
     assert "run_migration_lanes=true" in branch_text
     assert "run_frontend=true" in branch_text
+    assert "run_docker_build=true" in branch_text
     assert "exit 0" in branch_text
 
 
@@ -219,6 +230,7 @@ def test_gate_job_fails_open_on_diff_command_failure() -> None:
     assert "run_perf_cert_arena=true" in branch_text
     assert "run_migration_lanes=true" in branch_text
     assert "run_frontend=true" in branch_text
+    assert "run_docker_build=true" in branch_text
     assert "exit 0" in branch_text
 
 
@@ -235,7 +247,12 @@ def test_perf_cert_arena_path_set_covers_all_actually_imported_src_dirs() -> Non
     run_text = _gate_run_text(jobs)
     perf_pattern = _extract_re_pattern(run_text, "PERF_RE")
 
-    missing = sorted(d for d in imported if d not in perf_pattern)
+    # TCK-20261008-PERF-LANE-PATH-GATE-MISSES-SIMULATION-SRC-DIRS: PERF_RE is "any src/ path except an
+    # exclusion list", so the check is behavioural (does the compiled pattern match a path in each imported
+    # dir?) instead of a substring test for a folder name. It still fails if a lane test imports a folder
+    # that the exclusion list names.
+    compiled = re.compile(perf_pattern)
+    missing = sorted(d for d in imported if not compiled.match(f"src/{d}/module.py"))
     assert not missing, (
         f"perf-cert-arena's trigger path set (PERF_RE) is missing coverage for src/ dirs "
         f"actually imported by tests/perf, tests/certification, tests/arena: {missing} -- "
@@ -279,6 +296,7 @@ def test_gated_jobs_fail_open_on_gate_job_non_success() -> None:
         ("perf-cert-arena", "run_perf_cert_arena"),
         ("migration-lanes", "run_migration_lanes"),
         ("frontend", "run_frontend"),
+        ("docker-build", "run_docker_build"),
     ):
         condition = jobs[job_name]["if"]
         assert "!cancelled()" in condition, (
@@ -333,14 +351,82 @@ def test_frontend_path_set_covers_frontend_directory_and_workflow_file() -> None
     )
 
 
+# 12b. (TCK-20261015-FRONTEND-PATH-FILTER-MISSES-FILES-OUTSIDE-FRONTEND-THAT-ITS-TESTS-READ) The frontend job's
+# trigger set must also cover every file OUTSIDE frontend/ that a frontend test reads from disk: #596 changed only
+# visual_assets/catalog/definitions/visual_keys.yaml, iconScene.test.ts reads it, and the job was skipped, so the red
+# first showed on main. The outside paths are derived from the tests themselves (two read forms), never listed here.
+_FRONTEND_READ_CALL = re.compile(r"\bread\(((?:\s*'[^']*'\s*,?)+)\)")
+_FRONTEND_RESOLVE_CALL = re.compile(r"resolve\(__dirname,\s*'([^']+)'\)")
+
+
+def _frontend_test_outside_reads() -> set[str]:
+    """Repo-relative paths outside frontend/ that frontend/src/**/*.test.ts(x) read via read('<root>', ...) or resolve(__dirname, '../..')."""
+    found: set[str] = set()
+    for test in sorted((_ROOT / "frontend" / "src").rglob("*.test.ts*")):
+        text = test.read_text(encoding="utf-8")
+        candidates = []
+        for m in _FRONTEND_READ_CALL.finditer(text):
+            candidates.append("/".join(re.findall(r"'([^']*)'", m.group(1))))
+        for m in _FRONTEND_RESOLVE_CALL.finditer(text):
+            candidates.append((test.parent / m.group(1)).resolve().relative_to(_ROOT).as_posix())
+        found.update(c for c in candidates if not c.startswith("frontend/") and c != "frontend")
+    return found
+
+
+def test_frontend_path_set_covers_every_file_outside_frontend_that_its_tests_read() -> None:
+    pattern = re.compile(_extract_re_pattern(_gate_run_text(_jobs()), "FRONTEND_RE"))
+    outside = _frontend_test_outside_reads()
+    assert outside, "derived zero outside-frontend paths: the derivation is broken, not the filter"
+    assert "visual_assets/catalog/definitions/visual_keys.yaml" in outside
+    uncovered = sorted(p for p in outside if not pattern.search(p))
+    assert not uncovered, f"frontend tests read these files but FRONTEND_RE would skip the job: {uncovered}"
+
+
+def test_the_old_frontend_pattern_missed_visual_keys_and_the_new_one_catches_it() -> None:
+    old = re.compile(r"^(frontend/|\.github/workflows/test\.yml$)")
+    new = re.compile(_extract_re_pattern(_gate_run_text(_jobs()), "FRONTEND_RE"))
+    path = "visual_assets/catalog/definitions/visual_keys.yaml"
+    assert not old.search(path)
+    assert new.search(path)
+    assert not new.search("docs/assets/other.md") and not new.search("src/x.py")
+
+
 # 13. TCK-20261002-UV-REMAINING-CI-JOBS: dependencies are declared in pyproject.toml / uv.lock
-# (requirements.txt is a generated export), so a change to either must run both gated jobs.
+# (there is no requirements.txt export any more), so a change to either must run both gated jobs.
 # Note this also means any pyproject.toml edit, including tool configuration, triggers them.
 def test_both_gated_jobs_trigger_on_pyproject_and_lockfile_but_not_unrelated_files() -> None:
     run_text = _gate_run_text(_jobs())
     for var_name in ("PERF_RE", "MIG_RE"):
         pattern = re.compile(_extract_re_pattern(run_text, var_name))
-        for path in ("pyproject.toml", "uv.lock", "requirements.txt"):
+        for path in ("pyproject.toml", "uv.lock"):
             assert pattern.search(path), f"{var_name} must match {path}"
         for path in ("README.md", "uv.lock.bak", "docs/pyproject.toml.md"):
             assert not pattern.search(path), f"{var_name} must not match {path}"
+
+
+# 13. (TCK-20261008-CI-BACKEND-IMAGE-BUILD-CHECK) docker-build's trigger path set: the backend Dockerfile,
+# .dockerignore, the dependency declarations the image installs from, and the workflow file. Source and docs
+# changes must not trigger a ~minute-long image build.
+def test_docker_path_set_covers_the_image_inputs_and_not_source_or_docs() -> None:
+    jobs = _jobs()
+    run_text = _gate_run_text(jobs)
+    pattern = re.compile(_extract_re_pattern(run_text, "DOCKER_RE"))
+    for path in ("docker/backend.Dockerfile", ".dockerignore", "uv.lock", "pyproject.toml", ".github/workflows/test.yml"):
+        assert pattern.search(path), f"DOCKER_RE must match {path}"
+    for path in ("src/x.py", "docs/x.md", "docker/frontend.Dockerfile", "docker/nginx.conf", "uv.lock.bak", "frontend/src/App.tsx"):
+        assert not pattern.search(path), f"DOCKER_RE must not match {path}"
+
+
+# 14. The job is plain docker: the three commands the ticket pins, no docker/* action, no cache, no push.
+def test_docker_build_job_uses_plain_docker_commands_only() -> None:
+    job = _jobs()["docker-build"]
+    # Action names, not refs: a version bump of actions/checkout must not need a test edit, but a new action still fails.
+    uses = [step["uses"].split("@", 1)[0] for step in job["steps"] if "uses" in step]
+    assert uses == ["actions/checkout"], uses
+    runs = "\n".join(step["run"] for step in job["steps"] if "run" in step)
+    assert "docker build --check -f docker/backend.Dockerfile ." in runs
+    assert "docker build -f docker/backend.Dockerfile -t rpg-backend:ci ." in runs
+    assert "sys.version_info[:2] == (3, 13)" in runs
+    for forbidden in ("docker push", "docker login", "--push", "cache-from", "cache-to"):
+        assert forbidden not in runs, forbidden
+    assert job["timeout-minutes"] == 15

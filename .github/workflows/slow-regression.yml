@@ -8,11 +8,25 @@ name: Slow regression
 #   - no `needs:` on the fast jobs (the slow suite is informational);
 #   - a final report step that keeps ONE rolling GitHub issue and comments only when the set of
 #     failing tests changes.
+#
+# TCK-20261008-SLOW-REGRESSION-SCHEDULE-WATCHDOG: GitHub's schedule trigger is best-effort (a slot was
+# never created on 2026-10-08, others start up to 3.5 h late), so `slow-regression-watchdog.yml` runs
+# hourly and dispatches this workflow on main when none is queued or running and the newest run is 10 h
+# old or more. 10 h = 6 h period + 3.5 h observed lateness + 0.5 h grace; a shorter threshold would
+# double the cost when a late scheduled run is still on its way. Rule: tools/test_architecture/slow_regression_watchdog.py.
+#
+# TCK-20261009-SLOW-REGRESSION-OFF-HOUR-AND-SKIP-UNCHANGED-MAIN: the `gate` job skips a SCHEDULED run when main's head
+# was already actually tested less than 24 h ago (one same-commit rerun a day stays, to keep failing-set flapping
+# visible). A `workflow_dispatch` run always tests. A skipped run runs only the gate (about one billed minute), leaves
+# the report and rolling issue #390 untouched, and its suite job concludes `skipped`, which is how later gates tell it
+# from a run that tested. Rule and the "actually tested" definition: tools/test_architecture/slow_regression_gate.py.
 
 on:
   schedule:
-    # Every 6 hours (owner decision D2): about 4 x 2 runner-hours a day.
-    - cron: "0 3,9,15,21 * * *"
+    # Every 6 hours (owner decision D2): about 4 x 2 runner-hours a day. Off the hour (owner, 2026-10-09,
+    # TCK-20261009-SLOW-REGRESSION-OFF-HOUR-AND-SKIP-UNCHANGED-MAIN): GitHub delays or drops top-of-hour
+    # schedules under load, and the :00 slots here started 1.5 to 5.5 h late or never.
+    - cron: "41 2,8,14,20 * * *"
   workflow_dispatch: {}
 
 concurrency:
@@ -20,8 +34,49 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  gate:
+    name: "Gate: skip if main was tested recently"
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      actions: read
+      contents: read
+    outputs:
+      decision: ${{ steps.decide.outputs.decision }}
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+    steps:
+      # Sparse checkout: only the pure decision module, not the slow suite.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          sparse-checkout: |
+            tools/test_architecture/__init__.py
+            tools/test_architecture/slow_regression_gate.py
+          sparse-checkout-cone-mode: false
+      # Schedule events only: a workflow_dispatch run (a human asked, or the watchdog decided) always tests. If this
+      # step errors, `decision` stays empty and the suite still runs (fail open).
+      - name: Decide
+        id: decide
+        if: ${{ github.event_name == 'schedule' }}
+        env:
+          HEAD_SHA: ${{ github.sha }}
+          RUN_ID: ${{ github.run_id }}
+        run: |
+          set -o pipefail  # without it a crashing gate hides behind `| tee`: empty decision, no red signal
+          python3 -m tools.test_architecture.slow_regression_gate decide \
+            --head-sha "${HEAD_SHA}" --exclude-run-id "${RUN_ID}" | tee decision.txt
+          cat decision.txt >> "$GITHUB_OUTPUT"
+          {
+            echo "### Slow regression gate"
+            sed 's/^/- /' decision.txt
+          } >> "$GITHUB_STEP_SUMMARY"
+
   slow:
     name: "Slow regression"
+    needs: gate
+    # `!cancelled()` so a failed gate does not skip the suite (fail open); skip only on an explicit `skip` decision.
+    if: ${{ !cancelled() && (github.event_name == 'workflow_dispatch' || needs.gate.outputs.decision != 'skip') }}
     runs-on: ubuntu-latest
     timeout-minutes: 240
     # Job-level permissions drop everything not listed: checkout needs contents, the report step
@@ -30,8 +85,8 @@ jobs:
       contents: read
       issues: write
     steps:
-      - uses: actions/checkout@v5
-      - uses: astral-sh/setup-uv@v10.2.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
         with: { version: "0.11.2", python-version: "3.13", activate-environment: true, enable-cache: true }
       - run: uv sync --locked --no-install-project --no-group lint
       - name: Slow tests — corpus diversity (isolated per-test, TCK-20260715-SIMQ-CORPUS-DIVERSITY-SESSION-LOAD-FLAKE)
@@ -73,23 +128,28 @@ jobs:
       - name: Report failing-set changes
         if: ${{ !cancelled() }}
         env:
+          HEAD_SHA: ${{ github.sha }}
+          REPOSITORY: ${{ github.repository }}
+          RUN_ID: ${{ github.run_id }}
           GH_TOKEN: ${{ github.token }}
         run: |
-          python3 tools/test_architecture/slow_regression_report.py \
+          # `-m` from the repo root: the report imports the shared known_reds module as tools.test_architecture.known_reds
+          # (TCK-20261009-KNOWN-REDS-REGISTRY-SHARED-MODULE); run by path it would not find it.
+          python3 -m tools.test_architecture.slow_regression_report \
             --junit-dir reports/slow \
-            --repo "${{ github.repository }}" \
-            --run-id "${{ github.run_id }}" \
-            --sha "${{ github.sha }}" \
+            --repo "${REPOSITORY}" \
+            --run-id "${RUN_ID}" \
+            --sha "${HEAD_SHA}" \
             --known-reds tools/test_architecture/slow_known_reds.yaml
       - name: Upload certification report
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: always()
         with:
           name: certification-report-${{ github.sha }}
           path: reports/certification/
           retention-days: 30
       - name: Upload slow JUnit reports
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: always()
         with:
           name: slow-junit-${{ github.sha }}

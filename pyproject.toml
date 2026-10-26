@@ -6,15 +6,15 @@ build-backend = "setuptools.build_meta"
 name = "rpg-based-simulation"
 version = "0.1.0"
 description = "Deterministic Concurrent RPG Engine"
-requires-python = ">=3.11"
+requires-python = ">=3.12"
 # Single source of dependency declarations. uv.lock is resolved from this file and
-# requirements.txt is a generated export of the lock (never edit it by hand):
-#   uv export --frozen --no-hashes --no-emit-project -o requirements.txt
+# there is no requirements.txt export: every CI job runs `uv sync --locked` (TCK-20261008-DROP-UNUSED-REQUIREMENTS-EXPORT).
+# A consumer that cannot read uv.lock can run `uv export --frozen --no-hashes --no-emit-project` ad hoc.
 # See docs/guidelines/agent_working_environment.md.
 dependencies = [
     "xxhash>=3.4.0",
-    "fastapi>=0.115.0",
-    "starlette>=0.40.0",
+    "fastapi>=0.143.5",
+    "starlette>=1.0.0,<2",
     "uvicorn[standard]>=0.30.0",
     "pydantic>=2.0.0",
     "typing-extensions>=4.8.0",
@@ -31,19 +31,23 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-# torch must be installed separately from the CPU wheel before this extra:
+# torch is not pinned here, and uv.lock resolves it from PyPI (the CUDA build). `.venv-knowledge` (3.12) is built by a
+# manual CPU-wheel step instead:
 #   pip install torch --index-url https://download.pytorch.org/whl/cpu
+# so that venv is NOT reproducible from the lock: do not `uv sync --extra knowledge` expecting the CPU env. The lock
+# stays index-free because download.pytorch.org is blocked on u24desktop-Virtual-Machine (see "Why the knowledge stack
+# is stuck on 3.12" in docs/guidelines/agent_working_environment.md); revisit once it is reachable from every host.
 knowledge = [
     "sentence-transformers>=2.7.0",
     "sqlite-vec>=0.1.1",
     "rank-bm25>=0.2.2",
 ]
 search-mcp = [
-    "mcp>=1.0.0",
+    "mcp>=1.30.0,<2",
 ]
 
 # Test and dev tooling. `dev` and `lint` are installed by default by `uv sync` (`[tool.uv]
-# default-groups`) and are part of the requirements.txt export; `profiling` is opt-in (`uv sync --group profiling`).
+# default-groups`); `profiling` is opt-in (`uv sync --group profiling`).
 [dependency-groups]
 dev = [
     "pytest>=8.0.0",
@@ -51,37 +55,50 @@ dev = [
     "httpx>=0.27.0",
     "hypothesis>=6.0.0",
     "coverage>=7.0.0",
-    "mypy",
+    # Exact, equal to the version uv.lock resolves (TCK-20261012-MYPY-DEV-PIN): a new mypy release can add errors
+    # and move the mypy baseline without a code change. Bump here and in uv.lock together.
+    "mypy==2.4.0",
     "jsonschema>=4.0.0",
     # Also declared as the `search-mcp` extra, which existing tests pin; the dev group makes
-    # the default export (requirements.txt) reach it for tests/tools/test_search_mcp.py.
-    "mcp>=1.0.0",
+    # the default install reach it for tests/tools/test_search_mcp.py.
+    "mcp>=1.30.0,<2",
     "websockets>=12.0",
     # Baseline filter for mypy (TCK-20261003-MYPY-BASELINE-ADVISORY): existing errors are held in
     # codebase/baselines/mypy_baseline.txt, so only new ones are reported. Pinned exactly like the code-health tools.
     "mypy-baseline==0.7.4",
     # Git hook runner for the opt-in `make install-prek-hooks` (TCK-20261003-PREK-GIT-HOOKS-OPT-IN); a single
     # binary wheel. In `dev` so every CI job and the installer tests have it.
-    "prek==0.5.4",
+    "prek==0.5.5",
+    # Exact, equal to the version uv.lock resolves. Runs the Integration, API/CLI/engine and Tools f-z jobs in parallel inside the job (TCK-20261019-CI-PR-WAIT-XDIST-IN-EXISTING-JOBS);
+    # `--dist loadgroup` honours xdist_group.
+    "pytest-xdist==3.8.0",
 ]
 # Code-health tools (TCK-20261002-CODE-HEALTH-TOOL-CONFIG). Pinned exactly: a new release can
 # add or retune rules, which would change the measured baseline without a code change.
 # jscpd is a Node tool and is pinned separately (JSCPD_VERSION in the Makefile). Kept out of
 # `dev` so CI jobs that do not run the code-health tests skip them (`uv sync --no-group lint`);
-# `default-groups` below keeps a plain `uv sync` and the requirements.txt export unchanged.
+# `default-groups` below keeps a plain `uv sync` unchanged.
 lint = [
-    "ruff==0.16.10",
+    "ruff==0.17.0",
     "complexipy==8.0.1",
     # TCK-20261004-AST-GREP-RULE-PACK-ADVISORY: project rules in codebase/rules/ (binary: `ast-grep`, never `sg`).
-    "ast-grep-cli==0.45.3",
-    # TCK-20261004-IMPORT-LINTER-ADOPTION: contracts in codebase/structure/importlinter.toml (advisory; binary: `lint-imports --config <file>`).
+    "ast-grep-cli==0.50.0",
+    # TCK-20261004-IMPORT-LINTER-ADOPTION: contracts in codebase/structure/importlinter.toml (blocking in the required Code health job since #671; binary: `lint-imports --config <file>`).
     "import-linter==2.15",
+    # TCK-20261021-PYREFLY-ADVISORY-REPORT: advisory second type-checker opinion, report-only, never a gate (mypy is the gate).
+    "pyrefly==1.3.2",
 ]
 profiling = [
     "memray>=1.0.0",
     # Sampling profiler for tools/perf/profile_tick.py (TCK-20261003-PERF-PROFILING-TOOLKIT). Opt-in
-    # with the rest of this group, so it is not in `dev` and not in the requirements.txt export.
+    # with the rest of this group, so it is not in `dev` and not in the default install.
     "py-spy>=0.3.14",
+]
+
+# Load-test runner (TCK-20261018-LOCUST-API-LOAD-TEST): opt-in with `uv sync --group loadtest`, not a runtime dependency and not in a
+# default group, so no CI job installs it. Pinned exactly (2.46.7, 2026-10-04): a new release can change the measured numbers.
+loadtest = [
+    "locust==2.46.7",
 ]
 
 [project.scripts]
@@ -126,6 +143,7 @@ norecursedirs = [
 ]
 markers = [
     "slow: marks tests as slow (deselect with '-m \"not slow\"')",
+    "real_data_runs: the test deliberately reads or writes the real data/runs (every other test's Kernel run output goes to tmp_path)",
     "extra_slow: marks tests as extremely slow (>60s, deselect with '-m \"not extra_slow\"'); runs under the large resource budget (600s/8GB) like resource_budget_large (TCK-20261006-EXTRA-SLOW-TESTS-LOCAL-RESOURCE-BUDGET)",
     "world_long_run: long-run living-world stability tests",
     "legacy_characterization: proves legacy behavior in src",
@@ -157,7 +175,7 @@ markers = [
 ]
 
 [tool.mypy]
-python_version = "3.11"
+python_version = "3.12"
 strict = false
 ignore_missing_imports = true
 warn_return_any = true
@@ -170,7 +188,28 @@ exclude = [
     "src/progression/",
 ]
 
+# TCK-20261021-PYREFLY-ADVISORY-REPORT: Pyrefly is an advisory second opinion, report-only and never a gate (mypy is the gate).
+# Same scope as [tool.mypy]: src/ minus the five excluded V1 packages. Run it with `make typecheck-pyrefly`.
+[tool.pyrefly]
+project-includes = ["src/**/*.py"]
+project-excludes = [
+    "src/ai/**",
+    "src/town/**",
+    "src/quests/**",
+    "src/entities/**",
+    "src/progression/**",
+]
+search-path = ["."]
+python-version = "3.12"
+ignore-missing-imports = ["*"]
+
 # ── Code health (python_code_craft_roadmap.md section 6; docs/guidelines/python_code_standard.md) ──
+[tool.ruff]
+# Explicit, and moved together with `requires-python` and `[tool.mypy] python_version` above: ruff would otherwise
+# fall back to requires-python, so a floor change would silently retarget it. Floor is 3.12 (owner decision
+# 2026-10-09, amending roadmap decision 12); 3.13 follows once the knowledge-search venv moves.
+target-version = "py312"
+
 # Check only: no formatter is adopted (roadmap decision 8.3), so there is no [tool.ruff.format].
 # Existing violations are held in an external baseline, not fixed or suppressed in src/.
 [tool.ruff.lint]

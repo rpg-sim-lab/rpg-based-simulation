@@ -1334,8 +1334,8 @@
     at level thresholds 10/25/50, reading EntityUpdate.kind_set directly -- diffed
     against prior_ent.kind, not id_upd, since kind_set lives on EntityUpdate itself,
     not IdentityUpdate like the other 7 events). Verified against the real EvolutionSystem.evaluate()
-    output (src/engine/evolution.py) via tests/unit/progression/test_evolution.py::
-    test_goblin_evolution_emits_entity_evolved_observability_event. Same rollback-path
+    output (src/engine/evolution.py). Superseded 2026-10-15 (D79 step 3, divergence 2.133): EvolutionSystem no longer writes
+    kind_set, so entity_evolved can no longer be emitted from production. Same rollback-path
     convention as the other 7: event_extractor.py also carries a flag-gated (_push_shapers_phase2_active)
     mirror block.'
   status: verified
@@ -1599,7 +1599,7 @@
     ProgressionScorer as a new species_evolution signal (+10, config/simulation_quality/scoring_weights.yaml)
     -- PROGRESSION''s own Question already names "evolving their playstyle" as part
     of what this pillar tracks.'
-  status: verified
+  status: divergent
   priority: P2
   legacy_evidence: null
   v2_evidence: 'src/observability/event_shapers.py::ProgressionShaper.shape() (new
@@ -1612,8 +1612,8 @@
     tick budgets; a real, disclosed gap for a future calibration ticket, matching
     route_new_query''s own precedent (SOC/INFRA entries from TCK-20260906-SIMQ-PILLAR-MAPPING-AND-RULES).'
   proof_type: regression
-  test_path: tests/unit/progression/test_evolution.py::test_goblin_evolution_emits_entity_evolved_observability_event
-  divergence_note: null
+  test_path: tests/unit/progression/test_evolution.py::test_a_real_level_up_emits_no_entity_evolved_event
+  divergence_note: 'Intentional divergence 2.133 (D79 step 3): a level-up no longer renames an entity kind, EvolutionSystem no longer writes kind_set, so the shaper block never fires from production. The wiring is kept for a later declared-role advancement.'
   support_boundary: Covers wiring correctness (the event fires and carries the right
     payload when EvolutionSystem genuinely evolves an entity). Does not cover real-corpus
     calibration reachability -- out of this ticket's own scope, disclosed as a known
@@ -1684,5 +1684,97 @@
     declared kind keeps the old constants and is listed by undeclared_need_kinds.'
   proof_type: regression
   test_path: tests/unit/engine/test_biological_needs.py::test_apply_path_accumulates_per_kind
-  divergence_note: See docs/guidelines/intentional_divergences.md Section 2.80.
+  divergence_note: See docs/guidelines/intentional_divergences.md Section 2.80, and Section 2.93 (owner decision 33, light balance pass,
+    `humanoid_survival` hunger is low, 0.05 per tick, for human, orc, elf, dwarf, troll, lizardfolk and species-less persons).
   support_boundary: null
+- id: PROG-129
+  text: 'TCK-20261008-STARVATION-WEAKENS-FIRST-AND-KILLS-OVER-DAYS-SURV-02: past the hunger line a person weakens first (hunger 85: recovery at half rate, attack x0.8) and then loses health slowly (hunger 95: 1 HP every round(6000 / max_hp) ticks), dying about 6000 ticks after the line instead of about 50 (SURV-02 amendment, owner decision 36).'
+  status: verified
+  priority: P1
+  legacy_evidence: null
+  v2_evidence: 'src/engine/starvation.py (the table and the pure stage functions), src/engine/apply.py (HP term and recovery scale), src/engine/combat.py (STARVATION_WEAKENED). Pinned 5x3 at 10000 ticks in docs/guidelines/intentional_divergences.md Section 2.94.'
+  proof_type: regression
+  test_path: tests/mechanic_scenarios/test_starvation_over_days.py
+  divergence_note: See docs/guidelines/intentional_divergences.md Section 2.94.
+  support_boundary: 'Constants in one table, not content. Sleep debt (hunger-like 1 HP per tick at 98) is not staged. Long-run survivors converge because the worlds feed few people.'
+- id: PROG-130
+  text: 'TCK-20261009-SLEEP-DEBT-WEAKENS-THEN-COLLAPSES-THE-SUBJECT-WHERE-IT-STANDS-NO-HP-LOSS: sleep debt weakens a subject above 80 (recovery at half rate, attack x0.8) and at 98 it falls asleep where it stands, takes no action until its debt is below the wake line, and loses no health (SURV-02, owner decision 41, replacing the 1 HP per tick drain). A bed is a way for the sleep goal only within reach and range.'
+  status: verified
+  priority: P1
+  legacy_evidence: null
+  v2_evidence: 'src/engine/sleep_debt.py (the table, stage functions, collapse_update, sleep_done), src/engine/apply.py (drain removed, combined recovery scale), src/engine/combat.py (EXHAUSTION line), src/engine/tactical.py (collapse decision), src/engine/candidate_selector.py (a held walk stops), src/engine/pipeline_phases/actions.py (the held collapse sleep), src/ai/goals/scorers.py (SleepScorer reach), src/engine/way_in_range.py; docs/mechanics/01_entity_anatomy.md section 4, docs/mechanics/04_strategic_cognition.md section 1.'
+  proof_type: regression
+  test_path: tests/mechanic_scenarios/test_sleep_debt_collapse.py
+  divergence_note: See docs/guidelines/intentional_divergences.md Section 2.105.
+  support_boundary: 'The values are ruled (designer, 2026-10-10): rest at twice the kind''s accrual rate, wake at SURV-07''s escalation onset, bed reach 30. A collapse lasts about 408 ticks. The sleep pull is measured only on top of the need-wake that lets a held mover re-decide.'
+- id: PROG-131
+  text: 'TCK-20261011-EVERY-LIVING-KIND-HEALS-NATURALLY-FASTER-AT-REST-ROW-65: every living body heals 1 HP every round(9600 / max_hp) life-due ticks awake and every round(4800 / max_hp) ticks in a held SLEEP or REST, none at or past the starving line (hunger 95) and half speed while weakened by hunger or sleep debt (SURV-02, owner decision 42, memo row 65).'
+  status: verified
+  priority: P1
+  legacy_evidence: null
+  v2_evidence: 'src/engine/natural_healing.py (the table, heal_period, hp_gain), src/engine/apply.py (the HP term of the life-due branch). Measured in docs/guidelines/intentional_divergences.md Section 2.116.'
+  proof_type: regression
+  test_path: tests/unit/engine/test_natural_healing.py
+  divergence_note: See docs/guidelines/intentional_divergences.md Section 2.116.
+  support_boundary: 'Named D33 placeholder constants in one table; per-kind rates come with M1 body properties. Town-tile, paid inn rest and level-up healing are unchanged (the town tile still heals free, disclosed for M3).'
+- id: PROG-132
+  text: 'TCK-20261013-HEALTH-NEVER-RISES-ABOVE-MAX-HP-AT-THE-PATCH-WRITER: health never exceeds max_hp. The combat patch writer clamps every CombatUpdate to min(max_hp after the update, max(0, hp + hp_delta)), so a paid inn rest, a level-up or any other hp_delta writer cannot lift a body past its maximum (Mechanics Bible 01).'
+  status: verified
+  priority: P1
+  legacy_evidence: null
+  v2_evidence: 'src/engine/patches.py (CombatPatch.apply clamp). Measured in docs/guidelines/intentional_divergences.md Section 2.118; docs/mechanics/01_entity_anatomy.md Natural Healing.'
+  proof_type: regression
+  test_path: tests/unit/engine/test_health_never_exceeds_max_hp.py
+  divergence_note: See docs/guidelines/intentional_divergences.md Section 2.118.
+  support_boundary: 'The bound is enforced at the single patch writer every CombatUpdate goes through. The legacy town_service INN_REST writer is dead code in src (removal follow-up).'
+- id: PROG-133
+  text: 'TCK-20261013-HEALTH-NEVER-RISES-ABOVE-MAX-HP-AT-THE-PATCH-WRITER (companion): rest, meal and repair building services serve only a subject whose species declares keeps_coin_and_trades (EXCH-02, owner decisions 43 and 68). Known gap: decision 43''s ''where the relationship allows it'' is not applied to these routes; it is a later ticket (D68). The sale and the shift keep the controlling-faction rule.'
+  status: verified
+  priority: P1
+  legacy_evidence: null
+  v2_evidence: 'src/engine/building_services.py (service_building gate), src/engine/serves.py (keeps_coin). Measured in docs/guidelines/intentional_divergences.md Section 2.119.'
+  proof_type: regression
+  test_path: tests/unit/engine/test_building_services_serve_only_people.py
+  divergence_note: See docs/guidelines/intentional_divergences.md Section 2.119.
+  support_boundary: 'Trait only (D68); the relationship half is a later ticket. A person who holds less than a service costs is still served with the charge clamped to what it holds (free meal or bed) until M0 step 4 (TCK-20261007-EAT-BESIDE-THE-INN-FEEDS-A-SUBJECT-THAT-CANNOT-PAY-FREE-MEAL).'
+- id: PROG-134
+  text: "TCK-20261012-A-HELD-GATHERER-ON-A-REGROWING-PATCH-IS-NEVER-RELEASED-TO-EAT: a held INTERACT whose subject is at or past the SURV-07 hunger onset and carries food its diet can eat is woken for the brain on the strategic cadence, so a grazer held on a regrowing patch is released to eat (SURV-06, SURV-07)."
+  status: verified
+  priority: P1
+  legacy_evidence: null
+  v2_evidence: "src/engine/scheduler.py (_is_need_woken, _carries_edible_food). Measured in docs/guidelines/intentional_divergences.md Section 2.120; docs/mechanics/04_strategic_cognition.md."
+  proof_type: regression
+  test_path: tests/unit/engine/test_pressing_hunger_releases_a_held_gatherer.py
+  divergence_note: See docs/guidelines/intentional_divergences.md Section 2.120.
+  support_boundary: "Only a gatherer that carries edible food is woken; a held gather making no progress with an empty pocket is a later ticket (typed progress signal)."
+- id: PROG-135
+  text: "TCK-20261014-A-CONQUEST-STRONGHOLD-OVERWRITES-ENTITY-1: a mid-run entity add never reuses an existing id. Every mid-run generator comes from EntityGenerator.for_state, the apply raises DuplicateEntityIdError for a duplicate-id add, and next_entity_id advances past every added id."
+  status: verified
+  priority: P1
+  legacy_evidence: null
+  v2_evidence: "src/systems/world_systems/generator.py (for_state), src/engine/apply.py (DuplicateEntityIdError, the next_entity_id advance), src/systems/lifecycle_systems/lifecycle.py and src/engine/pipeline.py (the call sites). docs/guidelines/intentional_divergences.md Section 2.121; docs/core/entities.md."
+  proof_type: regression
+  test_path: tests/unit/engine/test_mid_run_adds_never_reuse_an_entity_id.py
+  divergence_note: See docs/guidelines/intentional_divergences.md Section 2.121.
+  support_boundary: "The refusal is a raised exception. Whether a monster conquest should spawn a stronghold is a designer question (V1/V8)."
+
+- id: PROG-136
+  text: "TCK-20261014-A-CONQUEST-NO-LONGER-SPAWNS-A-STRONGHOLD-BODY-D71: a monster conquest flips region ownership at influence <= -50 and adds no entity; an invader-owned region is freed at influence >= +50. No stronghold body is spawned."
+  status: verified
+  priority: P1
+  legacy_evidence: null
+  v2_evidence: "src/world/influence.py (process_influence_shift unchanged; process_conquest_lifecycle removed), src/systems/lifecycle_systems/lifecycle.py (no conquest entity merge), src/systems/world_systems/generator.py (spawn_stronghold removed). docs/guidelines/intentional_divergences.md Section 2.123; docs/mechanics/05_world_evolution.md Section 3."
+  proof_type: regression
+  test_path: tests/unit/world/test_conquest_adds_no_entity.py
+  divergence_note: See docs/guidelines/intentional_divergences.md Section 2.123.
+  support_boundary: "Dormant in the baseline (0 conquests in 10 runs of 5000 ticks); proved by forced-conquest tests. The influence trigger and MONSTER_HORDE as a taker are label-driven until caused war and peace (not before M3)."
+- id: PROG-137
+  text: "TCK-20261014-EVERY-DEATH-CARRIES-A-TYPED-CAUSE-RECORDED-AT-DEATH: every death writes one durable typed LifecycleComponent.death_record (cause, tick, last_attacker_id, hazard_kind) through resolve_lifecycle and the authoritative patch. last_attacker_id is the most recent hit at any time before death; recency is not recorded. The behaviour is unchanged: the canonical state with the two new fields removed is byte-identical to the state before this step."
+  status: verified
+  priority: P1
+  legacy_evidence: null
+  v2_evidence: "src/core/death_cause.py (DeathCause, HpLossSource, DeathRecord), src/core/state.py (LifecycleComponent.death_record, CombatComponent.last_attacker_id, canonical dicts), src/systems/lifecycle_systems/lifecycle.py (_death_record), src/engine/patches.py (LifecyclePatch and CombatPatch apply), src/observability/death_ledger.py (hp loss by typed source; UNATTRIBUTED expected 0). docs/mechanics/01_entity_anatomy.md Death Record. Projection proof 15/15 pairs (3 worlds x seeds 42-46 x 5000 ticks) and the 15 post-step full fingerprints: agent-working/stored_artifacts/TCK-20261014-EVERY-DEATH-CARRIES-A-TYPED-CAUSE-RECORDED-AT-DEATH/probes/projection_proof_table.md."
+  proof_type: regression
+  test_path: tests/unit/progression/test_death_record.py
+  divergence_note: null
+  support_boundary: "Recency of the last attacker is not recorded (no last_attacker_tick); a follow-up if testing or SimQ need it."

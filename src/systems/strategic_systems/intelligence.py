@@ -84,7 +84,7 @@ from src.core.updates import NavigationUpdate, InteractionUpdate
 from src.systems.world_systems.routine import RoutineService
 from src.systems.world_systems.intake import ConcernIntakeSystem
 from src.engine.domain_logic import SimulationDomainLogic
-from src.ai.goals import GoalRegistry
+from src.ai.goals import GoalRegistry, escalated_need_wins
 from src.ai.goals.base import GoalScore
 from src.ai.score_modifiers import ScoreModifierSystem
 from src.domains.adventure.mapper import RouteToProjectMapper
@@ -394,7 +394,7 @@ class StrategicIntelligenceSystem:
                         if len(pending_inventory.items) > 0 and entity.navigation.position != (0.0, 0.0) and town_target and entity.navigation.target != town_target:
                             if ent_upd:
                                 refined_entity_updates[e_id] = replace(ent_upd,
-                                    navigation=NavigationUpdate(target_set=town_target, movement_mode_set=MovementMode.REGROUP),
+                                    navigation=replace(ent_upd.navigation or NavigationUpdate(), target_set=town_target, movement_mode_set=MovementMode.REGROUP),
                                     interaction=InteractionUpdate(reset=True)
                                 )
                             else:
@@ -1768,7 +1768,7 @@ class StrategicIntelligenceSystem:
                     score=best_candidate.utility
                 )
 
-            if not existing and not has_project_capacity(strat.projects, strat.profile.max_active_projects):
+            if not existing and not has_project_capacity(strat.projects, strat.profile.max_active_projects) and not escalated_need_wins(entity, best_candidate.kind):
                 if boredom_upd:
                     return StrategicUpdate(boredom_delta=boredom_upd)
                 return StrategicUpdate()

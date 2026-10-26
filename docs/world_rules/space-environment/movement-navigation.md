@@ -4,7 +4,7 @@ layer: architecture
 authority: P1
 audience: agent
 tags: [architecture, world, content]
-last_verified: "2026-10-06"
+last_verified: "2026-10-19"
 ---
 
 # World Rule Family: Movement / Navigation
@@ -119,6 +119,85 @@ occurs) — the earlier cost is never revisited or refunded. This confirms the g
 via this repository's own chosen stage granularity (the step), not evidence that the stage must
 always be a step.
 
+**Amendment, terrain cost is declared by the terrain (decided by the owner directly, 2026-10-13;
+row 72 of the memo):** Lane C found that the terrain cost table (`TERRAIN_COST`,
+`src/core/state.py`) is keyed in upper case while compiled terrain is lower case, so forest,
+swamp, mountain and road all cost 1.0 instead of 1.5, 3.0, 4.0 and 0.5, in 20 of 24 corpus
+worlds. Roads give no advantage (`frontier_living_world`: 1,455 forest, 170 swamp and 947 road
+tiles mispriced). Cave, ruin and river had no cost at all.
+- **The cost lives in content:** each terrain declares its movement cost in terrain content.
+  A terrain without one is a content error at compile, never a silent 1.0, and code reads no
+  terrain names (decision 56).
+- **Values:** the existing values are kept. New placeholders (decision 33): cave 1.5, ruin 1.5
+  (rubble) and river 3.0 (wading, like swamp). A river stays walkable. Movement styles per body
+  (a swimmer, a climber) come with milestone 1's body properties.
+- **Sequencing:** it lands before baseline v1 as its own measured step, so v1 records the world
+  as authored.
+- **Alternatives not taken:** after v1 as a change against it; a river that blocks walking,
+  which changes which places connect; keeping the code table with the three values added.
+- **What the cost does (decided by the owner directly, 2026-10-14; row 75 of the memo):** with
+  decision 72 built, the only reader is the readiness pre-check (`legality.py`, `readiness <
+  move_cost * terrain_cost`). Movement spends no readiness (chapter 2, section 7), so that check
+  refuses steps on rough ground when readiness is low but charges nothing. On
+  `frontier_living_world` all 5 seeds move both ways; `urban_political` is byte-identical. Route
+  choice ignores the cost.
+  - **Ruling:** rough ground is slower, and routes are chosen by cost. A step on a tile costing
+    N takes N times as long (road 0.5 is half, mountain 4.0 four times). Routes weigh the cost,
+    so roads get used and mountains avoided.
+  - **Sequencing:** before baseline v1, each part its own measured step: time first, then route
+    choice. Decision 72 ships first as built, with its pre-check effect disclosed.
+  - **Applied (rpg-designer):** the cost is paid in time, not gated on readiness. When the time
+    step lands, the terrain multiplier leaves the readiness pre-check; the plain `move_cost`
+    readiness check stays as it is.
+  - **Road below one tick (decided by the owner directly, 2026-10-14):** the engine allows one
+    step per entity per tick, so a cost below 1 cannot take less than a tick. A step on a tile
+    costing N lets the next step come N ticks after entry (mountain 4; 1.5 alternates 1 and 2),
+    and a cost below 1 is capped at one tick, so road and plain take the same time. Road's
+    advantage comes through route choice. A faster road (more than one step per tick) is a
+    possible later measured step, and the cap is disclosed. **Alternatives not taken:** two
+    steps per tick on road; halving all walking (plain 2 ticks, road 1, mountain 8).
+  - **What a route may know (decided by the owner directly, 2026-10-14):** there is no real
+    pathfinder today (one greedy axis step that ignores terrain), so the route step adds a
+    bounded search over terrain cost. It plans on the true terrain map, treated as common
+    knowledge of the land: terrain is static, public geography, not a hidden fact like a food
+    stock. This is a known shortcut and is disclosed. Routing from what each subject has seen or
+    remembers is a later step of its own, measured alone. **Alternatives not taken:** only known
+    tiles with a default cost for the rest; true terrain within sight range and a default beyond.
+  - **Later:** tiring the body on rough ground (a fatigue cost) can be added on top later.
+  - **Alternatives not taken:** slower only; route choice only; a fatigue cost now; both parts
+    in one step; after v1.
+- **Cover, high ground and walls (rpg-designer, 2026-10-14, applying decisions 33, 56 and 72):**
+  Lane C found more terrain checks that compare upper-case names, which never match catalog
+  terrain. Cover (`check_cover`, COMB-262: forest, mountain, "WALL") and high ground
+  (`check_high_ground`: mountain, "HILL") never apply. No terrain is a wall. Walking is already
+  blocked by structures through `blocked_tiles`, so the "WALL" branch of the walk check is dead,
+  and the chokepoint finder (which looks for "WALL" tiles only) never finds one.
+  - **Terrain declares it:** each terrain declares `gives_cover` and `high_ground` in content,
+    and a missing value is a compile error. Code drops its terrain names, and the "HILL" name
+    goes with them.
+  - **Values (placeholders by each terrain's fiction):** forest, mountain, ruin (rubble and
+    broken walls) and cave (rock walls) give cover. Mountain is high ground. Plain, grass, road,
+    swamp, river, snow and volcanic ground give neither.
+  - **Walls are structures:** the walk check reads only `blocked_tiles`, and the dead "WALL"
+    branch is removed. This must be hash-identical.
+  - **Chokepoints:** reading structures' `blocked_tiles` turns on a mechanic that has never run,
+    so it is its own measured step, after cover and high ground.
+  - **Sequencing:** the same reason as decision 72 (v1 records the world as authored). Cover and
+    high ground land before baseline v1 as one measured step after the terrain route step, then
+    chokepoints. Each reports cover and high-ground hits, perception, flight and pursuit counts
+    per world. The rendering checks are a separate presentation cleanup.
+  - **Outcome (measured 2026-10-17/18; ruled by the owner 2026-10-17):** all three landed and
+    are dormant in the gate worlds. Cover (2.129) never applies there. Chokepoints (2.130): the
+    finder now reads structures' `blocked_tiles`, finds no chokepoint, and the step is
+    byte-identical on 20 of 20 runs, so it folded as neutral by proof. High ground: every attack
+    goes through the shared tactical multipliers (1,081 attacks, all through
+    `_get_tactical_multipliers`), but the only mountain world, `highland_traverse`, has no fights.
+    Each mechanic is proven by a forced-geometry scenario test that fails with the mechanic off
+    (`tests/unit/combat/test_terrain_mechanics_forced_scenarios.py`) and is disclosed in v1
+    (`docs/plans/systemic_world/v1_disclosure.md` C1). The skill and area attack paths never run
+    and would bypass these multipliers; when they are switched on after v1 they go through the
+    same multipliers (decision 78, ONE DAMAGE LAW).
+
 **Scenarios:** [SPC-S08](../scenarios/space-environment-batch-04.md#spc-s08).
 
 ---
@@ -171,6 +250,10 @@ LOC-02 — reach and topology are both probed by the same near-but-unreachable c
 > pursuit, and movement itself all use this one adjacency, so a subject that can step to a
 > tile in one move is exactly a subject that could strike from it. A subject standing diagonal
 > to its target must first step to an adjacent tile.
+>
+> A subject's position is always a whole tile. Every step moves it to an adjacent tile, so no
+> movement leaves it between tiles, and every check that measures distance between positions
+> measures the same whole-tile distance.
 
 **Disposition: ACCEPT — decided by world-rule-catalog-design under owner delegation, 2026-10-06**
 (row 20 of `docs/plans/systemic_world/owner_decision_memo.md`). This is MOV-06's adjacency fact
@@ -184,8 +267,17 @@ Diagonal movement and adjacency are not supported."
   engagement and opportunity-attack definitions.
 - **Scope:** this Rule fixes adjacency only. Ranges beyond adjacency, line of sight and
   perception falloff are unchanged.
+- **Amendment, positions are tiles (decided by world-rule-catalog-design under owner delegation,
+  2026-10-07; row 25 of the memo):** the whole-tile clause states the premise that the adjacency
+  above already rests on. It is an amendment, not a new Rule: a step that does not land on a tile
+  is not a step to an adjacent tile, so it already breaks this Rule's "movement itself". Every
+  lookup that reads a position (occupancy, terrain, buildings, legality) reads whole tiles.
+  **Alternative not taken:** accept sub-tile positions and choose floor, round or float for
+  distance. That would make a leak legitimate and give every whole-tile lookup a second meaning
+  to define.
 
-**Repository evidence: SUPPORTED, with two known side-effect exceptions.**
+**Repository evidence: SUPPORTED, for adjacency (with two known side-effect exceptions) and,
+since #424 (`2a50072f2`, 2026-10-08), for the whole-tile clause.**
 - **Supported:** melee legality uses Manhattan reach (`src/engine/legality.py`), and so does
   pursuit completion (#366). Movement steps orthogonally (`NavigationSystem.get_next_step`,
   `src/systems/world_systems/navigation.py:100-103`).
@@ -193,13 +285,37 @@ Diagonal movement and adjacency are not supported."
   of 8 neighbours (`src/engine/movement.py:123`), and the bracketing flank can land at distance
   2 on a diagonal. Both can leave a subject diagonal to its target, which this Rule handles: the
   subject steps first.
+- **Supported since #424 (the whole-tile clause):** the flow-field step toward the town centre is a
+  one-tile step along the flow vector's dominant axis (a tie takes y, as the local step does;
+  `NavigationSystem.get_next_step`). Attack legality and pursuit reach both measure
+  `LegalityServiceV2.get_manhattan_dist`, the distance between the tiles the positions stand on
+  (`src/engine/legality.py`, `src/engine/candidate_selector.py::_target_in_attack_reach`). It is
+  recorded as divergence 2.83 (`docs/guidelines/intentional_divergences.md`, Bug Fix), Bible 02's
+  Whole-Tile Reach Distance, and parity entry COMB-337 (`docs/parity_ledger/combat_movement.yaml`,
+  verified). It is pinned by `tests/unit/engine/test_attack_reach_distance.py` and
+  `tests/unit/movement/test_flow_field_navigation.py`.
+  - **Measured** (Lane A, relayed, not re-measured here; seed 42, 2,000 ticks, `audit_mode`, budget
+    off, governor pinned NORMAL, main `753f98ea9` vs the fix, `crowded_frontier` /
+    `frontier_living_world`): entities between tiles at any tick went from 1 / 3 to 0 / 0, and
+    legality-versus-pursuit reach disagreements from 4 / 110 to 0 / 0. ATTACK decisions went from
+    46 / 49 to 45 / 109 (a re-baseline). The fixed arm ran twice per world with identical digests.
+  - **Re-baseline, disclosed by the ticket:** walks to the town centre now follow a Manhattan path,
+    so trajectories diverge from older main, and SimQ grade anchors were not re-measured.
+- **Previously CONFLICTING, as found on main `6e7ef56ec`** (seed 42, 2,000 ticks): the flow-field
+  step added a unit vector (`navigation.py:92-96`) and left the subject between tiles for good. By
+  t=2000, 9 of 41 entities on crowded_frontier and 13 of 55 on frontier_living_world were between
+  tiles. Legality truncated the distance (`legality.py:45`) and pursuit reach
+  (`candidate_selector.py:116`) did not, so they disagreed 59 times, and 1 of 17 and 4 of 28
+  ATTACK decisions were allowed only because of the truncation. Fixed by
+  `TCK-20261006-ATTACK-LEGALITY-TRUNCATES-MANHATTAN-DISTANCE-BUT-PURSUIT-REACH-DOES-NOT` (Lane A).
 - **The defect this exposed is engineering:**
   `TCK-20261006-HELD-ATTACK-TASK-AGAINST-AN-OUT-OF-RANGE-TARGET-IS-NEVER-RE-DECIDED`. A held
   ATTACK task against an OUT_OF_RANGE target was never re-decided, and one entity re-swung at a
   diagonal target 267 times. OUT_OF_RANGE must lead to a re-decision or a closing step.
 
-**Scenarios:** none traced yet. One is owed when the ticket lands: an attacker diagonal to its
-target steps one orthogonal tile, then strikes, and never swings from the diagonal.
+**Scenarios:** SPC-S17 (`docs/world_rules/scenarios/space-environment-batch-04.md`, 2026-10-11),
+covered since #385: an attacker diagonal to its target steps one orthogonal tile, then strikes
+within two brain cadences, and never swings from the diagonal (OUT_OF_RANGE ends the task).
 
 ---
 

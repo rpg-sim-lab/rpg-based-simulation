@@ -1,0 +1,709 @@
+# Construction specs of every icon (TCK-20261008-VISUAL-ASSETS-ICON-RECOGNISABILITY-CHECKS), written 2026-10-08 BEFORE any redraw.
+# One entry per registered icon key. `status: v2` entries are targets for the drawing (the 4c redraw works to them); `status: adopted` entries DESCRIBE the adopted art as it is.
+# `synonyms` are what counts as naming the object in the blind recognition check (case-insensitive substring of the free-text answer); `distractors` join the intended name in the candidate list.
+# The human-readable table in docs/assets/icon_style_guide.md is generated from this file (python -m visual_assets.review.icon_specs --table); a test fails if they differ.
+# Reference studies: Kenney Tiny Dungeon (CC0, "Kenney", https://kenney.nl/assets/tiny-dungeon) and Kenney 1-Bit Pack (CC0, https://kenney.nl/assets/1-bit-pack), looked at only, nothing traced or copied.
+families:
+  marker: {size: 16, convention: "16x16 glyph, live area 12x12 (2 px margin), dark outline #0e1018, drawn over the plate; one object, upright and centred, no scene"}
+  building: {size: 24, convention: "24x24 panel icon, live area 20x20; one object, centred; the object as seen from the front, light from the top left"}
+  class: {size: 24, convention: "24x24 panel icon, live area 20x20; the class's signature object alone (no figure)"}
+  item: {size: 24, convention: "24x24; one object per family; weapons point UP on the vertical axis (Tiny Dungeon's convention); this sword is the only new blade: the rogue became a hooded cowl (2026-10-08, owner fixes) while the enemy camp keeps its adopted crossed swords by the owner's choice (the tent drafts were not adopted); the tool is a smith's HAMMER CROSSED WITH TONGS (the owner's choice, 2026-10-08, after rejecting a toolbox as a modern suitcase; the catalog's two tool items are a repair kit and a spirit lantern, neither is a mining tool, and the lantern cannot also be drawn; a hammer alone reads as a weapon)"}
+  rarity: {size: 8, convention: "8x8 badge, a gem or bead silhouette that is never an octagon or a diamond (those are the tier ladder); name stays as text"}
+  tier: {size: 8, convention: "8x8 rank badge: octagon (E to A) or diamond (S to SSS), pips cut out for steps"}
+  status: {size: 16, convention: "16x16 frame with one arrow inside; the arrow's direction carries the meaning, not colour"}
+  plate: {size: 16, convention: "16x16 rounded plate, rim #9ea4b6, composited under a location glyph"}
+  node: {size: 16, convention: "16x16 glyph, live area 12x12 (2 px margin), dark outline #0e1018, drawn on the map cell with NO plate (a resource node is not a location); one object, upright and centred, no scene; readable over any terrain colour"}
+  entity: {size: 16, convention: "16x16 glyph, live area 12x12 (2 px margin), dark outline #0e1018, drawn on the map cell with NO plate and NO token (owner decision 2026-10-19: a bare object); one object or creature, centred, no scene; keyed on the presenter's role kind; readable over any terrain colour and distinct from an item or a resource node"}
+icons:
+  icon.marker.resource_grove:
+    status: v2
+    subject: a tree
+    theme: "medieval fantasy: a wild broadleaf tree of the countryside"
+    modern_lookalikes_to_avoid: ["a modern park or street tree", "broccoli", "a cloud"]
+    orientation: upright, centred
+    proportions: "crown 10-12 px wide and about 8 px tall; trunk 2 px wide and 3-4 px tall, centred under the crown; the crown is wider than tall"
+    parts: [crown, shaded right side, trunk]
+    reads_as: a broadleaf tree
+    must_not_read_as: a bush, a speech bubble, a cloud, a lollipop
+    synonyms: [tree, oak, forest, grove, woods]
+    distractors: [bush, cloud, mushroom, speech bubble, lollipop, broccoli]
+  icon.marker.ruins:
+    status: v2
+    subject: a ruined brick wall
+    theme: "medieval ruin: a broken masonry wall of a fort or castle"
+    modern_lookalikes_to_avoid: ["a modern brick building", "concrete or a construction site", "a staircase"]
+    orientation: "upright, wider than tall, the broken top edge shaped like a U (never a one-way slope: that read as a boot, and a slab under it as a sole)"
+    proportions: "wall 10 px wide and about 9 px tall; 4 courses of bricks, two rows each, alternating light and dark with staggered mortar joints; a broken top edge with two towers of different heights (4 and 3 px from the top) either side of a low jagged gap; at least one fallen brick (a loose group of 2 or more px) lying in the gap; no ground slab and no matched pair of bricks under the wall (they read as wheels and a cart)"
+    parts: [brick courses, mortar joints, two towers, low jagged gap, fallen brick]
+    reads_as: a broken brick wall
+    must_not_read_as: mountain peaks, a wagon, a boot, a chess piece, a stair, a tooth, a crown
+    synonyms: [ruin, wall, brick, masonry, rubble, crumbl, castle, fortress, battlement]
+    distractors: [mountain, boot, wagon, chess piece, staircase, tooth]
+  icon.marker.dungeon_entrance:
+    status: v2
+    subject: an arched doorway
+    theme: "medieval dungeon: a stone archway into a keep or cave"
+    modern_lookalikes_to_avoid: ["a modern tunnel or subway entrance", "a garage door", "a window"]
+    orientation: upright, centred
+    proportions: "arch frame 12 px wide and 12 px tall with a round top, a dark opening about 6 px wide and 7 px tall inside it, a 1-2 px stone frame"
+    parts: [stone frame, arched dark opening, base step]
+    reads_as: a doorway into a dungeon or cave
+    must_not_read_as: a window, a tombstone, a mailbox, a tunnel seen from the side
+    synonyms: [door, arch, archway, gate, entrance, tunnel, cave, dungeon, portal, doorway, tomb]
+    distractors: [window, grave marker, mailbox, oven, bridge, helmet]
+  icon.marker.shrine:
+    status: v2
+    subject: an obelisk
+    theme: "ancient or medieval: a standing stone, obelisk or waymarker"
+    modern_lookalikes_to_avoid: ["a modern headstone or monument sign", "a rocket", "a bell"]
+    orientation: upright, centred, taller than wide
+    proportions: "8 px wide, 11 px tall; shaft 4 px wide with straight sides; pointed pyramid tip (1 px, then 2 px); plinth 6 px wide and 2 px tall; no rounded top, no flare"
+    parts: [pyramid tip, shaft with a light left edge, gold marks, plinth]
+    reads_as: a standing stone, obelisk or monument
+    must_not_read_as: a bell, a bottle, a tombstone, a candle
+    synonyms: [obelisk, monolith, monument, pillar, standing stone, spire, tower, stone, shrine, totem]
+    distractors: [bell, bottle, grave marker, candle, rocket, chess piece]
+  icon.marker.boss_arena:
+    status: v2
+    subject: a skull
+    theme: "medieval fantasy: a skull marking a deadly place"
+    modern_lookalikes_to_avoid: ["a poison or hazard label (skull and crossbones sign)", "a modern horror-mask emoji"]
+    orientation: upright, centred
+    proportions: "cranium 10-12 px wide and about 8 px tall, two dark 2x2 eye sockets, a 1-px nose, a jaw 6-8 px wide with 3 tooth gaps"
+    parts: [cranium, eye sockets, nose, jaw with teeth, shade on the right]
+    reads_as: a human skull
+    must_not_read_as: a ghost, a cloud, a mask
+    synonyms: [skull, skeleton, death, bone]
+    distractors: [ghost, cloud, mask, pumpkin, egg, robot head]
+  icon.building.store:
+    status: v2
+    subject: a coin purse
+    theme: "medieval: a leather purse of coins at a market stall"
+    modern_lookalikes_to_avoid: ["a modern wallet or credit card", "a shopping bag", "a cash register"]
+    orientation: upright, centred
+    proportions: "bag body 16 px wide and 12 px tall, round-bottomed; a gathered neck 8 px wide tied with a brown cord; a coin about 7 px across on the front; two small gathered tips on top"
+    parts: [bag body, tied neck, cord, coin, gathered top]
+    reads_as: a bag of money
+    must_not_read_as: a sack of flour, a pumpkin, a sock
+    synonyms: [purse, money, coin, gold, pouch, bag, sack, loot]
+    distractors: [pumpkin, sock, cushion, balloon, potion, onion]
+  icon.building.guild:
+    status: v2
+    subject: a banner on a pole
+    theme: "medieval: a heraldic banner on a pole"
+    modern_lookalikes_to_avoid: ["a modern office flag or pennant", "a signpost", "a bookmark"]
+    orientation: upright; pole on the left edge, cloth to the right
+    proportions: "pole 2 px wide and 18 px tall with a gold finial; cloth 13 px wide and 10 px tall with a swallow-tail or notched bottom edge; a gold emblem about 4x5 px"
+    parts: [pole, finial, cloth, notched edge, emblem]
+    reads_as: a guild banner or flag
+    must_not_read_as: a signpost, a bookmark, a tent
+    synonyms: [banner, flag, pennant, standard, guild]
+    distractors: [signpost, bookmark, tent, kite, ribbon, sail]
+  icon.building.inn:
+    status: revision
+    subject: a tankard with wooden staves and iron hoops
+    theme: "medieval: a tavern tankard (wood, horn or pewter) of ale, with staves and iron hoops"
+    modern_lookalikes_to_avoid: ["a modern glass beer mug or pint glass", "a coffee mug", "a paper cup"]
+    orientation: upright; handle on the right (the adopted silhouette, unchanged)
+    proportions: "the adopted tankard's outline exactly (no outline pixel changes); the body gains two vertical stave seams (dark brown, at least 7 px tall each) and two iron hoops (steel grey bands, at least 9 px wide) near the top and the bottom; the foam cap and the ring handle are unchanged"
+    parts: [wooden body, stave seams, iron hoops, foam, ring handle]
+    reads_as: a wooden tankard of ale
+    must_not_read_as: a glass beer mug, a coffee mug, a bucket, a barrel
+    synonyms: [mug, beer, tankard, stein, ale, pint, cup, drink, barrel]
+    distractors: [bucket, jar, vase, lantern, teapot, coffee pot]
+  icon.building.hero_house:
+    status: revision
+    subject: a timber-framed cottage
+    theme: "medieval: a timber-framed cottage with a thatched or tiled roof and small windows"
+    modern_lookalikes_to_avoid: ["a modern suburban house with white walls and large blue glass windows", "a cabin with a satellite dish", "an apartment block"]
+    orientation: upright, symmetric, a steep roof over low walls
+    proportions: "20 px wide and 20 px tall including the outline; a steep thatched roof (golden thatch with a darker shaded half and specks) with deep eaves, at least 80 px of thatch; cream plaster walls in a dark timber frame (posts, beams and braces, at least 40 px of timber brown); two small windows 2x2 px with dark leaded panes and green shutters; an arched wooden door with planks and a latch; a stone chimney; NO blue glass, no white walls"
+    parts: [thatched roof, timber frame, plaster walls, shuttered windows, arched door, stone chimney]
+    reads_as: a medieval cottage
+    must_not_read_as: a suburban house, a barn, a tent, a birdhouse
+    synonyms: [house, home, cottage, hut, cabin, thatch, building]
+    distractors: [barn, tent, nesting box, castle, church, shop]
+  icon.building.class_hall:
+    status: v2
+    subject: an open book
+    theme: "medieval: a hand-written tome or spellbook"
+    modern_lookalikes_to_avoid: ["a printed paperback", "a tablet or e-reader", "a notebook"]
+    orientation: upright, symmetric about the spine
+    proportions: "two pages 9 px wide each and 10 px tall, a spine 2 px wide, text lines 1 px tall, a cover band 18 px wide and 3 px tall below; a gold bookmark"
+    parts: [left page, right page, spine, text lines, cover, bookmark]
+    reads_as: an open book
+    must_not_read_as: a letter, a map, a notebook seen from the side
+    synonyms: [book, tome, spellbook, grimoire, ledger, journal, pages, manual]
+    distractors: [letter, map, scroll, tablet, window, envelope]
+  icon.class.ranger:
+    status: v2
+    subject: a longbow with a nocked arrow
+    theme: "medieval: a hunter's longbow and arrow"
+    modern_lookalikes_to_avoid: ["a compound bow with sights", "a rifle or a crosshair", "a crossbow"]
+    orientation: vertical bow with its belly bulging to the right (towards the target), string on the left pulled back to a V, arrow pointing right
+    proportions: "bow at least 18 px tall; limbs curved so the belly stands at least 4 px (measured 7) from the line between the tips; a visible string (15 px); an arrow shaft 16 px long (1 px) nocked at the string and crossing the bow, a broad head and green fletching; NO stock and no horizontal bar thicker than 1 row"
+    parts: [bow limbs, string, arrow shaft, arrowhead, fletching]
+    reads_as: a bow and arrow
+    must_not_read_as: a crossbow, a harp, a fishing rod
+    synonyms: [bow, longbow, arrow, archer, archery]
+    distractors: [crossbow, harp, fishing rod, slingshot, spear, boomerang]
+  icon.class.mage:
+    status: v2
+    subject: a pointed wizard hat
+    theme: "medieval fantasy: a pointed wizard hat"
+    modern_lookalikes_to_avoid: ["a party hat", "a graduation cap", "a traffic cone"]
+    orientation: upright, symmetric
+    proportions: "cone 12 px wide at the base and 13 px tall, a brim 18 px wide and 3 px tall, a gold band 8 px wide, a star or sparkle on the cone"
+    parts: [cone, brim, gold band, sparkles]
+    reads_as: a wizard hat
+    must_not_read_as: a party hat, a traffic cone, a witch hat with no brim
+    synonyms: [wizard, hat, witch, mage]
+    distractors: [birthday cone, traffic cone, crown, helmet, tent, mountain]
+  icon.class.rogue:
+    status: revision
+    subject: a hooded cowl
+    theme: "medieval fantasy: a hooded cowl of a thief or assassin"
+    modern_lookalikes_to_avoid: ["a modern hooded sweatshirt", "a ski mask or balaclava", "a gas mask"]
+    orientation: upright, symmetric
+    proportions: "18 px wide at the shoulders and 18 px tall; a peaked hood narrowing to a point at the top, a deep dark face opening about 8 px wide and 9 px tall with two gold eye glints, shoulders flaring below the hood to the full width, a hem band; dark cloak colours (never the mage hat's cone-and-brim)"
+    parts: [peaked hood, face opening, eye glints, shoulders, hem band]
+    reads_as: a hooded cloak, a rogue
+    must_not_read_as: a wizard hat, a tent, a ghost, a bell
+    synonyms: [hood, hooded, cowl, cloak, rogue, thief, assassin, monk]
+    distractors: [wizard hat, tent, ghost, bell, mountain, helmet]
+  icon.item.weapon:
+    status: v2
+    subject: a sword
+    theme: "medieval: an arming sword"
+    modern_lookalikes_to_avoid: ["a modern knife or machete", "a letter opener", "a key"]
+    orientation: upright, point up, centred on the vertical axis
+    proportions: "total 20 px tall; blade 12 px (60 percent) long and 4 px wide with a 1 px light centre line and a 2 px tip; a gold crossguard 12 px wide and 2 px thick, perpendicular; a grip 2 px wide and 2 px long (never wider than the guard or the blade), brown; a gold pommel 4x2 px"
+    parts: [blade, centre line, crossguard, grip, pommel]
+    reads_as: a longsword
+    must_not_read_as: a cleaver, a knife, a dagger, a key
+    synonyms: [sword, longsword, broadsword, blade, saber, sabre, claymore]
+    distractors: [cleaver, knife, dagger, key, screwdriver, letter opener]
+  icon.item.armor:
+    status: v2
+    subject: a breastplate
+    theme: "medieval: a plate breastplate with pauldrons"
+    modern_lookalikes_to_avoid: ["a bulletproof vest", "a t-shirt or vest", "a kevlar jacket"]
+    orientation: upright, symmetric
+    proportions: "18 px wide at the shoulders and 18 px tall; two round pauldrons, a neck notch 4 px wide, a torso tapering to 8 px at the waist, a vertical centre ridge and a gold clasp"
+    parts: [pauldrons, neck notch, torso plate, centre ridge, clasp]
+    reads_as: plate armour for the torso
+    must_not_read_as: a shirt, a vest, a tank top
+    synonyms: [armor, armour, breastplate, chestplate, cuirass, plate, mail, torso, chest]
+    distractors: [shirt, vest, tank top, apron, backpack, dress]
+  icon.item.trinket:
+    status: v2
+    subject: a pendant on a chain
+    theme: "medieval fantasy: an amulet on a chain"
+    modern_lookalikes_to_avoid: ["a modern necklace or locket", "a sports medal on a ribbon", "a watch"]
+    orientation: upright, symmetric
+    proportions: "a thin 1 px chain loop 12 px wide that rises to a point, closed by a small bail ring (4 px or less) at the apex; a round gold pendant 10 px wide and 8 px tall hanging at the loop's foot with a blue gem at least 5x4 px; never two ribbons, never a neck and a body"
+    parts: [bail ring, chain loop, gold setting, gem, highlight]
+    reads_as: an amulet or necklace
+    must_not_read_as: a medal, a potion flask, a ring, a compass, a clock
+    synonyms: [pendant, amulet, necklace, medallion, locket, talisman, jewel, charm]
+    distractors: [medal, flask, ring, compass, clock, button]
+  icon.item.tool:
+    status: revision
+    subject: a smith's hammer crossed with tongs
+    theme: "medieval: a smith's hammer crossed with tongs"
+    modern_lookalikes_to_avoid: ["a wrench or spanner", "a toolbox or suitcase", "pliers or power tools", "a hammer in a weapon pose"]
+    orientation: "two tools crossed in an X, centred and not a weapon pose: the hammer's handle from the bottom left to its flat-faced head at the top right, the tongs from their handles at the bottom right to closed jaws at the top left"
+    proportions: "19 px wide and 19 px tall including the outline, inside the 20x20 live area (margins of at least 2 px); two long diagonal strokes crossing at a gold rivet near the centre; the hammer: a wooden handle 2 px wide and a short heavy steel head about 7 px across, at least 20 steel pixels in the top right (no spike, not a war hammer); the tongs: two steel arms meeting at the rivet, spreading apart at the handle end and closing to flat jaws at the other end"
+    parts: [wooden handle, steel hammer head, tong arms, flat jaws, rivet]
+    reads_as: a blacksmith's hammer and tongs
+    must_not_read_as: a weapon, crossed swords, a wrench, a toolbox, an axe
+    synonyms: [hammer, tongs, smith, blacksmith, forge, tools]
+    distractors: [crossed swords, battle axe, wrench, scissors, pliers, crossed spears]
+  icon.item.consumable:
+    status: v2
+    subject: a potion flask
+    theme: "medieval fantasy: a corked alchemical potion flask"
+    modern_lookalikes_to_avoid: ["a screw-cap glass bottle", "a light bulb", "a syringe or pill bottle", "a perfume bottle"]
+    orientation: upright, symmetric
+    proportions: "round body 14 px wide and 12 px tall, a neck 6 px wide and 4 px tall, a tan cork 6x3 px, red liquid filling the lower two thirds, a highlight at the top left"
+    parts: [round body, neck, cork, liquid, highlight]
+    reads_as: a healing potion
+    must_not_read_as: a lightbulb, a jar, a perfume bottle
+    synonyms: [potion, flask, elixir, vial, bottle, remedy, tonic]
+    distractors: [lightbulb, jar, perfume, vase, test tube, inkwell]
+  icon.item.material:
+    status: v2
+    subject: an ore chunk
+    theme: "medieval: a chunk of raw ore with gold flecks"
+    modern_lookalikes_to_avoid: ["a cut modern gemstone", "a bag of coal", "a pillow"]
+    orientation: upright, irregular
+    proportions: "an irregular faceted chunk about 18 px wide and 17 px tall with 3 light and dark facets and 4-6 gold flecks"
+    parts: [faceted body, light facet, dark facet, gold flecks]
+    reads_as: ore or a rock
+    must_not_read_as: a gem, a pillow, a cabbage
+    synonyms: [ore, rock, stone, boulder, mineral, nugget, crystal, gold]
+    distractors: [gem, pillow, cabbage, egg, coal bag, diamond]
+  icon.rarity.common:
+    status: revision
+    subject: a silver bead
+    theme: "abstract UI glyph: a plain bead, no setting"
+    modern_lookalikes_to_avoid: ["a button", "a coin", "a modern verified badge"]
+    orientation: centred
+    proportions: "7x7 px, round (fills at most 80 percent of its bounding box), a light silver fill (#c8d8e8) with a bright highlight (#eafeff) at the top left and a shaded lower right (#91a2ab), dark outline; never the tier's 8 px, and lighter than the dark tier badges E and D so it cannot be mistaken for them by value"
+    parts: [round body, highlight, shade]
+    reads_as: a silver bead or pearl
+    must_not_read_as: a square, a tier badge, a coin
+    synonyms: [bead, ball, pearl, orb, dot, circle, sphere, stone, button, silver]
+    distractors: [square, octagon, coin, diamond, star, hexagon]
+  icon.rarity.uncommon:
+    status: v2
+    subject: a kite-shaped gem
+    theme: "abstract UI glyph: a cut gem, no setting"
+    modern_lookalikes_to_avoid: ["an arrow", "a leaf", "a modern location pin"]
+    orientation: point up, centred
+    proportions: "6 px wide at the widest and 6-7 px tall, a wide top and a pointed bottom, green fill"
+    parts: [gem body, point]
+    reads_as: a cut gem
+    must_not_read_as: an up arrow, a shield, a leaf
+    synonyms: [gem, crystal, jewel, emerald, diamond, kite, shield, rhombus]
+    distractors: [up arrow, leaf, tree, flag, heart, drop]
+  icon.rarity.rare:
+    status: v2
+    subject: a four-point sparkle gem
+    theme: "abstract UI glyph: a sparkle gem, no setting"
+    modern_lookalikes_to_avoid: ["a plus sign or medical cross", "a compass", "a snowflake icon"]
+    orientation: centred
+    proportions: "8x8 px, four points of equal length on both axes, a 4x4 body, violet fill"
+    parts: [four points, body]
+    reads_as: a sparkle or glint
+    must_not_read_as: a plus sign, a compass, a cross
+    synonyms: [sparkle, star, glint, twinkle, shine, gem, crystal, shuriken, four-point]
+    distractors: [plus sign, compass, cross, flower, snowflake, medical cross]
+  icon.plate.location:
+    status: adopted
+    subject: a location plate
+    theme: "abstract UI glyph: a plaque the glyph sits on, no setting"
+    modern_lookalikes_to_avoid: ["a phone screen", "a button with a label", "a picture frame"]
+    orientation: square
+    proportions: "16x16, 1 px rim #9ea4b6, slate fill, a light top-left edge, a shadow bottom-right, cut corners"
+    parts: [rim, fill, light edge, shadow edge]
+    reads_as: a plaque or button the glyph sits on
+    must_not_read_as: a window, a button with a label
+    synonyms: [plate, plaque, tile, button, panel, frame, square, badge, tray, base, slab]
+    distractors: [window, phone, tv screen, door, painting, chip]
+  icon.marker.enemy_camp:
+    status: adopted
+    subject: crossed swords
+    theme: "medieval fantasy: crossed swords marking a hostile camp"
+    modern_lookalikes_to_avoid: ["firearms or rifles crossed", "a modern video-game battle pictogram", "scissors"]
+    orientation: two diagonals crossing at the centre
+    proportions: "two blades crossing in an X about 12 px across, gold guards, brown grips"
+    parts: [two blades, two guards, two grips]
+    reads_as: crossed swords, battle
+    must_not_read_as: a pair of scissors, an X mark
+    synonyms: [crossed sword, swords, sword, battle, combat, duel, fight, weapon, crossed blades]
+    distractors: [scissors, x mark, crossed arrows, crossed keys, pickaxes, knives]
+  icon.building.blacksmith:
+    status: adopted
+    subject: an anvil with a raised hammer
+    theme: "medieval: a blacksmith's anvil with a raised hammer"
+    modern_lookalikes_to_avoid: ["a modern workshop machine", "a bird", "a toaster"]
+    orientation: upright; anvil at the bottom, hammer raised above
+    proportions: "anvil about 16 px wide and 8 px tall with a horn on the left and a flat top, a hammer raised above, orange sparks"
+    parts: [anvil, hammer, sparks]
+    reads_as: a blacksmith's anvil
+    must_not_read_as: a bird, a hammer alone, a tooth
+    synonyms: [anvil, blacksmith, forge, smith, hammer]
+    distractors: [bird, tooth, toaster, boat, cannon, shoe]
+  icon.class.warrior:
+    status: adopted
+    subject: a shield with a sword emblem
+    theme: "medieval: a heater shield with a sword emblem"
+    modern_lookalikes_to_avoid: ["a police badge", "a riot shield", "a modern coat of arms plaque"]
+    orientation: upright, symmetric
+    proportions: "a heater shield about 16 px wide and 20 px tall, a sword emblem down its centre"
+    parts: [shield, rim, sword emblem]
+    reads_as: a shield
+    must_not_read_as: a coat of arms with no sword, a keyhole
+    synonyms: [shield, crest, emblem, coat of arms, warrior, heater]
+    distractors: [keyhole, badge, door, tombstone, kite, flag]
+  icon.tier.e: {status: adopted, subject: a dark green plain octagon badge, orientation: centred, proportions: "8x8 octagon, dark fill, outline", parts: [octagon], reads_as: a rank badge, must_not_read_as: a stop sign, synonyms: [octagon, badge, stop sign, rank, button, gem, token, seal, stone], distractors: [diamond, star, circle, square, heart, shield], theme: "abstract UI glyph: a rank badge in a seal-like octagon, no setting", modern_lookalikes_to_avoid: ["a stop sign", "a modern button"]}
+  icon.tier.d: {status: adopted, subject: a plain octagon badge, orientation: centred, proportions: "8x8 octagon, slightly lighter fill than E", parts: [octagon], reads_as: a rank badge, must_not_read_as: a stop sign, synonyms: [octagon, badge, stop sign, rank, button, gem, token, seal, stone], distractors: [diamond, star, circle, square, heart, shield], theme: "abstract UI glyph: a rank badge in a seal-like octagon, no setting", modern_lookalikes_to_avoid: ["a stop sign", "a modern button"]}
+  icon.tier.c: {status: adopted, subject: an octagon badge with one pip cut out, orientation: centred, proportions: "8x8 octagon with one 1x1 cut-out", parts: [octagon, one pip], reads_as: a rank badge, must_not_read_as: a stop sign, synonyms: [octagon, badge, ring, rank, button, token, seal, gem, coin], distractors: [diamond, star, circle, square, heart, shield], theme: "abstract UI glyph: a rank badge in a seal-like octagon, no setting", modern_lookalikes_to_avoid: ["a stop sign", "a modern button"]}
+  icon.tier.b: {status: adopted, subject: an octagon badge with two pips cut out, orientation: centred, proportions: "8x8 octagon with two 1x1 cut-outs", parts: [octagon, two pips], reads_as: a rank badge, must_not_read_as: a stop sign, synonyms: [octagon, badge, rank, button, token, seal, gem, coin, dice], distractors: [diamond, star, circle, square, heart, shield], theme: "abstract UI glyph: a rank badge in a seal-like octagon, no setting", modern_lookalikes_to_avoid: ["a stop sign", "a modern button"]}
+  icon.tier.a: {status: adopted, subject: an octagon badge with a frame cut out, orientation: centred, proportions: "8x8 octagon with a 2x1 cut-out", parts: [octagon, frame], reads_as: a rank badge, must_not_read_as: a stop sign, synonyms: [octagon, badge, ring, rank, button, token, seal, coin, frame], distractors: [diamond, star, circle, square, heart, shield], theme: "abstract UI glyph: a rank badge in a seal-like octagon, no setting", modern_lookalikes_to_avoid: ["a stop sign", "a modern button"]}
+  icon.tier.s: {status: adopted, subject: a silver diamond badge, orientation: centred, proportions: "8x8 diamond, silver fill", parts: [diamond], reads_as: a rank badge, must_not_read_as: a playing card suit, synonyms: [diamond, gem, rhombus, crystal, badge, jewel, rank, token], distractors: [octagon, star, circle, square, heart, shield], theme: "abstract UI glyph: a rank gem (diamond), no setting", modern_lookalikes_to_avoid: ["a playing-card suit", "a diamond road sign"]}
+  icon.tier.ss: {status: adopted, subject: a gold diamond badge with one pip, orientation: centred, proportions: "8x8 diamond, gold fill, one cut-out", parts: [diamond, one pip], reads_as: a rank badge, must_not_read_as: a playing card suit, synonyms: [diamond, gem, rhombus, crystal, badge, jewel, rank, token], distractors: [octagon, star, circle, square, heart, shield], theme: "abstract UI glyph: a rank gem (diamond), no setting", modern_lookalikes_to_avoid: ["a playing-card suit", "a diamond road sign"]}
+  icon.tier.sss: {status: adopted, subject: a platinum diamond badge with two pips, orientation: centred, proportions: "8x8 diamond, platinum fill, two cut-outs", parts: [diamond, two pips], reads_as: a rank badge, must_not_read_as: a playing card suit, synonyms: [diamond, gem, rhombus, crystal, badge, jewel, rank, token], distractors: [octagon, star, circle, square, heart, shield], theme: "abstract UI glyph: a rank gem (diamond), no setting", modern_lookalikes_to_avoid: ["a playing-card suit", "a diamond road sign"]}
+  icon.status.frame_buff:
+    status: revision
+    subject: a round frame with a solid up arrow
+    theme: "abstract UI glyph: an up arrow in a round frame, no setting"
+    modern_lookalikes_to_avoid: ["a modern upload or volume-up icon", "a gem", "a shield"]
+    orientation: upright, symmetric
+    proportions: "the adopted round green frame unchanged (16x16, green rim, dark green interior); inside it a SOLID bone-coloured up arrow: a head 2, 4 then 6 px wide and a shaft 2 px wide and 5 px tall, centred, the mirror of the debuff's down arrow; no chevron outline"
+    parts: [round frame, green rim, solid arrow head, solid arrow shaft]
+    reads_as: an increase, a buff
+    must_not_read_as: a gem, a shield, a cross, a sword
+    synonyms: [up arrow, arrow up, upward, increase, rise, boost, ascend, buff]
+    distractors: [gem, shield, cross, sword, signpost, lamp post]
+  icon.status.frame_debuff:
+    status: revision
+    subject: a spiked ball frame with a down arrow
+    theme: "abstract UI glyph: a spiked-ball frame with a down arrow, no setting (a morning star's head)"
+    modern_lookalikes_to_avoid: ["a red road warning sign", "a hazard label", "a funnel", "a gear or saw blade"]
+    orientation: upright, symmetric (eight spikes at the compass points)
+    proportions: "16x16, filling its canvas like the buff frame; a dark disc with a red rim ring and eight sharp triangular red spikes round it (the registry's 'spiked frame'); inside, a SOLID bone down arrow: a shaft 2 px wide and 4 px tall, then a head 6, 4 and 2 px wide (20 px in one piece); the silhouette is not a triangle and must differ from the round buff frame by at least 6 px (I1)"
+    parts: [dark disc, red rim, eight spikes, solid down arrow]
+    reads_as: a harmful effect, a debuff
+    must_not_read_as: a warning sign, a gear, a sun, an up arrow
+    synonyms: [down arrow, arrow down, downward, decrease, debuff, drop, spiked, spike, mace, morning star]
+    distractors: [warning sign, gear, sun, up arrow, flower, shield]
+  icon.building.healer_hut:
+    status: v2
+    subject: a mortar and pestle with a herb sprig
+    theme: "medieval: a stone mortar and pestle of an herbalist, with a green herb sprig"
+    modern_lookalikes_to_avoid: ["a modern pill bottle or medicine cross", "a coffee cup", "a first-aid kit"]
+    orientation: upright, centred, the pestle leaning out to the upper right
+    proportions: "a bowl 14 px wide and 9 px tall (flat-topped rim, rounded base on a 2 px foot) in stone grey; a pestle 3 px wide leaning out 9 px tall to the upper right; a green sprig of 2 leaf pairs rising from the bowl, at least 12 px of green; fits the 20x20 live area"
+    parts: [stone bowl, rim, pestle, herb sprig, foot]
+    reads_as: an herbalist's mortar and pestle
+    must_not_read_as: a cup, a cauldron, a pot of soup
+    synonyms: [mortar, pestle, bowl, herbs, herbalist, apothecary, healer, potion]
+    distractors: [cup, kettle, helmet, bucket, teapot, drum]
+  icon.building.town_hall:
+    status: v2
+    subject: a rolled charter scroll with a wax seal
+    theme: "medieval: a town charter, a parchment scroll tied with a ribbon and a red wax seal"
+    modern_lookalikes_to_avoid: ["a modern rolled poster tube", "a diploma in a frame", "a paper towel roll"]
+    orientation: upright, centred, the scroll slightly slanted
+    proportions: "a parchment scroll 16 px wide and 12 px tall with both ends curled into 3 px rolls; a red wax seal 4 px across on a hanging ribbon at the lower right; two ink lines of text as 1 px dark dashes; fits the 20x20 live area"
+    parts: [parchment, curled rolls, ink lines, wax seal, ribbon]
+    reads_as: a rolled parchment charter with a seal
+    must_not_read_as: an open book, a letter, a bandage
+    synonyms: [scroll, charter, parchment, decree, paper, document, letter, seal]
+    distractors: [book, bandage, flag, bone, candle, bread]
+  icon.building.mine_entrance:
+    status: v2
+    subject: a pickaxe
+    theme: "medieval: an iron-headed miner's pickaxe on a wooden haft"
+    modern_lookalikes_to_avoid: ["a modern jackhammer", "a garden fork", "a hockey stick"]
+    orientation: upright on a diagonal, head at the upper left, haft to the lower right
+    proportions: "a haft 3 px wide and 17 px long on a diagonal; a curved double-pointed iron head 16 px across with two pointed tips curving down (steel grey with a light top edge); nothing else; fits the 20x20 live area"
+    parts: [wooden haft, iron head, pointed tips, binding]
+    reads_as: a miner's pickaxe
+    must_not_read_as: a hammer, an axe, an anchor
+    synonyms: [pickaxe, pick, pick axe, mining, mine, miner]
+    distractors: [hammer, anchor, sickle, scythe, fishing rod, shovel]
+  icon.building.watchtower:
+    status: v2
+    subject: a crenellated stone tower with a pennant
+    theme: "medieval: a stone watchtower with a crenellated top, an arrow slit and a pennant"
+    modern_lookalikes_to_avoid: ["a modern lighthouse", "a chimney", "a rocket"]
+    orientation: upright, symmetric, centred, taller than wide
+    proportions: "a tower 10 px wide and 17 px tall; four crenellations on top (2 px wide, 2 px gap); a 1x3 px arrow slit; a stone block pattern of lighter and darker greys; a 4 px pennant on a 3 px pole above the top; fits the 20x20 live area"
+    parts: [stone shaft, crenellations, arrow slit, pennant, base]
+    reads_as: a medieval watchtower
+    must_not_read_as: a lighthouse, a chimney, a chess piece
+    synonyms: [tower, watchtower, turret, castle tower, keep, lookout, rook]
+    distractors: [chimney, lighthouse, silo, rocket, bottle, chess pawn]
+  icon.marker.nest:
+    status: v2
+    subject: a bird's nest with three eggs
+    theme: "medieval fantasy: a woven twig nest of a wild beast with speckled eggs"
+    modern_lookalikes_to_avoid: ["a modern bowl of eggs", "a straw hat", "a basket"]
+    orientation: upright, centred, the nest low and wide
+    proportions: "a nest 12 px wide and 6 px tall of interlaced twig lines (brown, two shades) with a ragged top rim; three pale speckled eggs 3x4 px resting in it, visible above the rim; fits the 12x12 live area"
+    parts: [twig bowl, rim twigs, three eggs, shadow]
+    reads_as: a nest with eggs
+    must_not_read_as: a bowl of food, a hat, a basket
+    synonyms: [nest, eggs, egg, bird nest, twigs]
+    distractors: [hat, wreath, basket, haystack, bread, bowl of fruit]
+  icon.node.wood_node:
+    status: v2
+    subject: a stack of three logs
+    theme: "medieval: cut logs of timber stacked with their ends showing, ringed and bark-brown"
+    modern_lookalikes_to_avoid: ["a modern lumber plank", "a stack of pipes", "a barrel"]
+    orientation: upright, a 2-over-1 pyramid of logs
+    proportions: "three round log ends 5 px across (two below, one above) with 2 px light ring marks and bark-brown rims; fits the 12x12 live area"
+    parts: [log ends, growth rings, bark, shadow]
+    reads_as: a stack of logs
+    must_not_read_as: a barrel, a stack of pipes, a bunch of coins
+    synonyms: [log, logs, wood, timber, firewood, stack]
+    distractors: [pipes, barrel, coins, bread, drum, cheese]
+  icon.node.herb_patch:
+    status: v2
+    subject: three leafy herb sprigs
+    theme: "medieval fantasy: wild medicinal herbs, three green sprigs with paired leaves and no blossoms"
+    modern_lookalikes_to_avoid: ["a modern potted plant", "a salad", "a clover icon"]
+    orientation: upright, three sprigs fanning from one base
+    proportions: "three stems 9 px, 7 px and 8 px tall with 3 to 4 pairs of 2 px leaves, two greens, no flowers, a 1-px soil line; fits the 12x12 live area"
+    parts: [stems, paired leaves, soil line]
+    reads_as: a few green herb sprigs
+    must_not_read_as: a cluster of cover grass, a flower, a seaweed frond
+    synonyms: [herb, herbs, plant, leaves, sprig, grass]
+    distractors: [flower, tree, cactus, clover, fern, seaweed]
+  icon.node.berry_thicket:
+    status: v2
+    subject: a round bush with red berries
+    theme: "medieval fantasy: a wild berry bush with leaves and red berries"
+    modern_lookalikes_to_avoid: ["a modern holly wreath", "a cherry emoji", "a tomato plant"]
+    orientation: upright, round, wider than tall
+    proportions: "a bush 12 px wide and 10 px tall, dark and light green clumps, five red berries 2 px across with a 1 px highlight, a 2 px trunk stub; fits the 12x12 live area"
+    parts: [leaf clumps, red berries, trunk stub]
+    reads_as: a bush with red berries
+    must_not_read_as: a round tree crown, a cherry, a holly wreath
+    synonyms: [bush, berries, berry, shrub, thicket, hedge]
+    distractors: [tree, cherry, tomato, holly wreath, cloud, broccoli]
+  icon.node.healing_flower_patch:
+    status: v2
+    subject: a single white and gold flower
+    theme: "medieval fantasy: a wild healing flower with five white petals and a gold centre on a leafy stem"
+    modern_lookalikes_to_avoid: ["a modern daisy emoji", "a sunflower", "a cotton swab"]
+    orientation: upright, one flower on a stem with two leaves
+    proportions: "a stem 8 px tall; five white petals around a 3 px gold centre (a flower head 7 px across); two green leaves 3 px long; fits the 12x12 live area"
+    parts: [petals, gold centre, stem, leaves]
+    reads_as: a single white flower
+    must_not_read_as: a sun, a star, a mushroom
+    synonyms: [flower, daisy, bloom, blossom, petal, plant]
+    distractors: [sun, star, tree, mushroom, clover, snowflake]
+  icon.node.cover_patch_high:
+    status: v2
+    subject: a tall grass clump
+    theme: "medieval fantasy: tall wild grass hiding a person, reeds and long blades to head height"
+    modern_lookalikes_to_avoid: ["a modern lawn", "a paintbrush", "a broom"]
+    orientation: upright, blades fanning slightly
+    proportions: "eleven blades in two greens, the tallest 11 px and the shortest 8 px, tips leaning outward by 1 px, a 2 px dark base; the tallest of the three cover patches; fits the 12x12 live area"
+    parts: [tall blades, tips, base]
+    reads_as: tall grass
+    must_not_read_as: a feather, a flame, a broom
+    synonyms: [grass, tall grass, reeds, reed, blades, weeds]
+    distractors: [flame, feather, broom, palm, fountain, wheat]
+  icon.node.cover_patch_medium:
+    status: v2
+    subject: a medium grass tuft
+    theme: "medieval fantasy: waist-high wild grass, a tuft of blades"
+    modern_lookalikes_to_avoid: ["a modern lawn", "a paintbrush", "a broom"]
+    orientation: upright, blades fanning slightly
+    proportions: "eight blades in two greens, the tallest 7 px and the shortest 5 px, a 2 px dark base; half the height of the high patch; fits the 12x12 live area"
+    parts: [blades, tips, base]
+    reads_as: a tuft of grass
+    must_not_read_as: a bush, a flame, a feather
+    synonyms: [grass, tuft, tall grass, weeds, blades, bush]
+    distractors: [flame, feather, broom, palm, fountain, wheat]
+  icon.node.cover_patch_low:
+    status: v2
+    subject: a short grass tuft
+    theme: "medieval fantasy: ankle-high wild grass, a few short blades"
+    modern_lookalikes_to_avoid: ["a modern lawn", "a paintbrush", "a broom"]
+    orientation: upright, blades short and close
+    proportions: "five blades in two greens, the tallest 4 px, a 2 px dark base; the shortest of the three patches; fits the 12x12 live area"
+    parts: [short blades, base]
+    reads_as: a short grass tuft
+    must_not_read_as: a sprout, a bush, a wave
+    synonyms: [grass, tuft, sprout, weeds, blades, sprouts]
+    distractors: [flame, feather, broom, palm, fountain, wheat]
+  icon.node.iron_vein:
+    status: v2
+    subject: a grey boulder with rust-brown ore seams
+    theme: "medieval: a rough rock with veins of iron ore in angular rust-brown chunks"
+    modern_lookalikes_to_avoid: ["a modern brick", "a coal lump", "a meteor"]
+    orientation: upright, a rough angular boulder, wider than tall
+    proportions: "a boulder 12 px wide and 9 px tall in two cool greys with an angular silhouette; two rust-brown angular ore chunks 3 x 2 px set into it; no sparkle; fits the 12x12 live area"
+    parts: [rock, angular ore chunks, shadow]
+    reads_as: a rock with iron ore
+    must_not_read_as: a brick, a lump of coal, an egg
+    synonyms: [rock, ore, iron, boulder, stone, mine]
+    distractors: [brick, coal, egg, meteor, bread, mushroom]
+  icon.node.silver_vein:
+    status: v2
+    subject: a rounded boulder with a bright silver seam
+    theme: "medieval: a smooth rock cut by a bright silver seam with a sparkle"
+    modern_lookalikes_to_avoid: ["a modern coin", "a snowball", "a pearl"]
+    orientation: upright, a rounded boulder, wider than tall
+    proportions: "a boulder 12 px wide and 9 px tall in two warm greys with a ROUNDED silhouette; one diagonal pale silver seam 8 px long and 2 px wide; two white sparkle pixels beside it; fits the 12x12 live area"
+    parts: [rounded rock, silver seam, sparkle]
+    reads_as: a rock with a silver seam
+    must_not_read_as: a pearl, an egg, a snowball
+    synonyms: [rock, ore, silver, boulder, stone, mine]
+    distractors: [brick, coal, egg, pearl, bread, snowball]
+  icon.node.crystal_outcrop:
+    status: v2
+    subject: a cluster of pointed crystals on rock
+    theme: "medieval fantasy: three tall pointed blue crystals growing from a grey rock base"
+    modern_lookalikes_to_avoid: ["a modern glass shard", "a diamond emoji", "a candle flame"]
+    orientation: upright, three crystals of different heights on a low rock base
+    proportions: "a rock base 11 px wide and 3 px tall; three hexagonal-pointed crystals 9 px, 7 px and 5 px tall in light blue with a white highlight edge; fits the 12x12 live area"
+    parts: [rock base, three crystals, highlight edges]
+    reads_as: blue crystals
+    must_not_read_as: an icicle, a candle flame, a tooth
+    synonyms: [crystal, crystals, gem, gems, quartz, outcrop]
+    distractors: [ice, icicle, candle, flame, tooth, bottle]
+  icon.node.frost_shard_cluster:
+    status: v2
+    subject: a spray of ice shards
+    theme: "medieval fantasy: pale cyan ice shards bursting outward from one point, with a frost sparkle"
+    modern_lookalikes_to_avoid: ["a modern ice cube", "a snowflake logo", "a broken windshield"]
+    orientation: upright, shards radiating outward from the bottom centre
+    proportions: "five thin angular shards radiating from a 2 px base, 5 to 9 px long, pale cyan with white edges; NO rock base; one white sparkle pixel above; fits the 12x12 live area"
+    parts: [radiating shards, white edges, sparkle]
+    reads_as: shards of ice
+    must_not_read_as: a crystal outcrop on rock, a star, a claw
+    synonyms: [ice, shards, shard, frost, icicles, icicle]
+    distractors: [crystal, star, flame, feather, claw, tree]
+  icon.node.spirit_wisp:
+    status: v2
+    subject: a floating wisp flame with a curved tail
+    theme: "medieval fantasy: a pale blue-white will-o'-the-wisp, a teardrop flame with a curled tail floating above the ground"
+    modern_lookalikes_to_avoid: ["a modern light bulb", "a candle", "a ghost emoji"]
+    orientation: upright, the flame body above a curling tail, tilted slightly
+    proportions: "a teardrop body 6 px wide and 7 px tall in pale blue with a white core; a curled tail 5 px long to one side; no base and no ground; two 1 px dark eye dots; fits the 12x12 live area"
+    parts: [body, white core, curled tail, eye dots]
+    reads_as: a floating wisp of spirit flame
+    must_not_read_as: a candle flame, a water drop, a leaf
+    synonyms: [wisp, flame, spirit, ghost, fire, soul]
+    distractors: [candle, drop, bulb, cloud, egg, leaf]
+  icon.node.moon_resin_tree:
+    status: v2
+    subject: a slim pale tree with an amber resin drop
+    theme: "medieval fantasy: a slender silver-barked tree with a glowing amber resin drop on its trunk"
+    modern_lookalikes_to_avoid: ["a modern street tree", "a lollipop", "a palm tree"]
+    orientation: upright, centred, a round crown on a slender trunk
+    proportions: "a crown 9 px wide and 6 px tall in blue-green; a slender pale silver trunk 2 px wide and 5 px tall; one amber resin drop 2 x 3 px with a highlight on the trunk; fits the 12x12 live area"
+    parts: [crown, pale trunk, amber drop]
+    reads_as: a tree with an amber resin drop
+    must_not_read_as: a lollipop, a mushroom, a plain green tree
+    synonyms: [tree, resin, amber, trunk, sap, forest]
+    distractors: [lollipop, mushroom, cactus, broccoli, cloud, candle]
+  icon.entity.worker:
+    status: v2
+    subject: a three-tine pitchfork
+    theme: "medieval: a farmer's iron pitchfork on a wooden shaft"
+    modern_lookalikes_to_avoid: ["a trident (a sea god's weapon)", "a modern garden fork", "cutlery"]
+    orientation: upright, tines up, shaft down
+    proportions: "three iron tines 6 to 7 px long joined by a 1 px crossbar, a wooden shaft 2 px wide and 4 to 5 px long below; about 9 px wide and 12 px tall; the tines are straight, the shaft is long, never a trident's barbs"
+    parts: [tines, crossbar, wooden shaft]
+    reads_as: a pitchfork
+    must_not_read_as: a trident, a pickaxe (the mine icon), a rake, the crossed hammer and tongs item
+    synonyms: [pitchfork, fork, farm, hay, tines, trident]
+    distractors: [rake, cutlery, comb, candelabra, antenna, cactus]
+  icon.entity.guard:
+    status: v2
+    subject: a large iron gate key
+    theme: "medieval: a heavy iron key of a castle gate warden, round bow and two blocky teeth"
+    modern_lookalikes_to_avoid: ["a modern house key", "a padlock", "a wrench"]
+    orientation: upright, bow on top, teeth to the lower right
+    proportions: "a round open bow 6 px across with a 2 px hole, a shaft 2 px wide and 6 px long, two square teeth 2 px wide on the right of the lower shaft; 8 px wide and 12 px tall; iron grey with a dark outline"
+    parts: [bow, shaft, teeth]
+    reads_as: a large key
+    must_not_read_as: a padlock, a keyhole, a wrench, a door-key trinket item, a shield (the warrior class icon)
+    synonyms: [key, gate key, skeleton key]
+    distractors: [padlock, wrench, magnifier, spoon, mirror, lollipop]
+  icon.entity.scout:
+    status: v2
+    subject: an open eye
+    theme: "abstract ui glyph: a watching eye, the almond outline with a round iris (an interface-style glyph, not a person)"
+    modern_lookalikes_to_avoid: ["a modern camera lens", "a power button", "an eyeball with veins"]
+    orientation: front view, level, centred
+    proportions: "an almond outline 12 px wide and 7 px tall with a 4 px round iris and a 2 px pupil, a 1 px lid line above; no lashes, no blood vessels"
+    parts: [almond outline, iris, pupil]
+    reads_as: an open eye
+    must_not_read_as: a camera lens, a power button, a fish, an eyeball for sale (a dropped item)
+    synonyms: [eye, watching, seeing, iris, vision]
+    distractors: [camera, lens, button, fish, lemon, seed]
+  icon.entity.raider:
+    status: v2
+    subject: a torn red banner
+    theme: "medieval: a tattered war banner on a pole, red cloth with a ragged lower edge"
+    modern_lookalikes_to_avoid: ["a modern flag", "a pennant", "a sail"]
+    orientation: upright pole at the left, cloth hanging to the right
+    proportions: "a pole 1 px wide and 12 px tall at the left, red cloth 8 px wide and 6 px tall hanging from near the top with a torn zig-zag lower edge and two notches; the cloth is never a clean rectangle"
+    parts: [pole, torn cloth, notches]
+    reads_as: a torn banner
+    must_not_read_as: a clean flag, the guild banner item, crossed swords (the enemy camp), a castle
+    synonyms: [banner, flag, standard, tattered, pole]
+    distractors: [sail, curtain, bat, hammer, pickaxe, kite]
+  icon.entity.sentinel:
+    status: v2
+    subject: a stone idol face
+    theme: "medieval fantasy: a square carved stone head of an undead guardian, two blue-lit eye slits"
+    modern_lookalikes_to_avoid: ["a modern robot head", "a skull", "a tombstone"]
+    orientation: front view, level, centred
+    proportions: "a square block 10 px wide and 10 px tall with two 2 x 1 px blue eye slits, a 1 px nose groove and a flat chin; grey stone, no bone, no teeth, no helm"
+    parts: [block head, eye slits, nose groove]
+    reads_as: a stone idol face
+    must_not_read_as: a skull or bone (the boss arena), the guard's gate key, a helm, a tombstone, a door
+    synonyms: [idol, statue, stone, face, mask, golem, head]
+    distractors: [tombstone, door, robot, violin case, cube, oven]
+  icon.entity.merchant:
+    status: v2
+    subject: a balance scale
+    theme: "medieval: a market trader's brass balance with two hanging pans"
+    modern_lookalikes_to_avoid: ["modern kitchen scales", "the scales of justice emblem", "a coin purse"]
+    orientation: upright, symmetric, centred
+    proportions: "a post 2 px wide and 9 px tall on a 6 px base, a beam 12 px wide across the top, two pans 4 px wide hanging on 1 px strings at each end; brass and dark outline"
+    parts: [post, beam, strings, pans]
+    reads_as: a balance scale
+    must_not_read_as: a coin purse (the store icon), a tree, an anvil, a pair of bowls
+    synonyms: [scale, balance, scales, weigh, weighing]
+    distractors: [purse, tree, hourglass, candelabra, bell, anchor]
+  icon.entity.blacksmith:
+    status: v2
+    subject: a horseshoe
+    theme: "medieval: an iron horseshoe, open end up, with nail holes"
+    modern_lookalikes_to_avoid: ["a magnet", "a modern U-shaped clip", "a letter U"]
+    orientation: open end up, centred
+    proportions: "a thick U 10 px wide and 11 px tall with a 2 px band, six 1 px nail holes (three each side), flat ends; dark iron with a highlight on the left"
+    parts: [arch, ends, nail holes]
+    reads_as: a horseshoe
+    must_not_read_as: a magnet, the anvil in the blacksmith building icon, the crossed hammer and tongs item
+    synonyms: [horseshoe, shoe, horse, lucky, u-shape]
+    distractors: [magnet, letter u, bracelet, cup handle, arch, bow]
+  icon.entity.leader:
+    status: v2
+    subject: a gold crown
+    theme: "medieval: a gold king's crown with three points and a band"
+    modern_lookalikes_to_avoid: ["a modern tiara", "a party crown", "a comb"]
+    orientation: front view, level, centred
+    proportions: "a band 10 px wide and 3 px tall with three triangular points 3 px tall, a small round gem on the middle point; gold with a darker lower edge"
+    parts: [band, three points, gem]
+    reads_as: a crown
+    must_not_read_as: a tiara, a flame, a comb, the guild banner
+    synonyms: [crown, king, queen, royal, gold crown]
+    distractors: [tiara, comb, flame, castle, hat, gear]
+  icon.entity.alpha:
+    status: v2
+    subject: a standing wolf
+    theme: "medieval fantasy: a wild grey wolf standing in side view, head up, tail down"
+    modern_lookalikes_to_avoid: ["a dog", "a fox", "a cat"]
+    orientation: side view facing right, standing
+    proportions: "a body 7 px long and 4 px tall, four legs 3 px tall, a head with a long snout and two pointed ears at the front, a thick tail down at the back; grey with a pale chest"
+    parts: [body, legs, pointed ears, snout, tail]
+    reads_as: a standing wolf
+    must_not_read_as: a dog, a fox, a horse, the hooded rogue cowl
+    synonyms: [wolf, canine, hound]
+    distractors: [dog, fox, cat, horse, goat, sheep]
+  icon.entity.predator_hunter:
+    status: v2
+    subject: three claw slashes
+    theme: "medieval fantasy: three parallel red claw marks of a wild beast, tapering at the ends"
+    modern_lookalikes_to_avoid: ["a modern scratch icon", "lightning", "a rake"]
+    orientation: three near-vertical strokes leaning right
+    proportions: "three strokes 2 px wide at the middle, tapering to 1 px points at both ends, 10 px tall, 3 px apart, red with a dark outline; no hand, no animal"
+    parts: [three claw strokes]
+    reads_as: three claw slashes
+    must_not_read_as: a skull (the boss arena), a rake, lightning, a fence, steam
+    synonyms: [claw, claws, scratch, slash, scratches, rake marks]
+    distractors: [rake, lightning, fence, steam, comb, bars]
+  icon.entity.wild_creature:
+    status: v2
+    subject: a grazing deer
+    theme: "medieval fantasy: a wild brown deer with branching antlers, head lowered to graze"
+    modern_lookalikes_to_avoid: ["a modern cartoon deer", "a horse", "a goat"]
+    orientation: side view facing left, head down
+    proportions: "a body 7 px long and 4 px tall, four thin legs 3 px tall, a neck and head lowered to the left, branching antlers 3 px tall on the head, a short tail; brown with a pale belly"
+    parts: [body, legs, lowered head, antlers, tail]
+    reads_as: a grazing deer
+    must_not_read_as: a horse, a goat, a dog, a nest, a tree
+    synonyms: [deer, stag, antlers, reindeer, elk, doe]
+    distractors: [horse, goat, dog, cow, sheep, tree]

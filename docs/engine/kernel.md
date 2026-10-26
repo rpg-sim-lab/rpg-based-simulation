@@ -93,7 +93,7 @@ The Kernel enforces a two-tier isolation model for read-only phases (Scheduling,
 
 **Tier 2 — Full Stability Guard (audit_mode=True only)**
 `_guard_stability()` is active only when `Kernel` is initialized with `audit_mode=True` (used in certification scenarios). It:
-- **Fingerprints**: At the start of the tick, a SHA-256 fingerprint of the entire world is captured.
+- **Fingerprints**: At the start of the tick, an MD5 fingerprint (`AuthoritativeState.fingerprint()`, `StateFingerprinter`, `src/replay/fingerprint.py`) over selected gameplay state domains (not every field; see `known_limitations.md` §2.3 and §2.4) is captured.
 - **Verifies**: After non-mutating phases (Scheduling, Collection), the fingerprint is re-verified.
 - **Halt Law**: If the hash changes during a read-only phase, the Kernel triggers an **Immediate Halt** to prevent state corruption and identify "leakage" in system logic.
 
@@ -120,15 +120,22 @@ gracefully under load.
 
 ## 📈 Observability & Telemetry
 The Kernel maintains a `TickAudit` record for every cycle, capturing:
-- **Phase Costs**: Millisecond duration of each phase for bottleneck analysis.
+- **Phase Costs**: Millisecond duration of each phase for bottleneck analysis. Each millisecond is counted once: `resolution_overhead` is the resolution wall time minus every sub-phase cost the refinement pipeline recorded, so `sum(phase_costs)` is the tick's cost, which becomes the governor's `tick_compute_ms` (DEV-017, INFRA-425).
+- **Signal source**: The pressure signals the governor receives are built by `src/engine/signal_source.py`, chosen by `select_signal_source(profile, audit_mode)`: `audit_mode` zeroes them; otherwise the profile's `signal_contract` picks the Live (measured) or Canonical (modelled) source. The run manifest records the contract and the work-model version (DEV-018, INFRA-426, INFRA-427).
 - **Rejection Delta**: Count of proposals rejected by the refinement pipeline.
 - **Compute Ratio**: Current tick duration vs. the allowed `max_tick_budget_ms`.
 
-### Emergency Throttling
-If a tick exceeds 2x its average duration or the hard cap in `RuntimeProfile`, the Kernel will:
-1. Signal the Governor to transition to **DEGRADED** mode.
-2. Drop remaining work items in the current resolution queue.
-3. Log a "Tick Budget Violated" warning with phase-by-phase cost breakdown.
+### Budget Overrun (report-only)
+If a tick exceeds the profile's `max_tick_budget_ms` mid-resolution, or its end-of-tick compute exceeds
+the smaller of that cap and twice the recent average (after tick 5), and `audit_mode` is off, the Kernel
+calls `Kernel._report_budget_overrun` (`src/engine/kernel.py`). It:
+1. Records `RuntimeStatus.budget_overrun_ms`, `budget_overrun_tick` and `total_budget_overruns`.
+2. Raises the watchdog alert with the phase-by-phase cost breakdown and logs a "exceeded budget" warning.
+
+It never drops a result and never forces `DEGRADED`: every result is processed, so what a run computes
+does not depend on host speed. The governor's own `tick_compute_ms` input can still move the mode (PERF-D1
+input 1). Before DEV-014 (`TCK-20261006-PERF-TICK-BUDGET-THROTTLE-REPORT-ONLY`) an overrun dropped the
+remaining resolution queue and forced `DEGRADED`; see `docs/engine/deterministic_execution.md`.
 
 ---
 
@@ -199,7 +206,7 @@ The **lightweight fingerprint** (`StateFingerprinter.get_fingerprint()`) is an M
 the most gameplay-visible state (entities, strategic state, resources, regions, groups).
 It is emitted in `REFINED_UPDATE` events in all replay-enabled modes (NORMAL, CONSTRAINED,
 DEGRADED). It is NOT a complete determinism proof — buildings, corpses, ground items,
-chests, home storage, camps, tile indices, work debt, and the RNG checkpoint are excluded.
+chests, home storage, camps, tile indices, and the RNG checkpoint are excluded.
 
 **Shutdown always emits the final canonical hash** regardless of runtime mode.
 

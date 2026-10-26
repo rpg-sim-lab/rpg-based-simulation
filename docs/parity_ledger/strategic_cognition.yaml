@@ -4526,3 +4526,71 @@
     REST_IN_PLACE did not fire in the corpus in 1500 or 3000 ticks (sleep debt reaches
     0.85 of its line at about t=1670): its dispatch is proved by a constructed test.
     SimQ grade-anchor movement is not measured locally.'
+- id: STRAT-281
+  text: 'A need with no open way pulls toward the step that opens one (SURV-07 amendment, owner decision 27):
+    a hungry subject with no inn within reach carries a typed `NeedAccess` (`NO_AFFORDABLE_WAY` is defined and produced only by the parked free-meal removal), the pull goes to the first open
+    opening step (forage, with earn-then-buy and ask as closed stubs), and with no open step the goal keeps the raw
+    hunger and says `no_open_step`.'
+  status: verified
+  priority: P1
+  legacy_evidence: null
+  v2_evidence: '`src/ai/goals/opening_steps.py` (`opening_steps`, `first_open_step`), `src/ai/goals/scorers.py`
+    (`_hunger_without_open_way`), `src/engine/need_paths.py` (`need_path_report` counts food nodes);
+    `docs/guidelines/intentional_divergences.md` section 2.91'
+  proof_type: parity
+  test_path: tests/unit/ai/test_opening_steps.py
+  divergence_note: 'Intentional divergence 2.91 (Intentional Gameplay Change).'
+  support_boundary: 'Held out: the earn-then-buy and ask steps are stubs that report why they are closed; broke workers have no earn path yet.'
+- id: STRAT-282
+  text: 'TCK-20261009-HEROES-ON-A-LEASH-NEVER-SEEK-FOOD-AND-STARVE-WITHOUT-ONE-EAT-ATTEMPT: a pressing biological need (hunger or sleep debt at or past ESCALATION_ONSET of its consequence line) wakes the brain of an entity holding ENTITY_MOVE every strategic-cadence tick (staggered by id), so the need goal it already ranks first can displace the held move; a present threat to life re-issues the flight in the re-decision.'
+  status: verified
+  priority: P1
+  legacy_evidence: null
+  v2_evidence: src/engine/need_pull.py (need_is_pressing), src/engine/scheduler.py (_is_need_woken, NEED_WAKE_CADENCE), src/engine/rpg_depth.py (LeashService.way_in_range), src/ai/goals/scorers.py and opening_steps.py (way_in_range), src/worldbuilding/camp_food.py, data/content/world_modules/goblin_camp_forage.yaml.
+  proof_type: regression
+  test_path: tests/unit/engine/test_pressing_need_wakes_a_held_move.py
+  divergence_note: See docs/guidelines/intentional_divergences.md Section 2.106.
+  support_boundary: A range-bound subject (leash above 0) targets only ways inside its range (way_in_range) and stays honestly hungry with none; goblin camps have berries in range (goblin_camp_forage), wolf nests are a reported meat-only gap. The held-move completion rule is COMB-345 (divergence 2.113). Measured on urban_political, frontier_living_world and crowded_frontier, seeds 42 to 46, 5000 ticks.
+- id: STRAT-283
+  text: 'TCK-20261011-HUNGER-WAKES-A-SLEEPER: hunger at or past ESCALATION_ONSET of its line (need_pull.hunger_is_pressing) wakes the brain of a held SLEEP or REST on the strategic cadence (staggered by id), so a chosen sleep ends and the subject decides again (eat if a way is open, else sleep again); a collapse is woken too, but the decision is the collapse again until the debt is below the collapse line. Only hunger wakes a sleeper.'
+  status: verified
+  priority: P1
+  legacy_evidence: null
+  v2_evidence: src/engine/scheduler.py (_is_need_woken), src/engine/need_pull.py (hunger_is_pressing), src/engine/sleep_debt.py (is_asleep).
+  proof_type: regression
+  test_path: tests/unit/engine/test_hunger_wakes_a_sleeper.py
+  divergence_note: See docs/guidelines/intentional_divergences.md Section 2.115.
+  support_boundary: 'On the current code the measured effect is within noise (seeds 42 to 46, 5000 ticks); a woken sleeper with no open way to eat sleeps again, and a re-decided sleep at an inn charges a new bed.'
+
+- id: STRAT-284
+  text: 'TCK-20261019-STARVATION-PAST-ITS-LINE-IS-A-PRESENT-THREAT-WEIGHED-IN-GOAL-SELECTION (SURV-07 amendment, memo row 83): past the starvation line (95, where health drains, src/engine/starvation.py STARVING_LINE) a present threat no longer drops the hunger goal; a threat acting on the subject still pre-empts it in the tactical pass. The weighing is by immediacy, not by score magnitude: at the goal level the starving pull (155-160) exceeds the retreat ceiling (150).'
+  status: verified
+  priority: P1
+  legacy_evidence: null
+  v2_evidence: src/ai/goals/scorers.py (_hunger_escalated_unless_threatened, EatScorer, _hunger_without_open_way), src/engine/starvation.py (STARVING_LINE), docs/mechanics/04_strategic_cognition.md section 1. Forced merchant-37 case through the real kernel eats by tick 14 and does not with the old gate. Paired measurement (b)+(ii) in docs/guidelines/intentional_divergences.md Section 2.135.
+  proof_type: regression
+  test_path: tests/unit/ai/test_starvation_is_a_present_threat_weighed_in_goal_selection.py
+  divergence_note: See docs/guidelines/intentional_divergences.md Section 2.135.
+  support_boundary: 'Does not add a meal path for a subject with no hunger project (the in-reach meal stays after v1); gate V3 on frontier_living_world seed 42 (5000 ticks) is 0 with this change. A hunter closing on a starving subject is not seen before contact (strategic cadence, v1 row C5).'
+
+- id: STRAT-285
+  text: 'TCK-20261020-A-DEAD-BODY-IS-NOT-A-PERCEIVED-THREAT (SURV-07, memo row 84 (1)): threat perception (_perceived_threats), emotional appraisal (hostile, ally, nemesis) and saliency ranking read only the living; a dead body is in the neighbour view but is no threat, no hostile or ally, and earns no hostility bonus. Grief, mourning and vengeance are unchanged.'
+  status: verified
+  priority: P1
+  legacy_evidence: null
+  v2_evidence: 'src/engine/tactical.py (_perceived_threats), src/engine/cognition.py (AppraisalSystem.evaluate_emotional_state, SensoryFilter.filter_saliency), docs/mechanics/04_strategic_cognition.md section 1. Ticket TCK-20261020-A-DEAD-BODY-IS-NOT-A-PERCEIVED-THREAT. Real-kernel tests: a corpse gives no PANIC_RETREAT; a live hostile still does; a hungry hp-2 raider with three townsfolk dead eats.'
+  proof_type: regression
+  test_path: tests/integration/observability/test_a_dead_body_is_not_a_perceived_threat_through_the_real_kernel.py
+  divergence_note: See docs/guidelines/intentional_divergences.md Section 2.136.
+  support_boundary: 'Paired against 7b1528861 (seeds 42-46): no drift in any world; extinction stop in crowded (guard, merchant), accepted by the owner (v1 disclosure N7). Flight rises on the frontier from live threats no longer crowded out of attention by corpses.'
+
+- id: STRAT-286
+  text: 'TCK-20261020-A-ESCALATED-NEED-IS-NEVER-REFUSED-FOR-CAPACITY (SURV-07, memo row 84 (2)): a hunger or sleep goal that wins scoring at or past its escalation onset (0.6 of its line) is admitted when project capacity is full (escalated_need_wins); one live hunger and one live sleep project (the current one, else the newest by created_tick) are outside both capacity trims (bandwidth trim and CapacityEnforcementPhase); every other live need project counts and is trimmed. Below the onset the cap applies as before.'
+  status: verified
+  priority: P1
+  legacy_evidence: null
+  v2_evidence: 'src/ai/goals/escalation.py (escalated_need_wins), src/core/strategic.py (NEED_PROJECT_KINDS, live_projects_in_the_trim), src/systems/strategic_systems/intelligence.py (capacity gate), src/systems/strategic_systems/detour.py (enforce_bandwidth), src/engine/pipeline_phases/capacity_enforcement.py, docs/mechanics/04_strategic_cognition.md sections 1 and 4. Ticket TCK-20261020-A-ESCALATED-NEED-IS-NEVER-REFUSED-FOR-CAPACITY. Real-kernel tests: a hungry entity past the onset at a full cap gets a hunger project and eats; below the onset the cap refuses; one project per need kind; an admitted non-current need project survives both trims; hunger and sleep switching for 600 ticks never exceeds the cap plus two.'
+  proof_type: regression
+  test_path: tests/integration/observability/test_an_escalated_need_is_never_refused_for_capacity_through_the_real_kernel.py
+  divergence_note: See docs/guidelines/intentional_divergences.md Section 2.137.
+  support_boundary: 'Paired against the dead-are-not-threats step, STRAT-285 (seeds 42-46): no drift; extinction stop (frontier scout; crowded hero, scout, worker), accepted by the owner (v1 disclosure N9). V3 on 15: 12 clean, 3 owned known reds (N14, N15). has_project_capacity still counts exempt need projects (slot-leak ticket); a suspended exempt need project frees a slot for an ordinary project that the old trim would have removed.'

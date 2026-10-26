@@ -36,11 +36,12 @@ from pathlib import Path
 _REPO_ROOT = Path(__file__).resolve().parent.parent.parent
 if str(_REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(_REPO_ROOT))
+from tools.graphify_link import link_shared_graph  # noqa: E402
 from tools.handover_home import handover_base  # noqa: E402
 
 from tools.sessions import state as st  # noqa: E402
 from tools.sessions.resolve import instance_ids  # noqa: E402
-from tools.sessions.roster import Role, Roster, load_roster  # noqa: E402
+from tools.sessions.roster import Role, Roster, handover_rel, load_roster  # noqa: E402
 from tools.sessions import settings_freshness as sf  # noqa: E402
 
 EXIT_USAGE, EXIT_REFUSED, EXIT_NEEDS_CHOICE = 2, 4, 3
@@ -132,6 +133,8 @@ def agent_file_exists(role: Role, root: Path = _REPO_ROOT) -> bool:
 # ---- worktrees ---------------------------------------------------------------------------------
 
 def default_worktree_path(role: Role, main_checkout: Path) -> Path:
+    if role.launch == "main-checkout":  # read-mostly seat: it starts in the main checkout and takes no lease
+        return main_checkout
     return main_checkout / ".claude" / "worktrees" / role.worktree
 
 
@@ -184,6 +187,24 @@ def bootstrap_worktree(path: Path, role: Role, topic: str, cwd: Path, apply: boo
     return notes + [f"created {path} on new branch `{new}` from origin/main"]
 
 
+def branch_spent_reason(branch: str, cwd: Path) -> str | None:
+    """Why a recorded branch is spent (merged), or None. PRs here are squash-merged, so the branch is usually NOT an
+    ancestor of origin/main: also ask for a merged PR (`gh`), and if gh fails fall back to `git cherry` showing
+    nothing unmerged."""
+    if _run(["git", "merge-base", "--is-ancestor", f"refs/heads/{branch}", "origin/main"], cwd).returncode == 0:
+        return "is merged into origin/main"
+    try:
+        res = _run(["gh", "pr", "list", "--head", branch, "--state", "merged", "--json", "number"], cwd)
+        if res.returncode == 0:
+            return "has a merged PR" if json.loads(res.stdout or "[]") else None
+    except (OSError, ValueError, subprocess.TimeoutExpired):
+        pass
+    cherry = _run(["git", "cherry", "origin/main", f"refs/heads/{branch}"], cwd)
+    if cherry.returncode == 0 and not any(line.startswith("+") for line in cherry.stdout.splitlines()):
+        return "has no commit missing from origin/main (squash-merged)"
+    return None
+
+
 def ensure_worktree(path: Path, branch: str | None, cwd: Path, apply: bool = True,
                     role: Role | None = None, topic: str | None = None) -> list[str]:
     """Self-heal a missing or prunable worktree from the role's branch; returns what was said/done.
@@ -197,22 +218,21 @@ def ensure_worktree(path: Path, branch: str | None, cwd: Path, apply: bool = Tru
     if known and path.is_dir() and "prunable" not in known:
         return []
     notes = [f"worktree {path} is missing or prunable"]
+    if topic and role:  # an explicit --branch always wins over whatever branch is recorded
+        why = [f"recorded branch `{branch}` is not reused: --branch was given"] if branch else []
+        return bootstrap_worktree(path, role, topic, cwd, apply, notes + why)
     if not branch:
-        if topic and role:
-            return bootstrap_worktree(path, role, topic, cwd, apply, notes)
         return notes + ["no branch is recorded for this role, so it is not recreated: pass `--branch <topic>` to create "
                         "`<role>-<topic>` from origin/main, or create the worktree yourself "
                         "(`git worktree add <path> <branch>`) and relaunch"]
     if _run(["git", "show-ref", "--verify", "--quiet", f"refs/heads/{branch}"], cwd).returncode != 0:
         return notes + [f"the role's branch `{branch}` no longer exists: nothing is invented; restore it from the "
                         "branch-backup file or choose a branch, then relaunch"]
-    if _run(["git", "merge-base", "--is-ancestor", f"refs/heads/{branch}", "origin/main"], cwd).returncode == 0:
-        if topic and role:
-            return bootstrap_worktree(path, role, topic, cwd, apply,
-                                      notes + [f"recorded branch `{branch}` is merged into origin/main: not reused"])
-        return notes + [f"recorded branch `{branch}` is merged into origin/main: not recreated from a spent branch; "
-                        "create the worktree from origin/main yourself (`git worktree add <path> -b <new-branch> "
-                        "origin/main`) and relaunch"]
+    spent = branch_spent_reason(branch, cwd)
+    if spent:
+        return notes + [f"recorded branch `{branch}` {spent}: not recreated from a spent branch; pass `--branch <topic>` "
+                        "to create `<role>-<topic>` from origin/main, or create the worktree from origin/main yourself "
+                        "(`git worktree add <path> -b <new-branch> origin/main`) and relaunch"]
     if not apply:
         return notes + [f"would run: git worktree prune; git worktree add {path} {branch}"]
     _run(["git", "worktree", "prune"], cwd)
@@ -346,7 +366,7 @@ def plan_launch(target: Target, root: Path, state_root: Path, worktree: Path, pd
                 session_id: str | None, interactive: bool, resume_flag: bool, input_fn=input) -> tuple[int, list[str], str | None]:
     """Decide what to do. Returns (exit code, lines to print, session id to resume or None). Exit 0 = go."""
     instance = st.read_instance(state_root, target.instance)
-    handover = handover_base(root) / target.role.handover
+    handover = handover_base(root) / handover_rel(target.role, target.instance)
     if instance is None or st.liveness(instance) == st.RELEASED:
         stub = [] if handover.is_file() else ["no handover note yet: a stub will be created"]
         return 0, stub, None
@@ -379,6 +399,47 @@ def plan_launch(target: Target, root: Path, state_root: Path, worktree: Path, pd
         sid = session_id or instance.holder.session_id
         return 0, evidence + [f"resuming session {sid} (by id, never by name)"], sid
     return 0, evidence + ["replacing: a fresh instance reads the handover note and the git state; the old transcript is kept"], None
+
+
+def disk_warning(root: Path) -> list[str]:
+    """One warning line when free space is below the threshold, else nothing. Warns only: any failure
+    here yields no line, never a changed exit code. The tree walk runs only when the cheap free-space
+    reading is already low (a walk of ~50 worktrees is slow)."""
+    try:
+        from tools.sessions import disk_headroom as dh
+
+        limit = dh.threshold_bytes()
+        if dh.low_space_line(dh.free_bytes(root), limit) is None:
+            return []
+        line = dh.warning_line(dh.measure(root), limit) or dh.low_space_line(dh.free_bytes(root), limit)
+        return [line] if line else []
+    except Exception:
+        return []
+
+
+def resolve_missing_worktree(wt: Path, target: Target, sroot: Path, root: Path, sid: str | None,
+                             explicit_arg: bool, holder_wt: str | None = None) -> tuple[Path, bool, list[str]]:
+    """The worktree is still missing after self-heal: (path, explicit, refusal lines). Falls back to the role's recorded
+    holder's own worktree when resuming (`claude --resume` finds a transcript only from the cwd it was written in), then the
+    bound worktree (never when --worktree named this one); otherwise a refusal with the real role and instance filled in,
+    so the launch never reaches os.chdir with a path that is not there (GitHub #620 part 2)."""
+    why = f"worktree {wt} does not exist"
+    if not explicit_arg:
+        if holder_wt and Path(holder_wt).is_dir() and _run(["git", "rev-parse", "--git-dir"], Path(holder_wt)).returncode == 0:
+            print(f"manifest worktree {wt} missing; resuming in the dead holder's worktree {holder_wt}")
+            return Path(holder_wt), False, []
+        bound = st.read_bound_worktree(sroot, target.instance)
+        if bound and Path(bound[0]).is_dir() and _run(["git", "rev-parse", "--git-dir"], Path(bound[0])).returncode == 0:
+            print(f"manifest worktree {wt} missing; using the recorded bound worktree {bound[0]}")
+            return Path(bound[0]), bound[1], []
+        why += " and no existing bound worktree is recorded" if not bound else f" and the recorded bound worktree {bound[0]} is not usable"
+    resume = f"--resume {sid} " if sid else "--resume <session-id> "
+    return wt, explicit_arg, [
+        f"refusing to launch {target.instance}: {why}.",
+        f"fix: cd {main_checkout(root)} && SESSION_ROLE={target.instance} claude {resume}--name {target.instance} "
+        f"--agent session-{target.role.role}",
+        f"or create the worktree: relaunch with `--branch <topic>` (creates `{target.role.role}-<topic>` from origin/main) "
+        "or `--worktree <existing worktree path>`"]
 
 
 def main(argv: list[str] | None = None, root: Path = _REPO_ROOT) -> int:
@@ -420,24 +481,40 @@ def main(argv: list[str] | None = None, root: Path = _REPO_ROOT) -> int:
         print(line)
     if code != 0:
         return code
+    explicit = bool(a.worktree)
+    if not wt.is_dir() and not (a.dry_run and a.branch):  # a dry run with --branch only prints the worktree it would create
+        holder_wt = recorded.holder.worktree if recorded and sid else None  # a resume: its transcript lives under the holder's cwd
+        wt, explicit, refusal = resolve_missing_worktree(wt, target, sroot, root, sid, bool(a.worktree), holder_wt)
+        if refusal:
+            print("\n".join(refusal), file=sys.stderr)
+            return EXIT_REFUSED
     go, notes = preflight(wt, a.allow_stale)
     for line in notes:
         print(line)
     if not go:
         return EXIT_REFUSED
+    for line in disk_warning(root):
+        print(line)
     cmd, env = build_command(target, sid)
     if a.dry_run:
-        note = handover_base(root) / role.handover
-        print(f"handover note: {note if note.is_file() else 'none'} (read from the main checkout, not the role's worktree)")
+        note = handover_base(root) / handover_rel(role, target.instance)
+        print(f"handover note: {note}{'' if note.is_file() else ' (none yet: a stub is created at launch)'} (read from the main checkout, not the role's worktree)")
         print("DRY RUN: " + " ".join(f"{k}={shlex.quote(v)}" for k, v in env.items()) + " " + " ".join(shlex.quote(c) for c in cmd)
               + f"   (cwd {wt})")
         return 0
-    handover = handover_base(root) / role.handover
+    handover = handover_base(root) / handover_rel(role, target.instance)
     if not handover.is_file():
         handover.parent.mkdir(parents=True, exist_ok=True)
         handover.write_text(HANDOVER_STUB.format(role=target.instance, date=time.strftime("%Y-%m-%d")), encoding="utf-8")
+    if role.launch == "worktree":  # the lease follows the recorded worktree (a batch worktree via --worktree)
+        try:
+            st.write_bound_worktree(sroot, target.instance, os.path.realpath(wt), explicit)
+        except (OSError, st.StateError):
+            pass  # the record is a convenience; the launch never fails on it
+    link_shared_graph(wt)  # graphify-out -> the main checkout's graph; a no-op when it has its own or is the main checkout
     os.chdir(wt)
-    os.execvpe(cmd[0], cmd, {**os.environ, **env})
+    # Local launcher run by hand; cmd comes from the role registry plus the user's CLI; no untrusted input.
+    os.execvpe(cmd[0], cmd, {**os.environ, **env})  # nosemgrep: python.lang.security.audit.dangerous-os-exec-tainted-env-args.dangerous-os-exec-tainted-env-args
     return 0  # pragma: no cover
 
 

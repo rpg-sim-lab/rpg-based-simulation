@@ -3,7 +3,7 @@ import os
 import yaml
 import logging
 from pathlib import Path
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Optional, cast
 
 from src.config.profiles import RuntimeProfile, HardwareClass
 
@@ -27,7 +27,7 @@ class ConfigLoader:
         """
         # 1. Base Defaults (Hardcoded for "cli_default")
         # In a real system, these might come from a internal registry of known profiles.
-        base_data = {
+        base_data: Dict[str, Any] = {
             "name": profile_name,
             "hardware_class": HardwareClass.CLASS_B,
             "max_ram_mb": 1024,
@@ -64,7 +64,7 @@ class ConfigLoader:
                         base_data[field] = float(val)
                     elif field_type == bool:
                         base_data[field] = val.lower() in ("true", "1", "yes")
-                    elif issubclass(field_type, str): # Handle HardwareClass Enum
+                    elif issubclass(cast(type, field_type), str): # Handle HardwareClass Enum
                         base_data[field] = val
                 except ValueError:
                     logger.warning(f"Invalid environment value for {env_key}: {val}")

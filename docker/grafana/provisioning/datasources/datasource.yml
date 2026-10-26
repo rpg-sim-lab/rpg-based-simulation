@@ -1,0 +1,32 @@
+apiVersion: 1
+
+datasources:
+  - name: Prometheus
+    type: prometheus
+    url: http://prometheus:9090
+    access: proxy
+    isDefault: true
+    editable: false
+    uid: prometheus
+
+  - name: Loki
+    type: loki
+    url: http://loki:3100
+    access: proxy
+    editable: false
+    uid: loki
+
+  - name: Tempo
+    type: tempo
+    url: http://tempo:3200
+    access: proxy
+    editable: false
+    uid: tempo
+    jsonData:
+      tracesToLogsV2:
+        # Loki streams carry a `container` label (promtail relabel); filter on the backend container and the trace id.
+        datasourceUid: loki
+        customQuery: true
+        query: '{container=~".*backend.*"} |= "$${__trace.traceId}"'
+      tracesToMetrics:
+        datasourceUid: prometheus

@@ -1,6 +1,6 @@
 # Deterministic Concurrent RPG Engine
 
-A high-fidelity, deterministic 2D RPG simulation engine in Python with a React frontend. Parallelized AI agents propose intents; a single authoritative WorldLoop validates and executes them. Every run is byte-identical replay-faithful.
+A high-fidelity, deterministic 2D RPG simulation engine in Python with a React frontend. Parallelized AI agents propose intents; a single authoritative WorldLoop validates and executes them. The same seed replays to the same state hash on one machine under the Canonical signal contract; the [Deterministic Execution Contract](docs/engine/deterministic_execution.md) states the scope.
 
 ---
 
@@ -12,7 +12,7 @@ make serve      # Build frontend + start server at :8000
 make cli        # Run a headless simulation (200 ticks)
 ```
 
-**Requirements:** Python ≥ 3.11, Node.js ≥ 18, Docker (optional — for Grafana/Loki telemetry).
+**Requirements:** Python ≥ 3.12, Node.js ≥ 18, Docker (optional — for Grafana/Loki telemetry). On Windows, run `make` under WSL or Git Bash (there is no `make.bat`).
 
 ---
 
@@ -20,12 +20,12 @@ make cli        # Run a headless simulation (200 ticks)
 
 ### Server mode — visual client at `http://127.0.0.1:8000`
 ```bash
-python3 -m src serve --seed 42 --entities 50 --workers 4
+python3 -m src serve --seed 42 --workers 4
 ```
 
 ### Headless CLI mode
 ```bash
-python3 -m src cli --seed 42 --ticks 1000 --entities 50
+python3 -m src cli --seed 42 --ticks 1000
 OBS_MODE=DEBUG python3 -m src cli --ticks 100 --seed 42   # full observability
 ```
 
@@ -37,13 +37,19 @@ See [docs/guides/simulation.md](docs/guides/simulation.md) for world authoring, 
 
 | Principle | Summary |
 |---|---|
-| **Determinism** | All randomness from xxhash generators seeded per run — 100% replay fidelity |
+| **Determinism** | Stateless seeded RNG: `DeterministicRNG` seeds a fresh `random.Random` per draw from the run seed, domain, tick and entity. A SHA-256 canonical state hash is the proof. Guaranteed tier, Canonical signal contract and known gaps: [Deterministic Execution Contract](docs/engine/deterministic_execution.md) |
 | **Intent / Effect split** | Parallel AI workers propose intents; WorldLoop validates and executes |
 | **Aspect composition** | Entities are pure compositions (`IdentityAspect`, `BodyAspect`, `MindAspect`, `SocialAspect`) |
 | **Decoupled reads** | Thread-safe isolated read models let the API serve without locking the tick loop |
 | **Content pipeline** | World modules, compositions, and archetypes resolved through a typed content pipeline before runtime |
 
 Core laws: [Simulation Kernel](docs/engine/kernel.md) · [Authoritative Pipeline](docs/engine/authoritative_pipeline.md) · [Project Lawbook](docs/engine/project_lawbook_m10.md)
+
+---
+
+## For reviewers
+
+- Determinism demo: [`make replay-check`](docs/guides/reviewer_replay_check.md) runs one seed twice and compares the final state hashes.
 
 ---
 
@@ -127,14 +133,17 @@ See [docs/ai/](docs/ai/) for the full agent and workflow reference.
 
 ## Infrastructure (Optional)
 
-Docker Compose manages Grafana, Loki, Redis, and RabbitMQ for production telemetry.
+Docker Compose (`compose.yaml` at the root; Dockerfiles and ops configs in `docker/`) runs two profiles. The only broker is
+Redis Streams; there is no Kafka or RabbitMQ (`docs/architecture/devops_baseline_adr.md`).
 
 ```bash
-docker compose up -d     # start telemetry stack
-# Grafana: http://localhost:3000  (admin/admin)
+docker compose up -d                                  # backend, redis, ai_worker, frontend
+docker compose --profile observability up -d          # adds Prometheus, Grafana, Loki, Promtail, Tempo, ntfy and the exporters
+# Grafana: http://localhost:3000 (user admin; the password is the gitignored secret file docker/secrets/grafana_admin_password)
 ```
 
-If Kafka/Redis throws `InconsistentClusterIdException`: `docker compose down -v && docker compose up -d --build`
+The observability profile needs its secret files first (Grafana password, ntfy topic and token): the steps are in the header of
+`compose.yaml`. Alerts, drills and first checks are in [`docs/runbooks/`](docs/runbooks/README.md).
 
 ---
 

@@ -14,6 +14,7 @@ from src.core.updates import (
     StrategicUpdate,
     StaminaUpdate,
 )
+from src.engine.candidate_selector import MovementCandidateSelector
 from src.engine.movement import MovementSystem
 from src.engine.policy import GovernorPolicy
 
@@ -151,29 +152,9 @@ class MovementPhase:
                 continue
 
             # Apply atomic swap.
-            a_existing = refined_entity_updates.get(
-                a_id,
-                EntityUpdate(entity_id=a_id),
+            refined_entity_updates[a_id], refined_entity_updates[b_id] = MovementPhase._swap_updates(
+                state, a, b, refined_entity_updates.get(a_id, EntityUpdate(entity_id=a_id)), refined_entity_updates.get(b_id, EntityUpdate(entity_id=b_id)),
             )
-            b_existing = refined_entity_updates.get(
-                b_id,
-                EntityUpdate(entity_id=b_id),
-            )
-
-            a_swap = MovementPhase._build_position_swap_entity_update(
-                entity=a,
-                new_position=b_old,
-                reason=ReasonCode.POSITION_SWAP,
-            )
-
-            b_swap = MovementPhase._build_position_swap_entity_update(
-                entity=b,
-                new_position=a_old,
-                reason=ReasonCode.POSITION_SWAP,
-            )
-
-            refined_entity_updates[a_id] = a_existing.merge(a_swap)
-            refined_entity_updates[b_id] = b_existing.merge(b_swap)
 
             if active_contract is not None:
                 MovementPhase._mark_position_swap_contract_fulfilled(
@@ -221,12 +202,12 @@ class MovementPhase:
         object.__setattr__(state, "_occupancy_map_cache", live_occ_map)
         object.__setattr__(state, "transient_claims", live_claims)
         
-        from src.engine.candidate_selector import MovementCandidateSelector
         policy = getattr(update, "current_policy_set", None) or GovernorPolicy()
+        position_index = MovementCandidateSelector.position_index(state.entities)
         selected_ids = MovementCandidateSelector.select(
             state, update, state.entities.keys(), 
             budget=policy.movement_budget, 
-            scan_policy=policy.scan_policy
+            scan_policy=policy.scan_policy,
         )
         
         # Record candidate count for observability
@@ -245,32 +226,11 @@ class MovementPhase:
             if _already_settled_this_tick(ent_upd):
                 continue
                 
-            # Determine target and mode (prefer update if present)
-            has_fresh_decision = bool(ent_upd and ent_upd.navigation and ent_upd.navigation.target_set is not None)
-            nav_target = ent_upd.navigation.target_set if has_fresh_decision else entity.navigation.target
-
-            # Live-refresh a stale entity-tracking target (TCK-20260809-COMBAT-PURSUIT-PER-TICK-TRACE):
-            # when this tick has no fresh brain decision, nav_target is a static snapshot from
-            # whichever prior tick's decision last set it -- correct for a fixed-point errand
-            # (WANDER/RETREAT/objective pursuit, none of which set task.payload["target_id"]) but
-            # stale for a real entity-tracking mode (PURSUE/INTERCEPT/KITING/BRACKETING/
-            # GUARDING_ALLY), all of which do set target_id. Tactical decisions are cadence-gated
-            # to once per ~10 ticks (scheduler.py's own strategic_intelligence cadence) while
-            # movement itself runs every tick, so a pursuer previously walked straight to a
-            # snapshot of where its target *was*, arrived, and then idled until its next cadence
-            # tick while the real target kept moving -- confirmed via live per-tick trace to be
-            # the real, precise reason chase convergence was rare rather than reliable.
-            #
-            # Shared with MovementCandidateSelector.select's own, separately-computed nav_target
-            # (TCK-20260810-COMBAT-PURSUIT-STALE-TARGET-SNAPSHOT-NEVER-RETARGETS) -- that function
-            # runs BEFORE this loop to decide which entities are even offered a chance to move,
-            # and its own un-refreshed staleness check was silently excluding an "arrived at a
-            # stale snapshot" entity from candidacy entirely, before this already-correct live
-            # retarget ever got a chance to run for it.
-            if not has_fresh_decision:
-                nav_target = MovementCandidateSelector.resolve_live_tracking_target(
-                    entity, state.entities, nav_target
-                )
+            # Determine target and mode (prefer update if present). With no fresh decision this tick the stored target is a
+            # snapshot of an earlier decision: it is live-refreshed for an entity-tracking move (TCK-20260809-COMBAT-PURSUIT-PER-
+            # TICK-TRACE, TCK-20260810-COMBAT-PURSUIT-STALE-TARGET-SNAPSHOT-NEVER-RETARGETS) and ignored for an entity holding an
+            # action task, which moves only on a tick that sets a target. MovementCandidateSelector.select uses the same rule.
+            nav_target = MovementCandidateSelector.movement_target(entity, ent_upd, state.entities, position_index)
 
             if not nav_target or entity.navigation.position == nav_target:
                 continue
@@ -340,6 +300,20 @@ class MovementPhase:
     # --- Helpers ---
 
     @staticmethod
+    def _swap_updates(state: AuthoritativeState, a: EntityState, b: EntityState, a_existing: EntityUpdate, b_existing: EntityUpdate) -> tuple[EntityUpdate, EntityUpdate]:
+        """Each side moves onto the other's tile and pays the step time of that tile (D75), merged onto its update so far this tick."""
+        a_old, b_old = a.navigation.position, b.navigation.position
+        a_swap = MovementPhase._build_position_swap_entity_update(
+            entity=a, new_position=b_old, reason=ReasonCode.POSITION_SWAP,
+            step_ready_tick=MovementSystem._step_ready_tick(a, True, b_old, state.tick, state),
+        )
+        b_swap = MovementPhase._build_position_swap_entity_update(
+            entity=b, new_position=a_old, reason=ReasonCode.POSITION_SWAP,
+            step_ready_tick=MovementSystem._step_ready_tick(b, True, a_old, state.tick, state),
+        )
+        return a_existing.merge(a_swap), b_existing.merge(b_swap)
+
+    @staticmethod
     def _can_attempt_position_swap_pair(
         state: AuthoritativeState,
         a: EntityState,
@@ -352,6 +326,9 @@ class MovementPhase:
         if a.navigation.movement_mode == MovementMode.HOLD:
             return False
         if b.navigation.movement_mode == MovementMode.HOLD:
+            return False
+        # Terrain cost is time (D75): an entity still taking its previous step does not swap either.
+        if state.tick < a.navigation.step_ready_tick or state.tick < b.navigation.step_ready_tick:
             return False
         a_pos = a.navigation.position
         b_pos = b.navigation.position
@@ -459,27 +436,16 @@ class MovementPhase:
         b_old: tuple[float, float],
     ) -> bool:
         return (
-            not MovementPhase._is_static_position_blocked(state, a_old)
-            and not MovementPhase._is_static_position_blocked(state, b_old)
+            not MovementCandidateSelector.is_static_position_blocked(state, a_old)
+            and not MovementCandidateSelector.is_static_position_blocked(state, b_old)
         )
-
-    @staticmethod
-    def _is_static_position_blocked(state: AuthoritativeState, pos: tuple[float, float]) -> bool:
-        tile = (int(pos[0]), int(pos[1]))
-        if getattr(state, "terrain", {}).get(tile) == "WALL":
-            return True
-        if tile in getattr(state, "blocked_tiles", set()):
-            return True
-        for building in getattr(state, "buildings", {}).values():
-            if tuple(building.position) == tile:
-                return True
-        return False
 
     @staticmethod
     def _build_position_swap_entity_update(
         entity: EntityState,
         new_position: tuple[float, float],
         reason,
+        step_ready_tick: float | None = None,
     ) -> EntityUpdate:
         # Movement no longer costs readiness -- see the matching note in
         # MovementSystem.resolve_move (src/engine/movement.py)
@@ -496,6 +462,7 @@ class MovementPhase:
                 oscillation_count_delta=-entity.navigation.oscillation_count,
                 last_position_set=entity.navigation.position,
                 clear_path=True,
+                step_ready_tick_set=step_ready_tick,
             ),
             stamina_update=StaminaUpdate(
                 current_delta=-entity.stamina.MOVE_COST,

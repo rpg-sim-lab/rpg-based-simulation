@@ -1,40 +1,45 @@
-"""AC #3 hand-orchestrated metamorphic validation for species hostility.
+"""Metamorphic validation for species hostility: raising declared species hostility never lowers the engagement rate of the pair it governs.
 
-TCK-20260831-RACE-RELATIONS-MATRIX, Step 12. Per the plan's explicit, user-approved
-resolution of investigation.md's Risk #1: `MutationLabOrchestrator.run_mutation_lab()` /
-`MutationEngine.apply_mutations` structurally cannot target content-catalog files
-(`target.split(".")[0]` must resolve against `WorldSpec`/`ScenarioSpec` model fields, and
-`species_relations.yaml` lives entirely outside both). This test bypasses that pipeline
-entirely and hand-orchestrates the same validation `MetamorphicRuleEngine.evaluate_rules()`
-provides: physically swap the on-disk `data/content/social/species_relations.yaml` wolf<->human
-entries between a no-entry baseline and a `hostility: "high"` variant, run the real
-`unit_faction_tension` corpus world (human town_council population + wolf wild_beast_pack
-population, "already proven population-stable to 2000 ticks") via
-`ScenarioLabOrchestrator.run_lab()` directly for each variant, compute a real
-`combat_engagement_rate` from each run's `simulation_events.jsonl`'s real
-`combat_engagement_started` events (NOT `run_report.json`, which has no such field), and
-call the real `MetamorphicRuleEngine.evaluate_rules()` directly against the resulting
-`variant_metrics`.
+TCK-20260831-RACE-RELATIONS-MATRIX, Step 12; re-pointed by TCK-20261011-SPECIES-HOSTILITY-METAMORPHIC-TEST-USES-A-PAIR-SPECIES-RELATIONS-STILL-GOVERNS.
 
-Does not extend MutationEngine or any shared lab infrastructure — stays self-contained to
-this ticket's own validation, per the plan's explicit scope guard.
+The pair. Wolves are wild creatures (`hostility.is_wild_creature`, decision 47): appraisal decides whom they fight, and `species_relations` never
+reaches them, so a wolf<->human variant would hold trivially (the 'high' variant changes nothing the kernel reads). The relation now uses a pair that
+`species_relations` still governs: a town_council human and a merchant_league human of the real `unit_faction_tension` world (two different factions,
+the same people-kind species, neutral at faction level). The baseline is the authored file (it has no human<->human row); the compared variant appends a
+`human_to_human` row of hostility "high", which `RelationProjectionService.project_relation` escalates to an enemy label for two different factions.
+
+Non-vacuity guard (`_pair_hostility_input`): before the engagement rates are compared, the test asserts that the 'high' variant CHANGES the hostility
+input the kernel reads for the pair (the faction-semantics verdict `hostility.faction_hostile` makes: False in the baseline, True in the high variant),
+and that neither member is a wild creature. If a later rule takes the pair out of `species_relations`, the test fails loudly instead of passing for
+the wrong reason. The hungry-wolf appraisal check lives in its own unit test (tests/unit/engine/test_hungry_wolf_hunts_prey_it_out_bands.py).
+
+Hand-orchestrated, as before: `MutationLabOrchestrator` cannot target content-catalog files, so the test swaps the on-disk
+`data/content/social/species_relations.yaml` between the two variants, runs the real world via `ScenarioLabOrchestrator.run_lab()` for each, counts
+`combat_engagement_started` events between the two factions' humans from each run's `simulation_events.jsonl`, and calls the real
+`MetamorphicRuleEngine.evaluate_rules()`. The governor is pinned to NORMAL (`PinnedNormalGovernor`) so host speed does not decide the outcome. The
+assertion keeps its form (pooled high rate >= pooled baseline rate, no tolerance band); the engagement counts per seed are printed.
 """
 import json
 import os
 import shutil
+from dataclasses import replace
 
 import pytest
 
+from src.worldbuilding.compiler import WorldCompiler
 from src.worldbuilding.repository import WorldRepository
 from src.lab.repository import ScenarioRepository, ExperimentRepository, LabRunRepository
 from src.lab.orchestrator import ScenarioLabOrchestrator
 from src.lab.schema import ScenarioSpec, ExperimentSpec, ExpectedRelationshipSpec
 from src.lab.metamorphic import MetamorphicRuleEngine
+import src.engine.governor as governor_module
+from tests.helpers.kernel_pinning import PinnedNormalGovernor
 
 SPECIES_RELATIONS_PATH = "data/content/social/species_relations.yaml"
 SCENARIO_ID = "species_hostility_metamorphic_check"
 EXPERIMENT_ID = "species_hostility_metamorphic_check_experiment"
-SEEDS = [201, 202, 203]
+GUARD_SEED = 301  # the seed whose compiled entities the input guard reads
+SEEDS = list(range(301, 311))  # fixed in advance; see the module docstring for the sizing
 TICKS = 200
 
 SCENARIO_DIR = f"data/scenarios/{SCENARIO_ID}"
@@ -43,54 +48,69 @@ LAB_RUN_BASELINE = "data/lab_runs/species_hostility_baseline"
 LAB_RUN_HIGH = "data/lab_runs/species_hostility_high"
 
 
-def _strip_wolf_human_entries(content: str) -> str:
-    """Removes the wolf_to_human / human_to_wolf blocks, leaving every other authored
-    entry (including every other pair) untouched -- the 'no-entry baseline' variant."""
-    blocks = content.split("\n\n")
-    kept = [
-        b for b in blocks
-        if 'id: "wolf_to_human"' not in b and 'id: "human_to_wolf"' not in b
-    ]
-    return "\n\n".join(kept)
-
-
-def _set_wolf_human_high(content: str) -> str:
-    """The 'compared' variant: wolf<->human hostility overwritten to 'high' both ways."""
-    stripped = _strip_wolf_human_entries(content)
-    addition = (
+def _set_human_pair_high(content: str) -> str:
+    """The 'compared' variant: a human<->human species row of hostility "high" appended. The authored file has no human<->human row, so the baseline is
+    the file as authored; the pair it governs is two different factions of the same people-kind species (town_council and merchant_league)."""
+    return content.rstrip("\n") + (
         "\n\n"
-        '- id: "wolf_to_human"\n'
-        '  source_species: "wolf"\n'
-        '  target_species: "human"\n'
-        '  relationship_model: "predator_prey"\n'
-        "  axes:\n"
-        '    hostility: "high"\n'
-        "\n"
-        '- id: "human_to_wolf"\n'
+        '- id: "human_to_human"\n'
         '  source_species: "human"\n'
-        '  target_species: "wolf"\n'
-        '  relationship_model: "predator_prey"\n'
+        '  target_species: "human"\n'
+        '  relationship_model: "people_pair"\n'
         "  axes:\n"
         '    hostility: "high"\n'
     )
-    return stripped + addition
 
 
-def _count_combat_engagements(lab_run_id: str) -> int:
-    total = 0
+def _pair_hostility_input(seed: int) -> bool:
+    """What the kernel's hostility test reads for the chosen pair: the faction semantics verdict (`hostility.faction_hostile`'s own call) of a
+    town_council human toward a merchant_league human, with their species in the context, from the species_relations file as it is on disk now.
+    Neither is a wild creature, so species_relations (not appraisal) governs the pair."""
+    from src.content_semantics.faction import get_faction_semantics_service, reset_faction_semantics_service
+    from src.content_semantics.relation import RelationContext
+    from src.engine.hostility import is_wild_creature
+    from tests.helpers.scenario import compile_world
+
+    reset_faction_semantics_service()
+    state = compile_world("unit_faction_tension", seed)
+    by_faction = {}
+    for ent in state.entities.values():
+        props = ent.identity.properties or {}
+        if props.get("species_id") == "human":
+            by_faction.setdefault(props.get("faction_id"), ent)
+    council, merchant = by_faction["town_council"], by_faction["merchant_league"]
+    assert not is_wild_creature(council) and not is_wild_creature(merchant), "the chosen pair must not be wild creatures (appraisal would govern it)"
+    context = RelationContext(distance=3.0, combat_engaged=False, source_species="human", target_species="human")
+    return bool(get_faction_semantics_service().is_hostile_compat("town_council", "merchant_league", context))
+
+
+def _is_pair_engagement(event: dict) -> bool:
+    """True for an engagement between a town_council human and a merchant_league human, in either direction (wolf engagements are not counted)."""
+    payload = event.get("payload") or {}
+    pair = set()
+    for key in ("attacker_snapshot", "defender_snapshot"):
+        snap = payload.get(key) or {}
+        pair.add((snap.get("species_id"), snap.get("faction_id")))
+    return pair == {("human", "town_council"), ("human", "merchant_league")}
+
+
+def _engagements_per_seed(lab_run_id: str) -> dict:
+    counts = {}
     for seed in SEEDS:
         run_id = f"run_{lab_run_id}_seed_{seed}"
         path = os.path.join("data", "lab_runs", lab_run_id, "runs", run_id, "simulation_events.jsonl")
         assert os.path.isfile(path), f"Missing simulation_events.jsonl for {run_id}"
+        count = 0
         with open(path, "r", encoding="utf-8") as f:
             for line in f:
                 line = line.strip()
                 if not line:
                     continue
                 event = json.loads(line)
-                if event.get("event_type") == "combat_engagement_started":
-                    total += 1
-    return total
+                if event.get("event_type") == "combat_engagement_started" and _is_pair_engagement(event):
+                    count += 1
+        counts[seed] = count
+    return counts
 
 
 def _cleanup_created_dirs():
@@ -118,7 +138,11 @@ def _cleanup_created_dirs():
 
 @pytest.mark.slow
 @pytest.mark.resource_budget_large
-def test_species_hostility_increase_does_not_decrease_combat_engagement_rate():
+def test_species_hostility_increase_does_not_decrease_combat_engagement_rate(monkeypatch):
+    # Test-scoped: Kernel.__init__ imports its default governor from this module lazily, and the lab
+    # orchestrator loads its world through WorldRepository.load_world (see the module docstring).
+    monkeypatch.setattr(governor_module, "ResourceGovernor", PinnedNormalGovernor)
+
     with open(SPECIES_RELATIONS_PATH, "r", encoding="utf-8") as f:
         original_content = f.read()
 
@@ -161,22 +185,30 @@ def test_species_hostility_increase_does_not_decrease_combat_engagement_rate():
     experiment_repo.save_experiment(experiment_spec)
 
     try:
-        # Baseline variant: no wolf<->human species_relations entries at all.
-        with open(SPECIES_RELATIONS_PATH, "w", encoding="utf-8") as f:
-            f.write(_strip_wolf_human_entries(original_content))
+        # Baseline variant: the file as authored (no human<->human row).
+        baseline_hostile = _pair_hostility_input(GUARD_SEED)
 
         baseline_orchestrator = ScenarioLabOrchestrator(world_repo, scenario_repo, experiment_repo, lab_run_repo)
         baseline_orchestrator.run_lab(EXPERIMENT_ID, lab_run_id="species_hostility_baseline")
-        baseline_engagements = _count_combat_engagements("species_hostility_baseline")
+        baseline_per_seed = _engagements_per_seed("species_hostility_baseline")
+        baseline_engagements = sum(baseline_per_seed.values())
         baseline_rate = baseline_engagements / (TICKS * len(SEEDS))
 
-        # Compared variant: wolf<->human hostility overwritten to "high" both directions.
+        # Compared variant: a human<->human row of hostility "high".
         with open(SPECIES_RELATIONS_PATH, "w", encoding="utf-8") as f:
-            f.write(_set_wolf_human_high(original_content))
+            f.write(_set_human_pair_high(original_content))
+        high_hostile = _pair_hostility_input(GUARD_SEED)
+        # Non-vacuity guard: the 'high' variant must change the hostility input the kernel reads for this pair.
+        assert (baseline_hostile, high_hostile) == (False, True), (
+            f"The 'high' variant no longer changes the hostility input for the town_council/merchant_league human pair "
+            f"(baseline {baseline_hostile}, high {high_hostile}): species_relations does not govern this pair any more, so the "
+            f"engagement comparison below would hold for the wrong reason. Pick a pair species_relations still governs."
+        )
 
         high_orchestrator = ScenarioLabOrchestrator(world_repo, scenario_repo, experiment_repo, lab_run_repo)
         high_orchestrator.run_lab(EXPERIMENT_ID, lab_run_id="species_hostility_high")
-        high_engagements = _count_combat_engagements("species_hostility_high")
+        high_per_seed = _engagements_per_seed("species_hostility_high")
+        high_engagements = sum(high_per_seed.values())
         high_rate = high_engagements / (TICKS * len(SEEDS))
 
         variant_metrics = {
@@ -194,13 +226,16 @@ def test_species_hostility_increase_does_not_decrease_combat_engagement_rate():
 
         assert len(results) == 1
         result = results[0]
+        print(f"species metamorphic per-seed engagements: baseline={baseline_per_seed} high={high_per_seed}")
+        # The input guard above is the non-vacuity guard. This only stops a hollow metric (no engagement of the pair in either variant).
         assert not (baseline_rate == 0.0 and high_rate == 0.0), (
-            "Degenerate zero/zero engagement rate in both variants -- would indicate the "
-            "metric extraction produced a hollow result, not real evidence."
+            "Zero engagements of the pair in both variants even though the hostility input differs: the pair never meets in this layout, "
+            "so the comparison carries no evidence. Re-check spawn and perception for town_council and merchant_league."
         )
         assert result.status == "PASSED", (
-            f"Increasing wolf<->human species hostility decreased combat_engagement_rate: "
-            f"baseline={baseline_rate}, high_hostility={high_rate}, message={result.message}"
+            f"Increasing human<->human species hostility decreased combat_engagement_rate: "
+            f"baseline={baseline_rate}, high_hostility={high_rate}, message={result.message}; "
+            f"per seed baseline={baseline_per_seed}, high={high_per_seed}"
         )
     finally:
         with open(SPECIES_RELATIONS_PATH, "w", encoding="utf-8") as f:

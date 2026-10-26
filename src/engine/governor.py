@@ -20,6 +20,10 @@ class ResourceGovernor:
     Proof: Verified by mb_test_matrix.md and test_milestone_b_closure.py.
     """
 
+    #: True for a governor that must see zeroed pressure signals (the kernel then uses the same ZeroedSignalSource as ``audit_mode``), so neither the
+    #: mode nor the phase budgets nor any other wall-clock reader can depend on host speed. Overridden by the test pin.
+    zeroes_signals: bool = False
+
     def __init__(self) -> None:
         """Initialize the governor. Constants are now profile-driven."""
         pass
@@ -72,17 +76,15 @@ class ResourceGovernor:
         profile: RuntimeProfile, 
         signals: PressureSignals
     ) -> RuntimeMode:
+        cost_ms = signals.effective_tick_cost
+        budget_ms = signals.effective_tick_budget(profile.max_tick_budget_ms)
         # 1. SURVIVAL (3): Critical overload
-        if signals.work_debt_total >= profile.max_work_debt:
-            return RuntimeMode.SURVIVAL
-        if signals.tick_compute_ms >= profile.max_tick_budget_ms * 1.5:
+        if cost_ms >= budget_ms * 1.5:
             return RuntimeMode.SURVIVAL
         if signals.memory_estimate_mb >= profile.max_ram_mb:
             return RuntimeMode.SURVIVAL
             
         # 2. DEGRADED (2): High pressure
-        if signals.work_debt_total >= profile.max_work_debt * 0.5:
-            return RuntimeMode.DEGRADED
         # Confirmed (real, uninstrumented sustained-load Kernel run, not reasoning alone --
         # TCK-20260908-DEGRADED-POLICY-NONURGENT-MOVEMENT-STARVATION) as the real driver of
         # ScanPolicy.EXACT_DIRTY, whose own non-urgent movement-candidate exclusion used to be
@@ -92,7 +94,7 @@ class ResourceGovernor:
         # measurement, so it is PERF-D1 input 1: it still makes the mode depend on host speed. The
         # kernel's mid-tick and end-of-tick budget checks no longer feed the mode or drop work
         # (report-only, TCK-20261006-PERF-TICK-BUDGET-THROTTLE-REPORT-ONLY); this is the one that remains.
-        if signals.tick_compute_ms >= profile.max_tick_budget_ms:
+        if cost_ms >= budget_ms:
             return RuntimeMode.DEGRADED
         if signals.worker_utilization >= 0.9 or signals.queue_utilization >= 0.9:
             return RuntimeMode.DEGRADED
@@ -100,7 +102,7 @@ class ResourceGovernor:
             return RuntimeMode.DEGRADED
             
         # 3. CONSTRAINED (1): Early pressure
-        if signals.tick_compute_ms >= profile.max_tick_budget_ms * 0.7:
+        if cost_ms >= budget_ms * 0.7:
             return RuntimeMode.CONSTRAINED
         if signals.worker_utilization >= 0.7 or signals.queue_utilization >= 0.7:
             return RuntimeMode.CONSTRAINED
@@ -140,7 +142,6 @@ class ResourceGovernor:
             recovery_limit_ms = (profile.max_tick_budget_ms * 0.7) * watermark
             recovery_limit_capacity = 0.7 * watermark
             recovery_limit_ram = (profile.max_ram_mb * profile.degradation_threshold_ram) * watermark
-            recovery_limit_debt = (profile.max_work_debt * 0.5) * watermark
             
             # Note: We check avg_compute for stability
             if sample.tick_compute_ms_avg > recovery_limit_ms:
@@ -148,8 +149,6 @@ class ResourceGovernor:
             if sample.worker_utilization > recovery_limit_capacity or sample.queue_utilization > recovery_limit_capacity:
                 return False
             if sample.memory_estimate_mb > recovery_limit_ram:
-                return False
-            if sample.work_debt_total > recovery_limit_debt:
                 return False
                 
         return True

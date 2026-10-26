@@ -8,7 +8,7 @@ tags: [performance, architecture, engine]
 
 # Authoritative Pipeline Phase Inventory
 
-Generated from commit `262d7e57ba18a1ac17b66dffa7b0fa6f62d93e9e` by `tools/perf/phase_inventory.py`.
+Generated from commit `b23e7812846e56832837e34ab54ccb9a9f859f20` by `tools/perf/phase_inventory.py`.
 Regenerate with:
 
 ```
@@ -23,9 +23,9 @@ Counts below are measured, not asserted anywhere in a test: `refine()` changes o
 
 ## 1. Executable inventory (`src/engine/pipeline.py::AuthoritativeApplyPipeline.refine`)
 
-- `run_phase()` calls: **44**; distinct literal names: **44**; duplicate names: none
+- `run_phase()` calls: **43**; distinct literal names: **43**; duplicate names: none
 - dynamic-name calls: 0; conditional/loop calls: 0; feature-flagged calls: 12
-- direct operations on `update` (not through `run_phase`): 9; direct class-method calls outside `run_phase`: 5
+- direct operations on `update` (not through `run_phase`): 9; direct class-method calls outside `run_phase`: 6
 
 ### 1.1 `run_phase()` calls in source order
 
@@ -54,27 +54,26 @@ Counts below are measured, not asserted anywhere in a test: `refine()` changes o
 | 21 | `interaction_enforcement` | 333 | - | InteractionSystem.enforce | no |
 | 22 | `building_sabotage` | 334 | - | BuildingSabotageSystem.resolve | no |
 | 23 | `town_resolution` | 339 | - | TownResolutionSystem.resolve | no |
-| 24 | `gold_sink` | 344 | - | GoldSinkSystem.apply | no |
-| 25 | `world_dynamics` | 348 | - | WorldDynamicsSystem.resolve_dynamics | no |
-| 26 | `world_emergence` | 355 | ENABLE_WORLD_EMERGENCE | WorldEmergencePhase.execute | no |
-| 27 | `quest_rewards` | 363 | - | AuthoritativeApplyPipeline._resolve_quest_rewards | no |
-| 28 | `guild_visit` | 369 | ENABLE_GUILD_QUEST_GENERATION | GuildVisitPhase.resolve | no |
-| 29 | `shop` | 371 | - | ShopSystem.enforce | no |
-| 30 | `paid_information` | 375 | - | PaidInformationTransactionSystem.enforce | no |
-| 31 | `resource_transactions` | 377 | - | AuthoritativeApplyPipeline._resolve_resource_transactions | no |
-| 32 | `evolution` | 381 | - | EvolutionSystem.evaluate | no |
-| 33 | `progression_conversion` | 387 | ENABLE_PROGRESSION_EVOLUTION | ProgressionConversionPhase.execute | no |
-| 34 | `strategic_intelligence` | 398 | - | StrategicIntelligenceSystem.fused_strategic_pass | no |
-| 35 | `belief_staleness_decay` | 408 | - | BeliefCycleSystem.resolve_lead_staleness | no |
-| 36 | `lead_contradiction` | 409 | - | AuthoritativeApplyPipeline._enforce_lead_contradiction | no |
-| 37 | `near_death_hardening` | 410 | - | AuthoritativeApplyPipeline._apply_near_death_hardening | no |
-| 38 | `occupancy_resolution` | 412 | - | AuthoritativeApplyPipeline._resolve_occupancy_conflicts | no |
-| 39 | `lifecycle` | 414 | - | LifecycleSystem.resolve_lifecycle | no |
-| 40 | `groups` | 416 | - | AuthoritativeApplyPipeline._resolve_groups | no |
-| 41 | `clan_lifecycle` | 418 | - | AuthoritativeApplyPipeline._resolve_clan_lifecycle | no |
-| 42 | `expired_offers` | 425 | - | ContractService.reap_expired_offers | no |
-| 43 | `capacity_enforcement` | 427 | - | CapacityEnforcementPhase.enforce | no |
-| 44 | `faction_sentiment` | 441 | - | _SU_fs | no |
+| 24 | `world_dynamics` | 342 | - | WorldDynamicsSystem.resolve_dynamics | no |
+| 25 | `world_emergence` | 349 | ENABLE_WORLD_EMERGENCE | WorldEmergencePhase.execute | no |
+| 26 | `quest_rewards` | 357 | - | AuthoritativeApplyPipeline._resolve_quest_rewards | no |
+| 27 | `guild_visit` | 363 | ENABLE_GUILD_QUEST_GENERATION | GuildVisitPhase.resolve | no |
+| 28 | `shop` | 365 | - | ShopSystem.enforce | no |
+| 29 | `paid_information` | 369 | - | PaidInformationTransactionSystem.enforce | no |
+| 30 | `resource_transactions` | 371 | - | AuthoritativeApplyPipeline._resolve_resource_transactions | no |
+| 31 | `evolution` | 375 | - | EvolutionSystem.evaluate | no |
+| 32 | `progression_conversion` | 381 | ENABLE_PROGRESSION_EVOLUTION | ProgressionConversionPhase.execute | no |
+| 33 | `strategic_intelligence` | 392 | - | StrategicIntelligenceSystem.fused_strategic_pass | no |
+| 34 | `belief_staleness_decay` | 402 | - | BeliefCycleSystem.resolve_lead_staleness | no |
+| 35 | `lead_contradiction` | 403 | - | AuthoritativeApplyPipeline._enforce_lead_contradiction | no |
+| 36 | `near_death_hardening` | 404 | - | AuthoritativeApplyPipeline._apply_near_death_hardening | no |
+| 37 | `occupancy_resolution` | 406 | - | AuthoritativeApplyPipeline._resolve_occupancy_conflicts | no |
+| 38 | `lifecycle` | 408 | - | _resolve_death_transfers | no |
+| 39 | `groups` | 410 | - | AuthoritativeApplyPipeline._resolve_groups | no |
+| 40 | `clan_lifecycle` | 412 | - | AuthoritativeApplyPipeline._resolve_clan_lifecycle | no |
+| 41 | `expired_offers` | 419 | - | ContractService.reap_expired_offers | no |
+| 42 | `capacity_enforcement` | 421 | - | CapacityEnforcementPhase.enforce | no |
+| 43 | `faction_sentiment` | 435 | - | _SU_fs | no |
 
 ### 1.2 Direct operations on `update` that do not go through `run_phase()`
 
@@ -87,11 +86,11 @@ These are a separate counted unit: they transform the update between phases.
 | 2 | 51 | assign | `replace` | if@L50 |
 | 3 | 100 | assign | `replace` | no |
 | 4 | 328 | assign | `update.replace` | no |
-| 5 | 362 | assign | `update.replace` | no |
-| 6 | 380 | assign | `update.replace` | no |
-| 7 | 395 | assign | `update.replace` | no |
-| 8 | 449 | assign | `update.replace` | no |
-| 9 | 452 | assign | `update.replace` | if@L450 |
+| 5 | 356 | assign | `update.replace` | no |
+| 6 | 374 | assign | `update.replace` | no |
+| 7 | 389 | assign | `update.replace` | no |
+| 8 | 443 | assign | `update.replace` | no |
+| 9 | 446 | assign | `update.replace` | if@L444 |
 
 ### 1.3 Direct class-method calls made by `refine()` outside `run_phase()`
 
@@ -104,15 +103,16 @@ nested function. A structural heuristic: it finds services wired in directly, wh
 | 1 | 64 | `OccupancySnapshot.from_state` | if@L63 |
 | 2 | 96 | `StateUpdateCompactor.compact_with_metrics` | no |
 | 3 | 230 | `FactionDecisionPhase.execute` | no |
-| 4 | 439 | `FactionSentimentService.derive_from_bond_updates` | no |
-| 5 | 440 | `FactionSentimentService.decay_stale_sentiments` | no |
+| 4 | 341 | `EntityGenerator.for_state` | no |
+| 5 | 433 | `FactionSentimentService.derive_from_bond_updates` | no |
+| 6 | 434 | `FactionSentimentService.decay_stale_sentiments` | no |
 
 ## 2. Documented sources against the executable phases
 
 | Source | Path | Stated count | Names listed | Executable phases with no entry | Entries matching no executable phase |
 |---|---|---|---|---|---|
-| authoritative_pipeline_md | `docs/engine/authoritative_pipeline.md` | - | 39 | `habit_bias_action_style`, `role_model_selection`, `information_propagation`, `belief_staleness_decay`, `clan_lifecycle`, `faction_sentiment` | `active_contracts` |
-| d19_domain_phase_inventory | `docs/audits/D19_domain_phase_inventory.md` | 38 | 36 | `memory_update`, `habit_bias_action_style`, `role_model_selection`, `information_intent_execution`, `information_propagation`, `guild_visit`, `belief_staleness_decay`, `lead_contradiction`, `clan_lifecycle`, `faction_sentiment` | `adventure_decision`, `active_contracts` |
+| authoritative_pipeline_md | `docs/engine/authoritative_pipeline.md` | - | 39 | `habit_bias_action_style`, `role_model_selection`, `information_propagation`, `belief_staleness_decay`, `clan_lifecycle`, `faction_sentiment` | `gold_sink`, `active_contracts` |
+| d19_domain_phase_inventory | `docs/audits/D19_domain_phase_inventory.md` | 38 | 36 | `memory_update`, `habit_bias_action_style`, `role_model_selection`, `information_intent_execution`, `information_propagation`, `guild_visit`, `belief_staleness_decay`, `lead_contradiction`, `clan_lifecycle`, `faction_sentiment` | `adventure_decision`, `gold_sink`, `active_contracts` |
 | codex_generator_note | `tools/agent_orchestration_codex_adapter/generator.py` | - | 0 | n/a (count only) | n/a (count only) |
 | subphase_domain_contracts_epic | `docs/plans/design_enhancement/subphase_domain_contracts_epic.md` | - | 0 | n/a (count only) | n/a (count only) |
 
@@ -127,7 +127,7 @@ Notes:
 
 ### 3.1 `PhaseDependencyGraph.PHASES` (31 names)
 
-- In the pipeline but not in the graph: `habit_bias_action_style`, `role_model_selection`, `faction_awareness`, `information_propagation`, `diplomatic_transitions`, `military_conflict`, `gold_sink`, `guild_visit`, `paid_information`, `belief_staleness_decay`, `lead_contradiction`, `clan_lifecycle`, `expired_offers`, `faction_sentiment`
+- In the pipeline but not in the graph: `habit_bias_action_style`, `role_model_selection`, `faction_awareness`, `information_propagation`, `diplomatic_transitions`, `military_conflict`, `guild_visit`, `paid_information`, `belief_staleness_decay`, `lead_contradiction`, `clan_lifecycle`, `expired_offers`, `faction_sentiment`
 - In the graph but not in the pipeline: `compactor`
 
 ### 3.2 `phase_domain_permissions.py`

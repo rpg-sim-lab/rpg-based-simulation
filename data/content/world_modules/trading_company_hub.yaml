@@ -20,12 +20,13 @@ regions:
     type: "town"
     grid_bounds: [45, 10, 80, 45]
     terrain: "plain"
-    hazard_level: 0.5
+    hazard_level: 0.0
     hazard_kind: "NATURAL_TERRAIN"
     tags: [plain, trade_route]
 factions: ["merchant_league", "town_council"]
 population_recipes:
   - role: "merchant"
+    species_id: "human"
     count: "{merchant_count}"
     faction: "merchant_league"
     spawn_region: "hometown"

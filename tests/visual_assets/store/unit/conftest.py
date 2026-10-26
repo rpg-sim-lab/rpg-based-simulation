@@ -7,6 +7,7 @@ from pathlib import Path
 
 import pytest
 
+from tests.visual_assets.store.lock_isolation import redirect_real_catalog_lock
 from visual_assets.store.contracts import RECORD_TYPES
 
 FIXTURES = Path(__file__).resolve().parents[4] / "visual_assets" / "catalog" / "fixtures" / "contracts"
@@ -69,6 +70,8 @@ def snapshot(root) -> dict[str, tuple]:
         return out
     for dirpath, dirnames, filenames in os.walk(root, followlinks=False):
         for name in dirnames + filenames:
+            if name == ".store.lock" or name.startswith(".deletions"):
+                continue  # ADR D24: the advisory lock file and the local gc deletion log are gitignored local files, not tracked store state
             path = Path(dirpath) / name
             mode = path.lstat().st_mode
             rel = str(path.relative_to(root))
@@ -79,6 +82,19 @@ def snapshot(root) -> dict[str, tuple]:
             else:
                 out[rel] = ("dir" if st.S_ISDIR(mode) else "special",)
     return out
+
+
+# #657: no test in this directory takes the real catalog lock (a tmp catalog keeps its own `.store.lock`)
+_store_lock_in_tmp = pytest.fixture(autouse=True)(redirect_real_catalog_lock)
+
+
+@pytest.fixture(autouse=True)
+def _fresh_decode_memo():
+    """The PNG decode memo is process-global; a test that patches the decoder must never see another test's cached result."""
+    from visual_assets.store import pixels
+
+    pixels.decode_png.cache_clear()
+    yield
 
 
 @pytest.fixture

@@ -156,7 +156,8 @@ def test_real_registry_enumeration_and_binding_counts_pinned():
     (`strategic_systems/town_targeting`). The 8 left are `domains/motivation` (Child B) and seven modules with no
     caller in `src/`, filed for deletion as
     TCK-20261007-DEAD-SYSTEMS-MODULES-WITH-NO-CALLER-BLOCK-THE-MECHANISM-COMPLETENESS-GATE. Taken by running the
-    check."""
+    check.
+    """
     data = _real_registry_data()
     report = build_report(data)
     assert report.total_targets == 65
@@ -225,7 +226,52 @@ def test_wider_scope_numbers_pinned():
     # lookup; functions only, bound under `knowledge_model`, so it adds no unbound file or mechanism-shaped class).
     # 310 -> 311 on 2026-10-08 (layer-order fix): +src/content/common_knowledge_seed.py (KNOW-04's seeding, moved out of
     # src/cognition/common_knowledge.py so the compiler and spawner need not import cognition; bound under `knowledge_model`).
-    assert wider["scope_files"] == 311
+    # 311 -> 312 on 2026-10-08 (CONFLICT-04): +src/engine/tactical_hold.py (the held swing and the stalemate-break emission;
+    # functions only, bound under `tactical_decision`, so it adds no unbound file or mechanism-shaped class).
+    # 312 -> 313 on 2026-10-08 (movement-layer rule): +src/engine/hostility.py (the shared perceived-hostile test; functions only,
+    # bound under `tactical_decision`, so it adds no unbound file or mechanism-shaped class).
+    # 313 -> 314 on 2026-10-08 (Decision 27): +src/ai/goals/opening_steps.py (the opening steps a need with no open way can take; pure
+    # functions and one small dataclass, unbound: it is a helper of the hunger goal, not a mechanism of its own).
+    # 314 -> 316 on 2026-10-08 (PERF governor Phase A, merged on top of Decision 27; 313 -> 315 on main): +src/engine/signal_source.py (the Live, Zeroed and Canonical signal sources) and
+    # +src/engine/work_units.py (WORK_MODEL_V1 constants and pure functions). Both are runtime-governance infrastructure with no gameplay
+    # mechanism of their own, beside the already-unbound governor.py and runtime_status.py, so they stay unbound (see unbound_files below);
+    # the classes in signal_source.py add no wired unbound candidate (candidates and wired are unchanged).
+    # 316 -> 317 on 2026-10-09 (decision 36): +src/engine/starvation.py (pure stage functions; bound under `attributes_biology`, so it adds no
+    # unbound file or mechanism-shaped class).
+    # 317 -> 323 on 2026-10-09 (EXCH-02 earning chain): +src/engine/building_services.py, building_arrival.py, serves.py, service_prices.py,
+    # shop_sale.py and work_shift.py. All six are pure functions and constants (no class), unbound helpers of the town services, so they
+    # add no unbound mechanism-shaped class (candidates stay 72).
+    # 323 -> 321 on 2026-10-09 (batch 4): the dead src/town/inn.py and src/town/home.py are deleted.
+    # 321 -> 323 on 2026-10-09 (sleep collapse, decision 41): +src/engine/sleep_debt.py (the stage table and pure functions; no mechanism-shaped
+    # class) and +src/engine/way_in_range.py (one function, the range rule). Both are helpers.
+    # 323 -> 324 on 2026-10-11 (D57, #500 folded into the combined RPG PR): +src/worldbuilding/camp_food.py (camp_food_gaps and
+    # camp_food_sources; functions only, no class, so it adds no unbound mechanism-shaped class).
+    # 324 -> 327 on 2026-10-11 (EXCH-02 treasury batch, folded into the combined RPG PR): +src/core/treasury.py (the treasury accessor) and src/engine/place_tax.py (tax and reward payer).
+    # (same batch): +src/engine/repair.py and +src/core/models/world_records.py (data records and a pure
+    # function; unbound helpers) and -src/engine/gold_sink.py (GoldSinkSystem retired: one unbound candidate fewer).
+    # 327 -> 328 on 2026-10-11 (held-move completion, divergence 2.113): +src/engine/tile_distance.py (one function, the whole-tile
+    # Manhattan distance, a leaf helper; no class, so it adds no unbound candidate). The hunting branch adds the same file: one bump, not two.
+    # 328 -> 333 on 2026-10-11 (hunting, diet gate and grazing, owner decisions 44 to 50 and row 59): +src/engine/appraisal.py, carcass.py,
+    # tactical_avoid.py, +src/core/resource_regrowth.py and +src/worldassembly/cover.py (tile_distance.py is the fold's, already counted: one bump,
+    # not two). Functions and constants only (appraisal.py holds one Relation enum), helpers of the existing mechanisms: no wired unbound class.
+    # 333 -> 334 on 2026-10-13 (natural healing, owner decision 42, divergence 2.116): +src/engine/natural_healing.py (HealingTable and hp_gain),
+    # bound under `attributes_biology` (implemented_by ::hp_gain), so unbound_files and candidates are unchanged.
+    # 334 -> 335 on 2026-10-13 (M0 gate H6, starvation-death record): +src/ai/goals/ways.py (the food ways in reach: a pure read and one enum);
+    # src/observability/starvation_record.py is outside the scope globs. rpg-planner binds and recomputes at the fold.
+    # 335 -> 338 on 2026-10-13 (code-health extractions, behaviour-free): +src/engine/run_identity.py (out of kernel.py),
+    # +src/worldassembly/spawn_position.py (out of resolver.py) and +src/core/update_models/buildings.py (BuildingUpdate out of updates.py).
+    # 338 -> 337 on 2026-10-14 (D67/D70): -src/world/spawn.py (the density top-up SpawnService, removed; divergence 2.122).
+    # 337 -> 338 on 2026-10-13 (M0 gate V8): +src/core/spawn_source.py (SpawnKind, SpawnSource: a record of where an add came from).
+    # 338 -> 339 (run ledger): +src/ai/goals/kind_group.py (the kind group from the declared diet; functions only). src/observability/run_ledger.py is outside the scope globs.
+    # 339 -> 340 on 2026-10-14 (D72, folded into rpg-next): +src/content/terrain_cost.py (the content-declared terrain cost accessor).
+    # 340 -> 341 on 2026-10-14 (diet slice of SURV-05): +src/worldbuilding/diet_declaration.py (two checks: a compiled body names a declared diet; a recipe names a known species; functions only).
+    # 341 -> 342 on 2026-10-15 (typed death cause): +src/core/death_cause.py (DeathCause, HpLossSource, DeathRecord: enums and one frozen record). src/observability/death_ledger.py is outside the scope globs.
+    # 342 -> 343 on 2026-10-16 (D75 route step, divergence 2.128): +src/engine/route_search.py (RoutePlanStore and the bounded terrain-cost search).
+    # 343 -> 344 on 2026-10-17 (grief-as-state, decision 80, divergence 2.134): +src/core/grief_triggers.py (pending_grief_triggers, a pure read of
+    # death records and trust), bound under `cross_episode_grief_nemesis`, so unbound_files is unchanged.
+    # 344 -> 345 on 2026-10-21 (TCK-20261020-A-ESCALATED-NEED-IS-NEVER-REFUSED-FOR-CAPACITY): +src/ai/goals/escalation.py (escalated_need_wins, bound under
+    # `goal_hierarchy`; functions only, so it adds no unbound file or mechanism-shaped class).
+    assert wider["scope_files"] == 345
     # 233 -> 227 on 2026-10-05: the world-building split names six more files (worldmodules/normalizer,
     # worldassembly/resolve_io, worldbuilding/repository and validator, worldgeneration/generator and scorer).
     # Then +1 for the unbound entity_target_objective.py module (TCK-20261002-COMBAT-OBJECTIVE-TARGETS-...).
@@ -235,9 +281,44 @@ def test_wider_scope_numbers_pinned():
     # (a lookup and an advisory report, no mechanism of their own); biological_needs.py is bound under `attributes_biology`.
     # 228 -> 232 on 2026-10-07 (SURV-07): the four new modules above are unbound helpers (pure functions, no mechanism of their own).
     # KNOW-04 (2026-10-07): src/cognition/common_knowledge.py is bound under `knowledge_model`, so unbound_files stays 232.
-    assert wider["unbound_files"] == 232
+    # CONFLICT-04: tactical_hold.py is bound under `tactical_decision`, so unbound_files stays 232.
+    # Decision 27: opening_steps.py is an unbound helper, so unbound_files is 233.
+    # 232 -> 234 on 2026-10-08 (PERF governor Phase A): src/engine/signal_source.py and src/engine/work_units.py are unbound
+    # runtime-governance infrastructure (no gameplay mechanism; the same treatment as governor.py and runtime_status.py).
+    # 235 -> 241 on 2026-10-09 (EXCH-02 earning chain): the six helper modules above are unbound.
+    # 241 -> 236 on 2026-10-09 (rpg-planner, after #468): building_services, building_arrival, shop_sale, work_shift and serves
+    # are bound under `town_services`; service_prices.py stays an unbound constants module.
+    # 236 -> 234 on 2026-10-09 (batch 4): inn.py and home.py were unbound dead modules.
+    # 234 -> 236 on 2026-10-09 (sleep collapse): the two helper modules above are unbound.
+    # 236 -> 237 on 2026-10-11 (D57): src/worldbuilding/camp_food.py is an unbound helper (a validator report: pure functions, no mechanism).
+    # 237 -> 240 on 2026-10-11 (EXCH-02 treasury batch): treasury.py and place_tax.py are unbound until rpg-planner binds them (mechanisms.yaml is its).
+    # (same batch): repair.py and world_records.py unbound, gold_sink.py removed.
+    # 240 -> 241 on 2026-10-11 (divergence 2.113): src/engine/tile_distance.py is an unbound leaf helper (one function).
+    # 241 -> 246 on 2026-10-11 (hunting, diet gate and grazing): the five new helper modules above are unbound.
+    # 246 -> 247 on 2026-10-13 (H6): src/ai/goals/ways.py is an unbound helper (a pure read); rpg-planner binds and recomputes at the fold.
+    # 247 -> 250 on 2026-10-13 (code-health extractions): the three moved-out modules above are unbound helpers; the code they hold was
+    # already unbound in its old module, and candidates are unchanged.
+    # 250 -> 251 on 2026-10-13 (M0 gate V8): +src/core/spawn_source.py is unbound (two names, a record of where an add came from); rpg-planner binds it.
+    # 251 -> 252 (run ledger): +src/ai/goals/kind_group.py is unbound (a lookup, functions only); rpg-planner binds it.
+    # 252 -> 250 on 2026-10-14 (rpg-planner binding): src/ai/goals/kind_group.py::kind_group is bound under `attributes_biology` (the kind group
+    # read from the declared diet), and src/core/spawn_source.py::SpawnSource under `humanoid_reproduction` (its one live BIRTH producer).
+    # 250 -> 251 on 2026-10-14 (D72): src/content/terrain_cost.py is an unbound helper (a content-backed lookup). Left unbound on purpose:
+    # D75 moves where terrain cost is paid (time, then route), so it is bound with that step's mechanism, not the pre-check's.
+    # 251 -> 252 on 2026-10-14 (D70, 2.125): src/world/raid.py is no longer cited; `faction_raid` is a gap (the raid spawner is deleted, the module
+    # keeps only its constants for the raid that returns with caused war, M3).
+    # 252 -> 253 on 2026-10-14 (diet slice of SURV-05): +src/worldbuilding/diet_declaration.py is unbound; rpg-planner binds it.
+    # 253 -> 254 on 2026-10-15 (typed death cause): src/core/death_cause.py is in scope and bound to no mechanism; rpg-planner binds it at the fold.
+    # 254 -> 255 on 2026-10-16 (D75 route step): +src/engine/route_search.py, in scope and unbound.
+    # 255 -> 251 on 2026-10-16 (rpg-planner binding at the fold): route_search.py::route_next_step and content/terrain_cost.py::terrain_cost
+    # under `movement` (terrain cost is now paid in step time and route weighting, so it is movement's), death_cause.py::DeathRecord under
+    # `aging_death` (the record resolve_lifecycle writes at death), diet_declaration.py::require_declared_diet under `attributes_biology`.
+    assert wider["unbound_files"] == 251
     # 73 -> 72 on 2026-10-07 (row 7 (b) pass): src/quests/generator.py::QuestGenerator is now bound under `guilds`.
-    assert wider["candidates"] == 72  # unbound mechanism-shaped classes, wired or not
+    # 72 -> 71 on 2026-10-11 (#500, D57): src/engine/rpg_depth.py::LeashService is cited under `tactical_decision` (it became wired when
+    # the hunger and fatigue goals started calling `way_in_range`), so it is no longer an unbound candidate.
+    # 71 -> 70 on 2026-10-11 (treasury batch): GoldSinkSystem is gone.
+    # 70 -> 71 on 2026-10-14 (D70, 2.125): RaidService is no longer cited (`faction_raid` is a gap), so it is an unbound candidate again.
+    assert wider["candidates"] == 71  # unbound mechanism-shaped classes, wired or not
     assert len(wider["wired"]) == 21  # ... of which referenced from another top-level package
     assert len(WIDER_EXCLUSIONS) == 18 and len(WIDER_PENDING) == 3
 

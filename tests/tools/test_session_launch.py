@@ -22,7 +22,7 @@ if str(REAL_ROOT) not in sys.path:
 
 from tools.sessions import launch as ln  # noqa: E402
 from tools.sessions import state as st  # noqa: E402
-from tools.sessions.roster import load_roster  # noqa: E402
+from tools.sessions.roster import handover_rel, load_roster  # noqa: E402
 
 ROSTER = load_roster(REAL_ROOT)
 ROLE = "agent-working-implementer"
@@ -106,6 +106,47 @@ def test_instance_names_follow_max_sessions():
     roster = dataclasses.replace(ROSTER, roles=tuple(two if r.role == ROLE else r for r in ROSTER.roles))
     assert ln.resolve_target(f"{ROLE}-2", roster).instance == f"{ROLE}-2"
     assert ln.resolve_target(f"{ROLE}-2", ROSTER) is None and ln.resolve_target(f"{ROLE}-3", roster) is None
+
+
+def test_the_real_roster_gives_rpg_implementer_three_seats_and_no_fourth():
+    """TCK-20261009-RPG-IMPLEMENTER-THIRD-SEAT: Lane C launches as `rpg-implementer-3`."""
+    third = ln.resolve_target("rpg-implementer-3", ROSTER)
+    assert third is not None and third.role.role == "rpg-implementer" and third.instance == "rpg-implementer-3"
+    assert ln.resolve_target("rpg-implementer-4", ROSTER) is None
+    # every instance shares the role's single handover note
+    assert third.role.handover == ROSTER.role("rpg-implementer").handover
+
+
+def test_each_instance_has_its_own_handover_path_and_the_first_keeps_the_roles(repo, seat_worktree, monkeypatch, capsys):
+    """TCK-20261009-PER-INSTANCE-HANDOVER-NOTE."""
+    role = ROSTER.role("rpg-implementer")
+    assert handover_rel(role, "rpg-implementer") == handover_rel(role) == ".claude/handover/rpg-implementer.md"
+    assert handover_rel(role, "rpg-implementer-3") == ".claude/handover/rpg-implementer-3.md"
+    monkeypatch.setattr(os, "execvpe", lambda *a, **k: pytest.fail("must not exec in a dry run"))
+    for name, rel in (("rpg-implementer", "rpg-implementer.md"), ("rpg-implementer-3", "rpg-implementer-3.md")):
+        assert ln.main([name, "--dry-run", "--worktree", str(seat_worktree)], root=seat_worktree) == 0
+        assert f"handover note: {repo}/.claude/handover/{rel}" in capsys.readouterr().out
+
+
+def test_the_stub_is_created_at_the_instances_own_path(repo, seat_worktree, monkeypatch):
+    execs = []
+    monkeypatch.setattr(os, "execvpe", lambda *a, **k: execs.append(a))
+    monkeypatch.setattr(os, "chdir", lambda p: None)
+    ln.main(["rpg-implementer-3", "--worktree", str(seat_worktree)], root=seat_worktree)
+    third = repo / ".claude" / "handover" / "rpg-implementer-3.md"
+    assert execs and third.is_file() and "rpg-implementer-3" in third.read_text()
+    assert not (repo / ".claude" / "handover" / "rpg-implementer.md").exists()
+
+
+def test_an_existing_instance_note_is_left_byte_identical_by_a_launch(repo, seat_worktree, monkeypatch):
+    note = repo / ".claude" / "handover" / "rpg-implementer-2.md"
+    note.parent.mkdir(parents=True)
+    note.write_bytes(b"# Lane B live state\r\nkeep me\n")
+    before = note.read_bytes()
+    monkeypatch.setattr(os, "execvpe", lambda *a, **k: None)
+    monkeypatch.setattr(os, "chdir", lambda p: None)
+    ln.main(["rpg-implementer-2", "--worktree", str(seat_worktree)], root=seat_worktree)
+    assert note.read_bytes() == before
 
 
 # ---- AC2: live refused, killed -> recovery, released -> fresh ----------------------------------
@@ -402,3 +443,172 @@ def test_main_dry_run_for_a_planner_with_branch_prints_the_command(repo, tmp_pat
     ln.main(["agent-working-planner", "--dry-run", "--branch", "topic", "--worktree", str(wt)], root=REAL_ROOT)
     out = capsys.readouterr().out
     assert "-b agent-working-planner-topic origin/main" in out and not wt.exists()
+
+
+# ---- TCK-20261008-LAUNCHER-SQUASH-MERGED-BRANCH ---------------------------------------------------
+
+def _squash_merged(repo, name="squashed"):
+    """A branch whose work reached origin/main as a DIFFERENT commit (squash): not an ancestor, nothing missing."""
+    git(repo, "checkout", "-q", "-b", name)
+    (repo / "sq").write_text("work\n"); git(repo, "add", "-A"); git(repo, "commit", "-q", "-m", "work")
+    git(repo, "checkout", "-q", "main")
+    (repo / "sq").write_text("work\n"); git(repo, "add", "-A"); git(repo, "commit", "-q", "-m", "squash of work")
+    git(repo, "update-ref", "refs/remotes/origin/main", "HEAD")
+    return name
+
+
+def test_squash_merged_branch_is_spent_by_git_cherry_when_gh_fails(repo, tmp_path, monkeypatch):
+    name = _squash_merged(repo)
+    real = ln._run
+    monkeypatch.setattr(ln, "_run", lambda cmd, cwd=None: subprocess.CompletedProcess(cmd, 1, "", "no gh") if cmd[0] == "gh" else real(cmd, cwd))
+    assert ln.branch_spent_reason(name, repo) and "squash-merged" in ln.branch_spent_reason(name, repo)
+    wt = tmp_path / "wt"
+    notes = ln.ensure_worktree(wt, name, repo, role=PLANNER)
+    assert any("not recreated from a spent branch" in n and "--branch" in n for n in notes) and not wt.exists()
+
+
+def test_a_merged_pr_makes_the_recorded_branch_spent_even_with_unmerged_looking_commits(repo, monkeypatch):
+    git(repo, "checkout", "-q", "-b", "ahead")
+    (repo / "x").write_text("x\n"); git(repo, "add", "-A"); git(repo, "commit", "-q", "-m", "x")
+    git(repo, "checkout", "-q", "main")
+    git(repo, "update-ref", "refs/remotes/origin/main", "HEAD")
+    real = ln._run
+    monkeypatch.setattr(ln, "_run", lambda cmd, cwd=None: subprocess.CompletedProcess(cmd, 0, '[{"number": 7}]', "") if cmd[0] == "gh" else real(cmd, cwd))
+    assert ln.branch_spent_reason("ahead", repo) == "has a merged PR"
+    monkeypatch.setattr(ln, "_run", lambda cmd, cwd=None: subprocess.CompletedProcess(cmd, 0, "[]", "") if cmd[0] == "gh" else real(cmd, cwd))
+    assert ln.branch_spent_reason("ahead", repo) is None
+
+
+def test_explicit_branch_overrides_a_live_recorded_branch(repo, tmp_path):
+    git(repo, "checkout", "-q", "-b", "live")
+    (repo / "g").write_text("new\n"); git(repo, "add", "-A"); git(repo, "commit", "-q", "-m", "ahead")
+    git(repo, "checkout", "-q", "main")
+    git(repo, "update-ref", "refs/remotes/origin/main", "HEAD")
+    wt = tmp_path / "wt"
+    notes = ln.ensure_worktree(wt, "live", repo, apply=False, role=PLANNER, topic="seat")
+    assert any(f"git worktree add {wt} -b agent-working-planner-seat origin/main" in n for n in notes)
+    assert not any("git worktree add " + str(wt) + " live" in n for n in notes)
+
+
+def test_explicit_branch_overrides_a_squash_merged_recorded_branch(repo, tmp_path):
+    name = _squash_merged(repo)
+    wt = tmp_path / "wt"
+    notes = ln.ensure_worktree(wt, name, repo, role=PLANNER, topic="seat")
+    assert any("created" in n for n in notes) and git(wt, "branch", "--show-current").stdout.strip() == "agent-working-planner-seat"
+
+
+def test_a_gh_timeout_falls_back_to_git_cherry(repo, monkeypatch):
+    name = _squash_merged(repo, "timed-out")
+    real = ln._run
+
+    def fake(cmd, cwd=None):
+        if cmd[0] == "gh":
+            raise subprocess.TimeoutExpired(cmd, 30)
+        return real(cmd, cwd)
+
+    monkeypatch.setattr(ln, "_run", fake)
+    assert "squash-merged" in ln.branch_spent_reason(name, repo)
+
+
+# ---- TCK-20261010-SESSION-MAIN-CHECKOUT-LAUNCH-AND-BATCH-WORKTREE-RECORD ------------------------------------
+
+def test_a_main_checkout_role_launches_in_the_main_checkout(tmp_path):
+    lead = ROSTER.role("lead-planner")
+    assert lead.launch == "main-checkout" and lead.worktree == ""
+    assert ln.default_worktree_path(lead, tmp_path) == tmp_path
+    assert ln.default_worktree_path(ROSTER.role(ROLE), tmp_path) == tmp_path / ".claude" / "worktrees" / "agent-working"
+
+
+def test_launching_with_worktree_records_it_for_the_instance(repo, seat_worktree, monkeypatch):
+    monkeypatch.setattr(os, "execvpe", lambda *a, **k: None)
+    monkeypatch.setattr(os, "chdir", lambda *_: None)
+    assert ln.main([ROLE, "--worktree", str(seat_worktree)], root=seat_worktree) == 0
+    assert st.read_bound_worktree(st.state_root(repo), ROLE) == (os.path.realpath(seat_worktree), True)
+
+
+def test_a_dry_run_records_nothing(repo, seat_worktree, monkeypatch):
+    monkeypatch.setattr(os, "execvpe", lambda *a, **k: pytest.fail("no exec"))
+    ln.main([ROLE, "--dry-run", "--worktree", str(seat_worktree)], root=seat_worktree)
+    assert st.read_bound_worktree(st.state_root(repo), ROLE) is None
+
+
+def test_an_unreadable_record_reads_as_none(repo):
+    sroot = st.state_root(repo)
+    st.write_role_file(sroot, ROLE, "worktree.json", {"path": 3})
+    assert st.read_bound_worktree(sroot, ROLE) is None
+    (st.role_dir(sroot, ROLE) / "worktree.json").write_text("{not json")
+    assert st.read_bound_worktree(sroot, ROLE) is None
+
+
+# ---- TCK-20261018-LAUNCH-RESUME-MISSING-WORKTREE-REFUSE (GitHub #620 part 2) -----------------------
+
+def _launch_env(repo, tmp_path, monkeypatch):
+    """A repo whose manifest worktree for ROLE does not exist; exec/chdir are recorded, never run."""
+    monkeypatch.setattr(st, "state_root", lambda *_: tmp_path / "sr")
+    monkeypatch.setattr(ln, "main_checkout", lambda *_a, **_k: repo)
+    calls = {"exec": [], "chdir": []}
+    monkeypatch.setattr(os, "execvpe", lambda *a, **k: calls["exec"].append(a))
+    monkeypatch.setattr(os, "chdir", lambda p: calls["chdir"].append(Path(p)))
+    return calls
+
+
+def test_a_missing_manifest_worktree_falls_back_to_the_existing_bound_worktree(repo, seat_worktree, tmp_path, monkeypatch, capsys):
+    calls = _launch_env(repo, tmp_path, monkeypatch)
+    st.write_bound_worktree(tmp_path / "sr", ROLE, str(seat_worktree), False)
+    assert ln.main([ROLE], root=REAL_ROOT) == 0
+    out = capsys.readouterr().out
+    assert f"using the recorded bound worktree {seat_worktree}" in out
+    assert calls["chdir"] == [seat_worktree] and len(calls["exec"]) == 1
+
+
+@pytest.mark.parametrize("bound", [None, "gone"])
+def test_a_missing_worktree_without_a_usable_bound_one_refuses_with_the_filled_hint(repo, tmp_path, monkeypatch, capsys, bound):
+    calls = _launch_env(repo, tmp_path, monkeypatch)
+    if bound:
+        st.write_bound_worktree(tmp_path / "sr", ROLE, str(tmp_path / bound), False)
+    code = ln.main([ROLE], root=REAL_ROOT)
+    cap = capsys.readouterr()
+    text = cap.out + cap.err
+    assert code == ln.EXIT_REFUSED and code != 0
+    assert f"SESSION_ROLE={ROLE} claude" in text and f"--name {ROLE} --agent session-{ROLE}" in text
+    assert "<role>" not in cap.err and "Traceback" not in text and "--branch <topic>" in cap.err  # ensure_worktree's own note is stdout
+    assert calls["chdir"] == [] and calls["exec"] == []
+    assert st.read_bound_worktree(tmp_path / "sr", ROLE) == ((str(tmp_path / bound), False) if bound else None)
+
+
+def test_the_hint_names_the_resolved_session_id(repo, tmp_path, monkeypatch, capsys):
+    _launch_env(repo, tmp_path, monkeypatch)
+    sroot = tmp_path / "sr"
+    st.record_start(sroot, dataclasses.replace(_binding(repo, sid="sess-42"), worktree=str(tmp_path / "gone-holder")))
+    assert ln.main([ROLE, "--action", "resume", "--session-id", "sess-42"], root=REAL_ROOT) == ln.EXIT_REFUSED
+    assert "claude --resume sess-42 --name" in capsys.readouterr().err
+
+
+def test_an_explicit_missing_worktree_is_refused_without_a_silent_fallback(repo, seat_worktree, tmp_path, monkeypatch, capsys):
+    calls = _launch_env(repo, tmp_path, monkeypatch)
+    st.write_bound_worktree(tmp_path / "sr", ROLE, str(seat_worktree), False)
+    assert ln.main([ROLE, "--worktree", str(tmp_path / "nowhere")], root=REAL_ROOT) == ln.EXIT_REFUSED
+    assert "using the recorded bound worktree" not in capsys.readouterr().out
+    assert calls["chdir"] == []
+
+
+def test_a_dry_run_also_refuses_instead_of_printing_a_launch_into_nothing(repo, tmp_path, monkeypatch, capsys):
+    _launch_env(repo, tmp_path, monkeypatch)
+    assert ln.main([ROLE, "--dry-run"], root=REAL_ROOT) == ln.EXIT_REFUSED
+    assert "DRY RUN" not in capsys.readouterr().out
+
+
+def test_an_existing_worktree_still_launches_unchanged(repo, seat_worktree, tmp_path, monkeypatch, capsys):
+    calls = _launch_env(repo, tmp_path, monkeypatch)
+    assert ln.main([ROLE, "--worktree", str(seat_worktree)], root=REAL_ROOT) == 0
+    assert calls["chdir"] == [seat_worktree] and "bound worktree" not in capsys.readouterr().out
+
+
+def test_a_resume_prefers_the_dead_holders_worktree_over_the_bound_one(repo, seat_worktree, tmp_path, monkeypatch, capsys):
+    calls = _launch_env(repo, tmp_path, monkeypatch)
+    bound = tmp_path / "bound"
+    git(repo, "worktree", "add", "-q", "-b", "bound-b", str(bound))
+    st.write_bound_worktree(tmp_path / "sr", ROLE, str(bound), False)
+    st.record_start(tmp_path / "sr", dataclasses.replace(_binding(repo, sid="sess-9"), worktree=str(seat_worktree)))
+    assert ln.main([ROLE, "--action", "resume", "--session-id", "sess-9"], root=REAL_ROOT) == 0
+    assert calls["chdir"] == [seat_worktree] and "dead holder's worktree" in capsys.readouterr().out

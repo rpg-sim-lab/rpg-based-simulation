@@ -13,20 +13,20 @@ a plausible simulation rather than a degenerate artifact.
 """
 import ast
 from collections import Counter
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 
 import pytest
 
-from src.core.governance import RuntimeMode
 from src.domains.campaigns.orchestrator import CampaignManifest, CampaignOrchestrator
+from src.domains.cooperation.services import CooperationDecisionService
 from src.engine.domain.action_router import ActionRouter
-from src.engine.governor import ResourceGovernor
 from src.engine.kernel import Kernel
 from src.engine.pipeline_phases.actions import ActionRoutingPhase
 from src.engine.scenario_runtime import ScenarioRuntimeService
 from src.engine.tactical import TacticalDecisionSystem
 from src.scenarios.schema import SimulationScenarioDefinition
+from tests.helpers.kernel_pinning import PinnedNormalGovernor
 
 
 class _CollectingRecorder:
@@ -117,26 +117,15 @@ def test_real_campaign_episode_does_not_stall_early():
 #
 # The episode runs under a governor pinned to NORMAL, so the assertions do not depend on host speed or on the
 # worker-utilization coupling (#175) that once forced this workers-disabled kernel into DEGRADED mode.
-# Thresholds are the original ones: InvariantViolation == 0, cooperation share < 0.5, >= 3 deliberate attacks.
+# Thresholds: InvariantViolation == 0, cooperation per entity-tick under a ceiling (see the cooperation checks), >= 3 deliberate attacks.
 # ---------------------------------------------------------------------------------------------------------------------
 
 _EPISODE_TICKS = 70
 _CAMPAIGN_TICKET = "TCK-20261006-CAMPAIGN-EPISODE-COMBAT-TEST-RED-BECAUSE-NO-DELIBERATE-ATTACK-ONLY-OPPORTUNITY-ATTACKS"
-_SHARE_TICKET = "TCK-20261006-CAMPAIGN-EPISODE-COOPERATION-SHARE-ABOVE-HALF-UNDER-A-PINNED-NORMAL-GOVERNOR"
 _OFFENSIVE_ACTIONS = ("ATTACK", "AOE_ATTACK", "SKILL")
 # Copied from TacticalDecisionSystem.evaluate_entity_intent's neighbour scan (tactical.py); pinned by test_perception_scan_constants_match_tactical.
 _PERCEPTION_RADIUS = 10.0
 _MAX_SALIENT_TARGETS = 5
-
-
-class _PinnedNormalGovernor(ResourceGovernor):
-    """Pins NORMAL: the test asserts event-stream plausibility, which must not depend on host speed or the #175 coupling."""
-
-    def _get_indicated_mode(self, profile, signals):
-        return RuntimeMode.NORMAL
-
-    def force_mode(self, mode, status, current_tick):
-        return None  # the mid-tick wall-clock throttle must not flip the mode either
 
 
 @dataclass
@@ -150,6 +139,8 @@ class _Counts:
     attempts: int = 0  # decisions that set an ENTITY_ACT of ATTACK / AOE_ATTACK / SKILL: the origin of every attempt
     dispatches: int = 0  # DIAGNOSTIC only, never added to attempts: router dispatches of those kinds (decision -> task -> dispatch)
     dispatches_all_kinds: int = 0
+    entity_ticks: int = 0  # alive entities summed over the ticks of the episode: the denominator of the cooperation volume
+    cooperation_basis: Counter = field(default_factory=Counter)  # why each cooperation decision was made: help_need / group_member / incoming_offer / other
 
 
 def _hostiles_perceived(state, entity, neighbors):
@@ -207,6 +198,8 @@ def _instrument(mp, counts):
     original_route = ActionRoutingPhase.route
     original_execute = ActionRouter.execute_action
     original_tick = Kernel.tick_once
+    original_select = CooperationDecisionService.select_for_own_needs
+    original_accept = CooperationDecisionService.accept_pending_offer
 
     def decision(state, entity, neighbors=None, region_trauma=None):
         counts.decisions += 1
@@ -230,12 +223,41 @@ def _instrument(mp, counts):
 
     def tick_once(self, *args, **kwargs):
         counts.ticks += 1
-        return original_tick(self, *args, **kwargs)
+        result = original_tick(self, *args, **kwargs)
+        counts.entity_ticks += sum(1 for e in self.state.entities.values() if e.combat.alive)
+        return result
+
+    def select_for_own_needs(entity, help_needs, *args, **kwargs):
+        basis = "help_need" if help_needs else "group_member" if entity.identity.group_id is not None else "other"
+        counts.cooperation_basis[basis] += 1
+        return original_select(entity, help_needs, *args, **kwargs)
+
+    def accept_pending_offer(entity, offer, *args, **kwargs):
+        counts.cooperation_basis["incoming_offer"] += 1
+        return original_accept(entity, offer, *args, **kwargs)
 
     mp.setattr(TacticalDecisionSystem, "evaluate_entity_intent", staticmethod(decision))
     mp.setattr(ActionRoutingPhase, "route", staticmethod(route))
     mp.setattr(ActionRouter, "execute_action", staticmethod(execute))
     mp.setattr(Kernel, "tick_once", tick_once)
+    mp.setattr(CooperationDecisionService, "select_for_own_needs", staticmethod(select_for_own_needs))
+    mp.setattr(CooperationDecisionService, "accept_pending_offer", staticmethod(accept_pending_offer))
+
+
+def _pin_audit_mode(mp):
+    """Build the episode's kernel under ``audit_mode``, the documented determinism configuration (docs/engine/deterministic_execution.md).
+
+    ``PinnedNormalGovernor`` pins only the governor's mode. Outside ``audit_mode`` the other wall-clock inputs still change what is
+    computed: a 10 ms stall inside tick 1 (a cold lazy import) moved this episode's deliberate attacks from 2 to 5, so the first
+    episode in a process differed from every later one (TCK-20261009-CAMPAIGN-EPISODE-DELIBERATE-ATTACKS-STRICT-XFAIL-DEPENDS-ON-TEST-ORDER).
+    ``ScenarioRuntimeService`` builds its kernel with fixed flags, so the flag is added at the kernel's constructor (restored when ``mp`` exits)."""
+    original_init = Kernel.__init__
+
+    def init(self, *args, **kwargs):
+        kwargs["flags"] = {**(kwargs.get("flags") or {}), "audit_mode": True}
+        original_init(self, *args, **kwargs)
+
+    mp.setattr(Kernel, "__init__", init)
 
 
 _EPISODE_SEEDS = (42, 1337)
@@ -251,11 +273,12 @@ def _run_episode(seed):
     counts = _Counts()
     with pytest.MonkeyPatch.context() as mp:
         _instrument(mp, counts)
+        _pin_audit_mode(mp)
         orch = CampaignOrchestrator(_campaign_life_arc_shaped_manifest(tick_limit=_EPISODE_TICKS))
         spec = orch._manifest.episodes[0]
         svc = ScenarioRuntimeService(
             spec, initial_state=orch._build_initial_state(seed, spec), scenario_event_recorder=None,
-            governor=_PinnedNormalGovernor(),
+            governor=PinnedNormalGovernor(),
         )
         svc._kernel = svc._build_kernel()
         svc._kernel._event_listeners = [lambda events: recorder.events.extend(events)]
@@ -296,32 +319,56 @@ def test_real_campaign_episode_has_no_hard_law_violation(episode):
     assert event_types.get("InvariantViolation", 0) == 0
 
 
-@pytest.mark.slow
-def test_real_campaign_episode_event_mix_is_not_dominated_by_cooperation(episodes_by_seed):
-    """A real, spread-out episode should not be dominated by cooperation_event (co-located entities inflate it to ~79%).
+# The cooperation checks (TCK-20261010-CAMPAIGN-EPISODE-COOPERATION-SHARE-CROSSES-HALF-ON-MAIN-AFTER-BATCH-2).
+#
+# The test used to assert that cooperation_event is under half of ALL events. A ratio over all events breaks whenever an unrelated event type is
+# added or retired: the share went 0.51 -> 0.60 when a plant-eater herd added risk-driven help needs (8464582f5) and 0.58 -> 0.70 when the treasury
+# batch retired the per-head TAX gold_sink_fired events (14% of the stream) while cooperation barely moved. The claim the test exists for is the
+# co-location one (every entity spawned on one tile inflated cooperation to ~79% of the stream, TCK-20260909-CAMPAIGN-CATALOG-ENTITY-SPAWN-WIRING,
+# fixed by real per-entity spawn positions), so it is now two checks on cooperation itself:
+#   (a) structure: each cooperation_event comes from one cooperation decision whose basis is typed (an evaluated help need, a group membership, an
+#       incoming offer) and none has another basis. This does NOT catch co-location (co-located entities still produce typed help needs); it catches
+#       a cooperation event emitted for an entity with no reason to cooperate.
+#   (b) volume: cooperation events per alive entity-tick, pooled over the seeds. Co-locating every entity on one tile (scratch copy of the tip) gives
+#       0.451 per entity-tick and a 0.761 share; the tip is 0.210 (combat_support_needed 1276 -> 409 events). The ceiling sits between with headroom.
+# Measured per entity-tick, pooled over seeds 42 and 1337 (70 ticks, audit_mode): c35ebf475 (before #536) 0.13 to 0.15 (a pre-determinism-fix commit: it varies run to run), plant-eater commit 8464582f5
+# 0.19, tip 5829b1986 0.2107 (deterministic: seed 42 0.2175, seed 1337 0.2040).
+_COOPERATION_PER_ENTITY_TICK_CEILING = 0.30
+_COOPERATION_BASES = frozenset({"help_need", "group_member", "incoming_offer"})
 
-    Pooled across the seeds in `_EPISODE_SEEDS` (cooperation events over all events), not per seed: the claim is about the
-    scenario, and seed 42 alone sat at 0.4962 under AGENCY-07 (decision 21), a 0.0038 margin too thin to assert (see
-    `TCK-20261006-CAMPAIGN-EPISODE-COOPERATION-SHARE-ABOVE-HALF-UNDER-A-PINNED-NORMAL-GOVERNOR`). The per-seed shares are in the message so a seed drifting toward 0.5 shows before the pooled value
-    crosses it."""
-    shares = {}
-    pooled_cooperation = pooled_total = 0
-    for seed, (event_types, _) in episodes_by_seed.items():
-        total = sum(event_types.values())
+
+@pytest.mark.slow
+def test_every_cooperation_event_comes_from_a_decision_with_a_typed_basis(episodes_by_seed):
+    for seed, (event_types, counts) in episodes_by_seed.items():
+        events = event_types.get("cooperation_event", 0)
+        assert events > 0, f"seed {seed}: no cooperation_event at all, the check below would say nothing"
+        assert set(counts.cooperation_basis) <= _COOPERATION_BASES, f"seed {seed}: cooperation decisions with no typed basis: {dict(counts.cooperation_basis)}"
+        assert sum(counts.cooperation_basis.values()) == events, (
+            f"seed {seed}: {events} cooperation_event but {sum(counts.cooperation_basis.values())} decisions ({dict(counts.cooperation_basis)}): an event without a decision, or the reverse"
+        )
+
+
+@pytest.mark.slow
+def test_real_campaign_episode_cooperation_volume_per_entity_tick_stays_bounded(episodes_by_seed):
+    """Cooperation events per alive entity-tick, pooled over the seeds, stay under the ceiling (see the comment above for the measured values and
+    the co-location run that exceeds it). The per-seed values are in the message so a seed drifting toward the ceiling shows before the pool does."""
+    per_seed, events, entity_ticks = {}, 0, 0
+    for seed, (event_types, counts) in episodes_by_seed.items():
         cooperation = event_types.get("cooperation_event", 0)
-        shares[seed] = f"{cooperation / max(1, total):.4f} ({cooperation} of {total})"
-        pooled_cooperation += cooperation
-        pooled_total += total
-    pooled = pooled_cooperation / max(1, pooled_total)
-    assert pooled < 0.5, f"pooled cooperation_event share is {pooled:.4f} ({pooled_cooperation} of {pooled_total}); per seed: {shares}"
+        per_seed[seed] = f"{cooperation / max(1, counts.entity_ticks):.4f} ({cooperation} over {counts.entity_ticks} entity-ticks)"
+        events += cooperation
+        entity_ticks += counts.entity_ticks
+    pooled = events / max(1, entity_ticks)
+    assert entity_ticks > 0
+    assert pooled < _COOPERATION_PER_ENTITY_TICK_CEILING, f"cooperation per entity-tick is {pooled:.4f}, ceiling {_COOPERATION_PER_ENTITY_TICK_CEILING}; per seed: {per_seed}"
 
 
 @pytest.mark.slow
 @pytest.mark.xfail(
     strict=True,
-    reason=f"{_CAMPAIGN_TICKET}: as measured on 0c89bd390 (seed 42, 70 ticks): 0 deliberate attacks among 250 decisions; "
-           f"11 perceived a hostile (10 of 11 SAFETY_PRESSURE_RETREAT at full HP, 1 pursued), none in reach. Not the "
-           f"attack fix's acceptance signal: an XPASS is a bonus",
+    reason=f"{_CAMPAIGN_TICKET}: under audit_mode (seed 42, 70 ticks) the episode makes 2 deliberate attacks, below the 3 required "
+           f"(267 decisions, 21 perceived a hostile). An XPASS means the expected behaviour changed and needs rpg review: it is "
+           f"not a bonus, and this marker is strict on purpose",
 )
 def test_real_campaign_episode_makes_deliberate_attacks(episode):
     """>= 3 deliberate attacks attempted (decisions that set an offensive ENTITY_ACT), not combat_initiated: the latter was
@@ -331,6 +378,16 @@ def test_real_campaign_episode_makes_deliberate_attacks(episode):
         f"{counts.attempts} deliberate attacks among {counts.decisions} decisions; {counts.decisions_with_hostile_perceived} "
         f"perceived a hostile; {counts.route_calls} router-phase calls over {counts.ticks} ticks; router dispatches of "
         f"offensive kinds (diagnostic, not added): {counts.dispatches} of {counts.dispatches_all_kinds}"
+    )
+
+
+@pytest.mark.slow
+def test_the_episode_is_deterministic_in_one_process_under_audit_mode(episode):
+    """Two episodes of one seed in ONE process give identical counts: the first-in-process episode no longer differs (5 vs 2 attempts before audit_mode)."""
+    _, first = episode
+    _, again = _run_episode(_EPISODE_SEEDS[0])
+    assert (again.attempts, again.decisions, again.decisions_with_hostile_perceived, again.dispatches_all_kinds) == (
+        first.attempts, first.decisions, first.decisions_with_hostile_perceived, first.dispatches_all_kinds
     )
 
 

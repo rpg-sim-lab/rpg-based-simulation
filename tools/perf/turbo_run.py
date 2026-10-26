@@ -1,8 +1,22 @@
+"""Headless 5000-tick turbo run with JSON logging to logs/stress_test.jsonl."""
+import argparse
 import os
 import sys
 import time
 import logging
 from pathlib import Path
+
+
+def _reject_unknown_arguments() -> None:
+    """Take no arguments: ``--help`` prints usage and exits 0, anything else exits 2, both before ``src`` is imported."""
+    argparse.ArgumentParser(
+        prog="turbo_run.py",
+        description="Run 5000 ticks of the dungeon_crawl world headlessly and write logs/stress_test.jsonl. Takes no arguments.",
+    ).parse_args()
+
+
+if __name__ == "__main__":
+    _reject_unknown_arguments()
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
@@ -45,7 +59,7 @@ def run_turbo():
     print(f"Targeting {target_ticks} ticks with an inline headless kernel...")
 
     # 2. Configure headless
-    mgr = V2EngineManager(PROD_LARGE, seed=111, entities_count=25, world_id="dungeon_crawl")
+    mgr = V2EngineManager(PROD_LARGE, seed=111, world_id="dungeon_crawl")
     kernel = mgr.kernel
 
     start_time = time.time()

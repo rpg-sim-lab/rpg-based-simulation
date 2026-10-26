@@ -216,14 +216,13 @@ def test_reward_atomicity(base_state):
     state_lethal = replace(base_state, entities={1: attacker, 3: target_weak})
     update_kill = CombatResolutionSystem.resolve_attack(attacker, target_weak, state_lethal)
     assert update_kill.outcome_kind == "KILL"
-    assert len(update_kill.resource_transfers) >= 2
+    assert len(update_kill.resource_transfers) >= 1
     # Find XP transfer
     xp_transfer = next((t for t in update_kill.resource_transfers if t.xp_reward > 0), None)
     assert xp_transfer is not None, "XP transfer missing"
     
-    # Find Gold transfer
-    gold_transfer = next((t for t in update_kill.resource_transfers if t.gold_delta > 0), None)
-    assert gold_transfer is not None, "Gold transfer missing"
+    # A kill mints no coin (EXCH-02, decision 38): the body's own coin is looted, never paid
+    assert not [t for t in update_kill.resource_transfers if t.gold_delta > 0], "a kill must not mint gold"
     
     # Trace consistency
     assert update_kill.trace["FINAL_ATK_MULT"] > 0
@@ -282,7 +281,7 @@ def test_combat_trace_consistency(base_state):
     # 1. High Ground
     state_hg = replace(base_state, 
         entities={1: attacker, 2: target},
-        terrain={(10, 10): "HILL", (11, 10): "PLAIN"}
+        terrain={(10, 10): "mountain", (11, 10): "plain"}
     )
     update_hg = CombatResolutionSystem.resolve_attack(attacker, target, state_hg)
     assert "HIGH_GROUND" in update_hg.trace
@@ -294,7 +293,7 @@ def test_combat_trace_consistency(base_state):
     target_far = create_mock_entity(2, pos=(12, 10), faction="MONSTER")
     state_cover = replace(base_state,
         entities={1: attacker_far, 2: target_far},
-        terrain={(11, 10): "FOREST"}
+        terrain={(11, 10): "forest"}
     )
     update_cover = CombatResolutionSystem.resolve_attack(attacker_far, target_far, state_cover)
     assert "COVER_REDUCTION" in update_cover.trace
@@ -325,8 +324,9 @@ def test_pipeline_simultaneous_attack_atomicity(base_state):
     upd_1 = refined.entity_updates[1]
     upd_2 = refined.entity_updates[2]
     
-    # Attacker 1 should succeed
-    assert upd_1.task.payload_set.get("outcome") == "SUCCESS"
+    # Attacker 1 should succeed: its swing killed the target, which ends the held attack in the same tick (decision 44), so the task is
+    # retired (empty payload) instead of annotated; the reward is the observable success.
+    assert upd_1.task.payload_set == {}
     assert upd_1.identity.evolution_points_delta > 0
     
     # Attacker 2 should FAIL because Attacker 1 already killed it in the same refinement pass --

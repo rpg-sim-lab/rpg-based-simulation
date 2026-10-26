@@ -157,8 +157,9 @@ The gate CLIs write one `gate_verdicts` row per verdict (`docs/agent-monitoring/
 override or stop on a blocking verdict instead of fixing and re-running it, record that with
 `python3 tools/agent-monitoring/gate_ledger.py outcome --gate-verdict-id <id> --outcome overridden|stopped [--note ...]`;
 `gate_ledger.py list --unresolved` shows the ids still open. A fix and re-run is derived without any entry
-(a later pass on the same ticket and gate is `fixed_and_rerun`; the same block on the same inputs is
-`rerun_no_change`). When someone rules on whether a verdict was right, `gate_ledger.py adjudicate`. When
+(any later pass on the same ticket and gate is `fixed_and_rerun`, even past an intervening block with other inputs; the same block on the same inputs is
+`rerun_no_change`). `done_checker_static.py` records Part A (`cli:done_checker_static`, phase Verify) and Part B (`Finalize:...run_finalize_selfcheck`) as separate rows; precheck on an already-closed ticket (`--part both`) is recorded non-blocking with `inputs_ref.post_close`. After a close, run `--part finalize` (or omit `--part`), not `--part both`. A run that died before its pipeline site recorded the gate leaves only an attested row; `outcome`
+accepts that id too, but an attested row that has a verdict row refuses and names the verdict id to use. When someone rules on whether a verdict was right, `gate_ledger.py adjudicate`. When
 `post_native_run_check.py` fails a gate that the native run attested as PASS, it records the `false_pass`
 itself. Recording an override is bookkeeping, not permission: never edit an artifact to make a gate pass.
 
@@ -200,6 +201,12 @@ alongside the main checkout, each independently on its own branch.
   — it just shares the filesystem directory rather than getting its own. Commit and push each unit
   of work to its own branch as usual; never mix commits from two unrelated units of work onto one
   branch.
+- **Removing merged worktrees** (owner-run, `delete_worktree_or_data`): `python3 -m tools.sessions.prune_branches
+  --worktrees` lists each worktree as removable or kept with a reason (dry run by default). Removable means the branch
+  tip equals a merged PR head, the tree is completely clean (a dirty monitoring shard is named, never ignored), it is
+  no session seat (roster path, writer lease or live instance), has no open PR and no process inside. `--execute` runs
+  `git worktree remove` without `--force`, keeps the branches and writes `~/Working/worktree-backup-<date>.txt`.
+  Detached worktrees are always kept (no PR to prove them merged). (`TCK-20261008-SESSION-MERGED-WORKTREE-PRUNE`)
 - Watch for the shared-directory monitoring auto-write race when switching branches this way: the
   current week's `agent-working/agent-monitoring/data/YYYY-Www/tools.jsonl` shard is rewritten by a hook on nearly
   every tool call, so a plain `git checkout -b` can fail with "local changes would be overwritten"
@@ -325,7 +332,8 @@ Checking CI status and diagnosing a failure is read-only — do it proactively o
    - The fix is to resolve the conflict. **Never** respond to a missing run with a re-trigger commit, force-push, or branch recreation — each pushes into the same conflicted state, produces no run again, and destroys the evidence (commit history, prior push timestamps) that would have shown the real cause, without touching it.
    - To rule out "the push simply never arrived" before concluding the run is genuinely absent: `git ls-remote origin <branch>` and compare its reported SHA against the PR's own `headRefOid` — a cheap, read-only disambiguator between "push didn't land" and "push landed, no run was ever going to be created for it."
 2. **Never conclude root cause from the job name or a guess.** Pull real logs (`gh api repos/{owner}/{repo}/actions/jobs/{id}/logs`) for every failing job. Do not assume it's a known local-sandbox quirk (e.g. bare `python3` lacking `pydantic`) without checking the actual CI log first — CI runs in a clean `astral-sh/setup-uv` + `uv sync --locked --no-install-project` environment and does not share the sandbox's gaps.
-   - **If log fetching itself fails with a TLS/cert error** (`gh run view --log`, `gh api .../logs`, or a raw `curl` to the redirect target all fail the same way): check `echo | openssl s_client -connect <host>:443 | openssl x509 -noout -subject -issuer`. If the cert's subject/issuer reads as a network filter block page (e.g. `O = Fortinet, CN = Fortiguard SDNS Blocked Page`) rather than the real host, raw log fetching is blocked at the sandbox's network layer for that host (`results-receiver.actions.githubusercontent.com`, `*.blob.core.windows.net`) — not an SSL misconfiguration you can fix. Do not keep retrying variations of the same fetch. Instead: (a) try `gh api repos/{owner}/{repo}/check-runs/{job_id}/annotations` first — sometimes enough on its own; (b) reproduce the failing job locally by running the exact same command from the relevant `.github/workflows/*.yml` job block (e.g. `pytest tests/api tests/cli tests/tools ... -m "not slow and not extra_slow"`) — this is usually more actionable than the raw log anyway. A local repro will include environment-only noise (e.g. live-server tests failing for lack of a running server) that the real CI runner doesn't hit — cross-check any suspicious failure by fetching the job list (`gh run list --workflow=test.yml --json databaseId,conclusion`) for the last known-green run on the base branch and confirming that job passed there, before treating a locally-reproduced failure as real.
+   - **If log fetching itself fails with a TLS/cert error** (`gh run view --log`, `gh api .../logs`, or a raw `curl` to the redirect target all fail the same way): check `echo | openssl s_client -connect <host>:443 -showcerts | grep issuer` (or `... | openssl x509 -noout -subject -issuer`). Two patterns have been seen. (1) A network filter block page (e.g. `O = Fortinet, CN = Fortiguard SDNS Blocked Page`) in place of the real host: raw log fetching is blocked at the sandbox's network layer for that host (`results-receiver.actions.githubusercontent.com`, `*.blob.core.windows.net`). (2) On u24desktop, `api.github.com` and the Actions hosts present certificates from a corporate intercepting CA (`DC=vn, DC=com, DC=tma, CN=tma-ADCA-CA`), with intermittent handshake timeouts and 502s: the host is reachable but flaky, and the same call often works on a retry. Either way it is not an SSL misconfiguration you can fix. Do not keep retrying variations of the same fetch. Instead: (a) try `gh api repos/{owner}/{repo}/check-runs/{job_id}/annotations` first — sometimes enough on its own; (b) reproduce the failing job locally by running the exact same command from the relevant `.github/workflows/*.yml` job block (e.g. `pytest tests/api tests/cli tests/tools ... -m "not slow and not extra_slow"`) — this is usually more actionable than the raw log anyway. A local repro will include environment-only noise (e.g. live-server tests failing for lack of a running server) that the real CI runner doesn't hit — cross-check any suspicious failure by fetching the job list (`gh run list --workflow=test.yml --json databaseId,conclusion`) for the last known-green run on the base branch and confirming that job passed there, before treating a locally-reproduced failure as real.
+   - **Predict GitHub's mergeability with a driverless merge, never with the registry driver.** `git merge-tree --write-tree origin/main HEAD` reports what GitHub will see. A local merge or merge-tree that runs the registry driver (`merge.registry-regen.driver true`, which keeps our side) reads clean and proves nothing, because GitHub never runs that driver (shown on #589: clean locally, `CONFLICTING` on GitHub). A `docs/REGISTRY.yaml` conflict is still fixed by the plain local merge of `origin/main` plus a push, where the driver or `make docs-registry` regenerates it.
    - **Step-level conclusions stay readable even when raw logs are unreachable** (`gh api repos/{owner}/{repo}/actions/jobs/{job_id} --jq '.steps[]'`): each step's own name and `conclusion` (`success`/`failure`/`skipped`) is metadata, not a log, so it is never subject to the TLS block above. This alone can localize a failure — e.g. "`Build: success`, `Configure Pages: failure`, everything after skipped" identifies the exact failing stage with zero log access, and is why a job that runs many test paths in one combined step (e.g. `unit-infra` before `TCK-20260916-CI-PER-DIRECTORY-STEPS-FOR-BLOCKED-LOGS` split it) is much harder to diagnose blind than one split into a step per directory with `if: always()` on each — a diagnostic technique confirmed twice in this repo on 2026-09-16 before any test file was touched. `tools/delivery/pr_status.py`'s `FAILING` verdict fetches exactly this metadata for every failing job automatically, without ever reading a log body.
    - **A partial log fetch is not evidence that log fetching works.** The TLS block above is per-job-blob-shard and unpredictable, not all-or-nothing: a fetch across several jobs in one run can silently return logs for some and omit exactly the ones that failed, reading as a successful fetch rather than a blocked one. Confirm every job you actually needed a log for came back — an empty or missing result for one specific job, sitting among several that returned real content, is not "fetching is broken," it is that job's own log being blocked while its siblings' were not.
 3. **Classify each failure before acting.** The evidence record, failure classes and prohibitions live in `docs/testing/regression_policy.md` §13; use those. The CI-specific cases:
@@ -335,20 +343,34 @@ Checking CI status and diagnosing a failure is read-only — do it proactively o
 4. **Never edit a test's assertion or a gate's logic just to make CI pass without one of the paths above** — this is the same Gate Integrity rule (`.claude/skills/implement-ticket/SKILL.md`) applied to CI as the outermost gate, not just the local pipeline's own gates.
 5. Report the real CI status and the triage conclusion. Don't report a fix as done until CI is confirmed green (or explicitly still-pending, reported as such) — a local test pass is not the same claim as a green CI run. Once the triage conclusion is recorded, evaluate the reset boundary per `docs/guides/agent_session_reset_boundaries.md`.
 
+### Action pin rule (owner decision, 2026-10-19)
+
+Every workflow pins each `uses:` by its full 40-character commit SHA with a `# vX.Y.Z` comment, GitHub-owned actions included; Dependabot `github-actions` (grouped, monthly) keeps the pins current, and each owner converts its own workflow files.
+
+The "Semgrep OSS" and code-health code-scanning check runs are advisory: their failure threshold is None (a repo setting the owner keeps), so a red result there is not a CI failure to triage. Suppress a Semgrep finding in the code with `# nosemgrep: <rule id>` plus a reason, never with a Security-tab dismissal; `security-scan.yml` drops in-source-suppressed results from the SARIF it uploads, because code scanning would otherwise still raise them as alerts.
+
 ### PR Lifecycle (once the user has authorized landing a batch)
 
 The steps above cover diagnosing a failure; this covers the surrounding push→PR→merge→sync cadence itself, since it isn't a `Workflow` and has no other home.
 
 1. **Before staging/committing**: always run `git status`/`git log` first — this repo's working directory can be shared by more than one concurrent session (see `CLAUDE.md`'s Hard Rules), so check for in-flight files that belong to another ticket before touching them.
 2. **Commit** per ticket, referencing its ID (see `## Commit Contract` above). Stage `agent-working/agent-monitoring/` in every commit, including any small trailing update the monitoring tools auto-write after the main commit — commit that separately rather than leaving it unstaged.
-2a. **Refresh the handover-transit bundle** (before the final commit that precedes opening the PR):
-   `python3 tools/handover_transit.py export`, then stage `agent-working/handover-transit/`. The
-   bundle is rolling — one per source host, each export replaces that host's previous one, so the
-   tree holds one small current bundle per machine and git history keeps the old ones. The bundle
-   carries only OPEN handover state (role notes, unmerged drafts, memory): completed work, merged
-   drafts and probe evidence are never exported, and a role removes its own completed drafts from
-   `.claude/handover/drafts/` when closing its work. See
-   `docs/guides/agent_session_reset_boundaries.md` ("Moving sessions between machines").
+2a. **Handover-transit bundle: not part of a PR.** Export it only before a machine move, in its own commit or PR, never
+   inside a ticket batch. The repo is public, so an export publishes every handover note, open draft and memory file; see
+   `docs/guides/agent_session_reset_boundaries.md` ("Moving sessions between machines"), the only place that prescribes it.
+2b. **Run the CI lanes your diff touches, before the push** (`TCK-20261014-PRE-PUSH-CI-LANE-PARITY`): `python3 -m tools.delivery.ci_lanes`
+   lists them (`--run` runs them and exits non-zero on a failing lane). It reads `.github/workflows/test.yml`, so there is no
+   copied lane list: path-filtered lanes (perf-cert-arena, migration-lanes, scenario-lane, frontend, docker-build) are evaluated
+   from the `changed-files` regexes, and every unfiltered lane is reported as running on any diff (never "not affected"), with a
+   *hint* where a changed file sits under its pytest paths. Changed files are `git diff --name-only origin/main...HEAD`
+   (committed only; uncommitted paths are warned about), a failed diff or evaluation reports `runs (fail-open)` as CI does, and
+   `slow-regression*.yml` lanes are listed as not on PR. It models a `pull_request` against `main`; `resync-gate` is assumed
+   not to skip. The pre-push hook's check D names the touched lanes and this command; it is advisory, never runs tests and never
+   blocks. `tests/tools/test_delivery_ci_lanes.py` fails if `test.yml` gains a regex variable, output or pytest step the
+   resolver cannot map. Scoping which tests to run inside a lane stays test-scoper's job.
+   Check E (`TCK-20261024-PRE-PUSH-WARNS-ON-A-STALE-DOCS-REGISTRY`) runs `python3 tools/generate_registry.py --check` only when the
+   branch diff touches a `.md` under `docs/`, the tickets or the stored artifacts, and adds one advisory line naming
+   `make docs-registry` when `docs/REGISTRY.yaml` is stale (exit 2); any other result or a timeout says nothing.
 3. **Push** the branch, then **create the PR** (`gh pr create`). The title and the generated body
    sections (`## What landed` through `## Verification`/`## Known gaps`, plus the `Closes:` line)
    come from `python3 tools/delivery/pr_render.py` — run it plain for readable stdout
@@ -357,7 +379,10 @@ The steps above cover diagnosing a failure; this covers the surrounding push→P
    `--theme "<one-line batch headline>"` to the render and the same `--theme` to `--check`;
    without it the title names the most recently closed ticket (the renderer prints a stderr
    `HINT:` when it renders more than one ticket with no theme). Hand-write only
-   `## Review notes` (the renderer never generates it — see its own module docstring). PR body: no
+   `## Review notes` (the renderer never generates it — see its own module docstring). The renderer also adds a
+   non-blocking discovery warning when the PR adds more than 200 KB of raw output under
+   `agent-working/stored_artifacts/**/probes/` (anything but `.py`/`.sh`/`.md`/`.txt`): commit probe scripts and summary
+   tables, keep a raw file only when a ticket cites it. PR body: no
    `Co-Authored-By`/session-link trailer, and no "🤖 Generated with [Claude Code](...)" (or
    equivalent tool-attribution) line either — commit message trailers still keep the
    `Co-Authored-By`/session-link trailer, this is a PR-body-only exclusion — this was an explicit

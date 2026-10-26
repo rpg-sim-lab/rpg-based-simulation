@@ -127,6 +127,63 @@ class TestCliSites:
         assert passing["gate_id"].startswith("Finalize:") and passing["inputs_ref"]["cmd_sha"]
         assert "RESULT: PASS" in capsys.readouterr().out
 
+    def test_done_checker_row_carries_sub_reasons_only_for_fails(self, scratch, monkeypatch):
+        monkeypatch.setattr(done_checker_static, "run_finalize_selfcheck", lambda *a, **k: [
+            {"condition": "ticket_finalized", "status": "PASS", "evidence": "e"},
+            {"condition": "registry_entry_regenerated", "status": "FAIL", "evidence": "e", "reason": "registry_stale_on_disk"}])
+        monkeypatch.setattr(done_checker_static, "run_advisory_checks", lambda *a, **k: [])
+        assert done_checker_static.main(["--ticket-id", "TCK-1", "--tier", "hotfix", "--part", "finalize"]) == 1
+        monkeypatch.setattr(done_checker_static, "run_finalize_selfcheck", lambda *a, **k: [
+            {"condition": "ticket_finalized", "status": "PASS", "evidence": "e"}])
+        assert done_checker_static.main(["--ticket-id", "TCK-2", "--tier", "hotfix", "--part", "finalize"]) == 0
+        failing, passing = _rows(scratch)
+        assert failing["sub_reasons"] == {"finalize.registry_entry_regenerated": "registry_stale_on_disk"}
+        assert "sub_reasons" not in passing
+
+    def test_sub_reasons_malformed_entries_are_dropped_never_fatal(self):
+        record = _valid(sub_results={"finalize.a": "FAIL"},
+                        sub_reasons={"finalize.a": "x", "finalize.unknown": "y", "finalize.b": 3, "finalize.c": ""})
+        assert record["sub_reasons"] == {"finalize.a": "x"}
+        assert gate_verdicts.validate_record(record) == []
+        assert "sub_reasons" not in _valid(sub_results={"finalize.a": "FAIL"}, sub_reasons={"zzz": "x"})
+        assert "sub_reasons" not in _valid(sub_reasons={"finalize.a": "x"})
+
+    def test_validate_record_flags_a_malformed_sub_reasons_row(self):
+        record = _valid(sub_results={"finalize.a": "FAIL"})
+        record["sub_reasons"] = {"finalize.zzz": "x"}
+        assert any("sub_reasons" in p for p in gate_verdicts.validate_record(record))
+        record["sub_reasons"] = ["x"]
+        assert any("sub_reasons" in p for p in gate_verdicts.validate_record(record))
+
+    def _stub_both(self, monkeypatch, closed):
+        monkeypatch.setattr(done_checker_static, "check_ticket_finalized", lambda t: ("PASS" if closed else "FAIL", "e"))
+        monkeypatch.setattr(done_checker_static, "run_static_precheck", lambda *a, **k: [
+            {"condition": "ticket_location", "status": "FAIL", "evidence": "e"}])
+        monkeypatch.setattr(done_checker_static, "run_finalize_selfcheck", lambda *a, **k: [
+            {"condition": "ticket_finalized", "status": "PASS", "evidence": "e"}])
+        monkeypatch.setattr(done_checker_static, "run_advisory_checks", lambda *a, **k: [])
+
+    def test_part_both_on_a_closed_ticket_records_a_nonblocking_post_close_precheck_row(self, scratch, monkeypatch, capsys):
+        self._stub_both(monkeypatch, closed=True)
+        assert done_checker_static.main(["--ticket-id", "TCK-1", "--tier", "hotfix", "--part", "both"]) == 0
+        precheck, finalize = _rows(scratch)
+        assert precheck["gate_id"] != finalize["gate_id"] and finalize["gate_id"].startswith("Finalize:")
+        assert (precheck["verdict"], precheck["blocking"], precheck["phase"]) == ("FAIL", False, "Verify")
+        assert precheck["inputs_ref"]["post_close"] is True
+        assert set(precheck["sub_results"]) == {"precheck.ticket_location"}
+        assert (finalize["verdict"], finalize["blocking"]) == ("PASS", False)
+        assert "post_close" not in finalize["inputs_ref"]
+        assert "WARNING" in capsys.readouterr().out
+
+    def test_part_both_on_an_open_ticket_records_a_blocking_precheck_row_under_its_own_gate(self, scratch, monkeypatch):
+        self._stub_both(monkeypatch, closed=False)
+        assert done_checker_static.main(["--ticket-id", "TCK-1", "--tier", "hotfix", "--part", "both"]) == 1
+        precheck, finalize = _rows(scratch)
+        assert (precheck["verdict"], precheck["blocking"]) == ("FAIL", True)
+        assert "post_close" not in precheck["inputs_ref"]
+        assert precheck["gate_id"] != finalize["gate_id"]
+        assert (finalize["verdict"], finalize["blocking"]) == ("PASS", False)
+
     def test_done_checker_no_record_writes_nothing(self, scratch, monkeypatch):
         monkeypatch.setattr(done_checker_static, "run_finalize_selfcheck", lambda *a, **k: [])
         monkeypatch.setattr(done_checker_static, "run_advisory_checks", lambda *a, **k: [])

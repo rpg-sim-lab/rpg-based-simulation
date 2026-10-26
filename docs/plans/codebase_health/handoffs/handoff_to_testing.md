@@ -129,3 +129,73 @@ the job on new findings; the two local `make`-target tests that exceed the 60 s 
 `TCK-20261005-CODE-HEALTH-MAKE-TARGET-TESTS-LOCAL-TIMEOUT`. Adding the checks to ruleset 14220945 as required is the owner's
 step. The import-linter flip and class E test retirement stay on `TCK-20261005-IMPORT-LINTER-FLIP-AND-TEST-RETIREMENT`
 (soak ends 2026-10-19, your four conditions attached).
+
+
+## Update 2026-10-08: decision 8.11 notice, repo-root cleanup batch A
+
+Source: `docs/plans/codebase_health/repo_root_layout_ticket_brief.md`. Under owner decision 8.11 (the `src/` freeze only; tests that pin CI or the Makefile may be edited, with a notice to you), ticket `TCK-20261008-DROP-UNUSED-REQUIREMENTS-EXPORT` (A2) deletes `requirements.txt` and edits these tests:
+
+- `tests/static/test_ci_narrow_path_filtered_jobs.py`: the PERF_RE/MIG_RE match check no longer expects `requirements.txt`.
+- `tests/static/test_ci_requirements_no_ml_stack.py`: rewritten. It asserts the ML stack is absent from the default install closure (project dependencies plus `[tool.uv] default-groups`, walked in `uv.lock`) instead of reading `requirements.txt`; the `requirements-knowledge.txt` test is unchanged.
+- `tests/static/test_ci_step_summary_reporting.py`: the banned-dependency check (`pytest-cov`, `pytest-html`) reads `pyproject.toml`; two test functions renamed (`..._no_new_dependency_entry_...`).
+- `tests/unit/tools/test_scenario_lane_paths.py`: the `requirements.txt` trigger cases use `uv.lock`; `tools/test_architecture/scenario_lane_paths.py` drops `requirements.txt` from its regex (`uv.lock` and `pyproject.toml` stay).
+- `tests/tools/test_evidence_cache_identity_contract.py` (candidate list), `tests/tools/test_delivery_ci_triage_classifier.py` (an inline sample workflow line), and comments in `tests/tools/test_knowledge_search.py` and `tests/codebase/test_code_health_impact.py`.
+
+`.github/workflows/test.yml` loses `requirements\.txt$` from PERF_RE and MIG_RE (`pyproject.toml` and `uv.lock` were already in both). Scoped run: `tests/static` and the 42 files referencing the touched paths pass; the known local 60 s failure `test_codebase_health_snapshot.py::test_make_target_runs_successfully_end_to_end` was deselected. Batch B (after A merges) will also edit `tests/architecture/test_docker_compose_dependency_hygiene.py`, `tests/logging/test_loki_cardinality.py`, `tests/codebase/test_code_health_install_git_hooks.py`, and add `tests/codebase/test_repo_root_allowlist.py`; you will get a notice then.
+
+
+## Update 2026-10-08 (batch B): decision 8.11 notice, repo-root layout
+
+Source: `docs/plans/codebase_health/repo_root_layout_ticket_brief.md`. Batch B (after batch A, PR #447) edits tests under owner decision 8.11 (CI- and layout-pinning tests may be edited, with a notice to you):
+
+- `TCK-20261008-OPS-FILES-INTO-DOCKER-DIR` (B1): `tests/architecture/test_docker_compose_dependency_hygiene.py` now reads `compose.yaml` and `pyproject.toml` anchored on the repo root (was cwd-relative `docker-compose.yml`); `tests/logging/test_loki_cardinality.py` reads `docker/promtail-config.yml` anchored on the repo root (was cwd-relative `promtail-config.yml`); `tests/unit/tools/test_scenario_lane_paths.py` gains two `docker/` cases (the scenario-lane gate treats `docker/` like the old `grafana/`: irrelevant to the lane), with `tools/test_architecture/scenario_lane_paths.py` updated.
+- `TCK-20261008-DROP-MAKE-BAT` (B2): `tests/codebase/test_code_health_install_git_hooks.py` drops `make.bat` from its scan list.
+- `TCK-20261008-GRAPH-HTML-JS-DEPS-BESIDE-TOOL` (B3): new `tests/tools/test_graphify_to_html_js_assets.py` (paths and a fake tree, no network or npm).
+- `TCK-20261008-REPO-ROOT-ALLOWLIST-GUARD` (B4): new `tests/codebase/test_repo_root_allowlist.py` compares the tracked root entries (`git ls-files` first path components) with the allowlist in `docs/guidelines/repo_tooling_layout.md`, section "Repo root"; it fails on any new root file or directory and ignores everything below the root. Mutation-proved with an extra staged root file.
+
+Scoped runs pass (169 passed, 1 skipped for B1's set; 97 for B2; 5 for B3; 4 for B4). The known local 60 s failure `test_codebase_health_snapshot.py::test_make_target_runs_successfully_end_to_end` is unrelated.
+
+
+## Update 2026-10-08 (CI backend image build): decision 8.11 notice
+
+`TCK-20261008-CI-BACKEND-IMAGE-BUILD-CHECK` adds a path-gated `docker-build` job ("Backend image build") to `.github/workflows/test.yml` and edits the tests that pin the workflow, as the job set and the gate shape are exactly what they pin:
+
+- `tests/static/test_ci_step_summary_reporting.py`: `docker-build` joins the expected job set (comment names the ticket).
+- `tests/static/test_ci_uv_install.py`: `docker-build` is in `_NO_PYTHON_INSTALL` (it installs nothing on the runner; plain `docker` commands).
+- `tests/static/test_ci_registry_resync_skip_jobs.py`: `docker-build` is in `SKIP_JOBS` (its result depends on the PR content only).
+- `tests/static/test_ci_narrow_path_filtered_jobs.py`: `run_docker_build` is checked in both fail-open branches and in the gated-job condition checks; three new tests: the job's `if` references its own output and `pr_content_unchanged`; `DOCKER_RE` matches `docker/backend.Dockerfile`, `.dockerignore`, `uv.lock`, `pyproject.toml` and the workflow file but not `src/`, `docs/`, `docker/frontend.Dockerfile` or `docker/nginx.conf`; the job uses plain `docker` commands only (no docker/* action, no cache, no push or login, 15-minute timeout).
+
+The job is deliberately not a required check (a path-skipped required check stays "expected"). `docs/testing/migration_ci_lanes.md` documents the gate and the skip-table row. `actionlint` (via `uvx --from actionlint-py`) reports no findings on the edited workflow, the same as on `origin/main`.
+
+
+## Update 2026-10-09: order-dependent failure in test_metrics_endpoint_integration
+
+Source: `TCK-20261009-HANDOFF-TESTING-METRICS-EXPORT-FLAKE`. Codebase does not fix this test (`tests/observability/` is yours); this is the handover of what perf reported and what I saw.
+
+- **Test:** `tests/observability/test_metrics_export.py::test_metrics_endpoint_integration` (line 155). It starts `python -m src serve --port 8011` as a subprocess, does a fixed `time.sleep(3)`, then `requests.get(...)`.
+- **Missing safeguards (read from the source, not observed failing):** no readiness check (the sleep is the only wait), the port is hard-coded to 8011, `requests.get` has no `timeout=`, and the `finally` does `terminate()` then `wait()` with no timeout and no `kill()` fallback.
+- **Report (perf, repro on `8754f94f2`):** connection refused when the test runs after `tests/unit/resource` and `tests/unit/observability` in a single pytest invocation. CI runs those suites as separate steps, so CI is not affected today. It is the same pattern as the earlier api boot flake.
+- **Re-run on `0c3a5654b` (main, 2026-10-09):** `pytest tests/unit/resource tests/unit/observability tests/observability/test_metrics_export.py -s -q -x`, one invocation, under a 2 GB cgroup cap, light host load: **PASSED**, 1267 passed, 2 skipped, 55.85 s. After the run nothing was listening on port 8011 (`ss -ltnp | grep 8011` empty). So there is no stderr or port state to attach: I could not reproduce the connection refused, and I make no claim about its cause. The report stands as perf's observation; one way it can happen: server startup takes longer than the fixed 3 s, which the missing readiness check leaves unguarded.
+- **Suggested fix (yours to decide):** bind to port 0 and pass the chosen port, poll `/health` (or the port) with a deadline instead of the fixed sleep, give `requests.get` a `timeout=`, and `kill()` the server if `terminate()` does not return in time.
+- **Related:** most of `.github/workflows/test.yml` is your lanes. `ubuntu-latest` begins migrating to Ubuntu 26.04 on 2026-10-19 (rolling out to 2026-11-19); the per-job result of running `test.yml` on `ubuntu-26.04` is in `docs/plans/codebase_health/ubuntu_26_runner_precheck.md` (ticket `TCK-20261009-UBUNTU-26-RUNNER-PRECHECK`).
+
+## Update 2026-10-19 (import-linter flip): decision 8.11 notice
+
+**Sent 2026-10-19 as issue #672** (PR #671).
+
+Source: ticket `TCK-20261005-IMPORT-LINTER-FLIP-AND-TEST-RETIREMENT`, branch `import-linter-flip`. The two-week soak from the adoption merge (#351) ended 2026-10-19T13:40Z. Under decision 8.11 (the `src/` freeze only; tests that pin CI may be edited, with a notice to you) the flip does this:
+
+- **`.github/workflows/test.yml`:** the `Import contracts` step (last step of the `code-health` job, which has been a required check since 2026-10-06) runs `python3 -m codebase.structure.import_contracts ci ...` and loses its `continue-on-error`. A broken contract, a stale `ignore_imports` entry or a stale generated `layers` block now fails `Code health` (exit 1); a run that cannot start fails it too (exit 2). There is no ruleset change and no new check name. The step summary and the `::error::` annotations list each broken contract's `importer -> imported (l.N)` pairs.
+- **Static pins edited:** `tests/static/test_ci_uv_install.py::test_code_health_job_is_blocking_and_the_ratchet_step_can_fail_it` (the tolerant-step set is now only `Paths this PR changed`; the `Import contracts` step must carry no `continue-on-error` and stay last) and `tests/codebase/test_import_contracts.py` (the step is blocking; unit tests for the exit codes).
+- **Retired tests (7), each with its replacement contract and a parity row set in the ticket's Test Summary** (37 injected violations, the contract went BROKEN on all 37, none where the test failed and the contract stayed KEPT; the tests missed 9 of them). Four of the seven files are outside `tests/architecture/`:
+  - `tests/architecture/test_phase18_import_boundaries.py::test_entity_models_do_not_import_domain_services` -> `c01_core_not_domains`
+  - `tests/architecture/test_belief_institution_write_paths.py::test_belief_institution_module_no_engine_or_core_state_imports` -> `c08_belief_model_pure`
+  - `tests/architecture/test_fame_legend_fact_distinctness.py::test_fame_deriver_and_model_no_engine_or_core_state_imports` -> `c08_fame_model_pure`
+  - `tests/architecture/test_fidelity_write_paths.py::test_fidelity_deriver_and_model_no_engine_or_core_state_imports` -> `c08_fidelity_model_pure`
+  - `tests/api/test_admission_control.py::test_admission_control_does_not_reach_into_governor_internals` -> `c09_admission_governor`
+  - `tests/unit/domains/campaigns/test_campaign_state.py::test_campaign_state_module_has_no_engine_imports` -> `c13_campaign_state`
+  - `tests/visual_assets/test_boundaries.py::test_src_never_imports_visual_assets` -> `c15_src_no_visual_assets`
+
+  Dead helpers and constants those tests left behind went with them (`_is_type_checking_test`, `_collect_type_checking_node_ids`, three `_FORBIDDEN_TOP_LEVEL_IMPORT_PREFIXES`, `_FAME_DERIVER_AND_MODEL_FILES`, unused imports).
+- **Not retired:** `tests/visual_assets/test_boundaries.py::test_visual_assets_module_respects_the_boundaries` (about 10 rules `c14` does not express) and the 42 rules that stay tests. **phase19 `test_hot_path_does_not_import_heavy_analyzers` stays:** the OFF-mode condition rpg's four reasons rely on is not enforced by it today (static scan, bare prefixes); on #547 the owner chose the gap note plus a follow-up (2026-10-18): the OFF-mode runtime test is filed as `TCK-20261018-PHASE19-OFF-MODE-RUNTIME-CHECK`, owned by testing-planner. Nothing else changes for the phase19 test.
+- **Coupling (your condition 1):** the retirements and the blocking step land in one PR. If the blocking step is dropped, the retirements are dropped with it.

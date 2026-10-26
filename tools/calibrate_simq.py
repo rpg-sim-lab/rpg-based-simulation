@@ -22,6 +22,7 @@ import logging
 import os
 import sys
 import time
+import uuid
 
 logging.basicConfig(level=logging.WARNING, format="%(levelname)s %(name)s: %(message)s")
 logger = logging.getLogger("calibrate_simq")
@@ -191,8 +192,13 @@ def _run_engine(
     entity_count: int = 10,
     extra_flags: dict | None = None,
     cal_dir: str | None = None,
+    audit_mode: bool = False,
 ) -> tuple[str, float, str]:
     """Drive the kernel tick_once() N times; return (run_dir, elapsed_sec, run_id).
+
+    ``audit_mode`` (default off, so every other caller is unchanged) builds the Kernel with ``flags["audit_mode"]``: outside audit_mode the kernel's wall-clock
+    watchdog and throttle make a run depend on host speed. The grade anchors are measured with it on (TCK-20261011-SIMQ-GRADE-ANCHORS-RUN-UNDER-AUDIT-MODE). It is a
+    Kernel constructor flag, so ``extra_flags`` (state feature flags) can not carry it.
 
     If a compiled world spec exists for ``name``, loads it via WorldCompiler and
     injects the resulting AuthoritativeState into the Kernel.  Falls back to a
@@ -297,7 +303,10 @@ def _run_engine(
     # max_tick_budget_ms for real-time pacing). Calibration runs are offline/batch, not
     # real-time, so this sleep only slows down the run without affecting simulation logic.
     # Same fix as tests/regression/test_behavioral_5k.py (TCK-20260628-E-LONGRUN-REGRESSION).
-    kernel = Kernel(profile=PROD_SMALL, state=state, rng=rng, flags={"no_frame_pacing": True})
+    # A unique run id per call: the Kernel's default id is ``run_<unix second>_<seeded suffix>``, the same for every run with one seed, so two same-seed runs
+    # starting within one second (xdist workers, parallel processes) would share one ``data/runs/<id>`` directory and double each other's events.
+    unique_run_id = f"{name}_{seed}_{ticks}_{os.getpid()}_{uuid.uuid4().hex[:8]}"
+    kernel = Kernel(profile=PROD_SMALL, state=state, rng=rng, flags={"no_frame_pacing": True, **({"audit_mode": True} if audit_mode else {})}, run_id=unique_run_id)
 
     run_id = getattr(kernel, "_run_id", None)
     start = time.perf_counter()
@@ -483,12 +492,28 @@ def _replay_jsonl_through_hub(run_dir: str, hub) -> int:
     return event_count
 
 
+
+def pillar_line(pillar_id: str, snap) -> str:
+    """One line of the pillar breakdown; a no-data pillar prints its event count against the minimum."""
+    if snap.normalized_score is None:
+        return f"    {pillar_id:20s}  no-data ({snap.event_count} events < {snap.min_events})"
+    return f"    {pillar_id:20s}  grade={snap.grade}  norm={snap.normalized_score:+.4f}  events={snap.event_count}"
+
 def main():
     parser = argparse.ArgumentParser(description="SimQ calibration runner")
     parser.add_argument("--ticks", type=int, default=100)
     parser.add_argument("--seed", type=int, default=42)
     parser.add_argument("--name", type=str, default="generic")
     parser.add_argument("--entities", type=int, default=10)
+    parser.add_argument(
+        "--audit-mode",
+        action="store_true",
+        help=(
+            "Build the Kernel with audit_mode so the run does not depend on host speed (off by default). "
+            "The grade anchors are measured with it; tools/evaluate_simq.py always passes it. "
+            "A campaign-mode profile already runs under audit_mode."
+        ),
+    )
     parser.add_argument(
         "--profile",
         type=str,
@@ -553,7 +578,7 @@ def main():
     else:
         engine_run_dir, elapsed, run_id = _run_engine(
             args.name, args.seed, args.ticks, args.entities,
-            extra_flags=profile_feature_flags, cal_dir=cal_dir,
+            extra_flags=profile_feature_flags, cal_dir=cal_dir, audit_mode=args.audit_mode,
         )
     print(f"[calibrate_simq] Engine done in {elapsed:.2f}s. JSONL at: {engine_run_dir}")
 
@@ -574,16 +599,24 @@ def main():
     report = hub.get_quality_report()
     persistence.write_report(report)
     persistence.shutdown()
+    # The run's own host-independence record (audit_mode / signals_zeroed, copied from its run manifest) is written right after the report of this same run, so it can
+    # never describe an earlier or later run than the report beside it; a comparison tool refuses a run that is not recorded host-independent
+    # (TCK-20261014-SIMQ-COMPARE-TOOLS-REFUSE-RUNS-NOT-RECORDED-HOST-INDEPENDENT).
+    from tools.test_architecture.simq_run_record import write_sidecar  # noqa: PLC0415
+    write_sidecar(cal_dir, engine_run_dir)
 
     print(f"\n=== Quality Report: {run_tag} ===")
     print(
         f"  ticks={args.ticks} events={event_count} elapsed={elapsed:.2f}s profile={profile}"
         f" window_size={weights.detection.window_size} loop_threshold={weights.detection.loop_threshold}"
     )
-    print(f"  overall_grade={report.overall_grade} overall_score={report.overall_score:.4f}")
+    if report.overall_score is None:
+        print(f"  overall=no-data ({report.overall_reason}; {report.pillars_scored} pillars scored, {report.pillars_no_data} no-data)")
+    else:
+        print(f"  overall_grade={report.overall_grade} overall_score={report.overall_score:.4f}")
     print("\n  Pillar breakdown:")
     for pillar_id, snap in sorted(report.pillars.items()):
-        print(f"    {pillar_id:20s}  grade={snap.grade}  norm={snap.normalized_score:+.4f}  events={snap.event_count}")
+        print(pillar_line(pillar_id, snap))
     print(f"\n  Report written: {os.path.join(cal_dir, 'quality_report.json')}")
     return report
 

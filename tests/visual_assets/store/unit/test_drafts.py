@@ -134,7 +134,7 @@ def test_drafts_survive_gc_and_a_fresh_clone_and_the_catalog_never_sees_them(dra
     keep(drafting, 16, visual_key=ROCK)
     before_catalog = snapshot(drafting.catalog)
     before_drafts = snapshot(drafting.drafts)
-    gc.gc(expire_before="2999-01-01T00:00:00Z", delete=True)  # the most aggressive gc there is
+    gc.gc(expire_before="2999-01-01T00:00:00Z", delete=True, decided_at="2026-02-01T00:00:00Z")  # the most aggressive gc there is
     assert snapshot(drafting.drafts) == before_drafts and snapshot(drafting.catalog) == before_catalog
     assert all(f.code != "UNEXPECTED_FILE" for f in verify(drafting.catalog, allow_fixture_namespace=True))
     clone = tmp_path / "clone"
@@ -274,6 +274,9 @@ def test_the_decision_arguments_are_checked_before_anything_else(two):
     refused(two, "licence_not_cleared", licence_state="UNREVIEWED")
     refused(two, "licence_evidence_missing", licence_evidence_ref="UNAVAILABLE")
     refused(two, "invalid_approver", approver=" ")
+    refused(two, "placeholder_value", approver="<your name>")
+    refused(two, "placeholder_value", approver_role="<your role>")
+    refused(two, "placeholder_value", licence_evidence_ref="<your own licence evidence reference>")
     refused(two, "review_evidence_missing", review_evidence_ref="  ")
     refused(two, "renderer_unavailable", renderer=None)
     refused(two, "bad_decided_at", decided_at="yesterday")

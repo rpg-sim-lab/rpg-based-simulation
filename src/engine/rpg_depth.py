@@ -16,7 +16,7 @@ checklist's sections:
 """
 from __future__ import annotations
 from typing import TYPE_CHECKING, Optional, Dict, Any, List, Set, Tuple
-from src.core.state import TERRAIN_COST
+from src.content.terrain_cost import DEFAULT_TERRAIN_ID, terrain_cost
 
 if TYPE_CHECKING:
     from src.core.state import EntityState, AuthoritativeState, StaminaComponent
@@ -194,6 +194,25 @@ class LeashService:
         return dist > nav.leash_radius
 
     @staticmethod
+    def in_home_area(entity: EntityState) -> bool:
+        """True for a leashed entity inside its leash radius: the area a ``LEASH_RETURN`` move is sent to reach (it ends there, not on the home tile)."""
+        nav = entity.navigation
+        return nav.leash_radius > 0 and nav.home_position is not None and not LeashService.is_beyond_leash(entity)
+
+    @staticmethod
+    def way_in_range(entity: EntityState, target_pos: Optional[Tuple[float, float]]) -> bool:
+        """True when a way to meet a need at ``target_pos`` is inside the entity's range.
+
+        A range-bound subject (``leash_radius`` above 0, a leashed animal or monster) judges its ways to eat and to sleep inside its
+        range, the Manhattan distance of ``home_position``; one with no way inside it has no open step and stays honestly hungry
+        (SURV-06), it is not a wanderer. A subject with no range-bound home (people: a leash or post is a duty) has every way in
+        range. The one test the hunger and sleep goals and the opening steps share (owner decision D57; the designer's range rule)."""
+        nav = entity.navigation
+        if nav.leash_radius <= 0 or nav.home_position is None or target_pos is None:
+            return True
+        return abs(target_pos[0] - nav.home_position[0]) + abs(target_pos[1] - nav.home_position[1]) <= nav.leash_radius
+
+    @staticmethod
     def should_give_up_chase(entity: EntityState) -> bool:
         """
         Check if a chasing mob should abandon pursuit.
@@ -257,8 +276,7 @@ class TerrainCostService:
         terrain = getattr(state, 'terrain', {})
         if not terrain:
             return 1.0
-        terrain_type = terrain.get(pos, "PLAIN")
-        return TERRAIN_COST.get(terrain_type, 1.0)
+        return terrain_cost(terrain.get(pos, DEFAULT_TERRAIN_ID))
 
     @staticmethod
     def get_path_cost(path: List[Tuple[int, int]], state: AuthoritativeState) -> float:

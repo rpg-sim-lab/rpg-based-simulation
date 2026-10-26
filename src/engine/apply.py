@@ -4,6 +4,7 @@ from __future__ import annotations
 import logging
 # from dataclasses import replace
 from typing import Dict, Any, List, Optional
+from src.core.models.world_records import fold_owed
 
 def replace(obj: Any, **changes: Any) -> Any:
     """Fast dataclass replacement bypassing inspect/__init__ overhead."""
@@ -45,6 +46,9 @@ from src.core.updates import StateUpdate, EntityUpdate, SocialUpdate, StrategicU
 from src.engine.legality import LegalityServiceV2
 from src.engine.spatial_query import SpatialQueryService
 from src.engine.rpg_depth import StaminaService, SkillScalingService
+from src.engine.sleep_debt import debt_change_per_tick, is_asleep, recovery_scale as sleep_recovery_scale
+from src.engine.natural_healing import hp_gain
+from src.engine.starvation import STARVING_LINE, hp_loss, recovery_scale
 from src.systems.social_memory import SocialMemoryService
 from src.systems.social_systems.relationships import RelationshipService
 from src.progression.leveling import LevelingService
@@ -61,6 +65,23 @@ def shallow_freeze(obj: Any) -> Any:
     if isinstance(obj, list):
         return tuple(obj)
     return obj
+
+class DuplicateEntityIdError(ValueError):
+    """An ``entities_add`` carried an id that already exists: an add never replaces an entity, so the apply refuses it loudly."""
+
+
+def _add_entities(entities: dict, adds: Any, tick: int) -> None:
+    """Insert each added entity; an id already present (or repeated in ``adds``) is refused, never overwritten."""
+    for ent in adds:
+        if ent.id in entities:
+            raise DuplicateEntityIdError(f"entities_add reuses id {ent.id} at tick {tick}: an add never replaces an existing entity")
+        entities[ent.id] = ent
+
+
+def _counter_past_adds(counter: int, adds: Any) -> int:
+    """Every add advances ``next_entity_id`` past its id, whoever added it."""
+    return max([counter, *(ent.id + 1 for ent in adds)]) if adds else counter
+
 
 class ApplyPath:
     """
@@ -89,7 +110,7 @@ class ApplyPath:
                 bio = entity.biological
                 changes["biological"] = replace(bio, 
                     hunger=min(100.0, bio.hunger + need_rates(entity)[0] * cadence.biological),
-                    sleep_debt=min(100.0, bio.sleep_debt + need_rates(entity)[1] * cadence.biological)
+                    sleep_debt=max(0.0, min(100.0, bio.sleep_debt + debt_change_per_tick(need_rates(entity)[1], is_asleep(entity)) * cadence.biological))
                 )
             
             # Lifecycle / Health Decay
@@ -98,12 +119,13 @@ class ApplyPath:
                 new_age = life.age_ticks + 1
                 bio = changes.get("biological", entity.biological)
                 total_passive_dmg = 0
-                if bio.hunger >= 95.0: total_passive_dmg += 2
-                if bio.sleep_debt >= 98.0: total_passive_dmg += 1
+                if bio.hunger >= STARVING_LINE:
+                    total_passive_dmg += hp_loss(bio.hunger, entity.combat.max_hp, tick, entity.id, cadence.lifecycle)
                 
                 if total_passive_dmg > 0 or new_age != life.age_ticks:
                     comb = changes.get("combat", entity.combat)
-                    new_hp = max(0, comb.hp - total_passive_dmg)
+                    heal = hp_gain(comb, bio, is_asleep(entity), tick // max(1, cadence.lifecycle), entity.id) if total_passive_dmg == 0 else 0  # decision 42
+                    new_hp = max(0, comb.hp - total_passive_dmg + heal)
                     if new_hp != comb.hp:
                         changes["combat"] = replace(comb, hp=new_hp, alive=(new_hp > 0))
                     # Passive HP-death cause, recorded at the writer on the fatal tick only (never
@@ -114,10 +136,7 @@ class ApplyPath:
                     passive_cause_tick = life.passive_death_cause_tick
                     if (comb.hp > 0 and new_hp == 0 and total_passive_dmg > 0
                             and life.death_reason is None and not life.is_permadeath):
-                        passive_cause = (
-                            PassiveDeathCause.STARVATION if bio.hunger >= 95.0
-                            else PassiveDeathCause.SLEEP_DEPRIVATION
-                        )
+                        passive_cause = PassiveDeathCause.STARVATION  # sleep debt costs no health (decision 41): hunger is the only passive drain
                         passive_cause_tick = tick
                     # The passive branch never DEACTIVATES: resolve_lifecycle is the sole declared
                     # authority for HP-death and old-age deactivation (PROG-030). Its one remaining
@@ -136,11 +155,15 @@ class ApplyPath:
                         passive_death_cause_tick=passive_cause_tick,
                     )
             
+            # Weakened by hunger (owner decision 36): slower recovery. One compare per entity; 1.0 off the weakened path.
+            rbio = changes["biological"] if "biological" in changes else entity.biological
+            rscale = min(recovery_scale(rbio.hunger), sleep_recovery_scale(rbio.sleep_debt))  # the worse of the hunger and sleep stages
+
             # Stamina Regen
             stamina = entity.stamina
             if stamina.current < stamina.max_stamina:
                 is_resting = (entity.navigation.movement_mode == MovementMode.HOLD)
-                stam_regen = StaminaService.tick_regen(stamina, is_resting=is_resting)
+                stam_regen = StaminaService.tick_regen(stamina, is_resting=is_resting) * rscale
                 if stam_regen > 0:
                     new_stam = min(stamina.max_stamina, stamina.current + stam_regen)
                     if new_stam != stamina.current:
@@ -152,7 +175,7 @@ class ApplyPath:
             # readiness_delta; this is the missing passive counterpart.
             comb = changes.get("combat", entity.combat)
             if comb.readiness < 100.0 and comb.readiness_speed > 0:
-                new_readiness = min(100.0, comb.readiness + comb.readiness_speed)
+                new_readiness = min(100.0, comb.readiness + comb.readiness_speed * rscale)
                 if new_readiness != comb.readiness:
                     changes["combat"] = replace(comb, readiness=new_readiness)
 
@@ -288,8 +311,7 @@ class ApplyPath:
             if not any_entity_changed:
                 new_entities = dict(new_entities)
                 any_entity_changed = True
-            for ent in update.entities_add:
-                new_entities[ent.id] = ent
+            _add_entities(new_entities, update.entities_add, prior_state.tick)
 
         # TCK-20260908-READMODEL-CACHE-PASSIVE-DECAY-STALENESS: built unconditionally (the tags are
         # already fully computed by ApplyPlanBuilder; this is cheap) rather than only when an
@@ -311,13 +333,6 @@ class ApplyPath:
         for k, v in update.rejections_delta.items():
             new_rejections[k] = new_rejections.get(k, 0) + v
 
-        new_periodic = dict(prior_state.periodic_due_ticks)
-        new_periodic.update(update.periodic_updates)
-
-        new_work_debt = dict(prior_state.work_debt)
-        for k, delta in update.work_debt_updates.items():
-            new_work_debt[k] = max(0, new_work_debt.get(k, 0) + delta)
-
         if audit_mode:
             new_trace = list(prior_state.transaction_trace)
             new_trace.extend(update.transaction_trace)
@@ -331,13 +346,17 @@ class ApplyPath:
         new_mode = update.current_mode_set if update.current_mode_set is not None else getattr(prior_state, "current_mode", 0)
         new_next_node = update.next_node_id_set if update.next_node_id_set is not None else getattr(prior_state, "next_node_id", 1000)
         new_next_entity = update.next_entity_id_set if update.next_entity_id_set is not None else getattr(prior_state, "next_entity_id", 1)
+        new_next_entity = _counter_past_adds(new_next_entity, update.entities_add)
         new_next_item_instance = update.next_item_instance_id_set if update.next_item_instance_id_set is not None else getattr(prior_state, "next_item_instance_id", 1)
         new_maturity = update.maturity_set if update.maturity_set is not None else prior_state.maturity
         new_last_calamity = update.last_calamity_tick_set if update.last_calamity_tick_set is not None else prior_state.last_calamity_tick
+        new_grief_drained = update.grief_drained_tick_set if update.grief_drained_tick_set is not None else prior_state.grief_drained_tick
         new_rng = update.rng_checkpoint if update.rng_checkpoint is not None else prior_state.rng_checkpoint
         new_global_resources = dict(prior_state.global_resources)
         for k, v in update.resource_updates.items():
             new_global_resources[k] = new_global_resources.get(k, 0.0) + v
+
+        new_owed = fold_owed(prior_state.owed, update.owed_remove, update.owed_add_or_update)
 
         grid_invalidated = plan.grid_invalidated
         if grid_invalidated:
@@ -484,6 +503,7 @@ class ApplyPath:
             chests=new_chests,
             ground_items=new_ground_items,
             corpses=new_corpses,
+            owed=new_owed,
             camps=new_camps,
             local_scars=new_scars,
             global_resources=new_global_resources,
@@ -492,11 +512,10 @@ class ApplyPath:
             terrain=prior_state.terrain,
             home_storage=new_storage,
             town_center=prior_state.town_center,
-            periodic_due_ticks=new_periodic,
-            work_debt=new_work_debt,
             movement_count=new_movement_count,
             maturity=new_maturity,
             last_calamity_tick=new_last_calamity,
+            grief_drained_tick=new_grief_drained,
             blocked_tiles=prior_state.blocked_tiles,
             town_entity_ids=prior_state.town_entity_ids,
             rng_checkpoint=new_rng,
@@ -514,6 +533,7 @@ class ApplyPath:
             _has_hostiles_or_dead_cache=pass_hostile,
             _has_contracts_cache=pass_contracts,
             movement_cache=m_cache,
+            route_plans=getattr(prior_state, "route_plans", None),
             world_indexes=getattr(prior_state, "world_indexes", None),
             semantic_entity_indexes=getattr(prior_state, "semantic_entity_indexes", None),
             _index_hits=getattr(prior_state, "_index_hits", 0),
@@ -716,6 +736,7 @@ class ApplyPath:
         object.__setattr__(res, "max_chase_ticks", nav.max_chase_ticks)
         object.__setattr__(res, "returning_home", nav.returning_home)
         object.__setattr__(res, "place_id", nav.place_id)
+        object.__setattr__(res, "step_ready_tick", nav.step_ready_tick)
         return res
 
     @staticmethod

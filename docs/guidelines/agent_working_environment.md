@@ -16,11 +16,11 @@ This document is the single reference for setting up and operating the local con
 
 | Requirement | Version | Notes |
 |---|---|---|
-| Docker Engine | 24+ | Required for `make search-server-docker` (primary) |
-| Python | 3.11+ (floor); 3.13 is the CI-tested version | The floor is `requires-python` in `pyproject.toml`, which is the source; `[tool.mypy] python_version` follows it. CI (`.github/workflows/test.yml`) runs 3.13. The floor stays at 3.11 because `.venv-knowledge` is on 3.12. |
-| `uv` | 0.11+ | Resolves and installs from `pyproject.toml` and `uv.lock`. On this machine every `uv` network command needs `--system-certs` (see "TLS interception" below). |
+| Docker Engine | 24+ | Required for `make search-server-docker` (primary). The search image is `python:3.13-slim` (`tools/search/Dockerfile`); its build is **unverified** until it is run on a host with an unblocked torch index (on `u24desktop-Virtual-Machine` the build fails at the CPU torch install, TLS to the index, 2026-10-09), and `sentence-transformers` and `sqlite-vec` on 3.13 are untested in the image. |
+| Python | 3.12+ (floor); 3.13 is the CI-tested version | The floor is `requires-python` in `pyproject.toml`, which is the source; `[tool.mypy] python_version` and `[tool.ruff] target-version` move with it. CI (`.github/workflows/test.yml`) and `.python-version` use 3.13. The floor is 3.12 (owner decision 2026-10-09, amending roadmap decision 12). The 3.13 floor needs, on every host: a 3.13 system `python3` (hooks and `python3 tools/...` commands run under it, not a venv) and a 3.13 `.venv-knowledge`. Knowledge-venv (`.venv-knowledge`) Python per host: `ubuntu` 3.13.7 (verified 2026-10-09); `u24desktop-Virtual-Machine` 3.12.3 (verified 2026-10-09; `torch` 2.12.1+cpu, `sentence-transformers` 5.6.0). System `python3`: `ubuntu` 3.13, `u24desktop-Virtual-Machine` 3.12.3 (PR #456). The floor can reach 3.13 only when `u24desktop-Virtual-Machine`'s venv does, and that is blocked by the torch-index filter in "Why the knowledge stack is stuck on 3.12" below. |
+| `uv` | 0.11+ | Resolves and installs from `pyproject.toml` and `uv.lock`. On `u24desktop-Virtual-Machine` (the TLS-intercepted network) every `uv` network command needs `--system-certs` (see "TLS interception" below). |
 | `uv sync --system-certs` (or `make install-py`) | — | Core app, test and dev deps from `uv.lock` (`fastapi`, `uvicorn`, `pytest`, etc.), plus the `lint` group (`ruff`, `complexipy`). Dependencies are declared once, in `pyproject.toml`. CI installs this way too (`uv sync --locked --no-install-project`); every CI job except `tools-a-e` passes `--no-group lint`. |
-| `pip install -r requirements.txt` | — | Same set (including the `lint` tools) for environments without uv, such as other worktrees and `.venv-knowledge`; no CI job uses it. `requirements.txt` is a **generated export** of `uv.lock`: never edit it by hand (see "Changing a dependency" below). |
+| `uv export --frozen --no-hashes --no-emit-project \| uv pip install -r -` | — | Same set (including the `lint` tools) for an environment that is not the project's own `.venv`, such as another worktree or `.venv-knowledge`. There is no committed `requirements.txt` any more (`TCK-20261008-DROP-UNUSED-REQUIREMENTS-EXPORT`): the export is generated on demand from `uv.lock`, and no CI job uses it. |
 | `pip install -r requirements-knowledge.txt` | — | Knowledge-search stack: `torch`, `sentence-transformers`, `sqlite-vec`, `rank_bm25`. Local agent tooling only — CI never installs this. |
 
 First-time model download: `all-MiniLM-L6-v2` (~22 MB) is downloaded automatically on first `make knowledge-index`. Subsequent builds use the local cache.
@@ -33,8 +33,8 @@ First-time model download: `all-MiniLM-L6-v2` (~22 MB) is downloaded automatical
 
 | Venv | Python | Use it for | Why |
 |---|---|---|---|
-| `.venv` | **3.13.14** | **Engine, API, and all test runs** | Matches what CI actually runs (`.github/workflows/test.yml` declares `python-version: "3.13"`); holds only `requirements.txt`'s deps, no editable install of this package. Running tests on anything else means a local pass cannot rule out a version-specific CI failure. |
-| `.venv-knowledge` | 3.12.3 | Knowledge-search tooling (`tools/knowledge_search.py`, `search_mcp.py`, `search_server.py`) **and** general local dev use | Holds `torch`/`sentence-transformers` (cannot be migrated to 3.13 — see below), **plus** `requirements.txt`'s core app deps, **plus** this package itself editable-installed (`pip install -e .`, giving the `rpg-sim`/`rpg-world`/`rpg-lab` console scripts), **plus** `headroom-ai==0.37.0` (pinned in `requirements-knowledge.txt` since PR #228 — see `TCK-20260916-HEADROOM-TRIAL-ISOLATION-AND-REVERT`). It is not narrowly scoped to the knowledge stack; despite the name, it is this machine's fuller general-purpose venv. |
+| `.venv` | **3.13.14** | **Engine, API, and all test runs** | Matches what CI actually runs (`.github/workflows/test.yml` declares `python-version: "3.13"`); holds only the locked default deps (`uv.lock`), no editable install of this package. Running tests on anything else means a local pass cannot rule out a version-specific CI failure. |
+| `.venv-knowledge` | 3.12.3 | Knowledge-search tooling (`tools/knowledge_search.py`, `search_mcp.py`, `search_server.py`) **and** general local dev use | Holds `torch`/`sentence-transformers` (cannot be migrated to 3.13 — see below), **plus** the locked core app deps, **plus** this package itself editable-installed (`pip install -e .`, giving the `rpg-sim`/`rpg-world`/`rpg-lab` console scripts), **plus** `headroom-ai==0.37.0` (pinned in `requirements-knowledge.txt` since PR #228 — see `TCK-20260916-HEADROOM-TRIAL-ISOLATION-AND-REVERT`). It is not narrowly scoped to the knowledge stack; despite the name, it is `u24desktop-Virtual-Machine`'s fuller general-purpose venv. |
 
 **Run tests as `.venv/bin/python3 -m pytest …`**, not the bare `python3` on PATH (which is 3.12,
 still resolving to `.venv-knowledge`'s interpreter — see above).
@@ -51,19 +51,21 @@ implied.)*
 
 ### Why the knowledge stack is stuck on 3.12
 
-`download.pytorch.org` is **blocked by this network's content filter**, not merely TLS-intercepted. Confirmed 2026-09-14:
+`download.pytorch.org` is **blocked by `u24desktop-Virtual-Machine`'s network content filter**, not merely TLS-intercepted. Confirmed 2026-09-14:
 
 ```
 openssl s_client -connect download.pytorch.org:443 | openssl x509 -noout -subject -issuer
 subject=O = Fortinet, CN = Fortiguard SDNS Blocked Page
 ```
 
-So `torch==2.12.1+cpu` cannot be installed for a new Python version from this machine by any tool. The existing `.venv-knowledge` predates the block and **must be preserved** — deleting it permanently breaks `search_docs` for every session here. `tools/start_search_mcp.sh` hardcodes its absolute path for exactly this reason.
+So `torch==2.12.1+cpu` cannot be installed for a new Python version from `u24desktop-Virtual-Machine` by any tool. The existing `.venv-knowledge` predates the block and **must be preserved** — deleting it permanently breaks `search_docs` for every session here. `tools/start_search_mcp.sh` and `tools/start_headroom_mcp.sh` reach it without a host path, for exactly this reason: `KNOWLEDGE_PYTHON` first when set, then the main checkout through `git rev-parse --git-common-dir` (`TCK-20261012-HOST-PATH-LITERALS-MAKEFILE-AND-MCP-LAUNCHERS`). On any host the search launcher finds the main checkout's `.venv-knowledge` from a git worktree through `git rev-parse --git-common-dir`, and it only selects an interpreter that has both `mcp` and `sentence_transformers`. The Makefile's `PYTHON_KNOWLEDGE` no longer hardcodes a host path: it uses `KNOWLEDGE_PYTHON` when set, else the main checkout's `.venv-knowledge` (via `git rev-parse --git-common-dir`), else this checkout's own, else `python3` (`TCK-20261011-KNOWLEDGE-TORCH-CPU-INDEX-IN-LOCK`). `uv.lock` resolves `torch` from PyPI (the CUDA build), so `.venv-knowledge` is built by the manual CPU-wheel step and is not reproducible from the lock; `uv sync --extra knowledge` does not give the CPU env. A worktree has no knowledge index of its own (`agent-working/.index/` is gitignored), so `search_mcp.py` queries the main checkout's index when the worktree's own is missing (`TCK-20261010-SEARCH-MCP-WORKTREE-VENV-RESOLUTION`).
 
 **Symptoms the block produces, none of which name the real cause:**
 - `pip`: `Could not find a version that satisfies the requirement torch==2.12.1+cpu (from versions: none)` — pip fetched the *block page*, which lists no packages.
 - `pip --trusted-host`: identical, because skipping verification just accepts the block page.
 - `uv`: `invalid peer certificate: Other(OtherError(CaUsedAsEndEntity))`.
+
+**2026-10-24 (`TCK-20261024-KNOWLEDGE-STACK-SECURITY-BUMPS`):** `requirements-knowledge.txt` now pins `torch==2.13.0+cpu`, which comes only from `download.pytorch.org` and so cannot be installed on `u24desktop-Virtual-Machine`. Its `.venv-knowledge` stays at `torch==2.12.1+cpu` (the text above is kept as history) and the low-severity torch alert stands for that host. The new `mcp` and `graphifyy` pins come from PyPI, but their upgrade there is not verified on `u24desktop-Virtual-Machine`.
 
 ### TLS interception — a separate problem that looks the same
 
@@ -80,7 +82,7 @@ This network also intercepts TLS generally, via a corporate CA in the system sto
 ```bash
 uv python install 3.13 --system-certs
 uv venv .venv --python 3.13 --system-certs
-uv pip install --python .venv/bin/python3 --system-certs -r requirements.txt
+uv sync --python .venv/bin/python3 --system-certs
 ```
 
 ---
@@ -93,8 +95,8 @@ Run these once after cloning or after a clean checkout.
 # 1. Install core Python dependencies into .venv from uv.lock
 #    (drop --system-certs on a network without TLS interception)
 uv sync --python 3.13 --system-certs
-#    Equivalent without uv:
-#    pip install -r requirements.txt
+#    For another environment (worktree, .venv-knowledge), export on demand:
+#    uv export --frozen --no-hashes --no-emit-project | uv pip install --python <env>/bin/python3 -r -
 
 # 1b. Install the knowledge-search stack (torch must come from the CPU wheel index)
 pip install torch --index-url https://download.pytorch.org/whl/cpu
@@ -116,7 +118,7 @@ The Docker container runs with `restart: unless-stopped` — it will come back a
 
 `uv sync` installs the default dependencies plus the `dev` and `lint` groups (`[tool.uv] default-groups`),
 and installs this package itself as editable. `make install-py` runs plain `uv sync`, so it also installs
-the project as an editable package, which `pip install -r requirements.txt` did not; on a machine with TLS
+the project as an editable package, which an export-based install does not; on a machine with TLS
 interception set `UV_SYSTEM_CERTS=1` before `make install-py` (the environment variable for `--system-certs`). It does not install the knowledge-search stack: that stays in
 `requirements-knowledge.txt` and `.venv-knowledge` (step 1b), unchanged. The opt-in `profiling`
 group (`memray`) is installed with `uv sync --group profiling`.
@@ -127,26 +129,24 @@ Dependencies are declared in one place, `pyproject.toml` (`TCK-20261002-UV-DECLA
 runtime packages under `[project] dependencies`, test and dev tooling under
 `[dependency-groups] dev`, and the code-health tools (`ruff`, `complexipy`) under `lint`. The `lint` group
 is kept out of `dev` so that CI jobs that do not run the code-health tests can skip it with
-`uv sync --no-group lint`; `default-groups` keeps a plain `uv sync` and the export unchanged. After editing it, refresh the lock and regenerate the export, and commit
-all three files together:
+`uv sync --no-group lint`; `default-groups` keeps a plain `uv sync` unchanged. After editing it, refresh the lock and commit
+`pyproject.toml` and `uv.lock` together:
 
 ```bash
 uv lock --system-certs
-uv export --frozen --no-hashes --no-emit-project -o requirements.txt
 ```
 
 **After the Python Code Craft branch merges, every existing environment (the main checkout's
-`.venv`, other worktrees) must re-run `uv sync --system-certs` or `pip install -r requirements.txt`.**
+`.venv`, other worktrees) must re-run `uv sync --system-certs` (or the on-demand export above).**
 `ruff` and `complexipy` are now `lint` dependencies (the `Code health` and `Code health SARIF (advisory)` jobs sync them too), and the codebase-health snapshot measures with them
 live, so tests such as `tests/codebase/test_codebase_health_snapshot.py`'s throwaway-repository tests fail
 in an older environment with `complexipy not found: install the project environment (uv sync)`. That
 failure is deliberate: the snapshot never silently skips its craft metrics. CI is unaffected because
-the one job that runs those tests (`tools-a-e`) syncs the `lint` group, and `requirements.txt` carries both tools.
+the one job that runs those tests (`tools-a-e`) syncs the `lint` group, and the default `uv sync` carries both tools.
 
-`uv lock --check` exits non-zero if `uv.lock` is out of date with `pyproject.toml`. Re-running the
-export on an unchanged lock produces no diff. The export leaves out extras, so `torch`,
-`sentence-transformers`, `sqlite-vec` and `rank-bm25` never reach `requirements.txt`
-(`tests/static/test_ci_requirements_no_ml_stack.py` pins this).
+`uv lock --check` exits non-zero if `uv.lock` is out of date with `pyproject.toml`. The export leaves out extras, so `torch`,
+`sentence-transformers`, `sqlite-vec` and `rank-bm25` never reach the default install
+(`tests/static/test_ci_requirements_no_ml_stack.py` pins this by walking `uv.lock` from the default roots).
 
 ### Reading code-health results on a PR
 
@@ -184,29 +184,35 @@ is changed-line feedback only and stays advisory permanently (decision 8.19).
 3. Locally: `make code-health` (ratchet), `make typecheck-py` (mypy through the baseline) and
    `python3 -m codebase.gates.sarif_feedback --changed FILE --out SARIF` (the SARIF the job would upload).
 
-### Reading the import-contract result (advisory)
+### Reading the import-contract result (blocking)
 
 The `Import contracts` step is the last step of the `code-health` CI job. It runs the import-linter contracts in
-`codebase/structure/importlinter.toml` (`TCK-20261004-IMPORT-LINTER-ADOPTION`) and can never fail the job: the
-command exits 0 whatever it finds and the step has its own `continue-on-error`. `Code health` is a required check
-(`TCK-20261003-CODE-HEALTH-GATES-FLIP-BLOCKING`), but this step stays advisory: a broken contract is a summary line
-and a `::warning::`, never a red required check. Blocking is a separate, later step
-(`TCK-20261005-IMPORT-LINTER-FLIP-AND-TEST-RETIREMENT`).
+`codebase/structure/importlinter.toml` (`TCK-20261004-IMPORT-LINTER-ADOPTION`, made blocking by
+`TCK-20261005-IMPORT-LINTER-FLIP-AND-TEST-RETIREMENT`) as `python3 -m codebase.structure.import_contracts ci`. The step
+has no `continue-on-error`, and `Code health` has been a required check since 2026-10-06
+(`TCK-20261003-CODE-HEALTH-GATES-FLIP-BLOCKING`), so a failing step is a red required check. There is no separate
+required-check name and no ruleset change.
 
-- **Job summary:** one line `Import contracts (advisory): N kept, M broken` (plus stale ignored imports), then each
-  broken contract by name. One `::warning::` annotation appears when a contract is broken, stale or could not
-  run ("could not run" is shown instead of looking like a pass).
+- **Exit codes:** 1 when a contract is broken, an `ignore_imports` entry is stale, or the generated `layers` block is
+  out of date; 2 when the contracts could not run (a missing binary or output that is not lint-imports' own). Both fail
+  the job: "could not run" never looks like a pass.
+- **Job summary:** one line `Import contracts (blocking): N kept, M broken` (plus stale ignored imports), then each
+  broken contract by name with every `importer -> imported (l.N)` pair under it. One `::error::` annotation per broken
+  contract carries the same pairs (and one each for stale entries, a stale block and "could not run").
 - **A broken contract** means a new import crosses a boundary: the `layers` contract (order from
-  `codebase/structure/package_registry.jsonl`, 135 existing upward imports held in
-  `codebase/structure/import_layers_baseline.txt`) or one of the class E and loophole contracts. Run locally for the
-  import lines. **A stale ignored import** means an excepted import no longer exists: delete its entry.
-- **Locally:** `make import-contracts` (the same step), or for the full import lines
-  `uvx --from import-linter==2.15 lint-imports --config codebase/structure/importlinter.toml` (`lint-imports` is in
-  the `lint` group). After a registry change: `python3 -m codebase.structure.import_contracts` rewrites the
-  generated `layers` block, `--check` reports a stale one; `seed-baseline` accepts the current violations (a
-  deliberate reseed, never to hide a new import).
-- The existing `tests/architecture/` import tests still run beside the contracts; nothing is retired until
-  `TCK-20261005-IMPORT-LINTER-FLIP-AND-TEST-RETIREMENT`.
+  `codebase/structure/package_registry.jsonl`, existing upward imports held in
+  `codebase/structure/import_layers_baseline.txt`) or one of the class E and loophole contracts. Fix the import in your
+  PR; if it is deliberate, ask the codebase planner for a baseline or `ignore_imports` entry with a reason (never add one
+  just to pass). **A stale ignored import** means an excepted import no longer exists: delete its entry.
+- **Locally:** `make import-contracts` (the advisory twin: same summary, always exit 0), `make lint-imports` for
+  lint-imports' own report and exit code, or
+  `uvx --from import-linter==2.15 lint-imports --config codebase/structure/importlinter.toml` (`lint-imports` is in the
+  `lint` group). After a registry change: `python3 -m codebase.structure.import_contracts` rewrites the generated
+  `layers` block, `--check` reports a stale one; `seed-baseline` accepts the current violations (a deliberate reseed,
+  never to hide a new import).
+- **Retired tests:** seven class E import tests were retired when the step became blocking; each has a replacement
+  contract and a parity table (injected violation, contract BROKEN) in the ticket's Test Summary. The phase19 hot-path
+  test and the other 42 import rules stay tests.
 
 ### Git hooks (opt-in)
 
@@ -224,7 +230,7 @@ automatically (no make target, script, CI step or session hook), and CI stays th
   (`tools/hooks/post-commit-reindex.sh`, a no-op unless docs/ or `agent-working/tickets/done/` changed and a
   knowledge index exists). The check sees the **staged** content: prek stashes unstaged changes while the
   hooks run and restores them afterwards.
-- **Install affects every worktree on this machine.** `.git/hooks` is the common directory shared by all
+- **Install affects every worktree of this clone's host.** `.git/hooks` is the common directory shared by all
   worktrees of this repository, so once anyone installs, the pre-commit hook runs on every commit in every
   worktree, including ones with no project environment and ones on a branch cut before this config existed. The
   hooks therefore never block for a missing environment: without ruff, without the registry, without
@@ -407,6 +413,20 @@ search_health()
 
 No curl. No bash. Results arrive as a structured tool response directly in context.
 
+### One shared search model for the whole fleet (`TCK-20261012-SEARCH-MCP-SHARED-MODEL`)
+
+Every session's `search_mcp.py` used to load its own embedding model on its first query (about 600 MB each). The first session now starts one local server (`tools/search_shared.py serve`) and every later session asks it, so nine sessions hold about 1.2 GB instead of about 5.7 GB. Nothing to set up and nothing breaks without it:
+
+- **Same answers.** The server runs `search_mcp._search`, the very function the in-process path runs; the client also compares a hash of the result-deciding files (`search_mcp.py`, `search_shared.py`, `knowledge_search.py`, `hybrid_retrieval.py`) with the server's and searches in-process on a mismatch, so a server started from older code never answers. The hash and the server's own code both come from the **main checkout's** `tools/` (resolved from git, never the cwd), so a worktree that edits `tools/search_*.py` neither starts a server from its own copy nor falls back because of it (`TCK-20261018-SEARCH-SHARED-SINGLE-SERVER-FROM-MAIN-CHECKOUT`). The one exception: a worktree that built its own index keeps its own `tools/` for that index. `RPG_SEARCH_SHARED_CODE_ROOT` overrides the root for tests and dev.
+- **One server per index, and a slow start is waited for.** The server holds an exclusive lock on `server.lock` for its whole life, taken before it loads anything; a second `serve` exits at once, and a killed server's lock disappears with its pid. While the model loads the state file holds a `starting` record; clients never spawn over it. A query that arrives during that load (up to 180 s) gets a **lexical-only** answer, `{"results": [...], "degraded": "lexical_only_server_starting"}`, so no client loads a second 600 MB model because of a slow start. Past 180 s, or for any other failure, the call searches in-process as before. After a pull changes `tools/search_*.py`, the first client that sees the live server on other code replaces it (SIGTERM only to the process that just answered with the token and whose recorded start time still matches) and answers lexical-only meanwhile, so the whole fleet does not fall back to its own models.
+- **Server cwd.** The detached server starts with the main checkout as its cwd, so a removed worktree never leaves it with a deleted one. Under pytest `state_dir()` refuses the real runtime dir (`tests/tools/conftest.py` gives every test a tmp one).
+- **One log line per move.** `search_mcp` prints one stderr line when it moves between the shared server, lexical-only answers and in-process search, never one per query.
+- **Fallback.** Any failure (no server, timeout, a bad answer, a state directory that is not private to your user) makes that call search in-process, as before. The staleness warning and the worktree index fallback do not depend on the server.
+- **Where it lives.** `$XDG_RUNTIME_DIR/rpg-search/<key>/` (outside the repo, `0700`; `<key>` is the sha256 of the index database's resolved path, so every worktree of a checkout shares one server): `server.json` (pid, port, token; `0600`; a `starting` record while the model loads), `lock` (clients), `server.lock` (held by the server), `server.log`. It binds `127.0.0.1` on an OS-assigned port, requires the token, and exits after 30 idle minutes (`RPG_SEARCH_IDLE_SECONDS`), removing its state.
+- **Kill switch.** `RPG_SEARCH_SHARED=0` forces in-process search. `tests/tools` sets it for every test; no test starts a real detached server without `RPG_SEARCH_SHARED_ALLOW_TEST_SPAWN=1` and a tmp `XDG_RUNTIME_DIR`.
+- **Stopping one by hand:** `kill $(python3 -c 'import json,glob;print(json.load(open(glob.glob("'$XDG_RUNTIME_DIR'/rpg-search/*/server.json")[0]))["pid"])')`; the next search starts a fresh one.
+- The FastAPI `tools/search_server.py` (Docker, `make search-server-docker`) is a separate server with its own search path and different results; it is unchanged. Pointing it at the same core is an agent-working follow-up.
+
 ### When the index is stale
 
 Each worktree searches its own index (`agent-working/.index/knowledge-index/`), so a worktree on another branch, or one whose docs
@@ -545,7 +565,7 @@ The hook guards against this: `git rev-parse HEAD~1 2>/dev/null || exit 0`. If y
 
 **`sqlite-vec` version mismatch**
 
-If `make knowledge-index` fails with a sqlite-vec error, check: `python3 -c "import sqlite_vec; print(sqlite_vec.__version__)"`. The required minimum version is listed in `requirements.txt`.
+If `make knowledge-index` fails with a sqlite-vec error, check: `python3 -c "import sqlite_vec; print(sqlite_vec.__version__)"`. The required minimum version is listed in `requirements-knowledge.txt`.
 
 **Search returns no results for a doc that exists**
 

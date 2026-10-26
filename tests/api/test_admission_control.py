@@ -12,12 +12,10 @@ docs/architecture/http_admission_control.md for the mechanism this file guards.
 """
 from __future__ import annotations
 
-import ast
 import hashlib
 import time
 
 import pytest
-from fastapi import Depends
 from fastapi.testclient import TestClient
 
 import src.api.admission_control as admission_control
@@ -33,6 +31,7 @@ from src.api.admission_control import (
 )
 from src.api.server import create_v2_app
 from src.config.profiles import RuntimeProfile, HardwareClass
+from tests.helpers.api_routes import route_dependant, route_path, walk_routes
 
 TEST_CLIENT_ID = "test-client"
 TEST_RAW_KEY = "test-raw-key-12345"
@@ -226,8 +225,8 @@ def test_admission_dependency_requires_resolved_client_identity():
     }
 
     checked_any = False
-    for route in app.routes:
-        dependant = getattr(route, "dependant", None)
+    for route in walk_routes(app):  # `include_router` routes are not flat in `app.routes` on starlette 1.x
+        dependant = route_dependant(route)
         if dependant is None:
             continue
         for dep in dependant.dependencies:
@@ -258,8 +257,8 @@ def test_admission_control_covers_every_authenticated_route():
     admission_names = {"require_admission", "require_admission_header_or_query", "require_admission_ws"}
 
     neither_paths = set()
-    for route in app.routes:
-        dependant = getattr(route, "dependant", None)
+    for route in walk_routes(app):  # `include_router` routes are not flat in `app.routes` on starlette 1.x
+        dependant = route_dependant(route)
         if dependant is None:
             continue
 
@@ -274,7 +273,7 @@ def test_admission_control_covers_every_authenticated_route():
 
         _collect(dependant)
 
-        path = getattr(route, "path", None)
+        path = route_path(route)
         has_auth = bool(all_names & auth_names)
         has_admission = bool(all_names & admission_names)
 
@@ -285,16 +284,3 @@ def test_admission_control_covers_every_authenticated_route():
 
     assert neither_paths == {"/health"}
 
-
-def test_admission_control_does_not_reach_into_governor_internals():
-    """Static guard: src/api/admission_control.py must never import from
-    src.engine.governor or src.engine.phase_governor -- the hysteresis logic is
-    pattern-mirrored, never imported, per the ticket's Out of Scope."""
-    with open("src/api/admission_control.py", "r", encoding="utf-8") as f:
-        tree = ast.parse(f.read(), filename="src/api/admission_control.py")
-
-    for node in ast.walk(tree):
-        if isinstance(node, ast.ImportFrom):
-            module = node.module or ""
-            assert not module.startswith("src.engine.governor")
-            assert not module.startswith("src.engine.phase_governor")

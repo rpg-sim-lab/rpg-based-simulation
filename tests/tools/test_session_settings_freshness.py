@@ -25,6 +25,9 @@ GUARD = "python3 tools/sessions/guard.py"
 SAMPLER = "python3 tools/agent-monitoring/manual_actions.py hook"
 
 
+from tools.agent_working_paths import AGENT_MONITORING as MON  # noqa: E402
+
+
 def git(cwd, *a):
     return subprocess.run(["git", *a], cwd=cwd, check=True, capture_output=True, text=True, env=_ENV)
 
@@ -126,3 +129,157 @@ def test_an_unverifiable_ref_only_warns(tmp_path):
     git(tmp_path, "init", "-q", "-b", "main", str(r))
     go, lines = ln.preflight(r, allow_stale=False)
     assert go is True and "could not be verified" in lines[-1]
+
+
+# ---- TCK-20261015-SESSION-CODE-FRESHNESS-AT-SESSION-START ---------------------------------------------------
+
+def _code_repo(repo):
+    (repo / "tools" / "sessions").mkdir(parents=True)
+    (repo / "registries").mkdir()
+    (repo / "tools" / "sessions" / "session_start_hook.py").write_text("v1\n")
+    (repo / "registries" / "session_roles.yaml").write_text("roles: v1\n")
+    git(repo, "add", "-A")
+    git(repo, "commit", "-q", "-m", "session code v1")
+    git(repo, "update-ref", "refs/remotes/origin/main", "HEAD")
+    return repo
+
+
+def _advance_origin(repo, tmp_path, name="hook.py"):
+    """Move origin/main ahead by one commit that changes session code, without moving `repo`'s branch."""
+    other = tmp_path / "other"
+    git(repo, "worktree", "add", "-q", "--detach", str(other), "origin/main")
+    (other / "tools" / "sessions" / "session_start_hook.py").write_text("v2\n")
+    git(other, "commit", "-aq", "-m", "session code v2")
+    git(repo, "update-ref", "refs/remotes/origin/main", git(other, "rev-parse", "HEAD").stdout.strip())
+    git(repo, "worktree", "remove", "--force", str(other))
+
+
+def test_a_current_worktree_has_no_stale_session_code_and_no_line(repo):
+    _code_repo(repo)
+    assert sf.stale_session_code(repo) == []
+    assert sf.session_code_line(repo) == ""
+
+
+def test_a_worktree_behind_origin_names_the_stale_files_in_one_line(repo, tmp_path):
+    _code_repo(repo)
+    _advance_origin(repo, tmp_path)
+    assert sf.stale_session_code(repo) == ["tools/sessions/session_start_hook.py"]
+    line = sf.session_code_line(repo)
+    assert line.count("\n") == 0 and "STALE SESSION CODE" in line
+    assert "tools/sessions/session_start_hook.py" in line and "Sync this worktree" in line
+
+
+def test_a_branch_that_edits_session_code_itself_is_not_called_stale(repo):
+    _code_repo(repo)
+    (repo / "tools" / "sessions" / "session_start_hook.py").write_text("my own edit\n")
+    git(repo, "commit", "-aq", "-m", "my edit")  # ahead of origin/main, never behind
+    assert sf.stale_session_code(repo) == []
+
+
+def test_no_origin_ref_or_no_repo_says_it_could_not_verify(repo, tmp_path):
+    git(repo, "update-ref", "-d", "refs/remotes/origin/main")
+    assert sf.stale_session_code(repo) is None
+    assert "could not verify" in sf.session_code_line(repo)
+    assert sf.stale_session_code(tmp_path / "nowhere") is None
+
+
+def test_a_crash_in_the_check_fails_open_and_says_so(repo, monkeypatch):
+    monkeypatch.setattr(sf, "stale_session_code", lambda *a, **k: (_ for _ in ()).throw(RuntimeError("boom")))
+    assert "check failed (RuntimeError); not verified" in sf.session_code_line(repo)
+
+
+def test_the_check_is_offline_and_fast(repo, tmp_path):
+    import time
+    _code_repo(repo)
+    _advance_origin(repo, tmp_path)
+    calls = []
+    real = sf._git
+    sf._git = lambda args, cwd, binary=False: (calls.append(args[0]), real(args, cwd, binary))[1]
+    try:
+        t0 = time.perf_counter()
+        sf.session_code_line(repo)
+        elapsed = time.perf_counter() - t0
+    finally:
+        sf._git = real
+    assert not {"fetch", "pull", "ls-remote", "clone"} & set(calls) and len(calls) == 3
+    assert elapsed < 2.0
+
+
+# ---- TCK-20261016-TOOLS-HOOK-LOADED-AND-LATE-ROWS-FLUSH ------------------------------------------------------------
+
+POST_HOOK = 'R=$(git rev-parse --show-toplevel 2>/dev/null) || exit 0; test -f "$R/tools/agent-monitoring/post_tool_hook.py" || exit 0; python3 "$R/tools/agent-monitoring/post_tool_hook.py"'
+
+
+def _post_settings(*commands: str) -> str:
+    hooks = {"PostToolUse": [{"matcher": "*", "hooks": [{"type": "command", "command": c} for c in commands]}]}
+    return json.dumps({"hooks": hooks})
+
+
+def _worktree(tmp_path, settings: str | None, script: bool) -> Path:
+    r = tmp_path / "wt"
+    (r / ".claude").mkdir(parents=True)
+    git(r, "init", "-q")
+    if settings is not None:
+        (r / ".claude" / "settings.json").write_text(settings)
+    if script:
+        (r / "tools" / "agent-monitoring").mkdir(parents=True)
+        (r / "tools" / "agent-monitoring" / "post_tool_hook.py").write_text("")
+    return r
+
+
+def test_a_worktree_with_the_monitoring_hook_gets_no_line(tmp_path):
+    assert sf.monitoring_hook_line(_worktree(tmp_path, _post_settings(POST_HOOK), script=True)) == ""
+
+
+def test_a_settings_file_without_the_post_tool_hook_gets_one_line(tmp_path):
+    line = sf.monitoring_hook_line(_worktree(tmp_path, _post_settings("echo other"), script=True))
+    assert line.startswith("monitoring: NO TOOL-ROW HOOK") and "no PostToolUse hook" in line and "\n" not in line
+
+
+def test_a_pre_tool_use_mention_does_not_count_as_the_post_tool_hook(tmp_path):
+    pre_only = json.dumps({"hooks": {"PreToolUse": [{"matcher": "*", "hooks": [{"type": "command", "command": POST_HOOK}]}]}})
+    assert "no PostToolUse hook" in sf.monitoring_hook_line(_worktree(tmp_path, pre_only, script=True))
+
+
+def test_a_missing_hook_script_is_reported_because_the_command_skips_it_silently(tmp_path):
+    line = sf.monitoring_hook_line(_worktree(tmp_path, _post_settings(POST_HOOK), script=False))
+    assert "post_tool_hook.py is missing here" in line
+
+
+def test_no_settings_file_and_not_a_repo_fail_open(tmp_path):
+    assert "no PostToolUse hook" in sf.monitoring_hook_line(_worktree(tmp_path / "a", None, script=True))
+    plain = tmp_path / "plain"
+    plain.mkdir()
+    assert sf.monitoring_hook_line(plain) == "" and sf.unstaged_tool_rows_line(plain) == ""
+
+
+def _shard_repo(tmp_path) -> Path:
+    r = tmp_path / "rows"
+    old = r / MON / "data" / "2026-W41"
+    old.mkdir(parents=True)
+    (old / "seat.tools.jsonl").write_text('{"a":1}\n')
+    git(r, "init", "-q")
+    git(r, "add", "-A")
+    git(r, "commit", "-qm", "base")
+    return r
+
+
+def test_tool_rows_left_uncommitted_in_an_older_week_are_counted(tmp_path):
+    r = _shard_repo(tmp_path)
+    assert sf.unstaged_tool_rows_line(r) == ""
+    shard = r / MON / "data" / "2026-W41" / "seat.tools.jsonl"
+    shard.write_text('{"a":1}\n{"a":2}\n{"a":3}\n')
+    new = r / MON / "data" / "2026-W43"
+    new.mkdir()
+    (new / "seat.tools.jsonl").write_text('{"b":1}\n')
+    line = sf.unstaged_tool_rows_line(r)
+    assert "3 tool row(s) in 2 shard file(s) (2026-W41, 2026-W43)" in line and "not in any commit" in line
+
+
+def test_staged_rows_are_not_reported_as_pending_once_committed(tmp_path):
+    r = _shard_repo(tmp_path)
+    shard = r / MON / "data" / "2026-W41" / "seat.tools.jsonl"
+    shard.write_text('{"a":1}\n{"a":2}\n')
+    git(r, "add", "-A")
+    git(r, "commit", "-qm", "rows")
+    assert sf.unstaged_tool_rows_line(r) == ""

@@ -1,8 +1,15 @@
 from __future__ import annotations
-from typing import TYPE_CHECKING, Optional, Dict
+
+from typing import TYPE_CHECKING, Dict, Optional
+
+from src.core.items import ItemRegistry
 
 if TYPE_CHECKING:
     from src.core.state import AuthoritativeState, BuildingState
+
+# What an item the catalog does not know is worth.
+UNKNOWN_ITEM_BASE_VALUE = 10.0
+
 
 class MarketSystem:
     """
@@ -12,25 +19,9 @@ class MarketSystem:
 
     @staticmethod
     def get_item_base_value(item_id: str) -> float:
-        """Returns the static base value for an item."""
-        # Baseline values (Milestone 8)
-        bases = {
-            "gold": 1.0,
-            "wood": 2.0,
-            "iron_ore": 5.0,
-            "steel_ore": 15.0,
-            "leather": 4.0,
-            "cloth": 3.0,
-            "herb": 2.5,
-            
-            "iron_sword": 50.0,
-            "steel_sword": 150.0,
-            "iron_plate": 80.0,
-            "steel_plate": 240.0,
-            "health_potion": 20.0,
-            "stamina_potion": 15.0
-        }
-        return bases.get(item_id, 10.0)
+        """The item's content base value (EXCH-01, D79): the catalog is the only price source. Only an item the catalog does not know defaults to 10."""
+        definition = ItemRegistry.get(item_id)
+        return float(definition.value) if definition is not None else UNKNOWN_ITEM_BASE_VALUE
 
     @staticmethod
     def calculate_price(
@@ -74,11 +65,6 @@ class MarketSystem:
 
     @staticmethod
     def get_item_kind(item_id: str) -> str:
-        """Maps item IDs to broader categories for modifiers."""
-        if "sword" in item_id or "plate" in item_id:
-            return "GEAR"
-        if "ore" in item_id or item_id in ("wood", "leather", "cloth"):
-            return "MATERIAL"
-        if "potion" in item_id or item_id == "herb":
-            return "CONSUMABLE"
-        return "OTHER"
+        """The item's content kind (MATERIAL, WEAPON, ARMOR, CONSUMABLE, CURRENCY), the key regional and building price modifiers use; OTHER for an unknown item."""
+        definition = ItemRegistry.get(item_id)
+        return definition.kind.value if definition is not None else "OTHER"

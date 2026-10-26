@@ -5,6 +5,7 @@ import importlib.util
 import json
 import pickle
 import sqlite3
+import subprocess
 import sys
 import tomllib
 from pathlib import Path
@@ -289,3 +290,197 @@ class TestRunSearchFusionWiring:
         for key in ("doc_id", "title", "heading", "source_path", "section",
                     "score", "semantic_score", "keyword_score", "excerpt"):
             assert key in results[0], f"missing key in _run_search result: {key}"
+
+
+# --- TCK-20261010-SEARCH-MCP-WORKTREE-VENV-RESOLUTION: a worktree with no index reads the main one ---
+
+
+class TestResolveIndexDir:
+    """A worktree with no knowledge index of its own queries the main checkout's."""
+
+    def _make_index(self, root: Path) -> Path:
+        index_dir = root / KNOWLEDGE_INDEX
+        index_dir.mkdir(parents=True)
+        (index_dir / "knowledge.db").write_bytes(b"")
+        return index_dir
+
+    def test_own_index_wins_when_present(self, tmp_path: Path) -> None:
+        own = self._make_index(tmp_path / "worktree")
+        self._make_index(tmp_path / "main")
+        assert _mod._resolve_index_dir(own, tmp_path / "worktree", tmp_path / "main") == own
+
+    def test_falls_back_to_main_checkout_index_when_own_missing(self, tmp_path: Path) -> None:
+        own = tmp_path / "worktree" / KNOWLEDGE_INDEX
+        main_index = self._make_index(tmp_path / "main")
+        assert _mod._resolve_index_dir(own, tmp_path / "worktree", tmp_path / "main") == main_index
+
+    def test_keeps_own_path_when_neither_index_exists(self, tmp_path: Path) -> None:
+        own = tmp_path / "worktree" / KNOWLEDGE_INDEX
+        assert _mod._resolve_index_dir(own, tmp_path / "worktree", tmp_path / "main") == own
+
+    def test_keeps_own_path_when_main_root_unknown(self, tmp_path: Path) -> None:
+        own = tmp_path / "worktree" / KNOWLEDGE_INDEX
+        assert _mod._resolve_index_dir(own, tmp_path / "worktree", None) == own
+
+    def test_main_checkout_root_from_a_worktree(self, tmp_path: Path) -> None:
+        main = tmp_path / "main"
+        main.mkdir()
+        git = ["git", "-c", "user.name=t", "-c", "user.email=t@t", "-c", "init.defaultBranch=main"]
+        subprocess.run([*git, "init", "-q", str(main)], check=True)
+        subprocess.run([*git, "-C", str(main), "commit", "-q", "--allow-empty", "-m", "x"], check=True)
+        subprocess.run([*git, "-C", str(main), "worktree", "add", "-q", str(tmp_path / "wt")], check=True)
+        assert _mod._main_checkout_root(tmp_path / "wt") == main.resolve()
+        assert _mod._main_checkout_root(main) == main.resolve()
+
+    def test_main_checkout_root_outside_git_is_none(self, tmp_path: Path) -> None:
+        assert _mod._main_checkout_root(tmp_path) is None
+
+
+# --- TCK-20261012-SEARCH-MCP-SHARED-MODEL: _run_search asks the shared server first, else searches in-process ---
+
+
+class TestSharedServerWiring:
+    def test_a_shared_answer_is_used_and_the_local_search_is_not_run(self, monkeypatch):
+        shared = [{"doc_id": "from-server"}]
+        monkeypatch.setattr(_mod._ss, "try_search_ex", lambda *a, **k: (shared, None))
+        monkeypatch.setattr(_mod, "_search", lambda *a, **k: pytest.fail("must not search in-process"))
+        assert _mod._run_search("q") == shared
+
+    def test_no_shared_answer_falls_back_to_the_in_process_search(self, monkeypatch):
+        monkeypatch.setattr(_mod._ss, "try_search_ex", lambda *a, **k: (None, "no server ready"))
+        monkeypatch.setattr(_mod, "_search", lambda *a, **k: [{"doc_id": "local"}])
+        assert _mod._run_search("q") == [{"doc_id": "local"}]
+
+    def test_the_request_carries_the_query_arguments_and_this_index(self, monkeypatch):
+        seen: dict = {}
+
+        def fake(db, query, top_k, section, mode):
+            seen.update(db=db, query=query, top_k=top_k, section=section, mode=mode)
+            return None, "no server ready"
+
+        monkeypatch.setattr(_mod._ss, "try_search_ex", fake)
+        monkeypatch.setattr(_mod, "_search", lambda *a, **k: [])
+        _mod._run_search("damage", top_k=3, section="mechanics", mode="vector")
+        assert seen == {"db": _mod._DB_PATH, "query": "damage", "top_k": 3, "section": "mechanics", "mode": "vector"}
+
+    def test_the_server_runs_the_same_function_the_in_process_path_runs(self):
+        """By construction: search_shared serves `search_mcp._search`, never a second search path."""
+        text = (_REPO_ROOT / "tools" / "search_shared.py").read_text(encoding="utf-8")
+        assert "return mcp._search(query, **kwargs)" in text and "serve(_reloading(mcp)" in text
+
+
+class TestSearchReadsOneLexicalGeneration:
+    """`_search` reads `_STATE.lexical` once, so a reload published between its reads cannot mix generations."""
+
+    def test_a_swap_between_the_bm25_and_doc_id_reads_is_never_seen(self, tmp_path, monkeypatch):
+        fake_db = tmp_path / "knowledge.db"
+        fake_db.write_bytes(b"x")
+        monkeypatch.setattr(_mod, "_DB_PATH", fake_db)
+        monkeypatch.setitem(sys.modules, "sqlite_vec", MagicMock())
+        monkeypatch.setattr(_mod, "sqlite3", MagicMock())
+        model = MagicMock()
+        model.encode.return_value.tolist.return_value = [0.0] * 8
+        _mod._STATE.model = model
+        _mod._STATE.lexical = ("bm25-gen1", ["ids-gen1"])
+        _mod._STATE.ready = True
+
+        def swapping_bm25(self):
+            value = self.lexical[0]
+            self.lexical = ("bm25-gen2", ["ids-gen2"])  # a reload lands right after the first read
+            return value
+
+        monkeypatch.setattr(_mod._State, "bm25", property(swapping_bm25), raising=True)
+        captured: dict = {}
+
+        def fake_fuse(**kwargs):
+            captured.update(bm25=kwargs["bm25_obj"], ids=kwargs["bm25_doc_ids"])
+            return []
+
+        monkeypatch.setattr(_mod._hr, "hybrid_fuse_and_filter", fake_fuse)
+        _mod._search("anything", top_k=3)
+        assert (captured["bm25"], captured["ids"][0]) in {("bm25-gen1", "ids-gen1"), ("bm25-gen2", "ids-gen2")}
+        assert captured["bm25"].split("-")[1] == captured["ids"][0].split("-")[1]
+
+
+# --- TCK-20261018-SEARCH-SHARED-SINGLE-SERVER-FROM-MAIN-CHECKOUT: starting server, degraded answers, one log line per transition ---
+
+
+class TestSingleServerFallbacks:
+    @pytest.fixture(autouse=True)
+    def _fresh_mode(self, monkeypatch):
+        monkeypatch.setitem(_mod._LAST_MODE, "mode", None)
+
+    @pytest.fixture
+    def loads(self, monkeypatch):
+        """A fake embedder: counts every model load the in-process path attempts. Never the real model."""
+        count = {"n": 0}
+
+        def ensure() -> bool:
+            count["n"] += 1
+            return False  # `_search` then answers "index not found" without any model
+
+        monkeypatch.setattr(_mod, "_ensure_loaded", ensure)
+        return count
+
+    def test_a_starting_server_gets_a_lexical_only_degraded_answer_and_no_model_load(self, monkeypatch, loads):
+        monkeypatch.setattr(_mod._ss, "try_search_ex", lambda *a, **k: (None, _mod._ss.REASON_STARTING))
+        monkeypatch.setattr(_mod, "_search_lexical", lambda q, **k: [{"doc_id": "kw"}])
+        out = _mod._search_shared_or_local("q")
+        assert out == {"results": [{"doc_id": "kw"}], "degraded": "lexical_only_server_starting"}
+        assert loads["n"] == 0
+
+    @pytest.mark.parametrize("reason", ["server not responding", "server was started from different code",
+                                        "request failed: boom", "state directory is not private to this user"])
+    def test_any_other_reason_searches_in_process_loading_the_model_once(self, monkeypatch, loads, reason):
+        monkeypatch.setattr(_mod._ss, "try_search_ex", lambda *a, **k: (None, reason))
+        _mod._search_shared_or_local("q")
+        assert loads["n"] == 1
+
+    def test_without_a_usable_lexical_index_a_starting_server_falls_back_in_process(self, monkeypatch, loads):
+        monkeypatch.setattr(_mod._ss, "try_search_ex", lambda *a, **k: (None, _mod._ss.REASON_STARTING))
+        monkeypatch.setattr(_mod, "_search_lexical", lambda q, **k: {"error": "lexical index not available"})
+        _mod._search_shared_or_local("q")
+        assert loads["n"] == 1
+
+    def test_one_stderr_line_per_move_between_shared_lexical_and_in_process(self, monkeypatch, loads, capsys):
+        script = iter([([1], None), ([2], None), (None, _mod._ss.REASON_STARTING), (None, _mod._ss.REASON_STARTING),
+                       (None, "request failed: x"), (None, "request failed: x"), ([3], None)])
+        monkeypatch.setattr(_mod._ss, "try_search_ex", lambda *a, **k: next(script))
+        monkeypatch.setattr(_mod, "_search_lexical", lambda q, **k: [])
+        for _ in range(7):
+            _mod._search_shared_or_local("q")
+        lines = capsys.readouterr().err.strip().splitlines()
+        assert len(lines) == 4  # shared, lexical-only, in-process, shared again: never one per query
+        assert lines[0].endswith("using shared server") and "lexical-only" in lines[1]
+        assert "in-process fallback: request failed: x" in lines[2] and lines[3].endswith("using shared server")
+
+    def test_the_degraded_answer_still_carries_the_staleness_warning(self, monkeypatch):
+        monkeypatch.setattr(_mod._ss, "try_search_ex", lambda *a, **k: (None, _mod._ss.REASON_STARTING))
+        monkeypatch.setattr(_mod, "_search_lexical", lambda q, **k: [{"doc_id": "kw"}])
+        monkeypatch.setattr(_mod._ks, "index_staleness", lambda db: {"changed": 2, "new": 0, "removed": 0})
+        out = _mod._run_search("q", with_staleness=True)
+        assert out["degraded"] == "lexical_only_server_starting" and out["stale"]["changed"] == 2
+
+    def test_search_lexical_ranks_by_bm25_alone_without_the_model(self, tmp_path, monkeypatch):
+        db = tmp_path / "knowledge.db"
+        con = sqlite3.connect(db)
+        con.execute("CREATE TABLE knowledge_docs (doc_id TEXT, path TEXT, heading TEXT, section TEXT, text TEXT, source_type TEXT)")
+        con.executemany("INSERT INTO knowledge_docs VALUES (?,?,?,?,?,?)", [
+            ("a", "docs/a.md", "A", "mechanics", "damage formula text", "doc"),
+            ("b", "docs/b.md", "B", "engine", "kernel loop", "doc"),
+            ("c", "docs/c.md", "C", "mechanics", "unrelated", "doc")])
+        con.commit()
+        con.close()
+
+        class Bm25:
+            @staticmethod
+            def get_scores(tokens):
+                return [2.0, 1.0, 0.0]
+
+        monkeypatch.setattr(_mod, "_DB_PATH", db)
+        monkeypatch.setattr(_mod._STATE, "lexical", (Bm25, ["a", "b", "c"]))
+        monkeypatch.setattr(_mod, "_ensure_loaded", lambda: pytest.fail("the lexical path must not load the model"))
+        out = _mod._search_lexical("damage", top_k=5)
+        assert [r["doc_id"] for r in out] == ["a", "b"]  # zero-score "c" is not a hit
+        assert out[0]["semantic_score"] == 0.0 and out[0]["score"] == 1.0 and out[0]["source_path"] == "docs/a.md"
+        assert [r["doc_id"] for r in _mod._search_lexical("damage", top_k=5, section="engine")] == ["b"]
