@@ -52,6 +52,8 @@ rpg-designer ruling (2026-10-29). Sources: survival-needs.md SURV-06 l.335-350, 
 
 - Non-atomic payment check (rpg-designer, 2026-10-29): a subject that earns 6 gold and loses 5 with no meal stays hungry. The paired run must show no non-atomic payment. The tests include a ledger check that flags gold going down with no service delivered. Evidence: TCK-20261007-EAT-BESIDE-THE-INN-FEEDS-A-SUBJECT-THAT-CANNOT-PAY-FREE-MEAL (the t587 case, base urban s46 worker 4).
 
+- Note for the consumer list (2026-10-29, worker 1 trace c1610/w1c/): inn_in_reach returned inn 20003 on every tick, including from 11 tiles away at (38,24). Check whether "in reach" is a real proximity test or just "an inn exists". Whether a priced way counts as open depends on both.
+
 ## Out of Scope
 - Removing the free meal (D73).
 - Making a broke subject actually earn: TCK-20261029-A-BROKE-HUNGRY-SUBJECT-NEVER-EARNS-SO-THE-FREE-MEAL-CANNOT-GO.
