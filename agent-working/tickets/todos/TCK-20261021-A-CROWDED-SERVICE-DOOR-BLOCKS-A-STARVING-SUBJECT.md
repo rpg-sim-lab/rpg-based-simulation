@@ -37,10 +37,10 @@ Lane A traced urban_political s44 on step 2 (f9b21b55b, TCK-20261020-A-ESCALATED
 The designer's ruling (2026-10-21): OUT of family under the user's v1 cutoff (2026-10-21), because the cause is movement and occupancy, not a decision-side cause. It is an owned known red at v1, disclosed as N14, and its rpg_gate_known.yaml entry cites the cutoff.
 
 - CANDIDATE SECOND CASE, not yet confirmed (rpg-designer, 2026-10-29, from the :1610 crowded s46 trace on c32db1a41; /mnt/data/scratch-rpg-implementer/c1610/trace/):
-  - crowded_frontier s46, worker 1. Its hunger project is CURRENT for the whole window t4272-4772 at hunger 100.
+  - crowded_frontier s46, worker 1. Its hunger project is CURRENT for the whole window t3740-4272 at hunger 100 (current in 473 of 533 ticks; fatigue in 60).
   - Ways in reach: INN_MEAL (the free meal on that tree), FORAGE, BUY and WORK_SHIFT.
-  - Threat present in 45 of 137 decisions, acting in only 3. It never eats and starves at about t4772.
-  - In base it died of COMBAT at about t2000, so a longer life exposed this.
+  - Threat present in 5 of 25 decisions, acting in 1. It never eats and starves at about t4240-4271 (last decision t4239). CORRECTED 2026-10-29: the first report read a nonexistent `alive` attribute and gave t4772.
+  - In base it died of COMBAT at about t2000, so a life about 2250 ticks longer exposed this.
   - No :1610 path is involved: the project selection is right.
   - If its execution trace matches this ticket's door shape (an inn in reach, the project current, never served, a refused move or an occupancy fallback), it stays here as a second case. If not, it splits into its own ticket: "a subject whose hunger project is current with a meal in reach starves without eating".
   - First evidence, per tick, new arm only, since base cannot be forced to keep it alive (say so in the report): the action dispatched and its result (move refused or blocked, EAT refused and the reason), position against the inn door, leash, gold, and whether the free meal was offered.

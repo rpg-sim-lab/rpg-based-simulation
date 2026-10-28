@@ -48,7 +48,8 @@ V3 step (ii), on rpg-v3-starvation-threat at 70402779d, keeps the escalated hung
   - crowded_frontier s46, raider 35, on c32db1a41. Its path diverges from base at about t1500.
   - Hunger is 100 from about t2026. Fatigue is current, the hunger record is SUSPENDED, and the two trade places.
   - Threat present in 81 of 99 decisions (43 acting), against 13 of 147 in base. combat_retreat candidates score 169-187 at hunger 100.
-  - It never eats and starves at about t4458. In base it ate at about t2026 and lived to 5000.
+  - Death window t2950-3480: threat present in 25 of 26 decisions (18 acting). Fatigue is current for 191 ticks and hunger for 340.
+  - It never eats and starves at about t3465-3480 (CORRECTED 2026-10-29; first reported as t4458). In base it ate at about t2026, is at hunger 72.7 at t3470, and lives to 5000.
 
 ## Scope
 - Apply the existing ESCALATION_AMPLITUDE and smoothstep to combat_retreat once hp is past its consequence line. No new constant.
