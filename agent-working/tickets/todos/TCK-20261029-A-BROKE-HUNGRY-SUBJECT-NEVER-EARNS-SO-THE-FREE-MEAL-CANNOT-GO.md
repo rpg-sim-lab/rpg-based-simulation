@@ -37,6 +37,12 @@ rpg-designer ruling (2026-10-29). Sources: survival-needs.md l.925-936 and the o
 - The free-meal removal was parked by the owner's earlier ruling "until earning works".
 - D73 does NOT land until broke-and-hungry -> earn is shown to work. Landing it with a disclosure instead would reverse the owner's ruling, and that needs an owner question through lead-planner-u24.
 
+- STATIC FINDING (rpg-implementer-2, 2026-10-29, both d914bace7 and 58c0821dc): no code ever dispatches a WORK action.
+  - grep '"WORK"' src finds only the handlers (action_router.py:57 -> work_shift.work_update; building_services.py:44; pipeline_phases/actions.py:53,216). It finds no emitter.
+  - src/engine/building_arrival.py:50-56 dispatches EAT at the inn for a hunger project. The comment there says the work shift is dispatched "only on the removal stack, where a meal costs coin". D73 IS that removal stack, and that dispatch was never written.
+  - The opening step (EatScorer -> first_open_step -> _earn_then_buy_step, opening_steps.py:145) moves the subject to the inn. Arrival then gives EAT, which is refused below gold 5, and nothing sends the subject to WORK.
+  - So the earn path is declared (work_shift.py: SHIFT_TICKS 200, WAGE_GOLD 6) but not wired at arrival. The evidence job should confirm that no 'work' interaction ever appears.
+
 ## Scope
 - First, evidence (lane B job, queued after lane A's s46 :1610 trace). Urban s46, on 58c0821dc and on base d914bace7:
   - per decision: the winner's kind and utility against the WORK_SHIFT candidate's utility, or the reason it was not a candidate (no work_in_reach, a leash, a gate, the cap);

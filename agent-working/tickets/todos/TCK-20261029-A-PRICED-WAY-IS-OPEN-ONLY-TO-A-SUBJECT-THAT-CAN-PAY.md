@@ -45,15 +45,18 @@ rpg-designer ruling (2026-10-29). Sources: survival-needs.md SURV-06 l.335-350, 
 - V3 judge verdict, so a relabel cannot turn the gate green. The judge records, next to the ways, the opening steps in reach and whether each was tried: work_in_reach, and any forage way the subject's kind has.
   - A starvation where the meal was closed by price, but an opening step the subject could take was in reach and never taken, is still a FAIL: "opening step untried" (row 27: the pull goes to the step).
   - Only "no open way AND no step it can take" is SURV-06's poverty outcome, which is not a fail.
+- FOLDED IN (rpg-designer, 2026-10-29): TCK-20261028-BROKE-SUBJECT-WALKS-TO-THE-INN-BED-IT-CANNOT-PAY-FOR. An unaffordable inn bed is not open, so the fatigue goal stops naming it, and a subject with no home in bed_reach rests in place (rough rest, Bible 04 l.40). That is the same definition change, so it gets one paired run.
+  - (a) f400's acceptance carries over as a named test: a broke, tired subject with no home in reach does not walk to the inn bed, and rests in place.
+  - (b) The consumer list marks the fatigue/bed consumers separately from the hunger/meal ones, so the paired run can attribute a change to the bed or the meal.
 - Paired run, 3 gate worlds x s42-46 x 5000t, against its parent (decision 76). The free meal is still ON, so the effect may be small. The run shows it.
 
 ## Out of Scope
 - Removing the free meal (D73).
 - Making a broke subject actually earn: TCK-20261029-A-BROKE-HUNGRY-SUBJECT-NEVER-EARNS-SO-THE-FREE-MEAL-CANNOT-GO.
-- The SleepScorer gold gate: TCK-20261028-BROKE-SUBJECT-WALKS-TO-THE-INN-BED-IT-CANNOT-PAY-FOR. Coordinate with it, because both read the bed price. Fold it in only if rpg-designer agrees.
 
 ## Acceptance Criteria
 - The consumer list has been ruled on by rpg-designer before any code changes.
+- The named f400 test (a) passes.
 - Unit tests: below the price is closed, at the price is open, above is open, for both meal and bed. Undeclared diet keeps the legacy behaviour.
 - The judge and EatScorer agree on open/closed for the same subject and tick (one test through the real kernel).
 - The V3 verdict has "opening step untried" as a FAIL and poverty as a non-fail, with tests for both.

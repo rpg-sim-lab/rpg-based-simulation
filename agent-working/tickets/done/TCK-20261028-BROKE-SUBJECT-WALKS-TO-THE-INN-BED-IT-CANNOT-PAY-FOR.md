@@ -1,10 +1,10 @@
 ---
-status: active
+status: historical
 layer: strategy
 authority: P2
 audience: agent
 ticket_id: TCK-20261028-BROKE-SUBJECT-WALKS-TO-THE-INN-BED-IT-CANNOT-PAY-FOR
-phase: open
+phase: done
 date: 2026-10-28
 tags: []
 ---
@@ -15,7 +15,7 @@ tags: []
 A subject that cannot pay the bed price still chooses the inn bed as its way to rest (SleepScorer has no gold check)
 
 ## Status
-OPEN
+DONE
 
 ## Tier
 standard
@@ -70,3 +70,4 @@ D73 (TCK-20261023-FREE-MEAL-REMOVED-AS-ITS-OWN-STEP-BEFORE-M1) makes the inn bed
 ## Files Changed
 
 ## Completion Summary
+Closed as FOLDED, not implemented (rpg-designer, 2026-10-29). The scope moves to TCK-20261029-A-PRICED-WAY-IS-OPEN-ONLY-TO-A-SUBJECT-THAT-CAN-PAY: a priced bed is open only to a subject that can pay, which is the same shared-definition change. f400's acceptance carries over there as a named test.
