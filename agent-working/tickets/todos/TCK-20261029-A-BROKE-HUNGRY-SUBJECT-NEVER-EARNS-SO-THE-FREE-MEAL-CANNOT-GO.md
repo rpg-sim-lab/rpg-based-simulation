@@ -49,6 +49,17 @@ rpg-designer ruling (2026-10-29). Sources: survival-needs.md l.925-936 and the o
   - whether the row-27 earn opening step (a STUB at #454) is wired today, with file and line;
   - hero 22's HOLD: move target, path existence, and why the move is held;
   - base: the first tick where it diverges, and whether the 7 workers eat for free and live.
+- FIRST ARTIFACT (rpg-designer, 2026-10-29): a failing real-kernel test for the owed scenario (l.1015): a broke, hungry worker beside the inn, with work there, ends with gold above 0 and a meal eaten. It must fail on both d914bace7 and 58c0821dc today.
+- ARITHMETIC before any fix shape: does a 200-tick shift (SHIFT_TICKS) fit before the starvation line? Check that a person's hunger rate (half the base rate, decision 33) x 200, added to hunger at arrival, stays under 95. Check it at the escalation onset (57) and at the observed arrival levels (89-100). If it does not fit, rpg-designer rules (row 27 leaves "how far ahead" to engineering) between:
+  - (i) earning taken as a step before the need is pressing (chosen below onset when gold < price);
+  - (ii) the shift ends early once the wage covers a meal;
+  - (iii) a disclosed gap.
+- Lean fix shape, for the evidence to confirm (rpg-designer):
+  - On arrival (building_arrival.py about l.50), when a hunger project's EAT cannot be paid and the building's work_in_reach offers a shift, dispatch WORK (work_shift.work_update).
+  - The project stays current, and EAT follows on the next arrival or decision once gold >= the price.
+  - No new constants: SHIFT_TICKS 200 and WAGE_GOLD 6 already exist.
+  - It lands on the D73 stack after PRICED-WAY, because with the free meal ON it never fires.
+- ask stays a stub. That is out of scope and already disclosed under row 27.
 - Then the fix shape goes to rpg-designer. Not before.
 - Fix, measured as its own step: paired 3 x s42-46 x 5000t (decision 76).
 
