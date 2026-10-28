@@ -43,6 +43,15 @@ rpg-designer ruling (2026-10-29). Sources: survival-needs.md l.925-936 and the o
   - The opening step (EatScorer -> first_open_step -> _earn_then_buy_step, opening_steps.py:145) moves the subject to the inn. Arrival then gives EAT, which is refused below gold 5, and nothing sends the subject to WORK.
   - So the earn path is declared (work_shift.py: SHIFT_TICKS 200, WAGE_GOLD 6) but not wired at arrival. The evidence job should confirm that no 'work' interaction ever appears.
 
+- LIVE CONFIRMATION (rpg-implementer-2 trace3, 2026-10-29, urban s46; pure, hash equal; /mnt/data/scratch-rpg-implementer-2/d73/trace3/):
+  - Hero 22: EatScorer gives NO_AFFORDABLE_WAY. first_open_step gives EARN_THEN_BUY targeting building 20000 at (32,19), which is not the inn; the inn is 20003 at (27,20).
+  - Hero 22 stands adjacent at (33,19), path_len 0. Each tick the router dispatches EAT at 20000, and it fails with SOURCE_MISSING.
+  - _hold_in_place (action_router.py:74) clears the target, and the hunger goal re-points to 20000. The loop runs from about t800 until death, 1100+ ticks, while hunger rises from 40 to 95.
+  - So arrival at an EARN_THEN_BUY target sends EAT, never WORK.
+  - Base d914bace7: all 7 s46 workers and hero 22 live to t5000 on free meals at 20003. In D73 all 8 die between t1784 and t2274, every one with last_attacker entity 14, at x28-35 y17-22.
+  - First divergence: t587, worker 4's 5 gold, which base takes with no meal (fits N1; not traced).
+  - Building 20000's kind is not logged. Check it first.
+
 ## Scope
 - First, evidence (lane B job, queued after lane A's s46 :1610 trace). Urban s46, on 58c0821dc and on base d914bace7:
   - per decision: the winner's kind and utility against the WORK_SHIFT candidate's utility, or the reason it was not a candidate (no work_in_reach, a leash, a gate, the cap);
