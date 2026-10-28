@@ -27,7 +27,7 @@ refactor
 P3
 
 ## Request Summary
-Follow-up from PR #779 (TCK-20261028-EVENT-RECORDER-NEVER-GIVEN-THE-RUN-ID-SO-EVENTS-SAY-UNKNOWN-RUN). Moving the SimQ hub construction into src/simulation_quality/wiring.py narrowed the grandfathered engine->simulation_quality import edges from five to one (, kept in codebase/structure/import_layers_baseline.txt with codebase-planner's agreement). The clean shape is to remove that edge: the Kernel receives a quality-wiring factory (or the built feed and hub) from whoever constructs it, so the engine layer never imports simulation_quality.
+Follow-up from PR #779 (TCK-20261028-EVENT-RECORDER-NEVER-GIVEN-THE-RUN-ID-SO-EVENTS-SAY-UNKNOWN-RUN). Moving the SimQ hub construction into src/simulation_quality/wiring.py narrowed the grandfathered engine->simulation_quality import edges from five to one (`src.engine.kernel -> src.simulation_quality.wiring`, kept in codebase/structure/import_layers_baseline.txt with codebase-planner's agreement). The clean shape is to remove that edge: the Kernel receives a quality-wiring factory (or the built feed and hub) from whoever constructs it, so the engine layer never imports simulation_quality.
 
 ## Scope
 1. List every Kernel construction site (src, tools, tests).
