@@ -40,6 +40,7 @@ Finding from rpg-designer (2026-10-29), based on rpg-implementer-2's D73 trace3:
 Counts first. Numbers go to rpg-designer through rpg-planner before any fix shape:
 - Why the repeated SOURCE_MISSING does not reach infer_blockers. Is the failure not recorded where infer_blockers reads it, or is it not a kind it maps?
 - How often a same-target, same-reason action failure repeats 10 or more times in a row, on the gate worlds s42-46 (5000t), by action, reason and kind group. Use a pure probe: hash equal with and without it.
+- Nav side, same class (rpg-designer, 2026-10-29). Crowded s46 worker 1 had 328 ticks of nav failure with reason position_swap, and no blocker was learned (c1610/w1c/). Urban s44 merchant 28 had occupancy_violation on every tick (CROWDED-SERVICE-DOOR case 1). Count which nav failure reasons reach infer_blockers and which do not: position_swap, occupancy_violation, PATH_NOT_FOUND, STUCK, OSCILLATING, and any others found. The fix shapes may split. Door congestion stays the DOOR ticket's own fix, but the count lives here.
 - Design question for rpg-designer: should a failed service dispatch become a blocker that closes that way for the subject (and with what decay or expiry)?
 
 ## Out of Scope

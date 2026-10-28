@@ -52,6 +52,7 @@ rpg-designer ruling (2026-10-29). Sources: survival-needs.md SURV-06 l.335-350, 
 
 - Non-atomic payment check (rpg-designer, 2026-10-29): a subject that earns 6 gold and loses 5 with no meal stays hungry. The paired run must show no non-atomic payment. The tests include a ledger check that flags gold going down with no service delivered. Evidence: TCK-20261007-EAT-BESIDE-THE-INN-FEEDS-A-SUBJECT-THAT-CANNOT-PAY-FREE-MEAL (the t587 case, base urban s46 worker 4).
 
+- Reach bounds (rpg-designer, 2026-10-29). For each reach field (inn_in_reach, work_in_reach, the forage way), the consumer list states the distance bound it actually applies, if any, measured against SURV-06/07's "within reach" (the bed has an explicit SLEEP_DEBT.bed_reach). A field with no bound is a semantic defect in this same shared definition. It is in scope here if small; otherwise it goes back to rpg-designer as a finding.
 - Note for the consumer list (2026-10-29, worker 1 trace c1610/w1c/): inn_in_reach returned inn 20003 on every tick, including from 11 tiles away at (38,24). Check whether "in reach" is a real proximity test or just "an inn exists". Whether a priced way counts as open depends on both.
 
 ## Out of Scope
