@@ -94,7 +94,25 @@ sibling, the duplicate over the cap, and the self-eviction.
 
 ## Assumptions / Open Questions
 - Not M1-blocking unless it shows in the M1 gate (rpg-designer). Dispatch after step A lands.
-- Decision 2 (dead-only bypass) is rpg-designer's; record it here before coding.
+- **rpg-designer ruling, 2026-10-28 (decisions 1-3, binding):**
+  - Decision 2: NO. "Existing" means a LIVE record of the kind; dead records (COMPLETED/ABANDONED) take no part in
+    the lookup or the gate (2.77 "finished records never count"). At a full cap only `escalated_need_wins` (2.137)
+    admits a new project.
+  - Lookup, stated as behaviour (dict order plays no part anywhere): (1) the current project is of the kind ->
+    continue it (no new project, no switch); (2) else the newest live record of the kind by `created_tick`, a
+    non-current ACTIVE over SUSPENDED if that state can exist (investigator says whether it can) -> resume it;
+    (3) else no live record -> a new project through the cap gate.
+  - Decision 3, report BEFORE code: kind-only matching can resume a suspended record whose TARGET differs from the
+    winning candidate's (combat_engage on hostile X vs candidate Y; a different harvest node). Designer lean: resume
+    only when the live record's target matches the candidate's (`target_entity_id` / `target_id`); a different target
+    is a new project through the gate (refused at a full cap; the tactical pass still handles the adjacent fight).
+    Count on the confirm seeds (frontier s42 to t531, s43 to t326) how often the resumed record's target differs; if
+    common, the numbers go to rpg-designer before the plan is approved.
+  - No owner row, on condition: the paired step measures it, and any STOP goes to the owner as step A's did.
+- **Records required:** new divergence entry or amendment of 2.77 (rationale Bug Fix); Bible 04 ~l.229 sentence
+  rewritten (diff to rpg-designer, who OKs or drafts); parity entry.
+- **Measured report must list per-kind capacity-refusal counts, base vs new** (below-onset hunger/sleep,
+  combat_engage, harvest at a full cap are now refused where base admitted them: the behaviour shift to watch).
 
 ## Implementation Notes
 
