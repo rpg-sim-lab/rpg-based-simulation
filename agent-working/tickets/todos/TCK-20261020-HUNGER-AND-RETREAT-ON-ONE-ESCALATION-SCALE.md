@@ -44,6 +44,12 @@ This is backlog, parked by the designer on 2026-10-20. Build it only if data sho
 
 V3 step (ii), on rpg-v3-starvation-threat at 70402779d, keeps the escalated hunger pull under a present threat once hunger is past STARVING_LINE (95). At the goal level, that pull is 155-160: raw hunger plus ESCALATION_AMPLITUDE 60 (need_pull.py). CombatRetreatScorer is 100·(1−hp_ratio) + 50·panic − 30·bravery, with a ceiling of 150, so the starving pull beats every reachable retreat score. The designer ruled the weighing is by immediacy: an acting threat still pre-empts in the tactical pass. The long-run unification it noted is to escalate retreat the same way, so both pressures saturate on one scale and the appraised threat decides.
 
+- LIVE CASE (rpg-designer, 2026-10-29, from the :1610 crowded s46 trace; /mnt/data/scratch-rpg-implementer/c1610/trace/):
+  - crowded_frontier s46, raider 35, on c32db1a41. Its path diverges from base at about t1500.
+  - Hunger is 100 from about t2026. Fatigue is current, the hunger record is SUSPENDED, and the two trade places.
+  - Threat present in 81 of 99 decisions (43 acting), against 13 of 147 in base. combat_retreat candidates score 169-187 at hunger 100.
+  - It never eats and starves at about t4458. In base it ate at about t2026 and lived to 5000.
+
 ## Scope
 - Apply the existing ESCALATION_AMPLITUDE and smoothstep to combat_retreat once hp is past its consequence line. No new constant.
 - Measure it as its own step: paired 3 × 42-46, crowded first. Retreat changes in every world.
