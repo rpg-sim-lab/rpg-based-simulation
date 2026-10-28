@@ -52,6 +52,13 @@ rpg-designer ruling (2026-10-29). Sources: survival-needs.md l.925-936 and the o
   - First divergence: t587, worker 4's 5 gold, which base takes with no meal (fits N1; not traced).
   - Building 20000's kind is not logged. Check it first.
 
+- SHAPE CONFIRMED (rpg-designer, 2026-10-29), with these additions:
+  - Arrival dispatches by the opening step's own kind. An EARN_THEN_BUY target dispatches WORK. EAT goes only to a serving building, and after PRICED-WAY only when the subject can pay.
+  - First check: does building 20000 offer a shift? Log its kind. If the earn step can name a building with no work, that is a second defect, in first_open_step / work_in_reach. Fix it in THIS ticket: the step must name a building where WORK can succeed.
+  - Add a shape test: a subject at its EARN_THEN_BUY target receives WORK, not EAT.
+  - The D73 owner package (the owner's "explain s46" condition) is written after this ticket lands and D73 is re-measured on top of it. It cites trace3.
+  - The 1100-tick SOURCE_MISSING loop not becoming a blocker is NOT this ticket's scope: see TCK-20261029-A-SERVICE-DISPATCH-THAT-FAILS-EVERY-TICK-NEVER-BECOMES-A-BLOCKER.
+
 ## Scope
 - First, evidence (lane B job, queued after lane A's s46 :1610 trace). Urban s46, on 58c0821dc and on base d914bace7:
   - per decision: the winner's kind and utility against the WORK_SHIFT candidate's utility, or the reason it was not a candidate (no work_in_reach, a leash, a gate, the cap);

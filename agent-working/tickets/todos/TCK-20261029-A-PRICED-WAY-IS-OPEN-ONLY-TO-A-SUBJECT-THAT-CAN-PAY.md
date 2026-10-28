@@ -50,6 +50,8 @@ rpg-designer ruling (2026-10-29). Sources: survival-needs.md SURV-06 l.335-350, 
   - (b) The consumer list marks the fatigue/bed consumers separately from the hunger/meal ones, so the paired run can attribute a change to the bed or the meal.
 - Paired run, 3 gate worlds x s42-46 x 5000t, against its parent (decision 76). The free meal is still ON, so the effect may be small. The run shows it.
 
+- Non-atomic payment check (rpg-designer, 2026-10-29): a subject that earns 6 gold and loses 5 with no meal stays hungry. The paired run must show no non-atomic payment. The tests include a ledger check that flags gold going down with no service delivered. Evidence: TCK-20261007-EAT-BESIDE-THE-INN-FEEDS-A-SUBJECT-THAT-CANNOT-PAY-FREE-MEAL (the t587 case, base urban s46 worker 4).
+
 ## Out of Scope
 - Removing the free meal (D73).
 - Making a broke subject actually earn: TCK-20261029-A-BROKE-HUNGRY-SUBJECT-NEVER-EARNS-SO-THE-FREE-MEAL-CANNOT-GO.

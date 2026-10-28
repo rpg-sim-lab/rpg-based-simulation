@@ -32,6 +32,8 @@ Finding from rpg-designer (2026-10-29), raised by the :1610 outcome check (TCK-2
 - SURV-07 changes (escalation, wake, capacity, and the new switch ticket) should be judged on harm before death.
 - In the :1610 check, sleep-debt collapses and time at or above hunger 95 could not be measured, because nothing counts them.
 
+- MOTIVATING CASE (rpg-designer, 2026-10-29). In the base d914bace7 urban s46 trace3, workers 1, 2, 4, 7 and 8 end at hunger 100 but alive at t5000, and worker 7 never ate in 5000 ticks. Survival to t5000 hides harm at the starvation line, which is exactly what ticks_at_starvation_line exists to show. Whether a person can live that long at 100 (the starvation health drain against the 5000 horizon) is a later SURV calibration question. It is out of scope here.
+
 ## Scope
 New RunLedger counters, per world-run, keyed the same way as the existing behaviour counters (kind group and person flag; see tests/unit/observability/test_run_ledger_behaviour.py):
 1. sleep_debt_collapses: count of collapse events. These are a SLEEP task begun with COLLAPSE_FLAG at debt >= COLLAPSE_LINE (src/engine/sleep_debt.py; Bible 01 Staged Sleep Debt, Bible 04 l.38).

@@ -80,6 +80,13 @@ _(not started)_
 ## Completion Summary
 _(not started)_
 
+## Evidence 2026-10-29 (the reverse direction: gold taken, no meal)
+- From rpg-implementer-2 trace3, base d914bace7, urban_political s46: /mnt/data/scratch-rpg-implementer-2/d73/trace3/base_s46.jsonl.
+- At t587, worker 4 holds 5 gold, then 0 gold. Hunger is unchanged at 29.35 and last_meal is unchanged. Everything else matches the D73 arm at that tick.
+- So the inn charge took the price and no meal was delivered. That breaks SURV-06 "payment is atomic: the meal and its price move together" (survival-needs.md about l.549). This ticket covers the free-meal half of N1; this is the other half.
+- What took the gold has not been traced. First step: trace t585-590 for worker 4, recording the transfer, the service and the result reason.
+- PRICED-WAY's paired run must show no non-atomic payment (rpg-designer).
+
 ## Amendment 2026-10-08 (Decision 29, from rpg-planner; supersedes the AC table above where they differ)
 
 Wild food is part of the land and is never sized to demand. Supply model:
