@@ -36,7 +36,18 @@ Lane A traced urban_political s44 on step 2 (f9b21b55b, TCK-20261020-A-ESCALATED
 
 The designer's ruling (2026-10-21): OUT of family under the user's v1 cutoff (2026-10-21), because the cause is movement and occupancy, not a decision-side cause. It is an owned known red at v1, disclosed as N14, and its rpg_gate_known.yaml entry cites the cutoff.
 
-- CANDIDATE SECOND CASE, not yet confirmed (rpg-designer, 2026-10-29, from the :1610 crowded s46 trace on c32db1a41; /mnt/data/scratch-rpg-implementer/c1610/trace/):
+- SECOND CASE CONFIRMED (rpg-implementer worker 1 execution trace, 2026-10-29; c32db1a41 crowded s46, t3760-4247, new arm only, pure; /mnt/data/scratch-rpg-implementer/c1610/w1c/):
+  - The hunger project is current in 448 of 488 ticks, at hunger 100. Its objective is reach_location at inn 20003, and the nav target is (27,20) for 374 ticks.
+  - The worker hovers 1-2 tiles from the target (222 ticks at (28-29, 21-22)) and never arrives. In the adjacent ticks it falls back to REST 126 times.
+  - nav.last_failure_reason is position_swap in 328 ticks and LEGAL in 160.
+  - Neighbours within 2 tiles: merchant 12 (202 ticks), worker 7 (199), hero 32 (90).
+  - No leash. No interaction update and no transfer at all. It dies at t4248.
+  - Differences from case 1:
+    - (a) the failure reason is position_swap, not occupancy_violation, so the cause analysis covers both;
+    - (b) it holds 85 GOLD throughout, so this is not a free-meal case: BUY was open and it still never ate. Say whether gold changes the service path.
+  - Caveat: inn_in_reach reads 20003 even 11 tiles away, so it means "an inn exists", not proximity. Who occupies (27,20) is not logged.
+  - Earlier text below, kept for history:
+- (was) CANDIDATE SECOND CASE, not yet confirmed (rpg-designer, 2026-10-29, from the :1610 crowded s46 trace on c32db1a41; /mnt/data/scratch-rpg-implementer/c1610/trace/):
   - crowded_frontier s46, worker 1. Its hunger project is CURRENT for the whole window t3740-4272 at hunger 100 (current in 473 of 533 ticks; fatigue in 60).
   - Ways in reach: INN_MEAL (the free meal on that tree), FORAGE, BUY and WORK_SHIFT.
   - Threat present in 5 of 25 decisions, acting in 1. It never eats and starves at about t4240-4271 (last decision t4239). CORRECTED 2026-10-29: the first report read a nonexistent `alive` attribute and gave t4772.
