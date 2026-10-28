@@ -34,6 +34,12 @@ Investigation only, then numbers to rpg-designer before any fix shape:
 - On the corpus seeds (the gate worlds, s42-46), per mapped kind: live projects per entity (duplicates, and the maximum held at once), and how often each is refused at the cap.
 - The mapping table: candidate GoalKind -> ProjectKind, and where it is built.
 
+- First numbers (rpg-implementer, :1610 head c32db1a41, frontier_living_world s42-46, 5000t, event probe; /mnt/data/scratch-rpg-implementer/c1610/need/):
+  - region_stabilization: 1581 gate refusals, plus 12688 'no create' events with no record and no gate refusal. rpg-designer (2026-10-29) reads the 12688 as probably the fresh-path switch loss (evaluate_project_switch returns None) at scale. Split the 12688 into switch-lost vs other.
+  - adventure_route, social_contract, occupation_change: 0 events. The candidate never won, so these are "not exercised in 5000t frontier" and the ticket makes no claim about them.
+  - Base counts for all four kinds come from the queued base rerun need_probe_base.py on d914bace7, which runs after lane B's D73 traces. The long probe logged only kinds that already had a record, so it has no base numbers for them.
+  - Related: TCK-20261029-AN-ESCALATED-NEED-THAT-WINS-SCORING-LOSES-THE-PROJECT-SWITCH (the same switch-loss shape for need kinds).
+
 ## Out of Scope
 - Any fix before rpg-designer's ruling.
 - :1610 (keeps the kind comparison as is).
