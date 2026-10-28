@@ -1,7 +1,7 @@
 ---
 status: active
 layer: observability
-authority: P3
+authority: P2
 audience: agent
 ticket_id: TCK-20261028-OBSERVABILITY-GUIDE-NAMES-EVENT-FIELD-CATEGORY-NOT-EVENT-CATEGORY
 phase: open
