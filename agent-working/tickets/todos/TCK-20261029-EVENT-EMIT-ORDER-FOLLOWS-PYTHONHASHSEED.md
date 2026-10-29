@@ -44,7 +44,7 @@ rpg-planner ruled on 2026-10-29 that the work splits in two. The ruling is in `a
 Sort at emission, with a stable key: the enum `.value` or the string ID itself, never `str(obj)`. These are the sites on 33da13604:
 1. `src/observability/event_extractor.py:351`. It iterates `set(eq_slots) | set(prior_eq_slots)` and emits `item_equipped`/`item_unequipped`. Use `sorted(..., key=lambda s: s.value)`. The block is not flag-gated.
 2. `src/observability/event_extractor.py:379`. It iterates `set(eq_dur) | set(prior_eq_dur)` and emits `equipment_durability_changed`. Use the same key. Verify that the durability keys are `EquipSlot`; `src/core/equipment.py:260` uses `durability.get(slot, ...)`. If any key is a plain string, use a key that handles both and say so.
-3. `src/observability/event_extractor.py:1163` (`skill_unlocked`), `:1173` (`trait_expressed`) and `:1183` (`pillar_trait_unlocked`). These are set differences on the rollback path (`ENABLE_PUSH_EVENT_SHAPERS_PHASE2` OFF). Use `sorted(...)`.
+3. `src/observability/event_extractor.py:1163` (`skill_unlocked`), `:1173` (`trait_expressed`) and `:1183` (`pillar_trait_unlocked`). These are set differences on the rollback path (`ENABLE_PUSH_EVENT_SHAPERS_PHASE2` OFF). Use `sorted(...)` with an explicit stable key for the element type: the id, or `.value` for an Enum. Don't rely on the natural ordering of mixed or Enum types. The test asserts the element type (rpg-planner ruling 2).
 4. `src/observability/event_shapers.py`, `ProgressionShaper` (around line 1031-1050), on the default path. It iterates `id_upd.learned_skills`, `traits_add` and `breakthroughs_add` in list order. Use `sorted(...)`.
    - Those lists come from `list(set(...))` in `src/core/updates.py:276-281` and `src/engine/evolution.py:120`, so their order follows the hash seed.
    - Sorting here makes emission independent of the producers' order.
@@ -53,7 +53,7 @@ Sort at emission, with a stable key: the enum `.value` or the string ID itself, 
    - Report anything that reaches state, rather than fixing it.
    - Dict iteration is insertion-ordered and out of scope.
 
-`src/engine/evolution.py:120` is **not edited** in this ticket. Its list goes into `IdentityUpdate.learned_skills`. The apply path folds that list into a set (`src/engine/patches.py:230`, `sk |= set(u_id.learned_skills)`), and state holds `learned_skills: Set[str]` (`src/core/state.py:646`). So its order reaches nothing but emission, and step 4 covers that.
+`src/engine/evolution.py:120` is **not edited** in this ticket. Its list goes into `IdentityUpdate.learned_skills`. The apply path folds that list into a set (`src/engine/patches.py:230`, `sk |= set(u_id.learned_skills)`), and state holds `learned_skills: Set[str]` (`src/core/state.py:646`). So its order reaches nothing but emission, and step 4 covers that. rpg-planner accepted this reasoning (ruling 2). Record it in Implementation Notes.
 
 ## Out of Scope
 - Any state-side ordering: `IdentityUpdate.merge` in `src/core/updates.py`, `src/domains/combat_engagement/learning.py:45`, and set iteration in decision code. All of that is ticket (B).
@@ -70,7 +70,8 @@ Sort at emission, with a stable key: the enum `.value` or the string ID itself, 
 3. A cross-process test runs a fixed short run twice in subprocesses, at `PYTHONHASHSEED=0` and at one other value, and asserts that the event streams are identical.
    - It needs a positive control: show that the same comparison fails on main before the fix, or uses a fixture where two or more IDs land in one tick.
    - If no world and tick count makes two or more land in a short run, drive it from a constructed state, and say so.
-4. The final STATE hash at `PYTHONHASHSEED=0` is unchanged against main on one short run (world, seed and ticks recorded). Only event order moves.
+4. The final STATE hash at `PYTHONHASHSEED=0` is unchanged against main on one short run (world, seed and ticks recorded). Only event order moves. If the hash changes, STOP and report to rpg-planner.
+6. The Completion Summary carries the step-5 sweep report: what was fixed and what was only reported. Reported items are appended to (B)'s audit list.
 5. Scoped tests pass:
    - `tests/unit/observability/`
    - the extractor and shaper tests
@@ -97,7 +98,7 @@ Sort at emission, with a stable key: the enum `.value` or the string ID itself, 
 
 ## Assumptions / Open Questions
 - Assumed: no consumer depends on the current within-tick order of these events. SimQ scorers count by type. Check by grepping the readers of the event streams in `src/` and `frontend/`.
-- The plan goes to rpg-planner through lead-planner before dispatch. S4 (#715 6473439661) covers dispatch after its OK.
+- rpg-planner OK'd the plan on 2026-10-29 (ruling 2, recorded in the ruling file). Dispatch is under S4 (#715 6473439661), after #784's main merge.
 
 ## Implementation Notes
 ## Test Summary
