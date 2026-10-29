@@ -65,6 +65,14 @@ Investigation only, then numbers to rpg-designer before any fix shape:
 - Sequenced after :1610 lands, so it reads the new lookup. Not dispatched yet.
 
 ## Implementation Notes
+
+### Like-for-like probe, 2026-10-29 (lane A, need_probe_base.py; data /mnt/data/scratch-rpg-implementer/c1610/needbase/ and needc/)
+- Same wrapper both arms, frontier_living_world s42-46, 5000t, base d914bace7 vs :1610 c32db1a41. Counts per decision tick.
+- Strict gate refusal = no live record, no create, count at cap, no escalated need. Base 3081 -> new 6814: combat_engage 533->2433, resolve_blocker 1521->2269, region_stabilization 240->1581, town_return 460->175, harvesting 59->146, fatigue 52->77, recover 113->75, combat_retreat 68->31, hunger 29->25, reach_location 6->2. No hunger/fatigue refusal is escalated in either arm.
+- NO-CREATE SPLIT: every no-create event is a lost switch in both arms (switch='None' on all 13296 base and 13041 new; zero 'update', zero no-call). There is no "other" cause.
+- region_stabilization: 13091 (base) vs 12688 (new) lost-switch no-creates; refusals 240 -> 1581.
+- adventure_route, social_contract, occupation_change: 0 events in both arms (the candidate never won). These three still need a scenario that exercises them before any fix is judged.
+
 ## Test Summary
 ## Files Changed
 ## Completion Summary

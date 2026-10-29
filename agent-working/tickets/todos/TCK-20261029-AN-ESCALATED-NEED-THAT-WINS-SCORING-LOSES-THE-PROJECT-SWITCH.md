@@ -85,6 +85,14 @@ Lean fix shape, for the counts to confirm (rpg-designer's call):
 - Sequenced after :1610 lands. Independent of the mapped-kinds and orphan tickets. Not dispatched.
 
 ## Implementation Notes
+
+### Like-for-like probe, 2026-10-29 (lane A, need_probe_base.py; data /mnt/data/scratch-rpg-implementer/c1610/needbase/ and needc/)
+- Same wrapper both arms, frontier_living_world s42-46, 5000t, base d914bace7 vs :1610 c32db1a41. Counts per decision tick.
+- Strict gate refusal = no live record, no create, count at cap, no escalated need. Base 3081 -> new 6814: combat_engage 533->2433, resolve_blocker 1521->2269, region_stabilization 240->1581, town_return 460->175, harvesting 59->146, fatigue 52->77, recover 113->75, combat_retreat 68->31, hunger 29->25, reach_location 6->2. No hunger/fatigue refusal is escalated in either arm.
+- ESCALATED SPLIT (orphan switch, ACTIVE record beside another current project): base hunger lost 57 / won 28 (67% lost), fatigue 28 / 14 (67%); new hunger 103 / 18 (85%), fatigue 307 / 129 (70%). Every loss and win is escalated in both arms. Base totals 85 lost / 42 won; new 410 / 147. Confirms the designer's ruling that this is a base gap; :1610 raises the call count, not the loss rate (fatigue), and hunger rises 67% -> 85%.
+- Escalated need no-record/no-create events are all lost switches: hunger 53 -> 97, fatigue 34 -> 102 (non-escalated 3 and 3 in both arms).
+- Still owed by this ticket's counts step: (a) lock vs margin, (b) current project kind, (c) parked time, (d) deaths.
+
 ## Test Summary
 ## Files Changed
 ## Completion Summary
