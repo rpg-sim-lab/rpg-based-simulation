@@ -71,12 +71,12 @@ Sort at emission, with a stable key: the enum `.value` or the string ID itself, 
    - It needs a positive control: show that the same comparison fails on main before the fix, or uses a fixture where two or more IDs land in one tick.
    - If no world and tick count makes two or more land in a short run, drive it from a constructed state, and say so.
 4. The final STATE hash at `PYTHONHASHSEED=0` is unchanged against main on one short run (world, seed and ticks recorded). Only event order moves. If the hash changes, STOP and report to rpg-planner.
-6. The Completion Summary carries the step-5 sweep report: what was fixed and what was only reported. Reported items are appended to (B)'s audit list.
 5. Scoped tests pass:
    - `tests/unit/observability/`
    - the extractor and shaper tests
    - `pytest -m "not slow"` on the touched areas.
    Also run `generate_registry --check` and paths-guard before the push ask.
+6. The Completion Summary carries the step-5 sweep report: what was fixed and what was only reported. Reported items are appended to (B)'s audit list.
 
 ## Related Tickets
 - TCK-20261029-STATE-SET-ORDER-FOLLOWS-PYTHONHASHSEED (B, state side)
