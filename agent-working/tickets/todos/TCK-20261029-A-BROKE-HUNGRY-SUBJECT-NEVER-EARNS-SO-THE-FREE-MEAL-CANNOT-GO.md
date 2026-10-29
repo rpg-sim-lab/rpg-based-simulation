@@ -111,6 +111,16 @@ rpg-designer ruling (2026-10-29). Sources: survival-needs.md l.925-936 and the o
 - Is the earn opening step still a stub? The evidence job answers this. If it is, this ticket is the real D73 blocker. Not dispatched.
 
 ## Implementation Notes
+
+### DESIGNER RULING 2026-10-29 on the shift arithmetic: (i) + (iii), not (ii). This SUPERSEDES earlier notes wherever they differ.
+Arithmetic (lane B): a person's hunger rate is 0.05/tick, so a 200-tick shift adds +10 and pays 6 gold only at the end. The line is 95.
+1. TRIGGER is derived, not a fixed level. Extend Bible 04 "Standing Needs Escalate" arrival adjustment over the whole step. For EARN_THEN_BUY the fraction = (need + rate × (walk to work + SHIFT_TICKS + walk to the meal)) / line. A broke subject's pull escalates about 10 points earlier and follows the real distances. No new constant.
+2. TAKEABLE (row 27): the earn step is offered only if hunger + rate × (walk + SHIFT_TICKS) < 95. Otherwise it is not takeable, and the subject falls back to other ways (forage, carried food), or to SURV-06's poverty outcome. The V3 verdict is a non-fail only if no step was takeable.
+3. (iii): subjects already past that point and broke (the s46 shape) are disclosed in Measured as a transition effect. The paired run reports, per world, how many still reach it.
+4. (ii) partial wages are NOT wanted (EXCH-02, an owner-row question). Revisit only if the paired run shows feasible shifts that still starve.
+5. SHIFT HOLD: WORK is a held action. A present threat to life wakes it (tier 1), and the wage is forfeited (wage-at-end, no partial pay). Hunger does NOT wake a feasible shift. Tests: (a) a threat ends the shift with no wage; (b) hunger rising during a feasible shift does not end it, and the subject finishes, is paid 6 and eats.
+6. Prerequisite: building 20000 offers work. If the earn step names a building with no work, fix it in this ticket.
+Bible 04 gets one sentence under Standing Needs Escalate for the multi-step arrival adjustment. The designer reviews the text.
 ## Test Summary
 ## Files Changed
 ## Completion Summary
