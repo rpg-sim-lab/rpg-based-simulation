@@ -100,6 +100,8 @@ Sort at emission, with a stable key: the enum `.value` or the string ID itself, 
 - Assumed: no consumer depends on the current within-tick order of these events. SimQ scorers count by type. Check by grepping the readers of the event streams in `src/` and `frontend/`.
 - rpg-planner OK'd the plan on 2026-10-29 (ruling 2, recorded in the ruling file). Dispatch is under S4 (#715 6473439661), after #784's main merge.
 
+- Regression test handoff: codebase-implementer wrote `tests/unit/observability/test_event_extractor_equipment_multislot.py` (4-slot equip; equip+swap+unequip; 4-slot durability). With default flags it shows 4 different emit orders at PYTHONHASHSEED 0-3: LEGS,HEAD,TORSO,MAIN_HAND / LEGS,HEAD,MAIN_HAND,TORSO / LEGS,MAIN_HAND,TORSO,HEAD / TORSO,HEAD,LEGS,MAIN_HAND. codebase-planner is handing it over as a local commit SHA. This ticket adopts it, asserting sorted `EquipSlot.value` order, and uses it as AC3's positive control. M7 batch 2 drops its copy once this lands.
+
 ## Implementation Notes
 ## Test Summary
 ## Files Changed
