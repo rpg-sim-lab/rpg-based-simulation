@@ -48,6 +48,10 @@ A fourth, `test_event_recorder_live_publish.py:12`, makes its path per-pid. That
 ## Scope
 - Replace each fixed `run_dir` fixture in the four files above, plus `test_event_recorder_live_publish.py`, with pytest's `tmp_path`. Pass `str(tmp_path)` where the code under test needs a string. Drop the manual rmtree setup and teardown.
 - Keep every assertion unchanged. This is test plumbing only.
+- rpg-planner's conditions (2026-10-29, word for word in its relay):
+  1. Make sure the code under test actually WRITES to tmp_path. The run dir must be passed in, not taken from a cwd-relative default inside src. If src hard-codes the location, STOP to rpg-planner: that would be a src change, out of hotfix scope.
+  2. Record the remover hypothesis below, even though it's unconfirmed.
+  3. Move live_publish's per-pid output to tmp_path too, so nothing writes into the repo tree.
 
 ## Out of Scope
 - Any `src/` change.
@@ -58,6 +62,8 @@ A fourth, `test_event_recorder_live_publish.py:12`, makes its path per-pid. That
 1. No test under `tests/integration/observability/` writes to a fixed path under `tests/`. Check it with `git grep -n '"tests/run_data' tests/`, which must return nothing.
 2. The five files pass under `pytest -n auto` and serially, and pass 3 times in a row with `-n 4` (`pytest -p no:randomly` is not needed).
 3. Assertions are unchanged, and the diff shows only fixture and path plumbing.
+4. After the full `-n auto` run, `git status` shows no new untracked directories under `tests/`.
+5. Implementation Notes record the result of grepping `tests/` and `tools/` for `run_data` globs or rmtree on `tests/`. A remover found that way gets its own finding to rpg-planner-ubuntu, not a silent fix.
 
 ## Related Tickets
 - #784 (where the error showed up; not part of that PR)
@@ -78,6 +84,11 @@ A fourth, `test_event_recorder_live_publish.py:12`, makes its path per-pid. That
 ## Assumptions / Open Questions
 - Dispatch is under S4 (#715 6473439661), after rpg-planner OKs this plan. It doesn't change test expectations.
 - It queues behind A (TCK-20261029-EVENT-EMIT-ORDER-FOLLOWS-PYTHONHASHSEED) on the one implementer. Fold it into A's PR as a same-track test hotfix, before B (TCK-20261029-STATE-SET-ORDER-FOLLOWS-PYTHONHASHSEED).
+
+- Remover hypothesis (unconfirmed): rpg-planner suggests either another fixture or test that cleans a `tests/run_data*` glob, or a data-run cleaner running at the same time from the repo root.
+  - rpg-planner-ubuntu grepped `tests/ tools/ src/` on 197f4c78b for `run_data[*_]`, `glob(...run_data`, and `rmtree(...tests`. It found nothing outside the 5 files themselves and `tools/sessions/disk_headroom.py`, which only reports `run_data_bytes`.
+  - The other observability `rmtree` calls target `tmp_path` or `data/runs/<id>`, not `tests/`.
+  - So no static remover was found. The implementer re-checks this at its own head.
 
 ## Implementation Notes
 ## Test Summary
