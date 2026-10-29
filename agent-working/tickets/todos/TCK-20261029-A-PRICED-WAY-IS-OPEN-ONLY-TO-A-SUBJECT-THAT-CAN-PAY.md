@@ -12,7 +12,8 @@ tags: []
 # TCK-20261029-A-PRICED-WAY-IS-OPEN-ONLY-TO-A-SUBJECT-THAT-CAN-PAY
 
 ## Title
-ways_in_reach and can_use_inn_meal count a priced inn meal or bed as open for a subject that cannot pay, so the V3 judge and EatScorer disagree about what is open
+
+One admission rule for ways, scorers and services: a way is open to a subject iff the service would actually deliver it now (working title ONE-ADMISSION-RULE-FOR-WAYS-SCORERS-AND-SERVICES; the id is kept because the owner's dispatch go, #715 6485905808, names it)
 
 ## Status
 OPEN
@@ -88,6 +89,19 @@ rpg-designer ruling (2026-10-29). Sources: survival-needs.md SURV-06 l.335-350, 
 - Sequence: before D73. Independent of :1610. Not dispatched.
 
 ## Implementation Notes
+
+### DESIGNER RULING 2026-10-29. This SUPERSEDES Scope and Acceptance Criteria wherever they differ.
+On main the service clamps the price (EAT_PRICE_GOLD and REST_PRICE_GOLD are charged as min(price, gold held), and the meal or bed is still delivered). So a broke subject IS fed and bedded on main. The original "INN_MEAL open only if gold >= price" assumed atomic payment and would encode a world that does not exist yet. The old title, "A priced way is open only to a subject that can pay", is now the consequence on the D73 stack, not this ticket's rule.
+- RULE (AGENCY-03 / row 27, "judged for the subject"): a way is open to a subject iff the service would actually deliver it to that subject now.
+- ONE shared admission function is used by building_services EAT/REST (building_services.py:64, :67-70) AND by every "open" test: ways.py:50 ways_in_reach, scorers.py:127-131 EatScorer, scorers.py:93-97 FatigueScorer, and starvation_record.py:75 and :214.
+  (a) It reads the same payment law the service applies (the clamp today; atomic after D73/N1). There is no second copy of the price rule and no feature-flag string in any consumer.
+  (b) An agreement test: for a grid of subjects (gold 0, below price, at or above price; diet yes/no), admission == the service's real outcome, for both EAT and REST. It runs under the clamp law and under the atomic law.
+  (c) Main behaviour is unchanged: a paired run on main must be hash-identical, because no consumer's answer changes. A mismatch is a STOP to the designer. This needs the host slot from rpg-planner.
+  (d) The flip (D73 or N1 makes payment atomic) needs no edit to any consumer, and the D73 re-measure shows this.
+- f400 (bed): it follows the same function. Named test: a broke, tired subject is offered the inn bed iff REST would deliver it. That is live on main (true, it walks to the bed). The D73 case (it rests in place) is pinned through the admission-grid test under the atomic law.
+- V3 judge, kept in this ticket: an additive, judge-only typed field. For each opening step in reach, record whether it was tried (dispatched at least once in the record window). Verdicts: untried while a step is takeable = FAIL; no open way and no takeable step = poverty outcome (non-fail). Unit tests cover all three verdicts.
+- OUT of this ticket: reach bounds. These move to TCK-20261029-HUNGER-SIDE-WAYS-HAVE-NO-DISTANCE-BOUND, which runs after EARN.
+- Lane B consumer list (main f102085e0) is accepted as the consumer inventory. core_actions.py:64 eat_update stays as the diet gate on the action side, and it must agree with the admission function's diet branch.
 ## Test Summary
 ## Files Changed
 ## Completion Summary
