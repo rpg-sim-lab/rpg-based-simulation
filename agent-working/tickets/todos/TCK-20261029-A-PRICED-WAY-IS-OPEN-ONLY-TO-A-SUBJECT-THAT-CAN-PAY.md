@@ -101,6 +101,7 @@ On main the service clamps the price (EAT_PRICE_GOLD and REST_PRICE_GOLD are cha
 - f400 (bed): it follows the same function. Named test: a broke, tired subject is offered the inn bed iff REST would deliver it. That is live on main (true, it walks to the bed). The D73 case (it rests in place) is pinned through the admission-grid test under the atomic law.
 - V3 judge, kept in this ticket: an additive, judge-only typed field. For each opening step in reach, record whether it was tried (dispatched at least once in the record window). Verdicts: untried while a step is takeable = FAIL; no open way and no takeable step = poverty outcome (non-fail). Unit tests cover all three verdicts.
 - OUT of this ticket: reach bounds. These move to TCK-20261029-HUNGER-SIDE-WAYS-HAVE-NO-DISTANCE-BOUND, which runs after EARN.
+- keeps_coin (designer ruling (A), 2026-10-29): it stays OUT of admission. The grid in (b) holds for coin-keeping subjects. One explicit test asserts the current disagreement for a non-coin subject (admits=True, service_building refuses), names TCK-20261029-SHARED-ADMISSION-IGNORES-KEEPS-COIN-SO-A-NON-COIN-SUBJECT-IS-SENT-TO-A-SERVICE-THAT-REFUSES-IT, and is NOT xfail. The admission function's docstring says keeps_coin is not yet part of admission and points to that ticket.
 - Lane B consumer list (main f102085e0) is accepted as the consumer inventory. core_actions.py:64 eat_update stays as the diet gate on the action side, and it must agree with the admission function's diet branch.
 ## Test Summary
 ## Files Changed
