@@ -77,7 +77,7 @@ A fourth, `test_event_recorder_live_publish.py:12`, makes its path per-pid. That
 
 ## Assumptions / Open Questions
 - Dispatch is under S4 (#715 6473439661), after rpg-planner OKs this plan. It doesn't change test expectations.
-- It queues behind A (TCK-20261029-EVENT-EMIT-ORDER-FOLLOWS-PYTHONHASHSEED) on the one implementer. B (TCK-20261029-STATE-SET-ORDER-FOLLOWS-PYTHONHASHSEED) comes after it, or can be folded into A's PR if it's ready at the same time.
+- It queues behind A (TCK-20261029-EVENT-EMIT-ORDER-FOLLOWS-PYTHONHASHSEED) on the one implementer. Fold it into A's PR as a same-track test hotfix, before B (TCK-20261029-STATE-SET-ORDER-FOLLOWS-PYTHONHASHSEED).
 
 ## Implementation Notes
 ## Test Summary
