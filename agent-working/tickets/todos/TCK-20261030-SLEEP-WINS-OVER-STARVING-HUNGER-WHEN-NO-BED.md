@@ -84,6 +84,22 @@ Designer framing (rpg-designer, 2026-10-30):
 - Sequence: after EARN merges; before the #781 re-measure.
 
 ## Implementation Notes
+COUNTS (2026-10-30, lane B, 30 runs at EARN 0efd21a61, /mnt/data/scratch-rpg-implementer-2/sleep/out/):
+- D73-shape: 509 holds; 42,445 forced ticks (debt >= collapse_line 98) and 19,674 chosen; the hunger wake fired 1,947 times in chosen ticks and sleep was re-chosen every time.
+- MAIN (CLAMP): 306 holds (292 bed REST, inn meal open), 38,513 chosen ticks, 3,770 wakes re-choosing sleep; ate later 156 / unfed 142 / died 8.
+- A bed and rough rest both recover at -0.1/tick.
+
+DESIGNER RULING (rpg-designer, 2026-10-30):
+1. Bible 04 l.38 is a GUARANTEE, so this is a Bug Fix. In the hunger-woken re-decision: if the subject was in a CHOSEN sleep or rest (debt < collapse_line) and a hunger way is open by admits() (ONE-ADMISSION), take the hunger goal; sleep is not re-chosen at that decision. A present threat to life still outranks it. Collapse (debt >= line) is untouched. No score change, no new constant, no owner row unless the paired run STOPs.
+2. Reading (i) in the same rule: on a priced meal, a takeable earning step (EARN shift_takeable) counts as an open way. Bible 04 l.38 gains the clause "(on a priced meal, a takeable step that earns it counts as an open way)"; the l.38 diff goes to the designer.
+3. Tests:
+   (a) main: a starving bed-REST subject with the inn open is woken and goes to EAT;
+   (b) a collapse is still forced;
+   (c) a threat present means the threat answer wins;
+   (d) D73-shape: a chosen rough SLEEP with a takeable shift is woken into WORK.
+4. Paired runs on main AND D73-shape. Expected on main: chosen hold ticks about 0, ate-later up. A rise in deaths or collapses, or any STARVATION death after holds, is a STOP to the designer.
+5. Divergence: Bug Fix, ids 2.152 / STRAT-292; parity entry next to 2.115.
+6. For the D73 owner package (not engineering): for each FORCED hold, the subject's activity in the 200 ticks before it (WORK / MOVE / combat / idle), and why a forced hold spans about 100 ticks (does debt exceed 98, or does the hold count the whole span?). WORK first means calibration: starting purses, the shift's debt cost, SHIFT_TICKS.
 ## Test Summary
 ## Files Changed
 ## Completion Summary
