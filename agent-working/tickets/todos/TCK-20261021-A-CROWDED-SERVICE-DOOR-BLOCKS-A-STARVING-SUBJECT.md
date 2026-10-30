@@ -57,6 +57,26 @@ The designer's ruling (2026-10-21): OUT of family under the user's v1 cutoff (20
   - First evidence, per tick, new arm only, since base cannot be forced to keep it alive (say so in the report): the action dispatched and its result (move refused or blocked, EAT refused and the reason), position against the inn door, leash, gold, and whether the free meal was offered.
   - Sequenced after lane B's D73 job. Not a :1610 blocker.
 
+
+## Designer Ruling 2026-10-30 (N14, verbatim summary; full text at main-checkout .claude/handover/drafts/rpg-designer-n14-ruling-UNSENT.md)
+- CAUSE (lane B, main de5a223ca, urban s46): FATIGUE squatters hold all 4 door tiles, chattering in 1-tick RESTs at the wake line 58.8 (is_rested_enough), while the fatigue project completes only at REST_MIN_SLEEP_DEBT 20 and its goal keeps winning at about 59. Gold is irrelevant. The free-door share was mostly target-type artifact (100 of 155 stalls aim at an entity or position).
+- RULING: F1 GENERALIZED (Unified divergence). A chosen REST or SLEEP lasts until the fatigue project completes (debt <= 20), unless a wake ends it: a hunger wake (2.115 / A'), a present threat to life, or any existing sleep end. The wake line stays only as the scheduler's wake trigger and the goal's "tired" read. No new constant. It applies to rough rest and to a bed.
+- CHECK: paired run on main, 3 worlds × s42-46. Report:
+  - asleep share per person-day, base vs new (a move beyond noise is a STOP to the designer, then an owner question);
+  - stall runs within 2-6 tiles (878 expected to fall to a small number);
+  - door-tile occupancy;
+  - collapses;
+  - deaths by cause (a rise is a STOP).
+- TESTS:
+  (a) the p22 hover: a REST at 59 runs to 20, the project completes, the subject leaves the tile;
+  (b) a hunger wake ends it;
+  (c) a threat ends it;
+  (d) a sleep from 90 ends at 20, not 58.8.
+- BIBLE 04 §1 sleep paragraph, add: "A rest, once begun, lasts until the sleep need is met (sleep debt at REST_MIN_SLEEP_DEBT) unless a wake ends it; the wake line only wakes a sleeper's brain and marks a subject as tired." The diff goes to the designer. Unified divergence (u24 id 2.153 / STRAT-293) plus a parity entry.
+- F2 (a door yield to pressing hunger) is need ordering, so an owner row; ask only if the re-measure shows starving subjects still waiting behind real sleepers. F3 (a served rest occupies the building, 2.78) is a parked design ticket for rpg-designer, after the A'/D73 chain.
+- To the STALEMATE/WANDER nav ticket: the 100 entity/position-target stalls (counts split by target type), and the sub-finding that the movement rungs consider only the subject's own neighbours, so never a door tile 2+ steps away (p4).
+- SEQUENCE: N14 (F1) -> A' re-measure (p7/11/27/30 arrive) -> STALEMATE/WANDER nav family -> #781.
+
 ## Scope
 - Cause first:
   - Is "reach" for a service a single tile or an area? Does an adjacent tile count (divergence 2.78, the walk ending on reach)?
