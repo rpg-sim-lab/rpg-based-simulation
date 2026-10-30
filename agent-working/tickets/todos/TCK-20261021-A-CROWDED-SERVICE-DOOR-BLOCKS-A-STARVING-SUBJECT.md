@@ -149,3 +149,12 @@ The designer's ruling (2026-10-21): OUT of family under the user's v1 cutoff (20
 ## Files Changed
 
 ## Completion Summary
+
+## Designer Ruling 2026-10-31 (N14 final-code table)
+- (a) NOT accepted: both STOPs stand (deaths 346->376, urban s44 6->28, frontier +14; asleep share 0.1951->0.2057). 2.153 trades a fatigue-holder jam for a sleeper jam (door sleepers 74,281->111,824, every world; stall runs 878->813).
+- F3 goes FIRST: TCK-20261031-A-SLEEPER-HOLDS-A-DOOR-OR-SERVICE-TILE (seated 2026-10-31), ahead of A', the nav family and #781. N14 (2.153 + 2.154 as narrowed) stays PARKED as lane B's local WIP 173e5fd42 (S2 backup on remote rpg-nav-stall, no PR), re-measured on top of F3.
+- Asleep share: no owner row yet; framed after the F3+N14 re-measure.
+- (b) YES: s44 final-code ablation pair (2.153 rest-to-20 off; floor-end wake off), to tell F3 whether the extra deaths come from where sleepers sleep or how long.
+- (c) DROPPED: the owner row "should hunger end a collapse that cannot reach food?" (hunger re-collapses 15->0). Returns only if a later run shows the loop again.
+- 2.154 is fine on its own guards (asleep-at-death 7->7, 0 unwoken hits, collapse loop gone); it stays bundled with N14 for one re-measure.
+- Hoverer cut used: spans <=4 ticks (a REST decision records as 3-4 ticks; the <=2 cut found zero). Door-sleeper split by group is not available (run-level counter); not requested.
