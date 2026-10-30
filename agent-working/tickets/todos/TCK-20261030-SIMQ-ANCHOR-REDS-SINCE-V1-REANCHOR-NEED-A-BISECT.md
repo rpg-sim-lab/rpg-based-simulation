@@ -89,7 +89,7 @@ Run settings: `PYTHONHASHSEED=0`, `audit_mode` as the tests set it, and an expli
 - src/ (whatever the bisect names)
 
 ## Assumptions / Open Questions
-- Standard tier, so dispatch needs the ubuntu owner's go through lead-planner. Heavy-slot order is also the owner's call. The current queue is perf movement, then B's paired run, then (b) hunger part 1.
+- Owner DISPATCH GO, as narrowed, and the heavy-slot order: #715 comment 6518908366. The order is perf overnight, the corpus hotfix slow run, THIS bisect, B's runs, then (b) hunger part 1. Each run still needs lead-planner's explicit go against the gate. It goes to rpg-implementer-ubuntu's fresh session after its /clear.
 - Assumed: the slow job runs both tests. Confirm in the slow-regression report.
 
 ## Implementation Notes
