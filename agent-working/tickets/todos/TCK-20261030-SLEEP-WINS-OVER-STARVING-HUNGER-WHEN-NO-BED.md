@@ -100,6 +100,21 @@ DESIGNER RULING (rpg-designer, 2026-10-30):
 4. Paired runs on main AND D73-shape. Expected on main: chosen hold ticks about 0, ate-later up. A rise in deaths or collapses, or any STARVATION death after holds, is a STOP to the designer.
 5. Divergence: Bug Fix, ids 2.152 / STRAT-292; parity entry next to 2.115.
 6. For the D73 owner package (not engineering): for each FORCED hold, the subject's activity in the 200 ticks before it (WORK / MOVE / combat / idle), and why a forced hold spans about 100 ticks (does debt exceed 98, or does the hold count the whole span?). WORK first means calibration: starting purses, the shift's debt cost, SHIFT_TICKS.
+REVISED RULING (rpg-designer, 2026-10-30, after lane B's STOP).
+Finding: the wake-only rule gave EAT/WORK in 1.4% of 1,145 windows; in 89% FATIGUE re-won at the next ordinary decision; in 11% the subject stalled near the target. 2.115's real defect is that an en-route nav-only update sets no task, so a held REST outlives the wake.
+Ruling A' (within the l.38 reading; no owner row unless the paired run STOPs):
+1. A typed ProjectState.held_for (HUNGER_WAKE), set when a hunger wake ends a CHOSEN sleep with an open way, and cleared only at:
+   (a) the subject eats;
+   (b) the way closes;
+   (c) a threat is answered;
+   (d) debt reaches collapse_line.
+   Each end has a typed end-reason. The field is hash-neutral when None and visible in the read model. It is not a lock.
+2. While held, FATIGUE does not displace the hunger project and rest_in_place does not fire.
+3. The wake ends a chosen sleep even when the hunger project is already current.
+4. The Bible 04 l.38 held_for sentence is verbatim from the designer, plus clause (i).
+5. STOP if deaths rise, or if collapses rise beyond what the held-window count explains.
+The nav-stall share (11%) goes to TCK-20261030-STALEMATE-BREAK-OVERWRITES-A-PROJECT-MOVE-EVERY-TICK.
+
 ## Test Summary
 ## Files Changed
 ## Completion Summary
