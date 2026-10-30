@@ -102,6 +102,12 @@ The designer's ruling (2026-10-21): OUT of family under the user's v1 cutoff (20
   - Tests: (c) is replaced by (c1) a collapse with an adjacent non-acting hostile is NOT woken; (c2) a collapse that is hit is woken and re-collapses if past the line; (c3) the s44 shape, an adjacent hostile across 50 ticks of collapse, gives one uninterrupted collapse.
   - Re-run s44 with the narrowed wake (expected collapses about 0 to low) before the full table is re-read.
   - NOT ruled yet: s44 deaths 16-17 with either wake off (base 6). All-seeds deaths, the asleep-share split and the door occupancy are judged together. Record subject 17 (a hostile kind, 10 kills at the inn door) in the trace.
+- 2026-10-30 designer RE-RULING (supersedes the conditional "acting only" narrowing above, which is WITHDRAWN): lane B's dump showed the short collapse holds were ended by the threat wake while the subject was being hit, and every wake landed at 97.4-97.9, so it re-collapsed within 2 ticks.
+  - 2.154: a COLLAPSE is not woken by ANY threat, adjacent or acting. It stands until its own end or the existing hunger wake. The threat wake applies to chosen SLEEP/REST only. Still Enforced.
+  - 2.115 (the hunger wake of a collapse, owner ruling 2026-10-11, Bible 04 l.38) is UNCHANGED. The s44 hunger re-collapse loop at the jammed door is F3 evidence; if it remains after F3 or N14's final re-run, it becomes an owner row via the lead: "should hunger end a collapse that cannot reach food?"
+  - Bible threat sentence: "A present threat wakes a chosen sleeper (decision 32's adjacent hostile, or a perceived hostile acting on it); a collapse is not woken by a threat (decision 41), only by hunger as above; the wake is a re-decision, so otherwise the threat is answered (divergences 2.153 and 2.154)."
+  - Tests: (c1) a collapse with an adjacent hostile is not woken; (c2) a collapse being hit is not woken and runs to its end (or the hunger wake); (c3) the s44 shape, 50 ticks of adjacent hits, gives one uninterrupted collapse; (c4) a chosen sleep with an adjacent hostile is woken.
+  - s44 single-seed re-run: report collapses and, separately, the hunger-wake re-collapses. The deaths ruling waits for the all-seeds table.
 
 ## Scope
 - Cause first:
