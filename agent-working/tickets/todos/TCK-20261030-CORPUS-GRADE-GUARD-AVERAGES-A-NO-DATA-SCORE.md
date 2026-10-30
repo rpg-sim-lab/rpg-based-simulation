@@ -59,7 +59,8 @@ rpg-planner-ubuntu checked the other score-mean sites in the same file. The only
 2. Every score-mean site in the file is guarded by `_score_applies`. A `grep -n "sum(trial_scores" tests/unit/worldassembly/test_corpus_diversity.py` listing in the ticket shows each one.
 3. The new unit test passes. The positive control is shown.
 4. `pytest tests/unit/worldassembly/test_corpus_diversity.py -m "not slow"` passes, and the slow test above passes once.
-5. If a `slow_known_reds.yaml` entry was added for this test in the meantime, this ticket removes it.
+5. If a `slow_known_reds.yaml` entry was added for this test in the meantime, this ticket removes it. (rpg-planner ruled (b): none is added.)
+6. No silent pass (rpg-planner's condition, 2026-10-30): at all 8 sites, an applicability mismatch between live and anchor still FAILS, with a clear message. That covers both a live score against a no-data anchor, and a no-data live pillar against a scored anchor. Only the both-no-data case skips the mean. Add a unit case for each direction alongside the TypeError positive control. If `_snap_failure`, which `compare_pillar` calls before the mean (the assertion at :675 for this test), already fails both directions at every site, cite the line and the case instead of adding a new check. Confirm that each of the 8 sites asserts its band/status failures before it computes the mean.
 
 ## Related Tickets
 - TCK-20261030-SIMQ-ANCHOR-REDS-SINCE-V1-REANCHOR-NEED-A-BISECT (test 3; separate)
@@ -75,7 +76,8 @@ rpg-planner-ubuntu checked the other score-mean sites in the same file. The only
 - tests/unit/worldassembly/test_corpus_diversity.py
 
 ## Assumptions / Open Questions
-- Dispatch is under S4 (#715 6473439661) once rpg-planner OKs this plan. It changes no expectation, only a crash before the expectation is checked.
+- Dispatch is under S4 (#715 6473439661). rpg-planner OK'd the plan on 2026-10-30, relayed via lead-planner-u24 and lead-planner, adding AC6. It changes no expectation, only a crash before the expectation is checked.
+- Ownership: `test_corpus_diversity.py` is rpg-domain (rpg-planner, 2026-10-30).
 
 ## Implementation Notes
 ## Test Summary
