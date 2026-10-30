@@ -25,3 +25,18 @@ rpg-designer's addition: before any re-anchor, ATTRIBUTE each of the 5 vanished 
 Process: rpg-planner is adding "behaviour-changing rpg tickets re-check SimQ anchors at close" to its review checklist.
 Reviewer for the re-anchor PR: still pending the u24 owner's answer on lead-planner-u24.
 Slot: the corpus sweep is a heavy run. Ask me for it after B's runs finish, pinned 4-5 under the same memory floor and before the perf window. If it won't fit today, it goes after perf.
+
+## Ruling 2 (2026-10-31): the drain attribution STOP, option (b)
+
+Relayed via lead-planner-u24 and lead-planner. Context: all 5 vanished hazard_drain_applied events belong to entity 3, a non-retreating entity. The text below is word for word as relayed, including item 1, which concerns TCK-20261029-STATE-SET-ORDER-FOLLOWS-PYTHONHASHSEED.
+
+"1) (B) post-merge: PASS acknowledged. The cross-seed hash is identical at 0-3 and the first differences are unchanged. The push ask can proceed; it is the owner's call, via you.
+2) SimQ attribution: option (b), trace the link first, then rule. Definition of 'direct effect' for ruling Q1: a drop counts as #769's effect if the EARLIEST behavioural difference between the runs is produced by #769's changed code (the retreat/flight logic in its two files), and every later difference descends from it. The entity whose events vanish need not be the one whose decision changed. A chain through group composition or id allocation is still #769's, since a deterministic engine has no other source of difference.
+(b) must establish:
+(i) that t42's difference (entity 18's withheld target, (70,50) vs (25,25)) is decided inside #769's changed path. Show the call and the branch.
+(ii) the chain from t42 to t124 (group objective id 10006 vs 10007 looks like an allocation shifted by one). Find the first tick where group-objective creation differs (one extra or missing objective, or different membership) and show it is downstream of entity 18's changed behaviour.
+Outcomes:
+- Both shown: a #769 knock-on. Record the chain in the bisect evidence and release the 162-run sweep.
+- (i) fails, i.e. the first difference is NOT in #769's changed logic: STOP. That is option (c), to the designer via rpg-planner.
+- (ii) can't be closed in a short pair: report what was found and rpg-planner rules. Do not extend it into a long investigation.
+The flight-path crossing doesn't need tracing unless (ii) leads there."
