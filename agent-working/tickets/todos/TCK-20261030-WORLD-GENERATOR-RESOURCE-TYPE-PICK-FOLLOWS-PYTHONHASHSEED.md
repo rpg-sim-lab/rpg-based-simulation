@@ -18,7 +18,7 @@ The intent-driven world generator picks each node's resource type with the RNG f
 OPEN
 
 ## Tier
-hotfix
+standard
 
 ## Type
 bug
@@ -27,6 +27,8 @@ bug
 P2
 
 ## Request Summary
+**2026-10-30: re-tiered STANDARD after the STOP.** Seed-0 content changes with the fix (16/16, 19/20, 26/30 nodes). There are no pinned outputs, and the generator has no production caller. rpg-planner's ruling, relayed via lead-planner-u24 and lead-planner, is word for word in `agent-working/staging_artifacts/TCK-20261030-WORLD-GENERATOR-RESOURCE-TYPE-PICK-FOLLOWS-PYTHONHASHSEED/rpg_planner_ruling_2026-10-30.md`. Its Scope/AC replace the hotfix Scope/AC below wherever they differ. Dispatch needs the owner's standard-dispatch go; write no fix code until then.
+
 Found by the (B) audit of TCK-20261029-STATE-SET-ORDER-FOLLOWS-PYTHONHASHSEED (item 5e, investigation at 16f7eb1f1). `src/worldgeneration/generator.py:220` builds `resource_types = list(set(r.resource_type ...))` and then calls `rng.choice(..., resource_types, ...)` per node. The RNG is seeded, but the list it indexes is in hash-seed order. So the same seed and catalog give different generated worlds across processes. This affects the intent-driven `WorldGenerator` path only, not the declarative worlds in `data/worlds`.
 
 rpg-planner ruled on 2026-10-30 (ruling 3, Q2, in `TCK-20261029-STATE-SET-ORDER-FOLLOWS-PYTHONHASHSEED/rpg_planner_ruling_2026-10-29.md`): this goes in a SEPARATE ticket, P2, in the ubuntu queue, not in B.
@@ -66,7 +68,7 @@ rpg-planner ruled on 2026-10-30 (ruling 3, Q2, in `TCK-20261029-STATE-SET-ORDER-
 - src/worldgeneration/generator.py
 
 ## Assumptions / Open Questions
-- Hotfix tier, dispatched under S4. rpg-planner OK'd the plan on 2026-10-30 (relayed via lead-planner-u24 and lead-planner) with the STOP condition in Scope 3.
+- Originally a hotfix dispatched under S4. It STOPPED on Scope 3 (seed-0 content changes) and was re-tiered STANDARD per rpg-planner's ruling. It needs the owner's standard-dispatch go before code.
 - It queues behind the corpus hotfix and B on rpg-implementer-ubuntu.
 
 ## Implementation Notes
