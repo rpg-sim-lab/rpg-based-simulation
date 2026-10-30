@@ -96,6 +96,12 @@ The designer's ruling (2026-10-21): OUT of family under the user's v1 cutoff (20
   - Test (a) becomes deterministic: the exact tick, the project COMPLETED, and no rest_in_place dispatch afterwards, across brain-cadence offsets 0-9. Add (a') for an inn-bed SLEEP.
   - The paired run adds rest_in_place dispatches within 10 ticks of a floor-end. Expected 0; anything else is a STOP to the designer. Options 2, 3 and 4 are rejected.
   - Wording: "below" in both the code and the Bible. New 2.153 sentence: "A rest, once begun, lasts until the sleep need is met (sleep debt below REST_MIN_SLEEP_DEBT), and the sleeper's brain is woken as it ends so the need is closed; otherwise only a wake ends it. The wake line only wakes a sleeper's brain and marks a subject as tired." The 2.154 sentence is unchanged ("a perceived hostile acting on it").
+- 2026-10-30 designer ruling (s44 collapse loop), CONDITIONAL on lane B confirming that the threat wake ends the short collapse holds:
+  - 2.154 narrowed: a COLLAPSE is woken only by a perceived hostile ACTING on it. Adjacency alone does not wake a collapse; it still wakes a chosen sleep. 2.154 stays Enforced (SURV-06 / l.40 is about chosen rests).
+  - Bible: "A present threat wakes a chosen sleeper (decision 32's adjacent hostile, or a perceived hostile acting on it); a collapsed one is woken only by a perceived hostile acting on it" (the rest of the sentence unchanged).
+  - Tests: (c) is replaced by (c1) a collapse with an adjacent non-acting hostile is NOT woken; (c2) a collapse that is hit is woken and re-collapses if past the line; (c3) the s44 shape, an adjacent hostile across 50 ticks of collapse, gives one uninterrupted collapse.
+  - Re-run s44 with the narrowed wake (expected collapses about 0 to low) before the full table is re-read.
+  - NOT ruled yet: s44 deaths 16-17 with either wake off (base 6). All-seeds deaths, the asleep-share split and the door occupancy are judged together. Record subject 17 (a hostile kind, 10 kills at the inn door) in the trace.
 
 ## Scope
 - Cause first:
