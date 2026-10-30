@@ -71,6 +71,7 @@ Designer framing: this is a third "repeated failure, never learned" shape, after
 - the stalemate breaker and its stall/oscillation counters, navigation last_failure_reason, the tactical move path
 
 ## Assumptions / Open Questions
+- WIDENED 2026-10-30 (SLEEP-WINS wake-window count, urban s46): 122 of 1,108 post-wake windows held the hunger project but stalled within 1-6 tiles of the target (median 3) in MovementMode.WANDER, WITHOUT STALEMATE_BREAK (p7, t1905-1950, target (27,20), jitter (25,20)-(25,22)). The en-route branch in tactical.py sets WANDER. The counts must cover both triggers: STALEMATE_BREAK, and the en-route WANDER jitter near the target.
 - Main-law frequency unknown; the counts decide the priority.
 
 ## Implementation Notes
