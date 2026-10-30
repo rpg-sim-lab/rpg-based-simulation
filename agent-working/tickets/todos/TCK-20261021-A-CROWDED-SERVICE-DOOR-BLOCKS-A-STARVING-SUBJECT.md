@@ -77,6 +77,20 @@ The designer's ruling (2026-10-21): OUT of family under the user's v1 cutoff (20
 - To the STALEMATE/WANDER nav ticket: the 100 entity/position-target stalls (counts split by target type), and the sub-finding that the movement rungs consider only the subject's own neighbours, so never a door tile 2+ steps away (p4).
 - SEQUENCE: N14 (F1) -> A' re-measure (p7/11/27/30 arrive) -> STALEMATE/WANDER nav family -> #781.
 
+## Designer Ruling 2026-10-30 (N14 follow-up: Q1 collapse, Q2 threat end)
+- Q1 COLLAPSE: confirmed, a collapse (decision 41, owner's) keeps its end at the wake line 58.8. F1 covers chosen rests only. After a collapse ends, a still-live fatigue project picks a chosen sleep, which F1 runs to 20. Extra test: a collapse from 98 ends at 58.8, and a sleep chosen after it runs to 20.
+- Q2 THREAT END: option 1, its OWN id 2.154 / STRAT-294, class Enforced. SURV-06 says rest happens "wherever it is not in danger" and Bible 04 l.40 says "when no present threat holds", so a held sleep that no threat can end already breaks the text. It is a separate mechanism, true even without F1.
+  - Condition (existing predicates only): wake a holder of SLEEP or REST, collapse included, when decision 32's condition holds (an unengaged hostile adjacent) OR acting_threat_to(subject). A hit or an aimed attack wakes it, including at range. It runs on decision 32's cadence. No new constant.
+  - The wake is a re-decision only (l.30 / l.38). At debt >= 98 the subject collapses again; otherwise it answers the threat (flee or fight). The fatigue project stays live.
+  - Tests:
+    (a) a hostile steps adjacent to a chosen sleeper, which wakes and flees or fights;
+    (b) a ranged acting attacker wakes it;
+    (c) a collapse at 98 under threat wakes and re-collapses;
+    (d) with no threat there is no wake and F1 runs to 20;
+    (e) after the threat ends, the fatigue project is still live and sleep resumes by ordinary decision.
+  - Paired run adds: sleeps ended by threat, and deaths of subjects asleep at the death tick, base vs new. A rise in asleep-at-death is a STOP to the designer.
+- BIBLE 04 §1 sentence (replaces the F1 sentence; send the designer one diff covering both ids): "A rest, once begun, lasts until the sleep need is met (sleep debt at REST_MIN_SLEEP_DEBT) unless a wake ends it; the wake line only wakes a sleeper's brain and marks a subject as tired. A present threat wakes a sleeper, a collapsed one included (decision 32's adjacent hostile, or a hostile acting on it); the wake is a re-decision, so a collapse past its line is chosen again and otherwise the threat is answered."
+
 ## Scope
 - Cause first:
   - Is "reach" for a service a single tile or an area? Does an adjacent tile count (divergence 2.78, the walk ending on reach)?
