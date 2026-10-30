@@ -89,7 +89,8 @@ The designer's ruling (2026-10-21): OUT of family under the user's v1 cutoff (20
     (d) with no threat there is no wake and F1 runs to 20;
     (e) after the threat ends, the fatigue project is still live and sleep resumes by ordinary decision.
   - Paired run adds: sleeps ended by threat, and deaths of subjects asleep at the death tick, base vs new. A rise in asleep-at-death is a STOP to the designer.
-- BIBLE 04 §1 sentence (replaces the F1 sentence; send the designer one diff covering both ids): "A rest, once begun, lasts until the sleep need is met (sleep debt at REST_MIN_SLEEP_DEBT) unless a wake ends it; the wake line only wakes a sleeper's brain and marks a subject as tired. A present threat wakes a sleeper, a collapsed one included (decision 32's adjacent hostile, or a hostile acting on it); the wake is a re-decision, so a collapse past its line is chosen again and otherwise the threat is answered."
+- BIBLE 04 §1 sentence (replaces the F1 sentence; send the designer one diff covering both ids): "A rest, once begun, lasts until the sleep need is met (sleep debt at REST_MIN_SLEEP_DEBT) unless a wake ends it; the wake line only wakes a sleeper's brain and marks a subject as tired. A present threat wakes a sleeper, a collapsed one included (decision 32's adjacent hostile, or a perceived hostile acting on it); the wake is a re-decision, so a collapse past its line is chosen again and otherwise the threat is answered."
+- 2026-10-30 designer ack: acting_threat_to stays unchanged (it also gates row 88). The saliency-cap gap (a shooter behind 5+ closer non-acting hostiles) is guarded by a measured STOP: a non-zero count of hits on a sleeper from an unperceived hostile goes to the designer. Bible wording changed to "a perceived hostile acting on it". An item or spell range above 10 also goes to the designer before the code lands.
 
 ## Scope
 - Cause first:
