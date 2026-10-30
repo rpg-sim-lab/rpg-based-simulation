@@ -68,7 +68,7 @@ rpg-planner ruled on 2026-10-30 (ruling 3, Q2, in `TCK-20261029-STATE-SET-ORDER-
 - src/worldgeneration/generator.py
 
 ## Assumptions / Open Questions
-- Originally a hotfix dispatched under S4. It STOPPED on Scope 3 (seed-0 content changes) and was re-tiered STANDARD per rpg-planner's ruling. It needs the owner's standard-dispatch go before code.
+- Originally a hotfix dispatched under S4. It STOPPED on Scope 3 (seed-0 content changes) and was re-tiered STANDARD per rpg-planner's ruling. Owner standard-DISPATCH GO: #715 comment 6525127552, sequenced after TCK-20261029-STATE-SET-ORDER-FOLLOWS-PYTHONHASHSEED and the SimQ re-anchor work.
 - It queues behind the corpus hotfix and B on rpg-implementer-ubuntu.
 
 ## Implementation Notes
