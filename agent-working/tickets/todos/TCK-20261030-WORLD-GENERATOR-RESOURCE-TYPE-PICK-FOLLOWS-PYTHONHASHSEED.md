@@ -34,7 +34,10 @@ rpg-planner ruled on 2026-10-30 (ruling 3, Q2, in `TCK-20261029-STATE-SET-ORDER-
 ## Scope
 1. First step: list every pinned generator output, meaning snapshots, golden worlds and content assertions that read `WorldGenerator` output, with file:line. Grep tests/ and tools/ for `WorldGenerator`, `generator.generate` and fixtures built from it.
 2. Change the site to `sorted(set(...))` with a stable key (the resource type id string, or `.value` if it is an Enum).
-3. If step 1 found pinned outputs: re-pin them, and tell rpg-planner-ubuntu, who tells the owner (ruling: "re-pins them with the owner's knowledge"). If none: say so.
+3. STOP before any re-pin (rpg-planner's plan-OK condition, 2026-10-30) and report to rpg-planner-ubuntu if either:
+   - step 1 finds ANY pinned generator output; or
+   - seed-0 generated content changes (a different resource pick under PYTHONHASHSEED=0). Compare the per-node resource types for a fixed seed and intent on main and on the fix, both at PYTHONHASHSEED=0.
+   A content change in a generated world is a world-content change. The ticket then becomes STANDARD with a divergence entry. If nothing is pinned and seed 0 is unchanged, it stays a hotfix.
 4. Add a test: generate the same seed and intent in subprocesses at PYTHONHASHSEED 0 and 1, and assert identical resource types per node. Positive control: the comparison fails on main.
 
 ## Out of Scope
@@ -45,7 +48,7 @@ rpg-planner ruled on 2026-10-30 (ruling 3, Q2, in `TCK-20261029-STATE-SET-ORDER-
 1. The pinned-output inventory is in Implementation Notes, before any code change.
 2. The generator site iterates a sorted, stable-key list.
 3. The cross-seed test passes, and its positive control is shown.
-4. Any re-pinned output is listed with the old and new value, and the owner's knowledge is recorded (comment id).
+4. The seed-0 comparison (main against the fix, PYTHONHASHSEED=0) is recorded: unchanged, or a STOP.
 5. Scoped tests pass (`tests/` for worldgeneration, `-m "not slow"`), and generate_registry --check and paths-guard pass.
 
 ## Related Tickets
@@ -63,7 +66,7 @@ rpg-planner ruled on 2026-10-30 (ruling 3, Q2, in `TCK-20261029-STATE-SET-ORDER-
 - src/worldgeneration/generator.py
 
 ## Assumptions / Open Questions
-- Hotfix tier, so dispatch is under S4 once rpg-planner OKs this plan. rpg-planner ruled the split and the first step; the plan OK for the fix itself is still to be confirmed.
+- Hotfix tier, dispatched under S4. rpg-planner OK'd the plan on 2026-10-30 (relayed via lead-planner-u24 and lead-planner) with the STOP condition in Scope 3.
 - It queues behind the corpus hotfix and B on rpg-implementer-ubuntu.
 
 ## Implementation Notes
