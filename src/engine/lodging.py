@@ -69,7 +69,7 @@ def grant_beds(state: Any, update: Any) -> Any:
     update. A REFUSED claim loses the claim (no lodging, no move), its REST task ends (an idle act, the brain re-decides) and its fatigue project ends with
     `ProjectEnd.WAY_CLOSED`; it never has a charge, readiness or heal applied because none was ever put on its update. A tick with no claim returns ``update`` unchanged."""
     from dataclasses import replace
-    from src.core.strategic import close_way
+    from src.core.strategic import ProjectEnd, ProjectStatus, end_record
     from src.core.updates import EntityUpdate, StrategicUpdate, TaskUpdate
     from src.engine.building_services import bed_delta
 
@@ -99,7 +99,7 @@ def grant_beds(state: Any, update: Any) -> Any:
                 continue
             project = entity.strategic.projects.get(entity.strategic.current_project_id or "")
             ended = EntityUpdate(entity_id=eid, strategic=StrategicUpdate(
-                projects_add_or_update=[close_way(project)], current_project_id_set="", current_objective_id_set="")) if project is not None else None
+                projects_add_or_update=[end_record(project, ProjectStatus.ABANDONED, ProjectEnd.WAY_CLOSED)], current_project_id_set="", current_objective_id_set="")) if project is not None else None
             task = replace(upd.task, payload_set={}) if upd.task is not None else upd.task
             refined[eid] = replace(upd, navigation=replace(upd.navigation, lodged_in_set=None), new_position=None, moved_this_tick=False, task=task)
             if ended is not None:

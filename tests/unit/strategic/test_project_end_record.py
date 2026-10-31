@@ -46,7 +46,7 @@ def test_supersede_record_is_end_record_with_abandoned_and_superseded_by_target(
 
 
 def test_the_enum_keeps_its_existing_value_and_adds_threat_cleared():
-    assert {e.value for e in ProjectEnd} == {"SUPERSEDED_BY_TARGET", "THREAT_CLEARED"}
+    assert {e.value for e in ProjectEnd} == {"SUPERSEDED_BY_TARGET", "THREAT_CLEARED", "WAY_CLOSED"}  # WAY_CLOSED: F3, lodging
 
 
 def test_threat_cleared_is_omitted_from_the_canonical_dict_until_set_and_changes_the_hash_only_then():
