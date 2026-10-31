@@ -111,3 +111,8 @@ The code lives in `src/systems/strategic_systems/intelligence.py` (the ticket's 
 ## Files Changed
 
 ## Completion Summary
+
+## 2026-10-31 counts from TCK-20261031-A-RETREAT-PROJECT-OUTLIVES-ITS-THREAT (lane C, rpg-retreat-completes 7811d749f; main 6fdfdf555; 3 worlds x s42-46, 2000t; samples every 20 ticks at cap)
+- 15364 entity-samples at cap over 359 entity-runs: 86% have >= 1 SUSPENDED in the live set, 80% one older than 200 ticks, 62% two or more; 709 distinct stale (> 200 ticks) SUSPENDED records.
+- By kind, of 1051 distinct SUSPENDED seen at cap: STABILIZE 218, RESOLVE_BLOCKER 178, COMBAT_ENGAGE 158, HUNGER 120, FATIGUE 120, GUILD 98, HARVESTING 65, TOWN_RETURN 32, RECOVER 31, COMBAT_RETREAT 15, SOCIAL 13, INVESTIGATE 3.
+- Example: urban_political s42 entity 18's cap is filled by project_stabilize_bandit_road_t2 / _t22 (STABILIZE, created t2 / t22, never resumed, ~1400 ticks old).
