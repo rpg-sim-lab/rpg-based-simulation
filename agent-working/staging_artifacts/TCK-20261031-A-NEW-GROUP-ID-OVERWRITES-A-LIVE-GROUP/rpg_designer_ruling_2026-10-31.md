@@ -131,3 +131,15 @@ Divergence 2.146: rewrite the disclosure to state the formation rise, the suppre
 The churn ticket's owner go is asked after counts 1-3, with the designer's fix shape."
 
 lead-planner's note, same message: the 2-run go covers frontier_living_world only. The other two worlds' counts, without a profiler and one run per tree, are a further ask. If wrapper changes push the start past 21:20, start the next day; do not rush the instrument. The expiry re-date cannot wait on this batch; lead-planner is asking the owner for it to go its own way.
+
+---
+
+## rpg-planner on the final measurement and tomorrow's runs (u24, 2026-10-31; relayed by lead-planner-u24 and lead-planner). Word for word:
+
+"No non-audit pair now. The designer already requires the churn fix in the same batch, so today's hold decides nothing.
+For the batch's FINAL measurement, the hold rule (5% tick time, or the store above 2000) is judged on a NON-AUDIT run at the default replay_richness (FULL), since that's what a normal run pays. Report the audit-mode figure beside it, and state which policy each run used.
+Tomorrow's 6 runs (3 worlds, one per tree, no profiler, per-entity size by field at t500/1000/2000, the contract-invalid split, and the hash check) are agreed as the input to the designer's fix shape. Two additions, if cheap:
+(a) split contract-invalid into missing / not ACTIVE / expired. That tests the implementer's expiry hypothesis at groups.py:305-326 against :160-170 directly.
+(b) per entity, which fields grew: strategic.contracts length, trust/grudge entries, memory. The canonical dict being about 50% larger is the cost carrier, so naming the field decides whether the fix is the churn rule alone or also what a dissolved group's contract leaves behind."
+
+lead-planner's note, same message: for the final measurement the alternating 3-per-tree terms still apply, and non-audit runs have a governor, so check whether it changes policy mid-run and report that; a run that drops out of FULL isn't the rule's run.
