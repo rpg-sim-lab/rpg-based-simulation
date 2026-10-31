@@ -493,6 +493,8 @@ class CombatResolutionSystem:
                 # COMB-006: radius application legality — only living, active entities are valid splash targets
                 if not other_ent.combat.alive or not other_ent.lifecycle.active:
                     continue
+                if other_ent.navigation.lodged_in is not None:
+                    continue  # F3: a lodger is indoors and is never splashed
                 if not are_entities_hostile(attacker, other_ent, RelationContext(distance=float(dist), combat_engaged=True)):
                     continue
 

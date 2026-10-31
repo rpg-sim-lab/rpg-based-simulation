@@ -32,6 +32,8 @@ class InformationIntentResolver:
         """
         source_id = candidate.source_id
         source_npc = state.entities.get(source_id)
+        if source_npc is not None and source_npc.navigation.lodged_in is not None:
+            source_npc = None  # F3 (divergence 2.155): a source indoors cannot be reached from outside
 
         # Proximity checks
         actor_pos = entity.navigation.position or (0.0, 0.0)

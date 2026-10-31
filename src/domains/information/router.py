@@ -65,6 +65,8 @@ class InformationQueryRouter:
             dist_cost = 0.0
             # If the source corresponds to another entity/npc, compute real distance
             source_entity = state.entities.get(prof.source_id)
+            if source_entity and source_entity.navigation.lodged_in is not None:
+                continue  # F3 (divergence 2.155): a source indoors cannot be asked from outside (proximity-based delivery only)
             if source_entity:
                 tgt_pos = source_entity.navigation.position or (0.0, 0.0)
                 dx = tgt_pos[0] - entity_pos[0]

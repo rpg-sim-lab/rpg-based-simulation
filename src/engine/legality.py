@@ -241,6 +241,12 @@ class LegalityServiceV2:
             return False, ReasonCode.ATTACKER_INCAPACITATED
         if not target.lifecycle.active or not target.combat.alive:
             return False, ReasonCode.TARGET_INCAPACITATED
+        # F3 (divergence 2.155): a lodger is indoors, so it cannot be attacked from outside and, seeing no one outside, cannot attack out. A stale target id (captured before the
+        # target lodged) lands here and ends the held attack like any incapacitated target.
+        if target.navigation.lodged_in is not None:
+            return False, ReasonCode.TARGET_INCAPACITATED
+        if attacker.navigation.lodged_in is not None:
+            return False, ReasonCode.ATTACKER_INCAPACITATED
         if attacker.id == target.id:
             return False, ReasonCode.SELF_ATTACK_ILLEGAL
 

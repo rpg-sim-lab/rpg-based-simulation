@@ -107,6 +107,8 @@ class MovementPhase:
             dist = abs(a_pos[0] - b_pos[0]) + abs(a_pos[1] - b_pos[1])
             if dist != 1:
                 continue
+            if a.navigation.lodged_in is not None or b.navigation.lodged_in is not None:
+                continue  # F3: a lodger is on no tile, so it is never a swap partner
 
             if not MovementPhase._can_attempt_position_swap_pair(
                 state,
