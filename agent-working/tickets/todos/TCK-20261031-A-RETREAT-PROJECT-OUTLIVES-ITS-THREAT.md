@@ -102,3 +102,11 @@ Overlap: TCK-20261028-LOW-HP-RETREAT (tactical.py:536-544) is NOT folded in (thi
 
 ## Landing-order condition (rpg-designer 2026-10-31)
 TCK-20261031-A-RETREAT-PROJECT-OUTLIVES-ITS-THREAT is measured on 6fdfdf555 (pre-F3). Whichever of it and TCK-20261031-A-SLEEPER-HOLDS-A-DOOR-OR-SERVICE-TILE lands SECOND repeats, on top of the other, retention's recovery check (ticks with hp < 0.5, no present threat and no RECOVER/REST/FATIGUE project current; any entity over 200 ticks is a finding) and deaths by cause per world.
+
+## Tactical flight gate (rpg-designer ruling (A), 2026-10-31)
+Finding (lane C): tactical.py:209/213's `threats` is `perceived_threats` (tactical_threat.py:64-75), perceived hostiles WITHOUT the AGENCY-07 terms; it agrees with present_threat_to whenever hp < 0.7 and differs for an unhurt subject fleeing (dread, grudge) a distant, idle hostile.
+Ruling (A), inside this ticket, counts first: tactical's flight gate also calls present_threat_to. It carries 2.76 (retreat from a present threat, not on sight) to the last ungated branch; not a new rule.
+- Counts before it lands (probe9, same base): ticks where tactical flees on perceived_threats while present_threat_to is False; distinct entities; hp and the hostile's distance at each; then deaths by cause of those entities on the paired run.
+- Land (A) unless first-diff attributes a death to a flight (A) removed; then it goes to rpg-designer with victim ids and (A) waits.
+- Docs: the divergence names 2.76 and 2.114 as narrowed (2.114's flight rule now uses the AGENCY-07 terms). Law text: "flight, a retreat project's adoption and its completion use one present-threat test".
+
