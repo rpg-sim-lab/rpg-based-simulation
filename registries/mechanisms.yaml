@@ -188,8 +188,7 @@ mechanisms:
         erosion is destroying something demonstrably real, not a cosmetic drift.
         **Note, added 2026-11-01 (TCK-20261031-A-SLEEPER-HOLDS-A-DOOR-OR-SERVICE-TILE, divergence
         2.155, owner #715 6543182195):** a lodged entity (`navigation.lodged_in` set) has no tile
-        and cannot be targeted or hit from outside; combat skips it as a target and as an attacker
-        while lodged.
+        and cannot be targeted or hit from outside; combat skips it as a target, and its own attack is refused as illegal (ATTACKER_INCAPACITATED) while lodged.
   - id: tactical_decision
     layer: entity
     systems: [combat]
