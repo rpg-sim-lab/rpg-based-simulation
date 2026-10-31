@@ -54,6 +54,7 @@ src/observability/events.py:56: `event_id = Field(default_factory=lambda: uuid.u
 
 ## Assumptions / Open Questions
 - Is CampaignEvent.event_id copied from SimulationEvent.event_id?
+- rpg-planner-ubuntu (SimQ probes README, ed1d208d5, 2026-10-31): nothing in the simulation core reads event_id; outside observability/simulation_quality the only readers are campaign post-analysis (not run by the single-episode path) and source_event_id fields built from category/region/tick strings. So the exposure is the campaign post-analysis path only.
 
 ## Implementation Notes
 
