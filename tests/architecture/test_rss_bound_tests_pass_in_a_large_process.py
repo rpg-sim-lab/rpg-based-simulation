@@ -34,6 +34,6 @@ sys.exit(pytest.main(["-q", "-p", "no:cacheprovider", *sys.argv[1:]]))
 def test_the_four_pass_in_a_process_already_holding_1200_mb():
     done = subprocess.run(
         [sys.executable, "-c", _RUNNER, *FOUR],
-        cwd=REPO_ROOT, capture_output=True, text=True, timeout=300,
+        cwd=REPO_ROOT, capture_output=True, text=True, timeout=50,  # under the medium budget's 60 s SIGALRM, which would otherwise fire first
     )
     assert done.returncode == 0, done.stdout[-3000:] + done.stderr[-1000:]
