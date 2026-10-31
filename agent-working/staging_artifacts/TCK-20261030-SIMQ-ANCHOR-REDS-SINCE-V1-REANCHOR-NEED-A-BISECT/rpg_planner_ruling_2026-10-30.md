@@ -169,3 +169,18 @@ lead-planner's notes, same message:
 - Slot: its go for P1-P4 and the P1 repeat stands and the hold is lifted. Start when B's re-check has finished, because the slot is one run at a time.
 - Do not edit the expiry until the owner's answer arrives with a #715 id.
 - The designer packet goes to rpg-designer via rpg-planner when P3 is in. Send it to lead-planner for the relay.
+
+## Ruling 7 (2026-10-31): the state-hash question and the probe results
+
+Relayed via lead-planner-u24 and lead-planner. The text between the rules is word for word as relayed.
+
+---
+STATE-HASH QUESTION: accepted, with a stated limit. With no per-tick state hash, the prefix check is full event-stream equality up to the prefix tick (event_id excluded). The binding confirmation is that the longer run's first difference is the same record as the probe's. The evidence must say, in those words, that state equality inside the prefix is inferred from the event stream, not hashed. For the repeat test, the equal final hash 0bd536588c14d9c5 stands as the binding check. A per-tick state hash in the probe wrapper is not required for this ticket.
+
+1. P3f is accepted as measured; any further probe is a fresh ask.
+2. Your PASS reading is correct: rule (a)+(b) shows where each path starts, and does not link the pull to each moved pillar. Re-anchor reasons per row should read "path starts at retreat_pull, tX entity N" and claim no more. P1's ECONOMY gap from t111 to t435 stays recorded as untraced. That is enough for the four in-tolerance rows outside s42 (P1, P2, P4), once the post-groups-fix sweep confirms they are still moved.
+3. The P1 arbiter oddity (entity 10 gets proj_combat_retreat_110 with no top-score flip) is recorded and passed to the designer as observed. No trace unless the designer asks.
+4. The order is unchanged: (B)'s re-check, then the groups fix plus a fresh sweep, then re-probe only the rows whose values change, then re-anchor. The s42 rows wait for the designer's ruling.
+---
+
+lead-planner's note: check the prefix evidence meets the "same record" confirmation; reading existing logs needs no slot.
