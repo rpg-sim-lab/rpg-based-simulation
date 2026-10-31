@@ -64,3 +64,6 @@ src/ (route_search; the cognition, faction and social event producers)
 ## Files Changed
 
 ## Completion Summary
+
+## Note 2026-10-31 (rpg-planner): stale anchors moved by #769
+TCK-20261030-SIMQ-ANCHOR-REDS-SINCE-V1-REANCHOR-NEED-A-BISECT's sweep (a25619971 vs d914bace7) found 38 rows out of tolerance at the parent; 10 of them (urban_political s456 500t FACTION, PROGRESSION, SOCIAL, INFORMATION; 1000t COMBAT, FACTION, ECONOMY, PROGRESSION, SOCIAL, INFORMATION) also moved under #769. Any re-anchor of a held row here must be based on values after #769 AND after TCK-20261031-A-NEW-GROUP-ID-OVERWRITES-A-LIVE-GROUP, never on a25619971's, and each needs its own cause. The ticket counts 36 rows, the sweep 38 (entries are whole-key); reconcile the 2 at close.
