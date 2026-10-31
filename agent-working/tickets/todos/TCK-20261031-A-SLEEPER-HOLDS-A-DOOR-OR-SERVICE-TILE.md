@@ -180,3 +180,6 @@ Answered by the design: occupancy is entity-side `lodged_in` with a derived coun
 ## Files Changed
 
 ## Completion Summary
+
+## Landing-order condition (rpg-designer 2026-10-31)
+TCK-20261031-A-RETREAT-PROJECT-OUTLIVES-ITS-THREAT is measured on 6fdfdf555 (pre-F3). Whichever of it and TCK-20261031-A-SLEEPER-HOLDS-A-DOOR-OR-SERVICE-TILE lands SECOND repeats, on top of the other, retention's recovery check (ticks with hp < 0.5, no present threat and no RECOVER/REST/FATIGUE project current; any entity over 200 ticks is a finding) and deaths by cause per world.
