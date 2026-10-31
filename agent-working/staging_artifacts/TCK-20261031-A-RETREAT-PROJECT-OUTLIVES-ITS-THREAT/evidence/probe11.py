@@ -18,6 +18,8 @@ from src.ai.goals.present_threat import acting_threat_to
 from src.ai.goals.present_threat import present_threat_to   # exists on both arms
 retreat_threat_present = present_threat_to
 from src.ai.goals.scorers_support import perceived_hostiles
+from src.content_semantics.faction import are_entities_hostile
+from src.content_semantics.relation import RelationContext
 from src.engine.legality import LegalityServiceV2
 from src.ai.score_modifiers import ScoreModifierSystem as SM
 from src.systems.strategic_systems.intelligence import StrategicIntelligenceSystem as SI
@@ -154,9 +156,10 @@ def ug(state, current_update=None):
             hs = perceived_hostiles(e, state)
             adj = any(LegalityServiceV2.is_adjacent(e.navigation.position, h.navigation.position) for h in hs)
             ex_, ey_ = e.navigation.position
-            nh_ = {oid: round(abs(o.navigation.position[0] - ex_) + abs(o.navigation.position[1] - ey_), 1) for oid, o in state.entities.items() if oid != eid and o.combat.alive and o.identity.faction != e.identity.faction and abs(o.navigation.position[0] - ex_) + abs(o.navigation.position[1] - ey_) <= 20}
+            nf_ = {oid: round(abs(o.navigation.position[0] - ex_) + abs(o.navigation.position[1] - ey_), 1) for oid, o in state.entities.items() if oid != eid and o.combat.alive and o.identity.faction != e.identity.faction and abs(o.navigation.position[0] - ex_) + abs(o.navigation.position[1] - ey_) <= 20}  # secondary: any other faction
+            nh_ = {oid: d_ for oid, d_ in nf_.items() if are_entities_hostile(e, state.entities[oid], RelationContext(distance=d_, combat_engaged=True))}  # primary: hostile by the catalog test the present-threat code uses
             dmin_ = min((abs(h.navigation.position[0] - ex_) + abs(h.navigation.position[1] - ey_) for h in hs), default=None)
-            log(k="rh2", t=t, e=eid, nh=nh_, dmin=dmin_, pt=bool(present_threat_to(e, state)))
+            log(k="rh2", t=t, e=eid, nh=nh_, nf=nf_, dmin=dmin_, pt=bool(present_threat_to(e, state)))
             log(k="rh", t=t, e=eid, pr=pr, hp=e.combat.hp, mh=e.combat.max_hp, cs=getattr(st.projects.get(pr), 'cleared_since', None), acting=bool(acting_threat_to(e, state)), adj=bool(adj), perc=len(hs), p=e.navigation.position, wk=e.task.work_kind, act=(e.task.payload.get("action") if e.task.payload else None))
         if not e.combat.alive:
             first = prev.get(("dead", eid)) is None
