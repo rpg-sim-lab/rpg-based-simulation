@@ -158,3 +158,10 @@ The designer's ruling (2026-10-21): OUT of family under the user's v1 cutoff (20
 - (c) DROPPED: the owner row "should hunger end a collapse that cannot reach food?" (hunger re-collapses 15->0). Returns only if a later run shows the loop again.
 - 2.154 is fine on its own guards (asleep-at-death 7->7, 0 unwoken hits, collapse loop gone); it stays bundled with N14 for one re-measure.
 - Hoverer cut used: spans <=4 ticks (a REST decision records as 3-4 ticks; the <=2 cut found zero). Door-sleeper split by group is not available (run-level counter); not requested.
+
+## 2026-10-31 designer trace request before the 2.153 / floor-end-wake ruling (read-only, existing s44 traces: new2 and floor-end wake OFF; lane B)
+F3 investigation item 2 found s44's new2 deaths are awake victims (27 of 28), so not exposure on reach tiles. Before ruling on 2.153's rest length and the floor-end wake, rpg-designer needs:
+1. Subject 17's sleep timeline in new2: every rest start/end with end reason (debt floor, wake line, threat, other); every collapse with the debt and the task just before. Why does a rule that lengthens chosen rests give 17 collapses where base has 0 (e.g. the floor-end wake wakes it at debt 20 into a goal that runs it to 98 with no chosen rest between: a held project, a nav stall, rest refused or never chosen)?
+2. What subject 17 is (role, faction) and why it attacks in 8 deaths at new2 but not base: collapse-weakened fights, or a changed target or route?
+3. The t1629-1635 hazard group: why it stands awake in a hazard cell at debt ~81 (waiting on a rest it cannot start: door, admission, project lock?), and for how long.
+Not blocking F3.

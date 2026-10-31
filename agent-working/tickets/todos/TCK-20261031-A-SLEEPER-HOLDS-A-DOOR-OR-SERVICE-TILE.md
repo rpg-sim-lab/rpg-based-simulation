@@ -94,6 +94,9 @@ Investigation (read-only, before the plan):
 3. EAT: confirm it is a single-tick action with no hold.
 4. The list of `navigation.position` readers (Scope 6).
 
+PERCEPTION RULING (rpg-designer 2026-10-31, after investigation items 2-4): a lodger perceives NOTHING outside while it lodges and re-perceives normally on the tick it steps out (one symmetric lodger filter for every spatial read). It keeps what it knows (memory, leads, concerns); only perception stops updating; nothing is cleared on entry. While lodged it is woken only by its own body (sleep debt ending the rest; hunger under A' later); no outside event wakes it (no 2.154 threat wake indoors). Law text gains: "...no one outside can reach or see it, and it sees no one outside." Guard list accepted: six index builders (spatial_query.get_occupancy_map, occupancy_snapshot.from_state, world_index._build_entity_index, spatial.SpatialGrid, pipeline_phases/occupancy.py, candidate_selector.position_index) plus direct readers (AoE splash, engagement phase, cognition scans, swap detection, legality fallbacks); lodged_in carried in the navigation copy, omitted from the canonical dict when None; a unit test per direct reader that a lodger is invisible to it.
+Investigation item 2 result (lane B, s44 traces, classification only): 27 of 28 new2 victims awake with no sleep in the 20 ticks before; F3 will not clear s44 (AC 9 branch). Designer's follow-up trace for the 2.153 ruling is on the N14 ticket.
+
 Planner notes (rpg-planner):
 - Divergence number: 2.155 (u24 block; next free after 2.154).
 - Investigation item 2 reads the EXISTING s44 traces, which sit on base ba7aa11bd (pre-#795). That is fine for classifying victims; no hash or count from them is compared with a 6fdfdf555 run.
