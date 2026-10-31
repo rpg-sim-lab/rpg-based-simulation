@@ -106,11 +106,11 @@ class CombatUpdate:
     damage_taken: int = 0
     hp_delta: int = 0
     attacker_id: Optional[int] = None
+    hit_tick_set: Optional[int] = None  # the tick a damaging hit took hp; CombatPatch writes it to CombatComponent.last_hit_tick with attacker_id
     is_opportunity_attack: bool = False
     alive_set: Optional[bool] = None
-    # Regional hazard drain applied this tick, carried independently of `outcome_kind` so a hazard
-    # that lands on an entity combat already resolved stays observable (hazard_drain_applied)
-    # without overwriting the combat outcome. Not a death cause; see Mechanics Bible 01 §4.
+    # Regional hazard drain applied this tick, carried independently of `outcome_kind` so a hazard that lands on an entity combat already resolved stays
+    # observable (hazard_drain_applied) without overwriting the combat outcome. Not a death cause; see Mechanics Bible 01 §4.
     hazard_damage: int = 0
     outcome_kind: str = "SURVIVE" # SURVIVE, DEFEAT, KILL, REJECTED
     is_lethal: bool = False
@@ -142,7 +142,7 @@ class CombatUpdate:
         changes: Dict[str, Any] = {}
         if other.damage_taken != 0: changes["damage_taken"] = self.damage_taken + other.damage_taken
         if other.hp_delta != 0: changes["hp_delta"] = self.hp_delta + other.hp_delta
-        if other.attacker_id is not None: changes["attacker_id"] = other.attacker_id
+        if other.attacker_id is not None: changes.update(attacker_id=other.attacker_id, hit_tick_set=self.hit_tick_set if other.hit_tick_set is None else other.hit_tick_set)
         if other.is_opportunity_attack: changes["is_opportunity_attack"] = True
         if other.alive_set is not None: changes["alive_set"] = other.alive_set
         if other.hazard_damage != 0: changes["hazard_damage"] = self.hazard_damage + other.hazard_damage
@@ -266,19 +266,19 @@ class IdentityUpdate:
         changes: Dict[str, Any] = {}
         if other.role_set is not None: changes["role_set"] = other.role_set
         if other.faction_set is not None: changes["faction_set"] = other.faction_set
-        if other.recipes_learned: changes["recipes_learned"] = list(set(self.recipes_learned + other.recipes_learned))
+        if other.recipes_learned: changes["recipes_learned"] = sorted(set(self.recipes_learned + other.recipes_learned))
         if other.craft_target is not None: changes["craft_target"] = other.craft_target
         if other.evolution_level_set is not None: changes["evolution_level_set"] = other.evolution_level_set
         if other.life_stage_set is not None: changes["life_stage_set"] = other.life_stage_set
         if other.class_id_set is not None: changes["class_id_set"] = other.class_id_set
         if other.evolution_points_delta != 0: changes["evolution_points_delta"] = self.evolution_points_delta + other.evolution_points_delta
         if other.veterancy_points_delta != 0: changes["veterancy_points_delta"] = self.veterancy_points_delta + other.veterancy_points_delta
-        if other.breakthroughs_add: changes["breakthroughs_add"] = list(set(self.breakthroughs_add + other.breakthroughs_add))
+        if other.breakthroughs_add: changes["breakthroughs_add"] = sorted(set(self.breakthroughs_add + other.breakthroughs_add))
         if other.unspent_ap_delta != 0: changes["unspent_ap_delta"] = self.unspent_ap_delta + other.unspent_ap_delta
         if other.unspent_ap_set is not None: changes["unspent_ap_set"] = other.unspent_ap_set
-        if other.learned_skills: changes["learned_skills"] = list(set(self.learned_skills + other.learned_skills))
-        if other.traits_add: changes["traits_add"] = list(set(self.traits_add + other.traits_add))
-        if other.traits_remove: changes["traits_remove"] = list(set(self.traits_remove + other.traits_remove))
+        if other.learned_skills: changes["learned_skills"] = sorted(set(self.learned_skills + other.learned_skills))
+        if other.traits_add: changes["traits_add"] = sorted(set(self.traits_add + other.traits_add))
+        if other.traits_remove: changes["traits_remove"] = sorted(set(self.traits_remove + other.traits_remove))
         if other.cooldown_updates: changes["cooldown_updates"] = {**self.cooldown_updates, **other.cooldown_updates}
         if other.territory_maturity_delta != 0: changes["territory_maturity_delta"] = self.territory_maturity_delta + other.territory_maturity_delta
         return replace(self, **changes)
@@ -879,8 +879,8 @@ class WorldUpdate:
             owner_faction_id_set=other.owner_faction_id_set if other.owner_faction_id_set is not None else self.owner_faction_id_set,
             kind_set=other.kind_set if other.kind_set is not None else self.kind_set,
             weather_set=other.weather_set if other.weather_set is not None else self.weather_set,
-            modifiers_add=list(set(self.modifiers_add + other.modifiers_add)),
-            modifiers_remove=list(set(self.modifiers_remove + other.modifiers_remove)),
+            modifiers_add=sorted(set(self.modifiers_add + other.modifiers_add)),
+            modifiers_remove=sorted(set(self.modifiers_remove + other.modifiers_remove)),
             price_modifiers_set=other.price_modifiers_set if other.price_modifiers_set is not None else self.price_modifiers_set,
             population_cohorts_set=other.population_cohorts_set if other.population_cohorts_set is not None else self.population_cohorts_set,
             population_young_births_delta=self.population_young_births_delta + other.population_young_births_delta,

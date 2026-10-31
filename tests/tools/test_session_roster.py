@@ -16,6 +16,7 @@ import yaml
 
 from tools.agent_working_paths import TICKETS
 from tools.sessions import roster as roster_mod
+from tools.sessions import validate as validate_mod
 from tools.sessions.roster import RosterError, load_authority, load_roster
 from tools.sessions.validate import complexity_report, main, validate
 
@@ -93,17 +94,17 @@ def test_real_registry_validates():
     assert validate(REAL_ROOT) == []
 
 
-def test_real_registry_has_seventeen_seats_three_unstaffed():
+def test_real_registry_has_thirty_two_seats_two_unstaffed():
     # Changed from twelve seats / five unstaffed: on the owner's request of 2026-10-09
     # (TCK-20261009-REGISTER-OTHER-HOST-SEATS) the asset and perf planner/implementer seats were registered and the
     # codebase planner/implementer seats marked staffed; those sessions run on host ubuntu. Asset and perf have
     # no designer seat (their planners take dispatch from the user). lead-planner is the lead domain's only seat, and
     # no role accepts dispatch from it (owner: advisory and sequencing only).
     roster = load_roster(REAL_ROOT)
-    assert len(roster.roles) == 32  # +3 rpg -ubuntu twins (TCK-20261025-RPG-UBUNTU-SEATS); +4 architecture seats (#715); +5 host-suffixed -u24 twins (#620); agent-working-planner staffed, agent-working-designer unstaffed (owner 2026-10-18)
+    assert len(roster.roles) == 32  # +3 rpg -ubuntu twins (TCK-20261025-RPG-UBUNTU-SEATS); +4 architecture seats (#715); +5 host-suffixed -u24 twins (#620); agent-working-planner and agent-working-designer staffed (owner 2026-10-30)
     assert not any("lead-planner" in r.accepts_dispatch_from for r in roster.roles)
     assert {r.role for r in roster.roles if r.seat_status == "unstaffed"} == {
-        "agent-working-designer", "testing-designer", "codebase-designer",
+        "testing-designer", "codebase-designer",
     }
     assert {(r.domain, r.function) for r in roster.roles} == {
         (d, f) for d in ("rpg", "agent-working", "testing", "codebase") for f in ("designer", "planner", "implementer")
@@ -349,3 +350,15 @@ def test_an_unknown_launch_mode_is_a_bad_field(fixture_root):
         _role(r, "d1-planner")["placement"]["launch"] = "anywhere"
 
     assert "bad-field" in _rules(_mutated(fixture_root, mutate))
+
+
+def test_validation_expands_each_glob_once_not_once_per_shared_file(monkeypatch):
+    """TCK-20261026-VALIDATE-SPLIT-GLOBS-EXPANDED-ONCE: a split path was re-globbed for every shared file, ~230 s over
+    18k tracked files. Calls to `_files` are bounded by the owns patterns plus the distinct split paths."""
+    roster = load_roster()
+    calls = []
+    real = validate_mod._files
+    monkeypatch.setattr(validate_mod, "_files", lambda root, pattern: calls.append(pattern) or real(root, pattern))
+    validate_mod.validate()
+    bound = sum(len(r.owns) for r in roster.roles) + len({p for s in roster.splits for p in s.paths})
+    assert len(calls) <= bound, f"{len(calls)} glob expansions for a bound of {bound}"

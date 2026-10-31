@@ -106,6 +106,9 @@ is_wound = damage > (defender.max_hp * 0.25) and defender.alive
     becomes an additional guard-priority qualifier, alongside the existing `hp_ratio < 0.8`/`< 0.7`
     checks.
 
+### 5.5 Skill Selection Tie-Break (COMB-264, COMB-265; divergence 2.144)
+Among the ready, in-range, affordable skills the entity picks the highest power. Deterministic tie-break: power, then skill id.
+
 ---
 
 ## 6. Area of Effect (AoE) Logic
@@ -127,6 +130,9 @@ attack is not yet legal only because its readiness is under 100 does not step: i
 (a held `ATTACK`, reason `HOLD_BETWEEN_BLOWS`) and strikes when readiness reaches 100, so it
 provokes no opportunity attack. It leaves only by a decision (flight, panic retreat, a declared
 ability, a goal that outranks the fight), and that decision pays the opportunity attack.
+A strategic retreat (the brain choosing COMBAT_RETREAT) is not yet such a decision: it stays a stored target and takes no step,
+so a fighter leaves a fight to retreat only by a tactical decision (panic retreat, safety retreat) until the retreat-flight
+step after M1 (divergence 2.139).
 The same holds for every walk, not only the fighter's own: an entity with an engaged, perceived, hostile entity orthogonally
 adjacent takes no step from a stored navigation target (an idle walk toward an objective, a held move); it steps only on a target
 a decision sets that tick (`MovementCandidateSelector.movement_target`).
