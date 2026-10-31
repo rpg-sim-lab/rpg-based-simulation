@@ -66,3 +66,16 @@ Record the churn itself (the (37,38) pair forming and being expelled about every
 Live vs dissolved split: the 3 extra runs are enough; it's not needed on all 15."
 
 lead-planner's note, same message, on the 5% test (raised with rpg-planner, unanswered at recording): one run per tree can't resolve 5% on this VM (perf's noise rule here is 15%). Plan base and branch runs alternating, same CPUs, nothing else on 4-5, at least 3 per tree per world if possible, spread reported. A difference inside the spread is reported as unresolved, not as a pass. Store size is deterministic and needs one run. The run list, wall estimate and stop time need lead-planner's go; the existing 3-run go doesn't cover branch runs or repeats.
+
+---
+
+## rpg-planner on Ruling 2, the timing test (u24, 2026-10-31; relayed by lead-planner-u24 and lead-planner). Word for word:
+
+"Your alternating plan is CONFIRMED: at least 3 runs per tree per world, alternating, with the spread reported.
+An unresolved total-tick-time result means (b), not a hold:
+- The deterministic store-size limit decides: more than 2000 records by 2000t on any world HOLDS the PR.
+- Report the per-phase timings (groups and cooperation) with their spread. They hold the PR only if the branch's median sits outside base's spread by more than 5% of base's median TOTAL tick time.
+- Add one deterministic work count that load can't move: the records sorted and walked per tick by those two phases, summed over 2000t, base vs branch. It is reported, not gated, and it shows whether a hidden cost is growing, so the churn ticket can cite it.
+A resolved total-time rise above 5% still holds the PR, as ruled."
+
+lead-planner's note, same message: the 18 runs need a run list, wall estimate and stop time for its go, probably with the fix code final first. Runs not finished by 22:00 wait for the next day's slot.
