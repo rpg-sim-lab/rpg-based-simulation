@@ -46,6 +46,12 @@ Phase 1 answers (rpg-implementer-ubuntu; recounted by rpg-planner-ubuntu from ra
 Phase 2 (designer ruling 2026-10-31): a COMBAT_RETREAT project COMPLETES when the threat it answered is no longer present. "Present" is the pull's own test: decision-32 adjacent hostile OR a perceived hostile acting on the entity (`acting_threat_to`). The end is typed (e.g. ended_by THREAT_CLEARED), never a reason string or lock_until_tick. The slot frees and the next selection is an ordinary re-decision (a hurt entity picks RECOVER/REST on its own scores). A returning threat starts a new retreat through the scorer. No hysteresis in v1; flapping (retreat -> complete -> retreat within a few calls) is measured and is the trigger to add one later.
 Investigation (before plan): (a) where COMBAT_RETREAT's completion facts are defined today and what they test (destination reached? hp?); entity 18 sat at its destination, so if completion is "reached destination" say why it did not fire; the fix shape depends on missing vs misconditioned. (b) Log the 2 SUSPENDED projects filling entity 18's cap (ids, kinds, age) and count stale SUSPENDED records filling caps generally; that is a :1610 follow-up, reported as counts, not folded in.
 
+WIDENED 2026-10-31 (rpg-designer ruling on the churn; lane C fix-arm a5631c4f3 showed 32 of 52 THREAT_CLEARED ends never threatened and 31 re-adoptions within 60 ticks, 30 at the next selection call):
+- THE TEST on both sides is `present_threat_to` (src/ai/goals/present_threat.py; AGENCY-07's full terms: a perceived hostile with wounded, adjacent, targeting/closing or outmatching). This CORRECTS the earlier "decision-32 adjacent OR acting" wording for completion. `acting_threat_to` (memo row 88) is unchanged where it is: it gates retreat_pull's escalation and is the SURV-07 family table's "need yields only to" test.
+- R1: CombatRetreatScorer (scorers.py ~235) adopts COMBAT_RETREAT only while present_threat_to holds; low hp, panic or is_fleeing alone do not (2.76's rule carried to the goal scorer; tactical already requires a threat to flee, 2.114). The utility formula is unchanged under the gate.
+- R2: completion THREAT_CLEARED when present_threat_to stops holding.
+- R3: a hurt subject with no present threat goes to RECOVER/REST on their own scores; verify RecoverScorer yields a candidate passing the selection filter (utility >= 20 and a target). Report ticks with hp < 0.5, no present threat and no RECOVER/REST/FATIGUE project current (about 0; any entity over 200 ticks is a finding).
+
 ## Out of Scope
 - #769 (cleared). The groups-id fix (TCK-20261031-A-NEW-GROUP-ID-OVERWRITES-A-LIVE-GROUP), sequenced together with this before the s42 re-anchor.
 - Closing projects on death: TCK-20261031-DEATH-CLOSES-NO-PROJECT.
@@ -59,6 +65,13 @@ Investigation (before plan): (a) where COMBAT_RETREAT's completion facts are def
 4. Bible 04 / tactical contract section 4 state "a retreat ends when the threat is gone" as a law; parity ledger row added.
 5. Divergence entry, class Enforced, if legacy behaviour differs.
 6. No death/combat regression; s42 re-measured (500/1000/2000t) before the re-anchor.
+
+Acceptance additions (widened):
+7. Churn: re-adoptions by the same entity within 60 ticks with no present threat = 0; never-threatened adoptions = 0.
+8. AC6 replaced: deaths BY CAUSE per world on a cause-logged re-run, both arms (the probe also logs hp, stamina, panic, bravery and the retreat/RECOVER/REST utilities at each retreat adoption). Any per-world rise that first-diff attributes to an ended or unadopted retreat is a STOP, reported to rpg-designer with victim ids; a rise first-diff puts elsewhere (trajectory) is reported, not gated.
+9. Unit test from crowded s43: hp < 0.5 and no hostile in view -> RECOVER, not COMBAT_RETREAT; a closing hostile -> COMBAT_RETREAT; the hostile leaves -> completes THREAT_CLEARED.
+10. Docs: the law "a retreat begins and ends on the same present-threat test" in tactical contract section 4 and Bible 04; parity row; divergence (Enforced, linked to 2.76) -- 2.156 / STRAT-295 carry it.
+Overlap: TCK-20261028-LOW-HP-RETREAT (tactical.py:536-544) is NOT folded in (this ticket gates the goal scorer only); count the moved deaths/ticks also under it with the family-table tag.
 
 ## Related Tickets
 - TCK-20261031-DEATH-CLOSES-NO-PROJECT (split from Q4); TCK-20261020-SUSPENDED-PROJECTS-ARE-NEVER-RESUMED-SLOT-LEAK and TCK-20261028-CURRENT-PROJECT-CLEARED-WITHOUT-ENDING-LEAVES-ORPHANED-ACTIVE-RECORDS (the stale SUSPENDED / orphan records that fill caps: counts go there, not folded in);
