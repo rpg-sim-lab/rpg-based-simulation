@@ -15,18 +15,17 @@ UNKNOWN = "unknown"
 def format_cpu_ranges(cpus: Iterable[int]) -> str:
     """``{4, 5}`` -> ``"4-5"``, ``{0..5}`` -> ``"0-5"``, ``{0, 2, 3}`` -> ``"0,2-3"``; a lone CPU is just its number; empty is ``""``."""
     ordered = sorted(set(cpus))
+    if not ordered:
+        return ""
     parts: List[str] = []
-    start = prev = None  # type: Optional[int]
-    for cpu in ordered:
-        if start is None:
-            start = prev = cpu
-        elif cpu == prev + 1:
+    start = prev = ordered[0]
+    for cpu in ordered[1:]:
+        if cpu == prev + 1:
             prev = cpu
         else:
             parts.append(_span(start, prev))
             start = prev = cpu
-    if start is not None:
-        parts.append(_span(start, prev))
+    parts.append(_span(start, prev))
     return ",".join(parts)
 
 
