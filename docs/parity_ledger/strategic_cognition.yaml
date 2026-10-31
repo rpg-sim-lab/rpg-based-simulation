@@ -4648,4 +4648,13 @@
   test_path: tests/unit/strategic/test_project_lookup_live_record_first.py
   divergence_note: See docs/guidelines/intentional_divergences.md Section 2.143.
   support_boundary: 'The four mapped kinds (ADVENTURE_ROUTE, SOCIAL_CONTRACT, REGION_STABILIZATION, OCCUPATION_CHANGE) never match a stored record and are unchanged here (separate ticket). Direct resume of a matching suspended record is existing behaviour, not endorsed. Measured counts: divergence 2.143.'
-
+- id: STRAT-295
+  text: 'TCK-20261031-A-RETREAT-PROJECT-OUTLIVES-ITS-THREAT: a COMBAT_RETREAT project completes (status COMPLETED, ended_by THREAT_CLEARED) when no hostile the subject perceives is adjacent to it (ADJACENT_DISTANCE, decision 32) or acts on it (hostile_acts_on), evaluated on the state of the strategic phase tick by the one predicate objective_outcome that the evaluator and the strategic work queue share. The slot frees and the next selection is an ordinary re-decision; a returning threat starts a new retreat through the scorer; no hysteresis. Before this a retreat project had no completion fact.'
+  status: verified
+  priority: P1
+  legacy_evidence: null
+  v2_evidence: 'src/ai/goals/present_threat.py (retreat_threat_present), src/systems/strategic_systems/entity_target_objective.py (ObjectiveOutcome, retreat_outcome, objective_outcome, close_entity_target_project), src/core/strategic.py (ProjectEnd.THREAT_CLEARED, end_record), src/core/combat_constants.py (ENTITY_TARGET_PERCEPTION_RADIUS). docs/mechanics/04_strategic_cognition.md; docs/engine/contracts/tactical_contract.md section 4; docs/guidelines/intentional_divergences.md 2.156.'
+  proof_type: regression
+  test_path: tests/unit/strategic/test_retreat_ends_with_its_threat.py
+  divergence_note: See docs/guidelines/intentional_divergences.md Section 2.156.
+  support_boundary: 'A retreat adopted with no acting hostile (low hit points or a fleeing emotion alone) ends at the first evaluation; whether the scorer re-proposes it is measured, not suppressed (no hysteresis). Dead entities keep their projects (TCK-20261031-DEATH-CLOSES-NO-PROJECT). Stale SUSPENDED records still fill capacity (TCK-20261020-SUSPENDED-PROJECTS-ARE-NEVER-RESUMED-SLOT-LEAK).'
