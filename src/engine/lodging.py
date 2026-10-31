@@ -15,6 +15,7 @@ Tile = Tuple[int, int]
 
 # The orthogonal reach tiles beside a building tile, in the fixed order of ``service_reach._REACH_OFFSETS`` without (0, 0): a leaver takes the first free one.
 LEAVE_OFFSETS: Tuple[Tile, ...] = ((0, -1), (1, 0), (0, 1), (-1, 0))
+CLAIM_MARKER = "LODGE_CLAIM"  # the transfer kind of the marker a lodge claim carries; `grant_beds` removes every marker and delivers the bed once per marker
 LEAVE_RING_RADIUS = 3  # then the nearest free walkable tile within this many tiles, by a fixed ring order
 
 
@@ -56,8 +57,12 @@ def has_free_bed(state: Any, building: Any, entity: Any = None) -> bool:
 def lodge_claim(entity: Any, building: Any) -> Any:
     """The CLAIM a bed service makes for ``entity`` at ``building``: lodge from this tick, standing on the building's tile. No bed is delivered by the claim; `grant_beds` grants
     it (the lowest entity id first, up to the beds) and only then adds the bed's service. Idempotent: the same claim merged twice is one claim."""
-    from src.core.updates import EntityUpdate, NavigationUpdate
-    return EntityUpdate(entity_id=entity.id, navigation=NavigationUpdate(lodged_in_set=building.id),
+    from src.core.updates import EntityUpdate, NavigationUpdate, ResourceTransferIntent
+    # One marker per execution of the REST. Updates of one subject are merged by concatenating their transfers, so the number of markers on the merged update is the number of
+    # times main would have delivered the bed (today a REST is executed by the worker and again by the actions phase, a defect tracked on its own ticket): `grant_beds` delivers
+    # the bed that many times, so F3 changes where the subject sleeps and not what a bed costs.
+    marker = ResourceTransferIntent(source_id=building.id, source_kind="LODGING", transfer_kind=CLAIM_MARKER)
+    return EntityUpdate(entity_id=entity.id, navigation=NavigationUpdate(lodged_in_set=building.id), resource_transfers=[marker],
                         new_position=(float(building.position[0]), float(building.position[1])), moved_this_tick=True)
 
 
@@ -92,10 +97,14 @@ def grant_beds(state: Any, update: Any) -> Any:
             if entity is None:
                 continue
             upd = refined[eid]
+            markers = sum(1 for t in upd.resource_transfers if t.transfer_kind == CLAIM_MARKER)
+            upd = replace(upd, resource_transfers=[t for t in upd.resource_transfers if t.transfer_kind != CLAIM_MARKER])
             if usable and (eid in held or free > 0):
                 if eid not in held:
                     free -= 1
-                refined[eid] = upd.merge(bed_delta(entity, building))
+                for _ in range(max(1, markers)):
+                    upd = upd.merge(bed_delta(entity, building))
+                refined[eid] = upd
                 continue
             project = entity.strategic.projects.get(entity.strategic.current_project_id or "")
             ended = EntityUpdate(entity_id=eid, strategic=StrategicUpdate(

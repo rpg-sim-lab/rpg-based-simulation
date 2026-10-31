@@ -17,10 +17,17 @@ def _final(k, ticks=4):
         k.shutdown()
 
 
+def _main_gold_per_hold():
+    """What one hold of a bed costs a subject on main: a beds=0 inn serving the same REST (the worker result and the actions phase both merge the bed today, a defect with its own ticket;
+    F3 reproduces the per-hold total exactly so its paired runs measure where the subject sleeps, not a cheaper inn)."""
+    ents, _ = _final(kernel([hero(1, REACH[0])], beds=0))
+    return 50 - ents[1].inventory.gold
+
+
 def test_a_served_bed_lodges_the_subject_on_the_building_tile():
     ents, inn = _final(kernel([hero(1, REACH[0])], beds=2))
     assert ents[1].navigation.lodged_in == INN_ID and ents[1].navigation.position == INN_AT and is_lodged(ents[1])
-    assert ents[1].inventory.gold == 40          # the bed was paid for once
+    assert ents[1].inventory.gold == 50 - _main_gold_per_hold()   # the bed costs what it costs on main
     assert ents[1].task.payload.get("action") == "REST"
 
 
@@ -31,6 +38,14 @@ def test_an_eat_a_collapse_and_a_rest_with_no_inn_in_reach_do_not_lodge():
     ents, _ = _final(kernel([eat, collapse, rough], beds=5))
     assert not any(is_lodged(e) for e in ents.values())
     assert ents[3].navigation.position == (20.0, 20.0)
+
+
+def test_a_lodger_s_gold_readiness_and_heal_per_hold_equal_main_s_beds_zero_hold():
+    lodged, _ = _final(kernel([hero(1, REACH[0], debt=90.0)], beds=2))
+    rough, _ = _final(kernel([hero(1, REACH[0], debt=90.0)], beds=0))
+    assert is_lodged(lodged[1]) and not is_lodged(rough[1])
+    assert lodged[1].inventory.gold == rough[1].inventory.gold
+    assert lodged[1].combat.hp == rough[1].combat.hp and lodged[1].combat.readiness == rough[1].combat.readiness
 
 
 def test_beds_zero_keeps_main_s_behaviour_the_rest_is_served_on_the_reach_tile():
@@ -48,7 +63,7 @@ def test_the_last_bed_goes_to_the_lowest_id_and_a_loser_is_never_charged_or_heal
     assert loser.navigation.position == REACH[2] and not loser.task.payload        # it did not move and its REST ended
     project = loser.strategic.projects["p1"]
     assert project.status.value == "ABANDONED" and project.ended_by.value == "WAY_CLOSED" and not loser.strategic.current_project_id
-    assert inn.inventory.gold == 2 * 10                                              # only the two granted beds were paid into the building
+    assert inn.inventory.gold == 2 * _main_gold_per_hold()                           # only the two granted beds were paid into the building, at main's price per hold
 
 
 def test_a_full_building_does_not_admit_a_rest_and_beds_zero_gives_main_s_answer():
