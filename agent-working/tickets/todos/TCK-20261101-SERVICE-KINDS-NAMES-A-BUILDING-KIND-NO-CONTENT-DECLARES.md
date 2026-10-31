@@ -38,7 +38,7 @@ Adding a home building kind (that is new content and its own owner question). F3
 
 ## Acceptance Criteria
 - AC1: no building name in SERVICE_KINDS that content does not declare; a test fails if one appears.
-- AC2: if the set moves to content, every current service mapping is preserved, and state hashes are identical on the 3-world s42 1000t check.
+- AC2 (designer correction 2026-11-01): every current service mapping is preserved; behaviour-identical on the 3-world s42 1000t check: at tick 0 the only state difference is `serves` on buildings, and every event stream and every other state field is byte-equal for the whole run.
 - AC3: mechanisms.yaml town_services and the parity ledger are updated to match.
 
 ## Related Tickets
@@ -57,6 +57,7 @@ src/engine/building_services.py; data/content/world/buildings.yaml; the world as
 After F3 lands (F3 touches the same module). The designer decides remove-only or a content trait. Dispatch needs an owner go, or S4 if it is remove-only and filed as a hotfix.
 
 ## Implementation Notes
+- 2026-11-01 SETTLED, shape (b). WORK's path, verified by the planner: `hires_for_pay` is a BuildingState field (src/core/state.py:1261) written into to_canonical_dict (state.py:1279), and building_services.py:38-39 reads the building state with no building name. So `serves` goes on BuildingState, copied at compile like beds and hires_for_pay. The designer corrects AC2 to: "behaviour-identical: at tick 0 the only state difference is `serves` on buildings; every event stream and every other state field is byte-equal for the whole run" (it replaces "hash-identical").
 - 2026-11-01 DESIGNER RULING: use the CONTENT TRAIT. Each building kind declares `serves: [...]` in buildings.yaml (inn REST+EAT, shop SELL, blacksmith REPAIR); SERVICE_KINDS is derived from it; it follows WORK's path (ruling 66, D56). The dead "home" disappears because nothing declares it. It must be hash-identical.
 - PLANNER NOTE, sent to the designer: "copied at compile like beds" and "hash-identical" conflict if `serves` enters BuildingState.to_canonical_dict, because beds moved the tick-0 hash. The implementer must state which holds: (a) `serves` is resolved into a content/registry lookup and not into the building's canonical dict, so hashes stay identical; or (b) it is on building state, and the hash moves (the AC then needs the designer's restatement). Settle this before the plan.
 
