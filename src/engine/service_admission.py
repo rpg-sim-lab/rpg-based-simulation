@@ -42,8 +42,20 @@ def payment_covers(entity: Any, action: str, law: Optional[PaymentLaw] = None) -
     return int(entity.inventory.gold) >= _PRICES[action]
 
 
-def admits(entity: Any, action: str, law: Optional[PaymentLaw] = None) -> bool:
-    """True when the inn's ``action`` ("EAT" or "REST") would be delivered to ``entity`` now, by diet and by the payment law."""
+def admits_at(entity: Any, building: Any, action: str, state: Any = None, law: Optional[PaymentLaw] = None) -> bool:
+    """True when ``action`` ("EAT" or "REST") at ``building`` would be delivered to ``entity`` now: by diet, by the payment law and, for a REST at a building that
+    lodges (content ``beds`` > 0), by a free bed (F3, divergence 2.155). ONE source of truth: :func:`admits` is this with no building. Without a ``building`` or a
+    ``state`` there is no bed to count and the answer is the diet and payment answer, so a building with no beds (0 or absent) gives main's answer."""
     if action == "EAT" and not can_use_inn_meal(entity):  # decision 44: a diet without prepared food has no inn meal
         return False
-    return payment_covers(entity, action, law)
+    if not payment_covers(entity, action, law):
+        return False
+    if action == "REST" and building is not None and state is not None:
+        from src.engine.lodging import has_free_bed  # lazy: lodging reads the state, admission is imported by the scorers
+        return has_free_bed(state, building, entity)
+    return True
+
+
+def admits(entity: Any, action: str, law: Optional[PaymentLaw] = None) -> bool:
+    """True when the inn's ``action`` ("EAT" or "REST") would be delivered to ``entity`` now, by diet and by the payment law (no building: no bed to count)."""
+    return admits_at(entity, None, action, None, law)

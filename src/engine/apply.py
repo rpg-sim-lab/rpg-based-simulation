@@ -737,6 +737,7 @@ class ApplyPath:
         object.__setattr__(res, "returning_home", nav.returning_home)
         object.__setattr__(res, "place_id", nav.place_id)
         object.__setattr__(res, "step_ready_tick", nav.step_ready_tick)
+        object.__setattr__(res, "lodged_in", nav.lodged_in)  # F3: a move must carry the lodging, or it would silently reset to the default
         return res
 
     @staticmethod

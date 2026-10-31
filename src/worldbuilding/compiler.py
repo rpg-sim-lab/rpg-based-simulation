@@ -650,11 +650,13 @@ class WorldCompiler:
                 max_hp = 500
                 maintenance_shifts = 0
                 hires_for_pay = False
+                beds = 0
                 if context is not None and bld_spec.id in context.buildings:
                     hp = context.buildings[bld_spec.id].hp
                     max_hp = context.buildings[bld_spec.id].max_hp
                     maintenance_shifts = context.buildings[bld_spec.id].maintenance_shifts
                     hires_for_pay = context.buildings[bld_spec.id].hires_for_pay
+                    beds = context.buildings[bld_spec.id].beds
 
                 buildings[next_building_id] = BuildingState(
                     id=next_building_id,
@@ -666,6 +668,7 @@ class WorldCompiler:
                     inventory=_building_till(context, bld_spec.id),
                     maintenance_shifts_needed=maintenance_shifts,
                     hires_for_pay=hires_for_pay,
+                    beds=beds,
                 )
                 blocked_tiles.add((x, y))
                 next_building_id += 1

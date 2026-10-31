@@ -182,13 +182,15 @@ class NavigationUpdate:
     last_position_set: Optional[tuple[float, float]] = None
     region_id_set: Optional[str] = None
     step_ready_tick_set: Optional[float] = None  # D75: the earliest tick of the entity's next step
+    lodged_in_set: Optional[int] = None  # F3: the building the subject lodges in from this tick (a lodge claim until `grant_beds` grants it)
+    lodged_in_clear: bool = False  # F3: the subject leaves the building it lodges in
 
     def is_noop(self) -> bool:
         return (self.target_set is None and not self.target_clear and self.path_set is None and self.step_ready_tick_set is None and 
                 self.moved_recently_set is None and self.movement_mode_set is None and 
                 self.failure_reason is None and not self.clear_target and not self.clear_path and 
                 self.wait_count_delta == 0 and self.oscillation_count_delta == 0 and 
-                self.last_position_set is None and self.region_id_set is None)
+                self.last_position_set is None and self.region_id_set is None and self.lodged_in_set is None and not self.lodged_in_clear)
 
     def merge(self, other: NavigationUpdate) -> NavigationUpdate:
         if not other or other.is_noop():
@@ -207,6 +209,8 @@ class NavigationUpdate:
         if other.last_position_set is not None: changes["last_position_set"] = other.last_position_set
         if other.region_id_set is not None: changes["region_id_set"] = other.region_id_set
         if other.step_ready_tick_set is not None: changes["step_ready_tick_set"] = other.step_ready_tick_set
+        if other.lodged_in_set is not None: changes["lodged_in_set"] = other.lodged_in_set
+        if other.lodged_in_clear: changes["lodged_in_clear"] = True
         return replace(self, **changes)
 
 @dataclass(frozen=True, slots=True)

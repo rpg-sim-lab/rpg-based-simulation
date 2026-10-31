@@ -515,9 +515,14 @@ class NavigationComponent:
     # 0.0 = never stepped (free to step).
     step_ready_tick: float = 0.0
 
+    # F3 (divergence 2.155): the id of the building this subject LODGES in, or None. While set, ``position`` is that building's tile and the subject stands on no tile
+    # (it is in no occupancy map or spatial index, `src/engine/lodging.py`). Set and cleared only by the apply path (NavigationPatch); the building's lodger count is
+    # derived from this field, never stored on the building.
+    lodged_in: Optional[int] = None
+
     def to_canonical_dict(self) -> Dict[str, Any]:
         """The navigation block of the entity's canonical form. `step_ready_tick` (D75) is present only once non-zero, so the form of an
-        entity that never stepped is unchanged."""
+        entity that never stepped is unchanged; `lodged_in` (F3) likewise, only while lodged."""
         res = {
             "target": self.target,
             "path": self.path,
@@ -537,6 +542,8 @@ class NavigationComponent:
         }
         if self.step_ready_tick:
             res["step_ready_tick"] = self.step_ready_tick
+        if self.lodged_in is not None:
+            res["lodged_in"] = self.lodged_in  # present only while lodged, so the form of a subject that never lodged is unchanged (F3)
         return res
 
 
@@ -1259,6 +1266,9 @@ class BuildingState:
     maintenance_shifts_done: int = 0
     # Commercial paid work (content ``hires_for_pay``, ruling 66): a shift is paid from the building's own purse only.
     hires_for_pay: bool = False
+    # F3 (divergence 2.155), content ``beds``: how many subjects the building lodges at once (copied at compile like ``maintenance_shifts_needed``). 0 = lodges no one.
+    # The occupancy of a bed is NOT stored here: it is derived from the entities whose ``navigation.lodged_in`` is this building (one source of truth).
+    beds: int = 0
     _canonical_cache: Any = field(default=None, init=False, repr=False, compare=False)
 
     def to_canonical_dict(self) -> Dict[str, Any]:
@@ -1278,6 +1288,8 @@ class BuildingState:
             "maintenance_shifts_done": self.maintenance_shifts_done,
             "hires_for_pay": self.hires_for_pay,
         }
+        if self.beds:
+            res["beds"] = self.beds  # present only once non-zero, so a building that lodges no one keeps its canonical form
         object.__setattr__(self, "_canonical_cache", res)
         return res
 
