@@ -7966,6 +7966,19 @@
   - content
   last_verified: '2026-10-09'
 - type: ticket
+  path: agent-working/tickets/done/TCK-20261101-SLOW-KNOWN-RED-FOR-THE-BRAVERY-QUARTILE-TEST.md
+  ticket_id: TCK-20261101-SLOW-KNOWN-RED-FOR-THE-BRAVERY-QUARTILE-TEST
+  title: The bravery quartile test gets a slow_known_reds entry owned by rpg-planner
+    until its kernel is pinned
+  tier: hotfix
+  ticket_type: chore
+  date: '2026-11-01'
+  related_code_areas:
+  - tools/test_architecture/slow_known_reds.yaml
+  artifact_files: []
+  tags:
+  - testing
+- type: ticket
   path: agent-working/tickets/done/TCK-20261031-ADVENTURE-SCORER-LOADS-THE-COGNITION-PACKAGE-IN-OFF-MODE.md
   ticket_id: TCK-20261031-ADVENTURE-SCORER-LOADS-THE-COGNITION-PACKAGE-IN-OFF-MODE
   title: The adventure scorer loads the cognition observability package in an OFF-mode
