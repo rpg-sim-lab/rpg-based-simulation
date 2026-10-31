@@ -7,16 +7,13 @@ ticket_id: TCK-20261031-A-SLEEPER-HOLDS-A-DOOR-OR-SERVICE-TILE
 artifact_type: plan
 ---
 
-# Plan — TCK-20261031-A-SLEEPER-HOLDS-A-DOOR-OR-SERVICE-TILE (F3, lodging) — DRAFT FOR REVIEW, NO CODE YET
+# Plan — TCK-20261031-A-SLEEPER-HOLDS-A-DOOR-OR-SERVICE-TILE (F3, lodging) — FOR REVIEW, NO CODE YET
 
 Base 6fdfdf555. Owner answers (#715 6543182195): indoors is safe (a lodger cannot be attacked/reached/perceived from outside), beds inn 10 / home 4 declared in content, beds 0/absent keeps main's behaviour. Divergence 2.155 (Enforced).
 
-## 0. Open design question (designer): lodger outward perception
-The law text says only that no one OUTSIDE sees a lodger. A lodger asleep does not decide, so the question bites only when it is awake indoors (EAT in place, the ticks between a rest ending and its next decision, "stuck awake") and for wake triggers while asleep.
-- OPTION A (planner's lean): a lodger perceives nothing outside while lodged; it re-perceives on stepping out.
-  Touches: `engine/domain/view.py:27 get_neighbor_view` and `SpatialGrid` consumers return an empty neighbor view for a lodged subject (one guard at the query: `spatial_query.get_entities_near/in_bounds/nearby_entities` and `get_neighbor_view` return () when the QUERYING entity is lodged); `engine/cognition.py:35-43,139-144` perception/threat scans skip when the observer is lodged; `tactical_threat.perceived_threats`/`hostility.perceived_hostile` (False if observer or target is lodged); `scheduler._threat_wakes_sleeper` unaffected (no outside hostile is ever adjacent/perceived). So: one additional "observer is lodged" guard in about 4 places. Consequence: an indoors subject cannot be woken by a threat (also the N14 note in section 8) and cannot flee from, avoid or answer outside events; hunger wake (2.115) still works.
-- OPTION B: a lodger perceives outward. Touches: nothing extra beyond the target-side filter, but needs a rule for what a lodger does with a perceived threat it cannot be reached by (flee? attack through the wall? A lodger as an attacker needs a legal attack from a non-tile position: `legality.py:256-337` distance/LoS would measure from the building tile, so it could attack a neighbour: an asymmetry the owner row rules out). To avoid a lodger attacking out, B would add an "attacker is lodged" gate in legality, `tactical.py` target choice and `combat.py`, plus scorers using hostiles (`scorers.py:178-223`). More paths, more asymmetry.
-- Plan assumption: A unless the designer rules B. Implementation puts the observer guard behind one predicate (`is_lodged`) so B is a removal, not a rewrite.
+## 0. Lodger perception — RULED by the designer (via rpg-planner, 2026-10-31)
+A lodger perceives NOTHING outside while it lodges and re-perceives normally on the tick it steps out. It keeps memory, leads and concerns (nothing is cleared on entry). While lodged only its own body wakes it: sleep debt ending its rest (hunger under A' later); no outside event wakes it. Law text gains: "...no one outside can reach or see it, and it sees no one outside."
+Code paths (the observer is lodged, so the reader returns nothing): `engine/domain/view.py:27 get_neighbor_view` and the `SpatialQueryService` queries (`nearby_entities`, `get_entities_near`, `get_entities_in_bounds`) return () when the QUERYING entity is lodged; `engine/cognition.py:35-43,139-144` perception/threat scans skip a lodged observer; `hostility.perceived_hostile` and `tactical_threat.perceived_threats` are False when observer or target is lodged; `tactical.py:193` hostile list empty for a lodger; `domains/information/router.py:39/69` and `resolver.py:37/43` deliver nothing to a lodger; `scheduler._threat_wakes_sleeper` never fires indoors (no outside hostile is perceived). The hunger wake (2.115) and the floor-end/sleep-debt end stay. Everything sits behind the one predicate `is_lodged` (engine/lodging.py). Every direct reader gets a unit test that a lodger is invisible to it (section 5).
 
 ## 1. Data
 - `NavigationComponent.lodged_in: Optional[int] = None` (core/state.py:487). `to_canonical_dict` emits `"lodged_in"` only when not None (pattern of `step_ready_tick` :541) so every non-lodging canonical dict/fingerprint is unchanged. `EntityState._canonical_cache` is rebuilt by the usual replace path.
@@ -56,7 +53,7 @@ Fallback loops at legality.py:128, :577, :604 get the same predicate.
 | legality fallbacks | legality.py:128, :577, :604 | `not is_lodged` in the AttributeError fallback scans | fallback path (maps raise) ignores a lodger |
 | AoE | engine/combat.py:491-527 splash; engine/domain/aoe_actions.py:38 (`ent.navigation.position == target_pos` would match lodgers sharing the building tile) | skip lodged | AoE centred on/near an inn takes no lodger |
 | engagement | combat_engagement/phase.py:308 direct scan, :205-206 witness radius | skip lodged as target and as witness | a fight beside the inn: lodgers are neither engaged nor witnesses |
-| cognition scans | engine/cognition.py:35-43,139-144; hostility.py:64 `perceived_hostile` (last-line, False if either side lodged); tactical_threat.py:54-85; domains/information/router.py:39/69, resolver.py:37/43 (a lodger must not "hear" outside news; MAYBE, decide with Option A) | skip lodged targets (and, under A, lodged observers) | a hostile next to the inn is not perceived by a lodger (A) and a lodger is not perceived/threatened by it |
+| cognition scans | engine/cognition.py:35-43,139-144; hostility.py:64 `perceived_hostile` (last-line, False if either side lodged); tactical_threat.py:54-85; domains/information/router.py:39/69, resolver.py:37/43 (a lodger must not "hear" outside news; MAYBE, ruled) | skip lodged targets (and lodged observers) | a hostile next to the inn is not perceived by a lodger and a lodger is not perceived/threatened by it |
 | swap | pipeline_phases/movement.py:105-119, :305, :333 swap detection via `occ_map`/`state.entities` | exclude lodged from partner search | a mover onto the building tile never swaps with a lodger |
 | follow/target by id | candidate_selector.py:98, tactical.py:662-665,763,825 | lodged target treated as gone for following | a follower of an entity that lodged stops following |
 | service | building_services.py:45,50; tactical_rest.py:69,114 | use `lodged_in` building for a lodger (same tile, so identical answer); lodging initiated here/in `service_delta` | EAT served from the building tile |
@@ -64,7 +61,7 @@ Fallback loops at legality.py:128, :577, :604 get the same predicate.
 | other MAYBE | reproduction_humanoid.py:49, groups.py:298,310, cooperation/providers.py:100, world/environment.py:91 | decided by the "lodger on every reader" test: add `is_lodged` where a lodger would be paired/recruited | one parametrised test per reader that returns entities by proximity |
 
 ## 6. Scope 7 (EAT from the building tile)
-Verified in investigation: fires at distance 0, `_REACH_OFFSETS` start at (0,0). Under A the arrival block (tactical.py ~:262-291) sees no hostiles for a lodger so it proceeds. Test: lodger, hunger, inn meal: EAT served, hunger down, lodger leaves afterwards.
+Verified in investigation: fires at distance 0, `_REACH_OFFSETS` start at (0,0). The arrival block (tactical.py ~:262-291) sees no hostiles for a lodger so it proceeds. Test: lodger, hunger, inn meal: EAT served, hunger down, lodger leaves afterwards.
 
 ## 7. Documents (AC 8)
 Bible 04 sec 1 and engine/contracts/local_world_interaction_contract.md 2.1 (law text from the ticket); divergence 2.155 (Enforced; Verification test path; "Measured: pending" until the F3 runs); parity rows (strategic_cognition, combat_movement); mechanisms.yaml via rpg-planner; `make knowledge-index-update`.
@@ -82,4 +79,4 @@ Bible 04 sec 1 and engine/contracts/local_world_interaction_contract.md 2.1 (law
 - R4 `admits` signature: callers (FatigueScorer, ways_in_reach, service_delta, starvation record) are updated together; `beds == 0` must reproduce main exactly (golden test).
 - R5 a held lodger whose brain never decides stays lodged awake: counted (`stuck_awake_indoors`), > 50 ticks is a finding, no timeout rule added.
 - R6 lodger leaves and re-lodges (churn) if its next decision is REST again at the reach tile; leave only fires when the resulting task is not a REST/SLEEP hold, so a continuing REST at the same building keeps it lodged.
-- R7 Option A/B undecided: guard isolated behind `is_lodged`.
+- R7 the observer-side guard is one predicate (`is_lodged`) read in about 6 places; a missed direct reader leaks perception, hence a per-reader invisibility test.
