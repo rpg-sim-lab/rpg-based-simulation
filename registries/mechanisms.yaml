@@ -2827,6 +2827,10 @@ mechanisms:
       - src/systems/economy_systems/reputation_discount.py::apply_reputation_discount
       - src/engine/building_services.py::service_delta
       - src/engine/service_admission.py::admits
+      - src/engine/service_admission.py::admits_at
+      - src/engine/lodging.py::grant_beds
+      - src/engine/lodging.py::place_leavers
+      - src/engine/lodging.py::is_lodged
       - src/engine/building_arrival.py::building_arrival_update
       - src/engine/shop_sale.py::plan_sale
       - src/engine/work_shift.py::work_update
@@ -2868,6 +2872,7 @@ mechanisms:
         `work_shift.offers_work`/`nearest_work` with no building name in code; a maintenance shift
         is counted and treasury-backed in `conservation._wage_result`, a commercial shift is paid
         from the purse only; upkeep is shifts times the wage.
+        **Noted 2026-10-31** (TCK-20261031-A-SLEEPER-HOLDS-A-DOOR-OR-SERVICE-TILE, rpg-implementer-2; divergence 2.155, STRAT-296, COMB-350; owner #715 6543182195, memo row 94): a REST that the service delivers at a building with declared `beds` lodges the subject inside it (`navigation.lodged_in`, set and cleared only on the apply path; the lodger count is derived, `lodgers_of`). Beds are granted before the service is delivered (`grant_beds`, lowest id first), and a full building is not admitted (`admits_at`; `admits` delegates to it). A lodger stands on no tile, is invisible to every spatial read in both directions (`is_lodged`), and steps out through OccupancyPhase when its held rest ends (`place_leavers`). Beds 0 or absent keeps the earlier behaviour. The per-hold charge equals main's on purpose (TCK-20261031-AN-INN-BED-IS-CHARGED-TWICE-PER-HOLD owns the double charge).
   - id: building_sabotage
     layer: world
     systems: [economy]

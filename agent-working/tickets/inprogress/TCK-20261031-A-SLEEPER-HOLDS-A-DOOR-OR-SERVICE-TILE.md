@@ -171,6 +171,10 @@ case, so I advise against it.
 Answered by the design: occupancy is entity-side `lodged_in` with a derived count (no record on the building); full = not admitted, arrival with no bed ends the project with a typed way-closed end; leaving = reach offsets, ring search to radius 3, else stay lodged; served REST only (EAT, WORK, rough rest, collapse do not lodge).
 
 ## Implementation Notes
+- Beds: only the inn declares beds (10). Home beds (owner: 4) apply when a home building kind is declared; none exists on main (no `home` in data/content/world/buildings.yaml), and adding a building kind is out of F3's scope (rpg-planner ruling 2026-10-31).
+- Charge parity: the lodging path charges what a beds=0 hold charges on main (the bed is merged twice per hold today; TCK-20261031-AN-INN-BED-IS-CHARGED-TWICE-PER-HOLD owns that defect).
+- Typed end: WAY_CLOSED goes through lane C's `end_record` (cherry-pick c1b14815c); parity ids STRAT-296 and COMB-350; divergence 2.155.
+- phase_graph.py (+11) adds two run-gates in `should_run_phase` (occupancy_resolution runs while anyone lodges; resource_transactions runs when a lodge claim is on the update); pipeline.py wraps `grant_beds` inside the existing resource_transactions phase. No run_phase is added or removed: the PHASES table and the golden live-signal fixture are unchanged.
 
 ## Test Summary
 
