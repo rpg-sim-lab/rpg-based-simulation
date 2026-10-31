@@ -93,6 +93,12 @@ Overlap: TCK-20261028-LOW-HP-RETREAT (tactical.py:536-544) is NOT folded in (thi
 - The committed-intention pointer (path i) was ruled out by the counts.
 
 ## Implementation Notes
+- 2026-11-01 BATCH STOP + DESIGNER RULING. Batch on 23e0f9967 (15 runs x both arms, base 6fdfdf555): stale 8/4/1 -> 0/0/0; never-threatened adoptions 767 -> 0; churn 30 -> 0; net deaths 344 -> 339. BUT urban s42 8 -> 16 and frontier s43 21 -> 31, each with its first diff at a THREAT_CLEARED end: e18 / e19 at hp ~0.06 are re-engaged and killed by attacker 17 within 60-110 ticks. Q1: HOLD. The STOP stands and a net -5 does not waive it.
+  CAUSE (designer): the completion was built narrower than ruled. The ruling was "the threat it answered is gone AND the entity is clear of it"; the implementation was "no present threat this tick" only.
+  SHAPE (d): a COMBAT_RETREAT completes THREAT_CLEARED when present_threat_to is false AND either (1) it has REACHED its retreat destination (town_center), or (2) present_threat_to has been false CONTINUOUSLY for CLEAR_TICKS = 200, a named constant in the retreat table. A returning present threat restarts the window. While no threat is present the retreat keeps walking to its destination ((A) concerns only the tactical flight). Adoption is unchanged (present_threat_to only); never-threatened 0 and churn 0 must still hold. Rejected: (a) an hp line, which brings the stale hold back; (b) attacker memory, more machinery than needed.
+  R3 (33 -> 32): a separate base defect, not a precondition. Needs ONE trace (e18 urban s42, e19 frontier s43, THREAT_CLEARED -> death): each selection call with its winner, RECOVER's modified utility, the live set (cap and which SUSPENDED), any gate refusal. A cap refusal files under TCK-20261020-SUSPENDED-PROJECTS-ARE-NEVER-RESUMED-SLOT-LEAK; a score loss is a scorer ticket.
+  Q3 (A): e9 does not hold (A) on what we have. Needed: at e9's fatal fight (t1145) was present_threat_to TRUE, and who was the killer? A present threat means trajectory and (A) lands; no flight test firing up to the hit is a finding for the designer. e29 (fl s42, a flight with no perceived hostile) is a separate follow-up row.
+  RE-MEASURE: the same 15 runs; deaths by cause per world; the first diff for every run with a death rise; R3; churn. 2.156 and the close stay held until the designer reads it.
 
 ## Test Summary
 
