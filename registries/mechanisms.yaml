@@ -1863,6 +1863,10 @@ mechanisms:
         `concern_intake` remain `code_trace` pending their own staging). The scenario confirms
         `fused_strategic_pass()` really dispatches through a real `Kernel.tick_once()`, not just
         that `pipeline.py` calls it by name.
+        **Note, added 2026-11-01 (TCK-20261031-A-RETREAT-PROJECT-OUTLIVES-ITS-THREAT, divergence 2.156):** the
+        new-project capacity gate admits through `exempt_from_the_project_cap` (an escalated need, or a
+        retreat under `present_threat_to`); a tick on which a retreat's clear window opens or drops returns
+        early from evaluate_strategic_intent with no goal selection (tactical still runs).
   - id: committed_intentions
     layer: entity
     systems: [cognition]
@@ -1955,6 +1959,10 @@ mechanisms:
         is a design question, not settled here -- see
         `TCK-20260921-COGNITION-CAPACITY-ENFORCEMENT-CONDITIONAL-ON-OTHER-UPDATES`.
         **Note, added 2026-10-31 (TCK-20261029-STATE-SET-ORDER-FOLLOWS-PYTHONHASHSEED, divergence 2.144, Stabilized):** when concerns tie at the capacity trim, the kept set is ordered by (urgency desc, concern id) with ids compared as strings, so the trim no longer follows the process hash seed. The id key exists for determinism only and carries no meaning about which concern matters more.
+        **Note, added 2026-11-01 (TCK-20261031-A-RETREAT-PROJECT-OUTLIVES-ITS-THREAT, divergence 2.156):** the
+        capacity trim also leaves out the current ACTIVE COMBAT_RETREAT while its threat holds
+        (`retreat_held_under_threat`, read from `cleared_since` being None so the engine phase needs no
+        AI-layer import); once its clear window opens it is counted and trimmed like any project.
 
   # ── Group layer (2, atlas `group-layer`) ────────────────────────────────────────────────────
 
