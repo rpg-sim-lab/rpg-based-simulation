@@ -267,3 +267,20 @@ lead-planner's notes, same message:
 - Worlds in this set may run heavier than urban_political. Report the first 6 runs' timing and any hang.
 - The ticket file is on rpg-planner's seat branch at 96edb1607; a u24 ref unless pushed, so ask lead-planner if its text is needed.
 - The owner hasn't said go on the groups fix. lead-planner is telling the owner the sequence now includes the retention fix.
+
+---
+
+## Ruling on D80C and the re-anchor (rpg-planner, u24, 2026-10-31; relayed by lead-planner-u24 and lead-planner)
+
+TCK-20261019-D80C-SIMQ-READS-THE-LOSSLESS-EVENT-FILE-OFFLINE does NOT go before the s42 re-anchor, with one condition. Condition, word for word:
+
+"CONDITION: the re-anchor's own s42 re-runs (500/1000/2000t) must read the drain worker's failure_count and the recorder's _events_dropped_by_mode at end of run. Read-only probe logging, like the retention trace; no change to tools/. If either is non-zero, D80C goes first and the re-anchor waits."
+
+Reason, as relayed by lead-planner: every shedding path runs before the queue, so a drop removes the event from the file and the feed alike. The drain worker passes each envelope to file, stream and quality_fn in one loop (lead-planner read src/observability/queue.py:128-160 at 6fdfdf555). The remaining gap is an exception inside quality_fn, which only bumps failure_count. rpg-planner adds the D80C acceptance items and the +3 trace note on its own ticket.
+
+lead-planner's notes, same message: confirm nothing has called the reset of _events_dropped_by_mode (event_recorder.py:332) before the probe's read, and show the probe reads a non-zero value under a forced drop, so a zero means something. Sequence otherwise unchanged: groups fix + retention fix, then the re-runs, each with lead-planner's go.
+
+rpg-planner-ubuntu's notes for the probe (not part of the ruling):
+- At 6fdfdf555 `reset_mode()` has no caller in src/ or tools/, only tests/unit/observability/test_obs_backpressure.py:271. Re-check at the probe's commit.
+- `tools/calibrate_simq.py:322` reads its guard state before shutdown. The probe must read failure_count after the final drain, or failures in the last window are missed.
+- Positive control needed for both values, not only the mode counter.
