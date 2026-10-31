@@ -23,6 +23,7 @@ This document defines the authoritative semantics for environment and building i
 ### 2.1 Occupancy & Obstruction
 - Functional buildings act as solid obstacles for movement and combat LoS.
 - Rejection reason: `BUILDING_OBSTRUCTION`.
+- **Lodging (F3, divergence 2.155).** A subject served a bed at a building lodges inside it: while it lodges it stands on no tile (`navigation.lodged_in` is the building id, `position` is the building's own tile), so it holds no tile beside the building, and, as the building is a solid obstacle, no one outside can reach or see it, and it sees no one outside. It is in no occupancy map or spatial index, is not a legal attack target or splash target, witnesses nothing and is not a swap partner; the lodgers of one building share its tile, which is no occupant's tile. A building lodges at most its content `beds`; the lodger count is derived from `lodged_in`, never stored on the building. `lodged_in` is set and cleared only by the apply path.
 
 ### 2.2 Building Services (REST)
 - Entities located at a building tile of type `inn` or `home` can issue a `REST` intent.

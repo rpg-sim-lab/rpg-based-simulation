@@ -4888,3 +4888,14 @@
   test_path: tests/unit/engine/test_route_weighs_terrain_cost.py
   divergence_note: See docs/guidelines/intentional_divergences.md Section 2.128.
   support_boundary: The search plans on the true terrain map and over terrain cost only (no hazard, no obstacles or entities; those stay with the sidestep ladder). A far TOWN target keeps the flow-field branch and swaps keep their own next step. Knowledge-limited routing is a later step.
+- id: COMB-350
+  text: 'TCK-20261031-A-SLEEPER-HOLDS-A-DOOR-OR-SERVICE-TILE: a lodger is indoors: it is in no occupancy map, snapshot, world index or spatial grid, is not a legal attack target (TARGET_INCAPACITATED, also for a stale target id) nor an attacker, is never splashed, witnesses nothing, is not a swap partner, hears no proximity news and perceives nothing outside (neighbour view empty, perceives() false both ways); it re-perceives on the tick it steps out.'
+  status: verified
+  priority: P1
+  legacy_evidence: null
+  v2_evidence: 'src/engine/spatial_query.py, occupancy_snapshot.py, world_index.py, spatial.py, candidate_selector.py (position_index), pipeline_phases/occupancy.py, domain/view.py (get_neighbor_view), appraisal.py (perceives), legality.py (verify_attack_legality), combat.py and domain/aoe_actions.py, domains/combat_engagement/phase.py, pipeline_phases/movement.py (swaps), domains/information/router.py and resolver.py. docs/engine/contracts/local_world_interaction_contract.md 2.1.'
+  proof_type: regression
+  test_path: tests/unit/engine/test_lodger_is_invisible.py
+  divergence_note: See docs/guidelines/intentional_divergences.md Section 2.155.
+  support_boundary: 'Direct scans of state.entities in cognition/social/world code that pair or recruit by proximity are reached through the neighbour view and the indexes; a reader that bypasses both is not yet audited one by one.'
+

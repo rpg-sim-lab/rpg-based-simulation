@@ -61,7 +61,7 @@ def lodge_claim(entity: Any, building: Any) -> Any:
     # One marker per execution of the REST. Updates of one subject are merged by concatenating their transfers, so the number of markers on the merged update is the number of
     # times main would have delivered the bed (today a REST is executed by the worker and again by the actions phase, a defect tracked on its own ticket): `grant_beds` delivers
     # the bed that many times, so F3 changes where the subject sleeps and not what a bed costs.
-    marker = ResourceTransferIntent(source_id=building.id, source_kind="LODGING", transfer_kind=CLAIM_MARKER)
+    marker = ResourceTransferIntent(source_id=building.id, source_kind="TOWN_SERVICE", transfer_kind=CLAIM_MARKER)
     return EntityUpdate(entity_id=entity.id, navigation=NavigationUpdate(lodged_in_set=building.id), resource_transfers=[marker],
                         new_position=(float(building.position[0]), float(building.position[1])), moved_this_tick=True)
 
