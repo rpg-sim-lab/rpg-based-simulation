@@ -180,6 +180,8 @@ Answered by the design: occupancy is entity-side `lodged_in` with a derived coun
 
 Pre-existing failures, red on clean main 6fdfdf555 and not caused by this ticket: `tests/unit/worldassembly/test_corpus_diversity.py::test_hero_guild_routing_seed42_1000t_cognition_grade_stability` and `::test_urban_political_selfmodel_probe_seed42_200t_social_world_grade_stability` (WORLD pillar 0.25 against anchor 0.32). Everything else in the scoped unit runs passed.
 
+Mechanism changed-code advisory (report-only), 12 findings, rpg-planner's review 2026-11-01: `buildings` and `combat_resolution` got a note in `registries/mechanisms.yaml`; the other ten are reviewed, plumbing only, no entry change (`action_pacing_readiness` legality.py, `attributes_biology` apply.py, `race_archetype` content/schema.py, `personality`/`city`/`camp` core/state.py, `entity_role` core/enums.py, `status_effects` core/updates.py and engine/patches.py, `world_composition_assembly` worldassembly/resolver.py, `world_compilation` worldbuilding/compiler.py).
+
 ## Files Changed
 
 ## Completion Summary

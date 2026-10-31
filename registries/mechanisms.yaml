@@ -186,6 +186,10 @@ mechanisms:
         attributes have real, formula-exact purchase on how a fight resolves** -- which means
         `TCK-20260921-STATS-DIRTY-RECALC-DISCARDS-SPECIES-BASE-STATS`'s own species-base-stat
         erosion is destroying something demonstrably real, not a cosmetic drift.
+        **Note, added 2026-11-01 (TCK-20261031-A-SLEEPER-HOLDS-A-DOOR-OR-SERVICE-TILE, divergence
+        2.155, owner #715 6543182195):** a lodged entity (`navigation.lodged_in` set) has no tile
+        and cannot be targeted or hit from outside; combat skips it as a target and as an attacker
+        while lodged.
   - id: tactical_decision
     layer: entity
     systems: [combat]
@@ -2813,6 +2817,11 @@ mechanisms:
         own mechanism here since no registry entry names it). Real `BuildingState` construction
         confirmed at `src/worldbuilding/compiler.py:538` (`WorldCompiler`, see `world_compilation`'s
         own binding above; `world_generation` before the 2026-10-05 split) and in performance-scenario generators.
+        **Note, added 2026-11-01 (TCK-20261031-A-SLEEPER-HOLDS-A-DOOR-OR-SERVICE-TILE, divergence
+        2.155):** `BuildingState.beds` is copied at compile from the kind's content `beds` (like
+        `maintenance_shifts_needed` and `hires_for_pay`), never mutated, and in the canonical dict
+        only when non-zero; occupancy is not stored on the building but derived from entities whose
+        `navigation.lodged_in` names it (`town_services`).
   - id: town_services
     layer: world
     systems: [economy]
