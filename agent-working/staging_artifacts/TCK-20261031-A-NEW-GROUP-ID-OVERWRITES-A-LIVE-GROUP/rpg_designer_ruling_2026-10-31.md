@@ -91,3 +91,15 @@ lead-planner's note, same message: the 18 runs need a run list, wall estimate an
 Base count: noted. 2496 loose and 388 strict overwrites, with ghosts in every world and seed, make this fix clearly material. Please confirm whether the 247 ghosts are distinct entities or entity-tick rows before the PR body quotes them. Divergence 2.146 is fine (ubuntu block). The 18 timing runs plus (b) re-done on the fixed commit are agreed."
 
 lead-planner's note, same message: item 3 changes "fix or prove" to fix only. The fixed src may also move the fixture, so check whether the regeneration still matches before the 18 runs. The go for the 18 stands on the new SHA; tell lead-planner the SHA at start and it holds agent-working-implementer then.
+
+---
+
+## rpg-planner on the same-tick winner exception (u24, 2026-10-31; relayed by lead-planner-u24 and lead-planner). Word for word:
+
+"Your reading is right and meets item 4. A member that the same-tick WINNER of that id also lists keeps its group_id, because that write belongs to the winning add; the rejected add contributes nothing.
+Please make sure one test pins both sides in a single tick:
+(a) a member listed in both the winner and the rejected add ends with the winner's id;
+(b) a member listed only in the rejected add keeps its prior group_id, whether None or its old group.
+Noted on the 3-run split: 33 live against 366 dissolved overwrites, and every live one is a disjoint-member overwrite, the damaging kind. The PR body can quote it as a 3-run sample, not as the 15-run split. Timing carries on."
+
+lead-planner's note, same message: a test-only addition doesn't change src, so timing and (b) stand.
