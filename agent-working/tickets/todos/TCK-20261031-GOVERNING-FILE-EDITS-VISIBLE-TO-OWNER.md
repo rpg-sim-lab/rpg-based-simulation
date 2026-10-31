@@ -27,7 +27,7 @@ feature
 P2
 
 ## Request Summary
-Raised by lead-planner on 2026-10-31, filed from the designer's draft. Nothing of ours stops or shows an agent's edit to a governing file. That matches the owner's 2026-10-07 rule ("Drop all but critical"; "governing files are protected by review and PR merge"), so this is not a malfunction. On 2026-10-31 one `CLAUDE.md` edit succeeded, one settings edit was denied and a later settings edit succeeded, all in auto mode, with no prompt seen in the records. Why the two settings outcomes differ is inferred, not known.
+Raised by lead-planner on 2026-10-31, filed from the designer's draft. Nothing of ours stops or shows an agent's edit to a governing file. That matches the owner's 2026-10-07 rule ("Drop all but critical"; "governing files are protected by review and PR merge"), so this is not a malfunction. On 2026-10-31 one `CLAUDE.md` edit succeeded, one settings edit was denied and a later settings edit succeeded, all in auto mode. The records show only those outcomes, so they cannot show whether a prompt appeared. Why the two settings outcomes differ is inferred, not known.
 
 Gaps this leaves:
 1. Review relies on the owner noticing, but nothing lists governing paths in a PR.
