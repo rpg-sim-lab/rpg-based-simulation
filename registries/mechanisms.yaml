@@ -204,6 +204,7 @@ mechanisms:
       - src/engine/hostility.py::perceived_hostile
       - src/engine/rpg_depth.py::LeashService
       - src/world/motivation/pressure_resolver.py::MotivationPressureResolver
+      - src/engine/tactical_threat.py::present_threats
     verified:
       instrument: corpus_run
       verdict: contradicted
@@ -1574,6 +1575,11 @@ mechanisms:
       - src/ai/goals/live_record_route.py::route_live_record
       - src/ai/goals/live_record_route.py::orphan_switch_candidate
       - src/ai/goals/live_record_route.py::supersede_on_win
+      - src/ai/goals/escalation.py::exempt_from_the_project_cap
+      - src/ai/goals/escalation.py::retreat_under_threat_wins
+      - src/core/strategic.py::note_threat_state
+      - src/core/strategic.py::restart_clear_window
+      - src/core/strategic.py::retreat_held_under_threat
     verified:
       instrument: scenario
       verdict: observed
@@ -1626,6 +1632,15 @@ mechanisms:
         `concern_intake`'s or `strategic_learning_bias`'s own separate branches (different
         preconditions, not triggered by this staging), which remain unverified at `code_trace`
         pending their own scenarios.
+        **Note, added 2026-11-01 (TCK-20261031-A-RETREAT-PROJECT-OUTLIVES-ITS-THREAT, divergence 2.156):** a
+        COMBAT_RETREAT project is adopted only under `present_threat_to` and ends THREAT_CLEARED only when
+        that threat is gone AND the subject is clear of it: it has reached its destination, or
+        `present_threat_to` has been false for CLEAR_TICKS continuous observed ticks
+        (`ProjectState.cleared_since`, written only by `note_threat_state`; a suspended retreat's window
+        restarts on resume). While its threat holds, a retreat passes the project-cap gate the way an
+        escalated need does (`exempt_from_the_project_cap`) and is outside the capacity trim
+        (`retreat_held_under_threat`). RECOVER and COMBAT_ENGAGE get no exemption. The tactical flight uses
+        the same present-threat test (`present_threats`).
   - id: belief_cycle
     layer: entity
     systems: [cognition]

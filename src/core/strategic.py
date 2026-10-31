@@ -449,7 +449,7 @@ def live_projects_in_the_trim(projects: Mapping[str, ProjectState], current_proj
     greater id). It is keyed on the KIND and not on the need's level, so it does not re-enter the count when the need falls below its onset mid-meal
     and a suspended project is never evicted for it. Every other live need project counts and is trimmed like any project, so an entity switching
     between hunger and sleep holds at most the cap plus two. Admission is `ai.goals.escalation.escalated_need_wins`.
-    ``kept_ids`` are further records outside the trim (a retreat held under a present threat, `ai.goals.escalation.retreat_held_under_threat`)."""
+    ``kept_ids`` are further records outside the trim (a retreat held under a present threat, `retreat_held_under_threat` in this module)."""
     live = live_projects(projects)
     exempt: set = set()
     for kind in NEED_PROJECT_KINDS:

@@ -112,3 +112,15 @@ def test_retreat_held_under_threat_needs_the_current_active_retreat_with_no_clea
     assert not retreat_held_under_threat(replace(ret, cleared_since=TICK), "ret")  # window open
     assert not retreat_held_under_threat(replace(ret, status=ProjectStatus.SUSPENDED), "ret")
     assert not retreat_held_under_threat(hero.strategic.projects["a"], "a")  # another kind
+
+
+def test_with_a_clear_window_open_the_retreat_is_counted_and_trimmed_like_any_project():
+    from src.core.strategic import live_projects_in_the_trim
+
+    hero = _hero_with_retreat(cleared_since=TICK - 5)
+    ret = hero.strategic.projects["ret"]
+    projects = hero.strategic.projects
+    kept = frozenset({"ret"}) if retreat_held_under_threat(ret, "ret") else frozenset()
+    assert kept == frozenset() and "ret" in live_projects_in_the_trim(projects, "ret", kept)  # counted
+    held = _hero_with_retreat().strategic.projects
+    assert "ret" not in live_projects_in_the_trim(held, "ret", frozenset({"ret"}))  # outside the count while the threat holds
