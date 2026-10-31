@@ -9,9 +9,10 @@ from __future__ import annotations
 from dataclasses import replace
 from typing import Any, Optional
 
-from src.core.strategic import ObjectiveStatus, ProjectStatus
+from src.core.strategic import ObjectiveStatus, ProjectStatus, close_way
 from src.core.updates import EntityUpdate, StrategicUpdate, TaskUpdate
 from src.engine.building_services import SERVICE_KINDS, offers_work
+from src.engine.lodging import has_free_bed
 from src.engine.service_admission import admits
 from src.engine.shop_sale import plan_sale
 from src.engine.work_shift import SHIFT_START, shift_takeable
@@ -71,5 +72,9 @@ def building_arrival_update(state: Any, entity: Any, project: Any, building_id: 
     if kind == "hunger":
         return _hunger_arrival(state, entity, project, building_id)
     if kind == "fatigue":
+        building = state.buildings.get(building_id)
+        if building is not None and not has_free_bed(state, building, entity):
+            # F3: the bed is taken (the way closed on the way): no REST on the reach tile, the project ends with the typed way-closed end and the subject re-decides.
+            return EntityUpdate(entity_id=entity.id, strategic=StrategicUpdate(projects_add_or_update=[close_way(project)], current_project_id_set="", current_objective_id_set=""))
         return _act(entity, "REST", building_id)
     return EntityUpdate(entity_id=entity.id)

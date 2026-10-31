@@ -11,6 +11,8 @@ class SpatialGrid:
         self.cell_size = cell_size
         
         for eid, ent in entities.items():
+            if ent.navigation.lodged_in is not None:
+                continue  # a lodger stands on no tile: no neighbour, no perception, no target (F3)
             cx = int(ent.navigation.position[0] // cell_size)
             cy = int(ent.navigation.position[1] // cell_size)
             cell = (cx, cy)

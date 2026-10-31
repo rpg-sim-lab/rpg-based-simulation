@@ -30,8 +30,9 @@ class ProjectStatus(str, Enum):
 class ProjectEnd(str, Enum):
     """Why a project was ended, set once together with the terminal status ABANDONED and never cleared or rewritten (TCK-20261027-CAPACITY-GATE-FIRST-RECORD-OF-KIND-IS-DEAD-SO-LIVE-SIBLING-NEVER-RESUMED).
 
-    `SUPERSEDED_BY_TARGET`: a candidate of the same kind at a different target replaced this live record (`supersede_record`, the one writer). A project ended for any other reason keeps `ended_by` None."""
+    `SUPERSEDED_BY_TARGET`: a candidate of the same kind at a different target replaced this live record (`supersede_record`, the one writer). `WAY_CLOSED` (F3, divergence 2.155): the subject reached the building its fatigue project walked to and no bed was free (the way closed on the way; `close_way`, its one writer). A project ended for any other reason keeps `ended_by` None."""
     SUPERSEDED_BY_TARGET = "SUPERSEDED_BY_TARGET"
+    WAY_CLOSED = "WAY_CLOSED"
 
 
 class ObjectiveStatus(str, Enum):
@@ -405,6 +406,11 @@ def project_target_matches(project: ProjectState, target_id: Any, target_entity_
 def supersede_record(project: ProjectState) -> ProjectState:
     """The one writer of ``ended_by``: the live ``project`` ended by a same-kind candidate at a different target (status ABANDONED, ``ended_by`` SUPERSEDED_BY_TARGET)."""
     return dataclasses.replace(project, status=ProjectStatus.ABANDONED, ended_by=ProjectEnd.SUPERSEDED_BY_TARGET)
+
+
+def close_way(project: Any) -> Any:
+    """The one writer of ``ProjectEnd.WAY_CLOSED``: ``project`` ended because the building it walked to had no bed free on arrival (status ABANDONED)."""
+    return dataclasses.replace(project, status=ProjectStatus.ABANDONED, ended_by=ProjectEnd.WAY_CLOSED)
 
 
 #: The project kinds of the standing needs (the values of GoalKind.HUNGER and GoalKind.FATIGUE).

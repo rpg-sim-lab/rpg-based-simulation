@@ -47,13 +47,18 @@ class OccupancyPhase:
             If the destination is occupied by an entity that is not moving away in
             this same update, the move is rejected.
         """
+        # F3: lodgers whose rest is over step out onto a free tile first (through the same position update a move uses, vetted below).
+        from src.engine.lodging import place_leavers
+        update = place_leavers(state, update)
         refined_entity_updates = dict(update.entity_updates)
 
-        # Moving entities are entities that propose a concrete final position.
+        # Moving entities are entities that propose a concrete final position. A GRANTED lodge claim (F3) moves onto its building's tile, which no occupant holds and
+        # which several lodgers of the one building share: it is not a contender for a tile, so it is not vetted as a move.
         moving_entity_ids = {
             entity_id
             for entity_id, entity_update in refined_entity_updates.items()
             if entity_update.new_position is not None
+            and not (entity_update.navigation is not None and entity_update.navigation.lodged_in_set is not None)
         }
 
         if not moving_entity_ids:
@@ -63,7 +68,7 @@ class OccupancyPhase:
         # This bypasses any transient occupancy caches from prior movement phases.
         occ_map: dict[tuple[int, int], int] = {}
         for e_id, entity in state.entities.items():
-            if entity.lifecycle.active and entity.combat.alive:
+            if entity.lifecycle.active and entity.combat.alive and entity.navigation.lodged_in is None:  # a lodger stands on no tile (F3)
                 pos = (
                     int(entity.navigation.position[0]),
                     int(entity.navigation.position[1]),
@@ -135,6 +140,8 @@ class OccupancyPhase:
             )
 
             current_navigation_update = entity_update.navigation or NavigationUpdate()
+            if current_navigation_update.lodged_in_clear:
+                current_navigation_update = replace(current_navigation_update, lodged_in_clear=False)  # a leaver whose step was refused stays lodged and tries again next tick (F3)
             reason = "OCCUPANCY_CONFLICT"
             
             new_rejections_delta[reason] = new_rejections_delta.get(reason, 0) + 1

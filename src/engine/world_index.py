@@ -159,7 +159,7 @@ class WorldIndexService:
         import math
         tiles: Dict[Tuple[int, int], List[int]] = {}
         for e_id, e in state.entities.items():
-            if e.lifecycle.active and e.combat.alive:
+            if e.lifecycle.active and e.combat.alive and e.navigation.lodged_in is None:  # a lodger stands on no tile (F3)
                 x, y = e.navigation.position
                 if math.isfinite(x) and math.isfinite(y):
                     pos = (int(x), int(y))

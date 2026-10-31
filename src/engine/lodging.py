@@ -40,3 +40,140 @@ def has_free_bed(state: Any, building: Any, entity: Any = None) -> bool:
         return True
     held = lodgers_of(state, building.id)
     return (entity is not None and entity.id in held) or len(held) < int(building.beds)
+
+
+def lodge_claim(entity: Any, building: Any) -> Any:
+    """The CLAIM a bed service makes for ``entity`` at ``building``: lodge from this tick, standing on the building's tile. No bed is delivered by the claim; `grant_beds` grants
+    it (the lowest entity id first, up to the beds) and only then adds the bed's service. Idempotent: the same claim merged twice is one claim."""
+    from src.core.updates import EntityUpdate, NavigationUpdate
+    return EntityUpdate(entity_id=entity.id, navigation=NavigationUpdate(lodged_in_set=building.id),
+                        new_position=(float(building.position[0]), float(building.position[1])), moved_this_tick=True)
+
+
+def grant_beds(state: Any, update: Any) -> Any:
+    """Grant or refuse every lodge claim of this tick's ``update``, BEFORE any service is delivered (F3, divergence 2.155).
+
+    Per building the claimants are taken in ascending entity id (TOWN-006 order): a subject that already lodges there keeps its bed, others take a free bed while one is left, and a
+    building that is gone or not functional refuses everyone. A GRANTED claim gets the bed service (`building_services.bed_delta`: readiness, health, the charge) merged into its
+    update. A REFUSED claim loses the claim (no lodging, no move), its REST task ends (an idle act, the brain re-decides) and its fatigue project ends with
+    `ProjectEnd.WAY_CLOSED`; it never has a charge, readiness or heal applied because none was ever put on its update. A tick with no claim returns ``update`` unchanged."""
+    from dataclasses import replace
+    from src.core.strategic import close_way
+    from src.core.updates import EntityUpdate, StrategicUpdate, TaskUpdate
+    from src.engine.building_services import bed_delta
+
+    claims: Dict[int, List[int]] = {}
+    for eid, upd in update.entity_updates.items():
+        nav = upd.navigation
+        if nav is not None and nav.lodged_in_set is not None:
+            claims.setdefault(nav.lodged_in_set, []).append(eid)
+    if not claims:
+        return update
+    entities = state.entities
+    refined = dict(update.entity_updates)
+    for building_id in sorted(claims):
+        building = state.buildings.get(building_id)
+        usable = building is not None and building.functional and lodges(building)
+        held = set(lodgers_of(state, building_id)) if usable else set()
+        free = int(building.beds) - len(held) if usable else 0
+        for eid in sorted(claims[building_id]):
+            entity = entities.get(eid)
+            if entity is None:
+                continue
+            upd = refined[eid]
+            if usable and (eid in held or free > 0):
+                if eid not in held:
+                    free -= 1
+                refined[eid] = upd.merge(bed_delta(entity, building))
+                continue
+            project = entity.strategic.projects.get(entity.strategic.current_project_id or "")
+            ended = EntityUpdate(entity_id=eid, strategic=StrategicUpdate(
+                projects_add_or_update=[close_way(project)], current_project_id_set="", current_objective_id_set="")) if project is not None else None
+            task = replace(upd.task, payload_set={}) if upd.task is not None else upd.task
+            refined[eid] = replace(upd, navigation=replace(upd.navigation, lodged_in_set=None), new_position=None, moved_this_tick=False, task=task)
+            if ended is not None:
+                refined[eid] = refined[eid].merge(ended)
+    return replace(update, entity_updates=refined)
+
+
+def keeps_lodging(work_kind: Optional[str], payload: Any) -> bool:
+    """True when a lodger's resulting task keeps it indoors: it is still resting or sleeping, it is eating (only EAT was ruled, scope 7), or it has no task yet and waits for its
+    next decision (an idle act or a brain pending). Any other task (a walk, a shift of work, a fight) means it leaves."""
+    if work_kind == "ENTITY_BRAIN":
+        return True
+    action = (payload or {}).get("action") if isinstance(payload, dict) else None
+    if not action:
+        return work_kind in (None, "ENTITY_ACT", "IDLE", "")
+    from src.engine.sleep_debt import SLEEP_ACTIONS
+    return action in SLEEP_ACTIONS or action == "EAT"
+
+
+def leave_tile(state: Any, origin: Tile, taken: Iterable[Tile]) -> Optional[Tile]:
+    """Where a leaver steps out: the first free orthogonal tile beside ``origin`` in the fixed reach order (without the building tile itself), else the nearest free walkable tile
+    within ``LEAVE_RING_RADIUS`` (Manhattan distance, then row, then column), else None. Free = not statically obstructed (world extent, terrain, building) and not in ``taken``."""
+    from src.engine.legality import _static_obstruction
+    blocked = set(taken)
+
+    def free(tile: Tile) -> bool:
+        return tile not in blocked and _static_obstruction(tile, state) is None
+
+    for dx, dy in LEAVE_OFFSETS:
+        tile = (origin[0] + dx, origin[1] + dy)
+        if free(tile):
+            return tile
+    ring = sorted(((abs(dx) + abs(dy), dy, dx) for dx in range(-LEAVE_RING_RADIUS, LEAVE_RING_RADIUS + 1) for dy in range(-LEAVE_RING_RADIUS, LEAVE_RING_RADIUS + 1)
+                   if 2 <= abs(dx) + abs(dy) <= LEAVE_RING_RADIUS))
+    for _, dy, dx in ring:
+        tile = (origin[0] + dx, origin[1] + dy)
+        if free(tile):
+            return tile
+    return None
+
+
+def place_leavers(state: Any, update: Any) -> Any:
+    """Step every lodger that is leaving out of its building, through the same position update a move uses (F3, divergence 2.155).
+
+    A lodger leaves when its resulting task is not to keep resting or eating (`keeps_lodging`), when this tick's update gives it a walk target, or when its building is gone or no
+    longer functional. It takes the first free orthogonal tile beside the building (fixed reach order), else the nearest free walkable tile within three tiles, else it stays lodged
+    and awake and tries again next tick (counted under the rejection reason ``LODGE_EXIT_BLOCKED``). Leavers are placed in ascending id, so two leavers for one tile give it to the
+    lowest id and the other takes its next tile. It moves on from the next tick: any move this tick's update already proposes for a leaver is dropped. Returns ``update`` unchanged when
+    nobody lodges."""
+    from dataclasses import replace
+    from src.core.updates import EntityUpdate, NavigationUpdate
+
+    lodged = [(e_id, e) for e_id, e in state.entities.items() if e.navigation.lodged_in is not None and e.combat.alive and e.lifecycle.active]
+    if not lodged:
+        return update
+    leavers: List[Tuple[int, Any]] = []
+    for e_id, e in sorted(lodged, key=lambda kv: kv[0]):
+        upd = update.entity_updates.get(e_id)
+        building = state.buildings.get(e.navigation.lodged_in)
+        gone = building is None or not building.functional
+        task = upd.task if upd is not None else None
+        work_kind = task.work_kind_set if task is not None and task.work_kind_set is not None else e.task.work_kind
+        payload = task.payload_set if task is not None and task.payload_set is not None else e.task.payload
+        walking = upd is not None and upd.navigation is not None and upd.navigation.target_set is not None
+        if gone or walking or not keeps_lodging(work_kind, payload):
+            leavers.append((e_id, e))
+    if not leavers:
+        return update
+    from src.engine.spatial_query import SpatialQueryService
+    leaving_ids = {e_id for e_id, _ in leavers}
+    taken = set(SpatialQueryService.get_occupancy_map(state))
+    for e_id, upd in update.entity_updates.items():
+        if e_id not in leaving_ids and upd.new_position is not None:
+            taken.add((int(upd.new_position[0]), int(upd.new_position[1])))
+    refined = dict(update.entity_updates)
+    rejections = dict(update.rejections_delta)
+    for e_id, e in leavers:
+        origin = (int(e.navigation.position[0]), int(e.navigation.position[1]))
+        tile = leave_tile(state, origin, taken)
+        upd = refined.get(e_id, EntityUpdate(entity_id=e_id))
+        if tile is None:
+            rejections["LODGE_EXIT_BLOCKED"] = rejections.get("LODGE_EXIT_BLOCKED", 0) + 1
+            refined[e_id] = replace(upd, new_position=None, moved_this_tick=False)
+            continue
+        taken.add(tile)
+        leave = EntityUpdate(entity_id=e_id, navigation=NavigationUpdate(lodged_in_clear=True), new_position=(float(tile[0]), float(tile[1])), moved_this_tick=True)
+        refined[e_id] = replace(upd, new_position=None, moved_this_tick=False).merge(leave)
+    return replace(update, entity_updates=refined, rejections_delta=rejections)

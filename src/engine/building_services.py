@@ -18,7 +18,8 @@ from src.core.updates import (
     ResourceTransferIntent,
 )
 from src.engine.serves import keeps_coin, serves
-from src.engine.service_admission import admits
+from src.engine.lodging import lodge_claim, lodges
+from src.engine.service_admission import admits_at
 from src.engine.service_prices import EAT_PRICE_GOLD, INN_MEAL_HUNGER, REST_PRICE_GOLD
 from src.engine.service_reach import service_building_where, service_tile
 from src.engine.shop_sale import plan_sale
@@ -54,6 +55,13 @@ def service_building(context: Any, entity: Any, action: str) -> Optional[Any]:
     return building
 
 
+def bed_delta(entity: Any, building: Any) -> EntityUpdate:
+    """What a bed delivers: readiness, a little health and the charge for it (the bed is paid for, and heals, once per hold). The one definition, read by the rough-rest service
+    (a building with no beds, on the reach tile) and by `lodging.grant_beds` (a granted lodging)."""
+    charge = ResourceTransferIntent(source_id=building.id, source_kind="TOWN_SERVICE", gold_delta=-REST_PRICE_GOLD, transfer_kind="REST", is_group_required=True)
+    return EntityUpdate(entity_id=entity.id, readiness_delta=10.0, combat=CombatUpdate(hp_delta=5), resource_transfers=[charge])
+
+
 def service_delta(context: Any, entity: Any, action: str, tick: int) -> Optional[EntityUpdate]:
     """What the building service for `action` adds to the subject's update, or None (no such building in reach, or nothing to deliver).
 
@@ -61,13 +69,12 @@ def service_delta(context: Any, entity: Any, action: str, tick: int) -> Optional
     charge the resolver clamps at what the subject holds, and the building's purse is credited with what was actually paid. The building is found only
     for a subject it serves (`service_building`)."""
     building = service_building(context, entity, action)
-    if building is None or (action in ("EAT", "REST") and not admits(entity, action)):
-        return None  # the one admission rule (service_admission): no meal to a diet without prepared food (decision 44), none the payment law refuses
+    if building is None or (action in ("EAT", "REST") and not admits_at(entity, building, action, context)):
+        return None  # the one admission rule (service_admission): no meal to a diet without prepared food (decision 44), none the payment law refuses, no bed where none is free (F3)
     if action == "REST":
-        charge = ResourceTransferIntent(source_id=building.id, source_kind="TOWN_SERVICE", gold_delta=-REST_PRICE_GOLD, transfer_kind="REST",
-                                        is_group_required=True)
-        return EntityUpdate(entity_id=entity.id, readiness_delta=10.0, combat=CombatUpdate(hp_delta=5),
-                            resource_transfers=[charge])
+        if lodges(building):
+            return lodge_claim(entity, building)  # grant before delivery (F3): the bed service is merged only into a GRANTED claim (`lodging.grant_beds`), never delivered and taken back
+        return bed_delta(entity, building)
     if action == "EAT":
         charge = ResourceTransferIntent(source_id=building.id, source_kind="TOWN_SERVICE", gold_delta=-EAT_PRICE_GOLD, transfer_kind="EAT",
                                         is_group_required=True)
