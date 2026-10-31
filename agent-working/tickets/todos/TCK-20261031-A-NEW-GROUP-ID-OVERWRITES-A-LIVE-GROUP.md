@@ -83,11 +83,11 @@ rpg-planner ruled this a separate ticket, settled before the SimQ re-anchor. The
 - src/engine/pipeline_phases/groups.py, src/engine/military_conflict.py, src/domains/cooperation/phase.py (other group update producers)
 
 ## Assumptions / Open Questions
-- DISPATCH WAITS for the owner's go, which lead-planner is asking for. Order among B, this ticket and the generator ticket comes after that answer.
+- Owner DISPATCH GO #715 6540533093, standard P1. Dispatch only: pushes and merge are separate asks. Branch off current origin/main (6fdfdf555 at the go). The retention trace keeps the slot first. Heavy runs for this ticket need lead-planner's go; the fresh 162-run sweep is separate, after the merge.
 - If the owner prefers to re-anchor now and accept a second move later, that is the owner's call.
 - Divergence id: next free in the ubuntu block at close (2.144 is B; 2.145 is likely the generator's).
 - Check u24's open branches before editing, per the cross-host rule.
-- Owner decision #715 6540197059: the 12 whole-key slow_known_reds entries under TCK-20261024-SIMQ-V1-HELD-ROWS-NEED-A-CAUSE move their expiry from 2026-11-15 to 2026-11-29, no other change. rpg-planner-ubuntu owns the edit, citing that id, in the first of its PRs to reach main; it must be on main before 2026-11-15. If this ticket's PR is that first PR, it carries the edit. Tell lead-planner by 2026-11-10 if nothing is on course to land by then.
+- Owner decision #715 6540197059: the 12 whole-key slow_known_reds entries under TCK-20261024-SIMQ-V1-HELD-ROWS-NEED-A-CAUSE move their expiry from 2026-11-15 to 2026-11-29, no other change. rpg-planner-ubuntu owns the edit, citing that id, in the first of its PRs to reach main; it must be on main before 2026-11-15. This ticket's PR carries the edit as its only change outside scope (lead-planner, with the dispatch go), unless it would land after 2026-11-15. Tell lead-planner by 2026-11-10 if nothing is on course to land by then.
 
 ## Implementation Notes
 ## Test Summary
