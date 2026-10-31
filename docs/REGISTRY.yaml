@@ -11551,6 +11551,18 @@
   - delivery
   - security
 - type: ticket
+  path: agent-working/tickets/done/TCK-20261018-TWO-BARE-KERNEL-TESTS-DEPEND-ON-HOST-MEMORY.md
+  ticket_id: TCK-20261018-TWO-BARE-KERNEL-TESTS-DEPEND-ON-HOST-MEMORY
+  title: Two tests that build a bare Kernel fail when the pytest process is large
+  tier: hotfix
+  ticket_type: bug
+  date: '2026-10-18'
+  related_code_areas:
+  - tests/unit/resource/test_resource_governor_contract.py; tests/unit/core/test_operational_flags.py;
+    tests/helpers/kernel_pinning.py
+  artifact_files: []
+  tags: []
+- type: ticket
   path: agent-working/tickets/done/TCK-20261018-VISUAL-ASSETS-ASEPRITE-JOB-TIMEOUT-UNDER-LOAD.md
   ticket_id: TCK-20261018-VISUAL-ASSETS-ASEPRITE-JOB-TIMEOUT-UNDER-LOAD
   title: Find why a sub-second Aseprite job hits the 30 s `JOB_TIMEOUT_S` under host
@@ -11652,18 +11664,6 @@
   tags:
   - architecture
   - documentation
-- type: ticket
-  path: agent-working/tickets/todos/TCK-20261018-TWO-BARE-KERNEL-TESTS-DEPEND-ON-HOST-MEMORY.md
-  ticket_id: TCK-20261018-TWO-BARE-KERNEL-TESTS-DEPEND-ON-HOST-MEMORY
-  title: Two tests that build a bare Kernel fail when the pytest process is large
-  tier: hotfix
-  ticket_type: bug
-  date: '2026-10-18'
-  related_code_areas:
-  - tests/unit/resource/test_resource_governor_contract.py; tests/unit/core/test_operational_flags.py;
-    tests/helpers/kernel_pinning.py
-  artifact_files: []
-  tags: []
 - type: ticket
   path: agent-working/tickets/todos/devops-api-dashboard-trace/TCK-20261018-API-DASHBOARD-AND-TRACE-PROOF.md
   ticket_id: TCK-20261018-API-DASHBOARD-AND-TRACE-PROOF
