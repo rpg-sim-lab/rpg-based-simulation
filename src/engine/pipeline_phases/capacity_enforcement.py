@@ -7,7 +7,7 @@ if TYPE_CHECKING:
     from src.core.state import AuthoritativeState, EntityState
     from src.core.updates import StateUpdate, StrategicUpdate
 
-from src.core.strategic import CognitionProfile, live_projects_in_the_trim, retreat_held_under_threat
+from src.core.strategic import CognitionProfile, live_projects_in_the_trim
 from src.strategy.capacity import CapacityService
 from src.core.updates import EntityUpdate, StrategicUpdate
 
@@ -87,11 +87,8 @@ class CapacityEnforcementPhase:
                 for p_id in strat_upd.projects_remove:
                     all_projects.pop(p_id, None)
                     
-                current_id = _current_project_id(entity, strat_upd)
-                held = all_projects.get(current_id) if current_id else None
-                kept = frozenset({current_id}) if held is not None and retreat_held_under_threat(held, current_id) else frozenset()  # a retreat held under a present threat is never the record the trim removes
                 project_removals = CapacityService.trim_dict(
-                    live_projects_in_the_trim(all_projects, current_id, kept),  # SURV-07: one live need project per kind is outside the trim
+                    live_projects_in_the_trim(all_projects, _current_project_id(entity, strat_upd)),  # SURV-07: one live need project per kind is outside the trim
                     profile.max_active_projects,
                     lambda p: p.score
                 )

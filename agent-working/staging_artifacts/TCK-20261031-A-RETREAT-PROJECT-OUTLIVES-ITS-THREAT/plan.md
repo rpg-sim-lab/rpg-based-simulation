@@ -68,3 +68,6 @@ Fix-arm a5631c4f3 measured 32 of 52 THREAT_CLEARED ends never threatened and 31 
 - Cap exemption: gate `exempt_from_the_project_cap` (escalated need OR retreat under present_threat_to) at intelligence.py; trim keeps the current ACTIVE retreat with no clear window (`retreat_held_under_threat`, read from the record so the engine layer needs no AI-layer call). RECOVER/COMBAT_ENGAGE none.
 - Tests: test_retreat_clear_window.py (14), test_retreat_cap_exemption.py (21), test_retreat_ends_with_its_threat.py (windowed fixtures).
 - Re-measure with evidence/probe10.py (adds hurt-entity selection, gate, cleared_since logging).
+
+## Addendum 4 (2026-11-01): the cap exemption is DROPPED (designer ruling via rpg-planner)
+The 15-run re-measure of window + exemption (evidence/full_batch_afacf1577) rose in five runs on a cap-exempt retreat adoption (crowded s46 22->31, fl s42 25->30, fl s44 32->36, urban s42, crowded s44); retreat projects 42->120. Removed: `exempt_from_the_project_cap`, `retreat_under_threat_wins`, `retreat_held_under_threat`, `kept_ids`, the capacity_enforcement change, test_retreat_cap_exemption.py, their docs and mechanisms.yaml lines. Kept: present_threat_to adoption, shape (d) (cleared_since, CLEAR_TICKS, restart on resume), option (A), the window tests. Cap pressure on a retreat is unchanged from main. Next: re-measure of shape (d) alone.

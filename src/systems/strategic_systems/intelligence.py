@@ -84,7 +84,7 @@ from src.core.updates import NavigationUpdate, InteractionUpdate
 from src.systems.world_systems.routine import RoutineService
 from src.systems.world_systems.intake import ConcernIntakeSystem
 from src.engine.domain_logic import SimulationDomainLogic
-from src.ai.goals import GoalRegistry, exempt_from_the_project_cap
+from src.ai.goals import GoalRegistry, escalated_need_wins
 from src.ai.goals.base import GoalScore
 from src.ai.goals.live_record_route import orphan_switch_candidate, route_live_record, supersede_on_win
 from src.ai.score_modifiers import ScoreModifierSystem
@@ -1765,7 +1765,7 @@ class StrategicIntelligenceSystem:
 
             candidate_proj = orphan_switch_candidate(route, candidate_proj, best_candidate.utility, current_tick)
 
-            if not route.existing and not has_project_capacity(strat.projects, strat.profile.max_active_projects) and not exempt_from_the_project_cap(entity, state, best_candidate.kind):
+            if not route.existing and not has_project_capacity(strat.projects, strat.profile.max_active_projects) and not escalated_need_wins(entity, best_candidate.kind):
                 if boredom_upd:
                     return StrategicUpdate(boredom_delta=boredom_upd)
                 return StrategicUpdate()

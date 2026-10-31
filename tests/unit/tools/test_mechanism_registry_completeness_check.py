@@ -351,8 +351,7 @@ def test_wider_scope_numbers_pinned():
     # bound at once under `town_services` (admits), so the unbound count does not move.
     # 247 -> 247 on 2026-10-29 (TCK-20261029-A-BROKE-HUNGRY-SUBJECT-NEVER-EARNS-SO-THE-FREE-MEAL-CANNOT-GO): work_wake.py is bound under `town_services` and need_wake.py is a
     # helper (a cadence constant); the check's own output stays 247.
-    # 247 -> 246 on 2026-11-01 (TCK-20261031-A-RETREAT-PROJECT-OUTLIVES-ITS-THREAT): src/core/strategic.py is now cited by `goal_hierarchy` (note_threat_state, restart_clear_window,
-    # retreat_held_under_threat), so one unbound file is bound.
+    # 247 -> 246 on 2026-11-01 (TCK-20261031-A-RETREAT-PROJECT-OUTLIVES-ITS-THREAT): src/core/strategic.py is now cited by `goal_hierarchy` (note_threat_state, restart_clear_window), so one unbound file is bound.
     assert wider["unbound_files"] == 246
     # 73 -> 72 on 2026-10-07 (row 7 (b) pass): src/quests/generator.py::QuestGenerator is now bound under `guilds`.
     # 72 -> 71 on 2026-10-11 (#500, D57): src/engine/rpg_depth.py::LeashService is cited under `tactical_decision` (it became wired when

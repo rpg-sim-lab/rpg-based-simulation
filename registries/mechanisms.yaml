@@ -1575,11 +1575,8 @@ mechanisms:
       - src/ai/goals/live_record_route.py::route_live_record
       - src/ai/goals/live_record_route.py::orphan_switch_candidate
       - src/ai/goals/live_record_route.py::supersede_on_win
-      - src/ai/goals/escalation.py::exempt_from_the_project_cap
-      - src/ai/goals/escalation.py::retreat_under_threat_wins
       - src/core/strategic.py::note_threat_state
       - src/core/strategic.py::restart_clear_window
-      - src/core/strategic.py::retreat_held_under_threat
     verified:
       instrument: scenario
       verdict: observed
@@ -1637,10 +1634,7 @@ mechanisms:
         that threat is gone AND the subject is clear of it: it has reached its destination, or
         `present_threat_to` has been false for CLEAR_TICKS continuous observed ticks
         (`ProjectState.cleared_since`, written only by `note_threat_state`; a suspended retreat's window
-        restarts on resume). While its threat holds, a retreat passes the project-cap gate the way an
-        escalated need does (`exempt_from_the_project_cap`) and is outside the capacity trim
-        (`retreat_held_under_threat`). RECOVER and COMBAT_ENGAGE get no exemption. The tactical flight uses
-        the same present-threat test (`present_threats`).
+        restarts on resume). The tactical flight uses the same present-threat test (`present_threats`).
   - id: belief_cycle
     layer: entity
     systems: [cognition]
@@ -1863,10 +1857,9 @@ mechanisms:
         `concern_intake` remain `code_trace` pending their own staging). The scenario confirms
         `fused_strategic_pass()` really dispatches through a real `Kernel.tick_once()`, not just
         that `pipeline.py` calls it by name.
-        **Note, added 2026-11-01 (TCK-20261031-A-RETREAT-PROJECT-OUTLIVES-ITS-THREAT, divergence 2.156):** the
-        new-project capacity gate admits through `exempt_from_the_project_cap` (an escalated need, or a
-        retreat under `present_threat_to`); a tick on which a retreat's clear window opens or drops returns
-        early from evaluate_strategic_intent with no goal selection (tactical still runs).
+        **Note, added 2026-11-01 (TCK-20261031-A-RETREAT-PROJECT-OUTLIVES-ITS-THREAT, divergence 2.156):** a tick
+        on which a retreat's clear window opens or drops returns early from evaluate_strategic_intent with no
+        goal selection (tactical still runs).
   - id: committed_intentions
     layer: entity
     systems: [cognition]
@@ -1959,10 +1952,6 @@ mechanisms:
         is a design question, not settled here -- see
         `TCK-20260921-COGNITION-CAPACITY-ENFORCEMENT-CONDITIONAL-ON-OTHER-UPDATES`.
         **Note, added 2026-10-31 (TCK-20261029-STATE-SET-ORDER-FOLLOWS-PYTHONHASHSEED, divergence 2.144, Stabilized):** when concerns tie at the capacity trim, the kept set is ordered by (urgency desc, concern id) with ids compared as strings, so the trim no longer follows the process hash seed. The id key exists for determinism only and carries no meaning about which concern matters more.
-        **Note, added 2026-11-01 (TCK-20261031-A-RETREAT-PROJECT-OUTLIVES-ITS-THREAT, divergence 2.156):** the
-        capacity trim also leaves out the current ACTIVE COMBAT_RETREAT while its threat holds
-        (`retreat_held_under_threat`, read from `cleared_since` being None so the engine phase needs no
-        AI-layer import); once its clear window opens it is counted and trimmed like any project.
 
   # ── Group layer (2, atlas `group-layer`) ────────────────────────────────────────────────────
 

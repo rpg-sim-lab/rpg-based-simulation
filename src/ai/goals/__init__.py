@@ -1,6 +1,6 @@
 from src.core.strategic import GoalKind
 from src.ai.goals.base import GoalRegistry
-from src.ai.goals.escalation import escalated_need_wins, exempt_from_the_project_cap, retreat_under_threat_wins  # noqa: F401  (re-exported for the strategic capacity gate and trim)
+from src.ai.goals.escalation import escalated_need_wins  # noqa: F401  (re-exported for the strategic capacity gate)
 from src.ai.goals.adventure_scorer import AdventureGoalScorer
 from src.ai.goals.social_contract_scorer import SocialContractGoalScorer
 from src.ai.goals.region_stabilization_scorer import RegionStabilizationGoalScorer

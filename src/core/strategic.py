@@ -442,14 +442,13 @@ def supersede_record(project: ProjectState) -> ProjectState:
 NEED_PROJECT_KINDS = frozenset({"hunger", "fatigue"})
 
 
-def live_projects_in_the_trim(projects: Mapping[str, ProjectState], current_project_id: Optional[str] = None, kept_ids: frozenset = frozenset()) -> Dict[str, ProjectState]:
+def live_projects_in_the_trim(projects: Mapping[str, ProjectState], current_project_id: Optional[str] = None) -> Dict[str, ProjectState]:
     """The live projects the capacity trims count and may remove: every live project except ONE hunger and ONE sleep project (SURV-07).
 
     The exempt project of a need kind is the current project when it is of that kind, otherwise the newest live one by `created_tick` (ties: the
     greater id). It is keyed on the KIND and not on the need's level, so it does not re-enter the count when the need falls below its onset mid-meal
     and a suspended project is never evicted for it. Every other live need project counts and is trimmed like any project, so an entity switching
-    between hunger and sleep holds at most the cap plus two. Admission is `ai.goals.escalation.escalated_need_wins`.
-    ``kept_ids`` are further records outside the trim (a retreat held under a present threat, `retreat_held_under_threat` in this module)."""
+    between hunger and sleep holds at most the cap plus two. Admission is `ai.goals.escalation.escalated_need_wins`."""
     live = live_projects(projects)
     exempt: set = set()
     for kind in NEED_PROJECT_KINDS:
@@ -459,13 +458,7 @@ def live_projects_in_the_trim(projects: Mapping[str, ProjectState], current_proj
         current = [p for p in of_kind if p.id == current_project_id]
         pick = current[0] if current else max(of_kind, key=lambda p: (p.created_tick, p.id))
         exempt.add(pick.id)
-    return {pid: p for pid, p in live.items() if pid not in exempt and pid not in kept_ids}
-
-
-def retreat_held_under_threat(project: ProjectState, current_project_id: Optional[str]) -> bool:
-    """True for the CURRENT, ACTIVE COMBAT_RETREAT project while its threat holds: no clear window is open (`cleared_since` None: a present threat drops the window and a new retreat has none yet).
-    The record the capacity trim never removes; once the threat is absent the window opens and it is an ordinary project. Read from the record alone so the engine's trim needs no AI-layer test."""
-    return project.id == current_project_id and project.kind == GoalKind.COMBAT_RETREAT and project.status == ProjectStatus.ACTIVE and project.cleared_since is None
+    return {pid: p for pid, p in live.items() if pid not in exempt}
 
 
 def has_project_capacity(projects: Mapping[str, ProjectState], max_active_projects: int) -> bool:
