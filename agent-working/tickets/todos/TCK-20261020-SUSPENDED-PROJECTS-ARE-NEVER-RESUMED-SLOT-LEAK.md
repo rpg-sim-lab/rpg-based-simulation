@@ -105,6 +105,7 @@ The code lives in `src/systems/strategic_systems/intelligence.py` (the ticket's 
 **What this leaves for the designer (no proposal):** the lifecycle needs a stated owner for each of the four suspend writers' resume/end condition; the two production resume paths are narrow (one detour completion, or the same kind winning, first-of-kind only); nothing ends a non-current suspended project except a trim that is idle at the cap; and the tactical and near-death writers differ on whether `current_project_id` is cleared.
 
 ## Implementation Notes
+- 2026-10-31 designer routed CAP_REFUSAL here (it is not a precedence case). F3 base on 6fdfdf555, 15 runs: CAP_REFUSAL 9406 ticks / 233 subjects / longest stretch 1. In 9104 of 13461 at-cap ticks (about 68%) the subject holds 2 or more SUSPENDED records (record count: ticks = 0:1726, 1:2631, 2:5367, 3:3091, 4:644, 5:2).
 
 ## Test Summary
 

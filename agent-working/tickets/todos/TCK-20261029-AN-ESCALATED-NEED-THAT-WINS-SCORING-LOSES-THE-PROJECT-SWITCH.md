@@ -85,6 +85,8 @@ Lean fix shape, for the counts to confirm (rpg-designer's call):
 - Sequenced after :1610 lands. Independent of the mapped-kinds and orphan tickets. Not dispatched.
 
 ## Implementation Notes
+- 2026-10-31 DESIGNER RULING (SURV-07 family, from the F3-base family table). THE ONE PRECEDENCE LAW P: at every decision site choosing between a need past its escalation onset and any other goal or act, the need wins unless acting_threat_to(subject) holds (memo row 88: a perceived hostile attacking or pursuing the subject, or one that hit it within the window). No owner row is needed. Whether to flee at all stays on present_threat_to (AGENCY-07); where flight is warranted but the hostile is not acting, a pressing need still wins. ONE shared predicate pair, both reads: need_is_pressing(subject) (need_pull ESCALATION_ONSET line) and need_yields(subject, state) = acting_threat_to. Every site calls them; none re-derives them. ONE PRECEDENCE GRID test: {need pressing y/n} x {no hostile / perceived only / present-not-acting / acting} x site -> winner; each site's ticket adds its rows. Provisional order until harm-per-tag is counted: ENGAGEMENT -> LOW-HP-RETREAT -> TOWN-RETURN -> ESCALATED-SWITCH -> FLEE-LINE.
+- THIS SITE: a pressing need bypasses the project lock and the margin (confirms the designer's earlier lean). Uses the predicates landed by ENGAGEMENT-OVERRIDES. F3 base: 1699 ticks / 153 subjects / longest 1.
 
 ### Like-for-like probe, 2026-10-29 (lane A, need_probe_base.py; data /mnt/data/scratch-rpg-implementer/c1610/needbase/ and needc/)
 - Same wrapper both arms, frontier_living_world s42-46, 5000t, base d914bace7 vs :1610 c32db1a41. Counts per decision tick.
