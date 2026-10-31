@@ -202,3 +202,21 @@ Answered by the design: occupancy is entity-side `lodged_in` with a derived coun
 
 ## Landing-order condition (rpg-designer 2026-10-31)
 TCK-20261031-A-RETREAT-PROJECT-OUTLIVES-ITS-THREAT is measured on 6fdfdf555 (pre-F3). Whichever of it and TCK-20261031-A-SLEEPER-HOLDS-A-DOOR-OR-SERVICE-TILE lands SECOND repeats, on top of the other, retention's recovery check (ticks with hp < 0.5, no present threat and no RECOVER/REST/FATIGUE project current; any entity over 200 ticks is a finding) and deaths by cause per world.
+
+## Arm f3q STOP and ruling (2026-11-01)
+- **Arm f3q (15 runs, abe8d0074):** LAW-LODGER-INDOORS fired in 13/15 runs (crowd 0/6/30/1/161; front 5/0/0/102/0; urban 326/521/200+/175/161).
+  - Class (a): a lodger ends the tick holding a nav target. The town-return/REGROUP writers (intelligence.py:676, :668) re-set it after drop_lodger_targets runs.
+  - Class (b): a lodger stands off its building tile with no target.
+  - Deaths: crowded 176→163, frontier 122→119, urban 48→50 (s44 +2: COMBAT and HAZARD), an AC2 STOP pending attribution.
+  - Asleep share: crowded 0.1035→0.1439, the other worlds flat. Hits on sleepers: 0.
+- **Ruling (rpg-designer), (Q): a lodged subject has no movement intent.** (R), a later erase pass, is rejected as a hidden override.
+  - One read-only predicate, is_lodged, at the shared target-emit point covering every writer. If no shared point exists, a per-writer guard through the same predicate plus one parametrised test over the full writer list.
+  - Town-return counts a lodger as in town at its building, so the goal is satisfied.
+  - REGROUP skips a lodged member; the group never wakes it.
+  - drop_lodger_targets stays as the claim-tick backstop. After the claim tick its expected count is 0; anything left over is a finding naming the writer.
+- **Class (b):** position == building tile while lodged_in is set (never accepted otherwise).
+  - If (b) is downstream of (a): the guard fixes it, and the apply path refuses a move for a lodged subject (a typed, counted rejection).
+  - Otherwise: trace the position writer and bring it to the designer before any fix.
+- **Repeat run:** the same 15 runs and close conditions, plus class (a) = 0 and class (b) = 0. Report:
+  - the crowded asleep-share split (lodged REST / outside REST / collapse; lodged REST length p50/p90 against base's served REST length);
+  - the s44 victim ids, and whether each was a lodger or a leaver.
