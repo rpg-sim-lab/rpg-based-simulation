@@ -165,3 +165,10 @@ F3 investigation item 2 found s44's new2 deaths are awake victims (27 of 28), so
 2. What subject 17 is (role, faction) and why it attacks in 8 deaths at new2 but not base: collapse-weakened fights, or a changed target or route?
 3. The t1629-1635 hazard group: why it stands awake in a hazard cell at debt ~81 (waiting on a rest it cannot start: door, admission, project lock?), and for how long.
 Not blocking F3.
+
+## 2026-10-31 designer ruling on the s44 trace (rpg-designer)
+- 2.153's rest length and the floor-end wake: KEEP, no change. Subject 17's one long rest (t1814-2341, 72.7 -> 20) and the floor wake are the rule working.
+- s44's +22 deaths = subject 17 freed by 2.153 + an engagement-overrides-need defect, now TCK-20261031-AN-ENGAGEMENT-OVERRIDES-A-PRESSING-NEED (counts first). The 6-death hazard pack (13, 2, 5, 6, 9, 1; 13 takes combat_engage ~t1610, the pack walks south into (42-44, 43-45)) is open pending the target-dump re-run; likely TCK-20261020-ENGAGE-BRACKETING-MOVES-WALK-A-GROUP-INTO-A-HAZARD-CLUSTER (same cluster coordinates as that ticket's frontier s42 case).
+- The N14 STOP is NOT waived by this attribution: N14 lands only on a re-measure that clears it.
+- Base evidence (a base defect, not a target): base subject 17 is pinned starving at (66-67,24), hunger 100 all run, short REST holds, 1 kill, 0 collapses.
+- Order ask (designer -> owner via lead): F3 -> precedence fix -> N14 re-measure -> A' -> nav -> D80C -> #781.
