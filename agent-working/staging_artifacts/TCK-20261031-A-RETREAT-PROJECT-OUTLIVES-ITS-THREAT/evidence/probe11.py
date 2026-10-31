@@ -156,7 +156,7 @@ def ug(state, current_update=None):
             ex_, ey_ = e.navigation.position
             nh_ = {oid: round(abs(o.navigation.position[0] - ex_) + abs(o.navigation.position[1] - ey_), 1) for oid, o in state.entities.items() if oid != eid and o.combat.alive and o.identity.faction != e.identity.faction and abs(o.navigation.position[0] - ex_) + abs(o.navigation.position[1] - ey_) <= 20}
             dmin_ = min((abs(h.navigation.position[0] - ex_) + abs(h.navigation.position[1] - ey_) for h in hs), default=None)
-            log(k="rh2", t=t, e=eid, nh=nh_, dmin=dmin_)
+            log(k="rh2", t=t, e=eid, nh=nh_, dmin=dmin_, pt=bool(present_threat_to(e, state)))
             log(k="rh", t=t, e=eid, pr=pr, hp=e.combat.hp, mh=e.combat.max_hp, cs=getattr(st.projects.get(pr), 'cleared_since', None), acting=bool(acting_threat_to(e, state)), adj=bool(adj), perc=len(hs), p=e.navigation.position, wk=e.task.work_kind, act=(e.task.payload.get("action") if e.task.payload else None))
         if not e.combat.alive:
             first = prev.get(("dead", eid)) is None
