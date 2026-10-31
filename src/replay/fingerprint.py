@@ -59,6 +59,7 @@ class StateFingerprinter:
                 f"role={ent.identity.role}:"
                 f"faction={ent.identity.faction}:"
                 f"pos={ent.navigation.position}:"
+                f"{'' if ent.navigation.lodged_in is None else 'lodged_in=%s:' % ent.navigation.lodged_in}"  # only while lodged (F3), so a run with no lodgers keeps its fingerprint
                 f"hp={ent.combat.hp}:"
                 f"gold={ent.inventory.gold}:"
                 f"current_project={ent.strategic.current_project_id}:"

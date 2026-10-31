@@ -128,6 +128,7 @@ class StatePresenter:
             "kind": entity.kind,
             **_species_and_size(entity),
             "position": entity.position,
+            **({} if entity.navigation.lodged_in is None else {"lodged_in": entity.navigation.lodged_in}),  # F3: the building a lodger is indoors in; absent otherwise
             "readiness": entity.readiness,
             "combat": {
                 "hp": entity.combat.hp,
@@ -215,6 +216,7 @@ class StatePresenter:
             "kind": entity.kind,
             **_species_and_size(entity),
             "position": entity.position,
+            **({} if entity.navigation.lodged_in is None else {"lodged_in": entity.navigation.lodged_in}),  # F3: the building a lodger is indoors in; absent otherwise
             "combat": {"hp": entity.combat.hp, "max_hp": entity.combat.max_hp, "alive": entity.combat.alive},
             "biological": {"hunger": entity.biological.hunger, "sleep_debt": entity.biological.sleep_debt},
             "identity": {"faction": entity.identity.faction, "role": entity.identity.role, "level": entity.identity.evolution_level, "class": entity.identity.class_id},
