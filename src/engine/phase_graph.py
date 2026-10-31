@@ -124,6 +124,17 @@ class PhaseDependencyGraph:
         ):
             return True
 
+        # 3d. Lodging (F3): a lodger leaves the tick its rest ends, which marks no movement, and a bed claim must be granted before its service is delivered, so the occupancy phase runs
+        # while anyone lodges and the transactions phase runs when a claim is on the update.
+        if phase_name == "occupancy_resolution":
+            from src.engine.lodging import anyone_lodges
+            if anyone_lodges(state):
+                return True
+        elif phase_name == "resource_transactions":
+            from src.engine.lodging import has_claims
+            if has_claims(update):
+                return True
+
         # 4. Dirty set short-circuiting
         if update.dirty_set is None:
             return True

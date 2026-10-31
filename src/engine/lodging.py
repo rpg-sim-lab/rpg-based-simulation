@@ -29,6 +29,17 @@ def lodgers_of(state: Any, building_id: int) -> Tuple[int, ...]:
     return tuple(sorted(e_id for e_id, e in entities.items() if e.navigation.lodged_in == building_id and e.combat.alive))
 
 
+def anyone_lodges(state: Any) -> bool:
+    """True when at least one living entity lodges (the phase gate for the leave step: a leaver's rest ended, which marks no movement)."""
+    entities = getattr(state, "entities", None) or {}
+    return any(e.navigation.lodged_in is not None for e in entities.values())
+
+
+def has_claims(update: Any) -> bool:
+    """True when ``update`` carries a lodge claim (the phase gate for the bed grant)."""
+    return any(u.navigation is not None and u.navigation.lodged_in_set is not None for u in update.entity_updates.values())
+
+
 def lodges(building: Any) -> bool:
     """True when ``building`` lodges anyone at all (content ``beds`` > 0). Zero or absent: its rest is served on the reach tile exactly as before."""
     return int(getattr(building, "beds", 0) or 0) > 0
@@ -97,13 +108,12 @@ def grant_beds(state: Any, update: Any) -> Any:
 
 
 def keeps_lodging(work_kind: Optional[str], payload: Any) -> bool:
-    """True when a lodger's resulting task keeps it indoors: it is still resting or sleeping, it is eating (only EAT was ruled, scope 7), or it has no task yet and waits for its
-    next decision (an idle act or a brain pending). Any other task (a walk, a shift of work, a fight) means it leaves."""
-    if work_kind == "ENTITY_BRAIN":
-        return True
+    """True when a lodger's resulting task keeps it indoors: it is still resting or sleeping, or it is eating (only EAT was ruled, scope 7). Anything else, including no task at all
+    (the held rest ended this tick), means it leaves: a lodger holds a bed only while it uses it, so the bed is free the tick its rest ends and no lodger can be stranded
+    awake indoors waiting for a decision (risk R5). The brain then decides from the reach tile, where the building's services are still in reach."""
     action = (payload or {}).get("action") if isinstance(payload, dict) else None
     if not action:
-        return work_kind in (None, "ENTITY_ACT", "IDLE", "")
+        return False
     from src.engine.sleep_debt import SLEEP_ACTIONS
     return action in SLEEP_ACTIONS or action == "EAT"
 
@@ -133,8 +143,8 @@ def leave_tile(state: Any, origin: Tile, taken: Iterable[Tile]) -> Optional[Tile
 def place_leavers(state: Any, update: Any) -> Any:
     """Step every lodger that is leaving out of its building, through the same position update a move uses (F3, divergence 2.155).
 
-    A lodger leaves when its resulting task is not to keep resting or eating (`keeps_lodging`), when this tick's update gives it a walk target, or when its building is gone or no
-    longer functional. It takes the first free orthogonal tile beside the building (fixed reach order), else the nearest free walkable tile within three tiles, else it stays lodged
+    A lodger leaves the tick its held rest ends: when its resulting task is not to keep resting or eating (`keeps_lodging`; an ended rest leaves no task), when this tick's update gives it a
+    walk target, or when its building is gone or no longer functional. It takes the first free orthogonal tile beside the building (fixed reach order), else the nearest free walkable tile within three tiles, else it stays lodged
     and awake and tries again next tick (counted under the rejection reason ``LODGE_EXIT_BLOCKED``). Leavers are placed in ascending id, so two leavers for one tile give it to the
     lowest id and the other takes its next tile. It moves on from the next tick: any move this tick's update already proposes for a leaver is dropped. Returns ``update`` unchanged when
     nobody lodges."""
