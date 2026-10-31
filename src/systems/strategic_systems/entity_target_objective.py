@@ -11,18 +11,23 @@ from __future__ import annotations
 
 import re
 from dataclasses import replace
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING, NamedTuple, Optional
 
-from src.core.strategic import ContractStatus, ObjectiveStatus, ProjectStatus
+from src.ai.goals.present_threat import retreat_threat_present
+from src.core.combat_constants import ENTITY_TARGET_PERCEPTION_RADIUS
+from src.core.strategic import (
+    ContractStatus,
+    GoalKind,
+    ObjectiveStatus,
+    ProjectEnd,
+    ProjectStatus,
+    end_record,
+)
 
 if TYPE_CHECKING:
     from src.core.state import AuthoritativeState, EntityState
     from src.core.strategic import ObjectiveState, ProjectState
 
-# Perception radius an entity-targeted objective is held to: the radius CombatEngageScorer chooses its
-# target within (get_neighbor_view radius), so an objective ends when its target leaves the neighbourhood
-# the scorer would have chosen it from.
-ENTITY_TARGET_PERCEPTION_RADIUS = 10.0
 
 
 def entity_target_outcome(
@@ -85,14 +90,31 @@ def contract_objective_outcome(
     return ObjectiveStatus.FAILED, ProjectStatus.ABANDONED
 
 
+class ObjectiveOutcome(NamedTuple):
+    """How an objective ended: the terminal (objective, project) status, and the typed ``ended_by`` when the end is one of the typed ones (None otherwise)."""
+
+    objective: ObjectiveStatus
+    project: ProjectStatus
+    ended_by: Optional[ProjectEnd] = None
+
+
+def retreat_outcome(hero: "EntityState", state: "AuthoritativeState") -> Optional[ObjectiveOutcome]:
+    """Terminal outcome of a COMBAT_RETREAT project, or None while its threat holds: the retreat COMPLETES (RESOLVED / COMPLETED, THREAT_CLEARED) when no
+    hostile the subject perceives is adjacent to it or acts on it (`retreat_threat_present`, read from ``state`` at its tick)."""
+    if retreat_threat_present(hero, state):
+        return None
+    return ObjectiveOutcome(ObjectiveStatus.RESOLVED, ProjectStatus.COMPLETED, ProjectEnd.THREAT_CLEARED)
+
+
 def objective_outcome(
     hero: "EntityState", state: "AuthoritativeState", project: "ProjectState", objective: "ObjectiveState"
-) -> Optional[tuple[ObjectiveStatus, ProjectStatus]]:
-    """The one predicate for "has this project's active objective ended": entity-targeted objectives by their target,
-    contract projects by their contract. Shared by the evaluator and the work queue."""
-    if objective.target_entity_id is not None:
-        return entity_target_outcome(hero, state, objective)
-    return contract_objective_outcome(hero, project)
+) -> Optional[ObjectiveOutcome]:
+    """The one predicate for "has this project's active objective ended": a retreat by its threat, entity-targeted objectives by their target, contract projects
+    by their contract. Shared by the evaluator and the work queue."""
+    if project.kind == GoalKind.COMBAT_RETREAT:
+        return retreat_outcome(hero, state)
+    outcome = entity_target_outcome(hero, state, objective) if objective.target_entity_id is not None else contract_objective_outcome(hero, project)
+    return None if outcome is None else ObjectiveOutcome(*outcome)
 
 
 def close_entity_target_project(
@@ -110,10 +132,8 @@ def close_entity_target_project(
     outcome = objective_outcome(hero, state, project, objective)
     if outcome is None:
         return None
-    objective_status, project_status = outcome
-    closed = replace(objective, status=objective_status)
-    return replace(
-        project,
-        objectives=[closed if o.id == closed.id else o for o in project.objectives],
-        status=project_status,
-    )
+    closed = replace(objective, status=outcome.objective)
+    ended = replace(project, objectives=[closed if o.id == closed.id else o for o in project.objectives])
+    if outcome.ended_by is not None:
+        return end_record(ended, outcome.project, outcome.ended_by)
+    return replace(ended, status=outcome.project)

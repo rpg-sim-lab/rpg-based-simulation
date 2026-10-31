@@ -22,3 +22,7 @@ NEAR_DEATH_HP_RATIO: float = 0.2
 # overwrite one of these in `CombatUpdate.outcome_kind`. The learning layer's
 # `_DEFEATED_OUTCOME_KINDS` is this same set, derived from it so the two cannot drift.
 TERMINAL_COMBAT_OUTCOME_KINDS = ("KILL", "DEFEAT")
+
+# Perception radius an entity-targeted objective is held to: the radius CombatEngageScorer chooses its target within (get_neighbor_view radius) and the radius the
+# threat reads (`perceived_hostiles`) use. A foundation constant so the objective lifecycle (systems) and the goal scorers (ai) share it without importing each other.
+ENTITY_TARGET_PERCEPTION_RADIUS = 10.0
