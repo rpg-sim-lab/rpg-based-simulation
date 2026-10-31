@@ -87,6 +87,7 @@ rpg-planner ruled this a separate ticket, settled before the SimQ re-anchor. The
 - If the owner prefers to re-anchor now and accept a second move later, that is the owner's call.
 - Divergence id: next free in the ubuntu block at close (2.144 is B; 2.145 is likely the generator's).
 - Check u24's open branches before editing, per the cross-host rule.
+- Owner decision #715 6540197059: the 12 whole-key slow_known_reds entries under TCK-20261024-SIMQ-V1-HELD-ROWS-NEED-A-CAUSE move their expiry from 2026-11-15 to 2026-11-29, no other change. rpg-planner-ubuntu owns the edit, citing that id, in the first of its PRs to reach main; it must be on main before 2026-11-15. If this ticket's PR is that first PR, it carries the edit. Tell lead-planner by 2026-11-10 if nothing is on course to land by then.
 
 ## Implementation Notes
 ## Test Summary
