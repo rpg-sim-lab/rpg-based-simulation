@@ -36,7 +36,7 @@ Gaps this leaves:
 4. "Show the owner first" is a practice that nothing enforces.
 5. The current governing list covers `CLAUDE.md` and the two settings files only. The guard, the classifier and `.github/workflows/` are not on it.
 
-**Dispatch hold:** do not dispatch until lead-planner has the owner's view on this shape.
+**Owner's decision (#715 6543787917):** detection first, with this shape. Guard `ask` is not chosen and is decided later from the counts. Checks stay report-only, with no strict gate. Dispatch is covered, in sequence: this ticket starts after TCK-20261031-SDLC-GUARD-PAYLOADS-AND-SECRET-REDACTION merges, because both touch the guard, on a fresh branch from origin/main. Slots, pushes and merges stay separate asks.
 
 ## Scope
 Detection only:
