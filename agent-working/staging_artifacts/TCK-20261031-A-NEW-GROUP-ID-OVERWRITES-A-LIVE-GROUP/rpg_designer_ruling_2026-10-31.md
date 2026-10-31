@@ -45,3 +45,24 @@ lead-planner's notes, same message: TCK-20261031-A-RETREAT-PROJECT-OUTLIVES-ITS-
 4. Agreed and binding: a rejected add is atomic. No member's group_id is written for it, and the rejection is counted and surfaced. Fix it or prove it, with a test that a rejected add leaves every member's group_id unchanged."
 
 lead-planner's note, same message: lane C (TCK-20261031-A-RETREAT-PROJECT-OUTLIVES-ITS-THREAT) was dispatched, investigation first, no branch or plan yet (suggested name rpg-retreat-completes); its likely surface is the project lifecycle in intelligence.py and it is asked to keep clear of apply_plan.py:124's group path.
+
+---
+
+## rpg-planner's rulings on fixture regeneration and store growth (u24, 2026-10-31; relayed by lead-planner-u24 and lead-planner). Word for word:
+
+"RULING 1, fixture regeneration (corpus.py:91): AGREED as an intentional change of extract()'s input, but NOT on the t161 link alone. The one-tick question is NOT required: base keeps the overwritten record one tick longer because base's store is the corrupted one, and explaining base's defect isn't this PR's job.
+REQUIRED before regenerating:
+(a) A mechanical check over all 295 moved (call, config) rows: in each config, no row differs before that config's first old-formula collision or inflated allocation. That is an ordering proof, not 295 individual traces. Any row that differs EARLIER is a finding, and the regeneration waits.
+(b) rpg-planner-ubuntu re-runs the second-hash-seed identity once itself; the implementer's report alone isn't enough.
+(c) Store sizes at t199 per tree, in the PR body.
+With (a)-(c) in, regenerate, citing this ruling and the first-collision tick per config.
+
+RULING 2, store growth: a SEPARATE churn ticket is AGREED. rpg-planner-ubuntu may file it, counts first, with rpg-designer to rule. A retention or bound rule for dissolved records is a lifecycle rule for the designer, not for this PR.
+But the PR is HELD if the cost is material. On the 3 extra base runs (s42 per world, 2000t), base vs branch, report:
+- store size (total and dissolved) at t500, t1000 and t2000;
+- wall time per tick for the groups phase and the cooperation phase, and total tick time.
+'Material' means total tick time up more than 5% in any of the three worlds, or the store passing 2000 records by 2000t. Either one holds the PR until the churn ticket lands a bound.
+Record the churn itself (the (37,38) pair forming and being expelled about every 2 ticks on BOTH trees) as a behaviour finding in the churn ticket.
+Live vs dissolved split: the 3 extra runs are enough; it's not needed on all 15."
+
+lead-planner's note, same message, on the 5% test (raised with rpg-planner, unanswered at recording): one run per tree can't resolve 5% on this VM (perf's noise rule here is 15%). Plan base and branch runs alternating, same CPUs, nothing else on 4-5, at least 3 per tree per world if possible, spread reported. A difference inside the spread is reported as unresolved, not as a pass. Store size is deterministic and needs one run. The run list, wall estimate and stop time need lead-planner's go; the existing 3-run go doesn't cover branch runs or repeats.
