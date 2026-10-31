@@ -90,17 +90,25 @@ def test_it_completes_with_threat_cleared_when_the_hostile_is_gone():
     assert _objective(closed).status == ObjectiveStatus.RESOLVED and not is_live_project(closed)
 
 
-def test_it_completes_when_a_hostile_is_perceived_but_neither_adjacent_nor_acting():
+def test_a_wounded_subject_with_an_idle_hostile_still_in_view_holds_the_retreat():
+    """present_threat_to counts WOUNDED (hp < 0.7): any perceived hostile is then a present threat, adjacent, acting or not."""
     hero, foe, project = _hero()
-    watching_foe = replace(foe, navigation=replace(foe.navigation, position=(10.0, 13.0)))
-    assert objective_outcome(hero, _state(hero, watching_foe), project, _objective(project)).ended_by == ProjectEnd.THREAT_CLEARED
+    idle_foe = replace(foe, navigation=replace(foe.navigation, position=(10.0, 13.0)))
+    assert objective_outcome(hero, _state(hero, idle_foe), project, _objective(project)) is None
 
 
-def test_an_old_hit_is_not_a_present_threat():
+def test_it_completes_when_the_only_hostile_is_beyond_perception():
     hero, foe, project = _hero()
-    hero = replace(hero, combat=replace(hero.combat, last_hit_tick=TICK - NEED_WAKE_CADENCE - 1, last_attacker_id=2))
-    far_foe = replace(foe, navigation=replace(foe.navigation, position=(10.0, 14.0)))
+    far_foe = replace(foe, navigation=replace(foe.navigation, position=(10.0, 30.0)))
     assert objective_outcome(hero, _state(hero, far_foe), project, _objective(project)).ended_by == ProjectEnd.THREAT_CLEARED
+
+
+def test_a_healed_subject_with_an_idle_distant_hostile_completes():
+    """Healed to 100 hp, a hostile that is not adjacent, targeting, closing or outmatching is no present threat."""
+    hero, foe, project = _hero()
+    healed = replace(hero, combat=replace(hero.combat, hp=hero.combat.max_hp))
+    idle_foe = replace(foe, navigation=replace(foe.navigation, position=(10.0, 14.0)))
+    assert objective_outcome(healed, _state(healed, idle_foe), project, _objective(project)).ended_by == ProjectEnd.THREAT_CLEARED
 
 
 def test_a_returning_threat_gets_a_new_retreat_through_the_scorer_not_the_old_record():
@@ -140,3 +148,41 @@ def test_other_kinds_return_what_they_returned_before_with_no_end():
     # a project that is neither a retreat, entity-targeted nor a contract has no outcome
     plain = ProjectState(id="proj_hunger_1", kind=GoalKind.HUNGER, status=ProjectStatus.ACTIVE, objectives=[replace(obj, target_entity_id=None)], active_objective_id=obj.id)
     assert objective_outcome(hero, state, plain, plain.objectives[0]) is None
+
+
+# --- the scorer begins on the test the retreat ends on (R1, AC9) ------------------------------------------------------------
+
+def _projects_adopted(hero, *others, tick=TICK):
+    update = StrategicIntelligenceSystem.evaluate_strategic_intent(_state(hero, *others, tick=tick), hero, force=True)
+    return {p.kind for p in update.projects_add_or_update if p.status == ProjectStatus.ACTIVE}
+
+
+def test_a_hurt_subject_with_no_hostile_in_view_recovers_and_adopts_no_retreat():
+    hero = _entity(1, Faction.HERO_GUILD, (10.0, 10.0), hp=20)
+    adopted = _projects_adopted(hero)
+    assert GoalKind.COMBAT_RETREAT not in adopted
+    assert GoalKind.RECOVER in adopted
+
+
+def test_a_hurt_subject_with_a_closing_hostile_adopts_a_retreat():
+    hero = _entity(1, Faction.HERO_GUILD, (10.0, 10.0), hp=20)
+    foe = _entity(2, Faction.MONSTER_HORDE, (10.0, 12.0))
+    assert GoalKind.COMBAT_RETREAT in _projects_adopted(hero, foe)
+
+
+def test_the_retreat_scorer_is_zero_without_a_present_threat_whatever_the_hp_or_panic():
+    from src.ai.goals.scorers import CombatRetreatScorer
+
+    hero = _entity(1, Faction.HERO_GUILD, (10.0, 10.0), hp=5)
+    assert CombatRetreatScorer().score(hero, _state(hero)).utility == 0.0
+    foe = _entity(2, Faction.MONSTER_HORDE, (10.0, 11.0))
+    assert CombatRetreatScorer().score(hero, _state(hero, foe)).utility > 0.0
+
+
+def test_the_whole_arc_recover_then_retreat_then_complete_when_the_hostile_leaves():
+    hero, foe, project = _hero()
+    assert objective_outcome(hero, _state(hero, foe), project, _objective(project)) is None
+    closed = close_entity_target_project(hero, _state(hero), project)
+    assert closed.ended_by == ProjectEnd.THREAT_CLEARED
+    after = replace(hero, strategic=replace(hero.strategic, projects={closed.id: closed}, current_project_id="", current_objective_id=""))
+    assert GoalKind.RECOVER in _projects_adopted(after, tick=TICK + 5) and GoalKind.COMBAT_RETREAT not in _projects_adopted(after, tick=TICK + 5)

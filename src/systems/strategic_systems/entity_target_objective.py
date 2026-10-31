@@ -13,7 +13,7 @@ import re
 from dataclasses import replace
 from typing import TYPE_CHECKING, NamedTuple, Optional
 
-from src.ai.goals.present_threat import retreat_threat_present
+from src.ai.goals.present_threat import present_threat_to
 from src.core.combat_constants import ENTITY_TARGET_PERCEPTION_RADIUS
 from src.core.strategic import (
     ContractStatus,
@@ -99,9 +99,9 @@ class ObjectiveOutcome(NamedTuple):
 
 
 def retreat_outcome(hero: "EntityState", state: "AuthoritativeState") -> Optional[ObjectiveOutcome]:
-    """Terminal outcome of a COMBAT_RETREAT project, or None while its threat holds: the retreat COMPLETES (RESOLVED / COMPLETED, THREAT_CLEARED) when no
-    hostile the subject perceives is adjacent to it or acts on it (`retreat_threat_present`, read from ``state`` at its tick)."""
-    if retreat_threat_present(hero, state):
+    """Terminal outcome of a COMBAT_RETREAT project, or None while its threat holds: the retreat COMPLETES (RESOLVED / COMPLETED, THREAT_CLEARED) when
+    `present_threat_to` stops holding, the same test the scorer adopts it on (read from ``state`` at its tick)."""
+    if present_threat_to(hero, state):
         return None
     return ObjectiveOutcome(ObjectiveStatus.RESOLVED, ProjectStatus.COMPLETED, ProjectEnd.THREAT_CLEARED)
 

@@ -19,11 +19,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from src.ai.goals.scorers_support import perceived_hostiles
-from src.engine.tactical_threat import (
-    ADJACENT_DISTANCE,
-    hostile_acts_on,
-    present_threat_terms,
-)
+from src.engine.tactical_threat import hostile_acts_on, present_threat_terms
 
 if TYPE_CHECKING:
     from src.core.state import AuthoritativeState, EntityState
@@ -38,13 +34,3 @@ def present_threat_to(entity: "EntityState", state: "AuthoritativeState") -> boo
 def acting_threat_to(entity: "EntityState", state: "AuthoritativeState") -> bool:
     """True when a perceived hostile is acting on `entity` (see the module docstring). A pure read of the state."""
     return any(hostile_acts_on(h, entity, state.tick) for h in perceived_hostiles(entity, state))
-
-
-def retreat_threat_present(entity: "EntityState", state: "AuthoritativeState") -> bool:
-    """True while a perceived hostile is adjacent to `entity` (decision 32: within ``ADJACENT_DISTANCE``, Manhattan) or acts on it (`acting_threat_to`'s own test): the
-    one test the retreat pull and the end of a retreat project share (TCK-20261031-A-RETREAT-PROJECT-OUTLIVES-ITS-THREAT). A pure read of the state at its tick."""
-    ex, ey = entity.navigation.position
-    return any(
-        abs(h.navigation.position[0] - ex) + abs(h.navigation.position[1] - ey) <= ADJACENT_DISTANCE or hostile_acts_on(h, entity, state.tick)
-        for h in perceived_hostiles(entity, state)
-    )
