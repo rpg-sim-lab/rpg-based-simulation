@@ -102,3 +102,16 @@ lead-planner's notes, same message:
 - Groups dispatch: the order in 5 does not start it. The owner's go is still open, and the fix and the fresh sweep each need it or a later go.
 - S2 push of the bisect branch: covered by the standing approval (#715 6473439661), no PR. Tell it when it is up, and confirm the branch has no credential or unrelated content.
 - Check 4's condition from the data: it read FACTION as REGRESS in evaluate_simq's output at s42 500t and 2000t. Treat it as met unless P3 shows otherwise, so it goes to the designer via rpg-planner.
+
+### Ruling 4 addendum (2026-10-31)
+
+Relayed via lead-planner-u24 and lead-planner, word for word.
+
+---
+The count of 15 of 16 untraced stands. The two s42 200t WORLD rows that are not traced are covered like this:
+- urban_political s42 200t WORLD: covered by P3 (urban_political s42 500t) under the same prefix rule. P3's first difference must fall at or before t200, and the 200t run's hashes must match P3's run up to t200 at both commits.
+- selfmodel_execution_probe s42 200t WORLD: a different profile, so no prefix applies. Add P4, a 200t probe of selfmodel_execution_probe s42, with the same logging and the same pass rule.
+The matching 0.32 -> 0.25 across the three profiles is a hint, not evidence. Each row still needs its own path shown.
+---
+
+lead-planner's note: its slot go now covers P4 as well, on the same terms. The prefix-check note applies to the 200t hashes too: tell it first, with the cost, if they need a re-run.
