@@ -124,7 +124,7 @@ def lodge_claim(entity: Any, building: Any) -> Any:
     # times main would have delivered the bed (today a REST is executed by the worker and again by the actions phase, a defect tracked on its own ticket): `grant_beds` delivers
     # the bed that many times, so F3 changes where the subject sleeps and not what a bed costs.
     marker = ResourceTransferIntent(source_id=building.id, source_kind="TOWN_SERVICE", transfer_kind=CLAIM_MARKER)
-    return EntityUpdate(entity_id=entity.id, navigation=NavigationUpdate(lodged_in_set=building.id, clear_target=True, clear_path=True), resource_transfers=[marker],
+    return EntityUpdate(entity_id=entity.id, navigation=NavigationUpdate(lodged_in_set=building.id, target_clear=True, clear_path=True), resource_transfers=[marker],
                         new_position=(float(building.position[0]), float(building.position[1])), moved_this_tick=True)
 
 
@@ -147,6 +147,8 @@ def grant_beds(state: Any, update: Any) -> Any:
         return update
     entities = state.entities
     refined = dict(update.entity_updates)
+    dropped_events: List[Any] = list(update.rejection_events)
+    dropped_counts: Dict[str, int] = dict(update.rejections_delta)
     for building_id in sorted(claims):
         building = state.buildings.get(building_id)
         usable = building is not None and building.functional and lodges(building)
@@ -165,14 +167,21 @@ def grant_beds(state: Any, update: Any) -> Any:
                 for _ in range(max(1, markers)):
                     upd = upd.merge(bed_delta(entity, building))
                 arrived = resolve_arrival(entity)
-                refined[eid] = upd.merge(arrived) if arrived is not None else upd
+                upd = upd.merge(arrived) if arrived is not None else upd
+                nav = upd.navigation
+                if nav is not None and (nav.target_set is not None or nav.path_set is not None or nav.movement_mode_set is not None):
+                    # The claim tick: another writer's walk target in the same update must not survive the grant (the subject is indoors from now on); dropped, counted, typed.
+                    if nav.target_set is not None:
+                        _note_drop(state, dropped_events, dropped_counts, eid, nav.movement_mode_set, entity.strategic.projects.get(entity.strategic.current_project_id or ""), nav.target_set)
+                    upd = replace(upd, navigation=replace(nav, target_set=None, movement_mode_set=None, path_set=None, target_clear=True, clear_path=True))
+                refined[eid] = upd
                 continue
             ended = way_closed_end(entity, upd)
             task = replace(upd.task, payload_set={}) if upd.task is not None else upd.task
             refined[eid] = replace(upd, navigation=replace(upd.navigation, lodged_in_set=None), new_position=None, moved_this_tick=False, task=task)
             if ended is not None:
                 refined[eid] = refined[eid].merge(ended)
-    return replace(update, entity_updates=refined)
+    return replace(update, entity_updates=refined, rejection_events=dropped_events, rejections_delta=dropped_counts)
 
 
 def keeps_lodging(work_kind: Optional[str], payload: Any) -> bool:
@@ -208,34 +217,41 @@ def leave_tile(state: Any, origin: Tile, taken: Iterable[Tile]) -> Optional[Tile
     return None
 
 
+def _note_drop(state: Any, events: List[Any], rejections: Dict[str, int], e_id: int, mode: Any, project: Any, target: Any) -> None:
+    """One dropped lodger target: counted under ``LODGER_TARGET_DROPPED`` and recorded as a typed rejection event naming the proposer's movement mode, the subject's project kind and the target."""
+    from src.core.enums import ReasonCode
+    from src.core.updates import RejectionEvent
+    key = ReasonCode.LODGER_TARGET_DROPPED.value
+    rejections[key] = rejections.get(key, 0) + 1
+    events.append(RejectionEvent(tick=state.tick, actor_id=e_id, action_kind="LODGE", reason=ReasonCode.LODGER_TARGET_DROPPED,
+                                 target_id=f"{mode}|{getattr(getattr(project, 'kind', None), 'value', None)}|{target}"))
+
+
 def drop_lodger_targets(state: Any, update: Any, leaving: Iterable[int]) -> Any:
     """The guard for a lodger who STAYS (F3, Q-B): a walk target or a move proposed for it this tick is dropped, so it can never be carried off its building's tile while it is lodged. A drop
     is never silent: each is counted under the rejection reason ``LODGER_TARGET_DROPPED`` and recorded as a typed rejection event naming the proposer's movement mode, the subject's project kind and the
     target. After lodging resolves the arrival objective the count must be zero; a non-zero count names the next writer of a lodger's target."""
     from dataclasses import replace
-    from src.core.enums import ReasonCode
-    from src.core.updates import RejectionEvent
     leaving = set(leaving)
     refined = None
     events = list(update.rejection_events)
     rejections = dict(update.rejections_delta)
     for e_id, e in state.entities.items():
-        if e.navigation.lodged_in is None or e_id in leaving:
-            continue
         upd = update.entity_updates.get(e_id)
         nav = upd.navigation if upd is not None else None
-        walking = nav is not None and nav.target_set is not None
-        moving = upd is not None and upd.new_position is not None
+        claiming = e.navigation.lodged_in is None and nav is not None and nav.lodged_in_set is not None   # granted this tick: indoors from now on (the writers after the grant land here)
+        if (e.navigation.lodged_in is None and not claiming) or e_id in leaving:
+            continue
+        walking = nav is not None and (nav.target_set is not None or nav.path_set is not None)
+        moving = upd is not None and upd.new_position is not None and not claiming   # a claim's own move onto the building tile is not a drop
         if not (walking or moving):
             continue
         refined = dict(update.entity_updates) if refined is None else refined
         project = e.strategic.projects.get(e.strategic.current_project_id or "")
-        key = ReasonCode.LODGER_TARGET_DROPPED.value
-        rejections[key] = rejections.get(key, 0) + 1
-        events.append(RejectionEvent(tick=state.tick, actor_id=e_id, action_kind="LODGE", reason=ReasonCode.LODGER_TARGET_DROPPED,
-                                     target_id=f"{getattr(nav, 'movement_mode_set', None)}|{getattr(getattr(project, 'kind', None), 'value', None)}|{getattr(nav, 'target_set', None)}"))
-        new_nav = replace(nav, target_set=None, movement_mode_set=None) if nav is not None else None
-        refined[e_id] = replace(upd, navigation=new_nav, new_position=None, moved_this_tick=False)
+        if nav is not None and nav.target_set is not None or moving:
+            _note_drop(state, events, rejections, e_id, getattr(nav, "movement_mode_set", None), project, getattr(nav, "target_set", None))
+        new_nav = replace(nav, target_set=None, movement_mode_set=None, path_set=None, target_clear=True, clear_path=True) if nav is not None else None
+        refined[e_id] = replace(upd, navigation=new_nav, new_position=upd.new_position if claiming else None, moved_this_tick=upd.moved_this_tick if claiming else False)
     if refined is None:
         return update
     return replace(update, entity_updates=refined, rejection_events=events, rejections_delta=rejections)
@@ -254,7 +270,7 @@ def place_leavers(state: Any, update: Any) -> Any:
 
     lodged = [(e_id, e) for e_id, e in state.entities.items() if e.navigation.lodged_in is not None and e.combat.alive and e.lifecycle.active]
     if not lodged:
-        return update
+        return drop_lodger_targets(state, update, ())   # nobody lodged yet, but a claim granted this tick must not keep another writer's walk target
     leavers: List[Tuple[int, Any]] = []
     for e_id, e in sorted(lodged, key=lambda kv: kv[0]):
         upd = update.entity_updates.get(e_id)

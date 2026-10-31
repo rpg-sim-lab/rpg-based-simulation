@@ -137,3 +137,42 @@ def test_the_lodger_indoors_hard_law_flags_a_lodged_entity_with_a_target_or_off_
         assert [v.law_id for v in HardLawMonitor.check_entities(view, ds) if v.law_id == "LAW-LODGER-INDOORS"] == ["LAW-LODGER-INDOORS"]
     finally:
         k.shutdown()
+
+
+def test_a_walk_target_in_the_same_update_as_a_granted_claim_does_not_survive_the_grant_and_is_counted():
+    """The claim tick: another writer (the town-return fallback, the objective redirect) puts a walk target on the update that carries the claim. The subject is indoors from this tick, so the
+    grant drops the target, mode and path (target_clear, clear_path) and counts it as LODGER_TARGET_DROPPED."""
+    from src.core.movement_modes import MovementMode
+    from src.core.updates import NavigationUpdate, StateUpdate
+    from src.engine.lodging import grant_beds, lodge_claim
+    k = kernel([hero(1, REACH[0], action=None)], beds=1)
+    try:
+        st = k._state
+        claim = lodge_claim(st.entities[1], st.buildings[INN_ID]).merge(
+            EntityUpdate(entity_id=1, navigation=NavigationUpdate(target_set=(38.0, 23.0), movement_mode_set=MovementMode.REGROUP, path_set=[(38.0, 23.0)])))
+        assert claim.navigation.target_set == (38.0, 23.0)                                          # the merge keeps the other writer's target beside the claim
+        out = grant_beds(st, StateUpdate(entity_updates={1: claim}))
+        nav = out.entity_updates[1].navigation
+        assert nav.lodged_in_set == INN_ID and nav.target_set is None and nav.movement_mode_set is None and nav.path_set is None and nav.target_clear and nav.clear_path
+        assert out.rejections_delta.get("LODGER_TARGET_DROPPED") == 1
+        assert out.rejection_events[-1].actor_id == 1 and "REGROUP" in out.rejection_events[-1].target_id and "(38.0, 23.0)" in out.rejection_events[-1].target_id
+    finally:
+        k.shutdown()
+
+
+def test_a_walk_target_written_after_the_grant_in_the_same_tick_is_dropped_at_the_leave_step():
+    """The strategic phase runs after the grant and before the leave step: its fallback target for a subject granted a bed this tick (the update carries the claim) is dropped there, and the claim's own move
+    onto the building tile is kept."""
+    from src.core.movement_modes import MovementMode
+    from src.core.updates import NavigationUpdate, StateUpdate
+    from src.engine.lodging import lodge_claim, place_leavers
+    k = kernel([hero(1, REACH[0], action=None)], beds=1)
+    try:
+        st = k._state
+        late = lodge_claim(st.entities[1], st.buildings[INN_ID]).merge(EntityUpdate(entity_id=1, navigation=NavigationUpdate(target_set=(38.0, 23.0), movement_mode_set=MovementMode.REGROUP)))
+        out = place_leavers(st, StateUpdate(entity_updates={1: late}))
+        u = out.entity_updates[1]
+        assert u.navigation.lodged_in_set == INN_ID and u.navigation.target_set is None and u.navigation.target_clear and u.new_position is not None and u.moved_this_tick
+        assert out.rejections_delta.get("LODGER_TARGET_DROPPED") == 1
+    finally:
+        k.shutdown()
