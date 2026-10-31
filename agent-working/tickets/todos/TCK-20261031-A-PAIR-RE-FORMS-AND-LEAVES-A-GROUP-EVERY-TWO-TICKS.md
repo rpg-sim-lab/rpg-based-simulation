@@ -38,10 +38,12 @@ Later measurement, s42, 2000t, 3 worlds: formations go from 225 to 571, 185 to 1
 Not known: why the group ends each cycle (the dissolve and expel conditions at `src/systems/world_systems/groups.py` l.90-175 have not been traced for this pair), why it re-forms, and how many pairs and worlds show this.
 
 ## Scope
-1. Counts, before any fix shape: per world, how many pairs cycle, cycle length, how long it lasts, and store size at t500, t1000 and t2000. Use the group-id PR's 2000t runs where they suffice.
+1. Counts, before any fix shape: rpg-designer's counts 1-3, word for word in the group-id ticket's staging `rpg_designer_ruling_2026-10-31.md` (the pool excluded by ghost group_ids on base and whether it explains the gap; re-forming the same membership within 10 or 50 ticks against new memberships; where the time goes). Also per world: how many pairs cycle, cycle length, how long it lasts, store size at t500, t1000 and t2000. Use the group-id PR's 2000t runs where they suffice.
 2. Trace one cycle: what ends the group, and what re-forms it. Say whether the contract or recruitment path is involved.
 3. Send the counts and the trace to rpg-designer, via rpg-planner-ubuntu and the leads. No fix shape before its ruling.
 4. Fix as ruled. It may cover the churn, a retention or bound rule for dissolved records, or both.
+
+Batching (rpg-designer): the group-id fix does not land alone. It lands with this fix, in the same batch, with this fix first or together. Designer's lean: a group that forms should not dissolve without a typed end reason that has changed since it formed; re-forming identical membership on unchanged conditions is the defect.
 
 ## Out of Scope
 - Group id allocation, which stays with TCK-20261031-A-NEW-GROUP-ID-OVERWRITES-A-LIVE-GROUP.
@@ -69,7 +71,7 @@ None yet.
 - src/domains/cooperation/phase.py
 
 ## Assumptions / Open Questions
-- Priority raised to P1 by rpg-planner: this blocks the s42 re-anchor chain. Tier may change with the counts. Not dispatched: the owner go comes after the profile and rpg-designer's reading, so the fix shape (dissolved-record skip, retention bound or churn rule) is picked with the cost known.
+- Priority raised to P1 by rpg-planner: this blocks the s42 re-anchor chain. Tier may change with the counts. Not dispatched: the owner go is asked after counts 1-3, with the designer's fix shape.
 - Whether churning is ever legitimate behaviour is the designer's question.
 
 ## Implementation Notes

@@ -115,3 +115,19 @@ That tests the untraced 'ghosts suppressed churn' reading directly.
 2. YES, this is a behaviour change, and it needs rpg-designer's reading. rpg-planner has sent the designer the numbers with the question: accept the post-fix behaviour as 'the bug no longer suppresses formation', with the churn visible and owned by its own ticket, or require the churn fix to land with or before the id fix. No ruling yet; it will be relayed. Either way, divergence 2.146's Disclosed text must state the formation rise per world.
 3. Raise TCK-20261031-A-PAIR-RE-FORMS-AND-LEAVES-A-GROUP-EVERY-TWO-TICKS to P1: it now blocks the s42 re-anchor chain. Its owner go comes after the profile and the designer's reading, so its fix shape (dissolved-record skip, retention bound or churn rule) is picked with the cost known.
 fyi: lane C's retention fix is measured on main without the group fix, and the s42 re-anchor takes both. Lane C's numbers don't need the group fix; the re-anchor re-runs on one tree carrying both."
+
+---
+
+## rpg-designer on batching and counts (agreed by rpg-planner, u24, 2026-10-31; relayed by lead-planner-u24 and lead-planner). Word for word:
+
+"The id fix is CORRECT. The churn is a pre-existing defect it makes visible, owned by TCK-20261031-A-PAIR-RE-FORMS-AND-LEAVES-A-GROUP-EVERY-TWO-TICKS, now P1.
+The id fix does NOT land alone. It lands WITH the churn fix, in the same batch, with the churn fix first or together. A 5.6x jump in group behaviour and +35.6% frontier tick time are real signals. Both tickets gate the s42 re-anchor anyway.
+COUNTS FIRST, before any churn fix shape. s42, the 3 worlds, the same reps; fold them into the 2 profiled runs where possible.
+1. CONFIRM the suppression reading. On base, per tick, count the entities excluded from the formation pool because they hold a ghost group_id. Does that pool difference explain the formation gap? If not, the rise has another cause, and it goes to the designer.
+2. The churn split: formations that re-form the SAME membership within 10 or 50 ticks of that membership dissolving, against genuinely new memberships. Then, for each churned group, the dissolve or leave reason: the code path and condition that ends a group 2 ticks after it forms (cohesion, distance, goal mismatch, a leader with no project?).
+3. The profile: where frontier's 73 s goes, against a work count up 23.7x. Is it formation and dissolution itself, or downstream (party coordination, leadership influence over more groups)? Name the untimed phase, since only 1.7 s falls in the timed ones.
+The designer's lean, to shape the probe: a group that forms should not dissolve without a typed end reason that has changed since it formed. Re-forming identical membership on unchanged conditions is the defect.
+Divergence 2.146: rewrite the disclosure to state the formation rise, the suppression mechanism (once count 1 confirms it), and that the churn fix pairs with it.
+The churn ticket's owner go is asked after counts 1-3, with the designer's fix shape."
+
+lead-planner's note, same message: the 2-run go covers frontier_living_world only. The other two worlds' counts, without a profiler and one run per tree, are a further ask. If wrapper changes push the start past 21:20, start the next day; do not rush the instrument. The expiry re-date cannot wait on this batch; lead-planner is asking the owner for it to go its own way.
