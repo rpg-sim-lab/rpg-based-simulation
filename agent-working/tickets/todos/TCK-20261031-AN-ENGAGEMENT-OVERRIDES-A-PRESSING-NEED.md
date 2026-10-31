@@ -70,6 +70,9 @@ Phase 2: fix shapes for ALL five only after the table reaches rpg-designer.
 
 ## Implementation Notes
 
+- 2026-10-31 F3 base (lane B, 15 runs on 6fdfdf555): family table recorded and sent to the designer. ENGAGEMENT_OVERRIDES 5872 ticks / 62 subjects / longest 254 (9 collapsed, 0 starved); LOW_HP_RETREAT 4963/40/270; TOWN_RETURN 3552/20/272; CAP_REFUSAL 9406/233/1; FLEE_LINE 1177/99/50; ESCALATED_NEED_SWITCH 1699/153/1.
+- PROBE DEFECT to fix here before this ticket's own base: the tactical hostiles-present skip counter recorded 0 skips over 131785 evaluate calls, so there is no (pressing, present_threat) split. Lane B's untested guess: the wrapper patched the module attribute `_tac.classify_neighbours`, but `evaluate_entity_intent` may reach the classifier through another binding, so the stored hostiles count stays empty. The AC: the fixed counter must be non-zero on a known case (13 pursues 16) before any base is measured.
+
 ## Test Summary
 
 ## Files Changed
