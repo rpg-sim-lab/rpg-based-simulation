@@ -15,7 +15,7 @@ tags: []
 A sleeper holds a door or service tile (F3: a served rest occupies the building, not the door tile)
 
 ## Status
-OPEN. Design by rpg-designer 2026-10-31 SEATED (source: main-checkout .claude/handover/drafts/rpg-designer-f3-design.md). Order per owner #715 6541804604 (memo row 93): F3 first, then N14 re-measure, A', nav, D80C, #781. Not dispatched: needs the owner row below AND an owner dispatch go via lead-planner-u24.
+OPEN. Design by rpg-designer 2026-10-31 SEATED (source: main-checkout .claude/handover/drafts/rpg-designer-f3-design.md). Order per owner #715 6541804604 (memo row 93): F3 first, then N14 re-measure, A', nav, D80C, #781. DISPATCHED 2026-10-31 to lane B (rpg-implementer-2) under owner go #715 6543182195, investigation first; heavy runs after lane C releases the slot.
 
 ## Tier
 standard (a durable entity field, content, occupancy and perception). Dispatch needs an owner go via lead-planner-u24 / #715.
@@ -160,7 +160,8 @@ Paired runs: base at or after 6fdfdf555 vs F3, 15 runs (3 worlds x s42-46), 5000
 - src/engine/building_arrival.py (service on reach), occupancy and movement candidate checks, src/engine/sleep_debt.py
 
 ## Assumptions / Open Questions
-OWNER ROW (before dispatch, with the dispatch go):
+OWNER ROW: ANSWERED YES by the owner 2026-10-31 (#715 6543182195; memo row 94): a lodger indoors cannot be attacked from outside. Beds: inn 10, home 4 (content). Dispatch GO to lane B (rpg-implementer-2), investigation first, same comment.
+Original row text:
 "A sleeper in a bed indoors cannot be attacked from outside." This follows from 2.1 (a building is a solid obstacle) and from
 lodging leaving no tile, but it is a gameplay change: inns and homes become safe sleeping places, it moves combat deaths of
 sleepers, and the 2.154 threat wake cannot fire indoors. My lean is YES (fiction: you bar the door). The alternative, "a lodger
