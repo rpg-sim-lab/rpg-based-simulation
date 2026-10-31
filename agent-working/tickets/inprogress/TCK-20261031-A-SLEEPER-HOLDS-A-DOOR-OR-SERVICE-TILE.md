@@ -178,6 +178,8 @@ Answered by the design: occupancy is entity-side `lodged_in` with a derived coun
 
 ## Test Summary
 
+Pre-existing failures, red on clean main 6fdfdf555 and not caused by this ticket: `tests/unit/worldassembly/test_corpus_diversity.py::test_hero_guild_routing_seed42_1000t_cognition_grade_stability` and `::test_urban_political_selfmodel_probe_seed42_200t_social_world_grade_stability` (WORLD pillar 0.25 against anchor 0.32). Everything else in the scoped unit runs passed.
+
 ## Files Changed
 
 ## Completion Summary

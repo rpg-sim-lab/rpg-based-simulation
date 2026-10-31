@@ -2831,6 +2831,12 @@ mechanisms:
       - src/engine/lodging.py::grant_beds
       - src/engine/lodging.py::place_leavers
       - src/engine/lodging.py::is_lodged
+      - src/engine/lodging.py::finds_no_bed
+      - src/engine/lodging.py::no_bed_in_reach
+      - src/engine/lodging.py::way_closed_end
+      - src/engine/lodging.py::refuse_rest
+      - src/engine/lodging.py::resolve_arrival
+      - src/engine/lodging.py::drop_lodger_targets
       - src/engine/building_arrival.py::building_arrival_update
       - src/engine/shop_sale.py::plan_sale
       - src/engine/work_shift.py::work_update
@@ -2873,6 +2879,15 @@ mechanisms:
         is counted and treasury-backed in `conservation._wage_result`, a commercial shift is paid
         from the purse only; upkeep is shifts times the wage.
         **Noted 2026-10-31** (TCK-20261031-A-SLEEPER-HOLDS-A-DOOR-OR-SERVICE-TILE, rpg-implementer-2; divergence 2.155, STRAT-296, COMB-350; owner #715 6543182195, memo row 94): a REST that the service delivers at a building with declared `beds` lodges the subject inside it (`navigation.lodged_in`, set and cleared only on the apply path; the lodger count is derived, `lodgers_of`). Beds are granted before the service is delivered (`grant_beds`, lowest id first), and a full building is not admitted (`admits_at`; `admits` delegates to it). A lodger stands on no tile, is invisible to every spatial read in both directions (`is_lodged`), and steps out through OccupancyPhase when its held rest ends (`place_leavers`). Beds 0 or absent keeps the earlier behaviour. The per-hold charge equals main's on purpose (TCK-20261031-AN-INN-BED-IS-CHARGED-TWICE-PER-HOLD owns the double charge).
+        **Note, added 2026-11-01 (TCK-20261031-A-SLEEPER-HOLDS-A-DOOR-OR-SERVICE-TILE, divergence
+        2.155):** a REST whose first execution is in reach of a building that declares beds, by a
+        subject the building serves (`keeps_coin`), either lodges or does not run there: a fatigue
+        project ends WAY_CLOSED, and a bare REST is refused with `NO_BED_FREE` (`finds_no_bed`, the
+        one no-bed predicate, shared with arrival and the grant's contention loser). Lodging is
+        arrival: the grant resolves the fatigue project's reach objective in the same apply
+        (`resolve_arrival`). A lodger leaves only when its held REST ends, or the building is gone
+        or not functional; a walk target never moves it out (`drop_lodger_targets`, each drop
+        counted as `LODGER_TARGET_DROPPED`; hard law LAW-LODGER-INDOORS).
   - id: building_sabotage
     layer: world
     systems: [economy]
