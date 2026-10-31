@@ -1,7 +1,7 @@
-"""TCK-20261031-A-RETREAT-PROJECT-OUTLIVES-ITS-THREAT, commit 2: a COMBAT_RETREAT project completes when its threat is gone.
+"""TCK-20261031-A-RETREAT-PROJECT-OUTLIVES-ITS-THREAT, commit 2: a COMBAT_RETREAT project completes when its threat is gone AND the subject is clear of it.
 
-The end is `objective_outcome`'s retreat branch (shared by the evaluator and the strategic work queue): COMPLETED with the typed end THREAT_CLEARED once no perceived hostile is
-adjacent (decision 32) or acts on the subject. The retreat here is created through the real selection path (a wounded hero beside a hostile), never hand-built, so a
+The end is `objective_outcome`'s retreat branch (shared by the evaluator and the strategic work queue): COMPLETED with the typed end THREAT_CLEARED once `present_threat_to` is false
+and the subject has reached the destination or stayed clear for CLEAR_TICKS (the window itself is tested in test_retreat_clear_window.py; here a project whose window has run is built with `_clear`). The retreat here is created through the real selection path (a wounded hero beside a hostile), never hand-built, so a
 GoalKind-vs-ProjectKind or string-vs-enum mismatch cannot skip the branch unseen.
 """
 from __future__ import annotations
@@ -10,6 +10,7 @@ from dataclasses import replace
 
 from src.core.builder import V2EntityBuilder
 from src.core.enums import EntityRole, Faction
+from src.core.combat_constants import CLEAR_TICKS
 from src.core.state import AuthoritativeState
 from src.core.strategic import (
     GoalKind,
@@ -32,6 +33,11 @@ from src.systems.strategic_systems.intelligence import StrategicIntelligenceSyst
 from src.systems.strategic_systems.work_queue import StrategicWorkQueue
 
 TICK = 60
+
+
+def _clear(project):
+    """The retreat project with its clear window already run: no present threat for CLEAR_TICKS ticks up to TICK."""
+    return replace(project, cleared_since=TICK - CLEAR_TICKS)
 
 
 def _entity(eid, faction, pos, hp=100):
@@ -83,6 +89,7 @@ def test_it_holds_while_a_hostile_acts_on_the_subject_from_a_distance():
 
 def test_it_completes_with_threat_cleared_when_the_hostile_is_gone():
     hero, _foe, project = _hero()
+    project = _clear(project)
     outcome = objective_outcome(hero, _state(hero), project, _objective(project))
     assert outcome == ObjectiveOutcome(ObjectiveStatus.RESOLVED, ProjectStatus.COMPLETED, ProjectEnd.THREAT_CLEARED)
     closed = close_entity_target_project(hero, _state(hero), project)
@@ -100,6 +107,7 @@ def test_a_wounded_subject_with_an_idle_hostile_still_in_view_holds_the_retreat(
 def test_it_completes_when_the_only_hostile_is_beyond_perception():
     hero, foe, project = _hero()
     far_foe = replace(foe, navigation=replace(foe.navigation, position=(10.0, 30.0)))
+    project = _clear(project)
     assert objective_outcome(hero, _state(hero, far_foe), project, _objective(project)).ended_by == ProjectEnd.THREAT_CLEARED
 
 
@@ -108,12 +116,13 @@ def test_a_healed_subject_with_an_idle_distant_hostile_completes():
     hero, foe, project = _hero()
     healed = replace(hero, combat=replace(hero.combat, hp=hero.combat.max_hp))
     idle_foe = replace(foe, navigation=replace(foe.navigation, position=(10.0, 14.0)))
+    project = _clear(project)
     assert objective_outcome(healed, _state(healed, idle_foe), project, _objective(project)).ended_by == ProjectEnd.THREAT_CLEARED
 
 
 def test_a_returning_threat_gets_a_new_retreat_through_the_scorer_not_the_old_record():
     hero, foe, project = _hero()
-    closed = close_entity_target_project(hero, _state(hero), project)
+    closed = close_entity_target_project(hero, _state(hero), _clear(project))
     strategic = replace(hero.strategic, projects={closed.id: closed}, current_project_id="", current_objective_id="")
     hero_after = replace(hero, strategic=strategic)
     update = StrategicIntelligenceSystem.evaluate_strategic_intent(_state(hero_after, foe, tick=TICK + 5), hero_after, force=True)
@@ -182,7 +191,7 @@ def test_the_retreat_scorer_is_zero_without_a_present_threat_whatever_the_hp_or_
 def test_the_whole_arc_recover_then_retreat_then_complete_when_the_hostile_leaves():
     hero, foe, project = _hero()
     assert objective_outcome(hero, _state(hero, foe), project, _objective(project)) is None
-    closed = close_entity_target_project(hero, _state(hero), project)
+    closed = close_entity_target_project(hero, _state(hero), _clear(project))
     assert closed.ended_by == ProjectEnd.THREAT_CLEARED
     after = replace(hero, strategic=replace(hero.strategic, projects={closed.id: closed}, current_project_id="", current_objective_id=""))
     assert GoalKind.RECOVER in _projects_adopted(after, tick=TICK + 5) and GoalKind.COMBAT_RETREAT not in _projects_adopted(after, tick=TICK + 5)

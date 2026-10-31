@@ -14,7 +14,11 @@ from dataclasses import replace
 from typing import TYPE_CHECKING, NamedTuple, Optional
 
 from src.ai.goals.present_threat import present_threat_to
-from src.core.combat_constants import ENTITY_TARGET_PERCEPTION_RADIUS
+from src.core.combat_constants import (
+    CLEAR_TICKS,
+    ENTITY_TARGET_PERCEPTION_RADIUS,
+    RETREAT_ARRIVAL_RADIUS,
+)
 from src.core.strategic import (
     ContractStatus,
     GoalKind,
@@ -22,6 +26,7 @@ from src.core.strategic import (
     ProjectEnd,
     ProjectStatus,
     end_record,
+    note_threat_state,
 )
 
 if TYPE_CHECKING:
@@ -98,12 +103,28 @@ class ObjectiveOutcome(NamedTuple):
     ended_by: Optional[ProjectEnd] = None
 
 
-def retreat_outcome(hero: "EntityState", state: "AuthoritativeState") -> Optional[ObjectiveOutcome]:
-    """Terminal outcome of a COMBAT_RETREAT project, or None while its threat holds: the retreat COMPLETES (RESOLVED / COMPLETED, THREAT_CLEARED) when
-    `present_threat_to` stops holding, the same test the scorer adopts it on (read from ``state`` at its tick)."""
+def retreat_outcome(hero: "EntityState", state: "AuthoritativeState", project: "ProjectState", objective: "ObjectiveState") -> Optional[ObjectiveOutcome]:
+    """Terminal outcome of a COMBAT_RETREAT project, or None: the retreat COMPLETES (RESOLVED / COMPLETED, THREAT_CLEARED) when `present_threat_to` has stopped holding (the test the
+    scorer adopts it on, read at ``state.tick``) AND the subject is clear of it: it has reached the retreat's destination, or no present threat has held for CLEAR_TICKS
+    consecutive ticks (``project.cleared_since``, kept by `retreat_window_update`). Threat gone alone ends nothing: a hurt subject that merely lost sight of its attacker keeps walking."""
     if present_threat_to(hero, state):
         return None
-    return ObjectiveOutcome(ObjectiveStatus.RESOLVED, ProjectStatus.COMPLETED, ProjectEnd.THREAT_CLEARED)
+    clear = ObjectiveOutcome(ObjectiveStatus.RESOLVED, ProjectStatus.COMPLETED, ProjectEnd.THREAT_CLEARED)
+    destination = objective.target_position
+    if destination is not None and abs(hero.navigation.position[0] - destination[0]) + abs(hero.navigation.position[1] - destination[1]) < RETREAT_ARRIVAL_RADIUS:
+        return clear
+    if project.cleared_since is not None and state.tick - project.cleared_since >= CLEAR_TICKS:
+        return clear
+    return None
+
+
+def retreat_window_update(hero: "EntityState", state: "AuthoritativeState", project: "ProjectState") -> Optional["ProjectState"]:
+    """The COMBAT_RETREAT ``project`` with its clear window moved by this tick's observation (opened on the first tick without a present threat, dropped when one returns), or None
+    when nothing changes (another kind, not ACTIVE, or the window already stands). Pure; the evaluator wraps the record in its StrategicUpdate and the work queue schedules on it."""
+    if project.kind != GoalKind.COMBAT_RETREAT:
+        return None
+    noted = note_threat_state(project, present_threat_to(hero, state), state.tick)
+    return None if noted is project else noted
 
 
 def objective_outcome(
@@ -112,9 +133,14 @@ def objective_outcome(
     """The one predicate for "has this project's active objective ended": a retreat by its threat, entity-targeted objectives by their target, contract projects
     by their contract. Shared by the evaluator and the work queue."""
     if project.kind == GoalKind.COMBAT_RETREAT:
-        return retreat_outcome(hero, state)
+        return retreat_outcome(hero, state, project, objective)
     outcome = entity_target_outcome(hero, state, objective) if objective.target_entity_id is not None else contract_objective_outcome(hero, project)
     return None if outcome is None else ObjectiveOutcome(*outcome)
+
+
+def project_transition_pending(hero: "EntityState", state: "AuthoritativeState", project: "ProjectState", objective: "ObjectiveState") -> bool:
+    """True when `close_entity_target_project` would return a record this tick: the objective has ended, or a retreat's clear window moves. The work queue's schedule for it."""
+    return objective_outcome(hero, state, project, objective) is not None or retreat_window_update(hero, state, project) is not None
 
 
 def close_entity_target_project(
@@ -122,6 +148,7 @@ def close_entity_target_project(
 ) -> Optional["ProjectState"]:
     """The project with its active objective closed (entity-targeted, or serving a contract), or None while it holds.
 
+    A COMBAT_RETREAT whose clear window moves this tick (opens, or drops as a threat returns) is returned ACTIVE with the new ``cleared_since``; the caller keeps it current.
     The name predates the contract case and is kept because the mechanism registry cites it. Kept out of
     ``evaluate_strategic_intent`` (already far over the complexity limits): the caller only wraps the returned
     project in its ``StrategicUpdate``.
@@ -131,7 +158,7 @@ def close_entity_target_project(
         return None
     outcome = objective_outcome(hero, state, project, objective)
     if outcome is None:
-        return None
+        return retreat_window_update(hero, state, project)
     closed = replace(objective, status=outcome.objective)
     ended = replace(project, objectives=[closed if o.id == closed.id else o for o in project.objectives])
     if outcome.ended_by is not None:

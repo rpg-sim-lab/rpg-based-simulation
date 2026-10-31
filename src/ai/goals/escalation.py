@@ -8,11 +8,12 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from src.ai.goals.present_threat import present_threat_to
 from src.core.strategic import GoalKind
 from src.engine.need_pull import need_is_pressing
 
 if TYPE_CHECKING:
-    from src.core.state import EntityState
+    from src.core.state import AuthoritativeState, EntityState
 
 
 def escalated_need_wins(entity: "EntityState", goal_kind: object) -> bool:
@@ -27,3 +28,15 @@ def escalated_need_wins(entity: "EntityState", goal_kind: object) -> bool:
     if kind == GoalKind.FATIGUE.value:
         return need_is_pressing(0.0, entity.biological.sleep_debt)
     return False
+
+
+def retreat_under_threat_wins(entity: "EntityState", state: "AuthoritativeState", goal_kind: object) -> bool:
+    """True for a COMBAT_RETREAT goal while a present threat holds (`present_threat_to`, the test the retreat is adopted and ended on): admitted past a full project cap exactly as an
+    escalated need is (the caller's `not existing` and the capacity trim keep the choice of which record yields the slot unchanged). Retreat only: RECOVER and COMBAT_ENGAGE get none."""
+    return getattr(goal_kind, "value", goal_kind) == GoalKind.COMBAT_RETREAT.value and present_threat_to(entity, state)
+
+
+def exempt_from_the_project_cap(entity: "EntityState", state: "AuthoritativeState", goal_kind: object) -> bool:
+    """The one capacity-gate exemption: a NEW project of this kind is admitted past a full cap when it is an escalated need (`escalated_need_wins`) or a retreat under a present threat
+    (`retreat_under_threat_wins`). RECOVER, COMBAT_ENGAGE and every other kind get none."""
+    return escalated_need_wins(entity, goal_kind) or retreat_under_threat_wins(entity, state, goal_kind)
