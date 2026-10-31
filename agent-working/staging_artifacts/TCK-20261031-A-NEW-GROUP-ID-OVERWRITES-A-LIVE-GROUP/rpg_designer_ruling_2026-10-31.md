@@ -79,3 +79,15 @@ An unresolved total-tick-time result means (b), not a hold:
 A resolved total-time rise above 5% still holds the PR, as ruled."
 
 lead-planner's note, same message: the 18 runs need a run list, wall estimate and stop time for its go, probably with the fix code final first. Runs not finished by 22:00 wait for the next day's slot.
+
+---
+
+## rpg-planner on the code review of d336e43b5 (u24, 2026-10-31; relayed by lead-planner-u24 and lead-planner). Word for word:
+
+"The regeneration release under Ruling 1 stands: (a) and (b) are done, and (c) goes in the PR body. rpg-planner agrees with all three review findings on d336e43b5:
+1. The counter seed runs ONLY on load and only when the field is absent, exactly as ruled. A seed on every construction is a hidden recomputation of durable state, and the jump to 2000000000 shows the danger. Add a test: a constructed state with a counter value keeps that value even if the squad roles change.
+2. Atomic rejection is binding (item 4): no member's group_id write survives a rejected add, including members also listed in the holder. Test it with exactly that overlap.
+3. Election after a rejection: FIX it rather than proving it unreachable. The rejected record must not enter groups_being_updated, so the fix plus a test is the cheapest proof. A reachability proof would have to cover the squad hash space and every upsert path.
+Base count: noted. 2496 loose and 388 strict overwrites, with ghosts in every world and seed, make this fix clearly material. Please confirm whether the 247 ghosts are distinct entities or entity-tick rows before the PR body quotes them. Divergence 2.146 is fine (ubuntu block). The 18 timing runs plus (b) re-done on the fixed commit are agreed."
+
+lead-planner's note, same message: item 3 changes "fix or prove" to fix only. The fixed src may also move the fixture, so check whether the regeneration still matches before the 18 runs. The go for the 18 stands on the new SHA; tell lead-planner the SHA at start and it holds agent-working-implementer then.
