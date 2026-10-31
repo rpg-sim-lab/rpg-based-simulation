@@ -174,6 +174,12 @@ case, so I advise against it.
 Answered by the design: occupancy is entity-side `lodged_in` with a derived count (no record on the building); full = not admitted, arrival with no bed ends the project with a typed way-closed end; leaving = reach offsets, ring search to radius 3, else stay lodged; served REST only (EAT, WORK, rough rest, collapse do not lodge).
 
 ## Implementation Notes
+- 2026-11-01 DESIGNER RULING on the F3 arm: AC1, AC2 and AC4 are MET. F3 does NOT close until both BLOCKERS are done:
+  (i) the AC5 checks: the first diff falls at the first lodging, and the building canonical hash holds.
+  (ii) diagnostic (a), widened. On the urban seed with the most WAY_CLOSED ends (122 or 113), for every WAY_CLOSED end: was the same building re-adopted within 50 ticks, and did it have a free bed at that adoption? Re-adopted while still FULL is an F3 DEFECT (the scorer or ways path is not carrying the capacity) and is fixed before close. A free bed that filled en route is an acceptable race; disclose it (reservation is out of scope). In the same run, classify urban awake_other (2798 -> 11972) and give the stall histogram and stall positions against the inn door, to confirm or refute that these are the WAY_CLOSED subjects re-deciding at the door. Fewer total stall ticks with more, shorter stalls is not by itself a regression; it is judged together with the WAY_CLOSED answer.
+  Non-blocking, before the N14 re-measure: (b) the non-person door sleepers on frontier (animals = follow-up row, not F3 scope), lodge and re-lodge gaps, and frontier sleep_collapse 118 -> 630 from the same 3 subjects (who, where, why). If F3 is the cause, it returns to the designer as a finding.
+  Completion summary must disclose: the re-lodge churn is a base cycle (median 3-tick spans already in base); the N14 re-measure judges it.
+  Awake door-holders -> TCK-20261101-A-WALKER-WAITS-AT-A-DOOR-TILE-AN-AWAKE-HOLDER-KEEPS. The precedence base is measured ON F3.
 
 ## Test Summary
 
