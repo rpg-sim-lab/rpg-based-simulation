@@ -168,6 +168,8 @@ def grant_beds(state: Any, update: Any) -> Any:
                     upd = upd.merge(bed_delta(entity, building))
                 arrived = resolve_arrival(entity)
                 upd = upd.merge(arrived) if arrived is not None else upd
+                # A granted claim stands on the building's tile: another writer's step merged into the same update (a walk onto the reach tile) must not decide where the lodger stands.
+                upd = replace(upd, new_position=(float(building.position[0]), float(building.position[1])), moved_this_tick=True)
                 nav = upd.navigation
                 if nav is not None and (nav.target_set is not None or nav.path_set is not None or nav.movement_mode_set is not None):
                     # The claim tick: another writer's walk target in the same update must not survive the grant (the subject is indoors from now on); dropped, counted, typed.
@@ -240,7 +242,16 @@ def drop_lodger_targets(state: Any, update: Any, leaving: Iterable[int]) -> Any:
         upd = update.entity_updates.get(e_id)
         nav = upd.navigation if upd is not None else None
         claiming = e.navigation.lodged_in is None and nav is not None and nav.lodged_in_set is not None   # granted this tick: indoors from now on (the writers after the grant land here)
-        if (e.navigation.lodged_in is None and not claiming) or e_id in leaving:
+        if e.navigation.lodged_in is None and not claiming:
+            continue
+        if e_id in leaving:
+            # A leaver's own step is placed by `place_leavers` (it moves on from the next tick); a walk target proposed for it now is dropped too, so a refused leave (occupancy) cannot leave a lodger holding a target.
+            if nav is not None and (nav.target_set is not None or nav.path_set is not None):
+                refined = dict(update.entity_updates) if refined is None else refined
+                project = e.strategic.projects.get(e.strategic.current_project_id or "")
+                if nav.target_set is not None:
+                    _note_drop(state, events, rejections, e_id, nav.movement_mode_set, project, nav.target_set)
+                refined[e_id] = replace(upd, navigation=replace(nav, target_set=None, movement_mode_set=None, path_set=None, target_clear=True, clear_path=True))
             continue
         walking = nav is not None and (nav.target_set is not None or nav.path_set is not None)
         moving = upd is not None and upd.new_position is not None and not claiming   # a claim's own move onto the building tile is not a drop

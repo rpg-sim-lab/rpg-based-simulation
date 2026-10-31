@@ -176,3 +176,38 @@ def test_a_walk_target_written_after_the_grant_in_the_same_tick_is_dropped_at_th
         assert out.rejections_delta.get("LODGER_TARGET_DROPPED") == 1
     finally:
         k.shutdown()
+
+
+def test_a_granted_claim_stands_on_the_building_tile_whatever_step_another_writer_merged_into_its_update():
+    """A walk step onto the reach tile merged with the claim (the merge keeps the later position) must not decide where the lodger stands: a granted claim is placed on the building's tile."""
+    from src.core.updates import StateUpdate
+    from src.engine.lodging import grant_beds, lodge_claim
+    k = kernel([hero(1, REACH[0], action=None)], beds=1)
+    try:
+        st = k._state
+        claim = lodge_claim(st.entities[1], st.buildings[INN_ID]).merge(EntityUpdate(entity_id=1, new_position=(9, 11), moved_this_tick=True))
+        assert claim.new_position == (9, 11)
+        out = grant_beds(st, StateUpdate(entity_updates={1: claim}))
+        assert out.entity_updates[1].new_position == (10.0, 10.0) and out.entity_updates[1].moved_this_tick
+    finally:
+        k.shutdown()
+
+
+def test_a_leaver_whose_step_is_refused_keeps_no_walk_target_so_it_is_never_lodged_holding_one():
+    """A leaver is placed by `place_leavers`; a walk target another writer proposed for the same tick is dropped and counted, so a leave refused by the occupancy vet leaves a lodger with no target."""
+    from src.core.movement_modes import MovementMode
+    from src.core.updates import NavigationUpdate, StateUpdate, TaskUpdate
+    from src.engine.lodging import place_leavers
+    k = kernel([hero(1, REACH[0], action=None)], beds=1)
+    try:
+        st = k._state
+        e = st.entities[1]
+        object.__setattr__(e, "navigation", replace(e.navigation, lodged_in=INN_ID, position=(10.0, 10.0)))
+        upd = EntityUpdate(entity_id=1, task=TaskUpdate(work_kind_set="ENTITY_ACT", payload_set={}),
+                           navigation=NavigationUpdate(target_set=(10.0, 10.0), movement_mode_set=MovementMode.REGROUP))
+        out = place_leavers(st, StateUpdate(entity_updates={1: upd}))
+        u = out.entity_updates[1]
+        assert u.navigation.lodged_in_clear and u.navigation.target_set is None and u.navigation.target_clear
+        assert out.rejections_delta.get("LODGER_TARGET_DROPPED") == 1
+    finally:
+        k.shutdown()
