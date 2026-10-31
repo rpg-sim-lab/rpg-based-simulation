@@ -220,3 +220,16 @@ TCK-20261031-A-RETREAT-PROJECT-OUTLIVES-ITS-THREAT is measured on 6fdfdf555 (pre
 - **Repeat run:** the same 15 runs and close conditions, plus class (a) = 0 and class (b) = 0. Report:
   - the crowded asleep-share split (lodged REST / outside REST / collapse; lodged REST length p50/p90 against base's served REST length);
   - the s44 victim ids, and whether each was a lodger or a leaver.
+
+## Root causes and narrowed ruling (2026-11-01)
+- **Lane B traces (local 4b3ecce12):**
+  - Class (a): 495/505 rows are LEAVERS. The occupancy vet refused the leave step (OCCUPANCY_CONFLICT) and stripped lodged_in_clear and new_position, but left the :676 target. The other 10 rows are claim-tick :676.
+  - Class (b): on the claim tick, a movement new_position (the reach tile) merged over the building tile.
+  - No shared target-emit point exists (~30 writers).
+- **Ruling (rpg-designer):**
+  - A refused leave refuses all of that tick's movement outputs together, typed and counted.
+  - LODGER_TARGET_DROPPED reasons: CLAIM_TICK | LEAVE_REFUSED.
+  - Report leave-refused retries (more than 50 consecutive is a finding under AC4) and conflict winners (leaver vs mover).
+  - If (iii) = 0 (no stayer drops after the claim tick): (Q) narrows to the backstop, plus a named and locked held-REST entry point with a unit test, plus an arm assert of (iii) = 0. The town-return and REGROUP decision meaning is dropped (YAGNI).
+  - If (iii) > 0: one decision-entry skip via is_lodged, not 30 writer guards.
+  - Class (b) accepted: the claim wins the merge over a same-tick move, explicitly. The move's new_position is refused and counted, with a test that the result is order-independent.
