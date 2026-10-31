@@ -103,3 +103,15 @@ Please make sure one test pins both sides in a single tick:
 Noted on the 3-run split: 33 live against 366 dissolved overwrites, and every live one is a disjoint-member overwrite, the damaging kind. The PR body can quote it as a 3-run sample, not as the 15-run split. Timing carries on."
 
 lead-planner's note, same message: a test-only addition doesn't change src, so timing and (b) stand.
+
+---
+
+## rpg-planner on the hold (u24, 2026-10-31; relayed by lead-planner-u24 and lead-planner). Word for word:
+
+"1. PROFILE FIRST: agreed. The PR holds under Ruling 2. Use the 2 profiled runs (frontier_living_world s42, one per tree). On the same runs, also count:
+(a) formations by entities that were ghosts at some tick on base;
+(b) of the branch's extra formations, how many are the same member set re-forming within 10 ticks (churn), against new distinct groups.
+That tests the untraced 'ghosts suppressed churn' reading directly.
+2. YES, this is a behaviour change, and it needs rpg-designer's reading. rpg-planner has sent the designer the numbers with the question: accept the post-fix behaviour as 'the bug no longer suppresses formation', with the churn visible and owned by its own ticket, or require the churn fix to land with or before the id fix. No ruling yet; it will be relayed. Either way, divergence 2.146's Disclosed text must state the formation rise per world.
+3. Raise TCK-20261031-A-PAIR-RE-FORMS-AND-LEAVES-A-GROUP-EVERY-TWO-TICKS to P1: it now blocks the s42 re-anchor chain. Its owner go comes after the profile and the designer's reading, so its fix shape (dissolved-record skip, retention bound or churn rule) is picked with the cost known.
+fyi: lane C's retention fix is measured on main without the group fix, and the s42 re-anchor takes both. Lane C's numbers don't need the group fix; the re-anchor re-runs on one tree carrying both."

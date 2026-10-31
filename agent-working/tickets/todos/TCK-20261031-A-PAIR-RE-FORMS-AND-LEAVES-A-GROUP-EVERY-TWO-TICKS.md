@@ -24,7 +24,7 @@ standard
 bug
 
 ## Priority
-P2
+P1
 
 ## Request Summary
 Found while verifying TCK-20261031-A-NEW-GROUP-ID-OVERWRITES-A-LIVE-GROUP. rpg-planner agreed this separate ticket, counts first, with rpg-designer to rule (Ruling 2, in that ticket's staging `rpg_designer_ruling_2026-10-31.md`). A retention or bound rule for dissolved records is a lifecycle rule for the designer, not for the group-id PR.
@@ -32,6 +32,8 @@ Found while verifying TCK-20261031-A-NEW-GROUP-ID-OVERWRITES-A-LIVE-GROUP. rpg-p
 Behaviour finding, on BOTH trees: on lifecycle_full_coverage_world, seed 42, 200t, entities (37,38) form a group and are expelled about every 2 ticks (read in the event lines at t130-140; the implementer reports it from t102). Trees: 6fdfdf555 and branch rpg-ubuntu-group-id-alloc-impl. Data: /data/vboxuser/Work/groups_base/out/tr_{base,branch}.jsonl (scratch; copy what the close needs into staging).
 
 Measured group store on that scenario: at t199, base 20 records (20 dissolved), branch 54 (53 dissolved). Branch 32 records at t158, 54 at t199, about 0.5 per tick while the churn runs. About 950 by 2000t is an extrapolation from one 200t scenario, not a measurement.
+
+Later measurement, s42, 2000t, 3 worlds: formations go from 225 to 571, 185 to 1035 and 96 to 839 (crowded_frontier, frontier_living_world, urban_political), whole tick +5.1%, +35.6%, +14.6%, which holds the group-id PR. So the old id defect may have been suppressing this churn; that reading is untraced. The profiled runs of the group-id ticket test it.
 
 Not known: why the group ends each cycle (the dissolve and expel conditions at `src/systems/world_systems/groups.py` l.90-175 have not been traced for this pair), why it re-forms, and how many pairs and worlds show this.
 
@@ -67,7 +69,7 @@ None yet.
 - src/domains/cooperation/phase.py
 
 ## Assumptions / Open Questions
-- Tier and priority are provisional; the counts may change them. Not dispatched: dispatch needs an owner go.
+- Priority raised to P1 by rpg-planner: this blocks the s42 re-anchor chain. Tier may change with the counts. Not dispatched: the owner go comes after the profile and rpg-designer's reading, so the fix shape (dissolved-record skip, retention bound or churn rule) is picked with the cost known.
 - Whether churning is ever legitimate behaviour is the designer's question.
 
 ## Implementation Notes
