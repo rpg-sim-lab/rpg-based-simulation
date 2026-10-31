@@ -7972,6 +7972,35 @@
   - delivery
   - planning
 - type: ticket
+  path: agent-working/tickets/todos/TCK-20261031-A-NEW-GROUP-ID-OVERWRITES-A-LIVE-GROUP.md
+  ticket_id: TCK-20261031-A-NEW-GROUP-ID-OVERWRITES-A-LIVE-GROUP
+  title: A new group's id comes from a count, so it can collide with a live group's
+    id and overwrite that record. Allocate group ids so they never repeat.
+  tier: standard
+  ticket_type: bug
+  date: '2026-10-31'
+  related_code_areas:
+  - src/systems/world_systems/groups.py (l.110, l.170, l.227, l.308)
+  - src/engine/pipeline_phases/groups.py, src/engine/military_conflict.py, src/domains/cooperation/phase.py
+    (other group update producers)
+  artifact_files: []
+  tags:
+  - social
+  - simulation-quality
+- type: ticket
+  path: agent-working/tickets/todos/TCK-20261031-MECHANISM-NOTE-CAPACITY-TIE-TRIM-ORDER.md
+  ticket_id: TCK-20261031-MECHANISM-NOTE-CAPACITY-TIE-TRIM-ORDER
+  title: Append rpg-planner's binding note about the capacity trim's tie rule to the
+    cognition_capacity_fatigue entry in registries/mechanisms.yaml.
+  tier: hotfix
+  ticket_type: chore
+  date: '2026-10-31'
+  related_code_areas:
+  - registries/mechanisms.yaml
+  artifact_files: []
+  tags:
+  - determinism
+- type: ticket
   path: agent-working/tickets/todos/ai-first-sdlc-evolution/TCK-20261031-EPIC-AI-FIRST-SDLC-EVOLUTION.md
   ticket_id: TCK-20261031-EPIC-AI-FIRST-SDLC-EVOLUTION
   title: 'Evolve the AI-first SDLC: separate authority, verifiable completion, evidence,
@@ -8160,6 +8189,69 @@
   - ai
   - process-improvement
 - type: ticket
+  path: agent-working/tickets/todos/TCK-20261030-CORPUS-GRADE-GUARD-AVERAGES-A-NO-DATA-SCORE.md
+  ticket_id: TCK-20261030-CORPUS-GRADE-GUARD-AVERAGES-A-NO-DATA-SCORE
+  title: The urban_political seed123 500t COGNITION grade guard averages a None score
+    when its anchor is no-data, and crashes with a TypeError. Average only when the
+    score tolerance applies.
+  tier: hotfix
+  ticket_type: bug
+  date: '2026-10-30'
+  related_code_areas:
+  - tests/unit/worldassembly/test_corpus_diversity.py
+  artifact_files: []
+  tags:
+  - simulation-quality
+  - regression
+- type: ticket
+  path: agent-working/tickets/todos/TCK-20261030-RETIRE-PUSH-EVENT-SHAPER-ROLLBACK-PATHS.md
+  ticket_id: TCK-20261030-RETIRE-PUSH-EVENT-SHAPER-ROLLBACK-PATHS
+  title: Retire the flag-OFF rollback paths of the four push-event-shaper flags, and
+    the flags themselves, once the push path is proven stable and the owner decides.
+    PARKED.
+  tier: standard
+  ticket_type: refactor
+  date: '2026-10-30'
+  related_code_areas:
+  - src/observability/event_extractor.py, src/observability/extraction/, src/observability/event_shapers.py,
+    src/engine/kernel.py
+  artifact_files: []
+  tags:
+  - observability
+- type: ticket
+  path: agent-working/tickets/todos/TCK-20261030-SIMQ-ANCHOR-REDS-SINCE-V1-REANCHOR-NEED-A-BISECT.md
+  ticket_id: TCK-20261030-SIMQ-ANCHOR-REDS-SINCE-V1-REANCHOR-NEED-A-BISECT
+  title: 'A SimQ grade-stability test went red on main after the v1 re-anchor: urban_political_selfmodel_probe
+    seed42 200t WORLD is 0.25 against anchor 0.32. Bisect it to the commit and mechanism
+    that moved the score.'
+  tier: standard
+  ticket_type: bug
+  date: '2026-10-30'
+  related_code_areas:
+  - tests/unit/worldassembly/test_corpus_diversity.py
+  - tests/simulation_quality/fixtures/grade_anchors.json
+  - tools/test_architecture/slow_known_reds.yaml
+  - src/ (whatever the bisect names)
+  artifact_files: []
+  tags:
+  - simulation-quality
+  - regression
+  - determinism
+- type: ticket
+  path: agent-working/tickets/todos/TCK-20261030-WORLD-GENERATOR-RESOURCE-TYPE-PICK-FOLLOWS-PYTHONHASHSEED.md
+  ticket_id: TCK-20261030-WORLD-GENERATOR-RESOURCE-TYPE-PICK-FOLLOWS-PYTHONHASHSEED
+  title: The intent-driven world generator picks each node's resource type with the
+    RNG from a list built by list(set(...)), so the generated world depends on PYTHONHASHSEED.
+    Sort the list.
+  tier: standard
+  ticket_type: bug
+  date: '2026-10-30'
+  related_code_areas:
+  - src/worldgeneration/generator.py
+  artifact_files: []
+  tags:
+  - determinism
+- type: ticket
   path: agent-working/tickets/done/TCK-20261028-PARITY-PAYDOWN-WORLD-DYNAMICS-STATUS-CHANGES.md
   ticket_id: TCK-20261028-PARITY-PAYDOWN-WORLD-DYNAMICS-STATUS-CHANGES
   title: 'Parity-ledger paydown, child 1b: resolve the world_dynamics.yaml entries
@@ -8262,6 +8354,62 @@
   - delivery
 - type: ticket
   path: agent-working/tickets/done/TCK-20261029-STATE-SET-ORDER-FOLLOWS-PYTHONHASHSEED.md
+  ticket_id: TCK-20261029-STATE-SET-ORDER-FOLLOWS-PYTHONHASHSEED
+  title: Set ordering that reaches durable state or decisions follows the process
+    hash seed. Audit every consumer, then sort.
+  tier: standard
+  ticket_type: bug
+  date: '2026-10-29'
+  related_code_areas:
+  - src/core/updates.py
+  - src/domains/combat_engagement/learning.py
+  - src/engine/tactical.py
+  - src/progression/leveling.py
+  - src/engine/patches.py
+  - src/engine/apply.py
+  - src/core/state.py
+  artifact_files:
+  - agent-working/stored_artifacts/TCK-20261029-STATE-SET-ORDER-FOLLOWS-PYTHONHASHSEED/investigation.md
+  - agent-working/stored_artifacts/TCK-20261029-STATE-SET-ORDER-FOLLOWS-PYTHONHASHSEED/plan.md
+  - agent-working/stored_artifacts/TCK-20261029-STATE-SET-ORDER-FOLLOWS-PYTHONHASHSEED/rpg_planner_ruling_2026-10-29.md
+  - agent-working/stored_artifacts/TCK-20261029-STATE-SET-ORDER-FOLLOWS-PYTHONHASHSEED/test_plan.md
+  tags:
+  - determinism
+- type: ticket
+  path: agent-working/tickets/todos/TCK-20261029-EVENT-EMIT-ORDER-FOLLOWS-PYTHONHASHSEED.md
+  ticket_id: TCK-20261029-EVENT-EMIT-ORDER-FOLLOWS-PYTHONHASHSEED
+  title: Within one tick, the emit order of progression and equipment events follows
+    the process hash seed. Sort at the emit loops.
+  tier: hotfix
+  ticket_type: bug
+  date: '2026-10-29'
+  related_code_areas:
+  - src/observability/event_extractor.py
+  - src/observability/event_shapers.py
+  - tests/unit/observability/
+  artifact_files: []
+  tags:
+  - determinism
+  - observability
+- type: ticket
+  path: agent-working/tickets/todos/TCK-20261029-OBSERVABILITY-PHASE-TESTS-SHARE-FIXED-REPO-RUN-DIRS.md
+  ticket_id: TCK-20261029-OBSERVABILITY-PHASE-TESTS-SHARE-FIXED-REPO-RUN-DIRS
+  title: Four observability integration tests write to fixed, cwd-relative directories
+    under tests/. One errored on teardown in CI. Move them to tmp_path.
+  tier: hotfix
+  ticket_type: bug
+  date: '2026-10-29'
+  related_code_areas:
+  - tests/integration/observability/test_phase23_behavior_timeline_episode_artifacts.py
+  - tests/integration/observability/test_phase24_behavior_metric_artifacts.py
+  - tests/integration/observability/test_phase25_postrun_behavior_analysis.py
+  - tests/integration/observability/test_phase26_behavior_scorecard_artifacts.py
+  - tests/integration/observability/test_event_recorder_live_publish.py
+  artifact_files: []
+  tags:
+  - observability
+- type: ticket
+  path: agent-working/tickets/todos/TCK-20261029-STATE-SET-ORDER-FOLLOWS-PYTHONHASHSEED.md
   ticket_id: TCK-20261029-STATE-SET-ORDER-FOLLOWS-PYTHONHASHSEED
   title: Set ordering that reaches durable state or decisions follows the process
     hash seed. Audit every consumer, then sort.
