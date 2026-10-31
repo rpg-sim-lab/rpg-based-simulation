@@ -73,14 +73,21 @@ def test_a_leaver_with_no_free_tile_stays_lodged_awake_and_is_counted(monkeypatc
         k.shutdown()
 
 
-def test_a_lodger_that_keeps_resting_does_not_leave_and_a_walk_target_makes_it_leave():
+def test_a_lodger_that_keeps_resting_does_not_leave_and_a_walk_target_for_it_is_dropped_and_counted():
+    """Q-B guard: a walk target (or a move) proposed for a lodger who keeps resting never makes it leave; it is dropped, counted and typed so a writer of such a target can be named."""
     k = _state([_lodged(1, action="REST"), _lodged(2, action="REST")])
     try:
         rest = StateUpdate(entity_updates={})
         assert place_leavers(k._state, rest) is rest
         walk = StateUpdate(entity_updates={2: EntityUpdate(entity_id=2, navigation=NavigationUpdate(target_set=(20.0, 20.0)))})
         out = place_leavers(k._state, walk)
-        assert out.entity_updates[2].navigation.lodged_in_clear and 1 not in out.entity_updates
+        assert not out.entity_updates[2].navigation.lodged_in_clear and out.entity_updates[2].navigation.target_set is None
+        assert out.rejections_delta.get("LODGER_TARGET_DROPPED") == 1
+        event = out.rejection_events[-1]
+        assert event.actor_id == 2 and event.reason.value == "LODGER_TARGET_DROPPED" and "(20.0, 20.0)" in event.target_id
+        moved = StateUpdate(entity_updates={1: EntityUpdate(entity_id=1, new_position=(5.0, 5.0), moved_this_tick=True)})
+        out = place_leavers(k._state, moved)
+        assert out.entity_updates[1].new_position is None and not out.entity_updates[1].moved_this_tick and out.rejections_delta.get("LODGER_TARGET_DROPPED") == 1
     finally:
         k.shutdown()
 

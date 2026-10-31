@@ -46,12 +46,74 @@ def lodges(building: Any) -> bool:
     return int(getattr(building, "beds", 0) or 0) > 0
 
 
+def bed_free(beds: int, held: int, holds_one: bool) -> bool:
+    """The ONE bed rule: a bed is free when the subject already holds one, or fewer than ``beds`` are held. `has_free_bed` (the counted state) and `grant_beds` (the in-tick counter) both read it."""
+    return holds_one or held < beds
+
+
 def has_free_bed(state: Any, building: Any, entity: Any = None) -> bool:
     """True when ``building`` can take one more lodger: it has no beds declared (main's behaviour, nothing to count), or a bed is free, or ``entity`` already holds one."""
     if not lodges(building):
         return True
     held = lodgers_of(state, building.id)
-    return (entity is not None and entity.id in held) or len(held) < int(building.beds)
+    return bed_free(int(building.beds), len(held), entity is not None and entity.id in held)
+
+
+def finds_no_bed(state: Any, entity: Any, building: Any) -> bool:
+    """THE 'no bed' predicate (F3, divergence 2.155): a subject the building would serve (`keeps_coin`, the trait; no kind name) finds NO free bed at a functional building that declares
+    beds. Every caller asks this one function: the first execution of a REST (`building_services.with_service`), the arrival of a fatigue project (`building_arrival`). A non-person, a
+    building with no beds and a building that is not functional are not refused here: their rest runs as on main."""
+    from src.engine.serves import keeps_coin
+    return building is not None and building.functional and lodges(building) and keeps_coin(entity) and not has_free_bed(state, building, entity)
+
+
+def no_bed_in_reach(state: Any, entity: Any) -> Optional[Any]:
+    """The building in whose reach the subject stands (the REST service reach) that declares beds and has none free for it, or None."""
+    from src.engine.building_services import SERVICE_KINDS
+    from src.engine.service_reach import service_tile
+    from src.engine.spatial_query import SpatialQueryService
+    tile = service_tile(state, (int(entity.navigation.position[0]), int(entity.navigation.position[1])), SERVICE_KINDS["REST"])
+    building = SpatialQueryService.get_building_at(state, tile) if tile is not None else None
+    return building if finds_no_bed(state, entity, building) else None
+
+
+def way_closed_end(entity: Any, update: Any = None) -> Any:
+    """The typed end of a fatigue project that found no bed: ``ProjectEnd.WAY_CLOSED`` through `end_record`, the current project and objective cleared. None when the subject has no
+    fatigue project, or when ``update`` already carries that project's end (the claim path and the first-execution path may both refuse the same REST)."""
+    from src.core.strategic import ProjectEnd, ProjectStatus, end_record
+    from src.core.updates import EntityUpdate, StrategicUpdate
+    project = entity.strategic.projects.get(entity.strategic.current_project_id or "")
+    if project is None or str(getattr(project.kind, "value", project.kind)).lower() != "fatigue" or project.ended_by is not None:
+        return None
+    if update is not None and update.strategic is not None and any(p.id == project.id and p.ended_by is not None for p in update.strategic.projects_add_or_update):
+        return None
+    return EntityUpdate(entity_id=entity.id, strategic=StrategicUpdate(
+        projects_add_or_update=[end_record(project, ProjectStatus.ABANDONED, ProjectEnd.WAY_CLOSED)], current_project_id_set="", current_objective_id_set=""))
+
+
+def refuse_rest(entity: Any) -> Any:
+    """The update of a REST that found no bed at its first execution: no rest, no charge, no claim, no move. The typed failure reason ``NO_BED_FREE`` is what the actions phase counts and
+    annotates (and what ends the held REST task, see ``_ENDS_HELD_REASONS_BY_ACTION``); a fatigue project ends WAY_CLOSED through `way_closed_end`. The subject re-decides."""
+    from src.core.enums import ReasonCode
+    from src.core.updates import EntityUpdate, NavigationUpdate
+    refusal = EntityUpdate(entity_id=entity.id, navigation=NavigationUpdate(failure_reason=ReasonCode.NO_BED_FREE.value))
+    ended = way_closed_end(entity)
+    return refusal.merge(ended) if ended is not None else refusal
+
+
+def resolve_arrival(entity: Any) -> Any:
+    """Lodging IS arrival (F3, Q-B): when a subject is granted a bed, its fatigue project's active reach objective RESOLVES in the same apply, so no fallback has a walk to re-issue. The
+    project stays ACTIVE (it completes through its own debt test when the need is met). None when the subject has no fatigue project with an active objective."""
+    from dataclasses import replace
+    from src.core.strategic import ObjectiveStatus
+    from src.core.updates import EntityUpdate, StrategicUpdate
+    project = entity.strategic.projects.get(entity.strategic.current_project_id or "")
+    if project is None or str(getattr(project.kind, "value", project.kind)).lower() != "fatigue" or project.ended_by is not None:
+        return None
+    if not any(o.id == project.active_objective_id and o.status == ObjectiveStatus.ACTIVE for o in project.objectives):
+        return None
+    objectives = [replace(o, status=ObjectiveStatus.RESOLVED) if o.id == project.active_objective_id else o for o in project.objectives]
+    return EntityUpdate(entity_id=entity.id, strategic=StrategicUpdate(projects_add_or_update=[replace(project, objectives=objectives)]))
 
 
 def lodge_claim(entity: Any, building: Any) -> Any:
@@ -62,7 +124,7 @@ def lodge_claim(entity: Any, building: Any) -> Any:
     # times main would have delivered the bed (today a REST is executed by the worker and again by the actions phase, a defect tracked on its own ticket): `grant_beds` delivers
     # the bed that many times, so F3 changes where the subject sleeps and not what a bed costs.
     marker = ResourceTransferIntent(source_id=building.id, source_kind="TOWN_SERVICE", transfer_kind=CLAIM_MARKER)
-    return EntityUpdate(entity_id=entity.id, navigation=NavigationUpdate(lodged_in_set=building.id), resource_transfers=[marker],
+    return EntityUpdate(entity_id=entity.id, navigation=NavigationUpdate(lodged_in_set=building.id, clear_target=True, clear_path=True), resource_transfers=[marker],
                         new_position=(float(building.position[0]), float(building.position[1])), moved_this_tick=True)
 
 
@@ -74,8 +136,6 @@ def grant_beds(state: Any, update: Any) -> Any:
     update. A REFUSED claim loses the claim (no lodging, no move), its REST task ends (an idle act, the brain re-decides) and its fatigue project ends with
     `ProjectEnd.WAY_CLOSED`; it never has a charge, readiness or heal applied because none was ever put on its update. A tick with no claim returns ``update`` unchanged."""
     from dataclasses import replace
-    from src.core.strategic import ProjectEnd, ProjectStatus, end_record
-    from src.core.updates import EntityUpdate, StrategicUpdate, TaskUpdate
     from src.engine.building_services import bed_delta
 
     claims: Dict[int, List[int]] = {}
@@ -99,16 +159,15 @@ def grant_beds(state: Any, update: Any) -> Any:
             upd = refined[eid]
             markers = sum(1 for t in upd.resource_transfers if t.transfer_kind == CLAIM_MARKER)
             upd = replace(upd, resource_transfers=[t for t in upd.resource_transfers if t.transfer_kind != CLAIM_MARKER])
-            if usable and (eid in held or free > 0):
+            if usable and bed_free(int(building.beds), int(building.beds) - free, eid in held):
                 if eid not in held:
                     free -= 1
                 for _ in range(max(1, markers)):
                     upd = upd.merge(bed_delta(entity, building))
-                refined[eid] = upd
+                arrived = resolve_arrival(entity)
+                refined[eid] = upd.merge(arrived) if arrived is not None else upd
                 continue
-            project = entity.strategic.projects.get(entity.strategic.current_project_id or "")
-            ended = EntityUpdate(entity_id=eid, strategic=StrategicUpdate(
-                projects_add_or_update=[end_record(project, ProjectStatus.ABANDONED, ProjectEnd.WAY_CLOSED)], current_project_id_set="", current_objective_id_set="")) if project is not None else None
+            ended = way_closed_end(entity, upd)
             task = replace(upd.task, payload_set={}) if upd.task is not None else upd.task
             refined[eid] = replace(upd, navigation=replace(upd.navigation, lodged_in_set=None), new_position=None, moved_this_tick=False, task=task)
             if ended is not None:
@@ -149,11 +208,44 @@ def leave_tile(state: Any, origin: Tile, taken: Iterable[Tile]) -> Optional[Tile
     return None
 
 
+def drop_lodger_targets(state: Any, update: Any, leaving: Iterable[int]) -> Any:
+    """The guard for a lodger who STAYS (F3, Q-B): a walk target or a move proposed for it this tick is dropped, so it can never be carried off its building's tile while it is lodged. A drop
+    is never silent: each is counted under the rejection reason ``LODGER_TARGET_DROPPED`` and recorded as a typed rejection event naming the proposer's movement mode, the subject's project kind and the
+    target. After lodging resolves the arrival objective the count must be zero; a non-zero count names the next writer of a lodger's target."""
+    from dataclasses import replace
+    from src.core.enums import ReasonCode
+    from src.core.updates import RejectionEvent
+    leaving = set(leaving)
+    refined = None
+    events = list(update.rejection_events)
+    rejections = dict(update.rejections_delta)
+    for e_id, e in state.entities.items():
+        if e.navigation.lodged_in is None or e_id in leaving:
+            continue
+        upd = update.entity_updates.get(e_id)
+        nav = upd.navigation if upd is not None else None
+        walking = nav is not None and nav.target_set is not None
+        moving = upd is not None and upd.new_position is not None
+        if not (walking or moving):
+            continue
+        refined = dict(update.entity_updates) if refined is None else refined
+        project = e.strategic.projects.get(e.strategic.current_project_id or "")
+        key = ReasonCode.LODGER_TARGET_DROPPED.value
+        rejections[key] = rejections.get(key, 0) + 1
+        events.append(RejectionEvent(tick=state.tick, actor_id=e_id, action_kind="LODGE", reason=ReasonCode.LODGER_TARGET_DROPPED,
+                                     target_id=f"{getattr(nav, 'movement_mode_set', None)}|{getattr(getattr(project, 'kind', None), 'value', None)}|{getattr(nav, 'target_set', None)}"))
+        new_nav = replace(nav, target_set=None, movement_mode_set=None) if nav is not None else None
+        refined[e_id] = replace(upd, navigation=new_nav, new_position=None, moved_this_tick=False)
+    if refined is None:
+        return update
+    return replace(update, entity_updates=refined, rejection_events=events, rejections_delta=rejections)
+
+
 def place_leavers(state: Any, update: Any) -> Any:
     """Step every lodger that is leaving out of its building, through the same position update a move uses (F3, divergence 2.155).
 
-    A lodger leaves the tick its held rest ends: when its resulting task is not to keep resting or eating (`keeps_lodging`; an ended rest leaves no task), when this tick's update gives it a
-    walk target, or when its building is gone or no longer functional. It takes the first free orthogonal tile beside the building (fixed reach order), else the nearest free walkable tile within three tiles, else it stays lodged
+    A lodger leaves the tick its held rest ends: when its resulting task is not to keep resting or eating (`keeps_lodging`; an ended rest leaves no task), or when its building is gone or no
+    longer functional (the one eject today). A walk target proposed for a lodger who stays does NOT make it leave: it is dropped and counted (`drop_lodger_targets`). It takes the first free orthogonal tile beside the building (fixed reach order), else the nearest free walkable tile within three tiles, else it stays lodged
     and awake and tries again next tick (counted under the rejection reason ``LODGE_EXIT_BLOCKED``). Leavers are placed in ascending id, so two leavers for one tile give it to the
     lowest id and the other takes its next tile. It moves on from the next tick: any move this tick's update already proposes for a leaver is dropped. Returns ``update`` unchanged when
     nobody lodges."""
@@ -171,9 +263,9 @@ def place_leavers(state: Any, update: Any) -> Any:
         task = upd.task if upd is not None else None
         work_kind = task.work_kind_set if task is not None and task.work_kind_set is not None else e.task.work_kind
         payload = task.payload_set if task is not None and task.payload_set is not None else e.task.payload
-        walking = upd is not None and upd.navigation is not None and upd.navigation.target_set is not None
-        if gone or walking or not keeps_lodging(work_kind, payload):
+        if gone or not keeps_lodging(work_kind, payload):
             leavers.append((e_id, e))
+    update = drop_lodger_targets(state, update, {e_id for e_id, _ in leavers})
     if not leavers:
         return update
     from src.engine.spatial_query import SpatialQueryService

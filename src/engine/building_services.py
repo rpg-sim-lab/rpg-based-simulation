@@ -87,6 +87,10 @@ def with_service(updates: dict, entity: Any, action: str, tick: int, context: An
     """The action's updates with the building service for `action` merged into the subject's own update."""
     if context is None or entity.id not in updates or (action == "REST" and "outcome" in entity.task.payload):
         return updates  # (a held sleep repeats its action every tick; the bed is paid for, and heals, once)
+    if action == "REST":
+        from src.engine.lodging import no_bed_in_reach, refuse_rest
+        if no_bed_in_reach(context, entity) is not None:
+            return {**updates, entity.id: refuse_rest(entity)}  # F3: a REST whose first execution is in reach of a full beds building does not run on that tile (the one 'no bed' predicate)
     delta = service_delta(context, entity, action, tick)
     if delta is None:
         return updates

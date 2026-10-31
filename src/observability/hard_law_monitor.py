@@ -124,6 +124,19 @@ class HardLawMonitor:
                         details={"stamina": entity.stamina.current}
                     ))
 
+            # LAW-LODGER-INDOORS (F3, divergence 2.155): after apply a lodged entity stands on its building's own tile and has no navigation target
+            if entity.navigation is not None and entity.navigation.lodged_in is not None:
+                building = state.buildings.get(entity.navigation.lodged_in)
+                on_tile = building is not None and (int(entity.navigation.position[0]), int(entity.navigation.position[1])) == (int(building.position[0]), int(building.position[1]))
+                if not on_tile or entity.navigation.target is not None:
+                    violations.append(HardLawViolation(
+                        law_id="LAW-LODGER-INDOORS",
+                        entity_id=e_id,
+                        severity="ERROR",
+                        message=f"Entity {e_id} lodges in building {entity.navigation.lodged_in} but is off its tile or has a target {entity.navigation.target}",
+                        details={"lodged_in": entity.navigation.lodged_in, "on_building_tile": on_tile, "target": entity.navigation.target}
+                    ))
+
             # LAW-POSITION-FINITE: Position must be finite coordinates
             if entity.navigation is not None:
                 pos = entity.navigation.position
@@ -178,6 +191,8 @@ class HardLawMonitor:
         for e_id, entity in state.entities.items():
             if not entity.lifecycle.active or not entity.combat.alive:
                 continue
+            if entity.navigation.lodged_in is not None:
+                continue  # a lodger is inside its building (F3, divergence 2.155): it stands on the building's own tile by law, so a restored state is not a placement collision
             objects.append(("entity", e_id, entity.navigation.position))
         for b_id, building in state.buildings.items():
             objects.append(("building", b_id, building.position))
