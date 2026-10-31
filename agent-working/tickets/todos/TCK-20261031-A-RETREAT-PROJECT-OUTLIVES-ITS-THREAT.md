@@ -71,6 +71,8 @@ Acceptance additions (widened):
 8. AC6 replaced: deaths BY CAUSE per world on a cause-logged re-run, both arms (the probe also logs hp, stamina, panic, bravery and the retreat/RECOVER/REST utilities at each retreat adoption). Any per-world rise that first-diff attributes to an ended or unadopted retreat is a STOP, reported to rpg-designer with victim ids; a rise first-diff puts elsewhere (trajectory) is reported, not gated.
 9. Unit test from crowded s43: hp < 0.5 and no hostile in view -> RECOVER, not COMBAT_RETREAT; a closing hostile -> COMBAT_RETREAT; the hostile leaves -> completes THREAT_CLEARED.
 10. Docs: the law "a retreat begins and ends on the same present-threat test" in tactical contract section 4 and Bible 04; parity row; divergence (Enforced, linked to 2.76) -- 2.156 / STRAT-295 carry it.
+ONE FUNCTION (designer): the adoption gate, the completion rule and tactical.py:209/213's `threats` use one helper; plan.md states what `threats` is built from, and a mismatch is a finding for rpg-designer, not a silent swap. Law cited: 2.114 and Bible ch2 section 7 CONFLICT-04.
+BASE: measured on main 6fdfdf555 (pre-F3), stated in the evidence; whichever of this ticket and F3 (TCK-20261031-A-SLEEPER-HOLDS-A-DOOR-OR-SERVICE-TILE) lands second re-measures on top of the other (RECOVER walks to the inn, whose door and bed rule F3 changes).
 Overlap: TCK-20261028-LOW-HP-RETREAT (tactical.py:536-544) is NOT folded in (this ticket gates the goal scorer only); count the moved deaths/ticks also under it with the family-table tag.
 
 ## Related Tickets
