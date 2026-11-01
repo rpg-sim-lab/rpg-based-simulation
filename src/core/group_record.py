@@ -56,8 +56,9 @@ class GroupRecord:
 
     def to_canonical_dict(self) -> Dict[str, Any]:
         """Canonical form for hashing and checkpoints; the binding and end-reason keys are present only when set."""
-        if self._canonical_cache is not None:
-            return self._canonical_cache
+        cached: Optional[Dict[str, Any]] = self._canonical_cache
+        if cached is not None:
+            return cached
         res = {
             "id": self.id,
             "leader_id": self.leader_id,

@@ -5,6 +5,7 @@ from dataclasses import replace
 from typing import Callable, Dict, List, Set, Optional, TYPE_CHECKING
 
 from src.core.enums import GroupDissolutionReason
+from src.core.state import seeded_next_group_id
 from src.core.strategic import ContractStatus
 from src.systems.social_systems.contracts import contract_is_live
 
@@ -39,7 +40,7 @@ class GroupSystem:
         if current_update is not None:
             taken_ids.update(g.id for g in current_update.groups_add)
             taken_ids.update(g.id for g in current_update.groups_add_or_update)
-        next_free_id = state.next_group_id
+        next_free_id = state.next_group_id if state.next_group_id is not None else seeded_next_group_id(state.groups)
 
         def is_alive(e_id: int) -> bool:
             # Check for death in current update
@@ -420,7 +421,7 @@ class GroupSystem:
             if holder_up.strategic:
                 contract = next((c for c in holder_up.strategic.contracts_add_or_update if c.id == group.contract_id), None)
         if contract is None:
-            contract = state.entities[holder_id].strategic.contracts.get(group.contract_id)
+            contract = state.entities[holder_id].strategic.contracts.get(group.contract_id) if group.contract_id is not None else None
         if contract is None:
             return GroupDissolutionReason.BINDING_CONTRACT_MISSING, None
         if not contract_is_live(contract, state.tick):

@@ -62,7 +62,7 @@ def due_bound_group_ids(state: AuthoritativeState) -> Set[int]:
     """
     due: Set[int] = set()
     for g_id, group in live_group_items(state.groups):
-        if group.contract_holder_id is None:
+        if group.contract_holder_id is None or group.contract_id is None:
             continue
         holder = state.entities.get(group.contract_holder_id)
         contract = holder.strategic.contracts.get(group.contract_id) if holder is not None else None

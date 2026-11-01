@@ -2,7 +2,7 @@
 
 A frozen slotted record unpickled from an older checkpoint does not run __init__/__post_init__ and lacks every slot added since, so the
 first read raises AttributeError. A missing field is filled ONLY when its value is a pure function of the loaded state that a ruling already
-defines; otherwise the restore is refused with CheckpointFieldMissing. Nothing is guessed. Every rule is a row of FIELD_RULES, applied by the
+defines; otherwise the restore is refused with CheckpointFieldMissingError. Nothing is guessed. Every rule is a row of FIELD_RULES, applied by the
 single function fill_missing_fields(); there are no fixups anywhere else.
 """
 from __future__ import annotations
@@ -16,7 +16,7 @@ if TYPE_CHECKING:
     from src.core.state import AuthoritativeState
 
 
-class CheckpointFieldMissing(ValueError):  # noqa: N818  (name fixed by the designer's ruling and shared with the other restore rules)
+class CheckpointFieldMissingError(ValueError):
     """An older checkpoint lacks a field whose value cannot be derived from the loaded state, so the restore is refused.
 
     A ValueError, so the scenarios restore route answers it as a client error (400), not a server error.
@@ -30,7 +30,7 @@ class FieldRule:
     name: str  # rule name, for messages and tests
     records: Callable[[Any], Iterable[Tuple[Any, Any]]]  # state -> (key, record) pairs the field lives on
     field: str  # slot name on the record
-    fill: Callable[[Any, Any, Any], Any]  # (record, state, key) -> value; raises CheckpointFieldMissing to refuse
+    fill: Callable[[Any, Any, Any], Any]  # (record, state, key) -> value; raises CheckpointFieldMissingError to refuse
     ruling: str  # where the rule is decided
 
 
@@ -51,7 +51,7 @@ def _none_on_unbound_group(record: Any, state: AuthoritativeState, key: Any) -> 
     knowable holder or end reason, so the checkpoint is refused, naming the group."""
     contract_id = getattr(record, "contract_id", None)
     if contract_id is not None:
-        raise CheckpointFieldMissing(
+        raise CheckpointFieldMissingError(
             f"Checkpoint predates the group-contract binding: group {key} has contract_id {contract_id!r} (a retained dissolved record "
             f"counts) but no contract holder or end reason, which cannot be derived from the state. Restore refused; "
             f"re-create the checkpoint with a current build."

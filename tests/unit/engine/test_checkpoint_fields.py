@@ -2,7 +2,7 @@
 
 A frozen slotted dataclass unpickles positionally and without running __init__/__post_init__, so an older checkpoint leaves the new slots absent
 (AttributeError on first read). fill_missing_fields is the one post-unpickle step: it fills a field only when its value is a pure function of the
-loaded state, otherwise it refuses with CheckpointFieldMissing. The old shape is produced here by pickling with the new fields left out.
+loaded state, otherwise it refuses with CheckpointFieldMissingError. The old shape is produced here by pickling with the new fields left out.
 """
 from __future__ import annotations
 
@@ -16,7 +16,7 @@ import pytest
 from src.core.state import AuthoritativeState, GroupRecord, seeded_next_group_id
 from src.engine.apply import ApplyPath
 from src.engine.checkpoint import CanonicalStateHasher
-from src.engine.checkpoint_fields import FIELD_RULES, CheckpointFieldMissing, fill_missing_fields
+from src.engine.checkpoint_fields import FIELD_RULES, CheckpointFieldMissingError, fill_missing_fields
 from src.engine.scenario_checkpoint import ScenarioCheckpointer
 from src.systems.world_systems.groups import GroupSystem
 
@@ -72,13 +72,13 @@ def test_an_old_checkpoint_with_an_unbound_group_restores_with_holder_none_and_t
 
 def test_an_old_checkpoint_with_a_bound_group_is_refused_naming_the_group(monkeypatch):
     old = pickle.loads(_old_shape_dumps(_state({10003: _unbound(), 10004: _bound()}), monkeypatch))
-    with pytest.raises(CheckpointFieldMissing, match=r"predates the group-contract binding: group 10004"):
+    with pytest.raises(CheckpointFieldMissingError, match=r"predates the group-contract binding: group 10004"):
         fill_missing_fields(old)
 
 
 def test_a_retained_dissolved_record_with_a_contract_counts_as_bound(monkeypatch):
     old = pickle.loads(_old_shape_dumps(_state({10004: _bound(dissolution_tick=9)}), monkeypatch))
-    with pytest.raises(CheckpointFieldMissing, match="retained dissolved record"):
+    with pytest.raises(CheckpointFieldMissingError, match="retained dissolved record"):
         fill_missing_fields(old)
 
 
@@ -118,7 +118,7 @@ def test_restore_refuses_a_bound_group_checkpoint_before_building_a_kernel(tmp_p
     path = tmp_path / "old.bin"
     path.write_bytes(struct.pack("<I", len(header)) + header + blob)
     spec = SimulationScenarioDefinition(id="s", world_composition="frontier_living_world", perspective="hero_guild_perspective")
-    with pytest.raises(CheckpointFieldMissing) as err:
+    with pytest.raises(CheckpointFieldMissingError) as err:
         ScenarioCheckpointer.restore(path, spec)
     assert isinstance(err.value, ValueError)  # the restore route answers ValueError as a client error
 

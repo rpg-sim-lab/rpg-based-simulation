@@ -63,7 +63,7 @@ class ScenarioCheckpointer:
         Raises:
             FileNotFoundError: if *path* does not exist.
             ValueError: if the checkpoint spec_id does not match *spec.id*.
-            CheckpointFieldMissing: (a ValueError) if the checkpoint predates a field that cannot be derived (a group with a contract_id).
+            CheckpointFieldMissingError: (a ValueError) if the checkpoint predates a field that cannot be derived (a group with a contract_id).
         """
         from src.engine.scenario_runtime import ScenarioRuntimeService
         from src.config.profiles import RuntimeProfile, HardwareClass

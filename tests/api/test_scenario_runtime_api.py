@@ -318,10 +318,10 @@ def test_restore_endpoint_default_spec_branch_unaffected_by_containment(client, 
 # ---------------------------------------------------------------------------
 
 def test_restore_endpoint_400_when_the_checkpoint_predates_a_required_field(client, mock_scenario_svc, monkeypatch):
-    from src.engine.checkpoint_fields import CheckpointFieldMissing
+    from src.engine.checkpoint_fields import CheckpointFieldMissingError
 
     def _raise(path, spec):
-        raise CheckpointFieldMissing("Checkpoint predates the group-contract binding: group 10004 ...")
+        raise CheckpointFieldMissingError("Checkpoint predates the group-contract binding: group 10004 ...")
 
     monkeypatch.setattr("src.api.routes.scenarios.ScenarioCheckpointer.restore", _raise)
     response = client.post("/api/v1/scenarios/test-scenario/restore/old-save")
