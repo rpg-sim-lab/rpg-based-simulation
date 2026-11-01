@@ -136,3 +136,27 @@ def test_a_group_pickled_under_the_old_module_path_still_loads_through_the_re_ex
     back = pickle.loads(blob)
     assert type(back) is GroupRecord and back.contract_holder_id == 1
     assert "src.core.group_record" in sys.modules
+
+
+def test_restore_fills_an_old_shape_checkpoint_before_the_kernel_is_built_and_reads_it(tmp_path, monkeypatch):
+    """The ordering the restore step relies on: on an old-shape checkpoint the new slots are ABSENT after unpickling, `fill_missing_fields` runs inside `restore`,
+    and only then is the Kernel built. The Kernel is replaced by a recorder that captures the state it is given, so this proves the order without running a tick."""
+    import src.engine.kernel as kernel_module
+    from src.scenarios.schema import SimulationScenarioDefinition
+    seen = {}
+
+    class RecordingKernel:
+        def __init__(self, profile, state, rng, *a, **k):
+            seen["next_group_id"] = state.next_group_id
+            seen["holder"] = state.groups[10003].contract_holder_id
+            seen["reason"] = state.groups[10003].dissolution_reason
+
+    blob = _old_shape_dumps(_state({10003: _unbound(), 10009: _unbound(10009)}), monkeypatch)  # first: the helper undoes the monkeypatch it made
+    monkeypatch.setattr(kernel_module, "Kernel", RecordingKernel)
+    assert not hasattr(pickle.loads(blob), "next_group_id")  # absent as unpickled: nothing reads it before the fill
+    header = json.dumps({"tick": 7, "spec_id": "s", "rng_checkpoint": None}).encode()
+    path = tmp_path / "old.bin"
+    path.write_bytes(struct.pack("<I", len(header)) + header + blob)
+    spec = SimulationScenarioDefinition(id="s", world_composition="frontier_living_world", perspective="hero_guild_perspective")
+    ScenarioCheckpointer.restore(path, spec)
+    assert seen == {"next_group_id": 10010, "holder": None, "reason": None}
