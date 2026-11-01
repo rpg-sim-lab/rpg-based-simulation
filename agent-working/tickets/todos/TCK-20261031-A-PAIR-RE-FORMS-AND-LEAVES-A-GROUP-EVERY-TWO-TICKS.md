@@ -318,6 +318,20 @@ VICTIMS FILE (old tree, nothing runs for it):
 - Entity 11: FAILS (ungrouped INTERCEPTING; H1 exposure).
 - Entity 32 on base: a panic retreat into the hazard, also H1, on base."
 
+### rpg-designer on Tier 2's scope and crowded_frontier, 2026-11-01 (u24; relayed by lead-planner-u24 and lead-planner). Word for word:
+
+"A, with the exception, as both of you prefer.
+- Tier 2 applies to a (world, cause) whose 5-seed TOTAL rose above 0 and missed tier 1.
+- A per-seed rise inside a world total that did NOT rise is reported only (the 'per-pair rises reported' line), with victim ids. The implementer's per-seed reading is corrected.
+CROWDED: no STOP and no Tier 2 (HAZARD 22->21, COMBAT 89->86, DEFEAT 48->40, all causes 159->147). The gates hold.
+EXCEPTION, NOT GATING: trace the crowded s42 HAZARD cluster (2 at t417; 6, 5, 1, 7 and 13 at t444-453) if a trace pair is left after the other worlds. It is H1 evidence, not a STOP test.
+- The question: did the group objective (a shared target or bracketing), or a group ending, put them on the walk (the N3 shape)?
+- If yes, it goes to ENGAGE-BRACKETING and to the H1 owner row, as the mechanism H1's first step must cover.
+- Report the outcome as PASS, FAIL or NOT SHOWN, for the record.
+Noted:
+- s45 audit tick +27% (single run): report it in the frontier tick-time line; not gating on single runs.
+- The byte-equal runs remain the proof for the relevance fix."
+
 ## Implementation Notes
 ## Test Summary
 ## Files Changed
