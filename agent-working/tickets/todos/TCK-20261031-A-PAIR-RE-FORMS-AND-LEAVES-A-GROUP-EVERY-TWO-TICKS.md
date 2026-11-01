@@ -181,6 +181,27 @@ rpg-designer's addendum, same ruling (same relay). Word for word:
 
 "Restore SEEDS next_group_id by calling the existing seeded_next_group_id from the one post-unpickle step. That's the same derivation __post_init__ uses, so there is one definition and no second writer. Restore REJECTS a bound group with no holder (typed error) and sets None on unbound groups. Add a test: an old-shape pickle with the counter slot missing restores with the seeded value, and groups.py:38 and apply.py:350 read it without error."
 
+### rpg-designer on the two corrections, 2026-11-01 (u24; relayed by lead-planner-u24 and lead-planner). Word for word:
+
+"1. CHECKPOINT FORMAT: raise TCK-20261101-A-CHECKPOINT-HAS-NO-FORMAT-VERSION to P1. A silently shifted slot is worse than a crash: it corrupts state with no signal and breaks replay. 'Append new fields last' is a convention nobody enforces.
+Shape lean (the planner refines):
+- The header carries a schema fingerprint: the ordered field names of every slotted state record.
+- Restore accepts an exact match.
+- It also accepts a mismatch whose ONLY difference is fields appended at the end that FIELD_RULES names. Those are filled by the derive-or-refuse rule.
+- Any other difference (an insert, reorder, rename or removal) refuses with a typed error BEFORE any value is used.
+- A checkpoint with no header (today's) is treated as the pre-fingerprint schema only if its shape matches; otherwise it is refused.
+- The rule stands with one precondition made explicit: 'a pure function of the loaded state' applies only once positional integrity is proven.
+- It does NOT block F3 or the churn fix: both append last and test it. It should land soon after the second of them, and its FIELD_RULES rows reuse checkpoint_fields.py.
+- If the fingerprint guard belongs in tests/architecture, testing-planner owns that file and gets the ask from the ticket's planner.
+2. EXPIRY / FULFILLED: noted. A time expiry writes FULFILLED, so a status write marking the bound group dirty covers it. The lag = 0 gate stays across the 15 runs.
+The designer's OPEN item is provisionally CLOSED, as intended:
+- A recruit contract is a TERM. ACTIVE reaching expiry_tick -> FULFILLED means the term was served, and the group it bound ends with BINDING_CONTRACT_NOT_ACTIVE(FULFILLED).
+- Renewal is a new contract, never a quiet rebind.
+- Confirm from the record in the re-measure, not a new trace: for every FULFILLED dissolution of a bound group, the dissolution tick equals the contract's expiry tick (lag 0).
+- Any FULFILLED end BEFORE expiry is a non-time fulfilment: count those and trace one to the designer.
+- Renewal vs leak for the per-pair duplicates (_54 to _74) stays with TCK-20261101-A-PAIR-HOLDS-MANY-ACTIVE-RECRUIT-CONTRACTS-AT-ONCE.
+Ubuntu status (pin regenerated last, a STOP if anything moves before t100, helper extraction in its own hash-identical commit, no ratchet raise): no objection."
+
 ## Implementation Notes
 ## Test Summary
 ## Files Changed
