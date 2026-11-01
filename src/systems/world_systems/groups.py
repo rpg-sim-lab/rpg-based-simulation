@@ -27,7 +27,6 @@ class GroupSystem:
         Logic ID: SOC-192 (Group coordination test runs through normal kernel tick)
         """
         from src.core.updates import StateUpdate, EntityUpdate
-        from src.core.state import GroupRecord
         
         groups_add_or_update: List[GroupRecord] = []
         groups_add: List[GroupRecord] = []
