@@ -72,10 +72,10 @@ Ticket 1 of 2 (rpg-designer accepted the split 2026-11-01): the MEASURED social 
 - Lodger-to-lodger interaction in the same building. A possible owner question after the audit ticket; closed for now, for determinism and simplicity.
 
 ## Acceptance Criteria
-- On a re-measure on the same seeds as batch C (frontier s43-s45 and urban s42 at least), lodged contract creations = 0 and lodged contract acceptances = 0.
+- On a re-measure on the same seeds as batch C (frontier s43-s45 and urban s42 at least): contracts CREATED with a lodged party = 0, and OFFERED->ACTIVE with a lodged party = 0. ACTIVE->FULFILLED is excluded, because term expiry is exception (c) (rpg-designer 2026-11-01).
 - Lodged-leader / lodged-holder formations are about 0. Any remaining case is named, with the reason no non-lodged member was eligible.
 - A unit test pins that membership persists through lodging.
-- Outside follow targets on a lodged leader = 0 (re-measure count), with a unit test of the absent-leader rule.
+- Outside follow targets on a lodged leader = 0 (re-measure count, with the objective and reason recorded), with a unit test of the absent-leader rule. rpg-designer ruled rule (4) a GUARD with a test (urban s42: target_id on the leader 0, REGROUP/FOLLOW 0).
 - A unit test per suppressed path pins that a lodged stayer makes no new offer/accept/counter/help request/defection, and is never chosen as partner or offeree.
 - The architecture test passes for this ticket's phases, and fails if a listed phase drops the predicate.
 - A run with no lodgers is hash-identical to the base.
@@ -121,7 +121,7 @@ Ticket 1 of 2 (rpg-designer accepted the split 2026-11-01): the MEASURED social 
   - OFFERED->ACTIVE 230 / 7 / 6 / 0;
   - ACTIVE->FULFILLED 214 / 3 / 9 / 11.
   Offers AND accepts leak. A lodged offerer occurs only with a lodged target (32/32), which fits the distance mechanism.
-- Lodged-leader/holder formations: 9 across the probes.
+- Lodged-leader/holder formations: 9 across the probes (0/3/3/3).
 - Rule (4), urban s42: 370 outside-member ticks with a lodged leader (on the building tile 92, reach tile 63, ring 38). target_id on the leader 0; REGROUP/FOLLOW reason 0. That is "needed now" by the tile definition. Caveat: the rows cannot tell following apart from walking to the same inn to rest, and there is no objective column. This ticket measures it with the objective and reason, and rpg-designer then confirms behaviour change vs guard.
 
 ## Assumptions / Open Questions
