@@ -38,6 +38,7 @@ class CognitionDomain:
         Optimized v2.4: early-exit for idle/isolated entities and reduced object pressure.
         """
         from src.engine.cognition import SensoryFilter, AppraisalSystem
+        from src.engine.lodging import suppress_stayer_movement
         from src.engine.tactical import TacticalDecisionSystem
         from src.engine.domain.cognition_extras import InformationNeedDetector
         
@@ -74,6 +75,7 @@ class CognitionDomain:
 
         # 2. Tactical Intent
         tactical_up = TacticalDecisionSystem.evaluate_entity_intent(readonly_state, entity, salient_neighbors, trauma)
+        tactical_up = suppress_stayer_movement(entity, tactical_up)   # F3: a lodger whose rest goes on emits no movement intent (a woken lodger still decides)
 
         # A strategic update the tactical layer itself returned (the end of a shop visit, building_arrival.py) is the decision of this tick; the
         # information-need project is proposed again on the next one.

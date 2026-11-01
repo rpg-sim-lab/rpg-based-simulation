@@ -74,6 +74,7 @@ from src.core.strategic import (
     CognitionProfile, ProjectKind, GoalKind, ObjectiveKind, has_project_capacity, with_live_current_score
 )
 from src.engine.spatial_query import SpatialQueryService
+from src.engine.lodging import is_lodged_stayer
 from src.content_semantics.faction import are_entities_hostile
 from src.content_semantics.relation import RelationContext
 from src.strategy.cognition_capacity import CapacityService
@@ -365,6 +366,7 @@ class StrategicIntelligenceSystem:
             ent_upd = refined_entity_updates.get(e_id)
             has_existing_upd = ent_upd is not None
             strat_up = ent_upd.strategic if ent_upd else None
+            lodged_stayer = is_lodged_stayer(entity)   # F3: a lodger whose rest goes on has no movement intent; the walk-target writers below skip it
             
             pending_inventory = entity.inventory
             if ent_upd and ent_upd.inventory:
@@ -390,7 +392,7 @@ class StrategicIntelligenceSystem:
                             if target_pos and entity.navigation.target != target_pos:
                                 nav_changed = True
                 if not nav_changed and not proj_resolved:
-                    if not (curr_proj_id and project and project.status == ProjectStatus.ACTIVE and active_obj and getattr(active_obj, 'target_position', None) is not None):
+                    if not lodged_stayer and not (curr_proj_id and project and project.status == ProjectStatus.ACTIVE and active_obj and getattr(active_obj, 'target_position', None) is not None):
                         town_target = nearest_town_tile(state.town_tiles, entity.navigation.position) or state.town_center
                         if len(pending_inventory.items) > 0 and entity.navigation.position != (0.0, 0.0) and town_target and entity.navigation.target != town_target:
                             if ent_upd:
@@ -628,7 +630,7 @@ class StrategicIntelligenceSystem:
             # --- 5. Redirection (Bridge to Navigation) ---
             # (Hoisted logic from StrategicRedirectionSystem)
             
-            has_nav_update = ent_upd.navigation and ent_upd.navigation.target_set is not None
+            has_nav_update = lodged_stayer or (ent_upd.navigation and ent_upd.navigation.target_set is not None)
             current_project_id = strat_up.current_project_id_set if strat_up.current_project_id_set is not None else entity.strategic.current_project_id
             
             active_blockers = [b for b_id, b in entity.strategic.blockers.items() if b_id not in new_removals and not b.resolved]
@@ -638,7 +640,7 @@ class StrategicIntelligenceSystem:
             if mat_blockers:
                 target_mat = mat_blockers[0].subject
                 match_lead = next((l for l in entity.strategic.leads.values() if l.subject == target_mat and l.kind == 'location'), None)
-                if match_lead:
+                if match_lead and not lodged_stayer:
                     try:
                         coords = tuple(map(float, match_lead.detail.split(',')))
                         if entity.navigation.target != coords:

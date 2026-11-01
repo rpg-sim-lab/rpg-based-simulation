@@ -211,3 +211,90 @@ def test_a_leaver_whose_step_is_refused_keeps_no_walk_target_so_it_is_never_lodg
         assert out.rejections_delta.get("LODGER_TARGET_DROPPED") == 1
     finally:
         k.shutdown()
+
+
+def _lodged_stayer_kernel(items=True):
+    """A hero lodged in the inn with a REST running, carrying an item (which makes the town-return fallback fire for anyone not lodged)."""
+    from src.core.state import InventoryComponent  # noqa: F401
+    k = kernel([hero(1, REACH[0], action="REST")], beds=1)
+    st = k._state
+    e = st.entities[1]
+    inv = e.inventory
+    if items:
+        from src.core.inventory import ItemStack
+        inv = replace(inv, items=[ItemStack(item_id="wood", quantity=1)])
+    object.__setattr__(e, "navigation", replace(e.navigation, lodged_in=INN_ID, position=(10.0, 10.0)))
+    object.__setattr__(e, "inventory", inv)
+    return k
+
+
+def test_the_claim_wins_the_merge_in_either_order_and_the_refused_step_is_counted():
+    from src.core.updates import StateUpdate
+    from src.engine.lodging import grant_beds, lodge_claim
+    k = kernel([hero(1, REACH[0], action=None)], beds=1)
+    try:
+        st = k._state
+        claim = lodge_claim(st.entities[1], st.buildings[INN_ID])
+        step = EntityUpdate(entity_id=1, new_position=(9, 11), moved_this_tick=True)
+        for merged in (claim.merge(step), step.merge(claim)):
+            out = grant_beds(st, StateUpdate(entity_updates={1: merged}))
+            assert out.entity_updates[1].new_position == (10.0, 10.0) and out.entity_updates[1].navigation.lodged_in_set == INN_ID
+        assert out.rejections_delta.get("LODGER_TARGET_DROPPED") in (1, None) and out.rejections_delta.get("LODGER_DROP_CLAIM_TICK") in (1, None)
+        both = grant_beds(st, StateUpdate(entity_updates={1: claim.merge(step)}))
+        assert both.rejections_delta["LODGER_DROP_CLAIM_TICK"] == 1 and both.rejections_delta["LODGER_TARGET_DROPPED"] == 1
+    finally:
+        k.shutdown()
+
+
+def test_the_strategic_pass_writes_no_walk_target_for_a_lodged_stayer_but_does_for_the_same_subject_outdoors():
+    from src.core.updates import StateUpdate
+    from src.systems.strategic_systems.intelligence import StrategicIntelligenceSystem
+    k = _lodged_stayer_kernel()
+    try:
+        st = k._state
+        out = StrategicIntelligenceSystem.fused_strategic_pass(st, StateUpdate(entity_updates={}))
+        upd = out.entity_updates.get(1)
+        assert upd is None or upd.navigation is None or upd.navigation.target_set is None
+        e = st.entities[1]
+        object.__setattr__(e, "navigation", replace(e.navigation, lodged_in=None, position=(30.0, 30.0)))
+        outdoors = StrategicIntelligenceSystem.fused_strategic_pass(st, StateUpdate(entity_updates={}))
+        u2 = outdoors.entity_updates.get(1)
+        assert u2 is not None and u2.navigation is not None and u2.navigation.target_set is not None   # the check is not vacuous
+    finally:
+        k.shutdown()
+
+
+def test_the_cognition_entry_strips_movement_from_a_stayers_decision_and_leaves_a_leavers_whole():
+    from src.core.movement_modes import MovementMode
+    from src.core.updates import NavigationUpdate, TaskUpdate
+    from src.engine.lodging import suppress_stayer_movement
+    k = _lodged_stayer_kernel(items=False)
+    try:
+        e = k._state.entities[1]
+        walk = NavigationUpdate(target_set=(1.0, 1.0), movement_mode_set=MovementMode.REGROUP)
+        stays = suppress_stayer_movement(e, EntityUpdate(entity_id=1, navigation=walk))
+        assert stays.navigation.target_set is None and stays.navigation.movement_mode_set is None
+        eats = suppress_stayer_movement(e, EntityUpdate(entity_id=1, navigation=walk, task=TaskUpdate(work_kind_set="ENTITY_ACT", payload_set={"action": "EAT"})))
+        assert eats.navigation.target_set is None
+        leaves = EntityUpdate(entity_id=1, navigation=walk, task=TaskUpdate(work_kind_set="ENTITY_MOVE", payload_set={}))
+        assert suppress_stayer_movement(e, leaves) is leaves
+        outdoor = replace(e, navigation=replace(e.navigation, lodged_in=None))
+        plain = EntityUpdate(entity_id=1, navigation=walk)
+        assert suppress_stayer_movement(outdoor, plain) is plain
+    finally:
+        k.shutdown()
+
+
+def test_a_starving_resting_lodger_gets_the_same_decisions_as_the_same_subject_resting_outdoors_on_main():
+    """The skip must not pin a lodger in bed: the decision a hunger-woken sleeper makes is the decision it makes outdoors (beds=0 is main's behaviour). The action sequence over 60 ticks is equal."""
+    from src.core.inventory import ItemStack
+
+    def actions(beds):
+        h = hero(1, REACH[0], debt=90.0, action="REST")
+        h = replace(h, biological=replace(h.biological, hunger=97.0), inventory=replace(h.inventory, items=[ItemStack(item_id="bread", quantity=3)]))
+        k = kernel([h], beds=beds)
+        try:
+            return [d[1][4] for _, d in run(k, 60)]
+        finally:
+            k.shutdown()
+    assert actions(1) == actions(0)
