@@ -262,7 +262,21 @@ planner reviews by comment. `--review-ref <PR#>#<comment id>` (`TCK-20261031-HAN
 owner option (a), #715 6545962757) records Review as `ok`, its summary naming the PR and the comment, so the retro's
 Paths table counts it as ran and stops offering Review as a routing candidate for those runs. Give it only once the review
 comment exists. A close without it keeps `skipped`/`no_hand_tool`, so a PR that really had no review still shows. The
-flag is refused for a tier with no Review step (hotfix) and when a Review event was narrated. Architecture-Verify is not
+flag is refused for a tier with no Review step (hotfix) and when a Review event was narrated.
+
+**Normal order: close, PR, review, then `record_review.py`.** A hand close is recorded before its PR exists, so the review
+comment usually does not exist yet. After it does, the planner (or the implementer on the planner's word) runs
+`python3 tools/agent-monitoring/record_review.py --ticket-id <TCK-ID> --review-ref <PR#>#<comment id>`
+(`TCK-20261101-RECORD-REVIEW-AFTER-THE-PR-REVIEW-EXISTS`). It checks read-only that the comment exists on that PR (a
+WARNING, not a failure, when `gh` or the network is unavailable), then appends one Review `ok` event with a fresh `seq` and
+`supersedes` naming the folded skip; nothing already written changes. It refuses, writing nothing, for a ticket with no hand
+close, a tier with no Review step, a bad ref, a comment that is missing or on another PR, and a Review already `ok`.
+`--review-ref` at close stays valid for the rare case where the review already exists.
+The comment id is a PR conversation comment (`gh pr comment`, the issues/comments endpoint); an inline review-thread comment id is refused as not found.
+
+**Where the appended row is committed.** It is created after the PR head is pinned, and pushing it to that PR changes the
+head (a fresh owner ask and re-review). So by default the row rides the closer's NEXT batch PR, or a monitoring-only PR (like
+#805). Adding it to the same PR is the exception. Architecture-Verify is not
 affected: it stays `skipped` unless the closer narrates one. The run row's `agent_count` is `null` for a hand closure (unknown: the recorder cannot see agent calls), so neither these events nor the narrated ones are counted as agent calls. A hotfix gets only Document-Update (its Review and Architecture-Verify are
 `skipped_event` in the plan).
 

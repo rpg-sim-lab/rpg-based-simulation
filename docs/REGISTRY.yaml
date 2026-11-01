@@ -7966,6 +7966,25 @@
   - content
   last_verified: '2026-10-09'
 - type: ticket
+  path: agent-working/tickets/done/TCK-20261101-RECORD-REVIEW-AFTER-THE-PR-REVIEW-EXISTS.md
+  ticket_id: TCK-20261101-RECORD-REVIEW-AFTER-THE-PR-REVIEW-EXISTS
+  title: A hand close's Review can be recorded after the fact, once the planner's
+    PR review comment exists; CLAUDE.md's closure example names that command
+  tier: standard
+  ticket_type: repair
+  date: '2026-11-01'
+  related_code_areas:
+  - review_ref_event
+  - tools/agent-monitoring/gate_ledger.py (pattern), path_report.py, generate_retro.py,
+    run_dedup.py
+  artifact_files:
+  - agent-working/stored_artifacts/TCK-20261101-RECORD-REVIEW-AFTER-THE-PR-REVIEW-EXISTS/investigation.md
+  - agent-working/stored_artifacts/TCK-20261101-RECORD-REVIEW-AFTER-THE-PR-REVIEW-EXISTS/plan.md
+  - agent-working/stored_artifacts/TCK-20261101-RECORD-REVIEW-AFTER-THE-PR-REVIEW-EXISTS/test_plan.md
+  tags:
+  - agent-monitoring
+  - governance
+- type: ticket
   path: agent-working/tickets/todos/TCK-20261101-PERF-V0002-RECORD-AFTER-FINDING-WHAT-MOVES-HOST-SPEED.md
   ticket_id: TCK-20261101-PERF-V0002-RECORD-AFTER-FINDING-WHAT-MOVES-HOST-SPEED
   title: Find what moves the ubuntu VM's speed, then re-record idle_100_local and
