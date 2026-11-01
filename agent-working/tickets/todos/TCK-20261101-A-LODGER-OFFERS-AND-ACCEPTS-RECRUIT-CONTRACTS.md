@@ -41,6 +41,8 @@ rpg-designer ruling (2026-11-01): this is a ROW, not a STOP on batch C.
 2. Suppress NEW social decisions by a lodged stayer on each uncovered path: offers, acceptances, counters and help requests, as the source or as the partner.
 3. Election and leader choice skip lodged members while a non-lodged member is eligible. Holder binding follows the same rule.
 4. Existing membership persists through lodging. It is not dissolved or left because the member lodged.
+5. Rule (4) (rpg-designer, 2026-11-01): while a leader is lodged it is ABSENT for following and regrouping. Followers outside do not target its building or reach tile; they act on their own. An election picks a non-lodged member. Whether this ships as a behaviour change now, or as a guard with a test only, depends on ubuntu's s45 / urban s42 outside-follower count.
+6. The fix reads lodging state, not distance. The distance check passes for co-lodgers and is not the gate.
 
 ## Out of Scope
 - The churn fix itself (TCK-20261031-A-PAIR-RE-FORMS-AND-LEAVES-A-GROUP-EVERY-TWO-TICKS).
@@ -52,6 +54,7 @@ rpg-designer ruling (2026-11-01): this is a ROW, not a STOP on batch C.
 - On a re-measure on the same seeds as batch C (frontier s43-s45 and urban s42 at least), lodged contract creations = 0 and lodged contract acceptances = 0.
 - Lodged-leader / lodged-holder formations are about 0. Any remaining case is named, with the reason no non-lodged member was eligible.
 - A unit test pins that membership persists through lodging.
+- Outside follow targets on a lodged leader = 0 (re-measure count), with a unit test of the absent-leader rule.
 - A unit test per suppressed path pins that a lodged stayer makes no new offer/accept/counter/help request.
 - A run with no lodgers is hash-identical to the base.
 - Deaths are paired under the death-STOP bar (Tier 1 / Tier 2 as in the batch C rules). rpg-designer reads any Tier 2 set.
@@ -80,7 +83,7 @@ rpg-designer ruling (2026-11-01): this is a ROW, not a STOP on batch C.
 - Offer: CooperationPhase loops over active+alive entities (src/domains/cooperation/phase.py:105-106). services.py:280/:284 creates the recruitment contract with no lodged read.
 - Accept: phase.py:130/:151 and services.py:48/:80/:95 also have no lodged read.
 - Formation: groups.py:282/:325/:338. The leader is the initiator (:300/:391). The distance check passes for co-lodgers.
-- Base: reachable by code (phase.py:104-105, groups.py:266/:309) but not measured. A 5-7 min base probe is available if the designer wants the base count.
+- Base: reachable by code (phase.py:104-105, groups.py:266/:309). No base probe is needed (rpg-designer).
 - Intent: on the rows it is stamps only. The scheduler holds the act, and lodging.py:264 strips moves.
 - Open seam, in scope to answer: a follower OUTSIDE with a lodged leader (tactical.py:568 reads the leader's state/position). Does the follower follow a lodged leader to the door, or wait? The investigation answers this before a fix shape.
 
