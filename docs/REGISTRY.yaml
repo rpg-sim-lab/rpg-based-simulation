@@ -7966,6 +7966,19 @@
   - content
   last_verified: '2026-10-09'
 - type: ticket
+  path: agent-working/tickets/done/TCK-20261101-PHASE19-CONTRACT-NAMES-ITS-RUNTIME-TEST.md
+  ticket_id: TCK-20261101-PHASE19-CONTRACT-NAMES-ITS-RUNTIME-TEST
+  title: The phase19 import contract names its runtime test, drops drifting kernel
+    line numbers, and also guards src.ai.goals
+  tier: hotfix
+  ticket_type: chore
+  date: '2026-11-01'
+  related_code_areas:
+  - codebase/structure/importlinter.toml; tests/architecture/test_phase19_off_mode_imports_none_of_the_four.py;
+    tests/codebase/test_import_contracts.py
+  artifact_files: []
+  tags: []
+- type: ticket
   path: agent-working/tickets/todos/TCK-20261101-PERF-V0002-RECORD-AFTER-FINDING-WHAT-MOVES-HOST-SPEED.md
   ticket_id: TCK-20261101-PERF-V0002-RECORD-AFTER-FINDING-WHAT-MOVES-HOST-SPEED
   title: Find what moves the ubuntu VM's speed, then re-record idle_100_local and

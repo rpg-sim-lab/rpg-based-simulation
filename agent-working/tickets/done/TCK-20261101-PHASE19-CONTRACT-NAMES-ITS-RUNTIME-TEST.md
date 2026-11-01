@@ -1,10 +1,10 @@
 ---
-status: active
+status: historical
 layer: architecture
 authority: P1
 audience: agent
 ticket_id: TCK-20261101-PHASE19-CONTRACT-NAMES-ITS-RUNTIME-TEST
-phase: open
+phase: done
 date: 2026-11-01
 tags: []
 ---
@@ -15,7 +15,7 @@ tags: []
 The phase19 import contract names its runtime test, drops drifting kernel line numbers, and also guards src.ai.goals
 
 ## Status
-OPEN
+DONE
 
 ## Tier
 hotfix
@@ -66,9 +66,13 @@ codebase/structure/importlinter.toml; tests/architecture/test_phase19_off_mode_i
 With `allow_indirect_imports = true` the new source catches direct imports only, which is the shape of the pre-#803 break. The runtime test stays the check for indirect paths. A grep of origin/main f5ae02e80 finds no direct import of the three forbidden packages under `src/ai/goals`; `make lint-imports` confirms it. rpg-planner proposed the source; this changes no RPG behaviour.
 
 ## Implementation Notes
+Only the `c06_hot_path_not_heavy` block of `codebase/structure/importlinter.toml` changed. Each comment's location was checked against the current `src/engine/kernel.py`: the artifact repository (line 153), metric recorder, cognition recorder and decision-trace writer (lines 254-272) are all opened in `Kernel.__init__` under `obs_mode != ObservabilityMode.OFF`, and `Kernel.shutdown` closes the writer only `if self._decision_trace_writer`. The "UNENFORCED" sentence now names the runtime test and its limit (one tick on one world). `tests/codebase/test_import_contracts.py` only holds sample lint-imports output, so the renamed contract needed no test edit.
 
 ## Test Summary
+Run on vCPUs 4-5 under `MemoryMax=1G`, one at a time (lead-planner go). `make lint-imports`: 17 kept, 0 broken, c06 still `KEPT (4 ignored imports)`, no stale-ignore warning. Positive control in a scratch copy on /data (removed afterwards): a direct `from src.observability.cognition import decision_trace_writer` appended to `src/ai/goals/adventure_scorer.py` makes c06 BROKEN with `src.ai.goals` as a source (15 kept, 2 broken) and leaves c06 kept without it (16 kept, 1 broken); the second broken contract in both runs is the registry layer-order contract, which the probe import itself violates. `test_phase19_off_mode_imports_none_of_the_four.py`: 7 passed. `tests/codebase/test_import_contracts.py`: 34 passed.
 
 ## Files Changed
+`codebase/structure/importlinter.toml` (c06 block). Carried from the planner: the M7 batch 2 roadmap row and monitoring rows; also 5 monitoring tool rows carried from the previous batch.
 
 ## Completion Summary
+The phase19 contract now names its runtime test, refers to `Kernel.__init__`/`Kernel.shutdown` instead of kernel.py line numbers, and guards `src.ai.goals` too. No `ignore_imports` edge and nothing under `src/` changed.
