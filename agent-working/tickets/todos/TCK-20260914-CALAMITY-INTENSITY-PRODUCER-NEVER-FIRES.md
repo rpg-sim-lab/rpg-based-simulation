@@ -17,7 +17,7 @@ calamity-intensity system (both its producer and its propagator) appears to be i
 not just the maturity-independent `world_boss` spawn path that consumes it
 
 ## Status
-OPEN
+BLOCKED (on TCK-20260914-LAIR-REGION-TRAUMA-NEVER-ACCUMULATES; scope superseded by ENV-06)
 
 ## Tier
 standard
@@ -341,3 +341,6 @@ but this ticket's own eventual scope needs to cover both the wiring gap and the 
 when picked up, not the composition gap alone.
 
 **Verdict as of 2026-09-30: `DEFECT`** (from PR #258, recorded not re-investigated); see Implementation Notes. Still `OPEN`.
+
+## 2026-10-31 cleanup re-verification (rpg-planner, owner go #715 6543261623; origin/main 96f623a62)
+- Zero callers confirmed (src/world/calamity.py:87, only tests/architecture/test_calamity_intensity_producer_unwired.py). Original AC1-3 superseded by ENV-06 (environment.md:174). Kept open, BLOCKED on TCK-20260914-LAIR-REGION-TRAUMA-NEVER-ACCUMULATES; re-file as ENV-06 implementation after LAIR.
