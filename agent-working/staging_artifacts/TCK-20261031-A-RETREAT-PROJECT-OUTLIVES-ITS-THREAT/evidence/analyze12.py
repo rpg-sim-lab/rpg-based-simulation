@@ -33,6 +33,10 @@ def outcome(R, e, d):
     ad, tc = mech(R, e, d["dtick"]); x = next((r for r in R["dtask"] if r["e"] == e), None); en = (x or {}).get("entry") or {}
     if "combat_retreat" in (en.get("project") or ""): return f"PASS: retreat {en['project']} was current on the entry move into the death tile at t{en['t']} (move reason {en.get('reason')}, writer {x['entry_writer']}) -> STOP to the designer with this chain"
     if "combat_retreat" in ((x or {}).get("project") or ""): return f"PASS: retreat {x['project']} current at death t{d['dtick']} (task {x['task']}) -> STOP to the designer with this chain"
+    for tcr in reversed(tc):   # completion is causal too: the first post-clear choice is the project on the entry move into the death tile
+        nxt = next((r for r in sorted(R["pj"], key=lambda r: r["t"]) if r["e"] == e and r["t"] >= tcr[0] and r["a"] and r["pr"] and "combat_retreat" not in r["pr"]), None)
+        if nxt is not None and en.get("project") == nxt["pr"]:
+            return f"PASS: THREAT_CLEARED of {tcr[1]} at t{tcr[0]}; first post-clear choice {nxt['pr']} (t{nxt['t']}, {'resumed' if int(nxt['pr'].rsplit('_', 1)[-1]) < tcr[0] else 'adopted'}) was the project on the entry move into the death tile at t{en.get('t')} -> STOP to the designer with this chain"
     if ad or tc: return f"NOT SHOWN: retreat adopted {ad[:3]} / THREAT_CLEARED {tc[:3]} within 200t but not on the logged entry move or death task -> rows to the designer"
     return "FAIL: no retreat adopted or completed within 200t -> divergence, reported"
 def first_diff(Rb, Rf):
