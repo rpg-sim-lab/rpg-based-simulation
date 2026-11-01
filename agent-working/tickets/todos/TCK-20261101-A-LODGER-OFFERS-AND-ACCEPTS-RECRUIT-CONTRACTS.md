@@ -43,6 +43,12 @@ rpg-designer ruling (2026-11-01): this is a ROW, not a STOP on batch C.
 4. Existing membership persists through lodging. It is not dissolved or left because the member lodged.
 5. Rule (4) (rpg-designer, 2026-11-01): while a leader is lodged it is ABSENT for following and regrouping. Followers outside do not target its building or reach tile; they act on their own. An election picks a non-lodged member. Whether this ships as a behaviour change now, or as a guard with a test only, depends on ubuntu's s45 / urban s42 outside-follower count.
 6. The fix reads lodging state, not distance. The distance check passes for co-lodgers and is not the gate.
+7. Rule details (rpg-designer verbatim, 2026-11-01, via lead resend):
+   - (1) Suppression is the same as F3 class (a): time, needs and wake still run.
+   - (3) Formation needs an accepted contract, so lodger-led formations fall to about 0. If every member is lodged, the current leader stays.
+   - (4) Reason: without it, followers walk to the inn door to "regroup" with a sleeper. That rebuilds the door jam F3 removed, and it is a REGROUP walk of the kind seen in the hazard entries.
+   - The mechanism is the distance-10 finding. Lodgers share the building tile, so formation sees them as side by side.
+8. The measurement rows carry the lodging state of BOTH the offerer and the target, at contract creation and at acceptance, plus outside-follower ticks whose follow or REGROUP target is a lodged leader's building tile or reach tile.
 
 ## Out of Scope
 - The churn fix itself (TCK-20261031-A-PAIR-RE-FORMS-AND-LEAVES-A-GROUP-EVERY-TWO-TICKS).
@@ -60,6 +66,9 @@ rpg-designer ruling (2026-11-01): this is a ROW, not a STOP on batch C.
 - Deaths are paired under the death-STOP bar (Tier 1 / Tier 2 as in the batch C rules). rpg-designer reads any Tier 2 set.
 - Mechanics ch.04 (strategic cognition), the parity ledger and intentional_divergences are updated in the same change if behaviour diverges from the Bible.
 - Hot-loop: probably no (a lodged-state check on the cooperation decision path, per decision, not per tick per pair). The investigation confirms it. Under the perf pause (#715 6556861718), timing is NOT MEASURED and is covered by checkpoint (a).
+
+## Disclosure
+- Batch C's disclosure names this as a known F3 seam (2.155) with this ticket id. F3 (TCK-20261031-A-SLEEPER-HOLDS-A-DOOR-OR-SERVICE-TILE) is already closed and merged (#823, 30307228c), so the seam is recorded here and in batch C, not in F3's close.
 
 ## Related Tickets
 - TCK-20261031-A-SLEEPER-HOLDS-A-DOOR-OR-SERVICE-TILE (F3; the two suppressed entries)
