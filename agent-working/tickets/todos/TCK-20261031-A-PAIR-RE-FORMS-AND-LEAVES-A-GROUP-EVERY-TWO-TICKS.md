@@ -234,6 +234,24 @@ THEN: the FINAL tree (latest-expiry pick plus contract_is_live) gets all 15 pair
 
 lead-planner's decision, same message: skip the 14 interim pairs on the current tree; make Q3, Fact 2 and Fact 3 first, then run all 15 on the final tree, stopping per world as ruled. "Rise" is to be defined before the runs and sent to it. Each run set needs its go when src is final.
 
+### rpg-designer's world STOP bar, set before the data, 2026-11-01 (u24; relayed by lead-planner-u24 and lead-planner). Word for word:
+
+"For each (world, cause) among HAZARD, COMBAT and DEFEAT, against the same seeds on base:
+TIER 1, BLOCKING STOP: the fix's total for that cause across the 5 seeds rises by >= max(2, ceil(10% of base's total)) AND rises in >= 3 of the 5 seeds. This stops, and the trace goes as approved.
+TIER 2, VICTIM REVIEW (any rise above 0 that misses tier 1): no stop by itself. Each extra victim of that cause gets its first state diff and death path, reported against one test: does the path pass through this fix's mechanism?
+- Here that means the victim was in a group formed or dissolved under the new binding, or in a re-form within 50 ticks of its death (same contract or a duplicate).
+- ANY victim that passes through the mechanism -> STOP, sent to the designer with the chain.
+- If none do, it's divergence, reported.
+REPORTED ONLY:
+- a rise in a world's all-cause total with no cause in either tier;
+- every per-pair rise, with victim ids.
+WHY: across 9 comparisons, chance alone moves +1s. A mechanism-traced death counts whatever the size; a chaos-sized rise with no mechanism doesn't. This matches F3's subject 17 (+1, traced, divergence) and the retention exemption (first diffs at cap-exempt adoptions, which is a mechanism, so it was dropped).
+It applies to this batch, and the designer uses the same bar for the rpg lanes from now on."
+
+rpg-designer's correction, same relay: "do NOT run the 14 parked pairs on 9e3b07c22. The Q3 pick and Fact 2 change the tree, so run ALL 15 pairs ONCE on the final tree vs c9b9a50f4, with the gates as listed."
+
+lead-planner's note, same message: "extra victim" is fixed per world before the runs: the victims present on the branch and absent on base for that cause, per seed. Tier 2's traces need instrumented runs; list them in the go ask. My draft definition of a rise is dropped.
+
 ## Implementation Notes
 ## Test Summary
 ## Files Changed
