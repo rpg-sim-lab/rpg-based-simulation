@@ -1,10 +1,10 @@
 ---
-status: active
+status: historical
 layer: simulation
 authority: P1
 audience: agent
 ticket_id: TCK-20261023-M1-DONE-CRITERIA-AND-FREEZE-RULE
-phase: open
+phase: done
 date: 2026-10-23
 tags: []
 ---
@@ -15,7 +15,7 @@ tags: []
 Record the owner-approved milestone 1 done criteria and freeze rule as roadmap §12.5
 
 ## Status
-OPEN
+DONE
 
 ## Tier
 hotfix
@@ -58,3 +58,5 @@ docs/plans/systemic_world/roadmap.md
 ## Files Changed
 
 ## Completion Summary
+
+Closed 2026-10-31 by rpg-planner (owner go #715 6543261623). Landed in #726 (6c1373951): roadmap.md §12.5 on main; memo rows 87/89/90/92 present; amended since by owner rows 93-95 (owner-authorized).

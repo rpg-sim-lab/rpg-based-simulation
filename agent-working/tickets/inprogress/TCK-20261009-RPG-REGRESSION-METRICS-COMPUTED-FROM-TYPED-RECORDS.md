@@ -80,3 +80,7 @@ TBD
 
 ## Completion Summary
 TBD
+
+## 2026-10-31 cleanup re-verification (rpg-planner, owner go #715 6543261623; origin/main 96f623a62)
+- AC1 met (tests/unit/observability/test_rpg_gate_metrics.py:73-168). AC2 met partly (:190 AST import ban; no live-state mutation test under tests/architecture). AC3 NOT met as worded: :185 computes twice on staged synthetic files; the harness byte test (test_rpg_gate_harness.py:41) uses a stub; rpg_gate_candidate.py:130 compares findings, not document bytes.
+- Left: run the gate harness twice in fresh processes on one pinned (world, seed, ticks, sha) Kernel run and byte-compare the per-run JSON (needs a slot). Title O1-O7 -> O1-O6 (O7, tick time, is the harness cost document, rpg_gate_metrics.py:20).
