@@ -8114,6 +8114,20 @@
   artifact_files: []
   tags: []
 - type: ticket
+  path: agent-working/tickets/todos/TCK-20261101-FUSED-STRATEGIC-PASS-RESTRUCTURE.md
+  ticket_id: TCK-20261101-FUSED-STRATEGIC-PASS-RESTRUCTURE
+  title: 'Pay down the code-health debt in fused_strategic_pass and the files F3 grew:
+    split the 408-line strategic pass into named stages'
+  tier: standard
+  ticket_type: refactor
+  date: '2026-11-01'
+  related_code_areas:
+  - src/systems/strategic_systems/intelligence.py (fused_strategic_pass)
+  - src/engine/phase_graph.py (should_run_phase)
+  - src/core/state.py, src/core/updates.py
+  artifact_files: []
+  tags: []
+- type: ticket
   path: agent-working/tickets/todos/TCK-20261101-PERF-V0002-RECORD-AFTER-FINDING-WHAT-MOVES-HOST-SPEED.md
   ticket_id: TCK-20261101-PERF-V0002-RECORD-AFTER-FINDING-WHAT-MOVES-HOST-SPEED
   title: Find what moves the ubuntu VM's speed, then re-record idle_100_local and
@@ -8139,6 +8153,22 @@
   - src/engine/building_services.py; data/content/world/buildings.yaml; the world
     assembly building profile.
   artifact_files: []
+  tags: []
+- type: ticket
+  path: agent-working/tickets/done/TCK-20261031-A-SLEEPER-HOLDS-A-DOOR-OR-SERVICE-TILE.md
+  ticket_id: TCK-20261031-A-SLEEPER-HOLDS-A-DOOR-OR-SERVICE-TILE
+  title: 'A sleeper holds a door or service tile (F3: a served rest occupies the building,
+    not the door tile)'
+  tier: standard
+  ticket_type: repair
+  date: '2026-10-31'
+  related_code_areas:
+  - src/engine/building_arrival.py (service on reach), occupancy and movement candidate
+    checks, src/engine/sleep_debt.py
+  artifact_files:
+  - agent-working/stored_artifacts/TCK-20261031-A-SLEEPER-HOLDS-A-DOOR-OR-SERVICE-TILE/investigation.md
+  - agent-working/stored_artifacts/TCK-20261031-A-SLEEPER-HOLDS-A-DOOR-OR-SERVICE-TILE/plan.md
+  - agent-working/stored_artifacts/TCK-20261031-A-SLEEPER-HOLDS-A-DOOR-OR-SERVICE-TILE/test_plan.md
   tags: []
 - type: ticket
   path: agent-working/tickets/done/TCK-20261031-ADVENTURE-SCORER-LOADS-THE-COGNITION-PACKAGE-IN-OFF-MODE.md
@@ -8409,20 +8439,6 @@
   - src/systems/strategic_systems/intelligence.py (capacity gate :1768, switch :1042-ish),
     project completion facts (location to find), src/ai/goals/present_threat.py, src/engine/scheduler.py
     (_throttled), src/ai/goals/scorers.py (retreat scorer)
-  artifact_files: []
-  tags: []
-- type: ticket
-  path: agent-working/tickets/todos/TCK-20261031-A-SLEEPER-HOLDS-A-DOOR-OR-SERVICE-TILE.md
-  ticket_id: TCK-20261031-A-SLEEPER-HOLDS-A-DOOR-OR-SERVICE-TILE
-  title: 'A sleeper holds a door or service tile (F3: a served rest occupies the building,
-    not the door tile)'
-  tier: 'standard (a durable entity field, content, occupancy and perception). Dispatch
-    needs an owner go via lead-planner-u24 / #715.'
-  ticket_type: repair
-  date: '2026-10-31'
-  related_code_areas:
-  - src/engine/building_arrival.py (service on reach), occupancy and movement candidate
-    checks, src/engine/sleep_debt.py
   artifact_files: []
   tags: []
 - type: ticket
