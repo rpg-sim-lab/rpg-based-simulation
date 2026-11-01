@@ -272,6 +272,7 @@ WARNING, not a failure, when `gh` or the network is unavailable), then appends o
 `supersedes` naming the folded skip; nothing already written changes. It refuses, writing nothing, for a ticket with no hand
 close, a tier with no Review step, a bad ref, a comment that is missing or on another PR, and a Review already `ok`.
 `--review-ref` at close stays valid for the rare case where the review already exists.
+The comment id is a PR conversation comment (`gh pr comment`, the issues/comments endpoint); an inline review-thread comment id is refused as not found.
 
 **Where the appended row is committed.** It is created after the PR head is pinned, and pushing it to that PR changes the
 head (a fresh owner ask and re-review). So by default the row rides the closer's NEXT batch PR, or a monitoring-only PR (like
