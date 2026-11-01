@@ -1,5 +1,5 @@
 ---
-status: active
+status: historical
 layer: ai
 authority: P1
 audience: agent
@@ -88,3 +88,6 @@ Bible 04 sec 1 and engine/contracts/local_world_interaction_contract.md 2.1 (law
 - WAY_CLOSED goes through lane C's `end_record` (cherry-pick c1b14815c); `ProjectEnd.WAY_CLOSED` is the only value F3 adds; lane C's enum test is widened by that one value.
 - `beds` canonical-dict: present on `BuildingState` only when non-zero. Static content, so the state hash differs from base from tick 0 for worlds with an inn; AC 5's first-diff therefore compares entity trajectories and events, not the building content hash.
 - No `home` building kind exists in data/content/world/buildings.yaml, so `home: 4` cannot be declared; only `inn: 10` is. A `home` definition would be a content change (no world uses it); flagged to rpg-planner.
+
+## Close note (2026-11-01)
+Implemented as planned, with these changes after review: a lodged stayer emits no movement intent at the strategic and tactical entries (not ~30 writer guards); the claim wins the merge in either order; typed drop reasons (LODGER_DROP_CLAIM_TICK, LODGER_DROP_LEAVE_REFUSED); one post-unpickle checkpoint step; the stay rule in core. Heavy-run evidence is in divergence 2.155.

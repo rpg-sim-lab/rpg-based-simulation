@@ -1,5 +1,5 @@
 ---
-status: active
+status: historical
 layer: ai
 authority: P1
 audience: agent
@@ -35,3 +35,6 @@ Real Kernel for behaviour tests (as `test_a_chosen_rest_lasts_until...`: ids 1-1
 
 ## Existing suites to run (scoped)
 tests/unit/engine, tests/unit/strategic, tests/unit/ai, tests/unit/cognition, tests for legality/occupancy/spatial/hard_law_monitor/replay fingerprint, the architecture tests touching apply path and canonical dict.
+
+## Close note (2026-11-01)
+Added after the plan: claim-wins-merge in both orders, strategic and cognition entries for a stayer, REST-end placement within one tick, a re-claim is not a counted drop, old-shape checkpoint records (lodged_in fills None, beds refused), field-position pin. Results are in the ticket Test Summary.

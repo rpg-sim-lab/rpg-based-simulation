@@ -1,5 +1,5 @@
 ---
-status: active
+status: historical
 layer: ai
 authority: P1
 audience: agent
@@ -72,3 +72,11 @@ Method: grep gave 314 `navigation.position` hits plus about 40 through the `Enti
 
 ## Not done
 - Item 1 (15-run base split on 6fdfdf555 by sleep type, door-tile holders served/rough/collapse/refused-bed and awake holders). Needs the slot and an observer edit (per-person door ticks by sleep type).
+
+## Close findings (2026-11-01)
+- Repeat of the 15 paired runs on the final code: door-tile sleeper ticks, deaths by cause, asleep share, lodging counts are in divergence 2.155 "Measured". LAW-LODGER-INDOORS 0 in 15 runs after two root causes were fixed: (a) a leaver kept the writer's walk target and the occupancy refusal of its leave step kept the target; (b) on the claim tick a movement step's position merged over the claim's building-tile position.
+- Stayer drops: every one was the claim's own building-tile position re-emitted by `lodge_claim` while the subject already stood on that tile (no target writer). Counting fixed in 039af5373; behaviour unchanged.
+- Crowded HAZARD 23 to 27 (tier 1): traced by id against the base; the 6 extra victims reached the draining field on a tactical intercept, a regroup leg or a panic-retreat target; none was fed by a lodging or leave; routes weigh move cost only. Frontier COMBAT +1 and urban COMBAT +1 (subject 17): divergence.
+- Subject 17 (urban s44): nearest open bed chosen (20006 at 9 tiles against 27.5), left t3187, walked to (25,25) on a congestion blocker-resolution project objective (intelligence.py:670), met hostile 24 and did not flee.
+- Checkpoint: a slotted frozen dataclass unpickles POSITIONALLY, so a field inserted before another takes the old value of the next one; each F3 field is the last of its class and `src/engine/checkpoint_fields.py` fills or refuses.
+- tests/architecture caught a systems to engine import (intelligence.py to engine.lodging); the stay rule moved to `src/core/lodging_rules.py`.

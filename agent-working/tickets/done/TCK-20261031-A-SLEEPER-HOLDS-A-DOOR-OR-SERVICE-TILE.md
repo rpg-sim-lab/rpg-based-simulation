@@ -1,10 +1,10 @@
 ---
-status: active
+status: historical
 layer: ai
 authority: P1
 audience: agent
 ticket_id: TCK-20261031-A-SLEEPER-HOLDS-A-DOOR-OR-SERVICE-TILE
-phase: open
+phase: done
 date: 2026-10-31
 tags: []
 ---
@@ -15,10 +15,12 @@ tags: []
 A sleeper holds a door or service tile (F3: a served rest occupies the building, not the door tile)
 
 ## Status
-OPEN. Design by rpg-designer 2026-10-31 SEATED (source: main-checkout .claude/handover/drafts/rpg-designer-f3-design.md). Order per owner #715 6541804604 (memo row 93): F3 first, then N14 re-measure, A', nav, D80C, #781. DISPATCHED 2026-10-31 to lane B (rpg-implementer-2) under owner go #715 6543182195, investigation first; heavy runs after lane C releases the slot.
+DONE (hand-orchestrated, lane B, local branch rpg-sleeper-lodges; push and merge are the owner's). Dispatched under owner go #715 6543182195 (dispatch only).
 
 ## Tier
-standard (a durable entity field, content, occupancy and perception). Dispatch needs an owner go via lead-planner-u24 / #715.
+standard
+
+A durable entity field, content, occupancy and perception. Dispatch needed an owner go via lead-planner-u24 / #715 (given: 6543182195).
 
 ## Type
 repair
@@ -182,6 +184,96 @@ Pre-existing failures, red on clean main 6fdfdf555 and not caused by this ticket
 
 Mechanism changed-code advisory (report-only), 12 findings, rpg-planner's review 2026-11-01: `buildings` and `combat_resolution` got a note in `registries/mechanisms.yaml`; the other ten are reviewed, plumbing only, no entry change (`action_pacing_readiness` legality.py, `attributes_biology` apply.py, `race_archetype` content/schema.py, `personality`/`city`/`camp` core/state.py, `entity_role` core/enums.py, `status_effects` core/updates.py and engine/patches.py, `world_composition_assembly` worldassembly/resolver.py, `world_compilation` worldbuilding/compiler.py).
 
+
+Final-head checks (2026-11-01, merged with origin/main 61e984212):
+- tests/architecture + tests/unit/{core,engine,systems,observability,ai,tools} + tests/engine: 3947 passed, 4 skipped; one `test_kernel_run_output_stays_out_of_data_runs` failure under xdist (parallel workers write data/runs) passes alone (4 passed). `-k mechanism`: 321 passed. Integration (`-m 'not slow'`) on 56abe4d8a: 1125 passed, 6 skipped, 0 failed.
+- Determinism: urban s44 5000t final hash cb3913a288b2729e7db10b2b02774e16f121125ee215629d4edb1b4b0398f46a and 25-tick chain 18fa525567e3de175de0becd9248b4c3b49327888a53cb09547cfde8ca917f0f, byte-equal on 9fa23bc0c, 039af5373, 56abe4d8a, c16d16bcd and the merged head; crowded s46 (4d6657f5...) and frontier s45 (d626e239...) byte-equal on 9fa23bc0c vs 56abe4d8a.
+- Defect found by tests/architecture and fixed: intelligence.py (systems) imported src.engine.lodging (systems to engine); the stay-or-leave predicates now live in src/core/lodging_rules.py.
+- Checkpoint: pre-F3 checkpoints are refused with CheckpointFieldMissing (a ValueError) for BuildingState.beds; lodged_in fills None; both fields are the LAST field of their class (a slotted dataclass unpickles positionally). tests/unit/engine/test_checkpoint_fields.py builds records as an old pickle loads them.
+
 ## Files Changed
+- agent-working/tickets/inprogress/TCK-20261031-A-SLEEPER-HOLDS-A-DOOR-OR-SERVICE-TILE.md
+- data/content/world/buildings.yaml
+- docs/brainstorm/mechanism_verification_view.md
+- docs/engine/contracts/local_world_interaction_contract.md
+- docs/guidelines/intentional_divergences.md
+- docs/mechanics/04_strategic_cognition.md
+- docs/observability/hard_law_monitor.md
+- docs/parity_ledger/combat_movement.yaml
+- docs/parity_ledger/strategic_cognition.yaml
+- docs/parity_ledger/world_dynamics.yaml
+- registries/mechanisms.yaml
+- src/ai/goals/scorers.py
+- src/api/presenters/state_presenter.py
+- src/content/schema.py
+- src/core/enums.py
+- src/core/lodging_rules.py
+- src/core/state.py
+- src/core/strategic.py
+- src/core/updates.py
+- src/domains/combat_engagement/phase.py
+- src/domains/information/resolver.py
+- src/domains/information/router.py
+- src/engine/apply.py
+- src/engine/appraisal.py
+- src/engine/building_arrival.py
+- src/engine/building_services.py
+- src/engine/candidate_selector.py
+- src/engine/checkpoint_fields.py
+- src/engine/combat.py
+- src/engine/domain/aoe_actions.py
+- src/engine/domain/cognition.py
+- src/engine/domain/view.py
+- src/engine/legality.py
+- src/engine/lodging.py
+- src/engine/occupancy_snapshot.py
+- src/engine/patches.py
+- src/engine/phase_graph.py
+- src/engine/pipeline.py
+- src/engine/pipeline_phases/actions.py
+- src/engine/pipeline_phases/movement.py
+- src/engine/pipeline_phases/occupancy.py
+- src/engine/scenario_checkpoint.py
+- src/engine/service_admission.py
+- src/engine/sleep_debt.py
+- src/engine/spatial.py
+- src/engine/spatial_query.py
+- src/engine/world_index.py
+- src/observability/hard_law_monitor.py
+- src/replay/fingerprint.py
+- src/systems/strategic_systems/intelligence.py
+- src/worldassembly/context.py
+- src/worldassembly/models.py
+- src/worldassembly/resolver.py
+- src/worldbuilding/compiler.py
+- tests/unit/engine/lodging_kernel.py
+- tests/unit/engine/test_beds_survive_a_checkpoint_restore.py
+- tests/unit/engine/test_checkpoint_fields.py
+- tests/unit/engine/test_lodged_in_is_carried_by_the_apply_path.py
+- tests/unit/engine/test_lodged_in_stays_in_the_apply_path.py
+- tests/unit/engine/test_lodger_is_invisible.py
+- tests/unit/engine/test_lodging.py
+- tests/unit/engine/test_lodging_leave_and_indexes.py
+- tests/unit/engine/test_lodging_no_bed_and_arrival.py
+- tests/unit/strategic/test_project_end_record.py
+- tests/unit/tools/test_mechanism_registry_completeness_check.py
+- data/worlds/*/resolved/{assembly_report,compile_context,provenance_manifest,validation_report}.json (regenerated compile outputs: the inn now carries beds; 91 files)
+- agent-working/staging_artifacts (moved to stored_artifacts), agent-working/agent-monitoring shards, docs/REGISTRY.yaml
 
 ## Completion Summary
+A subject served a bed at a building that declares beds now lodges inside it (navigation.lodged_in, position the building's tile, no tile held): it holds no door or service tile, is invisible and untargetable from outside, and leaves the tick its rest ends onto a free tile beside the building. Divergence 2.155 (class Enforced); Bible 04 sec 1; contract 2.1; parity STRAT-295/STRAT-296/COMB-350; hard law LAW-LODGER-INDOORS; mechanisms.yaml (town_services, strategic_intelligence_core, buildings, combat_resolution). Measured over 15 paired runs (base 6fdfdf555, 3 worlds x seeds 42-46 x 5000 ticks): door-tile sleeper ticks crowded 11128 to 100, frontier 18137 to 715, urban 34662 to 85; asleep on a door tile after a leave 0; LAW-LODGER-INDOORS 0; stuck awake indoors at most 4 ticks. Deaths crowded 176 to 174, frontier 122 to 119, urban 48 to 49. Details in divergence 2.155 Measured.
+Disclosure:
+- the FULL re-adoption race;
+- the gold-0 clamp (to D73);
+- the hoverer cycle with figures: urban relodge_within_20 63 to 1775 per run, lodged span p50/p90 6/46 (urban), 3/4 (crowded), 3/6 (frontier), WAY_CLOSED ends 2 to 103 per urban run;
+- leaver re-target churn (to N14): 501 to 653 target changes in the first 20 ticks after a leave per urban run, 10 to 29 crowded, 4 to 67 frontier;
+- the counter correction 039af5373: the stayer drops were the claim's own tile re-emitted by lodge_claim each tick of a held rest, not a movement writer;
+- asleep share crowded 0.1035 to 0.1207 (0.59 of its asleep ticks are lodged rest), frontier 0.1876 to 0.1809, urban 0.2402 to 0.2458: the owner question follows N14;
+- crowded HAZARD 23 to 27 (tier 1), traced by id: 6 extra victims, 0 fed by lodging/leave; H1 exposure (no hazard avoidance) on intercept, regroup and panic-retreat legs. Frontier COMBAT 58 to 59 (extras 26 and 30 never lodged or left) is divergence;
+- subject 17 (urban s44, COMBAT t3306, divergence): the walk to (25,25) was a congestion blocker-resolution project replacing the finished fatigue project (intelligence.py:670), not town-return; to TCK-20261101-A-CONGESTION-BLOCKER-RESOLUTION-SENDS-A-SUBJECT-TO-THE-TOWN-CENTRE (counts-first);
+- subject 30 (the pre-Q-B door-tile hold at t4001): not reproducible at 9c685e498, abe8d0074, 876388edc, 4b3ecce12 or the final head (the world trajectory differs by commit); the class count is 0 in all 15 repeat runs;
+- the combat note wording, frontier item (b), and the clear_target versus target_clear field note in 2.155;
+- checkpoint format: pre-F3 checkpoints are refused with a typed error (CheckpointFieldMissing), and the restore step is a single table (src/engine/checkpoint_fields.py, FIELD_RULES) that the churn lane extends with its own rows; the general fix, a checkpoint format version in the header, is a separate ticket;
+- the import-boundary fix (src/core/lodging_rules.py) found by tests/architecture after 91014a88f;
+- N14 is not on this branch: it is re-measured on top of F3. The churn fix is not on main either, so F3 lands first and the churn lane re-measures on F3.
+Run data this session wrote under data/runs was cleaned by id; scratch trees outside data/runs (n14/old9fa, o_*, base6fd) stay for the owner.
