@@ -615,3 +615,10 @@ Send results to me for relay.
 - A lodged stayer that is chosen as leader or bound as holder is a lodger making a social choice indoors: a candidate F3×churn defect, independent of the victims. That split decides STOP or row.
 - If the frontier runs already started without the decider/kind/flag fields, say whether those can be derived from what is logged. If not, the urban s42 run carries the full field set, and rpg-planner decides whether one frontier run repeats.
 4. Tier 2 outcomes: FED -> STOP to rpg-planner; NOT FED -> divergence row; NOT SHOWN -> rows to rpg-designer. The allowance closes at 6.
+
+### rpg-designer clears STOP victim 1 (via rpg-planner, lead-planner-u24 and lead-planner, 2026-11-01, word for word as relayed)
+
+rpg-designer rules frontier s43 e12 NOT FED. The s43 seam check is clean: group 10088 formed 5t after the leave, so e12 was not lodged when chosen. STOP victim 1 is CLEARED.
+- The e30 cluster (s43 DEFEAT 3->10) is report-only, since frontier's 5-seed DEFEAT fell 35->31. No slot. It goes in batch C's close disclosure as "per-seed cluster, untraced", with evidence on ENGAGE-BRACKETING.
+- e12's leave/re-claim cadence goes as an F3 churn row on N14. Both are filed on rpg-planner's local seat branch.
+Still open: victim 2 (e23) and the s44/s45 lodged splits. B stays held.
