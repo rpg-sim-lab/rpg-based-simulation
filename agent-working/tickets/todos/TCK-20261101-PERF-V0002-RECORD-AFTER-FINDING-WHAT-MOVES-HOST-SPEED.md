@@ -88,6 +88,9 @@ None.
 - Soft-lockup readings were empty before and after the chain, so the 10-30 panic's symptom did not recur in that boot. That is not proof of its cause.
 
 ## Implementation Notes
+**Paused (owner, #715 issuecomment-6556861718 and issuecomment-6556925036, recorded 2026-11-01):** this ticket does not start until an RPG milestone; the replan's milestone for lifting the pause is not fixed here. Do not dispatch or run it, and do not ask for a slot for it, before the owner lifts the pause. The pause includes the owner's Windows-side checks in Step 1.
+
+Unmeasured lead for Step 1, not a finding (rpg-planner smoke row via lead-planner-u24, 2026-11-01; one seed, one host, base c9b9a50f4, logs not read): `frontier_living_world` s42, 600t, non-audit on PROD_SMALL spent FULL 66 / MINIMAL 281 / OFF 253 ticks, leaving FULL after about 50 ticks. Its audit tick (120-160 ms) exceeds `max_tick_budget_ms` 100, and wall-clock signals drive the governor. Nothing yet links this to host speed variation.
 
 ## Test Summary
 
