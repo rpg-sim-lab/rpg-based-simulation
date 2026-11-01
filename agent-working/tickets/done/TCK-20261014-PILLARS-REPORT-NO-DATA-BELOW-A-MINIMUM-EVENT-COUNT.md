@@ -1,10 +1,10 @@
 ---
-status: active
+status: historical
 layer: simulation
 authority: P1
 audience: agent
 ticket_id: TCK-20261014-PILLARS-REPORT-NO-DATA-BELOW-A-MINIMUM-EVENT-COUNT
-phase: open
+phase: done
 date: 2026-10-14
 tags: []
 ---
@@ -15,7 +15,7 @@ tags: []
 Below a minimum event count a pillar reports no-data in the quality report, not the plateau-penalty constant (PROGRESSION -8/51 = -0.1569).
 
 ## Status
-INPROGRESS (built on rpg-next d39c60aa7; testing's harness TCK-20261013-SIMQ-NO-DATA-PILLAR-IN-GRADE-REGRESSION lands with it)
+DONE
 
 ## Tier
 standard
@@ -82,4 +82,6 @@ Consumer audit (read 2026-10-14; what each does on a null grade or score):
 `src/simulation_quality/pillars.py` (PILLAR_MIN_EVENTS), `quality_report.py` (nullable grade/score, status, min_events, reason, overall fields), `api/routes.py` (status fields), `tools/calibrate_simq.py` (pillar_line, null-safe overall), tests above. Not touched: `grade_anchors.json`, the harness, `simq_reanchor` (testing's).
 
 ## Completion Summary
+Closed 2026-10-31 by rpg-planner (owner go #715 6543261623, ticket cleanup). Re-verified on origin/main 96f623a62: PILLAR_MIN_EVENTS at src/simulation_quality/pillars.py:23; no-data rules in quality_report.py:16-17,125-165; tests/simulation_quality/test_report.py:178,270,282,291; consumers handle nulls (calibrate_simq.py:497-499,613; test_api_routes.py:211; grade regression; reanchor). Gap stated: no frontend reader of these fields was found, so hub UI handling of a no-data pillar is unproven. Landed earlier; the ticket was never moved. No staging artifacts were kept.
+
 TBD
