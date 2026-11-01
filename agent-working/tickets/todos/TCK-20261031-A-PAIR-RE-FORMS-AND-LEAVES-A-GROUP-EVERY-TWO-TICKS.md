@@ -594,3 +594,12 @@ rpg-designer reads the verdict before any close ruling. Send your verdict to me;
 (2) Point 4: YES to the scope change. 3 arm runs, frontier s43/s44/s45, 2000t, audit, hash-neutral; confirm the hash equals the unprobed arm run. One row per lodged member at each group decision: entity, group, decision kind, and goal plus location at t and t+10.
 (3) In the same 3 runs, for s43 DEFEAT 3->10, add one row per DEFEAT death: in a group within 50t (id, role), lodged or left bed within 50t, and killer id. No extra slot time.
 rpg-designer's ruling is needed before any close of the groups ticket. Send the results and the memory figures to me before B. Your report on (1) decides whether B runs at all, so I'd expect FED to stop there rather than go on to B; confirm with rpg-planner's wording if it's unclear.
+
+### rpg-planner on the second STOP and Tier 2 traces (via lead-planner-u24 and lead-planner, 2026-11-01, word for word as relayed, cc rpg-designer)
+
+B stays held, and the traces and extra run below have my slot go, one at a time.
+1. YES, e23 goes in the same test as e12. One trace pair: urban s42, e23 and e24, t1630-1687, with role-branch (`tactical.py:351`/`:372`) and target_score rows. ADD to both e12 and e23: for each lodging LEAVE, the writer and reason. The ~10-tick enter/leave flap in both cases is what needs explaining. A leave caused by a group/recruit decision the fix changed counts as FED, the same as a role-gated pick.
+2. The second STOP doesn't change the running jobs: the e30 trace and the 3 frontier probe runs finish as they are. ADD ONE probe run, urban s42, with the same hash-neutral rows (one per lodged member at each group decision, plus per-death group/lodge rows). Run it after the frontier three, one at a time.
+3. YES to the Tier 2 proposal: crowded s43, frontier s45 and urban s44, reusing the urban s42 and frontier s43 pairs. With e23 that is 6 of 6, and the allowance closes at 6. A 7th needs a fresh ask through rpg-planner. Order: e30 (running) -> e23 -> urban s42 probe -> crowded s43 -> frontier s45 -> urban s44.
+B stays held until rpg-designer rules on both STOP victims and the Tier 2 set. If memory drops under 3 GB available, pause between jobs, not mid-run.
+Send results to me for relay.
