@@ -138,4 +138,4 @@ Ticket 1 of 2 (rpg-designer accepted the split 2026-11-01): the MEASURED social 
 ## Completion Summary
 
 ## 2026-11-01 live example for rule (4) (ubuntu groups batch C)
-- e3 with a lodged leader e26: a live case of an outside member whose leader is lodged. Use it as a replay case for the absent-leader guard test. Rows are via ubuntu's batch C evidence.
+- Named co-presence case (urban s42): e3, VANGUARD of group 10048, with leader e26 lodged at [40,31] t1674-1682. e3 alternates beside the door with its OWN target 17, not the leader, so the follow-target count stays 0. Use it as a replay case for the absent-leader guard test. Rows are via ubuntu's batch C evidence.
