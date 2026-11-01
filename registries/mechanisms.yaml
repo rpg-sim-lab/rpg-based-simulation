@@ -1852,7 +1852,7 @@ mechanisms:
         `fused_strategic_pass()` really dispatches through a real `Kernel.tick_once()`, not just
         that `pipeline.py` calls it by name.
         **Note, added 2026-11-01 (TCK-20261031-A-SLEEPER-HOLDS-A-DOOR-OR-SERVICE-TILE, divergence
-        2.155):** `fused_strategic_pass` reads `is_lodged_stayer` (src/engine/lodging.py) once per
+        2.155):** `fused_strategic_pass` reads `is_lodged_stayer` (src/core/lodging_rules.py) once per
         entity. For a lodger whose held rest or meal goes on, it writes no walk target: the town-return
         fallback, the material-lead target and the section-5 redirection fallbacks are skipped. The rest
         of the pass (candidates, project bookkeeping, blockers, capacity, leads, intents) runs
@@ -2851,6 +2851,8 @@ mechanisms:
       - src/engine/lodging.py::refuse_rest
       - src/engine/lodging.py::resolve_arrival
       - src/engine/lodging.py::drop_lodger_targets
+      - src/core/lodging_rules.py::is_lodged_stayer
+      - src/core/lodging_rules.py::keeps_lodging
       - src/engine/building_arrival.py::building_arrival_update
       - src/engine/shop_sale.py::plan_sale
       - src/engine/work_shift.py::work_update

@@ -353,7 +353,8 @@ def test_wider_scope_numbers_pinned():
     # bound at once under `town_services` (admits), so the unbound count does not move.
     # 247 -> 247 on 2026-10-29 (TCK-20261029-A-BROKE-HUNGRY-SUBJECT-NEVER-EARNS-SO-THE-FREE-MEAL-CANNOT-GO): work_wake.py is bound under `town_services` and need_wake.py is a
     # helper (a cadence constant); the check's own output stays 247.
-    assert wider["unbound_files"] == 247
+    # unbound_files 247 -> 248 on 2026-11-01 (same ticket): +src/engine/checkpoint_fields.py (a restore helper, no mechanism of its own); src/core/lodging_rules.py is bound under `town_services`.
+    assert wider["unbound_files"] == 248
     # 73 -> 72 on 2026-10-07 (row 7 (b) pass): src/quests/generator.py::QuestGenerator is now bound under `guilds`.
     # 72 -> 71 on 2026-10-11 (#500, D57): src/engine/rpg_depth.py::LeashService is cited under `tactical_decision` (it became wired when
     # the hunger and fatigue goals started calling `way_in_range`), so it is no longer an unbound candidate.
