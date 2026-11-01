@@ -6,6 +6,7 @@ changes nothing. Rows go to the `governing_sink` fixture, never to a live shard.
 """
 import io
 import json
+import subprocess
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -24,8 +25,10 @@ def _rows(sink: Path) -> list[dict]:
 
 
 def _repo(tmp_path: Path) -> Path:
+    """A real (empty) repo: an authority-class call resolves the git common dir, and a fake `.git` makes the guard fail closed."""
     repo = tmp_path / "repo"
-    (repo / ".git").mkdir(parents=True)
+    repo.mkdir()
+    subprocess.run(["git", "init", "-q", "-b", "feature-x", str(repo)], check=True)
     return repo
 
 
