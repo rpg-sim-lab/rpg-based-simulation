@@ -189,7 +189,7 @@ def _binding(role, session_id):
 def _run_guard(payload, monkeypatch, root, data):
     monkeypatch.setattr(st, "state_root", lambda cwd=".": root)
     real = bd.write_event
-    monkeypatch.setattr(bd, "write_event", lambda record, data_dir=None: real(record, data))
+    monkeypatch.setattr(bd, "write_event", lambda record, data_dir=None, family="role_boundary.jsonl": real(record, data, family))
     out, err = io.StringIO(), io.StringIO()
     code = guard.main(io.StringIO(json.dumps(payload)), out, err)
     return code, out.getvalue(), err.getvalue()

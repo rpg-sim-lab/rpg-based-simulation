@@ -67,6 +67,12 @@ Before v1, the designer's step 2 (TCK for "an escalated need is never refused fo
 - src/core/strategic.py (is_live_project, has_project_capacity)
 
 ## Assumptions / Open Questions
+- Checked before v1 (Lane C, 2026-10-21, step 2 at a634dcfd0; designer's terminal-record question): NOT a step-2 hole.
+  - `existing` (intelligence.py ~L1609) is the first project of the kind in any status. resume_project (L1139-1151) is a no-op on a COMPLETED or ABANDONED project.
+  - A stored terminal hunger record makes `not existing` False, so the capacity gate (L1772) is skipped and a NEW project is built.
+  - Real-kernel check (crowded s45, blacksmith 13, cap full plus a COMPLETED hunger record first): proj_hunger_47 is ACTIVE at t48 and the subject eats by t58.
+  - The same bypass applies BELOW onset (hunger 40). The cap is enforced only for kinds with no stored record (documented, Bible 04 L225), so step 2's escalated_need_wins matters only for a subject that has never held a project of that kind. Rule this together with the lifecycle.
+  - interpret_near_death (events.py L138) has no production caller (only tests/unit/strategic/test_event_interpretation.py). Its suspend path cannot occur in a real run today, and a staged equivalent behaves the same way. It is dead code (designer, 2026-10-21): its suspend path is part of the lifecycle ruling only if it is ever wired.
 - Context (designer, 2026-10-21): after step 2, `has_project_capacity` still counts the 1-2 exempt need projects. So ordinary-project admission sees them as used slots. That is acceptable before v1, because ordinary goals yield to escalated needs anyway. Revisit it with the slot-leak rule.
 - Context (designer, 2026-10-21, from the step-2 paired run, crowded s46): the same bound is seen from the other side. An exempt need project leaves room for an ordinary project that the pre-step-2 trim would have removed: blacksmith 13's suspended fatigue project is exempt, so its combat_engage project against leader 30 survives and is resumed at t547 (live 4 of 3). This is the designed bound (ordinary projects up to the cap, plus at most one exempt project per need), not a leak. The slot-leak rule must keep it consistent.
 - What suspends a resolve_blocker project, and does anything resume any project kind today? (Answered below.)
@@ -99,9 +105,18 @@ The code lives in `src/systems/strategic_systems/intelligence.py` (the ticket's 
 **What this leaves for the designer (no proposal):** the lifecycle needs a stated owner for each of the four suspend writers' resume/end condition; the two production resume paths are narrow (one detour completion, or the same kind winning, first-of-kind only); nothing ends a non-current suspended project except a trim that is idle at the cap; and the tactical and near-death writers differ on whether `current_project_id` is cleared.
 
 ## Implementation Notes
+- 2026-11-01 More evidence (retention afacf1577, crowded s46 e14 t366): at 3/3 the live set was SUSPENDED stabilize_t6 (354 ticks old), stabilize_t106 (254) and engage_266 (94), with no current project. In base, e14 stood with nothing adopted (cap-refused) and was killed at t485. When a cap-exempt retreat entered (since dropped), the trim removed only the stale engage_266; the two stabilize records stayed.
+- 2026-11-01 R3 FILED HERE (designer rule: a cap refusal belongs here). The retention batch (lane C, 15 runs, fix 23e0f9967) found hurt subjects (hp < 0.5, no present threat, no RECOVER/REST/FATIGUE current) for more than 200 ticks: 33 entities on base and 32 on fix. Of those, 31 of 32 (fix) and 33 of 33 (base) had their live projects at the cap of 3 at some point (sampled every 20 ticks, so "ever full", not "full during the R3 ticks"). Gate: src/systems/strategic_systems/intelligence.py:1768 drops a NEW candidate when `not has_project_capacity(...)` and `not escalated_need_wins(entity, kind)`; escalated_need_wins (src/ai/goals/escalation.py) holds only for HUNGER/FATIGUE past onset, so RECOVER and COMBAT_RETREAT get no exemption. RecoverScorer (src/ai/goals/scorers.py:255) scores >= 40 at hp < 0.5, so it clears the candidate filter. The slots are held by SUSPENDED STABILIZE projects that never resume. Trace e18 (urban s42, fix): its retreat was SUSPENDED at t53 under cap pressure; after THREAT_CLEARED at t83 it adopted a third STABILIZE at hp 0.06 (live = 3 = cap); at t122-182 retreat_u 124-137 beat recover_u 89-110 with a perceived threat, but nothing was adopted; it died at t196 to attacker 17. To measure per entity: whether the cap was full DURING the R3 ticks.
+- 2026-10-31 designer routed CAP_REFUSAL here (it is not a precedence case). F3 base on 6fdfdf555, 15 runs: CAP_REFUSAL 9406 ticks / 233 subjects / longest stretch 1. In 9104 of 13461 at-cap ticks (about 68%) the subject holds 2 or more SUSPENDED records (record count: ticks = 0:1726, 1:2631, 2:5367, 3:3091, 4:644, 5:2).
 
 ## Test Summary
 
 ## Files Changed
 
 ## Completion Summary
+
+## 2026-10-31 counts from TCK-20261031-A-RETREAT-PROJECT-OUTLIVES-ITS-THREAT (lane C, rpg-retreat-completes 7811d749f; main 6fdfdf555; 3 worlds x s42-46, 2000t; samples every 20 ticks at cap)
+- 15364 entity-samples at cap over 359 entity-runs: 86% have >= 1 SUSPENDED in the live set, 80% one older than 200 ticks, 62% two or more; 709 distinct stale (> 200 ticks) SUSPENDED records.
+- By kind, of 1051 distinct SUSPENDED seen at cap: STABILIZE 218, RESOLVE_BLOCKER 178, COMBAT_ENGAGE 158, HUNGER 120, FATIGUE 120, GUILD 98, HARVESTING 65, TOWN_RETURN 32, RECOVER 31, COMBAT_RETREAT 15, SOCIAL 13, INVESTIGATE 3.
+- Example: urban_political s42 entity 18's cap is filled by project_stabilize_bandit_road_t2 / _t22 (STABILIZE, created t2 / t22, never resumed, ~1400 ticks old).
+- rpg-designer 2026-10-31: structural; likely drives much of :1610's cap refusals (only escalated needs get through). Counts first: per kind, how a SUSPENDED record is meant to end (resume, expire, supersede) and how many ever do. Joins the SURV-07 family table only through its CAP_REFUSAL tag. Not folded into the retention fix.

@@ -73,6 +73,8 @@ The existing leash ticket does not cover this. TCK-20261009-HEROES-ON-A-LEASH-NE
 - Is town_return's band (115 to 139) a fixed priority or need-aware?
 
 ## Implementation Notes
+- 2026-10-31 DESIGNER RULING (SURV-07 family, from the F3-base family table). THE ONE PRECEDENCE LAW P: at every decision site choosing between a need past its escalation onset and any other goal or act, the need wins unless acting_threat_to(subject) holds (memo row 88: a perceived hostile attacking or pursuing the subject, or one that hit it within the window). No owner row is needed. Whether to flee at all stays on present_threat_to (AGENCY-07); where flight is warranted but the hostile is not acting, a pressing need still wins. ONE shared predicate pair, both reads: need_is_pressing(subject) (need_pull ESCALATION_ONSET line) and need_yields(subject, state) = acting_threat_to. Every site calls them; none re-derives them. ONE PRECEDENCE GRID test: {need pressing y/n} x {no hostile / perceived only / present-not-acting / acting} x site -> winner; each site's ticket adds its rows. Provisional order until harm-per-tag is counted: ENGAGEMENT -> LOW-HP-RETREAT -> TOWN-RETURN -> ESCALATED-SWITCH -> FLEE-LINE.
+- THIS SITE: a town return is never a threat, so a pressing need beats it under P. Uses the predicates landed by ENGAGEMENT-OVERRIDES. F3 base: 3552 ticks / 20 subjects / longest 272.
 
 ## Test Summary
 

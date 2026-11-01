@@ -86,6 +86,8 @@ The designer's ruling (2026-10-21): a defect independent of the corpse fix, sinc
 - Does sleep debt 92.5 change the flee line or the appraisal?
 
 ## Implementation Notes
+- 2026-10-31 DESIGNER RULING (SURV-07 family, from the F3-base family table). THE ONE PRECEDENCE LAW P: at every decision site choosing between a need past its escalation onset and any other goal or act, the need wins unless acting_threat_to(subject) holds (memo row 88: a perceived hostile attacking or pursuing the subject, or one that hit it within the window). No owner row is needed. Whether to flee at all stays on present_threat_to (AGENCY-07); where flight is warranted but the hostile is not acting, a pressing need still wins. ONE shared predicate pair, both reads: need_is_pressing(subject) (need_pull ESCALATION_ONSET line) and need_yields(subject, state) = acting_threat_to. Every site calls them; none re-derives them. ONE PRECEDENCE GRID test: {need pressing y/n} x {no hostile / perceived only / present-not-acting / acting} x site -> winner; each site's ticket adds its rows. Provisional order until harm-per-tag is counted: ENGAGEMENT -> LOW-HP-RETREAT -> TOWN-RETURN -> ESCALATED-SWITCH -> FLEE-LINE.
+- THIS SITE: whether to flee stays on present_threat_to; P decides need versus flight. Uses the predicates landed by ENGAGEMENT-OVERRIDES. F3 base: 1177 ticks / 99 subjects / longest 50.
 
 ## Test Summary
 
