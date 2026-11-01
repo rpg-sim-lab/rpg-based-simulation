@@ -121,8 +121,8 @@ def merged_governing_commits(week_str: str | None, cutoff: str | None, ref: str 
 def _governing_lines(attempts: list[dict], total: int | None, merged: dict[str, int] | None) -> list[str]:
     lines = ["### Governing-file edit attempts (report-only)", "",
              "_Rows are written by the guard at PreToolUse, so each is an ATTEMPT. `edit` rows (basis `path`, an edit tool) are "
-             "exact; `mention` rows (basis `mention`, a Bash command naming the path) may not be edits and over-count. Rows for "
-             "files outside the repo are not written. Merged commits are counted by path and period from `origin/main`, "
+             "exact; `mention` rows (basis `mention`, a Bash command naming the path) may not be edits and over-count. Edit-tool "
+             "rows for files outside the repo are not written. Merged commits are counted by path and period from `origin/main`, "
              "with the same path list the PR body uses; an attempt cannot be tied to one PR body._", ""]
     note = _dark("governing_edits", total, len(attempts))
     if total == 0:

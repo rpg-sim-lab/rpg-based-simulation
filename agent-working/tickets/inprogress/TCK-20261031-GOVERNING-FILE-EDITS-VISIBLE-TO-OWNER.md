@@ -78,6 +78,7 @@ tools/sessions/classify.py, tools/sessions/guard.py, tools/delivery/pr_render.py
 - Retro line (scope item 4) compares attempts with merged commits on origin/main by path and period, replacing "against the PR lists": a PR body is not a source of record and an event cannot be tied to one PR body. Unmatched can mean a reverted edit, a denied call, an unmerged branch or an unreviewed edit; an attempt can merge the next week.
 - Rows carry `basis` (`path` exact for edit tools, `mention` for Bash text, which over-counts) and repo-relative paths only; a file outside the repo writes no row.
 - The new path list is a second list in `classify.py` (`GOVERNING_PATHS_EXACT`, `GOVERNING_PATH_PREFIXES`); `GOVERNING_FILE_EDIT` is unchanged.
+- Known gap: `discover_changed_files` in `pr_render.py` still uses the two-dot tree diff (`base..HEAD`) for the raw-probe warning and the ticketless file summary, so on a branch behind main those can list files only main changed. The governing section has its own three-dot call. The two-dot output is a separate question, not changed here.
 - PR section is a `conditional` entry in `pr_template_spec.json`; the template-order test exempts only conditional entries and asserts this is the only one.
 
 ## Test Summary
