@@ -1,0 +1,29 @@
+{
+ "world": "crowded_frontier",
+ "seed": 42,
+ "ticks": 400,
+ "elapsed": 25.275548186007654,
+ "stats": {
+  "ticks": 400,
+  "full_scan_ticks": 0,
+  "relevant_all_ticks": 15,
+  "overdue_group_ticks": 0,
+  "overdue_not_relevant_ticks": 0,
+  "bound_live_group_ticks": 1247
+ },
+ "bound_groups_seen_live": 29,
+ "groups_with_ended_binding": 0,
+ "dissolved_with_lag": 0,
+ "lag_ticks_max": null,
+ "lag_nonzero": 0,
+ "never_dissolved": [],
+ "n_never": 0,
+ "dissolution_reasons": {
+  "MEMBERS_BELOW_TWO": 7,
+  "dissolved_in_relevant_set": 22,
+  "BINDING_HOLDER_LEFT": 2,
+  "BINDING_CONTRACT_NOT_ACTIVE": 13,
+  "status:FULFILLED": 13
+ },
+ "lags_sample": {}
+}
