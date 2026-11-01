@@ -105,3 +105,5 @@ After v1.
     - e32, e5, e8, e2, e6 and e4 entered on tactical REGROUP moves (tactical.py:382) into drain tiles at (44,41-43) and (40-42,41-51).
     - HAZARD entry-move table: REGROUP 8 on fix vs 0 on base; INTERCEPTING 2 and BRACKETING 3 are equal on both arms.
     - REGROUP joins INTERCEPTING and BRACKETING as a move leg with no hazard weight. Still H1/N3 exposure evidence; no dispatch without the owner's H1 decision.
+    - **On F3 (lane C on-F3 re-measure, base 30307228c vs fix c1f20e1e1; rpg-designer 2026-11-01):** REGROUP hazard entries 0->8 were seen pre-F3 only; not reproduced on F3 (fix 1, base 1). Kept as H1/N3 evidence, not a measured effect of the retreat fix.
+  - **Evidence (frontier s43 churn-on-F3, ubuntu groups batch C; rpg-designer 2026-11-01):** e30 kills 4 group members (e12, e36, e9, e19) in t1433-1511; untraced; candidate for groups converging on one strong hostile (target_score group_bias :428). Frontier's 5-seed DEFEAT total fell 35->31, so the s43 rise 3->10 is report-only. e12 was traced and ruled NOT FED (single candidate, group_bias 1.0).
