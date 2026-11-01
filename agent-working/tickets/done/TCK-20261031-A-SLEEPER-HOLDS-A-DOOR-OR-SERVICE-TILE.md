@@ -20,8 +20,6 @@ DONE (hand-orchestrated, lane B, local branch rpg-sleeper-lodges; push and merge
 ## Tier
 standard
 
-A durable entity field, content, occupancy and perception. Dispatch needed an owner go via lead-planner-u24 / #715 (given: 6543182195).
-
 ## Type
 repair
 
