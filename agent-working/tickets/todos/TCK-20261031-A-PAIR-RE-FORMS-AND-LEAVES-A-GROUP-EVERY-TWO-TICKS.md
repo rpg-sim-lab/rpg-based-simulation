@@ -532,3 +532,22 @@ Disclosure line: 'frontier groups phase about 0.98 ms/tick vs base 0.27, with or
 4. Changed test: no parity or Bible citation, so no ledger change. Noted.
 
 lead-planner's note, same message: 'non-optional' with a load seed has one catch: the old-shape slot is absent until restore's fill runs, so the fill step must run before any kernel read, and an old-shape test already covers that. Confirm it does.
+
+### rpg-planner rules next_group_id's shape (via lead-planner-u24 and lead-planner, 2026-11-01, word for word)
+
+next_group_id is RULED (3) plus your check. Not (1).
+The ruling's intent was 'no runtime value that hides a MISSING counter for a state that HAS groups', not 'no initial value ever'. 10000 is the correct counter for an EMPTY store, so it's a fresh-state value, not a cover, provided every state with groups is guarded. (1)'s ~1,560 edits buy nothing beyond that and collide with every open lane.
+CONDITIONS:
+1. next_group_id: int = 10000 (non-optional), and __post_init__ seeds NOTHING. Restore seeds an absent slot only through FIELD_RULES, as now. The interim update_groups GroupCounterMissingError GOES AWAY, since the field can't be absent; keep a test that the type is int and never None after restore.
+2. (i) Every src builder that constructs a state WITH groups passes the counter explicitly. The implementer's list goes in the PR body.
+3. (ii) GroupCounterBehindStoreError (typed, Error suffix) is raised at load and in those builders if the counter is not above every non-squad stored id. NOT in __post_init__ or replace. Tests: one that raises, one that passes.
+4. Your guard: a check that FAILS when a src construction of AuthoritativeState (or a builder) supplies groups without next_group_id, so the list can't silently go stale. ROUTING: if it lives in tests/architecture/**, that's testing-planner's area and needs its OK through me (u24). Otherwise put it under tests/unit/ as a static scan of src. Either is fine with rpg-planner.
+5. Hashes: canonical omits the counter at 10000. Report any pinned hash that moves on a hand-built state, with the test name. The 3 pinned world hashes must stay EQUAL.
+6. Retention reissue risk: rpg-planner is writing it into step (b)'s AC on TCK-20261101-DISSOLVED-GROUP-RECORDS-ARE-KEPT-AND-VISITED-EVERY-TICK.
+- A drop must never lower next_group_id.
+- A state that has had records dropped must never be re-seeded from stored ids: FIELD_RULES' max(10000, the highest non-squad id + 1) applies only to pre-counter checkpoints, which predate any drop.
+- Test: drop, round-trip, and the next id is above every id ever issued (already in (c)).
+Then the 3 pinned hash runs proceed on that head.
+If the guard goes in tests/architecture, send me the file and I'll get testing-planner's OK.
+
+lead-planner's note, same message: suggests tests/unit/, to avoid the extra review round. Go for the hash runs stands on that head.
