@@ -42,7 +42,10 @@ _ENDS_HELD_INTERACT_REASONS = frozenset({
     ReasonCode.SOURCE_DEPLETED.value,
 })
 
-_ENDS_HELD_REASONS_BY_ACTION = {"ATTACK": _ENDS_HELD_ATTACK_REASONS, "INTERACT": _ENDS_HELD_INTERACT_REASONS}
+# Failure reasons that end a held REST: no bed was free at its first execution (F3, divergence 2.155); the rest does not run there and the subject re-decides.
+_ENDS_HELD_REST_REASONS = frozenset({ReasonCode.NO_BED_FREE.value})
+
+_ENDS_HELD_REASONS_BY_ACTION = {"ATTACK": _ENDS_HELD_ATTACK_REASONS, "INTERACT": _ENDS_HELD_INTERACT_REASONS, "REST": _ENDS_HELD_REST_REASONS}
 
 
 def _survival_action_ends(action: str, is_survival: bool, outcome: str, actor_update: Optional[EntityUpdate], held: tuple) -> bool:

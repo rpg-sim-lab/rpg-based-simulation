@@ -1017,7 +1017,8 @@
         "travel_ration": 20,
         "bread": 10
       },
-      "hires_for_pay": true
+      "hires_for_pay": true,
+      "beds": 10
     },
     "healer_hut_0": {
       "hp": 450,
@@ -1053,7 +1054,8 @@
         "travel_ration": 20,
         "bread": 10
       },
-      "hires_for_pay": true
+      "hires_for_pay": true,
+      "beds": 10
     }
   },
   "resources": {

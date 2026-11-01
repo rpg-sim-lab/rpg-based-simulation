@@ -45,6 +45,8 @@ def perceives(entity: "EntityState", other: "EntityState") -> bool:
     """True when ``entity`` perceives the living ``other`` through the perception gate."""
     if not other.combat.alive:
         return False
+    if entity.navigation.lodged_in is not None or other.navigation.lodged_in is not None:
+        return False  # F3 (divergence 2.155): a lodger sees no one outside and is seen by no one outside
     dist = manhattan_tile_distance(entity.navigation.position, other.navigation.position)
     try:
         return bool(get_perception_gate().can_perceive(entity, get_entity_signals(other), {"distance": float(dist)}).perceived)

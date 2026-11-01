@@ -646,15 +646,10 @@ class WorldCompiler:
                 x = rng.get_int(Domain.WORLD, 0, next_building_id, min_x, max_x, sub_id=0)
                 y = rng.get_int(Domain.WORLD, 0, next_building_id, min_y, max_y, sub_id=1)
 
-                hp = 500
-                max_hp = 500
-                maintenance_shifts = 0
-                hires_for_pay = False
+                hp, max_hp, maintenance_shifts, hires_for_pay, beds = 500, 500, 0, False, 0
                 if context is not None and bld_spec.id in context.buildings:
-                    hp = context.buildings[bld_spec.id].hp
-                    max_hp = context.buildings[bld_spec.id].max_hp
-                    maintenance_shifts = context.buildings[bld_spec.id].maintenance_shifts
-                    hires_for_pay = context.buildings[bld_spec.id].hires_for_pay
+                    declared = context.buildings[bld_spec.id]
+                    hp, max_hp, maintenance_shifts, hires_for_pay, beds = declared.hp, declared.max_hp, declared.maintenance_shifts, declared.hires_for_pay, declared.beds
 
                 buildings[next_building_id] = BuildingState(
                     id=next_building_id,
@@ -666,6 +661,7 @@ class WorldCompiler:
                     inventory=_building_till(context, bld_spec.id),
                     maintenance_shifts_needed=maintenance_shifts,
                     hires_for_pay=hires_for_pay,
+                    beds=beds,
                 )
                 blocked_tiles.add((x, y))
                 next_building_id += 1

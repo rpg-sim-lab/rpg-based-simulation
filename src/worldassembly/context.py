@@ -17,6 +17,8 @@ def _empty_building_purse(profile: Any) -> Optional[set]:
         left_out.add("maintenance_shifts")
     if not profile.hires_for_pay:
         left_out.add("hires_for_pay")
+    if not profile.beds:
+        left_out.add("beds")
     return left_out or None
 
 

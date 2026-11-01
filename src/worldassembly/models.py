@@ -77,6 +77,8 @@ class ResolvedBuildingProfile(BaseModel):
     maintenance_shifts: int = 1
     # The building hires for pay from its own purse (BuildingDefinition.hires_for_pay, EXCH-02 ruling 66); false is left out of the serialized context.
     hires_for_pay: bool = False
+    # The beds the building lodges (BuildingDefinition.beds, F3); zero is left out of the serialized context.
+    beds: int = 0
 
 
 class ResolvedResourceProfile(BaseModel):

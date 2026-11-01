@@ -584,7 +584,7 @@
 {"added_date": "2026-10-02", "ceiling": 1, "file": "src/core/skills.py", "retiring_ticket": null, "reviewed": false, "rule": "D100", "symbol": null, "tool": "ruff", "value": 1}
 {"added_date": "2026-10-02", "ceiling": 3, "file": "src/core/skills.py", "retiring_ticket": null, "reviewed": false, "rule": "D101", "symbol": null, "tool": "ruff", "value": 3}
 {"added_date": "2026-10-02", "ceiling": 1, "file": "src/core/skills.py", "retiring_ticket": null, "reviewed": false, "rule": "I001", "symbol": null, "tool": "ruff", "value": 1}
-{"added_date": "2026-10-02", "ceiling": 1668, "file": "src/core/state.py", "retiring_ticket": null, "reviewed": true, "rule": "module-length", "symbol": null, "tool": "line_count", "value": 1668}
+{"added_date": "2026-10-02", "ceiling": 1672, "file": "src/core/state.py", "retiring_ticket": null, "reviewed": true, "rule": "module-length", "symbol": null, "tool": "line_count", "value": 1672}
 {"added_date": "2026-10-02", "ceiling": 5, "file": "src/core/state.py", "retiring_ticket": null, "reviewed": false, "rule": "ANN001", "symbol": null, "tool": "ruff", "value": 5}
 {"added_date": "2026-10-02", "ceiling": 2, "file": "src/core/state.py", "retiring_ticket": null, "reviewed": false, "rule": "ANN002", "symbol": null, "tool": "ruff", "value": 2}
 {"added_date": "2026-10-02", "ceiling": 2, "file": "src/core/state.py", "retiring_ticket": null, "reviewed": false, "rule": "ANN003", "symbol": null, "tool": "ruff", "value": 2}
@@ -619,7 +619,7 @@
 {"added_date": "2026-10-02", "ceiling": 1, "file": "src/core/update_models/resources.py", "retiring_ticket": null, "reviewed": false, "rule": "D100", "symbol": null, "tool": "ruff", "value": 1}
 {"added_date": "2026-10-02", "ceiling": 1, "file": "src/core/update_models/resources.py", "retiring_ticket": null, "reviewed": false, "rule": "F401", "symbol": null, "tool": "ruff", "value": 1}
 {"added_date": "2026-10-02", "ceiling": 2, "file": "src/core/update_models/resources.py", "retiring_ticket": null, "reviewed": false, "rule": "I001", "symbol": null, "tool": "ruff", "value": 2}
-{"added_date": "2026-10-02", "ceiling": 1308, "file": "src/core/updates.py", "retiring_ticket": null, "reviewed": false, "rule": "module-length", "symbol": null, "tool": "line_count", "value": 1308}
+{"added_date": "2026-10-02", "ceiling": 1315, "file": "src/core/updates.py", "retiring_ticket": null, "reviewed": false, "rule": "module-length", "symbol": null, "tool": "line_count", "value": 1315}
 {"added_date": "2026-10-02", "ceiling": 1, "file": "src/core/updates.py", "retiring_ticket": null, "reviewed": false, "rule": "ANN003", "symbol": null, "tool": "ruff", "value": 1}
 {"added_date": "2026-10-02", "ceiling": 6, "file": "src/core/updates.py", "retiring_ticket": null, "reviewed": false, "rule": "C901", "symbol": null, "tool": "ruff", "value": 6}
 {"added_date": "2026-10-02", "ceiling": 1, "file": "src/core/updates.py", "retiring_ticket": null, "reviewed": false, "rule": "D100", "symbol": null, "tool": "ruff", "value": 1}
@@ -1411,7 +1411,7 @@
 {"added_date": "2026-10-02", "ceiling": 1, "file": "src/engine/phase_graph.py", "retiring_ticket": null, "reviewed": false, "rule": "I001", "symbol": null, "tool": "ruff", "value": 1}
 {"added_date": "2026-10-02", "ceiling": 1, "file": "src/engine/phase_graph.py", "retiring_ticket": null, "reviewed": false, "rule": "PLC0415", "symbol": null, "tool": "ruff", "value": 1}
 {"added_date": "2026-10-02", "ceiling": 1, "file": "src/engine/phase_graph.py", "retiring_ticket": null, "reviewed": false, "rule": "PLR0912", "symbol": null, "tool": "ruff", "value": 1}
-{"added_date": "2026-10-02", "ceiling": 49, "file": "src/engine/phase_graph.py", "retiring_ticket": null, "reviewed": false, "rule": "cognitive-complexity", "symbol": "PhaseDependencyGraph.should_run_phase", "tool": "complexipy", "value": 49}
+{"added_date": "2026-10-02", "ceiling": 50, "file": "src/engine/phase_graph.py", "retiring_ticket": null, "reviewed": false, "rule": "cognitive-complexity", "symbol": "PhaseDependencyGraph.should_run_phase", "tool": "complexipy", "value": 50}
 {"added_date": "2026-10-02", "ceiling": 83, "file": "src/engine/phase_graph.py", "retiring_ticket": null, "reviewed": false, "rule": "function-length", "symbol": "PhaseDependencyGraph.should_run_phase", "tool": "line_count", "value": 83}
 {"added_date": "2026-10-02", "ceiling": 1, "file": "src/engine/phases.py", "retiring_ticket": null, "reviewed": false, "rule": "D100", "symbol": null, "tool": "ruff", "value": 1}
 {"added_date": "2026-10-02", "ceiling": 1, "file": "src/engine/pipeline.py", "retiring_ticket": null, "reviewed": false, "rule": "ANN001", "symbol": null, "tool": "ruff", "value": 1}
@@ -3164,7 +3164,7 @@
 {"added_date": "2026-10-02", "ceiling": 102, "file": "src/systems/strategic_systems/detour.py", "retiring_ticket": null, "reviewed": false, "rule": "function-length", "symbol": "DetourSuggestionSystem.enforce_bandwidth", "tool": "line_count", "value": 102}
 {"added_date": "2026-10-02", "ceiling": 25, "file": "src/systems/strategic_systems/detour.py", "retiring_ticket": null, "reviewed": false, "rule": "cognitive-complexity", "symbol": "DetourSuggestionSystem.suggest_detours", "tool": "complexipy", "value": 25}
 {"added_date": "2026-10-02", "ceiling": 17, "file": "src/systems/strategic_systems/detour.py", "retiring_ticket": null, "reviewed": false, "rule": "cognitive-complexity", "symbol": "DetourSuggestionSystem.suppress_exhausted_leads", "tool": "complexipy", "value": 17}
-{"added_date": "2026-10-02", "ceiling": 1831, "file": "src/systems/strategic_systems/intelligence.py", "retiring_ticket": null, "reviewed": true, "rule": "module-length", "symbol": null, "tool": "line_count", "value": 1831}
+{"added_date": "2026-10-02", "ceiling": 1833, "file": "src/systems/strategic_systems/intelligence.py", "retiring_ticket": null, "reviewed": true, "rule": "module-length", "symbol": null, "tool": "line_count", "value": 1833}
 {"added_date": "2026-10-02", "ceiling": 3, "file": "src/systems/strategic_systems/intelligence.py", "retiring_ticket": null, "reviewed": false, "rule": "ANN001", "symbol": null, "tool": "ruff", "value": 3}
 {"added_date": "2026-10-02", "ceiling": 1, "file": "src/systems/strategic_systems/intelligence.py", "retiring_ticket": null, "reviewed": false, "rule": "B006", "symbol": null, "tool": "ruff", "value": 1}
 {"added_date": "2026-10-02", "ceiling": 1, "file": "src/systems/strategic_systems/intelligence.py", "retiring_ticket": null, "reviewed": false, "rule": "BLE001", "symbol": null, "tool": "ruff", "value": 1}
@@ -3190,8 +3190,8 @@
 {"added_date": "2026-10-02", "ceiling": 233, "file": "src/systems/strategic_systems/intelligence.py", "retiring_ticket": null, "reviewed": true, "rule": "cognitive-complexity", "symbol": "StrategicIntelligenceSystem.evaluate_strategic_intent", "tool": "complexipy", "value": 233}
 {"added_date": "2026-10-02", "ceiling": 566, "file": "src/systems/strategic_systems/intelligence.py", "retiring_ticket": null, "reviewed": true, "rule": "function-length", "symbol": "StrategicIntelligenceSystem.evaluate_strategic_intent", "tool": "line_count", "value": 566}
 {"added_date": "2026-10-04", "ceiling": 3, "file": "src/systems/strategic_systems/intelligence.py", "retiring_ticket": null, "reviewed": false, "rule": "e3-silent-except", "symbol": "StrategicIntelligenceSystem.fused_strategic_pass", "tool": "ast_grep", "value": 3}
-{"added_date": "2026-10-02", "ceiling": 433, "file": "src/systems/strategic_systems/intelligence.py", "retiring_ticket": null, "reviewed": true, "rule": "cognitive-complexity", "symbol": "StrategicIntelligenceSystem.fused_strategic_pass", "tool": "complexipy", "value": 433}
-{"added_date": "2026-10-02", "ceiling": 407, "file": "src/systems/strategic_systems/intelligence.py", "retiring_ticket": null, "reviewed": true, "rule": "function-length", "symbol": "StrategicIntelligenceSystem.fused_strategic_pass", "tool": "line_count", "value": 407}
+{"added_date": "2026-10-02", "ceiling": 437, "file": "src/systems/strategic_systems/intelligence.py", "retiring_ticket": null, "reviewed": true, "rule": "cognitive-complexity", "symbol": "StrategicIntelligenceSystem.fused_strategic_pass", "tool": "complexipy", "value": 437}
+{"added_date": "2026-10-02", "ceiling": 408, "file": "src/systems/strategic_systems/intelligence.py", "retiring_ticket": null, "reviewed": true, "rule": "function-length", "symbol": "StrategicIntelligenceSystem.fused_strategic_pass", "tool": "line_count", "value": 408}
 {"added_date": "2026-10-02", "ceiling": 28, "file": "src/systems/strategic_systems/intelligence.py", "retiring_ticket": null, "reviewed": false, "rule": "cognitive-complexity", "symbol": "StrategicIntelligenceSystem.infer_blockers", "tool": "complexipy", "value": 28}
 {"added_date": "2026-10-02", "ceiling": 95, "file": "src/systems/strategic_systems/intelligence.py", "retiring_ticket": null, "reviewed": false, "rule": "function-length", "symbol": "StrategicIntelligenceSystem.infer_blockers", "tool": "line_count", "value": 95}
 {"added_date": "2026-10-04", "ceiling": 1, "file": "src/systems/strategic_systems/intelligence.py", "retiring_ticket": null, "reviewed": false, "rule": "e3-silent-except", "symbol": "StrategicIntelligenceSystem.resolve_blockers", "tool": "ast_grep", "value": 1}
