@@ -421,3 +421,19 @@ RETAINED DISSOLVED RECORDS: more than an awareness line. Durable state needs a d
 ORDER: F3 lands FIRST (its owner ask is pending a re-sync after #822, which is awaiting the owner's merge), so the churn lane re-measures on F3 per the cross-lane rule. Push ask: when your PR notes carry these lines, after F3 is on main.
 
 lead-planner's note, same message: wait for F3 on main before syncing. Send the re-measure list and estimate for what "re-measures on F3" needs; the 15 pairs and the 18 are both candidates, so ask rpg-planner through lead which applies. Keep the raw until the PR lands.
+
+### rpg-planner on the re-measure on F3 (via lead-planner-u24 and lead-planner, 2026-11-01, word for word)
+
+Skip A (F3 moves the hashes). Scope:
+1. GATING: the full 15 pairs with the Tier death gates.
+- Base = main with F3 landed; arm = the churn fix merged onto that main.
+- Same worlds, seeds 42-46 and run length as the original Tier set, the standing death bar (tier 1/tier 2; FED/PASS only when the fix's changed behaviour selects the walk), and hard law {}.
+- ADD one cross-lane row per world: lodger counts (lodged_in set ticks, leaves) base vs arm, plus group members who are lodged at a group decision. That's where the two fixes meet, since a lodged member is invisible and untargetable.
+- Any tier-1 row, or a victim who was lodged or had just left a bed within 50t, is a STOP to rpg-planner.
+2. WORK COUNT, cheap and deterministic: rerun the 6 s42 work-count runs on the new base and arm, and apply the same bars fixed earlier: A on frontier (R x 11.2 s > 52.2 s), and per phase > 2 x the store ratio. No noise; about 20 min.
+3. TIMING, the 18 pinned runs: ONLY IF the work count's visit ratio moves by more than 25% in any world vs the pre-F3 ratios (x1.52 / x1.92 / x2.13), or (iii) fires. Otherwise the pre-F3 timing disclosure stands, plus one line: 'timing measured before F3; work count re-checked on F3, ratio within 25%'.
+4. If the designer's step (a) (live-groups-only iteration, TCK-20261101-DISSOLVED-GROUP-RECORDS-ARE-KEPT-AND-VISITED-EVERY-TICK, P2) lands WITH the churn fix, hash-equal on 3 worlds at 2000t, the timing question goes away: the 6 count runs would then show the visit count tracking live groups.
+Host: all on ubuntu, no u24 slot needed. The u24 slot is lane C's (retention 15x2, running now).
+D (identity on the merged src) is implied before the runs.
+
+lead-planner's terms, same message: go for 1, 2 and D, starting after F3 is on main and the branch has synced; message lead first. The base for the (iii) store ratio changes on F3, so state the new ratios before reading the count.
