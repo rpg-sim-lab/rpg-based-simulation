@@ -80,3 +80,6 @@ Proposed rule, for the designer to confirm after the counts: below a hp line, a 
 ## Files Changed
 
 ## Completion Summary
+
+## 2026-11-01 owner order (#715 6560083151)
+- Ordered after TCK-20261101-A-HOSTILE-ATTACKING-YOU-OUTRANKS-THE-GROUP-SHARED-TARGET; counts first. e22 dies on base too (t1029); on the arm it died 138 ticks earlier. e23 is final NOT FED.

@@ -85,3 +85,6 @@ Main gate run 40653115297 (2c4869d61) has an unowned V3 at frontier_living_world
 ## 2026-11-01 rows from groups batch C (rpg-designer ruling, via rpg-planner)
 - A cornered low-hp subject with no home region holds and dies. urban s42 e23 (churn-on-F3): AVOID_NO_ROUTE at tactical_hold.py:117 fires when retreat_destination (tactical_destinations.py:80) returns None. That function is pure region geometry: a point away from threats clamped to the region, else the home_region centre, else None, with no occupancy or route_search. e23 held at hp<=32 beside e17 and died t1687. It is the same gap as e9's "why no town_center" (TCK-20261101-A-RETREAT-WALKS-TOWARD-THE-THREAT).
 - Rename the AVOID_NO_ROUTE reason to NO_RETREAT_DESTINATION: it is not a route failure.
+- e23 final (ubuntu probe): retreat_destination is None from both [41,31] and [41,30]. It was not boxed in. The t1680/1681 moves came from a non-group writer.
+- Finding (ubuntu, for this ticket / nav): the carry-to-town REGROUP step overrides a tactical HOLD at low hp, so a held low-hp subject is walked by REGROUP.
+- Finding (ubuntu, for this ticket / nav): AVOID_NO_ROUTE fires on tiles that lie in no region, where retreat_destination has no region to clamp to.

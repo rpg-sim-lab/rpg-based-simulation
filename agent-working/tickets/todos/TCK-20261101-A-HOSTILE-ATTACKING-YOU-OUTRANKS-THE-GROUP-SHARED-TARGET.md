@@ -86,3 +86,8 @@ Case: ubuntu groups batch C, Tier 2 crowded s43, churn-on-F3 arm. Victim e10 is 
 ## Files Changed
 
 ## Completion Summary
+
+## 2026-11-01 owner order and post-answer correction (#715 6560083151)
+- Owner chose (b): churn lands disclosed; this ticket is ordered NEXT (P1), measured on top of churn.
+- Correction recorded on the owner comment: rpg-planner-ubuntu's later rows (out_t2/crowded_s43_e10.jsonl) show the bias held e10's target only about t894-897 of a 34-tick fight. After that e10 targeted its attacker and still died, and (ii) is at most partly met. So the rows do NOT show that this rule would have saved e10. The e10 unit case still pins the t894 ordering, and the paired re-measure judges the rule's effect. Do not claim saved deaths from e10.
+- e10's trust in leader 4 is 0.8, from bonds, matching the tuple.
