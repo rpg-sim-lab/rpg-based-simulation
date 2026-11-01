@@ -122,7 +122,7 @@ Ticket 1 of 2 (rpg-designer accepted the split 2026-11-01): the MEASURED social 
   - ACTIVE->FULFILLED 214 / 3 / 9 / 11.
   Offers AND accepts leak. A lodged offerer occurs only with a lodged target (32/32), which fits the distance mechanism.
 - Lodged-leader/holder formations: 9 across the probes (0/3/3/3).
-- Rule (4), urban s42: 370 outside-member ticks with a lodged leader (on the building tile 92, reach tile 63, ring 38). target_id on the leader 0; REGROUP/FOLLOW reason 0. That is "needed now" by the tile definition. Caveat: the rows cannot tell following apart from walking to the same inn to rest, and there is no objective column. This ticket measures it with the objective and reason, and rpg-designer then confirms behaviour change vs guard.
+- Rule (4), urban s42: 370 ticks of outside members near a lodged leader's building (co-presence: building tile 92, reach tile 63, ring 38); follow target 0. This is not a follow count. target_id on the leader 0; REGROUP/FOLLOW reason 0. That is "needed now" by the tile definition. Caveat: the rows cannot tell following apart from walking to the same inn to rest, and there is no objective column. This ticket measures it with the objective and reason, and rpg-designer then confirms behaviour change vs guard.
 
 ## Assumptions / Open Questions
 - The partner side is covered by exception (d).
