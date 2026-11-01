@@ -177,6 +177,10 @@ TESTS: an old-shape pickle with
 - a current-shape round-trip: byte-equal.
 GENERAL FIX: agreed. A checkpoint-format version in the header, refusing an unknown or older version BEFORE unpickling, is its own ticket, P2, filed by rpg-planner-ubuntu. Any field added to a slotted state record has this hazard today. F3's lodged_in and beds on the u24 rpg side are one case; the designer is telling rpg-planner."
 
+rpg-designer's addendum, same ruling (same relay). Word for word:
+
+"Restore SEEDS next_group_id by calling the existing seeded_next_group_id from the one post-unpickle step. That's the same derivation __post_init__ uses, so there is one definition and no second writer. Restore REJECTS a bound group with no holder (typed error) and sets None on unbound groups. Add a test: an old-shape pickle with the counter slot missing restores with the seeded value, and groups.py:38 and apply.py:350 read it without error."
+
 ## Implementation Notes
 ## Test Summary
 ## Files Changed
