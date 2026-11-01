@@ -20,6 +20,20 @@ class DiplomaticState(str, Enum):
     ALLIED = "ALLIED"
     VASSAL = "VASSAL"
 
+class GroupDissolutionReason(str, Enum):
+    """Typed end reason of a contract-bound group, recorded on the dissolved GroupRecord by its single dissolving writer.
+
+    Precedence when several apply on one tick (one reason per dissolution; the cause outranks the consequence):
+    BINDING_HOLDER_LEFT > BINDING_CONTRACT_MISSING > BINDING_CONTRACT_NOT_ACTIVE > LEADER_LOST > DEFECTION > MEMBERS_BELOW_TWO.
+    Groups that were not formed by a contract (no holder) carry no reason.
+    """
+    BINDING_HOLDER_LEFT = "BINDING_HOLDER_LEFT"
+    BINDING_CONTRACT_MISSING = "BINDING_CONTRACT_MISSING"
+    BINDING_CONTRACT_NOT_ACTIVE = "BINDING_CONTRACT_NOT_ACTIVE"
+    LEADER_LOST = "LEADER_LOST"
+    DEFECTION = "DEFECTION"
+    MEMBERS_BELOW_TWO = "MEMBERS_BELOW_TWO"
+
 class PassiveDeathCause(str, Enum):
     """Typed cause for an HP-zeroing passive biological drain, recorded at the writer.
 

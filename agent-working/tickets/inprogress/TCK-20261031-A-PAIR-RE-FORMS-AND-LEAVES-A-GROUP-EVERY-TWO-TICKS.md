@@ -131,6 +131,56 @@ Then the owner go via you. The 2.146 rewrite covers the id fix plus the binding 
 
 lead-planner's note, same message: the final hold rule (non-audit at FULL, audit figure beside it, alternating 3 per tree) still stands on top of the re-measure. Each run set needs its go. No code until it relays the owner's yes.
 
+### rpg-designer's ruling in advance for the re-measure, 2026-11-01 (u24; relayed by lead-planner-u24 and lead-planner). Word for word:
+
+"RE-FORMATIONS: split the re-forms by the same members at 10 and 50 ticks by binding contract.
+- SAME contract_id as the dissolved group: true churn, GATED at about 0.
+- DIFFERENT contract (the pair's next ACTIVE duplicate, e.g. _39 then _54): reported, NOT gated, and attributed to TCK-20261101-A-PAIR-HOLDS-MANY-ACTIVE-RECRUIT-CONTRACTS-AT-ONCE.
+- The duplicates stay OUT of this batch unless a death STOP's first diff traces to a duplicate-driven re-form.
+NO REBINDING: a group whose binding contract ends does not quietly rebind to the pair's next ACTIVE contract. That would hide the duplicate defect. The duplicates ticket fixes the source.
+Note 1 (12 contracts at t100, before the first churn) goes into the duplicates ticket's counts as it stands."
+
+### rpg-designer on the churn plan at 8f0a5dd74, 2026-11-01 (u24; relayed by lead-planner-u24 and lead-planner). Word for word:
+
+"Q1 = A, Q2 = A. The three defaults are accepted, each with one tightening, and the dirty-set risk gets a law in advance.
+Q1, A: keep GroupRecord.contract_id as the one stored id and add contract_holder_id. ContractBinding was only an 'e.g.'; the rule is one copy of one fact.
+- contract_holder_id is omitted from the canonical dict when None, so squads and unbound groups stay byte-identical.
+- The fingerprint includes it for bound groups; their hashes move anyway.
+Q2, A: every end of a bound group carries a typed reason: the 3 contract reasons plus LEADER_LOST, MEMBERS_BELOW_TWO and DEFECTION.
+- It is an ENUM on the typed dissolution record or event, never a string. Unbound groups stay None.
+- FIXED PRECEDENCE when several apply on one tick, one reason per dissolution: BINDING_HOLDER_LEFT > BINDING_CONTRACT_MISSING > BINDING_CONTRACT_NOT_ACTIVE > LEADER_LOST > DEFECTION > MEMBERS_BELOW_TWO.
+- The cause outranks the consequence: a pair whose holder dies is HOLDER_LEFT, not MEMBERS_BELOW_TWO.
+- Test one tick with several reasons.
+DEFAULTS:
+- The holder is the leader and dies -> BINDING_HOLDER_LEFT. Accepted; it follows from the precedence.
+- A non-holder leader dies -> dissolves as today (SOC-176), reason LEADER_LOST. Accepted.
+- No legacy fallback: accepted, but make it EXPLICIT. A GroupRecord with contract_id set and contract_holder_id None is INVALID at construction or validation (a typed error), not silently unbound. Tests build with a holder.
+DIRTY-SET RISK, law in advance: a bound group dissolves ON THE TICK its binding contract stops being ACTIVE. Its validity must not depend on whether the group happens to be dirty or on a full-scan tick.
+- The implementer's count comes first: live bound groups whose contract has ended, with the lag in ticks.
+- If the count is above 0, the fix is IN THIS TICKET, since the binding is what makes the gap reachable. Lean: an expiry is known ahead of time, so a bound group is relevant on the tick its contract's expiry falls due, and a contract status write marks its bound group dirty. Deterministic, with no full scan.
+- Re-measure gate: lag = 0.
+- If the count is 0 only because the full-scan cadence happens to cover it, that is still a FINDING: send it to the designer with the cadence. A lag hidden by cadence is not a lag of 0 by law."
+
+lead-planner's note, same message: "invalid at construction" means loading an old save or checkpoint with a contract_id and no holder would raise. The load path needs handling, or that's a question back to the designer; don't choose silently.
+
+### rpg-designer on checkpoint restore, 2026-11-01 (u24; relayed by lead-planner-u24 and lead-planner). Word for word:
+
+"OPTION A, under one rule that answers both questions. Seed the counter, and refuse a missing holder on a bound group.
+RULE: restore may fill a field missing from an older checkpoint ONLY when its value is a pure function of the loaded state that a ruling already defines. Otherwise it refuses with a typed error. It never guesses. It is ONE post-unpickle step in ScenarioCheckpointer's restore (the single authoritative restore path), with no scattered fixups.
+APPLIED:
+1. next_group_id: SEED it. Addition 4 already defines it as max(10000, the highest non-squad id + 1) from the loaded groups. That is derivation, not a second writer.
+2. contract_holder_id on an UNBOUND group (contract_id None): set it to None, the only valid value. NOTE: a slotted record unpickled from an old checkpoint lacks the slot entirely, so without this step EVERY group raises AttributeError, not only bound ones. Test it.
+3. contract_holder_id on a BOUND group (contract_id set): REFUSE with a typed error that names the group and says the checkpoint predates the group-contract binding. B's guess from the contract's source fails when the contract is gone, and it adds a second writer. That checkpoint stops being restorable, which is accepted since there are no checkpoint files in git or data/.
+TESTS: an old-shape pickle with
+- an unbound group: restores, holder None, counter seeded;
+- a bound group: raises the typed error;
+- a current-shape round-trip: byte-equal.
+GENERAL FIX: agreed. A checkpoint-format version in the header, refusing an unknown or older version BEFORE unpickling, is its own ticket, P2, filed by rpg-planner-ubuntu. Any field added to a slotted state record has this hazard today. F3's lodged_in and beds on the u24 rpg side are one case; the designer is telling rpg-planner."
+
+rpg-designer's addendum, same ruling (same relay). Word for word:
+
+"Restore SEEDS next_group_id by calling the existing seeded_next_group_id from the one post-unpickle step. That's the same derivation __post_init__ uses, so there is one definition and no second writer. Restore REJECTS a bound group with no holder (typed error) and sets None on unbound groups. Add a test: an old-shape pickle with the counter slot missing restores with the seeded value, and groups.py:38 and apply.py:350 read it without error."
+
 ## Implementation Notes
 ## Test Summary
 ## Files Changed

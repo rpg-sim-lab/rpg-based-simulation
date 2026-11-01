@@ -50,6 +50,7 @@ def test_contract_expiration_resolves_and_dissolves():
         member_ids={1, 2},
         anchor=(0, 0),
         contract_id="c1",
+        contract_holder_id=1,
         last_updated_tick=10
     )
 

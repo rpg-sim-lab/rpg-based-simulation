@@ -8,6 +8,8 @@ import struct
 from pathlib import Path
 from typing import TYPE_CHECKING
 
+from src.engine.checkpoint_fields import fill_missing_fields
+
 if TYPE_CHECKING:
     from src.engine.scenario_runtime import ScenarioRuntimeService
     from src.scenarios.schema import SimulationScenarioDefinition
@@ -61,6 +63,7 @@ class ScenarioCheckpointer:
         Raises:
             FileNotFoundError: if *path* does not exist.
             ValueError: if the checkpoint spec_id does not match *spec.id*.
+            CheckpointFieldMissing: (a ValueError) if the checkpoint predates a field that cannot be derived (a group with a contract_id).
         """
         from src.engine.scenario_runtime import ScenarioRuntimeService
         from src.config.profiles import RuntimeProfile, HardwareClass
@@ -78,6 +81,8 @@ class ScenarioCheckpointer:
                 f"Checkpoint spec_id {header['spec_id']!r} does not match "
                 f"supplied spec id {spec.id!r}."
             )
+
+        fill_missing_fields(state)
 
         # Reconstruct RNG from the checkpoint embedded in state.
         # base_seed=0 matches _build_kernel(); the stream is immediately

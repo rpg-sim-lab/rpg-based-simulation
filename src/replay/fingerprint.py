@@ -279,6 +279,8 @@ class StateFingerprinter:
                 f"target={shared_target_kind}:{shared_target_id}:"
                 f"intent={shared_intent}:"
                 f"contract={getattr(group, 'contract_id', None)}"
+                # Bound groups only: an unbound group's string is byte-identical to before.
+                + (f":holder={group.contract_holder_id}" if getattr(group, "contract_holder_id", None) is not None else "")
             )
 
         return "|".join(group_parts)

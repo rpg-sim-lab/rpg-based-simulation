@@ -2,12 +2,14 @@
 # Compliance IDs: SOC-025
 from __future__ import annotations
 from dataclasses import replace
-from typing import Dict, List, Set, Optional, TYPE_CHECKING
+from typing import Callable, Dict, List, Set, Optional, TYPE_CHECKING
+
+from src.core.enums import GroupDissolutionReason
+from src.core.strategic import ContractStatus
 
 if TYPE_CHECKING:
     from src.core.state import AuthoritativeState, EntityState, GroupRecord
     from src.core.updates import StateUpdate, EntityUpdate
-    from src.core.strategic import ContractStatus
 
 class GroupSystem:
     """
@@ -94,6 +96,21 @@ class GroupSystem:
 
             leader = state.entities.get(group.leader_id)
 
+            # Contract binding (highest precedence): a group formed by a contract lives while the contract that formed it is ACTIVE on the entity
+            # that holds it. A leadership change never moves the binding, so the contract is read from `contract_holder_id`, never from the leader.
+            # Holder-left > contract missing > contract not active > leader lost > defection > members below two (GroupDissolutionReason).
+            if group.contract_holder_id is not None:
+                binding_end = GroupSystem._binding_end(state, group, current_update, is_alive, is_active)
+                if binding_end is not None:
+                    b_reason, b_status = binding_end
+                    groups_add_or_update.append(replace(
+                        group, dissolution_tick=state.tick, dissolution_reason=b_reason, dissolution_contract_status=b_status,
+                    ))
+                    for m_id in group.member_ids:
+                        if m_id in state.entities:
+                            entity_updates[m_id] = EntityUpdate(entity_id=m_id, group_id_set=-1)
+                    continue
+
             # Logic ID: SOC-176 (Party dissolves when leader is dead/missing)
             # Logic ID: SOC-189 (Group dissolution test covers dead leader)
             #
@@ -116,7 +133,10 @@ class GroupSystem:
                 # / CampState.active -- the only two real, live precedents for this shape in this
                 # codebase. Enables find_group_for_contract() to answer "did this recruitment ever
                 # produce a group, and how did it end" after dissolution, which it could not before.
-                groups_add_or_update.append(replace(group, dissolution_tick=state.tick))
+                groups_add_or_update.append(replace(
+                    group, dissolution_tick=state.tick,
+                    dissolution_reason=GroupDissolutionReason.LEADER_LOST if group.contract_holder_id is not None else None,
+                ))
 
                 for m_id in group.member_ids:
                     # Logic ID: SOC-179 (Party dissolution updates member group IDs)
@@ -150,25 +170,8 @@ class GroupSystem:
                 dy = m_pos[1] - group.anchor[1]
                 dist_sq = dx*dx + dy*dy
                 
-                # Phase 7: Contract validity check
-                # VERIFIED v2: group_contract_binding
-                contract_invalid = False
-                leader = state.entities.get(group.leader_id) # Needed for contract access
-                if group.contract_id and leader:
-                    from src.core.strategic import ContractStatus
-                    contract = None
-                    if current_update and group.leader_id in current_update.entity_updates:
-                        leader_up = current_update.entity_updates[group.leader_id]
-                        if leader_up.strategic:
-                            contract = next((c for c in leader_up.strategic.contracts_add_or_update if c.id == group.contract_id), None)
-                    if not contract:
-                        contract = leader.strategic.contracts.get(group.contract_id)
-                    if not contract or contract.status != ContractStatus.ACTIVE:
-                        contract_invalid = True
-                    elif contract.expiry_tick != -1 and state.tick > contract.expiry_tick:
-                        contract_invalid = True
-                
-                if dist_sq > (group.cohesion_radius * 2)**2 or contract_invalid: 
+                # The group's contract is checked once per group above (contract_holder_id), not per member.
+                if dist_sq > (group.cohesion_radius * 2)**2:
                     entity_updates[m_id] = EntityUpdate(entity_id=m_id, group_id_set=-1)
                     continue
                 
@@ -176,7 +179,10 @@ class GroupSystem:
                 member_positions.append(m_pos)
 
             if len(new_member_ids) < 2:
-                groups_add_or_update.append(replace(group, dissolution_tick=state.tick))
+                groups_add_or_update.append(replace(
+                    group, dissolution_tick=state.tick,
+                    dissolution_reason=GroupDissolutionReason.MEMBERS_BELOW_TWO if group.contract_holder_id is not None else None,
+                ))
                 for m_id in new_member_ids:
                     entity_updates[m_id] = EntityUpdate(entity_id=m_id, group_id_set=-1)
                 continue
@@ -342,8 +348,11 @@ class GroupSystem:
                         member_ids=new_group_members,
                         anchor=(anchor_x, anchor_y),
                         contract_id=active_contract_id,
+                        contract_holder_id=id_a,
                         roles=roles,
                         last_updated_tick=state.tick,
+                        # The leadership cadence starts at formation: the default 0 would open the election gate on the formation tick.
+                        last_leadership_check_tick=state.tick,
                         composition_score=comp_score,
                     )
                     groups_add.append(new_group)
@@ -358,6 +367,37 @@ class GroupSystem:
             groups_add=groups_add,
             next_group_id_set=next_free_id if groups_add else None,
         )
+
+    @staticmethod
+    def _binding_end(
+        state: AuthoritativeState,
+        group: GroupRecord,
+        current_update: Optional[StateUpdate],
+        is_alive: Callable[[int], bool],
+        is_active: Callable[[int], bool],
+    ) -> Optional[tuple[GroupDissolutionReason, Optional[ContractStatus]]]:
+        """Why a contract-bound group's binding has ended this tick, or None while it holds.
+
+        Returns (GroupDissolutionReason, ContractStatus | None). The contract is read from the holder's own map (a same-tick contract update first),
+        never from the current leader's. Time expiry writes nothing, so it is judged from `expiry_tick` here.
+        """
+        holder_id = group.contract_holder_id
+        if holder_id not in group.member_ids or holder_id not in state.entities or not is_alive(holder_id) or not is_active(holder_id):
+            return GroupDissolutionReason.BINDING_HOLDER_LEFT, None
+        contract = None
+        if current_update and holder_id in current_update.entity_updates:
+            holder_up = current_update.entity_updates[holder_id]
+            if holder_up.strategic:
+                contract = next((c for c in holder_up.strategic.contracts_add_or_update if c.id == group.contract_id), None)
+        if contract is None:
+            contract = state.entities[holder_id].strategic.contracts.get(group.contract_id)
+        if contract is None:
+            return GroupDissolutionReason.BINDING_CONTRACT_MISSING, None
+        if contract.status != ContractStatus.ACTIVE:
+            return GroupDissolutionReason.BINDING_CONTRACT_NOT_ACTIVE, contract.status
+        if contract.expiry_tick != -1 and state.tick > contract.expiry_tick:
+            return GroupDissolutionReason.BINDING_CONTRACT_NOT_ACTIVE, ContractStatus.EXPIRED
+        return None
 
     @staticmethod
     def find_group_for_contract(state: AuthoritativeState, contract_id: str) -> Optional[GroupRecord]:
