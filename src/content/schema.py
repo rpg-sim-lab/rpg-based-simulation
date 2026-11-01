@@ -354,6 +354,7 @@ class BuildingDefinition(CatalogBaseDefinition):
     starting_gold: int = Field(0, ge=0, description="The building's till at world creation: coin the place holds (EXCH-02, owner decision 37)")
     starting_stock: Dict[str, int] = Field(default_factory=dict, description="Items the building holds for sale at world creation (item id to quantity)")
     hires_for_pay: bool = Field(False, description="The building offers commercial paid work, paid from its OWN purse only, no treasury top-up (EXCH-02, owner decision 34 and ruling 66)")
+    beds: int = Field(0, ge=0, description="Beds the building lodges: a subject served a bed here lodges inside it, up to this many at once (F3, divergence 2.155). 0 = the building lodges no one; its rest is served on the reach tile as before.")
     maintenance_shifts: int = Field(1, ge=0, description="Maintenance shifts the building needs each upkeep period (EXCH-02, ruling 61: upkeep in work, shifts times the wage; a coarse band, D50). 0 = no upkeep")
 
 

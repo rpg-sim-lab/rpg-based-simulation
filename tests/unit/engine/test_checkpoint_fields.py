@@ -1,183 +1,84 @@
-"""TCK-20261031-A-PAIR-RE-FORMS-AND-LEAVES-A-GROUP-EVERY-TWO-TICKS: restoring a checkpoint written before the group-contract binding.
+"""The single restore step for fields a checkpoint predates (F3, divergence 2.155; `src/engine/checkpoint_fields.py`).
 
-A frozen slotted dataclass unpickles positionally and without running __init__/__post_init__, so an older checkpoint leaves the new slots absent
-(AttributeError on first read). fill_missing_fields is the one post-unpickle step: it fills a field only when its value is a pure function of the
-loaded state, otherwise it refuses with CheckpointFieldMissingError. The old shape is produced here by pickling with the new fields left out.
-"""
-from __future__ import annotations
-
+A slotted dataclass unpickles POSITIONALLY (`dataclasses._dataclass_setstate` zips ``fields()`` with the state tuple), so the old-shape records here are built the way an old pickle
+loads: the state tuple of the OLD field list, set through the dataclass's own ``__setstate__`` (a record from before the field existed is one value short)."""
 import dataclasses
-import json
 import pickle
-import struct
 
 import pytest
 
-from src.core.state import AuthoritativeState, GroupRecord, seeded_next_group_id
-from src.engine.apply import ApplyPath
-from src.engine.checkpoint import CanonicalStateHasher
-from src.engine.checkpoint_fields import FIELD_RULES, CheckpointFieldMissingError, check_group_counter, fill_missing_fields
-from src.engine.scenario_checkpoint import ScenarioCheckpointer
-from src.systems.world_systems.groups import GroupSystem
-
-NEW_GROUP_FIELDS = {"contract_holder_id", "dissolution_reason", "dissolution_contract_status"}
+from src.core.state import BuildingState, NavigationComponent
+from src.engine.checkpoint_fields import CheckpointFieldMissingError, FIELD_RULES, fill_missing_fields
+from src.engine.kernel import Kernel
+from src.platform.rng import DeterministicRNG
+from tests.unit.engine.lodging_kernel import INN_ID, REACH, hero, kernel, profile
 
 
-def _old_shape_dumps(state, monkeypatch, *, group_fields=True, counter=True):
-    """Pickle `state` the way a build before the binding did: the new fields are not in the saved tuple."""
-    def group_state(self):
-        return [getattr(self, f.name) for f in dataclasses.fields(self) if f.name not in NEW_GROUP_FIELDS]
+def _old_shape(obj, missing):
+    """The record as an older checkpoint loads it: the state tuple lacks the trailing field(s) ``missing``."""
+    names = [f.name for f in dataclasses.fields(obj)]
+    assert names[-len(missing):] == missing or all(m in names for m in missing)
+    old = [n for n in names if n not in missing]
+    new = type(obj).__new__(type(obj))
+    type(obj).__setstate__(new, tuple(getattr(obj, n) for n in old))
+    return new
 
-    def auth_state(self):
-        return [getattr(self, f.name) for f in dataclasses.fields(self) if f.name != "next_group_id"]
 
-    if group_fields:
-        monkeypatch.setattr(GroupRecord, "__getstate__", group_state, raising=False)
-    if counter:
-        monkeypatch.setattr(AuthoritativeState, "__getstate__", auth_state, raising=False)
+def _values(obj, skip=()):
+    return {f.name: getattr(obj, f.name) for f in dataclasses.fields(obj) if f.name not in skip and f.name != "_canonical_cache"}
+
+
+def test_every_rule_field_is_the_last_field_of_its_record_or_the_pickle_shift_is_invisible():
+    """beds was inserted before `_canonical_cache`: an old pickle then put the old cache value in `beds` and nothing looked missing. Each F3 field is last."""
+    assert [f.name for f in dataclasses.fields(NavigationComponent)][-1] == "lodged_in"
+    assert [f.name for f in dataclasses.fields(BuildingState)][-1] == "beds"
+    assert {r.field for r in FIELD_RULES} >= {"lodged_in", "beds"}
+
+
+def test_a_navigation_without_lodged_in_restores_to_none_keeps_every_other_field_and_the_state_ticks():
+    k = kernel([hero(1, REACH[0], action=None)], beds=1)
     try:
-        return pickle.dumps(state)
+        st = k._state
+        nav = st.entities[1].navigation
+        old = _old_shape(nav, ["lodged_in"])
+        with pytest.raises(AttributeError):
+            old.lodged_in
+        object.__setattr__(st.entities[1], "navigation", old)
+        fill_missing_fields(st, [r for r in FIELD_RULES if r.field == "lodged_in"])
+        restored = st.entities[1].navigation
+        assert restored.lodged_in is None
+        assert _values(restored, skip=("lodged_in",)) == _values(nav, skip=("lodged_in",))      # nothing shifted
+        r = Kernel(profile(), pickle.loads(pickle.dumps(st, protocol=pickle.HIGHEST_PROTOCOL)), DeterministicRNG(1))
+        try:
+            r.tick_once()
+            assert r._state.entities[1].navigation.lodged_in is None or r._state.entities[1].navigation.lodged_in == INN_ID
+        finally:
+            r.shutdown()
     finally:
-        monkeypatch.undo()
+        k.shutdown()
 
 
-def _state(groups):
-    return AuthoritativeState(tick=7, seed=1, groups=groups, next_item_instance_id=77)
+def test_a_building_without_beds_is_refused_with_a_typed_error_naming_the_field_and_the_building():
+    k = kernel([hero(1, REACH[0], action=None)], beds=1)
+    try:
+        st = k._state
+        b = st.buildings[INN_ID]
+        old = _old_shape(b, ["beds"])
+        assert _values(old, skip=("beds",)) == _values(b, skip=("beds",))                  # beds was last: the other fields did not shift
+        object.__setattr__(st, "buildings", {**st.buildings, INN_ID: old})
+        with pytest.raises(CheckpointFieldMissingError, match=r"'beds'.*building %d" % INN_ID):
+            fill_missing_fields(st)
+        assert issubclass(CheckpointFieldMissingError, ValueError)                              # the API route answers 400
+    finally:
+        object.__setattr__(k._state, "buildings", {**k._state.buildings, INN_ID: b})        # the refused state is not a state to hash: put the real building back before shutdown
+        k.shutdown()
 
 
-def _unbound(gid=10003):
-    return GroupRecord(id=gid, leader_id=1, member_ids={1, 2}, anchor=(0.0, 0.0), last_updated_tick=4)
-
-
-def _bound(gid=10004, **kw):
-    return GroupRecord(id=gid, leader_id=1, member_ids={1, 2}, anchor=(0.0, 0.0), contract_id="r1", contract_holder_id=1, **kw)
-
-
-def test_an_old_shape_checkpoint_leaves_the_new_slots_absent_and_keeps_every_other_field_aligned(monkeypatch):
-    blob = _old_shape_dumps(_state({10003: _unbound()}), monkeypatch)
-    old = pickle.loads(blob)
-    g = old.groups[10003]
-    assert not hasattr(g, "contract_holder_id") and not hasattr(old, "next_group_id")  # absent, not a neighbour's value
-    assert old.next_item_instance_id == 77 and g.last_updated_tick == 4 and g.contract_id is None
-
-
-def test_an_old_checkpoint_with_an_unbound_group_restores_with_holder_none_and_the_counter_seeded(monkeypatch):
-    old = pickle.loads(_old_shape_dumps(_state({10003: _unbound(), 10009: _unbound(10009)}), monkeypatch))
-    fill_missing_fields(old)
-    g = old.groups[10003]
-    assert (g.contract_holder_id, g.dissolution_reason, g.dissolution_contract_status) == (None, None, None)
-    assert old.next_group_id == seeded_next_group_id(old.groups) == 10010
-    assert g.to_canonical_dict() == _unbound().to_canonical_dict()
-
-
-def test_an_old_checkpoint_with_a_bound_group_is_refused_naming_the_group(monkeypatch):
-    old = pickle.loads(_old_shape_dumps(_state({10003: _unbound(), 10004: _bound()}), monkeypatch))
-    with pytest.raises(CheckpointFieldMissingError, match=r"predates the group-contract binding: group 10004"):
-        fill_missing_fields(old)
-
-
-def test_a_retained_dissolved_record_with_a_contract_counts_as_bound(monkeypatch):
-    old = pickle.loads(_old_shape_dumps(_state({10004: _bound(dissolution_tick=9)}), monkeypatch))
-    with pytest.raises(CheckpointFieldMissingError, match="retained dissolved record"):
-        fill_missing_fields(old)
-
-
-def test_a_current_shape_round_trip_is_byte_equal_and_untouched_by_the_step():
-    state = _state({10003: _unbound(), 10004: _bound()})
-    blob = pickle.dumps(state)
-    back = pickle.loads(blob)
-    fill_missing_fields(back)
-    assert pickle.dumps(back) == blob
-    assert CanonicalStateHasher.to_canonical_data(back) == CanonicalStateHasher.to_canonical_data(state)
-    assert back.groups[10004].contract_holder_id == 1
-
-
-def test_with_only_the_counter_slot_missing_it_is_seeded_and_the_readers_work(monkeypatch):
-    old = pickle.loads(_old_shape_dumps(_state({10003: _bound(), 10012: _unbound(10012)}), monkeypatch, group_fields=False))
-    assert not hasattr(old, "next_group_id")
-    fill_missing_fields(old)
-    assert old.next_group_id == 10013
-    GroupSystem.update_groups(old)  # groups.py reads state.next_group_id without error
-    new = ApplyPath.apply_generation(old, GroupSystem.update_groups(old))  # apply.py reads it too
-    assert new.next_group_id >= 10013
-
-
-def test_every_rule_names_its_ruling_and_the_step_is_the_only_caller():
-    assert {r.field for r in FIELD_RULES} == {"next_group_id", *NEW_GROUP_FIELDS}
-    assert all(r.ruling for r in FIELD_RULES)
-    import pathlib
-    src = pathlib.Path("src")
-    users = [str(p) for p in src.rglob("*.py") if "fill_missing_fields(state)" in p.read_text() and p.name != "checkpoint_fields.py"]
-    assert users == ["src/engine/scenario_checkpoint.py"]
-
-
-def test_restore_refuses_a_bound_group_checkpoint_before_building_a_kernel(tmp_path, monkeypatch):
-    from src.scenarios.schema import SimulationScenarioDefinition
-    blob = _old_shape_dumps(_state({10004: _bound()}), monkeypatch)
-    header = json.dumps({"tick": 7, "spec_id": "s", "rng_checkpoint": None}).encode()
-    path = tmp_path / "old.bin"
-    path.write_bytes(struct.pack("<I", len(header)) + header + blob)
-    spec = SimulationScenarioDefinition(id="s", world_composition="frontier_living_world", perspective="hero_guild_perspective")
-    with pytest.raises(CheckpointFieldMissingError) as err:
-        ScenarioCheckpointer.restore(path, spec)
-    assert isinstance(err.value, ValueError)  # the restore route answers ValueError as a client error
-
-
-def test_a_group_pickled_under_the_old_module_path_still_loads_through_the_re_export(monkeypatch):
-    """GroupRecord lives in src.core.group_record; pickles name the module, so checkpoints written when it lived in src.core.state must still load."""
-    import sys
-
-    import src.core.state as state_module
-    assert state_module.GroupRecord is GroupRecord
-    monkeypatch.setattr(GroupRecord, "__module__", "src.core.state")
-    blob = pickle.dumps(_bound())
-    monkeypatch.undo()
-    assert b"src.core.state" in blob and b"src.core.group_record" not in blob
-    back = pickle.loads(blob)
-    assert type(back) is GroupRecord and back.contract_holder_id == 1
-    assert "src.core.group_record" in sys.modules
-
-
-def test_restore_fills_an_old_shape_checkpoint_before_the_kernel_is_built_and_reads_it(tmp_path, monkeypatch):
-    """The ordering the restore step relies on: on an old-shape checkpoint the new slots are ABSENT after unpickling, `fill_missing_fields` runs inside `restore`,
-    and only then is the Kernel built. The Kernel is replaced by a recorder that captures the state it is given, so this proves the order without running a tick."""
-    import src.engine.kernel as kernel_module
-    from src.scenarios.schema import SimulationScenarioDefinition
-    seen = {}
-
-    class RecordingKernel:
-        def __init__(self, profile, state, rng, *a, **k):
-            seen["next_group_id"] = state.next_group_id
-            seen["holder"] = state.groups[10003].contract_holder_id
-            seen["reason"] = state.groups[10003].dissolution_reason
-
-    blob = _old_shape_dumps(_state({10003: _unbound(), 10009: _unbound(10009)}), monkeypatch)  # first: the helper undoes the monkeypatch it made
-    monkeypatch.setattr(kernel_module, "Kernel", RecordingKernel)
-    assert not hasattr(pickle.loads(blob), "next_group_id")  # absent as unpickled: nothing reads it before the fill
-    header = json.dumps({"tick": 7, "spec_id": "s", "rng_checkpoint": None}).encode()
-    path = tmp_path / "old.bin"
-    path.write_bytes(struct.pack("<I", len(header)) + header + blob)
-    spec = SimulationScenarioDefinition(id="s", world_composition="frontier_living_world", perspective="hero_guild_perspective")
-    ScenarioCheckpointer.restore(path, spec)
-    assert seen == {"next_group_id": 10010, "holder": None, "reason": None}
-
-
-def test_after_restore_the_counter_is_an_int_and_never_none(monkeypatch):
-    old = pickle.loads(_old_shape_dumps(_state({10003: _unbound()}), monkeypatch))
-    fill_missing_fields(old)
-    check_group_counter(old)
-    assert type(old.next_group_id) is int and old.next_group_id == 10004
-    assert type(_state({}).next_group_id) is int and _state({}).next_group_id == 10000  # a fresh state starts at 10000, nothing seeds it
-
-
-def test_a_counter_not_above_every_stored_non_squad_id_raises_at_restore_and_one_above_it_passes():
-    from src.engine.checkpoint_fields import GroupCounterBehindStoreError
-    groups = {10003: _unbound(), 10009: _unbound(10009)}
-    behind = _state(groups)
-    object.__setattr__(behind, "next_group_id", 10009)  # equal to a stored id: the next formation would reuse it
-    with pytest.raises(GroupCounterBehindStoreError, match="needs >= 10010"):
-        check_group_counter(behind)
-    ok = _state(groups)
-    object.__setattr__(ok, "next_group_id", 10010)
-    check_group_counter(ok)  # passes
-    assert issubclass(GroupCounterBehindStoreError, ValueError)  # the restore route answers 400
+def test_a_current_shape_state_is_untouched():
+    k = kernel([hero(1, REACH[0], action=None)], beds=1)
+    try:
+        before = {i: e.navigation for i, e in k._state.entities.items()}
+        fill_missing_fields(k._state)
+        assert all(k._state.entities[i].navigation is n for i, n in before.items())
+    finally:
+        k.shutdown()

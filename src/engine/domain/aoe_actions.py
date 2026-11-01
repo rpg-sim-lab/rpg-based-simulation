@@ -35,7 +35,7 @@ class AoeActions:
         defender = None
         if context and hasattr(context, "entities"):
             for eid, ent in context.entities.items():
-                if ent.navigation.position == target_pos and ent.combat.alive:
+                if ent.navigation.position == target_pos and ent.combat.alive and ent.navigation.lodged_in is None:  # F3: lodgers share the building tile and are never the primary target
                     defender = ent
                     break
         

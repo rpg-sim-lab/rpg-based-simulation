@@ -41,7 +41,7 @@ class SleepDebtTable:
 SLEEP_DEBT = SleepDebtTable()
 COLLAPSE_LINE = SLEEP_DEBT.collapse_line
 COLLAPSE_FLAG = "collapse"  # marks a SLEEP task that began as a collapse (a key other than `reason`, which the outcome annotation drops)
-SLEEP_ACTIONS = frozenset({"SLEEP", "REST"})  # the actions that put a subject to sleep; each is held until the debt is below the wake line
+from src.core.lodging_rules import SLEEP_ACTIONS  # noqa: E402,F401  (defined in core beside the lodger stay rule: the actions that put a subject to sleep, each held until the debt is below the wake line)
 
 
 def is_weakened(sleep_debt: float) -> bool:

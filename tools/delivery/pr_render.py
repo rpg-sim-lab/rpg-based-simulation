@@ -183,6 +183,20 @@ def find_ticket_file(ticket_id: str, tickets_root: Path = _DEFAULT_TICKETS_ROOT)
     return matches[0] if matches else None
 
 
+def _status_dirs(ticket_id: str, tickets_root: Path = _DEFAULT_TICKETS_ROOT) -> list:
+    """The distinct status folders (first path part under `tickets_root`) holding a file for this ticket, sorted.
+    More than one means the ticket is both open and closed in the tree (TCK-20261101-PR-RENDER-LEAVES-OUT-A-TICKET-IN-TWO-STATUS-FOLDERS)."""
+    dirs = set()
+    for path in tickets_root.rglob(f"{ticket_id}.md"):
+        try:
+            parts = path.relative_to(tickets_root).parts
+        except ValueError:
+            continue
+        if len(parts) > 1:
+            dirs.add(parts[0])
+    return sorted(dirs)
+
+
 _NOT_CLOSED_DIRS = ("todos", "inprogress")
 
 
@@ -270,7 +284,8 @@ def discover_tickets(
     TICKET-EXCLUSION AC5).
 
     A ticket whose file sits under `todos/` or `inprogress/` is left out with a warning, with no flag
-    needed: a PR that files a follow-up names it in a commit subject, but cannot have closed it."""
+    needed: a PR that files a follow-up names it in a commit subject, but cannot have closed it.
+    So is one with files in two status folders."""
     exclusions = exclusions or {}
     commit_ids = discover_commit_ticket_ids(run_command, base_ref)
     changed_ids = discover_changed_ticket_ids(run_command, base_ref)
@@ -308,6 +323,14 @@ def discover_tickets(
             warnings.append(
                 f"{ticket_id}: named in a commit subject but its ticket file is not changed by this "
                 f"branch -- cited, not closed; left out of Closes:"
+            )
+            continue
+        dirs = _status_dirs(ticket_id, tickets_root)
+        if len(dirs) > 1:
+            # done/ sorts first, so find_ticket_file would load the closed copy and hide the open one
+            warnings.append(
+                f"{ticket_id}: ticket file exists under {', '.join(d + '/' for d in dirs)} -- left out of Closes: "
+                f"(one ticket in two status folders; keep one copy before this PR lands)"
             )
             continue
         open_dir = _not_closed_dir(path, tickets_root)

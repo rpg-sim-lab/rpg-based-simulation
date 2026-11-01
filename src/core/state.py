@@ -516,9 +516,11 @@ class NavigationComponent:
     # 0.0 = never stepped (free to step).
     step_ready_tick: float = 0.0
 
+    lodged_in: Optional[int] = None  # F3 (2.155): the building this subject LODGES in (position is its tile, on no tile held); set and cleared only by the apply path; LAST field (positional unpickle)
+
     def to_canonical_dict(self) -> Dict[str, Any]:
         """The navigation block of the entity's canonical form. `step_ready_tick` (D75) is present only once non-zero, so the form of an
-        entity that never stepped is unchanged."""
+        entity that never stepped is unchanged; `lodged_in` (F3) likewise, only while lodged."""
         res = {
             "target": self.target,
             "path": self.path,
@@ -538,6 +540,8 @@ class NavigationComponent:
         }
         if self.step_ready_tick:
             res["step_ready_tick"] = self.step_ready_tick
+        if self.lodged_in is not None:
+            res["lodged_in"] = self.lodged_in  # present only while lodged, so the form of a subject that never lodged is unchanged (F3)
         return res
 
 
@@ -1203,6 +1207,7 @@ class BuildingState:
     # Commercial paid work (content ``hires_for_pay``, ruling 66): a shift is paid from the building's own purse only.
     hires_for_pay: bool = False
     _canonical_cache: Any = field(default=None, init=False, repr=False, compare=False)
+    beds: int = 0  # F3 (2.155), content: beds lodged at once (0 = none); occupancy is derived from entities' lodged_in; LAST field (positional unpickle: a pre-F3 pickle reads it missing, then refused)
 
     def to_canonical_dict(self) -> Dict[str, Any]:
         if self._canonical_cache is not None:
@@ -1221,6 +1226,8 @@ class BuildingState:
             "maintenance_shifts_done": self.maintenance_shifts_done,
             "hires_for_pay": self.hires_for_pay,
         }
+        if self.beds:
+            res["beds"] = self.beds  # present only once non-zero, so a building that lodges no one keeps its canonical form
         object.__setattr__(self, "_canonical_cache", res)
         return res
 
