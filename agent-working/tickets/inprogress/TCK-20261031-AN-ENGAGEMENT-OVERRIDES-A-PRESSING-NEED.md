@@ -15,7 +15,7 @@ tags: []
 An engagement overrides a pressing need: with hostiles in sight, tactical skips the survival step though no present threat is on the subject (SURV-07)
 
 ## Status
-OPEN (counts first; ruled by rpg-designer 2026-10-31; seated by rpg-planner; not dispatched: needs an owner go, and an order ask is with the owner)
+INPROGRESS (Phase 1 only: counts first; dispatched by rpg-planner under owner yes #715 6561198771)
 
 ## Tier
 standard
