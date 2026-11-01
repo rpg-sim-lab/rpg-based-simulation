@@ -101,8 +101,7 @@ class StateFingerprinter:
         macro_ident = (
             f"maturity={state.maturity}:"
             f"last_calamity_tick={state.last_calamity_tick}:"
-            f"movement_count={state.movement_count}" + ("" if state.grief_drained_tick == -1 else f":grief_drained_tick={state.grief_drained_tick}")
-            + ("" if state.next_group_id == GROUP_ID_BASE else f":next_group_id={state.next_group_id}")
+            f"movement_count={state.movement_count}" + StateFingerprinter._counter_suffix(state)
         )
 
         raw_data = (
@@ -244,6 +243,13 @@ class StateFingerprinter:
             f"marriages=[{marriage_ident}];"
             f"boredom=[{boredom_ident}]"
         )
+
+    @staticmethod
+    def _counter_suffix(state: AuthoritativeState) -> str:
+        """Counters that join the fingerprint only once they differ from their start value (older fingerprints stay as they were)."""
+        grief = "" if state.grief_drained_tick == -1 else f":grief_drained_tick={state.grief_drained_tick}"
+        group = "" if state.next_group_id == GROUP_ID_BASE else f":next_group_id={state.next_group_id}"
+        return grief + group
 
     @staticmethod
     def _group_identity(state: AuthoritativeState) -> str:

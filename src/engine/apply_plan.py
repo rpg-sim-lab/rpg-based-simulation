@@ -158,9 +158,7 @@ class ApplyPlanBuilder:
         if "groups" in cols:
             for g_id in update.groups_remove:
                 new_groups.pop(g_id, None)
-            for g in update.groups_add:
-                new_groups[g.id] = g
-            for g in update.groups_add_or_update:
+            for g in (*update.groups_add, *update.groups_add_or_update):
                 new_groups[g.id] = g
         plan.world_collection_changes["groups"] = new_groups
 

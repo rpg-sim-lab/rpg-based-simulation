@@ -325,36 +325,8 @@ class GroupSystem:
                     new_g_id = next_free_id
                     taken_ids.add(new_g_id)
                     next_free_id = new_g_id + 1
-                    leader_id = id_a # Simplified: initiator is leader
-                    anchor_x = sum(state.entities[m_id].navigation.position[0] for m_id in new_group_members) / len(new_group_members)
-                    anchor_y = sum(state.entities[m_id].navigation.position[1] for m_id in new_group_members) / len(new_group_members)
-                    
-                    # Assign Roles
-                    roles = {leader_id: "LEADER"}
-                    for m_id in new_group_members:
-                        if m_id == leader_id: continue
-                        member = state.entities[m_id]
-                        # Derive role from combat component or default
-                        role = member.combat.tactical_role if member.combat.tactical_role else "VANGUARD"
-                        roles[m_id] = role
-
-                    from src.systems.social_systems.party_composition import PartyCompositionScorer
-                    member_entities = [state.entities[mid] for mid in new_group_members if mid in state.entities]
-                    comp_score = PartyCompositionScorer.score(member_entities)
-
-                    new_group = GroupRecord(
-                        id=new_g_id,
-                        leader_id=leader_id,
-                        member_ids=new_group_members,
-                        anchor=(anchor_x, anchor_y),
-                        contract_id=active_contract_id,
-                        contract_holder_id=id_a,
-                        roles=roles,
-                        last_updated_tick=state.tick,
-                        # The leadership cadence starts at formation: the default 0 would open the election gate on the formation tick.
-                        last_leadership_check_tick=state.tick,
-                        composition_score=comp_score,
-                    )
+                    # Simplified: the initiator (id_a) is leader and holds the binding contract.
+                    new_group = GroupSystem._new_group_record(state, new_g_id, id_a, new_group_members, active_contract_id)
                     groups_add.append(new_group)
                     
                     for m_id in new_group_members:
@@ -366,6 +338,38 @@ class GroupSystem:
             groups_add_or_update=groups_add_or_update,
             groups_add=groups_add,
             next_group_id_set=next_free_id if groups_add else None,
+        )
+
+    @staticmethod
+    def _new_group_record(
+        state: AuthoritativeState, group_id: int, leader_id: int, member_ids: Set[int], contract_id: Optional[str],
+    ) -> GroupRecord:
+        """The record of a group formed by `contract_id`, held by its leader (the initiator): anchor at the members' centre, roles from each
+        member's tactical role, composition scored at formation, and the leadership cadence starting at the formation tick (the default 0 would
+        open the election gate on the formation tick)."""
+        from src.core.state import GroupRecord
+        from src.systems.social_systems.party_composition import PartyCompositionScorer
+        anchor_x = sum(state.entities[m_id].navigation.position[0] for m_id in member_ids) / len(member_ids)
+        anchor_y = sum(state.entities[m_id].navigation.position[1] for m_id in member_ids) / len(member_ids)
+        roles = {leader_id: "LEADER"}
+        for m_id in member_ids:
+            if m_id == leader_id:
+                continue
+            member = state.entities[m_id]
+            # Derive role from combat component or default
+            roles[m_id] = member.combat.tactical_role if member.combat.tactical_role else "VANGUARD"
+        member_entities = [state.entities[mid] for mid in member_ids if mid in state.entities]
+        return GroupRecord(
+            id=group_id,
+            leader_id=leader_id,
+            member_ids=member_ids,
+            anchor=(anchor_x, anchor_y),
+            contract_id=contract_id,
+            contract_holder_id=leader_id,
+            roles=roles,
+            last_updated_tick=state.tick,
+            last_leadership_check_tick=state.tick,
+            composition_score=PartyCompositionScorer.score(member_entities),
         )
 
     @staticmethod
