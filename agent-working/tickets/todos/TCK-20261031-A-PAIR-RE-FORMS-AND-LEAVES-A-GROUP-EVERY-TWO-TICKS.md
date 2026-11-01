@@ -551,3 +551,13 @@ Then the 3 pinned hash runs proceed on that head.
 If the guard goes in tests/architecture, send me the file and I'll get testing-planner's OK.
 
 lead-planner's note, same message: suggests tests/unit/, to avoid the extra review round. Go for the hash runs stands on that head.
+
+### rpg-planner confirms the restore-only reading (via lead-planner-u24 and lead-planner, 2026-11-01, word for word)
+
+A restore-only GroupCounterBehindStoreError (after fill_missing_fields) plus condition 4's guard satisfies conditions 2 and 3, given the AST scan.
+- Condition 2 becomes: 'the list is empty today; the guard enforces it for any future builder'. The PR body states the 19-site scan result.
+- Condition 3: RESTORE ONLY. NOT in the apply copy: the allocator already steps past every stored id, and an O(store) check per apply isn't wanted.
+- The guard (condition 4) must flag any src construction of AuthoritativeState (or replace on it) that supplies groups without next_group_id, with the apply copy and to_readonly excepted BY NAME. Its own test shows it failing on a planted example.
+- Tests: run the 72 + 30 hand-built sites and report any that need a counter (ids at or above 10000 reaching restore), with names. No expectation edits without listing them.
+- The gap is named: a hand-built runtime state with groups above 10000 and no counter keeps 10000. That's safe while records are kept, since the allocator skips taken ids. rpg-planner is adding to step (b)'s AC on the DISSOLVED ticket: 'a drop must never lower next_group_id, and a state with stored ids at or above the counter is refused at restore (GroupCounterBehindStoreError)'.
+Your 3 pinned hash runs can PROCEED on that head.
