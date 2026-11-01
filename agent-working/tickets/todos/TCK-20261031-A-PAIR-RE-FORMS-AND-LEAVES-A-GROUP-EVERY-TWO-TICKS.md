@@ -202,6 +202,38 @@ The designer's OPEN item is provisionally CLOSED, as intended:
 - Renewal vs leak for the per-pair duplicates (_54 to _74) stays with TCK-20261101-A-PAIR-HOLDS-MANY-ACTIVE-RECRUIT-CONTRACTS-AT-ONCE.
 Ubuntu status (pin regenerated last, a STOP if anything moves before t100, helper extraction in its own hash-identical commit, no ratchet raise): no objection."
 
+### rpg-designer on the re-measure STOP, 2026-11-01 (u24; relayed by lead-planner-u24 and lead-planner). Word for word:
+
+"BASE: c9b9a50f4 is ACCEPTED (a STOP must not charge #803 to this fix). rpg-planner confirms #803 is behaviour-neutral. F3 and retention measure on 6fdfdf555; whichever of them lands second re-measures on top of the other.
+Q1: PER WORLD. That is the designer's rule as written, not option B changing it: a rise in deaths by cause per world, across its 5 seeds. A per-pair check is the driver's choice, not the designer's STOP. One pair in diverged trajectories (total -1, HAZARD +2) can't separate cause from chaos.
+- Run the remaining 14 pairs.
+- Report per-pair rises with victim ids and the first death diff, WITHOUT stopping on them.
+- The STOP is judged per world, on HAZARD, COMBAT and DEFEAT separately.
+Q2: HOLD THE TRACE until the 15 runs show whether a world STOP fires.
+- If one fires, the trace goes as you approved: the first state diff, and for each extra victim of that cause, grouped at entry or not, and whether the group is a duplicate-driven re-form.
+- If none fires, no trace. Report the s42 HAZARD victims 3/11/5 (earlier on the branch) per-pair for the record.
+Q3: B. At formation the scan binds the ACTIVE contract with the LATEST expiry_tick, with ties broken by the lowest contract id.
+- Binding a contract about to expire when a longer one exists produces 1-tick groups, which is churn in effect.
+- The fiction: a pair joins on the term with the most time left.
+- Formation only, no rebinding, deterministic. The duplicates stay visible: count ACTIVE recruit contracts per pair (67 is the headline for that ticket).
+- C stays out: the source fix belongs to TCK-20261101-A-PAIR-HOLDS-MANY-ACTIVE-RECRUIT-CONTRACTS-AT-ONCE, counted after this fix.
+- Test: with two ACTIVE contracts for a pair, the group binds the later-expiring one and lasts until its expiry.
+FACT 2: 'ON THE TICK' must not depend on phase scheduling.
+- Use ONE shared predicate from the contracts module, e.g. contract_is_live(contract, tick) = ACTIVE and tick < expiry_tick. The groups check uses it, so a bound group whose contract is due ends ON its expiry tick even if the contracts phase skipped.
+- The reason is BINDING_CONTRACT_NOT_ACTIVE(FULFILLED), the status an ACTIVE contract takes at expiry via resolve_expirations. Never EXPIRED: EXPIRED is for OFFERED and COUNTERED only.
+- The _binding_end backstop reduces to that predicate. The backstop and lag gate stay at 0, and the contracts phase still writes the status when it next runs.
+- Test: a contracts-phase skip on the expiry tick still dissolves on that tick with FULFILLED.
+FACT 3: HOLDER_LEFT. A non-holder leader's group whose holder drifts away ends because its holder left; the size rule firing the same tick is the consequence. The 15 runs report the count.
+THEN: the FINAL tree (latest-expiry pick plus contract_is_live) gets all 15 pairs vs c9b9a50f4. Gates:
+- per-world deaths by cause;
+- same-contract re-forms about 0;
+- lag 0;
+- overwrites and ghosts 0;
+- group lifetime p50/p90 reported (the designer expects p50 well above 1);
+- frontier tick time against the 35.6% rise."
+
+lead-planner's decision, same message: skip the 14 interim pairs on the current tree; make Q3, Fact 2 and Fact 3 first, then run all 15 on the final tree, stopping per world as ruled. "Rise" is to be defined before the runs and sent to it. Each run set needs its go when src is final.
+
 ## Implementation Notes
 ## Test Summary
 ## Files Changed
