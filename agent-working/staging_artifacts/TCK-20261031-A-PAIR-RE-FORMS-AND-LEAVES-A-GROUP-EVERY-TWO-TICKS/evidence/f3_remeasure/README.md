@@ -34,13 +34,13 @@ Base tree = origin/main 30307228c (F3 landed). Arm tree = effd2e8fc (the churn f
 ## Corrections made along the way (the final wording to use)
 
 - DISSOLVED rows in the frontier s45 probe: 10, not 8 (the earlier message's 8 was a mis-sum).
-- e23 (urban s42): e17, its killer, did NOT hold e23 as its target throughout. At t1669 its target is 18; at t1681 it picks 23 from adjacent [23, 5, 24] on hp 32. e17's first pick of 23 is at t1663 on distance (7 against 8 for e5), with group_bias 1.0 for both candidates. The e23 verdict is NOT FED (designer).
+- e23 (urban s42): e17, its killer, did NOT hold e23 as its target throughout. At t1669 its target is 18; at t1681 it picks 23 from adjacent [23, 5, 24] on hp 32. e17's first pick of 23 is at t1663 on distance (7 against 8 for e5), with group_bias 1.0 for both candidates. The e23 verdict: NOT FED on item 1, NOT FED by the recast (iii) test, designer's final word pending.
 - Base e23: in the base run entity 23 is dead since t111 (HAZARD), so the base trace has no e23 in the window t1630-1700; the "extra victim" for e23 is by (entity, cause) and there is no same-tick base comparison for it.
-- e12 (frontier s43): the chain "group shared target -> e12 drops FATIGUE -> INTERCEPTING" was reversed in the first report; e12 (leader) picks e30 at t1399 with the group's shared target still None and the shared target becomes 30 at t1400 from e12's own pick; FATIGUE persists through the first intercept and the first hit at t1404. Verdict NOT SHOWN (rpg-planner), not FED.
+- e12 (frontier s43): the chain "group shared target -> e12 drops FATIGUE -> INTERCEPTING" was reversed in the first report; e12 (leader) picks e30 at t1399 with the group's shared target still None and the shared target becomes 30 at t1400 from e12's own pick; FATIGUE persists through the first intercept and the first hit at t1404. The first working verdict was NOT SHOWN, before the leave rows; the final ruling (rpg-designer) is NOT FED, e12 cleared.
 - Frontier base lodged-at-decision counts for s43, s44, s45 are 0, 0, 0 (arm 70, 738, 1192); "4, 176, 86" is crowded_frontier's row.
 - s44 formations: in g10082 (formed 1892) entity 4, the group's other member, leaves its bed at state tick 1898 (plain rest end); the chosen leader/holder entity 1 stays lodged. In g10048 (urban s42, formed 1671) entity 3 leaves at 1674 (plain rest end).
 - `AVOID_NO_ROUTE` is not a route search and not tile occupancy: it is `retreat_destination` returning None (no region contains the tile and no home region; geometry only), identical at [41,30] and [41,31].
-- Fix-fed deaths among the Tier 2 victims, per rpg-planner / rpg-designer: e10 (crowded s43) and e22 (frontier s45). e12 NOT SHOWN, e23 NOT FED; the others are not read as fed.
+- Verdicts after the traces (rpg-designer / rpg-planner): e12 NOT FED, cleared. e22 (frontier s45): FED by the letter of (i), limit disclosed. e23 (urban s42): NOT FED on item 1, NOT FED by the recast (iii) test, designer's final word pending. e10 (crowded s43): fix-fed. The other Tier 2 victims are not read as fed.
 - The group counter work is separate: `next_group_id` is a non-optional int default 10000 seeded only by restore (FIELD_RULES) and checked there (`GroupCounterBehindStoreError`); restore checks the spec id before the fill.
 
 ## Limits that apply to every row
