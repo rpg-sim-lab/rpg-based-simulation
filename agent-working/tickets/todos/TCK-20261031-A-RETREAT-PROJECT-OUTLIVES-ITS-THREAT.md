@@ -134,3 +134,6 @@ Ruling (A), inside this ticket, counts first: tactical's flight gate also calls 
   - disclosures: R3 to the slot-leak ticket; the 2 N=200 holds; destination P3; the REGROUP H1 evidence; e9 as a base gap;
   - F3 lands first, then retention re-measures on F3 (the same 15, the same bar, the recovery check, deaths by cause);
   - the owner push ask names one scope widening (option A, tactical flight).
+- **Flight check (lane C probe12, local 335793b2c; designer ACK 2026-11-01):** option A changed no flight decision for any victim. 369 flee ticks, 0 disagreeing. All 11 Tier 2 victims FAIL, so the Tier 2 pairs are divergence.
+  - The on-F3 re-measure fills 2.156 Measured and AC9. This set is cited as the pre-F3 reading (c861855da, 335793b2c).
+  - On-F3 conditions: any tier-1 cause gets the full Tier 2 trace again (200t, both changes); never-threatened adoptions must stay 0, and a rise is a STOP.

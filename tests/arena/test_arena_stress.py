@@ -23,7 +23,7 @@ def test_arena_stress_50v50():
     # Run for 50 ticks to measure scaling
     result = harness.run_scenario(scenario_id, state, expectations, ticks=50)
     
-    assert result.conformance_passed
+    assert result.conformance_passed, f"conformance failed: failure_kind={result.failure_kind}, failure_reason={result.failure_reason}"  # owner #715 6557171539: CI fails here, not on RSS; print why
     print(f"Stress Arena 50v50 completed.")
     print(f"Peak RSS: {result.peak_rss_mb:.1f} MB")
     print(f"Total CPU: {result.total_cpu_sec:.3f} sec")
