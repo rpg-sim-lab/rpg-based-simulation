@@ -21,6 +21,11 @@ def mech(R, e, dt):
     ad = [(r["t"], r["pr"]) for r in R["pj"] if r["e"] == e and "combat_retreat" in (r["pr"] or "") and dt - 200 <= r["t"] <= dt + 1]
     tc = [(r["t"], r["pr"]) for r in R["end"] if r["e"] == e and r.get("ended_by") == "THREAT_CLEARED" and dt - 200 <= r["t"] <= dt]
     return ad, tc
+def dt_line(R, e):
+    x = next((r for r in R["dtask"] if r["e"] == e), None)
+    if x is None: return "no dtask record (old log)"
+    en = x["entry"] or {}
+    return (f"at death task {x['task']} mode {x['mode']} reason {x['reason']} action {x['action']} project {x['project']}; entry tick t{en.get('t')} pos {en.get('pos')} move {en.get('work_kind')} reason {en.get('reason')} mode {en.get('mode')} project {en.get('project')} writer {x['entry_writer'] or 'project/other (no tactical reason)'}")
 def first_diff(Rb, Rf):
     pb = [(r["t"], r["e"], r["a"], r["pr"]) for r in Rb["pj"]]; pf = [(r["t"], r["e"], r["a"], r["pr"]) for r in Rf["pj"]]
     i = next((i for i, (x, y) in enumerate(zip(pb, pf)) if x != y), None)
@@ -60,4 +65,18 @@ for w, c in tier1 + tier2:
             verdict = "PASS (retreat adopted/completed within 200t) -> STOP with chain" if (ad or tc or held) else "FAIL -> divergence, reported"
             b = db.get(e)
             print(f"    - e{e} died t{d['dtick']} {c} attacker {d['attacker']}; holding retreat at death: {held}; retreats adopted in window {ad[:4]}; THREAT_CLEARED in window {tc[:4]}; mechanism test {verdict}")
+            print(f"      death detail: {dt_line(Rf, e)}")
             print(f"      base fate: {('died t%s %s attacker %s' % (b['dtick'], b['cause'], b['attacker'])) if b else 'alive at end'}; fix project path last 60t: {path(Rf, e, d['dtick'])[-8:]}; base path: {path(Rb, e, d['dtick'])[-8:]}")
+
+print("\n## Tactical chase into drain terrain (HAZARD victims, all fix-arm HAZARD deaths): entry writer counts, so the older INTERCEPTING/BRACKETING defect is not counted against retention\n")
+for w in W:
+    for a in ("base", "fix"):
+        c = collections.Counter()
+        for s in SEEDS:
+            Rx = R[(w, s, a)]
+            if Rx is None: continue
+            for e, d in deaths(Rx).items():
+                if d["cause"] != "HAZARD": continue
+                x = next((r for r in Rx["dtask"] if r["e"] == e), None)
+                c[(x["entry"] or {}).get("reason") if x else "no-record"] += 1
+        print(f"- {w} {a}: HAZARD deaths by entry-move reason {dict(c)}")

@@ -126,6 +126,12 @@ I.has_project_capacity = hc
 if hasattr(I, 'escalated_need_wins'): I.escalated_need_wins = en
 SI.resume_project = staticmethod(rs)
 prev = {}
+import re, glob, collections as _co
+WRITER = {}   # reason -> "file:line" of the payload_set that writes it (static scan of src/engine)
+for _f in sorted(glob.glob("src/engine/**/*.py", recursive=True)):
+    for _i, _l in enumerate(open(_f), 1):
+        for _m in re.finditer(r'"reason": "([A-Z_]+)"', _l): WRITER.setdefault(_m.group(1), f"{_f}:{_i}")
+RING = _co.defaultdict(lambda: _co.deque(maxlen=12))   # per entity: (t, pos, work_kind, reason, action, mode, project)
 og = GroupSystem.update_groups
 def ug(state, current_update=None):
     t = state.tick
@@ -143,6 +149,9 @@ def ug(state, current_update=None):
             ck = str(getattr(cur_p.kind, "value", cur_p.kind)) if cur_p is not None else None
             if ck not in ("recover", "rest", "fatigue") and not present_threat_to(e, state):
                 r3[eid] = r3.get(eid, 0) + 1
+        if e.combat.alive:
+            _pl = e.task.payload or {}
+            RING[eid].append((t, tuple(e.navigation.position), e.task.work_kind, _pl.get("reason"), _pl.get("action"), str(e.navigation.movement_mode), pr))
         if e.combat.alive and t % 20 == 0:
             live = [p for p in st.projects.values() if is_live_project(p)]
             mx = st.profile.max_active_projects
@@ -167,6 +176,12 @@ def ug(state, current_update=None):
                 prev[("dead", eid)] = t
                 act = [[pid, str(p.kind), str(p.status)] for pid, p in st.projects.items() if "ACTIVE" in str(p.status)]
                 dr = getattr(e.lifecycle, "death_record", None)
+                if first:
+                    rg = list(RING[eid]); ent = next((i for i in range(len(rg) - 1, 0, -1) if rg[i][1] != rg[i - 1][1]), 0)  # last position change = entry into the death tile
+                    tk = e.task; pl = tk.payload or {}
+                    log(k="dtask", t=t, e=eid, cause=(dr.cause.value if dr else None), dtick=(dr.tick if dr else None), task=tk.work_kind, reason=pl.get("reason"), action=pl.get("action"), mode=str(e.navigation.movement_mode), project=pr,
+                        entry=dict(zip(("t", "pos", "work_kind", "reason", "action", "mode", "project"), rg[ent])) if rg else None,
+                        entry_writer=WRITER.get(rg[ent][3]) if rg else None, tail=rg[-4:])
                 log(k="dead", t=t, e=eid, pr=pr, active=act, first=first, cause=(dr.cause.value if dr else None), dtick=(dr.tick if dr else None), attacker=(dr.last_attacker_id if dr else None))
     return og(state, current_update)
 GroupSystem.update_groups = staticmethod(ug)
