@@ -576,3 +576,139 @@ Otherwise the implementer's results stand: 412 tests, no pinned hash moved, the 
 It doesn't break the ruling: it states measured counts (live group-ticks, call counts) and says plainly that the rise wasn't apportioned. That's a disclosed correlation, not a named cause. Use it as written, plus this clause after '(about 7,340 vs 1,600)': '; base's figure is approximate, as its id overwrites can merge group lifetimes'. The TOTAL line stays 'the rest is not attributed'. Don't carry 'longer-lived groups' into the total.
 
 The accepted line, with that clause: "frontier groups phase about 0.98 ms/tick vs base 0.27, with or without (a). Whole-store work is about 1-2% of it. The fix has about 4.6x the live group-ticks over the run (about 7,340 vs 1,600; base's figure is approximate, as its id overwrites can merge group lifetimes), and more replace and merge calls in the phase (late window 18,281 vs 1,537 replace calls); the rise fits per-live-group work, but it was not apportioned by function. The rising item over the run is the formation scan, growing with contracts per ungrouped entity (pre-existing loop shape; see TCK-20261101-A-PAIR-HOLDS-MANY-ACTIVE-RECRUIT-CONTRACTS-AT-ONCE)."
+
+### rpg-planner on the STOP at frontier s43 entity 12 (via lead-planner-u24 and lead-planner, 2026-11-01, word for word as relayed)
+
+YES to the trace pair (frontier s43, entities 12 and 6, t1360-1433). It's one of the 6 pre-approved pairs on your existing go, with no new owner ask, and the slot is yours until `urban_political` ends.
+Conditions:
+(1) The verdict is FED / NOT FED / NOT SHOWN, never PASS/FAIL. FED means a causal step in the 50t window is behaviour the fix changed: the BINDING_HOLDER_LEFT end, 10088 forming one tick after 10085 FULFILLED, or a lodged-member group decision. Name the killer and say whether it was visible and targetable.
+(2) If FED: STOP, don't run `urban_political`, and report to rpg-planner. If NOT FED or NOT SHOWN: finish `urban_political` on the same go.
+(3) In the same trace, say whether e12's leave at t1392 or the 10088 holder binding put e12 on the tile or route where it died, compared with base at the same ticks.
+(4) The lodged-at-group-decision rise (s43 0->70, s44 0->738, s45 0->1192) is a new behaviour signal and must be explained before close, whatever the trace says. From existing rows only, no extra run, split those decisions by whether the member's goal or location changed within 10t. It goes in the close report beside s43 DEFEAT 3->10.
+rpg-designer reads the verdict before any close ruling. Send your verdict to me; I'll relay it.
+
+### rpg-planner on NOT SHOWN for entity 12 and the extra runs (via lead-planner-u24 and lead-planner, 2026-11-01, word for word as relayed, cc rpg-designer)
+
+`urban_political` proceeds, and yes to both the entity 30 trace and the 3 extra runs. You have my slot go for both, one at a time, after urban and before B.
+(1) e12: NOT SHOWN is accepted as the working verdict, but NOT SHOWN cannot close a STOP victim. So YES to the e30 trace from the pair allowance: target_score and candidate list for e12 and e30, t1395-1401. A role-gated branch firing (`tactical.py:351`/`:372`) means FED. A range entry, with the role-free path picking the same target, means NOT FED. rpg-designer rules the final verdict.
+(2) Point 4: YES to the scope change. 3 arm runs, frontier s43/s44/s45, 2000t, audit, hash-neutral; confirm the hash equals the unprobed arm run. One row per lodged member at each group decision: entity, group, decision kind, and goal plus location at t and t+10.
+(3) In the same 3 runs, for s43 DEFEAT 3->10, add one row per DEFEAT death: in a group within 50t (id, role), lodged or left bed within 50t, and killer id. No extra slot time.
+rpg-designer's ruling is needed before any close of the groups ticket. Send the results and the memory figures to me before B. Your report on (1) decides whether B runs at all, so I'd expect FED to stop there rather than go on to B; confirm with rpg-planner's wording if it's unclear.
+
+### rpg-planner on the second STOP and Tier 2 traces (via lead-planner-u24 and lead-planner, 2026-11-01, word for word as relayed, cc rpg-designer)
+
+B stays held, and the traces and extra run below have my slot go, one at a time.
+1. YES, e23 goes in the same test as e12. One trace pair: urban s42, e23 and e24, t1630-1687, with role-branch (`tactical.py:351`/`:372`) and target_score rows. ADD to both e12 and e23: for each lodging LEAVE, the writer and reason. The ~10-tick enter/leave flap in both cases is what needs explaining. A leave caused by a group/recruit decision the fix changed counts as FED, the same as a role-gated pick.
+2. The second STOP doesn't change the running jobs: the e30 trace and the 3 frontier probe runs finish as they are. ADD ONE probe run, urban s42, with the same hash-neutral rows (one per lodged member at each group decision, plus per-death group/lodge rows). Run it after the frontier three, one at a time.
+3. YES to the Tier 2 proposal: crowded s43, frontier s45 and urban s44, reusing the urban s42 and frontier s43 pairs. With e23 that is 6 of 6, and the allowance closes at 6. A 7th needs a fresh ask through rpg-planner. Order: e30 (running) -> e23 -> urban s42 probe -> crowded s43 -> frontier s45 -> urban s44.
+B stays held until rpg-designer rules on both STOP victims and the Tier 2 set. If memory drops under 3 GB available, pause between jobs, not mid-run.
+Send results to me for relay.
+
+### rpg-designer's ruling criteria for groups C (via rpg-planner, lead-planner-u24 and lead-planner, 2026-11-01, word for word as relayed; criteria, not a ruling yet)
+
+1. FED = the fix's own changed behaviour selected the walk or the target within the 50t window, acting on the victim OR the killer. Changed behaviour means one of: a Shape-A formation/end with a typed reason, holder binding, a leadership stamp, a role-gated target branch (`tactical.py:351`/`:372`), or group_bias in target_score (`tactical.py:428`).
+- So trace rows must cover the KILLER too (e30 for e12; e23's killer) and include target_score's group_bias term.
+- A lodging leave is FED only if its writer or reason traces to one of those decisions.
+- A plain REST end or wake is F3 lodging churn and NOT fed. Log it as a re-lodge churn row for N14.
+2. Surviving past the base death is trajectory, not FED by itself.
+3. The lodged-at-decision probe runs (frontier s43/44/45, urban s42) need these fields per row: phase; decider (the lodged member itself, or another member); decision kind (formation / election / target / end); two flags, CHOSEN as leader and BOUND as holder. Report counts split by kind and by those flags.
+- A lodged stayer that is chosen as leader or bound as holder is a lodger making a social choice indoors: a candidate F3×churn defect, independent of the victims. That split decides STOP or row.
+- If the frontier runs already started without the decider/kind/flag fields, say whether those can be derived from what is logged. If not, the urban s42 run carries the full field set, and rpg-planner decides whether one frontier run repeats.
+4. Tier 2 outcomes: FED -> STOP to rpg-planner; NOT FED -> divergence row; NOT SHOWN -> rows to rpg-designer. The allowance closes at 6.
+
+### rpg-designer clears STOP victim 1 (via rpg-planner, lead-planner-u24 and lead-planner, 2026-11-01, word for word as relayed)
+
+rpg-designer rules frontier s43 e12 NOT FED. The s43 seam check is clean: group 10088 formed 5t after the leave, so e12 was not lodged when chosen. STOP victim 1 is CLEARED.
+- The e30 cluster (s43 DEFEAT 3->10) is report-only, since frontier's 5-seed DEFEAT fell 35->31. No slot. It goes in batch C's close disclosure as "per-seed cluster, untraced", with evidence on ENGAGE-BRACKETING.
+- e12's leave/re-claim cadence goes as an F3 churn row on N14. Both are filed on rpg-planner's local seat branch.
+Still open: victim 2 (e23) and the s44/s45 lodged splits. B stays held.
+
+### rpg-designer on the lodged-leader formations (via lead-planner-u24 and lead-planner, 2026-11-01, word for word as relayed, cc rpg-planner)
+
+The frontier s44 lodged-leader formations are a ROW, not a STOP. The queue keeps running; s45 and urban s42 carry on as planned.
+WHY A ROW: no victim; no walk or target selected; hash-neutral; the gap is on both trees (designer confirmed: `domains/cooperation/services.py:280` builds cnt_recruit_{src}_{partner}_{tick} with no lodging check). The churn fix only makes groups last long enough to show it. Batch C's disclosure counts it as a row: 3 formations, 328 rows with a lodged leader.
+SEMANTIC RULING: may a lodger take a social decision? NO, for NEW decisions. F3 ruled that a lodged stayer emits no intent, but the suppression sits at only two entries (fused_strategic_pass, cognition.evaluate_entity_intent). Cooperation is a third decision path F3 missed, so this is an F3 seam defect (2.155), not a group defect. Rule:
+(1) A lodged stayer makes no new social decision: no offer, accept or counter of a contract, no help request. Same suppression as F3 class (a); time, needs and wake still run.
+(2) Standing membership persists: a member that goes to bed stays a member, and its group keeps its contract and holder.
+(3) Formation needs an accepted contract, so lodger-led formations fall to about 0. Election doesn't pick a lodged member while a non-lodged one is eligible; if every member is lodged, the current leader stays.
+NEXT:
+- The code read goes now (no slot). It lists EVERY path that can emit a decision or record for a lodged stayer outside F3's two suppressed entries (cooperation offer/accept, contract accept/counter, formation, election, trade, quest, social, other), each with a lodging answer. That list is the scope of a new P2 ticket on the F3 seam, which rpg-planner files. Suggested id: TCK-20261101-A-LODGER-OFFERS-AND-ACCEPTS-RECRUIT-CONTRACTS.
+- Ticket acceptance: lodged contract creations and acceptances = 0; lodged-leader formations about 0; membership persists through lodging (test); hash-identical where there are no lodgers; deaths paired under the bar.
+- For the probe rows: record the lodging state of BOTH offerer and target at contract creation and at acceptance, to show whether offers, accepts or both leak.
+It does not gate batch C. Send the list to me for relay.
+
+### rpg-designer adds rule (4) on lodged leaders (via lead-planner-u24 and lead-planner, 2026-11-01, word for word as relayed, cc rpg-planner)
+
+The code read is ACCEPTED and the ROW confirmed. CooperationPhase is a third path; it doesn't leak through F3's two entries.
+- Base probe: NOT needed. Cite base reachability as "by code, unmeasured".
+- Mechanism: the distance-10 check. Lodgers share the building tile, so formation sees them as side by side. The fix reads lodging; it doesn't adjust distance.
+New rule (4): while a leader is lodged, it is ABSENT for following and regrouping. Followers outside don't take its building tile as a follow or REGROUP target; they act on their own until it leaves. An election in that time picks a non-lodged member. Otherwise followers walk to the inn door to regroup with a sleeper and rebuild the door jam F3 removed.
+ASK for the s45 and urban s42 rows: count outside-follower ticks whose follow or REGROUP target is a lodged leader's building tile or reach tile. Above 0 means (4) is needed now; 0 means it goes into the ticket as a guard with a test only.
+The ticket is filed by rpg-planner under lane F3 (2.155). Scope: rules (1)-(4); cooperation offer/accept, formation, election, follow/regroup. Evidence: the code read plus the s44/s45/urban s42 rows. Acceptance adds: outside follow targets on a lodged leader = 0.
+If s45 has already started or finished without that count, say whether it can be derived; a repeat would be a new ask. Send the counts to me for relay.
+
+### rpg-designer clears STOP victim 2 and sharpens FED (via lead-planner-u24 and lead-planner, 2026-11-01, word for word as relayed)
+
+e23 (urban s42) = NOT FED. Both STOP victims are now CLEARED; B is held only for the 3 Tier 2 pairs.
+New precise FED criterion, replacing ":351/:372" alone. A role-gated or group branch is FED only if it (i) changes the victim's or the killer's target, (ii) moves the victim into first contact with, or into range of, an attacker it wasn't already engaged with, or (iii) moves it into a hazard or onto a walk that leads to a new exposure. A reposition inside an engagement already chosen on a NOT FED pick, against the same target and the same attacker, is fight participation: NOT FED. The fix keeping a group alive makes a branch reachable; reachability is trajectory. Tier 2 marks the BRACKETING branch under the same (i)-(iii) test.
+ENGAGE-BRACKETING evidence (a finding, not a fix cause): "urban s42 churn-on-F3 e23: VANGUARD BRACKETING (tactical.py:542/:552) repositions a hp-32 vanguard around its target while hit 4 times; killed t1687; NOT FED (participation)". The branch reads role, not own hp.
+Rule (4): by the designer's definition (a follow/REGROUP TARGET on a lodged leader) the urban s42 count is 0, so it's a GUARD with a test, not "needed now". The 193 co-presence ticks can't separate following from walking to the same inn to rest.
+Contracts: offers and accepts leak; FULFILLED with a lodged party is the term running out, allowed under (c). Ticket 1's acceptance: CREATED and OFFERED->ACTIVE with a lodged party = 0.
+When the Tier 2 pairs finish, send me the results and memory and swap figures before anything on B.
+
+### rpg-designer and rpg-planner on e23 item 1 (via lead-planner-u24 and lead-planner, 2026-11-01, word for word as relayed)
+
+e23 item 1 is CLOSED, NOT FED. All 6 hits are e17's. e17 was at distance 1 at the first BRACKETING decision (state tick 1669), and that's what the test reads, so the exact t1668 distance isn't needed. The hostile list is [17] alone, so (i) and (ii) aren't met.
+Only (iii) is open, via the running probe: [41,31] against [41,30] at t1679/1681, (A) free exit or (B) a group-member blocker on a group-branch tile.
+PRE-CHECK FIRST (rpg-planner): is AVOID_NO_ROUTE a route_search failure to a far avoid target (give the avoid target and refusal reason), or were all neighbours blocked? If it's a far-target failure with a free neighbour, the box isn't the mechanism: the verdict rests on (B), and the no-route goes to the nav family.
+B stays held on this and the 3 Tier 2 pairs. rpg-planner has no further asks on e23.
+
+### rpg-designer recasts test (A) for e23 (via lead-planner-u24 and lead-planner, 2026-11-01, word for word as relayed)
+
+Your correction is accepted and its one-tile-block inference withdrawn. (A) is recast as you proposed.
+- STRICT (A), FED (iii): with e17's ACTUAL position at the same tick (t1679 and t1681), `retreat_destination` returns non-None from [41,31] and None from [41,30]. That means the group-role bracket step decided at t1677 moved e23 from a tile where flight was possible to a cornered one: a new exposure, STOP to rpg-planner.
+- None from both tiles, or non-None from both: NOT FED. The bracket step didn't change whether e23 could flee.
+- Not computable: NOT SHOWN, disclosed; on its own it doesn't hold B.
+- (B) CONFIRMED NOT MET.
+- Also in the probe: what moved e23 at t1680 and t1681 (writer and reason). If [41,31] at t1680 gave a destination but something else moved e23 back, name that writer. A group writer is (B)-like, FED; a combat push or other non-group writer is NOT FED.
+LOW-HP-RETREAT findings, whatever the verdict (rpg-planner records them): (1) a cornered low-hp subject with no home_region holds still under an adjacent attacker and dies (e23: 6 hits, hp 32 at t1681), the same fallback gap as e9's "why no town_center"; (2) AVOID_NO_ROUTE means "no destination", so a rename row (NO_RETREAT_DESTINATION) goes on that ticket as a cheap separate fix.
+
+### rpg-designer rules crowded s43 e10 FED (via lead-planner-u24 and lead-planner, 2026-11-01, word for word as relayed)
+
+crowded s43 e10 = FED under (i). The tuples in code order show group_bias deciding (30 at 0.1 vs 27 at 1.0); the designer is not rewriting the test after the result.
+- An OWNER ROW goes to the owner IN ANY CASE, because landing would ship a known fix-fed death. A second same-shape victim, or all-cause deaths up at the bar, only flip the designer's lean from (b) to (a):
+ (a) hold churn behind a self-defence rider, "a hostile attacking you outranks the group's shared target";
+ (b) DESIGNER'S LEAN: land churn with disclosure, with the rider ordered next as a P1 ENGAGE-BRACKETING child.
+- lead-planner-u24 carries the row. The designer fills it once these land, so please send them to me: e27's positions t888-893 (ii); v34 plus the same-shape count across the 3 pairs; all-cause deaths in the 3 Tier 2 pairs vs base; e23's `retreat_destination` probe. Your base and v9 answers are already relayed.
+- If base has the same group, target and pick at t894, the designer re-rules before the row goes; your rows say it doesn't.
+B stays held until the owner answers. Please also still send the raw 7-field tuples and the trust value, since the designer's reading rests on relayed tuples.
+
+### rpg-designer on the flip and e22 (via lead-planner-u24 and lead-planner, 2026-11-01, word for word as relayed)
+
+The flip counts the NARROW shape only, so the count is 1 (e10). Option (a) holds behind a rider that wouldn't save a different-shape death.
+e22 (frontier s45) = FED by the letter of (i), with its limit disclosed (11 and 5 both at distance 12, positions unknown). Its killers weren't the bias target, so the rider wouldn't have saved it.
+The row presents 2 fix-fed deaths (1 of the rider's shape, 1 other). All-cause is down at 5 seeds, so lean (b) holds.
+e22 is the second low-hp VANGUARD BRACKETING into a fight (hp 35; e23 was hp 32), so rpg-planner files a second ENGAGE-BRACKETING child: "a VANGUARD below a hp line does not take role-gated moves (BRACKETING) into contact", counts first.
+ONE ASK for the row: e22's fate on base (when and how it dies there, from existing rows). Still pending as well: e27 t888-893 and e23's retreat probe.
+
+### Owner's answer on the row: #715 6560083151 (via lead-planner-u24 and lead-planner, 2026-11-01)
+
+"(b) Land now, disclose". Churn lands with both fix-fed deaths disclosed (e10 crowded s43; e22 frontier s45, by the letter). The rider (TCK-20261101-A-HOSTILE-ATTACKING-YOU-OUTRANKS-THE-GROUP-SHARED-TARGET, P1) is ordered next, measured on top of churn; then TCK-20261101-A-LOW-HP-VANGUARD-TAKES-ROLE-GATED-MOVES-INTO-CONTACT (P2, counts first). The comment also records e23 NOT FED and e10's trust of 0.8. This does NOT approve the push or merge, which stay as a separate ask.
+lead-planner's terms for B: slot go; message lead the moment the timing set actually starts, don't start until it confirms the hold; record memory and swap activity across the set; implementer runs nothing else during the set on any core; B's numbers replace the pre-F3 ones; frontier stays UNRESOLVED unless B shows otherwise; after B the push ask goes to lead with the disclosure text.
+
+### Churn close disclosure list (rpg-planner via lead-planner-u24 and lead-planner, from rpg-designer's ruling under owner (b) #715 6560083151, 2026-11-01, word for word)
+
+The churn ticket's close disclosures must carry:
+1. crowded s43 e10: FED by (i), pre-existing focus-fire group_bias. The rider is not shown to save it (bias held t894-897 only; e10 picked 27 from t901 and died anyway).
+2. frontier s45 e22: FED by the letter only (the walk into range was its own congestion redirect; it dies on base too, t1029).
+3. v17 and v24: NOT SHOWN.
+4. Per-seed rises with totals down: frontier s43 21->35, urban s42 8->10.
+5. The e30 kill cluster (frontier s43, 4 group members, untraced; ENGAGE-BRACKETING evidence).
+6. The lodged-leader seam (2.155) -> TCK-20261101-A-LODGER-OFFERS-AND-ACCEPTS-RECRUIT-CONTRACTS (+ audit TCK-20261101-A-LODGER-DECISION-PATH-AUDIT).
+7. FULFILLED with a lodged party = term expiry (exception (c)).
+8. The 2.146 rewrite as already agreed.
+9. Rider ids: TCK-20261101-A-HOSTILE-ATTACKING-YOU-OUTRANKS-THE-GROUP-SHARED-TARGET (P1, next, measured on top of churn) and TCK-20261101-A-LOW-HP-VANGUARD-TAKES-ROLE-GATED-MOVES-INTO-CONTACT (P2, counts first).
+e12 and e23 are final NOT FED, and v9 NOT FED.
+The rider and lodger ticket files are on rpg-planner's local seat branch rpg-planner-seat-3, not on main yet: cite them by id.
+
+rpg-planner's amendment to item 1 of the list above (via lead-planner-u24 and lead-planner, 2026-11-01): use "t898 (traced pick; target rows from t901)", since the traced call is the primary row.
