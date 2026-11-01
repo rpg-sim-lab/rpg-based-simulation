@@ -383,7 +383,16 @@ def test_only_live_bound_groups_with_a_due_binding_contract_are_added_to_the_rel
     assert due_bound_group_ids(state) == {10000}
     assert get_relevant_group_ids(state, _update_with_dirty_groups([10003])) == {10000, 10003}
     assert get_relevant_group_ids(state, _update_with_dirty_groups([])) == {10000}
-    assert get_relevant_group_ids(state, StateUpdate(force_full_scan=True)) == {10000, 10001, 10003}  # a full-scan tick returns every LIVE group (step (a): the dissolved record 10002 is not walked)
     assert due_bound_group_ids(replace(state, tick=49)) == set()
     no_expiry = replace(state, entities={1: _ent(1, 0.0, 0.1, {"r_due": _contract("r_due", expiry=-1), "r_live": _contract("r_live", expiry=-1)}), 2: ents[2]})
     assert due_bound_group_ids(no_expiry) == set()  # -1 never due
+
+
+def test_a_full_scan_tick_yields_live_group_ids_and_dissolved_records_stay_in_the_store():
+    """Step (a): on a full-scan tick `get_relevant_group_ids` returns the LIVE group ids only; the dissolved record is not walked but it is still in the store."""
+    from src.core.dirty import get_relevant_group_ids
+    live = [_bound_group(gid=10000, cid="r_a"), _bound_group(gid=10001, cid="r_b"), _bound_group(gid=10003, cid="r_c")]
+    gone = replace(_bound_group(gid=10002, cid="r_a"), dissolution_tick=40)
+    state = AuthoritativeState(tick=50, seed=1, entities={1: _ent(1, 0.0, 0.1), 2: _ent(2, 0.5)}, groups={g.id: g for g in (*live, gone)})
+    assert get_relevant_group_ids(state, StateUpdate(force_full_scan=True)) == {10000, 10001, 10003}
+    assert 10002 in state.groups and state.groups[10002].dissolution_tick == 40

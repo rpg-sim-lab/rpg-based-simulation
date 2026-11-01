@@ -84,3 +84,22 @@ def test_the_allocator_and_the_counter_seed_still_see_the_whole_store_dissolved_
     new = ApplyPath.apply_generation(state, GroupSystem.update_groups(state))
     formed = [g for g in new.groups.values() if g.dissolution_tick is None]
     assert len(formed) == 1 and formed[0].id == 10008 and new.groups[10007].dissolution_tick == 3
+
+
+def test_a_dissolved_record_stays_in_the_store_above_the_counter_and_in_the_hash_and_the_checkpoint():
+    """What step (a) must not change: after a dissolve the record is still in the store, the allocator's next id is above it, and the canonical data, the replay
+    fingerprint and a checkpoint (pickle) all still include it."""
+    import pickle
+    from src.core.updates import CombatUpdate, EntityUpdate
+    from src.engine.checkpoint import CanonicalStateHasher
+    from src.replay.fingerprint import StateFingerprinter
+    ents = {i: V2EntityBuilder(i).kind("actor").location(float(i), 0.0).build() for i in (1, 2)}
+    state = _state([_g(10000, (1, 2))], tick=20, entities=ents, next_group_id=10001)
+    leader_dies = StateUpdate(force_full_scan=True, entity_updates={1: EntityUpdate(entity_id=1, combat=CombatUpdate(alive_set=False))})
+    new = ApplyPath.apply_generation(state, GroupPhase.resolve(state, leader_dies))
+    assert 10000 in new.groups and new.groups[10000].dissolution_tick == 20  # dissolved, kept
+    assert new.next_group_id > 10000  # the allocator's next id is above the dissolved record
+    assert 10000 not in live_group_ids(new.groups)  # the live view no longer lists it
+    assert CanonicalStateHasher.to_canonical_data(new)["groups"]["10000"]["dissolution_tick"] == 20
+    assert "10000:" in StateFingerprinter._group_identity(new)
+    assert pickle.loads(pickle.dumps(new)).groups[10000].dissolution_tick == 20

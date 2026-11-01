@@ -398,6 +398,22 @@ class GroupSystem:
         )
 
     @staticmethod
+    def _holder_contract(state: AuthoritativeState, group: GroupRecord, current_update: Optional[StateUpdate]) -> Optional[ContractState]:
+        """The binding contract as its holder holds it: a same-tick update of the holder first, then the holder's own map; never the leader's."""
+        holder_id = group.contract_holder_id
+        if holder_id is None:
+            return None
+        if current_update and holder_id in current_update.entity_updates:
+            holder_up = current_update.entity_updates[holder_id]
+            if holder_up.strategic:
+                pending = next((c for c in holder_up.strategic.contracts_add_or_update if c.id == group.contract_id), None)
+                if pending is not None:
+                    return pending
+        if group.contract_id is None:
+            return None
+        return state.entities[holder_id].strategic.contracts.get(group.contract_id)
+
+    @staticmethod
     def _binding_end(
         state: AuthoritativeState,
         group: GroupRecord,
@@ -415,13 +431,7 @@ class GroupSystem:
         holder_id = group.contract_holder_id
         if holder_id not in group.member_ids or holder_id not in state.entities or not is_alive(holder_id) or not is_active(holder_id):
             return GroupDissolutionReason.BINDING_HOLDER_LEFT, None
-        contract = None
-        if current_update and holder_id in current_update.entity_updates:
-            holder_up = current_update.entity_updates[holder_id]
-            if holder_up.strategic:
-                contract = next((c for c in holder_up.strategic.contracts_add_or_update if c.id == group.contract_id), None)
-        if contract is None:
-            contract = state.entities[holder_id].strategic.contracts.get(group.contract_id) if group.contract_id is not None else None
+        contract = GroupSystem._holder_contract(state, group, current_update)
         if contract is None:
             return GroupDissolutionReason.BINDING_CONTRACT_MISSING, None
         if not contract_is_live(contract, state.tick):
