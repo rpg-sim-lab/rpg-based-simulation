@@ -561,3 +561,12 @@ A restore-only GroupCounterBehindStoreError (after fill_missing_fields) plus con
 - Tests: run the 72 + 30 hand-built sites and report any that need a counter (ids at or above 10000 reaching restore), with names. No expectation edits without listing them.
 - The gap is named: a hand-built runtime state with groups above 10000 and no counter keeps 10000. That's safe while records are kept, since the allocator skips taken ids. rpg-planner is adding to step (b)'s AC on the DISSOLVED ticket: 'a drop must never lower next_group_id, and a state with stored ids at or above the counter is refused at restore (GroupCounterBehindStoreError)'.
 Your 3 pinned hash runs can PROCEED on that head.
+
+### rpg-planner on the one test edit (via lead-planner-u24 and lead-planner, 2026-11-01, word for word)
+
+The one test edit is OK. It encodes the ruled behaviour (construction doesn't seed) and doesn't loosen a check. Two small conditions:
+1. SPLIT it, so each test name says what it asserts.
+- Keep test_seed_skips_squads_and_covers_the_highest_non_squad_id for the load-time seed (the three seeded_next_group_id assertions).
+- Move the changed line into its own test, e.g. test_construction_does_not_seed_next_group_id, asserting == GROUP_ID_BASE with groups present.
+2. Next to it, add ONE assertion that the same state restored from a checkpoint without the counter IS seeded to 10042, or is refused with GroupCounterBehindStoreError if the fill leaves it behind. Whichever the restore path does, PIN it, so the gap is visible in one place.
+Otherwise the implementer's results stand: 412 tests, no pinned hash moved, the static scan clean with its planted example failing, and to_readonly the only exemption. The hash runs proceed after the base profile.
