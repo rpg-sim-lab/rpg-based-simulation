@@ -93,3 +93,12 @@ for w in W:
                 x = next((r for r in Rx["dtask"] if r["e"] == e), None)
                 c[(x["entry"] or {}).get("reason") if x else "no-record"] += 1
         print(f"- {w} {a}: HAZARD deaths by entry-move reason {dict(c)}")
+print("\n## Reported only: per-seed rises inside a (world, cause) whose 5-seed total did not rise (victim ids; no PASS/FAIL/NOT SHOWN review)\n")
+for w in W:
+    for c in CAUSES:
+        if (w, c) in tier1 + tier2: continue
+        for s in SEEDS:
+            if R[(w, s, "base")] is None or R[(w, s, "fix")] is None or cnt(w, s, "fix", c) <= cnt(w, s, "base", c): continue
+            db, df = deaths(R[(w, s, "base")]), deaths(R[(w, s, "fix")])
+            ids = sorted((e, d["dtick"]) for e, d in df.items() if d["cause"] == c and not (e in db and db[e]["cause"] == c))
+            print(f"- {w} {c} s{s}: base {cnt(w, s, 'base', c)} -> fix {cnt(w, s, 'fix', c)}; fix-only victims (entity, tick) {ids}")
