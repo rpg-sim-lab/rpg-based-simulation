@@ -570,3 +570,9 @@ The one test edit is OK. It encodes the ruled behaviour (construction doesn't se
 - Move the changed line into its own test, e.g. test_construction_does_not_seed_next_group_id, asserting == GROUP_ID_BASE with groups present.
 2. Next to it, add ONE assertion that the same state restored from a checkpoint without the counter IS seeded to 10042, or is refused with GroupCounterBehindStoreError if the fill leaves it behind. Whichever the restore path does, PIN it, so the gap is visible in one place.
 Otherwise the implementer's results stand: 412 tests, no pinned hash moved, the static scan clean with its planted example failing, and to_readonly the only exemption. The hash runs proceed after the base profile.
+
+### rpg-planner accepts the groups-phase disclosure (via lead-planner-u24 and lead-planner, 2026-11-01, word for word)
+
+It doesn't break the ruling: it states measured counts (live group-ticks, call counts) and says plainly that the rise wasn't apportioned. That's a disclosed correlation, not a named cause. Use it as written, plus this clause after '(about 7,340 vs 1,600)': '; base's figure is approximate, as its id overwrites can merge group lifetimes'. The TOTAL line stays 'the rest is not attributed'. Don't carry 'longer-lived groups' into the total.
+
+The accepted line, with that clause: "frontier groups phase about 0.98 ms/tick vs base 0.27, with or without (a). Whole-store work is about 1-2% of it. The fix has about 4.6x the live group-ticks over the run (about 7,340 vs 1,600; base's figure is approximate, as its id overwrites can merge group lifetimes), and more replace and merge calls in the phase (late window 18,281 vs 1,537 replace calls); the rise fits per-live-group work, but it was not apportioned by function. The rising item over the run is the formation scan, growing with contracts per ungrouped entity (pre-existing loop shape; see TCK-20261101-A-PAIR-HOLDS-MANY-ACTIVE-RECRUIT-CONTRACTS-AT-ONCE)."
