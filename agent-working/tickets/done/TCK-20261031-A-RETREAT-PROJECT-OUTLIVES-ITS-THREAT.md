@@ -1,10 +1,10 @@
 ---
-status: active
+status: historical
 layer: ai
 authority: P1
 audience: agent
 ticket_id: TCK-20261031-A-RETREAT-PROJECT-OUTLIVES-ITS-THREAT
-phase: inprogress
+phase: done
 date: 2026-10-31
 tags: []
 ---
@@ -15,7 +15,7 @@ tags: []
 A retreat project outlives its threat (entity parked on COMBAT_RETREAT ~950 ticks with no threat, recovered, not moving)
 
 ## Status
-OPEN. Phase 1 counts DONE (ubuntu, d2ed6c8c2 evidence/retention_trace/). Phase 2 fix shape RULED by rpg-designer 2026-10-31 (completion fact). Not dispatched: standard dispatch needs an owner go.
+DONE
 
 ## Tier
 standard
@@ -82,10 +82,14 @@ Investigation (before plan): (a) where COMBAT_RETREAT's completion facts are def
 ## Implementation Notes
 
 ## Test Summary
+New: tests/unit/strategic/test_retreat_clear_window.py (15: destination end, exact 200-tick window, a returning threat restarts it, suspend/resume, non-retreat kinds never get a window, evaluator and work-queue scheduling, canonical dict, cleared_since advances while lodged), test_retreat_ends_with_its_threat.py (scorer gate, whole arc, AC9 numbers), tests/unit/combat/test_flight_uses_the_present_threat_test.py, tests/unit/engine/test_checkpoint_fields.py (cleared_since FieldRule). Changed expectation: tests/unit/strategic/test_expanded_goals.py::test_combat_retreat_scorer (the hostile is `Faction.MONSTER_HORDE`; the retreat scorer now needs a present threat). Completeness pin unbound_files 248 -> 247 (run). Scoped suites on the merged head: tests/unit/strategic, ai, tactical, engine, systems, cognition, kernel, combat, docs, observability, motivation and tests/architecture all green (754 + 2570 passed, 4 skipped); make code-health OK (only 2 report-only jscpd rows in event_shapers.py); make typecheck-py clean; import contracts 17 kept, 0 broken.
+Measurement: pre-F3 (base 6fdfdf555) evidence/full_batch_5c6001620 and analysis13_flight.md; on F3 (base 30307228c vs fix c1f20e1e1) evidence/full_batch_30307228c: no Tier 1; 21 Tier 2 victims, all FAIL (0 fed); never-threatened adoptions 1101 -> 0; option A changed no flight decision in 1822 is_fleeing ticks.
 
 ## Files Changed
+src/core/strategic.py (cleared_since, note_threat_state, restart_clear_window; ProjectEnd.THREAT_CLEARED arrived via F3's squash), src/core/combat_constants.py (CLEAR_TICKS, RETREAT_ARRIVAL_RADIUS, ENTITY_TARGET_PERCEPTION_RADIUS), src/ai/goals/present_threat.py, scorers.py, scorers_support.py, src/engine/tactical.py, tactical_threat.py (present_threats; flight uses it), src/engine/checkpoint_fields.py (cleared_since row), src/systems/strategic_systems/entity_target_objective.py, intelligence.py, work_queue.py, cognition_export.py; docs: tactical_contract.md, 04_strategic_cognition.md, intentional_divergences.md (2.156), parity ledger STRAT-295, registries/mechanisms.yaml; tests as above; evidence under the stored artifacts directory (raw per-tick dumps stay in the author's scratch with sha256 in evidence/README_raw_data.md).
 
 ## Completion Summary
+A COMBAT_RETREAT project now begins and ends on one test, `present_threat_to` (AGENCY-07 terms): the scorer is 0.0 without a present threat, and the project completes THREAT_CLEARED once that test is false AND the subject has reached its destination or stayed clear for CLEAR_TICKS (200) continuous ticks (window state `ProjectState.cleared_since`, one writer). The tactical flight test uses the same helper (option A, the one scope widening beyond the lifecycle change). The cap exemption of the earlier shape was dropped. Measured on F3 (15 runs x both arms): no Tier 1; 21 Tier 2 victims all FAIL (trajectory, 0 fed); never-threatened adoptions 1101 -> 0; stale N=200 holds 4 -> 3. Open items filed elsewhere: R3 (slot-leak ticket), destination (TCK-20261101-A-RETREAT-WALKS-TOWARD-THE-THREAT, P3), e9 base gap.
 
 ## Ruling record carried from the seat copy
 Every line of the seat copy (main's `agent-working/tickets/todos/TCK-20261031-A-RETREAT-PROJECT-OUTLIVES-ITS-THREAT.md`, batch #820) that this copy lacked, verbatim and in the seat copy's order:
