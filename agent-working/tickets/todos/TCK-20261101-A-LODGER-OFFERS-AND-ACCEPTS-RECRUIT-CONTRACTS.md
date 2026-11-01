@@ -49,7 +49,7 @@ rpg-designer ruling (2026-11-01): this is a ROW, not a STOP on batch C, and it d
 Ticket 1 of 2 (rpg-designer accepted the split 2026-11-01): the MEASURED social paths only. The remaining rows of ubuntu's 59-row path list go to TCK-20261101-A-LODGER-DECISION-PATH-AUDIT, which extends this ticket's predicate and test list. No second mechanism is built.
 1. Code read first, written into investigation.md: verify each cited social path's file:line at the implementing head (cooperation offer/accept/counter/help request, being chosen as partner, formation, election, holder binding, defection, follow/regroup).
 2. Introduce ONE shared predicate, `is_lodged_stayer`, read at each covered decision phase's entity loop (as actor) and in partner/offeree candidate filters (as (d)). No per-site special cases. Suppress NEW social decisions by a lodged stayer: offers, acceptances, counters and help requests, as the source or as the partner, and defection.
-2a. An architecture test that lists every phase that writes a decision record and asserts that it reads the predicate. It starts with this ticket's phases; the audit ticket adds its phases to the same list. It lives under tests/architecture/, so testing-planner's OK on placement and shape is needed before implementation.
+2a. An architecture test that lists every phase that writes a decision record and asserts that it reads the predicate. It starts with this ticket's phases; the audit ticket adds its phases to the same list. It lives under tests/architecture/ (testing-planner OK 2026-11-01; conditions in the acceptance criteria).
 2b. Parity: check 2.155's text and Bible ch.04 section 1 against the landed code. If the text already says "emits no intent", the ledger has been wrong since #823. Record that and correct it with this fix.
 3. Election and leader choice skip lodged members while a non-lodged member is eligible. Holder binding follows the same rule.
 4. Existing membership persists through lodging. It is not dissolved or left because the member lodged.
@@ -77,7 +77,13 @@ Ticket 1 of 2 (rpg-designer accepted the split 2026-11-01): the MEASURED social 
 - A unit test pins that membership persists through lodging.
 - Outside follow targets on a lodged leader = 0 (re-measure count, with the objective and reason recorded), with a unit test of the absent-leader rule. rpg-designer ruled rule (4) a GUARD with a test (urban s42: target_id on the leader 0, REGROUP/FOLLOW 0).
 - A unit test per suppressed path pins that a lodged stayer makes no new offer/accept/counter/help request/defection, and is never chosen as partner or offeree.
-- The architecture test passes for this ticket's phases, and fails if a listed phase drops the predicate.
+- Architecture test (testing-planner rulings 2026-11-01): tests/architecture/test_lodged_stayer_predicate.py, `pytestmark = pytest.mark.architecture`, AST-only (no slow marker), modelled on test_no_local_pinned_governor_copies.py and test_decision_trace_hot_path_no_io.py. The phase list is a module-level constant in the test (no registry file); the audit ticket extends it in place.
+  1. Completeness: derive the decision-record writers by AST (whatever constructs or emits the typed decision record) and assert that the set equals the list, with named exemptions and a reason each. If the writers cannot be derived statically, state that as a known gap in the ticket and the test docstring.
+  2. A listed phase or function that cannot be found fails, naming it (no silent pass on rename).
+  3. It asserts a real read: a call to `is_lodged_stayer` inside the phase's entity loop. An import, or a mention outside the loop, fails.
+  4. Parity proof: a scratch copy or synthetic AST sample with the predicate removed fails, plus a positive case (pattern: test_phase19_off_mode_imports_none_of_the_four.py).
+  5. Wiring only: behaviour is proven by separate tests (at least one phase run with a lodged stayer).
+  testing-planner is named on the PR review for that file.
 - A run with no lodgers is hash-identical to the base.
 - Deaths are paired under the death-STOP bar (Tier 1 / Tier 2 as in the batch C rules). rpg-designer reads any Tier 2 set.
 - Mechanics ch.04 (strategic cognition), the parity ledger and intentional_divergences are updated in the same change if behaviour diverges from the Bible.
@@ -126,7 +132,7 @@ Ticket 1 of 2 (rpg-designer accepted the split 2026-11-01): the MEASURED social 
 
 ## Assumptions / Open Questions
 - The partner side is covered by exception (d).
-- The architecture test placement needs testing-planner's OK.
+- testing-planner OK'd the architecture test placement and shape (2026-11-01), with conditions 1-5 in the acceptance criteria.
 - The code read below answers Scope 1 for cooperation and groups. Other social/strategic writers still need the full listing in investigation.md.
 
 ## Implementation Notes
