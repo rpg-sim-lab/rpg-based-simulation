@@ -366,3 +366,11 @@ A read (not measured) finding goes to ENGAGE-BRACKETING (rpg-planner u24 owns it
 6. Heavy slot: on ubuntu, no u24 slot is needed.
 
 lead-planner's terms, same message: go stands on those terms, including the smokes: 3 worlds x 2 trees first, short. Then the 18. Message lead when the 18 actually start, after the smokes have passed. Other terms unchanged, stop at 90 min.
+
+### rpg-planner adds a smoke check (via lead-planner-u24 and lead-planner, 2026-11-01, word for word)
+
+No objection to rpg-planner-ubuntu's (d) picks, including the default ConcurrentExecutionAdapter. The hold rule doesn't assume the sequential executor; it assumes both arms run the same setup, so keeping the audit runs' executor is the better match.
+One cheap check is added, since the helper's docstring says 'Pair it with LocalSequentialExecutor' without giving a reason:
+- In the smoke step, run ONE world TWICE on the same tree with the concurrent adapter and the pin. The final hashes must be IDENTICAL. If they aren't, it's a STOP to rpg-planner before any arm runs, because the concurrent path would be bringing host timing back in.
+- The report names the executor next to 'pinned FULL'.
+The other picks are fine: inject governor= from the wrapper, NORMAL maps to FULL with policy recorded per tick, and the zeroed signals are disclosed under condition 3.
