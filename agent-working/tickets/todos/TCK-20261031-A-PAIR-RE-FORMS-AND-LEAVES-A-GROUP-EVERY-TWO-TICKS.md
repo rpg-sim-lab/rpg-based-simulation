@@ -336,3 +336,14 @@ Noted:
 ## Test Summary
 ## Files Changed
 ## Completion Summary
+
+### rpg-designer's ack on the 15 paired runs (via lead-planner-u24 and lead-planner, 2026-11-01, word for word)
+
+1. URBAN Tier 2 (6, 16, 17 on s42; 14 on s44), standing reading:
+- FED needs a CAUSAL step, within 50t of death, where the churn fix's changed behaviour selects the victim's walk or target: a group objective or shared target of a group formed under the new binding, or a goal or location change from its dissolution or re-form.
+- Fight participation shifted by longer-lived groups is trajectory (NOT FED).
+- Outcomes: PASS -> STOP to the designer; FAIL -> divergence; NOT SHOWN -> rows to the designer.
+2. H1 CLUSTERS: entities 5, 1, 7 and 13 appear in both crowded s42 and frontier s43. Ids are spawn order, so these are DIFFERENT entities with the same spawn slot.
+- Record each one's spawn role (starting party or faction slot), and whether the two clusters are the same contract kind and group shape.
+- A spawn-slot pattern would mean a starting-group configuration walks into hazard on its first long-lived group, which is useful for H1's first step.
+3. LAG: the independent check (all 741 FULFILLED ends 101-109 ticks after the contract's id tick, none early) stands alongside the _binding_end instrument. The 3 byte-equal runs plus the positive-control test carry the dirty-set law. No further proof is needed.
