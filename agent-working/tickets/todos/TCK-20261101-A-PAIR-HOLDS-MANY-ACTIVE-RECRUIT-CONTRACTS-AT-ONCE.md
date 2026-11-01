@@ -68,3 +68,6 @@ None yet.
 ## Test Summary
 ## Files Changed
 ## Completion Summary
+
+## Evidence added 2026-11-01 (profile inside GroupPhase.resolve, frontier_living_world s42 2000t, pinned FULL, on the churn tree with step (a), a6902557b; raw /data/vboxuser/Work/groups_base/out_profA/frontier_profile.json)
+`_formation_partner` calls per window (t<=666, 667-1333, >=1334): 53,049 / 160,805 / 178,874. `_gather_formation` per call: 4.5 / 9.7 / 15.1 us (cProfile-inflated). Consistent with contracts per ungrouped entity rising; contracts were not counted per window, so this is not shown. Base's loop also scans every contract with no break, so the scan is not new to the churn fix. When this ticket's counts run, count contracts per ungrouped entity per 1000t, including at 5000t, since a rising scan would show in 5000t tick time.
