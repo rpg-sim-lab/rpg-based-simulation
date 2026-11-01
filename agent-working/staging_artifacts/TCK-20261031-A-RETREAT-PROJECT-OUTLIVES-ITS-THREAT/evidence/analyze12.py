@@ -18,7 +18,7 @@ def path(R, e, dt, span=60):
     pj = [(r["t"], r["pr"] or "-") for r in R["pj"] if r["e"] == e and dt - span <= r["t"] <= dt + 1]
     return pj
 def mech(R, e, dt):
-    ad = [(r["t"], r["pr"]) for r in R["pj"] if r["e"] == e and "combat_retreat" in (r["pr"] or "") and dt - 200 <= r["t"] <= dt + 1]
+    ad = [(r["t"], r["pr"]) for r in R["pj"] if r["e"] == e and r["a"] and "combat_retreat" in (r["pr"] or "") and dt - 200 <= r["t"] <= dt]
     tc = [(r["t"], r["pr"]) for r in R["end"] if r["e"] == e and r.get("ended_by") == "THREAT_CLEARED" and dt - 200 <= r["t"] <= dt]
     return ad, tc
 def dt_line(R, e):
@@ -28,11 +28,11 @@ def dt_line(R, e):
     return (f"at death task {x['task']} mode {x['mode']} reason {x['reason']} action {x['action']} project {x['project']}; entry tick t{en.get('t')} pos {en.get('pos')} move {en.get('work_kind')} reason {en.get('reason')} mode {en.get('mode')} project {en.get('project')} writer {x['entry_writer'] or 'project/other (no tactical reason)'}")
 def outcome(R, e, d):
     """Final tier-2 wording: PASS only if a CAUSAL step of the death path, within 200t of death, is a retreat adopted or completed (THREAT_CLEARED) under the new rules; merely holding one is not enough.
-    PASS: the entry move into the death tile (last position change) was made while the retreat project was current (the retreat walked it there), or the death task itself belongs to a retreat project: step named with its tick.
+    PASS: the entry move into the death tile (last position change) was a project-driven move (no tactical reason) made while the retreat project was current, or the first post-clear choice after a THREAT_CLEARED was that move's project. A tactical-reason entry move (retreat_destination never reads the retreat project) or a retreat merely current at death is FAIL.
     NOT SHOWN only when the logs cannot tell whether the retreat selected the path (no death-path record); a retreat in the window that did not select the entry move is FAIL (trajectory, as #769). FAIL: none in the window."""
     ad, tc = mech(R, e, d["dtick"]); x = next((r for r in R["dtask"] if r["e"] == e), None); en = (x or {}).get("entry") or {}
-    if "combat_retreat" in (en.get("project") or ""): return f"PASS: retreat {en['project']} was current on the entry move into the death tile at t{en['t']} (move reason {en.get('reason')}, writer {x['entry_writer']}) -> STOP to the designer with this chain"
-    if "combat_retreat" in ((x or {}).get("project") or ""): return f"PASS: retreat {x['project']} current at death t{d['dtick']} (task {x['task']}) -> STOP to the designer with this chain"
+    # designer ruling 2026-11-01 (e34/e8): retreat_destination() never reads the retreat project, so an entry move with a tactical reason (PANIC_RETREAT, REGROUP, ...) is tactical flight, the same on both arms, even while a retreat project is current; and a retreat merely current at death is holding, not selecting.
+    if "combat_retreat" in (en.get("project") or "") and not en.get("reason"): return f"PASS: retreat {en['project']} was current on a project-driven entry move (no tactical reason) into the death tile at t{en['t']} -> STOP to the designer with this chain"
     for tcr in reversed(tc):   # completion is causal too: the first post-clear choice is the project on the entry move into the death tile
         nxt = next((r for r in sorted(R["pj"], key=lambda r: r["t"]) if r["e"] == e and r["t"] >= tcr[0] and r["a"] and r["pr"] and "combat_retreat" not in r["pr"]), None)
         if nxt is not None and en.get("project") == nxt["pr"]:

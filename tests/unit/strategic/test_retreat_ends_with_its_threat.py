@@ -167,6 +167,8 @@ def _projects_adopted(hero, *others, tick=TICK):
 
 
 def test_a_hurt_subject_with_no_hostile_in_view_recovers_and_adopts_no_retreat():
+    """AC9, from crowded_frontier s43 entity 19 (measured identically on base 30307228c and the fix, probe11 `adopt` row): the retreat was adopted at t41 with hp 5/85 = 0.059, stamina 1.0, panic 0.921, fleeing, bravery 0.178,
+    retreat utility 194.8 against RECOVER 75.3, and hostile 15 one tile away and acting on it; its present threat was gone at t52 (hostile 12 tiles off). Here hp is 20/100 and no hostile is in view: RECOVER, no retreat."""
     hero = _entity(1, Faction.HERO_GUILD, (10.0, 10.0), hp=20)
     adopted = _projects_adopted(hero)
     assert GoalKind.COMBAT_RETREAT not in adopted
