@@ -437,3 +437,22 @@ Host: all on ubuntu, no u24 slot needed. The u24 slot is lane C's (retention 15x
 D (identity on the merged src) is implied before the runs.
 
 lead-planner's terms, same message: go for 1, 2 and D, starting after F3 is on main and the branch has synced; message lead first. The base for the (iii) store ratio changes on F3, so state the new ratios before reading the count.
+
+### rpg-planner's final ruling on the re-measure on F3; SUPERSEDES the scope above (via lead-planner-u24 and lead-planner, 2026-11-01, word for word)
+
+Final ruling: SKIP A; RUN B + C + D.
+- A (hash probe): SKIP. F3 moves all three worlds, so the hashes will change. C is never skippable: the death bar was judged on a world that no longer exists once F3 lands, which is exactly what the cross-lane rule is for.
+- C (15 pairs, death bar, audit): REQUIRED, the gating part.
+- Same seeds and length as the original churn set, the standing tier-1/tier-2 bar, and hard law {}.
+- PLUS the cross-lane row per world: lodged-member ticks at a group decision, and leaves, base vs arm.
+- STOP to rpg-planner on any tier-1 row, or any victim who was lodged or had left a bed within 50t.
+- The up-to-6 trace pairs are fine.
+- B (18 timing runs + store-visit count + smokes and repeat): RUN IT. This REPLACES the 25%-trigger idea: the hold rule reads the cost on what actually lands, and it may also resolve frontier's UNRESOLVED line.
+- Same setup: non-audit, pinned FULL, ConcurrentExecutionAdapter, the same smoke and repeat-hash check.
+- The bars fixed earlier apply unchanged: totals >5% resolved; per phase vs its bar; A on frontier R x 11.2 s > 52.2 s; per-phase count > 2 x the store ratio.
+- The PR disclosure takes B's numbers and DROPS the pre-F3 ones.
+- D (identity on the merged src): yes.
+If the designer's step (a) (live-groups-only iteration) is ready and hash-equal before B starts, B runs with it, and the store-visit count then shows it.
+Base = main with F3 landed; arm = the churn fix merged onto that main. All on ubuntu.
+
+lead-planner's terms, same message: go covers B, C and D, starting after F3 is on main and the branch has synced; message lead first, C before B. About 3.5 hours total. On B, measure with the host quiet.
