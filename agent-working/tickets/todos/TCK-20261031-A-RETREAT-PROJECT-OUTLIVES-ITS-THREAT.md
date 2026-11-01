@@ -119,3 +119,5 @@ Ruling (A), inside this ticket, counts first: tactical's flight gate also calls 
 - Land (A) unless first-diff attributes a death to a flight (A) removed; then it goes to rpg-designer with victim ids and (A) waits.
 - Docs: the divergence names 2.76 and 2.114 as narrowed (2.114's flight rule now uses the AGENCY-07 terms). Law text: "flight, a retreat project's adoption and its completion use one present-threat test".
 
+
+- **2026-11-01 landing-order item (from F3):** if this lands after F3, add a test that cleared_since advances while a subject is lodged (F3 suppresses movement intent only; the strategic pass still runs for lodgers).

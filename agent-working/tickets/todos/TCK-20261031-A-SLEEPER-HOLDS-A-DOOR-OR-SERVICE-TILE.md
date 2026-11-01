@@ -261,3 +261,11 @@ TCK-20261031-A-RETREAT-PROJECT-OUTLIVES-ITS-THREAT is measured on 6fdfdf555 (pre
   - subject 17's death chain;
   - leaver re-targets in the first 20t.
   - A world rise that is half or more in recent leavers is a STOP.
+- **2026-11-01, 91014a88f reviewed OK by rpg-planner:**
+  - is_lodged_stayer gates only the strategic target writers.
+  - The tactical entry uses suppress_stayer_movement (not a skip: scheduler.py:79-83 routes the hunger/threat wake through execute_brain).
+  - Typed reasons and claim-wins-merge are in.
+  - Binding mechanisms notes given for strategic_intelligence_core and town_services.
+  - Added a tick-count test: REST end leads to place_leavers on T or T+1.
+  - LANDING ORDER: whichever of F3 and TCK-20261031-A-RETREAT-PROJECT-OUTLIVES-ITS-THREAT lands second adds the test "cleared_since advances while lodged".
+  - 15-run repeat: GO.
