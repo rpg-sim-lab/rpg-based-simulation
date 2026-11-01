@@ -391,3 +391,21 @@ The other picks are fine: inject governor= from the wrapper, NORMAL maps to FULL
 The push ask goes once the count is in and sorted into (i) or (ii). (iii) comes back through me to rpg-planner first.
 
 lead-planner's note, same message: fix (iii)'s "about 2x" before reading the count, in plain numbers, so the sort isn't chosen after seeing it; send lead the reading. A count rising in urban or crowded also reaches (iii) as written.
+
+### rpg-planner fixes the (iii) thresholds and the frontier wording (via lead-planner-u24 and lead-planner, 2026-11-01, word for word)
+
+The (iii) thresholds are FIXED NOW, before any count is seen.
+A (frontier): CONFIRMED as written. The time-equivalent is right; rpg-planner did not mean a plain 19.4% on the count. It fires if R x T > 52.2 s (R > 4.66), with T = 11.2 s from base rep 1.
+B (crowded/urban): CHANGED, because 1% would fire on the fix's intended effect.
+- It fires per world and per phase alone (C_g and C_c separately) if C_fix / C_base > 2 x that world's STORE RATIO.
+- Store ratios: crowded 45/19 = 2.37, urban 79/19 = 4.16, so it fires above 4.74x and 8.32x base.
+- Frontier ALSO gets the same per-phase check (110/28 = 3.93, fires above 7.86x), alongside A.
+- Rationale: the work should scale roughly with the live records the fix keeps, and more than twice that is the 'work far beyond what the design explains' case that (iii) exists for.
+- A rise at or below the bar is NOT a STOP. It's disclosed with its rows, as 'groups/cooperation work rises with the live-group store (C ratio x vs store ratio y), as designed'.
+- rpg-planner's prediction, stated first: C_g rises in every world, below the bar; C_c is roughly flat.
+ATTRIBUTION: CONFIRMED. The frontier line uses (i) or (ii) for the count, but the cause claim is limited to what the count shows. Wording:
+'frontier +9.7% median, UNRESOLVED by timing (fix slower in 3/3 pairs; overlap 1.7 s on one base rep). Groups and cooperation account for about 2 s of the 26 s (C ratio <x>); the rest is not attributed. By median difference, resolution_overhead +3.3, persistence +2.1 and combat_engagement +1.7 ms/tick moved; their cause is not shown.'
+- Do NOT name 'trajectory' or 'longer-lived groups' as a cause. It's a reasonable guess, but nothing measured it. A ticket is optional if the designer wants that attribution later.
+- Unchanged: crowded's persistence fall needs a stated cause or 'cause not shown', and is not offered as a gain.
+
+lead-planner's note, same message: "store" here is at t2000; if the count uses another store basis, say so before reading.
