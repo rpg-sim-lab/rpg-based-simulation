@@ -7979,6 +7979,20 @@
   artifact_files: []
   tags: []
 - type: ticket
+  path: agent-working/tickets/done/TCK-20261101-PR-RENDER-LEAVES-OUT-A-TICKET-IN-TWO-STATUS-FOLDERS.md
+  ticket_id: TCK-20261101-PR-RENDER-LEAVES-OUT-A-TICKET-IN-TWO-STATUS-FOLDERS
+  title: 'pr_render leaves a ticket out of Closes: when its file is in more than one
+    status folder'
+  tier: hotfix
+  ticket_type: bug
+  date: '2026-11-01'
+  related_code_areas:
+  - tools/delivery/pr_render.py
+  - tests/tools/test_delivery_pr_render.py
+  artifact_files: []
+  tags:
+  - delivery
+- type: ticket
   path: agent-working/tickets/done/TCK-20261101-RECORD-REVIEW-AFTER-THE-PR-REVIEW-EXISTS.md
   ticket_id: TCK-20261101-RECORD-REVIEW-AFTER-THE-PR-REVIEW-EXISTS
   title: A hand close's Review can be recorded after the fact, once the planner's
@@ -8023,6 +8037,19 @@
   - src/engine/scenario_checkpoint.py
   - src/api/routes/scenarios.py
   - src/core/state.py
+  artifact_files: []
+  tags: []
+- type: ticket
+  path: agent-working/tickets/todos/TCK-20261101-A-CONGESTION-BLOCKER-RESOLUTION-SENDS-A-SUBJECT-TO-THE-TOWN-CENTRE.md
+  ticket_id: TCK-20261101-A-CONGESTION-BLOCKER-RESOLUTION-SENDS-A-SUBJECT-TO-THE-TOWN-CENTRE
+  title: A congestion blocker-resolution project sends its subject to the town centre,
+    from inside town, right after a lodge
+  tier: standard
+  ticket_type: bug
+  date: '2026-11-01'
+  related_code_areas:
+  - src/systems/strategic_systems/intelligence.py:670 (active-objective redirect),
+    :678 (town-return fallback)
   artifact_files: []
   tags: []
 - type: ticket
@@ -8116,6 +8143,51 @@
   artifact_files: []
   tags: []
 - type: ticket
+  path: agent-working/tickets/todos/TCK-20261101-DISSOLVED-GROUP-RECORDS-ARE-KEPT-AND-VISITED-EVERY-TICK.md
+  ticket_id: TCK-20261101-DISSOLVED-GROUP-RECORDS-ARE-KEPT-AND-VISITED-EVERY-TICK
+  title: Dissolved group records stay in the group store for the whole run, and the
+    groups and cooperation phases visit every one of them every tick
+  tier: standard
+  ticket_type: bug
+  date: '2026-11-01'
+  related_code_areas:
+  - src/systems/world_systems/groups.py (group store, id allocation; groups.py:308
+    per the id-overwrite ticket)
+  - src/engine/pipeline_phases/groups.py (groups phase)
+  - src/systems/social_systems/group_service.py
+  - cooperation phase / GroupEvaluator
+  artifact_files: []
+  tags: []
+- type: ticket
+  path: agent-working/tickets/todos/TCK-20261101-FUSED-STRATEGIC-PASS-RESTRUCTURE.md
+  ticket_id: TCK-20261101-FUSED-STRATEGIC-PASS-RESTRUCTURE
+  title: 'Pay down the code-health debt in fused_strategic_pass and the files F3 grew:
+    split the 408-line strategic pass into named stages'
+  tier: standard
+  ticket_type: refactor
+  date: '2026-11-01'
+  related_code_areas:
+  - src/systems/strategic_systems/intelligence.py (fused_strategic_pass)
+  - src/engine/phase_graph.py (should_run_phase)
+  - src/core/state.py, src/core/updates.py
+  artifact_files: []
+  tags: []
+- type: ticket
+  path: agent-working/tickets/todos/TCK-20261101-PERF-BENCH-KNOWN-REDS-PARKED-DURING-THE-PAUSE.md
+  ticket_id: TCK-20261101-PERF-BENCH-KNOWN-REDS-PARKED-DURING-THE-PAUSE
+  title: Own the perf bench and arena stress known reds while most perf work is paused
+  tier: standard
+  ticket_type: chore
+  date: '2026-11-01'
+  related_code_areas:
+  - tools/test_architecture/slow_known_reds.yaml
+  - tests/perf/test_perf_movement*
+  - tests/arena/test_arena_stress.py
+  - tests/tools/perf_assertions.py
+  artifact_files: []
+  tags:
+  - performance
+- type: ticket
   path: agent-working/tickets/todos/TCK-20261101-PERF-V0002-RECORD-AFTER-FINDING-WHAT-MOVES-HOST-SPEED.md
   ticket_id: TCK-20261101-PERF-V0002-RECORD-AFTER-FINDING-WHAT-MOVES-HOST-SPEED
   title: Find what moves the ubuntu VM's speed, then re-record idle_100_local and
@@ -8141,6 +8213,22 @@
   - src/engine/building_services.py; data/content/world/buildings.yaml; the world
     assembly building profile.
   artifact_files: []
+  tags: []
+- type: ticket
+  path: agent-working/tickets/done/TCK-20261031-A-SLEEPER-HOLDS-A-DOOR-OR-SERVICE-TILE.md
+  ticket_id: TCK-20261031-A-SLEEPER-HOLDS-A-DOOR-OR-SERVICE-TILE
+  title: 'A sleeper holds a door or service tile (F3: a served rest occupies the building,
+    not the door tile)'
+  tier: standard
+  ticket_type: repair
+  date: '2026-10-31'
+  related_code_areas:
+  - src/engine/building_arrival.py (service on reach), occupancy and movement candidate
+    checks, src/engine/sleep_debt.py
+  artifact_files:
+  - agent-working/stored_artifacts/TCK-20261031-A-SLEEPER-HOLDS-A-DOOR-OR-SERVICE-TILE/investigation.md
+  - agent-working/stored_artifacts/TCK-20261031-A-SLEEPER-HOLDS-A-DOOR-OR-SERVICE-TILE/plan.md
+  - agent-working/stored_artifacts/TCK-20261031-A-SLEEPER-HOLDS-A-DOOR-OR-SERVICE-TILE/test_plan.md
   tags: []
 - type: ticket
   path: agent-working/tickets/done/TCK-20261031-ADVENTURE-SCORER-LOADS-THE-COGNITION-PACKAGE-IN-OFF-MODE.md
@@ -8449,20 +8537,6 @@
   - src/systems/strategic_systems/intelligence.py (capacity gate :1768, switch :1042-ish),
     project completion facts (location to find), src/ai/goals/present_threat.py, src/engine/scheduler.py
     (_throttled), src/ai/goals/scorers.py (retreat scorer)
-  artifact_files: []
-  tags: []
-- type: ticket
-  path: agent-working/tickets/todos/TCK-20261031-A-SLEEPER-HOLDS-A-DOOR-OR-SERVICE-TILE.md
-  ticket_id: TCK-20261031-A-SLEEPER-HOLDS-A-DOOR-OR-SERVICE-TILE
-  title: 'A sleeper holds a door or service tile (F3: a served rest occupies the building,
-    not the door tile)'
-  tier: 'standard (a durable entity field, content, occupancy and perception). Dispatch
-    needs an owner go via lead-planner-u24 / #715.'
-  ticket_type: repair
-  date: '2026-10-31'
-  related_code_areas:
-  - src/engine/building_arrival.py (service on reach), occupancy and movement candidate
-    checks, src/engine/sleep_debt.py
   artifact_files: []
   tags: []
 - type: ticket
