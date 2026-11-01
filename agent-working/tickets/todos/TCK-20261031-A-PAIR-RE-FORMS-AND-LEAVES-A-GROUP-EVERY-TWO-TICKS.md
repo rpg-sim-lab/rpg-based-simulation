@@ -491,3 +491,16 @@ lead-planner's terms, same message: implement before the F3 sync, so C and B run
 Related code: src/systems/world_systems/groups.py, src/engine/pipeline_phases/groups.py, src/systems/social_systems/group_service.py, and cooperation/GroupEvaluator.
 
 COUNT BAR WITH (a): rpg-planner-ubuntu's 'at or below 2 x the live-group visits' is TIGHTENED to EQUAL. With live-only iteration, the per-group work visits are deterministic and should equal the summed live count exactly; 2x would hide up to one full extra pass. The filter scan is counted apart and disclosed, with no bar. The store-ratio bars are RETIRED for (a). Frontier A stays R x 11.2 s > 52.2 s. The timing bar is in the AC above, and it is disclosure, not a STOP.
+
+### rpg-planner on the counter definition and the two expected excess sources (via lead-planner-u24 and lead-planner, 2026-11-01, word for word)
+
+rpg-planner-ubuntu's counter definition is ACCEPTED as stated, before any reading (a loop-body entry before any dissolved-skip guard; per pass: election, defection, update_groups, cohesion; live count from state at phase start; compared per pass; counter not redefined).
+The two expected sources are ruled NOW. Per pass, excess = visits - live_at_start must decompose EXACTLY into:
+(A) Dirty-set dissolved ids read and skipped at the guard. Expected; disclosed as a named count per pass.
+- BOUND: each dissolved id appears at most ONCE per pass, and only on its dissolve tick or the next.
+- A dissolved id visited on any LATER tick is a FINDING to the designer: the dirty set keeps dissolved ids, so the work stays O(store).
+(B) Rows created or dissolved THIS tick, entering election and defection. Expected; disclosed.
+- BOUND: per pass and per tick, at most that tick's creations + dissolutions (from typed records in the same run).
+RESIDUAL = excess - (A) - (B) must be 0 in EVERY pass of EVERY run. Any residual is a FINDING to the designer, naming what the visit was.
+Within their bounds, neither (A) nor (B) goes to the designer. The disclosure line: 'per-pass visits = live at phase start + (A) <n> dirty dissolved ids skipped at the guard + (B) <m> same-tick adds/dissolves; residual 0'.
+The implementation note is fine: 5 store walks move to a dict-order-preserving filter; the id allocator, hash and checkpoint readers stay whole-store. Hash-equal acceptance is unchanged and covers the dict-order point.
