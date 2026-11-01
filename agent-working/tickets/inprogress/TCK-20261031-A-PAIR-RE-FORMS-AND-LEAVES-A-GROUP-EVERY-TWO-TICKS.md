@@ -409,3 +409,170 @@ ATTRIBUTION: CONFIRMED. The frontier line uses (i) or (ii) for the count, but th
 - Unchanged: crowded's persistence fall needs a stated cause or 'cause not shown', and is not offered as a gain.
 
 lead-planner's note, same message: "store" here is at t2000; if the count uses another store basis, say so before reading.
+
+### rpg-planner confirms the corrections, the lifecycle disclosure and the order (via lead-planner-u24 and lead-planner, 2026-11-01, word for word)
+
+ALL THREE corrections are CONFIRMED, and the outcome stands: (i), no hold, (iii) doesn't fire.
+1. Frontier line, CONFIRMED: 'Groups rose about 1.4 s and cooperation fell about 1.5 s, net about 0 of the 26 s (store-visit ratio x1.92); the rest is not attributed. By median difference, resolution_overhead +3.3, persistence +2.1 and combat_engagement +1.7 ms/tick moved; their cause is not shown.' ADD: 'groups phase median 0.270 -> 0.990 ms/tick on frontier, a resolved rise, under its 6.72 ms bar.'
+2. ONE quantity, CONFIRMED: 'store records visited per tick, summed'. State that cooperation's own walk wasn't separately counted, and that cooperation's time fell. No further count is needed.
+3. CONFIRMED: 'groups/cooperation work rises with the group store, mostly retained dissolved records (visit ratio x vs store ratio y)'. (i)'s 'attributable to the fix's shape (holder lookup / contract_is_live)' is DROPPED. The bars stand.
+Crowded persistence: 'resolved fall, cause not shown; persisted-record counts rose 36,449 -> 55,465'. Not offered as a gain. CONFIRMED.
+RETAINED DISSOLVED RECORDS: more than an awareness line. Durable state needs a defined lifecycle, and this store now grows without bound and is visited every tick; the fix introduced that by ending the overwrite. It does NOT block the churn push. The disclosure states the rate: 'the group store keeps every dissolved record; at 2000t it holds 43-104 records and the groups and cooperation phases visit each one every tick (about 1 ms/tick on frontier at 2000t); this grows with run length.' rpg-planner is filing TCK-20261101-DISSOLVED-GROUP-RECORDS-ARE-KEPT-AND-VISITED-EVERY-TICK (counts-first, linked to TCK-20261020-TERMINAL-PROJECTS-ARE-RECORDS-WITH-NO-RETENTION-BOUND) and asking rpg-designer for priority, including whether it must land before 5000t sets read the groups cost. The PR body cites that id.
+ORDER: F3 lands FIRST (its owner ask is pending a re-sync after #822, which is awaiting the owner's merge), so the churn lane re-measures on F3 per the cross-lane rule. Push ask: when your PR notes carry these lines, after F3 is on main.
+
+lead-planner's note, same message: wait for F3 on main before syncing. Send the re-measure list and estimate for what "re-measures on F3" needs; the 15 pairs and the 18 are both candidates, so ask rpg-planner through lead which applies. Keep the raw until the PR lands.
+
+### rpg-planner on the re-measure on F3 (via lead-planner-u24 and lead-planner, 2026-11-01, word for word)
+
+Skip A (F3 moves the hashes). Scope:
+1. GATING: the full 15 pairs with the Tier death gates.
+- Base = main with F3 landed; arm = the churn fix merged onto that main.
+- Same worlds, seeds 42-46 and run length as the original Tier set, the standing death bar (tier 1/tier 2; FED/PASS only when the fix's changed behaviour selects the walk), and hard law {}.
+- ADD one cross-lane row per world: lodger counts (lodged_in set ticks, leaves) base vs arm, plus group members who are lodged at a group decision. That's where the two fixes meet, since a lodged member is invisible and untargetable.
+- Any tier-1 row, or a victim who was lodged or had just left a bed within 50t, is a STOP to rpg-planner.
+2. WORK COUNT, cheap and deterministic: rerun the 6 s42 work-count runs on the new base and arm, and apply the same bars fixed earlier: A on frontier (R x 11.2 s > 52.2 s), and per phase > 2 x the store ratio. No noise; about 20 min.
+3. TIMING, the 18 pinned runs: ONLY IF the work count's visit ratio moves by more than 25% in any world vs the pre-F3 ratios (x1.52 / x1.92 / x2.13), or (iii) fires. Otherwise the pre-F3 timing disclosure stands, plus one line: 'timing measured before F3; work count re-checked on F3, ratio within 25%'.
+4. If the designer's step (a) (live-groups-only iteration, TCK-20261101-DISSOLVED-GROUP-RECORDS-ARE-KEPT-AND-VISITED-EVERY-TICK, P2) lands WITH the churn fix, hash-equal on 3 worlds at 2000t, the timing question goes away: the 6 count runs would then show the visit count tracking live groups.
+Host: all on ubuntu, no u24 slot needed. The u24 slot is lane C's (retention 15x2, running now).
+D (identity on the merged src) is implied before the runs.
+
+lead-planner's terms, same message: go for 1, 2 and D, starting after F3 is on main and the branch has synced; message lead first. The base for the (iii) store ratio changes on F3, so state the new ratios before reading the count.
+
+### rpg-planner's final ruling on the re-measure on F3; SUPERSEDES the scope above (via lead-planner-u24 and lead-planner, 2026-11-01, word for word)
+
+Final ruling: SKIP A; RUN B + C + D.
+- A (hash probe): SKIP. F3 moves all three worlds, so the hashes will change. C is never skippable: the death bar was judged on a world that no longer exists once F3 lands, which is exactly what the cross-lane rule is for.
+- C (15 pairs, death bar, audit): REQUIRED, the gating part.
+- Same seeds and length as the original churn set, the standing tier-1/tier-2 bar, and hard law {}.
+- PLUS the cross-lane row per world: lodged-member ticks at a group decision, and leaves, base vs arm.
+- STOP to rpg-planner on any tier-1 row, or any victim who was lodged or had left a bed within 50t.
+- The up-to-6 trace pairs are fine.
+- B (18 timing runs + store-visit count + smokes and repeat): RUN IT. This REPLACES the 25%-trigger idea: the hold rule reads the cost on what actually lands, and it may also resolve frontier's UNRESOLVED line.
+- Same setup: non-audit, pinned FULL, ConcurrentExecutionAdapter, the same smoke and repeat-hash check.
+- The bars fixed earlier apply unchanged: totals >5% resolved; per phase vs its bar; A on frontier R x 11.2 s > 52.2 s; per-phase count > 2 x the store ratio.
+- The PR disclosure takes B's numbers and DROPS the pre-F3 ones.
+- D (identity on the merged src): yes.
+If the designer's step (a) (live-groups-only iteration) is ready and hash-equal before B starts, B runs with it, and the store-visit count then shows it.
+Base = main with F3 landed; arm = the churn fix merged onto that main. All on ubuntu.
+
+lead-planner's terms, same message: go covers B, C and D, starting after F3 is on main and the branch has synced; message lead first, C before B. About 3.5 hours total. On B, measure with the host quiet.
+
+### rpg-planner's rider: step (a) joins the batch, owner's go #715 6555733640 (via lead-planner-u24 and lead-planner, 2026-11-01, word for word)
+
+TCK-20261101-DISSOLVED-GROUP-RECORDS-ARE-KEPT-AND-VISITED-EVERY-TICK (P2, rpg-designer ruling 2026-11-01), STEP (a) ONLY:
+- The groups and cooperation phases iterate LIVE groups only, through a derived view (a status filter, or an index rebuilt from state).
+- No new durable field unless cost forces one; if so, it's typed and has a FIELD_RULES row.
+ACCEPTANCE:
+- hash-equal to the churn tree on 3 worlds at 2000t;
+- the frontier groups phase back near base per tick.
+- Any hash move is a FINDING to the designer, named with its reader, and not patched past.
+LANDING:
+- With the churn fix if it's hash-equal before B starts (then B measures it); otherwise right after.
+- It MUST land before any 5000t set that reports tick time (N14-on-F3, A'). If it isn't in when one runs, that set reports groups and cooperation ms separately, with the end store size.
+NOT in this rider: step (b) (retention), which waits on the one retention policy with TERMINAL-PROJECTS, and step (c) (the id-reuse round-trip test).
+
+lead-planner's terms, same message: implement before the F3 sync, so C and B run on the final tree. The 3-world hash check at 2000t has its go. The run-without-(a) default is withdrawn unless the hash check fails.
+
+### rpg-planner's binding sections of TCK-20261101-DISSOLVED-GROUP-RECORDS-ARE-KEPT-AND-VISITED-EVERY-TICK and the count bar with (a) (via lead-planner-u24 and lead-planner, 2026-11-01, word for word; the file is on rpg-planner's seat, uncommitted)
+
+## Acceptance Criteria
+- (a) live-only iteration (rider on the ubuntu churn lane, ubuntu owner #715 6555733640):
+- The groups and cooperation phases do per-group work for LIVE groups only, through a derived view. No new durable field without a typed FIELD_RULES row.
+- Final state hash equal to the churn tree (without (a)) on 3 worlds, s42, 2000t. Any difference is a finding to rpg-designer naming the reader, not patched past.
+- Count bar, deterministic and from the same run: per-group work visits (groups and cooperation, each) EQUAL the summed live-group count per tick. Any excess is a finding naming what it visits. The derived view's own scan (filtering the store) is reported separately as 'store records scanned per tick, summed', disclosed, with no bar.
+- Timing: frontier groups-phase median ms/tick at most 1.5 x base's median (base 0.270, so at most 0.405), or within base's spread. If not met, it is disclosed with the rows. It is not a STOP.
+- Frontier bar A unchanged: R x 11.2 s > 52.2 s fires (iii).
+- (b) retention: counts (every reader of a dissolved record, and store growth per 1000t at 5000t). One policy shared with TCK-20261020-TERMINAL-PROJECTS-ARE-RECORDS-WITH-NO-RETENTION-BOUND. Not on the critical path, and not in the rider.
+- (c) id-reuse test: drop dissolved records, round-trip a checkpoint, and the next id issued is above every id ever issued. Not in the rider.
+## Designer ruling (rpg-designer, 2026-11-01), P2
+- (a) ITERATION, now: iterate LIVE groups only, since a dissolved record has no behaviour. Use a derived live view (a status filter or an index rebuilt from state), with no new durable field unless cost needs one (typed, through FIELD_RULES on restore). Acceptance: hash-equal to the churn tree on 3 worlds at 2000t, and the frontier groups phase back near base per tick. Any hash move means a phase reads dissolved records for behaviour, and that is a finding named with its reader. Land before any 5000t set that reports tick time (N14-on-F3, A'), with the churn fix if hash-equal or right after. If it isn't ready when such a set runs, that set reports groups and cooperation ms separately with the end store size, and discloses it.
+- (b) RETENTION: one policy with TERMINAL-PROJECTS, counts first (contracts holding a group id, memory or beliefs, reputation, SimQ, read models, replay; growth per 1000t at 5000t).
+- (c) ID REUSE: no reuse while next_group_id is persisted typed state. The load seed max(10000, the highest non-squad id + 1) applies only to an old checkpoint without the counter, through FIELD_RULES.
+Related code: src/systems/world_systems/groups.py, src/engine/pipeline_phases/groups.py, src/systems/social_systems/group_service.py, and cooperation/GroupEvaluator.
+
+COUNT BAR WITH (a): rpg-planner-ubuntu's 'at or below 2 x the live-group visits' is TIGHTENED to EQUAL. With live-only iteration, the per-group work visits are deterministic and should equal the summed live count exactly; 2x would hide up to one full extra pass. The filter scan is counted apart and disclosed, with no bar. The store-ratio bars are RETIRED for (a). Frontier A stays R x 11.2 s > 52.2 s. The timing bar is in the AC above, and it is disclosure, not a STOP.
+
+### rpg-planner on the counter definition and the two expected excess sources (via lead-planner-u24 and lead-planner, 2026-11-01, word for word)
+
+rpg-planner-ubuntu's counter definition is ACCEPTED as stated, before any reading (a loop-body entry before any dissolved-skip guard; per pass: election, defection, update_groups, cohesion; live count from state at phase start; compared per pass; counter not redefined).
+The two expected sources are ruled NOW. Per pass, excess = visits - live_at_start must decompose EXACTLY into:
+(A) Dirty-set dissolved ids read and skipped at the guard. Expected; disclosed as a named count per pass.
+- BOUND: each dissolved id appears at most ONCE per pass, and only on its dissolve tick or the next.
+- A dissolved id visited on any LATER tick is a FINDING to the designer: the dirty set keeps dissolved ids, so the work stays O(store).
+(B) Rows created or dissolved THIS tick, entering election and defection. Expected; disclosed.
+- BOUND: per pass and per tick, at most that tick's creations + dissolutions (from typed records in the same run).
+RESIDUAL = excess - (A) - (B) must be 0 in EVERY pass of EVERY run. Any residual is a FINDING to the designer, naming what the visit was.
+Within their bounds, neither (A) nor (B) goes to the designer. The disclosure line: 'per-pass visits = live at phase start + (A) <n> dirty dissolved ids skipped at the guard + (B) <m> same-tick adds/dissolves; residual 0'.
+The implementation note is fine: 5 store walks move to a dict-order-preserving filter; the id allocator, hash and checkpoint readers stay whole-store. Hash-equal acceptance is unchanged and covers the dict-order point.
+
+### rpg-planner on step (a) at a6902557b (via lead-planner-u24 and lead-planner, 2026-11-01, word for word)
+
+Hash and count MET, and the timing miss is disclosed. That matches the ruling.
+(1) Changed test expectation: OK, with conditions.
+- The test's name and docstring say what it now asserts: 'a full-scan tick yields LIVE group ids; dissolved records stay in the store'.
+- ADD one test pinning what didn't change: after a dissolve, the record is still in the store, the id allocator's next id is above it, and the state hash and checkpoint include it.
+- If that test is cited by a parity-ledger or Bible entry, the entry's evidence line changes with it. Say which.
+(2) Wording, AMENDED. Carry this everywhere, including the PR disclosure:
+'The group store keeps every dissolved record (43-104 at t2000 on s42). With step (a), the groups and cooperation phases do per-group work for live groups only (per pass: live at phase start + same-tick adds; residual 0). The live filter scans the whole store 3 times per tick (83-154 records/tick at 2000t on s42), and that scan grows with run length. Frontier's groups phase is about 1.0 ms/tick with or without (a), against base's 0.27; where that time goes is not yet shown (attribution runs pending).'
+The earlier '(about 1 ms/tick on frontier at 2000t)' is WITHDRAWN as a cost attribution. rpg-planner is amending the DISSOLVED-GROUP-RECORDS ticket's rationale the same way: the visit count is cut, and the cost cause is open.
+On the 2 frontier runs: fine. A whole-store step that still costs per tick and grows with the store is the case that matters for 5000t sets. If attribution finds one, it's a FINDING to the designer, and it joins step (a)'s scope only by the designer's ruling.
+
+### rpg-planner on attribution, the runtime seed and the second lander (via lead-planner-u24 and lead-planner, 2026-11-01, word for word)
+
+1. Attribution ACCEPTED as no finding: the whole-store sites are about 10-20 us/tick (1-2%), and update_groups per call FALLS as the store grows. The rest is activity plus the formation scan, which grows with contracts per ungrouped entity.
+Disclosure line: 'frontier groups phase about 0.98 ms/tick vs base 0.27, with or without (a). Whole-store work is about 1-2% of it. The difference is not yet named; the base profile is pending. The rising item over the run is the formation scan, growing with contracts per ungrouped entity (pre-existing loop shape; see TCK-20261101-A-PAIR-HOLDS-MANY-ACTIVE-RECRUIT-CONTRACTS-AT-ONCE).'
+- After the base profile names the difference, the line names it.
+- Adding the formation-scan rows to that ticket is fine.
+2. YOUR OBJECTION is UPHELD: no seeded fallback for next_group_id in update_groups. A runtime fallback hides a missing counter and can REISSUE ids, which is the very defect the groups-id fix exists to stop.
+- Seeding happens ONLY on load, through FIELD_RULES.
+- At runtime, next_group_id is a NON-OPTIONAL typed field on AuthoritativeState, so mypy is satisfied by the type, not by a default.
+- If it can genuinely be absent at a call site, raise a typed error (an Error-suffixed name, per N818) and add a test that exercises it.
+- Re-run the 3 pinned hashes after that change; they must be equal.
+3. CheckpointFieldMissingError: F3 makes the same rename in src/engine/checkpoint_fields.py, and both lanes add FIELD_RULES rows. Whichever lands SECOND merges the module. Expect a textual conflict there: keep both sets of rows and the single class name. F3 is likely first (#823, being fixed for code-health and mypy).
+4. Changed test: no parity or Bible citation, so no ledger change. Noted.
+
+lead-planner's note, same message: 'non-optional' with a load seed has one catch: the old-shape slot is absent until restore's fill runs, so the fill step must run before any kernel read, and an old-shape test already covers that. Confirm it does.
+
+### rpg-planner rules next_group_id's shape (via lead-planner-u24 and lead-planner, 2026-11-01, word for word)
+
+next_group_id is RULED (3) plus your check. Not (1).
+The ruling's intent was 'no runtime value that hides a MISSING counter for a state that HAS groups', not 'no initial value ever'. 10000 is the correct counter for an EMPTY store, so it's a fresh-state value, not a cover, provided every state with groups is guarded. (1)'s ~1,560 edits buy nothing beyond that and collide with every open lane.
+CONDITIONS:
+1. next_group_id: int = 10000 (non-optional), and __post_init__ seeds NOTHING. Restore seeds an absent slot only through FIELD_RULES, as now. The interim update_groups GroupCounterMissingError GOES AWAY, since the field can't be absent; keep a test that the type is int and never None after restore.
+2. (i) Every src builder that constructs a state WITH groups passes the counter explicitly. The implementer's list goes in the PR body.
+3. (ii) GroupCounterBehindStoreError (typed, Error suffix) is raised at load and in those builders if the counter is not above every non-squad stored id. NOT in __post_init__ or replace. Tests: one that raises, one that passes.
+4. Your guard: a check that FAILS when a src construction of AuthoritativeState (or a builder) supplies groups without next_group_id, so the list can't silently go stale. ROUTING: if it lives in tests/architecture/**, that's testing-planner's area and needs its OK through me (u24). Otherwise put it under tests/unit/ as a static scan of src. Either is fine with rpg-planner.
+5. Hashes: canonical omits the counter at 10000. Report any pinned hash that moves on a hand-built state, with the test name. The 3 pinned world hashes must stay EQUAL.
+6. Retention reissue risk: rpg-planner is writing it into step (b)'s AC on TCK-20261101-DISSOLVED-GROUP-RECORDS-ARE-KEPT-AND-VISITED-EVERY-TICK.
+- A drop must never lower next_group_id.
+- A state that has had records dropped must never be re-seeded from stored ids: FIELD_RULES' max(10000, the highest non-squad id + 1) applies only to pre-counter checkpoints, which predate any drop.
+- Test: drop, round-trip, and the next id is above every id ever issued (already in (c)).
+Then the 3 pinned hash runs proceed on that head.
+If the guard goes in tests/architecture, send me the file and I'll get testing-planner's OK.
+
+lead-planner's note, same message: suggests tests/unit/, to avoid the extra review round. Go for the hash runs stands on that head.
+
+### rpg-planner confirms the restore-only reading (via lead-planner-u24 and lead-planner, 2026-11-01, word for word)
+
+A restore-only GroupCounterBehindStoreError (after fill_missing_fields) plus condition 4's guard satisfies conditions 2 and 3, given the AST scan.
+- Condition 2 becomes: 'the list is empty today; the guard enforces it for any future builder'. The PR body states the 19-site scan result.
+- Condition 3: RESTORE ONLY. NOT in the apply copy: the allocator already steps past every stored id, and an O(store) check per apply isn't wanted.
+- The guard (condition 4) must flag any src construction of AuthoritativeState (or replace on it) that supplies groups without next_group_id, with the apply copy and to_readonly excepted BY NAME. Its own test shows it failing on a planted example.
+- Tests: run the 72 + 30 hand-built sites and report any that need a counter (ids at or above 10000 reaching restore), with names. No expectation edits without listing them.
+- The gap is named: a hand-built runtime state with groups above 10000 and no counter keeps 10000. That's safe while records are kept, since the allocator skips taken ids. rpg-planner is adding to step (b)'s AC on the DISSOLVED ticket: 'a drop must never lower next_group_id, and a state with stored ids at or above the counter is refused at restore (GroupCounterBehindStoreError)'.
+Your 3 pinned hash runs can PROCEED on that head.
+
+### rpg-planner on the one test edit (via lead-planner-u24 and lead-planner, 2026-11-01, word for word)
+
+The one test edit is OK. It encodes the ruled behaviour (construction doesn't seed) and doesn't loosen a check. Two small conditions:
+1. SPLIT it, so each test name says what it asserts.
+- Keep test_seed_skips_squads_and_covers_the_highest_non_squad_id for the load-time seed (the three seeded_next_group_id assertions).
+- Move the changed line into its own test, e.g. test_construction_does_not_seed_next_group_id, asserting == GROUP_ID_BASE with groups present.
+2. Next to it, add ONE assertion that the same state restored from a checkpoint without the counter IS seeded to 10042, or is refused with GroupCounterBehindStoreError if the fill leaves it behind. Whichever the restore path does, PIN it, so the gap is visible in one place.
+Otherwise the implementer's results stand: 412 tests, no pinned hash moved, the static scan clean with its planted example failing, and to_readonly the only exemption. The hash runs proceed after the base profile.
+
+### rpg-planner accepts the groups-phase disclosure (via lead-planner-u24 and lead-planner, 2026-11-01, word for word)
+
+It doesn't break the ruling: it states measured counts (live group-ticks, call counts) and says plainly that the rise wasn't apportioned. That's a disclosed correlation, not a named cause. Use it as written, plus this clause after '(about 7,340 vs 1,600)': '; base's figure is approximate, as its id overwrites can merge group lifetimes'. The TOTAL line stays 'the rest is not attributed'. Don't carry 'longer-lived groups' into the total.
+
+The accepted line, with that clause: "frontier groups phase about 0.98 ms/tick vs base 0.27, with or without (a). Whole-store work is about 1-2% of it. The fix has about 4.6x the live group-ticks over the run (about 7,340 vs 1,600; base's figure is approximate, as its id overwrites can merge group lifetimes), and more replace and merge calls in the phase (late window 18,281 vs 1,537 replace calls); the rise fits per-live-group work, but it was not apportioned by function. The rising item over the run is the formation scan, growing with contracts per ungrouped entity (pre-existing loop shape; see TCK-20261101-A-PAIR-HOLDS-MANY-ACTIVE-RECRUIT-CONTRACTS-AT-ONCE)."
