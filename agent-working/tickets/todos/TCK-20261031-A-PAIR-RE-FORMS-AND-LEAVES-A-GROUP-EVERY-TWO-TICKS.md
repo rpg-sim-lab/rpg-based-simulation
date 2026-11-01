@@ -636,3 +636,13 @@ NEXT:
 - Ticket acceptance: lodged contract creations and acceptances = 0; lodged-leader formations about 0; membership persists through lodging (test); hash-identical where there are no lodgers; deaths paired under the bar.
 - For the probe rows: record the lodging state of BOTH offerer and target at contract creation and at acceptance, to show whether offers, accepts or both leak.
 It does not gate batch C. Send the list to me for relay.
+
+### rpg-designer adds rule (4) on lodged leaders (via lead-planner-u24 and lead-planner, 2026-11-01, word for word as relayed, cc rpg-planner)
+
+The code read is ACCEPTED and the ROW confirmed. CooperationPhase is a third path; it doesn't leak through F3's two entries.
+- Base probe: NOT needed. Cite base reachability as "by code, unmeasured".
+- Mechanism: the distance-10 check. Lodgers share the building tile, so formation sees them as side by side. The fix reads lodging; it doesn't adjust distance.
+New rule (4): while a leader is lodged, it is ABSENT for following and regrouping. Followers outside don't take its building tile as a follow or REGROUP target; they act on their own until it leaves. An election in that time picks a non-lodged member. Otherwise followers walk to the inn door to regroup with a sleeper and rebuild the door jam F3 removed.
+ASK for the s45 and urban s42 rows: count outside-follower ticks whose follow or REGROUP target is a lodged leader's building tile or reach tile. Above 0 means (4) is needed now; 0 means it goes into the ticket as a guard with a test only.
+The ticket is filed by rpg-planner under lane F3 (2.155). Scope: rules (1)-(4); cooperation offer/accept, formation, election, follow/regroup. Evidence: the code read plus the s44/s45/urban s42 rows. Acceptance adds: outside follow targets on a lodged leader = 0.
+If s45 has already started or finished without that count, say whether it can be derived; a repeat would be a new ask. Send the counts to me for relay.
