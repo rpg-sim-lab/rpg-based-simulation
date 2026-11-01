@@ -103,7 +103,7 @@ class MovementCandidateSelector:
         """Whole tile -> ids of the active, living entities standing on it (the tick-start positions of ``entities``)."""
         index: dict[tuple[int, int], list[int]] = {}
         for other in entities.values():
-            if other.lifecycle.active and other.combat.alive:
+            if other.lifecycle.active and other.combat.alive and other.navigation.lodged_in is None:  # a lodger stands on no tile (F3)
                 pos = other.navigation.position
                 index.setdefault((int(pos[0]), int(pos[1])), []).append(other.id)
         return index

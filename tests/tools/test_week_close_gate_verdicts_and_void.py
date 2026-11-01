@@ -63,8 +63,10 @@ def test_bare_manual_actions_and_role_boundary_files_are_untouched(tmp_path):
     data = tmp_path / "data"
     _w(data / WEEK / "manual_actions.jsonl", [{"x": 1}])
     _w(data / WEEK / "role_boundary.jsonl", [{"y": 2}])
+    _w(data / WEEK / "governing_edits.jsonl", [{"z": 3}])
     wc.close_week(WEEK, data_dir=data, today=AFTER)
     assert (data / WEEK / "manual_actions.jsonl").exists() and (data / WEEK / "role_boundary.jsonl").exists()
+    assert (data / WEEK / "governing_edits.jsonl").exists()
 
 
 # --- the void row -------------------------------------------------------------------------------------------------

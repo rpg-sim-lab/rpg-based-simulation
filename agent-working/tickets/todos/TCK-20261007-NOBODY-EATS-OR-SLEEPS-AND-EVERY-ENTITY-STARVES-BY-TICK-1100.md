@@ -78,3 +78,7 @@ None yet.
 
 ## Completion Summary
 None yet.
+
+## 2026-10-31 cleanup re-verification (rpg-planner, owner go #715 6543261623; origin/main 96f623a62)
+- Child tickets done; gate baseline v1 shows starvation 0.2/seed per world. AC1 UNPROVEN (eating evidence indirect via O4 transfers; no sleep row in the gate). AC3 UNPROVEN (no behavioral_5k re-measure).
+- Left (needs a slot): frontier_living_world and crowded_frontier, s42, 2000t, audit_mode: completed eat and sleep state changes per 100-tick bucket after thresholds are crossed; behavioral_5k alive curve vs tick ~950. Then close.

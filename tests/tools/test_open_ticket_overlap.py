@@ -18,8 +18,10 @@ from open_ticket_overlap import find_overlapping_open_tickets, main  # noqa: E40
 
 _REPO_ROOT = Path(__file__).parent.parent.parent
 _FIXTURE_DIR = _REPO_ROOT / "tests" / "fixtures" / "open_ticket_overlap"
+# The target ticket is closed (it left todos/ in the #820 batch), so this reads the frozen, unedited copy in the corpus fixture
+# (same reason as tests/fixtures/open_ticket_overlap/corpus/README.md): a live open ticket leaves todos/ when it closes.
 _REAL_TARGET_TICKET = (
-    _REPO_ROOT / TICKETS / "todos" / "TCK-20260920-PERCEPTION-UPDATE-PHASE-NEVER-INSTANTIATED.md"
+    _FIXTURE_DIR / "corpus" / "todos" / "TCK-20260920-PERCEPTION-UPDATE-PHASE-NEVER-INSTANTIATED.md"
 )
 
 

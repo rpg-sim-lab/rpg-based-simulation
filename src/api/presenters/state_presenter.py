@@ -5,6 +5,7 @@ from src.core.state import AuthoritativeState, EntityState, PlaceState, RegionSt
 from src.api.schemas import PlaceReadModel, PlaceTiles
 from src.content_semantics.faction import get_faction_semantics_service
 from src.core.enums import Faction
+from src.core.lodging_rules import lodged_in_field
 from src.core.strategic import ContractStatus, is_live_project
 
 # The entity read model is bounded by construction (TCK-20261020-ENTITY-LIST-RETURNS-A-BOUNDED-SUMMARY-NOT-THE-FULL-DETAIL): an entity's finished records
@@ -127,7 +128,7 @@ class StatePresenter:
             "id": entity.id,
             "kind": entity.kind,
             **_species_and_size(entity),
-            "position": entity.position,
+            "position": entity.position, **lodged_in_field(entity),  # F3: the building a lodger is indoors in; absent otherwise
             "readiness": entity.readiness,
             "combat": {
                 "hp": entity.combat.hp,
@@ -214,7 +215,7 @@ class StatePresenter:
             "id": entity.id,
             "kind": entity.kind,
             **_species_and_size(entity),
-            "position": entity.position,
+            "position": entity.position, **lodged_in_field(entity),  # F3: the building a lodger is indoors in; absent otherwise
             "combat": {"hp": entity.combat.hp, "max_hp": entity.combat.max_hp, "alive": entity.combat.alive},
             "biological": {"hunger": entity.biological.hunger, "sleep_debt": entity.biological.sleep_debt},
             "identity": {"faction": entity.identity.faction, "role": entity.identity.role, "level": entity.identity.evolution_level, "class": entity.identity.class_id},

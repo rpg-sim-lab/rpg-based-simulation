@@ -38,7 +38,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 from vocabulary import WORKFLOW_AGENTS, WORKFLOW_PHASES, infer_workflow  # noqa: E402
 from duration_utils import compute_active_idle_split  # noqa: E402
 from validate import load_data_glob  # noqa: E402
-from run_dedup import dedupe_to_latest_per_execution  # noqa: E402
+from run_dedup import dedupe_to_latest_per_execution, drop_superseded_events  # noqa: E402
 import real_token_usage  # noqa: E402
 import retro_provenance  # noqa: E402
 
@@ -148,14 +148,14 @@ def _load_runs_and_events():
             events = [json.loads(row[0]) for row in conn.execute("SELECT raw_json FROM events ORDER BY id")]
         finally:
             conn.close()
-        return runs, events
+        return runs, drop_superseded_events(events)
     except Exception as exc:
         print(
             f"WARNING: agent-monitoring index unavailable ({exc}); falling back to direct JSONL "
             f"scan of {RUNS_FILE}/{EVENTS_FILE}",
             file=sys.stderr,
         )
-        return _load_source(RUNS_FILE, "runs"), _load_source(EVENTS_FILE, "events")
+        return _load_source(RUNS_FILE, "runs"), drop_superseded_events(_load_source(EVENTS_FILE, "events"))
 
 
 def iso_week(ts_str):
@@ -1373,7 +1373,7 @@ def compute_tool_safety_metrics(events: list[dict], tools: list[dict]) -> dict:
 
 def generate(
     runs, events, label, week_str=None, tickets_root=None, tools=None, all_tools=None,
-    raw_run_count=None, deduped_run_count=None, real_token_report=None, session_layer=None, gates=None, paths=None, failures=None, ledger_blocks=None, reset_declarations=None,
+    raw_run_count=None, deduped_run_count=None, real_token_report=None, session_layer=None, gates=None, paths=None, failures=None, ledger_blocks=None, reset_declarations=None, week_open=False,
 ):
     """Render `compute_retro_metrics()`'s result to the retro report's Markdown text — the sole
     rendering consumer of that function. Signature/behavior unchanged by the
@@ -1463,7 +1463,7 @@ def generate(
         lines.append(f"| Reset-boundary declarations | {reset_declarations['total']} "
                      f"(HARD {reset_declarations['HARD']}, SOFT {reset_declarations['SOFT']}, NEVER {reset_declarations['NEVER']}) |")
     if prov:
-        lines.extend(retro_provenance.run_summary_rows(prov))
+        lines.extend(retro_provenance.run_summary_rows(prov, week_open))
     else:
         lines.append(f"| Avg duration | {rs['avg_duration_min']} min |")
     n_known, n_runs = rs["avg_agents_n"], rs["total"]
@@ -2178,20 +2178,35 @@ def _session_layer_section(runs, week_str, cutoff, latency_prs):
         data_dir = DEFAULT_TOOLS_FILE if DEFAULT_TOOLS_FILE.is_dir() else DEFAULT_TOOLS_FILE.parent
         all_manual = slr.load_family(data_dir, "manual_actions.jsonl")
         all_boundary = slr.load_family(data_dir, "role_boundary.jsonl")
+        all_governing = slr.load_family(data_dir, "governing_edits.jsonl")
         manual = slr.in_period(all_manual, week_str, cutoff)
         boundary = slr.in_period(all_boundary, week_str, cutoff)
+        governing = slr.in_period(all_governing, week_str, cutoff)
         rows = []
         for n in latency_prs:
             try:
                 rows.append((f"#{n}", batch_latency.from_pr(batch_latency.fetch_pr(n))))
             except Exception:  # noqa: BLE001 - an unavailable PR is `unknown`, not a failed retro
                 rows.append((f"#{n}", batch_latency.latencies(None, None, None) | {"dispatch_source": "unavailable"}))
-        return slr.render(manual, runs, boundary, rows or None, len(all_manual), len(all_boundary))
+        return slr.render(manual, runs, boundary, rows or None, len(all_manual), len(all_boundary), governing,
+                          len(all_governing), slr.merged_governing_commits(week_str, cutoff) if all_governing else {})
     except Exception:  # noqa: BLE001
         return None
 
 
 _RESET_DECLARATIONS_FROM = "2026-W42"
+
+
+def _week_is_open(week_str):
+    """True when the report covers one ISO week that is not finished yet (`week_close.is_finished`, today's date): its
+    unknown hand-closure durations are derived at the week close. A rolling window or an unreadable week id is not open."""
+    if not week_str:
+        return False
+    try:
+        import week_close
+        return not week_close.is_finished(week_str, date.today())
+    except Exception:  # noqa: BLE001 - the sentence is an aid; never fail the report over it
+        return False
 
 
 def _reset_declarations(week_str):
@@ -2368,6 +2383,7 @@ def main():
         runs, events, label, week_str, tools=tools, all_tools=all_tools,
         raw_run_count=raw_run_count, deduped_run_count=deduped_run_count,
         real_token_report=real_token_report, session_layer=session_layer, gates=gates, paths=paths, failures=failures, ledger_blocks=ledger_blocks, reset_declarations=reset_declarations,
+        week_open=_week_is_open(None if (args.all or args.days) else week_str),
     )
 
     RETRO_DIR.mkdir(parents=True, exist_ok=True)
