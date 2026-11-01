@@ -79,3 +79,5 @@ Main gate run 40653115297 (2c4869d61) has an unowned V3 at frontier_living_world
 ## Test Summary
 ## Files Changed
 ## Completion Summary
+
+- **2026-11-01 evidence (F3 f3r, urban s44, subject 17; rpg-designer):** from t3250 to t3306 the subject halted in REGROUP at (43-45,23) with hostile 24 (faction 0) adjacent. Its hp fell 70 to 0, and it did not flee even at hp 16 (REGROUP/ENTITY_ACT). The designer ruled this death the pre-existing no-flee-at-low-hp gap (law P family), not F3. Trace: lane B n14/out/tr17.json.
