@@ -15,7 +15,7 @@ tags: [social, simulation-quality]
 A new group's id comes from a count, so it can collide with a live group's id and overwrite that record. Allocate group ids so they never repeat.
 
 ## Status
-INPROGRESS
+OPEN
 
 ## Tier
 standard

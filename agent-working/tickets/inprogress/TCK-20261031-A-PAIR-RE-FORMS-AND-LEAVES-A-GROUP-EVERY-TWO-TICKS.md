@@ -181,7 +181,231 @@ rpg-designer's addendum, same ruling (same relay). Word for word:
 
 "Restore SEEDS next_group_id by calling the existing seeded_next_group_id from the one post-unpickle step. That's the same derivation __post_init__ uses, so there is one definition and no second writer. Restore REJECTS a bound group with no holder (typed error) and sets None on unbound groups. Add a test: an old-shape pickle with the counter slot missing restores with the seeded value, and groups.py:38 and apply.py:350 read it without error."
 
+### rpg-designer on the two corrections, 2026-11-01 (u24; relayed by lead-planner-u24 and lead-planner). Word for word:
+
+"1. CHECKPOINT FORMAT: raise TCK-20261101-A-CHECKPOINT-HAS-NO-FORMAT-VERSION to P1. A silently shifted slot is worse than a crash: it corrupts state with no signal and breaks replay. 'Append new fields last' is a convention nobody enforces.
+Shape lean (the planner refines):
+- The header carries a schema fingerprint: the ordered field names of every slotted state record.
+- Restore accepts an exact match.
+- It also accepts a mismatch whose ONLY difference is fields appended at the end that FIELD_RULES names. Those are filled by the derive-or-refuse rule.
+- Any other difference (an insert, reorder, rename or removal) refuses with a typed error BEFORE any value is used.
+- A checkpoint with no header (today's) is treated as the pre-fingerprint schema only if its shape matches; otherwise it is refused.
+- The rule stands with one precondition made explicit: 'a pure function of the loaded state' applies only once positional integrity is proven.
+- It does NOT block F3 or the churn fix: both append last and test it. It should land soon after the second of them, and its FIELD_RULES rows reuse checkpoint_fields.py.
+- If the fingerprint guard belongs in tests/architecture, testing-planner owns that file and gets the ask from the ticket's planner.
+2. EXPIRY / FULFILLED: noted. A time expiry writes FULFILLED, so a status write marking the bound group dirty covers it. The lag = 0 gate stays across the 15 runs.
+The designer's OPEN item is provisionally CLOSED, as intended:
+- A recruit contract is a TERM. ACTIVE reaching expiry_tick -> FULFILLED means the term was served, and the group it bound ends with BINDING_CONTRACT_NOT_ACTIVE(FULFILLED).
+- Renewal is a new contract, never a quiet rebind.
+- Confirm from the record in the re-measure, not a new trace: for every FULFILLED dissolution of a bound group, the dissolution tick equals the contract's expiry tick (lag 0).
+- Any FULFILLED end BEFORE expiry is a non-time fulfilment: count those and trace one to the designer.
+- Renewal vs leak for the per-pair duplicates (_54 to _74) stays with TCK-20261101-A-PAIR-HOLDS-MANY-ACTIVE-RECRUIT-CONTRACTS-AT-ONCE.
+Ubuntu status (pin regenerated last, a STOP if anything moves before t100, helper extraction in its own hash-identical commit, no ratchet raise): no objection."
+
+### rpg-designer on the re-measure STOP, 2026-11-01 (u24; relayed by lead-planner-u24 and lead-planner). Word for word:
+
+"BASE: c9b9a50f4 is ACCEPTED (a STOP must not charge #803 to this fix). rpg-planner confirms #803 is behaviour-neutral. F3 and retention measure on 6fdfdf555; whichever of them lands second re-measures on top of the other.
+Q1: PER WORLD. That is the designer's rule as written, not option B changing it: a rise in deaths by cause per world, across its 5 seeds. A per-pair check is the driver's choice, not the designer's STOP. One pair in diverged trajectories (total -1, HAZARD +2) can't separate cause from chaos.
+- Run the remaining 14 pairs.
+- Report per-pair rises with victim ids and the first death diff, WITHOUT stopping on them.
+- The STOP is judged per world, on HAZARD, COMBAT and DEFEAT separately.
+Q2: HOLD THE TRACE until the 15 runs show whether a world STOP fires.
+- If one fires, the trace goes as you approved: the first state diff, and for each extra victim of that cause, grouped at entry or not, and whether the group is a duplicate-driven re-form.
+- If none fires, no trace. Report the s42 HAZARD victims 3/11/5 (earlier on the branch) per-pair for the record.
+Q3: B. At formation the scan binds the ACTIVE contract with the LATEST expiry_tick, with ties broken by the lowest contract id.
+- Binding a contract about to expire when a longer one exists produces 1-tick groups, which is churn in effect.
+- The fiction: a pair joins on the term with the most time left.
+- Formation only, no rebinding, deterministic. The duplicates stay visible: count ACTIVE recruit contracts per pair (67 is the headline for that ticket).
+- C stays out: the source fix belongs to TCK-20261101-A-PAIR-HOLDS-MANY-ACTIVE-RECRUIT-CONTRACTS-AT-ONCE, counted after this fix.
+- Test: with two ACTIVE contracts for a pair, the group binds the later-expiring one and lasts until its expiry.
+FACT 2: 'ON THE TICK' must not depend on phase scheduling.
+- Use ONE shared predicate from the contracts module, e.g. contract_is_live(contract, tick) = ACTIVE and tick < expiry_tick. The groups check uses it, so a bound group whose contract is due ends ON its expiry tick even if the contracts phase skipped.
+- The reason is BINDING_CONTRACT_NOT_ACTIVE(FULFILLED), the status an ACTIVE contract takes at expiry via resolve_expirations. Never EXPIRED: EXPIRED is for OFFERED and COUNTERED only.
+- The _binding_end backstop reduces to that predicate. The backstop and lag gate stay at 0, and the contracts phase still writes the status when it next runs.
+- Test: a contracts-phase skip on the expiry tick still dissolves on that tick with FULFILLED.
+FACT 3: HOLDER_LEFT. A non-holder leader's group whose holder drifts away ends because its holder left; the size rule firing the same tick is the consequence. The 15 runs report the count.
+THEN: the FINAL tree (latest-expiry pick plus contract_is_live) gets all 15 pairs vs c9b9a50f4. Gates:
+- per-world deaths by cause;
+- same-contract re-forms about 0;
+- lag 0;
+- overwrites and ghosts 0;
+- group lifetime p50/p90 reported (the designer expects p50 well above 1);
+- frontier tick time against the 35.6% rise."
+
+lead-planner's decision, same message: skip the 14 interim pairs on the current tree; make Q3, Fact 2 and Fact 3 first, then run all 15 on the final tree, stopping per world as ruled. "Rise" is to be defined before the runs and sent to it. Each run set needs its go when src is final.
+
+### rpg-designer's world STOP bar, set before the data, 2026-11-01 (u24; relayed by lead-planner-u24 and lead-planner). Word for word:
+
+"For each (world, cause) among HAZARD, COMBAT and DEFEAT, against the same seeds on base:
+TIER 1, BLOCKING STOP: the fix's total for that cause across the 5 seeds rises by >= max(2, ceil(10% of base's total)) AND rises in >= 3 of the 5 seeds. This stops, and the trace goes as approved.
+TIER 2, VICTIM REVIEW (any rise above 0 that misses tier 1): no stop by itself. Each extra victim of that cause gets its first state diff and death path, reported against one test: does the path pass through this fix's mechanism?
+- Here that means the victim was in a group formed or dissolved under the new binding, or in a re-form within 50 ticks of its death (same contract or a duplicate).
+- ANY victim that passes through the mechanism -> STOP, sent to the designer with the chain.
+- If none do, it's divergence, reported.
+REPORTED ONLY:
+- a rise in a world's all-cause total with no cause in either tier;
+- every per-pair rise, with victim ids.
+WHY: across 9 comparisons, chance alone moves +1s. A mechanism-traced death counts whatever the size; a chaos-sized rise with no mechanism doesn't. This matches F3's subject 17 (+1, traced, divergence) and the retention exemption (first diffs at cap-exempt adoptions, which is a mechanism, so it was dropped).
+It applies to this batch, and the designer uses the same bar for the rpg lanes from now on."
+
+rpg-designer's correction, same relay: "do NOT run the 14 parked pairs on 9e3b07c22. The Q3 pick and Fact 2 change the tree, so run ALL 15 pairs ONCE on the final tree vs c9b9a50f4, with the gates as listed."
+
+lead-planner's note, same message: "extra victim" is fixed per world before the runs: the victims present on the branch and absent on base for that cause, per seed. Tier 2's traces need instrumented runs; list them in the go ask. My draft definition of a rise is dropped.
+
+### rpg-designer on the first-pair trace, 2026-11-01 (u24; relayed by lead-planner-u24 and lead-planner). Word for word:
+
+"1. NOT A NEW TICKET: the INTERCEPTING chase along y=40 into terrain draining 20 hp/tick, with no retreat, looks like TCK-20261020-ENGAGE-BRACKETING-MOVES-WALK-A-GROUP-INTO-A-HAZARD-CLUSTER. The designer ruled that in the N14 s44 analysis: there is no engagement exemption from hazard avoidance (in s44, followers adopted scout 16's target and walked into bandit_road, hazard 2.0).
+- Check whether the INTERCEPTING writer (tactical.py:612) is inside that ticket's scope. If its path ignores hazard, it's the same law: a chase is a move, and it avoids hazard like any move.
+- Attach entities 3, 11 and 5 there as evidence, and widen the scope if it named only bracketing moves.
+- File separately ONLY if the path does respect hazard and the drain comes from something else.
+2. MECHANISM TEST, sharpened (the same for every lane): 'passes through the fix's mechanism' = a CAUSAL step in the death chain is behaviour the fix changed. Being in a group, or a diverged world, is NOT enough.
+- Churn fix, entity 3 (leader and holder on a fresh contract): did the INTERCEPTING chase come from group engagement (a group target, a follower adopting the leader's target, or similar)? If yes, the fix's longer-lived groups feed a known defect.
+- 11 and 5 (ungrouped) FAIL the test as described.
+3. AN EXPOSED OLD DEFECT: if the final 15 show a tier-1 HAZARD STOP whose victims share this path, the fix isn't wrong. The older defect then ranks first: the hazard ticket moves AHEAD of the landing (like the id fix landing with the churn fix). It is NOT waived as divergence. Below tier 1, it's tier-2 divergence, reported, with the victims attached to the hazard ticket.
+4. FIRST DIFFS: the t176 movement diff is base's overwrite of live group 10021 being removed. That's the id fix doing its job; no action."
+
+### rpg-designer's final Tier 2 wording, 2026-11-01 (u24; relayed by lead-planner-u24 and lead-planner). Word for word:
+
+"TIER 2 TEST (final wording): a victim passes the mechanism test ONLY if, within the lane's window before death, a CAUSAL step of its death path is behaviour the fix changed. For the churn fix:
+- it was following a group objective of a group formed or dissolved under the new binding; OR
+- that group's dissolution or re-form changed its goal or its location.
+Merely being grouped, or a diverged world, does NOT pass.
+WINDOWS, named in each lane's brief: churn 50t; F3 and retention 200t.
+OUTCOMES, three, never two:
+- PASS -> STOP, sent to the designer with the chain.
+- FAIL -> divergence, reported.
+- NOT SHOWN (the trace can't establish the chain either way) -> to the designer with the rows. Neither a pass nor divergence; the designer rules each case.
+On the s42 examples: 11 (ungrouped, 29t after its term ended, on a chase) FAILS unless the dissolution changed its goal into that chase. 3 FAILS unless the chase came from its group's objective. The trace states which.
+LAG: accepted. The final set records the true expiry tick on each dissolution, with a positive control, and any lag above 0 is a gate failure. The 11 late-by-1-7 cases aren't re-run; contract_is_live should take them to 0."
+
+lead-planner's note, same message: rpg-planner (u24) takes the widening of TCK-20261020-ENGAGE-BRACKETING-MOVES-WALK-A-GROUP-INTO-A-HAZARD-CLUSTER. Its go is given for the final tree once src is final and reviewed, with the SHA told to it at start.
+
+### rpg-designer on the relevance fix, 2026-11-01 (u24; relayed by lead-planner-u24 and lead-planner). Word for word:
+
+"RULES the relevance fix NOW, in this ticket. The positive control proves the gap by construction, so the fix is needed whatever the 15 runs show.
+FIX: a bound group is RELEVANT to the groups phase on the tick its binding contract becomes due, using the same due test as contract_is_live and resolve_expirations, regardless of the dirty set and of whether the contracts phase ran.
+- Derived from state: the bound groups whose holder's contract is due this tick, by an index or by a scan over bound groups only.
+- No new durable field, unless an index is needed for cost. In that case the index is typed, rebuilt on restore, and listed in FIELD_RULES.
+- Tests:
+- the implementer's positive control (due, outside the dirty set, contracts phase skipped) now dissolves ON that tick with FULFILLED;
+- an unbound or not-due group is NOT added to the relevant set.
+THE RUNNING BATCH: let it FINISH. Deaths, lifetimes and re-forms on fc22ae71f stay valid evidence. Also report the count of (bound group due, contracts phase skipped, group not dirty) tick-instances; your 'lag 0 with skipped phases' report nearly gives this already.
+- Count 0 in all 15: the fix can't change those runs. Prove it with 3 runs byte-equal to fc22ae71f (one per world), and close on the batch.
+- Count above 0: re-run ONLY the affected pairs on the fixed tree, and judge the lag gate there.
+- Your added stop (lag above 0 -> stop at the end of that pair, to the designer) stays for the current batch.
+READINGS ACCEPTED:
+- expiry -1 (no expiry) ranks latest;
+- 'qualified partner' as defined;
+- formation refuses a DUE contract (no born-dead groups);
+- resolve_expirations on the shared due test, with no behaviour change.
+(Victim reads, also relayed: the designer has entity 3 as NOT SHOWN via the shared-target bonus; if that path recurs on the final tree, the trace must answer it.)"
+
+lead-planner's note, same message: the fix may be coded while the batch runs, on a separate tree from the runs; short test runs may overlap. The 3 byte-equal or re-run sets have its go when the list is sent.
+
+### rpg-designer's correction on hazard deaths, 2026-11-01 (u24; relayed by lead-planner-u24 and lead-planner). Replaces the hazard part (items 1 and 3) of its ruling on the first-pair trace. Word for word:
+
+"The designer said a chase 'avoids hazard like any move', and that ENGAGE-BRACKETING meant 'no engagement exemption from hazard avoidance'. That was WRONG: NO move avoids hazard.
+- v1 disclosure H1 (docs/plans/systemic_world/v1_disclosure.md): 'Subjects do not leave or avoid a draining regional hazard'. Routes weigh terrain cost only (2.128).
+- H1 is owed to the owner after v1, and the ENGAGE-BRACKETING ticket is tied to it (row N3).
+- So these deaths are not a lane defect that a lane can rank ahead. They're a disclosed world gap that needs an OWNER decision.
+REVISED DECISION RULE for hazard deaths, any lane:
+1. A victim whose death path is a walk into a draining hazard with no avoidance is H1 EXPOSURE. Tier 2 then asks only whether the fix's change is a causal step that put it on that walk within the window (a group objective, a dissolution, a leave, a retreat, ...). The hazard itself is never the fix's mechanism.
+2. A tier-1 HAZARD rise whose extra victims are H1 exposure FED by the fix's causal step becomes an OWNER ROW via the leads: (a) bring H1 (hazard avoidance, or at least leaving a draining hazard) forward before the landing, or (b) land the fix with the rise disclosed against H1. The designer's lean comes with the numbers; the lane doesn't decide.
+3. H1 exposure NOT fed by the fix FAILS Tier 2: divergence.
+VICTIMS FILE (old tree, nothing runs for it):
+- Entity 3: NOT SHOWN (shared_target 34 until t402, with the target_score bonus). If it recurs as an extra victim on the final tree, the trace must answer whether the group's shared-target bonus picked 34.
+- Entity 5: NOT SHOWN (left its group the tick before; writer not shown).
+- Entity 11: FAILS (ungrouped INTERCEPTING; H1 exposure).
+- Entity 32 on base: a panic retreat into the hazard, also H1, on base."
+
+### rpg-designer on Tier 2's scope and crowded_frontier, 2026-11-01 (u24; relayed by lead-planner-u24 and lead-planner). Word for word:
+
+"A, with the exception, as both of you prefer.
+- Tier 2 applies to a (world, cause) whose 5-seed TOTAL rose above 0 and missed tier 1.
+- A per-seed rise inside a world total that did NOT rise is reported only (the 'per-pair rises reported' line), with victim ids. The implementer's per-seed reading is corrected.
+CROWDED: no STOP and no Tier 2 (HAZARD 22->21, COMBAT 89->86, DEFEAT 48->40, all causes 159->147). The gates hold.
+EXCEPTION, NOT GATING: trace the crowded s42 HAZARD cluster (2 at t417; 6, 5, 1, 7 and 13 at t444-453) if a trace pair is left after the other worlds. It is H1 evidence, not a STOP test.
+- The question: did the group objective (a shared target or bracketing), or a group ending, put them on the walk (the N3 shape)?
+- If yes, it goes to ENGAGE-BRACKETING and to the H1 owner row, as the mechanism H1's first step must cover.
+- Report the outcome as PASS, FAIL or NOT SHOWN, for the record.
+Noted:
+- s45 audit tick +27% (single run): report it in the frontier tick-time line; not gating on single runs.
+- The byte-equal runs remain the proof for the relevance fix."
+
 ## Implementation Notes
 ## Test Summary
 ## Files Changed
 ## Completion Summary
+
+### rpg-designer's ack on the 15 paired runs (via lead-planner-u24 and lead-planner, 2026-11-01, word for word)
+
+1. URBAN Tier 2 (6, 16, 17 on s42; 14 on s44), standing reading:
+- FED needs a CAUSAL step, within 50t of death, where the churn fix's changed behaviour selects the victim's walk or target: a group objective or shared target of a group formed under the new binding, or a goal or location change from its dissolution or re-form.
+- Fight participation shifted by longer-lived groups is trajectory (NOT FED).
+- Outcomes: PASS -> STOP to the designer; FAIL -> divergence; NOT SHOWN -> rows to the designer.
+2. H1 CLUSTERS: entities 5, 1, 7 and 13 appear in both crowded s42 and frontier s43. Ids are spawn order, so these are DIFFERENT entities with the same spawn slot.
+- Record each one's spawn role (starting party or faction slot), and whether the two clusters are the same contract kind and group shape.
+- A spawn-slot pattern would mean a starting-group configuration walks into hazard on its first long-lived group, which is useful for H1's first step.
+3. LAG: the independent check (all 741 FULFILLED ends 101-109 ticks after the contract's id tick, none early) stands alongside the _binding_end instrument. The 3 byte-equal runs plus the positive-control test carry the dirty-set law. No further proof is needed.
+
+### rpg-designer on Tier 2 close and the hazard window (via lead-planner-u24 and lead-planner, 2026-11-01, word for word)
+
+The churn Tier 2 is CLOSED as divergence. Urban s42 16, 6 and 17 FAIL, and s44 14 is not an extra. The relevance fix is proven byte-equal. Nothing gates the churn landing on the designer's side beyond the final non-audit measurement.
+After that, the close/push ask carries: the 2.146 rewrite (the id fix plus the binding); the disclosures: the duplicates ticket for different-contract re-forms, the lag instrument caveat, single-run audit timing, and the H1 clusters.
+HAZARD / WINDOW: no fresh probe now, and the window stays at 50t. The NOT SHOWN cases (crowded 1, 6, 7; frontier 1, 7) are recorded as H1 evidence as they stand and don't gate. What they show, enough for H1's design: novice workers in recruit pairs follow a group's shared target into a chase that ends beside a draining hazard. The last leg is their own pick, and nothing on the way weighs hazard.
+A read (not measured) finding goes to ENGAGE-BRACKETING (rpg-planner u24 owns it): target_score ranks group_bias directly after adjacency (tactical.py:428). That ticket's counts-first step takes the target_score probe at the pick tick when it's scheduled. The designer is adding both to the H1 owner-row draft.
+
+### rpg-planner on the final measurement's method (via lead-planner-u24 and lead-planner, 2026-11-01, word for word)
+
+(d) is the deterministic way to meet the rule's intent, the cost of normal computation at FULL with no audit-only work. Conditions:
+1. Installed by the wrapper ONLY, on PROD_SMALL, with no src change on either tree. Both arms (base c9b9a50f4 and the fix) use the same wrapper and pin.
+2. Before any arm runs: one smoke run per world AND per tree must show mode FULL on EVERY tick. Any non-FULL tick is a STOP to rpg-planner.
+3. The report calls it 'non-audit, pinned FULL (PinnedNormalGovernor)', never plain 'non-audit'. It discloses that production on this host isn't measured, and cites the smoke rows (frontier s42 600t: FULL 66 / MINIMAL 281 / OFF 253) as the only evidence on that.
+4. The hash comparison with the audit runs is informational only, not a gate. Any mismatch goes to rpg-planner before anyone reads anything into it.
+5. Run18's +35.6% (audit, 6fdfdf555 vs edb638b6a) is NOT compared with this result: a different mode and base, stated in the report.
+6. Heavy slot: on ubuntu, no u24 slot is needed.
+
+lead-planner's terms, same message: go stands on those terms, including the smokes: 3 worlds x 2 trees first, short. Then the 18. Message lead when the 18 actually start, after the smokes have passed. Other terms unchanged, stop at 90 min.
+
+### rpg-planner adds a smoke check (via lead-planner-u24 and lead-planner, 2026-11-01, word for word)
+
+No objection to rpg-planner-ubuntu's (d) picks, including the default ConcurrentExecutionAdapter. The hold rule doesn't assume the sequential executor; it assumes both arms run the same setup, so keeping the audit runs' executor is the better match.
+One cheap check is added, since the helper's docstring says 'Pair it with LocalSequentialExecutor' without giving a reason:
+- In the smoke step, run ONE world TWICE on the same tree with the concurrent adapter and the pin. The final hashes must be IDENTICAL. If they aren't, it's a STOP to rpg-planner before any arm runs, because the concurrent path would be bringing host timing back in.
+- The report names the executor next to 'pinned FULL'.
+The other picks are fine: inject governor= from the wrapper, NORMAL maps to FULL with policy recorded per tick, and the zeroed signals are disclosed under condition 3.
+
+### rpg-planner on the final measurement's outcome (via lead-planner-u24 and lead-planner, 2026-11-01, word for word)
+
+1. Crowded persistence -10.9 ms is NOT a hold. The rule guards cost the fix ADDS: a resolved rise in a total or in a phase beyond its bar. A resolved fall never fires, named phase or not, so rpg-planner-ubuntu's reading is right and the implementer's 'fired' is wrong. Two conditions:
+- The hashes are identical, so state is identical, but the report should still say WHY persistence fell. Most likely fewer group/contract records to persist after the churn fix; the store figures move the other way, so name it. The work count below should show it. If no one can explain it: 'resolved fall, cause not shown', not a gain.
+- It is NOT offered as a speed claim in the PR.
+2. Overall: NO HOLD FIRES, with frontier UNRESOLVED. That is not a pass, and the push ask WAITS for the pending count.
+- Totals: crowded is a resolved fall; urban +2.3% is within spread; frontier +9.7% median is UNRESOLVED (overlap 1.7 s, resting on one base rep; the fix was slower in 3/3 pairs). Phases: largest +3.31 ms vs a 6.72 ms bar, under. Store: at most 110 of 2000, within.
+- REQUIRED before the push ask: the deterministic work count, base vs fix per world, summed over 2000t (records sorted and walked per tick by groups and by cooperation), plus the groups phase's own row. The 6 runs on ubuntu are fine.
+- How the count decides the frontier line:
+(i) Frontier's count RISES, attributable to the fix's shape (the ContractBinding holder lookup or contract_is_live walks). Disclose 'frontier: expected real cost rise, estimated <median>% (UNRESOLVED by timing), from <N> extra records walked per tick', and cite the groups phase row. Not a hold, UNLESS that phase row is itself a resolved rise beyond its bar, which is a STOP to rpg-planner.
+(ii) The count is FLAT or LOWER on frontier. Disclose 'frontier +9.7% median UNRESOLVED; no extra work counted; timing spread (one base rep)'. Not a hold.
+(iii) The count rises by more than about 2x what the timing rise suggests, OR rises in a world where timing didn't move: STOP to rpg-planner before the push ask.
+- The disclosure keeps: non-audit pinned FULL with ConcurrentExecutionAdapter; production on this host not measured (smoke row only); no comparison with +35.6%; the audit figures from different single runs as context only.
+The push ask goes once the count is in and sorted into (i) or (ii). (iii) comes back through me to rpg-planner first.
+
+lead-planner's note, same message: fix (iii)'s "about 2x" before reading the count, in plain numbers, so the sort isn't chosen after seeing it; send lead the reading. A count rising in urban or crowded also reaches (iii) as written.
+
+### rpg-planner fixes the (iii) thresholds and the frontier wording (via lead-planner-u24 and lead-planner, 2026-11-01, word for word)
+
+The (iii) thresholds are FIXED NOW, before any count is seen.
+A (frontier): CONFIRMED as written. The time-equivalent is right; rpg-planner did not mean a plain 19.4% on the count. It fires if R x T > 52.2 s (R > 4.66), with T = 11.2 s from base rep 1.
+B (crowded/urban): CHANGED, because 1% would fire on the fix's intended effect.
+- It fires per world and per phase alone (C_g and C_c separately) if C_fix / C_base > 2 x that world's STORE RATIO.
+- Store ratios: crowded 45/19 = 2.37, urban 79/19 = 4.16, so it fires above 4.74x and 8.32x base.
+- Frontier ALSO gets the same per-phase check (110/28 = 3.93, fires above 7.86x), alongside A.
+- Rationale: the work should scale roughly with the live records the fix keeps, and more than twice that is the 'work far beyond what the design explains' case that (iii) exists for.
+- A rise at or below the bar is NOT a STOP. It's disclosed with its rows, as 'groups/cooperation work rises with the live-group store (C ratio x vs store ratio y), as designed'.
+- rpg-planner's prediction, stated first: C_g rises in every world, below the bar; C_c is roughly flat.
+ATTRIBUTION: CONFIRMED. The frontier line uses (i) or (ii) for the count, but the cause claim is limited to what the count shows. Wording:
+'frontier +9.7% median, UNRESOLVED by timing (fix slower in 3/3 pairs; overlap 1.7 s on one base rep). Groups and cooperation account for about 2 s of the 26 s (C ratio <x>); the rest is not attributed. By median difference, resolution_overhead +3.3, persistence +2.1 and combat_engagement +1.7 ms/tick moved; their cause is not shown.'
+- Do NOT name 'trajectory' or 'longer-lived groups' as a cause. It's a reasonable guess, but nothing measured it. A ticket is optional if the designer wants that attribution later.
+- Unchanged: crowded's persistence fall needs a stated cause or 'cause not shown', and is not offered as a gain.
+
+lead-planner's note, same message: "store" here is at t2000; if the count uses another store basis, say so before reading.
