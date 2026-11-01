@@ -7,6 +7,7 @@ Phase 7 — CooperationPhase bounded execution.
 from __future__ import annotations
 import time
 from dataclasses import replace
+from src.core.group_record import live_group_items
 from src.core.state import AuthoritativeState, EntityState
 from src.core.strategic import ContractStatus
 from src.core.updates import StateUpdate, EntityUpdate, StrategicUpdate, SocialUpdate, SocialBondUpdate
@@ -211,7 +212,7 @@ class CooperationPhase:
 
         # 6. Evaluate party cohesion for active groups in this tick
         new_groups_add = list(update.groups_add_or_update)
-        for g_id, g_rec in state.groups.items():
+        for g_id, g_rec in live_group_items(state.groups):
             # TCK-20260913-GROUP-DISSOLUTION-OUTCOME-NOT-CAPTURED: dissolved groups are now
             # retained in state.groups with dissolution_tick set, not removed -- without this
             # check, this loop would re-evaluate cohesion (and re-apply the "LEADER_LOST"/

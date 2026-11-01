@@ -383,7 +383,7 @@ def test_only_live_bound_groups_with_a_due_binding_contract_are_added_to_the_rel
     assert due_bound_group_ids(state) == {10000}
     assert get_relevant_group_ids(state, _update_with_dirty_groups([10003])) == {10000, 10003}
     assert get_relevant_group_ids(state, _update_with_dirty_groups([])) == {10000}
-    assert get_relevant_group_ids(state, StateUpdate(force_full_scan=True)) == set(state.groups)  # a full-scan tick stays as it is
+    assert get_relevant_group_ids(state, StateUpdate(force_full_scan=True)) == {10000, 10001, 10003}  # a full-scan tick returns every LIVE group (step (a): the dissolved record 10002 is not walked)
     assert due_bound_group_ids(replace(state, tick=49)) == set()
     no_expiry = replace(state, entities={1: _ent(1, 0.0, 0.1, {"r_due": _contract("r_due", expiry=-1), "r_live": _contract("r_live", expiry=-1)}), 2: ents[2]})
     assert due_bound_group_ids(no_expiry) == set()  # -1 never due

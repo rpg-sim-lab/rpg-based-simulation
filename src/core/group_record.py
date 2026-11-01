@@ -3,7 +3,7 @@ checkpoints pickled with the old module path still load)."""
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Any, Dict, Optional, Set, Tuple
+from typing import Any, Dict, List, Optional, Set, Tuple
 
 from src.core.enums import GroupDissolutionReason
 from src.core.strategic import ContractStatus
@@ -92,3 +92,20 @@ class GroupRecord:
             res["dissolution_contract_status"] = self.dissolution_contract_status.value
         object.__setattr__(self, "_canonical_cache", res)
         return res
+
+
+def is_live_group(group: "GroupRecord") -> bool:
+    """The one definition of a live group: not dissolved. The store keeps dissolved records (their ids stay taken and the canonical data holds them), so
+    code that works on groups that still exist walks `live_group_items` / `live_group_ids`; code that needs every stored id (the id allocator, the
+    counter seed, the hash, `find_group_for_contract`) walks the store itself."""
+    return group.dissolution_tick is None
+
+
+def live_group_items(groups: "Dict[int, GroupRecord]") -> "List[Tuple[int, GroupRecord]]":
+    """(id, record) of every live group, in the store's insertion order (the cohesion loop's order decides the order of its penalties)."""
+    return [(group_id, group) for group_id, group in groups.items() if is_live_group(group)]
+
+
+def live_group_ids(groups: "Dict[int, GroupRecord]") -> "List[int]":
+    """Ids of every live group, in the store's insertion order."""
+    return [group_id for group_id, group in groups.items() if is_live_group(group)]

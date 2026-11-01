@@ -2,6 +2,8 @@ from __future__ import annotations
 from dataclasses import replace
 from typing import TYPE_CHECKING, Dict, List
 
+from src.core.group_record import live_group_ids
+
 if TYPE_CHECKING:
     from src.core.state import AuthoritativeState, GroupRecord
     from src.core.updates import StateUpdate
@@ -94,7 +96,7 @@ class GroupPhase:
         # Build a combined view: groups already in state PLUS groups being added/updated
         groups_being_updated = GroupPhase._group_view(viewable_adds, new_groups_add)
         all_relevant_group_ids = (
-            set(state.groups.keys()) | set(groups_being_updated.keys())
+            set(live_group_ids(state.groups)) | set(groups_being_updated.keys())
         ) - removed_ids
 
         for g_id in sorted(all_relevant_group_ids):
