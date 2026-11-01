@@ -137,16 +137,26 @@ def _governing_lines(attempts: list[dict], total: int | None, merged: dict[str, 
         for path in sorted(by_path):
             c = by_path[path]
             lines.append(f"| {path} | {c['path']} | {c['mention']} | {merged.get(path, 0) if merged is not None else 'unknown'} |")
-        if merged is None:
-            lines += ["", "_Merged commits unavailable (git could not be read), so nothing is matched._"]
-        else:
-            unmatched = sorted(p for p, c in by_path.items() if c["path"] and not merged.get(p))
-            lines += ["", "Edit attempts with no merged commit on that path in the period: "
-                      + (", ".join(unmatched) if unmatched else "none") + "."]
-            lines += ["_Unmatched means one of: the edit was reverted, the call was denied or failed, the work has not merged "
-                      "yet (an attempt in one week can merge the next), or a real edit never went through review. Rows reach "
-                      "main only when a branch carries them, so a missing row can also mean its branch is unmerged. A prompt "
-                      "to look, not a violation count._"]
+    if merged is None:
+        lines += ["", "_Merged commits unavailable (git could not be read), so nothing is matched._"]
+    else:
+        edits = sum(c["path"] for c in by_path.values())
+        mentions = sum(c["mention"] for c in by_path.values())
+        lines += ["", f"Totals: {edits} edit attempts, {mentions} Bash mentions; {sum(merged.values())} merged commits touching a "
+                  "governing path (counted per path)."]
+        unmatched = sorted(p for p, c in by_path.items() if c["path"] and not merged.get(p))
+        lines += ["Edit attempts with no merged commit on that path in the period: " + (", ".join(unmatched) if unmatched else "none") + "."]
+        unattempted = sorted(p for p, n in merged.items() if n and not by_path.get(p, Counter())["path"])
+        lines += ["Governing paths with merged commits and no edit attempt row in the period: "
+                  + (", ".join(unattempted) if unattempted else "none") + "."]
+        lines += ["_Unmatched means one of: the edit was reverted, the call was denied or failed, the work has not merged "
+                  "yet (an attempt in one week can merge the next), or a real edit never went through review. A merged path "
+                  "with no attempt row can mean the edit was made where no row is written (see the limits below), or its "
+                  "rows sit on an unmerged branch or the other host. Rows reach main only when a branch carries them, so a "
+                  "missing row can also mean its branch is unmerged. A prompt to look, not a violation count._"]
+    lines += ["_Limits: a Bash edit that does not name the path from the repo root (e.g. `cd tools/sessions && sed -i ... guard.py`) "
+              "or that sits inside an interpreter payload writes no row, so an empty count does not mean no edits. A mention can "
+              "also name a same-suffix file outside the repo (e.g. a user-level settings file)._"]
     if note:
         lines.append(note)
     return lines + [""]

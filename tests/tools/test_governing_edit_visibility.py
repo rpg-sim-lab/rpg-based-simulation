@@ -153,3 +153,11 @@ def test_a_guard_row_made_in_a_test_never_reaches_the_live_week_shard(tmp_path):
     repo = _repo(tmp_path)
     _run({"tool_name": "Edit", "cwd": str(repo), "tool_input": {"file_path": str(repo / "CLAUDE.md")}})
     assert (live.read_bytes() if live.exists() else None) == before
+
+
+def test_known_limits_of_bash_rows_are_pinned_not_fixed():
+    """A Bash edit not naming the path from the repo root, or inside an interpreter payload, writes no row; a mention can name
+    a same-suffix file outside the repo. Documented in schema.md and the retro note; these assertions fail loudly if that changes."""
+    assert cl.classify("Bash", {"command": "cd tools/sessions && sed -i s/a/b/ guard.py"}).governing_mentions == ()
+    assert cl.classify("Bash", {"command": "python3 -c \"open('CLAUDE.md','w')\""}).governing_mentions == ()
+    assert cl.classify("Bash", {"command": "sed -i x $HOME/.claude/settings.json"}).governing_mentions == (".claude/settings.json",)

@@ -2189,7 +2189,7 @@ def _session_layer_section(runs, week_str, cutoff, latency_prs):
             except Exception:  # noqa: BLE001 - an unavailable PR is `unknown`, not a failed retro
                 rows.append((f"#{n}", batch_latency.latencies(None, None, None) | {"dispatch_source": "unavailable"}))
         return slr.render(manual, runs, boundary, rows or None, len(all_manual), len(all_boundary), governing,
-                          len(all_governing), slr.merged_governing_commits(week_str, cutoff) if governing else {})
+                          len(all_governing), slr.merged_governing_commits(week_str, cutoff) if all_governing else {})
     except Exception:  # noqa: BLE001
         return None
 

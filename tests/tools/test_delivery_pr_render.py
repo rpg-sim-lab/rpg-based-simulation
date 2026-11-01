@@ -1256,3 +1256,52 @@ def test_check_gives_no_difference_when_nothing_governing_is_touched_and_the_sec
     result = _check_live(tmp_path, ["src/a.py"], lambda b: b)
     assert result["matches"] is True and result["differing_sections"] == []
 
+
+
+# ---- the governing list is the branch's own diff, and an unreadable diff is not "nothing touched" -----------------------
+
+def _git_runner(repo):
+    def run(cmd, timeout=30):
+        r = subprocess.run(cmd, cwd=repo, capture_output=True, text=True)
+        return CommandResult(r.returncode, r.stdout, r.stderr)
+    return run
+
+
+def _commit(repo, rel, text, msg):
+    path = Path(repo) / rel
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(text)
+    subprocess.run(["git", "add", rel], cwd=repo, check=True)
+    subprocess.run(["git", "-c", "user.name=t", "-c", "user.email=t@t", "commit", "-q", "-m", msg], cwd=repo, check=True)
+
+
+def test_a_governing_path_changed_only_on_base_is_not_listed_for_a_branch_behind_main(tmp_path):
+    repo = tmp_path / "r"
+    repo.mkdir()
+    subprocess.run(["git", "init", "-q", "-b", "main", str(repo)], check=True)
+    _commit(repo, "README.md", "x", "init")
+    subprocess.run(["git", "checkout", "-q", "-b", "feature"], cwd=repo, check=True)
+    _commit(repo, "CLAUDE.md", "branch edit", "branch")
+    subprocess.run(["git", "checkout", "-q", "main"], cwd=repo, check=True)
+    _commit(repo, ".github/workflows/test.yml", "only main", "main moves on")
+    subprocess.run(["git", "checkout", "-q", "feature"], cwd=repo, check=True)
+    run = _git_runner(repo)
+    files, ok = pr_render.discover_governing_files(run, "main")
+    assert ok and files == ["CLAUDE.md"]
+    assert ".github/workflows/test.yml" in pr_render.discover_changed_files(run, "main")  # the two-dot tree diff the section must not use
+    section = pr_render.render_governing_section(files, ok)
+    assert "- `CLAUDE.md`" in section and ".github/workflows/test.yml" not in section
+
+
+def test_an_unreadable_diff_shows_the_section_with_a_line_saying_so(tmp_path):
+    tickets_root = tmp_path / TICKETS
+    tickets_root.mkdir(parents=True)
+    _write_ticket(tickets_root, "TCK-20260924-A", "ai", "Thing")
+    runner = FakeRunner([
+        (lambda cmd: cmd[:2] == ["git", "diff"] and any("..." in a for a in cmd), CommandResult(128, "", "fatal: bad revision")),
+        _git_log_rule(["TCK-20260924-A: x"]),
+        _git_diff_rule(["agent-working/tickets/TCK-20260924-A.md"]),
+    ])
+    body = pr_render.render(tickets_root=tickets_root, run_command=runner)["body"]
+    assert "## Governing paths touched" in body and pr_render.GOVERNING_UNREADABLE in body
+    assert pr_render.render_governing_section([], True) == ""  # a clean PR still shows nothing

@@ -683,15 +683,19 @@ Fields: `ts`, `event` (`"governing_edit_attempt"`), `seat` (the resolved role in
 (repo-relative, never absolute), `basis`, `attempt` (always `true`). Nothing else: no tool name, command text, session id or
 content.
 
-- `basis: "path"`: an edit tool's file, exact. A file outside the repo (a user-level settings file, say) writes no row, because
-  it can never appear in a PR.
-- `basis: "mention"`: a non-read-only Bash command whose text names the path (`python3 tools/sessions/guard.py` and
-  `git add .github/workflows/x.yml` both count). It may not be an edit, so mention rows over-count; the row holds the matched
-  token only.
+- `basis: "path"`: an edit tool's file, exact. A file outside the repo (a user-level settings file, say) writes no row from an
+  edit tool, because it can never appear in a PR. (A `mention` row can still name a same-suffix file outside the repo; see below.)
+- `basis: "mention"`: a non-read-only Bash command whose text names the path from the repo root (`python3 tools/sessions/guard.py`
+  and `git add .github/workflows/x.yml` both count). It may not be an edit, so mention rows over-count; the row holds the
+  matched token only. They also under-count, and a mention can be misplaced:
+  - a Bash edit that does not name the path from the repo root (`cd tools/sessions && sed -i ... guard.py`) or that sits inside an
+    interpreter payload (`python3 -c "open('CLAUDE.md','w')"`) writes no row, so an empty count does not mean no edits;
+  - a mention such as `sed -i ... $HOME/.claude/settings.json` records `.claude/settings.json`, a file outside the repo.
+  These limits are pinned by tests, not fixed.
 
 A row is written at PreToolUse, so it is an attempt: the call may still be denied or fail, or the edit reverted. The retro
 (`session_layer_report.py`, "Governing-file edit attempts") compares attempts with merged commits on `origin/main` by path
-and period; an attempt in one week can merge the next, and rows reach main only when a branch carries them, so "no merged
+and period, in both directions (attempts with no merged commit, and merged commits with no edit attempt row); an attempt in one week can merge the next, and rows reach main only when a branch carries them, so "no merged
 commit" can mean either. Hook scripts wired from directories outside the list are not covered. Covered by the existing
 `agent-working/agent-monitoring/data/*/*.jsonl merge=union` glob.
 
