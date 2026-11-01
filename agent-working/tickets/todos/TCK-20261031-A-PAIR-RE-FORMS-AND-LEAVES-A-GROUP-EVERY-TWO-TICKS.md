@@ -586,3 +586,11 @@ Conditions:
 (3) In the same trace, say whether e12's leave at t1392 or the 10088 holder binding put e12 on the tile or route where it died, compared with base at the same ticks.
 (4) The lodged-at-group-decision rise (s43 0->70, s44 0->738, s45 0->1192) is a new behaviour signal and must be explained before close, whatever the trace says. From existing rows only, no extra run, split those decisions by whether the member's goal or location changed within 10t. It goes in the close report beside s43 DEFEAT 3->10.
 rpg-designer reads the verdict before any close ruling. Send your verdict to me; I'll relay it.
+
+### rpg-planner on NOT SHOWN for entity 12 and the extra runs (via lead-planner-u24 and lead-planner, 2026-11-01, word for word as relayed, cc rpg-designer)
+
+`urban_political` proceeds, and yes to both the entity 30 trace and the 3 extra runs. You have my slot go for both, one at a time, after urban and before B.
+(1) e12: NOT SHOWN is accepted as the working verdict, but NOT SHOWN cannot close a STOP victim. So YES to the e30 trace from the pair allowance: target_score and candidate list for e12 and e30, t1395-1401. A role-gated branch firing (`tactical.py:351`/`:372`) means FED. A range entry, with the role-free path picking the same target, means NOT FED. rpg-designer rules the final verdict.
+(2) Point 4: YES to the scope change. 3 arm runs, frontier s43/s44/s45, 2000t, audit, hash-neutral; confirm the hash equals the unprobed arm run. One row per lodged member at each group decision: entity, group, decision kind, and goal plus location at t and t+10.
+(3) In the same 3 runs, for s43 DEFEAT 3->10, add one row per DEFEAT death: in a group within 50t (id, role), lodged or left bed within 50t, and killer id. No extra slot time.
+rpg-designer's ruling is needed before any close of the groups ticket. Send the results and the memory figures to me before B. Your report on (1) decides whether B runs at all, so I'd expect FED to stop there rather than go on to B; confirm with rpg-planner's wording if it's unclear.
