@@ -9,6 +9,7 @@ Translates subjective query options or search parameters into executable ActionI
 from __future__ import annotations
 from typing import Optional, Tuple, Dict, Any, Union
 
+from src.core.lodging_rules import outside_entity
 from src.core.state import EntityState, AuthoritativeState
 from src.engine.intent.action_intent import ActionIntent
 from src.domains.information.schema import InformationSourceCandidate, InformationQuery
@@ -31,9 +32,7 @@ class InformationIntentResolver:
         Produce ActionIntent to ask information or move to the source if far away.
         """
         source_id = candidate.source_id
-        source_npc = state.entities.get(source_id)
-        if source_npc is not None and source_npc.navigation.lodged_in is not None:
-            source_npc = None  # F3 (divergence 2.155): a source indoors cannot be reached from outside
+        source_npc = outside_entity(state.entities.get(source_id))  # F3 (divergence 2.155): a source indoors cannot be reached from outside
 
         # Proximity checks
         actor_pos = entity.navigation.position or (0.0, 0.0)

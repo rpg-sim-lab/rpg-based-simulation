@@ -68,7 +68,7 @@ def test_a_lodger_is_not_a_swap_partner():
     assert lodger.navigation.lodged_in is not None and MovementPhase is not None
     # the swap pair search skips a pair with a lodger (dist 1 between the building tile and the reach tile): pinned through the module's own guard
     import inspect
-    assert "lodged_in" in inspect.getsource(MovementPhase.resolve_position_swaps)
+    assert "is_lodged" in inspect.getsource(MovementPhase.resolve_position_swaps)
 
 
 def test_a_lodger_is_not_a_witness_of_a_fight_outside(monkeypatch):

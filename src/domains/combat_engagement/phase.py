@@ -11,6 +11,7 @@ from __future__ import annotations
 from dataclasses import replace as dataclass_replace
 from typing import Dict, List, Optional, Tuple
 
+from src.core.lodging_rules import is_lodged
 from src.core.state import AuthoritativeState, EntityState
 from src.core.strategic import RiskLevel
 from src.core.updates import StateUpdate, EntityUpdate, StrategicUpdate
@@ -190,7 +191,7 @@ def _apply_witnessed_combat(
     if not real_fights:
         return
 
-    living_active = [e for e in state.entities.values() if e.combat.alive and e.lifecycle.active and e.navigation.lodged_in is None]  # F3: a lodger witnesses nothing outside
+    living_active = [e for e in state.entities.values() if e.combat.alive and e.lifecycle.active and not is_lodged(e)]  # F3: a lodger witnesses nothing outside
 
     for defender_id, attacker_id in real_fights:
         defender = state.entities.get(defender_id)
@@ -303,7 +304,7 @@ class CombatEngagementPhase:
             rel_context = RelationContext(combat_engaged=True)
 
             def _consider(e: EntityState) -> None:
-                if not (e.combat.alive and e.lifecycle.active) or e.navigation.lodged_in is not None:
+                if not (e.combat.alive and e.lifecycle.active and not is_lodged(e)):
                     return  # (F3: a lodger is never a target)
                 dist_sq = ((e.navigation.position[0] - actor.navigation.position[0]) ** 2 +
                            (e.navigation.position[1] - actor.navigation.position[1]) ** 2)

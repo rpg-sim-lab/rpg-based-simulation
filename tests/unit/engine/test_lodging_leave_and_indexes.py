@@ -5,7 +5,7 @@ from src.core.updates import EntityUpdate, NavigationUpdate, StateUpdate, TaskUp
 from src.engine.candidate_selector import MovementCandidateSelector
 from src.engine.lodging import keeps_lodging, leave_tile, place_leavers
 from src.engine.occupancy_snapshot import OccupancySnapshot
-from src.engine.pipeline_phases.occupancy import OccupancyPhase
+from src.engine.pipeline import AuthoritativeApplyPipeline
 from src.engine.spatial import SpatialGrid
 from src.engine.spatial_query import SpatialQueryService
 from src.engine.world_index import WorldIndexService
@@ -104,7 +104,7 @@ def test_a_building_that_stops_being_functional_ejects_its_lodgers():
 def test_two_leavers_through_the_occupancy_phase_end_on_different_tiles_and_are_no_longer_lodged():
     k = _state([_lodged(1), _lodged(2)])
     try:
-        out = OccupancyPhase.resolve(k._state, _leave_update([1, 2]))
+        out = AuthoritativeApplyPipeline._resolve_occupancy_conflicts(k._state, _leave_update([1, 2]))   # place_leavers, then the occupancy phase vets the steps
         a, b = out.entity_updates[1], out.entity_updates[2]
         assert a.new_position != b.new_position and a.navigation.lodged_in_clear and b.navigation.lodged_in_clear
     finally:

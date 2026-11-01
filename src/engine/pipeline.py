@@ -20,7 +20,7 @@ from src.engine.sabotage import BuildingSabotageSystem
 from src.engine.town_resolution import TownResolutionSystem
 from src.engine.world_dynamics import WorldDynamicsSystem
 from src.engine.shop import ShopSystem
-from src.engine.lodging import grant_beds
+from src.engine.lodging import grant_beds, place_leavers
 from src.engine.evolution import EvolutionSystem
 from src.systems.strategic import StrategicIntelligenceSystem
 from src.systems.lifecycle import LifecycleSystem
@@ -564,7 +564,7 @@ class AuthoritativeApplyPipeline:
         update: StateUpdate,
     ) -> StateUpdate:
         from src.engine.pipeline_phases.occupancy import OccupancyPhase
-        return OccupancyPhase.resolve(state, update)
+        return OccupancyPhase.resolve(state, place_leavers(state, update))  # F3: lodgers whose rest is over step out first, through the same position update a move uses, vetted by resolve
 
 
 def _resolve_death_transfers(state: AuthoritativeState, update: StateUpdate) -> StateUpdate:

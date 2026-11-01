@@ -20,6 +20,7 @@ from enum import Enum
 from typing import Any, Optional
 
 from src.engine.appraisal import can_use_inn_meal
+from src.engine.lodging import has_free_bed
 from src.engine.service_prices import EAT_PRICE_GOLD, REST_PRICE_GOLD
 
 
@@ -51,7 +52,6 @@ def admits_at(entity: Any, building: Any, action: str, state: Any = None, law: O
     if not payment_covers(entity, action, law):
         return False
     if action == "REST" and building is not None and state is not None:
-        from src.engine.lodging import has_free_bed  # lazy: lodging reads the state, admission is imported by the scorers
         return has_free_bed(state, building, entity)
     return True
 

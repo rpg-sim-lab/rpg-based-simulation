@@ -8,7 +8,7 @@ import pickle
 import pytest
 
 from src.core.state import BuildingState, NavigationComponent
-from src.engine.checkpoint_fields import CheckpointFieldMissing, FIELD_RULES, fill_missing_fields
+from src.engine.checkpoint_fields import CheckpointFieldMissingError, FIELD_RULES, fill_missing_fields
 from src.engine.kernel import Kernel
 from src.platform.rng import DeterministicRNG
 from tests.unit.engine.lodging_kernel import INN_ID, REACH, hero, kernel, profile
@@ -66,9 +66,9 @@ def test_a_building_without_beds_is_refused_with_a_typed_error_naming_the_field_
         old = _old_shape(b, ["beds"])
         assert _values(old, skip=("beds",)) == _values(b, skip=("beds",))                  # beds was last: the other fields did not shift
         object.__setattr__(st, "buildings", {**st.buildings, INN_ID: old})
-        with pytest.raises(CheckpointFieldMissing, match=r"'beds'.*building %d" % INN_ID):
+        with pytest.raises(CheckpointFieldMissingError, match=r"'beds'.*building %d" % INN_ID):
             fill_missing_fields(st)
-        assert issubclass(CheckpointFieldMissing, ValueError)                              # the API route answers 400
+        assert issubclass(CheckpointFieldMissingError, ValueError)                              # the API route answers 400
     finally:
         object.__setattr__(k._state, "buildings", {**k._state.buildings, INN_ID: b})        # the refused state is not a state to hash: put the real building back before shutdown
         k.shutdown()

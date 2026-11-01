@@ -209,9 +209,12 @@ class NavigationUpdate:
         if other.last_position_set is not None: changes["last_position_set"] = other.last_position_set
         if other.region_id_set is not None: changes["region_id_set"] = other.region_id_set
         if other.step_ready_tick_set is not None: changes["step_ready_tick_set"] = other.step_ready_tick_set
-        if other.lodged_in_set is not None: changes["lodged_in_set"] = other.lodged_in_set
-        if other.lodged_in_clear: changes["lodged_in_clear"] = True
+        changes.update(other._lodging_changes())
         return replace(self, **changes)
+
+    def _lodging_changes(self) -> Dict[str, Any]:
+        """What a merge takes from this update for the lodging fields (F3): the claim's building, and the leave flag."""
+        return {**({"lodged_in_set": self.lodged_in_set} if self.lodged_in_set is not None else {}), **({"lodged_in_clear": True} if self.lodged_in_clear else {})}
 
 @dataclass(frozen=True, slots=True)
 class TaskUpdate:

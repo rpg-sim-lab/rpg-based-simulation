@@ -515,10 +515,7 @@ class NavigationComponent:
     # 0.0 = never stepped (free to step).
     step_ready_tick: float = 0.0
 
-    # F3 (divergence 2.155): the id of the building this subject LODGES in, or None. While set, ``position`` is that building's tile and the subject stands on no tile
-    # (it is in no occupancy map or spatial index, `src/engine/lodging.py`). Set and cleared only by the apply path (NavigationPatch); the building's lodger count is
-    # derived from this field, never stored on the building.
-    lodged_in: Optional[int] = None
+    lodged_in: Optional[int] = None  # F3 (2.155): the building this subject LODGES in (position is its tile, on no tile held); set and cleared only by the apply path; LAST field (positional unpickle)
 
     def to_canonical_dict(self) -> Dict[str, Any]:
         """The navigation block of the entity's canonical form. `step_ready_tick` (D75) is present only once non-zero, so the form of an
@@ -1267,11 +1264,7 @@ class BuildingState:
     # Commercial paid work (content ``hires_for_pay``, ruling 66): a shift is paid from the building's own purse only.
     hires_for_pay: bool = False
     _canonical_cache: Any = field(default=None, init=False, repr=False, compare=False)
-    # F3 (divergence 2.155), content ``beds``: how many subjects the building lodges at once (copied at compile like ``maintenance_shifts_needed``). 0 = lodges no one.
-    # The occupancy of a bed is NOT stored here: it is derived from the entities whose ``navigation.lodged_in`` is this building (one source of truth).
-    # LAST on purpose: a slotted dataclass unpickles POSITIONALLY (`dataclasses._dataclass_setstate` zips ``fields()`` with the state tuple), so a field inserted before another takes that
-    # field's old value from an older checkpoint. Last, a pre-F3 pickle is one short and ``beds`` reads missing, which `checkpoint_fields.fill_missing_fields` refuses.
-    beds: int = 0
+    beds: int = 0  # F3 (2.155), content: beds lodged at once (0 = none); occupancy is derived from entities' lodged_in; LAST field (positional unpickle: a pre-F3 pickle reads it missing, then refused)
 
     def to_canonical_dict(self) -> Dict[str, Any]:
         if self._canonical_cache is not None:

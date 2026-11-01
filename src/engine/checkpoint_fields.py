@@ -6,7 +6,7 @@ existed skips ``__post_init__`` and leaves the slot UNSET, so the first read rai
 ``FIELD_RULES`` (the single restore step: later rows, from any lane, are added here; keep the names and the ``FieldRule`` shape): each row names the records that carry the field, the field, and a rule.
 
 THE RULE: fill only a pure function of the loaded state that a ruling defines; else a typed refusal. A missing field is FILLED only when its value is a pure function of the loaded state that a ruling already defines (``fill``). Otherwise the row has no ``fill`` and the
-restore REFUSES with ``CheckpointFieldMissing``, naming the field and the records. A checkpoint that carries every field is not touched, so a current-shape restore is unchanged.
+restore REFUSES with ``CheckpointFieldMissingError``, naming the field and the records. A checkpoint that carries every field is not touched, so a current-shape restore is unchanged.
 """
 from __future__ import annotations
 
@@ -16,7 +16,7 @@ from typing import Any, Callable, Iterable, List, Optional
 _UNSET = object()
 
 
-class CheckpointFieldMissing(ValueError):
+class CheckpointFieldMissingError(ValueError):
     """A checkpoint predates a field whose value cannot be derived from the loaded state: the restore is refused (never a raw ``AttributeError`` mid-tick)."""
 
 
@@ -56,7 +56,7 @@ def fill_missing_fields(state: Any, rules: Optional[List[FieldRule]] = None) -> 
             continue
         if rule.fill is None:
             labels = ", ".join(label for label, _ in missing[:5]) + (f" (+{len(missing) - 5} more)" if len(missing) > 5 else "")
-            raise CheckpointFieldMissing(f"checkpoint predates field {rule.field!r} and no rule derives it ({rule.ruling}); missing on {len(missing)} record(s): {labels}")
+            raise CheckpointFieldMissingError(f"checkpoint predates field {rule.field!r} and no rule derives it ({rule.ruling}); missing on {len(missing)} record(s): {labels}")
         for _, owner in missing:
             object.__setattr__(owner, rule.field, rule.fill(state, owner))
     return state

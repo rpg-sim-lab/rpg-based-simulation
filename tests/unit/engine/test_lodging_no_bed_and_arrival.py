@@ -4,7 +4,8 @@ from dataclasses import replace
 from src.core.strategic import ObjectiveStatus, ProjectStatus
 from src.core.updates import BiologicalUpdate, EntityUpdate
 from src.engine.building_services import with_service
-from src.engine.lodging import finds_no_bed, is_lodged, lodgers_of, no_bed_in_reach
+from src.engine.building_services import no_bed_in_reach
+from src.engine.lodging import finds_no_bed, is_lodged, lodgers_of
 from tests.unit.engine.lodging_kernel import INN_ID, REACH, hero, kernel, run
 
 

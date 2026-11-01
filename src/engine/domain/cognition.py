@@ -5,6 +5,7 @@ from dataclasses import replace
 
 from src.core.updates import EntityUpdate, StrategicUpdate
 from src.core.enums import ReasonCode
+from src.engine.lodging import suppress_stayer_movement
 
 if TYPE_CHECKING:
     from src.core.state import EntityState, AuthoritativeState
@@ -38,7 +39,6 @@ class CognitionDomain:
         Optimized v2.4: early-exit for idle/isolated entities and reduced object pressure.
         """
         from src.engine.cognition import SensoryFilter, AppraisalSystem
-        from src.engine.lodging import suppress_stayer_movement
         from src.engine.tactical import TacticalDecisionSystem
         from src.engine.domain.cognition_extras import InformationNeedDetector
         

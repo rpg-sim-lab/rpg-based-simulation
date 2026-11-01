@@ -6,6 +6,7 @@ from typing import Any, Dict, List, Optional, Set, Tuple
 
 from src.core.state import AuthoritativeState
 from src.core.dirty import DirtySet
+from src.core.lodging_rules import is_lodged
 from src.core.region_resolution import is_inside_world, world_extent
 from src.observability.config import ObservabilityConfig, ObservabilityMode
 from src.engine.kernel import Kernel
@@ -37,6 +38,24 @@ class HardLawViolationError(Exception):
         ]
         msg = "Hard Law Violations detected in authoritative state:\n" + "\n".join(violation_messages)
         super().__init__(msg)
+
+
+def _lodger_violations(state: AuthoritativeState, e_id: int, entity: Any) -> List[HardLawViolation]:
+    """LAW-LODGER-INDOORS (F3, divergence 2.155): after apply a lodged entity stands on its building's own tile and has no navigation target."""
+    nav = entity.navigation
+    if nav is None or nav.lodged_in is None:
+        return []
+    building = state.buildings.get(nav.lodged_in)
+    on_tile = building is not None and (int(nav.position[0]), int(nav.position[1])) == (int(building.position[0]), int(building.position[1]))
+    if on_tile and nav.target is None:
+        return []
+    return [HardLawViolation(
+        law_id="LAW-LODGER-INDOORS",
+        entity_id=e_id,
+        severity="ERROR",
+        message=f"Entity {e_id} lodges in building {nav.lodged_in} but is off its tile or has a target {nav.target}",
+        details={"lodged_in": nav.lodged_in, "on_building_tile": on_tile, "target": nav.target},
+    )]
 
 
 class HardLawMonitor:
@@ -124,18 +143,7 @@ class HardLawMonitor:
                         details={"stamina": entity.stamina.current}
                     ))
 
-            # LAW-LODGER-INDOORS (F3, divergence 2.155): after apply a lodged entity stands on its building's own tile and has no navigation target
-            if entity.navigation is not None and entity.navigation.lodged_in is not None:
-                building = state.buildings.get(entity.navigation.lodged_in)
-                on_tile = building is not None and (int(entity.navigation.position[0]), int(entity.navigation.position[1])) == (int(building.position[0]), int(building.position[1]))
-                if not on_tile or entity.navigation.target is not None:
-                    violations.append(HardLawViolation(
-                        law_id="LAW-LODGER-INDOORS",
-                        entity_id=e_id,
-                        severity="ERROR",
-                        message=f"Entity {e_id} lodges in building {entity.navigation.lodged_in} but is off its tile or has a target {entity.navigation.target}",
-                        details={"lodged_in": entity.navigation.lodged_in, "on_building_tile": on_tile, "target": entity.navigation.target}
-                    ))
+            violations.extend(_lodger_violations(state, e_id, entity))  # LAW-LODGER-INDOORS (F3, divergence 2.155)
 
             # LAW-POSITION-FINITE: Position must be finite coordinates
             if entity.navigation is not None:
@@ -189,10 +197,8 @@ class HardLawMonitor:
         """
         objects: List[Tuple[str, int, Tuple[float, float]]] = []
         for e_id, entity in state.entities.items():
-            if not entity.lifecycle.active or not entity.combat.alive:
+            if not entity.lifecycle.active or not entity.combat.alive or is_lodged(entity):  # (a lodger stands on its building's own tile by law, F3: no placement collision)
                 continue
-            if entity.navigation.lodged_in is not None:
-                continue  # a lodger is inside its building (F3, divergence 2.155): it stands on the building's own tile by law, so a restored state is not a placement collision
             objects.append(("entity", e_id, entity.navigation.position))
         for b_id, building in state.buildings.items():
             objects.append(("building", b_id, building.position))

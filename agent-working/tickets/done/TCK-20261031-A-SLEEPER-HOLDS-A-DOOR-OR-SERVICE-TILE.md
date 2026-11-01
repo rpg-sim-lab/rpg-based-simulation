@@ -187,7 +187,7 @@ Final-head checks (2026-11-01, merged with origin/main 61e984212):
 - tests/architecture + tests/unit/{core,engine,systems,observability,ai,tools} + tests/engine: 3947 passed, 4 skipped; one `test_kernel_run_output_stays_out_of_data_runs` failure under xdist (parallel workers write data/runs) passes alone (4 passed). `-k mechanism`: 321 passed. Integration (`-m 'not slow'`) on 56abe4d8a: 1125 passed, 6 skipped, 0 failed.
 - Determinism: urban s44 5000t final hash cb3913a288b2729e7db10b2b02774e16f121125ee215629d4edb1b4b0398f46a and 25-tick chain 18fa525567e3de175de0becd9248b4c3b49327888a53cb09547cfde8ca917f0f, byte-equal on 9fa23bc0c, 039af5373, 56abe4d8a, c16d16bcd and the merged head; crowded s46 (4d6657f5...) and frontier s45 (d626e239...) byte-equal on 9fa23bc0c vs 56abe4d8a.
 - Defect found by tests/architecture and fixed: intelligence.py (systems) imported src.engine.lodging (systems to engine); the stay-or-leave predicates now live in src/core/lodging_rules.py.
-- Checkpoint: pre-F3 checkpoints are refused with CheckpointFieldMissing (a ValueError) for BuildingState.beds; lodged_in fills None; both fields are the LAST field of their class (a slotted dataclass unpickles positionally). tests/unit/engine/test_checkpoint_fields.py builds records as an old pickle loads them.
+- Checkpoint: pre-F3 checkpoints are refused with CheckpointFieldMissingError (a ValueError) for BuildingState.beds; lodged_in fills None; both fields are the LAST field of their class (a slotted dataclass unpickles positionally). tests/unit/engine/test_checkpoint_fields.py builds records as an old pickle loads them.
 
 ## Files Changed
 - agent-working/tickets/inprogress/TCK-20261031-A-SLEEPER-HOLDS-A-DOOR-OR-SERVICE-TILE.md
@@ -271,7 +271,7 @@ Disclosure:
 - subject 17 (urban s44, COMBAT t3306, divergence): the walk to (25,25) was a congestion blocker-resolution project replacing the finished fatigue project (intelligence.py:670), not town-return; to TCK-20261101-A-CONGESTION-BLOCKER-RESOLUTION-SENDS-A-SUBJECT-TO-THE-TOWN-CENTRE (counts-first);
 - subject 30 (the pre-Q-B door-tile hold at t4001): not reproducible at 9c685e498, abe8d0074, 876388edc, 4b3ecce12 or the final head (the world trajectory differs by commit); the class count is 0 in all 15 repeat runs;
 - the combat note wording, frontier item (b), and the clear_target versus target_clear field note in 2.155;
-- checkpoint format: pre-F3 checkpoints are refused with a typed error (CheckpointFieldMissing), and the restore step is a single table (src/engine/checkpoint_fields.py, FIELD_RULES) that the churn lane extends with its own rows; the general fix, a checkpoint format version in the header, is a separate ticket;
+- checkpoint format: pre-F3 checkpoints are refused with a typed error (CheckpointFieldMissingError), and the restore step is a single table (src/engine/checkpoint_fields.py, FIELD_RULES) that the churn lane extends with its own rows; the general fix, a checkpoint format version in the header, is a separate ticket;
 - the import-boundary fix (src/core/lodging_rules.py) found by tests/architecture after 91014a88f;
 - N14 is not on this branch: it is re-measured on top of F3. The churn fix is not on main either, so F3 lands first and the churn lane re-measures on F3.
 Run data this session wrote under data/runs was cleaned by id; scratch trees outside data/runs (n14/old9fa, o_*, base6fd) stay for the owner.

@@ -13,14 +13,13 @@ from typing import Any, Optional
 
 from src.core.updates import (
     BiologicalUpdate,
-    CombatUpdate,
     EntityUpdate,
     ResourceTransferIntent,
 )
+from src.engine.lodging import bed_delta, finds_no_bed, lodge_claim, lodges, refuse_rest
 from src.engine.serves import keeps_coin, serves
-from src.engine.lodging import lodge_claim, lodges
 from src.engine.service_admission import admits_at
-from src.engine.service_prices import EAT_PRICE_GOLD, INN_MEAL_HUNGER, REST_PRICE_GOLD
+from src.engine.service_prices import EAT_PRICE_GOLD, INN_MEAL_HUNGER
 from src.engine.service_reach import service_building_where, service_tile
 from src.engine.shop_sale import plan_sale
 from src.engine.spatial_query import SpatialQueryService
@@ -28,6 +27,13 @@ from src.engine.spatial_query import SpatialQueryService
 # The building kinds that serve an action. WORK is not here: the work a building offers is declared by its state (content ``hires_for_pay`` and
 # ``maintenance_shifts``, EXCH-02 ruling 66), see ``offers_work``; no building name is in code (D56).
 SERVICE_KINDS = {"REST": frozenset({"inn", "home"}), "EAT": frozenset({"inn"}), "SELL": frozenset({"shop"}), "REPAIR": frozenset({"blacksmith"})}
+
+
+def no_bed_in_reach(state: Any, entity: Any) -> Optional[Any]:
+    """The building in whose reach the subject stands (the REST service reach) that declares beds and has none free for it, or None (F3, divergence 2.155)."""
+    tile = service_tile(state, (int(entity.navigation.position[0]), int(entity.navigation.position[1])), SERVICE_KINDS["REST"])
+    building = SpatialQueryService.get_building_at(state, tile) if tile is not None else None
+    return building if finds_no_bed(state, entity, building) else None
 
 
 def maintenance_open(building: Any) -> bool:
@@ -53,13 +59,6 @@ def service_building(context: Any, entity: Any, action: str) -> Optional[Any]:
     if building is None or not building.functional or not (serves(context, entity, building) if action == "SELL" else keeps_coin(entity)):
         return None  # rest, meal, repair: the trait only (decision 43), never a kind name; the sale keeps its relationship rule as on main
     return building
-
-
-def bed_delta(entity: Any, building: Any) -> EntityUpdate:
-    """What a bed delivers: readiness, a little health and the charge for it (the bed is paid for, and heals, once per hold). The one definition, read by the rough-rest service
-    (a building with no beds, on the reach tile) and by `lodging.grant_beds` (a granted lodging)."""
-    charge = ResourceTransferIntent(source_id=building.id, source_kind="TOWN_SERVICE", gold_delta=-REST_PRICE_GOLD, transfer_kind="REST", is_group_required=True)
-    return EntityUpdate(entity_id=entity.id, readiness_delta=10.0, combat=CombatUpdate(hp_delta=5), resource_transfers=[charge])
 
 
 def service_delta(context: Any, entity: Any, action: str, tick: int) -> Optional[EntityUpdate]:
@@ -88,7 +87,6 @@ def with_service(updates: dict, entity: Any, action: str, tick: int, context: An
     if context is None or entity.id not in updates or (action == "REST" and "outcome" in entity.task.payload):
         return updates  # (a held sleep repeats its action every tick; the bed is paid for, and heals, once)
     if action == "REST":
-        from src.engine.lodging import no_bed_in_reach, refuse_rest
         if no_bed_in_reach(context, entity) is not None:
             return {**updates, entity.id: refuse_rest(entity)}  # F3: a REST whose first execution is in reach of a full beds building does not run on that tile (the one 'no bed' predicate)
     delta = service_delta(context, entity, action, tick)

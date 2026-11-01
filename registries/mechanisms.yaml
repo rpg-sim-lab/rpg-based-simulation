@@ -2844,9 +2844,9 @@ mechanisms:
       - src/engine/service_admission.py::admits_at
       - src/engine/lodging.py::grant_beds
       - src/engine/lodging.py::place_leavers
-      - src/engine/lodging.py::is_lodged
+      - src/core/lodging_rules.py::is_lodged
       - src/engine/lodging.py::finds_no_bed
-      - src/engine/lodging.py::no_bed_in_reach
+      - src/engine/building_services.py::no_bed_in_reach
       - src/engine/lodging.py::way_closed_end
       - src/engine/lodging.py::refuse_rest
       - src/engine/lodging.py::resolve_arrival
