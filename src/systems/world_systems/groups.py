@@ -5,7 +5,6 @@ from dataclasses import replace
 from typing import Callable, Dict, List, Set, Optional, TYPE_CHECKING
 
 from src.core.enums import GroupDissolutionReason
-from src.core.group_record import GroupCounterMissingError
 from src.core.strategic import ContractStatus
 from src.systems.social_systems.contracts import contract_is_live
 
@@ -40,8 +39,6 @@ class GroupSystem:
         if current_update is not None:
             taken_ids.update(g.id for g in current_update.groups_add)
             taken_ids.update(g.id for g in current_update.groups_add_or_update)
-        if state.next_group_id is None:
-            raise GroupCounterMissingError("AuthoritativeState.next_group_id is None: the counter is seeded only at construction or restore, never by decision code")
         next_free_id = state.next_group_id
 
         def is_alive(e_id: int) -> bool:

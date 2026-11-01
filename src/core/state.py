@@ -1276,13 +1276,6 @@ def seeded_next_group_id(groups: Any) -> int:
     return max([GROUP_ID_BASE, *(i + 1 for i in ids)])
 
 
-def _seed_absent_group_counter(state: Any) -> None:
-    """Seed the counter only when it is absent (older data / a hand-built state): past the highest non-squad id; squads carry hash ids and
-    are recognised by role for this seed only. A state that carries a counter keeps it, whatever the roles in `groups` later become."""
-    if state.next_group_id is None:
-        object.__setattr__(state, "next_group_id", seeded_next_group_id(state.groups))
-
-
 @dataclass(frozen=True, slots=True)
 # VERIFIED v2: authoritative_state_model
 class AuthoritativeState:
@@ -1450,7 +1443,6 @@ class AuthoritativeState:
         object.__setattr__(self, "entities", _readonly_mapping(self.entities))
         has_hostile = False
         has_contracts = False
-        _seed_absent_group_counter(self)
         if self.entities:
             int_e_keys = [k for k in self.entities.keys() if isinstance(k, int)]
             if int_e_keys and self.next_entity_id <= max(int_e_keys):
@@ -1502,7 +1494,7 @@ class AuthoritativeState:
     # ids, FACTION_SQUAD role) never advance it.
     # Keep this the LAST field: a slotted dataclass unpickles positionally (zip of fields and the saved tuple), so a field inserted mid-class
     # would receive the older checkpoint's next field's value instead of being absent.
-    next_group_id: Optional[int] = None  # None = absent (older data / hand-built state): seeded once in __post_init__
+    next_group_id: int = GROUP_ID_BASE  # never None; nothing seeds it at construction. A checkpoint that lacks the slot is filled by checkpoint_fields (FIELD_RULES) at restore, then checked there
 
     def to_readonly(self) -> AuthoritativeState:
         """Returns a read-only view of the entire world state."""

@@ -181,7 +181,24 @@ def test_seed_skips_squads_and_covers_the_highest_non_squad_id():
     assert seeded_next_group_id({}) == GROUP_ID_BASE
     assert seeded_next_group_id({squad.id: squad}) == GROUP_ID_BASE
     assert seeded_next_group_id({squad.id: squad, formed.id: formed}) == 10042
-    assert AuthoritativeState(tick=0, seed=1, groups={formed.id: formed}).next_group_id == 10042
+
+
+def test_construction_does_not_seed_next_group_id():
+    """Stated gap: construction seeds nothing, so a hand-built state with groups above 10000 and no counter keeps 10000 (safe while records are kept: the
+    allocator steps past every taken id). Only restore seeds, through FIELD_RULES."""
+    formed = GroupRecord(id=10041, leader_id=1, member_ids={1}, anchor=(0, 0))
+    assert AuthoritativeState(tick=0, seed=1, groups={formed.id: formed}).next_group_id == GROUP_ID_BASE
+
+
+def test_the_same_state_restored_without_the_counter_is_seeded_to_10042_and_passes_the_check():
+    """Restore is where the seed runs: the slot is absent as unpickled (deleted here), the fill seeds it past the highest non-squad id, the check passes."""
+    from src.engine.checkpoint_fields import check_group_counter, fill_missing_fields
+    formed = GroupRecord(id=10041, leader_id=1, member_ids={1}, anchor=(0, 0))
+    state = AuthoritativeState(tick=0, seed=1, groups={formed.id: formed})
+    object.__delattr__(state, "next_group_id")
+    fill_missing_fields(state)
+    check_group_counter(state)
+    assert state.next_group_id == 10042
 
 
 def test_no_id_is_reissued_over_a_long_form_and_dissolve_run():

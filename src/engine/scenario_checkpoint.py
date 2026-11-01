@@ -8,7 +8,7 @@ import struct
 from pathlib import Path
 from typing import TYPE_CHECKING
 
-from src.engine.checkpoint_fields import fill_missing_fields
+from src.engine.checkpoint_fields import check_group_counter, fill_missing_fields
 
 if TYPE_CHECKING:
     from src.engine.scenario_runtime import ScenarioRuntimeService
@@ -83,6 +83,7 @@ class ScenarioCheckpointer:
             )
 
         fill_missing_fields(state)
+        check_group_counter(state)
 
         # Reconstruct RNG from the checkpoint embedded in state.
         # base_seed=0 matches _build_kernel(); the stream is immediately

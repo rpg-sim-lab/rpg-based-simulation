@@ -23,6 +23,11 @@ class CheckpointFieldMissingError(ValueError):
     """
 
 
+class GroupCounterBehindStoreError(ValueError):
+    """A restored checkpoint's group id counter is not above every non-squad group id in its store (dissolved records included), so the next formation
+    could reuse a taken id. Raised at restore, after the fill; never in __post_init__ or replace. A ValueError, so the restore route answers 400."""
+
+
 @dataclass(frozen=True)
 class FieldRule:
     """One row of the restore table: where a field lives, how a missing value is derived (or refused), and the ruling that allows it."""
@@ -67,6 +72,13 @@ FIELD_RULES: Tuple[FieldRule, ...] = (
     FieldRule("group.dissolution_reason", _groups, "dissolution_reason", _none_on_unbound_group, _GROUP_RULING),
     FieldRule("group.dissolution_contract_status", _groups, "dissolution_contract_status", _none_on_unbound_group, _GROUP_RULING),
 )
+
+
+def check_group_counter(state: AuthoritativeState) -> None:
+    """The counter must be above every non-squad stored group id; the seed rule yields exactly the smallest such value."""
+    floor = seeded_next_group_id(state.groups)
+    if state.next_group_id < floor:
+        raise GroupCounterBehindStoreError(f"next_group_id {state.next_group_id} is not above the highest non-squad group id in the store (needs >= {floor})")
 
 
 def fill_missing_fields(state: AuthoritativeState, rules: Tuple[FieldRule, ...] = FIELD_RULES) -> None:

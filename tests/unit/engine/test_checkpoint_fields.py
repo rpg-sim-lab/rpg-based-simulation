@@ -16,7 +16,7 @@ import pytest
 from src.core.state import AuthoritativeState, GroupRecord, seeded_next_group_id
 from src.engine.apply import ApplyPath
 from src.engine.checkpoint import CanonicalStateHasher
-from src.engine.checkpoint_fields import FIELD_RULES, CheckpointFieldMissingError, fill_missing_fields
+from src.engine.checkpoint_fields import FIELD_RULES, CheckpointFieldMissingError, check_group_counter, fill_missing_fields
 from src.engine.scenario_checkpoint import ScenarioCheckpointer
 from src.systems.world_systems.groups import GroupSystem
 
@@ -160,3 +160,24 @@ def test_restore_fills_an_old_shape_checkpoint_before_the_kernel_is_built_and_re
     spec = SimulationScenarioDefinition(id="s", world_composition="frontier_living_world", perspective="hero_guild_perspective")
     ScenarioCheckpointer.restore(path, spec)
     assert seen == {"next_group_id": 10010, "holder": None, "reason": None}
+
+
+def test_after_restore_the_counter_is_an_int_and_never_none(monkeypatch):
+    old = pickle.loads(_old_shape_dumps(_state({10003: _unbound()}), monkeypatch))
+    fill_missing_fields(old)
+    check_group_counter(old)
+    assert type(old.next_group_id) is int and old.next_group_id == 10004
+    assert type(_state({}).next_group_id) is int and _state({}).next_group_id == 10000  # a fresh state starts at 10000, nothing seeds it
+
+
+def test_a_counter_not_above_every_stored_non_squad_id_raises_at_restore_and_one_above_it_passes():
+    from src.engine.checkpoint_fields import GroupCounterBehindStoreError
+    groups = {10003: _unbound(), 10009: _unbound(10009)}
+    behind = _state(groups)
+    object.__setattr__(behind, "next_group_id", 10009)  # equal to a stored id: the next formation would reuse it
+    with pytest.raises(GroupCounterBehindStoreError, match="needs >= 10010"):
+        check_group_counter(behind)
+    ok = _state(groups)
+    object.__setattr__(ok, "next_group_id", 10010)
+    check_group_counter(ok)  # passes
+    assert issubclass(GroupCounterBehindStoreError, ValueError)  # the restore route answers 400

@@ -13,12 +13,6 @@ class GroupBindingError(ValueError):
     """A GroupRecord names a contract (contract_id) but not the entity holding it (contract_holder_id)."""
 
 
-class GroupCounterMissingError(RuntimeError):
-    """`AuthoritativeState.next_group_id` is None where decision code needs it. The counter is seeded ONLY when a state is built or an older checkpoint is
-    restored (`AuthoritativeState.__post_init__`, `checkpoint_fields.fill_missing_fields`); seeding anywhere else would silently recompute durable state and hide
-    the corruption the counter exists to expose, so a missing counter here is an error."""
-
-
 @dataclass(frozen=True, slots=True)
 class GroupRecord:
     """Authoritative state for a multi-entity coordination unit.
