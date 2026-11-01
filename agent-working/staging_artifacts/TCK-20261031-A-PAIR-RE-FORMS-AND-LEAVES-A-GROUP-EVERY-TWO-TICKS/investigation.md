@@ -45,3 +45,6 @@ Evidence in `evidence/fixture/` (cnt_run.py, out json, hash logs, lag run).
 
 ## Hash-seed identity on the synced head (planner's run, not mine)
 rpg-planner-ubuntu re-ran the characterization's hash-seed identity (b) on trees/9e3b07c22 (lifecycle_full_coverage_world s42 200t, full rows, PYTHONHASHSEED 0 vs 1): identical, sha 473efcc782f25b4b; raw `groups_base/out/planner3_full{0,1}.jsonl` (scratch, planner's). Not re-run by the implementer.
+
+## Correction to the first-diff statement (planner, 2026-11-01)
+The first BEHAVIOURAL diff t176 holds only for `position`, `navigation` and `task` (entity 25). Fields outside those differ earlier: `social` of entity 19 at t112 and `properties` of entity 33 at t113 (from the planner's recount of the same traces), both before t176; so the election/dissolution path shows up in social state before it reaches movement. The chain I traced (base id overwrite at t171 -> ghost member 25 -> t176 navigation) explains t176; it does not explain t112/t113, which I have not traced. The correction in the rows I reported: t11 group id label, t12 directive id label, then t112/t113 as above, then t176.

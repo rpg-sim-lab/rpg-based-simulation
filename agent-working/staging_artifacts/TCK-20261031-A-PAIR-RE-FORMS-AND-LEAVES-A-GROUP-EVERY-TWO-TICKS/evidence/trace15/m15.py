@@ -24,7 +24,7 @@ def _ug2(state, *a, **k):
         ended = {}
         for gid, g in state.groups.items():
             if g.dissolution_tick is None and g.contract_holder_id is not None:
-                e = _GS._binding_end(state, g, None, alive, active)
+                e = _GS._binding_end(state, g, cu, alive, active)  # with the same-tick update, so a status write landing on the expiry tick is seen
                 if e is not None: ended[gid] = (e[0].value, gid in rel or fs)
         E["pending_ended"][state.tick] = ended
     r = _inner_ug(state, *a, **k)
@@ -54,7 +54,9 @@ def _ag2(prior, update, *a, **k):
         old = prior.groups.get(gid)
         if g.dissolution_tick is not None and old is not None and old.dissolution_tick is None and g.dissolution_tick == t:
             reason = getattr(g, "dissolution_reason", None); status = getattr(g, "dissolution_contract_status", None)
-            E["dis"].append([t, gid, sorted(old.member_ids), old.contract_id, reason.value if reason else None, status.value if status else None, old.leader_id, getattr(old, "contract_holder_id", None), old.formation_tick if False else None])
+            _ho = prior.entities.get(getattr(old, "contract_holder_id", None) if getattr(old, "contract_holder_id", None) is not None else old.leader_id)
+            _hc = _ho.strategic.contracts.get(old.contract_id) if _ho is not None else None
+            E["dis"].append([t, gid, sorted(old.member_ids), old.contract_id, reason.value if reason else None, status.value if status else None, old.leader_id, getattr(old, "contract_holder_id", None), None if _hc is None else _hc.expiry_tick])
             dissolved_now[gid] = True
             if reason is not None and reason.value == "MEMBERS_BELOW_TWO":
                 d = _classify_mbt(prior, new, old)

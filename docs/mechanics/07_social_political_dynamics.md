@@ -340,16 +340,24 @@ Leadership acts only through `apply_leadership_influence()`'s goal injection abo
   formation; a leadership change never moves them. A `GroupRecord` with a `contract_id` and no
   `contract_holder_id` is invalid (`GroupBindingError`). Groups not formed by a contract (squads)
   have neither. The group lives while the binding contract is ACTIVE on the holder and the holder is
-  alive, active and a member. It dissolves **on the tick** the binding ends (a same-tick contract
-  write on the holder counts; time expiry past `expiry_tick` counts), all members are released, and
-  the record is kept. The contract is read from the holder, never from the current leader. A group
+  alive, active and a member. At formation the group binds the **live contract with the latest
+  `expiry_tick`** among the contracts that qualified a partner (`expiry_tick == -1`, no expiry, ranks
+  latest; a tie takes the lowest contract id; the holder stays the initiator). "Live" is one shared
+  test, `contract_is_live` (ACTIVE and not due, due meaning `expiry_tick != -1` and
+  `tick >= expiry_tick`), used by the contracts phase, group formation and the dissolution check, so a
+  contract due this tick forms no group. The group dissolves **on the tick** the binding ends (a
+  same-tick contract write on the holder counts; a contract that reaches its `expiry_tick` ends the
+  group on that tick as `BINDING_CONTRACT_NOT_ACTIVE` with status `FULFILLED`, whether or not the
+  contracts phase has written the status yet), all members are released, and the record is kept. The contract is read from the holder, never from the current leader. A group
   does not rebind to the pair's next ACTIVE contract.
 - **Typed end reason (bound groups only; `GroupRecord.dissolution_reason`, `GroupDissolutionReason`):**
   one reason per dissolution, in this precedence when several apply on one tick:
   `BINDING_HOLDER_LEFT` > `BINDING_CONTRACT_MISSING` > `BINDING_CONTRACT_NOT_ACTIVE`
-  (with `dissolution_contract_status`, the typed `ContractStatus`; time expiry records `EXPIRED`) >
+  (with `dissolution_contract_status`, the typed `ContractStatus`; a contract that reached its expiry
+  records `FULFILLED`, never `EXPIRED`) >
   `LEADER_LOST` > `DEFECTION` > `MEMBERS_BELOW_TWO`. A pair whose holder dies is `BINDING_HOLDER_LEFT`,
-  not `MEMBERS_BELOW_TWO`: the cause outranks the consequence. Unbound groups carry no reason.
+  not `MEMBERS_BELOW_TWO`: the cause outranks the consequence, also when a non-leader holder drifts
+  out of a pair (the size rule fires the same tick; the holder having left is recorded). Unbound groups carry no reason.
 - **Defection:** an entity defects when `len(group.grievance_log) >= effective_defection_threshold(group)`:
   ```
   threshold = max(1, 3 + round(composition_score * 2) - round(loyalty_pressure * 2))

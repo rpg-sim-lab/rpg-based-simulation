@@ -9,5 +9,4 @@ first = min([x[0] for x in only_r] + [x[0] for x in only_b], default=None)  # fi
 zip_first = next(((i, x, y) for i, (x, y) in enumerate(zip(b["deaths"], r["deaths"])) if x != y), None)  # first position where the two ordered death lists differ
 print("PAIR", r["world"], r["seed"], "base_deaths", sum(cb.values()), dict(cb), "branch_deaths", sum(cr.values()), dict(cr), "first_victim_set_diff_tick", first, "first_ordered_list_diff", zip_first)
 if rise:
-    print("DEATH_RISE", json.dumps(rise), "branch_only_victims", [(x[0], x[1], x[2]) for x in only_r][:30], "base_only_victims", [(x[0], x[1], x[2]) for x in only_b][:30])
-    sys.exit(7)
+    print("PER_PAIR_RISE", json.dumps(rise), "branch_only_victims", [(x[0], x[1], x[2]) for x in only_r][:30], "base_only_victims", [(x[0], x[1], x[2]) for x in only_b][:30])

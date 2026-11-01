@@ -1,6 +1,6 @@
 #!/bin/bash
 # 15 paired runs: 3 worlds x s42-46, base c9b9a50f4 vs branch 9e3b07c22, m15.py (NOPROF=1), audit_mode, PYTHONHASHSEED=0, cores 4-5, sequential, resumable (.done markers),
-# alternating which tree goes first per pair, MemAvailable >= 3 GB before each run, stop at 4 h own wall, STOP on a rise in deaths by cause.
+# alternating which tree goes first per pair, MemAvailable >= 3 GB before each run, stop at 4 h own wall, no stop per pair; STOP only if a world's Tier-1 death bar fires (world_check.py).
 T=/data/vboxuser/Work/groups_base; PY=/data/vboxuser/Work/rpg-based-simulation/.venv/bin/python; O=$T/out15; mkdir -p $O
 export XDG_RUNTIME_DIR=/run/user/1000 DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/1000/bus PYTHONHASHSEED=0
 START=$(date +%s); n=0
@@ -17,8 +17,10 @@ for w in crowded_frontier frontier_living_world urban_political; do for seed in 
     echo "RUN15_DONE $key rc=$rc wall_s=$(( $(date +%s)-ST )) mem_start_kB=$m mem_end_kB=$mf at=$(date +%H:%M:%S)"
     [ $rc -eq 0 ] && [ -f $O/$key.json ] && echo ok > $O/$key.done || { echo "RUN15_STOP rc=$rc at $key"; exit 5; }
   done
-  $PY $T/pair_check.py $O/${w}_s${seed}_base.json $O/${w}_s${seed}_branch.json; prc=$?
-  echo "PAIR_DONE ${w}_s${seed} check_rc=$prc at=$(date +%H:%M:%S) total_wall_s=$(( $(date +%s)-START ))"
-  [ $prc -eq 0 ] || { echo "RUN15_STOP death rise at ${w}_s${seed}"; exit 7; }
-done; done
+  $PY $T/pair_check.py $O/${w}_s${seed}_base.json $O/${w}_s${seed}_branch.json; echo "PAIR_DONE ${w}_s${seed} at=$(date +%H:%M:%S) total_wall_s=$(( $(date +%s)-START ))"
+done
+  $PY $T/world_check.py $w $O; wrc=$?
+  echo "WORLD_DONE $w check_rc=$wrc at=$(date +%H:%M:%S) total_wall_s=$(( $(date +%s)-START ))"
+  [ $wrc -eq 0 ] || { echo "RUN15_STOP tier-1 death rise in $w"; exit 7; }
+done
 echo RUN15_ALL_DONE

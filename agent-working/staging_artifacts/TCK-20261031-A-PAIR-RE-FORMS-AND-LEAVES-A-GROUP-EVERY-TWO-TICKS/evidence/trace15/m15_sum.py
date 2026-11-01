@@ -37,6 +37,12 @@ def summ(d, has_typed):
     for t, gid, ld, ho, dr, hd in d["mbt"]:
         for c in set(dr.values()): mb[("holder_dropped:" if hd else "other_dropped:") + c] += 1
     out["mbt"] = dict(mb)
+    ful = [x for x in dis if x[4] == "BINDING_CONTRACT_NOT_ACTIVE" and x[5] == "FULFILLED"]
+    lags = [x[0] - x[8] for x in ful if len(x) > 8 and x[8] is not None]
+    out["fulfilled"] = len(ful); out["fulfilled_with_true_expiry"] = len(lags)
+    out["fulfilled_lag_hist_tick_minus_expiry"] = dict(sorted(collections.Counter(lags).items()))
+    out["fulfilled_before_expiry_non_time"] = [[x[0], x[1], x[3], x[8]] for x in ful if len(x) > 8 and x[8] is not None and x[0] < x[8]][:20]
+    out["holder_drift_holder_left"] = sum(1 for x in dis if x[4] == "BINDING_HOLDER_LEFT")
     out["deaths"] = len(d["deaths"]); out["deaths_by_cause"] = dict(collections.Counter(x[2] for x in d["deaths"]))
     out["active_recruit_pairs"] = d["active_pairs"]
     return out
