@@ -163,6 +163,20 @@ DIRTY-SET RISK, law in advance: a bound group dissolves ON THE TICK its binding 
 
 lead-planner's note, same message: "invalid at construction" means loading an old save or checkpoint with a contract_id and no holder would raise. The load path needs handling, or that's a question back to the designer; don't choose silently.
 
+### rpg-designer on checkpoint restore, 2026-11-01 (u24; relayed by lead-planner-u24 and lead-planner). Word for word:
+
+"OPTION A, under one rule that answers both questions. Seed the counter, and refuse a missing holder on a bound group.
+RULE: restore may fill a field missing from an older checkpoint ONLY when its value is a pure function of the loaded state that a ruling already defines. Otherwise it refuses with a typed error. It never guesses. It is ONE post-unpickle step in ScenarioCheckpointer's restore (the single authoritative restore path), with no scattered fixups.
+APPLIED:
+1. next_group_id: SEED it. Addition 4 already defines it as max(10000, the highest non-squad id + 1) from the loaded groups. That is derivation, not a second writer.
+2. contract_holder_id on an UNBOUND group (contract_id None): set it to None, the only valid value. NOTE: a slotted record unpickled from an old checkpoint lacks the slot entirely, so without this step EVERY group raises AttributeError, not only bound ones. Test it.
+3. contract_holder_id on a BOUND group (contract_id set): REFUSE with a typed error that names the group and says the checkpoint predates the group-contract binding. B's guess from the contract's source fails when the contract is gone, and it adds a second writer. That checkpoint stops being restorable, which is accepted since there are no checkpoint files in git or data/.
+TESTS: an old-shape pickle with
+- an unbound group: restores, holder None, counter seeded;
+- a bound group: raises the typed error;
+- a current-shape round-trip: byte-equal.
+GENERAL FIX: agreed. A checkpoint-format version in the header, refusing an unknown or older version BEFORE unpickling, is its own ticket, P2, filed by rpg-planner-ubuntu. Any field added to a slotted state record has this hazard today. F3's lodged_in and beds on the u24 rpg side are one case; the designer is telling rpg-planner."
+
 ## Implementation Notes
 ## Test Summary
 ## Files Changed
