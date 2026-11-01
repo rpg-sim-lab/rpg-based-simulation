@@ -76,9 +76,17 @@ rpg-designer ruling (2026-11-01): this is a ROW, not a STOP on batch C.
 - src/systems/social_systems/contracts.py (ContractService.create_recruitment_contract)
 - groups formation, election and holder binding (exact sites from the code read)
 
+## Code read (rpg-planner-ubuntu, 2026-11-01, read-only; seeds investigation.md, re-verify at the implementing head)
+- Offer: CooperationPhase loops over active+alive entities (src/domains/cooperation/phase.py:105-106). services.py:280/:284 creates the recruitment contract with no lodged read.
+- Accept: phase.py:130/:151 and services.py:48/:80/:95 also have no lodged read.
+- Formation: groups.py:282/:325/:338. The leader is the initiator (:300/:391). The distance check passes for co-lodgers.
+- Base: reachable by code (phase.py:104-105, groups.py:266/:309) but not measured. A 5-7 min base probe is available if the designer wants the base count.
+- Intent: on the rows it is stamps only. The scheduler holds the act, and lodging.py:264 strips moves.
+- Open seam, in scope to answer: a follower OUTSIDE with a lodged leader (tactical.py:568 reads the leader's state/position). Does the follower follow a lodged leader to the door, or wait? The investigation answers this before a fix shape.
+
 ## Assumptions / Open Questions
 - Whether the partner side (being offered while lodged) needs the same check as the source. Assumed yes by the ruling ("no offer, accept, counter").
-- Whether ubuntu's pending code read (four questions sent 2026-11-01: lodged offer/accept, formation lodged check, base reachability, lodged leader intent) already answers Scope 1. If so, it seeds investigation.md.
+- The code read below answers Scope 1 for cooperation and groups. Other social/strategic writers still need the full listing in investigation.md.
 
 ## Implementation Notes
 
