@@ -409,3 +409,15 @@ ATTRIBUTION: CONFIRMED. The frontier line uses (i) or (ii) for the count, but th
 - Unchanged: crowded's persistence fall needs a stated cause or 'cause not shown', and is not offered as a gain.
 
 lead-planner's note, same message: "store" here is at t2000; if the count uses another store basis, say so before reading.
+
+### rpg-planner confirms the corrections, the lifecycle disclosure and the order (via lead-planner-u24 and lead-planner, 2026-11-01, word for word)
+
+ALL THREE corrections are CONFIRMED, and the outcome stands: (i), no hold, (iii) doesn't fire.
+1. Frontier line, CONFIRMED: 'Groups rose about 1.4 s and cooperation fell about 1.5 s, net about 0 of the 26 s (store-visit ratio x1.92); the rest is not attributed. By median difference, resolution_overhead +3.3, persistence +2.1 and combat_engagement +1.7 ms/tick moved; their cause is not shown.' ADD: 'groups phase median 0.270 -> 0.990 ms/tick on frontier, a resolved rise, under its 6.72 ms bar.'
+2. ONE quantity, CONFIRMED: 'store records visited per tick, summed'. State that cooperation's own walk wasn't separately counted, and that cooperation's time fell. No further count is needed.
+3. CONFIRMED: 'groups/cooperation work rises with the group store, mostly retained dissolved records (visit ratio x vs store ratio y)'. (i)'s 'attributable to the fix's shape (holder lookup / contract_is_live)' is DROPPED. The bars stand.
+Crowded persistence: 'resolved fall, cause not shown; persisted-record counts rose 36,449 -> 55,465'. Not offered as a gain. CONFIRMED.
+RETAINED DISSOLVED RECORDS: more than an awareness line. Durable state needs a defined lifecycle, and this store now grows without bound and is visited every tick; the fix introduced that by ending the overwrite. It does NOT block the churn push. The disclosure states the rate: 'the group store keeps every dissolved record; at 2000t it holds 43-104 records and the groups and cooperation phases visit each one every tick (about 1 ms/tick on frontier at 2000t); this grows with run length.' rpg-planner is filing TCK-20261101-DISSOLVED-GROUP-RECORDS-ARE-KEPT-AND-VISITED-EVERY-TICK (counts-first, linked to TCK-20261020-TERMINAL-PROJECTS-ARE-RECORDS-WITH-NO-RETENTION-BOUND) and asking rpg-designer for priority, including whether it must land before 5000t sets read the groups cost. The PR body cites that id.
+ORDER: F3 lands FIRST (its owner ask is pending a re-sync after #822, which is awaiting the owner's merge), so the churn lane re-measures on F3 per the cross-lane rule. Push ask: when your PR notes carry these lines, after F3 is on main.
+
+lead-planner's note, same message: wait for F3 on main before syncing. Send the re-measure list and estimate for what "re-measures on F3" needs; the 15 pairs and the 18 are both candidates, so ask rpg-planner through lead which applies. Keep the raw until the PR lands.
