@@ -68,6 +68,7 @@ _REPO_ROOT_STR = str(Path(__file__).resolve().parents[2])
 if _REPO_ROOT_STR not in sys.path:
     sys.path.append(_REPO_ROOT_STR)
 from tools.agent_working_paths import STORED_ARTIFACTS, TICKETS, posix  # noqa: E402
+from tools.sessions.classify import is_governing_path  # noqa: E402
 
 _TICKET_ID_RE = re.compile(r"TCK-[0-9]{8}-[A-Z0-9-]+")
 _REVIEW_NOTES_PLACEHOLDER = "<!-- UNFILLED: write review notes by hand before opening the PR -->"
@@ -444,7 +445,27 @@ def _render_section(heading: str, tickets: list, warnings: list) -> str:
     return ""
 
 
-def render_body(tickets: list, spec: dict, warnings: list, exclusions: Optional[Dict[str, str]] = None) -> str:
+GOVERNING_HEADING = "## Governing paths touched"
+GOVERNING_LIMIT = (
+    "This list is computed from the PR's own code (`tools/sessions/classify.py`, `tools/delivery/pr_render.py`), so a PR "
+    "that edits those controls it. `.github/` changes are still checked on GitHub's files tab (plan section 28a)."
+)
+
+
+def render_governing_section(files: Optional[list]) -> str:
+    """The `## Governing paths touched` block for the PR's changed files, or "" when it touches none.
+
+    TCK-20261031-GOVERNING-FILE-EDITS-VISIBLE-TO-OWNER. The one path definition is `tools/sessions/classify.py`. Report-only: it
+    shows the owner what to look at, never gates. It is not a `pr_template_spec.json` section, so `--check` lists it as an
+    unexpected section (information) and passes with it present or absent."""
+    touched = sorted({f for f in (files or []) if is_governing_path(f)})
+    if not touched:
+        return ""
+    return "\n".join([GOVERNING_HEADING, "", *(f"- `{path}`" for path in touched), "", GOVERNING_LIMIT, ""])
+
+
+def render_body(tickets: list, spec: dict, warnings: list, exclusions: Optional[Dict[str, str]] = None,
+                changed_files: Optional[list] = None) -> str:
     parts = []
     for section in spec["sections"]:
         heading = section["heading"]
@@ -453,6 +474,10 @@ def render_body(tickets: list, spec: dict, warnings: list, exclusions: Optional[
         parts.append(heading)
         parts.append(_render_section(heading, tickets, warnings))
         parts.append("")
+        if heading == "## What landed":
+            governing = render_governing_section(changed_files)
+            if governing:
+                parts.append(governing)
     ids = ", ".join(t["ticket_id"] for t in tickets)
     parts.append(f"Closes: {ids}")
     if exclusions:
@@ -505,7 +530,8 @@ def render(
 
     spec = json.loads(Path(spec_path).read_text(encoding="utf-8"))
     title = render_title(tickets, scope, theme)
-    body = render_body(tickets, spec, warnings, exclusions=exclusions)
+    body = render_body(tickets, spec, warnings, exclusions=exclusions,
+                       changed_files=discover_changed_files(run_command, base_ref))
     hints = []
     if theme is None and len(tickets) > 1:
         hints.append(
@@ -566,6 +592,10 @@ def render_ticketless_body(
         if heading == "Closes:":
             continue
         parts += [heading, sections[heading], ""]
+        if heading == "## What landed":
+            governing = render_governing_section(files)
+            if governing:
+                parts.append(governing)
     parts.append("Closes: (none)")
     if exclusions:
         for ticket_id in sorted(exclusions):

@@ -28,3 +28,5 @@ Nothing runs on 4-5 until the lead says rpg's groups runs have ended.
 ## Amendments (planner review)
 - Added to the slot set: `test_delivery_pr_status.py`, `tests/tools/test_agent_working_paths_guard*.py`, and every test file touched for the schema.md/validate/week_close checks. Final: full `tests/tools` + `tests/docs` once at the final SHA before the push ask (separate slot).
 - New tests: `basis` path vs mention; `frontend/src/hooks/x.ts` negative; `.claude/hooks/`, `tools/hooks/`, `codebase/hooks/` positives; absolute path in a linked worktree resolves to repo-relative; path outside repo writes no row; row from text holds only the matched token; guard test file redirects data dir (autouse) and one test asserts the real week dir is untouched; Bash mention of guard.py alone gives identical (empty) output to today; session_authority.yaml in the list with action unchanged.
+
+- Touched for item 7: `tests/tools/test_week_close_gate_verdicts_and_void.py` (bare governing_edits file untouched), `tests/tools/conftest.py` (autouse `governing_sink`), `tests/tools/test_session_boundary.py` (lambda takes `family`). Tests written, none run.

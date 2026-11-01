@@ -402,6 +402,14 @@ The steps above cover diagnosing a failure; this covers the surrounding push→P
    specific and wins for PR-body content specifically. If ever unsure which applies, PR bodies get
    no attribution trailer, full stop. Immediately after `gh pr create`, run the read-back check
    described in step 4 — the requirement there applies to this first write too, not just later ones.
+3a. **Governing paths touched** (`TCK-20261031-GOVERNING-FILE-EDITS-VISIBLE-TO-OWNER`; report-only). When the PR diff touches
+   a governing path, `pr_render.py` adds `## Governing paths touched` right after `## What landed`; it is absent when none is
+   touched. The one path definition is `tools/sessions/classify.py` (`GOVERNING_PATHS_EXACT`, `GOVERNING_PATH_PREFIXES`,
+   `is_governing_path`): `CLAUDE.md`, the settings files, `registries/session_authority.yaml`, the guard and the classifier,
+   `.github/workflows/`, and `.claude/hooks/`, `tools/hooks/`, `codebase/hooks/`. Hook scripts wired from other directories
+   are not on the list. The list comes from the PR's own code, so a PR that edits the classifier or the renderer controls it;
+   `.github/` changes are still checked on GitHub's files tab (plan section 28a). It is not a template section: `--check`
+   reports it as an unexpected section and passes with it present or absent.
 4. **Every PR title/body update — including `gh pr create` above and pushing more tickets to an
    already-open PR** (standing practice here — one open PR per batch, follow-ups pushed onto it
    rather than opened as a new PR) — **uses `gh api -X PATCH` and is followed by a read-back

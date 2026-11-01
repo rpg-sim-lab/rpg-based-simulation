@@ -670,6 +670,31 @@ instance; never the `agent` vocabulary), `function`, `domain`, `tool`. Covered b
 window (plan section 10; M7). "Unusual route" is deliberately not its own kind: a routed path is still an edit in another domain, so it is
 folded into `edit_outside_owns` (`owner_seats` shows where it should have gone); M7 can split it if the data shows it recurs.
 
+## `governing_edits` (`agent-working/agent-monitoring/data/YYYY-Www/governing_edits.jsonl`)
+
+Report-only attempts on governing paths (`TCK-20261031-GOVERNING-FILE-EDITS-VISIBLE-TO-OWNER`; plan
+`docs/plans/agent_infrastructure/AI_FIRST_SDLC_ARCHITECTURE_EVOLUTION_PLAN.md` sections 7 and 28a). Its own file family like
+`role_boundary`: not an `events` row, no `agent`, `phase` or `run_id`, no gate reads it. Written by
+`tools/sessions/guard.py::_record_governing` through `tools/sessions/boundary.py::write_event(..., family=)` and the shared
+`writer.py::write_line()`. The guard still allows the call with no output; a write failure is swallowed. The path list is
+`tools/sessions/classify.py` (`is_governing_path`), shared with the PR-body section and the retro.
+
+Fields: `ts`, `event` (`"governing_edit_attempt"`), `seat` (the resolved role instance, else `unresolved`), `path`
+(repo-relative, never absolute), `basis`, `attempt` (always `true`). Nothing else: no tool name, command text, session id or
+content.
+
+- `basis: "path"`: an edit tool's file, exact. A file outside the repo (a user-level settings file, say) writes no row, because
+  it can never appear in a PR.
+- `basis: "mention"`: a non-read-only Bash command whose text names the path (`python3 tools/sessions/guard.py` and
+  `git add .github/workflows/x.yml` both count). It may not be an edit, so mention rows over-count; the row holds the matched
+  token only.
+
+A row is written at PreToolUse, so it is an attempt: the call may still be denied or fail, or the edit reverted. The retro
+(`session_layer_report.py`, "Governing-file edit attempts") compares attempts with merged commits on `origin/main` by path
+and period; an attempt in one week can merge the next, and rows reach main only when a branch carries them, so "no merged
+commit" can mean either. Hook scripts wired from directories outside the list are not covered. Covered by the existing
+`agent-working/agent-monitoring/data/*/*.jsonl merge=union` glob.
+
 ## `gate_verdicts` (`agent-working/agent-monitoring/data/YYYY-Www/<identifier>.gate_verdicts.jsonl`)
 
 One row per verdict a gate CLI prints (`TCK-20261006-GATE-VERDICT-RECORD-AND-HAND-SITES`, child 1 of

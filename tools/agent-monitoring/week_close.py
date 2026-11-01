@@ -45,8 +45,8 @@ from monitoring_consolidation import DEFAULT_DATA_DIR, JSONL_KINDS, _default_csv
 from tools.agent_working_paths import AGENT_MONITORING  # noqa: E402
 
 #: What a week close folds: the three canonical kinds plus the gate-verdict ledger, so a closed week leaves no per-batch shard
-#: of any family that has them (TCK-20261015-WEEK-CLOSE-ALL-SHARD-KINDS-AND-VOID-ROW). `manual_actions.jsonl` and
-#: `role_boundary.jsonl` are bare per-week files with no per-batch shards, so there is nothing of theirs to fold.
+#: of any family that has them (TCK-20261015-WEEK-CLOSE-ALL-SHARD-KINDS-AND-VOID-ROW). `manual_actions.jsonl`,
+#: `role_boundary.jsonl` and `governing_edits.jsonl` are bare per-week files with no per-batch shards, so there is nothing of theirs to fold.
 CLOSE_KINDS = (*JSONL_KINDS, "gate_verdicts")
 from monitoring_shard_paths import per_identifier_shard_paths  # noqa: E402
 from working_log_writer import consolidate_pending_rows  # noqa: E402

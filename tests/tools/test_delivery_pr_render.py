@@ -1182,3 +1182,50 @@ def test_render_adds_the_probe_warning_to_the_discovery_warnings_without_changin
     without = pr_render.render(tickets_root=tickets_root, run_command=runner2, spec_path=spec_path, layer_registry_path=layers)
     assert with_probe["title"] == without["title"]
     assert not any(w.startswith("raw probe output") for w in without["warnings"])
+
+
+# ---------------------------------------------------------------------------
+# TCK-20261031-GOVERNING-FILE-EDITS-VISIBLE-TO-OWNER: the governing-paths section
+# ---------------------------------------------------------------------------
+
+def _render_with_files(tmp_path, files):
+    tickets_root = tmp_path / TICKETS
+    tickets_root.mkdir(parents=True)
+    _write_ticket(tickets_root, "TCK-20260924-A", "ai", "Thing")
+    runner = FakeRunner([_git_log_rule(["TCK-20260924-A: x"]), _git_diff_rule(["agent-working/tickets/TCK-20260924-A.md", *files])])
+    return pr_render.render(tickets_root=tickets_root, run_command=runner), tickets_root, runner
+
+
+def test_a_pr_touching_governing_paths_lists_them_high_in_the_body_with_the_limit(tmp_path):
+    rendered, _, _ = _render_with_files(tmp_path, ["CLAUDE.md", ".github/workflows/test.yml", "tools/sessions/guard.py", "src/a.py"])
+    body = rendered["body"]
+    assert body.index("## What landed") < body.index("## Governing paths touched") < body.index("## Tickets")
+    for path in ("CLAUDE.md", ".github/workflows/test.yml", "tools/sessions/guard.py"):
+        assert f"- `{path}`" in body
+    assert "src/a.py" not in body.split("## Tickets")[0]
+    assert "GitHub's files tab" in body and "plan section 28a" in body
+
+
+def test_a_pr_touching_no_governing_path_has_no_such_section(tmp_path):
+    rendered, _, _ = _render_with_files(tmp_path, ["src/a.py", "frontend/src/hooks/useThing.ts", "docs/guides/x.md"])
+    assert "Governing paths" not in rendered["body"]
+
+
+def test_check_passes_with_the_governing_section_present_and_absent(tmp_path):
+    for files in (["CLAUDE.md"], ["src/a.py"]):
+        sub = tmp_path / ("with" if files == ["CLAUDE.md"] else "without")
+        sub.mkdir()
+        rendered, tickets_root, runner = _render_with_files(sub, files)
+        live = rendered["body"].replace(pr_render._REVIEW_NOTES_PLACEHOLDER, "Looked.")
+        runner.rules.insert(0, (lambda cmd: cmd[:2] == ["gh", "pr"],
+                                CommandResult(0, json.dumps({"title": rendered["title"], "body": live}), "")))
+        result = pr_render.check_against_live(run_command=runner, tickets_root=tickets_root)
+        assert result["matches"] is True, (files, result)
+
+
+def test_the_ticketless_body_lists_governing_paths_too(tmp_path):
+    tickets_root = tmp_path / TICKETS
+    (tickets_root / "done").mkdir(parents=True)
+    runner = FakeRunner([_git_log_rule(["no ticket here"]), _git_diff_rule([".claude/hooks/x.py"])])
+    result = pr_render.render(tickets_root=tickets_root, run_command=runner, theme="t", scope="ai", why="w")
+    assert "- `.claude/hooks/x.py`" in result["body"]

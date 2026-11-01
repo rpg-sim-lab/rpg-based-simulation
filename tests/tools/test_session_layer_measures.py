@@ -309,3 +309,45 @@ def test_wired_hook_passes_outside_a_repo_and_when_the_script_is_missing(tmp_pat
 def test_wired_hook_in_this_repo_exits_zero_with_no_output_for_an_untagged_prompt():
     result = _run(_REPO_ROOT, json.dumps({"prompt": "merge it", "session_id": "s", "cwd": str(_REPO_ROOT)}))
     assert result.returncode == 0 and result.stdout == ""
+
+
+# ---- governing-file edit attempts (TCK-20261031-GOVERNING-FILE-EDITS-VISIBLE-TO-OWNER) -------------
+
+def test_governing_section_is_absent_unless_asked_for():
+    assert "Governing-file edit attempts" not in slr.render([], [], [])
+
+
+def test_governing_section_splits_edit_and_mention_rows_and_flags_unmatched_paths():
+    rows = [{"path": "CLAUDE.md", "basis": "path"}, {"path": "CLAUDE.md", "basis": "mention"},
+            {"path": ".github/workflows/test.yml", "basis": "path"}, {"path": "tools/sessions/guard.py", "basis": "mention"}]
+    text = slr.render([], [], [], None, governing=rows, governing_total=4, merged={"CLAUDE.md": 2})
+    assert "| CLAUDE.md | 1 | 1 | 2 |" in text and "| .github/workflows/test.yml | 1 | 0 | 0 |" in text
+    assert "no merged commit on that path in the period: .github/workflows/test.yml." in text
+    assert "tools/sessions/guard.py" in text.split("no merged commit")[0]  # listed, but only mentions: never "unmatched"
+    assert "over-count" in text and "can merge the next" in text and "only when a branch carries them" in text
+
+
+def test_governing_section_without_git_matches_nothing_and_says_so():
+    text = slr.render([], [], [], None, governing=[{"path": "CLAUDE.md", "basis": "path"}], governing_total=1, merged=None)
+    assert "| CLAUDE.md | 1 | 0 | unknown |" in text and "nothing is matched" in text
+
+
+def test_governing_section_dark_family_and_empty_period():
+    assert "no governing_edits records exist in any week" in slr.render([], [], [], None, governing=[], governing_total=0, merged={})
+    quiet = slr.render([], [], [], None, governing=[], governing_total=3, merged={})
+    assert "None in this period." in quiet.split("Governing-file edit attempts")[1] and "3 records outside this period" in quiet
+
+
+def test_merged_governing_commits_counts_by_path_and_period():
+    log = "@@2026-10-27T10:00:00+00:00\nCLAUDE.md\nsrc/a.py\n\n@@2026-10-28T10:00:00+00:00\nCLAUDE.md\ntools/hooks/x.py\n\n@@2026-09-01T10:00:00+00:00\nCLAUDE.md\n"
+
+    class R:
+        returncode, stdout = 0, log
+
+    got = slr.merged_governing_commits("2026-W44", None, run=lambda *a, **k: R())
+    assert got == {"CLAUDE.md": 2, "tools/hooks/x.py": 1}
+
+    class Bad:
+        returncode, stdout = 1, ""
+
+    assert slr.merged_governing_commits("2026-W44", None, run=lambda *a, **k: Bad()) is None
