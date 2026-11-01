@@ -116,6 +116,31 @@ def _capf(projects, max_active, *a, **kw):
 
 _intel.has_project_capacity = _capf
 
+# CARRY by writer: who wrote a REGROUP walk. Record-only: the writer line in intelligence.py (town-carry branches) vs any other writer.
+import src.core.updates as _upd
+from src.core.movement_modes import MovementMode as _MM
+_REG_WRITES = collections.Counter(); _REG_SUBJ = collections.defaultdict(set)
+_orig_nav_init = _upd.NavigationUpdate.__init__
+
+
+def _nav_init(self, *a, **kw):
+    _orig_nav_init(self, *a, **kw)
+    try:
+        if getattr(self, "movement_mode_set", None) == _MM.REGROUP:
+            f = sys._getframe(1)
+            while f is not None and "/src/" not in f.f_code.co_filename or (f is not None and f.f_code.co_filename.endswith(("src/core/updates.py", "src/core/update_models/navigation.py"))):
+                f = f.f_back
+            if f is not None:
+                key = f"{f.f_code.co_filename.split('/src/')[-1]}:{f.f_lineno}"
+                eid_ = f.f_locals.get("e_id")
+                if eid_ is None and f.f_locals.get("entity") is not None: eid_ = f.f_locals["entity"].id
+                _REG_WRITES[key] += 1; _REG_SUBJ[key].add(eid_)
+    except Exception:
+        pass
+
+
+_upd.NavigationUpdate.__init__ = _nav_init
+
 k = build_kernel(world, seed, rid)
 persons = {e.id for e in k.state.entities.values() if keeps_coin(e)}
 kind_of = {e.id: str(getattr(e, "kind", "")) for e in k.state.entities.values()}
@@ -247,6 +272,7 @@ doc = {"world": world, "seed": seed, "ticks": ticks, "hash": h, "persons": len(p
        "eng_dead_subjects": sum(1 for i in eng_ids if subj[i]["death"]),
        "eng_deaths_by_cause": dict(collections.Counter(subj[i]["death"][1] for i in eng_ids if subj[i]["death"])),
        "cap_refusals": len(_CAP), "cap_suspended_counts": dict(collections.Counter(x[2] for x in _CAP)),
+       "regroup_writers": {a: {"writes": b, "subjects": len(_REG_SUBJ[a])} for a, b in _REG_WRITES.items()},
        "lhr_carry_walk": {"ticks": dict(carry), "subjects": len(carry_subj)},
        "lhr_hold_rows": lhr_hold_rows[:400], "lhr_hold_row_count": len(lhr_hold_rows),
        "subjects": {str(a): b for a, b in subj.items()}}
