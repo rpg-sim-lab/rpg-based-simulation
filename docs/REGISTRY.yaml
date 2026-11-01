@@ -7966,6 +7966,83 @@
   - content
   last_verified: '2026-10-09'
 - type: ticket
+  path: agent-working/tickets/todos/TCK-20261101-A-CHECKPOINT-HAS-NO-FORMAT-VERSION.md
+  ticket_id: TCK-20261101-A-CHECKPOINT-HAS-NO-FORMAT-VERSION
+  title: A scenario checkpoint has no format version, so a checkpoint older than a
+    slotted state record's newest field loads without error and fails later on first
+    read.
+  tier: standard
+  ticket_type: bug
+  date: '2026-11-01'
+  related_code_areas:
+  - src/engine/scenario_checkpoint.py
+  - src/api/routes/scenarios.py
+  - src/core/state.py
+  artifact_files: []
+  tags: []
+- type: ticket
+  path: agent-working/tickets/todos/TCK-20261101-A-NO-PARTNER-BLOCKER-IS-RE-CREATED-EVERY-TICK.md
+  ticket_id: TCK-20261101-A-NO-PARTNER-BLOCKER-IS-RE-CREATED-EVERY-TICK
+  title: An entity with no partner gets one new strategic blocker per tick, with a
+    new id each time, so strategic.blockers may grow without bound. Count it first.
+  tier: standard
+  ticket_type: bug
+  date: '2026-11-01'
+  related_code_areas:
+  - src/domains/cooperation/ (DEFER_NO_PARTNER; exact site not yet cited)
+  - src/core/strategic.py
+  artifact_files: []
+  tags:
+  - cooperation
+  - social
+- type: ticket
+  path: agent-working/tickets/todos/TCK-20261101-A-PAIR-HOLDS-MANY-ACTIVE-RECRUIT-CONTRACTS-AT-ONCE.md
+  ticket_id: TCK-20261101-A-PAIR-HOLDS-MANY-ACTIVE-RECRUIT-CONTRACTS-AT-ONCE
+  title: One pair can hold about 12 ACTIVE recruit contracts at once, each with a
+    new id. Count it across the runs first; P2 if material.
+  tier: standard
+  ticket_type: bug
+  date: '2026-11-01'
+  related_code_areas:
+  - src/domains/cooperation/phase.py
+  - src/systems/social_systems/ (recruit contract creation; exact site not yet cited)
+  artifact_files: []
+  tags:
+  - cooperation
+  - social
+- type: ticket
+  path: agent-working/tickets/done/TCK-20261031-ADVENTURE-SCORER-LOADS-THE-COGNITION-PACKAGE-IN-OFF-MODE.md
+  ticket_id: TCK-20261031-ADVENTURE-SCORER-LOADS-THE-COGNITION-PACKAGE-IN-OFF-MODE
+  title: The adventure scorer loads the cognition observability package in an OFF-mode
+    process
+  tier: hotfix
+  ticket_type: bug
+  date: '2026-10-31'
+  related_code_areas:
+  - src/ai/goals/adventure_scorer.py:10,184; src/observability/cognition/decision_trace_writer.py:50-61;
+    src/engine/kernel.py:252-272
+  artifact_files: []
+  tags: []
+- type: ticket
+  path: agent-working/tickets/done/TCK-20261031-HAND-CLOSE-REVIEW-PHASE-RECORDS-THE-PR-REVIEW.md
+  ticket_id: TCK-20261031-HAND-CLOSE-REVIEW-PHASE-RECORDS-THE-PR-REVIEW
+  title: 'A standard-tier hand close''s Review phase is the planner''s PR review:
+    record it, rather than `skipped`/`no_hand_tool` in every run'
+  tier: standard
+  ticket_type: repair
+  date: '2026-10-31'
+  related_code_areas:
+  - tools/agent-monitoring/record_hand_orchestrated_closure.py
+  - tools/agent-monitoring/generate_retro.py, tools/agent-monitoring/path_report.py
+    (routing-candidate text)
+  artifact_files:
+  - agent-working/stored_artifacts/TCK-20261031-HAND-CLOSE-REVIEW-PHASE-RECORDS-THE-PR-REVIEW/investigation.md
+  - agent-working/stored_artifacts/TCK-20261031-HAND-CLOSE-REVIEW-PHASE-RECORDS-THE-PR-REVIEW/plan.md
+  - agent-working/stored_artifacts/TCK-20261031-HAND-CLOSE-REVIEW-PHASE-RECORDS-THE-PR-REVIEW/test_plan.md
+  tags:
+  - agent-monitoring
+  - governance
+- type: ticket
   path: agent-working/tickets/done/TCK-20261031-MECHANISM-NOTE-CAPACITY-TIE-TRIM-ORDER.md
   ticket_id: TCK-20261031-MECHANISM-NOTE-CAPACITY-TIE-TRIM-ORDER
   title: Append rpg-planner's binding note about the capacity trim's tie rule to the
@@ -8007,6 +8084,58 @@
   - tracking
   - documentation
 - type: ticket
+  path: agent-working/tickets/done/TCK-20261031-REGISTRY-CHECK-NAMES-AN-UNSTAGED-CLOSING-TICKET.md
+  ticket_id: TCK-20261031-REGISTRY-CHECK-NAMES-AN-UNSTAGED-CLOSING-TICKET
+  title: '`registry_entry_regenerated` (read-only) fails with `ticket_not_staged`
+    and the working order when the closing `done/` ticket isn''t tracked or staged,
+    not with a misleading `entry_absent`'
+  tier: hotfix
+  ticket_type: bug
+  date: '2026-10-31'
+  related_code_areas:
+  - tools/gate_checks/done_checker_static.py
+  - indexable_paths
+  artifact_files: []
+  tags:
+  - agent-monitoring
+  - data-quality
+- type: ticket
+  path: agent-working/tickets/done/TCK-20261031-RETRO-SAYS-MID-WEEK-UNKNOWN-DURATIONS-DERIVE-AT-WEEK-CLOSE.md
+  ticket_id: TCK-20261031-RETRO-SAYS-MID-WEEK-UNKNOWN-DURATIONS-DERIVE-AT-WEEK-CLOSE
+  title: 'Retro Run Summary: for a week that isn''t closed yet, say that its unknown
+    hand-closure durations are derived at the week close'
+  tier: hotfix
+  ticket_type: bug
+  date: '2026-10-31'
+  related_code_areas:
+  - tools/agent-monitoring/retro_provenance.py
+  - tools/agent-monitoring/generate_retro.py
+  - tools/agent-monitoring/week_close.py (read only)
+  artifact_files: []
+  tags:
+  - agent-monitoring
+  - data-quality
+- type: ticket
+  path: agent-working/tickets/done/TCK-20261031-SDLC-GUARD-PAYLOADS-AND-SECRET-REDACTION.md
+  ticket_id: TCK-20261031-SDLC-GUARD-PAYLOADS-AND-SECRET-REDACTION
+  title: The guard inspects interpreter payloads and asks on `gh api` writes and merges,
+    and secret-shaped strings are redacted from tool rows and the transit export.
+  tier: standard
+  ticket_type: feature
+  date: '2026-10-31'
+  related_code_areas:
+  - tools/sessions/guard.py, tools/sessions/classify.py
+  - tools/agent-monitoring/post_tool_hook.py, tools/handover_transit.py
+  - .claude/settings.json
+  artifact_files:
+  - agent-working/stored_artifacts/TCK-20261031-SDLC-GUARD-PAYLOADS-AND-SECRET-REDACTION/investigation.md
+  - agent-working/stored_artifacts/TCK-20261031-SDLC-GUARD-PAYLOADS-AND-SECRET-REDACTION/plan.md
+  - agent-working/stored_artifacts/TCK-20261031-SDLC-GUARD-PAYLOADS-AND-SECRET-REDACTION/test_plan.md
+  tags:
+  - ai
+  - governance
+  - security
+- type: ticket
   path: agent-working/tickets/done/TCK-20261031-SDLC-HAND-PATH-OFFICIAL-AND-BASELINES-FROZEN.md
   ticket_id: TCK-20261031-SDLC-HAND-PATH-OFFICIAL-AND-BASELINES-FROZEN
   title: The hand/batch path is recorded as the official delivery model, `owner_directed`
@@ -8043,6 +8172,19 @@
   - governance
   - delivery
   - planning
+- type: ticket
+  path: agent-working/tickets/done/TCK-20261031-SDLC-PLAN-REVIEW-FIXES-AND-EVIDENCE.md
+  ticket_id: TCK-20261031-SDLC-PLAN-REVIEW-FIXES-AND-EVIDENCE
+  title: Apply lead-planner's review fixes to the AI-first SDLC plan and add an evidence
+    section to its summary
+  tier: hotfix
+  ticket_type: chore
+  date: '2026-10-31'
+  related_code_areas: []
+  artifact_files: []
+  tags:
+  - planning
+  - documentation
 - type: ticket
   path: agent-working/tickets/done/TCK-20261031-SDLC-R0-INVENTORY-AND-BASELINE-TAGS.md
   ticket_id: TCK-20261031-SDLC-R0-INVENTORY-AND-BASELINE-TAGS
@@ -8092,6 +8234,21 @@
   tags:
   - testing
 - type: ticket
+  path: agent-working/tickets/done/TCK-20261031-SLOW-KNOWN-REDS-NOVEMBER-EXPIRIES.md
+  ticket_id: TCK-20261031-SLOW-KNOWN-REDS-NOVEMBER-EXPIRIES
+  title: 'Five slow_known_reds entries expiring 2026-11-15 are settled: three arena
+    entries retired, behavioral_5k renewed to 12-15, the hero_guild exact-id entry
+    renewed to 11-29'
+  tier: hotfix
+  ticket_type: chore
+  date: '2026-10-31'
+  related_code_areas:
+  - tools/test_architecture/slow_known_reds.yaml
+  - tests/unit/tools/test_slow_regression_report.py
+  artifact_files: []
+  tags:
+  - testing
+- type: ticket
   path: agent-working/tickets/inprogress/TCK-20261031-A-NEW-GROUP-ID-OVERWRITES-A-LIVE-GROUP.md
   ticket_id: TCK-20261031-A-NEW-GROUP-ID-OVERWRITES-A-LIVE-GROUP
   title: A new group's id comes from a count, so it can collide with a live group's
@@ -8107,6 +8264,28 @@
   tags:
   - social
   - simulation-quality
+- type: ticket
+  path: agent-working/tickets/inprogress/TCK-20261031-A-PAIR-RE-FORMS-AND-LEAVES-A-GROUP-EVERY-TWO-TICKS.md
+  ticket_id: TCK-20261031-A-PAIR-RE-FORMS-AND-LEAVES-A-GROUP-EVERY-TWO-TICKS
+  title: 'A pair of entities forms a group and is expelled from it about every 2 ticks.
+    Cause: a same-tick leadership election moves the leader off the entity holding
+    the group''s contract, and the dissolution check reads the contract from the current
+    leader. Once group ids stop repeating, each cycle leaves a retained dissolved
+    record. Fix as ruled: a typed contract binding on the group, plus an election
+    cadence that starts at formation.'
+  tier: standard
+  ticket_type: bug
+  date: '2026-10-31'
+  related_code_areas:
+  - src/systems/world_systems/groups.py
+  - src/engine/pipeline_phases/groups.py
+  - src/systems/social_systems/party_lifecycle.py
+  - src/core/state.py (GroupRecord)
+  - src/domains/cooperation/phase.py
+  artifact_files: []
+  tags:
+  - cooperation
+  - social
 - type: ticket
   path: agent-working/tickets/todos/ai-first-sdlc-evolution/TCK-20261031-EPIC-AI-FIRST-SDLC-EVOLUTION.md
   ticket_id: TCK-20261031-EPIC-AI-FIRST-SDLC-EVOLUTION
@@ -8153,23 +8332,6 @@
   - ai
   - governance
   - delivery
-- type: ticket
-  path: agent-working/tickets/todos/ai-first-sdlc-evolution/TCK-20261031-SDLC-GUARD-PAYLOADS-AND-SECRET-REDACTION.md
-  ticket_id: TCK-20261031-SDLC-GUARD-PAYLOADS-AND-SECRET-REDACTION
-  title: The guard inspects interpreter payloads and asks on `gh api` writes and merges,
-    and secret-shaped strings are redacted from tool rows and the transit export.
-  tier: standard
-  ticket_type: feature
-  date: '2026-10-31'
-  related_code_areas:
-  - tools/sessions/guard.py, tools/sessions/classify.py
-  - tools/agent-monitoring/post_tool_hook.py, tools/handover_transit.py
-  - .claude/settings.json
-  artifact_files: []
-  tags:
-  - ai
-  - governance
-  - security
 - type: ticket
   path: agent-working/tickets/todos/ai-first-sdlc-evolution/TCK-20261031-SDLC-MACHINE-USER-AND-OWNER-CREDENTIAL-REMOVAL.md
   ticket_id: TCK-20261031-SDLC-MACHINE-USER-AND-OWNER-CREDENTIAL-REMOVAL
