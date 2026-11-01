@@ -24,7 +24,7 @@ standard
 bug
 
 ## Priority
-P2
+P3
 
 ## Request Summary
 Designer ruling 2026-11-01, from the retention STOP #2 (TCK-20261031-A-RETREAT-PROJECT-OUTLIVES-ITS-THREAT, lane C, fix afacf1577, crowded s46). A COMBAT_RETREAT's destination is town_center wherever the threat is. In crowded s46, e14 walked a steady diagonal (66,94) -> (33,32) toward the town centre at hp 6-10/85, met three hostiles at t463, and died at t542 still holding the retreat. Six of the nine fix-only dead in that run held a retreat adopted 1-30 ticks before death. Whether the walk brought them closer to their killer than standing would have is NOT measured: out10 has no positions. COUNTS FIRST, on the retention (d)-alone batch.
@@ -64,3 +64,18 @@ The designer's lean (not a ruling): flight is "away from the threat"; the step c
 ## Files Changed
 
 ## Completion Summary
+
+## 2026-11-01 priority and named case (rpg-designer ruling on the retention re-measure)
+- Priority is now P3. No Tier 1, and walks toward the threat are about a third on both arms (fix 5c6001620 vs base: 15/37 -> 11/32; trend closing 12 -> 8). Not worse with the retention fix.
+- Named case: e9 (frontier s46, 2000t), byte-identical on base 6fdfdf555 and the retention fix 5c6001620 (hash 45002e515a), so it's a base gap. CORRECTED 2026-11-01 by lane C: e9 does NOT die in this set. The t1056 death was the earlier cap-exempt batch.
+  - It holds retreat_431 for 1176 ticks in six segments: 432-641, 692-1085, 1092-1123, 1132-1171, 1192-1611 and 1632-1711.
+  - It is alive at t1999 with hp down to 0.05.
+  - Retreat walk ends by segment: (33,28)->(12,22), (10,14)->(19,29), (17,30)->(11,18), (20,18)->(25,25), (21,31)->(15,35), (32,31)->(34,10).
+  - Nearest hostile, first/min/last per segment: 3/1/11, 3/1/1, 4/1/1, 2/1/3, 5/1/1, 8/1/1. So it is at distance 1 in every segment.
+  - present_threat_to was true on 108/210, 215/394, 32/32, 24/40, 419/420 and 80/80 ticks.
+  - The retreat repeatedly walks through hostile-adjacent tiles. No town_center end is logged.
+  - **Counts-step addition for e9 (rpg-designer, 2026-11-01):** a hostile at distance 1 in every segment for 1176 ticks, with e9 alive at hp 0.05, may be a STALEMATE rather than a walk toward the threat. For each segment, record:
+    - attacks by the adjacent hostile on e9;
+    - tiles e9 moved, and why it doesn't reach town_center (blocked path, congestion or re-targeting);
+    - the hostile's own goal.
+    If e9 barely moves and the hostile barely attacks, link the case to the STALEMATE/WANDER nav family (TCK-20261030-STALEMATE-BREAK-OVERWRITES-A-PROJECT-MOVE-EVERY-TICK). No 5000t base run (designer).

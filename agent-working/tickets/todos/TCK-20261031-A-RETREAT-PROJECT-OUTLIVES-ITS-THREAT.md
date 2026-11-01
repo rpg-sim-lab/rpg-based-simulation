@@ -121,3 +121,19 @@ Ruling (A), inside this ticket, counts first: tactical's flight gate also calls 
 
 
 - **2026-11-01 landing-order item (from F3):** if this lands after F3, add a test that cleared_since advances while a subject is lodged (F3 suppresses movement intent only; the strategic pass still runs for lodgers).
+
+## Re-measure ruling (rpg-designer, 2026-11-01; fix 5c6001620 vs base 6fdfdf555, 15 runs per arm)
+- **Accepted:** no Tier 1. Crowded HAZARD rises in 1 seed only. The crowded s43 first diff (retreat_41 THREAT_CLEARED at t142) is trajectory.
+- **Gap to close first:** the mechanism test is widened to cover option A. Within 200t of death, a victim counts if it had a retreat adopted or completed under the new rules, OR a tactical flight decision that option A changed (present_threat_to vs perceived_threats, tactical.py:209/213).
+  - Check every flight-relevant tick in the 200t before death for urban s42 e14 and s46 e3 and e13 (PANIC_RETREAT), s45 e16, and the 7 crowded s43 victims.
+  - Same answer from both tests is FAIL. A different answer may PASS; the rows go to the designer.
+- **e9 (fl s46):** a base gap (byte-identical to base). It goes to TCK-20261031-DEATH-CLOSES-NO-PROJECT, and as a named case in TCK-20261101-A-RETREAT-WALKS-TOWARD-THE-THREAT, with the distance trend over the last 30t and where the town_center walk took it.
+- **The destination ticket is now P3.** REGROUP 0->8 hazard entries go to ENGAGE-BRACKETING as H1/N3 evidence. No owner H1 row.
+- **Close list:**
+  - 2.156 Measured states no cap behaviour and names both changes;
+  - disclosures: R3 to the slot-leak ticket; the 2 N=200 holds; destination P3; the REGROUP H1 evidence; e9 as a base gap;
+  - F3 lands first, then retention re-measures on F3 (the same 15, the same bar, the recovery check, deaths by cause);
+  - the owner push ask names one scope widening (option A, tactical flight).
+- **Flight check (lane C probe12, local 335793b2c; designer ACK 2026-11-01):** option A changed no flight decision for any victim. 369 flee ticks, 0 disagreeing. All 11 Tier 2 victims FAIL, so the Tier 2 pairs are divergence.
+  - The on-F3 re-measure fills 2.156 Measured and AC9. This set is cited as the pre-F3 reading (c861855da, 335793b2c).
+  - On-F3 conditions: any tier-1 cause gets the full Tier 2 trace again (200t, both changes); never-threatened adoptions must stay 0, and a rise is a STOP.
