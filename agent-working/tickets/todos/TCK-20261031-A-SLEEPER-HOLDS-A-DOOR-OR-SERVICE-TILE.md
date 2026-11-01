@@ -233,3 +233,31 @@ TCK-20261031-A-RETREAT-PROJECT-OUTLIVES-ITS-THREAT is measured on 6fdfdf555 (pre
   - If (iii) = 0 (no stayer drops after the claim tick): (Q) narrows to the backstop, plus a named and locked held-REST entry point with a unit test, plus an arm assert of (iii) = 0. The town-return and REGROUP decision meaning is dropped (YAGNI).
   - If (iii) > 0: one decision-entry skip via is_lodged, not 30 writer guards.
   - Class (b) accepted: the claim wins the merge over a same-tick move, explicitly. The move's new_position is refused and counted, with a test that the result is order-independent.
+
+## (iii) > 0 and the entry-suppression ruling (2026-11-01)
+- **Stayer drops after the claim tick are large.** LODGER_TARGET_DROPPED as claim / leave / stayer:
+  - crowded s46: 16 / 794 / 3022
+  - urban s42: 103 / 1190 / 13660
+  - urban s44: 54 / 1285 / 13566
+  - Dominant writer: intelligence.py:676 town-return REGROUP.
+- **Ruling (rpg-designer): two entries share the is_lodged predicate** (stayers only):
+  - the fused_strategic_pass per-entity loop;
+  - cognition.py evaluate_entity_intent.
+- **SUPPRESS movement-intent emission, don't skip the entity.** The entry runs what an outdoor sleeper with a held REST runs, minus outside perception. That keeps:
+  - time-driven state (cleared_since);
+  - needs and body, including REST end and the hunger/fatigue wake;
+  - memory upkeep and decay.
+  - The loop contents are listed keep/suppress in the change.
+  - Dispatch writers are expected to be unreached; any hit is a finding.
+- **Tests:**
+  - one per entry;
+  - a lodger's REST ends on time;
+  - past the hunger wake, the lodger decides and is served EAT in place;
+  - REST end leads to place_leavers on that tick or the next;
+  - cleared_since advances while lodged.
+- **Subject 17 (urban s44, dead t3306, 120t after leaving): provisionally divergence.** No leave-death law. The repeat reports, per world:
+  - deaths within 200t of leaving, against base's deaths within 200t of a served REST end;
+  - victim, cause and attacker for each;
+  - subject 17's death chain;
+  - leaver re-targets in the first 20t.
+  - A world rise that is half or more in recent leavers is a STOP.
