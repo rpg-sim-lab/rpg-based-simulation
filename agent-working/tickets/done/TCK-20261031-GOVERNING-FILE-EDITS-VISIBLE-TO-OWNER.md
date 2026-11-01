@@ -1,10 +1,10 @@
 ---
-status: active
+status: historical
 layer: ai
 authority: P2
 audience: agent
 ticket_id: TCK-20261031-GOVERNING-FILE-EDITS-VISIBLE-TO-OWNER
-phase: open
+phase: done
 date: 2026-10-31
 tags: [governance, delivery, agent-monitoring]
 ---
@@ -15,7 +15,7 @@ tags: [governance, delivery, agent-monitoring]
 Show the owner when governing files are edited: one path definition, a list in the PR body and a guard event
 
 ## Status
-OPEN
+DONE
 
 ## Tier
 standard
@@ -82,7 +82,12 @@ tools/sessions/classify.py, tools/sessions/guard.py, tools/delivery/pr_render.py
 - PR section is a `conditional` entry in `pr_template_spec.json`; the template-order test exempts only conditional entries and asserts this is the only one.
 
 ## Test Summary
+- Slot A (14 affected files, cores 4-5, -n 1): first run 699 passed, 5 failed (my new test file used a fake `.git`, so authority-class calls failed closed: a fixture fault, fixed with a real `git init`); second run of that file 28 passed; after the review fixes 710 passed, 0 failed.
+- Slot B at a445c91fe (full `tests/tools` + `tests/docs`, -n 2): 5630 passed, 1 failed, 58 skipped, 2 xfailed, 447 s. The one failure was `test_generate_registry.py::TestRealDocsTree::test_check_flag_detects_no_drift_against_real_registry`: `docs/REGISTRY.yaml` did not list this ticket while it sat in inprogress. The test itself was NOT re-run after Finalize; the registry state is checked with `python3 -m tools.generate_registry --check` (result recorded below).
+- `codebase.health check`: exit 0 (2 new report-only jscpd rows in src/observability, untouched by this ticket).
 
 ## Files Changed
+tools/sessions/classify.py, tools/sessions/guard.py, tools/sessions/boundary.py, tools/delivery/pr_render.py, tools/delivery/pr_template_spec.json, tools/agent-monitoring/session_layer_report.py, tools/agent-monitoring/generate_retro.py, tools/agent-monitoring/week_close.py (comment), docs/agent-monitoring/schema.md, docs/guides/delivery_process.md, tests/tools/conftest.py, tests/tools/test_governing_edit_visibility.py (new), tests/tools/test_delivery_pr_render.py, tests/tools/test_delivery_templates.py, tests/tools/test_session_boundary.py, tests/tools/test_session_layer_measures.py, tests/tools/test_week_close_gate_verdicts_and_void.py.
 
 ## Completion Summary
+Detection only, report-only, no settings or CLAUDE.md change. `classify.py` has one reported-governing-path list (second list; `GOVERNING_FILE_EDIT` unchanged) with `is_governing_path` (exact, repo-relative) and `governing_mentions` (Bash text, matched tokens only). The guard writes one `governing_edits.jsonl` row (seat, repo-relative path, `basis` path|mention, time, attempt) before any decision and still allows with no output; a failed write changes nothing. `pr_render.py` adds a conditional `## Governing paths touched` section from the three-dot branch diff (or a line saying the diff could not be read), with the limit sentence; `--check` compares it like any generated section. The retro compares attempts with merged commits by path and period in both directions and states the limits. Known gaps: Bash rows over- and under-count (pinned by a test); `discover_changed_files` stays two-dot for its other callers; rows reach main only when a branch carries them.
