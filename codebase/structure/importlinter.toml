@@ -297,10 +297,11 @@ ignore_imports = [
 
 [[tool.importlinter.contracts]]
 id = "c06_hot_path_not_heavy"
-name = "engine and the three hot observability modules do not import the heavy analyzers (phase19)"
+name = "engine, ai.goals and the three hot observability modules do not import the heavy analyzers (phase19)"
 type = "forbidden"
 source_modules = [
     "src.engine",
+    "src.ai.goals",
     "src.observability.config",
     "src.observability.event_extractor",
     "src.observability.event_recorder",
@@ -317,16 +318,16 @@ ignore_imports = [
     # `obs_mode != ObservabilityMode.OFF` branch (or the shutdown of an object that branch created). With
     # observability OFF none of these modules is imported; each is a write-only sink, never read back into the tick.
     # The ignores rely on rpg's condition (#547): an OFF-mode kernel imports none of the four, and an edge that moves
-    # out of the guard becomes a violation. That condition is UNENFORCED until TCK-20261018-PHASE19-OFF-MODE-RUNTIME-CHECK
-    # lands (owner decision 2026-10-18, #547): tests/architecture/test_phase19_observability_boundaries.py is a static scan
-    # that never matches `src.observability...` and has no notion of OFF mode.
-    # kernel.py:294 and :1188 -- decision-trace sink, opened only when observability is on (294), cleared at shutdown only if opened (1188)
+    # out of the guard becomes a violation. That condition is enforced at runtime by
+    # tests/architecture/test_phase19_off_mode_imports_none_of_the_four.py (one tick on one world; it checks the modules
+    # that tick imports, so a path that only a later tick or another world takes is outside it).
+    # Kernel.__init__ opens the decision-trace sink only when observability is on; Kernel.shutdown clears it only if it was opened
     "src.engine.kernel -> src.observability.cognition.decision_trace_writer",
-    # kernel.py:283 -- cognition recorder sink, built only when observability is on
+    # Kernel.__init__ -- cognition recorder sink, built only when observability is on
     "src.engine.kernel -> src.observability.cognition.recorder",
-    # kernel.py:152 -- run manifest and artifact sink, built only when observability is on
+    # Kernel.__init__ -- run manifest and artifact sink, built only when observability is on
     "src.engine.kernel -> src.observability.reporting.artifact_repository",
-    # kernel.py:282 -- metric-window sink, built only when observability is on
+    # Kernel.__init__ -- metric-window sink, built only when observability is on
     "src.engine.kernel -> src.observability.reporting.metric_recorder",
 ]
 

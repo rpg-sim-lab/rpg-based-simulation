@@ -38,7 +38,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 from vocabulary import WORKFLOW_AGENTS, WORKFLOW_PHASES, infer_workflow  # noqa: E402
 from duration_utils import compute_active_idle_split  # noqa: E402
 from validate import load_data_glob  # noqa: E402
-from run_dedup import dedupe_to_latest_per_execution  # noqa: E402
+from run_dedup import dedupe_to_latest_per_execution, drop_superseded_events  # noqa: E402
 import real_token_usage  # noqa: E402
 import retro_provenance  # noqa: E402
 
@@ -148,14 +148,14 @@ def _load_runs_and_events():
             events = [json.loads(row[0]) for row in conn.execute("SELECT raw_json FROM events ORDER BY id")]
         finally:
             conn.close()
-        return runs, events
+        return runs, drop_superseded_events(events)
     except Exception as exc:
         print(
             f"WARNING: agent-monitoring index unavailable ({exc}); falling back to direct JSONL "
             f"scan of {RUNS_FILE}/{EVENTS_FILE}",
             file=sys.stderr,
         )
-        return _load_source(RUNS_FILE, "runs"), _load_source(EVENTS_FILE, "events")
+        return _load_source(RUNS_FILE, "runs"), drop_superseded_events(_load_source(EVENTS_FILE, "events"))
 
 
 def iso_week(ts_str):
@@ -2178,15 +2178,18 @@ def _session_layer_section(runs, week_str, cutoff, latency_prs):
         data_dir = DEFAULT_TOOLS_FILE if DEFAULT_TOOLS_FILE.is_dir() else DEFAULT_TOOLS_FILE.parent
         all_manual = slr.load_family(data_dir, "manual_actions.jsonl")
         all_boundary = slr.load_family(data_dir, "role_boundary.jsonl")
+        all_governing = slr.load_family(data_dir, "governing_edits.jsonl")
         manual = slr.in_period(all_manual, week_str, cutoff)
         boundary = slr.in_period(all_boundary, week_str, cutoff)
+        governing = slr.in_period(all_governing, week_str, cutoff)
         rows = []
         for n in latency_prs:
             try:
                 rows.append((f"#{n}", batch_latency.from_pr(batch_latency.fetch_pr(n))))
             except Exception:  # noqa: BLE001 - an unavailable PR is `unknown`, not a failed retro
                 rows.append((f"#{n}", batch_latency.latencies(None, None, None) | {"dispatch_source": "unavailable"}))
-        return slr.render(manual, runs, boundary, rows or None, len(all_manual), len(all_boundary))
+        return slr.render(manual, runs, boundary, rows or None, len(all_manual), len(all_boundary), governing,
+                          len(all_governing), slr.merged_governing_commits(week_str, cutoff) if all_governing else {})
     except Exception:  # noqa: BLE001
         return None
 

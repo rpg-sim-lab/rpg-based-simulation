@@ -12893,14 +12893,18 @@
 
 - id: INFRA-430
   text: 'TCK-20261010-PERF-M2-T02B-RECORD (PERF-M2 OD-1, OD-3, OD-4, OD-6): benchmark
-    identity and result schema 1.4 (src/perf/benchmark_record.py SCHEMA_VERSION) is
+    identity and result schema 1.5 (src/perf/benchmark_record.py SCHEMA_VERSION) is
     binding in docs/performance/benchmark_identity_schema.md and implemented by src/perf/benchmark_record.py.
     BenchmarkRecord is frozen and round-trips through to_dict/from_dict. compare(base,
     head, thresholds) returns PASS, REGRESSION, INCONCLUSIVE or NOT_APPLICABLE with
     a reason: a missing base, a MAJOR schema_version mismatch (only a MAJOR mismatch
-    is INCONCLUSIVE; the steps from 1.0 to 1.4 were all additive MINOR bumps: 1.1
+    is INCONCLUSIVE; the steps from 1.0 to 1.5 were all additive MINOR bumps: 1.1
     the optional identity.runner section, 1.2 the optional after-collect keys of result.memory_mb,
-    1.3 the optional working_set_* keys of result.memory_mb, 1.4 the optional outcome.check),
+    1.3 the optional working_set_* keys of result.memory_mb, 1.4 the optional outcome.check,
+    1.5 the optional blocking identity.runtime.cpu_affinity and identity.runtime.dependency_fingerprint
+    and the recorded-only identity.runtime.dependency_count; a record from before 1.5 reads unknown
+    on both blocking fields, so against a 1.5 head it is INCONCLUSIVE with check blocking_fields,
+    not PASS),
     a missing or different result.cost_accounting_version, a declared hardware class
     that is not the detected one, or any blocking identity field that differs is INCONCLUSIVE
     and names the field; a head-side non-NORMAL RuntimeMode against an all-NORMAL
@@ -12911,14 +12915,18 @@
     for a capacity run, and its result dict is unchanged. PERF_* profiles take hardware_class
     from HardwareClassifier.detect_class(). Every PERF_* profile has a PERF_CANONICAL_PROFILES
     variant (name suffix _CANONICAL) with signal_contract=CANONICAL; the defaults
-    stay LIVE. No gate behaviour changes and no check becomes blocking.'
+    stay LIVE. compare() is not adopted by any gate here: no gate behaviour changes and
+    no check becomes blocking. tools/perf/quiet_gate.py and the rerun_baselines refusals
+    guard recording a baseline only; they are not compare() gates.'
   status: verified
   priority: P1
   legacy_evidence: null
   v2_evidence: src/perf/benchmark_record.py (BenchmarkRecord, compare, nearest_rank,
     collect_identity); src/perf/bench_harness.py (BenchHarness.run_benchmark, _build_record,
     _calculate_stats); src/perf/profiles.py (detected_hardware_class, canonical_variant,
-    PERF_CANONICAL_PROFILES)
+    PERF_CANONICAL_PROFILES); src/perf/dependency_fingerprint.py (collect_dependency_fingerprint);
+    src/perf/cpu_affinity.py (collect_cpu_affinity); tests/unit/perf/test_dependency_fingerprint.py;
+    tests/unit/perf/test_cpu_affinity.py
   proof_type: contract
   test_path: tests/unit/perf/test_benchmark_record.py
   divergence_note: DEV-020 (Bug Fix)

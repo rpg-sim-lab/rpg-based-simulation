@@ -203,6 +203,7 @@ The per-record schema is unaffected by this change; only where a record physical
 | `session_id` | string | Yes (optional) | Same value as the run's `session_id` on a hand-closure event (`TCK-20261006-HAND-CLOSURE-RECORDER-REAL-TIMESTAMPS`); `null` when the variable was unset; absent on older rows. Event `ts` keeps the closure time: per-event times are not derived. |
 | `cost_source` | string | Yes (optional) | Where `tool_call_count`/`cost_proxy_score` came from (`TCK-20261006-HAND-CLOSURE-COST-ATTRIBUTION`). `sidecar`: rows carrying this event's `(run_id, seq)` from a live sidecar. `session_window`: a hand closure's claim of the closing session's own unattributed `tools.jsonl` rows (`run_id` null, claimed by at most one closure, see `duration_source` on the run), carried as one ticket-level total on the final event, so it is NOT phase-resolved: read `cost_source` before using a per-phase figure. Absent: no attribution (keys absent too, never 0), or a row that predates the field. |
 | `skip_reason` | string | Yes (optional) | Only on a `status: skipped` event (`TCK-20261006-PATH-REASON-AND-PHASE-COVERAGE-RECORD`): `tier_plan` (the tier marks the phase `skipped_event`), `condition_false` (e.g. Parity's `src_change_and_behavior_changed`), `not_applicable`, `no_hand_tool` (what the hand-closure recorder sets for Review, Architecture-Verify and, with no docs change, Document-Update: the hand path has no step of its own for them), `deferred`, `other`, `unstated` (default when a hand closure does not say). The pipeline sets `tier_plan` and `condition_false` at its own skip sites. Rejected on any other status. |
+| `supersedes` | integer | Yes (optional) | Only on an `ok` event written by `tools/agent-monitoring/record_review.py` (`TCK-20261101-RECORD-REVIEW-AFTER-THE-PR-REVIEW-EXISTS`): the `seq` of the earlier event of the same run and phase that this row replaces (the hand close's folded `skipped` Review). Nothing is rewritten; readers drop the replaced row (`run_dedup.drop_superseded_events`, applied in `generate_retro._load_runs_and_events`), so Review counts as ran exactly once. A reader that bypasses that loader still sees both rows. A retro already published for a closed week keeps its skipped count; only a regenerated one picks up the overlay. Positive integer; absent on every other event. |
 
 ### `status` values
 
@@ -669,6 +670,35 @@ instance; never the `agent` vocabulary), `function`, `domain`, `tool`. Covered b
 `agent-working/agent-monitoring/data/*/*.jsonl merge=union` glob. Harden only what recurs after a measured
 window (plan section 10; M7). "Unusual route" is deliberately not its own kind: a routed path is still an edit in another domain, so it is
 folded into `edit_outside_owns` (`owner_seats` shows where it should have gone); M7 can split it if the data shows it recurs.
+
+## `governing_edits` (`agent-working/agent-monitoring/data/YYYY-Www/governing_edits.jsonl`)
+
+Report-only attempts on governing paths (`TCK-20261031-GOVERNING-FILE-EDITS-VISIBLE-TO-OWNER`; plan
+`docs/plans/agent_infrastructure/AI_FIRST_SDLC_ARCHITECTURE_EVOLUTION_PLAN.md` sections 7 and 28a). Its own file family like
+`role_boundary`: not an `events` row, no `agent`, `phase` or `run_id`, no gate reads it. Written by
+`tools/sessions/guard.py::_record_governing` through `tools/sessions/boundary.py::write_event(..., family=)` and the shared
+`writer.py::write_line()`. The guard still allows the call with no output; a write failure is swallowed. The path list is
+`tools/sessions/classify.py` (`is_governing_path`), shared with the PR-body section and the retro.
+
+Fields: `ts`, `event` (`"governing_edit_attempt"`), `seat` (the resolved role instance, else `unresolved`), `path`
+(repo-relative, never absolute), `basis`, `attempt` (always `true`). Nothing else: no tool name, command text, session id or
+content.
+
+- `basis: "path"`: an edit tool's file, exact. A file outside the repo (a user-level settings file, say) writes no row from an
+  edit tool, because it can never appear in a PR. (A `mention` row can still name a same-suffix file outside the repo; see below.)
+- `basis: "mention"`: a non-read-only Bash command whose text names the path from the repo root (`python3 tools/sessions/guard.py`
+  and `git add .github/workflows/x.yml` both count). It may not be an edit, so mention rows over-count; the row holds the
+  matched token only. They also under-count, and a mention can be misplaced:
+  - a Bash edit that does not name the path from the repo root (`cd tools/sessions && sed -i ... guard.py`) or that sits inside an
+    interpreter payload (`python3 -c "open('CLAUDE.md','w')"`) writes no row, so an empty count does not mean no edits;
+  - a mention such as `sed -i ... $HOME/.claude/settings.json` records `.claude/settings.json`, a file outside the repo.
+  These limits are pinned by tests, not fixed.
+
+A row is written at PreToolUse, so it is an attempt: the call may still be denied or fail, or the edit reverted. The retro
+(`session_layer_report.py`, "Governing-file edit attempts") compares attempts with merged commits on `origin/main` by path
+and period, in both directions (attempts with no merged commit, and merged commits with no edit attempt row); an attempt in one week can merge the next, and rows reach main only when a branch carries them, so "no merged
+commit" can mean either. Hook scripts wired from directories outside the list are not covered. Covered by the existing
+`agent-working/agent-monitoring/data/*/*.jsonl merge=union` glob.
 
 ## `gate_verdicts` (`agent-working/agent-monitoring/data/YYYY-Www/<identifier>.gate_verdicts.jsonl`)
 

@@ -1,10 +1,10 @@
 ---
-status: active
+status: historical
 layer: observability
 authority: P2
 audience: agent
 ticket_id: TCK-20261014-THE-PRESENTER-EMITS-SPECIES-AND-SIZE-FOR-MAP-MARKERS
-phase: open
+phase: done
 date: 2026-10-14
 tags: []
 ---
@@ -15,7 +15,7 @@ tags: []
 The entity presenter emits species and size, so map markers can vary by them (#548, designer application of D46/D50/D69/D74).
 
 ## Status
-INPROGRESS (presentation only; built on cefce1664)
+DONE
 
 ## Tier
 hotfix
@@ -74,3 +74,5 @@ Not done here: the acceptance line that sample worlds present no null species. O
 `src/api/presenters/state_presenter.py` (`_species_and_size`, both entity shapes) and the test above. There are no entity schemas under `src/api/schemas.py` to update.
 
 ## Completion Summary
+
+Closed 2026-10-31 by rpg-planner (owner go #715 6543261623, ticket cleanup). Re-verified on origin/main 96f623a62: AC1 (state_presenter.py:60), AC2 (tests/unit/api/test_presenter_species_and_size.py:18), AC3 as recorded (5000t hash-neutral). AC4 (post-merge #548 comment) dropped: the owner decision on #548 (2026-10-18) keys markers on `kind`; species/size not needed for batch A. The sample-worlds no-null-species test moves to the D74 diet step.

@@ -5,6 +5,8 @@ from pathlib import Path
 
 import pytest
 
+from tools.sessions import boundary as _boundary
+
 # The runtime base the shared search server would use if a test did not isolate it, captured at import, before any test
 # can change the environment. `search_shared.state_dir()` refuses it under pytest
 # (TCK-20261018-SEARCH-SHARED-SERVER-CWD-AND-TEST-RUNTIME-ISOLATION). Never compare listings of it: live sessions write there.
@@ -46,3 +48,20 @@ def _git_never_looks_above_the_tests_tmp_dir(tmp_path, monkeypatch):
     ceiling = str(tmp_path.resolve().parent)
     existing = os.environ.get("GIT_CEILING_DIRECTORIES")
     monkeypatch.setenv("GIT_CEILING_DIRECTORIES", f"{ceiling}{os.pathsep}{existing}" if existing else ceiling)
+
+
+@pytest.fixture(autouse=True)
+def governing_sink(tmp_path_factory, monkeypatch):
+    """Guard `governing_edits.jsonl` rows go to a tmp dir in every tools test (TCK-20261031-GOVERNING-FILE-EDITS-VISIBLE-TO-OWNER).
+
+    The guard writes one row for an edit of a governing path, so any test that sends such a path through `guard.main`
+    would otherwise append to the live week shard. A test that passes its own `data_dir` is not redirected. Returns the
+    sink directory (`<sink>/<iso-week>/governing_edits.jsonl`)."""
+    sink = tmp_path_factory.mktemp("governing-sink")
+    real = _boundary.write_event
+
+    def redirected(record, data_dir=None, family="role_boundary.jsonl"):
+        return real(record, sink if data_dir is None and family == "governing_edits.jsonl" else data_dir, family)
+
+    monkeypatch.setattr(_boundary, "write_event", redirected)
+    return sink

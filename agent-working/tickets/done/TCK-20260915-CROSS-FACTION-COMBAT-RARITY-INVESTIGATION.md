@@ -1,10 +1,10 @@
 ---
-status: active
+status: historical
 layer: world
 authority: P1
 audience: agent
 ticket_id: TCK-20260915-CROSS-FACTION-COMBAT-RARITY-INVESTIGATION
-phase: open
+phase: done
 date: 2026-09-15
 tags: [world, faction, combat]
 ---
@@ -17,7 +17,7 @@ system (faction sentiment) fed by nothing, not merely a reachability threshold p
 shape as the lair-trauma and calamity-intensity findings this week
 
 ## Status
-OPEN
+DONE
 
 ## Tier
 standard
@@ -630,6 +630,8 @@ follow-up, not a same-pass edit. **Filed as its own ticket, not left as only a c
 `TCK-20260919-COMBAT-HOSTILITY-SOURCE-DIVERGENCE-UNIFICATION`.
 
 ## Completion Summary
+Closed BY DISPOSITION 2026-10-31 by rpg-planner (owner go #715 6543261623). The rarity premise is gone: TCK-20260919 fixed the hostility test and combat is now decisional. The open part (pairwise_tension 0.0 in 3 of 4 worlds, measured 2026-09-15 before that fix, so stale) moves to TCK-20261031-FACTION-TENSION-FROM-REAL-ACTS (counts first on current main).
+
 **Investigation still paused (not closed).** Real progress across two sessions: six candidate root
 causes traced and falsified with direct evidence in the original 2026-09-15 pass (catalog
 hostility coverage was correct; spatial separation was not the blocker; the posture/targeting

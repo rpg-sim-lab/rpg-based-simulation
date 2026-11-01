@@ -1,10 +1,10 @@
 ---
-status: active
+status: historical
 layer: combat
 authority: P1
 audience: agent
 ticket_id: TCK-20261014-THE-WALK-CHECK-READS-ONLY-BLOCKED-TILES
-phase: open
+phase: done
 date: 2026-10-14
 tags: []
 ---
@@ -15,7 +15,7 @@ tags: []
 The walk check reads only blocked_tiles; the dead WALL terrain branch is removed (hash-identical).
 
 ## Status
-INPROGRESS
+DONE
 
 ## Tier
 hotfix
@@ -94,3 +94,5 @@ New test: `tests/unit/engine/test_walk_check_reads_only_blocked_tiles.py` (a blo
 `src/engine/candidate_selector.py` (public `is_static_position_blocked`, WALL branch removed), `src/engine/pipeline_phases/movement.py` (its copy removed; calls the selector via a top-level import), and the test above.
 
 ## Completion Summary
+
+Closed BY DISPOSITION 2026-10-31 by rpg-planner (owner go #715 6543261623). NOT done as titled: AC1 fails, src/engine/legality.py:40 still reads `== "WALL"` (and :395/:411 line of sight). AC2 met (tests/unit/engine/test_walk_check_reads_only_blocked_tiles.py). The removal is carried by v1_disclosure.md row D4 (:121, 'WALL line of sight | legality.py:40, 395-411') as a dead-rule switch-on after v1, its own measured step. Correction: this ticket cited row D1; the correct row is D4.

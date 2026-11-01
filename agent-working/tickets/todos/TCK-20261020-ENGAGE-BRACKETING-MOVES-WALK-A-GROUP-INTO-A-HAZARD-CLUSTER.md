@@ -78,3 +78,9 @@ After v1.
 ## Files Changed
 
 ## Completion Summary
+
+## 2026-10-31 second case and designer rule (rpg-planner)
+- urban_political s44 5000t, N14 new2 arm (pre-#795; lane B re-run t1585-1640, /mnt/data/scratch-rpg-implementer-2/n14/out/pack_new2_s44.jsonl, trace_pack.py): subject 13 (hunger 80) pursues non-acting scout 16 from t1608; 2, 5, 1, 6, 9 adopt the same target; REPOSITION/BRACKETING from t1618; the pack enters bandit_road (ROAD, hazard_level 2.0, NATURAL_TERRAIN) at t1624 and all six die t1629-1635 in the same road cells; 16 (fleeing along x=44) is unhurt. Same cluster (42-45, 43-45) as this ticket's frontier s42 case.
+- Designer rule direction: a pursuit or BRACKETING step into a cell with hazard_level > 0 is weighed like any other move into a hazard; no engagement exemption.
+- Counts first (15-run set, base at or after 6fdfdf555): hazard deaths during engage/BRACKETING moves; whether the pursuer's target itself entered the hazard. The need side of this case belongs to TCK-20261031-AN-ENGAGEMENT-OVERRIDES-A-PRESSING-NEED.
+
