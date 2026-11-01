@@ -13,7 +13,7 @@ The **Hard Law Monitor** is a core simulation health compliance guardian in the 
 
 ## 1. Core Operational Laws
 
-The monitor enforces seven authoritative laws spanning entity attributes, safety values, coordinates, and physical occupancy constraints:
+The monitor enforces eight authoritative laws spanning entity attributes, safety values, coordinates, and physical occupancy constraints:
 
 | Law ID | Scope | Constraint Rule | Severity | Description |
 | :--- | :--- | :--- | :--- | :--- |
@@ -24,6 +24,9 @@ The monitor enforces seven authoritative laws spanning entity attributes, safety
 | **`LAW-POSITION-FINITE`** | `DirtySet.movement_entities` | $x, y \in \mathbb{R}$ | **ERROR** | Guarantees that entity location coordinates are valid finite floating-point numbers (no `NaN` or `Infinity`). |
 | **`LAW-OCCUPANCY-COLLISION`** | `DirtySet.movement_entities` | $\text{occupants}(tile) \le 1$ | **ERROR** | Ensures no two solid active alive entities occupy the same spatial grid tile simultaneously. |
 | **`LAW-SPAWN-OCCUPANCY`** | `Kernel.__init__` (once, pre-tick) | Reuses `LegalityServiceV2.verify_occupancy()`'s WALL/`blocked_tiles`/`building_tiles`/`transient_claims`/occupancy rule, plus a tile-multi-occupancy scan, across entities + buildings + resource nodes | **ERROR** | Unconditional full-population scan of the compiled spawn state, run once before the first tick. Catches placement collisions `WorldCompiler.compile()` never validates and that dirty-set-gated `LAW-OCCUPANCY-COLLISION` cannot see because nothing has "moved" yet. |
+| **`LAW-LODGER-INDOORS`** | `DirtySet.all_dirty_entities` | An entity with `navigation.lodged_in` set stands on its building's own tile and has no navigation target | **ERROR** | F3 (divergence 2.155): a lodger is indoors; after apply it has no walk target and has not left its building's tile. A guard (`lodging.drop_lodger_targets`) drops a proposed target and counts it as `LODGER_TARGET_DROPPED`; this law fails if one gets through. |
+
+`LAW-SPAWN-OCCUPANCY`'s initial-placement scan skips an entity with `navigation.lodged_in` set: a lodger stands on its building's own tile by law (F3, divergence 2.155), so a restored checkpoint with a lodger is not a placement collision. An entity with `lodged_in` unset on an occupied tile is still flagged.
 
 ---
 
@@ -43,7 +46,7 @@ graph TD
 - **`OFF`**: All health checking is completely bypassed.
 - **`LIGHT` (Default)**: Tracks statistics and cumulative violations on the engine's thread-safe status signal. Emits structured warnings to standard logging outputs, but allows the simulation to proceed.
 - **`DEBUG` & `CERTIFICATION`**: Fails fast immediately. Halts loop execution by raising `HardLawViolationError`, preventing corrupt states from committing to persistence or being exposed to APIs.
-- **`LONG_RUN`**: Violations are still persisted to `hard_law_violations.jsonl` and routed to `AlertsManager`, but neither logged nor raised — the mode-gating `if`/`elif` chain only handles `LIGHT` for logging and `DEBUG`/`CERTIFICATION` for fail-fast, so `LONG_RUN` falls through both. This is a known gap, not a "LIGHT-like" behavior, and it applies identically to all seven laws above, including `LAW-SPAWN-OCCUPANCY`.
+- **`LONG_RUN`**: Violations are still persisted to `hard_law_violations.jsonl` and routed to `AlertsManager`, but neither logged nor raised — the mode-gating `if`/`elif` chain only handles `LIGHT` for logging and `DEBUG`/`CERTIFICATION` for fail-fast, so `LONG_RUN` falls through both. This is a known gap, not a "LIGHT-like" behavior, and it applies identically to all eight laws above, including `LAW-SPAWN-OCCUPANCY`.
 
 ---
 

@@ -11,6 +11,7 @@ from __future__ import annotations
 from typing import Tuple, List, Dict
 import math
 
+from src.core.lodging_rules import outside_entity
 from src.core.state import EntityState, AuthoritativeState
 from src.domains.information.schema import (
     InformationQuery,
@@ -64,7 +65,7 @@ class InformationQueryRouter:
             # 4. Proximity distance cost (mocked or loaded coordinates)
             dist_cost = 0.0
             # If the source corresponds to another entity/npc, compute real distance
-            source_entity = state.entities.get(prof.source_id)
+            source_entity = outside_entity(state.entities.get(prof.source_id))  # F3 (divergence 2.155): a source indoors cannot be asked from outside
             if source_entity:
                 tgt_pos = source_entity.navigation.position or (0.0, 0.0)
                 dx = tgt_pos[0] - entity_pos[0]

@@ -4,11 +4,13 @@ from __future__ import annotations
 from dataclasses import replace
 from typing import TYPE_CHECKING
 
+from src.core.lodging_rules import is_lodged
 from src.core.updates import (
     EntityUpdate,
     NavigationUpdate,
     RejectionEvent,
 )
+from src.engine.lodging import proposes_move, stays_lodged_on_refusal
 
 if TYPE_CHECKING:
     from src.core.state import AuthoritativeState
@@ -53,7 +55,7 @@ class OccupancyPhase:
         moving_entity_ids = {
             entity_id
             for entity_id, entity_update in refined_entity_updates.items()
-            if entity_update.new_position is not None
+            if proposes_move(entity_update)  # (a granted lodge claim, F3, is no contender for a tile)
         }
 
         if not moving_entity_ids:
@@ -63,7 +65,7 @@ class OccupancyPhase:
         # This bypasses any transient occupancy caches from prior movement phases.
         occ_map: dict[tuple[int, int], int] = {}
         for e_id, entity in state.entities.items():
-            if entity.lifecycle.active and entity.combat.alive:
+            if entity.lifecycle.active and entity.combat.alive and not is_lodged(entity):  # a lodger stands on no tile (F3)
                 pos = (
                     int(entity.navigation.position[0]),
                     int(entity.navigation.position[1]),
@@ -134,7 +136,7 @@ class OccupancyPhase:
                 EntityUpdate(entity_id=entity_id),
             )
 
-            current_navigation_update = entity_update.navigation or NavigationUpdate()
+            current_navigation_update = stays_lodged_on_refusal(entity_update.navigation or NavigationUpdate())  # (F3: a refused leaver stays lodged)
             reason = "OCCUPANCY_CONFLICT"
             
             new_rejections_delta[reason] = new_rejections_delta.get(reason, 0) + 1

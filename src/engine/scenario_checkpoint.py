@@ -8,6 +8,8 @@ import struct
 from pathlib import Path
 from typing import TYPE_CHECKING
 
+from src.engine.checkpoint_fields import fill_missing_fields
+
 if TYPE_CHECKING:
     from src.engine.scenario_runtime import ScenarioRuntimeService
     from src.scenarios.schema import SimulationScenarioDefinition
@@ -72,6 +74,7 @@ class ScenarioCheckpointer:
             header_len = struct.unpack("<I", f.read(4))[0]
             header = json.loads(f.read(header_len).decode("utf-8"))
             state = pickle.loads(f.read())
+        fill_missing_fields(state)  # the one post-unpickle step: fill a field the checkpoint predates (only where a ruling derives it) or refuse with a typed error
 
         if header["spec_id"] != spec.id:
             raise ValueError(

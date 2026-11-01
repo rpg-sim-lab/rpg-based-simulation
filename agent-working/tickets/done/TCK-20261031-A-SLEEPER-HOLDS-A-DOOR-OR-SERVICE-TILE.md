@@ -1,10 +1,10 @@
 ---
-status: active
+status: historical
 layer: ai
 authority: P1
 audience: agent
 ticket_id: TCK-20261031-A-SLEEPER-HOLDS-A-DOOR-OR-SERVICE-TILE
-phase: open
+phase: done
 date: 2026-10-31
 tags: []
 ---
@@ -15,10 +15,10 @@ tags: []
 A sleeper holds a door or service tile (F3: a served rest occupies the building, not the door tile)
 
 ## Status
-OPEN. Design by rpg-designer 2026-10-31 SEATED (source: main-checkout .claude/handover/drafts/rpg-designer-f3-design.md). Order per owner #715 6541804604 (memo row 93): F3 first, then N14 re-measure, A', nav, D80C, #781. DISPATCHED 2026-10-31 to lane B (rpg-implementer-2) under owner go #715 6543182195, investigation first; heavy runs after lane C releases the slot.
+DONE (hand-orchestrated, lane B, local branch rpg-sleeper-lodges; push and merge are the owner's). Dispatched under owner go #715 6543182195 (dispatch only).
 
 ## Tier
-standard (a durable entity field, content, occupancy and perception). Dispatch needs an owner go via lead-planner-u24 / #715.
+standard
 
 ## Type
 repair
@@ -93,9 +93,6 @@ Investigation (read-only, before the plan):
    elsewhere (F3 does not, and then 2.153's rest length or the floor-end wake needs its own ruling).
 3. EAT: confirm it is a single-tick action with no hold.
 4. The list of `navigation.position` readers (Scope 6).
-
-PERCEPTION RULING (rpg-designer 2026-10-31, after investigation items 2-4): a lodger perceives NOTHING outside while it lodges and re-perceives normally on the tick it steps out (one symmetric lodger filter for every spatial read). It keeps what it knows (memory, leads, concerns); only perception stops updating; nothing is cleared on entry. While lodged it is woken only by its own body (sleep debt ending the rest; hunger under A' later); no outside event wakes it (no 2.154 threat wake indoors). Law text gains: "...no one outside can reach or see it, and it sees no one outside." Guard list accepted: six index builders (spatial_query.get_occupancy_map, occupancy_snapshot.from_state, world_index._build_entity_index, spatial.SpatialGrid, pipeline_phases/occupancy.py, candidate_selector.position_index) plus direct readers (AoE splash, engagement phase, cognition scans, swap detection, legality fallbacks); lodged_in carried in the navigation copy, omitted from the canonical dict when None; a unit test per direct reader that a lodger is invisible to it.
-Investigation item 2 result (lane B, s44 traces, classification only): 27 of 28 new2 victims awake with no sleep in the 20 ticks before; F3 will not clear s44 (AC 9 branch). Designer's follow-up trace for the 2.153 ruling is on the N14 ticket.
 
 Planner notes (rpg-planner):
 - Divergence number: 2.155 (u24 block; next free after 2.154).
@@ -174,6 +171,124 @@ case, so I advise against it.
 Answered by the design: occupancy is entity-side `lodged_in` with a derived count (no record on the building); full = not admitted, arrival with no bed ends the project with a typed way-closed end; leaving = reach offsets, ring search to radius 3, else stay lodged; served REST only (EAT, WORK, rough rest, collapse do not lodge).
 
 ## Implementation Notes
+- Beds: only the inn declares beds (10). Home beds (owner: 4) apply when a home building kind is declared; none exists on main (no `home` in data/content/world/buildings.yaml), and adding a building kind is out of F3's scope (rpg-planner ruling 2026-10-31).
+- Charge parity: the lodging path charges what a beds=0 hold charges on main (the bed is merged twice per hold today; TCK-20261031-AN-INN-BED-IS-CHARGED-TWICE-PER-HOLD owns that defect).
+- Typed end: WAY_CLOSED goes through lane C's `end_record` (cherry-pick c1b14815c); parity ids STRAT-296 and COMB-350; divergence 2.155.
+- phase_graph.py (+11) adds two run-gates in `should_run_phase` (occupancy_resolution runs while anyone lodges; resource_transactions runs when a lodge claim is on the update); pipeline.py wraps `grant_beds` inside the existing resource_transactions phase. No run_phase is added or removed: the PHASES table and the golden live-signal fixture are unchanged.
+
+## Test Summary
+
+Pre-existing failures, red on clean main 6fdfdf555 and not caused by this ticket: `tests/unit/worldassembly/test_corpus_diversity.py::test_hero_guild_routing_seed42_1000t_cognition_grade_stability` and `::test_urban_political_selfmodel_probe_seed42_200t_social_world_grade_stability` (WORLD pillar 0.25 against anchor 0.32). Everything else in the scoped unit runs passed.
+
+Mechanism changed-code advisory (report-only), 12 findings, rpg-planner's review 2026-11-01: `buildings` and `combat_resolution` got a note in `registries/mechanisms.yaml`; the other ten are reviewed, plumbing only, no entry change (`action_pacing_readiness` legality.py, `attributes_biology` apply.py, `race_archetype` content/schema.py, `personality`/`city`/`camp` core/state.py, `entity_role` core/enums.py, `status_effects` core/updates.py and engine/patches.py, `world_composition_assembly` worldassembly/resolver.py, `world_compilation` worldbuilding/compiler.py).
+
+
+Final-head checks (2026-11-01, merged with origin/main 61e984212):
+- tests/architecture + tests/unit/{core,engine,systems,observability,ai,tools} + tests/engine: 3947 passed, 4 skipped; one `test_kernel_run_output_stays_out_of_data_runs` failure under xdist (parallel workers write data/runs) passes alone (4 passed). `-k mechanism`: 321 passed. Integration (`-m 'not slow'`) on 56abe4d8a: 1125 passed, 6 skipped, 0 failed.
+- Determinism: urban s44 5000t final hash cb3913a288b2729e7db10b2b02774e16f121125ee215629d4edb1b4b0398f46a and 25-tick chain 18fa525567e3de175de0becd9248b4c3b49327888a53cb09547cfde8ca917f0f, byte-equal on 9fa23bc0c, 039af5373, 56abe4d8a, c16d16bcd and the merged head; crowded s46 (4d6657f5...) and frontier s45 (d626e239...) byte-equal on 9fa23bc0c vs 56abe4d8a.
+- Defect found by tests/architecture and fixed: intelligence.py (systems) imported src.engine.lodging (systems to engine); the stay-or-leave predicates now live in src/core/lodging_rules.py.
+- Checkpoint: pre-F3 checkpoints are refused with CheckpointFieldMissingError (a ValueError) for BuildingState.beds; lodged_in fills None; both fields are the LAST field of their class (a slotted dataclass unpickles positionally). tests/unit/engine/test_checkpoint_fields.py builds records as an old pickle loads them.
+
+## Files Changed
+- agent-working/tickets/inprogress/TCK-20261031-A-SLEEPER-HOLDS-A-DOOR-OR-SERVICE-TILE.md
+- data/content/world/buildings.yaml
+- docs/brainstorm/mechanism_verification_view.md
+- docs/engine/contracts/local_world_interaction_contract.md
+- docs/guidelines/intentional_divergences.md
+- docs/mechanics/04_strategic_cognition.md
+- docs/observability/hard_law_monitor.md
+- docs/parity_ledger/combat_movement.yaml
+- docs/parity_ledger/strategic_cognition.yaml
+- docs/parity_ledger/world_dynamics.yaml
+- registries/mechanisms.yaml
+- src/ai/goals/scorers.py
+- src/api/presenters/state_presenter.py
+- src/content/schema.py
+- src/core/enums.py
+- src/core/lodging_rules.py
+- src/core/state.py
+- src/core/strategic.py
+- src/core/updates.py
+- src/domains/combat_engagement/phase.py
+- src/domains/information/resolver.py
+- src/domains/information/router.py
+- src/engine/apply.py
+- src/engine/appraisal.py
+- src/engine/building_arrival.py
+- src/engine/building_services.py
+- src/engine/candidate_selector.py
+- src/engine/checkpoint_fields.py
+- src/engine/combat.py
+- src/engine/domain/aoe_actions.py
+- src/engine/domain/cognition.py
+- src/engine/domain/view.py
+- src/engine/legality.py
+- src/engine/lodging.py
+- src/engine/occupancy_snapshot.py
+- src/engine/patches.py
+- src/engine/phase_graph.py
+- src/engine/pipeline.py
+- src/engine/pipeline_phases/actions.py
+- src/engine/pipeline_phases/movement.py
+- src/engine/pipeline_phases/occupancy.py
+- src/engine/scenario_checkpoint.py
+- src/engine/service_admission.py
+- src/engine/sleep_debt.py
+- src/engine/spatial.py
+- src/engine/spatial_query.py
+- src/engine/world_index.py
+- src/observability/hard_law_monitor.py
+- src/replay/fingerprint.py
+- src/systems/strategic_systems/intelligence.py
+- src/worldassembly/context.py
+- src/worldassembly/models.py
+- src/worldassembly/resolver.py
+- src/worldbuilding/compiler.py
+- tests/unit/engine/lodging_kernel.py
+- tests/unit/engine/test_beds_survive_a_checkpoint_restore.py
+- tests/unit/engine/test_checkpoint_fields.py
+- tests/unit/engine/test_lodged_in_is_carried_by_the_apply_path.py
+- tests/unit/engine/test_lodged_in_stays_in_the_apply_path.py
+- tests/unit/engine/test_lodger_is_invisible.py
+- tests/unit/engine/test_lodging.py
+- tests/unit/engine/test_lodging_leave_and_indexes.py
+- tests/unit/engine/test_lodging_no_bed_and_arrival.py
+- tests/unit/strategic/test_project_end_record.py
+- tests/unit/tools/test_mechanism_registry_completeness_check.py
+- data/worlds/*/resolved/{assembly_report,compile_context,provenance_manifest,validation_report}.json (regenerated compile outputs: the inn now carries beds; 91 files)
+- agent-working/staging_artifacts (moved to stored_artifacts), agent-working/agent-monitoring shards, docs/REGISTRY.yaml
+
+## Completion Summary
+A subject served a bed at a building that declares beds now lodges inside it (navigation.lodged_in, position the building's tile, no tile held): it holds no door or service tile, is invisible and untargetable from outside, and leaves the tick its rest ends onto a free tile beside the building. Divergence 2.155 (class Enforced); Bible 04 sec 1; contract 2.1; parity STRAT-295/STRAT-296/COMB-350; hard law LAW-LODGER-INDOORS; mechanisms.yaml (town_services, strategic_intelligence_core, buildings, combat_resolution). Measured over 15 paired runs (base 6fdfdf555, 3 worlds x seeds 42-46 x 5000 ticks): door-tile sleeper ticks crowded 11128 to 100, frontier 18137 to 715, urban 34662 to 85; asleep on a door tile after a leave 0; LAW-LODGER-INDOORS 0; stuck awake indoors at most 4 ticks. Deaths crowded 176 to 174, frontier 122 to 119, urban 48 to 49. Details in divergence 2.155 Measured.
+Disclosure:
+- the FULL re-adoption race;
+- the gold-0 clamp (to D73);
+- the hoverer cycle with figures: urban relodge_within_20 63 to 1775 per run, lodged span p50/p90 6/46 (urban), 3/4 (crowded), 3/6 (frontier), WAY_CLOSED ends 2 to 103 per urban run;
+- leaver re-target churn (to N14): 501 to 653 target changes in the first 20 ticks after a leave per urban run, 10 to 29 crowded, 4 to 67 frontier;
+- the counter correction 039af5373: the stayer drops were the claim's own tile re-emitted by lodge_claim each tick of a held rest, not a movement writer;
+- asleep share crowded 0.1035 to 0.1207 (0.59 of its asleep ticks are lodged rest), frontier 0.1876 to 0.1809, urban 0.2402 to 0.2458: the owner question follows N14;
+- crowded HAZARD 23 to 27 (tier 1), traced by id: 6 extra victims, 0 fed by lodging/leave; H1 exposure (no hazard avoidance) on intercept, regroup and panic-retreat legs. Frontier COMBAT 58 to 59 (extras 26 and 30 never lodged or left) is divergence;
+- subject 17 (urban s44, COMBAT t3306, divergence): the walk to (25,25) was a congestion blocker-resolution project replacing the finished fatigue project (intelligence.py:670), not town-return; to TCK-20261101-A-CONGESTION-BLOCKER-RESOLUTION-SENDS-A-SUBJECT-TO-THE-TOWN-CENTRE (counts-first);
+- subject 30 (the pre-Q-B door-tile hold at t4001): not reproducible at 9c685e498, abe8d0074, 876388edc, 4b3ecce12 or the final head (the world trajectory differs by commit); the class count is 0 in all 15 repeat runs;
+- the combat note wording, frontier item (b), and the clear_target versus target_clear field note in 2.155;
+- checkpoint format: pre-F3 checkpoints are refused with a typed error (CheckpointFieldMissingError), and the restore step is a single table (src/engine/checkpoint_fields.py, FIELD_RULES) that the churn lane extends with its own rows; the general fix, a checkpoint format version in the header, is a separate ticket;
+- the import-boundary fix (src/core/lodging_rules.py) found by tests/architecture after 91014a88f;
+- N14 is not on this branch: it is re-measured on top of F3. The churn fix is not on main either, so F3 lands first and the churn lane re-measures on F3.
+Run data this session wrote under data/runs was cleaned by id; scratch trees outside data/runs (n14/old9fa, o_*, base6fd) stay for the owner.
+
+## Ruling record carried from the seat copy (rpg-planner / rpg-designer, 2026-10-31 to 11-01)
+
+### Status
+OPEN. Design by rpg-designer 2026-10-31 SEATED (source: main-checkout .claude/handover/drafts/rpg-designer-f3-design.md). Order per owner #715 6541804604 (memo row 93): F3 first, then N14 re-measure, A', nav, D80C, #781. DISPATCHED 2026-10-31 to lane B (rpg-implementer-2) under owner go #715 6543182195, investigation first; heavy runs after lane C releases the slot.
+
+### Tier
+standard (a durable entity field, content, occupancy and perception). Dispatch needs an owner go via lead-planner-u24 / #715.
+
+### Scope
+PERCEPTION RULING (rpg-designer 2026-10-31, after investigation items 2-4): a lodger perceives NOTHING outside while it lodges and re-perceives normally on the tick it steps out (one symmetric lodger filter for every spatial read). It keeps what it knows (memory, leads, concerns); only perception stops updating; nothing is cleared on entry. While lodged it is woken only by its own body (sleep debt ending the rest; hunger under A' later); no outside event wakes it (no 2.154 threat wake indoors). Law text gains: "...no one outside can reach or see it, and it sees no one outside." Guard list accepted: six index builders (spatial_query.get_occupancy_map, occupancy_snapshot.from_state, world_index._build_entity_index, spatial.SpatialGrid, pipeline_phases/occupancy.py, candidate_selector.position_index) plus direct readers (AoE splash, engagement phase, cognition scans, swap detection, legality fallbacks); lodged_in carried in the navigation copy, omitted from the canonical dict when None; a unit test per direct reader that a lodger is invisible to it.
+Investigation item 2 result (lane B, s44 traces, classification only): 27 of 28 new2 victims awake with no sleep in the 20 ticks before; F3 will not clear s44 (AC 9 branch). Designer's follow-up trace for the 2.153 ruling is on the N14 ticket.
+
+### Implementation Notes
 - 2026-11-01 Q-A RESTATED by the designer (independent of the dispatch path): a REST whose FIRST execution is in reach of a building that declares beds either lodges (served) or does NOT run on that reach tile. With a fatigue project: the project ends WAY_CLOSED and the subject re-decides. A bare REST with no project: the action is refused there with a typed reason and the subject re-decides. A collapse is unchanged (decision 41). This replaces the 'REST targeting a beds building' guard. Added test: a bare REST on the reach tile of a full inn is refused and holds nothing. Trace the dispatch path after lane C's batch, for the record only (a finding if a path should have refused earlier). RULED (designer): Q-A applies only to subjects service_building would serve (keeps_coin, decision 43's trait); non-persons are unchanged. Test row: a non-keeps_coin subject's REST beside a full inn runs as on main.
 - 2026-11-01 DESIGNER ONE-ROUND RULING. Items 1-3 ACCEPTED: (i) = 0 closed; the FULL re-adoption is a disclosed race; the charge clamp goes to the D73 package. Q-A and Q-B are BOTH F3 scope and BLOCK closure (gaps against Scope 4 and the leave rule, not new rules).
   Q-A: a REST dispatched to a building that declares beds and finding NO bed at its first execution ends WAY_CLOSED (as at arrival) and never rests rough on the reach tile. The rule lives at the service's first execution, where admits_at refuses; no reservation. Scope guard: only a REST targeting a beds building; a rough REST elsewhere is unchanged. Test: two subjects for the last bed in the same tick; the lowest id lodges, the other ends WAY_CLOSED, holds no reach tile, and re-decides.
@@ -194,16 +309,10 @@ Answered by the design: occupancy is entity-side `lodged_in` with a derived coun
   Completion summary must disclose: the re-lodge churn is a base cycle (median 3-tick spans already in base); the N14 re-measure judges it.
   Awake door-holders -> TCK-20261101-A-WALKER-WAITS-AT-A-DOOR-TILE-AN-AWAKE-HOLDER-KEEPS. The precedence base is measured ON F3.
 
-## Test Summary
-
-## Files Changed
-
-## Completion Summary
-
-## Landing-order condition (rpg-designer 2026-10-31)
+### Landing-order condition (rpg-designer 2026-10-31)
 TCK-20261031-A-RETREAT-PROJECT-OUTLIVES-ITS-THREAT is measured on 6fdfdf555 (pre-F3). Whichever of it and TCK-20261031-A-SLEEPER-HOLDS-A-DOOR-OR-SERVICE-TILE lands SECOND repeats, on top of the other, retention's recovery check (ticks with hp < 0.5, no present threat and no RECOVER/REST/FATIGUE project current; any entity over 200 ticks is a finding) and deaths by cause per world.
 
-## Arm f3q STOP and ruling (2026-11-01)
+### Arm f3q STOP and ruling (2026-11-01)
 - **Arm f3q (15 runs, abe8d0074):** LAW-LODGER-INDOORS fired in 13/15 runs (crowd 0/6/30/1/161; front 5/0/0/102/0; urban 326/521/200+/175/161).
   - Class (a): a lodger ends the tick holding a nav target. The town-return/REGROUP writers (intelligence.py:676, :668) re-set it after drop_lodger_targets runs.
   - Class (b): a lodger stands off its building tile with no target.
@@ -221,7 +330,7 @@ TCK-20261031-A-RETREAT-PROJECT-OUTLIVES-ITS-THREAT is measured on 6fdfdf555 (pre
   - the crowded asleep-share split (lodged REST / outside REST / collapse; lodged REST length p50/p90 against base's served REST length);
   - the s44 victim ids, and whether each was a lodger or a leaver.
 
-## Root causes and narrowed ruling (2026-11-01)
+### Root causes and narrowed ruling (2026-11-01)
 - **Lane B traces (local 4b3ecce12):**
   - Class (a): 495/505 rows are LEAVERS. The occupancy vet refused the leave step (OCCUPANCY_CONFLICT) and stripped lodged_in_clear and new_position, but left the :676 target. The other 10 rows are claim-tick :676.
   - Class (b): on the claim tick, a movement new_position (the reach tile) merged over the building tile.
@@ -234,7 +343,7 @@ TCK-20261031-A-RETREAT-PROJECT-OUTLIVES-ITS-THREAT is measured on 6fdfdf555 (pre
   - If (iii) > 0: one decision-entry skip via is_lodged, not 30 writer guards.
   - Class (b) accepted: the claim wins the merge over a same-tick move, explicitly. The move's new_position is refused and counted, with a test that the result is order-independent.
 
-## (iii) > 0 and the entry-suppression ruling (2026-11-01)
+### (iii) > 0 and the entry-suppression ruling (2026-11-01)
 - **Stayer drops after the claim tick are large.** LODGER_TARGET_DROPPED as claim / leave / stayer:
   - crowded s46: 16 / 794 / 3022
   - urban s42: 103 / 1190 / 13660
