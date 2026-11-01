@@ -49,3 +49,5 @@ Timing: non-audit, pinned FULL (PinnedNormalGovernor), ConcurrentExecutionAdapte
 - Step (a) (live-group iteration) is in the batch: state hashes unchanged on three worlds (66101cd32511, a872018bf494, ae41db137ac7), per-pass visits = live at phase start + same-tick adds, residual 0.
 
 - Step (a) ticket: TCK-20261101-DISSOLVED-GROUP-RECORDS-ARE-KEPT-AND-VISITED-EVERY-TICK lives on origin rpg-planner-seat-next at 986510e3d (agent-working/tickets/todos/); it reaches main in the planner's next batch, after F3. This PR delivers step (a) only; (b) and (c) stay open, so the ticket must NOT appear under Closes: when the body is rendered (check pr_render output; if it does, tell the planner, no hand edit).
+
+- restore order: spec check before fill_missing_fields (F3's order inverted; found by test_restore_raises_on_spec_id_mismatch with the group FIELD_RULES rows).

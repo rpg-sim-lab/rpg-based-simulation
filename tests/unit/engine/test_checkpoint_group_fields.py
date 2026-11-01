@@ -181,3 +181,46 @@ def test_a_counter_not_above_every_stored_non_squad_id_raises_at_restore_and_one
     object.__setattr__(ok, "next_group_id", 10010)
     check_group_counter(ok)  # passes
     assert issubclass(GroupCounterBehindStoreError, ValueError)  # the restore route answers 400
+
+
+def _write_checkpoint(tmp_path, blob, spec_id):
+    header = json.dumps({"tick": 7, "spec_id": spec_id, "rng_checkpoint": None}).encode()
+    path = tmp_path / "pre_f3.bin"
+    path.write_bytes(struct.pack("<I", len(header)) + header + blob)
+    return path
+
+
+def _pre_f3_blob(monkeypatch):
+    """A checkpoint written before F3: the state pickles with a building whose trailing `beds` slot is not in the saved tuple (the current group fields are present)."""
+    from tests.unit.engine.lodging_kernel import INN_ID, REACH, hero, kernel
+    k = kernel([hero(1, REACH[0], action=None)], beds=1)
+    try:
+        def building_state(self):
+            return [getattr(self, f.name) for f in dataclasses.fields(self) if f.name != "beds"]
+        from src.core.state import BuildingState
+        monkeypatch.setattr(BuildingState, "__getstate__", building_state, raising=False)
+        try:
+            return pickle.dumps(k._state)
+        finally:
+            monkeypatch.undo()
+    finally:
+        k.shutdown()
+
+
+def test_a_pre_f3_checkpoint_of_the_same_scenario_is_still_refused_for_the_missing_beds(tmp_path, monkeypatch):
+    """F3's refusal survives the restore reorder: same scenario id, spec check passes, the fill then refuses the building without `beds`."""
+    from src.scenarios.schema import SimulationScenarioDefinition
+    path = _write_checkpoint(tmp_path, _pre_f3_blob(monkeypatch), "s")
+    spec = SimulationScenarioDefinition(id="s", world_composition="frontier_living_world", perspective="hero_guild_perspective")
+    with pytest.raises(CheckpointFieldMissingError, match=r"'beds'"):
+        ScenarioCheckpointer.restore(path, spec)
+
+
+def test_a_pre_f3_checkpoint_of_a_different_scenario_raises_the_spec_id_mismatch_not_the_field_error(tmp_path, monkeypatch):
+    """The spec check runs before the fill: a checkpoint of another scenario is refused for that reason even when it also lacks fields."""
+    from src.scenarios.schema import SimulationScenarioDefinition
+    path = _write_checkpoint(tmp_path, _pre_f3_blob(monkeypatch), "other_scenario")
+    spec = SimulationScenarioDefinition(id="s", world_composition="frontier_living_world", perspective="hero_guild_perspective")
+    with pytest.raises(ValueError, match="spec_id") as err:
+        ScenarioCheckpointer.restore(path, spec)
+    assert not isinstance(err.value, CheckpointFieldMissingError)
