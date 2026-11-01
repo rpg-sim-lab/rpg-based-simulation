@@ -472,3 +472,22 @@ LANDING:
 NOT in this rider: step (b) (retention), which waits on the one retention policy with TERMINAL-PROJECTS, and step (c) (the id-reuse round-trip test).
 
 lead-planner's terms, same message: implement before the F3 sync, so C and B run on the final tree. The 3-world hash check at 2000t has its go. The run-without-(a) default is withdrawn unless the hash check fails.
+
+### rpg-planner's binding sections of TCK-20261101-DISSOLVED-GROUP-RECORDS-ARE-KEPT-AND-VISITED-EVERY-TICK and the count bar with (a) (via lead-planner-u24 and lead-planner, 2026-11-01, word for word; the file is on rpg-planner's seat, uncommitted)
+
+## Acceptance Criteria
+- (a) live-only iteration (rider on the ubuntu churn lane, ubuntu owner #715 6555733640):
+- The groups and cooperation phases do per-group work for LIVE groups only, through a derived view. No new durable field without a typed FIELD_RULES row.
+- Final state hash equal to the churn tree (without (a)) on 3 worlds, s42, 2000t. Any difference is a finding to rpg-designer naming the reader, not patched past.
+- Count bar, deterministic and from the same run: per-group work visits (groups and cooperation, each) EQUAL the summed live-group count per tick. Any excess is a finding naming what it visits. The derived view's own scan (filtering the store) is reported separately as 'store records scanned per tick, summed', disclosed, with no bar.
+- Timing: frontier groups-phase median ms/tick at most 1.5 x base's median (base 0.270, so at most 0.405), or within base's spread. If not met, it is disclosed with the rows. It is not a STOP.
+- Frontier bar A unchanged: R x 11.2 s > 52.2 s fires (iii).
+- (b) retention: counts (every reader of a dissolved record, and store growth per 1000t at 5000t). One policy shared with TCK-20261020-TERMINAL-PROJECTS-ARE-RECORDS-WITH-NO-RETENTION-BOUND. Not on the critical path, and not in the rider.
+- (c) id-reuse test: drop dissolved records, round-trip a checkpoint, and the next id issued is above every id ever issued. Not in the rider.
+## Designer ruling (rpg-designer, 2026-11-01), P2
+- (a) ITERATION, now: iterate LIVE groups only, since a dissolved record has no behaviour. Use a derived live view (a status filter or an index rebuilt from state), with no new durable field unless cost needs one (typed, through FIELD_RULES on restore). Acceptance: hash-equal to the churn tree on 3 worlds at 2000t, and the frontier groups phase back near base per tick. Any hash move means a phase reads dissolved records for behaviour, and that is a finding named with its reader. Land before any 5000t set that reports tick time (N14-on-F3, A'), with the churn fix if hash-equal or right after. If it isn't ready when such a set runs, that set reports groups and cooperation ms separately with the end store size, and discloses it.
+- (b) RETENTION: one policy with TERMINAL-PROJECTS, counts first (contracts holding a group id, memory or beliefs, reputation, SimQ, read models, replay; growth per 1000t at 5000t).
+- (c) ID REUSE: no reuse while next_group_id is persisted typed state. The load seed max(10000, the highest non-squad id + 1) applies only to an old checkpoint without the counter, through FIELD_RULES.
+Related code: src/systems/world_systems/groups.py, src/engine/pipeline_phases/groups.py, src/systems/social_systems/group_service.py, and cooperation/GroupEvaluator.
+
+COUNT BAR WITH (a): rpg-planner-ubuntu's 'at or below 2 x the live-group visits' is TIGHTENED to EQUAL. With live-only iteration, the per-group work visits are deterministic and should equal the summed live count exactly; 2x would hide up to one full extra pass. The filter scan is counted apart and disclosed, with no bar. The store-ratio bars are RETIRED for (a). Frontier A stays R x 11.2 s > 52.2 s. The timing bar is in the AC above, and it is disclosure, not a STOP.
