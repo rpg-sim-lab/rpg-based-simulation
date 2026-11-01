@@ -252,6 +252,18 @@ rpg-designer's correction, same relay: "do NOT run the 14 parked pairs on 9e3b07
 
 lead-planner's note, same message: "extra victim" is fixed per world before the runs: the victims present on the branch and absent on base for that cause, per seed. Tier 2's traces need instrumented runs; list them in the go ask. My draft definition of a rise is dropped.
 
+### rpg-designer on the first-pair trace, 2026-11-01 (u24; relayed by lead-planner-u24 and lead-planner). Word for word:
+
+"1. NOT A NEW TICKET: the INTERCEPTING chase along y=40 into terrain draining 20 hp/tick, with no retreat, looks like TCK-20261020-ENGAGE-BRACKETING-MOVES-WALK-A-GROUP-INTO-A-HAZARD-CLUSTER. The designer ruled that in the N14 s44 analysis: there is no engagement exemption from hazard avoidance (in s44, followers adopted scout 16's target and walked into bandit_road, hazard 2.0).
+- Check whether the INTERCEPTING writer (tactical.py:612) is inside that ticket's scope. If its path ignores hazard, it's the same law: a chase is a move, and it avoids hazard like any move.
+- Attach entities 3, 11 and 5 there as evidence, and widen the scope if it named only bracketing moves.
+- File separately ONLY if the path does respect hazard and the drain comes from something else.
+2. MECHANISM TEST, sharpened (the same for every lane): 'passes through the fix's mechanism' = a CAUSAL step in the death chain is behaviour the fix changed. Being in a group, or a diverged world, is NOT enough.
+- Churn fix, entity 3 (leader and holder on a fresh contract): did the INTERCEPTING chase come from group engagement (a group target, a follower adopting the leader's target, or similar)? If yes, the fix's longer-lived groups feed a known defect.
+- 11 and 5 (ungrouped) FAIL the test as described.
+3. AN EXPOSED OLD DEFECT: if the final 15 show a tier-1 HAZARD STOP whose victims share this path, the fix isn't wrong. The older defect then ranks first: the hazard ticket moves AHEAD of the landing (like the id fix landing with the churn fix). It is NOT waived as divergence. Below tier 1, it's tier-2 divergence, reported, with the victims attached to the hazard ticket.
+4. FIRST DIFFS: the t176 movement diff is base's overwrite of live group 10021 being removed. That's the id fix doing its job; no action."
+
 ## Implementation Notes
 ## Test Summary
 ## Files Changed
