@@ -11,6 +11,23 @@ from src.engine.apply import ApplyPath as _AP
 import src.core.dirty as _dirty
 E = dict(forms=[], dis=[], pending_ended={}, first_ended={}, lag=[], overdue_ticks=0, overdue_not_relevant=0, ended_seen=0, mbt=[], deaths=[], active_pairs={}, full_scan_ticks=0, ticks=0)
 _has_binding = hasattr(_GS, "_binding_end")
+E["phase_ran"] = []; E["ended_log"] = []; E["formation_pick"] = []
+from src.engine.pipeline import AuthoritativeApplyPipeline as _AAP
+_orc = _AAP._resolve_contract_expirations
+def _rc(state, update, *a, **k):
+    E["phase_ran"].append(state.tick)
+    return _orc(state, update, *a, **k)
+_AAP._resolve_contract_expirations = staticmethod(_rc)
+if _has_binding:
+    _ogf = _GS._gather_formation
+    def _gf(state, id_a, already_forming):
+        members, best = _ogf(state, id_a, already_forming)
+        if len(members) >= 2:
+            ea = state.entities[id_a]
+            qual = [c for c in sorted(ea.strategic.contracts) if _GS._formation_partner(state, ea, ea.strategic.contracts[c], already_forming) is not None]
+            E["formation_pick"].append([state.tick, id_a, len(qual), qual[0] if qual else None, best])
+        return members, best
+    _GS._gather_formation = staticmethod(_gf)
 _inner_ug = _GS.update_groups
 def _ug2(state, *a, **k):
     cu = a[0] if a else k.get("current_update")
@@ -25,7 +42,8 @@ def _ug2(state, *a, **k):
         for gid, g in state.groups.items():
             if g.dissolution_tick is None and g.contract_holder_id is not None:
                 e = _GS._binding_end(state, g, cu, alive, active)  # with the same-tick update, so a status write landing on the expiry tick is seen
-                if e is not None: ended[gid] = (e[0].value, gid in rel or fs)
+                if e is not None:
+                    ended[gid] = (e[0].value, gid in rel or fs); E["ended_log"].append([state.tick, gid, bool(gid in rel or fs)])
         E["pending_ended"][state.tick] = ended
     r = _inner_ug(state, *a, **k)
     for g in P.CUR["form"]:
