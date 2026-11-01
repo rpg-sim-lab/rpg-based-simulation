@@ -1,10 +1,10 @@
 ---
-status: active
+status: historical
 layer: simulation
 authority: P1
 audience: agent
 ticket_id: TCK-20261031-A-PAIR-RE-FORMS-AND-LEAVES-A-GROUP-EVERY-TWO-TICKS
-phase: open
+phase: done
 date: 2026-10-31
 tags: [cooperation, social]
 ---
@@ -15,7 +15,7 @@ tags: [cooperation, social]
 A pair of entities forms a group and is expelled from it about every 2 ticks. Cause: a same-tick leadership election moves the leader off the entity holding the group's contract, and the dissolution check reads the contract from the current leader. Once group ids stop repeating, each cycle leaves a retained dissolved record. Fix as ruled: a typed contract binding on the group, plus an election cadence that starts at formation.
 
 ## Status
-OPEN
+DONE
 
 ## Tier
 standard
@@ -333,9 +333,21 @@ Noted:
 - The byte-equal runs remain the proof for the relevance fix."
 
 ## Implementation Notes
+- A group formed by a contract is bound to it and to its holder: `GroupRecord.contract_holder_id` (the formation scan's entity_a), `dissolution_reason` (typed enum `GroupDissolutionReason`, fixed precedence BINDING_HOLDER_LEFT > BINDING_CONTRACT_MISSING > BINDING_CONTRACT_NOT_ACTIVE > LEADER_LOST > DEFECTION > MEMBERS_BELOW_TWO) and `dissolution_contract_status`; `GroupBindingError` for a contract id without a holder. The contract is read from the holder's own map; liveness is the shared `contract_is_live` (now in `src/core/strategic.py`), a due contract ends the group on its expiry tick as FULFILLED even when the contracts phase did not run. Formation binds the live contract with the latest expiry (ties lowest id) and stamps `last_leadership_check_tick`, so the election cadence starts at formation.
+- Dirty-set relevance: a bound group is relevant when its contract is due (`due_bound_group_ids` in `src/core/dirty.py`); phase skipping is covered by a test and an independent range check.
+- Step (a) (TCK-20261101-DISSOLVED-GROUP-RECORDS-ARE-KEPT-AND-VISITED-EVERY-TICK, step (a) only): the groups and cooperation phases iterate live groups through `is_live_group` / `live_group_items` / `live_group_ids`; whole-store readers (allocator, hash, checkpoint, `find_group_for_contract`) are unchanged; hash-equal on three worlds at 2000t.
+- Restore: one post-unpickle step in `src/engine/checkpoint_fields.py` in F3's table and shape (`FIELD_RULES`, `CheckpointFieldMissingError`, a 400 on the route); the spec id is checked before the fill (F3's order inverted); field order guard `test_pickled_record_field_order.py`. Parity SOC-279; divergence 2.146 rewritten (Bug Fix); Bible chapter 07 binding paragraph.
+
 ## Test Summary
+- New: `tests/unit/social/test_group_contract_binding.py`, `test_live_group_view.py`, `tests/unit/engine/test_checkpoint_group_fields.py` (incl. a pre-F3 checkpoint of the same scenario refused for the beds, another scenario's refused for the spec id; a control run on F3's order fails the latter), `tests/unit/core/test_pickled_record_field_order.py`, `tests/unit/core/test_state_builders_pass_the_group_counter.py`. Changed: hand-built groups in `test_domain_7_social.py` and `test_social_phase7.py` gain `contract_holder_id`; the lifecycle pin and kernel fixture regenerated (id fix moved 295 rows, the binding 297; the default path carries none of these events).
+- Gates on the final head: scoped tests 3142 passed, 6 skipped, 1 xfailed (cores 4-5); mypy filter clean; `codebase.health check` OK, 0 worse; N818 only HashScheduleViolation; ruff no new finding against main; parity schema gate OK, baseline tightened (two main-side count falls, in its own commit).
+- Measurements (post-F3, base 30307228c vs arm effd2e8fc): 15 audit pairs: Tier 1 not fired, hard law `{}`, lag 0 on every FULFILLED end; three pinned hash runs equal the churn tree's; timing set of 18 (non-audit, pinned FULL, ConcurrentExecutionAdapter): crowded -7.6%, urban -0.1%, frontier +6.7% median UNRESOLVED (slower in 3 of 3 pairs, 5.0 s overlap on one base rep, likely real); hold rule fired in no world; visits per pass = live + (A) 0 + (B) 45 / 109 / 59, residual 0.
+
 ## Files Changed
+Source: `src/core/{dirty,enums,state,strategic,updates,group_record,group_update_merge}.py`, `src/domains/cooperation/phase.py`, `src/engine/{apply,apply_plan,checkpoint,checkpoint_fields,military_conflict,scenario_checkpoint}.py`, `src/engine/pipeline_phases/{contracts,groups}.py`, `src/replay/fingerprint.py`, `src/systems/social_systems/{contracts,party_lifecycle}.py`, `src/systems/world_systems/groups.py`. Tests: the new files above and updated `tests/unit/social/{test_domain_7_social,test_multi_hero,test_social_party_regression,test_social_phase7}.py`, `tests/unit/domains/faction/{test_siege_model,test_squad_group_id_hashseed}.py`, `tests/integration/optimization/test_force_full_scan_phase_compliance.py`, `tests/api/test_scenario_runtime_api.py`, fixture `kernel_runs.jsonl`. Docs: `docs/guidelines/intentional_divergences.md` (2.146), `docs/mechanics/07_social_political_dynamics.md`, `docs/parity_ledger/social_narrative.yaml` (SOC-279), `codebase/baselines/parity_ledger_schema_baseline.json`, `docs/REGISTRY.yaml`. Evidence and PR notes: `agent-working/stored_artifacts/TCK-20261031-A-PAIR-RE-FORMS-AND-LEAVES-A-GROUP-EVERY-TWO-TICKS/`.
+
 ## Completion Summary
+Not pushed, no PR, and the owner has not approved a push or a merge: this closes the work on the branch `rpg-ubuntu-group-id-alloc-impl` locally only (src identical to effd2e8fc). The churn is gone: pairs form one group per contract and it ends on a typed reason at the contract's term (FULFILLED ends 217 / 356 / 186 with lag 0; formations fall 988 to 332, 934 to 504, 805 to 218 over 5 seeds). Disclosure list (full text in the PR notes and divergence 2.146): the Tier 1 death bar did not fire; two victims died within 50 ticks of a bed leave (frontier s43 e12, urban s42 e23), both traced and cleared NOT FED (plain rest ends, F3 re-lodge churn); crowded s43 e10 is FED by (i) (pre-existing focus-fire group_bias); frontier s45 e22 FED by the letter only; v17 and v24 NOT SHOWN; per-seed rises with totals down (frontier s43 21 to 35, urban s42 8 to 10); the e30 kill cluster untraced; the lodged-leader seam (TCK-20261101-A-LODGER-OFFERS-AND-ACCEPTS-RECRUIT-CONTRACTS and TCK-20261101-A-LODGER-DECISION-PATH-AUDIT, not on main yet) with 9 probe rows of a lodged stayer chosen leader and bound holder; riders TCK-20261101-A-HOSTILE-ATTACKING-YOU-OUTRANKS-THE-GROUP-SHARED-TARGET and TCK-20261101-A-LOW-HP-VANGUARD-TAKES-ROLE-GATED-MOVES-INTO-CONTACT; frontier timing +6.7% unresolved, groups phase 0.261 to 0.854 ms/tick and cooperation 4.014 to 3.097, about 8 ms/tick not attributed. TCK-20261101-DISSOLVED-GROUP-RECORDS-ARE-KEPT-AND-VISITED-EVERY-TICK is on main and stays OPEN: step (a) delivered here, (b) and (c) open. Open findings stay open: TCK-20261101-A-PAIR-HOLDS-MANY-ACTIVE-RECRUIT-CONTRACTS-AT-ONCE, TCK-20261101-A-CHECKPOINT-HAS-NO-FORMAT-VERSION, TCK-20261101-A-NO-PARTNER-BLOCKER-IS-RE-CREATED-EVERY-TICK. A merge-time warning that comes from merged main, not from this batch: TCK-20261031-SLOW-KNOWN-REDS-HELD-ROWS-EXPIRY-REDATED-TO-1129 appears in a commit subject without a changed ticket file.
 
 ### rpg-designer's ack on the 15 paired runs (via lead-planner-u24 and lead-planner, 2026-11-01, word for word)
 

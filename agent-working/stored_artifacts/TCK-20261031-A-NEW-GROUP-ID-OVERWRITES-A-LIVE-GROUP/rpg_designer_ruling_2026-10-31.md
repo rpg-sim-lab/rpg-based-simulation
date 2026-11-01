@@ -4,7 +4,7 @@ layer: simulation
 authority: P1
 audience: agent
 ticket_id: TCK-20261031-A-NEW-GROUP-ID-OVERWRITES-A-LIVE-GROUP
-artifact_type: ruling
+artifact_type: report
 date: 2026-10-31
 tags: []
 ---

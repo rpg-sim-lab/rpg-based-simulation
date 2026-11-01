@@ -3,6 +3,7 @@ status: active
 layer: simulation
 authority: P1
 audience: agent
+artifact_type: plan
 ticket_id: TCK-20261031-A-NEW-GROUP-ID-OVERWRITES-A-LIVE-GROUP
 phase: open
 date: 2026-10-31

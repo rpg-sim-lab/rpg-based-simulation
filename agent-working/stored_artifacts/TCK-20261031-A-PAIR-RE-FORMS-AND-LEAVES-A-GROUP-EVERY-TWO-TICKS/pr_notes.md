@@ -3,6 +3,7 @@ status: active
 layer: simulation
 authority: P1
 audience: agent
+artifact_type: report
 ticket_id: TCK-20261031-A-PAIR-RE-FORMS-AND-LEAVES-A-GROUP-EVERY-TWO-TICKS
 phase: open
 date: 2026-11-01
@@ -60,7 +61,7 @@ e12 and e23 are final NOT FED, and v9 NOT FED. e12 and e23 died within 50 ticks 
 - Which of F3 or this batch landed `checkpoint_fields.py` first: F3 did (30307228c); this batch's four rows are in F3's table and shape, one class name `CheckpointFieldMissingError`.
 
 ## Evidence
-`agent-working/staging_artifacts/TCK-20261031-A-PAIR-RE-FORMS-AND-LEAVES-A-GROUP-EVERY-TWO-TICKS/evidence/` (set15, timing, trace15, trace59f, fixture, out6, trace); raw scratch under /data/vboxuser/Work/groups_base (kept until the PR lands).
+`agent-working/stored_artifacts/TCK-20261031-A-PAIR-RE-FORMS-AND-LEAVES-A-GROUP-EVERY-TWO-TICKS/evidence/` (set15, timing, trace15, trace59f, fixture, out6, trace); raw scratch under /data/vboxuser/Work/groups_base (kept until the PR lands).
 
 - Local-only observation: tests/unit/perf/test_benchmark_record.py::...cpu_affinity fails when pytest runs under a taskset pin (cores 4-5) and passes without the pin; it is main's perf test reacting to the affinity, not this batch.
 - Step (a) (live-group iteration) is in the batch: state hashes unchanged on three worlds (66101cd32511, a872018bf494, ae41db137ac7), per-pass visits = live at phase start + same-tick adds, residual 0.

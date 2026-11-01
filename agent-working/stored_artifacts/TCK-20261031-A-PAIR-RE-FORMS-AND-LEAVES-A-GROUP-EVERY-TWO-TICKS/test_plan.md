@@ -3,6 +3,7 @@ status: active
 layer: simulation
 authority: P1
 audience: agent
+artifact_type: test_plan
 ticket_id: TCK-20261031-A-PAIR-RE-FORMS-AND-LEAVES-A-GROUP-EVERY-TWO-TICKS
 phase: open
 date: 2026-11-01

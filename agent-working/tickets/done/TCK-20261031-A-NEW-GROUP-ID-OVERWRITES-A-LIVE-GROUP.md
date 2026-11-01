@@ -1,10 +1,10 @@
 ---
-status: active
+status: historical
 layer: simulation
 authority: P1
 audience: agent
 ticket_id: TCK-20261031-A-NEW-GROUP-ID-OVERWRITES-A-LIVE-GROUP
-phase: open
+phase: done
 date: 2026-10-31
 tags: [social, simulation-quality]
 ---
@@ -15,7 +15,7 @@ tags: [social, simulation-quality]
 A new group's id comes from a count, so it can collide with a live group's id and overwrite that record. Allocate group ids so they never repeat.
 
 ## Status
-OPEN
+DONE
 
 ## Tier
 standard
@@ -90,6 +90,18 @@ rpg-planner ruled this a separate ticket, settled before the SimQ re-anchor. The
 - Owner decision #715 6540197059: the 12 whole-key slow_known_reds entries under TCK-20261024-SIMQ-V1-HELD-ROWS-NEED-A-CAUSE move their expiry from 2026-11-15 to 2026-11-29, no other change. rpg-planner-ubuntu owns the edit, citing that id, in the first of its PRs to reach main; it must be on main before 2026-11-15. This ticket's PR carries the edit as its only change outside scope (lead-planner, with the dispatch go), unless it would land after 2026-11-15. Tell lead-planner by 2026-11-10 if nothing is on course to land by then.
 
 ## Implementation Notes
+- Group ids come from a typed counter: `AuthoritativeState.next_group_id: int = 10000` (non-optional, the last field of the class so older pickles line up). Decision code reads it and never seeds it; `ApplyPath` advances it from `StateUpdate.next_group_id_set`. Formations advance it, faction squads (hash ids, role FACTION_SQUAD) never do.
+- `update_groups` steps past every id already taken (the whole store, dissolved records included, plus adds already in this tick's update and ids handed out in the call). `StateUpdate.groups_add` is a typed add; apply rejects an add whose id is taken (`rejection_registry["group_add_id_taken"]`), so a record is never replaced. Merge of two updates keeps both adds and takes the larger counter (`src/core/group_update_merge.py`).
+- Canonical data and the fingerprint carry the counter only when it differs from 10000. Restore seeds an absent slot (`FIELD_RULES`, past the highest non-squad id) and then checks it (`GroupCounterBehindStoreError`); construction seeds nothing (a named gap: a hand-built runtime state with groups above 10000 and no counter keeps 10000, safe while records are kept). A static scan (`test_state_builders_pass_the_group_counter.py`) fails when a src builder supplies groups without the counter; the list is empty today.
+- Parity SOC-278; divergence 2.146 part (1) (Bug Fix); Bible chapter 07 id rule.
+
 ## Test Summary
+- New: `tests/unit/social/test_group_id_allocation.py` (allocation, squads, merge, round trip, seed, hard-law style no-reissue run), `tests/unit/social/test_live_group_view.py`, `tests/unit/core/test_state_builders_pass_the_group_counter.py` (scan with a planted-bad positive control), `tests/unit/core/test_pickled_record_field_order.py`, `tests/unit/engine/test_checkpoint_group_fields.py` (restore: absent counter seeded, behind-store refused, spec id before fill).
+- Gates on the final head: scoped tests (social, core, engine, domains/cooperation, observability, scenario runtime API, integration/scenarios) 3142 passed, 6 skipped, 1 xfailed on cores 4-5; mypy baseline filter prints nothing; `codebase.health check` OK, 0 worse; N818 only the old HashScheduleViolation; ruff on the changed src files has no new finding against main; parity ledger schema gate OK (baseline tightened in its own commit).
+- Measured (15 paired audit runs, 3 worlds x s42-46, 2000t): ids handed out twice 884 / 810 / 595 on base, 0 on the arm; ghosts 0; hard law `{}`; the pinned hashes are identical across reps and equal to the audit set's.
+
 ## Files Changed
+`src/core/state.py`, `src/core/updates.py`, `src/core/group_update_merge.py` (new), `src/core/group_record.py` (new, holds `GroupRecord`, re-exported from `src/core/state.py`), `src/engine/apply.py`, `src/engine/apply_plan.py`, `src/engine/checkpoint.py`, `src/engine/checkpoint_fields.py`, `src/engine/scenario_checkpoint.py`, `src/replay/fingerprint.py`, `src/systems/world_systems/groups.py`, `src/engine/military_conflict.py`; the tests listed above plus the updated characterization fixture `tests/fixtures/event_extractor_characterization/kernel_runs.jsonl`; `docs/guidelines/intentional_divergences.md` (2.146), `docs/mechanics/07_social_political_dynamics.md`, `docs/parity_ledger/social_narrative.yaml` (SOC-278), `docs/REGISTRY.yaml`; evidence in `agent-working/stored_artifacts/TCK-20261031-A-NEW-GROUP-ID-OVERWRITES-A-LIVE-GROUP/`.
+
 ## Completion Summary
+Not pushed, no PR, and the owner has not approved a push or a merge: this closes the work on the branch `rpg-ubuntu-group-id-alloc-impl` locally only (src identical to effd2e8fc). Delivered with the contract-binding ticket in one batch (the PR notes and divergence 2.146 carry the numbers and the close disclosures). The ids can no longer collide: 0 handed out twice and 0 ghosts on the arm on 15 paired runs. Disclosures: the hashes of any run that forms a group move; per-world death totals moved in both directions (Tier 1 not fired; two victims with a bed leave within 50 ticks were traced and cleared NOT FED; one extra death FED by (i) and one FED by the letter only; see the PAIR-RE-FORMS ticket); the named counter gap above.
