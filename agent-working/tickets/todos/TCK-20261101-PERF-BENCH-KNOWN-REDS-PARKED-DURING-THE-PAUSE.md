@@ -54,7 +54,7 @@ Each is one `note:` value. `expires_on` stays as it is today (2026-12-31 on all 
 - `tests.perf.test_perf_combat::test_perf_combat*`:
   `"parked under the owner's perf pause until an RPG milestone (#715 6556861718, 6556925036); first red run 37682076933 at a514e2025 (range 6e7ef56ec..a514e2025 incl. #407); cause not attributed"`
 - `tests.arena.test_arena_stress::test_arena_stress_50v50`:
-  `"parked, cause not attributed, reads as a conformance failure, not peak RSS (test source read, not run; #715 6556925036); first red run 37682076933 at a514e2025 (range 6e7ef56ec..a514e2025 incl. #407)"`
+  `"parked, cause not attributed; a conformance failure, not peak RSS (line 26 in run 41230865672), check not named, passed alone locally 2026-11-01 (#715 6557042733); first red run 37682076933 at a514e2025 (range 6e7ef56ec..a514e2025 incl. #407)"`
 
 ## Related Tickets
 - TCK-20261006-COMBAT-ENGAGEMENT-HOSTILITY-PROJECTION-COST-STEP (the done ticket these entries cited)
@@ -73,11 +73,18 @@ None.
 - `tests/tools/perf_assertions.py`
 
 ## Assumptions / Open Questions
-- Open, with the owner via lead-planner: is naming the failing check of `test_arena_stress_50v50` exempt from the pause? Do not run it until answered.
-- The conformance reading comes from source at origin/main, not a run. The test has two checks: line 26 `assert result.conformance_passed`, and line 44 `assert_perf_threshold(result.peak_rss_mb, 375.0, ...)` with `hard` at its default False, which warns with the value and limit rather than failing. Run 41230865672 at e523f92b2 shows only `assert False` (as relayed by testing-planner via lead-planner-u24; log not read by perf-planner). Whether a warnings-as-errors setting applies was not checked. It may be a real bug rather than a perf cost, which the pause keeps open.
+- Open: how to name the failing check of `test_arena_stress_50v50`. The owner's exemption (#715 6557042733) covered one local run, now spent, and it did not name the check. Any next step needs a new decision.
+- It may be a real bug rather than a perf cost, which the pause keeps open.
 - The causes of the four `tests.perf.*` reds are not established by this ticket.
 
 ## Implementation Notes
+**`test_arena_stress_50v50`, one exempted run, 2026-11-01 (#715 6557042733): PASSED, so the failing check is NOT named.**
+- Local: `systemd-run --user --scope -q -p MemoryMax=3G -p MemorySwapMax=0 taskset -c 4-5 .venv/bin/python -m pytest tests/arena/test_arena_stress.py::test_arena_stress_50v50 --resource-budget large -vv -s`, the test alone in its process, at f8e05dc87 (origin/main code plus tickets), Python 3.13.7, 67.57 s. Certification PASS, hash status MATCHED, peak RSS 122.1 MB, tick compute about 50-81 ms in the ticks the report shows. One run, no retry.
+- CI: run 41230865672 at e523f92b2, JUnit from the `slow-junit` artifact. It failed twice in that run (`slow_tests.xml` 64.2 s, `legacy_regression.xml` 63.8 s), both at line 26 `assert result.conformance_passed`, so this is the conformance assertion and not the peak RSS one. pytest's repr is cut in the middle, so `failure_kind` and `failure_reason` are not in the JUnit. The `certification-report` artifact covers only IDLE_CLEAN and RAM_PRESSURE, not this scenario.
+- What the visible part of the CI repr shows (`legacy_regression.xml`, ticks 1-2 only): `memory_rss_mb` 351.5 against the local 103.0 at tick 1, and `tick_compute_ms` 34-36. The test's profile has `max_ram_mb=512` and `max_tick_budget_ms=400` (limit 600 with the 1.5 burst). The CI runs share a process with the rest of the slow suite, so the local run did not reproduce that condition.
+- Unproven candidates, in `src/certification/conformance.py` order: a RAM envelope breach (the higher starting RSS leaves about 160 MB, and the local run grew about 19 MB over 50 ticks, which is not enough on its own); semantic drift or a reproducibility mismatch, which would be a determinism problem; others not excluded. The visible data does not choose between them.
+- Possible next steps, not started: make the test's assertion print `failure_kind` and `failure_reason` (a test edit in `tests/arena`, not a perf-owned path), then read the next scheduled slow run; or run the slow lane's whole process locally, which is a much larger run.
+
 
 ## Test Summary
 
