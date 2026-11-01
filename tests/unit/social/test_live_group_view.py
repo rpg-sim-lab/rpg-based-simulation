@@ -103,3 +103,15 @@ def test_a_dissolved_record_stays_in_the_store_above_the_counter_and_in_the_hash
     assert CanonicalStateHasher.to_canonical_data(new)["groups"]["10000"]["dissolution_tick"] == 20
     assert "10000:" in StateFingerprinter._group_identity(new)
     assert pickle.loads(pickle.dumps(new)).groups[10000].dissolution_tick == 20
+
+
+def test_decision_code_raises_a_typed_error_on_a_missing_counter_and_does_not_seed_it():
+    """The counter is seeded only at construction or restore. Decision code that finds it None raises GroupCounterMissingError (not a bare assert, which -O removes)
+    and leaves the state as it was: a seed here would hide the corruption the counter exists to expose."""
+    import pytest
+    from src.core.group_record import GroupCounterMissingError
+    state = _state([_g(10000, (1, 2))], tick=20)
+    object.__setattr__(state, "next_group_id", None)  # a corrupted state: __post_init__ never leaves it None
+    with pytest.raises(GroupCounterMissingError):
+        GroupSystem.update_groups(state)
+    assert state.next_group_id is None
