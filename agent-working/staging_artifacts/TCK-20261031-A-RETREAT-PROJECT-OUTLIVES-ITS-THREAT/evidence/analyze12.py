@@ -26,6 +26,15 @@ def dt_line(R, e):
     if x is None: return "no dtask record (old log)"
     en = x["entry"] or {}
     return (f"at death task {x['task']} mode {x['mode']} reason {x['reason']} action {x['action']} project {x['project']}; entry tick t{en.get('t')} pos {en.get('pos')} move {en.get('work_kind')} reason {en.get('reason')} mode {en.get('mode')} project {en.get('project')} writer {x['entry_writer'] or 'project/other (no tactical reason)'}")
+def outcome(R, e, d):
+    """Final tier-2 wording: PASS only if a CAUSAL step of the death path, within 200t of death, is a retreat adopted or completed (THREAT_CLEARED) under the new rules; merely holding one is not enough.
+    PASS: the entry move into the death tile (last position change) was made while the retreat project was current (the retreat walked it there), or the death task itself belongs to a retreat project: step named with its tick.
+    NOT SHOWN: a retreat was adopted/completed in the window but the logs do not show it on the path (rows go to the designer). FAIL: none in the window."""
+    ad, tc = mech(R, e, d["dtick"]); x = next((r for r in R["dtask"] if r["e"] == e), None); en = (x or {}).get("entry") or {}
+    if "combat_retreat" in (en.get("project") or ""): return f"PASS: retreat {en['project']} was current on the entry move into the death tile at t{en['t']} (move reason {en.get('reason')}, writer {x['entry_writer']}) -> STOP to the designer with this chain"
+    if "combat_retreat" in ((x or {}).get("project") or ""): return f"PASS: retreat {x['project']} current at death t{d['dtick']} (task {x['task']}) -> STOP to the designer with this chain"
+    if ad or tc: return f"NOT SHOWN: retreat adopted {ad[:3]} / THREAT_CLEARED {tc[:3]} within 200t but not on the logged entry move or death task -> rows to the designer"
+    return "FAIL: no retreat adopted or completed within 200t -> divergence, reported"
 def first_diff(Rb, Rf):
     pb = [(r["t"], r["e"], r["a"], r["pr"]) for r in Rb["pj"]]; pf = [(r["t"], r["e"], r["a"], r["pr"]) for r in Rf["pj"]]
     i = next((i for i, (x, y) in enumerate(zip(pb, pf)) if x != y), None)
@@ -62,9 +71,9 @@ for w, c in tier1 + tier2:
         for e, d in sorted(df.items(), key=lambda x: x[1]["dtick"]):
             if d["cause"] != c or (e in db and db[e]["cause"] == c): continue
             ad, tc = mech(Rf, e, d["dtick"]); held = "combat_retreat" in (d["pr"] or "")
-            verdict = "PASS (retreat adopted/completed within 200t) -> STOP with chain" if (ad or tc or held) else "FAIL -> divergence, reported"
+            verdict = outcome(Rf, e, d)
             b = db.get(e)
-            print(f"    - e{e} died t{d['dtick']} {c} attacker {d['attacker']}; holding retreat at death: {held}; retreats adopted in window {ad[:4]}; THREAT_CLEARED in window {tc[:4]}; mechanism test {verdict}")
+            print(f"    - e{e} died t{d['dtick']} {c} attacker {d['attacker']}; holding retreat at death: {held}; retreats adopted in window {ad[:4]}; THREAT_CLEARED in window {tc[:4]}; OUTCOME {verdict}")
             print(f"      death detail: {dt_line(Rf, e)}")
             print(f"      base fate: {('died t%s %s attacker %s' % (b['dtick'], b['cause'], b['attacker'])) if b else 'alive at end'}; fix project path last 60t: {path(Rf, e, d['dtick'])[-8:]}; base path: {path(Rb, e, d['dtick'])[-8:]}")
 
