@@ -7979,6 +7979,20 @@
   artifact_files: []
   tags: []
 - type: ticket
+  path: agent-working/tickets/done/TCK-20261101-PR-RENDER-LEAVES-OUT-A-TICKET-IN-TWO-STATUS-FOLDERS.md
+  ticket_id: TCK-20261101-PR-RENDER-LEAVES-OUT-A-TICKET-IN-TWO-STATUS-FOLDERS
+  title: 'pr_render leaves a ticket out of Closes: when its file is in more than one
+    status folder'
+  tier: hotfix
+  ticket_type: bug
+  date: '2026-11-01'
+  related_code_areas:
+  - tools/delivery/pr_render.py
+  - tests/tools/test_delivery_pr_render.py
+  artifact_files: []
+  tags:
+  - delivery
+- type: ticket
   path: agent-working/tickets/done/TCK-20261101-RECORD-REVIEW-AFTER-THE-PR-REVIEW-EXISTS.md
   ticket_id: TCK-20261101-RECORD-REVIEW-AFTER-THE-PR-REVIEW-EXISTS
   title: A hand close's Review can be recorded after the fact, once the planner's
@@ -7997,6 +8011,19 @@
   tags:
   - agent-monitoring
   - governance
+- type: ticket
+  path: agent-working/tickets/done/TCK-20261101-SLOW-KNOWN-RED-FOR-THE-BRAVERY-QUARTILE-TEST.md
+  ticket_id: TCK-20261101-SLOW-KNOWN-RED-FOR-THE-BRAVERY-QUARTILE-TEST
+  title: The bravery quartile test gets a slow_known_reds entry owned by rpg-planner
+    until its kernel is pinned
+  tier: hotfix
+  ticket_type: chore
+  date: '2026-11-01'
+  related_code_areas:
+  - tools/test_architecture/slow_known_reds.yaml
+  artifact_files: []
+  tags:
+  - testing
 - type: ticket
   path: agent-working/tickets/todos/TCK-20261101-A-PANIC-FLIGHT-FIRES-WITH-NO-HOSTILE-PERCEIVED.md
   ticket_id: TCK-20261101-A-PANIC-FLIGHT-FIRES-WITH-NO-HOSTILE-PERCEIVED
