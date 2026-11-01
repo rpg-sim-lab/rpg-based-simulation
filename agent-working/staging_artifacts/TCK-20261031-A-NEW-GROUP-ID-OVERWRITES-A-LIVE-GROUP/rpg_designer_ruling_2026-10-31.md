@@ -143,3 +143,37 @@ Tomorrow's 6 runs (3 worlds, one per tree, no profiler, per-entity size by field
 (b) per entity, which fields grew: strategic.contracts length, trust/grudge entries, memory. The canonical dict being about 50% larger is the cost carrier, so naming the field decides whether the fix is the churn rule alone or also what a dissolved group's contract leaves behind."
 
 lead-planner's note, same message: for the final measurement the alternating 3-per-tree terms still apply, and non-audit runs have a governor, so check whether it changes policy mid-run and report that; a run that drops out of FULL isn't the rule's run.
+
+---
+
+## rpg-designer on the churn trace (u24, 2026-11-01; relayed by lead-planner-u24 and lead-planner). On TCK-20261031-A-PAIR-RE-FORMS-AND-LEAVES-A-GROUP-EVERY-TWO-TICKS. Word for word:
+
+"Take the ONE trace (entities 19 and 33, crowded_frontier from t100) before the designer rules. The designer won't rule the shape on the unknown.
+SETTLED by the counts:
+- Expiry is out.
+- The churn is a 1-tick group.
+- ACTIVE at formation -> missing one tick later -> ACTIVE again is NOT a changed typed reason. Designer's lean holds: a group does not dissolve without a changed typed reason. So a not-found while the contract still exists is a defect, whatever the trace shows.
+HYPOTHESIS for the trace to confirm or kill:
+- The groups.py:166 lookup is keyed on something a new group id changes (the contract records the old group id while the group carries a new id from next_group_id), OR
+- the formation and dissolution reads see different state (post-apply snapshot vs pre-apply view, or leader vs member).
+THE TRACE MUST RECORD, per tick t100 to ~t110, for 19 and 33:
+1. The leader's contract set: id, status, expiry, and the group id or key each contract references.
+2. The formed group: its id, how the id was issued (counter, reuse or skip), and its members.
+3. At groups.py:166: the exact lookup key, the state object read (which snapshot), and the result.
+4. Every write or removal of the contract between formation and dissolution: writer, tick and phase.
+5. The same for one contract reused up to 50 times. Does reuse mean one ACTIVE contract backing a series of new 1-tick groups?
+ALSO REPORT (not gating): strategic.blockers per living rose in 2 of 3 worlds (63->132, 27->58). If each 1-tick group leaves a blocker behind, that's churn residue, and the fix must not leave it standing.
+AFTER THE TRACE:
+- If it's a key or snapshot mismatch, the fix is the lookup, plus a law test: no dissolution without a changed typed reason.
+- If the contract really leaves and comes back, the writer that removes it goes to the designer before any fix.
+Unchanged: the id fix lands WITH the churn fix, and the 2.146 rewrite waits for the shape."
+
+lead-planner's note, same message: the note's "two ticks later" is corrected on their side to re-formed at t+2. Trace item 5 may run longer than t110; the go covers that, as a short run.
+
+## rpg-designer's addendum to the churn trace (u24, 2026-11-01; same relay). Word for word:
+
+"The trace stays as specified, with one addition.
+ADD TO ITEM 3:
+- At the t+1 dissolution check, list every pending update for the leader that the check folds in: its kind, its writer, and whether it removes, replaces or moves the contract. For example, does the formation's own update consume the contract, or hand it to the group?
+- Show the same for the t+2 formation read: what it saw, and why the contract is back.
+LAW IN ADVANCE, whatever the trace shows: formation and dissolution judge a group's contract on ONE state basis. A group formed against state S cannot be dissolved by a view that differs from S only by that same formation's own pending updates. Together with 'no dissolution without a changed typed reason', the shape follows from which read is off. The trace decides whether the fix is the lookup basis or a contract writer. Everything else is unchanged."
