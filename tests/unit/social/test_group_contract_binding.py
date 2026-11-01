@@ -127,9 +127,15 @@ def test_contract_not_active_is_BINDING_CONTRACT_NOT_ACTIVE_with_the_typed_statu
     assert (g.dissolution_reason, g.dissolution_contract_status) == (R.BINDING_CONTRACT_NOT_ACTIVE, status)
 
 
-def test_time_expiry_with_no_write_is_NOT_ACTIVE_with_status_EXPIRED():
-    assert _dissolved(_state(50, contract=_contract(expiry=49))).dissolution_contract_status is ContractStatus.EXPIRED
-    assert _dissolved(_state(50, contract=_contract(expiry=50))).dissolution_tick is None  # alive ON the expiry tick, as before
+def test_a_contract_due_this_tick_ends_the_group_on_its_expiry_tick_as_FULFILLED_even_when_the_contracts_phase_did_not_run():
+    """The contracts phase is not in this step (GroupPhase.resolve alone), so no status write exists: the shared predicate still ends the group."""
+    on_the_tick = _dissolved(_state(50, contract=_contract(expiry=50)))
+    assert (on_the_tick.dissolution_tick, on_the_tick.dissolution_reason, on_the_tick.dissolution_contract_status) == (
+        50, R.BINDING_CONTRACT_NOT_ACTIVE, ContractStatus.FULFILLED)
+    after = _dissolved(_state(50, contract=_contract(expiry=49)))
+    assert after.dissolution_contract_status is ContractStatus.FULFILLED  # never EXPIRED for an ACTIVE contract that reached its expiry
+    assert _dissolved(_state(50, contract=_contract(expiry=51))).dissolution_tick is None  # alive the tick before
+    assert _dissolved(_state(50, contract=_contract(expiry=-1))).dissolution_tick is None  # no expiry: never due
 
 
 def test_a_same_tick_status_write_on_the_holder_is_seen_the_same_tick():
@@ -276,3 +282,78 @@ def test_a_status_change_on_the_holders_map_dissolves_the_group_through_the_pipe
     state = _state(50, contract=_contract(status=ContractStatus.FULFILLED))
     out = _live_after(state, 1)
     assert out.groups[10000].dissolution_reason is R.BINDING_CONTRACT_NOT_ACTIVE
+
+
+# --- shared predicate, formation pick, holder drift ----------------------------------------------------------------------------------------
+
+def test_contract_is_live_is_active_and_not_due_and_minus_one_never_expires():
+    from src.systems.social_systems.contracts import contract_is_due, contract_is_live
+    assert contract_is_live(_contract(expiry=51), 50) and not contract_is_live(_contract(expiry=50), 50) and not contract_is_live(_contract(expiry=49), 50)
+    assert contract_is_live(_contract(expiry=-1), 10**9) and not contract_is_due(_contract(expiry=-1), 10**9)
+    assert not contract_is_live(_contract(expiry=99, status=ContractStatus.FULFILLED), 50)
+    assert contract_is_due(_contract(expiry=50, status=ContractStatus.OFFERED), 50)  # due is about time only; live also needs ACTIVE
+
+
+def _formation_state(contracts, tick=50, extra=None):
+    ents = {1: _ent(1, 0.0, 0.1, contracts), 2: _ent(2, 0.5, 0.9)}
+    ents.update(extra or {})
+    return AuthoritativeState(tick=tick, seed=1, entities=ents)
+
+
+def _formed(state):
+    new = ApplyPath.apply_generation(state, GroupSystem.update_groups(state))
+    return [g for g in new.groups.values() if g.dissolution_tick is None]
+
+
+def test_formation_binds_the_live_contract_with_the_latest_expiry_and_it_lasts_until_that_expiry():
+    cs = {"r_a": _contract("r_a", expiry=60), "r_b": _contract("r_b", expiry=90)}
+    [g] = _formed(_formation_state(cs))
+    assert (g.contract_id, g.contract_holder_id, g.leader_id) == ("r_b", 1, 1)  # the later-expiring one, holder stays id_a
+    state = ApplyPath.apply_generation(_formation_state(cs), GroupSystem.update_groups(_formation_state(cs)))
+    for _ in range(35):  # through r_a's expiry at 60: the group stays, bound to r_b
+        state, _u = _tick(state)
+    assert state.tick > 60 and state.groups[g.id].dissolution_tick is None
+    while state.groups[g.id].dissolution_tick is None and state.tick < 100:
+        state, _u = _tick(state)
+    assert state.groups[g.id].dissolution_tick == 90 and state.groups[g.id].contract_id == "r_b"
+
+
+def test_formation_tie_on_expiry_takes_the_lowest_contract_id_and_no_expiry_ranks_latest():
+    [g] = _formed(_formation_state({"r_z": _contract("r_z", expiry=70), "r_c": _contract("r_c", expiry=70), "r_m": _contract("r_m", expiry=70)}))
+    assert g.contract_id == "r_c"
+    [g2] = _formed(_formation_state({"r_a": _contract("r_a", expiry=500), "r_n": _contract("r_n", expiry=-1)}))
+    assert g2.contract_id == "r_n"
+
+
+def test_formation_binds_among_contracts_that_actually_gathered_a_partner_and_refuses_a_due_contract():
+    # the later-expiring contract names a partner who is far away (no member gathered), so the nearer partner's contract binds
+    far = {3: _ent(3, 400.0)}
+    cs = {"r_near": _contract("r_near", 1, 2, expiry=60), "r_far": _contract("r_far", 1, 3, expiry=99)}
+    [g] = _formed(_formation_state(cs, extra=far))
+    assert g.contract_id == "r_near" and g.member_ids == {1, 2}
+    # a contract due this tick (status not yet written by the contracts phase) forms nothing; one tick earlier it forms
+    assert _formed(_formation_state({"r_due": _contract("r_due", expiry=50)}, tick=50)) == []
+    assert len(_formed(_formation_state({"r_due": _contract("r_due", expiry=51)}, tick=50))) == 1
+
+
+def test_a_pair_whose_non_leader_holder_drifts_away_ends_BINDING_HOLDER_LEFT_not_MEMBERS_BELOW_TWO():
+    ents = {1: _ent(1, 0.0, 0.1, None, 10000), 2: _ent(2, 400.0, 0.5, {"r1": _contract("r1", 2, 1)}, 10000)}
+    group = _bound_group(leader=1, holder=2, members=(1, 2), cid="r1", last_leadership_check_tick=49)
+    state = AuthoritativeState(tick=50, seed=1, entities=ents, groups={10000: group})
+    g = _dissolved(state)
+    assert (g.dissolution_tick, g.dissolution_reason) == (50, R.BINDING_HOLDER_LEFT)
+
+
+def test_a_group_of_three_that_loses_two_non_holders_to_distance_is_still_MEMBERS_BELOW_TWO():
+    far = {3: _ent(3, 400.0, group_id=10000), 4: _ent(4, 410.0, group_id=10000)}
+    state = _state(50, group=_bound_group(members=(1, 3, 4), last_leadership_check_tick=49), extra=far)
+    assert _dissolved(state).dissolution_reason is R.MEMBERS_BELOW_TWO
+
+
+def test_the_contracts_phase_agrees_with_the_predicate_on_the_expiry_tick():
+    from src.engine.pipeline_phases.contracts import ContractLifecyclePhase
+    state = _state(50, contract=_contract(expiry=50))
+    upd = ContractLifecyclePhase.resolve_expirations(state, StateUpdate())
+    assert any(c.status is ContractStatus.FULFILLED for c in upd.entity_updates[1].strategic.contracts_add_or_update)
+    early = ContractLifecyclePhase.resolve_expirations(_state(49, contract=_contract(expiry=50)), StateUpdate())
+    assert 1 not in early.entity_updates or not early.entity_updates[1].strategic

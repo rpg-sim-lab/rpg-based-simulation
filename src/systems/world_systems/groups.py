@@ -6,10 +6,12 @@ from typing import Callable, Dict, List, Set, Optional, TYPE_CHECKING
 
 from src.core.enums import GroupDissolutionReason
 from src.core.strategic import ContractStatus
+from src.systems.social_systems.contracts import contract_is_live
 
 if TYPE_CHECKING:
     from src.core.state import AuthoritativeState, EntityState, GroupRecord
     from src.core.updates import StateUpdate, EntityUpdate
+    from src.core.strategic import ContractState
 
 class GroupSystem:
     """
@@ -181,7 +183,7 @@ class GroupSystem:
             if len(new_member_ids) < 2:
                 groups_add_or_update.append(replace(
                     group, dissolution_tick=state.tick,
-                    dissolution_reason=GroupDissolutionReason.MEMBERS_BELOW_TWO if group.contract_holder_id is not None else None,
+                    dissolution_reason=GroupSystem._size_rule_reason(group, new_member_ids),
                 ))
                 for m_id in new_member_ids:
                     entity_updates[m_id] = EntityUpdate(entity_id=m_id, group_id_set=-1)
@@ -287,36 +289,7 @@ class GroupSystem:
                 if id_a in already_forming:
                     continue
                 
-                entity_a = state.entities[id_a]
-                new_group_members = {id_a}
-                active_contract_id = None
-                
-                # Check for contracts where id_a is source or target
-                # Logic ID: SOC-160 (Party formation can be driven by accepted social contract)
-                # Logic ID: SOC-187 (Group formation test covers accepted contract)
-                # Logic ID: SOC-188 (Group formation test covers no contract / proximity-only rejection)
-                # Logic ID: SOC-164 (Proximity alone does not create a party)
-                for c_id in sorted(entity_a.strategic.contracts.keys()):
-                    contract = entity_a.strategic.contracts[c_id]
-                    from src.core.strategic import ContractStatus
-                    if contract.status != ContractStatus.ACTIVE: continue
-                    
-                    other_id = contract.target_id if contract.source_id == id_a else contract.source_id
-                    if other_id in state.entities:
-                        other_entity = state.entities[other_id]
-                        # Law: Entity must be alive, ungrouped, and NOT already being assigned a group this tick
-                        if (other_entity.combat.alive and 
-                            other_entity.identity.group_id is None and 
-                            other_id not in already_forming):
-                            
-                            # Cohesion check: only form group if they are within range
-                            dx = entity_a.navigation.position[0] - other_entity.navigation.position[0]
-                            dy = entity_a.navigation.position[1] - other_entity.navigation.position[1]
-                            if (dx*dx + dy*dy) < (10.0**2):
-                                new_group_members.add(other_id)
-                                # Use the first contract ID as the primary group contract
-                                if active_contract_id is None:
-                                    active_contract_id = c_id
+                new_group_members, active_contract_id = GroupSystem._gather_formation(state, id_a, already_forming)
                 
                 if len(new_group_members) >= 2:
                     # Form new group
@@ -339,6 +312,57 @@ class GroupSystem:
             groups_add=groups_add,
             next_group_id_set=next_free_id if groups_add else None,
         )
+
+    @staticmethod
+    def _size_rule_reason(group: GroupRecord, remaining: Set[int]) -> Optional[GroupDissolutionReason]:
+        """The typed reason for a bound group that falls below two members this tick: the holder having left is the cause and outranks the size rule
+        (a pair whose non-leader holder drifted away is BINDING_HOLDER_LEFT, not MEMBERS_BELOW_TWO). Unbound groups carry no reason."""
+        if group.contract_holder_id is None:
+            return None
+        return GroupDissolutionReason.MEMBERS_BELOW_TWO if group.contract_holder_id in remaining else GroupDissolutionReason.BINDING_HOLDER_LEFT
+
+    @staticmethod
+    def _formation_partner(state: AuthoritativeState, entity_a: EntityState, contract: ContractState, already_forming: Set[int]) -> Optional[int]:
+        """The partner `contract` offers `entity_a` for a new group, or None: the contract must be live, the partner alive, ungrouped, not already
+        being assigned a group this tick, and within 10 tiles (Law: the cohesion check)."""
+        if not contract_is_live(contract, state.tick):
+            return None
+        other_id = contract.target_id if contract.source_id == entity_a.id else contract.source_id
+        other = state.entities.get(other_id)
+        if other is None or not other.combat.alive or other.identity.group_id is not None or other_id in already_forming:
+            return None
+        dx = entity_a.navigation.position[0] - other.navigation.position[0]
+        dy = entity_a.navigation.position[1] - other.navigation.position[1]
+        return other_id if (dx * dx + dy * dy) < (10.0 ** 2) else None
+
+    @staticmethod
+    def _gather_formation(state: AuthoritativeState, id_a: int, already_forming: Set[int]) -> tuple:
+        """The members a purpose-driven group around `id_a` would gather, and the contract that binds it.
+
+        Check for contracts where id_a is source or target (Logic IDs SOC-160 party formation can be driven by an accepted social contract,
+        SOC-187 covers the accepted contract, SOC-188 no contract / proximity-only rejection, SOC-164 proximity alone does not create a party).
+        Only live contracts count (ACTIVE and not due: `contract_is_live`), so a contract due this tick, whose status the contracts phase has
+        not written yet, forms no group that would end at once. The partner must be alive, ungrouped, not already being assigned a group this
+        tick, and within 10 tiles.
+
+        The binding is the live contract with the LATEST expiry among those that qualified a partner (expiry -1, no expiry, ranks latest); on a tie
+        the lowest contract id (the scan is in sorted id order and replaces only on a strictly later expiry). The holder is `id_a`. The binding is
+        chosen here, once; nothing rebinds a group to another contract later.
+        """
+        entity_a = state.entities[id_a]
+        members = {id_a}
+        best_id = None
+        best_expiry = None
+        for c_id in sorted(entity_a.strategic.contracts.keys()):
+            contract = entity_a.strategic.contracts[c_id]
+            other_id = GroupSystem._formation_partner(state, entity_a, contract, already_forming)
+            if other_id is None:
+                continue
+            members.add(other_id)
+            rank = float("inf") if contract.expiry_tick == -1 else contract.expiry_tick
+            if best_expiry is None or rank > best_expiry:
+                best_id, best_expiry = c_id, rank
+        return members, best_id
 
     @staticmethod
     def _new_group_record(
@@ -383,11 +407,10 @@ class GroupSystem:
         """Why a contract-bound group's binding has ended this tick, or None while it holds.
 
         Returns (GroupDissolutionReason, ContractStatus | None). The contract is read from the holder's own map (a same-tick contract update first),
-        never from the current leader's. The contracts phase (ContractLifecyclePhase.resolve_expirations) runs before the groups phase in the same refine
-        and turns an ACTIVE contract at `tick >= expiry_tick` into FULFILLED in the pending update, which is read first above, so expiry normally reaches
-        here as BINDING_CONTRACT_NOT_ACTIVE with status FULFILLED. The `tick > expiry_tick` branch is a backstop for a contracts phase that did not run
-        on the expiry tick (phase skipping): it records EXPIRED for a contract still stored as ACTIVE. It was never reached in the measured runs.
-        """
+        never from the current leader's. Liveness is the shared `contract_is_live` (ACTIVE and not due), the same test the contracts phase and group
+        formation use, so a contract that reaches its expiry tick ends the group on that tick as BINDING_CONTRACT_NOT_ACTIVE with status FULFILLED
+        even when the contracts phase has not run yet (phase skipping); the group never records EXPIRED.
+                """
         holder_id = group.contract_holder_id
         if holder_id not in group.member_ids or holder_id not in state.entities or not is_alive(holder_id) or not is_active(holder_id):
             return GroupDissolutionReason.BINDING_HOLDER_LEFT, None
@@ -400,10 +423,11 @@ class GroupSystem:
             contract = state.entities[holder_id].strategic.contracts.get(group.contract_id)
         if contract is None:
             return GroupDissolutionReason.BINDING_CONTRACT_MISSING, None
-        if contract.status != ContractStatus.ACTIVE:
-            return GroupDissolutionReason.BINDING_CONTRACT_NOT_ACTIVE, contract.status
-        if contract.expiry_tick != -1 and state.tick > contract.expiry_tick:
-            return GroupDissolutionReason.BINDING_CONTRACT_NOT_ACTIVE, ContractStatus.EXPIRED
+        if not contract_is_live(contract, state.tick):
+            # A contract that is due this tick ends the group ON its expiry tick as FULFILLED (the status the contracts phase writes for an ACTIVE
+            # contract that reaches its expiry), whether or not that phase has written it yet. Never EXPIRED.
+            status = ContractStatus.FULFILLED if contract.status == ContractStatus.ACTIVE else contract.status
+            return GroupDissolutionReason.BINDING_CONTRACT_NOT_ACTIVE, status
         return None
 
     @staticmethod

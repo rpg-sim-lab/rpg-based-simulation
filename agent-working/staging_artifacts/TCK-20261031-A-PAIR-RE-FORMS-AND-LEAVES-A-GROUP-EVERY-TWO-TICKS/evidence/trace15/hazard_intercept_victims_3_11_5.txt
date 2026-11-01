@@ -1,0 +1,65 @@
+Hazard entry rows for the NATURAL_TERRAIN deaths of entities 3, 11 and 5 on crowded_frontier s42 (branch tree 9e3b07c22), plus entity 32 on the base tree c9b9a50f4 for comparison.
+Source: groups_base/out_trace15/{branch,base}.jsonl (per-tick watch-entity detail, written by trace_pair.py; the traced runs' hashes and death lists equal the out15 rows). Written for TCK-20261020-ENGAGE-BRACKETING-MOVES-WALK-A-GROUP-INTO-A-HAZARD-CLUSTER. No src change was made.
+
+WHAT THE ROWS SHOW (each line says what it is):
+1. Hazard cells and damage, measured from the rows: on y=40, the first tile that drains hp is x=42 (entity 3 at t410: hp 70 -> 50 at (42,40); entity 11 at t483: 120 -> 100 at (42,40); entity 5 at t489: 96 -> 76 at (42,40)); tiles x=41 and below drain nothing. The drain is 20 hp per tick on every tile measured, x=42..47 (entity 3: 50,30,10,0 at x=42..45; entity 11: 100,80,60,40,20,0 at x=42..47; entity 5: 76,56,36,16,0 at x=42..46). Death row hazard kind for all three: NATURAL_TERRAIN. Only these tiles were observed; the full extent of the hazard cluster was not mapped.
+2. Writer of the move for entities 3 and 11: payload reason INTERCEPTING with target_id 34, written at src/engine/tactical.py:612 (section 5.4, "Intercept Logic"). The target position comes from PositioningService.find_intercept_position (src/engine/positioning.py:112), which, read in the source, leads the target 2 tiles along its goal vector and checks only walkable occupancy (LegalityServiceV2.verify_occupancy); it reads no hazard. Entity 5's rows carry target_id 34 but NO "reason" in the payload (work ENTITY_MOVE, project COMBAT_ENGAGE, nav moving east along y=40), so the writer of entity 5's move is not tactical.py:612 on these rows; its writer is not shown.
+3. Did entity 3's chase come from its group? Group 10026 [3,5] (leader 3, holder 3) had shared_target_id 34 on t393-396 and t399-402 and None on t397-398 and t403-413 (list below). target_score in tactical.py (about lines 389-399) gives a bias when group.shared_target_id == h.id, so a group target of 34 was available to the scoring at t393-402; but at the INTERCEPTING moves of t408-413 the group's shared_target_id was None. Why 34 was picked by entity 3 at t408: not shown (the score components are not in the rows).
+4. Route cost: src/engine/route_search.py (imported by movement.py) states in its module docstring that "No hazard enters the weights: the route weighs move cost only." CHECKED as documentation only: I did not trace that these particular steps went through route_next_step, nor read its code paths for a hazard check.
+5. Entity 32 on base is not the same case: its hp drops by 17 at t356, t358, t360 at (37-38,35) (PANIC_RETREAT starts t361), it then sits at (40,40) with hp 17 for 17 ticks in base group id 10020 (record lists [7,8,10], so a ghost of that group) and dies at (40,42) at t380 on a PANIC_RETREAT move toward (46.1,47.9); the death row says HAZARD / NATURAL_TERRAIN with attacker id 35. It is a low-hp retreat that steps into the hazard; the t355-360 drain is not characterised here.
+
+ROWS (format: tick, position, hp, group id, group = [leader, holder, contract, shared_target, members], work, reason, target_id, nav target, project kind)
+
+### entity 3 on branch tree 9e3b07c22, from t408 to death t413
+t408 pos=(40.0, 40.0) hp=70 gid=10026 grp(leader,holder,contract,shared_target,members)=[3, 3, 'cnt_recruit_3_5_363', None, [3, 5]] work=ENTITY_MOVE reason=INTERCEPTING target_id=34 nav=(47.0, 40.0) proj=None
+t409 pos=(41.0, 40.0) hp=70 gid=10026 grp(leader,holder,contract,shared_target,members)=[3, 3, 'cnt_recruit_3_5_363', None, [3, 5]] work=ENTITY_MOVE reason=INTERCEPTING target_id=34 nav=(46.0, 40.0) proj=None
+t410 pos=(42.0, 40.0) hp=50 gid=10026 grp(leader,holder,contract,shared_target,members)=[3, 3, 'cnt_recruit_3_5_363', None, [3, 5]] work=ENTITY_MOVE reason=INTERCEPTING target_id=34 nav=(47.0, 40.0) proj=None
+t411 pos=(43.0, 40.0) hp=30 gid=10026 grp(leader,holder,contract,shared_target,members)=[3, 3, 'cnt_recruit_3_5_363', None, [3, 5]] work=ENTITY_MOVE reason=INTERCEPTING target_id=34 nav=(48.0, 40.0) proj=None
+t412 pos=(44.0, 40.0) hp=10 gid=10026 grp(leader,holder,contract,shared_target,members)=[3, 3, 'cnt_recruit_3_5_363', None, [3, 5]] work=ENTITY_MOVE reason=INTERCEPTING target_id=34 nav=(49.0, 40.0) proj=None
+t413 pos=(45.0, 40.0) hp=0 gid=None grp(leader,holder,contract,shared_target,members)=None work=ENTITY_MOVE reason=INTERCEPTING target_id=34 nav=(49.0, 40.0) proj=None
+t414 pos=(45.0, 40.0) hp=0 gid=None grp(leader,holder,contract,shared_target,members)=None work=ENTITY_MOVE reason=INTERCEPTING target_id=34 nav=(49.0, 40.0) proj=None
+death row: {'t': 413, 'e': 3, 'cause': 'HAZARD', 'hazard': 'NATURAL_TERRAIN', 'att': 34, 'pos': [45.0, 40.0], 'hp': 0}
+
+### entity 11 on branch tree 9e3b07c22, from t481 to death t488
+t481 pos=(40.0, 40.0) hp=120 gid=None grp(leader,holder,contract,shared_target,members)=None work=ENTITY_MOVE reason=INTERCEPTING target_id=34 nav=(44.0, 40.0) proj=GoalKind.COMBAT_ENGAGE
+t482 pos=(41.0, 40.0) hp=120 gid=None grp(leader,holder,contract,shared_target,members)=None work=ENTITY_MOVE reason=INTERCEPTING target_id=34 nav=(45.0, 40.0) proj=GoalKind.COMBAT_ENGAGE
+t483 pos=(42.0, 40.0) hp=100 gid=None grp(leader,holder,contract,shared_target,members)=None work=ENTITY_MOVE reason=INTERCEPTING target_id=34 nav=(46.0, 40.0) proj=GoalKind.COMBAT_ENGAGE
+t484 pos=(43.0, 40.0) hp=80 gid=None grp(leader,holder,contract,shared_target,members)=None work=ENTITY_MOVE reason=INTERCEPTING target_id=34 nav=(47.0, 40.0) proj=GoalKind.COMBAT_ENGAGE
+t485 pos=(44.0, 40.0) hp=60 gid=None grp(leader,holder,contract,shared_target,members)=None work=ENTITY_MOVE reason=INTERCEPTING target_id=34 nav=(48.0, 40.0) proj=GoalKind.COMBAT_ENGAGE
+t486 pos=(45.0, 40.0) hp=40 gid=None grp(leader,holder,contract,shared_target,members)=None work=ENTITY_MOVE reason=INTERCEPTING target_id=34 nav=(49.0, 40.0) proj=GoalKind.COMBAT_ENGAGE
+t487 pos=(46.0, 40.0) hp=20 gid=None grp(leader,holder,contract,shared_target,members)=None work=ENTITY_MOVE reason=INTERCEPTING target_id=34 nav=(49.0, 40.0) proj=GoalKind.COMBAT_ENGAGE
+t488 pos=(47.0, 40.0) hp=0 gid=None grp(leader,holder,contract,shared_target,members)=None work=ENTITY_MOVE reason=INTERCEPTING target_id=34 nav=(50.0, 40.0) proj=GoalKind.COMBAT_ENGAGE
+t489 pos=(47.0, 40.0) hp=0 gid=None grp(leader,holder,contract,shared_target,members)=None work=ENTITY_MOVE reason=INTERCEPTING target_id=34 nav=(50.0, 40.0) proj=GoalKind.COMBAT_ENGAGE
+death row: {'t': 488, 'e': 11, 'cause': 'HAZARD', 'hazard': 'NATURAL_TERRAIN', 'att': None, 'pos': [47.0, 40.0], 'hp': 0}
+
+### entity 5 on branch tree 9e3b07c22, from t486 to death t493
+t486 pos=(41.0, 38.0) hp=96 gid=10030 grp(leader,holder,contract,shared_target,members)=[1, 1, 'cnt_recruit_1_5_415', None, [1, 5]] work=ENTITY_MOVE reason=None target_id=34 nav=(49.0, 40.0) proj=GoalKind.COMBAT_ENGAGE
+t487 pos=(41.0, 39.0) hp=96 gid=10030 grp(leader,holder,contract,shared_target,members)=[1, 1, 'cnt_recruit_1_5_415', None, [1, 5]] work=ENTITY_MOVE reason=None target_id=34 nav=(49.0, 40.0) proj=GoalKind.COMBAT_ENGAGE
+t488 pos=(41.0, 40.0) hp=96 gid=None grp(leader,holder,contract,shared_target,members)=None work=ENTITY_MOVE reason=None target_id=34 nav=(50.0, 40.0) proj=GoalKind.COMBAT_ENGAGE
+t489 pos=(42.0, 40.0) hp=76 gid=None grp(leader,holder,contract,shared_target,members)=None work=ENTITY_MOVE reason=None target_id=34 nav=(51.0, 40.0) proj=GoalKind.COMBAT_ENGAGE
+t490 pos=(43.0, 40.0) hp=56 gid=None grp(leader,holder,contract,shared_target,members)=None work=ENTITY_MOVE reason=None target_id=34 nav=(52.0, 40.0) proj=GoalKind.COMBAT_ENGAGE
+t491 pos=(44.0, 40.0) hp=36 gid=None grp(leader,holder,contract,shared_target,members)=None work=ENTITY_MOVE reason=None target_id=34 nav=(53.0, 40.0) proj=GoalKind.COMBAT_ENGAGE
+t492 pos=(45.0, 40.0) hp=16 gid=None grp(leader,holder,contract,shared_target,members)=None work=ENTITY_MOVE reason=None target_id=34 nav=(54.0, 40.0) proj=GoalKind.COMBAT_ENGAGE
+t493 pos=(46.0, 40.0) hp=0 gid=None grp(leader,holder,contract,shared_target,members)=None work=ENTITY_MOVE reason=None target_id=34 nav=(55.0, 40.0) proj=GoalKind.COMBAT_ENGAGE
+t494 pos=(46.0, 40.0) hp=0 gid=None grp(leader,holder,contract,shared_target,members)=None work=ENTITY_MOVE reason=None target_id=34 nav=(55.0, 40.0) proj=GoalKind.COMBAT_ENGAGE
+death row: {'t': 493, 'e': 5, 'cause': 'HAZARD', 'hazard': 'NATURAL_TERRAIN', 'att': 24, 'pos': [46.0, 40.0], 'hp': 0}
+
+### entity 32 on BASE tree c9b9a50f4, t355-361 and t376-381 (for comparison)
+t355 pos=(37.0, 35.0) hp=67 gid=10020 grp(leader,holder,contract,shared_target,members)=[16, None, 'cnt_recruit_14_16_144', None, [14, 16]] work=ENTITY_MOVE reason=None target_id=34 nav=(36.0, 34.0) proj=None
+t356 pos=(38.0, 35.0) hp=50 gid=10020 grp(leader,holder,contract,shared_target,members)=[16, None, 'cnt_recruit_14_16_144', None, [14, 16]] work=ENTITY_MOVE reason=None target_id=34 nav=(36.0, 34.0) proj=None
+t357 pos=(37.0, 35.0) hp=50 gid=10020 grp(leader,holder,contract,shared_target,members)=[16, None, 'cnt_recruit_14_16_144', None, [14, 16]] work=ENTITY_MOVE reason=None target_id=34 nav=(36.0, 34.0) proj=None
+t358 pos=(38.0, 35.0) hp=33 gid=10020 grp(leader,holder,contract,shared_target,members)=[16, None, 'cnt_recruit_14_16_144', None, [14, 16]] work=ENTITY_MOVE reason=None target_id=34 nav=(36.0, 34.0) proj=None
+t359 pos=(37.0, 35.0) hp=33 gid=10020 grp(leader,holder,contract,shared_target,members)=[16, None, 'cnt_recruit_14_16_144', None, [14, 16]] work=ENTITY_MOVE reason=None target_id=34 nav=(36.0, 34.0) proj=None
+t360 pos=(37.0, 35.0) hp=16 gid=10020 grp(leader,holder,contract,shared_target,members)=[16, None, 'cnt_recruit_14_16_144', None, [14, 16]] work=ENTITY_MOVE reason=None target_id=34 nav=(36.0, 34.0) proj=None
+t361 pos=(37.0, 36.0) hp=17 gid=10020 grp(leader,holder,contract,shared_target,members)=[16, None, 'cnt_recruit_14_16_144', None, [14, 16]] work=ENTITY_MOVE reason=PANIC_RETREAT target_id=None nav=(40.0, 40.0) proj=None
+...
+t376 pos=(40.0, 40.0) hp=17 gid=10020 grp(leader,holder,contract,shared_target,members)=[8, None, 'cnt_recruit_7_10_371', None, [7, 8, 10]] work=ENTITY_ACT reason=None target_id=None nav=None proj=None
+t377 pos=(40.0, 40.0) hp=17 gid=10020 grp(leader,holder,contract,shared_target,members)=[8, None, 'cnt_recruit_7_10_371', None, [7, 8, 10]] work=ENTITY_ACT reason=None target_id=None nav=None proj=None
+t378 pos=(40.0, 40.0) hp=17 gid=10020 grp(leader,holder,contract,shared_target,members)=[8, None, 'cnt_recruit_7_10_371', None, [7, 8, 10]] work=ENTITY_ACT reason=None target_id=None nav=None proj=None
+t379 pos=(40.0, 41.0) hp=17 gid=10020 grp(leader,holder,contract,shared_target,members)=[8, None, 'cnt_recruit_7_10_371', None, [7, 8, 10]] work=ENTITY_MOVE reason=PANIC_RETREAT target_id=None nav=(46.09710760849693, 47.926239891046) proj=None
+t380 pos=(40.0, 42.0) hp=0 gid=10020 grp(leader,holder,contract,shared_target,members)=[8, None, 'cnt_recruit_7_10_371', None, [7, 8, 10]] work=ENTITY_MOVE reason=PANIC_RETREAT target_id=None nav=(46.09710760849693, 47.926239891046) proj=None
+t381 pos=(40.0, 42.0) hp=0 gid=10020 grp(leader,holder,contract,shared_target,members)=[8, None, 'cnt_recruit_7_10_371', None, [7, 8, 10]] work=ENTITY_MOVE reason=PANIC_RETREAT target_id=None nav=(46.09710760849693, 47.926239891046) proj=None
+death row: {'t': 380, 'e': 32, 'cause': 'HAZARD', 'hazard': 'NATURAL_TERRAIN', 'att': 35, 'pos': [40.0, 42.0], 'hp': 0}
+
+### entity 3 shared_target_id of its group 10026 on the branch, t393-413 (None = no shared target)
+t393 shared_target=34; t394 shared_target=34; t395 shared_target=34; t396 shared_target=34; t397 shared_target=None; t398 shared_target=None; t399 shared_target=34; t400 shared_target=34; t401 shared_target=34; t402 shared_target=34; t403 shared_target=None; t404 shared_target=None; t405 shared_target=None; t406 shared_target=None; t407 shared_target=None; t408 shared_target=None; t409 shared_target=None; t410 shared_target=None; t411 shared_target=None; t412 shared_target=None; t413 shared_target=no group; 

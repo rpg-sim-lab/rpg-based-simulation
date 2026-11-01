@@ -77,6 +77,17 @@ class SocialContractSystem:
             
         return StrategicUpdate(contracts_add_or_update=to_update)
 
+def contract_is_due(contract: ContractState, tick: int) -> bool:
+    """A contract with an expiry (`expiry_tick != -1`) is due on its expiry tick and after. `-1` means no expiry: never due."""
+    return contract.expiry_tick != -1 and tick >= contract.expiry_tick
+
+
+def contract_is_live(contract: ContractState, tick: int) -> bool:
+    """The one test of whether a contract still holds: ACTIVE and not due. Shared by the contracts phase (expiry), group formation and the
+    group binding check, so they cannot disagree about the expiry tick."""
+    return contract.status == ContractStatus.ACTIVE and not contract_is_due(contract, tick)
+
+
 class ContractService:
     """
     Manages the creation, acceptance, and termination of social contracts.
