@@ -298,3 +298,18 @@ def test_a_starving_resting_lodger_gets_the_same_decisions_as_the_same_subject_r
         finally:
             k.shutdown()
     assert actions(1) == actions(0)
+
+
+def test_a_lodger_whose_held_rest_ends_on_tick_t_is_placed_outside_on_t_or_t_plus_1():
+    """No tick is lost between the end of the held REST and the leave: the rest ends at the wake line, and the subject is off its bed the same tick or the next, never lodged and awake for longer."""
+    k = kernel([hero(1, REACH[0], debt=59.95, action="REST")], beds=1)
+    try:
+        hist = run(k, 20)
+        by_tick = {t: d[1] for t, d in hist}
+        ended = next(t for t, s in sorted(by_tick.items()) if s[4] != "REST")
+        assert by_tick[ended - 1][1] == INN_ID                       # it did lodge while the rest ran
+        out = [t for t, s in sorted(by_tick.items()) if t >= ended and s[1] is None]
+        assert out and out[0] <= ended + 1
+        assert by_tick[out[0]][0] in REACH
+    finally:
+        k.shutdown()
