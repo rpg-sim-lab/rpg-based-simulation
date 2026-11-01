@@ -47,3 +47,5 @@ Timing: non-audit, pinned FULL (PinnedNormalGovernor), ConcurrentExecutionAdapte
 
 - Local-only observation: tests/unit/perf/test_benchmark_record.py::...cpu_affinity fails when pytest runs under a taskset pin (cores 4-5) and passes without the pin; it is main's perf test reacting to the affinity, not this batch.
 - Step (a) (live-group iteration) is in the batch: state hashes unchanged on three worlds (66101cd32511, a872018bf494, ae41db137ac7), per-pass visits = live at phase start + same-tick adds, residual 0.
+
+- Step (a) ticket: TCK-20261101-DISSOLVED-GROUP-RECORDS-ARE-KEPT-AND-VISITED-EVERY-TICK lives on origin rpg-planner-seat-next at 986510e3d (agent-working/tickets/todos/); it reaches main in the planner's next batch, after F3. This PR delivers step (a) only; (b) and (c) stay open, so the ticket must NOT appear under Closes: when the body is rendered (check pr_render output; if it does, tell the planner, no hand edit).
