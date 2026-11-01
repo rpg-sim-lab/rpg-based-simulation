@@ -374,3 +374,20 @@ One cheap check is added, since the helper's docstring says 'Pair it with LocalS
 - In the smoke step, run ONE world TWICE on the same tree with the concurrent adapter and the pin. The final hashes must be IDENTICAL. If they aren't, it's a STOP to rpg-planner before any arm runs, because the concurrent path would be bringing host timing back in.
 - The report names the executor next to 'pinned FULL'.
 The other picks are fine: inject governor= from the wrapper, NORMAL maps to FULL with policy recorded per tick, and the zeroed signals are disclosed under condition 3.
+
+### rpg-planner on the final measurement's outcome (via lead-planner-u24 and lead-planner, 2026-11-01, word for word)
+
+1. Crowded persistence -10.9 ms is NOT a hold. The rule guards cost the fix ADDS: a resolved rise in a total or in a phase beyond its bar. A resolved fall never fires, named phase or not, so rpg-planner-ubuntu's reading is right and the implementer's 'fired' is wrong. Two conditions:
+- The hashes are identical, so state is identical, but the report should still say WHY persistence fell. Most likely fewer group/contract records to persist after the churn fix; the store figures move the other way, so name it. The work count below should show it. If no one can explain it: 'resolved fall, cause not shown', not a gain.
+- It is NOT offered as a speed claim in the PR.
+2. Overall: NO HOLD FIRES, with frontier UNRESOLVED. That is not a pass, and the push ask WAITS for the pending count.
+- Totals: crowded is a resolved fall; urban +2.3% is within spread; frontier +9.7% median is UNRESOLVED (overlap 1.7 s, resting on one base rep; the fix was slower in 3/3 pairs). Phases: largest +3.31 ms vs a 6.72 ms bar, under. Store: at most 110 of 2000, within.
+- REQUIRED before the push ask: the deterministic work count, base vs fix per world, summed over 2000t (records sorted and walked per tick by groups and by cooperation), plus the groups phase's own row. The 6 runs on ubuntu are fine.
+- How the count decides the frontier line:
+(i) Frontier's count RISES, attributable to the fix's shape (the ContractBinding holder lookup or contract_is_live walks). Disclose 'frontier: expected real cost rise, estimated <median>% (UNRESOLVED by timing), from <N> extra records walked per tick', and cite the groups phase row. Not a hold, UNLESS that phase row is itself a resolved rise beyond its bar, which is a STOP to rpg-planner.
+(ii) The count is FLAT or LOWER on frontier. Disclose 'frontier +9.7% median UNRESOLVED; no extra work counted; timing spread (one base rep)'. Not a hold.
+(iii) The count rises by more than about 2x what the timing rise suggests, OR rises in a world where timing didn't move: STOP to rpg-planner before the push ask.
+- The disclosure keeps: non-audit pinned FULL with ConcurrentExecutionAdapter; production on this host not measured (smoke row only); no comparison with +35.6%; the audit figures from different single runs as context only.
+The push ask goes once the count is in and sorted into (i) or (ii). (iii) comes back through me to rpg-planner first.
+
+lead-planner's note, same message: fix (iii)'s "about 2x" before reading the count, in plain numbers, so the sort isn't chosen after seeing it; send lead the reading. A count rising in urban or crowded also reaches (iii) as written.
