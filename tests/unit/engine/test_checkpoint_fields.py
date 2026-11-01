@@ -121,3 +121,18 @@ def test_restore_refuses_a_bound_group_checkpoint_before_building_a_kernel(tmp_p
     with pytest.raises(CheckpointFieldMissing) as err:
         ScenarioCheckpointer.restore(path, spec)
     assert isinstance(err.value, ValueError)  # the restore route answers ValueError as a client error
+
+
+def test_a_group_pickled_under_the_old_module_path_still_loads_through_the_re_export(monkeypatch):
+    """GroupRecord lives in src.core.group_record; pickles name the module, so checkpoints written when it lived in src.core.state must still load."""
+    import sys
+
+    import src.core.state as state_module
+    assert state_module.GroupRecord is GroupRecord
+    monkeypatch.setattr(GroupRecord, "__module__", "src.core.state")
+    blob = pickle.dumps(_bound())
+    monkeypatch.undo()
+    assert b"src.core.state" in blob and b"src.core.group_record" not in blob
+    back = pickle.loads(blob)
+    assert type(back) is GroupRecord and back.contract_holder_id == 1
+    assert "src.core.group_record" in sys.modules
