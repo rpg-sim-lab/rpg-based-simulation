@@ -8085,6 +8085,21 @@
   artifact_files: []
   tags: []
 - type: ticket
+  path: agent-working/tickets/todos/TCK-20261101-PERF-BENCH-KNOWN-REDS-PARKED-DURING-THE-PAUSE.md
+  ticket_id: TCK-20261101-PERF-BENCH-KNOWN-REDS-PARKED-DURING-THE-PAUSE
+  title: Own the perf bench and arena stress known reds while most perf work is paused
+  tier: standard
+  ticket_type: chore
+  date: '2026-11-01'
+  related_code_areas:
+  - tools/test_architecture/slow_known_reds.yaml
+  - tests/perf/test_perf_movement*
+  - tests/arena/test_arena_stress.py
+  - tests/tools/perf_assertions.py
+  artifact_files: []
+  tags:
+  - performance
+- type: ticket
   path: agent-working/tickets/todos/TCK-20261101-PERF-V0002-RECORD-AFTER-FINDING-WHAT-MOVES-HOST-SPEED.md
   ticket_id: TCK-20261101-PERF-V0002-RECORD-AFTER-FINDING-WHAT-MOVES-HOST-SPEED
   title: Find what moves the ubuntu VM's speed, then re-record idle_100_local and
