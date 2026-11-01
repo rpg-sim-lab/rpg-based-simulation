@@ -11,6 +11,7 @@ logger = logging.getLogger(__name__)
 from src.core.enums import EntityRole, ReasonCode
 from src.content_semantics.faction import are_entities_hostile
 from src.content_semantics.relation import RelationContext
+from src.core.lodging_rules import is_lodged
 from src.core.state import EquipSlot
 from src.engine.sleep_debt import is_weakened
 from src.engine.starvation import attack_scale
@@ -491,7 +492,7 @@ class CombatResolutionSystem:
             dist = LegalityServiceV2.get_manhattan_dist(target_pos, other_ent.navigation.position)
             if dist <= radius:
                 # COMB-006: radius application legality — only living, active entities are valid splash targets
-                if not other_ent.combat.alive or not other_ent.lifecycle.active:
+                if not other_ent.combat.alive or not other_ent.lifecycle.active or is_lodged(other_ent):  # (F3: a lodger is indoors and is never splashed)
                     continue
                 if not are_entities_hostile(attacker, other_ent, RelationContext(distance=float(dist), combat_engaged=True)):
                     continue
