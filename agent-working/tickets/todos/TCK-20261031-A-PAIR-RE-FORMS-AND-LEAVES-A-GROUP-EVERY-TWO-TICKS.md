@@ -456,3 +456,19 @@ If the designer's step (a) (live-groups-only iteration) is ready and hash-equal 
 Base = main with F3 landed; arm = the churn fix merged onto that main. All on ubuntu.
 
 lead-planner's terms, same message: go covers B, C and D, starting after F3 is on main and the branch has synced; message lead first, C before B. About 3.5 hours total. On B, measure with the host quiet.
+
+### rpg-planner's rider: step (a) joins the batch, owner's go #715 6555733640 (via lead-planner-u24 and lead-planner, 2026-11-01, word for word)
+
+TCK-20261101-DISSOLVED-GROUP-RECORDS-ARE-KEPT-AND-VISITED-EVERY-TICK (P2, rpg-designer ruling 2026-11-01), STEP (a) ONLY:
+- The groups and cooperation phases iterate LIVE groups only, through a derived view (a status filter, or an index rebuilt from state).
+- No new durable field unless cost forces one; if so, it's typed and has a FIELD_RULES row.
+ACCEPTANCE:
+- hash-equal to the churn tree on 3 worlds at 2000t;
+- the frontier groups phase back near base per tick.
+- Any hash move is a FINDING to the designer, named with its reader, and not patched past.
+LANDING:
+- With the churn fix if it's hash-equal before B starts (then B measures it); otherwise right after.
+- It MUST land before any 5000t set that reports tick time (N14-on-F3, A'). If it isn't in when one runs, that set reports groups and cooperation ms separately, with the end store size.
+NOT in this rider: step (b) (retention), which waits on the one retention policy with TERMINAL-PROJECTS, and step (c) (the id-reuse round-trip test).
+
+lead-planner's terms, same message: implement before the F3 sync, so C and B run on the final tree. The 3-world hash check at 2000t has its go. The run-without-(a) default is withdrawn unless the hash check fails.
