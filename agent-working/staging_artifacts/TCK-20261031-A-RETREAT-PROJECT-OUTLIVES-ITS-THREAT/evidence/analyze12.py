@@ -29,7 +29,7 @@ def dt_line(R, e):
 def outcome(R, e, d):
     """Final tier-2 wording: PASS only if a CAUSAL step of the death path, within 200t of death, is a retreat adopted or completed (THREAT_CLEARED) under the new rules; merely holding one is not enough.
     PASS: the entry move into the death tile (last position change) was made while the retreat project was current (the retreat walked it there), or the death task itself belongs to a retreat project: step named with its tick.
-    NOT SHOWN: a retreat was adopted/completed in the window but the logs do not show it on the path (rows go to the designer). FAIL: none in the window."""
+    NOT SHOWN only when the logs cannot tell whether the retreat selected the path (no death-path record); a retreat in the window that did not select the entry move is FAIL (trajectory, as #769). FAIL: none in the window."""
     ad, tc = mech(R, e, d["dtick"]); x = next((r for r in R["dtask"] if r["e"] == e), None); en = (x or {}).get("entry") or {}
     if "combat_retreat" in (en.get("project") or ""): return f"PASS: retreat {en['project']} was current on the entry move into the death tile at t{en['t']} (move reason {en.get('reason')}, writer {x['entry_writer']}) -> STOP to the designer with this chain"
     if "combat_retreat" in ((x or {}).get("project") or ""): return f"PASS: retreat {x['project']} current at death t{d['dtick']} (task {x['task']}) -> STOP to the designer with this chain"
@@ -37,7 +37,10 @@ def outcome(R, e, d):
         nxt = next((r for r in sorted(R["pj"], key=lambda r: r["t"]) if r["e"] == e and r["t"] >= tcr[0] and r["a"] and r["pr"] and "combat_retreat" not in r["pr"]), None)
         if nxt is not None and en.get("project") == nxt["pr"]:
             return f"PASS: THREAT_CLEARED of {tcr[1]} at t{tcr[0]}; first post-clear choice {nxt['pr']} (t{nxt['t']}, {'resumed' if int(nxt['pr'].rsplit('_', 1)[-1]) < tcr[0] else 'adopted'}) was the project on the entry move into the death tile at t{en.get('t')} -> STOP to the designer with this chain"
-    if ad or tc: return f"NOT SHOWN: retreat adopted {ad[:3]} / THREAT_CLEARED {tc[:3]} within 200t but not on the logged entry move or death task -> rows to the designer"
+    if ad or tc:
+        if x is None or not en:   # the logs cannot tell whether the retreat selected the path
+            return f"NOT SHOWN: retreat adopted {ad[:3]} / THREAT_CLEARED {tc[:3]} within 200t, and no death-path record (task, entry move) to tell whether it selected the walk -> rows to the designer"
+        return f"FAIL: retreat adopted {ad[:3]} / THREAT_CLEARED {tc[:3]} within 200t, but the entry move into the death tile (t{en.get('t')}, project {en.get('project')}, reason {en.get('reason')}) and the death task were not selected by it: trajectory only (it changed who fought or where), divergence, reported"
     return "FAIL: no retreat adopted or completed within 200t -> divergence, reported"
 def first_diff(Rb, Rf):
     pb = [(r["t"], r["e"], r["a"], r["pr"]) for r in Rb["pj"]]; pf = [(r["t"], r["e"], r["a"], r["pr"]) for r in Rf["pj"]]
