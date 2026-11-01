@@ -1,10 +1,10 @@
 ---
-status: active
+status: historical
 layer: testing
 authority: P1
 audience: agent
 ticket_id: TCK-20261018-PHASE19-OFF-MODE-RUNTIME-CHECK
-phase: open
+phase: done
 date: 2026-10-18
 tags: [testing, architecture, observability]
 ---
@@ -15,7 +15,7 @@ tags: [testing, architecture, observability]
 A runtime test that an OFF-mode kernel imports none of the four heavy observability modules the phase19 import-linter ignores rely on
 
 ## Status
-OPEN
+DONE
 
 ## Tier
 standard
@@ -74,13 +74,13 @@ None.
 - The kernel line numbers in the toml comments drift; the test must not depend on them.
 
 ## Implementation Notes
-Not started.
+Test: `tests/architecture/test_phase19_off_mode_imports_none_of_the_four.py`. A fresh subprocess builds a Kernel from sandbox_world (seed 42, PROD_SMALL), runs one tick_once and shutdown, reports the kernel's resolved obs mode (asserted equal to the requested mode) and which of the four modules are in sys.modules. First run on main 6fdfdf555 failed for recorder and decision_trace_writer: adventure_scorer.py:10 loaded the cognition package during world compile (a path the linter does not cover). testing-planner held the ticket; rpg-planner fixed src (PR #803, 0bba1ff7d); rerun passed after merging main. Stated limit: one tick on sandbox_world does not cover imports reached only on later ticks or other worlds. The assertion was never narrowed.
 
 ## Test Summary
-Not started.
+7 passed (OFF none loaded; LIGHT control loads all four; injected unguarded import caught for each of the four; module list equals the four c06 kernel ignore_imports edges).
 
 ## Files Changed
-None yet.
+tests/architecture/test_phase19_off_mode_imports_none_of_the_four.py (new); this ticket and its stored artifacts.
 
 ## Completion Summary
-Not started.
+An OFF-mode kernel imports none of the four heavy observability modules, now enforced at runtime in a fresh interpreter, with an ON-mode control and a per-module injected-import parity proof. Gaps stated: one tick on one world; the codebase follow-on (name this test in the importlinter.toml phase19 comment, whose kernel.py line numbers have drifted) is not in this change and stays with testing-planner. Not pushed: pushing and merging need the owner's separate yes.

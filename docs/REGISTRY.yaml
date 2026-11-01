@@ -11486,6 +11486,26 @@
   - observability
   - security
 - type: ticket
+  path: agent-working/tickets/done/TCK-20261018-PHASE19-OFF-MODE-RUNTIME-CHECK.md
+  ticket_id: TCK-20261018-PHASE19-OFF-MODE-RUNTIME-CHECK
+  title: A runtime test that an OFF-mode kernel imports none of the four heavy observability
+    modules the phase19 import-linter ignores rely on
+  tier: standard
+  ticket_type: feature
+  date: '2026-10-18'
+  related_code_areas:
+  - tests/architecture/test_phase19_observability_boundaries.py
+  - src/engine/kernel.py (function-local imports behind the OFF guard)
+  - codebase/structure/importlinter.toml
+  artifact_files:
+  - agent-working/stored_artifacts/TCK-20261018-PHASE19-OFF-MODE-RUNTIME-CHECK/investigation.md
+  - agent-working/stored_artifacts/TCK-20261018-PHASE19-OFF-MODE-RUNTIME-CHECK/plan.md
+  - agent-working/stored_artifacts/TCK-20261018-PHASE19-OFF-MODE-RUNTIME-CHECK/test_plan.md
+  tags:
+  - testing
+  - architecture
+  - observability
+- type: ticket
   path: agent-working/tickets/done/TCK-20261018-REDIS-ADAPTER-MISSING-LIBRARY-TEST-BLOCKS-THE-IMPORT.md
   ticket_id: TCK-20261018-REDIS-ADAPTER-MISSING-LIBRARY-TEST-BLOCKS-THE-IMPORT
   title: test_redis_adapter_resilient_missing_library really blocks the redis import,
@@ -11823,23 +11843,6 @@
   artifact_files: []
   tags:
   - platform
-  - observability
-- type: ticket
-  path: agent-working/tickets/todos/phase19-off-mode-check/TCK-20261018-PHASE19-OFF-MODE-RUNTIME-CHECK.md
-  ticket_id: TCK-20261018-PHASE19-OFF-MODE-RUNTIME-CHECK
-  title: A runtime test that an OFF-mode kernel imports none of the four heavy observability
-    modules the phase19 import-linter ignores rely on
-  tier: standard
-  ticket_type: feature
-  date: '2026-10-18'
-  related_code_areas:
-  - tests/architecture/test_phase19_observability_boundaries.py
-  - src/engine/kernel.py (function-local imports behind the OFF guard)
-  - codebase/structure/importlinter.toml
-  artifact_files: []
-  tags:
-  - testing
-  - architecture
   - observability
 - type: ticket
   path: agent-working/tickets/done/TCK-20261017-FORCED-SCENARIOS-FOR-COVER-CHOKEPOINTS-AND-HIGH-GROUND.md
