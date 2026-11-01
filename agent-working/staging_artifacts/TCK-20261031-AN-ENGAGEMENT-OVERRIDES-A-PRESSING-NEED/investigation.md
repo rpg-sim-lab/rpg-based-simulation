@@ -52,3 +52,11 @@ No death by STARVATION among recorded subjects in the 15 runs (deaths: COMBAT 18
 - LHR_HOLD is gated on a pressing need: 0 in 15 runs. NO_RETREAT_DESTINATION holds WITHOUT a pressing need (e.g. low-hp e23) were not counted; the per-hold region facts (in region, home, boundary and building distances) were therefore not collected. Asked for, not widened.
 - LHR_CARRY_WALK is an approximation (REGROUP walk, acting hostile, hp<0.5); the writer split above says how much of REGROUP is the town carry.
 - ENG, LOW_HP_RETREAT, TOWN_RETURN and FLEE_LINE are probe-defined (lane B's definitions); harm joins are co-occurrence, not attribution.
+
+### Test coverage of the tactical.py:266 presence skip (read-only check, 2026-11-02)
+No test exercises it with a pressing need and a hostile that is present but not acting.
+- tests/unit/tactical/test_objective_pursuit_coverage.py covers the `if not hostiles:` objective block only with NO hostile (its docstring notes DEFEAT_ENEMY is handled by the hostile branch).
+- tests/unit/ai/test_starvation_is_a_present_threat_weighed_in_goal_selection.py::test_a_subject_in_the_desperation_band_with_a_hunter_really_attacking_does_not_stand_and_eat uses a hunger objective and a hostile that is ATTACKING the subject; it leaves through the PANIC_RETREAT branch (tactical.py:213) before reaching :266, so it does not reach the skip.
+- tests/unit/tactical/test_held_panic_falls_through.py (:59-:112) covers the PANIC site (:213) with non-acting and acting hunters (memo row 88: a starving subject beside a non-acting hunter does not flee); :97 pins the freeze beside a real tactical hostile. It stops at the panic decision, not at the arrival/engagement skip.
+- tests/unit/world/test_building_services_land_with_their_action.py and tests/unit/movement/test_arrival_beside_unenterable_target.py cover building arrival with no hostile.
+So the grid test (Phase 2) must add the :266 rows: {pressing y/n} x {no hostile / perceived only / present-not-acting / acting} at this site.
