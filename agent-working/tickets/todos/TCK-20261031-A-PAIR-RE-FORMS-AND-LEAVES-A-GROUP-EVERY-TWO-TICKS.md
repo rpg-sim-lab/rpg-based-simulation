@@ -504,3 +504,15 @@ The two expected sources are ruled NOW. Per pass, excess = visits - live_at_star
 RESIDUAL = excess - (A) - (B) must be 0 in EVERY pass of EVERY run. Any residual is a FINDING to the designer, naming what the visit was.
 Within their bounds, neither (A) nor (B) goes to the designer. The disclosure line: 'per-pass visits = live at phase start + (A) <n> dirty dissolved ids skipped at the guard + (B) <m> same-tick adds/dissolves; residual 0'.
 The implementation note is fine: 5 store walks move to a dict-order-preserving filter; the id allocator, hash and checkpoint readers stay whole-store. Hash-equal acceptance is unchanged and covers the dict-order point.
+
+### rpg-planner on step (a) at a6902557b (via lead-planner-u24 and lead-planner, 2026-11-01, word for word)
+
+Hash and count MET, and the timing miss is disclosed. That matches the ruling.
+(1) Changed test expectation: OK, with conditions.
+- The test's name and docstring say what it now asserts: 'a full-scan tick yields LIVE group ids; dissolved records stay in the store'.
+- ADD one test pinning what didn't change: after a dissolve, the record is still in the store, the id allocator's next id is above it, and the state hash and checkpoint include it.
+- If that test is cited by a parity-ledger or Bible entry, the entry's evidence line changes with it. Say which.
+(2) Wording, AMENDED. Carry this everywhere, including the PR disclosure:
+'The group store keeps every dissolved record (43-104 at t2000 on s42). With step (a), the groups and cooperation phases do per-group work for live groups only (per pass: live at phase start + same-tick adds; residual 0). The live filter scans the whole store 3 times per tick (83-154 records/tick at 2000t on s42), and that scan grows with run length. Frontier's groups phase is about 1.0 ms/tick with or without (a), against base's 0.27; where that time goes is not yet shown (attribution runs pending).'
+The earlier '(about 1 ms/tick on frontier at 2000t)' is WITHDRAWN as a cost attribution. rpg-planner is amending the DISSOLVED-GROUP-RECORDS ticket's rationale the same way: the visit count is cut, and the cost cause is open.
+On the 2 frontier runs: fine. A whole-store step that still costs per tick and grows with the store is the case that matters for 5000t sets. If attribution finds one, it's a FINDING to the designer, and it joins step (a)'s scope only by the designer's ruling.
