@@ -603,3 +603,15 @@ B stays held, and the traces and extra run below have my slot go, one at a time.
 3. YES to the Tier 2 proposal: crowded s43, frontier s45 and urban s44, reusing the urban s42 and frontier s43 pairs. With e23 that is 6 of 6, and the allowance closes at 6. A 7th needs a fresh ask through rpg-planner. Order: e30 (running) -> e23 -> urban s42 probe -> crowded s43 -> frontier s45 -> urban s44.
 B stays held until rpg-designer rules on both STOP victims and the Tier 2 set. If memory drops under 3 GB available, pause between jobs, not mid-run.
 Send results to me for relay.
+
+### rpg-designer's ruling criteria for groups C (via rpg-planner, lead-planner-u24 and lead-planner, 2026-11-01, word for word as relayed; criteria, not a ruling yet)
+
+1. FED = the fix's own changed behaviour selected the walk or the target within the 50t window, acting on the victim OR the killer. Changed behaviour means one of: a Shape-A formation/end with a typed reason, holder binding, a leadership stamp, a role-gated target branch (`tactical.py:351`/`:372`), or group_bias in target_score (`tactical.py:428`).
+- So trace rows must cover the KILLER too (e30 for e12; e23's killer) and include target_score's group_bias term.
+- A lodging leave is FED only if its writer or reason traces to one of those decisions.
+- A plain REST end or wake is F3 lodging churn and NOT fed. Log it as a re-lodge churn row for N14.
+2. Surviving past the base death is trajectory, not FED by itself.
+3. The lodged-at-decision probe runs (frontier s43/44/45, urban s42) need these fields per row: phase; decider (the lodged member itself, or another member); decision kind (formation / election / target / end); two flags, CHOSEN as leader and BOUND as holder. Report counts split by kind and by those flags.
+- A lodged stayer that is chosen as leader or bound as holder is a lodger making a social choice indoors: a candidate F3×churn defect, independent of the victims. That split decides STOP or row.
+- If the frontier runs already started without the decider/kind/flag fields, say whether those can be derived from what is logged. If not, the urban s42 run carries the full field set, and rpg-planner decides whether one frontier run repeats.
+4. Tier 2 outcomes: FED -> STOP to rpg-planner; NOT FED -> divergence row; NOT SHOWN -> rows to rpg-designer. The allowance closes at 6.
