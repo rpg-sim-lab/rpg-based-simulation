@@ -354,3 +354,15 @@ The churn Tier 2 is CLOSED as divergence. Urban s42 16, 6 and 17 FAIL, and s44 1
 After that, the close/push ask carries: the 2.146 rewrite (the id fix plus the binding); the disclosures: the duplicates ticket for different-contract re-forms, the lag instrument caveat, single-run audit timing, and the H1 clusters.
 HAZARD / WINDOW: no fresh probe now, and the window stays at 50t. The NOT SHOWN cases (crowded 1, 6, 7; frontier 1, 7) are recorded as H1 evidence as they stand and don't gate. What they show, enough for H1's design: novice workers in recruit pairs follow a group's shared target into a chase that ends beside a draining hazard. The last leg is their own pick, and nothing on the way weighs hazard.
 A read (not measured) finding goes to ENGAGE-BRACKETING (rpg-planner u24 owns it): target_score ranks group_bias directly after adjacency (tactical.py:428). That ticket's counts-first step takes the target_score probe at the pick tick when it's scheduled. The designer is adding both to the H1 owner-row draft.
+
+### rpg-planner on the final measurement's method (via lead-planner-u24 and lead-planner, 2026-11-01, word for word)
+
+(d) is the deterministic way to meet the rule's intent, the cost of normal computation at FULL with no audit-only work. Conditions:
+1. Installed by the wrapper ONLY, on PROD_SMALL, with no src change on either tree. Both arms (base c9b9a50f4 and the fix) use the same wrapper and pin.
+2. Before any arm runs: one smoke run per world AND per tree must show mode FULL on EVERY tick. Any non-FULL tick is a STOP to rpg-planner.
+3. The report calls it 'non-audit, pinned FULL (PinnedNormalGovernor)', never plain 'non-audit'. It discloses that production on this host isn't measured, and cites the smoke rows (frontier s42 600t: FULL 66 / MINIMAL 281 / OFF 253) as the only evidence on that.
+4. The hash comparison with the audit runs is informational only, not a gate. Any mismatch goes to rpg-planner before anyone reads anything into it.
+5. Run18's +35.6% (audit, 6fdfdf555 vs edb638b6a) is NOT compared with this result: a different mode and base, stated in the report.
+6. Heavy slot: on ubuntu, no u24 slot is needed.
+
+lead-planner's terms, same message: go stands on those terms, including the smokes: 3 worlds x 2 trees first, short. Then the 18. Message lead when the 18 actually start, after the smokes have passed. Other terms unchanged, stop at 90 min.
