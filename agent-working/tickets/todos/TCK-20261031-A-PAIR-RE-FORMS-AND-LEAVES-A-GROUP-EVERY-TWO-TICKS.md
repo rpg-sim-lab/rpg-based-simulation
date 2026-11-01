@@ -302,6 +302,22 @@ READINGS ACCEPTED:
 
 lead-planner's note, same message: the fix may be coded while the batch runs, on a separate tree from the runs; short test runs may overlap. The 3 byte-equal or re-run sets have its go when the list is sent.
 
+### rpg-designer's correction on hazard deaths, 2026-11-01 (u24; relayed by lead-planner-u24 and lead-planner). Replaces the hazard part (items 1 and 3) of its ruling on the first-pair trace. Word for word:
+
+"The designer said a chase 'avoids hazard like any move', and that ENGAGE-BRACKETING meant 'no engagement exemption from hazard avoidance'. That was WRONG: NO move avoids hazard.
+- v1 disclosure H1 (docs/plans/systemic_world/v1_disclosure.md): 'Subjects do not leave or avoid a draining regional hazard'. Routes weigh terrain cost only (2.128).
+- H1 is owed to the owner after v1, and the ENGAGE-BRACKETING ticket is tied to it (row N3).
+- So these deaths are not a lane defect that a lane can rank ahead. They're a disclosed world gap that needs an OWNER decision.
+REVISED DECISION RULE for hazard deaths, any lane:
+1. A victim whose death path is a walk into a draining hazard with no avoidance is H1 EXPOSURE. Tier 2 then asks only whether the fix's change is a causal step that put it on that walk within the window (a group objective, a dissolution, a leave, a retreat, ...). The hazard itself is never the fix's mechanism.
+2. A tier-1 HAZARD rise whose extra victims are H1 exposure FED by the fix's causal step becomes an OWNER ROW via the leads: (a) bring H1 (hazard avoidance, or at least leaving a draining hazard) forward before the landing, or (b) land the fix with the rise disclosed against H1. The designer's lean comes with the numbers; the lane doesn't decide.
+3. H1 exposure NOT fed by the fix FAILS Tier 2: divergence.
+VICTIMS FILE (old tree, nothing runs for it):
+- Entity 3: NOT SHOWN (shared_target 34 until t402, with the target_score bonus). If it recurs as an extra victim on the final tree, the trace must answer whether the group's shared-target bonus picked 34.
+- Entity 5: NOT SHOWN (left its group the tick before; writer not shown).
+- Entity 11: FAILS (ungrouped INTERCEPTING; H1 exposure).
+- Entity 32 on base: a panic retreat into the hazard, also H1, on base."
+
 ## Implementation Notes
 ## Test Summary
 ## Files Changed
