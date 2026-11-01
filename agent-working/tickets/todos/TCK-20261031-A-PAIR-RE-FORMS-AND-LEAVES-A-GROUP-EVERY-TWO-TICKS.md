@@ -280,6 +280,28 @@ LAG: accepted. The final set records the true expiry tick on each dissolution, w
 
 lead-planner's note, same message: rpg-planner (u24) takes the widening of TCK-20261020-ENGAGE-BRACKETING-MOVES-WALK-A-GROUP-INTO-A-HAZARD-CLUSTER. Its go is given for the final tree once src is final and reviewed, with the SHA told to it at start.
 
+### rpg-designer on the relevance fix, 2026-11-01 (u24; relayed by lead-planner-u24 and lead-planner). Word for word:
+
+"RULES the relevance fix NOW, in this ticket. The positive control proves the gap by construction, so the fix is needed whatever the 15 runs show.
+FIX: a bound group is RELEVANT to the groups phase on the tick its binding contract becomes due, using the same due test as contract_is_live and resolve_expirations, regardless of the dirty set and of whether the contracts phase ran.
+- Derived from state: the bound groups whose holder's contract is due this tick, by an index or by a scan over bound groups only.
+- No new durable field, unless an index is needed for cost. In that case the index is typed, rebuilt on restore, and listed in FIELD_RULES.
+- Tests:
+- the implementer's positive control (due, outside the dirty set, contracts phase skipped) now dissolves ON that tick with FULFILLED;
+- an unbound or not-due group is NOT added to the relevant set.
+THE RUNNING BATCH: let it FINISH. Deaths, lifetimes and re-forms on fc22ae71f stay valid evidence. Also report the count of (bound group due, contracts phase skipped, group not dirty) tick-instances; your 'lag 0 with skipped phases' report nearly gives this already.
+- Count 0 in all 15: the fix can't change those runs. Prove it with 3 runs byte-equal to fc22ae71f (one per world), and close on the batch.
+- Count above 0: re-run ONLY the affected pairs on the fixed tree, and judge the lag gate there.
+- Your added stop (lag above 0 -> stop at the end of that pair, to the designer) stays for the current batch.
+READINGS ACCEPTED:
+- expiry -1 (no expiry) ranks latest;
+- 'qualified partner' as defined;
+- formation refuses a DUE contract (no born-dead groups);
+- resolve_expirations on the shared due test, with no behaviour change.
+(Victim reads, also relayed: the designer has entity 3 as NOT SHOWN via the shared-target bonus; if that path recurs on the final tree, the trace must answer it.)"
+
+lead-planner's note, same message: the fix may be coded while the batch runs, on a separate tree from the runs; short test runs may overlap. The 3 byte-equal or re-run sets have its go when the list is sent.
+
 ## Implementation Notes
 ## Test Summary
 ## Files Changed
