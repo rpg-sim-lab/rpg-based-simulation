@@ -1,3 +1,14 @@
+---
+status: active
+layer: simulation
+authority: P1
+audience: agent
+ticket_id: TCK-20261031-A-PAIR-RE-FORMS-AND-LEAVES-A-GROUP-EVERY-TWO-TICKS
+phase: open
+date: 2026-11-01
+tags: []
+---
+
 # Evidence: step-1 proof runs and the four trace pairs on 59f0e78bd (vs base c9b9a50f4)
 
 Written by rpg-implementer-ubuntu. The corrections in the section "Corrections" below come from rpg-planner-ubuntu (its review of this evidence, 2026-11-01), who checked 16, 6's end and death ticks, 17 and 14 in the raw rows; I did not re-derive them and name the source for each.
