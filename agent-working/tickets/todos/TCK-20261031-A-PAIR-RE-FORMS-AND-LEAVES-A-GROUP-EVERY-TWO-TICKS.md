@@ -576,3 +576,13 @@ Otherwise the implementer's results stand: 412 tests, no pinned hash moved, the 
 It doesn't break the ruling: it states measured counts (live group-ticks, call counts) and says plainly that the rise wasn't apportioned. That's a disclosed correlation, not a named cause. Use it as written, plus this clause after '(about 7,340 vs 1,600)': '; base's figure is approximate, as its id overwrites can merge group lifetimes'. The TOTAL line stays 'the rest is not attributed'. Don't carry 'longer-lived groups' into the total.
 
 The accepted line, with that clause: "frontier groups phase about 0.98 ms/tick vs base 0.27, with or without (a). Whole-store work is about 1-2% of it. The fix has about 4.6x the live group-ticks over the run (about 7,340 vs 1,600; base's figure is approximate, as its id overwrites can merge group lifetimes), and more replace and merge calls in the phase (late window 18,281 vs 1,537 replace calls); the rise fits per-live-group work, but it was not apportioned by function. The rising item over the run is the formation scan, growing with contracts per ungrouped entity (pre-existing loop shape; see TCK-20261101-A-PAIR-HOLDS-MANY-ACTIVE-RECRUIT-CONTRACTS-AT-ONCE)."
+
+### rpg-planner on the STOP at frontier s43 entity 12 (via lead-planner-u24 and lead-planner, 2026-11-01, word for word as relayed)
+
+YES to the trace pair (frontier s43, entities 12 and 6, t1360-1433). It's one of the 6 pre-approved pairs on your existing go, with no new owner ask, and the slot is yours until `urban_political` ends.
+Conditions:
+(1) The verdict is FED / NOT FED / NOT SHOWN, never PASS/FAIL. FED means a causal step in the 50t window is behaviour the fix changed: the BINDING_HOLDER_LEFT end, 10088 forming one tick after 10085 FULFILLED, or a lodged-member group decision. Name the killer and say whether it was visible and targetable.
+(2) If FED: STOP, don't run `urban_political`, and report to rpg-planner. If NOT FED or NOT SHOWN: finish `urban_political` on the same go.
+(3) In the same trace, say whether e12's leave at t1392 or the 10088 holder binding put e12 on the tile or route where it died, compared with base at the same ticks.
+(4) The lodged-at-group-decision rise (s43 0->70, s44 0->738, s45 0->1192) is a new behaviour signal and must be explained before close, whatever the trace says. From existing rows only, no extra run, split those decisions by whether the member's goal or location changed within 10t. It goes in the close report beside s43 DEFEAT 3->10.
+rpg-designer reads the verdict before any close ruling. Send your verdict to me; I'll relay it.
