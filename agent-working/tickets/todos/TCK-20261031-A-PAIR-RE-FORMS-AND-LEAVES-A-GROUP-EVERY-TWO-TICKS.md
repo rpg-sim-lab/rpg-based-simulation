@@ -516,3 +516,19 @@ Hash and count MET, and the timing miss is disclosed. That matches the ruling.
 'The group store keeps every dissolved record (43-104 at t2000 on s42). With step (a), the groups and cooperation phases do per-group work for live groups only (per pass: live at phase start + same-tick adds; residual 0). The live filter scans the whole store 3 times per tick (83-154 records/tick at 2000t on s42), and that scan grows with run length. Frontier's groups phase is about 1.0 ms/tick with or without (a), against base's 0.27; where that time goes is not yet shown (attribution runs pending).'
 The earlier '(about 1 ms/tick on frontier at 2000t)' is WITHDRAWN as a cost attribution. rpg-planner is amending the DISSOLVED-GROUP-RECORDS ticket's rationale the same way: the visit count is cut, and the cost cause is open.
 On the 2 frontier runs: fine. A whole-store step that still costs per tick and grows with the store is the case that matters for 5000t sets. If attribution finds one, it's a FINDING to the designer, and it joins step (a)'s scope only by the designer's ruling.
+
+### rpg-planner on attribution, the runtime seed and the second lander (via lead-planner-u24 and lead-planner, 2026-11-01, word for word)
+
+1. Attribution ACCEPTED as no finding: the whole-store sites are about 10-20 us/tick (1-2%), and update_groups per call FALLS as the store grows. The rest is activity plus the formation scan, which grows with contracts per ungrouped entity.
+Disclosure line: 'frontier groups phase about 0.98 ms/tick vs base 0.27, with or without (a). Whole-store work is about 1-2% of it. The difference is not yet named; the base profile is pending. The rising item over the run is the formation scan, growing with contracts per ungrouped entity (pre-existing loop shape; see TCK-20261101-A-PAIR-HOLDS-MANY-ACTIVE-RECRUIT-CONTRACTS-AT-ONCE).'
+- After the base profile names the difference, the line names it.
+- Adding the formation-scan rows to that ticket is fine.
+2. YOUR OBJECTION is UPHELD: no seeded fallback for next_group_id in update_groups. A runtime fallback hides a missing counter and can REISSUE ids, which is the very defect the groups-id fix exists to stop.
+- Seeding happens ONLY on load, through FIELD_RULES.
+- At runtime, next_group_id is a NON-OPTIONAL typed field on AuthoritativeState, so mypy is satisfied by the type, not by a default.
+- If it can genuinely be absent at a call site, raise a typed error (an Error-suffixed name, per N818) and add a test that exercises it.
+- Re-run the 3 pinned hashes after that change; they must be equal.
+3. CheckpointFieldMissingError: F3 makes the same rename in src/engine/checkpoint_fields.py, and both lanes add FIELD_RULES rows. Whichever lands SECOND merges the module. Expect a textual conflict there: keep both sets of rows and the single class name. F3 is likely first (#823, being fixed for code-health and mypy).
+4. Changed test: no parity or Bible citation, so no ledger change. Noted.
+
+lead-planner's note, same message: 'non-optional' with a load seed has one catch: the old-shape slot is absent until restore's fill runs, so the fill step must run before any kernel read, and an old-shape test already covers that. Confirm it does.
