@@ -131,6 +131,15 @@ Then the owner go via you. The 2.146 rewrite covers the id fix plus the binding 
 
 lead-planner's note, same message: the final hold rule (non-audit at FULL, audit figure beside it, alternating 3 per tree) still stands on top of the re-measure. Each run set needs its go. No code until it relays the owner's yes.
 
+### rpg-designer's ruling in advance for the re-measure, 2026-11-01 (u24; relayed by lead-planner-u24 and lead-planner). Word for word:
+
+"RE-FORMATIONS: split the re-forms by the same members at 10 and 50 ticks by binding contract.
+- SAME contract_id as the dissolved group: true churn, GATED at about 0.
+- DIFFERENT contract (the pair's next ACTIVE duplicate, e.g. _39 then _54): reported, NOT gated, and attributed to TCK-20261101-A-PAIR-HOLDS-MANY-ACTIVE-RECRUIT-CONTRACTS-AT-ONCE.
+- The duplicates stay OUT of this batch unless a death STOP's first diff traces to a duplicate-driven re-form.
+NO REBINDING: a group whose binding contract ends does not quietly rebind to the pair's next ACTIVE contract. That would hide the duplicate defect. The duplicates ticket fixes the source.
+Note 1 (12 contracts at t100, before the first churn) goes into the duplicates ticket's counts as it stands."
+
 ## Implementation Notes
 ## Test Summary
 ## Files Changed
