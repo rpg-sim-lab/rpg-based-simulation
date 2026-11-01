@@ -72,6 +72,9 @@ class ScenarioCheckpointer:
             header_len = struct.unpack("<I", f.read(4))[0]
             header = json.loads(f.read(header_len).decode("utf-8"))
             state = pickle.loads(f.read())
+        # The one post-unpickle step: fill a field the checkpoint predates (only where a ruling derives it from the state) or refuse with a typed error, never a raw AttributeError mid-tick.
+        from src.engine.checkpoint_fields import fill_missing_fields
+        fill_missing_fields(state)
 
         if header["spec_id"] != spec.id:
             raise ValueError(

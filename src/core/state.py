@@ -1266,10 +1266,12 @@ class BuildingState:
     maintenance_shifts_done: int = 0
     # Commercial paid work (content ``hires_for_pay``, ruling 66): a shift is paid from the building's own purse only.
     hires_for_pay: bool = False
+    _canonical_cache: Any = field(default=None, init=False, repr=False, compare=False)
     # F3 (divergence 2.155), content ``beds``: how many subjects the building lodges at once (copied at compile like ``maintenance_shifts_needed``). 0 = lodges no one.
     # The occupancy of a bed is NOT stored here: it is derived from the entities whose ``navigation.lodged_in`` is this building (one source of truth).
+    # LAST on purpose: a slotted dataclass unpickles POSITIONALLY (`dataclasses._dataclass_setstate` zips ``fields()`` with the state tuple), so a field inserted before another takes that
+    # field's old value from an older checkpoint. Last, a pre-F3 pickle is one short and ``beds`` reads missing, which `checkpoint_fields.fill_missing_fields` refuses.
     beds: int = 0
-    _canonical_cache: Any = field(default=None, init=False, repr=False, compare=False)
 
     def to_canonical_dict(self) -> Dict[str, Any]:
         if self._canonical_cache is not None:
