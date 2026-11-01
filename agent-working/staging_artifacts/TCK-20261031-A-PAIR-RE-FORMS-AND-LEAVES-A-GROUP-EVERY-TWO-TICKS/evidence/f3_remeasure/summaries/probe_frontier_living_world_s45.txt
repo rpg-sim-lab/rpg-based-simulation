@@ -1,0 +1,28 @@
+hook cohesion True decision rows 1203 leave rows 22 claim rows 55
+== counts by (phase, kind, role-before, chosen, bound, change within 10 ticks):
+  653 ('groups', 'NO_CHANGE', 'other', '-', '-', 'same')
+  356 ('groups', 'NO_CHANGE', 'leader', '-', '-', 'same')
+  61 ('groups', 'NO_CHANGE', 'other', '-', '-', 'goal')
+  34 ('groups', 'NO_CHANGE', 'leader', '-', '-', 'goal')
+  25 ('groups', 'NO_CHANGE', 'other', '-', '-', 'goal+loc')
+  23 ('groups', 'NO_CHANGE', 'other', '-', '-', 'loc')
+  19 ('groups', 'NO_CHANGE', 'leader', '-', '-', 'loc')
+  11 ('groups', 'NO_CHANGE', 'leader', '-', '-', 'goal+loc')
+  7 ('groups', 'FORMATION', 'other', '-', '-', 'same')
+  4 ('groups', 'DISSOLVED:BINDING_CONTRACT_NOT_ACTIVE', 'other', '-', '-', 'same')
+  3 ('groups', 'FORMATION', 'leader', 'CHOSEN', 'BOUND', 'same')
+  3 ('groups', 'DISSOLVED:BINDING_CONTRACT_NOT_ACTIVE', 'leader', '-', '-', 'same')
+  1 ('groups', 'FORMATION', 'other', '-', '-', 'goal')
+  1 ('groups', 'DISSOLVED:BINDING_CONTRACT_NOT_ACTIVE', 'other', '-', '-', 'loc')
+  1 ('groups', 'DISSOLVED:BINDING_CONTRACT_NOT_ACTIVE', 'other', '-', '-', 'goal')
+  1 ('groups', 'DISSOLVED:BINDING_CONTRACT_NOT_ACTIVE', 'leader', '-', '-', 'goal')
+== by kind x change: {('NO_CHANGE', 'goal+loc'): 36, ('NO_CHANGE', 'same'): 1009, ('NO_CHANGE', 'loc'): 42, ('FORMATION', 'same'): 10, ('NO_CHANGE', 'goal'): 95, ('FORMATION', 'goal'): 1, ('DISSOLVED:BINDING_CONTRACT_NOT_ACTIVE', 'loc'): 1, ('DISSOLVED:BINDING_CONTRACT_NOT_ACTIVE', 'goal'): 2, ('DISSOLVED:BINDING_CONTRACT_NOT_ACTIVE', 'same'): 7}
+== total split: {'goal+loc': 36, 'same': 1026, 'loc': 43, 'goal': 98}
+== lodged stayers CHOSEN leader or BOUND holder: 3
+   {'t': 1447, 'gid': 10101, 'm': 37, 'kind': 'FORMATION', 'lodged_in': 20003, 'work': 'ENTITY_ACT', 'reason': None, 't10': {'alive': True, 'lodged_in': 20003, 'work': 'ENTITY_ACT', 'reason': None, 'obj': 'fatigue_20003', 'pos': [23.0, 39.0]}}
+   {'t': 1530, 'gid': 10107, 'm': 12, 'kind': 'FORMATION', 'lodged_in': 20003, 'work': 'ENTITY_ACT', 'reason': None, 't10': {'alive': True, 'lodged_in': 20003, 'work': 'ENTITY_ACT', 'reason': None, 'obj': 'fatigue_20003', 'pos': [23.0, 39.0]}}
+   {'t': 1547, 'gid': 10108, 'm': 37, 'kind': 'FORMATION', 'lodged_in': 20003, 'work': 'ENTITY_ACT', 'reason': None, 't10': {'alive': True, 'lodged_in': 20003, 'work': 'ENTITY_ACT', 'reason': None, 'obj': 'resolve_blocker_blocker_congestion', 'pos': [23.0, 39.0]}}
+== DEFEAT deaths:
+   {'t': 53, 'e': 18, 'cause': 'DEFEAT', 'killer': 17, 'hazard': None, 'gid': 10003, 'role': 'LEADER', 'grp_leader': 18} last_lodged None last_leave None near_lodge50 False groups_within50 [(10003, 21)]
+   {'t': 137, 'e': 14, 'cause': 'DEFEAT', 'killer': 30, 'hazard': None, 'gid': 10008, 'role': 'VANGUARD', 'grp_leader': 16} last_lodged None last_leave None near_lodge50 False groups_within50 [(10008, 92)]
+   {'t': 226, 'e': 15, 'cause': 'DEFEAT', 'killer': 30, 'hazard': None, 'gid': None, 'role': None, 'grp_leader': None} last_lodged None last_leave None near_lodge50 False groups_within50 []
