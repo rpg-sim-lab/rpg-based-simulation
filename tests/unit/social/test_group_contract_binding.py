@@ -357,3 +357,33 @@ def test_the_contracts_phase_agrees_with_the_predicate_on_the_expiry_tick():
     assert any(c.status is ContractStatus.FULFILLED for c in upd.entity_updates[1].strategic.contracts_add_or_update)
     early = ContractLifecyclePhase.resolve_expirations(_state(49, contract=_contract(expiry=50)), StateUpdate())
     assert 1 not in early.entity_updates or not early.entity_updates[1].strategic
+
+
+# --- relevance: a bound group is relevant on the tick its binding contract is due, dirty or not -----------------------------------------------
+
+def _update_with_dirty_groups(group_ids):
+    from src.core.dirty import DirtySet
+    return StateUpdate(dirty_set=DirtySet(group_ids=set(group_ids)))
+
+
+def test_a_due_bound_group_outside_the_dirty_set_dissolves_on_the_tick_with_FULFILLED_when_the_contracts_phase_was_skipped():
+    state = _state(53, contract=_contract(expiry=50), group=_bound_group(last_leadership_check_tick=53))
+    rows = GroupSystem.update_groups(state, _update_with_dirty_groups([])).groups_add_or_update  # not dirty; no contracts phase ran (no status write)
+    assert [(g.dissolution_tick, g.dissolution_reason, g.dissolution_contract_status) for g in rows] == [(53, R.BINDING_CONTRACT_NOT_ACTIVE, ContractStatus.FULFILLED)]
+
+
+def test_only_live_bound_groups_with_a_due_binding_contract_are_added_to_the_relevant_set():
+    from src.core.dirty import due_bound_group_ids, get_relevant_group_ids
+    due = _bound_group(gid=10000, cid="r_due")
+    notdue = _bound_group(gid=10001, cid="r_live")
+    gone = replace(_bound_group(gid=10002, cid="r_due"), dissolution_tick=40)  # dissolved records are skipped first
+    unbound = GroupRecord(id=10003, leader_id=1, member_ids={1, 2}, anchor=(0.0, 0.0))
+    ents = {1: _ent(1, 0.0, 0.1, {"r_due": _contract("r_due", expiry=50), "r_live": _contract("r_live", expiry=51)}), 2: _ent(2, 0.5)}
+    state = AuthoritativeState(tick=50, seed=1, entities=ents, groups={g.id: g for g in (due, notdue, gone, unbound)})
+    assert due_bound_group_ids(state) == {10000}
+    assert get_relevant_group_ids(state, _update_with_dirty_groups([10003])) == {10000, 10003}
+    assert get_relevant_group_ids(state, _update_with_dirty_groups([])) == {10000}
+    assert get_relevant_group_ids(state, StateUpdate(force_full_scan=True)) == set(state.groups)  # a full-scan tick stays as it is
+    assert due_bound_group_ids(replace(state, tick=49)) == set()
+    no_expiry = replace(state, entities={1: _ent(1, 0.0, 0.1, {"r_due": _contract("r_due", expiry=-1), "r_live": _contract("r_live", expiry=-1)}), 2: ents[2]})
+    assert due_bound_group_ids(no_expiry) == set()  # -1 never due

@@ -3,6 +3,8 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Set, Dict, TYPE_CHECKING
 
+from src.core.strategic import contract_is_due
+
 if TYPE_CHECKING:
     from src.core.updates import StateUpdate
     from src.core.state import AuthoritativeState
@@ -45,7 +47,27 @@ def get_relevant_group_ids(state: AuthoritativeState, update: Optional[StateUpda
     """
     if not update or update.force_full_scan or update.dirty_set is None:
         return set(state.groups.keys())
-    return update.dirty_set.group_ids
+    due = due_bound_group_ids(state)
+    return update.dirty_set.group_ids | due if due else update.dirty_set.group_ids
+
+
+def due_bound_group_ids(state: AuthoritativeState) -> Set[int]:
+    """Live bound groups whose binding contract is due this tick (`contract_is_due`), derived from state by a scan over the group store.
+
+    A bound group is relevant to the groups phase on the tick its contract becomes due whether or not the group is dirty and whether or not the
+    contracts phase ran, so its validity never depends on the dirty set. Dissolved records are skipped first (the store keeps them), then unbound
+    groups; only the holder's contract is read. A group with no contract or no holder entity is not 'due' here (those ends are driven by their own
+    writes).
+    """
+    due: Set[int] = set()
+    for g_id, group in state.groups.items():
+        if group.dissolution_tick is not None or group.contract_holder_id is None:
+            continue
+        holder = state.entities.get(group.contract_holder_id)
+        contract = holder.strategic.contracts.get(group.contract_id) if holder is not None else None
+        if contract is not None and contract_is_due(contract, state.tick):
+            due.add(g_id)
+    return due
 
 def get_dirty_set(update: Optional[StateUpdate]) -> Optional[DirtySet]:
     """
