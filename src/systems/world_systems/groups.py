@@ -383,7 +383,10 @@ class GroupSystem:
         """Why a contract-bound group's binding has ended this tick, or None while it holds.
 
         Returns (GroupDissolutionReason, ContractStatus | None). The contract is read from the holder's own map (a same-tick contract update first),
-        never from the current leader's. Time expiry writes nothing, so it is judged from `expiry_tick` here.
+        never from the current leader's. The contracts phase (ContractLifecyclePhase.resolve_expirations) runs before the groups phase in the same refine
+        and turns an ACTIVE contract at `tick >= expiry_tick` into FULFILLED in the pending update, which is read first above, so expiry normally reaches
+        here as BINDING_CONTRACT_NOT_ACTIVE with status FULFILLED. The `tick > expiry_tick` branch is a backstop for a contracts phase that did not run
+        on the expiry tick (phase skipping): it records EXPIRED for a contract still stored as ACTIVE. It was never reached in the measured runs.
         """
         holder_id = group.contract_holder_id
         if holder_id not in group.member_ids or holder_id not in state.entities or not is_alive(holder_id) or not is_active(holder_id):
