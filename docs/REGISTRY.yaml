@@ -8025,6 +8025,19 @@
   tags:
   - testing
 - type: ticket
+  path: agent-working/tickets/done/TCK-20261101-SLOW-KNOWN-REDS-PERF-PAUSE-REWORD.md
+  ticket_id: TCK-20261101-SLOW-KNOWN-REDS-PERF-PAUSE-REWORD
+  title: Five perf known-reds entries move to perf-planner's parking ticket and name
+    the pause, and catalog_arena_smoke is reclassified flaky
+  tier: hotfix
+  ticket_type: chore
+  date: '2026-11-01'
+  related_code_areas:
+  - tools/test_architecture/slow_known_reds.yaml
+  artifact_files: []
+  tags:
+  - testing
+- type: ticket
   path: agent-working/tickets/todos/TCK-20261101-A-PANIC-FLIGHT-FIRES-WITH-NO-HOSTILE-PERCEIVED.md
   ticket_id: TCK-20261101-A-PANIC-FLIGHT-FIRES-WITH-NO-HOSTILE-PERCEIVED
   title: A panic flight fires with no hostile perceived
