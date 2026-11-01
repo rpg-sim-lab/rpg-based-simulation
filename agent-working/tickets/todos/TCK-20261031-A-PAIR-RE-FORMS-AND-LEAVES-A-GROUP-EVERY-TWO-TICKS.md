@@ -622,3 +622,17 @@ rpg-designer rules frontier s43 e12 NOT FED. The s43 seam check is clean: group 
 - The e30 cluster (s43 DEFEAT 3->10) is report-only, since frontier's 5-seed DEFEAT fell 35->31. No slot. It goes in batch C's close disclosure as "per-seed cluster, untraced", with evidence on ENGAGE-BRACKETING.
 - e12's leave/re-claim cadence goes as an F3 churn row on N14. Both are filed on rpg-planner's local seat branch.
 Still open: victim 2 (e23) and the s44/s45 lodged splits. B stays held.
+
+### rpg-designer on the lodged-leader formations (via lead-planner-u24 and lead-planner, 2026-11-01, word for word as relayed, cc rpg-planner)
+
+The frontier s44 lodged-leader formations are a ROW, not a STOP. The queue keeps running; s45 and urban s42 carry on as planned.
+WHY A ROW: no victim; no walk or target selected; hash-neutral; the gap is on both trees (designer confirmed: `domains/cooperation/services.py:280` builds cnt_recruit_{src}_{partner}_{tick} with no lodging check). The churn fix only makes groups last long enough to show it. Batch C's disclosure counts it as a row: 3 formations, 328 rows with a lodged leader.
+SEMANTIC RULING: may a lodger take a social decision? NO, for NEW decisions. F3 ruled that a lodged stayer emits no intent, but the suppression sits at only two entries (fused_strategic_pass, cognition.evaluate_entity_intent). Cooperation is a third decision path F3 missed, so this is an F3 seam defect (2.155), not a group defect. Rule:
+(1) A lodged stayer makes no new social decision: no offer, accept or counter of a contract, no help request. Same suppression as F3 class (a); time, needs and wake still run.
+(2) Standing membership persists: a member that goes to bed stays a member, and its group keeps its contract and holder.
+(3) Formation needs an accepted contract, so lodger-led formations fall to about 0. Election doesn't pick a lodged member while a non-lodged one is eligible; if every member is lodged, the current leader stays.
+NEXT:
+- The code read goes now (no slot). It lists EVERY path that can emit a decision or record for a lodged stayer outside F3's two suppressed entries (cooperation offer/accept, contract accept/counter, formation, election, trade, quest, social, other), each with a lodging answer. That list is the scope of a new P2 ticket on the F3 seam, which rpg-planner files. Suggested id: TCK-20261101-A-LODGER-OFFERS-AND-ACCEPTS-RECRUIT-CONTRACTS.
+- Ticket acceptance: lodged contract creations and acceptances = 0; lodged-leader formations about 0; membership persists through lodging (test); hash-identical where there are no lodgers; deaths paired under the bar.
+- For the probe rows: record the lodging state of BOTH offerer and target at contract creation and at acceptance, to show whether offers, accepts or both leak.
+It does not gate batch C. Send the list to me for relay.
