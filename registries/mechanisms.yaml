@@ -186,6 +186,9 @@ mechanisms:
         attributes have real, formula-exact purchase on how a fight resolves** -- which means
         `TCK-20260921-STATS-DIRTY-RECALC-DISCARDS-SPECIES-BASE-STATS`'s own species-base-stat
         erosion is destroying something demonstrably real, not a cosmetic drift.
+        **Note, added 2026-11-01 (TCK-20261031-A-SLEEPER-HOLDS-A-DOOR-OR-SERVICE-TILE, divergence
+        2.155, owner #715 6543182195):** a lodged entity (`navigation.lodged_in` set) has no tile
+        and cannot be targeted or hit from outside; combat skips it as a target, and its own attack is refused as illegal (ATTACKER_INCAPACITATED) while lodged.
   - id: tactical_decision
     layer: entity
     systems: [combat]
@@ -1857,6 +1860,12 @@ mechanisms:
         `concern_intake` remain `code_trace` pending their own staging). The scenario confirms
         `fused_strategic_pass()` really dispatches through a real `Kernel.tick_once()`, not just
         that `pipeline.py` calls it by name.
+        **Note, added 2026-11-01 (TCK-20261031-A-SLEEPER-HOLDS-A-DOOR-OR-SERVICE-TILE, divergence
+        2.155):** `fused_strategic_pass` reads `is_lodged_stayer` (src/core/lodging_rules.py) once per
+        entity. For a lodger whose held rest or meal goes on, it writes no walk target: the town-return
+        fallback, the material-lead target and the section-5 redirection fallbacks are skipped. The rest
+        of the pass (candidates, project bookkeeping, blockers, capacity, leads, intents) runs
+        unchanged. A lodged stayer has no movement intent; it leaves only through `place_leavers`.
         **Note, added 2026-11-01 (TCK-20261031-A-RETREAT-PROJECT-OUTLIVES-ITS-THREAT, divergence 2.156):** a tick
         on which a retreat's clear window opens or drops returns early from evaluate_strategic_intent with no
         goal selection (tactical still runs).
@@ -2825,6 +2834,11 @@ mechanisms:
         own mechanism here since no registry entry names it). Real `BuildingState` construction
         confirmed at `src/worldbuilding/compiler.py:538` (`WorldCompiler`, see `world_compilation`'s
         own binding above; `world_generation` before the 2026-10-05 split) and in performance-scenario generators.
+        **Note, added 2026-11-01 (TCK-20261031-A-SLEEPER-HOLDS-A-DOOR-OR-SERVICE-TILE, divergence
+        2.155):** `BuildingState.beds` is copied at compile from the kind's content `beds` (like
+        `maintenance_shifts_needed` and `hires_for_pay`), never mutated, and in the canonical dict
+        only when non-zero; occupancy is not stored on the building but derived from entities whose
+        `navigation.lodged_in` names it (`town_services`).
   - id: town_services
     layer: world
     systems: [economy]
@@ -2839,6 +2853,18 @@ mechanisms:
       - src/systems/economy_systems/reputation_discount.py::apply_reputation_discount
       - src/engine/building_services.py::service_delta
       - src/engine/service_admission.py::admits
+      - src/engine/service_admission.py::admits_at
+      - src/engine/lodging.py::grant_beds
+      - src/engine/lodging.py::place_leavers
+      - src/core/lodging_rules.py::is_lodged
+      - src/engine/lodging.py::finds_no_bed
+      - src/engine/building_services.py::no_bed_in_reach
+      - src/engine/lodging.py::way_closed_end
+      - src/engine/lodging.py::refuse_rest
+      - src/engine/lodging.py::resolve_arrival
+      - src/engine/lodging.py::drop_lodger_targets
+      - src/core/lodging_rules.py::is_lodged_stayer
+      - src/core/lodging_rules.py::keeps_lodging
       - src/engine/building_arrival.py::building_arrival_update
       - src/engine/shop_sale.py::plan_sale
       - src/engine/work_shift.py::work_update
@@ -2880,6 +2906,22 @@ mechanisms:
         `work_shift.offers_work`/`nearest_work` with no building name in code; a maintenance shift
         is counted and treasury-backed in `conservation._wage_result`, a commercial shift is paid
         from the purse only; upkeep is shifts times the wage.
+        **Noted 2026-10-31** (TCK-20261031-A-SLEEPER-HOLDS-A-DOOR-OR-SERVICE-TILE, rpg-implementer-2; divergence 2.155, STRAT-296, COMB-350; owner #715 6543182195, memo row 94): a REST that the service delivers at a building with declared `beds` lodges the subject inside it (`navigation.lodged_in`, set and cleared only on the apply path; the lodger count is derived, `lodgers_of`). Beds are granted before the service is delivered (`grant_beds`, lowest id first), and a full building is not admitted (`admits_at`; `admits` delegates to it). A lodger stands on no tile, is invisible to every spatial read in both directions (`is_lodged`), and steps out through OccupancyPhase when its held rest ends (`place_leavers`). Beds 0 or absent keeps the earlier behaviour. The per-hold charge equals main's on purpose (TCK-20261031-AN-INN-BED-IS-CHARGED-TWICE-PER-HOLD owns the double charge).
+        **Note, added 2026-11-01 (TCK-20261031-A-SLEEPER-HOLDS-A-DOOR-OR-SERVICE-TILE, divergence
+        2.155):** a REST whose first execution is in reach of a building that declares beds, by a
+        subject the building serves (`keeps_coin`), either lodges or does not run there: a fatigue
+        project ends WAY_CLOSED, and a bare REST is refused with `NO_BED_FREE` (`finds_no_bed`, the
+        one no-bed predicate, shared with arrival and the grant's contention loser). Lodging is
+        arrival: the grant resolves the fatigue project's reach objective in the same apply
+        (`resolve_arrival`). A lodger leaves only when its held REST ends, or the building is gone
+        or not functional; a walk target never moves it out (`drop_lodger_targets`, each drop
+        counted as `LODGER_TARGET_DROPPED`; hard law LAW-LODGER-INDOORS).
+        Movement intent: the tactical entry (`CognitionDomain.execute_brain`) passes its decision
+        through `suppress_stayer_movement`. A woken lodger still decides; a decision that keeps it
+        resting or eating carries no target, mode or path. `LODGER_TARGET_DROPPED` is the claim/leave
+        backstop, split as `LODGER_DROP_CLAIM_TICK` (the claim wins the merge in either order; a merged
+        step is refused) and `LODGER_DROP_LEAVE_REFUSED` (a refused leave refuses that tick's target,
+        path and mode as one unit). Total minus both is the stayer count, which must be 0.
   - id: building_sabotage
     layer: world
     systems: [economy]

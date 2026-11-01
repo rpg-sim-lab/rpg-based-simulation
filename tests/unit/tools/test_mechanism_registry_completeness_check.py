@@ -292,7 +292,9 @@ def test_wider_scope_numbers_pinned():
     # frozen dataclass that route a winning goal to its live record, moved out of `evaluate_strategic_intent`; bound under `goal_hierarchy`, see below).
     # 345 -> 346 on 2026-10-30 (merge of #785 into #788, from the check's own output): both sides added one file above (service_admission.py, live_record_route.py); unbound_files stays 247 (both bound).
     # 346 -> 348 on 2026-10-30 (merge of main ba7aa11bd into the EARN branch, from the check's own output): main is 346 after #785 and #788; EARN adds work_wake.py and need_wake.py (the 345 -> 347 line above is relative to the pre-#785 base). unbound_files stays 247.
-    assert wider["scope_files"] == 348
+    # 348 -> 349 on 2026-10-31 (TCK-20261031-A-SLEEPER-HOLDS-A-DOOR-OR-SERVICE-TILE, divergence 2.155): +src/engine/lodging.py (bound under `town_services`: grant_beds, place_leavers, is_lodged).
+    # 349 -> 351 on 2026-11-01 (same ticket): +src/core/lodging_rules.py (the lodger stay rule, read by the decision and apply layers) and +src/engine/checkpoint_fields.py (the one restore step for fields a checkpoint predates).
+    assert wider["scope_files"] == 351
     # 233 -> 227 on 2026-10-05: the world-building split names six more files (worldmodules/normalizer,
     # worldassembly/resolve_io, worldbuilding/repository and validator, worldgeneration/generator and scorer).
     # Then +1 for the unbound entity_target_objective.py module (TCK-20261002-COMBAT-OBJECTIVE-TARGETS-...).
@@ -351,8 +353,9 @@ def test_wider_scope_numbers_pinned():
     # bound at once under `town_services` (admits), so the unbound count does not move.
     # 247 -> 247 on 2026-10-29 (TCK-20261029-A-BROKE-HUNGRY-SUBJECT-NEVER-EARNS-SO-THE-FREE-MEAL-CANNOT-GO): work_wake.py is bound under `town_services` and need_wake.py is a
     # helper (a cadence constant); the check's own output stays 247.
-    # 247 -> 246 on 2026-11-01 (TCK-20261031-A-RETREAT-PROJECT-OUTLIVES-ITS-THREAT): src/core/strategic.py is now cited by `goal_hierarchy` (note_threat_state, restart_clear_window), so one unbound file is bound.
-    assert wider["unbound_files"] == 246
+    # unbound_files 247 -> 248 on 2026-11-01 (same ticket): +src/engine/checkpoint_fields.py (a restore helper, no mechanism of its own); src/core/lodging_rules.py is bound under `town_services`.
+    # 248 -> 247 on 2026-11-01 (TCK-20261031-A-RETREAT-PROJECT-OUTLIVES-ITS-THREAT, merged on top of F3): src/core/strategic.py is now cited by `goal_hierarchy` (note_threat_state, restart_clear_window), so one unbound file is bound. Taken by running the check.
+    assert wider["unbound_files"] == 247
     # 73 -> 72 on 2026-10-07 (row 7 (b) pass): src/quests/generator.py::QuestGenerator is now bound under `guilds`.
     # 72 -> 71 on 2026-10-11 (#500, D57): src/engine/rpg_depth.py::LeashService is cited under `tactical_decision` (it became wired when
     # the hunger and fatigue goals started calling `way_in_range`), so it is no longer an unbound candidate.

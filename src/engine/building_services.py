@@ -13,13 +13,13 @@ from typing import Any, Optional
 
 from src.core.updates import (
     BiologicalUpdate,
-    CombatUpdate,
     EntityUpdate,
     ResourceTransferIntent,
 )
+from src.engine.lodging import bed_delta, finds_no_bed, lodge_claim, lodges, refuse_rest
 from src.engine.serves import keeps_coin, serves
-from src.engine.service_admission import admits
-from src.engine.service_prices import EAT_PRICE_GOLD, INN_MEAL_HUNGER, REST_PRICE_GOLD
+from src.engine.service_admission import admits_at
+from src.engine.service_prices import EAT_PRICE_GOLD, INN_MEAL_HUNGER
 from src.engine.service_reach import service_building_where, service_tile
 from src.engine.shop_sale import plan_sale
 from src.engine.spatial_query import SpatialQueryService
@@ -27,6 +27,13 @@ from src.engine.spatial_query import SpatialQueryService
 # The building kinds that serve an action. WORK is not here: the work a building offers is declared by its state (content ``hires_for_pay`` and
 # ``maintenance_shifts``, EXCH-02 ruling 66), see ``offers_work``; no building name is in code (D56).
 SERVICE_KINDS = {"REST": frozenset({"inn", "home"}), "EAT": frozenset({"inn"}), "SELL": frozenset({"shop"}), "REPAIR": frozenset({"blacksmith"})}
+
+
+def no_bed_in_reach(state: Any, entity: Any) -> Optional[Any]:
+    """The building in whose reach the subject stands (the REST service reach) that declares beds and has none free for it, or None (F3, divergence 2.155)."""
+    tile = service_tile(state, (int(entity.navigation.position[0]), int(entity.navigation.position[1])), SERVICE_KINDS["REST"])
+    building = SpatialQueryService.get_building_at(state, tile) if tile is not None else None
+    return building if finds_no_bed(state, entity, building) else None
 
 
 def maintenance_open(building: Any) -> bool:
@@ -61,13 +68,12 @@ def service_delta(context: Any, entity: Any, action: str, tick: int) -> Optional
     charge the resolver clamps at what the subject holds, and the building's purse is credited with what was actually paid. The building is found only
     for a subject it serves (`service_building`)."""
     building = service_building(context, entity, action)
-    if building is None or (action in ("EAT", "REST") and not admits(entity, action)):
-        return None  # the one admission rule (service_admission): no meal to a diet without prepared food (decision 44), none the payment law refuses
+    if building is None or (action in ("EAT", "REST") and not admits_at(entity, building, action, context)):
+        return None  # the one admission rule (service_admission): no meal to a diet without prepared food (decision 44), none the payment law refuses, no bed where none is free (F3)
     if action == "REST":
-        charge = ResourceTransferIntent(source_id=building.id, source_kind="TOWN_SERVICE", gold_delta=-REST_PRICE_GOLD, transfer_kind="REST",
-                                        is_group_required=True)
-        return EntityUpdate(entity_id=entity.id, readiness_delta=10.0, combat=CombatUpdate(hp_delta=5),
-                            resource_transfers=[charge])
+        if lodges(building):
+            return lodge_claim(entity, building)  # grant before delivery (F3): the bed service is merged only into a GRANTED claim (`lodging.grant_beds`), never delivered and taken back
+        return bed_delta(entity, building)
     if action == "EAT":
         charge = ResourceTransferIntent(source_id=building.id, source_kind="TOWN_SERVICE", gold_delta=-EAT_PRICE_GOLD, transfer_kind="EAT",
                                         is_group_required=True)
@@ -80,6 +86,9 @@ def with_service(updates: dict, entity: Any, action: str, tick: int, context: An
     """The action's updates with the building service for `action` merged into the subject's own update."""
     if context is None or entity.id not in updates or (action == "REST" and "outcome" in entity.task.payload):
         return updates  # (a held sleep repeats its action every tick; the bed is paid for, and heals, once)
+    if action == "REST":
+        if no_bed_in_reach(context, entity) is not None:
+            return {**updates, entity.id: refuse_rest(entity)}  # F3: a REST whose first execution is in reach of a full beds building does not run on that tile (the one 'no bed' predicate)
     delta = service_delta(context, entity, action, tick)
     if delta is None:
         return updates

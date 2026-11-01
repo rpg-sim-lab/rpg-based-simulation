@@ -199,3 +199,18 @@ def test_cleared_since_is_absent_from_the_canonical_dict_until_set():
     assert "cleared_since" not in _hero(project).to_canonical_dict()["strategic"]["projects"][key]
     opened = replace(project, cleared_since=T0)
     assert _hero(opened).to_canonical_dict()["strategic"]["projects"][key]["cleared_since"] == T0
+
+
+def test_cleared_since_advances_while_lodged():
+    """F3 (2.155) hides a lodger from outside, so a lodged retreat holder sees no one: the window opens the first lodged tick, is kept, and ends the retreat after CLEAR_TICKS (the retreat is not held open by a hostile it cannot see)."""
+    project = _retreat()
+    hero = _hero(project)
+    hero = replace(hero, navigation=replace(hero.navigation, lodged_in=7))
+    foe = _foe((11.0, 10.0))                       # adjacent outside the building
+    for tick in (T0, T0 + 1, T0 + 100):
+        project = _observe(hero, project, tick, foe)
+        assert project.cleared_since == T0
+    hero = _hero(project)
+    hero = replace(hero, navigation=replace(hero.navigation, lodged_in=7))
+    outcome = _outcome(hero, project, T0 + CLEAR_TICKS)
+    assert outcome is not None and outcome.project == ProjectStatus.COMPLETED and outcome.ended_by == ProjectEnd.THREAT_CLEARED

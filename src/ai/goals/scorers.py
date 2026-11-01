@@ -4,7 +4,7 @@ from src.ai.goals.base import GoalScorer, GoalScore, NeedAccess
 from src.ai.goals.opening_steps import first_open_step
 from src.core.items import food_hunger_recovery
 from src.engine.appraisal import can_eat_item
-from src.engine.service_admission import admits
+from src.engine.service_admission import admits, admits_at
 from src.ai.goals.ways import inn_in_reach
 from src.engine.need_pull import hunger_pull, retreat_pull, sleep_pull, step_travel_tiles
 from src.engine.sleep_debt import SLEEP_DEBT
@@ -94,8 +94,8 @@ class SleepScorer(GoalScorer):
         from src.engine.spatial_query import SpatialQueryService
         best_bldg = SpatialQueryService.nearest_building(state, entity.navigation.position, "inn")
         # A bed is a way only within reach and inside the subject's range; otherwise it rests where it stands (no target), which is always open.
-        if best_bldg and not admits(entity, "REST"):
-            best_bldg = None  # a bed the inn would not deliver to this subject (the payment law) is not a way
+        if best_bldg and not admits_at(entity, best_bldg, "REST", state):
+            best_bldg = None  # a bed the inn would not deliver to this subject (the payment law, or no bed free: F3) is not a way
         if best_bldg and (_travel_tiles(entity, best_bldg.position) > SLEEP_DEBT.bed_reach or not way_in_range(entity, best_bldg.position)):
             best_bldg = None
         # SURV-07: the pull grows with the sleep debt the subject will have on arrival at the inn (no inn: no walk).

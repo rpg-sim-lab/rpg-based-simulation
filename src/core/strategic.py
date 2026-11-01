@@ -33,9 +33,11 @@ class ProjectEnd(str, Enum):
     Each value names the terminal status it pairs with:
       `SUPERSEDED_BY_TARGET` (ABANDONED): a candidate of the same kind at a different target replaced this live record (`supersede_record`).
       `THREAT_CLEARED` (COMPLETED): a COMBAT_RETREAT project whose threat is gone.
+      `WAY_CLOSED` (ABANDONED): a fatigue project whose subject reached the building and no bed was free (F3, divergence 2.155).
     A project ended for any other reason keeps `ended_by` None."""
     SUPERSEDED_BY_TARGET = "SUPERSEDED_BY_TARGET"
     THREAT_CLEARED = "THREAT_CLEARED"
+    WAY_CLOSED = "WAY_CLOSED"
 
 
 class ObjectiveStatus(str, Enum):

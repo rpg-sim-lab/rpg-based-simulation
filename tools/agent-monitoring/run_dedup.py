@@ -118,3 +118,20 @@ def classify_duplicate_groups(runs: list[dict]) -> dict:
         "same_status_diff_end": same_status_diff_end,
         "identical_outcome": identical_outcome,
     }
+
+
+def drop_superseded_events(events: list[dict]) -> list[dict]:
+    """`events` without the rows an `ok` event replaced (TCK-20261101-RECORD-REVIEW-AFTER-THE-PR-REVIEW-EXISTS).
+
+    `record_review.py` appends a Review `ok` event carrying `supersedes: <seq>` instead of rewriting the folded
+    `skipped` row. An event is dropped only when another event of the same `(run_id, execution_id)` and the same phase
+    has `status` `ok` and `supersedes` equal to its `seq`; the superseding row stays. Order is kept. A list with no
+    `supersedes` field comes back with the same rows."""
+    replaced = {
+        (e.get("run_id"), e.get("execution_id"), e.get("phase"), e["supersedes"])
+        for e in events
+        if e.get("status") == "ok" and isinstance(e.get("supersedes"), int) and not isinstance(e.get("supersedes"), bool)
+    }
+    if not replaced:
+        return events
+    return [e for e in events if (e.get("run_id"), e.get("execution_id"), e.get("phase"), e.get("seq")) not in replaced]

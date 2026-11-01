@@ -114,6 +114,10 @@ class ReasonCode(str, Enum):
     LOS_OBSTRUCTED = "LOS_OBSTRUCTED"
     FRIENDLY_FIRE_ILLEGAL = "FRIENDLY_FIRE_ILLEGAL"
     INSUFFICIENT_READINESS = "INSUFFICIENT_READINESS"
+    NO_BED_FREE = "NO_BED_FREE"  # F3 (divergence 2.155): a REST in reach of a building that declares beds found none free; the rest does not run on the reach tile
+    LODGER_TARGET_DROPPED = "LODGER_TARGET_DROPPED"  # F3: a walk target proposed for a lodger who stays was dropped (a guard that must stay at zero)
+    LODGER_DROP_CLAIM_TICK = "LODGER_DROP_CLAIM_TICK"  # F3: of the LODGER_TARGET_DROPPED count, a target or step dropped on the tick a bed was granted (the claim wins the merge)
+    LODGER_DROP_LEAVE_REFUSED = "LODGER_DROP_LEAVE_REFUSED"  # F3: of the LODGER_TARGET_DROPPED count, a target dropped on a leaver's tick (the leave is one unit: step, target, path, mode)
     READINESS_NOT_READY = "READINESS_NOT_READY"
     SELF_ATTACK_ILLEGAL = "SELF_ATTACK_ILLEGAL"
     SKILL_ON_COOLDOWN = "SKILL_ON_COOLDOWN"
