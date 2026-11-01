@@ -37,6 +37,6 @@ S = P.S
 full = all(k.startswith("FULL") or "RichnessLevel.FULL" in k or k.split("/")[0].endswith("FULL") for k in policy_ticks)
 out = dict(world=world, seed=seed, ticks=ticks, state_hash=m["state_hash"], elapsed_s=elapsed, tick_sum_s=S["tick_ms"] / 1000.0, tick_calls=S["tick_calls"],
            tick_mean_ms=S["tick_ms"] / max(S["tick_calls"], 1), phase_median_ms={k: statistics.median(v) for k, v in phase_lists.items()}, phase_mean_ms={k: sum(v) / len(v) for k, v in phase_lists.items()},
-           group_phase_ms_total=S["phase_ms"], store_records=S["end_groups"], store_dissolved=S["end_dissolved"], ghost=len(S["ghost_any"]), overwrites=S["pre_loose"],
+           group_phase_ms_total=S["phase_ms"], coop_ms_total=S["coop_ms"], work_phase=S["work_phase"], work_coop=S["work_coop"], work_relevant=S["work_relevant"], phase_calls=S["phase_calls"], coop_calls=S["coop_calls"], store_records=S["end_groups"], store_dissolved=S["end_dissolved"], ghost=len(S["ghost_any"]), overwrites=S["pre_loose"],
            policy_ticks=dict(policy_ticks), policy_changes=policy_changes[:20], all_full=full, pin=_pin or None, executor=sorted(executor_seen), governor=sorted(governor_seen))
 open(os.environ["TIM_OUT"], "w").write(json.dumps(out, default=str)); print("TIM_OK", out["state_hash"][:12], round(out["tick_sum_s"], 1), "s", "policy", dict(policy_ticks))
