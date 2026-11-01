@@ -11,6 +11,35 @@ from src.engine.apply import ApplyPath as _AP
 import src.core.dirty as _dirty
 E = dict(forms=[], dis=[], pending_ended={}, first_ended={}, lag=[], overdue_ticks=0, overdue_not_relevant=0, ended_seen=0, mbt=[], deaths=[], active_pairs={}, full_scan_ticks=0, ticks=0)
 _has_binding = hasattr(_GS, "_binding_end")
+# --- cross-lane row (F3 lodgers): prepared, inactive until an entity exposes `lodged_in` (field name read from F3's branch once it is available; set LODGED_FIELD to override) ---
+_LODGED = os.environ.get("LODGED_FIELD", "lodged_in")
+E["lodged"] = dict(field_found=None, lodger_ticks=0, leaves=[], enters=[], group_decision_lodged=0, group_decision_ticks=0, by_entity_last_lodged={}, by_entity_last_leave={})
+_lodged_state = {}
+def _lodged_value(e):
+    for comp in ("lifecycle", "biological", "identity", "navigation", "strategic", "task", "interaction", "social", "combat"):
+        c = getattr(e, comp, None)
+        if c is not None and hasattr(c, _LODGED): return getattr(c, _LODGED)
+    return getattr(e, _LODGED, None) if hasattr(e, _LODGED) else None
+def _lodged_probe(state):
+    """Called once per tick on the post-apply state."""
+    L = E["lodged"]
+    for eid, e in state.entities.items():
+        v = _lodged_value(e)
+        if L["field_found"] is None and (hasattr(e, _LODGED) or any(hasattr(getattr(e, c, None), _LODGED) for c in ("lifecycle", "biological", "identity", "navigation", "strategic", "task", "interaction", "social", "combat"))): L["field_found"] = True
+        was = _lodged_state.get(eid)
+        if v is not None:
+            L["lodger_ticks"] += 1; L["by_entity_last_lodged"][eid] = state.tick
+            if was is None: L["enters"].append([state.tick, eid])
+        elif was is not None:
+            L["leaves"].append([state.tick, eid]); L["by_entity_last_leave"][eid] = state.tick
+        _lodged_state[eid] = v
+def _lodged_at_group_decision(state):
+    L = E["lodged"]; L["group_decision_ticks"] += 1
+    for g in state.groups.values():
+        if g.dissolution_tick is None:
+            for m in g.member_ids:
+                e = state.entities.get(m)
+                if e is not None and _lodged_value(e) is not None: L["group_decision_lodged"] += 1
 E["phase_ran"] = []; E["ended_log"] = []; E["formation_pick"] = []
 from src.engine.pipeline import AuthoritativeApplyPipeline as _AAP
 _orc = _AAP._resolve_contract_expirations
@@ -45,6 +74,7 @@ def _ug2(state, *a, **k):
                 if e is not None:
                     ended[gid] = (e[0].value, gid in rel or fs); E["ended_log"].append([state.tick, gid, bool(gid in rel or fs)])
         E["pending_ended"][state.tick] = ended
+    _lodged_at_group_decision(state)
     r = _inner_ug(state, *a, **k)
     for g in P.CUR["form"]:
         E["forms"].append([state.tick, g.id, sorted(g.member_ids), g.contract_id, getattr(g, "contract_holder_id", None), g.leader_id])
@@ -67,6 +97,7 @@ def _classify_mbt(prior, new, old):
 def _ag2(prior, update, *a, **k):
     new = _inner_ag(prior, update, *a, **k)
     t = prior.tick
+    _lodged_probe(new)
     dissolved_now = {}
     for gid, g in new.groups.items():
         old = prior.groups.get(gid)
@@ -107,5 +138,6 @@ exec(compile("world, seed, ticks = sys.argv[1]" + _tail, "profile_run_tail", "ex
 E["pending_ended"] = {}
 E["state_hash"] = m["state_hash"]; E["elapsed"] = elapsed; E["world"] = world; E["seed"] = seed; E["ticks_run"] = ticks; E["dis_probe"] = X["dis"]; E["dis_other"] = X["dis_other"]
 E["first_ended"] = {str(k): v for k, v in E["first_ended"].items()}
+E["lodged"]["by_entity_last_lodged"] = {str(k): v for k, v in E["lodged"]["by_entity_last_lodged"].items()}; E["lodged"]["by_entity_last_leave"] = {str(k): v for k, v in E["lodged"]["by_entity_last_leave"].items()}
 with open(os.environ["M15_OUT"], "w") as fh: fh.write(json.dumps(E, default=str, separators=(",", ":")))
 print("M15_OK")
