@@ -1,0 +1,36 @@
+# Raw probe dumps (kept out of git)
+
+The per-tick probe logs of every measured batch are NOT committed (about 75k lines). They live in `/mnt/data/scratch-rpg-implementer-3/raw_evidence` (author's scratch, same relative paths) and the on-F3 batch in `/mnt/data/scratch-rpg-implementer-3/out13`. Committed here: the analysis summaries (analysis*.md, tier tables, per-victim rows) and the scripts that produced them (probe*.py, analyze*.py).
+
+| file | sha256 |
+|---|---|
+| evidence/full_batch_23e0f9967/full_crowded_frontier_s42_base.jsonl | 7e554a2fec884f2170dab42d2ccca7d1e71198d2581cd63884556776ea448aec |
+| evidence/full_batch_23e0f9967/full_crowded_frontier_s42_fix.jsonl | 25f84bbd13a89b7c7bb685ef390bf39d13808edef4034386aae512eb6b63bdbb |
+| evidence/full_batch_23e0f9967/full_crowded_frontier_s43_base.jsonl | c7b3c083f65a2694f1da2737e14717e05e90e9ac8160d82242e38f4a99789bcf |
+| evidence/full_batch_23e0f9967/full_crowded_frontier_s43_fix.jsonl | 1ffaf0e9d8e56006b3674094c362397a74794f62f46ebe278bf61d7e815c13d1 |
+| evidence/full_batch_23e0f9967/full_crowded_frontier_s44_base.jsonl | 9c63f2c0270097828b56b75d22cacad690af53f72bebb00df8bdd87ea24d69a3 |
+| evidence/full_batch_23e0f9967/full_crowded_frontier_s44_fix.jsonl | 7d90e1cd89ebecd90a176227167103cf2a1a4318515c2bf0522d5601bec42734 |
+| evidence/full_batch_23e0f9967/full_crowded_frontier_s45_base.jsonl | c5450eeebd3e4d3a55cab031f88e5d0cda3954091428eba628f212e2da8a3924 |
+| evidence/full_batch_23e0f9967/full_crowded_frontier_s45_fix.jsonl | 7264f7f4ebbe421010032eadfa65651e14b84e5e8269c9b5c38fdb4fe8cd1829 |
+| evidence/full_batch_23e0f9967/full_crowded_frontier_s46_base.jsonl | c65dc0d75b97cf0ce658385d2985f0ee493f35a7bc8d826bbabf5db3ad817b83 |
+| evidence/full_batch_23e0f9967/full_crowded_frontier_s46_fix.jsonl | 231d6ff7d986108bae8ac7897161182f18bb39124afc4b3dde343178ab11ef87 |
+| evidence/full_batch_23e0f9967/full_frontier_living_world_s42_base.jsonl | 9015f62dbac5bfbf83898ecff1962064bd06079dfe166420eb881846785a3938 |
+| evidence/full_batch_23e0f9967/full_frontier_living_world_s42_fix.jsonl | f2da1893af43f81d7e6b9364cca700f812fd46f15b8e3c6dd233526a2f699df1 |
+| evidence/full_batch_23e0f9967/full_frontier_living_world_s43_base.jsonl | e741af85da829e3131a107f3c12a732b14c418c25e0f521fa7674788c15de582 |
+| evidence/full_batch_23e0f9967/full_frontier_living_world_s43_fix.jsonl | ac4ddb380dc6e4bfc39a67c59a1942c5449d94c2ac42ed761931b778ef0ef045 |
+| evidence/full_batch_23e0f9967/full_frontier_living_world_s44_base.jsonl | 38ae4fa6ef0f9e3e0ab8a4a586d0dd3fa7c0a42ad699b99489097cd1fdc9adb7 |
+| evidence/full_batch_23e0f9967/full_frontier_living_world_s44_fix.jsonl | cc9e8b7b8f78794670c5c93c003380c4dee90295c8e285f227d3dab9d11c4f83 |
+| evidence/full_batch_23e0f9967/full_frontier_living_world_s45_base.jsonl | 510649caed79cba0d416f6f4159a4021807f6251bb4ef3f99621c7e87b665e1e |
+| evidence/full_batch_23e0f9967/full_frontier_living_world_s45_fix.jsonl | c3b712bb63d09254f664c33e888357c94b566bdb8f005acae43e33f396e5551f |
+| evidence/full_batch_23e0f9967/full_frontier_living_world_s46_base.jsonl | b9535d374a17707b497a40c0f6219dc4bf310b4b0e2cce03570cd12f7615d5de |
+| evidence/full_batch_23e0f9967/full_frontier_living_world_s46_fix.jsonl | d45df99988b3200456d2ab1763cebc6c7a11c649b6de85441aee2538f1700e43 |
+| evidence/full_batch_23e0f9967/full_urban_political_s42_base.jsonl | 7194442b9f7c0ac685b0340022b89d8bbfdb9fbfdef9111655eb70eee15710c5 |
+| evidence/full_batch_23e0f9967/full_urban_political_s42_fix.jsonl | aee5d988e93dde370e8bb0e2d0534242db259eaf64a4dd14d8f3244612f5f9e1 |
+| evidence/full_batch_23e0f9967/full_urban_political_s43_base.jsonl | c6a7d18ef698b8e449dcef6287c4344b3f1b99e7620c4f0633f70b639ea74586 |
+| evidence/full_batch_23e0f9967/full_urban_political_s43_fix.jsonl | 6f1f9cd56dc760f96cf12255c0eb3f65ee8882928a3a9446bdc4151f34eb4bc2 |
+| evidence/full_batch_23e0f9967/full_urban_political_s44_base.jsonl | e512976ef68f78abd875a4e55321cdfbfadc2a2f564fb129e912ae5809e525e2 |
+| evidence/full_batch_23e0f9967/full_urban_political_s44_fix.jsonl | f4358d2c8a0c7afa34b04a8c4f9188ee9402cd6b99a3711b931b81d623a03a6f |
+| evidence/full_batch_23e0f9967/full_urban_political_s45_base.jsonl | 680ed5c2975d00dc7739b0d38817e0e473b84a38f82e3a11737d398cd39f46c6 |
+| evidence/full_batch_23e0f9967/full_urban_political_s45_fix.jsonl | c66c485bd49505375c868324d9039afd1618375b5121e96c0864927ca27ca32a |
+| evidence/full_batch_23e0f9967/full_urban_political_s46_base.jsonl | 731f610329641daee160a71a618303641c25dc872366fdfcdb8a6d40f94a771c |
+| evidence/full_batch_23e0f9967/full_urban_political_s46_fix.jsonl | 2b06a877c2c30d5e72d506b20dce30b9e2d59b29cb296831f730d5ff9ea0313d |
