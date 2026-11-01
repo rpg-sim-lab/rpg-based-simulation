@@ -81,3 +81,7 @@ Main gate run 40653115297 (2c4869d61) has an unowned V3 at frontier_living_world
 ## Completion Summary
 
 - **2026-11-01 evidence (F3 f3r, urban s44, subject 17; rpg-designer):** from t3250 to t3306 the subject halted in REGROUP at (43-45,23) with hostile 24 (faction 0) adjacent. Its hp fell 70 to 0, and it did not flee even at hp 16 (REGROUP/ENTITY_ACT). The designer ruled this death the pre-existing no-flee-at-low-hp gap (law P family), not F3. Trace: lane B n14/out/tr17.json.
+
+## 2026-11-01 rows from groups batch C (rpg-designer ruling, via rpg-planner)
+- A cornered low-hp subject with no home region holds and dies. urban s42 e23 (churn-on-F3): AVOID_NO_ROUTE at tactical_hold.py:117 fires when retreat_destination (tactical_destinations.py:80) returns None. That function is pure region geometry: a point away from threats clamped to the region, else the home_region centre, else None, with no occupancy or route_search. e23 held at hp<=32 beside e17 and died t1687. It is the same gap as e9's "why no town_center" (TCK-20261101-A-RETREAT-WALKS-TOWARD-THE-THREAT).
+- Rename the AVOID_NO_ROUTE reason to NO_RETREAT_DESTINATION: it is not a route failure.
