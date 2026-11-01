@@ -40,6 +40,36 @@ AUTHORITY_FILE = "registries/session_authority.yaml"
 GOVERNING_FILES = ("CLAUDE.md", ".claude/settings.json", ".claude/settings.local.json")
 GOVERNING_DIR_MARKERS = ("/hooks/", ".claude/hooks/")
 
+# The REPORTED governing paths (TCK-20261031-GOVERNING-FILE-EDITS-VISIBLE-TO-OWNER): the one definition behind the PR-body
+# list, the guard's `governing_edits` event and the retro line, and the one plan section 28a's gate job reuses. Repo-relative.
+# It is a SECOND list on purpose: `GOVERNING_FILE_EDIT` and its tests keep the three files and the loose `/hooks/` marker above,
+# and nothing here changes a classification or a guard decision. `/hooks/` is not used here (it matches frontend/src/hooks);
+# hook scripts wired from other directories are not on the list.
+GOVERNING_PATHS_EXACT = (*GOVERNING_FILES, "tools/sessions/guard.py", "tools/sessions/classify.py", AUTHORITY_FILE)
+GOVERNING_PATH_PREFIXES = (".claude/hooks/", "tools/hooks/", "codebase/hooks/", ".github/workflows/")
+_GOVERNING_MENTION = re.compile(
+    r"(?<![\w.-])(?:"
+    + "|".join(re.escape(p) + r"[\w./-]*" for p in GOVERNING_PATH_PREFIXES)
+    + "|"
+    + "|".join(re.escape(p) for p in GOVERNING_PATHS_EXACT)
+    + r")(?![\w-])"
+)
+
+
+def is_governing_path(rel: str) -> bool:
+    """Exact check of ONE repo-relative path (posix, no leading `./`) against the reported governing list.
+
+    For edit tools, the PR-body list and the retro. A path outside the repo is the caller's to drop before calling."""
+    rel = rel.replace("\\", "/").removeprefix("./")
+    return rel in GOVERNING_PATHS_EXACT or rel.startswith(GOVERNING_PATH_PREFIXES)
+
+
+def governing_mentions(command_text: str) -> tuple[str, ...]:
+    """Governing paths a command's TEXT names, matched tokens only (never the rest of the command), in order, once each.
+
+    A mention is not an edit: callers record it as `basis: mention`, which over-counts."""
+    return tuple(dict.fromkeys(m.group(0) for m in _GOVERNING_MENTION.finditer(command_text or "")))
+
 _EDIT_TOOLS = ("Edit", "Write", "MultiEdit", "NotebookEdit")
 _READ_ONLY_VERBS = frozenset({"cat", "head", "tail", "grep", "rg", "ls", "wc", "diff", "stat", "less", "file"})
 _READ_ONLY_GIT = frozenset({"diff", "log", "show", "blame", "status", "ls-files", "grep", "cat-file"})
@@ -164,6 +194,7 @@ class Classification:
     detail: str = ""
     push_implicit: bool = False  # a push with no explicit destination: it goes to the call's current branch
     cd_chain: tuple[str, ...] = ()  # literal `cd`/`pushd` targets that precede the first commit/push, in order
+    governing_mentions: tuple[str, ...] = ()  # reported governing paths named by a non-read-only Bash segment (never a decision input)
 
     @property
     def is_authority(self) -> bool:
@@ -581,6 +612,7 @@ def classify_command(command: str, default_branches: tuple[str, ...] = DEFAULT_B
     push_implicit = False
     switches_branch = False
     cd_chain: list[str] = []
+    mentions: list[str] = []
     bad_cd = cd_after_action = False
     mentions_governed = any(f in command for f in (AUTHORITY_FILE, *GOVERNING_FILES))
 
@@ -627,6 +659,8 @@ def classify_command(command: str, default_branches: tuple[str, ...] = DEFAULT_B
         if seg_redirected and ({COMMIT, PUSH} & seg_actions):
             uncertain = True
             details.append("git -C/--git-dir/--work-tree: the branch of the repository acted on is not the call's cwd")
+        if not _is_read_only(tokens):
+            mentions += governing_mentions(segment)
         if mentions_governed and not _is_read_only(tokens):
             seg = segment
             if AUTHORITY_FILE in seg:
@@ -644,4 +678,5 @@ def classify_command(command: str, default_branches: tuple[str, ...] = DEFAULT_B
         details.append("a branch switch in the same command: the branch committed or pushed is not the cwd's current one")
     if DELETE_REMOTE_BRANCH in actions:
         details.append("remote branch deletion")
-    return Classification(frozenset(actions), uncertain, "; ".join(dict.fromkeys(details)), push_implicit, tuple(cd_chain))
+    return Classification(frozenset(actions), uncertain, "; ".join(dict.fromkeys(details)), push_implicit, tuple(cd_chain),
+                          tuple(dict.fromkeys(mentions)))
