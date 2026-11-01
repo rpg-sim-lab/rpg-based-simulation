@@ -7993,6 +7993,25 @@
   artifact_files: []
   tags: []
 - type: ticket
+  path: agent-working/tickets/done/TCK-20261031-GOVERNING-FILE-EDITS-VISIBLE-TO-OWNER.md
+  ticket_id: TCK-20261031-GOVERNING-FILE-EDITS-VISIBLE-TO-OWNER
+  title: 'Show the owner when governing files are edited: one path definition, a list
+    in the PR body and a guard event'
+  tier: standard
+  ticket_type: feature
+  date: '2026-10-31'
+  related_code_areas:
+  - tools/sessions/classify.py, tools/sessions/guard.py, tools/delivery/pr_render.py,
+    tools/agent-monitoring/
+  artifact_files:
+  - agent-working/stored_artifacts/TCK-20261031-GOVERNING-FILE-EDITS-VISIBLE-TO-OWNER/investigation.md
+  - agent-working/stored_artifacts/TCK-20261031-GOVERNING-FILE-EDITS-VISIBLE-TO-OWNER/plan.md
+  - agent-working/stored_artifacts/TCK-20261031-GOVERNING-FILE-EDITS-VISIBLE-TO-OWNER/test_plan.md
+  tags:
+  - governance
+  - delivery
+  - agent-monitoring
+- type: ticket
   path: agent-working/tickets/done/TCK-20261031-HAND-CLOSE-REVIEW-PHASE-RECORDS-THE-PR-REVIEW.md
   ticket_id: TCK-20261031-HAND-CLOSE-REVIEW-PHASE-RECORDS-THE-PR-REVIEW
   title: 'A standard-tier hand close''s Review phase is the planner''s PR review:
