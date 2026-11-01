@@ -8025,6 +8025,19 @@
   tags:
   - testing
 - type: ticket
+  path: agent-working/tickets/todos/TCK-20261101-A-CONGESTION-BLOCKER-RESOLUTION-SENDS-A-SUBJECT-TO-THE-TOWN-CENTRE.md
+  ticket_id: TCK-20261101-A-CONGESTION-BLOCKER-RESOLUTION-SENDS-A-SUBJECT-TO-THE-TOWN-CENTRE
+  title: A congestion blocker-resolution project sends its subject to the town centre,
+    from inside town, right after a lodge
+  tier: standard
+  ticket_type: bug
+  date: '2026-11-01'
+  related_code_areas:
+  - src/systems/strategic_systems/intelligence.py:670 (active-objective redirect),
+    :678 (town-return fallback)
+  artifact_files: []
+  tags: []
+- type: ticket
   path: agent-working/tickets/todos/TCK-20261101-A-PANIC-FLIGHT-FIRES-WITH-NO-HOSTILE-PERCEIVED.md
   ticket_id: TCK-20261101-A-PANIC-FLIGHT-FIRES-WITH-NO-HOSTILE-PERCEIVED
   title: A panic flight fires with no hostile perceived
@@ -8084,6 +8097,51 @@
     src/engine/pipeline_phases/actor_validity.py.
   artifact_files: []
   tags: []
+- type: ticket
+  path: agent-working/tickets/todos/TCK-20261101-DISSOLVED-GROUP-RECORDS-ARE-KEPT-AND-VISITED-EVERY-TICK.md
+  ticket_id: TCK-20261101-DISSOLVED-GROUP-RECORDS-ARE-KEPT-AND-VISITED-EVERY-TICK
+  title: Dissolved group records stay in the group store for the whole run, and the
+    groups and cooperation phases visit every one of them every tick
+  tier: standard
+  ticket_type: bug
+  date: '2026-11-01'
+  related_code_areas:
+  - src/systems/world_systems/groups.py (group store, id allocation; groups.py:308
+    per the id-overwrite ticket)
+  - src/engine/pipeline_phases/groups.py (groups phase)
+  - src/systems/social_systems/group_service.py
+  - cooperation phase / GroupEvaluator
+  artifact_files: []
+  tags: []
+- type: ticket
+  path: agent-working/tickets/todos/TCK-20261101-FUSED-STRATEGIC-PASS-RESTRUCTURE.md
+  ticket_id: TCK-20261101-FUSED-STRATEGIC-PASS-RESTRUCTURE
+  title: 'Pay down the code-health debt in fused_strategic_pass and the files F3 grew:
+    split the 408-line strategic pass into named stages'
+  tier: standard
+  ticket_type: refactor
+  date: '2026-11-01'
+  related_code_areas:
+  - src/systems/strategic_systems/intelligence.py (fused_strategic_pass)
+  - src/engine/phase_graph.py (should_run_phase)
+  - src/core/state.py, src/core/updates.py
+  artifact_files: []
+  tags: []
+- type: ticket
+  path: agent-working/tickets/todos/TCK-20261101-PERF-BENCH-KNOWN-REDS-PARKED-DURING-THE-PAUSE.md
+  ticket_id: TCK-20261101-PERF-BENCH-KNOWN-REDS-PARKED-DURING-THE-PAUSE
+  title: Own the perf bench and arena stress known reds while most perf work is paused
+  tier: standard
+  ticket_type: chore
+  date: '2026-11-01'
+  related_code_areas:
+  - tools/test_architecture/slow_known_reds.yaml
+  - tests/perf/test_perf_movement*
+  - tests/arena/test_arena_stress.py
+  - tests/tools/perf_assertions.py
+  artifact_files: []
+  tags:
+  - performance
 - type: ticket
   path: agent-working/tickets/todos/TCK-20261101-PERF-V0002-RECORD-AFTER-FINDING-WHAT-MOVES-HOST-SPEED.md
   ticket_id: TCK-20261101-PERF-V0002-RECORD-AFTER-FINDING-WHAT-MOVES-HOST-SPEED

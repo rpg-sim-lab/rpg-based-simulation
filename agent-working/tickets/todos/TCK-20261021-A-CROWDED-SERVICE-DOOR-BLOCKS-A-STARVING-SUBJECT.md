@@ -172,3 +172,12 @@ Not blocking F3.
 - The N14 STOP is NOT waived by this attribution: N14 lands only on a re-measure that clears it.
 - Base evidence (a base defect, not a target): base subject 17 is pinned starving at (66-67,24), hunger 100 all run, short REST holds, 1 kill, 0 collapses.
 - Order ask (designer -> owner via lead): F3 -> precedence fix -> N14 re-measure -> A' -> nav -> D80C -> #781.
+
+## 2026-11-01 extra counts on the N14-on-F3 re-measure (rpg-designer ruling, via rpg-planner)
+From the same runs as the N14 report, for the arms base, F3 and N14-on-F3, report the counts in TCK-20261101-A-CONGESTION-BLOCKER-RESOLUTION-SENDS-A-SUBJECT-TO-THE-TOWN-CENTRE:
+- blocker_congestion creations per run;
+- the share created within 50t of a leave or at a reach tile;
+- the resolution's target kind (town_center or other) and walk length;
+- deaths within 200t of such a walk;
+- the target's writer.
+Hypothesis: the leaver churn registers the congestion blocker, so this fix may remove the trigger.

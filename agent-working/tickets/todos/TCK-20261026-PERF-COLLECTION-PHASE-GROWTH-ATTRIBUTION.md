@@ -62,6 +62,7 @@ None yet.
 - The 50 to 260 ms figures come from single runs on a loaded host (2026-10-06). The growth may be smaller on a pinned measurement; that would be a finding too.
 
 ## Implementation Notes
+**Paused (owner, #715 issuecomment-6556861718 and issuecomment-6556925036, recorded 2026-11-01):** this ticket does not start until an RPG milestone; the replan's milestone for lifting the pause is not fixed here. Do not dispatch or run it, and do not ask for a slot for it, before the owner lifts the pause.
 
 ## Test Summary
 
