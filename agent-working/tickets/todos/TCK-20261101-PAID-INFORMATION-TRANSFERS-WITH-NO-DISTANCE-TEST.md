@@ -50,7 +50,7 @@ Counts first, no fix shape before the counts and a designer ruling:
 - docs/mechanics/03_economic_laws.md; docs/mechanics/04_strategic_cognition.md
 
 ## Related Stored Artifacts
-- lodger_decision_paths_2026-11-01.md at c721b3316 (row 22)
+- lodger_decision_paths_2026-11-01.md at origin rpg-ubuntu-planner-idle, c721b3316198b4158316194f61fc0deb2acd2141 (row 22)
 
 ## Related Code Areas
 - src/engine/pipeline_phases/paid_information.py:98

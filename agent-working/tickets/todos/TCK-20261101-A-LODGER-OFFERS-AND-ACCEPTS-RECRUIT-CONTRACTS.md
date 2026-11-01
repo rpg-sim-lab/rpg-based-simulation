@@ -99,7 +99,7 @@ Ticket 1 of 2 (rpg-designer accepted the split 2026-11-01): the MEASURED social 
 - docs/parity_ledger/social_narrative.yaml, docs/parity_ledger/strategic_cognition.yaml
 
 ## Related Stored Artifacts
-- Path list: lodger_decision_paths_2026-11-01.md at c721b3316 on rpg-planner-ubuntu's seat branch (59 rows; origin branch name to be added once backed up).
+- Path list: lodger_decision_paths_2026-11-01.md at origin rpg-ubuntu-planner-idle, c721b3316198b4158316194f61fc0deb2acd2141 (59 rows).
 - Evidence: ubuntu groups batch C, frontier s44 probe rows (probe hash ebc58e3b8c34; groups 10078/10080/10082, building 20003). Also rpg-designer's own read at src/domains/cooperation/services.py:280. Defect id 2.155 (F3 seam). The pointer is on the churn ticket's evidence folder (origin rpg-ubuntu-group-id-alloc-impl, agent-working/staging_artifacts/TCK-20261031-A-PAIR-RE-FORMS-AND-LEAVES-A-GROUP-EVERY-TWO-TICKS/evidence/).
 
 ## Related Code Areas
@@ -114,6 +114,15 @@ Ticket 1 of 2 (rpg-designer accepted the split 2026-11-01): the MEASURED social 
 - Base: reachable by code (phase.py:104-105, groups.py:266/:309). No base probe is needed (rpg-designer).
 - Intent: on the rows it is stamps only. The scheduler holds the act, and lodging.py:264 strips moves.
 - Open seam, in scope to answer: a follower OUTSIDE with a lodged leader (tactical.py:568 reads the leader's state/position). Does the follower follow a lodged leader to the door, or wait? The investigation answers this before a fix shape.
+
+## Measured on batch C probes (rpg-planner-ubuntu raw read, 2026-11-01; not re-checked)
+- Contracts by lodged state (neither / target lodged / both / offerer only):
+  - CREATED 419 / 29 / 32 / 0;
+  - OFFERED->ACTIVE 230 / 7 / 6 / 0;
+  - ACTIVE->FULFILLED 214 / 3 / 9 / 11.
+  Offers AND accepts leak. A lodged offerer occurs only with a lodged target (32/32), which fits the distance mechanism.
+- Lodged-leader/holder formations: 9 across the probes.
+- Rule (4), urban s42: 370 outside-member ticks with a lodged leader (on the building tile 92, reach tile 63, ring 38). target_id on the leader 0; REGROUP/FOLLOW reason 0. That is "needed now" by the tile definition. Caveat: the rows cannot tell following apart from walking to the same inn to rest, and there is no objective column. This ticket measures it with the objective and reason, and rpg-designer then confirms behaviour change vs guard.
 
 ## Assumptions / Open Questions
 - The partner side is covered by exception (d).

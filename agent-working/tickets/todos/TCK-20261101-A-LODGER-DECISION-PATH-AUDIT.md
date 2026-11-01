@@ -76,7 +76,7 @@ For every row of the 59 not covered by ticket 1:
 - docs/mechanics/04_strategic_cognition.md (section 1); docs/parity_ledger/strategic_cognition.yaml (2.155)
 
 ## Related Stored Artifacts
-- lodger_decision_paths_2026-11-01.md at c721b3316, rpg-planner-ubuntu seat branch (origin branch name to be added once backed up).
+- lodger_decision_paths_2026-11-01.md at origin rpg-ubuntu-planner-idle, c721b3316198b4158316194f61fc0deb2acd2141.
 
 ## Related Code Areas
 - src/systems/strategic_systems/intelligence.py:618; cognition.py:74-78; paid_information.py:98; appraisal.py:48/:183; and the rest per the path list.
