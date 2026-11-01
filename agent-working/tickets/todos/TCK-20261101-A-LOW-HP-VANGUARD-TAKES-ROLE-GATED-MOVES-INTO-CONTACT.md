@@ -28,8 +28,9 @@ P2
 
 ## Request Summary
 This is the second child of TCK-20261020-ENGAGE-BRACKETING-MOVES-WALK-A-GROUP-INTO-A-HAZARD-CLUSTER, filed by rpg-planner at rpg-designer's request on 2026-11-01. The VANGUARD BRACKETING branch (src/engine/tactical.py:542/:552) reads the role, not the entity's own hp. Two churn-on-F3 victims from ubuntu groups batch C took BRACKETING moves at low hp while being hit:
-- urban s42 e23, VANGUARD at hp 32: hit 6 times by e17 (t1671-1686), died t1687. Ruled NOT FED for the churn fix (participation); provisional pending the retreat_destination probe.
-- frontier s45 e22, at hp 35: ruled FED under the churn test (i), because group_bias 0.2 vs 1.0 changed its target. Its killers e13 and e1 were not the bias target. Positions are unknown, so the walk might have been the same without the group.
+- urban s42 e23: BRACKETING kept a hp-32 VANGUARD in contact. It was hit 6 times by e17 (t1671-1686) and died t1687. Ruled NOT FED for the churn fix (participation); provisional pending the retreat_destination probe.
+- frontier s45 e22: BRACKETING at hp 35 within an existing contact. Its walk into range was its own congestion-redirect project, begun before the group existed (see TCK-20261101-A-CONGESTION-BLOCKER-RESOLUTION-SENDS-A-SUBJECT-TO-THE-TOWN-CENTRE). Ruled FED for the churn fix only by the letter of (i): group_bias at t868 switched its target from 5 to 11, and 11 hit it.
+Neither case is strictly "into contact". The counts decide whether the title holds (rpg-designer 2026-11-01).
 
 The sibling child TCK-20261101-A-HOSTILE-ATTACKING-YOU-OUTRANKS-THE-GROUP-SHARED-TARGET fixes target choice. This ticket covers role-gated MOVES at low hp.
 
