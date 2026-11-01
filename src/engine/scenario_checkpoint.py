@@ -75,14 +75,14 @@ class ScenarioCheckpointer:
             header_len = struct.unpack("<I", f.read(4))[0]
             header = json.loads(f.read(header_len).decode("utf-8"))
             state = pickle.loads(f.read())
-        fill_missing_fields(state)  # the one post-unpickle step: fill a field the checkpoint predates (only where a ruling derives it) or refuse with a typed error
-
         if header["spec_id"] != spec.id:
             raise ValueError(
                 f"Checkpoint spec_id {header['spec_id']!r} does not match "
                 f"supplied spec id {spec.id!r}."
             )
 
+        # after the spec check: a checkpoint of another scenario is refused before its state is touched
+        fill_missing_fields(state)  # the one post-unpickle step: fill a field the checkpoint predates (only where a ruling derives it) or refuse with a typed error
         check_group_counter(state)  # after the fill: the counter must be above every non-squad stored group id (GroupCounterBehindStoreError)
 
         # Reconstruct RNG from the checkpoint embedded in state.
