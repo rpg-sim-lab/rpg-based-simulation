@@ -85,7 +85,8 @@ None yet.
 - src/domains/cooperation/phase.py
 
 ## Assumptions / Open Questions
-- Priority raised to P1 by rpg-planner: this blocks the s42 re-anchor chain. Not dispatched: lead-planner is asking the owner's go; no code until it relays the yes.
+- Priority raised to P1 by rpg-planner: this blocks the s42 re-anchor chain. Owner's go: #715 6552476734, dispatch per the ruling, one batch with the id fix. Heavy runs need lead-planner's go; push and merge are separate.
+- PR note, from rpg-planner (u24, relayed by lead-planner): groups that now last feed REGROUP targets, which ties to F3's lodger suppression and to N14. If the churn fix lands before N14-on-F3, the N14 base should sit at or after it, or the order must be disclosed.
 - Size of the behaviour change is not known until the re-measure: groups now last, so hashes and timing move.
 - Whether BINDING_CONTRACT_NOT_ACTIVE should stay as ruled for FULFILLED is open (see the ruling).
 
