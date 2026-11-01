@@ -347,3 +347,10 @@ Noted:
 - Record each one's spawn role (starting party or faction slot), and whether the two clusters are the same contract kind and group shape.
 - A spawn-slot pattern would mean a starting-group configuration walks into hazard on its first long-lived group, which is useful for H1's first step.
 3. LAG: the independent check (all 741 FULFILLED ends 101-109 ticks after the contract's id tick, none early) stands alongside the _binding_end instrument. The 3 byte-equal runs plus the positive-control test carry the dirty-set law. No further proof is needed.
+
+### rpg-designer on Tier 2 close and the hazard window (via lead-planner-u24 and lead-planner, 2026-11-01, word for word)
+
+The churn Tier 2 is CLOSED as divergence. Urban s42 16, 6 and 17 FAIL, and s44 14 is not an extra. The relevance fix is proven byte-equal. Nothing gates the churn landing on the designer's side beyond the final non-audit measurement.
+After that, the close/push ask carries: the 2.146 rewrite (the id fix plus the binding); the disclosures: the duplicates ticket for different-contract re-forms, the lag instrument caveat, single-run audit timing, and the H1 clusters.
+HAZARD / WINDOW: no fresh probe now, and the window stays at 50t. The NOT SHOWN cases (crowded 1, 6, 7; frontier 1, 7) are recorded as H1 evidence as they stand and don't gate. What they show, enough for H1's design: novice workers in recruit pairs follow a group's shared target into a chase that ends beside a draining hazard. The last leg is their own pick, and nothing on the way weighs hazard.
+A read (not measured) finding goes to ENGAGE-BRACKETING (rpg-planner u24 owns it): target_score ranks group_bias directly after adjacency (tactical.py:428). That ticket's counts-first step takes the target_score probe at the pick tick when it's scheduled. The designer is adding both to the H1 owner-row draft.
