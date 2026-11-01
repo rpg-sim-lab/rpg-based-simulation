@@ -85,6 +85,7 @@ None yet.
 - The 3-tick window is short. The number is an order-of-magnitude reading, not a steady-state average.
 
 ## Implementation Notes
+**Paused (owner, #715 issuecomment-6556861718 and issuecomment-6556925036, recorded 2026-11-01):** this ticket does not start until an RPG milestone; the replan's milestone for lifting the pause is not fixed here. Do not dispatch or run it, and do not ask for a slot for it, before the owner lifts the pause.
 
 ## Test Summary
 
