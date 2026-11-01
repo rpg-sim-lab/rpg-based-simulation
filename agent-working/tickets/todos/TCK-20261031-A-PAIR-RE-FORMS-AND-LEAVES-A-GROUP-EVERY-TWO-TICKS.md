@@ -264,6 +264,22 @@ lead-planner's note, same message: "extra victim" is fixed per world before the 
 3. AN EXPOSED OLD DEFECT: if the final 15 show a tier-1 HAZARD STOP whose victims share this path, the fix isn't wrong. The older defect then ranks first: the hazard ticket moves AHEAD of the landing (like the id fix landing with the churn fix). It is NOT waived as divergence. Below tier 1, it's tier-2 divergence, reported, with the victims attached to the hazard ticket.
 4. FIRST DIFFS: the t176 movement diff is base's overwrite of live group 10021 being removed. That's the id fix doing its job; no action."
 
+### rpg-designer's final Tier 2 wording, 2026-11-01 (u24; relayed by lead-planner-u24 and lead-planner). Word for word:
+
+"TIER 2 TEST (final wording): a victim passes the mechanism test ONLY if, within the lane's window before death, a CAUSAL step of its death path is behaviour the fix changed. For the churn fix:
+- it was following a group objective of a group formed or dissolved under the new binding; OR
+- that group's dissolution or re-form changed its goal or its location.
+Merely being grouped, or a diverged world, does NOT pass.
+WINDOWS, named in each lane's brief: churn 50t; F3 and retention 200t.
+OUTCOMES, three, never two:
+- PASS -> STOP, sent to the designer with the chain.
+- FAIL -> divergence, reported.
+- NOT SHOWN (the trace can't establish the chain either way) -> to the designer with the rows. Neither a pass nor divergence; the designer rules each case.
+On the s42 examples: 11 (ungrouped, 29t after its term ended, on a chase) FAILS unless the dissolution changed its goal into that chase. 3 FAILS unless the chase came from its group's objective. The trace states which.
+LAG: accepted. The final set records the true expiry tick on each dissolution, with a positive control, and any lag above 0 is a gate failure. The 11 late-by-1-7 cases aren't re-run; contract_is_live should take them to 0."
+
+lead-planner's note, same message: rpg-planner (u24) takes the widening of TCK-20261020-ENGAGE-BRACKETING-MOVES-WALK-A-GROUP-INTO-A-HAZARD-CLUSTER. Its go is given for the final tree once src is final and reviewed, with the SHA told to it at start.
+
 ## Implementation Notes
 ## Test Summary
 ## Files Changed
