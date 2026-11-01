@@ -74,7 +74,7 @@ from src.core.strategic import (
     CognitionProfile, ProjectKind, GoalKind, ObjectiveKind, has_project_capacity, with_live_current_score
 )
 from src.engine.spatial_query import SpatialQueryService
-from src.engine.lodging import is_lodged_stayer
+from src.core.lodging_rules import is_lodged_stayer
 from src.content_semantics.faction import are_entities_hostile
 from src.content_semantics.relation import RelationContext
 from src.strategy.cognition_capacity import CapacityService

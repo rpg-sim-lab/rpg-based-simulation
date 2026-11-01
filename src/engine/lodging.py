@@ -10,6 +10,7 @@ leaver steps out (`leave_tile`). It writes no state.
 from __future__ import annotations
 
 from typing import Any, Dict, Iterable, List, Optional, Tuple
+from src.core.lodging_rules import is_lodged_stayer, keeps_lodging  # noqa: F401  (the stay-or-leave predicates live in core so the decision layers can read them)
 
 Tile = Tuple[int, int]
 
@@ -190,12 +191,6 @@ def grant_beds(state: Any, update: Any) -> Any:
     return replace(update, entity_updates=refined, rejection_events=dropped_events, rejections_delta=dropped_counts)
 
 
-def is_lodged_stayer(entity: Any) -> bool:
-    """True for a lodger whose held rest or meal goes on: it has no movement intent (F3, divergence 2.155). A decision pass reads this and writes no walk target for it; it never writes `lodged_in`.
-    A lodger whose rest has ended is not a stayer: it decides again and leaves through `place_leavers`."""
-    return entity.navigation.lodged_in is not None and keeps_lodging(entity.task.work_kind, entity.task.payload)
-
-
 def suppress_stayer_movement(entity: Any, update: Any) -> Any:
     """The tactical entry's one check (F3): a decision for a lodger that keeps it resting or eating (the update changes no task, or sets a resting or eating one) carries no walk target, mode or path.
     A decision that ends the stay (any other task) is a leaver's and is left whole. The decision itself still runs, so a lodger woken by hunger or a threat decides normally."""
@@ -209,17 +204,6 @@ def suppress_stayer_movement(entity: Any, update: Any) -> Any:
     if not keeps_lodging(work_kind, payload):
         return update
     return replace(update, navigation=replace(nav, target_set=None, movement_mode_set=None, path_set=None))
-
-
-def keeps_lodging(work_kind: Optional[str], payload: Any) -> bool:
-    """True when a lodger's resulting task keeps it indoors: it is still resting or sleeping, or it is eating (only EAT was ruled, scope 7). Anything else, including no task at all
-    (the held rest ended this tick), means it leaves: a lodger holds a bed only while it uses it, so the bed is free the tick its rest ends and no lodger can be stranded
-    awake indoors waiting for a decision (risk R5). The brain then decides from the reach tile, where the building's services are still in reach."""
-    action = (payload or {}).get("action") if isinstance(payload, dict) else None
-    if not action:
-        return False
-    from src.engine.sleep_debt import SLEEP_ACTIONS
-    return action in SLEEP_ACTIONS or action == "EAT"
 
 
 def leave_tile(state: Any, origin: Tile, taken: Iterable[Tile]) -> Optional[Tile]:

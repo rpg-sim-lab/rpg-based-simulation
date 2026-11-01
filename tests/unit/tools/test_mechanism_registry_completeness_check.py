@@ -293,7 +293,8 @@ def test_wider_scope_numbers_pinned():
     # 345 -> 346 on 2026-10-30 (merge of #785 into #788, from the check's own output): both sides added one file above (service_admission.py, live_record_route.py); unbound_files stays 247 (both bound).
     # 346 -> 348 on 2026-10-30 (merge of main ba7aa11bd into the EARN branch, from the check's own output): main is 346 after #785 and #788; EARN adds work_wake.py and need_wake.py (the 345 -> 347 line above is relative to the pre-#785 base). unbound_files stays 247.
     # 348 -> 349 on 2026-10-31 (TCK-20261031-A-SLEEPER-HOLDS-A-DOOR-OR-SERVICE-TILE, divergence 2.155): +src/engine/lodging.py (bound under `town_services`: grant_beds, place_leavers, is_lodged).
-    assert wider["scope_files"] == 349
+    # 349 -> 351 on 2026-11-01 (same ticket): +src/core/lodging_rules.py (the lodger stay rule, read by the decision and apply layers) and +src/engine/checkpoint_fields.py (the one restore step for fields a checkpoint predates).
+    assert wider["scope_files"] == 351
     # 233 -> 227 on 2026-10-05: the world-building split names six more files (worldmodules/normalizer,
     # worldassembly/resolve_io, worldbuilding/repository and validator, worldgeneration/generator and scorer).
     # Then +1 for the unbound entity_target_objective.py module (TCK-20261002-COMBAT-OBJECTIVE-TARGETS-...).
