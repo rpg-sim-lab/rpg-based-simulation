@@ -313,3 +313,22 @@ def test_a_lodger_whose_held_rest_ends_on_tick_t_is_placed_outside_on_t_or_t_plu
         assert by_tick[out[0]][0] in REACH
     finally:
         k.shutdown()
+
+
+def test_a_stayer_re_claiming_its_own_bed_is_not_a_counted_drop_but_a_real_step_is():
+    """A REST executes every tick, so a lodger re-emits the claim's building-tile position while already standing on it. That is no move: it is not counted as a stayer drop.
+    A step to any other tile is counted (the stayer count stays the finding the arm asserts is zero)."""
+    from src.core.updates import StateUpdate
+    from src.engine.lodging import drop_lodger_targets, lodge_claim
+    k = _lodged_stayer_kernel(items=False)
+    try:
+        st = k._state
+        claim = lodge_claim(st.entities[1], st.buildings[INN_ID])
+        assert tuple(claim.new_position) == tuple(st.entities[1].navigation.position)
+        out = drop_lodger_targets(st, StateUpdate(entity_updates={1: claim}), [])
+        assert out.rejections_delta.get("LODGER_TARGET_DROPPED") is None
+        step = EntityUpdate(entity_id=1, new_position=(9.0, 11.0), moved_this_tick=True)
+        out = drop_lodger_targets(st, StateUpdate(entity_updates={1: step}), [])
+        assert out.rejections_delta.get("LODGER_TARGET_DROPPED") == 1 and out.entity_updates[1].new_position is None
+    finally:
+        k.shutdown()

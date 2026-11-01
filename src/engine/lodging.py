@@ -286,7 +286,9 @@ def drop_lodger_targets(state: Any, update: Any, leaving: Iterable[int]) -> Any:
             continue
         refined = dict(update.entity_updates) if refined is None else refined
         project = e.strategic.projects.get(e.strategic.current_project_id or "")
-        if nav is not None and nav.target_set is not None or moving:
+        # A lodger re-claiming its own bed (a REST executes every tick) re-emits the claim's building-tile position: it is already standing there, so stripping it is no move and no drop.
+        real_move = moving and tuple(float(c) for c in upd.new_position) != tuple(float(c) for c in e.navigation.position)
+        if nav is not None and nav.target_set is not None or real_move:
             _note_drop(state, events, rejections, e_id, getattr(nav, "movement_mode_set", None), project, getattr(nav, "target_set", None), "LODGER_DROP_CLAIM_TICK" if claiming else None)
         new_nav = replace(nav, target_set=None, movement_mode_set=None, path_set=None, target_clear=True, clear_path=True) if nav is not None else None
         refined[e_id] = replace(upd, navigation=new_nav, new_position=upd.new_position if claiming else None, moved_this_tick=upd.moved_this_tick if claiming else False)
