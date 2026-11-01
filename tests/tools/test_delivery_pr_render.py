@@ -936,6 +936,37 @@ def test_a_ticket_filed_under_todos_is_left_out_of_closes_with_a_warning(tmp_pat
     assert result["title"] == "ai: Closed thing (1 ticket)"
 
 
+def _render_dup_in(tmp_path, open_dir):
+    """TCK-20261101-PR-RENDER-LEAVES-OUT-A-TICKET-IN-TWO-STATUS-FOLDERS: DUP has an unchanged-from-main done/ copy and an
+    open copy the branch adds, so the ID counts as changed while find_ticket_file's sorted-first pick is the done/ one."""
+    tickets_root = tmp_path / TICKETS
+    for sub in ("done", open_dir):
+        (tickets_root / sub).mkdir(parents=True, exist_ok=True)
+    _write_ticket(tickets_root / "done", "TCK-20260924-A", "ai", "Closed thing")
+    _write_ticket(tickets_root / "done", "TCK-20260924-DUP", "ai", "Closed copy")
+    _write_ticket(tickets_root / open_dir, "TCK-20260924-DUP", "ai", "Open copy")
+    runner = FakeRunner([
+        _git_log_rule(["TCK-20260924-A: x", "TCK-20260924-DUP: y"]),
+        _git_diff_rule([f"{posix(TICKETS)}/done/TCK-20260924-A.md", f"{posix(TICKETS)}/{open_dir}/TCK-20260924-DUP.md"]),
+    ])
+    return pr_render.render(tickets_root=tickets_root, run_command=runner)
+
+
+@pytest.mark.parametrize("open_dir", ["todos", "inprogress"])
+def test_a_ticket_in_done_and_an_open_folder_is_left_out_of_closes_with_a_warning(tmp_path, open_dir):
+    result = _render_dup_in(tmp_path, open_dir)
+    assert "TCK-20260924-A" in result["body"]
+    assert "TCK-20260924-DUP" not in result["body"].split("Closes:")[-1]
+    assert any("TCK-20260924-DUP" in w and "done/" in w and f"{open_dir}/" in w for w in result["warnings"])
+    assert result["title"] == "ai: Closed thing (1 ticket)"
+
+
+def test_a_ticket_only_in_done_and_changed_is_still_listed(tmp_path):
+    result = _render_one_in(tmp_path, "done")
+    assert "TCK-20260924-A" in result["body"].split("Closes:")[-1]
+    assert not any("TCK-20260924-A:" in w for w in result["warnings"])
+
+
 def test_a_pr_whose_every_ticket_is_still_open_renders_nothing_and_says_why(tmp_path):
     result = _render_one_in(tmp_path, "inprogress")
     assert any("TCK-20260924-A" in w and "inprogress/" in w for w in result["warnings"])
