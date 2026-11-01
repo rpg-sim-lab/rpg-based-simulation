@@ -140,6 +140,29 @@ lead-planner's note, same message: the final hold rule (non-audit at FULL, audit
 NO REBINDING: a group whose binding contract ends does not quietly rebind to the pair's next ACTIVE contract. That would hide the duplicate defect. The duplicates ticket fixes the source.
 Note 1 (12 contracts at t100, before the first churn) goes into the duplicates ticket's counts as it stands."
 
+### rpg-designer on the churn plan at 8f0a5dd74, 2026-11-01 (u24; relayed by lead-planner-u24 and lead-planner). Word for word:
+
+"Q1 = A, Q2 = A. The three defaults are accepted, each with one tightening, and the dirty-set risk gets a law in advance.
+Q1, A: keep GroupRecord.contract_id as the one stored id and add contract_holder_id. ContractBinding was only an 'e.g.'; the rule is one copy of one fact.
+- contract_holder_id is omitted from the canonical dict when None, so squads and unbound groups stay byte-identical.
+- The fingerprint includes it for bound groups; their hashes move anyway.
+Q2, A: every end of a bound group carries a typed reason: the 3 contract reasons plus LEADER_LOST, MEMBERS_BELOW_TWO and DEFECTION.
+- It is an ENUM on the typed dissolution record or event, never a string. Unbound groups stay None.
+- FIXED PRECEDENCE when several apply on one tick, one reason per dissolution: BINDING_HOLDER_LEFT > BINDING_CONTRACT_MISSING > BINDING_CONTRACT_NOT_ACTIVE > LEADER_LOST > DEFECTION > MEMBERS_BELOW_TWO.
+- The cause outranks the consequence: a pair whose holder dies is HOLDER_LEFT, not MEMBERS_BELOW_TWO.
+- Test one tick with several reasons.
+DEFAULTS:
+- The holder is the leader and dies -> BINDING_HOLDER_LEFT. Accepted; it follows from the precedence.
+- A non-holder leader dies -> dissolves as today (SOC-176), reason LEADER_LOST. Accepted.
+- No legacy fallback: accepted, but make it EXPLICIT. A GroupRecord with contract_id set and contract_holder_id None is INVALID at construction or validation (a typed error), not silently unbound. Tests build with a holder.
+DIRTY-SET RISK, law in advance: a bound group dissolves ON THE TICK its binding contract stops being ACTIVE. Its validity must not depend on whether the group happens to be dirty or on a full-scan tick.
+- The implementer's count comes first: live bound groups whose contract has ended, with the lag in ticks.
+- If the count is above 0, the fix is IN THIS TICKET, since the binding is what makes the gap reachable. Lean: an expiry is known ahead of time, so a bound group is relevant on the tick its contract's expiry falls due, and a contract status write marks its bound group dirty. Deterministic, with no full scan.
+- Re-measure gate: lag = 0.
+- If the count is 0 only because the full-scan cadence happens to cover it, that is still a FINDING: send it to the designer with the cadence. A lag hidden by cadence is not a lag of 0 by law."
+
+lead-planner's note, same message: "invalid at construction" means loading an old save or checkpoint with a contract_id and no holder would raise. The load path needs handling, or that's a question back to the designer; don't choose silently.
+
 ## Implementation Notes
 ## Test Summary
 ## Files Changed
