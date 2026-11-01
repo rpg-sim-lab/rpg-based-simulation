@@ -5,12 +5,20 @@ records, so it is testable without a data tree.
 from __future__ import annotations
 
 import json
+import subprocess
+import sys
 from collections import Counter
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 from batch_latency import render_row
 from manual_actions import CATEGORIES, count_by_category
 from session_role import UNRESOLVED
+
+_REPO_ROOT = Path(__file__).resolve().parents[2]
+if str(_REPO_ROOT) not in sys.path:
+    sys.path.append(str(_REPO_ROOT))
+from tools.sessions.classify import is_governing_path  # noqa: E402
 
 PREDATES = "predates field"
 
@@ -79,8 +87,84 @@ def _manual_lines(manual: list[dict], total: int | None) -> list[str]:
     return lines + ([note] if note else []) + [""]
 
 
+def merged_governing_commits(week_str: str | None, cutoff: str | None, ref: str = "origin/main", run=subprocess.run) -> dict[str, int] | None:
+    """{governing path: merged commits touching it in the period} from `git log <ref>`, or None when git cannot say.
+
+    Same path definition as the guard rows and the PR list (`classify.is_governing_path`). Period = commit date, like the rows."""
+    try:
+        if week_str:
+            year, week = week_str.split("-W")
+            since = datetime.fromisocalendar(int(year), int(week), 1).replace(tzinfo=timezone.utc) - timedelta(days=1)
+            since_arg = since.isoformat()
+        else:
+            since_arg = cutoff or "1970-01-01"
+        out = run(["git", "log", ref, f"--since={since_arg}", "--name-only", "--format=@@%cI"], cwd=_REPO_ROOT, capture_output=True,
+                  text=True, timeout=60)
+        if out.returncode != 0:
+            return None
+    except Exception:  # noqa: BLE001 - the retro line must never fail the report
+        return None
+    counts: Counter = Counter()
+    touched: set[str] = set()
+    keep = False
+    for line in out.stdout.splitlines():
+        if line.startswith("@@"):
+            counts.update(touched)
+            touched = set()
+            keep = bool(in_period([{"ts": line[2:]}], week_str, cutoff))
+        elif keep and line.strip() and is_governing_path(line.strip()):
+            touched.add(line.strip())
+    counts.update(touched)
+    return dict(counts)
+
+
+def _governing_lines(attempts: list[dict], total: int | None, merged: dict[str, int] | None) -> list[str]:
+    lines = ["### Governing-file edit attempts (report-only)", "",
+             "_Rows are written by the guard at PreToolUse, so each is an ATTEMPT. `edit` rows (basis `path`, an edit tool) are "
+             "exact; `mention` rows (basis `mention`, a Bash command naming the path) may not be edits and over-count. Edit-tool "
+             "rows for files outside the repo are not written. Merged commits are counted by path and period from `origin/main`, "
+             "with the same path list the PR body uses; an attempt cannot be tied to one PR body._", ""]
+    note = _dark("governing_edits", total, len(attempts))
+    if total == 0:
+        return lines + [note, ""]
+    by_path: dict[str, Counter] = {}
+    for a in attempts:
+        by_path.setdefault(str(a.get("path") or "unknown"), Counter())[str(a.get("basis") or "unknown")] += 1
+    if not by_path:
+        lines.append("None in this period.")
+    else:
+        lines += ["| path | edit attempts | Bash mentions | merged commits |", "|---|---|---|---|"]
+        for path in sorted(by_path):
+            c = by_path[path]
+            lines.append(f"| {path} | {c['path']} | {c['mention']} | {merged.get(path, 0) if merged is not None else 'unknown'} |")
+    if merged is None:
+        lines += ["", "_Merged commits unavailable (git could not be read), so nothing is matched._"]
+    else:
+        edits = sum(c["path"] for c in by_path.values())
+        mentions = sum(c["mention"] for c in by_path.values())
+        lines += ["", f"Totals: {edits} edit attempts, {mentions} Bash mentions; {sum(merged.values())} merged commits touching a "
+                  "governing path (counted per path)."]
+        unmatched = sorted(p for p, c in by_path.items() if c["path"] and not merged.get(p))
+        lines += ["Edit attempts with no merged commit on that path in the period: " + (", ".join(unmatched) if unmatched else "none") + "."]
+        unattempted = sorted(p for p, n in merged.items() if n and not by_path.get(p, Counter())["path"])
+        lines += ["Governing paths with merged commits and no edit attempt row in the period: "
+                  + (", ".join(unattempted) if unattempted else "none") + "."]
+        lines += ["_Unmatched means one of: the edit was reverted, the call was denied or failed, the work has not merged "
+                  "yet (an attempt in one week can merge the next), or a real edit never went through review. A merged path "
+                  "with no attempt row can mean the edit was made where no row is written (see the limits below), or its "
+                  "rows sit on an unmerged branch or the other host. Rows reach main only when a branch carries them, so a "
+                  "missing row can also mean its branch is unmerged. A prompt to look, not a violation count._"]
+    lines += ["_Limits: a Bash edit that does not name the path from the repo root (e.g. `cd tools/sessions && sed -i ... guard.py`) "
+              "or that sits inside an interpreter payload writes no row, so an empty count does not mean no edits. A mention can "
+              "also name a same-suffix file outside the repo (e.g. a user-level settings file)._"]
+    if note:
+        lines.append(note)
+    return lines + [""]
+
+
 def render(manual: list[dict], runs: list[dict], boundary: list[dict], latency_rows: list[tuple[str, dict]] | None = None,
-           manual_total: int | None = None, boundary_total: int | None = None) -> str:
+           manual_total: int | None = None, boundary_total: int | None = None, governing: list[dict] | None = None,
+           governing_total: int | None = None, merged: dict[str, int] | None = None) -> str:
     lines = ["## Session-Layer Measures", "",
              "_Headline metric and batch latency from `docs/plans/agent_infrastructure/session_layer_working_process.md` "
              "section 11. Counts are repeated instructions, never decisions, design feedback or requirements. "
@@ -107,6 +191,8 @@ def render(manual: list[dict], runs: list[dict], boundary: list[dict], latency_r
         lines.append(", ".join(f"{k}: {v}" for k, v in sorted(kinds.items())) if kinds else "None in this period.")
         if note:
             lines.append(note)
+    if governing is not None:
+        lines += [""] + _governing_lines(governing, governing_total, merged)
     lines += ["", "### Batch latency", ""]
     if latency_rows:
         lines += ["| batch | implementation | finalization | cycle | dispatch from |", "|---|---|---|---|---|"]

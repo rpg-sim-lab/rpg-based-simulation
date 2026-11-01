@@ -83,8 +83,8 @@ One record per workflow invocation.
 | `duration_rederived` | string | Yes (optional) | `"week_close"` on a hand closure whose `unknown` duration a week close re-derived from the tool rows present by then (`start_ts`, `end_ts`, `duration_s`, `duration_source`, `claim_peers` and, if anchored, `closed_ts` were rewritten in place; cost fields are not re-derived). Counts as `tool_activity` (derived) everywhere. The close drops an old `unknown` row for the same `(run_id, execution_id)` that a late shard brings back, so a re-derived run is never counted twice. |
 | `session_id` | string | Yes (optional) | `CLAUDE_CODE_SESSION_ID` of the session that recorded the closure, `null` when unset. Written with `duration_source`; the join key to that session's `tools.jsonl` rows. Absent on older rows. |
 | `claim_peers` | int >= 0 | Yes (optional) | Only with `duration_source: tool_activity`: how many earlier hand closures by the same session ended inside the same activity block. `0` means the block was not shared. |
-| `path_reason` | string | Yes (optional) | Why the ticket took its path (`TCK-20261006-PATH-REASON-AND-PHASE-COVERAGE-RECORD`, epic `TCK-20261006-EPIC-TICKET-PATH-RECORD`). One of `pipeline_default` (the pipeline's own run write sets it), `pipeline_unavailable`, `native_port_blocked`, `small_change`, `owner_directed`, `batch_hand_close`, `investigation_only`, `other` (requires `path_note`), `unstated` (the writers' default when nobody said: not a reason, a gap). Set on a hand closure with `record_hand_orchestrated_closure.py --path-reason`. Absent on a row that predates the field. |
-| `path_note` | string | Yes (optional) | Free text beside `path_reason`; required when it is `other`. |
+| `path_reason` | string | Yes (optional) | Why the ticket took its path (`TCK-20261006-PATH-REASON-AND-PHASE-COVERAGE-RECORD`, epic `TCK-20261006-EPIC-TICKET-PATH-RECORD`; values defined by `TCK-20261031-SDLC-HAND-PATH-OFFICIAL-AND-BASELINES-FROZEN`, the hand/batch path being the official model, #715 comment 6529263880). One of: `pipeline_default` (the formal pipeline ran; its own run write sets it), `pipeline_unavailable` (the pipeline could not run), `native_port_blocked` (the native port of a gate site was not available), `small_change` (the change was too small for the pipeline), `owner_directed` (the owner asked for this close by hand; **requires `path_note`**), `batch_hand_close` (closed by hand as part of a batch PR), `investigation_only` (the work was investigation, with no code change), `other` (**requires `path_note`**), `unstated` (the writers' default when nobody said: not a reason, a gap). Set on a hand closure with `record_hand_orchestrated_closure.py --path-reason`. Absent on a row that predates the field. |
+| `path_note` | string | Yes (optional) | Free text beside `path_reason`. **Required and non-empty when `path_reason` is `other` or `owner_directed`** (for `owner_directed`: the owner decision, as a comment id or issue reference). The rule applies to rows written from `TCK-20261031-SDLC-HAND-PATH-OFFICIAL-AND-BASELINES-FROZEN` on; both writers refuse such a row (`record_run.py`'s validator and the closure CLI, which exits non-zero and writes nothing). Rows written earlier have no note and stay valid: nothing re-validates stored rows for a note, and the shard check (`validate.py`) only checks that `path_reason` is a known value. |
 | `phases_omitted` | array of string | Yes (optional) | Phases the run's tier marks `full` in `agent-working/agent-orchestration/workflows/implement-ticket.yaml` that have no event in the run, derived at write time by `tools/agent-monitoring/path_record.py` (never a hard-coded copy, so editing the plan changes it with no code change). `conditional` and `skipped_event` phases are never counted; a tier the plan does not list (epic, n/a) records `[]`. Absent when the plan could not be read or the row predates the field: read absence as "unknown", never as `[]`. Note a phase with a `skipped` event is NOT omitted: it was logged, and its `skip_reason` says why. |
 
 ### What is not recorded
@@ -203,6 +203,7 @@ The per-record schema is unaffected by this change; only where a record physical
 | `session_id` | string | Yes (optional) | Same value as the run's `session_id` on a hand-closure event (`TCK-20261006-HAND-CLOSURE-RECORDER-REAL-TIMESTAMPS`); `null` when the variable was unset; absent on older rows. Event `ts` keeps the closure time: per-event times are not derived. |
 | `cost_source` | string | Yes (optional) | Where `tool_call_count`/`cost_proxy_score` came from (`TCK-20261006-HAND-CLOSURE-COST-ATTRIBUTION`). `sidecar`: rows carrying this event's `(run_id, seq)` from a live sidecar. `session_window`: a hand closure's claim of the closing session's own unattributed `tools.jsonl` rows (`run_id` null, claimed by at most one closure, see `duration_source` on the run), carried as one ticket-level total on the final event, so it is NOT phase-resolved: read `cost_source` before using a per-phase figure. Absent: no attribution (keys absent too, never 0), or a row that predates the field. |
 | `skip_reason` | string | Yes (optional) | Only on a `status: skipped` event (`TCK-20261006-PATH-REASON-AND-PHASE-COVERAGE-RECORD`): `tier_plan` (the tier marks the phase `skipped_event`), `condition_false` (e.g. Parity's `src_change_and_behavior_changed`), `not_applicable`, `no_hand_tool` (what the hand-closure recorder sets for Review, Architecture-Verify and, with no docs change, Document-Update: the hand path has no step of its own for them), `deferred`, `other`, `unstated` (default when a hand closure does not say). The pipeline sets `tier_plan` and `condition_false` at its own skip sites. Rejected on any other status. |
+| `supersedes` | integer | Yes (optional) | Only on an `ok` event written by `tools/agent-monitoring/record_review.py` (`TCK-20261101-RECORD-REVIEW-AFTER-THE-PR-REVIEW-EXISTS`): the `seq` of the earlier event of the same run and phase that this row replaces (the hand close's folded `skipped` Review). Nothing is rewritten; readers drop the replaced row (`run_dedup.drop_superseded_events`, applied in `generate_retro._load_runs_and_events`), so Review counts as ran exactly once. A reader that bypasses that loader still sees both rows. A retro already published for a closed week keeps its skipped count; only a regenerated one picks up the overlay. Positive integer; absent on every other event. |
 
 ### `status` values
 
@@ -670,6 +671,35 @@ instance; never the `agent` vocabulary), `function`, `domain`, `tool`. Covered b
 window (plan section 10; M7). "Unusual route" is deliberately not its own kind: a routed path is still an edit in another domain, so it is
 folded into `edit_outside_owns` (`owner_seats` shows where it should have gone); M7 can split it if the data shows it recurs.
 
+## `governing_edits` (`agent-working/agent-monitoring/data/YYYY-Www/governing_edits.jsonl`)
+
+Report-only attempts on governing paths (`TCK-20261031-GOVERNING-FILE-EDITS-VISIBLE-TO-OWNER`; plan
+`docs/plans/agent_infrastructure/AI_FIRST_SDLC_ARCHITECTURE_EVOLUTION_PLAN.md` sections 7 and 28a). Its own file family like
+`role_boundary`: not an `events` row, no `agent`, `phase` or `run_id`, no gate reads it. Written by
+`tools/sessions/guard.py::_record_governing` through `tools/sessions/boundary.py::write_event(..., family=)` and the shared
+`writer.py::write_line()`. The guard still allows the call with no output; a write failure is swallowed. The path list is
+`tools/sessions/classify.py` (`is_governing_path`), shared with the PR-body section and the retro.
+
+Fields: `ts`, `event` (`"governing_edit_attempt"`), `seat` (the resolved role instance, else `unresolved`), `path`
+(repo-relative, never absolute), `basis`, `attempt` (always `true`). Nothing else: no tool name, command text, session id or
+content.
+
+- `basis: "path"`: an edit tool's file, exact. A file outside the repo (a user-level settings file, say) writes no row from an
+  edit tool, because it can never appear in a PR. (A `mention` row can still name a same-suffix file outside the repo; see below.)
+- `basis: "mention"`: a non-read-only Bash command whose text names the path from the repo root (`python3 tools/sessions/guard.py`
+  and `git add .github/workflows/x.yml` both count). It may not be an edit, so mention rows over-count; the row holds the
+  matched token only. They also under-count, and a mention can be misplaced:
+  - a Bash edit that does not name the path from the repo root (`cd tools/sessions && sed -i ... guard.py`) or that sits inside an
+    interpreter payload (`python3 -c "open('CLAUDE.md','w')"`) writes no row, so an empty count does not mean no edits;
+  - a mention such as `sed -i ... $HOME/.claude/settings.json` records `.claude/settings.json`, a file outside the repo.
+  These limits are pinned by tests, not fixed.
+
+A row is written at PreToolUse, so it is an attempt: the call may still be denied or fail, or the edit reverted. The retro
+(`session_layer_report.py`, "Governing-file edit attempts") compares attempts with merged commits on `origin/main` by path
+and period, in both directions (attempts with no merged commit, and merged commits with no edit attempt row); an attempt in one week can merge the next, and rows reach main only when a branch carries them, so "no merged
+commit" can mean either. Hook scripts wired from directories outside the list are not covered. Covered by the existing
+`agent-working/agent-monitoring/data/*/*.jsonl merge=union` glob.
+
 ## `gate_verdicts` (`agent-working/agent-monitoring/data/YYYY-Www/<identifier>.gate_verdicts.jsonl`)
 
 One row per verdict a gate CLI prints (`TCK-20261006-GATE-VERDICT-RECORD-AND-HAND-SITES`, child 1 of
@@ -713,7 +743,7 @@ The long gate commands live in `tools/gate_checks/gate_cli.py`, which derives th
 | `verdict` | string | No | `PASS` or `FAIL` for these CLIs; an agent-verdict gate records its raw enum. |
 | `blocking` | bool | No | `true` when the verdict stopped the work (the CLI exited non-zero). |
 | `sub_results` | object | Yes | `{condition: PASS\|FAIL\|NA}`, e.g. the done-checker checklist. |
-| `sub_reasons` | object | Yes | `{finalize.<condition>: <reason class>}` for the FAILing Finalize conditions only (`TCK-20261020-FINALIZE-SELFCHECK-RECORDS-FAIL-REASON-CLASS`); absent when nothing failed or the gate has no classes (precheck, other gates). Keys are a subset of `sub_results`' keys; a closed vocabulary, never evidence text. Classes: `registry_entry_regenerated`: `registry_file_missing` (no file on disk), `registry_stale_on_disk` (a fresh registry has the `done/` entry, the file does not), `entry_absent` (no `done/` entry even in a fresh or regenerated registry); `migration_complete`: `stored_artifacts_missing`, `staging_not_cleaned`, `disposition_invalid`, `disposition_src_changes`; `working_log_exactly_one_row`: `no_row`, `duplicate_rows`; `ticket_finalized` (the first problem found): `ticket_not_in_done`, `ticket_still_inprogress`, `stale_todos_copy`. |
+| `sub_reasons` | object | Yes | `{finalize.<condition>: <reason class>}` for the FAILing Finalize conditions only (`TCK-20261020-FINALIZE-SELFCHECK-RECORDS-FAIL-REASON-CLASS`); absent when nothing failed or the gate has no classes (precheck, other gates). Keys are a subset of `sub_results`' keys; a closed vocabulary, never evidence text. Classes: `registry_entry_regenerated`: `registry_file_missing` (no file on disk), `ticket_not_staged` (read-only check: the `done/` ticket exists but git neither tracks nor stages it, so no registry can index it), `registry_stale_on_disk` (a fresh registry has the `done/` entry, the file does not), `entry_absent` (no `done/` entry even in a fresh or regenerated registry); `migration_complete`: `stored_artifacts_missing`, `staging_not_cleaned`, `disposition_invalid`, `disposition_src_changes`; `working_log_exactly_one_row`: `no_row`, `duplicate_rows`; `ticket_finalized` (the first problem found): `ticket_not_in_done`, `ticket_still_inprogress`, `stale_todos_copy`. |
 | `inputs_ref` | object | No | What the gate looked at: `head_sha`, `cmd_sha` or `files_sha` (a hash of the command or file list), and `stdout_sha`/`exit_code` for an attested command. |
 
 Opt out with `--no-record` or `GATE_VERDICT_NO_RECORD=1` (`tests/conftest.py` sets it so no test writes into the

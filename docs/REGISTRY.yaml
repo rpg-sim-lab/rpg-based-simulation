@@ -5695,7 +5695,7 @@
   - testing
 - type: doc
   path: docs/performance/benchmark_identity_schema.md
-  title: Benchmark Identity and Result Schema (schema 1.2)
+  title: Benchmark Identity and Result Schema (schema 1.5)
   status: active
   layer: performance
   authority: P2
@@ -5812,6 +5812,30 @@
   - delivery
   - planning
 - type: doc
+  path: docs/plans/agent_infrastructure/SDLC_BASELINES_FROZEN.md
+  title: 'AI-First SDLC: Frozen Baselines'
+  status: active
+  layer: ai
+  authority: P2
+  audience: agent
+  tags:
+  - ai
+  - governance
+  - delivery
+  - planning
+- type: doc
+  path: docs/plans/agent_infrastructure/SDLC_DECISION_RECORD.md
+  title: 'AI-First SDLC: Decision Record'
+  status: active
+  layer: ai
+  authority: P2
+  audience: agent
+  tags:
+  - ai
+  - governance
+  - delivery
+  - planning
+- type: doc
   path: docs/plans/agent_infrastructure/agent_working_direction.md
   title: Agent-Working Direction — Observable, Self-Diagnosing, Adaptable Delivery
   status: active
@@ -5895,6 +5919,17 @@
   - governance
   - security
   - mcp
+- type: doc
+  path: docs/plans/agent_infrastructure/plans_tracking.md
+  title: Plans Tracking — Quick Overview
+  status: active
+  layer: architecture
+  authority: P2
+  audience: developer
+  tags:
+  - planning
+  - tracking
+  - documentation
 - type: doc
   path: docs/plans/agent_infrastructure/session_layer_working_process.md
   title: Session-Layer Working Process — Roles, Launch, Routing, Batches, Worktrees
@@ -6942,17 +6977,6 @@
   - determinism
   - performance
 - type: doc
-  path: docs/plans/plans_tracking.md
-  title: Plans Tracking — Quick Overview
-  status: active
-  layer: architecture
-  authority: P2
-  audience: developer
-  tags:
-  - planning
-  - tracking
-  - documentation
-- type: doc
   path: docs/plans/render-and-art/07_manual_art_experiment_execution_plan.md
   title: Detailed Plan 07 — Manual Pixel-Art Experiment Execution
   status: active
@@ -7942,6 +7966,103 @@
   - content
   last_verified: '2026-10-09'
 - type: ticket
+  path: agent-working/tickets/done/TCK-20261101-PHASE19-CONTRACT-NAMES-ITS-RUNTIME-TEST.md
+  ticket_id: TCK-20261101-PHASE19-CONTRACT-NAMES-ITS-RUNTIME-TEST
+  title: The phase19 import contract names its runtime test, drops drifting kernel
+    line numbers, and also guards src.ai.goals
+  tier: hotfix
+  ticket_type: chore
+  date: '2026-11-01'
+  related_code_areas:
+  - codebase/structure/importlinter.toml; tests/architecture/test_phase19_off_mode_imports_none_of_the_four.py;
+    tests/codebase/test_import_contracts.py
+  artifact_files: []
+  tags: []
+- type: ticket
+  path: agent-working/tickets/done/TCK-20261101-RECORD-REVIEW-AFTER-THE-PR-REVIEW-EXISTS.md
+  ticket_id: TCK-20261101-RECORD-REVIEW-AFTER-THE-PR-REVIEW-EXISTS
+  title: A hand close's Review can be recorded after the fact, once the planner's
+    PR review comment exists; CLAUDE.md's closure example names that command
+  tier: standard
+  ticket_type: repair
+  date: '2026-11-01'
+  related_code_areas:
+  - review_ref_event
+  - tools/agent-monitoring/gate_ledger.py (pattern), path_report.py, generate_retro.py,
+    run_dedup.py
+  artifact_files:
+  - agent-working/stored_artifacts/TCK-20261101-RECORD-REVIEW-AFTER-THE-PR-REVIEW-EXISTS/investigation.md
+  - agent-working/stored_artifacts/TCK-20261101-RECORD-REVIEW-AFTER-THE-PR-REVIEW-EXISTS/plan.md
+  - agent-working/stored_artifacts/TCK-20261101-RECORD-REVIEW-AFTER-THE-PR-REVIEW-EXISTS/test_plan.md
+  tags:
+  - agent-monitoring
+  - governance
+- type: ticket
+  path: agent-working/tickets/todos/TCK-20261101-PERF-V0002-RECORD-AFTER-FINDING-WHAT-MOVES-HOST-SPEED.md
+  ticket_id: TCK-20261101-PERF-V0002-RECORD-AFTER-FINDING-WHAT-MOVES-HOST-SPEED
+  title: Find what moves the ubuntu VM's speed, then re-record idle_100_local and
+    movement_100_local as v0002
+  tier: standard
+  ticket_type: chore
+  date: '2026-11-01'
+  related_code_areas:
+  - tools/perf/rerun_baselines.py, tools/perf/quiet_gate.py
+  - tests/perf/baselines/
+  artifact_files: []
+  tags:
+  - performance
+- type: ticket
+  path: agent-working/tickets/done/TCK-20261031-ADVENTURE-SCORER-LOADS-THE-COGNITION-PACKAGE-IN-OFF-MODE.md
+  ticket_id: TCK-20261031-ADVENTURE-SCORER-LOADS-THE-COGNITION-PACKAGE-IN-OFF-MODE
+  title: The adventure scorer loads the cognition observability package in an OFF-mode
+    process
+  tier: hotfix
+  ticket_type: bug
+  date: '2026-10-31'
+  related_code_areas:
+  - src/ai/goals/adventure_scorer.py:10,184; src/observability/cognition/decision_trace_writer.py:50-61;
+    src/engine/kernel.py:252-272
+  artifact_files: []
+  tags: []
+- type: ticket
+  path: agent-working/tickets/done/TCK-20261031-GOVERNING-FILE-EDITS-VISIBLE-TO-OWNER.md
+  ticket_id: TCK-20261031-GOVERNING-FILE-EDITS-VISIBLE-TO-OWNER
+  title: 'Show the owner when governing files are edited: one path definition, a list
+    in the PR body and a guard event'
+  tier: standard
+  ticket_type: feature
+  date: '2026-10-31'
+  related_code_areas:
+  - tools/sessions/classify.py, tools/sessions/guard.py, tools/delivery/pr_render.py,
+    tools/agent-monitoring/
+  artifact_files:
+  - agent-working/stored_artifacts/TCK-20261031-GOVERNING-FILE-EDITS-VISIBLE-TO-OWNER/investigation.md
+  - agent-working/stored_artifacts/TCK-20261031-GOVERNING-FILE-EDITS-VISIBLE-TO-OWNER/plan.md
+  - agent-working/stored_artifacts/TCK-20261031-GOVERNING-FILE-EDITS-VISIBLE-TO-OWNER/test_plan.md
+  tags:
+  - governance
+  - delivery
+  - agent-monitoring
+- type: ticket
+  path: agent-working/tickets/done/TCK-20261031-HAND-CLOSE-REVIEW-PHASE-RECORDS-THE-PR-REVIEW.md
+  ticket_id: TCK-20261031-HAND-CLOSE-REVIEW-PHASE-RECORDS-THE-PR-REVIEW
+  title: 'A standard-tier hand close''s Review phase is the planner''s PR review:
+    record it, rather than `skipped`/`no_hand_tool` in every run'
+  tier: standard
+  ticket_type: repair
+  date: '2026-10-31'
+  related_code_areas:
+  - tools/agent-monitoring/record_hand_orchestrated_closure.py
+  - tools/agent-monitoring/generate_retro.py, tools/agent-monitoring/path_report.py
+    (routing-candidate text)
+  artifact_files:
+  - agent-working/stored_artifacts/TCK-20261031-HAND-CLOSE-REVIEW-PHASE-RECORDS-THE-PR-REVIEW/investigation.md
+  - agent-working/stored_artifacts/TCK-20261031-HAND-CLOSE-REVIEW-PHASE-RECORDS-THE-PR-REVIEW/plan.md
+  - agent-working/stored_artifacts/TCK-20261031-HAND-CLOSE-REVIEW-PHASE-RECORDS-THE-PR-REVIEW/test_plan.md
+  tags:
+  - agent-monitoring
+  - governance
+- type: ticket
   path: agent-working/tickets/done/TCK-20261031-MECHANISM-NOTE-CAPACITY-TIE-TRIM-ORDER.md
   ticket_id: TCK-20261031-MECHANISM-NOTE-CAPACITY-TIE-TRIM-ORDER
   title: Append rpg-planner's binding note about the capacity trim's tie rule to the
@@ -7954,6 +8075,106 @@
   artifact_files: []
   tags:
   - determinism
+- type: ticket
+  path: agent-working/tickets/done/TCK-20261031-N14-KNOWN-V3-ENTRY-RENEWED-TO-1130.md
+  ticket_id: TCK-20261031-N14-KNOWN-V3-ENTRY-RENEWED-TO-1130
+  title: The N14 known V3 gate entry is renewed from 2026-11-05 to 2026-11-30, with
+    nothing else changed
+  tier: hotfix
+  ticket_type: chore
+  date: '2026-10-31'
+  related_code_areas:
+  - tools/test_architecture/rpg_gate_known.yaml
+  artifact_files: []
+  tags:
+  - testing
+- type: ticket
+  path: agent-working/tickets/done/TCK-20261031-PLANS-TRACKING-AUDITED-REFRESH.md
+  ticket_id: TCK-20261031-PLANS-TRACKING-AUDITED-REFRESH
+  title: Move plans_tracking.md to docs/plans/agent_infrastructure/ and refresh it
+    with an audited count of the plans on main
+  tier: hotfix
+  ticket_type: chore
+  date: '2026-10-31'
+  related_code_areas:
+  - tools/gate_checks/planning_doc_staleness_check.py
+  artifact_files: []
+  tags:
+  - planning
+  - tracking
+  - documentation
+- type: ticket
+  path: agent-working/tickets/done/TCK-20261031-REGISTRY-CHECK-NAMES-AN-UNSTAGED-CLOSING-TICKET.md
+  ticket_id: TCK-20261031-REGISTRY-CHECK-NAMES-AN-UNSTAGED-CLOSING-TICKET
+  title: '`registry_entry_regenerated` (read-only) fails with `ticket_not_staged`
+    and the working order when the closing `done/` ticket isn''t tracked or staged,
+    not with a misleading `entry_absent`'
+  tier: hotfix
+  ticket_type: bug
+  date: '2026-10-31'
+  related_code_areas:
+  - tools/gate_checks/done_checker_static.py
+  - indexable_paths
+  artifact_files: []
+  tags:
+  - agent-monitoring
+  - data-quality
+- type: ticket
+  path: agent-working/tickets/done/TCK-20261031-RETRO-SAYS-MID-WEEK-UNKNOWN-DURATIONS-DERIVE-AT-WEEK-CLOSE.md
+  ticket_id: TCK-20261031-RETRO-SAYS-MID-WEEK-UNKNOWN-DURATIONS-DERIVE-AT-WEEK-CLOSE
+  title: 'Retro Run Summary: for a week that isn''t closed yet, say that its unknown
+    hand-closure durations are derived at the week close'
+  tier: hotfix
+  ticket_type: bug
+  date: '2026-10-31'
+  related_code_areas:
+  - tools/agent-monitoring/retro_provenance.py
+  - tools/agent-monitoring/generate_retro.py
+  - tools/agent-monitoring/week_close.py (read only)
+  artifact_files: []
+  tags:
+  - agent-monitoring
+  - data-quality
+- type: ticket
+  path: agent-working/tickets/done/TCK-20261031-SDLC-GUARD-PAYLOADS-AND-SECRET-REDACTION.md
+  ticket_id: TCK-20261031-SDLC-GUARD-PAYLOADS-AND-SECRET-REDACTION
+  title: The guard inspects interpreter payloads and asks on `gh api` writes and merges,
+    and secret-shaped strings are redacted from tool rows and the transit export.
+  tier: standard
+  ticket_type: feature
+  date: '2026-10-31'
+  related_code_areas:
+  - tools/sessions/guard.py, tools/sessions/classify.py
+  - tools/agent-monitoring/post_tool_hook.py, tools/handover_transit.py
+  - .claude/settings.json
+  artifact_files:
+  - agent-working/stored_artifacts/TCK-20261031-SDLC-GUARD-PAYLOADS-AND-SECRET-REDACTION/investigation.md
+  - agent-working/stored_artifacts/TCK-20261031-SDLC-GUARD-PAYLOADS-AND-SECRET-REDACTION/plan.md
+  - agent-working/stored_artifacts/TCK-20261031-SDLC-GUARD-PAYLOADS-AND-SECRET-REDACTION/test_plan.md
+  tags:
+  - ai
+  - governance
+  - security
+- type: ticket
+  path: agent-working/tickets/done/TCK-20261031-SDLC-HAND-PATH-OFFICIAL-AND-BASELINES-FROZEN.md
+  ticket_id: TCK-20261031-SDLC-HAND-PATH-OFFICIAL-AND-BASELINES-FROZEN
+  title: The hand/batch path is recorded as the official delivery model, `owner_directed`
+    closes require a `path_note`, and the baseline table is frozen.
+  tier: standard
+  ticket_type: feature
+  date: '2026-10-31'
+  related_code_areas:
+  - tools/agent-monitoring/record_hand_orchestrated_closure.py
+  - docs/agent-monitoring/schema.md
+  - docs/plans/agent_infrastructure/session_layer_working_process.md
+  artifact_files:
+  - agent-working/stored_artifacts/TCK-20261031-SDLC-HAND-PATH-OFFICIAL-AND-BASELINES-FROZEN/investigation.md
+  - agent-working/stored_artifacts/TCK-20261031-SDLC-HAND-PATH-OFFICIAL-AND-BASELINES-FROZEN/plan.md
+  - agent-working/stored_artifacts/TCK-20261031-SDLC-HAND-PATH-OFFICIAL-AND-BASELINES-FROZEN/test_plan.md
+  tags:
+  - ai
+  - governance
+  - delivery
 - type: ticket
   path: agent-working/tickets/done/TCK-20261031-SDLC-PLAN-DOCUMENTS-LAND.md
   ticket_id: TCK-20261031-SDLC-PLAN-DOCUMENTS-LAND
@@ -7971,6 +8192,82 @@
   - governance
   - delivery
   - planning
+- type: ticket
+  path: agent-working/tickets/done/TCK-20261031-SDLC-PLAN-REVIEW-FIXES-AND-EVIDENCE.md
+  ticket_id: TCK-20261031-SDLC-PLAN-REVIEW-FIXES-AND-EVIDENCE
+  title: Apply lead-planner's review fixes to the AI-first SDLC plan and add an evidence
+    section to its summary
+  tier: hotfix
+  ticket_type: chore
+  date: '2026-10-31'
+  related_code_areas: []
+  artifact_files: []
+  tags:
+  - planning
+  - documentation
+- type: ticket
+  path: agent-working/tickets/done/TCK-20261031-SDLC-R0-INVENTORY-AND-BASELINE-TAGS.md
+  ticket_id: TCK-20261031-SDLC-R0-INVENTORY-AND-BASELINE-TAGS
+  title: 'Research stage R0: candidate tasks and the disposition review are recorded,
+    and baselines are frozen as git tags.'
+  tier: standard
+  ticket_type: feature
+  date: '2026-10-31'
+  related_code_areas:
+  - .claude/workflows/, tools/agent_orchestration/, tools/agent_replay* (read-only)
+  - agent-working/stored_artifacts/ (result record)
+  artifact_files:
+  - agent-working/stored_artifacts/TCK-20261031-SDLC-R0-INVENTORY-AND-BASELINE-TAGS/investigation.md
+  - agent-working/stored_artifacts/TCK-20261031-SDLC-R0-INVENTORY-AND-BASELINE-TAGS/plan.md
+  - agent-working/stored_artifacts/TCK-20261031-SDLC-R0-INVENTORY-AND-BASELINE-TAGS/test_plan.md
+  tags:
+  - ai
+  - governance
+  - delivery
+- type: ticket
+  path: agent-working/tickets/done/TCK-20261031-SDLC-RULESET-EXPORT-AND-LOGIN-ASSUMPTION-INVENTORY.md
+  ticket_id: TCK-20261031-SDLC-RULESET-EXPORT-AND-LOGIN-ASSUMPTION-INVENTORY
+  title: The ruleset is exported as the rollback point, and the tools that assume
+    the owner's login are listed.
+  tier: hotfix
+  ticket_type: chore
+  date: '2026-10-31'
+  related_code_areas:
+  - tools/delivery/pr_render.py, tools/delivery/pr_status.py
+  - agent-working/stored_artifacts/ (result record)
+  artifact_files: []
+  tags:
+  - ai
+  - governance
+  - delivery
+- type: ticket
+  path: agent-working/tickets/done/TCK-20261031-SLOW-KNOWN-REDS-HELD-ROWS-EXPIRY-REDATED-TO-1129.md
+  ticket_id: TCK-20261031-SLOW-KNOWN-REDS-HELD-ROWS-EXPIRY-REDATED-TO-1129
+  title: The 12 whole-key SimQ held-row slow_known_reds entries are re-dated from
+    2026-11-15 to 2026-11-29, with nothing else changed
+  tier: hotfix
+  ticket_type: chore
+  date: '2026-10-31'
+  related_code_areas:
+  - tools/test_architecture/slow_known_reds.yaml
+  artifact_files: []
+  tags:
+  - testing
+- type: ticket
+  path: agent-working/tickets/done/TCK-20261031-SLOW-KNOWN-REDS-NOVEMBER-EXPIRIES.md
+  ticket_id: TCK-20261031-SLOW-KNOWN-REDS-NOVEMBER-EXPIRIES
+  title: 'Five slow_known_reds entries expiring 2026-11-15 are settled: three arena
+    entries retired, behavioral_5k renewed to 12-15, the hero_guild exact-id entry
+    renewed to 11-29'
+  tier: hotfix
+  ticket_type: chore
+  date: '2026-10-31'
+  related_code_areas:
+  - tools/test_architecture/slow_known_reds.yaml
+  - tests/unit/tools/test_slow_regression_report.py
+  artifact_files: []
+  tags:
+  - testing
 - type: ticket
   path: agent-working/tickets/todos/ai-first-sdlc-evolution/TCK-20261031-EPIC-AI-FIRST-SDLC-EVOLUTION.md
   ticket_id: TCK-20261031-EPIC-AI-FIRST-SDLC-EVOLUTION
@@ -8018,40 +8315,6 @@
   - governance
   - delivery
 - type: ticket
-  path: agent-working/tickets/todos/ai-first-sdlc-evolution/TCK-20261031-SDLC-GUARD-PAYLOADS-AND-SECRET-REDACTION.md
-  ticket_id: TCK-20261031-SDLC-GUARD-PAYLOADS-AND-SECRET-REDACTION
-  title: The guard inspects interpreter payloads and asks on `gh api` writes and merges,
-    and secret-shaped strings are redacted from tool rows and the transit export.
-  tier: standard
-  ticket_type: feature
-  date: '2026-10-31'
-  related_code_areas:
-  - tools/sessions/guard.py, tools/sessions/classify.py
-  - tools/agent-monitoring/post_tool_hook.py, tools/handover_transit.py
-  - .claude/settings.json
-  artifact_files: []
-  tags:
-  - ai
-  - governance
-  - security
-- type: ticket
-  path: agent-working/tickets/todos/ai-first-sdlc-evolution/TCK-20261031-SDLC-HAND-PATH-OFFICIAL-AND-BASELINES-FROZEN.md
-  ticket_id: TCK-20261031-SDLC-HAND-PATH-OFFICIAL-AND-BASELINES-FROZEN
-  title: The hand/batch path is recorded as the official delivery model, `owner_directed`
-    closes require a `path_note`, and the baseline table is frozen.
-  tier: standard
-  ticket_type: feature
-  date: '2026-10-31'
-  related_code_areas:
-  - tools/agent-monitoring/record_hand_orchestrated_closure.py
-  - docs/agent-monitoring/schema.md
-  - docs/plans/agent_infrastructure/session_layer_working_process.md
-  artifact_files: []
-  tags:
-  - ai
-  - governance
-  - delivery
-- type: ticket
   path: agent-working/tickets/todos/ai-first-sdlc-evolution/TCK-20261031-SDLC-MACHINE-USER-AND-OWNER-CREDENTIAL-REMOVAL.md
   ticket_id: TCK-20261031-SDLC-MACHINE-USER-AND-OWNER-CREDENTIAL-REMOVAL
   title: Agents authenticate as a machine user on both hosts, and owner credentials
@@ -8066,38 +8329,6 @@
   - ai
   - governance
   - security
-- type: ticket
-  path: agent-working/tickets/todos/ai-first-sdlc-evolution/TCK-20261031-SDLC-R0-INVENTORY-AND-BASELINE-TAGS.md
-  ticket_id: TCK-20261031-SDLC-R0-INVENTORY-AND-BASELINE-TAGS
-  title: 'Research stage R0: candidate tasks and the disposition review are recorded,
-    and baselines are frozen as git tags.'
-  tier: standard
-  ticket_type: feature
-  date: '2026-10-31'
-  related_code_areas:
-  - .claude/workflows/, tools/agent_orchestration/, tools/agent_replay* (read-only)
-  - agent-working/stored_artifacts/ (result record)
-  artifact_files: []
-  tags:
-  - ai
-  - governance
-  - delivery
-- type: ticket
-  path: agent-working/tickets/todos/ai-first-sdlc-evolution/TCK-20261031-SDLC-RULESET-EXPORT-AND-LOGIN-ASSUMPTION-INVENTORY.md
-  ticket_id: TCK-20261031-SDLC-RULESET-EXPORT-AND-LOGIN-ASSUMPTION-INVENTORY
-  title: The ruleset is exported as the rollback point, and the tools that assume
-    the owner's login are listed.
-  tier: hotfix
-  ticket_type: chore
-  date: '2026-10-31'
-  related_code_areas:
-  - tools/delivery/pr_render.py, tools/delivery/pr_status.py
-  - agent-working/stored_artifacts/ (result record)
-  artifact_files: []
-  tags:
-  - ai
-  - governance
-  - delivery
 - type: ticket
   path: agent-working/tickets/todos/ai-first-sdlc-evolution/TCK-20261031-SDLC-RULESET-M1-AND-TAG-PROTECTION.md
   ticket_id: TCK-20261031-SDLC-RULESET-M1-AND-TAG-PROTECTION
@@ -8159,6 +8390,25 @@
   tags:
   - ai
   - process-improvement
+- type: ticket
+  path: agent-working/tickets/todos/TCK-20261030-SIMQ-ANCHOR-REDS-SINCE-V1-REANCHOR-NEED-A-BISECT.md
+  ticket_id: TCK-20261030-SIMQ-ANCHOR-REDS-SINCE-V1-REANCHOR-NEED-A-BISECT
+  title: 'A SimQ grade-stability test went red on main after the v1 re-anchor: urban_political_selfmodel_probe
+    seed42 200t WORLD is 0.25 against anchor 0.32. Bisect it to the commit and mechanism
+    that moved the score.'
+  tier: standard
+  ticket_type: bug
+  date: '2026-10-30'
+  related_code_areas:
+  - tests/unit/worldassembly/test_corpus_diversity.py
+  - tests/simulation_quality/fixtures/grade_anchors.json
+  - tools/test_architecture/slow_known_reds.yaml
+  - src/ (whatever the bisect names)
+  artifact_files: []
+  tags:
+  - simulation-quality
+  - regression
+  - determinism
 - type: ticket
   path: agent-working/tickets/done/TCK-20261028-PARITY-PAYDOWN-WORLD-DYNAMICS-STATUS-CHANGES.md
   ticket_id: TCK-20261028-PARITY-PAYDOWN-WORLD-DYNAMICS-STATUS-CHANGES
@@ -8564,6 +8814,22 @@
   tags:
   - economy
 - type: ticket
+  path: agent-working/tickets/done/TCK-20261027-PERF-INVENTORY-SCANNERS-WALK-EACH-TREE-ONCE.md
+  ticket_id: TCK-20261027-PERF-INVENTORY-SCANNERS-WALK-EACH-TREE-ONCE
+  title: 'Make the perf inventory scanners at least 2x faster: an iterative AST walk,
+    each file parsed once (wall_clock_inventory, hash_callsite_inventory, phase_inventory),
+    with byte-identical output'
+  tier: hotfix
+  ticket_type: refactor
+  date: '2026-10-27'
+  related_code_areas:
+  - tools/perf/hash_callsite_inventory.py
+  - tools/perf/wall_clock_inventory.py
+  - tools/perf/phase_inventory.py
+  artifact_files: []
+  tags:
+  - performance
+- type: ticket
   path: agent-working/tickets/done/TCK-20261027-RPG-MEASURE-CACHE-DEFAULT-HOST-NEUTRAL.md
   ticket_id: TCK-20261027-RPG-MEASURE-CACHE-DEFAULT-HOST-NEUTRAL
   title: The paired run's default cache path is host-neutral, resolved when called,
@@ -8697,6 +8963,54 @@
   tags:
   - process-improvement
 - type: ticket
+  path: agent-working/tickets/todos/TCK-20261026-COMBAT-ENGAGEMENT-CONSIDER-PER-PAIR-COST-AFTER-H1.md
+  ticket_id: TCK-20261026-COMBAT-ENGAGEMENT-CONSIDER-PER-PAIR-COST-AFTER-H1
+  title: Profile and name what is left of combat_engagement's per-pair `_consider`
+    cost after H1 (~1.6 s per tick, 70 % of the tick at 1000 entities)
+  tier: standard
+  ticket_type: chore
+  date: '2026-10-26'
+  related_code_areas:
+  - src/domains/combat_engagement/
+  - tools/perf/profile_tick.py
+  artifact_files: []
+  tags:
+  - performance
+  - combat
+  - investigation
+- type: ticket
+  path: agent-working/tickets/todos/TCK-20261026-PERF-CAPACITY-SIZING-PROBE-AT-10K-ENTITIES.md
+  ticket_id: TCK-20261026-PERF-CAPACITY-SIZING-PROBE-AT-10K-ENTITIES
+  title: One short capacity sizing probe at 10,000 entities, recorded against the
+    kept bigger-world target in `optimization_architecture.md` §1 (CLASS_B host, not
+    a CLASS_A verdict)
+  tier: standard
+  ticket_type: chore
+  date: '2026-10-26'
+  related_code_areas:
+  - tools/perf/capacity_run.py
+  - src/perf/scenarios.py
+  - src/perf/profiles.py
+  artifact_files: []
+  tags:
+  - performance
+  - benchmarking
+- type: ticket
+  path: agent-working/tickets/todos/TCK-20261026-PERF-COLLECTION-PHASE-GROWTH-ATTRIBUTION.md
+  ticket_id: TCK-20261026-PERF-COLLECTION-PHASE-GROWTH-ATTRIBUTION
+  title: Attribute the collection phase's growth from about 50 ms to about 260 ms
+    per tick (movement, measurement-only)
+  tier: standard
+  ticket_type: chore
+  date: '2026-10-26'
+  related_code_areas:
+  - tools/perf/profile_tick.py
+  - src/engine/
+  artifact_files: []
+  tags:
+  - performance
+  - investigation
+- type: ticket
   path: agent-working/tickets/done/TCK-20261025-CROSS-HOST-LEADS-TALK-OVER-REMOTE-CONTROL.md
   ticket_id: TCK-20261025-CROSS-HOST-LEADS-TALK-OVER-REMOTE-CONTROL
   title: The two leads message each other across hosts over Remote Control, and every
@@ -8789,6 +9103,23 @@
   - tests/codebase/test_codebase_health_baseline.py
   artifact_files: []
   tags: []
+- type: ticket
+  path: agent-working/tickets/done/TCK-20261025-PERF-RECORD-IDENTITY-PINS-INSTALLED-RUNTIME-DEPENDENCIES.md
+  ticket_id: TCK-20261025-PERF-RECORD-IDENTITY-PINS-INSTALLED-RUNTIME-DEPENDENCIES
+  title: A benchmark record's identity pins the installed runtime dependency set;
+    then re-record idle_100_local and movement_100_local as v0002
+  tier: standard
+  ticket_type: feature
+  date: '2026-10-25'
+  related_code_areas:
+  - Runtime
+  - the Runtime capture path in src/perf/
+  - tests/perf/baselines/
+  - tests/unit/perf/
+  artifact_files: []
+  tags:
+  - performance
+  - determinism
 - type: ticket
   path: agent-working/tickets/done/TCK-20261025-README-DETERMINISM-AND-ENTITIES-FLAG-CLAIMS.md
   ticket_id: TCK-20261025-README-DETERMINISM-AND-ENTITIES-FLAG-CLAIMS
@@ -10372,6 +10703,27 @@
   artifact_files: []
   tags: []
 - type: ticket
+  path: agent-working/tickets/done/TCK-20261019-CI-PR-WAIT-XDIST-IN-EXISTING-JOBS.md
+  ticket_id: TCK-20261019-CI-PR-WAIT-XDIST-IN-EXISTING-JOBS
+  title: The three critical-path test.yml jobs (Integration, Tools f–z, API/CLI/engine)
+    run their tests in parallel with pytest-xdist inside the job, after an audit shows
+    the tests are safe to parallelise. No jobs are added.
+  tier: standard
+  ticket_type: feature
+  date: '2026-10-19'
+  related_code_areas:
+  - integration
+  - tests/conftest.py (resource budget, run-dir creation)
+  - tools/ci_junit_summary.py
+  artifact_files:
+  - agent-working/stored_artifacts/TCK-20261019-CI-PR-WAIT-XDIST-IN-EXISTING-JOBS/investigation.md
+  - agent-working/stored_artifacts/TCK-20261019-CI-PR-WAIT-XDIST-IN-EXISTING-JOBS/plan.md
+  - agent-working/stored_artifacts/TCK-20261019-CI-PR-WAIT-XDIST-IN-EXISTING-JOBS/test_plan.md
+  tags:
+  - testing
+  - workflows
+  - performance
+- type: ticket
   path: agent-working/tickets/done/TCK-20261019-CI-SIMQ-LONG-RUN-OBSERVATION-TEST-SERIAL.md
   ticket_id: TCK-20261019-CI-SIMQ-LONG-RUN-OBSERVATION-TEST-SERIAL
   title: test_observe_world_cleans_up_its_own_run_dir runs in the serial step of Tools
@@ -10769,24 +11121,6 @@
   tags:
   - architecture
   - testing
-- type: ticket
-  path: agent-working/tickets/inprogress/TCK-20261019-CI-PR-WAIT-XDIST-IN-EXISTING-JOBS.md
-  ticket_id: TCK-20261019-CI-PR-WAIT-XDIST-IN-EXISTING-JOBS
-  title: The three critical-path test.yml jobs (Integration, Tools f–z, API/CLI/engine)
-    run their tests in parallel with pytest-xdist inside the job, after an audit shows
-    the tests are safe to parallelise. No jobs are added.
-  tier: standard
-  ticket_type: feature
-  date: '2026-10-19'
-  related_code_areas:
-  - integration
-  - tests/conftest.py (resource budget, run-dir creation)
-  - tools/ci_junit_summary.py
-  artifact_files: []
-  tags:
-  - testing
-  - workflows
-  - performance
 - type: ticket
   path: agent-working/tickets/todos/TCK-20261019-CATALOG-ARENA-SMOKE-TICK-3-BUDGET-OVERRUN-AFTER-645.md
   ticket_id: TCK-20261019-CATALOG-ARENA-SMOKE-TICK-3-BUDGET-OVERRUN-AFTER-645
@@ -11203,6 +11537,26 @@
   - observability
   - security
 - type: ticket
+  path: agent-working/tickets/done/TCK-20261018-PHASE19-OFF-MODE-RUNTIME-CHECK.md
+  ticket_id: TCK-20261018-PHASE19-OFF-MODE-RUNTIME-CHECK
+  title: A runtime test that an OFF-mode kernel imports none of the four heavy observability
+    modules the phase19 import-linter ignores rely on
+  tier: standard
+  ticket_type: feature
+  date: '2026-10-18'
+  related_code_areas:
+  - tests/architecture/test_phase19_observability_boundaries.py
+  - src/engine/kernel.py (function-local imports behind the OFF guard)
+  - codebase/structure/importlinter.toml
+  artifact_files:
+  - agent-working/stored_artifacts/TCK-20261018-PHASE19-OFF-MODE-RUNTIME-CHECK/investigation.md
+  - agent-working/stored_artifacts/TCK-20261018-PHASE19-OFF-MODE-RUNTIME-CHECK/plan.md
+  - agent-working/stored_artifacts/TCK-20261018-PHASE19-OFF-MODE-RUNTIME-CHECK/test_plan.md
+  tags:
+  - testing
+  - architecture
+  - observability
+- type: ticket
   path: agent-working/tickets/done/TCK-20261018-REDIS-ADAPTER-MISSING-LIBRARY-TEST-BLOCKS-THE-IMPORT.md
   ticket_id: TCK-20261018-REDIS-ADAPTER-MISSING-LIBRARY-TEST-BLOCKS-THE-IMPORT
   title: test_redis_adapter_resilient_missing_library really blocks the redis import,
@@ -11540,23 +11894,6 @@
   artifact_files: []
   tags:
   - platform
-  - observability
-- type: ticket
-  path: agent-working/tickets/todos/phase19-off-mode-check/TCK-20261018-PHASE19-OFF-MODE-RUNTIME-CHECK.md
-  ticket_id: TCK-20261018-PHASE19-OFF-MODE-RUNTIME-CHECK
-  title: A runtime test that an OFF-mode kernel imports none of the four heavy observability
-    modules the phase19 import-linter ignores rely on
-  tier: standard
-  ticket_type: feature
-  date: '2026-10-18'
-  related_code_areas:
-  - tests/architecture/test_phase19_observability_boundaries.py
-  - src/engine/kernel.py (function-local imports behind the OFF guard)
-  - codebase/structure/importlinter.toml
-  artifact_files: []
-  tags:
-  - testing
-  - architecture
   - observability
 - type: ticket
   path: agent-working/tickets/done/TCK-20261017-FORCED-SCENARIOS-FOR-COVER-CHOKEPOINTS-AND-HIGH-GROUND.md
