@@ -408,8 +408,10 @@ The steps above cover diagnosing a failure; this covers the surrounding push→P
    `is_governing_path`): `CLAUDE.md`, the settings files, `registries/session_authority.yaml`, the guard and the classifier,
    `.github/workflows/`, and `.claude/hooks/`, `tools/hooks/`, `codebase/hooks/`. Hook scripts wired from other directories
    are not on the list. The list comes from the PR's own code, so a PR that edits the classifier or the renderer controls it;
-   `.github/` changes are still checked on GitHub's files tab (plan section 28a). It is not a template section: `--check`
-   reports it as an unexpected section and passes with it present or absent.
+   `.github/` changes are still checked on GitHub's files tab (plan section 28a). It is a `conditional` section of
+   `tools/delivery/pr_template_spec.json` (absent from `.github/pull_request_template.md` on purpose): `--check` compares it like
+   any generated section, so a live body that lacks it or lists other paths shows as a difference (printed, exit code unchanged,
+   as for every other generated section), and an absent section matches when nothing governing is touched.
 4. **Every PR title/body update — including `gh pr create` above and pushing more tickets to an
    already-open PR** (standing practice here — one open PR per batch, follow-ups pushed onto it
    rather than opened as a new PR) — **uses `gh api -X PATCH` and is followed by a read-back

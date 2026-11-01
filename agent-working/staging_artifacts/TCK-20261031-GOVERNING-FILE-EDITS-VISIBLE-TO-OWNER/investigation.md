@@ -48,3 +48,6 @@ Report: `tools/agent-monitoring/session_layer_report.py` (it already renders `ro
 6. API split: `governing_path(path, repo_root=None)` exact, repo-relative matching (edit tools, pr_render, retro, 28a); `governing_mentions(command_text)` separate, returning only matched tokens, never the rest of the command.
 7. Docs also: `docs/agent-monitoring/schema.md` documents the new family (role_boundary is there); check `validate.py`, `week_close.py` and anything else listing families. Retro text: an attempt in one week can merge the next, and rows reach main only when a branch carries them, so "unmatched" can mean either.
 Retro basis note for the ticket: the retro compares attempts with merged commits by path and period, replacing "against the PR lists" in the ticket, because PR bodies are not a source of record and an event cannot be tied to one PR body.
+
+## Amendment (planner, spec route)
+Q4 now uses the spec: `pr_template_spec.json` gets `{heading: "## Governing paths touched", rendered: true, conditional: true}` after What landed; the template is untouched; `test_pr_template_spec_section_order_matches_the_actual_template` exempts only `conditional` entries and asserts this heading is the only one (name this test edit in the PR's Review notes). `--check` prints a difference and still returns 0, like every other generated section.

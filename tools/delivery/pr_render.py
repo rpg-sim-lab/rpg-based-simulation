@@ -456,8 +456,9 @@ def render_governing_section(files: Optional[list]) -> str:
     """The `## Governing paths touched` block for the PR's changed files, or "" when it touches none.
 
     TCK-20261031-GOVERNING-FILE-EDITS-VISIBLE-TO-OWNER. The one path definition is `tools/sessions/classify.py`. Report-only: it
-    shows the owner what to look at, never gates. It is not a `pr_template_spec.json` section, so `--check` lists it as an
-    unexpected section (information) and passes with it present or absent."""
+    shows the owner what to look at, never gates. It is a `conditional` section of `pr_template_spec.json`: absent when no
+    governing path is touched (so `.github/pull_request_template.md` does not list it), compared by `--check` like any other
+    generated section otherwise, so a live body that lacks it or lists different paths shows as a difference."""
     touched = sorted({f for f in (files or []) if is_governing_path(f)})
     if not touched:
         return ""
@@ -471,13 +472,14 @@ def render_body(tickets: list, spec: dict, warnings: list, exclusions: Optional[
         heading = section["heading"]
         if heading == "Closes:":
             continue
-        parts.append(heading)
-        parts.append(_render_section(heading, tickets, warnings))
-        parts.append("")
-        if heading == "## What landed":
+        if section.get("conditional"):
             governing = render_governing_section(changed_files)
             if governing:
                 parts.append(governing)
+            continue
+        parts.append(heading)
+        parts.append(_render_section(heading, tickets, warnings))
+        parts.append("")
     ids = ", ".join(t["ticket_id"] for t in tickets)
     parts.append(f"Closes: {ids}")
     if exclusions:
@@ -591,11 +593,12 @@ def render_ticketless_body(
         heading = section["heading"]
         if heading == "Closes:":
             continue
-        parts += [heading, sections[heading], ""]
-        if heading == "## What landed":
+        if section.get("conditional"):
             governing = render_governing_section(files)
             if governing:
                 parts.append(governing)
+            continue
+        parts += [heading, sections[heading], ""]
     parts.append("Closes: (none)")
     if exclusions:
         for ticket_id in sorted(exclusions):

@@ -1229,3 +1229,30 @@ def test_the_ticketless_body_lists_governing_paths_too(tmp_path):
     runner = FakeRunner([_git_log_rule(["no ticket here"]), _git_diff_rule([".claude/hooks/x.py"])])
     result = pr_render.render(tickets_root=tickets_root, run_command=runner, theme="t", scope="ai", why="w")
     assert "- `.claude/hooks/x.py`" in result["body"]
+
+
+def _check_live(tmp_path, files, mutate):
+    rendered, tickets_root, runner = _render_with_files(tmp_path, files)
+    live = mutate(rendered["body"].replace(pr_render._REVIEW_NOTES_PLACEHOLDER, "Looked."))
+    runner.rules.insert(0, (lambda cmd: cmd[:2] == ["gh", "pr"], CommandResult(0, json.dumps({"title": rendered["title"], "body": live}), "")))
+    return pr_render.check_against_live(run_command=runner, tickets_root=tickets_root)
+
+
+def test_check_flags_a_live_body_that_lacks_the_section_when_the_diff_touches_a_governing_path(tmp_path):
+    def drop(body):
+        start, end = body.index("## Governing paths touched"), body.index("## Tickets")
+        return body[:start] + body[end:]
+
+    result = _check_live(tmp_path, [".github/workflows/test.yml"], drop)
+    assert result["matches"] is False and result["differing_sections"] == ["## Governing paths touched"]
+
+
+def test_check_flags_a_live_list_that_differs_from_the_diff(tmp_path):
+    result = _check_live(tmp_path, ["CLAUDE.md", ".github/workflows/test.yml"], lambda b: b.replace("- `.github/workflows/test.yml`\n", ""))
+    assert result["matches"] is False and result["differing_sections"] == ["## Governing paths touched"]
+
+
+def test_check_gives_no_difference_when_nothing_governing_is_touched_and_the_section_is_absent(tmp_path):
+    result = _check_live(tmp_path, ["src/a.py"], lambda b: b)
+    assert result["matches"] is True and result["differing_sections"] == []
+
