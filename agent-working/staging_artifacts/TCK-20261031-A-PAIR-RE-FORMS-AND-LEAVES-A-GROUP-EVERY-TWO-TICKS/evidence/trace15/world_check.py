@@ -1,7 +1,7 @@
 """World-level death check for the paired runs (designer's bar). Usage: world_check.py <world> [out15 dir]
 For each cause in HAZARD, COMBAT, DEFEAT, over the world's 5 seeds (branch vs base, same seeds):
   Tier 1 (STOP): total rise >= max(2, ceil(10% of base total)) AND rise in >= 3 of 5 seeds.
-  Tier 2 (victim review): any other rise > 0 (no stop); lists the extra victims = on the branch and absent on base for that cause, per seed, with their groups
+  Tier 2 (victim review): only where the 5-seed TOTAL rose above 0 and missed Tier 1 (no stop); lists the extra victims = on the branch and absent on base for that cause, per seed, with their groups
       (formation tick, dissolution tick/reason, contract, whether it re-formed the same members within 50 ticks before) and re-formation after death within 50 ticks;
       the outcome field is left 'NOT SHOWN' for the trace.
   Reported only: an all-cause rise with no cause in either tier; every per-pair rise with victim ids.
@@ -26,9 +26,14 @@ for cause in CAUSES:
         if nr > nb: rising.append(s)
     thresh = max(2, math.ceil(0.10 * bt))
     t1 = (br - bt) >= thresh and len(rising) >= 3 and len(avail) == 5
-    t2 = (not t1) and (br > bt or bool(rising))
-    print(f"  {cause}: base total {bt}, branch total {br}, rise {br - bt}, threshold {thresh}, seeds rising {rising} (per seed base,branch {per}) -> {'TIER1_STOP' if t1 else ('TIER2_REVIEW' if t2 else 'no rise')}")
+    t2 = (not t1) and (br > bt)  # designer's correction: Tier 2 only when the 5-seed TOTAL rose above 0 and missed Tier 1
+    print(f"  {cause}: base total {bt}, branch total {br}, rise {br - bt}, threshold {thresh}, seeds rising {rising} (per seed base,branch {per}) -> {'TIER1_STOP' if t1 else ('TIER2_REVIEW' if t2 else ('REPORT_ONLY (per-seed rise inside a total that did not rise)' if rising else 'no rise'))}")
     tier1 = tier1 or t1
+    if rising and not (t1 or t2):
+        for s in rising:
+            b, r = runs[s]
+            bs = {(x[1], x[2]) for x in b["deaths"]}
+            print(f"    report only: seed {s} {cause} extra victims (branch, absent on base) {[(x[0], x[1]) for x in r['deaths'] if x[2] == cause and (x[1], x[2]) not in bs]}")
     if t1 or t2:
         for s in rising:
             b, r = runs[s]
