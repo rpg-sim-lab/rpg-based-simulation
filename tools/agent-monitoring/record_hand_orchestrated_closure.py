@@ -26,7 +26,8 @@ Usage:
 `--review-ref <PR#>#<comment id>` (TCK-20261031-HAND-CLOSE-REVIEW-PHASE-RECORDS-THE-PR-REVIEW): when the domain planner reviewed this
 ticket's PR by comment, name that comment and the recorder writes Review as `ok` with the link, instead of the default
 `skipped`/`no_hand_tool`. Give it only once the review comment exists; without it the event stays `skipped`, so a missing
-review still shows in the retro. Refused for a tier whose plan has no Review step (hotfix) and when you narrated a Review.
+review still shows in the retro. If the review comment does not exist yet (the normal order: close, PR, review), use
+`record_review.py` afterwards instead. Refused for a tier whose plan has no Review step (hotfix) and when you narrated a Review.
 
 Each event object only needs `phase`/`status`/`summary` (plus an optional per-event `ts`, `agent`
 override) -- `run_id`, `execution_id`, `provider`, `ticket_id`, and `seq` (1-indexed, in array

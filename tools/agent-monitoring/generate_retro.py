@@ -38,7 +38,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 from vocabulary import WORKFLOW_AGENTS, WORKFLOW_PHASES, infer_workflow  # noqa: E402
 from duration_utils import compute_active_idle_split  # noqa: E402
 from validate import load_data_glob  # noqa: E402
-from run_dedup import dedupe_to_latest_per_execution  # noqa: E402
+from run_dedup import dedupe_to_latest_per_execution, drop_superseded_events  # noqa: E402
 import real_token_usage  # noqa: E402
 import retro_provenance  # noqa: E402
 
@@ -148,14 +148,14 @@ def _load_runs_and_events():
             events = [json.loads(row[0]) for row in conn.execute("SELECT raw_json FROM events ORDER BY id")]
         finally:
             conn.close()
-        return runs, events
+        return runs, drop_superseded_events(events)
     except Exception as exc:
         print(
             f"WARNING: agent-monitoring index unavailable ({exc}); falling back to direct JSONL "
             f"scan of {RUNS_FILE}/{EVENTS_FILE}",
             file=sys.stderr,
         )
-        return _load_source(RUNS_FILE, "runs"), _load_source(EVENTS_FILE, "events")
+        return _load_source(RUNS_FILE, "runs"), drop_superseded_events(_load_source(EVENTS_FILE, "events"))
 
 
 def iso_week(ts_str):
