@@ -8443,7 +8443,7 @@
   tags:
   - testing
 - type: ticket
-  path: agent-working/tickets/todos/TCK-20261031-A-RETREAT-PROJECT-OUTLIVES-ITS-THREAT.md
+  path: agent-working/tickets/inprogress/TCK-20261031-A-RETREAT-PROJECT-OUTLIVES-ITS-THREAT.md
   ticket_id: TCK-20261031-A-RETREAT-PROJECT-OUTLIVES-ITS-THREAT
   title: A retreat project outlives its threat (entity parked on COMBAT_RETREAT ~950
     ticks with no threat, recovered, not moving)
