@@ -32,6 +32,7 @@ from validate_frontmatter import extract_frontmatter  # noqa: E402
 
 REPO = "ttnhan18062000/rpg-based-simulation"
 TICKET_DIRS = ("agent-working/tickets/todos", "agent-working/tickets/inprogress")
+DONE_DIR = "agent-working/tickets/done"
 ROADMAP = "docs/plans/systemic_world/roadmap.md"
 PR_LIMIT = 300  # gh's GraphQL node cap rejects a larger list when each PR also returns up to 100 files
 PR_FILES_CAP = 100
@@ -55,7 +56,7 @@ def _git(run_command, *args) -> CommandResult:
 
 
 def read_ticket_sources(run_command, ref: str):
-    """([(path, text)], header dict, warnings) for the ticket files at `ref`, read through git only."""
+    """([(path, text)], header dict, roadmap text or None, warnings) for the ticket files at `ref`, read through git only."""
     warnings = []
     sha = _git(run_command, "rev-parse", ref)
     if sha.returncode != 0:
@@ -74,6 +75,16 @@ def read_ticket_sources(run_command, ref: str):
         sources.append((path, shown.stdout))
     roadmap = _git(run_command, "show", f"{ref}:{ROADMAP}")
     return sources, header, (roadmap.stdout if roadmap.returncode == 0 else None), warnings
+
+
+def read_done_ids(run_command, ref: str, worktree_root: Path | None = None):
+    """(ticket ids with a file under done/ at the same source, warnings): a ticket also there is in two status folders."""
+    if worktree_root is not None:
+        return {p.stem for p in (worktree_root / DONE_DIR).rglob("TCK-*.md")}, []
+    listing = _git(run_command, "ls-tree", "-r", "--name-only", ref, DONE_DIR)
+    if listing.returncode != 0:
+        return set(), [f"could not list {DONE_DIR} at {ref}: the done/ copy check was skipped"]
+    return {Path(p).stem for p in listing.stdout.splitlines() if re.search(r"/TCK-[^/]*\.md$", p)}, []
 
 
 def read_worktree_sources(root: Path):
@@ -203,11 +214,11 @@ def fetch_flight(run_command, ids: list[str]):
         files = [f.get("path", "") for f in pr.get("files") or []]
         if len(files) >= PR_FILES_CAP:
             warnings.append(f"PR #{pr.get('number')} lists {len(files)} files (gh caps at {PR_FILES_CAP}): its flight labels may be incomplete")
-        subjects = pr.get("title") or ""
+        title = pr.get("title") or ""
         for ticket_id in ids:
             if any("/done/" in f and f.endswith(f"/{ticket_id}.md") for f in files):
                 flight[ticket_id].append(f"pr #{pr['number']} closes")
-            elif any(Path(f).name == f"{ticket_id}.md" for f in files) or ticket_id in subjects:
+            elif any(Path(f).name == f"{ticket_id}.md" for f in files) or ticket_id in title:
                 flight[ticket_id].append(f"pr #{pr['number']} touches")
     comments = run_command(["gh", "api", f"repos/{REPO}/issues/{CLAIMS_ISSUE}/comments", "--paginate", "--jq",
                             ".[] | [.id, (.body|tostring)] | @json"])
@@ -238,9 +249,13 @@ def build_view(run_command=default_run_command, ref: str = "origin/main", worktr
     warnings += order_warnings
     header["order_line"] = {"steps": steps, "at": order_at}
     rows = [build_row(path, text, steps) for path, text in sources]
+    done_ids, done_warnings = read_done_ids(run_command, ref, worktree_root)
+    warnings += done_warnings
     folders: dict = {}
     for row in rows:
         folders.setdefault(row["id"], set()).add(row["folder"])
+        if row["id"] in done_ids:
+            folders[row["id"]].add("done")
     for row in rows:
         if len(folders[row["id"]]) > 1:
             row["flags"].append("two-folders")

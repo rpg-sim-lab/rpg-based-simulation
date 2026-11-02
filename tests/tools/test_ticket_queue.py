@@ -29,7 +29,8 @@ def _ticket(ticket_id, status="OPEN", tier="standard", priority="P2", layer="ai"
 
 class Runner:
     """Answers git/gh from a dict of tickets {path: text}; records every command."""
-    def __init__(self, tickets, roadmap=ROADMAP, prs=None, comments="", gh_ok=True):
+    def __init__(self, tickets, roadmap=ROADMAP, prs=None, comments="", gh_ok=True, done=()):
+        self.done = list(done)
         self.tickets, self.roadmap, self.prs, self.comments, self.gh_ok, self.calls = tickets, roadmap, prs or [], comments, gh_ok, []
 
     def __call__(self, cmd, timeout=30):
@@ -44,6 +45,8 @@ class Runner:
             return CommandResult(0, "abcdef1234567890\n", "")
         if cmd[1] == "show" and cmd[2] == "-s":
             return CommandResult(0, "2026-11-02T10:00:00+07:00\n", "")
+        if cmd[1] == "ls-tree" and cmd[-1] == ticket_queue.DONE_DIR:
+            return CommandResult(0, "\n".join(f"{ticket_queue.DONE_DIR}/{i}.md" for i in self.done) + "\n", "")
         if cmd[1] == "ls-tree":
             return CommandResult(0, "\n".join(sorted(self.tickets) + ["agent-working/tickets/todos/.gitkeep", "agent-working/tickets/todos/SEQUENCE.md"]) + "\n", "")
         if cmd[1] == "show":
@@ -238,3 +241,29 @@ def test_worktree_mode_reads_the_files_and_leaves_the_tree_byte_identical(tmp_pa
     assert [r["id"] for r in view["rows"]] == ["TCK-20261101-A"] and view["header"]["source"] == "worktree"
     assert view["header"]["order_line"]["steps"] == STEPS
     assert digest() == before
+
+
+def test_an_open_ticket_that_also_has_a_done_copy_is_flagged_at_a_ref_and_in_the_worktree(tmp_path):
+    view = ticket_queue.build_view(Runner({_path("TCK-20261101-A"): _ticket("TCK-20261101-A"), _path("TCK-20261101-B"): _ticket("TCK-20261101-B")},
+                                          done=["TCK-20261101-A"]), "origin/main")
+    assert "two-folders" in _row(view, "TCK-20261101-A")["flags"] and _row(view, "TCK-20261101-B")["flags"] == []
+    assert view["summary"]["two_folders"] == 1
+    for sub, name in (("todos", "TCK-20261101-A"), ("done", "TCK-20261101-A"), ("todos", "TCK-20261101-B")):
+        d = tmp_path / "agent-working" / "tickets" / sub
+        d.mkdir(parents=True, exist_ok=True)
+        (d / f"{name}.md").write_text(_ticket(name), encoding="utf-8")
+    (tmp_path / "docs" / "plans" / "systemic_world").mkdir(parents=True)
+    (tmp_path / ticket_queue.ROADMAP).write_text(ROADMAP, encoding="utf-8")
+    wt = ticket_queue.build_view(Runner({}), worktree_root=tmp_path, use_gh=False)
+    assert "two-folders" in _row(wt, "TCK-20261101-A")["flags"] and _row(wt, "TCK-20261101-B")["flags"] == []
+
+
+def test_a_failing_done_listing_warns_and_skips_the_check():
+    class NoDone(Runner):
+        def __call__(self, cmd, timeout=30):
+            if cmd[0] == "git" and cmd[1] == "ls-tree" and cmd[-1] == ticket_queue.DONE_DIR:
+                return CommandResult(1, "", "boom")
+            return super().__call__(cmd, timeout)
+
+    view = ticket_queue.build_view(NoDone({_path("TCK-20261101-A"): _ticket("TCK-20261101-A")}, done=["TCK-20261101-A"]), "origin/main")
+    assert any("done/ copy check was skipped" in w for w in view["warnings"]) and _row(view, "TCK-20261101-A")["flags"] == []
