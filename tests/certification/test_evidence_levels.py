@@ -40,6 +40,7 @@ from src.certification.models import (
     MeasurementPoint,
 )
 from src.certification.recorder import CertificationRecorder
+from src.core.state import GROUP_ID_BASE
 
 
 # ---------------------------------------------------------------------------
@@ -76,6 +77,7 @@ class FakeState:
     maturity: int = 0
     last_calamity_tick: int = 0
     grief_drained_tick: int = -1  # D80: canonical only once a grief drain happened
+    next_group_id: int = GROUP_ID_BASE  # AuthoritativeState.next_group_id (non-optional): the hasher joins it only once it differs from the base
     town_center = (0, 0)
     local_scars: dict = {}
     chests: dict = {}

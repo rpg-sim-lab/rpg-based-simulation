@@ -43,7 +43,7 @@ Method for every timing line: non-audit, pinned FULL (PinnedNormalGovernor), Con
 - Store at t2000 on s42: 19 to 45 (crowded), 28 to 109 (frontier), 19 to 59 (urban); dissolved 45 / 103 / 56 on the arm. The store keeps every dissolved record; with step (a) the groups and cooperation phases do per-group work for live groups only; the live filter's whole-store scan grows with run length.
 - H1 clusters (hazard walks, traced before F3): NOT SHOWN as caused by the fix for crowded s42 victims 1, 6, 7 and frontier s43 victims 1, 7 (followers whose group's shared target equalled the chase target; the target-score group bias at `tactical.py:428` is second in the sort key and was not excluded); FAIL (no causal step) for the other traced victims.
 
-## Close disclosures (rpg-planner's list, rpg-designer's ruling under owner (b); tickets not on main are cited by id)
+## Close disclosures (rpg-planner's list, rpg-designer's ruling under owner (b); all tickets cited are now on main)
 1. crowded s43 e10: FED by (i), pre-existing focus-fire group_bias. The rider is not shown to save it (bias held t894-897 only; e10 picked 27 from t898 (traced pick; target rows from t901) and died anyway).
 2. frontier s45 e22: FED by the letter only (the walk into range was its own congestion redirect; it dies on base too, t1029).
 3. v17 and v24: NOT SHOWN.
@@ -52,7 +52,7 @@ Method for every timing line: non-audit, pinned FULL (PinnedNormalGovernor), Con
 6. The lodged-leader seam (2.155): TCK-20261101-A-LODGER-OFFERS-AND-ACCEPTS-RECRUIT-CONTRACTS (+ audit TCK-20261101-A-LODGER-DECISION-PATH-AUDIT). Probe rows: a lodged stayer chosen leader and bound holder at a formation in 9 rows (frontier s44 3, s45 3, urban s42 3, s43 0). Outside-follower tile conditions on urban s42: 193 of 370 outside-member ticks with a lodged leader (follow-specific conditions, task target = leader and a REGROUP/FOLLOW reason, were 0).
 7. FULFILLED with a lodged party = term expiry (exception (c)).
 8. The 2.146 rewrite as already agreed.
-9. Rider ids, not on main: TCK-20261101-A-HOSTILE-ATTACKING-YOU-OUTRANKS-THE-GROUP-SHARED-TARGET (P1, next, measured on top of churn) and TCK-20261101-A-LOW-HP-VANGUARD-TAKES-ROLE-GATED-MOVES-INTO-CONTACT (P2, counts first).
+9. Rider ids (now on main): TCK-20261101-A-HOSTILE-ATTACKING-YOU-OUTRANKS-THE-GROUP-SHARED-TARGET (P1, next, measured on top of churn) and TCK-20261101-A-LOW-HP-VANGUARD-TAKES-ROLE-GATED-MOVES-INTO-CONTACT (P2, counts first).
 e12 and e23 are final NOT FED, and v9 NOT FED. e12 and e23 died within 50 ticks of a bed leave; both leaves were plain rest ends (F3 re-lodge churn, N14), not a decision this change made.
 
 ## Builders and the counter
