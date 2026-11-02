@@ -112,6 +112,7 @@ Lead candidate (rpg-designer's read of src/engine/executor.py:239-257 on main; f
 - The earlier "0 id matches, 0 stale hits" (TCK-20261005-DIRTY-SET-DEDUPES-UPDATES-BY-ID) is empty evidence: `frozen_probe.py` hooked `LocalSequentialExecutor.execute`, while `_freeze_cache` is on `ConcurrentExecutionAdapter`. Correct docs/engine/deterministic_execution.md ("probed without a stale hit") in this ticket.
 - rpg-designer: a `_freeze_cache` stale-hit count of 0 wouldn't clear this ticket; the per-field diff decides. Take the `is` fix only once the cause reading is in, so it doesn't change the world mid-diagnosis.
 - ubuntu's diff at t600 (hashes equal): `timeline` on all 38 entities, `cognition` on e16 and e30, `route_plans`, `_spatial_grid_cache` already differ, so the origin is before t601. A t1-t601 field digest is next. It may change this ticket's scope.
+- Second lead, code read only, test running on ubuntu: src/engine/route_search.py:146-149 sets `route_plans` on whichever object it is given. The concurrent path passes a WorkerPacket, so it may build a throwaway store per call and search fresh, where sequential reuses a plan valid for 10 ticks. If so, it is a logic difference unrelated to `_freeze_cache`, and which behaviour is the rule goes to rpg-designer. Also check checkpoint restore: a store outside the hash that may not be saved could change a restored world.
 - The fix won't settle it alone: packets, `frozen_grid` and other frozen maps, ordering and RNG could diverge too. If it ships as the cause, it needs the convergence check.
 
 ## Test Summary
