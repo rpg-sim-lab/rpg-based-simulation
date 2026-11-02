@@ -78,6 +78,11 @@ def need_is_pressing(hunger: float, sleep_debt: float) -> bool:
     return hunger >= ESCALATION_ONSET * HUNGER_LINE or sleep_debt >= ESCALATION_ONSET * SLEEP_LINE
 
 
+def entity_need_is_pressing(entity) -> bool:
+    """`need_is_pressing` read off a subject: the one way a site asks "is this subject's need pressing" (the pair with `need_yields`)."""
+    return need_is_pressing(entity.biological.hunger, entity.biological.sleep_debt)
+
+
 def hunger_pull(raw_utility: float, hunger: float, hunger_rate: float, travel_tiles: float) -> float:
     """The hunger goal's utility with the SURV-07 escalation for the hunger the subject will have on arrival."""
     return need_pull(raw_utility, hunger, hunger_rate, travel_tiles, HUNGER_LINE)

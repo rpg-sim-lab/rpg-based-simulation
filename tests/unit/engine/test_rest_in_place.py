@@ -87,7 +87,10 @@ def test_a_fatigue_project_that_names_no_place_rests_in_place():
 
 
 def test_a_present_threat_means_no_rest():
-    hero = _hero(sleep_debt=90.0)
+    """Changed expectation (TCK-20261031-AN-ENGAGEMENT-OVERRIDES-A-PRESSING-NEED, rpg-planner ruling 2026-11-02): this holds BELOW the need's escalation onset
+    (sleep_debt 50 of 98). Past the onset (debt >= 58.8) only a hostile ACTING on the subject blocks the rest (SURV-07 LAW P); the pressing rows moved to
+    tests/unit/tactical/test_surv07_precedence_grid.py (adjacent and not acting rests, an acting hostile does not)."""
+    hero = _hero(sleep_debt=50.0)
     assert rest_in_place_update(_state(hero), hero, [_monster((1, 0))]) is None  # adjacent
     assert rest_in_place_update(_state(hero), hero, [_monster((9, 0), targeting=1)]) is None  # targeting it
 

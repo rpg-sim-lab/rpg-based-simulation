@@ -11,7 +11,7 @@ logger = logging.getLogger(__name__)
 from src.core.updates import EntityUpdate, StrategicUpdate, TaskUpdate, NavigationUpdate
 from src.engine.legality import LegalityServiceV2
 from src.engine.positioning import PositioningService
-from src.core.strategic import ProjectStatus, ObjectiveKind
+from src.core.strategic import GoalKind, ProjectStatus, ObjectiveKind
 from src.core.movement_modes import MovementMode
 from src.core.enums import ActionStyle, ReasonCode, EntityRole, Faction
 from src.core.skills import SKILL_REGISTRY, SkillDefinition
@@ -19,7 +19,7 @@ from src.engine.rpg_depth import WoundService
 from src.cognition.common_knowledge import combat_capability_against
 from src.engine.tactical_destinations import retreat_destination, wander_destination
 from src.engine.tactical_threat import hostile_acts_on, perceived_threats, safety_retreat_warranted
-from src.engine.need_pull import HUNGER_LINE, SLEEP_LINE
+from src.engine.need_pull import HUNGER_LINE, SLEEP_LINE, entity_need_is_pressing
 from src.engine.tactical_rest import in_place_survival_update
 from src.engine.building_arrival import building_arrival_update
 from src.engine.behavior_consumers import get_entity_signals, get_perception_gate
@@ -108,6 +108,13 @@ def _has_tactical_hostiles(entity: "EntityState", neighbors: List["EntityState"]
 def _destination_or_hold(entity: "EntityState", destination: Optional[Tuple[float, float]]) -> Tuple[float, float]:
     """MOV-03: with no valid destination the entity holds position; never a sentinel coordinate."""
     return destination if destination is not None else entity.navigation.position
+
+
+def _serves_a_need(entity: "EntityState") -> bool:
+    """True when the subject's current project is a hunger or fatigue project: the project whose objective is the way to meet the need."""
+    strat = entity.strategic
+    project = strat.projects.get(strat.current_project_id) if strat.current_project_id else None
+    return project is not None and project.status == ProjectStatus.ACTIVE and project.kind in (GoalKind.HUNGER, GoalKind.FATIGUE)
 
 
 def _suspend_project_for_threat(entity: "EntityState", hostiles: List["EntityState"]) -> Optional[StrategicUpdate]:
@@ -330,8 +337,14 @@ class TacticalDecisionSystem:
         hood = classify_neighbours(entity, neighbors, (_src_faction_id, _src_identity_source))
         hostiles, hostile_identity_sources = hood.hostiles, hood.hostile_identity_sources
 
-        # 4. Strategic Persistence (Pillar 5.1)
-        strat_up = _suspend_project_for_threat(entity, hostiles)
+        # SURV-07 LAW P (TCK-20261031-AN-ENGAGEMENT-OVERRIDES-A-PRESSING-NEED): a need past its escalation onset gives way only to a hostile ACTING on the subject
+        # (`need_yields`). With hostiles in sight and none acting, the need path runs first: before the presence test below, role obligation, cohesion and target
+        # selection (so a follower too takes no part in the group's target). Flight keeps AGENCY-07's `present_threat_to`.
+        from src.ai.goals.present_threat import need_yields
+        need_first = bool(hostiles) and entity_need_is_pressing(entity) and not need_yields(entity, state)
+
+        # 4. Strategic Persistence (Pillar 5.1): a need project the subject is walking to is not suspended for a hostile that is not acting on it
+        strat_up = None if need_first and _serves_a_need(entity) else _suspend_project_for_threat(entity, hostiles)
 
         # Safety pressure (AGENCY-07): a cautious entity retreats from a present threat, never from a hostile merely seen
         if safety_retreat_warranted(entity, hostiles, entity_pressures.safety_pressure):
@@ -352,6 +365,13 @@ class TacticalDecisionSystem:
         rest_update = in_place_survival_update(state, entity, hostiles)
         if rest_update is not None:
             return rest_update
+
+        if need_first:
+            # LAW P: the need path (the hunger arrival, or the building arrival that serves the need) runs with hostiles in sight. A subject whose project is not
+            # a need project has nothing for the need to do here; it does not engage (it waits for the brain, which a pressing need wakes) while nothing acts on it.
+            if _serves_a_need(entity) and (need_update := TacticalDecisionSystem._pursue_objective(state, entity, neighbors)) is not None:
+                return need_update
+            return EntityUpdate(entity_id=entity.id, strategic=strat_up)
 
         if not hostiles:
             if (objective_update := TacticalDecisionSystem._pursue_objective(state, entity, neighbors)) is not None:

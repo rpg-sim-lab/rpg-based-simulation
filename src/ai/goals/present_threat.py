@@ -34,3 +34,11 @@ def present_threat_to(entity: "EntityState", state: "AuthoritativeState") -> boo
 def acting_threat_to(entity: "EntityState", state: "AuthoritativeState") -> bool:
     """True when a perceived hostile is acting on `entity` (see the module docstring). A pure read of the state."""
     return any(hostile_acts_on(h, entity, state.tick) for h in perceived_hostiles(entity, state))
+
+
+def need_yields(entity: "EntityState", state: "AuthoritativeState") -> bool:
+    """True when a pressing need gives way: a perceived hostile is ACTING on `entity` (SURV-07 LAW P, memo row 88).
+
+    The other half of the one predicate pair with `src.engine.need_pull.need_is_pressing`: every site that weighs a pressing need against another goal or act
+    calls both and re-derives neither. Flight still reads `present_threat_to` (AGENCY-07); this is only the test for whether a need gives way."""
+    return acting_threat_to(entity, state)
