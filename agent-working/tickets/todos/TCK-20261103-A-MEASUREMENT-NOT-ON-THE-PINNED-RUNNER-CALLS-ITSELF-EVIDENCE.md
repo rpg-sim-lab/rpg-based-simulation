@@ -75,6 +75,7 @@ Standing rule for rpg-planner's lanes until this lands: measure on the pinned ru
 - Dispatch needs an owner yes.
 
 ## Implementation Notes
+2026-11-03 delivery rule, state: text agreed by rpg-designer, sent to agent-working-planner-u24, which holds it until this ticket, the executor ticket and the digest ticket are all on main, since the text cites them. docs/guides/delivery_process.md is unowned; it would carry it as a short subsection, and that needs the owner's yes because the rule binds every session's verdicts. Its wording notes, for rpg-planner and rpg-designer to settle: "Applies from 2026-11-03" vs from the rule's merge; name the hash the pinned run reports; the older-claims sentence (including intentional_divergences.md entries) should be explicit to the owner. Open: whether the rule closes on this ticket's batch.
 
 ## Test Summary
 

@@ -95,6 +95,14 @@ Why it matters: what production runs and everything measured since the paired to
 - Real acceptance: local vs concurrent hash equal on a gate world across several hundred ticks (the current tests reportedly run 1 tick or 2 entities). This is a floor; the seeds here split as late as t2051-2100, so the horizon must also reach those. testing-planner decides the test's home.
 - Every pending close carries: "measured on the sequential reference; the production path differs until TCK-20261103-THE-CONCURRENT-AND-SEQUENTIAL-EXECUTORS-GIVE-DIFFERENT-WORLDS lands". #826's correction says its table was the concurrent world.
 
+2026-11-03 testing-planner ruling on the long-horizon test:
+- Home: tests/integration/kernel/, beside test_long_run_determinism.py, marked `extra_slow` (Slow regression lane). Not PR lanes, not the rpg gate, not tests/certification/test_cert_long_run_stability.py (those skip in CI).
+- Once the split is named, also a short regression test on the named cause in a PR lane.
+- Horizon: provisional floor 3000 ticks, finalised when the split is named. extra_slow budget is 600s/8GB per test: measure one arm first; if two arms don't fit, ask testing-planner, and don't quietly drop below t2100.
+- Compare hashes every 100 ticks, fail on the first mismatch, naming the tick. A gate world and the seeds and bases that split, named in the test.
+- Conditions: (1) concurrent twice and sequential once, worker count pinned; concurrent vs concurrent decides `kind`. (2) Shown red on current src on a named world and seed, and the first CI run is red too; if CI doesn't reproduce it, tell testing-planner. (3) audit_mode and governor pinned as #827/#829 settled (out-of-reach RAM ceiling). (4) The test states its strength is limited by the digest (TCK-20261103-STATE-DIGEST-MAY-OMIT-FIELDS-THAT-DECISIONS-READ).
+- Parking: a plain failing test plus a slow_known_reds entry in the same PR, not xfail: exact test id, owner rpg-planner, this ticket, expiry about 4 weeks, kind `flaky` if concurrent races, else `broken`. The fix PR deletes the entry. lead-planner-u24 reviews the entry. Tell testing-planner on dispatch.
+
 Lead candidate (rpg-designer's read of src/engine/executor.py:239-257 on main; firing NOT shown): `_freeze_cache` holds (id, frozen) per key and drops the original, so address reuse can return a stale frozen copy for groups, buildings, corpses and so on.
 - Log by comparing content on cache hits, without keeping originals alive: holding them changes addresses and could hide it.
 - If it fires, the fix is a held reference and an identity compare. Then compare local vs concurrent again, because the adapters differ in other ways too.
