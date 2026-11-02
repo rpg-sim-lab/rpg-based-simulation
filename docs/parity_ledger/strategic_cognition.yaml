@@ -4667,6 +4667,6 @@
   v2_evidence: 'src/engine/tactical.py (need_first branch, _pursue_objective, _serves_a_need), src/engine/tactical_rest.py (_in_danger), src/ai/goals/present_threat.py (need_yields), src/engine/need_pull.py (entity_need_is_pressing), docs/mechanics/04_strategic_cognition.md section 1. Ticket TCK-20261031-AN-ENGAGEMENT-OVERRIDES-A-PRESSING-NEED.'
   proof_type: regression
   test_path: tests/unit/tactical/test_surv07_precedence_grid.py
-  divergence_note: See docs/guidelines/intentional_divergences.md Section 2.156.
+  divergence_note: See docs/guidelines/intentional_divergences.md Section 2.157.
   support_boundary: 'Unit-level grid only so far ({pressing y/n} x {no hostile, perceived only, present and not acting, acting} for the presence skip, rest in place and eat carried, plus the 13/16 case). The paired Phase 2 measurement is not run. Phase 1 counts: 2942 skip calls with a pressing need and no present threat in 15 runs.'
 
