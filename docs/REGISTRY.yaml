@@ -8443,6 +8443,19 @@
   tags:
   - testing
 - type: ticket
+  path: agent-working/tickets/inprogress/TCK-20261031-AN-ENGAGEMENT-OVERRIDES-A-PRESSING-NEED.md
+  ticket_id: TCK-20261031-AN-ENGAGEMENT-OVERRIDES-A-PRESSING-NEED
+  title: 'An engagement overrides a pressing need: with hostiles in sight, tactical
+    skips the survival step though no present threat is on the subject (SURV-07)'
+  tier: standard
+  ticket_type: bug
+  date: '2026-10-31'
+  related_code_areas:
+  - src/ai/tactical.py (hunger arrival ~262-291, in-place survival blocks); src/ai/goals/present_threat.py;
+    src/engine/need_pull.py (need_is_pressing)
+  artifact_files: []
+  tags: []
+- type: ticket
   path: agent-working/tickets/todos/TCK-20261031-A-RETREAT-PROJECT-OUTLIVES-ITS-THREAT.md
   ticket_id: TCK-20261031-A-RETREAT-PROJECT-OUTLIVES-ITS-THREAT
   title: A retreat project outlives its threat (entity parked on COMBAT_RETREAT ~950
@@ -8454,19 +8467,6 @@
   - src/systems/strategic_systems/intelligence.py (capacity gate :1768, switch :1042-ish),
     project completion facts (location to find), src/ai/goals/present_threat.py, src/engine/scheduler.py
     (_throttled), src/ai/goals/scorers.py (retreat scorer)
-  artifact_files: []
-  tags: []
-- type: ticket
-  path: agent-working/tickets/todos/TCK-20261031-AN-ENGAGEMENT-OVERRIDES-A-PRESSING-NEED.md
-  ticket_id: TCK-20261031-AN-ENGAGEMENT-OVERRIDES-A-PRESSING-NEED
-  title: 'An engagement overrides a pressing need: with hostiles in sight, tactical
-    skips the survival step though no present threat is on the subject (SURV-07)'
-  tier: standard
-  ticket_type: bug
-  date: '2026-10-31'
-  related_code_areas:
-  - src/ai/tactical.py (hunger arrival ~262-291, in-place survival blocks); src/ai/goals/present_threat.py;
-    src/engine/need_pull.py (need_is_pressing)
   artifact_files: []
   tags: []
 - type: ticket
