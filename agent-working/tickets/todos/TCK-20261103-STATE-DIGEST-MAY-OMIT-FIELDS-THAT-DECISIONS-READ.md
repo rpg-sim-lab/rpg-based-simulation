@@ -86,7 +86,7 @@ Counts first, with no digest change in this step:
 - Dispatch needs an owner yes; its order is rpg-planner's, after the row 88 work.
 
 ## Implementation Notes
-2026-11-03 evidence from ubuntu's executor diff (implementer's, unchecked, relayed): on the #828 arm, crowded s45, t600 hashes are equal while unhashed state already differs: `timeline` on all 38 entities, `cognition` on e16 and e30, top-level `route_plans` and `_spatial_grid_cache`. The hashed split at t601 (e30 navigation and task) is then a symptom. So a real case exists where a decision-read difference sits outside the digest. Add `route_plans` and the differing part of `cognition` to the candidates (`_spatial_grid_cache` is presumably derived: state it). Any "hash equal" claim proves less than stated for decision-read fields outside the digest, and that includes F3's.
+2026-11-03 evidence from ubuntu's executor diff (implementer's, unchecked, relayed): on the #828 arm, crowded s45, t600 hashes are equal while unhashed state already differs: `timeline` on all 38 entities, `cognition` on e16 and e30, top-level `route_plans` and `_spatial_grid_cache`. The hashed split at t601 (e30 navigation and task) is then a symptom. So a real case exists where a decision-read difference sits outside the digest. Add `route_plans` and the differing part of `cognition` to the candidates (`_spatial_grid_cache` is presumably derived: state it). Question for this ticket (rpg-designer): a stored route plan steers steps for 10 ticks, so "outside the hash" and "dropping it only costs a search" both need a look, including checkpoint restore. Any "hash equal" claim proves less than stated for decision-read fields outside the digest, and that includes F3's.
 
 ## Test Summary
 
