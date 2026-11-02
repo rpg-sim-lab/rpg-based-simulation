@@ -86,6 +86,18 @@ Why it matters: what production runs and everything measured since the paired to
 - Dispatch needs an owner yes.
 
 ## Implementation Notes
+2026-11-03 rpg-designer rulings:
+- By test_local_vs_concurrent_identical in the certification matrix this is a defect, not a degraded world. The law stands.
+- Lean: concurrent comes to sequential. It flips only if the first split shows sequential is the one breaking a rule.
+- All rule measurement stays on pinned sequential. F3 and ENG stay valid as measurements of the reference but do not yet describe production.
+- #828's re-measure starts after the first split is named, if the fix touches only the concurrent path.
+- Real acceptance: local vs concurrent hash equal on a gate world across several hundred ticks (the current tests reportedly run 1 tick or 2 entities). This is a floor; the seeds here split as late as t2051-2100, so the horizon must also reach those. testing-planner decides the test's home.
+- Every pending close carries: "measured on the sequential reference; the production path differs until TCK-20261103-THE-CONCURRENT-AND-SEQUENTIAL-EXECUTORS-GIVE-DIFFERENT-WORLDS lands". #826's correction says its table was the concurrent world.
+
+Lead candidate (rpg-designer's read of src/engine/executor.py:239-257 on main; firing NOT shown): `_freeze_cache` holds (id, frozen) per key and drops the original, so address reuse can return a stale frozen copy for groups, buildings, corpses and so on.
+- Log by comparing content on cache hits, without keeping originals alive: holding them changes addresses and could hide it.
+- If it fires, the fix is a held reference and an identity compare. Then compare local vs concurrent again, because the adapters differ in other ways too.
+- Also read the other caches at :259-275.
 
 ## Test Summary
 
