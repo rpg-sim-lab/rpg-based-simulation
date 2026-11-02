@@ -124,7 +124,9 @@ def _need_way_is_not_a_hunt(entity: "EntityState") -> bool:
     if not _serves_a_need(entity):
         return False
     strat = entity.strategic
-    project = strat.projects.get(strat.current_project_id)
+    project = strat.projects.get(strat.current_project_id or "")
+    if project is None:
+        return False
     objective = next((o for o in project.objectives if o.id == strat.current_objective_id), None)
     return objective is None or objective.target_entity_id is None
 
@@ -135,7 +137,9 @@ def _hunt_project_names_prey(entity: "EntityState", prey: List["EntityState"]) -
     if not _serves_a_need(entity):
         return False
     strat = entity.strategic
-    project = strat.projects.get(strat.current_project_id)
+    project = strat.projects.get(strat.current_project_id or "")
+    if project is None:
+        return False
     objective = next((o for o in project.objectives if o.id == strat.current_objective_id), None)
     return objective is not None and objective.target_entity_id is not None and any(h.id == objective.target_entity_id for h in prey)
 
