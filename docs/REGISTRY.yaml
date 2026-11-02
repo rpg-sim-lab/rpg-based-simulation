@@ -9871,6 +9871,21 @@
   - agent-working/stored_artifacts/TCK-20261023-COOPERATION-CANDIDATES-ENUMERATED-PER-ENTITY-PER-TICK/test_plan.md
   tags: []
 - type: ticket
+  path: agent-working/tickets/done/TCK-20261023-FOUR-TESTS-FAIL-ONLY-IN-A-WIDE-SCOPED-RUN-ORDER-DEPENDENT.md
+  ticket_id: TCK-20261023-FOUR-TESTS-FAIL-ONLY-IN-A-WIDE-SCOPED-RUN-ORDER-DEPENDENT
+  title: 'Four tests fail only inside a wide scoped run and pass alone: a per-test
+    RAM ceiling meets the growing pytest process (not a state leak)'
+  tier: standard
+  ticket_type: bug
+  date: '2026-10-23'
+  related_code_areas:
+  - tests/ (the four named tests and their fixtures)
+  artifact_files:
+  - agent-working/stored_artifacts/TCK-20261023-FOUR-TESTS-FAIL-ONLY-IN-A-WIDE-SCOPED-RUN-ORDER-DEPENDENT/investigation.md
+  - agent-working/stored_artifacts/TCK-20261023-FOUR-TESTS-FAIL-ONLY-IN-A-WIDE-SCOPED-RUN-ORDER-DEPENDENT/plan.md
+  - agent-working/stored_artifacts/TCK-20261023-FOUR-TESTS-FAIL-ONLY-IN-A-WIDE-SCOPED-RUN-ORDER-DEPENDENT/test_plan.md
+  tags: []
+- type: ticket
   path: agent-working/tickets/done/TCK-20261023-M1-DONE-CRITERIA-AND-FREEZE-RULE.md
   ticket_id: TCK-20261023-M1-DONE-CRITERIA-AND-FREEZE-RULE
   title: Record the owner-approved milestone 1 done criteria and freeze rule as roadmap
@@ -10018,18 +10033,6 @@
   date: '2026-10-23'
   related_code_areas:
   - the lead-certainty enum (src/ai or src/cognition; locate at work time)
-  artifact_files: []
-  tags: []
-- type: ticket
-  path: agent-working/tickets/todos/TCK-20261023-FOUR-TESTS-FAIL-ONLY-IN-A-WIDE-SCOPED-RUN-ORDER-DEPENDENT.md
-  ticket_id: TCK-20261023-FOUR-TESTS-FAIL-ONLY-IN-A-WIDE-SCOPED-RUN-ORDER-DEPENDENT
-  title: Four tests fail only inside a wide scoped run and pass alone, on the v1 tree
-    too (order-dependent state leak)
-  tier: standard
-  ticket_type: bug
-  date: '2026-10-23'
-  related_code_areas:
-  - tests/ (the four named tests and their fixtures)
   artifact_files: []
   tags: []
 - type: ticket
