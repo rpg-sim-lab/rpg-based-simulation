@@ -68,6 +68,7 @@ _REPO_ROOT_STR = str(Path(__file__).resolve().parents[2])
 if _REPO_ROOT_STR not in sys.path:
     sys.path.append(_REPO_ROOT_STR)
 from tools.agent_working_paths import STORED_ARTIFACTS, TICKETS, posix  # noqa: E402
+from tools.sessions.classify import is_governing_path  # noqa: E402
 
 _TICKET_ID_RE = re.compile(r"TCK-[0-9]{8}-[A-Z0-9-]+")
 _REVIEW_NOTES_PLACEHOLDER = "<!-- UNFILLED: write review notes by hand before opening the PR -->"
@@ -132,6 +133,19 @@ def discover_changed_files(run_command=default_run_command, base_ref: str = "ori
     return sorted({line.strip() for line in result.stdout.splitlines() if line.strip()})
 
 
+def discover_governing_files(run_command=default_run_command, base_ref: str = "origin/main") -> tuple:
+    """(files this branch changed against its merge base with `base_ref`, whether git could say).
+
+    Three dots, as `ci_lanes.py` does: `base..HEAD` is a TREE diff, so once the branch is behind main it lists files that only
+    main changed. This is the section's own call; `discover_changed_files` keeps its two-dot form for its other callers (the
+    raw-probe warning and the ticketless file summary). A failure returns ([], False) so the caller can say so, instead of
+    showing the same nothing as a clean PR."""
+    result = run_command(["git", "diff", "--name-only", f"{base_ref}...HEAD"])
+    if result.returncode != 0:
+        return [], False
+    return sorted({line.strip() for line in result.stdout.splitlines() if line.strip()}), True
+
+
 # Raw probe output under stored_artifacts/**/probes/ (TCK-20261009-PR-RENDER-RAW-PROBE-OUTPUT-ADVISORY). Measured on
 # origin/main 2026-10-09: 414 probe files, 5.3 MB, mostly raw per-run .jsonl. Rule agreed with the rpg domain: commit the
 # probe scripts and summary tables, no raw per-run output unless a ticket cites it. A probe file counts as raw output when
@@ -167,6 +181,20 @@ def raw_probe_warning(files: list, root: Path = Path(".")) -> Optional[str]:
 def find_ticket_file(ticket_id: str, tickets_root: Path = _DEFAULT_TICKETS_ROOT) -> Optional[Path]:
     matches = sorted(tickets_root.rglob(f"{ticket_id}.md"))
     return matches[0] if matches else None
+
+
+def _status_dirs(ticket_id: str, tickets_root: Path = _DEFAULT_TICKETS_ROOT) -> list:
+    """The distinct status folders (first path part under `tickets_root`) holding a file for this ticket, sorted.
+    More than one means the ticket is both open and closed in the tree (TCK-20261101-PR-RENDER-LEAVES-OUT-A-TICKET-IN-TWO-STATUS-FOLDERS)."""
+    dirs = set()
+    for path in tickets_root.rglob(f"{ticket_id}.md"):
+        try:
+            parts = path.relative_to(tickets_root).parts
+        except ValueError:
+            continue
+        if len(parts) > 1:
+            dirs.add(parts[0])
+    return sorted(dirs)
 
 
 _NOT_CLOSED_DIRS = ("todos", "inprogress")
@@ -256,7 +284,8 @@ def discover_tickets(
     TICKET-EXCLUSION AC5).
 
     A ticket whose file sits under `todos/` or `inprogress/` is left out with a warning, with no flag
-    needed: a PR that files a follow-up names it in a commit subject, but cannot have closed it."""
+    needed: a PR that files a follow-up names it in a commit subject, but cannot have closed it.
+    So is one with files in two status folders."""
     exclusions = exclusions or {}
     commit_ids = discover_commit_ticket_ids(run_command, base_ref)
     changed_ids = discover_changed_ticket_ids(run_command, base_ref)
@@ -294,6 +323,14 @@ def discover_tickets(
             warnings.append(
                 f"{ticket_id}: named in a commit subject but its ticket file is not changed by this "
                 f"branch -- cited, not closed; left out of Closes:"
+            )
+            continue
+        dirs = _status_dirs(ticket_id, tickets_root)
+        if len(dirs) > 1:
+            # done/ sorts first, so find_ticket_file would load the closed copy and hide the open one
+            warnings.append(
+                f"{ticket_id}: ticket file exists under {', '.join(d + '/' for d in dirs)} -- left out of Closes: "
+                f"(one ticket in two status folders; keep one copy before this PR lands)"
             )
             continue
         open_dir = _not_closed_dir(path, tickets_root)
@@ -444,11 +481,42 @@ def _render_section(heading: str, tickets: list, warnings: list) -> str:
     return ""
 
 
-def render_body(tickets: list, spec: dict, warnings: list, exclusions: Optional[Dict[str, str]] = None) -> str:
+GOVERNING_HEADING = "## Governing paths touched"
+GOVERNING_LIMIT = (
+    "This list is computed from the PR's own code (`tools/sessions/classify.py`, `tools/delivery/pr_render.py`), so a PR "
+    "that edits those controls it. `.github/` changes are still checked on GitHub's files tab (plan section 28a)."
+)
+
+
+GOVERNING_UNREADABLE = "The diff against base could not be read, so the governing paths this PR touches are unknown."
+
+
+def render_governing_section(files: Optional[list], diff_ok: bool = True) -> str:
+    """The `## Governing paths touched` block for the PR's changed files, or "" when it touches none.
+
+    TCK-20261031-GOVERNING-FILE-EDITS-VISIBLE-TO-OWNER. The one path definition is `tools/sessions/classify.py`. Report-only: it
+    shows the owner what to look at, never gates. It is a `conditional` section of `pr_template_spec.json`: absent when no
+    governing path is touched (so `.github/pull_request_template.md` does not list it), compared by `--check` like any other
+    generated section otherwise, so a live body that lacks it or lists different paths shows as a difference."""
+    if not diff_ok:
+        return "\n".join([GOVERNING_HEADING, "", GOVERNING_UNREADABLE, "", GOVERNING_LIMIT, ""])
+    touched = sorted({f for f in (files or []) if is_governing_path(f)})
+    if not touched:
+        return ""
+    return "\n".join([GOVERNING_HEADING, "", *(f"- `{path}`" for path in touched), "", GOVERNING_LIMIT, ""])
+
+
+def render_body(tickets: list, spec: dict, warnings: list, exclusions: Optional[Dict[str, str]] = None,
+                changed_files: Optional[list] = None, diff_ok: bool = True) -> str:
     parts = []
     for section in spec["sections"]:
         heading = section["heading"]
         if heading == "Closes:":
+            continue
+        if section.get("conditional"):
+            governing = render_governing_section(changed_files, diff_ok)
+            if governing:
+                parts.append(governing)
             continue
         parts.append(heading)
         parts.append(_render_section(heading, tickets, warnings))
@@ -473,6 +541,7 @@ def render(
     why: Optional[str] = None,
 ) -> dict:
     tickets, warnings = discover_tickets(run_command, tickets_root, base_ref, exclusions=exclusions)
+    governing_files, diff_ok = discover_governing_files(run_command, base_ref)
     probe_warning = raw_probe_warning(discover_changed_files(run_command, base_ref))
     if probe_warning:
         warnings.append(probe_warning)
@@ -493,6 +562,7 @@ def render(
             "title": f"{scope}: {_collapse_whitespace(theme)} (no tickets)",
             "body": render_ticketless_body(
                 _collapse_whitespace(theme), why.strip(), files, spec, warnings, exclusions=exclusions,
+                governing_files=governing_files, diff_ok=diff_ok,
             ),
             "warnings": warnings,
             "hints": [],
@@ -505,7 +575,8 @@ def render(
 
     spec = json.loads(Path(spec_path).read_text(encoding="utf-8"))
     title = render_title(tickets, scope, theme)
-    body = render_body(tickets, spec, warnings, exclusions=exclusions)
+    body = render_body(tickets, spec, warnings, exclusions=exclusions,
+                       changed_files=governing_files, diff_ok=diff_ok)
     hints = []
     if theme is None and len(tickets) > 1:
         hints.append(
@@ -546,6 +617,7 @@ def summarize_changed_files(files: list, max_lines: int = _MAX_FILE_SUMMARY_LINE
 
 def render_ticketless_body(
     theme: str, why: str, files: list, spec: dict, warnings: list, exclusions: Optional[Dict[str, str]] = None,
+    governing_files: Optional[list] = None, diff_ok: bool = True,
 ) -> str:
     """Body for a branch that closes no ticket (docs-only or record-only). Nothing here is invented:
     the theme and the why come from the caller, the file summary from the diff, and `Closes:` is
@@ -564,6 +636,11 @@ def render_ticketless_body(
     for section in spec["sections"]:
         heading = section["heading"]
         if heading == "Closes:":
+            continue
+        if section.get("conditional"):
+            governing = render_governing_section(files if governing_files is None else governing_files, diff_ok)
+            if governing:
+                parts.append(governing)
             continue
         parts += [heading, sections[heading], ""]
     parts.append("Closes: (none)")

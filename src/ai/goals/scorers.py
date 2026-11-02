@@ -4,19 +4,19 @@ from src.ai.goals.base import GoalScorer, GoalScore, NeedAccess
 from src.ai.goals.opening_steps import first_open_step
 from src.core.items import food_hunger_recovery
 from src.engine.appraisal import can_eat_item
-from src.engine.service_admission import admits
+from src.engine.service_admission import admits, admits_at
 from src.ai.goals.ways import inn_in_reach
 from src.engine.need_pull import hunger_pull, retreat_pull, sleep_pull, step_travel_tiles
 from src.engine.sleep_debt import SLEEP_DEBT
 from src.engine.starvation import STARVING_LINE
 from src.engine.way_in_range import way_in_range
-from src.ai.goals.present_threat import acting_threat_to
+from src.ai.goals.present_threat import acting_threat_to, present_threat_to
 from src.content_semantics.faction import are_entities_hostile
 from src.content_semantics.relation import RelationContext
 from src.core.state import EntityState, AuthoritativeState
 from src.core.strategic import GoalKind, ObjectiveKind, has_project_capacity
 from src.engine.biological_needs import need_rates
-from src.systems.strategic_systems.entity_target_objective import ENTITY_TARGET_PERCEPTION_RADIUS
+from src.core.combat_constants import ENTITY_TARGET_PERCEPTION_RADIUS
 
 class HarvestScorer(GoalScorer):
     def score(self, entity: EntityState, state: AuthoritativeState) -> GoalScore:
@@ -94,8 +94,8 @@ class SleepScorer(GoalScorer):
         from src.engine.spatial_query import SpatialQueryService
         best_bldg = SpatialQueryService.nearest_building(state, entity.navigation.position, "inn")
         # A bed is a way only within reach and inside the subject's range; otherwise it rests where it stands (no target), which is always open.
-        if best_bldg and not admits(entity, "REST"):
-            best_bldg = None  # a bed the inn would not deliver to this subject (the payment law) is not a way
+        if best_bldg and not admits_at(entity, best_bldg, "REST", state):
+            best_bldg = None  # a bed the inn would not deliver to this subject (the payment law, or no bed free: F3) is not a way
         if best_bldg and (_travel_tiles(entity, best_bldg.position) > SLEEP_DEBT.bed_reach or not way_in_range(entity, best_bldg.position)):
             best_bldg = None
         # SURV-07: the pull grows with the sleep debt the subject will have on arrival at the inn (no inn: no walk).
@@ -233,6 +233,8 @@ class CombatRetreatScorer(GoalScorer):
         
         hp_ratio = entity.combat.hp / max(1, entity.combat.max_hp)
         if hp_ratio >= 0.5 and not emotion.is_fleeing:
+            return GoalScore(kind=GoalKind.COMBAT_RETREAT, utility=0.0)
+        if not present_threat_to(entity, state):  # a retreat begins on the test it ends on (divergence 2.156, amends 2.76): low hp, dread or is_fleeing alone adopt nothing, the hurt subject re-decides to RECOVER
             return GoalScore(kind=GoalKind.COMBAT_RETREAT, utility=0.0)
             
         utility = (1.0 - hp_ratio) * 100.0

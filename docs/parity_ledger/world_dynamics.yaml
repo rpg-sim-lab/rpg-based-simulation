@@ -1636,7 +1636,7 @@
     buildings + resource nodes) reusing LegalityServiceV2.verify_occupancy()'s WALL/blocked_tiles/building_tiles/transient_claims/occupancy
     rule plus a multi-occupant tile scan; called once from Kernel._run_initial_placement_check()
     (src/engine/kernel.py), invoked near the end of Kernel.__init__ after ContentWarmupService.warmup().
-    TCK-20260716-PLACELEGAL-HARDLAW.
+    TCK-20260716-PLACELEGAL-HARDLAW. An entity with navigation.lodged_in set is skipped (a lodger stands on its building's tile, F3 divergence 2.155); tests/unit/engine/test_beds_survive_a_checkpoint_restore.py.
   proof_type: parity
   test_path: tests/engine/test_hard_law_monitor.py::test_seed42_entity6_entity14_tile_27_38_collision
   divergence_note: null

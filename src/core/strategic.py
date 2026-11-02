@@ -28,10 +28,16 @@ class ProjectStatus(str, Enum):
 
 
 class ProjectEnd(str, Enum):
-    """Why a project was ended, set once together with the terminal status ABANDONED and never cleared or rewritten (TCK-20261027-CAPACITY-GATE-FIRST-RECORD-OF-KIND-IS-DEAD-SO-LIVE-SIBLING-NEVER-RESUMED).
+    """Why a project was ended: a typed reason set once by `end_record` together with the terminal status, never cleared or rewritten (TCK-20261027-CAPACITY-GATE-FIRST-RECORD-OF-KIND-IS-DEAD-SO-LIVE-SIBLING-NEVER-RESUMED; widened by TCK-20261031-A-RETREAT-PROJECT-OUTLIVES-ITS-THREAT).
 
-    `SUPERSEDED_BY_TARGET`: a candidate of the same kind at a different target replaced this live record (`supersede_record`, the one writer). A project ended for any other reason keeps `ended_by` None."""
+    Each value names the terminal status it pairs with:
+      `SUPERSEDED_BY_TARGET` (ABANDONED): a candidate of the same kind at a different target replaced this live record (`supersede_record`).
+      `THREAT_CLEARED` (COMPLETED): a COMBAT_RETREAT project whose threat is gone.
+      `WAY_CLOSED` (ABANDONED): a fatigue project whose subject reached the building and no bed was free (F3, divergence 2.155).
+    A project ended for any other reason keeps `ended_by` None."""
     SUPERSEDED_BY_TARGET = "SUPERSEDED_BY_TARGET"
+    THREAT_CLEARED = "THREAT_CLEARED"
+    WAY_CLOSED = "WAY_CLOSED"
 
 
 class ObjectiveStatus(str, Enum):
@@ -340,12 +346,18 @@ class ProjectState:
     active_objective_id: Optional[str] = None
     created_tick: int = 0
     failure_count: int = 0
-    # Typed end reason, set only together with status ABANDONED by `supersede_record` and omitted from the canonical dict while None (an unrelated state hash does not move).
+    # Typed end reason, set once with the terminal status by `end_record` and omitted from the canonical dict while None (an unrelated state hash does not move).
     ended_by: Optional[ProjectEnd] = None
+    # COMBAT_RETREAT only: the tick `present_threat_to` last turned false for the CURRENT, ACTIVE project and has stayed false since (the start of its clear window); None while a
+    # threat is present, before the first check, and on every other kind. Written only by `note_threat_state`; omitted from the canonical dict while None.
+    cleared_since: Optional[int] = None
 
     def canonical_extra(self) -> Dict[str, Any]:
-        """The canonical-dict entries of this project that are omitted while empty: `ended_by` (a project that was never superseded keeps the unrelated state hash where it was)."""
-        return {"ended_by": self.ended_by.value} if self.ended_by is not None else {}
+        """The canonical-dict entries of this project that are omitted while empty: `ended_by` and `cleared_since` (a project that never had a typed end or a clear window keeps the unrelated state hash where it was)."""
+        extra: Dict[str, Any] = {"ended_by": self.ended_by.value} if self.ended_by is not None else {}
+        if self.cleared_since is not None:
+            extra["cleared_since"] = self.cleared_since
+        return extra
 
     def canonical_objectives(self) -> List[Dict[str, Any]]:
         """The objectives for the canonical dict: every field, `target_entity_id` omitted while None."""
@@ -402,9 +414,30 @@ def project_target_matches(project: ProjectState, target_id: Any, target_entity_
     return (None if record_target is None else str(record_target)) == (None if target_id is None else str(target_id))
 
 
+def end_record(project: ProjectState, status: ProjectStatus, ended_by: ProjectEnd) -> ProjectState:
+    """The one writer of ``ended_by``: ``project`` with the terminal ``status`` and its typed end. A record that already has an end is never rewritten (ValueError: a caller bug, not a state)."""
+    if project.ended_by is not None:
+        raise ValueError(f"project {project.id} already ended by {project.ended_by.value}")
+    return dataclasses.replace(project, status=status, ended_by=ended_by)
+
+
+def note_threat_state(project: ProjectState, present: bool, tick: int) -> ProjectState:
+    """The one writer of ``cleared_since``: the retreat ``project`` as it stands after observing at ``tick`` whether a present threat holds. A present threat clears the window (None); the first clear observation
+    opens it at ``tick``; later clear observations keep it. Only an ACTIVE COMBAT_RETREAT project is touched (a SUSPENDED window never advances; `restart_clear_window` clears it on resume)."""
+    if project.kind != GoalKind.COMBAT_RETREAT or project.status != ProjectStatus.ACTIVE or project.ended_by is not None:
+        return project
+    want = None if present else (project.cleared_since if project.cleared_since is not None else tick)
+    return project if want == project.cleared_since else dataclasses.replace(project, cleared_since=want)
+
+
+def restart_clear_window(project: ProjectState) -> ProjectState:
+    """The project with its clear window dropped (a suspended retreat was not observed, so "continuously clear" cannot be claimed across the suspension); the project itself when it has none."""
+    return project if project.cleared_since is None else dataclasses.replace(project, cleared_since=None)
+
+
 def supersede_record(project: ProjectState) -> ProjectState:
-    """The one writer of ``ended_by``: the live ``project`` ended by a same-kind candidate at a different target (status ABANDONED, ``ended_by`` SUPERSEDED_BY_TARGET)."""
-    return dataclasses.replace(project, status=ProjectStatus.ABANDONED, ended_by=ProjectEnd.SUPERSEDED_BY_TARGET)
+    """The live ``project`` ended by a same-kind candidate at a different target (status ABANDONED, ``ended_by`` SUPERSEDED_BY_TARGET)."""
+    return end_record(project, ProjectStatus.ABANDONED, ProjectEnd.SUPERSEDED_BY_TARGET)
 
 
 #: The project kinds of the standing needs (the values of GoalKind.HUNGER and GoalKind.FATIGUE).

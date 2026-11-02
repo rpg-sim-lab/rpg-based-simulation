@@ -78,3 +78,30 @@ After v1.
 ## Files Changed
 
 ## Completion Summary
+
+## 2026-10-31 second case and designer rule (rpg-planner)
+- urban_political s44 5000t, N14 new2 arm (pre-#795; lane B re-run t1585-1640, /mnt/data/scratch-rpg-implementer-2/n14/out/pack_new2_s44.jsonl, trace_pack.py): subject 13 (hunger 80) pursues non-acting scout 16 from t1608; 2, 5, 1, 6, 9 adopt the same target; REPOSITION/BRACKETING from t1618; the pack enters bandit_road (ROAD, hazard_level 2.0, NATURAL_TERRAIN) at t1624 and all six die t1629-1635 in the same road cells; 16 (fleeing along x=44) is unhurt. Same cluster (42-45, 43-45) as this ticket's frontier s42 case.
+- Designer rule direction: a pursuit or BRACKETING step into a cell with hazard_level > 0 is weighed like any other move into a hazard; no engagement exemption.
+- Counts first (15-run set, base at or after 6fdfdf555): hazard deaths during engage/BRACKETING moves; whether the pursuer's target itself entered the hazard. The need side of this case belongs to TCK-20261031-AN-ENGAGEMENT-OVERRIDES-A-PRESSING-NEED.
+
+
+- **2026-11-01 scope check (rpg-designer):** this ticket's scope names BRACKETING only. The tactical INTERCEPTING chase target writer (tactical.py:612) is NOT inside it. The ubuntu churn trace (crowded s42) found 3 extra HAZARD deaths on an INTERCEPTING chase along y=40 into terrain draining 20 hp/tick, with no retreat. The F3 f3r crowded HAZARD tier-1 (23→27) may share that path; lane B is checking. If it does: WIDEN the scope to "every engagement/chase move (BRACKETING, INTERCEPTING, any combat target writer) respects hazards the way travel does", and this ticket ranks ahead of F3's landing as an exposed old defect (designer ruling).
+  - **Evidence (ubuntu, 2026-11-01):** origin branch rpg-ubuntu-group-id-alloc-impl, file agent-working/staging_artifacts/TCK-20261031-A-PAIR-RE-FORMS-AND-LEAVES-A-GROUP-EVERY-TWO-TICKS/evidence/trace15/hazard_intercept_victims_3_11_5.txt (crowded s42).
+    - tactical.py:612 writes the chase for victims 3 and 11. Victim 5 moves with target_id 34 and no payload reason; its writer is not shown.
+    - From reading the code, unrun: find_intercept_position checks only occupancy for its aim; tactical.py has no hazard term. Whether this move uses route_search.py (which mentions hazard) is unchecked; check it in investigation.
+  - **More from rpg-planner-ubuntu's read of the same file:**
+    - Entity 3: its group 10026 had shared_target_id 34 until t402, and it chases 34 from t408. target_score (tactical.py ~389-399) boosts a group's shared target, so a group-shared target is a chase source.
+    - Entity 11: INTERCEPTING, hp 120 at entry, drain 20 per tick.
+    - route_search.py's docstring says hazard is NOT in the route weights. This is documentation only; no route was traced.
+    - In base, entity 32 died on a PANIC_RETREAT at hp 17 into the hazard: retreat routing has no hazard weight either.
+    - Candidate wider scope: every move kind (chase, group-shared target, panic/retreat, travel) reads hazard in its aim or route. Confirm per writer in investigation.
+  - **Correction (rpg-designer, 2026-11-01):** v1 has NO hazard avoidance for any move. Disclosure H1 (docs/plans/systemic_world/v1_disclosure.md) says "Subjects do not leave or avoid a draining regional hazard"; routes weigh terrain cost only (2.128). This ticket is tied to H1, the owner's after-v1 item. It does NOT automatically rank ahead of F3. If F3's tier-1 HAZARD rise has F3 as a causal step onto H1 exposure, an owner row decides: (a) bring H1 forward before F3, or (b) land F3 with the rise disclosed against H1.
+  - **Re-scope (2026-11-01):** the widening drafted above is NOT a lane fix. The victim evidence (F3 crowded s44/s46, ubuntu 3/11/5, base 32 PANIC_RETREAT) attaches to H1 / disclosure row N3 as exposure evidence. Whether to widen this ticket to every move kind (chase, group-shared target, retreat, travel) is part of the OWNER's H1 decision, raised through lead-planner-u24 when an owner row comes up. No dispatch without that.
+  - **Read finding (rpg-designer via lead, 2026-11-01; read, not measured; line checked by rpg-planner):** target_score (tactical.py:390-428) returns `(not_adjacent, group_bias, is_current_target, -capability_confidence, hp, dist * pressure_dist_mod, id)`. group_bias = 1.0 - trust when the hostile is the group's shared_target_id and trust >= 0.2 (halved again for VANGUARD), else 1.0. So a shared target with trust >= 0.2 outranks the subject's own capability confidence, the hostile's hp and distance; only adjacency ranks above it.
+  - **Counts-first step amended:** the target_score probe is taken AT THE PICK TICK, when this ticket's counts step is scheduled, not before.
+  - **Evidence (ubuntu churn H1 clusters, crowded s42 and frontier s43):** novice workers in recruit pairs follow a shared target into a chase that ends beside the hazard; the last leg is their own pick. Pointer: origin rpg-ubuntu-group-id-alloc-impl, agent-working/staging_artifacts/TCK-20261031-A-PAIR-RE-FORMS-AND-LEAVES-A-GROUP-EVERY-TWO-TICKS/evidence/. The churn Tier 2 is closed as divergence. Still H1/N3 exposure evidence; no dispatch without the owner's H1 decision.
+  - **Evidence (retention re-measure, lane C, 2026-11-01; fix 5c6001620 vs base 6fdfdf555, crowded s43):** 7 extra HAZARD victims, all FAIL (trajectory; no retreat on any path; first diff at t142).
+    - e13 entered on a tactical INTERCEPTING chase (tactical.py:612).
+    - e32, e5, e8, e2, e6 and e4 entered on tactical REGROUP moves (tactical.py:382) into drain tiles at (44,41-43) and (40-42,41-51).
+    - HAZARD entry-move table: REGROUP 8 on fix vs 0 on base; INTERCEPTING 2 and BRACKETING 3 are equal on both arms.
+    - REGROUP joins INTERCEPTING and BRACKETING as a move leg with no hazard weight. Still H1/N3 exposure evidence; no dispatch without the owner's H1 decision.

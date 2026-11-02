@@ -5,6 +5,7 @@ from dataclasses import replace
 from typing import TYPE_CHECKING
 
 from src.core.enums import ReasonCode
+from src.core.lodging_rules import is_lodged, outside_entity
 from src.core.movement_modes import MovementMode
 from src.core.strategic import ContractKind, ContractStatus
 from src.core.cognition_write import read_through_cognition
@@ -85,7 +86,7 @@ class MovementPhase:
                 continue
             
             # Skip inactive/dead entities
-            if not a.lifecycle.active or not a.combat.alive:
+            if not a.lifecycle.active or not a.combat.alive or is_lodged(a):  # (F3: a lodger is on no tile, so it is never a swap partner)
                 continue
 
             a_next = get_next_step(a)
@@ -97,7 +98,7 @@ class MovementPhase:
             if b_id is None or b_id == a_id or b_id in consumed_entities:
                 continue
 
-            b = state.entities.get(b_id)
+            b = outside_entity(state.entities.get(b_id))  # (F3: a lodger is never a swap partner)
             if b is None:
                 continue
                 

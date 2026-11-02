@@ -24,6 +24,7 @@ from src.core.strategic import (
     ProjectStatus,
 )
 from src.systems.strategic_systems.entity_target_objective import (
+    ObjectiveOutcome,
     contract_id_of_project,
     contract_objective_outcome,
     contract_project_id,
@@ -174,11 +175,11 @@ class TestObjectiveOutcomeDispatch:
                              target_entity_id=2)
         proj = ProjectState(id="proj_combat_engage_1", kind=ProjectKind.COMBAT, status=ProjectStatus.ACTIVE, objectives=[obj],
                             active_objective_id=obj.id)
-        assert objective_outcome(hero, _state(hero, foe), proj, obj) == (ObjectiveStatus.RESOLVED, ProjectStatus.COMPLETED)
+        assert objective_outcome(hero, _state(hero, foe), proj, obj) == ObjectiveOutcome(ObjectiveStatus.RESOLVED, ProjectStatus.COMPLETED)
 
     def test_a_contract_project_ends_by_its_contract(self):
         hero, proj, obj = _contract_project(_holding(_entity(1, (10.0, 10.0)), _contract(2, 1, ContractStatus.CANCELLED)))
-        assert objective_outcome(hero, _state(hero), proj, obj) == (ObjectiveStatus.FAILED, ProjectStatus.ABANDONED)
+        assert objective_outcome(hero, _state(hero), proj, obj) == ObjectiveOutcome(ObjectiveStatus.FAILED, ProjectStatus.ABANDONED)
 
 
 class TestLifecycleThroughStrategicIntent:
