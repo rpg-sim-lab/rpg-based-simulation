@@ -56,6 +56,13 @@ def _fatigue_target(state: AuthoritativeState, entity: EntityState) -> Tuple[boo
     return True, (float(building.position[0]), float(building.position[1]))
 
 
+def in_danger(entity: EntityState, hostiles: Sequence[EntityState]) -> bool:
+    """The "in danger" test of the survival steps that happen in the open: a perceived hostile makes a present threat (`present_threat_terms`, AGENCY-07: wounded, adjacent,
+    targeted, closing, outmatched). Resting or eating in place keeps these full terms, pressing or not (memo row 88, shape S1); the fatigue arrival under a pressing need reads the
+    same predicate."""
+    return bool(hostiles) and bool(present_threat_terms(entity, list(hostiles)))
+
+
 def rest_in_place_update(
     state: AuthoritativeState, entity: EntityState, hostiles: Sequence[EntityState]
 ) -> Optional[EntityUpdate]:
@@ -63,7 +70,7 @@ def rest_in_place_update(
     has_project, target = _fatigue_target(state, entity)
     if not has_project or entity.biological.sleep_debt < REST_MIN_SLEEP_DEBT:
         return None
-    if hostiles and present_threat_terms(entity, list(hostiles)):
+    if in_danger(entity, hostiles):
         return None  # in danger (a perceived hostile makes a present threat); a wound alone, with no hostile in view, is not
     if target is not None:
         px, py = entity.navigation.position
@@ -91,7 +98,7 @@ def eat_carried_update(entity: EntityState, hostiles: Sequence[EntityState]) -> 
     if not any(food_hunger_recovery(stack.item_id) > 0.0 and stack.quantity > 0 and can_eat_item(entity, stack.item_id)
                for stack in entity.inventory.items):
         return None
-    if hostiles and present_threat_terms(entity, list(hostiles)):
+    if in_danger(entity, hostiles):
         return None
     return EntityUpdate(
         entity_id=entity.id,
@@ -108,7 +115,7 @@ def eat_at_corpse_in_place_update(
     lead to the meal: the killer is beside its own fresh kill. A kind never eats a carcass of its own species; a present threat outranks it."""
     if entity.biological.hunger < EAT_CARRIED_MIN_HUNGER or not state.corpses:
         return None
-    if hostiles and present_threat_terms(entity, list(hostiles)):
+    if in_danger(entity, hostiles):
         return None
     own = get_species_id_str(entity)
     px, py = entity.navigation.position

@@ -9,7 +9,7 @@ Moved out of `TacticalDecisionSystem.evaluate_entity_intent` (it sat inside the 
 """
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Callable, List, Optional, Tuple
+from typing import TYPE_CHECKING, Callable, List, Optional, Sequence, Tuple
 
 from src.core.movement_modes import MovementMode
 from src.core.strategic import ObjectiveKind
@@ -22,7 +22,9 @@ from src.core.updates import (
 from src.domains.adventure.resolver import ObjectiveIntentResolver
 from src.engine.building_arrival import building_arrival_update
 from src.engine.intent.action_intent import ActionIntent, ActionIntentAdapter
+from src.engine.lodging import rest_would_lodge
 from src.engine.tactical_avoid import eat_at_hunger_corpse
+from src.engine.tactical_rest import in_danger
 
 if TYPE_CHECKING:
     from src.core.state import AuthoritativeState, EntityState
@@ -38,6 +40,19 @@ def _distance(entity: "EntityState", target_pos: Tuple[float, float]) -> float:
 def _walk_to(entity: "EntityState", target_pos: Tuple[float, float]) -> EntityUpdate:
     """Still en route: set the nav target and stay idle so the brain re-evaluates on each cadence tick."""
     return EntityUpdate(entity_id=entity.id, navigation=NavigationUpdate(target_set=target_pos, movement_mode_set=MovementMode.WANDER))
+
+
+def _fatigue_arrival_waits(state: "AuthoritativeState", entity: "EntityState", obj: "ObjectiveState", resolve: Resolver, hostiles: Sequence["EntityState"]) -> bool:
+    """With hostiles in sight, a fatigue arrival (the subject is within a step of the building) dispatches its REST only if the REST lodges (a bed is delivered) or the AGENCY-07 terms
+    are clear; otherwise it waits (nothing is dispatched and the project stays current), because a rest on the reach tile beside a hostile is the widening memo row 88 leaves to the
+    owner (SURV-06). Walking to the building is not an arrival and is never held here."""
+    project = entity.strategic.projects.get(entity.strategic.current_project_id or "")
+    if not hostiles or project is None or str(getattr(project.kind, "value", project.kind)).lower() != "fatigue":
+        return False
+    target_pos, _, building_id = resolve(state, obj)
+    if not target_pos or building_id is None or _distance(entity, target_pos) > 1.0:
+        return False
+    return not rest_would_lodge(state, entity, state.buildings.get(building_id)) and in_danger(entity, hostiles)
 
 
 def _reach_location_step(state: "AuthoritativeState", entity: "EntityState", project: "ProjectState", obj: "ObjectiveState", resolve: Resolver) -> Optional[EntityUpdate]:
@@ -87,8 +102,10 @@ def _other_objective_step(state: "AuthoritativeState", entity: "EntityState", ob
     return updates.get(entity.id, EntityUpdate(entity_id=entity.id))
 
 
-def pursue_objective(state: "AuthoritativeState", entity: "EntityState", neighbors: Optional[List["EntityState"]], resolve: Resolver) -> Optional[EntityUpdate]:
-    """The step toward the current objective, or None when the objective gives no step (DEFEAT_ENEMY is the hostile-engagement branch's)."""
+def pursue_objective(state: "AuthoritativeState", entity: "EntityState", neighbors: Optional[List["EntityState"]], resolve: Resolver,
+                     hostiles: Sequence["EntityState"] = ()) -> Optional[EntityUpdate]:
+    """The step toward the current objective, or None when the objective gives no step (DEFEAT_ENEMY is the hostile-engagement branch's). `hostiles` is passed only by the
+    pressing-need path (hostiles in sight, none acting); the no-hostile path leaves it empty and is unchanged."""
     strat = entity.strategic
     if not strat.current_objective_id:
         return None
@@ -99,7 +116,11 @@ def pursue_objective(state: "AuthoritativeState", entity: "EntityState", neighbo
     if obj is None:
         return None
     if obj.kind == "reach_location":
-        return _reach_location_step(state, entity, project, obj, resolve) if obj.target else None
+        if not obj.target:
+            return None
+        if _fatigue_arrival_waits(state, entity, obj, resolve, hostiles):
+            return EntityUpdate(entity_id=entity.id)
+        return _reach_location_step(state, entity, project, obj, resolve)
     if obj.kind not in (ObjectiveKind.REACH_LOCATION, ObjectiveKind.DEFEAT_ENEMY):
         return _other_objective_step(state, entity, obj, neighbors, resolve)
     return None

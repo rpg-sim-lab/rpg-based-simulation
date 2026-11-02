@@ -278,7 +278,7 @@ class TacticalDecisionSystem:
         if need_first:
             # LAW P: the need path (the hunger arrival, or the building arrival that serves the need) runs with hostiles in sight. A subject whose project is not
             # a need project has nothing for the need to do here; it does not engage (it waits for the brain, which a pressing need wakes) while nothing acts on it.
-            if _serves_a_need(entity) and (need_update := pursue_objective(state, entity, neighbors, TacticalDecisionSystem._resolve_target_position)) is not None:
+            if _serves_a_need(entity) and (need_update := pursue_objective(state, entity, neighbors, TacticalDecisionSystem._resolve_target_position, hostiles)) is not None:
                 return need_update
             return EntityUpdate(entity_id=entity.id, strategic=strat_up)
 

@@ -140,6 +140,60 @@ def test_unit_case_13_16_a_subject_at_hunger_80_pursuing_a_fleeing_scout_that_ne
     assert update.strategic is None, "the hunger project must not be suspended for a hostile that is not acting on the subject"
 
 
+# ---- site 1b: the fatigue arrival under the pressing-need path ------------------------------------------------------------------------------------------------
+
+def _sleepy_arrival(beds, hostile_at, hostile_task=None):
+    """A hero at sleep_debt 90 (past the onset) one tile from an inn with a fatigue project on it, a hostile at `hostile_at`; `beds` is the inn's declared beds."""
+    hero = (V2EntityBuilder(1).kind("HERO").properties({"species_id": "human"}).location(39.0, 31.0).identity(faction=Faction.HERO_GUILD)   # a person: it keeps coin, so a bed can be delivered
+            .combat(hp=85, max_hp=85, atk=10, def_stat=5, alive=True, readiness=100.0)
+            .navigation(movement_mode=MovementMode.WANDER, target=INN).lifecycle(active=True).build())
+    hero = replace(hero, biological=replace(hero.biological, hunger=0.0, sleep_debt=PRESSING_DEBT))
+    objective = ObjectiveState(id="fatigue_20003", kind=ObjectiveKind.REACH_LOCATION, target="20003", status=ObjectiveStatus.ACTIVE)
+    project = ProjectState(id="proj_fatigue_1", kind="fatigue", status=ProjectStatus.ACTIVE, objectives=[objective], active_objective_id=objective.id)
+    hero = replace(hero, strategic=replace(hero.strategic, projects={project.id: project}, current_project_id=project.id, current_objective_id=objective.id))
+    monster = (V2EntityBuilder(2).kind("MONSTER").location(*hostile_at).identity(faction=Faction.MONSTER_HORDE)
+               .combat(hp=300, max_hp=300, atk=60, def_stat=5, alive=True, readiness=100.0)
+               .navigation(movement_mode=MovementMode.WANDER).lifecycle(active=True).build())
+    if hostile_task is not None:
+        monster = replace(monster, task=hostile_task)
+    inn = BuildingState(id=INN_ID, kind="inn", position=INN, functional=True, beds=beds)
+    state = AuthoritativeState(tick=1, seed=1, entities={1: hero, 2: monster}, buildings={INN_ID: inn}, blocked_tiles={(40, 31)}, building_tiles={}, terrain={})
+    return state, hero
+
+
+FATIGUE_ROWS = [
+    # (beds, hostile position, hostile task, label, dispatches REST)
+    (2, (39.0, 30.0), None, "fatigue arrival, the REST lodges, hostile adjacent but not acting", True),
+    (2, (39.0, 26.0), None, "fatigue arrival, the REST lodges, hostile perceived only", True),
+    (0, (39.0, 26.0), None, "fatigue arrival, no-bed building, AGENCY-07 terms clear", True),
+    (0, (39.0, 30.0), None, "fatigue arrival, no-bed building, AGENCY-07 terms true (adjacent)", False),
+    (2, (39.0, 30.0), ATTACKS_THE_HERO, "fatigue arrival, the REST lodges, hostile acting (the threat wins)", False),
+]
+
+
+@pytest.mark.parametrize("beds,hostile_at,hostile_task,label,rests", FATIGUE_ROWS, ids=[r[3] for r in FATIGUE_ROWS])
+def test_the_fatigue_arrival_row(monkeypatch, beds, hostile_at, hostile_task, label, rests):
+    seen = {"hostiles": 0}
+    real_classify = tactical_module.classify_neighbours
+
+    def spy_classify(*a, **k):
+        hood = real_classify(*a, **k)
+        seen["hostiles"] = len(hood.hostiles)
+        return hood
+
+    monkeypatch.setattr(tactical_module, "classify_neighbours", spy_classify)
+    state, hero = _sleepy_arrival(beds, hostile_at, hostile_task)
+    update = TacticalDecisionSystem.evaluate_entity_intent(state, hero)
+    payload = (update.task.payload_set if update.task is not None else None) or {}
+    assert payload.get("reason") != "PANIC_RETREAT" and seen["hostiles"] == 1, "the row must reach the pressing-need path with a hostile in sight"
+    if rests:
+        assert payload.get("action") == "REST" and payload.get("target_id") == INN_ID, label
+    elif hostile_task is None:   # the wait: nothing dispatched, the project stays current (no end, no suspension)
+        assert update.task is None and update.strategic is None and update.navigation is None, label
+    else:                        # acting: the threat wins
+        assert payload.get("action") != "REST", label
+
+
 # ---- site 2: tactical_rest rest in place -------------------------------------------------------------------------------------------------------------------
 
 def _sleepy_hero(sleep_debt):
