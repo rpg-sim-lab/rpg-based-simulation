@@ -11,6 +11,9 @@ if str(_DELIVERY) not in sys.path:
     sys.path.insert(0, str(_DELIVERY))
 
 import ticket_queue  # noqa: E402
+
+sys.path.insert(0, str(Path(__file__).parent.parent.parent))
+from tools.agent_working_paths import TICKETS  # noqa: E402
 from pr_status import CommandResult  # noqa: E402
 
 REPO_ROOT = Path(__file__).parent.parent.parent
@@ -227,7 +230,7 @@ def test_the_default_run_reads_no_working_tree_ticket_and_writes_nothing(tmp_pat
 
 
 def test_worktree_mode_reads_the_files_and_leaves_the_tree_byte_identical(tmp_path):
-    todos = tmp_path / "agent-working" / "tickets" / "todos"
+    todos = tmp_path / TICKETS / "todos"
     todos.mkdir(parents=True)
     (todos / "TCK-20261101-A.md").write_text(_ticket("TCK-20261101-A"), encoding="utf-8")
     (tmp_path / "docs" / "plans" / "systemic_world").mkdir(parents=True)
@@ -249,7 +252,7 @@ def test_an_open_ticket_that_also_has_a_done_copy_is_flagged_at_a_ref_and_in_the
     assert "two-folders" in _row(view, "TCK-20261101-A")["flags"] and _row(view, "TCK-20261101-B")["flags"] == []
     assert view["summary"]["two_folders"] == 1
     for sub, name in (("todos", "TCK-20261101-A"), ("done", "TCK-20261101-A"), ("todos", "TCK-20261101-B")):
-        d = tmp_path / "agent-working" / "tickets" / sub
+        d = tmp_path / TICKETS / sub
         d.mkdir(parents=True, exist_ok=True)
         (d / f"{name}.md").write_text(_ticket(name), encoding="utf-8")
     (tmp_path / "docs" / "plans" / "systemic_world").mkdir(parents=True)
