@@ -21,14 +21,9 @@ from src.core.updates import EntityUpdate, NavigationUpdate, TaskUpdate
 from src.engine.appraisal import can_eat_item
 from src.engine.biological_needs import need_rates
 from src.engine.domain.core_actions import EAT_AT_CORPSE_REACH as CARCASS_NEAR
-from src.engine.need_pull import (
-    ESCALATION_FULL,
-    SLEEP_LINE,
-    arrival_fraction,
-    entity_need_is_pressing,
-)
+from src.engine.need_pull import ESCALATION_FULL, SLEEP_LINE, arrival_fraction
 from src.engine.service_reach import service_tile
-from src.engine.tactical_threat import need_yields, present_threat_terms
+from src.engine.tactical_threat import present_threat_terms
 
 if TYPE_CHECKING:
     from src.core.state import AuthoritativeState, EntityState
@@ -61,16 +56,6 @@ def _fatigue_target(state: AuthoritativeState, entity: EntityState) -> Tuple[boo
     return True, (float(building.position[0]), float(building.position[1]))
 
 
-def _in_danger(state: Optional[AuthoritativeState], entity: EntityState, hostiles: Sequence[EntityState]) -> bool:
-    """The "in danger" test of the in-place survival steps. Past the need's escalation onset only a hostile ACTING on the subject outranks the need (SURV-07
-    LAW P: `need_yields`); below it the AGENCY-07 `present_threat_terms` stay (wounded, adjacent, targeted, closing, outmatched). Flight keeps those terms."""
-    if not hostiles:
-        return False
-    if state is not None and entity_need_is_pressing(entity):
-        return need_yields(entity, hostiles, state.tick)
-    return bool(present_threat_terms(entity, list(hostiles)))
-
-
 def rest_in_place_update(
     state: AuthoritativeState, entity: EntityState, hostiles: Sequence[EntityState]
 ) -> Optional[EntityUpdate]:
@@ -78,7 +63,7 @@ def rest_in_place_update(
     has_project, target = _fatigue_target(state, entity)
     if not has_project or entity.biological.sleep_debt < REST_MIN_SLEEP_DEBT:
         return None
-    if _in_danger(state, entity, hostiles):
+    if hostiles and present_threat_terms(entity, list(hostiles)):
         return None  # in danger (a perceived hostile makes a present threat); a wound alone, with no hostile in view, is not
     if target is not None:
         px, py = entity.navigation.position
@@ -99,14 +84,14 @@ def rest_in_place_update(
 EAT_CARRIED_MIN_HUNGER = 40.0
 
 
-def eat_carried_update(entity: EntityState, hostiles: Sequence[EntityState], state: Optional[AuthoritativeState] = None) -> Optional[EntityUpdate]:
+def eat_carried_update(entity: EntityState, hostiles: Sequence[EntityState]) -> Optional[EntityUpdate]:
     """An eat-what-you-carry update for a hungry subject holding food, or None. No building is needed; a present threat outranks it."""
     if entity.biological.hunger < EAT_CARRIED_MIN_HUNGER:
         return None
     if not any(food_hunger_recovery(stack.item_id) > 0.0 and stack.quantity > 0 and can_eat_item(entity, stack.item_id)
                for stack in entity.inventory.items):
         return None
-    if _in_danger(state, entity, hostiles):
+    if hostiles and present_threat_terms(entity, list(hostiles)):
         return None
     return EntityUpdate(
         entity_id=entity.id,
@@ -123,7 +108,7 @@ def eat_at_corpse_in_place_update(
     lead to the meal: the killer is beside its own fresh kill. A kind never eats a carcass of its own species; a present threat outranks it."""
     if entity.biological.hunger < EAT_CARRIED_MIN_HUNGER or not state.corpses:
         return None
-    if _in_danger(state, entity, hostiles):
+    if hostiles and present_threat_terms(entity, list(hostiles)):
         return None
     own = get_species_id_str(entity)
     px, py = entity.navigation.position
@@ -151,5 +136,5 @@ def in_place_survival_update(
     state: AuthoritativeState, entity: EntityState, hostiles: Sequence[EntityState]
 ) -> Optional[EntityUpdate]:
     """A survival action that needs no building: rest in place, else eat carried food; None to decide as usual."""
-    return (rest_in_place_update(state, entity, hostiles) or eat_carried_update(entity, hostiles, state)
+    return (rest_in_place_update(state, entity, hostiles) or eat_carried_update(entity, hostiles)
             or eat_at_corpse_in_place_update(state, entity, hostiles))

@@ -3,7 +3,7 @@
 At every site that weighs a need past its escalation onset against another goal or act, the need wins unless a hostile ACTS on the subject (`need_yields` =
 `acting_threat_to`, memo row 88). One grid: {need pressing: yes / no} x {no hostile / perceived only / present, not acting / acting} x site -> winner.
 Each "no" row asserts today's behaviour, each pressing and not-acting row asserts that the need wins, each acting row asserts that the threat wins.
-Sites in this file: tactical.py presence skip (`if not hostiles:`, the hunger arrival); tactical_rest in-place rest; tactical_rest eat carried food.
+Sites in this file: tactical.py presence skip (`if not hostiles:`, the hunger arrival); tactical_rest in-place rest and eat carried food, which keep the full AGENCY-07 terms (memo row 88, S1).
 Later tickets add their own rows (low-hp retreat, town return, escalated switch, flee line).
 """
 from __future__ import annotations
@@ -177,43 +177,27 @@ def _consumers():
     reset_behavior_consumers()
 
 
-def test_rest_in_place_pressing_rows():
+def test_rest_in_place_pressing_rows_keep_the_agency_07_terms():
+    """Memo row 88 (S1): resting or eating in place keeps the FULL AGENCY-07 terms, pressing or not (widening them is SURV-06's question, the owner's). So at
+    sleep_debt 90 an adjacent hostile that is not acting, and a hostile targeting by payload alone, still block the rest; only a far, untargeting one does not."""
     hero = _sleepy_hero(PRESSING_DEBT)
     assert _rests(rest_in_place_update(_rest_state(hero), hero, []))                                                   # no hostile
     assert _rests(rest_in_place_update(_rest_state(hero, _hostile((12, 0))), hero, [_hostile((12, 0))]))               # perceived only
-    assert _rests(rest_in_place_update(_rest_state(hero, _hostile((1, 0))), hero, [_hostile((1, 0))]))                 # adjacent, not acting: the need wins (changed)
+    assert rest_in_place_update(_rest_state(hero, _hostile((1, 0))), hero, [_hostile((1, 0))]) is None                 # adjacent, not acting: AGENCY-07 holds it back
     attacking = _hostile((1, 0), TaskComponent(work_kind="ENTITY_ACT", payload={"action": "ATTACK", "target_id": 1}))
-    assert rest_in_place_update(_rest_state(hero, attacking), hero, [attacking]) is None                              # acting by task: the threat wins
+    assert rest_in_place_update(_rest_state(hero, attacking), hero, [attacking]) is None                              # acting: the threat wins
 
 
-def test_rest_in_place_a_hit_inside_the_window_is_acting_and_an_old_hit_is_not():
-    from src.engine.tactical_threat import NEED_WAKE_CADENCE
-
-    hero = _sleepy_hero(PRESSING_DEBT)
-    other = _hostile((1, 0))
-    recent = replace(hero, combat=replace(hero.combat, last_attacker_id=2, last_hit_tick=500 - NEED_WAKE_CADENCE))
-    assert rest_in_place_update(_rest_state(recent, other), recent, [other]) is None
-    old = replace(hero, combat=replace(hero.combat, last_attacker_id=2, last_hit_tick=500 - NEED_WAKE_CADENCE - 1))
-    assert _rests(rest_in_place_update(_rest_state(old, other), old, [other]))
-
-
-def test_rest_in_place_a_hostile_targeting_by_payload_alone_is_not_acting():
-    """The old test's targeting=1 row at distance 9: a bare target_id on a task that is neither an attack nor a pursuit is not an act (tactical_threat._task_acts_on)."""
+def test_rest_in_place_a_hostile_targeting_by_payload_alone_is_not_acting_but_still_blocks_the_rest():
+    """The old test's targeting=1 row at distance 9, past the onset: not an act (`acting_threat_to` False, `need_yields` False) and yet AGENCY-07's TARGETED term
+    still blocks the rest, so it lands on None (the original expectation), not REST."""
     from src.ai.goals.present_threat import acting_threat_to
 
     hero = _sleepy_hero(PRESSING_DEBT)
     targeting = replace(_hostile((9, 0)), task=replace(_hostile((9, 0)).task, payload={"target_id": 1}))
     state = _rest_state(hero, targeting)
     assert not acting_threat_to(hero, state)
-    assert _rests(rest_in_place_update(state, hero, [targeting]))     # lands on REST: the need wins
-
-
-def test_rest_in_place_calm_rows_keep_the_agency_07_terms():
-    """Below the onset nothing changed: an adjacent hostile, or one targeting by payload, still blocks the rest (the moved rows of test_rest_in_place.py)."""
-    hero = _sleepy_hero(CALM_DEBT)
-    assert rest_in_place_update(_rest_state(hero, _hostile((1, 0))), hero, [_hostile((1, 0))]) is None
-    targeting = replace(_hostile((9, 0)), task=replace(_hostile((9, 0)).task, payload={"target_id": 1}))
-    assert rest_in_place_update(_rest_state(hero, targeting), hero, [targeting]) is None
+    assert rest_in_place_update(state, hero, [targeting]) is None
 
 
 # ---- site 3: tactical_rest eat carried food -----------------------------------------------------------------------------------------------------------------
@@ -223,15 +207,15 @@ def _forager(hunger):
     return replace(ent, inventory=replace(ent.inventory, items=[ItemStack("wild_berries", 1)]))
 
 
-def test_eat_carried_rows():
+def test_eat_carried_rows_keep_the_agency_07_terms():
     pressing, calm = _forager(PRESSING_HUNGER), _forager(CALM_HUNGER + 5.0)
     attacking = TaskComponent(work_kind="ENTITY_ACT", payload={"action": "ATTACK", "target_id": 1})
 
-    def run(entity, task=None):
-        h = replace(_hostile((10, 11)), task=task) if task is not None else _hostile((10, 11))
-        state = AuthoritativeState(tick=500, seed=1, entities={entity.id: entity, h.id: h})
-        return eat_carried_update(entity, [h], state)
+    def run(entity, hostile_at, task=None):
+        h = replace(_hostile(hostile_at), task=task) if task is not None else _hostile(hostile_at)
+        return eat_carried_update(entity, [h])
 
-    assert run(pressing) is not None                    # pressing, adjacent, not acting: the need wins (changed)
-    assert run(pressing, attacking) is None             # acting: the threat wins
-    assert run(calm) is None                            # calm and adjacent: AGENCY-07 terms still hold it back
+    assert run(pressing, (10, 12)) is not None              # pressing, far hostile: eats
+    assert run(pressing, (10, 11)) is None                  # pressing, adjacent, not acting: AGENCY-07 holds it back (row 88 S1)
+    assert run(pressing, (10, 11), attacking) is None       # acting: the threat wins
+    assert run(calm, (10, 11)) is None                      # calm and adjacent: unchanged
