@@ -76,6 +76,12 @@ rpg-designer's lean, to be confirmed after the counts: real hits only.
 - The grant lowers hp share, so it may interact with the row 88 lines. Hypothesis only.
 
 ## Implementation Notes
+2026-11-03 rpg-designer, on ubuntu's rows (relayed, not checked by rpg-planner):
+- About 40 of base e34's 53 grants landed with no hit. Both trees, not part of #828.
+- Counts also split by kind, with max hp reached and near_death firings.
+- Fix lean: require hp_delta < 0, as the law says. Check whether 01_entity_anatomy.md:54 and the two parity rows claim otherwise.
+- Town tiles only by this path. It may inflate panic counts near towns and shortens hp_loss_period on survivors, so ENG's starving and panic numbers carry it on both arms. No ENG re-run for it: ENG's row notes it was measured on a tree with this defect.
+- Order: rpg-designer would put it ahead of LOW-HP-RETREAT, whose panic counts it muddies. rpg-planner's call, with the owner's yes for dispatch.
 
 ## Test Summary
 
