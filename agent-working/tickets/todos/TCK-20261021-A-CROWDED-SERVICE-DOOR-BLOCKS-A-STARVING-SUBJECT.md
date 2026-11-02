@@ -181,3 +181,7 @@ From the same runs as the N14 report, for the arms base, F3 and N14-on-F3, repor
 - deaths within 200t of such a walk;
 - the target's writer.
 Hypothesis: the leaver churn registers the congestion blocker, so this fix may remove the trigger.
+
+## 2026-11-01 F3 churn row from the groups batch C trace (rpg-designer ruling, via rpg-planner)
+- frontier s43 e12 (churn fix arm, F3 on both arms): leaves its lodging every 9-11 ticks from t1301 (plain REST end: ENTITY_ACT, reason/action None, objective fatigue_20003, proj_fatigue_1228, building 20003 functional) and re-claims a bed only at its brain cadence slots (all granted; beds 10, held 0). Its t1392 leave was followed by the t1398 slot with hostile e30 in view; it walked a FATIGUE-project INTERCEPTING move and died t1433 DEFEAT.
+- Ruled: F3 / N14 exposure (leave -> out-of-bed gap until the next cadence slot), not the churn fix. Count it on the N14-on-F3 re-measure beside relodge_within_20: leaves per lodger-hour, ticks out of bed between a REST-end leave and the next claim, and deaths inside that gap.
