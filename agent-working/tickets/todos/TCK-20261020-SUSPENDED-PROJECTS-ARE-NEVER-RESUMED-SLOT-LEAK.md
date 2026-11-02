@@ -24,7 +24,7 @@ standard
 bug
 
 ## Priority
-P2
+P1
 
 ## Request Summary
 Lane A traced blacksmith 13 on crowded_frontier s45 (2026-10-20, at 23fbe0ecf and in base 7b1528861). It holds 3 SUSPENDED resolve_blocker projects (plus 4 ABANDONED). Since divergence 2.77 (TCK-20261007-STRATEGIC-CAPACITY-GATE-COUNTS-TERMINAL-PROJECTS-SO-NO-NEW-PROJECT-KIND-CAN-START), ACTIVE and SUSPENDED count as live against max_active_projects (3). Nothing resumes those three or ends them, so the entity sits at 3 of 3 for its whole life: 52 of 52 strategic calls from t1207 to t2227 in the fix arm, and 99 of 99 calls from t1207 to t3167 in base.
@@ -120,3 +120,9 @@ The code lives in `src/systems/strategic_systems/intelligence.py` (the ticket's 
 - By kind, of 1051 distinct SUSPENDED seen at cap: STABILIZE 218, RESOLVE_BLOCKER 178, COMBAT_ENGAGE 158, HUNGER 120, FATIGUE 120, GUILD 98, HARVESTING 65, TOWN_RETURN 32, RECOVER 31, COMBAT_RETREAT 15, SOCIAL 13, INVESTIGATE 3.
 - Example: urban_political s42 entity 18's cap is filled by project_stabilize_bandit_road_t2 / _t22 (STABILIZE, created t2 / t22, never resumed, ~1400 ticks old).
 - rpg-designer 2026-10-31: structural; likely drives much of :1610's cap refusals (only escalated needs get through). Counts first: per kind, how a SUSPENDED record is meant to end (resume, expire, supersede) and how many ever do. Joins the SURV-07 family table only through its CAP_REFUSAL tag. Not folded into the retention fix.
+
+## 2026-11-02 promoted to P1, counts first (rpg-designer SURV-07 Phase 2 ruling, via rpg-planner)
+- Evidence: ENG Phase 1 family probe (lane A, 15 runs on main 15a8f5893, 5000t, hash-neutral). CAP_REFUSAL (the capacity gate at intelligence.py:1768 refusing the subject's best candidate) fired on 16656 ticks over 282 subjects, and 14413 of them had SUSPENDED records in the live set (live SUSPENDED at refusal: 1=4217, 2=6535, 3=3177, 4=457, 5=41).
+- Phase 1, counts first: a HARM JOIN. Refused candidate kind × a death or collapse of that subject within 200t, per world and seed, with the SUSPENDED count at refusal.
+- The open "threat vs cap" grid row from the SURV-07 family is answered here, after the join. No fix shape before rpg-designer reads the join.
+- Source ruling: main-checkout .claude/handover/drafts/rpg-designer-surv07-phase2-ruling.md.
