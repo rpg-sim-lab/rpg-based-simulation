@@ -7966,6 +7966,38 @@
   - content
   last_verified: '2026-10-09'
 - type: ticket
+  path: agent-working/tickets/done/TCK-20261102-A-PRINTED-QUEUE-VIEW-OF-OPEN-TICKETS.md
+  ticket_id: TCK-20261102-A-PRINTED-QUEUE-VIEW-OF-OPEN-TICKETS
+  title: 'A read-only command prints the open-ticket queue: order, work in flight,
+    blocked, parked, each with its evidence or `unknown`'
+  tier: standard
+  ticket_type: feature
+  date: '2026-11-02'
+  related_code_areas:
+  - tools/delivery/ticket_queue.py
+  - tests/tools/test_ticket_queue.py
+  - tools/ticket_field_values.py
+  artifact_files:
+  - agent-working/stored_artifacts/TCK-20261102-A-PRINTED-QUEUE-VIEW-OF-OPEN-TICKETS/investigation.md
+  - agent-working/stored_artifacts/TCK-20261102-A-PRINTED-QUEUE-VIEW-OF-OPEN-TICKETS/plan.md
+  - agent-working/stored_artifacts/TCK-20261102-A-PRINTED-QUEUE-VIEW-OF-OPEN-TICKETS/test_plan.md
+  tags:
+  - delivery
+- type: ticket
+  path: agent-working/tickets/done/TCK-20261102-PR-RENDER-RAW-OUTPUT-ADVISORY-SCANS-ONLY-PROBES.md
+  ticket_id: TCK-20261102-PR-RENDER-RAW-OUTPUT-ADVISORY-SCANS-ONLY-PROBES
+  title: pr_render's raw-output advisory scans a ticket's whole stored_artifacts folder,
+    not only probes/
+  tier: hotfix
+  ticket_type: bug
+  date: '2026-11-02'
+  related_code_areas:
+  - tools/delivery/pr_render.py
+  - tests/tools/test_delivery_pr_render.py
+  artifact_files: []
+  tags:
+  - delivery
+- type: ticket
   path: agent-working/tickets/done/TCK-20261101-PHASE19-CONTRACT-NAMES-ITS-RUNTIME-TEST.md
   ticket_id: TCK-20261101-PHASE19-CONTRACT-NAMES-ITS-RUNTIME-TEST
   title: The phase19 import contract names its runtime test, drops drifting kernel
@@ -8025,6 +8057,19 @@
   tags:
   - testing
 - type: ticket
+  path: agent-working/tickets/done/TCK-20261101-SLOW-KNOWN-REDS-PERF-PAUSE-REWORD.md
+  ticket_id: TCK-20261101-SLOW-KNOWN-REDS-PERF-PAUSE-REWORD
+  title: Five perf known-reds entries move to perf-planner's parking ticket and name
+    the pause, and catalog_arena_smoke is reclassified flaky
+  tier: hotfix
+  ticket_type: chore
+  date: '2026-11-01'
+  related_code_areas:
+  - tools/test_architecture/slow_known_reds.yaml
+  artifact_files: []
+  tags:
+  - testing
+- type: ticket
   path: agent-working/tickets/todos/TCK-20261101-A-CHECKPOINT-HAS-NO-FORMAT-VERSION.md
   ticket_id: TCK-20261101-A-CHECKPOINT-HAS-NO-FORMAT-VERSION
   title: A scenario checkpoint has no format version, so a checkpoint older than a
@@ -8050,6 +8095,59 @@
   related_code_areas:
   - src/systems/strategic_systems/intelligence.py:670 (active-objective redirect),
     :678 (town-return fallback)
+  artifact_files: []
+  tags: []
+- type: ticket
+  path: agent-working/tickets/todos/TCK-20261101-A-HOSTILE-ATTACKING-YOU-OUTRANKS-THE-GROUP-SHARED-TARGET.md
+  ticket_id: TCK-20261101-A-HOSTILE-ATTACKING-YOU-OUTRANKS-THE-GROUP-SHARED-TARGET
+  title: 'A group member keeps attacking the group''s shared target while an adjacent
+    hostile kills it: self-defence must outrank group_bias in target_score'
+  tier: standard
+  ticket_type: bug
+  date: '2026-11-01'
+  related_code_areas:
+  - src/engine/tactical.py:390-428 (target_score), :542/:552 (VANGUARD BRACKETING)
+  - src/core/death_cause.py, CombatComponent.last_attacker_id
+  artifact_files: []
+  tags: []
+- type: ticket
+  path: agent-working/tickets/todos/TCK-20261101-A-LODGER-DECISION-PATH-AUDIT.md
+  ticket_id: TCK-20261101-A-LODGER-DECISION-PATH-AUDIT
+  title: 'Lodger decision-path audit: classify every remaining path a lodged stayer
+    can still take a decision on, counts first (F3 seam 2.155, ticket 2 of 2)'
+  tier: standard
+  ticket_type: bug
+  date: '2026-11-01'
+  related_code_areas:
+  - src/systems/strategic_systems/intelligence.py:618; cognition.py:74-78; paid_information.py:98;
+    appraisal.py:48/:183; and the rest per the path list.
+  artifact_files: []
+  tags: []
+- type: ticket
+  path: agent-working/tickets/todos/TCK-20261101-A-LODGER-OFFERS-AND-ACCEPTS-RECRUIT-CONTRACTS.md
+  ticket_id: TCK-20261101-A-LODGER-OFFERS-AND-ACCEPTS-RECRUIT-CONTRACTS
+  title: 'A lodged stayer still offers and accepts recruit contracts, and a formation
+    can elect it leader and bind it as holder (F3 seam: cooperation is a third decision
+    path)'
+  tier: standard
+  ticket_type: bug
+  date: '2026-11-01'
+  related_code_areas:
+  - src/domains/cooperation/services.py (REQUEST_HELP / HIRE_SUPPORT -> recruitment
+    contract, ~:278-297)
+  - src/systems/social_systems/contracts.py (ContractService.create_recruitment_contract)
+  artifact_files: []
+  tags: []
+- type: ticket
+  path: agent-working/tickets/todos/TCK-20261101-A-LOW-HP-VANGUARD-TAKES-ROLE-GATED-MOVES-INTO-CONTACT.md
+  ticket_id: TCK-20261101-A-LOW-HP-VANGUARD-TAKES-ROLE-GATED-MOVES-INTO-CONTACT
+  title: 'A VANGUARD below a hp line still takes role-gated moves (BRACKETING) into
+    contact: counts first'
+  tier: standard
+  ticket_type: bug
+  date: '2026-11-01'
+  related_code_areas:
+  - src/engine/tactical.py:542/:552 (VANGUARD BRACKETING), :390-428 (target_score)
   artifact_files: []
   tags: []
 - type: ticket
@@ -8173,6 +8271,18 @@
   artifact_files: []
   tags: []
 - type: ticket
+  path: agent-working/tickets/todos/TCK-20261101-PAID-INFORMATION-TRANSFERS-WITH-NO-DISTANCE-TEST.md
+  ticket_id: TCK-20261101-PAID-INFORMATION-TRANSFERS-WITH-NO-DISTANCE-TEST
+  title: Paid information transfers a lead and gold between two entities with no distance
+    test (counts first)
+  tier: standard
+  ticket_type: bug
+  date: '2026-11-01'
+  related_code_areas:
+  - src/engine/pipeline_phases/paid_information.py:98
+  artifact_files: []
+  tags: []
+- type: ticket
   path: agent-working/tickets/todos/TCK-20261101-PERF-BENCH-KNOWN-REDS-PARKED-DURING-THE-PAUSE.md
   ticket_id: TCK-20261101-PERF-BENCH-KNOWN-REDS-PARKED-DURING-THE-PAUSE
   title: Own the perf bench and arena stress known reds while most perf work is paused
@@ -8257,10 +8367,28 @@
   - agent-working/stored_artifacts/TCK-20261031-A-PAIR-RE-FORMS-AND-LEAVES-A-GROUP-EVERY-TWO-TICKS/lodger_decision_paths_2026-11-01.md
   - agent-working/stored_artifacts/TCK-20261031-A-PAIR-RE-FORMS-AND-LEAVES-A-GROUP-EVERY-TWO-TICKS/plan.md
   - agent-working/stored_artifacts/TCK-20261031-A-PAIR-RE-FORMS-AND-LEAVES-A-GROUP-EVERY-TWO-TICKS/pr_notes.md
+  - agent-working/stored_artifacts/TCK-20261031-A-PAIR-RE-FORMS-AND-LEAVES-A-GROUP-EVERY-TWO-TICKS/rulings_2026-11-01.md
   - agent-working/stored_artifacts/TCK-20261031-A-PAIR-RE-FORMS-AND-LEAVES-A-GROUP-EVERY-TWO-TICKS/test_plan.md
   tags:
   - cooperation
   - social
+- type: ticket
+  path: agent-working/tickets/done/TCK-20261031-A-RETREAT-PROJECT-OUTLIVES-ITS-THREAT.md
+  ticket_id: TCK-20261031-A-RETREAT-PROJECT-OUTLIVES-ITS-THREAT
+  title: A retreat project outlives its threat (entity parked on COMBAT_RETREAT ~950
+    ticks with no threat, recovered, not moving)
+  tier: standard
+  ticket_type: bug
+  date: '2026-10-31'
+  related_code_areas:
+  - src/systems/strategic_systems/intelligence.py (capacity gate :1768, switch :1042-ish),
+    project completion facts (location to find), src/ai/goals/present_threat.py, src/engine/scheduler.py
+    (_throttled), src/ai/goals/scorers.py (retreat scorer)
+  artifact_files:
+  - agent-working/stored_artifacts/TCK-20261031-A-RETREAT-PROJECT-OUTLIVES-ITS-THREAT/investigation.md
+  - agent-working/stored_artifacts/TCK-20261031-A-RETREAT-PROJECT-OUTLIVES-ITS-THREAT/plan.md
+  - agent-working/stored_artifacts/TCK-20261031-A-RETREAT-PROJECT-OUTLIVES-ITS-THREAT/test_plan.md
+  tags: []
 - type: ticket
   path: agent-working/tickets/done/TCK-20261031-A-SLEEPER-HOLDS-A-DOOR-OR-SERVICE-TILE.md
   ticket_id: TCK-20261031-A-SLEEPER-HOLDS-A-DOOR-OR-SERVICE-TILE
@@ -8534,20 +8662,6 @@
   artifact_files: []
   tags:
   - testing
-- type: ticket
-  path: agent-working/tickets/todos/TCK-20261031-A-RETREAT-PROJECT-OUTLIVES-ITS-THREAT.md
-  ticket_id: TCK-20261031-A-RETREAT-PROJECT-OUTLIVES-ITS-THREAT
-  title: A retreat project outlives its threat (entity parked on COMBAT_RETREAT ~950
-    ticks with no threat, recovered, not moving)
-  tier: standard
-  ticket_type: bug
-  date: '2026-10-31'
-  related_code_areas:
-  - src/systems/strategic_systems/intelligence.py (capacity gate :1768, switch :1042-ish),
-    project completion facts (location to find), src/ai/goals/present_threat.py, src/engine/scheduler.py
-    (_throttled), src/ai/goals/scorers.py (retreat scorer)
-  artifact_files: []
-  tags: []
 - type: ticket
   path: agent-working/tickets/todos/TCK-20261031-AN-ENGAGEMENT-OVERRIDES-A-PRESSING-NEED.md
   ticket_id: TCK-20261031-AN-ENGAGEMENT-OVERRIDES-A-PRESSING-NEED
@@ -9963,6 +10077,21 @@
   - agent-working/stored_artifacts/TCK-20261023-COOPERATION-CANDIDATES-ENUMERATED-PER-ENTITY-PER-TICK/test_plan.md
   tags: []
 - type: ticket
+  path: agent-working/tickets/done/TCK-20261023-FOUR-TESTS-FAIL-ONLY-IN-A-WIDE-SCOPED-RUN-ORDER-DEPENDENT.md
+  ticket_id: TCK-20261023-FOUR-TESTS-FAIL-ONLY-IN-A-WIDE-SCOPED-RUN-ORDER-DEPENDENT
+  title: 'Four tests fail only inside a wide scoped run and pass alone: a per-test
+    RAM ceiling meets the growing pytest process (not a state leak)'
+  tier: standard
+  ticket_type: bug
+  date: '2026-10-23'
+  related_code_areas:
+  - tests/ (the four named tests and their fixtures)
+  artifact_files:
+  - agent-working/stored_artifacts/TCK-20261023-FOUR-TESTS-FAIL-ONLY-IN-A-WIDE-SCOPED-RUN-ORDER-DEPENDENT/investigation.md
+  - agent-working/stored_artifacts/TCK-20261023-FOUR-TESTS-FAIL-ONLY-IN-A-WIDE-SCOPED-RUN-ORDER-DEPENDENT/plan.md
+  - agent-working/stored_artifacts/TCK-20261023-FOUR-TESTS-FAIL-ONLY-IN-A-WIDE-SCOPED-RUN-ORDER-DEPENDENT/test_plan.md
+  tags: []
+- type: ticket
   path: agent-working/tickets/done/TCK-20261023-M1-DONE-CRITERIA-AND-FREEZE-RULE.md
   ticket_id: TCK-20261023-M1-DONE-CRITERIA-AND-FREEZE-RULE
   title: Record the owner-approved milestone 1 done criteria and freeze rule as roadmap
@@ -10110,18 +10239,6 @@
   date: '2026-10-23'
   related_code_areas:
   - the lead-certainty enum (src/ai or src/cognition; locate at work time)
-  artifact_files: []
-  tags: []
-- type: ticket
-  path: agent-working/tickets/todos/TCK-20261023-FOUR-TESTS-FAIL-ONLY-IN-A-WIDE-SCOPED-RUN-ORDER-DEPENDENT.md
-  ticket_id: TCK-20261023-FOUR-TESTS-FAIL-ONLY-IN-A-WIDE-SCOPED-RUN-ORDER-DEPENDENT
-  title: Four tests fail only inside a wide scoped run and pass alone, on the v1 tree
-    too (order-dependent state leak)
-  tier: standard
-  ticket_type: bug
-  date: '2026-10-23'
-  related_code_areas:
-  - tests/ (the four named tests and their fixtures)
   artifact_files: []
   tags: []
 - type: ticket
@@ -12301,6 +12418,18 @@
   - delivery
   - security
 - type: ticket
+  path: agent-working/tickets/done/TCK-20261018-TWO-BARE-KERNEL-TESTS-DEPEND-ON-HOST-MEMORY.md
+  ticket_id: TCK-20261018-TWO-BARE-KERNEL-TESTS-DEPEND-ON-HOST-MEMORY
+  title: Two tests that build a bare Kernel fail when the pytest process is large
+  tier: hotfix
+  ticket_type: bug
+  date: '2026-10-18'
+  related_code_areas:
+  - tests/unit/resource/test_resource_governor_contract.py; tests/unit/core/test_operational_flags.py;
+    tests/helpers/kernel_pinning.py
+  artifact_files: []
+  tags: []
+- type: ticket
   path: agent-working/tickets/done/TCK-20261018-VISUAL-ASSETS-ASEPRITE-JOB-TIMEOUT-UNDER-LOAD.md
   ticket_id: TCK-20261018-VISUAL-ASSETS-ASEPRITE-JOB-TIMEOUT-UNDER-LOAD
   title: Find why a sub-second Aseprite job hits the 30 s `JOB_TIMEOUT_S` under host
@@ -12402,18 +12531,6 @@
   tags:
   - architecture
   - documentation
-- type: ticket
-  path: agent-working/tickets/todos/TCK-20261018-TWO-BARE-KERNEL-TESTS-DEPEND-ON-HOST-MEMORY.md
-  ticket_id: TCK-20261018-TWO-BARE-KERNEL-TESTS-DEPEND-ON-HOST-MEMORY
-  title: Two tests that build a bare Kernel fail when the pytest process is large
-  tier: hotfix
-  ticket_type: bug
-  date: '2026-10-18'
-  related_code_areas:
-  - tests/unit/resource/test_resource_governor_contract.py; tests/unit/core/test_operational_flags.py;
-    tests/helpers/kernel_pinning.py
-  artifact_files: []
-  tags: []
 - type: ticket
   path: agent-working/tickets/todos/devops-api-dashboard-trace/TCK-20261018-API-DASHBOARD-AND-TRACE-PROOF.md
   ticket_id: TCK-20261018-API-DASHBOARD-AND-TRACE-PROOF
