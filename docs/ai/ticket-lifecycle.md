@@ -792,3 +792,16 @@ Agent(subagent_type="done-checker", prompt="Check DoD for ticket TCK-20260606-..
 ```
 
 Each agent reads the artifacts written by the previous one from `agent-working/staging_artifacts/{ticket_id}/`, so the handoff is through the filesystem — no direct parameter passing required.
+
+---
+
+## Open-ticket queue view
+
+`python3 tools/delivery/ticket_queue.py [--ref origin/main | --worktree] [--json] [--no-gh]` prints every ticket under `agent-working/tickets/todos/` and `inprogress/` (`TCK-20261102-A-PRINTED-QUEUE-VIEW-OF-OPEN-TICKETS`). It is read-only: it writes no file, moves no ticket, and is not a gate (exit 0 unless the tool itself fails). By default it reads `origin/main` through git and prints the ref, sha and commit date in the header; the tool does not fetch, so that ref can be stale. `--worktree` reads the working tree instead.
+
+Each row shows its evidence or reads `unknown` / `mention`:
+- `order`: an optional `## Order Ref` body section holds a short name from the milestone-1 order line in `docs/plans/systemic_world/roadmap.md` section 12.5 (for example `F3`). The position is the name's place in that line's last `the order is A → B → ...` sentence; a name not in the line reads `stale-ref`, no section reads `unknown`, and an unparseable line makes every row `unknown` with a warning. Position is never stored on a ticket. The section is optional and is not checked at close. F4 lands "as soon as it is ready, independent of this order", so its position is nominal.
+- `blocked`: only from a BLOCKED status; `on:` lists ticket IDs on the Status line, else `on: unknown`.
+- `parked`: `yes` only on a narrow line match (a `## Parked`/`## Paused` heading, or a line starting `**Paused (owner,`, `**Parked by explicit user decision` or `**Parked**`), shown as `path:line`. A pause that was lifted but left in the text still reads `yes`, so check the line. The word elsewhere reads `mention` and is never counted as parked.
+- `flight`: `pr #N closes` when an open PR's files include `done/<ID>.md`, `pr #N touches` when a changed file or the PR title names the ID, and `#634 comment <id>` for the latest #634 comment naming the ID (a mention, not necessarily a claim). `gh` unavailable reads `unknown` with a warning.
+- Epic tracking rows are marked and left out of the work counts. The summary prints `unknown` counts and P1 counts by status, tier and layer.
