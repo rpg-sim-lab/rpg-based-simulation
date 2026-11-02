@@ -4659,3 +4659,14 @@
   divergence_note: See docs/guidelines/intentional_divergences.md Section 2.155.
   support_boundary: 'Only the inn declares beds (no home kind in content). A lodger leaves the tick its rest ends. Main merges the bed delivery twice per hold; the lodging path reproduces it (separate ticket).'
 
+- id: STRAT-297
+  text: 'TCK-20261031-AN-ENGAGEMENT-OVERRIDES-A-PRESSING-NEED (SURV-07 LAW P, memo row 88): with a hostile in sight and none acting on the subject (need_yields = acting_threat_to), a subject past its need''s escalation onset (need_is_pressing) runs its need path before the presence test, role obligation, cohesion and target selection (a follower included): in-place survival, then the objective step of a hunger or fatigue project; the need project is not suspended. The in-place rest, eat-carried and eat-at-corpse steps use need_yields instead of the AGENCY-07 present_threat_terms in the pressing branch only. Below the onset and when a hostile acts on the subject the behaviour is unchanged; flight keeps present_threat_terms.'
+  status: verified
+  priority: P1
+  legacy_evidence: null
+  v2_evidence: 'src/engine/tactical.py (need_first branch, _pursue_objective, _serves_a_need), src/engine/tactical_rest.py (_in_danger), src/ai/goals/present_threat.py (need_yields), src/engine/need_pull.py (entity_need_is_pressing), docs/mechanics/04_strategic_cognition.md section 1. Ticket TCK-20261031-AN-ENGAGEMENT-OVERRIDES-A-PRESSING-NEED.'
+  proof_type: regression
+  test_path: tests/unit/tactical/test_surv07_precedence_grid.py
+  divergence_note: See docs/guidelines/intentional_divergences.md Section 2.156.
+  support_boundary: 'Unit-level grid only so far ({pressing y/n} x {no hostile, perceived only, present and not acting, acting} for the presence skip, rest in place and eat carried, plus the 13/16 case). The paired Phase 2 measurement is not run. Phase 1 counts: 2942 skip calls with a pressing need and no present threat in 15 runs.'
+
