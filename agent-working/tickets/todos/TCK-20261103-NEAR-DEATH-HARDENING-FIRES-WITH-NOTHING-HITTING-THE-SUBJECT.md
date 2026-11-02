@@ -27,9 +27,9 @@ bug
 P1
 
 ## Request Summary
-Found by rpg-designer on 2026-11-03 from crowded s45 e34, whose max hp grew 150 to 310 while it was starving (the #828 composition check, V3 red). `NearDeathHardeningPhase` (src/engine/pipeline_phases/hardening.py, read at ca9ebe7c6) takes any surviving CombatUpdate with projected hp at or below 10% of max and adds `max_hp_delta=5`, `permanent_max_hp_bonus_delta=5` and a "near_death" emotion. Nothing in the part read tests hp_delta < 0, while the law says it follows surviving a hit.
+Found by rpg-designer on 2026-11-03 from crowded s45 e34, whose max hp kept growing while it was starving (the #828 composition check, V3 red; base 150 to 350 by t2000). `NearDeathHardeningPhase` (src/engine/pipeline_phases/hardening.py, read at ca9ebe7c6) takes any surviving CombatUpdate with projected hp at or below 10% of max and adds `max_hp_delta=5`, `permanent_max_hp_bonus_delta=5` and a "near_death" emotion. Nothing in the part read tests hp_delta < 0, while the law says it follows surviving a hit.
 
-rpg-planner-ubuntu reports this proven on rows (relayed by lead-planner-u24, not checked by rpg-planner): about 40 grants on e34 with nothing hitting it, on both trees, from the town heal (src/engine/town_resolution.py Part A, `hp_delta=PASSIVE_HEAL_AMT`).
+rpg-planner-ubuntu reports this proven on rows (relayed by lead-planner-u24, not checked by rpg-planner), for base e34 up to t2000: 40 grants, of which 37 have hp rising and only 3 fall on a new last-hit tick (t1521, t1644, t1667); 29 grants come after t1667 with no hit at all since t1666. On both trees, from the town heal (src/engine/town_resolution.py Part A, `hp_delta=PASSIVE_HEAL_AMT`).
 
 Why it matters, as a hypothesis until counted: a low-hp body in a town gains max hp and panic repeatedly with nothing hitting it, which lowers its hp share, keeps it under the hp lines and may hold it in panic while it starves. The emotional panic counts in the SURV-07 reading may be inflated by it.
 
@@ -77,7 +77,7 @@ rpg-designer's lean, to be confirmed after the counts: real hits only.
 
 ## Implementation Notes
 2026-11-03 rpg-designer, on ubuntu's rows (relayed, not checked by rpg-planner):
-- The proof holds on base e34 t1521-t1991, 40 steps with no hit. The earlier "of 53" total is NOT usable: ubuntu's trace past t2000 is withdrawn (a plain replay on both hosts has e34 dead at t2101, not t2131). A corrected count comes from rpg-planner-ubuntu. Both trees, not part of #828.
+- Use only the corrected count in the Request Summary (37 of 40; 29 since t1666). Earlier "53", "47" and "about 40 with no hit" are NOT usable: ubuntu's trace past t2000 is withdrawn (a plain replay on both hosts has e34 dead at t2101, not t2131). Both trees, not part of #828.
 - Counts also split by kind, with max hp reached and near_death firings.
 - Fix lean: require hp_delta < 0, as the law says. Check whether 01_entity_anatomy.md:54 and the two parity rows claim otherwise.
 - Town tiles only by this path. It may inflate panic counts near towns and shortens hp_loss_period on survivors, so ENG's starving and panic numbers carry it on both arms. No ENG re-run for it: ENG's row notes it was measured on a tree with this defect.
