@@ -2,7 +2,7 @@
 from __future__ import annotations
 from typing import Tuple, List, Set, Optional, TYPE_CHECKING
 from src.core.strategic import ProjectStatus, ObjectiveStatus, ContractStatus
-from src.systems.strategic_systems.entity_target_objective import objective_outcome
+from src.systems.strategic_systems.entity_target_objective import project_transition_pending
 
 if TYPE_CHECKING:
     from src.core.state import AuthoritativeState
@@ -76,7 +76,7 @@ class StrategicWorkQueue:
                         if obj is None or obj.status in (ObjectiveStatus.RESOLVED, ObjectiveStatus.FAILED):
                             tier3.append(e_id)
                             added = True
-                        elif objective_outcome(entity, state, proj, obj) is not None:
+                        elif project_transition_pending(entity, state, proj, obj):
                             # An objective that has ended (its entity target died, vanished or left perception, or its
                             # contract is no longer ACTIVE): a transition, evaluated now rather than at the next sweep.
                             tier3.append(e_id)

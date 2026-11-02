@@ -98,7 +98,8 @@ def test_combat_retreat_scorer(base_state):
                .kind("goblin")
                .location(2.0, 2.0)
                .build())
-    hostile = replace(hostile, identity=replace(hostile.identity, faction=2))
+    # A real hostile the catalog counts (monster horde vs the hero guild): the retreat begins only on a present threat (divergence 2.156), and a faction=2 int matched no one.
+    hostile = replace(hostile, identity=replace(hostile.identity, faction=Faction.MONSTER_HORDE))
     
     brave_entity = (V2EntityBuilder(1)
                     .kind("hero")

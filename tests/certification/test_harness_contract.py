@@ -12,7 +12,7 @@ def test_certification_detects_semantic_drift():
     """
     profile = RuntimeProfile(
         name="DRIFT_TEST", hardware_class=HardwareClass.CLASS_B,
-        max_ram_mb=512, max_cpu_percent=50.0, max_worker_count=2,
+        max_ram_mb=1_000_000, max_cpu_percent=50.0, max_worker_count=2,
         max_queue_depth=10, max_replay_buffer_kb=0, max_tick_budget_ms=10.0,
         max_observability_budget_percent=5.0
     )

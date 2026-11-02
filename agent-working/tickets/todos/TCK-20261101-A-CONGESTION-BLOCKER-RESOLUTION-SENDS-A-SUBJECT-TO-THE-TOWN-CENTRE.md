@@ -80,3 +80,6 @@ Filed by rpg-planner, 2026-11-01, on a designer ruling (P3, own ticket, counts-f
 ## Files Changed
 
 ## Completion Summary
+
+## 2026-11-01 second named case (rpg-designer, via rpg-planner)
+- frontier s45 churn-on-F3 e22: resolve_blocker_blocker_congestion toward [25,25] walked [49,40]->[34,33] into a hostile cluster around [25,25-30]; killed t891. It is the same redirect as subject 17. Source: ubuntu groups batch C rows (via the churn ticket's evidence folder on origin rpg-ubuntu-group-id-alloc-impl).
