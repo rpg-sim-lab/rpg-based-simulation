@@ -110,6 +110,8 @@ Lead candidate (rpg-designer's read of src/engine/executor.py:239-257 on main; f
 
 2026-11-03 perf-planner's view (read only on 0e7b1030c, nothing run or measured, relayed): held reference plus `is` should cost close to nothing on the normal path (7 keys per execute call, at most one old container per key until the next call); the one real cost is that a hit stale today becomes a `deep_freeze`, in proportion to how often the bug fires. rpg may take it on correctness with no perf review or timing set. A stale hit may need two or more replacements between two execute calls; not traced. CORE-PERF-020 records no measured benefit; removing the cache may be simpler, but that is for after the pause, with a measurement.
 - The earlier "0 id matches, 0 stale hits" (TCK-20261005-DIRTY-SET-DEDUPES-UPDATES-BY-ID) is empty evidence: `frozen_probe.py` hooked `LocalSequentialExecutor.execute`, while `_freeze_cache` is on `ConcurrentExecutionAdapter`. Correct docs/engine/deterministic_execution.md ("probed without a stale hit") in this ticket.
+- rpg-designer: a `_freeze_cache` stale-hit count of 0 wouldn't clear this ticket; the per-field diff decides. Take the `is` fix only once the cause reading is in, so it doesn't change the world mid-diagnosis.
+- ubuntu's diff at t600 (hashes equal): `timeline` on all 38 entities, `cognition` on e16 and e30, `route_plans`, `_spatial_grid_cache` already differ, so the origin is before t601. A t1-t601 field digest is next. It may change this ticket's scope.
 - The fix won't settle it alone: packets, `frozen_grid` and other frozen maps, ordering and RNG could diverge too. If it ships as the cause, it needs the convergence check.
 
 ## Test Summary
