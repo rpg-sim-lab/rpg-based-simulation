@@ -19,12 +19,13 @@ from src.engine.rpg_depth import WoundService
 from src.cognition.common_knowledge import combat_capability_against
 from src.engine.tactical_destinations import retreat_destination, wander_destination
 from src.engine.tactical_threat import hostile_acts_on, need_yields, perceived_threats, present_threats, safety_retreat_warranted
-from src.engine.need_pull import HUNGER_LINE, SLEEP_LINE, entity_need_is_pressing
+from src.engine.need_pull import HUNGER_LINE, SLEEP_LINE, entity_hunger_is_pressing, entity_need_is_pressing
 from src.engine.tactical_rest import in_place_survival_update
 from src.engine.behavior_consumers import get_entity_signals, get_perception_gate
 from src.engine.sleep_debt import collapse_update, must_collapse
 from src.engine.tactical_hold import held_swing_update, leash_return_update, notice_unengaged_hostile, stalemate_break_update
-from src.engine.hostility import source_identity
+from src.engine.appraisal import Relation
+from src.engine.hostility import relation, source_identity
 from src.engine.tactical_objective import pursue_objective
 from src.engine.tactical_avoid import avoid_what_can_eat_me, classify_neighbours
 
@@ -115,6 +116,22 @@ def _serves_a_need(entity: "EntityState") -> bool:
     strat = entity.strategic
     project = strat.projects.get(strat.current_project_id) if strat.current_project_id else None
     return project is not None and project.status == ProjectStatus.ACTIVE and project.kind in (GoalKind.HUNGER, GoalKind.FATIGUE)
+
+
+def _need_way_is_not_a_hunt(entity: "EntityState") -> bool:
+    """True when the subject has an active need project whose current objective does not name a living target (an inn, a shop, work, a forage node, a carcass,
+    a bed): that walk is its way and a prey in sight does not take it off. A hunger project that names a living target IS the hunt and is not this."""
+    if not _serves_a_need(entity):
+        return False
+    strat = entity.strategic
+    project = strat.projects.get(strat.current_project_id)
+    objective = next((o for o in project.objectives if o.id == strat.current_objective_id), None)
+    return objective is None or objective.target_entity_id is None
+
+
+def _prey_in_sight(entity: "EntityState", hostiles: List["EntityState"]) -> List["EntityState"]:
+    """The hostiles the subject regards as prey (`Relation.PREDATION`, the test `opening_steps._hunt_step` uses): the fight a pressing HUNGER does not stop."""
+    return [h for h in hostiles if relation(entity, h) is Relation.PREDATION]
 
 
 def _suspend_project_for_threat(entity: "EntityState", hostiles: List["EntityState"]) -> Optional[StrategicUpdate]:
@@ -251,6 +268,11 @@ class TacticalDecisionSystem:
         # (`need_yields`). With hostiles in sight and none acting, the need path runs first: before the presence test below, role obligation, cohesion and target
         # selection (so a follower too takes no part in the group's target). Flight keeps AGENCY-07's `present_threat_to`.
         need_first = bool(hostiles) and entity_need_is_pressing(entity) and not need_yields(entity, hostiles, state.tick)
+        # The hunt exemption (designer's ruling on LAW P): with HUNGER pressing and prey in sight, the fight with the prey is the need's way, unless the subject has an
+        # active need project whose objective names no living target (that walk stays on need_first). Exempt: skip need_first and take the target from the prey only.
+        hunt_prey = _prey_in_sight(entity, hostiles) if need_first and entity_hunger_is_pressing(entity) and not _need_way_is_not_a_hunt(entity) else []
+        if hunt_prey:
+            need_first = False
 
         # 4. Strategic Persistence (Pillar 5.1): a need project the subject is walking to is not suspended for a hostile that is not acting on it
         strat_up = None if need_first and _serves_a_need(entity) else _suspend_project_for_threat(entity, hostiles)
@@ -326,6 +348,8 @@ class TacticalDecisionSystem:
             return EntityUpdate(entity_id=entity.id)
 
         # 4. Target Selection with Focus Fire
+        if hunt_prey:
+            hostiles = hunt_prey    # non-prey, non-acting hostiles are not engaged by a hunter under a pressing hunger
         group = state.groups.get(entity.identity.group_id) if entity.identity.group_id is not None else None
         def target_score(h: EntityState) -> Tuple[int, float, int, float, float, float, int]:
             dist = abs(h.navigation.position[0] - entity.navigation.position[0]) + abs(h.navigation.position[1] - entity.navigation.position[1])
