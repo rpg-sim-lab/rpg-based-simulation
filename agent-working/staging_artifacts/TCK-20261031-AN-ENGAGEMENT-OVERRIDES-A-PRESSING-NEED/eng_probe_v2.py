@@ -211,6 +211,7 @@ def region_facts(st, e, hostiles):
 
 
 last_pk_run = {}
+KIND_ACC = collections.defaultdict(collections.Counter); last_meal_seen = {}
 for _ in range(ticks):
     _cur[0] = k.state.tick
     k.tick_once(); st = k.state; t = st.tick
@@ -231,6 +232,13 @@ for _ in range(ticks):
         pk = str(getattr(cpj.kind, "value", cpj.kind)).lower() if cpj is not None else None
         hunger, debt = e.biological.hunger, e.biological.sleep_debt
         pr = need_is_pressing(hunger, debt)
+        kk = kind_of.get(eid)
+        KIND_ACC[kk]["alive_ticks"] += 1
+        if hunger >= HUNGER_LINE: KIND_ACC[kk]["starving_ticks"] += 1
+        if pr: KIND_ACC[kk]["pressing_ticks"] += 1
+        lm = e.biological.last_meal_tick
+        if lm is not None and lm != last_meal_seen.get(eid, lm) : KIND_ACC[kk]["meals"] += 1
+        last_meal_seen[eid] = lm
         tags = set(ev) - {"SKIP_SITE"}
         if hunger >= HUNGER_LINE or debt >= SLEEP_LINE or act == "ATTACK" or pr or tags:
             rr = rec(eid)
@@ -238,6 +246,7 @@ for _ in range(ticks):
             if debt >= SLEEP_LINE: rr["debt98_ticks"] += 1
         c = bool(pl.get(COLLAPSE_FLAG))
         if c and not collapse_prev.get(eid):
+            KIND_ACC[kind_of.get(eid)]["collapses"] += 1
             rec(eid)["collapses"] += 1
             collapse_ticks[eid].append(t)
         collapse_prev[eid] = c
@@ -330,6 +339,8 @@ doc = {"world": world, "seed": seed, "ticks": ticks, "hash": h, "persons": len(p
        "cap_refusals": len(_CAP), "cap_suspended_counts": dict(collections.Counter(x[2] for x in _CAP)),
        "regroup_writers": {a: {"writes": b, "subjects": len(_REG_SUBJ[a])} for a, b in _REG_WRITES.items()},
        "wait_report": wait_report,
+       "by_kind": {str(a): dict(b) for a, b in KIND_ACC.items()},
+       "wait_by_kind": {r_: {str(kd): {"events": sum(1 for _, e_ in _WAIT.get(r_, []) if kind_of.get(e_) == kd), "subjects": len({e_ for _, e_ in _WAIT.get(r_, []) if kind_of.get(e_) == kd})} for kd in {kind_of.get(e_) for _, e_ in _WAIT.get(r_, [])}} for r_ in ("WAIT_NO_NEED_PROJECT", "WAIT_FATIGUE_ARRIVAL", "WAIT_HELD_WORK", "NO_EAT_IN_PLACE")},
        "lhr_carry_walk": {"ticks": dict(carry), "subjects": len(carry_subj)},
        "lhr_hold_rows": lhr_hold_rows[:400], "lhr_hold_row_count": len(lhr_hold_rows),
        "subjects": {str(a): b for a, b in subj.items()}}
