@@ -356,8 +356,8 @@ def test_wider_scope_numbers_pinned():
     # helper (a cadence constant); the check's own output stays 247.
     # unbound_files 247 -> 248 on 2026-11-01 (same ticket): +src/engine/checkpoint_fields.py (a restore helper, no mechanism of its own); src/core/lodging_rules.py is bound under `town_services`.
     # 248 -> 247 on 2026-11-01 (TCK-20261031-A-RETREAT-PROJECT-OUTLIVES-ITS-THREAT, merged on top of F3): src/core/strategic.py is now cited by `goal_hierarchy` (note_threat_state, restart_clear_window), so one unbound file is bound. Taken by running the check.
-    # 247 -> 248 on 2026-11-02 (TCK-20261031-AN-ENGAGEMENT-OVERRIDES-A-PRESSING-NEED, from the check's own output): src/engine/tactical_objective.py is an unbound helper module (functions only). Binding it under `tactical_decision` in registries/mechanisms.yaml (rpg-planner's content) would keep this at 247.
-    assert wider["unbound_files"] == 248
+    # 2026-11-02 (TCK-20261031-AN-ENGAGEMENT-OVERRIDES-A-PRESSING-NEED): src/engine/tactical_objective.py is cited by `tactical_decision` (rpg-planner ruling: it was split out of tactical.py), so unbound_files stays 247 while scope_files rises by one (above).
+    assert wider["unbound_files"] == 247
     # 73 -> 72 on 2026-10-07 (row 7 (b) pass): src/quests/generator.py::QuestGenerator is now bound under `guilds`.
     # 72 -> 71 on 2026-10-11 (#500, D57): src/engine/rpg_depth.py::LeashService is cited under `tactical_decision` (it became wired when
     # the hunger and fatigue goals started calling `way_in_range`), so it is no longer an unbound candidate.

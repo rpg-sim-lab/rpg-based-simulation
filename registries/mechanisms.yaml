@@ -196,6 +196,7 @@ mechanisms:
     state: done
     implemented_by:
       - src/engine/tactical.py::TacticalDecisionSystem
+      - src/engine/tactical_objective.py::pursue_objective
       - src/engine/tactical_threat.py::present_threat_terms
       - src/engine/tactical_threat.py::safety_retreat_warranted
       - src/engine/tactical_threat.py::hostile_acts_on
