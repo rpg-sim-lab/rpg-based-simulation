@@ -10,13 +10,13 @@ from src.engine.need_pull import hunger_pull, retreat_pull, sleep_pull, step_tra
 from src.engine.sleep_debt import SLEEP_DEBT
 from src.engine.starvation import STARVING_LINE
 from src.engine.way_in_range import way_in_range
-from src.ai.goals.present_threat import acting_threat_to
+from src.ai.goals.present_threat import acting_threat_to, present_threat_to
 from src.content_semantics.faction import are_entities_hostile
 from src.content_semantics.relation import RelationContext
 from src.core.state import EntityState, AuthoritativeState
 from src.core.strategic import GoalKind, ObjectiveKind, has_project_capacity
 from src.engine.biological_needs import need_rates
-from src.systems.strategic_systems.entity_target_objective import ENTITY_TARGET_PERCEPTION_RADIUS
+from src.core.combat_constants import ENTITY_TARGET_PERCEPTION_RADIUS
 
 class HarvestScorer(GoalScorer):
     def score(self, entity: EntityState, state: AuthoritativeState) -> GoalScore:
@@ -233,6 +233,8 @@ class CombatRetreatScorer(GoalScorer):
         
         hp_ratio = entity.combat.hp / max(1, entity.combat.max_hp)
         if hp_ratio >= 0.5 and not emotion.is_fleeing:
+            return GoalScore(kind=GoalKind.COMBAT_RETREAT, utility=0.0)
+        if not present_threat_to(entity, state):  # a retreat begins on the test it ends on (divergence 2.156, amends 2.76): low hp, dread or is_fleeing alone adopt nothing, the hurt subject re-decides to RECOVER
             return GoalScore(kind=GoalKind.COMBAT_RETREAT, utility=0.0)
             
         utility = (1.0 - hp_ratio) * 100.0

@@ -82,3 +82,25 @@ def test_a_current_shape_state_is_untouched():
         assert all(k._state.entities[i].navigation is n for i, n in before.items())
     finally:
         k.shutdown()
+
+
+def test_a_project_without_cleared_since_restores_to_no_window_and_keeps_every_other_field():
+    """2.156: `cleared_since` is the last field of ProjectState; a pickle from before it loads one value short and the slot is unset until the restore step fills None."""
+    from dataclasses import replace
+    from src.core.strategic import GoalKind, ProjectState
+    k = kernel([hero(1, REACH[0], action=None)], beds=1)
+    try:
+        st = k._state
+        assert [f.name for f in dataclasses.fields(ProjectState)][-1] == "cleared_since"
+        proj = ProjectState(id="proj_combat_retreat_9", kind=GoalKind.COMBAT_RETREAT, created_tick=3, score=7.5)
+        old = _old_shape(proj, ["cleared_since"])
+        with pytest.raises(AttributeError):
+            old.cleared_since
+        e = st.entities[1]
+        object.__setattr__(e, "strategic", replace(e.strategic, projects={old.id: old}))
+        fill_missing_fields(st, [r for r in FIELD_RULES if r.field == "cleared_since"])
+        restored = st.entities[1].strategic.projects[old.id]
+        assert restored.cleared_since is None
+        assert _values(restored, skip=("cleared_since",)) == _values(proj, skip=("cleared_since",))      # nothing shifted
+    finally:
+        k.shutdown()
