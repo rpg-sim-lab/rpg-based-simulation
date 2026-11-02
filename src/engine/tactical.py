@@ -129,6 +129,17 @@ def _need_way_is_not_a_hunt(entity: "EntityState") -> bool:
     return objective is None or objective.target_entity_id is None
 
 
+def _hunt_project_names_prey(entity: "EntityState", prey: List["EntityState"]) -> bool:
+    """True when the subject's current need project (HUNGER or FATIGUE) names a living target that is in `prey`: the hunt itself, which a threat in sight does not suspend.
+    A COMBAT_ENGAGE project is not a need project and keeps today's behaviour; a project naming X with prey Y also in view stays current for X."""
+    if not _serves_a_need(entity):
+        return False
+    strat = entity.strategic
+    project = strat.projects.get(strat.current_project_id)
+    objective = next((o for o in project.objectives if o.id == strat.current_objective_id), None)
+    return objective is not None and objective.target_entity_id is not None and any(h.id == objective.target_entity_id for h in prey)
+
+
 def _prey_in_sight(entity: "EntityState", hostiles: List["EntityState"]) -> List["EntityState"]:
     """The hostiles the subject regards as prey (`Relation.PREDATION`, the test `opening_steps._hunt_step` uses): the fight a pressing HUNGER does not stop."""
     return [h for h in hostiles if relation(entity, h) is Relation.PREDATION]
@@ -275,7 +286,7 @@ class TacticalDecisionSystem:
             need_first = False
 
         # 4. Strategic Persistence (Pillar 5.1): a need project the subject is walking to is not suspended for a hostile that is not acting on it
-        strat_up = None if need_first and _serves_a_need(entity) else _suspend_project_for_threat(entity, hostiles)
+        strat_up = None if (need_first and _serves_a_need(entity)) or (hunt_prey and _hunt_project_names_prey(entity, hunt_prey)) else _suspend_project_for_threat(entity, hostiles)
 
         # Safety pressure (AGENCY-07): a cautious entity retreats from a present threat, never from a hostile merely seen
         if safety_retreat_warranted(entity, hostiles, entity_pressures.safety_pressure):

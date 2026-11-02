@@ -152,3 +152,75 @@ def test_a_hostile_acting_on_a_hungry_hunter_takes_the_normal_path_unchanged(wor
     update = TacticalDecisionSystem.evaluate_entity_intent(state, hunter)
     payload = (update.task.payload_set if update.task is not None else None) or {}
     assert payload.get("action") == "ATTACK" and payload.get("target_id") == gob.id, f"got {payload}"
+
+
+# ---- the hunt project is not suspended by its own prey, and it ends with its target (designer's condition on the exemption) ------------------------------------
+
+def _suspends(update):
+    return update.strategic is not None and bool(update.strategic.projects_add_or_update) and any(
+        getattr(p.status, "value", p.status) == "SUSPENDED" for p in update.strategic.projects_add_or_update)
+
+
+@pytest.mark.parametrize("sp", HUNTERS)
+def test_the_hunt_project_stays_current_and_active_with_its_prey_in_view(world, sp):
+    payload, update, hunter, prey, _ = _decide(world, sp, prey_dx=1.0)
+    assert not _suspends(update), "the hunter's own hunt project must not be suspended by its prey"
+    assert update.strategic is None or update.strategic.current_project_id_set != ""
+
+
+@pytest.mark.parametrize("sp", HUNTERS)
+def test_a_combat_engage_project_on_prey_keeps_todays_suspension(world, sp):
+    payload, update, hunter, prey, _ = _decide(world, sp, prey_dx=1.0, project=("combat", ObjectiveKind.DEFEAT_ENEMY))
+    assert _suspends(update), "COMBAT_ENGAGE is not a need project: today's suspension stays"
+
+
+def test_a_hunt_project_naming_x_with_prey_y_also_in_view_stays_current_and_the_hunter_may_take_y(world):
+    base = _species(world, "human")
+    herd = [e for e in world.entities.values() if (e.identity.properties or {}).get("species_id") == "small_plant_eater"][:2]
+    x, y = _at(herd[0], 33.0, 30.0), _at(herd[1], 31.0, 30.0)
+    hunter = replace(_at(base, 30.0, 30.0), biological=replace(base.biological, hunger=PRESSING_HUNGER, sleep_debt=0.0))
+    hunter = _with_project(hunter, "hunger", ObjectiveKind.REACH_LOCATION, x)
+    state = replace(world, entities={hunter.id: hunter, x.id: x, y.id: y}, tick=world.tick + 1)
+    update = TacticalDecisionSystem.evaluate_entity_intent(state, hunter)
+    payload = (update.task.payload_set if update.task is not None else None) or {}
+    assert not _suspends(update)
+    assert payload.get("action") == "ATTACK" and payload.get("target_id") == y.id, f"got {payload}"
+
+
+def _hunter_with_hunt(world, prey_alive=True, prey_dx=1.0):
+    base = _species(world, "human")
+    herd = _species(world, "small_plant_eater")
+    hunter = replace(_at(base, 30.0, 30.0), biological=replace(base.biological, hunger=PRESSING_HUNGER, sleep_debt=0.0))
+    prey = _at(herd, 30.0 + prey_dx, 30.0)
+    if not prey_alive:
+        prey = replace(prey, combat=replace(prey.combat, alive=False, hp=0))
+    hunter = _with_project(hunter, "hunger", ObjectiveKind.REACH_LOCATION, prey)
+    return replace(world, entities={hunter.id: hunter, prey.id: prey}, tick=world.tick + 1), hunter, prey
+
+
+def test_the_hunt_objective_ends_with_its_target_dead_gone_or_out_of_perception(world):
+    """Pins `_hunt_step`'s docstring ("the objective ends with its target") against the lifecycle predicate the evaluator and the work queue share."""
+    from src.core.combat_constants import ENTITY_TARGET_PERCEPTION_RADIUS
+    from src.core.strategic import ObjectiveStatus, ProjectStatus
+    from src.systems.strategic_systems.entity_target_objective import objective_outcome
+    for kwargs, expected in (({"prey_alive": False}, (ObjectiveStatus.RESOLVED, ProjectStatus.COMPLETED)),
+                             ({"prey_dx": ENTITY_TARGET_PERCEPTION_RADIUS + 5.0}, (ObjectiveStatus.FAILED, ProjectStatus.ABANDONED))):
+        state, hunter, prey = _hunter_with_hunt(world, **kwargs)
+        project = hunter.strategic.projects[hunter.strategic.current_project_id]
+        out = objective_outcome(hunter, state, project, project.objectives[0])
+        assert out is not None and (out.objective, out.project) == expected, kwargs
+    state, hunter, prey = _hunter_with_hunt(world)
+    project = hunter.strategic.projects[hunter.strategic.current_project_id]
+    assert objective_outcome(hunter, state, project, project.objectives[0]) is None     # alive and in view: it holds
+    gone = replace(state, entities={hunter.id: hunter})
+    out = objective_outcome(hunter, gone, project, project.objectives[0])
+    assert out is not None and out.project == ProjectStatus.ABANDONED
+
+
+def test_the_evaluator_clears_the_current_project_when_the_prey_dies(world):
+    from src.core.strategic import ProjectStatus
+    from src.systems.strategic_systems.intelligence import StrategicIntelligenceSystem
+    state, hunter, prey = _hunter_with_hunt(world, prey_alive=False)
+    up = StrategicIntelligenceSystem.evaluate_strategic_intent(state, hunter, force=True)
+    assert up.current_project_id_set == "" and up.current_objective_id_set == "", "no stuck current project"
+    assert up.projects_add_or_update and up.projects_add_or_update[0].status == ProjectStatus.COMPLETED, "no orphan: the project is COMPLETED"
