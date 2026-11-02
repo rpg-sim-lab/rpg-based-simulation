@@ -8038,6 +8038,59 @@
   artifact_files: []
   tags: []
 - type: ticket
+  path: agent-working/tickets/todos/TCK-20261101-A-HOSTILE-ATTACKING-YOU-OUTRANKS-THE-GROUP-SHARED-TARGET.md
+  ticket_id: TCK-20261101-A-HOSTILE-ATTACKING-YOU-OUTRANKS-THE-GROUP-SHARED-TARGET
+  title: 'A group member keeps attacking the group''s shared target while an adjacent
+    hostile kills it: self-defence must outrank group_bias in target_score'
+  tier: standard
+  ticket_type: bug
+  date: '2026-11-01'
+  related_code_areas:
+  - src/engine/tactical.py:390-428 (target_score), :542/:552 (VANGUARD BRACKETING)
+  - src/core/death_cause.py, CombatComponent.last_attacker_id
+  artifact_files: []
+  tags: []
+- type: ticket
+  path: agent-working/tickets/todos/TCK-20261101-A-LODGER-DECISION-PATH-AUDIT.md
+  ticket_id: TCK-20261101-A-LODGER-DECISION-PATH-AUDIT
+  title: 'Lodger decision-path audit: classify every remaining path a lodged stayer
+    can still take a decision on, counts first (F3 seam 2.155, ticket 2 of 2)'
+  tier: standard
+  ticket_type: bug
+  date: '2026-11-01'
+  related_code_areas:
+  - src/systems/strategic_systems/intelligence.py:618; cognition.py:74-78; paid_information.py:98;
+    appraisal.py:48/:183; and the rest per the path list.
+  artifact_files: []
+  tags: []
+- type: ticket
+  path: agent-working/tickets/todos/TCK-20261101-A-LODGER-OFFERS-AND-ACCEPTS-RECRUIT-CONTRACTS.md
+  ticket_id: TCK-20261101-A-LODGER-OFFERS-AND-ACCEPTS-RECRUIT-CONTRACTS
+  title: 'A lodged stayer still offers and accepts recruit contracts, and a formation
+    can elect it leader and bind it as holder (F3 seam: cooperation is a third decision
+    path)'
+  tier: standard
+  ticket_type: bug
+  date: '2026-11-01'
+  related_code_areas:
+  - src/domains/cooperation/services.py (REQUEST_HELP / HIRE_SUPPORT -> recruitment
+    contract, ~:278-297)
+  - src/systems/social_systems/contracts.py (ContractService.create_recruitment_contract)
+  artifact_files: []
+  tags: []
+- type: ticket
+  path: agent-working/tickets/todos/TCK-20261101-A-LOW-HP-VANGUARD-TAKES-ROLE-GATED-MOVES-INTO-CONTACT.md
+  ticket_id: TCK-20261101-A-LOW-HP-VANGUARD-TAKES-ROLE-GATED-MOVES-INTO-CONTACT
+  title: 'A VANGUARD below a hp line still takes role-gated moves (BRACKETING) into
+    contact: counts first'
+  tier: standard
+  ticket_type: bug
+  date: '2026-11-01'
+  related_code_areas:
+  - src/engine/tactical.py:542/:552 (VANGUARD BRACKETING), :390-428 (target_score)
+  artifact_files: []
+  tags: []
+- type: ticket
   path: agent-working/tickets/todos/TCK-20261101-A-PANIC-FLIGHT-FIRES-WITH-NO-HOSTILE-PERCEIVED.md
   ticket_id: TCK-20261101-A-PANIC-FLIGHT-FIRES-WITH-NO-HOSTILE-PERCEIVED
   title: A panic flight fires with no hostile perceived
@@ -8125,6 +8178,18 @@
   - src/systems/strategic_systems/intelligence.py (fused_strategic_pass)
   - src/engine/phase_graph.py (should_run_phase)
   - src/core/state.py, src/core/updates.py
+  artifact_files: []
+  tags: []
+- type: ticket
+  path: agent-working/tickets/todos/TCK-20261101-PAID-INFORMATION-TRANSFERS-WITH-NO-DISTANCE-TEST.md
+  ticket_id: TCK-20261101-PAID-INFORMATION-TRANSFERS-WITH-NO-DISTANCE-TEST
+  title: Paid information transfers a lead and gold between two entities with no distance
+    test (counts first)
+  tier: standard
+  ticket_type: bug
+  date: '2026-11-01'
+  related_code_areas:
+  - src/engine/pipeline_phases/paid_information.py:98
   artifact_files: []
   tags: []
 - type: ticket
