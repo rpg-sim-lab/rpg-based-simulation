@@ -63,7 +63,7 @@ rpg-designer's lean, to be confirmed after the counts: real hits only.
 - docs/plans/systemic_world/owner_decision_memo.md rows 83 and 88
 
 ## Related Stored Artifacts
-- e34 trace pair and rows: rpg-planner-ubuntu, #828 composition evidence (path to be confirmed when #828 is pushed). Rows past t2000 are not to be used until ubuntu's t2131 vs u24's t2101 death-tick difference is resolved (lead-planner-u24, 2026-11-03).
+- e34 trace pair and rows: rpg-planner-ubuntu, #828 composition evidence (path to be confirmed when #828 is pushed). Ubuntu's trace rows past t2000 are withdrawn; the plain replay's e34 death at t2101 stands (lead-planner-u24, 2026-11-03).
 
 ## Related Code Areas
 - src/engine/pipeline_phases/hardening.py
@@ -77,7 +77,7 @@ rpg-designer's lean, to be confirmed after the counts: real hits only.
 
 ## Implementation Notes
 2026-11-03 rpg-designer, on ubuntu's rows (relayed, not checked by rpg-planner):
-- About 40 of base e34's 53 grants landed with no hit. Both trees, not part of #828.
+- The proof holds on base e34 t1521-t1991, 40 steps with no hit. The earlier "of 53" total is NOT usable: ubuntu's trace past t2000 is withdrawn (a plain replay on both hosts has e34 dead at t2101, not t2131). A corrected count comes from rpg-planner-ubuntu. Both trees, not part of #828.
 - Counts also split by kind, with max hp reached and near_death firings.
 - Fix lean: require hp_delta < 0, as the law says. Check whether 01_entity_anatomy.md:54 and the two parity rows claim otherwise.
 - Town tiles only by this path. It may inflate panic counts near towns and shortens hp_loss_period on survivors, so ENG's starving and panic numbers carry it on both arms. No ENG re-run for it: ENG's row notes it was measured on a tree with this defect.
