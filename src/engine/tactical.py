@@ -11,22 +11,22 @@ logger = logging.getLogger(__name__)
 from src.core.updates import EntityUpdate, StrategicUpdate, TaskUpdate, NavigationUpdate
 from src.engine.legality import LegalityServiceV2
 from src.engine.positioning import PositioningService
-from src.core.strategic import GoalKind, ProjectStatus, ObjectiveKind
+from src.core.strategic import GoalKind, ProjectStatus
 from src.core.movement_modes import MovementMode
 from src.core.enums import ActionStyle, ReasonCode, EntityRole, Faction
 from src.core.skills import SKILL_REGISTRY, SkillDefinition
 from src.engine.rpg_depth import WoundService
 from src.cognition.common_knowledge import combat_capability_against
 from src.engine.tactical_destinations import retreat_destination, wander_destination
-from src.engine.tactical_threat import hostile_acts_on, perceived_threats, safety_retreat_warranted
+from src.engine.tactical_threat import hostile_acts_on, need_yields, perceived_threats, safety_retreat_warranted
 from src.engine.need_pull import HUNGER_LINE, SLEEP_LINE, entity_need_is_pressing
 from src.engine.tactical_rest import in_place_survival_update
-from src.engine.building_arrival import building_arrival_update
 from src.engine.behavior_consumers import get_entity_signals, get_perception_gate
 from src.engine.sleep_debt import collapse_update, must_collapse
 from src.engine.tactical_hold import held_swing_update, leash_return_update, notice_unengaged_hostile, stalemate_break_update
 from src.engine.hostility import source_identity
-from src.engine.tactical_avoid import avoid_what_can_eat_me, classify_neighbours, eat_at_hunger_corpse
+from src.engine.tactical_objective import pursue_objective
+from src.engine.tactical_avoid import avoid_what_can_eat_me, classify_neighbours
 
 if TYPE_CHECKING:
     from src.core.state import EntityState, AuthoritativeState
@@ -154,96 +154,6 @@ class TacticalDecisionSystem:
     """
 
     @staticmethod
-    def _pursue_objective(state: AuthoritativeState, entity: EntityState, neighbors: Optional[List[EntityState]]) -> Optional[EntityUpdate]:
-        """The objective-pursuit step (Pillar 5.1): walk to, or act at, the current objective; None when the objective gives no step.
-
-        Moved out of the `if not hostiles:` block unchanged (TCK-20261031-AN-ENGAGEMENT-OVERRIDES-A-PRESSING-NEED) so the pressing-need path can run it
-        with hostiles in sight while the no-hostile path runs it as before."""
-        # Pillar 5.1: Objective Pursuit
-        if entity.strategic.current_objective_id:
-            obj_id = entity.strategic.current_objective_id
-            # Find the objective in projects
-            project = entity.strategic.projects.get(entity.strategic.current_project_id or "")
-            if project:
-                obj = next((o for o in project.objectives if o.id == obj_id), None)
-                if obj and obj.kind == "reach_location" and obj.target:
-                    target_pos, node_id, building_id = TacticalDecisionSystem._resolve_target_position(state, obj)
-
-                    if target_pos:
-                        dist = abs(target_pos[0] - entity.navigation.position[0]) + abs(target_pos[1] - entity.navigation.position[1])
-                        if dist <= 1.0:
-                            if node_id is not None:
-                                from src.core.updates import InteractionUpdate
-                                return EntityUpdate(
-                                    entity_id=entity.id,
-                                    task=TaskUpdate(
-                                        work_kind_set="ENTITY_ACT",
-                                        payload_set={"action": "INTERACT", "target_id": node_id}
-                                    ),
-                                    interaction=InteractionUpdate(target_node_id=node_id, progress_delta=1)
-                                )
-                            elif building_id is not None:
-                                return building_arrival_update(state, entity, project, building_id)
-                            else:
-                                # Arrived at a carcass the hunger goal pointed at (decision 44): eat where it lies.
-                                return eat_at_hunger_corpse(entity, state, project, obj) or EntityUpdate(entity_id=entity.id)
-                        else:
-                            # Still en-route — update nav target and stay idle
-                            # so the brain re-evaluates on each cadence tick.
-                            return EntityUpdate(
-                                entity_id=entity.id,
-                                navigation=NavigationUpdate(target_set=target_pos, movement_mode_set=MovementMode.WANDER),
-                            )
-                elif obj and obj.kind not in (ObjectiveKind.REACH_LOCATION, ObjectiveKind.DEFEAT_ENEMY):
-                    # Pillar 5.1 continued: every other ObjectiveKind System A/B can
-                    # produce reaches real execution via ObjectiveIntentResolver +
-                    # ActionIntentAdapter, not just REACH_LOCATION. DEFEAT_ENEMY is
-                    # excluded — handled entirely by the hostile-engagement branch
-                    # below (gated on `hostiles`, not `obj.kind`).
-                    target_pos = None
-                    node_id = None
-                    if obj.target:
-                        target_pos, node_id, _ = TacticalDecisionSystem._resolve_target_position(state, obj)
-
-                    if target_pos:
-                        dist = abs(target_pos[0] - entity.navigation.position[0]) + abs(target_pos[1] - entity.navigation.position[1])
-                        if dist > 1.0:
-                            return EntityUpdate(
-                                entity_id=entity.id,
-                                navigation=NavigationUpdate(target_set=target_pos, movement_mode_set=MovementMode.WANDER),
-                            )
-                        if obj.kind == ObjectiveKind.REACH_RESOURCE and node_id is not None:
-                            # Arrived at the resource node: transition to a harvest
-                            # action instead of falling through to
-                            # ObjectiveIntentResolver's REACH_RESOURCE -> MOVE_TO
-                            # mapping, which would re-issue navigation forever.
-                            from src.engine.intent.action_intent import ActionIntent, ActionIntentAdapter
-
-                            harvest_intent = ActionIntent(
-                                kind="HARVEST_RESOURCE",
-                                actor_id=entity.id,
-                                target_id=node_id,
-                                source_opportunity_id=obj.id,
-                                reason=f"Arrived at resource node {node_id} for objective {obj.id}",
-                            )
-                            updates = ActionIntentAdapter.execute(
-                                entity, harvest_intent, current_tick=state.tick, neighbor_view=neighbors, context=state
-                            )
-                            return updates.get(entity.id, EntityUpdate(entity_id=entity.id))
-
-                    from src.domains.adventure.resolver import ObjectiveIntentResolver
-                    from src.engine.intent.action_intent import ActionIntentAdapter
-
-                    intent = ObjectiveIntentResolver.resolve(
-                        entity.id, obj, payload={"position": target_pos} if target_pos else {}
-                    )
-                    updates = ActionIntentAdapter.execute(
-                        entity, intent, current_tick=state.tick, neighbor_view=neighbors, context=state
-                    )
-                    return updates.get(entity.id, EntityUpdate(entity_id=entity.id))
-        return None
-
-    @staticmethod
     def evaluate_entity_intent(
         state: AuthoritativeState,
         entity: EntityState,
@@ -340,8 +250,7 @@ class TacticalDecisionSystem:
         # SURV-07 LAW P (TCK-20261031-AN-ENGAGEMENT-OVERRIDES-A-PRESSING-NEED): a need past its escalation onset gives way only to a hostile ACTING on the subject
         # (`need_yields`). With hostiles in sight and none acting, the need path runs first: before the presence test below, role obligation, cohesion and target
         # selection (so a follower too takes no part in the group's target). Flight keeps AGENCY-07's `present_threat_to`.
-        from src.ai.goals.present_threat import need_yields
-        need_first = bool(hostiles) and entity_need_is_pressing(entity) and not need_yields(entity, state)
+        need_first = bool(hostiles) and entity_need_is_pressing(entity) and not need_yields(entity, hostiles, state.tick)
 
         # 4. Strategic Persistence (Pillar 5.1): a need project the subject is walking to is not suspended for a hostile that is not acting on it
         strat_up = None if need_first and _serves_a_need(entity) else _suspend_project_for_threat(entity, hostiles)
@@ -369,12 +278,12 @@ class TacticalDecisionSystem:
         if need_first:
             # LAW P: the need path (the hunger arrival, or the building arrival that serves the need) runs with hostiles in sight. A subject whose project is not
             # a need project has nothing for the need to do here; it does not engage (it waits for the brain, which a pressing need wakes) while nothing acts on it.
-            if _serves_a_need(entity) and (need_update := TacticalDecisionSystem._pursue_objective(state, entity, neighbors)) is not None:
+            if _serves_a_need(entity) and (need_update := pursue_objective(state, entity, neighbors, TacticalDecisionSystem._resolve_target_position)) is not None:
                 return need_update
             return EntityUpdate(entity_id=entity.id, strategic=strat_up)
 
         if not hostiles:
-            if (objective_update := TacticalDecisionSystem._pursue_objective(state, entity, neighbors)) is not None:
+            if (objective_update := pursue_objective(state, entity, neighbors, TacticalDecisionSystem._resolve_target_position)) is not None:
                 return objective_update
 
 

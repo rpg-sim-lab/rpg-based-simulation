@@ -72,7 +72,7 @@ ROWS_266 = [
 @pytest.mark.parametrize("hunger,hostile_at,hostile_task,label,winner", ROWS_266, ids=[r[3] for r in ROWS_266])
 def test_the_presence_skip_row(monkeypatch, hunger, hostile_at, hostile_task, label, winner):
     seen = {"rest_called": 0, "pursue_called": 0, "hostiles": 0}
-    real_rest, real_pursue, real_classify = tactical_module.in_place_survival_update, TacticalDecisionSystem._pursue_objective, tactical_module.classify_neighbours
+    real_rest, real_pursue, real_classify = tactical_module.in_place_survival_update, tactical_module.pursue_objective, tactical_module.classify_neighbours
 
     def spy_rest(*a, **k):
         seen["rest_called"] += 1
@@ -89,7 +89,7 @@ def test_the_presence_skip_row(monkeypatch, hunger, hostile_at, hostile_task, la
 
     monkeypatch.setattr(tactical_module, "in_place_survival_update", spy_rest)
     monkeypatch.setattr(tactical_module, "classify_neighbours", spy_classify)
-    monkeypatch.setattr(TacticalDecisionSystem, "_pursue_objective", staticmethod(spy_pursue))
+    monkeypatch.setattr(tactical_module, "pursue_objective", spy_pursue)
     state, hero = _hungry_hero(hunger, hostile_at, hostile_task)
     update = TacticalDecisionSystem.evaluate_entity_intent(state, hero)
     payload = (update.task.payload_set if update.task is not None else None) or {}

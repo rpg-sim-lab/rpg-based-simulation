@@ -16,7 +16,10 @@ the subject will have ON ARRIVAL, not the need it has now. Pure functions: no st
 """
 from __future__ import annotations
 
-from typing import Optional, Tuple
+from typing import TYPE_CHECKING, Optional, Tuple
+
+if TYPE_CHECKING:
+    from src.core.state import EntityState
 
 # The pull is the raw need below ESCALATION_ONSET (a fraction of the consequence line), then a smoothstep adds up to
 # ESCALATION_AMPLITUDE by ESCALATION_FULL.
@@ -78,7 +81,7 @@ def need_is_pressing(hunger: float, sleep_debt: float) -> bool:
     return hunger >= ESCALATION_ONSET * HUNGER_LINE or sleep_debt >= ESCALATION_ONSET * SLEEP_LINE
 
 
-def entity_need_is_pressing(entity) -> bool:
+def entity_need_is_pressing(entity: "EntityState") -> bool:
     """`need_is_pressing` read off a subject: the one way a site asks "is this subject's need pressing" (the pair with `need_yields`)."""
     return need_is_pressing(entity.biological.hunger, entity.biological.sleep_debt)
 

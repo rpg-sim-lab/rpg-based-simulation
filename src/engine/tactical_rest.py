@@ -21,9 +21,14 @@ from src.core.updates import EntityUpdate, NavigationUpdate, TaskUpdate
 from src.engine.appraisal import can_eat_item
 from src.engine.biological_needs import need_rates
 from src.engine.domain.core_actions import EAT_AT_CORPSE_REACH as CARCASS_NEAR
-from src.engine.need_pull import ESCALATION_FULL, SLEEP_LINE, arrival_fraction, entity_need_is_pressing
+from src.engine.need_pull import (
+    ESCALATION_FULL,
+    SLEEP_LINE,
+    arrival_fraction,
+    entity_need_is_pressing,
+)
 from src.engine.service_reach import service_tile
-from src.engine.tactical_threat import present_threat_terms
+from src.engine.tactical_threat import need_yields, present_threat_terms
 
 if TYPE_CHECKING:
     from src.core.state import AuthoritativeState, EntityState
@@ -62,8 +67,7 @@ def _in_danger(state: Optional[AuthoritativeState], entity: EntityState, hostile
     if not hostiles:
         return False
     if state is not None and entity_need_is_pressing(entity):
-        from src.ai.goals.present_threat import need_yields
-        return need_yields(entity, state)
+        return need_yields(entity, hostiles, state.tick)
     return bool(present_threat_terms(entity, list(hostiles)))
 
 
