@@ -18,7 +18,7 @@ from src.core.skills import SKILL_REGISTRY, SkillDefinition
 from src.engine.rpg_depth import WoundService
 from src.cognition.common_knowledge import combat_capability_against
 from src.engine.tactical_destinations import retreat_destination, wander_destination
-from src.engine.tactical_threat import hostile_acts_on, need_yields, perceived_threats, safety_retreat_warranted
+from src.engine.tactical_threat import hostile_acts_on, need_yields, perceived_threats, present_threats, safety_retreat_warranted
 from src.engine.need_pull import HUNGER_LINE, SLEEP_LINE, entity_need_is_pressing
 from src.engine.tactical_rest import in_place_survival_update
 from src.engine.behavior_consumers import get_entity_signals, get_perception_gate
@@ -212,7 +212,7 @@ class TacticalDecisionSystem:
             social_context=entity.social
         )
         
-        threats = perceived_threats(entity, neighbors)
+        threats = present_threats(entity, perceived_threats(entity, neighbors))  # a flight needs a PRESENT threat (AGENCY-07 terms), the test the retreat goal begins and ends on (divergence 2.156)
         panic_destination = retreat_destination(state, entity, threats) if (emotion.is_fleeing and threats) else None
         # A flight with no destination is not flight (designer ruling, V3): a panic that resolves to the subject's own tile is not taken, and the tick
         # falls through the existing order (in-place survival, then the arrival at a building). A real tactical hostile keeps the old freeze, so the

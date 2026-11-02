@@ -19,7 +19,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from src.ai.goals.scorers_support import perceived_hostiles
-from src.engine.tactical_threat import need_yields, present_threat_terms
+from src.engine.tactical_threat import need_yields, present_threats
 
 if TYPE_CHECKING:
     from src.core.state import AuthoritativeState, EntityState
@@ -27,8 +27,7 @@ if TYPE_CHECKING:
 
 def present_threat_to(entity: "EntityState", state: "AuthoritativeState") -> bool:
     """True when a perceived hostile makes a present threat to `entity` (AGENCY-07's terms)."""
-    hostiles = perceived_hostiles(entity, state)
-    return bool(hostiles) and bool(present_threat_terms(entity, hostiles))
+    return bool(present_threats(entity, perceived_hostiles(entity, state)))
 
 
 def acting_threat_to(entity: "EntityState", state: "AuthoritativeState") -> bool:

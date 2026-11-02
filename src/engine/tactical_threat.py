@@ -95,6 +95,12 @@ def present_threat_terms(entity: EntityState, hostiles: Sequence[EntityState]) -
     return terms
 
 
+def present_threats(entity: EntityState, hostiles: Sequence[EntityState]) -> List[EntityState]:
+    """The perceived ``hostiles`` when they make a present threat to ``entity`` (`present_threat_terms` is non-empty), else none: the ONE test that a panic flight
+    (`TacticalDecisionSystem`), a retreat project's adoption (`CombatRetreatScorer`) and its completion (`retreat_outcome`) share (TCK-20261031-A-RETREAT-PROJECT-OUTLIVES-ITS-THREAT)."""
+    return list(hostiles) if hostiles and present_threat_terms(entity, hostiles) else []
+
+
 def safety_retreat_warranted(entity: EntityState, hostiles: Sequence[EntityState], safety_pressure: float) -> bool:
     """A cautious subject retreats only from a present threat; it never retreats from a hostile merely seen."""
     return bool(hostiles) and safety_pressure > CAUTIOUS_SAFETY_PRESSURE and bool(present_threat_terms(entity, hostiles))

@@ -35,6 +35,12 @@ def _navigations(state: Any) -> Iterable[Any]:
         yield (f"entity {e.id}", e.navigation)
 
 
+def _projects(state: Any) -> Iterable[Any]:
+    for e in (getattr(state, "entities", None) or {}).values():
+        for project in ((getattr(getattr(e, "strategic", None), "projects", None)) or {}).values():
+            yield (f"project {project.id} of entity {e.id}", project)
+
+
 def _buildings(state: Any) -> Iterable[Any]:
     for b in (getattr(state, "buildings", None) or {}).values():
         yield (f"building {b.id}", b)
@@ -44,6 +50,8 @@ def _buildings(state: Any) -> Iterable[Any]:
 FIELD_RULES: List[FieldRule] = [
     FieldRule("lodged_in", _navigations, "lodged_in", fill=lambda state, owner: None, ruling="2.155: a state that predates lodging lodged no one"),
     FieldRule("beds", _buildings, "beds", fill=None, ruling="2.155: beds are copied from content at compile; the checkpoint carries no compiled content"),
+    # A pre-2.156 state kept no retreat clear window, so a project that predates it has none yet (it opens on the first clear observation); None is exactly that state.
+    FieldRule("cleared_since", _projects, "cleared_since", fill=lambda state, owner: None, ruling="2.156: a state that predates the retreat clear window had no window"),
 ]
 
 
