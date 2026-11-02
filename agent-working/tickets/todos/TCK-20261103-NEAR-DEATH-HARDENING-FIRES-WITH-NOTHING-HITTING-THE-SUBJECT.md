@@ -63,7 +63,7 @@ rpg-designer's lean, to be confirmed after the counts: real hits only.
 - docs/plans/systemic_world/owner_decision_memo.md rows 83 and 88
 
 ## Related Stored Artifacts
-- e34 trace pair and rows: rpg-planner-ubuntu, #828 composition evidence (path to be confirmed when #828 is pushed). Ubuntu's trace rows past t2000 are withdrawn; the plain replay's e34 death at t2101 stands (lead-planner-u24, 2026-11-03).
+- e34 trace pair and rows: rpg-planner-ubuntu, #828 composition evidence (path to be confirmed when #828 is pushed). Ubuntu's trace rows past t2000 describe `_run_engine` only (e34 death t2131), not the reference; the pinned build_kernel's e34 death at t2101 is the reference (lead-planner-u24, 2026-11-03; cause of the runner difference open).
 
 ## Related Code Areas
 - src/engine/pipeline_phases/hardening.py
@@ -77,7 +77,7 @@ rpg-designer's lean, to be confirmed after the counts: real hits only.
 
 ## Implementation Notes
 2026-11-03 rpg-designer, on ubuntu's rows (relayed, not checked by rpg-planner):
-- Use only the corrected count in the Request Summary (37 of 40; 29 since t1666). Earlier "53", "47" and "about 40 with no hit" are NOT usable: ubuntu's trace past t2000 is withdrawn (a plain replay on both hosts has e34 dead at t2101, not t2131). Both trees, not part of #828.
+- Use only the corrected count in the Request Summary (37 of 40; 29 since t1666). Earlier "53", "47" and "about 40 with no hit" are NOT usable: past t2000 ubuntu's trace is a `_run_engine` run, which leaves the pinned reference between t2000 and t2100 (the pinned replay on both hosts has e34 dead at t2101; `_run_engine` has t2131). Both trees, not part of #828.
 - Counts also split by kind, with max hp reached and near_death firings.
 - Fix lean: require hp_delta < 0, as the law says. Check whether 01_entity_anatomy.md:54 and the two parity rows claim otherwise.
 - Town tiles only by this path. It may inflate panic counts near towns and shortens hp_loss_period on survivors, so ENG's starving and panic numbers carry it on both arms. No ENG re-run for it: ENG's row notes it was measured on a tree with this defect.
