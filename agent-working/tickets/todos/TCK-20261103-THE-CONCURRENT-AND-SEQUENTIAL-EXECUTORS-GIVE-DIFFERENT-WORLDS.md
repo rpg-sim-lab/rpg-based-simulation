@@ -1,0 +1,94 @@
+---
+status: active
+layer: engine
+authority: P1
+audience: agent
+ticket_id: TCK-20261103-THE-CONCURRENT-AND-SEQUENTIAL-EXECUTORS-GIVE-DIFFERENT-WORLDS
+phase: open
+date: 2026-11-03
+tags: []
+---
+
+# TCK-20261103-THE-CONCURRENT-AND-SEQUENTIAL-EXECUTORS-GIVE-DIFFERENT-WORLDS
+
+## Title
+The concurrent and sequential executors give different worlds on the same seed, with no load, against the bit-identical law
+
+## Status
+OPEN
+
+## Tier
+standard
+
+## Type
+bug
+
+## Priority
+P1
+
+## Request Summary
+Found by rpg-planner-ubuntu on 2026-11-03 while chasing a #828 V3 red. Relayed by lead-planner-u24: implementer's results, raw being located, not checked by the lead or rpg-planner.
+
+On crowded s45:
+- build_kernel with only `ConcurrentExecutionAdapter` reproduces `_run_engine` (t2000 014bd9e2230c, e34 dead).
+- build_kernel with only a 100 ms budget equals plain pinned (d60d4287b8f4, e34 alive), so the budget is out.
+- The governor never leaves NORMAL, the host was idle, and each executor repeats its own result. So results change with no load, and it is not random.
+- The #828 arm splits before t900. The base splits in t2051-2100.
+
+Production takes the concurrent path (src/engine/kernel.py:193-198: `profile.max_worker_count > 0` picks `ConcurrentExecutionAdapter`; PROD_SMALL has 2 workers). The RPG gate and tools/rpg_measure take `LocalSequentialExecutor`.
+
+The law exists: docs/engine/matrices/full_certification_test_matrix.md requires bit-identical equivalence between local and concurrent runs, and the certification contract requires a sequential baseline hash. Its kernel test reportedly runs one tick (lead-planner-u24's read), and short runs would miss a split this late.
+
+rpg-designer's framing (2026-11-03): an executor difference is a defect to fix so that the two agree. Pinned stays the measuring ruler until then, and is not a claim about what players get.
+
+Why it matters: what production runs and everything measured since the paired tool landed are different worlds on these seeds. How much they differ in general is unknown.
+
+## Scope
+1. Name the cause: rpg-planner-ubuntu's per-tick diff t1-t900 on the #828 arm and t2051-2100 on base, then the first differing field and the code that writes it. Likely shapes, none shown: worker result order, a stale read in a worker, an RNG draw that depends on packet grouping.
+2. Counts: how many seeds and worlds split, and the first split tick, base main, 2 workers vs sequential.
+3. A long-horizon equivalence test (long enough to catch these seeds, within test budgets), failing today. Home and tier are testing-planner's call.
+4. Fix so that the concurrent path equals the sequential path, in the direction that leaves sequential hashes unchanged where possible, so pinned evidence and baselines stay valid. If the fix must move sequential results, stop and report: that's a new baseline and an owner decision.
+
+## Out of Scope
+- Governor or budget behaviour under load (not implicated by the controls; rpg-designer treats that as a separate degraded-world question).
+- The digest coverage (TCK-20261103-STATE-DIGEST-MAY-OMIT-FIELDS-THAT-DECISIONS-READ), though a hash equal under a narrow digest doesn't prove the executors agree, so the equivalence test should read that ticket's result.
+- Re-measuring #826 and #828.
+
+## Acceptance Criteria
+- Cause named with file:line and a replay.
+- The long-horizon equivalence test passes on the standard worlds and seeds.
+- Sequential hashes unchanged, shown by neutral runs, or a stop as in Scope 4.
+- docs/engine and the parity ledger (infrastructure.yaml) state the law as tested, with its horizon.
+- Hot-loop: probably yes (executor and commit path). Under the perf pause (#715 6556861718) timing is NOT MEASURED unless the fix needs it; say so at close.
+
+## Related Tickets
+- TCK-20261103-A-MEASUREMENT-NOT-ON-THE-PINNED-RUNNER-CALLS-ITSELF-EVIDENCE
+- TCK-20261103-STATE-DIGEST-MAY-OMIT-FIELDS-THAT-DECISIONS-READ
+- TCK-20261031-A-PAIR-RE-FORMS-AND-LEAVES-A-GROUP-EVERY-TWO-TICKS (#828)
+- TCK-20261031-A-RETREAT-PROJECT-OUTLIVES-ITS-THREAT (#826)
+
+## Related Docs
+- docs/engine/matrices/full_certification_test_matrix.md
+- docs/engine/deterministic_execution.md
+- docs/plans/architecture/port_leak_audit.md (section 6)
+
+## Related Stored Artifacts
+- None yet; ubuntu's raw is being located.
+
+## Related Code Areas
+- src/engine/kernel.py:193-198, src/engine/executor.py (`ConcurrentExecutionAdapter`, `LocalSequentialExecutor`), src/core/worker_protocol.py
+- tests/integration/kernel/test_executor_determinism.py, test_determinism_suite.py, test_tied_worker_result_order.py, tests/perf/test_concurrency_parity.py
+- tools/calibrate_simq.py (`_run_engine`), tools/test_architecture/rpg_gate_run.py (`build_kernel`)
+
+## Assumptions / Open Questions
+- Priority P1 because each executor repeats, so same-config replay holds. rpg-planner would raise it to P0 if counts show most seeds split early. The lead may want the owner's view.
+- Who holds this: src is rpg-planner's seat; the executor may sit with perf or architecture. Ask the lead on dispatch.
+- Dispatch needs an owner yes.
+
+## Implementation Notes
+
+## Test Summary
+
+## Files Changed
+
+## Completion Summary
