@@ -127,6 +127,19 @@ def test_a_pressing_follower_takes_no_part_in_the_groups_target_unless_it_is_act
             assert payload.get("action") != "EAT" and payload.get("target_id") == 2
 
 
+def test_unit_case_13_16_a_subject_at_hunger_80_pursuing_a_fleeing_scout_that_never_attacks_it_keeps_its_hunger_project():
+    """ENG item 7, built from the recorded values (s44 trace t1605-1610: subject 13 at hunger 80, past onset, pursues scout 16, which flees and never acts on it)."""
+    fleeing = TaskComponent(work_kind="ENTITY_MOVE", payload={"target_position": (39.0, 5.0), "reason": "FLEE_THREAT"})
+    state, hero = _hungry_hero(PRESSING_HUNGER, hostile_at=(45.0, 26.0), hostile_task=fleeing, hero_at=(45.0, 31.0))
+    hero = replace(hero, task=TaskComponent(work_kind="ENTITY_ACT", payload={"action": "ATTACK", "target_id": 2}))   # 13 is in ATTACK on 16
+    state = AuthoritativeState(tick=1, seed=1, entities={1: hero, 2: state.entities[2]}, buildings=state.buildings, blocked_tiles=state.blocked_tiles,
+                               building_tiles={}, terrain={})
+    update = TacticalDecisionSystem.evaluate_entity_intent(state, hero)
+    assert update.navigation is not None and update.navigation.target_set == INN        # walks to the inn, keeps its hunger objective
+    assert not (update.task and (update.task.payload_set or {}).get("action") == "ATTACK")
+    assert update.strategic is None, "the hunger project must not be suspended for a hostile that is not acting on the subject"
+
+
 # ---- site 2: tactical_rest rest in place -------------------------------------------------------------------------------------------------------------------
 
 def _sleepy_hero(sleep_debt):
