@@ -15,16 +15,16 @@ tags: []
 Base tree = origin/main 30307228c (F3 landed). Arm tree = effd2e8fc (the churn fix merged onto it). Host: ubuntu, cores 4-5, one run at a time, audit mode for C and the traces,
 `PYTHONHASHSEED=0`. Scratch trees and the raw per-run json stay in `/data/vboxuser/Work/groups_base/` (`trees/30307228c`, `trees/effd2e8fc`, `out15F/` = the 30 C runs as json, `out_decF/`
 = the four probe json, `out_t2/`, `out_e23/`, `out_e30/`, `out_occ/`, `out_trace_lodge/`, `out_hashF/`, `out_decF/`). `.json` files are not committed (the repository ignores them under
-`stored_artifacts`); the traces (`.jsonl`), the logs, the scripts and text summaries of the probe json are.
+`stored_artifacts`). Since the trim (owner ruling #715 6573916118) the raw files are out of git too: the per-tick traces (`traces/`, 11 `.jsonl` files; 5 small ones that other tickets cite stay in git: the e10 rows and trust run, both e23 traces, the frontier s45 trace; the other 6 are listed with bytes and sha256 in `../README_raw_data.md`) are kept under `/data/vboxuser/Work/groups_base/raw_evidence/` (same relative path). The run logs under `logs/` were never in git (`*.log` is ignored); they stay on disk in `/data/vboxuser/Work/groups_base/*.log`. Committed here: the scripts, the READMEs and the text summaries.
 
 ## Layout
 
 | Path | What |
 |---|---|
-| `logs/` | `run15F.log`, `run15F_urban.log` (C), `hashF.log` (3 pinned hash runs on f6cd0e057), `ctlL.log` (lodger-row control), `D.log` (seed 0 vs 1), probe/trace run logs |
+| `logs/` (on disk only, not in git) | `run15F.log`, `run15F_urban.log` (C), `hashF.log` (3 pinned hash runs on f6cd0e057), `ctlL.log` (lodger-row control), `D.log` (seed 0 vs 1), probe/trace run logs |
 | `scripts/` | the wrappers and drivers (`m15.py`, `m15_dec.py`, `trace_*.py`, `*.sh`, `outside_follow.py` with its planted-state test, `decan.py`, `t2sum.py`, `t2scan.py`) |
 | `summaries/` | C world-end reports; probe summaries (decision rows by kind and change within 10 ticks, leaves, DEFEAT rows); outside-follower and contract rows (urban s42); Tier 2 per-victim rows and range-entry scans |
-| `traces/` | per-tick traces: `f43_*.jsonl` (frontier s43 e12/e6), `e30/`, `e23/` (urban s42 both arms), `tier2/` (crowded s43, frontier s45, urban s44; crowded s43 e10/e27 and trust runs), `occ/` (occupancy and retreat probe) |
+| `traces/` (5 cited small files in git; the rest out: see `../README_raw_data.md`) | per-tick traces: `f43_*.jsonl` (frontier s43 e12/e6), `e30/`, `e23/` (urban s42 both arms), `tier2/` (crowded s43, frontier s45, urban s44; crowded s43 e10/e27 and trust runs), `occ/` (occupancy and retreat probe) |
 
 ## What was run (all hash-neutral wrappers; no src change)
 

@@ -61,7 +61,12 @@ e12 and e23 are final NOT FED, and v9 NOT FED. e12 and e23 died within 50 ticks 
 - Which of F3 or this batch landed `checkpoint_fields.py` first: F3 did (30307228c); this batch's four rows are in F3's table and shape, one class name `CheckpointFieldMissingError`.
 
 ## Evidence
-`agent-working/stored_artifacts/TCK-20261031-A-PAIR-RE-FORMS-AND-LEAVES-A-GROUP-EVERY-TWO-TICKS/evidence/` (set15, timing, trace15, trace59f, fixture, out6, trace); raw scratch under /data/vboxuser/Work/groups_base (kept until the PR lands).
+`agent-working/stored_artifacts/TCK-20261031-A-PAIR-RE-FORMS-AND-LEAVES-A-GROUP-EVERY-TWO-TICKS/evidence/` (f3_remeasure: README with the corrections, scripts and text summaries; set15, timing, trace15, trace59f, fixture, out6, trace, stepa: scripts and text summaries). The raw run json, per-tick jsonl traces, stdout and `.done` files (167 files, about 4.2 MB) are out of git after the owner's trim ruling (#715 6573916118): `evidence/README_raw_data.md` of each ticket lists them with bytes and sha256; the files are kept under /data/vboxuser/Work/groups_base/raw_evidence/ (same relative paths). The run logs of f3_remeasure were never in git (`*.log` is ignored).
+
+## Changed expectations (tests)
+- `tests/certification/test_evidence_levels.py`: `FakeState` carries `next_group_id = GROUP_ID_BASE` (the canonical hasher now reads the non-optional field; no tolerant read in src).
+- `tests/unit/tools/test_mechanism_registry_completeness_check.py::test_wider_scope_numbers_pinned`: `scope_files` 351 to 353 and `unbound_files` 247 to 249 (the two new unbound helper modules `src/core/group_record.py` and `src/core/group_update_merge.py`; ticket and files named in the history line). If #828 and the ENG branch (which moves `scope_files` 351 to 352 in the same test) both land, whichever lands second re-counts BOTH numbers on the merged tree and does not add deltas by hand.
+- Earlier changed expectations: see "What the batch changes" above (hand-built groups gain `contract_holder_id`; the lifecycle pin and kernel fixture regenerated).
 
 - Local-only observation: tests/unit/perf/test_benchmark_record.py::...cpu_affinity fails when pytest runs under a taskset pin (cores 4-5) and passes without the pin; it is main's perf test reacting to the affinity, not this batch.
 - Step (a) (live-group iteration) is in the batch: state hashes unchanged on three worlds (66101cd32511, a872018bf494, ae41db137ac7), per-pass visits = live at phase start + same-tick adds, residual 0.

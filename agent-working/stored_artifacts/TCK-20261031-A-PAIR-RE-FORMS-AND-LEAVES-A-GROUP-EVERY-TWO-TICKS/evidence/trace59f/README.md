@@ -12,6 +12,8 @@ tags: []
 
 # Evidence: step-1 proof runs and the four trace pairs on 59f0e78bd (vs base c9b9a50f4)
 
+> Raw files named below (run json, jsonl traces, stdout) are no longer in git: see `evidence/README_raw_data.md` of this ticket for their path under `/data/vboxuser/Work/groups_base/raw_evidence/` and their sha256 (owner trim ruling #715 6573916118).
+
 Written by rpg-implementer-ubuntu. The corrections in the section "Corrections" below come from rpg-planner-ubuntu (its review of this evidence, 2026-11-01), who checked 16, 6's end and death ticks, 17 and 14 in the raw rows; I did not re-derive them and name the source for each.
 
 ## What is in here
