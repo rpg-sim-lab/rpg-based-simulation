@@ -172,3 +172,16 @@ Not blocking F3.
 - The N14 STOP is NOT waived by this attribution: N14 lands only on a re-measure that clears it.
 - Base evidence (a base defect, not a target): base subject 17 is pinned starving at (66-67,24), hunger 100 all run, short REST holds, 1 kill, 0 collapses.
 - Order ask (designer -> owner via lead): F3 -> precedence fix -> N14 re-measure -> A' -> nav -> D80C -> #781.
+
+## 2026-11-01 extra counts on the N14-on-F3 re-measure (rpg-designer ruling, via rpg-planner)
+From the same runs as the N14 report, for the arms base, F3 and N14-on-F3, report the counts in TCK-20261101-A-CONGESTION-BLOCKER-RESOLUTION-SENDS-A-SUBJECT-TO-THE-TOWN-CENTRE:
+- blocker_congestion creations per run;
+- the share created within 50t of a leave or at a reach tile;
+- the resolution's target kind (town_center or other) and walk length;
+- deaths within 200t of such a walk;
+- the target's writer.
+Hypothesis: the leaver churn registers the congestion blocker, so this fix may remove the trigger.
+
+## 2026-11-01 F3 churn row from the groups batch C trace (rpg-designer ruling, via rpg-planner)
+- frontier s43 e12 (churn fix arm, F3 on both arms): leaves its lodging every 9-11 ticks from t1301 (plain REST end: ENTITY_ACT, reason/action None, objective fatigue_20003, proj_fatigue_1228, building 20003 functional) and re-claims a bed only at its brain cadence slots (all granted; beds 10, held 0). Its t1392 leave was followed by the t1398 slot with hostile e30 in view; it walked a FATIGUE-project INTERCEPTING move and died t1433 DEFEAT.
+- Ruled: F3 / N14 exposure (leave -> out-of-bed gap until the next cadence slot), not the churn fix. Count it on the N14-on-F3 re-measure beside relodge_within_20: leaves per lodger-hour, ticks out of bed between a REST-end leave and the next claim, and deaths inside that gap.

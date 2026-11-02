@@ -75,3 +75,7 @@ Filed on the rpg-planner seat after :1610; not dispatched.
 ## Files Changed
 
 ## Completion Summary
+
+## 2026-11-01 counts row from groups batch C (rpg-designer, via rpg-planner)
+- crowded s43 v9 (churn-on-F3, ruled NOT FED): ungrouped, on its own COMBAT_ENGAGE walk. Its objective is combat_engage_34 while its task target is 14, a stale or mismatched objective target with an unnamed writer.
+- Count it on this ticket's counts step: how often a COMBAT_ENGAGE objective's subject differs from the task target (per run, with durations), and which writer sets each side (file:line). If the mismatch turns out to be a goal-kind/record mapping issue rather than an orphaned record, move the row to TCK-20261028-MAPPED-GOAL-KINDS-NEVER-MATCH-THEIR-OWN-PROJECT-RECORDS.

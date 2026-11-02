@@ -66,3 +66,9 @@ P2
 ## Files Changed
 
 ## Completion Summary
+
+## 2026-11-01 quiet-host repro (rpg-planner)
+- Run: tests/integration/certification/test_catalog_arena_smoke.py::test_catalog_arena_small_can_tick on u24 at 986510e3d (src identical to main 1bc1de313), load average about 1.0, no heavy process.
+- Result: 4/4 passed, 3.5-3.9 s each. Did not reproduce.
+- Per the known-red entry's note, it is reclassified flaky. Text given to testing-planner via lead-planner-u24: kind flaky, owner rpg-planner, expires 2026-12-31.
+- Retire at 12-31 if CI shows no recurrence. A recurrence goes to the perf coarse check.

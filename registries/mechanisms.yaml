@@ -207,6 +207,7 @@ mechanisms:
       - src/engine/hostility.py::perceived_hostile
       - src/engine/rpg_depth.py::LeashService
       - src/world/motivation/pressure_resolver.py::MotivationPressureResolver
+      - src/engine/tactical_threat.py::present_threats
     verified:
       instrument: corpus_run
       verdict: contradicted
@@ -1577,6 +1578,8 @@ mechanisms:
       - src/ai/goals/live_record_route.py::route_live_record
       - src/ai/goals/live_record_route.py::orphan_switch_candidate
       - src/ai/goals/live_record_route.py::supersede_on_win
+      - src/core/strategic.py::note_threat_state
+      - src/core/strategic.py::restart_clear_window
     verified:
       instrument: scenario
       verdict: observed
@@ -1629,6 +1632,12 @@ mechanisms:
         `concern_intake`'s or `strategic_learning_bias`'s own separate branches (different
         preconditions, not triggered by this staging), which remain unverified at `code_trace`
         pending their own scenarios.
+        **Note, added 2026-11-01 (TCK-20261031-A-RETREAT-PROJECT-OUTLIVES-ITS-THREAT, divergence 2.156):** a
+        COMBAT_RETREAT project is adopted only under `present_threat_to` and ends THREAT_CLEARED only when
+        that threat is gone AND the subject is clear of it: it has reached its destination, or
+        `present_threat_to` has been false for CLEAR_TICKS continuous observed ticks
+        (`ProjectState.cleared_since`, written only by `note_threat_state`; a suspended retreat's window
+        restarts on resume). The tactical flight uses the same present-threat test (`present_threats`).
   - id: belief_cycle
     layer: entity
     systems: [cognition]
@@ -1857,6 +1866,9 @@ mechanisms:
         fallback, the material-lead target and the section-5 redirection fallbacks are skipped. The rest
         of the pass (candidates, project bookkeeping, blockers, capacity, leads, intents) runs
         unchanged. A lodged stayer has no movement intent; it leaves only through `place_leavers`.
+        **Note, added 2026-11-01 (TCK-20261031-A-RETREAT-PROJECT-OUTLIVES-ITS-THREAT, divergence 2.156):** a tick
+        on which a retreat's clear window opens or drops returns early from evaluate_strategic_intent with no
+        goal selection (tactical still runs).
   - id: committed_intentions
     layer: entity
     systems: [cognition]

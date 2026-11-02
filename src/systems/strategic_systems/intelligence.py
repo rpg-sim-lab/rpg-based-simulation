@@ -71,7 +71,7 @@ from src.engine.policy import GovernorPolicy
 from src.core.strategic import (
     BlockerState, LeadState, LeadCertainty,
     ProjectState, ProjectStatus, ObjectiveState, ObjectiveStatus,
-    CognitionProfile, ProjectKind, GoalKind, ObjectiveKind, has_project_capacity, with_live_current_score
+    CognitionProfile, ProjectKind, GoalKind, ObjectiveKind, has_project_capacity, restart_clear_window, with_live_current_score
 )
 from src.engine.spatial_query import SpatialQueryService
 from src.core.lodging_rules import is_lodged_stayer
@@ -1147,7 +1147,7 @@ class StrategicIntelligenceSystem:
         if not project or project.status != ProjectStatus.SUSPENDED:
             return None
 
-        resumed = replace(project, status=ProjectStatus.ACTIVE)
+        resumed = restart_clear_window(replace(project, status=ProjectStatus.ACTIVE))  # a suspended retreat's clear window was not observed: it restarts on resume
         return StrategicUpdate(
             projects_add_or_update=[resumed],
             current_project_id_set=project_id,
@@ -1401,8 +1401,8 @@ class StrategicIntelligenceSystem:
                 if _closed_project is not None:
                     return StrategicUpdate(
                         projects_add_or_update=[_closed_project],
-                        current_project_id_set="",
-                        current_objective_id_set="",
+                        current_project_id_set="" if _closed_project.status != ProjectStatus.ACTIVE else None,  # a retreat's clear window moving (still ACTIVE) keeps the project current
+                        current_objective_id_set="" if _closed_project.status != ProjectStatus.ACTIVE else None,
                         boredom_delta=boredom_upd,
                         leads_add_or_update=memory_upd.leads_add_or_update,
                         leads_remove=memory_upd.leads_remove

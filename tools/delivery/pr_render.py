@@ -146,35 +146,42 @@ def discover_governing_files(run_command=default_run_command, base_ref: str = "o
     return sorted({line.strip() for line in result.stdout.splitlines() if line.strip()}), True
 
 
-# Raw probe output under stored_artifacts/**/probes/ (TCK-20261009-PR-RENDER-RAW-PROBE-OUTPUT-ADVISORY). Measured on
-# origin/main 2026-10-09: 414 probe files, 5.3 MB, mostly raw per-run .jsonl. Rule agreed with the rpg domain: commit the
-# probe scripts and summary tables, no raw per-run output unless a ticket cites it. A probe file counts as raw output when
-# its extension is not a script or a summary. 200 KB is where one probe batch starts to be worth a second look.
-RAW_PROBE_WARN_BYTES = 200 * 1024
-_PROBE_NON_RAW_SUFFIXES = frozenset({".py", ".sh", ".md", ".txt"})
-_RAW_PROBE_TOP = 5
+# Raw output anywhere under stored_artifacts/ (TCK-20261009-PR-RENDER-RAW-PROBE-OUTPUT-ADVISORY, widened by
+# TCK-20261102-PR-RENDER-RAW-OUTPUT-ADVISORY-SCANS-ONLY-PROBES). Measured on origin/main 2026-10-09: 414 probe files, 5.3 MB, mostly
+# raw per-run .jsonl. Rule agreed with the rpg domain: commit the probe scripts and summary tables, no raw per-run output
+# unless a ticket cites it. PR #828 (9716c6785) added 287 stored-artifact files, 4.65 MiB, all under evidence/ or at a ticket
+# folder's top, which the probes/-only scan never saw. A file counts as raw output when its extension is not a script or a
+# summary. 200 KB is where one batch of raw output starts to be worth a second look.
+RAW_OUTPUT_WARN_BYTES = 200 * 1024
+_NON_RAW_SUFFIXES = frozenset({".py", ".sh", ".md", ".txt"})
+_RAW_OUTPUT_TOP = 5
 
 
-def raw_probe_warning(files: list, root: Path = Path(".")) -> Optional[str]:
-    """One non-blocking warning when the changed files include more than `RAW_PROBE_WARN_BYTES` of raw probe output.
-    Sizes come from the working tree; a file that is gone (a deletion) counts for nothing."""
+def raw_output_warning(files: list, root: Path = Path(".")) -> Optional[str]:
+    """One non-blocking warning when the PR's files under `agent-working/stored_artifacts/` include more than
+    `RAW_OUTPUT_WARN_BYTES` of raw output (any subfolder, or a ticket folder's top). `files` should be the three-dot list
+    (`discover_governing_files`): on a branch behind main a two-dot list also names files only main changed. Sizes come from
+    the working tree; a file that is gone (a deletion) counts for nothing. Scripts and summaries are left out of the threshold
+    but counted in the printed totals."""
     prefix = posix(STORED_ARTIFACTS) + "/"
-    sized = []
+    raw, all_count, all_bytes = [], 0, 0
     for rel in files:
-        if not (rel.startswith(prefix) and "/probes/" in rel[len(prefix):]):
-            continue
-        if Path(rel).suffix.lower() in _PROBE_NON_RAW_SUFFIXES:
+        if not rel.startswith(prefix):
             continue
         try:
             size = (root / rel).stat().st_size
         except OSError:
             continue
-        sized.append((size, rel))
-    total = sum(size for size, _ in sized)
-    if total <= RAW_PROBE_WARN_BYTES:
+        all_count += 1
+        all_bytes += size
+        if Path(rel).suffix.lower() not in _NON_RAW_SUFFIXES:
+            raw.append((size, rel))
+    total = sum(size for size, _ in raw)
+    if total <= RAW_OUTPUT_WARN_BYTES:
         return None
-    top = ", ".join(f"{rel} ({size // 1024} KB)" for size, rel in sorted(sized, key=lambda item: (-item[0], item[1]))[:_RAW_PROBE_TOP])
-    return (f"raw probe output: {len(sized)} file(s), {total // 1024} KB under {prefix}**/probes/ (largest: {top}); "
+    top = ", ".join(f"{rel} ({size // 1024} KB)" for size, rel in sorted(raw, key=lambda item: (-item[0], item[1]))[:_RAW_OUTPUT_TOP])
+    return (f"raw output: {len(raw)} file(s), {total // 1024} KB under {prefix} (the whole folder, not only probes/; largest: {top}); "
+            f"all stored_artifacts in this PR: {all_count} file(s), {all_bytes // 1024} KB; "
             "keep only files a ticket cites; summarize the rest in investigation.md")
 
 
@@ -542,9 +549,9 @@ def render(
 ) -> dict:
     tickets, warnings = discover_tickets(run_command, tickets_root, base_ref, exclusions=exclusions)
     governing_files, diff_ok = discover_governing_files(run_command, base_ref)
-    probe_warning = raw_probe_warning(discover_changed_files(run_command, base_ref))
-    if probe_warning:
-        warnings.append(probe_warning)
+    raw_warning = raw_output_warning(governing_files)
+    if raw_warning:
+        warnings.append(raw_warning)
     if not tickets:
         warnings = warnings + ["no tickets discovered"]
         if not (theme and scope and why):
