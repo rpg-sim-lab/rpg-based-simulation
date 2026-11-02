@@ -81,8 +81,9 @@ Why it matters: what production runs and everything measured since the paired to
 - tools/calibrate_simq.py (`_run_engine`), tools/test_architecture/rpg_gate_run.py (`build_kernel`)
 
 ## Assumptions / Open Questions
-- Priority P1 because each executor repeats, so same-config replay holds. rpg-planner would raise it to P0 if counts show most seeds split early. The lead may want the owner's view.
-- Who holds this: src is rpg-planner's seat; the executor may sit with perf or architecture. Ask the lead on dispatch.
+- Priority P1 because each executor repeated its own result. That has only been shown on ubuntu, on one tree and seed. Raise to P0 if counts show most seeds split early, or if `_freeze_cache` fires: results would then depend on memory addresses and may not repeat across hosts or Python builds.
+- Holder: rpg-planner (src/engine/executor.py routes to rpg, lead-planner-u24 2026-11-03). rpg-planner-ubuntu is diagnosing; who builds the fix is settled between the two. perf-planner gets a finding through the ubuntu lead (Phase B's timings ran the concurrent adapter, and CORE-PERF-020 is the freeze cache's reason for existing) and gives its view on the fix's cost. testing-planner homes the long-horizon test.
+- The owner knows (#715 6585858521, via the lead). rpg-designer's decision row follows the first split.
 - Dispatch needs an owner yes.
 
 ## Implementation Notes
