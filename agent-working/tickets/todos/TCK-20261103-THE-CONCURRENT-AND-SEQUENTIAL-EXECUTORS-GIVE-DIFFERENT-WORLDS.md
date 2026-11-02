@@ -87,6 +87,10 @@ Why it matters: what production runs and everything measured since the paired to
 - Dispatch needs an owner yes.
 
 ## Implementation Notes
+2026-11-03 CAUSE NAMED (rpg-planner-ubuntu; proof runs pending at this entry): under `ConcurrentExecutionAdapter`, `state.seed` reads a per-packet seed (src/engine/executor.py:286-293), not the world's, so `wander_destination` (src/engine/tactical_destinations.py:117) draws a different point: e30 at t600 on the #828 arm, reproduced with the repo's RNG to the digit (one seed).
+
+rpg-designer rulings on it: concurrent is wrong; `state.seed` means the world seed everywhere. Fix: `packet.seed` carries the world seed, with a separately named field only if a real reader needs one (rpg-planner's grep on main found no reader of `packet.seed` by that name in src or tests). The ticket reads each of the 27 `state.seed` lines, among them src/domains/combat_engagement/perception.py:97 (observation noise), src/ai/coming_of_age.py:146, src/town/guild.py:85, src/domains/world_emergence/phase.py:59/:66. Sequential and pinned proofs aren't touched. Acceptance stays the long-horizon test on gate worlds and several seeds, because the proof runs are one seed; a split remaining after the fix is a second cause. P1 stands unless the proof or a host check says otherwise. The closes' "production path differs" line drops once this lands and the long test is green. Owner row after the proof. Older lines below are the diagnosis history; the plan-store and `_freeze_cache` leads are not the cause.
+
 2026-11-03 rpg-designer rulings:
 - By test_local_vs_concurrent_identical in the certification matrix this is a defect, not a degraded world. The law stands.
 - Lean: concurrent comes to sequential. It flips only if the first split shows sequential is the one breaking a rule.
