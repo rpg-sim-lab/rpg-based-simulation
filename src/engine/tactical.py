@@ -147,6 +147,96 @@ class TacticalDecisionSystem:
     """
 
     @staticmethod
+    def _pursue_objective(state: AuthoritativeState, entity: EntityState, neighbors: Optional[List[EntityState]]) -> Optional[EntityUpdate]:
+        """The objective-pursuit step (Pillar 5.1): walk to, or act at, the current objective; None when the objective gives no step.
+
+        Moved out of the `if not hostiles:` block unchanged (TCK-20261031-AN-ENGAGEMENT-OVERRIDES-A-PRESSING-NEED) so the pressing-need path can run it
+        with hostiles in sight while the no-hostile path runs it as before."""
+        # Pillar 5.1: Objective Pursuit
+        if entity.strategic.current_objective_id:
+            obj_id = entity.strategic.current_objective_id
+            # Find the objective in projects
+            project = entity.strategic.projects.get(entity.strategic.current_project_id or "")
+            if project:
+                obj = next((o for o in project.objectives if o.id == obj_id), None)
+                if obj and obj.kind == "reach_location" and obj.target:
+                    target_pos, node_id, building_id = TacticalDecisionSystem._resolve_target_position(state, obj)
+
+                    if target_pos:
+                        dist = abs(target_pos[0] - entity.navigation.position[0]) + abs(target_pos[1] - entity.navigation.position[1])
+                        if dist <= 1.0:
+                            if node_id is not None:
+                                from src.core.updates import InteractionUpdate
+                                return EntityUpdate(
+                                    entity_id=entity.id,
+                                    task=TaskUpdate(
+                                        work_kind_set="ENTITY_ACT",
+                                        payload_set={"action": "INTERACT", "target_id": node_id}
+                                    ),
+                                    interaction=InteractionUpdate(target_node_id=node_id, progress_delta=1)
+                                )
+                            elif building_id is not None:
+                                return building_arrival_update(state, entity, project, building_id)
+                            else:
+                                # Arrived at a carcass the hunger goal pointed at (decision 44): eat where it lies.
+                                return eat_at_hunger_corpse(entity, state, project, obj) or EntityUpdate(entity_id=entity.id)
+                        else:
+                            # Still en-route — update nav target and stay idle
+                            # so the brain re-evaluates on each cadence tick.
+                            return EntityUpdate(
+                                entity_id=entity.id,
+                                navigation=NavigationUpdate(target_set=target_pos, movement_mode_set=MovementMode.WANDER),
+                            )
+                elif obj and obj.kind not in (ObjectiveKind.REACH_LOCATION, ObjectiveKind.DEFEAT_ENEMY):
+                    # Pillar 5.1 continued: every other ObjectiveKind System A/B can
+                    # produce reaches real execution via ObjectiveIntentResolver +
+                    # ActionIntentAdapter, not just REACH_LOCATION. DEFEAT_ENEMY is
+                    # excluded — handled entirely by the hostile-engagement branch
+                    # below (gated on `hostiles`, not `obj.kind`).
+                    target_pos = None
+                    node_id = None
+                    if obj.target:
+                        target_pos, node_id, _ = TacticalDecisionSystem._resolve_target_position(state, obj)
+
+                    if target_pos:
+                        dist = abs(target_pos[0] - entity.navigation.position[0]) + abs(target_pos[1] - entity.navigation.position[1])
+                        if dist > 1.0:
+                            return EntityUpdate(
+                                entity_id=entity.id,
+                                navigation=NavigationUpdate(target_set=target_pos, movement_mode_set=MovementMode.WANDER),
+                            )
+                        if obj.kind == ObjectiveKind.REACH_RESOURCE and node_id is not None:
+                            # Arrived at the resource node: transition to a harvest
+                            # action instead of falling through to
+                            # ObjectiveIntentResolver's REACH_RESOURCE -> MOVE_TO
+                            # mapping, which would re-issue navigation forever.
+                            from src.engine.intent.action_intent import ActionIntent, ActionIntentAdapter
+
+                            harvest_intent = ActionIntent(
+                                kind="HARVEST_RESOURCE",
+                                actor_id=entity.id,
+                                target_id=node_id,
+                                source_opportunity_id=obj.id,
+                                reason=f"Arrived at resource node {node_id} for objective {obj.id}",
+                            )
+                            updates = ActionIntentAdapter.execute(
+                                entity, harvest_intent, current_tick=state.tick, neighbor_view=neighbors, context=state
+                            )
+                            return updates.get(entity.id, EntityUpdate(entity_id=entity.id))
+
+                    from src.domains.adventure.resolver import ObjectiveIntentResolver
+                    from src.engine.intent.action_intent import ActionIntentAdapter
+
+                    intent = ObjectiveIntentResolver.resolve(
+                        entity.id, obj, payload={"position": target_pos} if target_pos else {}
+                    )
+                    updates = ActionIntentAdapter.execute(
+                        entity, intent, current_tick=state.tick, neighbor_view=neighbors, context=state
+                    )
+                    return updates.get(entity.id, EntityUpdate(entity_id=entity.id))
+        return None
+
+    @staticmethod
     def evaluate_entity_intent(
         state: AuthoritativeState,
         entity: EntityState,
@@ -264,88 +354,9 @@ class TacticalDecisionSystem:
             return rest_update
 
         if not hostiles:
-            # Pillar 5.1: Objective Pursuit
-            if entity.strategic.current_objective_id:
-                obj_id = entity.strategic.current_objective_id
-                # Find the objective in projects
-                project = entity.strategic.projects.get(entity.strategic.current_project_id or "")
-                if project:
-                    obj = next((o for o in project.objectives if o.id == obj_id), None)
-                    if obj and obj.kind == "reach_location" and obj.target:
-                        target_pos, node_id, building_id = TacticalDecisionSystem._resolve_target_position(state, obj)
+            if (objective_update := TacticalDecisionSystem._pursue_objective(state, entity, neighbors)) is not None:
+                return objective_update
 
-                        if target_pos:
-                            dist = abs(target_pos[0] - entity.navigation.position[0]) + abs(target_pos[1] - entity.navigation.position[1])
-                            if dist <= 1.0:
-                                if node_id is not None:
-                                    from src.core.updates import InteractionUpdate
-                                    return EntityUpdate(
-                                        entity_id=entity.id,
-                                        task=TaskUpdate(
-                                            work_kind_set="ENTITY_ACT",
-                                            payload_set={"action": "INTERACT", "target_id": node_id}
-                                        ),
-                                        interaction=InteractionUpdate(target_node_id=node_id, progress_delta=1)
-                                    )
-                                elif building_id is not None:
-                                    return building_arrival_update(state, entity, project, building_id)
-                                else:
-                                    # Arrived at a carcass the hunger goal pointed at (decision 44): eat where it lies.
-                                    return eat_at_hunger_corpse(entity, state, project, obj) or EntityUpdate(entity_id=entity.id)
-                            else:
-                                # Still en-route — update nav target and stay idle
-                                # so the brain re-evaluates on each cadence tick.
-                                return EntityUpdate(
-                                    entity_id=entity.id,
-                                    navigation=NavigationUpdate(target_set=target_pos, movement_mode_set=MovementMode.WANDER),
-                                )
-                    elif obj and obj.kind not in (ObjectiveKind.REACH_LOCATION, ObjectiveKind.DEFEAT_ENEMY):
-                        # Pillar 5.1 continued: every other ObjectiveKind System A/B can
-                        # produce reaches real execution via ObjectiveIntentResolver +
-                        # ActionIntentAdapter, not just REACH_LOCATION. DEFEAT_ENEMY is
-                        # excluded — handled entirely by the hostile-engagement branch
-                        # below (gated on `hostiles`, not `obj.kind`).
-                        target_pos = None
-                        node_id = None
-                        if obj.target:
-                            target_pos, node_id, _ = TacticalDecisionSystem._resolve_target_position(state, obj)
-
-                        if target_pos:
-                            dist = abs(target_pos[0] - entity.navigation.position[0]) + abs(target_pos[1] - entity.navigation.position[1])
-                            if dist > 1.0:
-                                return EntityUpdate(
-                                    entity_id=entity.id,
-                                    navigation=NavigationUpdate(target_set=target_pos, movement_mode_set=MovementMode.WANDER),
-                                )
-                            if obj.kind == ObjectiveKind.REACH_RESOURCE and node_id is not None:
-                                # Arrived at the resource node: transition to a harvest
-                                # action instead of falling through to
-                                # ObjectiveIntentResolver's REACH_RESOURCE -> MOVE_TO
-                                # mapping, which would re-issue navigation forever.
-                                from src.engine.intent.action_intent import ActionIntent, ActionIntentAdapter
-
-                                harvest_intent = ActionIntent(
-                                    kind="HARVEST_RESOURCE",
-                                    actor_id=entity.id,
-                                    target_id=node_id,
-                                    source_opportunity_id=obj.id,
-                                    reason=f"Arrived at resource node {node_id} for objective {obj.id}",
-                                )
-                                updates = ActionIntentAdapter.execute(
-                                    entity, harvest_intent, current_tick=state.tick, neighbor_view=neighbors, context=state
-                                )
-                                return updates.get(entity.id, EntityUpdate(entity_id=entity.id))
-
-                        from src.domains.adventure.resolver import ObjectiveIntentResolver
-                        from src.engine.intent.action_intent import ActionIntentAdapter
-
-                        intent = ObjectiveIntentResolver.resolve(
-                            entity.id, obj, payload={"position": target_pos} if target_pos else {}
-                        )
-                        updates = ActionIntentAdapter.execute(
-                            entity, intent, current_tick=state.tick, neighbor_view=neighbors, context=state
-                        )
-                        return updates.get(entity.id, EntityUpdate(entity_id=entity.id))
 
             # 4.1 Role-Based Obligation (Phase 7)
             group = state.groups.get(entity.identity.group_id) if entity.identity.group_id is not None else None
