@@ -7992,6 +7992,19 @@
   artifact_files: []
   tags: []
 - type: ticket
+  path: agent-working/tickets/todos/TCK-20261103-SEQUENTIAL-AND-CONCURRENT-DIFFER-ON-A-WORKER-EXCEPTION.md
+  ticket_id: TCK-20261103-SEQUENTIAL-AND-CONCURRENT-DIFFER-ON-A-WORKER-EXCEPTION
+  title: 'An equivalence gap, not a breach: the sequential executor raises on a worker
+    exception while the concurrent path turns it into the contract''s no-op (Fallback
+    Equivalence)'
+  tier: standard
+  ticket_type: bug
+  date: '2026-11-03'
+  related_code_areas:
+  - LocalSequentialExecutor
+  artifact_files: []
+  tags: []
+- type: ticket
   path: agent-working/tickets/todos/TCK-20261103-STATE-DIGEST-MAY-OMIT-FIELDS-THAT-DECISIONS-READ.md
   ticket_id: TCK-20261103-STATE-DIGEST-MAY-OMIT-FIELDS-THAT-DECISIONS-READ
   title: 'The canonical state digest may leave out fields that decisions read: a per-field
@@ -8017,6 +8030,19 @@
   - tests/integration/kernel/test_executor_determinism.py, test_determinism_suite.py,
     test_tied_worker_result_order.py, tests/perf/test_concurrency_parity.py
   - _run_engine
+  artifact_files: []
+  tags: []
+- type: ticket
+  path: agent-working/tickets/todos/TCK-20261103-TWO-UNOWNED-V3-STARVATIONS-APPEARED-ON-MAIN-WITH-THE-RETREAT-FIX.md
+  ticket_id: TCK-20261103-TWO-UNOWNED-V3-STARVATIONS-APPEARED-ON-MAIN-WITH-THE-RETREAT-FIX
+  title: 'Two unowned V3 starvation deaths show on main in crowded_frontier after
+    #826, and the advisory gate report that showed them was not routed'
+  tier: standard
+  ticket_type: bug
+  date: '2026-11-03'
+  related_code_areas:
+  - tools/test_architecture/rpg_gate_known.yaml, .github/workflows/rpg-gate-report.yml
+  - src/ai/goals/present_threat.py, src/systems/strategic_systems/intelligence.py
   artifact_files: []
   tags: []
 - type: ticket
