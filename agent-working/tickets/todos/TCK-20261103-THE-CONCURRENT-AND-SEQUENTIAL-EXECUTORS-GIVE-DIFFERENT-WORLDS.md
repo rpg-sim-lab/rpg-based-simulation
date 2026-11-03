@@ -87,6 +87,12 @@ Why it matters: what production runs and everything measured since the paired to
 - Dispatch needs an owner yes.
 
 ## Implementation Notes
+2026-11-03 ACCEPTED FIX SHAPE (rpg-designer; owner row at main-checkout .claude/handover/drafts/rpg-designer-executor-owner-row.md; go, builder and size are the owner's):
+- World seed on the packet; flags on the packet.
+- A guard failing on executor-side reads of state fields the packet lacks (the 11,011 getattr/hasattr reads; `building_tiles` is the next named one).
+- A long-horizon test on gate worlds and seeds comparing cognition too, with `timeline` excluded (event-id ticket), on top of testing-planner's ruling below.
+- Separate from #828. Sequential hashes unchanged, or stop.
+
 2026-11-03 STATE AT FILING TO MAIN (rpg-planner-ubuntu; raw spot-checked by it, otherwise its implementer's; one world and seed; relayed, not checked by rpg-planner):
 - With the seed change alone, concurrent equals sequential on hashes for the #828 arm and base through t2100.
 - SECOND DIVERGENCE, outside the hash: the worker packet has no `feature_flags`, so src/engine/domain/combat_actions.py:126-127 reads ENABLE_COMBAT_ENGAGEMENT as OFF on concurrent (learning calls 153 vs 241 by t2000; line read by lead-planner-u24). On production paths, learning-weighted engagement has been partly off.
