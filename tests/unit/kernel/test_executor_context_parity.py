@@ -168,16 +168,16 @@ def test_a_move_resolved_in_the_executor_takes_the_same_far_town_branch_as_seque
 _RENAMED = {"all_entities": "entities"}
 _PER_ITEM = {"packet_id", "work_id", "work_class", "subject", "neighbor_view", "work_kind", "payload", "class_priority", "local_priority"}
 _DERIVED = {  # name: (reason, owner)
-    "spatial_grid": ("the neighbour grid built from the state's entities (DomainView._get_cached_spatial_grid)", "executor.py"),
-    "occupancy_map": ("tile -> entity id built from the state's entities (SpatialQueryService.get_occupancy_map); the long executor-equivalence test covers drift", "executor.py"),
-    "region_list": ("the region list cache of the state", "executor.py"),
-    "building_map": ("tile -> building built from state.buildings", "executor.py"),
-    "_region_index_cache": ("derived from state.regions", "executor.py"),
-    "_regions_global_bounds": ("derived from state.regions", "executor.py"),
-    "_building_region_map_cache": ("derived from state.buildings and regions", "executor.py"),
-    "_node_map_cache": ("derived from state.resource_nodes", "executor.py"),
-    "_corpse_map_cache": ("derived from state.corpses", "executor.py"),
-    "_ground_item_map_cache": ("derived from state.ground_items", "executor.py"),
+    "spatial_grid": ("the neighbour grid built from the state's entities; COMPARED by content with a fresh SpatialGrid in _DERIVED_CHECKS", "executor.py"),
+    "occupancy_map": ("tile -> entity id built from the state's entities; COMPARED by content with a cache-free rebuild and with OccupancySnapshot.from_state in _DERIVED_CHECKS", "executor.py"),
+    "region_list": ("the region list of the state; COMPARED by content with list(state.regions.values()) in _DERIVED_CHECKS", "executor.py"),
+    "building_map": ("tile -> building built from state.buildings; COMPARED by content with a fresh rebuild in _DERIVED_CHECKS", "executor.py"),
+    "_region_index_cache": ("identity of a memo cannot be compared (no public fresh rebuild that returns the same type); derived from state.regions", "executor.py"),
+    "_regions_global_bounds": ("identity of a memo cannot be compared (no public fresh rebuild that returns the same type); derived from state.regions", "executor.py"),
+    "_building_region_map_cache": ("identity of a memo cannot be compared (no public fresh rebuild that returns the same type); derived from state.buildings and regions", "executor.py"),
+    "_node_map_cache": ("identity of a memo cannot be compared (no public fresh rebuild that returns the same type); derived from state.resource_nodes", "executor.py"),
+    "_corpse_map_cache": ("identity of a memo cannot be compared (no public fresh rebuild that returns the same type); derived from state.corpses", "executor.py"),
+    "_ground_item_map_cache": ("identity of a memo cannot be compared (no public fresh rebuild that returns the same type); derived from state.ground_items", "executor.py"),
     "transient_claims": ("the state's value is None outside a resolution pass (state.py:1369, reset at :1479); verify_occupancy reads `or []`, so [] and None read the same", "rpg-implementer"),
 }
 
@@ -198,6 +198,45 @@ def _packet_fields():
     return dataclasses.fields(WorkerPacket)
 
 
+def _fresh_occupancy(state) -> dict:
+    """Tile -> entity id rebuilt from the entities with no cache (a lodger stands on no tile, F3)."""
+    return {(int(e.navigation.position[0]), int(e.navigation.position[1])): eid for eid, e in state.entities.items()
+            if e.lifecycle.active and e.combat.alive and e.navigation.lodged_in is None}
+
+
+def _check_occupancy_map(packet, state):
+    from src.engine.occupancy_snapshot import OccupancySnapshot
+    fresh = _fresh_occupancy(state)
+    out = []
+    if dict(packet.occupancy_map) != fresh:
+        out.append("occupancy_map differs from a cache-free rebuild")
+    if OccupancySnapshot.from_state(state).occupancy_by_tile != fresh:
+        out.append("OccupancySnapshot.from_state differs from the cache-free rebuild")
+    snap = getattr(state, "occupancy_snapshot", None)
+    if snap is not None and dict(snap.occupancy_by_tile) != fresh:
+        out.append("the state's own occupancy_snapshot is stale against the entities")
+    return out
+
+
+def _check_spatial_grid(packet, state):
+    from src.engine.spatial import SpatialGrid
+    fresh = SpatialGrid(state.entities)
+    return [f"spatial_grid neighbours of entity {eid} differ from a fresh grid" for eid, e in sorted(state.entities.items())
+            if [t[0] for t in packet.spatial_grid.get_neighbor_tuples(e.navigation.position, 10.0, eid)] != [t[0] for t in fresh.get_neighbor_tuples(e.navigation.position, 10.0, eid)]]
+
+
+def _check_region_list(packet, state):
+    return [] if [r.id for r in packet.region_list] == [r.id for r in state.regions.values()] else ["region_list differs from list(state.regions.values())"]
+
+
+def _check_building_map(packet, state):
+    fresh = {b.position: b.id for b in state.buildings.values()}
+    return [] if {k: v.id for k, v in packet.building_map.items()} == fresh else ["building_map differs from a rebuild of state.buildings"]
+
+
+_DERIVED_CHECKS = {"occupancy_map": _check_occupancy_map, "spatial_grid": _check_spatial_grid, "region_list": _check_region_list, "building_map": _check_building_map}
+
+
 def check_field_parity(state) -> list:
     """The list of packet fields whose value differs from the state's (empty when the packet is the state's world)."""
     import dataclasses
@@ -215,6 +254,8 @@ def check_field_parity(state) -> list:
             continue
         if _by_value(getattr(packet, name)) != _by_value(getattr(view, source)):
             wrong.append(f"{name}: packet {str(getattr(packet, name))[:60]} != state {str(getattr(view, source))[:60]}")
+    for name, check in _DERIVED_CHECKS.items():
+        wrong.extend(check(packet, view))
     return wrong
 
 
@@ -228,6 +269,28 @@ def test_the_exclusions_have_reasons_and_no_same_name_field_is_excluded_but_the_
     same_name_excluded = {n for n in _DERIVED if n in state_names}
     assert {n for n in same_name_excluded if not n.startswith("_")} == {"transient_claims"}, same_name_excluded
     assert (_PER_ITEM | set(_DERIVED) | set(_RENAMED)) <= {f.name for f in _packet_fields()}
+    unchecked = {n for n in _DERIVED if not n.startswith("_") and n != "transient_claims"} - set(_DERIVED_CHECKS)
+    assert unchecked == set(), f"derived structures excluded without a by-content check: {sorted(unchecked)}"
+
+
+def test_a_stale_occupancy_map_is_caught():
+    """Positive control: the memoised map that drifts (an entity moved after the map was built) must fail the parity check."""
+    import dataclasses
+    state = _rich_state()
+    packet = _packet(state)
+    stale = dataclasses.replace(packet, occupancy_map={**dict(packet.occupancy_map), (30, 30): 99})
+    assert _check_occupancy_map(stale, state.readonly_view()) != []
+    assert _check_occupancy_map(packet, state.readonly_view()) == []
+
+
+def test_a_stale_snapshot_on_the_state_is_caught():
+    import dataclasses
+    from src.engine.occupancy_snapshot import OccupancySnapshot
+    state = _rich_state()
+    snap = OccupancySnapshot.from_state(state)
+    moved = dataclasses.replace(state.entities[1], navigation=dataclasses.replace(state.entities[1].navigation, position=(15.0, 15.0)))
+    drifted = dataclasses.replace(state, entities={**state.entities, 1: moved}, occupancy_snapshot=snap)
+    assert any("stale" in m for m in _check_occupancy_map(_packet(drifted), drifted.readonly_view()))
 
 
 def _after_lodging(state):
