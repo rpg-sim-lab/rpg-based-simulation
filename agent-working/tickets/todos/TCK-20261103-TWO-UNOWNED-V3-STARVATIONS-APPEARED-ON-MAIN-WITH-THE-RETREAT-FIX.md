@@ -81,6 +81,10 @@ Not a credit to ENG: e844e2845 lacking the record on s42 is a different world (r
 - Dispatch of the reads: rpg-planner orders them as part of the #826 re-measure, already owner-ordered by rpg-designer's ruling; any fix needs an owner yes.
 
 ## Implementation Notes
+2026-11-03 NOTE: the gate's drift is blind since about 2026-10-28. testing-planner: a25619971 (TCK-20261023-MEASURED-STEP-RUN-AND-RERUN-LEDGER) moved the harness hash, baseline v1 is stale, and stale rows don't turn the job red. Paired tables are the only drift signal until v2 is recorded. Validity (V1-V8) is judged absolutely, so V3 is unaffected. These two V3s block a re-record: rpg_gate_candidate refuses an unowned or expired fail, so they need fixing or an owner-accepted scoped entry. v1's stale_after is 2026-11-21: if the V3s aren't settled by about 11-14, raise it with the owner.
+
+Pre-merge V3 reading, testing-planner's costing for the owner row: feasible now by dispatching rpg-gate-report.yml with `-f ref=<arm sha>` (evidence only); about 70-85 min wall, very roughly 2 runner-hours; no V3-only mode. Conditions it wants: behaviour-changing src tickets only, on the final head (a re-sync bringing other src means a new reading; a re-sync with no src keeps it); advisory, enforced at review citing the run id; an owner standing rule for dispatch, since dispatch is a shared-state action; one at a time through the heavy-job order (the concurrency group keeps one pending run). Open: reading a dispatch's report, since #669 updates only for scheduled runs on main; test it on the next one before it's a rule.
+
 2026-11-03 rpg-designer:
 - No origin run needed; wording stays "first shows with #826", not "caused by".
 - ubuntu holds the e30 trace (t700 to t5000, pinned base); lane C takes e37 only, from its last meal, and reads e30 from ubuntu's rows. If u24 gets there sooner on an idle slot, it takes e30 and ubuntu skips it.
