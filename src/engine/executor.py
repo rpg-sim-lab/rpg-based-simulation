@@ -6,6 +6,7 @@ from dataclasses import replace
 from types import MappingProxyType
 from typing import TYPE_CHECKING, List, Dict, Any, Mapping, Protocol, Callable
 
+from src.core.state import ReadOnlyDict
 from src.core.worker_protocol import WorkerResult, ResultStatus, WorkerPacket
 from src.core.work import WorkClass, packet_work_id
 from src.engine.candidate_selector import MovementCandidateSelector
@@ -248,6 +249,7 @@ class ConcurrentExecutionAdapter:
             self._freeze_cache[key] = (obj_id, frozen)
             return frozen
 
+        frozen_feature_flags = ReadOnlyDict(state.feature_flags)  # a fresh read-only copy per batch (the readonly view leaves this dict mutable)
         frozen_regions = get_frozen(state.regions, "regions")
         frozen_resource_nodes = get_frozen(state.resource_nodes, "nodes")
         frozen_buildings = get_frozen(state.buildings, "buildings")
@@ -282,15 +284,13 @@ class ConcurrentExecutionAdapter:
                     # Optimization: state is already a readonly_view, so entities are already frozen
                     subject_snapshot = subject
                     
-                    from src.core.enums import Domain
                     packet_id = f"{state.tick}:{i}"
-                    packet_seed = rng.get_int(Domain.DEFAULT, state.tick, item.owner_id, 0, 1000000)
                     packet = WorkerPacket(
                         packet_id=packet_id,
                         work_id=packet_work_id(state.tick, item.owner_id, item.work_kind),
                         tick=state.tick,
                         world_time=state.world_time,
-                        seed=packet_seed,
+                        seed=state.seed,  # the world seed: `context.seed` means the same under either executor
                         work_class=item.work_class,
                         subject=subject_snapshot,
                         neighbor_view=[], # Computed lazily by worker
@@ -315,7 +315,11 @@ class ConcurrentExecutionAdapter:
                         _building_region_map_cache=frozen_building_region_map,
                         _node_map_cache=frozen_node_map,
                         _corpse_map_cache=frozen_corpse_map,
-                        _ground_item_map_cache=frozen_ground_item_map
+                        _ground_item_map_cache=frozen_ground_item_map,
+                        feature_flags=frozen_feature_flags,
+                        building_tiles=state.building_tiles,
+                        town_center=state.town_center,
+                        clans=state.clans,
                     )
                     packets.append(packet)
                     source_meta[packet_id] = (item, packet)

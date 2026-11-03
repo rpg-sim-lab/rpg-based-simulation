@@ -7966,6 +7966,21 @@
   - content
   last_verified: '2026-10-09'
 - type: ticket
+  path: agent-working/tickets/inprogress/TCK-20261103-THE-CONCURRENT-AND-SEQUENTIAL-EXECUTORS-GIVE-DIFFERENT-WORLDS.md
+  ticket_id: TCK-20261103-THE-CONCURRENT-AND-SEQUENTIAL-EXECUTORS-GIVE-DIFFERENT-WORLDS
+  title: The concurrent and sequential executors give different worlds on the same
+    seed, with no load, against the bit-identical law
+  tier: standard
+  ticket_type: bug
+  date: '2026-11-03'
+  related_code_areas:
+  - ConcurrentExecutionAdapter
+  - tests/integration/kernel/test_executor_determinism.py, test_determinism_suite.py,
+    test_tied_worker_result_order.py, tests/perf/test_concurrency_parity.py
+  - _run_engine
+  artifact_files: []
+  tags: []
+- type: ticket
   path: agent-working/tickets/todos/TCK-20261103-A-MEASUREMENT-NOT-ON-THE-PINNED-RUNNER-CALLS-ITSELF-EVIDENCE.md
   ticket_id: TCK-20261103-A-MEASUREMENT-NOT-ON-THE-PINNED-RUNNER-CALLS-ITSELF-EVIDENCE
   title: 'A behaviour measurement run on the unpinned `_run_engine` can be presented
@@ -8002,21 +8017,6 @@
   related_code_areas:
   - to_canonical_dict
   - src/core/strategic.py, src/core/cognition.py, src/core/self_model.py, src/core/models/
-  artifact_files: []
-  tags: []
-- type: ticket
-  path: agent-working/tickets/todos/TCK-20261103-THE-CONCURRENT-AND-SEQUENTIAL-EXECUTORS-GIVE-DIFFERENT-WORLDS.md
-  ticket_id: TCK-20261103-THE-CONCURRENT-AND-SEQUENTIAL-EXECUTORS-GIVE-DIFFERENT-WORLDS
-  title: The concurrent and sequential executors give different worlds on the same
-    seed, with no load, against the bit-identical law
-  tier: standard
-  ticket_type: bug
-  date: '2026-11-03'
-  related_code_areas:
-  - ConcurrentExecutionAdapter
-  - tests/integration/kernel/test_executor_determinism.py, test_determinism_suite.py,
-    test_tied_worker_result_order.py, tests/perf/test_concurrency_parity.py
-  - _run_engine
   artifact_files: []
   tags: []
 - type: ticket

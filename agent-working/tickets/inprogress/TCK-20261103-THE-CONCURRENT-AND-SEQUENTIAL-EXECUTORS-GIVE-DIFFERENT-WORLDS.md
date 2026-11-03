@@ -4,7 +4,7 @@ layer: engine
 authority: P1
 audience: agent
 ticket_id: TCK-20261103-THE-CONCURRENT-AND-SEQUENTIAL-EXECUTORS-GIVE-DIFFERENT-WORLDS
-phase: open
+phase: implement
 date: 2026-11-03
 tags: []
 ---
@@ -15,7 +15,7 @@ tags: []
 The concurrent and sequential executors give different worlds on the same seed, with no load, against the bit-identical law
 
 ## Status
-OPEN
+INPROGRESS
 
 ## Tier
 standard
@@ -135,6 +135,15 @@ Lead candidate (rpg-designer's read of src/engine/executor.py:239-257 on main; f
 - `_freeze_cache` result (implementer's, unchecked): zero stale hits in one full 2000t concurrent run on crowded s45, end hash unchanged; it barely hits except ground_items (1997 of 2000, 0 different). Out as the lead on this one run. The `is` fix isn't the fix for this split; it stays optional on correctness. Route test is next.
 - Route-plan result (rows read raw by rpg-planner-ubuntu, unchecked by rpg-planner): hypothesis NOT supported. On both runners all 8240 route calls come from the apply path on AuthoritativeState, with equal hits and searches. So rpg-designer's plan-store ruling above, conditional on discarding, doesn't currently describe the cause, and no fix shape stands. First difference: call 8234, tick 600, e30, same start [38,33], goal [33,32] sequential vs [40,34] concurrent. So the executors produced different movement intents from an input whose hash is equal: decision context or unhashed input such as cognition, not shown. Cause open. The route_plans-outside-the-hash question stays on the digest ticket.
 - The fix won't settle it alone: packets, `frozen_grid` and other frozen maps, ordering and RNG could diverge too. If it ships as the cause, it needs the convergence check.
+
+2026-11-03 BUILD NOTES (rpg-ubuntu-implementer; branch rpg-ubuntu-executor-parity off 9eeb0fd97; owner go #715 6593491826, failure answers #715 6593673717):
+- Built: packet carries the world seed and the state's feature_flags, building_tiles, town_center, clans by value; `PacketFieldMissingError` guard (`WorkerPacket.__getattr__`) with the allow-list `PACKET_DERIVED_CACHE_NAMES` (a reason per name); the error passes through the worker_manager handlers (`_process_chunk_wrapper`, `_wrap_work` and with it the :175 local rerun, `_collect`); all other worker exceptions keep Failure-to-No-Op and are counted by wrapping `failure_no_op` (zero required). Contract section 4 states the one exception.
+- Horizon: testing-planner's final ruling supersedes the 3000t line in the testing-planner paragraph above: 2200t on crowded s45 (the base that split at t2051-2100), 2000t on the other cases (rpg-planner seat-5 record, relayed via lead). The case list comes from the pre-fix evidence run and goes to testing-planner first.
+- Divergence 2.147 (Bug Fix; ubuntu's block is 2.145-2.149, then 2.160-2.199); parity ledger INFRA-439 (checked free by rpg-planner).
+- Record correction, not a fault: TCK-20260824-TOWN-CENTER-POINTER-FIX called `WorkerPacket.town_center` a dead field; its premise missed the executor-path reader `MovementSystem._route_step` (movement.py:112), reached in the executor through `resolve_move` from the MOVE action (domain/movement_actions.py:27). The field is back, and its test now pins the consumer.
+- building_tiles: the packet is built from `state.building_tiles` at the single construction site (a test pins that src/engine/executor.py is the only constructor). Crowded s45 has NO building tiles (len 0 at all 1,118 reads), so the long test cannot catch a wrong-empty map on that world; the evidence run covers worlds with tiles (urban, frontier).
+- Expectation changes held for and accepted by rpg-planner: tests/unit/kernel/test_worker_protocol.py (town_center now live) and tests/unit/engine/test_service_reach_on_a_worker_packet.py (packet now carries building_tiles). SimQ pins run before (trees/0e7b1030c) and after (this worktree): no moved pin so far (test_anchors_audit_mode 11/11, test_calibrate_simq 9/9, population stability 1/1 on both).
+- Not in scope and not done: the `is` fix for `_freeze_cache` (zero stale hits in one 2000t concurrent run, caveat terrain sampled); the process-pool path (no caller passes use_processes=True); timing (NOT MEASURED, perf pause).
 
 ## Test Summary
 
