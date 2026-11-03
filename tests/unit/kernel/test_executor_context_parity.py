@@ -183,13 +183,27 @@ _DERIVED = {  # name: (reason, owner)
 
 
 def _by_value(value):
+    """A value by content: mappings, sets and sequences are walked; anything else (a dataclass: its own field-by-field ``==``) is compared as it is. A Mapping is tested by type, not by an ``items``
+    attribute (an inventory-like dataclass has an ``items`` that is a list)."""
+    import collections.abc
     if isinstance(value, (set, frozenset)):
         return frozenset(value)
-    if hasattr(value, "items"):
+    if isinstance(value, collections.abc.Mapping):
         return {k: _by_value(v) for k, v in value.items()}
     if isinstance(value, (list, tuple)) and not (isinstance(value, tuple) and len(value) == 2 and all(isinstance(x, float) for x in value)):
         return [_by_value(v) for v in value]
     return value
+
+
+def test_by_value_walks_a_dataclass_whose_items_attribute_is_a_list():
+    import dataclasses
+
+    @dataclasses.dataclass
+    class Bag:
+        items: list
+
+    assert _by_value({"a": Bag(items=[1, 2])}) == {"a": Bag(items=[1, 2])}
+    assert _by_value(Bag(items=[1])) != _by_value(Bag(items=[2]))
 
 
 def _packet_fields():
