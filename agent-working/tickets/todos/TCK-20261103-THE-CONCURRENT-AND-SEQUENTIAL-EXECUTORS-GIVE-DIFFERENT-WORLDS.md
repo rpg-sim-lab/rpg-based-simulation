@@ -87,6 +87,8 @@ Why it matters: what production runs and everything measured since the paired to
 - Dispatch needs an owner yes.
 
 ## Implementation Notes
+2026-11-03 rpg-designer (owner row drafted at main-checkout .claude/handover/drafts/rpg-designer-executor-failure-row.md, not yet answered): ubuntu found the concurrent path turns worker exceptions into no-ops under a written contract (bounded_concurrency_contract.md:39-40). Proposed: the guard stops a production run on an undeclared read; other errors keep the no-op for now, counted; any count above zero fails evidence runs and the long test, with the raise option back to the owner if non-zero. Add to scope: the no-op count, and the `clans` read and its test (detail from rpg-planner-ubuntu). Evidence runs report the no-op count (also for TCK-20261103-A-MEASUREMENT-NOT-ON-THE-PINNED-RUNNER-CALLS-ITSELF-EVIDENCE). Testing-planner's final test ruling (lead's relay) supersedes the 3000t one below: extra_slow per world and seed, 2000t, 2200t for the base that split late, red on pre-fix src, one 600t concurrent-twice case, governor pinned, short PR-lane test; no re-anchor inside the fix PR by default, old and new values listed, rpg-planner rules, testing-planner sees the list first.
+
 2026-11-03 ACCEPTED FIX SHAPE (rpg-designer; owner row at main-checkout .claude/handover/drafts/rpg-designer-executor-owner-row.md; go, builder and size are the owner's):
 - World seed on the packet; flags on the packet.
 - A guard failing on executor-side reads of state fields the packet lacks (the 11,011 getattr/hasattr reads; `building_tiles` is the next named one).
