@@ -81,6 +81,11 @@ Not a credit to ENG: e844e2845 lacking the record on s42 is a different world (r
 - Dispatch of the reads: rpg-planner orders them as part of the #826 re-measure, already owner-ordered by rpg-designer's ruling; any fix needs an owner yes.
 
 ## Implementation Notes
+2026-11-03 rpg-designer:
+- No origin run needed; wording stays "first shows with #826", not "caused by".
+- ubuntu holds the e30 trace (t700 to t5000, pinned base); lane C takes e37 only, from its last meal, and reads e30 from ubuntu's rows. If u24 gets there sooner on an idle slot, it takes e30 and ubuntu skips it.
+- FED test: (i)-(iii) with "the act that displaced its need", window 200t and also the first displacement after the last meal. Two steps #826 changed: dropping a retreat project without a present threat, and no adoption without a threat. Look first at a subject whose retreat project now ends and gets a different goal. Say so if it's trajectory.
+- Process lean (rpg-designer's): a behaviour close needs the V3 reading from a pinned 5000t set on the arm, before merge, not a day after. For testing-planner and the owner. Reading #669 after each RPG merge: yes.
 
 ## Test Summary
 
