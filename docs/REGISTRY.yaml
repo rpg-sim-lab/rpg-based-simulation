@@ -7966,6 +7966,38 @@
   - content
   last_verified: '2026-10-09'
 - type: ticket
+  path: agent-working/tickets/done/TCK-20261102-A-PRINTED-QUEUE-VIEW-OF-OPEN-TICKETS.md
+  ticket_id: TCK-20261102-A-PRINTED-QUEUE-VIEW-OF-OPEN-TICKETS
+  title: 'A read-only command prints the open-ticket queue: order, work in flight,
+    blocked, parked, each with its evidence or `unknown`'
+  tier: standard
+  ticket_type: feature
+  date: '2026-11-02'
+  related_code_areas:
+  - tools/delivery/ticket_queue.py
+  - tests/tools/test_ticket_queue.py
+  - tools/ticket_field_values.py
+  artifact_files:
+  - agent-working/stored_artifacts/TCK-20261102-A-PRINTED-QUEUE-VIEW-OF-OPEN-TICKETS/investigation.md
+  - agent-working/stored_artifacts/TCK-20261102-A-PRINTED-QUEUE-VIEW-OF-OPEN-TICKETS/plan.md
+  - agent-working/stored_artifacts/TCK-20261102-A-PRINTED-QUEUE-VIEW-OF-OPEN-TICKETS/test_plan.md
+  tags:
+  - delivery
+- type: ticket
+  path: agent-working/tickets/done/TCK-20261102-PR-RENDER-RAW-OUTPUT-ADVISORY-SCANS-ONLY-PROBES.md
+  ticket_id: TCK-20261102-PR-RENDER-RAW-OUTPUT-ADVISORY-SCANS-ONLY-PROBES
+  title: pr_render's raw-output advisory scans a ticket's whole stored_artifacts folder,
+    not only probes/
+  tier: hotfix
+  ticket_type: bug
+  date: '2026-11-02'
+  related_code_areas:
+  - tools/delivery/pr_render.py
+  - tests/tools/test_delivery_pr_render.py
+  artifact_files: []
+  tags:
+  - delivery
+- type: ticket
   path: agent-working/tickets/done/TCK-20261101-PHASE19-CONTRACT-NAMES-ITS-RUNTIME-TEST.md
   ticket_id: TCK-20261101-PHASE19-CONTRACT-NAMES-ITS-RUNTIME-TEST
   title: The phase19 import contract names its runtime test, drops drifting kernel
@@ -8016,6 +8048,19 @@
   ticket_id: TCK-20261101-SLOW-KNOWN-RED-FOR-THE-BRAVERY-QUARTILE-TEST
   title: The bravery quartile test gets a slow_known_reds entry owned by rpg-planner
     until its kernel is pinned
+  tier: hotfix
+  ticket_type: chore
+  date: '2026-11-01'
+  related_code_areas:
+  - tools/test_architecture/slow_known_reds.yaml
+  artifact_files: []
+  tags:
+  - testing
+- type: ticket
+  path: agent-working/tickets/done/TCK-20261101-SLOW-KNOWN-REDS-PERF-PAUSE-REWORD.md
+  ticket_id: TCK-20261101-SLOW-KNOWN-REDS-PERF-PAUSE-REWORD
+  title: Five perf known-reds entries move to perf-planner's parking ticket and name
+    the pause, and catalog_arena_smoke is reclassified flaky
   tier: hotfix
   ticket_type: chore
   date: '2026-11-01'
@@ -12280,6 +12325,18 @@
   - delivery
   - security
 - type: ticket
+  path: agent-working/tickets/done/TCK-20261018-TWO-BARE-KERNEL-TESTS-DEPEND-ON-HOST-MEMORY.md
+  ticket_id: TCK-20261018-TWO-BARE-KERNEL-TESTS-DEPEND-ON-HOST-MEMORY
+  title: Two tests that build a bare Kernel fail when the pytest process is large
+  tier: hotfix
+  ticket_type: bug
+  date: '2026-10-18'
+  related_code_areas:
+  - tests/unit/resource/test_resource_governor_contract.py; tests/unit/core/test_operational_flags.py;
+    tests/helpers/kernel_pinning.py
+  artifact_files: []
+  tags: []
+- type: ticket
   path: agent-working/tickets/done/TCK-20261018-VISUAL-ASSETS-ASEPRITE-JOB-TIMEOUT-UNDER-LOAD.md
   ticket_id: TCK-20261018-VISUAL-ASSETS-ASEPRITE-JOB-TIMEOUT-UNDER-LOAD
   title: Find why a sub-second Aseprite job hits the 30 s `JOB_TIMEOUT_S` under host
@@ -12381,18 +12438,6 @@
   tags:
   - architecture
   - documentation
-- type: ticket
-  path: agent-working/tickets/todos/TCK-20261018-TWO-BARE-KERNEL-TESTS-DEPEND-ON-HOST-MEMORY.md
-  ticket_id: TCK-20261018-TWO-BARE-KERNEL-TESTS-DEPEND-ON-HOST-MEMORY
-  title: Two tests that build a bare Kernel fail when the pytest process is large
-  tier: hotfix
-  ticket_type: bug
-  date: '2026-10-18'
-  related_code_areas:
-  - tests/unit/resource/test_resource_governor_contract.py; tests/unit/core/test_operational_flags.py;
-    tests/helpers/kernel_pinning.py
-  artifact_files: []
-  tags: []
 - type: ticket
   path: agent-working/tickets/todos/devops-api-dashboard-trace/TCK-20261018-API-DASHBOARD-AND-TRACE-PROOF.md
   ticket_id: TCK-20261018-API-DASHBOARD-AND-TRACE-PROOF

@@ -95,8 +95,10 @@ def test_flags_cannot_alter_authoritative_semantics():
 # --- What the kernel really does with operational flags (TCK-20261006-PERF-OPERATIONAL-FLAGS-MATRIX-DRIFT) -----------------------------
 
 def _flag_profile() -> RuntimeProfile:
+    # max_ram_mb is out of reach on purpose: a process above the ceiling drops the kernel to SURVIVAL and switches replay off, which would
+    # make these flag tests depend on host memory (TCK-20261018-TWO-BARE-KERNEL-TESTS-DEPEND-ON-HOST-MEMORY). Not pinned: the mode is live.
     return RuntimeProfile(
-        name="FLAG_OBEDIENCE", hardware_class=HardwareClass.CLASS_B, max_ram_mb=1024, max_cpu_percent=100.0, max_worker_count=0,
+        name="FLAG_OBEDIENCE", hardware_class=HardwareClass.CLASS_B, max_ram_mb=1_000_000, max_cpu_percent=100.0, max_worker_count=0,
         max_queue_depth=10, max_replay_buffer_kb=64, max_observability_budget_percent=5.0, max_tick_budget_ms=100000.0,
     )
 
