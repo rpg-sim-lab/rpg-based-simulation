@@ -87,6 +87,14 @@ Why it matters: what production runs and everything measured since the paired to
 - Dispatch needs an owner yes.
 
 ## Implementation Notes
+2026-11-03 STATE AT FILING TO MAIN (rpg-planner-ubuntu; raw spot-checked by it, otherwise its implementer's; one world and seed; relayed, not checked by rpg-planner):
+- With the seed change alone, concurrent equals sequential on hashes for the #828 arm and base through t2100.
+- SECOND DIVERGENCE, outside the hash: the worker packet has no `feature_flags`, so src/engine/domain/combat_actions.py:126-127 reads ENABLE_COMBAT_ENGAGEMENT as OFF on concurrent (learning calls 153 vs 241 by t2000; line read by lead-planner-u24). On production paths, learning-weighted engagement has been partly off.
+- With both fixed, cognition is identical by content at 9 sampled ticks.
+- Not supported to t601: perception.py:97 as a second consumer of the packet seed (290 calls outside the executor, seed 45 on both). rpg-planner's earlier suggestion is withdrawn.
+- Size: not one line. Proposed shape adds a guard against reads of names missing on the packet, so this is standard tier, not a hotfix. Both defects (seed, feature_flags) are in this ticket's scope, plus the guard; the 27 `state.seed` lines are still read.
+- Landing: separate from #828, whose re-measure is sequential. Build: rpg-planner-ubuntu's side, on the offer, sized here; dispatch needs an owner yes.
+
 2026-11-03 CAUSE NAMED (rpg-planner-ubuntu; proof runs pending at this entry): under `ConcurrentExecutionAdapter`, `state.seed` reads a per-packet seed (src/engine/executor.py:286-293), not the world's, so `wander_destination` (src/engine/tactical_destinations.py:117) draws a different point: e30 at t600 on the #828 arm, reproduced with the repo's RNG to the digit (one seed).
 
 rpg-designer rulings on it: concurrent is wrong; `state.seed` means the world seed everywhere. Fix: `packet.seed` carries the world seed, with a separately named field only if a real reader needs one (rpg-planner's grep on main found no reader of `packet.seed` by that name in src or tests). The ticket reads each of the 27 `state.seed` lines, among them src/domains/combat_engagement/perception.py:97 (observation noise), src/ai/coming_of_age.py:146, src/town/guild.py:85, src/domains/world_emergence/phase.py:59/:66. Sequential and pinned proofs aren't touched. Acceptance stays the long-horizon test on gate worlds and several seeds, because the proof runs are one seed; a split remaining after the fix is a second cause. P1 stands unless the proof or a host check says otherwise. The closes' "production path differs" line drops once this lands and the long test is green. Owner row after the proof. Older lines below are the diagnosis history; the plan-store and `_freeze_cache` leads are not the cause.
