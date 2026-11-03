@@ -73,6 +73,8 @@ The merchant never reacted before contact. The brain runs only at the strategic 
 - Is the wake costed per perceived hostile? Bound it the same way the adjacency wake is bounded.
 
 ## Implementation Notes
+2026-11-03 WIDENED (rpg-designer): the question is now "an act on the subject, row 88's (a) or (b), wakes its brain for a decision on the next tick". A hit is the strongest case. Same idea in one state as divergence 2.154 (the threat wake for a chosen sleeper); say whether one mechanism covers both.
+Evidence (lane A's urban s44 re-run on ENG head e844e2845, pinned, hash equal to paired; rows read by lane A, not by rpg-planner): after scout 17's first hit, each victim had NO tactical decision (no evaluate_entity_intent call, task empty) for: victim 2 t3326-3328 (3 ticks), 25 t3501-3505 (5), 1 t3502-3509 (8), 12 t3542-3548 (7), while 17 kept hitting (1 lost 17 hp at t3512, 25 lost 14 at t3511). The act test read True at the next decision, so it isn't the act test. Check whether the gap equals NEED_WAKE_CADENCE (10) by design; e1's 10 ticks suggests re-deciding only on cadence. Counts wanted before ENG closes, if cheap: hits not followed by a decision within 2 ticks, per run. ENG's owner row names this as the cheaper half of urban's +6: it doesn't change the gate.
 After v1. Needs the owner's confirmation.
 
 ## Test Summary
