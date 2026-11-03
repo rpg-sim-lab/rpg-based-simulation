@@ -40,7 +40,7 @@ rpg-planner read src/observability/starvation_record.py:230-244 on main: `_note_
 Until fixed, UNTRIED_STEP and last_meal_tick are caveated on every V3 record. Fails still count (rpg-designer).
 
 ## Out of Scope
-- The t1391 drop (-19.9 = INN_MEAL_HUNGER, 16 tiles from the inn, no charge, gold 195): possibly a service delivered at a distance. It waits for the replay's writer and would be its own defect and ticket.
+- The meal path itself: the replay showed it works (see Implementation Notes).
 - The cap's fourth project (the escalated-need exemption, intelligence.py:1770, by design).
 
 ## Acceptance Criteria
@@ -65,10 +65,11 @@ Until fixed, UNTRIED_STEP and last_meal_tick are caveated on every V3 record. Fa
 - tools/test_architecture/rpg_gate_known.yaml
 
 ## Assumptions / Open Questions
-- Which writer lowered e30's hunger at t1071 and t1391: the replay names it.
+- Answered by the replay: corpse meals (see Implementation Notes).
 - Dispatch needs an owner yes.
 
 ## Implementation Notes
+2026-11-03 replay result (rpg-planner-ubuntu, relayed by lead-planner-u24, not checked by rpg-planner): e30's two silent drops were corpse meals (src/engine/domain/core_actions.py:89 `corpse_meal`, source_kind CORPSE_FOOD, on the action path), not the inn and not at a distance. The meal path is fine; decision 44 isn't touched. The recorder gap is sharper than first stated: `_attempted_way` has no CORPSE_FOOD mapping, so SCAVENGE reads untried even when the subject scavenged, and last_meal_tick misses every meal but CARRIED_FOOD and INN_MEAL. e30's true last meal is t1390, not t721. On ubuntu's read V3 likely stays red for e30 on FORAGE alone. Scope adds: map CORPSE_FOOD to SCAVENGE in `_attempted_way`, with a test.
 
 ## Test Summary
 
