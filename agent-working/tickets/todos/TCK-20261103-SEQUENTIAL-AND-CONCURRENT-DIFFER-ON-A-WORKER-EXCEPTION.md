@@ -3,13 +3,13 @@ status: active
 layer: engine
 authority: P1
 audience: agent
-ticket_id: TCK-20261103-SEQUENTIAL-EXECUTOR-RAISES-WHERE-THE-CONTRACT-SAYS-NO-OP
+ticket_id: TCK-20261103-SEQUENTIAL-AND-CONCURRENT-DIFFER-ON-A-WORKER-EXCEPTION
 phase: open
 date: 2026-11-03
 tags: []
 ---
 
-# TCK-20261103-SEQUENTIAL-EXECUTOR-RAISES-WHERE-THE-CONTRACT-SAYS-NO-OP
+# TCK-20261103-SEQUENTIAL-AND-CONCURRENT-DIFFER-ON-A-WORKER-EXCEPTION
 
 ## Title
 An equivalence gap, not a breach: the sequential executor raises on a worker exception while the concurrent path turns it into the contract's no-op (Fallback Equivalence)
