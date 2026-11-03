@@ -98,7 +98,7 @@ class WorkerPacket:
     _ground_item_map_cache: Optional[Any] = field(default=None, repr=False, compare=False)
 
     # Deterministic Context (Defaulted for backwards compatibility/optional inclusion)
-    blocked_tiles: List[Tuple[int, int]] = field(default_factory=list) # Spatial Law
+    blocked_tiles: Any = field(default_factory=frozenset) # Spatial Law: the state's blocked tiles (walls, building tiles), set by the executor from the state
     transient_claims: List[Tuple[int, int]] = field(default_factory=list) # Multi-agent conflict truth
     terrain: Dict[Tuple[int, int], str] = field(default_factory=dict) # Tile terrain types
     # The state's own answers for the questions domain logic asks of its context (set by the executor from the read-only state, not defaulted):

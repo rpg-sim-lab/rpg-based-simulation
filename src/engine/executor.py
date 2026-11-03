@@ -318,6 +318,7 @@ class ConcurrentExecutionAdapter:
                         _ground_item_map_cache=frozen_ground_item_map,
                         feature_flags=frozen_feature_flags,
                         building_tiles=state.building_tiles,
+                        blocked_tiles=state.blocked_tiles,  # buildings and walls are solid (the compiler adds each building tile here); a packet that defaulted to [] let a worker walk into the inn
                         town_center=state.town_center,
                         clans=state.clans,
                     )

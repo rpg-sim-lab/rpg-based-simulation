@@ -157,3 +157,152 @@ def test_a_move_resolved_in_the_executor_takes_the_same_far_town_branch_as_seque
         calls.clear()
         movement.MovementSystem._route_step(entity, (95.0, 95.0), context)
         assert calls == [], type(context).__name__
+
+
+# FIELD PARITY (rpg-planner conditions, TCK-20261103-THE-CONCURRENT-AND-SEQUENTIAL-EXECUTORS-GIVE-DIFFERENT-WORLDS).
+# Fields are discovered with dataclasses.fields(WorkerPacket), never listed by hand. Each is one of:
+#   * the state's own value (same name, or the renamed pair in _RENAMED), compared BY CONTENT (frozen copies and views by value);
+#   * set per work item by the executor (_PER_ITEM);
+#   * a derived structure the executor builds from the state (_DERIVED), with a reason and an owner. An entry with no reason, or a field that shares a name with a
+#     state field and is listed here, fails: a same-name field must be equal to the state's (what broke ``seed``; and ``blocked_tiles``, which a default left empty).
+_RENAMED = {"all_entities": "entities"}
+_PER_ITEM = {"packet_id", "work_id", "work_class", "subject", "neighbor_view", "work_kind", "payload", "class_priority", "local_priority"}
+_DERIVED = {  # name: (reason, owner)
+    "spatial_grid": ("the neighbour grid built from the state's entities (DomainView._get_cached_spatial_grid)", "executor.py"),
+    "occupancy_map": ("tile -> entity id built from the state's entities (SpatialQueryService.get_occupancy_map); the long executor-equivalence test covers drift", "executor.py"),
+    "region_list": ("the region list cache of the state", "executor.py"),
+    "building_map": ("tile -> building built from state.buildings", "executor.py"),
+    "_region_index_cache": ("derived from state.regions", "executor.py"),
+    "_regions_global_bounds": ("derived from state.regions", "executor.py"),
+    "_building_region_map_cache": ("derived from state.buildings and regions", "executor.py"),
+    "_node_map_cache": ("derived from state.resource_nodes", "executor.py"),
+    "_corpse_map_cache": ("derived from state.corpses", "executor.py"),
+    "_ground_item_map_cache": ("derived from state.ground_items", "executor.py"),
+    "transient_claims": ("the state's value is None outside a resolution pass (state.py:1369, reset at :1479); verify_occupancy reads `or []`, so [] and None read the same", "rpg-implementer"),
+}
+
+
+def _by_value(value):
+    if isinstance(value, (set, frozenset)):
+        return frozenset(value)
+    if hasattr(value, "items"):
+        return {k: _by_value(v) for k, v in value.items()}
+    if isinstance(value, (list, tuple)) and not (isinstance(value, tuple) and len(value) == 2 and all(isinstance(x, float) for x in value)):
+        return [_by_value(v) for v in value]
+    return value
+
+
+def _packet_fields():
+    import dataclasses
+    from src.core.worker_protocol import WorkerPacket
+    return dataclasses.fields(WorkerPacket)
+
+
+def check_field_parity(state) -> list:
+    """The list of packet fields whose value differs from the state's (empty when the packet is the state's world)."""
+    import dataclasses
+    state_names = {f.name for f in dataclasses.fields(AuthoritativeState)}
+    packet = _packet(state)
+    view = state.readonly_view()
+    wrong = []
+    for f in _packet_fields():
+        name = f.name
+        if name in _PER_ITEM or name in _DERIVED:
+            continue
+        source = _RENAMED.get(name, name)
+        if source not in state_names and source != "entities":
+            wrong.append(f"{name}: not a state field, not renamed, not per-item, not derived (no reason given)")
+            continue
+        if _by_value(getattr(packet, name)) != _by_value(getattr(view, source)):
+            wrong.append(f"{name}: packet {str(getattr(packet, name))[:60]} != state {str(getattr(view, source))[:60]}")
+    return wrong
+
+
+def test_the_exclusions_have_reasons_and_no_same_name_field_is_excluded_but_the_two_written_kinds():
+    """Rule: no field may be excluded if its name matches a state field (what broke ``seed``), except (a) the state's own derived caches (leading underscore: the same
+    cache, built from fields the packet carries) and (b) ``transient_claims`` (reason in the table). Anything else must be compared."""
+    import dataclasses
+    state_names = {f.name for f in dataclasses.fields(AuthoritativeState)}
+    for name, (reason, owner) in _DERIVED.items():
+        assert reason.strip() and owner.strip(), f"{name}: an exclusion needs a reason and an owner"
+    same_name_excluded = {n for n in _DERIVED if n in state_names}
+    assert {n for n in same_name_excluded if not n.startswith("_")} == {"transient_claims"}, same_name_excluded
+    assert (_PER_ITEM | set(_DERIVED) | set(_RENAMED)) <= {f.name for f in _packet_fields()}
+
+
+def _after_lodging(state):
+    """An entity lodged in a building: it stands on no tile (F3 2.155)."""
+    import dataclasses
+    e = state.entities[1]
+    lodged = dataclasses.replace(e, navigation=dataclasses.replace(e.navigation, lodged_in=100))
+    return dataclasses.replace(state, entities={**state.entities, 1: lodged})
+
+
+def _after_building_change(state):
+    """A building added after t0: its tile joins the blocked tiles and the building tiles."""
+    import dataclasses
+    from src.core.state import BuildingState
+    return dataclasses.replace(state, buildings={**state.buildings, 100: BuildingState(id=100, kind="inn", position=(20.0, 20.0))},
+                               blocked_tiles=frozenset(set(state.blocked_tiles) | {(20, 20)}), building_tiles={**state.building_tiles, (20, 20): "inn"})
+
+
+@pytest.mark.parametrize("name", ["t0", "mid_run", "after_lodging", "after_building_change"])
+def test_every_packet_field_equals_the_states_value_at_each_stage(name):
+    """PR-lane fixture version of the gate-world check below (a small state, the stages the reviewer named)."""
+    base = _rich_state()
+    state = {"t0": lambda: _state(seed=7, tick=0, blocked_tiles={(5, 5)}, building_tiles={(5, 5): "inn"}),
+             "mid_run": lambda: _rich_state(),
+             "after_lodging": lambda: _after_lodging(base),
+             "after_building_change": lambda: _after_building_change(base)}[name]()
+    assert check_field_parity(state) == []
+
+
+@pytest.mark.extra_slow
+@pytest.mark.parametrize("ticks", [0, 150, 600])
+def test_every_packet_field_equals_the_states_value_on_a_gate_world(ticks):
+    """Slow-lane version: crowded_frontier s45 compiled and run sequentially to ``ticks``; the packet is built from the state at that tick (drift in a memoised
+    structure shows here). Stage coverage: t0 and mid-run always; lodging and building changes only if the run produced one, which is recorded not assumed."""
+    from src.config.profiles import PROD_SMALL
+    from src.engine.kernel import Kernel
+    from src.platform.rng import DeterministicRNG
+    from src.worldbuilding.compiler import WorldCompiler
+    from src.worldbuilding.repository import WorldRepository
+    from tests.helpers.kernel_pinning import PinnedNormalGovernor
+    spec, context = WorldRepository("data/worlds").load_world_with_context("crowded_frontier")
+    state, _ = WorldCompiler.compile(spec, 45, context=context)
+    kernel = Kernel(PROD_SMALL.model_copy(update={"max_tick_budget_ms": 1e9}), state, DeterministicRNG(45), governor=PinnedNormalGovernor(),
+                    executor=LocalSequentialExecutor(), flags={"audit_mode": True, "no_frame_pacing": True}, run_id=f"fieldparity_{ticks}")
+    try:
+        for _ in range(ticks):
+            kernel.tick_once()
+        assert check_field_parity(kernel.state) == []
+    finally:
+        kernel.shutdown()
+
+
+def test_a_defaulted_packet_field_is_shown_set_by_the_executor_or_listed():
+    """A defaulted field the constructor does not set answers the state's question with the default (blocked_tiles: [] said walkable for the inn tile)."""
+    import dataclasses
+    import pathlib
+    import re
+    text = pathlib.Path("src/engine/executor.py").read_text(encoding="utf-8")
+    block = text[text.index("packet = WorkerPacket("):text.index("packets.append(packet)")]
+    set_names = set(re.findall(r"^\s*(\w+)=", block, re.M))
+    unset = {f.name for f in _packet_fields() if (f.default is not dataclasses.MISSING or f.default_factory is not dataclasses.MISSING) and f.name not in set_names}
+    assert unset <= set(_DERIVED), f"defaulted packet fields the executor never sets and no reason lists: {sorted(unset - set(_DERIVED))}"
+
+
+def test_a_walled_or_built_tile_is_blocked_on_the_packet_as_on_the_state():
+    """The row that split crowded s42 at t1973: ``find_intercept_position`` asked ``verify_occupancy`` about the inn tile; the compiler puts each building tile into
+    ``blocked_tiles``, the packet carried none, and the worker said walkable where the state said solid."""
+    from src.engine.legality import LegalityServiceV2
+    state = _rich_state()
+    for tile in ((5, 5), (6, 5), (9, 9)):
+        assert LegalityServiceV2.verify_occupancy(tile, state.readonly_view())[0] is False
+        assert LegalityServiceV2.verify_occupancy(tile, _packet(state))[0] is False, tile
+
+
+def _rich_state():
+    clan = ClanState(clan_id="c1", name="Clan", member_entity_ids=(1,), leader_entity_id=2, founded_tick=1)
+    return _state(seed=7, clans={"c1": clan}, feature_flags={"ENABLE_COMBAT_ENGAGEMENT": "ON"}, building_tiles={(5, 5): "inn"}, town_center=(7.0, 8.0),
+                  blocked_tiles={(5, 5), (6, 5), (9, 9)}, terrain={(1, 1): "WALL"})
