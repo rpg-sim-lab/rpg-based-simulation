@@ -7966,6 +7966,19 @@
   - content
   last_verified: '2026-10-09'
 - type: ticket
+  path: agent-working/tickets/done/TCK-20261103-DELIVERY-GUIDE-PINNED-RUNNER-EVIDENCE-RULE.md
+  ticket_id: TCK-20261103-DELIVERY-GUIDE-PINNED-RUNNER-EVIDENCE-RULE
+  title: The delivery guide states that behaviour evidence comes from the pinned runner
+  tier: hotfix
+  ticket_type: chore
+  date: '2026-11-03'
+  related_code_areas:
+  - tools/rpg_measure/, tools/test_architecture/rpg_gate_run.py, src/engine/checkpoint.py
+  artifact_files: []
+  tags:
+  - delivery
+  - documentation
+- type: ticket
   path: agent-working/tickets/todos/TCK-20261103-A-MEASUREMENT-NOT-ON-THE-PINNED-RUNNER-CALLS-ITSELF-EVIDENCE.md
   ticket_id: TCK-20261103-A-MEASUREMENT-NOT-ON-THE-PINNED-RUNNER-CALLS-ITSELF-EVIDENCE
   title: 'A behaviour measurement run on the unpinned `_run_engine` can be presented
@@ -8030,6 +8043,19 @@
   - tests/integration/kernel/test_executor_determinism.py, test_determinism_suite.py,
     test_tied_worker_result_order.py, tests/perf/test_concurrency_parity.py
   - _run_engine
+  artifact_files: []
+  tags: []
+- type: ticket
+  path: agent-working/tickets/todos/TCK-20261103-THE-STARVATION-RECORD-MISSES-MEALS-WITHOUT-AN-INTENT-RESULT.md
+  ticket_id: TCK-20261103-THE-STARVATION-RECORD-MISSES-MEALS-WITHOUT-AN-INTENT-RESULT
+  title: The starvation record misses meals that come without an accepted intent result,
+    so V3's last_meal_tick and UNTRIED_STEP can be wrong
+  tier: standard
+  ticket_type: bug
+  date: '2026-11-03'
+  related_code_areas:
+  - _note_attempts
+  - tools/test_architecture/rpg_gate_known.yaml
   artifact_files: []
   tags: []
 - type: ticket
