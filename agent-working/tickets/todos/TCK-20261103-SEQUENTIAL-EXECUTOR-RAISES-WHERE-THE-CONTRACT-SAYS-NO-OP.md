@@ -12,7 +12,7 @@ tags: []
 # TCK-20261103-SEQUENTIAL-EXECUTOR-RAISES-WHERE-THE-CONTRACT-SAYS-NO-OP
 
 ## Title
-The sequential executor raises on a worker exception where bounded_concurrency_contract.md says no-op (Fallback Equivalence)
+An equivalence gap, not a breach: the sequential executor raises on a worker exception while the concurrent path turns it into the contract's no-op (Fallback Equivalence)
 
 ## Status
 OPEN
@@ -27,9 +27,9 @@ bug
 P3
 
 ## Request Summary
-Requested by rpg-designer on 2026-11-03, after rpg-planner-ubuntu read the contract (relayed, not checked here beyond the lines cited). The concurrent path's no-op on a worker exception follows the contract (:39-40); the sequential path's raise does not (Fallback Equivalence).
+Requested by rpg-designer on 2026-11-03, after rpg-planner-ubuntu read the contract (relayed, not checked here beyond the lines cited). The concurrent path's no-op on a worker exception follows the contract (:39-40). The sequential path raises instead, so the two aren't equivalent on a failure (Fallback Equivalence): an equivalence gap, not a breach (rpg-planner-ubuntu's correction, via lead-planner-u24).
 
-It matters only if the no-op count from TCK-20261103-THE-CONCURRENT-AND-SEQUENTIAL-EXECUTORS-GIVE-DIFFERENT-WORLDS ever fires: with a zero count, the two paths never differ on it. One written exception is proposed for `PacketFieldMissingError` on that ticket; other no-ops are counted. That row is with the owner.
+It matters only if the no-op count from TCK-20261103-THE-CONCURRENT-AND-SEQUENTIAL-EXECUTORS-GIVE-DIFFERENT-WORLDS ever fires: with a zero count, the two paths never differ on it. Owner's answer (#715 6593673717): an undeclared read stops the run, production included, with one written contract exception; other worker errors keep the no-op, counted, and non-zero fails evidence and returns to the owner.
 
 ## Scope
 1. Watch the no-op count once the executor ticket lands.
