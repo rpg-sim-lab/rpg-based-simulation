@@ -30,7 +30,7 @@ PACKET_DERIVED_CACHE_NAMES = frozenset({
     "_occupancy_map_cache",         # SpatialQueryService.get_occupancy_map uses the packet's occupancy_map
     "_has_hostiles_or_dead_cache",  # a short-circuit boolean over entities; absent means the helper scans the packet's entities
     "_has_contracts_cache",         # a short-circuit boolean over entity contracts; absent means the helper scans the packet's entities
-    "occupancy_snapshot",           # the state-vs-packet switch in legality.py: the else branch reads the packet's occupancy_map (same occupants)
+    "occupancy_snapshot",           # the state-vs-packet switch in legality.py: the else branch reads the packet's occupancy_map; both are compared with a cache-free rebuild in test_executor_context_parity (_check_occupancy_map), not assumed equal
     "movement_cache",               # a step cache: a hit equals recomputation; None on the state in every gate run measured
     "route_plans",                  # a derived 10-tick plan store (route_search); no route call has come from an executor in the runs measured
 })
