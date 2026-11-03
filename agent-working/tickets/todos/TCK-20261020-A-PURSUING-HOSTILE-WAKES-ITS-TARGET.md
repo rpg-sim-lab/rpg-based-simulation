@@ -73,6 +73,12 @@ The merchant never reacted before contact. The brain runs only at the strategic 
 - Is the wake costed per perceived hostile? Bound it the same way the adjacency wake is bounded.
 
 ## Implementation Notes
+2026-11-03 RULING on order and owner visibility (rpg-designer):
+- Whether: a defect to fix, no owner question. A hit not waking its victim contradicts decision 32's intent and row 88's act test.
+- When and how measured: owner-visible. The counts below show it moves many deaths, so under one variable per step it is its own measured step, and its place in the order is the owner's (rows 93 and 95).
+- Lean: ENG lands first, as already measured, then this fix as the next step, measured on top. ENG's owner row carries one line: "next in the order, unless you'd rather", naming it as the cheaper half of urban's +6.
+- Hot-loop: yes. Waking on every hit means more brain decisions under the perf pause (#715 6556861718). Its measurement includes a timing reading if the pause allows; otherwise state "not measured".
+
 2026-11-03 COUNTS on base 65d43dfa9 (lane A's gap probe, pinned, 3 runs, hashes equal to paired; not on ENG's head, which the mechanism doesn't depend on). Hit = a new last_hit_tick with an attacker on a person; next decision = first evaluate_entity_intent at a later tick:
 - urban s44: 72 hits; next decision within 2 ticks 3; gap >2 47 (median 7, max 59); died before deciding 22; hp lost in gaps >2 824 (vs 43).
 - frontier s42: 192 hits; <=2 18; >2 121 (median 8, max 141); died first 53; hp lost 1878 (vs 173).
