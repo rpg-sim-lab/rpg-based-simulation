@@ -77,6 +77,9 @@ Open: whether it explains the s44 victims. They were hit by scout 17 alone as fa
 - Dispatch needs an owner yes.
 
 ## Implementation Notes
+2026-11-03 rpg-designer, two ties for the fix shape:
+- The self-defence rider (TCK-20261101-A-HOSTILE-ATTACKING-YOU-OUTRANKS-THE-GROUP-SHARED-TARGET, lane C, unpushed, `self_defence_rank` via `hostile_hit_subject_within`) reads the same `last_attacker_id`. A group hit would make the rider favour the first hitter and ignore the rest. Whatever the fix, the rider's key and row 88 (b) read the same field, and both get a grid row with a two-attacker group hit.
+- A typed per-attacker field is new durable state: it needs the digest (TCK-20261103-STATE-DIGEST-MAY-OMIT-FIELDS-THAT-DECISIONS-READ), a checkpoint field rule (append-only; FIELD_RULES derive-or-refuse; restore can't derive it, so it is refused or defaulted per the checkpoint ruling), and parity rows. Prefer a smaller fix if counts allow it: each attacker of a group hit writes last_attacker_id in a fixed order, so the latest wins, as for single hits.
 
 ## Test Summary
 
