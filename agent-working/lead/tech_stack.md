@@ -6,18 +6,21 @@ audience: agent
 tags: [ai, governance]
 ---
 
-# Tech stack overview
+# Tech stack and design overview
 
-Kept by `lead-planner`. One page that lists every stack the project uses, grouped by domain, with where and how each is
-used. Taken from the manifests on `main` at 36d4fd78 (2026-11-04): `pyproject.toml`, the three `package.json` files,
+Kept by `lead-planner`. **Part 1** lists every stack the project uses, grouped by domain, with where and how each is
+used. **Part 2** covers the design: the architecture decisions and engineering practices worth putting on a CV, each
+with a ready bullet and the files that prove it. Taken from the manifests on `main` at 36d4fd78 (2026-11-04): `pyproject.toml`, the three `package.json` files,
 `compose.yaml`, `docker/`, `infra/terraform/`, `.github/workflows/`, `.mcp.json` and `visual_assets/`.
 
-"Used in" counts are files with a top-level import of the package (`import x` / `from x`), counted in
+"Used in" counts are files with an import line for the package (`import x` / `from x`, at any indent), counted in
 `src/`, `tools/` and `tests/`. They show where a library sits, not how heavily it is called.
 
 This page is **advice and inventory only**. It is not the registry: `registries/tech_stack.yaml` does not exist yet, and
 `stack_seed_review.md` says it should be seeded from this page. Changing a version is an edit in the owning domain
 (see the owner column), not here.
+
+# Part 1: Stacks
 
 ## At a glance
 
@@ -131,7 +134,7 @@ Deployed to GitHub Pages by `.github/workflows/deploy-docs.yml` (platform-owned)
 | pytest | `>=8.0.0` | `tests/` | The main suite, organised by `docs/testing/test_taxonomy.md`. Scope runs by domain or with `-m "not slow"` (CLAUDE.md). |
 | pytest-xdist | `==3.8.0` | CI `test.yml` | Parallel jobs with `--dist loadgroup`. |
 | pytest-asyncio | `>=1.0.0` | API and async tests | Async test support. |
-| Hypothesis | `>=6.0.0` | declared (dev) | Property tests. No top-level import found; any use is inside functions. |
+| Hypothesis | `>=6.0.0` | declared (dev) | **Unused**: no test imports it (finding F4). |
 | httpx | `>=0.27.0` | declared (dev) | FastAPI `TestClient` transport. |
 | coverage | `>=7.0.0` | CI | Coverage reports. |
 | jsonschema | `>=4.0.0` | `tests/tools/` 2 files | Validates parity-ledger entries against `docs/parity_ledger/schema.json`. |
@@ -262,4 +265,239 @@ finding 5), mypy is pinned `==2.4.0` (finding 1), and Promtail has been replaced
 | F1 | The two React apps no longer match. `frontend/` is on Vite 8, plugin-react 6 and Vitest 5; `dashboard-frontend/` is on Vite 7, plugin-react 5 and Vitest 4. The seed review's finding 4 ("versions match today") no longer holds. | Bring the dashboard up to the client's majors in one PR; the open Dependabot npm-major PR #811 covers only `frontend/`. Still no workspace. | lead (dashboard) |
 | F2 | `pandas` is imported lazily in `src/observability/mining/dataset.py` but is declared nowhere in `pyproject.toml`. | Declare it in an extra, or replace it with DuckDB or PyArrow, which are already runtime dependencies. | rpg |
 | F3 | Seed finding 2 still holds: `uv.lock` resolves torch's CUDA build while `.venv-knowledge` uses a hand-installed CPU wheel on Python 3.12. | Unchanged; tracked on #514. | agent-working |
-| F4 | `hypothesis` and `httpx` are declared in `dev` but have no top-level import in `tests/`. | Check whether they are used through fixtures or lazy imports before removing either one. | testing |
+| F4 | `hypothesis` is declared in `dev`, but no file in `tests/` imports it. (`httpx` has no direct import either, but it is needed: FastAPI's `TestClient` runs on it.) | Either write property tests or drop `hypothesis` from `dev`. Keep `httpx`. | testing |
+
+# Part 2: Design and engineering highlights (CV-ready)
+
+Part 1 lists the tools. This part covers the design: the decisions that make the project more than a FastAPI app with
+a React client. Each item has what it is, why it is worth naming, a bullet you can paste into a CV, and the evidence
+an interviewer can be pointed to.
+
+**Scale on `main` at 36d4fd78** (counted from the tree; the clone is shallow, so it has no commit history):
+825 Python modules and about 134k lines in `src/`; 2,032 test files with about 17,200 test functions; 393 tooling
+modules in `tools/`; 1,212 Markdown docs; 3,080 closed tickets; more than 830 pull requests (the latest is #834);
+2,299 parity-ledger entries; 32 agent session roles across 9 domains.
+
+**One honest framing note.** Most of the code was written by AI agents working through the delivery process in item
+12, under your design, review and approval. On a CV, say exactly that: "designed and led", "defined the architecture
+and contracts", "built a multi-agent delivery process". In an interview, that story is stronger than claiming every line
+by hand, and it is the true one.
+
+## Suggested CV entry
+
+> **RPG-Based Simulation: deterministic, large-scale fantasy world simulation engine** (Python, FastAPI, React,
+> Redis Streams, Docker, Terraform/AWS)
+>
+> Designed and led a deterministic, tick-based simulation of autonomous agents (strategic cognition, combat, economy,
+> factions, world evolution) with a concurrent-propose / sequential-commit kernel, immutable state, replay-grade
+> state hashing and a ten-pillar simulation-quality scoring system. Built the full delivery platform around it:
+> observability stack, signed container images, IaC, and a 32-role multi-agent AI development process with
+> machine-checked gates. About 134k lines of Python and 17k tests.
+
+Pick 4 to 6 of the bullets below to go under it, depending on the job.
+
+## 1. Deterministic tick kernel: concurrent proposals, sequential commit
+
+- **What.** Every tick runs a fixed 7-phase loop: Initialization, Scheduling, Collection, Resolution, Cleanup,
+  Advancement, Persistence. Only Collection is concurrent: workers "think" in parallel and return proposals. Everything
+  that changes the world is resolved in a fixed order (entities sorted by id), one step after another.
+- **Why it matters.** It gets parallel speed without giving up reproducibility, the classic trade-off in game servers
+  and agent simulations.
+- **CV bullet.** *Designed a 7-phase deterministic tick kernel that runs agent decision-making concurrently while
+  committing all world changes sequentially, so that any run reproduces exactly from its seed.*
+- **Evidence.** `docs/engine/kernel.md`, `docs/architecture/kernel_concurrency_design_philosophy.md`,
+  `src/engine/kernel.py`, `src/engine/scheduler.py`.
+
+## 2. Single authoritative mutation pipeline (Proposal, Refine, Apply)
+
+- **What.** No system may change state directly. Every change is a typed `StateUpdate` proposal. The
+  `AuthoritativeApplyPipeline` refines proposals through an ordered chain of steps (45 `run_phase` calls in
+  `src/engine/pipeline.py`): trust boundary, actor validity, cooperation, combat, movement, economy, quests, and more.
+  It resolves conflicts and rejects illegal moves before a single apply step commits.
+- **Why it matters.** It is a CQRS-style write path, the same pattern behind event-sourced backends, with untrusted
+  input stripped at the first step (`trust_boundary`).
+- **CV bullet.** *Enforced a single write path: typed state-update proposals pass through an ordered validation and
+  conflict-resolution pipeline before one authoritative commit, so a move can be rejected deterministically without
+  corrupting world state.*
+- **Evidence.** `docs/engine/authoritative_pipeline.md`, `docs/engine/authoritative_mutation_pipeline_contract.md`,
+  `tests/engine/test_pipeline_contract.py`.
+
+## 3. Immutable, component-based world state with canonical hashing
+
+- **What.** `AuthoritativeState` and all its components (Identity, Combat, Navigation, Strategic, Inventory, Biological,
+  Lifecycle) are `@dataclass(frozen=True, slots=True)`. Each tick produces a new state object. Every component has
+  key-sorted canonical serialization, and `CanonicalStateHasher` hashes the whole state after every tick.
+- **Why it matters.** Frozen objects are safe to share across workers without locks. Slots keep memory down across
+  millions of components. The hash turns "is this run identical?" into a single comparison.
+- **CV bullet.** *Modelled world state as immutable slotted components with canonical serialization and per-tick state
+  hashing, giving lock-free sharing across workers and replay-grade verification.*
+- **Evidence.** `docs/core/state.md`, `src/engine/checkpoint.py`, `src/replay/fingerprint.py`.
+
+## 4. Tiered determinism guarantee, stated honestly
+
+- **What.** Determinism is claimed in tiers. DET-PORT-0 (same build, interpreter, OS and CPU, sequential executor) is
+  guaranteed. DET-PORT-1 (other executor backends or worker counts) holds only where a parity matrix passes. DET-PORT-2
+  (other OS, CPU or interpreter) is not claimed until it passes the same matrix. Randomness goes through one seeded
+  `DeterministicRNG`.
+- **Why it matters.** Most projects say "it's deterministic" and stop there. Saying exactly what is proven, and on
+  which runtime, is the kind of rigour reviewers look for in senior engineers.
+- **CV bullet.** *Defined a tiered determinism contract (same-runtime, cross-executor, cross-platform), each tier
+  backed by a test matrix, with every benchmark and hash proof recording its tier and runtime identity.*
+- **Evidence.** `docs/engine/deterministic_execution.md`, `src/platform/rng.py`.
+
+## 5. Agent AI: bounded cognition and a strategy/tactics split
+
+- **What.** Each agent has a cognition capacity derived from its attributes (INT, WIS, PER, CHA) and personality, which
+  limits how much it can reason strategically. Strategy owns long-term direction (projects, leads, concerns); tactics
+  own immediate execution. Agents carry beliefs, memory (causal, temporal, spatial), a self-model, and leads that stay
+  vague until evidence narrows them.
+- **Why it matters.** It produces believable, differentiated behaviour without a scripted behaviour tree, and it is a
+  real design position you can discuss in an AI or game interview.
+- **CV bullet.** *Designed bounded agent cognition: reasoning capacity derived from attributes and personality, with
+  separate strategic and tactical layers, belief and memory models, and uncertainty-preserving knowledge.*
+- **Evidence.** `docs/strategy/bounded_cognition_contract.md`, `docs/mechanics/04_strategic_cognition.md`,
+  `src/cognition/`, `src/strategy/`.
+
+## 6. Systemic world: economy with conservation, factions, ecology
+
+- **What.** 21 behaviour domains (`src/domains/`), among them combat engagement, cooperation, culture, demographics,
+  emotion, faction, information and world emergence. The economy enforces atomic conservation: gold and items are
+  transferred, never created from nothing. Factions run a diplomatic state machine and military conflict. Regions
+  carry trauma, ecology and calamities.
+- **Why it matters.** It shows emergent-systems design: systems interact through shared state instead of scripts.
+  Conservation is a testable invariant, not a hope.
+- **CV bullet.** *Built a systemic world of 21 interacting domains (combat, economy, factions, culture, demographics,
+  ecology) with conservation-checked economic transfers and emergent faction diplomacy.*
+- **Evidence.** `docs/mechanics/02_combat_laws.md`, `03_economic_laws.md`, `05_world_evolution.md`, `src/domains/`.
+
+## 7. Declarative world assembly and a plug-in Feature Pack system
+
+- **What.** Worlds are composed from YAML world modules (for example `frontier_village_core`, `goblin_camp_conflict`)
+  with integrity validation for collisions and sovereignty. Feature Packs add new quest types or faction mechanics as
+  a YAML manifest plus a Python module, without touching `src/engine/` or `src/domains/`.
+- **Why it matters.** Data-driven content and an open/closed extension point are what make an engine reusable.
+- **CV bullet.** *Designed declarative world assembly from validated YAML modules, plus a dependency-aware Feature Pack
+  plug-in system that adds gameplay without changing engine code.*
+- **Evidence.** `docs/architecture/world_assembly_architecture.md`, `docs/architecture/feature_pack_architecture.md`,
+  `docs/mechanics/06_worldbuilding_foundation.md`.
+
+## 8. Specification as code: Mechanics Bible and parity ledger
+
+- **What.** Six Mechanics Bible chapters define every formula. A machine-readable parity ledger (2,299 entries across 8
+  subsystem YAML files, with a JSON Schema) tracks each rule as `verified`, `divergent` or `missing`, with evidence and a
+  test path; P0 entries require a passing test. Intentional changes from legacy behaviour are recorded with a
+  rationale class.
+- **Why it matters.** Docs and code are kept in checked agreement, not left to drift. That is unusual and easy to
+  demonstrate.
+- **CV bullet.** *Kept specification and code in verified parity: a schema-validated ledger of more than 2,000 rules,
+  each linked to evidence and a test, with every intentional divergence recorded and justified.*
+- **Evidence.** `docs/mechanics/`, `docs/parity_ledger/`, `docs/guidelines/intentional_divergences.md`.
+
+## 9. Simulation quality scoring (SimQ)
+
+- **What.** A live quality hub scores every run on ten pillars: Cognition, Agency, Combat, Faction, Economy,
+  Progression, Social, Information, World, Narrative. It has bounded memory (100 worst events and a 200-record window per
+  pillar), deduplicates redelivered events by `event_id`, and keeps grade anchors that turn a quality regression into a
+  red CI result.
+- **Why it matters.** It answers the hard question for any simulation, "is it still *good*, not just still running?",
+  with numbers.
+- **CV bullet.** *Built a ten-pillar simulation-quality scoring system that grades every run live, with bounded memory,
+  idempotent ingestion, and grade anchors that catch behavioural regressions in CI.*
+- **Evidence.** `docs/simulation_quality/quality_scoring_contract.md`, `src/simulation_quality/`.
+
+## 10. Observability with backpressure, kept off the hot path
+
+- **What.** An event recorder feeds a bounded queue with four modes: NORMAL; PRESSURE at 70 % full; DEGRADED at 90 %;
+  SURVIVAL when full. The in-memory buffer evicts low-severity events first and protects CRITICAL ones; the file and
+  stream never lose events. Events stream over Redis to a live anomaly worker. Metrics, logs and traces run on the
+  observability profile (Prometheus, Grafana, Loki, Alloy, Tempo), with a watchdog service and ntfy alerts.
+- **Why it matters.** It is graceful degradation under load, a production SRE pattern, and a hot-path safety contract
+  stops telemetry from slowing the simulation.
+- **CV bullet.** *Designed an observability pipeline with four-level backpressure and severity-aware eviction,
+  streaming events over Redis to a live anomaly worker, with full metrics, logs and traces (Prometheus, Grafana, Loki,
+  Tempo).*
+- **Evidence.** `src/observability/event_recorder.py`, `docs/architecture/observability_hot_path_safety_contract.md`,
+  `docs/architecture/simulation_watchdog.md`, `compose.yaml`.
+
+## 11. Honest performance engineering
+
+- **What.** One performance contract defines tick cost (`perf_counter_ns`), TPS and a cost breakdown per phase. Results
+  are tied to hardware classes (certification contract). Tripwires, capacity runs and comparative runs are kept
+  separate, and noisy results stay `PENDING-NOISY` instead of being reported. A hardware-aware governor changes the
+  engine's mode under pressure. Tooling: py-spy, memray, Locust.
+- **CV bullet.** *Set up performance governance: per-phase tick-cost budgets tied to hardware classes, noise-aware
+  baselines, a load-aware runtime governor, and CPU and memory profiling.*
+- **Evidence.** `docs/engine/performance_contract.md`, `docs/architecture/performance_optimization_decisions.md`,
+  `src/perf/`, `src/certification/`.
+
+## 12. AI-native development process (the strongest differentiator)
+
+- **What.** The project is built by a team of AI agents with defined seats: 32 session roles (planner, implementer,
+  designer) across 9 domains, from a registry that also generates the role cards. Work flows through typed tickets,
+  with tiers (hotfix, standard, epic) that select a pipeline: Scope, Implement, Test, Parity, Verify, Finalize. There
+  are subagents for architecture review, security review and done-checking. Workflows are deterministic JavaScript
+  orchestration scripts. Every run is recorded in weekly JSONL shards that DuckDB can query. Gates are
+  machine-checked, and the "never edit an artifact to pass a gate" rule is enforced. Agents use RAG over the project's
+  own docs (sentence-transformers, sqlite-vec, BM25, served by an MCP server) and a code knowledge graph.
+- **Why it matters.** Very few people can show a working, governed multi-agent software process with 3,000+ closed
+  tickets behind it. It is directly relevant to AI engineering, developer-productivity and platform roles.
+- **CV bullets.**
+  - *Designed and ran a multi-agent AI software delivery process: 32 agent roles across 9 domains, ownership and
+    routing from a registry, tiered ticket pipelines with machine-checked done gates, and run telemetry. More than
+    3,000 tickets and 830 pull requests delivered.*
+  - *Built hybrid retrieval (dense embeddings, sqlite-vec and BM25) over the project's own docs, served to agents over
+    MCP, so agents ground their work in design contracts before changing code.*
+- **Evidence.** `CLAUDE.md`, `registries/session_roles.yaml`, `.claude/workflows/`, `.claude/agents/`,
+  `docs/architecture/agent_orchestration_contract.md`, `agent-working/agent-monitoring/`, `tools/knowledge_search.py`,
+  `tools/search_mcp.py`.
+
+## 13. Quality engineering at scale
+
+- **What.** About 17,200 tests with a test taxonomy, parallel CI (pytest-xdist with load groups), architecture tests that check read-only logic never mutated live state, and import-linter layer contracts as a
+  blocking CI check. mypy runs with a baseline so only new errors fail; Ruff, ast-grep rule packs and complexity
+  reports run alongside.
+- **CV bullet.** *Ran quality engineering for a codebase of about 134k lines: about 17k tests with a defined taxonomy,
+  architecture-boundary tests, enforced import-layer contracts and baselined static typing, all in parallel CI.*
+- **Evidence.** `docs/testing/test_taxonomy.md`, `codebase/structure/importlinter.toml`, `.github/workflows/test.yml`.
+
+## 14. Supply chain and platform engineering
+
+- **What.** Every GitHub Action is pinned to a commit SHA and every container image to a digest. Images are built with
+  Buildx, scanned with Trivy, come with an SBOM, and are signed with cosign. Secret scanning uses Gitleaks, static
+  analysis uses Semgrep and CodeQL. AWS infrastructure is in Terraform (ECS service, GitHub OIDC with no long-lived
+  keys, and a budget with an enforced budget action), linted and scanned in CI. Containers run as non-root, and Compose
+  secrets are used instead of environment variables.
+- **CV bullet.** *Hardened the software supply chain (SHA-pinned actions, digest-pinned images, signed images with
+  SBOMs, Trivy, Semgrep, Gitleaks and CodeQL scanning) and delivered infrastructure as code on AWS ECS with keyless
+  GitHub OIDC deploys and enforced budget controls.*
+- **Evidence.** `.github/workflows/publish-images.yml`, `security-scan.yml`, `iac.yml`, `infra/terraform/`,
+  `docs/architecture/devops_baseline_adr.md`.
+
+## 15. Architecture decision records and API boundaries
+
+- **What.** Significant decisions are ADRs (Status, Context, Decision, Rationale, Trade-offs, Consequences, Revisit
+  Trigger). The API returns read models shaped by presenters, never raw domain objects. It has admission control and
+  API-key authentication.
+- **CV bullet.** *Ran architecture by ADR, and kept domain models behind presenter-shaped API read models with
+  admission control and API-key authentication.*
+- **Evidence.** `docs/architecture/` (ADRs), `docs/architecture/http_admission_control.md`,
+  `docs/architecture/http_api_key_authentication.md`, `src/api/`.
+
+## Skills line for the CV
+
+**Languages:** Python, TypeScript, JavaScript, SQL, HCL, Lua. **Backend:** FastAPI, Pydantic, WebSockets, Redis
+Streams, DuckDB, PyArrow. **Frontend:** React 19, Vite, Tailwind, ECharts, Docusaurus. **Infrastructure:** Docker,
+Compose, Terraform, AWS (ECS, IAM OIDC, Budgets), GitHub Actions, Prometheus, Grafana, Loki, Tempo. **Quality:** pytest,
+pytest-xdist, Playwright, Vitest, mypy, Ruff, import-linter, Semgrep, Trivy, cosign. **AI:** multi-agent orchestration,
+MCP, RAG (sentence-transformers, sqlite-vec, BM25), Claude Code. **Concepts:** deterministic simulation, immutable
+state, CQRS-style write path, backpressure, agent cognition, emergent systems, spec-to-code parity, ADRs.
+
+## Which items to lead with
+
+| target role | lead with |
+|---|---|
+| Backend / distributed systems | 1, 2, 3, 4, 10 |
+| AI engineering / agents | 12, 5, 9 |
+| Game / simulation | 1, 5, 6, 7, 9 |
+| Platform / DevOps / SRE | 14, 10, 11 |
+| Tech lead / staff | 12, 8, 15, 4 |
