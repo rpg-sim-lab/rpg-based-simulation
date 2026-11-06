@@ -40,6 +40,7 @@ Main gate run 40653115297 (2c4869d61) has an unowned V3 at frontier_living_world
    (a) tactical.py:536: what gates the low-hp pure retreat. The name says "engaged", but the code reads only perceived hostiles. Align it with step A's rule (retreat only against a hostile that acts) or with the engagement predicate, and handle a None retreat destination without stamping a no-op move.
    (b) the downstream refusal of the step to (31,40), if it is a defect of its own.
    Any semantic choice in (a), i.e. which predicate gates a low-hp retreat, goes to rpg-designer before code.
+   (c) Added 2026-11-07 (rpg-designer's ENG reading 3 correction, pending the owner's answer): the emotional panic branch before need_first, tactical.py:252 on ENG head 5c86b1b8a. Below the consequence line (hunger 95, sleep debt 98), `_panic_holds` (:94-101) keeps a panic standing against a present but non-acting threat. With no destination, `_has_tactical_hostiles` keeps the subject frozen on its own tile. Lane A's unit row: hp 8/85, hunger 80, a non-acting hostile in view gives PANIC_RETREAT to its own tile. This is the same stall shape as (a), reached through an earlier branch. Any fix covers both branches, or states why one stays. The semantic choice goes to rpg-designer before code.
 3. Measured as a behaviour step (decision 76) against its parent; report fls s43 merchant 38 and V3 on the gate worlds.
 
 ## Out of Scope
