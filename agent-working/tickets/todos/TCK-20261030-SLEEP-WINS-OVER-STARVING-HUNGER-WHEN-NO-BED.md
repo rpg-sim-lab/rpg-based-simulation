@@ -63,6 +63,7 @@ Designer framing (rpg-designer, 2026-10-30):
 - A test for the s46 p1 shape: hunger >= 95, a takeable earn step, sleep debt below the collapse line, a chosen sleep. The subject is woken and takes the step (if (i) is ruled).
 - A test: at the collapse line, the subject keeps sleeping (collapse is unchanged).
 - The paired run on main is reported; the D73-shape probe shows the hunger-100 SLEEP holds near a takeable step fall.
+- Known entry: this ticket's fix PR deletes the V3 entry for crowded_frontier seed 46 entity 9 (#828's arm) from tools/test_architecture/rpg_gate_known.yaml (owner, #715 6697054601 item 1; the file takes only a date expiry, `expires_on: 2026-11-30`, so the delete is the PR's job, per testing-planner). If e9 still starves on the fix's pinned run, keep the entry and bring that to the owner.
 
 ## Related Tickets
 - TCK-20261029-A-BROKE-HUNGRY-SUBJECT-NEVER-EARNS-SO-THE-FREE-MEAL-CANNOT-GO (EARN; the source)
