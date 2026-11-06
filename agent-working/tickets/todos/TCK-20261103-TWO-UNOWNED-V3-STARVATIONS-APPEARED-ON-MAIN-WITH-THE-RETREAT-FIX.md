@@ -1,0 +1,101 @@
+---
+status: active
+layer: strategy
+authority: P1
+audience: agent
+ticket_id: TCK-20261103-TWO-UNOWNED-V3-STARVATIONS-APPEARED-ON-MAIN-WITH-THE-RETREAT-FIX
+phase: open
+date: 2026-11-03
+tags: []
+---
+
+# TCK-20261103-TWO-UNOWNED-V3-STARVATIONS-APPEARED-ON-MAIN-WITH-THE-RETREAT-FIX
+
+## Title
+Two unowned V3 starvation deaths show on main in crowded_frontier after #826, and the advisory gate report that showed them was not routed
+
+## Status
+OPEN
+
+## Tier
+standard
+
+## Type
+bug
+
+## Priority
+P1
+
+## Request Summary
+Requested by rpg-designer on 2026-11-03 after rpg-planner-ubuntu's pinned base showed crowded s42 e30 starving. rpg-planner then read the gate's rolling issue #669.
+
+Gate report, run 41454964932, head 9ced8fb24 (pinned sequential, 5000t):
+- `V3 [crowded_frontier/42]`: e30 leader, t2211, untried FORAGE, INN_MEAL, SCAVENGE. Unowned.
+- `V3 [crowded_frontier/45]`: e37 raider, t2338, untried BUY, FORAGE, INN_MEAL, SCAVENGE, WORK_SHIFT. Unowned.
+
+Both are listed NEW on the 2026-11-02 #669 comment. The previous run (41303978015, b9879de8f, 2026-11-01), which has F3 and lacks #826, did not list them. `git log 30307228c^..9ced8fb24 -- src data` shows only F3 and #826 (65d43dfa9). So they first show with #826.
+
+Limit on that reading: it shows where they appear, not that #826's rule starved them. This metric has come and gone on crowded seeds with other changes (#669: `V3 [crowded_frontier/42]` RESOLVED 2026-10-30, `V3 [crowded_frontier/46]` NEW 2026-10-30, RESOLVED 2026-11-01), and any behaviour change reroutes the world.
+
+How it reached main unnoticed: the gate is a daily scheduled advisory report (.github/workflows/rpg-gate-report.yml, no push or pull_request trigger), so no gate ran at #826's close. #826's own close used a concurrent-path `_run_engine` table at 2000t, before t2211 and t2338. The report came about 3 hours after the merge and was not routed. rpg-planner saw it only on 2026-11-03.
+
+Not a credit to ENG: e844e2845 lacking the record on s42 is a different world (rpg-designer). It doesn't touch #828's gate, which judges its arm alone, or ENG's order.
+
+## Scope
+1. Each subject's last stretch from rows on the pinned base 65d43dfa9, with the same questions as e34: hunger project and way; goal scores, winner and runner-up; cap refusals with SUSPENDED count; tactical reason; group and contract; each way open or closed with its reason, and whether it is really admitted; ticks crossing hunger 60 and 95 with hp; last meal. Hash equal to the paired base.
+2. FED test against #826: did a step #826 changed (retreat completion, cap exemption) select what displaced the need? Compare on 30307228c at the same seed where it helps. Verdict: fed / pre-existing gap / not shown.
+3. A verdict goes to rpg-designer, then the owner through lead-planner-u24. Known entries are the owner's only; nothing is added here.
+4. Routing: who reads #669 when it goes NEW on an unowned V3. rpg-planner proposes reading it after each RPG merge, and a merge-time note for hand merges. Whether it should be a pre-merge check is for testing-planner and the owner (cost: 50-60 min).
+
+## Out of Scope
+- #826's pinned re-measure (ordered separately; its table may add evidence).
+- ENG, N14, row 88.
+- Other findings on #669 (V1 counts are outside this ticket).
+
+## Acceptance Criteria
+- Both last stretches read, with direct reads and inference marked, and a verdict for each from rpg-designer.
+- The owner has the row if a merged fix fed either, or a known-entry decision is needed.
+- The routing decision is recorded.
+- Hot-loop: no (no code yet). A fix is its own ticket.
+
+## Related Tickets
+- TCK-20261031-A-RETREAT-PROJECT-OUTLIVES-ITS-THREAT (#826)
+- TCK-20261031-AN-ENGAGEMENT-OVERRIDES-A-PRESSING-NEED (ENG)
+- TCK-20261103-A-MEASUREMENT-NOT-ON-THE-PINNED-RUNNER-CALLS-ITSELF-EVIDENCE
+- TCK-20261103-NEAR-DEATH-HARDENING-FIRES-WITH-NOTHING-HITTING-THE-SUBJECT
+
+## Related Docs
+- docs/world_rules/life-body/survival-needs.md (SURV-06, SURV-07)
+- docs/plans/systemic_world/owner_decision_memo.md rows 54, 56, 83, 88
+
+## Related Stored Artifacts
+- Issue #669, run 41454964932; /mnt/data2/rpg-measure/results/65d43dfa9f2b-72320cac-5000/
+
+## Related Code Areas
+- tools/test_architecture/rpg_gate_known.yaml, .github/workflows/rpg-gate-report.yml
+- src/ai/goals/present_threat.py, src/systems/strategic_systems/intelligence.py
+
+## Assumptions / Open Questions
+- b9879de8f's source equals F3's for this purpose: only #826 changes src or data after F3, by git log.
+- Row 88's panic line may come up once rows are read (rpg-designer); no guess here.
+- Dispatch of the reads: rpg-planner orders them as part of the #826 re-measure, already owner-ordered by rpg-designer's ruling; any fix needs an owner yes.
+
+## Implementation Notes
+2026-11-03 VERDICTS (rpg-designer): e37 NOT FED against #826 (trajectory: decisions identical to t1413, divergence through another entity's corpse at t1406, no retreat record in its slots). e30 NOT FED, provisional. Both are pre-existing gaps reached on #826's path. Owner row drafted (main-checkout .claude/handover/drafts/rpg-designer-main-v3-owner-row.md): known entries expiring with their owning tickets or 2026-11-30, e30 under TCK-20261028-LOW-HP-RETREAT-BRANCH-HOLDS-A-STARVING-SUBJECT-IN-PLACE-BESIDE-A-NON-ACTING-HOSTILE, e37 under this ticket until its walk is explained.
+Open evidence line for e37: it walked about 150 tiles toward inn 20003 and never reached it. A nav or admission question: is a raider actually served there (EXCH-02's relationship gate)? If not, a way that "admits" while the service would refuse is ONE-ADMISSION's defect (ba7aa11bd, one admission rule for ways, scorers and services).
+2026-11-03 CAVEAT: the starvation record misses meals that come without an accepted intent result, or while hunger is below the escalated line (TCK-20261103-THE-STARVATION-RECORD-MISSES-MEALS-WITHOUT-AN-INTENT-RESULT). e30's "last meal t721, ways attempted []" stood through hunger drops at t1071 and t1391. UNTRIED_STEP and last_meal_tick are caveated on both records here; the fails still count. e30's stall beside the inn fits base's hostiles-present gate (ENG's target) plus low-hp retreat, on rpg-designer's reading pending the replay; the cap's fourth project is the escalated-need exemption by design.
+2026-11-03 NOTE: the gate's drift is blind since about 2026-10-28. testing-planner: a25619971 (TCK-20261023-MEASURED-STEP-RUN-AND-RERUN-LEDGER) moved the harness hash, baseline v1 is stale, and stale rows don't turn the job red. Paired tables are the only drift signal until v2 is recorded. Validity (V1-V8) is judged absolutely, so V3 is unaffected. These two V3s block a re-record: rpg_gate_candidate refuses an unowned or expired fail, so they need fixing or an owner-accepted scoped entry. v1's stale_after is 2026-11-21: if the V3s aren't settled by about 11-14, raise it with the owner.
+
+Pre-merge V3 reading, testing-planner's costing for the owner row: feasible now by dispatching rpg-gate-report.yml with `-f ref=<arm sha>` (evidence only); about 70-85 min wall, very roughly 2 runner-hours; no V3-only mode. Conditions it wants: behaviour-changing src tickets only, on the final head (a re-sync bringing other src means a new reading; a re-sync with no src keeps it); advisory, enforced at review citing the run id; an owner standing rule for dispatch, since dispatch is a shared-state action; one at a time through the heavy-job order (the concurrency group keeps one pending run). Open: reading a dispatch's report, since #669 updates only for scheduled runs on main; test it on the next one before it's a rule.
+
+2026-11-03 rpg-designer:
+- No origin run needed; wording stays "first shows with #826", not "caused by".
+- ubuntu holds the e30 trace (t700 to t5000, pinned base); lane C takes e37 only, from its last meal, and reads e30 from ubuntu's rows. If u24 gets there sooner on an idle slot, it takes e30 and ubuntu skips it.
+- FED test: (i)-(iii) with "the act that displaced its need", window 200t and also the first displacement after the last meal. Two steps #826 changed: dropping a retreat project without a present threat, and no adoption without a threat. Look first at a subject whose retreat project now ends and gets a different goal. Say so if it's trajectory.
+- Process lean (rpg-designer's): a behaviour close needs the V3 reading from a pinned 5000t set on the arm, before merge, not a day after. For testing-planner and the owner. Reading #669 after each RPG merge: yes.
+
+## Test Summary
+
+## Files Changed
+
+## Completion Summary

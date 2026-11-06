@@ -76,6 +76,8 @@ rpg-designer's lean, to be confirmed after the counts: real hits only.
 - The grant lowers hp share, so it may interact with the row 88 lines. Hypothesis only.
 
 ## Implementation Notes
+- 2026-11-03 third case (rpg-planner-ubuntu's pinned e9 trace, #828 arm crowded s46, valid end hash, trace from t3000; relayed): 65 grants, max hp 120 to 445. Hit/heal split not stated yet.
+- 2026-11-03 second case (rpg-planner-ubuntu's pinned e30 trace, crowded s42 base, end hash equal to the set; relayed by rpg-designer): 20 grants, 14 on +1 heal ticks, max hp 120 to 220.
 2026-11-03 rpg-designer, on ubuntu's rows (relayed, not checked by rpg-planner):
 - Use only the corrected count in the Request Summary (37 of 40; 29 since t1666). Earlier "53", "47" and "about 40 with no hit" are NOT usable: past t2000 ubuntu's trace is a `_run_engine` run, which leaves the pinned reference between t2000 and t2100 (the pinned replay on both hosts has e34 dead at t2101; `_run_engine` has t2131). Both trees, not part of #828.
 - Counts also split by kind, with max hp reached and near_death firings.
