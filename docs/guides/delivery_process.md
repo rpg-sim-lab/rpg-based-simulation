@@ -163,6 +163,12 @@ accepts that id too, but an attested row that has a verdict row refuses and name
 `post_native_run_check.py` fails a gate that the native run attested as PASS, it records the `false_pass`
 itself. Recording an override is bookkeeping, not permission: never edit an artifact to make a gate pass.
 
+### Behaviour evidence comes from the pinned runner
+
+Behaviour evidence (a paired table, a probe count, a trace row used in a verdict or disclosure) comes from the pinned runner: `tools/rpg_measure` or `rpg_gate_run.build_kernel`. A run on another runner is labelled as such, backs no verdict, and is not re-labelled after the fact. A trace or probe used as evidence states its hash check against a plain pinned run at its own end tick, using `CanonicalStateHasher.get_hash` (the same value as the manifest `state_hash` when the end tick is the run's last). A hash check covers the state digest only; fields outside it are listed in TCK-20261103-STATE-DIGEST-MAY-OMIT-FIELDS-THAT-DECISIONS-READ until that closes. Until TCK-20261103-THE-CONCURRENT-AND-SEQUENTIAL-EXECUTORS-GIVE-DIFFERENT-WORLDS closes, the pinned runner is the measuring ruler, not a claim about what the concurrent production path gives. Applies from 2026-11-03, the date the standard was ruled. Older claims, including entries in `intentional_divergences.md`, stand as their era's and are re-checked only if a new ruling cites them.
+
+Ruled by rpg-designer; the owner approved adding it here (#715 6593491826 item 3) and the older-claims scope (#715 6593558681 item 2). The cause: `tools.calibrate_simq._run_engine` and the pinned `build_kernel` give different worlds on the same seed, and a #828 red belonged to the unpinned runner alone (TCK-20261103-A-MEASUREMENT-NOT-ON-THE-PINNED-RUNNER-CALLS-ITSELF-EVIDENCE, which also owns the runner marker and refuse-or-label helper that will enforce this).
+
 ---
 
 ## Branch Naming
