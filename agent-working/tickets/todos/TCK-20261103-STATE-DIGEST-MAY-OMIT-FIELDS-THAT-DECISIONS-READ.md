@@ -87,6 +87,7 @@ Counts first, with no digest change in this step:
 
 ## Implementation Notes
 2026-11-03 evidence from ubuntu's executor diff (implementer's, unchecked, relayed): on the #828 arm, crowded s45, t600 hashes are equal while unhashed state already differs: `timeline` on all 38 entities, `cognition` on e16 and e30, top-level `route_plans` and `_spatial_grid_cache`. The hashed split at t601 (e30 navigation and task) is then a symptom. So a real case exists where a decision-read difference sits outside the digest. Add `route_plans` and the differing part of `cognition` to the candidates (`_spatial_grid_cache` is presumably derived: state it). Question for this ticket (rpg-designer): a stored route plan steers steps for 10 ticks, so "outside the hash" and "dropping it only costs a search" both need a look, including checkpoint restore. Any "hash equal" claim proves less than stated for decision-read fields outside the digest, and that includes F3's.
+2026-11-07 direct evidence (testing-planner, from the executor evidence run; relayed by lead-planner-u24, not checked by rpg-planner): under the executor bug, content split in all 15 cases (3 worlds x seeds 42-46) by t100-t300 through an unhashed cognition field. The canonical hash split in only 6 of the 15 within 2000t; the other 9 stayed hash-equal up to t2000. So a hash-equal pair can hide a decision-read split for at least 1700 ticks. Which cognition field it was is to be named from that run's rows when this ticket is dispatched.
 
 ## Test Summary
 
