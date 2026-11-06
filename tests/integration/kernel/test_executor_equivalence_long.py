@@ -46,22 +46,40 @@ def _skipped(name: str, skip: frozenset) -> bool:
     return name in skip or name.startswith("_")  # leading underscore: a cache attribute (_canonical_cache, _spatial_grid_cache, ...)
 
 
-def _md5(value) -> str:
+def _canonical(value):
+    """JSON-ready form of a field value. A dict with a key JSON cannot carry (the state's ``terrain`` is keyed by (x, y) tuples) becomes a sorted list of
+    [key, value] pairs, recursively; tuples and sets become lists (sets sorted)."""
+    if isinstance(value, dict):
+        if all(isinstance(k, (str, int, float, bool)) or k is None for k in value):
+            return {k: _canonical(v) for k, v in value.items()}
+        return sorted(([_canonical(k), _canonical(v)] for k, v in value.items()), key=lambda pair: json.dumps(pair[0], sort_keys=True, default=str))
+    if isinstance(value, (set, frozenset)):
+        return sorted((_canonical(v) for v in value), key=lambda v: json.dumps(v, sort_keys=True, default=str))
+    if isinstance(value, (list, tuple)):
+        return [_canonical(v) for v in value]
+    return value
+
+
+def _md5(value, unserialisable: list = None, name: str = "") -> str:
+    """Content digest of one field. A value that cannot be serialised is recorded by name in ``unserialisable`` (the test fails naming it) and digested by its type."""
     try:
         if dataclasses.is_dataclass(value) and not isinstance(value, type):
             value = dataclasses.asdict(value)
-        text = json.dumps(value, sort_keys=True, default=str)
-    except Exception as exc:  # noqa: BLE001 - a field that cannot be serialised is compared by its type and the error
+        text = json.dumps(_canonical(value), sort_keys=True, default=str)
+    except Exception as exc:  # noqa: BLE001 - a field that cannot be serialised is named, not silently compared by its error text
+        if unserialisable is not None:
+            unserialisable.append(name)
         text = f"UNSERIALISABLE {type(value).__name__} {exc!r}"
     return hashlib.md5(text.encode()).hexdigest()[:12]
 
 
 def _digest(state) -> dict:
-    """Every entity field and every top-level state field by content (not only the canonical subset)."""
-    fields = {f.name: _md5(getattr(state, f.name, None)) for f in dataclasses.fields(state) if not _skipped(f.name, _DERIVED_STATE_FIELDS)}
-    entities = {str(eid): {f.name: _md5(getattr(e, f.name, None)) for f in dataclasses.fields(e) if not _skipped(f.name, _SKIP_ENTITY_FIELDS)}
+    """Every entity field and every top-level state field by content (not only the canonical subset); ``unserialisable`` names any field that could not be digested."""
+    bad: list = []
+    fields = {f.name: _md5(getattr(state, f.name, None), bad, f"state.{f.name}") for f in dataclasses.fields(state) if not _skipped(f.name, _DERIVED_STATE_FIELDS)}
+    entities = {str(eid): {f.name: _md5(getattr(e, f.name, None), bad, f"entity.{f.name}") for f in dataclasses.fields(e) if not _skipped(f.name, _SKIP_ENTITY_FIELDS)}
                 for eid, e in state.entities.items()}
-    return {"state": fields, "entities": entities}
+    return {"state": fields, "entities": entities, "unserialisable": sorted(set(bad))}
 
 
 def _kernel(world: str, seed: int, concurrent: bool, run_id: str) -> Kernel:
@@ -125,6 +143,8 @@ def test_the_sequential_and_the_concurrent_executor_give_the_same_world(world, s
     sequential, seq_failures = snapshots(world, seed, ticks, False, f"eqlong_seq_{world}_{seed}", monkeypatch)
     concurrent, con_failures = snapshots(world, seed, ticks, True, f"eqlong_con_{world}_{seed}", monkeypatch)
     assert (seq_failures, con_failures) == (0, 0), "a worker FAILURE no-op happened: a worker failure is a split (contract section 4)"
+    named = sorted({n for snaps in (sequential, concurrent) for _hash, digest in snaps.values() for n in digest["unserialisable"]})
+    assert named == [], f"fields the digest could not serialise (compared by their error text, not by content): {named}"
     mismatch = first_mismatch(sequential, concurrent)
     assert mismatch is None, f"{world} seed {seed}: the executors first differ at tick {mismatch[0]} ({mismatch[1]})"
 
@@ -135,5 +155,7 @@ def test_the_concurrent_executor_repeats_itself(monkeypatch):
     first, f1 = snapshots("crowded_frontier", 45, 2000, True, "eqlong_con_a", monkeypatch)
     second, f2 = snapshots("crowded_frontier", 45, 2000, True, "eqlong_con_b", monkeypatch)
     assert (f1, f2) == (0, 0)
+    named = sorted({n for snaps in (first, second) for _hash, digest in snaps.values() for n in digest["unserialisable"]})
+    assert named == [], f"fields the digest could not serialise: {named}"
     mismatch = first_mismatch(first, second)
     assert mismatch is None, f"two concurrent runs of the same seed first differ at tick {mismatch[0]} ({mismatch[1]})"
