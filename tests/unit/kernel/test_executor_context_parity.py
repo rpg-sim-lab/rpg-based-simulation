@@ -345,7 +345,7 @@ def test_every_packet_field_equals_the_states_value_on_a_gate_world(ticks):
     from src.worldbuilding.compiler import WorldCompiler
     from src.worldbuilding.repository import WorldRepository
     from tests.helpers.kernel_pinning import PinnedNormalGovernor
-    spec, context = WorldRepository("data/worlds").load_world_with_context("crowded_frontier")
+    spec, context = WorldRepository(str(__import__("pathlib").Path(__file__).resolve().parents[3] / "data" / "worlds")).load_world_with_context("crowded_frontier")
     state, _ = WorldCompiler.compile(spec, 45, context=context)
     kernel = Kernel(PROD_SMALL.model_copy(update={"max_tick_budget_ms": 1e9}), state, DeterministicRNG(45), governor=PinnedNormalGovernor(),
                     executor=LocalSequentialExecutor(), flags={"audit_mode": True, "no_frame_pacing": True}, run_id=f"fieldparity_{ticks}")

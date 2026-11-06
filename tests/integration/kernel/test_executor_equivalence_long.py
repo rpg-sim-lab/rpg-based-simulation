@@ -18,6 +18,8 @@ Horizon: 2200 ticks on crowded s45 (the base that split at t2051-2100), 2000 tic
 import dataclasses
 import hashlib
 import json
+from concurrent.futures import ThreadPoolExecutor
+from pathlib import Path
 
 import pytest
 
@@ -32,8 +34,10 @@ from src.worldbuilding.repository import WorldRepository
 from tests.helpers.kernel_pinning import PinnedNormalGovernor
 
 SAMPLE_EVERY = 100
+WORLDS_DIR = str(Path(__file__).resolve().parents[3] / "data" / "worlds")  # anchored to the repo root, not the working directory
 _SKIP_ENTITY_FIELDS = frozenset({"timeline"})
-# Derived caches and indexes on the state, rebuilt per state object (a dropped one only costs a new search): not world content.
+# Derived caches and indexes on the state, rebuilt per state object (a dropped one only costs a new search): not world content. ``route_plans`` and ``movement_cache`` are
+# such caches (a cache hit equals recomputation); the claim that they are not world content is owned by TCK-20261103-STATE-DIGEST-MAY-OMIT-FIELDS-THAT-DECISIONS-READ.
 _DERIVED_STATE_FIELDS = frozenset({"entities", "route_plans", "movement_cache", "occupancy_snapshot", "occupancy_map", "spatial_grid", "building_map",
                                    "world_indexes", "semantic_entity_indexes"})
 
@@ -61,7 +65,7 @@ def _digest(state) -> dict:
 
 
 def _kernel(world: str, seed: int, concurrent: bool, run_id: str) -> Kernel:
-    spec, context = WorldRepository("data/worlds").load_world_with_context(world)
+    spec, context = WorldRepository(WORLDS_DIR).load_world_with_context(world)
     state, _report = WorldCompiler.compile(spec, seed, context=context)
     extra = {} if concurrent else {"executor": LocalSequentialExecutor()}  # no executor given: PROD_SMALL has 2 workers, so the kernel builds ConcurrentExecutionAdapter
     return Kernel(PROD_SMALL.model_copy(update={"max_tick_budget_ms": 1e9}), state, DeterministicRNG(seed), governor=PinnedNormalGovernor(),
@@ -74,6 +78,12 @@ def snapshots(world: str, seed: int, ticks: int, concurrent: bool, run_id: str, 
     real = worker_manager.failure_no_op
     monkeypatch.setattr(worker_manager, "failure_no_op", lambda packet: (failures.append(packet.packet_id), real(packet))[1])
     kernel = _kernel(world, seed, concurrent, run_id)
+    if concurrent:
+        pool = getattr(getattr(kernel, "_executor", None), "_worker_manager", None)
+        pool = getattr(pool, "_pool", None)
+        assert isinstance(pool, ThreadPoolExecutor), (
+            f"the concurrent arm's pool is {type(pool).__name__}, not a ThreadPoolExecutor: the worker failure count is taken by patching "
+            "worker_manager.failure_no_op in this process, which only holds on threads (a process pool would count nothing and pass vacuously)")
     out = {}
     try:
         for tick in range(1, ticks + 1):
