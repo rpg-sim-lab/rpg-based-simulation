@@ -218,23 +218,9 @@ class ConcurrentExecutionAdapter:
         """Update the active concurrency throttle for the next batch."""
         self._concurrency_limit = limit
 
-    def execute(
-        self, 
-        work_items: List[WorkItem], 
-        state: AuthoritativeState, 
-        rng: DeterministicRNG,
-        profile: RuntimeProfile
-    ) -> List[WorkerResult]:
-        from src.engine.worker_logic import default_simulation_worker
-        from src.core.protocol_validator import ProtocolValidator
-        from src.core.concurrency_law import ConcurrencyLaw
-        from src.core.updates import EMPTY_ENTITY_UPDATE
+    def _batch_views(self, state: AuthoritativeState) -> Dict[str, Any]:
+        """The read-only views every packet of one batch shares (moved out of ``execute`` unchanged: same reads, same order, same values)."""
         from src.core.immutability import deep_freeze
-        from dataclasses import replace
-
-        packets: List[WorkerPacket] = []
-        source_meta: Dict[str, Tuple[WorkItem, WorkerPacket]] = {}
-        final_results: List[WorkerResult] = []
 
         # Logic ID: CORE-PERF-020 (Persistent deep_freeze caching)
         if not hasattr(self, "_freeze_cache"):
@@ -277,6 +263,27 @@ class ConcurrentExecutionAdapter:
         frozen_corpse_map = SpatialQueryService._get_corpse_map(state)
         frozen_ground_item_map = SpatialQueryService._get_ground_item_map(state)
 
+        return {"regions": frozen_regions, "resource_nodes": frozen_resource_nodes, "buildings": frozen_buildings, "groups": frozen_groups, "corpses": frozen_corpses, "ground_items": frozen_ground_items, "terrain": frozen_terrain, "feature_flags": frozen_feature_flags, "grid": frozen_grid, "occ_map": frozen_occ_map, "regions_list": frozen_regions_list, "building_map": frozen_building_map, "regions_bounds": frozen_regions_bounds, "region_index": frozen_region_index, "building_region_map": frozen_building_region_map, "node_map": frozen_node_map, "corpse_map": frozen_corpse_map, "ground_item_map": frozen_ground_item_map}
+
+    def execute(
+        self, 
+        work_items: List[WorkItem], 
+        state: AuthoritativeState, 
+        rng: DeterministicRNG,
+        profile: RuntimeProfile
+    ) -> List[WorkerResult]:
+        from src.engine.worker_logic import default_simulation_worker
+        from src.core.protocol_validator import ProtocolValidator
+        from src.core.concurrency_law import ConcurrencyLaw
+        from src.core.updates import EMPTY_ENTITY_UPDATE
+        from dataclasses import replace
+
+        packets: List[WorkerPacket] = []
+        source_meta: Dict[str, Tuple[WorkItem, WorkerPacket]] = {}
+        final_results: List[WorkerResult] = []
+
+        views = self._batch_views(state)
+
         for i, item in enumerate(work_items):
             if item.work_kind in ("ENTITY_MOVE", "ENTITY_ACT", "ENTITY_BRAIN") and isinstance(item.owner_id, int):
                 subject = state.entities.get(item.owner_id)
@@ -298,25 +305,25 @@ class ConcurrentExecutionAdapter:
                         payload=item.payload,
                         class_priority=ConcurrencyLaw.get_class_priority(item.work_class),
                         local_priority=item.priority,
-                        regions=frozen_regions,
-                        resource_nodes=frozen_resource_nodes,
-                        buildings=frozen_buildings,
-                        groups=frozen_groups,
-                        corpses=frozen_corpses,
-                        ground_items=frozen_ground_items,
-                        terrain=frozen_terrain,
+                        regions=views["regions"],
+                        resource_nodes=views["resource_nodes"],
+                        buildings=views["buildings"],
+                        groups=views["groups"],
+                        corpses=views["corpses"],
+                        ground_items=views["ground_items"],
+                        terrain=views["terrain"],
                         all_entities=state.entities, # Full state (efficient in Mega-Chunks)
-                        spatial_grid=frozen_grid,
-                        occupancy_map=frozen_occ_map,
-                        region_list=frozen_regions_list,
-                        building_map=frozen_building_map,
-                        _region_index_cache=frozen_region_index,
-                        _regions_global_bounds=frozen_regions_bounds,
-                        _building_region_map_cache=frozen_building_region_map,
-                        _node_map_cache=frozen_node_map,
-                        _corpse_map_cache=frozen_corpse_map,
-                        _ground_item_map_cache=frozen_ground_item_map,
-                        feature_flags=frozen_feature_flags,
+                        spatial_grid=views["grid"],
+                        occupancy_map=views["occ_map"],
+                        region_list=views["regions_list"],
+                        building_map=views["building_map"],
+                        _region_index_cache=views["region_index"],
+                        _regions_global_bounds=views["regions_bounds"],
+                        _building_region_map_cache=views["building_region_map"],
+                        _node_map_cache=views["node_map"],
+                        _corpse_map_cache=views["corpse_map"],
+                        _ground_item_map_cache=views["ground_item_map"],
+                        feature_flags=views["feature_flags"],
                         building_tiles=state.building_tiles,
                         blocked_tiles=state.blocked_tiles,  # buildings and walls are solid (the compiler adds each building tile here); a packet that defaulted to [] let a worker walk into the inn
                         town_center=state.town_center,
