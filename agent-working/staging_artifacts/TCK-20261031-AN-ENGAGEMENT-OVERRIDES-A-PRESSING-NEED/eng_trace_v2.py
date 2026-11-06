@@ -18,7 +18,6 @@ from src.engine.need_pull import need_is_pressing
 from src.engine.tactical_threat import hostile_acts_on
 import src.engine.tactical as _tac
 from src.engine.serves import keeps_coin
-from src.engine.tactical_rest import eat_carried_update, in_danger
 import src.systems.strategic_systems.intelligence as _intel
 import src.ai.score_modifiers as _sm
 from tools.test_architecture.rpg_gate_run import build_kernel
