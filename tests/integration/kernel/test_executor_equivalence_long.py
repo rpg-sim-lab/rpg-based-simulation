@@ -13,7 +13,10 @@ Strength is limited by the digest: the canonical hash omits fields decisions rea
 field-by-field content comparison is made here as well; a field outside both is not covered.
 
 Each test stands alone and runs both arms live (no recorded hash). Governor pinned, audit mode, worker count pinned by the profile (PROD_SMALL: 2 workers).
-Horizon: 2200 ticks on crowded s45 (the base that split at t2051-2100), 2000 ticks on the others (crowded s42 splits at t1974 without the packet's blocked_tiles).
+Horizon: 2200 ticks on crowded s45 (the base that split at t2051-2100), 2000 ticks on the others.
+Crowded s42 (hash split at t1974 on the packet's missing ``blocked_tiles``) left the list for time; the PR-lane control test_a_walled_or_built_tile_is_blocked_on_the_packet_as_on_the_state in
+tests/unit/kernel/test_executor_context_parity.py guards that cause (it fails when the executor's ``blocked_tiles=`` line is removed). A CI run over 540 s on any case is a finding for
+testing-planner, not something to re-run.
 """
 import dataclasses
 import hashlib
@@ -145,10 +148,13 @@ def first_mismatch(a: dict, b: dict):
 
 
 # (world, seed, ticks), picked from the evidence run (15 cases, 3 worlds x seeds 42-46; the pre-fix concurrent arm split in all 15 within 100-300 ticks, the fixed arm
-# equalled sequential in all 15): crowded s45 is the world and seed that split at t2051-2100 on main and carries the seed cause; crowded s42 split at t1974 with the seed and
-# flag causes fixed (the blocked_tiles cause, a late split); urban s42 is the cheapest world and a different cognition path (pre-fix first mismatch t300); frontier s44 is the
-# cheapest frontier case.
-CASES = [("crowded_frontier", 45, 2200), ("crowded_frontier", 42, 2000), ("urban_political", 42, 2000), ("frontier_living_world", 44, 2000)]
+# equalled sequential in all 15) and then by the ratio of each case's wall to crowded s45's, measured as pytest items in one session (crowded s43 430.1 s, s44 451.2 s, s45 at
+# 2000t 468.8 s: s43 0.917, s44 0.962): crowded s45 2200t is the world and seed that split at t2051-2100 on main and carries the seed cause; crowded s43 is the crowded case with
+# the lower wall ratio (it splits in the hash at t1600 pre-fix); urban s42 is the cheapest world and a different cognition path (pre-fix first mismatch t300); frontier s44 is the
+# cheapest frontier case. Crowded s42 left the list for time (about 430-585 s on this VM for identical code); its late split, the packet's missing ``blocked_tiles`` (hash split at
+# t1974 with the other causes fixed), is guarded in the PR lane by test_a_walled_or_built_tile_is_blocked_on_the_packet_as_on_the_state in
+# tests/unit/kernel/test_executor_context_parity.py, which fails when the executor's ``blocked_tiles=`` line is removed. A CI run over 540 s on any case is a finding for testing-planner.
+CASES = [("crowded_frontier", 45, 2200), ("crowded_frontier", 43, 2000), ("urban_political", 42, 2000), ("frontier_living_world", 44, 2000)]
 
 
 @pytest.mark.extra_slow
