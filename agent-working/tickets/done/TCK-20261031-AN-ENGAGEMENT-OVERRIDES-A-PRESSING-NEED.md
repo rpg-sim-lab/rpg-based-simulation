@@ -1,10 +1,10 @@
 ---
-status: active
+status: historical
 layer: ai
 authority: P1
 audience: agent
 ticket_id: TCK-20261031-AN-ENGAGEMENT-OVERRIDES-A-PRESSING-NEED
-phase: open
+phase: done
 date: 2026-10-31
 tags: []
 ---
@@ -15,7 +15,7 @@ tags: []
 An engagement overrides a pressing need: with hostiles in sight, tactical skips the survival step though no present threat is on the subject (SURV-07)
 
 ## Status
-INPROGRESS (Phase 1 only: counts first; dispatched by rpg-planner under owner yes #715 6561198771)
+DONE (landed as built on head 5c86b1b8a, owner approval #715 6697054601, reading 3 corrected #715 6697215821; not pushed at the time of this record)
 
 ## Tier
 standard
@@ -83,7 +83,28 @@ Phase 2: fix shapes for ALL five only after the table reaches rpg-designer.
 - PROBE DEFECT to fix here before this ticket's own base: the tactical hostiles-present skip counter recorded 0 skips over 131785 evaluate calls, so there is no (pressing, present_threat) split. Lane B's untested guess: the wrapper patched the module attribute `_tac.classify_neighbours`, but `evaluate_entity_intent` may reach the classifier through another binding, so the stored hostiles count stays empty. The AC: the fixed counter must be non-zero on a known case (13 pursues 16) before any base is measured.
 
 ## Test Summary
+- `tests/unit/tactical/test_surv07_precedence_grid.py` and `tests/unit/tactical/test_surv07_hunt_project_grid.py`: presence-skip, follower, rest-in-place, eat-carried, fatigue-arrival and hunt-exemption rows. Owner-reading rows: `test_reading_2_the_served_meal_on_arrival_is_taken_below_the_consequence_line_with_a_non_acting_hostile_in_sight`; `test_reading_3_past_the_consequence_line_a_badly_hurt_subject_with_nothing_acting_takes_the_need_path`; `test_reading_3_below_the_consequence_line_the_emotional_panic_branch_holds_on_its_own_tile`; control, not reading 3: `test_control_not_reading_3_above_the_panic_health_a_pressing_subject_eats`. 24 passed in the precedence grid file.
+- `tests/unit/tools/test_mechanism_registry_completeness_check.py`: scope_files pin 351 -> 352 (`tactical_objective.py`, bound under `tactical_decision`), unbound_files stays 247.
+- Full `tests/unit -m "not slow"` on 0e3851cb5 (repo venv): 9344 passed, 5 skipped, 46 deselected. `make code-health` rc 0 (2 report-only jscpd hits in `src/observability/event_shapers.py`, not in this diff); `make typecheck-py` rc 0, no new mypy errors (scratch-deps venv, python 3.13.14).
+- Measurement (pinned sequential runner, PYTHONHASHSEED=0, 15 runs x 2 arms, 5000 ticks, base 65d43dfa9 vs e844e2845, paired4): people deaths frontier 127 -> 122, urban 51 -> 57 (seed 44 only), crowded 176 -> 164; flee ticks 90579 -> 77254 / 4398 -> 5940 / 17356 -> 15087; pursuit ticks 30617 -> 17498 / 7312 -> 6945 / 21694 -> 16648; neutral4 identical at 1000 ticks. Evidence and hashes: stored artifacts `close_drafts/pr_body_draft.md`, `evidence_readme_draft.md`, `raw_dumps_sha256.txt`.
+- Measured on the sequential reference; the production path differs until TCK-20261103-THE-CONCURRENT-AND-SEQUENTIAL-EXECUTORS-GIVE-DIFFERENT-WORLDS lands. Hot-loop timing not measured (perf pause).
 
 ## Files Changed
+- src: `src/engine/tactical.py` (need_first branch, hunt exemption and helpers), `src/engine/tactical_objective.py` (new: objective step, `_fatigue_arrival_waits`), `src/engine/need_pull.py` (`entity_hunger_is_pressing`), `src/engine/tactical_threat.py` (`need_yields`), `src/engine/lodging.py` (`rest_would_lodge`), `src/engine/tactical_rest.py` (`in_danger`, behaviour-identical refactor of the AGENCY-07 terms), `src/ai/goals/present_threat.py` (`acting_threat_to` delegates to `need_yields`; docstring).
+- tests: the two SURV-07 grid files above; the completeness-check pin.
+- registries/docs: `registries/mechanisms.yaml` (one line: `src/engine/tactical_objective.py::pursue_objective`), `docs/mechanics/04_strategic_cognition.md`, `docs/guidelines/intentional_divergences.md` 2.157, `docs/parity_ledger/strategic_cognition.yaml` STRAT-297, `docs/REGISTRY.yaml`.
+- ticket, staging artifacts moved to `agent-working/stored_artifacts/` , monitoring shards.
 
 ## Completion Summary
+SURV-07 Law P at the tactical survival sites: with a hostile in sight and none acting on the subject (`need_yields`), a subject past its need's escalation onset runs its need path before the presence test, role obligation, cohesion and target selection (a follower included); a subject whose project is not a need project waits instead of engaging a non-acting hostile. Shape S1: `tactical_rest.py` keeps the AGENCY-07 terms. Hunt exemption (rpg-designer): with HUNGER pressing and prey in sight and none acting, the subject takes its target from the prey only.
+
+Owner readings (#715 6697054601 for readings 1-2, land as built on 5c86b1b8a; reading 3 corrected in #715 6697215821):
+1. The rule covers fighting, and group members do not join a target that is not acting on them.
+2. On a food project the character eats its served meal on arrival, before the consequence line as well as past it, with a non-attacking enemy nearby.
+3. Past the consequence line (hunger 95, sleep debt 98) a badly hurt subject (under 15% health) with a pressing need and nothing acting takes the need path; below the line the emotional panic branch holds (row 88 (5)), a disclosed gap owned by TCK-20261028-LOW-HP-RETREAT-BRANCH-HOLDS-A-STARVING-SUBJECT-IN-PLACE-BESIDE-A-NON-ACTING-HOSTILE. Reading 3 was corrected after a unit test showed the panic branch holds below the line; no source change.
+
+Options the owner did not take (#715 6697054601): group defence (an enemy attacking a nearby group member counts as attacking the group) and predator avoidance giving way to a pressing need near its food. Either would be measured on its own. Hit-wake is next in the owner's order.
+
+Open gaps, none a fix in this ticket: wild_creature collapses frontier 1 -> 251 (not caused by the rule; ticket filed); frontier s42 people held off the inn by avoided predators, predator 45 idling on a dead combat_engage objective (ticket filed); urban s44 six deaths to one scout (TCK-20261020-A-PURSUING-HOSTILE-WAKES-ITS-TARGET, next in the owner's order); `resolve_multi_attack` records only the first attacker; scheduler wakes read no `last_hit_tick`; Phase 1 family table not checked against plain except urban s42; hot-loop timing not measured.
+
+Measured on the sequential reference; the production path differs until TCK-20261103-THE-CONCURRENT-AND-SEQUENTIAL-EXECUTORS-GIVE-DIFFERENT-WORLDS lands.
