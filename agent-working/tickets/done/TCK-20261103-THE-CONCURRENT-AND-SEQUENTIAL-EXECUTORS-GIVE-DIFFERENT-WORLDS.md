@@ -1,10 +1,10 @@
 ---
-status: active
+status: historical
 layer: engine
 authority: P1
 audience: agent
 ticket_id: TCK-20261103-THE-CONCURRENT-AND-SEQUENTIAL-EXECUTORS-GIVE-DIFFERENT-WORLDS
-phase: implement
+phase: done
 date: 2026-11-03
 tags: []
 ---
@@ -15,7 +15,7 @@ tags: []
 The concurrent and sequential executors give different worlds on the same seed, with no load, against the bit-identical law
 
 ## Status
-INPROGRESS
+DONE
 
 ## Tier
 standard
@@ -158,7 +158,19 @@ Lead candidate (rpg-designer's read of src/engine/executor.py:239-257 on main; f
 - Docs: contract section 4, divergence 2.147, INFRA-439, the occupancy_snapshot allow-list comment (the old 'same occupants' claim was unverified).
 
 ## Test Summary
+- PR lane (unit-core-world, `tests/unit/kernel`, `-m "not slow and not extra_slow"`): `tests/unit/kernel/test_executor_context_parity.py` (23 tests: seed, flags, building_tiles/town_center, service reach, join-clan, the guard, the field-parity test over `dataclasses.fields(WorkerPacket)` at four stages, the derived structures against fresh rebuilds, the defaulted-field audit, two stale-occupancy controls), `test_worker_failure_paths.py` (8), `test_executor_equivalence_digest.py` (5: the digest and compare helpers incl. the terrain control). Fixed head: all pass. Pre-fix src (9eeb0fd97): context_parity 16 failed / 7 passed, worker_failure_paths collection error (imports PacketFieldMissingError), digest 4 passed (it tests the helpers).
+- Positive controls: executor `blocked_tiles=` line removed -> 6 fail; a stale occupancy_map and a stale state snapshot each fail; a changed terrain value is named at a sampled tick; a non-thread pool fails loudly; a cyclic field is named by the digest.
+- Slow lane (extra_slow, slow-regression.yml): `tests/integration/kernel/test_executor_equivalence_long.py` (crowded s45 2200t, crowded s42, urban s42, frontier s44 at 2000t, plus the concurrent-repeat test) and the gate-world field-parity cases (t0/150/600, 50 s). Crowded s42 as a pytest item: see the final run in the PR text.
+- Evidence run (15 cases, 3 worlds x seeds 42-46; groups_base/out_evidence2): fixed concurrent equals sequential in all 15 at every sampled tick (hash and every entity/state field), 0 worker no-ops; pre-fix concurrent differs in all 15 (t100-300, an entity's cognition), reaches the hash in 6 of 15; 4 sequential pins equal pre-fix vs fixed. CI on 157327d64: 25 pass, 1 fail (Code health, execute() 140 > 136, fixed by the _batch_views move), 4 skipping.
+- Known gap: the no-op count exists only inside the tests (monkeypatched `failure_no_op`), with no manifest counter; carried to TCK-20261103-A-MEASUREMENT-NOT-ON-THE-PINNED-RUNNER-CALLS-ITSELF-EVIDENCE (rpg-planner).
+- Known gap: lockstep early stop for the long test is not built (the failure list and the patched failure_no_op are module-global, plus other process-global state), a follow-up.
+- Known gap: the three causes are not separated per case in the 15-case table (the earlier split masks the later); blocked_tiles was isolated on crowded s42 only.
 
 ## Files Changed
+- src: `src/core/worker_protocol.py` (WorkerPacket: seed, feature_flags, building_tiles, town_center, clans, blocked_tiles; PacketFieldMissingError; derived-cache allow-list), `src/engine/executor.py` (packet construction; `_batch_views` helper), `src/engine/worker_manager.py` (guard pass-through; failure counting).
+- tests: `tests/unit/kernel/test_executor_context_parity.py`, `test_worker_failure_paths.py`, `test_executor_equivalence_digest.py`, `test_worker_protocol.py` (town_center now has a consumer), `tests/unit/engine/test_service_reach_on_a_worker_packet.py`, `tests/integration/kernel/test_executor_equivalence_long.py`.
+- docs: `docs/engine/contracts/bounded_concurrency_contract.md` (section 4), `docs/engine/deterministic_execution.md`, `docs/engine/matrices/full_certification_test_matrix.md`, `docs/guidelines/intentional_divergences.md` (2.147), `docs/parity_ledger/infrastructure.yaml` (INFRA-439), `docs/REGISTRY.yaml`.
 
 ## Completion Summary
+The concurrent executor (production) now hands domain logic the sequential world: the packet carries the world seed, the state's flags, building_tiles, town_center, clans and blocked_tiles; an undeclared state read raises and stops the run; every other worker exception stays a counted no-op. Three causes (seed, flags and the other defaulted reads, blocked_tiles), each measured to a first difference. Sequential results unchanged (4 pins). Evidence and tests as above. Review: rpg-planner 837#issuecomment-6697372043, testing-planner 837#issuecomment-6697389011.
+Known gap: no manifest counter for worker no-ops (carried to TCK-20261103-A-MEASUREMENT-NOT-ON-THE-PINNED-RUNNER-CALLS-ITSELF-EVIDENCE); lockstep early stop not built (follow-up); the three causes are not separated per case in the evidence table.
