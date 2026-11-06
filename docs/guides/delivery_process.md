@@ -319,9 +319,10 @@ The renderer leaves out of `Closes:` (with a warning) any ticket whose file is s
 move it to `agent-working/tickets/done/` if the PR really does close it.
 
 It likewise leaves out a ticket that a commit subject only *cites* (its file is not changed by the branch), such as a
-follow-up commit to an already-closed ticket. A branch that closes no ticket at all (docs-only or record-only) renders
-with `--theme`, `--scope` (a registered layer) and `--why`: the title ends `(no tickets)`, the body lists the changed
-directories, and the last line is `Closes: (none)`. Pass the same three flags to `--check`.
+follow-up commit to an already-closed ticket. A branch that closes no ticket renders with `--theme`, `--scope` (a registered
+layer) and `--why`: the title ends `(no tickets)`, the body lists the changed directories, and the last line is
+`Closes: (none)`. Pass the same three flags to `--check`. This path exists for the two named exceptions to the PR-size rule
+in "PR Lifecycle" below and nothing else; it prints a stderr warning saying so (report-only, no gate).
 
 `## Known gaps` is load-bearing and deliberate: the repo's Gate Integrity rule says a blocking gate
 result is information to report, never an obstacle to route around. Giving it a fixed slot in every
@@ -367,10 +368,23 @@ The "Semgrep OSS" and code-health code-scanning check runs are advisory: their f
 
 The steps above cover diagnosing a failure; this covers the surrounding push→PR→merge→sync cadence itself, since it isn't a `Workflow` and has no other home.
 
+**PR size (owner rule, 2026-11-07).** Every PR delivers complete work and closes at least one completed ticket. Ticket
+filings, evidence records and seat-ticket notes ride in the next implementation PR on that track, never in a PR of their
+own. The reason is to cut CI and check effort: each PR pays for the full lane set, so a PR with no ticket costs the same as
+one that ships work. Exceptions, and only these: Dependabot PRs, and the handover-transit export (step 2a). Week-close and
+retro batches are not exceptions: they get a ticket of their own, or ride in the next agent-working implementation PR.
+`pr_render.py` keeps its ticketless path for the two exceptions and warns on stderr when it is used; nothing blocks.
+
+**Weigh the fix (owner rule, 2026-11-07).** Before spending time on an RPG fix, weigh whether it is worth it, and prefer the
+simpler fix when it is enough. Some fixes cannot be avoided (determinism, conservation, a hard rule the owner set), and those
+are done properly. Others may be better as a smaller fix, a named known gap, or a follow-up. The planner states the choice and
+the reason when scoping: the cost, and what the simpler option leaves out. It escalates to the owner only when the simpler
+option changes a rule the owner set.
+
 1. **Before staging/committing**: always run `git status`/`git log` first — this repo's working directory can be shared by more than one concurrent session (see `CLAUDE.md`'s Hard Rules), so check for in-flight files that belong to another ticket before touching them.
 2. **Commit** per ticket, referencing its ID (see `## Commit Contract` above). Stage `agent-working/agent-monitoring/` in every commit, including any small trailing update the monitoring tools auto-write after the main commit — commit that separately rather than leaving it unstaged.
-2a. **Handover-transit bundle: not part of a PR.** Export it only before a machine move, in its own commit or PR, never
-   inside a ticket batch. The repo is public, so an export publishes every handover note, open draft and memory file; see
+2a. **Handover-transit bundle: not part of a ticket batch.** Export it only before a machine move, in its own commit or PR
+   (one of the two exceptions to the PR-size rule below), never inside a ticket batch. The repo is public, so an export publishes every handover note, open draft and memory file; see
    `docs/guides/agent_session_reset_boundaries.md` ("Moving sessions between machines"), the only place that prescribes it.
 2b. **Run the CI lanes your diff touches, before the push** (`TCK-20261014-PRE-PUSH-CI-LANE-PARITY`): `python3 -m tools.delivery.ci_lanes`
    lists them (`--run` runs them and exits non-zero on a failing lane). It reads `.github/workflows/test.yml`, so there is no
