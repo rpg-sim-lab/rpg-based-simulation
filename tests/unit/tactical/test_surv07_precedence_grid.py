@@ -286,3 +286,35 @@ def test_reading_2_the_served_meal_on_arrival_is_taken_below_the_consequence_lin
     payload = (update.task.payload_set if update.task is not None else None) or {}
     assert payload.get("action") == "EAT" and payload.get("target_id") == INN_ID, f"got {payload}"
 
+
+
+def _hurt_hero(hunger, hp, hostile_at=(39.0, 30.0)):
+    state, hero = _hungry_hero(hunger, hostile_at=hostile_at)
+    hurt = replace(hero, combat=replace(hero.combat, hp=hp))
+    return replace(state, entities={**state.entities, 1: hurt}), hurt
+
+
+def _payload(state, hero):
+    update = TacticalDecisionSystem.evaluate_entity_intent(state, hero)
+    return (update.task.payload_set if update.task is not None else None) or {}
+
+
+def test_reading_3_past_the_consequence_line_a_badly_hurt_subject_with_nothing_acting_takes_the_need_path():
+    """Owner reading 3 (#715 6697054601, corrected 6697215821): hp 8 of 85 (under 15%), hunger 96 (past the line), a hostile not acting on it: the need path, EAT."""
+    payload = _payload(*_hurt_hero(96.0, 8))
+    assert payload.get("action") == "EAT" and payload.get("target_id") == INN_ID, f"got {payload}"
+
+
+def test_reading_3_below_the_consequence_line_the_emotional_panic_branch_holds_on_its_own_tile():
+    """Disclosed gap (row 88 (5); TCK-20261028-LOW-HP-RETREAT-BRANCH-HOLDS-A-STARVING-SUBJECT-IN-PLACE-BESIDE-A-NON-ACTING-HOSTILE): hp 8 of 85, hunger 80 (pressing, below
+    the line): the panic branch runs before need_first and, with no destination, holds the subject on its own tile."""
+    state, hero = _hurt_hero(PRESSING_HUNGER, 8)
+    payload = _payload(state, hero)
+    assert payload.get("reason") == "PANIC_RETREAT" and payload.get("target_position") == hero.navigation.position, f"got {payload}"
+
+
+@pytest.mark.parametrize("hp", [20, 30])
+def test_control_not_reading_3_above_the_panic_health_a_pressing_subject_eats(hp):
+    """Control, not part of reading 3: at hp 20 and 30 of 85 `is_fleeing` is False, so the panic branch does not run and the need path eats (hunger 80)."""
+    payload = _payload(*_hurt_hero(PRESSING_HUNGER, hp))
+    assert payload.get("action") == "EAT" and payload.get("target_id") == INN_ID, f"got {payload}"
