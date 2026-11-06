@@ -44,3 +44,12 @@ def test_no_field_of_a_compiled_world_state_is_unserialisable():
     spec, context = WorldRepository(WORLDS_DIR).load_world_with_context("urban_political")
     state, _ = WorldCompiler.compile(spec, 42, context=context)
     assert _digest(state)["unserialisable"] == []
+
+
+def test_terrain_is_left_out_only_when_asked_and_is_otherwise_compared():
+    """``snapshots`` digests terrain at the first and last sample only (it is static during a run); the digest itself leaves it out only on request."""
+    a = _state(terrain={(1, 1): "WALL"})
+    b = _state(terrain={(1, 1): "plain"})
+    assert _digest(a)["state"]["terrain"] != _digest(b)["state"]["terrain"]
+    assert "terrain" not in _digest(a, terrain=False)["state"]
+    assert _digest(a, terrain=False) == _digest(b, terrain=False)

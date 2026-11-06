@@ -47,14 +47,21 @@ def _skipped(name: str, skip: frozenset) -> bool:
 
 
 def _canonical(value):
-    """JSON-ready form of a field value. A dict with a key JSON cannot carry (the state's ``terrain`` is keyed by (x, y) tuples) becomes a sorted list of
-    [key, value] pairs, recursively; tuples and sets become lists (sets sorted)."""
+    """JSON-ready form of a field value. A dict with a key JSON cannot carry (the state's ``terrain`` is keyed by (x, y) tuples) becomes a list of [key, value]
+    pairs sorted by key, recursively (tuple keys sort natively; a key set that does not falls back to its JSON text); tuples become lists, sets sorted lists."""
     if isinstance(value, dict):
         if all(isinstance(k, (str, int, float, bool)) or k is None for k in value):
             return {k: _canonical(v) for k, v in value.items()}
-        return sorted(([_canonical(k), _canonical(v)] for k, v in value.items()), key=lambda pair: json.dumps(pair[0], sort_keys=True, default=str))
+        try:
+            items = sorted(value.items(), key=lambda kv: kv[0])
+        except TypeError:
+            items = sorted(value.items(), key=lambda kv: json.dumps(_canonical(kv[0]), sort_keys=True, default=str))
+        return [[_canonical(k), _canonical(v)] for k, v in items]
     if isinstance(value, (set, frozenset)):
-        return sorted((_canonical(v) for v in value), key=lambda v: json.dumps(v, sort_keys=True, default=str))
+        try:
+            return sorted(_canonical(v) for v in value)
+        except TypeError:
+            return sorted((_canonical(v) for v in value), key=lambda v: json.dumps(v, sort_keys=True, default=str))
     if isinstance(value, (list, tuple)):
         return [_canonical(v) for v in value]
     return value
@@ -73,10 +80,12 @@ def _md5(value, unserialisable: list = None, name: str = "") -> str:
     return hashlib.md5(text.encode()).hexdigest()[:12]
 
 
-def _digest(state) -> dict:
-    """Every entity field and every top-level state field by content (not only the canonical subset); ``unserialisable`` names any field that could not be digested."""
+def _digest(state, terrain: bool = True) -> dict:
+    """Every entity field and every top-level state field by content (not only the canonical subset); ``unserialisable`` names any field that could not be digested.
+    ``terrain`` False leaves that one field out of this digest (see ``snapshots``)."""
     bad: list = []
-    fields = {f.name: _md5(getattr(state, f.name, None), bad, f"state.{f.name}") for f in dataclasses.fields(state) if not _skipped(f.name, _DERIVED_STATE_FIELDS)}
+    skip = _DERIVED_STATE_FIELDS if terrain else _DERIVED_STATE_FIELDS | {"terrain"}
+    fields = {f.name: _md5(getattr(state, f.name, None), bad, f"state.{f.name}") for f in dataclasses.fields(state) if not _skipped(f.name, skip)}
     entities = {str(eid): {f.name: _md5(getattr(e, f.name, None), bad, f"entity.{f.name}") for f in dataclasses.fields(e) if not _skipped(f.name, _SKIP_ENTITY_FIELDS)}
                 for eid, e in state.entities.items()}
     return {"state": fields, "entities": entities, "unserialisable": sorted(set(bad))}
@@ -107,7 +116,12 @@ def snapshots(world: str, seed: int, ticks: int, concurrent: bool, run_id: str, 
         for tick in range(1, ticks + 1):
             kernel.tick_once()
             if tick % SAMPLE_EVERY == 0 or tick == ticks:
-                out[tick] = (CanonicalStateHasher.get_hash(kernel.state), _digest(kernel.state))
+                # ``terrain`` (20k entries) is digested at the first and the last sample only: it is static during a run (apply.py:512 carries ``prior_state.terrain`` into every next
+                # state; local_world_interaction_contract section 4: "Terrain cannot currently be modified during a simulation"), and it is carried forward as state, so a change by any
+                # path still shows at the last sample (an unseen writer would only make the first reported difference later, it cannot hide a split). A change reverted before the last
+                # sample would be missed in terrain itself, but its effects would still show in the entity fields compared at every sample. If terrain ever becomes writable
+                # mid-run, digest it at every sample again (``terrain=True``).
+                out[tick] = (CanonicalStateHasher.get_hash(kernel.state), _digest(kernel.state, terrain=tick in (SAMPLE_EVERY, ticks)))
     finally:
         kernel.shutdown()
     return out, len(failures)
