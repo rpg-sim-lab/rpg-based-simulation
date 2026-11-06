@@ -273,3 +273,16 @@ def test_eat_carried_rows_keep_the_agency_07_terms():
     assert run(pressing, (10, 11)) is None                  # pressing, adjacent, not acting: AGENCY-07 holds it back (row 88 S1)
     assert run(pressing, (10, 11), attacking) is None       # acting: the threat wins
     assert run(calm, (10, 11)) is None                      # calm and adjacent: unchanged
+
+
+# ---- owner readings 2 and 3 (#715 6697054601), unit rows ---------------------------------------------------------------------------------------------------
+
+def test_reading_2_the_served_meal_on_arrival_is_taken_below_the_consequence_line_with_a_non_acting_hostile_in_sight():
+    """Hunger 80 is past the escalation onset and below the consequence line (95). The hero stands one tile from the inn the hunger project names, a hostile that is
+    not acting on it stands beside it: on arrival the project's served meal (EAT at the inn) is taken."""
+    assert PRESSING_HUNGER < 95.0
+    state, hero = _hungry_hero(PRESSING_HUNGER, hostile_at=(39.0, 30.0))
+    update = TacticalDecisionSystem.evaluate_entity_intent(state, hero)
+    payload = (update.task.payload_set if update.task is not None else None) or {}
+    assert payload.get("action") == "EAT" and payload.get("target_id") == INN_ID, f"got {payload}"
+

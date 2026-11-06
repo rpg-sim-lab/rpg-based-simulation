@@ -1,4 +1,3 @@
-<!-- DRAFT (rpg-implementer). Not for the PR until the owner confirms the row 88 shape and rpg-designer writes the owner row. No attribution trailer (repo rule). -->
 ## Summary
 SURV-07 Law P at the tactical survival sites (TCK-20261031-AN-ENGAGEMENT-OVERRIDES-A-PRESSING-NEED): a need past its escalation onset (`need_is_pressing`) outranks every goal and act that is not acting on the subject (`need_yields`, memo row 88). Shape **S1 with the hunt exemption**:
 - **Need path first** (`tactical.py` `need_first`, new `tactical_objective.py`): with hostiles in sight, a pressing need and no hostile acting on the subject, the hunger/fatigue project's objective step runs before the presence test, role obligation, cohesion and target selection (a follower included). A subject whose project is not a need project waits instead of engaging a non-acting hostile. `tactical_rest.py` keeps the AGENCY-07 terms (S1); a fatigue arrival under need_first dispatches REST only if it would lodge or the terms are clear (`lodging.rest_would_lodge`, `_fatigue_arrival_waits`).
@@ -21,9 +20,9 @@ Another session held ~1.8 GB for 6 h overlapping the first chain (17:55-23:55 on
 2. **Person starving share frontier s42 only**: workers 2, 6, 7, guard 10, 11, blacksmith 13 stay at the starving line to run end; they are held off the inn by `avoid_what_can_eat_me` (predator_hunter 45/48 in the wary/threatening lists; never attack a person), not by the LAW P gate (hood.hostiles empty on all decisions). Predator 45 sits on the tile beside the inn for 1906/1906 ticks (no retreat project; 0 hits; idles on an unreachable combat_engage objective; ticket filed).
 3. **Urban s44 (+6 deaths)**: six sleep-pressing victims die to scout 17 (t3321-3600); the first divergence (t3244) is subject 7 dropping its intercept of a non-acting scout; victims 25, 1, 12 wait 6-10 ticks after the first hit for their next decision (no scheduler wake reads last_hit_tick; ticket TCK-20261020-A-PURSUING-HOSTILE-WAKES-ITS-TARGET, next in the owner's order, #715 6697054601).
 4. `resolve_multi_attack` writes `attacker_id=valid_attackers[0]` only (second attacker not recorded as having hit); not changed here.
+5. Hot-loop timing not measured (perf pause). Phase 1 table (main 15a8f5893): NOT CHECKED against plain except urban s42.
 6. Not taken by the owner now (#715 6697054601): group defence (an enemy attacking a nearby group member counts as attacking the group) and predator avoidance giving way to a pressing need near its food. Either would be measured on its own.
 7. Owner readings 2 and 3 (served meal on arrival below the line; need_first ahead of the hp < 15% retreat) are owner-confirmed behaviour, not unit-covered.
-5. Hot-loop timing not measured (perf pause). Phase 1 table (main 15a8f5893): NOT CHECKED against plain except urban s42.
 
 ## Evidence
 See the evidence README (raw run dumps kept out of git with sha256; scripts, summaries and cited small traces kept) and the hash-check inventory below.
