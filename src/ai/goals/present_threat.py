@@ -13,6 +13,7 @@ ACTING (TCK-20261023-AN-ACTING-HOSTILE-IS-AN-ACT-NOT-A-STATE, owner decision mem
 `present_threat_to` keeps AGENCY-07's full terms (they are why flight is warranted); `acting_threat_to` is the narrower test that decides whether a hostile
 holds back an escalated need: the subject perceives it AND either (a) its current task is an attack or a pursuit aimed at the subject, or (b) it took hp
 from the subject by a hit within `NEED_WAKE_CADENCE` ticks. Wounded, adjacent, closing without (a) and outmatched are not acts.
+NEED_YIELDS (TCK-20261031-AN-ENGAGEMENT-OVERRIDES-A-PRESSING-NEED, SURV-07 LAW P, shape S1): `acting_threat_to` is `tactical_threat.need_yields` over the subject's perceived hostiles: the one test every site that weighs a pressing need (`need_pull.need_is_pressing`) against another goal or act reads, so a pressing need gives way only to a hostile that ACTS on the subject. Flight keeps `present_threat_terms` (AGENCY-07), the in-place rest/eat steps keep those terms (S1). Hunt exemption: with HUNGER pressing, a hostile the subject regards as prey (`Relation.PREDATION`) does not hold the need path back from the fight with that prey (`tactical.py`, not here).
 """
 from __future__ import annotations
 
