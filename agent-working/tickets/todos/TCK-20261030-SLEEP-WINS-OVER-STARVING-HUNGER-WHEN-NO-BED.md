@@ -84,6 +84,11 @@ Designer framing (rpg-designer, 2026-10-30):
 - Sequence: after EARN merges; before the #781 re-measure.
 
 ## Implementation Notes
+- 2026-11-03 non-person counterpart filed: TCK-20261103-A-CREATURE-WITH-BOTH-NEEDS-PRESSING-NEITHER-SLEEPS-NOR-FEEDS-ENOUGH. Related base finding: TCK-20261103-BROKE-HUNGRY-WORKERS-STILL-TAKE-NO-SHIFT-ON-MAIN (FATIGUE holds 63% of those workers' starving ticks).
+2026-11-03 evidence from the pinned runner (rpg-planner-ubuntu's rows, relayed by rpg-designer and lead-planner-u24; not checked by rpg-planner):
+- crowded s42 base (65d43dfa9), e30 leader: FATIGUE 97.85 over HUNGER 63.97 at hunger 59. Caution (rpg-designer): hunger 59 is just past the onset, not "starving hunger". It is evidence about where the two scales cross, which this ticket should state, not proof of its defect.
+- crowded s45 base, e34 raider: FATIGUE over HUNGER at hunger 90-99.
+- Both bodies also appear on TCK-20261103-TWO-UNOWNED-V3-STARVATIONS-APPEARED-ON-MAIN-WITH-THE-RETREAT-FIX (e30). Their starvation records' last_meal_tick and UNTRIED_STEP are caveated by TCK-20261103-THE-STARVATION-RECORD-MISSES-MEALS-WITHOUT-AN-INTENT-RESULT.
 COUNTS (2026-10-30, lane B, 30 runs at EARN 0efd21a61, /mnt/data/scratch-rpg-implementer-2/sleep/out/):
 - D73-shape: 509 holds; 42,445 forced ticks (debt >= collapse_line 98) and 19,674 chosen; the hunger wake fired 1,947 times in chosen ticks and sleep was re-chosen every time.
 - MAIN (CLAMP): 306 holds (292 bed REST, inn meal open), 38,513 chosen ticks, 3,770 wakes re-choosing sleep; ate later 156 / unfed 142 / died 8.
