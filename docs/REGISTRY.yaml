@@ -7966,6 +7966,19 @@
   - content
   last_verified: '2026-10-09'
 - type: ticket
+  path: agent-working/tickets/todos/TCK-20261107-A-COMBAT-ENGAGE-PROJECT-TARGETS-A-BODY-TACTICAL-NEVER-SEES-AS-HOSTILE.md
+  ticket_id: TCK-20261107-A-COMBAT-ENGAGE-PROJECT-TARGETS-A-BODY-TACTICAL-NEVER-SEES-AS-HOSTILE
+  title: 'A COMBAT_ENGAGE project can target a body tactical never sees as hostile,
+    so it idles on a dead objective until it fails: counts first'
+  tier: standard
+  ticket_type: bug
+  date: '2026-11-07'
+  related_code_areas:
+  - src/ai/goals/scorers.py (CombatEngageScorer), src/engine/tactical_avoid.py (classify_neighbours),
+    src/engine/tactical_objective.py:124-126, src/engine/tactical.py:278-290
+  artifact_files: []
+  tags: []
+- type: ticket
   path: agent-working/tickets/done/TCK-20261103-DELIVERY-GUIDE-PINNED-RUNNER-EVIDENCE-RULE.md
   ticket_id: TCK-20261103-DELIVERY-GUIDE-PINNED-RUNNER-EVIDENCE-RULE
   title: The delivery guide states that behaviour evidence comes from the pinned runner
