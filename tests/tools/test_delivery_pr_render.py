@@ -1168,27 +1168,66 @@ def _probe(root: Path, rel: str, size: int) -> str:
 def test_raw_probe_output_above_the_threshold_gives_one_warning_with_count_size_and_top_paths(tmp_path):
     base = "agent-working/stored_artifacts/TCK-1/probes/"
     files = [_probe(tmp_path, f"{base}run_{i}.jsonl", (i + 1) * 40 * 1024) for i in range(7)]
-    warning = pr_render.raw_probe_warning(files, root=tmp_path)
-    assert warning.startswith("raw probe output: 7 file(s), 1120 KB")
+    warning = pr_render.raw_output_warning(files, root=tmp_path)
+    assert warning.startswith("raw output: 7 file(s), 1120 KB")
     assert warning.count("run_") == 5, "up to the 5 largest paths"
     assert f"{base}run_6.jsonl (280 KB)" in warning and "run_0.jsonl" not in warning
     assert "keep only files a ticket cites; summarize the rest in investigation.md" in warning
 
 
 def test_raw_probe_output_at_or_below_the_threshold_gives_no_warning(tmp_path):
-    f = _probe(tmp_path, "agent-working/stored_artifacts/TCK-1/probes/a.jsonl", pr_render.RAW_PROBE_WARN_BYTES)
-    assert pr_render.raw_probe_warning([f], root=tmp_path) is None
+    f = _probe(tmp_path, "agent-working/stored_artifacts/TCK-1/probes/a.jsonl", pr_render.RAW_OUTPUT_WARN_BYTES)
+    assert pr_render.raw_output_warning([f], root=tmp_path) is None
 
 
-def test_probe_scripts_and_summaries_never_count_and_neither_do_files_outside_probes(tmp_path):
+def test_scripts_and_summaries_never_count_toward_the_threshold_but_files_outside_probes_do(tmp_path):
     base = "agent-working/stored_artifacts/TCK-1/"
     files = [_probe(tmp_path, f"{base}probes/{name}", 300 * 1024) for name in ("p.py", "p.sh", "summary.md", "notes.txt", "P.PY")]
-    files += [_probe(tmp_path, f"{base}evidence.jsonl", 300 * 1024), _probe(tmp_path, "tools/probes/raw.jsonl", 300 * 1024)]
-    assert pr_render.raw_probe_warning(files, root=tmp_path) is None
+    files += [_probe(tmp_path, "tools/probes/raw.jsonl", 300 * 1024)]  # not under stored_artifacts
+    assert pr_render.raw_output_warning(files, root=tmp_path) is None
+
+
+@pytest.mark.parametrize("where", ["evidence/out.jsonl", "out.jsonl", "deep/er/out.json", "probes/out.jsonl"])
+def test_more_than_the_threshold_of_raw_output_anywhere_under_stored_artifacts_warns(tmp_path, where):
+    f = _probe(tmp_path, f"agent-working/stored_artifacts/TCK-1/{where}", 300 * 1024)
+    warning = pr_render.raw_output_warning([f], root=tmp_path)
+    assert warning is not None and f"{f} (300 KB)" in warning and "the whole folder" in warning
+
+
+def test_the_totals_count_scripts_and_summaries_but_a_deleted_file_counts_for_nothing(tmp_path):
+    base = "agent-working/stored_artifacts/TCK-1/"
+    files = [_probe(tmp_path, f"{base}evidence/big.jsonl", 300 * 1024), _probe(tmp_path, f"{base}plan.md", 10 * 1024),
+             _probe(tmp_path, f"{base}run.py", 10 * 1024), f"{base}gone.jsonl"]
+    warning = pr_render.raw_output_warning(files, root=tmp_path)
+    assert "raw output: 1 file(s), 300 KB" in warning
+    assert "all stored_artifacts in this PR: 3 file(s), 320 KB" in warning
+
+
+def test_the_advisory_reads_the_three_dot_list_so_a_file_only_main_changed_is_not_counted(tmp_path, monkeypatch):
+    spec_path = Path(pr_render._DEFAULT_SPEC_PATH).resolve()
+    layers = REAL_LAYER_REGISTRY.resolve()
+    monkeypatch.chdir(tmp_path)
+    tickets_root = tmp_path / TICKETS
+    tickets_root.mkdir(parents=True)
+    _write_ticket(tickets_root, "TCK-20260924-EXAMPLE-ONE", "ai", "Do the example thing")
+    only_main = _probe(tmp_path, "agent-working/stored_artifacts/TCK-9/evidence/main_only.jsonl", 300 * 1024)
+    seen = []
+
+    def runner(cmd, timeout=30):
+        seen.append(cmd)
+        if cmd[:2] == ["git", "log"]:
+            return CommandResult(0, "TCK-20260924-EXAMPLE-ONE: x\n", "")
+        two_dot = cmd[-1].endswith("..HEAD") and "..." not in cmd[-1]
+        names = ["agent-working/tickets/TCK-20260924-EXAMPLE-ONE.md"] + ([only_main] if two_dot else [])
+        return CommandResult(0, "\n".join(names) + "\n", "")
+
+    result = pr_render.render(tickets_root=tickets_root, run_command=runner, spec_path=spec_path, layer_registry_path=layers)
+    assert not any(w.startswith("raw output") for w in result["warnings"])
+    assert any(c[:3] == ["git", "diff", "--name-only"] and c[-1].endswith("...HEAD") for c in seen)
 
 
 def test_a_deleted_probe_file_counts_for_nothing(tmp_path):
-    assert pr_render.raw_probe_warning(["agent-working/stored_artifacts/TCK-1/probes/gone.jsonl"], root=tmp_path) is None
+    assert pr_render.raw_output_warning(["agent-working/stored_artifacts/TCK-1/probes/gone.jsonl"], root=tmp_path) is None
 
 
 def test_render_adds_the_probe_warning_to_the_discovery_warnings_without_changing_the_title(tmp_path, monkeypatch):
@@ -1204,15 +1243,15 @@ def test_render_adds_the_probe_warning_to_the_discovery_warnings_without_changin
         _git_diff_rule(["agent-working/tickets/TCK-20260924-EXAMPLE-ONE.md", big]),
     ])
     with_probe = pr_render.render(tickets_root=tickets_root, run_command=runner, spec_path=spec_path, layer_registry_path=layers)
-    assert sum(w.startswith("raw probe output") for w in with_probe["warnings"]) == 1
-    assert "Discovery warnings" in with_probe["body"] and "raw probe output" in with_probe["body"]
+    assert sum(w.startswith("raw output") for w in with_probe["warnings"]) == 1
+    assert "Discovery warnings" in with_probe["body"] and "raw output" in with_probe["body"]
     runner2 = FakeRunner([
         _git_log_rule(["TCK-20260924-EXAMPLE-ONE: do the thing"]),
         _git_diff_rule(["agent-working/tickets/TCK-20260924-EXAMPLE-ONE.md"]),
     ])
     without = pr_render.render(tickets_root=tickets_root, run_command=runner2, spec_path=spec_path, layer_registry_path=layers)
     assert with_probe["title"] == without["title"]
-    assert not any(w.startswith("raw probe output") for w in without["warnings"])
+    assert not any(w.startswith("raw output") for w in without["warnings"])
 
 
 # ---------------------------------------------------------------------------
