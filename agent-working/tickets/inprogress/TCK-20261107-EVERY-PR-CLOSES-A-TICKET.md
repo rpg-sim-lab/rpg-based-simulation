@@ -4,7 +4,7 @@ layer: ai
 authority: P1
 audience: agent
 ticket_id: TCK-20261107-EVERY-PR-CLOSES-A-TICKET
-phase: in-progress
+phase: inprogress
 date: 2026-11-07
 tags: [delivery, governance, claude-md]
 ---
