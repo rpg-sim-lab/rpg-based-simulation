@@ -52,6 +52,7 @@ Main gate run 40653115297 (2c4869d61) has an unowned V3 at frontier_living_world
 - Paired step report; frontier_living_world s43 V3 entity 38 gone, or the reason it is not.
 - Divergence entry (Bug Fix), Bible 04 / combat rulebook sentence for the low-hp retreat gate, parity entry.
 - SimQ criterion (row 82): the outcome is already carried by the movement and task records, so no new event type.
+- Known entry: this ticket's fix PR deletes the V3 entry for crowded_frontier seed 42 entity 30 from tools/test_architecture/rpg_gate_known.yaml (owner, #715 6692734974 item 2; the file takes only a date expiry, `expires_on: 2026-11-30`, so the delete is the PR's job, per testing-planner). If e30 still starves on the fix's pinned run, keep the entry and bring that to the owner; don't extend the date here.
 
 ## Related Tickets
 - TCK-20261028-N15-KNOWN-V3-STARVATIONS-RECHECK-ON-THE-GATE-AFTER-STEP-A (where it was found)
