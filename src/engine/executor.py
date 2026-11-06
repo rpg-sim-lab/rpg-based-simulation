@@ -222,6 +222,7 @@ class ConcurrentExecutionAdapter:
         """The read-only views every packet of one batch shares (moved out of ``execute`` unchanged: same reads, same order, same values)."""
         from src.core.immutability import deep_freeze
 
+        views: Dict[str, Any] = {}
         # Logic ID: CORE-PERF-020 (Persistent deep_freeze caching)
         if not hasattr(self, "_freeze_cache"):
             self._freeze_cache = {}
@@ -235,35 +236,35 @@ class ConcurrentExecutionAdapter:
             self._freeze_cache[key] = (obj_id, frozen)
             return frozen
 
-        frozen_feature_flags = ReadOnlyDict(state.feature_flags)  # a fresh read-only copy per batch (the readonly view leaves this dict mutable)
-        frozen_regions = get_frozen(state.regions, "regions")
-        frozen_resource_nodes = get_frozen(state.resource_nodes, "nodes")
-        frozen_buildings = get_frozen(state.buildings, "buildings")
-        frozen_groups = get_frozen(state.groups, "groups")
-        frozen_corpses = get_frozen(state.corpses, "corpses")
-        frozen_ground_items = get_frozen(state.ground_items, "ground_items")
-        frozen_terrain = get_frozen(state.terrain, "terrain")
+        views["feature_flags"] = ReadOnlyDict(state.feature_flags)  # a fresh read-only copy per batch (the readonly view leaves this dict mutable)
+        views["regions"] = get_frozen(state.regions, "regions")
+        views["resource_nodes"] = get_frozen(state.resource_nodes, "nodes")
+        views["buildings"] = get_frozen(state.buildings, "buildings")
+        views["groups"] = get_frozen(state.groups, "groups")
+        views["corpses"] = get_frozen(state.corpses, "corpses")
+        views["ground_items"] = get_frozen(state.ground_items, "ground_items")
+        views["terrain"] = get_frozen(state.terrain, "terrain")
         
         from src.engine.domain.view import DomainView
         from src.engine.spatial_query import SpatialQueryService
-        frozen_grid = DomainView._get_cached_spatial_grid(state)
-        frozen_occ_map = SpatialQueryService.get_occupancy_map(state)
+        views["grid"] = DomainView._get_cached_spatial_grid(state)
+        views["occ_map"] = SpatialQueryService.get_occupancy_map(state)
         
         # CORE-PERF-021: Reuse region list cache
-        frozen_regions_list = getattr(state, "_region_list_cache", None)
-        if frozen_regions_list is None:
+        views["regions_list"] = getattr(state, "_region_list_cache", None)
+        if views["regions_list"] is None:
              DomainView.get_region_for_position(state, (0,0)) # Build cache
-             frozen_regions_list = getattr(state, "_region_list_cache")
+             views["regions_list"] = getattr(state, "_region_list_cache")
              
-        frozen_building_map = SpatialQueryService._get_building_map(state)
-        frozen_regions_bounds = SpatialQueryService._get_regions_global_bounds(state)
-        frozen_region_index = SpatialQueryService._get_region_index(state)
-        frozen_building_region_map = SpatialQueryService._get_building_region_map(state)
-        frozen_node_map = SpatialQueryService._get_node_map(state)
-        frozen_corpse_map = SpatialQueryService._get_corpse_map(state)
-        frozen_ground_item_map = SpatialQueryService._get_ground_item_map(state)
+        views["building_map"] = SpatialQueryService._get_building_map(state)
+        views["regions_bounds"] = SpatialQueryService._get_regions_global_bounds(state)
+        views["region_index"] = SpatialQueryService._get_region_index(state)
+        views["building_region_map"] = SpatialQueryService._get_building_region_map(state)
+        views["node_map"] = SpatialQueryService._get_node_map(state)
+        views["corpse_map"] = SpatialQueryService._get_corpse_map(state)
+        views["ground_item_map"] = SpatialQueryService._get_ground_item_map(state)
 
-        return {"regions": frozen_regions, "resource_nodes": frozen_resource_nodes, "buildings": frozen_buildings, "groups": frozen_groups, "corpses": frozen_corpses, "ground_items": frozen_ground_items, "terrain": frozen_terrain, "feature_flags": frozen_feature_flags, "grid": frozen_grid, "occ_map": frozen_occ_map, "regions_list": frozen_regions_list, "building_map": frozen_building_map, "regions_bounds": frozen_regions_bounds, "region_index": frozen_region_index, "building_region_map": frozen_building_region_map, "node_map": frozen_node_map, "corpse_map": frozen_corpse_map, "ground_item_map": frozen_ground_item_map}
+        return views
 
     def execute(
         self, 
