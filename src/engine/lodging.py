@@ -94,6 +94,13 @@ def has_free_bed(state: Any, building: Any, entity: Any = None) -> bool:
     return bed_free(int(building.beds), len(held), entity is not None and entity.id in held)
 
 
+def rest_would_lodge(state: Any, entity: Any, building: Any) -> bool:
+    """True when a REST at ``building`` delivers a bed to ``entity`` (it lodges): the building is functional, declares beds, the subject is a person it would serve (`keeps_coin`) and a
+    bed is free. The complement, within a bed-declaring building, of `finds_no_bed`; a rest anywhere else (no beds declared, a non-person, a non-functional building) is served on the reach
+    tile, exactly as on main."""
+    return building is not None and building.functional and lodges(building) and keeps_coin(entity) and has_free_bed(state, building, entity)
+
+
 def finds_no_bed(state: Any, entity: Any, building: Any) -> bool:
     """THE 'no bed' predicate (F3, divergence 2.155): a subject the building would serve (`keeps_coin`, the trait; no kind name) finds NO free bed at a functional building that declares
     beds. Every caller asks this one function: the first execution of a REST (`building_services.with_service`), the arrival of a fatigue project (`building_arrival`). A non-person, a

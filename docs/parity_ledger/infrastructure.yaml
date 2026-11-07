@@ -13091,3 +13091,43 @@
   divergence_note: null
   support_boundary: 'Unit level: a real prometheus_client registry served by start_metrics_port and a local HTTP server answering 401/403/500; check_metrics is never patched. The compose deployment is not run
     here (the observability profile); compose.yaml is unchanged because the code default covers it.'
+- id: INFRA-439
+  text: 'TCK-20261103-THE-CONCURRENT-AND-SEQUENTIAL-EXECUTORS-GIVE-DIFFERENT-WORLDS:
+    the concurrent executor hands domain logic the same world as the sequential one.
+    The WorkerPacket carries the world seed (not a per-packet seed), the state''s
+    feature_flags, building_tiles, town_center, clans and blocked_tiles (the state''s
+    own values, set by the executor); an executor-side read of an AuthoritativeState
+    field the packet neither carries nor lists in PACKET_DERIVED_CACHE_NAMES raises
+    PacketFieldMissingError instead of answering a getattr default, and that error
+    passes through every worker_manager handler and stops the run (bounded_concurrency_contract
+    section 4, one written exception); every other worker exception keeps Failure-to-No-Op
+    and is counted by wrapping failure_no_op, the count being zero in the long test.
+    Before: a STALEMATE_BREAK wander read the per-packet seed (crowded s45, #828 arm,
+    hash split at t601), combat learning was skipped on the packet (ENABLE_COMBAT_ENGAGEMENT
+    read OFF; 153 vs 241 learning calls to t2000), join/leave clan read no clans on
+    a packet. Second cause (crowded s42, hash split t1974): blocked_tiles had a default
+    the executor never set, so a worker saw the inn tile as walkable (find_intercept_position,
+    e37, t1973); fixed, sequential and concurrent both end at aa2fa3053507 at t2000.
+    A field-parity test over dataclasses.fields(WorkerPacket) compares every packet
+    field with the state by content (derived structures with fresh rebuilds) or lists
+    it with a reason and an owner.'
+  status: verified
+  priority: P1
+  legacy_evidence: null
+  v2_evidence: src/core/worker_protocol.py::WorkerPacket, ::PacketFieldMissingError,
+    ::PACKET_DERIVED_CACHE_NAMES; src/engine/executor.py::ConcurrentExecutionAdapter.execute;
+    src/engine/worker_manager.py::_process_chunk_wrapper, ::WorkerManager._collect,
+    ::WorkerManager._wrap_work; docs/engine/contracts/bounded_concurrency_contract.md
+    section 4
+  proof_type: contract
+  test_path: tests/unit/kernel/test_executor_context_parity.py
+  divergence_note: null
+  support_boundary: 'Unit level on every carried field, the guard, the pass-through
+    on the thread pool and the clans case; the horizon proof is tests/integration/kernel/test_executor_equivalence_long.py
+    (extra_slow): both executors live, hash and entity/state field content every 100
+    ticks, 2200 ticks on crowded s45 and 2000 on the other named worlds and seeds;
+    its strength is limited by the digest (TCK-20261103-STATE-DIGEST-MAY-OMIT-FIELDS-THAT-DECISIONS-READ).
+    The process-pool path of WorkerManager is not reachable from the kernel (no caller
+    passes use_processes=True) and has no pass-through test. The field-parity test
+    runs in the PR lane on fixture stages (t0, mid-run, after lodging, after a building
+    change) and, extra_slow, on crowded_frontier s45 at t0/150/600 (50 s).'
