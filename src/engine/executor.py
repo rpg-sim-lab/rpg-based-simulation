@@ -6,6 +6,7 @@ from dataclasses import replace
 from types import MappingProxyType
 from typing import TYPE_CHECKING, List, Dict, Any, Mapping, Protocol, Callable
 
+from src.core.state import ReadOnlyDict
 from src.core.worker_protocol import WorkerResult, ResultStatus, WorkerPacket
 from src.core.work import WorkClass, packet_work_id
 from src.engine.candidate_selector import MovementCandidateSelector
@@ -217,24 +218,11 @@ class ConcurrentExecutionAdapter:
         """Update the active concurrency throttle for the next batch."""
         self._concurrency_limit = limit
 
-    def execute(
-        self, 
-        work_items: List[WorkItem], 
-        state: AuthoritativeState, 
-        rng: DeterministicRNG,
-        profile: RuntimeProfile
-    ) -> List[WorkerResult]:
-        from src.engine.worker_logic import default_simulation_worker
-        from src.core.protocol_validator import ProtocolValidator
-        from src.core.concurrency_law import ConcurrencyLaw
-        from src.core.updates import EMPTY_ENTITY_UPDATE
+    def _batch_views(self, state: AuthoritativeState) -> Dict[str, Any]:
+        """The read-only views every packet of one batch shares (moved out of ``execute`` unchanged: same reads, same order, same values)."""
         from src.core.immutability import deep_freeze
-        from dataclasses import replace
 
-        packets: List[WorkerPacket] = []
-        source_meta: Dict[str, Tuple[WorkItem, WorkerPacket]] = {}
-        final_results: List[WorkerResult] = []
-
+        views: Dict[str, Any] = {}
         # Logic ID: CORE-PERF-020 (Persistent deep_freeze caching)
         if not hasattr(self, "_freeze_cache"):
             self._freeze_cache = {}
@@ -248,32 +236,54 @@ class ConcurrentExecutionAdapter:
             self._freeze_cache[key] = (obj_id, frozen)
             return frozen
 
-        frozen_regions = get_frozen(state.regions, "regions")
-        frozen_resource_nodes = get_frozen(state.resource_nodes, "nodes")
-        frozen_buildings = get_frozen(state.buildings, "buildings")
-        frozen_groups = get_frozen(state.groups, "groups")
-        frozen_corpses = get_frozen(state.corpses, "corpses")
-        frozen_ground_items = get_frozen(state.ground_items, "ground_items")
-        frozen_terrain = get_frozen(state.terrain, "terrain")
+        views["feature_flags"] = ReadOnlyDict(state.feature_flags)  # a fresh read-only copy per batch (the readonly view leaves this dict mutable)
+        views["regions"] = get_frozen(state.regions, "regions")
+        views["resource_nodes"] = get_frozen(state.resource_nodes, "nodes")
+        views["buildings"] = get_frozen(state.buildings, "buildings")
+        views["groups"] = get_frozen(state.groups, "groups")
+        views["corpses"] = get_frozen(state.corpses, "corpses")
+        views["ground_items"] = get_frozen(state.ground_items, "ground_items")
+        views["terrain"] = get_frozen(state.terrain, "terrain")
         
         from src.engine.domain.view import DomainView
         from src.engine.spatial_query import SpatialQueryService
-        frozen_grid = DomainView._get_cached_spatial_grid(state)
-        frozen_occ_map = SpatialQueryService.get_occupancy_map(state)
+        views["grid"] = DomainView._get_cached_spatial_grid(state)
+        views["occ_map"] = SpatialQueryService.get_occupancy_map(state)
         
         # CORE-PERF-021: Reuse region list cache
-        frozen_regions_list = getattr(state, "_region_list_cache", None)
-        if frozen_regions_list is None:
+        views["regions_list"] = getattr(state, "_region_list_cache", None)
+        if views["regions_list"] is None:
              DomainView.get_region_for_position(state, (0,0)) # Build cache
-             frozen_regions_list = getattr(state, "_region_list_cache")
+             views["regions_list"] = getattr(state, "_region_list_cache")
              
-        frozen_building_map = SpatialQueryService._get_building_map(state)
-        frozen_regions_bounds = SpatialQueryService._get_regions_global_bounds(state)
-        frozen_region_index = SpatialQueryService._get_region_index(state)
-        frozen_building_region_map = SpatialQueryService._get_building_region_map(state)
-        frozen_node_map = SpatialQueryService._get_node_map(state)
-        frozen_corpse_map = SpatialQueryService._get_corpse_map(state)
-        frozen_ground_item_map = SpatialQueryService._get_ground_item_map(state)
+        views["building_map"] = SpatialQueryService._get_building_map(state)
+        views["regions_bounds"] = SpatialQueryService._get_regions_global_bounds(state)
+        views["region_index"] = SpatialQueryService._get_region_index(state)
+        views["building_region_map"] = SpatialQueryService._get_building_region_map(state)
+        views["node_map"] = SpatialQueryService._get_node_map(state)
+        views["corpse_map"] = SpatialQueryService._get_corpse_map(state)
+        views["ground_item_map"] = SpatialQueryService._get_ground_item_map(state)
+
+        return views
+
+    def execute(
+        self, 
+        work_items: List[WorkItem], 
+        state: AuthoritativeState, 
+        rng: DeterministicRNG,
+        profile: RuntimeProfile
+    ) -> List[WorkerResult]:
+        from src.engine.worker_logic import default_simulation_worker
+        from src.core.protocol_validator import ProtocolValidator
+        from src.core.concurrency_law import ConcurrencyLaw
+        from src.core.updates import EMPTY_ENTITY_UPDATE
+        from dataclasses import replace
+
+        packets: List[WorkerPacket] = []
+        source_meta: Dict[str, Tuple[WorkItem, WorkerPacket]] = {}
+        final_results: List[WorkerResult] = []
+
+        views = self._batch_views(state)
 
         for i, item in enumerate(work_items):
             if item.work_kind in ("ENTITY_MOVE", "ENTITY_ACT", "ENTITY_BRAIN") and isinstance(item.owner_id, int):
@@ -282,15 +292,13 @@ class ConcurrentExecutionAdapter:
                     # Optimization: state is already a readonly_view, so entities are already frozen
                     subject_snapshot = subject
                     
-                    from src.core.enums import Domain
                     packet_id = f"{state.tick}:{i}"
-                    packet_seed = rng.get_int(Domain.DEFAULT, state.tick, item.owner_id, 0, 1000000)
                     packet = WorkerPacket(
                         packet_id=packet_id,
                         work_id=packet_work_id(state.tick, item.owner_id, item.work_kind),
                         tick=state.tick,
                         world_time=state.world_time,
-                        seed=packet_seed,
+                        seed=state.seed,  # the world seed: `context.seed` means the same under either executor
                         work_class=item.work_class,
                         subject=subject_snapshot,
                         neighbor_view=[], # Computed lazily by worker
@@ -298,24 +306,29 @@ class ConcurrentExecutionAdapter:
                         payload=item.payload,
                         class_priority=ConcurrencyLaw.get_class_priority(item.work_class),
                         local_priority=item.priority,
-                        regions=frozen_regions,
-                        resource_nodes=frozen_resource_nodes,
-                        buildings=frozen_buildings,
-                        groups=frozen_groups,
-                        corpses=frozen_corpses,
-                        ground_items=frozen_ground_items,
-                        terrain=frozen_terrain,
+                        regions=views["regions"],
+                        resource_nodes=views["resource_nodes"],
+                        buildings=views["buildings"],
+                        groups=views["groups"],
+                        corpses=views["corpses"],
+                        ground_items=views["ground_items"],
+                        terrain=views["terrain"],
                         all_entities=state.entities, # Full state (efficient in Mega-Chunks)
-                        spatial_grid=frozen_grid,
-                        occupancy_map=frozen_occ_map,
-                        region_list=frozen_regions_list,
-                        building_map=frozen_building_map,
-                        _region_index_cache=frozen_region_index,
-                        _regions_global_bounds=frozen_regions_bounds,
-                        _building_region_map_cache=frozen_building_region_map,
-                        _node_map_cache=frozen_node_map,
-                        _corpse_map_cache=frozen_corpse_map,
-                        _ground_item_map_cache=frozen_ground_item_map
+                        spatial_grid=views["grid"],
+                        occupancy_map=views["occ_map"],
+                        region_list=views["regions_list"],
+                        building_map=views["building_map"],
+                        _region_index_cache=views["region_index"],
+                        _regions_global_bounds=views["regions_bounds"],
+                        _building_region_map_cache=views["building_region_map"],
+                        _node_map_cache=views["node_map"],
+                        _corpse_map_cache=views["corpse_map"],
+                        _ground_item_map_cache=views["ground_item_map"],
+                        feature_flags=views["feature_flags"],
+                        building_tiles=state.building_tiles,
+                        blocked_tiles=state.blocked_tiles,  # buildings and walls are solid (the compiler adds each building tile here); a packet that defaulted to [] let a worker walk into the inn
+                        town_center=state.town_center,
+                        clans=state.clans,
                     )
                     packets.append(packet)
                     source_meta[packet_id] = (item, packet)
