@@ -46,7 +46,7 @@ make dev        # backend + frontend dev server with hot reload
 ### Headless CLI mode
 ```bash
 python3 -m src cli --seed 42 --ticks 1000
-OBS_MODE=DEBUG python3 -m src cli --ticks 100 --seed 42   # full observability
+SIM_OBS_MODE=DEBUG python3 -m src cli --ticks 100 --seed 42   # full observability
 ```
 
 See [docs/guides/simulation.md](docs/guides/simulation.md) for world authoring, CLI flags, and artifact paths. Full CLI reference: [docs/observability/how_to_run_simulation.md](docs/observability/how_to_run_simulation.md).
