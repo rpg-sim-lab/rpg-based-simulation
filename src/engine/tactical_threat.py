@@ -135,3 +135,13 @@ def _hit_acts_on(hostile: EntityState, subject: EntityState, tick: int) -> bool:
 def hostile_acts_on(hostile: EntityState, subject: EntityState, tick: int) -> bool:
     """True when `hostile` acts on `subject` by an act: its current task attacks or pursues the subject, or it hit the subject within the window."""
     return _task_acts_on(hostile, subject.id) or _hit_acts_on(hostile, subject, tick)
+
+
+def need_yields(entity: EntityState, hostiles: Sequence[EntityState], tick: int) -> bool:
+    """True when a pressing need gives way: one of `hostiles` ACTS on `entity` (SURV-07 LAW P, memo row 88; `hostile_acts_on`).
+
+    The other half of the one predicate pair with `need_pull.need_is_pressing`: every site that weighs a pressing need against another goal or act calls both and
+    re-derives neither. `src.ai.goals.present_threat.acting_threat_to` is this predicate over the subject's perceived hostiles. Flight still reads
+    `present_threat_terms` (AGENCY-07)."""
+    return any(hostile_acts_on(h, entity, tick) for h in hostiles)
+

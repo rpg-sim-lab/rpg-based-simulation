@@ -7982,6 +7982,19 @@
   - governance
   - claude-md
 - type: ticket
+  path: agent-working/tickets/todos/TCK-20261107-A-COMBAT-ENGAGE-PROJECT-TARGETS-A-BODY-TACTICAL-NEVER-SEES-AS-HOSTILE.md
+  ticket_id: TCK-20261107-A-COMBAT-ENGAGE-PROJECT-TARGETS-A-BODY-TACTICAL-NEVER-SEES-AS-HOSTILE
+  title: 'A COMBAT_ENGAGE project can target a body tactical never sees as hostile,
+    so it idles on a dead objective until it fails: counts first'
+  tier: standard
+  ticket_type: bug
+  date: '2026-11-07'
+  related_code_areas:
+  - src/ai/goals/scorers.py (CombatEngageScorer), src/engine/tactical_avoid.py (classify_neighbours),
+    src/engine/tactical_objective.py:124-126, src/engine/tactical.py:278-290
+  artifact_files: []
+  tags: []
+- type: ticket
   path: agent-working/tickets/done/TCK-20261103-DELIVERY-GUIDE-PINNED-RUNNER-EVIDENCE-RULE.md
   ticket_id: TCK-20261103-DELIVERY-GUIDE-PINNED-RUNNER-EVIDENCE-RULE
   title: The delivery guide states that behaviour evidence comes from the pinned runner
@@ -8487,6 +8500,22 @@
   artifact_files: []
   tags: []
 - type: ticket
+  path: agent-working/tickets/done/TCK-20261031-AN-ENGAGEMENT-OVERRIDES-A-PRESSING-NEED.md
+  ticket_id: TCK-20261031-AN-ENGAGEMENT-OVERRIDES-A-PRESSING-NEED
+  title: 'An engagement overrides a pressing need: with hostiles in sight, tactical
+    skips the survival step though no present threat is on the subject (SURV-07)'
+  tier: standard
+  ticket_type: bug
+  date: '2026-10-31'
+  related_code_areas:
+  - src/ai/tactical.py (hunger arrival ~262-291, in-place survival blocks); src/ai/goals/present_threat.py;
+    src/engine/need_pull.py (need_is_pressing)
+  artifact_files:
+  - agent-working/stored_artifacts/TCK-20261031-AN-ENGAGEMENT-OVERRIDES-A-PRESSING-NEED/investigation.md
+  - agent-working/stored_artifacts/TCK-20261031-AN-ENGAGEMENT-OVERRIDES-A-PRESSING-NEED/plan.md
+  - agent-working/stored_artifacts/TCK-20261031-AN-ENGAGEMENT-OVERRIDES-A-PRESSING-NEED/test_plan.md
+  tags: []
+- type: ticket
   path: agent-working/tickets/done/TCK-20261031-GOVERNING-FILE-EDITS-VISIBLE-TO-OWNER.md
   ticket_id: TCK-20261031-GOVERNING-FILE-EDITS-VISIBLE-TO-OWNER
   title: 'Show the owner when governing files are edited: one path definition, a list
@@ -8730,19 +8759,6 @@
   artifact_files: []
   tags:
   - testing
-- type: ticket
-  path: agent-working/tickets/todos/TCK-20261031-AN-ENGAGEMENT-OVERRIDES-A-PRESSING-NEED.md
-  ticket_id: TCK-20261031-AN-ENGAGEMENT-OVERRIDES-A-PRESSING-NEED
-  title: 'An engagement overrides a pressing need: with hostiles in sight, tactical
-    skips the survival step though no present threat is on the subject (SURV-07)'
-  tier: standard
-  ticket_type: bug
-  date: '2026-10-31'
-  related_code_areas:
-  - src/ai/tactical.py (hunger arrival ~262-291, in-place survival blocks); src/ai/goals/present_threat.py;
-    src/engine/need_pull.py (need_is_pressing)
-  artifact_files: []
-  tags: []
 - type: ticket
   path: agent-working/tickets/todos/TCK-20261031-AN-INN-BED-IS-CHARGED-TWICE-PER-HOLD.md
   ticket_id: TCK-20261031-AN-INN-BED-IS-CHARGED-TWICE-PER-HOLD

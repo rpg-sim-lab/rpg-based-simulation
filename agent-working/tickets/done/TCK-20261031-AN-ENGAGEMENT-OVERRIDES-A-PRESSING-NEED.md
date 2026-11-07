@@ -1,10 +1,10 @@
 ---
-status: active
+status: historical
 layer: ai
 authority: P1
 audience: agent
 ticket_id: TCK-20261031-AN-ENGAGEMENT-OVERRIDES-A-PRESSING-NEED
-phase: open
+phase: done
 date: 2026-10-31
 tags: []
 ---
@@ -15,7 +15,7 @@ tags: []
 An engagement overrides a pressing need: with hostiles in sight, tactical skips the survival step though no present threat is on the subject (SURV-07)
 
 ## Status
-OPEN (counts first; ruled by rpg-designer 2026-10-31; seated by rpg-planner; not dispatched: needs an owner go, and an order ask is with the owner)
+DONE (landed as built on head 5c86b1b8a, owner approval #715 6697054601, reading 3 corrected #715 6697215821; not pushed at the time of this record)
 
 ## Tier
 standard
@@ -69,6 +69,11 @@ Phase 2: fix shapes for ALL five only after the table reaches rpg-designer.
 - Phase 1 can share F3 investigation item 1's 15-run base (same set and base) if the probe fields are added to that run (planner proposal to the owner).
 
 ## Implementation Notes
+- 2026-11-02 PHASE 2 (code, not yet measured; rpg-designer ruling `.claude/handover/drafts/rpg-designer-surv07-phase2-ruling-ACKED.md`). Predicate pair: `need_pull.need_is_pressing` (`entity_need_is_pressing`) and `tactical_threat.need_yields(entity, hostiles, tick)` (`present_threat.acting_threat_to` is the same predicate over perceived hostiles). `tactical.py`: `need_first` branch (pressing, hostiles in sight, none acting) runs before the presence test, role obligation, cohesion and target selection; the objective step moved unchanged into `src/engine/tactical_objective.py` (new, split into small functions). `tactical_rest.py`: `_in_danger` uses `need_yields` in the pressing branch only. Divergence 2.157, parity STRAT-297, Bible 04 paragraph (DRAFT for rpg-designer).
+- CHANGED EXPECTATIONS (named for the PR body): (1) `tests/unit/engine/test_rest_in_place.py::test_a_present_threat_means_no_rest` now holds at sleep_debt 50 (below the onset); its pressing rows moved to `tests/unit/tactical/test_surv07_precedence_grid.py` (rpg-planner ruling 2026-11-02). A hostile targeting by payload alone at distance 9 lands on REST under a pressing need (not an act). (2) `tests/unit/tools/test_mechanism_registry_completeness_check.py::test_wider_scope_numbers_pinned` scope_files 351 -> 352 for `src/engine/tactical_objective.py` (pre-approved by rpg-planner; taken from the check's real count at the re-sync onto 65d43dfa9; unbound_files stays 247, see the next note).
+- (2026-11-02) src/engine/tactical_objective.py is bound under `tactical_decision` in registries/mechanisms.yaml (rpg-planner ruling), so the unbound_files pin stays 247 and only scope_files moves (351 -> 352).
+- 2026-11-02 S2 REMOVED (rpg-designer correction, memo row 88 S1): tactical_rest.py is back on the AGENCY-07 terms (identical to origin/main); `test_rest_in_place.py` is restored to its original expectations (the 'changed expectation (1)' above no longer applies); the grid file's rest and eat-carried rows now assert row 88. HELD AS DRAFTS (rpg-planner): divergence 2.157, parity STRAT-297, the Bible 04 paragraph and the present_threat.py docstring still describe the S2 shape for the in-place rest/eat sites and are stale on that point until the designer re-reads. 3e3a24d10 is the S2 arm.
+- Disclosures: a pressing subject whose project is not a need project waits (does not engage) while nothing acts on it; `_suspend_project_for_threat` still suspends non-need projects; the unit grid is the only evidence so far (no paired run yet).
 - 2026-11-01 OPEN GRID ROW (designer, from the retention STOP #2): whether a present threat outranks the live project cap is a precedence site. It sits beside CAP_REFUSAL on TCK-20261020-SUSPENDED-PROJECTS-ARE-NEVER-RESUMED-SLOT-LEAK. Before any rule: the causal trace of crowded s46 e14 t366 (displaced record, base behaviour, the chain to the 9 fix-only deaths by attackers 28/30) and e9's t1056 death path. A cap exemption for retreats was tried and dropped (retention afacf1577: 5 death-rise first diffs at cap-exempt adoptions).
 - 2026-10-31 HARM PER TAG (designer's ordering input) cannot come from the F3-base outputs, which hold only per-tag totals. It RIDES ON THIS TICKET'S OWN BASE BATCH: one extended probe = fixed skip counter + per-subject tag id sets + per-subject ticks at/past the starvation line + per-subject ticks at fatigue debt >= 98, + per-subject death cause and tick + per-subject collapse count (designer addition), so deaths by cause and collapses join to tags. All five tags (ENGAGEMENT_OVERRIDES, LOW_HP_RETREAT, TOWN_RETURN, ESCALATED_NEED_SWITCH, FLEE_LINE). The designer fixes the site order from that table before this ticket's fix is planned.
 - 2026-10-31 DESIGNER RULING (SURV-07 family, from the F3-base family table). THE ONE PRECEDENCE LAW P: at every decision site choosing between a need past its escalation onset and any other goal or act, the need wins unless acting_threat_to(subject) holds (memo row 88: a perceived hostile attacking or pursuing the subject, or one that hit it within the window). No owner row is needed. Whether to flee at all stays on present_threat_to (AGENCY-07); where flight is warranted but the hostile is not acting, a pressing need still wins. ONE shared predicate pair, both reads: need_is_pressing(subject) (need_pull ESCALATION_ONSET line) and need_yields(subject, state) = acting_threat_to. Every site calls them; none re-derives them. ONE PRECEDENCE GRID test: {need pressing y/n} x {no hostile / perceived only / present-not-acting / acting} x site -> winner; each site's ticket adds its rows. Provisional order until harm-per-tag is counted: ENGAGEMENT -> LOW-HP-RETREAT -> TOWN-RETURN -> ESCALATED-SWITCH -> FLEE-LINE.
@@ -78,7 +83,28 @@ Phase 2: fix shapes for ALL five only after the table reaches rpg-designer.
 - PROBE DEFECT to fix here before this ticket's own base: the tactical hostiles-present skip counter recorded 0 skips over 131785 evaluate calls, so there is no (pressing, present_threat) split. Lane B's untested guess: the wrapper patched the module attribute `_tac.classify_neighbours`, but `evaluate_entity_intent` may reach the classifier through another binding, so the stored hostiles count stays empty. The AC: the fixed counter must be non-zero on a known case (13 pursues 16) before any base is measured.
 
 ## Test Summary
+- `tests/unit/tactical/test_surv07_precedence_grid.py` and `tests/unit/tactical/test_surv07_hunt_project_grid.py`: presence-skip, follower, rest-in-place, eat-carried, fatigue-arrival and hunt-exemption rows. Owner-reading rows: `test_reading_2_the_served_meal_on_arrival_is_taken_below_the_consequence_line_with_a_non_acting_hostile_in_sight`; `test_reading_3_past_the_consequence_line_a_badly_hurt_subject_with_nothing_acting_takes_the_need_path`; `test_reading_3_below_the_consequence_line_the_emotional_panic_branch_holds_on_its_own_tile`; control, not reading 3: `test_control_not_reading_3_above_the_panic_health_a_pressing_subject_eats`. 24 passed in the precedence grid file.
+- `tests/unit/tools/test_mechanism_registry_completeness_check.py`: scope_files pin 351 -> 352 (`tactical_objective.py`, bound under `tactical_decision`), unbound_files stays 247.
+- Full `tests/unit -m "not slow"` on 0e3851cb5 (repo venv): 9344 passed, 5 skipped, 46 deselected. `make code-health` rc 0 (2 report-only jscpd hits in `src/observability/event_shapers.py`, not in this diff); `make typecheck-py` rc 0, no new mypy errors (scratch-deps venv, python 3.13.14).
+- Measurement (pinned sequential runner, PYTHONHASHSEED=0, 15 runs x 2 arms, 5000 ticks, base 65d43dfa9 vs e844e2845, paired4): people deaths frontier 127 -> 122, urban 51 -> 57 (seed 44 only), crowded 176 -> 164; flee ticks 90579 -> 77254 / 4398 -> 5940 / 17356 -> 15087; pursuit ticks 30617 -> 17498 / 7312 -> 6945 / 21694 -> 16648; neutral4 identical at 1000 ticks. Evidence and hashes: stored artifacts `close_drafts/pr_body_draft.md`, `evidence_readme_draft.md`, `raw_dumps_sha256.txt`.
+- Measured on the sequential reference; the production path differs until TCK-20261103-THE-CONCURRENT-AND-SEQUENTIAL-EXECUTORS-GIVE-DIFFERENT-WORLDS lands. Hot-loop timing not measured (perf pause).
 
 ## Files Changed
+- src: `src/engine/tactical.py` (need_first branch, hunt exemption and helpers), `src/engine/tactical_objective.py` (new: objective step, `_fatigue_arrival_waits`), `src/engine/need_pull.py` (`entity_hunger_is_pressing`), `src/engine/tactical_threat.py` (`need_yields`), `src/engine/lodging.py` (`rest_would_lodge`), `src/engine/tactical_rest.py` (`in_danger`, behaviour-identical refactor of the AGENCY-07 terms), `src/ai/goals/present_threat.py` (`acting_threat_to` delegates to `need_yields`; docstring).
+- tests: the two SURV-07 grid files above; the completeness-check pin.
+- registries/docs: `registries/mechanisms.yaml` (one line: `src/engine/tactical_objective.py::pursue_objective`), `docs/mechanics/04_strategic_cognition.md`, `docs/guidelines/intentional_divergences.md` 2.157, `docs/parity_ledger/strategic_cognition.yaml` STRAT-297, `docs/REGISTRY.yaml`.
+- ticket, staging artifacts moved to `agent-working/stored_artifacts/` , monitoring shards.
 
 ## Completion Summary
+SURV-07 Law P at the tactical survival sites: with a hostile in sight and none acting on the subject (`need_yields`), a subject past its need's escalation onset runs its need path before the presence test, role obligation, cohesion and target selection (a follower included); a subject whose project is not a need project waits instead of engaging a non-acting hostile. Shape S1: `tactical_rest.py` keeps the AGENCY-07 terms. Hunt exemption (rpg-designer): with HUNGER pressing and prey in sight and none acting, the subject takes its target from the prey only.
+
+Owner readings (#715 6697054601 for readings 1-2, land as built on 5c86b1b8a; reading 3 corrected in #715 6697215821):
+1. The rule covers fighting, and group members do not join a target that is not acting on them.
+2. On a food project the character eats its served meal on arrival, before the consequence line as well as past it, with a non-attacking enemy nearby.
+3. Past the consequence line (hunger 95, sleep debt 98) a badly hurt subject (under 15% health) with a pressing need and nothing acting takes the need path; below the line the emotional panic branch holds (row 88 (5)), a disclosed gap owned by TCK-20261028-LOW-HP-RETREAT-BRANCH-HOLDS-A-STARVING-SUBJECT-IN-PLACE-BESIDE-A-NON-ACTING-HOSTILE. Reading 3 was corrected after a unit test showed the panic branch holds below the line; no source change.
+
+Options the owner did not take (#715 6697054601): group defence (an enemy attacking a nearby group member counts as attacking the group) and predator avoidance giving way to a pressing need near its food. Either would be measured on its own. Hit-wake is next in the owner's order.
+
+Open gaps, none a fix in this ticket: wild_creature collapses frontier 1 -> 251 (not caused by the rule; TCK-20261103-A-CREATURE-WITH-BOTH-NEEDS-PRESSING-NEITHER-SLEEPS-NOR-FEEDS-ENOUGH); frontier s42 people held off the inn by avoided predators, predator 45 idling on a dead combat_engage objective (TCK-20261107-A-COMBAT-ENGAGE-PROJECT-TARGETS-A-BODY-TACTICAL-NEVER-SEES-AS-HOSTILE); urban s44 six deaths to one scout (TCK-20261020-A-PURSUING-HOSTILE-WAKES-ITS-TARGET, next in the owner's order); `resolve_multi_attack` records only the first attacker; scheduler wakes read no `last_hit_tick`; Phase 1 family table not checked against plain except urban s42; hot-loop timing not measured.
+
+Measured on the sequential reference; the production path differs until TCK-20261103-THE-CONCURRENT-AND-SEQUENTIAL-EXECUTORS-GIVE-DIFFERENT-WORLDS lands.
