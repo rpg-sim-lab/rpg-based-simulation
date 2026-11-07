@@ -536,6 +536,16 @@ def render_body(tickets: list, spec: dict, warnings: list, exclusions: Optional[
     return "\n".join(parts).strip() + "\n"
 
 
+TICKETLESS_TITLE_SUFFIX = " (no tickets)"
+
+TICKETLESS_WARNING = (
+    "this PR closes no ticket. Rule: every PR closes at least one completed ticket; filings, evidence records "
+    "and seat-ticket notes ride in the next implementation PR on that track. The only exceptions are Dependabot "
+    "PRs and the handover-transit export; week-close and retro batches need a ticket of their own or ride in the "
+    "next agent-working implementation PR. See docs/guides/delivery_process.md, \"PR Lifecycle\". Report-only."
+)
+
+
 def render(
     theme: Optional[str] = None,
     base_ref: str = "origin/main",
@@ -566,7 +576,7 @@ def render(
         spec = json.loads(Path(spec_path).read_text(encoding="utf-8"))
         files = discover_changed_files(run_command, base_ref)
         return {
-            "title": f"{scope}: {_collapse_whitespace(theme)} (no tickets)",
+            "title": f"{scope}: {_collapse_whitespace(theme)}{TICKETLESS_TITLE_SUFFIX}",
             "body": render_ticketless_body(
                 _collapse_whitespace(theme), why.strip(), files, spec, warnings, exclusions=exclusions,
                 governing_files=governing_files, diff_ok=diff_ok,
@@ -825,6 +835,9 @@ def main(argv=None) -> int:
     except Exception as exc:  # noqa: BLE001 - the one deliberate non-zero-exit path
         print(f"INTERNAL ERROR: {exc}", file=sys.stderr)
         return 1
+
+    if not args.check and (result.get("title") or "").endswith(TICKETLESS_TITLE_SUFFIX):
+        print(f"WARNING: {TICKETLESS_WARNING}", file=sys.stderr)
 
     if args.json:
         print("MARKER:" + json.dumps(result))
