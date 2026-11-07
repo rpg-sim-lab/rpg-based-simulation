@@ -7966,6 +7966,22 @@
   - content
   last_verified: '2026-10-09'
 - type: ticket
+  path: agent-working/tickets/done/TCK-20261107-EVERY-PR-CLOSES-A-TICKET.md
+  ticket_id: TCK-20261107-EVERY-PR-CLOSES-A-TICKET
+  title: Every PR closes at least one completed ticket, and fixes are weighed before
+    they are built
+  tier: hotfix
+  ticket_type: chore
+  date: '2026-11-07'
+  related_code_areas:
+  - render
+  - tests/tools/test_delivery_pr_render.py
+  artifact_files: []
+  tags:
+  - delivery
+  - governance
+  - claude-md
+- type: ticket
   path: agent-working/tickets/todos/TCK-20261107-A-COMBAT-ENGAGE-PROJECT-TARGETS-A-BODY-TACTICAL-NEVER-SEES-AS-HOSTILE.md
   ticket_id: TCK-20261107-A-COMBAT-ENGAGE-PROJECT-TARGETS-A-BODY-TACTICAL-NEVER-SEES-AS-HOSTILE
   title: 'A COMBAT_ENGAGE project can target a body tactical never sees as hostile,
@@ -7991,6 +8007,24 @@
   tags:
   - delivery
   - documentation
+- type: ticket
+  path: agent-working/tickets/done/TCK-20261103-THE-CONCURRENT-AND-SEQUENTIAL-EXECUTORS-GIVE-DIFFERENT-WORLDS.md
+  ticket_id: TCK-20261103-THE-CONCURRENT-AND-SEQUENTIAL-EXECUTORS-GIVE-DIFFERENT-WORLDS
+  title: The concurrent and sequential executors give different worlds on the same
+    seed, with no load, against the bit-identical law
+  tier: standard
+  ticket_type: bug
+  date: '2026-11-03'
+  related_code_areas:
+  - ConcurrentExecutionAdapter
+  - tests/integration/kernel/test_executor_determinism.py, test_determinism_suite.py,
+    test_tied_worker_result_order.py, tests/perf/test_concurrency_parity.py
+  - _run_engine
+  artifact_files:
+  - agent-working/stored_artifacts/TCK-20261103-THE-CONCURRENT-AND-SEQUENTIAL-EXECUTORS-GIVE-DIFFERENT-WORLDS/investigation.md
+  - agent-working/stored_artifacts/TCK-20261103-THE-CONCURRENT-AND-SEQUENTIAL-EXECUTORS-GIVE-DIFFERENT-WORLDS/plan.md
+  - agent-working/stored_artifacts/TCK-20261103-THE-CONCURRENT-AND-SEQUENTIAL-EXECUTORS-GIVE-DIFFERENT-WORLDS/test_plan.md
+  tags: []
 - type: ticket
   path: agent-working/tickets/todos/TCK-20261103-A-CREATURE-WITH-BOTH-NEEDS-PRESSING-NEITHER-SLEEPS-NOR-FEEDS-ENOUGH.md
   ticket_id: TCK-20261103-A-CREATURE-WITH-BOTH-NEEDS-PRESSING-NEITHER-SLEEPS-NOR-FEEDS-ENOUGH
@@ -8077,21 +8111,6 @@
   related_code_areas:
   - to_canonical_dict
   - src/core/strategic.py, src/core/cognition.py, src/core/self_model.py, src/core/models/
-  artifact_files: []
-  tags: []
-- type: ticket
-  path: agent-working/tickets/todos/TCK-20261103-THE-CONCURRENT-AND-SEQUENTIAL-EXECUTORS-GIVE-DIFFERENT-WORLDS.md
-  ticket_id: TCK-20261103-THE-CONCURRENT-AND-SEQUENTIAL-EXECUTORS-GIVE-DIFFERENT-WORLDS
-  title: The concurrent and sequential executors give different worlds on the same
-    seed, with no load, against the bit-identical law
-  tier: standard
-  ticket_type: bug
-  date: '2026-11-03'
-  related_code_areas:
-  - ConcurrentExecutionAdapter
-  - tests/integration/kernel/test_executor_determinism.py, test_determinism_suite.py,
-    test_tied_worker_result_order.py, tests/perf/test_concurrency_parity.py
-  - _run_engine
   artifact_files: []
   tags: []
 - type: ticket

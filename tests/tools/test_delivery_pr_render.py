@@ -1375,3 +1375,28 @@ def test_an_unreadable_diff_shows_the_section_with_a_line_saying_so(tmp_path):
     body = pr_render.render(tickets_root=tickets_root, run_command=runner)["body"]
     assert "## Governing paths touched" in body and pr_render.GOVERNING_UNREADABLE in body
     assert pr_render.render_governing_section([], True) == ""  # a clean PR still shows nothing
+
+
+def _patch_render(monkeypatch, tickets_root, runner):
+    real_render = pr_render.render
+    monkeypatch.setattr(
+        pr_render, "render",
+        lambda **kw: real_render(tickets_root=tickets_root, run_command=runner, **kw),
+    )
+
+
+def test_cli_warns_on_stderr_when_a_ticketless_branch_renders(tmp_path, monkeypatch, capsys):
+    tickets_root = tmp_path / TICKETS
+    (tickets_root / "done").mkdir(parents=True)
+    _patch_render(monkeypatch, tickets_root, _docs_only_runner([]))
+    assert pr_render.main(["--theme", "t", "--scope", "ai", "--why", "w", "--json"]) == 0
+    captured = capsys.readouterr()
+    assert "Dependabot" in captured.err and "handover-transit" in captured.err and "PR Lifecycle" in captured.err
+    assert captured.out.startswith("MARKER:") and "Dependabot" not in captured.out
+
+
+def test_cli_does_not_warn_for_a_branch_that_closes_a_ticket(tmp_path, monkeypatch, capsys):
+    tickets_root, runner = _two_ticket_runner(tmp_path)
+    _patch_render(monkeypatch, tickets_root, runner)
+    assert pr_render.main([]) == 0
+    assert "Dependabot" not in capsys.readouterr().err

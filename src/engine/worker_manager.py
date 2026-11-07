@@ -10,6 +10,8 @@ from concurrent.futures import ThreadPoolExecutor, ProcessPoolExecutor, Future
 from typing import TYPE_CHECKING, List, Dict, Any, Optional, Callable
 import multiprocessing
 
+from src.core.worker_protocol import PacketFieldMissingError
+
 if TYPE_CHECKING:
     from src.core.worker_protocol import WorkerPacket, WorkerResult
 
@@ -52,6 +54,8 @@ def _process_chunk_wrapper(packets, worker_fn):
                 chunk_results.append(replace(results, compute_time_ns=elapsed))
             else:
                 chunk_results.append(results)
+        except PacketFieldMissingError:
+            raise  # an undeclared state read stops the run (contract section 4); every other failure below is a no-op
         except Exception:
             chunk_results.append(failure_no_op(packet))
     return chunk_results
@@ -190,15 +194,20 @@ class WorkerManager:
         packets with a FAILURE no-op, in packet order, so the other chunks still commit and each entity keeps its single result slot (§4).
         """
         collected: List["WorkerResult"] = []
+        guard_error: Optional[PacketFieldMissingError] = None
         for future, chunk in futures:
             try:
                 collected.extend(future.result())
+            except PacketFieldMissingError as e:
+                guard_error = guard_error or e  # finish the loop so the inflight counts balance, then stop the run
             except Exception as e:
                 logger.error("Chunk future failure: %s; %d packet(s) become FAILURE no-ops", e, len(chunk))
                 collected.extend(failure_no_op(p) for p in chunk)
             finally:
                 with self._stats_lock:
                     self._inflight_count -= 1
+        if guard_error is not None:
+            raise guard_error
         return collected
 
     def _execute_locally(
@@ -241,6 +250,8 @@ class WorkerManager:
             elif isinstance(result, WorkerResult):
                 result = replace(result, compute_time_ns=elapsed)
             return result
+        except PacketFieldMissingError:
+            raise  # an undeclared state read stops the run (contract section 4)
         except Exception as e:
             logger.error("Internal worker crash: %s", e)
             return failure_no_op(packet)

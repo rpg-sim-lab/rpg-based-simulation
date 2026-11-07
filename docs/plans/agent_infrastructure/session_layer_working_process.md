@@ -389,9 +389,9 @@ The plan makes them role obligations so they are not re-taught.
   implementer acknowledges before starting.
 - **One writer per worktree and branch**: each role is the writer of its own worktree (designers and planners
   have their own since TCK-20261007-SESSION-PER-ROLE-WORKTREES, and land their own PRs; the implementer's is unchanged). The planner's detail tickets and plans are handed
-  to the implementer to commit with the batch, which is also why there are no plan-only PRs. Peers
+  to the implementer to commit with the batch (the PR-size rule: `docs/guides/delivery_process.md`, "PR Lifecycle"). Peers
   never push to another role's branch.
-- **One open PR per track**: follow-ups fold into the open PR, no plan-only PRs, no stacked PR
+- **One open PR per track**: follow-ups fold into the open PR (see "PR Lifecycle" for the PR-size rule), no stacked PR
   unless dependent. After a green PR the implementer may start the next batch without waiting for
   merge (stack when dependent). Merge is the user's call.
 - **A batch is not done until its Finalize ran** (the PR #276 lesson): done-checker static pass,
