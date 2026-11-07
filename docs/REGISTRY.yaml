@@ -7982,6 +7982,20 @@
   - governance
   - claude-md
 - type: ticket
+  path: agent-working/tickets/done/TCK-20261107-THREE-CROWDED-V3-STARVATIONS-GET-SCOPED-KNOWN-ENTRIES.md
+  ticket_id: TCK-20261107-THREE-CROWDED-V3-STARVATIONS-GET-SCOPED-KNOWN-ENTRIES
+  title: Five V3 starvations (crowded_frontier s42 e30, s45 e37, s45 e31, s46 e9;
+    frontier_living_world s45 e53) get owner-accepted scoped known entries that expire
+    on 2026-11-30
+  tier: hotfix
+  ticket_type: chore
+  date: '2026-11-07'
+  related_code_areas:
+  - tools/test_architecture/rpg_gate_known.yaml
+  artifact_files: []
+  tags:
+  - testing
+- type: ticket
   path: agent-working/tickets/todos/TCK-20261107-A-COMBAT-ENGAGE-PROJECT-TARGETS-A-BODY-TACTICAL-NEVER-SEES-AS-HOSTILE.md
   ticket_id: TCK-20261107-A-COMBAT-ENGAGE-PROJECT-TARGETS-A-BODY-TACTICAL-NEVER-SEES-AS-HOSTILE
   title: 'A COMBAT_ENGAGE project can target a body tactical never sees as hostile,
