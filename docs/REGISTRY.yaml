@@ -7982,6 +7982,20 @@
   - governance
   - claude-md
 - type: ticket
+  path: agent-working/tickets/done/TCK-20261107-PINNED-RUNNER-RULE-EXECUTOR-CLAUSE-AFTER-837.md
+  ticket_id: TCK-20261107-PINNED-RUNNER-RULE-EXECUTOR-CLAUSE-AFTER-837
+  title: 'The pinned-runner rule''s executor clause is replaced now that #837 has
+    merged'
+  tier: hotfix
+  ticket_type: chore
+  date: '2026-11-07'
+  related_code_areas:
+  - tests/unit/kernel/test_executor_context_parity.py, tests/integration/kernel/test_executor_equivalence_long.py
+  artifact_files: []
+  tags:
+  - delivery
+  - documentation
+- type: ticket
   path: agent-working/tickets/done/TCK-20261107-THREE-CROWDED-V3-STARVATIONS-GET-SCOPED-KNOWN-ENTRIES.md
   ticket_id: TCK-20261107-THREE-CROWDED-V3-STARVATIONS-GET-SCOPED-KNOWN-ENTRIES
   title: Five V3 starvations (crowded_frontier s42 e30, s45 e37, s45 e31, s46 e9;
@@ -9675,6 +9689,22 @@
   tags:
   - testing
   - determinism
+- type: ticket
+  path: agent-working/tickets/inprogress/TCK-20261027-SESSION-ROUTE-OTHERS-OWNS-BEAT-CATCHALL-ROUTE.md
+  ticket_id: TCK-20261027-SESSION-ROUTE-OTHERS-OWNS-BEAT-CATCHALL-ROUTE
+  title: '`route --from <domain>`: another domain''s `owns` claim should beat the
+    asking domain''s catch-all `tools/**` route'
+  tier: hotfix
+  ticket_type: bug
+  date: '2026-10-27'
+  related_code_areas:
+  - tools/sessions/route.py
+  - tests/tools/test_session_route.py
+  - registries/session_roles.yaml (read only)
+  artifact_files: []
+  tags:
+  - ai
+  - governance
 - type: ticket
   path: agent-working/tickets/todos/TCK-20261027-HUNGER-CAPACITY-DERIVATION-HAS-NO-LIVE-CALLER.md
   ticket_id: TCK-20261027-HUNGER-CAPACITY-DERIVATION-HAS-NO-LIVE-CALLER
