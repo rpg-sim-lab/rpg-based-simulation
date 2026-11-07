@@ -7966,6 +7966,20 @@
   - content
   last_verified: '2026-10-09'
 - type: ticket
+  path: agent-working/tickets/done/TCK-20261108-README-DEBUG-RUN-NAMES-AN-ENV-VAR-THE-CODE-NEVER-READS.md
+  ticket_id: TCK-20261108-README-DEBUG-RUN-NAMES-AN-ENV-VAR-THE-CODE-NEVER-READS
+  title: The README's full-observability run sets OBS_MODE, which the code never reads,
+    so the command runs in the default LIGHT mode
+  tier: hotfix
+  ticket_type: repair
+  date: '2026-11-08'
+  related_code_areas:
+  - src/observability/config.py, Makefile
+  artifact_files: []
+  tags:
+  - documentation
+  - observability
+- type: ticket
   path: agent-working/tickets/done/TCK-20261107-EVERY-PR-CLOSES-A-TICKET.md
   ticket_id: TCK-20261107-EVERY-PR-CLOSES-A-TICKET
   title: Every PR closes at least one completed ticket, and fixes are weighed before
