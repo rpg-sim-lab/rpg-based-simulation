@@ -16,7 +16,10 @@ the subject will have ON ARRIVAL, not the need it has now. Pure functions: no st
 """
 from __future__ import annotations
 
-from typing import Optional, Tuple
+from typing import TYPE_CHECKING, Optional, Tuple
+
+if TYPE_CHECKING:
+    from src.core.state import EntityState
 
 # The pull is the raw need below ESCALATION_ONSET (a fraction of the consequence line), then a smoothstep adds up to
 # ESCALATION_AMPLITUDE by ESCALATION_FULL.
@@ -76,6 +79,16 @@ def need_is_pressing(hunger: float, sleep_debt: float) -> bool:
     will have on arrival. At the human hunger rate (0.05 a tick) even a 190-tile walk adds about 9.5, so waking at 57 still leaves
     the decision well before the line of 95."""
     return hunger >= ESCALATION_ONSET * HUNGER_LINE or sleep_debt >= ESCALATION_ONSET * SLEEP_LINE
+
+
+def entity_need_is_pressing(entity: "EntityState") -> bool:
+    """`need_is_pressing` read off a subject: the one way a site asks "is this subject's need pressing" (the pair with `need_yields`)."""
+    return need_is_pressing(entity.biological.hunger, entity.biological.sleep_debt)
+
+
+def entity_hunger_is_pressing(entity: "EntityState") -> bool:
+    """The hunger half of `need_is_pressing`, read off a subject: true when its hunger alone is at or past the escalation onset."""
+    return entity.biological.hunger >= ESCALATION_ONSET * HUNGER_LINE
 
 
 def hunger_pull(raw_utility: float, hunger: float, hunger_rate: float, travel_tiles: float) -> float:

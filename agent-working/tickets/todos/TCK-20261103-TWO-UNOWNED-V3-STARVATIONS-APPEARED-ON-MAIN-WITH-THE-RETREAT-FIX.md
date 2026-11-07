@@ -57,6 +57,7 @@ Not a credit to ENG: e844e2845 lacking the record on s42 is a different world (r
 - The owner has the row if a merged fix fed either, or a known-entry decision is needed.
 - The routing decision is recorded.
 - Hot-loop: no (no code yet). A fix is its own ticket.
+- Known entry: the PR that fixes e37 (this ticket's close or the fix ticket it spawns, which then carries this line) deletes the V3 entry for crowded_frontier seed 45 entity 37 from tools/test_architecture/rpg_gate_known.yaml (owner, #715 6692734974 item 2; the file takes only a date expiry, `expires_on: 2026-11-30`, so the delete is the PR's job, per testing-planner). If e37 still starves on the fix's pinned run, keep the entry and bring that to the owner.
 
 ## Related Tickets
 - TCK-20261031-A-RETREAT-PROJECT-OUTLIVES-ITS-THREAT (#826)

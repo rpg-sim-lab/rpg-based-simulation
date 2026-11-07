@@ -3,7 +3,7 @@ from __future__ import annotations
 import hashlib
 from typing import Any, Dict
 
-from src.core.state import AuthoritativeState
+from src.core.state import GROUP_ID_BASE, AuthoritativeState
 
 
 class StateFingerprinter:
@@ -101,7 +101,7 @@ class StateFingerprinter:
         macro_ident = (
             f"maturity={state.maturity}:"
             f"last_calamity_tick={state.last_calamity_tick}:"
-            f"movement_count={state.movement_count}" + ("" if state.grief_drained_tick == -1 else f":grief_drained_tick={state.grief_drained_tick}")
+            f"movement_count={state.movement_count}" + StateFingerprinter._counter_suffix(state)
         )
 
         raw_data = (
@@ -245,6 +245,13 @@ class StateFingerprinter:
         )
 
     @staticmethod
+    def _counter_suffix(state: AuthoritativeState) -> str:
+        """Counters that join the fingerprint only once they differ from their start value (older fingerprints stay as they were)."""
+        grief = "" if state.grief_drained_tick == -1 else f":grief_drained_tick={state.grief_drained_tick}"
+        group = "" if state.next_group_id == GROUP_ID_BASE else f":next_group_id={state.next_group_id}"
+        return grief + group
+
+    @staticmethod
     def _group_identity(state: AuthoritativeState) -> str:
         """
         Return deterministic group coordination identity.
@@ -278,6 +285,8 @@ class StateFingerprinter:
                 f"target={shared_target_kind}:{shared_target_id}:"
                 f"intent={shared_intent}:"
                 f"contract={getattr(group, 'contract_id', None)}"
+                # Bound groups only: an unbound group's string is byte-identical to before.
+                + (f":holder={group.contract_holder_id}" if getattr(group, "contract_holder_id", None) is not None else "")
             )
 
         return "|".join(group_parts)

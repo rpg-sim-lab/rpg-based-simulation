@@ -83,6 +83,16 @@ def _counter_past_adds(counter: int, adds: Any) -> int:
     return max([counter, *(ent.id + 1 for ent in adds)]) if adds else counter
 
 
+def _next_counters(prior_state: Any, update: Any) -> tuple:
+    """The four id counters after this update: node, entity (past this update's adds), group (never lowered), item instance."""
+    node = update.next_node_id_set if update.next_node_id_set is not None else getattr(prior_state, "next_node_id", 1000)
+    entity = update.next_entity_id_set if update.next_entity_id_set is not None else getattr(prior_state, "next_entity_id", 1)
+    group = max(prior_state.next_group_id, update.next_group_id_set or 0)
+    entity = _counter_past_adds(entity, update.entities_add)
+    item = update.next_item_instance_id_set if update.next_item_instance_id_set is not None else getattr(prior_state, "next_item_instance_id", 1)
+    return node, entity, group, item
+
+
 class ApplyPath:
     """
     The authoritative state application pipeline.
@@ -249,7 +259,8 @@ class ApplyPath:
         
         # 1. Build Execution Plan
         # ---------------------------------------------------------------------
-        from src.engine.apply_plan import ApplyPlanBuilder
+        from src.engine.apply_plan import ApplyPlanBuilder, resolve_group_adds
+        update = resolve_group_adds(prior_state.groups, update)
         plan = ApplyPlanBuilder.build_plan(prior_state, update, tick, cadence, passive, ApplyPath._compute_entity_changes)
         
         new_groups = plan.world_collection_changes["groups"]
@@ -344,10 +355,7 @@ class ApplyPath:
 
         new_pressure = update.pressure_signals_set if update.pressure_signals_set is not None else prior_state.pressure_signals
         new_mode = update.current_mode_set if update.current_mode_set is not None else getattr(prior_state, "current_mode", 0)
-        new_next_node = update.next_node_id_set if update.next_node_id_set is not None else getattr(prior_state, "next_node_id", 1000)
-        new_next_entity = update.next_entity_id_set if update.next_entity_id_set is not None else getattr(prior_state, "next_entity_id", 1)
-        new_next_entity = _counter_past_adds(new_next_entity, update.entities_add)
-        new_next_item_instance = update.next_item_instance_id_set if update.next_item_instance_id_set is not None else getattr(prior_state, "next_item_instance_id", 1)
+        new_next_node, new_next_entity, new_next_group, new_next_item_instance = _next_counters(prior_state, update)
         new_maturity = update.maturity_set if update.maturity_set is not None else prior_state.maturity
         new_last_calamity = update.last_calamity_tick_set if update.last_calamity_tick_set is not None else prior_state.last_calamity_tick
         new_grief_drained = update.grief_drained_tick_set if update.grief_drained_tick_set is not None else prior_state.grief_drained_tick
@@ -526,6 +534,7 @@ class ApplyPath:
             processed_transaction_ids=new_processed,
             next_node_id=new_next_node,
             next_entity_id=new_next_entity,
+            next_group_id=new_next_group,
             item_instances=new_item_instances,
             next_item_instance_id=new_next_item_instance,
             _active_nodes_grid=new_active_nodes,

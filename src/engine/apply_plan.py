@@ -49,6 +49,44 @@ class ApplyPlan:
     grid_invalidated: bool = False
 
 
+GROUP_ADD_ID_TAKEN = "group_add_id_taken"
+
+
+def resolve_group_adds(prior_groups: Any, update: StateUpdate) -> StateUpdate:
+    """An add never replaces: a record whose id is already in the store (live or dissolved, or an earlier add this tick) is rejected.
+
+    The rejection is counted in ``rejections_delta`` and every ``group_id_set`` aimed at the rejected id is removed for the rejected
+    record's members (except members the same-tick winner of that id also lists), so no member's group_id is written for a rejected add. In-place updates are not touched.
+    """
+    if not update.groups_add:
+        return update
+    taken: Dict[int, Any] = dict(prior_groups)
+    added_now: set = set()
+    accepted: List[Any] = []
+    rejected: List[Any] = []
+    for g in update.groups_add:
+        if g.id in taken:
+            rejected.append((g, taken[g.id], g.id in added_now))
+        else:
+            taken[g.id] = g
+            added_now.add(g.id)
+            accepted.append(g)
+    if not rejected:
+        return update
+    entity_updates = dict(update.entity_updates)
+    for g, holder, holder_added_now in rejected:
+        # No member's group_id is written for a rejected add. The one exception is a member the record that WON this id in the same
+        # tick also lists: that write belongs to the winner (same id), not to the rejected record.
+        keep = set(holder.member_ids) if holder_added_now else set()
+        for m_id in sorted(g.member_ids - keep):
+            eu = entity_updates.get(m_id)
+            if eu is not None and eu.group_id_set == g.id:
+                entity_updates[m_id] = _dc_replace(eu, group_id_set=None)
+    delta = dict(update.rejections_delta)
+    delta[GROUP_ADD_ID_TAKEN] = delta.get(GROUP_ADD_ID_TAKEN, 0) + len(rejected)
+    return _dc_replace(update, groups_add=accepted, entity_updates=entity_updates, rejections_delta=delta)
+
+
 class ApplyPlanBuilder:
     """
     Constructs a structured ApplyPlan from an authoritative StateUpdate.
@@ -102,7 +140,7 @@ class ApplyPlanBuilder:
         
         # 2. Determine Collections to Copy
         cols = plan.collections_to_copy
-        if update.groups_remove or update.groups_add_or_update: cols.add("groups")
+        if update.groups_remove or update.groups_add_or_update or update.groups_add: cols.add("groups")
         if update.world_updates: cols.add("regions")
         if update.node_updates or update.nodes_add: cols.add("nodes")
         if update.chest_updates or update.chest_add_or_update: cols.add("chests")
@@ -120,7 +158,7 @@ class ApplyPlanBuilder:
         if "groups" in cols:
             for g_id in update.groups_remove:
                 new_groups.pop(g_id, None)
-            for g in update.groups_add_or_update:
+            for g in (*update.groups_add, *update.groups_add_or_update):
                 new_groups[g.id] = g
         plan.world_collection_changes["groups"] = new_groups
 

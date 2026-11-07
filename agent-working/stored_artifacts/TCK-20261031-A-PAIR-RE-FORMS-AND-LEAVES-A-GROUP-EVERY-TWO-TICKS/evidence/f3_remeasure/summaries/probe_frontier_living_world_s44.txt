@@ -1,0 +1,26 @@
+hook cohesion True decision rows 744 leave rows 115 claim rows 137
+== counts by (phase, kind, role-before, chosen, bound, change within 10 ticks):
+  388 ('groups', 'NO_CHANGE', 'other', '-', '-', 'same')
+  314 ('groups', 'NO_CHANGE', 'leader', '-', '-', 'same')
+  10 ('groups', 'NO_CHANGE', 'other', '-', '-', 'goal')
+  7 ('groups', 'NO_CHANGE', 'leader', '-', '-', 'loc')
+  5 ('groups', 'DISSOLVED:BINDING_CONTRACT_NOT_ACTIVE', 'other', '-', '-', 'same')
+  4 ('groups', 'DISSOLVED:BINDING_CONTRACT_NOT_ACTIVE', 'leader', '-', '-', 'same')
+  4 ('groups', 'NO_CHANGE', 'other', '-', '-', 'loc')
+  3 ('groups', 'NO_CHANGE', 'other', '-', '-', 'goal+loc')
+  3 ('groups', 'FORMATION', 'leader', 'CHOSEN', 'BOUND', 'same')
+  3 ('groups', 'NO_CHANGE', 'leader', '-', '-', 'goal+loc')
+  2 ('groups', 'FORMATION', 'other', '-', '-', 'same')
+  1 ('groups', 'FORMATION', 'other', '-', '-', 'loc')
+== by kind x change: {('NO_CHANGE', 'same'): 702, ('NO_CHANGE', 'goal+loc'): 6, ('DISSOLVED:BINDING_CONTRACT_NOT_ACTIVE', 'same'): 9, ('FORMATION', 'same'): 5, ('NO_CHANGE', 'goal'): 10, ('FORMATION', 'loc'): 1, ('NO_CHANGE', 'loc'): 11}
+== total split: {'same': 716, 'goal+loc': 6, 'goal': 10, 'loc': 12}
+== lodged stayers CHOSEN leader or BOUND holder: 3
+   {'t': 1684, 'gid': 10078, 'm': 4, 'kind': 'FORMATION', 'lodged_in': 20003, 'work': 'ENTITY_ACT', 'reason': None, 't10': {'alive': True, 'lodged_in': 20003, 'work': 'ENTITY_ACT', 'reason': None, 'obj': 'fatigue_20003', 'pos': [39.0, 23.0]}}
+   {'t': 1785, 'gid': 10080, 'm': 1, 'kind': 'FORMATION', 'lodged_in': 20003, 'work': 'ENTITY_ACT', 'reason': None, 't10': {'alive': True, 'lodged_in': 20003, 'work': 'ENTITY_ACT', 'reason': None, 'obj': 'fatigue_20003', 'pos': [39.0, 23.0]}}
+   {'t': 1892, 'gid': 10082, 'm': 1, 'kind': 'FORMATION', 'lodged_in': 20003, 'work': 'ENTITY_ACT', 'reason': None, 't10': {'alive': True, 'lodged_in': 20003, 'work': 'ENTITY_ACT', 'reason': None, 'obj': 'fatigue_20003', 'pos': [39.0, 23.0]}}
+== DEFEAT deaths:
+   {'t': 72, 'e': 19, 'cause': 'DEFEAT', 'killer': 14, 'hazard': None, 'gid': 10005, 'role': 'LEADER', 'grp_leader': 19} last_lodged None last_leave None near_lodge50 False groups_within50 [(10005, 37)]
+   {'t': 244, 'e': 17, 'cause': 'DEFEAT', 'killer': 30, 'hazard': None, 'gid': None, 'role': None, 'grp_leader': None} last_lodged None last_leave None near_lodge50 False groups_within50 []
+   {'t': 1369, 'e': 38, 'cause': 'DEFEAT', 'killer': 30, 'hazard': None, 'gid': None, 'role': None, 'grp_leader': None} last_lodged 833 last_leave 834 near_lodge50 False groups_within50 []
+   {'t': 1506, 'e': 37, 'cause': 'DEFEAT', 'killer': 30, 'hazard': None, 'gid': None, 'role': None, 'grp_leader': None} last_lodged None last_leave None near_lodge50 False groups_within50 []
+   {'t': 1581, 'e': 30, 'cause': 'DEFEAT', 'killer': 6, 'hazard': None, 'gid': 10073, 'role': 'LEADER', 'grp_leader': 30} last_lodged None last_leave None near_lodge50 False groups_within50 [(10073, 1538)]

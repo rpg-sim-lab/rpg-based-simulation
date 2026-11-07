@@ -13,6 +13,7 @@ if TYPE_CHECKING:
     from src.domains.fame.legend import LegendFact
     from src.domains.belief_institution.model import BeliefInstitution
 from src.core.strategic import StrategicComponent
+from src.core.group_record import GroupBindingError, GroupRecord  # noqa: F401  (re-exported: pickles name src.core.state.GroupRecord)
 from src.core.death_cause import DeathRecord
 from src.core.enums import Faction, EntityRole, DiplomaticState, PassiveDeathCause
 from src.core.movement_modes import MovementMode
@@ -716,64 +717,6 @@ class AptitudeComponent:
 
 
 @dataclass(frozen=True, slots=True)
-class GroupRecord:
-    """Authoritative state for a multi-entity coordination unit."""
-    id: int
-    leader_id: int
-    member_ids: Set[int]
-    anchor: tuple[float, float]
-    shared_target_id: Optional[int] = None
-    contract_id: Optional[str] = None
-    cohesion_radius: float = 5.0
-    last_updated_tick: int = 0
-    roles: Dict[int, str] = field(default_factory=dict) # entity_id -> role_name
-    str_apt: float = 1.0
-    int_apt: float = 1.0
-    agi_apt: float = 1.0
-    vit_apt: float = 1.0
-    end_apt: float = 1.0
-    formation_tick: int = 0
-    escort_target_id: Optional[int] = None
-    grievance_log: Tuple[str, ...] = ()
-    reward_pool: int = 0
-    last_leadership_check_tick: int = 0
-    dissolution_tick: Optional[int] = None
-    composition_score: float = 0.0  # PartyCompositionScorer result at formation (SOC-232)
-    _canonical_cache: Any = field(default=None, init=False, repr=False, compare=False)
-
-    def to_canonical_dict(self) -> Dict[str, Any]:
-        if self._canonical_cache is not None:
-            return self._canonical_cache
-        res = {
-            "id": self.id,
-            "leader_id": self.leader_id,
-            "member_ids": sorted(list(self.member_ids)),
-            "anchor": self.anchor,
-            "shared_target_id": self.shared_target_id,
-            "contract_id": self.contract_id,
-            "cohesion_radius": self.cohesion_radius,
-            "last_updated_tick": self.last_updated_tick,
-            "roles": {str(k): v for k, v in sorted(self.roles.items())},
-            "aptitudes": {
-                "str": self.str_apt,
-                "int": self.int_apt,
-                "agi": self.agi_apt,
-                "vit": self.vit_apt,
-                "end": self.end_apt
-            },
-            "formation_tick": self.formation_tick,
-            "escort_target_id": self.escort_target_id,
-            "grievance_log": list(self.grievance_log),
-            "reward_pool": self.reward_pool,
-            "last_leadership_check_tick": self.last_leadership_check_tick,
-            "dissolution_tick": self.dissolution_tick,
-            "composition_score": self.composition_score,
-        }
-        object.__setattr__(self, "_canonical_cache", res)
-        return res
-
-
-@dataclass(frozen=True, slots=True)
 class FactionSentiment:
     """A first-class directed faction-to-faction relationship record (E53-sentiment).
 
@@ -1327,6 +1270,19 @@ class CampState:
         return res
 
 
+GROUP_ID_BASE = 10000
+FACTION_SQUAD_ROLE = "FACTION_SQUAD"
+
+
+def seeded_next_group_id(groups: Any) -> int:
+    """max(10000, highest non-squad group id + 1); squad records (hash ids) are skipped by role."""
+    ids = [
+        g_id for g_id, g in groups.items()
+        if isinstance(g_id, int) and FACTION_SQUAD_ROLE not in getattr(g, "roles", {}).values()
+    ]
+    return max([GROUP_ID_BASE, *(i + 1 for i in ids)])
+
+
 @dataclass(frozen=True, slots=True)
 # VERIFIED v2: authoritative_state_model
 class AuthoritativeState:
@@ -1540,6 +1496,12 @@ class AuthoritativeState:
     next_node_id: int = 1000
     next_entity_id: int = 1
     next_item_instance_id: int = 1
+    # Group id counter (TCK-20261031-A-NEW-GROUP-ID-OVERWRITES-A-LIVE-GROUP): only rises; decision
+    # code reads it, ApplyPath advances it from StateUpdate.next_group_id_set. Squad records (hash
+    # ids, FACTION_SQUAD role) never advance it.
+    # Keep this the LAST field: a slotted dataclass unpickles positionally (zip of fields and the saved tuple), so a field inserted mid-class
+    # would receive the older checkpoint's next field's value instead of being absent.
+    next_group_id: int = GROUP_ID_BASE  # never None; nothing seeds it at construction. A checkpoint that lacks the slot is filled by checkpoint_fields (FIELD_RULES) at restore, then checked there
 
     def to_readonly(self) -> AuthoritativeState:
         """Returns a read-only view of the entire world state."""

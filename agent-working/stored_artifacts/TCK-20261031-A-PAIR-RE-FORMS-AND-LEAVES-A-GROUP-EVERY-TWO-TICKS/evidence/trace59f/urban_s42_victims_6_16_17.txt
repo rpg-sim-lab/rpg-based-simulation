@@ -1,0 +1,71 @@
+FIRST STATE DIFF (any key): 15 [('20', ['group_id']), ('30', ['group_id'])]
+FIRST DIFF outside identity/group_id/strategic: (68, '23', ['position', 'navigation', 'task'])
+STATIC (spawn) rows for watch entities, branch: {'6': {'kind': 'worker', 'role': '4', 'faction': '2', 'class_id': 'NOVICE', 'name': 'None', 'pos0': [27.0, 38.0]}, '14': {'kind': 'scout', 'role': '5', 'faction': '1', 'class_id': 'NOVICE', 'name': 'None', 'pos0': [74.0, 60.0]}, '15': {'kind': 'scout', 'role': '5', 'faction': '1', 'class_id': 'NOVICE', 'name': 'None', 'pos0': [41.0, 45.0]}, '16': {'kind': 'scout', 'role': '5', 'faction': '1', 'class_id': 'NOVICE', 'name': 'None', 'pos0': [64.0, 57.0]}, '17': {'kind': 'scout', 'role': '5', 'faction': '1', 'class_id': 'NOVICE', 'name': 'None', 'pos0': [91.0, 45.0]}, '20': {'kind': 'guard', 'role': '5', 'faction': '2', 'class_id': 'WARRIOR', 'name': 'None', 'pos0': [80.0, 42.0]}, '21': {'kind': 'guard', 'role': '5', 'faction': '2', 'class_id': 'WARRIOR', 'name': 'None', 'pos0': [57.0, 41.0]}, '23': {'kind': 'hero', 'role': '0', 'faction': '0', 'class_id': 'MAGE', 'name': 'None', 'pos0': [34.0, 13.0]}, '26': {'kind': 'merchant', 'role': '1', 'faction': '3', 'class_id': 'NOVICE', 'name': 'None', 'pos0': [66.0, 11.0]}, '29': {'kind': 'merchant', 'role': '1', 'faction': '3', 'class_id': 'NOVICE', 'name': 'None', 'pos0': [51.0, 43.0]}, '30': {'kind': 'merchant', 'role': '1', 'faction': '3', 'class_id': 'NOVICE', 'name': 'None', 'pos0': [73.0, 43.0]}}
+
+== entity 6 on branch: death {'t': 328, 'cause': 'COMBAT', 'hazard': None, 'att': 14, 'pos': [39.0, 35.0], 'hp': 0}
+ t268(-60) pos=(39.0, 31.0) hp=52 gid=10009 grp[leader,holder,contract,shared]=[18, 18, 'cnt_recruit_18_6_173', None] work=ENTITY_ACT reason=None tgt=None proj=GoalKind.RECOVER
+ t275(-53) pos=(39.0, 31.0) hp=53 gid=None grp[leader,holder,contract,shared]=None work=ENTITY_ACT reason=None tgt=None proj=GoalKind.RECOVER
+ t305(-23) pos=(39.0, 32.0) hp=57 gid=None grp[leader,holder,contract,shared]=None work=ENTITY_MOVE reason=INTERCEPTING tgt=14 proj=GoalKind.RECOVER
+ t314(-14) pos=(39.0, 35.0) hp=58 gid=None grp[leader,holder,contract,shared]=None work=ENTITY_ACT reason=None tgt=None proj=GoalKind.RECOVER
+ t315(-13) pos=(39.0, 35.0) hp=39 hp 58->39 gid=None grp[leader,holder,contract,shared]=None work=ENTITY_ACT reason=None tgt=14 proj=GoalKind.COMBAT_ENGAGE
+ t317(-11) pos=(39.0, 35.0) hp=20 hp 39->20 gid=None grp[leader,holder,contract,shared]=None work=ENTITY_ACT reason=None tgt=14 proj=GoalKind.COMBAT_ENGAGE
+ t326(-2) pos=(39.0, 35.0) hp=2 hp 21->2 gid=None grp[leader,holder,contract,shared]=None work=ENTITY_ACT reason=None tgt=None proj=GoalKind.COMBAT_ENGAGE
+ t327(-1) pos=(39.0, 35.0) hp=2 gid=None grp[leader,holder,contract,shared]=None work=ENTITY_ACT reason=None tgt=None proj=GoalKind.COMBAT_ENGAGE
+ t328(-0) pos=(39.0, 35.0) hp=0 hp 2->0 gid=None grp[leader,holder,contract,shared]=None work=ENTITY_ACT reason=None tgt=None proj=GoalKind.COMBAT_ENGAGE
+
+== entity 6 on base: death None
+ t1940(-60) pos=(42.0, 31.0) hp=99 gid=10021 grp[leader,holder,contract,shared]=[7, None, 'cnt_recruit_7_22_449', None] work=ENTITY_ACT reason=None tgt=None proj=GoalKind.FATIGUE
+ t1975(-25) pos=(43.0, 31.0) hp=98 gid=10021 grp[leader,holder,contract,shared]=[7, None, 'cnt_recruit_7_22_449', None] work=ENTITY_ACT reason=None tgt=None proj=GoalKind.HUNGER
+ t1999(-1) pos=(42.0, 32.0) hp=98 gid=10021 grp[leader,holder,contract,shared]=[7, None, 'cnt_recruit_7_22_449', None] work=ENTITY_ACT reason=None tgt=None proj=GoalKind.HUNGER
+ t2000(-0) pos=(42.0, 32.0) hp=98 gid=10021 grp[leader,holder,contract,shared]=[7, None, 'cnt_recruit_7_22_449', None] work=ENTITY_ACT reason=None tgt=None proj=GoalKind.HUNGER
+FIRST STATE DIFF (any key): 15 [('20', ['group_id']), ('30', ['group_id'])]
+FIRST DIFF outside identity/group_id/strategic: (68, '23', ['position', 'navigation', 'task'])
+STATIC (spawn) rows for watch entities, branch: {'6': {'kind': 'worker', 'role': '4', 'faction': '2', 'class_id': 'NOVICE', 'name': 'None', 'pos0': [27.0, 38.0]}, '14': {'kind': 'scout', 'role': '5', 'faction': '1', 'class_id': 'NOVICE', 'name': 'None', 'pos0': [74.0, 60.0]}, '15': {'kind': 'scout', 'role': '5', 'faction': '1', 'class_id': 'NOVICE', 'name': 'None', 'pos0': [41.0, 45.0]}, '16': {'kind': 'scout', 'role': '5', 'faction': '1', 'class_id': 'NOVICE', 'name': 'None', 'pos0': [64.0, 57.0]}, '17': {'kind': 'scout', 'role': '5', 'faction': '1', 'class_id': 'NOVICE', 'name': 'None', 'pos0': [91.0, 45.0]}, '20': {'kind': 'guard', 'role': '5', 'faction': '2', 'class_id': 'WARRIOR', 'name': 'None', 'pos0': [80.0, 42.0]}, '21': {'kind': 'guard', 'role': '5', 'faction': '2', 'class_id': 'WARRIOR', 'name': 'None', 'pos0': [57.0, 41.0]}, '23': {'kind': 'hero', 'role': '0', 'faction': '0', 'class_id': 'MAGE', 'name': 'None', 'pos0': [34.0, 13.0]}, '26': {'kind': 'merchant', 'role': '1', 'faction': '3', 'class_id': 'NOVICE', 'name': 'None', 'pos0': [66.0, 11.0]}, '29': {'kind': 'merchant', 'role': '1', 'faction': '3', 'class_id': 'NOVICE', 'name': 'None', 'pos0': [51.0, 43.0]}, '30': {'kind': 'merchant', 'role': '1', 'faction': '3', 'class_id': 'NOVICE', 'name': 'None', 'pos0': [73.0, 43.0]}}
+
+== entity 16 on branch: death {'t': 453, 'cause': 'COMBAT', 'hazard': None, 'att': 4, 'pos': [31.0, 27.0], 'hp': 0}
+ t393(-60) pos=(31.0, 27.0) hp=70 gid=10020 grp[leader,holder,contract,shared]=[16, 16, 'cnt_recruit_16_14_302', 3] work=ENTITY_ACT reason=None tgt=3 proj=GoalKind.COMBAT_ENGAGE
+ t394(-59) pos=(31.0, 27.0) hp=70 gid=10020 grp[leader,holder,contract,shared]=[16, 16, 'cnt_recruit_16_14_302', 3] work=ENTITY_ACT reason=None tgt=None proj=GoalKind.COMBAT_ENGAGE
+ t395(-58) pos=(31.0, 27.0) hp=70 gid=10020 grp[leader,holder,contract,shared]=[16, 16, 'cnt_recruit_16_14_302', None] work=ENTITY_ACT reason=INSUFFICIENT_READINESS tgt=11 proj=None
+ t396(-57) pos=(31.0, 27.0) hp=70 gid=10020 grp[leader,holder,contract,shared]=[16, 16, 'cnt_recruit_16_14_302', 11] work=ENTITY_ACT reason=INSUFFICIENT_READINESS tgt=11 proj=None
+ t400(-53) pos=(31.0, 27.0) hp=70 gid=10020 grp[leader,holder,contract,shared]=[16, 16, 'cnt_recruit_16_14_302', 11] work=ENTITY_ACT reason=None tgt=None proj=None
+ t401(-52) pos=(31.0, 27.0) hp=70 gid=10020 grp[leader,holder,contract,shared]=[16, 16, 'cnt_recruit_16_14_302', None] work=ENTITY_ACT reason=INSUFFICIENT_READINESS tgt=12 proj=None
+ t402(-51) pos=(31.0, 27.0) hp=70 gid=10020 grp[leader,holder,contract,shared]=[16, 16, 'cnt_recruit_16_14_302', 12] work=ENTITY_ACT reason=INSUFFICIENT_READINESS tgt=12 proj=None
+ t404(-49) pos=(31.0, 27.0) hp=70 gid=None grp[leader,holder,contract,shared]=None work=ENTITY_ACT reason=INSUFFICIENT_READINESS tgt=12 proj=None
+ t405(-48) pos=(31.0, 27.0) hp=70 gid=None grp[leader,holder,contract,shared]=None work=ENTITY_ACT reason=INSUFFICIENT_READINESS tgt=12 proj=GoalKind.COMBAT_ENGAGE
+ t406(-47) pos=(31.0, 27.0) hp=70 gid=None grp[leader,holder,contract,shared]=None work=ENTITY_ACT reason=None tgt=12 proj=GoalKind.COMBAT_ENGAGE
+ t410(-43) pos=(31.0, 27.0) hp=60 hp 70->60 gid=None grp[leader,holder,contract,shared]=None work=ENTITY_ACT reason=None tgt=12 proj=GoalKind.COMBAT_ENGAGE
+ t418(-35) pos=(31.0, 27.0) hp=60 gid=10027 grp[leader,holder,contract,shared]=[14, 14, 'cnt_recruit_14_16_415', None] work=ENTITY_ACT reason=None tgt=12 proj=GoalKind.COMBAT_ENGAGE
+ t419(-34) pos=(31.0, 27.0) hp=60 gid=10027 grp[leader,holder,contract,shared]=[14, 14, 'cnt_recruit_14_16_415', 2] work=ENTITY_ACT reason=None tgt=12 proj=GoalKind.COMBAT_ENGAGE
+ t421(-32) pos=(31.0, 27.0) hp=51 hp 60->51 gid=10027 grp[leader,holder,contract,shared]=[14, 14, 'cnt_recruit_14_16_415', 2] work=ENTITY_ACT reason=None tgt=12 proj=GoalKind.COMBAT_ENGAGE
+ t423(-30) pos=(31.0, 27.0) hp=51 gid=None grp[leader,holder,contract,shared]=None work=ENTITY_ACT reason=None tgt=12 proj=GoalKind.COMBAT_ENGAGE
+ t432(-21) pos=(31.0, 27.0) hp=35 hp 45->35 gid=None grp[leader,holder,contract,shared]=None work=ENTITY_ACT reason=None tgt=12 proj=GoalKind.COMBAT_ENGAGE
+ t443(-10) pos=(31.0, 27.0) hp=12 hp 22->12 gid=None grp[leader,holder,contract,shared]=None work=ENTITY_ACT reason=None tgt=12 proj=GoalKind.COMBAT_ENGAGE
+ t452(-1) pos=(31.0, 27.0) hp=5 gid=None grp[leader,holder,contract,shared]=None work=ENTITY_ACT reason=None tgt=12 proj=GoalKind.COMBAT_ENGAGE
+ t453(-0) pos=(31.0, 27.0) hp=0 hp 5->0 gid=None grp[leader,holder,contract,shared]=None work=ENTITY_ACT reason=None tgt=12 proj=GoalKind.COMBAT_ENGAGE
+  [group] formed t417 gid 10027 members [14, 16] contract cnt_recruit_14_16_415 holder 14 leader 14 -> dissolved [(422, 'BINDING_HOLDER_LEFT', None)]
+
+== entity 16 on base: death None
+ t1940(-60) pos=(59.0, 41.0) hp=70 gid=None grp[leader,holder,contract,shared]=None work=ENTITY_ACT reason=None tgt=None proj=GoalKind.FATIGUE
+ t1965(-35) pos=(59.0, 38.0) hp=69 gid=None grp[leader,holder,contract,shared]=None work=ENTITY_ACT reason=None tgt=None proj=GoalKind.HUNGER
+ t1999(-1) pos=(59.0, 35.0) hp=70 gid=None grp[leader,holder,contract,shared]=None work=ENTITY_ACT reason=None tgt=None proj=GoalKind.HUNGER
+ t2000(-0) pos=(59.0, 35.0) hp=70 gid=None grp[leader,holder,contract,shared]=None work=ENTITY_ACT reason=None tgt=None proj=GoalKind.HUNGER
+FIRST STATE DIFF (any key): 15 [('20', ['group_id']), ('30', ['group_id'])]
+FIRST DIFF outside identity/group_id/strategic: (68, '23', ['position', 'navigation', 'task'])
+STATIC (spawn) rows for watch entities, branch: {'6': {'kind': 'worker', 'role': '4', 'faction': '2', 'class_id': 'NOVICE', 'name': 'None', 'pos0': [27.0, 38.0]}, '14': {'kind': 'scout', 'role': '5', 'faction': '1', 'class_id': 'NOVICE', 'name': 'None', 'pos0': [74.0, 60.0]}, '15': {'kind': 'scout', 'role': '5', 'faction': '1', 'class_id': 'NOVICE', 'name': 'None', 'pos0': [41.0, 45.0]}, '16': {'kind': 'scout', 'role': '5', 'faction': '1', 'class_id': 'NOVICE', 'name': 'None', 'pos0': [64.0, 57.0]}, '17': {'kind': 'scout', 'role': '5', 'faction': '1', 'class_id': 'NOVICE', 'name': 'None', 'pos0': [91.0, 45.0]}, '20': {'kind': 'guard', 'role': '5', 'faction': '2', 'class_id': 'WARRIOR', 'name': 'None', 'pos0': [80.0, 42.0]}, '21': {'kind': 'guard', 'role': '5', 'faction': '2', 'class_id': 'WARRIOR', 'name': 'None', 'pos0': [57.0, 41.0]}, '23': {'kind': 'hero', 'role': '0', 'faction': '0', 'class_id': 'MAGE', 'name': 'None', 'pos0': [34.0, 13.0]}, '26': {'kind': 'merchant', 'role': '1', 'faction': '3', 'class_id': 'NOVICE', 'name': 'None', 'pos0': [66.0, 11.0]}, '29': {'kind': 'merchant', 'role': '1', 'faction': '3', 'class_id': 'NOVICE', 'name': 'None', 'pos0': [51.0, 43.0]}, '30': {'kind': 'merchant', 'role': '1', 'faction': '3', 'class_id': 'NOVICE', 'name': 'None', 'pos0': [73.0, 43.0]}}
+
+== entity 17 on branch: death {'t': 1704, 'cause': 'COMBAT', 'hazard': None, 'att': 10, 'pos': [45.0, 29.0], 'hp': 0}
+ t1644(-60) pos=(58.0, 28.0) hp=70 gid=None grp[leader,holder,contract,shared]=None work=ENTITY_ACT reason=None tgt=20006 proj=GoalKind.RESOLVE_BLOCKER
+ t1647(-57) pos=(58.0, 28.0) hp=70 gid=None grp[leader,holder,contract,shared]=None work=ENTITY_ACT reason=None tgt=None proj=GoalKind.RESOLVE_BLOCKER
+ t1654(-50) pos=(51.0, 28.0) hp=70 gid=None grp[leader,holder,contract,shared]=None work=ENTITY_MOVE reason=INTERCEPTING tgt=28 proj=GoalKind.RESOLVE_BLOCKER
+ t1664(-40) pos=(45.0, 29.0) hp=70 gid=None grp[leader,holder,contract,shared]=None work=ENTITY_ACT reason=None tgt=19 proj=None
+ t1686(-18) pos=(45.0, 29.0) hp=47 hp 57->47 gid=None grp[leader,holder,contract,shared]=None work=ENTITY_ACT reason=None tgt=19 proj=None
+ t1693(-11) pos=(45.0, 29.0) hp=23 hp 33->23 gid=None grp[leader,holder,contract,shared]=None work=ENTITY_ACT reason=None tgt=19 proj=None
+ t1702(-2) pos=(45.0, 29.0) hp=9 hp 17->9 gid=None grp[leader,holder,contract,shared]=None work=ENTITY_ACT reason=None tgt=19 proj=None
+ t1703(-1) pos=(45.0, 29.0) hp=9 gid=None grp[leader,holder,contract,shared]=None work=ENTITY_ACT reason=None tgt=19 proj=None
+ t1704(-0) pos=(45.0, 29.0) hp=0 hp 9->0 gid=None grp[leader,holder,contract,shared]=None work=ENTITY_ACT reason=None tgt=19 proj=None
+
+== entity 17 on base: death None
+ t1940(-60) pos=(58.0, 39.0) hp=70 gid=None grp[leader,holder,contract,shared]=None work=ENTITY_ACT reason=None tgt=None proj=GoalKind.FATIGUE
+ t1964(-36) pos=(58.0, 36.0) hp=69 gid=None grp[leader,holder,contract,shared]=None work=ENTITY_ACT reason=None tgt=None proj=GoalKind.HUNGER
+ t1999(-1) pos=(58.0, 33.0) hp=70 gid=None grp[leader,holder,contract,shared]=None work=ENTITY_ACT reason=None tgt=None proj=GoalKind.HUNGER
+ t2000(-0) pos=(58.0, 33.0) hp=70 gid=None grp[leader,holder,contract,shared]=None work=ENTITY_ACT reason=None tgt=None proj=GoalKind.HUNGER

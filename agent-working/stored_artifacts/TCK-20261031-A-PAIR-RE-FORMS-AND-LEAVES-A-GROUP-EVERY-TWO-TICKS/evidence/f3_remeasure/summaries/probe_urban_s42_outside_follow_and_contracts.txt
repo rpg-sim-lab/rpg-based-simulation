@@ -1,0 +1,13 @@
+outside_follow {'denominator': 370, 'c_building_tile': 92, 'c_reach_orth': 63, 'c_ring': 38, 'c_target_id': 0, 'c_reason': 0, 'any': 193} reasons {'None': 360, 'STALEMATE_BREAK': 10}
+examples [[862, 10036, 19, 24, [[40, 30]], None, None], [872, 10036, 19, 24, [[40, 30]], None, None], [882, 10036, 19, 24, [[40, 30]], None, None], [892, 10036, 19, 24, [[40, 30]], None, None], [902, 10036, 19, 24, [[40, 30]], None, None], [1449, 10038, 2, 9, [[40, 31]], None, None], [1450, 10038, 2, 9, [[40, 31]], None, None], [1451, 10038, 2, 9, [[40, 31]], None, None], [1452, 10038, 2, 9, [[40, 31]], None, None], [1453, 10038, 2, 9, [[40, 31]], None, None], [1454, 10038, 2, 9, [[40, 31]], None, None], [1455, 10038, 2, 9, [[40, 31]], None, None], [1456, 10038, 2, 9, [[40, 31]], None, None], [1457, 10038, 2, 9, [[40, 31]], None, None], [1458, 10038, 2, 9, [[40, 31]], None, None], [1459, 10038, 2, 9, [[40, 31]], None, None], [1460, 10038, 2, 9, [[40, 31]], None, None], [1461, 10038, 2, 9, [[40, 31]], None, None], [1462, 10038, 2, 9, [[40, 31]], None, None], [1463, 10038, 2, 9, [[40, 31]], None, None]]
+contract rows 960
+  ('CREATED', False, False) 419
+  ('OFFERED->ACTIVE', False, False) 230
+  ('ACTIVE->FULFILLED', False, False) 214
+  ('CREATED', True, True) 32
+  ('CREATED', False, True) 29
+  ('ACTIVE->FULFILLED', True, False) 11
+  ('ACTIVE->FULFILLED', True, True) 9
+  ('OFFERED->ACTIVE', False, True) 7
+  ('OFFERED->ACTIVE', True, True) 6
+  ('ACTIVE->FULFILLED', False, True) 3

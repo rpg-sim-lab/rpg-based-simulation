@@ -20,6 +20,7 @@ from src.core.models.social import RelationshipRole
 from src.core.movement_modes import MovementMode
 from src.core.death_cause import DeathRecord
 from src.core.enums import ReasonCode, DiplomaticState
+from src.core.group_update_merge import merge_group_fields
 from src.core.spawn_source import SpawnSource
 from src.core.update_models.buildings import BuildingUpdate  # noqa: F401  (re-exported: updates.py is where callers import it from)
 from src.core.update_models.inventory import InventoryUpdate, ItemInstanceUpdate
@@ -1040,7 +1041,9 @@ class StateUpdate:
     world_updates: Dict[str, WorldUpdate] = field(default_factory=dict)
     resource_updates: Dict[str, float] = field(default_factory=dict)
     home_storage_updates: Dict[int, InventoryUpdate] = field(default_factory=dict) # Milestone 5
-    groups_add_or_update: List[GroupRecord] = field(default_factory=list)
+    groups_add_or_update: List[GroupRecord] = field(default_factory=list)  # in-place updates of existing groups
+    groups_add: List[GroupRecord] = field(default_factory=list)  # new records; an id already taken is rejected at apply, never replaced
+    next_group_id_set: Optional[int] = None
     groups_remove: List[int] = field(default_factory=list)
     maturity_set: Optional[int] = None
     last_calamity_tick_set: Optional[int] = None
@@ -1082,7 +1085,7 @@ class StateUpdate:
                 not self.chest_add_or_update and not self.building_updates and
                 not self.camp_updates and not self.world_updates and
                 not self.resource_updates and not self.home_storage_updates and
-                not self.groups_add_or_update and not self.groups_remove and
+                not self.groups_add_or_update and not self.groups_add and self.next_group_id_set is None and not self.groups_remove and
                 self.maturity_set is None and self.last_calamity_tick_set is None and self.grief_drained_tick_set is None and
                 self.rng_checkpoint is None and not self.transaction_trace and
                 not self.rejections_delta and self.pressure_signals_set is None and
@@ -1130,8 +1133,7 @@ class StateUpdate:
         new_entities_add = list(self.entities_add)
         new_entities_remove = set(self.entities_remove)
         new_nodes_add = list(self.nodes_add)
-        new_groups_add_or_update = list(self.groups_add_or_update)
-        new_groups_remove = set(self.groups_remove)
+        group_fields = merge_group_fields(self, valid_others)
         new_ground_items_add_or_update = list(self.ground_items_add_or_update)
         new_ground_items_remove = set(self.ground_items_remove)
         new_item_instances_add_or_update = list(self.item_instances_add_or_update)
@@ -1199,8 +1201,6 @@ class StateUpdate:
             new_entities_add.extend(other.entities_add)
             new_entities_remove.update(other.entities_remove)
             new_nodes_add.extend(other.nodes_add)
-            new_groups_add_or_update.extend(other.groups_add_or_update)
-            new_groups_remove.update(other.groups_remove)
             new_ground_items_add_or_update.extend(other.ground_items_add_or_update)
             new_ground_items_remove.update(other.ground_items_remove)
             new_item_instances_add_or_update.extend(other.item_instances_add_or_update)
@@ -1259,8 +1259,7 @@ class StateUpdate:
             entity_spawn_sources=_merged_spawn_sources(self, valid_others),
             entities_remove=list(new_entities_remove),
             nodes_add=new_nodes_add,
-            groups_add_or_update=new_groups_add_or_update,
-            groups_remove=list(new_groups_remove),
+            **group_fields,
             ground_items_add_or_update=new_ground_items_add_or_update,
             ground_items_remove=list(new_ground_items_remove),
             corpses_add_or_update=new_corpses_add_or_update,

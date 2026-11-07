@@ -1,8 +1,8 @@
 {
   "counts": {
     "combat_movement.yaml": {
-      "allOf/0/then/properties/test_path/type": 237,
-      "allOf/2/else/then/properties/test_path/type": 263,
+      "allOf/0/then/properties/test_path/type": 235,
+      "allOf/2/else/then/properties/test_path/type": 261,
       "properties/proof_type/enum": 4
     },
     "infrastructure.yaml": {
