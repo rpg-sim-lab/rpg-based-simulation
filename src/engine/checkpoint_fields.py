@@ -13,11 +13,18 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any, Callable, Iterable, List, Optional
 
+from src.core.state import seeded_next_group_id
+
 _UNSET = object()
 
 
 class CheckpointFieldMissingError(ValueError):
     """A checkpoint predates a field whose value cannot be derived from the loaded state: the restore is refused (never a raw ``AttributeError`` mid-tick)."""
+
+
+class GroupCounterBehindStoreError(ValueError):
+    """A restored checkpoint's group id counter is not above every non-squad group id in its store (dissolved records included), so the next formation could reuse a taken id.
+    Raised at restore, after the fill; never in ``__post_init__`` or ``replace``. A ValueError, so the restore route answers 400."""
 
 
 @dataclass(frozen=True)
@@ -46,13 +53,51 @@ def _buildings(state: Any) -> Iterable[Any]:
         yield (f"building {b.id}", b)
 
 
+def _state_itself(state: Any) -> Iterable[Any]:
+    yield ("state", state)
+
+
+def _groups(state: Any) -> Iterable[Any]:
+    for gid, g in sorted((getattr(state, "groups", None) or {}).items(), key=lambda kv: str(kv[0])):
+        yield (f"group {gid}", g)
+
+
+def _seed_next_group_id(state: Any, owner: Any) -> int:
+    return seeded_next_group_id(state.groups)
+
+
+def _none_on_unbound_group(state: Any, owner: Any) -> None:
+    """None is the only valid value on a group with no contract. A group with a contract_id (retained dissolved records included) has no knowable holder or end reason, so the
+    checkpoint is refused, naming the group."""
+    if owner.contract_id is not None:
+        raise CheckpointFieldMissingError(
+            f"Checkpoint predates the group-contract binding: group {owner.id} has contract_id {owner.contract_id!r} (a retained dissolved record counts) but no contract holder or "
+            f"end reason, which cannot be derived from the state. Restore refused; re-create the checkpoint with a current build."
+        )
+    return None
+
+
+_GROUP_RULING = "rpg-designer 2026-11-01, checkpoint restore (TCK-20261031-A-PAIR-RE-FORMS-AND-LEAVES-A-GROUP-EVERY-TWO-TICKS)"
+
 # F3 (2.155): a pre-F3 state never lodged anyone, so the field is None. ``beds`` is content (per building spec) that a restore cannot reach: refuse.
 FIELD_RULES: List[FieldRule] = [
     FieldRule("lodged_in", _navigations, "lodged_in", fill=lambda state, owner: None, ruling="2.155: a state that predates lodging lodged no one"),
     FieldRule("beds", _buildings, "beds", fill=None, ruling="2.155: beds are copied from content at compile; the checkpoint carries no compiled content"),
     # A pre-2.156 state kept no retreat clear window, so a project that predates it has none yet (it opens on the first clear observation); None is exactly that state.
     FieldRule("cleared_since", _projects, "cleared_since", fill=lambda state, owner: None, ruling="2.156: a state that predates the retreat clear window had no window"),
+    # The group rows (2.146). next_group_id stays the LAST AuthoritativeState field and the three group fields stay after _canonical_cache (positional unpickle).
+    FieldRule("next_group_id", _state_itself, "next_group_id", fill=_seed_next_group_id, ruling="rpg-designer 2026-10-31, group id allocation (addition 4)"),
+    FieldRule("group.contract_holder_id", _groups, "contract_holder_id", fill=_none_on_unbound_group, ruling=_GROUP_RULING),
+    FieldRule("group.dissolution_reason", _groups, "dissolution_reason", fill=_none_on_unbound_group, ruling=_GROUP_RULING),
+    FieldRule("group.dissolution_contract_status", _groups, "dissolution_contract_status", fill=_none_on_unbound_group, ruling=_GROUP_RULING),
 ]
+
+
+def check_group_counter(state: Any) -> None:
+    """The counter must be above every non-squad stored group id; the seed rule yields exactly the smallest such value. Runs once at restore, after the fill."""
+    floor = seeded_next_group_id(state.groups)
+    if state.next_group_id < floor:
+        raise GroupCounterBehindStoreError(f"next_group_id {state.next_group_id} is not above the highest non-squad group id in the store (needs >= {floor})")
 
 
 def fill_missing_fields(state: Any, rules: Optional[List[FieldRule]] = None) -> Any:

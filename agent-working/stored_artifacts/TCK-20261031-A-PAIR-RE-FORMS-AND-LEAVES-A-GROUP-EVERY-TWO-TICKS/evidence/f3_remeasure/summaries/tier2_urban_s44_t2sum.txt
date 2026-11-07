@@ -1,0 +1,5 @@
+== victim 14 (death t291, killer 10): first hit by killer inside window: t268; killer in Euclid-10 of victim from t243; victim group at window start None
+   victim last traced pick before contact: (256, 'tgt', 28, 'ret', 739, None, 'tuple', [0, 1.0, 1, -0.693, 40, 1.0, 28])
+   killer last traced pick before contact: (268, 'tgt', 14, 'ret', 739, None, 'tuple', [0, 0.25, 1, -0.548, 51, 1.0, 14])
+   group/role branch FIRED (returned/entered body/group_bias!=1) before contact: victim [] killer [(268, ['group_bias!=1: [0.25]'])]
+   traced calls before contact: victim 3 killer 2

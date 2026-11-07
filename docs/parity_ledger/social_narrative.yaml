@@ -4315,3 +4315,40 @@
   test_path: tests/integration/campaigns/test_mid_episode_grief_trigger.py::test_observability_off_and_on_give_the_same_authoritative_outcome
   divergence_note: 'Divergence 2.134: the owed triggers are derived from state and drained by a typed watermark instead of a kernel list built in the observability phase.'
   support_boundary: null
+- id: SOC-278
+  text: 'A group id is never re-issued: a new GroupRecord takes the next free id from
+    AuthoritativeState.next_group_id (starts at 10000, only rises; decision code reads
+    it, ApplyPath advances it from StateUpdate.next_group_id_set; the allocator steps
+    past every id in the store, in the tick''s update and handed out earlier in the
+    call). New records travel in StateUpdate.groups_add; groups_add_or_update carries
+    only in-place updates. Apply rejects an add whose id is already taken (live or
+    dissolved, or added earlier in the tick): the row is dropped, rejection_registry[''group_add_id_taken'']
+    counts it, and the group_id_set writes aimed at that id are removed, so no member
+    points at a group that does not list it. A state built with groups and no counter
+    seeds it from the highest non-squad id; the counter joins the canonical data and
+    the replay fingerprint only once it differs from 10000.'
+  status: divergent
+  priority: P1
+  legacy_evidence: null
+  v2_evidence: src/core/state.py (next_group_id, seeded_next_group_id); src/core/updates.py
+    (groups_add, next_group_id_set); src/systems/world_systems/groups.py (allocator);
+    src/engine/apply_plan.py (resolve_group_adds, GROUP_ADD_ID_TAKEN); src/engine/apply.py;
+    src/engine/pipeline_phases/groups.py; src/engine/military_conflict.py (squad adds);
+    src/engine/checkpoint.py and src/replay/fingerprint.py (counter). Divergence 2.146.
+    (TCK-20261031-A-NEW-GROUP-ID-OVERWRITES-A-LIVE-GROUP)
+  proof_type: parity
+  test_path: tests/unit/social/test_group_id_allocation.py::test_formation_over_a_gap_does_not_overwrite_a_live_group
+  divergence_note: 'Divergence 2.146: the new-group id comes from a typed, only-rising
+    counter instead of a count of the store plus the tick''s update rows, and an add
+    over a taken id is a counted rejection instead of a silent replace.'
+  support_boundary: null
+- id: SOC-279
+  text: 'A group formed by a contract is bound to it and lives while the binding contract is ACTIVE on its holder. GroupRecord.contract_id is the one stored id of the contract and GroupRecord.contract_holder_id the entity whose strategic.contracts holds it; both are written once at formation (the formation scan''s entity_a) and a leadership change never moves them. The dissolution check reads the contract from the holder, never from the current leader, and dissolves the whole group on the tick the binding ends: holder not a live, active member, or the holder having drifted out of a pair that then falls below two (BINDING_HOLDER_LEFT), contract absent from the holder (BINDING_CONTRACT_MISSING), contract not live (BINDING_CONTRACT_NOT_ACTIVE, with the typed ContractStatus; a contract that reaches its expiry_tick ends the group on that tick as FULFILLED, never EXPIRED). Liveness is the one shared test contract_is_live (ACTIVE and not due) used by the contracts phase, group formation and the dissolution check. Formation binds the live contract with the latest expiry_tick among those that qualified a partner (expiry -1 ranks latest, a tie takes the lowest contract id, the holder stays entity_a). Every end of a bound group records a GroupDissolutionReason (those three plus LEADER_LOST, DEFECTION, MEMBERS_BELOW_TWO, one per dissolution in that precedence); unbound groups carry none. A new group stamps last_leadership_check_tick with its formation tick, so its first election is LEADERSHIP_CHECK_INTERVAL ticks later. A GroupRecord with a contract_id and no contract_holder_id is invalid (GroupBindingError). The new fields are omitted from the canonical dict when None; the holder joins the replay fingerprint string for bound groups. An older checkpoint is completed by one post-unpickle step: group fields None on unbound groups, a group with a contract_id refused (CheckpointFieldMissingError).'
+  status: divergent
+  priority: P1
+  legacy_evidence: null
+  v2_evidence: src/core/state.py (GroupRecord.contract_holder_id, dissolution_reason, dissolution_contract_status, GroupBindingError); src/core/enums.py (GroupDissolutionReason); src/systems/world_systems/groups.py (formation stamp and holder, _binding_end, dissolution reasons); src/systems/social_systems/party_lifecycle.py (defection reason); src/replay/fingerprint.py; src/engine/checkpoint_fields.py and src/engine/scenario_checkpoint.py (old-shape restore). Divergence 2.146. (TCK-20261031-A-PAIR-RE-FORMS-AND-LEAVES-A-GROUP-EVERY-TWO-TICKS)
+  proof_type: parity
+  test_path: tests/unit/social/test_group_contract_binding.py::test_election_that_moves_the_leader_off_the_holder_does_not_dissolve_a_bound_group
+  divergence_note: 'Divergence 2.146 (to be rewritten after the re-measure): the group is bound to the contract and its holder instead of reading the contract from whoever leads, and ends with a typed reason.'
+  support_boundary: null

@@ -1,0 +1,17 @@
+per run: world seed | formations base->branch | life p50/p90 branch | reasons NOT_ACTIVE(FULFILLED)/MBT/HOLDER_LEFT/other | reform same(10,50) diff(10,50) | FULFILLED lag hist | overwr/ghost base->branch | tick ms base->branch | store br | deaths base->branch | hashes | due-skipped-notrelevant | overdue
+crowded_frontier s42 | 225->45 | 78/99 | 20/17/6/{} | same[0, 0] diff[7, 9] | {'0': 20} | 199/21->0/0 | 90.69->74.98 | 45 | 35->31 | 3ffb7e977126/66101cd32511 | 0 | 0
+crowded_frontier s43 | 144->64 | 86/99 | 44/8/12/{} | same[0, 0] diff[4, 10] | {'0': 44} | 119/16->0/0 | 96.03->87.46 | 64 | 33->35 | ce607eb861a5/84b439085a21 | 0 | 0
+crowded_frontier s44 | 336->47 | 79/99 | 24/14/9/{} | same[0, 1] diff[5, 8] | {'0': 24} | 266/12->0/0 | 97.17->89.48 | 47 | 33->32 | 93da1cdfe5f1/fca6b6690c58 | 0 | 0
+crowded_frontier s45 | 176->58 | 68/99 | 28/18/10/{} | same[0, 0] diff[9, 13] | {'0': 28} | 117/6->0/0 | 65.39->82.76 | 58 | 36->32 | 6302f227364e/833a15e0ecbf | 0 | 0
+crowded_frontier s46 | 143->37 | 83/99 | 23/9/3/{} | same[0, 0] diff[6, 6] | {'0': 23} | 54/2->0/0 | 72.44->72.95 | 37 | 22->17 | 1995e9566b9b/a11cea425e6d | 0 | 0
+frontier_living_world s42 | 185->110 | 89/99 | 82/17/5/{} | same[0, 0] diff[10, 15] | {'0': 82} | 142/22->0/0 | 141.8->149.7 | 110 | 25->21 | 93a1944fe116/a872018bf494 | 0 | 0
+frontier_living_world s43 | 125->104 | 98/99 | 74/18/8/{} | same[0, 1] diff[16, 22] | {'0': 74} | 108/30->0/0 | 157.44->147.32 | 104 | 21->30 | 8823e8e19e8b/c4c3a755511a | 0 | 0
+frontier_living_world s44 | 181->85 | 99/99 | 62/12/6/{} | same[0, 0] diff[7, 12] | {'0': 62} | 162/22->0/0 | 141.18->145.46 | 85 | 32->22 | d9fa81684a91/c46ca1df1005 | 0 | 0
+frontier_living_world s45 | 285->145 | 99/99 | 120/15/4/{} | same[0, 0] diff[25, 36] | {'0': 120} | 219/22->0/0 | 123.72->164.18 | 145 | 28->22 | e762d9e8e0c3/8c29d5127d65 | 0 | 0
+frontier_living_world s46 | 329->78 | 71/99 | 42/27/8/{} | same[0, 2] diff[5, 6] | {'0': 42} | 270/23->0/0 | 157.07->130.05 | 78 | 31->29 | 45002e515a4a/c2f715573077 | 0 | 0
+urban_political s42 | 96->79 | 99/99 | 68/3/2/{} | same[0, 0] diff[5, 7] | {'0': 68} | 58/13->0/0 | 98.09->99.79 | 79 | 8->9 | 327f8e441f2b/ae41db137ac7 | 0 | 0
+urban_political s43 | 360->47 | 99/99 | 40/2/1/{} | same[0, 0] diff[3, 3] | {'0': 40} | 315/16->0/0 | 81.63->77.61 | 47 | 8->8 | b8fb78559bcd/601bffd01950 | 0 | 0
+urban_political s44 | 186->32 | 99/99 | 25/3/1/{} | same[0, 0] diff[5, 8] | {'0': 25} | 119/15->0/0 | 84.79->79.13 | 32 | 6->6 | 128824f13093/b221fe8464c1 | 0 | 0
+urban_political s45 | 236->65 | 99/99 | 54/5/2/{} | same[0, 0] diff[3, 7] | {'0': 54} | 229/14->0/0 | 96.02->117.54 | 65 | 16->12 | 67d466c76c1b/c22b48c7f622 | 0 | 0
+urban_political s46 | 203->36 | 99/99 | 35/0/1/{} | same[0, 0] diff[2, 2] | {'0': 35} | 119/13->0/0 | 110.22->95.21 | 36 | 10->9 | 6ee8543da2fa/41cd984ddcab | 0 | 0
+TOTAL FULFILLED ends 741 lag histogram {'0': 741} before expiry 0 | holder-drift/HOLDER_LEFT 78 | MEMBERS_BELOW_TWO split {'other_dropped:distance': 109, 'other_dropped:dead_or_inactive': 59}

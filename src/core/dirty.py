@@ -3,6 +3,9 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Set, Dict, TYPE_CHECKING
 
+from src.core.group_record import live_group_ids, live_group_items
+from src.core.strategic import contract_is_due
+
 if TYPE_CHECKING:
     from src.core.updates import StateUpdate
     from src.core.state import AuthoritativeState
@@ -44,8 +47,28 @@ def get_relevant_group_ids(state: AuthoritativeState, update: Optional[StateUpda
     Ensures that if force_full_scan is active or no dirty set exists, all group IDs are returned.
     """
     if not update or update.force_full_scan or update.dirty_set is None:
-        return set(state.groups.keys())
-    return update.dirty_set.group_ids
+        return set(live_group_ids(state.groups))
+    due = due_bound_group_ids(state)
+    return update.dirty_set.group_ids | due if due else update.dirty_set.group_ids
+
+
+def due_bound_group_ids(state: AuthoritativeState) -> Set[int]:
+    """Live bound groups whose binding contract is due this tick (`contract_is_due`), derived from state by a scan over the group store.
+
+    A bound group is relevant to the groups phase on the tick its contract becomes due whether or not the group is dirty and whether or not the
+    contracts phase ran, so its validity never depends on the dirty set. Only live groups are walked (the store keeps dissolved records), then unbound
+    groups are skipped; only the holder's contract is read. A group with no contract or no holder entity is not 'due' here (those ends are driven by their own
+    writes).
+    """
+    due: Set[int] = set()
+    for g_id, group in live_group_items(state.groups):
+        if group.contract_holder_id is None or group.contract_id is None:
+            continue
+        holder = state.entities.get(group.contract_holder_id)
+        contract = holder.strategic.contracts.get(group.contract_id) if holder is not None else None
+        if contract is not None and contract_is_due(contract, state.tick):
+            due.add(g_id)
+    return due
 
 def get_dirty_set(update: Optional[StateUpdate]) -> Optional[DirtySet]:
     """
@@ -114,7 +137,7 @@ class DirtySetBuilder:
     def mark_from_update(self, state: AuthoritativeState, update: StateUpdate):
         """Incremental update from a StateUpdate."""
         self.groups.update(update.groups_remove)
-        for g in update.groups_add_or_update:
+        for g in (*update.groups_add, *update.groups_add_or_update):
             self.groups.add(g.id)
             
         self.regions.update(update.world_updates.keys())
@@ -291,7 +314,7 @@ class DirtySet:
             town_cloned = False
         
         groups.update(update.groups_remove)
-        for g in update.groups_add_or_update:
+        for g in (*update.groups_add, *update.groups_add_or_update):
             groups.add(g.id)
             
         regions.update(update.world_updates.keys())

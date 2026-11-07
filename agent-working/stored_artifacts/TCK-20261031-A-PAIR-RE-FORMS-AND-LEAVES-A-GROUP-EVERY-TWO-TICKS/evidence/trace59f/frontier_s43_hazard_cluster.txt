@@ -1,0 +1,107 @@
+## frontier_living_world s43 branch tree 59f0e78bd
+
+### victim 8: death t442 HAZARD hazard=NATURAL_TERRAIN att=17 pos=[37.0, 59.0]; spawn static row: {'kind': 'worker', 'role': '4', 'faction': '2', 'class_id': 'NOVICE', 'name': 'None', 'pos0': [12.0, 24.0]}
+ hazard entry (first hp-draining tick) t437 at pos [35.0, 60.0]; contiguous ENTITY_MOVE walk starts t393; last tick in a group t441; group ended AFTER/DURING the walk start
+ group rows prior 50 ticks (t: leader,holder,contract,shared_target), changes only: [(392, (8, 8, 'cnt_recruit_8_7_356', None)), (394, (8, 8, 'cnt_recruit_8_7_356', 17))]
+   t391 work=ENTITY_ACT reason=None tgt=None nav=(25.0, 25.0) pos=[25.0, 24.0] hp=100 proj=GoalKind.RESOLVE_BLOCKER
+   t393 work=ENTITY_MOVE reason=INTERCEPTING tgt=17 nav=(34.0, 26.0) pos=[27.0, 24.0] hp=100 proj=None
+   t394 work=ENTITY_MOVE reason=INTERCEPTING tgt=17 nav=(33.0, 25.0) pos=[28.0, 24.0] hp=100 proj=None
+   t396 work=ENTITY_MOVE reason=INTERCEPTING tgt=17 nav=(32.0, 25.0) pos=[30.0, 24.0] hp=100 proj=None
+   t397 work=ENTITY_MOVE reason=INTERCEPTING tgt=17 nav=(32.0, 26.0) pos=[30.0, 25.0] hp=100 proj=None
+   t398 work=ENTITY_MOVE reason=INTERCEPTING tgt=17 nav=(32.0, 27.0) pos=[30.0, 26.0] hp=100 proj=None
+   t399 work=ENTITY_MOVE reason=INTERCEPTING tgt=17 nav=(32.0, 28.0) pos=[30.0, 27.0] hp=100 proj=None
+   t400 work=ENTITY_MOVE reason=INTERCEPTING tgt=17 nav=(33.0, 28.0) pos=[30.0, 28.0] hp=100 proj=None
+   t401 work=ENTITY_MOVE reason=INTERCEPTING tgt=17 nav=(33.0, 29.0) pos=[31.0, 28.0] hp=100 proj=None
+   t402 work=ENTITY_MOVE reason=INTERCEPTING tgt=17 nav=(34.0, 29.0) pos=[31.0, 29.0] hp=100 proj=None
+   t403 work=ENTITY_MOVE reason=INTERCEPTING tgt=17 nav=(34.0, 30.0) pos=[32.0, 29.0] hp=100 proj=None
+   t404 work=ENTITY_MOVE reason=INTERCEPTING tgt=17 nav=(35.0, 30.0) pos=[32.0, 30.0] hp=100 proj=None
+   t405 work=ENTITY_MOVE reason=INTERCEPTING tgt=17 nav=(35.0, 31.0) pos=[33.0, 30.0] hp=100 proj=None
+   t406 work=ENTITY_MOVE reason=INTERCEPTING tgt=17 nav=(36.0, 31.0) pos=[33.0, 31.0] hp=100 proj=None
+  [group] formed t358 gid 10040 members [7, 8] contract cnt_recruit_8_7_356 holder 8 leader 8 -> [(441, 'BINDING_HOLDER_LEFT', None)]
+
+### victim 13: death t443 HAZARD hazard=NATURAL_TERRAIN att=None pos=[37.0, 60.0]; spawn static row: {'kind': 'blacksmith', 'role': '4', 'faction': '2', 'class_id': 'NOVICE', 'name': 'None', 'pos0': [14.0, 24.0]}
+ hazard entry (first hp-draining tick) t438 at pos [34.0, 60.0]; contiguous ENTITY_MOVE walk starts t398; last tick in a group t442; group ended AFTER/DURING the walk start
+ group rows prior 50 ticks (t: leader,holder,contract,shared_target), changes only: [(418, (55, 55, 'cnt_recruit_55_13_415', None)), (438, (3, 3, 'cnt_recruit_3_13_380', None))]
+   t396 work=ENTITY_ACT reason=None tgt=None nav=(26.0, 27.0) pos=[26.0, 27.0] hp=90 proj=GoalKind.COMBAT_ENGAGE
+   t398 work=ENTITY_MOVE reason=INTERCEPTING tgt=17 nav=(33.0, 29.0) pos=[27.0, 27.0] hp=90 proj=GoalKind.COMBAT_ENGAGE
+   t399 work=ENTITY_MOVE reason=INTERCEPTING tgt=17 nav=(32.0, 28.0) pos=[28.0, 27.0] hp=90 proj=GoalKind.COMBAT_ENGAGE
+   t400 work=ENTITY_MOVE reason=INTERCEPTING tgt=17 nav=(33.0, 28.0) pos=[29.0, 27.0] hp=90 proj=GoalKind.COMBAT_ENGAGE
+   t401 work=ENTITY_MOVE reason=INTERCEPTING tgt=17 nav=(33.0, 29.0) pos=[29.0, 28.0] hp=90 proj=GoalKind.COMBAT_ENGAGE
+   t402 work=ENTITY_MOVE reason=INTERCEPTING tgt=17 nav=(34.0, 29.0) pos=[30.0, 28.0] hp=90 proj=GoalKind.COMBAT_ENGAGE
+   t403 work=ENTITY_MOVE reason=INTERCEPTING tgt=17 nav=(34.0, 30.0) pos=[30.0, 29.0] hp=90 proj=GoalKind.COMBAT_ENGAGE
+   t404 work=ENTITY_MOVE reason=INTERCEPTING tgt=17 nav=(35.0, 30.0) pos=[31.0, 29.0] hp=90 proj=GoalKind.COMBAT_ENGAGE
+   t405 work=ENTITY_MOVE reason=INTERCEPTING tgt=17 nav=(35.0, 31.0) pos=[31.0, 30.0] hp=90 proj=GoalKind.COMBAT_ENGAGE
+   t406 work=ENTITY_MOVE reason=INTERCEPTING tgt=17 nav=(36.0, 31.0) pos=[32.0, 30.0] hp=90 proj=GoalKind.COMBAT_ENGAGE
+   t407 work=ENTITY_MOVE reason=INTERCEPTING tgt=17 nav=(36.0, 32.0) pos=[32.0, 31.0] hp=90 proj=GoalKind.COMBAT_ENGAGE
+   t408 work=ENTITY_MOVE reason=INTERCEPTING tgt=17 nav=(37.0, 32.0) pos=[33.0, 31.0] hp=90 proj=GoalKind.COMBAT_ENGAGE
+   t410 work=ENTITY_MOVE reason=INTERCEPTING tgt=17 nav=(37.0, 33.0) pos=[34.0, 32.0] hp=90 proj=GoalKind.COMBAT_ENGAGE
+   t411 work=ENTITY_MOVE reason=INTERCEPTING tgt=17 nav=(37.0, 34.0) pos=[34.0, 33.0] hp=90 proj=GoalKind.COMBAT_ENGAGE
+  [group] formed t417 gid 10045 members [13, 55] contract cnt_recruit_55_13_415 holder 55 leader 55 -> [(436, 'MEMBERS_BELOW_TWO', None)]
+  [group] formed t437 gid 10048 members [3, 13] contract cnt_recruit_3_13_380 holder 3 leader 3 -> [(442, 'MEMBERS_BELOW_TWO', None)]
+
+### victim 5: death t452 HAZARD hazard=NATURAL_TERRAIN att=None pos=[45.0, 59.0]; spawn static row: {'kind': 'worker', 'role': '4', 'faction': '2', 'class_id': 'NOVICE', 'name': 'None', 'pos0': [14.0, 35.0]}
+ hazard entry (first hp-draining tick) t447 at pos [40.0, 59.0]; contiguous ENTITY_MOVE walk starts t446; last tick in a group t451; group ended AFTER/DURING the walk start
+ group rows prior 50 ticks (t: leader,holder,contract,shared_target), changes only: [(417, (1, 1, 'cnt_recruit_1_5_412', None)), (418, (1, 1, 'cnt_recruit_1_5_412', 17))]
+   t444 work=ENTITY_ACT reason=None tgt=None nav=None pos=[38.0, 59.0] hp=100 proj=GoalKind.COMBAT_ENGAGE
+   t446 work=ENTITY_MOVE reason=BRACKETING tgt=17 nav=(41.0, 59.0) pos=[39.0, 59.0] hp=100 proj=GoalKind.COMBAT_ENGAGE
+   t447 work=ENTITY_MOVE reason=BRACKETING tgt=17 nav=(41.0, 59.0) pos=[40.0, 59.0] hp=100 proj=GoalKind.COMBAT_ENGAGE
+   t448 work=ENTITY_MOVE reason=BRACKETING tgt=17 nav=(42.0, 59.0) pos=[41.0, 59.0] hp=80 proj=GoalKind.COMBAT_ENGAGE
+   t449 work=ENTITY_MOVE reason=BRACKETING tgt=17 nav=(43.0, 59.0) pos=[42.0, 59.0] hp=60 proj=GoalKind.COMBAT_ENGAGE
+   t450 work=ENTITY_MOVE reason=BRACKETING tgt=17 nav=(44.0, 59.0) pos=[43.0, 59.0] hp=40 proj=GoalKind.COMBAT_ENGAGE
+   t451 work=ENTITY_MOVE reason=BRACKETING tgt=17 nav=(45.0, 59.0) pos=[44.0, 59.0] hp=20 proj=GoalKind.COMBAT_ENGAGE
+   t452 work=ENTITY_MOVE reason=BRACKETING tgt=17 nav=(46.0, 59.0) pos=[45.0, 59.0] hp=0 proj=GoalKind.COMBAT_ENGAGE
+  [group] formed t416 gid 10044 members [1, 5] contract cnt_recruit_1_5_412 holder 1 leader 1 -> [(451, 'MEMBERS_BELOW_TWO', None)]
+
+### victim 1: death t453 HAZARD hazard=NATURAL_TERRAIN att=None pos=[43.0, 59.0]; spawn static row: {'kind': 'worker', 'role': '4', 'faction': '2', 'class_id': 'NOVICE', 'name': 'None', 'pos0': [14.0, 32.0]}
+ hazard entry (first hp-draining tick) t450 at pos [40.0, 59.0]; contiguous ENTITY_MOVE walk starts t393; last tick in a group t451; group ended AFTER/DURING the walk start
+ group rows prior 50 ticks (t: leader,holder,contract,shared_target), changes only: [(403, (6, 6, 'cnt_recruit_6_1_319', None)), (417, (1, 1, 'cnt_recruit_1_5_412', None)), (418, (1, 1, 'cnt_recruit_1_5_412', 17))]
+   t393 work=ENTITY_MOVE reason=BRACKETING tgt=17 nav=(33.0, 24.0) pos=[25.0, 27.0] hp=100 proj=None
+   t394 work=ENTITY_MOVE reason=BRACKETING tgt=17 nav=(33.0, 25.0) pos=[25.0, 26.0] hp=100 proj=None
+   t396 work=ENTITY_MOVE reason=BRACKETING tgt=17 nav=(32.0, 25.0) pos=[26.0, 26.0] hp=100 proj=None
+   t397 work=ENTITY_MOVE reason=BRACKETING tgt=17 nav=(32.0, 26.0) pos=[27.0, 26.0] hp=100 proj=None
+   t398 work=ENTITY_MOVE reason=BRACKETING tgt=17 nav=(32.0, 27.0) pos=[28.0, 26.0] hp=100 proj=None
+   t399 work=ENTITY_MOVE reason=BRACKETING tgt=17 nav=(32.0, 28.0) pos=[29.0, 26.0] hp=100 proj=None
+   t400 work=ENTITY_MOVE reason=BRACKETING tgt=17 nav=(33.0, 28.0) pos=[30.0, 26.0] hp=100 proj=GoalKind.RESOLVE_BLOCKER
+   t401 work=ENTITY_MOVE reason=BRACKETING tgt=17 nav=(33.0, 29.0) pos=[30.0, 27.0] hp=100 proj=GoalKind.RESOLVE_BLOCKER
+   t402 work=ENTITY_MOVE reason=BRACKETING tgt=17 nav=(34.0, 29.0) pos=[31.0, 27.0] hp=100 proj=GoalKind.RESOLVE_BLOCKER
+   t403 work=ENTITY_MOVE reason=BRACKETING tgt=17 nav=(34.0, 30.0) pos=[31.0, 28.0] hp=100 proj=GoalKind.RESOLVE_BLOCKER
+   t404 work=ENTITY_MOVE reason=BRACKETING tgt=17 nav=(35.0, 30.0) pos=[32.0, 28.0] hp=100 proj=GoalKind.RESOLVE_BLOCKER
+   t405 work=ENTITY_MOVE reason=BRACKETING tgt=17 nav=(35.0, 31.0) pos=[32.0, 29.0] hp=100 proj=GoalKind.RESOLVE_BLOCKER
+   t406 work=ENTITY_MOVE reason=BRACKETING tgt=17 nav=(36.0, 31.0) pos=[33.0, 29.0] hp=100 proj=GoalKind.RESOLVE_BLOCKER
+   t407 work=ENTITY_MOVE reason=BRACKETING tgt=17 nav=(36.0, 32.0) pos=[33.0, 30.0] hp=100 proj=GoalKind.RESOLVE_BLOCKER
+  [group] formed t416 gid 10044 members [1, 5] contract cnt_recruit_1_5_412 holder 1 leader 1 -> [(451, 'MEMBERS_BELOW_TWO', None)]
+
+### victim 7: death t454 HAZARD hazard=NATURAL_TERRAIN att=None pos=[42.0, 59.0]; spawn static row: {'kind': 'worker', 'role': '4', 'faction': '2', 'class_id': 'NOVICE', 'name': 'None', 'pos0': [11.0, 33.0]}
+ hazard entry (first hp-draining tick) t452 at pos [40.0, 59.0]; contiguous ENTITY_MOVE walk starts t394; last tick in a group t441; group ended AFTER/DURING the walk start
+ group rows prior 50 ticks (t: leader,holder,contract,shared_target), changes only: [(404, (8, 8, 'cnt_recruit_8_7_356', 17))]
+   t394 work=ENTITY_MOVE reason=BRACKETING tgt=17 nav=(34.0, 25.0) pos=[24.0, 25.0] hp=100 proj=GoalKind.COMBAT_ENGAGE
+   t395 work=ENTITY_MOVE reason=BRACKETING tgt=17 nav=(33.0, 25.0) pos=[24.0, 25.0] hp=100 proj=GoalKind.COMBAT_ENGAGE
+   t396 work=ENTITY_MOVE reason=BRACKETING tgt=17 nav=(32.0, 25.0) pos=[24.0, 26.0] hp=100 proj=GoalKind.COMBAT_ENGAGE
+   t397 work=ENTITY_MOVE reason=BRACKETING tgt=17 nav=(32.0, 26.0) pos=[25.0, 26.0] hp=100 proj=GoalKind.COMBAT_ENGAGE
+   t398 work=ENTITY_MOVE reason=BRACKETING tgt=17 nav=(32.0, 27.0) pos=[26.0, 26.0] hp=100 proj=GoalKind.COMBAT_ENGAGE
+   t399 work=ENTITY_MOVE reason=BRACKETING tgt=17 nav=(32.0, 28.0) pos=[27.0, 26.0] hp=100 proj=GoalKind.COMBAT_ENGAGE
+   t400 work=ENTITY_MOVE reason=BRACKETING tgt=17 nav=(33.0, 28.0) pos=[28.0, 26.0] hp=100 proj=GoalKind.COMBAT_ENGAGE
+   t401 work=ENTITY_MOVE reason=BRACKETING tgt=17 nav=(33.0, 29.0) pos=[29.0, 26.0] hp=100 proj=GoalKind.COMBAT_ENGAGE
+   t402 work=ENTITY_MOVE reason=BRACKETING tgt=17 nav=(34.0, 29.0) pos=[30.0, 26.0] hp=100 proj=GoalKind.COMBAT_ENGAGE
+   t403 work=ENTITY_MOVE reason=BRACKETING tgt=17 nav=(34.0, 30.0) pos=[30.0, 27.0] hp=100 proj=GoalKind.COMBAT_ENGAGE
+   t404 work=ENTITY_MOVE reason=BRACKETING tgt=17 nav=(35.0, 30.0) pos=[31.0, 27.0] hp=100 proj=GoalKind.COMBAT_ENGAGE
+   t405 work=ENTITY_MOVE reason=BRACKETING tgt=17 nav=(35.0, 31.0) pos=[31.0, 28.0] hp=100 proj=GoalKind.COMBAT_ENGAGE
+   t406 work=ENTITY_MOVE reason=BRACKETING tgt=17 nav=(36.0, 31.0) pos=[32.0, 28.0] hp=100 proj=GoalKind.COMBAT_ENGAGE
+   t407 work=ENTITY_MOVE reason=BRACKETING tgt=17 nav=(36.0, 32.0) pos=[32.0, 29.0] hp=100 proj=GoalKind.COMBAT_ENGAGE
+  [group] formed t358 gid 10040 members [7, 8] contract cnt_recruit_8_7_356 holder 8 leader 8 -> [(441, 'BINDING_HOLDER_LEFT', None)]
+
+### victim 3: death t455 HAZARD hazard=NATURAL_TERRAIN att=None pos=[44.0, 59.0]; spawn static row: {'kind': 'worker', 'role': '4', 'faction': '2', 'class_id': 'NOVICE', 'name': 'None', 'pos0': [15.0, 32.0]}
+ hazard entry (first hp-draining tick) t450 at pos [40, 58]; contiguous ENTITY_MOVE walk starts t448; last tick in a group t442; group ended BEFORE the walk start
+ group rows prior 50 ticks (t: leader,holder,contract,shared_target), changes only: [(405, (36, 36, 'cnt_recruit_36_3_350', None)), (438, (3, 3, 'cnt_recruit_3_13_380', None))]
+   t446 work=ENTITY_ACT reason=None tgt=None nav=None pos=[37, 58] hp=100 proj=GoalKind.COMBAT_ENGAGE
+   t448 work=ENTITY_MOVE reason=INTERCEPTING tgt=17 nav=(43.0, 60.0) pos=[38, 58] hp=100 proj=GoalKind.COMBAT_ENGAGE
+   t449 work=ENTITY_MOVE reason=INTERCEPTING tgt=17 nav=(43.0, 59.0) pos=[39, 58] hp=100 proj=GoalKind.COMBAT_ENGAGE
+   t450 work=ENTITY_MOVE reason=INTERCEPTING tgt=17 nav=(44.0, 59.0) pos=[40, 58] hp=100 proj=GoalKind.COMBAT_ENGAGE
+   t451 work=ENTITY_MOVE reason=INTERCEPTING tgt=17 nav=(45.0, 59.0) pos=[41, 58] hp=80 proj=GoalKind.COMBAT_ENGAGE
+   t452 work=ENTITY_MOVE reason=INTERCEPTING tgt=17 nav=(46.0, 59.0) pos=[42, 58] hp=60 proj=GoalKind.COMBAT_ENGAGE
+   t453 work=ENTITY_MOVE reason=INTERCEPTING tgt=17 nav=(46.0, 60.0) pos=[43, 58] hp=40 proj=GoalKind.COMBAT_ENGAGE
+   t454 work=ENTITY_MOVE reason=INTERCEPTING tgt=17 nav=(46.0, 61.0) pos=[43.0, 59.0] hp=20 proj=GoalKind.COMBAT_ENGAGE
+   t455 work=ENTITY_MOVE reason=INTERCEPTING tgt=17 nav=(46.0, 61.0) pos=[44.0, 59.0] hp=0 proj=GoalKind.COMBAT_ENGAGE
+  [group] formed t353 gid 10039 members [3, 12] contract cnt_recruit_12_3_263 holder 12 leader 12 -> [(364, 'BINDING_CONTRACT_NOT_ACTIVE', 'FULFILLED')]
+  [group] formed t365 gid 10042 members [3, 36] contract cnt_recruit_36_3_350 holder 36 leader 36 -> [(418, 'MEMBERS_BELOW_TWO', None)]
+  [group] formed t437 gid 10048 members [3, 13] contract cnt_recruit_3_13_380 holder 3 leader 3 -> [(442, 'MEMBERS_BELOW_TWO', None)]

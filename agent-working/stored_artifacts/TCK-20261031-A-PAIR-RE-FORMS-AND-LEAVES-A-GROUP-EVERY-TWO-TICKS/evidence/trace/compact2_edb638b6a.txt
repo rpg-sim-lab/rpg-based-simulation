@@ -1,0 +1,69 @@
+   ELECT t96 g10006 leader_in=19 last_chk=0 soc={'33': 0.36056867017210825, '19': 0.06668193439769443} -> leader_out=None event=None
+   ELECT t97 g10006 leader_in=19 last_chk=0 soc={'33': 0.36056867017210825, '19': 0.06668193439769443} -> leader_out=None event=None
+T98 next_group_id=10007 top_ids=[10003, 10004, 10005, 10006]
+   G10006 L19 lastchk=0 upd=97 dis=None contract=cnt_recruit_19_33_39 replica={'branch': 'leader.strategic.contracts', 'status': 'ACTIVE', 'expiry': 140}
+   M19 grp=10006 blockers=0 contracts39=['ACTIVE', 140, 19, 33] pend_all={'strategic': {'beliefs_add_or_update': 1}, 'social': 'SocialUpdate(bond_updates=[SocialBondUpdate(target_id=15, familiarity_delta=0.05', 'combat': 'CombatUpdate(damage_taken=15, hp_delta=-15, attacker_id=15, hit_tick_set=98, is_', 'cognition_bundle_set': 'CognitionModel(subjective=SubjectiveModel(perception=PerceptionModel(attention_f', 'property_updates': "{'last_cooperation_decision': 'SOLO', 'last_combat_posture': 'probe', 'last_comb"}
+   M33 grp=10006 blockers=0 contracts39=None pend_all={'strategic': {'beliefs_add_or_update': 1}, 'cognition_bundle_set': 'CognitionModel(subjective=SubjectiveModel(perception=PerceptionModel(attention_f', 'property_updates': "{'last_cooperation_decision': 'SOLO', 'last_combat_posture': 'engage', 'last_com"}
+   forms=[] dis=[]
+   ELECT t98 g10006 leader_in=19 last_chk=0 soc={'33': 0.36056867017210825, '19': 0.06668193439769443} -> leader_out=None event=None
+T99 next_group_id=10007 top_ids=[10003, 10004, 10005, 10006]
+   G10006 L19 lastchk=0 upd=98 dis=None contract=cnt_recruit_19_33_39 replica={'branch': 'leader.strategic.contracts', 'status': 'ACTIVE', 'expiry': 140}
+   M19 grp=10006 blockers=0 contracts39=['ACTIVE', 140, 19, 33] pend_all={'strategic': {'beliefs_add_or_update': 1}, 'cognition_bundle_set': 'CognitionModel(subjective=SubjectiveModel(perception=PerceptionModel(attention_f', 'property_updates': "{'last_cooperation_decision': 'SOLO', 'last_combat_posture': 'probe', 'last_comb"}
+   M33 grp=10006 blockers=0 contracts39=None pend_all={'strategic': {'beliefs_add_or_update': 1}, 'cognition_bundle_set': 'CognitionModel(subjective=SubjectiveModel(perception=PerceptionModel(attention_f', 'property_updates': "{'last_cooperation_decision': 'SOLO', 'last_combat_posture': 'engage', 'last_com"}
+   forms=[] dis=[]
+   ELECT t99 g10006 leader_in=19 last_chk=0 soc={'33': 0.36056867017210825, '19': 0.06668193439769443} -> leader_out=None event=None
+T100 next_group_id=10007 top_ids=[10003, 10004, 10005, 10006]
+   G10006 L19 lastchk=0 upd=99 dis=None contract=cnt_recruit_19_33_39 replica={'branch': 'leader.strategic.contracts', 'status': 'ACTIVE', 'expiry': 140}
+   M19 grp=10006 blockers=0 contracts39=['ACTIVE', 140, 19, 33] pend_all={'strategic': {'beliefs_add_or_update': 1}, 'cognition_bundle_set': 'CognitionModel(subjective=SubjectiveModel(perception=PerceptionModel(attention_f', 'property_updates': "{'last_cooperation_decision': 'SOLO', 'last_combat_posture': 'probe', 'last_comb"}
+   M33 grp=10006 blockers=0 contracts39=None pend_all={'strategic': {'beliefs_add_or_update': 1}, 'cognition_bundle_set': 'CognitionModel(subjective=SubjectiveModel(perception=PerceptionModel(attention_f', 'property_updates': "{'last_cooperation_decision': 'SOLO', 'last_combat_posture': 'engage', 'last_com"}
+   forms=[] dis=[]
+   ELECT t100 g10006 leader_in=19 last_chk=0 soc={'33': 0.36056867017210825, '19': 0.06668193439769443} -> leader_out=33 event=LeadershipChangedEvent
+   GP.resolve t100 g10006 leader 19->33 dis=None
+T101 next_group_id=10007 top_ids=[10003, 10004, 10005, 10006]
+   G10006 L33 lastchk=100 upd=100 dis=None contract=cnt_recruit_19_33_39 replica={'branch': 'none(contract absent)', 'status': None, 'expiry': None}
+   M19 grp=10006 blockers=0 contracts39=['ACTIVE', 140, 19, 33] pend_all={'readiness_delta': '-100.0', 'strategic': {'projects_add_or_update': 1, 'current_project_id_set': 20, 'current_objective_id_set': 16, 'concerns_add_or_update': 1, 'beliefs_add_or_update': 1}, 'navigation': 'NavigationUpdate(target_set=None, target_clear=True, path_set=None, moved_recent', 'task': "TaskUpdate(work_kind_set='ENTITY_ACT', payload_set={'action': 'ATTACK', 'target_", 'stamina_update': 'StaminaUpdate(current_delta=-5.0, current_set=None, max_stamina_set=None)', 'cognition_bundle_set': 'CognitionModel(subjective=SubjectiveModel(perception=PerceptionModel(attention_f', 'property_updates': "{'last_cooperation_decision': 'SOLO', 'last_combat_posture': 'probe', 'last_comb"}
+   M33 grp=10006 blockers=0 contracts39=None pend_all={'strategic': {'beliefs_add_or_update': 1}, 'social': 'SocialUpdate(bond_updates=[SocialBondUpdate(target_id=25, familiarity_delta=0.05', 'combat': 'CombatUpdate(damage_taken=10, hp_delta=-10, attacker_id=25, hit_tick_set=101, is', 'cognition_bundle_set': 'CognitionModel(subjective=SubjectiveModel(perception=PerceptionModel(attention_f', 'property_updates': "{'last_cooperation_decision': 'SOLO', 'last_combat_posture': 'engage', 'last_com"}
+   forms=[] dis=[[10006, [19, 33]]]
+   GP.resolve t101 g10006 leader 33->33 dis=101
+T102 next_group_id=10007 top_ids=[10003, 10004, 10005, 10006]
+   G10006 L33 lastchk=100 upd=100 dis=101 contract=cnt_recruit_19_33_39 replica={'branch': 'none(contract absent)', 'status': None, 'expiry': None}
+   M19 grp=None blockers=0 contracts39=['ACTIVE', 140, 19, 33] pend_all={'strategic': {'blockers_add_or_update': 1, 'beliefs_add_or_update': 1}, 'cognition_bundle_set': 'CognitionModel(subjective=SubjectiveModel(perception=PerceptionModel(attention_f', 'property_updates': "{'cooperation_blocker': 'block_no_partner_19_102', 'last_cooperation_decision': "}
+   M33 grp=None blockers=0 contracts39=None pend_all={'strategic': {'beliefs_add_or_update': 1}, 'cognition_bundle_set': 'CognitionModel(subjective=SubjectiveModel(perception=PerceptionModel(attention_f', 'property_updates': "{'last_combat_posture': 'engage', 'last_combat_posture_target': 25}"}
+   forms=[[10008, 19, 'cnt_recruit_19_33_39', [19, 33]]] dis=[]
+   ELECT t102 g10008 leader_in=19 last_chk=0 soc={'33': 0.36056867017210825, '19': 0.06668193439769443} -> leader_out=33 event=LeadershipChangedEvent
+T103 next_group_id=10009 top_ids=[10005, 10006, 10007, 10008]
+   G10008 L33 lastchk=102 upd=102 dis=None contract=cnt_recruit_19_33_39 replica={'branch': 'none(contract absent)', 'status': None, 'expiry': None}
+   M19 grp=10008 blockers=1 contracts39=['ACTIVE', 140, 19, 33] pend_all={'strategic': {'blockers_add_or_update': 1, 'contracts_add_or_update': 1, 'beliefs_add_or_update': 1}, 'social': 'SocialUpdate(bond_updates=[SocialBondUpdate(target_id=12, familiarity_delta=0.1,', 'cognition_bundle_set': 'CognitionModel(subjective=SubjectiveModel(perception=PerceptionModel(attention_f', 'property_updates': "{'cooperation_blocker': 'block_no_partner_19_103', 'last_cooperation_decision': "}
+   M33 grp=10008 blockers=0 contracts39=None pend_all={'strategic': {'beliefs_add_or_update': 1}, 'cognition_bundle_set': 'CognitionModel(subjective=SubjectiveModel(perception=PerceptionModel(attention_f', 'property_updates': "{'last_cooperation_decision': 'SOLO', 'last_combat_posture': 'engage', 'last_com"}
+   forms=[] dis=[[10008, [19, 33]]]
+   GP.resolve t103 g10008 leader 33->33 dis=103
+T104 next_group_id=10010 top_ids=[10006, 10007, 10008, 10009]
+   G10008 L33 lastchk=102 upd=102 dis=103 contract=cnt_recruit_19_33_39 replica={'branch': 'none(contract absent)', 'status': None, 'expiry': None}
+   M19 grp=None blockers=2 contracts39=['ACTIVE', 140, 19, 33] pend_all={'strategic': {'blockers_add_or_update': 1, 'beliefs_add_or_update': 1}, 'cognition_bundle_set': 'CognitionModel(subjective=SubjectiveModel(perception=PerceptionModel(attention_f', 'property_updates': "{'cooperation_blocker': 'block_no_partner_19_104', 'last_cooperation_decision': "}
+   M33 grp=None blockers=0 contracts39=None pend_all={'strategic': {'beliefs_add_or_update': 1}, 'cognition_bundle_set': 'CognitionModel(subjective=SubjectiveModel(perception=PerceptionModel(attention_f', 'property_updates': "{'last_combat_posture': 'engage', 'last_combat_posture_target': 25}"}
+   forms=[[10010, 19, 'cnt_recruit_19_33_39', [19, 33]]] dis=[]
+   ELECT t104 g10010 leader_in=19 last_chk=0 soc={'33': 0.36056867017210825, '19': 0.06668193439769443} -> leader_out=33 event=LeadershipChangedEvent
+T105 next_group_id=10011 top_ids=[10007, 10008, 10009, 10010]
+   G10010 L33 lastchk=104 upd=104 dis=None contract=cnt_recruit_19_33_39 replica={'branch': 'none(contract absent)', 'status': None, 'expiry': None}
+   M19 grp=10010 blockers=3 contracts39=['ACTIVE', 140, 19, 33] pend_all={'strategic': {'blockers_add_or_update': 1, 'beliefs_add_or_update': 1}, 'cognition_bundle_set': 'CognitionModel(subjective=SubjectiveModel(perception=PerceptionModel(attention_f', 'property_updates': "{'cooperation_blocker': 'block_no_partner_19_105', 'last_cooperation_decision': "}
+   M33 grp=10010 blockers=0 contracts39=None pend_all={'readiness_delta': '-100.0', 'strategic': {'beliefs_add_or_update': 1}, 'task': "TaskUpdate(work_kind_set='ENTITY_ACT', payload_set={'action': 'ATTACK', 'target_", 'stamina_update': 'StaminaUpdate(current_delta=-10.0, current_set=None, max_stamina_set=None)', 'cognition_bundle_set': 'CognitionModel(subjective=SubjectiveModel(perception=PerceptionModel(attention_f', 'property_updates': "{'last_cooperation_decision': 'SOLO', 'last_combat_posture': 'engage', 'last_com"}
+   forms=[] dis=[[10010, [19, 33]]]
+   GP.resolve t105 g10010 leader 33->33 dis=105
+T106 next_group_id=10011 top_ids=[10007, 10008, 10009, 10010]
+   G10010 L33 lastchk=104 upd=104 dis=105 contract=cnt_recruit_19_33_39 replica={'branch': 'none(contract absent)', 'status': None, 'expiry': None}
+   M19 grp=None blockers=4 contracts39=['ACTIVE', 140, 19, 33] pend_all={'strategic': {'blockers_add_or_update': 1, 'beliefs_add_or_update': 1}, 'cognition_bundle_set': 'CognitionModel(subjective=SubjectiveModel(perception=PerceptionModel(attention_f', 'property_updates': "{'cooperation_blocker': 'block_no_partner_19_106', 'last_cooperation_decision': "}
+   M33 grp=None blockers=0 contracts39=None pend_all={'strategic': {'beliefs_add_or_update': 1}, 'cognition_bundle_set': 'CognitionModel(subjective=SubjectiveModel(perception=PerceptionModel(attention_f', 'property_updates': "{'last_combat_posture': 'engage', 'last_combat_posture_target': 25}"}
+   forms=[[10011, 19, 'cnt_recruit_19_33_39', [19, 33]]] dis=[]
+   ELECT t106 g10011 leader_in=19 last_chk=0 soc={'33': 0.36056867017210825, '19': 0.06668193439769443} -> leader_out=33 event=LeadershipChangedEvent
+T107 next_group_id=10012 top_ids=[10008, 10009, 10010, 10011]
+   G10011 L33 lastchk=106 upd=106 dis=None contract=cnt_recruit_19_33_39 replica={'branch': 'none(contract absent)', 'status': None, 'expiry': None}
+   M19 grp=10011 blockers=5 contracts39=['ACTIVE', 140, 19, 33] pend_all={'strategic': {'blockers_add_or_update': 1, 'beliefs_add_or_update': 1}, 'cognition_bundle_set': 'CognitionModel(subjective=SubjectiveModel(perception=PerceptionModel(attention_f', 'property_updates': "{'cooperation_blocker': 'block_no_partner_19_107', 'last_cooperation_decision': "}
+   M33 grp=10011 blockers=0 contracts39=None pend_all={'strategic': {'boredom_delta': 1, 'beliefs_add_or_update': 1}, 'cognition_bundle_set': 'CognitionModel(subjective=SubjectiveModel(perception=PerceptionModel(attention_f', 'property_updates': "{'last_cooperation_decision': 'SOLO', 'last_combat_posture': 'engage', 'last_com"}
+   forms=[] dis=[[10011, [19, 33]]]
+   GP.resolve t107 g10011 leader 33->33 dis=107
+T108 next_group_id=10012 top_ids=[10008, 10009, 10010, 10011]
+   G10011 L33 lastchk=106 upd=106 dis=107 contract=cnt_recruit_19_33_39 replica={'branch': 'none(contract absent)', 'status': None, 'expiry': None}
+   M19 grp=None blockers=6 contracts39=['ACTIVE', 140, 19, 33] pend_all={'strategic': {'blockers_add_or_update': 1, 'beliefs_add_or_update': 1}, 'cognition_bundle_set': 'CognitionModel(subjective=SubjectiveModel(perception=PerceptionModel(attention_f', 'property_updates': "{'cooperation_blocker': 'block_no_partner_19_108', 'last_cooperation_decision': "}
+   M33 grp=None blockers=0 contracts39=None pend_all={'strategic': {'beliefs_add_or_update': 1}, 'cognition_bundle_set': 'CognitionModel(subjective=SubjectiveModel(perception=PerceptionModel(attention_f', 'property_updates': "{'last_combat_posture': 'engage', 'last_combat_posture_target': 25}"}
+   forms=[[10012, 19, 'cnt_recruit_19_33_39', [19, 33]]] dis=[]
+   ELECT t108 g10012 leader_in=19 last_chk=0 soc={'33': 0.36056867017210825, '19': 0.06668193439769443} -> leader_out=33 event=LeadershipChangedEvent

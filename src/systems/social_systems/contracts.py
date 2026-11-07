@@ -3,6 +3,7 @@ from __future__ import annotations
 from typing import Dict, Any, List, Optional, Tuple, TYPE_CHECKING
 from dataclasses import replace
 from src.core.strategic import ContractState, ContractKind, ContractStatus, RiskLevel, DirectiveKind, DirectivePriority
+from src.core.strategic import contract_is_due, contract_is_live  # noqa: F401  (re-exported: callers import the contract rules from here)
 from src.core.updates import StrategicUpdate, SocialBondUpdate, EntityUpdate, StateUpdate, SocialUpdate, IdentityUpdate
 
 if TYPE_CHECKING:

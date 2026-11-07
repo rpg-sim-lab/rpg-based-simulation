@@ -8258,6 +8258,21 @@
   tags:
   - testing
 - type: ticket
+  path: agent-working/tickets/todos/TCK-20261101-A-CHECKPOINT-HAS-NO-FORMAT-VERSION.md
+  ticket_id: TCK-20261101-A-CHECKPOINT-HAS-NO-FORMAT-VERSION
+  title: A scenario checkpoint has no format version, so a checkpoint older than a
+    slotted state record's newest field loads without error and fails later on first
+    read.
+  tier: standard
+  ticket_type: bug
+  date: '2026-11-01'
+  related_code_areas:
+  - src/engine/scenario_checkpoint.py
+  - src/api/routes/scenarios.py
+  - src/core/state.py
+  artifact_files: []
+  tags: []
+- type: ticket
   path: agent-working/tickets/todos/TCK-20261101-A-CONGESTION-BLOCKER-RESOLUTION-SENDS-A-SUBJECT-TO-THE-TOWN-CENTRE.md
   ticket_id: TCK-20261101-A-CONGESTION-BLOCKER-RESOLUTION-SENDS-A-SUBJECT-TO-THE-TOWN-CENTRE
   title: A congestion blocker-resolution project sends its subject to the town centre,
@@ -8323,6 +8338,36 @@
   - src/engine/tactical.py:542/:552 (VANGUARD BRACKETING), :390-428 (target_score)
   artifact_files: []
   tags: []
+- type: ticket
+  path: agent-working/tickets/todos/TCK-20261101-A-NO-PARTNER-BLOCKER-IS-RE-CREATED-EVERY-TICK.md
+  ticket_id: TCK-20261101-A-NO-PARTNER-BLOCKER-IS-RE-CREATED-EVERY-TICK
+  title: An entity with no partner gets one new strategic blocker per tick, with a
+    new id each time, so strategic.blockers may grow without bound. Count it first.
+  tier: standard
+  ticket_type: bug
+  date: '2026-11-01'
+  related_code_areas:
+  - src/domains/cooperation/ (DEFER_NO_PARTNER; exact site not yet cited)
+  - src/core/strategic.py
+  artifact_files: []
+  tags:
+  - cooperation
+  - social
+- type: ticket
+  path: agent-working/tickets/todos/TCK-20261101-A-PAIR-HOLDS-MANY-ACTIVE-RECRUIT-CONTRACTS-AT-ONCE.md
+  ticket_id: TCK-20261101-A-PAIR-HOLDS-MANY-ACTIVE-RECRUIT-CONTRACTS-AT-ONCE
+  title: One pair can hold about 12 ACTIVE recruit contracts at once, each with a
+    new id. Count it across the runs first; P2 if material.
+  tier: standard
+  ticket_type: bug
+  date: '2026-11-01'
+  related_code_areas:
+  - src/domains/cooperation/phase.py
+  - src/systems/social_systems/ (recruit contract creation; exact site not yet cited)
+  artifact_files: []
+  tags:
+  - cooperation
+  - social
 - type: ticket
   path: agent-working/tickets/todos/TCK-20261101-A-PANIC-FLIGHT-FIRES-WITH-NO-HOSTILE-PERCEIVED.md
   ticket_id: TCK-20261101-A-PANIC-FLIGHT-FIRES-WITH-NO-HOSTILE-PERCEIVED
@@ -8467,6 +8512,54 @@
     assembly building profile.
   artifact_files: []
   tags: []
+- type: ticket
+  path: agent-working/tickets/done/TCK-20261031-A-NEW-GROUP-ID-OVERWRITES-A-LIVE-GROUP.md
+  ticket_id: TCK-20261031-A-NEW-GROUP-ID-OVERWRITES-A-LIVE-GROUP
+  title: A new group's id comes from a count, so it can collide with a live group's
+    id and overwrite that record. Allocate group ids so they never repeat.
+  tier: standard
+  ticket_type: bug
+  date: '2026-10-31'
+  related_code_areas:
+  - src/systems/world_systems/groups.py (l.110, l.170, l.227, l.308)
+  - src/engine/pipeline_phases/groups.py, src/engine/military_conflict.py, src/domains/cooperation/phase.py
+    (other group update producers)
+  artifact_files:
+  - agent-working/stored_artifacts/TCK-20261031-A-NEW-GROUP-ID-OVERWRITES-A-LIVE-GROUP/investigation.md
+  - agent-working/stored_artifacts/TCK-20261031-A-NEW-GROUP-ID-OVERWRITES-A-LIVE-GROUP/plan.md
+  - agent-working/stored_artifacts/TCK-20261031-A-NEW-GROUP-ID-OVERWRITES-A-LIVE-GROUP/rpg_designer_ruling_2026-10-31.md
+  - agent-working/stored_artifacts/TCK-20261031-A-NEW-GROUP-ID-OVERWRITES-A-LIVE-GROUP/test_plan.md
+  tags:
+  - social
+  - simulation-quality
+- type: ticket
+  path: agent-working/tickets/done/TCK-20261031-A-PAIR-RE-FORMS-AND-LEAVES-A-GROUP-EVERY-TWO-TICKS.md
+  ticket_id: TCK-20261031-A-PAIR-RE-FORMS-AND-LEAVES-A-GROUP-EVERY-TWO-TICKS
+  title: 'A pair of entities forms a group and is expelled from it about every 2 ticks.
+    Cause: a same-tick leadership election moves the leader off the entity holding
+    the group''s contract, and the dissolution check reads the contract from the current
+    leader. Once group ids stop repeating, each cycle leaves a retained dissolved
+    record. Fix as ruled: a typed contract binding on the group, plus an election
+    cadence that starts at formation.'
+  tier: standard
+  ticket_type: bug
+  date: '2026-10-31'
+  related_code_areas:
+  - src/systems/world_systems/groups.py
+  - src/engine/pipeline_phases/groups.py
+  - src/systems/social_systems/party_lifecycle.py
+  - src/core/state.py (GroupRecord)
+  - src/domains/cooperation/phase.py
+  artifact_files:
+  - agent-working/stored_artifacts/TCK-20261031-A-PAIR-RE-FORMS-AND-LEAVES-A-GROUP-EVERY-TWO-TICKS/investigation.md
+  - agent-working/stored_artifacts/TCK-20261031-A-PAIR-RE-FORMS-AND-LEAVES-A-GROUP-EVERY-TWO-TICKS/lodger_decision_paths_2026-11-01.md
+  - agent-working/stored_artifacts/TCK-20261031-A-PAIR-RE-FORMS-AND-LEAVES-A-GROUP-EVERY-TWO-TICKS/plan.md
+  - agent-working/stored_artifacts/TCK-20261031-A-PAIR-RE-FORMS-AND-LEAVES-A-GROUP-EVERY-TWO-TICKS/pr_notes.md
+  - agent-working/stored_artifacts/TCK-20261031-A-PAIR-RE-FORMS-AND-LEAVES-A-GROUP-EVERY-TWO-TICKS/rulings_2026-11-01.md
+  - agent-working/stored_artifacts/TCK-20261031-A-PAIR-RE-FORMS-AND-LEAVES-A-GROUP-EVERY-TWO-TICKS/test_plan.md
+  tags:
+  - cooperation
+  - social
 - type: ticket
   path: agent-working/tickets/done/TCK-20261031-A-RETREAT-PROJECT-OUTLIVES-ITS-THREAT.md
   ticket_id: TCK-20261031-A-RETREAT-PROJECT-OUTLIVES-ITS-THREAT
