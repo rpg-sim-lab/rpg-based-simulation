@@ -1,6 +1,25 @@
 # Deterministic Concurrent RPG Engine
 
-A high-fidelity, deterministic 2D RPG simulation engine in Python with a React frontend. Parallelized AI agents propose intents; a single authoritative WorldLoop validates and executes them. The same seed replays to the same state hash on one machine under the Canonical signal contract; the [Deterministic Execution Contract](docs/engine/deterministic_execution.md) states the scope.
+A 2D fantasy world simulation in Python with a React client. Autonomous simulated entities (adventurers, townsfolk, monsters, factions) eat, sleep, work, trade, craft, fight, form groups and pursue long-term goals. The world around them changes too: resources deplete and regrow, regions carry the trauma of past events, and calamities strike.
+
+The engine is built so that a run can be examined after the fact. Every change to the world goes through one authoritative path, so each change has a typed record and a single place where it was applied. The same seed and starting state replay to the same state hash, within a stated scope. That makes emergent behaviour (a starvation, a faction war, an economic collapse) something you can reproduce, trace and compare across code changes, rather than a one-off.
+
+The simulated entities are not the coding agents described under [AI-first engineering workflow](#ai-first-engineering-workflow). The first are part of the simulated world; the second are the development process that builds it.
+
+---
+
+## Core capabilities
+
+| Capability | What exists today | Spec |
+|---|---|---|
+| Entity behaviour | Biological needs, a goal hierarchy with interruption resistance, bounded knowledge and perception, social and political ties | [Mechanics Bible](docs/mechanics/) ch. 01, 04, 07 |
+| Combat | A deterministic damage formula, tactical modifiers and durability decay | ch. 02 |
+| Economy | Harvesting, trade and crafting under atomic conservation (items and gold are moved, never created or lost) | ch. 03 |
+| World evolution | Tick-to-day time, regional trauma, ecology, calamities | ch. 05 |
+| Authoritative updates | AI decisions can run concurrently on workers; every proposed change is validated and applied in one synchronous phase | [Kernel](docs/engine/kernel.md), [Authoritative Pipeline](docs/engine/authoritative_pipeline.md) |
+| Reproducible runs | A seeded, order-independent RNG and a SHA-256 proof digest of the whole state, guaranteed only in the scope below | [Deterministic Execution Contract](docs/engine/deterministic_execution.md) |
+| Load governance | A governor moves the tick between NORMAL, CONSTRAINED, DEGRADED and SURVIVAL modes under load and sheds optional work | [Resource governor contract](docs/engine/contracts/resource_governor_contract.md) |
+| Observability and evaluation | Simulation events, Prometheus metrics, hard-law invariant checks every tick, and Simulation Quality scoring of runs against anchors | [docs/observability/](docs/observability/) |
 
 ---
 
@@ -12,15 +31,16 @@ make serve      # Build frontend + start server at :8000
 make cli        # Run a headless simulation (200 ticks)
 ```
 
-**Requirements:** Python ≥ 3.12, Node.js ≥ 18, Docker (optional — for Grafana/Loki telemetry). On Windows, run `make` under WSL or Git Bash (there is no `make.bat`).
+**Requirements:** Python ≥ 3.12, Node.js ≥ 18, Docker (optional, for the telemetry stack). On Windows, run `make` under WSL or Git Bash (there is no `make.bat`).
 
 ---
 
 ## Running the Engine
 
-### Server mode — visual client at `http://127.0.0.1:8000`
+### Server mode: visual client at `http://127.0.0.1:8000`
 ```bash
 python3 -m src serve --seed 42 --workers 4
+make dev        # backend + frontend dev server with hot reload
 ```
 
 ### Headless CLI mode
@@ -35,49 +55,44 @@ See [docs/guides/simulation.md](docs/guides/simulation.md) for world authoring, 
 
 ## Architecture
 
+Each tick runs a fixed sequence of phases in the `Kernel` (`src/engine/kernel.py`). The two that matter most:
+
+- **Propose.** In the Collection phase, entity AI runs on a read-only frozen view of the state, possibly on several workers at once, and returns proposals. It changes nothing.
+- **Refine and apply.** In the Resolution phase, every proposal is sorted into a fixed order and goes through the `AuthoritativeApplyPipeline`, which validates it against the current state and applies the accepted ones as typed updates. This is the only place durable state changes, so the result does not depend on which worker finished first.
+
 | Principle | Summary |
 |---|---|
-| **Determinism** | Stateless seeded RNG: `DeterministicRNG` seeds a fresh `random.Random` per draw from the run seed, domain, tick and entity. A SHA-256 canonical state hash is the proof. Guaranteed tier, Canonical signal contract and known gaps: [Deterministic Execution Contract](docs/engine/deterministic_execution.md) |
-| **Intent / Effect split** | Parallel AI workers propose intents; WorldLoop validates and executes |
-| **Aspect composition** | Entities are pure compositions (`IdentityAspect`, `BodyAspect`, `MindAspect`, `SocialAspect`) |
-| **Decoupled reads** | Thread-safe isolated read models let the API serve without locking the tick loop |
-| **Content pipeline** | World modules, compositions, and archetypes resolved through a typed content pipeline before runtime |
+| **Determinism** | Stateless seeded RNG: `DeterministicRNG` seeds a fresh `random.Random` per draw from the run seed, domain, tick and entity. A SHA-256 canonical state hash is the proof. |
+| **Immutable state** | `AuthoritativeState` and each entity's typed components are frozen dataclasses; a tick produces a new state instead of editing the old one ([docs/core/](docs/core/)) |
+| **Read projection for the API** | The API never reads the engine's working state. After each tick, the engine thread publishes the new state and an updated read-model cache under a lock; REST and WebSocket handlers read that published copy through the cache and presenters. It runs in the same process, so a slow read can briefly delay the next publish. |
+| **Content pipeline** | World modules, compositions and archetypes are resolved through a typed content pipeline before runtime |
 
 Core laws: [Simulation Kernel](docs/engine/kernel.md) · [Authoritative Pipeline](docs/engine/authoritative_pipeline.md) · [Project Lawbook](docs/engine/project_lawbook_m10.md)
 
 ---
 
-## For reviewers
+## Verification and reproducibility
 
-- Determinism demo: [`make replay-check`](docs/guides/reviewer_replay_check.md) runs one seed twice and compares the final state hashes.
+The guarantee is narrower than "every run is deterministic". It is guaranteed for the same build, Python minor version, OS and CPU architecture, using the sequential executor under the Canonical signal contract (tier DET-PORT-0). Concurrent executors and other platforms are claimed only where a parity test covers them. The default Live contract reads the wall clock and host load, so two Live runs can differ. The [Deterministic Execution Contract](docs/engine/deterministic_execution.md) gives the full scope and its known gaps.
+
+- [`make replay-check`](docs/guides/reviewer_replay_check.md) runs one seed twice under the Canonical contract and compares the final state hashes. It is a short-run demonstration, not a proof.
+- Limits and known defects: [docs/engine/known_limitations.md](docs/engine/known_limitations.md). One open defect not yet listed there: restoring a scenario checkpoint rebuilds the RNG with base seed 0 (`src/engine/scenario_checkpoint.py`), so a resumed run with a nonzero seed does not match the uninterrupted run.
 
 ---
 
 ## Documentation Site
 
-The project has a unified Docusaurus 3 documentation site that covers all content layers: mechanics laws, engine contracts, architecture, tickets, stored artifacts, and archived historical docs.
+`website/` holds a Docusaurus 3 site with one **Docs** section (`/docs/`): the Mechanics Bible, engine contracts, architecture and guidelines, grouped by layer, with full-text search and a status badge per page. It is built locally and is not published at the moment: the GitHub Pages deploy runs only by hand and Pages is not enabled (`TCK-20260916-REENABLE-DOCS-PAGES-PUBLISHING`). Tickets, stored artifacts and archived docs stay in the repository but are not part of the site. Details: [docs/README.md](docs/README.md).
 
 ```bash
 make docs-serve      # Start site at http://localhost:3000
 make docs-build      # Build static site (website/build/)
 make docs-registry   # Regenerate docs/REGISTRY.yaml after adding new docs
-make docs-artifacts  # Regenerate agent-working/stored_artifacts/*/index.md landing pages
 ```
-
-The site has four sections:
-
-| Section | URL | Contents |
-|---|---|---|
-| **Docs** | `/docs/` | Mechanics Bible, engine contracts, architecture, guidelines — grouped by layer |
-| **Tickets** | `/tickets/` | All closed tickets (~657), searchable |
-| **Artifacts** | `/artifacts/` | Investigation, plan, and test_plan files per ticket |
-| **Archive** | `/archive/` | Historical docs and design specs |
-
-Full-text search works across all four sections. Every page shows a status badge (`authoritative` / `active` / `historical` / `archive`) drawn from the file's YAML frontmatter.
 
 **How docs are classified:** every `.md` file carries a YAML frontmatter block (`status`, `layer`, `authority`, `audience`). The schema is defined in [`docs/guidelines/frontmatter_schema.md`](docs/guidelines/frontmatter_schema.md). Run `python3 tools/validate_frontmatter.py <path>` to check any file or directory.
 
-**Machine-readable index:** [`docs/REGISTRY.yaml`](docs/REGISTRY.yaml) is a flat list of all tagged docs and closed tickets (912 entries). Agents and scripts query it instead of scanning 500+ files.
+**Machine-readable index:** [`docs/REGISTRY.yaml`](docs/REGISTRY.yaml) is a generated flat list of all tagged docs and closed tickets. Agents and scripts query it instead of scanning the tree.
 
 ---
 
@@ -93,9 +108,7 @@ Full-text search works across all four sections. Every page shows a status badge
 | Observability and how to run | [`docs/observability/`](docs/observability/) |
 | Compliance, parity ledger, divergences | [`docs/parity_ledger/`](docs/parity_ledger/) · [`docs/guidelines/`](docs/guidelines/) |
 | Design patterns and coding conventions | [`docs/guidelines/design_patterns.md`](docs/guidelines/design_patterns.md) |
-| AI tooling (agents, workflows, skills) | [`docs/ai/`](docs/ai/) |
-| Frontmatter schema (doc classification) | [`docs/guidelines/frontmatter_schema.md`](docs/guidelines/frontmatter_schema.md) |
-| Doc registry (machine-readable index) | [`docs/REGISTRY.yaml`](docs/REGISTRY.yaml) |
+| AI-first engineering workflow | [`docs/ai/`](docs/ai/) |
 
 Full doc index: [docs/README.md](docs/README.md)
 
@@ -112,6 +125,7 @@ Resource budgets (for memory/timeout control in constrained environments):
 ```bash
 pytest tests/ --resource-budget=small    # 1 GB RAM, 15s timeout
 pytest tests/ --resource-budget=medium   # 4 GB RAM, 60s timeout (default)
+pytest tests/ --resource-budget=large    # 8 GB RAM, for long calibration tests
 pytest tests/ --resource-budget=off      # no limits
 ```
 
@@ -119,15 +133,16 @@ Never run `pytest tests/` without scoping — scope to the domain under change. 
 
 ---
 
-## AI Tooling
+## AI-first engineering workflow
 
-This project uses Claude Code subagents and workflows to automate the development and simulation lifecycle:
+The project is developed with an AI-first workflow: development agents work in defined roles (planning, implementation, review) under rules kept in the repository. Its purpose is:
 
-- **`/implement-ticket`** — full ticket lifecycle (scope → investigate → plan → review → implement → test → close)
-- **`/investigate-simulation-result`** — deep multi-agent run analysis
-- **`/generate-simulation-setup`** — generate world/scenario/experiment specs
+- **Coordination:** work is split into tickets with scope and acceptance criteria, and each role owns a defined set of files.
+- **Gates:** a ticket passes scoping, investigation, planning, review, tests and a definition-of-done check before it closes. A failing gate is reported, not worked around.
+- **Traceability:** every ticket, plan, investigation and run is recorded under `agent-working/`, and every commit names its ticket.
+- **Knowledge search:** a semantic index over docs and tickets, and a code graph, are queried before any change.
 
-See [docs/ai/](docs/ai/) for the full agent and workflow reference.
+None of this replaces tests or review; it is how the work is organised. See [docs/ai/](docs/ai/) for roles, workflows and gates.
 
 ---
 
@@ -138,15 +153,15 @@ Redis Streams; there is no Kafka or RabbitMQ (`docs/architecture/devops_baseline
 
 ```bash
 docker compose up -d                                  # backend, redis, ai_worker, frontend
-docker compose --profile observability up -d          # adds Prometheus, Grafana, Loki, Promtail, Tempo, ntfy and the exporters
-# Grafana: http://localhost:3000 (user admin; the password is the gitignored secret file docker/secrets/grafana_admin_password)
+docker compose --profile observability up -d          # adds Prometheus, Grafana, Loki, Alloy (log shipping), Tempo, ntfy and the exporters
+# Grafana: http://localhost:3000 (set GRAFANA_PORT if the docs site uses 3000; user admin; the password is the gitignored secret file docker/secrets/grafana_admin_password)
 ```
 
-The observability profile needs its secret files first (Grafana password, ntfy topic and token): the steps are in the header of
+Tempo runs in that profile, but the simulation code does not emit trace spans yet. The observability profile needs its secret files first (Grafana password, ntfy topic and token): the steps are in the header of
 `compose.yaml`. Alerts, drills and first checks are in [`docs/runbooks/`](docs/runbooks/README.md).
 
 ---
 
-## Contributing
+## License and contributing
 
-See [CONTRIBUTING.md](CONTRIBUTING.md). Tickets live in [`agent-working/tickets/`](agent-working/tickets/); active work tracked in [`agent-working/tickets/working_log.csv`](agent-working/tickets/working_log.csv).
+The code is public but not open source: [LICENSE](LICENSE) is All Rights Reserved, with provisions for versions previously released under MIT. See [CONTRIBUTING.md](CONTRIBUTING.md) for engineering rules. Tickets live in [`agent-working/tickets/`](agent-working/tickets/).
