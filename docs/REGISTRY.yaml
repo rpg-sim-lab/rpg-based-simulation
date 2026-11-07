@@ -7995,6 +7995,24 @@
   - delivery
   - documentation
 - type: ticket
+  path: agent-working/tickets/done/TCK-20261103-THE-CONCURRENT-AND-SEQUENTIAL-EXECUTORS-GIVE-DIFFERENT-WORLDS.md
+  ticket_id: TCK-20261103-THE-CONCURRENT-AND-SEQUENTIAL-EXECUTORS-GIVE-DIFFERENT-WORLDS
+  title: The concurrent and sequential executors give different worlds on the same
+    seed, with no load, against the bit-identical law
+  tier: standard
+  ticket_type: bug
+  date: '2026-11-03'
+  related_code_areas:
+  - ConcurrentExecutionAdapter
+  - tests/integration/kernel/test_executor_determinism.py, test_determinism_suite.py,
+    test_tied_worker_result_order.py, tests/perf/test_concurrency_parity.py
+  - _run_engine
+  artifact_files:
+  - agent-working/stored_artifacts/TCK-20261103-THE-CONCURRENT-AND-SEQUENTIAL-EXECUTORS-GIVE-DIFFERENT-WORLDS/investigation.md
+  - agent-working/stored_artifacts/TCK-20261103-THE-CONCURRENT-AND-SEQUENTIAL-EXECUTORS-GIVE-DIFFERENT-WORLDS/plan.md
+  - agent-working/stored_artifacts/TCK-20261103-THE-CONCURRENT-AND-SEQUENTIAL-EXECUTORS-GIVE-DIFFERENT-WORLDS/test_plan.md
+  tags: []
+- type: ticket
   path: agent-working/tickets/todos/TCK-20261103-A-CREATURE-WITH-BOTH-NEEDS-PRESSING-NEITHER-SLEEPS-NOR-FEEDS-ENOUGH.md
   ticket_id: TCK-20261103-A-CREATURE-WITH-BOTH-NEEDS-PRESSING-NEITHER-SLEEPS-NOR-FEEDS-ENOUGH
   title: 'A wild creature with hunger and sleep both pressing collapses again and
@@ -8080,21 +8098,6 @@
   related_code_areas:
   - to_canonical_dict
   - src/core/strategic.py, src/core/cognition.py, src/core/self_model.py, src/core/models/
-  artifact_files: []
-  tags: []
-- type: ticket
-  path: agent-working/tickets/todos/TCK-20261103-THE-CONCURRENT-AND-SEQUENTIAL-EXECUTORS-GIVE-DIFFERENT-WORLDS.md
-  ticket_id: TCK-20261103-THE-CONCURRENT-AND-SEQUENTIAL-EXECUTORS-GIVE-DIFFERENT-WORLDS
-  title: The concurrent and sequential executors give different worlds on the same
-    seed, with no load, against the bit-identical law
-  tier: standard
-  ticket_type: bug
-  date: '2026-11-03'
-  related_code_areas:
-  - ConcurrentExecutionAdapter
-  - tests/integration/kernel/test_executor_determinism.py, test_determinism_suite.py,
-    test_tied_worker_result_order.py, tests/perf/test_concurrency_parity.py
-  - _run_engine
   artifact_files: []
   tags: []
 - type: ticket
