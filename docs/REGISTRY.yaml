@@ -7996,6 +7996,23 @@
   - delivery
   - documentation
 - type: ticket
+  path: agent-working/tickets/done/TCK-20261107-README-OVERVIEW-AND-VERIFICATION-SCOPE.md
+  ticket_id: TCK-20261107-README-OVERVIEW-AND-VERIFICATION-SCOPE
+  title: The root README names classes that do not exist (WorldLoop, IdentityAspect
+    and the other aspects), describes a four-section published docs site that has
+    one unpublished section, lists Promtail where Alloy ships logs, and frames determinism
+    without its scope
+  tier: hotfix
+  ticket_type: repair
+  date: '2026-11-07'
+  related_code_areas:
+  - src/engine/kernel.py, src/api/engine_manager.py, src/api/ws/stream.py, src/engine/scenario_checkpoint.py,
+    compose.yaml, Makefile, codebase/reports/replay_check.py, tests/conftest.py
+  artifact_files: []
+  tags:
+  - documentation
+  - determinism
+- type: ticket
   path: agent-working/tickets/done/TCK-20261107-THREE-CROWDED-V3-STARVATIONS-GET-SCOPED-KNOWN-ENTRIES.md
   ticket_id: TCK-20261107-THREE-CROWDED-V3-STARVATIONS-GET-SCOPED-KNOWN-ENTRIES
   title: Five V3 starvations (crowded_frontier s42 e30, s45 e37, s45 e31, s46 e9;
