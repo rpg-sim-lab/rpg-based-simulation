@@ -100,6 +100,8 @@ FYI, not part of this ruling and not verified: the recruit group (`recruit_{paye
 
 (end of ruling)
 
+Correction to test (c) (rpg-designer, relayed by lead-planner from lead-planner-u24, 2026-11-09): "My test (c) was wrong: a reward the treasury can't cover records owed debt instead of rejecting. Replacing it with the two WAGE cases is right, and the owed-debt reward pair isn't required. Please put this correction in the ticket next to my original wording."
+
 ## Test Summary
 (empty)
 
