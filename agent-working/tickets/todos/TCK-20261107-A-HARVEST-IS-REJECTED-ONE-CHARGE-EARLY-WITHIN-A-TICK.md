@@ -75,6 +75,21 @@ Planner scope (rpg-planner-ubuntu, 2026-11-08; owner dispatch "yes", logged at #
 - R-tx-09 (exact debit/credit assertions on a successful transfer) is folded in, as the ticket says.
 - World impact: run the not-slow economy and conservation tests. Gate-world measurement only if those tests move, and only on a fresh go.
 
+### Rule-owner ruling (relayed by lead-planner from lead-planner-u24, 2026-11-08)
+
+Harvest ruling (rpg-designer, under #715 6721260970): it's a defect. Keep charges_delta and drop the NODE reservation, both where it's written and where it's read.
+
+1. Defect, not an intended guard. One accepted harvest is counted twice. `_apply_world_effects` (src/engine/economy.py:350-356) adds the harvest's -1 to `new_node_updates[node_id].charges_delta` and also adds +1 to `reservations[("NODE", node_id)]`. Both resolve paths in that file (:103 independent, :175 grouped) pass the same `new_node_updates` as `node_overrides` and the same `reservations` dict. So `resolve()` (src/core/conservation.py:317-323) computes remaining = charges + delta - reserved = 2 - 1 - 1 = 0, and the second same-tick harvest on a 2-charge node gets SOURCE_DEPLETED with 1 charge left. That breaks Bible 03 §3: a regular node loses 1 charge per harvest and yields until it reaches 0. The guard isn't conservative in any useful way, because the delta already stops duplication on its own. It just loses real yield.
+
+2. The proposed fix is right. charges_delta is the complete in-tick record: it starts from `update.node_updates`, so it carries node changes from earlier in the tick, and every accepted harvest in this phase adds to it. That alone keeps TOWN-122 (no duplicate yield). For a LOOT node, the delta takes every charge, so the reservation was never needed there either. Stop writing the NODE reservation at economy.py:356 as well as reading it at conservation.py:321-323. Nothing else reads that key (only the resolver), so leaving a dead writer would be a hidden durable-looking record with no reader. The GROUND_ITEM and CORPSE reservations stay as they are. This is the simpler option. The other way, keeping the reservation and dropping the delta, would lose the changes made earlier in the tick.
+
+What the ticket must also change:
+(a) tests/unit/resource/test_node_charge_accounting.py::test_reserved_last_charge_cannot_be_harvested_again_in_the_same_tick passes a reservation with no delta. It must be rewritten to the real apply-path shape: last charge taken earlier in the tick means delta -1, giving SOURCE_DEPLETED. Add the new case: 2-charge node, one harvest already accepted (delta -1), so the second is accepted and the node reaches 0. Add one through the apply path too: two actors on a 2-charge node in one tick both yield, and a third is rejected. This changes an RPG test expectation, so rpg-planner signs off. My ruling is that the new expectation is the Bible's.
+(b) docs/mechanics/resource_conservation_contract.md, "Concurrent Actor Protection": the sentence "For NODE the reservation is subtracted from the remaining charges (`conservation.py:82-91`) ..." gets replaced with: "For NODE there is no reservation: the in-tick charges_delta (node_overrides) already counts every accepted harvest and earlier node change, so a node rejects with SOURCE_DEPLETED only when that count reaches 0." Also change "populates reservations only for NODE, GROUND_ITEM, and CORPSE" to "only for GROUND_ITEM and CORPSE". Update the TOWN-122 ledger evidence to the new test.
+(c) Measurement: this changes world paths (more harvests succeed), so the default tier applies: crowded only, 5x5000, pinned and paired. Report how many same-tick repeat harvests the arm accepted on a node, because zero means crowded doesn't exercise the fix and that has to be named. Conservation counts must balance, and any arm STARVATION not covered by a known entry follows the usual rule. It can ride a combined run.
+
+Everything else stays idle.
+
 ## Test Summary
 
 ## Files Changed

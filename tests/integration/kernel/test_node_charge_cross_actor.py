@@ -2,7 +2,7 @@
 
 Parity ``TOWN-122``: two actors completing the same node charge in one tick cannot duplicate the
 yield. Resolver-level branches are covered in ``tests/unit/resource/test_node_charge_accounting.py``;
-this test proves the pipeline accumulates the reservation across the two actors' intents.
+this file proves the pipeline counts every accepted harvest of a node once, through the node's in-tick charges_delta.
 """
 
 import pytest
@@ -46,3 +46,38 @@ def test_two_actors_on_the_last_charge_yield_exactly_once():
     yields = [u for u in refined.entity_updates.values() if u.inventory is not None]
     assert len(yields) == 1
     assert refined.node_updates[_NODE_ID].charges_delta == -1
+
+
+def test_two_actors_on_a_two_charge_node_both_yield_and_a_third_is_rejected():
+    actors = [make_entity(1), make_entity(2), make_entity(3)]
+    node = make_resource_node(_NODE_ID, remaining_charges=2, max_charges=2)
+    state = make_resource_state(entities=actors, nodes=[node])
+    update = StateUpdate(
+        entity_updates={
+            actor.id: EntityUpdate(
+                entity_id=actor.id,
+                resource_transfers=[
+                    ResourceTransferIntent(
+                        transaction_id=f"txn-{actor.id}",
+                        source_id=_NODE_ID,
+                        source_kind="NODE",
+                        items_add=[ItemStack("iron_ore", 1)],
+                        transfer_kind="HARVEST",
+                    )
+                ],
+            )
+            for actor in actors
+        }
+    )
+
+    refined = AuthoritativeApplyPipeline.refine(state, update)
+
+    yielding = sorted(i for i, u in refined.entity_updates.items() if u.inventory is not None)
+    # exact credit: each yielding actor gains exactly one iron_ore and no gold
+    for actor_id in yielding:
+        inv = refined.entity_updates[actor_id].inventory
+        assert inv.items_add == [ItemStack("iron_ore", 1)]
+        assert inv.gold_delta == 0
+    # exact debit: the node loses exactly one charge per accepted harvest
+    assert len(yielding) == 2
+    assert refined.node_updates[_NODE_ID].charges_delta == -2

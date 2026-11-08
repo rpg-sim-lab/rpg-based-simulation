@@ -43,7 +43,7 @@ Items, gold, and node charges in the world obey strict conservation. An entity c
 2. **Destination capacity check (Gate 2):** `InventoryService.can_add_items_with_removals(inventory, items_add, items_remove)`. This accounts for simultaneous removals so that a swap or craft does not over-count slots. Runs before source validation for every `source_kind`.
 
 3. **Source existence / stock check (Gate 3):** The specific guard depends on `source_kind`:
-   - `NODE`: node must exist in `state.resource_nodes`; remaining charges > 0 (accounting for `node_overrides` from same-tick sliding updates and `reservations` dict for concurrent actors)
+   - `NODE`: node must exist in `state.resource_nodes`; remaining charges > 0 (accounting for `node_overrides` from same-tick sliding updates, which count every accepted harvest; NODE has no reservation)
    - `GROUND_ITEM`: item must exist in `state.ground_items`; not reserved by another actor
    - `CORPSE`: corpse must exist in `state.corpses`; not reserved
    - `CRAFTING`: entity must own all materials; gold >= `gold_cost`; capacity check already done
@@ -209,9 +209,9 @@ add/remove/gold-spend actually happens in production.
 
 ## Concurrent Actor Protection
 
-The resolver accepts an optional `reservations` dict (`Dict[tuple[str, str|int], int]`). Before committing a GROUND_ITEM, CORPSE, QUEST, CHEST, or RECRUIT source, the resolver checks `reservations.get((source_kind, source_id), 0)`. If > 0, the second actor receives `TARGET_LOCKED`. For NODE the reservation is subtracted from the remaining charges (`conservation.py:82-91`), so a fully reserved node rejects with `SOURCE_DEPLETED` rather than `TARGET_LOCKED`.
+The resolver accepts an optional `reservations` dict (`Dict[tuple[str, str|int], int]`). Before committing a GROUND_ITEM, CORPSE, QUEST, CHEST, or RECRUIT source, the resolver checks `reservations.get((source_kind, source_id), 0)`. If > 0, the second actor receives `TARGET_LOCKED`. For NODE there is no reservation: the in-tick charges_delta (node_overrides) already counts every accepted harvest and earlier node change, so a node rejects with SOURCE_DEPLETED only when that count reaches 0.
 
-The apply path (`src/engine/economy.py`, `_apply_world_effects`) populates reservations only for NODE, GROUND_ITEM, and CORPSE. The QUEST, CHEST, and RECRUIT guards therefore trigger only when a caller hands `resolve()` a reservations dict directly. There is no reservation guard for buildings (SHOP_BUY / SHOP_SELL).
+The apply path (`src/engine/economy.py`, `_apply_world_effects`) populates reservations only for GROUND_ITEM and CORPSE. The QUEST, CHEST, and RECRUIT guards therefore trigger only when a caller hands `resolve()` a reservations dict directly. There is no reservation guard for buildings (SHOP_BUY / SHOP_SELL).
 
 This mechanism prevents duplication when two actors complete the same loot target in the same tick.
 
@@ -222,8 +222,8 @@ This mechanism prevents duplication when two actors complete the same loot targe
 | Scenario | Behavior |
 |---|---|
 | Craft output would fill inventory, but craft also removes materials that free slots | `can_add_items_with_removals` accounts for removals — slot freed by material removal counts toward capacity for output |
-| Two actors harvest same node in same tick | First actor gets `TransactionResult(accepted=True)`; `reservations` marks it; second actor gets `TARGET_LOCKED` |
-| LOOT node picked up by one actor while another targets it | Same concurrent protection via reservations |
+| Two actors harvest same node in same tick | First actor gets `TransactionResult(accepted=True)` and the node's in-tick `charges_delta` records it; each later actor is accepted while charges remain and gets `SOURCE_DEPLETED` once the charges plus `charges_delta` reach 0 |
+| LOOT node picked up by one actor while another targets it | Same protection through the in-tick `charges_delta`: a LOOT harvest takes every charge, so the next actor gets `SOURCE_DEPLETED` |
 | Entity sells all items and then tries to deposit gold (zero-item transfer) | Gate 2 passes trivially; Gate 3 checks gold amount; succeeds if transfer is valid |
 | `source_kind` not in known set | Returns `UNKNOWN_SOURCE_KIND` immediately after Gate 2 |
 
@@ -272,7 +272,7 @@ Result: accepted=False, reason=INSUFFICIENT_GOLD
 | `tests/unit/resource/test_resource_conservation_regression.py` | Harvest conservation: inventory-full harvest leaves the node and inventory unchanged |
 | `tests/unit/resource/test_conservation_rejection_paths.py` | Every rejection path of `resolve()`: `accepted is False`, exact `ReasonCode`, no update fields; `TARGET_LOCKED` per reservation-guarded source kind |
 | `tests/unit/resource/test_rejected_transfer_apply_path.py` | A rejected transfer leaves its transaction id out of `processed_transaction_ids`, changes no durable state, and a grouped rejection rolls back without burning ids |
-| `tests/unit/resource/test_node_charge_accounting.py` | NODE charge accounting including in-tick reservations |
+| `tests/unit/resource/test_node_charge_accounting.py` | NODE charge accounting including the in-tick `charges_delta` |
 | `tests/unit/resource/test_resource_conflicts.py`, `tests/integration/kernel/test_race_conditions_v2.py` | Concurrent actor reservation prevents loot duplication (end to end through the apply path) |
 | `tests/unit/resource/test_transaction_grouping.py` | Grouped transfers commit together or roll back together |
 | `tests/unit/resource/test_resource_v2_boundary.py` | Shop sell, crafting, tax and recruitment transfers through the resolver |
