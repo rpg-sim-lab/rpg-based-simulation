@@ -1,10 +1,10 @@
 ---
-status: active
+status: historical
 layer: observability
 authority: P1
 audience: agent
 ticket_id: TCK-20261108-DLQ-CONTRACT-NAMES-NO-OUTCOME-FOR-A-FAILED-DLQ-WRITE
-phase: open
+phase: done
 date: 2026-11-08
 tags: [documentation, observability]
 ---
@@ -15,7 +15,7 @@ tags: [documentation, observability]
 The observability hot-path contract says an exhausted message is routed to the DLQ and ACKed, but names no outcome when the DLQ write fails or the source entry is gone
 
 ## Status
-OPEN
+DONE
 
 ## Tier
 hotfix
@@ -84,3 +84,4 @@ Edited `:124` and added two rows after it. Reworded `:143` to say the ACK happen
 - docs/architecture/observability_hot_path_safety_contract.md
 
 ## Completion Summary
+Done. The contract names an outcome for a failed DLQ write and for an unreadable source entry, as specified by rpg-planner-ubuntu. The code fix ships separately in rpg's PR (TCK-20261107-AN-EXHAUSTED-STREAM-MESSAGE-IS-ACKED-WHEN-ITS-DLQ-WRITE-FAILS).

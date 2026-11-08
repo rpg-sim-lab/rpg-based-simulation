@@ -1,10 +1,10 @@
 ---
-status: active
+status: historical
 layer: architecture
 authority: P1
 audience: agent
 ticket_id: TCK-20261108-KERNEL-CONCURRENCY-DIAGRAMS-SHOW-A-SEED-THE-PACKET-NO-LONGER-CARRIES
-phase: open
+phase: done
 date: 2026-11-08
 tags: [documentation, determinism]
 ---
@@ -15,7 +15,7 @@ tags: [documentation, determinism]
 The kernel concurrency design diagrams show a per-packet RNG seed, but since #837 every packet carries the world seed
 
 ## Status
-OPEN
+DONE
 
 ## Tier
 hotfix
@@ -79,3 +79,4 @@ None. Checked on 2026-11-08 by reading the doc's lines 71, 106-107 and 130, and 
 - docs/architecture/kernel_concurrency_design_philosophy.md
 
 ## Completion Summary
+Done. Both diagrams show packets carrying the world seed, and note 2 links the canonical determinism doc. The mermaid diagrams were not rendered.

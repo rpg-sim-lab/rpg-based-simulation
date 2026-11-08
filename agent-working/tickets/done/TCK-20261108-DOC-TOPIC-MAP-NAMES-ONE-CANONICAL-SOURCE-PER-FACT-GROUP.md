@@ -1,10 +1,10 @@
 ---
-status: active
+status: historical
 layer: architecture
 authority: P1
 audience: agent
 ticket_id: TCK-20261108-DOC-TOPIC-MAP-NAMES-ONE-CANONICAL-SOURCE-PER-FACT-GROUP
-phase: open
+phase: done
 date: 2026-11-08
 tags: [documentation, architecture]
 ---
@@ -15,7 +15,7 @@ tags: [documentation, architecture]
 A reviewer has no single page naming the canonical doc and normative source for each fact group, so reviews re-derive it from code
 
 ## Status
-OPEN
+DONE
 
 ## Tier
 standard
@@ -68,9 +68,19 @@ None (docs only).
 - The fact-group list is a starting set; investigation may split or merge groups.
 
 ## Implementation Notes
+- Wrote `docs/architecture/doc_topic_map.md`. It has the precedence of normative sources, the verification-status rule, a map of 30 fact groups (each with a canonical doc, normative level, satellites and confidence), six known conflicts (C1-C6), each with evidence and an owner, and a "Not covered" list.
+- All five D25 rows are kept.
+- Every canonical doc is marked unverified until the P1 fields exist.
 
 ## Test Summary
+- `validate_frontmatter.py --content-type doc` reports no violations.
+- `pytest -m "not slow" tests/docs`: 91 passed, 2 skipped, 1 xfailed.
+- All relative links in the page resolve (shell loop).
+- The website build was not re-run for this page; the heavy slot was in use, and `onBrokenLinks` is `warn`.
 
 ## Files Changed
+- docs/architecture/doc_topic_map.md
+- agent-working/staging_artifacts/ (investigation, plan, test_plan)
 
 ## Completion Summary
+Done. The map names one canonical doc per fact group and states the precedence. The conflicts it found are not fixed here; C1, C2, C3 (doc), C5 and C6 go to rpg, and C3 (skill files) and C4 to agent-working, as findings. Known gap: canonical docs were picked from headers and frontmatter, not full bodies (confidence column).

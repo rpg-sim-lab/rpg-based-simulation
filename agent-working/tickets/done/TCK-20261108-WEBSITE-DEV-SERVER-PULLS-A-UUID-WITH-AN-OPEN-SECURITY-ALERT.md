@@ -1,10 +1,10 @@
 ---
-status: active
+status: historical
 layer: misc
 authority: P1
 audience: agent
 ticket_id: TCK-20261108-WEBSITE-DEV-SERVER-PULLS-A-UUID-WITH-AN-OPEN-SECURITY-ALERT
-phase: open
+phase: done
 date: 2026-11-08
 tags: []
 ---
@@ -15,7 +15,7 @@ tags: []
 The docs website's dev server pulls uuid 8.3.2, which has an open medium Dependabot alert that no update PR will fix
 
 ## Status
-OPEN
+DONE
 
 ## Tier
 hotfix
@@ -76,3 +76,4 @@ Added `"sockjs": {"uuid": "^11.1.1"}` to `website/package.json` `overrides`, the
 - website/package-lock.json
 
 ## Completion Summary
+Done. sockjs's uuid is overridden to 11.1.1, so Dependabot alert #143 should close once this merges to main. Not done here: deepmerge alert #249 (no fix exists) and the `/website` Dependabot entry (platform, #845).

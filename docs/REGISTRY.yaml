@@ -481,6 +481,16 @@
   - observability
   - delivery
 - type: doc
+  path: docs/architecture/doc_topic_map.md
+  title: Documentation topic map
+  status: active
+  layer: architecture
+  authority: P1
+  audience: agent
+  tags:
+  - documentation
+  - architecture
+- type: doc
   path: docs/architecture/doc_updater_agent.md
   title: Document-Update Agent and Phase
   status: active
@@ -7966,6 +7976,51 @@
   - content
   last_verified: '2026-10-09'
 - type: ticket
+  path: agent-working/tickets/done/TCK-20261108-DLQ-CONTRACT-NAMES-NO-OUTCOME-FOR-A-FAILED-DLQ-WRITE.md
+  ticket_id: TCK-20261108-DLQ-CONTRACT-NAMES-NO-OUTCOME-FOR-A-FAILED-DLQ-WRITE
+  title: The observability hot-path contract says an exhausted message is routed to
+    the DLQ and ACKed, but names no outcome when the DLQ write fails or the source
+    entry is gone
+  tier: hotfix
+  ticket_type: repair
+  date: '2026-11-08'
+  related_code_areas:
+  - src/observability/stream/consumer.py
+  artifact_files: []
+  tags:
+  - documentation
+  - observability
+- type: ticket
+  path: agent-working/tickets/done/TCK-20261108-DOC-TOPIC-MAP-NAMES-ONE-CANONICAL-SOURCE-PER-FACT-GROUP.md
+  ticket_id: TCK-20261108-DOC-TOPIC-MAP-NAMES-ONE-CANONICAL-SOURCE-PER-FACT-GROUP
+  title: A reviewer has no single page naming the canonical doc and normative source
+    for each fact group, so reviews re-derive it from code
+  tier: standard
+  ticket_type: feature
+  date: '2026-11-08'
+  related_code_areas: []
+  artifact_files:
+  - agent-working/stored_artifacts/TCK-20261108-DOC-TOPIC-MAP-NAMES-ONE-CANONICAL-SOURCE-PER-FACT-GROUP/investigation.md
+  - agent-working/stored_artifacts/TCK-20261108-DOC-TOPIC-MAP-NAMES-ONE-CANONICAL-SOURCE-PER-FACT-GROUP/plan.md
+  - agent-working/stored_artifacts/TCK-20261108-DOC-TOPIC-MAP-NAMES-ONE-CANONICAL-SOURCE-PER-FACT-GROUP/test_plan.md
+  tags:
+  - documentation
+  - architecture
+- type: ticket
+  path: agent-working/tickets/done/TCK-20261108-KERNEL-CONCURRENCY-DIAGRAMS-SHOW-A-SEED-THE-PACKET-NO-LONGER-CARRIES.md
+  ticket_id: TCK-20261108-KERNEL-CONCURRENCY-DIAGRAMS-SHOW-A-SEED-THE-PACKET-NO-LONGER-CARRIES
+  title: 'The kernel concurrency design diagrams show a per-packet RNG seed, but since
+    #837 every packet carries the world seed'
+  tier: hotfix
+  ticket_type: repair
+  date: '2026-11-08'
+  related_code_areas:
+  - src/engine/executor.py, src/core/worker_protocol.py, src/platform/rng.py
+  artifact_files: []
+  tags:
+  - documentation
+  - determinism
+- type: ticket
   path: agent-working/tickets/done/TCK-20261108-README-DEBUG-RUN-NAMES-AN-ENV-VAR-THE-CODE-NEVER-READS.md
   ticket_id: TCK-20261108-README-DEBUG-RUN-NAMES-AN-ENV-VAR-THE-CODE-NEVER-READS
   title: The README's full-observability run sets OBS_MODE, which the code never reads,
@@ -7979,6 +8034,18 @@
   tags:
   - documentation
   - observability
+- type: ticket
+  path: agent-working/tickets/done/TCK-20261108-WEBSITE-DEV-SERVER-PULLS-A-UUID-WITH-AN-OPEN-SECURITY-ALERT.md
+  ticket_id: TCK-20261108-WEBSITE-DEV-SERVER-PULLS-A-UUID-WITH-AN-OPEN-SECURITY-ALERT
+  title: The docs website's dev server pulls uuid 8.3.2, which has an open medium
+    Dependabot alert that no update PR will fix
+  tier: hotfix
+  ticket_type: repair
+  date: '2026-11-08'
+  related_code_areas:
+  - website/package.json, website/package-lock.json
+  artifact_files: []
+  tags: []
 - type: ticket
   path: agent-working/tickets/done/TCK-20261107-EVERY-PR-CLOSES-A-TICKET.md
   ticket_id: TCK-20261107-EVERY-PR-CLOSES-A-TICKET
