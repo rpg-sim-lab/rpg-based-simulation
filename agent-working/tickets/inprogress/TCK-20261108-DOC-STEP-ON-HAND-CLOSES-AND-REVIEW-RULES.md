@@ -4,7 +4,7 @@ layer: ai
 authority: P1
 audience: agent
 ticket_id: TCK-20261108-DOC-STEP-ON-HAND-CLOSES-AND-REVIEW-RULES
-phase: open
+phase: inprogress
 date: 2026-11-08
 tags: [ai, documentation, governance, delivery, claude-md]
 ---
@@ -15,7 +15,7 @@ tags: [ai, documentation, governance, delivery, claude-md]
 Hand-orchestrated closes get the doc step, the Definition of Done records known defects, and the review rules that don't need P1 are written down.
 
 ## Status
-OPEN
+INPROGRESS
 
 ## Tier
 hotfix
@@ -68,13 +68,18 @@ Batch E1 of the plan (origin/lead-docs-review-source:agent-working/lead/docs_as_
 - CLAUDE.md and delivery_process.md are unowned in the route map; agent-working edited both in #840.
 
 ## Implementation Notes
-(to be filled by the implementer)
+- Owner direct OK on the CLAUDE.md diff: "OK as shown", logged at #715 6721186250 (2026-11-08), covering exactly the four pointer hunks (sha256 prefix 3741c98c66b8b0f0), hunk 1 untrimmed. The committed `git diff origin/main HEAD -- CLAUDE.md` has the same hash.
+- CLAUDE.md: (1) the P5 review paragraph after the Context Scan stop line (the reviewer's Q3 wording the plan marks "X27 ACCEPT", plus a pointer); (2) an After Work bullet for the hand-close doc step; (3) the Definition of Done line gains the known-defect limits wording; (4) Mechanics Bible table row 07. Each is a pointer; the rules live once in `docs/guides/delivery_process.md`, new section "Docs as the review source": the hand-close docs step, P3 known defects and limits, and the P5 rules that do not depend on the verification fields (start from documents, scope, pin, fix in the same PR / normative docs go to the rule owner).
+- Out of scope as ticketed: the P5 rules that cite P1 (E2), the limits entries themselves, plan audit item 8.
 
 ## Test Summary
-(to be filled by the implementer)
+- `test_agent_working_paths_guard.py` + `test_delivery_pr_render.py` + `tests/docs`: 194 passed, 2 skipped, 1 xfailed. No test pins the CLAUDE.md or delivery_process text that changed.
+- Full `tests/tools`: see the final entry.
+- AC 4: the guard recorded governing-edit rows for the CLAUDE.md edits (agent-working/agent-monitoring/data/2026-W45/governing_edits.jsonl).
+- Known gap: none stated.
 
 ## Files Changed
-(to be filled by the implementer)
+CLAUDE.md; docs/guides/delivery_process.md; this ticket.
 
 ## Completion Summary
-(to be filled by the implementer)
+Hand-orchestrated closes now have a named doc step, the Definition of Done records found defects, and the review rules that need no verification fields are written once in delivery_process.md with four owner-approved CLAUDE.md pointers.
