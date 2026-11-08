@@ -7997,6 +7997,21 @@
   - documentation
   - observability
 - type: ticket
+  path: agent-working/tickets/done/TCK-20261107-A-RESTORED-SCENARIO-CHECKPOINT-DRAWS-FROM-SEED-0.md
+  ticket_id: TCK-20261107-A-RESTORED-SCENARIO-CHECKPOINT-DRAWS-FROM-SEED-0
+  title: A restored scenario checkpoint builds its RNG with base seed 0, so for any
+    nonzero seed the resumed run's stateless draws differ from the uninterrupted run
+  tier: hotfix
+  ticket_type: bug
+  date: '2026-11-07'
+  related_code_areas:
+  - src/engine/scenario_checkpoint.py, src/platform/rng.py, src/engine/scenario_runtime.py,
+    tests/integration/scenarios/test_scenario_runtime_service.py
+  artifact_files: []
+  tags:
+  - determinism
+  - bug
+- type: ticket
   path: agent-working/tickets/done/TCK-20261107-AN-EXHAUSTED-STREAM-MESSAGE-IS-ACKED-WHEN-ITS-DLQ-WRITE-FAILS.md
   ticket_id: TCK-20261107-AN-EXHAUSTED-STREAM-MESSAGE-IS-ACKED-WHEN-ITS-DLQ-WRITE-FAILS
   title: The stream consumer's reclaim sweep ACKs a message that has used up its delivery

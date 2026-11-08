@@ -375,6 +375,67 @@ class TestCheckpointRestore:
             f"restored hash {restored_hash!r}"
         )
 
+    @pytest.mark.parametrize("seed", [0, 13])
+    def test_restore_keeps_the_state_seed_and_the_per_tick_digest(self, tmp_path, seed):
+        """A run restored at tick N matches the unbroken run at every tick N+1..N+k, for a nonzero seed too.
+
+        The service is built with an initial state, so the unbroken run's RNG uses base_seed=state.seed
+        (scenario_runtime._build_kernel). Restore must give the resumed kernel's RNG the same base seed,
+        or every stateless draw after the restore comes from seed 0. The default-built service in
+        test_checkpoint_restore_determinism has no initial state and always takes the seed-0 branch,
+        so it cannot see this.
+        """
+        from src.core.state import AuthoritativeState
+        from src.engine.checkpoint import CanonicalStateHasher
+        from src.engine.scenario_checkpoint import ScenarioCheckpointer
+        from src.engine.scenario_runtime import ScenarioRuntimeService
+        from src.systems.world_systems.generator import EntityGenerator
+
+        spec = _make_spec()
+        split, total = 6, 12
+
+        def _fresh_service():
+            gen = EntityGenerator(seed)
+            hero = gen.spawn_hero((10.0, 10.0))
+            goblin = gen.spawn_goblin((12.0, 12.0))
+            state = AuthoritativeState(tick=0, seed=seed, entities={hero.id: hero, goblin.id: goblin})
+            return ScenarioRuntimeService(spec, initial_state=state)
+
+        def _digests(svc, ticks):
+            out = []
+            for _ in range(ticks):
+                svc.step()
+                out.append(CanonicalStateHasher.get_hash(svc._kernel.state))
+            return out
+
+        ref = _fresh_service()
+        try:
+            ref.start(tick_limit=split)
+            ref_tail = _digests(ref, total - split)
+        finally:
+            ref.abort()
+
+        ckpt = _fresh_service()
+        path = tmp_path / "ckpt.bin"
+        try:
+            ckpt.start(tick_limit=split)
+            ScenarioCheckpointer.save(ckpt, path)
+        finally:
+            ckpt.abort()
+
+        restored = ScenarioCheckpointer.restore(path, spec)
+        try:
+            assert restored._kernel._rng.seed == seed
+            # the behavioural form of the same law: a stateless draw is what a fresh run at this seed gives
+            from src.platform.rng import DeterministicRNG
+            from src.core.enums import Domain
+            assert restored._kernel._rng.get_float(Domain.COMBAT, 7, 3) == DeterministicRNG(seed).get_float(Domain.COMBAT, 7, 3)
+            restored_tail = _digests(restored, total - split)
+        finally:
+            restored.abort()
+
+        assert restored_tail == ref_tail
+
     def test_checkpoint_file_contains_rng_checkpoint(self, tmp_path):
         """Checkpoint header contains rng_checkpoint field."""
         import struct
