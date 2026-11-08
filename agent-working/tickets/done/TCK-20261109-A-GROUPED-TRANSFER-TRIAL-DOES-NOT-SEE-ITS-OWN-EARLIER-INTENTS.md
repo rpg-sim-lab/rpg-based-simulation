@@ -1,10 +1,10 @@
 ---
-status: active
+status: historical
 layer: economy
 authority: P1
 audience: agent
 ticket_id: TCK-20261109-A-GROUPED-TRANSFER-TRIAL-DOES-NOT-SEE-ITS-OWN-EARLIER-INTENTS
-phase: open
+phase: done
 date: 2026-11-09
 tags: [economy]
 ---
@@ -15,7 +15,7 @@ tags: [economy]
 A grouped transfer's trial resolves each intent without the node charges, reservations, treasury or building purse and stock taken by the intents before it in the same group
 
 ## Status
-OPEN
+DONE
 
 ## Tier
 hotfix
@@ -102,11 +102,21 @@ FYI, not part of this ruling and not verified: the recruit group (`recruit_{paye
 
 Correction to test (c) (rpg-designer, relayed by lead-planner from lead-planner-u24, 2026-11-09): "My test (c) was wrong: a reward the treasury can't cover records owed debt instead of rejecting. Replacing it with the two WAGE cases is right, and the owed-debt reward pair isn't required. Please put this correction in the ticket next to my original wording."
 
+Implementer notes (rpg-implementer-ubuntu):
+- Step 1, producers that set `group_id` on a `ResourceTransferIntent`: quest reward (src/engine/quests.py:259; quest_opportunity_rewards.py:91), party reward (reward_distribution.py:117), recruit (core_actions.py, since removed by TCK-20261109-A-RECRUIT-PAYOUT-IS-PAID-IN-FULL-WHATEVER-THE-PAYER-HOLDS). Each puts at most one intent per entity in a group; `is_group_required` is a separate flag that groups nothing. So the defect is latent today; the fix went ahead per ruling Q2.
+- Step 3, shallow-copy check: every value in the node, building, treasury and home-storage dicts is replaced, never mutated in place. `ResourceNodeUpdate` and `BuildingUpdate` are frozen dataclasses, `_apply_world_effects` uses `replace` and `merge`, `apply_transfer` returns a new dict, and `source_debits` entries are replaced by `merge`. The lists (ground_rem, corpses_rem, corpses_upd, owed) are appended to or slice-assigned in place, so the trial gets copies of them. No in-place mutation of a dict value was found.
+- Shape: `_WorldRecords` bundles the ten containers `_apply_world_effects` and `_note_effects` write; `.copy()` is shallow. `ResourceTransactionSystem._trial_group` trials the group on a copy; the commit loop is unchanged. `ResourceTransactionResolver` is now a module-top import of economy.py (no cycle).
+- Test (c) as the ruling wrote it does not hold: a short treasury on a reward records owed debt instead of rejecting. The tests use two maintenance-shift WAGE intents (treasury-funded, and a purse-only pair); rpg-designer accepted this (correction recorded above).
+
 ## Test Summary
-(empty)
+- tests/unit/resource/test_grouped_trial_sees_its_own_earlier_intents.py: 7 tests. On the unfixed code the one-charge node, treasury-funded wage pair and purse pair tests fail (3 failed, 4 passed); all 7 pass after the fix.
+- Regression: tests/unit/resource, tests/unit/economy, test_node_charge_cross_actor, test_race_conditions_v2 (including test_multi_intent_group_rollback_race): 315 passed, 1 skipped; later the scoped run with the social, cooperation and kernel suites: 829 passed, 1 skipped. `codebase.health`: OK, 0 worse.
+- Measurement (AC5): crowded_frontier seeds 42-46, 5000 ticks, base c0d458ae1 vs arm f558049a1 (src byte-identical to the rebased 38cf5dc71), PYTHONHASHSEED=0, audit_mode, 11 cells, one at a time under lead-planner's slot (3G, cores 4-5). All 5 seeds have equal final_hash between base and arm (42 c5f6398b, 43 bb3067c3, 44 089115d6, 45 2209d096, 46 9fd13185), and base_42 equals its repeat (cells byte-equal). Conservation per cell: coin delta 0, unsourced adds 0, out-of-world 0, hard-law violations 0.
+- The group counter (a read-only wrapper on resolve_all, /data/vboxuser/Work/rpg-measure-group/grp_arm.py) read empty in every cell: crowded_frontier issues no groups at all, so it does not exercise the fix. Positive control, outside the cell set: one entity with a group of two NODE intents on a one-charge node. Base accepts both (charges_delta -2); the arm rolls the group back; the counter reads groups 1, more-than-one-intent 1, two-on-one-source 1 on both trees, and group_rollback_results 1 on the arm. The proof of the fix is the tests; the measurement shows the fix changes no world that does not hold such a group.
+- Not run: the full CI shard jobs and tests/architecture.
 
 ## Files Changed
-(empty)
+src/engine/economy.py; tests/unit/resource/test_grouped_trial_sees_its_own_earlier_intents.py; docs/mechanics/resource_conservation_contract.md; docs/parity_ledger/town_resource.yaml (TOWN-122, through the writer); this ticket.
 
 ## Completion Summary
-(empty)
+AC1 met (producers, reachability and the in-place-mutation check recorded). AC2 met: the one-charge node and the treasury-funded and purse pairs are red before, all seven green after (the treasury case uses WAGE intents, see the correction). AC3 met: the commit loop is unchanged. AC4 met: the named suites pass unchanged. AC5 met: equal fingerprints on all 5 seeds and the repeat, with the limits stated above. AC6 met: the contract text and TOWN-122 are changed in the same change. The residual risk is that no world exercises a group with two same-source intents, so the fix is proved by tests only.
