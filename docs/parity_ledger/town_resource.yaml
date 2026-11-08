@@ -1312,12 +1312,13 @@
     tests/integration/kernel/test_node_charge_cross_actor.py::test_two_actors_on_a_two_charge_node_both_yield_and_a_third_is_rejected;
     tests/unit/resource/test_node_charge_accounting.py::test_last_charge_taken_earlier_in_the_tick_cannot_be_harvested_again;
     tests/unit/resource/test_node_charge_accounting.py::test_second_harvest_of_a_two_charge_node_in_the_same_tick_is_accepted_and_takes_the_last_charge;
-    tests/unit/resource/test_node_charge_accounting.py::test_sliding_charge_delta_from_earlier_update_is_counted_before_yield
+    tests/unit/resource/test_node_charge_accounting.py::test_sliding_charge_delta_from_earlier_update_is_counted_before_yield;
+    tests/unit/resource/test_node_charge_accounting.py::test_a_node_reservation_no_longer_counts_against_the_charges
   divergence_note: null
   support_boundary: 'Proof added by the core-RPG test pilot and revised for the NODE
-    double-count fix: NODE-source harvest only (resolver sliding-delta branch and
-    the two-actor and three-actor pipeline cases). The same-tick corpse-loot sibling
-    (TOWN-123) is not covered here.'
+    double-count fix: NODE-source harvest only (the resolver''s in-tick charges_delta
+    branch, no NODE reservation, and the two-actor and three-actor pipeline cases).
+    The same-tick corpse-loot sibling (TOWN-123) is not covered here.'
 - id: TOWN-123
   text: Two actors completing the same corpse loot in the same tick cannot duplicate
     corpse rewards.

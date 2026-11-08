@@ -8100,20 +8100,6 @@
   artifact_files: []
   tags: []
 - type: ticket
-  path: agent-working/tickets/todos/TCK-20261107-A-HARVEST-IS-REJECTED-ONE-CHARGE-EARLY-WITHIN-A-TICK.md
-  ticket_id: TCK-20261107-A-HARVEST-IS-REJECTED-ONE-CHARGE-EARLY-WITHIN-A-TICK
-  title: A second harvest of a regular node in the same tick is rejected as depleted
-    while one charge remains, because the earlier accepted harvest is counted twice
-  tier: hotfix
-  ticket_type: bug
-  date: '2026-11-07'
-  related_code_areas:
-  - src/core/conservation.py, src/engine/economy.py
-  artifact_files: []
-  tags:
-  - economy
-  - bug
-- type: ticket
   path: agent-working/tickets/done/TCK-20261103-DELIVERY-GUIDE-PINNED-RUNNER-EVIDENCE-RULE.md
   ticket_id: TCK-20261103-DELIVERY-GUIDE-PINNED-RUNNER-EVIDENCE-RULE
   title: The delivery guide states that behaviour evidence comes from the pinned runner

@@ -1,10 +1,10 @@
 ---
-status: active
+status: historical
 layer: economy
 authority: P1
 audience: agent
 ticket_id: TCK-20261107-A-HARVEST-IS-REJECTED-ONE-CHARGE-EARLY-WITHIN-A-TICK
-phase: open
+phase: done
 date: 2026-11-07
 tags: [economy, bug]
 ---
@@ -15,7 +15,7 @@ tags: [economy, bug]
 A second harvest of a regular node in the same tick is rejected as depleted while one charge remains, because the earlier accepted harvest is counted twice
 
 ## Status
-OPEN
+DONE
 
 ## Tier
 hotfix
@@ -93,7 +93,12 @@ Everything else stays idle.
 (end of ruling)
 
 ## Test Summary
+Red on the unfixed code: test_a_node_reservation_no_longer_counts_against_the_charges and test_two_actors_on_a_two_charge_node_both_yield_and_a_third_is_rejected (1 yielder, expected 2). The delta-only unit cases pass on both because they already use the apply-path shape. Final head: tests/unit/resource + the cross-actor kernel test 276 passed, 1 skipped; tests/unit/economy 27 passed; test_conservation_rejection_paths, test_node_charge_accounting, test_node_charge_cross_actor, test_race_conditions_v2: 69 passed. Both 1-charge cross-actor tests pass at the final head: test_race_conditions_v2.py::test_race_condition_node_depletion and test_node_charge_cross_actor.py::test_two_actors_on_the_last_charge_yield_exactly_once. Health check: OK, the 2 report-only jscpd rows only.
+Measurement (crowded_frontier, seeds 42-46, 5000t, base 44c669016 vs arm 8a99e149c, audit_mode, signals_zeroed, 11 cells, harvester counter /data/vboxuser/Work/rpg-measure-harvest/harvest_arm.py; positive control base 1 accepted/0 repeats/2 depleted, fix 2/1/1): all 5 arm cells equal their base cell in final_hash and final roster; the base s42 repeat is byte-equal. Same-tick repeat harvests accepted: s43 3 (ordinal 2), s44 1, others 0, identical on both arms; all on nodes with 3 or more charges, which the old code also accepted. So crowded does NOT exercise the fix: no 2-charge-node repeat occurred. STARVATION: one, s45 e31 (known entry), same on both arms; no unowned delta. Conservation: coin delta 0, unsourced adds 0, out-of-world 0, meat books equal, hard-law violations 0, in every cell. Gap: the ledger tally has no item-ore or node-charge balance.
 
 ## Files Changed
+src/engine/economy.py; src/core/conservation.py; tests/unit/resource/test_node_charge_accounting.py; tests/integration/kernel/test_node_charge_cross_actor.py; tests/unit/resource/test_conservation_rejection_paths.py (docstring); docs/mechanics/resource_conservation_contract.md; docs/parity_ledger/town_resource.yaml (TOWN-122).
 
 ## Completion Summary
+One accepted harvest is now counted once, by the node's in-tick charges_delta; the NODE reservation is neither written nor read (rule-owner ruling recorded above; rpg-planner u24 YES, owner clearance #715 6722270184). R-tx-09: debit, credit, recipient and a committing bystander are asserted in the pipeline test. Crowded measurement shows no world change (see Test Summary), so the fix is proven by the tests, not by a world delta.
+Out of scope, predating the fix, disclosed: in the grouped path (economy.py ~166-180) the trial loop passes node_overrides=new_node_updates but nothing updates it between trial intents, so two same-node intents in one group can both pass on a 1-charge node. rpg-planner is filing a ticket; no fix here.

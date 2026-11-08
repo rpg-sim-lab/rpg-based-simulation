@@ -104,7 +104,7 @@ Both share the NODE code path in `resolve()`. Distinction is `charges_delta`:
 | Regular (e.g. `iron_vein`) | `-1` | One charge consumed per harvest |
 | Loot (e.g. `treasure_chest`) | `-node.remaining_charges` | All charges consumed in one interaction |
 
-Determined at: `src/core/conservation.py` line 91 — `node.kind == "LOOT"`.
+Determined at: `src/core/conservation.py`, NODE branch of `resolve()` — `node.kind == "LOOT"`.
 
 ---
 
@@ -237,7 +237,7 @@ This mechanism prevents duplication when two actors complete the same loot targe
 intent: source_kind=NODE, source_id="iron_vein_3", items_add=[iron_ore×1], gold_delta=0
 Gate 1: transaction_id not in processed → pass
 Gate 2: inventory has 1 free slot → pass
-Gate 3: node exists, remaining_charges=3, not reserved → pass
+Gate 3: node exists, remaining_charges=3, no earlier harvest this tick (charges_delta 0) → pass
 Result: accepted=True, node_update={remaining_charges: 2}
 ```
 
@@ -273,7 +273,7 @@ Result: accepted=False, reason=INSUFFICIENT_GOLD
 | `tests/unit/resource/test_conservation_rejection_paths.py` | Every rejection path of `resolve()`: `accepted is False`, exact `ReasonCode`, no update fields; `TARGET_LOCKED` per reservation-guarded source kind |
 | `tests/unit/resource/test_rejected_transfer_apply_path.py` | A rejected transfer leaves its transaction id out of `processed_transaction_ids`, changes no durable state, and a grouped rejection rolls back without burning ids |
 | `tests/unit/resource/test_node_charge_accounting.py` | NODE charge accounting including the in-tick `charges_delta` |
-| `tests/unit/resource/test_resource_conflicts.py`, `tests/integration/kernel/test_race_conditions_v2.py` | Concurrent actor reservation prevents loot duplication (end to end through the apply path) |
+| `tests/unit/resource/test_resource_conflicts.py`, `tests/integration/kernel/test_race_conditions_v2.py` | Concurrent actors cannot duplicate yield (end to end through the apply path): a GROUND_ITEM or CORPSE reservation turns the second actor away with `TARGET_LOCKED`; a node's in-tick `charges_delta` turns a harvest past 0 away with `SOURCE_DEPLETED` |
 | `tests/unit/resource/test_transaction_grouping.py` | Grouped transfers commit together or roll back together |
 | `tests/unit/resource/test_resource_v2_boundary.py` | Shop sell, crafting, tax and recruitment transfers through the resolver |
 | `tests/unit/resource/test_domain_8_economy.py`, `tests/unit/resource/test_economy_hardening.py` | Shop stock and liquidity depletion; buy/sell price formulas and caps |
