@@ -76,7 +76,7 @@ Core laws: [Simulation Kernel](docs/engine/kernel.md) · [Authoritative Pipeline
 The guarantee is narrower than "every run is deterministic". It is guaranteed for the same build, Python minor version, OS and CPU architecture, using the sequential executor under the Canonical signal contract (tier DET-PORT-0). Concurrent executors and other platforms are claimed only where a parity test covers them. The default Live contract reads the wall clock and host load, so two Live runs can differ. The [Deterministic Execution Contract](docs/engine/deterministic_execution.md) gives the full scope and its known gaps.
 
 - [`make replay-check`](docs/guides/reviewer_replay_check.md) runs one seed twice under the Canonical contract and compares the final state hashes. It is a short-run demonstration, not a proof.
-- Limits and known defects: [docs/engine/known_limitations.md](docs/engine/known_limitations.md). One open defect not yet listed there: restoring a scenario checkpoint rebuilds the RNG with base seed 0 (`src/engine/scenario_checkpoint.py`), so a resumed run with a nonzero seed does not match the uninterrupted run.
+- Limits and known defects: [docs/engine/known_limitations.md](docs/engine/known_limitations.md).
 
 ---
 
