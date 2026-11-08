@@ -4,7 +4,7 @@ layer: ai
 authority: P1
 audience: agent
 ticket_id: TCK-20261108-DOC-UPDATER-SATELLITE-STEP-AND-STALENESS-ADVISORY
-phase: open
+phase: inprogress
 date: 2026-11-08
 tags: [ai, documentation, process-improvement]
 ---
@@ -15,7 +15,7 @@ tags: [ai, documentation, process-improvement]
 doc-updater triages candidate satellite docs, and the doc-staleness gate lists untouched docs that cite changed code.
 
 ## Status
-OPEN
+INPROGRESS
 
 ## Tier
 standard
