@@ -353,7 +353,6 @@ class ResourceTransactionSystem:
                 nodes[node_id] = replace(existing, charges_delta=existing.charges_delta + result.node_update.charges_delta)
             else:
                 nodes[node_id] = result.node_update
-            reservations[("NODE", node_id)] = reservations.get(("NODE", node_id), 0) + 1
 
         if result.building_update:
             b_id = result.building_update.building_id
