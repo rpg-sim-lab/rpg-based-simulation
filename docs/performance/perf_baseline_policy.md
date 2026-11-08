@@ -81,7 +81,7 @@ A run is **pinned** when its CPU affinity is a strict subset of the host's CPUs 
 |---|---|---|
 | 1-minute load average below 1.5 | yes | yes |
 | every allowed CPU below 10 % busy (`/proc/stat`) | no | yes |
-| at least 3 GB available (`MemAvailable`) | yes | yes |
+| at least 3000 MB available (`MemAvailable`, read in kB and divided by 1024) | yes | yes |
 | `pswpin` / `pswpout` unchanged over the sample | yes | yes |
 | host-speed probe at or below `--max-probe-ms` | no | only when the option is set (off by default; a host-specific protocol setting, not a contract value) |
 
