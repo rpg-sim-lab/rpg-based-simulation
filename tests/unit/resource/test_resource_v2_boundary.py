@@ -270,6 +270,7 @@ def test_recruitment_moves_no_gold_until_recruit_is_wired(base_state):
     assert {i: e.inventory.gold for i, e in after.entities.items()} == gold_before
     assert after.entities[1].inventory.gold == 1000
     assert "contract_recruit_1_2_0" in after.entities[recruiter.id].strategic.contracts
+    assert "contract_recruit_1_2_0" in after.entities[recruit.id].strategic.contracts
 
 def test_class_hall_train_refactor():
     # Setup state: teacher (1) has no gold requirement; student (2) trusts the teacher.
