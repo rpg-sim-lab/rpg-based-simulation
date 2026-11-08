@@ -71,13 +71,22 @@ Batch B, parts F1 and F5 of the plan (origin/lead-docs-review-source:agent-worki
 - If graphify's import graph is unavailable in a worktree, the search falls back to direct path and symbol hits and says so in its output.
 
 ## Implementation Notes
-(to be filled by the implementer)
+- `tools/gate_checks/docs_search.py::search_docs_for_change` (MARKER-JSON CLI): required / candidate / excluded plus F5 `comment_hits`. Reads through a `DirSource` (working tree) or `GitRefSource` (a pinned ref, so a replay is repeatable). Public symbols are non-underscore `def`/`class` names; only identifier-shaped ones (underscore or two capitals) are searched, a rule about shape, not a stoplist. Old terms: `--old-term` plus public symbols at base and absent at head. Importers: graphify's `imports` edges when the graph was built at HEAD and no ref is pinned, else a regex scan of `src/`; the output names which ran. Mechanism hits come from `registries/mechanisms.yaml` `implemented_by`.
+- Exclusion classes (planner decision 2026-11-08): `archive`, `audit`, `registry`, `historical-status`, and the new `review-record` (stem ends `_review`, `_report`, `_audit`). Excluded entries keep their hits and reason. The class excludes 14 files under docs/ (listed in investigation.md); one, `docs/ai/codex_posttool_adapter_exact_config_diff_for_review.md`, looks like a live proposal.
+- AC 1's item-9 clause is checked on a third fixture, the #819 diff (`61e984212`), because item 9 (`import_linter_soak_review.md`) cannot be a hit on #837 or #786: neither diff's paths or terms appear in it, and its frontmatter says `status: active`. This was the planner's decision on 2026-11-08 (add the `review-record` class and the third fixture).
+- Measured noise (`python3 -m tools.gate_checks.docs_search_replay`, real git at pinned SHAs, docs/ and agent-working/ paths dropped from the changed set): #837 9 code paths -> required 12, candidate 80 (8.9 per path), excluded 74; items 1 and 2 required, item 6 candidate. #786 7 paths -> required 1, candidate 18 (2.6 per path); README.md (item 5) found as a candidate, also without `--old-term`. #819 1 path -> candidate 4, excluded 1 (item 9, `review-record`). The plan's basis was about 19-25 per path before the symbol-shape rule; before it, the first run returned 84 required docs for #837 because one-word names such as `execute` match prose.
+- `investigator.md` and the Investigate prompt in `implement-ticket.js` tell the investigator to run the search with the planned code paths and write required as Format 1 bullets and candidate / excluded as tables (a table row never matches the Verify regex, tested).
+- Deviation from the ticket text: fixtures are minimal subsets (the cited lines plus one decoy per class); the real-history counts come from the replay script, not from CI.
 
 ## Test Summary
-(to be filled by the implementer)
+- `tests/tools/test_docs_search.py`: 29 tests, all pass (light slot, cores 0-3, MemoryMax 1G).
+- Scoped: the 57 test files that mention investigator.md / implement-ticket.js / doc-updater / doc_staleness: 839 passed, 13 skipped, 1 xfailed; `test_agent_working_paths_guard.py` + `test_delivery_pr_render.py` + `tests/docs`: 194 passed.
+- `codebase.health check`: exit 0 (2 new report-only rows in src, not from this change).
+- Full `tests/tools`: see the final entry below.
+- Known gap: none stated beyond the planned-paths limit (the gate-time run uses the real diff).
 
 ## Files Changed
-(to be filled by the implementer)
+tools/gate_checks/docs_search.py; tools/gate_checks/docs_search_replay.py; tests/tools/test_docs_search.py; tests/tools/fixtures/docs_search/**; .claude/agents/investigator.md; .claude/workflows/implement-ticket.js (Investigate prompt); this ticket; staging artifacts.
 
 ## Completion Summary
-(to be filled by the implementer)
+The investigator can build `## Docs Requiring Update` from a pinned, repeatable search with required / candidate / excluded lists and F5 comment hits; the replay finds audit items 1, 2, 5 and 6, excludes item 9 on its own fixture, and the measured noise is recorded above.

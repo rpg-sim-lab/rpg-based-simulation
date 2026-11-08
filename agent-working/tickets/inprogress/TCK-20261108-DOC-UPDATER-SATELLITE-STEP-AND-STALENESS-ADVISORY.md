@@ -66,13 +66,17 @@ Batch B, parts F2 and F3 of the plan (origin/lead-docs-review-source:agent-worki
 - Owner's proportionate rule: agent-tooling checks over docs stay advisory.
 
 ## Implementation Notes
-(to be filled by the implementer)
+- `.claude/agents/doc-updater.md`: Step 0 lifts "never derive yourself" for candidates only; new section "Satellite step (candidates)" holds the F2 rules once (explanatory docs only; normative docs only with the rule owner's approval, otherwise a defect or divergence goes in `blocker`; never edit excluded docs; never write a defect into a normative doc as intended; parity_ledger candidates left to parity-updater; comment hits flagged for Implement). `docs/architecture/doc_updater_agent.md` carries a pointer.
+- Deviation from the ticket text (confirmed with the planner in the PR 1 report): the Document-Update prompt gets a ready search command built from the real diff and doc-updater runs it, instead of the orchestrator injecting three lists. No new attested gate site, `DOC_UPDATE_SCHEMA` unchanged.
+- F3: `check_doc_staleness(..., search_result=None)` appends one ADVISORY after the verdict: live docs that cite a changed file or symbol and were not touched, critical-invariant docs (determinism, conservation, persistence/restore/checkpoint, concurrency, acknowledgement; word-boundary match on path and hit text) first and named; excluded docs never listed; capped at 15 names with a count. `gate_cli.py doc_staleness` runs the search best effort (any failure gives None, output byte-identical). The module CLI accepts `--search-json PATH`. `implement-ticket.js` now shows every ADVISORY row, not only the first.
 
 ## Test Summary
-(to be filled by the implementer)
+- `tests/tools/test_doc_staleness_search_advisory.py`: 14 tests pass; with test_docs_search, test_gate_cli, test_document_update_phase_wiring and test_doc_staleness_gate_wiring: 70 passed.
+- Full `tests/tools`: see the final entry in the sibling ticket.
+- Known gap: the F2 rules are prompt text; their effect is judged on the first runs.
 
 ## Files Changed
-(to be filled by the implementer)
+tools/gate_checks/doc_staleness_check.py; tools/gate_checks/gate_cli.py; .claude/agents/doc-updater.md; .claude/workflows/implement-ticket.js (Document-Update prompt, advisory rows); docs/architecture/doc_updater_agent.md; tests/tools/test_doc_staleness_search_advisory.py; this ticket; staging artifacts.
 
 ## Completion Summary
-(to be filled by the implementer)
+doc-updater has a satellite step with its rules stated once, and the staleness gate lists untouched live docs that cite a changed file as a non-blocking advisory, critical-invariant docs first.
