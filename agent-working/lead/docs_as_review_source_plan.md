@@ -11,13 +11,13 @@ A reviewer, human or agent, should be able to answer feature, design, architectu
 ## Why now: evidence (origin/main 531010a9a, re-checked at 297494469 on 2026-11-08)
 
 - About 1.1M agent tokens were spent re-reading the same areas three or four times: the outside review, my findings check, the CV check, the fact bank, and the inventory. This figure comes from session usage. Monitoring records no tokens: `runs.jsonl` has duration only, and events carry a unitless `cost_proxy_score`.
-- Eight documents are wrong or incomplete. All except the README are still wrong at 297494469:
+- Eight documents were reported wrong or incomplete; one (substrate) was withdrawn on 2026-11-08. All except the README are still wrong at 297494469:
   - `docs/engine/deterministic_execution.md:69,182` says Canonical is unimplemented, while `:71` shows it is implemented.
   - `docs/architecture/observability_hot_path_safety_contract.md:124` says an exhausted message is "routed to the DLQ stream and ACKed off the source stream". It doesn't say what happens when the DLQ write fails, and the code ACKs anyway (`src/observability/stream/consumer.py:157-164`). This is a defect plus a contract gap, not a doc to rewrite to match the code: the contract gains an explicit failure row once the intended behaviour is decided (R3).
   - `src/engine/scenario_checkpoint.py:86-88`, a code comment, says the base seed is "irrelevant post-restore". That describes the restore-seed defect as if it were intended, so it is fixed together with that defect's ticket.
   - `README.md` named a `WorldLoop` class and `*Aspect` entities that don't exist, and listed Promtail. This was fixed in #843 (bb70d0cb5).
   - `CLAUDE.md` lists 6 Bible chapters; there are 7 (`07_social_political_dynamics.md`).
-  - `docs/engine/contracts/substrate_baseline_contract.md:27` says the kernel has 6 phases; it has 7.
+  - ~~`docs/engine/contracts/substrate_baseline_contract.md:27` says the kernel has 6 phases; it has 7.~~ Withdrawn 2026-11-08: `:40` of the same file already reconciles it (6 authoritative phases plus the PERSISTENCE hook make kernel.md's 7). Found by rpg-planner-ubuntu and confirmed by lead-planner at 297494469.
   - `docs/engine/known_limitations.md` doesn't record the defects found on 2026-11-07: DLQ ACK, restore seed, watchdog reset, dirty tag, harvest double count, shutdown success.
 - The worst findings came only from code, because each doc stated the intent and the code did something else. A docs-only review would have repeated those claims, which is why P5 keeps risk-triggered code inspection.
 - Counts re-derived by hand disagreed with each other. The baselined layer edges came out as 129, 145, 156 and 157; src lines came out as 132k and 134k, the first from a stale checkout.
@@ -173,7 +173,7 @@ Measured basis: DONE implement-ticket runs in W43-W45 on origin/main (221 runs) 
 
 | Batch | Tickets (tier) | Owner (PRs) | Depends on | Seat time | Tokens (estimate) |
 |---|---|---|---|---|---|
-| A. Doc fixes and limits lines: items 1, 2, 4 and 6, the three still-wrong docs above (`deterministic_execution`, `substrate_baseline_contract`, CLAUDE.md), the DLQ contract failure row, and the six P3 limits lines | about 5 hotfix: rpg 2, lead 1, perf 1, agent-working 1 (CLAUDE.md, needs your direct OK) | rpg, lead, perf, agent-working (4 PRs; perf's and agent-working's can ride with other work) | none. The DLQ row waits on the intended behaviour from the DLQ defect ticket. The restore-seed comment rides with that defect fix. | about 1-2 h per domain | 0.3-0.6M |
+| A. Doc fixes and limits lines: items 1, 2, 4 and 6, the still-wrong docs above (`deterministic_execution`, CLAUDE.md; `substrate_baseline_contract` withdrawn), the DLQ contract failure row, and the six P3 limits lines | about 5 hotfix: rpg 2, lead 1, perf 1, agent-working 1 (CLAUDE.md, needs your direct OK) | rpg, lead, perf, agent-working (4 PRs; perf's and agent-working's can ride with other work) | none. The DLQ row waits on the intended behaviour from the DLQ defect ticket. The restore-seed comment rides with that defect fix. | about 1-2 h per domain | 0.3-0.6M |
 | B. Pipeline changes F1, F2, F5 (prompts) and F3 (gate advisory), with the replay fixtures | 2 standard | agent-working (1 PR) | none | about 1 day | 0.8-1.5M |
 | C. The P1 fields, drift report and baseline derivation, plus the frontmatter schema and validator; the weekly hook (Q5) | 1 standard | agent-working (same PR as B or the next) | none | about 1 day | 0.6-1.0M |
 | D. The P2 stats tool, facts page and `--check` | 1 standard | agent-working (1 PR) | none | about 0.5-1 day | 0.4-0.8M |
