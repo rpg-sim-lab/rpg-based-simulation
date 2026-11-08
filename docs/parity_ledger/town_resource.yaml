@@ -1306,14 +1306,19 @@
   v2_evidence: A node's in-tick charges_delta counts every accepted harvest once and
     there is no NODE reservation (src/core/conservation.py NODE branch, src/engine/economy.py
     _apply_world_effects); two actors on a 2-charge node both yield and a third gets
-    SOURCE_DEPLETED.
+    SOURCE_DEPLETED. A grouped transfer's trial resolves on group-local copies of
+    the node charges, reservations, treasury and building records, so two same-node
+    intents in one group cannot both pass on a one-charge node (ResourceTransactionSystem._trial_group).
   proof_type: null
   test_path: tests/integration/kernel/test_node_charge_cross_actor.py::test_two_actors_on_the_last_charge_yield_exactly_once;
     tests/integration/kernel/test_node_charge_cross_actor.py::test_two_actors_on_a_two_charge_node_both_yield_and_a_third_is_rejected;
     tests/unit/resource/test_node_charge_accounting.py::test_last_charge_taken_earlier_in_the_tick_cannot_be_harvested_again;
     tests/unit/resource/test_node_charge_accounting.py::test_second_harvest_of_a_two_charge_node_in_the_same_tick_is_accepted_and_takes_the_last_charge;
     tests/unit/resource/test_node_charge_accounting.py::test_sliding_charge_delta_from_earlier_update_is_counted_before_yield;
-    tests/unit/resource/test_node_charge_accounting.py::test_a_node_reservation_no_longer_counts_against_the_charges
+    tests/unit/resource/test_node_charge_accounting.py::test_a_node_reservation_no_longer_counts_against_the_charges;
+    tests/unit/resource/test_grouped_trial_sees_its_own_earlier_intents.py::test_two_node_intents_in_a_group_on_a_one_charge_node_roll_back;
+    tests/unit/resource/test_grouped_trial_sees_its_own_earlier_intents.py::test_two_node_intents_in_a_group_on_a_two_charge_node_are_both_accepted;
+    tests/unit/resource/test_grouped_trial_sees_its_own_earlier_intents.py::test_a_rejected_group_leaves_the_node_records_and_reservations_unchanged
   divergence_note: null
   support_boundary: 'Proof added by the core-RPG test pilot and revised for the NODE
     double-count fix: NODE-source harvest only (the resolver''s in-tick charges_delta

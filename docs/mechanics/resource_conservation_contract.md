@@ -53,6 +53,8 @@ Items, gold, and node charges in the world obey strict conservation. An entity c
 
 4. **Atomicity (Gate 4):** On success, a single `TransactionResult` is returned that bundles all updates (`inventory_update`, `node_update` / `ground_item_remove` / `corpse_remove` / `building_update` / `home_storage_update`). The apply path commits all fields together. On failure, `TransactionResult(accepted=False, reason=<ReasonCode>)` is returned and nothing is mutated.
 
+   **Grouped transfers.** Intents that share a `group_id` commit together or not at all. `ResourceTransactionSystem.resolve_all` trial-resolves a group's intents in order on group-local copies of the in-tick node charges, reservations, treasury, building purse and stock, and the world-effect lists, applying each accepted intent's effects to the copies before the next intent is resolved. A later intent in the group therefore sees what the group's earlier intents would take: two harvests of a one-charge node, or two wages from one purse, cannot both pass. The live records are written only by the commit loop, once the whole group is accepted; a rejected group leaves them unchanged.
+
 ---
 
 ## Formula / Decision Logic
@@ -275,6 +277,7 @@ Result: accepted=False, reason=INSUFFICIENT_GOLD
 | `tests/unit/resource/test_node_charge_accounting.py` | NODE charge accounting including the in-tick `charges_delta` |
 | `tests/unit/resource/test_resource_conflicts.py`, `tests/integration/kernel/test_race_conditions_v2.py` | Concurrent actors cannot duplicate yield (end to end through the apply path): a GROUND_ITEM or CORPSE reservation turns the second actor away with `TARGET_LOCKED`; a node's in-tick `charges_delta` turns a harvest past 0 away with `SOURCE_DEPLETED` |
 | `tests/unit/resource/test_transaction_grouping.py` | Grouped transfers commit together or roll back together |
+| `tests/unit/resource/test_grouped_trial_sees_its_own_earlier_intents.py` | A group's trial sees what its own earlier intents take: node charges, treasury and building purse; a rejected group leaves the live records unchanged |
 | `tests/unit/resource/test_resource_v2_boundary.py` | Shop sell, crafting, tax and recruitment transfers through the resolver |
 | `tests/unit/resource/test_domain_8_economy.py`, `tests/unit/resource/test_economy_hardening.py` | Shop stock and liquidity depletion; buy/sell price formulas and caps |
 | `tests/unit/resource/test_equipment_chests_storage.py` | Home storage atomicity and chest loot |
