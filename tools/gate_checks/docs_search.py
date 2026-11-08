@@ -35,6 +35,12 @@ import tokenize
 from pathlib import Path
 from typing import Dict, Iterable, List, Optional, Sequence, Tuple
 
+_TOOLS = str(Path(__file__).resolve().parents[1])
+if _TOOLS not in sys.path:
+    sys.path.insert(0, _TOOLS)
+
+from gate_checks.changed_files import code_paths, derive_changed_files  # noqa: E402 - needs the sys.path entry above
+
 try:
     import yaml
 except ImportError:  # the search still runs; only the mechanism-registry input is lost
@@ -429,6 +435,11 @@ def _graph_for(root: Path) -> Optional[Path]:
 def main(argv: Optional[List[str]] = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
     parser.add_argument("--changed-file", action="append", default=[], metavar="PATH")
+    parser.add_argument(
+        "--start-sha",
+        help="derive the changed files from git exactly as the doc-staleness gate does (code paths only), "
+             "and read the pre-change files from this commit",
+    )
     parser.add_argument("--old-term", action="append", default=[], metavar="TERM")
     parser.add_argument("--repo-root", default=".")
     parser.add_argument("--docs-ref", help="git ref whose docs tree is searched (default: the working tree)")
@@ -442,12 +453,18 @@ def main(argv: Optional[List[str]] = None) -> int:
 
     docs_source = source(args.docs_ref)
     head_source = source(args.head_ref) if (args.head_ref or args.docs_ref) else docs_source
-    base_source = GitRefSource(root, args.base_ref) if args.base_ref else None
+    base_ref = args.base_ref or args.start_sha
+    base_source = GitRefSource(root, base_ref) if base_ref else None
+    changed = list(args.changed_file)
+    if args.start_sha:
+        changed += code_paths(derive_changed_files(args.start_sha))
     pinned = bool(args.docs_ref or args.head_ref)
     graph = None if pinned else _graph_for(root)
-    result = search_docs_for_change(
-        args.changed_file, docs_source, head_source, base_source, args.old_term, graph,
-    )
+    try:
+        result = search_docs_for_change(changed, docs_source, head_source, base_source, args.old_term, graph)
+    except Exception as exc:  # noqa: BLE001 - the caller must keep going: report the failure in the output
+        result = {"error": f"{type(exc).__name__}: {exc}", "required": [], "candidate": [], "excluded": [],
+                  "comment_hits": [], "notes": ["the docs search failed; continue on your own judgment"]}
     print("MARKER:" + json.dumps(result))
     return 0
 

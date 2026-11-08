@@ -22,8 +22,8 @@ The orchestrator computes the "what" before spawning you (mirrors `parity-update
   for whether a `docs/` update is warranted and where.
 
 - **All tiers, satellite search (`TCK-20261108-DOC-UPDATER-SATELLITE-STEP-AND-STALENESS-ADVISORY`):** the prompt also
-  carries a ready command, `python3 tools/gate_checks/docs_search.py --changed-file ... --base-ref <start sha>`, built from
-  the real diff. Run it first. It prints one `MARKER:` JSON line with `required`, `candidate`, `excluded` and
+  carries a ready command, `python3 tools/gate_checks/docs_search.py --start-sha <start sha>`, which derives the changed
+  files exactly as the staleness gate does. Run it as given; do not compute your own diff. It prints one `MARKER:` JSON line with `required`, `candidate`, `excluded` and
   `comment_hits`. The `candidate` list is the one input you may derive for yourself: the rule "never something you derive
   yourself" above does not apply to it. See "Satellite step" below.
 
@@ -81,7 +81,8 @@ After the required docs, triage each `candidate` from the search output:
 4. Leave `owner: parity-updater` candidates to the Parity phase.
 5. For each `comment_hits` entry in a file this ticket changed, check that the comment still states the new behaviour; if the
    ticket changed the behaviour, say so in `docs_skipped`/`blocker` so Implement fixes the comment (you do not edit `src/`).
-6. If the search printed nothing or failed, say so in `verified_by` and use your own judgment for the required docs only.
+6. If the search printed nothing, printed an `error`, or failed to run, say so in `docs_skipped` or `verified_by`, keep going, and
+   use your own judgment for the required docs only. A failed search never blocks the phase.
 
 Each candidate you edit is also a doc path to cross-check in step 6 below.
 

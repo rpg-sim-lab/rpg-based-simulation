@@ -7,7 +7,7 @@ doc-updater's instructions and the Document-Update prompt, so those are pinned a
 import json
 from pathlib import Path
 
-from tools.gate_checks import doc_staleness_check, docs_search, gate_cli
+from tools.gate_checks import changed_files, doc_staleness_check, docs_search, gate_cli
 
 REPO = Path(__file__).parent.parent.parent
 FIXTURES = Path(__file__).parent / "fixtures" / "docs_search"
@@ -114,6 +114,8 @@ def test_doc_updater_has_the_satellite_step_with_every_rule():
         "Never edit an `excluded` doc",
         "`owner: parity-updater`",
         "`docs_skipped`",
+        "A failed search never blocks the phase",
+        "do not compute your own diff",
     ):
         assert needle in text, needle
 
@@ -121,7 +123,7 @@ def test_doc_updater_has_the_satellite_step_with_every_rule():
 def test_the_document_update_prompt_carries_the_satellite_search_command():
     js = (REPO / ".claude" / "workflows" / "implement-ticket.js").read_text(encoding="utf-8")
     phase = js[js.index("phase('Document-Update')"):js.index("pushEvent(\n  'Document-Update'")]
-    assert "tools/gate_checks/docs_search.py" in phase and "--base-ref ${startSha}" in phase
+    assert "tools/gate_checks/docs_search.py --start-sha ${startSha}" in phase
     assert "satelliteSearchCmd" in phase and "DOC_UPDATE_SCHEMA" in phase
 
 
@@ -135,3 +137,25 @@ def test_the_investigator_is_told_to_build_the_list_by_search():
     js = (REPO / ".claude" / "workflows" / "implement-ticket.js").read_text(encoding="utf-8")
     assert "tools/gate_checks/docs_search.py --changed-file" in agent and "Build the list by search" in agent
     assert "tools/gate_checks/docs_search.py --changed-file" in js
+
+
+def test_the_search_cli_derives_the_same_changed_files_as_the_gate(monkeypatch, tmp_path, capsys):
+    seen = {}
+
+    def fake_search(changed, *args, **kwargs):
+        seen["changed"] = changed
+        return {"required": [], "candidate": [], "excluded": [], "comment_hits": [], "notes": []}
+
+    monkeypatch.setattr(docs_search, "derive_changed_files", lambda sha: ["src/a.py", "docs/b.md", "agent-working/x.md"])
+    monkeypatch.setattr(docs_search, "search_docs_for_change", fake_search)
+    assert docs_search.main(["--repo-root", str(tmp_path), "--start-sha", "abc"]) == 0
+    assert seen["changed"] == changed_files.code_paths(["src/a.py", "docs/b.md", "agent-working/x.md"]) == ["src/a.py"]
+
+
+def test_a_failing_search_prints_an_error_marker_and_exits_zero(monkeypatch, tmp_path, capsys):
+    def boom(*args, **kwargs):
+        raise RuntimeError("no git")
+    monkeypatch.setattr(docs_search, "search_docs_for_change", boom)
+    assert docs_search.main(["--repo-root", str(tmp_path), "--changed-file", "src/a.py"]) == 0
+    out = json.loads(capsys.readouterr().out[len("MARKER:"):])
+    assert out["error"].startswith("RuntimeError") and out["candidate"] == []

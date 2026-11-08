@@ -1247,12 +1247,10 @@ const DOC_UPDATE_SCHEMA = {
   },
 }
 
-// Satellite search (TCK-20261108-DOC-UPDATER-SATELLITE-STEP-AND-STALENESS-ADVISORY): the command is built here from the real
-// diff; doc-updater runs it (it has Bash), so no new attested gate site is needed. Docs and bookkeeping paths are not code paths.
-const satelliteCodeFiles = (implementation.files_changed || []).filter(f => !f.startsWith('docs/') && !f.startsWith('agent-working/'))
-const satelliteSearchCmd = satelliteCodeFiles.length
-  ? `python3 tools/gate_checks/docs_search.py ${satelliteCodeFiles.map(f => '--changed-file ' + shq(f)).join(' ')} --base-ref ${startSha}`
-  : '(no code files changed: skip the satellite search)'
+// Satellite search (TCK-20261108-DOC-UPDATER-SATELLITE-STEP-AND-STALENESS-ADVISORY): doc-updater runs this ready command (it
+// has Bash), so no new attested gate site is needed. --start-sha makes docs_search derive the changed files with the same
+// function the doc-staleness gate uses (gate_checks/changed_files.py), so doc-updater never computes its own diff.
+const satelliteSearchCmd = `python3 tools/gate_checks/docs_search.py --start-sha ${startSha}`
 const docUpdateTs = await captureTs()
 await writeSidecar(events.length + 1 + seqOffset, 'Document-Update', 'doc-updater')
 const docUpdate = await agent(

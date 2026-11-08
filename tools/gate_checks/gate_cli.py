@@ -27,32 +27,14 @@ if _TOOLS not in sys.path:
     sys.path.insert(0, _TOOLS)
 
 from gate_checks import docs_search  # noqa: E402 - needs the sys.path entry above
-
-# Paths a run writes as bookkeeping, never as the ticket's own change. A path is excluded when it starts with one of
-# these, or contains one of the fragments.
-EXCLUDED_PREFIXES = (
-    "agent-working/agent-monitoring/",  # run, event, tool and gate-verdict shards
-    "data/runs/",                       # simulation run output
-    "reports/release_proof/",           # release-proof output
-    "graphify-out/",                    # the knowledge graph
-    ".claude/current_run",              # the per-session run sidecar
+from gate_checks.changed_files import (  # noqa: E402,F401 - re-exported: tests and callers use gate_cli.derive_changed_files
+    EXCLUDED_FRAGMENTS,
+    EXCLUDED_PREFIXES,
+    _git,
+    code_paths,
+    derive_changed_files,
+    is_excluded,
 )
-EXCLUDED_FRAGMENTS = ("/__pycache__/", "/.pytest_cache/")
-
-
-def is_excluded(path: str) -> bool:
-    return path.startswith(EXCLUDED_PREFIXES) or any(fragment in "/" + path for fragment in EXCLUDED_FRAGMENTS)
-
-
-def _git(*args: str) -> list[str]:
-    done = subprocess.run(["git", *args], capture_output=True, text=True, check=True)
-    return [line for line in done.stdout.splitlines() if line.strip()]
-
-
-def derive_changed_files(start_sha: str) -> list[str]:
-    """Tracked changes since ``start_sha`` (working tree included) plus untracked files, bookkeeping removed, sorted."""
-    paths = set(_git("diff", "--name-only", start_sha, "--")) | set(_git("ls-files", "--others", "--exclude-standard"))
-    return sorted(p for p in paths if not is_excluded(p))
 
 
 def _touched_ledger_lines() -> list[str]:
@@ -80,7 +62,7 @@ def site_doc_staleness(args: argparse.Namespace) -> None:
 
 def _search_result(files: list[str], start_sha: str) -> dict | None:
     """The shared docs search on the real diff, or None: a failed search changes nothing about the gate's output."""
-    code = [f for f in files if not f.startswith(("docs/", "agent-working/"))]
+    code = code_paths(files)
     if not code:
         return None
     try:

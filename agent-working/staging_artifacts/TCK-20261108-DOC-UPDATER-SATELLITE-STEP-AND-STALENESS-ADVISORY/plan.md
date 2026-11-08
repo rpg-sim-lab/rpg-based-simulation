@@ -25,3 +25,6 @@ Design source: origin/lead-docs-review-source:agent-working/lead/docs_as_review_
 
 ## Tests
 See test_plan.md. Open questions: none beyond TCK-20261108-DOCS-REQUIRING-UPDATE-BUILT-BY-SEARCH's question 1 (the item-9 fixture), which this ticket's criterion 1 reuses.
+
+## Deviation from the ticket text (accepted by agent-working-planner, 2026-11-08)
+The ticket says the orchestrator passes the lists into the Document-Update prompt. Instead the prompt carries a ready command, `python3 tools/gate_checks/docs_search.py --start-sha <start sha>`, and doc-updater runs it. Reason: injecting lists needs a new attested gate site (a `gateCmd` key, a `gate_cli.py` sub-command, the gate-policy extractor and their pinned bounds); a command in the prompt needs none. Conditions kept: (a) `--start-sha` derives the changed files with `gate_checks/changed_files.py::derive_changed_files`, the function the staleness gate uses, so doc-updater never computes its own diff; (b) a failed search prints an `error` marker and exits 0, and doc-updater reports it in `docs_skipped`/`verified_by` and keeps going; the phase never blocks; (c) this record.
