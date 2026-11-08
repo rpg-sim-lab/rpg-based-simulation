@@ -90,6 +90,8 @@ What the ticket must also change:
 
 Everything else stays idle.
 
+(end of ruling)
+
 ## Test Summary
 
 ## Files Changed
