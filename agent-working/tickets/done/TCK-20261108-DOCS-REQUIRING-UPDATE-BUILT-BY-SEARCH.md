@@ -1,10 +1,10 @@
 ---
-status: active
+status: historical
 layer: ai
 authority: P1
 audience: agent
 ticket_id: TCK-20261108-DOCS-REQUIRING-UPDATE-BUILT-BY-SEARCH
-phase: inprogress
+phase: done
 date: 2026-11-08
 tags: [ai, documentation, process-improvement]
 ---
@@ -15,7 +15,7 @@ tags: [ai, documentation, process-improvement]
 Investigate builds "Docs Requiring Update" by search, as required, candidate and excluded lists.
 
 ## Status
-INPROGRESS
+DONE
 
 ## Tier
 standard
@@ -82,7 +82,7 @@ Batch B, parts F1 and F5 of the plan (origin/lead-docs-review-source:agent-worki
 - `tests/tools/test_docs_search.py`: 29 tests, all pass (light slot, cores 0-3, MemoryMax 1G).
 - Scoped: the 57 test files that mention investigator.md / implement-ticket.js / doc-updater / doc_staleness: 839 passed, 13 skipped, 1 xfailed; `test_agent_working_paths_guard.py` + `test_delivery_pr_render.py` + `tests/docs`: 194 passed.
 - `codebase.health check`: exit 0 (2 new report-only rows in src, not from this change).
-- Full `tests/tools`: see the final entry below.
+- Full `tests/tools` + `tests/docs` (heavy slot, cores 4-5, MemoryMax 3G, -n 1) at the code before Finalize: 5735 passed, 1 failed, 58 skipped, 2 xfailed, 962.7 s. The one failure, `test_generate_registry.py::TestRealDocsTree::test_check_flag_detects_no_drift_against_real_registry`, listed the three PR tickets and three sibling todos as missing from `docs/REGISTRY.yaml` (registry drift before Finalize). The test itself was NOT re-run; the registry state is checked with `python3 -m tools.generate_registry --check` after Finalize (result below). After Finalize (registry regenerated, `generate_registry --check`: In sync, 3919 entries)  that single test was run on its own, with `test_agent_working_paths_guard.py`: 12 passed, so the failure was the pre-Finalize registry drift: it listed the three PR tickets and the sibling todos as added.
 - Known gap: none stated beyond the planned-paths limit (the gate-time run uses the real diff).
 
 ## Files Changed

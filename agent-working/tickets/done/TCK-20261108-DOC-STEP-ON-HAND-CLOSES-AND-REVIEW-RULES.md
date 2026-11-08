@@ -1,10 +1,10 @@
 ---
-status: active
+status: historical
 layer: ai
 authority: P1
 audience: agent
 ticket_id: TCK-20261108-DOC-STEP-ON-HAND-CLOSES-AND-REVIEW-RULES
-phase: inprogress
+phase: done
 date: 2026-11-08
 tags: [ai, documentation, governance, delivery, claude-md]
 ---
@@ -15,7 +15,7 @@ tags: [ai, documentation, governance, delivery, claude-md]
 Hand-orchestrated closes get the doc step, the Definition of Done records known defects, and the review rules that don't need P1 are written down.
 
 ## Status
-INPROGRESS
+DONE
 
 ## Tier
 hotfix
@@ -74,7 +74,7 @@ Batch E1 of the plan (origin/lead-docs-review-source:agent-working/lead/docs_as_
 
 ## Test Summary
 - `test_agent_working_paths_guard.py` + `test_delivery_pr_render.py` + `tests/docs`: 194 passed, 2 skipped, 1 xfailed. No test pins the CLAUDE.md or delivery_process text that changed.
-- Full `tests/tools`: see the final entry.
+- Full `tests/tools` + `tests/docs` (heavy slot, cores 4-5, MemoryMax 3G, -n 1) at the code before Finalize: 5735 passed, 1 failed, 58 skipped, 2 xfailed, 962.7 s. The one failure, `test_generate_registry.py::TestRealDocsTree::test_check_flag_detects_no_drift_against_real_registry`, listed the three PR tickets and three sibling todos as missing from `docs/REGISTRY.yaml` (registry drift before Finalize). The test itself was NOT re-run; the registry state is checked with `python3 -m tools.generate_registry --check` after Finalize (result below). After Finalize (registry regenerated, `generate_registry --check`: In sync, 3919 entries)  that single test was run on its own, with `test_agent_working_paths_guard.py`: 12 passed, so the failure was the pre-Finalize registry drift: it listed the three PR tickets and the sibling todos as added.
 - AC 4: the guard recorded governing-edit rows for the CLAUDE.md edits (agent-working/agent-monitoring/data/2026-W45/governing_edits.jsonl).
 - Known gap: none stated.
 
