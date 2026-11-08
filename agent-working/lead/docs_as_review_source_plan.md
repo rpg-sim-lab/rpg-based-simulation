@@ -271,7 +271,7 @@ Living-doc verification states (unverified, `reviewed_by`, `verified_by`, needs 
 
 ## Rev 3.2: response to the third review (2026-11-08)
 
-Source: `agent-working/lead/docs_as_review_source_plan_review_v3.md` (external AI reviewer, plan text only). Verdict: approve the direction, with minor corrections before full implementation; no redesign.
+Source: the third external review (`docs_as_review_source_plan_review_v3.md`; external AI reviewer, plan text only). Verdict: approve the direction, with minor corrections before full implementation; no redesign. The review file was removed once its points were dispositioned; its text is in git at d1fa1263c.
 
 | # | Point | Disposition | Where it now lives |
 |---|---|---|---|
@@ -286,7 +286,7 @@ Source: `agent-working/lead/docs_as_review_source_plan_review_v3.md` (external A
 
 ## Rev 3: response to the follow-up review (2026-11-08)
 
-Source: `agent-working/lead/docs_as_review_source_plan_review_v2.md` (external AI reviewer, plan text only, not the repo). Verdict: conditional approval, no redesign.
+Source: the second external review (`docs_as_review_source_plan_review_v2.md`; external AI reviewer, plan text only, not the repo). Verdict: conditional approval, no redesign. The review file was removed once its points were dispositioned; its text is in git at d1fa1263c.
 
 | # | Point | Disposition | Where it now lives |
 |---|---|---|---|
@@ -301,7 +301,7 @@ Also corrected in rev 3: rev 2's X25 said "monitoring already records tokens per
 
 ## Rev 2: response to the first external review (2026-11-07), record only
 
-Source: `agent-working/lead/docs_as_review_source_plan_review.md`. Verdict: approve with changes. The requirements now live in the sections above. This table records the decision made on each suggestion.
+Source: the first external review (`docs_as_review_source_plan_review.md`). The review file was removed once its points were dispositioned; its text is in git at d1fa1263c. Verdict: approve with changes. The requirements now live in the sections above. This table records the decision made on each suggestion.
 
 | # | Suggestion | Disposition |
 |---|---|---|
