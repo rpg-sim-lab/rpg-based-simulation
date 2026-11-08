@@ -1,10 +1,10 @@
 ---
-status: active
+status: historical
 layer: economy
 authority: P1
 audience: agent
 ticket_id: TCK-20261109-A-RECRUIT-PAYOUT-IS-PAID-IN-FULL-WHATEVER-THE-PAYER-HOLDS
-phase: open
+phase: done
 date: 2026-11-09
 tags: [economy]
 ---
@@ -15,7 +15,7 @@ tags: [economy]
 A recruit payout is paid to the recruit in full whatever the payer holds, so a short payer mints the difference, and nothing rolls one side back when the other is rejected
 
 ## Status
-OPEN
+DONE
 
 ## Tier
 hotfix
@@ -104,11 +104,24 @@ This also settles my earlier FYI: removing the intents removes the cross-entity 
 
 (end of ruling)
 
+Scope step 1 result: one test asserted the two RECRUIT intents, which the ruling had not expected: tests/unit/resource/test_resource_v2_boundary.py::test_recruitment_gold_handoff (it pinned `resource_transfers[0].gold_delta` of -500 and +500). I stopped and sent it to rpg-planner-ubuntu. rpg-planner (u24) signed off under #715 6725103948: rewrite it in place, keep the fixture and the execute_action router path. It is now `test_recruitment_moves_no_gold_until_recruit_is_wired`: a test-expectation change signed off by rpg-planner under #715 6725103948. test_recruitment.py covers appraisal only and is unchanged; test_team_up.py names `execute_recruit` only in a docstring; test_phase5_negative_cases.py:283-286 (TARGET_NOT_FOUND) passes unchanged.
+
+Change: `execute_recruit` emits no `resource_transfers` and no group_id; the contract goes into `EntityUpdate.strategic` on both sides (one `StrategicUpdate` shared by both). The RECRUIT/CHEST branch of `resolve()` is not edited.
+
+Disclosed, not widened:
+- With no RECRUIT intents, the RECRUIT reservation guard and the RECRUIT branch in conservation.py (~:450) are unreachable from the apply path.
+- The contract used to commit only when the transfer group was accepted. It now commits on any accepted appraisal, which is what the ruling intends.
+- strategic_cognition.yaml:3608 ("live-reachable via execute_recruit()") is left as it is; it was already contradicted by social_contract_scorer.py:88.
+- The rule sentence is word for word in docs/mechanics/resource_conservation_contract.md and as a bullet in docs/guidelines/intentional_divergences.md §2.72, where the owner's "binds when RECRUIT is wired" answer sits (there is no heading named SOC-05 in that file).
+
 ## Test Summary
-(empty)
+- New tests/unit/social/test_recruit_moves_no_gold.py (2 tests): on the unfixed code both fail (transfers present; contract not on EntityUpdate.strategic); after, pass.
+- Rewritten test_recruitment_moves_no_gold_until_recruit_is_wired: asserts no transfers on both sides, the contract (id, kind RECRUITMENT, status ACTIVE, source, target, terms payout 500) on both sides, recruiter readiness_delta -100.0, recruit last_offer_tick_set 0, and an apply-path check (refine then ApplyPath.apply_partial): both entities' gold unchanged, the recruiter keeps 1000, the contract is in state. It fails on the unfixed code, passes after.
+- Scoped run: tests/unit/social, test_phase5_negative_cases, tests/unit/resource, tests/unit/economy, tests/integration/domains/cooperation, tests/integration/kernel: 829 passed, 1 skipped. `codebase.health`: OK, 0 worse.
+- Measurement: none, per the ruling (nothing issues RECRUIT).
 
 ## Files Changed
-(empty)
+src/engine/domain/core_actions.py; tests/unit/social/test_recruit_moves_no_gold.py; tests/unit/resource/test_resource_v2_boundary.py; docs/mechanics/resource_conservation_contract.md; docs/guidelines/intentional_divergences.md; this ticket.
 
 ## Completion Summary
-(empty)
+AC1-AC5 met: step 1 recorded, execute_recruit emits no transfers and the contract is created on both sides (both pinned, red before), the named suites pass, the rule sentence is word for word in both docs, and no world measurement was run. strategic_cognition.yaml:3608 wording left as is. No known gap beyond the disclosures above.

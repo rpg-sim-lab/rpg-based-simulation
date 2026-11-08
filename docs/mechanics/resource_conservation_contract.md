@@ -55,6 +55,8 @@ Items, gold, and node charges in the world obey strict conservation. An entity c
 
    **Grouped transfers.** Intents that share a `group_id` commit together or not at all. `ResourceTransactionSystem.resolve_all` trial-resolves a group's intents in order on group-local copies of the in-tick node charges, reservations, treasury, building purse and stock, and the world-effect lists, applying each accepted intent's effects to the copies before the next intent is resolved. A later intent in the group therefore sees what the group's earlier intents would take: two harvests of a one-charge node, or two wages from one purse, cannot both pass. The live records are written only by the commit loop, once the whole group is accepted; a rejected group leaves them unchanged.
 
+   **Recruitment.** A recruitment payout, when RECRUIT is wired, is one conserving transfer: the payer must hold the payout net of its own transfers earlier in the tick, and the recruit is credited only as the payer's source debit (TCK-20261109-A-RECRUIT-PAYOUT-IS-PAID-IN-FULL-WHATEVER-THE-PAYER-HOLDS retired the unconserving path); it is measured when it is wired.
+
 ---
 
 ## Formula / Decision Logic

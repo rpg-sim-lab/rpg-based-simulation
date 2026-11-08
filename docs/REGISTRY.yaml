@@ -7976,22 +7976,7 @@
   - content
   last_verified: '2026-10-09'
 - type: ticket
-  path: agent-working/tickets/todos/TCK-20261109-A-GROUPED-TRANSFER-TRIAL-DOES-NOT-SEE-ITS-OWN-EARLIER-INTENTS.md
-  ticket_id: TCK-20261109-A-GROUPED-TRANSFER-TRIAL-DOES-NOT-SEE-ITS-OWN-EARLIER-INTENTS
-  title: A grouped transfer's trial resolves each intent without the node charges,
-    reservations, treasury or building purse and stock taken by the intents before
-    it in the same group
-  tier: hotfix
-  ticket_type: bug
-  date: '2026-11-09'
-  related_code_areas:
-  - resolve_all
-  - ResourceTransactionResolver.resolve
-  artifact_files: []
-  tags:
-  - economy
-- type: ticket
-  path: agent-working/tickets/todos/TCK-20261109-A-RECRUIT-PAYOUT-IS-PAID-IN-FULL-WHATEVER-THE-PAYER-HOLDS.md
+  path: agent-working/tickets/done/TCK-20261109-A-RECRUIT-PAYOUT-IS-PAID-IN-FULL-WHATEVER-THE-PAYER-HOLDS.md
   ticket_id: TCK-20261109-A-RECRUIT-PAYOUT-IS-PAID-IN-FULL-WHATEVER-THE-PAYER-HOLDS
   title: A recruit payout is paid to the recruit in full whatever the payer holds,
     so a short payer mints the difference, and nothing rolls one side back when the
@@ -8008,7 +7993,7 @@
   tags:
   - economy
 - type: ticket
-  path: agent-working/tickets/todos/TCK-20261109-FRONTEND-LINT-TOOLING-PULLS-A-MINIMATCH-OPEN-TO-GLOB-DOS.md
+  path: agent-working/tickets/done/TCK-20261109-FRONTEND-LINT-TOOLING-PULLS-A-MINIMATCH-OPEN-TO-GLOB-DOS.md
   ticket_id: TCK-20261109-FRONTEND-LINT-TOOLING-PULLS-A-MINIMATCH-OPEN-TO-GLOB-DOS
   title: 'Frontend lint tooling pulls minimatch 10.2.6, which is open to a glob-pattern
     denial of service (Dependabot alert #250); force 11.0.1 with an npm override if
@@ -8020,6 +8005,21 @@
   - frontend/package.json, frontend/package-lock.json
   artifact_files: []
   tags: []
+- type: ticket
+  path: agent-working/tickets/inprogress/TCK-20261109-A-GROUPED-TRANSFER-TRIAL-DOES-NOT-SEE-ITS-OWN-EARLIER-INTENTS.md
+  ticket_id: TCK-20261109-A-GROUPED-TRANSFER-TRIAL-DOES-NOT-SEE-ITS-OWN-EARLIER-INTENTS
+  title: A grouped transfer's trial resolves each intent without the node charges,
+    reservations, treasury or building purse and stock taken by the intents before
+    it in the same group
+  tier: hotfix
+  ticket_type: bug
+  date: '2026-11-09'
+  related_code_areas:
+  - resolve_all
+  - ResourceTransactionResolver.resolve
+  artifact_files: []
+  tags:
+  - economy
 - type: ticket
   path: agent-working/tickets/done/TCK-20261108-DLQ-CONTRACT-NAMES-NO-OUTCOME-FOR-A-FAILED-DLQ-WRITE.md
   ticket_id: TCK-20261108-DLQ-CONTRACT-NAMES-NO-OUTCOME-FOR-A-FAILED-DLQ-WRITE
