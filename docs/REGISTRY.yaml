@@ -7966,6 +7966,20 @@
   - content
   last_verified: '2026-10-09'
 - type: ticket
+  path: agent-working/tickets/done/TCK-20261108-PERF-DOCS-QUIET-GATE-AND-SCHEMA-VERSION.md
+  ticket_id: TCK-20261108-PERF-DOCS-QUIET-GATE-AND-SCHEMA-VERSION
+  title: Document the re-record quiet window and correct the schema version in the
+    baseline policy
+  tier: hotfix
+  ticket_type: chore
+  date: '2026-11-08'
+  related_code_areas:
+  - tools/perf/quiet_gate.py
+  - tools/perf/rerun_baselines.py
+  artifact_files: []
+  tags:
+  - performance
+- type: ticket
   path: agent-working/tickets/done/TCK-20261108-README-DEBUG-RUN-NAMES-AN-ENV-VAR-THE-CODE-NEVER-READS.md
   ticket_id: TCK-20261108-README-DEBUG-RUN-NAMES-AN-ENV-VAR-THE-CODE-NEVER-READS
   title: The README's full-observability run sets OBS_MODE, which the code never reads,
