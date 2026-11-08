@@ -62,24 +62,17 @@ consistent with mechanics-bible design, not merely un-instrumented: `docs/mechan
 02_combat_laws.md:11` states "The simulation follows a deterministic, non-random resolution for
 all primary attacks."
 
-The only RNG draw physically inside Collection-phase packet construction is
-`src/engine/executor.py:301` (`packet_seed = rng.get_int(Domain.DEFAULT, state.tick,
-item.owner_id, 0, 1000000)`), assigned to `WorkerPacket.seed` (`src/core/worker_protocol.py:29`)
-at `executor.py:307`. This value is **dead**: `packet.seed` is never read by `worker_logic.py`,
-`domain_logic.py`, `combat.py`, `movement.py`, or anywhere else under `src/` — it is only ever
-*written*, and only otherwise referenced where test fixtures construct a `WorkerPacket` directly
-(e.g. `tests/unit/kernel/test_worker_integrity.py`, `tests/integration/kernel/
-test_worker_determinism.py`).
-
-**Disposition — deferred, not removed.** `WorkerPacket` is a typed, frozen protocol dataclass
-with `seed` threaded through roughly a dozen test call sites across
-`tests/unit/kernel/test_worker_*.py`, `tests/unit/core/test_no_worker_direct_mutation.py`,
-`tests/unit/core/test_signal_hardening.py`, `tests/unit/core/test_fallback_hardening.py`, and
-`tests/integration/kernel/test_worker_determinism.py`, `test_authoritative_outcome_truth.py`,
-`test_milestone_b_closure.py`, `test_milestone_d_closure.py`. Removing the field is a real (if
-small) protocol-contract change, not the "trivial removal" this documentation-recording hotfix's
-scope allows (see ticket Out of Scope) — left in place, tracked here rather than silently
-ignored, for its own ticket to remove.
+Packet construction draws no RNG. `WorkerPacket.seed` (`src/core/worker_protocol.py:64`) is the
+world seed: `src/engine/executor.py:301` sets `seed=state.seed`, and the comment there says
+`context.seed` means the same under either executor. Before #837 that field held a per-packet value
+drawn with `rng.get_int(Domain.DEFAULT, ...)`; no draw is made now. The worker receives the packet as
+`context=packet` (`src/engine/worker_logic.py:42`) and under the sequential executor the
+domain logic gets the readonly `AuthoritativeState`, whose `seed` is the same value.
+A grep of `src/` for `packet.seed` and `context.seed` finds no direct reader. The one `state.seed` read
+on the combat-engagement worker path is `deterministic_observation_noise(state.seed, ...)`
+(`src/domains/combat_engagement/perception.py:97`); whether the concurrent path passes the
+packet as that `state` argument has not been traced. The seed-derivation rule itself is in
+[deterministic_execution.md](../deterministic_execution.md) and is not restated here.
 
 **The real RNG consumers all run in serial RESOLUTION, not parallel COLLECTION:**
 

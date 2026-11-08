@@ -52,12 +52,30 @@ def test_loot_node_is_fully_consumed_on_first_interaction():
     assert result.node_update.charges_delta == -4
 
 
-def test_reserved_last_charge_cannot_be_harvested_again_in_the_same_tick():
+def test_last_charge_taken_earlier_in_the_tick_cannot_be_harvested_again():
+    # The apply-path shape: an accepted harvest leaves charges_delta -1 in node_overrides and nothing else.
     node = make_resource_node(_NODE_ID, remaining_charges=1, max_charges=1)
-    result = _resolve(node, reservations={_KEY: 1})
+    earlier = {_NODE_ID: ResourceNodeUpdate(node_id=_NODE_ID, charges_delta=-1)}
+    result = _resolve(node, node_overrides=earlier)
     assert not result.accepted
     assert result.reason == ReasonCode.SOURCE_DEPLETED
     assert result.inventory_update is None and result.node_update is None
+
+
+def test_second_harvest_of_a_two_charge_node_in_the_same_tick_is_accepted_and_takes_the_last_charge():
+    node = make_resource_node(_NODE_ID, remaining_charges=2, max_charges=2)
+    earlier = {_NODE_ID: ResourceNodeUpdate(node_id=_NODE_ID, charges_delta=-1)}
+    result = _resolve(node, node_overrides=earlier)
+    assert result.accepted
+    assert result.node_update.charges_delta == -1
+    assert result.inventory_update.items_add == [ItemStack("iron_ore", 1)]
+
+
+def test_a_node_reservation_no_longer_counts_against_the_charges():
+    # No NODE reservation is written or read: the in-tick charges_delta is the whole record.
+    node = make_resource_node(_NODE_ID, remaining_charges=1, max_charges=1)
+    result = _resolve(node, reservations={_KEY: 1})
+    assert result.accepted
 
 
 def test_sliding_charge_delta_from_earlier_update_is_counted_before_yield():
