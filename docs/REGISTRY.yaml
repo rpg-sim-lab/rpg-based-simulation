@@ -481,6 +481,16 @@
   - observability
   - delivery
 - type: doc
+  path: docs/architecture/doc_topic_map.md
+  title: Documentation topic map
+  status: active
+  layer: architecture
+  authority: P1
+  audience: agent
+  tags:
+  - documentation
+  - architecture
+- type: doc
   path: docs/architecture/doc_updater_agent.md
   title: Document-Update Agent and Phase
   status: active
@@ -7966,6 +7976,68 @@
   - content
   last_verified: '2026-10-09'
 - type: ticket
+  path: agent-working/tickets/done/TCK-20261108-DLQ-CONTRACT-NAMES-NO-OUTCOME-FOR-A-FAILED-DLQ-WRITE.md
+  ticket_id: TCK-20261108-DLQ-CONTRACT-NAMES-NO-OUTCOME-FOR-A-FAILED-DLQ-WRITE
+  title: The observability hot-path contract says an exhausted message is routed to
+    the DLQ and ACKed, but names no outcome when the DLQ write fails or the source
+    entry is gone
+  tier: hotfix
+  ticket_type: repair
+  date: '2026-11-08'
+  related_code_areas:
+  - src/observability/stream/consumer.py
+  artifact_files: []
+  tags:
+  - documentation
+  - observability
+- type: ticket
+  path: agent-working/tickets/done/TCK-20261108-DOC-TOPIC-MAP-NAMES-ONE-CANONICAL-SOURCE-PER-FACT-GROUP.md
+  ticket_id: TCK-20261108-DOC-TOPIC-MAP-NAMES-ONE-CANONICAL-SOURCE-PER-FACT-GROUP
+  title: A reviewer has no single page naming the canonical doc and normative source
+    for each fact group, so reviews re-derive it from code
+  tier: standard
+  ticket_type: feature
+  date: '2026-11-08'
+  related_code_areas: []
+  artifact_files:
+  - agent-working/stored_artifacts/TCK-20261108-DOC-TOPIC-MAP-NAMES-ONE-CANONICAL-SOURCE-PER-FACT-GROUP/investigation.md
+  - agent-working/stored_artifacts/TCK-20261108-DOC-TOPIC-MAP-NAMES-ONE-CANONICAL-SOURCE-PER-FACT-GROUP/plan.md
+  - agent-working/stored_artifacts/TCK-20261108-DOC-TOPIC-MAP-NAMES-ONE-CANONICAL-SOURCE-PER-FACT-GROUP/test_plan.md
+  tags:
+  - documentation
+  - architecture
+- type: ticket
+  path: agent-working/tickets/done/TCK-20261108-FOUR-ENGINE-AND-OBSERVABILITY-DOC-CLAIMS-NO-LONGER-MATCH-THE-CODE.md
+  ticket_id: TCK-20261108-FOUR-ENGINE-AND-OBSERVABILITY-DOC-CLAIMS-NO-LONGER-MATCH-THE-CODE
+  title: 'Four rpg-owned engine and observability doc claims no longer match the code:
+    the packet seed, what a worker receives, whether Canonical exists, and the hard-law
+    count'
+  tier: hotfix
+  ticket_type: repair
+  date: '2026-11-08'
+  related_code_areas:
+  - src/engine/executor.py, src/core/worker_protocol.py, src/engine/signal_source.py,
+    src/observability/hard_law_monitor.py
+  artifact_files: []
+  tags:
+  - documentation
+  - engine
+  - observability
+- type: ticket
+  path: agent-working/tickets/done/TCK-20261108-KERNEL-CONCURRENCY-DIAGRAMS-SHOW-A-SEED-THE-PACKET-NO-LONGER-CARRIES.md
+  ticket_id: TCK-20261108-KERNEL-CONCURRENCY-DIAGRAMS-SHOW-A-SEED-THE-PACKET-NO-LONGER-CARRIES
+  title: 'The kernel concurrency design diagrams show a per-packet RNG seed, but since
+    #837 every packet carries the world seed'
+  tier: hotfix
+  ticket_type: repair
+  date: '2026-11-08'
+  related_code_areas:
+  - src/engine/executor.py, src/core/worker_protocol.py, src/platform/rng.py
+  artifact_files: []
+  tags:
+  - documentation
+  - determinism
+- type: ticket
   path: agent-working/tickets/done/TCK-20261108-PERF-DOCS-QUIET-GATE-AND-SCHEMA-VERSION.md
   ticket_id: TCK-20261108-PERF-DOCS-QUIET-GATE-AND-SCHEMA-VERSION
   title: Document the re-record quiet window and correct the schema version in the
@@ -7993,6 +8065,61 @@
   tags:
   - documentation
   - observability
+- type: ticket
+  path: agent-working/tickets/done/TCK-20261108-WEBSITE-DEV-SERVER-PULLS-A-UUID-WITH-AN-OPEN-SECURITY-ALERT.md
+  ticket_id: TCK-20261108-WEBSITE-DEV-SERVER-PULLS-A-UUID-WITH-AN-OPEN-SECURITY-ALERT
+  title: The docs website's dev server pulls uuid 8.3.2, which has an open medium
+    Dependabot alert that no update PR will fix
+  tier: hotfix
+  ticket_type: repair
+  date: '2026-11-08'
+  related_code_areas:
+  - website/package.json, website/package-lock.json
+  artifact_files: []
+  tags: []
+- type: ticket
+  path: agent-working/tickets/done/TCK-20261107-A-HARVEST-IS-REJECTED-ONE-CHARGE-EARLY-WITHIN-A-TICK.md
+  ticket_id: TCK-20261107-A-HARVEST-IS-REJECTED-ONE-CHARGE-EARLY-WITHIN-A-TICK
+  title: A second harvest of a regular node in the same tick is rejected as depleted
+    while one charge remains, because the earlier accepted harvest is counted twice
+  tier: hotfix
+  ticket_type: bug
+  date: '2026-11-07'
+  related_code_areas:
+  - src/core/conservation.py, src/engine/economy.py
+  artifact_files: []
+  tags:
+  - economy
+  - bug
+- type: ticket
+  path: agent-working/tickets/done/TCK-20261107-A-RESTORED-SCENARIO-CHECKPOINT-DRAWS-FROM-SEED-0.md
+  ticket_id: TCK-20261107-A-RESTORED-SCENARIO-CHECKPOINT-DRAWS-FROM-SEED-0
+  title: A restored scenario checkpoint builds its RNG with base seed 0, so for any
+    nonzero seed the resumed run's stateless draws differ from the uninterrupted run
+  tier: hotfix
+  ticket_type: bug
+  date: '2026-11-07'
+  related_code_areas:
+  - src/engine/scenario_checkpoint.py, src/platform/rng.py, src/engine/scenario_runtime.py,
+    tests/integration/scenarios/test_scenario_runtime_service.py
+  artifact_files: []
+  tags:
+  - determinism
+  - bug
+- type: ticket
+  path: agent-working/tickets/done/TCK-20261107-AN-EXHAUSTED-STREAM-MESSAGE-IS-ACKED-WHEN-ITS-DLQ-WRITE-FAILS.md
+  ticket_id: TCK-20261107-AN-EXHAUSTED-STREAM-MESSAGE-IS-ACKED-WHEN-ITS-DLQ-WRITE-FAILS
+  title: The stream consumer's reclaim sweep ACKs a message that has used up its delivery
+    attempts even when the dead-letter write failed, so the message is lost silently
+  tier: hotfix
+  ticket_type: bug
+  date: '2026-11-07'
+  related_code_areas:
+  - src/observability/stream/consumer.py, tests for the stream consumer
+  artifact_files: []
+  tags:
+  - observability
+  - bug
 - type: ticket
   path: agent-working/tickets/done/TCK-20261107-EVERY-PR-CLOSES-A-TICKET.md
   ticket_id: TCK-20261107-EVERY-PR-CLOSES-A-TICKET
