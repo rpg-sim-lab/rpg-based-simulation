@@ -379,6 +379,9 @@ class TestCheckpointRestore:
     def test_restore_keeps_the_state_seed_and_the_per_tick_digest(self, tmp_path, seed):
         """A run restored at tick N matches the unbroken run at every tick N+1..N+k, for a nonzero seed too.
 
+        The red of this test is the RNG assertions (seed and a stateless draw). The per-tick digest equality is the
+        acceptance law, but it did not diverge on this fixture (hero and goblin, up to 80 ticks) so it alone cannot catch the defect.
+
         The service is built with an initial state, so the unbroken run's RNG uses base_seed=state.seed
         (scenario_runtime._build_kernel). Restore must give the resumed kernel's RNG the same base seed,
         or every stateless draw after the restore comes from seed 0. The default-built service in

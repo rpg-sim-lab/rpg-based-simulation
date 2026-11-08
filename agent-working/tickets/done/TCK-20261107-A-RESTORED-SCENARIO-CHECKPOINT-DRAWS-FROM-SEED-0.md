@@ -82,7 +82,7 @@ Planner scope (rpg-planner-ubuntu, 2026-11-08; owner dispatch "yes", logged at #
 - F6 (atomic checkpoint write, spec_id before unpickle) is NOT folded in: no ticket, and a durability change is a separate concern from this determinism fix.
 
 ## Test Summary
-New test `TestCheckpointRestore::test_restore_keeps_the_state_seed_and_the_per_tick_digest[0,13]` (service built with an initial state). On 297494469 the seed-13 case failed at `restored._kernel._rng.seed == seed` (0 != 13); the seed-0 case passed. The per-tick digest comparison alone did not diverge on this fixture (hero and goblin, 12 and 80 ticks), so the test also asserts the seed and a stateless draw equal a fresh `DeterministicRNG(seed)`. After the fix both cases pass; `-k 'checkpoint or restore or consumer or stream or pel'` over the integration scenarios and observability tests: 75 passed, 4 skipped.
+New test `TestCheckpointRestore::test_restore_keeps_the_state_seed_and_the_per_tick_digest[0,13]` (service built with an initial state). On 297494469 the seed-13 case failed at `restored._kernel._rng.seed == seed` (0 != 13); the seed-0 case passed. The per-tick digest comparison alone did not diverge on this fixture (hero and goblin, 12 and 80 ticks), so the RNG assertions are the red and the digest equality is the law check; the test also asserts the seed and a stateless draw equal a fresh `DeterministicRNG(seed)`. After the fix both cases pass; `-k 'checkpoint or restore or consumer or stream or pel'` over the integration scenarios and observability tests: 75 passed, 4 skipped.
 
 ## Files Changed
 src/engine/scenario_checkpoint.py (restore uses `base_seed=state.seed`, comment corrected); tests/integration/scenarios/test_scenario_runtime_service.py.
