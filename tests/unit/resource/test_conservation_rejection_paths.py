@@ -8,8 +8,9 @@ Source kinds in resolve() are string literals, so a coverage guard scans the res
 and fails when a handled kind has no rejection case in the table.
 
 Reservation guards for QUEST, RECRUIT and CHEST are only reachable by a direct resolve() call
-with a hand-built reservations dict; the apply path populates reservations for NODE,
-GROUND_ITEM and CORPSE only. The resolver has no reservation guard for buildings, so no
+with a hand-built reservations dict; the apply path populates reservations for
+GROUND_ITEM and CORPSE only (NODE has none: the in-tick charges_delta counts every accepted
+harvest). The resolver has no reservation guard for buildings, so no
 building lock test exists.
 """
 from __future__ import annotations

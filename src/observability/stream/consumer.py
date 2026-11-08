@@ -37,6 +37,8 @@ class RedisStreamConsumer:
         self.client: Optional[Any] = None
         self._connected = False
         self._consecutive_failures = 0
+        # Exhausted messages whose DLQ write failed: left pending (un-ACKed) so a later sweep retries.
+        self.dlq_write_failures = 0
 
     def _compute_backoff_delay(self, attempt: int, rng: Optional["random.Random"] = None) -> float:
         capped = min(self.BACKOFF_CAP_SECONDS, self.BACKOFF_BASE_SECONDS * (2 ** max(0, attempt - 1)))
@@ -123,6 +125,31 @@ class RedisStreamConsumer:
         self.client.xack(self.stream_name, self.group_name, msg_id)
         return True, True
 
+    def _dead_letter_exhausted(self, entry: Dict[str, Any]) -> bool:
+        """Write the DLQ record for an exhausted pending entry, then ACK it. Returns True if ACKed.
+
+        No DLQ record means no ACK: the entry stays in the PEL, still exhausted, and the next sweep
+        retries the DLQ write. A pending entry is visible; a silent loss is not. A source entry that
+        is gone (e.g. trimmed by MAXLEN) gets a payload-less tombstone, so every exhausted message
+        leaves a DLQ record.
+        """
+        msg_id = entry["message_id"]
+        delivery_count = entry["times_delivered"]
+        entries = self.client.xrange(self.stream_name, min=msg_id, max=msg_id, count=1)
+        if entries:
+            in_dlq = self._send_to_dlq(msg_id, entries[0][1], "max delivery attempts exceeded", delivery_count)
+        else:
+            in_dlq = self._send_to_dlq(msg_id, {}, "source entry no longer readable", delivery_count)
+        if not in_dlq:
+            self.dlq_write_failures += 1
+            logger.error(
+                f"RedisStreamConsumer left {msg_id} pending: its DLQ write failed "
+                f"(failures so far: {self.dlq_write_failures})"
+            )
+            return False
+        self.client.xack(self.stream_name, self.group_name, msg_id)
+        return True
+
     def _reclaim_pending(self, handler: Callable[[SimulationEvent], None]) -> None:
         try:
             pending = self.client.xpending_range(
@@ -152,16 +179,7 @@ class RedisStreamConsumer:
                     self._handle_message(msg_id, fields, handler)
 
             for entry in exhausted_entries:
-                msg_id = entry["message_id"]
-                entries = self.client.xrange(self.stream_name, min=msg_id, max=msg_id, count=1)
-                if entries:
-                    self._send_to_dlq(
-                        msg_id,
-                        entries[0][1],
-                        "max delivery attempts exceeded",
-                        entry["times_delivered"]
-                    )
-                self.client.xack(self.stream_name, self.group_name, msg_id)
+                self._dead_letter_exhausted(entry)
         except Exception as e:
             logger.error(f"RedisStreamConsumer reclaim sweep failed: {e}")
 

@@ -13,7 +13,7 @@ The **Hard Law Monitor** is a core simulation health compliance guardian in the 
 
 ## 1. Core Operational Laws
 
-The monitor enforces eight authoritative laws spanning entity attributes, safety values, coordinates, and physical occupancy constraints:
+The monitor enforces nine authoritative laws spanning entity attributes, safety values, coordinates, and physical occupancy constraints:
 
 | Law ID | Scope | Constraint Rule | Severity | Description |
 | :--- | :--- | :--- | :--- | :--- |
@@ -22,6 +22,7 @@ The monitor enforces eight authoritative laws spanning entity attributes, safety
 | **`LAW-GOLD-NONNEGATIVE`** | `DirtySet.inventory_entities` | $Gold \ge 0$ | **ERROR** | Confirms no active entity carries a negative gold balance. |
 | **`LAW-STAMINA-NONNEGATIVE`** | `DirtySet.biological_entities` | $Stamina \ge 0$ | **ERROR** | Validates that stamina/energy points do not drop below zero. |
 | **`LAW-POSITION-FINITE`** | `DirtySet.movement_entities` | $x, y \in \mathbb{R}$ | **ERROR** | Guarantees that entity location coordinates are valid finite floating-point numbers (no `NaN` or `Infinity`). |
+| **`LAW-POSITION-IN-WORLD`** | `DirtySet.all_dirty_entities` | A committed position of an active, alive entity lies inside the world extent (the union of the declared region bounds, Bible 06 topology) | **ERROR** | Catches an entity that left the world (`check_world_extent`, `src/observability/hard_law_monitor.py:163`). Added 2026-10-10. A non-finite position is `LAW-POSITION-FINITE`'s case and is skipped here. |
 | **`LAW-OCCUPANCY-COLLISION`** | `DirtySet.movement_entities` | $\text{occupants}(tile) \le 1$ | **ERROR** | Ensures no two solid active alive entities occupy the same spatial grid tile simultaneously. |
 | **`LAW-SPAWN-OCCUPANCY`** | `Kernel.__init__` (once, pre-tick) | Reuses `LegalityServiceV2.verify_occupancy()`'s WALL/`blocked_tiles`/`building_tiles`/`transient_claims`/occupancy rule, plus a tile-multi-occupancy scan, across entities + buildings + resource nodes | **ERROR** | Unconditional full-population scan of the compiled spawn state, run once before the first tick. Catches placement collisions `WorldCompiler.compile()` never validates and that dirty-set-gated `LAW-OCCUPANCY-COLLISION` cannot see because nothing has "moved" yet. |
 | **`LAW-LODGER-INDOORS`** | `DirtySet.all_dirty_entities` | An entity with `navigation.lodged_in` set stands on its building's own tile and has no navigation target | **ERROR** | F3 (divergence 2.155): a lodger is indoors; after apply it has no walk target and has not left its building's tile. A guard (`lodging.drop_lodger_targets`) drops a proposed target and counts it as `LODGER_TARGET_DROPPED`; this law fails if one gets through. |
@@ -46,7 +47,7 @@ graph TD
 - **`OFF`**: All health checking is completely bypassed.
 - **`LIGHT` (Default)**: Tracks statistics and cumulative violations on the engine's thread-safe status signal. Emits structured warnings to standard logging outputs, but allows the simulation to proceed.
 - **`DEBUG` & `CERTIFICATION`**: Fails fast immediately. Halts loop execution by raising `HardLawViolationError`, preventing corrupt states from committing to persistence or being exposed to APIs.
-- **`LONG_RUN`**: Violations are still persisted to `hard_law_violations.jsonl` and routed to `AlertsManager`, but neither logged nor raised — the mode-gating `if`/`elif` chain only handles `LIGHT` for logging and `DEBUG`/`CERTIFICATION` for fail-fast, so `LONG_RUN` falls through both. This is a known gap, not a "LIGHT-like" behavior, and it applies identically to all eight laws above, including `LAW-SPAWN-OCCUPANCY`.
+- **`LONG_RUN`**: Violations are still persisted to `hard_law_violations.jsonl` and routed to `AlertsManager`, but neither logged nor raised — the mode-gating `if`/`elif` chain only handles `LIGHT` for logging and `DEBUG`/`CERTIFICATION` for fail-fast, so `LONG_RUN` falls through both. This is a known gap, not a "LIGHT-like" behavior, and it applies identically to all nine laws above, including `LAW-SPAWN-OCCUPANCY`.
 
 ---
 
