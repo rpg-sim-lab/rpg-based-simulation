@@ -1,10 +1,10 @@
 ---
-status: active
+status: historical
 layer: frontend
 authority: P1
 audience: agent
 ticket_id: TCK-20261109-FRONTEND-LINT-TOOLING-PULLS-A-MINIMATCH-OPEN-TO-GLOB-DOS
-phase: open
+phase: done
 date: 2026-11-09
 tags: []
 ---
@@ -15,7 +15,7 @@ tags: []
 Frontend lint tooling pulls minimatch 10.2.6, which is open to a glob-pattern denial of service (Dependabot alert #250); force 11.0.1 with an npm override if eslint still works
 
 ## Status
-OPEN
+DONE
 
 ## Tier
 hotfix
@@ -77,13 +77,20 @@ None.
 - npm `overrides` lets a child resolve outside its parent's declared range. That is why the eslint check in step 2 is the real test, not `npm ls` alone.
 
 ## Implementation Notes
-(empty)
+- Override is `"minimatch": "^11.0.1"` in frontend/package.json. A caret, not a pin: the lockfile fixes the resolved version, and a later 11.x patch release of the fix is then taken by a normal `npm update`, with no override edit.
+- The lockfile was regenerated with `npm install` under Node 24.22.2 (installed to /data/vboxuser/Work/node24 from the `node@24.22.2` npm package, because the host has only Node 20). It resolves minimatch 11.0.5, which adds `@isaacs/nonrecursive-glob-match` 1.1.0. 11.0.5 is above the first patched version 11.0.1.
+- eslint.config.js and frontend/src are untouched.
+- Evidence: /data/vboxuser/Work/node24/{baseline.log,override.log,lint_base.txt,lint_over.txt}.
 
 ## Test Summary
-(empty)
+Under Node 24.22.2, one run at a time, inside lead-planner's slot (systemd scope, MemoryMax 3G, cores 4-5).
+- Baseline, unchanged lockfile (minimatch 10.2.6): `npm ci` ok; `npm audit` flags minimatch (moderate, GHSA-g3hv-75wg-m249); vitest 31 files / 369 tests passed; build ok; lint 21 problems (17 errors, 4 warnings).
+- With the override: `npm install` and `npm ci` ok; `npm ls minimatch` shows only 11.0.5 (the eslint direct edge is "overridden", the other two "deduped"), no invalid or ELSPROBLEMS; `npm audit` found 0 vulnerabilities; vitest 31 files / 369 tests passed; build ok; lint 21 problems (17 errors, 4 warnings).
+- The lint output after the override is byte-identical to the baseline (diff of the full output, same files, rules and positions).
+- Not run: the CI frontend job itself (it runs `npm ci`, `npx vitest run`, `npm run build` under Node 24, as done here); the e2e tests.
 
 ## Files Changed
-(empty)
+frontend/package.json, frontend/package-lock.json; this ticket.
 
 ## Completion Summary
-(empty)
+AC1 met: the override is in package.json and the lockfile resolves minimatch only to 11.0.5. AC2 met: every check passed with the counts above and lint equals the baseline. AC3 not applicable: the override was kept, eslint 10.13.0 loads and lints unchanged under minimatch 11. AC4 is the PR's frontend job, pending the PR. The Dependabot alert closes on its own once this lands; dismissing it is the owner's. No known gap beyond the checks not run, listed above.
