@@ -8021,6 +8021,30 @@
   artifact_files: []
   tags: []
 - type: ticket
+  path: agent-working/tickets/done/TCK-20261109-README-NAMES-A-CHECKPOINT-SEED-DEFECT-THAT-IS-FIXED.md
+  ticket_id: TCK-20261109-README-NAMES-A-CHECKPOINT-SEED-DEFECT-THAT-IS-FIXED
+  title: 'The README still lists the restored-checkpoint seed-0 defect as open, but
+    #848 fixed it'
+  tier: hotfix
+  ticket_type: repair
+  date: '2026-11-09'
+  related_code_areas:
+  - README.md
+  artifact_files: []
+  tags: []
+- type: ticket
+  path: agent-working/tickets/done/TCK-20261109-WEBSITE-LOCKFILE-PINS-JOI-AND-FOLLOW-REDIRECTS-WITH-OPEN-HIGH-ALERTS.md
+  ticket_id: TCK-20261109-WEBSITE-LOCKFILE-PINS-JOI-AND-FOLLOW-REDIRECTS-WITH-OPEN-HIGH-ALERTS
+  title: The docs website's lockfile pins joi 17.13.8 and follow-redirects 1.16.1,
+    which have open high Dependabot alerts
+  tier: hotfix
+  ticket_type: repair
+  date: '2026-11-09'
+  related_code_areas:
+  - website/package-lock.json
+  artifact_files: []
+  tags: []
+- type: ticket
   path: agent-working/tickets/done/TCK-20261108-DLQ-CONTRACT-NAMES-NO-OUTCOME-FOR-A-FAILED-DLQ-WRITE.md
   ticket_id: TCK-20261108-DLQ-CONTRACT-NAMES-NO-OUTCOME-FOR-A-FAILED-DLQ-WRITE
   title: The observability hot-path contract says an exhausted message is routed to
