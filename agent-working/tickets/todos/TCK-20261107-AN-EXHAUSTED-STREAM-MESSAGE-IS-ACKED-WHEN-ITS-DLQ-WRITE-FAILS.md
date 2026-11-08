@@ -64,6 +64,13 @@ src/observability/stream/consumer.py, tests for the stream consumer
 - A permanently failing DLQ would leave the message pending forever. Is that acceptable, or does it need a bounded give-up with a counter? This is for the owning planner.
 
 ## Implementation Notes
+Planner scope (rpg-planner-ubuntu, 2026-11-08; owner dispatch "yes", logged at #715 comment 6720661924). This answers the open question and is the intended behaviour:
+- Re-verified at origin/main 297494469: `consumer.py:164` ACKs unconditionally after `_send_to_dlq` (`:76-89`, returns False on a failed XADD).
+- DLQ write fails: do not ACK. The message stays in the PEL and the next reclaim sweep retries the DLQ write; it is still exhausted, so it goes straight back to the DLQ path. Log at error level and count the failure on the consumer (a typed counter attribute next to the existing failure counters, readable by the pending/lag metrics code).
+- No bounded give-up. A permanently failing DLQ leaves the entry pending, which the PEL-size metric (TCK-20261014-AI-WORKER-EXPOSES-STREAM-CONSUMER-LAG-AND-PENDING-METRICS) already makes visible. A visible pending entry is preferred over a silent loss.
+- Source entry gone (`xrange` empty, e.g. trimmed by MAXLEN): write a DLQ tombstone entry (`dlq_source_id`, `dlq_reason="source entry no longer readable"`, `dlq_delivery_count`, `dlq_failed_at`, no payload) and ACK only if that write succeeded. Every exhausted message then leaves a DLQ record.
+- Tests: XADD raises means no ACK and the counter is bumped; a later sweep with XADD working ACKs; empty xrange writes a tombstone then ACKs; tombstone write fails means no ACK.
+- The contract row in `docs/architecture/observability_hot_path_safety_contract.md:124,143` is lead-owned. rpg-planner-ubuntu sends lead this behaviour; the implementer does not edit that file.
 
 ## Test Summary
 

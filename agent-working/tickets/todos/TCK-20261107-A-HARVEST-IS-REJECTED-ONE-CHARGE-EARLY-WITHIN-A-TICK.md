@@ -67,6 +67,13 @@ src/core/conservation.py, src/engine/economy.py
 - The world impact is unmeasured. Simultaneous same-node harvests may be rare.
 
 ## Implementation Notes
+Planner scope (rpg-planner-ubuntu, 2026-11-08; owner dispatch "yes", logged at #715 comment 6720661924):
+- Re-verified at origin/main 297494469: `conservation.py:317-324` adds `node_overrides[...].charges_delta` and subtracts `reservations[("NODE", id)]`; `economy.py:350-356` writes both for one accepted harvest into the same `new_node_updates` dict.
+- BLOCKED on the economy rule owner. Nothing is built until rpg-designer confirms the double count is unintended. The question goes to rpg-designer via lead-planner and lead-planner-u24, and the ruling is recorded word for word in this ticket.
+- If the ruling is "unintended": count the accepted harvest once, by `charges_delta`. Remove the NODE reservation subtract (`conservation.py:322-323`) and its write (`economy.py:356`); those are the only reader and writer of `("NODE", id)` at 297494469. Keep `charges_delta` because `new_node_updates` starts as `dict(update.node_updates)` (`economy.py:33`), so it also carries node changes made earlier in the tick, which a reservation never sees. LOOT already reaches 0 through its whole-node delta, so it is unchanged; assert that in the test.
+- If the ruling is "intended": close by disposition, with no code. The ruling then needs a Bible ch. 03 §3 line or an intentional-divergences entry, and that is a planner follow-up.
+- R-tx-09 (exact debit/credit assertions on a successful transfer) is folded in, as the ticket says.
+- World impact: run the not-slow economy and conservation tests. Gate-world measurement only if those tests move, and only on a fresh go.
 
 ## Test Summary
 

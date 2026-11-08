@@ -73,6 +73,13 @@ src/engine/scenario_checkpoint.py, src/platform/rng.py, src/engine/scenario_runt
 - Unverified: whether any shipped flow restores a checkpoint and then compares a hash.
 
 ## Implementation Notes
+Planner scope (rpg-planner-ubuntu, 2026-11-08; owner dispatch "yes", logged at #715 comment 6720661924):
+- Tier stays hotfix. Re-verified at origin/main 297494469: `scenario_checkpoint.py:91` still builds `DeterministicRNG(base_seed=0)`; `set_state` (`rng.py:57-62`) restores only the stream map; `_build_kernel` uses `base_seed=self._initial_state.seed` when there is an initial state (`scenario_runtime.py:419-420`).
+- The comment at `scenario_checkpoint.py:88-90` is corrected in the same change (docs-as-review-source batch A item 6). It is wrong twice: base_seed does not match `_build_kernel()` for a nonzero seed, and it is not irrelevant post-restore.
+- The regression test must build the service with a nonzero-seed initial state, so the runtime takes the `base_seed=state.seed` branch, and it must show a red on 297494469 first.
+- README.md is lead-owned: do not edit it. When this lands, rpg-planner-ubuntu tells lead-planner, who drops the README line.
+- Evidence-run check: search recorded evidence for a resume from a scenario checkpoint and name any hit in the Completion Summary. "None found" with the search used is an acceptable result.
+- F6 (atomic checkpoint write, spec_id before unpickle) is NOT folded in: no ticket, and a durability change is a separate concern from this determinism fix.
 
 ## Test Summary
 
