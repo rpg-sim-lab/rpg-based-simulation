@@ -7991,6 +7991,23 @@
   tags:
   - economy
 - type: ticket
+  path: agent-working/tickets/todos/TCK-20261109-A-RECRUIT-PAYOUT-IS-PAID-IN-FULL-WHATEVER-THE-PAYER-HOLDS.md
+  ticket_id: TCK-20261109-A-RECRUIT-PAYOUT-IS-PAID-IN-FULL-WHATEVER-THE-PAYER-HOLDS
+  title: A recruit payout is paid to the recruit in full whatever the payer holds,
+    so a short payer mints the difference, and nothing rolls one side back when the
+    other is rejected
+  tier: hotfix
+  ticket_type: bug
+  date: '2026-11-09'
+  related_code_areas:
+  - execute_recruit
+  - src/core/conservation.py (RECRUIT branch)
+  - resolve_all
+  - src/core/inventory.py (gold clamp)
+  artifact_files: []
+  tags:
+  - economy
+- type: ticket
   path: agent-working/tickets/todos/TCK-20261109-FRONTEND-LINT-TOOLING-PULLS-A-MINIMATCH-OPEN-TO-GLOB-DOS.md
   ticket_id: TCK-20261109-FRONTEND-LINT-TOOLING-PULLS-A-MINIMATCH-OPEN-TO-GLOB-DOS
   title: 'Frontend lint tooling pulls minimatch 10.2.6, which is open to a glob-pattern

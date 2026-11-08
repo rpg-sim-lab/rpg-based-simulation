@@ -41,23 +41,25 @@ Neither intent sets `gold_cost`, which defaults to 0 (src/core/update_models/res
 Reachability: latent. Nothing in src issues a RECRUIT action. `action_router.py:63` routes it, but no producer emits it; src/ai/goals/social_contract_scorer.py:88 records the same ("nothing in `src` issues RECRUIT"). The crowded runs in #848 showed coin delta 0, which fits that. The cooperation path's `cnt_recruit_` contracts (src/domains/cooperation/services.py:280) carry no gold transfer and are not affected (to re-confirm in step 1).
 
 ## Scope
-1. Confirm reachability. Is any RECRUIT action producer present at the working base? Does the cooperation `cnt_recruit_` path move gold anywhere? Record both.
-2. Ask the rule owner (rpg-designer, via lead) which direction to take:
-   - (A) Fix the recruit payment as one conserving transfer. For example, the payer side checks it holds the payout. The target is credited only through the payer's accepted result, as a source debit (the way CORPSE loot debits the dead entity at conservation.py:152-157) rather than as an independent intent.
-   - (B) Retire the unreachable `execute_recruit` gold path.
-   Recommendation: (A) if recruitment is planned to come back; (B) if it is not. Do not implement before the ruling.
-3. Implement the ruled direction with a red-then-green apply-path test: a payer holding less than the payout creates no gold, and the totals before and after are equal.
-4. Update docs/mechanics/03_economic_laws.md, resource_conservation_contract.md and the parity-ledger entry if they describe recruitment payment.
+Ruled direction: B, narrowed to the gold path (rpg-designer, #715 6724908875; ruling word for word in Implementation Notes).
+1. Confirm no test asserts execute_recruit's two `resource_transfers` intents. The ruling found none (test_recruitment.py covers appraisal only; test_team_up.py names it only in a docstring). If one does, stop: that is an RPG test-expectation change and needs rpg-planner's sign-off.
+2. In `CoreActions.execute_recruit` (src/engine/domain/core_actions.py:188-213), remove the two `resource_transfers` intents and their `group_id`. Keep the function, its appraisal, its contract creation (`strategic_upd` with the contract on both sides, now carried outside the transfer intents) and the router branch. Do not edit the RECRUIT/CHEST branch in `resolve()`.
+3. Add a unit test: execute_recruit's accepted path emits no `resource_transfers` and still creates the contract on both sides. test_phase5_negative_cases.py:283-286 (TARGET_NOT_FOUND) must still pass unchanged.
+4. Docs: add the ruling's sentence word for word to docs/mechanics/resource_conservation_contract.md, and the same sentence under the SOC-05 entry in docs/guidelines/intentional_divergences.md. In strategic_cognition.yaml (:3608-3670), correct the "live-reachable via execute_recruit()" wording if you touch those entries; otherwise name it in the close as left. Update any parity-ledger entry that cites the recruit gold transfer.
 
 ## Out of Scope
-- The grouped-trial fix (TCK-20261109-A-GROUPED-TRANSFER-TRIAL-DOES-NOT-SEE-ITS-OWN-EARLIER-INTENTS). That one is about intents inside one entity's group.
+- Option A (a conserving recruit transfer). It is deferred until RECRUIT is wired, under the rule sentence this ticket records.
+- The RECRUIT/CHEST branch of `resolve()`.
+- Removing `execute_recruit` or its router branch.
+- The grouped-trial fix (TCK-20261109-A-GROUPED-TRANSFER-TRIAL-DOES-NOT-SEE-ITS-OWN-EARLIER-INTENTS).
 - Adding a RECRUIT producer.
 
 ## Acceptance Criteria
-- AC1: The reachability result is recorded.
-- AC2: The rule owner's ruling is recorded word for word before any code change.
-- AC3: Under (A), a short payer creates no gold and a rejected payer side leaves the target unpaid; both are tested through the apply path. Under (B), no src path pays RECRUIT gold, and tests that pinned it are updated with the rule owner's sign-off.
-- AC4: If step 1 confirms nothing reaches it, the close says so and no world measurement is needed.
+- AC1: Step 1's result is recorded.
+- AC2: execute_recruit emits no `resource_transfers`, and the contract is still created on both sides, both pinned by the new unit test. That test is red on the unfixed code.
+- AC3: test_phase5_negative_cases.py and test_recruitment.py pass unchanged, as do the conservation and economy suites (tests/unit/resource, tests/unit/economy).
+- AC4: The rule sentence appears word for word in resource_conservation_contract.md and under SOC-05 in intentional_divergences.md. The strategic_cognition.yaml wording is fixed, or named as left.
+- AC5: No world measurement (ruling): nothing reaches the path, and the gate's RECRUIT accepted count is 0. Equal end-state fingerprints may ride a combined run if one happens.
 
 ## Related Tickets
 - TCK-20261109-A-GROUPED-TRANSFER-TRIAL-DOES-NOT-SEE-ITS-OWN-EARLIER-INTENTS
@@ -77,11 +79,30 @@ None.
 - src/core/inventory.py (gold clamp)
 
 ## Assumptions / Open Questions
-- Q1 (rule owner): direction (A) or (B)?
-- Dispatch needs the owner's go after the ruling.
+- Q1 is answered: B, narrowed to the gold path (ruling in Implementation Notes).
+- Dispatch waits for the owner's go. The ruling clearance (#715 6724908875) covers the A/B choice only.
 
 ## Implementation Notes
-(empty)
+Ruling, recorded word for word (relayed by lead-planner from lead-planner-u24, 2026-11-09):
+
+Recruit payout ruling (rpg-designer, under #715 6724908875), for TCK-20261109-A-RECRUIT-PAYOUT-IS-PAID-IN-FULL-WHATEVER-THE-PAYER-HOLDS. I read it myself at 8d9f3ebf3. Text to record word for word:
+
+Choice: B, narrowed to the gold path only. Remove the two `resource_transfers` intents (and their group_id) from `CoreActions.execute_recruit` (core_actions.py:188-213). Keep the function, its appraisal, its contract creation and the router branch. Don't edit the RECRUIT/CHEST branch in `resolve()`.
+
+Findings, confirmed: (1) the RECRUIT branch (conservation.py:446-467) checks only `gold < gold_cost`. execute_recruit leaves gold_cost at 0, so the payer is never rejected, and a payer holding less than the payout mints the shortfall. That breaks Bible 03 §1. (2) The two sides are separate per-entity groups, so they aren't tied together. (3) The case can't be reached: nothing in src issues RECRUIT, and the gate baseline's RECRUIT accepted count is 0.0 on every seed (rpg_gate_v1.json, O4.accepted).
+
+Why not A now: recruitment is planned. The owner's 2026-10-06 answer, recorded in intentional_divergences.md (SOC-05 entry), says the contract "binds when RECRUIT is wired". But A isn't the CORPSE shape done once. A corpse can't spend in its own tick, and a live payer can: the payer's own transfers resolve in id order in the same tick, so `_corpse_food_result`'s check of the source's stored gold could overdraw it. A correct A needs the payer's in-tick running balance, and it needs a world in which to measure it. Neither exists while nothing issues RECRUIT. Designing an unreachable transfer now costs more and proves nothing (owner rule 6698958617). What B leaves out: no gold moves on a recruitment contract until it's wired. Nothing in src reaches it today.
+
+Why the gold path only, and not the whole action: the function's appraisal direction and contract shape are cited as the pattern in the Bible (04:1083), in social_narrative.yaml (:2334, :3773, :3866) and in strategic_cognition.yaml (:3608, :3641, :3670). test_phase5_negative_cases.py:283-286 pins its TARGET_NOT_FOUND path. Removing the function would turn all of those into stale citations for no gain. Removing the two intents takes away both the minting and the atomicity gap.
+
+Rule to record, so the payout returns correctly: add one sentence to docs/mechanics/resource_conservation_contract.md, and the same under the SOC-05 entry in intentional_divergences.md. "A recruitment payout, when RECRUIT is wired, is one conserving transfer: the payer must hold the payout net of its own transfers earlier in the tick, and the recruit is credited only as the payer's source debit (TCK-20261109-A-RECRUIT-PAYOUT-IS-PAID-IN-FULL-WHATEVER-THE-PAYER-HOLDS retired the unconserving path); it is measured when it is wired." In strategic_cognition.yaml (:3608-3670), the entries saying the scorer is "live-reachable via execute_recruit()" are already contradicted by social_contract_scorer.py:88. The ticket should correct that wording if it's touching them. If not, name it as left.
+
+Tests: a unit test that execute_recruit's accepted path emits no resource_transfers and still creates the contract on both sides. Scope step 1 must confirm that no test asserts those intents. I found none: test_recruitment.py covers appraisal only, and test_team_up.py only names it in a docstring. If one does assert them, that's an RPG test-expectation change and rpg-planner signs it off.
+Measurement: none needed in worlds. Nothing reaches the path, and the gate's RECRUIT count of 0 is the evidence. If a combined run happens anyway, equal end-state fingerprints can ride it.
+
+This also settles my earlier FYI: removing the intents removes the cross-entity group. Back to idle.
+
+(end of ruling)
 
 ## Test Summary
 (empty)
