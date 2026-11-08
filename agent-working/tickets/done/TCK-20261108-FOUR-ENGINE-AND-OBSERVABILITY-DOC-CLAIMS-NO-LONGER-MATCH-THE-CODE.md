@@ -1,10 +1,10 @@
 ---
-status: active
+status: historical
 layer: engine
 authority: P1
 audience: agent
 ticket_id: TCK-20261108-FOUR-ENGINE-AND-OBSERVABILITY-DOC-CLAIMS-NO-LONGER-MATCH-THE-CODE
-phase: open
+phase: done
 date: 2026-11-08
 tags: [documentation, engine, observability]
 ---
@@ -15,7 +15,7 @@ tags: [documentation, engine, observability]
 Four rpg-owned engine and observability doc claims no longer match the code: the packet seed, what a worker receives, whether Canonical exists, and the hard-law count
 
 ## Status
-OPEN
+DONE
 
 ## Tier
 hotfix
@@ -80,7 +80,10 @@ src/engine/executor.py, src/core/worker_protocol.py, src/engine/signal_source.py
 ## Implementation Notes
 
 ## Test Summary
+Docs only. `validate_frontmatter.py` OK on the three files; tests/docs engine/determinism/observability subset: 2 passed; `make knowledge-index-update` run.
 
 ## Files Changed
+docs/engine/contracts/simulation_kernel_contract.md; docs/engine/deterministic_execution.md; docs/observability/hard_law_monitor.md.
 
 ## Completion Summary
+Item 1: packet seed is the world seed (`executor.py:301`, `worker_protocol.py:64`); the dead-seed and deferred-removal paragraphs are replaced. A grep finds no direct reader of `packet.seed`/`context.seed`; the one `state.seed` read on the worker path is `perception.py:97`, and whether the concurrent path passes the packet there is stated as not traced. Item 2: Rule 3 names both executors (`executor.py:133`, `:296`). Item 3, per perf-planner via the planner: PERF-M1 is complete (epic line 49), so `:36`, `:69`, `:182` no longer call it pending, and `:199` says T03 is closed and that per-test relabelling was not checked. No open ticket owning the DET-PORT-1 matrix was found, so none is named. Item 4: nine laws, `LAW-POSITION-IN-WORLD` row added (`hard_law_monitor.py:163`), `all eight` at :49 corrected. Optional 2.147 link added to Rule 3. No lead-owned or perf-owned file edited.

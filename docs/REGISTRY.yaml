@@ -7966,6 +7966,23 @@
   - content
   last_verified: '2026-10-09'
 - type: ticket
+  path: agent-working/tickets/done/TCK-20261108-FOUR-ENGINE-AND-OBSERVABILITY-DOC-CLAIMS-NO-LONGER-MATCH-THE-CODE.md
+  ticket_id: TCK-20261108-FOUR-ENGINE-AND-OBSERVABILITY-DOC-CLAIMS-NO-LONGER-MATCH-THE-CODE
+  title: 'Four rpg-owned engine and observability doc claims no longer match the code:
+    the packet seed, what a worker receives, whether Canonical exists, and the hard-law
+    count'
+  tier: hotfix
+  ticket_type: repair
+  date: '2026-11-08'
+  related_code_areas:
+  - src/engine/executor.py, src/core/worker_protocol.py, src/engine/signal_source.py,
+    src/observability/hard_law_monitor.py
+  artifact_files: []
+  tags:
+  - documentation
+  - engine
+  - observability
+- type: ticket
   path: agent-working/tickets/done/TCK-20261108-README-DEBUG-RUN-NAMES-AN-ENV-VAR-THE-CODE-NEVER-READS.md
   ticket_id: TCK-20261108-README-DEBUG-RUN-NAMES-AN-ENV-VAR-THE-CODE-NEVER-READS
   title: The README's full-observability run sets OBS_MODE, which the code never reads,
@@ -7979,6 +7996,20 @@
   tags:
   - documentation
   - observability
+- type: ticket
+  path: agent-working/tickets/done/TCK-20261107-AN-EXHAUSTED-STREAM-MESSAGE-IS-ACKED-WHEN-ITS-DLQ-WRITE-FAILS.md
+  ticket_id: TCK-20261107-AN-EXHAUSTED-STREAM-MESSAGE-IS-ACKED-WHEN-ITS-DLQ-WRITE-FAILS
+  title: The stream consumer's reclaim sweep ACKs a message that has used up its delivery
+    attempts even when the dead-letter write failed, so the message is lost silently
+  tier: hotfix
+  ticket_type: bug
+  date: '2026-11-07'
+  related_code_areas:
+  - src/observability/stream/consumer.py, tests for the stream consumer
+  artifact_files: []
+  tags:
+  - observability
+  - bug
 - type: ticket
   path: agent-working/tickets/done/TCK-20261107-EVERY-PR-CLOSES-A-TICKET.md
   ticket_id: TCK-20261107-EVERY-PR-CLOSES-A-TICKET
@@ -8053,6 +8084,20 @@
     src/engine/tactical_objective.py:124-126, src/engine/tactical.py:278-290
   artifact_files: []
   tags: []
+- type: ticket
+  path: agent-working/tickets/todos/TCK-20261107-A-HARVEST-IS-REJECTED-ONE-CHARGE-EARLY-WITHIN-A-TICK.md
+  ticket_id: TCK-20261107-A-HARVEST-IS-REJECTED-ONE-CHARGE-EARLY-WITHIN-A-TICK
+  title: A second harvest of a regular node in the same tick is rejected as depleted
+    while one charge remains, because the earlier accepted harvest is counted twice
+  tier: hotfix
+  ticket_type: bug
+  date: '2026-11-07'
+  related_code_areas:
+  - src/core/conservation.py, src/engine/economy.py
+  artifact_files: []
+  tags:
+  - economy
+  - bug
 - type: ticket
   path: agent-working/tickets/done/TCK-20261103-DELIVERY-GUIDE-PINNED-RUNNER-EVIDENCE-RULE.md
   ticket_id: TCK-20261103-DELIVERY-GUIDE-PINNED-RUNNER-EVIDENCE-RULE
