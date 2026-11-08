@@ -7978,8 +7978,9 @@
 - type: ticket
   path: agent-working/tickets/todos/TCK-20261109-A-GROUPED-TRANSFER-TRIAL-DOES-NOT-SEE-ITS-OWN-EARLIER-INTENTS.md
   ticket_id: TCK-20261109-A-GROUPED-TRANSFER-TRIAL-DOES-NOT-SEE-ITS-OWN-EARLIER-INTENTS
-  title: A grouped transfer's trial resolves each intent without the node charges
-    or reservations taken by the intents before it in the same group
+  title: A grouped transfer's trial resolves each intent without the node charges,
+    reservations, treasury or building purse and stock taken by the intents before
+    it in the same group
   tier: hotfix
   ticket_type: bug
   date: '2026-11-09'
