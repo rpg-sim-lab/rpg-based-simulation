@@ -945,7 +945,7 @@ Read:
 Produce two files:
 
 FILE 1: agent-working/staging_artifacts/${tid}/investigation.md
-Sections: Current Behavior (file:line refs) | Mechanics/Engine Constraints | Docs Requiring Update (every specific docs/ path this ticket must change if implemented as scoped — empty/"None" only if no doc anywhere needs to change. REQUIRED FORMAT, machine-parsed by done-checker's static coverage check: one bullet per path, backtick-wrapped, immediately after "- ", e.g. "- \`docs/mechanics/03_economic_laws.md\`: one-line reason". If none apply, write exactly "None." with no bullets — any other format is treated as a format regression, not a clean "nothing required" case) | Parity Ledger Overlap (IDs + status) | Prior Work | Risks and Open Questions | Anti-Drift Hazards
+Sections: Current Behavior (file:line refs) | Mechanics/Engine Constraints | Docs Requiring Update (first run: python3 tools/gate_checks/docs_search.py --changed-file <code path> ... for the ticket's code paths and follow investigator.md's "Build the list by search" block: confirmed required docs as the bullets below; candidate and excluded docs in separate tables, never as backticked-docs/ bullets — every specific docs/ path this ticket must change if implemented as scoped — empty/"None" only if no doc anywhere needs to change. REQUIRED FORMAT, machine-parsed by done-checker's static coverage check: one bullet per path, backtick-wrapped, immediately after "- ", e.g. "- \`docs/mechanics/03_economic_laws.md\`: one-line reason". If none apply, write exactly "None." with no bullets — any other format is treated as a format regression, not a clean "nothing required" case) | Parity Ledger Overlap (IDs + status) | Prior Work | Risks and Open Questions | Anti-Drift Hazards
 
 FILE 2: agent-working/staging_artifacts/${tid}/test_plan.md
 Sections: Regression Surface (existing tests that must pass) | New Tests Required (per AC) | Scoped Pytest Commands | Anti-Drift Test Guards
@@ -1247,6 +1247,12 @@ const DOC_UPDATE_SCHEMA = {
   },
 }
 
+// Satellite search (TCK-20261108-DOC-UPDATER-SATELLITE-STEP-AND-STALENESS-ADVISORY): the command is built here from the real
+// diff; doc-updater runs it (it has Bash), so no new attested gate site is needed. Docs and bookkeeping paths are not code paths.
+const satelliteCodeFiles = (implementation.files_changed || []).filter(f => !f.startsWith('docs/') && !f.startsWith('agent-working/'))
+const satelliteSearchCmd = satelliteCodeFiles.length
+  ? `python3 tools/gate_checks/docs_search.py ${satelliteCodeFiles.map(f => '--changed-file ' + shq(f)).join(' ')} --base-ref ${startSha}`
+  : '(no code files changed: skip the satellite search)'
 const docUpdateTs = await captureTs()
 await writeSidecar(events.length + 1 + seqOffset, 'Document-Update', 'doc-updater')
 const docUpdate = await agent(
@@ -1259,6 +1265,8 @@ ${tier !== 'hotfix'
 Implementation summary: ${implementation.implementation_summary}
 Files changed: ${implementation.files_changed.join(', ')}
 Behavior changed: ${implementation.behavior_changed}
+
+Satellite search command (run it first; see "Satellite step" in your agent definition): ${satelliteSearchCmd}
 
 Follow the per-family rules in your own agent definition (.claude/agents/doc-updater.md) for how to update each doc family.
 
@@ -1306,7 +1314,11 @@ if (docStalenessMarkerIndex !== -1) {
   catch (e) { docStalenessResults = null }
 }
 const docStalenessFailure = docStalenessResults && docStalenessResults.find(r => r.status === 'FAIL')
-const docStalenessAdvisory = docStalenessResults && docStalenessResults.find(r => r.status === 'ADVISORY')
+// Every ADVISORY entry (docs_to_update coverage, and the docs-search list of untouched docs that cite a changed file) is shown, joined.
+const docStalenessAdvisoryRows = docStalenessResults ? docStalenessResults.filter(r => r.status === 'ADVISORY') : []
+const docStalenessAdvisory = docStalenessAdvisoryRows.length
+  ? { evidence: docStalenessAdvisoryRows.map(r => r.evidence).join(' | ') }
+  : null
 if (docStalenessResults) pushStaticGate('Implement:gate_checks.doc_staleness_check.check_doc_staleness', 'static_check', 'Implement', docStalenessFailure ? 'FAIL' : 'PASS', Boolean(docStalenessFailure), docStalenessFailure ? docStalenessFailure.evidence : '')
 
 // Files-Changed-omission early warning (TCK-20260831-HOTFIX-FILES-CHANGED-DOC-OMISSION-EARLY-

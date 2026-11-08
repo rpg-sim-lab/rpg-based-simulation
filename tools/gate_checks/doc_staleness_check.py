@@ -32,14 +32,23 @@ verdict changes shape or meaning:
 """
 
 import json
+import re
 import sys
 from typing import List, Optional
+
+# Plan P5: docs on a critical invariant are listed first in the advisory and named in the close summary.
+CRITICAL_INVARIANT = re.compile(
+    r"\b(determinis\w*|conservation|persist\w*|restore\w*|checkpoint\w*|concurren\w*|acknowledg\w*|ack)\b",
+    re.IGNORECASE,
+)
+MAX_ADVISORY_DOCS = 15
 
 
 def check_doc_staleness(
     files_changed: List[str],
     behavior_changed: bool,
     docs_to_update: Optional[List[str]] = None,
+    search_result: Optional[dict] = None,
 ) -> List[dict]:
     """Aggregate verdict: did a behavior-changing src/config/workflow diff skip its docs/ update.
 
@@ -55,6 +64,12 @@ def check_doc_staleness(
     When the `PASS` branch is taken and `docs_to_update` names paths not present in
     `files_changed`, a second, non-blocking `ADVISORY` entry is appended — the caller must never
     treat this as a `FAIL`.
+
+    `search_result` (TCK-20261108-DOC-UPDATER-SATELLITE-STEP-AND-STALENESS-ADVISORY, F3) is the output of
+    `docs_search.search_docs_for_change` on the same diff. When it names live docs that cite a changed file or symbol and
+    are not in `files_changed`, one more non-blocking `ADVISORY` entry lists them, critical-invariant docs first. Excluded
+    (history) docs never appear. It is appended after the verdict, so the verdict and the exit behaviour are unchanged, and
+    a missing or malformed `search_result` changes nothing.
     """
     flagged_paths = [
         path for path in files_changed
@@ -88,7 +103,45 @@ def check_doc_staleness(
                             f"they don't need touching, or update them",
             })
 
+    advisory = _search_advisory(search_result, files_changed)
+    if advisory:
+        results.append(advisory)
+
     return results
+
+
+def _critical(item: dict) -> bool:
+    text = item.get("path", "") + " " + " ".join(h.get("text", "") for h in item.get("hits", []))
+    return bool(CRITICAL_INVARIANT.search(text))
+
+
+def _search_advisory(search_result: Optional[dict], files_changed: List[str]) -> Optional[dict]:
+    """One ADVISORY entry for live docs that cite a changed file and were not touched, or None."""
+    if not isinstance(search_result, dict):
+        return None
+    try:
+        touched = set(files_changed)
+        items = [
+            item for key in ("required", "candidate") for item in search_result.get(key, [])
+            if item["path"] not in touched
+        ]
+        if not items:
+            return None
+        critical = [i for i in items if _critical(i)]
+        rest = [i for i in items if not _critical(i)]
+        ordered = critical + rest
+        shown = [i["path"] for i in ordered[:MAX_ADVISORY_DOCS]]
+        more = len(ordered) - len(shown)
+        text = (
+            f"{len(items)} live doc(s) cite a changed file or symbol and were not touched: " + ", ".join(shown)
+            + (f" (+{more} more)" if more > 0 else "")
+        )
+        if critical:
+            text += "; critical-invariant docs first: " + ", ".join(i["path"] for i in critical[:MAX_ADVISORY_DOCS])
+        return {"status": "ADVISORY", "evidence": text, "docs": [i["path"] for i in ordered],
+                "critical": [i["path"] for i in critical]}
+    except (KeyError, TypeError, AttributeError):
+        return None
 
 
 def _record(results, behavior_changed, files_changed, enabled, execution_mode):
@@ -130,6 +183,7 @@ if __name__ == "__main__":
     argv = sys.argv[1:]
     no_record = bool(_pop_option(argv, "--no-record", False))
     mode_arg = _pop_option(argv, "--execution-mode", True)
+    search_json_arg = _pop_option(argv, "--search-json", True)
     behavior_changed_arg = argv[0].lower() == "true"
     rest_args = argv[1:]
     if "--docs-to-update" in rest_args:
@@ -139,6 +193,13 @@ if __name__ == "__main__":
     else:
         files_changed_arg = rest_args
         docs_to_update_arg = []
-    result = check_doc_staleness(files_changed_arg, behavior_changed_arg, docs_to_update_arg)
+    search_result_arg = None
+    if search_json_arg:
+        try:
+            with open(search_json_arg, encoding="utf-8") as handle:
+                search_result_arg = json.load(handle)
+        except (OSError, ValueError):
+            search_result_arg = None
+    result = check_doc_staleness(files_changed_arg, behavior_changed_arg, docs_to_update_arg, search_result_arg)
     print("MARKER:" + json.dumps(result))
     _record(result, behavior_changed_arg, files_changed_arg, not no_record, mode_arg)

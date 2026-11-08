@@ -26,6 +26,8 @@ _TOOLS = str(Path(__file__).resolve().parents[1])
 if _TOOLS not in sys.path:
     sys.path.insert(0, _TOOLS)
 
+from gate_checks import docs_search  # noqa: E402 - needs the sys.path entry above
+
 # Paths a run writes as bookkeeping, never as the ticket's own change. A path is excluded when it starts with one of
 # these, or contains one of the fragments.
 EXCLUDED_PREFIXES = (
@@ -71,7 +73,23 @@ def site_plan_unresolved(args: argparse.Namespace) -> None:
 def site_doc_staleness(args: argparse.Namespace) -> None:
     from gate_checks.doc_staleness_check import check_doc_staleness
     files = derive_changed_files(args.start_sha)
-    print("MARKER:" + json.dumps(check_doc_staleness(files, args.behavior_changed == "true", args.docs_to_update)))
+    print("MARKER:" + json.dumps(check_doc_staleness(
+        files, args.behavior_changed == "true", args.docs_to_update, _search_result(files, args.start_sha),
+    )))
+
+
+def _search_result(files: list[str], start_sha: str) -> dict | None:
+    """The shared docs search on the real diff, or None: a failed search changes nothing about the gate's output."""
+    code = [f for f in files if not f.startswith(("docs/", "agent-working/"))]
+    if not code:
+        return None
+    try:
+        root = Path.cwd()
+        return docs_search.search_docs_for_change(
+            code, docs_search.DirSource(root), docs_search.DirSource(root), docs_search.GitRefSource(root, start_sha),
+        )
+    except Exception:  # noqa: BLE001 - best effort: the advisory must never break the gate
+        return None
 
 
 def site_test_scope(args: argparse.Namespace) -> None:
