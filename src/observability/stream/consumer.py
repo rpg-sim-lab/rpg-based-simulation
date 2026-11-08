@@ -37,6 +37,8 @@ class RedisStreamConsumer:
         self.client: Optional[Any] = None
         self._connected = False
         self._consecutive_failures = 0
+        # Exhausted messages whose DLQ write failed: left pending (un-ACKed) so a later sweep retries.
+        self.dlq_write_failures = 0
 
     def _compute_backoff_delay(self, attempt: int, rng: Optional["random.Random"] = None) -> float:
         capped = min(self.BACKOFF_CAP_SECONDS, self.BACKOFF_BASE_SECONDS * (2 ** max(0, attempt - 1)))
@@ -153,14 +155,27 @@ class RedisStreamConsumer:
 
             for entry in exhausted_entries:
                 msg_id = entry["message_id"]
+                delivery_count = entry["times_delivered"]
                 entries = self.client.xrange(self.stream_name, min=msg_id, max=msg_id, count=1)
                 if entries:
-                    self._send_to_dlq(
-                        msg_id,
-                        entries[0][1],
-                        "max delivery attempts exceeded",
-                        entry["times_delivered"]
+                    in_dlq = self._send_to_dlq(
+                        msg_id, entries[0][1], "max delivery attempts exceeded", delivery_count
                     )
+                else:
+                    # Source entry gone (e.g. trimmed by MAXLEN): leave a payload-less tombstone so
+                    # every exhausted message still has a DLQ record.
+                    in_dlq = self._send_to_dlq(
+                        msg_id, {}, "source entry no longer readable", delivery_count
+                    )
+                if not in_dlq:
+                    # No DLQ record, so no ACK: the entry stays in the PEL, still exhausted, and the
+                    # next sweep retries the DLQ write. A pending entry is visible; a silent loss is not.
+                    self.dlq_write_failures += 1
+                    logger.error(
+                        f"RedisStreamConsumer left {msg_id} pending: its DLQ write failed "
+                        f"(failures so far: {self.dlq_write_failures})"
+                    )
+                    continue
                 self.client.xack(self.stream_name, self.group_name, msg_id)
         except Exception as e:
             logger.error(f"RedisStreamConsumer reclaim sweep failed: {e}")

@@ -1,10 +1,10 @@
 ---
-status: active
+status: historical
 layer: observability
 authority: P1
 audience: agent
 ticket_id: TCK-20261107-AN-EXHAUSTED-STREAM-MESSAGE-IS-ACKED-WHEN-ITS-DLQ-WRITE-FAILS
-phase: open
+phase: done
 date: 2026-11-07
 tags: [observability, bug]
 ---
@@ -15,7 +15,7 @@ tags: [observability, bug]
 The stream consumer's reclaim sweep ACKs a message that has used up its delivery attempts even when the dead-letter write failed, so the message is lost silently
 
 ## Status
-OPEN
+DONE
 
 ## Tier
 hotfix
@@ -73,7 +73,10 @@ Planner scope (rpg-planner-ubuntu, 2026-11-08; owner dispatch "yes", logged at #
 - The contract row in `docs/architecture/observability_hot_path_safety_contract.md:124,143` is lead-owned. rpg-planner-ubuntu sends lead this behaviour; the implementer does not edit that file.
 
 ## Test Summary
+Three new tests in tests/unit/observability/test_stream_consumer_resilience.py (failed DLQ write: no ACK, counter bumped, a later sweep ACKs; gone source entry: tombstone then ACK; failed tombstone write: no ACK). Run against the pre-fix consumer: 3 failed, 11 passed. After the fix: 14 passed. Wider observability run: 75 passed, 4 skipped.
 
 ## Files Changed
+src/observability/stream/consumer.py (`dlq_write_failures` counter; ACK only after a successful DLQ write; tombstone for a gone source entry); tests/unit/observability/test_stream_consumer_resilience.py.
 
 ## Completion Summary
+ACK follows a successful DLQ write only. No bounded give-up, per the planner ruling. The contract file `observability_hot_path_safety_contract.md` is lead-owned and was not edited; it still says exhausted messages are routed to the DLQ and ACKed, which now holds only when the write succeeds.
