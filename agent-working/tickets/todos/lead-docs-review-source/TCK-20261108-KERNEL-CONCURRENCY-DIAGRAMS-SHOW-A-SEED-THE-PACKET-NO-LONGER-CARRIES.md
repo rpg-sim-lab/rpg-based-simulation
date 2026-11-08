@@ -66,9 +66,16 @@ src/engine/executor.py, src/core/worker_protocol.py, src/platform/rng.py
 None. Checked on 2026-11-08 by reading the doc's lines 71, 106-107 and 130, and `executor.py:295-305`, at origin/main 297494469.
 
 ## Implementation Notes
+- The flowchart DISPATCH node now reads "build packets (each carries the world seed), submit chunks".
+- The sequence-diagram step now reads "build WorkerPackets, seed = world seed (state.seed); per-call RNG derives from it (see note 2)".
+- Note 2 gains one sentence on #837's world-seed packet, and a link to the canonical `docs/engine/deterministic_execution.md` instead of restating it.
+- `state.readonly_view()` in the diagram stays: `executor.py:133` still calls it before building packets.
 
 ## Test Summary
+- `pytest -m "not slow" tests/docs`: 91 passed, 2 skipped, 1 xfailed. This includes `test_doc_integrity.py`, which references this doc.
+- The mermaid diagrams were not rendered.
 
 ## Files Changed
+- docs/architecture/kernel_concurrency_design_philosophy.md
 
 ## Completion Summary
