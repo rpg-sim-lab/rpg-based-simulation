@@ -94,7 +94,8 @@ Write `docs/plans/architecture/distributed_workers_experiment_design.md`, coveri
 - None beyond the two owner calls in acceptance criterion 2.
 
 ## Implementation Notes
-None yet.
+DRAFT written 2026-11-09 by owner leave (#715 6731956846): `docs/plans/architecture/distributed_workers_experiment_design.md`.
+Testing placement from testing-planner (2026-11-09) folded into §8. Stops for the owner's review with child 0.
 
 ## Test Summary
 Doc only.

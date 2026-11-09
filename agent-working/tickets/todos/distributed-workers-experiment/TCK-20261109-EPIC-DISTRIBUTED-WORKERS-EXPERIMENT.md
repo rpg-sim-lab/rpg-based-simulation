@@ -89,11 +89,14 @@ because each is another domain's ticket:
 | 1 | `TCK-20261109-DISTRIBUTED-WORKERS-DESIGN` (filed) | architecture (planner-u24 / implementer-u24) | one doc session, no runs | code, measurement, compose | child 0 |
 | 2 | packet-cost measurement | perf-planner | **cheap form first:** pickled packet size and encode/decode time on 3 worlds at seed 42, in-process, no containers (minutes on the heavy slot). Full form only if the cheap one is inconclusive: loopback round trip through one worker container (about an hour) | real multi-host networks; contention with other containers; tail latency | child 1 (wire format); u24 heavy slot behind the RPG queue, lead-planner-u24 told before it runs |
 | 3 | remote executor | rpg-planner (src/engine) | code + unit tests; equivalence on 3 gate worlds at seed 42, 300 ticks, remote (loopback) vs `LocalSequentialExecutor`: identical `flat-sha256-v3` final hash and `TICK_END` trail; `tests/unit/kernel/test_executor_context_parity.py` (#837) stays green and covers the new adapter as a third packet consumer. About 6 short runs | real container deploy (child 4); multi-host | child 1; child 2's cheap form |
-| 4 | worker entry point + `distributed` compose profile | platform-planner | image + profile; one containerized smoke run repeating child 3's equivalence on one world; `docker compose up` with no profile unchanged | k8s/Helm; scaling beyond one host; the API/engine split | child 3 |
+| 4 | worker entry point + `distributed` compose profile, and the opt-in workflow for its smoke run (not `test.yml` or `slow-regression.yml`) | platform-planner (to confirm; testing-planner reviews test content on request) | image + profile; one containerized smoke run repeating child 3's equivalence on one world; `docker compose up` with no profile unchanged | k8s/Helm; scaling beyond one host; the API/engine split | child 3 |
 | 5 | `worker_contract.md` §5 and `infrastructure_overview.md` (the new mode, and the `ai_worker` wording of fact 5); `intentional_divergences.md` only if behaviour differs | docs/engine owner via lead-planner | doc only | everything else | child 0; ubuntu's docs-as-review-source batch (#715 6720445592) |
+| 6 | evidence guard: the run manifest records the executor mode; the gate candidate, paired arms and `rpg_measure` refuse a non-sequential executor, with a unit test each | testing-planner scopes it (gate candidate in `tools/test_architecture`); `rpg_measure` and the manifest field with rpg-planner | code + 3 small unit tests, no runs | anything beyond refusing | child 0; owner review |
 
 The equivalence proof lives in children 3 and 4 as acceptance criteria rather than its own child (the simpler shape: it tests the
-code those children write). The testing strategy for all children is a section of child 1's design, reusing the existing layers.
+code those children write). The testing strategy for all children is §8 of child 1's design, reusing the existing layers, with testing-planner's placement
+(2026-11-09): PR-lane integration under the medium budget measured on the slow VM; a sibling extra_slow file, not a third arm on
+`test_executor_equivalence_long.py`, each slow test signed off by testing-planner under 540 s.
 
 ## Out of Scope
 - Splitting the API from the engine (fact 1), engine replicas, or more than one writer.

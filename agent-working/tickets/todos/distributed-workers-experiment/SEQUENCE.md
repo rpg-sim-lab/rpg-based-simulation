@@ -7,11 +7,13 @@ Epic `TCK-20261109-EPIC-DISTRIBUTED-WORKERS-EXPERIMENT`, filed by architecture-p
 
 1. TCK-20261109-DISTRIBUTED-WORKERS-ADR-AMENDMENT: lead-planner (ubuntu), after ubuntu's `lead-docs-review-source` batch lands.
    Everything below waits on it.
-2. TCK-20261109-DISTRIBUTED-WORKERS-DESIGN: architecture. BLOCKED on 1.
+2. TCK-20261109-DISTRIBUTED-WORKERS-DESIGN: architecture. **DRAFT written before 1 by owner leave (#715 6731956846)**, which relaxes
+   the ADR-first gate (6731714291) for this child only: `docs/plans/architecture/distributed_workers_experiment_design.md`, inside 1's
+   five scoped points, reviewed by the owner together with 1. It follows 1 if 1 narrows the points.
 
 ## Not cut yet
 
-Children 2-5 (packet-cost measurement, remote executor, worker entry point and compose profile, contract docs) are cut by their
+Children 2-6 (packet-cost measurement, remote executor, worker entry point and compose profile, contract docs, evidence guard) are cut by their
 owning planners after 1 lands; the epic's table gives each one's owner, cost, what it leaves out and its gate.
 
 ## Rules
