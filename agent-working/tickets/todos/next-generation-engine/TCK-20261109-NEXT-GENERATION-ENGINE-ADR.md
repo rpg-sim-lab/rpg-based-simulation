@@ -72,7 +72,8 @@ The detail goes to child 4.
 2. **Evolving state within a tick.** The per-step view is tick-start state plus the earlier deltas the step declares. The ADR must
    say how a step's view is built, and that no step silently moves onto tick-start state when today it reads this tick's deltas (for
    example, the combat witness tier reading action_routing's `CombatUpdate`s). (3.2.)
-3. **Order-sensitive merges.** Each needs a rule that reproduces today's order, or it is a Level B change:
+3. **Order-sensitive merges.** Each needs a rule that reproduces today's order exactly. If it does not, it is a Level B change,
+   with its **own versioned owner decision**; it is never folded into a contract PR:
    - (a) the faction-sentiment clamped accumulation, `max(-1, min(1, prior + delta))` in list order (`apply.py:406-434`);
    - (b) staleness → contradiction, where last writer wins (`pipeline.py:395-404`);
    - (c) trust and grudge float sums across groups (`cooperation/phase.py:252-265`);
@@ -84,7 +85,8 @@ The detail goes to child 4.
    - JOIN_PARTY writing the offerer's contract promotion, where two joiners in one tick collide (`cooperation/phase.py:175-196`);
    - resource reservations in sorted id order (`economy.py:49-57`);
    - first-come movement claims (`movement.py:188-204`).
-   The ADR must state who wins, why that equals today's result, and how a conflict is detected. (3.1; review_2 §9.)
+   The ADR must state who wins, why that equals today's result, and how a conflict is detected. Any contention rule that differs
+   from today's loop order is a Level B change, with its own versioned decision. (3.1; review_2 §9.)
 5. **Id allocation.** Spawn ids come from one sequential counter, and tiles are first-come (`world_systems/generator.py:96-119`).
    RNG keys and tiles derive from that id. The ADR must define deterministic allocation (for example, sort requests, then allocate)
    equal to today's order. (review_2 §9, task identity.)
@@ -104,24 +106,40 @@ The detail goes to child 4.
 9. **RNG.** Draws are keyed, which is guaranteed today (`rng.py:65-105`). The keys need repair:
    - XOR composition collides once entity ids pass about 65k;
    - quest keys lack a building id.
-   The fix moves pinned hashes, so the ADR must say whether it is a versioned change. Draws must never depend on the worker, the
-   process count or completion order. (review_2 §9, randomness.)
+   The fix moves pinned hashes, so it is **its own versioned decision** and never rides a contract PR. Draws must never depend on
+   the worker, the process count or completion order. (review_2 §9, randomness.)
 10. **Event ordering and identity.** Covers:
-    - `uuid4` event ids (`observability/events.py:56`);
+    - `uuid4` event ids (`observability/events.py:56`). Checked 2026-11-09 [C, static only]. They do **not** enter hashed state:
+      - `recent_world_events` holds `WorldEvent`s (`world_emergence/schema.py:64`), which have no id field;
+      - the `source_event_id`s stored in state are deterministic strings (`world_emergence/services.py:196,232`);
+      - the scar path that takes an event id (`world/consequences.py:62-75`) has no live caller found.
+      They **do** make the observability event stream unreproducible, so any comparison of event streams must exclude the id, or the
+      contract must derive it (from tick, source and seq). Changing the id derivation is its own versioned decision;
     - the ordered `world_events_add` and `recent_world_events` in hashed state;
     - the recorder's sampling counter, which depends on emit order (`event_recorder.py:214`).
     The ADR must define event ids and order under the contract. (review_2 §9, event ordering.)
 11. **Exception and failure semantics.** Today a unit that raises gives a FAILURE no-op per entity. The ADR must say:
     - that this is kept per unit;
     - how an infrastructure failure differs from a computation exception;
-    - that a lost unit is recomputed, never dropped, and never changes the outcome.
+    - that a lost unit is recomputed, never dropped, and never changes the outcome;
+    - that **recompute never hides a real computation error**. A unit that raises is a computation failure, and is handled as today
+      (a FAILURE no-op, recorded). It is never retried or recomputed as if the infrastructure had failed. If a recomputed result
+      differs from a late or remote one for the same task, the run fails loudly instead of choosing one.
     (§5; review_2 §9, worker failures; §14 item 5.)
 12. **Floating point and platform.** Order-dependent float reductions, and the DET-PORT tiers. The ADR must state:
-    - which reductions get a fixed order, or integer or fixed-point values;
+    - which reductions get a fixed order, or integer or fixed-point values. A reduction order or value type that differs from today's
+      is its own versioned decision;
     - that the claim scope stays within PERF-D2 (a DET-PORT-1 row per executor; no DET-PORT-2 claim).
     (review_2 §9.)
-13. **When a step counts as parallel-safe.** Declared read/write sets are necessary, not sufficient. The ADR must name the evidence:
-    child 2's access audit, plus a Level A proof under a parallel executor at worker counts 1, 2 and 4 with permuted arrival.
+13. **When a step counts as parallel-safe.** Declared read/write sets are necessary, not sufficient. A runtime audit sees only the
+    branches that ran, so it can never prove a step safe on its own. The ADR must name the evidence, in all of these forms:
+    - static inspection of the step's side effects: writes to state, `object.__setattr__`, globals, caches;
+    - child 2's runtime access audit;
+    - dependency-sensitive scenarios that exercise the rare branches (deaths, contention, spawns, the JOIN_PARTY collision);
+    - hidden-mutation and global-access detection;
+    - **fail-loud on undeclared access** under the contract (the packet's `PacketFieldMissingError` is the model,
+      `worker_protocol.py:110-116`);
+    - then a Level A proof under a parallel executor (item 18).
     (3.1; §5.)
 14. **The evidence standard** for every stage PR:
     - the field-by-field content compare, which is primary because of the digest's known gaps
@@ -132,12 +150,44 @@ The detail goes to child 4.
     - schedule and worker-count independence;
     - exception semantics.
     A matching hash alone is insufficient. (§5.)
-15. **Guaranteed versus tested.** The ADR must list which properties the architecture guarantees and which only tests establish:
-    - guaranteed: keyed RNG, a unique commit key, the duplicate check, a sorted digest;
-    - tested only: the executor equivalence cases, arrival permutation, the frozen-view cache.
-    (§5; review_2 §9.)
+15. **Guaranteed, inspected or tested.** The ADR must label each property with one of three evidence classes:
+    - **guaranteed by the contract:** keyed RNG, a unique commit key, the duplicate check, a sorted digest, fail-loud on undeclared
+      access;
+    - **established by static inspection:** for example "uuid4 ids do not enter hashed state" (item 10), and "this step writes only
+      its own key";
+    - **supported only by runtime tests:** the executor equivalence cases, arrival permutation, the frozen-view cache, the access audit.
+    A runtime-only property is never stated as a guarantee. (§5; review_2 §9.)
 16. **Versioned contracts and replay.** The contract version is recorded in the run manifest, and a contract change is a versioned
-    decision. Replay from declared state and inputs must stay reproducible. (3.3; review_2 §9, replay and recovery.)
+    decision. Replay from declared state and inputs must stay reproducible. Distributed readiness (feasibility review §8a) is a
+    **compatibility check only**, with no multi-host, remote-scheduling or multi-writer work. (3.3; review_2 §9, replay and recovery.)
+17. **Task identity namespace.** A task id (tick, step, unit) is unique only inside one world's run. Several worlds, runs and replays
+    execute at once (the world farm; the gate's subprocesses). So the ADR must scope the id as (run id, replay session or attempt,
+    tick, step, unit). Retries, dedup and late-result rejection then match only within the same run and attempt: a late result from a
+    different run, or from an earlier replay, is rejected, never merged.
+    - Run ids already exist (`src/engine/run_identity.py:20`).
+    - Today's `ProtocolValidator` dedup works per batch only (`protocol_validator.py:41-50`).
+    (Consolidated clarification 3; review_2 §9, task identity.)
+18. **Independent determinism evidence.** The proof matrix varies these independently:
+    - **`PYTHONHASHSEED`:** several values, not only the pinned 0. Every harness pins 0 (`rpg_gate_harness.py:158`, `paired.py:102`),
+      which can hide iteration-order dependence;
+    - **scheduling:** permuted arrival order;
+    - **worker counts:** 1, 2 and 4;
+    - **state:** a full-state, field-by-field compare;
+    - **failure behaviour:** exceptions, and lost or late units.
+    Only DET-PORT-1 rows that pass under all of these count. Hash-seed variation is a **new** requirement: no executor proof varies
+    it today. (Consolidated clarification 4; §5.)
+
+**Cross-check against the external AI's consolidated clarifications** (pasted by the owner via lead-planner-u24, 2026-11-09). Per
+that input, there is no separate canonical list. The 16 points are kept, and only genuine gaps were added.
+
+| Consolidated issue | Status | Where |
+|---|---|---|
+| 1. No silent Level A violations (the RNG-collision fix, event ids, float reduction order, contention semantics, each its own versioned decision); verify how uuid4 ids enter hashed state | **Accepted.** Partly covered already; the wording is sharpened. The uuid4 check found the ids are **not** in hashed state [C, static], but they make event streams unreproducible | items 3, 4, 9, 10, 12 |
+| 2. No overclaim from dynamic auditing (contract vs static vs runtime evidence; static inspection, runtime audit, dependency-sensitive scenarios, mutation and global detection, fail-loud) | **Accepted.** Mostly covered; the evidence forms and three evidence classes are now explicit | items 13, 15 |
+| 3. Task identity namespace | **Accepted, a genuine gap** | new item 17 |
+| 4. Independent determinism evidence (hash seeds, scheduling, worker counts, full state, failures) | **Accepted.** Hash-seed variation was a **genuine gap**; the rest was already covered | new item 18 (folds in 13 and 14) |
+| C-3. Local recompute must not hide a deterministic computation error | **Accepted, a clarification** | item 11 |
+| C-8. Distributed-ready means compatibility only | **Already covered** (feasibility review §8a, scope point 6); restated | item 16 |
 
 **Cost:** one doc session, no runs. **Leaves out:** the contract's detail (child 4), code, measurement.
 
@@ -146,7 +196,7 @@ The detail goes to child 4.
 - Distributed writers, partitioning, PDES, multi-host.
 
 ## Acceptance Criteria
-1. The ADR records points 1 to 8, citing #715 6735575831, and answers each of the 16 correctness clarifications with a rule, its Level A argument, and whether it is guaranteed or tested.
+1. The ADR records points 1 to 8, citing #715 6735575831, and answers each of the 18 correctness clarifications with a rule, its Level A argument, and whether it is guaranteed or tested.
 2. It keeps every decision it does not change, and names every one it changes with its owner.
 3. The owner accepts it.
 
