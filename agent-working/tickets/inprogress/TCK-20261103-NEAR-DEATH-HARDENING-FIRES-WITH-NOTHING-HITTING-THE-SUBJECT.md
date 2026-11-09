@@ -4,7 +4,7 @@ layer: combat
 authority: P1
 audience: agent
 ticket_id: TCK-20261103-NEAR-DEATH-HARDENING-FIRES-WITH-NOTHING-HITTING-THE-SUBJECT
-phase: open
+phase: implement
 date: 2026-11-03
 tags: []
 ---
@@ -15,7 +15,7 @@ tags: []
 Near-death hardening grants permanent max hp and a near_death emotion on a heal, with nothing hitting the subject: counts first
 
 ## Status
-OPEN
+INPROGRESS
 
 ## Tier
 standard
@@ -86,7 +86,10 @@ rpg-designer's lean, to be confirmed after the counts: real hits only.
 - Order: rpg-designer would put it ahead of LOW-HP-RETREAT, whose panic counts it muddies. rpg-planner's call, with the owner's yes for dispatch.
 
 ## Test Summary
+- New: `tests/unit/engine/test_near_death_hardening_hit_gate.py` (5 rows, max hp 100): a hit to 8 grants +5; a town +1 at 8 grants nothing; a hazard to 8 grants nothing; a hit plus a heal netting to 0 at 8 grants +5; a hit below 0 grants nothing. Checked against the old code: the town-heal and the hazard rows fail there; the other three pass there too.
+- Four existing tests got a changed INPUT, assertions unchanged (rpg-planner decision, 2026-11-09): `tests/unit/engine/test_near_death_hardening_emotion.py` (3 tests) and `tests/unit/progression/test_species_base_stats_preserved.py::test_hardening_grants_five_accumulates_and_survives_recalc` (its `_harden` helper). Reason: their bare `CombatUpdate(hp_delta=<negative>)` stood for a hit only because the old rule read the sign of hp_delta; the ruled behaviour is a typed hit fact, so the inputs now carry `attacker_id`, `damage_taken = -hp_delta`, `hit_tick_set = tick`. Unchanged and passing: `test_emotion_near_death_hardening.py`, `test_lifecycle.py::test_near_death_hardening_logic`.
 
 ## Files Changed
+src/engine/pipeline_phases/hardening.py; tests/unit/engine/test_near_death_hardening_hit_gate.py (new); tests/unit/engine/test_near_death_hardening_emotion.py; tests/unit/progression/test_species_base_stats_preserved.py; docs/mechanics/01_entity_anatomy.md; docs/guidelines/intentional_divergences.md (2.201); docs/parity_ledger/{social_narrative,strategic_cognition,town_resource}.yaml (SOC-042, STRAT-142, TOWN-021); codebase/baselines/parity_ledger_schema_baseline.json (tightened).
 
 ## Completion Summary

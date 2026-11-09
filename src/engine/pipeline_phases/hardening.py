@@ -12,6 +12,15 @@ if TYPE_CHECKING:
     from src.core.updates import StateUpdate
 
 
+def _records_combat_hit(combat_update: CombatUpdate, tick: int) -> bool:
+    """True when this tick's update carries a combat hit taken by the subject: the same typed fact CombatPatch uses to write (last_attacker_id, last_hit_tick)."""
+    return (
+        combat_update.attacker_id is not None
+        and combat_update.damage_taken > 0
+        and combat_update.hit_tick_set == tick
+    )
+
+
 class NearDeathHardeningPhase:
     """
     Applies authoritative near-death hardening after combat resolution.
@@ -23,12 +32,17 @@ class NearDeathHardeningPhase:
         Apply near-death hardening after authoritative combat resolution.
 
         LAW:
-            If an entity survives a hit with critically low remaining HP, it gains
+            If an entity survives a combat hit with critically low remaining HP, it gains
             a small permanent max-HP increase in the same authoritative tick.
+            A heal, a hazard drain, or nothing, while at or under the line, grants nothing.
 
         Trigger:
             - entity has a CombatUpdate
             - combat update is not REJECTED
+            - the update records a combat hit taken THIS tick: the typed hit fact the combat
+              patch itself uses to write last_attacker_id / last_hit_tick (attacker_id set,
+              damage_taken > 0, hit_tick_set == this tick). The sign of hp_delta is not the
+              test: a hit and a heal that net to 0 still count; a town heal or a hazard never does.
             - entity survives the hit
             - projected HP is > 0
             - projected HP is <= 10% of current max HP
@@ -61,6 +75,9 @@ class NearDeathHardeningPhase:
                 continue
 
             if combat_update.outcome_kind == "REJECTED":
+                continue
+
+            if not _records_combat_hit(combat_update, state.tick):
                 continue
 
             current_hp = entity.combat.hp
