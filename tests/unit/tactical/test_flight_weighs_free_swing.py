@@ -152,3 +152,17 @@ def test_the_guard_reads_state_and_writes_nothing():
     before = (m.combat, m.navigation, m.task)
     _decide(state, m)
     assert (state.entities[MERCHANT].combat, state.entities[MERCHANT].navigation, state.entities[MERCHANT].task) == before
+
+
+def test_a_held_subject_has_no_mutual_swap_step_and_a_swap_never_provokes_a_free_swing():
+    """Item 5: the held subject stays in RETREAT mode on its own tile. It has no desired next step (so no mutual-intent swap), and a contract swap is built
+    from position/step-time updates only: it never reaches the opportunity-attack trigger in `MovementSystem.resolve_move`."""
+    from src.core.updates import StateUpdate
+    from src.engine.pipeline_phases.movement import MovementPhase
+
+    state, m = _scene(hp=15, damage=17, hostile=45)
+    held = _decide(state, m)
+    assert MovementPhase._desired_next_step_for_swap(state, StateUpdate(entity_updates={m.id: held}), m) is None
+    other = state.entities[45]
+    mine, theirs = MovementPhase._swap_updates(state, m, other, held, EntityUpdate(entity_id=other.id))
+    assert mine.combat is None and theirs.combat is None
