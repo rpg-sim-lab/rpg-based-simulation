@@ -45,7 +45,7 @@ Write `docs/plans/architecture/distributed_workers_experiment_design.md`, coveri
    bounded wait, the kernel computes that chunk locally from the same packets (a pure function, so the result is identical), counts
    it, and records it in the run manifest; it never answers with a FAILURE no-op, because that would make the outcome depend on speed.
    The design weighs this against failing the run loudly.
-5. **Equivalence proof.** Same world and seed under `LocalSequentialExecutor` and the mode: identical `flat-sha256-v3` final hash and
+5. **Equivalence proof.** Same world and seed under `LocalSequentialExecutor` and the mode: identical final hash under the current proof scheme (`PROOF_DIGEST_SCHEME`) and
    `TICK_END` trail, on 3 gate worlds at seed 42, 300 ticks, plus a killed-worker case (the rule in 4 must still give the same hash).
 6. **Compose profile.** A `distributed` profile adding one engine-worker service holding N workers; a name that cannot be confused
    with `ai_worker` (the anomaly consumer, `compose.yaml:81-89`); `docker compose up` with no profile unchanged.

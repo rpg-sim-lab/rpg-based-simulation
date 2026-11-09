@@ -155,7 +155,7 @@ flowchart TB
 2. "One process" is relaxed for the Collection pool only, and only under the opt-in mode.
 3. The default is unchanged: `kernel.py:193-198` selection, `LocalSequentialExecutor`, `ConcurrentExecutionAdapter`, `WorkerManager`
    and `docker compose up` with no profile.
-4. Determinism: same world and seed give an identical `flat-sha256-v3` final hash and `TICK_END` trail to `LocalSequentialExecutor`,
+4. Determinism: same world and seed give an identical final hash under the current proof scheme (`PROOF_DIGEST_SCHEME`) and `TICK_END` trail to `LocalSequentialExecutor`,
    or the mode is unclaimed (PERF-D2 DET-PORT-1, `docs/engine/deterministic_execution.md`, "Scope of the guarantee"). Outcomes never
    depend on worker speed (`worker_manager.py:192`).
 5. An experiment by owner choice (#715 6731714291), standing in for Mode 5's reopen condition.

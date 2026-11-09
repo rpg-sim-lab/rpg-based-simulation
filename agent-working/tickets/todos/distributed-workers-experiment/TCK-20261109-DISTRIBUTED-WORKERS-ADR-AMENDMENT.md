@@ -40,7 +40,7 @@ Amend the recorded decisions so that one opt-in mode may run the Collection pool
    Every other phase, and every run without the profile, stays one process.
 3. **The default is unchanged:** no change to the executor selection at `kernel.py:193-198`, to `LocalSequentialExecutor`,
    `ConcurrentExecutionAdapter`, or to `docker compose up` without a profile.
-4. **Determinism rule:** a run in the mode must give an identical `flat-sha256-v3` final hash and `TICK_END` trail to
+4. **Determinism rule:** a run in the mode must give an identical final hash under the current proof scheme (`PROOF_DIGEST_SCHEME`) and `TICK_END` trail to
    `LocalSequentialExecutor` on the same world and seed, or the mode is unclaimed for it (PERF-D2: anything but DET-PORT-0
    sequential needs a passing parity matrix). Outcomes must not depend on worker speed (`worker_manager.py:192`, contract §4).
 5. **Why it reopens:** it is an experiment the owner chose (#715 6731714291), not a speed-up; this replaces the Mode 5 condition

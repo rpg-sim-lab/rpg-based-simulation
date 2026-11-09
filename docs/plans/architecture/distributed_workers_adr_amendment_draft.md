@@ -58,7 +58,7 @@ DRAFT. Proposed by architecture-planner-u24, 2026-11-09. To be decided by lead-p
    - `LocalSequentialExecutor`, `ConcurrentExecutionAdapter` or `WorkerManager`;
    - `docker compose up` without a profile.
 4. **Determinism rule.**
-   - A run in the mode must give an identical `flat-sha256-v3` final hash and `TICK_END` trail to `LocalSequentialExecutor` on the
+   - A run in the mode must give an identical final hash under the current proof scheme (`PROOF_DIGEST_SCHEME`) and `TICK_END` trail to `LocalSequentialExecutor` on the
      same world and seed, or the mode is unclaimed for it. This is PERF-D2: anything but DET-PORT-0 needs a passing parity matrix,
      and the content compare is primary.
    - Outcomes never depend on worker speed:
