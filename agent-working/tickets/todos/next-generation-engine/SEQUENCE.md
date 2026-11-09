@@ -17,6 +17,9 @@ model: #715 6735575831. Scoping only; no implementation authorised.
    hardening, hit-wake) are pushed, in a gap rpg-planner names, under rpg-planner's conditions in the ticket.
 4. `TCK-20261109-NEXT-GENERATION-ENGINE-CONTRACT-SPEC`: architecture. Draft 1 written (#715 6743047506); draft 2 with 1's and 3's results.
 5. **Stages 3 to 5:** not cut. They come after M1 completes and 4 is accepted. The parallel executor also needs Gate B.
+   - **Stage 3 entry condition:** `src/systems/strategic_systems/intelligence.py` is off the hands-off list (the COMBAT-RETREAT P2),
+     because the §8 slice is `fused_strategic_pass` (ubuntu review A-n2).
+   - Stage 3 is cut only after rpg-planner's explicit sign-off on the spec's §8 (A-n1).
 
 ## Rules
 

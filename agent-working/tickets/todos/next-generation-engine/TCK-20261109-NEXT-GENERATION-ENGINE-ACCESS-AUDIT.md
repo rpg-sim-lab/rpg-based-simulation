@@ -141,7 +141,9 @@ Filed by architecture-planner-u24. The filing rides a later implementation PR (#
 
 ## Test Summary
 Planned: unit tests for the hook and the declaration checker; an audit on/off equivalence test (hash and event count); pinned
-5000-tick cells with the audit on (condition 4a).
+5000-tick cells with the audit on (condition 4a). `test_observer.py` carries the positive controls for the hidden-mutation detector,
+one per known mutation kind, plus one control proving the stated blind spot (plan §3a; ubuntu review R-B1, plan approved
+with that change).
 
 ## Files Changed
 None yet.

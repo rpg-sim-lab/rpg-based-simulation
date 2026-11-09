@@ -79,8 +79,36 @@ that ticket until the audit PR merges. That is why the auditor line goes after t
 - **What that proves:** only that the **flag** sits outside the digest. It does **not** prove that the **observer** changes nothing.
   Conditions 4a and 4b prove that.
 - **The flag stays observe-only for good.** No behaviour may ever be hung on it, the same class as the pressure-signals finding.
-- The observer never reads cache-writing lazy properties (condition 4c). Its fingerprints read only plain fields and container
-  identity and length. It stores nothing on state; its records live in the auditor object, which the kernel owns for the run.
+- The observer never reads cache-writing lazy properties (condition 4c). It stores nothing on state; its records live in the auditor
+  object, which the kernel owns for the run.
+
+### 3a. What the hidden-mutation detector can see (ubuntu review R-B1)
+
+An identity-plus-length fingerprint misses in-place changes that keep both, for example a dict value changed in place or two list
+elements swapped. So the fingerprint has two tiers:
+- **Watch list, content-hashed.** These are the known mutation sites and everything carried across ticks by reference:
+  - every entity's `timeline`;
+  - `route_plans`, `movement_cache`, `occupancy_snapshot`, `_occupancy_map_cache`, `transient_claims` and
+    `_has_hostiles_or_dead_cache`;
+  - `world_indexes` and the spatial-query and semantic-index memo attributes.
+  Each is hashed by its canonical contents (keys, values and order), reading plain attributes only, never lazy properties.
+- **Everything else on `AuthoritativeState` and each `EntityState`:** attribute identity, plus container identity and length.
+
+**What it cannot see, stated in the report:**
+- an in-place change that keeps identity and length in a field **outside** the watch list;
+- a write to an attribute that did not exist before the step and is removed again before the step returns;
+- mutation of an object reached only through a process global outside the §1 watch list.
+A hit in the second tier promotes that field to the watch list for the next run.
+
+**Positive controls** (`test_observer.py`). Each known mutation kind is injected into a fake step, and the test asserts the detector
+reports it, with the step and the field:
+1. a timeline `append`;
+2. a `route_plans` `object.__setattr__`;
+3. an in-place dict value change;
+4. an equal-length list element swap;
+5. a cache flag flip.
+One more control proves the second-tier blind spot is real: an in-place change outside the watch list, asserted **not** detected.
+That keeps the stated limits honest.
 
 ## 4. Evidence (conditions 4a to 4e)
 
@@ -92,7 +120,7 @@ that ticket until the audit PR merges. That is why the auditor line goes after t
 | 4d | writes none of the fields in `TCK-20261103-STATE-DIGEST-MAY-OMIT-FIELDS-THAT-DECISIONS-READ` | stated in the PR, with the observer's write list |
 | 4e | timing NOT MEASURED | the PR makes no perf claim |
 
-**Slot:** the 6 cells are heavy and come from rpg-planner's queue: after the hit-wake re-measure, before A+B. Unit and scoped tests
+**Slot:** the 6 cells are heavy and come from rpg-planner's u24 queue: after the hit-wake re-measure, before A+B. Unit and scoped tests
 are not heavy.
 
 ## 5. Reads: v1 has none; a v2 proxy is its own ticket
@@ -111,6 +139,8 @@ are not heavy.
 
 - For each step: declared against observed writes, field by field.
 - Every hidden mutation, with the step, the field and the tick count it was seen in.
+- **"No hidden mutation observed" only for the kinds a positive control proved detectable (§3a), never "none exist".** The
+  report repeats §3a's blind spots.
 - Every process-global change.
 - The steps whose observed writes reach another entity's entry. These are the cross-entity rows that child 4's merge rules must
   cover: cooperation's JOIN_PARTY promotion, trust and grudge, and the combat witness tier.

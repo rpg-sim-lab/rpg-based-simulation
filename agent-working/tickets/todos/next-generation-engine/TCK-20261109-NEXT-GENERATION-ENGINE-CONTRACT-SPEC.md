@@ -54,7 +54,8 @@ results of children 1 (the stage 0 re-measure) and 2 (the stage 1 access audit).
 ## Acceptance Criteria
 1. Every field of `EntityUpdate` and `StateUpdate` has a declared merge rule, with the reason it reproduces today's result.
 2. Every hidden mutation and contention point found by child 2 has a rule.
-3. The prototype slice's contract is complete enough for rpg-planner to cut stage 3.
+3. The prototype slice's contract is complete enough for rpg-planner to cut stage 3. **Met only by rpg-planner's explicit sign-off**,
+   asked for when draft 2 lands (ubuntu review A-n1).
 
 ## Related Tickets
 - TCK-20261109-EPIC-NEXT-GENERATION-ENGINE (parent)
@@ -87,7 +88,8 @@ Draft 1, 2026-11-09, on the owner's dispatch (#715 6743047506):
 - contention (§4), state hygiene (§5), the prototype slice (§8);
 - findings F1-F8 for their owners (§9);
 - open items A1-A6 for the audit (§10).
-AC 1 is met statically. AC 2 needs child 2's report. AC 3 is met in draft for `fused_strategic_pass`.
+AC 1 is met statically. AC 2 needs child 2's report. AC 3 is drafted for `fused_strategic_pass` and needs rpg-planner's sign-off.
+Ubuntu lead-planner review of draft 1 (d315b4194, via lead-planner-u24): good as draft 1; notes A-n1 to A-n4 taken.
 
 ## Test Summary
 Doc only.

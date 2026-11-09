@@ -93,7 +93,7 @@ through a versioned change to integers or fixed point, which is Level B.
 | Class | Fields (inventory row) |
 |---|---|
 | key | E1 `entity_id` |
-| **C** | E4 `moved_this_tick` (OR); E10 `attributes` (integer sum, one cap); E16 `reward` (sum) |
+| **C** | E4 `moved_this_tick` (OR); E10 `attributes` (integer sum; C **only** because the cap is applied once, at apply: `enforce_attribute_caps` in `patches.py:615-640`. A per-merge clamp would move it to O); E16 `reward` (sum) |
 | **O** | E2 `kind_set`; E3 `new_position`; E5 `readiness_delta` (float); E6 `active`; E7 `interaction`; E8 `resource_transfers` (list order decides reservations and clamps); E9 `identity`; E11 `inventory` (capacity in list order); E12 `strategic` (last occurrence per id wins; `pipeline.py:395-401` depends on it); E13 `biological` (a set masks deltas); E14 `social` (mixed sum and per-key LWW, §9 F2); E15 `quest`; E17 `lifecycle`; E18 `combat` (attacker pair LWW, outcome precedence, the `is_noop` short-circuit, §9 F1); E19 `equipment`; E20 `navigation`; E21 `task` (action_routing replaces it whole); E22 `stamina_update`; E23 `wound_update`; E25 `group_id_set`; E28 `intent_results` (tuple order); E29 `property_updates` (per-key LWW) |
 | **O, split** (§3.3) | E26 `self_model_bundle_set`; E27 `cognition_bundle_set` |
 | transient | E30 `pending_action_intent`: never applied (no patch); it is a delta read by `information_intent_execution`. Ordered, excluded from the state compare |
@@ -206,20 +206,21 @@ the audit showing observed writes equal the declaration.
 
 ## 9. Findings for their owners (not fixed by the contract)
 
-These are behaviours the contract **reproduces** at Level A. Fixing any of them changes results, so each one is a separate ticket
+These are behaviours the contract **reproduces** at Level A. None is held for the contract: F3 is fixed independently under its own
+ticket, `TCK-20261109-ANY-SOCIAL-UPDATE-WIPES-THE-REJECTION-COUNTS-IT-DOES-NOT-NAME`. Fixing any of them changes results, so each one is a separate ticket
 for its owner, not a contract change. The inventory found them statically, and the items marked [rechecked] were confirmed by hand
 on `1fb40ac76`.
 
-| # | Finding | Where | Owner |
-|---|---|---|---|
-| F1 | `CombatUpdate.is_noop` ignores the nested and flag fields, so a CombatUpdate carrying only `wound_update`, `social_upd`, equipment, `outcome_kind` or `hit_tick_set` is dropped by merge, by the compactor and through `EntityUpdate.is_noop`. It works today only because `combat_actions.py:70-108` unpacks the payloads [partly rechecked] | `updates.py:133-142` | rpg-planner |
-| F2 | `SocialUpdate` merges `familiarity`, `debt`, `fear`, `salience` and `rejection_increment` as per-key LWW, while trust and grudge are summed; two same-tick gains for one target keep only the last | `updates.py:373-384` | rpg-planner |
-| F3 | `RelationshipService.process_update` rebuilds `rejection_count` from only the keys in the current update, so **any social update wipes every other rejection count** [rechecked] | `relationships.py:133` | rpg-planner |
-| F4 | `processed_transaction_ids` persists in hash-seed order and grows without dedup across ticks [rechecked]. Unhashed, membership only | `updates.py:1148/1274`, `economy.py:275`, `apply.py:353-354` | rpg-planner (perf if memory matters) |
-| F5 | counter merges differ: `next_node_id_set` is LWW (could lower it), `next_group_id_set` is max; `force_full_scan` is not merged at all | `updates.py:1236`, `group_update_merge.py:20-21` | rpg-planner |
-| F6 | `entities_remove` runs before replacements are written back, so a removed entity with passive changes is re-inserted. Latent: no producer | `apply.py:282-297` | rpg-planner |
-| F7 | `*_set` fields (world trauma and retaliation, biological) discard deltas from every other step | `apply_plan.py:181-182`, `patches.py:129-130` | rpg-planner (may be intended) |
-| F8 | the digest sees only `CausalMemory`'s count and capacity, not its entries (a digest blind spot) | `cognition.py:252-256` | perf (PERF-D5 owner) |
+| # | Finding | Where | Owner | Triage (rpg-planner, 2026-11-09, via lead-planner-u24) |
+|---|---|---|---|---|
+| F1 | `CombatUpdate.is_noop` ignores the nested and flag fields, so a CombatUpdate carrying only `wound_update`, `social_upd`, equipment, `outcome_kind` or `hit_tick_set` is dropped by merge, by the compactor and through `EntityUpdate.is_noop`. It works today only because `combat_actions.py:70-108` unpacks the payloads [partly rechecked] | `updates.py:133-142` | rpg-planner | no flight impact: every flight writer sets `hit_damage_set` with `attacker_id`/`damage_taken`, and CombatPatch applies `last_hit_damage` only on `hit_landed`. P3 latent, not filed |
+| F2 | `SocialUpdate` merges `familiarity`, `debt`, `fear`, `salience` and `rejection_increment` as per-key LWW, while trust and grudge are summed; two same-tick gains for one target keep only the last | `updates.py:373-384` | rpg-planner | `rejection_increment` (should sum) rides F3's ticket; the other fields are merge semantics with no reader shown, so they stay with this contract (children 4/5); no RPG ticket unless a reader is shown |
+| F3 | `RelationshipService.process_update` rebuilds `rejection_count` from only the keys in the current update, so **any social update wipes every other rejection count** [rechecked] | `src/systems/social_systems/relationships.py:133` | rpg-planner | **filed:** `TCK-20261109-ANY-SOCIAL-UPDATE-WIPES-THE-REJECTION-COUNTS-IT-DOES-NOT-NAME` (P1, rpg). Reader: `appraisal.py:125` (recruitment's social-fatigue penalty, which also gates loyalty); 5 writers in `core_actions.py`. The fix changes recruit outcomes, so it is paired-measured; priority with rpg-designer |
+| F4 | `processed_transaction_ids` persists in hash-seed order and grows without dedup across ticks [rechecked]. Unhashed, membership only | `updates.py:1148/1274`, `economy.py:275`, `apply.py:353-354` | rpg-planner (perf if memory matters) | P3, not filed; this contract treats it as a multiset (§3.2, §6) |
+| F5 | counter merges differ: `next_node_id_set` is LWW (could lower it), `next_group_id_set` is max; `force_full_scan` is not merged at all | `updates.py:1236`, `group_update_merge.py:20-21` | rpg-planner | no reader shown; stays with this contract (children 4/5) |
+| F6 | `entities_remove` runs before replacements are written back, so a removed entity with passive changes is re-inserted. Latent: no producer | `apply.py:282-297` | rpg-planner | no live writer of `StateUpdate.entities_remove` at `1fb40ac76` (only the field, the merge and `dirty.py`); the merge also passes it through `set()`, the same ordering class as F4. P3, not filed |
+| F7 | `*_set` fields (world trauma and retaliation, biological) discard deltas from every other step | `apply_plan.py:181-182`, `patches.py:129-130` | rpg-planner (may be intended) | no reader shown; stays with this contract (children 4/5) |
+| F8 | the digest sees only `CausalMemory`'s count and capacity, not its entries (a digest blind spot) | `cognition.py:252-256` | perf (PERF-D5 owner) | with perf-planner (PERF-D5 owner), forwarded via ubuntu |
 
 ## 10. Open items for the access audit (child 2) and for draft 2
 
@@ -233,6 +234,7 @@ on `1fb40ac76`.
 - **A5.** Whether one JOIN_PARTY contract can be accepted by two entities in a tick (`find_pending_incoming_offer`, `phase.py:130`).
 - **A6.** The lodging bed ordering rule (`lodging.py:177-189`).
 - **Draft 2:**
+  - asks rpg-planner for an explicit sign-off that §8 is complete enough to cut stage 3 (AC 3 needs it; ubuntu review A-n1);
   - folds in A1 to A6;
   - assigns every step its `StepDecl` (one table over all ~45 `run_phase` calls);
   - takes stage 0's per-phase costs, for the slice order of stage 4.
