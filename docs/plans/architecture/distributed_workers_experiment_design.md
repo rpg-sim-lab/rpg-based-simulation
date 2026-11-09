@@ -25,9 +25,10 @@ An **opt-in experiment** that runs the Collection phase's worker packets in a se
 Resolution, Cleanup, Advancement and Persistence stay in the engine process, and the engine stays the **one writer** that validates,
 sorts and applies every result.
 
-It is **not** a speed-up. Collection was 6 to 26 % of a tick, so the Amdahl ceiling is 1.06 to 1.35x. These are **PROVISIONAL
-shares**: py-spy on one loaded 6-vCPU VM, one run per profile, not a quiet-host measurement (`docs/performance/tick_cost_growth.md`
-§2; `engine_execution_modes_proposal.md` §2). Each tick also adds a network round trip and the serialization of large world views. A result slower than sequential is a valid outcome.
+It is **not** a speed-up. Collection was 14 to 26 % of a tick in py-spy shares (`docs/performance/tick_cost_growth.md` §2) and
+5.2 to 16 % in the benchmark records (`tests/perf/baselines/*.v0001.json`). So the Amdahl ceiling is about 1.05 to 1.35x. Both are
+**PROVISIONAL**: one loaded 6-vCPU VM and an uncontrolled runner, neither a quiet-host measurement. The earlier "6 %" lower bound
+(`engine_execution_modes_proposal.md` §2) cites a source not found in the repo. Each tick also adds a network round trip and the serialization of large world views. A result slower than sequential is a valid outcome.
 It is **not** an API/engine split, an engine replica, a multi-host deploy or a broker change.
 
 ### 1a. Today versus the experiment mode, in diagrams
