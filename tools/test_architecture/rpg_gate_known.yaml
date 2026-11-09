@@ -49,14 +49,14 @@ known:
       - {world: crowded_frontier, seed: 46, entity_id: 9}
     note: "Accepted by the owner on issue #715 (comment 6697054601, item 1). Owns EXACTLY crowded_frontier/46 entity 9, the V3 seen on #828's arm; a stale mapping on main until #828 lands. Expires when the owning ticket's fix lands or on 2026-11-30, whichever is first: the fix PR deletes this entry; if the subject still starves on the fix's pinned run, the entry stays and the case goes to the owner, with no new date. Any other V3 fail, or another entity on this (world, seed), is a regression."
   - match: "V3"
-    ticket: TCK-20261028-LOW-HP-RETREAT-BRANCH-HOLDS-A-STARVING-SUBJECT-IN-PLACE-BESIDE-A-NON-ACTING-HOSTILE
+    ticket: TCK-20261109-A-CROWDED-HERO-STARVES-WITH-NO-WAY-TRIED-AFTER-ITS-LAST-MEAL
     owner: rpg-planner
     added_on: "2026-11-07"
     expires_on: "2026-11-30"
     state: fail
     cases:
       - {world: crowded_frontier, seed: 45, entity_id: 31}
-    note: "Accepted by the owner on issue #715 (comment 6702815851), #828's combined run. Owns EXACTLY crowded_frontier/45 hero 31 (starved t2439 on arm 7384a28c9). Expires when the owning ticket's fix lands or on 2026-11-30, whichever is first: the fix PR deletes this entry; if the subject still starves on the fix's pinned run, the entry stays and the case goes to the owner, with no new date. Any other V3 fail, or another entity on this (world, seed), is a regression."
+    note: "Accepted by the owner on issue #715 (comment 6702815851), #828's combined run. Owns EXACTLY crowded_frontier/45 hero 31 (starved t2439 on arm 7384a28c9). Re-owned to TCK-20261109-A-CROWDED-HERO-STARVES-WITH-NO-WAY-TRIED-AFTER-ITS-LAST-MEAL on issue #715 (comment 6735771688): the LOW-HP fix's pinned run (tree f4d68046d) left e31 starving at t2439, UNTRIED_STEP. Expires when the owning ticket's fix lands or on 2026-11-30, whichever is first: the fix PR deletes this entry; if the subject still starves on the fix's pinned run, the entry stays and the case goes to the owner, with no new date. Any other V3 fail, or another entity on this (world, seed), is a regression."
   - match: "V3"
     ticket: TCK-20261103-A-CREATURE-WITH-BOTH-NEEDS-PRESSING-NEITHER-SLEEPS-NOR-FEEDS-ENOUGH
     owner: rpg-planner
