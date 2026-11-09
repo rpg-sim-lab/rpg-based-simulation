@@ -15,7 +15,7 @@ tags: [architecture, engine, determinism]
 Specify the kernel/logic phase contract and its deterministic merge rules, so the serial kernel can be reproduced exactly behind it.
 
 ## Status
-BLOCKED
+INPROGRESS (draft 1 written; draft 2 waits on child 2's report and stage 0)
 
 ## Tier
 standard
@@ -61,6 +61,9 @@ results of children 1 (the stage 0 re-measure) and 2 (the stage 1 access audit).
 - TCK-20261109-NEXT-GENERATION-ENGINE-ADR (blocks this)
 
 ## Related Docs
+- docs/plans/architecture/next_generation_engine_contract_spec.md (the spec, draft 1)
+- docs/plans/architecture/next_generation_engine_merge_inventory.md (its field-by-field evidence)
+- docs/architecture/next_generation_engine_adr.md (accepted, #715 6742854335)
 - docs/plans/architecture/next_generation_engine_feasibility_review.md
 
 ## Related Stored Artifacts
@@ -78,6 +81,13 @@ results of children 1 (the stage 0 re-measure) and 2 (the stage 1 access audit).
 
 ## Implementation Notes
 Filed by architecture-planner-u24. The filing rides a later implementation PR (#715 6697748243).
+
+Draft 1, 2026-11-09, on the owner's dispatch (#715 6743047506):
+- every field of `EntityUpdate` (30) and `StateUpdate` (53) has a merge class with its Level A argument (spec §2-§3);
+- contention (§4), state hygiene (§5), the prototype slice (§8);
+- findings F1-F8 for their owners (§9);
+- open items A1-A6 for the audit (§10).
+AC 1 is met statically. AC 2 needs child 2's report. AC 3 is met in draft for `fused_strategic_pass`.
 
 ## Test Summary
 Doc only.

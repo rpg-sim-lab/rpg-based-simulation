@@ -12,9 +12,10 @@ model: #715 6735575831. Scoping only; no implementation authorised.
 2. `TCK-20261109-NEXT-GENERATION-ENGINE-ADR`: **DONE 2026-11-09**, accepted by the owner (#715 6742854335) and adopted as `docs/architecture/next_generation_engine_adr.md`. Was: lead-planner (ubuntu) reviews it; it then goes to the owner for acceptance. It depends
    only on that review and the owner's yes (ubuntu review R5). It stays separate from `TCK-20261109-DISTRIBUTED-WORKERS-ADR-AMENDMENT`
    (R1: split).
-3. `TCK-20261109-NEXT-GENERATION-ENGINE-ACCESS-AUDIT` (stage 1): design now. Code after 2, after the three RPG heads (LOW-HP,
+3. `TCK-20261109-NEXT-GENERATION-ENGINE-ACCESS-AUDIT` (stage 1): plan done (`next_generation_engine_access_audit_plan.md`); code by
+   rpg-implementer-2, sequenced by rpg-planner (#715 6743082252). Code after 2, after the three RPG heads (LOW-HP,
    hardening, hit-wake) are pushed, in a gap rpg-planner names, under rpg-planner's conditions in the ticket.
-4. `TCK-20261109-NEXT-GENERATION-ENGINE-CONTRACT-SPEC`: architecture, after 2, with 1's and 3's results.
+4. `TCK-20261109-NEXT-GENERATION-ENGINE-CONTRACT-SPEC`: architecture. Draft 1 written (#715 6743047506); draft 2 with 1's and 3's results.
 5. **Stages 3 to 5:** not cut. They come after M1 completes and 4 is accepted. The parallel executor also needs Gate B.
 
 ## Rules

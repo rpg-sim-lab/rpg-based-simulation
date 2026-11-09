@@ -6008,6 +6008,31 @@
   - performance
   - testing
 - type: doc
+  path: docs/plans/architecture/next_generation_engine_access_audit_plan.md
+  title: 'Stage 1 plan: the observe-only access audit'
+  status: active
+  layer: architecture
+  authority: P2
+  audience: agent
+  tags:
+  - architecture
+  - engine
+  - determinism
+  - planning
+- type: doc
+  path: docs/plans/architecture/next_generation_engine_contract_spec.md
+  title: 'Contract spec (DRAFT): phases, merge rules and state hygiene for the next-generation
+    engine'
+  status: active
+  layer: architecture
+  authority: P2
+  audience: agent
+  tags:
+  - architecture
+  - engine
+  - determinism
+  - planning
+- type: doc
   path: docs/plans/architecture/next_generation_engine_feasibility_review.md
   title: 'Next-generation engine: feasibility review (DRAFT)'
   status: active
@@ -6019,6 +6044,18 @@
   - engine
   - determinism
   - performance
+  - planning
+- type: doc
+  path: docs/plans/architecture/next_generation_engine_merge_inventory.md
+  title: 'Merge inventory: every StateUpdate and EntityUpdate field, on main 1fb40ac76'
+  status: active
+  layer: architecture
+  authority: P2
+  audience: agent
+  tags:
+  - architecture
+  - engine
+  - determinism
   - planning
 - type: doc
   path: docs/plans/architecture/port_leak_audit.md
