@@ -114,3 +114,26 @@ def test_a_panic_freeze_with_prey_in_sight_holds_and_does_not_attack_the_prey(mo
     payload = _payload(update)
     assert payload.get("reason") == "PANIC_RETREAT" and tuple(payload["target_position"]) == person.navigation.position, f"got {payload}"
     assert payload.get("action") != "ATTACK"
+
+
+def _panic_scene(monkeypatch, destination, hostile_task=None):
+    """The reading-3 scene with the panic branch LIVE (`_panic_holds` untouched): hp 8/85, hunger 80 (pressing, below the line), a hostile beside it."""
+    monkeypatch.setattr(tactical_module, "retreat_destination", lambda *a, **k: destination)
+    state, hero = _hungry_hero(PRESSING_HUNGER, hostile_at=ADJACENT, hostile_task=hostile_task)
+    hero = replace(hero, combat=replace(hero.combat, hp=HP))
+    state = replace(state, entities={**state.entities, 1: hero})
+    return TacticalDecisionSystem.evaluate_entity_intent(state, hero), hero
+
+
+def test_a_panic_with_a_destination_still_flees_against_a_pressing_need(monkeypatch):
+    """Row 88 (5): the yield is only for the no-destination case. Same scene as reading 3 below the line, but the panic has somewhere to go: PANIC_RETREAT to it."""
+    update, _ = _panic_scene(monkeypatch, destination=(30.0, 31.0))
+    payload = _payload(update)
+    assert payload.get("reason") == "PANIC_RETREAT" and tuple(payload["target_position"]) == (30.0, 31.0), f"got {payload}"
+
+
+def test_an_acting_hostile_with_no_destination_keeps_the_freeze(monkeypatch):
+    """The yield needs nothing acting on the subject: a hostile attacking it keeps the freeze on its own tile, not the meal."""
+    update, hero = _panic_scene(monkeypatch, destination=None, hostile_task=ATTACKS_THE_HERO)
+    payload = _payload(update)
+    assert payload.get("reason") == "PANIC_RETREAT" and tuple(payload["target_position"]) == hero.navigation.position and payload.get("action") != "EAT", f"got {payload}"
