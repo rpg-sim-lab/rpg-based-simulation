@@ -16,6 +16,9 @@ owning planners after 1 lands; the epic's table gives each one's owner, cost, wh
 
 ## Rules
 
+- **Owner review gate (#715 6731938042):** the plan is complete when 1 and 2 are written and children 2-5 are cut; then STOP.
+  No implementation child starts, and no heavy-slot run, until the owner has reviewed the whole plan.
+
 - Nothing is built before 1 is accepted.
 - The default path never changes: `kernel.py:193-198` selection and `docker compose up` without a profile.
 - Any heavy-slot run (child 2) queues behind the RPG queue, and lead-planner-u24 is told before it runs.

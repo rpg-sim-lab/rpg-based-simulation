@@ -49,7 +49,14 @@ Write `docs/plans/architecture/distributed_workers_experiment_design.md`, coveri
    `TICK_END` trail, on 3 gate worlds at seed 42, 300 ticks, plus a killed-worker case (the rule in 4 must still give the same hash).
 6. **Compose profile.** A `distributed` profile adding one engine-worker service holding N workers; a name that cannot be confused
    with `ai_worker` (the anomaly consumer, `compose.yaml:81-89`); `docker compose up` with no profile unchanged.
-7. **Cut lines** for epic children 2-4: what each owner builds, its cost and what it leaves out, using the epic's table as the start.
+7. **Testing strategy** (owner, #715 6731938042), reusing what exists rather than inventing: the `docs/testing/test_taxonomy.md`
+   layers; `tests/unit/kernel/test_executor_context_parity.py` (#837) and `tests/integration/kernel/test_executor_equivalence_long.py`
+   as the equivalence pattern; the gate worlds and the rpg gate baseline (`tests/simulation_quality/rpg_gate/baselines/rpg_gate_v1.json`);
+   the pinned sequential runner (`tools/rpg_measure`) as the only behaviour evidence; the Slow regression lane
+   (`.github/workflows/slow-regression.yml`); the PERF-D2 hash and `TICK_END`-trail claim rules; the existing CI lanes. For each of
+   children 2-5: the layers it adds tests in, what is new and why no existing layer covers it, and which lane runs it. Layer
+   placement is testing-planner's call, asked through its own route.
+8. **Cut lines** for epic children 2-5: what each owner builds, its cost and what it leaves out, using the epic's table as the start.
 
 **Cost:** one doc session, no runs. **Leaves out:** code, measurement (child 2), the contract text (child 5).
 
@@ -59,7 +66,7 @@ Write `docs/plans/architecture/distributed_workers_experiment_design.md`, coveri
 - `docs/engine/**` and `docs/architecture/**` edits.
 
 ## Acceptance Criteria
-1. The design doc covers points 1-7, with each claim cited to a file and line on main at the time it is written.
+1. The design doc covers points 1-8, with each claim cited to a file and line on main at the time it is written.
 2. It names the open choices that are owners' calls (selection reach, the dead-worker rule) with a recommendation for each.
 3. It stays inside the amendment accepted in child 0.
 

@@ -39,6 +39,12 @@ across a container boundary is unmeasured, so the mode may well be slower than `
 ## Scope
 Scoping only. Nothing is built under this epic until child 0 is accepted.
 
+**Owner review gate (#715 6731938042).** The deliverable is a complete plan, then STOP: child 0 (ADR), child 1 (design, with its
+testing strategy) and children 2-5 cut, each with its cost and what it leaves out. No implementation child (2 to 5, including the
+packet-cost run on the heavy slot) starts until the owner has reviewed the whole plan. Owner's words: "complete the plan and stop,
+we need to review it carefully before starting, also, the plan should include the testing strategies, may re-use the existing
+since we have complex testing layers and strategies".
+
 **Decisions this runs into** (all re-read on main at `55d6ee703`, 2026-11-09):
 - `docs/architecture/system_overview.md`, "What is deliberately not distributed": "The engine is one process and one writer.
   ... determinism and replay depend on it. Scaling is per run (many seeds in parallel), not per tick."
@@ -87,7 +93,7 @@ because each is another domain's ticket:
 | 5 | `worker_contract.md` §5 and `infrastructure_overview.md` (the new mode, and the `ai_worker` wording of fact 5); `intentional_divergences.md` only if behaviour differs | docs/engine owner via lead-planner | doc only | everything else | child 0; ubuntu's docs-as-review-source batch (#715 6720445592) |
 
 The equivalence proof lives in children 3 and 4 as acceptance criteria rather than its own child (the simpler shape: it tests the
-code those children write).
+code those children write). The testing strategy for all children is a section of child 1's design, reusing the existing layers.
 
 ## Out of Scope
 - Splitting the API from the engine (fact 1), engine replicas, or more than one writer.
@@ -101,6 +107,7 @@ code those children write).
 
 ## Acceptance Criteria
 1. Child 0 is accepted, or the owner withdraws the idea; nothing under children 1-5 is built before child 0.
+1a. The owner has reviewed the complete plan (children 0 and 1 written, 2-5 cut) before any of children 2-5 starts (#715 6731938042).
 2. With the mode off, the default path is untouched: no change to `kernel.py:193-198` selection, to `LocalSequentialExecutor`,
    `ConcurrentExecutionAdapter` or `docker compose up`, and existing gate and paired hashes are unchanged.
 3. With the mode on, the same world and seed give an identical `flat-sha256-v3` final hash and `TICK_END` trail to
