@@ -88,17 +88,18 @@ Also in scope:
 - If a row can't be reached through state alone (only via a private helper), stop and tell testing-planner. Don't mock the function's internals.
 
 ## Implementation Notes
-New file tests/unit/strategic/test_fused_strategic_pass_fast_path_characterisation.py (34 passed, 1 xfailed, 0.5 s). No src/ change.
+New file tests/unit/strategic/test_fused_strategic_pass_fast_path_characterisation.py (35 passed, 1 xfailed, 0.5 s). No src/ change.
 
 - State is hand-built with V2EntityBuilder, tick 5, entity 1 the subject and entity 2 a live pursuit target. "Off cadence" = both cadences 1000; "due" = concern cadence 1 and intent cadence 1000. The intent cadence stays long on purpose: with it due, evaluate_strategic_intent abandons an entity-targeted project that has no real pursuit set up, which hides the redirection difference this ticket pins.
 - Every row is reached through state alone. Nothing is mocked and no private helper is called.
 - Objective kinds "craft"/"collect" are plain strings on ObjectiveState (they are not ObjectiveKind members); the guard compares against those strings, so the tests use them as such.
 - Row 5 cites TCK-20261109-STATE-TOWN-CENTER-DEFAULT-IS-A-SENTINEL-A-RETREAT-CAN-AIM-AT (rpg-planner; filed in #851): with no town tile and the default town_center (0.0, 0.0), a loaded entity is sent to the map origin; pinned as current behaviour.
+- Row 1 also has a plain pin of the fast path's current value (entity objective off cadence regroups home), added at testing-planner's review; defect A's PR changes that assert as well as removing the xfail.
 - Differential: 13 rows, one parameterized test. KNOWN_DISAGREEMENTS holds exactly two entries: row 1's entity objective (strict xfail citing defect A) and row 6 (earlier phase's target_set overwritten, pinned as different, citing TCK-20261101-CLEAR-TARGET-IS-NEVER-APPLIED). A guard test asserts the table has exactly those two keys.
 - Inactive/dead skip: StrategicWorkQueue.build already drops such entities before the loop, so the in-function early exit is shadowed. The row pins the pass-level behaviour; removing only the in-function guard does not turn it red (see Test Summary).
 
 ## Test Summary
-Local: tests/unit/strategic/test_fused_strategic_pass_fast_path_characterisation.py: 34 passed, 1 xfailed in 0.5 s (deterministic: no wall clock, no randomness).
+Local: tests/unit/strategic/test_fused_strategic_pass_fast_path_characterisation.py: 35 passed, 1 xfailed in 0.5 s (deterministic: no wall clock, no randomness).
 
 AC1 perturbation checks (a one-line change to src/systems/strategic_systems/intelligence.py in the worktree, test file run, file restored by hand; nothing committed under src/). Failing tests per perturbation:
 - row 1, flip the objective-position guard in the fast path: 4 failed (row 1 position-objective test; differential rows position_objective_walk_set, entity_objective_loaded_entity, craft_item_missing).
