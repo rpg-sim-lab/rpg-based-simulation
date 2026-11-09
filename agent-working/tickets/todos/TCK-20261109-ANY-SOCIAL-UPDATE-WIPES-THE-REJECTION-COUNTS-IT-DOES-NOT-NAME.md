@@ -80,7 +80,24 @@ None yet.
 - Dispatch needs rpg-designer's priority ruling, under the depth rule (#715 6731764470), and a slot after the current RPG heads.
 
 ## Implementation Notes
-None yet.
+2026-11-09 rpg-designer ruling (re-read on 1fb40ac76):
+1. The wipe is a bug, not intended. Class: Bug Fix.
+   - Bible 07 :65 and social_systems_contract.md :59 say only "social fatigue check".
+   - Neighbouring fields (betrayal_count, combat_loss_counts, trust) are cumulative.
+   - The keying is correct (candidate.rejection_count[offerer]); don't change it.
+   - Add a divergence entry only if the paired measurement moves anything.
+   - Parity: add a social_narrative.yaml entry, or amend the :3932 entry, citing the new unit test.
+2. Decay is OUT of this ticket. The fix keeps the counts and sums the merge, nothing more. Disclose in the ticket and the parity note that counts are lifetime, bounded by the 0.5 cap (5 rejections). The window is TCK-20261109-RECRUITMENT-FATIGUE-HAS-NO-RECENT-WINDOW (P3). last_offer_tick is per subject, not per offerer, so it can't serve as the window.
+3. Priority: after the current heads (flight, hardening and hit-wake re-measures, next-gen child 2, A+B).
+   - Its own paired measurement, never sharing a base with those.
+   - Bar: the standing death-stop bar, plus recruitment accepted and rejected counts per world. A move there is expected and is not a trip.
+   - Report LOYALTY_ACCEPTANCE separately, since the < 0.2 gate now bites after 2 rejections.
+
+Test rows (replace Scope 3):
+- a trust-only SocialUpdate leaves rejection_count intact;
+- a merge of two same-tick rejections from one offerer gives 2;
+- two offerers stay separate;
+- a round-trip through to_canonical_dict.
 
 ## Test Summary
 
