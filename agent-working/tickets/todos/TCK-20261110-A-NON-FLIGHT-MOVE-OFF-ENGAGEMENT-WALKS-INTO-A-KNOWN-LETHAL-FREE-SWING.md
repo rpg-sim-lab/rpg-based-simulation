@@ -78,7 +78,8 @@ Evidence (pinned traces; each hash-matches its cell):
 
 ## Assumptions / Open Questions
 - rpg-designer, 2026-11-10: the BRACKETING ticket TCK-20261020 is related only (a different harm). The hit-wake subject e24's bracketing step is an evidence row here.
-- Dispatch needs rpg-designer's priority under the depth rule (#715 6731764470).
+- rpg-designer, 2026-11-10, priority: not dispatchable until its design is done. The response for a non-flight move (hold the move, swap the target?) is open. It drafts the design after the owner's scout ruling and the hit-wake re-measure, since hit-wake changes how often engaged hit subjects re-decide. Queue: after flight, hardening and hit-wake, ahead of the rejection-count fix (it's on the death path). The measurement is a separate run on its own base, under the same bar.
+- rpg-planner, 2026-11-10, place: after next-gen child 2's cells and A+B. Both are already queued, and this ticket's design lands later anyway. It sits ahead of TCK-20261109-ANY-SOCIAL-UPDATE-WIPES-THE-REJECTION-COUNTS-IT-DOES-NOT-NAME.
 
 ## Implementation Notes
 None yet.
