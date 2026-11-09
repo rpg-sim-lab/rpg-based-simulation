@@ -5973,6 +5973,18 @@
   - architecture
   - determinism
 - type: doc
+  path: docs/plans/architecture/distributed_workers_experiment_design.md
+  title: 'Distributed-workers experiment mode: design (DRAFT)'
+  status: active
+  layer: architecture
+  authority: P2
+  audience: agent
+  tags:
+  - architecture
+  - engine
+  - determinism
+  - platform
+- type: doc
   path: docs/plans/architecture/engine_execution_modes_proposal.md
   title: 'Engine execution modes: fix the waste first, then four labelled modes'
   status: active

@@ -86,6 +86,12 @@ results are identical; the fallback is counted and recorded in the run manifest,
 It **never** answers with a FAILURE no-op: in `WorkerManager` a chunk that raised is answered with FAILURE no-ops (`:192-194`), and
 a timeout answered that way would make the outcome depend on speed (constraint 4).
 
+**Exception vs transport failure.** A worker that **raises** reports the exception back, and the engine handles it exactly as
+the local path would (FAILURE no-ops, as `WorkerManager` does for a raised chunk): the same packet raises on either side, so the
+outcome is the same. Only a **transport** failure or a timeout triggers the local recompute. A late result for a chunk already
+recomputed is dropped by the manager; `ProtocolValidator`'s one-result-per-entity check (`src/core/protocol_validator.py:41-50`)
+stays the backstop.
+
 The bound is liveness, not outcome, so it may be wall-clock without breaking determinism: whichever side computes the chunk, the
 result is the same. Alternative for the owner: fail the run loudly on the first timeout (simpler; loses runs on a flaky worker).
 
@@ -128,6 +134,87 @@ is the primary check and the canonical hash secondary**, because the digest may 
 
 Left out: multi-host networks, tail latency, real container networking beyond one host, and any timing claim.
 
+### 8a. Mapping to the backend testing catalogue (revised 2026-11-09)
+
+The owner shared an external catalogue as reference (58 techniques, 8 categories, P0 to P2; untracked, at
+`tmp/backend-systems-review/backend-distributed-systems-testing-strategies.md`). This maps it onto the mode **without adding a test
+layer**: every row lands in a §8 layer. Layer and cadence are **testing-planner's answer** (2026-11-09, second reply, after reading
+the same catalogue; advice for the draft, not an owner approval). The depth rule (#715 6731764470: fix hard issues only, no effort
+beyond the gain) decides the cuts: a technique is kept only if it guards the mode's one claim (equivalence) or its one rule (worker
+speed never changes the outcome).
+
+**PR lane, unit** (`tests/unit/kernel/`, `level("unit")`, medium budget):
+
+| Catalogue item (tier) | Already covered by | New for the mode |
+|---|---|---|
+| Unit, Component (P0) | `tests/unit/kernel/` | `RemoteWorkerManager` through `execute_batch` with a fake transport |
+| Contract (P1), Schema compatibility (P1), Golden (P1) | `test_executor_context_parity.py`; `ProtocolValidator` | the packet answers survive encode/decode; the chunk carries a wire-schema version and a build fingerprint, and a mismatch refuses (no cross-version compatibility: a different build is DET-PORT-2, unclaimable); the **wire field list is pinned as a golden** beside the parity test, so a new `WorkerPacket` field fails until the wire carries it |
+| Boundary / Negative (P0) | `test_an_undeclared_state_field_read_on_a_packet_fails_instead_of_defaulting` | an unknown or missing field, or a version mismatch, fails loudly on decode, never defaults |
+| Property-based (P1) | none (`hypothesis` is a dependency, unused by any test) | an encode/decode round trip over generated packets, **deterministic**: `@settings(derandomize=True, max_examples=<small>, deadline=None)`, no per-run seed |
+| Fuzz (P1), bounded | none | mutated or truncated encoded bytes refuse with a typed error: no crash, no hang, no partial packet (with `hypothesis`; no coverage-guided fuzzer). **Meaningful only under a typed encoding** (§10, choice 4): with pickle, mutated bytes cannot be made to refuse safely |
+| Idempotency / Dedup (P0*) | `ProtocolValidator._check_one_result_per_entity` raises on a second result for an entity (`src/core/protocol_validator.py:41-50`) | a duplicate result for one chunk id is applied once, and a late result after a local recompute is dropped by the manager before the validator (the validator stays the backstop) |
+| Retry / Timeout (P0*) | none (`WorkerManager` has no timeout, `:192`) | the bounded wait and local recompute of §6, tested with a **fake clock, never real sleeps**; the fallback counter is typed. The design has **no retry loop** (a timed-out chunk goes straight to local recompute), so there is no retry limit or backoff to test |
+| Ordering / Out-of-order (P1) | the kernel sort before apply (`kernel_concurrency_design_philosophy.md` Part 2) | results arriving out of order merge in packet order, and the world equals the in-order world |
+| Poison message (P1) | `WorkerManager` answers a raised chunk with FAILURE no-ops (`:192-194`) | a chunk that raises in the worker takes the declared path of §6 (handled as locally) and does not block the other chunks |
+| Backpressure (P1) | `WorkerManager`'s queue-depth fallback (contract §4) | `concurrency_limit` and any in-flight bound are respected, asserted by **counts, not timing** |
+
+**PR lane, kernel integration** (`tests/integration/kernel/`, `level("kernel_integration")`, medium budget measured on the slow VM):
+
+| Catalogue item (tier) | Already covered by | New for the mode |
+|---|---|---|
+| Differential (P2) | `test_executor_equivalence_long.py` (threads vs sequential) | the loopback test: an in-process fake remote vs `LocalSequentialExecutor`, content compare primary, hash secondary. **Kept despite P2: it is the mode's only claim** |
+| Fault injection (P1) + Parameterized (P0) | none | the same loopback test **parameterized over a seeded fault schedule** (drop, delay, duplicate, reorder, worker error); each case gives the sequential world; the seed and schedule are printed in the assert message so a failure reproduces |
+| Invariant / Runtime verification (P1) | HardLawMonitor and conservation run in every kernel run | none: kept on in these tests |
+| Regression (P0) | every PR lane; gate and paired hashes | none: the default path is unchanged |
+
+**Slow lane** (`slow-regression.yml`, four times a day; the extra_slow sibling file):
+
+| Catalogue item (tier) | Already covered by | New for the mode |
+|---|---|---|
+| Differential, long horizon (P2) | the long test's cases | remote vs sequential, `crowded_frontier` s45 first, more cases only with measured walls under 540 s and testing-planner's sign-off |
+| Soak, Resource exhaustion (P1), cheap form | the large budget (RLIMIT_AS and an alarm) | the same run asserts that open file descriptors and sockets at the end equal the start (the budget does not cap them); no separate soak job |
+
+**Container lane** (platform's opt-in or manual workflow, child 4):
+
+| Catalogue item (tier) | New for the mode |
+|---|---|
+| E2E, Smoke (P0) | the `distributed`-profile run on one world equals sequential |
+| Fault injection, real (P1); Network partition, Failover (P1) | kill the worker container mid-run or block its network: the result equals sequential and the typed fallback counter is above 0. For one stateless worker pool and one writer, partition and failover reduce to this; no chaos programme |
+| Schema compatibility, real | a worker on a different image digest is refused |
+| Rollback / Deployment (P1) | `docker compose config` without the profile lists exactly today's services |
+| AuthN (P0) | a client with a wrong `authkey` is refused; the worker port is not published |
+
+**Existing, nothing new:** SAST and SCA (P0) through `security-scan.yml` (Semgrep, gitleaks); the stdlib transport adds no
+dependency. Benchmark (P1) is child 2's one-off measurement, not a test.
+
+**Cut as cost over value** (the depth rule):
+
+| Item (tier) | Why |
+|---|---|
+| Mutation (P2) | testing-planner: not now; a possible later audit of the fallback and dedup paths once built (`tests/mutation`, testing's) |
+| Stateful model-based, Randomized (P1) | the sequential executor is the model, and seeds plus the seeded fault schedule are the randomization |
+| Load, Stress, Spike, Scalability (P1 / P2) | perf work with no claim to support: PERF-D2 claims equivalence only, and the mode makes no speed claim (§1) |
+| Replay / Recovery (P1) | the `TICK_END` trail is compared in the differential cases; checkpoint restore stays a sequential case (conformance X4) |
+| Chaos engineering (P2) | rejected by the devops amendment ("No ... chaos tooling"); fault injection covers the mechanism |
+| Continuous randomized simulation (P2) | the slow lane's schedule gives the recurrence |
+| Exploratory, Acceptance (P1) | the owner's plan review is the acceptance step; not a test layer |
+
+**Not applicable** (the mode has no such part): API functional (no API reach, §5); Database integration, Database migration,
+Backup / Restore, Disaster recovery (no database or durable store); Message / Event contract (no broker, a direct call);
+Consistency / Convergence, Linearizability (one writer, a barrier per tick, no replicas); Distributed transaction / Saga (no
+multi-service transaction); Canary, Shadow / Traffic replay, Synthetic monitoring (no production deployment).
+
+**What our layers cannot cover today** (testing-planner's list; flagged, not solved here):
+1. **Wire security** (TLS / auth P0*, DAST P1). Pickled packets over a socket are unsafe deserialization, a remote-code-execution
+   surface. There are SAST and SCA but no test layer for a network-exposed service. This is a **design choice, not a test** (§10,
+   choice 4), and child 3 gets the security-tagged review (`security-reviewer`) whichever encoding is chosen.
+2. **Real-process faults** (kill, partition, latency): no harness; the PR integration job has no docker. The in-process fake covers
+   the logic; real faults exist only in the container lane, which child 4 creates.
+3. **Coverage-guided fuzzing:** none; bounded `hypothesis` only. Not needed for this claim.
+4. **Slow-lane timings:** per-test durations are not recorded in CI (quiet mode; the JUnit artifact returns 403), so "each under
+   540 s" cannot be enforced from CI yet. A general gap, sent to lead-planner-u24 by testing-planner.
+5. **File-descriptor and socket limits:** the conftest budget does not cap them, so leak checks exist only as in-test assertions.
+
 ## 9. Cut lines for children 2 to 5
 
 | # | Child | Owner | Cost (measurement included) | Leaves out |
@@ -146,6 +233,11 @@ child 0 and ubuntu's docs batch. Every child waits for the owner's review.
 1. **Dead-worker rule:** local recompute, recorded (recommended), or fail the run on the first timeout.
 2. **Selection reach:** CLI and harness only (recommended), or also the API (needs `engine_manager.py:139` to pass an executor).
 3. **Transport:** stdlib `multiprocessing.connection` (recommended), unless child 2 shows it is the bottleneck.
+4. **Encoding (security):** pickle over `multiprocessing.connection` with HMAC `authkey`, on an unpublished compose-internal network
+   (recommended for the experiment: no new code for every packet type, and parity is kept by the one packet builder), **or** a typed,
+   validated encoding (no deserialization-to-code surface, and it makes the bounded fuzz of §8a meaningful; cost: a canonical encoder
+   and decoder for every packet field type, including `EntityState`, `spatial_grid` and the tile maps, and a new parity surface).
+   Either way child 3 gets the security-tagged review. If the mode ever leaves "experiment", the typed encoding becomes required.
 
 ## 11. Risks
 
@@ -153,4 +245,5 @@ child 0 and ubuntu's docs batch. Every child waits for the owner's review.
 - **Hidden reads outside the packet** (§6 open check): a singleton the worker container loads differently gives a split. The
   long equivalence test is the backstop; the content fingerprint is the guard.
 - **Packet-field drift** across a third consumer: covered by keeping one packet builder (§3) and the parity test.
-- **Pickle trust boundary** (§4): internal network and `authkey` only.
+- **Pickle trust boundary** (§4): unsafe deserialization, a remote-code-execution surface if the channel is reached; internal
+  network and `authkey` only, security-tagged review on child 3, and the typed-encoding alternative in §10 choice 4.
