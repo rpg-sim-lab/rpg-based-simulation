@@ -9,7 +9,7 @@ A pure builder: reads the entity and the decision's already-chosen update, write
 from __future__ import annotations
 
 from enum import Enum
-from typing import TYPE_CHECKING, Any, Dict, Optional
+from typing import TYPE_CHECKING, Any, Dict, Optional, overload
 
 from src.core.movement_modes import MovementMode
 from src.core.updates import EntityUpdate, NavigationUpdate, TaskUpdate
@@ -62,6 +62,10 @@ def _felt_lethal_attacker(state: "AuthoritativeState", entity: "EntityState") ->
     return attacker if attacker is not None and attacker.combat.alive else None
 
 
+@overload
+def flight_weighs_free_swing(state: "AuthoritativeState", entity: "EntityState", update: EntityUpdate, site: FlightSite) -> EntityUpdate: ...
+@overload
+def flight_weighs_free_swing(state: "AuthoritativeState", entity: "EntityState", update: None, site: FlightSite) -> None: ...
 def flight_weighs_free_swing(
     state: "AuthoritativeState", entity: "EntityState", update: Optional[EntityUpdate], site: FlightSite,
 ) -> Optional[EntityUpdate]:
