@@ -207,7 +207,7 @@ as a scheduling key for movement and occupancy. State ownership stays central.
 - arrival-order permutation does not change the result;
 - the frozen-view cache is safe (one probe).
 
-The DET-PORT-1 matrix **has never run**. Every harness pins `PYTHONHASHSEED=0`, which can hide residual hash-order effects.
+The DET-PORT-1 matrix **has never run**. The measurement harnesses pin `PYTHONHASHSEED=0`, which can hide residual hash-order effects.
 
 **The contract keeps evolving state visible; it does not force one snapshot.** Many steps read what earlier steps wrote in the same
 tick (§2). Forcing every step onto tick-start state would change today's meaning, so the contract has four layers:
@@ -561,7 +561,7 @@ The other children are cut by their owning planners, as with the distributed-wor
 
 | # | Child | Owner (by routing) | Filed by | Gate before it starts |
 |---|---|---|---|---|
-| 0 | ADR: the kernel/logic contract as the engine's direction. Single writer kept; Level A default; the delivery model above; the four layers of §5; the §8a readiness checks; **the Gate B question for stage 5** (C-10, PERF-M6-T05) | lead-planner (ubuntu); it touches the same "one process" decision (`system_overview.md`) as the distributed-workers ADR, so lead-planner may combine the two | architecture-planner-u24 (`TCK-20261109-NEXT-GENERATION-ENGINE-ADR`) | the ubuntu lead reachable; ubuntu's `lead-docs-review-source` batch landed |
+| 0 | ADR: the kernel/logic contract as the engine's direction. Single writer kept; Level A default; the delivery model above; the four layers of §5; the §8a readiness checks; **the Gate B question for stage 5** (C-10, PERF-M6-T05) | lead-planner (ubuntu); it touches the same "one process" decision (`system_overview.md`) as the distributed-workers ADR; kept separate, and only the distributed ADR edits the bullet (review R1) | architecture-planner-u24 (`TCK-20261109-NEXT-GENERATION-ENGINE-ADR`) | ubuntu's review, then the owner's acceptance (review R5) |
 | 1 | stage 0: re-measure after H1/H2 on a quiet host, per-phase ms with denominators, Resolution profile | perf-planner | perf-planner | none; measurement only |
 | 2 | stage 1: declaration audit plus shadow access audit; observe-only, off by default, hash-neutral (rpg-planner's conditions, 2026-11-09) | architecture's implementer, reviewed by rpg-planner | architecture-planner-u24 (`TCK-20261109-NEXT-GENERATION-ENGINE-ACCESS-AUDIT`) | design now; code after child 0, after the three RPG heads are pushed, in a gap rpg-planner names |
 | 3 | world farm: a stream per world, unique lab ids, measured worlds per host | platform-planner; perf-planner for the measurement | platform-planner | none (independent; first in priority) |

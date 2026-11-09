@@ -19,9 +19,10 @@ proposal, not a recorded decision.
 
 **Companion:** the distributed-workers ADR amendment draft (`docs/plans/architecture/distributed_workers_adr_amendment_draft.md`, on
 branch `architecture-distributed-workers-epic`).
-- Both touch the "one process" decision, and they carry the **same proposed `system_overview.md` bullet**, word for word. This ADR
-  adds nothing to that bullet, because its serial and parallel executors stay in-process.
-- They are separate ADRs because the tracks and gates differ: an experiment, and a direction. Lead-planner may combine them.
+- Both touch the "one process" decision. **This ADR proposes no edit to the `system_overview.md` bullet**: its serial and parallel
+  executors stay in-process. The bullet's edit, with its exception sentence, belongs to the companion ADR alone (ubuntu review R1:
+  split).
+- They are separate ADRs because the tracks and gates differ: an experiment, and a direction. Ubuntu's review keeps them separate (R1).
 
 ## Status
 
@@ -98,7 +99,7 @@ The detail is child 4's.
 | 7 | Hidden mutations of tick-start state | tick-start state is immutable during refine; timeline events, claims, `route_plans`, spatial and movement caches and the strategic flag move to deltas or to kernel- or phase-owned stores. The cooperation `< 150` gate reads the step's own pending events | the same values at each read point | S (inventory) + T (audit) |
 | 8 | Process-global state and content identity | content is loaded once per process from a declared path (not the cwd), and fingerprinted; caches are owned per world or keyed by content fingerprint, not `id()` | the same content gives the same reads | G (fingerprint check); S |
 | 9 | RNG key hygiene (XOR collisions past about 65k ids; quest keys without a building id) | keep today's keys under the contract; the repair (hashing the key tuple; adding building ids) is **its own versioned decision**, never in a contract PR | unchanged keys means unchanged draws | G (keyed draws); the repair is Level B |
-| 10 | Event ids and order | event order equals today's emit order under the commit key; `uuid4` ids are **not** in hashed state (static check, 2026-11-09), so event-stream comparisons exclude the id. Deriving ids (tick, source, seq) is its own versioned decision | the state digest is unaffected; the stream compare excludes ids | S |
+| 10 | Event ids and order | event order equals today's emit order under the commit key. `uuid4` ids are **not** in hashed state (static check, 2026-11-09, `main` `1fb40ac76`): they are minted only for the observability `SimulationEvent` envelope (`src/observability/events.py:56`), which goes to the event recorder, not `AuthoritativeState`; the hashed `recent_world_events` window (`src/engine/checkpoint.py:202`) holds `WorldEvent`s (`src/domains/world_emergence/schema.py:64`), which have no id field; `CausalMemoryEntry.event_id` (`src/core/cognition.py:237`) is a derived string, `combat_loss_{tick}_{subject}` (`src/engine/pipeline.py:151`), and is not hashed either, since `CausalMemory` hashes only `entries_count` and `capacity` (`cognition.py:252-256`). So event-stream comparisons exclude the id. Deriving ids (tick, source, seq) is its own versioned decision | the state digest is unaffected; the stream compare excludes ids | S |
 | 11 | Exception and failure semantics | a raised unit gives a FAILURE no-op per entity, recorded, as today; it is **never recomputed as an infrastructure failure**; a lost unit (transport, timeout) is recomputed from the same inputs; if a recomputed result differs from a late or remote one, the run fails loudly | identical to today for raised units; recompute is a pure function | G (classification); T |
 | 12 | Floating point and platform | reductions keep today's order (clause 3); any change of order or value type is its own versioned decision; claims stay within PERF-D2 (one DET-PORT-1 row per executor, no DET-PORT-2) | same order, same floats | G (claim scope); T |
 | 13 | When a step is parallel-safe | all of: static side-effect inspection; child 2's runtime audit; dependency-sensitive scenarios (deaths, contention, spawns, the JOIN_PARTY collision); hidden-mutation and global detection; **fail-loud on undeclared access** (modelled on `PacketFieldMissingError`); then clarification 18 | runtime evidence alone never makes a step safe | S + T; fail-loud is G |
@@ -106,24 +107,19 @@ The detail is child 4's.
 | 15 | Guaranteed, inspected or tested | every property in the contract and the spec carries G, S or T; a T property is never stated as a guarantee | — | — |
 | 16 | Versioned contracts and replay | the contract version is in the run manifest; a contract change is a versioned decision; replay from declared state and inputs stays reproducible; distributed readiness is compatibility only | — | G |
 | 17 | Task identity scope | task id = (run id, replay session or attempt, tick, step, unit). Dedup, retry and late-result rejection match within the same run and attempt only, so a result from another run or an earlier replay is rejected | ids cannot collide across concurrent worlds or replays | G |
-| 18 | Independent determinism evidence | the proof matrix varies `PYTHONHASHSEED` (several values; every harness pins 0 today), arrival order (permuted), worker counts (1, 2 and 4), and failures (exceptions, lost or late units), with a full-state compare. A DET-PORT-1 row counts only if it passes all of these | — | T |
+| 18 | Independent determinism evidence | the proof matrix varies `PYTHONHASHSEED` (several values; the measurement harnesses pin 0 today; reuse the subprocess pattern of `tests/unit/engine/test_set_order_follows_no_hash_seed.py`, `tests/unit/domains/faction/test_squad_group_id_hashseed.py` and `tests/unit/domains/perception/test_filter_ids_hashseed.py`), arrival order (permuted), worker counts (1, 2 and 4), and failures (exceptions, lost or late units), with a full-state compare. A DET-PORT-1 row counts only if it passes all of these | — | T |
 
 ## Proposed amended text (not applied; for lead-planner to place)
 
-**`docs/architecture/system_overview.md`, first bullet of "What is deliberately not distributed"** (shared with the companion ADR,
-word for word):
-
-> - **The engine has one writer.** That is a choice, not a gap: determinism and replay depend on it
->   (`docs/architecture/kernel_concurrency_design_philosophy.md`). Every result is validated, sorted and applied by the kernel alone.
->   **By default the engine is also one process.** One recorded exception exists: the opt-in distributed-workers experiment may run
->   the Collection pool in a separate container (ADR amendment, #715 6731714291), and it must give results identical to the
->   sequential run. Scaling is per run (many seeds in parallel), not per tick.
+**`docs/architecture/system_overview.md`, first bullet of "What is deliberately not distributed":** unchanged by this ADR. Any edit
+to it belongs to the distributed-workers ADR amendment alone.
 
 **A new paragraph after that list** (this ADR):
 
-> **Execution kernels are swappable behind a phase contract** (ADR, #715 6735575831). RPG logic declares what each step reads and
-> writes and returns typed deltas, and the kernel owns order, merge and commit. Today's serial order is the reference executor. Any
-> other executor must give identical results, and may run Resolution in parallel only after the Gate B evaluation (C-10, PERF-M6-T05).
+> **Direction: execution kernels become swappable behind a phase contract** (ADR, #715 6735575831). RPG logic will declare what
+> each step reads and writes and return typed deltas, and the kernel will own order, merge and commit. Until a stage lands, the
+> serial fold in `pipeline.py` is the only executor. Any other executor must give identical results, and may run Resolution in
+> parallel only after the Gate B evaluation (C-10, PERF-M6-T05).
 
 **`docs/architecture/kernel_concurrency_design_philosophy.md`, Part 2:** unchanged by this ADR. The sentence "Only COLLECTION runs
 work in parallel" stays true until a Gate B decision. If one is made, that decision amends this sentence.

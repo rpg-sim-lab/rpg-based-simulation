@@ -28,9 +28,9 @@ P2
 
 ## Request Summary
 Child 0 of `TCK-20261109-EPIC-NEXT-GENERATION-ENGINE`. Author: lead-planner (ubuntu). Owner decisions and delivery model: #715
-6735575831. It waits until the ubuntu lead is reachable; lead-planner-u24 carries it over together with
-`TCK-20261109-DISTRIBUTED-WORKERS-ADR-AMENDMENT`. **Both ADRs touch the same "one process" decision** (`system_overview.md`), so
-lead-planner may combine them into one ADR.
+6735575831. Lead-planner-u24 carries it over together with `TCK-20261109-DISTRIBUTED-WORKERS-ADR-AMENDMENT`. **Both ADRs touch the
+same "one process" decision** (`system_overview.md`). Ubuntu review R1 ruled a split: this ADR proposes no edit to that bullet,
+and the distributed ADR carries the bullet's edit alone.
 
 ## Scope
 Record, as an ADR under `docs/architecture/`:
@@ -112,7 +112,12 @@ The detail goes to child 4.
     - `uuid4` event ids (`observability/events.py:56`). Checked 2026-11-09 [C, static only]. They do **not** enter hashed state:
       - `recent_world_events` holds `WorldEvent`s (`world_emergence/schema.py:64`), which have no id field;
       - the `source_event_id`s stored in state are deterministic strings (`world_emergence/services.py:196,232`);
-      - the scar path that takes an event id (`world/consequences.py:62-75`) has no live caller found.
+      - the scar path that takes an event id (`world/consequences.py:62-75`) has no live caller found;
+      - `CausalMemoryEntry.event_id` (`src/core/cognition.py:237`, ubuntu review R3) is derived, `combat_loss_{tick}_{subject}`
+        (`src/engine/pipeline.py:151`, read by `src/domains/memory/phase.py:101`), not a uuid, and is not hashed: `CausalMemory`
+        hashes only `entries_count` and `capacity` (`cognition.py:252-256`), reached through the entity's `cognition`
+        (`src/core/state.py:985`, `src/engine/checkpoint.py:151`). Rechecked on `main` `1fb40ac76`. The uuid4 minting is
+        `src/observability/events.py:56`, the `SimulationEvent` envelope sent to the recorder, never `AuthoritativeState`.
       They **do** make the observability event stream unreproducible, so any comparison of event streams must exclude the id, or the
       contract must derive it (from tick, source and seq). Changing the id derivation is its own versioned decision;
     - the ordered `world_events_add` and `recent_world_events` in hashed state;
@@ -168,8 +173,9 @@ The detail goes to child 4.
     - Today's `ProtocolValidator` dedup works per batch only (`protocol_validator.py:41-50`).
     (Consolidated clarification 3; review_2 §9, task identity.)
 18. **Independent determinism evidence.** The proof matrix varies these independently:
-    - **`PYTHONHASHSEED`:** several values, not only the pinned 0. Every harness pins 0 (`rpg_gate_harness.py:158`, `paired.py:102`),
-      which can hide iteration-order dependence;
+    - **`PYTHONHASHSEED`:** several values, not only the pinned 0. The measurement harnesses pin 0 (`rpg_gate_harness.py:158`,
+      `paired.py:102`), which can hide iteration-order dependence. Reuse the existing subprocess hash-seed tests as the pattern:
+      `tests/unit/engine/test_set_order_follows_no_hash_seed.py`, `tests/unit/domains/faction/test_squad_group_id_hashseed.py` and `tests/unit/domains/perception/test_filter_ids_hashseed.py`;
     - **scheduling:** permuted arrival order;
     - **worker counts:** 1, 2 and 4;
     - **state:** a full-state, field-by-field compare;
@@ -202,7 +208,7 @@ that input, there is no separate canonical list. The 16 points are kept, and onl
 
 ## Related Tickets
 - TCK-20261109-EPIC-NEXT-GENERATION-ENGINE (parent)
-- TCK-20261109-DISTRIBUTED-WORKERS-ADR-AMENDMENT (same "one process" decision; may be combined)
+- TCK-20261109-DISTRIBUTED-WORKERS-ADR-AMENDMENT (same "one process" decision; kept separate, review R1)
 
 ## Related Docs
 - docs/plans/architecture/next_generation_engine_feasibility_review.md
@@ -219,7 +225,9 @@ that input, there is no separate canonical list. The 16 points are kept, and onl
 - src/engine/kernel.py
 
 ## Assumptions / Open Questions
-- It is gated on ubuntu's `lead-docs-review-source` batch landing (#715 6720445592), as the distributed-workers ADR is.
+- It depends only on ubuntu's review and the owner's acceptance (ubuntu review R5). Ubuntu's docs batch (row A) touches different
+  lines and is not a gate. On adoption, ubuntu writes `docs/architecture/next_generation_engine_adr.md` from a lead branch after the
+  owner's yes; the feasibility review stays in `docs/plans/architecture/` (R6).
 
 ## Implementation Notes
 Filed by architecture-planner-u24. The filing rides a later implementation PR (#715 6697748243).

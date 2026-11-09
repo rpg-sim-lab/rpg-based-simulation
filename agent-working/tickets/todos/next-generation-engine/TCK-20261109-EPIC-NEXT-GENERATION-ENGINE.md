@@ -69,7 +69,7 @@ Scoping only. Nothing is built under this epic until child 0 (the ADR) is accept
 
 | # | Child | Owner | Filed | Gate |
 |---|---|---|---|---|
-| 0 | `TCK-20261109-NEXT-GENERATION-ENGINE-ADR` | lead-planner (ubuntu); may be combined with the distributed-workers ADR (`TCK-20261109-DISTRIBUTED-WORKERS-ADR-AMENDMENT`), which touches the same "one process" decision | yes | the ubuntu lead reachable; ubuntu's `lead-docs-review-source` batch landed |
+| 0 | `TCK-20261109-NEXT-GENERATION-ENGINE-ADR` | lead-planner (ubuntu); kept separate from the distributed-workers ADR (`TCK-20261109-DISTRIBUTED-WORKERS-ADR-AMENDMENT`), which alone edits the "one process" bullet (review R1) | yes | ubuntu's review, then the owner's acceptance (review R5) |
 | 1 | stage 0: re-measure after H1 (#751) and H2 (#771) on a quiet host; per-phase ms with denominators; Resolution profile incl. `fused_strategic_pass`. Measurement only | perf-planner | to be cut by perf-planner | none |
 | 2 | `TCK-20261109-NEXT-GENERATION-ENGINE-ACCESS-AUDIT`: stage 1, declarations plus a shadow access audit; observe-only, off by default, hash-neutral; rpg-planner's conditions (2026-11-09) in the ticket | architecture's implementer, reviewed by rpg-planner (the implementer's write scope must grow first) | yes | design now; code after child 0, after the three RPG heads are pushed, in a gap rpg-planner names |
 | 3 | world farm: a Redis stream per world (`SIM_STREAM_NAME`), unique lab run ids (`src/lab/orchestrator.py:171-174`), process-safe ledger appends, N worlds per host measured | platform-planner; perf-planner for the measurement | to be cut by platform-planner | none (first in priority) |
