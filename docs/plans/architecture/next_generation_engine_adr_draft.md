@@ -34,7 +34,7 @@ DRAFT. Proposed by architecture-planner-u24, 2026-11-09. To be decided by lead-p
   - Resolution (`pipeline.py:136-444`) is one fold over a shared `StateUpdate`.
   - Its hot steps mostly compute per entity from tick-start state plus the entity's own entry.
   - The true ordering sits in a few chains.
-  - RNG is keyed (`rng.py:65-105`).
+  - RNG is keyed (`src/platform/rng.py:65-105`).
 - **Owner decisions** (#715 6735575831):
   - Level A by default;
   - both scaling dimensions, with the world farm first;
@@ -102,7 +102,7 @@ The detail is child 4's.
 | 11 | Exception and failure semantics | a raised unit gives a FAILURE no-op per entity, recorded, as today; it is **never recomputed as an infrastructure failure**; a lost unit (transport, timeout) is recomputed from the same inputs; if a recomputed result differs from a late or remote one, the run fails loudly | identical to today for raised units; recompute is a pure function | G (classification); T |
 | 12 | Floating point and platform | reductions keep today's order (clause 3); any change of order or value type is its own versioned decision; claims stay within PERF-D2 (one DET-PORT-1 row per executor, no DET-PORT-2) | same order, same floats | G (claim scope); T |
 | 13 | When a step is parallel-safe | all of: static side-effect inspection; child 2's runtime audit; dependency-sensitive scenarios (deaths, contention, spawns, the JOIN_PARTY collision); hidden-mutation and global detection; **fail-loud on undeclared access** (modelled on `PacketFieldMissingError`); then clarification 18 | runtime evidence alone never makes a step safe | S + T; fail-loud is G |
-| 14 | Evidence per stage PR | field-by-field content compare (primary); `flat-sha256-v3`; `TICK_END` trail; existing behaviour evidence; failure behaviour. A hash alone is insufficient (digest gaps, `TCK-20261103-STATE-DIGEST-MAY-OMIT-FIELDS-THAT-DECISIONS-READ`) | — | T |
+| 14 | Evidence per stage PR | field-by-field content compare (primary); the current proof scheme (`PROOF_DIGEST_SCHEME`); `TICK_END` trail; existing behaviour evidence; failure behaviour. A hash alone is insufficient (digest gaps, `TCK-20261103-STATE-DIGEST-MAY-OMIT-FIELDS-THAT-DECISIONS-READ`) | — | T |
 | 15 | Guaranteed, inspected or tested | every property in the contract and the spec carries G, S or T; a T property is never stated as a guarantee | — | — |
 | 16 | Versioned contracts and replay | the contract version is in the run manifest; a contract change is a versioned decision; replay from declared state and inputs stays reproducible; distributed readiness is compatibility only | — | G |
 | 17 | Task identity scope | task id = (run id, replay session or attempt, tick, step, unit). Dedup, retry and late-result rejection match within the same run and attempt only, so a result from another run or an earlier replay is rejected | ids cannot collide across concurrent worlds or replays | G |

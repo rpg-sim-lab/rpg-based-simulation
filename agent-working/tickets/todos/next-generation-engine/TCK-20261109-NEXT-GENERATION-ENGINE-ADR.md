@@ -103,7 +103,7 @@ The detail goes to child 4.
 8. **Process-global state and content identity.** Registries, the `behavior_consumers` catalog (auto-loaded from a cwd-relative path),
    the terrain cache and id-keyed caches. The ADR must state how a unit gets content: loaded once per process, or owned per world. It
    must also state how identity is checked (a content fingerprint). (3.1; review_2 §14, content identity and initialization.)
-9. **RNG.** Draws are keyed, which is guaranteed today (`rng.py:65-105`). The keys need repair:
+9. **RNG.** Draws are keyed, which is guaranteed today (`src/platform/rng.py:65-105`). The keys need repair:
    - XOR composition collides once entity ids pass about 65k;
    - quest keys lack a building id.
    The fix moves pinned hashes, so it is **its own versioned decision** and never rides a contract PR. Draws must never depend on
@@ -144,7 +144,7 @@ The detail goes to child 4.
 14. **The evidence standard** for every stage PR:
     - the field-by-field content compare, which is primary because of the digest's known gaps
       (`TCK-20261103-STATE-DIGEST-MAY-OMIT-FIELDS-THAT-DECISIONS-READ`);
-    - `flat-sha256-v3`;
+    - the current proof scheme (`PROOF_DIGEST_SCHEME`);
     - the `TICK_END` trail;
     - the existing behaviour evidence;
     - schedule and worker-count independence;

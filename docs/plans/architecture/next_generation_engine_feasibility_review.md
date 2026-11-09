@@ -356,11 +356,11 @@ multi-host work.
 | stable task identity | entity id plus a commit key (`concurrency_law.py:30-34`) | a task id = (tick, step, unit), where the unit is an entity, an interaction group or a tile |
 | explicit dependencies and scheduling boundaries | an implicit chain in `refine` | step declarations (layer 2, §5); a plan compiled from them and proven equal to today's order |
 | deterministic merge and conflict semantics | mixed merges; the cooperation contention point (§2a) | per-field merge rules; a contention rule for each contended key |
-| RNG independent of the worker | keyed already (`rng.py:65-105`) | a hash of the key tuple instead of XOR (a versioned change) |
+| RNG independent of the worker | keyed already (`src/platform/rng.py:65-105`) | a hash of the key tuple instead of XOR (a versioned change) |
 | data locality and transfer | Collection shares frozen views per batch; the experiment measures pickle cost | each step declares its view, so a remote executor knows what to send; views stay read-only |
 | bounded concurrency, resource governance | `WorkerManager` bounds, the governor, budgets | the executor takes a bound; outcomes never depend on it (constraint of PERF-D1 A2) |
 | replay and failure recovery | checkpoints, `TICK_END` trail; failure = FAILURE no-op per entity | the same failure semantics per unit; a lost unit is recomputed, never dropped (the experiment's §6 rule) |
-| versioned execution contracts | PERF-D2 tiers; flat-sha256-v3 | the contract version is recorded in the run manifest; a contract change is a versioned decision |
+| versioned execution contracts | PERF-D2 tiers; the current proof scheme (`PROOF_DIGEST_SCHEME`) | the contract version is recorded in the run manifest; a contract change is a versioned decision |
 
 ## 9. Smallest prototype, and a staged roadmap
 
@@ -373,7 +373,7 @@ The slice:
 1. Express it under the new contract: declared reads and writes, `compute(snapshot, own entry) → delta`.
 2. Run it under the **serial** executor of a contract kernel that wraps the rest of `refine` unchanged.
 3. Success criteria:
-   - bit-identical `flat-sha256-v3` and `TICK_END` trail on the 3 gate worlds at seed 42 for 300 ticks;
+   - bit-identical final hash under the current proof scheme (`PROOF_DIGEST_SCHEME`) and `TICK_END` trail on the 3 gate worlds at seed 42 for 300 ticks;
    - the long equivalence cases unchanged;
    - `rpg_measure --neutral` IDENTICAL x3;
    - a runtime **access audit** (shadow mode) showing the step's real reads and writes equal its declaration across those runs;

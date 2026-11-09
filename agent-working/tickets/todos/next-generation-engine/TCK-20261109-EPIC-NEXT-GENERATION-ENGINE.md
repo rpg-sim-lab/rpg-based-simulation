@@ -96,7 +96,7 @@ Scoping only. Nothing is built under this epic until child 0 (the ADR) is accept
 1. Child 0 is accepted before children 2 and 4 start, and before anything under child 5 is cut.
 2. Every stage PR is additive on `main`, behind the existing selection: the current path is untouched and selected as today, and
    existing gate and paired hashes are unchanged.
-3. Every stage PR carries a Level A equivalence test: the field-by-field content compare (primary), `flat-sha256-v3`, the
+3. Every stage PR carries a Level A equivalence test: the field-by-field content compare (primary), the current proof scheme (`PROOF_DIGEST_SCHEME`), the
    `TICK_END` trail, and, for an executor, worker-count and arrival-order independence.
 4. No step is called parallel-safe before child 2's access audit and a Level A proof under a parallel executor both pass.
 5. Each child records its cost and what it leaves out.
