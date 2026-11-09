@@ -71,6 +71,8 @@ Until fixed, UNTRIED_STEP and last_meal_tick are caveated on every V3 record. Fa
 ## Implementation Notes
 2026-11-03 replay result (rpg-planner-ubuntu, relayed by lead-planner-u24, not checked by rpg-planner): e30's two silent drops were corpse meals (src/engine/domain/core_actions.py:89 `corpse_meal`, source_kind CORPSE_FOOD, on the action path), not the inn and not at a distance. The meal path is fine; decision 44 isn't touched. The recorder gap is sharper than first stated: `_attempted_way` has no CORPSE_FOOD mapping, so SCAVENGE reads untried even when the subject scavenged, and last_meal_tick misses every meal but CARRIED_FOOD and INN_MEAL. e30's true last meal is t1390, not t721. On ubuntu's read V3 likely stays red for e30 on FORAGE alone. Scope adds: map CORPSE_FOOD to SCAVENGE in `_attempted_way`, with a test.
 
+2026-11-07 interim condition, agreed by rpg-planner and the ubuntu side under the owner's cost rule (#715 6697776913): there is no recorder fix for now. Until this ticket lands, any V3 starvation in a combined or paired run gets a manual meal check from the trace rows before it counts, as e30's did. The gap stays named here. Applied in the ENG+churn combined run: s45/e53 (meal rows at t788, t838, t918 and t2308, none in its last 200 ticks; trace sha 69c90c9c…) and the urban traces. (Carried here from seat-notes commit 30f4ad06f on rpg-hit-wake by rpg-planner's ruling; the pinned-runner ticket hunk of that commit stays on rpg-hit-wake.)
+
 ## Test Summary
 
 ## Files Changed
