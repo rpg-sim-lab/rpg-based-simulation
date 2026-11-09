@@ -9,7 +9,7 @@ model: #715 6735575831. Scoping only; no implementation authorised.
    and **stage 0 re-measure** (to be cut by perf-planner). Both are independent, and the farm comes first in priority (owner Q3).
    - Stage 0 needs an owner exemption from the perf pause (#715 6556861718) or the end of that pause (ubuntu review N1).
    - No platform seat is running on either host, so the farm waits for one to launch (N2).
-2. `TCK-20261109-NEXT-GENERATION-ENGINE-ADR`: lead-planner (ubuntu) reviews it; it then goes to the owner for acceptance. It depends
+2. `TCK-20261109-NEXT-GENERATION-ENGINE-ADR`: **DONE 2026-11-09**, accepted by the owner (#715 6742854335) and adopted as `docs/architecture/next_generation_engine_adr.md`. Was: lead-planner (ubuntu) reviews it; it then goes to the owner for acceptance. It depends
    only on that review and the owner's yes (ubuntu review R5). It stays separate from `TCK-20261109-DISTRIBUTED-WORKERS-ADR-AMENDMENT`
    (R1: split).
 3. `TCK-20261109-NEXT-GENERATION-ENGINE-ACCESS-AUDIT` (stage 1): design now. Code after 2, after the three RPG heads (LOW-HP,

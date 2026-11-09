@@ -1,10 +1,10 @@
 ---
-status: active
+status: historical
 layer: architecture
 authority: P1
 audience: agent
 ticket_id: TCK-20261109-NEXT-GENERATION-ENGINE-ADR
-phase: open
+phase: done
 date: 2026-11-09
 tags: [architecture, engine, determinism, planning]
 ---
@@ -15,7 +15,7 @@ tags: [architecture, engine, determinism, planning]
 ADR: the kernel/logic phase contract as the engine's direction, with one writer kept, Level A by default and trunk-additive delivery.
 
 ## Status
-OPEN
+DONE
 
 ## Tier
 standard
@@ -233,10 +233,27 @@ that input, there is no separate canonical list. The 16 points are kept, and onl
 Filed by architecture-planner-u24. The filing rides a later implementation PR (#715 6697748243).
 
 ## Test Summary
-Doc only.
+Docs only; no behaviour changed. Checks run:
+- `validate_frontmatter.py` passes on the ADR and the three stored artifacts;
+- `done_checker_static.py` passes;
+- the registry and doc tool tests are green after `make docs-registry`.
+lead-planner re-verified every code citation at `main` 1fb40ac76 (stored investigation.md).
 
 ## Files Changed
-None yet.
+- docs/architecture/next_generation_engine_adr.md (moved from docs/plans/architecture/next_generation_engine_adr_draft.md; Accepted)
+- docs/architecture/system_overview.md (direction paragraph)
+- docs/architecture/performance_optimization_decisions.md (C-10 evidence-route pointer)
+- agent-working/stored_artifacts/TCK-20261109-NEXT-GENERATION-ENGINE-ADR/ (plan, investigation, test_plan)
 
 ## Completion Summary
-Open.
+Done 2026-11-09. Acceptance criteria:
+- AC1: the ADR records points 1-8 (#715 6735575831) and answers all 18 clarifications with a rule, a Level A argument and a G/S/T
+  class.
+- AC2: it keeps every decision it does not change (one writer, one process, C-10, C-14, PERF-D1/D2) and names the owners of the
+  changes it implies.
+- AC3: the owner accepted it, #715 6742854335.
+
+Reviewed by lead-planner (R1-R6), revised by architecture-planner-u24 at 3299c3180, adopted by lead-planner. Left open:
+- stage 0 needs a perf-pause exemption;
+- the world farm's platform seat (ubuntu or u24) is not staffed;
+- the companion distributed-workers ADR is not accepted, and its review waits for the owner's design §10 choices.

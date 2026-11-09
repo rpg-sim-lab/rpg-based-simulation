@@ -6,27 +6,23 @@ audience: agent
 tags: [architecture, engine, determinism, planning]
 ---
 
-# ADR (DRAFT): the kernel/logic phase contract as the engine's direction
+# ADR: the kernel/logic phase contract as the engine's direction
 
-**Authored as DRAFT for lead-planner's review and adoption.** Authorship and the decision stay with lead-planner. This text is a
-proposal, not a recorded decision.
-- The owner had it drafted now (#715 6735920310, "Draft both ADRs now (Recommended)") while the ubuntu seat is away.
-- Written by architecture-planner-u24 for `TCK-20261109-NEXT-GENERATION-ENGINE-ADR`, child 0 of
-  `TCK-20261109-EPIC-NEXT-GENERATION-ENGINE`.
-- Nothing is implemented.
-- `system_overview.md`, `kernel_concurrency_design_philosophy.md` and the `docs/engine` contracts are in ubuntu's docs batch and are
-  **not edited** here. "Proposed amended text" quotes what would change.
+**Accepted by the owner on 2026-11-09 (#715 6742854335), after lead-planner's review.**
+- Drafted by architecture-planner-u24 for `TCK-20261109-NEXT-GENERATION-ENGINE-ADR`, child 0 of
+  `TCK-20261109-EPIC-NEXT-GENERATION-ENGINE`, on the owner's request (#715 6735920310). Decided by lead-planner.
+- Nothing is implemented. This ADR records a direction; until a stage lands, the serial fold in `pipeline.py` is the only executor.
+- The investigation is `docs/plans/architecture/next_generation_engine_feasibility_review.md`.
 
-**Companion:** the distributed-workers ADR amendment draft (`docs/plans/architecture/distributed_workers_adr_amendment_draft.md`, on
-branch `architecture-distributed-workers-epic`).
-- Both touch the "one process" decision. **This ADR proposes no edit to the `system_overview.md` bullet**: its serial and parallel
-  executors stay in-process. The bullet's edit, with its exception sentence, belongs to the companion ADR alone (ubuntu review R1:
-  split).
-- They are separate ADRs because the tracks and gates differ: an experiment, and a direction. Ubuntu's review keeps them separate (R1).
+**Companion:** the distributed-workers ADR amendment (`TCK-20261109-DISTRIBUTED-WORKERS-ADR-AMENDMENT`), a separate decision that is
+not yet accepted.
+- Both touch the "one process" decision. **This ADR makes no edit to the `system_overview.md` bullet**: its serial and parallel
+  executors stay in-process. The bullet's edit, with its exception sentence, belongs to the companion ADR alone.
+- They are separate ADRs because the tracks and gates differ: an experiment, and a direction.
 
 ## Status
 
-DRAFT. Proposed by architecture-planner-u24, 2026-11-09. To be decided by lead-planner, then accepted by the owner.
+Accepted, 2026-11-09 (#715 6742854335). Proposed by architecture-planner-u24; decided by lead-planner; accepted by the owner.
 
 ## Context
 
@@ -109,22 +105,22 @@ The detail is child 4's.
 | 17 | Task identity scope | task id = (run id, replay session or attempt, tick, step, unit). Dedup, retry and late-result rejection match within the same run and attempt only, so a result from another run or an earlier replay is rejected | ids cannot collide across concurrent worlds or replays | G |
 | 18 | Independent determinism evidence | the proof matrix varies `PYTHONHASHSEED` (several values; the measurement harnesses pin 0 today; reuse the subprocess pattern of `tests/unit/engine/test_set_order_follows_no_hash_seed.py`, `tests/unit/domains/faction/test_squad_group_id_hashseed.py` and `tests/unit/domains/perception/test_filter_ids_hashseed.py`), arrival order (permuted), worker counts (1, 2 and 4), and failures (exceptions, lost or late units), with a full-state compare. A DET-PORT-1 row counts only if it passes all of these | — | T |
 
-## Proposed amended text (not applied; for lead-planner to place)
+## Text applied to other documents
 
 **`docs/architecture/system_overview.md`, first bullet of "What is deliberately not distributed":** unchanged by this ADR. Any edit
 to it belongs to the distributed-workers ADR amendment alone.
 
-**A new paragraph after that list** (this ADR):
+**A new paragraph after that list** (applied with this ADR):
 
-> **Direction: execution kernels become swappable behind a phase contract** (ADR, #715 6735575831). RPG logic will declare what
-> each step reads and writes and return typed deltas, and the kernel will own order, merge and commit. Until a stage lands, the
-> serial fold in `pipeline.py` is the only executor. Any other executor must give identical results, and may run Resolution in
-> parallel only after the Gate B evaluation (C-10, PERF-M6-T05).
+> **Direction: execution kernels become swappable behind a phase contract** (ADR, #715 6735575831; `next_generation_engine_adr.md`). RPG
+> logic will declare what each step reads and writes and return typed deltas, and the kernel will own order, merge and commit. Until a
+> stage lands, the serial fold in `pipeline.py` is the only executor. Any other executor must give identical results, and may run
+> Resolution in parallel only after the Gate B evaluation (C-10, PERF-M6-T05).
 
 **`docs/architecture/kernel_concurrency_design_philosophy.md`, Part 2:** unchanged by this ADR. The sentence "Only COLLECTION runs
 work in parallel" stays true until a Gate B decision. If one is made, that decision amends this sentence.
 
-**`docs/architecture/performance_optimization_decisions.md`, C-10:** unchanged. Add a pointer: "Evidence route for the T05 evaluation:
+**`docs/architecture/performance_optimization_decisions.md`, C-10:** unchanged. A pointer is added after the decision table: "Evidence route for the T05 evaluation:
 next-generation engine ADR, Decision 7."
 
 ## Consequences
@@ -152,7 +148,7 @@ The current engine stays the reference and stays selected throughout.
 
 ## Related
 
-- `TCK-20261109-NEXT-GENERATION-ENGINE-ADR` (the ticket this drafts; its scope holds the clarification sources and the cross-check
+- `TCK-20261109-NEXT-GENERATION-ENGINE-ADR` (the ticket that records this ADR; its scope holds the clarification sources and the cross-check
   table)
 - `docs/plans/architecture/next_generation_engine_feasibility_review.md`
 - `docs/architecture/performance_optimization_decisions.md` (C-10, C-14, PERF-D1, PERF-D2)

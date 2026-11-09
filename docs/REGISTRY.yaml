@@ -5121,6 +5121,18 @@
   - delivery
   - documentation
 - type: doc
+  path: docs/architecture/next_generation_engine_adr.md
+  title: 'ADR: the kernel/logic phase contract as the engine''s direction'
+  status: active
+  layer: architecture
+  authority: P2
+  audience: agent
+  tags:
+  - architecture
+  - engine
+  - determinism
+  - planning
+- type: doc
   path: docs/architecture/performance_optimization_decisions.md
   title: Performance Optimization Decisions
   status: active
@@ -7989,6 +8001,23 @@
   - content
   last_verified: '2026-10-09'
 - type: ticket
+  path: agent-working/tickets/done/TCK-20261109-NEXT-GENERATION-ENGINE-ADR.md
+  ticket_id: TCK-20261109-NEXT-GENERATION-ENGINE-ADR
+  title: 'ADR: the kernel/logic phase contract as the engine''s direction, with one
+    writer kept, Level A by default and trunk-additive delivery.'
+  tier: standard
+  ticket_type: feature
+  date: '2026-11-09'
+  related_code_areas:
+  - src/engine/pipeline.py
+  - src/engine/kernel.py
+  artifact_files: []
+  tags:
+  - architecture
+  - engine
+  - determinism
+  - planning
+- type: ticket
   path: agent-working/tickets/done/TCK-20261109-README-NAMES-A-CHECKPOINT-SEED-DEFECT-THAT-IS-FIXED.md
   ticket_id: TCK-20261109-README-NAMES-A-CHECKPOINT-SEED-DEFECT-THAT-IS-FIXED
   title: 'The README still lists the restored-checkpoint seed-0 defect as open, but
@@ -8221,23 +8250,6 @@
   - architecture
   - engine
   - determinism
-- type: ticket
-  path: agent-working/tickets/todos/next-generation-engine/TCK-20261109-NEXT-GENERATION-ENGINE-ADR.md
-  ticket_id: TCK-20261109-NEXT-GENERATION-ENGINE-ADR
-  title: 'ADR: the kernel/logic phase contract as the engine''s direction, with one
-    writer kept, Level A by default and trunk-additive delivery.'
-  tier: standard
-  ticket_type: feature
-  date: '2026-11-09'
-  related_code_areas:
-  - src/engine/pipeline.py
-  - src/engine/kernel.py
-  artifact_files: []
-  tags:
-  - architecture
-  - engine
-  - determinism
-  - planning
 - type: ticket
   path: agent-working/tickets/todos/next-generation-engine/TCK-20261109-NEXT-GENERATION-ENGINE-CONTRACT-SPEC.md
   ticket_id: TCK-20261109-NEXT-GENERATION-ENGINE-CONTRACT-SPEC
