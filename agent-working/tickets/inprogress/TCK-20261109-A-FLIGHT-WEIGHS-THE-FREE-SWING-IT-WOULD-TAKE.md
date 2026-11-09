@@ -31,7 +31,7 @@ A fighter in melee does not flee when the free swing it has felt would kill it (
 
 ## Scope
 1. Field and carrier: `CombatUpdate.hit_damage_set`, `CombatComponent.last_hit_damage`, digest scheme `flat-sha256-v4`, shared `is_evasive_flight`.
-2. The guard `_flight_weighs_free_swing` at every FLIGHT_REASONS emission site (later commits).
+2. The guard `flight_weighs_free_swing` at every FLIGHT_REASONS emission site (later commits).
 3. Docs: Bible 02 §7, CONFLICT-04 corollary, divergence 2.202, combat_movement parity entry.
 
 ## Out of Scope
