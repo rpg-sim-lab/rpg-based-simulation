@@ -116,6 +116,14 @@ def test_row1_entity_objective_does_not_regroup_on_cadence():
     assert _run(entity, DUE_CADENCE) is None
 
 
+def test_row1_current_behaviour_entity_objective_off_cadence_regroups_home():
+    # DEFECT_A: the fast path sends a loaded entity with an entity-typed objective home, off the pursuit. Pinned as it is,
+    # so a change to a different wrong value is not hidden behind the strict xfail in the differential. A's PR changes THIS
+    # assert (to "no walk decision") as well as removing the xfail.
+    assert DEFECT_A
+    assert _run(_entity(objective=_objective(target_entity_id=2)), OFF_CADENCE) == REGROUP_HOME
+
+
 def test_row1_loaded_entity_with_no_objective_regroups_home_off_cadence():
     assert _run(_entity(), OFF_CADENCE) == REGROUP_HOME
 
