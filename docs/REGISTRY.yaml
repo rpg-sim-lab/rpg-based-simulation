@@ -7976,6 +7976,22 @@
   - content
   last_verified: '2026-10-09'
 - type: ticket
+  path: agent-working/tickets/done/TCK-20261109-FUSED-STRATEGIC-PASS-FAST-PATH-IS-PINNED-BRANCH-BY-BRANCH-AND-AGAINST-THE-SLOW-PATH.md
+  ticket_id: TCK-20261109-FUSED-STRATEGIC-PASS-FAST-PATH-IS-PINNED-BRANCH-BY-BRANCH-AND-AGAINST-THE-SLOW-PATH
+  title: fused_strategic_pass's off-cadence fast path is pinned branch by branch (characterisation),
+    and a fast-against-slow differential on the same entity state lists every known
+    disagreement as a row
+  tier: standard
+  ticket_type: chore
+  date: '2026-11-09'
+  related_code_areas:
+  - src/systems/strategic_systems/intelligence.py (fused_strategic_pass)
+  - tests/unit/strategic/
+  artifact_files: []
+  tags:
+  - testing
+  - regression
+- type: ticket
   path: agent-working/tickets/done/TCK-20261109-README-NAMES-A-CHECKPOINT-SEED-DEFECT-THAT-IS-FIXED.md
   ticket_id: TCK-20261109-README-NAMES-A-CHECKPOINT-SEED-DEFECT-THAT-IS-FIXED
   title: 'The README still lists the restored-checkpoint seed-0 defect as open, but
@@ -7999,22 +8015,6 @@
   - website/package-lock.json
   artifact_files: []
   tags: []
-- type: ticket
-  path: agent-working/tickets/inprogress/TCK-20261109-FUSED-STRATEGIC-PASS-FAST-PATH-IS-PINNED-BRANCH-BY-BRANCH-AND-AGAINST-THE-SLOW-PATH.md
-  ticket_id: TCK-20261109-FUSED-STRATEGIC-PASS-FAST-PATH-IS-PINNED-BRANCH-BY-BRANCH-AND-AGAINST-THE-SLOW-PATH
-  title: fused_strategic_pass's off-cadence fast path is pinned branch by branch (characterisation),
-    and a fast-against-slow differential on the same entity state lists every known
-    disagreement as a row
-  tier: standard
-  ticket_type: chore
-  date: '2026-11-09'
-  related_code_areas:
-  - src/systems/strategic_systems/intelligence.py (fused_strategic_pass)
-  - tests/unit/strategic/
-  artifact_files: []
-  tags:
-  - testing
-  - regression
 - type: ticket
   path: agent-working/tickets/todos/TCK-20261109-A-COMBAT-RETREAT-PROJECT-WALKS-THE-SUBJECT-AGAINST-THE-HELD-FLIGHT-RULE.md
   ticket_id: TCK-20261109-A-COMBAT-RETREAT-PROJECT-WALKS-THE-SUBJECT-AGAINST-THE-HELD-FLIGHT-RULE
