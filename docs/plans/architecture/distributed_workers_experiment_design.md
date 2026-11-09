@@ -25,8 +25,9 @@ An **opt-in experiment** that runs the Collection phase's worker packets in a se
 Resolution, Cleanup, Advancement and Persistence stay in the engine process, and the engine stays the **one writer** that validates,
 sorts and applies every result.
 
-It is **not** a speed-up. Collection was 6 to 26 % of a tick (Amdahl ceiling 1.06 to 1.35x, `docs/performance/tick_cost_growth.md`),
-and each tick adds a network round trip and serialization of large world views. A result slower than sequential is a valid outcome.
+It is **not** a speed-up. Collection was 6 to 26 % of a tick, so the Amdahl ceiling is 1.06 to 1.35x. These are **PROVISIONAL
+shares**: py-spy on one loaded 6-vCPU VM, one run per profile, not a quiet-host measurement (`docs/performance/tick_cost_growth.md`
+§2; `engine_execution_modes_proposal.md` §2). Each tick also adds a network round trip and the serialization of large world views. A result slower than sequential is a valid outcome.
 It is **not** an API/engine split, an engine replica, a multi-host deploy or a broker change.
 
 ### 1a. Today versus the experiment mode, in diagrams
@@ -336,7 +337,7 @@ multi-service transaction); Canary, Shadow / Traffic replay, Synthetic monitorin
 
 | # | Child | Owner | Cost (measurement included) | Leaves out |
 |---|---|---|---|---|
-| 2 | packet-cost measurement | perf-planner | **cheap form:** per-chunk pickled size and encode/decode time on the 3 gate worlds at seed 42, in-process (minutes). **Full form** only if inconclusive: loopback round trip through one worker container (about an hour) | multi-host; contention; tail latency |
+| 2 | packet-cost measurement | perf-planner | **cheap form:** per-chunk pickled size and encode/decode time on the 3 gate worlds at seed 42, in-process (minutes). It also records Collection's internal split (packet build, encode, compute per chunk, decode, validate), marking any item it cannot measure as unknown (§12). **Full form** only if inconclusive: loopback round trip through one worker container (about an hour) | multi-host; contention; tail latency |
 | 3 | `RemoteWorkerManager`, transport, rule of §6, the tests of §8 | rpg-planner | code + unit and integration tests; the extra_slow arm adds about 4 x 2000-tick runs to the slow lane | the container (child 4); API reach (§5) |
 | 4 | `engine-worker` entry point and the `distributed` profile | platform-planner | image entry point and profile; one containerized smoke run | k8s/Helm; scaling beyond one host |
 | 5 | `worker_contract.md` §5 and `infrastructure_overview.md` (the mode; the `ai_worker` wording at `:159`) | docs/engine owner via lead-planner | doc only | everything else |
@@ -364,3 +365,55 @@ child 0 and ubuntu's docs batch. Every child waits for the owner's review.
 - **Packet-field drift** across a third consumer: covered by keeping one packet builder (§3) and the parity test.
 - **Pickle trust boundary** (§4): unsafe deserialization, a remote-code-execution surface if the channel is reached; internal
   network and `authkey` only, security-tagged review on child 3, and the typed-encoding alternative in §10 choice 4.
+
+## 12. External review response (2026-11-09)
+
+The owner shared an external AI review (untracked, `tmp/distributed_workers_experiment_design_review.md`). It asks for answers, not
+a wider scope, and says itself that repository evidence wins. Each answer below is labelled **measured** (PROVISIONAL shares, see §1),
+**design** (read in the code) or **unknown**.
+
+**Pattern.** Measured or design, as marked. The design is a bulk-synchronous fork-join, written as coordinator–worker: one barrier
+per tick, pure workers and one writer. This is design: `kernel_concurrency_design_philosophy.md` Part 2, and the sort at
+`kernel.py:580`. The coordinator's validate and sort are not the bottleneck (measured). "Everything else" outside the strategic
+pass, sorting included, is 0.6 to 8 % of `resolution_overhead` (`tick_cost_growth.md`, H5 attribution). Ray, Dask, Spark and
+Celery are rejected as references to adopt. Celery is asynchronous, and Ray, Dask and Spark schedule dynamically and add a
+runtime. Each would bring a dependency and a scheduler into a per-tick synchronous call whose outcome must not depend on placement.
+The actor model does not fit, because workers hold no state between ticks. MapReduce fits only loosely: each worker reads the
+whole shared world view, which is the serialization cost §4 addresses.
+
+**Which phases dominate (measured, PROVISIONAL).** The large costs are serial Resolution work, not Collection. In the synthetic
+scenarios `combat_engagement` takes 23 to 71 % and `cooperation` up to 59 %. `fused_strategic_pass` takes 92 to 99 % of
+`resolution_overhead`, which is 12 to 33 % of the tick. Collection takes 14 to 26 % (`tick_cost_growth.md` §2 and H5). Resolution
+is one chained fold over a single `StateUpdate` (`pipeline.py:135-438`), and the single-writer rule keeps it serial. A full per-phase
+ms table on a quiet host does not exist. Collection's internal split also does not exist: packet build, encode, transfer, compute,
+wait and validate are all **unknown**. That split is child 2's job, and child 2 should record each item the review lists, marking
+any it cannot measure as unknown.
+
+**Bottleneck as workers grow.** Prediction: serialization and transfer of the shared world views first, then the coordinator's
+serial phases (Amdahl). One measured point supports the direction. A 4-thread pool made Collection 1.6 to 2.1x **slower** than 0
+workers, and the GIL-plus-dispatch cause is inferred (`engine_execution_modes_proposal.md` §2). Memory per worker process is
+unknown. The engine working set is about 101 to 130 MB (`tick_cost_growth.md` §5), and each worker decodes its own copy of the
+chunk's views. Load imbalance between chunks is unknown, and child 2 can record each chunk's compute time. Removing the serial
+waste (H1, H2) raises the parallel ceiling more than extra workers would, and that work is already on rpg's queue.
+
+**K containers × N processes.** Not adopted, and recorded as a possible later follow-up only.
+- On one host, K containers × N processes are K·N processes on the same cores. They give no capacity that 1 × (K·N) lacks.
+- Multi-host is out of scope ("deliberately not distributed", and child 0 keeps that).
+- Determinism would hold, because chunk-to-endpoint assignment cannot change the outcome: results are sorted before apply, and §6
+  recomputes any lost chunk locally.
+- What K adds is routing, a timeout and in-flight bound for each endpoint, a build check for each endpoint, and K-way failure cases
+  in the container lane.
+- `RemoteWorkerManager` could take a list of addresses later without changing its contract. Static chunking already exists, since
+  `worker_manager.py:138` sets `chunk_size = len(packets) // max_workers`. Dynamic balancing has nothing to fix until child 2
+  shows imbalance.
+
+The 1 × N experiment already answers the question the mode asks: is a remote Collection equivalent, and what does crossing the
+boundary cost? K × N is worth an experiment only if multi-host is ever reopened, by a new ADR.
+
+**Comparative experiment.** Child 2's cheap form plus the existing equivalence tests already cover three rows: sequential, local
+concurrent, and 1 × N. A K × N row is cut by the depth rule (#715 6731764470), because its gain over 1 × (K·N) on one host is nil.
+
+**Direction.** Keep this a bounded experiment with the current design. Do not turn it into a reusable backend, and do not defer it.
+The review justifies two changes, both made here:
+- §1 now labels the 6 to 26 % figures as PROVISIONAL shares;
+- child 2 records Collection's internal split, with unknowns marked.
