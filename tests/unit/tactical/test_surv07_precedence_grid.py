@@ -305,12 +305,12 @@ def test_reading_3_past_the_consequence_line_a_badly_hurt_subject_with_nothing_a
     assert payload.get("action") == "EAT" and payload.get("target_id") == INN_ID, f"got {payload}"
 
 
-def test_reading_3_below_the_consequence_line_the_emotional_panic_branch_holds_on_its_own_tile():
-    """Disclosed gap (row 88 (5); TCK-20261028-LOW-HP-RETREAT-BRANCH-HOLDS-A-STARVING-SUBJECT-IN-PLACE-BESIDE-A-NON-ACTING-HOSTILE): hp 8 of 85, hunger 80 (pressing, below
-    the line): the panic branch runs before need_first and, with no destination, holds the subject on its own tile."""
-    state, hero = _hurt_hero(PRESSING_HUNGER, 8)
-    payload = _payload(state, hero)
-    assert payload.get("reason") == "PANIC_RETREAT" and payload.get("target_position") == hero.navigation.position, f"got {payload}"
+def test_reading_3_below_the_consequence_line_a_panic_with_nowhere_to_go_does_not_freeze_against_a_pressing_need():
+    """Row 88 (5) and the closed gap (TCK-20261028-LOW-HP-RETREAT-BRANCH-HOLDS-A-STARVING-SUBJECT-IN-PLACE-BESIDE-A-NON-ACTING-HOSTILE, rpg-designer scope 2(c)): hp 8 of 85,
+    hunger 80 (pressing, below the line), a hostile not acting on it, no destination: the panic does not freeze, the tick takes the need path, EAT at the inn. A panic WITH a
+    destination still flees (test_low_hp_retreat_gate.py)."""
+    payload = _payload(*_hurt_hero(PRESSING_HUNGER, 8))
+    assert payload.get("action") == "EAT" and payload.get("target_id") == INN_ID, f"got {payload}"
 
 
 @pytest.mark.parametrize("hp", [20, 30])

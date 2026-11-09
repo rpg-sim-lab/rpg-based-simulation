@@ -81,3 +81,36 @@ def test_the_acceptance_scene_a_low_hp_subject_beside_a_non_acting_hostile_steps
     update = _decide(monkeypatch, PRESSING_HUNGER, ADJACENT, None)
     payload = _payload(update)
     assert payload.get("action") == "EAT" and payload.get("target_id") == INN_ID and payload.get("reason") != "PANIC_RETREAT", f"got {payload}"
+
+
+# ---- scope 2(c): the emotional panic freeze with no destination, below the consequence line ---------------------------------------------------------------
+
+def _prey_scene(monkeypatch, hunger=80.0, hp=8, prey_dx=1.0):
+    """A person at hp 8/85 with a hunger project, a small plant-eater (prey) beside it, and no destination for any retreat."""
+    from src.engine.appraisal import Relation
+    from src.engine.hostility import relation
+    from tests.helpers.scenario import compile_world
+    from tests.unit.tactical.test_surv07_hunt_project_grid import _at, _species, _with_project
+    from src.core.strategic import ObjectiveKind
+
+    monkeypatch.setattr(tactical_module, "retreat_destination", lambda *a, **k: None)
+    # The appraisal does not count a plant-eater as a threat to a person, so the panic would never start; stage the prey as a perceived threat as well (the case the guard is for).
+    monkeypatch.setattr(tactical_module, "perceived_threats", lambda entity, neighbors: [n for n in neighbors if n.combat.alive])
+    world = compile_world("frontier_living_world", 42)
+    base, herd = _species(world, "human"), _species(world, "small_plant_eater")
+    person = replace(_at(base, 30.0, 30.0), biological=replace(base.biological, hunger=hunger, sleep_debt=0.0),
+                     combat=replace(base.combat, hp=hp, max_hp=85))
+    prey = _at(herd, 30.0 + prey_dx, 30.0)
+    assert relation(person, prey) is Relation.PREDATION, "the fixture must make the herd the person's prey"
+    person = _with_project(person, "hunger", ObjectiveKind.REACH_LOCATION, prey)
+    state = replace(world, entities={person.id: person, prey.id: prey}, tick=world.tick + 1)
+    return TacticalDecisionSystem.evaluate_entity_intent(state, person), person
+
+
+def test_a_panic_freeze_with_prey_in_sight_holds_and_does_not_attack_the_prey(monkeypatch):
+    """The guard on the yield: with prey in sight `need_first` is False (the hunt exemption), so a yielded freeze would fall through to engagement and an hp 8/85 subject would attack a
+    non-acting prey animal. The freeze holds: PANIC_RETREAT on its own tile, not ATTACK."""
+    update, person = _prey_scene(monkeypatch)
+    payload = _payload(update)
+    assert payload.get("reason") == "PANIC_RETREAT" and tuple(payload["target_position"]) == person.navigation.position, f"got {payload}"
+    assert payload.get("action") != "ATTACK"
