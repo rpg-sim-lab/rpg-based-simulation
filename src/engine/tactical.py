@@ -149,6 +149,23 @@ def _prey_in_sight(entity: "EntityState", hostiles: List["EntityState"]) -> List
     return [h for h in hostiles if relation(entity, h) is Relation.PREDATION]
 
 
+def _need_path_first(entity: "EntityState", hostiles: List["EntityState"], tick: int) -> Tuple[bool, List["EntityState"]]:
+    """SURV-07 LAW P: whether the need path runs ahead of everything that reacts to a hostile in sight, and the prey that makes the hunt the need's way.
+
+    A need past its escalation onset gives way only to a hostile ACTING on the subject (`need_yields`). The hunt exemption (designer's ruling on LAW P): with HUNGER pressing and
+    prey in sight, the fight with the prey is the need's way, unless the subject has an active need project whose objective names no living target (that walk stays on the
+    need path). Exempt: the need path does not run first and the target is taken from the prey only. The one place this is computed: the panic freeze and the main order read it."""
+    need_first = bool(hostiles) and entity_need_is_pressing(entity) and not need_yields(entity, hostiles, tick)
+    hunt_prey = _prey_in_sight(entity, hostiles) if need_first and entity_hunger_is_pressing(entity) and not _need_way_is_not_a_hunt(entity) else []
+    return need_first and not hunt_prey, hunt_prey
+
+
+def _panic_yields_to_need(entity: "EntityState", neighbors: List["EntityState"], tick: int) -> bool:
+    """A panic with no destination does not freeze against a pressing need while nothing acts on the subject and no prey is in sight (rpg-designer, scope 2(c)): the same
+    `need_first` the main order computes, over the same tactical hostiles, so the yielded tick takes the need path and never falls through to engagement."""
+    return _need_path_first(entity, classify_neighbours(entity, neighbors, source_identity(entity)).hostiles, tick)[0]
+
+
 def _suspend_project_for_threat(entity: "EntityState", hostiles: List["EntityState"]) -> Optional[StrategicUpdate]:
     """If hostiles are present, SUSPEND the entity's current project if it is active (Pillar 5.1 strategic persistence)."""
     if not (hostiles and entity.strategic.current_project_id):
@@ -249,7 +266,7 @@ class TacticalDecisionSystem:
         # A flight with no destination is not flight (designer ruling, V3): a panic that resolves to the subject's own tile is not taken, and the tick
         # falls through the existing order (in-place survival, then the arrival at a building). A real tactical hostile keeps the old freeze, so the
         # fall-through never turns a held panic into a fight the subject would not otherwise start.
-        if emotion.is_fleeing and _panic_holds(entity, threats, state.tick) and (panic_destination is not None or _has_tactical_hostiles(entity, neighbors)):  # no threat in sight, no flight: low HP, dread and grudge feed the panic but never flee alone (divergence 2.114)
+        if emotion.is_fleeing and _panic_holds(entity, threats, state.tick) and (panic_destination is not None or (_has_tactical_hostiles(entity, neighbors) and not _panic_yields_to_need(entity, neighbors, state.tick))):  # no threat in sight, no flight: low HP, dread and grudge feed the panic but never flee alone (divergence 2.114)
              # PANIC: Move away from the perceived threats, inside the current region
              # (MOV-01 / LOC-01); hold position when no valid destination exists (MOV-03).
              retreat_to = _destination_or_hold(entity, panic_destination)
@@ -281,13 +298,8 @@ class TacticalDecisionSystem:
 
         # SURV-07 LAW P (TCK-20261031-AN-ENGAGEMENT-OVERRIDES-A-PRESSING-NEED): a need past its escalation onset gives way only to a hostile ACTING on the subject
         # (`need_yields`). With hostiles in sight and none acting, the need path runs first: before the presence test below, role obligation, cohesion and target
-        # selection (so a follower too takes no part in the group's target). Flight keeps AGENCY-07's `present_threat_to`.
-        need_first = bool(hostiles) and entity_need_is_pressing(entity) and not need_yields(entity, hostiles, state.tick)
-        # The hunt exemption (designer's ruling on LAW P): with HUNGER pressing and prey in sight, the fight with the prey is the need's way, unless the subject has an
-        # active need project whose objective names no living target (that walk stays on need_first). Exempt: skip need_first and take the target from the prey only.
-        hunt_prey = _prey_in_sight(entity, hostiles) if need_first and entity_hunger_is_pressing(entity) and not _need_way_is_not_a_hunt(entity) else []
-        if hunt_prey:
-            need_first = False
+        # selection (so a follower too takes no part in the group's target). Flight keeps AGENCY-07's `present_threat_to`. The hunt exemption is inside `_need_path_first`.
+        need_first, hunt_prey = _need_path_first(entity, hostiles, state.tick)
 
         # 4. Strategic Persistence (Pillar 5.1): a need project the subject is walking to is not suspended for a hostile that is not acting on it
         strat_up = None if (need_first and _serves_a_need(entity)) or (hunt_prey and _hunt_project_names_prey(entity, hunt_prey)) else _suspend_project_for_threat(entity, hostiles)
@@ -504,10 +516,16 @@ class TacticalDecisionSystem:
                          )
                      )
              
-             # Pure Retreat if HP is very low and engaged
+             # Pure retreat if hp is very low and engaged. Below 15% hp the WOUNDED term of `present_threat_terms` always holds, so every perceived hostile is a present
+             # threat here and the flight stands as before; the pressing-need rows never reach this line (`need_first` returned above, law P). With nowhere to go the
+             # retreat is not taken as a move: no PANIC_RETREAT task, and the tick does not become a fight either.
              if hp_percent < 0.15:
-                  # Away from all hostiles, inside the current region; hold when none is valid.
-                  retreat_pos = _destination_or_hold(entity, retreat_destination(state, entity, hostiles))
+                  retreat_pos = retreat_destination(state, entity, hostiles)
+                  if retreat_pos is None:
+                      # Nowhere to go: hold on the subject's own tile in RETREAT mode with no task (so no PANIC_RETREAT). An idle update would leave a stored target in place for the
+                      # movement phase to walk; RETREAT mode on a pinned tile is inert (routing skips position == target). Not HOLD mode: it changes swap eligibility at movement.py.
+                      return EntityUpdate(entity_id=entity.id, strategic=strat_up,
+                                          navigation=NavigationUpdate(target_set=entity.navigation.position, movement_mode_set=MovementMode.RETREAT))
                   return EntityUpdate(
                       entity_id=entity.id,
                       navigation=NavigationUpdate(target_set=retreat_pos, movement_mode_set=MovementMode.RETREAT),
