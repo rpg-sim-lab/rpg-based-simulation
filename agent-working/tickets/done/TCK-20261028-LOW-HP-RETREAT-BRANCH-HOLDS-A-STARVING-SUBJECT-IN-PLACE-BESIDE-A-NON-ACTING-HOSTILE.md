@@ -1,10 +1,10 @@
 ---
-status: active
+status: historical
 layer: strategy
 authority: P1
 audience: agent
 ticket_id: TCK-20261028-LOW-HP-RETREAT-BRANCH-HOLDS-A-STARVING-SUBJECT-IN-PLACE-BESIDE-A-NON-ACTING-HOSTILE
-phase: open
+phase: done
 date: 2026-10-28
 tags: []
 ---
@@ -15,7 +15,7 @@ tags: []
 A low-hp subject near a hostile that neither engages nor acts gets a no-op PANIC_RETREAT every 10th tick, and its step toward food one tile away is refused, so it starves (gate V3, frontier_living_world s43 merchant 38)
 
 ## Status
-OPEN
+DONE
 
 ## Tier
 standard
@@ -79,9 +79,15 @@ Main gate run 40653115297 (2c4869d61) has an unowned V3 at frontier_living_world
 2026-11-03 named case (rpg-designer), crowded s42 base 65d43dfa9, pinned, e30 leader: a starving body beside a serving inn, held off by retreat with no acting hostile. rpg-planner-ubuntu's rows (out_e30pin/rows.jsonl, rows only, checked by no one else): all 9 present-not-acting retreats beside the inn are past the line, so they come from the hp-under-15% writer (tactical.py :531), not :216. Ticks t2050, 2060, 2110, 2120, 2170, 2196, 2198, 2200, 2202; hunger 100.0 on each; hp 1-5 of max hp 205-220. Support: from t2050 every direct `_panic_holds` call returned False, so :216 couldn't return, and the sampled t2100 returned :532. The 9 ticks' return lines weren't logged, so this is rpg-designer's rule plus that support, not a per-tick read. So this case is the second, ungated writer's cost. Hardening's max-hp growth raises the 15% line, so TCK-20261103-NEAR-DEATH-HARDENING-FIRES-WITH-NOTHING-HITTING-THE-SUBJECT bears on it too.
 - 2026-10-31 DESIGNER RULING (SURV-07 family, from the F3-base family table). THE ONE PRECEDENCE LAW P: at every decision site choosing between a need past its escalation onset and any other goal or act, the need wins unless acting_threat_to(subject) holds (memo row 88: a perceived hostile attacking or pursuing the subject, or one that hit it within the window). No owner row is needed. Whether to flee at all stays on present_threat_to (AGENCY-07); where flight is warranted but the hostile is not acting, a pressing need still wins. ONE shared predicate pair, both reads: need_is_pressing(subject) (need_pull ESCALATION_ONSET line) and need_yields(subject, state) = acting_threat_to. Every site calls them; none re-derives them. ONE PRECEDENCE GRID test: {need pressing y/n} x {no hostile / perceived only / present-not-acting / acting} x site -> winner; each site's ticket adds its rows. Provisional order until harm-per-tag is counted: ENGAGEMENT -> LOW-HP-RETREAT -> TOWN-RETURN -> ESCALATED-SWITCH -> FLEE-LINE.
 - THIS SITE (tactical.py:536-544): flight on present_threat_to only (consistent with retention ruling A); with no present threat there is no tactical retreat and the pressing need runs. Uses the predicates landed by ENGAGEMENT-OVERRIDES. F3 base: 4963 ticks / 40 subjects / longest 270 (crowded 4694).
+2026-11-09 close (rpg-implementer). Scope 2(a): the low-hp pure retreat (hp < 15%) with no destination holds the subject's own tile in RETREAT mode with no task, so no PANIC_RETREAT (rpg-designer; not HOLD mode, which changes swap eligibility at movement.py). No present-threat gate was added: below 15% the WOUNDED term of `present_threat_terms` always holds, so the `present_threat_to` gate is a no-op at this site. Scope 2(c): the panic freeze with no destination yields to the need path only when the need is pressing, nothing acts on the subject, tactical hostiles are in sight and no prey is in sight; `_need_path_first` is the one computation. Disclosed gap: a starving subject under 15% hp with only prey in sight and nowhere to go holds; it neither hunts nor reaches food until the prey moves or the brain re-decides. Scope 1 (the refusal of e38's step to (31,40) at t2345): NOT traced, because e38 is alive at 5000t on the base and the fix in the paired fliving s43 cell. The (0,0) target flip is the COMBAT_RETREAT project's objective through intelligence.py:670 (a fixture artifact: the lodging fixture has no town; real worlds give (25,25)); base walks the same way; filed as TCK-20261109-A-COMBAT-RETREAT-PROJECT-WALKS-THE-SUBJECT-AGAINST-THE-HELD-FLIGHT-RULE (P2) and TCK-20261109-STATE-TOWN-CENTER-DEFAULT-IS-A-SENTINEL-A-RETREAT-CAN-AIM-AT (P3).
+
 ## Test Summary
+tests/unit/tactical/test_low_hp_retreat_gate.py (19 new) and the flipped reading-3 row in test_surv07_precedence_grid.py; the no-destination, destination, acting, prey and kernel rows each fail on the matching old behaviour (checked). Scoped suites pass. Nine pinned cells (evidence/).
 ## Files Changed
+src/engine/tactical.py; tests/unit/tactical/test_low_hp_retreat_gate.py; tests/unit/tactical/test_surv07_precedence_grid.py; docs: intentional_divergences.md (2.200, 2.157), 04_strategic_cognition.md, strategic_cognition.yaml (STRAT-299, STRAT-297); evidence under agent-working/stored_artifacts/TCK-20261028-LOW-HP-RETREAT-BRANCH-HOLDS-A-STARVING-SUBJECT-IN-PLACE-BESIDE-A-NON-ACTING-HOSTILE/; two new tickets (P2 held-flight conflict, P3 town_center sentinel).
 ## Completion Summary
+Measured (crowded_frontier s42-46, 5000t, paired against the recorder base): people deaths 169 -> 168; COMBAT 88->86, HAZARD 25->24, DEFEAT 55->57, STARVATION 1->1. DEFEAT is up in 3 of 5 seeds (s42, s43, s45, +1 each), down in s44 (-1), equal in s46. frontier_living_world s43 (a one-seed read): identical, end hash equal. (c) yield fired 40 of 111 evaluations in crowded and never ran in fliving s43; (a) branch reached 16 times, 2 with no destination. Prey plus panic: not counted. e30 (crowded s42) is alive at 5000t on the base and the fix: its known entry's case did not occur on main, and the fix did not remove it; the entry question goes to testing-planner via rpg-planner. e31 (crowded s45) starves at t2439 identically in both arms (UNTRIED_STEP, last meal t810): the fix did not reach it and its entry holds. e38 (fliving s43) is alive in both. No new unowned starvation. Timing NOT MEASURED (the perf pause).
+VERDICT (rpg-designer): NO TRIP. The Tier 1 DEFEAT floor is 6; DEFEAT 55->57 (+2, up in 3 of 5 seeds) is under it, so no DEFEAT trace is needed. (c) evaluated 111 times (crowded 5x5000): yielded 40, held 71; held cases not split by cause, so the prey guard is unit-covered (test_a_panic_freeze_with_prey_in_sight_holds_and_does_not_attack_the_prey: below the line, no destination, a pressing need, prey adjacent, the hunt exemption cancelling need_first; the freeze holds), not world-measured. (a) hp<0.15 reached 16 times; the hold (no retreat destination) fired 2 times (s42, s44). Gap: a starving subject under 15% hp with only prey in sight and nowhere to go holds; it neither hunts nor reaches food until the prey moves or the brain re-decides. Hot-loop timing NOT MEASURED. e30 is alive in both arms, so its known entry is stale (carried to testing-planner by rpg-planner; rpg_gate_known.yaml is not edited here).
 
 - **2026-11-01 evidence (F3 f3r, urban s44, subject 17; rpg-designer):** from t3250 to t3306 the subject halted in REGROUP at (43-45,23) with hostile 24 (faction 0) adjacent. Its hp fell 70 to 0, and it did not flee even at hp 16 (REGROUP/ENTITY_ACT). The designer ruled this death the pre-existing no-flee-at-low-hp gap (law P family), not F3. Trace: lane B n14/out/tr17.json.
 
