@@ -40,6 +40,8 @@ FIXTURE_DIGEST_V1_ON_MAIN = "13ed76f7fa7f7ba5fc324a20a1bb999295048507fb7630ec1f3
 FIXTURE_DIGEST_V2 = "41b03d22dc75548914f32c96aab57ab6d520842b818245d46c491cdcf7a382b7"
 # v3 (`flat-sha256-v3`) `get_hash` of `_carried_state()`: the v2 fixture plus non-empty values for the seven carried-state fields. It must never change without a new scheme version.
 FIXTURE_DIGEST_V3 = "37679334c2e549023f515e742db36c97d6d028d9f3778b85f6661a59625a619a"
+# v4 (`flat-sha256-v4`) `get_hash` of `_carried_state()`: v3 plus `CombatComponent.last_hit_damage` (None in the fixture). It must never change without a new scheme version.
+FIXTURE_DIGEST_V4 = "b7dd6509b1f0069ad3ed53ed1c15de6f40cd832562e47e4816dff7a8a359f8d2"
 V3_ADDED_KEYS = ("item_instances", "recent_world_events", "quest_registry", "factions", "clans", "information_providers")
 REMOVED_KEYS = ("periodic_due_ticks", "work_debt")
 
@@ -97,19 +99,33 @@ def _evolved_state(scenario: str, ticks: int = 8) -> AuthoritativeState:
 # 1. Byte-identity of the flat hash
 # ---------------------------------------------------------------------------
 
-def test_flat_hash_of_carried_fixture_is_pinned_under_v3():
-    assert PROOF_DIGEST_SCHEME == "flat-sha256-v3"
-    assert CanonicalStateHasher.get_hash(_carried_state()) == FIXTURE_DIGEST_V3
+def test_flat_hash_of_carried_fixture_is_pinned_under_v4():
+    assert PROOF_DIGEST_SCHEME == "flat-sha256-v4"
+    assert CanonicalStateHasher.get_hash(_carried_state()) == FIXTURE_DIGEST_V4
+
+
+def test_v4_is_v3_plus_the_last_felt_blow():
+    """Migration proof: drop `CombatComponent.last_hit_damage` and the v3 digest is reproduced exactly, so nothing else changed."""
+    assert _digest_of(_v3_form(_carried_state())) == FIXTURE_DIGEST_V3
+    assert CanonicalStateHasher.get_hash(_carried_state()) != FIXTURE_DIGEST_V3
 
 
 def _v2_form(state: AuthoritativeState) -> Dict[str, Any]:
-    """The v2 canonical data of a state: v3 data minus the six added keys and the entities' `last_hit_tick`."""
+    """The v2 canonical data of a state: v4 data minus the six added keys and the entities' `last_hit_tick` and `last_hit_damage`."""
     data = CanonicalStateHasher.to_canonical_data(state)
     assert set(V3_ADDED_KEYS) <= set(data)
     for key in V3_ADDED_KEYS:
         del data[key]
     for entity in data["entities"].values():
-        entity["combat"] = {k: v for k, v in entity["combat"].items() if k != "last_hit_tick"}
+        entity["combat"] = {k: v for k, v in entity["combat"].items() if k not in ("last_hit_tick", "last_hit_damage")}
+    return data
+
+
+def _v3_form(state: AuthoritativeState) -> Dict[str, Any]:
+    """The v3 canonical data of a state: v4 data minus the entities' `last_hit_damage`."""
+    data = CanonicalStateHasher.to_canonical_data(state)
+    for entity in data["entities"].values():
+        entity["combat"] = {k: v for k, v in entity["combat"].items() if k != "last_hit_damage"}
     return data
 
 
@@ -127,6 +143,9 @@ def test_v3_is_v2_plus_the_seven_carried_state_fields():
 
 def _vary(state: AuthoritativeState, field_name: str) -> AuthoritativeState:
     """The carried state with exactly one of the seven fields changed."""
+    if field_name == "last_hit_damage":
+        hero = state.entities[1]
+        return dataclasses.replace(state, entities={**state.entities, 1: dataclasses.replace(hero, combat=dataclasses.replace(hero.combat, last_hit_damage=9))})
     if field_name == "last_hit_tick":
         hero = state.entities[1]
         return dataclasses.replace(state, entities={**state.entities, 1: dataclasses.replace(hero, combat=dataclasses.replace(hero.combat, last_hit_tick=3))})
@@ -145,7 +164,7 @@ def _vary(state: AuthoritativeState, field_name: str) -> AuthoritativeState:
     raise AssertionError(field_name)
 
 
-@pytest.mark.parametrize("field_name", [*V3_ADDED_KEYS, "last_hit_tick"])
+@pytest.mark.parametrize("field_name", [*V3_ADDED_KEYS, "last_hit_tick", "last_hit_damage"])
 def test_each_carried_state_field_alone_changes_the_v3_digest(field_name: str):
     """Positive control: the digest sees a divergence in that one field (the seven fields were invisible under v2)."""
     base = _carried_state()
