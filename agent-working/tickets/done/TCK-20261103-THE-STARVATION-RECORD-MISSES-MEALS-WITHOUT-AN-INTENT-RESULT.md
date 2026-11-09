@@ -1,10 +1,10 @@
 ---
-status: active
+status: historical
 layer: observability
 authority: P1
 audience: agent
 ticket_id: TCK-20261103-THE-STARVATION-RECORD-MISSES-MEALS-WITHOUT-AN-INTENT-RESULT
-phase: open
+phase: done
 date: 2026-11-03
 tags: []
 ---
@@ -15,7 +15,7 @@ tags: []
 The starvation record misses meals that come without an accepted intent result, so V3's last_meal_tick and UNTRIED_STEP can be wrong
 
 ## Status
-OPEN
+DONE
 
 ## Tier
 standard
@@ -73,8 +73,22 @@ Until fixed, UNTRIED_STEP and last_meal_tick are caveated on every V3 record. Fa
 
 2026-11-07 interim condition, agreed by rpg-planner and the ubuntu side under the owner's cost rule (#715 6697776913): there is no recorder fix for now. Until this ticket lands, any V3 starvation in a combined or paired run gets a manual meal check from the trace rows before it counts, as e30's did. The gap stays named here. Applied in the ENG+churn combined run: s45/e53 (meal rows at t788, t838, t918 and t2308, none in its last 200 ticks; trace sha 69c90c9c…) and the urban traces. (Carried here from seat-notes commit 30f4ad06f on rpg-hit-wake by rpg-planner's ruling; the pinned-runner ticket hunk of that commit stays on rpg-hit-wake.)
 
+2026-11-09 close (rpg-implementer). The interim manual-check condition above ENDS WITH THIS FIX: a V3 starvation no longer needs a manual meal check for the meals the recorder now sees (all four writers below). SYNC RULE (rpg-planner's ruling): this ticket's text above was carried here from seat-notes commit 30f4ad06f on rpg-hit-wake. Whichever of the two branches lands second resolves the modify/delete conflict on this ticket by KEEPING THE DELETE (the done/ copy holds the text). The pinned-runner ticket hunk of 30f4ad06f stays on rpg-hit-wake only.
+
+Meal writers (every path that lowers hunger): carried_meal (core_actions.py:54, CARRIED_FOOD), the free meal in eat_update (:67, a direct update with no transfer, so no intent result), corpse_meal (:89, CORPSE_FOOD), the inn meal (building_services.py:80, TOWN_SERVICE). Nothing else lowers hunger; hunger_set has no writer. A hunger drop is a meal. Finding outside scope, filed as TCK-20261109-AN-INN-MEAL-DOES-NOT-STAMP-LAST-MEAL-TICK: the inn meal does not stamp the authoritative biological.last_meal_tick.
+
+Change: `StarvationRecorder._note_attempts` stamps the last meal and clears the trail on any hunger drop, escalated or not, with or without an intent result; attempts stay pressing-only; `_attempted_way` maps CORPSE_FOOD to SCAVENGE. Observability only: no state field, no behaviour change.
+
+Re-read of known entries (one cell, by the owner's depth rule #715 6731764470): crowded_frontier s45, base e755dc3d1 vs fix ba05f8c01 through the wrapper in evidence/. End hash 2209d096... equal in both arms and equal to lane C's arm_child base. e31: last_meal_tick None -> 810, ways attempted [] -> [], UNTRIED_STEP unchanged; its known-entry note holds. e37 is alive at 5000t on e755dc3d1 (no record); its entry (starved t2338 on 36d4fd78e) did not reproduce there. e30, e9 and e53 were NOT re-read: each is re-read with its own fix or the 2026-11-30 decision. rpg_gate_known.yaml is untouched (testing-planner owns it). Evidence is hash-equal on one cell plus the unit tests.
+
+Timing is NOT MEASURED (the perf pause, #715 6556861718). The recorder runs per entity update applied (hot-loop: maybe).
+
 ## Test Summary
+4 new tests in tests/unit/observability/test_starvation_death_record.py (a meal with no intent result; a meal below the escalated line; an attempt below the line does not count; a corpse meal is a SCAVENGE attempt and a meal); the meal and corpse tests fail on the old recorder. 33 passed with test_starvation_verdict.py and rpg_gate/test_v8_fires.py. No new real-kernel case. One pinned crowded_frontier s45 pair, hash-equal.
 
 ## Files Changed
+src/observability/starvation_record.py; tests/unit/observability/test_starvation_death_record.py; staged artifacts and evidence under agent-working/stored_artifacts/TCK-20261103-THE-STARVATION-RECORD-MISSES-MEALS-WITHOUT-AN-INTENT-RESULT/; new ticket TCK-20261109-AN-INN-MEAL-DOES-NOT-STAMP-LAST-MEAL-TICK; rpg-planner's milestone 1 filing (cb2a693eb) rides along.
 
 ## Completion Summary
+The starvation record counts every meal by its hunger drop and maps a corpse meal to SCAVENGE. See Implementation Notes for the writers, the sync rule and the evidence.
+e31's known entry still holds (UNTRIED_STEP either way; only its last meal changed, none -> t810). e37 is alive at 5000t on main, so its entry's case did not occur; that goes to testing-planner and the owner via rpg-planner, and rpg_gate_known.yaml is not edited here. e30, e9 and e53 were NOT re-read. Timing was NOT MEASURED (the perf pause). The fix is hash-equal on one cell (crowded_frontier s45) plus unit tests. The milestone 1 filings (624f0322d, a76cb1630) ride with this close; the second branch to land keeps the delete of the todos/ ticket copies.

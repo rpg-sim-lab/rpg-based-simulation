@@ -8415,7 +8415,7 @@
   - agent-working/stored_artifacts/TCK-20261103-THE-CONCURRENT-AND-SEQUENTIAL-EXECUTORS-GIVE-DIFFERENT-WORLDS/test_plan.md
   tags: []
 - type: ticket
-  path: agent-working/tickets/inprogress/TCK-20261103-THE-STARVATION-RECORD-MISSES-MEALS-WITHOUT-AN-INTENT-RESULT.md
+  path: agent-working/tickets/done/TCK-20261103-THE-STARVATION-RECORD-MISSES-MEALS-WITHOUT-AN-INTENT-RESULT.md
   ticket_id: TCK-20261103-THE-STARVATION-RECORD-MISSES-MEALS-WITHOUT-AN-INTENT-RESULT
   title: The starvation record misses meals that come without an accepted intent result,
     so V3's last_meal_tick and UNTRIED_STEP can be wrong
@@ -8425,7 +8425,10 @@
   related_code_areas:
   - _note_attempts
   - tools/test_architecture/rpg_gate_known.yaml
-  artifact_files: []
+  artifact_files:
+  - agent-working/stored_artifacts/TCK-20261103-THE-STARVATION-RECORD-MISSES-MEALS-WITHOUT-AN-INTENT-RESULT/investigation.md
+  - agent-working/stored_artifacts/TCK-20261103-THE-STARVATION-RECORD-MISSES-MEALS-WITHOUT-AN-INTENT-RESULT/plan.md
+  - agent-working/stored_artifacts/TCK-20261103-THE-STARVATION-RECORD-MISSES-MEALS-WITHOUT-AN-INTENT-RESULT/test_plan.md
   tags: []
 - type: ticket
   path: agent-working/tickets/todos/TCK-20261103-A-CREATURE-WITH-BOTH-NEEDS-PRESSING-NEITHER-SLEEPS-NOR-FEEDS-ENOUGH.md
