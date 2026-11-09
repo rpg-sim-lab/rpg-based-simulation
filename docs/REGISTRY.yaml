@@ -8000,6 +8000,22 @@
   artifact_files: []
   tags: []
 - type: ticket
+  path: agent-working/tickets/inprogress/TCK-20261109-FUSED-STRATEGIC-PASS-FAST-PATH-IS-PINNED-BRANCH-BY-BRANCH-AND-AGAINST-THE-SLOW-PATH.md
+  ticket_id: TCK-20261109-FUSED-STRATEGIC-PASS-FAST-PATH-IS-PINNED-BRANCH-BY-BRANCH-AND-AGAINST-THE-SLOW-PATH
+  title: fused_strategic_pass's off-cadence fast path is pinned branch by branch (characterisation),
+    and a fast-against-slow differential on the same entity state lists every known
+    disagreement as a row
+  tier: standard
+  ticket_type: chore
+  date: '2026-11-09'
+  related_code_areas:
+  - src/systems/strategic_systems/intelligence.py (fused_strategic_pass)
+  - tests/unit/strategic/
+  artifact_files: []
+  tags:
+  - testing
+  - regression
+- type: ticket
   path: agent-working/tickets/todos/TCK-20261109-A-COMBAT-RETREAT-PROJECT-WALKS-THE-SUBJECT-AGAINST-THE-HELD-FLIGHT-RULE.md
   ticket_id: TCK-20261109-A-COMBAT-RETREAT-PROJECT-WALKS-THE-SUBJECT-AGAINST-THE-HELD-FLIGHT-RULE
   title: A COMBAT_RETREAT project walks its owner to the town centre through the strategic
@@ -8026,6 +8042,22 @@
   - src/engine/tactical.py, src/engine/tactical_objective.py (the need path)
   artifact_files: []
   tags: []
+- type: ticket
+  path: agent-working/tickets/todos/TCK-20261109-AN-ADVISORY-GUARD-LISTS-TESTS-WHOSE-SUBJECT-SYSTEM-THE-PIPELINE-NEVER-RUNS.md
+  ticket_id: TCK-20261109-AN-ADVISORY-GUARD-LISTS-TESTS-WHOSE-SUBJECT-SYSTEM-THE-PIPELINE-NEVER-RUNS
+  title: An advisory guard lists src/systems classes the authoritative pipeline never
+    reaches, and the tests that import them without a stated reason, so a fix's regression
+    test is seen to prove a path that does not run
+  tier: standard
+  ticket_type: feature
+  date: '2026-11-09'
+  related_code_areas:
+  - src/engine/pipeline.py, src/systems/**
+  - tools/test_architecture/, tests/architecture/
+  artifact_files: []
+  tags:
+  - testing
+  - regression
 - type: ticket
   path: agent-working/tickets/todos/TCK-20261109-AN-INN-MEAL-DOES-NOT-STAMP-LAST-MEAL-TICK.md
   ticket_id: TCK-20261109-AN-INN-MEAL-DOES-NOT-STAMP-LAST-MEAL-TICK
@@ -8191,6 +8223,20 @@
   related_code_areas: []
   artifact_files: []
   tags: []
+- type: ticket
+  path: agent-working/tickets/todos/TCK-20261109-ONE-MUTATION-RUN-MEASURES-HOW-MANY-INJECTED-FAULTS-THE-FUSED-STRATEGIC-PASS-TESTS-CATCH.md
+  ticket_id: TCK-20261109-ONE-MUTATION-RUN-MEASURES-HOW-MANY-INJECTED-FAULTS-THE-FUSED-STRATEGIC-PASS-TESTS-CATCH
+  title: One report-only mutmut run measures how many injected faults in fused_strategic_pass
+    its current tests catch, recorded as a mutation baseline under tests/mutation/baselines/
+  tier: hotfix
+  ticket_type: chore
+  date: '2026-11-09'
+  related_code_areas:
+  - src/systems/strategic_systems/intelligence.py
+  - tests/mutation/baselines/
+  artifact_files: []
+  tags:
+  - testing
 - type: ticket
   path: agent-working/tickets/todos/TCK-20261109-STATE-TOWN-CENTER-DEFAULT-IS-A-SENTINEL-A-RETREAT-CAN-AIM-AT.md
   ticket_id: TCK-20261109-STATE-TOWN-CENTER-DEFAULT-IS-A-SENTINEL-A-RETREAT-CAN-AIM-AT
