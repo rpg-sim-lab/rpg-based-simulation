@@ -73,4 +73,9 @@ Unmutated selection: 567 passed, 3 xfailed. Positive control: the first killed m
 - tests/mutation/baselines/src_systems_strategic_intelligence_fused_v1.json (new)
 
 ## Completion Summary
-(implementer)
+Partial result, accepted by testing-planner as E's result (AC2 allows a run stopped at the 90-min cap, recorded as run.kind partial).
+- 452 mutants in range (lines 301-707); 105 tested: 61 killed, 44 survived, 0 timeout.
+- Lines not reached: 396-707 (347 mutants). Covered: 309-395, which holds the guard and the fast-path entry that C's rows were aimed at.
+- Survivors are listed in the baseline, not fixed.
+- No follow-up run planned; if wanted, a _v2 run needs an owner go.
+- Closes in the digest-light PR.
