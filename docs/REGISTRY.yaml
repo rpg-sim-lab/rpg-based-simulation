@@ -8014,6 +8014,19 @@
   artifact_files: []
   tags: []
 - type: ticket
+  path: agent-working/tickets/todos/TCK-20261109-A-CROWDED-HERO-STARVES-WITH-NO-WAY-TRIED-AFTER-ITS-LAST-MEAL.md
+  ticket_id: TCK-20261109-A-CROWDED-HERO-STARVES-WITH-NO-WAY-TRIED-AFTER-ITS-LAST-MEAL
+  title: Crowded_frontier s45 hero 31 starves at t2439 with no way tried after its
+    last meal, on main and on the LOW-HP fix
+  tier: standard
+  ticket_type: bug
+  date: '2026-11-09'
+  related_code_areas:
+  - src/observability/starvation_record.py (the record)
+  - src/engine/tactical.py, src/engine/tactical_objective.py (the need path)
+  artifact_files: []
+  tags: []
+- type: ticket
   path: agent-working/tickets/todos/TCK-20261109-AN-INN-MEAL-DOES-NOT-STAMP-LAST-MEAL-TICK.md
   ticket_id: TCK-20261109-AN-INN-MEAL-DOES-NOT-STAMP-LAST-MEAL-TICK
   title: An inn meal lowers hunger but does not stamp biological.last_meal_tick, which
