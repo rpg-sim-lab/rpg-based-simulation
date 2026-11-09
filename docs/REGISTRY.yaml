@@ -8000,6 +8000,33 @@
   artifact_files: []
   tags: []
 - type: ticket
+  path: agent-working/tickets/todos/TCK-20261109-A-COMBAT-RETREAT-PROJECT-WALKS-THE-SUBJECT-AGAINST-THE-HELD-FLIGHT-RULE.md
+  ticket_id: TCK-20261109-A-COMBAT-RETREAT-PROJECT-WALKS-THE-SUBJECT-AGAINST-THE-HELD-FLIGHT-RULE
+  title: A COMBAT_RETREAT project walks its owner to the town centre through the strategic
+    pass, against Bible 04's rule that a chosen retreat takes no step (held flight,
+    memo row 91 (2))
+  tier: standard
+  ticket_type: bug
+  date: '2026-11-09'
+  related_code_areas:
+  - src/systems/strategic_systems/intelligence.py (fused_strategic_pass, :670)
+  - src/ai/goals/scorers.py (CombatRetreatScorer, :248-252)
+  artifact_files: []
+  tags: []
+- type: ticket
+  path: agent-working/tickets/todos/TCK-20261109-A-CROWDED-HERO-STARVES-WITH-NO-WAY-TRIED-AFTER-ITS-LAST-MEAL.md
+  ticket_id: TCK-20261109-A-CROWDED-HERO-STARVES-WITH-NO-WAY-TRIED-AFTER-ITS-LAST-MEAL
+  title: Crowded_frontier s45 hero 31 starves at t2439 with no way tried after its
+    last meal, on main and on the LOW-HP fix
+  tier: standard
+  ticket_type: bug
+  date: '2026-11-09'
+  related_code_areas:
+  - src/observability/starvation_record.py (the record)
+  - src/engine/tactical.py, src/engine/tactical_objective.py (the need path)
+  artifact_files: []
+  tags: []
+- type: ticket
   path: agent-working/tickets/todos/TCK-20261109-AN-INN-MEAL-DOES-NOT-STAMP-LAST-MEAL-TICK.md
   ticket_id: TCK-20261109-AN-INN-MEAL-DOES-NOT-STAMP-LAST-MEAL-TICK
   title: An inn meal lowers hunger but does not stamp biological.last_meal_tick, which
@@ -8162,6 +8189,19 @@
   ticket_type: feature
   date: '2026-11-09'
   related_code_areas: []
+  artifact_files: []
+  tags: []
+- type: ticket
+  path: agent-working/tickets/todos/TCK-20261109-STATE-TOWN-CENTER-DEFAULT-IS-A-SENTINEL-A-RETREAT-CAN-AIM-AT.md
+  ticket_id: TCK-20261109-STATE-TOWN-CENTER-DEFAULT-IS-A-SENTINEL-A-RETREAT-CAN-AIM-AT
+  title: The state.town_center default (0.0, 0.0) lets CombatRetreatScorer aim a retreat
+    at a sentinel coordinate in a world with no town (MOV-03)
+  tier: standard
+  ticket_type: bug
+  date: '2026-11-09'
+  related_code_areas:
+  - src/core/state.py (town_center, :1345)
+  - src/ai/goals/scorers.py (:168, :250, :273, :313)
   artifact_files: []
   tags: []
 - type: ticket
@@ -9738,6 +9778,24 @@
   artifact_files: []
   tags: []
 - type: ticket
+  path: agent-working/tickets/done/TCK-20261028-LOW-HP-RETREAT-BRANCH-HOLDS-A-STARVING-SUBJECT-IN-PLACE-BESIDE-A-NON-ACTING-HOSTILE.md
+  ticket_id: TCK-20261028-LOW-HP-RETREAT-BRANCH-HOLDS-A-STARVING-SUBJECT-IN-PLACE-BESIDE-A-NON-ACTING-HOSTILE
+  title: A low-hp subject near a hostile that neither engages nor acts gets a no-op
+    PANIC_RETREAT every 10th tick, and its step toward food one tile away is refused,
+    so it starves (gate V3, frontier_living_world s43 merchant 38)
+  tier: standard
+  ticket_type: repair
+  date: '2026-10-28'
+  related_code_areas:
+  - src/engine/tactical.py (:214-229 panic, :536-544 low-hp retreat, _destination_or_hold,
+    retreat_destination)
+  - src/engine/candidate_selector.py (movement_target)
+  artifact_files:
+  - agent-working/stored_artifacts/TCK-20261028-LOW-HP-RETREAT-BRANCH-HOLDS-A-STARVING-SUBJECT-IN-PLACE-BESIDE-A-NON-ACTING-HOSTILE/investigation.md
+  - agent-working/stored_artifacts/TCK-20261028-LOW-HP-RETREAT-BRANCH-HOLDS-A-STARVING-SUBJECT-IN-PLACE-BESIDE-A-NON-ACTING-HOSTILE/plan.md
+  - agent-working/stored_artifacts/TCK-20261028-LOW-HP-RETREAT-BRANCH-HOLDS-A-STARVING-SUBJECT-IN-PLACE-BESIDE-A-NON-ACTING-HOSTILE/test_plan.md
+  tags: []
+- type: ticket
   path: agent-working/tickets/done/TCK-20261028-N15-KNOWN-V3-STARVATIONS-RECHECK-ON-THE-GATE-AFTER-STEP-A.md
   ticket_id: TCK-20261028-N15-KNOWN-V3-STARVATIONS-RECHECK-ON-THE-GATE-AFTER-STEP-A
   title: 'N15 known V3 starvations (crowded_frontier/46 raider 38, frontier_living_world/44
@@ -9856,21 +9914,6 @@
   related_code_areas:
   - src/systems/strategic_systems/intelligence.py, tactical.py, building_arrival.py,
     guild_visit.py, src/core/strategic.py
-  artifact_files: []
-  tags: []
-- type: ticket
-  path: agent-working/tickets/todos/TCK-20261028-LOW-HP-RETREAT-BRANCH-HOLDS-A-STARVING-SUBJECT-IN-PLACE-BESIDE-A-NON-ACTING-HOSTILE.md
-  ticket_id: TCK-20261028-LOW-HP-RETREAT-BRANCH-HOLDS-A-STARVING-SUBJECT-IN-PLACE-BESIDE-A-NON-ACTING-HOSTILE
-  title: A low-hp subject near a hostile that neither engages nor acts gets a no-op
-    PANIC_RETREAT every 10th tick, and its step toward food one tile away is refused,
-    so it starves (gate V3, frontier_living_world s43 merchant 38)
-  tier: standard
-  ticket_type: repair
-  date: '2026-10-28'
-  related_code_areas:
-  - src/engine/tactical.py (:214-229 panic, :536-544 low-hp retreat, _destination_or_hold,
-    retreat_destination)
-  - src/engine/candidate_selector.py (movement_target)
   artifact_files: []
   tags: []
 - type: ticket
