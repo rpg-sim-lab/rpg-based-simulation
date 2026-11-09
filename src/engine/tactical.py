@@ -504,10 +504,13 @@ class TacticalDecisionSystem:
                          )
                      )
              
-             # Pure Retreat if HP is very low and engaged
+             # Pure retreat if hp is very low and engaged. Below 15% hp the WOUNDED term of `present_threat_terms` always holds, so every perceived hostile is a present
+             # threat here and the flight stands as before; the pressing-need rows never reach this line (`need_first` returned above, law P). With nowhere to go the
+             # retreat is not taken: no no-op PANIC_RETREAT move or RETREAT mode is stamped over the subject's own tile, and the tick does not become a fight either.
              if hp_percent < 0.15:
-                  # Away from all hostiles, inside the current region; hold when none is valid.
-                  retreat_pos = _destination_or_hold(entity, retreat_destination(state, entity, hostiles))
+                  retreat_pos = retreat_destination(state, entity, hostiles)
+                  if retreat_pos is None:
+                      return EntityUpdate(entity_id=entity.id, strategic=strat_up)
                   return EntityUpdate(
                       entity_id=entity.id,
                       navigation=NavigationUpdate(target_set=retreat_pos, movement_mode_set=MovementMode.RETREAT),
