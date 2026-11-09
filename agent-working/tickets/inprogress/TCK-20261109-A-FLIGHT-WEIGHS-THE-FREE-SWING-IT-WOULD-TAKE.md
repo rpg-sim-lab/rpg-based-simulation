@@ -59,6 +59,11 @@ No committed baseline or benchmark record carries the scheme in a machine-checke
 ## Implementation Notes
 Digest bump to v4 ruled by rpg-planner. docs/engine edits limited to deterministic_execution :85/:102, known_limitations :120, substrate_baseline_contract :68.
 
+- Mechanism-registry advisory (rpg-planner, 2026-11-09): no `mechanisms.yaml` edit needed. Both extracts (`is_evasive_flight`, `live_action_style`) are behaviour-free, the guard adds no new mechanism identity, and it sits under `tactical_decision`.
+- `live_action_style` landed in the guard commit, not the field commit, so the (i) stripped-digest check does not cover it; arm 1's 0-fire seeds do (stripped digest = base). A 0-fire seed whose stripped digest differs: suspect that extract first.
+- Open design point with the designer: 2.202 item 5 (a flight whose target is the subject's own tile is left alone).
+- Filed: TCK-20261109-RESOLVE-ATTACK-IS-CALLED-TWICE-PER-TICK-FOR-ONE-HIT-AND-ONLY-ONE-RESULT-REACHES-HP (P2).
+
 ## Test Summary
 Pinned digests moved by exactly the new key: FIXTURE_DIGEST_V4 added (v3 form reproduced by dropping `last_hit_damage`). Timing NOT MEASURED.
 
