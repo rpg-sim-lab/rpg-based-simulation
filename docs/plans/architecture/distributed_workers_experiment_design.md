@@ -29,6 +29,123 @@ It is **not** a speed-up. Collection was 6 to 26 % of a tick (Amdahl ceiling 1.0
 and each tick adds a network round trip and serialization of large world views. A result slower than sequential is a valid outcome.
 It is **not** an API/engine split, an engine replica, a multi-host deploy or a broker change.
 
+### 1a. Today versus the experiment mode, in diagrams
+
+The mode is **one more run mode beside the existing ones, not a replacement**. In the diagrams, dashed boxes are new; everything
+drawn solid exists today and does not change. The style follows `docs/architecture/system_overview.md` and
+`docs/architecture/kernel_concurrency_design_philosophy.md`.
+
+**Deployment and processes.** With no profile, compose starts exactly today's services. The `distributed` profile adds one
+`engine-worker` container that holds N worker processes behind one listener (§7). The run that uses it is a CLI run (§5). The API's
+`v2-engine-loop` keeps the default executor, because `engine_manager.py:139` passes none.
+
+```mermaid
+flowchart LR
+    subgraph today["Today: docker compose up (default, unchanged)"]
+        direction TB
+        subgraph backend["backend container"]
+            API["FastAPI routes + presenters"] --> MGR["V2EngineManager<br/>thread v2-engine-loop"]
+            MGR --> K1["Kernel<br/>7-phase tick, single writer"]
+            K1 --> EX1["Collection pool, in-process:<br/>LocalSequentialExecutor, or<br/>ConcurrentExecutionAdapter + WorkerManager"]
+        end
+        CLI1["CLI run (src/cli/)"] --> K1b["Kernel"] --> EX1b["same in-process pool"]
+    end
+
+    subgraph exp["Experiment: docker compose --profile distributed (opt-in)"]
+        direction TB
+        subgraph backend2["backend container (unchanged)"]
+            API2["FastAPI routes + presenters"] --> MGR2["V2EngineManager<br/>v2-engine-loop, default executor"]
+        end
+        CLI2["CLI run in the backend image"] --> K2["Kernel<br/>7-phase tick, single writer (unchanged)"]
+        K2 --> AD2["ConcurrentExecutionAdapter (unchanged)<br/>builds and validates every packet"]
+        AD2 --> RWM["RemoteWorkerManager"]
+        RWM -- "pickled chunks, authkey<br/>compose-internal network only" --> EW
+        subgraph EW["engine-worker container (same image)"]
+            L["one listener"] --> P1["worker process 1"]
+            L --> P2["worker process ..."]
+            L --> PN["worker process N"]
+        end
+    end
+
+    classDef new stroke-dasharray: 5 5
+    class RWM,EW,L,P1,P2,PN,CLI2 new
+```
+
+**Executor selection.** `kernel.py:193-198` is not edited. The mode enters through the explicit-executor branch that already
+exists, and only a CLI or test-harness caller takes it. With the mode off, nothing passes an executor, so selection falls through
+to today's two branches.
+
+```mermaid
+flowchart TB
+    C["Kernel(profile, state, rng, executor=?)"] --> Q1{"executor passed?<br/>kernel.py:193"}
+    Q1 -- "no: API (engine_manager.py:139),<br/>and every run with the mode off" --> Q2{"profile.max_worker_count > 0?<br/>kernel.py:195"}
+    Q2 -- yes --> CA["ConcurrentExecutionAdapter(WorkerManager)"]
+    Q2 -- no --> LS["LocalSequentialExecutor"]
+    Q1 -- "yes" --> X{"which caller?"}
+    X -- "existing callers and tests" --> XE["the executor they pass (today)"]
+    X -- "CLI flag or harness, mode on" --> RA["ConcurrentExecutionAdapter(<br/>RemoteWorkerManager(address, authkey))"]
+
+    classDef new stroke-dasharray: 5 5
+    class RA new
+```
+
+**One tick, both modes.** Only Collection's transport differs. The packets come from the same builder, and from validation onward
+the path is the same code: `ProtocolValidator.validate_result_batch` at `kernel.py:556`, the sort by `ConcurrencyLaw.commit_key`
+at `kernel.py:580` (class priority, local priority, entity id), then the single-writer apply in Resolution.
+
+```mermaid
+sequenceDiagram
+    participant K as Kernel thread (single writer)
+    participant AD as ConcurrentExecutionAdapter
+    participant M as WorkerManager / RemoteWorkerManager
+    participant W as Worker (in-process / engine-worker)
+
+    K->>K: Init, Scheduling: select ready entities
+    K->>AD: Collection: execute(work items, state view)
+    AD->>AD: build every WorkerPacket (one builder, executor.py)
+    alt Default (today)
+        AD->>M: WorkerManager.execute_batch(packets)
+        M->>W: chunks on threads, or sequential
+        W-->>M: WorkerResults
+    else Experiment (opt-in)
+        AD->>M: RemoteWorkerManager.execute_batch(packets)
+        M->>M: encode each chunk (pickle, shared views once)
+        M->>W: send over the internal network
+        W->>W: decode, default_simulation_worker
+        W-->>M: encoded results
+        M->>M: decode, in packet order
+    end
+    M-->>AD: results in packet order
+    AD->>AD: validate against the source packets (executor.py:367)
+    AD-->>K: results
+    Note over K: identical in both modes from here on
+    K->>K: validate_result_batch (kernel.py:556)
+    K->>K: Resolution: sort by commit_key (kernel.py:580)
+    K->>K: apply through the authoritative path
+    K->>K: Cleanup, Advancement, Persistence
+```
+
+**Slow or dead worker (§6).** Every branch ends in the result the local path would give, so the outcome never depends on worker
+speed. A worker exception is handled exactly as locally. A transport failure or timeout recomputes the chunk locally and records
+it. A late result is dropped.
+
+```mermaid
+flowchart TB
+    S["chunk sent to engine-worker"] --> R{"what comes back,<br/>within the bounded wait?"}
+    R -- "results" --> OK["decode; use the results"]
+    R -- "the worker raised" --> EXC["FAILURE no-ops for that chunk's packets,<br/>as WorkerManager does locally (:192-194);<br/>the same packet raises on either side"]
+    R -- "transport failure<br/>or timeout" --> LOC["recompute the chunk locally:<br/>_execute_locally, same packets"]
+    LOC --> REC["count the fallback (typed record)<br/>and record it in the run manifest"]
+    LATE["late result for a chunk<br/>already recomputed"] --> DROP["dropped by the manager;<br/>validator one-result-per-entity check<br/>is the backstop"]
+    OK --> J["merge in packet order"]
+    EXC --> J
+    REC --> J
+    J --> V["validate, sort, single-writer apply (unchanged)"]
+
+    classDef new stroke-dasharray: 5 5
+    class S,R,OK,LOC,REC,LATE,DROP new
+```
+
 ## 2. Constraints (from child 0)
 
 1. One writer: workers compute `WorkerResult`s only; `ProtocolValidator.validate_result_batch` checks them against the source
