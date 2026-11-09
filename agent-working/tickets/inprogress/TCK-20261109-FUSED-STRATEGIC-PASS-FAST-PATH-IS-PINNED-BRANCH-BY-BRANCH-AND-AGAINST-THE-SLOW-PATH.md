@@ -4,7 +4,7 @@ layer: testing
 authority: P1
 audience: agent
 ticket_id: TCK-20261109-FUSED-STRATEGIC-PASS-FAST-PATH-IS-PINNED-BRANCH-BY-BRANCH-AND-AGAINST-THE-SLOW-PATH
-phase: open
+phase: inprogress
 date: 2026-11-09
 tags: [testing, regression]
 ---
@@ -15,7 +15,7 @@ tags: [testing, regression]
 fused_strategic_pass's off-cadence fast path is pinned branch by branch (characterisation), and a fast-against-slow differential on the same entity state lists every known disagreement as a row
 
 ## Status
-OPEN
+INPROGRESS
 
 ## Tier
 standard
@@ -88,13 +88,35 @@ Also in scope:
 - If a row can't be reached through state alone (only via a private helper), stop and tell testing-planner. Don't mock the function's internals.
 
 ## Implementation Notes
-(implementer)
+New file tests/unit/strategic/test_fused_strategic_pass_fast_path_characterisation.py (34 passed, 1 xfailed, 0.5 s). No src/ change.
+
+- State is hand-built with V2EntityBuilder, tick 5, entity 1 the subject and entity 2 a live pursuit target. "Off cadence" = both cadences 1000; "due" = concern cadence 1 and intent cadence 1000. The intent cadence stays long on purpose: with it due, evaluate_strategic_intent abandons an entity-targeted project that has no real pursuit set up, which hides the redirection difference this ticket pins.
+- Every row is reached through state alone. Nothing is mocked and no private helper is called.
+- Objective kinds "craft"/"collect" are plain strings on ObjectiveState (they are not ObjectiveKind members); the guard compares against those strings, so the tests use them as such.
+- Row 5 cites TCK-20261109-STATE-TOWN-CENTER-DEFAULT-IS-A-SENTINEL-A-RETREAT-CAN-AIM-AT (rpg-planner; filed in #851): with no town tile and the default town_center (0.0, 0.0), a loaded entity is sent to the map origin; pinned as current behaviour.
+- Differential: 13 rows, one parameterized test. KNOWN_DISAGREEMENTS holds exactly two entries: row 1's entity objective (strict xfail citing defect A) and row 6 (earlier phase's target_set overwritten, pinned as different, citing TCK-20261101-CLEAR-TARGET-IS-NEVER-APPLIED). A guard test asserts the table has exactly those two keys.
+- Inactive/dead skip: StrategicWorkQueue.build already drops such entities before the loop, so the in-function early exit is shadowed. The row pins the pass-level behaviour; removing only the in-function guard does not turn it red (see Test Summary).
 
 ## Test Summary
-(implementer)
+Local: tests/unit/strategic/test_fused_strategic_pass_fast_path_characterisation.py: 34 passed, 1 xfailed in 0.5 s (deterministic: no wall clock, no randomness).
+
+AC1 perturbation checks (a one-line change to src/systems/strategic_systems/intelligence.py in the worktree, test file run, file restored by hand; nothing committed under src/). Failing tests per perturbation:
+- row 1, flip the objective-position guard in the fast path: 4 failed (row 1 position-objective test; differential rows position_objective_walk_set, entity_objective_loaded_entity, craft_item_missing).
+- row 2, proj_resolved forced False: 2 failed (both row 2 completion tests).
+- row 3, nav_changed forced False: 2 failed (row 3 and differential position_objective_walk_differs).
+- row 4, drop the lodged_stayer test from the fast regroup: 2 failed (row 4 and differential lodged_stayer).
+- row 5a, drop the position != (0, 0) guard from the fast regroup: 2 failed (row 5 origin and differential origin_guard).
+- row 5b, drop the state.town_center fallback from the fast regroup: 11 failed.
+- row 6, make the fast regroup keep an earlier target_set: 2 failed (row 6 and differential earlier_phase_target_set).
+- row 7, disable the material-blocker redirect: 1 failed. Make the malformed-detail except re-raise: 1 failed.
+- Inactive/dead skip, remove the in-function early exit: 0 failed (equivalent mutant: StrategicWorkQueue.build filters the same entities first, work_queue.py:31). The row pins the pass-level result only.
+
+Known gap: the in-function inactive/dead guard cannot be pinned by a test on the function alone while the work queue duplicates it.
+AC6 (rpg-planner sign-off, PR comment id) is pending.
 
 ## Files Changed
-(implementer)
+- tests/unit/strategic/test_fused_strategic_pass_fast_path_characterisation.py (new)
+- the three ticket files filed by testing-planner (this ticket, the E mutation-run ticket, the held advisory-guard ticket)
 
 ## Completion Summary
 (implementer)
