@@ -8000,6 +8000,171 @@
   artifact_files: []
   tags: []
 - type: ticket
+  path: agent-working/tickets/todos/TCK-20261109-AN-INN-MEAL-DOES-NOT-STAMP-LAST-MEAL-TICK.md
+  ticket_id: TCK-20261109-AN-INN-MEAL-DOES-NOT-STAMP-LAST-MEAL-TICK
+  title: An inn meal lowers hunger but does not stamp biological.last_meal_tick, which
+    the other three meal writers do
+  tier: standard
+  ticket_type: bug
+  date: '2026-11-09'
+  related_code_areas:
+  - src/engine/building_services.py (service_delta)
+  - src/engine/domain/core_actions.py
+  - src/core/state.py (BiologicalComponent)
+  artifact_files: []
+  tags: []
+- type: ticket
+  path: agent-working/tickets/todos/TCK-20261109-M1-ACTIVITY-PERIOD-AND-HAZARD-TOLERANCE.md
+  ticket_id: TCK-20261109-M1-ACTIVITY-PERIOD-AND-HAZARD-TOLERANCE
+  title: Each kind has an activity period, and each body has a hazard tolerance
+  tier: standard
+  ticket_type: feature
+  date: '2026-11-09'
+  related_code_areas:
+  - content schemas, src/strategy/, hazard handling
+  artifact_files: []
+  tags: []
+- type: ticket
+  path: agent-working/tickets/todos/TCK-20261109-M1-BASIC-WILD-BIRTHS-FOR-EVERY-LIVING-KIND.md
+  ticket_id: TCK-20261109-M1-BASIC-WILD-BIRTHS-FOR-EVERY-LIVING-KIND
+  title: A well-fed creature with a mate of its kind nearby has young at a declared
+    rate, for every living kind, and camps no longer spawn members from nothing (decisions
+    67, 70)
+  tier: standard
+  ticket_type: feature
+  date: '2026-11-09'
+  related_code_areas: []
+  artifact_files: []
+  tags: []
+- type: ticket
+  path: agent-working/tickets/todos/TCK-20261109-M1-COARSE-PROPERTY-BANDS-AND-THE-APPRAISAL.md
+  ticket_id: TCK-20261109-M1-COARSE-PROPERTY-BANDS-AND-THE-APPRAISAL
+  title: Kinds carry a property model in coarse bands, as schema and content, and
+    subjects appraise each other by it
+  tier: standard
+  ticket_type: feature
+  date: '2026-11-09'
+  related_code_areas:
+  - content schemas, src/strategy/ (appraisal)
+  artifact_files: []
+  tags: []
+- type: ticket
+  path: agent-working/tickets/todos/TCK-20261109-M1-EACH-MONSTER-KIND-DECLARES-WHY-IT-FIGHTS.md
+  ticket_id: TCK-20261109-M1-EACH-MONSTER-KIND-DECLARES-WHY-IT-FIGHTS
+  title: Each monster kind declares why it fights, replacing faction hostility for
+    monsters (decision 62)
+  tier: standard
+  ticket_type: feature
+  date: '2026-11-09'
+  related_code_areas:
+  - src/domains/combat_engagement/, hostility predicates, content
+  artifact_files: []
+  tags: []
+- type: ticket
+  path: agent-working/tickets/todos/TCK-20261109-M1-HONEST-PERCEPTION-DEFAULTS.md
+  ticket_id: TCK-20261109-M1-HONEST-PERCEPTION-DEFAULTS
+  title: Each kind perceives by its own senses, and signals follow the body
+  tier: standard
+  ticket_type: feature
+  date: '2026-11-09'
+  related_code_areas:
+  - src/strategy/ and perception code, content schemas
+  artifact_files: []
+  tags: []
+- type: ticket
+  path: agent-working/tickets/todos/TCK-20261109-M1-KIND-ALWAYS-MEANS-SPECIES-AND-OCCUPATION-IS-ITS-OWN-FIELD.md
+  ticket_id: TCK-20261109-M1-KIND-ALWAYS-MEANS-SPECIES-AND-OCCUPATION-IS-ITS-OWN-FIELD
+  title: '`kind` always means species, and occupation is a separate field'
+  tier: standard
+  ticket_type: feature
+  date: '2026-11-09'
+  related_code_areas:
+  - src/core/ (entity identity), content schemas
+  artifact_files: []
+  tags: []
+- type: ticket
+  path: agent-working/tickets/todos/TCK-20261109-M1-NO-NAME-CHECKS-PROBE-AND-CONTENT-ALONE-KIND-PROBE.md
+  ticket_id: TCK-20261109-M1-NO-NAME-CHECKS-PROBE-AND-CONTENT-ALONE-KIND-PROBE
+  title: 'Milestone 1''s two gate probes: no name switch in a decision path, and a
+    test kind declared only in content perceives, eats and fights'
+  tier: standard
+  ticket_type: feature
+  date: '2026-11-09'
+  related_code_areas:
+  - tests/, decision code (read only)
+  artifact_files: []
+  tags: []
+- type: ticket
+  path: agent-working/tickets/todos/TCK-20261109-M1-PLACES-ARE-FOUND-FROM-PERCEPTION-AND-MEMORY.md
+  ticket_id: TCK-20261109-M1-PLACES-ARE-FOUND-FROM-PERCEPTION-AND-MEMORY
+  title: Food and other places are found from what the subject perceives, remembers
+    or was told, not from the true map (decision 56)
+  tier: standard
+  ticket_type: feature
+  date: '2026-11-09'
+  related_code_areas:
+  - src/strategy/, knowledge and memory
+  artifact_files: []
+  tags: []
+- type: ticket
+  path: agent-working/tickets/todos/TCK-20261109-M1-RECORD-AND-M1-DISCLOSURE.md
+  ticket_id: TCK-20261109-M1-RECORD-AND-M1-DISCLOSURE
+  title: 'Record milestone 1 on one commit: a green gate, the cumulative watch read,
+    m1_disclosure.md, and 5k and SimQ anchors re-recorded'
+  tier: standard
+  ticket_type: chore
+  date: '2026-11-09'
+  related_code_areas:
+  - tools/test_architecture/ (gate), SimQ anchors
+  artifact_files: []
+  tags: []
+- type: ticket
+  path: agent-working/tickets/todos/TCK-20261109-M1-RETIRE-ROLE-KIND-AND-FACTION-NAME-BRANCHES-IN-STAGES.md
+  ticket_id: TCK-20261109-M1-RETIRE-ROLE-KIND-AND-FACTION-NAME-BRANCHES-IN-STAGES
+  title: Retire behaviour that branches on role, kind or faction names, in stages,
+    measured each time, including the camp tether (decision 57)
+  tier: standard
+  ticket_type: feature
+  date: '2026-11-09'
+  related_code_areas:
+  - src/strategy/, src/systems/, decision code
+  artifact_files: []
+  tags: []
+- type: ticket
+  path: agent-working/tickets/todos/TCK-20261109-M1-THE-HERO-IS-WORK-AND-THE-GUILD-IS-MEMBERSHIP.md
+  ticket_id: TCK-20261109-M1-THE-HERO-IS-WORK-AND-THE-GUILD-IS-MEMBERSHIP
+  title: A hero is a person doing adventuring work, and the guild is a membership
+    people join and leave (decision 63)
+  tier: standard
+  ticket_type: feature
+  date: '2026-11-09'
+  related_code_areas:
+  - src/core/, guild and membership systems
+  artifact_files: []
+  tags: []
+- type: ticket
+  path: agent-working/tickets/todos/TCK-20261109-M1-WHO-A-PLACE-REFUSES.md
+  ticket_id: TCK-20261109-M1-WHO-A-PLACE-REFUSES
+  title: A town refuses service on a record it holds against this person or a mark
+    it can see, never on a faction label, and strangers are served (decision 68)
+  tier: standard
+  ticket_type: feature
+  date: '2026-11-09'
+  related_code_areas: []
+  artifact_files: []
+  tags: []
+- type: ticket
+  path: agent-working/tickets/todos/TCK-20261109-MILESTONE-1-KINDS-BY-PROPERTIES-EPIC.md
+  ticket_id: TCK-20261109-MILESTONE-1-KINDS-BY-PROPERTIES-EPIC
+  title: 'Milestone 1, kinds by properties: the §12.3 items, the two gate probes and
+    the record'
+  tier: epic
+  ticket_type: feature
+  date: '2026-11-09'
+  related_code_areas: []
+  artifact_files: []
+  tags: []
+- type: ticket
   path: agent-working/tickets/done/TCK-20261108-DLQ-CONTRACT-NAMES-NO-OUTCOME-FOR-A-FAILED-DLQ-WRITE.md
   ticket_id: TCK-20261108-DLQ-CONTRACT-NAMES-NO-OUTCOME-FOR-A-FAILED-DLQ-WRITE
   title: The observability hot-path contract says an exhausted message is routed to
@@ -8250,6 +8415,19 @@
   - agent-working/stored_artifacts/TCK-20261103-THE-CONCURRENT-AND-SEQUENTIAL-EXECUTORS-GIVE-DIFFERENT-WORLDS/test_plan.md
   tags: []
 - type: ticket
+  path: agent-working/tickets/inprogress/TCK-20261103-THE-STARVATION-RECORD-MISSES-MEALS-WITHOUT-AN-INTENT-RESULT.md
+  ticket_id: TCK-20261103-THE-STARVATION-RECORD-MISSES-MEALS-WITHOUT-AN-INTENT-RESULT
+  title: The starvation record misses meals that come without an accepted intent result,
+    so V3's last_meal_tick and UNTRIED_STEP can be wrong
+  tier: standard
+  ticket_type: bug
+  date: '2026-11-03'
+  related_code_areas:
+  - _note_attempts
+  - tools/test_architecture/rpg_gate_known.yaml
+  artifact_files: []
+  tags: []
+- type: ticket
   path: agent-working/tickets/todos/TCK-20261103-A-CREATURE-WITH-BOTH-NEEDS-PRESSING-NEITHER-SLEEPS-NOR-FEEDS-ENOUGH.md
   ticket_id: TCK-20261103-A-CREATURE-WITH-BOTH-NEEDS-PRESSING-NEITHER-SLEEPS-NOR-FEEDS-ENOUGH
   title: 'A wild creature with hunger and sleep both pressing collapses again and
@@ -8335,19 +8513,6 @@
   related_code_areas:
   - to_canonical_dict
   - src/core/strategic.py, src/core/cognition.py, src/core/self_model.py, src/core/models/
-  artifact_files: []
-  tags: []
-- type: ticket
-  path: agent-working/tickets/todos/TCK-20261103-THE-STARVATION-RECORD-MISSES-MEALS-WITHOUT-AN-INTENT-RESULT.md
-  ticket_id: TCK-20261103-THE-STARVATION-RECORD-MISSES-MEALS-WITHOUT-AN-INTENT-RESULT
-  title: The starvation record misses meals that come without an accepted intent result,
-    so V3's last_meal_tick and UNTRIED_STEP can be wrong
-  tier: standard
-  ticket_type: bug
-  date: '2026-11-03'
-  related_code_areas:
-  - _note_attempts
-  - tools/test_architecture/rpg_gate_known.yaml
   artifact_files: []
   tags: []
 - type: ticket
