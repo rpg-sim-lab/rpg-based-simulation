@@ -10,6 +10,7 @@ from dataclasses import replace
 
 import pytest
 
+from src.core.movement_modes import MovementMode
 from src.engine import tactical as tactical_module
 from src.engine.tactical import TacticalDecisionSystem
 from tests.unit.tactical.test_surv07_precedence_grid import ATTACKS_THE_HERO, CALM_HUNGER, INN_ID, PRESSING_HUNGER, _hungry_hero
@@ -31,10 +32,6 @@ def _decide(monkeypatch, hunger, hostile_at, hostile_task, destination="none"):
 
 def _payload(update):
     return (update.task.payload_set if update.task is not None else None) or {}
-
-
-def _stamps_a_move(update):
-    return update.navigation is not None and (update.navigation.target_set is not None or update.navigation.movement_mode_set is not None)
 
 
 NO_HOSTILE, PERCEIVED, ADJACENT = None, (39.0, 26.0), (39.0, 30.0)
@@ -64,15 +61,17 @@ def test_the_low_hp_retreat_rows_with_a_destination(monkeypatch, hunger, hostile
 
 
 @pytest.mark.parametrize("hunger,hostile_at,task,label,wins", [r for r in ROWS if r[1] is not None], ids=[r[3] for r in ROWS if r[1] is not None])
-def test_a_retreat_with_nowhere_to_go_stamps_no_move(monkeypatch, hunger, hostile_at, task, label, wins):
-    """No destination: no no-op PANIC_RETREAT and no RETREAT mode over the subject's own tile. A pressing need still eats (it ran first); a hostile acting does not make it fight."""
+def test_a_retreat_with_nowhere_to_go_holds_without_a_panic_task(monkeypatch, hunger, hostile_at, task, label, wins):
+    """No destination: no PANIC_RETREAT task and no ATTACK. A pressing need still eats (it ran first); any other row holds its own tile in RETREAT mode with no task (rpg-designer: the
+    hold stays, so a stored target elsewhere is not walked)."""
     update = _decide(monkeypatch, hunger, hostile_at, task, destination="none")
     payload = _payload(update)
-    assert payload.get("reason") != "PANIC_RETREAT", f"got {payload}"
+    assert payload.get("reason") != "PANIC_RETREAT" and payload.get("action") in (None, "EAT"), f"got {payload}"
     if hunger == PRESSING_HUNGER and task is None:
         assert payload.get("action") == "EAT" and payload.get("target_id") == INN_ID, f"got {payload}"
     else:
-        assert not _stamps_a_move(update) and payload.get("action") != "ATTACK", f"got {update}"
+        assert update.task is None and update.navigation is not None, f"got {update}"
+        assert update.navigation.movement_mode_set is MovementMode.RETREAT and tuple(update.navigation.target_set) == (39.0, 31.0), f"got {update.navigation}"
 
 
 def test_the_acceptance_scene_a_low_hp_subject_beside_a_non_acting_hostile_steps_to_the_inn_and_eats(monkeypatch):
@@ -137,3 +136,42 @@ def test_an_acting_hostile_with_no_destination_keeps_the_freeze(monkeypatch):
     update, hero = _panic_scene(monkeypatch, destination=None, hostile_task=ATTACKS_THE_HERO)
     payload = _payload(update)
     assert payload.get("reason") == "PANIC_RETREAT" and tuple(payload["target_position"]) == hero.navigation.position and payload.get("action") != "EAT", f"got {payload}"
+
+
+def test_a_held_retreat_does_not_walk_a_stored_target_through_the_kernel(monkeypatch):
+    """Rpg-designer's pin: hp under 15%, an acting hostile adjacent, no destination, and a stored target elsewhere. The hold (own tile, RETREAT mode, no task) is inert: through the
+    kernel's first decisions (this subject decides at ticks 9 and 13) its position is unchanged and it holds no PANIC_RETREAT task. An idle update instead lets the stored target walk it
+    from tick 14 (checked). The emotional panic branch is switched off so the low-hp branch is the one under test. The brain decides on a cadence, so the row runs 16 ticks and asserts
+    the low-hp branch really ran (the decisions are counted), not a single tick that decides nothing."""
+    from tests.unit.engine.lodging_kernel import hero, kernel
+    from src.core.builder import V2EntityBuilder
+    from src.core.enums import Faction
+    from src.core.state import TaskComponent
+
+    monkeypatch.setattr(tactical_module, "_panic_holds", lambda *a, **k: False)
+    monkeypatch.setattr(tactical_module, "retreat_destination", lambda *a, **k: None)
+    decisions = []
+    real = TacticalDecisionSystem.evaluate_entity_intent
+
+    def spy(state, entity, *a, **kw):
+        update = real(state, entity, *a, **kw)
+        if entity.id == 1:
+            decisions.append(update)
+        return update
+
+    monkeypatch.setattr(TacticalDecisionSystem, "evaluate_entity_intent", staticmethod(spy))
+    me = hero(1, (15.0, 15.0), debt=0.0, gold=0, action=None, project=False)
+    me = replace(me, combat=replace(me.combat, hp=8, max_hp=100, def_stat=50),
+                 navigation=replace(me.navigation, movement_mode=MovementMode.WANDER, target=(25.0, 25.0)))
+    foe = (V2EntityBuilder(2).kind("MONSTER").location(15.0, 16.0).identity(faction=Faction.MONSTER_HORDE)
+           .combat(hp=300, max_hp=300, atk=1, def_stat=5, alive=True, readiness=100.0).navigation(movement_mode=MovementMode.WANDER).lifecycle(active=True).build())
+    foe = replace(foe, task=TaskComponent(work_kind="ENTITY_ACT", payload={"action": "ATTACK", "target_id": 1}))
+    k = kernel([me, foe])
+    try:
+        for _ in range(16):
+            k.tick_once()
+            assert k._state.entities[1].navigation.position == (15.0, 15.0), f"walked to {k._state.entities[1].navigation.position} at tick {k._state.tick}"
+            assert (k._state.entities[1].task.payload or {}).get("reason") != "PANIC_RETREAT"
+    finally:
+        k.shutdown()
+    assert len(decisions) >= 2 and all(d.task is None and d.navigation.movement_mode_set is MovementMode.RETREAT for d in decisions), "the low-hp hold must have been decided"

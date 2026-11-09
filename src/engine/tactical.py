@@ -518,11 +518,14 @@ class TacticalDecisionSystem:
              
              # Pure retreat if hp is very low and engaged. Below 15% hp the WOUNDED term of `present_threat_terms` always holds, so every perceived hostile is a present
              # threat here and the flight stands as before; the pressing-need rows never reach this line (`need_first` returned above, law P). With nowhere to go the
-             # retreat is not taken: no no-op PANIC_RETREAT move or RETREAT mode is stamped over the subject's own tile, and the tick does not become a fight either.
+             # retreat is not taken as a move: no PANIC_RETREAT task, and the tick does not become a fight either.
              if hp_percent < 0.15:
                   retreat_pos = retreat_destination(state, entity, hostiles)
                   if retreat_pos is None:
-                      return EntityUpdate(entity_id=entity.id, strategic=strat_up)
+                      # Nowhere to go: hold on the subject's own tile in RETREAT mode with no task (so no PANIC_RETREAT). An idle update would leave a stored target in place for the
+                      # movement phase to walk; RETREAT mode on a pinned tile is inert (routing skips position == target). Not HOLD mode: it changes swap eligibility at movement.py.
+                      return EntityUpdate(entity_id=entity.id, strategic=strat_up,
+                                          navigation=NavigationUpdate(target_set=entity.navigation.position, movement_mode_set=MovementMode.RETREAT))
                   return EntityUpdate(
                       entity_id=entity.id,
                       navigation=NavigationUpdate(target_set=retreat_pos, movement_mode_set=MovementMode.RETREAT),
