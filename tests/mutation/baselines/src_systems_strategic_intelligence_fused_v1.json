@@ -1,0 +1,345 @@
+{
+  "schema_version": 1,
+  "kind": "mutation_baseline",
+  "baseline_id": "mutation-baseline-src-systems-strategic-intelligence-fused-v1",
+  "target": {
+    "path": "src/systems/strategic_systems/intelligence.py",
+    "sha256": "d5e3de70685450afd26b280c4fdd3f221ccd671bd2bd7d70de036604cbef0d56",
+    "lines": 1833,
+    "function": "StrategicIntelligenceSystem.fused_strategic_pass",
+    "function_line_range": [
+      301,
+      707
+    ]
+  },
+  "run": {
+    "kind": "partial",
+    "partial_reason": "stopped at the 90-minute cap set by rpg-planner (HOST FREE for E); mutmut tests mutants in source order, so it covered source lines 309-395 of the function's 301-707 and none of lines 396-707",
+    "started_utc": "2026-11-09T11:28:30Z",
+    "finished_utc": "2026-11-09T12:58:29Z",
+    "runtime_seconds": 5399,
+    "source_sha": "1fb40ac768789037b814b2db9f0ec095df389f87",
+    "source_note": "origin/main at 1fb40ac76 (the merge of #852), so this is the 'after C' number: the C characterisation tests (test_fused_strategic_pass_fast_path_characterisation.py) are in the test set. Scratch copy made with git archive of that commit on /mnt/data2, outside the repo; fresh .mutmut-cache; single process; nothing else heavy on the host by agreement with rpg-planner. A pre-C run was not done."
+  },
+  "tool": {
+    "name": "mutmut",
+    "version": "2.5.1",
+    "install": "uv pip install --target <scratch>/mutmut_pkg mutmut==2.5.1 (dev tool, not a project dependency, shared venv untouched)",
+    "configuration": "scratch-only mutmut_config.py in the archive copy: pre_mutation sets context.skip for any mutant outside source lines 301-707 of intelligence.py",
+    "reproduction_command": "cd <scratch archive of 1fb40ac76>; PYTHONPATH=<scratch>/kprobe:<scratch>/mutmut_pkg:<archive> KPROBE_FORCE=1 python <scratch>/mutmut_pkg/bin/mutmut run --paths-to-mutate src/systems/strategic_systems/intelligence.py --runner \"$PY -m pytest -x -q -p no:cacheprovider -p kprobe tests/unit/strategic/test_fused_strategic_pass_fast_path_characterisation.py tests/unit/strategic/test_fused_strategic_pass_routing_family.py tests/unit/strategic/test_strategic_regroup_keeps_the_step_time.py tests/unit/strategic/test_intelligence_routine_blockers.py tests/unit/strategic/test_capacity_enforcement.py tests/unit/strategic/test_cognition_authoritative_path.py tests/unit/strategic/test_belief_integration.py tests/unit/strategic/test_belief_staleness_decay_pipeline.py tests/integration/optimization/test_force_full_scan_phase_compliance.py tests/integrity/test_logic_guards.py tests/mechanic_scenarios/test_strategic_intelligence_detour_resolution.py tests/unit/engine/test_lodging_no_bed_and_arrival.py tests/unit/systems/test_quest_activation_pathway.py tests/unit/strategic\" --no-progress",
+    "why_not_3x": "mutmut 3.x trampoline rejects modules whose import path starts with 'src.' (same finding as src_core_conservation_v3.json)",
+    "probe_plugin": "kprobe: scratch pytest plugin outside the repo; counts Kernel.tick_once calls and, when KPROBE_FORCE=1, forces audit_mode=True and max_tick_budget_ms=10000000 for the scratch run only"
+  },
+  "tests": {
+    "files": [
+      "tests/unit/strategic/test_fused_strategic_pass_fast_path_characterisation.py",
+      "tests/unit/strategic/test_fused_strategic_pass_routing_family.py",
+      "tests/unit/strategic/test_strategic_regroup_keeps_the_step_time.py",
+      "tests/unit/strategic/test_intelligence_routine_blockers.py",
+      "tests/unit/strategic/test_capacity_enforcement.py",
+      "tests/unit/strategic/test_cognition_authoritative_path.py",
+      "tests/unit/strategic/test_belief_integration.py",
+      "tests/unit/strategic/test_belief_staleness_decay_pipeline.py",
+      "tests/integration/optimization/test_force_full_scan_phase_compliance.py",
+      "tests/integrity/test_logic_guards.py",
+      "tests/mechanic_scenarios/test_strategic_intelligence_detour_resolution.py",
+      "tests/unit/engine/test_lodging_no_bed_and_arrival.py",
+      "tests/unit/systems/test_quest_activation_pathway.py"
+    ],
+    "count": 13,
+    "rule": "the 13 test files that call fused_strategic_pass on 1fb40ac76 (grep), plus all of tests/unit/strategic/ (the directory path is in the runner)",
+    "unmutated_run": "567 passed, 3 xfailed in 61 s on the 13 callers plus the directory, before the characterisation file was moved to the front of the order (same set)"
+  },
+  "counts": {
+    "mutants_in_function_range": 452,
+    "tested": 105,
+    "not_reached": 347,
+    "killed": 61,
+    "survived": 44,
+    "timeout": 0,
+    "suspicious": 0,
+    "equivalent": "not-classified",
+    "kill_rate_of_tested": 0.581,
+    "kill_rate_note": "killed / (killed + survived) = 61/105 over the covered lines 309-395 only; it says nothing about lines 396-707",
+    "outside_range_skipped_or_untested": "mutants on other functions of the file (128 skipped, 650 not reached) are not part of this measure"
+  },
+  "result_categories": {
+    "killed": "mutmut ok_killed",
+    "survived": "mutmut bad_survived",
+    "timeout": "none",
+    "suspicious": "none",
+    "equivalent": "mutmut does not classify equivalent mutants; none were classified here"
+  },
+  "stale_after": {
+    "target_sha256_changes": true,
+    "selection_changed": true,
+    "days": 30
+  },
+  "survivors": [
+    {
+      "id": 131,
+      "location": "src/systems/strategic_systems/intelligence.py:311",
+      "diff": "--- src/systems/strategic_systems/intelligence.py\n+++ src/systems/strategic_systems/intelligence.py\n@@ -308,7 +308,7 @@\n         Logic ID: STRAT-PERF-001 (Consolidated O(N) pass for strategic state)\n         \"\"\"\n         cadence = cadence or SystemCadence()\n-        cad_val = cadence.strategic_intelligence\n+        cad_val = None\n \n         refined_entity_updates = dict(update.entity_updates)",
+      "material_sample": null
+    },
+    {
+      "id": 133,
+      "location": "src/systems/strategic_systems/intelligence.py:315",
+      "diff": "--- src/systems/strategic_systems/intelligence.py\n+++ src/systems/strategic_systems/intelligence.py\n@@ -312,7 +312,7 @@\n \n         refined_entity_updates = dict(update.entity_updates)\n \n-        def has_item(inventory, item_id: str, quantity: int = 1) -> bool:\n+        def has_item(inventory, item_id: str, quantity: int = 2) -> bool:\n             if item_id == \"gold\":\n                 return inventory.gold >= quantity\n             for stack in inventory.items:",
+      "material_sample": null
+    },
+    {
+      "id": 135,
+      "location": "src/systems/strategic_systems/intelligence.py:316",
+      "diff": "--- src/systems/strategic_systems/intelligence.py\n+++ src/systems/strategic_systems/intelligence.py\n@@ -313,7 +313,7 @@\n         refined_entity_updates = dict(update.entity_updates)\n \n         def has_item(inventory, item_id: str, quantity: int = 1) -> bool:\n-            if item_id == \"gold\":\n+            if item_id == \"XXgoldXX\":\n                 return inventory.gold >= quantity\n             for stack in inventory.items:\n                 sid = getattr(stack, \"item_id\", stack)",
+      "material_sample": null
+    },
+    {
+      "id": 136,
+      "location": "src/systems/strategic_systems/intelligence.py:317",
+      "diff": "--- src/systems/strategic_systems/intelligence.py\n+++ src/systems/strategic_systems/intelligence.py\n@@ -314,7 +314,7 @@\n \n         def has_item(inventory, item_id: str, quantity: int = 1) -> bool:\n             if item_id == \"gold\":\n-                return inventory.gold >= quantity\n+                return inventory.gold > quantity\n             for stack in inventory.items:\n                 sid = getattr(stack, \"item_id\", stack)\n                 if sid == item_id:",
+      "material_sample": null
+    },
+    {
+      "id": 140,
+      "location": "src/systems/strategic_systems/intelligence.py:321",
+      "diff": "--- src/systems/strategic_systems/intelligence.py\n+++ src/systems/strategic_systems/intelligence.py\n@@ -318,7 +318,7 @@\n             for stack in inventory.items:\n                 sid = getattr(stack, \"item_id\", stack)\n                 if sid == item_id:\n-                    sqty = getattr(stack, \"quantity\", 1)\n+                    sqty = getattr(stack, \"XXquantityXX\", 1)\n                     if sqty >= quantity:\n                         return True\n             return False",
+      "material_sample": null
+    },
+    {
+      "id": 141,
+      "location": "src/systems/strategic_systems/intelligence.py:321",
+      "diff": "--- src/systems/strategic_systems/intelligence.py\n+++ src/systems/strategic_systems/intelligence.py\n@@ -318,7 +318,7 @@\n             for stack in inventory.items:\n                 sid = getattr(stack, \"item_id\", stack)\n                 if sid == item_id:\n-                    sqty = getattr(stack, \"quantity\", 1)\n+                    sqty = getattr(stack, \"quantity\", 2)\n                     if sqty >= quantity:\n                         return True\n             return False",
+      "material_sample": null
+    },
+    {
+      "id": 146,
+      "location": "src/systems/strategic_systems/intelligence.py:326",
+      "diff": "--- src/systems/strategic_systems/intelligence.py\n+++ src/systems/strategic_systems/intelligence.py\n@@ -323,7 +323,7 @@\n                         return True\n             return False\n \n-        has_hostiles_or_dead = getattr(state, \"_has_hostiles_or_dead_cache\", None)\n+        has_hostiles_or_dead = getattr(state, \"XX_has_hostiles_or_dead_cacheXX\", None)\n         if has_hostiles_or_dead is None:\n             # Kept consistent with src/core/state.py's own __post_init__ computation of the same\n             # cache field (TCK-20260919-COMBAT-ENGAGED-HOSTILES-UNIFY-CATALOG-SEMANTICS): compare",
+      "material_sample": null
+    },
+    {
+      "id": 147,
+      "location": "src/systems/strategic_systems/intelligence.py:326",
+      "diff": "--- src/systems/strategic_systems/intelligence.py\n+++ src/systems/strategic_systems/intelligence.py\n@@ -323,7 +323,7 @@\n                         return True\n             return False\n \n-        has_hostiles_or_dead = getattr(state, \"_has_hostiles_or_dead_cache\", None)\n+        has_hostiles_or_dead = None\n         if has_hostiles_or_dead is None:\n             # Kept consistent with src/core/state.py's own __post_init__ computation of the same\n             # cache field (TCK-20260919-COMBAT-ENGAGED-HOSTILES-UNIFY-CATALOG-SEMANTICS): compare",
+      "material_sample": null
+    },
+    {
+      "id": 148,
+      "location": "src/systems/strategic_systems/intelligence.py:327",
+      "diff": "--- src/systems/strategic_systems/intelligence.py\n+++ src/systems/strategic_systems/intelligence.py\n@@ -324,7 +324,7 @@\n             return False\n \n         has_hostiles_or_dead = getattr(state, \"_has_hostiles_or_dead_cache\", None)\n-        if has_hostiles_or_dead is None:\n+        if has_hostiles_or_dead is not None:\n             # Kept consistent with src/core/state.py's own __post_init__ computation of the same\n             # cache field (TCK-20260919-COMBAT-ENGAGED-HOSTILES-UNIFY-CATALOG-SEMANTICS): compare\n             # the real content faction_id first, falling back to the raw legacy enum only when",
+      "material_sample": null
+    },
+    {
+      "id": 149,
+      "location": "src/systems/strategic_systems/intelligence.py:333",
+      "diff": "--- src/systems/strategic_systems/intelligence.py\n+++ src/systems/strategic_systems/intelligence.py\n@@ -330,7 +330,7 @@\n             # the real content faction_id first, falling back to the raw legacy enum only when\n             # absent, so this recomputation path can't reintroduce the same false-negative\n             # collapse the state.py fix corrected.\n-            first_fac = None\n+            first_fac = \"\"\n             has_diff = False\n             has_dead = False\n             for ent in state.entities.values():",
+      "material_sample": null
+    },
+    {
+      "id": 150,
+      "location": "src/systems/strategic_systems/intelligence.py:334",
+      "diff": "--- src/systems/strategic_systems/intelligence.py\n+++ src/systems/strategic_systems/intelligence.py\n@@ -331,7 +331,7 @@\n             # absent, so this recomputation path can't reintroduce the same false-negative\n             # collapse the state.py fix corrected.\n             first_fac = None\n-            has_diff = False\n+            has_diff = True\n             has_dead = False\n             for ent in state.entities.values():\n                 if not ent.combat.alive:",
+      "material_sample": null
+    },
+    {
+      "id": 151,
+      "location": "src/systems/strategic_systems/intelligence.py:334",
+      "diff": "--- src/systems/strategic_systems/intelligence.py\n+++ src/systems/strategic_systems/intelligence.py\n@@ -331,7 +331,7 @@\n             # absent, so this recomputation path can't reintroduce the same false-negative\n             # collapse the state.py fix corrected.\n             first_fac = None\n-            has_diff = False\n+            has_diff = None\n             has_dead = False\n             for ent in state.entities.values():\n                 if not ent.combat.alive:",
+      "material_sample": null
+    },
+    {
+      "id": 152,
+      "location": "src/systems/strategic_systems/intelligence.py:335",
+      "diff": "--- src/systems/strategic_systems/intelligence.py\n+++ src/systems/strategic_systems/intelligence.py\n@@ -332,7 +332,7 @@\n             # collapse the state.py fix corrected.\n             first_fac = None\n             has_diff = False\n-            has_dead = False\n+            has_dead = True\n             for ent in state.entities.values():\n                 if not ent.combat.alive:\n                     has_dead = True",
+      "material_sample": null
+    },
+    {
+      "id": 153,
+      "location": "src/systems/strategic_systems/intelligence.py:335",
+      "diff": "--- src/systems/strategic_systems/intelligence.py\n+++ src/systems/strategic_systems/intelligence.py\n@@ -332,7 +332,7 @@\n             # collapse the state.py fix corrected.\n             first_fac = None\n             has_diff = False\n-            has_dead = False\n+            has_dead = None\n             for ent in state.entities.values():\n                 if not ent.combat.alive:\n                     has_dead = True",
+      "material_sample": null
+    },
+    {
+      "id": 154,
+      "location": "src/systems/strategic_systems/intelligence.py:337",
+      "diff": "--- src/systems/strategic_systems/intelligence.py\n+++ src/systems/strategic_systems/intelligence.py\n@@ -334,7 +334,7 @@\n             has_diff = False\n             has_dead = False\n             for ent in state.entities.values():\n-                if not ent.combat.alive:\n+                if  ent.combat.alive:\n                     has_dead = True\n                 fac_key = ent.identity.properties.get(\"faction_id\") or ent.identity.faction\n                 if first_fac is None:",
+      "material_sample": null
+    },
+    {
+      "id": 155,
+      "location": "src/systems/strategic_systems/intelligence.py:338",
+      "diff": "--- src/systems/strategic_systems/intelligence.py\n+++ src/systems/strategic_systems/intelligence.py\n@@ -335,7 +335,7 @@\n             has_dead = False\n             for ent in state.entities.values():\n                 if not ent.combat.alive:\n-                    has_dead = True\n+                    has_dead = False\n                 fac_key = ent.identity.properties.get(\"faction_id\") or ent.identity.faction\n                 if first_fac is None:\n                     first_fac = fac_key",
+      "material_sample": null
+    },
+    {
+      "id": 156,
+      "location": "src/systems/strategic_systems/intelligence.py:338",
+      "diff": "--- src/systems/strategic_systems/intelligence.py\n+++ src/systems/strategic_systems/intelligence.py\n@@ -335,7 +335,7 @@\n             has_dead = False\n             for ent in state.entities.values():\n                 if not ent.combat.alive:\n-                    has_dead = True\n+                    has_dead = None\n                 fac_key = ent.identity.properties.get(\"faction_id\") or ent.identity.faction\n                 if first_fac is None:\n                     first_fac = fac_key",
+      "material_sample": null
+    },
+    {
+      "id": 157,
+      "location": "src/systems/strategic_systems/intelligence.py:339",
+      "diff": "--- src/systems/strategic_systems/intelligence.py\n+++ src/systems/strategic_systems/intelligence.py\n@@ -336,7 +336,7 @@\n             for ent in state.entities.values():\n                 if not ent.combat.alive:\n                     has_dead = True\n-                fac_key = ent.identity.properties.get(\"faction_id\") or ent.identity.faction\n+                fac_key = ent.identity.properties.get(\"XXfaction_idXX\") or ent.identity.faction\n                 if first_fac is None:\n                     first_fac = fac_key\n                 elif fac_key != first_fac:",
+      "material_sample": null
+    },
+    {
+      "id": 158,
+      "location": "src/systems/strategic_systems/intelligence.py:339",
+      "diff": "--- src/systems/strategic_systems/intelligence.py\n+++ src/systems/strategic_systems/intelligence.py\n@@ -336,7 +336,7 @@\n             for ent in state.entities.values():\n                 if not ent.combat.alive:\n                     has_dead = True\n-                fac_key = ent.identity.properties.get(\"faction_id\") or ent.identity.faction\n+                fac_key = ent.identity.properties.get(\"faction_id\") and ent.identity.faction\n                 if first_fac is None:\n                     first_fac = fac_key\n                 elif fac_key != first_fac:",
+      "material_sample": null
+    },
+    {
+      "id": 159,
+      "location": "src/systems/strategic_systems/intelligence.py:339",
+      "diff": "--- src/systems/strategic_systems/intelligence.py\n+++ src/systems/strategic_systems/intelligence.py\n@@ -336,7 +336,7 @@\n             for ent in state.entities.values():\n                 if not ent.combat.alive:\n                     has_dead = True\n-                fac_key = ent.identity.properties.get(\"faction_id\") or ent.identity.faction\n+                fac_key = None\n                 if first_fac is None:\n                     first_fac = fac_key\n                 elif fac_key != first_fac:",
+      "material_sample": null
+    },
+    {
+      "id": 160,
+      "location": "src/systems/strategic_systems/intelligence.py:340",
+      "diff": "--- src/systems/strategic_systems/intelligence.py\n+++ src/systems/strategic_systems/intelligence.py\n@@ -337,7 +337,7 @@\n                 if not ent.combat.alive:\n                     has_dead = True\n                 fac_key = ent.identity.properties.get(\"faction_id\") or ent.identity.faction\n-                if first_fac is None:\n+                if first_fac is not None:\n                     first_fac = fac_key\n                 elif fac_key != first_fac:\n                     has_diff = True",
+      "material_sample": null
+    },
+    {
+      "id": 161,
+      "location": "src/systems/strategic_systems/intelligence.py:341",
+      "diff": "--- src/systems/strategic_systems/intelligence.py\n+++ src/systems/strategic_systems/intelligence.py\n@@ -338,7 +338,7 @@\n                     has_dead = True\n                 fac_key = ent.identity.properties.get(\"faction_id\") or ent.identity.faction\n                 if first_fac is None:\n-                    first_fac = fac_key\n+                    first_fac = None\n                 elif fac_key != first_fac:\n                     has_diff = True\n                 if has_dead and has_diff:",
+      "material_sample": null
+    },
+    {
+      "id": 162,
+      "location": "src/systems/strategic_systems/intelligence.py:342",
+      "diff": "--- src/systems/strategic_systems/intelligence.py\n+++ src/systems/strategic_systems/intelligence.py\n@@ -339,7 +339,7 @@\n                 fac_key = ent.identity.properties.get(\"faction_id\") or ent.identity.faction\n                 if first_fac is None:\n                     first_fac = fac_key\n-                elif fac_key != first_fac:\n+                elif fac_key == first_fac:\n                     has_diff = True\n                 if has_dead and has_diff:\n                     break",
+      "material_sample": null
+    },
+    {
+      "id": 163,
+      "location": "src/systems/strategic_systems/intelligence.py:343",
+      "diff": "--- src/systems/strategic_systems/intelligence.py\n+++ src/systems/strategic_systems/intelligence.py\n@@ -340,7 +340,7 @@\n                 if first_fac is None:\n                     first_fac = fac_key\n                 elif fac_key != first_fac:\n-                    has_diff = True\n+                    has_diff = False\n                 if has_dead and has_diff:\n                     break\n             has_hostiles_or_dead = (has_diff or has_dead)",
+      "material_sample": null
+    },
+    {
+      "id": 164,
+      "location": "src/systems/strategic_systems/intelligence.py:343",
+      "diff": "--- src/systems/strategic_systems/intelligence.py\n+++ src/systems/strategic_systems/intelligence.py\n@@ -340,7 +340,7 @@\n                 if first_fac is None:\n                     first_fac = fac_key\n                 elif fac_key != first_fac:\n-                    has_diff = True\n+                    has_diff = None\n                 if has_dead and has_diff:\n                     break\n             has_hostiles_or_dead = (has_diff or has_dead)",
+      "material_sample": null
+    },
+    {
+      "id": 165,
+      "location": "src/systems/strategic_systems/intelligence.py:344",
+      "diff": "--- src/systems/strategic_systems/intelligence.py\n+++ src/systems/strategic_systems/intelligence.py\n@@ -341,7 +341,7 @@\n                     first_fac = fac_key\n                 elif fac_key != first_fac:\n                     has_diff = True\n-                if has_dead and has_diff:\n+                if has_dead or has_diff:\n                     break\n             has_hostiles_or_dead = (has_diff or has_dead)\n             try: object.__setattr__(state, \"_has_hostiles_or_dead_cache\", has_hostiles_or_dead)",
+      "material_sample": null
+    },
+    {
+      "id": 166,
+      "location": "src/systems/strategic_systems/intelligence.py:345",
+      "diff": "--- src/systems/strategic_systems/intelligence.py\n+++ src/systems/strategic_systems/intelligence.py\n@@ -342,7 +342,7 @@\n                 elif fac_key != first_fac:\n                     has_diff = True\n                 if has_dead and has_diff:\n-                    break\n+                    continue\n             has_hostiles_or_dead = (has_diff or has_dead)\n             try: object.__setattr__(state, \"_has_hostiles_or_dead_cache\", has_hostiles_or_dead)\n             except: pass",
+      "material_sample": null
+    },
+    {
+      "id": 167,
+      "location": "src/systems/strategic_systems/intelligence.py:346",
+      "diff": "--- src/systems/strategic_systems/intelligence.py\n+++ src/systems/strategic_systems/intelligence.py\n@@ -343,7 +343,7 @@\n                     has_diff = True\n                 if has_dead and has_diff:\n                     break\n-            has_hostiles_or_dead = (has_diff or has_dead)\n+            has_hostiles_or_dead = (has_diff and has_dead)\n             try: object.__setattr__(state, \"_has_hostiles_or_dead_cache\", has_hostiles_or_dead)\n             except: pass",
+      "material_sample": null
+    },
+    {
+      "id": 168,
+      "location": "src/systems/strategic_systems/intelligence.py:346",
+      "diff": "--- src/systems/strategic_systems/intelligence.py\n+++ src/systems/strategic_systems/intelligence.py\n@@ -343,7 +343,7 @@\n                     has_diff = True\n                 if has_dead and has_diff:\n                     break\n-            has_hostiles_or_dead = (has_diff or has_dead)\n+            has_hostiles_or_dead = None\n             try: object.__setattr__(state, \"_has_hostiles_or_dead_cache\", has_hostiles_or_dead)\n             except: pass",
+      "material_sample": null
+    },
+    {
+      "id": 169,
+      "location": "src/systems/strategic_systems/intelligence.py:347",
+      "diff": "--- src/systems/strategic_systems/intelligence.py\n+++ src/systems/strategic_systems/intelligence.py\n@@ -344,7 +344,7 @@\n                 if has_dead and has_diff:\n                     break\n             has_hostiles_or_dead = (has_diff or has_dead)\n-            try: object.__setattr__(state, \"_has_hostiles_or_dead_cache\", has_hostiles_or_dead)\n+            try: object.__setattr__(state, \"XX_has_hostiles_or_dead_cacheXX\", has_hostiles_or_dead)\n             except: pass\n \n         # Evaluation of routine blockers and concerns must run across candidate entities",
+      "material_sample": null
+    },
+    {
+      "id": 170,
+      "location": "src/systems/strategic_systems/intelligence.py:352",
+      "diff": "--- src/systems/strategic_systems/intelligence.py\n+++ src/systems/strategic_systems/intelligence.py\n@@ -349,7 +349,7 @@\n \n         # Evaluation of routine blockers and concerns must run across candidate entities\n         # Logic ID: PERF-006 (Dirty Entity Tracking for specific sub-phases, but routine pass is global)\n-        fast_hits = 0\n+        fast_hits = 1\n         fast_misses = 0\n         policy = getattr(update, \"current_policy_set\", None) or GovernorPolicy()\n         candidate_ids = StrategicWorkQueue.build(",
+      "material_sample": null
+    },
+    {
+      "id": 172,
+      "location": "src/systems/strategic_systems/intelligence.py:353",
+      "diff": "--- src/systems/strategic_systems/intelligence.py\n+++ src/systems/strategic_systems/intelligence.py\n@@ -350,7 +350,7 @@\n         # Evaluation of routine blockers and concerns must run across candidate entities\n         # Logic ID: PERF-006 (Dirty Entity Tracking for specific sub-phases, but routine pass is global)\n         fast_hits = 0\n-        fast_misses = 0\n+        fast_misses = 1\n         policy = getattr(update, \"current_policy_set\", None) or GovernorPolicy()\n         candidate_ids = StrategicWorkQueue.build(\n             state, update, get_dirty_set(update),",
+      "material_sample": null
+    },
+    {
+      "id": 174,
+      "location": "src/systems/strategic_systems/intelligence.py:354",
+      "diff": "--- src/systems/strategic_systems/intelligence.py\n+++ src/systems/strategic_systems/intelligence.py\n@@ -351,7 +351,7 @@\n         # Logic ID: PERF-006 (Dirty Entity Tracking for specific sub-phases, but routine pass is global)\n         fast_hits = 0\n         fast_misses = 0\n-        policy = getattr(update, \"current_policy_set\", None) or GovernorPolicy()\n+        policy = getattr(update, \"XXcurrent_policy_setXX\", None) or GovernorPolicy()\n         candidate_ids = StrategicWorkQueue.build(\n             state, update, get_dirty_set(update), \n             budget=policy.strategic_budget,",
+      "material_sample": null
+    },
+    {
+      "id": 181,
+      "location": "src/systems/strategic_systems/intelligence.py:363",
+      "diff": "--- src/systems/strategic_systems/intelligence.py\n+++ src/systems/strategic_systems/intelligence.py\n@@ -360,7 +360,7 @@\n         for e_id in candidate_ids:\n             entity = state.entities[e_id]\n             # Early exit: Skip inactive/dead entities entirely\n-            if not entity.lifecycle.active or not entity.combat.alive:\n+            if not entity.lifecycle.active and not entity.combat.alive:\n                 continue\n             \n             ent_upd = refined_entity_updates.get(e_id)",
+      "material_sample": null
+    },
+    {
+      "id": 182,
+      "location": "src/systems/strategic_systems/intelligence.py:364",
+      "diff": "--- src/systems/strategic_systems/intelligence.py\n+++ src/systems/strategic_systems/intelligence.py\n@@ -361,7 +361,7 @@\n             entity = state.entities[e_id]\n             # Early exit: Skip inactive/dead entities entirely\n             if not entity.lifecycle.active or not entity.combat.alive:\n-                continue\n+                break\n             \n             ent_upd = refined_entity_updates.get(e_id)\n             has_existing_upd = ent_upd is not None",
+      "material_sample": null
+    },
+    {
+      "id": 186,
+      "location": "src/systems/strategic_systems/intelligence.py:368",
+      "diff": "--- src/systems/strategic_systems/intelligence.py\n+++ src/systems/strategic_systems/intelligence.py\n@@ -365,7 +365,7 @@\n             \n             ent_upd = refined_entity_updates.get(e_id)\n             has_existing_upd = ent_upd is not None\n-            strat_up = ent_upd.strategic if ent_upd else None\n+            strat_up = None\n             lodged_stayer = is_lodged_stayer(entity)   # F3: a lodger whose rest goes on has no movement intent; the walk-target writers below skip it\n             \n             pending_inventory = entity.inventory",
+      "material_sample": null
+    },
+    {
+      "id": 200,
+      "location": "src/systems/strategic_systems/intelligence.py:379",
+      "diff": "--- src/systems/strategic_systems/intelligence.py\n+++ src/systems/strategic_systems/intelligence.py\n@@ -376,7 +376,7 @@\n             eval_intents = should_run(state.tick, e_id, cadence.strategic_intelligence)\n             \n             if not eval_concerns and not eval_intents and strat_up is None and not entity.strategic.blockers and not entity.strategic.leads:\n-                nav_changed = False\n+                nav_changed = None\n                 proj_resolved = False\n                 curr_proj_id = entity.strategic.current_project_id\n                 project = None",
+      "material_sample": null
+    },
+    {
+      "id": 202,
+      "location": "src/systems/strategic_systems/intelligence.py:380",
+      "diff": "--- src/systems/strategic_systems/intelligence.py\n+++ src/systems/strategic_systems/intelligence.py\n@@ -377,7 +377,7 @@\n             \n             if not eval_concerns and not eval_intents and strat_up is None and not entity.strategic.blockers and not entity.strategic.leads:\n                 nav_changed = False\n-                proj_resolved = False\n+                proj_resolved = None\n                 curr_proj_id = entity.strategic.current_project_id\n                 project = None\n                 active_obj = None",
+      "material_sample": null
+    },
+    {
+      "id": 204,
+      "location": "src/systems/strategic_systems/intelligence.py:382",
+      "diff": "--- src/systems/strategic_systems/intelligence.py\n+++ src/systems/strategic_systems/intelligence.py\n@@ -379,7 +379,7 @@\n                 nav_changed = False\n                 proj_resolved = False\n                 curr_proj_id = entity.strategic.current_project_id\n-                project = None\n+                project = \"\"\n                 active_obj = None\n                 if curr_proj_id:\n                     project = entity.strategic.projects.get(curr_proj_id)",
+      "material_sample": null
+    },
+    {
+      "id": 205,
+      "location": "src/systems/strategic_systems/intelligence.py:383",
+      "diff": "--- src/systems/strategic_systems/intelligence.py\n+++ src/systems/strategic_systems/intelligence.py\n@@ -380,7 +380,7 @@\n                 proj_resolved = False\n                 curr_proj_id = entity.strategic.current_project_id\n                 project = None\n-                active_obj = None\n+                active_obj = \"\"\n                 if curr_proj_id:\n                     project = entity.strategic.projects.get(curr_proj_id)\n                     if project and project.status == ProjectStatus.ACTIVE:",
+      "material_sample": null
+    },
+    {
+      "id": 208,
+      "location": "src/systems/strategic_systems/intelligence.py:386",
+      "diff": "--- src/systems/strategic_systems/intelligence.py\n+++ src/systems/strategic_systems/intelligence.py\n@@ -383,7 +383,7 @@\n                 active_obj = None\n                 if curr_proj_id:\n                     project = entity.strategic.projects.get(curr_proj_id)\n-                    if project and project.status == ProjectStatus.ACTIVE:\n+                    if project or project.status == ProjectStatus.ACTIVE:\n                         active_obj = next((o for o in project.objectives if o.id == project.active_objective_id), None)\n                         if active_obj and active_obj.status == ObjectiveStatus.ACTIVE:\n                             if active_obj.kind in (\"craft\", \"collect\") and has_item(pending_inventory, active_obj.target, 1):",
+      "material_sample": null
+    },
+    {
+      "id": 212,
+      "location": "src/systems/strategic_systems/intelligence.py:388",
+      "diff": "--- src/systems/strategic_systems/intelligence.py\n+++ src/systems/strategic_systems/intelligence.py\n@@ -385,7 +385,7 @@\n                     project = entity.strategic.projects.get(curr_proj_id)\n                     if project and project.status == ProjectStatus.ACTIVE:\n                         active_obj = next((o for o in project.objectives if o.id == project.active_objective_id), None)\n-                        if active_obj and active_obj.status == ObjectiveStatus.ACTIVE:\n+                        if active_obj or active_obj.status == ObjectiveStatus.ACTIVE:\n                             if active_obj.kind in (\"craft\", \"collect\") and has_item(pending_inventory, active_obj.target, 1):\n                                 proj_resolved = True\n                             target_pos = getattr(active_obj, 'target_position', None)",
+      "material_sample": null
+    },
+    {
+      "id": 217,
+      "location": "src/systems/strategic_systems/intelligence.py:389",
+      "diff": "--- src/systems/strategic_systems/intelligence.py\n+++ src/systems/strategic_systems/intelligence.py\n@@ -386,7 +386,7 @@\n                     if project and project.status == ProjectStatus.ACTIVE:\n                         active_obj = next((o for o in project.objectives if o.id == project.active_objective_id), None)\n                         if active_obj and active_obj.status == ObjectiveStatus.ACTIVE:\n-                            if active_obj.kind in (\"craft\", \"collect\") and has_item(pending_inventory, active_obj.target, 1):\n+                            if active_obj.kind in (\"craft\", \"collect\") or has_item(pending_inventory, active_obj.target, 1):\n                                 proj_resolved = True\n                             target_pos = getattr(active_obj, 'target_position', None)\n                             if target_pos and entity.navigation.target != target_pos:",
+      "material_sample": null
+    },
+    {
+      "id": 223,
+      "location": "src/systems/strategic_systems/intelligence.py:392",
+      "diff": "--- src/systems/strategic_systems/intelligence.py\n+++ src/systems/strategic_systems/intelligence.py\n@@ -389,7 +389,7 @@\n                             if active_obj.kind in (\"craft\", \"collect\") and has_item(pending_inventory, active_obj.target, 1):\n                                 proj_resolved = True\n                             target_pos = getattr(active_obj, 'target_position', None)\n-                            if target_pos and entity.navigation.target != target_pos:\n+                            if target_pos or entity.navigation.target != target_pos:\n                                 nav_changed = True\n                 if not nav_changed and not proj_resolved:\n                     if not lodged_stayer and not (curr_proj_id and project and project.status == ProjectStatus.ACTIVE and active_obj and getattr(active_obj, 'target_position', None) is not None):",
+      "material_sample": null
+    }
+  ],
+  "expectation_note": "Report only. No survivor-count threshold applies; survivors are listed, not fixed, and none is called a defect. A complete run needs a new host slot through rpg-planner (about 347 mutants left; the covered stretch ran at roughly 1.2 mutants per minute, so a full pass is a multi-hour job)."
+}

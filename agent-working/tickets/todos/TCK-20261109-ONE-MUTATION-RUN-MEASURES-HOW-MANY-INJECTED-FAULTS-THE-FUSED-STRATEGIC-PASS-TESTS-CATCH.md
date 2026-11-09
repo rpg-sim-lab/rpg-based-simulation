@@ -64,13 +64,13 @@ Owner go on issue #715, comment 6736269441 (item 2, E): one mutmut run on fused_
 - mutmut's version is pinned in the baseline's source_note.
 
 ## Implementation Notes
-(implementer)
+Ran 2026-11-09 11:28:30Z to 12:58:29Z on origin/main 1fb40ac76 (after C), mutmut 2.5.1, scratch on /mnt/data2. Stopped at the 90-min cap: PARTIAL. 452 mutants in the function range; 105 tested (61 killed, 44 survived), source lines 309-395 only; 347 not reached (lines 396-707). Baseline: tests/mutation/baselines/src_systems_strategic_intelligence_fused_v1.json (run.kind partial). A full pass needs a further host slot via rpg-planner.
 
 ## Test Summary
-(implementer)
+Unmutated selection: 567 passed, 3 xfailed. Positive control: the first killed mutants in the run.
 
 ## Files Changed
-(implementer)
+- tests/mutation/baselines/src_systems_strategic_intelligence_fused_v1.json (new)
 
 ## Completion Summary
 (implementer)
