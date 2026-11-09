@@ -40,6 +40,7 @@ Evidence (pinned traces; each hash-matches its cell):
   - crowded s43 #12: t3053, hp 13, swing 21, attacker 30, DEFEAT.
   - urban s46: no rows.
 - Hardening def2, fix arm 3300928e88c4: crowded s43 #1 and #8, crowded s45 #5, all with no decision on t, an ENTITY_ACT task, and the OA.
+- Hit-wake trace, urban s46 (B e755dc3d1 vs W aa209f2d6; defeat_{B,W}_5000.json in /mnt/data2/scratch-c3/): subject e24's fatal move off engagement was an engage BRACKETING step into the free swing, not a flight. So the same shape also arises from an engage move, not only from a no-decision ENTITY_ACT.
 - Attacker 30 lands most of these blows. Across def2, killer 30 landed 8 of 10 fatal swings.
 - Rows are in /mnt/data2/rpg-measure/flight/rows/*.json and /mnt/data2/scratch-c3/def2/rows.txt. They are copied into this ticket's evidence at scoping.
 
@@ -76,7 +77,7 @@ Evidence (pinned traces; each hash-matches its cell):
 - src/engine/tactical.py, src/engine/tactical_flight_guard.py
 
 ## Assumptions / Open Questions
-- Whether e24 BRACKETING folds in or is only related: asked of rpg-designer on 2026-11-10. Default: related.
+- rpg-designer, 2026-11-10: the BRACKETING ticket TCK-20261020 is related only (a different harm). The hit-wake subject e24's bracketing step is an evidence row here.
 - Dispatch needs rpg-designer's priority under the depth rule (#715 6731764470).
 
 ## Implementation Notes
