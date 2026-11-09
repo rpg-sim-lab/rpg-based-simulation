@@ -86,7 +86,7 @@ rpg-designer's lean, to be confirmed after the counts: real hits only.
 - Order: rpg-designer would put it ahead of LOW-HP-RETREAT, whose panic counts it muddies. rpg-planner's call, with the owner's yes for dispatch.
 
 ## Test Summary
-- New: `tests/unit/engine/test_near_death_hardening_hit_gate.py` (5 rows, max hp 100): a hit to 8 grants +5; a town +1 at 8 grants nothing; a hazard to 8 grants nothing; a hit plus a heal netting to 0 at 8 grants +5; a hit below 0 grants nothing. Checked against the old code: the town-heal and the hazard rows fail there; the other three pass there too.
+- New: `tests/unit/engine/test_near_death_hardening_hit_gate.py` (6 rows, max hp 100; the sixth builds the update through the real `CombatUpdate.merge`, a hit and a town heal in both orders): a hit to 8 grants +5; a town +1 at 8 grants nothing; a hazard to 8 grants nothing; a hit plus a heal netting to 0 at 8 grants +5; a hit below 0 grants nothing. Checked against the old code: the town-heal and the hazard rows fail there; the other three pass there too.
 - Four existing tests got a changed INPUT, assertions unchanged (rpg-planner decision, 2026-11-09): `tests/unit/engine/test_near_death_hardening_emotion.py` (3 tests) and `tests/unit/progression/test_species_base_stats_preserved.py::test_hardening_grants_five_accumulates_and_survives_recalc` (its `_harden` helper). Reason: their bare `CombatUpdate(hp_delta=<negative>)` stood for a hit only because the old rule read the sign of hp_delta; the ruled behaviour is a typed hit fact, so the inputs now carry `attacker_id`, `damage_taken = -hp_delta`, `hit_tick_set = tick`. Unchanged and passing: `test_emotion_near_death_hardening.py`, `test_lifecycle.py::test_near_death_hardening_logic`.
 
 ## Files Changed

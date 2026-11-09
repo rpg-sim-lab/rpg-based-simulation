@@ -83,3 +83,14 @@ def test_a_hit_and_a_heal_netting_to_zero_at_eight_grants_five():
 def test_a_hit_below_zero_grants_nothing():
     _, refined = _apply(10, _hit(20, alive_set=False))  # 10 - 20 < 0: the subject does not survive
     assert _nothing_granted(refined)
+
+
+def test_a_hit_and_a_town_heal_merged_through_combat_update_merge_still_grant_five():
+    # The phase reads the MERGED update for the tick: CombatUpdate.merge keeps the hit's attacker_id and hit_tick_set (a later writer with None leaves them) and sums
+    # damage_taken and hp_delta, in either order. 50 hp, hit for 45 (-45), town heal +1: projected 6, at the line.
+    hit = _hit(45)
+    town_heal = CombatUpdate(hp_delta=1)
+    for merged in (hit.merge(town_heal), town_heal.merge(hit)):
+        assert (merged.attacker_id, merged.damage_taken, merged.hit_tick_set, merged.hp_delta) == (2, 45, TICK, -44)
+        _, refined = _apply(50, merged)
+        assert _granted(refined)
