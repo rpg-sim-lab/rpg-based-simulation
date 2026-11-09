@@ -5121,6 +5121,18 @@
   - delivery
   - documentation
 - type: doc
+  path: docs/architecture/next_generation_engine_adr.md
+  title: 'ADR: the kernel/logic phase contract as the engine''s direction'
+  status: active
+  layer: architecture
+  authority: P2
+  audience: agent
+  tags:
+  - architecture
+  - engine
+  - determinism
+  - planning
+- type: doc
   path: docs/architecture/performance_optimization_decisions.md
   title: Performance Optimization Decisions
   status: active
@@ -5995,6 +6007,19 @@
   - architecture
   - performance
   - testing
+- type: doc
+  path: docs/plans/architecture/next_generation_engine_feasibility_review.md
+  title: 'Next-generation engine: feasibility review (DRAFT)'
+  status: active
+  layer: architecture
+  authority: P2
+  audience: agent
+  tags:
+  - architecture
+  - engine
+  - determinism
+  - performance
+  - planning
 - type: doc
   path: docs/plans/architecture/port_leak_audit.md
   title: 'Port-leak audit: what §5 of the engine execution modes proposal claims,
@@ -7995,6 +8020,26 @@
   - testing
   - regression
 - type: ticket
+  path: agent-working/tickets/done/TCK-20261109-NEXT-GENERATION-ENGINE-ADR.md
+  ticket_id: TCK-20261109-NEXT-GENERATION-ENGINE-ADR
+  title: 'ADR: the kernel/logic phase contract as the engine''s direction, with one
+    writer kept, Level A by default and trunk-additive delivery.'
+  tier: standard
+  ticket_type: feature
+  date: '2026-11-09'
+  related_code_areas:
+  - src/engine/pipeline.py
+  - src/engine/kernel.py
+  artifact_files:
+  - agent-working/stored_artifacts/TCK-20261109-NEXT-GENERATION-ENGINE-ADR/investigation.md
+  - agent-working/stored_artifacts/TCK-20261109-NEXT-GENERATION-ENGINE-ADR/plan.md
+  - agent-working/stored_artifacts/TCK-20261109-NEXT-GENERATION-ENGINE-ADR/test_plan.md
+  tags:
+  - architecture
+  - engine
+  - determinism
+  - planning
+- type: ticket
   path: agent-working/tickets/done/TCK-20261109-README-NAMES-A-CHECKPOINT-SEED-DEFECT-THAT-IS-FIXED.md
   ticket_id: TCK-20261109-README-NAMES-A-CHECKPOINT-SEED-DEFECT-THAT-IS-FIXED
   title: 'The README still lists the restored-checkpoint seed-0 defect as open, but
@@ -8253,6 +8298,69 @@
   - src/ai/goals/scorers.py (:168, :250, :273, :313)
   artifact_files: []
   tags: []
+- type: ticket
+  path: agent-working/tickets/todos/next-generation-engine/TCK-20261109-EPIC-NEXT-GENERATION-ENGINE.md
+  ticket_id: TCK-20261109-EPIC-NEXT-GENERATION-ENGINE
+  title: 'Separate the kernel from the RPG logic behind an explicit phase contract,
+    so execution kernels can be swapped (serial first, then a
+
+    measured parallel one), with exact legacy equivalence and the current engine kept
+    as the reference.'
+  tier: epic
+  ticket_type: refactor
+  date: '2026-11-09'
+  related_code_areas:
+  - src/engine/pipeline.py
+  - src/engine/kernel.py
+  - src/core/updates.py
+  - src/platform/rng.py
+  - src/domains/cooperation/phase.py
+  - src/domains/combat_engagement/phase.py
+  - src/systems/strategic_systems/intelligence.py
+  artifact_files: []
+  tags:
+  - architecture
+  - engine
+  - determinism
+  - performance
+  - planning
+- type: ticket
+  path: agent-working/tickets/todos/next-generation-engine/TCK-20261109-NEXT-GENERATION-ENGINE-ACCESS-AUDIT.md
+  ticket_id: TCK-20261109-NEXT-GENERATION-ENGINE-ACCESS-AUDIT
+  title: 'Stage 1: declare each Resolution step''s reads and writes, and audit them
+    against observed access with an observe-only hook that is
+
+    off by default and hash-neutral.'
+  tier: standard
+  ticket_type: feature
+  date: '2026-11-09'
+  related_code_areas:
+  - 'src/engine/pipeline.py (step dispatch: the hook only)'
+  - src/engine/phase_graph.py (read-only reference)
+  artifact_files: []
+  tags:
+  - architecture
+  - engine
+  - determinism
+- type: ticket
+  path: agent-working/tickets/todos/next-generation-engine/TCK-20261109-NEXT-GENERATION-ENGINE-CONTRACT-SPEC.md
+  ticket_id: TCK-20261109-NEXT-GENERATION-ENGINE-CONTRACT-SPEC
+  title: Specify the kernel/logic phase contract and its deterministic merge rules,
+    so the serial kernel can be reproduced exactly behind it.
+  tier: standard
+  ticket_type: feature
+  date: '2026-11-09'
+  related_code_areas:
+  - src/core/updates.py
+  - src/engine/pipeline.py
+  - src/engine/apply.py
+  - src/domains/cooperation/phase.py
+  - src/systems/strategic_systems/intelligence.py
+  artifact_files: []
+  tags:
+  - architecture
+  - engine
+  - determinism
 - type: ticket
   path: agent-working/tickets/done/TCK-20261108-DLQ-CONTRACT-NAMES-NO-OUTCOME-FOR-A-FAILED-DLQ-WRITE.md
   ticket_id: TCK-20261108-DLQ-CONTRACT-NAMES-NO-OUTCOME-FOR-A-FAILED-DLQ-WRITE

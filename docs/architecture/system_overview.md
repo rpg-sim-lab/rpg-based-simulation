@@ -59,6 +59,11 @@ flowchart LR
 - **No message broker beyond Redis Streams.** There is no Kafka or RabbitMQ in the running system, and no relational database: run data is
   analytical and append-only.
 
+**Direction: execution kernels become swappable behind a phase contract** (ADR, #715 6735575831; `next_generation_engine_adr.md`). RPG
+logic will declare what each step reads and writes and return typed deltas, and the kernel will own order, merge and commit. Until a
+stage lands, the serial fold in `pipeline.py` is the only executor. Any other executor must give identical results, and may run
+Resolution in parallel only after the Gate B evaluation (C-10, PERF-M6-T05).
+
 ## Ops capabilities and their evidence level
 
 Levels are those of the DevOps baseline ADR (D7). A capability is listed at the highest level it has **actually reached**, never the planned one.
