@@ -101,6 +101,9 @@ NOT LANDED. Parked with the hit-wake fix by the owner (#715 6776436829), so the 
 - Un-park options (rpg-designer to rule; rpg-planner dispatches):
   - land it alone, with its own hash-move measurement;
   - or keep it with hit-wake's revisit.
-- Note: SOC-227 on main still claims the field holds the formation tick. The ledger's `divergent` marking rode the parked branch, so main's ledger stays wrong until this lands.
+- On main, two docs-only corrections ride with A+B (rpg-planner, 2026-11-11, prompted by lead-planner-u24):
+  - SOC-227 is set to `divergent`, with a note naming this ticket;
+  - party_contract.md:29 now says the field is intended to hold the formation tick but is currently never written.
+  When this lands, set SOC-227 back to verified and restore line 29.
 
 Parked branch's own summary: Option (b): formation_tick is stamped with state.tick at both group-creation writers; no FIELD_RULES row (it cannot fire; old checkpoints keep 0, which is ambiguous on a restored group and said so in party_contract.md). The hash moves by construction and is measured once with the hit wake (arm F, 1 seed). Counts and reasoning in Implementation Notes.
