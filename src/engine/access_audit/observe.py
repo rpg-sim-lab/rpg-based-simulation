@@ -5,12 +5,32 @@ Plain attribute reads only: no ``to_dict``, digest or hash call that fills a cac
 INTO an unchanged sub-object (``object.__setattr__`` on a frozen sub-state) is not (one level of entity attributes is read, not their contents)."""
 from __future__ import annotations
 
+import collections
 import dataclasses
-from typing import Any, Dict, FrozenSet, Tuple
+import sys
+from typing import Any, Dict, FrozenSet, List, Tuple
 
 _PRIMITIVES = (int, float, str, bool, bytes, type(None))
-_CONTAINERS = (dict, list, set, frozenset, tuple)
+_CONTAINERS = (dict, list, set, frozenset, tuple, collections.deque)
 _NAMES_CACHE: Dict[type, Tuple[str, ...]] = {}
+
+# Tier 1 (plan 3a): content-hashed. State attributes (carried across ticks by reference) and the one per-entity attribute.
+WATCH_STATE_ATTRS: FrozenSet[str] = frozenset({
+    "route_plans", "movement_cache", "occupancy_snapshot", "_occupancy_map_cache", "transient_claims", "_has_hostiles_or_dead_cache", "world_indexes",
+    "_spatial_grid_cache", "_region_list_cache", "_node_map_cache", "_corpse_map_cache", "_ground_item_map_cache", "_building_map_cache",
+    "_region_index_cache", "_building_region_map_cache", "_readonly_entities_cache",
+})
+WATCH_ENTITY_ATTRS: FrozenSet[str] = frozenset({"timeline"})
+WATCH_PATHS: FrozenSet[str] = WATCH_STATE_ATTRS | frozenset(f"entities[*].{a}" for a in WATCH_ENTITY_ATTRS)
+# Process globals (plan 1): (module, attribute), read through ``sys.modules`` only, never imported from the hot path.
+GLOBAL_WATCH: Tuple[Tuple[str, str], ...] = (
+    ("src.content.terrain_cost", "_terrain_cache"),
+    ("src.core.registries", "runtime_content_source"),
+    ("src.content.common_knowledge_seed", "_warm_catalog_provider"),
+    ("src.content.common_knowledge_seed", "_fallback_catalog"),
+)
+_MAX_DEPTH = 3
+_NODE_BUDGET = 400
 
 
 def _declared_names(tp: type) -> Tuple[str, ...]:
@@ -43,23 +63,97 @@ def token(value: Any) -> Any:
     return id(value)
 
 
-def _attr_tokens(obj: Any, prefix: str, out: Dict[str, Any]) -> None:
-    """Add a token per attribute of ``obj`` to ``out`` under ``prefix``."""
-    for name in _attr_names(obj):
+_FROZEN: Dict[type, bool] = {}
+
+
+def _is_frozen_record(tp: type) -> bool:
+    """True for a frozen dataclass (an immutable record): its identity stands for its content."""
+    known = _FROZEN.get(tp)
+    if known is None:
+        params = getattr(tp, "__dataclass_params__", None)
+        known = _FROZEN[tp] = bool(params is not None and params.frozen) or tp in _PRIMITIVES
+    return known
+
+
+TIMELINE_MUTABLE_BY_CONTENT = False  # True: digest the content of a non-frozen timeline element (measured ~2.7x the ids-only cost on 100 ticks)
+
+
+def _element_token(element: Any) -> Any:
+    return digest(element, 1) if TIMELINE_MUTABLE_BY_CONTENT and not _is_frozen_record(type(element)) else id(element)
+
+
+def timeline_token(value: Any) -> Any:
+    """Token of an entity timeline: the deque's own id, its length, and per element its id (a frozen dataclass: immutable, so identity is content) or its content digest (a mutable record, e.g. a pydantic ``SimulationEvent``).
+
+    Kept behind this one function so full-content hashing is a one-line change."""
+    if isinstance(value, collections.deque):
+        return (id(value), len(value), hash(tuple(_element_token(e) for e in value)))
+    return token(value)
+
+
+TIMELINE_SAMPLE_EVERY = 100  # ticks between the sampled content checks of mutable timeline elements (reported as "sampled, not per step")
+
+
+def sample_mutable_timeline_elements(state: Any) -> Dict[int, Tuple[Any, str, int, Any]]:
+    """Per NON-frozen timeline element (frozen dataclasses are immutable, so identity is content), keyed by element id: ``(entity_id, type name, index in the deque, content digest)``."""
+    out: Dict[int, Tuple[Any, str, int, Any]] = {}
+    for e_id, ent in object.__getattribute__(state, "entities").items():
+        timeline = getattr(ent, "timeline", None)
+        for idx, element in enumerate(timeline if isinstance(timeline, collections.deque) else ()):
+            if not _is_frozen_record(type(element)):
+                out[id(element)] = (e_id, type(element).__name__, idx, digest(element, 1))
+    return out
+
+
+def digest(value: Any, depth: int = 0, budget: List[int] | None = None) -> Any:
+    """Content digest (keys, values, order) of ``value``, reading plain attributes only. Past ``_MAX_DEPTH`` or the node budget a node falls back to its id."""
+    if isinstance(value, _PRIMITIVES):
+        return value
+    budget = [_NODE_BUDGET] if budget is None else budget
+    budget[0] -= 1
+    if depth >= _MAX_DEPTH or budget[0] < 0:
+        return id(value)
+    nxt = depth + 1
+    if isinstance(value, dict):
+        return hash(tuple((k, digest(v, nxt, budget)) for k, v in value.items()))
+    if isinstance(value, (list, tuple, collections.deque)):
+        return hash((len(value), tuple(digest(v, nxt, budget) for v in value)))
+    if isinstance(value, (set, frozenset)):
+        return hash(frozenset(value))
+    return _object_digest(value, nxt, budget)
+
+
+def _object_digest(value: Any, depth: int, budget: List[int]) -> Any:
+    names = _attr_names(value)
+    if not names:
+        return id(value)
+    parts = []
+    for name in names:
         try:
-            out[prefix + name] = token(object.__getattribute__(obj, name))
+            parts.append(digest(object.__getattribute__(value, name), depth, budget))
         except AttributeError:
             continue
+    return hash((type(value).__name__, tuple(parts)))
+
+
+def _attr_tokens(obj: Any, prefix: str, out: Dict[str, Any], watch: FrozenSet[str] = frozenset(), timeline_names: FrozenSet[str] = frozenset()) -> None:
+    """Add a token per attribute of ``obj`` to ``out`` under ``prefix``: a content digest for a Tier 1 name, an id/len token otherwise."""
+    for name in _attr_names(obj):
+        try:
+            raw = object.__getattribute__(obj, name)
+        except AttributeError:
+            continue
+        out[prefix + name] = digest(raw) if name in watch else timeline_token(raw) if name in timeline_names else token(raw)
 
 
 def snapshot_state(state: Any) -> Dict[str, Any]:
     """Token per top-level state attribute, and per attribute of every entity (``entities[<id>].<attr>``)."""
     snap: Dict[str, Any] = {}
-    _attr_tokens(state, "", snap)
+    _attr_tokens(state, "", snap, WATCH_STATE_ATTRS)
     entities = snap.get("entities")
     if isinstance(entities, tuple):  # a dict token is (id, len)
         for e_id, ent in object.__getattribute__(state, "entities").items():
-            _attr_tokens(ent, f"entities[{e_id}].", snap)
+            _attr_tokens(ent, f"entities[{e_id}].", snap, frozenset(), WATCH_ENTITY_ATTRS)
     return snap
 
 
@@ -76,6 +170,21 @@ def _fold(path: str) -> str:
     if path.startswith("entities[") and "]." in path:
         return "entities[*]." + path.split("].", 1)[1]
     return path
+
+
+def split_tiers(paths: FrozenSet[str]) -> Tuple[FrozenSet[str], FrozenSet[str]]:
+    """Split changed (folded) paths into Tier 1 (watch list) and Tier 2 (everything else: a hit here is a field to promote to the watch list)."""
+    return frozenset(p for p in paths if p in WATCH_PATHS), frozenset(p for p in paths if p not in WATCH_PATHS)
+
+
+def snapshot_globals() -> Dict[str, Any]:
+    """Content digest of each process-global watch entry whose module is already loaded (``sys.modules`` only, never an import); absent entries are omitted."""
+    out: Dict[str, Any] = {}
+    for mod, attr in GLOBAL_WATCH:
+        module = sys.modules.get(mod)
+        if module is not None and attr in vars(module):
+            out[f"{mod}:{attr}"] = digest(vars(module)[attr])
+    return out
 
 
 def snapshot_update(upd: Any) -> Dict[str, Any]:
@@ -136,3 +245,37 @@ def _fold_update(path: str) -> str:
     if path.startswith("entity_updates[") and "]." in path:
         return "eu:" + path.split("].", 1)[1]
     return f"su:{path}"
+
+
+def update_identity_only(before: Any, after: Any) -> Tuple[FrozenSet[str], FrozenSet[str]]:
+    """A3 column: the fields/buckets whose object was REPLACED but compare equal (identity changed, value did not), and those whose ``==`` raised (not comparable, so treated as changed)."""
+    same: set = set()
+    unsafe: set = set()
+    for name, a, b in _paired_values(before, after):
+        if a is b:
+            continue
+        try:
+            if a == b:
+                same.add(name)
+        except (TypeError, ValueError):
+            unsafe.add(name)
+    return frozenset(same), frozenset(unsafe)
+
+
+def _paired_values(before: Any, after: Any) -> list:
+    pairs = [(f"su:{f.name}", getattr(before, f.name), getattr(after, f.name)) for f in dataclasses.fields(after) if f.name != "entity_updates"]
+    for e_id, eu in after.entity_updates.items():
+        old = before.entity_updates.get(e_id)
+        if old is not None:
+            pairs.extend((f"eu:{g.name}", getattr(old, g.name), getattr(eu, g.name)) for g in dataclasses.fields(eu) if g.name != "entity_id")
+    return pairs
+
+
+def entity_fanout(before: Any, after: Any) -> Tuple[int, Dict[str, int]]:
+    """Cross-entity proxy (the dispatch layer cannot know which entity a step acts for): how many entity entries the step CREATED (id absent from the input update), and per bucket how many distinct entity ids it wrote."""
+    created = sum(1 for e_id in after.entity_updates if e_id not in before.entity_updates)
+    ids: Dict[str, set] = {}
+    for e_id, eu in after.entity_updates.items():
+        for bucket in _entity_bucket_writes(before.entity_updates.get(e_id), eu):
+            ids.setdefault(bucket, set()).add(e_id)
+    return created, {b: len(v) for b, v in ids.items()}
