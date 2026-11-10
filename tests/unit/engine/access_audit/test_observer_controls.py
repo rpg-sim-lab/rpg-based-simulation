@@ -154,7 +154,8 @@ def test_sampled_control_an_in_place_edit_of_a_mutable_element_is_reported_at_th
     st.entities[1].timeline[-1].n = 2
     st.tick = 100
     rec.before(st, StateUpdate())
-    assert rec.sampled_timeline_edits == [{"entity": 1, "element": "Mutable", "index": 200 - 1, "first_seen_tick": 0, "sample_tick": 100}]
+    assert rec.sampled_timeline_edits == [{"entity": 1, "element": "Mutable", "index": 200 - 1, "first_seen_tick": 0, "sample_tick": 100, "fields": [{"field": "n", "old": "1", "new": "2"}]}]
+    assert rec.replaced_timeline_elements == 0
 
 
 def test_sampled_baseline_drops_an_evicted_element():
@@ -173,3 +174,44 @@ def test_sampled_baseline_drops_an_evicted_element():
     st.tick = 100
     rec.before(st, StateUpdate())
     assert rec._baseline == {} and rec.sampled_timeline_edits == []
+
+
+def test_id_reuse_is_counted_as_replaced_not_reported_as_an_edit():
+    @dataclasses.dataclass
+    class Mutable:
+        event_id: str
+        n: int
+
+    st = _state()
+    old = Mutable("a", 1)
+    st.entities[1].timeline.append(old)
+    rec = AccessAuditRecorder()
+    st.tick = 0
+    rec.before(st, StateUpdate())
+    (old_key,) = rec._baseline
+    new = Mutable("b", 7)  # a different event that (as if) reuses the evicted element's id
+    st.entities[1].timeline[-1] = new
+    rec._baseline[id(new)] = rec._baseline.pop(old_key)
+    st.tick = 100
+    rec.before(st, StateUpdate())
+    assert rec.sampled_timeline_edits == [] and rec.replaced_timeline_elements == 1
+
+
+def test_stable_key_falls_back_to_tick_type_and_ordinal_without_an_event_id():
+    @dataclasses.dataclass
+    class Plain:
+        tick: int
+
+    seen: dict = {}
+    keys = [observe._stable_key(Plain(5), "Plain", seen), observe._stable_key(Plain(5), "Plain", seen), observe._stable_key(Plain(6), "Plain", seen)]
+    assert keys == [(5, "Plain", 1), (5, "Plain", 2), (6, "Plain", 1)]
+
+
+def test_field_diff_names_the_changed_fields_with_truncated_values():
+    long = "x" * 200
+    old = {"a": "1", "b": repr(long)[: observe.FIELD_REPR_CHARS], "c": "same"}
+    new = {"a": "2", "b": old["b"], "c": "same", "d": "9"}
+    from src.engine.access_audit.recorder import _field_diff
+
+    assert _field_diff(old, new) == [{"field": "a", "old": "1", "new": "2"}, {"field": "d", "old": "<absent>", "new": "9"}]
+    assert all(len(v) <= observe.FIELD_REPR_CHARS for v in observe._field_reprs(types.SimpleNamespace(f=long)).values())

@@ -133,7 +133,7 @@ def sample_lines(cells: Sequence[Dict[str, Any]]) -> List[str]:
     for c in cells:
         s = c.get("timeline_content_sampled")
         if s is not None:
-            lines.append(f"- {c.get('world')} s{c.get('seed')}: {s.get('samples', 0)} samples every {s.get('every_ticks')} ticks, {len(s.get('findings', []))} finding(s)" + "".join(f"; {f}" for f in s.get("findings", [])))
+            lines.append(f"- {c.get('world')} s{c.get('seed')}: {s.get('samples', 0)} samples every {s.get('every_ticks')} ticks, {len(s.get('findings', []))} finding(s), {s.get('replaced_not_edited', 0)} replaced (id reused by a different event, not an edit)" + "".join(f"; {f}" for f in s.get("findings", [])))
     return [*lines, ""]
 
 

@@ -94,14 +94,35 @@ def timeline_token(value: Any) -> Any:
 TIMELINE_SAMPLE_EVERY = 100  # ticks between the sampled content checks of mutable timeline elements (reported as "sampled, not per step")
 
 
-def sample_mutable_timeline_elements(state: Any) -> Dict[int, Tuple[Any, str, int, Any]]:
-    """Per NON-frozen timeline element (frozen dataclasses are immutable, so identity is content), keyed by element id: ``(entity_id, type name, index in the deque, content digest)``."""
-    out: Dict[int, Tuple[Any, str, int, Any]] = {}
+FIELD_REPR_CHARS = 80
+
+
+def _stable_key(element: Any, type_name: str, seen: Dict[Any, int]) -> Any:
+    """Identity of a timeline element that does not depend on ``id()``: its own ``event_id`` when it has one, else (tick, type, ordinal among same-tick same-type elements in that deque)."""
+    event_id = getattr(element, "event_id", None)
+    if isinstance(event_id, str):
+        return event_id
+    base = (getattr(element, "tick", None), type_name)
+    seen[base] = seen.get(base, 0) + 1
+    return (*base, seen[base])
+
+
+def _field_reprs(element: Any) -> Dict[str, str]:
+    """Plain-attribute field values as truncated reprs (kept only to name the fields that differ)."""
+    attrs = getattr(element, "__dict__", None)
+    return {k: repr(v)[:FIELD_REPR_CHARS] for k, v in attrs.items()} if isinstance(attrs, dict) else {}
+
+
+def sample_mutable_timeline_elements(state: Any) -> Dict[int, Tuple[Any, str, int, Any, Any, Dict[str, str]]]:
+    """Per NON-frozen timeline element (frozen dataclasses are immutable, so identity is content), keyed by element id (no reference to the element is kept): ``(entity_id, type name, index in the deque, content digest, stable key, field reprs)``."""
+    out: Dict[int, Tuple[Any, str, int, Any, Any, Dict[str, str]]] = {}
     for e_id, ent in object.__getattribute__(state, "entities").items():
         timeline = getattr(ent, "timeline", None)
+        seen: Dict[Any, int] = {}
         for idx, element in enumerate(timeline if isinstance(timeline, collections.deque) else ()):
             if not _is_frozen_record(type(element)):
-                out[id(element)] = (e_id, type(element).__name__, idx, digest(element, 1))
+                name = type(element).__name__
+                out[id(element)] = (e_id, name, idx, digest(element, 1), _stable_key(element, name, seen), _field_reprs(element))
     return out
 
 

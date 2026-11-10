@@ -45,7 +45,8 @@ class AccessAuditRecorder:
     observations: List[StepObservation] = field(default_factory=list)
     timeline_samples: List[int] = field(default_factory=list)  # ticks at which a content sample was taken
     sampled_timeline_edits: List[Dict[str, Any]] = field(default_factory=list)  # findings: a mutable timeline element whose content differs from its first-seen digest
-    _baseline: Dict[int, Tuple[Any, Any, int]] = field(default_factory=dict, repr=False)  # element id -> (entity id, first-seen digest, first-seen tick); dropped on eviction
+    replaced_timeline_elements: int = 0  # an id seen before now holds a different element (different stable key): not an edit
+    _baseline: Dict[int, Tuple[Any, Any, int, Any, Dict[str, str]]] = field(default_factory=dict, repr=False)  # element id -> (entity id, first-seen digest, first-seen tick, stable key, field reprs); dropped on eviction
 
     def before(self, state: Any, upd: Any) -> tuple:
         """Snapshot tick-start state and the input update before a step runs."""
@@ -53,17 +54,20 @@ class AccessAuditRecorder:
         return snapshot_state(state), snapshot_update(upd), snapshot_globals()
 
     def _maybe_sample(self, state: Any) -> None:
-        """Once per ``TIMELINE_SAMPLE_EVERY`` ticks: compare each mutable timeline element's content digest with the one taken the first time it was seen (keyed by id while it stays in the deque; evicted ones are dropped). A difference is a finding naming the entity, the element and the tick window; the sample does not name the step."""
+        """Once per ``TIMELINE_SAMPLE_EVERY`` ticks: compare each mutable timeline element's content digest with the one taken the first time it was seen (keyed by id while it stays in the deque; evicted ones are dropped). If the element at a remembered id has a different stable key it is a different object that reused the id: counted in ``replaced_timeline_elements``, not a finding. Otherwise a digest difference is a finding naming the entity, the element, the tick window and the fields that differ; the sample does not name the step."""
         tick = int(getattr(state, "tick", -1))
         if tick % TIMELINE_SAMPLE_EVERY or (self.timeline_samples and self.timeline_samples[-1] == tick):
             return
         now = sample_mutable_timeline_elements(state)
         self._baseline = {k: v for k, v in self._baseline.items() if k in now}
-        for key, (e_id, type_name, idx, dig) in now.items():
-            first = self._baseline.setdefault(key, (e_id, dig, tick))
-            if first[1] != dig:
-                self.sampled_timeline_edits.append({"entity": e_id, "element": type_name, "index": idx, "first_seen_tick": first[2], "sample_tick": tick})
-                self._baseline[key] = (e_id, dig, tick)
+        for key, (e_id, type_name, idx, dig, stable, fields) in now.items():
+            first = self._baseline.setdefault(key, (e_id, dig, tick, stable, fields))
+            if first[3] != stable:
+                self.replaced_timeline_elements += 1
+                self._baseline[key] = (e_id, dig, tick, stable, fields)
+            elif first[1] != dig:
+                self.sampled_timeline_edits.append({"entity": e_id, "element": type_name, "index": idx, "first_seen_tick": first[2], "sample_tick": tick, "fields": _field_diff(first[4], fields)})
+                self._baseline[key] = (e_id, dig, tick, stable, fields)
         self.timeline_samples.append(tick)
 
     def after(self, phase: str, state: Any, upd: Any, result: Any, pre: tuple) -> None:
@@ -97,7 +101,12 @@ class AccessAuditRecorder:
     def dump(self, path: str, extra: Optional[Dict[str, Any]] = None) -> None:
         """Write the per-phase union (and any ``extra`` facts) to ``path`` as JSON."""
         with open(path, "w", encoding="utf-8") as fh:
-            json.dump({"per_phase": self.per_phase(), "timeline_content_sampled": {"every_ticks": TIMELINE_SAMPLE_EVERY, "samples": len(self.timeline_samples), "findings": self.sampled_timeline_edits}, **(extra or {})}, fh, indent=1, sort_keys=True)
+            json.dump({"per_phase": self.per_phase(), "timeline_content_sampled": {"every_ticks": TIMELINE_SAMPLE_EVERY, "samples": len(self.timeline_samples), "replaced_not_edited": self.replaced_timeline_elements, "findings": self.sampled_timeline_edits}, **(extra or {})}, fh, indent=1, sort_keys=True)
+
+
+def _field_diff(old: Dict[str, str], new: Dict[str, str]) -> List[Dict[str, str]]:
+    """The fields whose value differs between two samples of one element, old and new truncated."""
+    return [{"field": k, "old": old.get(k, "<absent>"), "new": new.get(k, "<absent>")} for k in sorted(old.keys() | new.keys()) if old.get(k) != new.get(k)]
 
 
 def _empty_record() -> Dict[str, Any]:
