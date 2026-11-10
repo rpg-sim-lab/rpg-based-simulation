@@ -1,10 +1,10 @@
 ---
-status: active
+status: historical
 layer: observability
 authority: P1
 audience: agent
 ticket_id: TCK-20261110-MONITORING-VALIDATE-WARNS-ON-A-STALE-INDEX
-phase: open
+phase: done
 date: 2026-11-10
 tags: [agent-monitoring, data-quality]
 ---
@@ -15,7 +15,7 @@ tags: [agent-monitoring, data-quality]
 `make agent-monitoring-validate` validates a stale index without saying so
 
 ## Status
-OPEN
+DONE
 
 ## Tier
 hotfix
@@ -63,9 +63,12 @@ lead saw 2,596 runs in the index against 2,676 raw: 80 batch-shard runs went unv
   warning is ignored.
 
 ## Implementation Notes
+validate.py: stale_shard_count() compares the db mtime with runs/events/tools shards (shared shard_paths resolver), warns on stderr with the count, and --rebuild runs build_index.py first (subprocess; validate.py is guarded against referencing RUNS_FILE). generate_retro._index_is_stale answers yes/no only, so the count is computed separately instead of importing generate_retro.
 
 ## Test Summary
+3 new tests in tests/tools/test_validate_agent_monitoring.py (warning with count, fresh index silent, --rebuild calls builder); the file's 48 tests and test_build_index pass.
 
 ## Files Changed
+tools/agent-monitoring/validate.py; tests/tools/test_validate_agent_monitoring.py
 
 ## Completion Summary

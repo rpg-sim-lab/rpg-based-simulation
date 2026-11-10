@@ -1,10 +1,10 @@
 ---
-status: active
+status: historical
 layer: observability
 authority: P1
 audience: agent
 ticket_id: TCK-20261110-RETRO-READERS-SELECT-TOOL-ROWS-BY-TS
-phase: open
+phase: done
 date: 2026-11-10
 tags: [agent-monitoring, data-quality]
 ---
@@ -15,7 +15,7 @@ tags: [agent-monitoring, data-quality]
 The retro and delivery-cost readers pick a period's tool rows by `run_id`, which has been null on every tool row since W42, so every tool-based section is empty
 
 ## Status
-OPEN
+DONE
 
 ## Tier
 standard
@@ -86,10 +86,12 @@ that watchlist row has been uncheckable since 10-06.
   run_id would cost a hook change and still leave history empty. No measurement runs. Leaves out per-run tool attribution.
 
 ## Implementation Notes
-Scope item 3 narrowed: delivery-cost selects tool rows by shard-directory week, not run_id (W44 492 / W45 66 gh calls counted), so only a pinning test is added. The README DELIVERY-COST row correction is pending the lead's word on whether it belongs in this PR.
+Added tools_in_period() (select by ts, drop exact duplicates, count missing-ts rows, legacy run_id fallback for rows without ts), used at the --days, week and trend-row sites; not-attributable per-run note for search/read/skill sections; README note. Delivery-cost needed no change (shard-week selection).
 
 ## Test Summary
+New tests/tools/test_retro_tool_rows_by_ts.py (10 tests) plus test_generate_retro, test_skill_usage_metric, test_delivery_cost_measurement, test_bash_command_mix, test_retro_notes, test_retro_provenance: all pass, scoped, no -n.
 
 ## Files Changed
+tools/agent-monitoring/generate_retro.py; tests/tools/test_retro_tool_rows_by_ts.py; docs/agent-monitoring/README.md; staging artifacts (now stored).
 
 ## Completion Summary

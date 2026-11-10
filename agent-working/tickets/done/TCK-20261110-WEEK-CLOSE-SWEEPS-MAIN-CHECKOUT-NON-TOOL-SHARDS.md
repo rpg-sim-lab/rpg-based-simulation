@@ -1,10 +1,10 @@
 ---
-status: active
+status: historical
 layer: observability
 authority: P1
 audience: agent
 ticket_id: TCK-20261110-WEEK-CLOSE-SWEEPS-MAIN-CHECKOUT-NON-TOOL-SHARDS
-phase: open
+phase: done
 date: 2026-11-10
 tags: [agent-monitoring, data-quality]
 ---
@@ -15,7 +15,7 @@ tags: [agent-monitoring, data-quality]
 Week close sweeps the main checkout's tool rows but not its manual_actions, reset_boundary or governing_edits rows, so nothing carries them
 
 ## Status
-OPEN
+DONE
 
 ## Tier
 hotfix
@@ -64,9 +64,12 @@ Deep-retro finding by lead-planner-u24, narrowed by agent-working-designer-u24 (
 - Simpler-fix check: reusing the existing sweep with a wider tuple is the smallest change; leaves out the other host.
 
 ## Implementation Notes
+week_close.py: _sweep_file() factored out; sweep_main_checkout_append_only() sweeps manual_actions, reset_boundary and governing_edits (tuple MAIN_CHECKOUT_APPEND_ONLY_KINDS) with the tool sweep's rules; close_week result and CLI print one line per kind; README passage updated.
 
 ## Test Summary
+5 new tests in tests/tools/test_week_close_main_checkout_sweep.py (per kind: swept once, deduped, main file untouched; absent kind skipped); 13 sweep tests plus test_week_close pass.
 
 ## Files Changed
+tools/agent-monitoring/week_close.py; tests/tools/test_week_close_main_checkout_sweep.py; docs/agent-monitoring/README.md
 
 ## Completion Summary
