@@ -1,10 +1,10 @@
 ---
-status: active
+status: historical
 layer: combat
 authority: P1
 audience: agent
 ticket_id: TCK-20261103-NEAR-DEATH-HARDENING-FIRES-WITH-NOTHING-HITTING-THE-SUBJECT
-phase: implement
+phase: done
 date: 2026-11-03
 tags: []
 ---
@@ -15,7 +15,7 @@ tags: []
 Near-death hardening grants permanent max hp and a near_death emotion on a heal, with nothing hitting the subject: counts first
 
 ## Status
-INPROGRESS
+DONE
 
 ## Tier
 standard
@@ -63,6 +63,7 @@ rpg-designer's lean, to be confirmed after the counts: real hits only.
 - docs/plans/systemic_world/owner_decision_memo.md rows 83 and 88
 
 ## Related Stored Artifacts
+- agent-working/stored_artifacts/TCK-20261103-NEAR-DEATH-HARDENING-FIRES-WITH-NOTHING-HITTING-THE-SUBJECT/ (plan.md, investigation.md, test_plan.md, evidence/: scripts with shas, tally, e13 rows, run logs, spied outputs)
 - e34 trace pair and rows: rpg-planner-ubuntu, #828 composition evidence (path to be confirmed when #828 is pushed). Ubuntu's trace rows past t2000 describe `_run_engine` only (e34 death t2131), not the reference; the pinned build_kernel's e34 death at t2101 is the reference (lead-planner-u24, 2026-11-03; cause of the runner difference open).
 
 ## Related Code Areas
@@ -89,7 +90,13 @@ rpg-designer's lean, to be confirmed after the counts: real hits only.
 - New: `tests/unit/engine/test_near_death_hardening_hit_gate.py` (6 rows, max hp 100; the sixth builds the update through the real `CombatUpdate.merge`, a hit and a town heal in both orders): a hit to 8 grants +5; a town +1 at 8 grants nothing; a hazard to 8 grants nothing; a hit plus a heal netting to 0 at 8 grants +5; a hit below 0 grants nothing. Checked against the old code: the town-heal and the hazard rows fail there; the other three pass there too.
 - Four existing tests got a changed INPUT, assertions unchanged (rpg-planner decision, 2026-11-09): `tests/unit/engine/test_near_death_hardening_emotion.py` (3 tests) and `tests/unit/progression/test_species_base_stats_preserved.py::test_hardening_grants_five_accumulates_and_survives_recalc` (its `_harden` helper). Reason: their bare `CombatUpdate(hp_delta=<negative>)` stood for a hit only because the old rule read the sign of hp_delta; the ruled behaviour is a typed hit fact, so the inputs now carry `attacker_id`, `damage_taken = -hp_delta`, `hit_tick_set = tick`. Unchanged and passing: `test_emotion_near_death_hardening.py`, `test_lifecycle.py::test_near_death_hardening_logic`.
 
+- Scoped runs at `-n 1` on the merge head (60c1bdc2a plus the planner-seat merge; src unchanged from 60c1bdc2a): the hit-gate, emotion and mechanic-scenario hardening tests 11 passed; `tests/unit/progression` 151 passed; the mechanism-registry checks (`test_mechanism_registry*`, `test_mechanism_artifact_convergence`, `test_mechanism_status_language_check`) 131 passed; `tests/architecture` 153 passed. No failures. No xfail in these runs. An earlier scoped run on 3300928e8 (104 passed, 2 xfailed) carried the two known xfails in `tests/integrity/test_logic_guards.py`: `test_resolution_phase_ordering_integrity` (`strict=False`) and `test_autonomous_loop_determinism_drift_guard` (imperative `pytest.xfail`).
+- Measured (pinned, crowded 5 seeds x 5000, base the flight fix cells at cf27795cb, fix 60c1bdc2a): 141 of 141 grants from a real hit, 0 non-hit; plain = spied end hash on all 5 seeds; people deaths COMBAT 114->118, DEFEAT 31->26, HAZARD 15->16, total 160->160; scouts 0->0 (reported only). Extinction STOP: the blacksmith e13 (s46), designer class NOT SHOWN, owner ruled land (a) at #715 6759056902. Details in divergence 2.201 and `evidence/`.
+- Timing: NOT MEASURED (perf pause, #715 6556861718); the hot-loop change is one extra attribute read per combat update.
+- The staging plan.md, investigation.md and test_plan.md were written with the code in the first commit (05f64a262), not after the fact.
+
 ## Files Changed
-src/engine/pipeline_phases/hardening.py; tests/unit/engine/test_near_death_hardening_hit_gate.py (new); tests/unit/engine/test_near_death_hardening_emotion.py; tests/unit/progression/test_species_base_stats_preserved.py; docs/mechanics/01_entity_anatomy.md; docs/guidelines/intentional_divergences.md (2.201); docs/parity_ledger/{social_narrative,strategic_cognition,town_resource}.yaml (SOC-042, STRAT-142, TOWN-021); codebase/baselines/parity_ledger_schema_baseline.json (tightened).
+src/engine/pipeline_phases/hardening.py; tests/unit/engine/test_near_death_hardening_hit_gate.py (new); tests/unit/engine/test_near_death_hardening_emotion.py; tests/unit/progression/test_species_base_stats_preserved.py; docs/mechanics/01_entity_anatomy.md; docs/guidelines/intentional_divergences.md (2.201); docs/parity_ledger/{social_narrative,strategic_cognition,town_resource}.yaml (SOC-042, STRAT-142, TOWN-021); codebase/baselines/parity_ledger_schema_baseline.json (tightened); staging/stored evidence under agent-working/stored_artifacts/TCK-20261103-NEAR-DEATH-HARDENING-FIRES-WITH-NOTHING-HITTING-THE-SUBJECT/evidence/; merges of origin/main cf27795cb and rpg-planner-seat-8 (agent-working tickets only). Src vs cf27795cb: `pipeline_phases/hardening.py` +18/-1 only.
 
 ## Completion Summary
+Near-death hardening now needs a combat hit taken this tick (attacker set, damage_taken > 0, hit_tick_set == tick): a town heal or a hazard at or under the 10% line grants nothing. Landed after the owner's (b) hold behind the flight fix (#715 6741669738) and the re-measure on the flight base, with the owner's land (a) ruling that accepts the s46 blacksmith death (#715 6759056902). Divergence 2.201 (Bug Fix); parity rows SOC-042, STRAT-142, TOWN-021 verified against the hit-gate test; Bible ch.01 line 54 updated. Timing NOT MEASURED (perf pause). Local only; the PR is the owner's push to approve.

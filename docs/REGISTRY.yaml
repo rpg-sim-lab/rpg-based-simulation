@@ -8679,6 +8679,23 @@
   - delivery
   - documentation
 - type: ticket
+  path: agent-working/tickets/done/TCK-20261103-NEAR-DEATH-HARDENING-FIRES-WITH-NOTHING-HITTING-THE-SUBJECT.md
+  ticket_id: TCK-20261103-NEAR-DEATH-HARDENING-FIRES-WITH-NOTHING-HITTING-THE-SUBJECT
+  title: 'Near-death hardening grants permanent max hp and a near_death emotion on
+    a heal, with nothing hitting the subject: counts first'
+  tier: standard
+  ticket_type: bug
+  date: '2026-11-03'
+  related_code_areas:
+  - src/engine/pipeline_phases/hardening.py
+  - src/engine/town_resolution.py (Part A healing)
+  - src/engine/pipeline.py
+  artifact_files:
+  - agent-working/stored_artifacts/TCK-20261103-NEAR-DEATH-HARDENING-FIRES-WITH-NOTHING-HITTING-THE-SUBJECT/investigation.md
+  - agent-working/stored_artifacts/TCK-20261103-NEAR-DEATH-HARDENING-FIRES-WITH-NOTHING-HITTING-THE-SUBJECT/plan.md
+  - agent-working/stored_artifacts/TCK-20261103-NEAR-DEATH-HARDENING-FIRES-WITH-NOTHING-HITTING-THE-SUBJECT/test_plan.md
+  tags: []
+- type: ticket
   path: agent-working/tickets/done/TCK-20261103-THE-CONCURRENT-AND-SEQUENTIAL-EXECUTORS-GIVE-DIFFERENT-WORLDS.md
   ticket_id: TCK-20261103-THE-CONCURRENT-AND-SEQUENTIAL-EXECUTORS-GIVE-DIFFERENT-WORLDS
   title: The concurrent and sequential executors give different worlds on the same
@@ -8711,20 +8728,6 @@
   - agent-working/stored_artifacts/TCK-20261103-THE-STARVATION-RECORD-MISSES-MEALS-WITHOUT-AN-INTENT-RESULT/investigation.md
   - agent-working/stored_artifacts/TCK-20261103-THE-STARVATION-RECORD-MISSES-MEALS-WITHOUT-AN-INTENT-RESULT/plan.md
   - agent-working/stored_artifacts/TCK-20261103-THE-STARVATION-RECORD-MISSES-MEALS-WITHOUT-AN-INTENT-RESULT/test_plan.md
-  tags: []
-- type: ticket
-  path: agent-working/tickets/inprogress/TCK-20261103-NEAR-DEATH-HARDENING-FIRES-WITH-NOTHING-HITTING-THE-SUBJECT.md
-  ticket_id: TCK-20261103-NEAR-DEATH-HARDENING-FIRES-WITH-NOTHING-HITTING-THE-SUBJECT
-  title: 'Near-death hardening grants permanent max hp and a near_death emotion on
-    a heal, with nothing hitting the subject: counts first'
-  tier: standard
-  ticket_type: bug
-  date: '2026-11-03'
-  related_code_areas:
-  - src/engine/pipeline_phases/hardening.py
-  - src/engine/town_resolution.py (Part A healing)
-  - src/engine/pipeline.py
-  artifact_files: []
   tags: []
 - type: ticket
   path: agent-working/tickets/todos/TCK-20261103-A-CREATURE-WITH-BOTH-NEEDS-PRESSING-NEITHER-SLEEPS-NOR-FEEDS-ENOUGH.md
