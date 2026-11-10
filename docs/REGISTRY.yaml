@@ -8001,6 +8001,23 @@
   - content
   last_verified: '2026-10-09'
 - type: ticket
+  path: agent-working/tickets/done/TCK-20261109-A-FLIGHT-WEIGHS-THE-FREE-SWING-IT-WOULD-TAKE.md
+  ticket_id: TCK-20261109-A-FLIGHT-WEIGHS-THE-FREE-SWING-IT-WOULD-TAKE
+  title: A flight weighs the free swing it would take
+  tier: standard
+  ticket_type: feature
+  date: '2026-11-09'
+  related_code_areas:
+  - src/core/state.py; src/core/updates.py; src/engine/patches.py; src/engine/combat.py;
+    src/engine/movement.py; src/engine/checkpoint.py; src/perf/benchmark_record.py
+  artifact_files:
+  - agent-working/stored_artifacts/TCK-20261109-A-FLIGHT-WEIGHS-THE-FREE-SWING-IT-WOULD-TAKE/investigation.md
+  - agent-working/stored_artifacts/TCK-20261109-A-FLIGHT-WEIGHS-THE-FREE-SWING-IT-WOULD-TAKE/plan.md
+  - agent-working/stored_artifacts/TCK-20261109-A-FLIGHT-WEIGHS-THE-FREE-SWING-IT-WOULD-TAKE/test_plan.md
+  tags:
+  - combat
+  - determinism
+- type: ticket
   path: agent-working/tickets/done/TCK-20261109-FUSED-STRATEGIC-PASS-FAST-PATH-IS-PINNED-BRANCH-BY-BRANCH-AND-AGAINST-THE-SLOW-PATH.md
   ticket_id: TCK-20261109-FUSED-STRATEGIC-PASS-FAST-PATH-IS-PINNED-BRANCH-BY-BRANCH-AND-AGAINST-THE-SLOW-PATH
   title: fused_strategic_pass's off-cadence fast path is pinned branch by branch (characterisation),
@@ -8285,6 +8302,20 @@
   artifact_files: []
   tags:
   - testing
+- type: ticket
+  path: agent-working/tickets/todos/TCK-20261109-RESOLVE-ATTACK-IS-CALLED-TWICE-PER-TICK-FOR-ONE-HIT-AND-ONLY-ONE-RESULT-REACHES-HP.md
+  ticket_id: TCK-20261109-RESOLVE-ATTACK-IS-CALLED-TWICE-PER-TICK-FOR-ONE-HIT-AND-ONLY-ONE-RESULT-REACHES-HP
+  title: resolve_attack is called twice per tick for one hit and only one result reaches
+    hp
+  tier: standard
+  ticket_type: repair
+  date: '2026-11-09'
+  related_code_areas:
+  - src/engine/combat.py; src/engine/movement.py
+  artifact_files: []
+  tags:
+  - combat
+  - determinism
 - type: ticket
   path: agent-working/tickets/todos/TCK-20261109-STATE-TOWN-CENTER-DEFAULT-IS-A-SENTINEL-A-RETREAT-CAN-AIM-AT.md
   ticket_id: TCK-20261109-STATE-TOWN-CENTER-DEFAULT-IS-A-SENTINEL-A-RETREAT-CAN-AIM-AT
