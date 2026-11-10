@@ -160,7 +160,7 @@ class CoreActions:
         
         from src.systems.social_systems.appraisal import SocialAppraisalSystem
         from src.core.strategic import ContractState, ContractKind, ContractStatus
-        from src.core.updates import ResourceTransferIntent, SocialUpdate, StrategicUpdate
+        from src.core.updates import SocialUpdate, StrategicUpdate
         
         # Evaluate offer using consolidated appraisal logic
         temp_contract = ContractState(
@@ -185,31 +185,14 @@ class CoreActions:
                 terms={"payout": payout}
             )
             
-            group_id = f"recruit_{entity.id}_{target_id}_{current_tick}"
-            
-            attacker_up = EntityUpdate(
-                entity_id=entity.id,
-                readiness_delta=-100.0,
-                resource_transfers=[ResourceTransferIntent(
-                    source_id=target_id,
-                    source_kind="RECRUIT",
-                    gold_delta=-payout,
-                    group_id=group_id,
-                    transfer_kind="RECRUITMENT",
-                    strategic_upd=StrategicUpdate(contracts_add_or_update=[contract])
-                )]
-            )
+            # No gold moves on a recruitment: the payout is not a transfer until RECRUIT is wired (a conserving one, see
+            # docs/mechanics/resource_conservation_contract.md). The contract is created on both sides.
+            bound = StrategicUpdate(contracts_add_or_update=[contract])
+            attacker_up = EntityUpdate(entity_id=entity.id, readiness_delta=-100.0, strategic=bound)
             target_up = EntityUpdate(
                 entity_id=target_id,
                 social=SocialUpdate(last_offer_tick_set=current_tick),
-                resource_transfers=[ResourceTransferIntent(
-                    source_id=entity.id,
-                    source_kind="RECRUIT",
-                    gold_delta=payout,
-                    group_id=group_id,
-                    transfer_kind="RECRUITMENT",
-                    strategic_upd=StrategicUpdate(contracts_add_or_update=[contract])
-                )]
+                strategic=bound
             )
             return {entity.id: attacker_up, target_id: target_up}
         else:
