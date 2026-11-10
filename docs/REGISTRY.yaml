@@ -8001,6 +8001,32 @@
   - content
   last_verified: '2026-10-09'
 - type: ticket
+  path: agent-working/tickets/todos/TCK-20261110-A-NON-FLIGHT-MOVE-OFF-ENGAGEMENT-WALKS-INTO-A-KNOWN-LETHAL-FREE-SWING.md
+  ticket_id: TCK-20261110-A-NON-FLIGHT-MOVE-OFF-ENGAGEMENT-WALKS-INTO-A-KNOWN-LETHAL-FREE-SWING
+  title: A subject with no flight decision moves off engagement and walks into a free
+    swing it has felt will finish it (the CONFLICT-04 "neither" shape)
+  tier: standard
+  ticket_type: bug
+  date: '2026-11-10'
+  related_code_areas:
+  - src/engine/movement.py (opportunity attack, :324)
+  - src/engine/tactical.py, src/engine/tactical_flight_guard.py
+  artifact_files: []
+  tags: []
+- type: ticket
+  path: agent-working/tickets/todos/TCK-20261110-A-RESTORED-SCENARIO-DROPS-ITS-GOVERNOR-AND-EVENT-RECORDER.md
+  ticket_id: TCK-20261110-A-RESTORED-SCENARIO-DROPS-ITS-GOVERNOR-AND-EVENT-RECORDER
+  title: A scenario restored from a checkpoint drops the service's governor and its
+    scenario event recorder
+  tier: hotfix
+  ticket_type: bug
+  date: '2026-11-10'
+  related_code_areas:
+  - src/engine/scenario_checkpoint.py:95-121
+  - src/engine/scenario_runtime.py:140-160, :405-424
+  artifact_files: []
+  tags: []
+- type: ticket
   path: agent-working/tickets/done/TCK-20261109-A-FLIGHT-WEIGHS-THE-FREE-SWING-IT-WOULD-TAKE.md
   ticket_id: TCK-20261109-A-FLIGHT-WEIGHS-THE-FREE-SWING-IT-WOULD-TAKE
   title: A flight weighs the free swing it would take
@@ -8135,6 +8161,21 @@
   - src/engine/building_services.py (service_delta)
   - src/engine/domain/core_actions.py
   - src/core/state.py (BiologicalComponent)
+  artifact_files: []
+  tags: []
+- type: ticket
+  path: agent-working/tickets/todos/TCK-20261109-ANY-SOCIAL-UPDATE-WIPES-THE-REJECTION-COUNTS-IT-DOES-NOT-NAME.md
+  ticket_id: TCK-20261109-ANY-SOCIAL-UPDATE-WIPES-THE-REJECTION-COUNTS-IT-DOES-NOT-NAME
+  title: Any social update wipes the rejection counts it does not name, so recruitment's
+    social-fatigue penalty almost never builds up
+  tier: standard
+  ticket_type: bug
+  date: '2026-11-09'
+  related_code_areas:
+  - src/systems/social_systems/relationships.py:133
+  - src/core/updates.py:322-384 (SocialUpdate rejection_increment, merge)
+  - src/systems/social_systems/appraisal.py:125
+  - src/engine/domain/core_actions.py (rejection writers)
   artifact_files: []
   tags: []
 - type: ticket
@@ -8302,6 +8343,19 @@
   artifact_files: []
   tags:
   - testing
+- type: ticket
+  path: agent-working/tickets/todos/TCK-20261109-RECRUITMENT-FATIGUE-HAS-NO-RECENT-WINDOW.md
+  ticket_id: TCK-20261109-RECRUITMENT-FATIGUE-HAS-NO-RECENT-WINDOW
+  title: Recruitment's social fatigue counts "recent" rejections, but no window exists,
+    so the counts are lifetime
+  tier: standard
+  ticket_type: feature
+  date: '2026-11-09'
+  related_code_areas:
+  - src/systems/social_systems/appraisal.py:125
+  - src/core/models/social.py:58 (rejection_count, last_offer_tick)
+  artifact_files: []
+  tags: []
 - type: ticket
   path: agent-working/tickets/todos/TCK-20261109-RESOLVE-ATTACK-IS-CALLED-TWICE-PER-TICK-FOR-ONE-HIT-AND-ONLY-ONE-RESULT-REACHES-HP.md
   ticket_id: TCK-20261109-RESOLVE-ATTACK-IS-CALLED-TWICE-PER-TICK-FOR-ONE-HIT-AND-ONLY-ONE-RESULT-REACHES-HP
@@ -8659,6 +8713,20 @@
   - agent-working/stored_artifacts/TCK-20261103-THE-STARVATION-RECORD-MISSES-MEALS-WITHOUT-AN-INTENT-RESULT/test_plan.md
   tags: []
 - type: ticket
+  path: agent-working/tickets/inprogress/TCK-20261103-NEAR-DEATH-HARDENING-FIRES-WITH-NOTHING-HITTING-THE-SUBJECT.md
+  ticket_id: TCK-20261103-NEAR-DEATH-HARDENING-FIRES-WITH-NOTHING-HITTING-THE-SUBJECT
+  title: 'Near-death hardening grants permanent max hp and a near_death emotion on
+    a heal, with nothing hitting the subject: counts first'
+  tier: standard
+  ticket_type: bug
+  date: '2026-11-03'
+  related_code_areas:
+  - src/engine/pipeline_phases/hardening.py
+  - src/engine/town_resolution.py (Part A healing)
+  - src/engine/pipeline.py
+  artifact_files: []
+  tags: []
+- type: ticket
   path: agent-working/tickets/todos/TCK-20261103-A-CREATURE-WITH-BOTH-NEEDS-PRESSING-NEITHER-SLEEPS-NOR-FEEDS-ENOUGH.md
   ticket_id: TCK-20261103-A-CREATURE-WITH-BOTH-NEEDS-PRESSING-NEITHER-SLEEPS-NOR-FEEDS-ENOUGH
   title: 'A wild creature with hunger and sleep both pressing collapses again and
@@ -8704,20 +8772,6 @@
   date: '2026-11-03'
   related_code_areas:
   - src/ai/goals/scorers.py, src/systems/strategic_systems/work_queue.py, src/engine/building_services.py
-  artifact_files: []
-  tags: []
-- type: ticket
-  path: agent-working/tickets/todos/TCK-20261103-NEAR-DEATH-HARDENING-FIRES-WITH-NOTHING-HITTING-THE-SUBJECT.md
-  ticket_id: TCK-20261103-NEAR-DEATH-HARDENING-FIRES-WITH-NOTHING-HITTING-THE-SUBJECT
-  title: 'Near-death hardening grants permanent max hp and a near_death emotion on
-    a heal, with nothing hitting the subject: counts first'
-  tier: standard
-  ticket_type: bug
-  date: '2026-11-03'
-  related_code_areas:
-  - src/engine/pipeline_phases/hardening.py
-  - src/engine/town_resolution.py (Part A healing)
-  - src/engine/pipeline.py
   artifact_files: []
   tags: []
 - type: ticket
