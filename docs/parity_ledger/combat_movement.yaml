@@ -137,7 +137,7 @@
     `src/engine/tactical.py` (stickiness logic)'
   proof_type: parity
   test_path: null
-  divergence_note: null
+  divergence_note: See docs/guidelines/intentional_divergences.md Section 2.202 (a flight into a known-lethal free swing is withheld).
   support_boundary: Cited `tests_v2/parity/test_oa_parity.py` and `tests_v2/parity/test_tactical_parity.py`
     (containing `test_no_oa_if_no_hostiles`, `test_oa_triggered_on_disengagement_hardened`)
     were both deleted in commit 6e5c2899 ('Implement resource v2 enhanced phases')
@@ -4899,3 +4899,13 @@
   divergence_note: See docs/guidelines/intentional_divergences.md Section 2.155.
   support_boundary: 'Direct scans of state.entities in cognition/social/world code that pair or recruit by proximity are reached through the neighbour view and the indexes; a reader that bypasses both is not yet audited one by one.'
 
+- id: COMB-351
+  text: 'TCK-20261109-A-FLIGHT-WEIGHS-THE-FREE-SWING-IT-WOULD-TAKE: a flight (any reason in FLIGHT_REASONS) is withheld when the last blow the subject felt, from a hostile still engaged with it, is at least its remaining health, unless the flight is evasive; the subject answers that hostile (ATTACK, else HOLD_BETWEEN_BLOWS, else holds its tile). The felt blow is CombatComponent.last_hit_damage, written with last_attacker_id and last_hit_tick on a landed hit, in the proof digest (flat-sha256-v4).'
+  status: verified
+  priority: P1
+  legacy_evidence: null
+  v2_evidence: 'src/engine/tactical_flight_guard.py (flight_weighs_free_swing, FlightSite), src/engine/tactical.py (call sites), src/engine/movement.py (is_evasive_flight, live_action_style), src/engine/patches.py (CombatPatch), src/core/updates.py (hit_damage_set), src/engine/combat.py (the five resolution sites). Cross-reference: COMB-009.'
+  proof_type: regression
+  test_path: tests/unit/tactical/testflight_weighs_free_swing.py
+  divergence_note: See docs/guidelines/intentional_divergences.md Section 2.202.
+  support_boundary: 'Last felt blow only; non-flight moves off engagement, KITING and KEEP_DISTANCE are not covered; a multi-attacker swing credits its total to the first attacker.'
