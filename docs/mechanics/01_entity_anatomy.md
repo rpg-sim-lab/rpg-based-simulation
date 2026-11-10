@@ -51,7 +51,7 @@ Move_Cost = max(5.0, 10.0 + (total_weight / 5.0) - (agility * 0.1))
 component, written once at spawn and never mutated afterwards. A stat profile declares the FINAL
 spawned stat, so for a profile-spawned entity each base is the residual `spawned stat - attribute
 contribution` (it may be negative); entities built without a profile keep the generic baseline
-`100 / 10 / 5 / 0.05`. Near-death hardening adds its permanent max-HP grant to a separate
+`100 / 10 / 5 / 0.05`. Near-death hardening (surviving a combat hit at or below 10% of max HP) adds its permanent max-HP grant to a separate
 `permanent_max_hp_bonus` accumulator, which enters `Max_HP` as a plain additive term. The recalculation
 is the sole definition of the four derived stats; the formulas above are unchanged. The recalculation
 is currently unreachable in corpus play and must not be activated before spawn and derivation agree on

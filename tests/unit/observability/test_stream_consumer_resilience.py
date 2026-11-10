@@ -276,3 +276,68 @@ def test_first_connect_attempt_never_sleeps(monkeypatch):
 
     assert consumer.connect() is False
     assert sleep_calls == []
+
+
+# ---------------------------------------------------------------------------
+# An exhausted message is ACKed only once its DLQ record exists
+# ---------------------------------------------------------------------------
+
+def _exhausted_consumer(msg_id: str = "9-0", *, source_entries) -> RedisStreamConsumer:
+    consumer = make_consumer()
+    consumer.client.xpending_range.return_value = [
+        {"message_id": msg_id, "consumer": "other", "time_since_delivered": 30000,
+         "times_delivered": RedisStreamConsumer.MAX_DELIVERY_ATTEMPTS}
+    ]
+    consumer.client.xrange.return_value = source_entries
+    return consumer
+
+
+def _acks(consumer: RedisStreamConsumer, msg_id: str) -> int:
+    return sum(1 for c in consumer.client.xack.call_args_list
+               if c.args == (consumer.stream_name, consumer.group_name, msg_id))
+
+
+def test_failed_dlq_write_leaves_the_message_pending_and_counts_it_then_a_later_sweep_acks():
+    msg_id = "9-0"
+    payload = make_stream_payload(make_event("exhausted"))
+    consumer = _exhausted_consumer(msg_id, source_entries=[(msg_id, payload)])
+    handler = MagicMock()
+
+    consumer.client.xadd.side_effect = ConnectionError("redis down")
+    consumer._reclaim_pending(handler)
+    assert _acks(consumer, msg_id) == 0
+    assert consumer.dlq_write_failures == 1
+
+    consumer.client.xadd.side_effect = None
+    consumer._reclaim_pending(handler)
+    assert _acks(consumer, msg_id) == 1
+    assert consumer.dlq_write_failures == 1
+    handler.assert_not_called()
+
+
+def test_gone_source_entry_gets_a_dlq_tombstone_then_the_ack():
+    msg_id = "9-0"
+    consumer = _exhausted_consumer(msg_id, source_entries=[])
+
+    consumer._reclaim_pending(MagicMock())
+
+    dlq_calls = [c for c in consumer.client.xadd.call_args_list if c.args[0] == consumer.dlq_stream_name]
+    assert len(dlq_calls) == 1
+    fields = dlq_calls[0].args[1]
+    assert fields["dlq_source_id"] == msg_id
+    assert fields["dlq_reason"] == "source entry no longer readable"
+    assert fields["dlq_delivery_count"] == str(RedisStreamConsumer.MAX_DELIVERY_ATTEMPTS)
+    assert "dlq_failed_at" in fields
+    assert "payload" not in fields
+    assert _acks(consumer, msg_id) == 1
+
+
+def test_gone_source_entry_with_a_failed_tombstone_write_is_not_acked():
+    msg_id = "9-0"
+    consumer = _exhausted_consumer(msg_id, source_entries=[])
+    consumer.client.xadd.side_effect = ConnectionError("redis down")
+
+    consumer._reclaim_pending(MagicMock())
+
+    assert _acks(consumer, msg_id) == 0
+    assert consumer.dlq_write_failures == 1

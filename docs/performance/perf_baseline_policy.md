@@ -12,7 +12,7 @@ audience: developer
 This document is the **lifecycle policy** for performance baselines: how one is created, promoted, invalidated, migrated and
 rejected. It is not where performance is defined, measured, compared or claimed: since PERF-D4 (approved 2026-10-03) that is
 `docs/engine/performance_contract.md`, the single clause-level authority. The record a baseline is made of, and the rule for comparing two,
-are `docs/performance/benchmark_identity_schema.md` (schema 1.0, §4). Hardware classes are defined once, in
+are `docs/performance/benchmark_identity_schema.md` (schema 1.5, §4). Hardware classes are defined once, in
 `docs/engine/contracts/certification_contract.md` §3.
 
 The repository-wide rules for changing any baseline (versions are never overwritten, a change cites its cause and its PR, a stale or
@@ -41,7 +41,7 @@ projection it serves decides what it may be used for.
 
 | Stage | Rule |
 |---|---|
-| **Create** | Measure with `BenchHarness` on an isolated machine. The run yields a `BenchmarkRecord` (`harness.last_record`; schema 1.0). A record that is not a clean, `NORMAL`, current-accounting run is not a baseline candidate (§3). |
+| **Create** | Measure with `BenchHarness` on an isolated machine. The run yields a `BenchmarkRecord` (`harness.last_record`; schema 1.5). A record that is not a clean, `NORMAL`, current-accounting run is not a baseline candidate (§3). |
 | **Promote** | `python3 tools/perf/baseline_lifecycle.py promote --candidate <record.json> --name <baseline> --cause <cause>`. It writes the next `<baseline>.vNNNN.json` in `tests/perf/baselines/` and never touches an earlier version. The file is the record, with `identity.baseline_ref` pointing at the previous version (`{id, schema_version, record_digest}`), plus a `promotion` object holding the cause, the note, the time, the **before** identity and the **after** identity. |
 | **Invalidate** | A baseline stops being comparable when a blocking field of the schema (§4) changes. The tool does not delete it. `compare()` reports `INCONCLUSIVE` naming the field, which is the visible state of an invalidated baseline. `docs/performance/baseline_invalidation_ledger.md` lists which committed baselines the M1 corrections invalidated. |
 | **Migrate** | A MAJOR `schema_version` bump invalidates every baseline of the older MAJOR for comparison (schema §4). They stay readable and are re-recorded by a promotion that cites the cause, not converted: a converter would invent identity the old file never recorded. |
@@ -58,7 +58,7 @@ A re-recorded baseline is measured in fresh processes, one after the other; the 
 | `idle_100_local`, `movement_100_local`, `combat_10_local` | 5 fresh-process runs | the median run | the middle 3: the lowest and the highest average dropped, spread = max / min of the other three, minus one |
 | every other record (including the corpus worlds and the `*_concurrent` records) | 3 fresh-process runs | the median run | all 3 |
 
-The promotion note lists **all** runs' averages, loadavg, swap and host-speed probes (not only the middle three), the spread over the middle 3 and the spread over all 5; the spread over all runs is recorded whichever rule decided. A record that still exceeds 15 % under its rule stays `PENDING-NOISY` in `baseline_invalidation_ledger.md`. Every measured run starts with a 1-minute load average below 1.5 and at least 2.5 GB available (`rerun_baselines.py record` waits up to 15 minutes before each run and refuses to start one outside that window, exit 1, nothing promotable), recorded in the note. This quiet-window precondition is a working rule of the perf sessions, not part of the owner's choice among the options below. This rule weakens the 15 % test for the three records it names (one slow and one fast run no longer count); it does not change `tripwire.TRIPWIRE_SCENARIOS`, `tripwire.NOISE_BUDGET` or any threshold of `compare`.
+The promotion note lists **all** runs' averages, loadavg, swap and host-speed probes (not only the middle three), the spread over the middle 3 and the spread over all 5; the spread over all runs is recorded whichever rule decided. A record that still exceeds 15 % under its rule stays `PENDING-NOISY` in `baseline_invalidation_ledger.md`. Every measured run starts inside the quiet window of §2.2, and its readings are recorded in the note. This quiet-window precondition is a working rule of the perf sessions, not part of the owner's choice among the options below. This rule weakens the 15 % test for the three records it names (one slow and one fast run no longer count); it does not change `tripwire.TRIPWIRE_SCENARIOS`, `tripwire.NOISE_BUDGET` or any threshold of `compare`.
 
 *How it was decided.* Evidence: the T08 noise diagnosis (`TCK-20261014-PERF-T08-NOISY-AND-OFF-NORMAL-BASELINES`) found the spread of these records to be a between-process level shift of the host (an identical allocation-free spin varied 4.3x on a quiet host), and `tripwire.py calibrate` had measured 0.35 head/base deviation with identical code. `lead-planner` put four options to the owner on 2026-10-16 (second ask, "Perf baseline spread rule for perf_baseline_policy.md (P1). My recommendation is (b), reasons above. Which do you choose?"):
 
@@ -68,6 +68,39 @@ The promotion note lists **all** runs' averages, loadavg, swap and host-speed pr
 - **(d) Quieter runner**: "No policy change; record the two tripwire baselines elsewhere via a follow-up ticket."
 
 `lead-planner` recommended (b): the tripwire's own 0.35 noise budget means a 15 % baseline spread buys no detection, and (b) is the narrowest change. **The owner chose (a), "(a) Middle-3 spread", on 2026-10-16, over that recommendation, with no note.**
+
+### 2.2 Quiet window and in-run checks of a re-record (`tools/perf/quiet_gate.py`)
+
+`rerun_baselines.py record` checks the host before each measured run and, for a pinned run, again over the run itself. These are working rules of the perf sessions on this host (2026-10-29/30, `TCK-20261025-PERF-RECORD-IDENTITY-PINS-INSTALLED-RUNTIME-DEPENDENCIES`, #806). They are not owner rulings, and none of them changes the 15 % spread rule of §2.1.
+
+A run is **pinned** when its CPU affinity is a strict subset of the host's CPUs (`src/perf/cpu_affinity.py`; recorded as `identity.runtime.cpu_affinity`). On this host the owner's split is Docker on vCPUs 0-3 and perf runs on 4-5 (#715, 2026-10-30).
+
+**Before each run** (sampled over 5 s; `--wait-s` is how long `record` waits for the window, default 900 s, `0` checks once):
+
+| Check | Unpinned run | Pinned run |
+|---|---|---|
+| 1-minute load average below 1.5 | yes | yes |
+| every allowed CPU below 10 % busy (`/proc/stat`) | no | yes |
+| at least 3000 MB available (`MemAvailable`, read in kB and divided by 1024) | yes | yes |
+| `pswpin` / `pswpout` unchanged over the sample | yes | yes |
+| host-speed probe at or below `--max-probe-ms` | no | only when the option is set (off by default; a host-specific protocol setting, not a contract value) |
+
+A run never starts outside the window. A failure before run 1 refuses the series (exit 1); before a later run it stops the series, names the failed check and writes no candidate. A reading that cannot be taken (memory, swap counters) fails by name; the check is never skipped.
+
+**Over each pinned run** (`RunWatch`):
+- *Foreign share*: busy jiffies of the allowed CPUs minus this run's own cgroup CPU time, as a share of `len(allowed) x` wall seconds. At 10 % or more the series stops, with no candidate.
+- *Swap*: any change of `pswpin` / `pswpout` during the run stops the series, with no candidate.
+- *Own scope*: the series is refused unless the process runs in its own transient `systemd-run --scope` unit (cgroup `run-*.scope`); otherwise its cgroup time would include other work and the foreign share would be understated. An unreadable cgroup or `/proc/vmstat` refuses the series.
+
+Unpinned runs skip these in-run checks. The interpreter must be a virtualenv (`sys.prefix != sys.base_prefix`), or `record` refuses: under the system interpreter the dependency fingerprint names the system packages.
+
+Every reading, both host-speed probes of every run (before the state build and after the timed span), the foreign share and the swap delta are stored in the series' `summary.json` (`gates`). The probe after a run is data only: it falls after the timed span, so it never stops a series. The pinned command used on this host is:
+
+```
+systemd-run --user --scope -q -p MemoryMax=3G -p MemorySwapMax=0 taskset -c 4-5 .venv/bin/python tools/perf/rerun_baselines.py record <name> --cause <ticket> --wait-s 1800
+```
+
+(`systemd-run --user -p AllowedCPUs=` does not pin here: the user manager has no cpuset delegation, so `taskset` does it.)
 
 `python3 tools/perf/baseline_lifecycle.py check` verifies the directory: every `tests/perf/baselines/*.json` is a valid `BenchmarkRecord` or
 is named in the legacy list (`LEGACY_TRIPWIRE_REFERENCES`, §4), and the version chain of each promoted baseline is intact (each version's

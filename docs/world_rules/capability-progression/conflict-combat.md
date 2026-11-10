@@ -220,6 +220,8 @@ refused both ways.
 > from an adjacent hostile is a decision to leave the engagement: flight under AGENCY-07, or a
 > goal that outranks the fight. It pays the disengagement cost. Nothing mechanical, such as a
 > timer or the lack of a "wait" action, may turn into a step.
+>
+> Corollary (owner, #715 6735931881): the cost of leaving is weighed when it is known to be fatal. A subject does not flee into a free swing that the blows it has felt say will zero it; it holds and fights instead.
 
 **Disposition: ACCEPT — decided by rpg-designer, direction confirmed by the owner, 2026-10-08**
 (row 28 of `docs/plans/systemic_world/owner_decision_memo.md`). Applies AGENCY-01/02 to melee:

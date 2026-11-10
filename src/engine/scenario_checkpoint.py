@@ -86,9 +86,10 @@ class ScenarioCheckpointer:
         check_group_counter(state)  # after the fill: the counter must be above every non-squad stored group id (GroupCounterBehindStoreError)
 
         # Reconstruct RNG from the checkpoint embedded in state.
-        # base_seed=0 matches _build_kernel(); the stream is immediately
-        # overwritten by set_state() so base_seed is irrelevant post-restore.
-        rng = DeterministicRNG(base_seed=0)
+        # base_seed=state.seed matches _build_kernel() for a service built with an initial state.
+        # set_state() restores only the per-domain stream generators; the stateless draws
+        # (get_float, get_int, ...) seed from base_seed, so it must be the run's seed.
+        rng = DeterministicRNG(base_seed=state.seed)
         if state.rng_checkpoint is not None:
             rng.set_state(state.rng_checkpoint)
 

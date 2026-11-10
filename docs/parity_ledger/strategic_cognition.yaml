@@ -1612,13 +1612,13 @@
   support_boundary: null
 - id: STRAT-142
   text: '`test_near_death_hardening`: near-death hardening'
-  status: legacy_verified
+  status: verified
   priority: P0
   legacy_evidence: null
-  v2_evidence: Implementation proven via exhaustive checklist audit Phase 1-11
+  v2_evidence: 'NearDeathHardeningPhase.apply (src/engine/pipeline_phases/hardening.py) grants +5 max HP and the near_death emotion only when this tick''s CombatUpdate records a combat hit (attacker_id, damage_taken > 0, hit_tick_set == tick, as patches.py:332-337) and the subject survives at or below 10% of max HP; a town heal or a hazard grants nothing.'
   proof_type: parity
-  test_path: null
-  divergence_note: null
+  test_path: tests/unit/engine/test_near_death_hardening_hit_gate.py
+  divergence_note: 'Divergence 2.201 (TCK-20261103-NEAR-DEATH-HARDENING-FIRES-WITH-NOTHING-HITTING-THE-SUBJECT): the grant needs a combat hit taken this tick; a heal or a hazard grants nothing.'
   support_boundary: null
 - id: STRAT-143
   text: '`test_nemesis_recognition_and_fear_bias`: nemesis recognition and fear bias'
@@ -4677,7 +4677,16 @@
   legacy_evidence: null
   v2_evidence: 'src/engine/tactical.py (need_first branch, hunt_prey, _need_way_is_not_a_hunt, _hunt_project_names_prey, _prey_in_sight, _serves_a_need), src/engine/tactical_objective.py (pursue_objective, _fatigue_arrival_waits), src/engine/lodging.py (rest_would_lodge), src/engine/tactical_threat.py (need_yields), src/engine/need_pull.py (entity_need_is_pressing, entity_hunger_is_pressing), src/ai/goals/present_threat.py (acting_threat_to), docs/mechanics/04_strategic_cognition.md section 1. Ticket TCK-20261031-AN-ENGAGEMENT-OVERRIDES-A-PRESSING-NEED.'
   proof_type: regression
-  test_path: tests/unit/tactical/test_surv07_precedence_grid.py
+  test_path: tests/unit/tactical/test_surv07_precedence_grid.py, tests/unit/tactical/test_low_hp_retreat_gate.py::test_a_panic_freeze_with_prey_in_sight_holds_and_does_not_attack_the_prey
   divergence_note: See docs/guidelines/intentional_divergences.md Section 2.157.
-  support_boundary: 'Unit grids ({pressing y/n} x {no hostile, perceived only, present and not acting, acting} for the presence skip, rest in place and eat carried; the hunt rows: walk at 3 tiles, strike at 1 tile, combat-engage project, no project, sleep-only, prey plus non-prey, guard rows for inn/fatigue/carcass projects, project stays current and ends with its target) plus paired4 (15x2, 5000t, sequential reference). Unit coverage of the owner readings: reading 2 tests/unit/tactical/test_surv07_precedence_grid.py::test_reading_2_the_served_meal_on_arrival_is_taken_below_the_consequence_line_with_a_non_acting_hostile_in_sight; reading 3 tests/unit/tactical/test_surv07_precedence_grid.py::test_reading_3_past_the_consequence_line_a_badly_hurt_subject_with_nothing_acting_takes_the_need_path (hunger 96 eats) and tests/unit/tactical/test_surv07_precedence_grid.py::test_reading_3_below_the_consequence_line_the_emotional_panic_branch_holds_on_its_own_tile (hunger 80 panic holds on its own tile); control, not reading 3: tests/unit/tactical/test_surv07_precedence_grid.py::test_control_not_reading_3_above_the_panic_health_a_pressing_subject_eats (hp 20 and 30 eat). No trace isolates readings 2 or 3: paired4 shows them only in aggregate. Not taken by the owner: group defence, predator avoidance. Open: wild_creature collapses frontier, frontier s42 people held off the inn by avoided predators, urban s44 deaths to one scout (PR body).'
-
+  support_boundary: 'Unit grids ({pressing y/n} x {no hostile, perceived only, present and not acting, acting} for the presence skip, rest in place and eat carried; the hunt rows: walk at 3 tiles, strike at 1 tile, combat-engage project, no project, sleep-only, prey plus non-prey, guard rows for inn/fatigue/carcass projects, project stays current and ends with its target) plus paired4 (15x2, 5000t, sequential reference). Unit coverage of the owner readings: reading 2 tests/unit/tactical/test_surv07_precedence_grid.py::test_reading_2_the_served_meal_on_arrival_is_taken_below_the_consequence_line_with_a_non_acting_hostile_in_sight; reading 3 tests/unit/tactical/test_surv07_precedence_grid.py::test_reading_3_past_the_consequence_line_a_badly_hurt_subject_with_nothing_acting_takes_the_need_path (hunger 96 eats) and tests/unit/tactical/test_surv07_precedence_grid.py::test_reading_3_below_the_consequence_line_a_panic_with_nowhere_to_go_does_not_freeze_against_a_pressing_need (hunger 80, no destination: eats; closed by divergence 2.200); control, not reading 3: tests/unit/tactical/test_surv07_precedence_grid.py::test_control_not_reading_3_above_the_panic_health_a_pressing_subject_eats (hp 20 and 30 eat). No trace isolates readings 2 or 3: paired4 shows them only in aggregate. Not taken by the owner: group defence, predator avoidance. Open: wild_creature collapses frontier, frontier s42 people held off the inn by avoided predators, urban s44 deaths to one scout (PR body).'
+- id: STRAT-299
+  text: 'TCK-20261028-LOW-HP-RETREAT-BRANCH-HOLDS-A-STARVING-SUBJECT-IN-PLACE-BESIDE-A-NON-ACTING-HOSTILE (SURV-07 LAW P, memo row 88 (2) and (5)): a retreat with nowhere to go is not taken. Below 15% health the pure retreat with no destination stamps no PANIC_RETREAT task and holds the subject''s own tile in RETREAT mode with no task; with a destination it flees as before. The emotional panic branch with no destination does not freeze against a pressing need while nothing acts on the subject and no prey is in sight: the tick takes the need path (one computation, tactical._need_path_first, shared with the main order). A panic with a destination still flees.'
+  status: verified
+  priority: P1
+  legacy_evidence: null
+  v2_evidence: 'src/engine/tactical.py (_need_path_first, _panic_yields_to_need, the panic gate, the pure retreat with a None destination), docs/mechanics/04_strategic_cognition.md section 1, docs/guidelines/intentional_divergences.md Section 2.200. Ticket TCK-20261028-LOW-HP-RETREAT-BRANCH-HOLDS-A-STARVING-SUBJECT-IN-PLACE-BESIDE-A-NON-ACTING-HOSTILE.'
+  proof_type: regression
+  test_path: tests/unit/tactical/test_low_hp_retreat_gate.py
+  divergence_note: See docs/guidelines/intentional_divergences.md Section 2.200.
+  support_boundary: 'Unit rows: the low-hp retreat grid ({pressing y/n} x {no hostile, perceived only, adjacent not acting, acting}) with and without a destination, the acceptance scene, the panic freeze with prey in sight, and the reading 3 below-line row. Paired measurement pending.'
