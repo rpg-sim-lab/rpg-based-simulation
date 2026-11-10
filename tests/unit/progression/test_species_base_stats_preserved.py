@@ -119,7 +119,7 @@ def _harden(entity):
     # leave 1 HP: projected hp <= 10% of max_hp triggers hardening
     hp_delta = -(entity.combat.hp - 1)
     update = StateUpdate(entity_updates={
-        entity.id: EntityUpdate(entity_id=entity.id, combat=CombatUpdate(hp_delta=hp_delta)),
+        entity.id: EntityUpdate(entity_id=entity.id, combat=CombatUpdate(hp_delta=hp_delta, damage_taken=-hp_delta, attacker_id=entity.id + 1, hit_tick_set=state.tick)),
     })
     refined = NearDeathHardeningPhase.apply(state, update)
     return refined.entity_updates[entity.id]

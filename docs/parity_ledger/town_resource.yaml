@@ -263,13 +263,13 @@
 - id: TOWN-021
   text: "`test_near_death_hardening`: Near death hardening \u2014 Verify that surviving\
     \ at low HP increases Max HP.."
-  status: legacy_verified
+  status: verified
   priority: P0
   legacy_evidence: null
-  v2_evidence: null
+  v2_evidence: 'NearDeathHardeningPhase.apply (src/engine/pipeline_phases/hardening.py) grants +5 max HP and the near_death emotion only when this tick''s CombatUpdate records a combat hit (attacker_id, damage_taken > 0, hit_tick_set == tick, as patches.py:332-337) and the subject survives at or below 10% of max HP; a town heal or a hazard grants nothing.'
   proof_type: parity
-  test_path: null
-  divergence_note: null
+  test_path: tests/unit/engine/test_near_death_hardening_hit_gate.py
+  divergence_note: 'Divergence 2.201 (TCK-20261103-NEAR-DEATH-HARDENING-FIRES-WITH-NOTHING-HITTING-THE-SUBJECT): the grant needs a combat hit taken this tick; a heal or a hazard grants nothing.'
   support_boundary: null
 - id: TOWN-022
   text: "`test_stat_decay_inactivity`: Stat decay inactivity \u2014 Verify that stat\
