@@ -8107,6 +8107,51 @@
   - combat
   - determinism
 - type: ticket
+  path: agent-working/tickets/done/TCK-20261109-A-GROUPED-TRANSFER-TRIAL-DOES-NOT-SEE-ITS-OWN-EARLIER-INTENTS.md
+  ticket_id: TCK-20261109-A-GROUPED-TRANSFER-TRIAL-DOES-NOT-SEE-ITS-OWN-EARLIER-INTENTS
+  title: A grouped transfer's trial resolves each intent without the node charges,
+    reservations, treasury or building purse and stock taken by the intents before
+    it in the same group
+  tier: hotfix
+  ticket_type: bug
+  date: '2026-11-09'
+  related_code_areas:
+  - resolve_all
+  - ResourceTransactionResolver.resolve
+  artifact_files: []
+  tags:
+  - economy
+- type: ticket
+  path: agent-working/tickets/done/TCK-20261109-A-RECRUIT-PAYOUT-IS-PAID-IN-FULL-WHATEVER-THE-PAYER-HOLDS.md
+  ticket_id: TCK-20261109-A-RECRUIT-PAYOUT-IS-PAID-IN-FULL-WHATEVER-THE-PAYER-HOLDS
+  title: A recruit payout is paid to the recruit in full whatever the payer holds,
+    so a short payer mints the difference, and nothing rolls one side back when the
+    other is rejected
+  tier: hotfix
+  ticket_type: bug
+  date: '2026-11-09'
+  related_code_areas:
+  - execute_recruit
+  - src/core/conservation.py (RECRUIT branch)
+  - resolve_all
+  - src/core/inventory.py (gold clamp)
+  artifact_files: []
+  tags:
+  - economy
+- type: ticket
+  path: agent-working/tickets/done/TCK-20261109-FRONTEND-LINT-TOOLING-PULLS-A-MINIMATCH-OPEN-TO-GLOB-DOS.md
+  ticket_id: TCK-20261109-FRONTEND-LINT-TOOLING-PULLS-A-MINIMATCH-OPEN-TO-GLOB-DOS
+  title: 'Frontend lint tooling pulls minimatch 10.2.6, which is open to a glob-pattern
+    denial of service (Dependabot alert #250); force 11.0.1 with an npm override if
+    eslint still works'
+  tier: hotfix
+  ticket_type: chore
+  date: '2026-11-09'
+  related_code_areas:
+  - frontend/package.json, frontend/package-lock.json
+  artifact_files: []
+  tags: []
+- type: ticket
   path: agent-working/tickets/done/TCK-20261109-FUSED-STRATEGIC-PASS-FAST-PATH-IS-PINNED-BRANCH-BY-BRANCH-AND-AGAINST-THE-SLOW-PATH.md
   ticket_id: TCK-20261109-FUSED-STRATEGIC-PASS-FAST-PATH-IS-PINNED-BRANCH-BY-BRANCH-AND-AGAINST-THE-SLOW-PATH
   title: fused_strategic_pass's off-cadence fast path is pinned branch by branch (characterisation),
