@@ -345,7 +345,7 @@ class StrategicIntelligenceSystem:
                     break
             has_hostiles_or_dead = (has_diff or has_dead)
             try: object.__setattr__(state, "_has_hostiles_or_dead_cache", has_hostiles_or_dead)
-            except: pass
+            except (AttributeError, TypeError) as cache_ex: logger.debug(f"[Tick {state.tick}] fused pass: hostiles/dead cache not stored on this state: {cache_ex}")
 
         # Evaluation of routine blockers and concerns must run across candidate entities
         # Logic ID: PERF-006 (Dirty Entity Tracking for specific sub-phases, but routine pass is global)
@@ -515,7 +515,7 @@ class StrategicIntelligenceSystem:
                             dx = entity.navigation.position[0] - coords[0]
                             dy = entity.navigation.position[1] - coords[1]
                             if (dx*dx + dy*dy)**0.5 < 0.5: resolved_ids.add(b_id)
-                    except: pass
+                    except (ValueError, SyntaxError, TypeError) as access_ex: logger.debug(f"[Tick {state.tick}] access blocker {b_id} subject {b.subject!r} is not a coordinate pair: {access_ex}")
                 elif b.kind == "inventory" and b.subject == "capacity":
                     if len(pending_inventory.items) < pending_inventory.max_slots:
                         resolved_ids.add(b_id)
@@ -618,11 +618,11 @@ class StrategicIntelligenceSystem:
                 intent_up = StrategicIntelligenceSystem.evaluate_strategic_intent(state, temp_entity, force=True, cadence=cadence)
                 strat_up = strat_up.merge(intent_up)
 
-            # --- 4. Capacity Enforcement (unconditional, every tick) ---
+            # --- 4. Capacity Enforcement (every slow-path evaluation; a fast-path hit skips this block) ---
             # Enforces profile limits on leads, concerns, hypotheses, and projects.
             # Runs after all cognition items are accumulated so final removals are
             # applied before navigation decisions read from strat_up.
-            # Logic ID: STRAT-012 (Cognition capacity is enforced unconditionally)
+            # Logic ID: STRAT-006, STRAT-007 (leads and concerns are retained under profile limits); enforce_bandwidth also caps hypotheses and projects, which have no ledger row
             capacity_up = DetourSuggestionSystem.enforce_bandwidth(entity, state.tick)
             if not capacity_up.is_noop():
                 strat_up = strat_up.merge(capacity_up)
@@ -647,7 +647,7 @@ class StrategicIntelligenceSystem:
                             has_nav_update = True
                             existing_nav = ent_upd.navigation or NavigationUpdate()
                             ent_upd = replace(ent_upd, navigation=replace(existing_nav, target_set=coords), interaction=InteractionUpdate(reset=True))
-                    except: pass
+                    except (ValueError, AttributeError) as lead_ex: logger.debug(f"[Tick {state.tick}] material lead for {target_mat!r} has a non-coordinate detail {match_lead.detail!r}: {lead_ex}")
             
             if not has_nav_update and current_project_id:
                 project = next((p for p in strat_up.projects_add_or_update if p.id == current_project_id), None) or entity.strategic.projects.get(current_project_id)
