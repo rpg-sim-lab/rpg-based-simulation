@@ -1,0 +1,17 @@
+## crowded_frontier (base s42 = our spot-check cell; s43-46 = lane C e755dc3d1)
+s42: base {'COMBAT': 17, 'HAZARD': 11, 'DEFEAT': 7} total 35 | fix {'COMBAT': 17, 'HAZARD': 10, 'DEFEAT': 8} total 35 | hash equal False
+s43: base {'DEFEAT': 14, 'COMBAT': 18, 'HAZARD': 3} total 35 | fix {'DEFEAT': 15, 'COMBAT': 16, 'HAZARD': 3} total 34 | hash equal False
+s44: base {'COMBAT': 17, 'DEFEAT': 11, 'HAZARD': 6} total 34 | fix {'DEFEAT': 10, 'COMBAT': 17, 'HAZARD': 6} total 33 | hash equal False
+s45: base {'COMBAT': 21, 'STARVATION': 1, 'HAZARD': 3, 'DEFEAT': 7} total 32 | fix {'COMBAT': 21, 'STARVATION': 1, 'HAZARD': 3, 'DEFEAT': 8} total 33 | hash equal False
+s46: base {'DEFEAT': 16, 'COMBAT': 15, 'HAZARD': 2} total 33 | fix {'DEFEAT': 16, 'COMBAT': 15, 'HAZARD': 2} total 33 | hash equal False
+TOTAL base {'COMBAT': 88, 'HAZARD': 25, 'DEFEAT': 55, 'STARVATION': 1} 169 | fix {'COMBAT': 86, 'HAZARD': 24, 'DEFEAT': 57, 'STARVATION': 1} 168 | seeds up 1 of 5
+alive by role base {'merchant': 2, 'leader': 5, 'raider': 7, 'scout': 1, 'worker': 2, 'guard': 4} | fix {'raider': 11, 'leader': 4, 'hero': 1, 'scout': 1, 'worker': 2, 'merchant': 1, 'guard': 2}
+## frontier_living_world s43 (one-seed read)
+s43: base {'HAZARD': 6, 'COMBAT': 9, 'DEFEAT': 2} total 17 | fix {'HAZARD': 6, 'COMBAT': 9, 'DEFEAT': 2} total 17 | hash equal True
+TOTAL base {'HAZARD': 6, 'COMBAT': 9, 'DEFEAT': 2} 17 | fix {'HAZARD': 6, 'COMBAT': 9, 'DEFEAT': 2} 17 | seeds up 0 of 1
+alive by role base {'worker': 8, 'merchant': 4, 'blacksmith': 1, 'guard': 2, 'leader': 1} | fix {'worker': 8, 'merchant': 4, 'blacksmith': 1, 'guard': 2, 'leader': 1}
+counts s42 {'a_branch_reached': 3, 'a_none_destination': 1, 'c_yield_evaluated': 24, 'c_yield_true': 3, 'has_yield_fn': True}
+counts s43 {'a_branch_reached': 2, 'a_none_destination': 0, 'c_yield_evaluated': 33, 'c_yield_true': 10, 'has_yield_fn': True}
+counts s44 {'a_branch_reached': 7, 'a_none_destination': 1, 'c_yield_evaluated': 29, 'c_yield_true': 14, 'has_yield_fn': True}
+counts s45 {'a_branch_reached': 4, 'a_none_destination': 0, 'c_yield_evaluated': 16, 'c_yield_true': 11, 'has_yield_fn': True}
+counts s46 {'a_branch_reached': 0, 'a_none_destination': 0, 'c_yield_evaluated': 9, 'c_yield_true': 2, 'has_yield_fn': True}
