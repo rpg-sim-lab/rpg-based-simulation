@@ -28,6 +28,7 @@ from src.engine.appraisal import Relation
 from src.engine.hostility import relation, source_identity
 from src.engine.tactical_objective import pursue_objective
 from src.engine.tactical_avoid import avoid_what_can_eat_me, classify_neighbours
+from src.engine.tactical_flight_guard import FlightSite, flight_weighs_free_swing
 
 if TYPE_CHECKING:
     from src.core.state import EntityState, AuthoritativeState
@@ -270,18 +271,18 @@ class TacticalDecisionSystem:
              # PANIC: Move away from the perceived threats, inside the current region
              # (MOV-01 / LOC-01); hold position when no valid destination exists (MOV-03).
              retreat_to = _destination_or_hold(entity, panic_destination)
-             return EntityUpdate(
+             return flight_weighs_free_swing(state, entity, EntityUpdate(
                  entity_id=entity.id,
                  navigation=NavigationUpdate(target_set=retreat_to, movement_mode_set=MovementMode.RETREAT),
                  task=TaskUpdate(
                      work_kind_set="ENTITY_MOVE",
                      payload_set={"target_position": retreat_to, "reason": "PANIC_RETREAT"}
                  )
-             )
+             ), FlightSite.PANIC_RETREAT)
 
         # Section 8: Mob Leashing (GAP-T08)
         if (leash_return := leash_return_update(entity)) is not None:
-            return leash_return
+            return flight_weighs_free_swing(state, entity, leash_return, FlightSite.LEASH_RETURN)
 
         from src.engine.behavior_consumers import get_pressure_resolver
         from src.world.motivation.pressure_resolver import MotivationPressureSet
@@ -307,7 +308,7 @@ class TacticalDecisionSystem:
         # Safety pressure (AGENCY-07): a cautious entity retreats from a present threat, never from a hostile merely seen
         if safety_retreat_warranted(entity, hostiles, entity_pressures.safety_pressure):
             retreat_to = _destination_or_hold(entity, retreat_destination(state, entity, hostiles))
-            return EntityUpdate(
+            return flight_weighs_free_swing(state, entity, EntityUpdate(
                 entity_id=entity.id,
                 strategic=strat_up,
                 navigation=NavigationUpdate(target_set=retreat_to, movement_mode_set=MovementMode.RETREAT),
@@ -315,10 +316,10 @@ class TacticalDecisionSystem:
                     work_kind_set="ENTITY_MOVE",
                     payload_set={"target_position": retreat_to, "reason": "SAFETY_PRESSURE_RETREAT"}
                 )
-            )
+            ), FlightSite.SAFETY_PRESSURE_RETREAT)
 
         if (avoid_update := avoid_what_can_eat_me(state, entity, hood, strat_up)) is not None:
-            return avoid_update
+            return flight_weighs_free_swing(state, entity, avoid_update, FlightSite.FLEE_THREAT)
 
         rest_update = in_place_survival_update(state, entity, hostiles)
         if rest_update is not None:
@@ -465,7 +466,7 @@ class TacticalDecisionSystem:
         # Decision 32: beside a hostile it is not engaged with, the subject decides now (keep walking, step away, or fight below).
         noticed = notice_unengaged_hostile(state, entity, target, hostiles, strat_up)
         if noticed is not None:
-            return noticed
+            return flight_weighs_free_swing(state, entity, noticed, FlightSite.AVOID_HOSTILE)
 
         # Tactical Role Logic
         role = entity.combat.tactical_role
@@ -526,14 +527,14 @@ class TacticalDecisionSystem:
                       # movement phase to walk; RETREAT mode on a pinned tile is inert (routing skips position == target). Not HOLD mode: it changes swap eligibility at movement.py.
                       return EntityUpdate(entity_id=entity.id, strategic=strat_up,
                                           navigation=NavigationUpdate(target_set=entity.navigation.position, movement_mode_set=MovementMode.RETREAT))
-                  return EntityUpdate(
+                  return flight_weighs_free_swing(state, entity, EntityUpdate(
                       entity_id=entity.id,
                       navigation=NavigationUpdate(target_set=retreat_pos, movement_mode_set=MovementMode.RETREAT),
                       task=TaskUpdate(
                           work_kind_set="ENTITY_MOVE",
                           payload_set={"target_position": retreat_pos, "reason": "PANIC_RETREAT"}
                       )
-                  )
+                  ), FlightSite.LOW_HP_RETREAT)
 
         # 5.2 Bracketing Logic (Task 4.3)
         if role == "VANGUARD" and group:

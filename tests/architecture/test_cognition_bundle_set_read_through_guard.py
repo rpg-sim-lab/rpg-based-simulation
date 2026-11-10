@@ -39,15 +39,7 @@ _HELPER_FUNC_NAME = "read_through_cognition"
 # entity's `.cognition` field to the correct same-tick value before this function ever runs, so
 # there is nothing for a read-through to do here. Each entry names that mechanism so a future
 # reader isn't left to re-derive it.
-_ALLOWLIST = {
-    ("src/engine/movement.py", "resolve_move"): (
-        "Called only from pipeline_phases/movement.py::route_movement_intent(), which already "
-        "calls read_through_cognition() and patches `entity.cognition` to the correct same-tick "
-        "value BEFORE calling this function -- the `.cognition` read here (habit-bias lookup) and "
-        "the later cognition_bundle_set= write both see/produce the already-correct value by "
-        "construction, not by this function reading through anything itself."
-    ),
-}
+_ALLOWLIST = {}
 
 
 def _iter_function_defs(tree: ast.AST):
