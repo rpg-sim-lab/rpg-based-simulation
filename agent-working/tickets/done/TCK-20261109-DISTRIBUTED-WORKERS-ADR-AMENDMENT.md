@@ -1,10 +1,10 @@
 ---
-status: active
+status: historical
 layer: architecture
 authority: P1
 audience: agent
 ticket_id: TCK-20261109-DISTRIBUTED-WORKERS-ADR-AMENDMENT
-phase: open
+phase: done
 date: 2026-11-09
 tags: [architecture, determinism, planning]
 ---
@@ -15,7 +15,7 @@ tags: [architecture, determinism, planning]
 ADR amendment: allow an opt-in experiment mode whose Collection workers run outside the engine process, with one writer kept and the default unchanged.
 
 ## Status
-OPEN
+DONE
 
 ## Tier
 standard
@@ -75,7 +75,7 @@ edits (epic child 5, gated on ubuntu's docs batch).
 - docs/plans/architecture/engine_execution_modes_proposal.md
 
 ## Related Stored Artifacts
-- none
+- agent-working/stored_artifacts/TCK-20261109-DISTRIBUTED-WORKERS-ADR-AMENDMENT/ (plan.md, investigation.md, test_plan.md)
 
 ## Related Code Areas
 - src/engine/kernel.py (selection at 193-198; validation at 556)
@@ -85,13 +85,31 @@ edits (epic child 5, gated on ubuntu's docs batch).
 - lead-planner may prefer a new ADR file over amending two docs; either satisfies this ticket.
 
 ## Implementation Notes
-None yet.
+- Took the "new ADR file" route (Assumptions): the draft moved by `git mv` from `docs/plans/architecture/distributed_workers_adr_amendment_draft.md`
+  to `docs/architecture/distributed_workers_adr.md`, rewritten as accepted. Header and Status cite the owner's acceptance (#715 6777076537), the
+  §10 answers (6776551375) and the scale direction (6776564953). Decision 6 records the first-build choices (local recompute, CLI and harness
+  only, gRPC, pickle with guards). "Not decided here" drops the two items the owner has now decided, and adds parallel Resolution (C-10, Gate B
+  unchanged) and promotion. Risks add the two accepted first-build risks and the child-3 replay note.
+- Applied §5.1 to `system_overview.md` (first bullet of "What is deliberately not distributed") and §5.2 to `devops_plan_amendment_proposal.md`
+  ("What stays from the ADR"). The ADR quotes the applied text verbatim. The next-gen direction paragraph is untouched.
+- Not applied: §5.3 (`worker_contract.md`, epic child 5, `docs/engine/**`) and §5.4 (Mode 5 pointer, architecture-planner-u24).
+- Gate: the ticket's "after ubuntu's docs batch" gate covered the docs/architecture/kernel_concurrency file. This change does not edit that file,
+  and docs-as-review-source PR 1 landed (#859), so the gate does not block.
 
 ## Test Summary
-Doc only.
+Doc only. `validate_frontmatter.py` passes on the ADR, this ticket and its three artifacts. `done_checker_static.py` passes. The five Scope points
+were checked against the ADR text by hand (AC1): kept one writer (Decision 1), relaxed only for Collection under the profile (2), default
+unchanged (3), determinism rule (4), why it reopens (5). Known gap: `make knowledge-index-update` was not run (the search model's load runs
+out of memory on this host).
 
 ## Files Changed
-None yet.
+- docs/architecture/distributed_workers_adr.md (moved from docs/plans/architecture/distributed_workers_adr_amendment_draft.md, rewritten as accepted)
+- docs/architecture/system_overview.md
+- docs/architecture/devops_plan_amendment_proposal.md
+- agent-working/tickets/todos/distributed-workers-experiment/SEQUENCE.md
+- this ticket, its stored artifacts, docs/REGISTRY.yaml, agent-working/agent-monitoring/
 
 ## Completion Summary
-Open.
+DONE. The owner accepted the design with this amendment (#715 6777076537). AC1: merged in `docs/architecture/**` with the five points, citing
+#715 6731714291 (in Context and Decision 5). AC2: Decision 5 and §5.4 state that the owner's experiment choice replaces the Mode 5 reopen condition.
+AC3: the devops amendment's bullet now reads "one writer and a single replica", which stays true. Known gap: the search index was not refreshed.

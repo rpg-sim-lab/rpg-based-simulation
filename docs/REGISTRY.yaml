@@ -481,6 +481,18 @@
   - observability
   - delivery
 - type: doc
+  path: docs/architecture/distributed_workers_adr.md
+  title: 'ADR: an opt-in mode may run the Collection pool outside the engine process'
+  status: active
+  layer: architecture
+  authority: P1
+  audience: agent
+  tags:
+  - architecture
+  - engine
+  - determinism
+  - platform
+- type: doc
   path: docs/architecture/doc_topic_map.md
   title: Documentation topic map
   status: active
@@ -5985,19 +5997,6 @@
   - architecture
   - determinism
 - type: doc
-  path: docs/plans/architecture/distributed_workers_adr_amendment_draft.md
-  title: 'ADR amendment (DRAFT): an opt-in experiment may run the Collection pool
-    outside the engine process'
-  status: active
-  layer: architecture
-  authority: P2
-  audience: agent
-  tags:
-  - architecture
-  - engine
-  - determinism
-  - platform
-- type: doc
   path: docs/plans/architecture/distributed_workers_experiment_design.md
   title: 'Distributed-workers experiment mode: design (DRAFT)'
   status: active
@@ -8164,6 +8163,22 @@
   tags:
   - economy
 - type: ticket
+  path: agent-working/tickets/done/TCK-20261109-DISTRIBUTED-WORKERS-ADR-AMENDMENT.md
+  ticket_id: TCK-20261109-DISTRIBUTED-WORKERS-ADR-AMENDMENT
+  title: 'ADR amendment: allow an opt-in experiment mode whose Collection workers
+    run outside the engine process, with one writer kept and the default unchanged.'
+  tier: standard
+  ticket_type: chore
+  date: '2026-11-09'
+  related_code_areas:
+  - src/engine/kernel.py (selection at 193-198; validation at 556)
+  - src/engine/worker_manager.py (no-timeout rule at 192)
+  artifact_files: []
+  tags:
+  - architecture
+  - determinism
+  - planning
+- type: ticket
   path: agent-working/tickets/done/TCK-20261109-FRONTEND-LINT-TOOLING-PULLS-A-MINIMATCH-OPEN-TO-GLOB-DOS.md
   ticket_id: TCK-20261109-FRONTEND-LINT-TOOLING-PULLS-A-MINIMATCH-OPEN-TO-GLOB-DOS
   title: 'Frontend lint tooling pulls minimatch 10.2.6, which is open to a glob-pattern
@@ -8530,22 +8545,6 @@
   - src/ai/goals/scorers.py (:168, :250, :273, :313)
   artifact_files: []
   tags: []
-- type: ticket
-  path: agent-working/tickets/todos/distributed-workers-experiment/TCK-20261109-DISTRIBUTED-WORKERS-ADR-AMENDMENT.md
-  ticket_id: TCK-20261109-DISTRIBUTED-WORKERS-ADR-AMENDMENT
-  title: 'ADR amendment: allow an opt-in experiment mode whose Collection workers
-    run outside the engine process, with one writer kept and the default unchanged.'
-  tier: standard
-  ticket_type: chore
-  date: '2026-11-09'
-  related_code_areas:
-  - src/engine/kernel.py (selection at 193-198; validation at 556)
-  - src/engine/worker_manager.py (no-timeout rule at 192)
-  artifact_files: []
-  tags:
-  - architecture
-  - determinism
-  - planning
 - type: ticket
   path: agent-working/tickets/todos/distributed-workers-experiment/TCK-20261109-DISTRIBUTED-WORKERS-DESIGN.md
   ticket_id: TCK-20261109-DISTRIBUTED-WORKERS-DESIGN

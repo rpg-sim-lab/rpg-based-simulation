@@ -5,7 +5,7 @@ Epic `TCK-20261109-EPIC-DISTRIBUTED-WORKERS-EXPERIMENT`, filed by architecture-p
 
 ## Order
 
-1. TCK-20261109-DISTRIBUTED-WORKERS-ADR-AMENDMENT: lead-planner (ubuntu), after ubuntu's `lead-docs-review-source` batch lands.
+1. **DONE** TCK-20261109-DISTRIBUTED-WORKERS-ADR-AMENDMENT: lead-planner (ubuntu). Accepted by the owner (#715 6777076537); now `docs/architecture/distributed_workers_adr.md`.
    Everything below waits on it.
 2. TCK-20261109-DISTRIBUTED-WORKERS-DESIGN: architecture. **DRAFT written before 1 by owner leave (#715 6731956846)**, which relaxes
    the ADR-first gate (6731714291) for this child only: `docs/plans/architecture/distributed_workers_experiment_design.md`, inside 1's

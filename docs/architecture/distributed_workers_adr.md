@@ -1,31 +1,29 @@
 ---
 status: active
 layer: architecture
-authority: P2
+authority: P1
 audience: agent
 tags: [architecture, engine, determinism, platform]
 ---
 
-# ADR amendment (DRAFT): an opt-in experiment may run the Collection pool outside the engine process
+# ADR: an opt-in mode may run the Collection pool outside the engine process
 
-**Authored as DRAFT for lead-planner's review and adoption.** Authorship and the decision stay with lead-planner; this text is a
-proposal, not a recorded decision.
-- The owner had it drafted now (#715 6735920310, "Draft both ADRs now (Recommended)") while the ubuntu seat is away.
-- Written by architecture-planner-u24 for `TCK-20261109-DISTRIBUTED-WORKERS-ADR-AMENDMENT`, child 0 of
-  `TCK-20261109-EPIC-DISTRIBUTED-WORKERS-EXPERIMENT`.
-- Nothing is implemented.
-- `system_overview.md`, `kernel_concurrency_design_philosophy.md` and the `docs/engine` contracts are in ubuntu's docs batch and are
-  **not edited** here. §5 quotes the proposed amended text instead.
+**Accepted by the owner on 2026-11-11 (#715 6777076537), after lead-planner's review (2/2, re-check clean).** It amends
+`system_overview.md` ("What is deliberately not distributed") and `devops_plan_amendment_proposal.md` ("What stays from the ADR");
+the text applied there is in §5.
+- Drafted by architecture-planner-u24 for `TCK-20261109-DISTRIBUTED-WORKERS-ADR-AMENDMENT`, child 0 of
+  `TCK-20261109-EPIC-DISTRIBUTED-WORKERS-EXPERIMENT` (owner, #715 6735920310). Adopted by lead-planner.
+- The design it rests on is `docs/plans/architecture/distributed_workers_experiment_design.md` (accepted with it, at f517f1fdf).
+- Nothing is implemented yet.
 
-**Companion:** the next-generation engine ADR draft (`docs/plans/architecture/next_generation_engine_adr_draft.md`, on branch
-`architecture-next-generation-engine-epic`).
-- It touches the same "one process" decision, and carries **the same proposed `system_overview.md` text** (§5.1), word for word.
-- They are written as two ADRs because they are separate tracks with separate gates: an experiment, and a direction. Lead-planner may
-  combine them at adoption.
+**Companion:** the next-generation engine ADR (`docs/architecture/next_generation_engine_adr.md`, accepted #715 6742854335). It is a
+direction for the whole kernel; this ADR is one opt-in mode for Collection. A future default mode at scale must fit that ADR's phase
+contract, not fork it (design §13).
 
 ## Status
 
-DRAFT. Proposed by architecture-planner-u24, 2026-11-09. To be decided by lead-planner, then accepted by the owner.
+Accepted (owner, #715 6777076537). The design's §10 choices are the owner's answers (#715 6776551375), and the scale direction is
+#715 6776564953.
 
 ## Context
 
@@ -40,8 +38,11 @@ DRAFT. Proposed by architecture-planner-u24, 2026-11-09. To be decided by lead-p
   unchanged ("Epic + ADR first", #715 6731714291). It is an experiment, not a speed-up.
 - **Measured starting point (PROVISIONAL).** Collection is 14 to 26 % of a tick in py-spy shares (`tick_cost_growth.md` §2), and
   5.2 to 16 % in the benchmark records. The mode may well be slower than sequential.
-- **The design** is `docs/plans/architecture/distributed_workers_experiment_design.md` (DRAFT). A `RemoteWorkerManager` behind the
-  existing `ConcurrentExecutionAdapter`, passed as an explicit executor.
+- **The design** is `docs/plans/architecture/distributed_workers_experiment_design.md`. A `RemoteWorkerManager` behind the
+  existing `ConcurrentExecutionAdapter`, passed as an explicit executor; gRPC between engine and worker, pickle as the first codec
+  behind a codec seam, two-way authentication, a MAC on every response (design §4).
+- **The owner's scale direction** (#715 6776564953): the mode may become the default when the engine scales up. It ships opt-in;
+  promotion is gated (design §13).
 
 ## Decision
 
@@ -68,37 +69,43 @@ DRAFT. Proposed by architecture-planner-u24, 2026-11-09. To be decided by lead-p
 5. **Why it reopens.** The owner's experiment choice (#715 6731714291) **replaces** Mode 5's reopen condition for this mode only.
    It makes no claim of speed.
 
+6. **Owner's choices for the first build** (#715 6776551375): a dead or slow worker's chunk is recomputed locally and recorded; the
+   mode is reached from the CLI and the test harness only; the transport is gRPC, point to point (no broker); the first codec is
+   pickle, guarded (compose-internal network only, a test that the worker port is never published, two-way authentication, a
+   security review of child 3, a typed codec before the mode leaves its opt-in profile).
+
 **Not decided here:**
 - more than one writer, engine replicas, an API/engine split;
-- brokers beyond Redis Streams;
+- parallel Resolution (C-10 and the Gate B evaluation, PERF-M6-T05, are unchanged);
 - multi-host or k8s deploys;
-- reaching the mode from the API (design §10, choice 2);
-- the wire encoding (design §10, choice 4; child 3 gets a security review either way).
+- promotion to a default mode (below, Consequences).
 
-## 5. Proposed amended text (not applied; for lead-planner to place)
+## 5. Text applied to other documents
 
-### 5.1 `docs/architecture/system_overview.md`, "What is deliberately not distributed", first bullet (shared with the companion ADR)
+### 5.1 `docs/architecture/system_overview.md`, "What is deliberately not distributed", first bullet (applied)
 
 > - **The engine has one writer.** That is a choice, not a gap: determinism and replay depend on it
 >   (`docs/architecture/kernel_concurrency_design_philosophy.md`). Every result is validated, sorted and applied by the kernel alone.
->   **By default the engine is also one process.** One recorded exception exists: the opt-in distributed-workers experiment may run
->   the Collection pool in a separate container (ADR amendment, #715 6731714291), and it must give results identical to the
->   sequential run. Scaling is per run (many seeds in parallel), not per tick.
+>   **By default the engine is also one process.** One recorded exception exists: the opt-in distributed-workers mode may run the
+>   Collection pool in a separate container (`distributed_workers_adr.md`, #715 6777076537), and it must give results identical to
+>   the sequential run. Scaling is per run (many seeds in parallel), not per tick.
 
-### 5.2 `docs/architecture/devops_plan_amendment_proposal.md`, "What stays from the ADR"
+The next-generation engine ADR's direction paragraph in the same section is unchanged.
+
+### 5.2 `docs/architecture/devops_plan_amendment_proposal.md`, "What stays from the ADR" (applied)
 
 > - **The engine stays one writer and a single replica.** Determinism and replay depend on it. Kubernetes runs it as a single
->   replica; only the API and workers could scale. Under the opt-in distributed-workers experiment profile only, the Collection pool
->   may run in a separate `engine-worker` container on the compose-internal network (ADR amendment, #715 6731714291).
+>   replica; only the API and workers could scale. Under the opt-in distributed-workers profile only, the Collection pool
+>   may run in a separate `engine-worker` container on the compose-internal network (`distributed_workers_adr.md`, #715 6777076537).
 
-### 5.3 `docs/engine/contracts/worker_contract.md` §5, Non-Goals (epic child 5; after ubuntu's docs batch)
+### 5.3 `docs/engine/contracts/worker_contract.md` §5, Non-Goals (not applied: epic child 5)
 
 > - No distributed workers (network boundaries), **except the opt-in distributed-workers experiment mode**: the Collection pool in
 >   one separate container, results validated and applied by the kernel as in §3, with an outcome independent of worker speed.
 
-### 5.4 `docs/plans/architecture/engine_execution_modes_proposal.md`, Mode 5 (architecture-planner-u24, after acceptance)
+### 5.4 `docs/plans/architecture/engine_execution_modes_proposal.md`, Mode 5 (not applied: architecture-planner-u24, now accepted)
 
-> Reopened for one opt-in experiment only, by ADR amendment (#715 6731714291). The owner's experiment choice replaces the condition
+> Reopened for one opt-in mode only, by ADR (`docs/architecture/distributed_workers_adr.md`, #715 6777076537). The owner's experiment choice replaces the condition
 > "a world one machine cannot hold" for this mode. Relaxed or distributed execution otherwise stays out of this plan.
 
 ## Consequences
@@ -112,13 +119,17 @@ DRAFT. Proposed by architecture-planner-u24, 2026-11-09. To be decided by lead-p
   does not make it so. Promotion, and any multi-host deploy, needs its own ADR, decided against the gates in the design's §13.
 - **Risks:**
   - an unsafe-deserialization surface, since the first build uses pickle (owner, #715 6776551375). Guards: compose-internal
-    network only, a test that the worker port is never published, two-way authentication, and a security review of child 3. A
-    typed encoding is required before the mode leaves its opt-in profile;
+    network only, a test that the worker port is never published, two-way authentication with a MAC on every response, and a
+    security review of child 3. A typed codec is required before the mode leaves its opt-in profile;
+  - two accepted first-build risks: the plaintext per-run secret on the internal network, and a compromised worker container,
+    whose signed results the engine still decodes (closed by the typed codec and mTLS, design §13 gates 3 and 4). Child 3's
+    review also binds the tick or a per-call nonce into the response MAC (replay);
   - hidden reads outside the packet, such as process-global content: covered by the content fingerprint and the long equivalence test.
 
 ## Related
 
-- `TCK-20261109-DISTRIBUTED-WORKERS-ADR-AMENDMENT` (the ticket this drafts)
+- `TCK-20261109-DISTRIBUTED-WORKERS-ADR-AMENDMENT` (the ticket that adopted it)
+- `docs/architecture/next_generation_engine_adr.md` (companion)
 - `docs/plans/architecture/distributed_workers_experiment_design.md`
 - `docs/architecture/system_overview.md`, `docs/architecture/devops_plan_amendment_proposal.md`
 - `docs/plans/architecture/engine_execution_modes_proposal.md` (Mode 5)
