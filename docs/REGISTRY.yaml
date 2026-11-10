@@ -8506,6 +8506,21 @@
   artifact_files: []
   tags: []
 - type: ticket
+  path: agent-working/tickets/todos/TCK-20261109-THE-FAST-STRATEGIC-PATH-SENDS-AN-ENTITY-TARGET-PURSUER-HOME-WITH-ITS-ITEMS.md
+  ticket_id: TCK-20261109-THE-FAST-STRATEGIC-PATH-SENDS-AN-ENTITY-TARGET-PURSUER-HOME-WITH-ITS-ITEMS
+  title: On an off-cadence tick, fused_strategic_pass's fast path sends a loaded entity
+    with an entity-typed objective home (REGROUP), off its pursuit. The slow path
+    does not.
+  tier: standard
+  ticket_type: bug
+  date: '2026-11-09'
+  related_code_areas:
+  - src/systems/strategic_systems/intelligence.py::fused_strategic_pass (fast path
+    ~:380-410, slow path ~:655-680, ~:348, ~:518, ~:621-625, ~:650)
+  - tests/unit/strategic/test_fused_strategic_pass_fast_path_characterisation.py
+  artifact_files: []
+  tags: []
+- type: ticket
   path: agent-working/tickets/todos/next-generation-engine/TCK-20261109-EPIC-NEXT-GENERATION-ENGINE.md
   ticket_id: TCK-20261109-EPIC-NEXT-GENERATION-ENGINE
   title: 'Separate the kernel from the RPG logic behind an explicit phase contract,
@@ -8908,6 +8923,21 @@
   related_code_areas:
   - src/ai/goals/scorers.py (CombatEngageScorer), src/engine/tactical_avoid.py (classify_neighbours),
     src/engine/tactical_objective.py:124-126, src/engine/tactical.py:278-290
+  artifact_files: []
+  tags: []
+- type: ticket
+  path: agent-working/tickets/todos/TCK-20261107-GROUP-FORMATION-TICK-IS-NEVER-WRITTEN.md
+  ticket_id: TCK-20261107-GROUP-FORMATION-TICK-IS-NEVER-WRITTEN
+  title: 'GroupRecord.formation_tick is never written: every group carries 0 in the
+    digest, while the docs say it holds the formation tick'
+  tier: standard
+  ticket_type: bug
+  date: '2026-11-07'
+  related_code_areas:
+  - 'src/core/state.py GroupRecord (src/core/group_record.py on the #828 branch)'
+  - src/systems/world_systems/groups.py, src/systems/social_systems/party_lifecycle.py
+    (group creation)
+  - src/engine/checkpoint_fields.py FIELD_RULES
   artifact_files: []
   tags: []
 - type: ticket
