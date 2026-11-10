@@ -84,6 +84,32 @@ def open_index(db_path: Path) -> sqlite3.Connection:
     return sqlite3.connect(str(db_path))
 
 
+def stale_shard_count(db_path: Path, data_dir: Path) -> int:
+    """How many runs/events/tools shard files are newer than the index db (0 when the db is missing:
+    open_index reports that case itself). The index is a point-in-time snapshot, so any shard written
+    after the last build is data this validator would not see (generate_retro._index_is_stale asks the
+    same question as a yes/no; the warning needs the count)."""
+    if not db_path.exists():
+        return 0
+    db_mtime = db_path.stat().st_mtime
+    return sum(
+        1
+        for source in ("runs", "events", "tools")
+        for shard in shard_paths(data_dir, source)
+        if shard.stat().st_mtime > db_mtime
+    )
+
+
+def rebuild_index(db_path: Path) -> None:
+    """Rebuild the index with build_index.py before validating (the `--rebuild` flag)."""
+    import subprocess
+
+    subprocess.run(
+        [sys.executable, str(Path(__file__).resolve().parent / "build_index.py"), "--db-path", str(db_path)],
+        check=True,
+    )
+
+
 def load_runs_from_index(conn: sqlite3.Connection) -> list:
     cursor = conn.execute("SELECT raw_json FROM runs ORDER BY id")
     return [json.loads(row[0]) for row in cursor]
@@ -475,6 +501,7 @@ def build_parser():
     parser.add_argument("--db-path", default=str(DEFAULT_DB_PATH), help="Path to the agent-monitoring SQLite index")
     parser.add_argument("--data-dir", default=str(AGENT_MONITORING / "data"), help="Shard root for the gate_verdicts, working_log and tools-row checks")
     parser.add_argument("--since-week", default=DEFAULT_SINCE_WEEK, help="ISO week (YYYY-Www) for the since-week warning count")
+    parser.add_argument("--rebuild", action="store_true", help="Rebuild the index (build_index.py) before validating")
     return parser
 
 
@@ -486,6 +513,15 @@ def main(argv=None):
     warnings = []
     classified = []  # (class, run_id) beside each run-keyed warning, for the since-week summary
 
+    if args.rebuild:
+        rebuild_index(Path(args.db_path))
+    stale = stale_shard_count(Path(args.db_path), Path(args.data_dir))
+    if stale:
+        print(
+            f"WARNING: index older than {stale} shard file(s); run make agent-monitoring-index "
+            f"(or pass --rebuild) -- runs in newer shards are not validated",
+            file=sys.stderr,
+        )
     conn = open_index(Path(args.db_path))
     runs = load_runs_from_index(conn)
     events = load_events_from_index(conn)
