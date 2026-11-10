@@ -43,8 +43,10 @@ that watchlist row has been uncheckable since 10-06.
 1. One shared helper, `tools_in_period(all_tools, week=None, cutoff=None)`, selecting tool rows by their own `ts`
    (`iso_week(ts) == week` or `_record_since_cutoff(ts, cutoff)`). Rows without `ts` are counted and reported, not guessed.
 2. Use it at the three generate_retro sites (week, `--days`, trend table).
-3. Trace the delivery-cost gh-call count's tool-row selection (not yet traced by the designer) and switch it to the same
-   rule. If delivery imports from agent-monitoring, put the helper in a small shared module.
+3. NARROWED after tracing (see investigation.md): delivery-cost does not select by run_id. `bash_command_mix.load_tools_rows`
+   takes rows by shard-directory week and counts Bash `gh` heads; measured W44 = 492 gh calls, W45 = 66. No code change there;
+   add a pinning regression test (null-run_id gh rows are counted). Its uncheckable state is `gh pr create` rarity in
+   committed shards, not run_id.
 4. Per-run joins (tool calls per run or ticket, e.g. ~:1348) keep using run_id. Where they come out empty for null-run_id
    rows, the section prints "not attributable since W42 (adhoc-null attribution)" instead of 0.
 5. README note: retros generated from W42 on change their tool numbers on regeneration; published retros are not rewritten.
@@ -84,6 +86,7 @@ that watchlist row has been uncheckable since 10-06.
   run_id would cost a hook change and still leave history empty. No measurement runs. Leaves out per-run tool attribution.
 
 ## Implementation Notes
+Scope item 3 narrowed: delivery-cost selects tool rows by shard-directory week, not run_id (W44 492 / W45 66 gh calls counted), so only a pinning test is added. The README DELIVERY-COST row correction is pending the lead's word on whether it belongs in this PR.
 
 ## Test Summary
 
