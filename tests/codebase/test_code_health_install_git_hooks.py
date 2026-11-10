@@ -313,7 +313,7 @@ def test_the_makefile_targets_only_call_the_installer_and_name_the_risk():
     text = (_REPO / "Makefile").read_text()
     install = next(l for l in text.splitlines() if l.startswith("install-prek-hooks:"))
     assert "OPT-IN" in install and "EVERY worktree" in install
-    assert "python3 -m codebase.hooks.install_git_hooks install" in text and "python3 -m codebase.hooks.install_git_hooks uninstall" in text
+    assert "$(PYTHON3) -m codebase.hooks.install_git_hooks install" in text and "$(PYTHON3) -m codebase.hooks.install_git_hooks uninstall" in text
     assert "OVERWRITES" in next(l for l in text.splitlines() if l.startswith("install-hooks:"))
 
 
@@ -337,4 +337,4 @@ def test_nothing_installs_hooks_implicitly():
                  if p.name != "install_git_hooks.py" and any(n in code(p) for n in needles)]
     assert offenders == [], offenders
     recipe_lines = [l for l in lines if l.startswith("\t") and any(n in l for n in needles)]
-    assert recipe_lines == ["\tpython3 -m codebase.hooks.install_git_hooks install", "\tpython3 -m codebase.hooks.install_git_hooks uninstall"]
+    assert recipe_lines == ["\t$(PYTHON3) -m codebase.hooks.install_git_hooks install", "\t$(PYTHON3) -m codebase.hooks.install_git_hooks uninstall"]

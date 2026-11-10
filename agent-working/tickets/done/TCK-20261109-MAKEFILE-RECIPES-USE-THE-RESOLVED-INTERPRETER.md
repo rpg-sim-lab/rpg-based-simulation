@@ -99,6 +99,7 @@ holds the guard test in full).
 
 ## Implementation Notes
 Perl swap of every tab-led bare `python3` command word to `$(PYTHON3)` (79 commands, incl. line 183 env prefix and both sides of the mypy pipes); `uv run python3` left. `test`/`test-cov` repointed to tests/ and --cov=src with -m "not slow". Guard test copied from the designer draft.
+Follow-up after #856 CI failed at d2959b5ac (owner S5 #715 6766654495): three existing tests pinned the old bare `python3` recipe text (tests/codebase/test_code_health_install_git_hooks.py two assertions, tests/tools/test_status_drift_check.py one). Each keeps its wiring check, rewritten against `$(PYTHON3)`; nothing else changed.
 
 ## Test Summary
 The three AC4 files: 15 passed. `env -i PATH=/usr/bin:/bin make test-collect`: 21595 collected (ran once, before the memory note arrived). `make -n` on test-quick, test, test-cov, typecheck-py, docs-registry, monitoring-anomaly-validate shows the .venv interpreter on every python command.
