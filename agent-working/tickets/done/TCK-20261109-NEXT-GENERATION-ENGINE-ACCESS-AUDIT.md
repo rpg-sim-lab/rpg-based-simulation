@@ -147,3 +147,8 @@ Departures from `docs/plans/architecture/next_generation_engine_access_audit_pla
 
 ## Completion Summary
 Stage 1 observe-only access audit built and run. Reports: declared against observed writes for 35 of 43 steps, in-place input-update mutation (evolution, world_dynamics), hidden mutations on the watch list, sampled timeline check, process globals (none changed), cross-entity proxies. Deviations, all cleared by rpg-planner, architecture-planner and lead: (1) plan section 3: the recorder is passed via `state.feature_flags["ACCESS_AUDIT_SINK"]`, not held by a kernel-owned auditor; checkpointing is unsupported with the audit on; not a pattern for child 4. (2) Plan section 6: the in-place table has no tick counts (the recorder keeps a per-run set) and is a lower bound. (3) File names vs plan section 2: `observer.py` -> `observe.py` + `recorder.py` + `hook.py`. Pin edit to the completeness test (6 files, unbound). The report is evidence for child 4; it files no ticket (frozen=True hygiene for the mutable pydantic timeline events is child 4's to raise). Reads are statically derived, not observed. No staging artifacts existed for this ticket, so none were migrated.
+
+Known gap: the in-place input-update table is a lower bound; an equal-length in-place edit inside a bucket is not seen, and its tick counts are not recorded.
+Known gap: checkpointing is unsupported while the audit is on (the recorder sits on `state.feature_flags["ACCESS_AUDIT_SINK"]`).
+Known gap: reads are statically derived, not observed; the reads table is an inventory, not a check.
+Known gap: timing is not measured; no performance claim.
