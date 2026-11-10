@@ -12,7 +12,7 @@ Written retroactively at close (2026-11-11). This records the work as done; it w
 
 # Plan
 
-The approved plan is `docs/plans/architecture/next_generation_engine_access_audit_plan.md` at commit d68b2cd4a on branch `architecture-next-generation-engine-epic` (not on main). The ADR it serves is `docs/architecture/next_generation_engine_adr.md`. This file records how the plan was built, and where it was not followed.
+The approved plan is `docs/plans/architecture/next_generation_engine_access_audit_plan.md` at `origin/architecture-next-generation-engine-epic @ d68b2cd4a` (not yet on main; lands with child 4). The ADR it serves is `docs/architecture/next_generation_engine_adr.md`. This file records how the plan was built, and where it was not followed.
 
 | Plan section | As built |
 |---|---|
