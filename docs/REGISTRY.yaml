@@ -8001,6 +8001,22 @@
   - content
   last_verified: '2026-10-09'
 - type: ticket
+  path: agent-working/tickets/done/TCK-20261110-DELIVERY-COST-REF-MODE-READS-NO-BRANCH-SHARDS.md
+  ticket_id: TCK-20261110-DELIVERY-COST-REF-MODE-READS-NO-BRANCH-SHARDS
+  title: '`delivery_cost_measurement.py --ref` reads only a week''s canonical `tools.jsonl`,
+    so an unclosed week''s branch shards count as 0 gh calls'
+  tier: hotfix
+  ticket_type: bug
+  date: '2026-11-10'
+  related_code_areas:
+  - load_tools_rows_from_ref
+  - tools/delivery/delivery_cost_measurement.py, tests/tools/
+  artifact_files: []
+  tags:
+  - agent-monitoring
+  - delivery
+  - data-quality
+- type: ticket
   path: agent-working/tickets/done/TCK-20261110-MONITORING-VALIDATE-WARNS-ON-A-STALE-INDEX.md
   ticket_id: TCK-20261110-MONITORING-VALIDATE-WARNS-ON-A-STALE-INDEX
   title: '`make agent-monitoring-validate` validates a stale index without saying
