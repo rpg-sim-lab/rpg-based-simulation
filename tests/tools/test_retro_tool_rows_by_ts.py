@@ -81,3 +81,20 @@ def test_a_legacy_row_without_ts_but_with_a_period_run_id_is_kept():
     rows = [{"tool": "Read", "run_id": "TCK-1"}, {"tool": "Read", "run_id": "other"}]
     picked, missing, _ = gr.tools_in_period(rows, week="2026-W45", legacy_run_ids={"TCK-1"})
     assert [r["run_id"] for r in picked] == ["TCK-1"] and missing == 1
+
+
+def test_trend_row_for_a_week_of_null_run_id_tool_rows_is_non_zero(tmp_path, monkeypatch):
+    """AC1: _update_index gives the index row of a W42+ week real search/read/skill totals."""
+    monkeypatch.setattr(gr, "RETRO_DIR", tmp_path)
+    (tmp_path / "RETRO-2026-W45.md").write_text("placeholder")
+    runs = [{"run_id": "TCK-W45", "start_ts": W45_TS, "final_status": "DONE"}]
+    tools = [
+        _row(tool="mcp__knowledge-search__search_docs"),
+        _row(tool="Read", summary="a"),
+        _row(tool="Read", summary="b"),
+        _row(tool="Skill", summary="{'skill': 'graphify'}"),
+        _row(tool="Read", ts=W44_TS, summary="other week"),
+    ]
+    gr._update_index(runs, tools)
+    line = next(l for l in (tmp_path / "index.md").read_text().splitlines() if "2026-W45" in l)
+    assert [c.strip() for c in line.split("|")][5:8] == ["1", "2", "1"]
