@@ -26,31 +26,15 @@ _TOOLS = str(Path(__file__).resolve().parents[1])
 if _TOOLS not in sys.path:
     sys.path.insert(0, _TOOLS)
 
-# Paths a run writes as bookkeeping, never as the ticket's own change. A path is excluded when it starts with one of
-# these, or contains one of the fragments.
-EXCLUDED_PREFIXES = (
-    "agent-working/agent-monitoring/",  # run, event, tool and gate-verdict shards
-    "data/runs/",                       # simulation run output
-    "reports/release_proof/",           # release-proof output
-    "graphify-out/",                    # the knowledge graph
-    ".claude/current_run",              # the per-session run sidecar
+from gate_checks import docs_search  # noqa: E402 - needs the sys.path entry above
+from gate_checks.changed_files import (  # noqa: E402,F401 - re-exported: tests and callers use gate_cli.derive_changed_files
+    EXCLUDED_FRAGMENTS,
+    EXCLUDED_PREFIXES,
+    _git,
+    code_paths,
+    derive_changed_files,
+    is_excluded,
 )
-EXCLUDED_FRAGMENTS = ("/__pycache__/", "/.pytest_cache/")
-
-
-def is_excluded(path: str) -> bool:
-    return path.startswith(EXCLUDED_PREFIXES) or any(fragment in "/" + path for fragment in EXCLUDED_FRAGMENTS)
-
-
-def _git(*args: str) -> list[str]:
-    done = subprocess.run(["git", *args], capture_output=True, text=True, check=True)
-    return [line for line in done.stdout.splitlines() if line.strip()]
-
-
-def derive_changed_files(start_sha: str) -> list[str]:
-    """Tracked changes since ``start_sha`` (working tree included) plus untracked files, bookkeeping removed, sorted."""
-    paths = set(_git("diff", "--name-only", start_sha, "--")) | set(_git("ls-files", "--others", "--exclude-standard"))
-    return sorted(p for p in paths if not is_excluded(p))
 
 
 def _touched_ledger_lines() -> list[str]:
@@ -71,7 +55,23 @@ def site_plan_unresolved(args: argparse.Namespace) -> None:
 def site_doc_staleness(args: argparse.Namespace) -> None:
     from gate_checks.doc_staleness_check import check_doc_staleness
     files = derive_changed_files(args.start_sha)
-    print("MARKER:" + json.dumps(check_doc_staleness(files, args.behavior_changed == "true", args.docs_to_update)))
+    print("MARKER:" + json.dumps(check_doc_staleness(
+        files, args.behavior_changed == "true", args.docs_to_update, _search_result(files, args.start_sha),
+    )))
+
+
+def _search_result(files: list[str], start_sha: str) -> dict | None:
+    """The shared docs search on the real diff, or None: a failed search changes nothing about the gate's output."""
+    code = code_paths(files)
+    if not code:
+        return None
+    try:
+        root = Path.cwd()
+        return docs_search.search_docs_for_change(
+            code, docs_search.DirSource(root), docs_search.DirSource(root), docs_search.GitRefSource(root, start_sha),
+        )
+    except Exception:  # noqa: BLE001 - best effort: the advisory must never break the gate
+        return None
 
 
 def site_test_scope(args: argparse.Namespace) -> None:
