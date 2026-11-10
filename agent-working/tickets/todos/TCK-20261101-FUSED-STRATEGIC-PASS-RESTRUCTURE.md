@@ -77,6 +77,8 @@ fused_strategic_pass is already far above every ceiling (cognitive complexity 43
 ## Implementation Notes
 
 **Scope note D (2026-11-11, from the owner's answers #715 6736269441): the restructure is folded into the next-gen kernel/logic contract after M1.** Fix A (the fast-path direction guard) and B (hygiene: citation, comment, three bare excepts) landed on `fused_strategic_pass` as small local changes; neither restructures it. The restructure itself (splitting the fast and slow paths and the 400-line function) is not taken as a stand-alone step: it is folded into the next-gen kernel/logic contract after M1, where the function's phases become contract units. Until then the function stays at its code-health ceilings, and any change to it is one line for one line.
+
+The fast-path guard (~:395) doesn't check active_obj.status; the slow path (:657) requires ObjectiveStatus.ACTIVE. A non-ACTIVE objective with a point target (since main) or an entity target (since this fix) blocks the off-cadence town walk. Fold this into the restructure.
 Filed by rpg-planner 2026-11-01 under the owner's option (a), #715 6557046208. HELD (lead-planner-u24, 2026-11-01): not dispatched until checkpoint (a) of the perf-pause replan has a base. Then it goes as a named hot-loop batch with its own timing pair; the ubuntu lead may take it to the owner with the replan.
 
 ## Test Summary
