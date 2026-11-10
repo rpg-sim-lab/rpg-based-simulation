@@ -8217,6 +8217,21 @@
   artifact_files: []
   tags: []
 - type: ticket
+  path: agent-working/tickets/done/TCK-20261109-THE-FAST-STRATEGIC-PATH-SENDS-AN-ENTITY-TARGET-PURSUER-HOME-WITH-ITS-ITEMS.md
+  ticket_id: TCK-20261109-THE-FAST-STRATEGIC-PATH-SENDS-AN-ENTITY-TARGET-PURSUER-HOME-WITH-ITS-ITEMS
+  title: On an off-cadence tick, fused_strategic_pass's fast path sends a loaded entity
+    with an entity-typed objective home (REGROUP), off its pursuit. The slow path
+    does not.
+  tier: standard
+  ticket_type: bug
+  date: '2026-11-09'
+  related_code_areas:
+  - src/systems/strategic_systems/intelligence.py::fused_strategic_pass (fast path
+    ~:380-410, slow path ~:655-680, ~:348, ~:518, ~:621-625, ~:650)
+  - tests/unit/strategic/test_fused_strategic_pass_fast_path_characterisation.py
+  artifact_files: []
+  tags: []
+- type: ticket
   path: agent-working/tickets/done/TCK-20261109-WEBSITE-LOCKFILE-PINS-JOI-AND-FOLLOW-REDIRECTS-WITH-OPEN-HIGH-ALERTS.md
   ticket_id: TCK-20261109-WEBSITE-LOCKFILE-PINS-JOI-AND-FOLLOW-REDIRECTS-WITH-OPEN-HIGH-ALERTS
   title: The docs website's lockfile pins joi 17.13.8 and follow-redirects 1.16.1,
@@ -8503,21 +8518,6 @@
   related_code_areas:
   - src/core/state.py (town_center, :1345)
   - src/ai/goals/scorers.py (:168, :250, :273, :313)
-  artifact_files: []
-  tags: []
-- type: ticket
-  path: agent-working/tickets/todos/TCK-20261109-THE-FAST-STRATEGIC-PATH-SENDS-AN-ENTITY-TARGET-PURSUER-HOME-WITH-ITS-ITEMS.md
-  ticket_id: TCK-20261109-THE-FAST-STRATEGIC-PATH-SENDS-AN-ENTITY-TARGET-PURSUER-HOME-WITH-ITS-ITEMS
-  title: On an off-cadence tick, fused_strategic_pass's fast path sends a loaded entity
-    with an entity-typed objective home (REGROUP), off its pursuit. The slow path
-    does not.
-  tier: standard
-  ticket_type: bug
-  date: '2026-11-09'
-  related_code_areas:
-  - src/systems/strategic_systems/intelligence.py::fused_strategic_pass (fast path
-    ~:380-410, slow path ~:655-680, ~:348, ~:518, ~:621-625, ~:650)
-  - tests/unit/strategic/test_fused_strategic_pass_fast_path_characterisation.py
   artifact_files: []
   tags: []
 - type: ticket

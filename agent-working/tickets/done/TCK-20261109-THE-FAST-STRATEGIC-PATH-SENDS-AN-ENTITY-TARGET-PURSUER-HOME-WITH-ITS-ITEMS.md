@@ -1,10 +1,10 @@
 ---
-status: active
+status: historical
 layer: strategy
 authority: P1
 audience: agent
 ticket_id: TCK-20261109-THE-FAST-STRATEGIC-PATH-SENDS-AN-ENTITY-TARGET-PURSUER-HOME-WITH-ITS-ITEMS
-phase: open
+phase: done
 date: 2026-11-09
 tags: []
 ---
@@ -15,7 +15,7 @@ tags: []
 On an off-cadence tick, fused_strategic_pass's fast path sends a loaded entity with an entity-typed objective home (REGROUP), off its pursuit. The slow path does not.
 
 ## Status
-OPEN
+DONE
 
 ## Tier
 standard
@@ -101,8 +101,34 @@ Notes riding in this PR (docs only, on the named tickets):
 
 **Run count (2026-11-11, rpg-implementer-3; lead agreed via rpg-planner): 16 runs, not 15.** 16 = the 15 approved runs + 1 `frontier_living_world` s45 base cell on origin/main `2ea0e4d8f`. There was no fliving s45 base cell on 993400a52, so the seventh pair needed one. `git diff 993400a52 2ea0e4d8f -- src data config` is empty (#859 is docs and tooling only), so the other 6 base cells (crowded_frontier s42-46, urban_political s44) reuse the cells measured on 993400a52. The set: B = crowded s42 on c7607b6da (must equal d842c20983d7); A = the fix head on crowded s42-46, urban s44 and fliving s45; base = fliving s45 on 2ea0e4d8f. The push ask names both shas (2ea0e4d8f and 993400a52); the PR's evidence section says the same.
 
+**What was built (2026-11-11).** B (c7607b6da): the capacity block cites STRAT-006/STRAT-007 and says it runs on every slow-path evaluation; three bare `except: pass` in `fused_strategic_pass` are line-for-line one-liners that log at debug through the module `logger` (cache store, access-blocker parse, material-lead parse). A (e3b3be09c, reshaped in c78d4c4b0): the fast-path guard counts a `target_entity_id` objective as owning the direction, as the slow path does (~:663). Two further bare excepts outside the function (~:775, ~:1251) are untouched. The parity text is COMB-329 in `combat_movement.yaml` (not a STRAT row, as the ticket assumed). Scope notes landed on CLEAR-TARGET and RESTRUCTURE (note D, plus the missing-status line). 26ca2c77c is a comment-only change on the :395 line.
+
+**Code health.** Cognitive complexity of `fused_strategic_pass` went 437 to 438 and the ceiling was raised by one (c1c762a46, owner #715 6776776165). The `value` is unchanged. The ratchet is otherwise untouched.
+
+**Staging artifacts: none.** The ticket's plan lives in its own Scope; there is no `staging_artifacts/<ticket>/` directory to migrate.
+
 ## Test Summary
+- `tests/unit/strategic`: 523 passed (`-n 1`, `-p no:randomly`) at c632e0150.
+- Row 1 flipped to `test_row1_entity_objective_off_cadence_does_not_regroup_home` (`is None`). The strict xfail and its `KNOWN_DISAGREEMENTS` entry for `entity_objective_loaded_entity` are removed; the table now holds exactly row 6 (`earlier_phase_target_set`).
+- New wired-path test `test_pursuit_objective_survives_the_off_cadence_strategic_pass.py`: through `AuthoritativeApplyPipeline.refine` off cadence, no REGROUP target and no interaction reset; it failed before the fix (REGROUP to (50,50)). A control without a project still regroups.
+- `codebase.health check`: OK, 0 worse. `mypy_gate`: rc 0.
+- Measurement (pinned runner, PYTHONHASHSEED=0, 5000 ticks, 16 runs): B crowded s42 on c7607b6da = d842c20983d7 = base. Fix on c1c762a46 vs base, 7 pairs (crowded s42-46, urban_political s44, frontier_living_world s45): all 7 final hashes and result JSONs are identical. Crowded 5-seed deaths 160 to 160 (COMBAT 118, DEFEAT 26, HAZARD 16 on both sides); extinction check: stop [], base_state [blacksmith, scout], recovered []. Bases: 993400a52 (6 cells) and 2ea0e4d8f (fliving s45); `git diff 993400a52 2ea0e4d8f -- src data config` is empty. rpg-designer ruled A+B PASSES with no probe.
 
 ## Files Changed
+- `src/systems/strategic_systems/intelligence.py` (B and A; one comment-only commit on :395)
+- `tests/unit/strategic/test_fused_strategic_pass_fast_path_characterisation.py` (row 1 flipped, xfail removed)
+- `tests/unit/strategic/test_pursuit_objective_survives_the_off_cadence_strategic_pass.py` (new)
+- `docs/parity_ledger/combat_movement.yaml` (COMB-329)
+- `codebase/baselines/code_health_exceptions.jsonl` (one ceiling, 437 to 438, owner-approved)
+- `agent-working/tickets/todos/TCK-20261101-CLEAR-TARGET-IS-NEVER-APPLIED.md`, `.../TCK-20261101-FUSED-STRATEGIC-PASS-RESTRUCTURE.md` (scope notes)
+- This ticket, moved to `done/`.
+The branch also carries earlier commits from its merge of rpg-planner-seat-8 (filed tickets, `social_narrative.yaml` SOC-227, `docs/simulation/domains/party_contract.md`); they are not part of this ticket's change.
 
 ## Completion Summary
+Fix A and the B hygiene ride-along are done. Three disclosures, in plain words:
+1. **The fix shows in the tests only.** All 7 paired measurement cells are byte-identical to base, so no run in the measured set exercised the changed branch in a way that moved any trajectory.
+2. **The guard never checked the objective's own status.** The fast-path guard (~:395) does not check `active_obj.status`, while the slow path (:657) requires `ObjectiveStatus.ACTIVE`. This fix extends that pre-existing leniency from point objectives to entity objectives. It is recorded on the RESTRUCTURE ticket to be folded into the restructure.
+3. **The three narrowed excepts now let other exception types propagate.** Each one catches only the exceptions it guards (AttributeError/TypeError; ValueError/SyntaxError/TypeError; ValueError/AttributeError). Any other type now propagates instead of being swallowed. No measured run hit one.
+
+The `fused_strategic_pass` complexipy ceiling went 437 to 438 (owner #715 6776776165). The restructure itself stays folded into the next-gen contract after M1 (note D); it is not done here.
+
