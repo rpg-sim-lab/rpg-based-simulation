@@ -99,6 +99,8 @@ Notes riding in this PR (docs only, on the named tickets):
 
 ## Implementation Notes
 
+**Run count (2026-11-11, rpg-implementer-3; lead agreed via rpg-planner): 16 runs, not 15.** 16 = the 15 approved runs + 1 `frontier_living_world` s45 base cell on origin/main `2ea0e4d8f`. There was no fliving s45 base cell on 993400a52, so the seventh pair needed one. `git diff 993400a52 2ea0e4d8f -- src data config` is empty (#859 is docs and tooling only), so the other 6 base cells (crowded_frontier s42-46, urban_political s44) reuse the cells measured on 993400a52. The set: B = crowded s42 on c7607b6da (must equal d842c20983d7); A = the fix head on crowded s42-46, urban s44 and fliving s45; base = fliving s45 on 2ea0e4d8f. The push ask names both shas (2ea0e4d8f and 993400a52); the PR's evidence section says the same.
+
 ## Test Summary
 
 ## Files Changed
