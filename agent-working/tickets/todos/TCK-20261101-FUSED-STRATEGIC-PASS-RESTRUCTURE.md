@@ -75,6 +75,8 @@ fused_strategic_pass is already far above every ceiling (cognitive complexity 43
 - The perf pause (#715 6556861718): this is a refactor with byte-equal acceptance, so no timing claim is made. Check whether the pause defers it.
 
 ## Implementation Notes
+
+**Scope note D (2026-11-11, from the owner's answers #715 6736269441): the restructure is folded into the next-gen kernel/logic contract after M1.** Fix A (the fast-path direction guard) and B (hygiene: citation, comment, three bare excepts) landed on `fused_strategic_pass` as small local changes; neither restructures it. The restructure itself (splitting the fast and slow paths and the 400-line function) is not taken as a stand-alone step: it is folded into the next-gen kernel/logic contract after M1, where the function's phases become contract units. Until then the function stays at its code-health ceilings, and any change to it is one line for one line.
 Filed by rpg-planner 2026-11-01 under the owner's option (a), #715 6557046208. HELD (lead-planner-u24, 2026-11-01): not dispatched until checkpoint (a) of the perf-pause replan has a base. Then it goes as a named hot-loop batch with its own timing pair; the ubuntu lead may take it to the owner with the replan.
 
 ## Test Summary
