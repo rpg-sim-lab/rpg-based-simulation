@@ -8119,6 +8119,51 @@
   - combat
   - determinism
 - type: ticket
+  path: agent-working/tickets/done/TCK-20261109-A-GROUPED-TRANSFER-TRIAL-DOES-NOT-SEE-ITS-OWN-EARLIER-INTENTS.md
+  ticket_id: TCK-20261109-A-GROUPED-TRANSFER-TRIAL-DOES-NOT-SEE-ITS-OWN-EARLIER-INTENTS
+  title: A grouped transfer's trial resolves each intent without the node charges,
+    reservations, treasury or building purse and stock taken by the intents before
+    it in the same group
+  tier: hotfix
+  ticket_type: bug
+  date: '2026-11-09'
+  related_code_areas:
+  - resolve_all
+  - ResourceTransactionResolver.resolve
+  artifact_files: []
+  tags:
+  - economy
+- type: ticket
+  path: agent-working/tickets/done/TCK-20261109-A-RECRUIT-PAYOUT-IS-PAID-IN-FULL-WHATEVER-THE-PAYER-HOLDS.md
+  ticket_id: TCK-20261109-A-RECRUIT-PAYOUT-IS-PAID-IN-FULL-WHATEVER-THE-PAYER-HOLDS
+  title: A recruit payout is paid to the recruit in full whatever the payer holds,
+    so a short payer mints the difference, and nothing rolls one side back when the
+    other is rejected
+  tier: hotfix
+  ticket_type: bug
+  date: '2026-11-09'
+  related_code_areas:
+  - execute_recruit
+  - src/core/conservation.py (RECRUIT branch)
+  - resolve_all
+  - src/core/inventory.py (gold clamp)
+  artifact_files: []
+  tags:
+  - economy
+- type: ticket
+  path: agent-working/tickets/done/TCK-20261109-FRONTEND-LINT-TOOLING-PULLS-A-MINIMATCH-OPEN-TO-GLOB-DOS.md
+  ticket_id: TCK-20261109-FRONTEND-LINT-TOOLING-PULLS-A-MINIMATCH-OPEN-TO-GLOB-DOS
+  title: 'Frontend lint tooling pulls minimatch 10.2.6, which is open to a glob-pattern
+    denial of service (Dependabot alert #250); force 11.0.1 with an npm override if
+    eslint still works'
+  tier: hotfix
+  ticket_type: chore
+  date: '2026-11-09'
+  related_code_areas:
+  - frontend/package.json, frontend/package-lock.json
+  artifact_files: []
+  tags: []
+- type: ticket
   path: agent-working/tickets/done/TCK-20261109-FUSED-STRATEGIC-PASS-FAST-PATH-IS-PINNED-BRANCH-BY-BRANCH-AND-AGAINST-THE-SLOW-PATH.md
   ticket_id: TCK-20261109-FUSED-STRATEGIC-PASS-FAST-PATH-IS-PINNED-BRANCH-BY-BRANCH-AND-AGAINST-THE-SLOW-PATH
   title: fused_strategic_pass's off-cadence fast path is pinned branch by branch (characterisation),
@@ -8551,6 +8596,23 @@
   - documentation
   - observability
 - type: ticket
+  path: agent-working/tickets/done/TCK-20261108-DOC-STEP-ON-HAND-CLOSES-AND-REVIEW-RULES.md
+  ticket_id: TCK-20261108-DOC-STEP-ON-HAND-CLOSES-AND-REVIEW-RULES
+  title: Hand-orchestrated closes get the doc step, the Definition of Done records
+    known defects, and the review rules that don't need P1 are written down.
+  tier: hotfix
+  ticket_type: chore
+  date: '2026-11-08'
+  related_code_areas:
+  - docs/guides/delivery_process.md
+  artifact_files: []
+  tags:
+  - ai
+  - documentation
+  - governance
+  - delivery
+  - claude-md
+- type: ticket
   path: agent-working/tickets/done/TCK-20261108-DOC-TOPIC-MAP-NAMES-ONE-CANONICAL-SOURCE-PER-FACT-GROUP.md
   ticket_id: TCK-20261108-DOC-TOPIC-MAP-NAMES-ONE-CANONICAL-SOURCE-PER-FACT-GROUP
   title: A reviewer has no single page naming the canonical doc and normative source
@@ -8566,6 +8628,47 @@
   tags:
   - documentation
   - architecture
+- type: ticket
+  path: agent-working/tickets/done/TCK-20261108-DOC-UPDATER-SATELLITE-STEP-AND-STALENESS-ADVISORY.md
+  ticket_id: TCK-20261108-DOC-UPDATER-SATELLITE-STEP-AND-STALENESS-ADVISORY
+  title: doc-updater triages candidate satellite docs, and the doc-staleness gate
+    lists untouched docs that cite changed code.
+  tier: standard
+  ticket_type: feature
+  date: '2026-11-08'
+  related_code_areas:
+  - .claude/agents/doc-updater.md (Step 0, :11-34)
+  - tools/gate_checks/doc_staleness_check.py (check_doc_staleness, :39)
+  - .claude/workflows/implement-ticket.js (Document-Update, :1211-1273)
+  artifact_files:
+  - agent-working/stored_artifacts/TCK-20261108-DOC-UPDATER-SATELLITE-STEP-AND-STALENESS-ADVISORY/investigation.md
+  - agent-working/stored_artifacts/TCK-20261108-DOC-UPDATER-SATELLITE-STEP-AND-STALENESS-ADVISORY/plan.md
+  - agent-working/stored_artifacts/TCK-20261108-DOC-UPDATER-SATELLITE-STEP-AND-STALENESS-ADVISORY/test_plan.md
+  tags:
+  - ai
+  - documentation
+  - process-improvement
+- type: ticket
+  path: agent-working/tickets/done/TCK-20261108-DOCS-REQUIRING-UPDATE-BUILT-BY-SEARCH.md
+  ticket_id: TCK-20261108-DOCS-REQUIRING-UPDATE-BUILT-BY-SEARCH
+  title: Investigate builds "Docs Requiring Update" by search, as required, candidate
+    and excluded lists.
+  tier: standard
+  ticket_type: feature
+  date: '2026-11-08'
+  related_code_areas:
+  - '## Docs Requiring Update'
+  - .claude/workflows/implement-ticket.js (Investigate prompt; Document-Update phase
+    :1211-1273)
+  - tools/gate_checks/done_checker_static.py (check_docs_to_update_coverage)
+  artifact_files:
+  - agent-working/stored_artifacts/TCK-20261108-DOCS-REQUIRING-UPDATE-BUILT-BY-SEARCH/investigation.md
+  - agent-working/stored_artifacts/TCK-20261108-DOCS-REQUIRING-UPDATE-BUILT-BY-SEARCH/plan.md
+  - agent-working/stored_artifacts/TCK-20261108-DOCS-REQUIRING-UPDATE-BUILT-BY-SEARCH/test_plan.md
+  tags:
+  - ai
+  - documentation
+  - process-improvement
 - type: ticket
   path: agent-working/tickets/done/TCK-20261108-FOUR-ENGINE-AND-OBSERVABILITY-DOC-CLAIMS-NO-LONGER-MATCH-THE-CODE.md
   ticket_id: TCK-20261108-FOUR-ENGINE-AND-OBSERVABILITY-DOC-CLAIMS-NO-LONGER-MATCH-THE-CODE
@@ -8637,6 +8740,71 @@
   - website/package.json, website/package-lock.json
   artifact_files: []
   tags: []
+- type: ticket
+  path: agent-working/tickets/todos/docs-as-review-source/TCK-20261108-DOC-EVIDENCE-FIELDS-AND-DRIFT-REPORT.md
+  ticket_id: TCK-20261108-DOC-EVIDENCE-FIELDS-AND-DRIFT-REPORT
+  title: Behaviour docs can carry evidence and a verification baseline, and an advisory
+    drift report says which ones need re-verifying.
+  tier: standard
+  ticket_type: feature
+  date: '2026-11-08'
+  related_code_areas:
+  - tools/validate_frontmatter.py, tools/mechanism_registry/mechanism_registry_changed_code_check.py
+  - tools/agent-monitoring/week_close.py, .claude/workflows/implement-ticket.js (Finalize)
+  artifact_files: []
+  tags:
+  - ai
+  - documentation
+  - governance
+  - frontmatter
+  - agent-monitoring
+- type: ticket
+  path: agent-working/tickets/todos/docs-as-review-source/TCK-20261108-EPIC-DOCS-AS-REVIEW-SOURCE.md
+  ticket_id: TCK-20261108-EPIC-DOCS-AS-REVIEW-SOURCE
+  title: 'Documents are the review source and stay correct: agent-working''s batches
+    B, C, D, E1, E2, J1-J2 and Q5.'
+  tier: epic
+  ticket_type: feature
+  date: '2026-11-08'
+  related_code_areas:
+  - .claude/agents/investigator.md, .claude/agents/doc-updater.md, .claude/workflows/implement-ticket.js
+  - tools/gate_checks/doc_staleness_check.py, tools/validate_frontmatter.py, tools/agent-monitoring/
+  artifact_files: []
+  tags:
+  - ai
+  - documentation
+  - governance
+  - delivery
+  - process-improvement
+- type: ticket
+  path: agent-working/tickets/todos/docs-as-review-source/TCK-20261108-PROJECT-FACTS-PAGE-GENERATED.md
+  ticket_id: TCK-20261108-PROJECT-FACTS-PAGE-GENERATED
+  title: Project numbers come from one stats tool and a generated facts page with
+    a --check.
+  tier: standard
+  ticket_type: feature
+  date: '2026-11-08'
+  related_code_areas:
+  - tools/project_stats.py (new), docs/architecture/project_facts.md (new)
+  artifact_files: []
+  tags:
+  - ai
+  - documentation
+  - governance
+- type: ticket
+  path: agent-working/tickets/todos/docs-as-review-source/TCK-20261108-STALE-DOC-DETECTION-PILOT.md
+  ticket_id: TCK-20261108-STALE-DOC-DETECTION-PILOT
+  title: A read-only stale-doc detection run at a pinned SHA, and an evaluation report
+    the owner uses to scope J3.
+  tier: standard
+  ticket_type: feature
+  date: '2026-11-08'
+  related_code_areas: []
+  artifact_files: []
+  tags:
+  - ai
+  - documentation
+  - governance
 - type: ticket
   path: agent-working/tickets/done/TCK-20261107-A-HARVEST-IS-REJECTED-ONE-CHARGE-EARLY-WITHIN-A-TICK.md
   ticket_id: TCK-20261107-A-HARVEST-IS-REJECTED-ONE-CHARGE-EARLY-WITHIN-A-TICK
