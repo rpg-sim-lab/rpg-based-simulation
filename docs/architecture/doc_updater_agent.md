@@ -12,6 +12,13 @@ Accepted — implemented across TCK-20260803-DOC-UPDATER-CORE-WIRING, -VOCAB-REG
 -DASHBOARD-PALETTE (all DONE). `.claude/agents/doc-updater.md` and the Document-Update phase are
 live in `.claude/workflows/implement-ticket.js` for every tier including hotfix.
 
+**Satellite step (`TCK-20261108-DOC-UPDATER-SATELLITE-STEP-AND-STALENESS-ADVISORY`):** the Decision below stands: doc-updater's
+input is Investigate's list. The one addition is the candidate docs from the shared search (`tools/gate_checks/docs_search.py`),
+which doc-updater triages after the required docs. The rules for it (explanatory docs only, no edits to history docs or
+to normative docs without the rule owner's approval, defects reported rather than written) are stated once in
+`.claude/agents/doc-updater.md`, "Satellite step". The staleness gate also lists untouched live docs that cite a changed
+file, as an advisory that never blocks.
+
 ## Context
 
 `implement-ticket.js` already enforces documentation staleness through three layers:
