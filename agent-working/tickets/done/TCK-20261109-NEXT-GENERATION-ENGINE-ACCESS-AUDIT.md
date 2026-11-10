@@ -1,10 +1,10 @@
 ---
-status: active
+status: historical
 layer: architecture
 authority: P1
 audience: agent
 ticket_id: TCK-20261109-NEXT-GENERATION-ENGINE-ACCESS-AUDIT
-phase: open
+phase: done
 date: 2026-11-09
 tags: [architecture, engine, determinism]
 ---
@@ -16,7 +16,7 @@ Stage 1: declare each Resolution step's reads and writes, and audit them against
 off by default and hash-neutral.
 
 ## Status
-BLOCKED
+DONE
 
 ## Tier
 standard
@@ -137,11 +137,13 @@ Departures from `docs/plans/architecture/next_generation_engine_access_audit_pla
 - In-place INPUT-update table (ruling relayed by rpg-planner, arch and lead accept (A)): tick counts not recorded (the recorder keeps a per-run set); departs from plan section 6 for this table only. The table is a LOWER BOUND: steps seen mutating their input; others may do so undetected (an equal-length in-place edit inside a bucket is not seen). Child 4's copy-on-write rule is enforced by its own Level A proof, not by this list. Carry this line into the PR body.
 
 ## Test Summary
-Planned: unit tests for the hook and the declaration checker; an audit on/off equivalence test (hash and event count); pinned
-5000-tick cells with the audit on (condition 4a).
+- Unit: `tests/unit/engine/access_audit/` 76 passed at `-n 1` (declarations cover every step; observe; flag and on/off equivalence; positive controls incl. the full-deque append, id-reuse control and field-diff row; report).
+- Evidence (condition 4a): 6 audit-ON cells (crowded_frontier s42-46, urban_political s46, 5000 ticks, `PYTHONHASHSEED=0`, approved wrapper sha256 39706ba7…) on src head f19379c43: every end hash equals the main 993400a52 base cell; 160k observations each; 35 of 43 steps observed (8 flag-OFF); sampled timeline check 0 edits in 300 samples, 860 replaced (id reuse). Main is now 2ea0e4d8f with an empty `src data config` diff against 993400a52. Timing NOT MEASURED, no perf claim.
+- Full test.yml set at `-n 1` on the pinned scratch venv (report head 0837fef5b): all pass except four commands, each with one failure: cmd 17 (wider-scope pin 355 vs 361, fixed by the pin edit af1466e37); cmd 21 (local env: no ruff in the repo `.venv`; CI installs the lint group); cmd 22 (`docs/REGISTRY.yaml` regenerated at close); cmd 23 (`test_http_surface_matches_the_recorded_snapshot`, fails identically on a `git archive` of main 2ea0e4d8f with the same python, so not this branch). `mypy_gate` rc 0 (no new errors); `codebase.health check` rc 0.
 
 ## Files Changed
-None yet.
+- New: `src/engine/access_audit/{__init__,declarations,hook,observe,recorder,report,static_reads}.py`; `tests/unit/engine/access_audit/` (6 files); `docs/plans/architecture/next_generation_engine_access_audit_report.md`.
+- Edited: `src/engine/pipeline.py` (one dispatch call + module-top import), `src/domains/optimization/feature_flags.py` (`ENABLE_ACCESS_AUDIT` OFF), `docs/guides/feature_flags.md` (row), `tests/unit/tools/test_mechanism_registry_completeness_check.py` (pin: scope_files 355 -> 361, unbound_files 249 -> 255, the 6 new access_audit files, measurement infrastructure), `docs/REGISTRY.yaml` (regenerated).
 
 ## Completion Summary
-Open.
+Stage 1 observe-only access audit built and run. Reports: declared against observed writes for 35 of 43 steps, in-place input-update mutation (evolution, world_dynamics), hidden mutations on the watch list, sampled timeline check, process globals (none changed), cross-entity proxies. Deviations, all cleared by rpg-planner, architecture-planner and lead: (1) plan section 3: the recorder is passed via `state.feature_flags["ACCESS_AUDIT_SINK"]`, not held by a kernel-owned auditor; checkpointing is unsupported with the audit on; not a pattern for child 4. (2) Plan section 6: the in-place table has no tick counts (the recorder keeps a per-run set) and is a lower bound. (3) File names vs plan section 2: `observer.py` -> `observe.py` + `recorder.py` + `hook.py`. Pin edit to the completeness test (6 files, unbound). The report is evidence for child 4; it files no ticket (frozen=True hygiene for the mutable pydantic timeline events is child 4's to raise). Reads are statically derived, not observed. No staging artifacts existed for this ticket, so none were migrated.
