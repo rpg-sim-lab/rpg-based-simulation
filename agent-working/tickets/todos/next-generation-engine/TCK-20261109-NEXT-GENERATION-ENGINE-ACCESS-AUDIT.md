@@ -122,7 +122,10 @@ It is blocked on child 0 (`TCK-20261109-NEXT-GENERATION-ENGINE-ADR`) for the cod
 - Python attribute-level read tracing on frozen dataclasses may need a proxy view at the dispatch layer. Its design must satisfy
   condition 4c.
 
+- **Ruling (rpg-planner, 2026-11-10; no read-proxy, per Q2):** the audit's READS are **statically derived** from each step's entry function, labelled "statically derived, not observed" in the declarations and the report. Writes and hidden mutations are **observed**. This narrows "actually read" in Scope 2. Runtime read tracing would be a separate proxy ticket (child 4 decides whether one is needed).
+
 ## Implementation Notes
+Code (WIP, local, not pushed): `src/engine/access_audit/{observe,recorder,hook,declarations,static_reads}.py`; one dispatch call in `pipeline.run_phase` (`dispatch_phase`); flag `ENABLE_ACCESS_AUDIT` registered in `_DEFERRED_FEATURE_FLAGS` (OFF) with a `docs/guides/feature_flags.md` row. The recorder is passed in through `state.feature_flags["ACCESS_AUDIT_SINK"]`; with the flag off nothing is built. Tests: `tests/unit/engine/access_audit/`. The report and the 6 pinned cells are still to do.
 Filed by architecture-planner-u24. The filing rides a later implementation PR (#715 6697748243).
 
 ## Test Summary
