@@ -392,7 +392,7 @@ class StrategicIntelligenceSystem:
                             if target_pos and entity.navigation.target != target_pos:
                                 nav_changed = True
                 if not nav_changed and not proj_resolved:
-                    if not lodged_stayer and not (curr_proj_id and project and project.status == ProjectStatus.ACTIVE and active_obj and getattr(active_obj, 'target_position', None) is not None):
+                    if not lodged_stayer and not (curr_proj_id and project and project.status == ProjectStatus.ACTIVE and active_obj and (getattr(active_obj, 'target_position', None), getattr(active_obj, 'target_entity_id', None)) != (None, None)):  # a point OR an entity objective owns the direction, as on the slow path (~:663)
                         town_target = nearest_town_tile(state.town_tiles, entity.navigation.position) or state.town_center
                         if len(pending_inventory.items) > 0 and entity.navigation.position != (0.0, 0.0) and town_target and entity.navigation.target != town_target:
                             if ent_upd:
