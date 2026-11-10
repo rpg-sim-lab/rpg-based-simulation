@@ -7,6 +7,7 @@ from src.engine.pipeline import AuthoritativeApplyPipeline
 from src.engine.domain_logic import SimulationDomainLogic
 from src.core.builder import V2EntityBuilder
 from src.core.enums import EntityRole, Faction
+from src.core.strategic import ContractKind, ContractStatus
 
 def make_actor(
     entity_id,
@@ -221,15 +222,23 @@ def test_combat_reward_via_intent(base_state):
     if gold_intent:
         assert gold_intent.gold_delta > 0
 
-def test_recruitment_gold_handoff(base_state):
-    """Verify that recruitment gold transfer uses ResourceTransferIntent."""
+def test_recruitment_moves_no_gold_until_recruit_is_wired(base_state):
+    """A recruitment payout, when RECRUIT is wired, is one conserving transfer; until then an accepted recruitment moves no gold.
+
+    Rule (rpg-designer, #715 6724908875): "A recruitment payout, when RECRUIT is wired, is one conserving transfer: the payer must hold the payout
+    net of its own transfers earlier in the tick, and the recruit is credited only as the payer's source debit; it is measured when it is wired."
+    ``execute_recruit`` therefore emits no ``resource_transfers``; the contract is created on both sides through ``EntityUpdate.strategic``.
+    (Was ``test_recruitment_gold_handoff``, which pinned the two unconserving RECRUIT intents; renamed under rpg-planner's sign-off, #715 6725103948.)
+    """
+    from src.engine.apply import ApplyPath
     recruiter = base_state.entities[1] # readiness=100
     recruit = base_state.entities[2]
-    
+
     # recruiter has 1000 gold
     base_state = replace(base_state, entities={**base_state.entities, 1: replace(recruiter, inventory=replace(recruiter.inventory, gold=1000))})
-    
-    # recruiter offers 500 gold (should succeed)
+    gold_before = {i: e.inventory.gold for i, e in base_state.entities.items()}
+
+    # recruiter offers 500 gold (should be accepted)
     updates = SimulationDomainLogic.execute_action(
         base_state.entities[1],
         payload={"action": "RECRUIT", "target_id": recruit.id, "payout": 500},
@@ -237,17 +246,31 @@ def test_recruitment_gold_handoff(base_state):
         current_tick=0,
         context=base_state
     )
-    
-    # Both should have ResourceTransferIntent in the same group
+
     assert recruiter.id in updates, "Recruiter update missing"
     assert recruit.id in updates, "Recruit update missing"
-    
+
     up1 = updates[recruiter.id]
     up2 = updates[recruit.id]
-    
-    assert len(up1.resource_transfers) > 0, f"Recruiter transfers missing: {up1.navigation.failure_reason if up1.navigation else 'None'}"
-    assert up1.resource_transfers[0].gold_delta == -500
-    assert up2.resource_transfers[0].gold_delta == 500
+
+    assert up1.resource_transfers == [] and up2.resource_transfers == []
+    assert up1.readiness_delta == -100.0
+    assert up2.social.last_offer_tick_set == 0
+    for up in (up1, up2):
+        contracts = up.strategic.contracts_add_or_update
+        assert len(contracts) == 1
+        assert contracts[0].id == "contract_recruit_1_2_0"
+        assert (contracts[0].kind, contracts[0].status) == (ContractKind.RECRUITMENT, ContractStatus.ACTIVE)
+        assert (contracts[0].source_id, contracts[0].target_id) == (recruiter.id, recruit.id)
+        assert contracts[0].terms == {"payout": 500}
+
+    # Apply path: no coin moves, and the contract is in state.
+    refined = AuthoritativeApplyPipeline.refine(base_state, StateUpdate(entity_updates=updates))
+    after = ApplyPath.apply_partial(base_state, refined)
+    assert {i: e.inventory.gold for i, e in after.entities.items()} == gold_before
+    assert after.entities[1].inventory.gold == 1000
+    assert "contract_recruit_1_2_0" in after.entities[recruiter.id].strategic.contracts
+    assert "contract_recruit_1_2_0" in after.entities[recruit.id].strategic.contracts
 
 def test_class_hall_train_refactor():
     # Setup state: teacher (1) has no gold requirement; student (2) trusts the teacher.

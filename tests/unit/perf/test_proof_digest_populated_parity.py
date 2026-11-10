@@ -107,5 +107,5 @@ def test_the_digest_covers_each_seeded_field(seeded_final_state: AuthoritativeSt
     assert CanonicalStateHasher.get_hash(seeded_final_state) != CanonicalStateHasher.get_hash(blanked)
 
 
-def test_the_digest_scheme_is_v3():
-    assert PROOF_DIGEST_SCHEME == "flat-sha256-v3"
+def test_the_digest_scheme_is_v4():
+    assert PROOF_DIGEST_SCHEME == "flat-sha256-v4"

@@ -1,0 +1,23 @@
+{
+ "case_837": {
+  "changed": [
+   "src/engine/executor.py"
+  ],
+  "old_terms": []
+ },
+ "case_786": {
+  "changed": [
+   "compose.yaml",
+   "docker/promtail-config.yml"
+  ],
+  "old_terms": [
+   "promtail"
+  ]
+ },
+ "case_819": {
+  "changed": [
+   "codebase/structure/importlinter.toml"
+  ],
+  "old_terms": []
+ }
+}

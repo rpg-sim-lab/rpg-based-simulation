@@ -126,6 +126,8 @@ def _attempted_way(source_kind: str, source_id: Any, state: AuthoritativeState) 
         return WayKind.CARRIED_FOOD
     if source_kind == "TOWN_SERVICE":
         return WayKind.INN_MEAL
+    if source_kind == "CORPSE_FOOD":
+        return WayKind.SCAVENGE
     if source_kind == "SHOP_SELL":
         return WayKind.BUY
     if source_kind == "WAGE":
@@ -228,18 +230,21 @@ class StarvationRecorder:
 
     @classmethod
     def _note_attempts(cls, prior: AuthoritativeState, prior_ent: EntityState, entity: EntityState, upd: Any, tick: int) -> None:
+        """A meal is a drop in hunger, whatever wrote it, with or without an accepted intent result and whether or not the subject was escalated:
+        it stamps the last meal and starts the trail again. Today four writers lower hunger, all meals: a carried item eaten (CARRIED_FOOD), the
+        free meal of an EAT with nothing carried (a direct update, no transfer), a corpse eaten where it lies (CORPSE_FOOD) and the inn's meal
+        (TOWN_SERVICE). Attempts are counted only from an escalated subject (the pressing-only rule, unchanged)."""
+        if entity.biological.hunger < prior_ent.biological.hunger:
+            cls._union.pop(entity.id, None)
+            cls._attempted.pop(entity.id, None)
+            cls._last_meal[entity.id] = tick
+            return
         if prior_ent.biological.hunger < cls._escalated_hunger:
             return
-        ate = entity.biological.hunger < prior_ent.biological.hunger
         for result in (getattr(upd, "intent_results", None) or []):
             way = _attempted_way(getattr(result, "source_kind", ""), getattr(result, "source_id", ""), prior)
-            if way is None:
-                continue
-            cls._attempted.setdefault(entity.id, set()).add(way)
-            if ate and getattr(result, "accepted", False) and way in (WayKind.CARRIED_FOOD, WayKind.INN_MEAL):
-                cls._union.pop(entity.id, None)
-                cls._attempted.pop(entity.id, None)
-                cls._last_meal[entity.id] = tick
+            if way is not None:
+                cls._attempted.setdefault(entity.id, set()).add(way)
 
     @classmethod
     def _death(cls, prior: AuthoritativeState, prior_ent: EntityState, entity: EntityState, tick: int) -> Optional[StarvationDeathRecord]:

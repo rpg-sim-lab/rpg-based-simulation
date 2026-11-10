@@ -117,7 +117,7 @@ dashboard-dev: ## Start dashboard backend (reload) + Vite dev server concurrentl
 		wait
 
 dashboard-serve: dashboard-build ## Build dashboard frontend + start single-process production server (port 8420)
-	python3 -m src.api.agent_ops_dashboard.serve
+	$(PYTHON3) -m src.api.agent_ops_dashboard.serve
 
 # ── Infrastructure & Testing ─────────────────────────────
 
@@ -143,25 +143,25 @@ run-engine: ## Start the Backend Engine locally
 WORLD ?= sandbox_world
 
 world-list: ## List all compiled worlds in the repository
-	python3 -m src.worldbuilding.cli list
+	$(PYTHON3) -m src.worldbuilding.cli list
 
 world-validate: ## Validate a world spec against compile constraints (WORLD=sandbox_world)
-	python3 -m src.worldbuilding.cli validate $(WORLD)
+	$(PYTHON3) -m src.worldbuilding.cli validate $(WORLD)
 
 world-compile: ## Compile a world spec into active state files (WORLD=sandbox_world)
-	python3 -m src.worldbuilding.cli compile $(WORLD)
+	$(PYTHON3) -m src.worldbuilding.cli compile $(WORLD)
 
 world-resolve: ## Resolve compositional world specs into compiled assets (WORLD=sandbox_world)
-	python3 -m src.worldbuilding.cli resolve $(WORLD)
+	$(PYTHON3) -m src.worldbuilding.cli resolve $(WORLD)
 
 world-inspect: ## Inspect structural metrics of a world definition (WORLD=sandbox_world)
-	python3 -m src.worldbuilding.cli inspect $(WORLD)
+	$(PYTHON3) -m src.worldbuilding.cli inspect $(WORLD)
 
 world-template: ## Bootstrap a starter world template (WORLD=my_world)
-	python3 -m src.worldbuilding.cli create-template $(WORLD)
+	$(PYTHON3) -m src.worldbuilding.cli create-template $(WORLD)
 
 catalog-list: ## List catalog IDs by type (biomes, ecologies, populations, factions, regions)
-	python3 tools/catalog_list.py
+	$(PYTHON3) tools/catalog_list.py
 
 # ── Simulation CLI ───────────────────────────────────────
 # Override TICKS, SEED, or WORLD to customise any run.
@@ -174,58 +174,58 @@ SEED   ?= 42
 CONFIG ?= data/sweeps/default.json
 
 cli: ## Run headless simulation (200 ticks, seed 42) — legacy alias for sim
-	python3 -m src cli --ticks $(TICKS) --seed $(SEED)
+	$(PYTHON3) -m src cli --ticks $(TICKS) --seed $(SEED)
 
 sim: ## Run headless simulation (TICKS=200 SEED=42 WORLD=sandbox_world)
-	python3 -m src cli --ticks $(TICKS) --seed $(SEED) $(if $(filter-out sandbox_world,$(WORLD)),--world $(WORLD),)
+	$(PYTHON3) -m src cli --ticks $(TICKS) --seed $(SEED) $(if $(filter-out sandbox_world,$(WORLD)),--world $(WORLD),)
 
 sim-debug: ## Run simulation with DEBUG observability + verbose logging (TICKS=200 SEED=42)
-	SIM_OBS_MODE=DEBUG python3 -m src cli --ticks $(TICKS) --seed $(SEED) --log-level DEBUG
+	SIM_OBS_MODE=DEBUG $(PYTHON3) -m src cli --ticks $(TICKS) --seed $(SEED) --log-level DEBUG
 
 sim-quick: ## Quick 20-tick smoke test (WARNING-level logs only)
-	python3 -m src cli --ticks 20 --seed $(SEED) --log-level WARNING
+	$(PYTHON3) -m src cli --ticks 20 --seed $(SEED) --log-level WARNING
 
 sim-world: ## Run simulation on a specific world (WORLD=<id> TICKS=200)
-	python3 -m src cli --ticks $(TICKS) --seed $(SEED) --world $(WORLD)
+	$(PYTHON3) -m src cli --ticks $(TICKS) --seed $(SEED) --world $(WORLD)
 
 sim-sweep: ## Run a scenario sweep matrix (CONFIG=data/sweeps/default.json)
-	python3 -m src sweep $(CONFIG)
+	$(PYTHON3) -m src sweep $(CONFIG)
 
 check-resources: ## Show per-subsystem resource pressure (exit 1 if any DEGRADED)
-	python3 -m src diagnostics resources
+	$(PYTHON3) -m src diagnostics resources
 
 # ── Data Pipeline ────────────────────────────────────────
 
 RUN_ID ?=
 
 export-run: ## Export a single run artifact set to Parquet (RUN_ID=<id>)
-	python3 -m src export $(RUN_ID)
+	$(PYTHON3) -m src export $(RUN_ID)
 
 retention-plan: ## Dry-run scan of expired/prunable observability files
-	python3 -m src retention plan
+	$(PYTHON3) -m src retention plan
 
 retention-clean: ## Clean expired observability files (confirmation prompt)
-	python3 -m src retention clean
+	$(PYTHON3) -m src retention clean
 
 warehouse-init: ## Initialise database warehouse schemas
-	python3 -m src warehouse init
+	$(PYTHON3) -m src warehouse init
 
 warehouse-ingest: ## Ingest a single run into the warehouse (RUN_ID=<id>)
-	python3 -m src warehouse ingest-run $(RUN_ID)
+	$(PYTHON3) -m src warehouse ingest-run $(RUN_ID)
 
 # ── Testing ──────────────────────────────────────────────
 
-test: ## Run all Python tests (V2)
-	python3 -m pytest tests_v2/ -v --tb=short
+test: ## Run Python tests under tests/ (skips slow, like test-quick)
+	$(PYTHON3) -m pytest tests/ -v --tb=short -m "not slow"
 
 test-quick: ## Run fast tests only (skip slow integration)
-	python3 -m pytest tests/ -v --tb=short -m "not slow"
+	$(PYTHON3) -m pytest tests/ -v --tb=short -m "not slow"
 
-test-cov: ## Run tests with coverage report (V2)
-	python3 -m pytest tests_v2/ -v --tb=short --cov=src_v2 --cov-report=term-missing
+test-cov: ## Run tests with coverage report (skips slow)
+	$(PYTHON3) -m pytest tests/ -v --tb=short -m "not slow" --cov=src --cov-report=term-missing
 
 test-collect: ## List and count collected Python test nodes (tests/ only; does not run tests)
-	python3 -m pytest tests/ --collect-only -q
+	$(PYTHON3) -m pytest tests/ --collect-only -q
 
 # ── Migration CI Lanes ────────────────────────────────────
 # Targeted test lanes for content migration work. Each lane selects a
@@ -233,42 +233,42 @@ test-collect: ## List and count collected Python test nodes (tests/ only; does n
 # See docs/testing/migration_ci_lanes.md for full documentation.
 
 lane-catalog: ## [fast] Catalog schema, adapter heuristics, reference graph, active-data-consumer
-	python3 -m pytest tests/ -m "catalog or content_graph" -v --tb=short
+	$(PYTHON3) -m pytest tests/ -m "catalog or content_graph" -v --tb=short
 
 lane-worldassembly: ## [fast] World module normalizers, assembly, provenance (excludes strict matrix)
-	python3 -m pytest tests/ -m "worldassembly and not strict_matrix" -v --tb=short
+	$(PYTHON3) -m pytest tests/ -m "worldassembly and not strict_matrix" -v --tb=short
 
 lane-runtime: ## [fast] Registry bootstrap modes, scenario setup, adapter projection
-	python3 -m pytest tests/ -m "registry_projection or scenario_setup" -v --tb=short
+	$(PYTHON3) -m pytest tests/ -m "registry_projection or scenario_setup" -v --tb=short
 
 lane-strict-matrix: ## [medium] Cumulative world module matrix (end-to-end content builds)
-	python3 -m pytest tests/ -m "strict_matrix" -v --tb=short
+	$(PYTHON3) -m pytest tests/ -m "strict_matrix" -v --tb=short
 
 lane-legacy-regression: ## [slow] Arena, certification, legacy compat regression tests
-	python3 -m pytest tests/ -m "legacy_compat" --resource-budget large -v --tb=short
+	$(PYTHON3) -m pytest tests/ -m "legacy_compat" --resource-budget large -v --tb=short
 
 regression-baseline: ## Generate/refresh 5k-tick behavioral regression baseline (commit the result)
-	python3 tools/generate_regression_baseline.py
+	$(PYTHON3) tools/generate_regression_baseline.py
 
 personality-audit: ## Run 1k-tick personality→behavior calibration audit (OCEAN trait vs behavioral diversity)
-	python3 tools/personality_audit.py $(if $(TICKS),--ticks $(TICKS),) $(if $(SEED),--seed $(SEED),) $(if $(WORLD),--world $(WORLD),)
+	$(PYTHON3) tools/personality_audit.py $(if $(TICKS),--ticks $(TICKS),) $(if $(SEED),--seed $(SEED),) $(if $(WORLD),--world $(WORLD),)
 
 lane-architecture: ## [fast] Static architecture guards (no simulation, no catalog load)
-	python3 -m pytest tests/ -m "architecture" -v --tb=short
+	$(PYTHON3) -m pytest tests/ -m "architecture" -v --tb=short
 
 lane-all-fast: ## [fast] All fast migration lanes combined (excludes slow and strict_matrix)
-	python3 -m pytest tests/ -m "(catalog or content_graph or worldassembly or registry_projection or scenario_setup or architecture) and not strict_matrix and not slow" -v --tb=short
+	$(PYTHON3) -m pytest tests/ -m "(catalog or content_graph or worldassembly or registry_projection or scenario_setup or architecture) and not strict_matrix and not slow" -v --tb=short
 
 gate-expansion: ## Content expansion readiness gate — must pass before horizontal expansion
-	python3 -m pytest tests/integration/content/test_expansion_gate.py -v --tb=short
+	$(PYTHON3) -m pytest tests/integration/content/test_expansion_gate.py -v --tb=short
 
 # ── Profiling ────────────────────────────────────────────
 
 profile-api: ## Measure API payload sizes (map, static, state endpoints)
-	python3 tools/perf/profile_api_payload.py --ticks 10 --seed 42
+	$(PYTHON3) tools/perf/profile_api_payload.py --ticks 10 --seed 42
 
 memray-profile: ## Run certification suite under Memray (disables RLIMIT_AS; requires: pip install memray)
-	python3 tools/perf/profile_memory.py --suite certification --memray
+	$(PYTHON3) tools/perf/profile_memory.py --suite certification --memray
 
 # ── Quality ──────────────────────────────────────────────
 
@@ -319,13 +319,13 @@ code-health: ## Run ruff, complexipy, jscpd and the line-count report over src/;
 
 # Ratchet over docs/parity_ledger/*.yaml against docs/parity_ledger/schema.json (TCK-20261003-PARITY-LEDGER-SCHEMA-RATCHET).
 parity-ledger-schema-check: ## Fail when any parity-ledger schema error count rose or a new error rule appeared against codebase/baselines/parity_ledger_schema_baseline.json (blocking; the tests/codebase live test runs it in CI)
-	python3 -m codebase.gates.parity_ledger_schema check
+	$(PYTHON3) -m codebase.gates.parity_ledger_schema check
 
 typecheck-py: ## Run mypy over src/ and show only errors not in codebase/baselines/mypy_baseline.txt (also the blocking `Type check` CI job: exits non-zero on a new error)
-	python3 -m mypy src/ --config-file pyproject.toml --no-error-summary | python3 -m mypy_baseline filter
+	$(PYTHON3) -m mypy src/ --config-file pyproject.toml --no-error-summary | $(PYTHON3) -m mypy_baseline filter
 
 typecheck-baseline-sync: ## Rewrite codebase/baselines/mypy_baseline.txt from a fresh mypy run. Codebase domain only, on main, together with the code-health reseed (make code-health seed); never to hide a new error
-	python3 -m mypy src/ --config-file pyproject.toml --no-error-summary | python3 -m mypy_baseline sync
+	$(PYTHON3) -m mypy src/ --config-file pyproject.toml --no-error-summary | $(PYTHON3) -m mypy_baseline sync
 
 # TCK-20261021-PYREFLY-ADVISORY-REPORT: Pyrefly is an advisory second opinion; mypy (`typecheck-py`) stays the gate.
 typecheck-pyrefly: ## Show the Pyrefly errors not in codebase/baselines/pyrefly_baseline.json (advisory, never blocks: exits 0 with new errors, 2 only if Pyrefly cannot run)
@@ -337,7 +337,7 @@ typecheck-pyrefly-baseline-sync: ## Rewrite codebase/baselines/pyrefly_baseline.
 # ── Documentation Site ───────────────────────────────────
 
 docs-artifacts: ## Generate stored_artifacts index pages
-	python3 tools/generate_artifact_pages.py
+	$(PYTHON3) tools/generate_artifact_pages.py
 
 docs-serve: docs-artifacts ## Start Docusaurus dev server (http://localhost:3000)
 	cd website && npm run start
@@ -346,37 +346,37 @@ docs-build: docs-artifacts ## Build Docusaurus static site to website/build/
 	cd website && npm run build
 
 docs-registry: ## Regenerate docs/REGISTRY.yaml from frontmatter
-	python3 tools/generate_registry.py
+	$(PYTHON3) tools/generate_registry.py
 
 docs-registry-check: ## Report whether docs/REGISTRY.yaml is stale relative to a fresh regeneration
-	python3 tools/generate_registry.py --check
+	$(PYTHON3) tools/generate_registry.py --check
 
 working-log-duplicate-check: ## Report duplicate ticket_ids in agent-working/tickets/working_log.csv, non-blocking
-	python3 tools/gate_checks/working_log_duplicate_check.py
+	$(PYTHON3) tools/gate_checks/working_log_duplicate_check.py
 
 working-log-content-duplicate-check: ## Ratcheted check for duplicate (ticket_id, title) rows in agent-working/tickets/working_log.csv
-	python3 tools/gate_checks/working_log_content_duplicate_check.py
+	$(PYTHON3) tools/gate_checks/working_log_content_duplicate_check.py
 
 duplicate-run-record-check: ## Ratcheted check for genuinely-accidental duplicate agent-working/agent-monitoring/data/*/runs.jsonl records
-	python3 tools/gate_checks/duplicate_run_record_check.py
+	$(PYTHON3) tools/gate_checks/duplicate_run_record_check.py
 
 sidecar-attribution-coverage-check: ## Report tools.jsonl run_id attribution coverage (non-blocking; see module docstring)
-	python3 tools/gate_checks/sidecar_attribution_coverage_check.py
+	$(PYTHON3) tools/gate_checks/sidecar_attribution_coverage_check.py
 
 tool-call-count-mismatch-check: ## Report post-fix tool_call_count vs tools.jsonl mismatches (non-blocking; see module docstring)
-	python3 tools/gate_checks/tool_call_count_mismatch_check.py
+	$(PYTHON3) tools/gate_checks/tool_call_count_mismatch_check.py
 
 event-seq-integrity-check: ## Report duplicate/gapped seq values in events.jsonl, non-blocking
-	python3 tools/gate_checks/event_seq_integrity_check.py
+	$(PYTHON3) tools/gate_checks/event_seq_integrity_check.py
 
 monitoring-integrity-backlog-check: ## Ratcheted checks for working_log/run-record gaps, unusable ts, and unknown-week rows
-	python3 tools/gate_checks/monitoring_integrity_backlog_check.py
+	$(PYTHON3) tools/gate_checks/monitoring_integrity_backlog_check.py
 
 monitoring-anomaly-validate: ## Aggregate coherence validator (duplicate runs, seq integrity, tool_call_count, ts shape, vocabulary)
-	python3 tools/gate_checks/monitoring_anomaly_validator.py
+	$(PYTHON3) tools/gate_checks/monitoring_anomaly_validator.py
 
 premise-staleness-check: ## Report Related Code Areas citation resolution rate, non-blocking (pass --touched-paths for the close-time sweep)
-	python3 tools/gate_checks/premise_staleness_check.py
+	$(PYTHON3) tools/gate_checks/premise_staleness_check.py
 
 setup-merge-drivers: ## Install the local merge driver + post-merge hook that regenerate docs/REGISTRY.yaml on conflict
 	git config merge.registry-regen.driver true
@@ -457,78 +457,78 @@ mechanism-capabilities-regenerate: ## Fix the capabilities page's mapped card ti
 	$(PYTHON3) tools/mechanism_registry/mechanism_capabilities_regenerate.py
 
 simq-corpus-registry: ## Regenerate config/simulation_quality/corpus_registry.yaml from real world/profile/anchor data
-	python3 tools/generate_corpus_registry.py
+	$(PYTHON3) tools/generate_corpus_registry.py
 
 tag-report: ## Print a tag-usage report over completed tickets (pass ARGS="--json reports/tag_report.json")
-	python3 tools/tag_report.py $(ARGS)
+	$(PYTHON3) tools/tag_report.py $(ARGS)
 
 ticket-stats-report: ## Print a ticket-corpus stats report (velocity/tier/priority/layer/artifact-completeness) (pass ARGS="--json reports/ticket_stats_report.json")
-	python3 tools/ticket_stats_report.py $(ARGS)
+	$(PYTHON3) tools/ticket_stats_report.py $(ARGS)
 
 # ── Agent Monitoring ─────────────────────────────────────
 
 agent-monitoring-retro: ## Generate current-week agent monitoring retro report
-	python3 tools/agent-monitoring/generate_retro.py
+	$(PYTHON3) tools/agent-monitoring/generate_retro.py
 
 agent-monitoring-close-week: ## Close a finished ISO week: fold its shards into canonical runs/events/tools files and its working_log shards into the CSV (WEEK=2026-W40; refuses an unfinished week)
-	python3 tools/agent-monitoring/week_close.py --week $(WEEK)
+	$(PYTHON3) tools/agent-monitoring/week_close.py --week $(WEEK)
 
 agent-monitoring-main-integrity: ## Report-only integrity check of a git ref's tickets, working log, shards and monitoring rows, never the working tree (REF=origin/main; add ARGS=--strict locally)
-	python3 tools/agent-monitoring/main_integrity_report.py --ref $(or $(REF),origin/main) $(ARGS)
+	$(PYTHON3) tools/agent-monitoring/main_integrity_report.py --ref $(or $(REF),origin/main) $(ARGS)
 
 agent-monitoring-consolidate: ## Fold per-ticket monitoring shard files into the canonical per-week files (on demand, any week; the retro no longer folds - use agent-monitoring-close-week for a finished week)
-	python3 tools/agent-monitoring/monitoring_consolidation.py
+	$(PYTHON3) tools/agent-monitoring/monitoring_consolidation.py
 
 agent-monitoring-validate: ## Cross-check agent monitoring integrity against working_log.csv
-	python3 tools/agent-monitoring/validate.py
+	$(PYTHON3) tools/agent-monitoring/validate.py
 
 agent-monitoring-query: ## Query agent monitoring records (pass ARGS="--agent investigator --days 14")
-	python3 tools/agent-monitoring/query.py $(ARGS)
+	$(PYTHON3) tools/agent-monitoring/query.py $(ARGS)
 
 agent-monitoring-weight-check: ## Required check before proposing a cost_proxy.py weight change (pass ARGS='--candidate-weights "{...}"')
-	python3 tools/agent-monitoring/weight_sensitivity_check.py $(ARGS)
+	$(PYTHON3) tools/agent-monitoring/weight_sensitivity_check.py $(ARGS)
 
 agent-monitoring-epic-staleness: ## Report open epics with no recent child-ticket activity
-	python3 tools/agent-monitoring/epic_staleness_check.py
+	$(PYTHON3) tools/agent-monitoring/epic_staleness_check.py
 
 planning-doc-staleness-check: ## Report docs/plans/ claims (status: idea, 'ready, schedule later') that a agent-working/tickets/done/ ticket already shipped
-	python3 tools/gate_checks/planning_doc_staleness_check.py
+	$(PYTHON3) tools/gate_checks/planning_doc_staleness_check.py
 
 status-drift-check: ## Report ## Status body-text drift in agent-working/tickets/done/ and lowercase final_status in runs.jsonl
-	python3 tools/gate_checks/status_drift_check.py
+	$(PYTHON3) tools/gate_checks/status_drift_check.py
 
 codebase-health-baseline: ## Print a live LoC/churn/dependency baseline snapshot (on-demand only — not CI)
-	python3 -m codebase.reports.codebase_health_baseline
+	$(PYTHON3) -m codebase.reports.codebase_health_baseline
 
 codebase-health-impact: ## Print a change-impact report for a source path (pass ARGS="src/engine/pipeline.py") (on-demand only — not CI)
-	python3 -m codebase.reports.code_health_impact $(ARGS)
+	$(PYTHON3) -m codebase.reports.code_health_impact $(ARGS)
 
 codebase-health-snapshot: ## Append a codebase-health metrics snapshot to codebase/reports/codebase_health_history.jsonl (on-demand only — not CI)
-	python3 -m codebase.reports.codebase_health_snapshot snapshot $(ARGS)
+	$(PYTHON3) -m codebase.reports.codebase_health_snapshot snapshot $(ARGS)
 
 codebase-health-scorecard: ## Print a per-dimension trend scorecard over codebase-health history (on-demand only — not CI)
-	python3 -m codebase.reports.codebase_health_snapshot scorecard $(ARGS)
+	$(PYTHON3) -m codebase.reports.codebase_health_snapshot scorecard $(ARGS)
 
 codebase-health-pr-impact: ## Print a batched PR/AI change-impact report for one or more source paths (pass ARGS="path1 path2 ...") (on-demand only — not CI)
-	python3 -m codebase.reports.pr_impact_report $(ARGS)
+	$(PYTHON3) -m codebase.reports.pr_impact_report $(ARGS)
 
 agent-monitoring-index: ## Rebuild the derived read-only SQLite index over agent-monitoring JSONL logs (on-demand only — not CI)
 	$(PYTHON3) tools/agent-monitoring/build_index.py
 
 parity-index: ## Rebuild the derived read-only SQLite index over docs/parity_ledger/*.yaml (on-demand only — not CI)
-	python3 tools/parity_index.py build
+	$(PYTHON3) tools/parity_index.py build
 
 tools-orphan-check: ## Report tools/ files with no live cross-reference (report-only) (on-demand only — not CI)
-	python3 tools/gate_checks/tools_orphan_check.py
+	$(PYTHON3) tools/gate_checks/tools_orphan_check.py
 
 parity-index-check: ## Report whether agent-working/.index/parity-index/parity.db is stale relative to live docs/parity_ledger/*.yaml
-	python3 tools/parity_index.py check-staleness
+	$(PYTHON3) tools/parity_index.py check-staleness
 
 simq-long-run-lifecycle-observation: ## Run the 5000-tick combined SimQ + entity-lifecycle observation across the curated 6-world sample
-	python3 tools/simq_long_run_observation.py
+	$(PYTHON3) tools/simq_long_run_observation.py
 
 content-inventory: ## Regenerate config/content_inventory.json from real data/content/ counts
-	python3 tools/generate_content_inventory.py
+	$(PYTHON3) tools/generate_content_inventory.py
 
 # ── Knowledge Search ─────────────────────────────────────────────────────────
 # developer env only — not CI
@@ -547,7 +547,7 @@ knowledge-index-update: ## Incremental reindex — only re-embeds changed/new fi
 
 .PHONY: graphify-shim
 graphify-shim: ## Once per host: point ~/.local/bin/graphify at the pinned .venv-knowledge graphify (fails loudly if the venv lacks the pin)
-	python3 tools/graphify_shim.py
+	$(PYTHON3) tools/graphify_shim.py
 
 kgmcp-bootstrap: parity-index knowledge-index ## Rebuild all local, gitignored Knowledge Gateway MCP caches for a fresh environment (see docs/guidelines/agent_working_environment.md)
 	@echo "agent-working/.index/parity-index/parity.db and agent-working/.index/knowledge-index/{knowledge.db,bm25.pkl,embeddings_cache.pkl} rebuilt."
@@ -575,10 +575,10 @@ install-hooks: ## Install git hooks (post-commit incremental reindex when docs/ 
 	@echo "[hooks] post-commit hook installed"
 
 install-prek-hooks: ## OPT-IN: install the prek pre-commit hook (ruff ratchet on staged src files, offline uv.lock check) and the post-commit reindex hook, never overwriting; affects EVERY worktree on this machine
-	python3 -m codebase.hooks.install_git_hooks install
+	$(PYTHON3) -m codebase.hooks.install_git_hooks install
 
 uninstall-prek-hooks: ## Remove what install-prek-hooks installed (prek pre-commit shim, restoring any legacy hook; post-commit only if it is ours); never touches post-merge
-	python3 -m codebase.hooks.install_git_hooks uninstall
+	$(PYTHON3) -m codebase.hooks.install_git_hooks uninstall
 
 eval-search: ## Run search quality evaluation — Recall@5, MRR@10 (requires knowledge-index)
 	$(PYTHON_KNOWLEDGE) tools/eval_search.py
