@@ -105,12 +105,28 @@ def load_tools_rows_with_line_count(
     return rows, total_lines
 
 
+def dedupe_rows(rows: list) -> list:
+    """Each exact-duplicate row once, first occurrence kept (identity = the row's canonical JSON, the
+    full-row identity week_close's sweep and the retro readers use). The same row can sit in the
+    canonical file and a branch shard, or in two branch shards of one unclosed week; counting both
+    would double a gh call. Both the working-tree and the --ref readers apply it, so they agree."""
+    seen = set()
+    kept = []
+    for row in rows:
+        identity = json.dumps(row, sort_keys=True, default=str)
+        if identity in seen:
+            continue
+        seen.add(identity)
+        kept.append(row)
+    return kept
+
+
 def load_tools_rows(
     data_dir: Path = DEFAULT_DATA_DIR,
     since_week: "str | None" = None, through_week: "str | None" = None,
 ) -> list:
     rows, _ = load_tools_rows_with_line_count(data_dir, since_week, through_week)
-    return rows
+    return dedupe_rows(rows)
 
 
 def resolve_ref_sha(ref: str, repo_root: Path = REPO_ROOT) -> str:
@@ -138,14 +154,19 @@ def load_tools_rows_from_ref(
     ).stdout
 
     shard_paths = []
-    suffix = f"/{source}.jsonl"
+    # Same naming rule as monitoring_shard_paths.shard_paths(): the bare per-week canonical
+    # `<source>.jsonl` AND every per-identifier `<id>.<source>.jsonl` (an unclosed week holds only the
+    # latter, one per branch/PR).
+    bare = f"{source}.jsonl"
+    per_identifier = f".{source}.jsonl"
     for line in listing.splitlines():
         line = line.strip()
-        if not line.endswith(suffix):
+        leaf = line.rsplit("/", 1)[-1]
+        if leaf != bare and not leaf.endswith(per_identifier):
             continue
         parts = line.split("/")
         depth = len(AGENT_MONITORING.parts)
-        if len(parts) != depth + 3:  # <agent-monitoring root>/data/<week>/<source>.jsonl
+        if len(parts) != depth + 3:  # <agent-monitoring root>/data/<week>/[<id>.]<source>.jsonl
             continue
         week = parts[depth + 1]
         if since_week and week < since_week:
@@ -169,7 +190,7 @@ def load_tools_rows_from_ref(
             except json.JSONDecodeError:
                 continue
 
-    return rows, sha
+    return dedupe_rows(rows), sha
 
 
 def bash_head(input_summary: str) -> str:

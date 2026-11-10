@@ -157,6 +157,33 @@ def _identity(line: str) -> str | None:
     return json.dumps(rec, sort_keys=True, separators=(",", ":")) if isinstance(rec, dict) else None
 
 
+def _sweep_file(src: Path, canonical: Path) -> dict:
+    """Append `src`'s rows that `canonical` lacks (full-row identity; torn or blank lines skipped) to `canonical`. Read-only on `src`."""
+    result = {"swept": 0, "duplicates_dropped": 0, "skipped": None}
+    existing_text = canonical.read_text(encoding="utf-8") if canonical.exists() else ""
+    seen = {i for i in (_identity(ln) for ln in existing_text.splitlines() if ln.strip()) if i}
+    fresh = []
+    for ln in src.read_text(encoding="utf-8", errors="replace").splitlines():
+        ident = _identity(ln) if ln.strip() else None
+        if ident is None:
+            continue  # blank or torn
+        if ident in seen:
+            result["duplicates_dropped"] += 1
+            continue
+        seen.add(ident)
+        fresh.append(ln.strip())
+    if not fresh:
+        return result
+    appended = [ln for _, ln in sorted(enumerate(fresh), key=_sort_key)]
+    new_text = existing_text if existing_text.endswith("\n") or not existing_text else existing_text + "\n"
+    new_text += "".join(ln + "\n" for ln in appended)
+    tmp = canonical.with_name(canonical.name + ".closing")
+    tmp.write_text(new_text, encoding="utf-8")
+    os.replace(tmp, canonical)
+    result["swept"] = len(appended)
+    return result
+
+
 def sweep_main_checkout_tools(week: str, week_dir: Path, main_checkout: object = _UNSET) -> dict:
     """Append the main checkout's `main.tools.jsonl` rows for `week` to this checkout's canonical `tools.jsonl`.
 
@@ -173,31 +200,43 @@ def sweep_main_checkout_tools(week: str, week_dir: Path, main_checkout: object =
         if not src.is_file():
             result["skipped"] = f"no {MAIN_CHECKOUT_TOOLS_SHARD} for {week} in the main checkout"
             return result
-        canonical = Path(week_dir) / "tools.jsonl"
-        existing_text = canonical.read_text(encoding="utf-8") if canonical.exists() else ""
-        seen = {i for i in (_identity(ln) for ln in existing_text.splitlines() if ln.strip()) if i}
-        fresh = []
-        for ln in src.read_text(encoding="utf-8", errors="replace").splitlines():
-            ident = _identity(ln) if ln.strip() else None
-            if ident is None:
-                continue  # blank or torn
-            if ident in seen:
-                result["duplicates_dropped"] += 1
-                continue
-            seen.add(ident)
-            fresh.append(ln.strip())
-        if not fresh:
-            return result
-        appended = [ln for _, ln in sorted(enumerate(fresh), key=_sort_key)]
-        new_text = existing_text if existing_text.endswith("\n") or not existing_text else existing_text + "\n"
-        new_text += "".join(ln + "\n" for ln in appended)
-        tmp = canonical.with_name(canonical.name + ".closing")
-        tmp.write_text(new_text, encoding="utf-8")
-        os.replace(tmp, canonical)
-        result["swept"] = len(appended)
+        result = _sweep_file(src, Path(week_dir) / "tools.jsonl")
     except Exception as exc:  # noqa: BLE001 - a sweep problem never fails a week close
         result["skipped"] = f"sweep failed: {type(exc).__name__}: {exc}"
     return result
+
+
+#: Append-only shard kinds a session in the main checkout writes as bare `<kind>.jsonl` that no PR branch carries
+#: (TCK-20261110-WEEK-CLOSE-SWEEPS-MAIN-CHECKOUT-NON-TOOL-SHARDS). Swept the same way as `main.tools.jsonl`.
+MAIN_CHECKOUT_APPEND_ONLY_KINDS = ("manual_actions", "reset_boundary", "governing_edits")
+
+
+def sweep_main_checkout_append_only(week: str, week_dir: Path, main_checkout: object = _UNSET) -> dict:
+    """Per kind in MAIN_CHECKOUT_APPEND_ONLY_KINDS: append the main checkout's `<kind>.jsonl` rows for `week` that this checkout's
+    `<kind>.jsonl` lacks. Same rules as the tools sweep: read-only on the main checkout, only the week being closed, full-row
+    identity, torn lines skipped, idempotent, never raises. Returns {kind: {"swept", "duplicates_dropped", "skipped"}}."""
+    results = {}
+    try:
+        main = find_main_checkout(Path(week_dir).parent) if main_checkout is _UNSET else main_checkout
+    except Exception as exc:  # noqa: BLE001
+        main, why = None, f"sweep failed: {type(exc).__name__}: {exc}"
+    else:
+        why = "no separate main checkout (this is the main checkout, or git cannot say)"
+    for kind in MAIN_CHECKOUT_APPEND_ONLY_KINDS:
+        result = {"swept": 0, "duplicates_dropped": 0, "skipped": None}
+        try:
+            if main is None:
+                result["skipped"] = why
+            else:
+                src = Path(main) / AGENT_MONITORING / "data" / week / f"{kind}.jsonl"
+                if not src.is_file():
+                    result["skipped"] = f"no {kind}.jsonl for {week} in the main checkout"
+                else:
+                    result = _sweep_file(src, Path(week_dir) / f"{kind}.jsonl")
+        except Exception as exc:  # noqa: BLE001 - a sweep problem never fails a week close
+            result["skipped"] = f"sweep failed: {type(exc).__name__}: {exc}"
+        results[kind] = result
+    return results
 
 
 def _previous_week(week: str) -> str:
@@ -316,6 +355,7 @@ def close_week(week: str, data_dir: Path = DEFAULT_DATA_DIR, today: date | None 
         raise WeekCloseError(f"no such week directory: {week_dir}")
     result = {kind: _fold_kind(week_dir, kind) for kind in CLOSE_KINDS}
     result["main_checkout_tools"] = sweep_main_checkout_tools(week, week_dir, main_checkout)
+    result["main_checkout_append_only"] = sweep_main_checkout_append_only(week, week_dir, main_checkout)
     result["durations"] = rederive_week_durations(week, week_dir)
     result["working_log"] = consolidate_pending_rows(
         data_root=Path(data_dir), csv_path=_default_csv_path_for(Path(data_dir)), week=week
@@ -349,6 +389,9 @@ def main(argv=None) -> int:
         sw = result["main_checkout_tools"]
         print(f"{args.week} main-checkout tools rows: swept {sw['swept']} ({sw['duplicates_dropped']} duplicate(s) dropped)"
               + (f"; {sw['skipped']}" if sw["skipped"] else ""))
+        for kind, ao in result["main_checkout_append_only"].items():
+            print(f"{args.week} main-checkout {kind} rows: swept {ao['swept']} ({ao['duplicates_dropped']} duplicate(s) dropped)"
+                  + (f"; {ao['skipped']}" if ao["skipped"] else ""))
         rd = result["durations"]
         print(f"{args.week} hand-closure durations: re-derived {rd['rederived']} unknown, dropped {rd['stale_dropped']} stale unknown row(s)"
               + (f"; {rd['skipped']}" if rd["skipped"] else ""))

@@ -179,6 +179,67 @@ def _record_since_cutoff(start_ts, cutoff):
     return start_ts >= cutoff
 
 
+def tools_in_period(all_tools, week=None, cutoff=None, legacy_run_ids=None):
+    """Tool rows belonging to one period, selected by each row's own `ts`.
+
+    Tool rows have carried `run_id=None` since W42 (adhoc-null attribution,
+    TCK-20260824-SIDECAR-ADHOC-NULL-ATTRIBUTION), so a run_id-set membership test selects nothing.
+    `week` ("YYYY-Www") keeps rows whose `iso_week(ts)` matches; `cutoff` (ISO 8601) keeps rows at or
+    after it. Rows with no usable `ts` are excluded and counted, and exact-duplicate rows (identity
+    = the row's canonical JSON, the same full-row identity week_close's main-checkout sweep uses)
+    are kept once and counted. `legacy_run_ids`: a row with no usable `ts` but a `run_id` in this set
+    still belongs to the period (pre-W42 shape), so it is kept rather than counted as missing.
+    Returns (rows, missing_ts_count, duplicate_count).
+    """
+    selected = []
+    seen = set()
+    missing_ts = 0
+    duplicates = 0
+    for row in all_tools:
+        ts = row.get("ts")
+        if not isinstance(ts, str) or not ts or iso_week(ts) == "unknown":
+            if legacy_run_ids and row.get("run_id") in legacy_run_ids:
+                pass
+            else:
+                missing_ts += 1
+                continue
+        elif (week is not None and iso_week(ts) != week) or (
+            cutoff is not None and not _record_since_cutoff(ts, cutoff)
+        ):
+            continue
+        if isinstance(ts, str) and ts:
+            # Dedup only rows that carry a ts: a legacy row without one has nothing that tells two
+            # real calls from a copy of one call.
+            identity = json.dumps(row, sort_keys=True, default=str)
+            if identity in seen:
+                duplicates += 1
+                continue
+            seen.add(identity)
+        selected.append(row)
+    return selected, missing_ts, duplicates
+
+
+def tool_selection_note(missing_ts, duplicates):
+    """One report line for rows `tools_in_period` set aside, or None when it set none aside."""
+    if not missing_ts and not duplicates:
+        return None
+    return (
+        f"_Tool rows selected by `ts`: {missing_ts} without a usable `ts` left out, "
+        f"{duplicates} exact-duplicate row(s) counted once._"
+    )
+
+
+NOT_ATTRIBUTABLE_NOTE = "not attributable since W42 (adhoc-null attribution)"
+
+
+def per_run_note(per_run):
+    """The not-attributable line when the per-run table holds only the `unattributed` bucket
+    (every row has run_id=None), else None. An all-unattributed table is not a run."""
+    if per_run and set(per_run) == {"unattributed"}:
+        return NOT_ATTRIBUTABLE_NOTE
+    return None
+
+
 def week_range(week_str):
     year, w = week_str.split("-W")
     monday = datetime.strptime(f"{year}-W{w}-1", "%G-W%V-%u").replace(tzinfo=timezone.utc)
@@ -410,6 +471,7 @@ def build_search_count_section(tools: list) -> dict:
                       "-existing-data derivation because it actually answers 'how many follow-up "
                       "searches happened', per this ticket's plan.md Step 3.",
         "per_run": dict(per_run),
+        "per_run_note": per_run_note(per_run),
         "total": total,
     }
 
@@ -452,6 +514,7 @@ def build_raw_investigation_count_section(tools: list) -> dict:
             "the literal string above instead of a divided-by-zero or fabricated value."
         ),
         "per_run": dict(per_run),
+        "per_run_note": per_run_note(per_run),
         "total": total,
         "read_to_search_ratio": ratio,
     }
@@ -1373,7 +1436,7 @@ def compute_tool_safety_metrics(events: list[dict], tools: list[dict]) -> dict:
 
 def generate(
     runs, events, label, week_str=None, tickets_root=None, tools=None, all_tools=None,
-    raw_run_count=None, deduped_run_count=None, real_token_report=None, session_layer=None, gates=None, paths=None, failures=None, ledger_blocks=None, reset_declarations=None, week_open=False,
+    raw_run_count=None, deduped_run_count=None, real_token_report=None, session_layer=None, gates=None, paths=None, failures=None, ledger_blocks=None, reset_declarations=None, week_open=False, tool_note=None,
 ):
     """Render `compute_retro_metrics()`'s result to the retro report's Markdown text — the sole
     rendering consumer of that function. Signature/behavior unchanged by the
@@ -1440,6 +1503,9 @@ def generate(
     prov = rs.get("provenance")
     if prov:
         lines.extend(retro_provenance.top_note(prov))
+    if tool_note:
+        lines.append(tool_note)
+        lines.append("")
 
     # Run summary
     lines.append("## Run Summary")
@@ -1916,6 +1982,8 @@ def generate(
         lines.append("### Search Calls (Follow-Up Search Tooling)")
         lines.append("")
         lines.append(f"**Total:** {sc['total']}")
+        if sc.get("per_run_note"):
+            lines.append(f"_Per run: {sc['per_run_note']}._")
         lines.append("")
 
         lines.append("### Raw Investigation (Read) Calls")
@@ -1924,6 +1992,8 @@ def generate(
         ratio_str = ratio if isinstance(ratio, str) else f"{ratio}"
         lines.append(f"**Total:** {ric['total']}")
         lines.append(f"**Read-to-search ratio:** {ratio_str}")
+        if ric.get("per_run_note"):
+            lines.append(f"_Per run: {ric['per_run_note']}._")
         lines.append("")
 
     # Tool Safety Audit (TCK-20260803-RETRO-TOOL-SAFETY-AUDIT): audits search-before-grep hard-rule
@@ -2029,6 +2099,11 @@ def generate(
                 lines.append(f"| {skill} | {su['per_skill'][skill]} |")
             lines.append("")
             lines.append(f"**Total:** {su['total_skill_invocations']}")
+            skill_note = per_run_note(
+                {run_id: 1 for runs_ in su["per_skill_per_run"].values() for run_id in runs_}
+            )
+            if skill_note:
+                lines.append(f"_Per run: {skill_note}._")
             lines.append("")
             lines.append(f"_{su['derivation']}_")
             lines.append("")
@@ -2326,6 +2401,7 @@ def main():
     all_runs, all_events = _load_runs_and_events()
     all_tools = _load_source(DEFAULT_TOOLS_FILE, "tools")
 
+    missing_ts = duplicates = 0
     if args.all:
         runs = all_runs
         events = all_events
@@ -2338,7 +2414,7 @@ def main():
         runs = [r for r in all_runs if _record_since_cutoff(r.get("start_ts"), cutoff)]
         run_ids = {r["run_id"] for r in runs}
         events = [e for e in all_events if e.get("run_id") in run_ids]
-        tools = [t for t in all_tools if t.get("run_id") in run_ids]
+        tools, missing_ts, duplicates = tools_in_period(all_tools, cutoff=cutoff, legacy_run_ids=run_ids)
         label = f"Last {args.days} Days"
         week_str = None
         out_name = f"RETRO-LAST{args.days}D.md"
@@ -2347,7 +2423,7 @@ def main():
         runs = [r for r in all_runs if iso_week(r.get("start_ts", "")) == week_str]
         run_ids = {r["run_id"] for r in runs}
         events = [e for e in all_events if e.get("run_id") in run_ids]
-        tools = [t for t in all_tools if t.get("run_id") in run_ids]
+        tools, missing_ts, duplicates = tools_in_period(all_tools, week=week_str, legacy_run_ids=run_ids)
         label = week_str
         out_name = f"RETRO-{week_str}.md"
 
@@ -2384,6 +2460,7 @@ def main():
         raw_run_count=raw_run_count, deduped_run_count=deduped_run_count,
         real_token_report=real_token_report, session_layer=session_layer, gates=gates, paths=paths, failures=failures, ledger_blocks=ledger_blocks, reset_declarations=reset_declarations,
         week_open=_week_is_open(None if (args.all or args.days) else week_str),
+        tool_note=tool_selection_note(missing_ts, duplicates),
     )
 
     RETRO_DIR.mkdir(parents=True, exist_ok=True)
@@ -2458,8 +2535,12 @@ def _update_index(all_runs, all_tools=None):
         if name == "ALL":
             week_tools = all_tools
         else:
-            week_run_ids = {r.get("run_id") for r in week_runs}
-            week_tools = [t for t in all_tools if t.get("run_id") in week_run_ids]
+            if re.fullmatch(r"\d{4}-W\d{2}", name):
+                # Tool rows are selected by their own ts, not run_id (null since W42).
+                week_tools, _missing, _dups = tools_in_period(all_tools, week=name, legacy_run_ids={r.get("run_id") for r in week_runs})
+            else:
+                week_run_ids = {r.get("run_id") for r in week_runs}
+                week_tools = [t for t in all_tools if t.get("run_id") in week_run_ids]
         search_calls = build_search_count_section(week_tools)["total"]
         read_calls = build_raw_investigation_count_section(week_tools)["total"]
         skill_invocations = build_skill_usage_section(week_tools)["total_skill_invocations"]
