@@ -207,9 +207,18 @@ Why this rather than a new `IWorkExecutor`:
     appears in the manifest or logs.
   - **Engine to worker:** every call carries the secret in gRPC metadata. The worker rejects a call without it, before decoding.
   - **Worker to engine:** in `Handshake`, the engine sends a nonce, and the worker answers with `HMAC(secret, nonce ‖ image digest
-    ‖ content fingerprint)`. The engine checks it before it decodes any result.
+    ‖ content fingerprint)`. That proves the build once per connection.
+  - **Every response is authenticated too (ubuntu review 2/2, D1).** gRPC can reconnect transparently, by re-resolving or by
+    opening a new subchannel after `UNAVAILABLE`, possibly to a different endpoint. So a one-time handshake does not cover later
+    responses. Each `ExecuteChunk` response carries `HMAC(secret, chunk id ‖ codec name and version ‖ SHA-256 of the payload)`. The
+    engine verifies it **before decode**, and refuses any response without a valid MAC. A refused response is a transport failure
+    (§6: local recompute, counted), and the run's report states it.
   - Accepted risk for the experiment: without TLS, an observer *on the compose-internal network* could read the secret and the
-    chunks. That network is not published to the host.
+    chunks, and so forge MACs. That network is not published to the host.
+  - **Accepted risk: a compromised worker container (D2).** Two-way auth stops an impostor, not a worker container that is itself
+    compromised. Such a worker holds the secret and signs valid responses, and the engine unpickles them, so worker RCE becomes
+    engine RCE. Accepted for the first build on the internal network. It is closed by promotion gate 3, the typed codec (§13),
+    which matters most on the **engine's decode side**.
   - **mTLS is planned**, because the scale case is multi-host. The auth sits behind gRPC channel credentials, so mTLS replaces
     the secret-in-metadata without changing the RPCs. Child 3 may build mTLS first if its security review asks; otherwise it is
     a promotion gate (§13).
@@ -339,7 +348,7 @@ speed never changes the outcome).
 | Fault injection, real (P1); Network partition, Failover (P1) | kill the worker container mid-run or block its network: the result equals sequential and the typed fallback counter is above 0. For one stateless worker pool and one writer, partition and failover reduce to this; no chaos programme |
 | Schema compatibility, real | a worker on a different image digest is refused |
 | Rollback / Deployment (P1) | `docker compose config` without the profile lists exactly today's services |
-| AuthN (P0) | a call without the run secret is refused before decode; a worker that fails the handshake HMAC is refused before any result is decoded; the worker port is not published to the host (the owner's guard) |
+| AuthN (P0) | a call without the run secret is refused before decode; a worker that fails the handshake HMAC is refused before any result is decoded; a response without a valid per-response MAC is refused before decode, and the chunk is recomputed locally; the worker port is not published to the host (the owner's guard) |
 
 **Existing, nothing new:** SAST and SCA (P0) through `security-scan.yml` (Semgrep, gitleaks); they cover the `grpcio` optional
 extra once it is added. Benchmark (P1) is child 2's one-off measurement, not a test.
@@ -399,7 +408,7 @@ where the two differ.
    and decoder for every packet field type, including `EntityState`, `spatial_grid` and the tile maps, and a new parity surface).
    Either way child 3 gets the security-tagged review. If the mode ever leaves "experiment", the typed encoding becomes required.
 
-**The owner's answers (#715 6776551375, 2026-11-10):**
+**The owner's answers (#715 6776551375, 2026-11-11 on the owner's host; GitHub stamps it 2026-11-10 19:03 UTC):**
 1. **Dead worker:** local recompute, counted and recorded (§6). A worker that raises is handled as the local path does.
 2. **Selection:** CLI and harness only (§5).
 3. **Transport:** gRPC, not the stdlib (§4). The stdlib recommendation above is superseded, and so is its rejection of gRPC.
@@ -413,8 +422,10 @@ where the two differ.
   long equivalence test is the backstop; the content fingerprint is the guard.
 - **Packet-field drift** across a third consumer: covered by keeping one packet builder (§3) and the parity test.
 - **Pickle trust boundary** (§4): unsafe deserialization, a remote-code-execution surface if the channel is reached. Guarded by
-  the owner's four conditions, plus two-way authentication with a per-run secret. The plaintext secret on the internal network is
-  an accepted experiment risk; mTLS and the typed encoding are required before the mode leaves "experiment".
+  the owner's four conditions, plus two-way authentication with a per-run secret and a MAC on every response. Two accepted
+  first-build risks: the plaintext secret on the internal network, and a **compromised worker container**, whose signed results
+  the engine still unpickles (worker RCE becomes engine RCE). mTLS and the typed codec (promotion gates 3 and 4, §13) close them;
+  the typed codec matters most on the engine's decode side.
 - **A new dependency** (`grpcio`): kept as an optional extra, out of the default install and image. SCA (`security-scan.yml`)
   covers it once the leads add it.
 
@@ -485,8 +496,10 @@ stand for the first build. This section keeps the design from locking the mode i
 - **One engine and one writer.** Every result is validated, sorted and applied by the one kernel.
 - **Resolution stays serial.** C-10 (`docs/architecture/performance_optimization_decisions.md`) and the Gate B evaluation
   (PERF-M6-T05) are unchanged.
-- **Fan-out is Collection only.** Collection is 14 to 26 % of a tick (§1, PROVISIONAL), so this mode alone caps near 1.05 to
-  1.35x. A default mode at scale needs Resolution's work to fan out too.
+- **Fan-out is Collection only.** Collection is 14 to 26 % of a tick in py-spy shares (`tick_cost_growth.md` §2) and 5.2 to 16 %
+  in the benchmark records (`tests/perf/baselines/*.v0001.json`), both PROVISIONAL (§1). So this mode alone caps near 1.05 to
+  1.35x: 1.05 from the 5.2 % record share, 1.35 from the 26 % py-spy share. A default mode at scale needs Resolution's work to fan
+  out too, and only after the Gate B evaluation (PERF-M6-T05) and under the next-gen phase contract.
 
 **Where it meets the next-gen engine.** That second step is the accepted next-generation engine ADR
 (`docs/architecture/next_generation_engine_adr.md`, #715 6742854335): the kernel/logic phase contract, Level A by default, with
@@ -499,7 +512,8 @@ This mode's transport, codec and dead-worker rule are meant to carry those units
 **Promotion gates** (all needed; each is evidence, not a promise):
 1. A **measured speedup** on the gate worlds, on a quiet host, under `docs/engine/performance_contract.md`.
 2. **Zero fallbacks** over a long equivalence run (§8), with content compare primary.
-3. A **typed codec** in place, replacing pickle (owner guard, §4), with the bounded fuzz of §8a running.
+3. A **typed codec** in place, replacing pickle (owner guard, §4), with the bounded fuzz of §8a running. This closes the
+   compromised-worker risk (§4, D2), so the engine's decode side comes first.
 4. **Multi-host auth:** mTLS (§4).
 5. **API reach:** `engine_manager.py:139` passes an executor (§5).
 6. **The `grpcio` extra moves to core dependencies,** through the leads.
