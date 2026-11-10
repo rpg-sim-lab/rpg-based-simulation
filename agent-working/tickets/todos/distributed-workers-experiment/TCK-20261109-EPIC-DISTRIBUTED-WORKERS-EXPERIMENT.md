@@ -152,6 +152,16 @@ code those children write). The testing strategy for all children is §8 of chil
 ## Implementation Notes
 Filing rides in a later implementation PR on this track (owner rule, #715 6697748243), not a PR of its own.
 
+**Design accepted (owner, #715 6777076537, "Accept (Recommended)"):** `docs/plans/architecture/distributed_workers_experiment_design.md`
+at `f517f1fdf`.
+- Before acceptance: ubuntu review 2/2 approved with changes D1-D5, and its re-check was clean.
+- Adoption mirrors next-gen. The child 0 amendment goes to its final home under `docs/architecture/` through the ubuntu lead, and
+  the children proceed in order (§9).
+
+**Carried to child 3's ticket and its security review** (the ubuntu lead's non-blocking note at the re-check): the per-response MAC
+binds chunk id, codec and payload hash, but not the tick or the request. So an old valid response could be replayed. Bind the tick,
+or a per-call nonce the worker echoes in its response. The accepted design text is not edited for this; child 3 carries it.
+
 ## Test Summary
 Not applicable at epic level.
 
