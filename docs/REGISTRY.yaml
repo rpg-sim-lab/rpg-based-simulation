@@ -8126,6 +8126,20 @@
   - testing
   - regression
 - type: ticket
+  path: agent-working/tickets/done/TCK-20261109-MAKEFILE-RECIPES-USE-THE-RESOLVED-INTERPRETER.md
+  ticket_id: TCK-20261109-MAKEFILE-RECIPES-USE-THE-RESOLVED-INTERPRETER
+  title: Makefile recipes run a bare `python3` instead of the resolved `$(PYTHON3)`,
+    so targets fail outside an activated venv
+  tier: hotfix
+  ticket_type: bug
+  date: '2026-11-09'
+  related_code_areas:
+  - tests/tools/ (agent-working)
+  artifact_files: []
+  tags:
+  - ai
+  - setup
+- type: ticket
   path: agent-working/tickets/done/TCK-20261109-NEXT-GENERATION-ENGINE-ADR.md
   ticket_id: TCK-20261109-NEXT-GENERATION-ENGINE-ADR
   title: 'ADR: the kernel/logic phase contract as the engine''s direction, with one
