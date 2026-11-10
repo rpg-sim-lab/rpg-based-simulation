@@ -319,6 +319,14 @@ make agent-monitoring-close-week WEEK=2026-W39
 - `retro_nudge_hook.py` adds a report-only line when a finished week still holds shards. It never blocks
   and the close is never scheduled: one session closes one week, and the implementer commits it.
 
+- **Retro tool rows are selected by their own `ts`** (`TCK-20261110-RETRO-READERS-SELECT-TOOL-ROWS-BY-TS`). Tool rows have carried
+  `run_id=None` since W42 (adhoc-null attribution), so `generate_retro.py` picks a week's or `--days` window's tool rows with
+  `tools_in_period()` (the row's `iso_week(ts)`), keeps an exact-duplicate row once, and reports rows with no usable `ts` in a note
+  line. Per-run tool tables over null-`run_id` rows print "not attributable since W42" instead of one fake run. Retros regenerated
+  for W42 or later therefore show different tool numbers; published retros are not rewritten. Period edges differ by reader: the
+  retro uses the tool row's `ts` week, `delivery_cost_measurement.py` the shard directory's week, runs their `start_ts`, so a
+  session crossing Sunday midnight UTC can split differently in each. `delivery_cost_measurement.py` never used `run_id` and needed no change.
+
 - **Main-checkout tool rows** (`TCK-20261021-WEEK-CLOSE-SWEEPS-MAIN-CHECKOUT-TOOL-ROWS`; see "Tool rows that never reach `main`"
   above for the reminder lines). A session launched in the main checkout (lead, planners) is on branch `main`, so the hook writes
   `main.tools.jsonl`, a file no PR branch carries, and a reminder cannot get it committed. A close run from a worktree finds the main
