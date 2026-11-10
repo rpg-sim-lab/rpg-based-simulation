@@ -1,10 +1,10 @@
 ---
-status: active
+status: historical
 layer: ai
 authority: P1
 audience: agent
 ticket_id: TCK-20261110-MONITORING-CLOSE-WEEK-BACKLOG
-phase: inprogress
+phase: done
 date: 2026-11-10
 tags: []
 ---
@@ -15,7 +15,7 @@ tags: []
 Monitoring weeks 2026-W41 to W45 are closed: their per-batch shards are folded into the canonical files.
 
 ## Status
-INPROGRESS
+DONE
 
 ## Tier
 hotfix
@@ -61,5 +61,10 @@ None open. W44 has 341 shard files, 6 MB: a light JSONL fold, no heavy slot need
 Branch agent-working-monitoring-close-week-backlog, cut from origin/main 61e0b4122, in worktree agent-working-close-week.
 
 ## Test Summary
+`week_close.py` ran without a refusal for all five weeks (exit 0). Per-week shard files after the close: W41 6, W42 7, W43 7, W44 8, W45 7 (bare per-week files only). W44: 341 shards, 6 MB, a light fold, no heavy slot. Late W45 rows (6 tools rows from the PR 859 session) were folded by a second W45 close in its own commit.
+
 ## Files Changed
+`agent-working/agent-monitoring/data/2026-W41..W45/`, `agent-working/tickets/working_log.csv` (W44: 99 rows, W45: 21 rows folded from pending shards), plus carried W46 rows from the PR 859 session (review events, tools rows, one governing-edit row).
+
 ## Completion Summary
+Weeks 2026-W41 to W45 are closed, one commit per week. Nothing was hand-edited.
