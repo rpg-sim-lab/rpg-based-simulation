@@ -8208,7 +8208,10 @@
   related_code_areas:
   - 'src/engine/pipeline.py (step dispatch: the hook only)'
   - src/engine/phase_graph.py (read-only reference)
-  artifact_files: []
+  artifact_files:
+  - agent-working/stored_artifacts/TCK-20261109-NEXT-GENERATION-ENGINE-ACCESS-AUDIT/investigation.md
+  - agent-working/stored_artifacts/TCK-20261109-NEXT-GENERATION-ENGINE-ACCESS-AUDIT/plan.md
+  - agent-working/stored_artifacts/TCK-20261109-NEXT-GENERATION-ENGINE-ACCESS-AUDIT/test_plan.md
   tags:
   - architecture
   - engine
