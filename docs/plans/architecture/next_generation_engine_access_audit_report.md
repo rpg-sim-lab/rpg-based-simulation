@@ -107,7 +107,11 @@ Two steps mutate the update they were handed, in place, instead of returning a n
 
 How it was detected, as built: before each step the recorder takes a token for every field of the INPUT `StateUpdate` and for every bucket of each of its `EntityUpdate`s (the value for a primitive, (id, length) for a container, the id otherwise); after the step it takes the same snapshot of the same input object, and any token that changed is an in-place mutation (`observe.snapshot_update`, `observe.update_inplace`). It sees a bucket replaced or resized on the input update; it does not see an equal-length in-place edit inside a bucket's contents.
 
-No tick count for this table: the recorder keeps the in-place mutation buckets as a per-step set over the run (`inplace_update_mutations`), not a per-tick counter, so how many ticks each step did this is not known from these cells and is not estimated here. (The hidden-mutation tables below do carry tick counts.)
+**Lower bound.** This table lists steps seen mutating their input; others may do so undetected (an equal-length in-place edit inside a bucket is not seen). Child 4's copy-on-write rule is enforced by its own Level A proof, not by this list.
+
+**Tick counts not recorded** (the recorder keeps a per-run set, `inplace_update_mutations`, not a per-tick counter); departs from plan section 6 for this table only. Nothing is estimated here. (The hidden-mutation tables below do carry tick counts.)
+
+Class S (read, not traced): the in-place writes are assignments into the input update's dicts: `src/engine/evolution.py:133` (`update.entity_updates[e_id] = ...`) and `src/engine/world_dynamics.py:128,181,219-221,272-274` (`update.world_updates[r_id] = ...`). I did not trace which branches run on which ticks, so how often each happens, and whether every call that writes does so in place, is not stated.
 
 | step | bucket(s) mutated in place |
 | --- | --- |
@@ -320,6 +324,7 @@ MATCH. Caveat: #857 did not move this seed's trajectory (the 993400a52 base hash
 
 - Reads are not observed (no read proxy, per the planner ruling of 2026-11-10).
 - Timing NOT MEASURED; no perf claim.
+- In-place table is a LOWER BOUND: steps seen mutating their input; others may do so undetected (an equal-length in-place edit inside a bucket is not seen). Its tick counts are not recorded (the recorder keeps a per-run set); departs from plan section 6 for this table only.
 - 6 cells on 2 worlds; steps behind OFF flags are unexercised.
 - The recorder is passed via `state.feature_flags["ACCESS_AUDIT_SINK"]` (not hashed, `compare=False`); a checkpoint pickles the whole state and would carry it: unsupported with the audit on. This departs from plan section 3 (records in a kernel-owned auditor); the PR states it.
 - The audit writes none of the fields in TCK-20261103-STATE-DIGEST-MAY-OMIT-FIELDS-THAT-DECISIONS-READ.

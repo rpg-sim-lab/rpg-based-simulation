@@ -134,6 +134,8 @@ Departures from `docs/plans/architecture/next_generation_engine_access_audit_pla
 - Sink: plan section 3 says the records live in an auditor object the kernel owns; as built the recorder is passed in through `state.feature_flags["ACCESS_AUDIT_SINK"]` (not hashed, `compare=False`; checkpointing unsupported while it is on). Stated as a deviation in the PR.
 - Timeline elements: mutable pydantic models (`src/observability/events.py:54`) whose only writer appends; the per-step token is the element ids, plus a sampled content check every 100 ticks against the first-seen digest (reported as sampled, not per step). A candidate `frozen=True` hygiene ticket (architecture, child 4 section 5); none filed here.
 
+- In-place INPUT-update table (ruling relayed by rpg-planner, arch and lead accept (A)): tick counts not recorded (the recorder keeps a per-run set); departs from plan section 6 for this table only. The table is a LOWER BOUND: steps seen mutating their input; others may do so undetected (an equal-length in-place edit inside a bucket is not seen). Child 4's copy-on-write rule is enforced by its own Level A proof, not by this list. Carry this line into the PR body.
+
 ## Test Summary
 Planned: unit tests for the hook and the declaration checker; an audit on/off equivalence test (hash and event count); pinned
 5000-tick cells with the audit on (condition 4a).
