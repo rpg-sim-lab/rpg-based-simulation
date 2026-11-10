@@ -108,8 +108,12 @@ DRAFT. Proposed by architecture-planner-u24, 2026-11-09. To be decided by lead-p
 - **The default deployment and every existing evidence path are unchanged.** The gate, paired arms and `rpg_measure` refuse a
   non-sequential executor (child 6).
 - **A result slower than sequential is a valid outcome**, and is reported.
+- **Not decided here: promotion.** The owner expects the mode may become the default at scale (#715 6776564953). This amendment
+  does not make it so. Promotion, and any multi-host deploy, needs its own ADR, decided against the gates in the design's §13.
 - **Risks:**
-  - an unsafe-deserialization surface if pickle is used: internal network and `authkey` only, plus a security review;
+  - an unsafe-deserialization surface, since the first build uses pickle (owner, #715 6776551375). Guards: compose-internal
+    network only, a test that the worker port is never published, two-way authentication, and a security review of child 3. A
+    typed encoding is required before the mode leaves its opt-in profile;
   - hidden reads outside the packet, such as process-global content: covered by the content fingerprint and the long equivalence test.
 
 ## Related

@@ -8,8 +8,9 @@ tags: [architecture, engine, determinism, platform]
 
 # Distributed-workers experiment mode: design (DRAFT)
 
-**Status: DRAFT, for the owner's review together with the ADR amendment.** Design only: no code, tests or runs were written for
-it, and no number here is measured. Written by architecture-planner-u24 for `TCK-20261109-DISTRIBUTED-WORKERS-DESIGN`, child 1 of
+**Status: DRAFT, revised after the owner answered §10 (#715 6776551375): local recompute, CLI and harness only, gRPC, pickle with
+guards.** For ubuntu's review 2/2, together with the ADR amendment. Design only: no code, tests or runs were written for it, and no
+number here is measured. Written by architecture-planner-u24 for `TCK-20261109-DISTRIBUTED-WORKERS-DESIGN`, child 1 of
 `TCK-20261109-EPIC-DISTRIBUTED-WORKERS-EXPERIMENT`. Drafted before child 0 (`TCK-20261109-DISTRIBUTED-WORKERS-ADR-AMENDMENT`) lands,
 by owner leave (#715 6731956846); it stays inside child 0's five scoped points, and if the ADR narrows them, this doc follows the ADR.
 Nothing under the epic is built before the owner has reviewed the whole plan (#715 6731938042). Code facts were read on `main` at
@@ -61,9 +62,9 @@ flowchart LR
         CLI2["CLI run in the backend image"] --> K2["Kernel<br/>7-phase tick, single writer (unchanged)"]
         K2 --> AD2["ConcurrentExecutionAdapter (unchanged)<br/>builds and validates every packet"]
         AD2 --> RWM["RemoteWorkerManager"]
-        RWM -- "pickled chunks, authkey<br/>compose-internal network only" --> EW
+        RWM -- "gRPC, pickled chunks as bytes,<br/>per-run secret, compose-internal network only" --> EW
         subgraph EW["engine-worker container (same image)"]
-            L["one listener"] --> P1["worker process 1"]
+            L["one gRPC server"] --> P1["worker process 1"]
             L --> P2["worker process ..."]
             L --> PN["worker process N"]
         end
@@ -85,7 +86,7 @@ flowchart TB
     Q2 -- no --> LS["LocalSequentialExecutor"]
     Q1 -- "yes" --> X{"which caller?"}
     X -- "existing callers and tests" --> XE["the executor they pass (today)"]
-    X -- "CLI flag or harness, mode on" --> RA["ConcurrentExecutionAdapter(<br/>RemoteWorkerManager(address, authkey))"]
+    X -- "CLI flag or harness, mode on" --> RA["ConcurrentExecutionAdapter(<br/>RemoteWorkerManager(address, run secret))"]
 
     classDef new stroke-dasharray: 5 5
     class RA new
@@ -112,7 +113,8 @@ sequenceDiagram
     else Experiment (opt-in)
         AD->>M: RemoteWorkerManager.execute_batch(packets)
         M->>M: encode each chunk (pickle, shared views once)
-        M->>W: send over the internal network
+        M->>W: unary gRPC call, chunk as a bytes payload
+
         W->>W: decode, default_simulation_worker
         W-->>M: encoded results
         M->>M: decode, in packet order
@@ -182,24 +184,57 @@ Why this rather than a new `IWorkExecutor`:
   (`_batch_views`, `executor.py:221-232`). One `pickle.dumps` per chunk keeps that sharing (pickle's memo writes a shared object
   once); per-packet encoding would copy `all_entities`, `regions`, `spatial_grid` and the tile maps into every packet. The private
   caches (`worker_protocol.py:93-98`) are rebuilt on the worker. Child 2 measures the size either way.
-- **Transport: stdlib first.** `multiprocessing.connection` (`Listener`/`Client` over TCP, with HMAC `authkey`) carries pickled
-  chunks with no new dependency. HTTP, gRPC or Redis Streams add a dependency or a broker hop for a synchronous per-tick call; they
-  are rejected for the experiment unless child 2 shows the stdlib path is the bottleneck.
-- **Trust boundary.** Unpickling network input runs code. The worker listens only on the compose-internal network, authenticated
-  by `authkey`; it is never published to the host. This is an experiment profile, not a deploy surface.
-- **Same build, or refuse.** At connect, the worker reports its image digest and a content fingerprint; the engine refuses a
-  worker whose build differs (a different build is DET-PORT-2, not claimable).
+- **Transport: gRPC (owner, #715 6776551375).** One service, point to point: no broker, so `system_overview.md`'s line on
+  brokers is unchanged. Two unary RPCs:
+  - `Handshake`, once per connection, before any chunk (below);
+  - `ExecuteChunk`, one call per chunk. The request and the response each carry the encoded chunk as one opaque `bytes` field,
+    plus a chunk id, a wire-schema version, and the **codec name and version**. Protobuf frames the call; it does not type the
+    packet.
+- **Codec seam (built now).** A small `ChunkCodec` interface (`name`, `version`, `encode(chunk) -> bytes`, `decode(bytes) ->
+  chunk`) sits between `RemoteWorkerManager` and the transport. **Pickle is the first codec.** A typed codec (protobuf messages,
+  or another canonical encoding) replaces it later without touching the transport, the manager or the `.proto` service.
+  - Both sides refuse a codec name or version they don't hold, at handshake, never by guessing.
+  - The round-trip and golden tests of §8a run per codec, so a second codec inherits them.
+  - Per-call deadlines carry §6's bounded wait. A deadline is liveness only, never outcome.
+  - Child 2 still measures the encode size and the round trip, now through gRPC.
+- **The dependency.** `grpcio`, plus `protobuf` and `grpcio-tools` if stubs are generated, goes in `pyproject.toml`/`uv.lock` as an
+  **optional extra**, for example `distributed`. The default install and the default image don't carry it. That edit goes through
+  the leads when child 3 or 4 reaches it, not in this design PR. It moves to core dependencies only at promotion, through the
+  leads (§13).
+- **Authentication: both ways, with a per-run secret.** Both sides unpickle what they receive, so each side must authenticate the
+  other. Client-only auth would let a fake server on the internal network hand the engine a malicious result.
+  - The engine generates a random secret per run and passes it to the worker container (env or a compose secret). It never
+    appears in the manifest or logs.
+  - **Engine to worker:** every call carries the secret in gRPC metadata. The worker rejects a call without it, before decoding.
+  - **Worker to engine:** in `Handshake`, the engine sends a nonce, and the worker answers with `HMAC(secret, nonce ‖ image digest
+    ‖ content fingerprint)`. The engine checks it before it decodes any result.
+  - Accepted risk for the experiment: without TLS, an observer *on the compose-internal network* could read the secret and the
+    chunks. That network is not published to the host.
+  - **mTLS is planned**, because the scale case is multi-host. The auth sits behind gRPC channel credentials, so mTLS replaces
+    the secret-in-metadata without changing the RPCs. Child 3 may build mTLS first if its security review asks; otherwise it is
+    a promotion gate (§13).
+- **Trust boundary (owner's guards).** Unpickling network input runs code. The owner's conditions:
+  - compose-internal network only;
+  - a test that the worker port is never published to the host (child 4, §8a);
+  - a security-tagged review of child 3;
+  - a typed encoding is mandatory before the mode leaves "experiment".
+  This is the **first build of a mode that may become the default at scale** (owner, #715 6776564953). It ships as an opt-in
+  profile; promotion is gated (§13).
+- **Same build, or refuse.** In the `Handshake` RPC, the worker reports its image digest and a content fingerprint, both bound into
+  the HMAC above. The engine refuses a worker whose build differs (a different build is DET-PORT-2, not claimable).
 
 ## 5. Selection: how a run opts in
 
-Default (cheaper): **CLI and test harness only.** A run opts in by building the kernel with
-`executor=ConcurrentExecutionAdapter(RemoteWorkerManager(address, authkey))`; a CLI flag or env var names the worker address.
-Reaching it from the API is a larger change, because `V2EngineManager` builds `Kernel(profile=..., state=..., rng=...)` with no
-executor (`src/api/engine_manager.py:139`); that is left out unless the owner asks for it.
+**CLI and test harness only (owner, #715 6776551375).** A run opts in by building the kernel with
+`executor=ConcurrentExecutionAdapter(RemoteWorkerManager(address, secret))`; a CLI flag or env var names the worker address.
+The API stays out: `V2EngineManager` builds `Kernel(profile=..., state=..., rng=...)` with no executor
+(`src/api/engine_manager.py:139`), and that is not changed in the first build. API reach (passing an executor there) is the
+expected step at promotion (§13).
 
 ## 6. Slow or dead worker rule
 
-**Proposal:** after a bounded wait per chunk, the engine computes that chunk **locally**, through the same
+**Rule (owner, #715 6776551375: local recompute, recorded):** after a bounded wait per chunk (the gRPC deadline), the engine
+computes that chunk **locally**, through the same
 `_execute_locally` path (`worker_manager.py:213-224`), from the same packets. The worker function is pure over the packet, so the
 results are identical; the fallback is counted and recorded in the run manifest, and a run with any fallback says so in its report.
 It **never** answers with a FAILURE no-op: in `WorkerManager` a chunk that raised is answered with FAILURE no-ops (`:192-194`), and
@@ -212,7 +247,10 @@ recomputed is dropped by the manager; `ProtocolValidator`'s one-result-per-entit
 stays the backstop.
 
 The bound is liveness, not outcome, so it may be wall-clock without breaking determinism: whichever side computes the chunk, the
-result is the same. Alternative for the owner: fail the run loudly on the first timeout (simpler; loses runs on a flaky worker).
+result is the same. The rejected alternative was failing the run on the first timeout.
+- **Mapping to gRPC status:** `DEADLINE_EXCEEDED` and `UNAVAILABLE` (and any other transport-level status) mean local recompute. A
+  raised worker exception comes back as a normal `ExecuteChunk` response that carries the exception, and is handled as locally. A
+  failed handshake refuses the run; it is not a fallback.
 
 Open check (unverified): the rule holds only if `default_simulation_worker` reads nothing outside its packet. The parity test fails
 on an undeclared **state** read (`test_executor_context_parity.py:109`), but a read of a process-global singleton (the content
@@ -301,10 +339,10 @@ speed never changes the outcome).
 | Fault injection, real (P1); Network partition, Failover (P1) | kill the worker container mid-run or block its network: the result equals sequential and the typed fallback counter is above 0. For one stateless worker pool and one writer, partition and failover reduce to this; no chaos programme |
 | Schema compatibility, real | a worker on a different image digest is refused |
 | Rollback / Deployment (P1) | `docker compose config` without the profile lists exactly today's services |
-| AuthN (P0) | a client with a wrong `authkey` is refused; the worker port is not published |
+| AuthN (P0) | a call without the run secret is refused before decode; a worker that fails the handshake HMAC is refused before any result is decoded; the worker port is not published to the host (the owner's guard) |
 
-**Existing, nothing new:** SAST and SCA (P0) through `security-scan.yml` (Semgrep, gitleaks); the stdlib transport adds no
-dependency. Benchmark (P1) is child 2's one-off measurement, not a test.
+**Existing, nothing new:** SAST and SCA (P0) through `security-scan.yml` (Semgrep, gitleaks); they cover the `grpcio` optional
+extra once it is added. Benchmark (P1) is child 2's one-off measurement, not a test.
 
 **Cut as cost over value** (the depth rule):
 
@@ -347,7 +385,10 @@ multi-service transaction); Canary, Shadow / Traffic replay, Synthetic monitorin
 Order: 6 first (cheap, and it makes the evidence rule a guard before the mode exists), 2's cheap form, then 3, then 4; 5 any time after
 child 0 and ubuntu's docs batch. Every child waits for the owner's review.
 
-## 10. Choices for the owner
+## 10. Choices for the owner (answered)
+
+The choices as they were offered, kept for the record. The owner's answers follow them, and they supersede the recommendations
+where the two differ.
 
 1. **Dead-worker rule:** local recompute, recorded (recommended), or fail the run on the first timeout.
 2. **Selection reach:** CLI and harness only (recommended), or also the API (needs `engine_manager.py:139` to pass an executor).
@@ -358,14 +399,24 @@ child 0 and ubuntu's docs batch. Every child waits for the owner's review.
    and decoder for every packet field type, including `EntityState`, `spatial_grid` and the tile maps, and a new parity surface).
    Either way child 3 gets the security-tagged review. If the mode ever leaves "experiment", the typed encoding becomes required.
 
+**The owner's answers (#715 6776551375, 2026-11-10):**
+1. **Dead worker:** local recompute, counted and recorded (§6). A worker that raises is handled as the local path does.
+2. **Selection:** CLI and harness only (§5).
+3. **Transport:** gRPC, not the stdlib (§4). The stdlib recommendation above is superseded, and so is its rejection of gRPC.
+4. **Encoding:** pickle, with guards (§4, "Trust boundary"). With pickle, the bounded fuzz row of §8a stays deferred until a typed
+   encoding exists.
+
 ## 11. Risks
 
 - **Slower than sequential**, likely; the experiment reports it rather than hides it.
 - **Hidden reads outside the packet** (§6 open check): a singleton the worker container loads differently gives a split. The
   long equivalence test is the backstop; the content fingerprint is the guard.
 - **Packet-field drift** across a third consumer: covered by keeping one packet builder (§3) and the parity test.
-- **Pickle trust boundary** (§4): unsafe deserialization, a remote-code-execution surface if the channel is reached; internal
-  network and `authkey` only, security-tagged review on child 3, and the typed-encoding alternative in §10 choice 4.
+- **Pickle trust boundary** (§4): unsafe deserialization, a remote-code-execution surface if the channel is reached. Guarded by
+  the owner's four conditions, plus two-way authentication with a per-run secret. The plaintext secret on the internal network is
+  an accepted experiment risk; mTLS and the typed encoding are required before the mode leaves "experiment".
+- **A new dependency** (`grpcio`): kept as an optional extra, out of the default install and image. SCA (`security-scan.yml`)
+  covers it once the leads add it.
 
 ## 12. External review response (2026-11-09)
 
@@ -414,7 +465,43 @@ boundary cost? K × N is worth an experiment only if multi-host is ever reopened
 **Comparative experiment.** Child 2's cheap form plus the existing equivalence tests already cover three rows: sequential, local
 concurrent, and 1 × N. A K × N row is cut by the depth rule (#715 6731764470), because its gain over 1 × (K·N) on one host is nil.
 
-**Direction.** Keep this a bounded experiment with the current design. Do not turn it into a reusable backend, and do not defer it.
+**Direction.** Keep the first build bounded, with the current design, and do not defer it. (Superseded in part by the owner's
+direction, #715 6776564953: the mode may become the default at scale, so the seams that promotion needs are built now. See §13.)
 The review justifies two changes, both made here:
 - §1 now labels the 6 to 26 % figures as PROVISIONAL shares;
 - child 2 records Collection's internal split, with unknowns marked.
+
+## 13. From first build to a default mode at scale (owner, #715 6776564953)
+
+The owner: "Remember this is not pure experiment but maybe the main mode in the future when the engine scale up". The §10 answers
+stand for the first build. This section keeps the design from locking the mode into experiment-only.
+
+**Built now so promotion doesn't need a rewrite:**
+- the codec seam (§4), so a typed codec replaces pickle without touching the transport or the manager;
+- auth behind gRPC channel credentials (§4), so mTLS replaces the per-run secret without changing the RPCs;
+- a list of addresses as a later option for `RemoteWorkerManager` (§12), with no change to its contract.
+
+**What does not scale yet, and stays so in this design:**
+- **One engine and one writer.** Every result is validated, sorted and applied by the one kernel.
+- **Resolution stays serial.** C-10 (`docs/architecture/performance_optimization_decisions.md`) and the Gate B evaluation
+  (PERF-M6-T05) are unchanged.
+- **Fan-out is Collection only.** Collection is 14 to 26 % of a tick (§1, PROVISIONAL), so this mode alone caps near 1.05 to
+  1.35x. A default mode at scale needs Resolution's work to fan out too.
+
+**Where it meets the next-gen engine.** That second step is the accepted next-generation engine ADR
+(`docs/architecture/next_generation_engine_adr.md`, #715 6742854335): the kernel/logic phase contract, Level A by default, with
+child 2's access audit as its evidence. This doc does not restate it. A future main mode must fit that contract, not fork it:
+- remote work units are the contract's declared step units;
+- results come back as its typed deltas, merged and committed by the kernel under its commit key;
+- the one-writer rule holds.
+This mode's transport, codec and dead-worker rule are meant to carry those units unchanged.
+
+**Promotion gates** (all needed; each is evidence, not a promise):
+1. A **measured speedup** on the gate worlds, on a quiet host, under `docs/engine/performance_contract.md`.
+2. **Zero fallbacks** over a long equivalence run (§8), with content compare primary.
+3. A **typed codec** in place, replacing pickle (owner guard, §4), with the bounded fuzz of §8a running.
+4. **Multi-host auth:** mTLS (§4).
+5. **API reach:** `engine_manager.py:139` passes an executor (§5).
+6. **The `grpcio` extra moves to core dependencies,** through the leads.
+7. **A new ADR.** Promotion to a default, and any multi-host deploy, reopens `system_overview.md`'s "deliberately not distributed"
+   beyond child 0's amendment. That decision is lead-planner's and the owner's, not this design's.

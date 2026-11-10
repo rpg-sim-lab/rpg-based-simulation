@@ -121,7 +121,7 @@ code those children write). The testing strategy for all children is §8 of chil
 ## Related Tickets
 - TCK-20261008-SERVICE-LOOKUP-CRASHES-UNDER-THE-CONCURRENT-EXECUTOR-WORKERPACKET-HAS-NO-BUILDING-TILES (packet parity precedent)
 - TCK-20261023-ARCHITECTURE-ENGINE-MODES-PROPOSAL-UPDATE (Mode 5 dropped)
-- TCK-20261024-PROOF-DIGEST-HASHES-THE-CARRIED-STATE-IT-OMITS (`flat-sha256-v3`, the equivalence hash)
+- TCK-20261024-PROOF-DIGEST-HASHES-THE-CARRIED-STATE-IT-OMITS (the equivalence hash, under the current `PROOF_DIGEST_SCHEME`)
 
 ## Related Docs
 - docs/architecture/system_overview.md

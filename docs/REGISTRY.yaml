@@ -5973,6 +5973,19 @@
   - architecture
   - determinism
 - type: doc
+  path: docs/plans/architecture/distributed_workers_adr_amendment_draft.md
+  title: 'ADR amendment (DRAFT): an opt-in experiment may run the Collection pool
+    outside the engine process'
+  status: active
+  layer: architecture
+  authority: P2
+  audience: agent
+  tags:
+  - architecture
+  - engine
+  - determinism
+  - platform
+- type: doc
   path: docs/plans/architecture/distributed_workers_experiment_design.md
   title: 'Distributed-workers experiment mode: design (DRAFT)'
   status: active
