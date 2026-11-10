@@ -33,3 +33,6 @@
 {"ts":"2026-10-28T18:03:00.711353Z","category":"handover_recovery","source":"sample","session_id":"b70f79dc-a5a2-4002-b405-1e3b6df11283","session_role":"codebase-planner","batch":null,"count":1}
 {"ts":"2026-10-29T09:09:21.337070Z","category":"handover_recovery","source":"sample","session_id":"7ce57f41-41e5-41d1-bb14-a6747a24bd60","session_role":"codebase-planner","batch":null,"count":1}
 {"ts":"2026-11-01T12:28:00.525706Z","category":"handover_recovery","source":"sample","session_id":"0083d62a-79d2-4ab9-9efe-1ae9b4605f27","session_role":"rpg-planner","batch":null,"count":1}
+{"ts":"2026-10-27T16:56:16.281748Z","category":"handover_recovery","source":"sample","session_id":"7a8a3e0d-f80c-4272-96e8-f8f2e0846f6d","session_role":"lead-planner","batch":null,"count":1}
+{"ts":"2026-10-30T17:42:04.937349Z","category":"handover_recovery","source":"sample","session_id":"aa4bbf7e-fc50-49aa-8e29-7ae4b7c52f08","session_role":"lead-planner","batch":null,"count":1}
+{"ts":"2026-11-01T10:28:26.075967Z","category":"handover_recovery","source":"sample","session_id":"41aac19e-e5a0-4f34-830a-faf91043d517","session_role":"lead-planner","batch":null,"count":1}
