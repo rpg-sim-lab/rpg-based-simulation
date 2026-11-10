@@ -2353,6 +2353,7 @@ untouched by §2.57's fix (out of that ticket's scope).
   non-`PURSUE` modes, dead or missing targets, live-versus-snapshot), `tests/unit/strategic/test_redirection_entity_objective.py`
   (control: an untyped objective still gets its point; a carrying entity is not sent home).
 - **Status**: RATIFIED
+- **Fast path (follow-up)**: The off-cadence fast path in fused_strategic_pass honours this too since TCK-20261109-THE-FAST-STRATEGIC-PATH-SENDS-AN-ENTITY-TARGET-PURSUER-HOME-WITH-ITS-ITEMS; before, it wrote a REGROUP to town for a loaded entity.
 
 ### 2.69 A Posture-Withheld or Unsupported Action Is Reported as a Typed Failure and Ends Its Task; the Task Annotation No Longer Carries a Stale Reason (TCK-20261005-SILENT-NO-OP-RETURNS-IN-ACTIONROUTER-HOLD-THE-TASK-AND-ANNOTATE-FALSE-SUCCESS)
 - **Subsystem**: Combat / action dispatch (`ActionRouter.execute_action`, `ActionRoutingPhase.route()`)
