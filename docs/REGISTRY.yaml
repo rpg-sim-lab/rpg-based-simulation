@@ -8173,7 +8173,10 @@
   related_code_areas:
   - src/engine/kernel.py (selection at 193-198; validation at 556)
   - src/engine/worker_manager.py (no-timeout rule at 192)
-  artifact_files: []
+  artifact_files:
+  - agent-working/stored_artifacts/TCK-20261109-DISTRIBUTED-WORKERS-ADR-AMENDMENT/investigation.md
+  - agent-working/stored_artifacts/TCK-20261109-DISTRIBUTED-WORKERS-ADR-AMENDMENT/plan.md
+  - agent-working/stored_artifacts/TCK-20261109-DISTRIBUTED-WORKERS-ADR-AMENDMENT/test_plan.md
   tags:
   - architecture
   - determinism
