@@ -21,6 +21,7 @@ from src.core.movement_modes import MovementMode
 from src.core.death_cause import DeathRecord
 from src.core.enums import ReasonCode, DiplomaticState
 from src.core.group_update_merge import merge_group_fields
+from src.core.social_counts import add_rejection_counts
 from src.core.spawn_source import SpawnSource
 from src.core.update_models.buildings import BuildingUpdate  # noqa: F401  (re-exported: updates.py is where callers import it from)
 from src.core.update_models.inventory import InventoryUpdate, ItemInstanceUpdate
@@ -368,11 +369,6 @@ class SocialUpdate:
         for k, v in other.combat_loss_delta.items():
             new_combat_loss[k] = new_combat_loss.get(k, 0) + v
 
-        # Two rejections from one offerer in one tick count twice (SOC-280); the other keyed fields stay last-writer-wins.
-        new_rejection = dict(self.rejection_increment)
-        for k, v in other.rejection_increment.items():
-            new_rejection[k] = new_rejection.get(k, 0) + v
-
         return SocialUpdate(
             bond_updates=self.bond_updates + other.bond_updates,
             trust_delta=new_trust,
@@ -387,7 +383,7 @@ class SocialUpdate:
             heroism_delta=self.heroism_delta + other.heroism_delta,
             notoriety_delta=self.notoriety_delta + other.notoriety_delta,
             last_offer_tick_set=other.last_offer_tick_set if other.last_offer_tick_set is not None else self.last_offer_tick_set,
-            rejection_increment=new_rejection,
+            rejection_increment=add_rejection_counts(self.rejection_increment, other.rejection_increment),
             nemesis_promotion=self.nemesis_promotion + other.nemesis_promotion,
             place_attachment_delta=new_places,
             regional_reputation_delta=new_regional_rep,

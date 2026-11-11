@@ -4363,8 +4363,8 @@
   status: verified
   priority: P1
   legacy_evidence: null
-  v2_evidence: src/systems/social_systems/relationships.py (RelationshipService.process_update, new_rejection); src/core/updates.py (SocialUpdate.merge, new_rejection); src/systems/social_systems/appraisal.py (_appraise_recruitment reads the count); src/core/state.py (rejection_count in the canonical dict).
+  v2_evidence: src/core/social_counts.py (add_rejection_counts, the one sum rule); src/systems/social_systems/relationships.py (RelationshipService.process_update calls it); src/core/updates.py (SocialUpdate.merge calls it); src/systems/social_systems/appraisal.py (_appraise_recruitment reads the count); src/core/state.py (rejection_count in the canonical dict).
   proof_type: regression
-  test_path: tests/unit/social/test_rejection_counts_kept.py::test_a_trust_only_update_leaves_the_rejection_counts_intact
+  test_path: tests/unit/social/test_rejection_counts_kept.py::test_a_trust_only_update_leaves_the_rejection_counts_intact; tests/unit/core/test_social_counts.py
   divergence_note: null
   support_boundary: null
