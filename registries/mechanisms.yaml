@@ -192,7 +192,7 @@ mechanisms:
         and cannot be targeted or hit from outside; combat skips it as a target, and its own attack is refused as illegal (ATTACKER_INCAPACITATED) while lodged.
   - id: tactical_decision
     layer: entity
-    summary: "Decides in the moment what a creature does when danger is near: attack, hold its ground, back away or run. In current worlds the choice to attack is rarely taken, so most fighting comes from free swings instead."
+    summary: "Decides in the moment what a creature does when danger is near: attack, hold its ground, back away or run. In current worlds the choice to attack is almost never taken."
     systems: [combat]
     depends_on: []
     state: done
@@ -2270,7 +2270,7 @@ mechanisms:
   # into `regional_sovereignty` as declared regional content rather than given its own row.
   - id: regional_trauma
     layer: region
-    summary: "Regions build up trauma from violent deaths and destruction, and it fades over time. In current worlds trauma stays low, and counting a wounded-then-drained death is not yet in place."
+    summary: "Regions build up trauma from violent deaths and destruction, and it fades over time. In current worlds it stays low, and some deaths, such as a creature wounded in a fight that later dies of hazard drain, are not counted yet."
     systems: [world]
     depends_on: []
     state: done
@@ -3257,7 +3257,7 @@ mechanisms:
         from `mechanism_state_caller_check.py`'s own full-registry run.
   - id: fidelity_drift
     layer: world
-    summary: "Tracks how far a later episode drifts from the world as first established."
+    summary: "Over a long campaign, tracks how far the world has drifted from how it was first set up."
     systems: [world]
     depends_on: [campaigns]
     state: done

@@ -59,6 +59,8 @@ None (hotfix tier).
 ## Assumptions / Open Questions
 - Summaries were written from each entry's state, notes and verified block. A few entries have a thin note (declared_cognition_schema, committed_intentions, strategic_redirection, group_coordination, settlement_capacity_axis, fidelity_drift, team_up, crafting); their summaries are deliberately generic and are listed for rpg-planner's check.
 
+- Known gap (registry state, for rpg-planner, not changed here): five entries are state `done` while their own verdict is `contradicted` or their note records a dormant part: regional_trauma, demographic_cohort_cycle, tactical_decision, trauma, derived_stats. Their summaries follow the verified evidence.
+
 ## Implementation Notes
 Inserted by script (id to summary map), one line per entry, then diffed: 110 insertions, 0 deletions, 0 other changes.
 
