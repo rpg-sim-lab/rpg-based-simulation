@@ -1,0 +1,1 @@
+{"ts":"2026-11-08T17:23:28.924804Z","event":"role_boundary","kind":"edit_outside_owns","session_id":"31443a9c-9c31-4e8a-b5e9-d1bca363c6a4","session_role":"rpg-planner-ubuntu","function":"planner","domain":"rpg","tool":"Write","path":".claude/handover/rpg-planner-ubuntu.md","owner_domains":["agent-working"],"owner_seats":["agent-working-designer"]}
