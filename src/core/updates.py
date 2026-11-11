@@ -368,6 +368,11 @@ class SocialUpdate:
         for k, v in other.combat_loss_delta.items():
             new_combat_loss[k] = new_combat_loss.get(k, 0) + v
 
+        # Two rejections from one offerer in one tick count twice (SOC-280); the other keyed fields stay last-writer-wins.
+        new_rejection = dict(self.rejection_increment)
+        for k, v in other.rejection_increment.items():
+            new_rejection[k] = new_rejection.get(k, 0) + v
+
         return SocialUpdate(
             bond_updates=self.bond_updates + other.bond_updates,
             trust_delta=new_trust,
@@ -382,7 +387,7 @@ class SocialUpdate:
             heroism_delta=self.heroism_delta + other.heroism_delta,
             notoriety_delta=self.notoriety_delta + other.notoriety_delta,
             last_offer_tick_set=other.last_offer_tick_set if other.last_offer_tick_set is not None else self.last_offer_tick_set,
-            rejection_increment={**self.rejection_increment, **other.rejection_increment},
+            rejection_increment=new_rejection,
             nemesis_promotion=self.nemesis_promotion + other.nemesis_promotion,
             place_attachment_delta=new_places,
             regional_reputation_delta=new_regional_rep,

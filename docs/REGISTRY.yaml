@@ -8279,6 +8279,21 @@
   artifact_files: []
   tags: []
 - type: ticket
+  path: agent-working/tickets/inprogress/TCK-20261109-ANY-SOCIAL-UPDATE-WIPES-THE-REJECTION-COUNTS-IT-DOES-NOT-NAME.md
+  ticket_id: TCK-20261109-ANY-SOCIAL-UPDATE-WIPES-THE-REJECTION-COUNTS-IT-DOES-NOT-NAME
+  title: Any social update wipes the rejection counts it does not name, so recruitment's
+    social-fatigue penalty almost never builds up
+  tier: standard
+  ticket_type: bug
+  date: '2026-11-09'
+  related_code_areas:
+  - src/systems/social_systems/relationships.py:133
+  - src/core/updates.py:322-384 (SocialUpdate rejection_increment, merge)
+  - src/systems/social_systems/appraisal.py:125
+  - src/engine/domain/core_actions.py (rejection writers)
+  artifact_files: []
+  tags: []
+- type: ticket
   path: agent-working/tickets/todos/TCK-20261109-A-COMBAT-RETREAT-PROJECT-WALKS-THE-SUBJECT-AGAINST-THE-HELD-FLIGHT-RULE.md
   ticket_id: TCK-20261109-A-COMBAT-RETREAT-PROJECT-WALKS-THE-SUBJECT-AGAINST-THE-HELD-FLIGHT-RULE
   title: A COMBAT_RETREAT project walks its owner to the town centre through the strategic
@@ -8333,21 +8348,6 @@
   - src/engine/building_services.py (service_delta)
   - src/engine/domain/core_actions.py
   - src/core/state.py (BiologicalComponent)
-  artifact_files: []
-  tags: []
-- type: ticket
-  path: agent-working/tickets/todos/TCK-20261109-ANY-SOCIAL-UPDATE-WIPES-THE-REJECTION-COUNTS-IT-DOES-NOT-NAME.md
-  ticket_id: TCK-20261109-ANY-SOCIAL-UPDATE-WIPES-THE-REJECTION-COUNTS-IT-DOES-NOT-NAME
-  title: Any social update wipes the rejection counts it does not name, so recruitment's
-    social-fatigue penalty almost never builds up
-  tier: standard
-  ticket_type: bug
-  date: '2026-11-09'
-  related_code_areas:
-  - src/systems/social_systems/relationships.py:133
-  - src/core/updates.py:322-384 (SocialUpdate rejection_increment, merge)
-  - src/systems/social_systems/appraisal.py:125
-  - src/engine/domain/core_actions.py (rejection writers)
   artifact_files: []
   tags: []
 - type: ticket

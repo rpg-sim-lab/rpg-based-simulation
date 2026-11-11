@@ -108,6 +108,11 @@ class RelationshipService:
         for eid, count in update.combat_loss_delta.items():
             new_combat_loss[eid] = new_combat_loss.get(eid, 0) + count
 
+        # Logic ID: SOC-280 (an update keeps the rejection counts it does not name; counts are lifetime)
+        new_rejection = dict(social.rejection_count)
+        for sid, count in update.rejection_increment.items():
+            new_rejection[sid] = new_rejection.get(sid, 0) + count
+
         return replace(
             social,
             trust_history=new_trust,
@@ -130,7 +135,7 @@ class RelationshipService:
             heroism_score=social.heroism_score + update.heroism_delta,
             notoriety_score=social.notoriety_score + update.notoriety_delta,
             last_offer_tick=update.last_offer_tick_set if update.last_offer_tick_set is not None else social.last_offer_tick,
-            rejection_count={k: social.rejection_count.get(k, 0) + v for k, v in update.rejection_increment.items()}
+            rejection_count=new_rejection
         )
 
     @staticmethod
