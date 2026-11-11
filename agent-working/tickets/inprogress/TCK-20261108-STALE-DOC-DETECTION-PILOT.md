@@ -4,7 +4,7 @@ layer: ai
 authority: P1
 audience: agent
 ticket_id: TCK-20261108-STALE-DOC-DETECTION-PILOT
-phase: open
+phase: inprogress
 date: 2026-11-08
 tags: [ai, documentation, governance]
 ---
@@ -15,7 +15,7 @@ tags: [ai, documentation, governance]
 A read-only stale-doc detection run at a pinned SHA, and an evaluation report the owner uses to scope J3.
 
 ## Status
-OPEN
+INPROGRESS
 
 ## Tier
 standard

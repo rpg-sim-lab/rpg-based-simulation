@@ -4,7 +4,7 @@ layer: ai
 authority: P1
 audience: agent
 ticket_id: TCK-20261108-DOC-EVIDENCE-FIELDS-AND-DRIFT-REPORT
-phase: open
+phase: inprogress
 date: 2026-11-08
 tags: [ai, documentation, governance, frontmatter, agent-monitoring]
 ---
@@ -15,7 +15,7 @@ tags: [ai, documentation, governance, frontmatter, agent-monitoring]
 Behaviour docs can carry evidence and a verification baseline, and an advisory drift report says which ones need re-verifying.
 
 ## Status
-OPEN
+INPROGRESS
 
 ## Tier
 standard
