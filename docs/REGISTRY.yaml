@@ -8064,6 +8064,24 @@
   - delivery
   - process-improvement
 - type: ticket
+  path: agent-working/tickets/done/TCK-20261111-WEBSITE-WIKI-VIEWS-OF-STORED-DATA.md
+  ticket_id: TCK-20261111-WEBSITE-WIKI-VIEWS-OF-STORED-DATA
+  title: The website becomes a wiki for someone watching the simulation, built from
+    the repository's stored data instead of rendering docs/
+  tier: standard
+  ticket_type: feature
+  date: '2026-11-11'
+  related_code_areas:
+  - website/
+  - tests/static/
+  artifact_files:
+  - agent-working/stored_artifacts/TCK-20261111-WEBSITE-WIKI-VIEWS-OF-STORED-DATA/investigation.md
+  - agent-working/stored_artifacts/TCK-20261111-WEBSITE-WIKI-VIEWS-OF-STORED-DATA/plan.md
+  - agent-working/stored_artifacts/TCK-20261111-WEBSITE-WIKI-VIEWS-OF-STORED-DATA/test_plan.md
+  tags:
+  - documentation
+  - onboarding
+- type: ticket
   path: agent-working/tickets/done/TCK-20261110-DELIVERY-COST-REF-MODE-READS-NO-BRANCH-SHARDS.md
   ticket_id: TCK-20261110-DELIVERY-COST-REF-MODE-READS-NO-BRANCH-SHARDS
   title: '`delivery_cost_measurement.py --ref` reads only a week''s canonical `tools.jsonl`,
