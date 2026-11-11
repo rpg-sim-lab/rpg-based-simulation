@@ -1,0 +1,306 @@
+diff --git a/src/engine/combat.py b/src/engine/combat.py
+index 697e3bfb3..6ddd66baf 100644
+--- a/src/engine/combat.py
++++ b/src/engine/combat.py
+@@ -225,7 +225,7 @@ class CombatResolutionSystem:
+         return CombatUpdate(
+             damage_taken=damage,
+             hp_delta=-damage,
+-            attacker_id=attacker.id, hit_tick_set=state.tick,
++            attacker_id=attacker.id, hit_tick_set=state.tick, hit_damage_set=damage,
+             is_opportunity_attack=is_opportunity_attack,
+             alive_set=alive,
+             outcome_kind=outcome,
+@@ -300,7 +300,7 @@ class CombatResolutionSystem:
+         return CombatUpdate(
+             damage_taken=damage,
+             hp_delta=-damage,
+-            attacker_id=attacker.id, hit_tick_set=state.tick,
++            attacker_id=attacker.id, hit_tick_set=state.tick, hit_damage_set=damage,
+             outcome_kind=outcome,
+             alive_set=alive,
+             equipment_upd=defender_equip_upd,
+@@ -401,7 +401,7 @@ class CombatResolutionSystem:
+         return CombatUpdate(
+             damage_taken=total_damage,
+             hp_delta=-total_damage,
+-            attacker_id=valid_attackers[0].id, hit_tick_set=state.tick,
++            attacker_id=valid_attackers[0].id, hit_tick_set=state.tick, hit_damage_set=total_damage,
+             is_opportunity_attack=is_opportunity_attack,
+             alive_set=alive,
+             outcome_kind=outcome,
+@@ -452,7 +452,7 @@ class CombatResolutionSystem:
+                 )
+ 
+                 updates[defender.id] = CombatUpdate(
+-                    attacker_id=attacker.id, hit_tick_set=state.tick,
++                    attacker_id=attacker.id, hit_tick_set=state.tick, hit_damage_set=primary_damage,
+                     damage_taken=primary_damage,
+                     hp_delta=-primary_damage,
+                     alive_set=not is_kill,
+@@ -510,7 +510,7 @@ class CombatResolutionSystem:
+                     )
+ 
+                     updates[other_id] = CombatUpdate(
+-                        attacker_id=attacker.id, hit_tick_set=state.tick,
++                        attacker_id=attacker.id, hit_tick_set=state.tick, hit_damage_set=v_damage,
+                         damage_taken=v_damage,
+                         hp_delta=-v_damage,
+                         alive_set=not is_kill,
+diff --git a/src/engine/movement.py b/src/engine/movement.py
+index 6e58d8d25..4482760d8 100644
+--- a/src/engine/movement.py
++++ b/src/engine/movement.py
+@@ -26,6 +26,30 @@ if TYPE_CHECKING:
+ _UNENTERABLE_TILE_REASONS = (ReasonCode.PATH_NOT_FOUND, ReasonCode.BUILDING_OBSTRUCTION)
+ 
+ 
++def is_evasive_flight(mode: MovementMode, style: int) -> bool:
++    """A retreat by an EVASIVE (style 2) mover is a disengagement the free swing (COMB-009) cannot reach. The one predicate movement and the flight guard share."""
++    return mode == MovementMode.RETREAT and style == 2
++
++
++def live_action_style(entity: "EntityState", state_or_context: Any) -> int:
++    """The action style the entity fights in now: the frozen construction-time field, or, with ENABLE_HABIT_BIAS_ACTION_STYLE ON, the style re-derived
++    from habit-biased bravery (TCK-20260831-HABIT-BIAS-WIRING). Must stay synchronized with the identical re-derivation in tactical.py:evaluate_entity_intent
++    (SUB-381). `state_or_context` is typed Any, so the flag read falls back safely to OFF if feature_flags is absent."""
++    style = entity.combat.action_style
++    flags = getattr(state_or_context, "feature_flags", None) or {}
++    if flags.get("ENABLE_HABIT_BIAS_ACTION_STYLE", "OFF") == "ON":
++        from src.domains.emotion.habit_service import HabitBiasService, HABIT_PATTERN_COMBAT_ENGAGEMENT
++        from src.content_semantics.personality import get_action_style_for_bravery
++        effective_bravery = HabitBiasService.apply_habit_bias(
++            entity.cognition.memory.habit,
++            [HABIT_PATTERN_COMBAT_ENGAGEMENT],
++            entity.identity.personality.bravery,
++        )
++        effective_bravery = max(0.0, min(1.0, effective_bravery))
++        style = get_action_style_for_bravery(effective_bravery)
++    return style
++
++
+ class MovementSystem:
+     """ Authoritative handler for grid-based movement in V2. """
+ 
+@@ -266,25 +290,9 @@ class MovementSystem:
+         
+         # Disengagement Logic
+         skip_oa = False
+-        style = entity.combat.action_style
+-        # TCK-20260831-HABIT-BIAS-WIRING: live re-derivation from habit-biased bravery, flag-
+-        # gated OFF by default (bit-identical to the frozen construction-time field above). Must
+-        # stay synchronized with the identical re-derivation in tactical.py:evaluate_entity_intent
+-        # -- wiring only one creates a flag-ON inconsistency between the two real ActionStyle
+-        # consumers named by SUB-381. state_or_context is typed Any (looser than tactical.py's
+-        # AuthoritativeState), so the flag read falls back safely to OFF if feature_flags is absent.
++        style = live_action_style(entity, state_or_context)
+         flags = getattr(state_or_context, "feature_flags", None) or {}
+-        if flags.get("ENABLE_HABIT_BIAS_ACTION_STYLE", "OFF") == "ON":
+-            from src.domains.emotion.habit_service import HabitBiasService, HABIT_PATTERN_COMBAT_ENGAGEMENT
+-            from src.content_semantics.personality import get_action_style_for_bravery
+-            effective_bravery = HabitBiasService.apply_habit_bias(
+-                entity.cognition.memory.habit,
+-                [HABIT_PATTERN_COMBAT_ENGAGEMENT],
+-                entity.identity.personality.bravery,
+-            )
+-            effective_bravery = max(0.0, min(1.0, effective_bravery))
+-            style = get_action_style_for_bravery(effective_bravery)
+-        if mode == MovementMode.RETREAT and style == 2: # EVASIVE
++        if is_evasive_flight(mode, style):
+              skip_oa = True
+ 
+         # Real, additive tag for a genuine successful escape (real hostile(s) present, would have
+diff --git a/src/engine/tactical.py b/src/engine/tactical.py
+index 0a4c60137..5e5490b11 100644
+--- a/src/engine/tactical.py
++++ b/src/engine/tactical.py
+@@ -28,6 +28,7 @@ from src.engine.appraisal import Relation
+ from src.engine.hostility import relation, source_identity
+ from src.engine.tactical_objective import pursue_objective
+ from src.engine.tactical_avoid import avoid_what_can_eat_me, classify_neighbours
++from src.engine.tactical_flight_guard import FlightSite, flight_weighs_free_swing
+ 
+ if TYPE_CHECKING:
+     from src.core.state import EntityState, AuthoritativeState
+@@ -149,6 +150,23 @@ def _prey_in_sight(entity: "EntityState", hostiles: List["EntityState"]) -> List
+     return [h for h in hostiles if relation(entity, h) is Relation.PREDATION]
+ 
+ 
++def _need_path_first(entity: "EntityState", hostiles: List["EntityState"], tick: int) -> Tuple[bool, List["EntityState"]]:
++    """SURV-07 LAW P: whether the need path runs ahead of everything that reacts to a hostile in sight, and the prey that makes the hunt the need's way.
++
++    A need past its escalation onset gives way only to a hostile ACTING on the subject (`need_yields`). The hunt exemption (designer's ruling on LAW P): with HUNGER pressing and
++    prey in sight, the fight with the prey is the need's way, unless the subject has an active need project whose objective names no living target (that walk stays on the
++    need path). Exempt: the need path does not run first and the target is taken from the prey only. The one place this is computed: the panic freeze and the main order read it."""
++    need_first = bool(hostiles) and entity_need_is_pressing(entity) and not need_yields(entity, hostiles, tick)
++    hunt_prey = _prey_in_sight(entity, hostiles) if need_first and entity_hunger_is_pressing(entity) and not _need_way_is_not_a_hunt(entity) else []
++    return need_first and not hunt_prey, hunt_prey
++
++
++def _panic_yields_to_need(entity: "EntityState", neighbors: List["EntityState"], tick: int) -> bool:
++    """A panic with no destination does not freeze against a pressing need while nothing acts on the subject and no prey is in sight (rpg-designer, scope 2(c)): the same
++    `need_first` the main order computes, over the same tactical hostiles, so the yielded tick takes the need path and never falls through to engagement."""
++    return _need_path_first(entity, classify_neighbours(entity, neighbors, source_identity(entity)).hostiles, tick)[0]
++
++
+ def _suspend_project_for_threat(entity: "EntityState", hostiles: List["EntityState"]) -> Optional[StrategicUpdate]:
+     """If hostiles are present, SUSPEND the entity's current project if it is active (Pillar 5.1 strategic persistence)."""
+     if not (hostiles and entity.strategic.current_project_id):
+@@ -249,22 +267,22 @@ class TacticalDecisionSystem:
+         # A flight with no destination is not flight (designer ruling, V3): a panic that resolves to the subject's own tile is not taken, and the tick
+         # falls through the existing order (in-place survival, then the arrival at a building). A real tactical hostile keeps the old freeze, so the
+         # fall-through never turns a held panic into a fight the subject would not otherwise start.
+-        if emotion.is_fleeing and _panic_holds(entity, threats, state.tick) and (panic_destination is not None or _has_tactical_hostiles(entity, neighbors)):  # no threat in sight, no flight: low HP, dread and grudge feed the panic but never flee alone (divergence 2.114)
++        if emotion.is_fleeing and _panic_holds(entity, threats, state.tick) and (panic_destination is not None or (_has_tactical_hostiles(entity, neighbors) and not _panic_yields_to_need(entity, neighbors, state.tick))):  # no threat in sight, no flight: low HP, dread and grudge feed the panic but never flee alone (divergence 2.114)
+              # PANIC: Move away from the perceived threats, inside the current region
+              # (MOV-01 / LOC-01); hold position when no valid destination exists (MOV-03).
+              retreat_to = _destination_or_hold(entity, panic_destination)
+-             return EntityUpdate(
++             return flight_weighs_free_swing(state, entity, EntityUpdate(
+                  entity_id=entity.id,
+                  navigation=NavigationUpdate(target_set=retreat_to, movement_mode_set=MovementMode.RETREAT),
+                  task=TaskUpdate(
+                      work_kind_set="ENTITY_MOVE",
+                      payload_set={"target_position": retreat_to, "reason": "PANIC_RETREAT"}
+                  )
+-             )
++             ), FlightSite.PANIC_RETREAT)
+ 
+         # Section 8: Mob Leashing (GAP-T08)
+         if (leash_return := leash_return_update(entity)) is not None:
+-            return leash_return
++            return flight_weighs_free_swing(state, entity, leash_return, FlightSite.LEASH_RETURN)
+ 
+         from src.engine.behavior_consumers import get_pressure_resolver
+         from src.world.motivation.pressure_resolver import MotivationPressureSet
+@@ -281,13 +299,8 @@ class TacticalDecisionSystem:
+ 
+         # SURV-07 LAW P (TCK-20261031-AN-ENGAGEMENT-OVERRIDES-A-PRESSING-NEED): a need past its escalation onset gives way only to a hostile ACTING on the subject
+         # (`need_yields`). With hostiles in sight and none acting, the need path runs first: before the presence test below, role obligation, cohesion and target
+-        # selection (so a follower too takes no part in the group's target). Flight keeps AGENCY-07's `present_threat_to`.
+-        need_first = bool(hostiles) and entity_need_is_pressing(entity) and not need_yields(entity, hostiles, state.tick)
+-        # The hunt exemption (designer's ruling on LAW P): with HUNGER pressing and prey in sight, the fight with the prey is the need's way, unless the subject has an
+-        # active need project whose objective names no living target (that walk stays on need_first). Exempt: skip need_first and take the target from the prey only.
+-        hunt_prey = _prey_in_sight(entity, hostiles) if need_first and entity_hunger_is_pressing(entity) and not _need_way_is_not_a_hunt(entity) else []
+-        if hunt_prey:
+-            need_first = False
++        # selection (so a follower too takes no part in the group's target). Flight keeps AGENCY-07's `present_threat_to`. The hunt exemption is inside `_need_path_first`.
++        need_first, hunt_prey = _need_path_first(entity, hostiles, state.tick)
+ 
+         # 4. Strategic Persistence (Pillar 5.1): a need project the subject is walking to is not suspended for a hostile that is not acting on it
+         strat_up = None if (need_first and _serves_a_need(entity)) or (hunt_prey and _hunt_project_names_prey(entity, hunt_prey)) else _suspend_project_for_threat(entity, hostiles)
+@@ -295,7 +308,7 @@ class TacticalDecisionSystem:
+         # Safety pressure (AGENCY-07): a cautious entity retreats from a present threat, never from a hostile merely seen
+         if safety_retreat_warranted(entity, hostiles, entity_pressures.safety_pressure):
+             retreat_to = _destination_or_hold(entity, retreat_destination(state, entity, hostiles))
+-            return EntityUpdate(
++            return flight_weighs_free_swing(state, entity, EntityUpdate(
+                 entity_id=entity.id,
+                 strategic=strat_up,
+                 navigation=NavigationUpdate(target_set=retreat_to, movement_mode_set=MovementMode.RETREAT),
+@@ -303,10 +316,10 @@ class TacticalDecisionSystem:
+                     work_kind_set="ENTITY_MOVE",
+                     payload_set={"target_position": retreat_to, "reason": "SAFETY_PRESSURE_RETREAT"}
+                 )
+-            )
++            ), FlightSite.SAFETY_PRESSURE_RETREAT)
+ 
+         if (avoid_update := avoid_what_can_eat_me(state, entity, hood, strat_up)) is not None:
+-            return avoid_update
++            return flight_weighs_free_swing(state, entity, avoid_update, FlightSite.FLEE_THREAT)
+ 
+         rest_update = in_place_survival_update(state, entity, hostiles)
+         if rest_update is not None:
+@@ -453,7 +466,7 @@ class TacticalDecisionSystem:
+         # Decision 32: beside a hostile it is not engaged with, the subject decides now (keep walking, step away, or fight below).
+         noticed = notice_unengaged_hostile(state, entity, target, hostiles, strat_up)
+         if noticed is not None:
+-            return noticed
++            return flight_weighs_free_swing(state, entity, noticed, FlightSite.AVOID_HOSTILE)
+ 
+         # Tactical Role Logic
+         role = entity.combat.tactical_role
+@@ -504,18 +517,24 @@ class TacticalDecisionSystem:
+                          )
+                      )
+              
+-             # Pure Retreat if HP is very low and engaged
++             # Pure retreat if hp is very low and engaged. Below 15% hp the WOUNDED term of `present_threat_terms` always holds, so every perceived hostile is a present
++             # threat here and the flight stands as before; the pressing-need rows never reach this line (`need_first` returned above, law P). With nowhere to go the
++             # retreat is not taken as a move: no PANIC_RETREAT task, and the tick does not become a fight either.
+              if hp_percent < 0.15:
+-                  # Away from all hostiles, inside the current region; hold when none is valid.
+-                  retreat_pos = _destination_or_hold(entity, retreat_destination(state, entity, hostiles))
+-                  return EntityUpdate(
++                  retreat_pos = retreat_destination(state, entity, hostiles)
++                  if retreat_pos is None:
++                      # Nowhere to go: hold on the subject's own tile in RETREAT mode with no task (so no PANIC_RETREAT). An idle update would leave a stored target in place for the
++                      # movement phase to walk; RETREAT mode on a pinned tile is inert (routing skips position == target). Not HOLD mode: it changes swap eligibility at movement.py.
++                      return EntityUpdate(entity_id=entity.id, strategic=strat_up,
++                                          navigation=NavigationUpdate(target_set=entity.navigation.position, movement_mode_set=MovementMode.RETREAT))
++                  return flight_weighs_free_swing(state, entity, EntityUpdate(
+                       entity_id=entity.id,
+                       navigation=NavigationUpdate(target_set=retreat_pos, movement_mode_set=MovementMode.RETREAT),
+                       task=TaskUpdate(
+                           work_kind_set="ENTITY_MOVE",
+                           payload_set={"target_position": retreat_pos, "reason": "PANIC_RETREAT"}
+                       )
+-                  )
++                  ), FlightSite.LOW_HP_RETREAT)
+ 
+         # 5.2 Bracketing Logic (Task 4.3)
+         if role == "VANGUARD" and group:
+diff --git a/src/systems/strategic_systems/intelligence.py b/src/systems/strategic_systems/intelligence.py
+index 57d406098..74753c7c0 100644
+--- a/src/systems/strategic_systems/intelligence.py
++++ b/src/systems/strategic_systems/intelligence.py
+@@ -345,7 +345,7 @@ class StrategicIntelligenceSystem:
+                     break
+             has_hostiles_or_dead = (has_diff or has_dead)
+             try: object.__setattr__(state, "_has_hostiles_or_dead_cache", has_hostiles_or_dead)
+-            except: pass
++            except (AttributeError, TypeError) as cache_ex: logger.debug(f"[Tick {state.tick}] fused pass: hostiles/dead cache not stored on this state: {cache_ex}")
+ 
+         # Evaluation of routine blockers and concerns must run across candidate entities
+         # Logic ID: PERF-006 (Dirty Entity Tracking for specific sub-phases, but routine pass is global)
+@@ -392,7 +392,7 @@ class StrategicIntelligenceSystem:
+                             if target_pos and entity.navigation.target != target_pos:
+                                 nav_changed = True
+                 if not nav_changed and not proj_resolved:
+-                    if not lodged_stayer and not (curr_proj_id and project and project.status == ProjectStatus.ACTIVE and active_obj and getattr(active_obj, 'target_position', None) is not None):
++                    if not lodged_stayer and not (active_obj and (getattr(active_obj, 'target_position', None) is not None or getattr(active_obj, 'target_entity_id', None) is not None)):  # an ACTIVE project's active objective with a point OR an entity target owns the direction, as on the slow path (~:663); the objective's own status is not checked here (pre-existing, see TCK-20261101-FUSED-STRATEGIC-PASS-RESTRUCTURE)
+                         town_target = nearest_town_tile(state.town_tiles, entity.navigation.position) or state.town_center
+                         if len(pending_inventory.items) > 0 and entity.navigation.position != (0.0, 0.0) and town_target and entity.navigation.target != town_target:
+                             if ent_upd:
+@@ -515,7 +515,7 @@ class StrategicIntelligenceSystem:
+                             dx = entity.navigation.position[0] - coords[0]
+                             dy = entity.navigation.position[1] - coords[1]
+                             if (dx*dx + dy*dy)**0.5 < 0.5: resolved_ids.add(b_id)
+-                    except: pass
++                    except (ValueError, SyntaxError, TypeError) as access_ex: logger.debug(f"[Tick {state.tick}] access blocker {b_id} subject {b.subject!r} is not a coordinate pair: {access_ex}")
+                 elif b.kind == "inventory" and b.subject == "capacity":
+                     if len(pending_inventory.items) < pending_inventory.max_slots:
+                         resolved_ids.add(b_id)
+@@ -618,11 +618,11 @@ class StrategicIntelligenceSystem:
+                 intent_up = StrategicIntelligenceSystem.evaluate_strategic_intent(state, temp_entity, force=True, cadence=cadence)
+                 strat_up = strat_up.merge(intent_up)
+ 
+-            # --- 4. Capacity Enforcement (unconditional, every tick) ---
++            # --- 4. Capacity Enforcement (every slow-path evaluation; a fast-path hit skips this block) ---
+             # Enforces profile limits on leads, concerns, hypotheses, and projects.
+             # Runs after all cognition items are accumulated so final removals are
+             # applied before navigation decisions read from strat_up.
+-            # Logic ID: STRAT-012 (Cognition capacity is enforced unconditionally)
++            # Logic ID: STRAT-006, STRAT-007 (leads and concerns are retained under profile limits); enforce_bandwidth also caps hypotheses and projects, which have no ledger row
+             capacity_up = DetourSuggestionSystem.enforce_bandwidth(entity, state.tick)
+             if not capacity_up.is_noop():
+                 strat_up = strat_up.merge(capacity_up)
+@@ -647,7 +647,7 @@ class StrategicIntelligenceSystem:
+                             has_nav_update = True
+                             existing_nav = ent_upd.navigation or NavigationUpdate()
+                             ent_upd = replace(ent_upd, navigation=replace(existing_nav, target_set=coords), interaction=InteractionUpdate(reset=True))
+-                    except: pass
++                    except (ValueError, AttributeError) as lead_ex: logger.debug(f"[Tick {state.tick}] material lead for {target_mat!r} has a non-coordinate detail {match_lead.detail!r}: {lead_ex}")
+             
+             if not has_nav_update and current_project_id:
+                 project = next((p for p in strat_up.projects_add_or_update if p.id == current_project_id), None) or entity.strategic.projects.get(current_project_id)
