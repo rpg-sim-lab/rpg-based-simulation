@@ -220,6 +220,9 @@ Layer 1 forbids these. Each one moves, keeping today's values at each read point
 
 ## 7. Fit with the distributed-workers experiment
 
+- **Related:** `docs/architecture/distributed_workers_adr.md` (accepted, #861). Its Companion line says a future default mode at scale
+  must fit the next-generation ADR's phase contract, which this spec writes out, not fork it (design §13). This spec does not
+  depend on that ADR.
 - The experiment's seam is the explicit Collection executor (`kernel.py:193-198`). This contract is the Resolution side. They share
   one principle: pure compute over a declared input, with the kernel committing. Neither changes the other.
 - ADR clarification 11 (a lost unit is recomputed from the same inputs; a raised unit is a FAILURE no-op) matches the experiment's
