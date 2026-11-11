@@ -5,8 +5,8 @@ no_frame_pacing are checked). One spy: MovementSystem.resolve_move is wrapped; i
 A "held step" is a returned update for the subject whose navigation.failure_reason is the typed ReasonCode FELT_LETHAL_FREE_SWING (compared by value, so a tree without the code counts 0).
   python held_step_spy.py <world> <seed> <ticks> <out.json> [<plain_cell.json>]
 When <plain_cell.json> (the plain, un-spied cell's result with "final_hash") is given, the run's end hash is compared with it; a mismatch exits 3 and the file must not be used.
-Output JSON: {meta, final_hash, cell_final_hash, match, held_total, held_by_entity{id: [ticks]}, longest_run{entity, ticks, first_tick}, runs_ge_50[{entity, ticks, first_tick}],
-death{id: [tick, cause]} for every person that died (cause as arm_child_flight's _cause), held_rows[first 40: tick, subject, hp, last_attacker_id, last_hit_damage, felt_attacker_engaged]}.
+Output JSON: {meta, final_hash, cell_final_hash, match, held_calls_total (raw), held_ticks_total (distinct ticks), held_by_entity{id: [distinct ticks]}, longest_run{entity, ticks, first_tick}, runs_ge_50[{entity, ticks, first_tick}],
+death{id: [tick, cause, kind]} for every person that died (cause as arm_child_flight's _cause, kind as arm_child's), held_rows[first 40: tick, subject, hp, last_attacker_id, last_hit_damage, felt_attacker_engaged]}.
 PIN STOP (the design's): any entity held for 50 or more consecutive ticks: rows to rpg-designer before any ruling. This script only reports it (runs_ge_50).
 """
 from __future__ import annotations
@@ -82,7 +82,7 @@ def main(argv):
     longest = {"entity": None, "ticks": 0, "first_tick": None}
     ge50 = []
     for eid, ts in held.items():
-        for length, start in runs(sorted(ts)):
+        for length, start in runs(sorted(set(ts))):  # a repeated tick (a second resolve_move in one tick) is one held tick, not a break
             if length > longest["ticks"]:
                 longest = {"entity": eid, "ticks": length, "first_tick": start}
             if length >= 50:
@@ -91,13 +91,13 @@ def main(argv):
     for e in state.entities.values():
         if not e.combat.alive:
             rec = getattr(e.lifecycle, "death_record", None)
-            deaths[str(e.id)] = [None if rec is None else rec.tick, _cause(e)]
+            deaths[str(e.id)] = [None if rec is None else rec.tick, _cause(e), e.kind]
     res = {"meta": {"world": world, "seed": seed, "ticks": ticks, "cwd": os.getcwd()}, "final_hash": final_hash, "cell_final_hash": want, "match": ok,
-           "held_total": sum(len(v) for v in held.values()), "held_by_entity": {str(k): sorted(v) for k, v in held.items()}, "longest_run": longest, "runs_ge_50": ge50,
+           "held_calls_total": sum(len(v) for v in held.values()), "held_ticks_total": sum(len(set(v)) for v in held.values()), "held_by_entity": {str(k): sorted(set(v)) for k, v in held.items()}, "longest_run": longest, "runs_ge_50": ge50,
            "death": deaths, "held_rows": rows}
     Path(out).write_text(json.dumps(res, sort_keys=True, default=str), encoding="utf-8")
     shutil.rmtree(Path("data") / "runs" / run_id, ignore_errors=True)
-    print(("MATCH " if ok else ("NOCELL " if ok is None else "MISMATCH ")) + final_hash[:12] + (f" vs cell {want[:12]}" if want else "") + f" held_total={res['held_total']} longest={longest['ticks']}")
+    print(("MATCH " if ok else ("NOCELL " if ok is None else "MISMATCH ")) + final_hash[:12] + (f" vs cell {want[:12]}" if want else "") + f" held_calls={res['held_calls_total']} held_ticks={res['held_ticks_total']} longest={longest['ticks']}")
     return 3 if ok is False else 0
 
 
