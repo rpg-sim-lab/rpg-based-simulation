@@ -361,6 +361,7 @@ def detect(repo: Repo, extra_changed: Iterable[str] = ()) -> dict:
             by_signal[signal] = by_signal.get(signal, 0) + 1
     return {
         "mode": "detect", "pin": repo.pin, "docs_scanned": len(doc_paths), "excluded": skipped,
+        "live_docs": len(doc_paths) - sum(skipped.values()),
         "quiet_with_clean_baseline": quiet, "flagged": len(flagged), "by_signal": by_signal,
         "by_domain": {d: len(v) for d, v in sorted(by_domain.items())}, "ranked": by_domain,
         "wall_seconds": round(time.monotonic() - started, 1),
@@ -379,7 +380,7 @@ def render_text(report: dict, limit: int = 10) -> str:
             lines.append(f"- {row['state']}: {row['path']}")
             lines.extend(f"    {reason}" for reason in row["reasons"])
         return "\n".join(lines)
-    lines.append(f"scanned {report['docs_scanned']} docs; excluded {report['excluded']}; quiet (clean baseline) "
+    lines.append(f"scanned {report['docs_scanned']} docs, {report['live_docs']} live after exclusions {report['excluded']}; quiet (clean baseline) "
                  f"{report['quiet_with_clean_baseline']}; flagged {report['flagged']} {report['by_signal']}; "
                  f"wall {report['wall_seconds']} s")
     for domain, rows in report["ranked"].items():

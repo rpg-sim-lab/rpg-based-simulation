@@ -77,8 +77,8 @@ def main(argv=None) -> int:
         return 0
     report = doc_drift.detect(repo)
     print(f"pin: {report['pin']}")
-    print(f"scanned {report['docs_scanned']} docs; excluded {report['excluded']}; quiet {report['quiet_with_clean_baseline']}")
-    print(f"flagged {report['flagged']} docs; by signal {report['by_signal']}")
+    print(f"scanned {report['docs_scanned']} docs; excluded {report['excluded']}; live {report['live_docs']}; quiet {report['quiet_with_clean_baseline']}")
+    print(f"flagged {report['flagged']} of {report['live_docs']} live docs; by signal {report['by_signal']}")
     print(f"by domain {report['by_domain']}")
     print(f"wall time {report['wall_seconds']} s")
     picks = sample(report)
