@@ -339,10 +339,10 @@ typecheck-pyrefly-baseline-sync: ## Rewrite codebase/baselines/pyrefly_baseline.
 docs-artifacts: ## Generate stored_artifacts index pages
 	$(PYTHON3) tools/generate_artifact_pages.py
 
-docs-serve: docs-artifacts ## Start Docusaurus dev server (http://localhost:3000)
+docs-serve: ## Start the website wiki dev server (http://localhost:3000); generates World Knowledge first
 	cd website && npm run start
 
-docs-build: docs-artifacts ## Build Docusaurus static site to website/build/
+docs-build: ## Build the website wiki to website/build/; generates World Knowledge first
 	cd website && npm run build
 
 docs-registry: ## Regenerate docs/REGISTRY.yaml from frontmatter

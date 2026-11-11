@@ -333,8 +333,8 @@ make agent-monitoring-close-week WEEK=2026-W39
   checkout with `git rev-parse --git-common-dir` and appends that week's rows that the canonical `tools.jsonl` lacks (full-row
   identity, so a row also in a branch shard or already folded counts once; a torn line is skipped). It is read-only on the main
   checkout: its `main.tools.jsonl` is never truncated, rewritten or staged. The close prints one line with the swept count. The same sweep
-  covers the main checkout's bare `manual_actions.jsonl`, `reset_boundary.jsonl` and `governing_edits.jsonl` for the closed week
-  (`TCK-20261110-WEEK-CLOSE-SWEEPS-MAIN-CHECKOUT-NON-TOOL-SHARDS`), one printed line per kind. Two
+  covers the main checkout's bare `manual_actions.jsonl`, `reset_boundary.jsonl`, `governing_edits.jsonl` and `role_boundary.jsonl` for the closed week
+  (`TCK-20261110-WEEK-CLOSE-SWEEPS-MAIN-CHECKOUT-NON-TOOL-SHARDS`, `TCK-20261111-WEEK-CLOSE-SWEEPS-MAIN-CHECKOUT-ROLE-BOUNDARY`), one printed line per kind. Two
   limits: the other host's main checkout (u24desktop) is a different machine and is not swept, and a week that was already closed
   only gains these rows on a re-close, which is back-fill and is done deliberately, not by this sweep. A close run in the main
   checkout itself folds `main.tools.jsonl` like any other shard. The sweep adds rows, so it improves row coverage; it does not change
@@ -347,6 +347,11 @@ make agent-monitoring-close-week WEEK=2026-W39
   dropped, so the run is never counted twice. It prints one line with the counts and is idempotent. Limits: cost (`cost_proxy_score`,
   `tool_call_count`) is not re-derived; only a finished week is closed, so only then is a duration re-derived; rows that sit only in
   the other host's checkout count only once they are merged.
+
+- **Doc drift report** (`TCK-20261108-DOC-EVIDENCE-FIELDS-AND-DRIFT-REPORT`, owner question Q5). After the fold, a close (without
+  `--data-dir`) prints a short summary of `tools/gate_checks/doc_drift.py` at HEAD of the checkout it runs in, with the full SHA:
+  counts per state and the first docs that need re-verifying. It is report-only: a failure becomes one "skipped" line, the exit status
+  is unchanged, and it writes nothing. The meaning of the states is in `docs/guides/delivery_process.md` ("Docs as the review source").
 
 Code: `tools/agent-monitoring/week_close.py`, `week_close_nudge.py`.
 

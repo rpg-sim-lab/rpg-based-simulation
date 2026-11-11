@@ -69,7 +69,7 @@ def test_retro_nudge_hook_counts_done_runs_across_multiple_week_folders(tmp_path
 
     module = _import_hook_module(monkeypatch, tmp_path, {"session_id": "sess-test"})
 
-    # No agent-working/agent-monitoring/retro/RETRO-*.md exists in this fixture -> _last_dated_retro_mtime()
+    # No agent-working/agent-monitoring/retro/RETRO-*.md exists in this fixture -> latest_retro_week_end_ts()
     # returns 0.0 (threshold already crossed), so every seeded record's start_ts (all in 2026,
     # well after epoch) counts.
     assert module._count_done_since(0.0) == 5, (
