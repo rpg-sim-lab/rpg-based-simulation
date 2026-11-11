@@ -5,3 +5,5 @@
 {"ts":"2026-11-11T04:12:22.006104Z","event":"governing_edit_attempt","seat":"lead-planner","path":"CLAUDE.md","basis":"mention","attempt":true}
 {"ts":"2026-11-11T04:29:36.483900Z","event":"governing_edit_attempt","seat":"lead-planner","path":"CLAUDE.md","basis":"mention","attempt":true}
 {"ts":"2026-11-10T14:52:36.658592Z","event":"governing_edit_attempt","seat":"agent-working-implementer","path":".github/workflows/test.yml","basis":"mention","attempt":true}
+{"ts":"2026-11-11T09:33:21.043817Z","event":"governing_edit_attempt","seat":"agent-working-planner","path":"tools/hooks/post-commit-reindex.sh","basis":"mention","attempt":true}
+{"ts":"2026-11-11T09:33:31.373865Z","event":"governing_edit_attempt","seat":"agent-working-planner","path":"codebase/hooks/install_git_hooks.py","basis":"mention","attempt":true}
