@@ -33,8 +33,9 @@ Written by `lead-planner-u24` on the owner's request, 2026-10-13.
   - tracing at the API layer only, with the engine never instrumented (D4);
   - Trivy report-only until a baseline exists (D3);
   - explicit evidence levels (D7).
-- **The engine stays one process with one writer.** Determinism and replay depend on it. Kubernetes runs it as a single
-  replica; only the API and workers could scale.
+- **The engine stays one writer and a single replica.** Determinism and replay depend on it. Kubernetes runs it as a single
+  replica; only the API and workers could scale. Under the opt-in distributed-workers profile only, the Collection pool
+  may run in a separate `engine-worker` container on the compose-internal network (`distributed_workers_adr.md`, #715 6777076537).
 - **No always-on paid deployment.**
 - **No Postgres, Kafka, OpenSearch, chaos tooling or policy-as-code.** Postgres and Kafka have no fit. The rest either
   duplicate what we have or are too specialised.
