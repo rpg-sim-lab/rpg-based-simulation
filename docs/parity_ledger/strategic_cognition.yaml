@@ -4414,7 +4414,7 @@
   divergence_note: See docs/guidelines/intentional_divergences.md Section 2.72.
   support_boundary: The corpus measure after the change is 0 because the self-targeted
     projects no longer form; termination is exercised only by constructed cases, and
-    the other holder (the recruit) never holds the contract; cooperation stores it on the offerer only, and execute_recruit, the only path that writes it to both sides, has no issuer in play (reworded under TCK-20261111-NO-RECRUITMENT-APPRAISAL-RUNS-IN-ANY-CORPUS-WORLD; divergence 2.205). 195 scorer wins versus
+    the other holder (the recruit) never holds the contract; cooperation stores it on the offerer only (services.py:283-305; phase.py:174-195), and execute_recruit, the only path that writes it to both sides, has no issuer in play (reworded under TCK-20261111-NO-RECRUITMENT-APPRAISAL-RUNS-IN-ANY-CORPUS-WORLD; divergence 2.205). 195 scorer wins versus
     2 materialized projects was not investigated.
 - id: STRAT-277
   text: 'TCK-20261005-REGIONAL-TRAUMA-FED-INTO-PANIC-AS-IF-NORMALISED-MAKES-EVERYONE-FLEE
