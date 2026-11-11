@@ -13,7 +13,9 @@ class FeatureMode(str, Enum):
 # CalamityService.process_world_dynamics (src/world/calamity.py). The code is kept, no gate or threshold changed.
 # Read through state.feature_flags like its ENABLE_REPRODUCTION_MAGICAL_DEMONIC_PATH sibling on the same calamity
 # trigger. DEV-002 default-OFF policy applies. Merged into FeatureFlagManager's defaults below.
-_DEFERRED_FEATURE_FLAGS = {"ENABLE_WORLD_BOSS_SPAWN": "OFF"}
+# ENABLE_ACCESS_AUDIT (TCK-20261109-NEXT-GENERATION-ENGINE-ACCESS-AUDIT, stage 1): the observe-only Resolution access audit, registered here so FeatureFlagManager.set_flag_mode accepts it. OFF by
+# default (DEV-002). ON and a recorder passed in through state.feature_flags["ACCESS_AUDIT_SINK"] makes pipeline.run_phase record each step; it writes nothing into state or the update.
+_DEFERRED_FEATURE_FLAGS = {"ENABLE_WORLD_BOSS_SPAWN": "OFF", "ENABLE_ACCESS_AUDIT": "OFF"}
 
 class FeatureFlagManager:
     """Manages Phase 10 feature rollout modes."""
