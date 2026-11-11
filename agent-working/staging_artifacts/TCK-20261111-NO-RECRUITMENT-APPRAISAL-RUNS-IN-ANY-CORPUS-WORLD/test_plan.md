@@ -20,3 +20,9 @@ Measurement ticket; the "tests" are the spy rows and the hash twins. No repo tes
 - Counts (a)-(d) per world and seed: the spy JSON of each hash-matched cell.
 - Path map OFFERED to end state with file:line: investigation.md.
 - Ruling recorded: rpg-designer, in the ticket.
+
+## Pre-registered reading (designer, 2026-11-11, before any rows)
+- Spy approved at sha256 84482e13212460c4f1427efaa6020f9e566b8cf60ed0e84a4c023e4af68ccd15; 4 PLAIN s42 twins first, each spied cell passes its twin hash (exit 3 = STOP); a crash in the shadow block is a failed cell.
+- (ii) holds only if a_execute_recruit_calls = 0 and b_appraise_contract_recruitment = 0 in all 20 cells plus the code-read citation of action_router.py:63-64 as the only dispatch; any execute_recruit call makes that world MIXED or DEFECT.
+- BY DESIGN WITH A PARITY GAP follow-up is docs and ledger only (SOC-001, SOC-008 to divergent; one wording for the two strategic_cognition rows; ch07 "Current play" note; intentional_divergences entry, class Bounded). Code routing accepts through the appraisal is an owner row.
+- Contract status flips on one id are reported unfiltered (possible copies in two dicts).
