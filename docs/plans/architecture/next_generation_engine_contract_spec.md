@@ -93,7 +93,7 @@ through a versioned change to integers or fixed point, which is Level B.
 | Class | Fields (inventory row) |
 |---|---|
 | key | E1 `entity_id` |
-| **C** | E4 `moved_this_tick` (OR); E10 `attributes` (integer sum; C **only** because the cap is applied once, at apply: `enforce_attribute_caps` in `patches.py:615-640`. A per-merge clamp would move it to O); E16 `reward` (sum) |
+| **C** | E4 `moved_this_tick` (OR); E10 `attributes` (integer sum; C **only** because the cap is applied once, at apply: `AttributePatch.apply` (`src/engine/patches.py:617/632`) calling `rpg_depth.enforce_attribute_caps` (`src/engine/rpg_depth.py:31`). A per-merge clamp would move it to O); E16 `reward` (sum) |
 | **O** | E2 `kind_set`; E3 `new_position`; E5 `readiness_delta` (float); E6 `active`; E7 `interaction`; E8 `resource_transfers` (list order decides reservations and clamps); E9 `identity`; E11 `inventory` (capacity in list order); E12 `strategic` (last occurrence per id wins; `pipeline.py:395-401` depends on it); E13 `biological` (a set masks deltas); E14 `social` (mixed sum and per-key LWW, §9 F2); E15 `quest`; E17 `lifecycle`; E18 `combat` (attacker pair LWW, outcome precedence, the `is_noop` short-circuit, §9 F1); E19 `equipment`; E20 `navigation`; E21 `task` (action_routing replaces it whole); E22 `stamina_update`; E23 `wound_update`; E25 `group_id_set`; E28 `intent_results` (tuple order); E29 `property_updates` (per-key LWW) |
 | **O, split** (§3.3) | E26 `self_model_bundle_set`; E27 `cognition_bundle_set` |
 | transient | E30 `pending_action_intent`: never applied (no patch); it is a delta read by `information_intent_execution`. Ordered, excluded from the state compare |
@@ -233,8 +233,36 @@ on `1fb40ac76`.
 - **A4.** Which later steps read movement's occupancy map and claims through state.
 - **A5.** Whether one JOIN_PARTY contract can be accepted by two entities in a tick (`find_pending_incoming_offer`, `phase.py:130`).
 - **A6.** The lodging bed ordering rule (`lodging.py:177-189`).
+- **What v1 can answer** (rpg-planner, relayed by lead-planner-u24, 2026-11-10; audit branch `rpg-nextgen-access-audit`):
+  - The audit observes writes and hidden tick-start mutations at dispatch. It does not trace reads, because the read-proxy was ruled
+    out (plan §5).
+  - So A1, A2 and A5 can be answered by observation. A3 (does a bundle writer read through?) and A4 (which steps read the occupancy
+    map and claims) are read questions. v1 answers them from source only, class S, labelled "not observed".
+  - Draft 2 decides whether a class S answer is enough to gate §3.3 and §5. If it is not, observed reads need their own proxy
+    ticket, with its own hash proof, scoped with rpg-planner.
+  - Cross-entity writes (§4) come as observed fan-out: entries created for an entity id absent from the input update, and the
+    distinct entity ids written per bucket per tick. The three named cases (JOIN_PARTY, trust/grudge, the witness tier) come as
+    class S notes. Observed actor-vs-target is not in v1 (agreed with rpg-planner, 2026-11-10). Draft 2 scopes a sampled actor trace
+    only if a merge rule's correctness depends on it.
+  - Timelines are fingerprinted by (len, element ids) at every step. That alone misses an in-place change inside an element, and
+    id reuse. About half the elements are mutable pydantic events (`src/observability/events.py:54`), so a sampled content check
+    every 100 ticks is added: each element is compared with its digest from when it was first seen. The sample does not name the
+    step that made a change (option C, agreed with rpg-planner 2026-11-10).
+  - §5 candidate: make the timeline event models `frozen=True`. Their only writer, `entity_timeline.record_to_entity`, only appends.
+    On crowded s42 at audit head f19379c43, 50 samples found 0 in-place edits, and 20 elements replaced rather than edited. The
+    earlier 27 hits were id() reuse. This is evidence, not proof, within the sampler's 100-tick limits.
 - **Draft 2:**
   - asks rpg-planner for an explicit sign-off that §8 is complete enough to cut stage 3 (AC 3 needs it; ubuntu review A-n1);
   - folds in A1 to A6;
   - assigns every step its `StepDecl` (one table over all ~45 `run_phase` calls);
-  - takes stage 0's per-phase costs, for the slice order of stage 4.
+  - takes stage 0's per-phase costs, for the slice order of stage 4;
+  - **checkpoint restore** (lead-planner-u24, 2026-11-10; ticket filed by testing-planner, run after the RPG batch per #715
+    6757579399). `ScenarioCheckpointer.restore` builds its Kernel apart from `scenario_runtime._build_kernel`, and it has already
+    drifted: it drops the governor and the `scenario_event_recorder`, which are telemetry only today, per rpg-planner. Draft 2:
+    - cites `TCK-20261110-A-RUN-RESTORED-FROM-A-CHECKPOINT-EQUALS-THE-UNINTERRUPTED-RUN-TICK-BY-TICK` as a guard that must be green
+      before any stage that changes Kernel construction or the state shape;
+    - requires restore to build through the same builder as a fresh run;
+    - states that typed deltas and cognition sub-field deltas change the checkpoint schema, which needs a `checkpoint_fields`
+      migration and a contract version in the run manifest (ADR item 16);
+  - **the CausalMemory blind spot (F8)**: restore and equivalence compares both rely on the proof digest, which does not hash
+    CausalMemory content. State this wherever equivalence is claimed (§6, §8).
