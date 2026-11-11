@@ -116,3 +116,26 @@ def test_merge_commit_regenerates_the_registry_whatever_the_opt_in(repo, opt_in)
     done = _merge_commit(repo)
     assert "[registry-post-commit]" in done.stdout + done.stderr
     assert _regen_commits(repo) == 1
+
+
+def test_a_failing_opted_in_reindex_does_not_stop_the_merge_registry_regen(repo):
+    # set -e would otherwise exit the hook at the failed reindex, before the always-on registry block. The merge commit must
+    # itself touch docs/ so the reindex block runs (and fails) in the same hook run as the regen.
+    (repo / "tools" / "knowledge_search.py").write_text("import sys\nsys.exit(3)\n")
+    _git(repo, "config", "--bool", "knowledge.reindexOnCommit", "true")
+    _git(repo, "add", "-A")
+    _git(repo, "commit", "-qm", "stub reindex fails")
+    _git(repo, "switch", "-q", "-c", "side")
+    (repo / "f.txt").write_text("side\n")
+    (repo / "docs" / "a.md").write_text("side doc\n")
+    _git(repo, "commit", "-qam", "side change")
+    _git(repo, "switch", "-q", "main")
+    (repo / "f.txt").write_text("main\n")
+    _git(repo, "commit", "-qam", "main change")
+    assert _git(repo, "merge", "side", check=False).returncode != 0
+    (repo / "f.txt").write_text("resolved\n")
+    _git(repo, "add", "f.txt")
+    done = _git(repo, "commit", "--no-edit")
+    out = done.stdout + done.stderr
+    assert "reindex failed (exit 3)" in out
+    assert _regen_commits(repo) == 1

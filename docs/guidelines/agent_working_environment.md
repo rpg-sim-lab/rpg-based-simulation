@@ -232,8 +232,8 @@ automatically (no make target, script, CI step or session hook), and CI stays th
   `docs/REGISTRY.yaml` after a merge commit that left it stale. The incremental knowledge reindex is **opt-in per
   clone**: it runs only after `git config --bool knowledge.reindexOnCommit true` (shared by every worktree of the clone), and
   then only when docs/ or `agent-working/tickets/done/` changed and a knowledge index exists. Without the opt-in, such a
-  commit prints one skip line naming the opt-in and `make knowledge-index-update`; the reindex loads the embedding model and
-  can exhaust memory on a small host (`TCK-20261111-KNOWLEDGE-INDEX-BUILD-MEMORY-BOUNDED`). The check sees the **staged** content: prek stashes unstaged changes while the
+  commit prints one skip line naming the opt-in and `make knowledge-index-update`; the reindex loads the embedding model (about
+  1.4-1.6 GB RSS, uncapped under the hook; `TCK-20261111-KNOWLEDGE-INDEX-BUILD-MEMORY-BOUNDED`). The check sees the **staged** content: prek stashes unstaged changes while the
   hooks run and restores them afterwards.
 - **Install affects every worktree of this clone's host.** `.git/hooks` is the common directory shared by all
   worktrees of this repository, so once anyone installs, the pre-commit hook runs on every commit in every
