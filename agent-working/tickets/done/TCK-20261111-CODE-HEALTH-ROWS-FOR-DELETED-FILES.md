@@ -70,7 +70,7 @@ The ratchet runs with `check_files=False` and reports these rows as "gone", whic
 Built the list from the file on the branch base (5c6990e51): the rows whose `file` does not exist. 57 rows, 13 files, matching the ticket. Deleted each with one `python3 -m codebase.health delete <file> <tool> <rule> [--symbol S]` call. No `tighten`, no ceiling change; the fused_strategic_pass row was not touched.
 
 ## Test Summary
-`codebase.health validate` 0 problems; `check` passes; diff is 57 deletions, 0 additions, every other row byte-identical; `tests/codebase/` run. Gates run last on the committed tree.
+`codebase.health validate` 0 problems; `check` passes; diff is 57 deletions, 0 additions, every other row byte-identical; `tests/codebase/` 519 passed, run before the closing commit; later changes are ticket, REGISTRY and monitoring only. Gates run last on the committed tree.
 
 ## Files Changed
 codebase/baselines/code_health_exceptions.jsonl (-57 rows)
