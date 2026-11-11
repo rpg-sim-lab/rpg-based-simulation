@@ -8194,6 +8194,37 @@
   - documentation
   - reference
 - type: ticket
+  path: agent-working/tickets/todos/TCK-20261111-KNOWLEDGE-INDEX-BUILD-MEMORY-BOUNDED.md
+  ticket_id: TCK-20261111-KNOWLEDGE-INDEX-BUILD-MEMORY-BOUNDED
+  title: 'The knowledge-index build tests get the address space they need: the resource
+    budget lowers only the soft limit, and the build tests are marked large'
+  tier: standard
+  ticket_type: bug
+  date: '2026-11-11'
+  related_code_areas:
+  - tools/knowledge_search.py, tests/tools/test_knowledge_search*.py, test_knowledge_index_staleness*.py
+  artifact_files:
+  - agent-working/stored_artifacts/TCK-20261111-KNOWLEDGE-INDEX-BUILD-MEMORY-BOUNDED/investigation.md
+  - agent-working/stored_artifacts/TCK-20261111-KNOWLEDGE-INDEX-BUILD-MEMORY-BOUNDED/plan.md
+  - agent-working/stored_artifacts/TCK-20261111-KNOWLEDGE-INDEX-BUILD-MEMORY-BOUNDED/test_plan.md
+  tags:
+  - delivery
+- type: ticket
+  path: agent-working/tickets/todos/TCK-20261111-POST-COMMIT-REINDEX-OPT-IN.md
+  ticket_id: TCK-20261111-POST-COMMIT-REINDEX-OPT-IN
+  title: The post-commit hook regenerates the registry by default and reindexes knowledge
+    search only when a clone opts in
+  tier: hotfix
+  ticket_type: bug
+  date: '2026-11-11'
+  related_code_areas:
+  - tools/hooks/post-commit-reindex.sh (unowned; agent-working takes it here)
+  - install-hooks
+  - codebase/hooks/install_git_hooks.py (read only)
+  artifact_files: []
+  tags:
+  - delivery
+- type: ticket
   path: agent-working/tickets/done/TCK-20261110-DELIVERY-COST-REF-MODE-READS-NO-BRANCH-SHARDS.md
   ticket_id: TCK-20261110-DELIVERY-COST-REF-MODE-READS-NO-BRANCH-SHARDS
   title: '`delivery_cost_measurement.py --ref` reads only a week''s canonical `tools.jsonl`,
