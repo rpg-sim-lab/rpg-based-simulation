@@ -11,12 +11,14 @@ tags: [architecture, engine, determinism, planning]
 The spec for `TCK-20261109-NEXT-GENERATION-ENGINE-CONTRACT-SPEC`, child 4 of `TCK-20261109-EPIC-NEXT-GENERATION-ENGINE`. Written by
 architecture-planner-u24, 2026-11-09.
 
-- **Status: DRAFT 1.** The owner dispatched it now (#715 6743047506). The ADR it implements is
+- **Status: DRAFT 2**, 2026-11-11. The owner dispatched it (#715 6743047506). The ADR it implements is
   `docs/architecture/next_generation_engine_adr.md` (accepted, #715 6742854335).
-- **Inputs it does not have yet:**
-  - child 2's access-audit report, which confirms or corrects §3 and §5 at runtime;
-  - stage 0's re-measure.
-  Everything marked **[S]** below is static only, and §10 lists what the audit must settle.
+- **Draft 2 adds child 2's access-audit report** (`next_generation_engine_access_audit_report.md`, merged as #863, main
+  `5c6990e51`). It folds the report into §3.4, §5, §8 and §10, and gives every step a starting declaration in
+  `next_generation_engine_step_declarations.md`.
+- **Still missing: stage 0's re-measure.** The slice order for stage 4 waits on it (§10).
+- **Labels:** **[S]** marks a static reading only. **[O]** marks something the audit observed on the two gate worlds (6 cells,
+  5000 ticks each). An [O] that nothing was seen means only that the detector saw nothing; report, "What the detector cannot see".
 - **Evidence:** `next_generation_engine_merge_inventory.md`, a field-by-field static read of `main` `1fb40ac76`. Rows are cited as
   **E#** (EntityUpdate field) and **S#** (StateUpdate field) from its §1 and §2.
 - **No code, no runs, no Level B change.** Where today's behaviour looks wrong, §9 hands it to its owner as a finding. The contract
@@ -52,8 +54,8 @@ StepDecl(
 )
 ```
 
-The access audit (child 2) checks `reads_state`, `reads_deltas` and `writes` against what the step does. The `writes` check is
-runtime. Reads are static in v1 (audit plan §5).
+The access audit (child 2) checked `writes` at runtime. Its reads are a static, entry-only scan (audit plan §5). Each of the 43
+steps' starting values is in `next_generation_engine_step_declarations.md`. §3.4 says how a stage turns one into a final `StepDecl`.
 
 ### 1.2 The delta
 
@@ -120,15 +122,53 @@ through a versioned change to integers or fixed point, which is Level B.
   them in commit-key order onto the tick-start bundle.
 - **Level A holds only if every writer reads through.** If one writer starts from tick-start state instead of the running bundle, a
   whole replace drops earlier writers' changes today, and a sub-field merge would keep them. That is a Level B change.
-- **The audit must show, per writer, that it reads through** (§10, A3). Until it does, E26, E27 and S51 stay whole-object O, and the
-  split is not done.
 - `self_model_bundle_set` (E26) and `information_providers_update` (S51) get the same rule.
+- **Decision (draft 2): the split is not part of v1. E26, E27 and S51 stay whole-object O.**
+  - The audit answers A3 from source only (class S). That is not enough to gate a change whose failure mode is silently keeping
+    changes that are dropped today.
+  - Three of the inventory's nine E27 writers are flag-OFF on the gate worlds and were never exercised: memory_update,
+    habit_bias_action_style and role_model_selection. A fourth, quest_rewards, was exercised but never seen writing the bundle.
+    For E26, self_model is flag-OFF too.
+  - Five E27 writers were seen writing it [O]: combat_engagement, action_routing, movement_routing, near_death_hardening and
+    lifecycle. All five are in the inventory. The last four are missing from the audit's own declarations (†), and the
+    attribution caveat applies (§3.4).
+  - Nothing in stage 3 needs the split: `fused_strategic_pass` writes no bundle (§8).
+  - **To reopen it:** a stage that needs the split cuts a ticket with rpg-planner for an observed-read proxy. That ticket carries
+    its own hash proof and flag-ON cells for the unexercised writers. It is not filed now.
+
+### 3.4 From the audit's declarations to a stage's StepDecl
+
+What the audit showed [O]: **17 of the 35 exercised steps wrote buckets their declaration does not list.** 22 declared at least
+one bucket that was never written in 30000 ticks. The heaviest gaps are action_routing (12 undeclared buckets) and
+resource_transactions (16). The audit's declarations came from coarse sources: the phase graph's output domains, the feasibility
+review's table, or the step's name. So most gaps are thin declarations, not steps writing outside their remit. The data cannot tell
+the two apart.
+
+Rules for every stage that converts a step:
+1. **`writes` starts as observed ∪ declared**, the step's row in `next_generation_engine_step_declarations.md`.
+2. **Each † bucket is settled before it is declared.** Is it a real write, or a re-copy or compaction of the input (the report's
+   attribution caveat)? One way: rerun that step's audit with an input-identity check per bucket. A re-copy is not declared as a
+   write, but the step must still not change it.
+3. **A flag-OFF step is not converted.** The 8 steps behind OFF flags keep their serial position and whole-update access until a
+   flag-ON audit cell exists for them. That cell is part of their own stage, not of v1.
+4. **A ° bucket stays declared** if the source shows a writer. Never seen in 30000 ticks is not the same as never written; it may
+   just not have happened on these two worlds. The declaration-coverage test (§6) catches an undeclared write, not an unused
+   declaration.
+5. **Reads stay class S.** The audit's read scan covers the entry function only. A stage lists its step's reads from its own
+   transitive reading, and the undeclared-read guard (§1, layer 3) is what enforces them.
 
 ## 4. Cross-entity writes and contention
 
+What the audit showed [O]: cross-entity work comes from a proxy, not a per-actor trace (report, "Cross-entity proxies"). The proxy
+counts entries created for an id absent from the input update. It cannot tell a unit creating **its own** first entry from a unit
+writing **another** entity's entry. The heaviest creators are cooperation (21564 ticks, up to 16 entries in a tick), world_dynamics
+(21894, 14), movement_routing (14399, 20) and combat_engagement (12938, 9). Every rule below stays [S] until a stage settles its
+own step's targets.
+
+
 | Point | Today | Contract rule (Level A) |
 |---|---|---|
-| JOIN_PARTY acceptance (`cooperation/phase.py:174-196`) | acceptors walk `state.entities` order; each promotes the offerer's contract from tick-start state; duplicates collapse at apply, last entry per contract id wins (`patches.py:459-467`) | the declared unit order is `state_entities`; the cross-entity write goes to the offerer's E12 under O; **contention key** = contract id; winner = the last in commit-key order, as today. Whether one contract can be accepted twice is open (§10, A5) |
+| JOIN_PARTY acceptance (`cooperation/phase.py:174-196`) | acceptors walk `state.entities` order; each promotes the offerer's contract from tick-start state; duplicates collapse at apply, last entry per contract id wins (`patches.py:459-467`) | the declared unit order is `state_entities`; the cross-entity write goes to the offerer's E12 under O; **contention key** = contract id; winner = the last in commit-key order, as today. Whether one contract can be accepted twice is still open after the audit (§10, A5). Cooperation's stage settles it with a contention scenario test before converting the step |
 | trust and grudge sums (`cooperation/phase.py:252-265`) | float additions across groups | O on E14, in commit-key order |
 | combat witness tier | several fights folded into one witness's model in `entity_updates` insertion order | O; the unit order is the fight order today |
 | economy reservations (`economy.py:49-57`) | lowest entity id wins; a second pass runs inside lifecycle with fresh reservations | `unit_order = ascending_id`; contention key = node, item or corpse id; the second pass is its own step (ordinal of `_resolve_death_transfers`) |
@@ -140,18 +180,21 @@ through a versioned change to integers or fixed point, which is Level B.
 
 ## 5. State hygiene: writes that move off tick-start state
 
-Layer 1 forbids these. Each one moves, keeping today's values at each read point.
+Layer 1 forbids these. Each one moves, keeping today's values at each read point. Observed tick counts are summed over the audit's
+6 cells, out of 30000 per step (report, "Hidden mutations of tick-start state").
 
-| Write (inventory §3) | Moves to | Note |
-|---|---|---|
-| cooperation `entity.timeline.append` (`phase.py:38/47/57/116`), with the `< 150` gates reading it back (`:110`, `:158`) | a delta (timeline events on the entity's update); the gate reads the step's own pending events plus the tick-start length | the deque is carried by reference into the next tick (`apply.py:789-793`), so this is durable history outside the update; SHADOW cannot undo it |
-| movement `_occupancy_map_cache` and `transient_claims` (`movement.py:203-204`, `:294-295`) | a step-owned store, exposed to later steps through their declared `reads_deltas` | later readers (`legality.py:121`, occupancy, lodging) must declare it; per call site this is **[S, open]** (§10, A4) |
-| `occupancy_snapshot` (`pipeline.py:65`) | kernel-owned per-tick store | written in the prologue, so the kernel owns it naturally |
-| `movement_cache` invalidation (`pipeline.py:331`), `route_plans` (`route_search.py:149-180`) | kernel-owned stores with their own lifecycle, carried across ticks by the kernel | both are carried forward today (`apply.py:544-545`); they are caches, so the rule is "pure: same inputs give the same plan", proven by the audit |
-| `_has_hostiles_or_dead_cache` (`intelligence.py:347`) | a per-tick derived value computed once by the strategic step's plan stage (§8) | |
-| lazy memo caches (spatial query, world index, semantic index, region resolution, view, environment) | kernel-owned per-tick caches | benign only if pure; the audit lists any that are not |
-| world_dynamics and evolution mutating the **incoming update** in place (`world_dynamics.py:128-274`, `evolution.py:133`) | copy-on-write: a step never mutates its input | breaks any rollback or diff that relies on the input staying unchanged |
-| process globals (registries, content catalog, terrain cache, observability config) | loaded once per process from a declared path, fingerprinted (ADR clarification 8) | |
+| Write (inventory §3) | Audit [O] | Moves to | Note |
+|---|---|---|---|
+| cooperation `entity.timeline.append` (`phase.py:38/47/57/116`), with the `< 150` gates reading it back (`:110`, `:158`) | seen, 3195 ticks (after the detector was fixed to see appends to a full deque) | a delta (timeline events on the entity's update); the gate reads the step's own pending events plus the tick-start length | the deque is carried by reference into the next tick (`apply.py:789-793`), so this is durable history outside the update; SHADOW cannot undo it |
+| timeline elements edited in place | 0 edits in 300 samples (sampled every 100 ticks; 860 elements replaced, not edited) | **candidate:** make the timeline event models `frozen=True`. Their only `entity.timeline` writers append (`entity_timeline.py:77`, cooperation) | evidence, not proof, within the sampler's limits. A hygiene change for its own ticket with rpg-planner; not filed here |
+| movement `transient_claims` and `_occupancy_map_cache` (`movement.py:203-204`, `:294-295`) | claims seen on 30000 ticks (movement_routing); map seen on 24403 (movement_routing) and 29994 (position_swaps) | a step-owned store, exposed to later steps through their declared `reads_deltas` | **real state outside the update, not a cache.** Readers (`legality.py:121`, occupancy, lodging) stay **[S, open]** (§10, A4). Movement's stage **removes the state attributes** instead of leaving them, so an undeclared reader fails loudly rather than reading a stale value |
+| `route_plans` (`route_search.py:149-180`) | seen, 23822 ticks (movement_routing) | kernel-owned store with its own lifecycle, carried across ticks by the kernel | **real state, not a cache**, carried forward today (`apply.py:544-545`). The rule is "pure: same inputs give the same plan", proven in movement's stage by the equivalence compare |
+| `occupancy_snapshot` (`pipeline.py:65`), `movement_cache` invalidation (`pipeline.py:331`) | not seen in any step: both are written outside `run_phase` | kernel-owned stores | written in the prologue or between steps, so the kernel owns them naturally |
+| `_has_hostiles_or_dead_cache` (`intelligence.py:326-347`) | **not seen** (0 ticks), on the watch list | **no move needed at Level A.** It is set at state construction (`state.py:1490`); strategic writes it only when it is None, which does not happen on tick-start state; the clear at `actions.py:347` is on the per-actor sliding state, another object | draft 1 listed it as a write; the audit's reading and observation agree it is not one. §8's plan stage may still compute it as a derived value, for clarity only |
+| lazy memo caches: `_corpse_map_cache`, `_ground_item_map_cache`, `_node_map_cache`, `_region_index_cache`, `_region_list_cache`, `_spatial_grid_cache`, `_building_map_cache`, `_building_region_map_cache`, `_readonly_entities_cache`, `world_indexes` | seen, filled on first read by whichever step reads first (up to 28055 ticks) | kernel-owned per-tick caches | benign only if pure. Which step fills a cache depends on step order, so each must give the same value whichever step fills it. That is a per-cache Level A test |
+| index hit/miss counters `_index_hits`, `_index_misses` | Tier 2 hits: combat_engagement (30000 and 2337 ticks), strategic_intelligence (14204) | kernel-owned cache statistics, class T | counters only; nothing suggests decision state. Promoted to the watch list for any later audit run |
+| world_dynamics and evolution mutating the **incoming update** in place (`world_dynamics.py:128,181,219-221,272-274`, `evolution.py:133`) | seen: evolution on eu:combat, eu:identity, eu:property_updates; world_dynamics on su:world_updates. **A lower bound**: an equal-length edit inside a bucket is not seen | copy-on-write: a step never mutates its input | proven per stage by its own test (§6), not by the audit's list |
+| process globals (`_terrain_cache`, `runtime_content_source`, the two `common_knowledge_seed` catalogs) | no change seen; the list is from a source search and is not exhaustive | loaded once per process from a declared path, fingerprinted (ADR clarification 8) | **registries held on the kernel were not checked by the audit at all**, and those on state got only the identity-and-length check. The fingerprint must cover kernel-held registries too |
 
 ## 6. How each rule is proven (Level A)
 
@@ -160,9 +203,15 @@ Layer 1 forbids these. Each one moves, keeping today's values at each read point
   - O and F: the serial executor's equivalence test.
   - K and T: none.
   - L: a declaration-coverage test.
+- **Per converted step:**
+  - a copy-on-write test: deep-compare the input update before and after compute; any change fails. The audit's in-place list is a
+    lower bound, so it does not replace this test;
+  - the declaration-coverage test, run through the audit recorder (`ENABLE_ACCESS_AUDIT`, hash-neutral) on the stage's worlds: an
+    observed write outside `writes` fails.
 - **Per stage PR**, ADR clarification 14:
   - a field-by-field state compare, which is primary. It treats S38 as a multiset, excludes T fields and E30, and compares
-    `CausalMemory` entries by content, because the digest sees only their count (`cognition.py:252-256`);
+    `CausalMemory` entries by content, because the digest sees only their count (`cognition.py:252-256`). **A hash match alone
+    is never claimed as equivalence** while F8 stands: it says nothing about CausalMemory content;
   - the final hash under the current proof scheme (`PROOF_DIGEST_SCHEME`);
   - the `TICK_END` trail;
   - the existing gate and paired evidence.
@@ -192,17 +241,28 @@ COMBAT-RETREAT P2).
    - `state.town_tiles` and `state.town_center`.
    It writes only its own entry: E20 `navigation`, E7 `interaction` (reset), E12 `strategic`, E9 `identity`, E29
    `property_updates`, and T `metric_counters`. **No cross-entity write** [S, spot-checked].
+   - **Audit [O]:** observed writes are eu:interaction, eu:navigation, eu:property_updates and eu:strategic. These match this list.
+     The audit's own declaration lacked interaction and property_updates (†); this spec already had them. eu:identity was never
+     seen in 30000 ticks (°), and stays declared because the source writes it. eu:task, in the audit's declaration, is not in this
+     list and was never seen; it is not declared.
+   - **Cross-entity proxy [O]:** entries were created for absent ids on 1011 ticks (up to 4 in a tick). The proxy cannot tell a
+     candidate's own first entry from another entity's, so "no cross-entity write" stays [S]. The stage 3 exit below adds a
+     check.
+   - **Hidden mutations [O]:** only lazy caches (`_region_list_cache`, `_spatial_grid_cache`) and the index hit counter.
+     `_has_hostiles_or_dead_cache` was not mutated (§5).
 
 | Declaration field | Value |
 |---|---|
 | `sliding` | False: no unit reads another unit's delta from this step |
 | merge | O on every written field; commit key = candidate order |
 | contention | none |
-| state hygiene | the flag moves off state (§5) |
+| state hygiene | no write to move (§5). The two lazy caches it fills become kernel-owned per-tick caches |
 | fast path | the off-cadence fast path (`:375-410`) is part of the unit; #852 characterises it branch by branch and lists the known fast-vs-slow disagreements; those tests are reused as Level A evidence |
 
-**Stage 3 exit:** the ADR's evidence standard (§6) on the 3 gate worlds at seed 42 for 300 ticks, under the serial executor, plus
-the audit showing observed writes equal the declaration.
+**Stage 3 exit:**
+- the ADR's evidence standard (§6) on the 3 gate worlds at seed 42 for 300 ticks, under the serial executor;
+- the declaration-coverage and copy-on-write tests (§6);
+- a per-unit target check: every entry a unit writes is keyed by that unit's own entity id.
 
 ## 9. Findings for their owners (not fixed by the contract)
 
@@ -222,47 +282,37 @@ on `1fb40ac76`.
 | F7 | `*_set` fields (world trauma and retaliation, biological) discard deltas from every other step | `apply_plan.py:181-182`, `patches.py:129-130` | rpg-planner (may be intended) | no reader shown; stays with this contract (children 4/5) |
 | F8 | the digest sees only `CausalMemory`'s count and capacity, not its entries (a digest blind spot) | `cognition.py:252-256` | perf (PERF-D5 owner) | with perf-planner (PERF-D5 owner), forwarded via ubuntu |
 
-## 10. Open items for the access audit (child 2) and for draft 2
+## 10. The audit's open items after draft 2
 
-- **A1.** Confirm the §3 writer attribution at runtime, especially the "via" rows: action modules reached through `domain_logic`.
-  Also check whether the `tactical*`, `kernel`, `executor` and `worker_logic` writers are reachable inside refine (inventory, method
-  and limits).
-- **A2.** Every §5 hidden mutation: observed, with the step, field and tick count. Check also whether
-  `observability/entity_timeline.py:77` appends inside refine.
-- **A3.** For each `cognition_bundle_set` and `self_model_bundle_set` writer: does it read through? This gates §3.3.
-- **A4.** Which later steps read movement's occupancy map and claims through state.
-- **A5.** Whether one JOIN_PARTY contract can be accepted by two entities in a tick (`find_pending_incoming_offer`, `phase.py:130`).
-- **A6.** The lodging bed ordering rule (`lodging.py:177-189`).
-- **What v1 can answer** (rpg-planner, relayed by lead-planner-u24, 2026-11-10; audit branch `rpg-nextgen-access-audit`):
-  - The audit observes writes and hidden tick-start mutations at dispatch. It does not trace reads, because the read-proxy was ruled
-    out (plan §5).
-  - So A1, A2 and A5 can be answered by observation. A3 (does a bundle writer read through?) and A4 (which steps read the occupancy
-    map and claims) are read questions. v1 answers them from source only, class S, labelled "not observed".
-  - Draft 2 decides whether a class S answer is enough to gate §3.3 and §5. If it is not, observed reads need their own proxy
-    ticket, with its own hash proof, scoped with rpg-planner.
-  - Cross-entity writes (§4) come as observed fan-out: entries created for an entity id absent from the input update, and the
-    distinct entity ids written per bucket per tick. The three named cases (JOIN_PARTY, trust/grudge, the witness tier) come as
-    class S notes. Observed actor-vs-target is not in v1 (agreed with rpg-planner, 2026-11-10). Draft 2 scopes a sampled actor trace
-    only if a merge rule's correctness depends on it.
-  - Timelines are fingerprinted by (len, element ids) at every step. That alone misses an in-place change inside an element, and
-    id reuse. About half the elements are mutable pydantic events (`src/observability/events.py:54`), so a sampled content check
-    every 100 ticks is added: each element is compared with its digest from when it was first seen. The sample does not name the
-    step that made a change (option C, agreed with rpg-planner 2026-11-10).
-  - §5 candidate: make the timeline event models `frozen=True`. Their only writer, `entity_timeline.record_to_entity`, only appends.
-    On crowded s42 at audit head f19379c43, 50 samples found 0 in-place edits, and 20 elements replaced rather than edited. The
-    earlier 27 hits were id() reuse. This is evidence, not proof, within the sampler's 100-tick limits.
-- **Draft 2:**
-  - asks rpg-planner for an explicit sign-off that §8 is complete enough to cut stage 3 (AC 3 needs it; ubuntu review A-n1);
-  - folds in A1 to A6;
-  - assigns every step its `StepDecl` (one table over all ~45 `run_phase` calls);
-  - takes stage 0's per-phase costs, for the slice order of stage 4;
-  - **checkpoint restore** (lead-planner-u24, 2026-11-10; ticket filed by testing-planner, run after the RPG batch per #715
-    6757579399). `ScenarioCheckpointer.restore` builds its Kernel apart from `scenario_runtime._build_kernel`, and it has already
-    drifted: it drops the governor and the `scenario_event_recorder`, which are telemetry only today, per rpg-planner. Draft 2:
-    - cites `TCK-20261110-A-RUN-RESTORED-FROM-A-CHECKPOINT-EQUALS-THE-UNINTERRUPTED-RUN-TICK-BY-TICK` as a guard that must be green
-      before any stage that changes Kernel construction or the state shape;
-    - requires restore to build through the same builder as a fresh run;
-    - states that typed deltas and cognition sub-field deltas change the checkpoint schema, which needs a `checkpoint_fields`
-      migration and a contract version in the run manifest (ADR item 16);
-  - **the CausalMemory blind spot (F8)**: restore and equivalence compares both rely on the proof digest, which does not hash
-    CausalMemory content. State this wherever equivalence is claimed (§6, §8).
+The questions draft 1 put to the audit, with what the report answered. "v1" is the audit as built: it observes writes and hidden
+mutations, and reads only statically (no read proxy, plan §5).
+
+| Item | Question | Status after the report | What settles the rest |
+|---|---|---|---|
+| A1 | §3's writer attribution at runtime, including the "via" rows | **partly answered [O]**: per-step observed writes are in `next_generation_engine_step_declarations.md`. The report does not attribute a write to a module, so the "via" rows and whether the `tactical*`, `kernel`, `executor` and `worker_logic` writers are reached inside refine stay [S] | each stage, for its own step (§3.4, rules 1 and 2) |
+| A2 | every §5 hidden mutation, observed, with step, field and ticks | **answered [O]** (§5), within the detector's limits. `entity_timeline.py:77` appends to `entity.timeline` and is reached from `kernel.py:1027` (report, sampled-check limits). Whether that call is inside refine is not stated there, and is [S, open] | the timeline's own move to a delta (§5) |
+| A3 | does each bundle writer read through? | **class S only**; 3 of the 9 E27 writers, and E26's self_model, unexercised | not needed for v1: the split is deferred (§3.3) |
+| A4 | which later steps read movement's occupancy map and claims | **class S only** | movement's stage removes the state attributes (§5), so an undeclared reader fails loudly |
+| A5 | can one JOIN_PARTY contract be accepted twice in a tick? | **not answered**: the proxy counts created entries, not acceptances | cooperation's stage: a contention scenario test before converting the step (§4) |
+| A6 | the lodging bed ordering rule (`lodging.py:177-189`) | **not covered** by the report | the stage that converts lodging's step |
+| — | the 8 flag-OFF steps | **no evidence**: never exercised (report, "Declared, not exercised") | not converted until a flag-ON audit cell exists, in their own stage (§3.4, rule 3) |
+| — | in-place mutation of the input update | **a lower bound [O]**: evolution, world_dynamics | copy-on-write test per converted step (§6) |
+
+**Debt carried from the audit, not to build on:** the recorder is passed through `state.feature_flags["ACCESS_AUDIT_SINK"]`, and a
+checkpoint would pickle it. The declaration-coverage test (§6) may use the recorder as it is, flag on, in tests only. A kernel-owned
+auditor, as audit plan §3 intended, comes before any stage depends on the recorder outside tests.
+
+## 11. Before draft 3 (and before stage 3 is cut)
+
+- **Stage 0's per-phase costs** (perf-planner) set the slice order for stage 4. Not in yet.
+- **Rpg-planner's sign-off that §8 is complete enough to cut stage 3** (AC 3; ubuntu review A-n1). Asked with this draft.
+- **Checkpoint restore** (lead-planner-u24, 2026-11-10). `ScenarioCheckpointer.restore` builds its Kernel apart from
+  `scenario_runtime._build_kernel`, and it has already drifted: it drops the governor and the `scenario_event_recorder`, which are
+  telemetry only today, per rpg-planner. So:
+  - `TCK-20261110-A-RUN-RESTORED-FROM-A-CHECKPOINT-EQUALS-THE-UNINTERRUPTED-RUN-TICK-BY-TICK` (filed by testing-planner, run after
+    the RPG batch per #715 6757579399) must be green before any stage that changes Kernel construction or the state shape;
+  - restore builds through the same builder as a fresh run;
+  - typed deltas change the checkpoint schema, as the bundle split (§3.3) would if it were reopened. That needs a
+    `checkpoint_fields` migration and a contract version in the run manifest (ADR item 16).
+- **The CausalMemory blind spot (F8)** applies to restore as well as to equivalence: both rely on the proof digest, which does not
+  hash CausalMemory content. §6 already requires the content compare; restore's test needs it too.
