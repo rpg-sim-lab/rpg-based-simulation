@@ -54,8 +54,11 @@ flowchart LR
 
 ## What is deliberately not distributed
 
-- **The engine is one process and one writer.** That is a choice, not a gap: determinism and replay depend on it
-  (`docs/architecture/kernel_concurrency_design_philosophy.md`). Scaling is per run (many seeds in parallel), not per tick.
+- **The engine has one writer.** That is a choice, not a gap: determinism and replay depend on it
+  (`docs/architecture/kernel_concurrency_design_philosophy.md`). Every result is validated, sorted and applied by the kernel alone.
+  **By default the engine is also one process.** One recorded exception exists: the opt-in distributed-workers mode may run the
+  Collection pool in a separate container (`distributed_workers_adr.md`, #715 6777076537), and it must give results identical to
+  the sequential run. Scaling is per run (many seeds in parallel), not per tick.
 - **No message broker beyond Redis Streams.** There is no Kafka or RabbitMQ in the running system, and no relational database: run data is
   analytical and append-only.
 

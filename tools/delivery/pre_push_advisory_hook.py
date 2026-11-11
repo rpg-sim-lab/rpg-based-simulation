@@ -209,7 +209,10 @@ def check_registry_fresh(run_command=default_run_command, base_ref: str = "origi
         diff = run_command(["git", "diff", "--name-only", f"{base_ref}...HEAD"])
         if diff.returncode != 0:
             return []
-        feeds = [p for p in diff.stdout.splitlines() if p.endswith(".md") and p.startswith(_REGISTRY_SOURCE_ROOTS)]
+        # the registry file itself counts too: a branch whose only registry-relevant change is a bad merge of
+        # docs/REGISTRY.yaml (no doc or ticket .md of its own) must still reach the check
+        feeds = [p for p in diff.stdout.splitlines()
+                 if p == "docs/REGISTRY.yaml" or (p.endswith(".md") and p.startswith(_REGISTRY_SOURCE_ROOTS))]
         if not feeds:
             return []
         # default 30 s timeout on purpose: the hook entry sets none, so Claude Code's 60 s covers ALL checks (A-E);
@@ -220,7 +223,7 @@ def check_registry_fresh(run_command=default_run_command, base_ref: str = "origi
     if result.returncode != _REGISTRY_STALE_EXIT:
         return []
     return [
-        "pre-push: this branch changes docs or tickets and docs/REGISTRY.yaml is stale (CI's Registry re-sync gate "
+        "pre-push: this branch changes docs, tickets or docs/REGISTRY.yaml and the registry is stale (CI's Registry re-sync gate "
         "will fail). Run `make docs-registry`, then `git add docs/REGISTRY.yaml` and commit it."
     ]
 
