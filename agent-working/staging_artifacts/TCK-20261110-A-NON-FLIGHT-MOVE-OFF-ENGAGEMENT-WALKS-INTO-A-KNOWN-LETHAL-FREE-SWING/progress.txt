@@ -1,6 +1,0 @@
-DONE flight_c42 rc=0 wall=532s MATCH b6a10dd0318a vs cell b6a10dd0318a
-DONE flight_c43 rc=0 wall=536s MATCH f6ba069ed76c vs cell f6ba069ed76c
-DONE def2_c43 rc=0 wall=547s MATCH a00b0749b8b0 vs cell a00b0749b8b0
-DONE def2_c45 rc=0 wall=561s MATCH 240d7b1e5107 vs cell 240d7b1e5107
-DONE e24_u46 rc=0 wall=457s MATCH e84737238317 vs cell e84737238317
-ALL_DONE

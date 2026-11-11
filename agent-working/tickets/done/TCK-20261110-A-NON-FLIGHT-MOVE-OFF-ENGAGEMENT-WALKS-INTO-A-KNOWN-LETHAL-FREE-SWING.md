@@ -1,10 +1,10 @@
 ---
-status: active
+status: historical
 layer: combat
 authority: P1
 audience: agent
 ticket_id: TCK-20261110-A-NON-FLIGHT-MOVE-OFF-ENGAGEMENT-WALKS-INTO-A-KNOWN-LETHAL-FREE-SWING
-phase: in_progress
+phase: done
 date: 2026-11-10
 tags: []
 ---
@@ -15,7 +15,7 @@ tags: []
 A subject with no flight decision moves off engagement and walks into a free swing it has felt will finish it (the CONFLICT-04 "neither" shape)
 
 ## Status
-INPROGRESS
+DONE
 
 ## Tier
 standard
@@ -85,7 +85,23 @@ Evidence (pinned traces; each hash-matches its cell):
 Scope 1 trace done (read-only, 5 hash-matched runs): see agent-working/staging_artifacts/TCK-20261110-A-NON-FLIGHT-MOVE-OFF-ENGAGEMENT-WALKS-INTO-A-KNOWN-LETHAL-FREE-SWING/investigation.md (writer lines, run table, writer diffs vs 5c6990e51). No fix code until rpg-designer rules.
 
 ## Test Summary
+- New unit rows: `tests/unit/movement/test_felt_lethal_free_swing_step.py` (8 rows: held, reposition held, under-hp taken, not-engaged taken, no felt blow taken, evasive unaffected, held equals the blocked-step shape, cache untouched). New kernel rows: `tests/mechanic_scenarios/test_engaged_subject_does_not_walk_a_stored_target_through_kernel.py` (main plus control).
+- Edited: `test_flight_weighs_free_swing_through_kernel.py`. Its 2.202 control now switches off both guards (the new step guard also holds that flight, which changes the control's premise; rpg-designer approved the edit, and the test file also gains a backstop row, `test_with_only_the_flight_guard_off_the_step_guard_holds_the_flight`). This is a premise change, not a gate pass. Completeness pins in `test_mechanism_registry_completeness_check.py` moved 361→362 and 255→256 from the check's own output.
+- Run so far: the unit directories above, the mypy gate and the code-health check were green. NOT yet run: `tests/architecture` and the full CI set (host held by other lanes); they run before the push.
+- Measurement: `agent-working/stored_artifacts/TCK-20261110-A-NON-FLIGHT-MOVE-OFF-ENGAGEMENT-WALKS-INTO-A-KNOWN-LETHAL-FREE-SWING/measurement.md` (22 runs; three plain-twin hash checks MATCH; no world × cause tripped under rpg-designer's ruling).
 
 ## Files Changed
+- src: `src/engine/felt_swing.py` (new; `felt_lethal_attacker` moved unchanged from the flight guard), `src/engine/movement.py` (held-step check in `resolve_move`, helpers `_held_by_felt_lethal_swing`, `_store_plan`, `_evasive_escape`), `src/engine/tactical_flight_guard.py` (import), `src/core/enums.py` (`FELT_LETHAL_FREE_SWING`).
+- tests: the four files listed under Test Summary.
+- docs: `docs/mechanics/02_combat_laws.md` (§7), `docs/parity_ledger/combat_movement.yaml` (COMB-352), `docs/guidelines/intentional_divergences.md` (2.204 with the Measured figures).
+- tickets: the two TCK-20261111 todo tickets (stored REGROUP oscillation, hold-mode step) and `TCK-20261111-FELT-LETHAL-MEMORY-HAS-NO-RECENCY-WINDOW.md` filed unchanged; widen note on the COMBAT-RETREAT-PROJECT ticket.
 
 ## Completion Summary
+Rule S1 (divergence 2.204): `MovementSystem.resolve_move` now holds a step off engagement when an engaged hostile is the subject's felt-lethal attacker, unless the step is an evasive retreat. The held step is the blocked-step shape with the typed `FELT_LETHAL_FREE_SWING` reason; target, position, stamina and cache are untouched. The Scope 1 trace named the writer (the movement phase walking a stored target, plus one decided BRACKETING step).
+Measured on main 5c6990e51 against fix 824483949 (crowded and urban, s42-46, 5000 ticks): crowded COMBAT 118→125, DEFEAT 26→16, HAZARD 16→17, STARVATION 0→2, all 160→160; urban hash-identical to base. Under rpg-designer's ruling nothing tripped (COMBAT +7 against a bar of 12; STARVATION +2 with 2 of 5 seeds up), so Tier 2 tested no subject.
+Known gap: 1 held-linked death where base survives (untested, below the bar): s45 e11, held t1926, dies COMBAT t1935, base alive at the end; its base death tick was not looked up.
+Known gap: two pins of 50+ ticks beside a non-striking hostile, up to about 70 ticks (s42 e3 71 ticks, survives; s43 e33 65 ticks, dies COMBAT 1261 ticks later), are S1's cost; their hp is not observable (rows past the first 40) and no hp trace was run.
+Known gap: the stop rule changed after the designer reviewed the first two pins.
+Known gap: s45 e5 (held 2117-2150, STARVATION t2161) is recency-ticket evidence, filed as TCK-20261111-FELT-LETHAL-MEMORY-HAS-NO-RECENCY-WINDOW.
+Known gap: `tests/architecture` and the full CI set have not run locally yet.
+Known gap: timing is NOT MEASURED (perf pause, #715 6556861718).

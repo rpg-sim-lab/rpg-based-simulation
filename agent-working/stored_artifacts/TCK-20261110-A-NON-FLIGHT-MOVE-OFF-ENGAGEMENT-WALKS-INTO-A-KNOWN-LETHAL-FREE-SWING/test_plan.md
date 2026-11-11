@@ -1,10 +1,11 @@
 ---
-status: active
+status: historical
 layer: combat
 authority: P2
 audience: agent
 ticket_id: TCK-20261110-A-NON-FLIGHT-MOVE-OFF-ENGAGEMENT-WALKS-INTO-A-KNOWN-LETHAL-FREE-SWING
-phase: test_plan
+phase: done
+artifact_type: test_plan
 date: 2026-11-11
 tags: []
 ---
