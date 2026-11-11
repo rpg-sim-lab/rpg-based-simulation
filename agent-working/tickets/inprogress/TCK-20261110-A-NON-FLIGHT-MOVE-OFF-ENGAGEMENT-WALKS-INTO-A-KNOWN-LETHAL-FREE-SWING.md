@@ -82,7 +82,7 @@ Evidence (pinned traces; each hash-matches its cell):
 - rpg-planner, 2026-11-10, place: after next-gen child 2's cells and A+B. Both are already queued, and this ticket's design lands later anyway. It sits ahead of TCK-20261109-ANY-SOCIAL-UPDATE-WIPES-THE-REJECTION-COUNTS-IT-DOES-NOT-NAME.
 
 ## Implementation Notes
-None yet.
+Scope 1 trace done (read-only, 5 hash-matched runs): see agent-working/staging_artifacts/TCK-20261110-A-NON-FLIGHT-MOVE-OFF-ENGAGEMENT-WALKS-INTO-A-KNOWN-LETHAL-FREE-SWING/investigation.md (writer lines, run table, writer diffs vs 5c6990e51). No fix code until rpg-designer rules.
 
 ## Test Summary
 
