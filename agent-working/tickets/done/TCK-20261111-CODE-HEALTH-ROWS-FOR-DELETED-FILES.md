@@ -1,10 +1,10 @@
 ---
-status: active
+status: historical
 layer: testing
 authority: P1
 audience: agent
 ticket_id: TCK-20261111-CODE-HEALTH-ROWS-FOR-DELETED-FILES
-phase: open
+phase: done
 date: 2026-11-11
 tags: []
 ---
@@ -15,7 +15,7 @@ tags: []
 Delete the 57 code-health exception rows that name 13 deleted source files
 
 ## Status
-OPEN
+DONE
 
 ## Tier
 hotfix
@@ -67,9 +67,13 @@ codebase/baselines/code_health_exceptions.jsonl; codebase/health/registry.py; co
 The ratchet runs with `check_files=False` and reports these rows as "gone", which never fails, so nothing is red today. If the u24 RPG PR with the 437→438 raise lands first, sync to main before the push. Those are separate lines, so no conflict is expected. #860 and #861 are ahead of this in the REGISTRY order. Owner rule #715 6785100551 (a ceiling raise names a paydown `retiring_ticket`) does not apply: this ticket raises nothing.
 
 ## Implementation Notes
+Built the list from the file on the branch base (5c6990e51): the rows whose `file` does not exist. 57 rows, 13 files, matching the ticket. Deleted each with one `python3 -m codebase.health delete <file> <tool> <rule> [--symbol S]` call. No `tighten`, no ceiling change; the fused_strategic_pass row was not touched.
 
 ## Test Summary
+`codebase.health validate` 0 problems; `check` passes; diff is 57 deletions, 0 additions, every other row byte-identical; `tests/codebase/` run. Gates run last on the committed tree.
 
 ## Files Changed
+codebase/baselines/code_health_exceptions.jsonl (-57 rows)
 
 ## Completion Summary
+Deleted the 57 code-health exception rows naming 13 deleted source files. `validate` is now clean.

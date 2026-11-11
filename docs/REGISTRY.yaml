@@ -8012,6 +8012,18 @@
   - content
   last_verified: '2026-10-09'
 - type: ticket
+  path: agent-working/tickets/done/TCK-20261111-CODE-HEALTH-ROWS-FOR-DELETED-FILES.md
+  ticket_id: TCK-20261111-CODE-HEALTH-ROWS-FOR-DELETED-FILES
+  title: Delete the 57 code-health exception rows that name 13 deleted source files
+  tier: hotfix
+  ticket_type: chore
+  date: '2026-11-11'
+  related_code_areas:
+  - codebase/baselines/code_health_exceptions.jsonl; codebase/health/registry.py;
+    codebase/health/ratchet.py; codebase/health/__main__.py
+  artifact_files: []
+  tags: []
+- type: ticket
   path: agent-working/tickets/done/TCK-20261110-DELIVERY-COST-REF-MODE-READS-NO-BRANCH-SHARDS.md
   ticket_id: TCK-20261110-DELIVERY-COST-REF-MODE-READS-NO-BRANCH-SHARDS
   title: '`delivery_cost_measurement.py --ref` reads only a week''s canonical `tools.jsonl`,
