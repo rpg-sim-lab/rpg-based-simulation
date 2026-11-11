@@ -133,3 +133,6 @@ Fix A and the B hygiene ride-along are done. Three disclosures, in plain words:
 The `fused_strategic_pass` complexipy ceiling went 437 to 438 (owner #715 6776776165). The restructure itself stays folded into the next-gen contract after M1 (note D); it is not done here.
 
 The mechanism-registry advisory flagged `goal_hierarchy` and `strategic_intelligence_core` (cited code changed, entries did not); rpg-planner agreed no entry change is needed. The staging artifacts (plan, investigation, test_plan) were written retroactively at close. 2.68 in `docs/guidelines/intentional_divergences.md` gained one line.
+
+Known gap: no measured run shows the fix's effect. All 7 base/fix pairs are byte-identical, so only the tests show it.
+Known gap: the fast-path guard does not check the objective's own status, while the slow path does (`ObjectiveStatus.ACTIVE`); this is left for the RESTRUCTURE ticket (note D).
