@@ -1,10 +1,10 @@
 ---
-status: active
+status: historical
 layer: observability
 authority: P1
 audience: agent
 ticket_id: TCK-20261111-U24-RECLOSE-W45-MAIN-CHECKOUT-LATE-ROWS
-phase: open
+phase: done
 date: 2026-11-11
 tags: [agent-monitoring, data-quality]
 ---
@@ -15,7 +15,7 @@ tags: [agent-monitoring, data-quality]
 Re-close 2026-W45 on host u24desktop so the u24 main checkout's late rows (404 `main.tools.jsonl` rows, 1 `manual_actions.jsonl` row) reach the canonical files
 
 ## Status
-OPEN
+DONE
 
 ## Tier
 hotfix
@@ -77,9 +77,13 @@ re-close, which counts as back-fill, and are never dropped.
 - The lead keeps a backup of the two main-checkout files in its scratchpad until this lands.
 
 ## Implementation Notes
+Dispatched by agent-working-planner-u24; owner go #715 6790740515 (read by me). Precondition met: #868 merged as 3ede20524. Branch agent-working-u24-reclose-w45 off origin/main 3ede20524. No code change. First W45 close swept: tools 404 (0 duplicates dropped), manual_actions 1 (3 dropped), reset_boundary 0 (2 dropped), governing_edits 0 (13 dropped), role_boundary 0 (1 dropped). A second W45 close swept 0 of every kind (404 / 4 / 2 / 13 / 1 duplicates dropped) and changed no file. W44 close: swept 0 of every kind; no main.tools.jsonl for W44 in the main checkout (duplicates dropped: manual_actions 39, reset_boundary 13, governing_edits 2, role_boundary 6). The main checkout's W44 and W45 shard files were hashed before and after and are unchanged.
 
 ## Test Summary
+By full-row identity (json.dumps sort_keys) every row of the main checkout's W45 main.tools.jsonl (404), manual_actions (4), reset_boundary (2), governing_edits (13) and role_boundary (1) is present in the branch's canonical W45 tools / manual_actions / reset_boundary / governing_edits / role_boundary files: 0 missing in each. Second close changed nothing.
 
 ## Files Changed
+agent-working/agent-monitoring/data/2026-W45/tools.jsonl (+404), agent-working/agent-monitoring/data/2026-W45/manual_actions.jsonl (+1); this ticket; working log; docs/REGISTRY.yaml; W46 shards.
 
 ## Completion Summary
+W45 is re-closed on host u24desktop: the u24 main checkout's 404 late tool rows and its 1 late manual_actions row are now in the canonical W45 files. The main checkout's own files are untouched; removing them is the owner's call.
