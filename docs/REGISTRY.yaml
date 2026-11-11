@@ -7560,6 +7560,16 @@
   - platform
   - observability
 - type: doc
+  path: docs/runbooks/records/2026-11-11-compose-image-bumps.md
+  title: Compose image bumps proven on the observability stack (2026-11-11)
+  status: active
+  layer: platform
+  authority: P2
+  audience: agent
+  tags:
+  - platform
+  - observability
+- type: doc
   path: docs/runbooks/redis-down.md
   title: 'Runbook: RedisDown (cause alert)'
   status: active
