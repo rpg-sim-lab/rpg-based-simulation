@@ -4366,5 +4366,5 @@
   v2_evidence: src/core/social_counts.py (add_rejection_counts, the one sum rule); src/systems/social_systems/relationships.py (RelationshipService.process_update calls it); src/core/updates.py (SocialUpdate.merge calls it); src/systems/social_systems/appraisal.py (_appraise_recruitment reads the count); src/core/state.py (rejection_count in the canonical dict).
   proof_type: regression
   test_path: tests/unit/social/test_rejection_counts_kept.py::test_a_trust_only_update_leaves_the_rejection_counts_intact; tests/unit/core/test_social_counts.py
-  divergence_note: null
+  divergence_note: 'The update and merge behaviour is real and unit-tested, but _appraise_recruitment, which reads the count, is not reached by recruitment in play: acceptance runs on cooperation''s minimal accept (services.py find_pending_incoming_offer -> phase.py:190 accept_contract, D-09), and execute_recruit, the only caller that appraises a RECRUITMENT contract, has no issuer (action_router.py:63-64). So the recruitment social-fatigue penalty this row''s text describes has no in-play effect today. See docs/guidelines/intentional_divergences.md Section 2.205 and TCK-20261111-NO-RECRUITMENT-APPRAISAL-RUNS-IN-ANY-CORPUS-WORLD.'
   support_boundary: null
