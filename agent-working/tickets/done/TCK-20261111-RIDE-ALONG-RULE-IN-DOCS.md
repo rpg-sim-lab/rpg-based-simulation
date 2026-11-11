@@ -1,10 +1,10 @@
 ---
-status: active
+status: historical
 layer: ai
 authority: P1
 audience: agent
 ticket_id: TCK-20261111-RIDE-ALONG-RULE-IN-DOCS
-phase: open
+phase: done
 date: 2026-11-11
 tags: [delivery]
 ---
@@ -15,7 +15,7 @@ tags: [delivery]
 The ride-along rule is written into CLAUDE.md and the delivery guide's PR Lifecycle
 
 ## Status
-OPEN
+DONE
 
 ## Tier
 hotfix
@@ -81,9 +81,13 @@ Every PR closes at least one completed ticket. Ticket filings, seat-ticket notes
 - The hand-orchestrated closure must record the governing edit as usual (governing_edits hook).
 
 ## Implementation Notes
+Applied from the ticket's two text blocks without reflow. `CLAUDE.md` line 387 is replaced by the one owner-approved line (#715 6793254041; rule #715 6793205403); the diff is one line removed and one added, and the added line is byte-identical to the ticket block (checked by script). `docs/guides/delivery_process.md` "PR Lifecycle": the PR size sentence now reads "Ticket filings and seat-ticket notes" (the paragraph's wrapping kept) and the Ride-along paragraph follows the PR size paragraph. The CLAUDE.md edit was made on the owner approval logged at #715 6793254041, relayed by agent-working-planner; the governing-edit hook recorded the attempt. The ticket text is the verbatim source, so the text is not repeated here.
 
 ## Test Summary
+`grep -rn "evidence records\|seat-ticket notes" tests/` finds nothing, so no test pins the old phrases. The paths-guard and the other light tests pass on the batch (see the batch PR).
 
 ## Files Changed
+CLAUDE.md (one line), docs/guides/delivery_process.md
 
 ## Completion Summary
+The ride-along rule is written into CLAUDE.md and the delivery guide's PR Lifecycle, and "evidence records" is dropped from the ride-along list in both.

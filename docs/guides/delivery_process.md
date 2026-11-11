@@ -369,10 +369,12 @@ The "Semgrep OSS" and code-health code-scanning check runs are advisory: their f
 The steps above cover diagnosing a failure; this covers the surrounding push→PR→merge→sync cadence itself, since it isn't a `Workflow` and has no other home.
 
 **PR size (owner rule, 2026-11-07).** Every PR delivers complete work and closes at least one completed ticket. Ticket
-filings, evidence records and seat-ticket notes ride in the next implementation PR on that track, never in a PR of their
+filings and seat-ticket notes ride in the next implementation PR on that track, never in a PR of their
 own. The reason is to cut CI and check effort. Exceptions, and only these: Dependabot PRs, and the handover-transit export (step 2a). Week-close and
 retro batches are not exceptions: they get a ticket of their own, or ride in the next agent-working implementation PR.
 `pr_render.py` keeps its ticketless path for the two exceptions and warns on stderr when it is used; nothing blocks.
+
+**Ride-along (owner rule, 2026-11-11, #715 6793205403).** Small no-code changes ride in the next PR on their track instead of a PR of their own: doc wording, monitoring week close-outs and re-closes, and glossary, registry or summary text. Each still closes its own ticket. A PR stands alone only when it changes `src/` behaviour, carries evidence (a measurement or proof run the PR is for), unblocks a seat that is waiting on it, or is the only open PR on its track. Why: every merge costs a full CI run, an owner merge, and a REGISTRY resync for every other open PR.
 
 **Weigh the fix (owner rule, 2026-11-07, widened the same day; issue #715 comments 6697776913 and 6698958617).** Before spending time on any fix, in any domain, weigh whether it is worth it, and prefer the
 simpler fix when it is enough. Some fixes cannot be avoided (determinism, conservation, a hard rule the owner set), and those
