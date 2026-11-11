@@ -227,42 +227,70 @@ Layer 1 forbids these. Each one moves, keeping today's values at each read point
 
 ## 8. The prototype slice: `fused_strategic_pass`
 
-`run_phase("strategic_intelligence", …)` at `pipeline.py:393`, implemented in
-`src/systems/strategic_systems/intelligence.py`. Stage 3 also has to wait for that file to leave the hands-off list (the
-COMBAT-RETREAT P2).
+`run_phase("strategic_intelligence", …)` at `pipeline.py:394` (main `5c6990e51`), implemented in
+`src/systems/strategic_systems/intelligence.py`. Line numbers below are at `5c6990e51`; #862 edited the file just before it.
+
+**Entry condition, still current:** the file must leave the hands-off list first. It is held for
+`TCK-20261109-A-COMBAT-RETREAT-PROJECT-WALKS-THE-SUBJECT-AGAINST-THE-HELD-FLIGHT-RULE` (P2), which is still in
+`agent-working/tickets/todos/` at `5c6990e51`. Rpg-planner owns the list and says when it clears.
 
 **Two stages inside the step:**
 1. **Plan (unit = world).** It reads tick-start state: every entity's `combat.alive` and faction, for the hostiles-or-dead flag
-   (`:336-347`). It also reads `update.dirty_set`, `update.current_policy_set` (the budget) and the cadence. It produces the
-   candidate list (`StrategicWorkQueue.build`, `:353-358`) and the flag, both as per-tick derived values, not on state.
+   (`:326-347`). It also reads `update.dirty_set`, `update.current_policy_set` (the budget) and the cadence. It produces the
+   candidate list (`StrategicWorkQueue.build`) and the flag, both as per-tick derived values, not on state.
 2. **Units (unit = entity, `unit_order = candidate_list`).** Each candidate reads:
    - its own tick-start entity;
    - its own earlier deltas: E11 `inventory` (to compute pending inventory), E12 `strategic`, and the existing entry;
-   - `state.town_tiles` and `state.town_center`.
-   It writes only its own entry: E20 `navigation`, E7 `interaction` (reset), E12 `strategic`, E9 `identity`, E29
-   `property_updates`, and T `metric_counters`. **No cross-entity write** [S, spot-checked].
+   - `state.town_tiles` and `state.town_center`;
+   - **other entities' tick-start state**, through `SimulationDomainLogic.get_neighbor_view(state, entity, radius=10.0)` (`:447`)
+     and `radius=3.0` (`:595`, `:917`, for salience);
+   - **whole tick-start state**, through `evaluate_strategic_intent(state, temp_entity, …)` (`:618`),
+     `RoutineService.evaluate_anchored_behavior(entity, state)` (`:589`, `:913`) and `ConcernIntakeSystem.evaluate_salience(…, state)`
+     (`:596`, `:918`);
+   - the lazy caches those calls fill (`_spatial_grid_cache`, `_region_list_cache`; §5).
+   **This list is not complete.** Reads stay class S (§3.4, rule 5), and the callees above read further. What the contract needs
+   is narrower, and it holds: **every read is of tick-start state or of the unit's own earlier deltas, never of another unit's
+   delta from this step** [S, rpg-planner checked against `5c6990e51`]. The stage 3 exit checks it at runtime.
+
+   It writes only its own entry: E20 `navigation`, E7 `interaction` (reset), E12 `strategic`, E9 `identity` (the craft-target
+   clear), E29 `property_updates`, and T `metric_counters`. **No cross-entity write** [S, spot-checked].
    - **Audit [O]:** observed writes are eu:interaction, eu:navigation, eu:property_updates and eu:strategic. These match this list.
      The audit's own declaration lacked interaction and property_updates (†); this spec already had them. eu:identity was never
      seen in 30000 ticks (°), and stays declared because the source writes it. eu:task, in the audit's declaration, is not in this
-     list and was never seen; it is not declared.
+     list and was never seen; it is not declared (rpg-planner agrees the declaration was wrong).
    - **Cross-entity proxy [O]:** entries were created for absent ids on 1011 ticks (up to 4 in a tick). The proxy cannot tell a
-     candidate's own first entry from another entity's, so "no cross-entity write" stays [S]. The stage 3 exit below adds a
-     check.
+     candidate's own first entry from another entity's, so "no cross-entity write" stays [S]. The stage 3 exit adds a check.
    - **Hidden mutations [O]:** only lazy caches (`_region_list_cache`, `_spatial_grid_cache`) and the index hit counter.
      `_has_hostiles_or_dead_cache` was not mutated (§5).
 
 | Declaration field | Value |
 |---|---|
-| `sliding` | False: no unit reads another unit's delta from this step |
+| `sliding` | **False.** Units read other entities' tick-start state, but no unit reads another unit's delta from this step |
 | merge | O on every written field; commit key = candidate order |
 | contention | none |
 | state hygiene | no write to move (§5). The two lazy caches it fills become kernel-owned per-tick caches |
-| fast path | the off-cadence fast path (`:375-410`) is part of the unit; #852 characterises it branch by branch and lists the known fast-vs-slow disagreements; those tests are reused as Level A evidence |
+| fast path | the off-cadence fast path (`:375-410`) is part of the unit. #852 characterises it branch by branch; those tests are reused as Level A evidence |
+
+**Fast-vs-slow disagreements that Level A reproduces and does not fix.** Each is today's behaviour; fixing it changes results and
+belongs to its own ticket:
+- **#852 row 6, `earlier_phase_target_set`**, still marked after #862.
+- **Objective-status leniency.** The fast-path guard (`:395`) does not check `active_obj.status`, while the slow path (`:657`)
+  requires `ObjectiveStatus.ACTIVE` (#862 disclosure 2; recorded on `TCK-20261101-FUSED-STRATEGIC-PASS-RESTRUCTURE`).
+- **Overwrite inconsistency** (`TCK-20261101-CLEAR-TARGET-IS-NEVER-APPLIED`, scope note). When the unit has no entry, the fast path
+  builds a new `EntityUpdate`. When it has one, it `replace`s it. The two branches drop different fields. **This bears directly on
+  how the unit's delta is formed under O**: the stage must reproduce both branches exactly, and its field compare must cover an
+  entity with and without an earlier entry.
 
 **Stage 3 exit:**
-- the ADR's evidence standard (§6) on the 3 gate worlds at seed 42 for 300 ticks, under the serial executor;
+- **primary:** the ADR's evidence standard (§6), the field-by-field compare, on the 3 gate worlds at seed 42 for 300 ticks, under
+  the serial executor;
+- **final-hash equality under the serial executor on the pinned 5000-tick set** that base cells already exist for:
+  crowded_frontier s42-46, urban_political s44, frontier_living_world s45 (runner `PYTHONHASHSEED=0`, `72320cac`). Rare branches
+  need the length: #862's defect changed no outcome in 7 × 5000-tick cells. Rpg-planner accepts these cells as RPG evidence. A
+  hash match here is supporting evidence only (§6, F8);
 - the declaration-coverage and copy-on-write tests (§6);
-- a per-unit target check: every entry a unit writes is keyed by that unit's own entity id.
+- a per-unit target check: every entry a unit writes is keyed by that unit's own entity id;
+- a per-unit read check: no unit reads the running update for another entity id.
 
 ## 9. Findings for their owners (not fixed by the contract)
 
@@ -305,7 +333,7 @@ auditor, as audit plan §3 intended, comes before any stage depends on the recor
 ## 11. Before draft 3 (and before stage 3 is cut)
 
 - **Stage 0's per-phase costs** (perf-planner) set the slice order for stage 4. Not in yet.
-- **Rpg-planner's sign-off that §8 is complete enough to cut stage 3** (AC 3; ubuntu review A-n1). Asked with this draft.
+- **Rpg-planner's sign-off that §8 is complete enough to cut stage 3** (AC 3; ubuntu review A-n1). Draft 2 got four amendments (A-D, 2026-11-11), now in §8; the sign-off is on that hunk.
 - **Checkpoint restore** (lead-planner-u24, 2026-11-10). `ScenarioCheckpointer.restore` builds its Kernel apart from
   `scenario_runtime._build_kernel`, and it has already drifted: it drops the governor and the `scenario_event_recorder`, which are
   telemetry only today, per rpg-planner. So:
