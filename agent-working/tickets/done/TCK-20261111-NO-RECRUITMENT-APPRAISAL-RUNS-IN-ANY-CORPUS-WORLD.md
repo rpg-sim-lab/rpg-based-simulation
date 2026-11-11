@@ -1,10 +1,10 @@
 ---
-status: active
+status: historical
 layer: systems
 authority: P1
 audience: agent
 ticket_id: TCK-20261111-NO-RECRUITMENT-APPRAISAL-RUNS-IN-ANY-CORPUS-WORLD
-phase: open
+phase: done
 date: 2026-11-11
 tags: []
 ---
@@ -15,7 +15,7 @@ tags: []
 No recruitment appraisal runs in any measured corpus world. Find out whether recruitment is dead by defect or goes around the appraisal by design.
 
 ## Status
-OPEN
+DONE
 
 ## Tier
 standard
@@ -96,9 +96,15 @@ This is not a duplicate. The 2026-09-12 investigation asked whether groups form 
 - Host: one heavy process. Queued after lane B's P2 runs.
 
 ## Implementation Notes
+Investigation only; no `src/`, test, Bible, parity or divergence file changed. The spy (recruit_spy.py, sha256 84482e13212460c4f1427efaa6020f9e566b8cf60ed0e84a4c023e4af68ccd15) was approved by rpg-designer unchanged. 4 plain s42 twins, then 20 spied cells, on main 70cb24253, 5000 ticks, one process at a time. The path map and rows are in `agent-working/stored_artifacts/TCK-20261111-NO-RECRUITMENT-APPRAISAL-RUNS-IN-ANY-CORPUS-WORLD/investigation.md`; per-cell counts and hashes in its `evidence/cells.json`.
 
 ## Test Summary
+No code changed, so no test suite was run. Measurement: 24 cells, all rc=0; the spied s42 hash equals the plain twin in all four worlds. Totals over 20 spied cells: 27,735 contracts created (cooperation site only), 14,366 accepts, 2,485 groups (all via cooperation_accept), 0 `execute_recruit` calls, 0 RECRUITMENT appraisals outside the shadow calls; shadow 8,098 / 401 / 5,866 / 1.
 
 ## Files Changed
+agent-working/stored_artifacts/TCK-20261111-NO-RECRUITMENT-APPRAISAL-RUNS-IN-ANY-CORPUS-WORLD/ (investigation.md, plan.md, test_plan.md, evidence/: recruit_spy.py, run_all.sh, cells.json, table.md, summary_cells.txt, summary_flips.txt); this ticket; monitoring shards; docs/REGISTRY.yaml.
 
 ## Completion Summary
+Ruled by rpg-designer, 2026-11-11, session message (not #715): BY DESIGN WITH A PARITY GAP. Recruitment goes around the appraisal: all 14,366 accepts in 20 cells came through the cooperation JOIN_PARTY path (`accept_pending_offer` services.py:95-106, no trust check, D-09); `execute_recruit` (the only RECRUITMENT appraise caller, core_actions.py:175, dispatched only at action_router.py:63-64) was called 0 times and nothing issues RECRUIT. Test (iii) is an inference from the 09-12 investigation.md :45-51 (no line literally says "appraisal unreached"). Test (iv) fails: ch07 :59-67 and SOC-001/SOC-008 (verified, P0) state trust gating as verified law.
+
+Open item: owner row pending (lead-planner-u24); docs/ledger fix held until then. Also found: 14,366 accepts formed only 2,485 groups; `calculate_recruitment_cost` (appraisal.py:508) has no caller. Known gap: producers of the TEAM_UP, TRADE, TRAIN, PROPOSE_MARRIAGE and JOIN_CLAN action strings were not traced. Timing not measured.
