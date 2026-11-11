@@ -82,7 +82,7 @@ The guarantee is narrower than "every run is deterministic". It is guaranteed fo
 
 ## Documentation Site
 
-`website/` holds a Docusaurus 3 site with one **Docs** section (`/docs/`): the Mechanics Bible, engine contracts, architecture and guidelines, grouped by layer, with full-text search and a status badge per page. It is built locally and is not published at the moment: the GitHub Pages deploy runs only by hand and Pages is not enabled (`TCK-20260916-REENABLE-DOCS-PAGES-PUBLISHING`). Tickets, stored artifacts and archived docs stay in the repository but are not part of the site. Details: [docs/README.md](docs/README.md).
+`website/` holds a Docusaurus 3 wiki for someone watching the simulation run, with three spaces: **World Knowledge** (generated at build time from the world rules, the mechanism registry and the content catalog), **Technical** and **Control Guide** (both filled later). It does not render `docs/`. It is built locally and is not published at the moment: the GitHub Pages deploy runs only by hand and Pages is not enabled (`TCK-20260916-REENABLE-DOCS-PAGES-PUBLISHING`). Details: [docs/README.md](docs/README.md).
 
 ```bash
 make docs-serve      # Start site at http://localhost:3000
