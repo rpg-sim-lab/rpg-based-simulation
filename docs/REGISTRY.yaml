@@ -8036,6 +8036,19 @@
   - content
   last_verified: '2026-10-09'
 - type: ticket
+  path: agent-working/tickets/done/TCK-20261111-CLAUDE-MD-REGISTRY-DRIVER-WORDING.md
+  ticket_id: TCK-20261111-CLAUDE-MD-REGISTRY-DRIVER-WORDING
+  title: CLAUDE.md says the registry merge driver regenerates after rebase and cherry-pick;
+    it does so only after a plain `git merge`
+  tier: hotfix
+  ticket_type: repair
+  date: '2026-11-11'
+  related_code_areas:
+  - tools/hooks/registry_post_merge_regen.sh (read only)
+  artifact_files: []
+  tags:
+  - claude-md
+- type: ticket
   path: agent-working/tickets/done/TCK-20261111-EACH-MECHANISM-GETS-A-PLAIN-LANGUAGE-SUMMARY.md
   ticket_id: TCK-20261111-EACH-MECHANISM-GETS-A-PLAIN-LANGUAGE-SUMMARY
   title: Each mechanism in the registry gets a plain-language summary
@@ -8101,6 +8114,21 @@
   - registries/world_glossary.jsonl
   artifact_files: []
   tags: []
+- type: ticket
+  path: agent-working/tickets/done/TCK-20261111-U24-RECLOSE-W45-MAIN-CHECKOUT-LATE-ROWS.md
+  ticket_id: TCK-20261111-U24-RECLOSE-W45-MAIN-CHECKOUT-LATE-ROWS
+  title: Re-close 2026-W45 on host u24desktop so the u24 main checkout's late rows
+    (404 `main.tools.jsonl` rows, 1 `manual_actions.jsonl` row) reach the canonical
+    files
+  tier: hotfix
+  ticket_type: chore
+  date: '2026-11-11'
+  related_code_areas:
+  - tools/agent-monitoring/week_close.py (run only, unchanged)
+  artifact_files: []
+  tags:
+  - agent-monitoring
+  - data-quality
 - type: ticket
   path: agent-working/tickets/done/TCK-20261111-WEBSITE-WIKI-VIEWS-OF-STORED-DATA.md
   ticket_id: TCK-20261111-WEBSITE-WIKI-VIEWS-OF-STORED-DATA
