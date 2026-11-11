@@ -10,7 +10,7 @@ from pathlib import Path
 
 import pytest
 
-_REPO = Path(__file__).resolve().parents[2]
+_REPO = Path(__file__).resolve().parents[3]
 _GB = 1024 ** 3
 _CHILD = r"""
 import json, resource, signal, sys
@@ -19,6 +19,8 @@ if len(sys.argv) > 2:
     hard = int(sys.argv[2])
     resource.setrlimit(resource.RLIMIT_AS, (hard, hard))
 from tests import conftest as c
+
+start_hard = resource.getrlimit(resource.RLIMIT_AS)[1]
 
 class Cfg:
     def __init__(self, b): self.b = b
@@ -34,7 +36,7 @@ for step in sys.argv[1].split(","):
     c.pytest_runtest_setup(Item(budget, large=bool(mark)))
     seen.append(list(resource.getrlimit(resource.RLIMIT_AS)))
     signal.alarm(0)
-print(json.dumps(seen))
+print(json.dumps({"start_hard": start_hard, "seen": seen}))
 """
 
 
@@ -44,23 +46,28 @@ def _sequence(steps, inherited_hard=None):
     return json.loads(out.strip().splitlines()[-1])
 
 
+def _seen(steps, inherited_hard=None):
+    return _sequence(steps, inherited_hard)["seen"]
+
+
 @pytest.mark.parametrize("first", ["small", "medium"])
 def test_a_large_test_after_a_smaller_budget_sees_8_gb(first):
-    seen = _sequence([first, "medium+large"])
+    seen = _seen([first, "medium+large"])
     assert seen[1][0] == 8 * _GB
 
 
 def test_a_small_test_after_a_large_one_sees_1_gb():
-    assert _sequence(["medium+large", "small"])[1][0] == 1 * _GB
+    assert _seen(["medium+large", "small"])[1][0] == 1 * _GB
 
 
 def test_the_hard_limit_is_unchanged_after_both():
     for steps in (["medium", "medium+large"], ["medium+large", "small"]):
-        seen = _sequence(steps)
-        assert seen[0][1] == seen[1][1] == -1  # unlimited here: never lowered to the budget
+        result = _sequence(steps)
+        # Compared with the hard limit the child started with, so a runner that already has a finite hard limit still passes.
+        assert [row[1] for row in result["seen"]] == [result["start_hard"]] * 2
 
 
 def test_an_inherited_finite_hard_limit_clamps_the_soft_limit_and_is_kept():
     hard = 6 * _GB
-    seen = _sequence(["medium+large"], inherited_hard=hard)
+    seen = _seen(["medium+large"], inherited_hard=hard)
     assert seen[0] == [hard, hard]  # min(8 GB, 6 GB) soft, the inherited hard unchanged
