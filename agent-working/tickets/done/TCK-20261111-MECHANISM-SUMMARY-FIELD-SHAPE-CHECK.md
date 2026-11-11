@@ -1,10 +1,10 @@
 ---
-status: active
+status: historical
 layer: ai
 authority: P1
 audience: agent
 ticket_id: TCK-20261111-MECHANISM-SUMMARY-FIELD-SHAPE-CHECK
-phase: open
+phase: done
 date: 2026-11-11
 tags: [documentation, reference]
 ---
@@ -15,7 +15,7 @@ tags: [documentation, reference]
 The mechanism registry validator checks the shape of the optional per-mechanism `summary`
 
 ## Status
-OPEN
+DONE
 
 ## Tier
 hotfix
@@ -63,9 +63,15 @@ passes, and so do `summary: 42` and `summary: ""`. The wiki would render those a
 - Lands after or independently of the rpg content ticket; neither blocks the other.
 
 ## Implementation Notes
+`validate()` in `tools/mechanism_registry/registry.py` gains one block before the `implemented_by` check: when a mechanism has the key `summary`, it must be a string, not blank, and a single line (no `
+` or `` inside the stripped text). Each failure is one error naming the mechanism id. Absent stays valid and no key allowlist was added. `docs/plans/mechanism_registry_initiative.md` lists no entry fields, so it needed no change.
+AC3 checked on main df3527c69 (after #866): all 110 mechanisms carry a `summary` and none produces a new error.
 
 ## Test Summary
+`tests/tools/test_mechanism_summary_shape.py`: 14 passed (absent; valid; non-string x5; empty x3; multi-line x3; the committed `mechanisms.yaml` has no summary error). The fixture is a bare one-mechanism file, so the tests compare against the baseline errors it already trips (orphan systems) instead of asserting an empty list.
 
 ## Files Changed
+tools/mechanism_registry/registry.py, tests/tools/test_mechanism_summary_shape.py
 
 ## Completion Summary
+An optional `summary` is now shape-checked: non-empty, single-line string, one error per bad mechanism. The 110 committed summaries validate.

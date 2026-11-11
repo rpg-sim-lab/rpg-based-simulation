@@ -1,10 +1,10 @@
 ---
-status: active
+status: historical
 layer: ai
 authority: P1
 audience: agent
 ticket_id: TCK-20261111-WORLD-TERM-GLOSSARY-REGISTRY
-phase: open
+phase: done
 date: 2026-11-11
 tags: [documentation, reference]
 ---
@@ -15,7 +15,7 @@ tags: [documentation, reference]
 A world-term glossary registry the website wiki can render: term, plain description, source pointer
 
 ## Status
-OPEN
+DONE
 
 ## Tier
 standard
@@ -98,9 +98,14 @@ in the existing one, because:
   that guide's owner and is not decided here.
 
 ## Implementation Notes
+New `tools/world_glossary_registry.py` (`add`, `list`, `load_registry()`, `source_problem()`), modelled on `tools/glossary_registry.py`, with the fixed row fields `term`, `description`, `source`, `added`. `load_registry()` refuses a duplicate term. `add` refuses a blank term or description, a `source` outside `docs/mechanics/`, `docs/engine/` and `docs/core/` (the open question is decided: `docs/architecture/` is not allowed, so the wiki points at the law), a path with `..`, a missing file, and an already-registered term; each refusal writes nothing. The module docstring says why the registry stays apart from the dashboard glossary. `registries/world_glossary.jsonl` is committed empty (no seed rows: the descriptions are rpg's).
+Route: `registries/world_glossary.jsonl` is added to the rpg domain's `owns` in `registries/session_roles.yaml` (rpg-planner), and `tools/world_glossary_registry.py` to agent-working's; the role cards are regenerated. A first attempt that also added the file to agent-working's `owns_not` and `routes` pushed three u24 cards over their token budget (458, 461 and 458 against 456); the rpg `owns` entry already makes `route` name rpg-planner, so the extra entries were dropped.
 
 ## Test Summary
+`tests/tools/test_world_glossary_registry.py`: 13 passed (add, load, case-sensitive terms, missing and empty file, duplicate file, re-add refused, four bad sources, blank inputs, CLI exit codes, corpus check that every committed row's source resolves, passing on the empty file). `tests/tools/test_session*.py`: 933 passed. `python3 -m tools.sessions.validate`: OK, 0 findings. `route registries/world_glossary.jsonl` names rpg-planner.
 
 ## Files Changed
+tools/world_glossary_registry.py, registries/world_glossary.jsonl, registries/session_roles.yaml, .claude/agents/session-*.md (12 regenerated cards), tests/tools/test_world_glossary_registry.py
 
 ## Completion Summary
+The world-term glossary registry and its tool exist, empty, with a route. Nothing in the dashboard glossary, its module or `src/api/` changed. The terms themselves are for rpg to seed.

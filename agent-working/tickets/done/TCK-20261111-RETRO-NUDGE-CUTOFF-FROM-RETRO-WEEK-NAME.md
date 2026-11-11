@@ -1,10 +1,10 @@
 ---
-status: active
+status: historical
 layer: ai
 authority: P1
 audience: agent
 ticket_id: TCK-20261111-RETRO-NUDGE-CUTOFF-FROM-RETRO-WEEK-NAME
-phase: open
+phase: done
 date: 2026-11-11
 tags: [agent-monitoring]
 ---
@@ -15,7 +15,7 @@ tags: [agent-monitoring]
 The retro nudge takes its cutoff from the newest RETRO-YYYY-Www week name, not from a file's mtime
 
 ## Status
-OPEN
+DONE
 
 ## Tier
 hotfix
@@ -64,9 +64,13 @@ same commit. Found while reviewing #860.
   toward the next nudge.
 
 ## Implementation Notes
+New `tools/agent-monitoring/retro_cutoff.py::latest_retro_week_end_ts()` replaces `_last_dated_retro_mtime()` in `retro_nudge_hook.py`. It takes the newest `RETRO-YYYY-Www.md` by name and returns 00:00 UTC of the day after that week's Sunday, reusing `week_close.week_end`. `RETRO-ALL.md`, names that do not parse and impossible weeks (W99) are ignored; no dated retro gives 0.0. `docs/guides/agent_monitoring.md` now describes the cutoff by week name instead of mtime. The nudge text and the threshold are unchanged.
 
 ## Test Summary
+`tests/tools/test_retro_cutoff.py`: 5 passed (none; newest week wins; mtimes change nothing; a newer mtime on an older retro does not win; unparsable names ignored). `tests/tools/test_retro_nudge_hook.py`: passes unchanged apart from a comment that named the old helper. Smoke run of the hook with a session id prints the week-close nudge as before.
 
 ## Files Changed
+tools/agent-monitoring/retro_cutoff.py, tools/agent-monitoring/retro_nudge_hook.py, docs/guides/agent_monitoring.md, tests/tools/test_retro_cutoff.py, tests/tools/test_retro_nudge_hook.py
 
 ## Completion Summary
+The retro nudge cutoff no longer moves when git touches a retro file; it follows the newest retro's week name.

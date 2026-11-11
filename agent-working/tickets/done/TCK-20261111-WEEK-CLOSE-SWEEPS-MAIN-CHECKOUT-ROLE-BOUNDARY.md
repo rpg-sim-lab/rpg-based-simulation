@@ -1,10 +1,10 @@
 ---
-status: active
+status: historical
 layer: ai
 authority: P1
 audience: agent
 ticket_id: TCK-20261111-WEEK-CLOSE-SWEEPS-MAIN-CHECKOUT-ROLE-BOUNDARY
-phase: open
+phase: done
 date: 2026-11-11
 tags: [agent-monitoring]
 ---
@@ -15,7 +15,7 @@ tags: [agent-monitoring]
 The week close also sweeps the main checkout's role_boundary.jsonl, and W44/W45 are re-closed to back-fill the rows it missed
 
 ## Status
-OPEN
+DONE
 
 ## Tier
 hotfix
@@ -84,9 +84,14 @@ late rows through a deliberate re-close, which is back-fill. Rows are never drop
   agent-working planners. Either way, the close is idempotent.
 
 ## Implementation Notes
+`role_boundary` joins `MAIN_CHECKOUT_APPEND_ONLY_KINDS` in `tools/agent-monitoring/week_close.py`, so the existing sweep reads it read-only from the main checkout with full-row identity and prints one line for it. README sentence updated.
+Back-fill (deliberate re-close, host ubuntu, run from this worktree so the sweep reads the ubuntu main checkout): `make agent-monitoring-close-week WEEK=2026-W44` swept 1 role_boundary row (2 duplicates dropped), and `WEEK=2026-W45` swept 1 and folded the late `agent-working-docs-review-source.tools.jsonl` shard (35 rows; W45 tools 4323 -> 4358, 0 duplicates). Counts before and after: W44 runs 98, events 868, gate_verdicts 212 and W45 runs 27, events 215, gate_verdicts 50, all unchanged; W44 role_boundary 5 -> 6, W45 0 -> 1. The u24desktop leftovers are not swept from here (different host); the close is idempotent, so a u24 seat's re-close adds only what is still missing.
 
 ## Test Summary
+`tests/tools/test_week_close_main_checkout_sweep.py` and `test_week_close.py`: 31 passed. The existing per-kind parametrized test now also runs for `role_boundary` (swept once, deduped, main file byte-identical, second close changes nothing), plus a test that the kind is in the tuple. AC2 measured: the ubuntu main checkout has 0 W44 and 0 W45 role_boundary rows that canonical lacks.
 
 ## Files Changed
+tools/agent-monitoring/week_close.py, docs/agent-monitoring/README.md, tests/tools/test_week_close_main_checkout_sweep.py, agent-working/agent-monitoring/data/2026-W44/role_boundary.jsonl, agent-working/agent-monitoring/data/2026-W45/{role_boundary,tools}.jsonl (the per-batch W45 shard folded and removed)
 
 ## Completion Summary
+The close now sweeps role_boundary too. W44 and W45 were re-closed as back-fill: 2 role_boundary rows and the late 35-row W45 tools shard landed, with runs, events and gate_verdicts counts unchanged.
