@@ -4516,13 +4516,19 @@
     instead of never. Non-PURSUE moves carrying a target_id and dead or missing targets
     are unchanged. For an objective with target_entity_id the strategic redirection
     writers set no navigation point (they still claim the navigation); the tactical
-    pass resolves the live position.'
+    pass resolves the live position. TCK-20261109-THE-FAST-STRATEGIC-PATH-SENDS-AN-ENTITY-TARGET-PURSUER-HOME-WITH-ITS-ITEMS:
+    the fused strategic pass''s off-cadence fast path honours the same rule: an active
+    objective with a target_entity_id owns the direction, so a loaded entity pursuing
+    it is no longer sent home (REGROUP, interaction reset) on an off-cadence tick.'
   v2_evidence: src/engine/candidate_selector.py (tracked_move_complete, tracked_move_completion_update),
     src/engine/executor.py and src/engine/worker_logic.py (ENTITY_MOVE branches),
-    src/systems/strategic_systems/intelligence.py and redirection.py (entity-typed
-    objective branch).
+    src/systems/strategic_systems/intelligence.py (the slow path's entity-typed objective
+    branch and the fast path's direction guard in fused_strategic_pass) and redirection.py
+    (entity-typed objective branch).
   test_path: tests/unit/engine/test_pursuit_completion.py::TestDispatchers::test_local_executor_ends_a_pursuit_that_reached_range;
-    tests/unit/strategic/test_redirection_entity_objective.py::test_entity_typed_objective_writes_no_navigation_point
+    tests/unit/strategic/test_redirection_entity_objective.py::test_entity_typed_objective_writes_no_navigation_point;
+    tests/unit/strategic/test_pursuit_objective_survives_the_off_cadence_strategic_pass.py;
+    tests/unit/strategic/test_fused_strategic_pass_fast_path_characterisation.py::test_row1_entity_objective_off_cadence_does_not_regroup_home
   status: verified
   priority: P1
   legacy_evidence: null

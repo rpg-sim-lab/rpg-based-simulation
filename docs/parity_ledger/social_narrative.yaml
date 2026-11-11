@@ -2447,7 +2447,7 @@
     safe immutable defaults for backward compatibility with existing callers.
 
     '
-  status: verified
+  status: divergent
   priority: P1
   legacy_evidence: null
   v2_evidence: 'src/core/state.py GroupRecord class body (formation_tick..dissolution_tick
@@ -2457,7 +2457,13 @@
     '
   proof_type: parity
   test_path: tests/unit/social/test_group_lifecycle_fields.py
-  divergence_note: null
+  divergence_note: 'formation_tick is declared and serialized, but no group-creation path writes
+    it (groups.py recruit-contract party, military_conflict.py faction squad), so
+    every group carries 0, not its formation tick. The fix is built but parked with
+    hit-wake (#715 6776436829); see TCK-20261107-GROUP-FORMATION-TICK-IS-NEVER-WRITTEN.
+    The other five fields are unaffected.
+
+    '
   support_boundary: null
 - id: SOC-228
   text: 'PartyLifecycleService.check_leadership() evaluates sociability-based leadership
