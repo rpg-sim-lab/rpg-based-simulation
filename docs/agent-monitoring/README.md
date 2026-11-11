@@ -333,8 +333,8 @@ make agent-monitoring-close-week WEEK=2026-W39
   checkout with `git rev-parse --git-common-dir` and appends that week's rows that the canonical `tools.jsonl` lacks (full-row
   identity, so a row also in a branch shard or already folded counts once; a torn line is skipped). It is read-only on the main
   checkout: its `main.tools.jsonl` is never truncated, rewritten or staged. The close prints one line with the swept count. The same sweep
-  covers the main checkout's bare `manual_actions.jsonl`, `reset_boundary.jsonl` and `governing_edits.jsonl` for the closed week
-  (`TCK-20261110-WEEK-CLOSE-SWEEPS-MAIN-CHECKOUT-NON-TOOL-SHARDS`), one printed line per kind. Two
+  covers the main checkout's bare `manual_actions.jsonl`, `reset_boundary.jsonl`, `governing_edits.jsonl` and `role_boundary.jsonl` for the closed week
+  (`TCK-20261110-WEEK-CLOSE-SWEEPS-MAIN-CHECKOUT-NON-TOOL-SHARDS`, `TCK-20261111-WEEK-CLOSE-SWEEPS-MAIN-CHECKOUT-ROLE-BOUNDARY`), one printed line per kind. Two
   limits: the other host's main checkout (u24desktop) is a different machine and is not swept, and a week that was already closed
   only gains these rows on a re-close, which is back-fill and is done deliberately, not by this sweep. A close run in the main
   checkout itself folds `main.tools.jsonl` like any other shard. The sweep adds rows, so it improves row coverage; it does not change

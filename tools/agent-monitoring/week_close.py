@@ -46,7 +46,8 @@ from tools.agent_working_paths import AGENT_MONITORING  # noqa: E402
 
 #: What a week close folds: the three canonical kinds plus the gate-verdict ledger, so a closed week leaves no per-batch shard
 #: of any family that has them (TCK-20261015-WEEK-CLOSE-ALL-SHARD-KINDS-AND-VOID-ROW). `manual_actions.jsonl`,
-#: `role_boundary.jsonl` and `governing_edits.jsonl` are bare per-week files with no per-batch shards, so there is nothing of theirs to fold.
+#: `role_boundary.jsonl` and `governing_edits.jsonl` are bare per-week files with no per-batch shards, so there is nothing of theirs to fold
+#: from branches. A main-checkout session still writes the bare file, which is why MAIN_CHECKOUT_APPEND_ONLY_KINDS sweeps them.
 CLOSE_KINDS = (*JSONL_KINDS, "gate_verdicts")
 from monitoring_shard_paths import per_identifier_shard_paths  # noqa: E402
 from working_log_writer import consolidate_pending_rows  # noqa: E402
@@ -213,7 +214,8 @@ def sweep_main_checkout_tools(week: str, week_dir: Path, main_checkout: object =
 
 #: Append-only shard kinds a session in the main checkout writes as bare `<kind>.jsonl` that no PR branch carries
 #: (TCK-20261110-WEEK-CLOSE-SWEEPS-MAIN-CHECKOUT-NON-TOOL-SHARDS). Swept the same way as `main.tools.jsonl`.
-MAIN_CHECKOUT_APPEND_ONLY_KINDS = ("manual_actions", "reset_boundary", "governing_edits")
+#: TCK-20261111-WEEK-CLOSE-SWEEPS-MAIN-CHECKOUT-ROLE-BOUNDARY added `role_boundary`.
+MAIN_CHECKOUT_APPEND_ONLY_KINDS = ("manual_actions", "reset_boundary", "governing_edits", "role_boundary")
 
 
 def sweep_main_checkout_append_only(week: str, week_dir: Path, main_checkout: object = _UNSET) -> dict:
