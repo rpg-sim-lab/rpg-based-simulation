@@ -384,7 +384,7 @@ title/body with `tools/delivery/pr_render.py` → PR → CI monitor → report �
 merge → sync, including the squash-merge "a finished branch is never pushed to again" rule and
 the PR-body no-attribution-trailer rule.
 
-Every PR closes at least one completed ticket: ticket filings, evidence records and seat-ticket notes ride in the next implementation PR on that track, never in a PR of their own (full rule and exceptions: `docs/guides/delivery_process.md`, "PR Lifecycle").
+Every PR closes at least one completed ticket. Ticket filings, seat-ticket notes and small no-code changes (doc wording, monitoring week close-outs and re-closes, glossary, registry or summary text) ride in the next PR on their track, each closing its own ticket; a PR stands alone only when it changes `src/` behaviour, carries evidence, unblocks a waiting seat, or is the only open PR on its track (full rule and exceptions: `docs/guides/delivery_process.md`, "PR Lifecycle").
 
 ---
 
