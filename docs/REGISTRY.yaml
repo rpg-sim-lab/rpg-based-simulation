@@ -8104,6 +8104,21 @@
   tags:
   - agent-monitoring
 - type: ticket
+  path: agent-working/tickets/done/TCK-20261111-U24-RECLOSE-W45-MAIN-CHECKOUT-LATE-ROWS.md
+  ticket_id: TCK-20261111-U24-RECLOSE-W45-MAIN-CHECKOUT-LATE-ROWS
+  title: Re-close 2026-W45 on host u24desktop so the u24 main checkout's late rows
+    (404 `main.tools.jsonl` rows, 1 `manual_actions.jsonl` row) reach the canonical
+    files
+  tier: hotfix
+  ticket_type: chore
+  date: '2026-11-11'
+  related_code_areas:
+  - tools/agent-monitoring/week_close.py (run only, unchanged)
+  artifact_files: []
+  tags:
+  - agent-monitoring
+  - data-quality
+- type: ticket
   path: agent-working/tickets/done/TCK-20261111-WEBSITE-WIKI-VIEWS-OF-STORED-DATA.md
   ticket_id: TCK-20261111-WEBSITE-WIKI-VIEWS-OF-STORED-DATA
   title: The website becomes a wiki for someone watching the simulation, built from
