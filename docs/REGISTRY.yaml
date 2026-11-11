@@ -8091,6 +8091,17 @@
   tags:
   - agent-monitoring
 - type: ticket
+  path: agent-working/tickets/done/TCK-20261111-THE-WORLD-GLOSSARY-GETS-ITS-SEED-TERMS.md
+  ticket_id: TCK-20261111-THE-WORLD-GLOSSARY-GETS-ITS-SEED-TERMS
+  title: The world glossary gets its 49 seed terms
+  tier: hotfix
+  ticket_type: chore
+  date: '2026-11-11'
+  related_code_areas:
+  - registries/world_glossary.jsonl
+  artifact_files: []
+  tags: []
+- type: ticket
   path: agent-working/tickets/done/TCK-20261111-WEBSITE-WIKI-VIEWS-OF-STORED-DATA.md
   ticket_id: TCK-20261111-WEBSITE-WIKI-VIEWS-OF-STORED-DATA
   title: The website becomes a wiki for someone watching the simulation, built from
