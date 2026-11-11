@@ -21,6 +21,7 @@ from src.core.movement_modes import MovementMode
 from src.core.death_cause import DeathRecord
 from src.core.enums import ReasonCode, DiplomaticState
 from src.core.group_update_merge import merge_group_fields
+from src.core.social_counts import add_rejection_counts
 from src.core.spawn_source import SpawnSource
 from src.core.update_models.buildings import BuildingUpdate  # noqa: F401  (re-exported: updates.py is where callers import it from)
 from src.core.update_models.inventory import InventoryUpdate, ItemInstanceUpdate
@@ -382,7 +383,7 @@ class SocialUpdate:
             heroism_delta=self.heroism_delta + other.heroism_delta,
             notoriety_delta=self.notoriety_delta + other.notoriety_delta,
             last_offer_tick_set=other.last_offer_tick_set if other.last_offer_tick_set is not None else self.last_offer_tick_set,
-            rejection_increment={**self.rejection_increment, **other.rejection_increment},
+            rejection_increment=add_rejection_counts(self.rejection_increment, other.rejection_increment),
             nemesis_promotion=self.nemesis_promotion + other.nemesis_promotion,
             place_attachment_delta=new_places,
             regional_reputation_delta=new_regional_rep,

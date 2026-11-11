@@ -4358,3 +4358,13 @@
   test_path: tests/unit/social/test_group_contract_binding.py::test_election_that_moves_the_leader_off_the_holder_does_not_dissolve_a_bound_group
   divergence_note: 'Divergence 2.146 (to be rewritten after the re-measure): the group is bound to the contract and its holder instead of reading the contract from whoever leads, and ends with a typed reason.'
   support_boundary: null
+- id: SOC-280
+  text: 'An applied SocialUpdate keeps the rejection counts it does not name, and adds its rejection_increment to them: a trust-only or familiarity-only update no longer empties SocialComponent.rejection_count, and an increment for one offerer leaves every other offerer''s count. SocialUpdate.merge sums rejection_increment per key (two same-tick rejections from one offerer count twice); the other keyed deltas stay last-writer-wins. The recruitment social-fatigue penalty (appraisal, -0.1 per rejection, capped at 0.5) therefore reads a count that survives. Counts are lifetime, bounded by the 0.5 cap (5 rejections); there is no recent window (TCK-20261109-RECRUITMENT-FATIGUE-HAS-NO-RECENT-WINDOW).'
+  status: verified
+  priority: P1
+  legacy_evidence: null
+  v2_evidence: src/core/social_counts.py (add_rejection_counts, the one sum rule); src/systems/social_systems/relationships.py (RelationshipService.process_update calls it); src/core/updates.py (SocialUpdate.merge calls it); src/systems/social_systems/appraisal.py (_appraise_recruitment reads the count); src/core/state.py (rejection_count in the canonical dict).
+  proof_type: regression
+  test_path: tests/unit/social/test_rejection_counts_kept.py::test_a_trust_only_update_leaves_the_rejection_counts_intact; tests/unit/core/test_social_counts.py
+  divergence_note: null
+  support_boundary: null
