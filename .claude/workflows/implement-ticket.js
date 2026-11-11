@@ -2370,6 +2370,17 @@ if (mechDriftCheck !== null && (mechDriftCheck.drift.length > 0 || mechDriftChec
   log(`ADVISORY: ${tid} changed code cited by mechanism(s) [${names.join(', ')}] without an entry update — worth a look, not a block. See tools/mechanism_registry/mechanism_registry_changed_code_check.py.`)
 }
 
+// Advisory-only doc drift report (TCK-20261108-DOC-EVIDENCE-FIELDS-AND-DRIFT-REPORT): a Finalize-tail advisory like the
+// mechanism check above. It lists docs that carry evidence fields (verified_by / reviewed_by) and now need re-verifying,
+// counting this ticket's files (committed since startSha or not) as changed evidence. Read-only at HEAD, never gates
+// the close, and the tool exits 0 even when it fails (a failure prints a MARKER error line, which is logged, not raised).
+const docDriftOutput = await sh(
+  `python3 tools/gate_checks/doc_drift.py --format advisory --start-sha ${startSha} || true`
+)
+if (docDriftOutput && docDriftOutput.trim()) {
+  log(`ADVISORY: ${tid} doc drift report (docs with evidence fields that need re-verifying, not a block): ${docDriftOutput.trim().split('\n').join(' | ')}`)
+}
+
 return {
   status: 'DONE',
   ticket_id: tid,

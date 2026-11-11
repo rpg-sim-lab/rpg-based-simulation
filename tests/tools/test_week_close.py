@@ -193,3 +193,45 @@ def test_week_with_a_shard_keeps_existing_lines_in_place_and_appends_sorted_new_
     assert after_lines[:2] == before_lines  # existing lines untouched, in place
     assert [json.loads(ln)["run_id"] for ln in after_lines[2:]] == ["N1", "N2"]  # new lines sorted by ts
     assert result["runs"]["duplicates_dropped"] == 1
+
+
+# --- weekly doc drift report (TCK-20261108-DOC-EVIDENCE-FIELDS-AND-DRIFT-REPORT, Q5) ---------------------------------
+
+
+def _empty_close_result():
+    return {
+        **{kind: {"shard_files": 0, "lines_in": 0, "lines_out": 0, "duplicates_dropped": 0} for kind in wc.CLOSE_KINDS},
+        "main_checkout_tools": {"swept": 0, "duplicates_dropped": 0, "skipped": ""},
+        "main_checkout_append_only": {},
+        "durations": {"rederived": 0, "stale_dropped": 0, "skipped": ""},
+        "working_log": {"shard_files": 0, "consolidated_rows": 0},
+    }
+
+
+def test_the_doc_drift_summary_never_raises_and_says_so(monkeypatch):
+    def boom(*args, **kwargs):
+        raise RuntimeError("git exploded")
+
+    monkeypatch.setattr(wc.doc_drift, "drift_report", boom)
+    assert wc.doc_drift_summary() == ["doc drift report skipped: RuntimeError: git exploded"]
+
+
+def test_the_doc_drift_summary_names_the_pin(tmp_path):
+    subprocess.run(["git", "init", "-q", str(tmp_path)], check=True)
+    subprocess.run(["git", "-C", str(tmp_path), "-c", "user.email=t@e", "-c", "user.name=t", "commit", "-q", "--allow-empty", "-m", "x"], check=True)
+    pin = subprocess.run(["git", "-C", str(tmp_path), "rev-parse", "HEAD"], capture_output=True, text=True, check=True).stdout.strip()
+    assert pin in wc.doc_drift_summary(tmp_path)[0]
+
+
+def test_a_failing_drift_report_leaves_the_exit_status_and_the_close_alone(monkeypatch, capsys):
+    monkeypatch.setattr(wc, "close_week", lambda *a, **k: _empty_close_result())
+    monkeypatch.setattr(wc.doc_drift, "drift_report", lambda *a, **k: (_ for _ in ()).throw(RuntimeError("boom")))
+    assert wc.main(["--week", "2026-W01"]) == 0
+    assert "doc drift report skipped: RuntimeError: boom" in capsys.readouterr().out
+
+
+def test_a_data_dir_run_does_not_print_the_drift_report(monkeypatch, capsys):
+    monkeypatch.setattr(wc, "close_week", lambda *a, **k: _empty_close_result())
+    monkeypatch.setattr(wc, "doc_drift_summary", lambda root=None: ["SHOULD NOT PRINT"])
+    assert wc.main(["--week", "2026-W01", "--data-dir", "x"]) == 0
+    assert "SHOULD NOT PRINT" not in capsys.readouterr().out
