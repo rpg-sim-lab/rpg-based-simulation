@@ -250,7 +250,7 @@ Layer 1 forbids these. Each one moves, keeping today's values at each read point
    - the lazy caches those calls fill (`_spatial_grid_cache`, `_region_list_cache`; §5).
    **This list is not complete.** Reads stay class S (§3.4, rule 5), and the callees above read further. What the contract needs
    is narrower, and it holds: **every read is of tick-start state or of the unit's own earlier deltas, never of another unit's
-   delta from this step** [S, rpg-planner checked against `5c6990e51`]. The stage 3 exit checks it at runtime.
+   delta from this step** [S: rpg-planner checked the call sites in `fused_strategic_pass` at `5c6990e51`, not the callees' transitive reads; the stage 3 per-unit read check settles it]. The stage 3 exit checks it at runtime.
 
    It writes only its own entry: E20 `navigation`, E7 `interaction` (reset), E12 `strategic`, E9 `identity` (the craft-target
    clear), E29 `property_updates`, and T `metric_counters`. **No cross-entity write** [S, spot-checked].
@@ -333,7 +333,7 @@ auditor, as audit plan §3 intended, comes before any stage depends on the recor
 ## 11. Before draft 3 (and before stage 3 is cut)
 
 - **Stage 0's per-phase costs** (perf-planner) set the slice order for stage 4. Not in yet.
-- **Rpg-planner's sign-off that §8 is complete enough to cut stage 3** (AC 3; ubuntu review A-n1). Draft 2 got four amendments (A-D, 2026-11-11), now in §8; the sign-off is on that hunk.
+- **Rpg-planner's sign-off that §8 is complete enough to cut stage 3** (AC 3; ubuntu review A-n1). **Given** (rpg-planner, 2026-11-11) on §8 with amendments A-D and its attribution wording; stage 3 may be cut once the entry condition clears.
 - **Checkpoint restore** (lead-planner-u24, 2026-11-10). `ScenarioCheckpointer.restore` builds its Kernel apart from
   `scenario_runtime._build_kernel`, and it has already drifted: it drops the governor and the `scenario_event_recorder`, which are
   telemetry only today, per rpg-planner. So:
