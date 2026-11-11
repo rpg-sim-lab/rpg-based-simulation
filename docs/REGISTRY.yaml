@@ -8060,6 +8060,20 @@
   artifact_files: []
   tags: []
 - type: ticket
+  path: agent-working/tickets/done/TCK-20261111-MECHANISM-SUMMARY-FIELD-SHAPE-CHECK.md
+  ticket_id: TCK-20261111-MECHANISM-SUMMARY-FIELD-SHAPE-CHECK
+  title: The mechanism registry validator checks the shape of the optional per-mechanism
+    `summary`
+  tier: hotfix
+  ticket_type: feature
+  date: '2026-11-11'
+  related_code_areas:
+  - tools/mechanism_registry/registry.py, tests/tools/test_mechanism_registry*.py
+  artifact_files: []
+  tags:
+  - documentation
+  - reference
+- type: ticket
   path: agent-working/tickets/done/TCK-20261111-REGISTRY-REGEN-MISSES-A-MERGE-FINISHED-BY-COMMIT.md
   ticket_id: TCK-20261111-REGISTRY-REGEN-MISSES-A-MERGE-FINISHED-BY-COMMIT
   title: '`docs/REGISTRY.yaml` isn''t regenerated when a merge stops on another conflict
@@ -8076,6 +8090,19 @@
   tags:
   - delivery
   - process-improvement
+- type: ticket
+  path: agent-working/tickets/done/TCK-20261111-RETRO-NUDGE-CUTOFF-FROM-RETRO-WEEK-NAME.md
+  ticket_id: TCK-20261111-RETRO-NUDGE-CUTOFF-FROM-RETRO-WEEK-NAME
+  title: The retro nudge takes its cutoff from the newest RETRO-YYYY-Www week name,
+    not from a file's mtime
+  tier: hotfix
+  ticket_type: bug
+  date: '2026-11-11'
+  related_code_areas:
+  - tools/agent-monitoring/retro_nudge_hook.py, tests/tools/ (retro nudge tests)
+  artifact_files: []
+  tags:
+  - agent-monitoring
 - type: ticket
   path: agent-working/tickets/done/TCK-20261111-WEBSITE-WIKI-VIEWS-OF-STORED-DATA.md
   ticket_id: TCK-20261111-WEBSITE-WIKI-VIEWS-OF-STORED-DATA
@@ -8094,6 +8121,40 @@
   tags:
   - documentation
   - onboarding
+- type: ticket
+  path: agent-working/tickets/done/TCK-20261111-WEEK-CLOSE-SWEEPS-MAIN-CHECKOUT-ROLE-BOUNDARY.md
+  ticket_id: TCK-20261111-WEEK-CLOSE-SWEEPS-MAIN-CHECKOUT-ROLE-BOUNDARY
+  title: The week close also sweeps the main checkout's role_boundary.jsonl, and W44/W45
+    are re-closed to back-fill the rows it missed
+  tier: hotfix
+  ticket_type: bug
+  date: '2026-11-11'
+  related_code_areas:
+  - tools/agent-monitoring/week_close.py, tools/sessions/boundary.py (the role_boundary
+    writer)
+  artifact_files: []
+  tags:
+  - agent-monitoring
+- type: ticket
+  path: agent-working/tickets/done/TCK-20261111-WORLD-TERM-GLOSSARY-REGISTRY.md
+  ticket_id: TCK-20261111-WORLD-TERM-GLOSSARY-REGISTRY
+  title: 'A world-term glossary registry the website wiki can render: term, plain
+    description, source pointer'
+  tier: standard
+  ticket_type: feature
+  date: '2026-11-11'
+  related_code_areas:
+  - tools/glossary_registry.py, tools/tag_registry.py (templates)
+  - registries/session_roles.yaml, registries/session_authority.yaml
+  - term
+  - description
+  artifact_files:
+  - agent-working/stored_artifacts/TCK-20261111-WORLD-TERM-GLOSSARY-REGISTRY/investigation.md
+  - agent-working/stored_artifacts/TCK-20261111-WORLD-TERM-GLOSSARY-REGISTRY/plan.md
+  - agent-working/stored_artifacts/TCK-20261111-WORLD-TERM-GLOSSARY-REGISTRY/test_plan.md
+  tags:
+  - documentation
+  - reference
 - type: ticket
   path: agent-working/tickets/done/TCK-20261110-DELIVERY-COST-REF-MODE-READS-NO-BRANCH-SHARDS.md
   ticket_id: TCK-20261110-DELIVERY-COST-REF-MODE-READS-NO-BRANCH-SHARDS
