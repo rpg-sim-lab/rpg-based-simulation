@@ -388,6 +388,20 @@ def validate(data: dict) -> List[str]:
                 f"which needs one of {sorted(RUNTIME_INSTRUMENTS)}"
             )
 
+    # Optional plain-language `summary` (read by the generated website wiki): when present it must
+    # be a non-empty, single-line string. Absent stays valid; no key allowlist is added.
+    for m in mechanisms:
+        if "summary" not in m:
+            continue
+        mid = m.get("id", "<missing id>")
+        summary = m["summary"]
+        if not isinstance(summary, str):
+            errors.append(f"mechanism '{mid}' summary must be a string, got {summary!r}")
+        elif not (stripped := summary.strip()):
+            errors.append(f"mechanism '{mid}' summary must not be empty")
+        elif "\n" in stripped or "\r" in stripped:
+            errors.append(f"mechanism '{mid}' summary must be a single line")
+
     # Invariant 7: a present `implemented_by` is a list of real, existing repo-relative paths,
     # optionally with a "::Symbol" suffix that must itself be a real top-level class or function
     # in that file. TCK-20260916-MECHANISM-IMPLEMENTED-BY-BINDING / -SYMBOL-LEVEL-BINDING. The

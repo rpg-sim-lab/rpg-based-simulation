@@ -18,6 +18,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from validate import load_data_glob  # noqa: E402
+from retro_cutoff import latest_retro_week_end_ts  # noqa: E402
 from week_close_nudge import nudge_message, weeks_needing_close  # noqa: E402
 _REPO_ROOT_STR = str(Path(__file__).resolve().parents[2])
 if _REPO_ROOT_STR not in sys.path:
@@ -36,13 +37,6 @@ def _load_state() -> dict:
         return json.loads(STATE_FILE.read_text())
     except Exception:
         return {}
-
-
-def _last_dated_retro_mtime() -> float:
-    dated = [p for p in RETRO_DIR.glob("RETRO-*.md") if p.name != "RETRO-ALL.md"]
-    if not dated:
-        return 0.0  # no dated report has ever existed -> threshold already crossed
-    return max(p.stat().st_mtime for p in dated)
 
 
 def _count_done_since(cutoff: float) -> int:
@@ -73,7 +67,7 @@ try:
     if not session_id and now - state.get("ts", 0) < COOLDOWN_S:
         sys.exit(0)
 
-    cutoff = _last_dated_retro_mtime()
+    cutoff = latest_retro_week_end_ts(RETRO_DIR)  # 0.0 with no dated retro: threshold already crossed
     count = _count_done_since(cutoff)
 
     messages = []

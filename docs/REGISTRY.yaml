@@ -8036,6 +8036,44 @@
   - content
   last_verified: '2026-10-09'
 - type: ticket
+  path: agent-working/tickets/done/TCK-20261111-CLAUDE-MD-REGISTRY-DRIVER-WORDING.md
+  ticket_id: TCK-20261111-CLAUDE-MD-REGISTRY-DRIVER-WORDING
+  title: CLAUDE.md says the registry merge driver regenerates after rebase and cherry-pick;
+    it does so only after a plain `git merge`
+  tier: hotfix
+  ticket_type: repair
+  date: '2026-11-11'
+  related_code_areas:
+  - tools/hooks/registry_post_merge_regen.sh (read only)
+  artifact_files: []
+  tags:
+  - claude-md
+- type: ticket
+  path: agent-working/tickets/done/TCK-20261111-CODE-HEALTH-ROWS-FOR-DELETED-FILES.md
+  ticket_id: TCK-20261111-CODE-HEALTH-ROWS-FOR-DELETED-FILES
+  title: Delete the 57 code-health exception rows that name 13 deleted source files
+  tier: hotfix
+  ticket_type: chore
+  date: '2026-11-11'
+  related_code_areas:
+  - codebase/baselines/code_health_exceptions.jsonl; codebase/health/registry.py;
+    codebase/health/ratchet.py; codebase/health/__main__.py
+  artifact_files: []
+  tags: []
+- type: ticket
+  path: agent-working/tickets/done/TCK-20261111-DEPENDABOT-WATCHES-WEBSITE.md
+  ticket_id: TCK-20261111-DEPENDABOT-WATCHES-WEBSITE
+  title: Dependabot watches website/, so a website advisory gets an update PR
+  tier: hotfix
+  ticket_type: repair
+  date: '2026-11-11'
+  related_code_areas:
+  - .github/dependabot.yml
+  - website/package.json
+  artifact_files: []
+  tags:
+  - platform
+- type: ticket
   path: agent-working/tickets/done/TCK-20261111-EACH-MECHANISM-GETS-A-PLAIN-LANGUAGE-SUMMARY.md
   ticket_id: TCK-20261111-EACH-MECHANISM-GETS-A-PLAIN-LANGUAGE-SUMMARY
   title: Each mechanism in the registry gets a plain-language summary
@@ -8046,6 +8084,20 @@
   - registries/mechanisms.yaml
   artifact_files: []
   tags: []
+- type: ticket
+  path: agent-working/tickets/done/TCK-20261111-MECHANISM-SUMMARY-FIELD-SHAPE-CHECK.md
+  ticket_id: TCK-20261111-MECHANISM-SUMMARY-FIELD-SHAPE-CHECK
+  title: The mechanism registry validator checks the shape of the optional per-mechanism
+    `summary`
+  tier: hotfix
+  ticket_type: feature
+  date: '2026-11-11'
+  related_code_areas:
+  - tools/mechanism_registry/registry.py, tests/tools/test_mechanism_registry*.py
+  artifact_files: []
+  tags:
+  - documentation
+  - reference
 - type: ticket
   path: agent-working/tickets/done/TCK-20261111-REGISTRY-REGEN-MISSES-A-MERGE-FINISHED-BY-COMMIT.md
   ticket_id: TCK-20261111-REGISTRY-REGEN-MISSES-A-MERGE-FINISHED-BY-COMMIT
@@ -8064,6 +8116,97 @@
   - delivery
   - process-improvement
 - type: ticket
+  path: agent-working/tickets/done/TCK-20261111-RETRO-NUDGE-CUTOFF-FROM-RETRO-WEEK-NAME.md
+  ticket_id: TCK-20261111-RETRO-NUDGE-CUTOFF-FROM-RETRO-WEEK-NAME
+  title: The retro nudge takes its cutoff from the newest RETRO-YYYY-Www week name,
+    not from a file's mtime
+  tier: hotfix
+  ticket_type: bug
+  date: '2026-11-11'
+  related_code_areas:
+  - tools/agent-monitoring/retro_nudge_hook.py, tests/tools/ (retro nudge tests)
+  artifact_files: []
+  tags:
+  - agent-monitoring
+- type: ticket
+  path: agent-working/tickets/done/TCK-20261111-THE-WORLD-GLOSSARY-GETS-ITS-SEED-TERMS.md
+  ticket_id: TCK-20261111-THE-WORLD-GLOSSARY-GETS-ITS-SEED-TERMS
+  title: The world glossary gets its 49 seed terms
+  tier: hotfix
+  ticket_type: chore
+  date: '2026-11-11'
+  related_code_areas:
+  - registries/world_glossary.jsonl
+  artifact_files: []
+  tags: []
+- type: ticket
+  path: agent-working/tickets/done/TCK-20261111-U24-RECLOSE-W45-MAIN-CHECKOUT-LATE-ROWS.md
+  ticket_id: TCK-20261111-U24-RECLOSE-W45-MAIN-CHECKOUT-LATE-ROWS
+  title: Re-close 2026-W45 on host u24desktop so the u24 main checkout's late rows
+    (404 `main.tools.jsonl` rows, 1 `manual_actions.jsonl` row) reach the canonical
+    files
+  tier: hotfix
+  ticket_type: chore
+  date: '2026-11-11'
+  related_code_areas:
+  - tools/agent-monitoring/week_close.py (run only, unchanged)
+  artifact_files: []
+  tags:
+  - agent-monitoring
+  - data-quality
+- type: ticket
+  path: agent-working/tickets/done/TCK-20261111-WEBSITE-WIKI-VIEWS-OF-STORED-DATA.md
+  ticket_id: TCK-20261111-WEBSITE-WIKI-VIEWS-OF-STORED-DATA
+  title: The website becomes a wiki for someone watching the simulation, built from
+    the repository's stored data instead of rendering docs/
+  tier: standard
+  ticket_type: feature
+  date: '2026-11-11'
+  related_code_areas:
+  - website/
+  - tests/static/
+  artifact_files:
+  - agent-working/stored_artifacts/TCK-20261111-WEBSITE-WIKI-VIEWS-OF-STORED-DATA/investigation.md
+  - agent-working/stored_artifacts/TCK-20261111-WEBSITE-WIKI-VIEWS-OF-STORED-DATA/plan.md
+  - agent-working/stored_artifacts/TCK-20261111-WEBSITE-WIKI-VIEWS-OF-STORED-DATA/test_plan.md
+  tags:
+  - documentation
+  - onboarding
+- type: ticket
+  path: agent-working/tickets/done/TCK-20261111-WEEK-CLOSE-SWEEPS-MAIN-CHECKOUT-ROLE-BOUNDARY.md
+  ticket_id: TCK-20261111-WEEK-CLOSE-SWEEPS-MAIN-CHECKOUT-ROLE-BOUNDARY
+  title: The week close also sweeps the main checkout's role_boundary.jsonl, and W44/W45
+    are re-closed to back-fill the rows it missed
+  tier: hotfix
+  ticket_type: bug
+  date: '2026-11-11'
+  related_code_areas:
+  - tools/agent-monitoring/week_close.py, tools/sessions/boundary.py (the role_boundary
+    writer)
+  artifact_files: []
+  tags:
+  - agent-monitoring
+- type: ticket
+  path: agent-working/tickets/done/TCK-20261111-WORLD-TERM-GLOSSARY-REGISTRY.md
+  ticket_id: TCK-20261111-WORLD-TERM-GLOSSARY-REGISTRY
+  title: 'A world-term glossary registry the website wiki can render: term, plain
+    description, source pointer'
+  tier: standard
+  ticket_type: feature
+  date: '2026-11-11'
+  related_code_areas:
+  - tools/glossary_registry.py, tools/tag_registry.py (templates)
+  - registries/session_roles.yaml, registries/session_authority.yaml
+  - term
+  - description
+  artifact_files:
+  - agent-working/stored_artifacts/TCK-20261111-WORLD-TERM-GLOSSARY-REGISTRY/investigation.md
+  - agent-working/stored_artifacts/TCK-20261111-WORLD-TERM-GLOSSARY-REGISTRY/plan.md
+  - agent-working/stored_artifacts/TCK-20261111-WORLD-TERM-GLOSSARY-REGISTRY/test_plan.md
+  tags:
+  - documentation
+  - reference
+- type: ticket
   path: agent-working/tickets/done/TCK-20261110-DELIVERY-COST-REF-MODE-READS-NO-BRANCH-SHARDS.md
   ticket_id: TCK-20261110-DELIVERY-COST-REF-MODE-READS-NO-BRANCH-SHARDS
   title: '`delivery_cost_measurement.py --ref` reads only a week''s canonical `tools.jsonl`,
@@ -8079,6 +8222,18 @@
   - agent-monitoring
   - delivery
   - data-quality
+- type: ticket
+  path: agent-working/tickets/done/TCK-20261110-MONITORING-CLOSE-WEEK-BACKLOG.md
+  ticket_id: TCK-20261110-MONITORING-CLOSE-WEEK-BACKLOG
+  title: 'Monitoring weeks 2026-W41 to W45 are closed: their per-batch shards are
+    folded into the canonical files.'
+  tier: hotfix
+  ticket_type: chore
+  date: '2026-11-10'
+  related_code_areas:
+  - agent-working/agent-monitoring/data/
+  artifact_files: []
+  tags: []
 - type: ticket
   path: agent-working/tickets/done/TCK-20261110-MONITORING-VALIDATE-WARNS-ON-A-STALE-INDEX.md
   ticket_id: TCK-20261110-MONITORING-VALIDATE-WARNS-ON-A-STALE-INDEX
@@ -8731,6 +8886,27 @@
   - documentation
   - observability
 - type: ticket
+  path: agent-working/tickets/done/TCK-20261108-DOC-EVIDENCE-FIELDS-AND-DRIFT-REPORT.md
+  ticket_id: TCK-20261108-DOC-EVIDENCE-FIELDS-AND-DRIFT-REPORT
+  title: Behaviour docs can carry evidence and a verification baseline, and an advisory
+    drift report says which ones need re-verifying.
+  tier: standard
+  ticket_type: feature
+  date: '2026-11-08'
+  related_code_areas:
+  - tools/validate_frontmatter.py, tools/mechanism_registry/mechanism_registry_changed_code_check.py
+  - tools/agent-monitoring/week_close.py, .claude/workflows/implement-ticket.js (Finalize)
+  artifact_files:
+  - agent-working/stored_artifacts/TCK-20261108-DOC-EVIDENCE-FIELDS-AND-DRIFT-REPORT/investigation.md
+  - agent-working/stored_artifacts/TCK-20261108-DOC-EVIDENCE-FIELDS-AND-DRIFT-REPORT/plan.md
+  - agent-working/stored_artifacts/TCK-20261108-DOC-EVIDENCE-FIELDS-AND-DRIFT-REPORT/test_plan.md
+  tags:
+  - ai
+  - documentation
+  - governance
+  - frontmatter
+  - agent-monitoring
+- type: ticket
   path: agent-working/tickets/done/TCK-20261108-DOC-STEP-ON-HAND-CLOSES-AND-REVIEW-RULES.md
   ticket_id: TCK-20261108-DOC-STEP-ON-HAND-CLOSES-AND-REVIEW-RULES
   title: Hand-orchestrated closes get the doc step, the Definition of Done records
@@ -8864,6 +9040,24 @@
   - documentation
   - observability
 - type: ticket
+  path: agent-working/tickets/done/TCK-20261108-STALE-DOC-DETECTION-PILOT.md
+  ticket_id: TCK-20261108-STALE-DOC-DETECTION-PILOT
+  title: A read-only stale-doc detection run at a pinned SHA, and an evaluation report
+    the owner uses to scope J3.
+  tier: standard
+  ticket_type: feature
+  date: '2026-11-08'
+  related_code_areas: []
+  artifact_files:
+  - agent-working/stored_artifacts/TCK-20261108-STALE-DOC-DETECTION-PILOT/doc_stale_detection_pilot_5c6990e51.md
+  - agent-working/stored_artifacts/TCK-20261108-STALE-DOC-DETECTION-PILOT/investigation.md
+  - agent-working/stored_artifacts/TCK-20261108-STALE-DOC-DETECTION-PILOT/plan.md
+  - agent-working/stored_artifacts/TCK-20261108-STALE-DOC-DETECTION-PILOT/test_plan.md
+  tags:
+  - ai
+  - documentation
+  - governance
+- type: ticket
   path: agent-working/tickets/done/TCK-20261108-WEBSITE-DEV-SERVER-PULLS-A-UUID-WITH-AN-OPEN-SECURITY-ALERT.md
   ticket_id: TCK-20261108-WEBSITE-DEV-SERVER-PULLS-A-UUID-WITH-AN-OPEN-SECURITY-ALERT
   title: The docs website's dev server pulls uuid 8.3.2, which has an open medium
@@ -8875,24 +9069,6 @@
   - website/package.json, website/package-lock.json
   artifact_files: []
   tags: []
-- type: ticket
-  path: agent-working/tickets/todos/docs-as-review-source/TCK-20261108-DOC-EVIDENCE-FIELDS-AND-DRIFT-REPORT.md
-  ticket_id: TCK-20261108-DOC-EVIDENCE-FIELDS-AND-DRIFT-REPORT
-  title: Behaviour docs can carry evidence and a verification baseline, and an advisory
-    drift report says which ones need re-verifying.
-  tier: standard
-  ticket_type: feature
-  date: '2026-11-08'
-  related_code_areas:
-  - tools/validate_frontmatter.py, tools/mechanism_registry/mechanism_registry_changed_code_check.py
-  - tools/agent-monitoring/week_close.py, .claude/workflows/implement-ticket.js (Finalize)
-  artifact_files: []
-  tags:
-  - ai
-  - documentation
-  - governance
-  - frontmatter
-  - agent-monitoring
 - type: ticket
   path: agent-working/tickets/todos/docs-as-review-source/TCK-20261108-EPIC-DOCS-AS-REVIEW-SOURCE.md
   ticket_id: TCK-20261108-EPIC-DOCS-AS-REVIEW-SOURCE
@@ -8921,20 +9097,6 @@
   date: '2026-11-08'
   related_code_areas:
   - tools/project_stats.py (new), docs/architecture/project_facts.md (new)
-  artifact_files: []
-  tags:
-  - ai
-  - documentation
-  - governance
-- type: ticket
-  path: agent-working/tickets/todos/docs-as-review-source/TCK-20261108-STALE-DOC-DETECTION-PILOT.md
-  ticket_id: TCK-20261108-STALE-DOC-DETECTION-PILOT
-  title: A read-only stale-doc detection run at a pinned SHA, and an evaluation report
-    the owner uses to scope J3.
-  tier: standard
-  ticket_type: feature
-  date: '2026-11-08'
-  related_code_areas: []
   artifact_files: []
   tags:
   - ai
@@ -14032,6 +14194,19 @@
   - platform
   - security
 - type: ticket
+  path: agent-working/tickets/done/TCK-20261015-DEPENDABOT-DOCKER-IGNORE-PYTHON-MINOR-AND-UV.md
+  ticket_id: TCK-20261015-DEPENDABOT-DOCKER-IGNORE-PYTHON-MINOR-AND-UV
+  title: 'Dependabot docker ecosystem: stop proposing Python minor-line moves and
+    uv bumps for the backend image'
+  tier: hotfix
+  ticket_type: repair
+  date: '2026-10-15'
+  related_code_areas:
+  - .github/dependabot.yml
+  artifact_files: []
+  tags:
+  - platform
+- type: ticket
   path: agent-working/tickets/done/TCK-20261015-FRONTEND-PATH-FILTER-MISSES-FILES-OUTSIDE-FRONTEND-THAT-ITS-TESTS-READ.md
   ticket_id: TCK-20261015-FRONTEND-PATH-FILTER-MISSES-FILES-OUTSIDE-FRONTEND-THAT-ITS-TESTS-READ
   title: test.yml's `FRONTEND_RE` also covers the files outside `frontend/` that the
@@ -14296,19 +14471,6 @@
   - agent-monitoring
   - data-quality
 - type: ticket
-  path: agent-working/tickets/inprogress/TCK-20261015-DEPENDABOT-DOCKER-IGNORE-PYTHON-MINOR-AND-UV.md
-  ticket_id: TCK-20261015-DEPENDABOT-DOCKER-IGNORE-PYTHON-MINOR-AND-UV
-  title: 'Dependabot docker ecosystem: stop proposing Python minor-line moves and
-    uv bumps for the backend image'
-  tier: hotfix
-  ticket_type: repair
-  date: '2026-10-15'
-  related_code_areas:
-  - .github/dependabot.yml
-  artifact_files: []
-  tags:
-  - platform
-- type: ticket
   path: agent-working/tickets/done/TCK-20261014-A-CONQUEST-NO-LONGER-SPAWNS-A-STRONGHOLD-BODY-D71.md
   ticket_id: TCK-20261014-A-CONQUEST-NO-LONGER-SPAWNS-A-STRONGHOLD-BODY-D71
   title: A conquest no longer spawns a stronghold body from nothing. The region still
@@ -14475,6 +14637,19 @@
   date: '2026-10-14'
   related_code_areas:
   - compose.yaml
+  artifact_files: []
+  tags:
+  - platform
+- type: ticket
+  path: agent-working/tickets/done/TCK-20261014-DEPENDABOT-GROUPED-MAJORS-MONTHLY.md
+  ticket_id: TCK-20261014-DEPENDABOT-GROUPED-MAJORS-MONTHLY
+  title: 'Dependabot: monthly schedule, one grouped majors PR and one grouped minor/patch
+    PR per ecosystem, Node held to LTS'
+  tier: hotfix
+  ticket_type: repair
+  date: '2026-10-14'
+  related_code_areas:
+  - .github/dependabot.yml
   artifact_files: []
   tags:
   - platform
@@ -15015,19 +15190,6 @@
   date: '2026-10-14'
   related_code_areas:
   - compose.yaml
-  artifact_files: []
-  tags:
-  - platform
-- type: ticket
-  path: agent-working/tickets/inprogress/TCK-20261014-DEPENDABOT-GROUPED-MAJORS-MONTHLY.md
-  ticket_id: TCK-20261014-DEPENDABOT-GROUPED-MAJORS-MONTHLY
-  title: 'Dependabot: monthly schedule, one grouped majors PR and one grouped minor/patch
-    PR per ecosystem, Node held to LTS'
-  tier: hotfix
-  ticket_type: repair
-  date: '2026-10-14'
-  related_code_areas:
-  - .github/dependabot.yml
   artifact_files: []
   tags:
   - platform
