@@ -22,8 +22,9 @@ This is no longer pure human discipline: a `PostToolUse` hook
 (`tools/agent-monitoring/retro_nudge_hook.py`, wired in `.claude/settings.json`)
 counts `implement-ticket` runs with `final_status`/`status` `DONE` in
 `agent-working/agent-monitoring/data/YYYY-Www/runs.jsonl` whose `start_ts`/`started_at` is later than the
-mtime of the most recent dated `agent-working/agent-monitoring/retro/RETRO-<week>.md` report
-(`RETRO-ALL.md` is a static all-time snapshot and is excluded from this check).
+end of the ISO week named by the newest dated `agent-working/agent-monitoring/retro/RETRO-<YYYY-Www>.md` report
+(Sunday 24:00 UTC; the file name sets the cutoff, never its mtime, which git moves on every sync;
+`RETRO-ALL.md` and names that do not parse are ignored; no dated retro means every run counts).
 Once that count reaches 5, it injects an `additionalContext` reminder to run
 `/agent-monitoring-retro` — advisory only, it never blocks a tool call, and it
 fires at most once per session. Run `/agent-monitoring-retro` to invoke the
