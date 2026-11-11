@@ -1,6 +1,6 @@
 - id: SOC-001
   text: Private betrayal history can override public recruiter reputation.
-  status: verified
+  status: divergent
   priority: P0
   legacy_evidence: null
   v2_evidence: '`src/systems/social_systems/appraisal.py` (`SocialAppraisalSystem.appraise_contract`
@@ -10,7 +10,7 @@
     social-systems package split, function renamed from `evaluate_recruitment_offer`)'
   proof_type: parity
   test_path: '`tests/unit/social/test_betrayal_consequence.py::test_betrayal_trauma_blocks_recruitment`'
-  divergence_note: null
+  divergence_note: 'In play, recruitment acceptance runs on cooperation''s minimal accept (services.py find_pending_incoming_offer -> phase.py:190 accept_contract, D-09: any live offer, if the receiver is not in a group), and the trust appraisal never runs: execute_recruit, the only caller that appraises a RECRUITMENT contract, has no issuer (action_router.py:63-64). The betrayal gate in appraise_contract is therefore not reached by recruitment in play. See docs/guidelines/intentional_divergences.md Section 2.205 and TCK-20261111-NO-RECRUITMENT-APPRAISAL-RUNS-IN-ANY-CORPUS-WORLD.'
   support_boundary: null
 - id: SOC-002
   text: Social learning updates familiarity/trust-like bonds from interaction evidence.
@@ -95,7 +95,7 @@
   support_boundary: null
 - id: SOC-008
   text: Recruitment evaluates trust, debt, greed, capability fit, and prior trauma.
-  status: verified
+  status: divergent
   priority: P0
   legacy_evidence: null
   v2_evidence: '`src/systems/social_systems/appraisal.py` (`SocialAppraisalSystem.calculate_recruitment_cost`,
@@ -104,7 +104,7 @@
     function renamed from `evaluate_recruitment_offer`)'
   proof_type: parity
   test_path: '`tests/unit/social/test_recruitment.py`, `tests/unit/social/test_betrayal_consequence.py::test_betrayal_trauma_blocks_recruitment`'
-  divergence_note: null
+  divergence_note: 'In play, recruitment acceptance runs on cooperation''s minimal accept (services.py find_pending_incoming_offer -> phase.py:190 accept_contract, D-09: any live offer, if the receiver is not in a group), and the trust appraisal never runs: execute_recruit, the only caller that appraises a RECRUITMENT contract, has no issuer (action_router.py:63-64). The calculate_recruitment_cost this row''s v2_evidence cites (appraisal.py:508) has no caller in play. See docs/guidelines/intentional_divergences.md Section 2.205 and TCK-20261111-NO-RECRUITMENT-APPRAISAL-RUNS-IN-ANY-CORPUS-WORLD.'
   support_boundary: null
 - id: SOC-009
   text: "`test_arena_structural_determinism`: Arena structural determinism \u2014\

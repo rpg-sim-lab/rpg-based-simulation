@@ -3604,11 +3604,12 @@
     on the same `_ADVENTURE_ROUTE_SCORE_MAX = 2.9` scale as adventure routes via `_score_scale_max()`''s
     `isinstance(kind, ProjectKind)` classification -- a deliberate, disclosed design
     choice (reusing the existing scale rather than extending the classifier), not
-    an oversight. Disclosed scope boundary: `accept_contract()` itself has no production
-    caller today, but `SocialContractGoalScorer` is confirmed live-reachable via `CoreActions.execute_recruit()`
-    (src/engine/domain/core_actions.py:96-105), which builds ACTIVE RECRUITMENT contracts
-    directly -- so this fix has real production impact without requiring `accept_contract()`
-    to be wired into a live call site.'
+    an oversight. Disclosed scope boundary (reworded under TCK-20261111-NO-RECRUITMENT-APPRAISAL-RUNS-IN-ANY-CORPUS-WORLD): in current play every RECRUITMENT contract
+    is made by the cooperation domain and made ACTIVE by `ContractService.accept_contract()`
+    (src/domains/cooperation/phase.py:190), so `SocialContractGoalScorer` reaches the
+    contracts that accept makes ACTIVE. `CoreActions.execute_recruit()` is never called in play
+    (nothing issues the RECRUIT action, action_router.py:63-64), and the trust appraisal does
+    not decide recruitment acceptance in play (divergence 2.205).'
   status: verified
   priority: P2
   legacy_evidence: null
@@ -3637,10 +3638,10 @@
   support_boundary: Real, registered, unit-tested code, reachable through the live
     tier-5 pipeline path (StrategicIntelligenceSystem.evaluate_strategic_intent(),
     driven every tick by the unconditional src/engine/pipeline.py:"strategic_intelligence"
-    phase) via any ACTIVE RECRUITMENT/LOAN contract regardless of provenance -- including
-    execute_recruit()-originated contracts, which bypass accept_contract() entirely.
-    accept_contract() itself remains reachable only from tests today (no production
-    caller), a disclosed, not a hidden, gap.
+    phase) via any ACTIVE RECRUITMENT/LOAN contract regardless of provenance -- in current
+    play the contracts the cooperation accept makes ACTIVE (phase.py:190 calls accept_contract).
+    execute_recruit() has no issuer in play (action_router.py:63-64), so no contract reaches
+    the scorer by that route (reworded under TCK-20261111-NO-RECRUITMENT-APPRAISAL-RUNS-IN-ANY-CORPUS-WORLD; divergence 2.205).
 - id: STRAT-255
   text: 'TCK-20260811-REGION-STABILIZATION-GOAL-SCORER -- a new `RegionStabilizationGoalScorer`
     (implementing the existing `GoalScorer` protocol) exists, is registered under
@@ -4413,7 +4414,7 @@
   divergence_note: See docs/guidelines/intentional_divergences.md Section 2.72.
   support_boundary: The corpus measure after the change is 0 because the self-targeted
     projects no longer form; termination is exercised only by constructed cases, and
-    the other holder (the recruit) has no production producer. 195 scorer wins versus
+    the other holder (the recruit) never holds the contract; cooperation stores it on the offerer only, and execute_recruit, the only path that writes it to both sides, has no issuer in play (reworded under TCK-20261111-NO-RECRUITMENT-APPRAISAL-RUNS-IN-ANY-CORPUS-WORLD; divergence 2.205). 195 scorer wins versus
     2 materialized projects was not investigated.
 - id: STRAT-277
   text: 'TCK-20261005-REGIONAL-TRAUMA-FED-INTO-PANIC-AS-IF-NORMALISED-MAKES-EVERYONE-FLEE

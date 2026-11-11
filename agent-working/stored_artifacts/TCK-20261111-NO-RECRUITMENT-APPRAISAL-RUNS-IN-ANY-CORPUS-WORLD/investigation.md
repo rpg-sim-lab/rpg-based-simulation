@@ -129,3 +129,6 @@ Owner row pending (lead-planner-u24); docs/ledger fix held until then. This tick
 ## Known gaps
 - The producers of the TEAM_UP, TRADE, TRAIN, PROPOSE_MARRIAGE and JOIN_CLAN action strings were not traced, so whether those routes are issued is unknown. This ticket makes no claim about them.
 - Timing was not measured. Seeds 43-46 had no plain twin, so purity of the spy there rests on the s42 hash equality.
+
+## Update: the owner answered (docs consequence folded in)
+The owner chose (a) docs only (#715 6798982732) and folded the docs fix into this PR (#715 6798995072). It is now in this change: SOC-001 and SOC-008 divergent; STRAT-254 and STRAT-276 reworded (status kept verified); a ch07 "Current play" note; divergence 2.205 (Bounded, D-09). The open item above ("owner row pending ... held") is superseded. Play is unchanged.
