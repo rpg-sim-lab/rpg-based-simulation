@@ -8080,6 +8080,18 @@
   - delivery
   - data-quality
 - type: ticket
+  path: agent-working/tickets/done/TCK-20261110-MONITORING-CLOSE-WEEK-BACKLOG.md
+  ticket_id: TCK-20261110-MONITORING-CLOSE-WEEK-BACKLOG
+  title: 'Monitoring weeks 2026-W41 to W45 are closed: their per-batch shards are
+    folded into the canonical files.'
+  tier: hotfix
+  ticket_type: chore
+  date: '2026-11-10'
+  related_code_areas:
+  - agent-working/agent-monitoring/data/
+  artifact_files: []
+  tags: []
+- type: ticket
   path: agent-working/tickets/done/TCK-20261110-MONITORING-VALIDATE-WARNS-ON-A-STALE-INDEX.md
   ticket_id: TCK-20261110-MONITORING-VALIDATE-WARNS-ON-A-STALE-INDEX
   title: '`make agent-monitoring-validate` validates a stale index without saying
