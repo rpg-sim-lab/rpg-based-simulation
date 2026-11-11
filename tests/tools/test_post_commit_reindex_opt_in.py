@@ -10,6 +10,8 @@ from pathlib import Path
 
 import pytest
 
+from tools.agent_working_paths import KNOWLEDGE_INDEX
+
 _REPO = Path(__file__).resolve().parents[2]
 _REGEN_SUBJECT = "auto-regenerate docs/REGISTRY.yaml after merge"
 _SKIP = "reindex skipped (opt-in)"
@@ -35,8 +37,8 @@ def repo(tmp_path):
     root = tmp_path / "repo"
     (root / "tools").mkdir(parents=True)
     (root / "docs").mkdir()
-    (root / "agent-working" / ".index" / "knowledge-index").mkdir(parents=True)
-    (root / "agent-working" / ".index" / "knowledge-index" / "knowledge.db").write_text("db")
+    (root / KNOWLEDGE_INDEX).mkdir(parents=True)
+    (root / KNOWLEDGE_INDEX / "knowledge.db").write_text("db")
     (root / "tools" / "knowledge_search.py").write_text(_KS_STUB)
     (root / "tools" / "generate_registry.py").write_text(_REG_STUB)
     (root / "docs" / "REGISTRY.yaml").write_text("old\n")
@@ -102,7 +104,7 @@ def test_a_commit_that_does_not_trigger_a_reindex_prints_no_skip_line(repo):
 
 
 def test_no_index_means_no_skip_line_and_no_reindex(repo):
-    (repo / "agent-working" / ".index" / "knowledge-index" / "knowledge.db").unlink()
+    (repo / KNOWLEDGE_INDEX / "knowledge.db").unlink()
     assert _SKIP not in _docs_commit(repo)
     assert not (repo / "reindex.ran").exists()
 
