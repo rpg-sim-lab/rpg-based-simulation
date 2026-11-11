@@ -4,7 +4,7 @@ layer: platform
 authority: P1
 audience: agent
 ticket_id: TCK-20261111-COMPOSE-IMAGE-BUMPS-WITH-STACK-PROOF
-phase: open
+phase: inprogress
 date: 2026-11-11
 tags: [platform, observability]
 ---
@@ -15,7 +15,7 @@ tags: [platform, observability]
 Take Dependabot #878's compose image bumps by hand, with their comments updated and a short stack proof run
 
 ## Status
-OPEN
+INPROGRESS
 
 ## Tier
 hotfix
@@ -109,6 +109,23 @@ compose.yaml
 - Dependabot may refresh #878 or open a new compose PR before this lands. If it does, the digests checked here win.
 
 ## Implementation Notes
+**Light part done (2026-11-11); the proof run has not started and waits for the owner's go through lead-planner.**
+- **Digests.** Each is the multi-arch index digest, read with `docker buildx imagetools inspect <tag>` on 2026-11-11. All four equal the ones in Dependabot #878 (no mismatch):
+  - `redis:8.10.3-alpine` `sha256:71885d8cc6e4...fb80` (OCI index; amd64, arm64, arm/v6, arm/v7, 386, ppc64le, riscv64, s390x).
+  - `prom/prometheus:v3.16.0` `sha256:e04987641b57...0f06` (OCI index; amd64, arm64, arm/v7, ppc64le, riscv64, s390x).
+  - `binwiederhier/ntfy:v2.37.2` `sha256:1875ddcf815c...2bd7` (Docker manifest list; amd64, arm64, arm/v6, arm/v7).
+  - `oliver006/redis_exporter:v1.97.0` `sha256:f5f903fbe775...9b83` (OCI index; amd64, arm64, arm/v7).
+- **Age.** ntfy v2.37.2 (2026-11-04), redis_exporter v1.97.0 (2026-11-04) and prometheus v3.16.0 (2026-11-05) are under the repo's usual two-week age. The owner chose them on 2026-11-11 (#715 6800739670, item 3); the compose comments say so.
+- **Comments** updated in compose.yaml: redis (8.10.3, verified 2026-11-11), prometheus (v3.16.0), ntfy (v2.37.2; the old text still said v2.28.0), redis_exporter (v1.97.0; the old text still said v1.93.0, and "this file's redis:8.10.3"). The redis_exporter comment cites `docs/runbooks/records/2026-11-compose-image-bumps.md`: **fix this to the real record filename when the record is written.** No `mem_limit` changed.
+- **Release notes read** (GitHub releases, 2026-11-11):
+  - redis 8.10.3 (2026-10-26): security fix only (heap overflow on a >4 GB PUBLISH over the cluster bus, cluster mode). We don't run cluster mode. No redis-py impact in the notes.
+  - prometheus v3.16.0: six [CHANGE] lines: search endpoint `batch_size` clamp, `--web.external-url` https default when TLS is on, subquery sample statistics, removal of four deprecated remote-write 2.0 metadata metrics, a remote-write receiver counter, exemplar label-name uniqueness. None touches our flags (`--config.file`, `--storage.tsdb.path` only), scrape or rule files, or any remote-write setting (grep of docker/, compose.yaml and docs/runbooks found no use).
+  - ntfy v2.35.0-v2.37.2: no change to auth-default-access, the message cache file or the metrics listener. Items that touch us or need a look in the proof run: (a) v2.36.0 says the whole server config is checked again when `base-url` is set, "so an invalid config that used to start now fails at startup". We set `NTFY_BASE_URL=http://ntfy` plus listen, cache file, auth file, deny-all and a metrics listener, so the proof run must show ntfy starts healthy. (b) v2.36.0 zeroes everyone's daily counts once and stores them in the user database (harmless here). (c) v2.35.0 fixes intermittent 403s under concurrent requests from the same IP (a fix for the auth path we depend on). (d) v2.36.0 adds an experimental admin socket, off by default (`experimental-listen-admin-unix`); we don't set it. The v2.37.2 release body only lists a merge commit.
+  - redis_exporter v1.97.0: opt-in KEYSIZES metrics, options to exclude slowlog/commandlog metrics, an error on an empty CA cert file. We pass only `--redis.addr`. Nothing changes by default.
+  - Result: no breaking or config-affecting change that needs a config edit. The one watch item is (a).
+- **Light checks.** `docker compose --profile observability config -q` parses; grep for the old versions in compose.yaml finds none; compose hygiene, repo-root and platform-domain tests: 14 passed. The ride-along on `TCK-20261111-DEPENDABOT-WATCHES-WEBSITE` is done (#879, opened 2 minutes after #875 merged, labels [dependencies, platform]).
+- Out of scope and for platform-planner to route: `tests/perf/test_simq_isolation_overhead.py` line 17 still cites the old redis digest.
+
 ## Test Summary
 ## Files Changed
 ## Completion Summary
