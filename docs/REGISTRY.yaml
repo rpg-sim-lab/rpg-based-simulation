@@ -8036,6 +8036,17 @@
   - content
   last_verified: '2026-10-09'
 - type: ticket
+  path: agent-working/tickets/done/TCK-20261111-EACH-MECHANISM-GETS-A-PLAIN-LANGUAGE-SUMMARY.md
+  ticket_id: TCK-20261111-EACH-MECHANISM-GETS-A-PLAIN-LANGUAGE-SUMMARY
+  title: Each mechanism in the registry gets a plain-language summary
+  tier: hotfix
+  ticket_type: chore
+  date: '2026-11-11'
+  related_code_areas:
+  - registries/mechanisms.yaml
+  artifact_files: []
+  tags: []
+- type: ticket
   path: agent-working/tickets/done/TCK-20261111-REGISTRY-REGEN-MISSES-A-MERGE-FINISHED-BY-COMMIT.md
   ticket_id: TCK-20261111-REGISTRY-REGEN-MISSES-A-MERGE-FINISHED-BY-COMMIT
   title: '`docs/REGISTRY.yaml` isn''t regenerated when a merge stops on another conflict
@@ -8086,6 +8097,18 @@
   - agent-monitoring
   - delivery
   - data-quality
+- type: ticket
+  path: agent-working/tickets/done/TCK-20261110-MONITORING-CLOSE-WEEK-BACKLOG.md
+  ticket_id: TCK-20261110-MONITORING-CLOSE-WEEK-BACKLOG
+  title: 'Monitoring weeks 2026-W41 to W45 are closed: their per-batch shards are
+    folded into the canonical files.'
+  tier: hotfix
+  ticket_type: chore
+  date: '2026-11-10'
+  related_code_areas:
+  - agent-working/agent-monitoring/data/
+  artifact_files: []
+  tags: []
 - type: ticket
   path: agent-working/tickets/done/TCK-20261110-MONITORING-VALIDATE-WARNS-ON-A-STALE-INDEX.md
   ticket_id: TCK-20261110-MONITORING-VALIDATE-WARNS-ON-A-STALE-INDEX
@@ -8738,6 +8761,27 @@
   - documentation
   - observability
 - type: ticket
+  path: agent-working/tickets/done/TCK-20261108-DOC-EVIDENCE-FIELDS-AND-DRIFT-REPORT.md
+  ticket_id: TCK-20261108-DOC-EVIDENCE-FIELDS-AND-DRIFT-REPORT
+  title: Behaviour docs can carry evidence and a verification baseline, and an advisory
+    drift report says which ones need re-verifying.
+  tier: standard
+  ticket_type: feature
+  date: '2026-11-08'
+  related_code_areas:
+  - tools/validate_frontmatter.py, tools/mechanism_registry/mechanism_registry_changed_code_check.py
+  - tools/agent-monitoring/week_close.py, .claude/workflows/implement-ticket.js (Finalize)
+  artifact_files:
+  - agent-working/stored_artifacts/TCK-20261108-DOC-EVIDENCE-FIELDS-AND-DRIFT-REPORT/investigation.md
+  - agent-working/stored_artifacts/TCK-20261108-DOC-EVIDENCE-FIELDS-AND-DRIFT-REPORT/plan.md
+  - agent-working/stored_artifacts/TCK-20261108-DOC-EVIDENCE-FIELDS-AND-DRIFT-REPORT/test_plan.md
+  tags:
+  - ai
+  - documentation
+  - governance
+  - frontmatter
+  - agent-monitoring
+- type: ticket
   path: agent-working/tickets/done/TCK-20261108-DOC-STEP-ON-HAND-CLOSES-AND-REVIEW-RULES.md
   ticket_id: TCK-20261108-DOC-STEP-ON-HAND-CLOSES-AND-REVIEW-RULES
   title: Hand-orchestrated closes get the doc step, the Definition of Done records
@@ -8871,6 +8915,24 @@
   - documentation
   - observability
 - type: ticket
+  path: agent-working/tickets/done/TCK-20261108-STALE-DOC-DETECTION-PILOT.md
+  ticket_id: TCK-20261108-STALE-DOC-DETECTION-PILOT
+  title: A read-only stale-doc detection run at a pinned SHA, and an evaluation report
+    the owner uses to scope J3.
+  tier: standard
+  ticket_type: feature
+  date: '2026-11-08'
+  related_code_areas: []
+  artifact_files:
+  - agent-working/stored_artifacts/TCK-20261108-STALE-DOC-DETECTION-PILOT/doc_stale_detection_pilot_5c6990e51.md
+  - agent-working/stored_artifacts/TCK-20261108-STALE-DOC-DETECTION-PILOT/investigation.md
+  - agent-working/stored_artifacts/TCK-20261108-STALE-DOC-DETECTION-PILOT/plan.md
+  - agent-working/stored_artifacts/TCK-20261108-STALE-DOC-DETECTION-PILOT/test_plan.md
+  tags:
+  - ai
+  - documentation
+  - governance
+- type: ticket
   path: agent-working/tickets/done/TCK-20261108-WEBSITE-DEV-SERVER-PULLS-A-UUID-WITH-AN-OPEN-SECURITY-ALERT.md
   ticket_id: TCK-20261108-WEBSITE-DEV-SERVER-PULLS-A-UUID-WITH-AN-OPEN-SECURITY-ALERT
   title: The docs website's dev server pulls uuid 8.3.2, which has an open medium
@@ -8882,24 +8944,6 @@
   - website/package.json, website/package-lock.json
   artifact_files: []
   tags: []
-- type: ticket
-  path: agent-working/tickets/todos/docs-as-review-source/TCK-20261108-DOC-EVIDENCE-FIELDS-AND-DRIFT-REPORT.md
-  ticket_id: TCK-20261108-DOC-EVIDENCE-FIELDS-AND-DRIFT-REPORT
-  title: Behaviour docs can carry evidence and a verification baseline, and an advisory
-    drift report says which ones need re-verifying.
-  tier: standard
-  ticket_type: feature
-  date: '2026-11-08'
-  related_code_areas:
-  - tools/validate_frontmatter.py, tools/mechanism_registry/mechanism_registry_changed_code_check.py
-  - tools/agent-monitoring/week_close.py, .claude/workflows/implement-ticket.js (Finalize)
-  artifact_files: []
-  tags:
-  - ai
-  - documentation
-  - governance
-  - frontmatter
-  - agent-monitoring
 - type: ticket
   path: agent-working/tickets/todos/docs-as-review-source/TCK-20261108-EPIC-DOCS-AS-REVIEW-SOURCE.md
   ticket_id: TCK-20261108-EPIC-DOCS-AS-REVIEW-SOURCE
@@ -8928,20 +8972,6 @@
   date: '2026-11-08'
   related_code_areas:
   - tools/project_stats.py (new), docs/architecture/project_facts.md (new)
-  artifact_files: []
-  tags:
-  - ai
-  - documentation
-  - governance
-- type: ticket
-  path: agent-working/tickets/todos/docs-as-review-source/TCK-20261108-STALE-DOC-DETECTION-PILOT.md
-  ticket_id: TCK-20261108-STALE-DOC-DETECTION-PILOT
-  title: A read-only stale-doc detection run at a pinned SHA, and an evaluation report
-    the owner uses to scope J3.
-  tier: standard
-  ticket_type: feature
-  date: '2026-11-08'
-  related_code_areas: []
   artifact_files: []
   tags:
   - ai
