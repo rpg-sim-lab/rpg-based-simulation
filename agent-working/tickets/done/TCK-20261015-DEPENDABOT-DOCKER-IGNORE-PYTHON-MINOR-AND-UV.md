@@ -1,10 +1,10 @@
 ---
-status: active
+status: historical
 layer: platform
 authority: P1
 audience: agent
 ticket_id: TCK-20261015-DEPENDABOT-DOCKER-IGNORE-PYTHON-MINOR-AND-UV
-phase: inprogress
+phase: done
 date: 2026-10-15
 tags: [platform]
 ---
@@ -15,7 +15,7 @@ tags: [platform]
 Dependabot docker ecosystem: stop proposing Python minor-line moves and uv bumps for the backend image
 
 ## Status
-OPEN
+DONE
 
 ## Tier
 hotfix
@@ -71,7 +71,8 @@ handled by hand.
 - **Dependency name:** #576's own commit metadata (Dependabot's `dependency-name` block) names the image `astral-sh/uv` (not `ghcr.io/astral-sh/uv`). The same block shows Dependabot also proposed `python 3.15.0rc3-slim`, which the `>=3.14` rule covers.
 
 ## Test Summary
-- **validated (schema):** the file parses; the docker ecosystem has the node, python and astral-sh/uv ignore entries. GitHub's Dependabot config check and the next monthly docker run are observed after merge (not yet; append the result to this ticket).
+- **validated (schema):** the file parses; the docker ecosystem has the node, python and astral-sh/uv ignore entries. 
+- **observed (2026-11-01 docker run, re-checked 2026-11-11 from #809's diff):** the only docker PR was #809 (docker-minor-patch, merged ab8ed9759). It moved `python:3.13.16-slim` -> `3.13.18-slim` (patch only, nothing >=3.14), `node:24.21.0` -> `24.22.2` (nothing >=25) and nginx-unprivileged 1.31.6 -> 1.31.7. `ghcr.io/astral-sh/uv:0.11.2` was left untouched. There was no docker-major PR. The `astral-sh/uv` dependency name works as an ignore.
 
 ## Files Changed
 - `.github/dependabot.yml`
