@@ -1,7 +1,13 @@
 #!/usr/bin/env bash
-# Post-commit hook: run incremental knowledge index reindex when docs/ or agent-working/tickets/done/ changed.
+# Post-commit hook, two jobs:
+#  1. Registry regen for a merge commit that leaves docs/REGISTRY.yaml stale (always on).
+#  2. Incremental knowledge-index reindex when docs/ or agent-working/tickets/done/ changed. OPT-IN per clone:
+#       git config --bool knowledge.reindexOnCommit true     (shared by every worktree of the clone)
+#     The reindex loads the embedding model and can exhaust memory (TCK-20261111-KNOWLEDGE-INDEX-BUILD-MEMORY-BOUNDED),
+#     so by default a commit that would have triggered it prints one skip line instead. `make knowledge-index-update`
+#     runs it by hand.
 # Install: make install-hooks
-# No-op if agent-working/.index/knowledge-index/ does not exist or if HEAD~1 is unavailable (first commit).
+# No-op for the reindex if agent-working/.index/knowledge-index/ does not exist or if HEAD~1 is unavailable (first commit).
 
 set -euo pipefail
 
@@ -12,8 +18,13 @@ changed=$(git diff --name-only HEAD~1 HEAD 2>/dev/null || true)
 
 if echo "$changed" | grep -qE '^(docs/|agent-working/tickets/done/)'; then
     if [ -f agent-working/.index/knowledge-index/knowledge.db ]; then
-        echo "[knowledge-search] Relevant files changed — running incremental reindex..."
-        python3 tools/knowledge_search.py build --incremental
+        opt_in=$(git config --bool knowledge.reindexOnCommit 2>/dev/null || true)
+        if [ "$opt_in" = "true" ]; then
+            echo "[knowledge-search] Relevant files changed — running incremental reindex..."
+            python3 tools/knowledge_search.py build --incremental
+        else
+            echo "[knowledge-search] reindex skipped (opt-in): run 'git config --bool knowledge.reindexOnCommit true' to reindex on commit, or 'make knowledge-index-update' by hand"
+        fi
     fi
 fi
 
