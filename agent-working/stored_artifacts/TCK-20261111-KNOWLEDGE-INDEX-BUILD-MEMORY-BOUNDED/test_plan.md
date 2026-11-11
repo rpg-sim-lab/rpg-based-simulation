@@ -5,7 +5,7 @@ authority: P2
 audience: agent
 ticket_id: TCK-20261111-KNOWLEDGE-INDEX-BUILD-MEMORY-BOUNDED
 artifact_type: test_plan
-tags: [documentation, reference]
+tags: [delivery]
 ---
 
 # Test plan: TCK-20261111-KNOWLEDGE-INDEX-BUILD-MEMORY-BOUNDED

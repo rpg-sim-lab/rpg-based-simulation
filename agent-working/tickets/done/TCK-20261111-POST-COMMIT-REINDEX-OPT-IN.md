@@ -1,10 +1,10 @@
 ---
-status: active
+status: historical
 layer: ai
 authority: P1
 audience: agent
 ticket_id: TCK-20261111-POST-COMMIT-REINDEX-OPT-IN
-phase: open
+phase: done
 date: 2026-11-11
 tags: [delivery]
 ---
@@ -15,7 +15,7 @@ tags: [delivery]
 The post-commit hook regenerates the registry by default and reindexes knowledge search only when a clone opts in
 
 ## Status
-OPEN
+DONE
 
 ## Tier
 hotfix
@@ -84,9 +84,15 @@ The owner asked for the split: the registry regen installable alone, with the re
   behaves the same whatever its shell profile.
 
 ## Implementation Notes
+`tools/hooks/post-commit-reindex.sh`: the reindex block runs only when `git config --bool knowledge.reindexOnCommit` is true (per clone, shared by its worktrees). Otherwise a commit that would have triggered it prints one skip line naming the opt-in and `make knowledge-index-update`. The registry-regen block for merge commits is untouched and unconditional. The `install-hooks` help line in the Makefile (lead's file; help text only) and `docs/guidelines/agent_working_environment.md` describe the default and the opt-in.
+`codebase/hooks/install_git_hooks.py` is untouched: its byte-identity test copies the repo file and passes, and the only content pin (`test_knowledge_search.py::test_hook_script_is_executable_shell`) still finds `knowledge_search.py` and `incremental` in the file.
+Planner correction recorded: the hook never runs under pytest, so the pytest address-space limit (see TCK-20261111-KNOWLEDGE-INDEX-BUILD-MEMORY-BOUNDED) does not touch it; its issue was only an uncapped 1.4-1.6 GB build on whichever seat commits.
 
 ## Test Summary
+`tests/tools/test_post_commit_reindex_opt_in.py`: 9 passed, running the real hook in a temp repo with a stub `knowledge_search.py` (unset: no reindex and the skip line; true: reindex runs; false/0/no skip; a commit that triggers nothing prints no skip line; no index prints nothing; a merge commit regenerates the registry with the opt-in unset and set). With `test_post_commit_registry_regen.py`, `tests/codebase/test_code_health_install_git_hooks.py` (venv python) and the hook-content test: 36 passed.
 
 ## Files Changed
+tools/hooks/post-commit-reindex.sh, Makefile (install-hooks help text), docs/guidelines/agent_working_environment.md, tests/tools/test_post_commit_reindex_opt_in.py
 
 ## Completion Summary
+The post-commit hook regenerates the registry by default and reindexes knowledge search only in clones that opt in with `git config --bool knowledge.reindexOnCommit true`.

@@ -1,10 +1,10 @@
 ---
-status: active
+status: historical
 layer: ai
 authority: P1
 audience: agent
 ticket_id: TCK-20261111-KNOWLEDGE-INDEX-BUILD-MEMORY-BOUNDED
-phase: open
+phase: done
 date: 2026-11-11
 tags: [delivery]
 ---
@@ -15,7 +15,7 @@ tags: [delivery]
 The knowledge-index build tests get the address space they need: the resource budget lowers only the soft limit, and the build tests are marked large
 
 ## Status
-OPEN
+DONE
 
 ## Tier
 standard
@@ -74,9 +74,15 @@ The ticket was filed assuming `tools/knowledge_search.py` encodes all texts in o
   climb. Investigate confirms or refutes this before any batching is designed.
 
 ## Implementation Notes
+Premise corrected (lead, 11-11): lead never ran `make knowledge-index-update` on this host; its 'the model OOMs here' came from the pytest MemoryError. Ticket rewritten at investigation (title, scope, ACs; batching dropped). See `investigation.md` for the measurements: full build rc 0, peak RSS 1.40 GB, peak virtual 4.68 GB; incremental rc 0, 1.57 GB and 4.85 GB; the same incremental build under `ulimit -v 4 GB` fails loading the model (`unable to mmap`). `tests/conftest.py` set `RLIMIT_AS` for every test (4 GB at the medium budget), hard limit included, so the build tests were refused address space and the first test's cap bound all later tests.
+Changes: (1) `tests/conftest.py` lowers only the soft limit, clamped to an inherited finite hard limit (rpg-planner's conditions; rpg-planner OK given via lead-planner-u24; a cross-domain edit); (2) `pytestmark = resource_budget_large` on `test_knowledge_search.py` and `test_knowledge_index_staleness.py`; (3) regression test `tests/unit/test_conftest_rlimit_soft_only.py`; (4) `test_conftest_resource_budget.py` updated where it pinned the old hard=soft pair; (5) the staleness `_query` helper also tolerates the empty fixture db's `OperationalError` (the two 'no such table: knowledge_vec' failures were this fixture, not a build that died; the helper's docstring already says the warning prints before any search work).
+Thread counts for the record: torch 2, cpu_count 6, affinity 2 under taskset 4-5; CI has different counts, so its VmPeak is probably lower. No change for CI.
 
 ## Test Summary
+Regression: `tests/unit/test_conftest_rlimit_soft_only.py` 5 passed on the new conftest and 4 of 5 fail on the old one. `test_conftest_resource_budget.py` passes. Under the 3G wrapper (lead's go): `test_knowledge_index_staleness.py` 14 passed on the synced tree. `test_knowledge_search.py` (before the sync with main): 107 passed, 4 failed; the two MemoryError build failures no longer occur. The 4 left are time limits on this 2-core host: two live queries took 5.3-5.4 s against a 2 s SLA, and two real builds (`test_build_docs_chunk_count_exceeds_500`, `test_build_completes_under_five_minutes`) hit their subprocess timeouts because the full build takes about 18 minutes here. They are not memory failures, are not addressed, and are Known gaps below.
 
 ## Files Changed
+tests/conftest.py (cross-domain: rpg), tests/unit/test_conftest_rlimit_soft_only.py, tests/tools/test_conftest_resource_budget.py, tests/tools/test_knowledge_search.py, tests/tools/test_knowledge_index_staleness.py, stored artifacts (investigation, plan, test_plan)
 
 ## Completion Summary
+Known gap: four time-based tests in `test_knowledge_search.py` still fail on this host (query SLA 2 s vs about 5.3 s; real builds slower than their subprocess timeouts). The build itself is not memory-bound and the pytest address-space cap no longer binds a large test; the knowledge build and staleness tests now run under the large budget.
