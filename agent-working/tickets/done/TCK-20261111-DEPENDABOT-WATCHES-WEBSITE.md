@@ -1,10 +1,10 @@
 ---
-status: active
+status: historical
 layer: platform
 authority: P1
 audience: agent
 ticket_id: TCK-20261111-DEPENDABOT-WATCHES-WEBSITE
-phase: open
+phase: done
 date: 2026-11-11
 tags: [platform]
 ---
@@ -15,7 +15,7 @@ tags: [platform]
 Dependabot watches website/, so a website advisory gets an update PR
 
 ## Status
-OPEN
+DONE
 
 ## Tier
 hotfix
@@ -89,5 +89,14 @@ satisfies the observed acceptance criteria of both earlier tickets. Record it th
   24.22.2 (no >=25). It left `ghcr.io/astral-sh/uv:0.11.2` untouched. There was no docker-major PR.
 
 ## Test Summary
+- **validated (parse):** `.github/dependabot.yml` parses as YAML with 6 entries. The `/website` npm entry equals the `/frontend` entry in schedule, `open-pull-requests-limit` and groups (compared programmatically); labels are `[dependencies, platform]`.
+- **validated:** `website/package.json` and `website/package-lock.json` both exist at the branch head.
+- **not observed:** GitHub's Dependabot config check after merge, and the 2026-12-01 run.
+
 ## Files Changed
+- `.github/dependabot.yml`: new `npm` `/website` entry; `website/** -> lead (platform triages)` in the routing comment.
+- Ride-along closes: `TCK-20261014-DEPENDABOT-GROUPED-MAJORS-MONTHLY`, `TCK-20261015-DEPENDABOT-DOCKER-IGNORE-PYTHON-MINOR-AND-UV` (evidence re-checked with `gh`, #809-#815).
+
 ## Completion Summary
+Dependabot now watches `/website` monthly with at most 2 grouped PRs, so a website advisory gets an update PR. Closes #845 through this ticket ID.
+Known gap: the first /website run is not yet observed. After merge, check that GitHub's Dependabot config check shows no error and that the 2026-12-01 run opens at most 2 grouped PRs "in /website", and record it here.

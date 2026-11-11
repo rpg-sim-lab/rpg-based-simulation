@@ -1,7 +1,7 @@
 # Dependabot version updates (TCK-20261014-DEPENDABOT-AND-BASE-IMAGE-PINS, TCK-20261014-DEPENDABOT-GROUPED-MAJORS-MONTHLY).
 # Monthly. Each ecosystem opens at most two PRs a month: one for major updates, one for minor/patch. We stay current on majors.
 # Review routing by the file a PR changes (labels below): uv.lock and frontend/** -> rpg; test.yml actions -> testing;
-# everything else -> platform.
+# website/** -> lead (platform triages); everything else -> platform.
 version: 2
 updates:
   - package-ecosystem: docker
@@ -57,6 +57,17 @@ updates:
       interval: monthly
     open-pull-requests-limit: 5
     labels: [dependencies, rpg]
+    groups:
+      npm-major:
+        update-types: [major]
+      npm-minor-patch:
+        update-types: [minor, patch]
+  - package-ecosystem: npm
+    directory: /website
+    schedule:
+      interval: monthly
+    open-pull-requests-limit: 5
+    labels: [dependencies, platform]
     groups:
       npm-major:
         update-types: [major]
