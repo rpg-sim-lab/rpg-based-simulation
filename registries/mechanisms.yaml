@@ -205,6 +205,7 @@ mechanisms:
       - src/engine/tactical_hold.py::held_swing_update
       - src/engine/tactical_hold.py::stalemate_break_update
       - src/engine/tactical_hold.py::notice_unengaged_hostile
+      - src/engine/tactical_flight_guard.py::flight_weighs_free_swing
       - src/engine/hostility.py::perceived_hostile
       - src/engine/rpg_depth.py::LeashService
       - src/world/motivation/pressure_resolver.py::MotivationPressureResolver
