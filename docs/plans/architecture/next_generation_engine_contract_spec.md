@@ -95,7 +95,7 @@ through a versioned change to integers or fixed point, which is Level B.
 | Class | Fields (inventory row) |
 |---|---|
 | key | E1 `entity_id` |
-| **C** | E4 `moved_this_tick` (OR); E10 `attributes` (integer sum; C **only** because the cap is applied once, at apply: `AttributePatch.apply` (`src/engine/patches.py:617/632`) calling `rpg_depth.enforce_attribute_caps` (`src/engine/rpg_depth.py:31`). A per-merge clamp would move it to O); E16 `reward` (sum) |
+| **C** | E4 `moved_this_tick` (OR); E10 `attributes` (integer sum; C **only** because the cap is applied once, at apply: `AttributePatch.apply` (`src/engine/patches.py:616`; import at `:618`, call at `:633`) calling `rpg_depth.enforce_attribute_caps` (`src/engine/rpg_depth.py:31`). A per-merge clamp would move it to O); E16 `reward` (sum) |
 | **O** | E2 `kind_set`; E3 `new_position`; E5 `readiness_delta` (float); E6 `active`; E7 `interaction`; E8 `resource_transfers` (list order decides reservations and clamps); E9 `identity`; E11 `inventory` (capacity in list order); E12 `strategic` (last occurrence per id wins; `pipeline.py:395-401` depends on it); E13 `biological` (a set masks deltas); E14 `social` (mixed sum and per-key LWW, §9 F2); E15 `quest`; E17 `lifecycle`; E18 `combat` (attacker pair LWW, outcome precedence, the `is_noop` short-circuit, §9 F1); E19 `equipment`; E20 `navigation`; E21 `task` (action_routing replaces it whole); E22 `stamina_update`; E23 `wound_update`; E25 `group_id_set`; E28 `intent_results` (tuple order); E29 `property_updates` (per-key LWW) |
 | **O, split** (§3.3) | E26 `self_model_bundle_set`; E27 `cognition_bundle_set` |
 | transient | E30 `pending_action_intent`: never applied (no patch); it is a delta read by `information_intent_execution`. Ordered, excluded from the state compare |
@@ -250,7 +250,7 @@ Layer 1 forbids these. Each one moves, keeping today's values at each read point
    - the lazy caches those calls fill (`_spatial_grid_cache`, `_region_list_cache`; §5).
    **This list is not complete.** Reads stay class S (§3.4, rule 5), and the callees above read further. What the contract needs
    is narrower, and it holds: **every read is of tick-start state or of the unit's own earlier deltas, never of another unit's
-   delta from this step** [S: rpg-planner checked the call sites in `fused_strategic_pass` at `5c6990e51`, not the callees' transitive reads; the stage 3 per-unit read check settles it]. The stage 3 exit checks it at runtime.
+   delta from this step** [S: rpg-planner checked the call sites in `fused_strategic_pass` at `5c6990e51`, not the callees' transitive reads; the stage 3 per-unit read check settles it]. Nothing can measure it today; stage 3 builds that check (exit, below).
 
    It writes only its own entry: E20 `navigation`, E7 `interaction` (reset), E12 `strategic`, E9 `identity` (the craft-target
    clear), E29 `property_updates`, and T `metric_counters`. **No cross-entity write** [S, spot-checked].
@@ -290,7 +290,11 @@ belongs to its own ticket:
   hash match here is supporting evidence only (§6, F8);
 - the declaration-coverage and copy-on-write tests (§6);
 - a per-unit target check: every entry a unit writes is keyed by that unit's own entity id;
-- a per-unit read check: no unit reads the running update for another entity id.
+- a per-unit read check: no unit reads the running update for another entity id. **A stage 3 build item**: v1 has no read
+  proxy, so nothing measures this today. Proposed mechanism: in tests only, the kernel hands each unit the running update through
+  a recording wrapper that logs the entity ids looked up in `entity_updates`; any id other than the unit's own fails. The wrapper is
+  kernel-owned and hash-neutral, not passed through `feature_flags` (§10, audit debt). Its own proof: a positive control that a
+  planted cross-id lookup is caught.
 
 ## 9. Findings for their owners (not fixed by the contract)
 
