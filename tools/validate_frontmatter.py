@@ -220,6 +220,44 @@ def _check_doc_tags(filepath: str, fm: dict, registry: dict | None = None) -> li
     return _tag_membership_errors(filepath, tags, registry)
 
 
+_EVIDENCE_REF_PATTERN = re.compile(r"^(TCK-\d{8}-[A-Z0-9]+(-[A-Z0-9]+)*|#\d+)$")
+_EVIDENCE_SHA_PATTERN = re.compile(r"^[0-9a-f]{7,40}$")
+_EVIDENCE_GLOB_CHARS = set("*?[]{}")
+
+
+def _check_evidence_path(filepath: str, path: object) -> str | None:
+    """Shape of one `evidence_paths` entry. It never checks that the file exists: a file deleted later is drift,
+    reported by tools/gate_checks/doc_drift.py, and must not turn every PR's frontmatter test red."""
+    if not isinstance(path, str) or not path:
+        return f"{filepath}: evidence_paths: entries must be non-empty strings"
+    if path.startswith("/") or re.match(r"^[A-Za-z]:[\\/]", path):
+        return f"{filepath}: evidence_paths: {path!r} is absolute; use a repo-relative path"
+    if path.endswith("/"):
+        return f"{filepath}: evidence_paths: {path!r} ends in '/'; list files, not directories"
+    if _EVIDENCE_GLOB_CHARS & set(path):
+        return f"{filepath}: evidence_paths: {path!r} is a glob; list files"
+    if ".." in path.split("/") or "\\" in path:
+        return f"{filepath}: evidence_paths: {path!r} must be a plain repo-relative path (no '..', no backslash)"
+    return None
+
+
+def _check_evidence_fields(filepath: str, fm: dict) -> list[str]:
+    """Optional P1 fields (TCK-20261108-DOC-EVIDENCE-FIELDS-AND-DRIFT-REPORT). Shape only; absent fields are fine."""
+    errors = []
+    if "evidence_paths" in fm:
+        value = fm["evidence_paths"]
+        if not isinstance(value, list):
+            errors.append(f"{filepath}: evidence_paths: must be a list of file paths, e.g. [src/a.py, tests/test_a.py]")
+        else:
+            errors += [e for e in (_check_evidence_path(filepath, p) for p in value) if e]
+    for field in ("verified_by", "reviewed_by"):
+        if field in fm and not (isinstance(fm[field], str) and _EVIDENCE_REF_PATTERN.match(fm[field])):
+            errors.append(f"{filepath}: {field}: {fm[field]!r} must be a TCK-ID or '#<PR number>'")
+    if "verified_at" in fm and not (isinstance(fm["verified_at"], str) and _EVIDENCE_SHA_PATTERN.match(fm["verified_at"])):
+        errors.append(f"{filepath}: verified_at: {fm['verified_at']!r} must be 7-40 lowercase hex characters")
+    return errors
+
+
 def _validate_doc(filepath: str, fm: dict, registry: dict | None = None) -> list[str]:
     errors = []
     for field in ("status", "layer", "authority", "audience"):
@@ -234,6 +272,7 @@ def _validate_doc(filepath: str, fm: dict, registry: dict | None = None) -> list
             f"{filepath}: last_verified: required when status is 'authoritative'"
         )
     errors += _check_doc_tags(filepath, fm, registry)
+    errors += _check_evidence_fields(filepath, fm)
     return errors
 
 

@@ -3,7 +3,10 @@
   "version": "0.0.0",
   "private": true,
   "scripts": {
+    "generate": "python3 scripts/generate_wiki.py",
+    "prestart": "npm run generate",
     "start": "docusaurus start",
+    "prebuild": "npm run generate",
     "build": "docusaurus build",
     "serve": "docusaurus serve",
     "clear": "docusaurus clear"
