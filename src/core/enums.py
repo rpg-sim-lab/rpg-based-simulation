@@ -107,6 +107,7 @@ class ReasonCode(str, Enum):
     CONGESTION = "congestion"
     PATH_EXHAUSTED = "path_exhausted"
     TARGET_REACHED = "target_reached"
+    FELT_LETHAL_FREE_SWING = "FELT_LETHAL_FREE_SWING"  # 2.204: a step that would give the free swing to a hostile whose felt blow finishes the subject is not taken
     
     # Movement / position swap
     POSITION_SWAP = "position_swap"
