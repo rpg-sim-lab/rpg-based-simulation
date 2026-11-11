@@ -42,6 +42,7 @@ open. The 2026-10-28 Alloy run shipped normally.
 ## Scope
 1. **Where the 94.8% comes from.** Find which path Loki's WAL disk check measures and how it computes the
    percentage. Read the Loki 3.7 source and docs for `wal.go` disk throttling. Facts known so far:
+   - Unverified: which path and which statfs fields Loki's check measures. The facts below locate the data, not the measurement.
    - The loki service has no volume and no bind mount (compose.yaml), and the image declares no VOLUME. Its data
      sits in the container layer under Docker's root `/data/docker`, on `/data` (/dev/sdb1, 99G).
    - At 16:37 `/data` read 83% used (`df`), or 79% (`findmnt`).

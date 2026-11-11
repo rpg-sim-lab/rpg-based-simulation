@@ -1,10 +1,10 @@
 ---
-status: active
+status: historical
 layer: platform
 authority: P1
 audience: agent
 ticket_id: TCK-20261111-COMPOSE-IMAGE-BUMPS-WITH-STACK-PROOF
-phase: inprogress
+phase: done
 date: 2026-11-11
 tags: [platform, observability]
 ---
@@ -15,7 +15,7 @@ tags: [platform, observability]
 Take Dependabot #878's compose image bumps by hand, with their comments updated and a short stack proof run
 
 ## Status
-INPROGRESS
+DONE
 
 ## Tier
 hotfix
@@ -109,7 +109,7 @@ compose.yaml
 - Dependabot may refresh #878 or open a new compose PR before this lands. If it does, the digests checked here win.
 
 ## Implementation Notes
-**Light part done and proof run done (2026-11-11, owner go #715 6801197149). One red check, not resolved: see the record, section 5. The ticket stays open until platform-planner decides.**
+**Light part done and proof run done (2026-11-11, owner go #715 6801197149). One red check (Loki), decided by platform-planner as option (a): the pins stay, the Loki fault is `TCK-20261111-LOKI-REJECTS-EVERY-PUSH-ON-WAL-DISK-THROTTLE`.**
 - **Digests.** Each is the multi-arch index digest, read with `docker buildx imagetools inspect <tag>` on 2026-11-11. All four equal the ones in Dependabot #878 (no mismatch):
   - `redis:8.10.3-alpine` `sha256:71885d8cc6e4...fb80` (OCI index; amd64, arm64, arm/v6, arm/v7, 386, ppc64le, riscv64, s390x).
   - `prom/prometheus:v3.16.0` `sha256:e04987641b57...0f06` (OCI index; amd64, arm64, arm/v7, ppc64le, riscv64, s390x).
@@ -141,3 +141,6 @@ compose.yaml
 - `agent-working/stored_artifacts/TCK-20261111-COMPOSE-IMAGE-BUMPS-WITH-STACK-PROOF/run-2026-11-11/`: run evidence.
 - `agent-working/tickets/done/TCK-20261111-DEPENDABOT-WATCHES-WEBSITE.md`: ride-along observed line.
 ## Completion Summary
+The four compose image bumps from Dependabot #878 are taken by hand: redis 8.10.3-alpine, prometheus v3.16.0, ntfy v2.37.2, redis_exporter v1.97.0, each pinned by a multi-arch index digest I read myself, with the compose comments updated. The stack proof run showed all 9 targets up, `redis_version=8.10.3`, ntfy's deny-all auth (403 anonymous, 200 with the token), a real `[firing]` and `[resolved]` TargetDown message through ntfy, and memory well under the limits of ntfy, redis-exporter and prometheus (record `docs/runbooks/records/2026-11-11-compose-image-bumps.md`). This also closes the #786 gap "ntfy not re-proven". Supersedes Dependabot #878 (the user closes it). Ride-along done: the observed line on `TCK-20261111-DEPENDABOT-WATCHES-WEBSITE`.
+Known gap: Loki accepted no log push during the proof run (cause open), tracked in TCK-20261111-LOKI-REJECTS-EVERY-PUSH-ON-WAL-DISK-THROTTLE
+Also not covered: the run lasted 12 min 43 s, not 25 to 30, so the memory numbers are a short-run peak. The Prometheus rules premise was corrected (Prometheus has no rule files; Grafana's 11 rules were checked instead).

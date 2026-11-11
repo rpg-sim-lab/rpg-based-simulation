@@ -8071,6 +8071,20 @@
   artifact_files: []
   tags: []
 - type: ticket
+  path: agent-working/tickets/done/TCK-20261111-COMPOSE-IMAGE-BUMPS-WITH-STACK-PROOF.md
+  ticket_id: TCK-20261111-COMPOSE-IMAGE-BUMPS-WITH-STACK-PROOF
+  title: 'Take Dependabot #878''s compose image bumps by hand, with their comments
+    updated and a short stack proof run'
+  tier: hotfix
+  ticket_type: chore
+  date: '2026-11-11'
+  related_code_areas:
+  - compose.yaml
+  artifact_files: []
+  tags:
+  - platform
+  - observability
+- type: ticket
   path: agent-working/tickets/done/TCK-20261111-DEPENDABOT-WATCHES-WEBSITE.md
   ticket_id: TCK-20261111-DEPENDABOT-WATCHES-WEBSITE
   title: Dependabot watches website/, so a website advisory gets an update PR
@@ -8260,20 +8274,6 @@
   tags:
   - documentation
   - reference
-- type: ticket
-  path: agent-working/tickets/inprogress/TCK-20261111-COMPOSE-IMAGE-BUMPS-WITH-STACK-PROOF.md
-  ticket_id: TCK-20261111-COMPOSE-IMAGE-BUMPS-WITH-STACK-PROOF
-  title: 'Take Dependabot #878''s compose image bumps by hand, with their comments
-    updated and a short stack proof run'
-  tier: hotfix
-  ticket_type: chore
-  date: '2026-11-11'
-  related_code_areas:
-  - compose.yaml
-  artifact_files: []
-  tags:
-  - platform
-  - observability
 - type: ticket
   path: agent-working/tickets/todos/TCK-20261111-LOKI-REJECTS-EVERY-PUSH-ON-WAL-DISK-THROTTLE.md
   ticket_id: TCK-20261111-LOKI-REJECTS-EVERY-PUSH-ON-WAL-DISK-THROTTLE
