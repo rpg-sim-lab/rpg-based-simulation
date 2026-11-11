@@ -8217,6 +8217,24 @@
   tags:
   - economy
 - type: ticket
+  path: agent-working/tickets/done/TCK-20261109-ANY-SOCIAL-UPDATE-WIPES-THE-REJECTION-COUNTS-IT-DOES-NOT-NAME.md
+  ticket_id: TCK-20261109-ANY-SOCIAL-UPDATE-WIPES-THE-REJECTION-COUNTS-IT-DOES-NOT-NAME
+  title: Any social update wipes the rejection counts it does not name, so recruitment's
+    social-fatigue penalty almost never builds up
+  tier: standard
+  ticket_type: bug
+  date: '2026-11-09'
+  related_code_areas:
+  - src/systems/social_systems/relationships.py:133
+  - src/core/updates.py:322-384 (SocialUpdate rejection_increment, merge)
+  - src/systems/social_systems/appraisal.py:125
+  - src/engine/domain/core_actions.py (rejection writers)
+  artifact_files:
+  - agent-working/stored_artifacts/TCK-20261109-ANY-SOCIAL-UPDATE-WIPES-THE-REJECTION-COUNTS-IT-DOES-NOT-NAME/investigation.md
+  - agent-working/stored_artifacts/TCK-20261109-ANY-SOCIAL-UPDATE-WIPES-THE-REJECTION-COUNTS-IT-DOES-NOT-NAME/plan.md
+  - agent-working/stored_artifacts/TCK-20261109-ANY-SOCIAL-UPDATE-WIPES-THE-REJECTION-COUNTS-IT-DOES-NOT-NAME/test_plan.md
+  tags: []
+- type: ticket
   path: agent-working/tickets/done/TCK-20261109-DISTRIBUTED-WORKERS-ADR-AMENDMENT.md
   ticket_id: TCK-20261109-DISTRIBUTED-WORKERS-ADR-AMENDMENT
   title: 'ADR amendment: allow an opt-in experiment mode whose Collection workers
@@ -8362,21 +8380,6 @@
   date: '2026-11-09'
   related_code_areas:
   - website/package-lock.json
-  artifact_files: []
-  tags: []
-- type: ticket
-  path: agent-working/tickets/inprogress/TCK-20261109-ANY-SOCIAL-UPDATE-WIPES-THE-REJECTION-COUNTS-IT-DOES-NOT-NAME.md
-  ticket_id: TCK-20261109-ANY-SOCIAL-UPDATE-WIPES-THE-REJECTION-COUNTS-IT-DOES-NOT-NAME
-  title: Any social update wipes the rejection counts it does not name, so recruitment's
-    social-fatigue penalty almost never builds up
-  tier: standard
-  ticket_type: bug
-  date: '2026-11-09'
-  related_code_areas:
-  - src/systems/social_systems/relationships.py:133
-  - src/core/updates.py:322-384 (SocialUpdate rejection_increment, merge)
-  - src/systems/social_systems/appraisal.py:125
-  - src/engine/domain/core_actions.py (rejection writers)
   artifact_files: []
   tags: []
 - type: ticket
