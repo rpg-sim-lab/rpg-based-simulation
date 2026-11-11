@@ -481,6 +481,18 @@
   - observability
   - delivery
 - type: doc
+  path: docs/architecture/distributed_workers_adr.md
+  title: 'ADR: an opt-in mode may run the Collection pool outside the engine process'
+  status: active
+  layer: architecture
+  authority: P1
+  audience: agent
+  tags:
+  - architecture
+  - engine
+  - determinism
+  - platform
+- type: doc
   path: docs/architecture/doc_topic_map.md
   title: Documentation topic map
   status: active
@@ -5985,6 +5997,18 @@
   - architecture
   - determinism
 - type: doc
+  path: docs/plans/architecture/distributed_workers_experiment_design.md
+  title: 'Distributed-workers experiment mode: design (DRAFT)'
+  status: active
+  layer: architecture
+  authority: P2
+  audience: agent
+  tags:
+  - architecture
+  - engine
+  - determinism
+  - platform
+- type: doc
   path: docs/plans/architecture/engine_execution_modes_proposal.md
   title: 'Engine execution modes: fix the waste first, then four labelled modes'
   status: active
@@ -8012,6 +8036,49 @@
   - content
   last_verified: '2026-10-09'
 - type: ticket
+  path: agent-working/tickets/done/TCK-20261111-EACH-MECHANISM-GETS-A-PLAIN-LANGUAGE-SUMMARY.md
+  ticket_id: TCK-20261111-EACH-MECHANISM-GETS-A-PLAIN-LANGUAGE-SUMMARY
+  title: Each mechanism in the registry gets a plain-language summary
+  tier: hotfix
+  ticket_type: chore
+  date: '2026-11-11'
+  related_code_areas:
+  - registries/mechanisms.yaml
+  artifact_files: []
+  tags: []
+- type: ticket
+  path: agent-working/tickets/done/TCK-20261111-REGISTRY-REGEN-MISSES-A-MERGE-FINISHED-BY-COMMIT.md
+  ticket_id: TCK-20261111-REGISTRY-REGEN-MISSES-A-MERGE-FINISHED-BY-COMMIT
+  title: '`docs/REGISTRY.yaml` isn''t regenerated when a merge stops on another conflict
+    and is finished with `git commit`, and pre-push check E skips a branch whose only
+    registry-relevant change is `docs/REGISTRY.yaml`'
+  tier: hotfix
+  ticket_type: bug
+  date: '2026-11-11'
+  related_code_areas:
+  - tools/hooks/post-commit-reindex.sh, tools/hooks/registry_post_merge_regen.sh (reference,
+    unchanged),
+  - tools/delivery/pre_push_advisory_hook.py, tests/tools/
+  artifact_files: []
+  tags:
+  - delivery
+  - process-improvement
+- type: ticket
+  path: agent-working/tickets/todos/TCK-20261111-SPLIT-UPDATES-PY-INTO-UPDATE-MODELS.md
+  ticket_id: TCK-20261111-SPLIT-UPDATES-PY-INTO-UPDATE-MODELS
+  title: Move the per-domain update models out of src/core/updates.py into src/core/update_models/,
+    so the module comes back under its length ceiling
+  tier: standard
+  ticket_type: refactor
+  date: '2026-11-11'
+  related_code_areas:
+  - src/core/updates.py
+  - src/core/update_models/
+  - codebase/baselines/code_health_exceptions.jsonl (the updates.py module-length
+    row)
+  artifact_files: []
+  tags: []
+- type: ticket
   path: agent-working/tickets/done/TCK-20261110-DELIVERY-COST-REF-MODE-READS-NO-BRANCH-SHARDS.md
   ticket_id: TCK-20261110-DELIVERY-COST-REF-MODE-READS-NO-BRANCH-SHARDS
   title: '`delivery_cost_measurement.py --ref` reads only a week''s canonical `tools.jsonl`,
@@ -8149,6 +8216,25 @@
   artifact_files: []
   tags:
   - economy
+- type: ticket
+  path: agent-working/tickets/done/TCK-20261109-DISTRIBUTED-WORKERS-ADR-AMENDMENT.md
+  ticket_id: TCK-20261109-DISTRIBUTED-WORKERS-ADR-AMENDMENT
+  title: 'ADR amendment: allow an opt-in experiment mode whose Collection workers
+    run outside the engine process, with one writer kept and the default unchanged.'
+  tier: standard
+  ticket_type: chore
+  date: '2026-11-09'
+  related_code_areas:
+  - src/engine/kernel.py (selection at 193-198; validation at 556)
+  - src/engine/worker_manager.py (no-timeout rule at 192)
+  artifact_files:
+  - agent-working/stored_artifacts/TCK-20261109-DISTRIBUTED-WORKERS-ADR-AMENDMENT/investigation.md
+  - agent-working/stored_artifacts/TCK-20261109-DISTRIBUTED-WORKERS-ADR-AMENDMENT/plan.md
+  - agent-working/stored_artifacts/TCK-20261109-DISTRIBUTED-WORKERS-ADR-AMENDMENT/test_plan.md
+  tags:
+  - architecture
+  - determinism
+  - planning
 - type: ticket
   path: agent-working/tickets/done/TCK-20261109-FRONTEND-LINT-TOOLING-PULLS-A-MINIMATCH-OPEN-TO-GLOB-DOS.md
   ticket_id: TCK-20261109-FRONTEND-LINT-TOOLING-PULLS-A-MINIMATCH-OPEN-TO-GLOB-DOS
@@ -8555,6 +8641,50 @@
   - src/ai/goals/scorers.py (:168, :250, :273, :313)
   artifact_files: []
   tags: []
+- type: ticket
+  path: agent-working/tickets/todos/distributed-workers-experiment/TCK-20261109-DISTRIBUTED-WORKERS-DESIGN.md
+  ticket_id: TCK-20261109-DISTRIBUTED-WORKERS-DESIGN
+  title: 'Design the distributed-workers experiment mode: seam, wire format, selection,
+    slow or dead worker rule, equivalence proof and compose profile.'
+  tier: standard
+  ticket_type: feature
+  date: '2026-11-09'
+  related_code_areas:
+  - src/engine/executor.py
+  - src/engine/kernel.py
+  - src/engine/worker_manager.py
+  - src/core/worker_protocol.py
+  - src/api/engine_manager.py
+  - compose.yaml
+  artifact_files: []
+  tags:
+  - architecture
+  - engine
+  - determinism
+  - platform
+- type: ticket
+  path: agent-working/tickets/todos/distributed-workers-experiment/TCK-20261109-EPIC-DISTRIBUTED-WORKERS-EXPERIMENT.md
+  ticket_id: TCK-20261109-EPIC-DISTRIBUTED-WORKERS-EXPERIMENT
+  title: An opt-in experiment mode that runs Collection work in separate worker containers,
+    with one writer kept and the default path unchanged.
+  tier: epic
+  ticket_type: feature
+  date: '2026-11-09'
+  related_code_areas:
+  - src/engine/executor.py
+  - src/engine/kernel.py
+  - src/engine/worker_manager.py
+  - src/core/worker_protocol.py
+  - src/api/engine_manager.py
+  - compose.yaml
+  - tests/unit/kernel/test_executor_context_parity.py
+  artifact_files: []
+  tags:
+  - architecture
+  - engine
+  - determinism
+  - platform
+  - planning
 - type: ticket
   path: agent-working/tickets/todos/next-generation-engine/TCK-20261109-EPIC-NEXT-GENERATION-ENGINE.md
   ticket_id: TCK-20261109-EPIC-NEXT-GENERATION-ENGINE
