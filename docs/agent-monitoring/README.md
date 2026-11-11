@@ -348,6 +348,11 @@ make agent-monitoring-close-week WEEK=2026-W39
   `tool_call_count`) is not re-derived; only a finished week is closed, so only then is a duration re-derived; rows that sit only in
   the other host's checkout count only once they are merged.
 
+- **Doc drift report** (`TCK-20261108-DOC-EVIDENCE-FIELDS-AND-DRIFT-REPORT`, owner question Q5). After the fold, a close (without
+  `--data-dir`) prints a short summary of `tools/gate_checks/doc_drift.py` at HEAD of the checkout it runs in, with the full SHA:
+  counts per state and the first docs that need re-verifying. It is report-only: a failure becomes one "skipped" line, the exit status
+  is unchanged, and it writes nothing. The meaning of the states is in `docs/guides/delivery_process.md` ("Docs as the review source").
+
 Code: `tools/agent-monitoring/week_close.py`, `week_close_nudge.py`.
 
 ## Main-branch integrity report
