@@ -61,7 +61,7 @@ Related, from the same §9: F2. SocialUpdate.merge takes the last writer per key
 - TCK-20261109-EPIC-NEXT-GENERATION-ENGINE (child 4, contract spec §9)
 - TCK-20260619-E41-PARTY-LOOP (done), TCK-20260811-RELATIONSHIP-AWARE-FORM-PARTY (done)
 - TCK-20261109-RECRUITMENT-FATIGUE-HAS-NO-RECENT-WINDOW (the counts are lifetime; the window is that ticket)
-- TCK-20261111-NO-RECRUITMENT-APPRAISAL-RUNS-IN-ANY-CORPUS-WORLD (follow-up: no corpus world exercises this fix)
+- TCK-20261111-NO-RECRUITMENT-APPRAISAL-RUNS-IN-ANY-CORPUS-WORLD (follow-up investigation: no corpus world exercises this fix; filed by the lane that closes it)
 - TCK-20261111-SPLIT-UPDATES-PY-INTO-UPDATE-MODELS (paydown ticket for the updates.py module-length raise)
 
 ## Related Docs
@@ -117,7 +117,7 @@ Test rows (replace Scope 3):
 - `tests/unit/social/test_rejection_counts_kept.py` (new), `tests/unit/core/test_social_counts.py` (new), `tests/unit/tools/test_mechanism_registry_completeness_check.py` (pin lines)
 - `docs/parity_ledger/social_narrative.yaml` (SOC-280)
 - `codebase/baselines/code_health_exceptions.jsonl` (two rows: updates.py module-length ceiling and value 1316 with its retiring ticket; `fused_strategic_pass` row names its retiring ticket)
-- `agent-working/tickets/todos/TCK-20261111-SPLIT-UPDATES-PY-INTO-UPDATE-MODELS.md`, `.../TCK-20261111-NO-RECRUITMENT-APPRAISAL-RUNS-IN-ANY-CORPUS-WORLD.md` (filed follow-ups)
+- `agent-working/tickets/todos/TCK-20261111-SPLIT-UPDATES-PY-INTO-UPDATE-MODELS.md` (filed paydown ticket). The follow-up investigation TCK-20261111-NO-RECRUITMENT-APPRAISAL-RUNS-IN-ANY-CORPUS-WORLD is filed by the lane that closes it, not by this PR.
 - This ticket, moved to `done/`; its staging artifacts under `agent-working/stored_artifacts/`.
 
 ## Completion Summary
