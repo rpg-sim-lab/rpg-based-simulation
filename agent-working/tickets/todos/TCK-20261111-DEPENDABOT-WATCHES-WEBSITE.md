@@ -74,9 +74,8 @@ None.
 website/package.json
 
 ## Assumptions / Open Questions
-- Open, for lead (owner of website/**): is the `platform` label acceptable for website Dependabot PRs, with platform
-  forwarding them? The other route is a `lead` label that the owner creates. The default above holds unless lead
-  answers otherwise before the push.
+- Resolved by lead-planner (owner of website/**), 2026-11-11: labels stay `[dependencies, platform]`. Platform triages
+  website Dependabot PRs and forwards them to lead. No `lead` label, because the owner would have to create it first.
 - Security updates are not governed by the version-update schedule. Once website is a watched directory, GitHub can
   raise a security PR for it at any time.
 
