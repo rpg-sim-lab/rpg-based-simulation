@@ -8626,7 +8626,10 @@
   related_code_areas:
   - tools/validate_frontmatter.py, tools/mechanism_registry/mechanism_registry_changed_code_check.py
   - tools/agent-monitoring/week_close.py, .claude/workflows/implement-ticket.js (Finalize)
-  artifact_files: []
+  artifact_files:
+  - agent-working/stored_artifacts/TCK-20261108-DOC-EVIDENCE-FIELDS-AND-DRIFT-REPORT/investigation.md
+  - agent-working/stored_artifacts/TCK-20261108-DOC-EVIDENCE-FIELDS-AND-DRIFT-REPORT/plan.md
+  - agent-working/stored_artifacts/TCK-20261108-DOC-EVIDENCE-FIELDS-AND-DRIFT-REPORT/test_plan.md
   tags:
   - ai
   - documentation
@@ -8775,7 +8778,11 @@
   ticket_type: feature
   date: '2026-11-08'
   related_code_areas: []
-  artifact_files: []
+  artifact_files:
+  - agent-working/stored_artifacts/TCK-20261108-STALE-DOC-DETECTION-PILOT/doc_stale_detection_pilot_5c6990e51.md
+  - agent-working/stored_artifacts/TCK-20261108-STALE-DOC-DETECTION-PILOT/investigation.md
+  - agent-working/stored_artifacts/TCK-20261108-STALE-DOC-DETECTION-PILOT/plan.md
+  - agent-working/stored_artifacts/TCK-20261108-STALE-DOC-DETECTION-PILOT/test_plan.md
   tags:
   - ai
   - documentation
