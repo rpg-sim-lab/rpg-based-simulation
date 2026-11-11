@@ -21,8 +21,8 @@ crowded s42 e0e20c2044d7; crowded s43 609683ccdf2b; urban s42 1cd06fd261a2.
 - crowded: COMBAT 118→125, DEFEAT 26→16, HAZARD 16→17, STARVATION 0→2, ALL 160→160.
 - urban: hash-identical to base in all five seeds (COMBAT 34, HAZARD 11, DEFEAT 4; 0 held steps).
 
-## Ruling (rpg-designer, citable)
-The Tier 1 trip is per world × cause on 5-seed sums: a rise of at least max(2, ceil(10% of base)) AND up in at least 3 of 5 seeds. Tier 2 (HELD-LINKED, FED) applies only to subjects of a tripped cause. No world × cause tripped, so no subject was tested. The per-cell linked rows are disclosed, not ruled.
+## Ruling (rpg-designer, 2026-11-11, a session message to rpg-planner; not an owner record)
+"The Tier 1 trip is per world × cause on 5-seed sums: a rise of at least max(2, ceil(10% of base)) AND up in at least 3 of 5 seeds. That is the standing bar, fixed before any rows (design §Measurement and the standing rules). Tier 2, including the HELD-LINKED and FED tests, applies only to subjects of a tripped cause. In P2, no world × cause tripped, so no subject was tested and none can be FED or a STOP. Lane B's per-cell reading was not the test. Its linked rows are disclosed below, not ruled. The test is not changed after the result."
 
 ## Held steps and pins (crowded; calls = ticks)
 s42 73 (longest 71), s43 70 (65), s44 3 (2), s45 38 (34), s46 8 (6). Pins of 50+ ticks: s42 e3 71 ticks from t2740, survives; s43 e33 65 ticks from t1449, dies COMBAT t2774. Both hp not observable; no linked death. Stop rule: record every pin of 50+ ticks; STOP at 500+, at the last tick, on an hp fall or on a linked death.
