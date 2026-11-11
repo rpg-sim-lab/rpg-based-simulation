@@ -8147,6 +8147,19 @@
   tags:
   - agent-monitoring
 - type: ticket
+  path: agent-working/tickets/done/TCK-20261111-RIDE-ALONG-RULE-IN-DOCS.md
+  ticket_id: TCK-20261111-RIDE-ALONG-RULE-IN-DOCS
+  title: The ride-along rule is written into CLAUDE.md and the delivery guide's PR
+    Lifecycle
+  tier: hotfix
+  ticket_type: chore
+  date: '2026-11-11'
+  related_code_areas:
+  - tools/delivery/pr_render.py (unchanged)
+  artifact_files: []
+  tags:
+  - delivery
+- type: ticket
   path: agent-working/tickets/done/TCK-20261111-THE-WORLD-GLOSSARY-GETS-ITS-SEED-TERMS.md
   ticket_id: TCK-20261111-THE-WORLD-GLOSSARY-GETS-ITS-SEED-TERMS
   title: The world glossary gets its 49 seed terms
