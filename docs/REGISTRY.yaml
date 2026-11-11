@@ -8049,6 +8049,18 @@
   tags:
   - claude-md
 - type: ticket
+  path: agent-working/tickets/done/TCK-20261111-CODE-HEALTH-ROWS-FOR-DELETED-FILES.md
+  ticket_id: TCK-20261111-CODE-HEALTH-ROWS-FOR-DELETED-FILES
+  title: Delete the 57 code-health exception rows that name 13 deleted source files
+  tier: hotfix
+  ticket_type: chore
+  date: '2026-11-11'
+  related_code_areas:
+  - codebase/baselines/code_health_exceptions.jsonl; codebase/health/registry.py;
+    codebase/health/ratchet.py; codebase/health/__main__.py
+  artifact_files: []
+  tags: []
+- type: ticket
   path: agent-working/tickets/done/TCK-20261111-EACH-MECHANISM-GETS-A-PLAIN-LANGUAGE-SUMMARY.md
   ticket_id: TCK-20261111-EACH-MECHANISM-GETS-A-PLAIN-LANGUAGE-SUMMARY
   title: Each mechanism in the registry gets a plain-language summary
