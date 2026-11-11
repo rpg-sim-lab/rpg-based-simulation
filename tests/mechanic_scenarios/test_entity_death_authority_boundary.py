@@ -44,10 +44,10 @@ ORC_ID = 2
 SEED = 42
 
 
-def _pinned_kernel(state) -> Kernel:
+def _pinned_kernel(state, seed: int = SEED) -> Kernel:
     """A deterministic kernel: pinned governor, sequential executor, no tick budget. The corpus test below once read 0, 1 or 2 DEFEAT deaths
     from identical code because the default executor and governor made the 120-tick run timing-dependent."""
-    return Kernel(profile=PROD_SMALL.model_copy(update={"max_tick_budget_ms": 1e9}), state=state, rng=DeterministicRNG(SEED),
+    return Kernel(profile=PROD_SMALL.model_copy(update={"max_tick_budget_ms": 1e9}), state=state, rng=DeterministicRNG(seed),
                   flags={"no_frame_pacing": True}, governor=PinnedNormalGovernor(), executor=LocalSequentialExecutor())
 
 # The arena's own compiled hazard_level. Pinned so the differential below changes exactly one
@@ -177,10 +177,11 @@ def test_hazard_drain_no_longer_destroys_a_same_tick_combat_kill_record():
     )
 
 
-# The corpus run ends at the first terminal DEFEAT or at this many ticks, whichever comes first. The count of DEFEATs in a fixed window
-# depends on pursuit geometry (the claim below does not): on `frontier_marches` seed 42 there are 0 DEFEAT deaths by tick 120, 2 by tick 200
-# and 8 by tick 400. #474's intercept change (a chaser aims at where a pursuing target IS, not ahead of it) moved scout 17's death from
-# DEFEAT at tick 93 to COMBAT at tick 104, so the first DEFEAT now lands at tick 120, one tick past the 120-tick window this test had.
+# The corpus run ends at the first terminal DEFEAT or at this many ticks, whichever comes first. It runs `frontier_marches` seed 43 (CORPUS_SEED).
+# Measured figures, in this test's own pinned kernel: fix tree (S1, 2.204): 1 terminal DEFEAT by tick 400 on seed 43, the first at tick 110.
+# Base 5c6990e51 on seed 42: 2 by tick 400, the first at tick 90. The earlier figure of 8 by tick 400 did not reproduce on 5c6990e51 (2 measured), so it was stale.
+# S1 (2.204) holds felt-lethal steps off engagement, so the early free-swing DEFEATs fall. rpg-designer ruling, 2026-11-12, session message.
+CORPUS_SEED = 43
 CORPUS_DEFEAT_WINDOW = 400
 
 
@@ -194,16 +195,16 @@ def test_defeat_deaths_are_recorded_in_unscripted_corpus_play():
 
     The claim is that EVERY DEFEAT that occurs is a recorded death, not that one occurs by a given tick: the run goes on until the first
     DEFEAT, bounded at `CORPUS_DEFEAT_WINDOW` ticks, and a run with no DEFEAT inside the bound still fails (so the test cannot pass
-    vacuously). Per trajectory on this seed: 0 DEFEAT deaths at tick 120, 2 at tick 200, 8 at tick 400.
+    vacuously). The window and seed are sized by the figures in the comment above CORPUS_DEFEAT_WINDOW (S1, 2.204; rpg-designer ruling, 2026-11-12, session message).
 
     The remaining combat-dead / lifecycle-active / unrecorded residue is the hazard route
     (world_dynamics.py:39 overwrites outcome_kind), owned by
     TCK-20261001-HAZARD-OVERWRITES-SAME-TICK-COMBAT-OUTCOME-KIND; pinned so its fix is visible."""
     repo = WorldRepository(os.path.join("data", "worlds"))
     spec, context = repo.load_world_with_context("frontier_marches")
-    state, _report = WorldCompiler.compile(spec, SEED, context=context)
+    state, _report = WorldCompiler.compile(spec, CORPUS_SEED, context=context)
 
-    kernel = _pinned_kernel(state)
+    kernel = _pinned_kernel(state, CORPUS_SEED)
     try:
         for _ in range(CORPUS_DEFEAT_WINDOW):
             kernel.tick_once()
