@@ -125,7 +125,11 @@ def pytest_runtest_setup(item):
     # 1. Enforce Memory Limits
     if resource is not None:
         try:
-            resource.setrlimit(resource.RLIMIT_AS, (mem_limit, mem_limit))
+            # Lower only the SOFT limit. An unprivileged process can never raise a lowered hard limit, so setting both would
+            # fix the first test's budget for every later test in the process (a large test after a medium one would keep 4 GB).
+            hard = resource.getrlimit(resource.RLIMIT_AS)[1]
+            soft_cap = mem_limit if hard == resource.RLIM_INFINITY else min(mem_limit, hard)
+            resource.setrlimit(resource.RLIMIT_AS, (soft_cap, hard))
         except ValueError:
             pass
 
