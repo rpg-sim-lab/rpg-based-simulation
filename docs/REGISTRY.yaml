@@ -6008,6 +6008,17 @@
   - performance
   - testing
 - type: doc
+  path: docs/plans/architecture/next_generation_engine_access_audit_report.md
+  title: 'Next-generation engine: stage 1 access audit report'
+  status: active
+  layer: architecture
+  authority: P2
+  audience: agent
+  tags:
+  - architecture
+  - engine
+  - determinism
+- type: doc
   path: docs/plans/architecture/next_generation_engine_feasibility_review.md
   title: 'Next-generation engine: feasibility review (DRAFT)'
   status: active
@@ -8185,6 +8196,27 @@
   - ai
   - setup
 - type: ticket
+  path: agent-working/tickets/done/TCK-20261109-NEXT-GENERATION-ENGINE-ACCESS-AUDIT.md
+  ticket_id: TCK-20261109-NEXT-GENERATION-ENGINE-ACCESS-AUDIT
+  title: 'Stage 1: declare each Resolution step''s reads and writes, and audit them
+    against observed access with an observe-only hook that is
+
+    off by default and hash-neutral.'
+  tier: standard
+  ticket_type: feature
+  date: '2026-11-09'
+  related_code_areas:
+  - 'src/engine/pipeline.py (step dispatch: the hook only)'
+  - src/engine/phase_graph.py (read-only reference)
+  artifact_files:
+  - agent-working/stored_artifacts/TCK-20261109-NEXT-GENERATION-ENGINE-ACCESS-AUDIT/investigation.md
+  - agent-working/stored_artifacts/TCK-20261109-NEXT-GENERATION-ENGINE-ACCESS-AUDIT/plan.md
+  - agent-working/stored_artifacts/TCK-20261109-NEXT-GENERATION-ENGINE-ACCESS-AUDIT/test_plan.md
+  tags:
+  - architecture
+  - engine
+  - determinism
+- type: ticket
   path: agent-working/tickets/done/TCK-20261109-NEXT-GENERATION-ENGINE-ADR.md
   ticket_id: TCK-20261109-NEXT-GENERATION-ENGINE-ADR
   title: 'ADR: the kernel/logic phase contract as the engine''s direction, with one
@@ -8549,24 +8581,6 @@
   - determinism
   - performance
   - planning
-- type: ticket
-  path: agent-working/tickets/todos/next-generation-engine/TCK-20261109-NEXT-GENERATION-ENGINE-ACCESS-AUDIT.md
-  ticket_id: TCK-20261109-NEXT-GENERATION-ENGINE-ACCESS-AUDIT
-  title: 'Stage 1: declare each Resolution step''s reads and writes, and audit them
-    against observed access with an observe-only hook that is
-
-    off by default and hash-neutral.'
-  tier: standard
-  ticket_type: feature
-  date: '2026-11-09'
-  related_code_areas:
-  - 'src/engine/pipeline.py (step dispatch: the hook only)'
-  - src/engine/phase_graph.py (read-only reference)
-  artifact_files: []
-  tags:
-  - architecture
-  - engine
-  - determinism
 - type: ticket
   path: agent-working/tickets/todos/next-generation-engine/TCK-20261109-NEXT-GENERATION-ENGINE-CONTRACT-SPEC.md
   ticket_id: TCK-20261109-NEXT-GENERATION-ENGINE-CONTRACT-SPEC
