@@ -8251,6 +8251,21 @@
   - documentation
   - reference
 - type: ticket
+  path: agent-working/tickets/todos/TCK-20261111-SPLIT-UPDATES-PY-INTO-UPDATE-MODELS.md
+  ticket_id: TCK-20261111-SPLIT-UPDATES-PY-INTO-UPDATE-MODELS
+  title: Move the per-domain update models out of src/core/updates.py into src/core/update_models/,
+    so the module comes back under its length ceiling
+  tier: standard
+  ticket_type: refactor
+  date: '2026-11-11'
+  related_code_areas:
+  - src/core/updates.py
+  - src/core/update_models/
+  - codebase/baselines/code_health_exceptions.jsonl (the updates.py module-length
+    row)
+  artifact_files: []
+  tags: []
+- type: ticket
   path: agent-working/tickets/done/TCK-20261110-DELIVERY-COST-REF-MODE-READS-NO-BRANCH-SHARDS.md
   ticket_id: TCK-20261110-DELIVERY-COST-REF-MODE-READS-NO-BRANCH-SHARDS
   title: '`delivery_cost_measurement.py --ref` reads only a week''s canonical `tools.jsonl`,
@@ -8400,6 +8415,24 @@
   artifact_files: []
   tags:
   - economy
+- type: ticket
+  path: agent-working/tickets/done/TCK-20261109-ANY-SOCIAL-UPDATE-WIPES-THE-REJECTION-COUNTS-IT-DOES-NOT-NAME.md
+  ticket_id: TCK-20261109-ANY-SOCIAL-UPDATE-WIPES-THE-REJECTION-COUNTS-IT-DOES-NOT-NAME
+  title: Any social update wipes the rejection counts it does not name, so recruitment's
+    social-fatigue penalty almost never builds up
+  tier: standard
+  ticket_type: bug
+  date: '2026-11-09'
+  related_code_areas:
+  - src/systems/social_systems/relationships.py:133
+  - src/core/updates.py:322-384 (SocialUpdate rejection_increment, merge)
+  - src/systems/social_systems/appraisal.py:125
+  - src/engine/domain/core_actions.py (rejection writers)
+  artifact_files:
+  - agent-working/stored_artifacts/TCK-20261109-ANY-SOCIAL-UPDATE-WIPES-THE-REJECTION-COUNTS-IT-DOES-NOT-NAME/investigation.md
+  - agent-working/stored_artifacts/TCK-20261109-ANY-SOCIAL-UPDATE-WIPES-THE-REJECTION-COUNTS-IT-DOES-NOT-NAME/plan.md
+  - agent-working/stored_artifacts/TCK-20261109-ANY-SOCIAL-UPDATE-WIPES-THE-REJECTION-COUNTS-IT-DOES-NOT-NAME/test_plan.md
+  tags: []
 - type: ticket
   path: agent-working/tickets/done/TCK-20261109-DISTRIBUTED-WORKERS-ADR-AMENDMENT.md
   ticket_id: TCK-20261109-DISTRIBUTED-WORKERS-ADR-AMENDMENT
@@ -8603,21 +8636,6 @@
   - src/engine/building_services.py (service_delta)
   - src/engine/domain/core_actions.py
   - src/core/state.py (BiologicalComponent)
-  artifact_files: []
-  tags: []
-- type: ticket
-  path: agent-working/tickets/todos/TCK-20261109-ANY-SOCIAL-UPDATE-WIPES-THE-REJECTION-COUNTS-IT-DOES-NOT-NAME.md
-  ticket_id: TCK-20261109-ANY-SOCIAL-UPDATE-WIPES-THE-REJECTION-COUNTS-IT-DOES-NOT-NAME
-  title: Any social update wipes the rejection counts it does not name, so recruitment's
-    social-fatigue penalty almost never builds up
-  tier: standard
-  ticket_type: bug
-  date: '2026-11-09'
-  related_code_areas:
-  - src/systems/social_systems/relationships.py:133
-  - src/core/updates.py:322-384 (SocialUpdate rejection_increment, merge)
-  - src/systems/social_systems/appraisal.py:125
-  - src/engine/domain/core_actions.py (rejection writers)
   artifact_files: []
   tags: []
 - type: ticket
