@@ -12,7 +12,7 @@ tags: [delivery]
 # TCK-20261111-KNOWLEDGE-INDEX-BUILD-MEMORY-BOUNDED
 
 ## Title
-The knowledge-index build embeds in bounded batches, so it fits under the 3G slot cap
+The knowledge-index build tests get the address space they need: the resource budget lowers only the soft limit, and the build tests are marked large
 
 ## Status
 OPEN
@@ -27,39 +27,35 @@ bug
 P2
 
 ## Request Summary
-On host ubuntu, the knowledge-index build fails under the lead slot cap
-(`systemd-run --user --scope -p MemoryMax=3G -p MemorySwapMax=0`). CI passes, so the failure is
+On host ubuntu, the knowledge-search build tests fail under the lead slot cap
+(`systemd-run --user --scope -p MemoryMax=3G -p MemorySwapMax=0`) with `MemoryError`. CI passes, so the failure is
 local only. Seen on main 5c6990e51 in the tests/tools [g-m] chunk:
 - test_knowledge_search build: MemoryError x2 (17,224 chunks);
 - test_knowledge_index_staleness: "no such table: knowledge_vec" x2 (the build died before the
   table was written);
 - one anomaly-validator SystemError as a casualty.
-
-Max RSS reached about 1.09 GB before the failure. lead also OOMs on `make knowledge-index-update`.
-Read on main: `tools/knowledge_search.py` calls `model.encode(texts, ...)` once over every text
-(about :786 for the full build, :951 for the incremental one), so the arrays for all chunks and
-the tokenizer's batch buffers are in memory together. The post-commit hook runs this same path
-with no cap (TCK-20261111-POST-COMMIT-REINDEX-OPT-IN).
+Max RSS reached about 1.09 GB before the failure.
+The ticket was filed assuming `tools/knowledge_search.py` encodes all texts in one call and needs batching. Investigation
+(Implementation Notes) shows that is not the cause: the cause is the pytest address-space limit.
 
 ## Scope
-- Investigate first: measure peak RSS of the full and the incremental build under the 3G cap,
-  and find which allocation fails (model load, encode, the numpy concat, or the sqlite vec
-  insert).
-- Encode and write in fixed-size batches, so peak memory no longer grows with the corpus.
-  The index contents must stay identical: the same chunks, ids and vectors (within float
-  tolerance), and the same query results on a fixed probe set.
-- A test proving the batching is bounded, on a synthetic corpus larger than one batch.
+- Investigate (done): peak RSS and peak virtual size of the full and the incremental build under the 3G cap, and which
+  limit refuses the allocation.
+- `tests/conftest.py`: lower only the SOFT `RLIMIT_AS`, keeping the hard limit (an unprivileged process can never raise a lowered
+  hard limit, so the first test's budget fixed the cap for every later test, and `resource_budget_large` / `extra_slow`
+  silently kept the medium cap). rpg owns that file; the edit waits for rpg-planner's OK.
+- Mark the knowledge build and staleness tests (`test_knowledge_search.py`, `test_knowledge_index_staleness.py`)
+  `resource_budget_large`: they need about 4.7-4.9 GB of address space.
+- A regression test: a medium test followed by a large test in one process sees the large address space.
 
 ## Out of Scope
-- Changing the embedding model or the chunking.
-- Re-enabling the post-commit reindex by default.
+- Batching the encode (dropped: the arrays are about 26 MB; the build is not memory-bound).
+- Changing the embedding model or the chunking, and re-enabling the post-commit reindex by default.
 
 ## Acceptance Criteria
-1. `make knowledge-index-update` and a full `make knowledge-index` complete under the 3G
-   wrapper on host ubuntu. Peak RSS is reported in the PR.
-2. The tests/tools [g-m] chunk's knowledge-search and index-staleness tests pass under the
-   wrapper.
-3. On a fixed probe set, the top-5 results before and after the change are the same.
+1. `make knowledge-index` and `make knowledge-index-update` complete under the 3G wrapper on host ubuntu. Peak RSS is reported in the PR. (Met by the runs below, before any change.)
+2. The tests/tools [g-m] chunk's knowledge-search and index-staleness tests pass under the wrapper.
+3. A medium test followed by a large test in one process: the large test sees an 8 GB soft limit, and the hard limit is not lowered.
 
 ## Related Tickets
 - TCK-20261111-POST-COMMIT-REINDEX-OPT-IN

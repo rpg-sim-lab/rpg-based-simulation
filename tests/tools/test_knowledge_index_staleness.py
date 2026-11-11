@@ -13,6 +13,10 @@ import pytest
 
 from tools.agent_working_paths import STORED_ARTIFACTS, TICKETS
 
+# The real embedding builds load the sentence-transformers model and need about 4.7-4.9 GB of virtual address space (peak RSS
+# stays near 1.4-1.6 GB), more than the medium budget's 4 GB RLIMIT_AS (TCK-20261111-KNOWLEDGE-INDEX-BUILD-MEMORY-BOUNDED).
+pytestmark = pytest.mark.resource_budget_large
+
 _REPO_ROOT = Path(__file__).parent.parent.parent
 
 
