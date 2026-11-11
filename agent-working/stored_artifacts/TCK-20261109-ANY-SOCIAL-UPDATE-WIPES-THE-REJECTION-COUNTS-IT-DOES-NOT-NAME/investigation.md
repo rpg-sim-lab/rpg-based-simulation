@@ -1,11 +1,11 @@
 ---
-status: active
+status: historical
 layer: core
 authority: P2
 audience: agent
 ticket_id: TCK-20261109-ANY-SOCIAL-UPDATE-WIPES-THE-REJECTION-COUNTS-IT-DOES-NOT-NAME
 artifact_type: investigation
-phase: inprogress
+phase: done
 date: 2026-11-11
 tags: []
 ---
