@@ -8036,6 +8036,34 @@
   - content
   last_verified: '2026-10-09'
 - type: ticket
+  path: agent-working/tickets/done/TCK-20261111-EACH-MECHANISM-GETS-A-PLAIN-LANGUAGE-SUMMARY.md
+  ticket_id: TCK-20261111-EACH-MECHANISM-GETS-A-PLAIN-LANGUAGE-SUMMARY
+  title: Each mechanism in the registry gets a plain-language summary
+  tier: hotfix
+  ticket_type: chore
+  date: '2026-11-11'
+  related_code_areas:
+  - registries/mechanisms.yaml
+  artifact_files: []
+  tags: []
+- type: ticket
+  path: agent-working/tickets/done/TCK-20261111-REGISTRY-REGEN-MISSES-A-MERGE-FINISHED-BY-COMMIT.md
+  ticket_id: TCK-20261111-REGISTRY-REGEN-MISSES-A-MERGE-FINISHED-BY-COMMIT
+  title: '`docs/REGISTRY.yaml` isn''t regenerated when a merge stops on another conflict
+    and is finished with `git commit`, and pre-push check E skips a branch whose only
+    registry-relevant change is `docs/REGISTRY.yaml`'
+  tier: hotfix
+  ticket_type: bug
+  date: '2026-11-11'
+  related_code_areas:
+  - tools/hooks/post-commit-reindex.sh, tools/hooks/registry_post_merge_regen.sh (reference,
+    unchanged),
+  - tools/delivery/pre_push_advisory_hook.py, tests/tools/
+  artifact_files: []
+  tags:
+  - delivery
+  - process-improvement
+- type: ticket
   path: agent-working/tickets/done/TCK-20261110-DELIVERY-COST-REF-MODE-READS-NO-BRANCH-SHARDS.md
   ticket_id: TCK-20261110-DELIVERY-COST-REF-MODE-READS-NO-BRANCH-SHARDS
   title: '`delivery_cost_measurement.py --ref` reads only a week''s canonical `tools.jsonl`,
