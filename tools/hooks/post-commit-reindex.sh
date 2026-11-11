@@ -16,3 +16,17 @@ if echo "$changed" | grep -qE '^(docs/|agent-working/tickets/done/)'; then
         python3 tools/knowledge_search.py build --incremental
     fi
 fi
+
+# A merge finished with `git commit` (it stopped on another conflict) never runs post-merge, so the
+# registry-regen driver's "keep ours" result stands. Regenerate here, for merge commits only.
+# Idempotent: if post-merge also ran, --check returns 0. The regen commit has one parent, so it cannot loop.
+if git rev-parse -q --verify HEAD^2 >/dev/null && [ -f tools/generate_registry.py ]; then
+    rc=0
+    python3 tools/generate_registry.py --check >/dev/null 2>&1 || rc=$?
+    if [ "$rc" -eq 2 ]; then
+        python3 tools/generate_registry.py
+        git add docs/REGISTRY.yaml
+        git commit -q -m "auto-regenerate docs/REGISTRY.yaml after merge"
+        echo "[registry-post-commit] docs/REGISTRY.yaml regenerated and committed"
+    fi
+fi

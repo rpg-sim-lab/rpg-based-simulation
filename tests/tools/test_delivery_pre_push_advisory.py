@@ -353,3 +353,17 @@ def test_check_e_is_silent_when_the_command_raises_or_the_diff_fails():
     assert hook.check_registry_fresh(_registry_runner(["docs/guides/a.md"], check_raises=True)) == []
     failing = FakeRunner([(lambda c: True, hook.CommandResult(128, "", "no origin/main"))])
     assert hook.check_registry_fresh(failing) == []
+
+
+# TCK-20261111-REGISTRY-REGEN-MISSES-A-MERGE-FINISHED-BY-COMMIT: a branch whose only registry-relevant change is
+# docs/REGISTRY.yaml itself (a bad merge of main's entries) must still reach the check.
+
+def test_check_e_fires_when_the_only_changed_path_is_the_registry_file():
+    runner = _registry_runner(["docs/REGISTRY.yaml"])
+    findings = hook.check_registry_fresh(runner)
+    assert len(findings) == 1 and "docs/REGISTRY.yaml" in findings[0] and "make docs-registry" in findings[0]
+    assert any("generate_registry.py" in " ".join(map(str, c)) for c in runner.calls)
+
+
+def test_check_e_is_silent_for_a_registry_only_diff_when_the_registry_is_current():
+    assert hook.check_registry_fresh(_registry_runner(["docs/REGISTRY.yaml"], check_rc=0)) == []
