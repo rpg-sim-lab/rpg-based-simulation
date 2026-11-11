@@ -4,7 +4,7 @@ layer: combat
 authority: P1
 audience: agent
 ticket_id: TCK-20261110-A-NON-FLIGHT-MOVE-OFF-ENGAGEMENT-WALKS-INTO-A-KNOWN-LETHAL-FREE-SWING
-phase: open
+phase: in_progress
 date: 2026-11-10
 tags: []
 ---
@@ -15,7 +15,7 @@ tags: []
 A subject with no flight decision moves off engagement and walks into a free swing it has felt will finish it (the CONFLICT-04 "neither" shape)
 
 ## Status
-OPEN
+INPROGRESS
 
 ## Tier
 standard
