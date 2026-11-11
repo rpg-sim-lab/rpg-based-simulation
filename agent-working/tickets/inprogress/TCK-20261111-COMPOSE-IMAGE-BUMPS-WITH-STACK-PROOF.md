@@ -109,14 +109,14 @@ compose.yaml
 - Dependabot may refresh #878 or open a new compose PR before this lands. If it does, the digests checked here win.
 
 ## Implementation Notes
-**Light part done (2026-11-11); the proof run has not started and waits for the owner's go through lead-planner.**
+**Light part done and proof run done (2026-11-11, owner go #715 6801197149). One red check, not resolved: see the record, section 5. The ticket stays open until platform-planner decides.**
 - **Digests.** Each is the multi-arch index digest, read with `docker buildx imagetools inspect <tag>` on 2026-11-11. All four equal the ones in Dependabot #878 (no mismatch):
   - `redis:8.10.3-alpine` `sha256:71885d8cc6e4...fb80` (OCI index; amd64, arm64, arm/v6, arm/v7, 386, ppc64le, riscv64, s390x).
   - `prom/prometheus:v3.16.0` `sha256:e04987641b57...0f06` (OCI index; amd64, arm64, arm/v7, ppc64le, riscv64, s390x).
   - `binwiederhier/ntfy:v2.37.2` `sha256:1875ddcf815c...2bd7` (Docker manifest list; amd64, arm64, arm/v6, arm/v7).
   - `oliver006/redis_exporter:v1.97.0` `sha256:f5f903fbe775...9b83` (OCI index; amd64, arm64, arm/v7).
 - **Age.** ntfy v2.37.2 (2026-11-04), redis_exporter v1.97.0 (2026-11-04) and prometheus v3.16.0 (2026-11-05) are under the repo's usual two-week age. The owner chose them on 2026-11-11 (#715 6800739670, item 3); the compose comments say so.
-- **Comments** updated in compose.yaml: redis (8.10.3, verified 2026-11-11), prometheus (v3.16.0), ntfy (v2.37.2; the old text still said v2.28.0), redis_exporter (v1.97.0; the old text still said v1.93.0, and "this file's redis:8.10.3"). The redis_exporter comment cites `docs/runbooks/records/2026-11-compose-image-bumps.md`: **fix this to the real record filename when the record is written.** No `mem_limit` changed.
+- **Comments** updated in compose.yaml: redis (8.10.3, verified 2026-11-11), prometheus (v3.16.0), ntfy (v2.37.2; the old text still said v2.28.0), redis_exporter (v1.97.0; the old text still said v1.93.0, and "this file's redis:8.10.3"). The redis_exporter comment cites `docs/runbooks/records/2026-11-compose-image-bumps.md`: the record is `docs/runbooks/records/2026-11-11-compose-image-bumps.md`. No `mem_limit` changed.
 - **Release notes read** (GitHub releases, 2026-11-11):
   - redis 8.10.3 (2026-10-26): security fix only (heap overflow on a >4 GB PUBLISH over the cluster bus, cluster mode). We don't run cluster mode. No redis-py impact in the notes.
   - prometheus v3.16.0: six [CHANGE] lines: search endpoint `batch_size` clamp, `--web.external-url` https default when TLS is on, subquery sample statistics, removal of four deprecated remote-write 2.0 metadata metrics, a remote-write receiver counter, exemplar label-name uniqueness. None touches our flags (`--config.file`, `--storage.tsdb.path` only), scrape or rule files, or any remote-write setting (grep of docker/, compose.yaml and docs/runbooks found no use).
@@ -127,5 +127,17 @@ compose.yaml
 - Out of scope and for platform-planner to route: `tests/perf/test_simq_isolation_overhead.py` line 17 still cites the old redis digest.
 
 ## Test Summary
+- **observed (run 16:25:57Z to 16:38:40Z, 12 min 43 s; record `docs/runbooks/records/2026-11-11-compose-image-bumps.md`, evidence in `agent-working/stored_artifacts/TCK-20261111-COMPOSE-IMAGE-BUMPS-WITH-STACK-PROOF/run-2026-11-11/`):**
+  - 9 of 9 Prometheus targets up (redis, ntfy, alloy included). Prometheus has no rule files (`rule_files` absent), so the premise "Prometheus loads every rule file" was corrected: Grafana loaded 11 rules, all health ok.
+  - `redis_version=8.10.3`, `redis_up=1`. Running image ids equal the pinned digests.
+  - ntfy v2.37.2 deny-all: anonymous publish 403, anonymous read 403, token publish 200; healthy with `NTFY_BASE_URL` set.
+  - Fire test: `[firing] TargetDown` for redis reached ntfy at 16:32:17Z (Pending 16:29:58, Alerting 16:31:59); `[resolved]` at 16:37:17Z. Closes the #786 gap "ntfy not re-proven".
+  - Memory (anon + active_file max, MiB): ntfy 24.9 of 96, redis-exporter 19.7 of 32, prometheus 137.4 of 512. No `mem_limit` changed.
+- **red check, not resolved:** Loki returned 500 `Ingester is shutting down` to every Alloy push (19 requests, 0 accepted), after logging `disk usage exceeded threshold ... usage_percent=94.80% threshold_percent=90.00%` while /data was 83 percent used. `LogShippingErrors` stayed Pending. The bumps do not touch Loki or Alloy, but I did not run the old pins to compare. Reported to platform-planner.
+- **validated:** compose config parses; compose hygiene, repo-root and platform-domain tests passed (14).
 ## Files Changed
+- `compose.yaml`: four image pins and the comments next to them.
+- `docs/runbooks/records/2026-11-11-compose-image-bumps.md`: the record.
+- `agent-working/stored_artifacts/TCK-20261111-COMPOSE-IMAGE-BUMPS-WITH-STACK-PROOF/run-2026-11-11/`: run evidence.
+- `agent-working/tickets/done/TCK-20261111-DEPENDABOT-WATCHES-WEBSITE.md`: ride-along observed line.
 ## Completion Summary

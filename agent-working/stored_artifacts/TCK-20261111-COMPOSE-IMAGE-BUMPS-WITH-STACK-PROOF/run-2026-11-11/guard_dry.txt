@@ -1,0 +1,2 @@
+16:24:30 avail=5457 swap=3050 mode=dry thresholds=999999/7500
+16:24:30 WOULD DOWN avail=5457 swap=3050
