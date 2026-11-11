@@ -139,6 +139,11 @@ def test_find_main_checkout_through_the_git_common_dir(tmp_path):
 import pytest  # noqa: E402
 
 
+def test_role_boundary_is_one_of_the_swept_kinds():
+    # TCK-20261111-WEEK-CLOSE-SWEEPS-MAIN-CHECKOUT-ROLE-BOUNDARY: a main-checkout session writes the bare file and no PR carries it.
+    assert "role_boundary" in wc.MAIN_CHECKOUT_APPEND_ONLY_KINDS
+
+
 @pytest.mark.parametrize("kind", wc.MAIN_CHECKOUT_APPEND_ONLY_KINDS)
 def test_non_tool_kind_is_swept_once_deduped_and_main_file_untouched(tmp_path, kind):
     data, main_data = _setup(tmp_path)
