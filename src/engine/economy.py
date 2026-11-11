@@ -2,8 +2,9 @@
 # Compliance IDs: TOWN-074, TOWN-075, TOWN-076
 from __future__ import annotations
 from typing import TYPE_CHECKING, Any, Dict, List, Optional
-from dataclasses import replace
+from dataclasses import dataclass, fields, replace
 
+from src.core.conservation import ResourceTransactionResolver
 from src.core.enums import ReasonCode
 from src.core.resource_regrowth import REGROW_MODE
 from src.core.state import IntentResult, ItemStack
@@ -14,6 +15,25 @@ from src.domains.world_emergence.schema import WorldEvent, WorldEventCategory
 
 if TYPE_CHECKING:
     from src.core.state import AuthoritativeState, EntityState
+
+@dataclass
+class _WorldRecords:
+    """The tick's world records a transfer's effects are written to (``_apply_world_effects`` and ``_note_effects``)."""
+    nodes: Dict[int, Any]
+    reservations: Dict[Any, int]
+    resources: Dict[str, float]
+    buildings: Dict[int, Any]
+    home_storage: Dict[int, Any]
+    ground_rem: List[Any]
+    corpses_rem: List[int]
+    corpses_upd: List[Any]
+    source_debits: Dict[int, InventoryUpdate]
+    owed: List[Any]
+
+    def copy(self) -> "_WorldRecords":
+        """A shallow copy: the dicts and lists are new, their values are shared. That is safe because every value is replaced, never mutated in place."""
+        return _WorldRecords(*(type(v)(v) for v in (getattr(self, f.name) for f in fields(self))))
+
 
 class ResourceTransactionSystem:
     """
@@ -27,8 +47,6 @@ class ResourceTransactionSystem:
         Processes all ResourceTransferIntents for all entities in the update.
         VERIFIED v2: resource_transaction_resolution
         """
-        from src.core.conservation import ResourceTransactionResolver
-        
         refined_entity_updates = dict(update.entity_updates)
         new_node_updates = dict(update.node_updates)
         new_chest_updates = dict(update.chest_updates)
@@ -164,26 +182,11 @@ class ResourceTransactionSystem:
                             update = replace(update, rejections_delta=new_rejections_delta)
                 else:
                     # Resolve group together
-                    trial_results = []
-                    all_accepted = True
-                    group_current_inventory = current_inventory
-                    
-                    for intent in group_intents:
-                        res = ResourceTransactionResolver.resolve(
-                            state, entity, intent,
-                            inventory_override=group_current_inventory,
-                            node_overrides=new_node_updates,
-                            reservations=reservations,
-                            treasury_pending=new_resource_updates,
-                            building_pending=new_building_updates
-                        )
-                        trial_results.append((intent, res))
-                        if not res.accepted:
-                            all_accepted = False
-                            break
-                        if res.inventory_update:
-                            group_current_inventory = InventoryService.apply_update(group_current_inventory, res.inventory_update)
-                            
+                    trial_results, all_accepted = ResourceTransactionSystem._trial_group(
+                        state, entity, group_intents, current_inventory,
+                        _WorldRecords(new_node_updates, reservations, new_resource_updates, new_building_updates, new_home_storage_updates,
+                                      new_ground_items_remove, new_corpses_remove, new_corpses_update, source_debits, new_owed))
+
                     if all_accepted:
                         # Commit all
                         for intent, res in trial_results:
@@ -309,6 +312,26 @@ class ResourceTransactionSystem:
         for src_id in sorted(source_debits):
             held = entity_updates.get(src_id, EntityUpdate(entity_id=src_id))
             entity_updates[src_id] = replace(held, inventory=held.inventory.merge(source_debits[src_id]) if held.inventory else source_debits[src_id])
+
+    @staticmethod
+    def _trial_group(state: AuthoritativeState, entity: EntityState, group_intents: List[ResourceTransferIntent], inventory: Any, world: _WorldRecords) -> tuple[list, bool]:
+        """Trial-resolve one group (all or nothing) on a copy of the world records, so each intent sees what the group's earlier intents would
+        take (a node charge, a reservation, treasury coin, a building purse or stock; Bible 03 §1). The live records are written only by the caller's
+        commit loop, so a rejected group leaves them untouched. Returns the (intent, result) pairs up to the first rejection and whether all were accepted."""
+        w = world.copy()
+        trial_results = []
+        for intent in group_intents:
+            res = ResourceTransactionResolver.resolve(
+                state, entity, intent, inventory_override=inventory, node_overrides=w.nodes, reservations=w.reservations,
+                treasury_pending=w.resources, building_pending=w.buildings)
+            trial_results.append((intent, res))
+            if not res.accepted:
+                return trial_results, False
+            if res.inventory_update:
+                inventory = InventoryService.apply_update(inventory, res.inventory_update)
+            ResourceTransactionSystem._apply_world_effects(res, entity.id, w.nodes, w.buildings, w.home_storage, w.ground_rem, w.corpses_rem, w.reservations, w.corpses_upd)
+            ResourceTransactionSystem._note_effects(res, w.resources, w.source_debits, w.owed)
+        return trial_results, True
 
     @staticmethod
     def _note_effects(res: Any, resource_updates: Dict[str, float], source_debits: Dict[int, InventoryUpdate], owed: list) -> None:

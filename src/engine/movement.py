@@ -26,6 +26,30 @@ if TYPE_CHECKING:
 _UNENTERABLE_TILE_REASONS = (ReasonCode.PATH_NOT_FOUND, ReasonCode.BUILDING_OBSTRUCTION)
 
 
+def is_evasive_flight(mode: MovementMode, style: int) -> bool:
+    """A retreat by an EVASIVE (style 2) mover is a disengagement the free swing (COMB-009) cannot reach. The one predicate movement and the flight guard share."""
+    return mode == MovementMode.RETREAT and style == 2
+
+
+def live_action_style(entity: "EntityState", state_or_context: Any) -> int:
+    """The action style the entity fights in now: the frozen construction-time field, or, with ENABLE_HABIT_BIAS_ACTION_STYLE ON, the style re-derived
+    from habit-biased bravery (TCK-20260831-HABIT-BIAS-WIRING). Must stay synchronized with the identical re-derivation in tactical.py:evaluate_entity_intent
+    (SUB-381). `state_or_context` is typed Any, so the flag read falls back safely to OFF if feature_flags is absent."""
+    style = entity.combat.action_style
+    flags = getattr(state_or_context, "feature_flags", None) or {}
+    if flags.get("ENABLE_HABIT_BIAS_ACTION_STYLE", "OFF") == "ON":
+        from src.domains.emotion.habit_service import HabitBiasService, HABIT_PATTERN_COMBAT_ENGAGEMENT
+        from src.content_semantics.personality import get_action_style_for_bravery
+        effective_bravery = HabitBiasService.apply_habit_bias(
+            entity.cognition.memory.habit,
+            [HABIT_PATTERN_COMBAT_ENGAGEMENT],
+            entity.identity.personality.bravery,
+        )
+        effective_bravery = max(0.0, min(1.0, effective_bravery))
+        style = get_action_style_for_bravery(effective_bravery)
+    return style
+
+
 class MovementSystem:
     """ Authoritative handler for grid-based movement in V2. """
 
@@ -266,25 +290,9 @@ class MovementSystem:
         
         # Disengagement Logic
         skip_oa = False
-        style = entity.combat.action_style
-        # TCK-20260831-HABIT-BIAS-WIRING: live re-derivation from habit-biased bravery, flag-
-        # gated OFF by default (bit-identical to the frozen construction-time field above). Must
-        # stay synchronized with the identical re-derivation in tactical.py:evaluate_entity_intent
-        # -- wiring only one creates a flag-ON inconsistency between the two real ActionStyle
-        # consumers named by SUB-381. state_or_context is typed Any (looser than tactical.py's
-        # AuthoritativeState), so the flag read falls back safely to OFF if feature_flags is absent.
+        style = live_action_style(entity, state_or_context)
         flags = getattr(state_or_context, "feature_flags", None) or {}
-        if flags.get("ENABLE_HABIT_BIAS_ACTION_STYLE", "OFF") == "ON":
-            from src.domains.emotion.habit_service import HabitBiasService, HABIT_PATTERN_COMBAT_ENGAGEMENT
-            from src.content_semantics.personality import get_action_style_for_bravery
-            effective_bravery = HabitBiasService.apply_habit_bias(
-                entity.cognition.memory.habit,
-                [HABIT_PATTERN_COMBAT_ENGAGEMENT],
-                entity.identity.personality.bravery,
-            )
-            effective_bravery = max(0.0, min(1.0, effective_bravery))
-            style = get_action_style_for_bravery(effective_bravery)
-        if mode == MovementMode.RETREAT and style == 2: # EVASIVE
+        if is_evasive_flight(mode, style):
              skip_oa = True
 
         # Real, additive tag for a genuine successful escape (real hostile(s) present, would have

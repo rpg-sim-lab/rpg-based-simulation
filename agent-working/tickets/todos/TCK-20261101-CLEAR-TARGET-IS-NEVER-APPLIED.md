@@ -63,6 +63,8 @@ After F3 and retention land (it moves hashes). Dispatch needs an owner go.
 
 ## Implementation Notes
 
+**Scope note (2026-11-11, rpg-implementer-3, from the fused_strategic_pass fix A and the owner's answers #715 6736224900 / 6736269441): an overwrite inconsistency in the fast path.** The fast path's "has-items, return to town" regroup (`fused_strategic_pass`, the off-cadence block, ~:394-411 on main 2ea0e4d8f) builds a NEW `EntityUpdate` when the entity has no update this tick, but `replace`s the existing one when it has one. The two branches drop different fields: the new update carries only the regroup navigation and an interaction reset, while the replaced update keeps its other fields and only the navigation target, mode and interaction are overwritten, so an earlier phase's `target_set` is overwritten in the replace branch (characterisation row 6, `earlier_phase_target_set`, pinned as a difference; the slow path keeps it). This note is for whoever takes this ticket: the clear-target fix and this inconsistency sit on the same lines and should be decided together. Not fixed by fix A (one condition only); the pinned row stays in `KNOWN_DISAGREEMENTS` until it is ruled.
+
 ## Test Summary
 
 ## Files Changed

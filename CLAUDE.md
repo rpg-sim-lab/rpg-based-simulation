@@ -40,6 +40,8 @@ Raw grep and direct file reads are **follow-up steps only** — they narrow down
 
 Detect and stop on duplicate work, conflicting requirements, or architectural mismatch.
 
+Start feature, design and architecture reviews from canonical specifications and documentation. Use recorded verification evidence and drift reports to establish review confidence. Inspect implementation selectively when evidence is insufficient, dependencies have changed, or risk requires independent verification. Do not infer implementation correctness solely from documentation freshness (rules: `docs/guides/delivery_process.md`, "Docs as the review source").
+
 ---
 
 ## Clarification Rule
@@ -109,6 +111,7 @@ Ticket must include: title, summary, scope, out of scope, acceptance criteria, r
   (or call `record_run.py`/`record_events.py` directly if you need finer control — that path does not append the working_log row, so the bullet above still applies). Monitoring write failure must never fail the workflow, same as the formal pipeline's own rule. To run done-checker's static conditions by hand (e.g. after a hand-orchestrated Finalize), `python3 tools/gate_checks/done_checker_static.py --ticket-id <TCK-ID>` now has a real CLI (`TCK-20260914-DONE-CHECKER-UNREACHABLE-FROM-HAND-ORCHESTRATED-CLOSURE`) — it prints a readable PASS/FAIL per condition and exits non-zero on any failure, including `working_log_exactly_one_row`.
   `record_hand_orchestrated_closure.py --path-reason owner_directed` needs `--path-note "<why>"`: without a note the tool refuses the closure.
 - **Also run the mechanism-registry changed-code advisory** (`TCK-20260920-MECHANISM-REGISTRY-CHANGED-CODE-ADVISORY-AT-CLOSE`): `python3 tools/mechanism_registry/mechanism_registry_changed_code_check.py --ticket-id <TCK-ID>` — flags a mechanism whose `implemented_by`-cited code changed in this ticket's own commits (or is still uncommitted in the working tree) without the mechanism's own registry entry changing too. **Non-blocking, report-only, no exit-code implication** — read what it prints, judge for yourself whether the named mechanism's entry needs a look, and close regardless of what it says. Safe to run before or after your own final closing commit (it checks the working tree too). Reachable only via this manual step for a hand-orchestrated close — `implement-ticket.js`'s own Finalize runs the same check automatically for the pipeline path.
+- **Hand-orchestrated closes get the doc step too:** run doc-updater, or the docs search (`python3 tools/gate_checks/docs_search.py`), before closing, and update the docs it names (detail: `docs/guides/delivery_process.md`, "Docs as the review source").
 - Before proposing `/clear` or ending a session at a natural stopping point — a ticket closed, a `Workflow` run finished and its results recorded, a plan or batch handed off, or a wait begun on another session's report — evaluate the reset boundary per `docs/guides/agent_session_reset_boundaries.md` — don't assume a stopping point is safe without checking it against that map.
 
 ### Commit Convention
@@ -241,7 +244,7 @@ A task is not done unless all are true:
 - Ticket is updated and moved to `agent-working/tickets/done/`
 - Staging artifacts are complete and migrated to `agent-working/stored_artifacts/`
 - Tests were run and updated
-- Docs were updated if behavior changed
+- Docs were updated if behavior changed; a found behaviour defect gets a limits line citing its ticket in the same change (`docs/guides/delivery_process.md`, "Docs as the review source")
 - Working log entry was added (`agent-working/tickets/working_log.csv`)
 - No important decision is undocumented
 - Repo state is consistent
@@ -274,6 +277,7 @@ All chapters are Certified Level 1 (Authoritative). Every formula is verified fo
 | 04 | `04_strategic_cognition.md` | Goal hierarchy, interruption resistance, knowledge management, perception |
 | 05 | `05_world_evolution.md` | Tick-to-day time, regional trauma, ecology, calamities |
 | 06 | `06_worldbuilding_foundation.md` | Declarative topology, sovereignty, distribution, integrity validation |
+| 07 | `07_social_political_dynamics.md` | Trust appraisal, contracts, relationships, social memory, reputation, guild intelligence, party coordination |
 
 Also: `content_usage_matrix.md` (content resolution rules), `regional_sovereignty.md` (region boundaries).
 

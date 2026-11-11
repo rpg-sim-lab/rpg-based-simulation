@@ -146,6 +146,9 @@ planner means drafting and review by `perf-planner`.
 | C-16 | documentation-status drift | Adopted. The owner makes `docs/architecture/performance_optimization.md`'s status and scope unambiguous: keep verified surviving decisions, mark the removed RabbitMQ mechanism historical or superseded, do not revive removed transport design. | carried | P1-owner (PERF-M0-T09) | Treat the RabbitMQ mechanism as historical; this ticket does not edit the document. |
 | C-17 | authority-blocking | **Resolved**, updated from T01: the proposal and the performance_optimization/ folder (11 files) are tracked in git since PR #185, and the folder is registered in `docs/REGISTRY.yaml`. Residual: the source proposal sits under the registry-skipped `docs/brainstorm/` tree and is never registered (T01 finding F-05). | T01 (`git ls-files`, `git log --diff-filter=A` showing `2f6b1551`; source_inventory.md §2) | none | The planning chain is durable; the residual registration gap does not block releasing evidence-only tickets. |
 
+**C-10 evidence route for the T05 evaluation:** the next-generation engine ADR
+(`docs/architecture/next_generation_engine_adr.md`, Decision 7; accepted #715 6742854335). C-10 itself is unchanged.
+
 ## 3. PERF-D decision records
 
 ### 3.1 Record template

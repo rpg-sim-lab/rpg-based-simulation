@@ -122,6 +122,30 @@ bullets). Do not invent a third format — a required doc written as a non-bulle
 un-backticked path, will not parse and is treated as a format regression, not a clean "nothing
 required" case.
 
+**Build the list by search, then judge (`TCK-20261108-DOCS-REQUIRING-UPDATE-BUILT-BY-SEARCH`):** judgment alone
+missed three satellite docs on #837. Before writing this section, run
+
+```
+python3 tools/gate_checks/docs_search.py --changed-file <code path> [--changed-file ...] [--old-term <term the ticket removes>]
+```
+
+with the code paths from Related Code Areas and the ticket's scope (it prints one `MARKER:` JSON line). Then:
+
+- **required** (normative doc with a direct hit): read each hit and keep it only if the doc states the fact this ticket
+  changes. Write the kept ones as Format 1 bullets. The search cannot read meaning, so this confirmation is yours.
+- **candidate** (every other hit, direct hits first, then importer and mechanism hits): list them under a
+  `### Candidate docs (triage)` table, one row per doc: `| path | hit kinds | first hit line |`. Never use a leading `- `
+  bullet with a backticked `docs/` path for a candidate: that shape is Format 1 and the Verify parser would demand the
+  doc be edited. doc-updater triages candidates after Implement; they never make Verify block.
+- **excluded** (archive, audit, REGISTRY, historical-status and review-record docs, each with its reason and hits): list
+  them under a `### Excluded docs` table the same way, with the reason. They are records and are never edited.
+- **comment_hits** (F5): comments and docstrings in the changed files that state an invariant, lifecycle, concurrency or
+  recovery behaviour. If the ticket changes that behaviour, name the comment in the investigation so Implement updates it.
+
+The search sees only the paths you pass, which at this point are planned, not the real diff; the gate runs it again on the
+real diff. If the command fails, say so in this section and fall back to judgment. Do not tune the output: report it, noise
+included.
+
 **Resolving a Format 1 bullet whose need depended on an implementation-time choice
 (`TCK-20260829-DOC-COVERAGE-CONDITIONAL-BULLET-BLIND-DOD-BLOCKED`):** if you write a Format 1
 bullet for a doc that must change *only if* the implementer makes a specific choice not yet made

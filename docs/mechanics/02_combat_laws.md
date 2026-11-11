@@ -130,6 +130,7 @@ attack is not yet legal only because its readiness is under 100 does not step: i
 (a held `ATTACK`, reason `HOLD_BETWEEN_BLOWS`) and strikes when readiness reaches 100, so it
 provokes no opportunity attack. It leaves only by a decision (flight, panic retreat, a declared
 ability, a goal that outranks the fight), and that decision pays the opportunity attack.
+A fighter does not flee into a blow it knows will finish it. When a flight would provoke the free swing of an engaged hostile (COMB-009) and the swing the subject has felt from that hostile is at least its remaining health, the flight is not taken: the subject stands and fights that hostile under the hold between blows. It knows only what it has felt. An engaged hostile that has not yet hit it is not assumed lethal, and a flight the free swing cannot reach (an evasive retreat) is unaffected (divergence 2.202).
 A strategic retreat (the brain choosing COMBAT_RETREAT) is not yet such a decision: it stays a stored target and takes no step,
 so a fighter leaves a fight to retreat only by a tactical decision (panic retreat, safety retreat) until the retreat-flight
 step after M1 (divergence 2.139).

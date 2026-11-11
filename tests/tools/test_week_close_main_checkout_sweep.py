@@ -133,3 +133,30 @@ def test_find_main_checkout_through_the_git_common_dir(tmp_path):
     assert wc.find_main_checkout(wt / "data") == main.resolve()
     assert wc.find_main_checkout(main / "data") is None  # the main checkout itself: its shard is folded as a normal shard
     assert wc.find_main_checkout(tmp_path / "outside" / "data") is None
+
+
+# TCK-20261110-WEEK-CLOSE-SWEEPS-MAIN-CHECKOUT-NON-TOOL-SHARDS: manual_actions / reset_boundary / governing_edits too.
+import pytest  # noqa: E402
+
+
+@pytest.mark.parametrize("kind", wc.MAIN_CHECKOUT_APPEND_ONLY_KINDS)
+def test_non_tool_kind_is_swept_once_deduped_and_main_file_untouched(tmp_path, kind):
+    data, main_data = _setup(tmp_path)
+    have = {"ts": "2026-09-22T09:00:00Z", "n": 1}
+    new = {"ts": "2026-09-22T10:00:00Z", "n": 2}
+    _write(data / WEEK / f"{kind}.jsonl", [have])
+    src = main_data / WEEK / f"{kind}.jsonl"
+    _write(src, [have, new])
+    before = src.read_bytes()
+    first = _close(data, tmp_path / "main")["main_checkout_append_only"][kind]
+    again = _close(data, tmp_path / "main")["main_checkout_append_only"][kind]
+    assert first["swept"] == 1 and first["duplicates_dropped"] == 1
+    assert again["swept"] == 0
+    assert _lines(data / WEEK / f"{kind}.jsonl") == [have, new]
+    assert src.read_bytes() == before
+
+
+def test_non_tool_kind_absent_in_main_checkout_is_skipped_not_an_error(tmp_path):
+    data, main_data = _setup(tmp_path)
+    result = _close(data, tmp_path / "main")["main_checkout_append_only"]
+    assert all(r["swept"] == 0 and r["skipped"] for r in result.values())

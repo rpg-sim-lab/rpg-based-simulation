@@ -15,7 +15,7 @@ tags: []
 A perceived hostile pursuing the subject (INTERCEPT/PURSUE on it) wakes its brain, extending D32's adjacency wake
 
 ## Status
-OPEN
+BLOCKED
 
 ## Tier
 standard
@@ -89,6 +89,25 @@ By kind (gap >2 or died first; urban/frontier/crowded): scout 34/63/62, raider -
 2026-11-03 WIDENED (rpg-designer): the question is now "an act on the subject, row 88's (a) or (b), wakes its brain for a decision on the next tick". A hit is the strongest case. Same idea in one state as divergence 2.154 (the threat wake for a chosen sleeper); say whether one mechanism covers both.
 Evidence (lane A's urban s44 re-run on ENG head e844e2845, pinned, hash equal to paired; rows read by lane A, not by rpg-planner): after scout 17's first hit, each victim had NO tactical decision (no evaluate_entity_intent call, task empty) for: victim 2 t3326-3328 (3 ticks), 25 t3501-3505 (5), 1 t3502-3509 (8), 12 t3542-3548 (7), while 17 kept hitting (1 lost 17 hp at t3512, 25 lost 14 at t3511). The act test read True at the next decision, so it isn't the act test. Check whether the gap equals NEED_WAKE_CADENCE (10) by design; e1's 10 ticks suggests re-deciding only on cadence. Code read (lane A, ENG worktree e844, not checked by rpg-planner): an empty task makes the work kind ENTITY_BRAIN (scheduler.py:136-141); unless woken, `_throttled` (scheduler.py:105-114) runs it only on `(tick + id) % cadence == 0` (cadence.py:39-60, default 10, the same value as NEED_WAKE_CADENCE, need_wake.py:8). Two wakes exist: decision 32's adjacency wake (scheduler.py:97-106; an orthogonally adjacent, unengaged perceived hostile, every 2 ticks, only without an action payload) and the need wake (scheduler.py:68-95; only a held move/sleep/INTERACT/WORK under a pressing need, not an empty task). Nothing in the scheduler reads last_hit_tick or last_attacker_id, so there is no wake on being hit. The inversion (rpg-designer): a hostile that names the subject as its target counts as engaged, so decision 32's adjacency wake skips it, which means the hostile acting on you is exactly the one that doesn't wake you. Lean shape, rpg-designer's to rule after the counts: a hit (row 88 (b)) wakes the victim's brain for the next tick, whatever its engagement state. That is consistent with decision 32's intent and the act test, so no owner question unless the counts show a cost. This ticket also settles whether a pursuit (a) wakes too, and how it relates to 2.154 for sleepers. The s44 gaps fit that [I]. Counts wanted before ENG closes, if cheap: hits not followed by a decision within 2 ticks, per run. ENG's owner row names this as the cheaper half of urban's +6: it doesn't change the gate.
 After v1. Needs the owner's confirmation.
+
+2026-11-11 PARKED by the owner (#715 6776436829, "Park it (Recommended)"; follows 6767852925 hold-and-narrow). rpg-planner recorded it.
+- Built as hit-wake: a hit on t wakes the victim's brain on t+1 (`src/engine/scheduler.py::_is_hit_woken`). The narrowed rule N2 also skips an entity whose task is an ATTACK (rpg-designer's design, main-checkout .claude/handover/drafts/rpg-designer-hitwake-narrowing-design.md).
+- Branches, kept LOCAL. Not pushed, not deleted; deleting needs the owner.
+  - Lane C's rpg-hit-wake: b46c429e7 is N2 on f25b04d8a; 2162e1f19 is N2 merged with main 993400a52.
+  - Both carry divergence 2.159, STRAT-298, the kernel.md wake rule (4) hunk, and this ticket plus TCK-20261107-GROUP-FORMATION-TICK-IS-NEVER-WRITTEN closed in done/.
+- Arm 2 (unnarrowed, f25b04d8a vs cefa99b07):
+  - 4 Tier 1 trips; Tier 2 FED 10.
+  - Owner row: drafts/rpg-designer-hitwake-arm2-owner-row.md.
+  - Traces: /mnt/data2/scratch-c3/tier2/.
+- N2 (2162e1f19 vs main 993400a52, crowded + urban s42-46 × 5000, pinned):
+  - Cells: /mnt/data2/rpg-measure/results/{993400a52995,2162e1f19fd9}-72320cac-5000/. All 10 fix hashes equal b46c429e70cf.
+  - Urban deaths 49→60: COMBAT 34→43 and DEFEAT 4→8, both over the bar.
+  - Crowded deaths 160→165 (COMBAT 118→128, under the bar).
+  - Tier 2: urban s44/s46, scripts ea239a3dec45 / 494d16b706e0, all 4 traces MATCH. Results in /mnt/data2/scratch-c3/tier2_n2main/.
+  - Designer's classes: FED 6, NEAR 5, DRIFT 2. Owner row: drafts/rpg-designer-hitwake-n2-owner-row.md.
+- Finding: the ATTACK payload clears on the tick the attack lands, so N2 still wakes an attacker on that tick (scout 15, urban s46).
+- Revisit after TCK-20261110-A-NON-FLIGHT-MOVE-OFF-ENGAGEMENT-WALKS-INTO-A-KNOWN-LETHAL-FREE-SWING: 4 of the 6 FED die walking off a fight into the free swing. That ticket takes scout 15 s46, scout 17 and worker 4 as evidence.
+- A revisit re-measures on the then-current main. The branch results are not reused.
 
 ## Test Summary
 

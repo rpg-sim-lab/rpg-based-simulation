@@ -16,11 +16,11 @@
     },
     "social_narrative.yaml": {
       "allOf/0/then/properties/test_path/type": 164,
-      "allOf/2/else/then/properties/test_path/type": 207
+      "allOf/2/else/then/properties/test_path/type": 206
     },
     "strategic_cognition.yaml": {
       "allOf/0/then/properties/test_path/type": 142,
-      "allOf/2/else/then/properties/test_path/type": 198
+      "allOf/2/else/then/properties/test_path/type": 197
     },
     "substrate.yaml": {
       "allOf/0/then/properties/test_path/type": 308,
@@ -29,7 +29,7 @@
     },
     "town_resource.yaml": {
       "allOf/0/then/properties/test_path/type": 129,
-      "allOf/2/else/then/properties/test_path/type": 143,
+      "allOf/2/else/then/properties/test_path/type": 142,
       "properties/proof_type/enum": 1
     }
   },

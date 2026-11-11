@@ -443,6 +443,7 @@ class CombatComponent:
     # The body that last took hp from this one by a hit, written by CombatPatch; a hazard or starvation death still names who last hit it.
     last_attacker_id: Optional[int] = None
     last_hit_tick: Optional[int] = None  # the tick of that same hit (CombatPatch, with last_attacker_id): the act test's window; None until first hit
+    last_hit_damage: Optional[int] = None  # the damage of that same hit (CombatPatch, with last_attacker_id): what the subject has felt from that body; None until first hit
     _canonical_cache: Any = field(default=None, init=False, repr=False, compare=False)
 
     def to_canonical_dict(self) -> Dict[str, Any]:
@@ -456,6 +457,7 @@ class CombatComponent:
             "permanent_max_hp_bonus": self.permanent_max_hp_bonus,
             "last_attacker_id": self.last_attacker_id,
             "last_hit_tick": self.last_hit_tick,
+            "last_hit_damage": self.last_hit_damage,
             "hp": self.hp,
             "max_hp": self.max_hp,
             "atk": self.atk,

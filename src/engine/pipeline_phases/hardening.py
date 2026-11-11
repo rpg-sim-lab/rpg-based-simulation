@@ -12,6 +12,25 @@ if TYPE_CHECKING:
     from src.core.updates import StateUpdate
 
 
+def _hardening_eligible(combat_update: CombatUpdate, tick: int) -> bool:
+    """
+    False when the update cannot grant near-death hardening: it is REJECTED, or it records no
+    combat hit taken this tick.
+
+    The hit is the typed fact CombatPatch itself uses to write last_attacker_id / last_hit_tick:
+    attacker_id set, damage_taken > 0, hit_tick_set == this tick. The sign of hp_delta is not the
+    test: a hit and a heal that net to 0 still count. A heal, a hazard drain, or nothing, while at
+    or under the line, grants nothing: a town heal or a hazard never does.
+    """
+    if combat_update.outcome_kind == "REJECTED":
+        return False
+    return (
+        combat_update.attacker_id is not None
+        and combat_update.damage_taken > 0
+        and combat_update.hit_tick_set == tick
+    )
+
+
 class NearDeathHardeningPhase:
     """
     Applies authoritative near-death hardening after combat resolution.
@@ -23,12 +42,12 @@ class NearDeathHardeningPhase:
         Apply near-death hardening after authoritative combat resolution.
 
         LAW:
-            If an entity survives a hit with critically low remaining HP, it gains
+            If an entity survives a combat hit with critically low remaining HP, it gains
             a small permanent max-HP increase in the same authoritative tick.
 
         Trigger:
             - entity has a CombatUpdate
-            - combat update is not REJECTED
+            - the update is not REJECTED and records a combat hit taken this tick (see _hardening_eligible)
             - entity survives the hit
             - projected HP is > 0
             - projected HP is <= 10% of current max HP
@@ -60,7 +79,7 @@ class NearDeathHardeningPhase:
             if combat_update is None:
                 continue
 
-            if combat_update.outcome_kind == "REJECTED":
+            if not _hardening_eligible(combat_update, state.tick):
                 continue
 
             current_hp = entity.combat.hp

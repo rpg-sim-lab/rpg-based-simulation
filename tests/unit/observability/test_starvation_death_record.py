@@ -192,6 +192,55 @@ def test_reset_run_state_clears_the_trail_the_counts_and_the_header():
     assert StarvationRecorder._deaths_seen == 0 and StarvationRecorder._header_sent is False
 
 
+def _ate(prior, tick, drop=30.0):
+    """The state after a meal: hunger lowered by ``drop``, nothing else changed."""
+    ent = prior.entities[WHO]
+    after = replace(prior, tick=tick)
+    object.__setattr__(after, "entities", {WHO: replace(ent, biological=replace(ent.biological, hunger=ent.biological.hunger - drop))})
+    return after
+
+
+def _death_after(meal_tick):
+    later = _at_tick(_world(carry=[]), meal_tick + 20)
+    (rec,) = _records(StarvationRecorder.observe(later, _dying(later, meal_tick + 23), _update()))
+    return rec.payload
+
+
+def test_a_meal_with_no_intent_result_updates_the_last_meal_tick():
+    """The free meal of an EAT with nothing carried is a direct update: hunger falls and no transfer result is produced."""
+    prior = _at_tick(_world(), SAMPLE_TICK)
+    StarvationRecorder.observe(prior, prior, SimpleNamespace(entity_updates={}))
+    StarvationRecorder.observe(prior, _ate(prior, SAMPLE_TICK + 1), SimpleNamespace(entity_updates={WHO: SimpleNamespace(intent_results=[])}))
+    payload = _death_after(SAMPLE_TICK + 1)
+    assert payload["last_meal_tick"] == SAMPLE_TICK + 1
+    assert payload["ways_open_in_reach_union"] == [] and payload["ways_attempted"] == []
+
+
+def test_a_meal_below_the_escalated_line_updates_the_last_meal_tick():
+    prior = _at_tick(_world(hunger=ESCALATION_ONSET * HUNGER_LINE - 10.0), SAMPLE_TICK)
+    StarvationRecorder.observe(prior, _ate(prior, SAMPLE_TICK + 1, drop=5.0), _update(_result("CARRIED_FOOD", accepted=True)))
+    assert _death_after(SAMPLE_TICK + 1)["last_meal_tick"] == SAMPLE_TICK + 1
+
+
+def test_an_attempt_below_the_escalated_line_still_does_not_count():
+    prior = _at_tick(_world(carry=["bread"], hunger=ESCALATION_ONSET * HUNGER_LINE - 10.0), SAMPLE_TICK)
+    StarvationRecorder.observe(prior, prior, _update(_result("CARRIED_FOOD", accepted=False)))  # tried, rejected, not hungry enough to count
+    later = _at_tick(_world(carry=["bread"]), SAMPLE_TICK + 10)
+    assert _death_after(SAMPLE_TICK + 10)["ways_attempted"] == [] and later.tick == SAMPLE_TICK + 10
+
+
+def test_a_corpse_meal_is_a_scavenge_attempt_and_a_meal():
+    prior = _at_tick(_world(), SAMPLE_TICK)
+    StarvationRecorder.observe(prior, prior, _update(_result("CORPSE_FOOD", accepted=False, source_id=7)))  # tried, nothing eaten
+    (rec,) = _records(StarvationRecorder.observe(prior, _dying(prior, SAMPLE_TICK + 3), _update()))
+    assert rec.payload["ways_attempted"] == ["SCAVENGE"]
+    StarvationRecorder.reset_run_state()
+    _reset()
+    StarvationRecorder.observe(prior, _ate(prior, SAMPLE_TICK + 1), _update(_result("CORPSE_FOOD", accepted=True, source_id=7)))
+    payload = _death_after(SAMPLE_TICK + 1)
+    assert payload["last_meal_tick"] == SAMPLE_TICK + 1 and payload["ways_attempted"] == []
+
+
 def test_a_real_kernel_run_writes_the_header_one_record_and_a_matching_tally(monkeypatch):
     """End to end through the kernel's observability phase: a lone starving person dies, the record and the live header are in its events."""
     from src.config.profiles import PROD_SMALL

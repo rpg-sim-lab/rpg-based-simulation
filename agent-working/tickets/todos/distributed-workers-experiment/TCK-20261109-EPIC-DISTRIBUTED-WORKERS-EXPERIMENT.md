@@ -155,8 +155,8 @@ Filing rides in a later implementation PR on this track (owner rule, #715 669774
 **Design accepted (owner, #715 6777076537, "Accept (Recommended)"):** `docs/plans/architecture/distributed_workers_experiment_design.md`
 at `f517f1fdf`.
 - Before acceptance: ubuntu review 2/2 approved with changes D1-D5, and its re-check was clean.
-- Adoption mirrors next-gen. The child 0 amendment goes to its final home under `docs/architecture/` through the ubuntu lead, and
-  the children proceed in order (§9).
+- Adoption mirrors next-gen. The child 0 amendment is adopted as `docs/architecture/distributed_workers_adr.md` (#861,
+  `a845656ad`), and the children proceed in order (§9).
 
 **Carried to child 3's ticket and its security review** (the ubuntu lead's non-blocking note at the re-check): the per-response MAC
 binds chunk id, codec and payload hash, but not the tick or the request. So an old valid response could be replayed. Bind the tick,

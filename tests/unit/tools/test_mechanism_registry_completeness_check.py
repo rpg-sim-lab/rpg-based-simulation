@@ -297,7 +297,9 @@ def test_wider_scope_numbers_pinned():
     # 351 -> 353 on 2026-11-02 (TCK-20261031-A-PAIR-RE-FORMS-AND-LEAVES-A-GROUP-EVERY-TWO-TICKS, divergence 2.146): +src/core/group_record.py (GroupRecord moved out of state.py, plus the one definition of a live group) and +src/core/group_update_merge.py (the merge of two updates' group adds and counter). Both are unbound (helper modules of the existing party_formation code, no mechanism of their own), so unbound_files goes 247 -> 249. Counts taken from the check's own output on the tree merged with main 0e7b1030c.
     # 351 -> 352 on 2026-11-02 (TCK-20261031-AN-ENGAGEMENT-OVERRIDES-A-PRESSING-NEED, divergence 2.157, from the check's own output): +src/engine/tactical_objective.py (the objective-pursuit step moved out of tactical.py; functions only, so it adds no unbound mechanism-shaped class).
     # 353 + 1 = 354 on 2026-11-07 (the merge of rpg-eng-overrides-need 4a1be4bd4 with the churn fix): both histories above hold; the figure is the check's own output on the merged tree.
-    assert wider["scope_files"] == 354
+    # 354 -> 355 on 2026-11-10 (TCK-20261109-A-FLIGHT-WEIGHS-THE-FREE-SWING-IT-WOULD-TAKE, divergence 2.202): +src/engine/tactical_flight_guard.py (flight_weighs_free_swing, bound under `tactical_decision`), so unbound_files stays 249.
+    # 355 -> 361 on 2026-11-11 (TCK-20261109-NEXT-GENERATION-ENGINE-ACCESS-AUDIT): +src/engine/access_audit/{declarations,hook,observe,recorder,report,static_reads}.py (the access-audit recorder and its report; measurement infrastructure, no gameplay mechanism).
+    assert wider["scope_files"] == 361
     # 233 -> 227 on 2026-10-05: the world-building split names six more files (worldmodules/normalizer,
     # worldassembly/resolve_io, worldbuilding/repository and validator, worldgeneration/generator and scorer).
     # Then +1 for the unbound entity_target_objective.py module (TCK-20261002-COMBAT-OBJECTIVE-TARGETS-...).
@@ -360,7 +362,8 @@ def test_wider_scope_numbers_pinned():
     # 248 -> 247 on 2026-11-01 (TCK-20261031-A-RETREAT-PROJECT-OUTLIVES-ITS-THREAT, merged on top of F3): src/core/strategic.py is now cited by `goal_hierarchy` (note_threat_state, restart_clear_window), so one unbound file is bound. Taken by running the check.
     # 2026-11-02 (TCK-20261031-AN-ENGAGEMENT-OVERRIDES-A-PRESSING-NEED): src/engine/tactical_objective.py is cited by `tactical_decision` (rpg-planner ruling: it was split out of tactical.py), so unbound_files stays 247 while scope_files rises by one (above).
     # unbound_files stays 249 on the merge: tactical_objective.py is bound (ENG), the churn fix's two helper modules are unbound (above).
-    assert wider["unbound_files"] == 249
+    # 249 -> 255 on 2026-11-11 (same ticket, from the check's own output): the same 6 files, unbound (measurement infrastructure, as governor.py); candidates (67) and wired (19) are unchanged.
+    assert wider["unbound_files"] == 255
     # 73 -> 72 on 2026-10-07 (row 7 (b) pass): src/quests/generator.py::QuestGenerator is now bound under `guilds`.
     # 72 -> 71 on 2026-10-11 (#500, D57): src/engine/rpg_depth.py::LeashService is cited under `tactical_decision` (it became wired when
     # the hunger and fatigue goals started calling `way_in_range`), so it is no longer an unbound candidate.

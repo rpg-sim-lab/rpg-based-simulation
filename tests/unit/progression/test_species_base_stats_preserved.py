@@ -119,7 +119,7 @@ def _harden(entity):
     # leave 1 HP: projected hp <= 10% of max_hp triggers hardening
     hp_delta = -(entity.combat.hp - 1)
     update = StateUpdate(entity_updates={
-        entity.id: EntityUpdate(entity_id=entity.id, combat=CombatUpdate(hp_delta=hp_delta)),
+        entity.id: EntityUpdate(entity_id=entity.id, combat=CombatUpdate(hp_delta=hp_delta, damage_taken=-hp_delta, attacker_id=entity.id + 1, hit_tick_set=state.tick)),
     })
     refined = NearDeathHardeningPhase.apply(state, update)
     return refined.entity_updates[entity.id]
@@ -271,7 +271,7 @@ def test_every_combat_component_field_survives_to_readonly():
         "evasion": 0.17, "move_cost": 18.0, "tactical_role": "SKIRMISHER", "action_style": 2,
         "alive": False, "readiness": 19.0, "readiness_speed": 20.0,
         "base_hp": -21, "base_atk": 22, "base_def": -23, "base_evasion": 0.24,
-        "permanent_max_hp_bonus": 25, "last_attacker_id": 26, "last_hit_tick": 27,
+        "permanent_max_hp_bonus": 25, "last_attacker_id": 26, "last_hit_tick": 27, "last_hit_damage": 28,
     }
     skip = {"wounds", "scars", "status_effects", "latest_result", "_canonical_cache"}
     assert {f.name for f in fields(CombatComponent)} - skip == set(sentinel), "update sentinel"

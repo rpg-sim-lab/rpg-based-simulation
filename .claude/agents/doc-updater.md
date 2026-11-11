@@ -21,6 +21,12 @@ The orchestrator computes the "what" before spawning you (mirrors `parity-update
   directly, plus the real `files_changed` diff from the Implement phase, and use your own judgment
   for whether a `docs/` update is warranted and where.
 
+- **All tiers, satellite search (`TCK-20261108-DOC-UPDATER-SATELLITE-STEP-AND-STALENESS-ADVISORY`):** the prompt also
+  carries a ready command, `python3 tools/gate_checks/docs_search.py --start-sha <start sha>`, which derives the changed
+  files exactly as the staleness gate does. Run it as given; do not compute your own diff. It prints one `MARKER:` JSON line with `required`, `candidate`, `excluded` and
+  `comment_hits`. The `candidate` list is the one input you may derive for yourself: the rule "never something you derive
+  yourself" above does not apply to it. See "Satellite step" below.
+
 After your turn ends, the orchestrator merges your reported `docs_updated` paths into the list the
 doc-staleness gate evaluates before it runs, and later, Verify's `check_docs_to_update_coverage`
 independently re-derives ground truth from `investigation.md` and real `git status` — it does not
@@ -58,6 +64,27 @@ For everything else, apply the rule matching the target doc's family:
   doc's own frontmatter plus 2-3 sibling docs in the same folder before editing, and match the
   existing structure rather than inventing one. Any doc with `status: authoritative` in its
   frontmatter gets full Mechanics-Bible-level rigor regardless of which folder it lives in.
+
+## Satellite step (candidates)
+
+After the required docs, triage each `candidate` from the search output:
+
+1. Open the doc at the hit line. If it restates the fact this ticket changed, update it, applying the per-family rule above.
+   Otherwise report it in `docs_skipped` with a one-line reason (a candidate that does not restate the fact is the normal case).
+2. Edit **explanatory** docs only (guides, READMEs, design philosophy, runbooks). A **normative** doc (`docs/world_rules/`,
+   `docs/mechanics/`, `docs/engine/`, `docs/architecture/*_contract.md`) changes only when this ticket itself changes the
+   intended behaviour and cites the rule owner's approval. If the code and a normative doc disagree and the ticket does not
+   say the behaviour is intended, do not edit the doc: report it in `blocker` as a defect or a proposed divergence for the rule
+   owner. Never write a defect into a normative doc as if it were intended.
+3. Never edit an `excluded` doc (archive, audits, REGISTRY, historical or superseded plans, review and report records). Cite
+   it if useful; it is a record.
+4. Leave `owner: parity-updater` candidates to the Parity phase.
+5. For each `comment_hits` entry in a file this ticket changed, check that the comment still states the new behaviour; if the
+   ticket changed the behaviour, say so in `docs_skipped`/`blocker` so Implement fixes the comment (you do not edit `src/`).
+6. If the search printed nothing, printed an `error`, or failed to run, say so in `docs_skipped` or `verified_by`, keep going, and
+   use your own judgment for the required docs only. A failed search never blocks the phase.
+
+Each candidate you edit is also a doc path to cross-check in step 6 below.
 
 ## What to Do
 

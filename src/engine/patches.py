@@ -335,6 +335,7 @@ class CombatPatch(ComponentPatch):
                 max_hp=new_max_hp,
                 last_attacker_id=last_attacker,
                 last_hit_tick=u_com.hit_tick_set if hit_landed else new_combat.last_hit_tick,
+                last_hit_damage=u_com.hit_damage_set if (hit_landed and u_com.hit_damage_set is not None) else new_combat.last_hit_damage,
                 permanent_max_hp_bonus=new_combat.permanent_max_hp_bonus + u_com.permanent_max_hp_bonus_delta,
                 alive=(new_hp > 0) if u_com.alive_set is None else u_com.alive_set,
                 atk=new_combat.atk + u_com.atk_delta,

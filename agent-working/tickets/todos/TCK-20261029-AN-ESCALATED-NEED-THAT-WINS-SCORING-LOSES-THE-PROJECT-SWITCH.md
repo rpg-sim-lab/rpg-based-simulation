@@ -94,6 +94,7 @@ Lean fix shape, for the counts to confirm (rpg-designer's call):
 - ESCALATED SPLIT (orphan switch, ACTIVE record beside another current project): base hunger lost 57 / won 28 (67% lost), fatigue 28 / 14 (67%); new hunger 103 / 18 (85%), fatigue 307 / 129 (70%). Every loss and win is escalated in both arms. Base totals 85 lost / 42 won; new 410 / 147. Confirms the designer's ruling that this is a base gap; :1610 raises the call count, not the loss rate (fatigue), and hunger rises 67% -> 85%.
 - Escalated need no-record/no-create events are all lost switches: hunger 53 -> 97, fatigue 34 -> 102 (non-escalated 3 and 3 in both arms).
 - Still owed by this ticket's counts step: (a) lock vs margin, (b) current project kind, (c) parked time, (d) deaths.
+- 2026-11-09 OWNER ORDER RULING (#715 6731822583, relayed by lead-planner-u24 and verified by rpg-planner), on the §12.5 order: "Unit rows only (Recommended)". This site gets unit precedence-grid rows only. A behaviour step follows only if a count shows a defect, and that step then needs its own owner yes. FLEE-LINE stays a full fix. Applies with the standing depth rule (#715 6731764470) and the measurement floor (#715 6731822583).
 
 ## Test Summary
 ## Files Changed

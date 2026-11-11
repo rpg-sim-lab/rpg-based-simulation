@@ -471,3 +471,39 @@ option changes a rule the owner set.
      `--admin` or route around it.
 7. **After the user reports a merge**: `git checkout main && git pull` to sync. If local `main` is already ahead of `origin/main` by a commit you didn't make, that's another concurrent session's unpushed local work — leave it alone, don't push it for them and don't rebase/reset over it. Once synced with nothing in flight, evaluate the reset boundary per `docs/guides/agent_session_reset_boundaries.md` — a merged batch is the most common HARD boundary.
 8. **This repo's PRs land as squash merges** — GitHub creates one new commit on `main` whose parent is `main`'s prior tip, not a merge of your branch's own commit history. Your branch's individual commits (and any local merge commit you made into it) are never ancestors of `main` after this, even though their *content* is fully present. **If you push further commits to the same branch after its PR has merged, those commits have no path to `main`** — a plain `git log origin/main..HEAD` or a naive re-open of the same PR will look like it's re-submitting the entire original diff, because ancestor-based diffing can't see the content is already there. The tell is a suspiciously large `git diff origin/main...HEAD` (three-dot, ancestor-based) right after a merge you know landed cleanly — confirm with `git diff origin/main HEAD` (plain two-ref, content-based) instead, which will show only the real new changes. Fix: merge `origin/main` into the branch again (resolving any "add/add" conflicts this ancestor-loss can spuriously create — check whether the `origin/main` side of such a conflict is genuinely new content or empty/stale before assuming a real concurrent edit), then open a **new** PR rather than trying to reuse or reopen the merged one. **A second symptom of the same root cause, visible even when you get the merge right**: a PR opened from that same already-squashed branch (even after a correct `origin/main` merge) shows GitHub's *own* commit count as the branch's full original history — dozens of commits against what might be a handful of real new files — because GitHub still can't recognize the squashed commit as an ancestor. The diff itself is correct (git compares trees, so already-landed content contributes nothing), but the commit list is genuinely misleading to a reviewer. The visible warning sign (an inflated commit count on an otherwise-small PR) and the invisible one (stranded commits with no path to `main`) are the same underlying cause — recognize either, and treat it the same way: **a squash-merged branch is finished.** Never push further work to it, not even after resyncing it with `origin/main`. Cut a fresh branch off `origin/main` for the next piece of work and copy or cherry-pick just the new commits onto it (`git checkout <old-branch> -- <changed paths>` on the new branch is usually simplest when the new work is a handful of files), so the resulting PR's commit count actually matches its diff.
+
+### Docs as the review source (owner-approved plan, 2026-11-08)
+
+Design source: `origin/lead-docs-review-source:agent-working/lead/docs_as_review_source_plan.md` (rev 3.2), P3 and P5. The rules that
+need the verification fields and the drift report (`verified_by`, "when code is read", critical-invariant evidence) arrive with
+`TCK-20261108-DOC-EVIDENCE-FIELDS-AND-DRIFT-REPORT` and are not stated here yet.
+
+**Docs step on a hand-orchestrated close.** The pipeline has a Document-Update phase; a hand close has none, so it does this
+before closing: run `python3 tools/gate_checks/docs_search.py --changed-file <code path> ... --base-ref <start sha>` on the
+ticket's real diff (code paths only, not `docs/` or `agent-working/`), then
+- update each `required` doc that states the changed fact, and each `candidate` that restates it, or note the ones you skipped
+  and why in the ticket's Implementation Notes;
+- leave `excluded` docs alone (archive, audits, REGISTRY, historical or superseded plans, review and report records);
+- read `comment_hits`: a comment or docstring that states the changed invariant, lifecycle, concurrency or recovery behaviour
+  changes with the code;
+- or spawn doc-updater with the same command, which is what the pipeline does.
+The search and its classes are defined once in `tools/gate_checks/docs_search.py`; doc-updater's rules for candidates are in
+`.claude/agents/doc-updater.md` ("Satellite step").
+
+**Known defects and limits (P3).** When an audit or a ticket finds a behaviour defect, the same change adds a line to the
+subsystem's limits section, or to `docs/engine/known_limitations.md`, citing the defect ticket. When the fix lands, the fix PR moves
+the line into the ticket's completion summary; the limits section keeps a one-line "fixed in <ticket>" pointer only if the
+limit was published, for example in a release note.
+
+**Review rules (P5, the ones that do not depend on the verification fields).**
+- **Start from documents.** A feature, design or architecture review starts from the canonical docs. It reads code selectively
+  when the evidence is insufficient, dependencies have changed, or risk requires an independent check. Freshness of a doc is not
+  evidence that the code is correct.
+- **Scope.** A review report says whether it was a docs-and-governance audit or an implementation audit. A docs-only audit never
+  claims the code is correct.
+- **Pin.** Every audit names the commit it read and reads files at that commit (`git show <sha>:path`, or a worktree at the pin).
+  A branch behind `origin/main` is a valid subject when the review is about that branch. The rule bans only an unpinned read of a
+  stale working tree presented as if it described current main; the session-start behind-origin warning stays.
+- **Fix in the same PR.** A wrong explanatory doc found during review is fixed in the PR that found it. A wrong normative doc
+  (world rules, Mechanics Bible, engine and architecture contracts) goes to its rule owner as a defect ticket, or as an
+  `intentional_divergences.md` entry if the owner accepts the code's behaviour; nobody edits it to match the code.
