@@ -90,6 +90,14 @@ def test_blank_description_or_term_is_refused(root):
     assert not wg.registry_path(root).exists()
 
 
+def test_term_with_surrounding_whitespace_is_refused(root):
+    with pytest.raises(ValueError, match="whitespace"):
+        _add(root, term=" tick")
+    with pytest.raises(ValueError, match="whitespace"):
+        _add(root, term="tick ")
+    assert not wg.registry_path(root).exists()
+
+
 def test_cli_add_and_duplicate_exit_codes(root, capsys):
     argv = ["add", "region", "--description", "A named area.", "--source", "docs/mechanics/05_world_evolution.md", "--root", str(root)]
     assert wg.main(argv) == 0

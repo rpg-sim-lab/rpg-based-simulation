@@ -397,9 +397,9 @@ def validate(data: dict) -> List[str]:
         summary = m["summary"]
         if not isinstance(summary, str):
             errors.append(f"mechanism '{mid}' summary must be a string, got {summary!r}")
-        elif not summary.strip():
+        elif not (stripped := summary.strip()):
             errors.append(f"mechanism '{mid}' summary must not be empty")
-        elif "\n" in summary.strip() or "\r" in summary:
+        elif "\n" in stripped or "\r" in stripped:
             errors.append(f"mechanism '{mid}' summary must be a single line")
 
     # Invariant 7: a present `implemented_by` is a list of real, existing repo-relative paths,

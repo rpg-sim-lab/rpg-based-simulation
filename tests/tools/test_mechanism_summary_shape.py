@@ -53,3 +53,10 @@ def test_multi_line_summary_is_one_error(bad):
 def test_committed_registry_has_no_summary_errors():
     data = yaml.safe_load((_REPO / "registries" / "mechanisms.yaml").read_text(encoding="utf-8"))
     assert [e for e in registry.validate(data) if "summary" in e] == []
+
+
+def test_trailing_line_break_only_is_a_blank_edge_not_multi_line():
+    # Surrounding whitespace is stripped once, then both line-break tests run on the stripped text.
+    assert _summary_errors(summary="One line.\n") == []
+    assert _summary_errors(summary="One line.\r\n") == []
+    assert len(_summary_errors(summary="One\rline")) == 1

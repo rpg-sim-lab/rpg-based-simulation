@@ -86,6 +86,8 @@ def add_term(term: str, description: str, source: str, root: Path | str | None =
     description, a bad or missing `source`, or an already-registered term."""
     if not term.strip():
         raise ValueError("term must not be blank")
+    if term != term.strip():
+        raise ValueError(f"term {term!r} must not have leading or trailing whitespace")
     if not description.strip():
         raise ValueError(f"cannot register {term!r}: description must not be blank")
     problem = source_problem(source, root)
