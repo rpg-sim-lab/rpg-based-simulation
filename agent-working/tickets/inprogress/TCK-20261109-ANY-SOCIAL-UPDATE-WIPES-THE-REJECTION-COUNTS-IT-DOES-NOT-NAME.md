@@ -4,7 +4,7 @@ layer: core
 authority: P1
 audience: agent
 ticket_id: TCK-20261109-ANY-SOCIAL-UPDATE-WIPES-THE-REJECTION-COUNTS-IT-DOES-NOT-NAME
-phase: open
+phase: inprogress
 date: 2026-11-09
 tags: []
 ---
@@ -15,7 +15,7 @@ tags: []
 Any social update wipes the rejection counts it does not name, so recruitment's social-fatigue penalty almost never builds up
 
 ## Status
-OPEN
+INPROGRESS
 
 ## Tier
 standard
