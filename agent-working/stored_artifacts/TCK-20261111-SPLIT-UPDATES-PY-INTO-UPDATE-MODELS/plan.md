@@ -16,12 +16,12 @@ Owner approval: #715 6813227854 (dispatch), paydown for the ceiling raise #715 6
 
 ## File map (whole classes move unchanged; `updates.py` re-exports every moved name)
 
-Stays in `src/core/updates.py`: EntityUpdate, StateUpdate (+ `_merged_spawn_sources`, `EMPTY_ENTITY_UPDATE`), NavigationUpdate, IdentityUpdate. Two guards read the file by path: `tests/architecture/test_faction_mutation_write_paths.py` (`faction_set=` only in `src/core/updates.py`, IdentityUpdate) and `tests/unit/engine/test_lodged_in_stays_in_the_apply_path.py` (`lodged_in_set/_clear=` only in `core/updates.py`, NavigationUpdate). Their allowlists are not touched.
+Stays in `src/core/updates.py`: StatusEffectUpdate (the mechanism registry's `status_effects` entry cites `src/core/updates.py::StatusEffectUpdate`; moving it broke the validator and made the state-caller check read the re-export as a caller; moved back on 2026-11-12, rpg-planner approved), EntityUpdate, StateUpdate (+ `_merged_spawn_sources`, `EMPTY_ENTITY_UPDATE`), NavigationUpdate, IdentityUpdate. Two guards read the file by path: `tests/architecture/test_faction_mutation_write_paths.py` (`faction_set=` only in `src/core/updates.py`, IdentityUpdate) and `tests/unit/engine/test_lodged_in_stays_in_the_apply_path.py` (`lodged_in_set/_clear=` only in `core/updates.py`, NavigationUpdate). Their allowlists are not touched.
 
 Moves to `src/core/update_models/`:
 - `social.py`: RejectionEvent, SocialBondUpdate, SocialUpdate
 - `strategic.py`: StrategicUpdate
-- `combat.py`: CombatIntent, EquipmentUpdate, CombatUpdate, WoundUpdate, StaminaUpdate, StatusEffectUpdate (imports social, strategic, resources)
+- `combat.py`: CombatIntent, EquipmentUpdate, CombatUpdate, WoundUpdate, StaminaUpdate (imports social, strategic, resources)
 - `body.py`: InteractionUpdate, TaskUpdate, BiologicalUpdate, AttributeUpdate, `_LIFECYCLE_SET_FIELDS`, LifecycleUpdate, RewardUpdate
 - `world.py`: ResourceNodeUpdate, WorldUpdate, `NO_OWNER_SENTINEL` (with its comment block), `decode_owner_faction_id_set`, ChestUpdate, CampUpdate, QuestOpportunityRewardIntent, FactionUpdate, ClanUpdate
 

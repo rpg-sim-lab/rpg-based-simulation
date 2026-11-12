@@ -15,6 +15,7 @@ if TYPE_CHECKING:
         GroupRecord,
         LocalScarState,
         OwedRecord,
+        StatusEffectState,
     )
     from src.engine.intent.action_intent import ActionIntent
     from src.engine.policy import GovernorPolicy
@@ -37,7 +38,6 @@ from src.core.update_models.combat import (  # noqa: F401  (re-exported)
     CombatUpdate,
     EquipmentUpdate,
     StaminaUpdate,
-    StatusEffectUpdate,
     WoundUpdate,
 )
 from src.core.update_models.inventory import InventoryUpdate, ItemInstanceUpdate
@@ -168,6 +168,26 @@ class IdentityUpdate:
 
     
     
+
+
+@dataclass(frozen=True, slots=True)
+class StatusEffectUpdate:
+    """New status effects and effect removal."""
+    effects_add: List[StatusEffectState] = field(default_factory=list)
+    effects_remove: List[str] = field(default_factory=list)  # status `kind` values to remove
+
+    def is_noop(self) -> bool:
+        """True when no status effect is added or removed."""
+        return not self.effects_add and not self.effects_remove
+
+    def merge(self, other: StatusEffectUpdate) -> StatusEffectUpdate:
+        """Fold `other` in: the add and remove lists concatenate."""
+        if not other or other.is_noop():
+            return self
+        changes: Dict[str, Any] = {}
+        if other.effects_add: changes["effects_add"] = self.effects_add + other.effects_add
+        if other.effects_remove: changes["effects_remove"] = self.effects_remove + other.effects_remove
+        return replace(self, **changes)
 
 
 @dataclass(frozen=True, slots=True)
