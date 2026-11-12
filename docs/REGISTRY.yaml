@@ -29283,6 +29283,20 @@
   - schema
   - simulation-quality
 - type: ticket
+  path: agent-working/tickets/done/TCK-20260916-REENABLE-DOCS-PAGES-PUBLISHING.md
+  ticket_id: TCK-20260916-REENABLE-DOCS-PAGES-PUBLISHING
+  title: Re-enable GitHub Pages docs publishing once the docs site is ready to publish
+    a first version
+  tier: hotfix
+  ticket_type: chore
+  date: '2026-09-16'
+  related_code_areas:
+  - .github/workflows/deploy-docs.yml
+  artifact_files: []
+  tags:
+  - documentation
+  - process-improvement
+- type: ticket
   path: agent-working/tickets/done/headroom-context-compression-trial/TCK-20260916-HEADROOM-CONTEXT-COMPRESSION-EPIC.md
   ticket_id: TCK-20260916-HEADROOM-CONTEXT-COMPRESSION-EPIC
   title: 'Bounded, reversible trial of Headroom context compression — measure real
@@ -29304,20 +29318,6 @@
   - agent-monitoring
   - process-improvement
   - optimization
-- type: ticket
-  path: agent-working/tickets/todos/TCK-20260916-REENABLE-DOCS-PAGES-PUBLISHING.md
-  ticket_id: TCK-20260916-REENABLE-DOCS-PAGES-PUBLISHING
-  title: Re-enable GitHub Pages docs publishing once the docs site is ready to publish
-    a first version
-  tier: standard
-  ticket_type: chore
-  date: '2026-09-16'
-  related_code_areas:
-  - .github/workflows/deploy-docs.yml
-  artifact_files: []
-  tags:
-  - documentation
-  - process-improvement
 - type: ticket
   path: agent-working/tickets/done/TCK-20260915-ARTIFACT-STATE-CONVERGENCE.md
   ticket_id: TCK-20260915-ARTIFACT-STATE-CONVERGENCE
