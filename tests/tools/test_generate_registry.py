@@ -796,3 +796,41 @@ class TestEdgeCases:
         types = [e["type"] for e in data]
         # doc before ticket
         assert types.index("doc") < types.index("ticket")
+
+
+# ---------------------------------------------------------------------------
+# TCK-20261112-REGISTRY-REGEN-SKIPPED-BY-A-STALE-HOOK-OR-AN-UNTRACKED-DOC: an untracked doc without frontmatter
+# is not indexed, so it cannot turn `--check` into exit 1 (both hooks treat any code other than 2 as "skip").
+# ---------------------------------------------------------------------------
+
+_DOC_FM = "status: active\nlayer: testing\nauthority: P1\naudience: agent\ntags: []"
+
+
+def _git_repo_with_tracked_doc(tmp_path: Path) -> Path:
+    def git(*a):
+        subprocess.run(["git", "-c", "user.email=a@b", "-c", "user.name=t", *a], cwd=tmp_path, check=True, capture_output=True)
+
+    git("init", "-q", "-b", "main")
+    _make_doc(tmp_path, "guides/tracked.md", _DOC_FM, "# Tracked\n")
+    git("add", "-A")
+    git("commit", "-q", "-m", "init")
+    return tmp_path / "docs" / "REGISTRY.yaml"
+
+
+class TestUntrackedDocWithoutFrontmatter:
+    def test_check_is_0_when_in_sync_and_2_when_drifted_never_1(self, tmp_path):
+        output = _git_repo_with_tracked_doc(tmp_path)
+        assert generate_registry(tmp_path, output) == 0
+        (tmp_path / "docs" / "guides" / "read.md").write_text("no frontmatter here\n", encoding="utf-8")  # untracked
+        assert generate_registry(tmp_path, output, check=True) == 0
+        _make_doc(tmp_path, "guides/second.md", _DOC_FM, "# Second\n")
+        subprocess.run(["git", "add", "docs/guides/second.md"], cwd=tmp_path, check=True)  # tracked now: the registry drifts
+        assert generate_registry(tmp_path, output, check=True) == 2
+
+    def test_a_tracked_doc_without_frontmatter_still_returns_1(self, tmp_path):
+        output = _git_repo_with_tracked_doc(tmp_path)
+        bare = tmp_path / "docs" / "guides" / "bare.md"
+        bare.write_text("no frontmatter here\n", encoding="utf-8")
+        subprocess.run(["git", "add", "docs/guides/bare.md"], cwd=tmp_path, check=True)
+        assert generate_registry(tmp_path, output, check=True) == 1
+        assert generate_registry(tmp_path, output) == 1  # the write path agrees
