@@ -1,0 +1,21 @@
+ Network platform_default Creating 
+ Network platform_default Created 
+ Container platform-redis-1 Creating 
+ Container platform-tempo-1 Creating 
+ Container platform-loki-1 Creating 
+ Container platform-docker-socket-proxy-1 Creating 
+ Container platform-ntfy-1 Creating 
+ Container platform-node-exporter-1 Creating 
+ Container platform-redis-exporter-1 Creating 
+ Container platform-ntfy-1 Created 
+ Container platform-node-exporter-1 Created 
+ Container platform-redis-exporter-1 Created 
+ Container platform-loki-1 Created 
+ Container platform-tempo-1 Created 
+ Container platform-redis-1 Created 
+ Container platform-ai_worker-1 Creating 
+ Container platform-backend-1 Creating 
+ Container platform-docker-socket-proxy-1 Created 
+ Container platform-alloy-1 Creating 
+ Container platform-ai_worker-1 Error response from daemon: No such image: platform-ai_worker:latest 
+Error response from daemon: No such image: platform-ai_worker:latest
