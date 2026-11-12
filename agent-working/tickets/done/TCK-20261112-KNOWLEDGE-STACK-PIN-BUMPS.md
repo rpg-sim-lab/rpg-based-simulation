@@ -136,4 +136,8 @@ Pin tests `tests/tools/test_code_test_index.py` and `tests/tools/test_graphify_s
 
 ## Completion Summary
 
-requirements-knowledge.txt pins `torch==2.15.0+cpu` and `graphifyy==0.9.104`; `headroom-ai` stays at 0.37.0 with the mcp 2.x reason in the pin comment (Known gap: headroom 0.43.1 waits for the mcp 2.x move of `tools/search_mcp.py`). Acceptance criterion 5 is met when the owner removes the throwaway venv, scratch tree, pip cache and index copies.
+requirements-knowledge.txt pins `torch==2.15.0+cpu` and `graphifyy==0.9.104`; `headroom-ai` stays at 0.37.0 with the mcp 2.x reason in the pin comment.
+
+Known gap: headroom-ai 0.43.1 waits for the mcp 2.x move of tools/search_mcp.py (needs mcp>=2.2.0,<3).
+
+Acceptance criterion 5 is met when the owner removes the throwaway venv, scratch tree, pip cache and index copies.
