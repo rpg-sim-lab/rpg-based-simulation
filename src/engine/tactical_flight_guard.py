@@ -14,6 +14,7 @@ from typing import TYPE_CHECKING, Any, Dict, Optional, overload
 from src.core.movement_modes import MovementMode
 from src.core.updates import EntityUpdate, NavigationUpdate, TaskUpdate
 from src.engine.candidate_selector import MovementCandidateSelector
+from src.engine.felt_swing import felt_lethal_attacker
 from src.engine.hostility import source_identity
 from src.engine.legality import LegalityServiceV2
 from src.engine.movement import is_evasive_flight, live_action_style
@@ -46,22 +47,6 @@ def _flight_reason(entity: "EntityState", update: EntityUpdate) -> Optional[str]
     return reason if reason in MovementCandidateSelector.FLIGHT_REASONS else None
 
 
-def _felt_lethal_attacker(state: "AuthoritativeState", entity: "EntityState") -> Optional["EntityState"]:
-    """The hostile whose last felt blow would finish the subject, if that hostile is engaged with it now; else None.
-
-    swing = last_hit_damage if last_attacker_id is engaged else 0 (the sum over engaged hostiles of what the subject has felt from each is only ever the
-    last attacker's); lethal = swing > 0 and swing >= hp.
-    """
-    combat = entity.combat
-    swing = combat.last_hit_damage
-    if combat.last_attacker_id is None or not swing or swing < combat.hp:
-        return None
-    if combat.last_attacker_id not in LegalityServiceV2.get_engaged_hostiles(entity, state):
-        return None
-    attacker = state.entities.get(combat.last_attacker_id)
-    return attacker if attacker is not None and attacker.combat.alive else None
-
-
 @overload
 def flight_weighs_free_swing(state: "AuthoritativeState", entity: "EntityState", update: EntityUpdate, site: FlightSite) -> EntityUpdate: ...
 @overload
@@ -79,7 +64,7 @@ def flight_weighs_free_swing(
         return update
     if is_evasive_flight(MovementMode.RETREAT, live_action_style(entity, state)):
         return update
-    attacker = _felt_lethal_attacker(state, entity)
+    attacker = felt_lethal_attacker(state, entity)
     if attacker is None:
         return update
     carried: Dict[str, Any] = {"stale_ticks": 0, "recent_positions": [], "target_identity_source": source_identity(entity)[1]}

@@ -9,6 +9,7 @@ from src.core.movement_modes import MovementMode
 from src.core.updates import EntityUpdate, NavigationUpdate, StaminaUpdate, LifecycleUpdate
 from src.core.enums import ReasonCode
 
+from src.engine.felt_swing import felt_lethal_attacker
 from src.engine.legality import LegalityServiceV2
 from src.systems.world_systems.navigation import NavigationSystem
 from src.world.environment import EnvironmentService
@@ -168,6 +169,49 @@ class MovementSystem:
         return move_speed_mult * mode_mults.get(mode, 1.0)
 
     @staticmethod
+    def _held_by_felt_lethal_swing(entity: EntityState, state_or_context: Any, engaged_hostiles: List[int], skip_oa: bool) -> Optional[Dict[int, EntityUpdate]]:
+        """2.204 (CONFLICT-04): the update that holds a step which would give the free swing to a hostile the subject has felt will finish it, else None.
+
+        Held as a blocked step is: no position, no stamina, no free swing, no fled learning, no cache entry; the stored target stays and wait_count is not touched."""
+        if not engaged_hostiles or skip_oa:
+            return None
+        felt = felt_lethal_attacker(state_or_context, entity)
+        if felt is None or felt.id not in engaged_hostiles:
+            return None
+        return {entity.id: EntityUpdate(entity_id=entity.id, navigation=NavigationUpdate(failure_reason=ReasonCode.FELT_LETHAL_FREE_SWING, wait_count_delta=0))}
+
+    @staticmethod
+    def _store_plan(m_cache: Any, cache_key: Optional[MovementPlanKey], plan: Optional[MovementPlan]) -> None:
+        """Write the step plan a taken step computed (deferred from the decision ladder until the free-swing check has passed)."""
+        if plan is not None:
+            m_cache.put(cache_key, plan)
+
+    @staticmethod
+    def _evasive_escape(entity: EntityState, engaged_hostiles: List[int], skip_oa: bool, flags: Dict[str, Any], current_tick: int) -> Tuple[Dict[str, Any], Any]:
+        """The additive escape tag and the fled-learning write of an evasive step away from engaged hostiles (empty and None otherwise)."""
+        # Real, additive tag for a genuine successful escape (real hostile(s) present, would have
+        # attacked, but didn't) -- previously left zero trace on the returned EntityUpdate, making
+        # this real outcome indistinguishable from an ordinary move with nothing nearby
+        # (TCK-20260809-COMBAT-LIFECYCLE-OBSERVABILITY). Mirrors this file's own established
+        # property_updates pattern (see "movement_resolution": "POSITION_SWAP" elsewhere in this
+        # module) -- purely additive, no change to the real skip_oa/OA resolution logic itself.
+        escape_tag: Dict[str, Any] = {}
+        fled_cognition = None
+        if engaged_hostiles and skip_oa:
+            escape_tag = {
+                "combat_escape": "EVASIVE_SUCCESS",
+                "combat_escape_evaded_ids": list(engaged_hostiles),
+            }
+            # TCK-20260914-COMBAT-ENGAGEMENT-PERCEIVED-POWER (Sec 13.5a): a real, weak FLED
+            # learning signal for each hostile evaded here -- gated on ENABLE_COMBAT_ENGAGEMENT,
+            # same as the passive-observation and combat-learning writes elsewhere in this
+            # feature, so the flag stays the single real on/off switch for the whole mechanism.
+            if flags.get("ENABLE_COMBAT_ENGAGEMENT", "OFF") == "ON":
+                from src.domains.combat_engagement.learning_outcome import apply_fled_learning
+                fled_cognition = apply_fled_learning(entity, tuple(engaged_hostiles), current_tick)
+        return escape_tag, fled_cognition
+
+    @staticmethod
     def resolve_move(
         state_or_context: Any,
         entity: EntityState,
@@ -221,6 +265,7 @@ class MovementSystem:
         wait_delta = 0
         osc_delta = 0
         replan = False
+        pending_plan = None
 
         if not success and MovementSystem._has_arrived_beside_unenterable_target(entity, effective_target, target_pos, reason_code):
             return {entity.id: EntityUpdate(entity_id=entity.id, navigation=NavigationUpdate(target_clear=True))}
@@ -271,9 +316,9 @@ class MovementSystem:
                 wait_delta = -entity.navigation.wait_count
                 osc_delta = -entity.navigation.oscillation_count
 
-                # Cache successful move on cache miss
+                # Cache successful move on cache miss (written after the free-swing check below, so a held step leaves the cache as a blocked step does)
                 if m_cache is not None and cache_key is not None and cached_plan is None and effective_target is not None:
-                    m_cache.put(cache_key, MovementPlan(next_step=effective_target, valid_until_tick=current_tick + 10))
+                    pending_plan = MovementPlan(next_step=effective_target, valid_until_tick=current_tick + 10)
 
         # Logic ID: COMB-010 (Anti-stalemate logic handles chase/kite loops)
         if not success and not replan:
@@ -295,26 +340,11 @@ class MovementSystem:
         if is_evasive_flight(mode, style):
              skip_oa = True
 
-        # Real, additive tag for a genuine successful escape (real hostile(s) present, would have
-        # attacked, but didn't) -- previously left zero trace on the returned EntityUpdate, making
-        # this real outcome indistinguishable from an ordinary move with nothing nearby
-        # (TCK-20260809-COMBAT-LIFECYCLE-OBSERVABILITY). Mirrors this file's own established
-        # property_updates pattern (see "movement_resolution": "POSITION_SWAP" elsewhere in this
-        # module) -- purely additive, no change to the real skip_oa/OA resolution logic itself.
-        escape_tag: Dict[str, Any] = {}
-        fled_cognition = None
-        if engaged_hostiles and skip_oa:
-            escape_tag = {
-                "combat_escape": "EVASIVE_SUCCESS",
-                "combat_escape_evaded_ids": list(engaged_hostiles),
-            }
-            # TCK-20260914-COMBAT-ENGAGEMENT-PERCEIVED-POWER (Sec 13.5a): a real, weak FLED
-            # learning signal for each hostile evaded here -- gated on ENABLE_COMBAT_ENGAGEMENT,
-            # same as the passive-observation and combat-learning writes elsewhere in this
-            # feature, so the flag stays the single real on/off switch for the whole mechanism.
-            if flags.get("ENABLE_COMBAT_ENGAGEMENT", "OFF") == "ON":
-                from src.domains.combat_engagement.learning_outcome import apply_fled_learning
-                fled_cognition = apply_fled_learning(entity, tuple(engaged_hostiles), current_tick)
+        held = MovementSystem._held_by_felt_lethal_swing(entity, state_or_context, engaged_hostiles, skip_oa)
+        if held is not None:
+            return held
+
+        escape_tag, fled_cognition = MovementSystem._evasive_escape(entity, engaged_hostiles, skip_oa, flags, current_tick)
 
         # 5. Opportunity Attack Trigger (Checklist Section 8)
         # Logic ID: COMB-009 (Disengagement, pursuit, target stickiness are explicit rules)
@@ -354,6 +384,8 @@ class MovementSystem:
                     updates[combat_update.attacker_id] = (
                         existing_attacker_upd.merge(reward_upd) if existing_attacker_upd else reward_upd
                     )
+
+        MovementSystem._store_plan(m_cache, cache_key, pending_plan)
 
         # 6. Final Subject Execution
         actor_up = updates.get(entity.id, EntityUpdate(entity_id=entity.id))
