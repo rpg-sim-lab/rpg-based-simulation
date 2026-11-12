@@ -1,0 +1,14 @@
+== 2026-11-12T10:10:52Z screenshots (headless Chrome via Playwright)
+dashboard text contains 'datasource': False
+dashboard text contains 'not found': False
+dashboard text contains 'Error': True
+dashboard text contains 'error': False
+panel titles visible: 6 of 6 probed
+explore shows PING: True | shows the route: True
+console errors (first 3): ['Failed to load resource: the server responded with a status of 404 (Not Found)']
+screenshots written
+total 536
+drwxrwxr-x 2 vboxuser vboxuser   4096 Nov 12 17:11 .
+drwxrwxr-x 5 vboxuser vboxuser   4096 Nov 12 17:10 ..
+-rw-rw-r-- 1 vboxuser vboxuser 375545 Nov 12 17:11 dashboard_api-v1.png
+-rw-rw-r-- 1 vboxuser vboxuser 163339 Nov 12 17:11 trace_b97bc419c7316b64bb7a1d0ca976bf6a.png

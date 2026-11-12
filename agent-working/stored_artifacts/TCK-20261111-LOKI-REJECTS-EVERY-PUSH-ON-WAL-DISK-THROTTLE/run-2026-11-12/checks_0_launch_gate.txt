@@ -1,0 +1,27 @@
+== 2026-11-12T09:59:18Z launch gate
+loadavg: 0.36 0.37 0.28 1/1045 183764
+MemAvailable MiB: 5604
+swap used MiB: 2245 at 09:59:18
+swap used MiB: 2245 at 09:59:23
+swap used MiB: 2245 at 09:59:28
+-- df -h / /data
+Filesystem      Size  Used Avail Use% Mounted on
+/dev/sda2        49G   34G   14G  72% /
+/dev/sdb1        99G   78G   16G  84% /data
+-- free -m
+               total        used        free      shared  buff/cache   available
+Mem:            9942        4308         699          17        5258        5634
+Swap:           8191        2245        5946
+-- stat -f / /data
+/ blocks=12821880 free=4167241 avail=3507824 bsize=4096
+/data blocks=25721923 free=5338220 avail=4154525 bsize=4096
+-- docker system df (before the build)
+TYPE            TOTAL     ACTIVE    SIZE      RECLAIMABLE
+Images          18        1         7.171GB   479.8MB (6%)
+Containers      2         1         4.096kB   0B (0%)
+Local Volumes   5         0         713.7MB   713.7MB (100%)
+Build Cache     10        0         641.7MB   43.11MB
+-- other containers on the host (not touched):
+cool_curie 
+-- platform containers now:
+0

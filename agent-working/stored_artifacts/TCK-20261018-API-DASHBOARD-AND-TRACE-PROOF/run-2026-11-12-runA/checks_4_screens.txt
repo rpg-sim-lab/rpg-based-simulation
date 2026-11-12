@@ -1,0 +1,19 @@
+== 2026-11-12T10:33:39Z run A screenshots + UI click-through (headless Chrome)
+loki end: line visible: True | trace id visible: True
+after the derived-field click: Tempo trace shown: True | followed: True
+tempo end: route shown: True
+click-through of 'Logs for this span' failed: Locator.click: Timeout 8000ms exceeded.
+Call log:
+  - waiting for get_by_role("button", name=re.compile(r"Logs for this span", re.IGNORECASE)).first
+
+after 'Logs for this span': the Loki line shown: False | clicked: False
+screenshots written
+runA_1_loki_line.png
+runA_2_loki_line_expanded.png
+runA_3_after_derived_field_click.png
+runA_4_tempo_trace.png
+runA_5_after_logs_for_span.png
+== 2026-11-12T10:34:46Z run A trace -> logs through the UI ('Related logs')
+clicked 'Related logs': True
+a Loki pane opened: True | the log line is shown: True | the trace id is shown in the page: 4 times
+done

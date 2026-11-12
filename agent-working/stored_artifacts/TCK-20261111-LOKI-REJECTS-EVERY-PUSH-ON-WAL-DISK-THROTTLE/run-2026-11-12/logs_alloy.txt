@@ -1,0 +1,31 @@
+ts=2026-11-12T10:01:37.787331935Z level=info msg="Alloy is starting"
+ts=2026-11-12T10:01:37.803523228Z level=info msg="boringcrypto enabled" enabled=false
+ts=2026-11-12T10:01:37.819012519Z level=info msg="GOMEMLIMIT is updated" package=github.com/KimMachineGun/automemlimit/memlimit GOMEMLIMIT=241591910 previous=9223372036854775807
+ts=2026-11-12T10:01:37.846734376Z level=info msg="no peer discovery configured: both join and discover peers are empty" service=cluster
+ts=2026-11-12T10:01:37.984990531Z level=info msg="starting complete graph evaluation" controller_path=/ controller_id="" trace_id=eb410e9a9ce592cd26fc72c35fcc1e83
+ts=2026-11-12T10:01:37.987310674Z level=info msg="finished node evaluation" controller_path=/ controller_id="" trace_id=eb410e9a9ce592cd26fc72c35fcc1e83 node_id=labelstore duration=2.217051ms
+ts=2026-11-12T10:01:37.987363628Z level=info msg="finished node evaluation" controller_path=/ controller_id="" trace_id=eb410e9a9ce592cd26fc72c35fcc1e83 node_id=tracing duration=20.663µs
+ts=2026-11-12T10:01:37.989988668Z level=info msg="finished node evaluation" controller_path=/ controller_id="" trace_id=eb410e9a9ce592cd26fc72c35fcc1e83 node_id=logging duration=2.616286ms
+ts=2026-11-12T10:01:37.990016774Z level=info msg="finished node evaluation" controller_path=/ controller_id="" trace_id=eb410e9a9ce592cd26fc72c35fcc1e83 node_id=otel duration=6.461µs
+ts=2026-11-12T10:01:37.990759401Z level=info msg="finished node evaluation" controller_path=/ controller_id="" trace_id=eb410e9a9ce592cd26fc72c35fcc1e83 node_id=livedebugging duration=325.085µs
+ts=2026-11-12T10:01:38.028652316Z level=info msg="finished node evaluation" controller_path=/ controller_id="" trace_id=eb410e9a9ce592cd26fc72c35fcc1e83 node_id=loki.write.loki duration=37.84868ms
+ts=2026-11-12T10:01:38.077183437Z level=info msg="finished node evaluation" controller_path=/ controller_id="" trace_id=eb410e9a9ce592cd26fc72c35fcc1e83 node_id=loki.process.json duration=39.849692ms
+ts=2026-11-12T10:01:38.141779135Z level=info msg="finished node evaluation" controller_path=/ controller_id="" trace_id=eb410e9a9ce592cd26fc72c35fcc1e83 node_id=discovery.docker.containers duration=64.49999ms
+ts=2026-11-12T10:01:38.14526686Z level=info msg="finished node evaluation" controller_path=/ controller_id="" trace_id=eb410e9a9ce592cd26fc72c35fcc1e83 node_id=discovery.relabel.containers duration=3.356948ms
+ts=2026-11-12T10:01:38.201830972Z level=info msg="finished node evaluation" controller_path=/ controller_id="" trace_id=eb410e9a9ce592cd26fc72c35fcc1e83 node_id=loki.source.docker.containers duration=56.500142ms
+ts=2026-11-12T10:01:38.205448963Z level=info msg="finished node evaluation" controller_path=/ controller_id="" trace_id=eb410e9a9ce592cd26fc72c35fcc1e83 node_id=remotecfg duration=2.423337ms
+ts=2026-11-12T10:01:38.206019835Z level=info msg="applying non-TLS config to HTTP server" service=http
+ts=2026-11-12T10:01:38.209214439Z level=info msg="finished node evaluation" controller_path=/ controller_id="" trace_id=eb410e9a9ce592cd26fc72c35fcc1e83 node_id=http duration=3.609925ms
+ts=2026-11-12T10:01:38.209713015Z level=info msg="finished node evaluation" controller_path=/ controller_id="" trace_id=eb410e9a9ce592cd26fc72c35fcc1e83 node_id=cluster duration=433.291µs
+ts=2026-11-12T10:01:38.209740103Z level=info msg="finished node evaluation" controller_path=/ controller_id="" trace_id=eb410e9a9ce592cd26fc72c35fcc1e83 node_id=ui duration=2.595µs
+ts=2026-11-12T10:01:38.209833629Z level=info msg="finished complete graph evaluation" controller_path=/ controller_id="" trace_id=eb410e9a9ce592cd26fc72c35fcc1e83 duration=240.409595ms
+ts=2026-11-12T10:01:38.212840289Z level=info msg="scheduling loaded components and services" controller_id=""
+ts=2026-11-12T10:01:38.29970836Z level=info msg="starting cluster node" service=cluster peers_count=0 peers="" advertise_addr=127.0.0.1:12345 minimum_cluster_size=0 minimum_size_wait_timeout=0s
+ts=2026-11-12T10:01:38.321232204Z level=info msg="{^_^} Alloy is running"
+ts=2026-11-12T10:01:38.323580985Z level=info msg="peers changed" service=cluster peers_count=1 min_cluster_size=0 peers=13b223aa920e
+ts=2026-11-12T10:01:38.403196384Z level=info msg="now listening for http traffic" service=http addr=0.0.0.0:12345
+ts=2026-11-12T10:05:18.099007033Z level=info msg="finished transferring logs" component_path=/ component_id=loki.source.docker.containers component=tailer container=docker/f84513086f54e69a6a2c1a14df3175b522e63467f25dc30d4a68df408ea4efcd written=55091 container=f84513086f54e69a6a2c1a14df3175b522e63467f25dc30d4a68df408ea4efcd
+ts=2026-11-12T10:05:18.337430532Z level=error msg="could not fetch logs for container" component_path=/ component_id=loki.source.docker.containers component=tailer container=docker/f84513086f54e69a6a2c1a14df3175b522e63467f25dc30d4a68df408ea4efcd container=f84513086f54e69a6a2c1a14df3175b522e63467f25dc30d4a68df408ea4efcd err="Error response from daemon: can not get logs from container which is dead or marked for removal"
+ts=2026-11-12T10:05:23.314544738Z level=info msg="container no longer exists, stopping tailer" component_path=/ component_id=loki.source.docker.containers component=tailer container=docker/f84513086f54e69a6a2c1a14df3175b522e63467f25dc30d4a68df408ea4efcd id=f84513086f54e69a6a2c1a14df3175b522e63467f25dc30d4a68df408ea4efcd
+ts=2026-11-12T10:11:43.407136333Z level=warn msg="could not transfer logs" component_path=/ component_id=loki.source.docker.containers component=tailer container=docker/449c4bc57ffb1f3decfe3ed83219eefc7bee9a5da5629668bffc219e3971d9f7 written=0 container=449c4bc57ffb1f3decfe3ed83219eefc7bee9a5da5629668bffc219e3971d9f7 err="unexpected EOF"
+ts=2026-11-12T10:11:43.408179829Z level=warn msg="could not transfer logs" component_path=/ component_id=loki.source.docker.containers component=tailer container=docker/f7e295f616d95dcbe364cd57a2e0aa9c6449d686f78878c01193cfd600e44061 written=0 container=f7e295f616d95dcbe364cd57a2e0aa9c6449d686f78878c01193cfd600e44061 err="unexpected EOF"
