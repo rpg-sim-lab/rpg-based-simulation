@@ -23,14 +23,18 @@ def is_excluded(path: str) -> bool:
     return path.startswith(EXCLUDED_PREFIXES) or any(fragment in "/" + path for fragment in EXCLUDED_FRAGMENTS)
 
 
-def _git(*args: str) -> list[str]:
-    done = subprocess.run(["git", *args], capture_output=True, text=True, check=True)
+def _git(*args: str, cwd: str | None = None) -> list[str]:
+    done = subprocess.run(["git", *args], capture_output=True, text=True, check=True, cwd=cwd)
     return [line for line in done.stdout.splitlines() if line.strip()]
 
 
-def derive_changed_files(start_sha: str) -> list[str]:
-    """Tracked changes since ``start_sha`` (working tree included) plus untracked files, bookkeeping removed, sorted."""
-    paths = set(_git("diff", "--name-only", start_sha, "--")) | set(_git("ls-files", "--others", "--exclude-standard"))
+def derive_changed_files(start_sha: str, cwd: str | None = None) -> list[str]:
+    """Tracked changes since ``start_sha`` (working tree included) plus untracked files, bookkeeping removed, sorted.
+
+    ``cwd`` is the repository to ask (default: the current directory)."""
+    paths = set(_git("diff", "--name-only", start_sha, "--", cwd=cwd)) | set(
+        _git("ls-files", "--others", "--exclude-standard", cwd=cwd)
+    )
     return sorted(p for p in paths if not is_excluded(p))
 
 

@@ -4,6 +4,7 @@ from __future__ import annotations
 import importlib.util
 import json
 import os
+import sqlite3
 import sys
 import types
 from argparse import Namespace
@@ -12,6 +13,10 @@ from pathlib import Path
 import pytest
 
 from tools.agent_working_paths import STORED_ARTIFACTS, TICKETS
+
+# The real embedding builds load the sentence-transformers model and need about 4.7-4.9 GB of virtual address space (peak RSS
+# stays near 1.4-1.6 GB), more than the medium budget's 4 GB RLIMIT_AS (TCK-20261111-KNOWLEDGE-INDEX-BUILD-MEMORY-BOUNDED).
+pytestmark = pytest.mark.resource_budget_large
 
 _REPO_ROOT = Path(__file__).parent.parent.parent
 
@@ -100,10 +105,12 @@ def test_a_missing_or_unreadable_manifest_is_unknown_and_never_raises(corpus, ma
 
 def _query(root, db):
     """Run the CLI query. The warning is printed before any model work, so a lean environment without the embedding
-    packages (the search itself then fails on import) still shows it."""
+    packages (the search itself then fails on import) still shows it. The same holds where the packages ARE installed: the fixture's
+    db is an empty file, so the search then fails on the missing `knowledge_vec` table, after the warning was printed
+    (TCK-20261111-KNOWLEDGE-INDEX-BUILD-MEMORY-BOUNDED: that failure is not a build that died, it is this fixture)."""
     try:
         _ks.cmd_query(Namespace(db_path=str(db), corpus_root=str(root), query="thing", top_k=1, mode="keyword"))
-    except ImportError:
+    except (ImportError, sqlite3.OperationalError):
         pass
 
 

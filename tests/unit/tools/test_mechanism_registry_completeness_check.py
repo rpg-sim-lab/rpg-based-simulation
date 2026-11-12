@@ -300,7 +300,9 @@ def test_wider_scope_numbers_pinned():
     # 354 -> 355 on 2026-11-10 (TCK-20261109-A-FLIGHT-WEIGHS-THE-FREE-SWING-IT-WOULD-TAKE, divergence 2.202): +src/engine/tactical_flight_guard.py (flight_weighs_free_swing, bound under `tactical_decision`), so unbound_files stays 249.
     # 355 -> 361 on 2026-11-11 (TCK-20261109-NEXT-GENERATION-ENGINE-ACCESS-AUDIT): +src/engine/access_audit/{declarations,hook,observe,recorder,report,static_reads}.py (the access-audit recorder and its report; measurement infrastructure, no gameplay mechanism).
     # 361 -> 362 on 2026-11-11 (TCK-20261110-A-NON-FLIGHT-MOVE-OFF-ENGAGEMENT-WALKS-INTO-A-KNOWN-LETHAL-FREE-SWING): +src/engine/felt_swing.py (felt_lethal_attacker, moved from tactical_flight_guard).
-    assert wider["scope_files"] == 362
+    # 361 -> 362 on 2026-11-11 (TCK-20261109-ANY-SOCIAL-UPDATE-WIPES-THE-REJECTION-COUNTS-IT-DOES-NOT-NAME, SOC-280): +src/core/social_counts.py (add_rejection_counts, the one sum rule the social apply and SocialUpdate.merge share; a helper of the existing social code, unbound).
+    # 362 + 1 = 363 on 2026-11-12 (merge of origin/main 373625027 into rpg-non-flight-free-swing): both histories above hold; the figure is the check's own output on the merged tree.
+    assert wider["scope_files"] == 363
     # 233 -> 227 on 2026-10-05: the world-building split names six more files (worldmodules/normalizer,
     # worldassembly/resolve_io, worldbuilding/repository and validator, worldgeneration/generator and scorer).
     # Then +1 for the unbound entity_target_objective.py module (TCK-20261002-COMBAT-OBJECTIVE-TARGETS-...).
@@ -365,7 +367,9 @@ def test_wider_scope_numbers_pinned():
     # unbound_files stays 249 on the merge: tactical_objective.py is bound (ENG), the churn fix's two helper modules are unbound (above).
     # 249 -> 255 on 2026-11-11 (same ticket, from the check's own output): the same 6 files, unbound (measurement infrastructure, as governor.py); candidates (67) and wired (19) are unchanged.
     # 255 -> 256 on 2026-11-11 (TCK-20261110-A-NON-FLIGHT-MOVE-OFF-ENGAGEMENT-WALKS-INTO-A-KNOWN-LETHAL-FREE-SWING, from the check's own output): +src/engine/felt_swing.py, unbound (a moved helper of 2.202; no new mechanism entry); candidates and wired are unchanged.
-    assert wider["unbound_files"] == 256
+    # 255 -> 256 on 2026-11-11 (TCK-20261109-ANY-SOCIAL-UPDATE-WIPES-THE-REJECTION-COUNTS-IT-DOES-NOT-NAME): +src/core/social_counts.py is an unbound helper (the shared rejection-count sum rule, no mechanism of its own); candidates and wired are unchanged.
+    # 256 + 1 = 257 on 2026-11-12 (same merge, from the check's own output): both new files are unbound helpers; candidates and wired are unchanged.
+    assert wider["unbound_files"] == 257
     # 73 -> 72 on 2026-10-07 (row 7 (b) pass): src/quests/generator.py::QuestGenerator is now bound under `guilds`.
     # 72 -> 71 on 2026-10-11 (#500, D57): src/engine/rpg_depth.py::LeashService is cited under `tactical_decision` (it became wired when
     # the hunger and fatigue goals started calling `way_in_range`), so it is no longer an unbound candidate.

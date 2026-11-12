@@ -339,10 +339,10 @@ typecheck-pyrefly-baseline-sync: ## Rewrite codebase/baselines/pyrefly_baseline.
 docs-artifacts: ## Generate stored_artifacts index pages
 	$(PYTHON3) tools/generate_artifact_pages.py
 
-docs-serve: docs-artifacts ## Start Docusaurus dev server (http://localhost:3000)
+docs-serve: ## Start the website wiki dev server (http://localhost:3000); generates World Knowledge first
 	cd website && npm run start
 
-docs-build: docs-artifacts ## Build Docusaurus static site to website/build/
+docs-build: ## Build the website wiki to website/build/; generates World Knowledge first
 	cd website && npm run build
 
 docs-registry: ## Regenerate docs/REGISTRY.yaml from frontmatter
@@ -569,7 +569,7 @@ search-server: ## FALLBACK ONLY — start search server directly via uvicorn (ex
 	@echo "[search-server] Fallback mode — use make search-server-docker for persistent deployment"
 	uvicorn tools.search_server:app --host 127.0.0.1 --port 8765 --reload
 
-install-hooks: ## Install git hooks (post-commit incremental reindex when docs/ or agent-working/tickets/done/ changed). OVERWRITES an existing post-commit hook; install-prek-hooks does not
+install-hooks: ## Install git hooks (post-commit: registry regen after a stale merge commit; the incremental knowledge reindex is opt-in via git config --bool knowledge.reindexOnCommit true). OVERWRITES an existing post-commit hook; install-prek-hooks does not
 	cp tools/hooks/post-commit-reindex.sh .git/hooks/post-commit
 	chmod +x .git/hooks/post-commit
 	@echo "[hooks] post-commit hook installed"
