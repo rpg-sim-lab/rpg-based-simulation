@@ -12,6 +12,9 @@ RUN="${1:?usage: stack_guard.sh <rundir> [real|dry]}"; MODE="${2:-real}"
 MIN_AVAIL_MIB="${MIN_AVAIL_MIB:-1500}"; MAX_SWAP_MIB="${MAX_SWAP_MIB:-7500}"
 # MAX_SWAP_GROWTH_MIB (default off = 0): also trigger when swap used grows more than this above the first reading of the run.
 MAX_SWAP_GROWTH_MIB="${MAX_SWAP_GROWTH_MIB:-0}"; BASE_SWAP=""
+# MAX_DISK_PCT (default off = 0): also trigger when any filesystem in DISK_PATHS (default "/ /data") reads this `df` percent or more
+# (TCK-20261111-LOKI-REJECTS-EVERY-PUSH-ON-WAL-DISK-THROTTLE: Loki throttles at 90% by its own formula, which reads about 5 points below df). An unreadable value is a trigger.
+MAX_DISK_PCT="${MAX_DISK_PCT:-0}"; DISK_PATHS="${DISK_PATHS:-/ /data}"
 COMPOSE_ARGS="${COMPOSE_ARGS:---profile observability}"
 mkdir -p "$RUN"; rm -f "$RUN/guard.stop" "$RUN/guard.abort"
 while [ ! -f "$RUN/guard.stop" ]; do
@@ -24,9 +27,18 @@ while [ ! -f "$RUN/guard.stop" ]; do
   [ -z "$BASE_SWAP" ] && case "$w" in ''|*[!0-9]*) ;; *) BASE_SWAP="$w";; esac
   if [ "$trig" = 0 ] && [ "$MAX_SWAP_GROWTH_MIB" -gt 0 ] && [ -n "$BASE_SWAP" ] && [ "$((w - BASE_SWAP))" -gt "$MAX_SWAP_GROWTH_MIB" ]; then trig=1; fi
   if [ "$trig" = 0 ] && { [ "$a" -lt "$MIN_AVAIL_MIB" ] || [ "$w" -gt "$MAX_SWAP_MIB" ]; }; then trig=1; fi
+  disk=""
+  if [ "$MAX_DISK_PCT" -gt 0 ]; then
+    for p in $DISK_PATHS; do
+      d=$(df -P "$p" 2>/dev/null | awk 'NR==2{gsub("%","",$5); print $5}')
+      disk="${disk} ${p}=${d}%"
+      case "$d" in ''|*[!0-9]*) trig=1; echo "$(date -u +%T) READ FAIL disk ${p}='${d}'" >> "$RUN/guard.log";; *) [ "$d" -ge "$MAX_DISK_PCT" ] && trig=1;; esac
+    done
+    echo "$(date -u +%T) disk:${disk} threshold=${MAX_DISK_PCT}%" >> "$RUN/guard.log"
+  fi
   if [ "$trig" = 1 ]; then
-    if [ "$MODE" = dry ]; then echo "$(date -u +%T) WOULD DOWN avail=${a} swap=${w}" | tee -a "$RUN/guard.log"; exit 0; fi
-    echo "ABORT $(date -u +%T) avail=${a} swap=${w}" > "$RUN/guard.abort"
+    if [ "$MODE" = dry ]; then echo "$(date -u +%T) WOULD DOWN avail=${a} swap=${w}${disk}" | tee -a "$RUN/guard.log"; exit 0; fi
+    echo "ABORT $(date -u +%T) avail=${a} swap=${w}${disk}" > "$RUN/guard.abort"
     [ -s "$RUN/locust.pid" ] && kill "$(cat "$RUN/locust.pid")" 2>/dev/null
     # shellcheck disable=SC2086
     docker compose $COMPOSE_ARGS down > "$RUN/guard.down.log" 2>&1

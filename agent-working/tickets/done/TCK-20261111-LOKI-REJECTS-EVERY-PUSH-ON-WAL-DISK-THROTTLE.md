@@ -1,0 +1,148 @@
+---
+status: historical
+layer: platform
+authority: P1
+audience: agent
+ticket_id: TCK-20261111-LOKI-REJECTS-EVERY-PUSH-ON-WAL-DISK-THROTTLE
+phase: done
+date: 2026-11-11
+tags: [platform, observability]
+---
+
+# TCK-20261111-LOKI-REJECTS-EVERY-PUSH-ON-WAL-DISK-THROTTLE
+
+## Title
+Loki accepted no log push during the 2026-11-11 stack run (WAL disk throttle, then "Ingester is shutting down")
+
+## Status
+DONE
+
+## Tier
+standard
+
+## Type
+bug
+
+## Priority
+P2
+
+## Request Summary
+During the compose-image-bumps proof run (record `docs/runbooks/records/2026-11-11-compose-image-bumps.md`,
+section 5), Loki 3.7.9 accepted no push at all:
+- Alloy recorded 19 write requests, all HTTP 500, 0 entries sent, and 213 dropped.
+- Loki answered `Ingester is shutting down` (first at 16:34:13Z).
+- At start-up (16:28:00Z), Loki logged `wal.go:215 disk usage exceeded threshold, throttling writes
+  usage_percent=94.80% threshold_percent=90.00%`.
+- `LogShippingErrors` was Pending from 16:28:40Z.
+
+The four bumped images (redis, prometheus, ntfy, redis_exporter) are not on Loki's path, so that ticket closes with
+this stated as a known gap. So far, local log shipping is known broken in that run only. Whether it reproduces is
+open. The 2026-10-28 Alloy run shipped normally.
+
+## Scope
+1. **Where the 94.8% comes from.** Find which path Loki's WAL disk check measures and how it computes the
+   percentage. Read the Loki 3.7 source and docs for `wal.go` disk throttling. Facts known so far:
+   - Unverified: which path and which statfs fields Loki's check measures. The facts below locate the data, not the measurement.
+   - The loki service has no volume and no bind mount (compose.yaml), and the image declares no VOLUME, so its data
+     sits in the container's writable layer.
+   - Corrected 2026-11-12. The filing said that layer was under Docker's root `/data/docker`, on `/data`. That was wrong.
+     Docker 29.3.1 here uses the containerd image store (`docker info`: driver-type `io.containerd.snapshotter.v1`;
+     lead-planner found it on 2026-11-12, and platform-planner re-checked it). Container layers therefore sit under
+     `/var/lib/containerd`, which is on `/` (/dev/sda2, 49G), not on `/data`. `DockerRootDir` is still `/data/docker`,
+     and that is where named volumes live.
+   - Leading hypothesis, not established: Loki's WAL was on `/`. During the run `/` was at 100% with about 20 MB free,
+     which fits the logged 94.8% only if Loki computes usage differently from `df` (for example, without the reserved
+     blocks). After the owner's `docker builder prune` on 2026-11-12, `/` reads 82–83% with 8.1 GB free.
+   - Alternative, weaker: the backend image build finished at 16:25Z, three minutes before Loki started. A build can
+     briefly fill the disk it writes to (now known to be `/` for the build cache too) and then free it.
+   - At 16:37 `/data` read 83% used (`df`), or 79% (`findmnt`). With Loki's data on `/`, that figure is not the one
+     Loki measured.
+2. **Why the ingester then reports "shutting down"** and never recovers within the run, even with the disk below 90%
+   later. Is this a Loki state machine (throttle -> read-only -> stopping) or something else?
+3. **Reproduce and prove in one run** (owner, option A, #715 6819928388). There is no separate reproduce run. Loki's
+   proof shares the single heavy run with TCK-20261018-API-DASHBOARD-AND-TRACE-PROOF. That run needs its own heavy-slot
+   go from lead-planner and the standing heavy-run rules. It builds the backend first, then records `df` for `/` and
+   `/data`, and stops before starting the stack if either is at 85% or more. Record usage at Loki start.
+4. **Fix**, depending on the cause. Options to weigh, without pre-choosing:
+   - a named `loki_data` volume, which makes the location explicit and survives a recreate. Named volumes live under
+     `DockerRootDir/volumes` on `/data`, which moves the WAL off `/`; verify with `docker volume inspect`. Weigh the
+     same change for the other stateful services (prometheus, grafana, redis), whose writable layers are also on `/`;
+     the stateful-service volumes are the direction lead-planner and platform-planner agreed on 2026-11-12;
+   - Loki's WAL disk-threshold settings, if they exist and are configurable;
+   - a pre-run free-space check in the run procedure;
+   - an alert on Loki's own throttling or ingester state.
+   Prove the fix in the shared run: Alloy sends > 0 entries, and a Loki query returns streams. If the fix is a named
+   volume, show where it lands: `docker volume inspect <project>_loki_data` must give a `Mountpoint` under
+   `/data/docker/volumes` (data-root is `/data/docker`, while image layers sit in `/var/lib/containerd`).
+5. Alloy memory: it peaked at anon+active_file 225.9 of 256 MiB (88%) while retrying failed pushes. Re-measure once
+   pushes succeed, and say whether 256m still holds.
+
+## Out of Scope
+- Freeing space on `/`, or any host cleanup (the owner's).
+- Changing the four images taken in TCK-20261111-COMPOSE-IMAGE-BUMPS-WITH-STACK-PROOF.
+- Grafana memory (860 of 1024 MiB in the same run). Note it only.
+
+## Acceptance Criteria
+- The origin of the 94.8% figure is explained, with source/doc citations (validated).
+- The cause of the persistent "Ingester is shutting down" is explained (validated or observed).
+- After the fix, a stack run shows Alloy `loki_write_sent_entries_total` > 0, no 500s, a Loki query returning streams,
+  and `LogShippingErrors` Normal (observed).
+- Alloy's memory against 256m is re-measured with working pushes (observed).
+- A record in `docs/runbooks/records/`.
+
+## Related Tickets
+- TCK-20261111-COMPOSE-IMAGE-BUMPS-WITH-STACK-PROOF (where it was seen; it closes with this as a known gap).
+- TCK-20261021-PROMTAIL-TO-ALLOY-LOG-SHIPPING (done, #786: the Alloy pipeline, shipped fine on 2026-10-28).
+- TCK-20261020-DISK-FILL-ALERT-TUNING (parked; host-disk alerting, possibly related).
+
+## Related Docs
+docs/runbooks/records/2026-11-11-compose-image-bumps.md
+docs/runbooks/records/2026-10-28-alloy-log-shipping.md
+docs/observability/loki_label_policy.md
+
+## Related Stored Artifacts
+agent-working/stored_artifacts/TCK-20261111-COMPOSE-IMAGE-BUMPS-WITH-STACK-PROOF/run-2026-11-11/
+
+## Related Code Areas
+compose.yaml
+docker/alloy/config.alloy
+
+## Assumptions / Open Questions
+- Known gap: no alert on Loki's own WAL throttle. `LogShippingErrors` covers the symptom (Alloy retries and dropped entries), and it went Pending on this fault. The Loki metric for the throttle is not named here because its Prometheus name was not read. A rule would need its own fire test.
+- Dispatch: owner yes for option A (#715 6819928388): standard tier, platform-implementer, staging artifacts. This
+  ticket goes first, then TCK-20261018-API-DASHBOARD-AND-TRACE-PROOF, with one proof run for both.
+- Standard tier, because the cause is unknown and a fix may change the stack's storage layout. It needs the owner's
+  dispatch yes, and staging artifacts (plan, investigation, test_plan).
+
+## Implementation Notes
+Status 2026-11-12: implemented, not yet run. Plans approved by platform-planner (artifacts under `agent-working/staging_artifacts/TCK-20261111-LOKI-REJECTS-EVERY-PUSH-ON-WAL-DISK-THROTTLE/`).
+- Cause (read from Loki v3.7.9 source, `pkg/ingester/wal_unix.go` and `wal.go`; docs v3.7.x `ingester.wal`): `checkDiskUsage` is `(Blocks - Bfree) / Blocks` from `syscall.Statfs` of the WAL dir, so root-reserved blocks count as free. This host's `/` has 5.14% reserved, so a full `/` reads about 94.8%, the logged figure. The WAL sat in the container layer, which the containerd image store keeps on `/`. The error text `Ingester is shutting down` is `ErrReadOnly`, returned by `Push` while `IsDiskThrottled()`; it clears by itself within about 10 s once usage is under 0.9. Not a stopping state.
+- Fix: `compose.yaml` loki service gets `volumes: - loki_data:/loki` and `command: ... -ingester.wal-dir=/loki/wal`; `loki_data` is added to the top-level volumes. The 0.9 threshold is unchanged. The other stateful services already had named volumes (redis, prometheus, grafana, tempo, ntfy); nothing to change there. Alloy's state stays in its container by design.
+- `docs/runbooks/log-shipping.md`: Known causes now names the symptom string, `ErrReadOnly`, the 0.9 threshold, the Bfree formula, the volume check and the 85% pre-run `df` gate.
+- Alloy's `mem_limit` is raised from 256m to 384m (platform-planner, after the 2026-11-12 run showed anon + active_file 246.7 of 256 MiB, 96.4%, with `memory.current` at 256.0, while pushes were working). The comment in `compose.yaml` cites the run and the record. The 384m figure is a margin, not a measurement: it was not run. Known gap: observed at 384m for 6 min 48 s only (run A, 2026-11-12: anon + active_file max 189.4 of 384 MiB, 49.3%; no OOM kill); the next run that keeps Alloy up for about an hour should re-measure it.
+- Not changed: the threshold, the host disk, any other service.
+
+## Test Summary
+Run 2026-11-12 (record `docs/runbooks/records/2026-11-12-loki-volume-and-api-dashboard.md`; evidence `agent-working/stored_artifacts/TCK-20261111-LOKI-REJECTS-EVERY-PUSH-ON-WAL-DISK-THROTTLE/run-2026-11-12/`). Branch head at the run: 731872b7f. up 10:01:28Z, down 10:13:00Z (11 min 32 s), `down` without `-v`.
+- **observed:** no permission-denied on `/loki` or `/loki/wal` (the only error line is the usual start-up "empty ring"); no `disk usage exceeded` line and no `push (500)`; `docker volume inspect platform_loki_data` Mountpoint `/data/docker/volumes/platform_loki_data/_data`; `docker diff platform-loki-1` empty (nothing in the container layer).
+- **observed:** Alloy `loki_write_sent_entries_total` 673 before the burst and 3,885 at the end; 370 requests, all `204`; dropped 0; retries 0; a Loki query returned streams for 9 containers; `LogShippingErrors` inactive; 9 of 9 targets up; no OOM kill or restart.
+- **observed (formula on a second filesystem):** `/data` Blocks 25,721,923, Bfree 5,352,059, so Loki's `(Blocks - Bfree) / Blocks` = 79.19% (df 83.01%), under 90%. With the earlier fit on `/` (5.14% reserved), this supports the origin of the 94.8%. It is a fit to a formula read from source, not a Loki-side measurement of the 11-11 run.
+- **observed (Alloy memory with working pushes):** anon + active_file max 246.7 of 256 MiB (96.4%); `memory.current` reached 256.0; no OOM kill, 0 restarts, over 11 minutes. In the failed run it was 225.9. 256m held for this run with about 9 MiB of headroom; it was raised to 384m afterwards (see Implementation Notes); no `mem_limit` was changed during the run. Grafana 854.5 of 1024 (83.4%), noted only.
+- **validated (static):** `docker compose --profile observability config -q`; compose hygiene, paths guard and REGISTRY no-drift tests.
+- **tools/loadtest/stack_guard.sh disk trigger:** `bash -n` passes; dry mode proved it (`WOULD DOWN avail=5588 swap=2245 /=72% /data=84%` at a 1% threshold; silent at a 99% threshold, `dry/guard_disk_trigger.txt` and `dry/guard_quiet.txt`); real mode ran with `MAX_DISK_PCT=90` and never triggered (highest disk reading 84% on `/data`, 73% on `/`).
+- **observed (run A, 2026-11-12 10:28Z to 10:35Z, alloy at 384m, 6 min 48 s):** Loki ready, no throttle line, no `push (500)`; Alloy sent 2,076 entries in 240 requests, all `204`, 0 dropped, 0 retries; anon + active_file max 189.4 of 384 MiB (49.3%), `memory.current` max 336.5; no OOM kill, 0 restarts (record section 9).
+- **not shown:** a negative control for the throttle (no safe way to fill a disk here); the WAL directory listing inside the volume (root-only on the host, no shell in the Loki image).
+
+## Files Changed
+- `compose.yaml`: loki volume, `-ingester.wal-dir`, top-level `loki_data`, comment; alloy `mem_limit` 256m to 384m, comment.
+- `docs/runbooks/log-shipping.md`: Known causes.
+- `tools/loadtest/stack_guard.sh`: the disk trigger (`MAX_DISK_PCT`, `DISK_PATHS`; default off), with the dry-mode proof above.
+- `docs/runbooks/records/2026-11-12-loki-volume-and-api-dashboard.md`: the record, shared with the dashboard ticket.
+- `agent-working/stored_artifacts/TCK-20261111-LOKI-REJECTS-EVERY-PUSH-ON-WAL-DISK-THROTTLE/run-2026-11-12/`: run evidence.
+- `agent-working/staging_artifacts/TCK-20261111-LOKI-REJECTS-EVERY-PUSH-ON-WAL-DISK-THROTTLE/`: investigation, plan, test plan.
+
+## Completion Summary
+Loki's data now lives in a named volume (`loki_data` at `/loki`, WAL at `/loki/wal`, set by `-ingester.wal-dir`) instead of the container's writable layer, which the containerd image store keeps on the root filesystem. The cause, read from the Loki v3.7.9 source: the WAL disk check is `(Blocks - Bfree) / Blocks` on the WAL filesystem and counts root-reserved blocks as free, so a full `/` (about 5% reserved here) read 94.8% against the 90% threshold; `Ingester is shutting down` is `ErrReadOnly`, returned by every push while the throttle is on, and it clears by itself within about 10 seconds. Observed in two stack runs on 2026-11-12: no throttle line and no push 500; Alloy sent 3,885 entries (first run) and 2,076 (run A), all requests `204`, 0 dropped, 0 retries; `LogShippingErrors` inactive; Loki's formula on `/data` read 79.19%. Also shipped: the log-shipping runbook now names the symptom, the formula and the 85% pre-run `df` gate; `tools/loadtest/stack_guard.sh` gained a disk trigger (proved in dry mode, then used in real mode); Alloy's `mem_limit` went from 256m to 384m after a 96.4% peak. Record: `docs/runbooks/records/2026-11-12-loki-volume-and-api-dashboard.md`; evidence under `agent-working/stored_artifacts/TCK-20261111-LOKI-REJECTS-EVERY-PUSH-ON-WAL-DISK-THROTTLE/run-2026-11-12/`.
+Known gap: no alert on Loki's own WAL throttle; `LogShippingErrors` covers the symptom (Alloy's retries and drops). The Loki metric for the throttle was not named because its Prometheus name was not read.
+Known gap: Alloy at 384m was observed for 6 min 48 s only (run A: anon + active_file max 189.4 of 384 MiB, 49.3%, no OOM kill); the next run that keeps Alloy up for about an hour should re-measure it.
+Also not covered: a negative control for the throttle (no safe way to fill a disk here) and a listing of the WAL directory inside the volume (the host user cannot read Docker's volumes directory, and the Loki image has no shell).

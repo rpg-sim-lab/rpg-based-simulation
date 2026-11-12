@@ -1,0 +1,689 @@
+INFO:src.cli.entry:Starting V2 server on 0.0.0.0:8000
+INFO:     Started server process [1]
+INFO:     Waiting for application startup.
+WARNING:src.simulation_quality.wiring:SimQ hub construction failed (non-fatal) — quality scoring disabled for this run
+INFO:src.api.engine_manager:V2 Engine thread started.
+INFO:src.api.metrics_port:backend metrics served on 0.0.0.0:9109
+INFO:src.api.engine_manager:V2EngineManager started.
+INFO:src.api.server:V2 API server started.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
+WARNING:src.engine.kernel:Tick 0 exceeded budget at mid_tick: 306.74ms vs limit 50.00ms.
+CRITICAL:src.observability.alerts.sinks:[ALERT] type=WatchdogTrip run=run_1794477921_5169_1_e60276c6 severity=CRITICAL tick=N/A: Tick compute time 306.74ms exceeded watchdog threshold of 50.00ms (mid_tick) (evidence={'compute_ms': 306.737326, 'threshold_ms': 50.0, 'site': 'mid_tick', 'phase_costs': {'init': 25.17505, 'scheduling': 22.460726, 'collection': 248.666357}})
+INFO:     127.0.0.1:33794 - "GET /health HTTP/1.1" 200 OK
+WARNING:src.engine.kernel:Tick 28 exceeded budget at end_of_tick: 23.38ms vs limit 22.00ms.
+WARNING:src.engine.kernel:Tick 48 exceeded budget at end_of_tick: 35.94ms vs limit 26.77ms.
+WARNING:src.engine.kernel:Tick 68 exceeded budget at end_of_tick: 25.28ms vs limit 24.12ms.
+WARNING:src.engine.kernel:Tick 100 exceeded budget at mid_tick: 159.67ms vs limit 50.00ms.
+WARNING:src.engine.kernel:Tick 100 exceeded budget at end_of_tick: 219.11ms vs limit 50.00ms.
+INFO:     172.20.0.1:56244 - "GET /api/v1/manifest HTTP/1.1" 401 Unauthorized
+INFO:     172.20.0.1:56256 - "GET /health HTTP/1.1" 200 OK
+WARNING:src.engine.kernel:Tick 106 exceeded budget at end_of_tick: 26.52ms vs limit 22.07ms.
+INFO:     127.0.0.1:37072 - "GET /health HTTP/1.1" 200 OK
+WARNING:src.engine.kernel:Tick 168 exceeded budget at end_of_tick: 27.85ms vs limit 24.17ms.
+WARNING:src.engine.kernel:Tick 188 exceeded budget at end_of_tick: 26.01ms vs limit 20.00ms.
+INFO:     172.20.0.1:56264 - "GET /api/v1/manifest HTTP/1.1" 200 OK
+WARNING:src.engine.kernel:Tick 191 exceeded budget at end_of_tick: 27.57ms vs limit 27.25ms.
+INFO:     172.20.0.1:56276 - "GET /api/v1/observability/live/stream-health HTTP/1.1" 200 OK
+WARNING:src.engine.kernel:Tick 192 exceeded budget at end_of_tick: 59.83ms vs limit 50.00ms.
+WARNING:src.engine.kernel:Tick 201 exceeded budget at end_of_tick: 30.22ms vs limit 20.00ms.
+INFO:     127.0.0.1:52274 - "GET /health HTTP/1.1" 200 OK
+WARNING:src.engine.kernel:Tick 249 exceeded budget at end_of_tick: 28.51ms vs limit 27.58ms.
+WARNING:src.engine.kernel:Tick 260 exceeded budget at end_of_tick: 141.52ms vs limit 40.97ms.
+INFO:     127.0.0.1:48026 - "GET /health HTTP/1.1" 200 OK
+INFO:     172.20.0.1:36242 - "GET /health HTTP/1.1" 200 OK
+INFO:     172.20.0.1:36254 - "GET /api/v1/manifest HTTP/1.1" 200 OK
+INFO:     172.20.0.1:36270 - "GET /api/v1/metadata/items HTTP/1.1" 200 OK
+INFO:     172.20.0.1:36282 - "GET /api/v1/metadata/classes HTTP/1.1" 200 OK
+INFO:     172.20.0.1:36286 - "GET /api/v1/stats HTTP/1.1" 200 OK
+INFO:     172.20.0.1:36292 - "GET /api/v1/economy/health HTTP/1.1" 200 OK
+INFO:     172.20.0.1:36294 - "GET /api/v1/observability/live/stream-health HTTP/1.1" 200 OK
+INFO:     172.20.0.1:36300 - "GET /api/v1/quality/status HTTP/1.1" 200 OK
+WARNING:src.engine.kernel:Tick 302 exceeded budget at end_of_tick: 47.57ms vs limit 33.29ms.
+INFO:     172.20.0.1:36316 - "GET /health HTTP/1.1" 200 OK
+INFO:     172.20.0.1:36330 - "GET /api/v1/manifest HTTP/1.1" 200 OK
+INFO:     172.20.0.1:36332 - "GET /api/v1/metadata/items HTTP/1.1" 200 OK
+INFO:     172.20.0.1:36348 - "GET /api/v1/metadata/classes HTTP/1.1" 200 OK
+INFO:     172.20.0.1:36356 - "GET /api/v1/stats HTTP/1.1" 200 OK
+INFO:     172.20.0.1:36370 - "GET /api/v1/economy/health HTTP/1.1" 200 OK
+INFO:     172.20.0.1:36382 - "GET /api/v1/observability/live/stream-health HTTP/1.1" 200 OK
+INFO:     172.20.0.1:36384 - "GET /api/v1/quality/status HTTP/1.1" 200 OK
+INFO:     172.20.0.1:36394 - "GET /health HTTP/1.1" 200 OK
+INFO:     172.20.0.1:36404 - "GET /api/v1/manifest HTTP/1.1" 200 OK
+INFO:     172.20.0.1:36412 - "GET /api/v1/metadata/items HTTP/1.1" 200 OK
+INFO:     172.20.0.1:36426 - "GET /api/v1/metadata/classes HTTP/1.1" 200 OK
+INFO:     172.20.0.1:36442 - "GET /api/v1/stats HTTP/1.1" 200 OK
+INFO:     172.20.0.1:36452 - "GET /api/v1/economy/health HTTP/1.1" 200 OK
+INFO:     172.20.0.1:36460 - "GET /api/v1/observability/live/stream-health HTTP/1.1" 200 OK
+INFO:     172.20.0.1:36464 - "GET /api/v1/quality/status HTTP/1.1" 200 OK
+INFO:     172.20.0.1:36468 - "GET /health HTTP/1.1" 200 OK
+INFO:     172.20.0.1:36474 - "GET /api/v1/manifest HTTP/1.1" 200 OK
+INFO:     172.20.0.1:36482 - "GET /api/v1/metadata/items HTTP/1.1" 200 OK
+INFO:     172.20.0.1:36490 - "GET /api/v1/metadata/classes HTTP/1.1" 200 OK
+INFO:     172.20.0.1:36502 - "GET /api/v1/stats HTTP/1.1" 200 OK
+INFO:     172.20.0.1:36518 - "GET /api/v1/economy/health HTTP/1.1" 200 OK
+INFO:     172.20.0.1:36522 - "GET /api/v1/observability/live/stream-health HTTP/1.1" 200 OK
+INFO:     172.20.0.1:36532 - "GET /api/v1/quality/status HTTP/1.1" 200 OK
+INFO:     172.20.0.1:48366 - "GET /health HTTP/1.1" 200 OK
+INFO:     172.20.0.1:48370 - "GET /api/v1/manifest HTTP/1.1" 200 OK
+INFO:     172.20.0.1:48384 - "GET /api/v1/metadata/items HTTP/1.1" 200 OK
+INFO:     172.20.0.1:48386 - "GET /api/v1/metadata/classes HTTP/1.1" 200 OK
+INFO:     172.20.0.1:48396 - "GET /api/v1/stats HTTP/1.1" 200 OK
+INFO:     172.20.0.1:48398 - "GET /api/v1/economy/health HTTP/1.1" 200 OK
+INFO:     172.20.0.1:48404 - "GET /api/v1/observability/live/stream-health HTTP/1.1" 200 OK
+INFO:     172.20.0.1:48414 - "GET /api/v1/quality/status HTTP/1.1" 200 OK
+INFO:     172.20.0.1:48424 - "GET /health HTTP/1.1" 200 OK
+INFO:     172.20.0.1:48430 - "GET /api/v1/manifest HTTP/1.1" 200 OK
+INFO:     172.20.0.1:48432 - "GET /api/v1/metadata/items HTTP/1.1" 200 OK
+INFO:     172.20.0.1:48434 - "GET /api/v1/metadata/classes HTTP/1.1" 200 OK
+INFO:     172.20.0.1:48440 - "GET /api/v1/stats HTTP/1.1" 200 OK
+INFO:     172.20.0.1:48446 - "GET /api/v1/economy/health HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:48460 - "GET /api/v1/observability/live/stream-health HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:48470 - "GET /api/v1/quality/status HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:48484 - "GET /health HTTP/1.1" 200 OK
+INFO:     172.20.0.1:48496 - "GET /api/v1/manifest HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:48512 - "GET /api/v1/metadata/items HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:48518 - "GET /api/v1/metadata/classes HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:48530 - "GET /api/v1/stats HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:48532 - "GET /api/v1/economy/health HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:48546 - "GET /api/v1/observability/live/stream-health HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:48562 - "GET /api/v1/quality/status HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:48576 - "GET /health HTTP/1.1" 200 OK
+INFO:     172.20.0.1:48590 - "GET /api/v1/manifest HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:48594 - "GET /api/v1/metadata/items HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:48604 - "GET /api/v1/metadata/classes HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:48618 - "GET /api/v1/stats HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:48634 - "GET /api/v1/economy/health HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:48640 - "GET /api/v1/observability/live/stream-health HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:48642 - "GET /api/v1/quality/status HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:48644 - "GET /health HTTP/1.1" 200 OK
+INFO:     172.20.0.1:48650 - "GET /api/v1/manifest HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:48660 - "GET /api/v1/metadata/items HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:48670 - "GET /api/v1/metadata/classes HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:48676 - "GET /api/v1/stats HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:48686 - "GET /api/v1/economy/health HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:48702 - "GET /api/v1/observability/live/stream-health HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:48708 - "GET /api/v1/quality/status HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:48716 - "GET /health HTTP/1.1" 200 OK
+WARNING:src.engine.kernel:Tick 348 exceeded budget at end_of_tick: 22.39ms vs limit 21.02ms.
+INFO:     172.20.0.1:48726 - "GET /api/v1/manifest HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:48740 - "GET /api/v1/metadata/items HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:48746 - "GET /api/v1/metadata/classes HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:48752 - "GET /api/v1/stats HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:48768 - "GET /api/v1/economy/health HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:48772 - "GET /api/v1/observability/live/stream-health HTTP/1.1" 429 Too Many Requests
+WARNING:src.engine.kernel:Tick 349 exceeded budget at end_of_tick: 116.99ms vs limit 44.79ms.
+INFO:     172.20.0.1:48786 - "GET /api/v1/quality/status HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:48788 - "GET /health HTTP/1.1" 200 OK
+INFO:     172.20.0.1:48800 - "GET /api/v1/manifest HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:48806 - "GET /api/v1/metadata/items HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:48816 - "GET /api/v1/metadata/classes HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:48826 - "GET /api/v1/stats HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:48842 - "GET /api/v1/economy/health HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:48848 - "GET /api/v1/observability/live/stream-health HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:48856 - "GET /api/v1/quality/status HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:48864 - "GET /health HTTP/1.1" 200 OK
+INFO:     172.20.0.1:48872 - "GET /api/v1/manifest HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:48888 - "GET /api/v1/metadata/items HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:48894 - "GET /api/v1/metadata/classes HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:48906 - "GET /api/v1/stats HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:48918 - "GET /api/v1/economy/health HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:48922 - "GET /api/v1/observability/live/stream-health HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:48936 - "GET /api/v1/quality/status HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:48940 - "GET /health HTTP/1.1" 200 OK
+INFO:     172.20.0.1:48954 - "GET /api/v1/manifest HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:48966 - "GET /api/v1/metadata/items HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:48976 - "GET /api/v1/metadata/classes HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:48980 - "GET /api/v1/stats HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:48992 - "GET /api/v1/economy/health HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:49006 - "GET /api/v1/observability/live/stream-health HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:49018 - "GET /api/v1/quality/status HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:49020 - "GET /health HTTP/1.1" 200 OK
+INFO:     172.20.0.1:49034 - "GET /api/v1/manifest HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:49046 - "GET /api/v1/metadata/items HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:49058 - "GET /api/v1/metadata/classes HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:49068 - "GET /api/v1/stats HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:49080 - "GET /api/v1/economy/health HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:49090 - "GET /api/v1/observability/live/stream-health HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:49106 - "GET /api/v1/quality/status HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:49110 - "GET /health HTTP/1.1" 200 OK
+INFO:     172.20.0.1:49118 - "GET /api/v1/manifest HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:49126 - "GET /api/v1/metadata/items HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:49138 - "GET /api/v1/metadata/classes HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:49146 - "GET /api/v1/stats HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:49154 - "GET /api/v1/economy/health HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:49170 - "GET /api/v1/observability/live/stream-health HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:49172 - "GET /api/v1/quality/status HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:49188 - "GET /health HTTP/1.1" 200 OK
+INFO:     172.20.0.1:49196 - "GET /api/v1/manifest HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:49206 - "GET /api/v1/metadata/items HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:49222 - "GET /api/v1/metadata/classes HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:49224 - "GET /api/v1/stats HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:49228 - "GET /api/v1/economy/health HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:49242 - "GET /api/v1/observability/live/stream-health HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:49248 - "GET /api/v1/quality/status HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:49260 - "GET /health HTTP/1.1" 200 OK
+INFO:     172.20.0.1:49268 - "GET /api/v1/manifest HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:49284 - "GET /api/v1/metadata/items HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:49286 - "GET /api/v1/metadata/classes HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:49298 - "GET /api/v1/stats HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:49302 - "GET /api/v1/economy/health HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:49318 - "GET /api/v1/observability/live/stream-health HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:49326 - "GET /api/v1/quality/status HTTP/1.1" 429 Too Many Requests
+INFO:     127.0.0.1:51310 - "GET /health HTTP/1.1" 200 OK
+INFO:     172.20.0.1:49338 - "GET /health HTTP/1.1" 200 OK
+INFO:     172.20.0.1:49348 - "GET /api/v1/manifest HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:49358 - "GET /api/v1/metadata/items HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:49368 - "GET /api/v1/metadata/classes HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:49376 - "GET /api/v1/stats HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:49382 - "GET /api/v1/economy/health HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:49394 - "GET /api/v1/observability/live/stream-health HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:49400 - "GET /api/v1/quality/status HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:49402 - "GET /health HTTP/1.1" 200 OK
+INFO:     172.20.0.1:49404 - "GET /api/v1/manifest HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:49406 - "GET /api/v1/metadata/items HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:49414 - "GET /api/v1/metadata/classes HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:49418 - "GET /api/v1/stats HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:49434 - "GET /api/v1/economy/health HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:49446 - "GET /api/v1/observability/live/stream-health HTTP/1.1" 429 Too Many Requests
+WARNING:src.engine.kernel:Tick 399 exceeded budget at end_of_tick: 38.75ms vs limit 33.53ms.
+INFO:     172.20.0.1:49448 - "GET /api/v1/quality/status HTTP/1.1" 429 Too Many Requests
+WARNING:src.engine.kernel:Tick 403 exceeded budget at end_of_tick: 33.94ms vs limit 31.63ms.
+INFO:     172.20.0.1:49452 - "GET /health HTTP/1.1" 200 OK
+INFO:     172.20.0.1:49468 - "GET /api/v1/manifest HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:49478 - "GET /api/v1/metadata/items HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:49488 - "GET /api/v1/metadata/classes HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:49496 - "GET /api/v1/stats HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:49502 - "GET /api/v1/economy/health HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:49506 - "GET /api/v1/observability/live/stream-health HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:49522 - "GET /api/v1/quality/status HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:49528 - "GET /health HTTP/1.1" 200 OK
+INFO:     172.20.0.1:49536 - "GET /api/v1/manifest HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:49544 - "GET /api/v1/metadata/items HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:37450 - "GET /api/v1/metadata/classes HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:37452 - "GET /api/v1/stats HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:37458 - "GET /api/v1/economy/health HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:37466 - "GET /api/v1/observability/live/stream-health HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:37468 - "GET /api/v1/quality/status HTTP/1.1" 429 Too Many Requests
+WARNING:src.engine.kernel:Tick 411 exceeded budget at end_of_tick: 31.10ms vs limit 30.80ms.
+INFO:     172.20.0.1:37482 - "GET /health HTTP/1.1" 200 OK
+INFO:     172.20.0.1:37488 - "GET /api/v1/manifest HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:37492 - "GET /api/v1/metadata/items HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:37508 - "GET /api/v1/metadata/classes HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:37516 - "GET /api/v1/stats HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:37532 - "GET /api/v1/economy/health HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:37534 - "GET /api/v1/observability/live/stream-health HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:37550 - "GET /api/v1/quality/status HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:37554 - "GET /health HTTP/1.1" 200 OK
+INFO:     172.20.0.1:37568 - "GET /api/v1/manifest HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:37582 - "GET /api/v1/metadata/items HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:37592 - "GET /api/v1/metadata/classes HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:37594 - "GET /api/v1/stats HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:37608 - "GET /api/v1/economy/health HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:37622 - "GET /api/v1/observability/live/stream-health HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:37638 - "GET /api/v1/quality/status HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:37640 - "GET /health HTTP/1.1" 200 OK
+INFO:     172.20.0.1:37648 - "GET /api/v1/manifest HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:37664 - "GET /api/v1/metadata/items HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:37678 - "GET /api/v1/metadata/classes HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:37680 - "GET /api/v1/stats HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:37682 - "GET /api/v1/economy/health HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:37684 - "GET /api/v1/observability/live/stream-health HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:37694 - "GET /api/v1/quality/status HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:37706 - "GET /health HTTP/1.1" 200 OK
+INFO:     172.20.0.1:37716 - "GET /api/v1/manifest HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:37730 - "GET /api/v1/metadata/items HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:37740 - "GET /api/v1/metadata/classes HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:37742 - "GET /api/v1/stats HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:37754 - "GET /api/v1/economy/health HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:37766 - "GET /api/v1/observability/live/stream-health HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:37782 - "GET /api/v1/quality/status HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:37786 - "GET /health HTTP/1.1" 200 OK
+INFO:     172.20.0.1:37800 - "GET /api/v1/manifest HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:37816 - "GET /api/v1/metadata/items HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:37822 - "GET /api/v1/metadata/classes HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:37832 - "GET /api/v1/stats HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:37846 - "GET /api/v1/economy/health HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:37858 - "GET /api/v1/observability/live/stream-health HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:37868 - "GET /api/v1/quality/status HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:37876 - "GET /health HTTP/1.1" 200 OK
+INFO:     172.20.0.1:37886 - "GET /api/v1/manifest HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:37902 - "GET /api/v1/metadata/items HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:37908 - "GET /api/v1/metadata/classes HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:37920 - "GET /api/v1/stats HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:37922 - "GET /api/v1/economy/health HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:37938 - "GET /api/v1/observability/live/stream-health HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:37952 - "GET /api/v1/quality/status HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:37966 - "GET /health HTTP/1.1" 200 OK
+INFO:     172.20.0.1:37970 - "GET /api/v1/manifest HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:37982 - "GET /api/v1/metadata/items HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:37996 - "GET /api/v1/metadata/classes HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:38008 - "GET /api/v1/stats HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:38020 - "GET /api/v1/economy/health HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:38030 - "GET /api/v1/observability/live/stream-health HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:38034 - "GET /api/v1/quality/status HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:38042 - "GET /health HTTP/1.1" 200 OK
+INFO:     172.20.0.1:38054 - "GET /api/v1/manifest HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:38056 - "GET /api/v1/metadata/items HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:38060 - "GET /api/v1/metadata/classes HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:38068 - "GET /api/v1/stats HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:38072 - "GET /api/v1/economy/health HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:38074 - "GET /api/v1/observability/live/stream-health HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:38078 - "GET /api/v1/quality/status HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:38090 - "GET /health HTTP/1.1" 200 OK
+INFO:     172.20.0.1:38104 - "GET /api/v1/manifest HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:38114 - "GET /api/v1/metadata/items HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:38122 - "GET /api/v1/metadata/classes HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:38138 - "GET /api/v1/stats HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:38150 - "GET /api/v1/economy/health HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:38164 - "GET /api/v1/observability/live/stream-health HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:38174 - "GET /api/v1/quality/status HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:38190 - "GET /health HTTP/1.1" 200 OK
+INFO:     172.20.0.1:38200 - "GET /api/v1/manifest HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:38212 - "GET /api/v1/metadata/items HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:38218 - "GET /api/v1/metadata/classes HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:38220 - "GET /api/v1/stats HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:38230 - "GET /api/v1/economy/health HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:38236 - "GET /api/v1/observability/live/stream-health HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:38248 - "GET /api/v1/quality/status HTTP/1.1" 429 Too Many Requests
+WARNING:src.engine.kernel:Tick 469 exceeded budget at end_of_tick: 126.46ms vs limit 40.88ms.
+INFO:     172.20.0.1:38256 - "GET /health HTTP/1.1" 200 OK
+INFO:     172.20.0.1:38270 - "GET /api/v1/manifest HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:38284 - "GET /api/v1/metadata/items HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:38294 - "GET /api/v1/metadata/classes HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:38300 - "GET /api/v1/stats HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:38316 - "GET /api/v1/economy/health HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:38326 - "GET /api/v1/observability/live/stream-health HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:38336 - "GET /api/v1/quality/status HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:38344 - "GET /health HTTP/1.1" 200 OK
+INFO:     172.20.0.1:38352 - "GET /api/v1/manifest HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:38368 - "GET /api/v1/metadata/items HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:38374 - "GET /api/v1/metadata/classes HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:38390 - "GET /api/v1/stats HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:38398 - "GET /api/v1/economy/health HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:38404 - "GET /api/v1/observability/live/stream-health HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:38420 - "GET /api/v1/quality/status HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:38430 - "GET /health HTTP/1.1" 200 OK
+INFO:     172.20.0.1:38434 - "GET /api/v1/manifest HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:38442 - "GET /api/v1/metadata/items HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:38458 - "GET /api/v1/metadata/classes HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:38460 - "GET /api/v1/stats HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:38472 - "GET /api/v1/economy/health HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:38476 - "GET /api/v1/observability/live/stream-health HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:38486 - "GET /api/v1/quality/status HTTP/1.1" 429 Too Many Requests
+INFO:     127.0.0.1:35934 - "GET /health HTTP/1.1" 200 OK
+INFO:     172.20.0.1:38498 - "GET /health HTTP/1.1" 200 OK
+INFO:     172.20.0.1:38512 - "GET /api/v1/manifest HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:38514 - "GET /api/v1/metadata/items HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:38516 - "GET /api/v1/metadata/classes HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:38528 - "GET /api/v1/stats HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:38536 - "GET /api/v1/economy/health HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:38550 - "GET /api/v1/observability/live/stream-health HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:38566 - "GET /api/v1/quality/status HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:38578 - "GET /health HTTP/1.1" 200 OK
+INFO:     172.20.0.1:38590 - "GET /api/v1/manifest HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:38602 - "GET /api/v1/metadata/items HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:38606 - "GET /api/v1/metadata/classes HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:38618 - "GET /api/v1/stats HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:38634 - "GET /api/v1/economy/health HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:38642 - "GET /api/v1/observability/live/stream-health HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:38646 - "GET /api/v1/quality/status HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:38652 - "GET /health HTTP/1.1" 200 OK
+INFO:     172.20.0.1:38666 - "GET /api/v1/manifest HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:38672 - "GET /api/v1/metadata/items HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:38684 - "GET /api/v1/metadata/classes HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:38696 - "GET /api/v1/stats HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:38698 - "GET /api/v1/economy/health HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:38712 - "GET /api/v1/observability/live/stream-health HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:38726 - "GET /api/v1/quality/status HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:50920 - "GET /health HTTP/1.1" 200 OK
+INFO:     172.20.0.1:50934 - "GET /api/v1/manifest HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:50936 - "GET /api/v1/metadata/items HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:50942 - "GET /api/v1/metadata/classes HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:50948 - "GET /api/v1/stats HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:50962 - "GET /api/v1/economy/health HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:50964 - "GET /api/v1/observability/live/stream-health HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:50968 - "GET /api/v1/quality/status HTTP/1.1" 429 Too Many Requests
+WARNING:src.engine.kernel:Tick 504 exceeded budget at end_of_tick: 46.33ms vs limit 31.03ms.
+INFO:     172.20.0.1:50974 - "GET /health HTTP/1.1" 200 OK
+INFO:     172.20.0.1:50984 - "GET /api/v1/manifest HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:51000 - "GET /api/v1/metadata/items HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:51008 - "GET /api/v1/metadata/classes HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:51018 - "GET /api/v1/stats HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:51032 - "GET /api/v1/economy/health HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:51044 - "GET /api/v1/observability/live/stream-health HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:51058 - "GET /api/v1/quality/status HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:51060 - "GET /health HTTP/1.1" 200 OK
+INFO:     172.20.0.1:51068 - "GET /api/v1/manifest HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:51078 - "GET /api/v1/metadata/items HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:51094 - "GET /api/v1/metadata/classes HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:51110 - "GET /api/v1/stats HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:51114 - "GET /api/v1/economy/health HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:51116 - "GET /api/v1/observability/live/stream-health HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:51126 - "GET /api/v1/quality/status HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:51134 - "GET /health HTTP/1.1" 200 OK
+INFO:     172.20.0.1:51136 - "GET /api/v1/manifest HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:51144 - "GET /api/v1/metadata/items HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:51148 - "GET /api/v1/metadata/classes HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:51162 - "GET /api/v1/stats HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:51176 - "GET /api/v1/economy/health HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:51186 - "GET /api/v1/observability/live/stream-health HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:51202 - "GET /api/v1/quality/status HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:51208 - "GET /health HTTP/1.1" 200 OK
+INFO:     172.20.0.1:51220 - "GET /api/v1/manifest HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:51232 - "GET /api/v1/metadata/items HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:51238 - "GET /api/v1/metadata/classes HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:51248 - "GET /api/v1/stats HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:51258 - "GET /api/v1/economy/health HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:51272 - "GET /api/v1/observability/live/stream-health HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:51274 - "GET /api/v1/quality/status HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:51288 - "GET /health HTTP/1.1" 200 OK
+INFO:     172.20.0.1:51294 - "GET /api/v1/manifest HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:51298 - "GET /api/v1/metadata/items HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:51304 - "GET /api/v1/metadata/classes HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:51306 - "GET /api/v1/stats HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:51312 - "GET /api/v1/economy/health HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:51326 - "GET /api/v1/observability/live/stream-health HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:51342 - "GET /api/v1/quality/status HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:51354 - "GET /health HTTP/1.1" 200 OK
+INFO:     172.20.0.1:51366 - "GET /api/v1/manifest HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:51376 - "GET /api/v1/metadata/items HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:51388 - "GET /api/v1/metadata/classes HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:51404 - "GET /api/v1/stats HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:51406 - "GET /api/v1/economy/health HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:51410 - "GET /api/v1/observability/live/stream-health HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:51414 - "GET /api/v1/quality/status HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:51428 - "GET /health HTTP/1.1" 200 OK
+INFO:     172.20.0.1:51434 - "GET /api/v1/manifest HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:51440 - "GET /api/v1/metadata/items HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:51442 - "GET /api/v1/metadata/classes HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:51448 - "GET /api/v1/stats HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:51460 - "GET /api/v1/economy/health HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:51468 - "GET /api/v1/observability/live/stream-health HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:51470 - "GET /api/v1/quality/status HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:51486 - "GET /health HTTP/1.1" 200 OK
+INFO:     172.20.0.1:51502 - "GET /api/v1/manifest HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:51508 - "GET /api/v1/metadata/items HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:51518 - "GET /api/v1/metadata/classes HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:51530 - "GET /api/v1/stats HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:51532 - "GET /api/v1/economy/health HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:51538 - "GET /api/v1/observability/live/stream-health HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:51544 - "GET /api/v1/quality/status HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:51552 - "GET /health HTTP/1.1" 200 OK
+INFO:     172.20.0.1:51554 - "GET /api/v1/manifest HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:51562 - "GET /api/v1/metadata/items HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:51570 - "GET /api/v1/metadata/classes HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:51578 - "GET /api/v1/stats HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:51592 - "GET /api/v1/economy/health HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:51604 - "GET /api/v1/observability/live/stream-health HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:51614 - "GET /api/v1/quality/status HTTP/1.1" 429 Too Many Requests
+WARNING:src.engine.kernel:Tick 558 exceeded budget at end_of_tick: 24.98ms vs limit 21.40ms.
+CRITICAL:src.observability.alerts.sinks:[ALERT] type=WatchdogTrip run=run_1794477921_5169_1_e60276c6 severity=CRITICAL tick=558: Tick compute time 24.98ms exceeded watchdog threshold of 21.40ms (end_of_tick) (evidence={'compute_ms': 24.975576999999998, 'threshold_ms': 21.397596, 'site': 'end_of_tick', 'phase_costs': {'init': 0.791278, 'scheduling': 0.671511, 'collection': 3.293619, 'trust_validity': 0.50859, 'memory_update': 0.025628, 'habit_bias_action_style': 0.004748, 'role_model_selection': 0.00292, 'self_model': 0.006958, 'information_belief': 0.043305, 'information_intent_execution': 0.003477, 'cooperation': 0.137652, 'contracts_production': 0.057269, 'faction_decision': 0.032081, 'faction_awareness': 0.019374, 'information_propagation': 0.002388, 'diplomatic_transitions': 0.453619, 'military_conflict': 0.061978, 'locomotion': 2.166626, 'combat_engagement': 2.853498, 'interaction': 0.254711, 'governance_ecology': 0.62852, 'world_emergence': 0.007796, 'economy': 0.371113, 'progression_conversion': 0.004185, 'faction_sentiment': 0.024794, 'final_integrity': 0.100923, 'resolution_overhead': 6.534102999999999, 'cleanup': 0.020831, 'advancement': 2.753409, 'persistence': 3.138673}})
+INFO:     172.20.0.1:51616 - "GET /health HTTP/1.1" 200 OK
+INFO:     172.20.0.1:51620 - "GET /api/v1/manifest HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:51628 - "GET /api/v1/metadata/items HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:51638 - "GET /api/v1/metadata/classes HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:51642 - "GET /api/v1/stats HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:51644 - "GET /api/v1/economy/health HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:51654 - "GET /api/v1/observability/live/stream-health HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:51664 - "GET /api/v1/quality/status HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:51678 - "GET /health HTTP/1.1" 200 OK
+INFO:     172.20.0.1:51686 - "GET /api/v1/manifest HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:51694 - "GET /api/v1/metadata/items HTTP/1.1" 429 Too Many Requests
+WARNING:src.engine.kernel:Tick 564 exceeded budget at end_of_tick: 28.56ms vs limit 26.70ms.
+INFO:     172.20.0.1:51708 - "GET /api/v1/metadata/classes HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:51714 - "GET /api/v1/stats HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:51722 - "GET /api/v1/economy/health HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:51732 - "GET /api/v1/observability/live/stream-health HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:51736 - "GET /api/v1/quality/status HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:51746 - "GET /health HTTP/1.1" 200 OK
+INFO:     172.20.0.1:51760 - "GET /api/v1/manifest HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:51770 - "GET /api/v1/metadata/items HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:51772 - "GET /api/v1/metadata/classes HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:51774 - "GET /api/v1/stats HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:51786 - "GET /api/v1/economy/health HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:51800 - "GET /api/v1/observability/live/stream-health HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:51802 - "GET /api/v1/quality/status HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:51804 - "GET /health HTTP/1.1" 200 OK
+INFO:     172.20.0.1:51808 - "GET /api/v1/manifest HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:51810 - "GET /api/v1/metadata/items HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:51814 - "GET /api/v1/metadata/classes HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:51818 - "GET /api/v1/stats HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:51822 - "GET /api/v1/economy/health HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:51828 - "GET /api/v1/observability/live/stream-health HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:51830 - "GET /api/v1/quality/status HTTP/1.1" 429 Too Many Requests
+INFO:     127.0.0.1:46642 - "GET /health HTTP/1.1" 200 OK
+INFO:     172.20.0.1:51840 - "GET /health HTTP/1.1" 200 OK
+INFO:     172.20.0.1:51852 - "GET /api/v1/manifest HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:51864 - "GET /api/v1/metadata/items HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:51880 - "GET /api/v1/metadata/classes HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:51894 - "GET /api/v1/stats HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:51900 - "GET /api/v1/economy/health HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:51902 - "GET /api/v1/observability/live/stream-health HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:51914 - "GET /api/v1/quality/status HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:51926 - "GET /health HTTP/1.1" 200 OK
+INFO:     172.20.0.1:51938 - "GET /api/v1/manifest HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:51946 - "GET /api/v1/metadata/items HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:51948 - "GET /api/v1/metadata/classes HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:51952 - "GET /api/v1/stats HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:51958 - "GET /api/v1/economy/health HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:51960 - "GET /api/v1/observability/live/stream-health HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:51964 - "GET /api/v1/quality/status HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:51976 - "GET /health HTTP/1.1" 200 OK
+INFO:     172.20.0.1:51992 - "GET /api/v1/manifest HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:52000 - "GET /api/v1/metadata/items HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:52006 - "GET /api/v1/metadata/classes HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:52020 - "GET /api/v1/stats HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:52026 - "GET /api/v1/economy/health HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:52034 - "GET /api/v1/observability/live/stream-health HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:52038 - "GET /api/v1/quality/status HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:53582 - "GET /health HTTP/1.1" 200 OK
+INFO:     172.20.0.1:53596 - "GET /api/v1/manifest HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:53606 - "GET /api/v1/metadata/items HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:53610 - "GET /api/v1/metadata/classes HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:53618 - "GET /api/v1/stats HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:53632 - "GET /api/v1/economy/health HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:53638 - "GET /api/v1/observability/live/stream-health HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:53648 - "GET /api/v1/quality/status HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:53654 - "GET /health HTTP/1.1" 200 OK
+INFO:     172.20.0.1:53662 - "GET /api/v1/manifest HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:53674 - "GET /api/v1/metadata/items HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:53682 - "GET /api/v1/metadata/classes HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:53696 - "GET /api/v1/stats HTTP/1.1" 429 Too Many Requests
+WARNING:src.engine.kernel:Tick 603 exceeded budget at end_of_tick: 140.48ms vs limit 40.07ms.
+INFO:     172.20.0.1:53706 - "GET /api/v1/economy/health HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:53716 - "GET /api/v1/observability/live/stream-health HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:53726 - "GET /api/v1/quality/status HTTP/1.1" 429 Too Many Requests
+WARNING:src.engine.kernel:Tick 605 exceeded budget at end_of_tick: 35.63ms vs limit 20.07ms.
+INFO:     172.20.0.1:53732 - "GET /health HTTP/1.1" 200 OK
+INFO:     172.20.0.1:53740 - "GET /api/v1/manifest HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:53750 - "GET /api/v1/metadata/items HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:53762 - "GET /api/v1/metadata/classes HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:53774 - "GET /api/v1/stats HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:53782 - "GET /api/v1/economy/health HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:53788 - "GET /api/v1/observability/live/stream-health HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:53802 - "GET /api/v1/quality/status HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:53806 - "GET /health HTTP/1.1" 200 OK
+INFO:     172.20.0.1:53818 - "GET /api/v1/manifest HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:53830 - "GET /api/v1/metadata/items HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:53834 - "GET /api/v1/metadata/classes HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:53846 - "GET /api/v1/stats HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:53856 - "GET /api/v1/economy/health HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:53868 - "GET /api/v1/observability/live/stream-health HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:53884 - "GET /api/v1/quality/status HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:53892 - "GET /health HTTP/1.1" 200 OK
+INFO:     172.20.0.1:53904 - "GET /api/v1/manifest HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:53912 - "GET /api/v1/metadata/items HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:53914 - "GET /api/v1/metadata/classes HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:53916 - "GET /api/v1/stats HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:53922 - "GET /api/v1/economy/health HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:53934 - "GET /api/v1/observability/live/stream-health HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:53944 - "GET /api/v1/quality/status HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:53948 - "GET /health HTTP/1.1" 200 OK
+INFO:     172.20.0.1:53960 - "GET /api/v1/manifest HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:53976 - "GET /api/v1/metadata/items HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:53984 - "GET /api/v1/metadata/classes HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:53988 - "GET /api/v1/stats HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:53998 - "GET /api/v1/economy/health HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:54014 - "GET /api/v1/observability/live/stream-health HTTP/1.1" 429 Too Many Requests
+INFO:     172.20.0.1:54016 - "GET /api/v1/quality/status HTTP/1.1" 429 Too Many Requests
+WARNING:src.engine.kernel:Tick 626 exceeded budget at end_of_tick: 21.86ms vs limit 20.00ms.
+WARNING:src.engine.kernel:Tick 636 exceeded budget at end_of_tick: 36.91ms vs limit 31.80ms.
+INFO:     127.0.0.1:47780 - "GET /health HTTP/1.1" 200 OK
+WARNING:src.engine.kernel:Tick 699 exceeded budget at end_of_tick: 116.26ms vs limit 43.79ms.
+INFO:     127.0.0.1:53202 - "GET /health HTTP/1.1" 200 OK
+WARNING:src.engine.kernel:Tick 806 exceeded budget at end_of_tick: 113.12ms vs limit 27.89ms.
+WARNING:src.engine.kernel:Tick 807 exceeded budget at end_of_tick: 58.38ms vs limit 50.00ms.
+INFO:     127.0.0.1:59860 - "GET /health HTTP/1.1" 200 OK
+WARNING:src.engine.kernel:Tick 858 exceeded budget at end_of_tick: 21.50ms vs limit 21.23ms.
+WARNING:src.engine.kernel:Tick 895 exceeded budget at end_of_tick: 106.20ms vs limit 33.70ms.
+WARNING:src.engine.kernel:Tick 908 exceeded budget at end_of_tick: 39.79ms vs limit 20.00ms.
+INFO:     127.0.0.1:51500 - "GET /health HTTP/1.1" 200 OK
+WARNING:src.engine.kernel:Tick 1009 exceeded budget at end_of_tick: 83.21ms vs limit 29.55ms.
+WARNING:src.engine.kernel:Tick 1032 exceeded budget at end_of_tick: 20.95ms vs limit 20.00ms.
+INFO:     127.0.0.1:49418 - "GET /health HTTP/1.1" 200 OK
+WARNING:src.engine.kernel:Tick 1106 exceeded budget at end_of_tick: 34.43ms vs limit 27.85ms.
+WARNING:src.engine.kernel:Tick 1110 exceeded budget at end_of_tick: 52.88ms vs limit 40.24ms.
+CRITICAL:src.observability.alerts.sinks:[ALERT] type=WatchdogTrip run=run_1794477921_5169_1_e60276c6 severity=CRITICAL tick=1110: Tick compute time 52.88ms exceeded watchdog threshold of 40.24ms (end_of_tick) (evidence={'compute_ms': 52.878388, 'threshold_ms': 40.244762, 'site': 'end_of_tick', 'phase_costs': {'init': 0.326167, 'scheduling': 0.441849, 'collection': 15.849875, 'trust_validity': 0.173189, 'memory_update': 0.006744, 'habit_bias_action_style': 0.002914, 'role_model_selection': 0.002716, 'self_model': 0.005977, 'information_belief': 0.037773, 'information_intent_execution': 0.003036, 'cooperation': 0.099305, 'contracts_production': 0.053328, 'faction_decision': 0.029334, 'faction_awareness': 0.016911, 'information_propagation': 0.002915, 'diplomatic_transitions': 0.468854, 'military_conflict': 0.042611, 'locomotion': 1.3986, 'combat_engagement': 1.282578, 'interaction': 0.179427, 'governance_ecology': 0.453153, 'world_emergence': 0.007554, 'economy': 0.31312, 'progression_conversion': 0.00297, 'faction_sentiment': 0.027277, 'final_integrity': 0.095346, 'resolution_overhead': 13.843117999999997, 'cleanup': 11.246895, 'advancement': 2.47553, 'persistence': 3.989322}})
+INFO:     127.0.0.1:48622 - "GET /health HTTP/1.1" 200 OK
+WARNING:src.engine.kernel:Tick 1178 exceeded budget at end_of_tick: 22.19ms vs limit 21.35ms.
+WARNING:src.engine.kernel:Tick 1211 exceeded budget at end_of_tick: 34.48ms vs limit 33.23ms.
+INFO:     127.0.0.1:56650 - "GET /health HTTP/1.1" 200 OK
+WARNING:src.engine.kernel:Tick 1313 exceeded budget at end_of_tick: 53.41ms vs limit 38.68ms.
+INFO:     127.0.0.1:52476 - "GET /health HTTP/1.1" 200 OK
+WARNING:src.engine.kernel:Tick 1413 exceeded budget at end_of_tick: 39.19ms vs limit 36.40ms.
+INFO:     127.0.0.1:59744 - "GET /health HTTP/1.1" 200 OK
+WARNING:src.engine.kernel:Tick 1440 exceeded budget at end_of_tick: 133.46ms vs limit 48.19ms.
+WARNING:src.engine.kernel:Tick 1498 exceeded budget at end_of_tick: 23.09ms vs limit 21.72ms.
+WARNING:src.engine.kernel:Tick 1510 exceeded budget at end_of_tick: 53.43ms vs limit 50.00ms.
+INFO:     127.0.0.1:36678 - "GET /health HTTP/1.1" 200 OK
+WARNING:src.engine.kernel:Tick 1514 exceeded budget at end_of_tick: 28.92ms vs limit 20.00ms.
+WARNING:src.engine.kernel:Tick 1526 exceeded budget at end_of_tick: 101.13ms vs limit 31.55ms.
+WARNING:src.engine.kernel:Tick 1549 exceeded budget at end_of_tick: 22.58ms vs limit 21.44ms.
+INFO:     127.0.0.1:47806 - "GET /health HTTP/1.1" 200 OK
+WARNING:src.engine.kernel:Tick 1644 exceeded budget at end_of_tick: 111.07ms vs limit 35.30ms.
+WARNING:src.engine.kernel:Tick 1689 exceeded budget at end_of_tick: 30.51ms vs limit 29.47ms.
+CRITICAL:src.observability.alerts.sinks:[ALERT] type=WatchdogTrip run=run_1794477921_5169_1_e60276c6 severity=CRITICAL tick=1689: Tick compute time 30.51ms exceeded watchdog threshold of 29.47ms (end_of_tick) (evidence={'compute_ms': 30.509502, 'threshold_ms': 29.46805, 'site': 'end_of_tick', 'phase_costs': {'init': 0.263068, 'scheduling': 0.377946, 'collection': 2.914927, 'trust_validity': 0.130413, 'memory_update': 0.008163, 'habit_bias_action_style': 0.002668, 'role_model_selection': 0.002499, 'self_model': 0.006351, 'information_belief': 0.038111, 'information_intent_execution': 0.003017, 'cooperation': 0.094188, 'contracts_production': 0.054425, 'faction_decision': 0.03027, 'faction_awareness': 0.016732, 'information_propagation': 0.002578, 'diplomatic_transitions': 0.561178, 'military_conflict': 0.046115, 'locomotion': 0.986229, 'combat_engagement': 1.926994, 'interaction': 0.217484, 'governance_ecology': 0.599554, 'world_emergence': 0.009318, 'economy': 1.009786, 'progression_conversion': 0.004989, 'faction_sentiment': 0.031734, 'final_integrity': 0.457107, 'resolution_overhead': 9.127808, 'cleanup': 0.026745, 'advancement': 7.131646, 'persistence': 4.427459}})
+INFO:     127.0.0.1:52840 - "GET /health HTTP/1.1" 200 OK
+WARNING:src.engine.kernel:Tick 1716 exceeded budget at end_of_tick: 84.52ms vs limit 26.03ms.
+WARNING:src.engine.kernel:Tick 1741 exceeded budget at end_of_tick: 107.32ms vs limit 50.00ms.
+INFO:     127.0.0.1:49666 - "GET /health HTTP/1.1" 200 OK
+WARNING:src.engine.kernel:Tick 1808 exceeded budget at end_of_tick: 24.70ms vs limit 21.91ms.
+INFO:     172.20.0.1:54330 - "GET /api/v1/observability/search/runs HTTP/1.1" 429 Too Many Requests
+WARNING:src.engine.kernel:Tick 1817 exceeded budget at end_of_tick: 28.33ms vs limit 26.99ms.
+INFO:     172.20.0.1:54336 - "GET /api/v1/observability/search/events HTTP/1.1" 429 Too Many Requests
+WARNING:src.engine.kernel:Tick 1840 exceeded budget at end_of_tick: 116.97ms vs limit 50.00ms.
+INFO:     172.20.0.1:54342 - "GET /api/v1/observability/search/anomalies HTTP/1.1" 429 Too Many Requests
+INFO:     127.0.0.1:46806 - "GET /health HTTP/1.1" 200 OK
+WARNING:src.engine.kernel:Tick 1906 exceeded budget at end_of_tick: 33.75ms vs limit 26.44ms.
+WARNING:src.engine.kernel:Tick 1918 exceeded budget at end_of_tick: 87.24ms vs limit 36.98ms.
+WARNING:src.engine.kernel:Tick 1943 exceeded budget at end_of_tick: 114.06ms vs limit 46.67ms.
+INFO:     127.0.0.1:45202 - "GET /health HTTP/1.1" 200 OK
+WARNING:src.engine.kernel:Tick 2017 exceeded budget at end_of_tick: 65.45ms vs limit 25.73ms.
+WARNING:src.engine.kernel:Tick 2029 exceeded budget at end_of_tick: 21.49ms vs limit 20.00ms.
+WARNING:src.engine.kernel:Tick 2043 exceeded budget at end_of_tick: 29.90ms vs limit 27.48ms.
+WARNING:src.engine.kernel:Tick 2071 exceeded budget at end_of_tick: 117.46ms vs limit 35.63ms.
+INFO:     127.0.0.1:58322 - "GET /health HTTP/1.1" 200 OK
+WARNING:src.engine.kernel:Tick 2120 exceeded budget at end_of_tick: 57.01ms vs limit 36.73ms.
+WARNING:src.engine.kernel:Tick 2139 exceeded budget at end_of_tick: 40.65ms vs limit 30.71ms.
+WARNING:src.engine.kernel:Tick 2148 exceeded budget at end_of_tick: 23.11ms vs limit 20.14ms.
+WARNING:src.engine.kernel:Tick 2158 exceeded budget at end_of_tick: 33.35ms vs limit 27.69ms.
+INFO:     127.0.0.1:48112 - "GET /health HTTP/1.1" 200 OK
+WARNING:src.engine.kernel:Tick 2200 exceeded budget at end_of_tick: 124.94ms vs limit 50.00ms.
+WARNING:src.engine.kernel:Tick 2221 exceeded budget at end_of_tick: 40.75ms vs limit 20.15ms.
+INFO:     127.0.0.1:34594 - "GET /health HTTP/1.1" 200 OK
+WARNING:src.engine.kernel:Tick 2322 exceeded budget at end_of_tick: 46.38ms vs limit 27.62ms.
+CRITICAL:src.observability.alerts.sinks:[ALERT] type=WatchdogTrip run=run_1794477921_5169_1_e60276c6 severity=CRITICAL tick=2322: Tick compute time 46.38ms exceeded watchdog threshold of 27.62ms (end_of_tick) (evidence={'compute_ms': 46.381495, 'threshold_ms': 27.62305, 'site': 'end_of_tick', 'phase_costs': {'init': 0.220625, 'scheduling': 0.447023, 'collection': 1.071861, 'trust_validity': 0.147649, 'memory_update': 0.00819, 'habit_bias_action_style': 0.002955, 'role_model_selection': 0.002726, 'self_model': 0.006915, 'information_belief': 0.030705, 'information_intent_execution': 0.002952, 'cooperation': 0.08318, 'contracts_production': 0.052102, 'faction_decision': 0.027845, 'faction_awareness': 0.016581, 'information_propagation': 0.00265, 'diplomatic_transitions': 0.463432, 'military_conflict': 0.041456, 'locomotion': 0.857866, 'combat_engagement': 0.792603, 'interaction': 0.129977, 'governance_ecology': 0.216136, 'world_emergence': 0.004085, 'economy': 6.064333, 'progression_conversion': 0.008898, 'faction_sentiment': 0.029086, 'final_integrity': 0.149348, 'resolution_overhead': 15.733502999999999, 'cleanup': 0.032281, 'advancement': 10.429224, 'persistence': 9.305308}})
+INFO:     127.0.0.1:47192 - "GET /health HTTP/1.1" 200 OK
+WARNING:src.engine.kernel:Tick 2421 exceeded budget at end_of_tick: 30.48ms vs limit 29.98ms.
+WARNING:src.engine.kernel:Tick 2423 exceeded budget at end_of_tick: 46.75ms vs limit 33.62ms.
+INFO:     127.0.0.1:38644 - "GET /health HTTP/1.1" 200 OK
+INFO:     172.20.0.1:35478 - "GET /api/v1/observability/search/runs HTTP/1.1" 429 Too Many Requests
+WARNING:src.engine.kernel:Tick 2485 exceeded budget at end_of_tick: 36.07ms vs limit 35.59ms.
+INFO:     172.20.0.1:35490 - "GET /api/v1/manifest HTTP/1.1" 200 OK
+WARNING:src.engine.kernel:Tick 2524 exceeded budget at end_of_tick: 47.90ms vs limit 37.43ms.
+INFO:     127.0.0.1:37624 - "GET /health HTTP/1.1" 200 OK
+WARNING:src.engine.kernel:Tick 2564 exceeded budget at end_of_tick: 31.02ms vs limit 28.38ms.
+WARNING:src.engine.kernel:Tick 2620 exceeded budget at end_of_tick: 40.85ms vs limit 39.06ms.
+INFO:     127.0.0.1:37340 - "GET /health HTTP/1.1" 200 OK
+WARNING:src.engine.kernel:Tick 2626 exceeded budget at end_of_tick: 65.61ms vs limit 49.97ms.
+WARNING:src.engine.kernel:Tick 2638 exceeded budget at end_of_tick: 23.77ms vs limit 20.00ms.
+WARNING:src.engine.kernel:Tick 2688 exceeded budget at end_of_tick: 26.63ms vs limit 23.34ms.
+INFO:     127.0.0.1:60512 - "GET /health HTTP/1.1" 200 OK
+WARNING:src.engine.kernel:Tick 2726 exceeded budget at end_of_tick: 66.38ms vs limit 34.30ms.
+WARNING:src.engine.kernel:Tick 2778 exceeded budget at end_of_tick: 73.38ms vs limit 34.13ms.
+WARNING:src.engine.kernel:Tick 2788 exceeded budget at end_of_tick: 20.44ms vs limit 20.00ms.
+INFO:     127.0.0.1:45772 - "GET /health HTTP/1.1" 200 OK
+WARNING:src.engine.kernel:Tick 2827 exceeded budget at end_of_tick: 36.72ms vs limit 28.59ms.
+WARNING:src.engine.kernel:Tick 2828 exceeded budget at end_of_tick: 60.12ms vs limit 50.00ms.
+WARNING:src.engine.kernel:Tick 2865 exceeded budget at end_of_tick: 34.44ms vs limit 28.70ms.
+CRITICAL:src.observability.alerts.sinks:[ALERT] type=WatchdogTrip run=run_1794477921_5169_1_e60276c6 severity=CRITICAL tick=2865: Tick compute time 34.44ms exceeded watchdog threshold of 28.70ms (end_of_tick) (evidence={'compute_ms': 34.441985, 'threshold_ms': 28.70155, 'site': 'end_of_tick', 'phase_costs': {'init': 0.370778, 'scheduling': 0.686096, 'collection': 4.194946, 'trust_validity': 3.635125, 'memory_update': 0.037827, 'habit_bias_action_style': 0.005957, 'role_model_selection': 0.004769, 'self_model': 0.017562, 'information_belief': 1.080019, 'information_intent_execution': 0.028935, 'cooperation': 0.714805, 'contracts_production': 0.151202, 'faction_decision': 0.044567, 'faction_awareness': 0.10371, 'information_propagation': 0.00898, 'diplomatic_transitions': 0.832742, 'military_conflict': 0.063344, 'locomotion': 1.264285, 'combat_engagement': 1.052523, 'interaction': 0.182239, 'governance_ecology': 0.319667, 'world_emergence': 0.00639, 'economy': 0.313893, 'progression_conversion': 0.00388, 'faction_sentiment': 0.01907, 'final_integrity': 0.075201, 'resolution_overhead': 10.691144, 'cleanup': 0.025572, 'advancement': 2.111898, 'persistence': 6.394859}})
+INFO:     127.0.0.1:40892 - "GET /health HTTP/1.1" 200 OK
+WARNING:src.engine.kernel:Tick 2928 exceeded budget at end_of_tick: 30.86ms vs limit 25.17ms.
+WARNING:src.engine.kernel:Tick 2929 exceeded budget at end_of_tick: 72.58ms vs limit 50.00ms.
+INFO:     127.0.0.1:40540 - "GET /health HTTP/1.1" 200 OK
+WARNING:src.engine.kernel:Tick 3006 exceeded budget at end_of_tick: 58.97ms vs limit 49.04ms.
+WARNING:src.engine.kernel:Tick 3010 exceeded budget at end_of_tick: 35.86ms vs limit 32.64ms.
+WARNING:src.engine.kernel:Tick 3017 exceeded budget at end_of_tick: 24.38ms vs limit 22.21ms.
+WARNING:src.engine.kernel:Tick 3019 exceeded budget at end_of_tick: 55.14ms vs limit 41.46ms.
+WARNING:src.engine.kernel:Tick 3029 exceeded budget at end_of_tick: 58.35ms vs limit 31.10ms.
+WARNING:src.engine.kernel:Tick 3030 exceeded budget at end_of_tick: 75.01ms vs limit 50.00ms.
+WARNING:src.engine.kernel:Tick 3031 exceeded budget at end_of_tick: 71.36ms vs limit 50.00ms.
+WARNING:src.engine.kernel:Tick 3032 exceeded budget at end_of_tick: 58.22ms vs limit 50.00ms.
+WARNING:src.engine.kernel:Tick 3088 exceeded budget at end_of_tick: 29.26ms vs limit 26.94ms.
+INFO:     127.0.0.1:33878 - "GET /health HTTP/1.1" 200 OK
+WARNING:src.engine.kernel:Tick 3113 exceeded budget at end_of_tick: 50.41ms vs limit 27.02ms.
+WARNING:src.engine.kernel:Tick 3126 exceeded budget at end_of_tick: 41.64ms vs limit 39.16ms.
+WARNING:src.engine.kernel:Tick 3130 exceeded budget at end_of_tick: 83.24ms vs limit 50.00ms.
+WARNING:src.engine.kernel:Tick 3143 exceeded budget at end_of_tick: 46.21ms vs limit 33.70ms.
+WARNING:src.engine.kernel:Tick 3161 exceeded budget at end_of_tick: 120.32ms vs limit 34.28ms.
+INFO:     127.0.0.1:36548 - "GET /health HTTP/1.1" 200 OK
+WARNING:src.engine.kernel:Tick 3206 exceeded budget at end_of_tick: 36.86ms vs limit 27.74ms.
+WARNING:src.engine.kernel:Tick 3231 exceeded budget at end_of_tick: 61.86ms vs limit 30.10ms.
+WARNING:src.engine.kernel:Tick 3257 exceeded budget at end_of_tick: 120.34ms vs limit 43.82ms.
+INFO:     127.0.0.1:41006 - "GET /health HTTP/1.1" 200 OK
+WARNING:src.engine.kernel:Tick 3281 exceeded budget at end_of_tick: 32.94ms vs limit 31.75ms.
+WARNING:src.engine.kernel:Tick 3332 exceeded budget at end_of_tick: 54.52ms vs limit 35.34ms.
+WARNING:src.engine.kernel:Tick 3372 exceeded budget at end_of_tick: 36.89ms vs limit 35.29ms.
+INFO:     127.0.0.1:43088 - "GET /health HTTP/1.1" 200 OK
+WARNING:src.engine.kernel:Tick 3376 exceeded budget at end_of_tick: 115.13ms vs limit 35.92ms.
+WARNING:src.engine.kernel:Tick 3417 exceeded budget at end_of_tick: 29.41ms vs limit 28.49ms.
+CRITICAL:src.observability.alerts.sinks:[ALERT] type=WatchdogTrip run=run_1794477921_5169_1_e60276c6 severity=CRITICAL tick=3417: Tick compute time 29.41ms exceeded watchdog threshold of 28.49ms (end_of_tick) (evidence={'compute_ms': 29.411077, 'threshold_ms': 28.487656, 'site': 'end_of_tick', 'phase_costs': {'init': 0.304793, 'scheduling': 0.520339, 'collection': 0.389206, 'trust_validity': 0.156988, 'memory_update': 0.010301, 'habit_bias_action_style': 0.003918, 'role_model_selection': 0.003802, 'self_model': 0.009833, 'information_belief': 0.04513, 'information_intent_execution': 0.003669, 'cooperation': 0.12571, 'contracts_production': 0.070986, 'faction_decision': 0.042282, 'faction_awareness': 0.023776, 'information_propagation': 0.003535, 'diplomatic_transitions': 0.751132, 'military_conflict': 0.049832, 'locomotion': 0.629616, 'combat_engagement': 1.309255, 'interaction': 0.149061, 'governance_ecology': 0.348107, 'world_emergence': 0.006956, 'economy': 0.421847, 'progression_conversion': 0.004642, 'faction_sentiment': 0.030112, 'final_integrity': 0.22272, 'resolution_overhead': 3.378716, 'cleanup': 0.021614, 'advancement': 10.970495, 'persistence': 9.402704}})
+WARNING:src.engine.kernel:Tick 3433 exceeded budget at end_of_tick: 75.03ms vs limit 32.08ms.
+INFO:     127.0.0.1:52266 - "GET /health HTTP/1.1" 200 OK
+WARNING:src.engine.kernel:Tick 3501 exceeded budget at end_of_tick: 118.35ms vs limit 43.59ms.
+WARNING:src.engine.kernel:Tick 3519 exceeded budget at end_of_tick: 22.12ms vs limit 21.99ms.
+INFO:     127.0.0.1:42034 - "GET /health HTTP/1.1" 200 OK
+WARNING:src.engine.kernel:Tick 3598 exceeded budget at end_of_tick: 22.36ms vs limit 20.66ms.
+WARNING:src.engine.kernel:Tick 3612 exceeded budget at end_of_tick: 114.47ms vs limit 37.72ms.
+WARNING:src.engine.kernel:Tick 3635 exceeded budget at end_of_tick: 40.83ms vs limit 20.00ms.
+WARNING:src.engine.kernel:Tick 3646 exceeded budget at end_of_tick: 26.14ms vs limit 24.29ms.
+INFO:     127.0.0.1:53094 - "GET /health HTTP/1.1" 200 OK
+WARNING:src.engine.kernel:Tick 3688 exceeded budget at end_of_tick: 32.48ms vs limit 28.76ms.
+WARNING:src.engine.kernel:Tick 3731 exceeded budget at end_of_tick: 139.57ms vs limit 50.00ms.
+WARNING:src.engine.kernel:Tick 3736 exceeded budget at end_of_tick: 28.13ms vs limit 20.00ms.
+INFO:     127.0.0.1:53384 - "GET /health HTTP/1.1" 200 OK
+WARNING:src.engine.kernel:Tick 3755 exceeded budget at end_of_tick: 40.65ms vs limit 40.21ms.
+WARNING:src.engine.kernel:Tick 3778 exceeded budget at end_of_tick: 38.44ms vs limit 34.14ms.
+WARNING:src.engine.kernel:Tick 3798 exceeded budget at end_of_tick: 50.58ms vs limit 33.93ms.
+WARNING:src.engine.kernel:Tick 3818 exceeded budget at end_of_tick: 137.83ms vs limit 31.95ms.
+WARNING:src.engine.kernel:Tick 3837 exceeded budget at end_of_tick: 34.70ms vs limit 20.00ms.
+INFO:     127.0.0.1:36026 - "GET /health HTTP/1.1" 200 OK
+WARNING:src.engine.kernel:Tick 3862 exceeded budget at end_of_tick: 67.60ms vs limit 49.88ms.
+WARNING:src.engine.kernel:Tick 3878 exceeded budget at end_of_tick: 53.38ms vs limit 25.71ms.
+WARNING:src.engine.kernel:Tick 3889 exceeded budget at end_of_tick: 36.41ms vs limit 32.72ms.
+WARNING:src.engine.kernel:Tick 3938 exceeded budget at end_of_tick: 40.38ms vs limit 28.25ms.
+INFO:     127.0.0.1:54862 - "GET /health HTTP/1.1" 200 OK
+WARNING:src.engine.kernel:Tick 3939 exceeded budget at end_of_tick: 60.02ms vs limit 50.00ms.
+WARNING:src.engine.kernel:Tick 3970 exceeded budget at end_of_tick: 45.29ms vs limit 44.93ms.
+WARNING:src.engine.kernel:Tick 3991 exceeded budget at end_of_tick: 45.56ms vs limit 38.50ms.
+CRITICAL:src.observability.alerts.sinks:[ALERT] type=WatchdogTrip run=run_1794477921_5169_1_e60276c6 severity=CRITICAL tick=3991: Tick compute time 45.56ms exceeded watchdog threshold of 38.50ms (end_of_tick) (evidence={'compute_ms': 45.564773, 'threshold_ms': 38.502986, 'site': 'end_of_tick', 'phase_costs': {'init': 0.259411, 'scheduling': 28.125492, 'collection': 1.645676, 'trust_validity': 0.109067, 'memory_update': 0.006308, 'habit_bias_action_style': 0.002275, 'role_model_selection': 0.002316, 'self_model': 0.00605, 'information_belief': 0.032702, 'information_intent_execution': 0.002991, 'cooperation': 0.088351, 'contracts_production': 0.053229, 'faction_decision': 0.102534, 'faction_awareness': 0.022124, 'information_propagation': 0.003304, 'diplomatic_transitions': 0.471184, 'military_conflict': 0.043213, 'locomotion': 0.886206, 'combat_engagement': 1.034861, 'interaction': 0.145571, 'governance_ecology': 0.202211, 'world_emergence': 0.004011, 'economy': 0.180794, 'progression_conversion': 0.003498, 'faction_sentiment': 0.017498, 'final_integrity': 0.064709, 'resolution_overhead': 4.546797, 'cleanup': 0.014219, 'advancement': 1.904211, 'persistence': 5.58396}})
+WARNING:src.engine.kernel:Tick 4006 exceeded budget at end_of_tick: 31.56ms vs limit 26.32ms.
+WARNING:src.engine.kernel:Tick 4018 exceeded budget at end_of_tick: 26.44ms vs limit 24.77ms.
+WARNING:src.engine.kernel:Tick 4032 exceeded budget at end_of_tick: 33.57ms vs limit 31.69ms.
+INFO:     127.0.0.1:46990 - "GET /health HTTP/1.1" 200 OK
+WARNING:src.engine.kernel:Tick 4039 exceeded budget at end_of_tick: 53.19ms vs limit 50.00ms.
+WARNING:src.engine.kernel:Tick 4126 exceeded budget at end_of_tick: 40.80ms vs limit 29.71ms.
+INFO:     127.0.0.1:48004 - "GET /health HTTP/1.1" 200 OK
+WARNING:src.engine.kernel:Tick 4140 exceeded budget at mid_tick: 194.19ms vs limit 50.00ms.
+WARNING:src.engine.kernel:Tick 4140 exceeded budget at end_of_tick: 265.03ms vs limit 39.20ms.
