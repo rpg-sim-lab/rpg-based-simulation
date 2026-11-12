@@ -8053,6 +8053,20 @@
   - delivery
   - process-improvement
 - type: ticket
+  path: agent-working/tickets/done/TCK-20261112-SEARCH-SERVER-PER-WORKTREE-INDEX-AND-BUILD-MEMORY-GUARD.md
+  ticket_id: TCK-20261112-SEARCH-SERVER-PER-WORKTREE-INDEX-AND-BUILD-MEMORY-GUARD
+  title: A worktree with its own knowledge index starts its own ~400 MB search server,
+    and `knowledge_search.py build` starts with no memory check
+  tier: hotfix
+  ticket_type: bug
+  date: '2026-11-12'
+  related_code_areas:
+  - _resolve_index_dir
+  - cmd_build
+  artifact_files: []
+  tags:
+  - process-improvement
+- type: ticket
   path: agent-working/tickets/done/TCK-20261111-CLAUDE-MD-REGISTRY-DRIVER-WORDING.md
   ticket_id: TCK-20261111-CLAUDE-MD-REGISTRY-DRIVER-WORDING
   title: CLAUDE.md says the registry merge driver regenerates after rebase and cherry-pick;
