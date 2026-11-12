@@ -8166,6 +8166,22 @@
   - observability
   - api-design
 - type: ticket
+  path: agent-working/tickets/todos/TCK-20261112-COMPOSE-STACK-HAS-NO-API-KEY.md
+  ticket_id: TCK-20261112-COMPOSE-STACK-HAS-NO-API-KEY
+  title: The compose stack configures no API key, so every backend route except /health
+    answers 401
+  tier: standard
+  ticket_type: bug
+  date: '2026-11-12'
+  related_code_areas:
+  - compose.yaml
+  - docker/frontend.Dockerfile
+  - src/config/loader.py
+  artifact_files: []
+  tags:
+  - platform
+  - security
+- type: ticket
   path: agent-working/tickets/todos/TCK-20261112-DEPENDABOT-IGNORE-KNOWLEDGE-STACK.md
   ticket_id: TCK-20261112-DEPENDABOT-IGNORE-KNOWLEDGE-STACK
   title: Dependabot's uv entry ignores torch, graphifyy and headroom-ai, so grouped
