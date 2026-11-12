@@ -246,10 +246,19 @@ def _worktree_ticket_copies(wt: Path, run: Runner) -> list[TicketCopy]:
             parts = line.split("\t")
             if parts and parts[0][:1] in ("A", "M", "R", "C") and len(parts) >= 2:
                 changed.add(parts[-1])
-    status = run(["git", "--no-optional-locks", "status", "--porcelain", "--untracked-files=all", "--", folder], wt)
+    # -z: NUL-separated entries, no quoting and no line splitting, so a leading-space ` M <path>` (unstaged-only) is read exactly
+    status = run(["git", "--no-optional-locks", "status", "--porcelain", "-z", "--untracked-files=all", "--", folder], wt)
     on_disk: set[str] = set()
-    for line in status.stdout.splitlines() if status.returncode == 0 else []:
-        code, path = line[:2], line[3:].split(" -> ")[-1].strip().strip('"')
+    entries = status.stdout.split("\0") if status.returncode == 0 else []
+    i = 0
+    while i < len(entries):
+        entry = entries[i]
+        i += 1
+        if len(entry) < 4:
+            continue
+        code, path = entry[:2], entry[3:]
+        if code[0] in "RC":
+            i += 1  # the next entry is the rename or copy source
         if "D" not in code:
             changed.add(path)
             on_disk.add(path)
@@ -337,6 +346,8 @@ def derive_item(tid: str, main: list[TicketCopy], branches: list[BranchFact], pr
     other = [e for e in _split((current or {}).get("Branch", "")) if not e.startswith(f"{host}:")]
     status, pr_urls, findings = derive_status(tid, main, mine, prs, other)
     branch_copies = [c for b in mine for c in b.copies if c.id == tid]
+    # Seat names who is working on the ticket: only a branch holding it in inprogress/ or done/, never one that merely filed it
+    working = [b for b in mine if any(c.id == tid and c.folder in PROGRESS_FOLDERS for c in b.copies)]
     best = (branch_copies or sorted(main, key=lambda c: FOLDERS.index(c.folder), reverse=True))[0] if (branch_copies or main) else None
     entries = [f"{host}:{b.branch}" + ("" if any(c.id == tid and c.folder in PROGRESS_FOLDERS for c in b.copies) else f" {FILING_SUFFIX}")
                for b in mine]
@@ -346,7 +357,7 @@ def derive_item(tid: str, main: list[TicketCopy], branches: list[BranchFact], pr
         "Ticket ID": tid,
         "Status": status,
         "Domain": ", ".join(sorted({b.domain for b in mine if b.domain})) or (current or {}).get("Domain", ""),
-        "Seat": ", ".join(sorted({b.seat for b in mine})) or (current or {}).get("Seat", ""),
+        "Seat": ", ".join(sorted({b.seat for b in working})) or ("" if status == "To do" else (current or {}).get("Seat", "")),
         "Host": merge_host_entries((current or {}).get("Host", ""), [host] if mine else [], host),
         "Branch": merge_host_entries((current or {}).get("Branch", ""), entries, f"{host}:"),
         "PR": ", ".join(pr_urls),

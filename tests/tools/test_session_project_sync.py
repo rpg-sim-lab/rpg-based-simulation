@@ -199,8 +199,8 @@ def test_an_uncommitted_ticket_file_in_a_worktree_is_read_from_disk_and_a_commit
     (tmp_path / new).write_text("---\ndate: 2026-11-12\n---\n# T\n\n## Title\nNew one\n\n## Tier\nStandard\n\n## Status\nBLOCKED\n")
     run = fake_runner({
         "merge-base": "base123\n",
-        "diff --name-status": f"A\t{committed}\nD\t{T}/done/TCK-20260101-GONE.md\nA\tdocs/not_a_ticket.md\n",
-        "status --porcelain": f"?? {new}\n D {T}/todos/TCK-20260102-DELETED.md\n",
+        "diff --name-status": f"D\t{T}/done/TCK-20260101-GONE.md\nA\tdocs/not_a_ticket.md\n",
+        "status --porcelain": f" M {committed}\0?? {new}\0 D {T}/todos/TCK-20260102-DELETED.md\0",
         "show HEAD:": "## Title\nCommitted one\n\n## Tier\nhotfix\n",
     })
     copies = {c.id: c for c in ps._worktree_ticket_copies(tmp_path, run)}
@@ -244,3 +244,43 @@ def test_the_registry_file_has_the_pilot_settings_and_no_field_ids():
     cfg = yaml.safe_load((Path(__file__).resolve().parents[2] / ps.CONFIG_REL).read_text(encoding="utf-8"))
     assert cfg["pilot_lanes"] == ["rpg"] and cfg["done_window_days"] == 14 and cfg["stale_host_hours"] == 24
     assert "PVTF" not in json.dumps(cfg, default=str) and "field" not in json.dumps(list(cfg)).lower()
+
+
+def test_an_unstaged_only_change_with_a_leading_space_is_the_first_porcelain_entry_and_is_kept(tmp_path):
+    ticket = f"{T}/done/TCK-20261110-A-NON-FLIGHT-MOVE.md"
+    (tmp_path / T / "done").mkdir(parents=True)
+    (tmp_path / ticket).write_text("## Title\nNon flight\n")
+    run = fake_runner({"merge-base": "b\n", "diff --name-status": "", "status --porcelain": f" M {ticket}\0"})
+    assert [c.id for c in ps._worktree_ticket_copies(tmp_path, run)] == ["TCK-20261110-A-NON-FLIGHT-MOVE"]
+
+
+def test_a_renamed_porcelain_entry_skips_its_source_and_a_real_repo_agrees(tmp_path):
+    import subprocess
+
+    def git(*a):
+        subprocess.run(["git", "-c", "user.email=a@b", "-c", "user.name=t", *a], cwd=tmp_path, check=True, capture_output=True)
+
+    (tmp_path / T / "todos").mkdir(parents=True)
+    (tmp_path / T / "done").mkdir(parents=True)
+    old = tmp_path / T / "todos" / "TCK-20261111-MOVED.md"
+    old.write_text("## Title\nMoved\n")
+    done = tmp_path / T / "done" / "TCK-20261110-DONE-ONE.md"
+    done.write_text("## Title\nDone one\n")
+    git("init", "-q", "-b", "main")
+    git("add", "-A")
+    git("commit", "-q", "-m", "i")
+    git("update-ref", "refs/remotes/origin/main", "HEAD")
+    done.write_text("## Title\nDone one changed\n")  # unstaged only: ` M` is the first porcelain entry
+    git("mv", str(old), str(tmp_path / T / "done" / "TCK-20261111-MOVED.md"))
+    copies = {c.id: c.folder for c in ps._worktree_ticket_copies(tmp_path, ps.run_command)}
+    assert copies == {"TCK-20261110-DONE-ONE": "done", "TCK-20261111-MOVED": "done"}
+
+
+def test_seat_names_only_a_branch_that_works_the_ticket_never_one_that_only_filed_it():
+    worker = branch([copy()], name="rpg-work", seat="rpg (unmapped)")
+    filer = branch([copy(folder="todos")], name="rpg-planner-seat", seat="rpg-planner")
+    item, _ = derive(branches=[worker, filer])
+    assert item["Seat"] == "rpg (unmapped)" and item["Status"] == "In progress"
+    assert f"{HOST}:rpg-planner-seat {ps.FILING_SUFFIX}" in item["Branch"] and f"{HOST}:rpg-work" in item["Branch"]
+    todo, _ = derive(branches=[filer])
+    assert todo["Status"] == "To do" and todo["Seat"] == ""
