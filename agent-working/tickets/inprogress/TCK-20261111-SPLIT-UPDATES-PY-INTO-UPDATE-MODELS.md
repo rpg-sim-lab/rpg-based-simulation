@@ -4,7 +4,7 @@ layer: core
 authority: P1
 audience: agent
 ticket_id: TCK-20261111-SPLIT-UPDATES-PY-INTO-UPDATE-MODELS
-phase: open
+phase: inprogress
 date: 2026-11-11
 tags: []
 ---
@@ -15,7 +15,7 @@ tags: []
 Move the per-domain update models out of src/core/updates.py into src/core/update_models/, so the module comes back under its length ceiling
 
 ## Status
-OPEN
+INPROGRESS
 
 ## Tier
 standard
