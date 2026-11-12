@@ -7592,6 +7592,16 @@
   - platform
   - observability
 - type: doc
+  path: docs/runbooks/records/2026-11-12-loki-volume-and-api-dashboard.md
+  title: Loki named volume and the API dashboard, proved in one stack run (2026-11-12)
+  status: active
+  layer: platform
+  authority: P2
+  audience: agent
+  tags:
+  - platform
+  - observability
+- type: doc
   path: docs/runbooks/redis-down.md
   title: 'Runbook: RedisDown (cause alert)'
   status: active
@@ -8240,6 +8250,22 @@
   - observability
   - api-design
 - type: ticket
+  path: agent-working/tickets/todos/TCK-20261112-COMPOSE-STACK-HAS-NO-API-KEY.md
+  ticket_id: TCK-20261112-COMPOSE-STACK-HAS-NO-API-KEY
+  title: The compose stack configures no API key, so every backend route except /health
+    answers 401
+  tier: standard
+  ticket_type: bug
+  date: '2026-11-12'
+  related_code_areas:
+  - compose.yaml
+  - docker/frontend.Dockerfile
+  - src/config/loader.py
+  artifact_files: []
+  tags:
+  - platform
+  - security
+- type: ticket
   path: agent-working/tickets/todos/TCK-20261112-HAND-ADDED-WORKTREES-ARE-NOT-RECORDED-AGAINST-A-SEAT.md
   ticket_id: TCK-20261112-HAND-ADDED-WORKTREES-ARE-NOT-RECORDED-AGAINST-A-SEAT
   title: A worktree a seat creates with a plain `git worktree add` is never recorded
@@ -8367,6 +8393,24 @@
   - agent-working/stored_artifacts/TCK-20261111-KNOWLEDGE-INDEX-BUILD-MEMORY-BOUNDED/test_plan.md
   tags:
   - delivery
+- type: ticket
+  path: agent-working/tickets/done/TCK-20261111-LOKI-REJECTS-EVERY-PUSH-ON-WAL-DISK-THROTTLE.md
+  ticket_id: TCK-20261111-LOKI-REJECTS-EVERY-PUSH-ON-WAL-DISK-THROTTLE
+  title: Loki accepted no log push during the 2026-11-11 stack run (WAL disk throttle,
+    then "Ingester is shutting down")
+  tier: standard
+  ticket_type: bug
+  date: '2026-11-11'
+  related_code_areas:
+  - compose.yaml
+  - docker/alloy/config.alloy
+  artifact_files:
+  - agent-working/stored_artifacts/TCK-20261111-LOKI-REJECTS-EVERY-PUSH-ON-WAL-DISK-THROTTLE/investigation.md
+  - agent-working/stored_artifacts/TCK-20261111-LOKI-REJECTS-EVERY-PUSH-ON-WAL-DISK-THROTTLE/plan.md
+  - agent-working/stored_artifacts/TCK-20261111-LOKI-REJECTS-EVERY-PUSH-ON-WAL-DISK-THROTTLE/test_plan.md
+  tags:
+  - platform
+  - observability
 - type: ticket
   path: agent-working/tickets/done/TCK-20261111-MECHANISM-SUMMARY-FIELD-SHAPE-CHECK.md
   ticket_id: TCK-20261111-MECHANISM-SUMMARY-FIELD-SHAPE-CHECK
@@ -8548,21 +8592,6 @@
   - src/engine/pipeline_phases/movement.py (route_movement_intent)
   artifact_files: []
   tags: []
-- type: ticket
-  path: agent-working/tickets/todos/TCK-20261111-LOKI-REJECTS-EVERY-PUSH-ON-WAL-DISK-THROTTLE.md
-  ticket_id: TCK-20261111-LOKI-REJECTS-EVERY-PUSH-ON-WAL-DISK-THROTTLE
-  title: Loki accepted no log push during the 2026-11-11 stack run (WAL disk throttle,
-    then "Ingester is shutting down")
-  tier: standard
-  ticket_type: bug
-  date: '2026-11-11'
-  related_code_areas:
-  - compose.yaml
-  - docker/alloy/config.alloy
-  artifact_files: []
-  tags:
-  - platform
-  - observability
 - type: ticket
   path: agent-working/tickets/todos/TCK-20261111-SPLIT-UPDATES-PY-INTO-UPDATE-MODELS.md
   ticket_id: TCK-20261111-SPLIT-UPDATES-PY-INTO-UPDATE-MODELS
@@ -14281,6 +14310,23 @@
   - architecture
   - testing
 - type: ticket
+  path: agent-working/tickets/done/devops-api-dashboard-trace/TCK-20261018-API-DASHBOARD-AND-TRACE-PROOF.md
+  ticket_id: TCK-20261018-API-DASHBOARD-AND-TRACE-PROOF
+  title: 'Grafana: one provisioned API dashboard (rate, errors, latency percentiles
+    by route, backend logs, trace links), and the step-2 end-to-end local proof'
+  tier: standard
+  ticket_type: feature
+  date: '2026-10-18'
+  related_code_areas:
+  - docker/grafana/dashboards/api.json
+  artifact_files:
+  - agent-working/stored_artifacts/TCK-20261018-API-DASHBOARD-AND-TRACE-PROOF/investigation.md
+  - agent-working/stored_artifacts/TCK-20261018-API-DASHBOARD-AND-TRACE-PROOF/plan.md
+  - agent-working/stored_artifacts/TCK-20261018-API-DASHBOARD-AND-TRACE-PROOF/test_plan.md
+  tags:
+  - platform
+  - observability
+- type: ticket
   path: agent-working/tickets/done/devops-s4-base-alerts-local/TCK-20261018-EPIC-DEVOPS-S4-BASE-ALERTS-LOCAL.md
   ticket_id: TCK-20261018-EPIC-DEVOPS-S4-BASE-ALERTS-LOCAL
   title: 'DevOps S4 (host ubuntu): base alerts with no rpg metrics (target down, observability
@@ -14365,20 +14411,6 @@
   tags:
   - architecture
   - documentation
-- type: ticket
-  path: agent-working/tickets/todos/devops-api-dashboard-trace/TCK-20261018-API-DASHBOARD-AND-TRACE-PROOF.md
-  ticket_id: TCK-20261018-API-DASHBOARD-AND-TRACE-PROOF
-  title: 'Grafana: one provisioned API dashboard (rate, errors, latency percentiles
-    by route, backend logs, trace links), and the step-2 end-to-end local proof'
-  tier: standard
-  ticket_type: feature
-  date: '2026-10-18'
-  related_code_areas:
-  - docker/grafana/dashboards/api.json
-  artifact_files: []
-  tags:
-  - platform
-  - observability
 - type: ticket
   path: agent-working/tickets/done/TCK-20261017-FORCED-SCENARIOS-FOR-COVER-CHOKEPOINTS-AND-HIGH-GROUND.md
   ticket_id: TCK-20261017-FORCED-SCENARIOS-FOR-COVER-CHOKEPOINTS-AND-HIGH-GROUND
