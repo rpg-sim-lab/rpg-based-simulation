@@ -4,7 +4,7 @@ layer: platform
 authority: P1
 audience: agent
 ticket_id: TCK-20261112-COMPOSE-STACK-HAS-NO-API-KEY
-phase: open
+phase: inprogress
 date: 2026-11-12
 tags: [platform, security]
 ---
@@ -15,7 +15,7 @@ tags: [platform, security]
 The compose stack configures no API key, so every backend route except /health answers 401
 
 ## Status
-OPEN
+INPROGRESS
 
 ## Tier
 standard
