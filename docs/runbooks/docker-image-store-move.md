@@ -34,7 +34,8 @@ Docker's documentation gives option A's method itself: "To change the storage lo
 ## Restart impact
 
 - **Currently only `cool_curie` (github-mcp-server) on this engine; owner to confirm nothing else.** Re-run `docker ps -a` just before the restart and stop if anything else is listed that you did not expect.
-- `cool_curie` has restart policy `no`, and live restore is off, so stopping docker stops it and it does not come back by itself: whoever uses that MCP server starts it again. The Loki, Grafana and the other stack containers are not running now (the compose stack is down); if you start it later, it comes up on the new root.
+- `cool_curie` is not started by hand and has no restart policy of its own (`no`): Claude Code starts it from the repository's `.mcp.json`, server `github`, which runs `docker run -i --rm --env-file .env ghcr.io/github/github-mcp-server` (stdio, auto-remove). Live restore is off, so stopping docker kills it and `--rm` removes it. Every Claude Code session that uses it loses the GitHub MCP tools until that session reconnects the server (`/mcp`, reconnect) or restarts; the `gh` command line keeps working. Nobody runs a `docker run` for it by hand, so there is nothing to start again by hand.
+- The compose stack is not running now (`docker ps -a` shows only `cool_curie`); if you start it later, it comes up on the new root.
 - While docker is stopped (minutes), every docker client gets "cannot connect to the Docker daemon", and any build in progress fails. Do not start this during a stack run or a build.
 - Option A restarts docker and containerd; option B restarts docker only.
 
@@ -43,20 +44,19 @@ Docker's documentation gives option A's method itself: "To change the storage lo
 The move adds 7.2G to `/data`. With the numbers above that takes `/data` from 83.35% to **91.04%** by `df` (and 79.51% to **86.85%** by Loki's formula): above our 85% run gate, and with only 3.1 GiB under Loki's 90% line, which one backend build (about 1.4 GiB of cache) would eat. So free room on `/data` before you move anything:
 
 - to land at 85% by `df`, free **at least 5.7 GiB**; to land at 80% (recommended: it leaves room for builds), free **about 10.3 GiB**. Re-measure on the day (`df -h /data`), because the figures move.
-- What is cheap and re-creatable (sizes as measured on 2026-11-12; yours to judge): `/data/vboxuser/.npm` 2.2G (`npm cache clean --force`), `/data/vboxuser/tmp` 2.0G, `/data/vboxuser/aw-pytest-tmp` 1.4G, `/data/vboxuser/playwright-browsers` 0.9G: about 6.5 GiB, which clears the floor but not the target. Beyond that it is your call: finished git worktrees under `/data/vboxuser/Work/rpg-based-simulation/.claude/worktrees` (16G in all), `/data/vboxuser/Work/simq_sweep` (4.3G), other projects under `/data/vboxuser/Work`, `/data/vboxuser/.local` (11G). An agent does not delete any of it.
+- What is cheap and re-creatable (sizes as measured on 2026-11-12; yours to judge): `/data/vboxuser/.npm` 2.2G (`npm cache clean --force`), `/data/vboxuser/tmp` 2.0G, `/data/vboxuser/aw-pytest-tmp` 1.4G, `/data/vboxuser/playwright-browsers` 0.9G: about 6.5 GiB, which clears the floor but not the target. The rest is listed for size only, and none of it is proposed as reclaimable; each is the owner's call, and **check each one for unpushed or unsaved work first**: the git worktrees under `/data/vboxuser/Work/rpg-based-simulation/.claude/worktrees` (16G in all; removing a worktree is the owner's alone, and a worktree may hold unpushed commits), `/data/vboxuser/Work/groups_base` (9.4G), `/data/vboxuser/Work/simq_sweep` (4.3G), other projects under `/data/vboxuser/Work`, and `/data/vboxuser/.local` (11G). An agent does not delete or propose deleting any of it.
 - If you cannot reach the floor, the honest answer is that `/data` needs more room first (a bigger disk), or use option B (smaller on `/data`, but `/` is not freed by it).
 
-Then shrink what has to move, on `/` (cheaper there). One command per line:
+Do the cheap, re-creatable set above first (that is the default order). Then shrink what has to move, on `/` (cheaper there). The default is one command; the second is optional:
 
 ```
 docker system df
 docker builder prune -f
-docker image prune -a
 docker system df
 sudo du -sh /var/lib/containerd
 ```
 
-`docker builder prune -f` removes dangling build cache (add `-a` to remove all unused cache). `docker image prune -a` removes every image no container references: here 15 of the 16 images, including the stack's pinned images and `platform-backend`, which then have to be re-pulled or rebuilt on the next run. It asks for confirmation; read the list. Neither command touches named volumes. Use the new `du` figure for the arithmetic above.
+`docker builder prune -f` removes dangling build cache (add `-a` to remove all unused cache): about 1.4 GB reclaimable per `docker system df`. **Optional, not the default:** `docker image prune -a` removes every image no container references (here 15 of the 16, about 1.65 GB by Docker's figure), but the next stack run then has to re-pull about 4.7G of stack images and rebuild `platform-backend`, and that lands on `/data` anyway after the move; run it only if you need the room. It asks for confirmation; read the list. Neither command touches named volumes. Use the new `du` figure for the arithmetic above.
 
 ## Step 1: pre-checks
 
@@ -67,9 +67,10 @@ df -h / /data
 findmnt -T /data
 ls -ld /data/containerd
 grep -n '^\[' /etc/containerd/config.toml
+systemctl cat containerd.service | grep -n ExecStart
 ```
 
-Expected: only `cool_curie` listed; `[[driver-type io.containerd.snapshotter.v1]]`; `/data` with the room from step 0; `/data` on `/dev/sdb1`; `ls` says `/data/containerd` does not exist; `grep` prints nothing (no `[table]` header in the file, so a new top-level `root` line is read as top-level). If `grep` prints a line, stop: a top-level key added after a table header would belong to that table.
+Expected: only `cool_curie` listed; `[[driver-type io.containerd.snapshotter.v1]]`; `/data` with the room from step 0; `/data` on `/dev/sdb1`; `ls` says `/data/containerd` does not exist; `grep` prints nothing (no `[table]` header in the file, so a new top-level `root` line is read as top-level). If `grep` prints a line, stop: a top-level key added after a table header would belong to that table. The `ExecStart` check must show a plain `ExecStart=/usr/bin/containerd` with no `--root` or `--config` (a `ExecStartPre=-/sbin/modprobe overlay` line is fine); otherwise the unit overrides `config.toml` and the `root` line would not take effect. Checked read-only on 2026-11-12: the unit has `ExecStart=/usr/bin/containerd` and no such flags.
 
 ## Step 2: stop docker and containerd
 
@@ -77,10 +78,10 @@ Expected: only `cool_curie` listed; `[[driver-type io.containerd.snapshotter.v1]
 sudo systemctl stop docker.socket
 sudo systemctl stop docker.service
 sudo systemctl stop containerd.service
-systemctl is-active docker containerd
+systemctl is-active docker.socket docker.service containerd.service
 ```
 
-Expected: both `inactive`. (`docker.socket` is stopped first because `dockerd -H fd://` is socket-activated: a client call would otherwise start docker again mid-copy.)
+Expected: all three `inactive` (this is a check, not an assumption: the socket must really be stopped, or a client call would start docker again mid-copy). (`docker.socket` is stopped first because `dockerd -H fd://` is socket-activated: a client call would otherwise start docker again mid-copy.)
 
 ## Step 3: copy, and keep the original
 
@@ -91,8 +92,10 @@ sudo rsync -aHAXS --numeric-ids --info=progress2 /var/lib/containerd/ /data/cont
 
 `-aHAXS` keeps permissions, owners, hard links, ACLs, extended attributes (overlayfs layers carry them) and sparse files. Verify with a dry run that lists nothing to do, and compare the sizes:
 
+This first command is a DRY RUN (`-n`: it changes nothing). It deliberately has no `--delete`, so there is no destructive form of it to run by mistake; never add `--delete` to any rsync in this file. Without `--delete` it still lists every file that is in the source and missing or different in the copy (as `>f+++++++++`-style lines):
+
 ```
-sudo rsync -aHAXSn --delete --numeric-ids --itemize-changes /var/lib/containerd/ /data/containerd/
+sudo rsync -aHAXSn --numeric-ids --itemize-changes /var/lib/containerd/ /data/containerd/
 sudo du -sx /var/lib/containerd /data/containerd
 ```
 
@@ -120,8 +123,10 @@ sudo mv /var/lib/containerd /var/lib/containerd.old-before-move
 ```
 sudo systemctl start containerd.service
 sudo systemctl start docker.service
-systemctl is-active docker containerd
+systemctl is-active docker.socket docker.service containerd.service
 ```
+
+Expected: all three `active`. `docker.socket` was stopped in step 2; starting `docker.service` brings it back, and this check confirms it rather than assuming it.
 
 ## Step 6: dry checks (is it really on the new root, and is nothing lost)
 
