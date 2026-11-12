@@ -1,0 +1,43 @@
+DONE base_crowded_frontier_42 rc=0 wall=434s
+DONE base_crowded_frontier_43 rc=0 wall=454s
+DONE base_crowded_frontier_44 rc=0 wall=339s
+DONE base_crowded_frontier_45 rc=0 wall=609s
+DONE base_crowded_frontier_46 rc=0 wall=720s
+DONE base_urban_political_42 rc=0 wall=369s
+DONE base_urban_political_43 rc=0 wall=314s
+DONE base_urban_political_44 rc=0 wall=332s
+DONE base_urban_political_45 rc=0 wall=362s
+DONE base_urban_political_46 rc=0 wall=331s
+DONE spy_crowded_frontier_42 rc=0 wall=509s NOCELL e0e20c2044d7 held_calls=73 held_ticks=73 longest=71
+DONE spy_crowded_frontier_43 rc=0 wall=540s NOCELL 609683ccdf2b held_calls=70 held_ticks=70 longest=65
+DONE spy_crowded_frontier_44 rc=143 wall=141s Terminated
+PIN_STOP: runs_ge_50 on crowded s42 (e3, 71 ticks) and s43 (e33, 65 ticks); driver stopped by implementer; spy_crowded_frontier_44 killed mid-run
+GO renamed GO.held; spy_crowded_frontier_44 partial output (if any) renamed *.incomplete (rpg-planner request)
+RESTART v3 17:21:33
+DONE fixplain_crowded_frontier_42 rc=0 wall=510s
+DONE fixplain_urban_political_42 rc=0 wall=402s
+DONE fixplain_crowded_frontier_43 rc=0 wall=560s
+HASHCHECK crowded s42 spied e0e20c2044d7 plain e0e20c2044d7 MATCH
+HASHCHECK crowded s43 spied 609683ccdf2b plain 609683ccdf2b MATCH
+PIN spy_crowded_frontier_42.json {'entity': 3, 'first_tick': 2740, 'ticks': 71}
+PINS_OK spy_crowded_frontier_42.json []
+PIN spy_crowded_frontier_43.json {'entity': 33, 'first_tick': 1449, 'ticks': 65}
+PINS_OK spy_crowded_frontier_43.json []
+DONE spy_crowded_frontier_44 rc=0 wall=390s NOCELL ebd2c92ad6f9 held_calls=3 held_ticks=3 longest=2
+PINS_OK spy_crowded_frontier_44.json []
+DONE spy_crowded_frontier_45 rc=0 wall=423s NOCELL f5bcf30a5f0c held_calls=38 held_ticks=38 longest=34
+PINS_OK spy_crowded_frontier_45.json []
+DONE spy_crowded_frontier_46 rc=0 wall=806s NOCELL b03d17738924 held_calls=8 held_ticks=8 longest=6
+PINS_OK spy_crowded_frontier_46.json []
+DONE spy_urban_political_42 rc=0 wall=346s NOCELL 1cd06fd261a2 held_calls=0 held_ticks=0 longest=0
+PINS_OK spy_urban_political_42.json []
+DONE spy_urban_political_43 rc=0 wall=292s NOCELL 36f0166ed0d5 held_calls=0 held_ticks=0 longest=0
+PINS_OK spy_urban_political_43.json []
+DONE spy_urban_political_44 rc=0 wall=296s NOCELL 4a42776debab held_calls=0 held_ticks=0 longest=0
+PINS_OK spy_urban_political_44.json []
+DONE spy_urban_political_45 rc=0 wall=337s NOCELL 57d8ce2fe915 held_calls=0 held_ticks=0 longest=0
+PINS_OK spy_urban_political_45.json []
+DONE spy_urban_political_46 rc=0 wall=312s NOCELL fc945eae91ba held_calls=0 held_ticks=0 longest=0
+PINS_OK spy_urban_political_46.json []
+HASHCHECK urban s42 spied 1cd06fd261a2 plain 1cd06fd261a2 MATCH
+ALL_DONE
