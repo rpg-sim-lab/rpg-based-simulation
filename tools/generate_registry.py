@@ -622,6 +622,11 @@ def generate_registry(root: Path, output: Path, *, check: bool = False, include=
         target = root / rel
         extra |= {f.relative_to(root).as_posix() for f in target.rglob("*")} if target.is_dir() else {rel.as_posix()}
     doc_entries = _drop_unindexable(doc_entries, root, allowed, extra)
+    # TCK-20261112-REGISTRY-REGEN-SKIPPED-BY-A-STALE-HOOK-OR-AN-UNTRACKED-DOC: a doc that would not be indexed (untracked and
+    # not named in `include`) cannot put a frontmatter error on the registry; it must not turn --check into exit 1 either.
+    if allowed is not None:
+        keep = allowed | extra
+        doc_errors = [e for e in doc_errors if e.split(": frontmatter parse error", 1)[0] in keep]
     ticket_entries = _drop_unindexable(ticket_entries, root, allowed, extra)
 
     all_entries = sort_entries(doc_entries + ticket_entries)
