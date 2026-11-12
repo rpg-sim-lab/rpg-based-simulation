@@ -8334,6 +8334,24 @@
   tags:
   - delivery
 - type: ticket
+  path: agent-working/tickets/done/TCK-20261111-LOKI-REJECTS-EVERY-PUSH-ON-WAL-DISK-THROTTLE.md
+  ticket_id: TCK-20261111-LOKI-REJECTS-EVERY-PUSH-ON-WAL-DISK-THROTTLE
+  title: Loki accepted no log push during the 2026-11-11 stack run (WAL disk throttle,
+    then "Ingester is shutting down")
+  tier: standard
+  ticket_type: bug
+  date: '2026-11-11'
+  related_code_areas:
+  - compose.yaml
+  - docker/alloy/config.alloy
+  artifact_files:
+  - agent-working/stored_artifacts/TCK-20261111-LOKI-REJECTS-EVERY-PUSH-ON-WAL-DISK-THROTTLE/investigation.md
+  - agent-working/stored_artifacts/TCK-20261111-LOKI-REJECTS-EVERY-PUSH-ON-WAL-DISK-THROTTLE/plan.md
+  - agent-working/stored_artifacts/TCK-20261111-LOKI-REJECTS-EVERY-PUSH-ON-WAL-DISK-THROTTLE/test_plan.md
+  tags:
+  - platform
+  - observability
+- type: ticket
   path: agent-working/tickets/done/TCK-20261111-MECHANISM-SUMMARY-FIELD-SHAPE-CHECK.md
   ticket_id: TCK-20261111-MECHANISM-SUMMARY-FIELD-SHAPE-CHECK
   title: The mechanism registry validator checks the shape of the optional per-mechanism
@@ -8501,21 +8519,6 @@
   tags:
   - documentation
   - reference
-- type: ticket
-  path: agent-working/tickets/inprogress/TCK-20261111-LOKI-REJECTS-EVERY-PUSH-ON-WAL-DISK-THROTTLE.md
-  ticket_id: TCK-20261111-LOKI-REJECTS-EVERY-PUSH-ON-WAL-DISK-THROTTLE
-  title: Loki accepted no log push during the 2026-11-11 stack run (WAL disk throttle,
-    then "Ingester is shutting down")
-  tier: standard
-  ticket_type: bug
-  date: '2026-11-11'
-  related_code_areas:
-  - compose.yaml
-  - docker/alloy/config.alloy
-  artifact_files: []
-  tags:
-  - platform
-  - observability
 - type: ticket
   path: agent-working/tickets/todos/TCK-20261111-A-HOLD-MODE-MOVE-STILL-TAKES-A-STEP.md
   ticket_id: TCK-20261111-A-HOLD-MODE-MOVE-STILL-TAKES-A-STEP
@@ -14247,6 +14250,23 @@
   - architecture
   - testing
 - type: ticket
+  path: agent-working/tickets/done/devops-api-dashboard-trace/TCK-20261018-API-DASHBOARD-AND-TRACE-PROOF.md
+  ticket_id: TCK-20261018-API-DASHBOARD-AND-TRACE-PROOF
+  title: 'Grafana: one provisioned API dashboard (rate, errors, latency percentiles
+    by route, backend logs, trace links), and the step-2 end-to-end local proof'
+  tier: standard
+  ticket_type: feature
+  date: '2026-10-18'
+  related_code_areas:
+  - docker/grafana/dashboards/api.json
+  artifact_files:
+  - agent-working/stored_artifacts/TCK-20261018-API-DASHBOARD-AND-TRACE-PROOF/investigation.md
+  - agent-working/stored_artifacts/TCK-20261018-API-DASHBOARD-AND-TRACE-PROOF/plan.md
+  - agent-working/stored_artifacts/TCK-20261018-API-DASHBOARD-AND-TRACE-PROOF/test_plan.md
+  tags:
+  - platform
+  - observability
+- type: ticket
   path: agent-working/tickets/done/devops-s4-base-alerts-local/TCK-20261018-EPIC-DEVOPS-S4-BASE-ALERTS-LOCAL.md
   ticket_id: TCK-20261018-EPIC-DEVOPS-S4-BASE-ALERTS-LOCAL
   title: 'DevOps S4 (host ubuntu): base alerts with no rpg metrics (target down, observability
@@ -14331,20 +14351,6 @@
   tags:
   - architecture
   - documentation
-- type: ticket
-  path: agent-working/tickets/inprogress/TCK-20261018-API-DASHBOARD-AND-TRACE-PROOF.md
-  ticket_id: TCK-20261018-API-DASHBOARD-AND-TRACE-PROOF
-  title: 'Grafana: one provisioned API dashboard (rate, errors, latency percentiles
-    by route, backend logs, trace links), and the step-2 end-to-end local proof'
-  tier: standard
-  ticket_type: feature
-  date: '2026-10-18'
-  related_code_areas:
-  - docker/grafana/dashboards/api.json
-  artifact_files: []
-  tags:
-  - platform
-  - observability
 - type: ticket
   path: agent-working/tickets/done/TCK-20261017-FORCED-SCENARIOS-FOR-COVER-CHOKEPOINTS-AND-HIGH-GROUND.md
   ticket_id: TCK-20261017-FORCED-SCENARIOS-FOR-COVER-CHOKEPOINTS-AND-HIGH-GROUND

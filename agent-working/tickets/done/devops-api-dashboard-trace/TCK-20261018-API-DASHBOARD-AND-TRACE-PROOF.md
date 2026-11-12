@@ -1,10 +1,10 @@
 ---
-status: active
+status: historical
 layer: platform
 authority: P1
 audience: agent
 ticket_id: TCK-20261018-API-DASHBOARD-AND-TRACE-PROOF
-phase: inprogress
+phase: done
 date: 2026-10-18
 tags: [platform, observability]
 ---
@@ -15,7 +15,7 @@ tags: [platform, observability]
 Grafana: one provisioned API dashboard (rate, errors, latency percentiles by route, backend logs, trace links), and the step-2 end-to-end local proof
 
 ## Status
-INPROGRESS
+DONE
 
 ## Tier
 standard
@@ -137,4 +137,7 @@ Run 2026-11-12 (record `docs/runbooks/records/2026-11-12-loki-volume-and-api-das
 - `agent-working/staging_artifacts/TCK-20261018-API-DASHBOARD-AND-TRACE-PROOF/`: investigation, plan, test plan.
 
 ## Completion Summary
-(open)
+The provisioned Grafana dashboard `docker/grafana/dashboards/api.json` (uid `api-v1`) shows request rate, 5xx ratio, latency percentiles, backend logs and recent traces, with an SLO row that repeats the alert expressions verbatim (plus "(value)" companions). The Loki datasource has a `trace_id` derived field linking to Tempo, and the backend passes `OTEL_TRACES_SAMPLER_ARG` (blank means the code default 0.1). Observed on 2026-11-12 in two stack runs: the dashboard loaded with no datasource or panel error; the p95 panel agrees with a by-hand `histogram_quantile` in Prometheus (0.00475 s at the same instant); a trace with a server span (`http.route`) and a child Redis `PING` span (`b97bc419c7316b64bb7a1d0ca976bf6a`); and, in run A, the full round trip: a Loki line with `trace_id=56016e92030d5e84ff01352c32300d29`, the derived field to the trace in Tempo, and Tempo's **Related logs** back to the line, through both the API and the Grafana UI (screenshots at both ends). Record: `docs/runbooks/records/2026-11-12-loki-volume-and-api-dashboard.md`; evidence under `agent-working/stored_artifacts/TCK-20261018-API-DASHBOARD-AND-TRACE-PROOF/run-2026-11-12/` and `.../run-2026-11-12-runA/`. No in-flight panel: R2 exports no gauge.
+Known gap: the error panels show 0 or No data because no 5xx was observed ("5xx ratio, overall" reads 0; "5xx ratio by route" and the SLO row's "5xx ratio (value)" read No data, since the histogram creates a `status_class` series only when one is observed). The SLO row has no negative control: a violating load is step 3's job.
+Known gap: both runs used a run-only API-key override outside the repo, because the compose stack has no API key configured and every route but `/health` answers 401 (fail-closed); tracked in `TCK-20261112-COMPOSE-STACK-HAS-NO-API-KEY`. The per-client admission control then answered 429 for most of the first authenticated burst; rpg tracks that as `TCK-20261112-A-THROTTLED-CLIENT-THAT-WAITS-OUT-RETRY-AFTER-IS-STILL-REFUSED`.
+Also not covered: a run of an hour, and a route that fails.

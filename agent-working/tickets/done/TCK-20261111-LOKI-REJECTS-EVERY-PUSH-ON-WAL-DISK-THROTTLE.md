@@ -1,10 +1,10 @@
 ---
-status: active
+status: historical
 layer: platform
 authority: P1
 audience: agent
 ticket_id: TCK-20261111-LOKI-REJECTS-EVERY-PUSH-ON-WAL-DISK-THROTTLE
-phase: inprogress
+phase: done
 date: 2026-11-11
 tags: [platform, observability]
 ---
@@ -15,7 +15,7 @@ tags: [platform, observability]
 Loki accepted no log push during the 2026-11-11 stack run (WAL disk throttle, then "Ingester is shutting down")
 
 ## Status
-INPROGRESS
+DONE
 
 ## Tier
 standard
@@ -142,3 +142,7 @@ Run 2026-11-12 (record `docs/runbooks/records/2026-11-12-loki-volume-and-api-das
 - `agent-working/staging_artifacts/TCK-20261111-LOKI-REJECTS-EVERY-PUSH-ON-WAL-DISK-THROTTLE/`: investigation, plan, test plan.
 
 ## Completion Summary
+Loki's data now lives in a named volume (`loki_data` at `/loki`, WAL at `/loki/wal`, set by `-ingester.wal-dir`) instead of the container's writable layer, which the containerd image store keeps on the root filesystem. The cause, read from the Loki v3.7.9 source: the WAL disk check is `(Blocks - Bfree) / Blocks` on the WAL filesystem and counts root-reserved blocks as free, so a full `/` (about 5% reserved here) read 94.8% against the 90% threshold; `Ingester is shutting down` is `ErrReadOnly`, returned by every push while the throttle is on, and it clears by itself within about 10 seconds. Observed in two stack runs on 2026-11-12: no throttle line and no push 500; Alloy sent 3,885 entries (first run) and 2,076 (run A), all requests `204`, 0 dropped, 0 retries; `LogShippingErrors` inactive; Loki's formula on `/data` read 79.19%. Also shipped: the log-shipping runbook now names the symptom, the formula and the 85% pre-run `df` gate; `tools/loadtest/stack_guard.sh` gained a disk trigger (proved in dry mode, then used in real mode); Alloy's `mem_limit` went from 256m to 384m after a 96.4% peak. Record: `docs/runbooks/records/2026-11-12-loki-volume-and-api-dashboard.md`; evidence under `agent-working/stored_artifacts/TCK-20261111-LOKI-REJECTS-EVERY-PUSH-ON-WAL-DISK-THROTTLE/run-2026-11-12/`.
+Known gap: no alert on Loki's own WAL throttle; `LogShippingErrors` covers the symptom (Alloy's retries and drops). The Loki metric for the throttle was not named because its Prometheus name was not read.
+Known gap: Alloy at 384m was observed for 6 min 48 s only (run A: anon + active_file max 189.4 of 384 MiB, 49.3%, no OOM kill); the next run that keeps Alloy up for about an hour should re-measure it.
+Also not covered: a negative control for the throttle (no safe way to fill a disk here) and a listing of the WAL directory inside the volume (the host user cannot read Docker's volumes directory, and the Loki image has no shell).
