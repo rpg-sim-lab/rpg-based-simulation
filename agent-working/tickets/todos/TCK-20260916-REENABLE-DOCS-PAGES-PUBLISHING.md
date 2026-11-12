@@ -87,6 +87,12 @@ When the docs are ready to publish:
 ## Implementation Notes
 Blocked. Do not pick this up without the user explicitly saying the docs are ready to publish.
 
+Observed 2026-11-12 (platform-planner; this records progress, the ticket is not closed):
+- After the repository moved to rpg-sim-lab (#715 6814855329), the owner re-enabled Pages with source GitHub Actions. `gh api repos/rpg-sim-lab/rpg-based-simulation/pages` gives `build_type: workflow` and html_url https://rpg-sim-lab.github.io/rpg-based-simulation/. AC 1 is met.
+- The owner ran the first deploy by hand: Deploy Docs run 43203095497 (workflow_dispatch, at 0539145cb), success. It is the first execution of actions/upload-pages-artifact@v5 and actions/setup-node@v7 with Node 24 here, which answers the open question above.
+- The published page was fetched: 200, title "RPG Simulation Wiki", canonical and og:url on the new host. That partly covers AC 3: the front page renders. No inner pages were inspected.
+- Still open: AC 2 (restore `push: branches: [main]` and remove the in-file disable comment) and AC 4 (the cross-reference). Restoring the trigger is the owner's call, per Assumptions above.
+
 ## Test Summary
 _Blocked._
 
