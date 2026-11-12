@@ -2300,6 +2300,17 @@
   - observability
   - api-design
 - type: doc
+  path: docs/observability/api_request_tracing.md
+  title: API Request Tracing
+  status: active
+  layer: observability
+  authority: P1
+  audience: agent
+  tags:
+  - documentation
+  - observability
+  - api-design
+- type: doc
   path: docs/observability/decision_trace_contract.md
   title: Decision Trace Contract — `decision_trace.jsonl`
   status: active
@@ -7560,6 +7571,16 @@
   - platform
   - observability
 - type: doc
+  path: docs/runbooks/records/2026-11-11-compose-image-bumps.md
+  title: Compose image bumps proven on the observability stack (2026-11-11)
+  status: active
+  layer: platform
+  authority: P2
+  audience: agent
+  tags:
+  - platform
+  - observability
+- type: doc
   path: docs/runbooks/redis-down.md
   title: 'Runbook: RedisDown (cause alert)'
   status: active
@@ -8054,6 +8075,38 @@
   tags:
   - testing
 - type: ticket
+  path: agent-working/tickets/done/TCK-20261112-KNOWLEDGE-STACK-PIN-BUMPS.md
+  ticket_id: TCK-20261112-KNOWLEDGE-STACK-PIN-BUMPS
+  title: requirements-knowledge.txt takes graphifyy 0.9.104 and torch 2.15.0+cpu,
+    each smoke-tested; headroom-ai stays at 0.37.0 (0.43.1 needs mcp 2.x)
+  tier: standard
+  ticket_type: chore
+  date: '2026-11-12'
+  related_code_areas:
+  - requirements-knowledge.txt, tests/tools/test_code_test_index.py, tests/tools/test_graphify_shim.py,
+  - tools/start_headroom_mcp.sh, tools/knowledge_search.py
+  artifact_files:
+  - agent-working/stored_artifacts/TCK-20261112-KNOWLEDGE-STACK-PIN-BUMPS/investigation.md
+  - agent-working/stored_artifacts/TCK-20261112-KNOWLEDGE-STACK-PIN-BUMPS/plan.md
+  - agent-working/stored_artifacts/TCK-20261112-KNOWLEDGE-STACK-PIN-BUMPS/test_plan.md
+  tags:
+  - knowledge-store
+  - setup
+- type: ticket
+  path: agent-working/tickets/done/TCK-20261112-OBSERVABILITY-SKILL-HARD-LAW-COUNT.md
+  ticket_id: TCK-20261112-OBSERVABILITY-SKILL-HARD-LAW-COUNT
+  title: The observability skill and the skills index name all nine HardLawMonitor
+    laws, not seven
+  tier: hotfix
+  ticket_type: chore
+  date: '2026-11-12'
+  related_code_areas:
+  - src/observability/hard_law_monitor.py (read only)
+  artifact_files: []
+  tags:
+  - skills
+  - observability
+- type: ticket
   path: agent-working/tickets/done/TCK-20261112-PROJECT-SYNC-DRY-RUN.md
   ticket_id: TCK-20261112-PROJECT-SYNC-DRY-RUN
   title: '`tools/sessions/project_sync.py --dry-run`: derive each rpg-lane ticket''s
@@ -8091,6 +8144,27 @@
   tags:
   - delivery
   - process-improvement
+- type: ticket
+  path: agent-working/tickets/done/TCK-20261112-THE-API-EMITS-NO-REQUEST-TRACES.md
+  ticket_id: TCK-20261112-THE-API-EMITS-NO-REQUEST-TRACES
+  title: 'The API emits no request traces: add OpenTelemetry server spans and Redis
+    client spans, off unless an OTLP endpoint is set (#622 R3)'
+  tier: standard
+  ticket_type: feature
+  date: '2026-11-12'
+  related_code_areas:
+  - create_v2_app
+  - RequestDurationMiddleware
+  - src/observability/stream/factory.py, src/observability/stream/adapters.py:139
+    (redis client)
+  - src/api/routes/live_health.py:11
+  artifact_files:
+  - agent-working/stored_artifacts/TCK-20261112-THE-API-EMITS-NO-REQUEST-TRACES/investigation.md
+  - agent-working/stored_artifacts/TCK-20261112-THE-API-EMITS-NO-REQUEST-TRACES/plan.md
+  - agent-working/stored_artifacts/TCK-20261112-THE-API-EMITS-NO-REQUEST-TRACES/test_plan.md
+  tags:
+  - observability
+  - api-design
 - type: ticket
   path: agent-working/tickets/todos/TCK-20261112-DEPENDABOT-IGNORE-KNOWLEDGE-STACK.md
   ticket_id: TCK-20261112-DEPENDABOT-IGNORE-KNOWLEDGE-STACK
@@ -8160,6 +8234,20 @@
     codebase/health/ratchet.py; codebase/health/__main__.py
   artifact_files: []
   tags: []
+- type: ticket
+  path: agent-working/tickets/done/TCK-20261111-COMPOSE-IMAGE-BUMPS-WITH-STACK-PROOF.md
+  ticket_id: TCK-20261111-COMPOSE-IMAGE-BUMPS-WITH-STACK-PROOF
+  title: 'Take Dependabot #878''s compose image bumps by hand, with their comments
+    updated and a short stack proof run'
+  tier: hotfix
+  ticket_type: chore
+  date: '2026-11-11'
+  related_code_areas:
+  - compose.yaml
+  artifact_files: []
+  tags:
+  - platform
+  - observability
 - type: ticket
   path: agent-working/tickets/done/TCK-20261111-DEPENDABOT-WATCHES-WEBSITE.md
   ticket_id: TCK-20261111-DEPENDABOT-WATCHES-WEBSITE
@@ -8400,6 +8488,21 @@
   - src/engine/pipeline_phases/movement.py (route_movement_intent)
   artifact_files: []
   tags: []
+- type: ticket
+  path: agent-working/tickets/todos/TCK-20261111-LOKI-REJECTS-EVERY-PUSH-ON-WAL-DISK-THROTTLE.md
+  ticket_id: TCK-20261111-LOKI-REJECTS-EVERY-PUSH-ON-WAL-DISK-THROTTLE
+  title: Loki accepted no log push during the 2026-11-11 stack run (WAL disk throttle,
+    then "Ingester is shutting down")
+  tier: standard
+  ticket_type: bug
+  date: '2026-11-11'
+  related_code_areas:
+  - compose.yaml
+  - docker/alloy/config.alloy
+  artifact_files: []
+  tags:
+  - platform
+  - observability
 - type: ticket
   path: agent-working/tickets/todos/TCK-20261111-SPLIT-UPDATES-PY-INTO-UPDATE-MODELS.md
   ticket_id: TCK-20261111-SPLIT-UPDATES-PY-INTO-UPDATE-MODELS
