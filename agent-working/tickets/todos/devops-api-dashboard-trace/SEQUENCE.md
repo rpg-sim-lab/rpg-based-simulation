@@ -4,7 +4,9 @@ Written by hand. Split out of the closed epic `TCK-20261018-EPIC-DEVOPS-STEP2-OB
 
 ## Order
 
-1. TCK-20261018-API-DASHBOARD-AND-TRACE-PROOF: BLOCKED on rpg R3 (OTel ASGI middleware + redis spans, issue #622).
+1. TCK-20261018-API-DASHBOARD-AND-TRACE-PROOF: unblocked 2026-11-12 (R3 merged as #891). It runs after
+   TCK-20261111-LOKI-REJECTS-EVERY-PUSH-ON-WAL-DISK-THROTTLE (todos/), in one batch with one proof run (owner, option A,
+   #715 6819928388).
 
 ## Unblock condition
 
