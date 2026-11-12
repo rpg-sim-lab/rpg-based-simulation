@@ -88,8 +88,8 @@ def test_an_open_pr_that_adds_a_todos_ticket_is_to_do_not_in_review():
     assert item["Status"] == "To do" and item["PR"] == ""
 
 
-def test_unmapped_seat_comes_from_the_branch_prefix_else_unknown():
-    assert ps.attribute("rpg-hit-wake", []) == ("rpg (unmapped)", "rpg")
+def test_an_unrecorded_seat_comes_from_the_branch_prefix_else_unknown():
+    assert ps.attribute("rpg-hit-wake", []) == ("rpg (seat not recorded)", "rpg")
     assert ps.attribute("freemeal", []) == ("unknown", "")
     assert ps.attribute("x-y", [("rpg-implementer", "rpg"), ("rpg-planner", "rpg")]) == ("rpg-implementer/rpg-planner", "rpg")
 
@@ -165,6 +165,13 @@ def test_apply_and_init_are_refused_and_nothing_runs(monkeypatch, capsys):
     ["git", "push", "origin", "x"], ["git", "worktree", "remove", "/wt"], ["git", "fetch"], ["git", "checkout", "main"],
     ["gh", "pr", "create"], ["gh", "pr", "merge", "1"], ["gh", "api", "-X", "POST", "repos/o/r/issues"], ["gh", "api", "x", "-f", "a=b"],
     ["rm", "-rf", "/"],
+    # joined spellings (P1a): none may slip past by prefix
+    ["gh", "api", "--method=POST", "repos/o/r/issues"], ["gh", "api", "-XPOST", "repos/o/r/issues"],
+    ["gh", "api", "-X=POST", "repos/o/r/issues"], ["gh", "api", "repos/o/r/issues", "-fk=v"],
+    ["gh", "api", "repos/o/r/issues", "--field=k=v"], ["gh", "api", "repos/o/r/issues", "--raw-field=k=v"],
+    ["gh", "api", "repos/o/r/issues", "--input=body.json"], ["gh", "api", "repos/o/r/issues", "--unknown-flag"],
+    ["gh", "api", "graphql", "-f", "query=mutation{x}"], ["gh", "api", "graphql"], ["gh", "api"], ["gh", "api", "repos/a", "repos/b"],
+    ["gh", "api", "repos/o/r/pulls", "--jq"],
 ])
 def test_the_guard_refuses_every_write_verb(cmd):
     with pytest.raises(ps.WriteRefused):
@@ -174,6 +181,8 @@ def test_the_guard_refuses_every_write_verb(cmd):
 @pytest.mark.parametrize("cmd", [
     ["git", "--no-optional-locks", "status", "--porcelain"], ["git", "ls-tree", "-r", "origin/main"], ["git", "worktree", "list"],
     ["gh", "pr", "list", "--state", "open"], ["gh", "api", "--paginate", "repos/{owner}/{repo}/pulls/1/files"],
+    ["gh", "api", "--paginate", "repos/{owner}/{repo}/pulls/1/files", "--jq", ".[].filename"],
+    ["gh", "api", "repos/o/r/pulls", "-H", "Accept: application/json", "-q", ".[]"],
 ])
 def test_the_guard_lets_read_verbs_through(cmd):
     ps._guard(cmd)
@@ -212,8 +221,8 @@ def test_an_uncommitted_ticket_file_in_a_worktree_is_read_from_disk_and_a_commit
 
 def test_detached_worktrees_are_skipped_counted_and_reported_when_they_change_a_ticket(tmp_path, monkeypatch):
     entries = [{"worktree": str(tmp_path / "a")}, {"worktree": str(tmp_path / "b"), "branch": "refs/heads/rpg-hit-wake"}]
-    infos = {str(tmp_path / "a"): SimpleNamespace(path=tmp_path / "a", branch=None, prunable=False, is_main=False),
-             str(tmp_path / "b"): SimpleNamespace(path=tmp_path / "b", branch="rpg-hit-wake", prunable=False, is_main=False)}
+    infos = {str(tmp_path / "a"): SimpleNamespace(path=tmp_path / "a", branch=None, prunable=False, is_main=False, last_activity=0.0),
+             str(tmp_path / "b"): SimpleNamespace(path=tmp_path / "b", branch="rpg-hit-wake", prunable=False, is_main=False, last_activity=0.0)}
     monkeypatch.setattr(ps, "load_roster", lambda root: SimpleNamespace(roles=[]))
     monkeypatch.setattr(ps, "main_checkout", lambda root: tmp_path / "main")
     monkeypatch.setattr(ps.st, "state_root", lambda root: tmp_path / "state")
@@ -222,7 +231,7 @@ def test_detached_worktrees_are_skipped_counted_and_reported_when_they_change_a_
     monkeypatch.setattr(ps, "_worktree_ticket_copies", lambda wt, run: [copy()])
     notes: list[str] = []
     facts, detached = ps.read_branch_facts(tmp_path, HOST, notes)
-    assert detached == 1 and [f.branch for f in facts] == ["rpg-hit-wake"] and facts[0].seat == "rpg (unmapped)"
+    assert detached == 1 and [f.branch for f in facts] == ["rpg-hit-wake"] and facts[0].seat == "rpg (seat not recorded)"
     assert any(n.startswith("unattributed: detached worktree") and "TCK-20261112-X" in n for n in notes)
 
 
@@ -284,3 +293,78 @@ def test_seat_names_only_a_branch_that_works_the_ticket_never_one_that_only_file
     assert f"{HOST}:rpg-planner-seat {ps.FILING_SUFFIX}" in item["Branch"] and f"{HOST}:rpg-work" in item["Branch"]
     todo, _ = derive(branches=[filer])
     assert todo["Status"] == "To do" and todo["Seat"] == ""
+
+
+# ---------------------------------------------------------------- P1a: seat label, Stale, entry point, host
+
+
+def test_a_leased_worktree_keeps_its_recorded_seat_over_the_unrecorded_label():
+    assert ps.attribute("rpg-x", [("rpg-implementer", "rpg")]) == ("rpg-implementer", "rpg")
+
+
+DAY = 86400.0
+STALE_BEFORE = NOW.timestamp() - 14 * DAY
+OLD, FRESH = STALE_BEFORE - DAY, STALE_BEFORE + 5 * DAY
+
+
+def aged(copies, activity, name="rpg-batch"):
+    return ps.BranchFact(HOST, name, f"/wt/{name}", "rpg (seat not recorded)", "rpg", tuple(copies), activity)
+
+
+def derive_stale(main=(), branches=(), prs=(), current=None):
+    return ps.derive_item("TCK-20261112-X", list(main), list(branches), list(prs), current, HOST, "abc @ now", STALE_BEFORE)
+
+
+def test_a_working_branch_older_than_the_window_is_stale_and_a_fresh_one_is_in_progress():
+    assert derive_stale(branches=[aged([copy()], OLD)])[0]["Status"] == "Stale"
+    assert derive_stale(branches=[aged([copy()], FRESH)])[0]["Status"] == "In progress"
+    assert derive_stale(branches=[aged([copy()], 0.0)])[0]["Status"] == "In progress"  # unknown age is never stale
+
+
+def test_one_fresh_working_branch_keeps_the_ticket_in_progress():
+    both = [aged([copy()], OLD, "rpg-old"), aged([copy()], FRESH, "rpg-new")]
+    assert derive_stale(branches=both)[0]["Status"] == "In progress"
+
+
+def test_a_stale_branch_with_an_open_pr_stays_in_review_and_a_blocked_ticket_stays_blocked():
+    c = copy()
+    assert derive_stale(branches=[aged([c], OLD)], prs=[pr([c])])[0]["Status"] == "In review"
+    assert derive_stale(branches=[aged([copy(blocked=True)], OLD)])[0]["Status"] == "Blocked"
+
+
+def test_a_fresh_filing_branch_does_not_keep_an_abandoned_working_branch_in_progress():
+    filing = aged([copy(folder="todos")], FRESH, "rpg-filing")
+    assert derive_stale(branches=[aged([copy()], OLD), filing])[0]["Status"] == "Stale"
+
+
+def test_a_fresh_entry_from_another_host_keeps_a_stale_local_branch_in_progress():
+    current = {"Branch": "ubuntu:rpg-other"}
+    assert derive_stale(branches=[aged([copy()], OLD)], current=current)[0]["Status"] == "In progress"
+
+
+def test_the_file_runs_as_a_script(tmp_path):
+    import subprocess
+    import sys
+    script = Path(ps.__file__)
+    out = subprocess.run([sys.executable, str(script), "--help"], cwd=tmp_path, capture_output=True, text=True, check=False)
+    assert out.returncode == 0 and "dry run" in out.stdout.lower()
+
+
+def test_the_host_default_comes_from_the_host_names_map_else_the_hostname(monkeypatch, capsys, tmp_path):
+    seen = []
+    monkeypatch.setattr(ps, "read_branch_facts", lambda root, host, notes, run=None: (seen.append(host) or [], 0))
+    monkeypatch.setattr(ps, "read_open_prs", lambda root, notes, run=None: [])
+    monkeypatch.setattr(ps, "read_main_index", lambda root, run=None, ref="origin/main": {})
+    monkeypatch.setattr(ps, "origin_info", lambda root, run=None, ref="origin/main": ("0" * 40, None))
+    (tmp_path / "registries").mkdir()
+    (tmp_path / ps.CONFIG_REL).write_text("host_names:\n  big-host-name: short\n", encoding="utf-8")
+    for hostname, expected in (("big-host-name", "short"), ("other", "other")):
+        monkeypatch.setattr(ps.socket, "gethostname", lambda h=hostname: h)
+        assert ps.main(["--root", str(tmp_path)]) == 0
+        assert seen[-1] == expected
+    capsys.readouterr()
+
+
+def test_the_registry_file_maps_this_hosts_long_name_and_sets_the_stale_window():
+    cfg = yaml.safe_load((Path(__file__).resolve().parents[2] / ps.CONFIG_REL).read_text(encoding="utf-8"))
+    assert cfg["stale_branch_days"] == 14 and cfg["host_names"]["u24desktop-Virtual-Machine"] == "u24desktop"

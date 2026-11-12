@@ -1,0 +1,10 @@
+TargetDown state transitions during the fire test (UTC), as printed by the 15-second poll of Grafana's rule API (job=redis). The poll's own file write went to a different path, so these lines are copied from its console events; nothing else was edited.
+16:29:22 redis-exporter stopped (events.txt)
+16:29:28 TargetDown: all Normal
+16:29:58 TargetDown: redis=Pending
+16:31:59 TargetDown: redis=Alerting
+16:32:17 ntfy message "[firing] TargetDown | Scrape target redis is down" (checks_5)
+16:32:50 redis-exporter started (events.txt)
+16:32:55 TargetDown: redis=Alerting
+16:33:55 TargetDown: all Normal
+16:37:17 ntfy message "[resolved] TargetDown | Scrape target redis is down" (checks_6)

@@ -8,7 +8,8 @@ changes against the merge base (read-only), and open PRs, then prints the create
 GitHub and nothing to the repo; `--apply` and `--init` are P1 and are refused. Every subprocess goes through `_guard`, which only
 lets read verbs through.
 
-Status, first match wins (design section 3): Done -> In review -> Blocked -> In progress -> To do. A `todos/` copy on a branch or in a
+Status, first match wins (design section 3): Done -> In review -> Blocked -> In progress (or Stale) -> To do. Stale replaces In progress
+only: every branch working the ticket is older than `stale_branch_days` (newest commit or index change, status.py `_activity`; approximate). A `todos/` copy on a branch or in a
 PR is filing, not progress, and never moves a ticket past To do.
 """
 
@@ -29,6 +30,9 @@ from pathlib import Path
 
 import yaml
 
+if __package__ in (None, ""):  # run as `python3 tools/sessions/project_sync.py`: put the repo root on sys.path
+    sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+
 from tools.agent_working_paths import TICKETS
 from tools.sessions import state as st
 from tools.sessions.launch import _worktree_entries as worktree_entries
@@ -46,12 +50,14 @@ DEFAULTS = {
     "pilot_start": "2026-11-12",
     "done_window_days": 14,
     "stale_host_hours": 24,
+    "stale_branch_days": 14,
+    "host_names": {},
 }
 PR_LIMIT = 300  # the value of ticket_queue.PR_LIMIT: gh's own default is 30
 FOLDERS = ("todos", "inprogress", "done")
 PROGRESS_FOLDERS = ("inprogress", "done")  # only these count as progress; todos/ on a branch or PR is filing
 HASH_FIELDS = ("Title", "Ticket ID", "Status", "Domain", "Seat", "Host", "Branch", "PR", "Tier")
-STATUSES = ("To do", "In progress", "In review", "Blocked", "Done")
+STATUSES = ("To do", "In progress", "Stale", "In review", "Blocked", "Done")
 FILING_SUFFIX = "[filing]"
 BODY = "Generated from {path} by tools/sessions/project_sync.py — edits are overwritten."
 _TICKET_RE = re.compile(r"(TCK-[A-Z0-9][A-Z0-9-]*)\.md$")
@@ -64,8 +70,32 @@ class WriteRefused(Exception):
     """A command that could write was about to run; the dry run never does."""
 
 
+GH_API_FLAGS = ("--paginate",)  # a flag with no value
+GH_API_VALUE_FLAGS = ("-q", "--jq", "-H", "--header")  # a flag followed by one value
+
+
+def _gh_api_is_read(rest: list[str]) -> bool:
+    """Allowlist: exactly one `repos/...` endpoint (never `graphql`: a POST that can carry a mutation), and every other
+    dash token is in a small set. Any joined spelling (`-XPOST`, `--method=POST`, `-fk=v`, ...) is not in it, so it is refused."""
+    endpoints, i = [], 0
+    while i < len(rest):
+        arg = rest[i]
+        if arg in GH_API_FLAGS:
+            i += 1
+        elif arg in GH_API_VALUE_FLAGS:
+            if i + 1 >= len(rest):
+                return False
+            i += 2
+        elif arg.startswith("-"):
+            return False
+        else:
+            endpoints.append(arg)
+            i += 1
+    return len(endpoints) == 1 and endpoints[0].startswith("repos/")
+
+
 def _guard(args: list[str]) -> None:
-    """Only read verbs: git ls-tree/show/merge-base/diff/status/log/rev-parse/worktree-list; gh `pr list` and GET `api`."""
+    """Only read verbs: git ls-tree/show/merge-base/diff/status/log/rev-parse/worktree-list; gh `pr list` and an allowlisted `api` read."""
     if not args:
         raise WriteRefused("empty command")
     tool, rest = args[0], [a for a in args[1:] if a != "--no-optional-locks"]
@@ -77,7 +107,7 @@ def _guard(args: list[str]) -> None:
     if tool == "gh":
         if rest[:2] == ["pr", "list"]:
             return
-        if rest[:1] == ["api"] and not any(a in ("-X", "--method", "-f", "-F", "--field", "--raw-field", "--input") for a in rest):
+        if rest[:1] == ["api"] and _gh_api_is_read(rest[1:]):
             return
         raise WriteRefused("gh " + " ".join(rest[:2]))
     raise WriteRefused(tool)
@@ -113,6 +143,7 @@ class BranchFact:
     seat: str
     domain: str
     copies: tuple[TicketCopy, ...]
+    last_activity: float = 0.0  # epoch seconds, status.py `_activity`; 0.0 = unknown, never stale
 
 
 @dataclass(frozen=True)
@@ -197,11 +228,12 @@ def done_date(root: Path, path: str, run: Runner = run_command, ref: str = "orig
 
 
 def attribute(branch: str, seats: list[tuple[str, str]]) -> tuple[str, str]:
-    """(Seat, Domain): the status.py seat mapping; else `<domain> (unmapped)` from the branch prefix; else `unknown`."""
+    """(Seat, Domain): the seat the launcher recorded (status.py mapping); else `<domain> (seat not recorded)` from the branch prefix,
+    a known gap (hand-made batch worktrees have no record); else `unknown`."""
     if seats:
         return "/".join(s for s, _ in seats), seats[0][1]
     prefix = branch.split("-", 1)[0]
-    return (f"{prefix} (unmapped)", prefix) if "-" in branch else ("unknown", "")
+    return (f"{prefix} (seat not recorded)", prefix) if "-" in branch else ("unknown", "")
 
 
 def read_branch_facts(root: Path, host: str, lanes_note: list[str], run: Runner = run_command) -> tuple[list[BranchFact], int]:
@@ -232,7 +264,7 @@ def read_branch_facts(root: Path, host: str, lanes_note: list[str], run: Runner 
         if not copies:
             continue
         seat, domain = attribute(info.branch, seat_of.get(info.path.resolve(), []))
-        facts.append(BranchFact(host, info.branch, str(info.path), seat, domain, tuple(copies)))
+        facts.append(BranchFact(host, info.branch, str(info.path), seat, domain, tuple(copies), info.last_activity))
     return facts, detached
 
 
@@ -318,7 +350,7 @@ def merge_host_entries(current: str, mine: list[str], tag: str) -> str:
 
 
 def derive_status(tid: str, main: list[TicketCopy], branches: list[BranchFact], prs: list[PrFact] | None,
-                  other_host_branches: list[str]) -> tuple[str, list[str], list[str]]:
+                  other_host_branches: list[str], stale_before: float | None = None) -> tuple[str, list[str], list[str]]:
     """(status, PR urls, findings). First match wins; see the module docstring."""
     findings = []
     folders = {c.folder for c in main}
@@ -334,6 +366,11 @@ def derive_status(tid: str, main: list[TicketCopy], branches: list[BranchFact], 
         return "Blocked", [], findings
     progressing = any(c.folder in PROGRESS_FOLDERS for c in branch_copies) or any(not e.endswith(FILING_SUFFIX) for e in other_host_branches)
     if progressing:
+        # Stale replaces In progress only. Filing branches and a fresh other-host entry keep it In progress.
+        working = [b for b in branches if any(c.id == tid and c.folder in PROGRESS_FOLDERS for c in b.copies)]
+        if (stale_before is not None and working and all(0 < b.last_activity < stale_before for b in working)
+                and not any(not e.endswith(FILING_SUFFIX) for e in other_host_branches)):
+            return "Stale", [], findings
         return "In progress", [], findings
     if "inprogress" in folders and not branch_copies and not other_host_branches:
         findings.append(f"{tid}: in inprogress/ on origin/main with no branch seen (orphaned in-progress ticket)")
@@ -341,10 +378,10 @@ def derive_status(tid: str, main: list[TicketCopy], branches: list[BranchFact], 
 
 
 def derive_item(tid: str, main: list[TicketCopy], branches: list[BranchFact], prs: list[PrFact] | None, current: dict | None,
-                host: str, source: str) -> tuple[dict, list[str]]:
+                host: str, source: str, stale_before: float | None = None) -> tuple[dict, list[str]]:
     mine = [b for b in branches if any(c.id == tid for c in b.copies)]
     other = [e for e in _split((current or {}).get("Branch", "")) if not e.startswith(f"{host}:")]
-    status, pr_urls, findings = derive_status(tid, main, mine, prs, other)
+    status, pr_urls, findings = derive_status(tid, main, mine, prs, other, stale_before)
     branch_copies = [c for b in mine for c in b.copies if c.id == tid]
     # Seat names who is working on the ticket: only a branch holding it in inprogress/ or done/, never one that merely filed it
     working = [b for b in mine if any(c.id == tid and c.folder in PROGRESS_FOLDERS for c in b.copies)]
@@ -387,13 +424,14 @@ def build_plan(main_index: dict[str, list[tuple[str, str]]], load_main: Callable
     by_id = {i.get("Ticket ID"): i for i in items if i.get("Ticket ID")}
     pilot_start = date.fromisoformat(str(config["pilot_start"]))
     window = int(config["done_window_days"])
+    stale_before = now.timestamp() - int(config.get("stale_branch_days", 14)) * 86400
     candidates = {c.id for b in branches if in_pilot_lane(b, config["pilot_lanes"]) for c in b.copies} | set(by_id)
     known = set(main_index) | {c.id for b in branches for c in b.copies}
     for tid in sorted(candidates):
         if tid not in known:
             continue
         main = [load_main(path) for _, path in main_index.get(tid, [])]
-        derived, findings = derive_item(tid, main, branches, prs, by_id.get(tid), host, source)
+        derived, findings = derive_item(tid, main, branches, prs, by_id.get(tid), host, source, stale_before)
         plan.findings += findings
         done_path = next((c.path for c in main if c.folder == "done"), None)
         finished = done_at(done_path) if done_path else None
@@ -453,7 +491,7 @@ def render(plan: Plan, host: str, sha: str, age_hours: float | None, detached: i
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Derive the ticket-state Project plan (dry run only; writes nothing).")
     parser.add_argument("--root", type=Path, default=REPO_ROOT)
-    parser.add_argument("--host", default=socket.gethostname(), help="this host's tag for Branch/Host entries (default: hostname)")
+    parser.add_argument("--host", default=None, help="this host's tag for Branch/Host entries (default: host_names[hostname] in session_project.yaml, else the hostname)")
     parser.add_argument("--items", type=Path, help="JSON file of the current Project items (P1 replaces this with a live read)")
     parser.add_argument("--dry-run", action="store_true", help="accepted; the only mode in P0")
     parser.add_argument("--apply", action="store_true")
@@ -464,6 +502,7 @@ def main(argv: list[str] | None = None) -> int:
         return 2
     plan_notes: list[str] = []
     config = load_config(args.root, plan_notes)
+    args.host = args.host or config["host_names"].get(socket.gethostname(), socket.gethostname())
     items = json.loads(args.items.read_text(encoding="utf-8")) if args.items else []
     sha, stamp = origin_info(args.root)
     now = datetime.now(timezone.utc)

@@ -6,13 +6,15 @@ Epic `TCK-20261112-EPIC-GITHUB-PROJECT-TICKET-VIEW`, filed by agent-working-plan
 
 ## Order
 
-1. TCK-20261112-PROJECT-SYNC-DRY-RUN (P0, standard): `project_sync.py --dry-run` on u24, rpg lanes. No token, no writes.
-   The owner's go is 6813165811.
+1. **DONE** TCK-20261112-PROJECT-SYNC-DRY-RUN (P0, standard): `project_sync.py --dry-run` on u24, rpg lanes. Merged in #889
+   (c73d76bad). The owner's go was 6813165811.
+2. TCK-20261112-PROJECT-SYNC-GUARD-SEAT-AND-STALE (P1a, standard): the guard fix first, then seat mapping (investigated first), `Stale`, the
+   entry point and the host name. Dry-run only, covered by go 6813165811 (split by the lead on #715).
+3. P1b, not cut: `--init`/`--apply`. Waits for the owner's token result (fine-grained reads tested; writes proven on the first --init;
+   fallback classic `project`), the Project, and a fresh go.
 
 ## Not cut yet
 
-- **P1:** `--init` / `--apply` on u24, rpg lanes. Cut it after P0 lands and the owner has created the Project and chosen the
-  token (fine-grained tested first, else classic `project`). The lead carries that ask.
 - **P2:** ubuntu runs the same tool. Needs the token on ubuntu.
 - **P3:** all lanes and a per-host timer. Needs the owner's timer decision.
 - **P4:** the claim-rule change. Needs the owner's decision after P3.
