@@ -4,7 +4,7 @@ layer: platform
 authority: P1
 audience: agent
 ticket_id: TCK-20261112-ROTATE-LOCAL-NTFY-TOPIC
-phase: open
+phase: inprogress
 date: 2026-11-12
 tags: [platform, security]
 ---
@@ -15,7 +15,7 @@ tags: [platform, security]
 Rotate the local ntfy alert topic, which was once echoed in an agent terminal, by an owner-run procedure
 
 ## Status
-OPEN
+INPROGRESS
 
 ## Tier
 hotfix

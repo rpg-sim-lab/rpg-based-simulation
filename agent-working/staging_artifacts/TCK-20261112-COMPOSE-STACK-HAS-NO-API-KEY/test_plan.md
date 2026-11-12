@@ -12,11 +12,11 @@ artifact_type: test_plan
 
 # Test plan: TCK-20261112-COMPOSE-STACK-HAS-NO-API-KEY
 
-> **Amendment, 2026-11-12.** The key pair is in `docker/secrets/compose.env` (not `.env`), with the tracked `docker/frontend.defaults.env` supplying the empty default. Added or changed checks:
-> - S0. `git check-ignore -q docker/secrets/compose.env` exits 0 (the path is gitignored) and `git check-ignore docker/frontend.defaults.env` prints nothing (the defaults file is tracked).
-> - S1/S2 run against a scratch copy of `compose.yaml` pointing at a throwaway env file outside `docker/secrets/`, printing booleans only (done: default fail-closed, the later file wins, both services hold both values, ports bind to `127.0.0.1`).
+> **Amendment, 2026-11-12.** The key pair is in two gitignored files, `docker/secrets/backend.env` (the hash) and `docker/secrets/frontend.env` (the raw key), not in `.env`, with the tracked `docker/frontend.defaults.env` supplying the empty default. Added or changed checks:
+> - S0. `git check-ignore -q` exits 0 for BOTH `docker/secrets/backend.env` and `docker/secrets/frontend.env` (the key pair is split in two, platform-planner's decision), and `git check-ignore docker/frontend.defaults.env` prints nothing (the defaults file is tracked).
+> - S1/S2 run against a scratch copy of `compose.yaml` pointing at two throwaway env files outside `docker/secrets/`, printing booleans only: default fail-closed; the frontend file wins over the empty default; **the backend environment has no `FRONTEND_API_KEY` and the frontend environment has no `RPG_API_KEY_HASHES`**; ports bind to `127.0.0.1`.
 > - S6. `.dockerignore` lists `.env` and `docker/secrets/`.
-> - P3 also confirms the rendered `/tmp/api-key.conf` has one `proxy_set_header X-API-Key` line and that the default (no `compose.env`) renders an empty value, not an nginx start failure.
+> - P3 also confirms the rendered `/tmp/api-key.conf` has one `proxy_set_header X-API-Key` line and that the default (no `frontend.env`) renders an empty value, not an nginx start failure.
 > - P8 adds: neither the backend's nor the frontend's `docker top` output has the key on argv, and the build context upload does not include `docker/secrets/` (the `.dockerignore` effect, read from the build log by count).
 
 

@@ -8298,6 +8298,21 @@
   tags:
   - platform
 - type: ticket
+  path: agent-working/tickets/inprogress/TCK-20261112-ROTATE-LOCAL-NTFY-TOPIC.md
+  ticket_id: TCK-20261112-ROTATE-LOCAL-NTFY-TOPIC
+  title: Rotate the local ntfy alert topic, which was once echoed in an agent terminal,
+    by an owner-run procedure
+  tier: hotfix
+  ticket_type: chore
+  date: '2026-11-12'
+  related_code_areas:
+  - compose.yaml
+  - docker/grafana/provisioning/alerting/contact-points.yaml
+  artifact_files: []
+  tags:
+  - platform
+  - security
+- type: ticket
   path: agent-working/tickets/todos/TCK-20261112-COMPOSE-FRONTEND-API-DOCS-SCHEMA-NOT-PROXIED.md
   ticket_id: TCK-20261112-COMPOSE-FRONTEND-API-DOCS-SCHEMA-NOT-PROXIED
   title: In the compose frontend, the API docs page's /openapi.json fetch gets index.html,
@@ -8325,21 +8340,6 @@
   tags:
   - planning
   - delivery
-- type: ticket
-  path: agent-working/tickets/todos/TCK-20261112-ROTATE-LOCAL-NTFY-TOPIC.md
-  ticket_id: TCK-20261112-ROTATE-LOCAL-NTFY-TOPIC
-  title: Rotate the local ntfy alert topic, which was once echoed in an agent terminal,
-    by an owner-run procedure
-  tier: hotfix
-  ticket_type: chore
-  date: '2026-11-12'
-  related_code_areas:
-  - compose.yaml
-  - docker/grafana/provisioning/alerting/contact-points.yaml
-  artifact_files: []
-  tags:
-  - platform
-  - security
 - type: ticket
   path: agent-working/tickets/todos/github-project-ticket-view/TCK-20261112-EPIC-GITHUB-PROJECT-TICKET-VIEW.md
   ticket_id: TCK-20261112-EPIC-GITHUB-PROJECT-TICKET-VIEW
