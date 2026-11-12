@@ -93,7 +93,7 @@ codebase/health/ratchet.py; codebase/health/registry.py; codebase/health/__main_
 - `tests/codebase/test_code_health_move.py`: 27 tests, tmp registries and hand-built findings only.
 - Full `tests/codebase/` under the wrapper: 546 passed, exit 0, run on the committed code (7e0d69b35); later changes are ticket, stored-artifact, REGISTRY and monitoring files only.
 - `make code-health` under the wrapper: exit 0, OK, 0 worse, no likely-move line on main.
-- Ruff and mypy on `codebase/health`: no new finding against the base. Pyrefly is advisory and was not run separately.
+- Ruff on `codebase/health`: no new finding against the base. `python3 -m mypy codebase/health --config-file pyproject.toml` on the committed tree: Success, no issues in 9 source files. Pyrefly is advisory and was not run.
 - The baseline `codebase/baselines/code_health_exceptions.jsonl` is byte-identical to the base.
 
 ## Files Changed
