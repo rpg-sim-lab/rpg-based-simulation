@@ -76,6 +76,8 @@ src/config/loader.py
 ## Assumptions / Open Questions
 - Standard tier, because it is a security-relevant design choice and has a cross-domain part (the frontend). It is
   not dispatched; it needs the owner's yes.
+- Owner dispatch yes, 2026-11-12 (#715 6828616413). The frontend half goes to rpg-planner-ubuntu as a question, not as
+  work. The committed dev pair stays dev-only, and no real secret goes into git.
 
 ## Implementation Notes
 ## Test Summary
