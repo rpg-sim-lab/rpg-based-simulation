@@ -86,7 +86,11 @@ The backend holds only the hash (`docker/secrets/backend.env`), which is not a k
 
 ## One key, one bucket
 
-The backend rate-limits per key (a token bucket of 30, refilled at 3 per second). Every browser tab and every user of the frontend share the one nginx key, so they share one bucket and can see 429 together. That is expected here; rpg's `TCK-20261112-A-THROTTLED-CLIENT-THAT-WAITS-OUT-RETRY-AFTER-IS-STILL-REFUSED` covers how a throttled client recovers.
+Every client behind the frontend proxy shares ONE admission bucket, the injected key's (30 tokens, refilled at 3 per second, plus the hysteresis). One busy tab, or the live-events WebSocket reconnecting, can push all compose users into 429 together. That is acceptable for a single-user dev stack; if compose is ever shared, per-user keys are the fix. Observed (P9 in the 2026-11-12 proof run): one client's 35 rapid requests got 31 x 200 and 4 x 429, then a second client that had made no request of its own got 15 of 15 429 with `Retry-After: 5`. rpg's `TCK-20261112-A-THROTTLED-CLIENT-THAT-WAITS-OUT-RETRY-AFTER-IS-STILL-REFUSED` covers how a throttled client recovers.
+
+## `/openapi.json`
+
+The API docs page fetches `/openapi.json`, which FastAPI serves at the backend root and does not gate by key. `docker/nginx.conf` proxies that exact path (`location = /openapi.json`) with an empty `X-API-Key`, so it never carries the key and drops any client-sent one. No other backend path is proxied outside `/api/`.
 
 ## Rotate or remove
 

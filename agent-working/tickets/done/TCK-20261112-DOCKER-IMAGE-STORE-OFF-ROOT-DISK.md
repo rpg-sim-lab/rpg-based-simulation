@@ -1,10 +1,10 @@
 ---
-status: active
+status: historical
 layer: platform
 authority: P1
 audience: agent
 ticket_id: TCK-20261112-DOCKER-IMAGE-STORE-OFF-ROOT-DISK
-phase: inprogress
+phase: done
 date: 2026-11-12
 tags: [platform]
 ---
@@ -15,7 +15,7 @@ tags: [platform]
 Plan moving Docker's containerd image store off the root disk, so builds and image layers stop filling /
 
 ## Status
-INPROGRESS
+DONE
 
 ## Tier
 standard
@@ -77,6 +77,16 @@ docs/runbooks/disk-space.md
 - Agents can't read `/var/lib/containerd` (it's root-only), so its size has to come from the owner.
 
 ## Implementation Notes
+Planning only. Deliverable: `docs/runbooks/docker-image-store-move.md`, with the investigation, plan and test plan under `agent-working/stored_artifacts/TCK-20261112-DOCKER-IMAGE-STORE-OFF-ROOT-DISK/`. Recommends moving the containerd root (`root = "/data/containerd"`, old root renamed not deleted, `docker.socket` stopped first, `rsync -aHAXS --numeric-ids` with a dry run without `--delete`, rollback by rename). No sudo was run and nothing under `/var/lib/containerd` or `/data/docker` was read. Approved by platform-planner and lead, whose additions (dry rsync, worktrees not proposed as reclaimable, ExecStart and socket checks, MCP restart impact, cheapest space first) are applied.
+
 ## Test Summary
+- validated: review by platform-planner and lead (both approved with additions, all applied); a scan found no secret value and no `!`-prefixed command in the runbook. The commands were not run (owner-run, privileged).
+
 ## Files Changed
+- `docs/runbooks/docker-image-store-move.md` (new), `docs/runbooks/README.md`.
+- `agent-working/stored_artifacts/TCK-20261112-DOCKER-IMAGE-STORE-OFF-ROOT-DISK/` (investigation, plan, test plan).
+
 ## Completion Summary
+The runbook is the deliverable and is approved.
+
+Known gap: the move itself is not done. It needs the owner's yes and a timing (it restarts Docker and every container, including the GitHub MCP container), and room on `/data` first: +7.2G takes `/data` from 83% to about 91%, so about 5.7 GiB must be freed before (about 10.3 GiB for 80%).

@@ -8141,6 +8141,39 @@
   tags:
   - testing
 - type: ticket
+  path: agent-working/tickets/done/TCK-20261112-COMPOSE-FRONTEND-API-DOCS-SCHEMA-NOT-PROXIED.md
+  ticket_id: TCK-20261112-COMPOSE-FRONTEND-API-DOCS-SCHEMA-NOT-PROXIED
+  title: In the compose frontend, the API docs page's /openapi.json fetch gets index.html,
+    because nginx proxies only /api/
+  tier: hotfix
+  ticket_type: bug
+  date: '2026-11-12'
+  related_code_areas:
+  - docker/nginx.conf
+  - frontend/src/components/ApiDocsPage.tsx
+  artifact_files: []
+  tags:
+  - platform
+- type: ticket
+  path: agent-working/tickets/done/TCK-20261112-COMPOSE-STACK-HAS-NO-API-KEY.md
+  ticket_id: TCK-20261112-COMPOSE-STACK-HAS-NO-API-KEY
+  title: The compose stack configures no API key, so every backend route except /health
+    answers 401
+  tier: standard
+  ticket_type: bug
+  date: '2026-11-12'
+  related_code_areas:
+  - compose.yaml
+  - docker/frontend.Dockerfile
+  - src/config/loader.py
+  artifact_files:
+  - agent-working/stored_artifacts/TCK-20261112-COMPOSE-STACK-HAS-NO-API-KEY/investigation.md
+  - agent-working/stored_artifacts/TCK-20261112-COMPOSE-STACK-HAS-NO-API-KEY/plan.md
+  - agent-working/stored_artifacts/TCK-20261112-COMPOSE-STACK-HAS-NO-API-KEY/test_plan.md
+  tags:
+  - platform
+  - security
+- type: ticket
   path: agent-working/tickets/done/TCK-20261112-DEPENDABOT-IGNORE-KNOWLEDGE-STACK.md
   ticket_id: TCK-20261112-DEPENDABOT-IGNORE-KNOWLEDGE-STACK
   title: Dependabot's uv entry ignores torch, graphifyy and headroom-ai, so grouped
@@ -8152,6 +8185,22 @@
   - .github/dependabot.yml
   - requirements-knowledge.txt
   artifact_files: []
+  tags:
+  - platform
+- type: ticket
+  path: agent-working/tickets/done/TCK-20261112-DOCKER-IMAGE-STORE-OFF-ROOT-DISK.md
+  ticket_id: TCK-20261112-DOCKER-IMAGE-STORE-OFF-ROOT-DISK
+  title: Plan moving Docker's containerd image store off the root disk, so builds
+    and image layers stop filling /
+  tier: standard
+  ticket_type: chore
+  date: '2026-11-12'
+  related_code_areas:
+  - docs/runbooks/disk-space.md
+  artifact_files:
+  - agent-working/stored_artifacts/TCK-20261112-DOCKER-IMAGE-STORE-OFF-ROOT-DISK/investigation.md
+  - agent-working/stored_artifacts/TCK-20261112-DOCKER-IMAGE-STORE-OFF-ROOT-DISK/plan.md
+  - agent-working/stored_artifacts/TCK-20261112-DOCKER-IMAGE-STORE-OFF-ROOT-DISK/test_plan.md
   tags:
   - platform
 - type: ticket
@@ -8279,35 +8328,6 @@
   - observability
   - api-design
 - type: ticket
-  path: agent-working/tickets/inprogress/TCK-20261112-COMPOSE-STACK-HAS-NO-API-KEY.md
-  ticket_id: TCK-20261112-COMPOSE-STACK-HAS-NO-API-KEY
-  title: The compose stack configures no API key, so every backend route except /health
-    answers 401
-  tier: standard
-  ticket_type: bug
-  date: '2026-11-12'
-  related_code_areas:
-  - compose.yaml
-  - docker/frontend.Dockerfile
-  - src/config/loader.py
-  artifact_files: []
-  tags:
-  - platform
-  - security
-- type: ticket
-  path: agent-working/tickets/inprogress/TCK-20261112-DOCKER-IMAGE-STORE-OFF-ROOT-DISK.md
-  ticket_id: TCK-20261112-DOCKER-IMAGE-STORE-OFF-ROOT-DISK
-  title: Plan moving Docker's containerd image store off the root disk, so builds
-    and image layers stop filling /
-  tier: standard
-  ticket_type: chore
-  date: '2026-11-12'
-  related_code_areas:
-  - docs/runbooks/disk-space.md
-  artifact_files: []
-  tags:
-  - platform
-- type: ticket
   path: agent-working/tickets/inprogress/TCK-20261112-ROTATE-LOCAL-NTFY-TOPIC.md
   ticket_id: TCK-20261112-ROTATE-LOCAL-NTFY-TOPIC
   title: Rotate the local ntfy alert topic, which was once echoed in an agent terminal,
@@ -8322,20 +8342,6 @@
   tags:
   - platform
   - security
-- type: ticket
-  path: agent-working/tickets/todos/TCK-20261112-COMPOSE-FRONTEND-API-DOCS-SCHEMA-NOT-PROXIED.md
-  ticket_id: TCK-20261112-COMPOSE-FRONTEND-API-DOCS-SCHEMA-NOT-PROXIED
-  title: In the compose frontend, the API docs page's /openapi.json fetch gets index.html,
-    because nginx proxies only /api/
-  tier: hotfix
-  ticket_type: bug
-  date: '2026-11-12'
-  related_code_areas:
-  - docker/nginx.conf
-  - frontend/src/components/ApiDocsPage.tsx
-  artifact_files: []
-  tags:
-  - platform
 - type: ticket
   path: agent-working/tickets/todos/TCK-20261112-HAND-ADDED-WORKTREES-ARE-NOT-RECORDED-AGAINST-A-SEAT.md
   ticket_id: TCK-20261112-HAND-ADDED-WORKTREES-ARE-NOT-RECORDED-AGAINST-A-SEAT

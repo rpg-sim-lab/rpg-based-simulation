@@ -85,3 +85,6 @@ Status 2026-11-12: the runbook and the comment fix are written; the rotation and
 - `compose.yaml`: the setup comment at the top (the `user add` and `access` lines and a note).
 
 ## Completion Summary
+
+## Status note (2026-11-13)
+Stays INPROGRESS: the runbook is committed, but acceptance needs the owner's rotation and a fire test (a lead slot). Not closed by the batch that carries the runbook.
