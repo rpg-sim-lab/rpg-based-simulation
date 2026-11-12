@@ -233,9 +233,21 @@ Layer 1 forbids these. Each one moves, keeping today's values at each read point
 `run_phase("strategic_intelligence", …)` at `pipeline.py:394` (main `5c6990e51`), implemented in
 `src/systems/strategic_systems/intelligence.py`. Line numbers below are at `5c6990e51`; #862 edited the file just before it.
 
-**Entry condition, still current:** the file must leave the hands-off list first. It is held for
-`TCK-20261109-A-COMBAT-RETREAT-PROJECT-WALKS-THE-SUBJECT-AGAINST-THE-HELD-FLIGHT-RULE` (P2), which is still in
-`agent-working/tickets/todos/` at `5c6990e51`. Rpg-planner owns the list and says when it clears.
+**Entry condition, cleared 2026-11-12:** the file had to leave rpg-planner's hands-off list first. It was held for
+`TCK-20261109-A-COMBAT-RETREAT-PROJECT-WALKS-THE-SUBJECT-AGAINST-THE-HELD-FLIGHT-RULE` (P2). Rpg-planner took it off the list on
+2026-11-12, without waiting for that ticket's merge. The reason: the designer's ruling is a one-predicate change in the movement
+gate. [S: rpg-planner's lane B reader check, read-only on main: the readers of `engaged_adjacent_hostile` / `_adjacent_hostile`
+are `candidate_selector.py:177` (movement gate), `:224` (`move_ends_here`) and `scheduler.py:106` (unengaged wake, unchanged).
+None of them is in `intelligence.py`. `fused_strategic_pass` `:670`/`:678` writes the stored targets, and the change does not touch
+them.] If the change ever moves into `intelligence.py`, rpg-planner tells this track before the edit.
+
+**Two rules that come with it:**
+- **Same-sha baselines.** That ticket's change moves every hash in the stage 3 exit set below, so no baseline taken before its
+  merge holds after it. Each stage 3 exit compares the old path against the new path on the same main sha. A slice that rebases
+  across the merge regenerates both arms.
+- **Warn before movement changes.** Before stage 3 lands anything that changes `movement_target` or `route_movement_intent`
+  behaviour, tell rpg-planner. Lane B's S2 measurement (30 runs, about 5 host-hours, against main at dispatch) must not straddle
+  a moving base.
 
 **Two stages inside the step:**
 1. **Plan (unit = world).** It reads tick-start state: every entity's `combat.alive` and faction, for the hostiles-or-dead flag
@@ -340,7 +352,8 @@ auditor, as audit plan §3 intended, comes before any stage depends on the recor
 ## 11. Before draft 3 (and before stage 3 is cut)
 
 - **Stage 0's per-phase costs** (perf-planner) set the slice order for stage 4. Not in yet.
-- **Rpg-planner's sign-off that §8 is complete enough to cut stage 3** (AC 3; ubuntu review A-n1). **Given** (rpg-planner, 2026-11-11) on §8 with amendments A-D and its attribution wording; stage 3 may be cut once the entry condition clears.
+- **Rpg-planner's sign-off that §8 is complete enough to cut stage 3** (AC 3; ubuntu review A-n1). **Given** (rpg-planner, 2026-11-11) on §8 with amendments A-D and its attribution wording; stage 3 may be cut once the entry condition clears. The entry condition cleared on 2026-11-12 (§8). Cutting still waits on
+  stage 0's per-phase costs for the slice order.
 - **Checkpoint restore** (lead-planner-u24, 2026-11-10). `ScenarioCheckpointer.restore` builds its Kernel apart from
   `scenario_runtime._build_kernel`, and it has already drifted: it drops the governor and the `scenario_event_recorder`, which are
   telemetry only today, per rpg-planner. So:
