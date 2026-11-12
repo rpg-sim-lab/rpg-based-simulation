@@ -23,7 +23,7 @@ from src.core.dirty import DirtySet
 from src.core.group_update_merge import merge_group_fields
 from src.core.movement_modes import MovementMode
 from src.core.spawn_source import SpawnSource
-from src.core.state import ItemInstance, LifeStage
+from src.core.state import ItemInstance, ItemStack, LifeStage  # noqa: F401  (ItemStack re-exported: tests import it from here)
 from src.core.update_models.body import (  # noqa: F401  (re-exported)
     AttributeUpdate,
     BiologicalUpdate,
