@@ -2300,6 +2300,17 @@
   - observability
   - api-design
 - type: doc
+  path: docs/observability/api_request_tracing.md
+  title: API Request Tracing
+  status: active
+  layer: observability
+  authority: P1
+  audience: agent
+  tags:
+  - documentation
+  - observability
+  - api-design
+- type: doc
   path: docs/observability/decision_trace_contract.md
   title: Decision Trace Contract — `decision_trace.jsonl`
   status: active
@@ -8052,6 +8063,24 @@
   tags:
   - delivery
   - process-improvement
+- type: ticket
+  path: agent-working/tickets/inprogress/TCK-20261112-THE-API-EMITS-NO-REQUEST-TRACES.md
+  ticket_id: TCK-20261112-THE-API-EMITS-NO-REQUEST-TRACES
+  title: 'The API emits no request traces: add OpenTelemetry server spans and Redis
+    client spans, off unless an OTLP endpoint is set (#622 R3)'
+  tier: standard
+  ticket_type: feature
+  date: '2026-11-12'
+  related_code_areas:
+  - create_v2_app
+  - RequestDurationMiddleware
+  - src/observability/stream/factory.py, src/observability/stream/adapters.py:139
+    (redis client)
+  - src/api/routes/live_health.py:11
+  artifact_files: []
+  tags:
+  - observability
+  - api-design
 - type: ticket
   path: agent-working/tickets/done/TCK-20261111-CLAUDE-MD-REGISTRY-DRIVER-WORDING.md
   ticket_id: TCK-20261111-CLAUDE-MD-REGISTRY-DRIVER-WORDING
