@@ -8046,6 +8046,78 @@
   - content
   last_verified: '2026-10-09'
 - type: ticket
+  path: agent-working/tickets/done/TCK-20261112-CODE-HEALTH-NAMES-AND-REKEYS-MOVED-ROWS.md
+  ticket_id: TCK-20261112-CODE-HEALTH-NAMES-AND-REKEYS-MOVED-ROWS
+  title: The code-health check names a likely move, and one `move` command re-keys
+    the moved rows at unchanged value and ceiling
+  tier: standard
+  ticket_type: feature
+  date: '2026-11-12'
+  related_code_areas:
+  - codebase/health/ratchet.py; codebase/health/registry.py; codebase/health/__main__.py;
+    codebase/health/findings.py; tests/codebase/test_code_health_ratchet_registry.py;
+    tests/codebase/test_code_health_ci_summary.py
+  artifact_files:
+  - agent-working/stored_artifacts/TCK-20261112-CODE-HEALTH-NAMES-AND-REKEYS-MOVED-ROWS/investigation.md
+  - agent-working/stored_artifacts/TCK-20261112-CODE-HEALTH-NAMES-AND-REKEYS-MOVED-ROWS/plan.md
+  - agent-working/stored_artifacts/TCK-20261112-CODE-HEALTH-NAMES-AND-REKEYS-MOVED-ROWS/test_plan.md
+  tags:
+  - testing
+- type: ticket
+  path: agent-working/tickets/done/TCK-20261112-PROJECT-SYNC-DRY-RUN.md
+  ticket_id: TCK-20261112-PROJECT-SYNC-DRY-RUN
+  title: '`tools/sessions/project_sync.py --dry-run`: derive each rpg-lane ticket''s
+    Project item from ticket files, u24 worktree branches and open PRs, and print
+    the plan without writing to GitHub'
+  tier: standard
+  ticket_type: feature
+  date: '2026-11-12'
+  related_code_areas:
+  - tools/sessions/status.py, tools/sessions/project_sync.py (new), registries/session_project.yaml
+    (new),
+  - tests/tools/test_session_project_sync.py (new; the tests/tools/ owner split is
+    rpg/agent-working)
+  artifact_files:
+  - agent-working/stored_artifacts/TCK-20261112-PROJECT-SYNC-DRY-RUN/investigation.md
+  - agent-working/stored_artifacts/TCK-20261112-PROJECT-SYNC-DRY-RUN/plan.md
+  - agent-working/stored_artifacts/TCK-20261112-PROJECT-SYNC-DRY-RUN/test_plan.md
+  tags:
+  - planning
+  - delivery
+- type: ticket
+  path: agent-working/tickets/done/TCK-20261112-REGISTRY-REGEN-SKIPPED-BY-A-STALE-HOOK-OR-AN-UNTRACKED-DOC.md
+  ticket_id: TCK-20261112-REGISTRY-REGEN-SKIPPED-BY-A-STALE-HOOK-OR-AN-UNTRACKED-DOC
+  title: The registry auto-regen is skipped when the installed post-commit hook is
+    a stale copy, or when an untracked doc without frontmatter makes `generate_registry.py
+    --check` return 1
+  tier: hotfix
+  ticket_type: bug
+  date: '2026-11-12'
+  related_code_areas:
+  - generate_registry
+  - tools/delivery/pre_push_advisory_hook.py, tools/hooks/post-commit-reindex.sh (reference,
+    unchanged), tests/tools/
+  artifact_files: []
+  tags:
+  - delivery
+  - process-improvement
+- type: ticket
+  path: agent-working/tickets/todos/github-project-ticket-view/TCK-20261112-EPIC-GITHUB-PROJECT-TICKET-VIEW.md
+  ticket_id: TCK-20261112-EPIC-GITHUB-PROJECT-TICKET-VIEW
+  title: A GitHub Project as a generated, read-only view of ticket state across seats
+    and hosts
+  tier: epic
+  ticket_type: feature
+  date: '2026-11-12'
+  related_code_areas:
+  - collect()
+  - registries/session_project.yaml (new), tests/tools/test_session_project_sync.py
+    (new)
+  artifact_files: []
+  tags:
+  - planning
+  - delivery
+- type: ticket
   path: agent-working/tickets/done/TCK-20261111-CLAUDE-MD-REGISTRY-DRIVER-WORDING.md
   ticket_id: TCK-20261111-CLAUDE-MD-REGISTRY-DRIVER-WORDING
   title: CLAUDE.md says the registry merge driver regenerates after rebase and cherry-pick;
@@ -8109,6 +8181,25 @@
   artifact_files: []
   tags: []
 - type: ticket
+  path: agent-working/tickets/done/TCK-20261111-FELT-LETHAL-MEMORY-HAS-NO-RECENCY-WINDOW.md
+  ticket_id: TCK-20261111-FELT-LETHAL-MEMORY-HAS-NO-RECENCY-WINDOW
+  title: A single felt-lethal hit keeps an engaged subject pinned for 65-71 ticks
+    while the hostile strikes nothing, because the felt-lethal memory has no recency
+    window
+  tier: standard
+  ticket_type: bug
+  date: '2026-11-11'
+  related_code_areas:
+  - src/engine/felt_swing.py (felt_lethal_attacker)
+  - src/engine/tactical_flight_guard.py
+  - src/engine/tactical_hold.py (stalemate_break_update)
+  - src/systems/movement.py (resolve_move free-swing site)
+  artifact_files:
+  - agent-working/stored_artifacts/TCK-20261111-FELT-LETHAL-MEMORY-HAS-NO-RECENCY-WINDOW/investigation.md
+  - agent-working/stored_artifacts/TCK-20261111-FELT-LETHAL-MEMORY-HAS-NO-RECENCY-WINDOW/plan.md
+  - agent-working/stored_artifacts/TCK-20261111-FELT-LETHAL-MEMORY-HAS-NO-RECENCY-WINDOW/test_plan.md
+  tags: []
+- type: ticket
   path: agent-working/tickets/done/TCK-20261111-KNOWLEDGE-INDEX-BUILD-MEMORY-BOUNDED.md
   ticket_id: TCK-20261111-KNOWLEDGE-INDEX-BUILD-MEMORY-BOUNDED
   title: 'The knowledge-index build tests get the address space they need: the resource
@@ -8138,6 +8229,24 @@
   tags:
   - documentation
   - reference
+- type: ticket
+  path: agent-working/tickets/done/TCK-20261111-NO-RECRUITMENT-APPRAISAL-RUNS-IN-ANY-CORPUS-WORLD.md
+  ticket_id: TCK-20261111-NO-RECRUITMENT-APPRAISAL-RUNS-IN-ANY-CORPUS-WORLD
+  title: No recruitment appraisal runs in any measured corpus world. Find out whether
+    recruitment is dead by defect or goes around the appraisal by design.
+  tier: standard
+  ticket_type: bug
+  date: '2026-11-11'
+  related_code_areas:
+  - _appraise_recruitment
+  - src/systems/social_systems/contracts.py (:124)
+  - src/engine/domain/core_actions.py (:168)
+  - src/domains/cooperation/services.py (:53, :163, about :280; find_pending_incoming_offer)
+  artifact_files:
+  - agent-working/stored_artifacts/TCK-20261111-NO-RECRUITMENT-APPRAISAL-RUNS-IN-ANY-CORPUS-WORLD/investigation.md
+  - agent-working/stored_artifacts/TCK-20261111-NO-RECRUITMENT-APPRAISAL-RUNS-IN-ANY-CORPUS-WORLD/plan.md
+  - agent-working/stored_artifacts/TCK-20261111-NO-RECRUITMENT-APPRAISAL-RUNS-IN-ANY-CORPUS-WORLD/test_plan.md
+  tags: []
 - type: ticket
   path: agent-working/tickets/done/TCK-20261111-POST-COMMIT-REINDEX-OPT-IN.md
   ticket_id: TCK-20261111-POST-COMMIT-REINDEX-OPT-IN
@@ -8275,6 +8384,19 @@
   - documentation
   - reference
 - type: ticket
+  path: agent-working/tickets/todos/TCK-20261111-A-HOLD-MODE-MOVE-STILL-TAKES-A-STEP.md
+  ticket_id: TCK-20261111-A-HOLD-MODE-MOVE-STILL-TAKES-A-STEP
+  title: A subject whose movement mode is HOLD still takes a step toward its stored
+    target
+  tier: hotfix
+  ticket_type: bug
+  date: '2026-11-11'
+  related_code_areas:
+  - src/systems/movement.py (resolve_move)
+  - src/engine/pipeline_phases/movement.py (route_movement_intent)
+  artifact_files: []
+  tags: []
+- type: ticket
   path: agent-working/tickets/todos/TCK-20261111-LOKI-REJECTS-EVERY-PUSH-ON-WAL-DISK-THROTTLE.md
   ticket_id: TCK-20261111-LOKI-REJECTS-EVERY-PUSH-ON-WAL-DISK-THROTTLE
   title: Loki accepted no log push during the 2026-11-11 stack run (WAL disk throttle,
@@ -8303,6 +8425,36 @@
   - codebase/baselines/code_health_exceptions.jsonl (the updates.py module-length
     row)
   artifact_files: []
+  tags: []
+- type: ticket
+  path: agent-working/tickets/todos/TCK-20261111-THE-STORED-REGROUP-TARGET-OSCILLATES-TICK-TO-TICK.md
+  ticket_id: TCK-20261111-THE-STORED-REGROUP-TARGET-OSCILLATES-TICK-TO-TICK
+  title: The REGROUP target that fused_strategic_pass stores (~:678) flips between
+    neighbouring tiles tick to tick, walking the subject into contact and out of it
+  tier: standard
+  ticket_type: bug
+  date: '2026-11-11'
+  related_code_areas:
+  - src/systems/strategic_systems/intelligence.py (~:670-:680 slow-path navigation
+    writes)
+  artifact_files: []
+  tags: []
+- type: ticket
+  path: agent-working/tickets/done/TCK-20261110-A-NON-FLIGHT-MOVE-OFF-ENGAGEMENT-WALKS-INTO-A-KNOWN-LETHAL-FREE-SWING.md
+  ticket_id: TCK-20261110-A-NON-FLIGHT-MOVE-OFF-ENGAGEMENT-WALKS-INTO-A-KNOWN-LETHAL-FREE-SWING
+  title: A subject with no flight decision moves off engagement and walks into a free
+    swing it has felt will finish it (the CONFLICT-04 "neither" shape)
+  tier: standard
+  ticket_type: bug
+  date: '2026-11-10'
+  related_code_areas:
+  - src/engine/movement.py (opportunity attack, :324)
+  - src/engine/tactical.py, src/engine/tactical_flight_guard.py
+  artifact_files:
+  - agent-working/stored_artifacts/TCK-20261110-A-NON-FLIGHT-MOVE-OFF-ENGAGEMENT-WALKS-INTO-A-KNOWN-LETHAL-FREE-SWING/investigation.md
+  - agent-working/stored_artifacts/TCK-20261110-A-NON-FLIGHT-MOVE-OFF-ENGAGEMENT-WALKS-INTO-A-KNOWN-LETHAL-FREE-SWING/measurement.md
+  - agent-working/stored_artifacts/TCK-20261110-A-NON-FLIGHT-MOVE-OFF-ENGAGEMENT-WALKS-INTO-A-KNOWN-LETHAL-FREE-SWING/plan.md
+  - agent-working/stored_artifacts/TCK-20261110-A-NON-FLIGHT-MOVE-OFF-ENGAGEMENT-WALKS-INTO-A-KNOWN-LETHAL-FREE-SWING/test_plan.md
   tags: []
 - type: ticket
   path: agent-working/tickets/done/TCK-20261110-DELIVERY-COST-REF-MODE-READS-NO-BRANCH-SHARDS.md
@@ -8379,19 +8531,6 @@
   tags:
   - agent-monitoring
   - data-quality
-- type: ticket
-  path: agent-working/tickets/todos/TCK-20261110-A-NON-FLIGHT-MOVE-OFF-ENGAGEMENT-WALKS-INTO-A-KNOWN-LETHAL-FREE-SWING.md
-  ticket_id: TCK-20261110-A-NON-FLIGHT-MOVE-OFF-ENGAGEMENT-WALKS-INTO-A-KNOWN-LETHAL-FREE-SWING
-  title: A subject with no flight decision moves off engagement and walks into a free
-    swing it has felt will finish it (the CONFLICT-04 "neither" shape)
-  tier: standard
-  ticket_type: bug
-  date: '2026-11-10'
-  related_code_areas:
-  - src/engine/movement.py (opportunity attack, :324)
-  - src/engine/tactical.py, src/engine/tactical_flight_guard.py
-  artifact_files: []
-  tags: []
 - type: ticket
   path: agent-working/tickets/todos/TCK-20261110-A-RESTORED-SCENARIO-DROPS-ITS-GOVERNOR-AND-EVENT-RECORDER.md
   ticket_id: TCK-20261110-A-RESTORED-SCENARIO-DROPS-ITS-GOVERNOR-AND-EVENT-RECORDER
