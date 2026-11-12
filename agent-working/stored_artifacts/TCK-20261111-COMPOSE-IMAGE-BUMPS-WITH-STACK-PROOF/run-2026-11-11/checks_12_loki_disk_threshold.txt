@@ -1,0 +1,4 @@
+level=warn ts=2026-11-11T16:28:00.793401346Z caller=wal.go:215 msg="disk usage exceeded threshold, throttling writes" usage_percent=94.80% threshold_percent=90.00% component=wal
+/dev/sdb1        99G   78G   17G  83% /data
+docker root: /data/docker
+/dev/sdb1        99G   78G   17G  83% /data

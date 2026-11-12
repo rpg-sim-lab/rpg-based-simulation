@@ -1,0 +1,4 @@
+DiskSpaceLow pending [('Pending', {'alertname': 'DiskSpaceLow', 'job': 'node-exporter', 'severity': 'warning'}), ('Normal', {'alertname': 'DiskSpaceLow', 'job': 'node-exporter', 'severity': 'warning'})]
+DiskWillFillIn24h pending [('Pending', {'alertname': 'DiskWillFillIn24h', 'job': 'node-exporter', 'severity': 'warning'}), ('Pending', {'alertname': 'DiskWillFillIn24h', 'job': 'node-exporter', 'severity': 'warning'})]
+LogShippingErrors pending [('Pending', {'alertname': 'LogShippingErrors', 'severity': 'warning'})]
+AiWorkerLagHigh firing [('Alerting (NoData)', {'alertname': 'AiWorkerLagHigh', 'severity': 'warning'})]
