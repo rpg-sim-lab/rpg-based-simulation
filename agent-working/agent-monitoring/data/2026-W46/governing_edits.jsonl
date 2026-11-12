@@ -12,3 +12,4 @@
 {"ts":"2026-11-11T10:22:22.521421Z","event":"governing_edit_attempt","seat":"agent-working-implementer","path":"tools/hooks/post-commit-reindex.sh","basis":"mention","attempt":true}
 {"ts":"2026-11-11T10:22:35.461717Z","event":"governing_edit_attempt","seat":"agent-working-implementer","path":"CLAUDE.md","basis":"mention","attempt":true}
 {"ts":"2026-11-11T10:23:14.269171Z","event":"governing_edit_attempt","seat":"agent-working-implementer","path":"CLAUDE.md","basis":"mention","attempt":true}
+{"ts":"2026-11-12T08:34:11.128518Z","event":"governing_edit_attempt","seat":"platform-planner","path":".github/workflows/","basis":"mention","attempt":true}
