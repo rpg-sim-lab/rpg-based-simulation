@@ -143,6 +143,10 @@ this ticket (see that doc's own updated text).
   the call, under the 0.8 limit. A client that keeps calling faster than the gap
   never takes either rule and stays call-counted and rejected as before. The
   bucket constants, `Retry-After` and the thresholds are unchanged.
+  The step-down to `DEGRADED` keeps the burst's samples in `recent_fill_ratios`;
+  only a full refill clears the sample window. `DEGRADED` to `PRESSURE` to
+  `NORMAL` then waits for the confidence window to flush, which is harmless
+  because `DEGRADED` admits.
 
 ---
 

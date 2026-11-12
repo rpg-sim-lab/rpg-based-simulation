@@ -333,6 +333,18 @@ def test_a_client_that_keeps_hammering_stays_in_survival():
     assert all(m is ObservabilityMode.SURVIVAL for m in modes[first:])
 
 
+def test_a_retry_just_under_retry_after_never_takes_the_idle_path():
+    """T3 variant: after a burst, a client retrying every 4.9 s (Retry-After minus 0.1 s)
+    never earns the idle step-down, so it recovers only by the call-counted rule. Exact
+    expectation: the first 4 retries stay SURVIVAL (refused, the same as before the fix),
+    and the 5th is the first DEGRADED, once the confidence window holds 5 low samples."""
+    end, _ = _burst("c")
+    retry = admission_control._RETRY_AFTER_SECONDS - 0.1
+    modes = [_check_admission("c", end + retry * k) for k in range(1, 7)]
+    assert modes[:4] == [ObservabilityMode.SURVIVAL] * 4
+    assert modes[4] is ObservabilityMode.DEGRADED
+
+
 def test_burst_replay_admits_about_forty():
     """T4: the burst admission count is unchanged by the fix (40 before it; allow +-3)."""
     _, admitted = _burst("c")
