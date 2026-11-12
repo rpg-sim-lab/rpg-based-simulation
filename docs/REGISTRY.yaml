@@ -8115,6 +8115,24 @@
   - documentation
   - reference
 - type: ticket
+  path: agent-working/tickets/done/TCK-20261111-NO-RECRUITMENT-APPRAISAL-RUNS-IN-ANY-CORPUS-WORLD.md
+  ticket_id: TCK-20261111-NO-RECRUITMENT-APPRAISAL-RUNS-IN-ANY-CORPUS-WORLD
+  title: No recruitment appraisal runs in any measured corpus world. Find out whether
+    recruitment is dead by defect or goes around the appraisal by design.
+  tier: standard
+  ticket_type: bug
+  date: '2026-11-11'
+  related_code_areas:
+  - _appraise_recruitment
+  - src/systems/social_systems/contracts.py (:124)
+  - src/engine/domain/core_actions.py (:168)
+  - src/domains/cooperation/services.py (:53, :163, about :280; find_pending_incoming_offer)
+  artifact_files:
+  - agent-working/stored_artifacts/TCK-20261111-NO-RECRUITMENT-APPRAISAL-RUNS-IN-ANY-CORPUS-WORLD/investigation.md
+  - agent-working/stored_artifacts/TCK-20261111-NO-RECRUITMENT-APPRAISAL-RUNS-IN-ANY-CORPUS-WORLD/plan.md
+  - agent-working/stored_artifacts/TCK-20261111-NO-RECRUITMENT-APPRAISAL-RUNS-IN-ANY-CORPUS-WORLD/test_plan.md
+  tags: []
+- type: ticket
   path: agent-working/tickets/done/TCK-20261111-POST-COMMIT-REINDEX-OPT-IN.md
   ticket_id: TCK-20261111-POST-COMMIT-REINDEX-OPT-IN
   title: The post-commit hook regenerates the registry by default and reindexes knowledge

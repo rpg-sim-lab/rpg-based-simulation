@@ -1,0 +1,22 @@
+contract keys: ['first_seen', 'holder', 'holder_alive_at_left', 'id', 'left_tick', 'source', 'status_changes', 'target']
+crowded_frontier 42 transitions_to {'ACTIVE': 719, 'FULFILLED': 719} seq {'OFFERED': 540, 'OFFERED > ACTIVE > FULFILLED': 719}
+crowded_frontier 43 transitions_to {'ACTIVE': 845, 'FULFILLED': 833} seq {'OFFERED > ACTIVE > FULFILLED': 833, 'OFFERED': 439, 'OFFERED > ACTIVE': 12}
+crowded_frontier 44 transitions_to {'ACTIVE': 371, 'FULFILLED': 370} seq {'OFFERED': 395, 'OFFERED > ACTIVE > FULFILLED': 370, 'OFFERED > ACTIVE': 1}
+crowded_frontier 45 transitions_to {'ACTIVE': 1041, 'FULFILLED': 1038} seq {'OFFERED': 947, 'OFFERED > ACTIVE > FULFILLED': 1038, 'OFFERED > ACTIVE': 3}
+crowded_frontier 46 transitions_to {'ACTIVE': 1203, 'FULFILLED': 1195} seq {'OFFERED': 1757, 'OFFERED > ACTIVE > FULFILLED': 1195, 'OFFERED > ACTIVE': 8}
+urban_political 42 transitions_to {'ACTIVE': 610, 'FULFILLED': 597} seq {'OFFERED > ACTIVE > FULFILLED': 597, 'OFFERED': 931, 'OFFERED > ACTIVE': 13}
+urban_political 43 transitions_to {'ACTIVE': 478, 'FULFILLED': 469} seq {'OFFERED > ACTIVE': 9, 'OFFERED': 570, 'OFFERED > ACTIVE > FULFILLED': 469}
+urban_political 44 transitions_to {'ACTIVE': 430, 'FULFILLED': 419} seq {'OFFERED > ACTIVE > FULFILLED': 419, 'OFFERED': 672, 'OFFERED > ACTIVE': 11}
+urban_political 45 transitions_to {'ACTIVE': 217, 'FULFILLED': 211} seq {'OFFERED > ACTIVE > FULFILLED': 211, 'OFFERED': 260, 'OFFERED > ACTIVE': 6}
+urban_political 46 transitions_to {'ACTIVE': 183, 'FULFILLED': 183} seq {'OFFERED > ACTIVE > FULFILLED': 183, 'OFFERED': 136}
+frontier_living_world 42 transitions_to {'ACTIVE': 1975, 'FULFILLED': 1964} seq {'OFFERED': 1611, 'OFFERED > ACTIVE > FULFILLED': 1964, 'OFFERED > ACTIVE': 11}
+frontier_living_world 43 transitions_to {'ACTIVE': 1270, 'FULFILLED': 1252} seq {'OFFERED > ACTIVE > FULFILLED': 1252, 'OFFERED': 1169, 'OFFERED > ACTIVE': 18}
+frontier_living_world 44 transitions_to {'ACTIVE': 1824, 'FULFILLED': 1800} seq {'OFFERED': 1206, 'OFFERED > ACTIVE > FULFILLED': 1800, 'OFFERED > ACTIVE': 24}
+frontier_living_world 45 transitions_to {'ACTIVE': 1707, 'FULFILLED': 1672} seq {'OFFERED': 1677, 'OFFERED > ACTIVE > FULFILLED': 1672, 'OFFERED > ACTIVE': 35}
+frontier_living_world 46 transitions_to {'ACTIVE': 661, 'FULFILLED': 653} seq {'OFFERED > ACTIVE > FULFILLED': 653, 'OFFERED': 916, 'OFFERED > ACTIVE': 8}
+highland_traverse 42 transitions_to {'ACTIVE': 402, 'FULFILLED': 402} seq {'OFFERED > ACTIVE > FULFILLED': 402, 'OFFERED': 21}
+highland_traverse 43 transitions_to {'ACTIVE': 100, 'FULFILLED': 100} seq {'OFFERED > ACTIVE > FULFILLED': 100, 'OFFERED': 38}
+highland_traverse 44 transitions_to {'ACTIVE': 90, 'FULFILLED': 90} seq {'OFFERED > ACTIVE > FULFILLED': 90, 'OFFERED': 24}
+highland_traverse 45 transitions_to {'ACTIVE': 111, 'FULFILLED': 111} seq {'OFFERED': 23, 'OFFERED > ACTIVE > FULFILLED': 111}
+highland_traverse 46 transitions_to {'ACTIVE': 129, 'FULFILLED': 129} seq {'OFFERED': 37, 'OFFERED > ACTIVE > FULFILLED': 129}
+ALL {'OFFERED': 13369, 'OFFERED > ACTIVE > FULFILLED': 14207, 'OFFERED > ACTIVE': 159}
