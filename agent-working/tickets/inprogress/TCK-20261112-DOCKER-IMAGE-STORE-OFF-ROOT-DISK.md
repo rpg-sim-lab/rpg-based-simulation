@@ -4,7 +4,7 @@ layer: platform
 authority: P1
 audience: agent
 ticket_id: TCK-20261112-DOCKER-IMAGE-STORE-OFF-ROOT-DISK
-phase: open
+phase: inprogress
 date: 2026-11-12
 tags: [platform]
 ---
@@ -15,7 +15,7 @@ tags: [platform]
 Plan moving Docker's containerd image store off the root disk, so builds and image layers stop filling /
 
 ## Status
-OPEN
+INPROGRESS
 
 ## Tier
 standard

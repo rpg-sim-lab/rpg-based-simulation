@@ -26,6 +26,8 @@ Every alert rule in `docker/grafana/provisioning/alerting/rules-base.yaml` has a
 
 Records of measured runs and drills are in `records/`.
 
+Owner-run procedures (nothing an agent runs): [docker-image-store-move.md](docker-image-store-move.md), moving Docker's containerd image store off the root disk (planned, not yet run).
+
 ## Common steps
 
 - **Silence an alert:** Grafana, Alerting, Silences, New silence. Match `alertname` (and `job` or `mountpoint`) and set an end time. A silence stops the ntfy message, not the evaluation.
