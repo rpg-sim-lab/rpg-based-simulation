@@ -1,10 +1,10 @@
 ---
-status: active
+status: historical
 layer: ai
 authority: P1
 audience: agent
 ticket_id: TCK-20261112-OBSERVABILITY-SKILL-HARD-LAW-COUNT
-phase: open
+phase: done
 date: 2026-11-12
 tags: [skills, observability]
 ---
@@ -15,7 +15,7 @@ tags: [skills, observability]
 The observability skill and the skills index name all nine HardLawMonitor laws, not seven
 
 ## Status
-OPEN
+DONE
 
 ## Tier
 hotfix
@@ -79,8 +79,18 @@ the branch head. If §1 changed since 4eaab4d8b, follow §1.
 
 ## Implementation Notes
 
+`.claude/skills/observability/SKILL.md`: heading 7 to 9 laws; `LAW-POSITION-IN-WORLD` row inserted after `LAW-POSITION-FINITE` and `LAW-LODGER-INDOORS` row appended after `LAW-SPAWN-OCCUPANCY`, both worded from `docs/observability/hard_law_monitor.md` §1 (unchanged since 4eaab4d8b); "other six" became "other eight" and "all seven" became "all nine". The line "except the last, which is a one-time full scan" became "except `LAW-SPAWN-OCCUPANCY`, which is a one-time full scan", because the appended row made "the last" wrong. `docs/ai/skills.md:227`: 7 laws to 9 laws. `.agents/skills/observability/SKILL.md` (not in the ticket, unowned in the manifest): body synced from the `.claude` copy, because `tests/tools/test_observability_skill_content.py::test_agents_mirror_body_matches_claude_source` pins the two bodies as equal; the mirror's body had matched the old source exactly.
+
 ## Test Summary
+
+`git grep -nE "7 (hard )?laws|seven laws|other six" -- .claude/skills/observability docs/ai/skills.md` prints nothing. The table has 9 `LAW-*` rows and their ids equal the 9 ids in `src/observability/hard_law_monitor.py`. `tests/tools/test_observability_skill_content.py`: 8 passed (the mirror test failed before the mirror was synced). `generate_registry --check`: in sync.
 
 ## Files Changed
 
+- .claude/skills/observability/SKILL.md
+- .agents/skills/observability/SKILL.md (mirror body, pinned by test)
+- docs/ai/skills.md
+
 ## Completion Summary
+
+The observability skill and the skills index now name all nine HardLawMonitor laws. Rode the pin-bump PR under the ride-along rule (#715 6793205403).
