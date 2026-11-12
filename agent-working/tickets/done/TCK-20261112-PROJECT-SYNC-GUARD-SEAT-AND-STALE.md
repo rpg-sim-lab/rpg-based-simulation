@@ -1,10 +1,10 @@
 ---
-status: active
+status: historical
 layer: ticket
 authority: P1
 audience: agent
 ticket_id: TCK-20261112-PROJECT-SYNC-GUARD-SEAT-AND-STALE
-phase: open
+phase: done
 date: 2026-11-12
 tags: [planning, delivery]
 ---
@@ -15,7 +15,7 @@ tags: [planning, delivery]
 `project_sync.py` P1a: a write-safe guard, correct Seat mapping, a `Stale` status for old branches, the script entry point and a short host name, all still dry-run (rpg lanes, u24)
 
 ## Status
-OPEN
+DONE
 
 ## Tier
 standard
@@ -91,9 +91,16 @@ The lead split P1 (#715, 2026-11-12): **P1a is this ticket.** It's dry-run only,
 - Seat mapping is the uncertain part, so plan.md investigates it first.
 
 ## Implementation Notes
+- Guard: `gh api` is an allowlist (one `repos/...` endpoint, only `--paginate`, `-q/--jq`, `-H/--header`), per the designer's amendment B; `graphql` and every joined or unknown flag are refused.
+- Seat: no map. The launcher's recorded seat stays first; the fallback label is `<domain> (seat not recorded)`. The launcher finding: hand-made `git worktree add` worktrees have no record (filed by the planner as TCK-20261112-HAND-ADDED-WORKTREES-ARE-NOT-RECORDED-AGAINST-A-SEAT, riding this PR, not implemented).
+- Stale replaces In progress only (amendment C); BranchFact.last_activity from status.py `_activity` (newest of commit and index mtime; approximate).
+- sys.path shim, `host_names` map and `stale_branch_days` in registries/session_project.yaml; doc: docs/guidelines/session_roles/project_sync_dry_run.md.
 
 ## Test Summary
+77 passed: tests/tools/test_session_project_sync.py and tests/tools/test_session_status*.py (-p no:randomly). New: 13 guard refusals and 2 reads, 2 seat, 5 Stale, 1 entry point, 1 host, 1 registry.
 
 ## Files Changed
+tools/sessions/project_sync.py, registries/session_project.yaml, tests/tools/test_session_project_sync.py, docs/guidelines/session_roles/project_sync_dry_run.md, stored artifacts.
 
 ## Completion Summary
+P1a built dry-run only: allowlist guard, honest seat label, Stale status, script entry point and host short-name map. Real dry run on u24: 6 Stale rows including October's abandoned branches. Review: planner's PR review comment is recorded afterwards with record_review.py.

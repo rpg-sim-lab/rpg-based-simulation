@@ -8,3 +8,6 @@ pilot_lanes: [rpg]     # a ticket qualifies when found on a worktree whose domai
 pilot_start: 2026-11-12  # a Done item is created only when the ticket reached done/ on origin/main on or after this date
 done_window_days: 14   # a Done item is archived this many days after the ticket reached done/
 stale_host_hours: 24   # a host whose last run is older than this is flagged in the output
+stale_branch_days: 14  # a ticket whose working branches are all older than this (newest commit or index change) shows Stale, not In progress
+host_names:            # hostname -> the short host tag used in Branch/Host entries; an unlisted hostname is used as is
+  u24desktop-Virtual-Machine: u24desktop

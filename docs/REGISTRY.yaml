@@ -5642,6 +5642,17 @@
   - process-improvement
   - governance
 - type: doc
+  path: docs/guidelines/session_roles/project_sync_dry_run.md
+  title: Project sync dry run
+  status: active
+  layer: ai
+  authority: P2
+  audience: agent
+  tags:
+  - ai
+  - process-improvement
+  - governance
+- type: doc
   path: docs/guides/diagram_index.md
   title: Diagram Index
   status: active
@@ -8075,6 +8086,25 @@
   - planning
   - delivery
 - type: ticket
+  path: agent-working/tickets/done/TCK-20261112-PROJECT-SYNC-GUARD-SEAT-AND-STALE.md
+  ticket_id: TCK-20261112-PROJECT-SYNC-GUARD-SEAT-AND-STALE
+  title: '`project_sync.py` P1a: a write-safe guard, correct Seat mapping, a `Stale`
+    status for old branches, the script entry point and a short host name, all still
+    dry-run (rpg lanes, u24)'
+  tier: standard
+  ticket_type: feature
+  date: '2026-11-12'
+  related_code_areas:
+  - tools/sessions/project_sync.py, tools/sessions/status.py, registries/session_project.yaml,
+    tests/tools/test_session_project_sync.py
+  artifact_files:
+  - agent-working/stored_artifacts/TCK-20261112-PROJECT-SYNC-GUARD-SEAT-AND-STALE/investigation.md
+  - agent-working/stored_artifacts/TCK-20261112-PROJECT-SYNC-GUARD-SEAT-AND-STALE/plan.md
+  - agent-working/stored_artifacts/TCK-20261112-PROJECT-SYNC-GUARD-SEAT-AND-STALE/test_plan.md
+  tags:
+  - planning
+  - delivery
+- type: ticket
   path: agent-working/tickets/done/TCK-20261112-REGISTRY-REGEN-SKIPPED-BY-A-STALE-HOOK-OR-AN-UNTRACKED-DOC.md
   ticket_id: TCK-20261112-REGISTRY-REGEN-SKIPPED-BY-A-STALE-HOOK-OR-AN-UNTRACKED-DOC
   title: The registry auto-regen is skipped when the installed post-commit hook is
@@ -8091,6 +8121,20 @@
   tags:
   - delivery
   - process-improvement
+- type: ticket
+  path: agent-working/tickets/todos/TCK-20261112-HAND-ADDED-WORKTREES-ARE-NOT-RECORDED-AGAINST-A-SEAT.md
+  ticket_id: TCK-20261112-HAND-ADDED-WORKTREES-ARE-NOT-RECORDED-AGAINST-A-SEAT
+  title: A worktree a seat creates with a plain `git worktree add` is never recorded
+    against that seat, so status.py and project_sync can't name who works in it
+  tier: hotfix
+  ticket_type: bug
+  date: '2026-11-12'
+  related_code_areas:
+  - --worktree
+  artifact_files: []
+  tags:
+  - planning
+  - delivery
 - type: ticket
   path: agent-working/tickets/todos/github-project-ticket-view/TCK-20261112-EPIC-GITHUB-PROJECT-TICKET-VIEW.md
   ticket_id: TCK-20261112-EPIC-GITHUB-PROJECT-TICKET-VIEW
