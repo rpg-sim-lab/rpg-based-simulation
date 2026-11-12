@@ -25,7 +25,7 @@ from dataclasses import dataclass
 from typing import Collection, Iterable, Sequence
 
 from codebase.health.findings import Finding
-from codebase.health.registry import Row
+from codebase.health.registry import Row, movable_symbol
 
 DEFAULT_REPORT_LIMIT = 25
 
@@ -71,6 +71,53 @@ class RatchetResult:
         return tuple(entries)
 
 
+@dataclass(frozen=True)
+class LikelyMove:
+    """A gone row and a new finding that look like one definition moved to another file.
+
+    A label only: the pair never changes `RatchetResult`, so `check` still fails the new finding. `ambiguous` is true
+    when the row has more than one candidate finding, or the finding more than one candidate row.
+    """
+
+    row: Row
+    finding: Finding
+    ambiguous: bool
+
+    @property
+    def command(self) -> str:
+        """The `move` command that re-keys this row, naming the symbol so nothing else of the file moves."""
+        return f"python3 -m codebase.health move {self.row.file} {self.finding.file} --symbol {self.row.symbol}"
+
+
+def likely_moves(result: RatchetResult) -> tuple[LikelyMove, ...]:
+    """Pair each gone row with each new finding of the same (symbol, tool, rule) in another file, at or under its ceiling.
+
+    Only a named definition can have moved: a file-level row (symbol `None`), ast-grep's `<module>` and a jscpd file pair
+    are never paired, and a finding above the row's ceiling is not a move. Sorted by old file, symbol, then new file.
+    """
+    by_identity: dict[tuple, list[Finding]] = {}
+    for finding in result.new:
+        if movable_symbol(finding.symbol, finding.tool):
+            by_identity.setdefault((finding.symbol, finding.tool, finding.rule), []).append(finding)
+    pairs = [
+        (row, finding)
+        for row in result.gone
+        if movable_symbol(row.symbol, row.tool)
+        for finding in by_identity.get((row.symbol, row.tool, row.rule), ())
+        if finding.file != row.file and finding.value <= row.ceiling
+    ]
+    rows_per_finding = {pair[1].key: 0 for pair in pairs}
+    findings_per_row = {pair[0].key: 0 for pair in pairs}
+    for row, finding in pairs:
+        rows_per_finding[finding.key] += 1
+        findings_per_row[row.key] += 1
+    moves = [
+        LikelyMove(row, finding, findings_per_row[row.key] > 1 or rows_per_finding[finding.key] > 1)
+        for row, finding in pairs
+    ]
+    return tuple(sorted(moves, key=lambda m: (m.row.file, m.row.symbol or "", m.finding.file)))
+
+
 def compare(findings: Iterable[Finding], rows: Sequence[Row]) -> RatchetResult:
     """Compare a scan with the registry. Both are matched by key, so line moves never matter."""
     baseline = {row.key: row for row in rows}
@@ -111,7 +158,18 @@ def _section(title: str, lines: list[str], limit: int) -> list[str]:
     return [f"{title} ({len(lines)}):", *shown, *more]
 
 
-def format_report(result: RatchetResult, limit: int = DEFAULT_REPORT_LIMIT) -> str:
+def _move_line(move: LikelyMove) -> str:
+    tag = " (ambiguous: other candidates listed)" if move.ambiguous else ""
+    return (
+        f"  {move.row.file} -> {move.finding.file} {move.row.symbol} [{move.row.tool} {move.row.rule}] "
+        f"value={move.finding.value} ceiling={move.row.ceiling}{tag}\n    {move.command}"
+    )
+
+
+MOVE_TITLE = "likely move (still a failure above; if the code moved unchanged, the command re-keys the row)"
+
+
+def format_report(result: RatchetResult, limit: int = DEFAULT_REPORT_LIMIT, moves: Sequence[LikelyMove] = ()) -> str:
     """A plain-text report: failures first, then the non-failing changes, then a one-line verdict."""
     lines: list[str] = []
     lines += _section(
@@ -124,6 +182,7 @@ def format_report(result: RatchetResult, limit: int = DEFAULT_REPORT_LIMIT) -> s
         [f"  {_where(f)} [{f.tool} {f.rule}] {f.value} > ceiling {r.ceiling}{_tag(f)}" for f, r in result.worse],
         limit,
     )
+    lines += _section(MOVE_TITLE, [_move_line(m) for m in moves], limit)
     lines += _section(
         "improved (not a failure; run `tighten` to lower the ceiling)",
         [f"  {_where(f)} [{f.tool} {f.rule}] {f.value} < ceiling {r.ceiling}" for f, r in result.improved],
@@ -153,6 +212,7 @@ def format_summary(
     changed_files: Collection[str] = (),
     limit: int = DEFAULT_REPORT_LIMIT,
     skipped: Collection[str] = (),
+    moves: Sequence[LikelyMove] = (),
 ) -> str:
     """A Markdown job summary: one line on a pass; on a failure, violations in changed files come first.
 
@@ -178,6 +238,9 @@ def format_summary(
         out += block("Elsewhere (baseline drift or other merged changes)", other)
     else:
         out = [f"**Code health:** OK, no new or worse blocking violations ({counts})."]
+    if moves:
+        out += ["", *_section(MOVE_TITLE, [f"- `{m.row.file}` -> `{m.finding.file}` {m.row.symbol} [{m.row.tool} {m.row.rule}]"
+                                           f"{' (ambiguous)' if m.ambiguous else ''}: `{m.command}`" for m in moves], limit)]
     if result.report_only:
         out += ["", *block(f"Report-only findings {REPORT_ONLY_LABEL}, they do not fail the PR", list(result.report_only))]
     if skipped:

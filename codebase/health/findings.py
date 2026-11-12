@@ -25,8 +25,11 @@ Match keys by tool (python_code_craft_roadmap.md section 6.3):
                stdlib `ast`, `<module>` when there is none), so module-level findings keep a stable key. The rules
                live in `codebase/rules/`; the binary is `ast-grep`, never `sg`.
 
-A function renamed, or moved to another file, surfaces as new. That is accepted: it is a real
-change to the code, and the old row then shows as "gone" and can be deleted.
+A function renamed, or moved to another file, surfaces as new, and the old row then shows as "gone". That
+is accepted: it is a real change to the code, and `check` still fails it. For a definition that moved to another
+file under the same name, `check` also names the pair as a "likely move" and prints the `move` command that re-keys
+the row (`codebase.health.ratchet.likely_moves`, `codebase.health.registry.move_rows`); a rename inside one file,
+a file-level row and a jscpd pair stay new plus gone, to be fixed or deleted by hand.
 """
 
 from __future__ import annotations

@@ -27,7 +27,7 @@ same key, and a `file` (or a jscpd `dup:` partner) that does not exist in the re
 from __future__ import annotations
 
 import json
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, replace
 from datetime import date
 from pathlib import Path
 from typing import Iterable, Mapping, Sequence
@@ -42,6 +42,7 @@ REQUIRED_FIELDS = (
 )
 NULLABLE_FIELDS = frozenset({"symbol", "retiring_ticket"})
 DUP_PREFIX = "dup:"
+MODULE_SYMBOL = "<module>"  # ast-grep's symbol for a finding outside any def or class
 
 # Files named by TCK-20260930-SAME-NAME-DIVERGENT-CLASS-PAIRS (four same-named class pairs). A
 # duplication row that touches one carries a link to that ticket and nothing else: this tool
@@ -58,6 +59,14 @@ SAME_NAME_PAIR_FILES = frozenset(
         "src/strategy/capacity.py",
     }
 )
+
+
+class MoveRefusedError(ValueError):
+    """`move_rows` would loosen the gate or has nothing to do; `reason` says why. Nothing was changed."""
+
+    def __init__(self, reason: str) -> None:
+        super().__init__(reason)
+        self.reason = reason
 
 
 class RegistryError(ValueError):
@@ -242,3 +251,66 @@ def tighten(rows: Sequence[Row], findings: Iterable[Finding]) -> tuple[list[Row]
         else:
             kept.append(row)
     return sorted(kept, key=_sort_key), changes
+
+
+def movable_symbol(symbol: str | None, tool: str) -> bool:
+    """True if `symbol` names one definition that can move between files.
+
+    File-level rows (symbol `None`), ast-grep's `<module>` and a jscpd file pair are not definitions.
+    """
+    return symbol is not None and symbol != MODULE_SYMBOL and tool != TOOL_JSCPD
+
+
+def move_rows(
+    rows: Sequence[Row], findings: Iterable[Finding], old_file: str, new_file: str, symbol: str | None = None
+) -> tuple[list[Row], list[str]]:
+    """Re-key rows of `old_file` to `new_file`, changing `file` and nothing else. Raises `MoveRefusedError` and changes nothing if:
+
+    - `old_file` is `new_file`, or no row would move;
+    - a row to move has a current finding at its old key (the code is still there) or none at the new key (it did not move);
+    - a moved finding is above its row's ceiling (a move never loosens the gate);
+    - `new_file` already has a row with the moved key.
+
+    Without `symbol`, rows that did not move stay where they are. With `symbol`, every row of that symbol must move.
+    """
+    if old_file == new_file:
+        raise MoveRefusedError("OLD_FILE and NEW_FILE are the same file")
+    current = {finding.key: finding for finding in findings}
+    existing = {row.key for row in rows}
+    candidates = [
+        row for row in rows
+        if row.file == old_file and movable_symbol(row.symbol, row.tool) and (symbol is None or row.symbol == symbol)
+    ]
+    moving: list[Row] = []
+    for row in candidates:
+        problem = _move_problem(row, new_file, current, existing)
+        if problem is None:
+            moving.append(row)
+        elif symbol is not None:
+            raise MoveRefusedError(f"{symbol} cannot be moved: {problem}")
+    if not moving:
+        raise MoveRefusedError(f"no row of {old_file} has moved to {new_file}" + (f" for symbol {symbol}" if symbol else ""))
+    changes = []
+    moved = {row.key for row in moving}
+    for row in moving:
+        finding = current[(new_file, *row.key[1:])]
+        if finding.value > row.ceiling:
+            raise MoveRefusedError(f"{row.key[1:]} is {finding.value} in {new_file}, above its ceiling {row.ceiling}")
+        changes.append(f"moved {row.symbol} [{row.tool} {row.rule}] {old_file} -> {new_file}, ceiling {row.ceiling} kept")
+    kept = [row for row in rows if row.key not in moved]
+    return sorted(kept + [replace(row, file=new_file) for row in moving], key=_sort_key), changes
+
+
+def _move_problem(row: Row, new_file: str, current: Mapping[Key, Finding], existing: set[Key]) -> str | None:
+    """Why `row` has not moved to `new_file`, or None if it has. Raises `MoveRefusedError` if `new_file` has a row for it.
+
+    A ceiling breach is checked by the caller.
+    """
+    target = (new_file, *row.key[1:])
+    if row.key in current:
+        return f"{row.file} still has a [{row.tool} {row.rule}] finding for it"
+    if target not in current:
+        return f"{new_file} has no [{row.tool} {row.rule}] finding for it"
+    if target in existing:
+        raise MoveRefusedError(f"{new_file} already has a row for {row.symbol} [{row.tool} {row.rule}]")
+    return None
