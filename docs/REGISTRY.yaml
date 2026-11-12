@@ -8036,6 +8036,24 @@
   - content
   last_verified: '2026-10-09'
 - type: ticket
+  path: agent-working/tickets/done/TCK-20261112-CODE-HEALTH-NAMES-AND-REKEYS-MOVED-ROWS.md
+  ticket_id: TCK-20261112-CODE-HEALTH-NAMES-AND-REKEYS-MOVED-ROWS
+  title: The code-health check names a likely move, and one `move` command re-keys
+    the moved rows at unchanged value and ceiling
+  tier: standard
+  ticket_type: feature
+  date: '2026-11-12'
+  related_code_areas:
+  - codebase/health/ratchet.py; codebase/health/registry.py; codebase/health/__main__.py;
+    codebase/health/findings.py; tests/codebase/test_code_health_ratchet_registry.py;
+    tests/codebase/test_code_health_ci_summary.py
+  artifact_files:
+  - agent-working/stored_artifacts/TCK-20261112-CODE-HEALTH-NAMES-AND-REKEYS-MOVED-ROWS/investigation.md
+  - agent-working/stored_artifacts/TCK-20261112-CODE-HEALTH-NAMES-AND-REKEYS-MOVED-ROWS/plan.md
+  - agent-working/stored_artifacts/TCK-20261112-CODE-HEALTH-NAMES-AND-REKEYS-MOVED-ROWS/test_plan.md
+  tags:
+  - testing
+- type: ticket
   path: agent-working/tickets/done/TCK-20261111-CLAUDE-MD-REGISTRY-DRIVER-WORDING.md
   ticket_id: TCK-20261111-CLAUDE-MD-REGISTRY-DRIVER-WORDING
   title: CLAUDE.md says the registry merge driver regenerates after rebase and cherry-pick;

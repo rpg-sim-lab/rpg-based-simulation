@@ -1,10 +1,10 @@
 ---
-status: active
+status: historical
 layer: testing
 authority: P1
 audience: agent
 ticket_id: TCK-20261112-CODE-HEALTH-NAMES-AND-REKEYS-MOVED-ROWS
-phase: open
+phase: done
 date: 2026-11-12
 tags: [testing]
 ---
@@ -15,7 +15,7 @@ tags: [testing]
 The code-health check names a likely move, and one `move` command re-keys the moved rows at unchanged value and ceiling
 
 ## Status
-OPEN
+DONE
 
 ## Tier
 standard
@@ -84,9 +84,20 @@ codebase/health/ratchet.py; codebase/health/registry.py; codebase/health/__main_
 - A full scan in `move` is slow. `--from DIR` reuses a `check` scan. Any test run past a light scope asks lead-planner for the heavy slot.
 
 ## Implementation Notes
+- `ratchet.likely_moves` is a separate pure function over a `RatchetResult`; `compare`, `blocking_failed` and the exit codes are untouched. `LikelyMove` carries the row, the finding, an `ambiguous` flag and the command.
+- `registry.move_rows` raises `MoveRefusedError` (named with the Error suffix, as ruff requires) and re-keys with `dataclasses.replace(row, file=new_file)` only. With `--symbol`, every row of that symbol must have moved; without it, rows whose code did not move stay in place. A target row that already exists is always a refusal.
+- `movable_symbol` is shared by both: `None`, `<module>` and jscpd rows are never paired or moved.
+- `move` scans completely like `tighten` (no skippable tool), so a tool that was not measured cannot look movable.
 
 ## Test Summary
+- `tests/codebase/test_code_health_move.py`: 27 tests, tmp registries and hand-built findings only.
+- Full `tests/codebase/` under the wrapper: 546 passed, exit 0, run on the committed code (7e0d69b35); later changes are ticket, stored-artifact, REGISTRY and monitoring files only.
+- `make code-health` under the wrapper: exit 0, OK, 0 worse, no likely-move line on main.
+- Ruff and mypy on `codebase/health`: no new finding against the base. Pyrefly is advisory and was not run separately.
+- The baseline `codebase/baselines/code_health_exceptions.jsonl` is byte-identical to the base.
 
 ## Files Changed
+codebase/health/{ratchet,registry,__main__,findings}.py; tests/codebase/test_code_health_move.py; docs/plans/codebase_health/python_code_craft_roadmap.md (6.3)
 
 ## Completion Summary
+`check` now names a likely move for a definition that moved files and prints the `move` command; `python3 -m codebase.health move OLD NEW [--symbol S]` re-keys it at its existing value and ceiling and refuses anything that would loosen the gate. `check`'s verdict is unchanged.
