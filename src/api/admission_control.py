@@ -118,14 +118,25 @@ def _get_or_create_state(client_id: str, current_time: float) -> _ClientAdmissio
     return state
 
 
-def _consume_token(state: _ClientAdmissionState, current_time: float) -> float:
-    """Refill based on elapsed wall-clock time, consume 1 token (floor 0), return the
-    resulting fill_ratio -- 0.0 = bucket full (no pressure), 1.0 = bucket empty (at capacity)."""
+def _refill(state: _ClientAdmissionState, current_time: float) -> bool:
+    """Refill based on elapsed wall-clock time. Returns True if the bucket reached full."""
     elapsed = max(0.0, current_time - state.last_refill_time)
     state.tokens = min(_BUCKET_CAPACITY, state.tokens + elapsed * _BUCKET_REFILL_PER_SECOND)
     state.last_refill_time = current_time
+    return state.tokens >= _BUCKET_CAPACITY
+
+
+def _spend_token(state: _ClientAdmissionState) -> float:
+    """Consume 1 token (floor 0), return the resulting fill_ratio -- 0.0 = bucket full (no
+    pressure), 1.0 = bucket empty (at capacity)."""
     state.tokens = max(0.0, state.tokens - 1.0)
     return 1.0 - (state.tokens / _BUCKET_CAPACITY)
+
+
+def _consume_token(state: _ClientAdmissionState, current_time: float) -> float:
+    """Refill, then consume 1 token; return the resulting fill_ratio."""
+    _refill(state, current_time)
+    return _spend_token(state)
 
 
 def _recovery_limit_for(mode: ObservabilityMode) -> float:
@@ -182,6 +193,30 @@ def _evaluate(state: _ClientAdmissionState, fill_ratio: float) -> ObservabilityM
     return state.mode
 
 
+def _apply_idle_recovery(
+    state: _ClientAdmissionState, gap: float, fill_ratio: float, refilled_full: bool,
+) -> None:
+    """Idle time counts toward recovery, so `Retry-After` is a true bound. Kept on the timed
+    path: _evaluate stays time-free and call-counted for a client that never pauses.
+    Both rules need a gap of at least `_RETRY_AFTER_SECONDS` since the client's previous call,
+    so a client that keeps calling faster than that never takes either path:
+    - A full refill resets the client's hysteresis to NORMAL (dwell 0, sample window cleared).
+    - A SURVIVAL client whose refilled fill_ratio is within the SURVIVAL recovery limit steps
+      down to DEGRADED (dwell 0), so the retry it was told to make is admitted."""
+    if gap < _RETRY_AFTER_SECONDS:
+        return
+    if refilled_full:
+        state.mode = ObservabilityMode.NORMAL
+        state.dwell_count = 0
+        state.recent_fill_ratios.clear()
+    elif (
+        state.mode is ObservabilityMode.SURVIVAL
+        and fill_ratio <= _recovery_limit_for(ObservabilityMode.SURVIVAL)
+    ):
+        state.mode = ObservabilityMode.DEGRADED
+        state.dwell_count = 0
+
+
 def _check_admission(client_id: str, current_time: Optional[float] = None) -> ObservabilityMode:
     """Core admission check, shared by all three Depends()-callables below. Returns the
     client's committed mode after evaluation. Raising on SURVIVAL is the caller's job (the
@@ -191,8 +226,11 @@ def _check_admission(client_id: str, current_time: Optional[float] = None) -> Ob
     with _lock:
         _prune_idle_clients(current_time)
         state = _get_or_create_state(client_id, current_time)
+        gap = current_time - state.last_active_time  # time since this client's previous call
         state.last_active_time = current_time
-        fill_ratio = _consume_token(state, current_time)
+        refilled_full = _refill(state, current_time)
+        fill_ratio = _spend_token(state)
+        _apply_idle_recovery(state, gap, fill_ratio, refilled_full)
         return _evaluate(state, fill_ratio)
 
 
