@@ -59,8 +59,10 @@ open. The 2026-10-28 Alloy run shipped normally.
      Loki measured.
 2. **Why the ingester then reports "shutting down"** and never recovers within the run, even with the disk below 90%
    later. Is this a Loki state machine (throttle -> read-only -> stopping) or something else?
-3. **Reproduce** in one short heavy run (owner's go through lead, standing heavy-run rules). Run Loki and Alloy with
-   the current pins only after the host `/` problem is settled. Record usage at Loki start.
+3. **Reproduce and prove in one run** (owner, option A, #715 6819928388). There is no separate reproduce run. Loki's
+   proof shares the single heavy run with TCK-20261018-API-DASHBOARD-AND-TRACE-PROOF. That run needs its own heavy-slot
+   go from lead-planner and the standing heavy-run rules. It builds the backend first, then records `df` for `/` and
+   `/data`, and stops before starting the stack if either is at 85% or more. Record usage at Loki start.
 4. **Fix**, depending on the cause. Options to weigh, without pre-choosing:
    - a named `loki_data` volume, which makes the location explicit and survives a recreate. Named volumes live under
      `DockerRootDir/volumes` on `/data`, which moves the WAL off `/`; verify with `docker volume inspect`. Weigh the
@@ -69,7 +71,9 @@ open. The 2026-10-28 Alloy run shipped normally.
    - Loki's WAL disk-threshold settings, if they exist and are configurable;
    - a pre-run free-space check in the run procedure;
    - an alert on Loki's own throttling or ingester state.
-   Prove the fix in the same or a following run: Alloy sends > 0 entries, and a Loki query returns streams.
+   Prove the fix in the shared run: Alloy sends > 0 entries, and a Loki query returns streams. If the fix is a named
+   volume, show where it lands: `docker volume inspect <project>_loki_data` must give a `Mountpoint` under
+   `/data/docker/volumes` (data-root is `/data/docker`, while image layers sit in `/var/lib/containerd`).
 5. Alloy memory: it peaked at anon+active_file 225.9 of 256 MiB (88%) while retrying failed pushes. Re-measure once
    pushes succeed, and say whether 256m still holds.
 
@@ -104,6 +108,8 @@ compose.yaml
 docker/alloy/config.alloy
 
 ## Assumptions / Open Questions
+- Dispatch: owner yes for option A (#715 6819928388): standard tier, platform-implementer, staging artifacts. This
+  ticket goes first, then TCK-20261018-API-DASHBOARD-AND-TRACE-PROOF, with one proof run for both.
 - Standard tier, because the cause is unknown and a fix may change the stack's storage layout. It needs the owner's
   dispatch yes, and staging artifacts (plan, investigation, test_plan).
 
