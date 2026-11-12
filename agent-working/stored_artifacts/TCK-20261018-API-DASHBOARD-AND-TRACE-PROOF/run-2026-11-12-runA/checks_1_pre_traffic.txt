@@ -1,0 +1,9 @@
+== 2026-11-12T10:30:01Z run A pre-traffic checks
+loki ready: ready
+loki throttle lines: 0, permission lines: 0
+loki_write_sent_entries_total{job="alloy"} => [('', '696')]
+loki_write_request_duration_seconds_count{job="alloy"} => [('204', '34')]
+loki_write_dropped_entries_total{job="alloy"} => [('', '0'), ('', '0'), ('', '0'), ('', '0'), ('', '0')]
+probe: 200 retry-after=
+backend lines with trace_id= now: 1
+INFO:api.observability.search:Search runs: scenario_name=ALL status=ALL sort=DEFAULT limit=50 result_count=16 trace_id=52337f4697a8657e25f43b2272d38168 span_id=56bc2bedaabeed6d

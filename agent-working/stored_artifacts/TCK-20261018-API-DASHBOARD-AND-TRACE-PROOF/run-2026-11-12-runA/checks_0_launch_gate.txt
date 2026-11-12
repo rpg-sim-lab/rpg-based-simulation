@@ -1,0 +1,25 @@
+== 2026-11-12T10:28:02Z RUN A launch gate
+loadavg: 1.18 0.90 0.76 | MemAvailable MiB: 5652 | swap used MiB: 2424 | 10:28:02
+loadavg: 1.09 0.89 0.76 | MemAvailable MiB: 5673 | swap used MiB: 2424 | 10:28:08
+loadavg: 1.00 0.87 0.75 | MemAvailable MiB: 5694 | swap used MiB: 2423 | 10:28:14
+loadavg: 0.92 0.86 0.75 | MemAvailable MiB: 5709 | swap used MiB: 2423 | 10:28:20
+-- df -h / /data
+Filesystem      Size  Used Avail Use% Mounted on
+/dev/sda2        49G   34G   13G  73% /
+/dev/sdb1        99G   78G   16G  84% /data
+-- free -m
+               total        used        free      shared  buff/cache   available
+Mem:            9942        4250         651          18        5396        5692
+Swap:           8191        2423        5768
+-- stat -f
+/ blocks=12821880 free=4063591 avail=3404174
+/data blocks=25721923 free=5326419 avail=4142724
+-- docker system df (before)
+TYPE            TOTAL     ACTIVE    SIZE      RECLAIMABLE
+Images          16        1         7.425GB   1.651GB (22%)
+Containers      2         1         4.096kB   0B (0%)
+Local Volumes   6         0         665MB     665MB (100%)
+Build Cache     31        0         2.039GB   1.426GB
+-- image
+platform-backend:latest id=4613dfdaefb5 created=2026-11-12 17:00:40 +0700 +07
+-- branch/head: platform-implementer-local-loki-volume-and-api-dashboard 2d00aacfeaba7dc889ff0dd918a635f3b95814b6
