@@ -15,7 +15,7 @@ tags: [observability, api-design]
 The API emits no request traces: add OpenTelemetry server spans and Redis client spans, off unless an OTLP endpoint is set (#622 R3)
 
 ## Status
-OPEN
+INPROGRESS
 
 ## Tier
 standard
@@ -105,6 +105,8 @@ Compose already passes `OTEL_EXPORTER_OTLP_ENDPOINT` (empty by default) and `OTE
 - The line numbers are from main 5e58ae857.
 
 ## Implementation Notes
+OpenTelemetry is a new runtime stack; lead-planner-u24 adds the tech-stack registry entry after R3 lands. Dependency diff approved by lead-planner-u24 at pyproject sha256 03fb919b…, uv.lock sha256 34ffcb76… (a change to either needs a fresh review). protobuf moves to a new major (7.x) and the image grows by the OpenTelemetry wheels (about 11 MB installed here); disclose both in the PR.
+Owner approval to run: #715 6813227854; scope decision #715 6789636164. rpg-planner scope rulings of 2026-11-12 are in staging plan.md (D2: Redis spans only with a parent; D4: OTLP HTTP 4318; D6: trace_id/span_id log fields).
 
 ## Test Summary
 
