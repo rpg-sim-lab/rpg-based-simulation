@@ -108,12 +108,27 @@ compose.yaml
 docker/alloy/config.alloy
 
 ## Assumptions / Open Questions
+- Known gap: no alert on Loki's own WAL throttle. `LogShippingErrors` covers the symptom (Alloy retries and dropped entries), and it went Pending on this fault. The Loki metric for the throttle is not named here because its Prometheus name was not read. A rule would need its own fire test.
 - Dispatch: owner yes for option A (#715 6819928388): standard tier, platform-implementer, staging artifacts. This
   ticket goes first, then TCK-20261018-API-DASHBOARD-AND-TRACE-PROOF, with one proof run for both.
 - Standard tier, because the cause is unknown and a fix may change the stack's storage layout. It needs the owner's
   dispatch yes, and staging artifacts (plan, investigation, test_plan).
 
 ## Implementation Notes
+Status 2026-11-12: implemented, not yet run. Plans approved by platform-planner (artifacts under `agent-working/staging_artifacts/TCK-20261111-LOKI-REJECTS-EVERY-PUSH-ON-WAL-DISK-THROTTLE/`).
+- Cause (read from Loki v3.7.9 source, `pkg/ingester/wal_unix.go` and `wal.go`; docs v3.7.x `ingester.wal`): `checkDiskUsage` is `(Blocks - Bfree) / Blocks` from `syscall.Statfs` of the WAL dir, so root-reserved blocks count as free. This host's `/` has 5.14% reserved, so a full `/` reads about 94.8%, the logged figure. The WAL sat in the container layer, which the containerd image store keeps on `/`. The error text `Ingester is shutting down` is `ErrReadOnly`, returned by `Push` while `IsDiskThrottled()`; it clears by itself within about 10 s once usage is under 0.9. Not a stopping state.
+- Fix: `compose.yaml` loki service gets `volumes: - loki_data:/loki` and `command: ... -ingester.wal-dir=/loki/wal`; `loki_data` is added to the top-level volumes. The 0.9 threshold is unchanged. The other stateful services already had named volumes (redis, prometheus, grafana, tempo, ntfy); nothing to change there. Alloy's state stays in its container by design.
+- `docs/runbooks/log-shipping.md`: Known causes now names the symptom string, `ErrReadOnly`, the 0.9 threshold, the Bfree formula, the volume check and the 85% pre-run `df` gate.
+- Not changed: the threshold, the host disk, any other service.
+
 ## Test Summary
+- **validated (static, no stack):** `docker compose --profile observability config -q` passes; the rendered loki service has `-ingester.wal-dir=/loki/wal`, the `loki_data:/loki` mount, and `loki_data` in the top-level volumes. Compose hygiene, paths guard and REGISTRY no-drift tests pass.
+- **validated against source (not observed):** the origin of the 94.8% and the meaning of `Ingester is shutting down` (see Implementation Notes).
+- **to be observed in the shared proof run (needs lead's heavy-slot go):** no permission error on `/loki` or `/loki/wal`; `docker volume inspect` `Mountpoint` under `/data/docker/volumes`; `stat -f` of the WAL filesystem at Loki start (checks the formula fit on a second filesystem); Alloy `loki_write_sent_entries_total` > 0, no 500s, a Loki query returning streams, `LogShippingErrors` Normal; Alloy memory against 256m.
+
 ## Files Changed
+- `compose.yaml`: loki volume, `-ingester.wal-dir`, top-level `loki_data`, comment.
+- `docs/runbooks/log-shipping.md`: Known causes.
+- `agent-working/staging_artifacts/TCK-20261111-LOKI-REJECTS-EVERY-PUSH-ON-WAL-DISK-THROTTLE/`: investigation, plan, test plan.
+
 ## Completion Summary

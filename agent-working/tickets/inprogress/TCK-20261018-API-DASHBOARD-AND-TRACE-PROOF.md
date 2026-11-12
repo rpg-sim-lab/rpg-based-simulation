@@ -108,13 +108,24 @@ None yet. Screenshots and the trace id go to this ticket's staging artifacts.
   platform-planner; don't work around it with `label_replace`.
 
 ## Implementation Notes
-(open)
+Status 2026-11-12: implemented, not yet run. Plans approved by platform-planner (artifacts under `agent-working/staging_artifacts/TCK-20261018-API-DASHBOARD-AND-TRACE-PROOF/`).
+- `docker/grafana/dashboards/api.json` (new, uid `api-v1`, 17 panels incl. rows): request rate by route and by status class, 5xx ratio overall and by route, p50/p95/p99 overall and p95 by route (SLI selectors), backend logs from Loki with a level variable, a Tempo search table for `service.name=rpg-backend`, and the SLO row. Variables: `route`, `status`, `level`. Datasources by uid only; no top-level `id`.
+- **In-flight panel dropped:** R2 exports only `http_request_duration_seconds{method,route,status_class}`, no in-flight gauge. A gauge would be an `src/api` change (rpg's); not built here.
+- The SLO row holds the two expressions of `rules-slo.yaml` verbatim (they carry their comparison, so they return a series only while the SLO is violated), plus two companion "(value)" panels with the same expressions minus ` > 0.3` / ` > 0.01`, so a value shows while the SLO holds.
+- `docker/grafana/provisioning/datasources/datasource.yml`: Loki `derivedFields`: `trace_id`, regex `trace_id=(\w+)`, `datasourceUid: tempo`. The JSON-format regex is not added (the container does not print JSON).
+- `compose.yaml`: backend passes `OTEL_TRACES_SAMPLER_ARG=${OTEL_TRACES_SAMPLER_ARG:-}`. Blank is safe: `src/api/tracing.py` reads blank as unset and uses 0.1.
+- Route-label cardinality: R2's `route` is the route template or `unmatched`, so the stop condition did not apply.
 
 ## Test Summary
-(open)
+- **validated (static, no stack):** `json.load(open('docker/grafana/dashboards/api.json'))` passes; no top-level `id`; every `datasource` object is `{type, uid}` with uid in {prometheus, loki, tempo}; the two `rules-slo.yaml` expressions appear verbatim as panel expressions and the companion "(value)" expressions are present (an independent check script, with a negative control: a copy with a mutated SLO expression fails it). `docker compose config -q` passes and renders the empty `OTEL_TRACES_SAMPLER_ARG`. The datasource YAML parses with the one `derivedFields` entry. `tests/unit/api/test_tracing_engine_boundary.py` exists and passes (20 passed together with the compose-hygiene, REGISTRY no-drift and paths-guard tests).
+- **to be observed in the shared proof run (needs lead's heavy-slot go):** the dashboard loads with no datasource or panel error; panels show data after the burst; the error panels will read 0 because the burst has no 5xx (accepted by platform-planner, not faked); the p95 panel against the same `histogram_quantile` in Prometheus; one trace with a server span and a child Redis span; the Loki line to trace and back round trip; screenshots and the trace id.
+- Known gap: whether the derived field renders as a link on the plain-format lines is unverified until the run (fallback: search the trace id in Tempo by hand).
 
 ## Files Changed
-(open)
+- `docker/grafana/dashboards/api.json` (new).
+- `docker/grafana/provisioning/datasources/datasource.yml`: Loki derivedFields.
+- `compose.yaml`: `OTEL_TRACES_SAMPLER_ARG`.
+- `agent-working/staging_artifacts/TCK-20261018-API-DASHBOARD-AND-TRACE-PROOF/`: investigation, plan, test plan.
 
 ## Completion Summary
 (open)
