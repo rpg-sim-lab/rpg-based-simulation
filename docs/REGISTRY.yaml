@@ -8139,6 +8139,25 @@
   artifact_files: []
   tags: []
 - type: ticket
+  path: agent-working/tickets/done/TCK-20261111-FELT-LETHAL-MEMORY-HAS-NO-RECENCY-WINDOW.md
+  ticket_id: TCK-20261111-FELT-LETHAL-MEMORY-HAS-NO-RECENCY-WINDOW
+  title: A single felt-lethal hit keeps an engaged subject pinned for 65-71 ticks
+    while the hostile strikes nothing, because the felt-lethal memory has no recency
+    window
+  tier: standard
+  ticket_type: bug
+  date: '2026-11-11'
+  related_code_areas:
+  - src/engine/felt_swing.py (felt_lethal_attacker)
+  - src/engine/tactical_flight_guard.py
+  - src/engine/tactical_hold.py (stalemate_break_update)
+  - src/systems/movement.py (resolve_move free-swing site)
+  artifact_files:
+  - agent-working/stored_artifacts/TCK-20261111-FELT-LETHAL-MEMORY-HAS-NO-RECENCY-WINDOW/investigation.md
+  - agent-working/stored_artifacts/TCK-20261111-FELT-LETHAL-MEMORY-HAS-NO-RECENCY-WINDOW/plan.md
+  - agent-working/stored_artifacts/TCK-20261111-FELT-LETHAL-MEMORY-HAS-NO-RECENCY-WINDOW/test_plan.md
+  tags: []
+- type: ticket
   path: agent-working/tickets/done/TCK-20261111-KNOWLEDGE-INDEX-BUILD-MEMORY-BOUNDED.md
   ticket_id: TCK-20261111-KNOWLEDGE-INDEX-BUILD-MEMORY-BOUNDED
   title: 'The knowledge-index build tests get the address space they need: the resource
@@ -8333,22 +8352,6 @@
   related_code_areas:
   - src/systems/movement.py (resolve_move)
   - src/engine/pipeline_phases/movement.py (route_movement_intent)
-  artifact_files: []
-  tags: []
-- type: ticket
-  path: agent-working/tickets/todos/TCK-20261111-FELT-LETHAL-MEMORY-HAS-NO-RECENCY-WINDOW.md
-  ticket_id: TCK-20261111-FELT-LETHAL-MEMORY-HAS-NO-RECENCY-WINDOW
-  title: A single felt-lethal hit keeps an engaged subject pinned for 65-71 ticks
-    while the hostile strikes nothing, because the felt-lethal memory has no recency
-    window
-  tier: standard
-  ticket_type: bug
-  date: '2026-11-11'
-  related_code_areas:
-  - src/engine/felt_swing.py (felt_lethal_attacker)
-  - src/engine/tactical_flight_guard.py
-  - src/engine/tactical_hold.py (stalemate_break_update)
-  - src/systems/movement.py (resolve_move free-swing site)
   artifact_files: []
   tags: []
 - type: ticket
