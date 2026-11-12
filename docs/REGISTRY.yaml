@@ -8054,6 +8054,38 @@
   tags:
   - testing
 - type: ticket
+  path: agent-working/tickets/done/TCK-20261112-KNOWLEDGE-STACK-PIN-BUMPS.md
+  ticket_id: TCK-20261112-KNOWLEDGE-STACK-PIN-BUMPS
+  title: requirements-knowledge.txt takes graphifyy 0.9.104 and torch 2.15.0+cpu,
+    each smoke-tested; headroom-ai stays at 0.37.0 (0.43.1 needs mcp 2.x)
+  tier: standard
+  ticket_type: chore
+  date: '2026-11-12'
+  related_code_areas:
+  - requirements-knowledge.txt, tests/tools/test_code_test_index.py, tests/tools/test_graphify_shim.py,
+  - tools/start_headroom_mcp.sh, tools/knowledge_search.py
+  artifact_files:
+  - agent-working/stored_artifacts/TCK-20261112-KNOWLEDGE-STACK-PIN-BUMPS/investigation.md
+  - agent-working/stored_artifacts/TCK-20261112-KNOWLEDGE-STACK-PIN-BUMPS/plan.md
+  - agent-working/stored_artifacts/TCK-20261112-KNOWLEDGE-STACK-PIN-BUMPS/test_plan.md
+  tags:
+  - knowledge-store
+  - setup
+- type: ticket
+  path: agent-working/tickets/done/TCK-20261112-OBSERVABILITY-SKILL-HARD-LAW-COUNT.md
+  ticket_id: TCK-20261112-OBSERVABILITY-SKILL-HARD-LAW-COUNT
+  title: The observability skill and the skills index name all nine HardLawMonitor
+    laws, not seven
+  tier: hotfix
+  ticket_type: chore
+  date: '2026-11-12'
+  related_code_areas:
+  - src/observability/hard_law_monitor.py (read only)
+  artifact_files: []
+  tags:
+  - skills
+  - observability
+- type: ticket
   path: agent-working/tickets/done/TCK-20261112-PROJECT-SYNC-DRY-RUN.md
   ticket_id: TCK-20261112-PROJECT-SYNC-DRY-RUN
   title: '`tools/sessions/project_sync.py --dry-run`: derive each rpg-lane ticket''s
