@@ -121,7 +121,7 @@ Full evidence is in `agent-working/stored_artifacts/TCK-20261112-KNOWLEDGE-STACK
 | graphifyy 0.9.70 to 0.9.104 | taken. `graphify update .` rc 0 in 411 s and `graphify query` rc 0 on a scratch copy of the graph; 57651 of 58781 node ids carried over and the node-link shape is the same. |
 | headroom-ai 0.37.0 to 0.43.1 | NOT taken. The MCP server crashes at start (`Server.__init__() got an unexpected keyword argument 'on_list_tools'`): 0.43.1 needs `mcp>=2.2.0,<3.0.0`, the repo pins `mcp==1.30.0` for `tools/search_mcp.py`. |
 
-Two slips, both reported: the 0.9.104 CLI refreshed the user-scope graphify skill folders on its first call (restored from `SKILL.md.bak` under owner decision #715 6813744774); and `graphify install`, run deliberately in step 7 under #715 6813901686, also changed `~/.claude/CLAUDE.md`, which that approval did not name (left as is; the owner decides). Step 7: main `.venv-knowledge` upgraded with `uv pip install`, full index rebuilt (16795 documents, rc 0), headroom 0.37.0 MCP still starts and answers.
+Two slips, both reported: the 0.9.104 CLI refreshed the user-scope graphify skill folders on its first call (restored from `SKILL.md.bak` under owner decision #715 6813744774); and `graphify install`, run deliberately in step 7 under #715 6813901686, also changed `~/.claude/CLAUDE.md`, which that approval did not name (left as is; the owner kept it, #715 6814303604). Step 7: main `.venv-knowledge` upgraded with `uv pip install`, full index rebuilt (16795 documents, rc 0), headroom 0.37.0 MCP still starts and answers.
 
 ## Test Summary
 
@@ -140,4 +140,4 @@ requirements-knowledge.txt pins `torch==2.15.0+cpu` and `graphifyy==0.9.104`; `h
 
 Known gap: headroom-ai 0.43.1 waits for the mcp 2.x move of tools/search_mcp.py (needs mcp>=2.2.0,<3).
 
-Acceptance criterion 5 is met when the owner removes the throwaway venv, scratch tree, pip cache and index copies.
+Acceptance criterion 5 is met: the owner had the throwaway venv, scratch tree, pip cache and index copies deleted (#715 6814303604), and kept the `~/.claude/CLAUDE.md` line that `graphify install` rewrote.
