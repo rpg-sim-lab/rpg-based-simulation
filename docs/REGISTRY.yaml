@@ -7582,6 +7582,16 @@
   - platform
   - observability
 - type: doc
+  path: docs/runbooks/records/2026-11-11-compose-image-bumps.md
+  title: Compose image bumps proven on the observability stack (2026-11-11)
+  status: active
+  layer: platform
+  authority: P2
+  audience: agent
+  tags:
+  - platform
+  - observability
+- type: doc
   path: docs/runbooks/redis-down.md
   title: 'Runbook: RedisDown (cause alert)'
   status: active
@@ -8241,6 +8251,20 @@
   artifact_files: []
   tags: []
 - type: ticket
+  path: agent-working/tickets/done/TCK-20261111-COMPOSE-IMAGE-BUMPS-WITH-STACK-PROOF.md
+  ticket_id: TCK-20261111-COMPOSE-IMAGE-BUMPS-WITH-STACK-PROOF
+  title: 'Take Dependabot #878''s compose image bumps by hand, with their comments
+    updated and a short stack proof run'
+  tier: hotfix
+  ticket_type: chore
+  date: '2026-11-11'
+  related_code_areas:
+  - compose.yaml
+  artifact_files: []
+  tags:
+  - platform
+  - observability
+- type: ticket
   path: agent-working/tickets/done/TCK-20261111-DEPENDABOT-WATCHES-WEBSITE.md
   ticket_id: TCK-20261111-DEPENDABOT-WATCHES-WEBSITE
   title: Dependabot watches website/, so a website advisory gets an update PR
@@ -8480,6 +8504,21 @@
   - src/engine/pipeline_phases/movement.py (route_movement_intent)
   artifact_files: []
   tags: []
+- type: ticket
+  path: agent-working/tickets/todos/TCK-20261111-LOKI-REJECTS-EVERY-PUSH-ON-WAL-DISK-THROTTLE.md
+  ticket_id: TCK-20261111-LOKI-REJECTS-EVERY-PUSH-ON-WAL-DISK-THROTTLE
+  title: Loki accepted no log push during the 2026-11-11 stack run (WAL disk throttle,
+    then "Ingester is shutting down")
+  tier: standard
+  ticket_type: bug
+  date: '2026-11-11'
+  related_code_areas:
+  - compose.yaml
+  - docker/alloy/config.alloy
+  artifact_files: []
+  tags:
+  - platform
+  - observability
 - type: ticket
   path: agent-working/tickets/todos/TCK-20261111-SPLIT-UPDATES-PY-INTO-UPDATE-MODELS.md
   ticket_id: TCK-20261111-SPLIT-UPDATES-PY-INTO-UPDATE-MODELS
