@@ -8053,6 +8053,19 @@
   - delivery
   - process-improvement
 - type: ticket
+  path: agent-working/tickets/todos/TCK-20261112-SOCIALUPDATE-MERGE-REUSES-ITS-LOOP-KEY-ACROSS-KEY-TYPES.md
+  ticket_id: TCK-20261112-SOCIALUPDATE-MERGE-REUSES-ITS-LOOP-KEY-ACROSS-KEY-TYPES
+  title: 'SocialUpdate carries 6 mypy errors: merge reuses one loop variable across
+    int-keyed and str-keyed dicts'
+  tier: hotfix
+  ticket_type: repair
+  date: '2026-11-12'
+  related_code_areas:
+  - src/core/update_models/social.py (SocialUpdate.merge)
+  - codebase/baselines/mypy_baseline.txt
+  artifact_files: []
+  tags: []
+- type: ticket
   path: agent-working/tickets/done/TCK-20261111-CLAUDE-MD-REGISTRY-DRIVER-WORDING.md
   ticket_id: TCK-20261111-CLAUDE-MD-REGISTRY-DRIVER-WORDING
   title: CLAUDE.md says the registry merge driver regenerates after rebase and cherry-pick;
@@ -8305,20 +8318,7 @@
   - documentation
   - reference
 - type: ticket
-  path: agent-working/tickets/todos/TCK-20261111-A-HOLD-MODE-MOVE-STILL-TAKES-A-STEP.md
-  ticket_id: TCK-20261111-A-HOLD-MODE-MOVE-STILL-TAKES-A-STEP
-  title: A subject whose movement mode is HOLD still takes a step toward its stored
-    target
-  tier: hotfix
-  ticket_type: bug
-  date: '2026-11-11'
-  related_code_areas:
-  - src/systems/movement.py (resolve_move)
-  - src/engine/pipeline_phases/movement.py (route_movement_intent)
-  artifact_files: []
-  tags: []
-- type: ticket
-  path: agent-working/tickets/todos/TCK-20261111-SPLIT-UPDATES-PY-INTO-UPDATE-MODELS.md
+  path: agent-working/tickets/inprogress/TCK-20261111-SPLIT-UPDATES-PY-INTO-UPDATE-MODELS.md
   ticket_id: TCK-20261111-SPLIT-UPDATES-PY-INTO-UPDATE-MODELS
   title: Move the per-domain update models out of src/core/updates.py into src/core/update_models/,
     so the module comes back under its length ceiling
@@ -8330,6 +8330,19 @@
   - src/core/update_models/
   - codebase/baselines/code_health_exceptions.jsonl (the updates.py module-length
     row)
+  artifact_files: []
+  tags: []
+- type: ticket
+  path: agent-working/tickets/todos/TCK-20261111-A-HOLD-MODE-MOVE-STILL-TAKES-A-STEP.md
+  ticket_id: TCK-20261111-A-HOLD-MODE-MOVE-STILL-TAKES-A-STEP
+  title: A subject whose movement mode is HOLD still takes a step toward its stored
+    target
+  tier: hotfix
+  ticket_type: bug
+  date: '2026-11-11'
+  related_code_areas:
+  - src/systems/movement.py (resolve_move)
+  - src/engine/pipeline_phases/movement.py (route_movement_intent)
   artifact_files: []
   tags: []
 - type: ticket
