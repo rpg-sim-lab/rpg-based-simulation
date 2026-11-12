@@ -61,10 +61,10 @@ services:
       start_period: 20s
 
   redis:
-    # Pinned to the exact 8.10.2 build, by digest (multi-arch index, verified by pull on 2026-10-18); moves together with redis-py 8
+    # Pinned to the exact 8.10.3 build, by digest (multi-arch index, verified with `docker buildx imagetools inspect` on 2026-11-11); moves together with redis-py 8
     # (TCK-20261018-DEPS-REDIS-8). A new 8.x patch cannot change the observability stream, anomaly worker or readiness behaviour
     # with no diff here. Bump deliberately.
-    image: redis:8.10.2-alpine@sha256:3811787313eba226a2ef38658c6ccb91cd5e110edc89c37767de373120a0e5a0
+    image: redis:8.10.3-alpine@sha256:71885d8cc6e42f2bc0aa2eb853bfc4be200b5108a46ac50e117ae1df0531fb80
     ports:
       - "127.0.0.1:${REDIS_PORT:-6379}:6379"
     restart: unless-stopped
@@ -131,8 +131,8 @@ services:
 
   prometheus:
     profiles: ["observability"]
-    # Third-party images are pinned by digest (the multi-arch index current on 2026-10-14; no version change); Dependabot bumps them.
-    image: prom/prometheus:v3.15.1@sha256:fa3302279710be2f21a8301ec17a8b4f2301fd829bd113839b3b6b02b6f191a2
+    # Third-party images are pinned by digest (v3.16.0, 2026-11-05, multi-arch index verified on 2026-11-11); Dependabot proposes bumps, a hand-taken bump needs a proof run.
+    image: prom/prometheus:v3.16.0@sha256:e04987641b57704f408e31f6373ba4138ecf27cb4a165d24aabb6c38fddd0f06
     mem_limit: 512m
     ports:
       - "127.0.0.1:${PROMETHEUS_PORT:-9090}:9090"
@@ -154,11 +154,11 @@ services:
 
   ntfy:
     profiles: ["observability"]
-    # Local push target for Grafana alerts (ADR D5; no Alertmanager). binwiederhier/ntfy v2.28.0 (2026-08-27, latest stable at least two weeks old),
+    # Local push target for Grafana alerts (ADR D5; no Alertmanager). binwiederhier/ntfy v2.37.2 (2026-11-04, taken early by owner decision #715 6800739670),
     # pinned by tag and multi-arch index digest; Dependabot bumps it. auth-default-access deny-all: nobody reads or writes a topic without a login or
     # token; the user and token are created with ntfy's own CLI (see the top of this file). Bound to 127.0.0.1 only. Metrics are on a dedicated
     # in-network port (9091), outside the auth, scraped by Prometheus as job "ntfy". The auth and cache databases live in the ntfy_data volume.
-    image: binwiederhier/ntfy:v2.34.0@sha256:901e14503d3f605f445be0e68f2ac71f0aa73391897ce6ceb599f8c48d8b3792
+    image: binwiederhier/ntfy:v2.37.2@sha256:1875ddcf815c8a3c981d6d78c67a93452d0abba79b1ab9520b1f5f5238902bd7
     command: serve
     mem_limit: 96m # measured 2026-10-20 (58-minute proof run): anon 26 MiB, anon + active_file 58 MiB (message-cache file pages), docker stats 61 MiB; raised from 64m (platform-planner)
     init: true # needed by the healthcheck (no zombie processes)
@@ -184,10 +184,10 @@ services:
   redis-exporter:
     profiles: ["observability"]
     # Redis metrics for the Redis-down cause alert (TCK-20261018-REDIS-DOWN-CAUSE-ALERT, cause alert added 2026-10-18 by lead review): `redis_up`,
-    # memory, clients and stream lengths. oliver006/redis_exporter v1.93.0 (2026-10-01, over two weeks old), pinned by tag and index digest; Dependabot bumps it.
-    # The README names Valkey 7-9 "and Redis" but not Redis 8: compatibility with this file's redis:8.10.2 is proven by the live run. The image is a scratch
+    # memory, clients and stream lengths. oliver006/redis_exporter v1.97.0 (2026-11-04, taken early by owner decision #715 6800739670), pinned by tag and index digest; Dependabot bumps it.
+    # The README names Valkey 7-9 "and Redis" but not Redis 8: compatibility with this file's redis:8.10.3 is proven by the live run in docs/runbooks/records/2026-11-11-compose-image-bumps.md. The image is a scratch
     # image with no shell, so there is no healthcheck; Prometheus' `up{job="redis"}` is the probe. No host port.
-    image: oliver006/redis_exporter:v1.96.0@sha256:3d57b9eb142a62ffc600063606a41cd471cd53d81bed10be5b56b3a8918f2c26
+    image: oliver006/redis_exporter:v1.97.0@sha256:f5f903fbe77571d455ede0453b084d6840bc62fc105efac001034421cab83b99
     mem_limit: 32m # measured 12 MiB peak (anon 10), 2026-10-19 re-measure
     command:
       - '--redis.addr=redis://redis:6379'
