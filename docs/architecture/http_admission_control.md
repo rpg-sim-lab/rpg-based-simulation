@@ -132,6 +132,17 @@ this ticket (see that doc's own updated text).
   scaling (`governor.py:131-134`). A future change to
   `ObservabilityController`'s thresholds automatically propagates without a
   second edit site.
+- **Idle time counts toward recovery** (`_apply_idle_recovery`, on the timed
+  `_check_admission` path; `_evaluate` stays time-free). Both rules need a gap of
+  at least `_RETRY_AFTER_SECONDS` (5 s) since that client's previous call:
+  (a) a `SURVIVAL` client whose refilled fill ratio is at or below the `SURVIVAL`
+  recovery limit steps down to `DEGRADED` with dwell 0, so the retry it was told
+  to make is admitted; (b) a client whose bucket has refilled to full is reset to
+  `NORMAL` (dwell 0, sample window cleared). `Retry-After: 5` is therefore a true
+  bound: from an empty bucket 5 s refills 15 tokens, a fill ratio of 0.533 after
+  the call, under the 0.8 limit. A client that keeps calling faster than the gap
+  never takes either rule and stays call-counted and rejected as before. The
+  bucket constants, `Retry-After` and the thresholds are unchanged.
 
 ---
 
