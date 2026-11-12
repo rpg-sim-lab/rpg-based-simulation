@@ -7525,6 +7525,16 @@
   - platform
   - observability
 - type: doc
+  path: docs/runbooks/ntfy-topic-rotation.md
+  title: 'Runbook: rotate the local ntfy alert topic'
+  status: active
+  layer: platform
+  authority: P2
+  audience: agent
+  tags:
+  - platform
+  - security
+- type: doc
   path: docs/runbooks/records/2026-10-18-api-load-test.md
   title: 'API load test (2026-10-18): age effect, /entities page cap and proposed
     SLO'

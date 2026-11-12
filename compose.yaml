@@ -11,8 +11,10 @@
 # deny-all, so Grafana needs a token. The topic and the token are two more gitignored secret files, never committed. Create them once, after the first ntfy start:
 #   mkdir -p docker/secrets && openssl rand -hex 16 > docker/secrets/ntfy_topic && : > docker/secrets/ntfy_token && chmod 644 docker/secrets/ntfy_topic docker/secrets/ntfy_token   # the files must be world-readable (644) because Grafana's container user (uid 472) reads them through the bind mount (accepted for this single-user host; on a multi-user host use a group-readable mode or a compose-managed secret instead); an empty token file only lets compose parse; Grafana's guard refuses to start until step 4 fills it
 #   docker compose --profile observability up -d ntfy
-#   docker compose exec -T -e NTFY_PASSWORD="$(openssl rand -hex 12)" ntfy ntfy user add grafana                       # a regular user for Grafana; its password is never used (the token is)
-#   docker compose exec -T ntfy ntfy access grafana "$(cat docker/secrets/ntfy_topic)" write-only
+#   NTFY_PASSWORD="$(openssl rand -hex 12)" docker exec -i -e NTFY_PASSWORD "$(docker compose --profile observability ps -q ntfy)" ntfy user add grafana   # a regular user for Grafana; its password is never used (the token is); it goes through the environment, not onto a command line
+#   NTFY_TOPIC="$(cat docker/secrets/ntfy_topic)" docker exec -i -e NTFY_TOPIC "$(docker compose --profile observability ps -q ntfy)" sh -c 'exec ntfy access grafana "$NTFY_TOPIC" write-only' > /dev/null
+#     `ntfy access` takes the topic only as a positional argument (cmd/access.go, ntfy v2.37.2; no stdin, file or env source), so it goes through the environment: off the host command line and out of shell
+#     history. Its output is discarded because it prints the topic on success. The topic is still in the container's process list for the milliseconds the command runs. Rotating it: docs/runbooks/ntfy-topic-rotation.md.
 #   docker compose exec -T ntfy ntfy token add --label=grafana grafana | grep -o 'tk_[A-Za-z0-9]*' > docker/secrets/ntfy_token
 #   docker compose exec ntfy ntfy user add --role=admin <your name>                                                  # your own login, to subscribe from this host (http://127.0.0.1:${NTFY_PORT:-2586}); it prompts for the password, so none lands in shell history
 # Grafana refuses to start on an empty ntfy_topic or ntfy_token (guard in the grafana entrypoint). Never put a real topic or token in a file that is committed.
