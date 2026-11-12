@@ -160,3 +160,29 @@ def test_default_exporter_is_otlp_http_and_needs_no_collector_to_start():
     assert provider is not None
     processor = provider._active_span_processor._span_processors[0]  # noqa: SLF001
     assert type(processor.span_exporter).__module__.startswith("opentelemetry.exporter.otlp.proto.http")
+
+
+def test_log_correlation_wraps_the_existing_record_factory_and_installs_once():
+    previous = logging.getLogRecordFactory()
+
+    def marking(*args, **kwargs):
+        record = previous(*args, **kwargs)
+        record.marker = "kept"
+        return record
+
+    logging.setLogRecordFactory(marking)
+    try:
+        app, provider, _ = _build()
+        installed = logging.getLogRecordFactory()
+        assert installed is not marking
+        # a second create_v2_app() in the same process (tests do this) must not stack a second wrapper
+        tracing.setup_tracing(FastAPI(), environ={**ENDPOINT, "OTEL_TRACES_SAMPLER_ARG": "1"}, span_exporter=InMemorySpanExporter())
+        assert logging.getLogRecordFactory() is installed
+        with provider.get_tracer("t").start_as_current_span("s"):
+            record = logging.getLogRecordFactory()("n", 30, "f", 1, "x", (), None)
+        assert record.marker == "kept"  # the old factory still ran
+        assert len(record.trace_id) == 32
+        tracing._remove_log_correlation()
+        assert logging.getLogRecordFactory() is marking  # and uninstalling restores it
+    finally:
+        logging.setLogRecordFactory(previous)
