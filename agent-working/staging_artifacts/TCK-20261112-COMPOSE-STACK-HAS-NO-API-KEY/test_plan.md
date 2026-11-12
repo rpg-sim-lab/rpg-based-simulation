@@ -12,6 +12,14 @@ artifact_type: test_plan
 
 # Test plan: TCK-20261112-COMPOSE-STACK-HAS-NO-API-KEY
 
+> **Amendment, 2026-11-12.** The key pair is in `docker/secrets/compose.env` (not `.env`), with the tracked `docker/frontend.defaults.env` supplying the empty default. Added or changed checks:
+> - S0. `git check-ignore -q docker/secrets/compose.env` exits 0 (the path is gitignored) and `git check-ignore docker/frontend.defaults.env` prints nothing (the defaults file is tracked).
+> - S1/S2 run against a scratch copy of `compose.yaml` pointing at a throwaway env file outside `docker/secrets/`, printing booleans only (done: default fail-closed, the later file wins, both services hold both values, ports bind to `127.0.0.1`).
+> - S6. `.dockerignore` lists `.env` and `docker/secrets/`.
+> - P3 also confirms the rendered `/tmp/api-key.conf` has one `proxy_set_header X-API-Key` line and that the default (no `compose.env`) renders an empty value, not an nginx start failure.
+> - P8 adds: neither the backend's nor the frontend's `docker top` output has the key on argv, and the build context upload does not include `docker/secrets/` (the `.dockerignore` effect, read from the build log by count).
+
+
 Static checks run before the proof run and need no stack. The proof run (P1 to P9) needs a frontend image build and its own slot ask; it covers the folded-in `/openapi.json` hotfix too. Run rules, as in the earlier runs: build first, `df` gate at 85% on `/` and `/data`, the abort watcher armed, `down` without `-v`, outputs under `/data`. **Nothing under `docker/secrets/` is read or printed; the raw key is generated in-process, sent through a `curl -K -` config on stdin, and never written to an evidence file.**
 
 ## Static

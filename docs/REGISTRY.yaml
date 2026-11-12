@@ -7486,6 +7486,16 @@
   - observability
   - performance
 - type: doc
+  path: docs/runbooks/compose-api-key.md
+  title: 'Runbook: API keys for the compose stack'
+  status: active
+  layer: platform
+  authority: P2
+  audience: agent
+  tags:
+  - platform
+  - security
+- type: doc
   path: docs/runbooks/disk-space.md
   title: 'Runbook: disk space (DiskSpaceLow, DiskWillFillIn24h)'
   status: active

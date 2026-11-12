@@ -80,6 +80,26 @@ src/config/loader.py
   work. The committed dev pair stays dev-only, and no real secret goes into git.
 
 ## Implementation Notes
+Status 2026-11-12: implemented statically, proof run pending. Plan approved by platform-planner (artifacts under `agent-working/staging_artifacts/TCK-20261112-COMPOSE-STACK-HAS-NO-API-KEY/`).
+- **Backend:** `compose.yaml` loads the optional, gitignored `docker/secrets/compose.env` with `env_file` (`required: false`): it carries `RPG_API_KEY_HASHES=local:<sha256 of the raw key>`. With the file absent nothing is set and the backend stays fail-closed (401 on every route except `/health`).
+- **Frontend (rpg-planner-ubuntu's answer: nginx adds the header, no frontend change):** `docker/nginx-api-key.conf.template` (one line: `proxy_set_header X-API-Key "${FRONTEND_API_KEY}";`) is rendered at container start by the base image's entrypoint into `/tmp/api-key.conf` (`NGINX_ENVSUBST_OUTPUT_DIR=/tmp`, `NGINX_ENVSUBST_FILTER=^FRONTEND_API_KEY`, set in `docker/frontend.Dockerfile`); `docker/nginx.conf` stays static and includes it inside `location /api/` (an explicit include, so a missing file stops nginx at start). An empty value renders `proxy_set_header X-API-Key "";`, which sends no header. The frontend loads the tracked `docker/frontend.defaults.env` (`FRONTEND_API_KEY=`, empty) first and `docker/secrets/compose.env` last, so the variable is always defined: an undefined one would leave `${FRONTEND_API_KEY}` in the rendered file and nginx would refuse to start.
+- **Not the repo-root `.env`:** `.mcp.json` runs the GitHub MCP server with `--env-file .env`, so the root `.env` is passed wholesale into that container and already holds its credentials; the API key pair has its own file (lead confirmed `docker/secrets/compose.env`). `.env` was not opened.
+- **Binding:** `backend` and `frontend` publish on `127.0.0.1` by default (`BACKEND_BIND`, `FRONTEND_BIND` override), because nginx is now the authentication boundary (anyone who can reach the frontend port is authenticated as that key).
+- **Settled from upstream source (read 2026-11-12, no container started):** the nginx-unprivileged entrypoint runs the templates step as uid 101 and honours `NGINX_ENVSUBST_OUTPUT_DIR`; it does not create the output directory (hence `/tmp`) and prints paths, not values. The read was of branch `main` (nginx 1.31.8): the tag `1.31.7` returned 404. The proof run confirms it on the pinned image.
+- **Runbook:** `docs/runbooks/compose-api-key.md` (owner-run recipe with a `git check-ignore` guard and `noclobber`, how to check it without a key on argv, what shows the raw key, who loses access to loopback, one key means one admission bucket, rotation). `.dockerignore` now lists `.env` and `docker/secrets/`.
+- **Found:** one shared env file means the backend container also holds the raw key (and the frontend the hash); splitting it into two `env_file`s removes that. Flagged to platform-planner.
+- **`/openapi.json`** (the folded-in hotfix `TCK-20261112-COMPOSE-FRONTEND-API-DOCS-SCHEMA-NOT-PROXIED`): not changed yet; the proof run observes it first, then the location is added.
+- Not touched: `src/**`, `frontend/**`, `tests/**`, `website/**`.
+
 ## Test Summary
+- **validated (static, no stack):** `docker compose config` with no `compose.env`: the backend has no `RPG_API_KEY_HASHES` (fail-closed) and the frontend's `FRONTEND_API_KEY` is defined and empty; with a throwaway pair in a scratch env file outside `docker/secrets/` (a scratch copy of `compose.yaml`), the backend hash equals sha256 of the generated key and the frontend key equals it (the later file wins over the empty default); both services publish on `127.0.0.1`. No added diff line and no new file carries a 32+ hex string; the template has exactly one `${FRONTEND_API_KEY}`; `nginx.conf` has no env-style `${...}`; the Dockerfile `ENV` lines hold no secret. `git check-ignore -q docker/secrets/compose.env` exits 0; `docker/frontend.defaults.env` is not ignored. Paths guard, REGISTRY no-drift, repo-root allowlist and compose-hygiene tests pass (19).
+- **to be observed in the proof run (heavy: needs a frontend image build, a slot ask):** fail-closed default (401 on the backend port and through the frontend, `/health` 200); the templates step on the pinned image; with a pair, 200 through the frontend with no client key, 200 direct with the key, 401 without or with a wrong key; the WebSocket handshake through the frontend (101); the empty-key case, and that a client-sent `X-API-Key` is NOT forwarded when `FRONTEND_API_KEY` is empty; `/openapi.json` before and after the location is added; the raw key absent (by counts) from the image config and history, the SPA bundle, logs and argv; the shared-bucket behaviour. `docker system df` before and after (the build lands on `/`).
+
 ## Files Changed
+- `compose.yaml`: `env_file` on backend and frontend, loopback port binds, header and inline comments.
+- `docker/frontend.Dockerfile`, `docker/nginx.conf`, `docker/nginx-api-key.conf.template` (new), `docker/frontend.defaults.env` (new).
+- `.dockerignore`: `.env`, `docker/secrets/`.
+- `docs/runbooks/compose-api-key.md` (new), `docs/runbooks/README.md`.
+- `agent-working/staging_artifacts/TCK-20261112-COMPOSE-STACK-HAS-NO-API-KEY/`: investigation, plan, test plan.
+
 ## Completion Summary

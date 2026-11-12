@@ -12,6 +12,17 @@ artifact_type: plan
 
 # Plan: TCK-20261112-COMPOSE-STACK-HAS-NO-API-KEY
 
+> **Amendment, 2026-11-12, after platform-planner's and lead's review (this supersedes the plan below where they differ).**
+> - **No root `.env`.** The repo's `.mcp.json` runs the GitHub MCP server with `docker run -i --rm --env-file .env ...`, so the root `.env` is passed wholesale into that container and already holds its GitHub credentials. Putting the API key pair there would inject the raw key into that container and mix two unrelated secrets. The pair lives in one gitignored file, **`docker/secrets/compose.env`** (lead confirmed), loaded explicitly with `env_file: [{path: ./docker/secrets/compose.env, required: false}]` on the backend and the frontend only. `.env` is not opened, printed or mentioned in any recipe except to say why it is not used.
+> - **Defaults file.** The base image's templates step substitutes only variables that exist; an undefined `FRONTEND_API_KEY` would leave `${FRONTEND_API_KEY}` in the rendered file and nginx would refuse to start in the default state. So the frontend also lists a tracked, secret-free `docker/frontend.defaults.env` (`FRONTEND_API_KEY=`, empty) first; `compose.env`, listed last, overrides it. The backend needs no default (its field defaults to empty).
+> - **The recipe** (runbook) writes both lines with one redirect under `noclobber` (it refuses if the file exists, so a second run cannot leave two keys) after `git check-ignore -q docker/secrets/compose.env && echo ignored-ok`; stop if that prints nothing. Bash-builtin `printf` only.
+> - **Loopback.** Both `frontend` and `backend` bind to `127.0.0.1` by default (`FRONTEND_BIND`, `BACKEND_BIND`), as platform-planner approved; the runbook says who loses access (only other machines).
+> - **nginx-unprivileged entrypoint, settled from upstream source** (see `investigation.md` section 3.4): the templates step runs as uid 101 and honours `NGINX_ENVSUBST_OUTPUT_DIR`; no fallback entrypoint is needed. The proof run still confirms it on the pinned image.
+> - **`.dockerignore`** now lists `.env` and `docker/secrets/`, so neither is sent in a build context (no Dockerfile copies the whole context, so neither could reach an image anyway: defence in depth).
+> - **One shared file means the backend container also holds the raw key and the frontend also holds the hash** (verified by the static check S2). The hash on the frontend is harmless; the raw key in the backend's environment is unnecessary exposure (the backend needs only the hash). Splitting the file into two (`env_file` per service) removes it; flagged to platform-planner.
+> - `/openapi.json` stays as planned: observe first (P2), then add the location.
+
+
 Standard tier. Findings are in `investigation.md`. **Not implemented yet: this plan goes to platform-planner first.** Folded in, as platform-planner asked: the hotfix `TCK-20261112-COMPOSE-FRONTEND-API-DOCS-SCHEMA-NOT-PROXIED` (the `/openapi.json` proxy). No heavy run in this dispatch; the proof run comes later with its own slot ask.
 
 ## Decision

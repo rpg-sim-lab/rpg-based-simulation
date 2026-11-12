@@ -18,6 +18,9 @@
 # Grafana refuses to start on an empty ntfy_topic or ntfy_token (guard in the grafana entrypoint). Never put a real topic or token in a file that is committed.
 # Grafana applies the admin password only when it first creates its database: to change it later, run `grafana cli admin reset-admin-password` in the container or remove the grafana_data volume.
 # Host ports of redis, prometheus, grafana and loki bind to 127.0.0.1 (redis has no auth); services reach each other by service name.
+# API access (TCK-20261112-COMPOSE-STACK-HAS-NO-API-KEY): the backend fails closed (401 on every route except /health) until you create the gitignored
+# docker/secrets/compose.env with a key pair (RPG_API_KEY_HASHES for the backend, FRONTEND_API_KEY for nginx; recipe in docs/runbooks/compose-api-key.md).
+# backend and frontend bind to 127.0.0.1 by default (BACKEND_BIND, FRONTEND_BIND); the frontend's nginx adds the key, so it is the authentication boundary.
 # backend, ai_worker and watchdog run as a non-root user (uid/gid 1000). On a host whose user is not 1000, build with APP_UID/APP_GID set
 # (for example `APP_UID=$(id -u) APP_GID=$(id -g) docker compose build`) so the bind-mounted ./data stays writable and files in it stay yours.
 # Every service has a memory limit (mem_limit); see TCK-20261014-COMPOSE-OBSERVABILITY-PROFILE-AND-LIMITS.
@@ -29,8 +32,10 @@ services:
       args:
         APP_UID: ${APP_UID:-1000}
         APP_GID: ${APP_GID:-1000}
+    # Bound to loopback by default, like redis, prometheus, grafana and loki (TCK-20261112-COMPOSE-STACK-HAS-NO-API-KEY): only this machine reaches it.
+    # Set BACKEND_BIND=0.0.0.0 in .env to publish it on every interface. The frontend (nginx) and ai_worker reach it over the compose network and are not affected.
     ports:
-      - "${BACKEND_PORT:-8000}:8000"
+      - "${BACKEND_BIND:-127.0.0.1}:${BACKEND_PORT:-8000}:8000"
     # The unauthenticated metrics port (rpg R1, #648) is reachable only on the compose network, by Prometheus: `expose`, never `ports`.
     # The public 8000/metrics stays behind admission (401).
     expose:
@@ -47,6 +52,12 @@ services:
       - OTEL_EXPORTER_OTLP_ENDPOINT=${OTEL_EXPORTER_OTLP_ENDPOINT:-}
       - OTEL_TRACES_SAMPLER_ARG=${OTEL_TRACES_SAMPLER_ARG:-}
       - OTEL_SERVICE_NAME=rpg-backend
+    # API keys (TCK-20261112-COMPOSE-STACK-HAS-NO-API-KEY). The backend fails closed while no key is configured: every route except /health answers 401.
+    # The optional, gitignored file docker/secrets/compose.env holds `RPG_API_KEY_HASHES=local:<sha256 of the raw key>` (recipe: docs/runbooks/compose-api-key.md);
+    # it is NOT the repo-root .env, which .mcp.json passes wholesale to another container. A missing file keeps the default (fail-closed).
+    env_file:
+      - path: ./docker/secrets/compose.env
+        required: false
     volumes:
       # Optional: mount data directory for persistent game state / config changes
       - ./data:/app/data
@@ -118,8 +129,17 @@ services:
     build:
       context: .
       dockerfile: docker/frontend.Dockerfile
+    # nginx here is the authentication boundary (TCK-20261112-COMPOSE-STACK-HAS-NO-API-KEY): it adds the API key to every /api/ request, so anyone who can
+    # reach this port is authenticated as that key. Hence loopback by default; set FRONTEND_BIND=0.0.0.0 in .env only if you accept that.
     ports:
-      - "${FRONTEND_PORT:-8080}:8080"
+      - "${FRONTEND_BIND:-127.0.0.1}:${FRONTEND_PORT:-8080}:8080"
+    # FRONTEND_API_KEY is the RAW key nginx sends as X-API-Key (docker/nginx-api-key.conf.template, rendered into /tmp at container start; never in the image).
+    # The tracked defaults file sets it empty (no header, the backend answers 401); the optional, gitignored docker/secrets/compose.env, listed last so it wins,
+    # carries the real value. `docker compose config` prints that value and `docker inspect` shows it. Recipe and warnings: docs/runbooks/compose-api-key.md.
+    env_file:
+      - ./docker/frontend.defaults.env
+      - path: ./docker/secrets/compose.env
+        required: false
     depends_on:
       backend:
         condition: service_healthy
