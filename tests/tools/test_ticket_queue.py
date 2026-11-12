@@ -225,7 +225,7 @@ def test_the_default_run_reads_no_working_tree_ticket_and_writes_nothing(tmp_pat
     runner = Runner({_path("TCK-20261101-A"): _ticket("TCK-20261101-A")})
     view = ticket_queue.build_view(runner, "origin/main")
     assert [r["id"] for r in view["rows"]] == ["TCK-20261101-A"]
-    assert all(c[0] in ("git", "gh") and c[1] in ("rev-parse", "show", "ls-tree", "pr", "api") for c in runner.calls)
+    assert all(c[0] in ("git", "gh") and c[1] in ("rev-parse", "show", "ls-tree", "pr", "api", "repo") for c in runner.calls)
     assert before == hashlib.sha256(repr(sorted(p.name for p in tmp_path.rglob("*"))).encode()).hexdigest()
 
 
