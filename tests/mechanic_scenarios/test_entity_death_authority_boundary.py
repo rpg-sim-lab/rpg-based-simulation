@@ -197,6 +197,8 @@ def test_defeat_deaths_are_recorded_in_unscripted_corpus_play():
     DEFEAT, bounded at `CORPUS_DEFEAT_WINDOW` ticks, and a run with no DEFEAT inside the bound still fails (so the test cannot pass
     vacuously). The window and seed are sized by the figures in the comment above CORPUS_DEFEAT_WINDOW (S1, 2.204; rpg-designer ruling, 2026-11-12, session message).
 
+    The premise rests on one DEFEAT (s43, t110, fix tree 824483949). If a later change removes it, re-size from measured cells per this ruling. Do not delete the test or script the DEFEAT.
+
     The remaining combat-dead / lifecycle-active / unrecorded residue is the hazard route
     (world_dynamics.py:39 overwrites outcome_kind), owned by
     TCK-20261001-HAZARD-OVERWRITES-SAME-TICK-COMBAT-OUTCOME-KIND; pinned so its fix is visible."""
