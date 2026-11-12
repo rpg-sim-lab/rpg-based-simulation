@@ -72,6 +72,8 @@ above before kind-specific dispatch:
 | MARRIAGE | Always ACCEPTED once the prelude passes — no utility/risk model, no `familiarity` threshold. On ACCEPTED, a durable `MarriageState` is written on **both** parties via `StrategicUpdate.marriages_add_or_update`. Bigamy prevention and aging/duration thresholds are deliberately out of scope — see `docs/mechanics/04_strategic_cognition.md` §8 |
 | CLAN | Clan-membership contract kind — see `docs/systems/faction_contract.md` for Clan formation/succession rules this chapter does not duplicate |
 
+> **Current play (RECRUITMENT; "Current play" note, `TCK-20261111-NO-RECRUITMENT-APPRAISAL-RUNS-IN-ANY-CORPUS-WORLD`, divergence 2.205).** The trust pipeline above and the RECRUITMENT row are the designed law, and they do not run for recruitment in play. Acceptance currently runs on D-09's minimal accept: any live offer from any entity is accepted by its receiver if the receiver is not already in a group (`find_pending_incoming_offer`, `src/domains/cooperation/services.py`; `CooperationPhase`, `src/domains/cooperation/phase.py:190`). The only code that appraises a RECRUITMENT contract, `CoreActions.execute_recruit`, is dispatched only by `ActionRouter` on the action "RECRUIT", and nothing issues it. The party-commitment check listed in the row has no code.
+
 Every dispatch except MERCHANT/RECRUITMENT/POSITION_SWAP is a pure trust-gate — no counter-terms,
 no utility model. On ACCEPTED, the resulting `ContractState` attaches to `EntityUpdate.strategic`
 with **no `ResourceTransferIntent`** for TEAM_UP — no gold changes hands on party formation.

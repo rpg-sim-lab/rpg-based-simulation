@@ -369,10 +369,12 @@ The "Semgrep OSS" and code-health code-scanning check runs are advisory: their f
 The steps above cover diagnosing a failure; this covers the surrounding push→PR→merge→sync cadence itself, since it isn't a `Workflow` and has no other home.
 
 **PR size (owner rule, 2026-11-07).** Every PR delivers complete work and closes at least one completed ticket. Ticket
-filings, evidence records and seat-ticket notes ride in the next implementation PR on that track, never in a PR of their
+filings and seat-ticket notes ride in the next implementation PR on that track, never in a PR of their
 own. The reason is to cut CI and check effort. Exceptions, and only these: Dependabot PRs, and the handover-transit export (step 2a). Week-close and
 retro batches are not exceptions: they get a ticket of their own, or ride in the next agent-working implementation PR.
 `pr_render.py` keeps its ticketless path for the two exceptions and warns on stderr when it is used; nothing blocks.
+
+**Ride-along (owner rule, 2026-11-11, #715 6793205403).** Small no-code changes ride in the next PR on their track instead of a PR of their own: doc wording, monitoring week close-outs and re-closes, and glossary, registry or summary text. Each still closes its own ticket. A PR stands alone only when it changes `src/` behaviour, carries evidence (a measurement or proof run the PR is for), unblocks a seat that is waiting on it, or is the only open PR on its track. Why: every merge costs a full CI run, an owner merge, and a REGISTRY resync for every other open PR.
 
 **Weigh the fix (owner rule, 2026-11-07, widened the same day; issue #715 comments 6697776913 and 6698958617).** Before spending time on any fix, in any domain, weigh whether it is worth it, and prefer the
 simpler fix when it is enough. Some fixes cannot be avoided (determinism, conservation, a hard rule the owner set), and those
@@ -474,9 +476,8 @@ option changes a rule the owner set.
 
 ### Docs as the review source (owner-approved plan, 2026-11-08)
 
-Design source: `origin/lead-docs-review-source:agent-working/lead/docs_as_review_source_plan.md` (rev 3.2), P3 and P5. The rules that
-need the verification fields and the drift report (`verified_by`, "when code is read", critical-invariant evidence) arrive with
-`TCK-20261108-DOC-EVIDENCE-FIELDS-AND-DRIFT-REPORT` and are not stated here yet.
+Design source: `agent-working/lead/docs_as_review_source_plan.md` (rev 3.2), P1, P3 and P5. The verification fields, the drift report
+and the review rules that use them are at the end of this section.
 
 **Docs step on a hand-orchestrated close.** The pipeline has a Document-Update phase; a hand close has none, so it does this
 before closing: run `python3 tools/gate_checks/docs_search.py --changed-file <code path> ... --base-ref <start sha>` on the
@@ -507,3 +508,34 @@ limit was published, for example in a release note.
 - **Fix in the same PR.** A wrong explanatory doc found during review is fixed in the PR that found it. A wrong normative doc
   (world rules, Mechanics Bible, engine and architecture contracts) goes to its rule owner as a defect ticket, or as an
   `intentional_divergences.md` entry if the owner accepts the code's behaviour; nobody edits it to match the code.
+
+**Evidence fields and the drift report (P1).** A behaviour doc may carry `evidence_paths` (files), `verified_by` (ticket or PR),
+`verified_at` (the code SHA that was read) and `reviewed_by` (triaged, no staleness found); shapes are in
+`docs/guidelines/frontmatter_schema.md`. A doc gets `verified_by` only when someone checked every behaviour claim in it against its
+evidence at that revision, and a ticket records what was read and any exclusions; fixing one line, or reading the code for another
+purpose, does not verify it. When the evidence is insufficient the fields stay unset and the doc stays unverified. No state is stored
+besides these fields.
+- `python3 tools/gate_checks/doc_drift.py [--ref <ref>] [--doc <path>]` lists each doc as `needs-re-verify`, `verified_by`,
+  `reviewed_by` or `unverified`. It reads the pinned commit (printed first) and writes nothing. The baseline is the last commit that
+  changed the doc's `verified_by:` line, found from git, so it survives a squash merge; the rules for what counts as drift (evidence
+  changed, deleted or renamed, or the doc's own text changed since) are stated once in the module docstring.
+- It is advisory and never blocks. It runs at a pipeline Finalize (a `log` line in `implement-ticket.js`), in the weekly close
+  (`make agent-monitoring-close-week` prints the summary after the fold and its exit status is unchanged), and **at a hand close**:
+  run `python3 tools/gate_checks/doc_drift.py --start-sha <start sha> --format advisory` after the docs step and re-verify, or note in
+  the ticket why not, each doc it names.
+- To re-verify: read the changed evidence files and the changed doc text, correct the doc, then set new `verified_by` and
+  `verified_at`. A doc with no drift keeps its baseline, but that only means it has not changed, not that it is correct.
+- `python3 tools/gate_checks/doc_drift.py --mode detect --ref <pin>` is the pilot detection mode (stale-doc signals for docs with no
+  evidence fields). Every signal means "possibly stale", never "wrong"; the pilot's measured results are in
+  `agent-working/stored_artifacts/`.
+
+**Review rules that use the fields (P5).**
+- **When code is read.** A review reads code when the claim's evidence is missing (no `verified_by`), when it is invalidated (the
+  drift report says `needs-re-verify`), when it is insufficient (no test exercises the claim; a test covers only a narrow case, such
+  as a restore test at seed 0; or, for a critical invariant, the only test was written in the same change as the code), when no doc
+  answers the question, or when the claim is picked for an independent spot check.
+- **Critical invariants need evidence, not a re-read every time.** Determinism, conservation, persistence and restore, concurrency
+  and message acknowledgement need a verified doc plus an independent test of the claim. A weekly audit does not re-read their code
+  unless one of the triggers above applies.
+- **A doc shown as verified is verified.** Only `verified_by` is shown as verified; `reviewed_by` is shown as reviewed, and the topic
+  map does not count it.

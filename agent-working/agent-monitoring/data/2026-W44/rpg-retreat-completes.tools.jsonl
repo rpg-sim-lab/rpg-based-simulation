@@ -1,1 +1,0 @@
-{"session_id":"230a7843-664c-4f31-809b-42c647817d66","run_id":null,"seq":null,"phase":null,"agent":null,"ts":"2026-11-01T05:55:32.543295Z","tool":"Bash","input_summary":"cd /mnt/data/Working/rpg-based-simulation/.claude/worktrees/retreat/data/runs 2>","read_ranged":null,"status":"ok","duration_ms":97,"execution_id":null,"provider":null,"ticket_id":null}

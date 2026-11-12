@@ -28,6 +28,7 @@ from src.engine.pipeline_phases.capacity_enforcement import CapacityEnforcementP
 from src.systems.world_systems.generator import EntityGenerator
 from src.engine.compactor import StateUpdateCompactor
 from src.engine.phase_graph import PhaseDependencyGraph
+from src.engine.access_audit.hook import dispatch_phase
 
 logger = logging.getLogger(__name__)
 
@@ -115,7 +116,7 @@ class AuthoritativeApplyPipeline:
                 metric_counters["phase_runs"] = metric_counters.get("phase_runs", 0) + 1
                 metric_counters[f"run_{phase_name}"] = metric_counters.get(f"run_{phase_name}", 0) + 1
                 
-                phase_upd = phase_fn(upd)
+                phase_upd = dispatch_phase(ff_manager, phase_name, state, upd, phase_fn)  # access audit (stage 1): phase_fn(upd) unless ENABLE_ACCESS_AUDIT is on
                 
                 # 3. Strictly enforce SHADOW mode: discard all aspect mutations from update
                 if mode == FeatureMode.SHADOW:

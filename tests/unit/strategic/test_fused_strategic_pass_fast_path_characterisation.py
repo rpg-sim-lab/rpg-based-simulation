@@ -116,12 +116,11 @@ def test_row1_entity_objective_does_not_regroup_on_cadence():
     assert _run(entity, DUE_CADENCE) is None
 
 
-def test_row1_current_behaviour_entity_objective_off_cadence_regroups_home():
-    # DEFECT_A: the fast path sends a loaded entity with an entity-typed objective home, off the pursuit. Pinned as it is,
-    # so a change to a different wrong value is not hidden behind the strict xfail in the differential. A's PR changes THIS
-    # assert (to "no walk decision") as well as removing the xfail.
+def test_row1_entity_objective_off_cadence_does_not_regroup_home():
+    # DEFECT_A, fixed: the fast path used to send a loaded entity with an entity-typed objective home, off the pursuit. An
+    # entity-typed objective owns the direction on the fast path too, as on the slow path: no walk decision.
     assert DEFECT_A
-    assert _run(_entity(objective=_objective(target_entity_id=2)), OFF_CADENCE) == REGROUP_HOME
+    assert _run(_entity(objective=_objective(target_entity_id=2)), OFF_CADENCE) is None
 
 
 def test_row1_loaded_entity_with_no_objective_regroups_home_off_cadence():
@@ -239,8 +238,6 @@ def test_inactive_and_dead_entities_are_skipped(kwargs, cadence):
 # Each row: the same entity state through the off-cadence (fast) path and the due (slow) path; the walk decision must match.
 # A row that is meant to differ is listed here, with its reason and its owning ticket. Anything else must be equal.
 KNOWN_DISAGREEMENTS = {
-    "entity_objective_loaded_entity": ("strict_xfail", DEFECT_A,
-                                       "fast path sends a loaded entity with an entity-typed objective home; slow path leaves it on the pursuit"),
     "earlier_phase_target_set": ("pinned_difference", CLEAR_TARGET,
                                  "fast path overwrites an earlier phase's target_set, slow path keeps it; nobody has ruled it a defect"),
 }
@@ -284,6 +281,7 @@ def test_fast_and_slow_paths_decide_the_same_walk(row, build):
     assert fast == slow
 
 
-def test_the_known_disagreement_table_holds_exactly_rows_1_and_6():
-    assert set(KNOWN_DISAGREEMENTS) == {"entity_objective_loaded_entity", "earlier_phase_target_set"}
+def test_the_known_disagreement_table_holds_exactly_row_6():
+    # Row 1 (entity_objective_loaded_entity) left the table when DEFECT_A was fixed: it now agrees on both paths.
+    assert set(KNOWN_DISAGREEMENTS) == {"earlier_phase_target_set"}
     assert set(KNOWN_DISAGREEMENTS) <= set(_DIFFERENTIAL_ROWS)
