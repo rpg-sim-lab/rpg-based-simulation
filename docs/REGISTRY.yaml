@@ -8068,6 +8068,22 @@
   - content
   last_verified: '2026-10-09'
 - type: ticket
+  path: agent-working/tickets/done/TCK-20261112-A-THROTTLED-CLIENT-THAT-WAITS-OUT-RETRY-AFTER-IS-STILL-REFUSED.md
+  ticket_id: TCK-20261112-A-THROTTLED-CLIENT-THAT-WAITS-OUT-RETRY-AFTER-IS-STILL-REFUSED
+  title: 'A throttled API client that waits out `Retry-After: 5` is still refused,
+    even after its token bucket has refilled, because admission recovery counts requests
+    instead of elapsed time'
+  tier: hotfix
+  ticket_type: bug
+  date: '2026-11-12'
+  related_code_areas:
+  - _check_admission
+  - tests/api/test_admission_control.py
+  artifact_files: []
+  tags:
+  - architecture
+  - api-design
+- type: ticket
   path: agent-working/tickets/done/TCK-20261112-CODE-HEALTH-NAMES-AND-REKEYS-MOVED-ROWS.md
   ticket_id: TCK-20261112-CODE-HEALTH-NAMES-AND-REKEYS-MOVED-ROWS
   title: The code-health check names a likely move, and one `move` command re-keys
