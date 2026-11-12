@@ -272,8 +272,11 @@ services:
     # Grafana Alloy v1.20.1 (released 2026-09-28; newest release at least 14 days old on 2026-10-28), pinned by multi-arch index digest.
     # Replaces Promtail, which reached end of life on 2026-03-02 (TCK-20261021-PROMTAIL-TO-ALLOY-LOG-SHIPPING).
     image: grafana/alloy:v1.21.3@sha256:8ab871206bd2d8f89277f53abffee5f452a293980788d52f85fa183a87a505a4
-    # 256m: the 2026-10-28 run (68 min) held anon 71 MiB and anon + active_file 187 MiB, which left no headroom under the first guess of 192m; docs/runbooks/records/2026-10-28-alloy-log-shipping.md section 5.
-    mem_limit: 256m
+    # 384m (was 256m). The 2026-10-28 run (68 min) held anon 71 MiB and anon + active_file 187 MiB, which left no headroom under the first guess of 192m, so it went to 256m
+    # (docs/runbooks/records/2026-10-28-alloy-log-shipping.md section 5). The 2026-11-12 run, with Loki accepting every push, peaked at anon + active_file 246.7 of 256 MiB
+    # (96.4%; memory.current reached 256.0) in 11 minutes with no OOM kill (docs/runbooks/records/2026-11-12-loki-volume-and-api-dashboard.md, finding 3): about 9 MiB of headroom
+    # is too little for a longer run, so the limit is raised by half. The new figure is a margin, not a measurement; re-measure it on the next run that keeps Alloy up for an hour.
+    mem_limit: 384m
     healthcheck:
       # The alloy image has bash but no wget/curl: read the first line of GET /-/ready over /dev/tcp and require HTTP 200.
       # Healthy means alloy's own :12345/-/ready AND loki:3100/ready both answer 200 (loki has no healthcheck of its own).
