@@ -48,7 +48,7 @@ jobs:
 
       - name: Build
         env:
-          DOCS_URL: https://ttnhan18062000.github.io
+          DOCS_URL: https://rpg-sim-lab.github.io
           DOCS_BASE_URL: /rpg-based-simulation/
           NODE_OPTIONS: --max-old-space-size=8192
         run: cd website && npm run build

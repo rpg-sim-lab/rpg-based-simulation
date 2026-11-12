@@ -8054,6 +8054,20 @@
   tags:
   - testing
 - type: ticket
+  path: agent-working/tickets/done/TCK-20261112-DEPENDABOT-IGNORE-KNOWLEDGE-STACK.md
+  ticket_id: TCK-20261112-DEPENDABOT-IGNORE-KNOWLEDGE-STACK
+  title: Dependabot's uv entry ignores torch, graphifyy and headroom-ai, so grouped
+    PRs leave requirements-knowledge.txt alone
+  tier: hotfix
+  ticket_type: chore
+  date: '2026-11-12'
+  related_code_areas:
+  - .github/dependabot.yml
+  - requirements-knowledge.txt
+  artifact_files: []
+  tags:
+  - platform
+- type: ticket
   path: agent-working/tickets/done/TCK-20261112-PROJECT-SYNC-DRY-RUN.md
   ticket_id: TCK-20261112-PROJECT-SYNC-DRY-RUN
   title: '`tools/sessions/project_sync.py --dry-run`: derive each rpg-lane ticket''s
@@ -8092,21 +8106,7 @@
   - delivery
   - process-improvement
 - type: ticket
-  path: agent-working/tickets/todos/TCK-20261112-DEPENDABOT-IGNORE-KNOWLEDGE-STACK.md
-  ticket_id: TCK-20261112-DEPENDABOT-IGNORE-KNOWLEDGE-STACK
-  title: Dependabot's uv entry ignores torch, graphifyy and headroom-ai, so grouped
-    PRs leave requirements-knowledge.txt alone
-  tier: hotfix
-  ticket_type: chore
-  date: '2026-11-12'
-  related_code_areas:
-  - .github/dependabot.yml
-  - requirements-knowledge.txt
-  artifact_files: []
-  tags:
-  - platform
-- type: ticket
-  path: agent-working/tickets/todos/TCK-20261112-REPO-MOVE-PLATFORM-REFS.md
+  path: agent-working/tickets/done/TCK-20261112-REPO-MOVE-PLATFORM-REFS.md
   ticket_id: TCK-20261112-REPO-MOVE-PLATFORM-REFS
   title: Platform files name the new repository owner rpg-sim-lab after the transfer
   tier: hotfix

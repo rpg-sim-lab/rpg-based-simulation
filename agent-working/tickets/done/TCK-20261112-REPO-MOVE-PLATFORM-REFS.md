@@ -1,10 +1,10 @@
 ---
-status: active
+status: historical
 layer: platform
 authority: P1
 audience: agent
 ticket_id: TCK-20261112-REPO-MOVE-PLATFORM-REFS
-phase: open
+phase: done
 date: 2026-11-12
 tags: [platform, delivery]
 ---
@@ -15,7 +15,7 @@ tags: [platform, delivery]
 Platform files name the new repository owner rpg-sim-lab after the transfer
 
 ## Status
-OPEN
+DONE
 
 ## Tier
 hotfix
@@ -85,6 +85,17 @@ infra/terraform/bootstrap/variables.tf
   publish-images run shows it; if it fails, that is the owner's org setting.
 
 ## Implementation Notes
+- `.github/workflows/deploy-docs.yml:51`: `DOCS_URL` is now `https://rpg-sim-lab.github.io`; `DOCS_BASE_URL: /rpg-based-simulation/` and `NODE_OPTIONS` are unchanged (parsed back with yaml: three env keys, as before).
+- `infra/terraform/bootstrap/variables.tf:9`: the `github_repository` default is now `"rpg-sim-lab/rpg-based-simulation"`. The validation regex on the variable accepts it. `main.tf:31` builds the OIDC subject from this variable, so the trust subject follows.
+- Scope item 3: `git grep ttnhan18062000` over compose.yaml, docker/, .github/ (except test.yml), infra/, tools/loadtest/, docs/runbooks/ and docs/observability/loki_label_policy.md now returns nothing (rc 1). Before the edit it returned only the two lines above, as the ticket said.
+- No docs deploy, Terraform plan or apply, image pull or build was run.
 ## Test Summary
+- **validated:** `tests/static/test_deploy_docs_heap_limit.py` and `tests/static/test_ci_step_summary_reporting.py`: 16 passed. The `git grep` above returns nothing.
+- **not run:** `terraform fmt -check` and `terraform validate`: terraform is not installed on this host (`which terraform tofu` prints nothing). The change is one string in a `default` that already satisfies the variable's validation regex; the IaC workflow on the PR is the proof.
 ## Files Changed
+- `.github/workflows/deploy-docs.yml`: `DOCS_URL`.
+- `infra/terraform/bootstrap/variables.tf`: `github_repository` default.
 ## Completion Summary
+The two platform-owned lines that named the old owner now name rpg-sim-lab. No other old-owner value is left in the platform paths.
+Known gap: the first Deploy Docs run under the new owner is not yet observed; after merge it should serve https://rpg-sim-lab.github.io/rpg-based-simulation/.
+Known gap: terraform fmt and validate were not run locally (terraform is not on this host); the IaC workflow on the PR is the check.
