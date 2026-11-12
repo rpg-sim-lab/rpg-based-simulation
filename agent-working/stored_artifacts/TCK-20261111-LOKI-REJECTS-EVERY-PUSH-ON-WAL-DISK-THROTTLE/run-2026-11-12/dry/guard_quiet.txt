@@ -1,0 +1,8 @@
+09:59:04 avail=5588 swap=2245 mode=dry thresholds=1500/7500
+09:59:04 disk: /=72% /data=84% threshold=99%
+09:59:05 avail=5588 swap=2245 mode=dry thresholds=1500/7500
+09:59:05 disk: /=72% /data=84% threshold=99%
+09:59:06 avail=5588 swap=2245 mode=dry thresholds=1500/7500
+09:59:06 disk: /=72% /data=84% threshold=99%
+09:59:07 avail=5588 swap=2245 mode=dry thresholds=1500/7500
+09:59:07 disk: /=72% /data=84% threshold=99%

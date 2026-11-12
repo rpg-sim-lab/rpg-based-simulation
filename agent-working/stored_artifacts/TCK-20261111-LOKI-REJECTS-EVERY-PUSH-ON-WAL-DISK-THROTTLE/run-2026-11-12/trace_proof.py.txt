@@ -1,0 +1,80 @@
+"""Find a stream-health trace through Grafana's Tempo proxy and show its spans; then check trace-to-logs and logs-to-trace links. Secrets read from files, never printed."""
+import base64
+import json
+import time
+import urllib.parse
+import urllib.request
+
+GRAFANA = "http://127.0.0.1:3000"
+pw = open("docker/secrets/grafana_admin_password").read().strip()
+AUTH = "Basic " + base64.b64encode(f"admin:{pw}".encode()).decode()
+
+
+def get(path):
+    req = urllib.request.Request(GRAFANA + path, headers={"Authorization": AUTH})
+    return json.load(urllib.request.urlopen(req, timeout=30))
+
+
+s = get("/api/datasources/proxy/uid/tempo/api/search?" + urllib.parse.urlencode({"tags": "service.name=rpg-backend", "limit": 100}))
+traces = s.get("traces", [])
+print("traces found for service.name=rpg-backend:", len(traces))
+names = {}
+for t in traces:
+    names[t.get("rootTraceName")] = names.get(t.get("rootTraceName"), 0) + 1
+print("root span names:", names)
+pick = None
+for t in traces:
+    if "stream-health" not in (t.get("rootTraceName") or ""):
+        continue
+    probe = get(f"/api/datasources/proxy/uid/tempo/api/traces/{t['traceID']}")
+    codes = set()
+    for b in probe.get("batches", []):
+        for ss in b.get("scopeSpans", []) + b.get("instrumentationLibrarySpans", []):
+            for sp in ss.get("spans", []):
+                for a in sp.get("attributes", []):
+                    if a["key"] in ("http.status_code", "http.response.status_code"):
+                        codes.add(str(list(a["value"].values())[0]))
+    print("  stream-health trace", t["traceID"], "statuses", sorted(codes))
+    if "200" in codes:
+        pick = t
+        break
+if not pick:
+    print("NO stream-health trace in the search results")
+    raise SystemExit(1)
+tid = pick["traceID"]
+print("chosen trace id:", tid, "| root:", pick.get("rootTraceName"))
+tr = get(f"/api/datasources/proxy/uid/tempo/api/traces/{tid}")
+spans = []
+for b in tr.get("batches", []):
+    rattrs = {a["key"]: list(a["value"].values())[0] for a in b.get("resource", {}).get("attributes", [])}
+    for ss in b.get("scopeSpans", []) + b.get("instrumentationLibrarySpans", []):
+        for sp in ss.get("spans", []):
+            attrs = {a["key"]: list(a["value"].values())[0] for a in sp.get("attributes", [])}
+            spans.append((sp.get("name"), sp.get("kind"), sp.get("spanId"), sp.get("parentSpanId", ""), rattrs.get("service.name"), attrs))
+print("spans in trace:", len(spans))
+for name, kind, sid, par, svc, attrs in spans:
+    keep = {k: v for k, v in attrs.items() if k in ("http.route", "http.method", "http.request.method", "http.status_code", "http.response.status_code", "db.system", "db.operation", "db.statement", "db.system.name")}
+    print(f"  {kind} | {name} | span {sid} parent {par or '-'} | service {svc} | {keep}")
+server = [x for x in spans if "SERVER" in str(x[1])]
+redis = [x for x in spans if x[5].get("db.system") == "redis" or x[5].get("db.system.name") == "redis"]
+print("server span(s):", len(server), "| route attr:", [x[5].get("http.route") for x in server])
+print("redis client span(s):", len(redis), "| child of the server span:", [x[3] == server[0][2] for x in redis] if server else None)
+
+# trace -> logs: the Tempo datasource's tracesToLogsV2 query, run on Loki
+q = '{container=~".*backend.*"} |= "%s"' % tid
+now = int(time.time())
+l = get("/api/datasources/proxy/uid/loki/loki/api/v1/query_range?" + urllib.parse.urlencode({"query": q, "start": (now - 3600) * 10**9, "end": now * 10**9, "limit": 20}))
+lines = [v for r in l["data"]["result"] for v in r["values"]]
+print("trace -> logs: Loki lines containing the trace id:", len(lines))
+for ts, line in lines[:3]:
+    print("   ", line[:200])
+# logs -> trace: derivedFields regex applied to a line
+import re
+rx = None
+ds = get("/api/datasources/uid/loki")
+for df in ds.get("jsonData", {}).get("derivedFields", []):
+    rx = df
+print("Loki datasource derivedFields as loaded by Grafana:", json.dumps(rx))
+if lines and rx:
+    m = re.search(rx["matcherRegex"], lines[0][1])
+    print("logs -> trace: regex matches the line:", bool(m), "| captured id equals trace id:", bool(m) and m.group(1) == tid, "| link target datasourceUid:", rx["datasourceUid"], "| url template:", rx["url"])

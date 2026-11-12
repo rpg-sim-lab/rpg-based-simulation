@@ -7581,6 +7581,16 @@
   - platform
   - observability
 - type: doc
+  path: docs/runbooks/records/2026-11-12-loki-volume-and-api-dashboard.md
+  title: Loki named volume and the API dashboard, proved in one stack run (2026-11-12)
+  status: active
+  layer: platform
+  authority: P2
+  audience: agent
+  tags:
+  - platform
+  - observability
+- type: doc
   path: docs/runbooks/redis-down.md
   title: 'Runbook: RedisDown (cause alert)'
   status: active

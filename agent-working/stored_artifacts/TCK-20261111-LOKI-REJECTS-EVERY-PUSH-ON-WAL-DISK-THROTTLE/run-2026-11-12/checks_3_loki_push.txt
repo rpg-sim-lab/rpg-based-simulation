@@ -1,0 +1,13 @@
+== 2026-11-12T10:02:42Z T2b formula on /data (the volume's filesystem; the host user cannot stat Docker's volumes dir, so /data stands in for the same fs)
+/data /dev/sdb1
+blocks=25721923 bfree=5352059 bavail=4168364 bsize=4096
+Loki formula (Blocks-Bfree)/Blocks on /data = 79.19%  (df-style 83.01%, threshold 90%)
+-- docker diff of the loki container (container-layer changes; WAL/chunks must NOT be here):
+(lines: 0)
+== T3 Alloy -> Loki push health
+loki_write_sent_entries_total{job="alloy"} => [('', '673')]
+loki_write_dropped_entries_total{job="alloy"} => [('', '0'), ('', '0'), ('', '0'), ('', '0'), ('', '0')]
+loki_write_batch_retries_total{job="alloy"} => [('', '0')]
+loki_write_request_duration_seconds_count{job="alloy"} => [('204', '29')]
+-- Loki streams (last 5m):
+{'platform-backend-1': '43', 'platform-docker-socket-proxy-1': '149', 'platform-grafana-1': '261', 'platform-node-exporter-1': '8', 'platform-ntfy-1': '4', 'platform-prometheus-1': '59', 'platform-redis-1': '89', 'platform-redis-exporter-1': '3', 'platform-tempo-1': '80'}
