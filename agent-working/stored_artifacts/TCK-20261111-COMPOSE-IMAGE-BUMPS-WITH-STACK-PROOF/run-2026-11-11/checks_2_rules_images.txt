@@ -1,0 +1,14 @@
+== 2026-11-11T16:28:49Z rule_files in prometheus.yml: 0
+== running images
+redis redis:8.10.3-alpine@sha256:71885d8cc6e4.. repoDigest-match=sha256:71885d8cc6e4
+prometheus prom/prometheus:v3.16.0@sha256:e04987641b57.. repoDigest-match=sha256:e04987641b57
+ntfy binwiederhier/ntfy:v2.37.2@sha256:1875ddcf815c.. repoDigest-match=sha256:1875ddcf815c
+redis-exporter oliver006/redis_exporter:v1.97.0@sha256:f5f903fbe775.. repoDigest-match=sha256:f5f903fbe775
+== grafana rules (health)
+groups 4 rules 11
+health counts {'ok': 11}
+lastError set: []
+states {'firing': 1, 'pending': 3, 'inactive': 7}
+== grafana log errors about alerting/provisioning
+grafana-1  | logger=provisioning.plugins t=2026-11-11T16:28:19.361980475Z level=error msg="Failed to read plugin provisioning files from directory" path=/etc/grafana/provisioning/plugins error="open /etc/grafana/provisioning/plugins: no suc
+(end)
