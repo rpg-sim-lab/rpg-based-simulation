@@ -4,7 +4,7 @@ layer: platform
 authority: P1
 audience: agent
 ticket_id: TCK-20261018-API-DASHBOARD-AND-TRACE-PROOF
-phase: open
+phase: inprogress
 date: 2026-10-18
 tags: [platform, observability]
 ---
@@ -15,7 +15,7 @@ tags: [platform, observability]
 Grafana: one provisioned API dashboard (rate, errors, latency percentiles by route, backend logs, trace links), and the step-2 end-to-end local proof
 
 ## Status
-OPEN
+INPROGRESS
 
 ## Tier
 standard

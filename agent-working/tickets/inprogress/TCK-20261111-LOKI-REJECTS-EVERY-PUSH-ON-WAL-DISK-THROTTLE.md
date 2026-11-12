@@ -4,7 +4,7 @@ layer: platform
 authority: P1
 audience: agent
 ticket_id: TCK-20261111-LOKI-REJECTS-EVERY-PUSH-ON-WAL-DISK-THROTTLE
-phase: open
+phase: inprogress
 date: 2026-11-11
 tags: [platform, observability]
 ---
@@ -15,7 +15,7 @@ tags: [platform, observability]
 Loki accepted no log push during the 2026-11-11 stack run (WAL disk throttle, then "Ingester is shutting down")
 
 ## Status
-OPEN
+INPROGRESS
 
 ## Tier
 standard
