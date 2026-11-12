@@ -39,7 +39,7 @@ Order: (1) build the backend image first; (2) `df` and `stat -f` on `/` and `/da
 
 ## Risks
 
-1. **Panels with no data.** The error panels need 5xx traffic and the burst has none. Answer: the error panels are expected to be empty after a clean burst; the acceptance text "every panel shows data" is met for the error ratio by the companion "(value)" panel returning 0 (a series with value 0), not by an empty result. The plan says so explicitly rather than faking errors. If the owner wants a real 5xx, that needs a route that returns one and is rpg's.
+1. **Panels with no data.** The burst has no 5xx, and R2 creates a `status_class` series only when a request of that class is observed, so the numerator of any 5xx ratio has no series. Answer (platform-planner review): "5xx ratio, overall" wraps its numerator in `or vector(0)` and reads 0; "5xx ratio by route" and the SLO row's "5xx ratio (value)" are left as they are and read No data, the latter because it must match the alert's query. The acceptance text "every panel shows data" is therefore met for all panels except those two, and the record says so. No errors are faked; a real 5xx needs a route that returns one (rpg's).
 2. **`derivedFields` not rendering as a link** on plain lines: fall back to a manual Tempo search by trace id; record it as a limit.
 3. **Sampler.** At the default 0.1 a short burst may show no trace; hence `=1` in the run.
 4. **Dashboard JSON written by hand** can have Grafana-version drift; the file provider loads it unchanged, and the test plan opens it in the running Grafana to catch "datasource not found" and panel errors.

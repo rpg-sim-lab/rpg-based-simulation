@@ -26,7 +26,7 @@ Static checks first (no stack). D1 to D6 happen in the ONE shared run (see the p
 ## In the shared run
 
 - D1. After a fresh start, open `api-v1` in Grafana (via `/api/dashboards/uid/api-v1` and by screenshot): no "datasource not found", no panel error state (check each panel's query result for errors with the Grafana API or the rendered page).
-- D2. After the burst, every panel but the error-ratio-by-route shows data; the error-ratio "(value)" panel shows 0; the plan states why (risk 1).
+- D2. After the burst: every panel shows data except the 5xx ones, which have no 5xx to show. "5xx ratio, overall" (numerator `or vector(0)`) reads 0; "5xx ratio by route" and the SLO row's "5xx ratio (value)" read No data, because R2's histogram creates a `status_class` series only when one is observed (`src/api/http_metrics.py`). Record exactly that as observed; do not send fake errors.
 - D3. p95 check: the dashboard's p95 panel value vs the same `histogram_quantile` run by hand in Prometheus at the same instant; record both numbers and the instant.
 - D4. One request trace: its trace id recorded; a server span named by `http.route`; for `/api/v1/observability/live/stream-health` (redis stream backend) a child Redis client span.
 - D5. Round trip: Loki log line (with `trace_id=`) to the trace via the derived field (or the manual fallback, recorded as such), and from the trace to its log lines via the Tempo `tracesToLogsV2` link, and back.

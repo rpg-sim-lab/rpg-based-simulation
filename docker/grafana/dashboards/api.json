@@ -244,12 +244,12 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "sum(rate(http_request_duration_seconds_count{status_class=\"5xx\"}[$__rate_interval])) / sum(rate(http_request_duration_seconds_count[$__rate_interval]))",
+          "expr": "(sum(rate(http_request_duration_seconds_count{status_class=\"5xx\"}[$__rate_interval])) or vector(0)) / sum(rate(http_request_duration_seconds_count[$__rate_interval]))",
           "legendFormat": "5xx / all",
           "range": true
         }
       ],
-      "description": "Same shape as the ApiErrorRateHigh expression, over the dashboard's rate interval."
+      "description": "Same shape as the ApiErrorRateHigh expression, over the dashboard's rate interval. The numerator falls back to 0 because the histogram has no 5xx series until a 5xx is observed (src/api/http_metrics.py), so this reads 0 with no errors."
     },
     {
       "id": 6,
@@ -296,7 +296,8 @@
           "legendFormat": "{{route}}",
           "range": true
         }
-      ]
+      ],
+      "description": "Reads 'No data' until a route has returned a 5xx: the histogram creates a status_class series only when one is observed."
     },
     {
       "id": 7,
@@ -599,7 +600,7 @@
       "fieldConfig": {
         "defaults": {
           "unit": "s",
-          "noValue": "no traffic",
+          "noValue": "No data (no matching requests)",
           "color": {
             "mode": "thresholds"
           },
@@ -701,7 +702,7 @@
       "id": 17,
       "type": "stat",
       "title": "5xx ratio (value)",
-      "description": "The same expression without the ' > 0.01' comparison.",
+      "description": "The same expression without the ' > 0.01' comparison. Kept identical to the alert's query, so it reads No data while no 5xx has been observed (the histogram has no 5xx series until one occurs).",
       "datasource": {
         "type": "prometheus",
         "uid": "prometheus"
@@ -715,7 +716,7 @@
       "fieldConfig": {
         "defaults": {
           "unit": "percentunit",
-          "noValue": "no traffic",
+          "noValue": "No data (no 5xx observed)",
           "color": {
             "mode": "thresholds"
           },
