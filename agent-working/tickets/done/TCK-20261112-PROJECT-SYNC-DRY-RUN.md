@@ -1,10 +1,10 @@
 ---
-status: active
+status: historical
 layer: ticket
 authority: P1
 audience: agent
 ticket_id: TCK-20261112-PROJECT-SYNC-DRY-RUN
-phase: open
+phase: done
 date: 2026-11-12
 tags: [planning, delivery]
 ---
@@ -15,7 +15,7 @@ tags: [planning, delivery]
 `tools/sessions/project_sync.py --dry-run`: derive each rpg-lane ticket's Project item from ticket files, u24 worktree branches and open PRs, and print the plan without writing to GitHub
 
 ## Status
-OPEN
+DONE
 
 ## Tier
 standard
@@ -98,6 +98,7 @@ This ticket restates only what P0 must do.
 - none yet (README section comes with P1)
 
 ## Related Stored Artifacts
+- agent-working/stored_artifacts/TCK-20261112-PROJECT-SYNC-DRY-RUN/{investigation,plan,test_plan}.md
 - Designer draft (main checkout): `.claude/handover/drafts/github-project-ticket-view-2026-11-12.md`
 
 ## Related Code Areas
@@ -110,9 +111,13 @@ This ticket restates only what P0 must do.
 - Branch names don't reliably name the seat (design §0), so Seat comes from status.py, not from the branch.
 
 ## Implementation Notes
+Owner go #715 6813165811 (read by me); dispatched by agent-working-planner-u24. plan.md reviewed by agent-working-designer-u24 (OK with amendments A-E, all folded into plan.md and test_plan.md before code). New tools/sessions/project_sync.py: pure derivation (derive_status, derive_item, merge_host_entries, sync_hash, hand_edits, build_plan) plus thin readers; every subprocess goes through `_guard` (git read verbs, gh `pr list` and GET `api` only). Reuses status.py's inspect_worktree (size and PR readers stubbed), seat_infos and the private `_worktree_for` (deliberate, commented). A todos/ copy on a branch or PR is filing, not progress. Done timing comes from `git log --diff-filter=A` on origin/main. `--apply` and `--init` exit 2 (P1). New registries/session_project.yaml (no field ids). Default `--host` is socket.gethostname() (here `u24desktop-Virtual-Machine`); the PR's dry run passes `--host u24desktop`.
 
 ## Test Summary
+tests/tools/test_session_project_sync.py: 37 passed (rules 1-5, two folders, squash-merged branch, filing on a branch and in a PR, branch-only content, unmapped seat, hash and hand edit, archives and Done ageing, pre-pilot Done, pilot lanes, the ubuntu+PR addendum case, filing entry from another host, --apply/--init refused, guard refuses write verbs, porcelain vs committed reads, detached worktrees, PR limit note, gh failure, registry file). With test_session_status.py and test_agent_working_paths_guard.py: 61 passed, scoped, single process. Real dry run on u24 (--host u24desktop): rc 0, origin/main 5e58ae857, 5 open PRs, 8 detached worktrees skipped, 24 creates (13 In progress, 7 To do, 2 Done, 1 In review, 1 Blocked), 5 unattributed notes; `git worktree list` shows 60 entries. The CI lane tools-f-z was not run locally.
 
 ## Files Changed
+tools/sessions/project_sync.py (new); registries/session_project.yaml (new); tests/tools/test_session_project_sync.py (new); the epic folder agent-working/tickets/todos/github-project-ticket-view/ (taken from the planner's a08bb770d: SEQUENCE.md, the epic, and this ticket moved to done/); stored artifacts; docs/REGISTRY.yaml; W46 shards.
 
 ## Completion Summary
+P0 is built: `python3 -m tools.sessions.project_sync --dry-run` prints the create / update / archive plan for rpg-lane tickets with no GitHub or repo write. Known gaps: To do items from main wait for P3; the live Project read, `--init`, `--apply`, tokens, ubuntu and timers are P1-P3; Seat is `<domain> (unmapped)` for batch worktrees that no roster seat is bound to.

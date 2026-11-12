@@ -1,8 +1,9 @@
 ---
-status: active
+status: historical
 layer: ticket
 authority: P2
 audience: agent
+phase: done
 ticket_id: TCK-20261112-PROJECT-SYNC-DRY-RUN
 artifact_type: plan
 tags: [planning, delivery]
@@ -39,3 +40,12 @@ All new code is in `tools/sessions/project_sync.py` (pure functions plus a thin 
 
 ## Not doing
 `--apply`/`--init`, tokens, ubuntu runs, timers, views, parsing #634 comments, any gh write.
+
+## Amendments (designer review, 2026-11-12: OK with A-E)
+- **A. Filing is not progress.** Only a copy in `inprogress/` or `done/` (on the branch, in a porcelain file, or in a PR's file path) counts for rule 4 or rule 2. A `todos/` copy stays To do, with Branch still recorded (the Branch entry gets a `[filing]` suffix, which later runs ignore as rule-4 evidence).
+- **B. Branch-only tickets carry their own content.** `BranchFact` holds, per ticket, `(folder, title, tier, blocked, date)`, read with `git show HEAD:<path>` in that worktree for committed files and from disk for porcelain files. The branch copy wins over main's for these fields.
+- **C. Done timing from git.** `done_date(path)` = `git log -1 --diff-filter=A --format=%cI origin/main -- <done path>`, run only for candidates. A Done item is created when `done_date >= pilot_start` and archived when it is more than 14 days old. `Source` stays the origin sha plus run time; the hash excludes `Source`, so a new run time alone is never an update.
+- **D. PR list limit.** `gh pr list --limit 300` (ticket_queue.PR_LIMIT's value); if the count equals the limit, a note says some PRs may be missing. File lists use `gh api --paginate` (GET).
+- **E. Host and detached worktrees.** `--host` defaults to `socket.gethostname()` and is printed. Detached worktrees are skipped and counted; one that changes a ticket file is reported as `unattributed`.
+- `_worktree_for` is imported as-is with a comment naming it deliberate reuse.
+- A read-only guard wraps every subprocess: git verbs limited to ls-tree, show, merge-base, diff, status, log, rev-parse, worktree; gh limited to `pr list` and GET `api`.

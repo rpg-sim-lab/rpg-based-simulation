@@ -1,8 +1,9 @@
 ---
-status: active
+status: historical
 layer: ticket
 authority: P2
 audience: agent
+phase: done
 ticket_id: TCK-20261112-PROJECT-SYNC-DRY-RUN
 artifact_type: investigation
 tags: [planning, delivery]
