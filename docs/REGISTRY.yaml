@@ -8036,6 +8036,23 @@
   - content
   last_verified: '2026-10-09'
 - type: ticket
+  path: agent-working/tickets/done/TCK-20261112-REGISTRY-REGEN-SKIPPED-BY-A-STALE-HOOK-OR-AN-UNTRACKED-DOC.md
+  ticket_id: TCK-20261112-REGISTRY-REGEN-SKIPPED-BY-A-STALE-HOOK-OR-AN-UNTRACKED-DOC
+  title: The registry auto-regen is skipped when the installed post-commit hook is
+    a stale copy, or when an untracked doc without frontmatter makes `generate_registry.py
+    --check` return 1
+  tier: hotfix
+  ticket_type: bug
+  date: '2026-11-12'
+  related_code_areas:
+  - generate_registry
+  - tools/delivery/pre_push_advisory_hook.py, tools/hooks/post-commit-reindex.sh (reference,
+    unchanged), tests/tools/
+  artifact_files: []
+  tags:
+  - delivery
+  - process-improvement
+- type: ticket
   path: agent-working/tickets/done/TCK-20261111-CLAUDE-MD-REGISTRY-DRIVER-WORDING.md
   ticket_id: TCK-20261111-CLAUDE-MD-REGISTRY-DRIVER-WORDING
   title: CLAUDE.md says the registry merge driver regenerates after rebase and cherry-pick;
