@@ -12,7 +12,7 @@ tags: [knowledge-store, setup]
 # TCK-20261112-KNOWLEDGE-STACK-PIN-BUMPS
 
 ## Title
-requirements-knowledge.txt takes graphifyy 0.9.104, torch 2.15.0+cpu and headroom-ai 0.43.1, each smoke-tested
+requirements-knowledge.txt takes graphifyy 0.9.104 and torch 2.15.0+cpu, each smoke-tested; headroom-ai stays at 0.37.0 (0.43.1 needs mcp 2.x)
 
 ## Status
 DONE

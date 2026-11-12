@@ -8056,8 +8056,8 @@
 - type: ticket
   path: agent-working/tickets/done/TCK-20261112-KNOWLEDGE-STACK-PIN-BUMPS.md
   ticket_id: TCK-20261112-KNOWLEDGE-STACK-PIN-BUMPS
-  title: requirements-knowledge.txt takes graphifyy 0.9.104, torch 2.15.0+cpu and
-    headroom-ai 0.43.1, each smoke-tested
+  title: requirements-knowledge.txt takes graphifyy 0.9.104 and torch 2.15.0+cpu,
+    each smoke-tested; headroom-ai stays at 0.37.0 (0.43.1 needs mcp 2.x)
   tier: standard
   ticket_type: chore
   date: '2026-11-12'
