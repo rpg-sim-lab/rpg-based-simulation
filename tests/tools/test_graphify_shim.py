@@ -18,7 +18,7 @@ if str(_ROOT) not in sys.path:
 
 from tools import graphify_shim as gs  # noqa: E402
 
-PIN = "0.9.70"
+PIN = "0.9.104"
 
 
 def _exe(path: Path, text: str) -> Path:
