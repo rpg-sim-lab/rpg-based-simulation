@@ -1,0 +1,2 @@
+mypy_rc=1
+filter_rc=0

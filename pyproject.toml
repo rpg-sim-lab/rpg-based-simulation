@@ -19,6 +19,11 @@ dependencies = [
     "typing-extensions>=4.8.0",
     "prometheus-client>=0.20.0",
     "redis>=5.0.0",
+    # API request tracing (#622 R3); imported only when OTEL_EXPORTER_OTLP_ENDPOINT is set. opentelemetry-api 1.45.x is already pulled by fastapi.
+    "opentelemetry-sdk>=1.45.1,<2",
+    "opentelemetry-exporter-otlp-proto-http>=1.45.1,<2",
+    "opentelemetry-instrumentation-fastapi>=0.66b1,<0.67",
+    "opentelemetry-instrumentation-redis>=0.66b1,<0.67",
     "psutil>=5.9.0",
     "requests>=2.31.0",
     "msgpack>=1.0.0",

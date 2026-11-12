@@ -1,0 +1,31 @@
+== 2026-11-11T16:28:37Z targets
+alloy http://alloy:12345/metrics up ''
+grafana http://grafana:3000/metrics up ''
+loki http://loki:3100/metrics up ''
+node-exporter http://node-exporter:9100/metrics up ''
+ntfy http://ntfy:9091/metrics up ''
+prometheus http://localhost:9090/metrics up ''
+redis http://redis-exporter:9121/metrics up ''
+rpg-backend http://backend:9109/metrics up ''
+tempo http://tempo:3200/metrics up ''
+== rules (prometheus)
+groups 0 rules 0
+rule errors: []
+== prometheus log errors
+4
+prometheus-1  | time=2026-11-11T16:28:08.434Z level=WARN source=dns.go:348 msg="DNS resolution failed" component="discovery manager scrape" discovery=dns config=ai_worker server=127.0.0.11 name=ai_worker.. err="dns: bad 
+prometheus-1  | time=2026-11-11T16:28:08.434Z level=ERROR source=dns.go:178 msg="Error refreshing DNS targets" component="discovery manager scrape" discovery=dns config=ai_worker err="could not resolve \"ai_worker\": all
+prometheus-1  | time=2026-11-11T16:28:23.437Z level=WARN source=dns.go:348 msg="DNS resolution failed" component="discovery manager scrape" discovery=dns config=ai_worker server=127.0.0.11 name=ai_worker.. err="dns: bad 
+prometheus-1  | time=2026-11-11T16:28:23.437Z level=ERROR source=dns.go:178 msg="Error refreshing DNS targets" component="discovery manager scrape" discovery=dns config=ai_worker err="could not resolve \"ai_worker\": all
+prometheus-1  | time=2026-11-11T16:28:08.431Z level=INFO source=main.go:1786 msg="Completed loading of configuration file" db_storage=136.869µs remote_storage=
+prometheus-1  | time=2026-11-11T16:28:08.431Z level=INFO source=main.go:1506 msg="Server is ready to receive web requests."
+== redis
+{'os': 'Linux 6.17.0-41-generic x86_64', 'redis_mode': 'standalone', 'redis_version': '8.10.3', 'role': 'master'} 1
+redis_up ['1']
+== versions running
+redis 
+prometheus 
+ntfy 
+redis-exporter 
+{"healthy":true,"role":"active"}
+
