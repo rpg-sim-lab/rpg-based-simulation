@@ -8250,6 +8250,20 @@
   - observability
   - api-design
 - type: ticket
+  path: agent-working/tickets/todos/TCK-20261112-COMPOSE-FRONTEND-API-DOCS-SCHEMA-NOT-PROXIED.md
+  ticket_id: TCK-20261112-COMPOSE-FRONTEND-API-DOCS-SCHEMA-NOT-PROXIED
+  title: In the compose frontend, the API docs page's /openapi.json fetch gets index.html,
+    because nginx proxies only /api/
+  tier: hotfix
+  ticket_type: bug
+  date: '2026-11-12'
+  related_code_areas:
+  - docker/nginx.conf
+  - frontend/src/components/ApiDocsPage.tsx
+  artifact_files: []
+  tags:
+  - platform
+- type: ticket
   path: agent-working/tickets/todos/TCK-20261112-COMPOSE-STACK-HAS-NO-API-KEY.md
   ticket_id: TCK-20261112-COMPOSE-STACK-HAS-NO-API-KEY
   title: The compose stack configures no API key, so every backend route except /health
