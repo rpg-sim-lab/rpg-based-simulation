@@ -1,11 +1,11 @@
 ---
-status: active
+status: historical
 layer: core
 authority: P2
 audience: agent
 ticket_id: TCK-20261111-SPLIT-UPDATES-PY-INTO-UPDATE-MODELS
 artifact_type: test_plan
-phase: open
+phase: done
 date: 2026-11-12
 tags: []
 ---

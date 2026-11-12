@@ -8258,6 +8258,24 @@
   tags:
   - delivery
 - type: ticket
+  path: agent-working/tickets/done/TCK-20261111-SPLIT-UPDATES-PY-INTO-UPDATE-MODELS.md
+  ticket_id: TCK-20261111-SPLIT-UPDATES-PY-INTO-UPDATE-MODELS
+  title: Move the per-domain update models out of src/core/updates.py into src/core/update_models/,
+    so the module comes back under its length ceiling
+  tier: standard
+  ticket_type: refactor
+  date: '2026-11-11'
+  related_code_areas:
+  - src/core/updates.py
+  - src/core/update_models/
+  - codebase/baselines/code_health_exceptions.jsonl (the updates.py module-length
+    row)
+  artifact_files:
+  - agent-working/stored_artifacts/TCK-20261111-SPLIT-UPDATES-PY-INTO-UPDATE-MODELS/investigation.md
+  - agent-working/stored_artifacts/TCK-20261111-SPLIT-UPDATES-PY-INTO-UPDATE-MODELS/plan.md
+  - agent-working/stored_artifacts/TCK-20261111-SPLIT-UPDATES-PY-INTO-UPDATE-MODELS/test_plan.md
+  tags: []
+- type: ticket
   path: agent-working/tickets/done/TCK-20261111-THE-WORLD-GLOSSARY-GETS-ITS-SEED-TERMS.md
   ticket_id: TCK-20261111-THE-WORLD-GLOSSARY-GETS-ITS-SEED-TERMS
   title: The world glossary gets its 49 seed terms
@@ -8335,21 +8353,6 @@
   tags:
   - documentation
   - reference
-- type: ticket
-  path: agent-working/tickets/inprogress/TCK-20261111-SPLIT-UPDATES-PY-INTO-UPDATE-MODELS.md
-  ticket_id: TCK-20261111-SPLIT-UPDATES-PY-INTO-UPDATE-MODELS
-  title: Move the per-domain update models out of src/core/updates.py into src/core/update_models/,
-    so the module comes back under its length ceiling
-  tier: standard
-  ticket_type: refactor
-  date: '2026-11-11'
-  related_code_areas:
-  - src/core/updates.py
-  - src/core/update_models/
-  - codebase/baselines/code_health_exceptions.jsonl (the updates.py module-length
-    row)
-  artifact_files: []
-  tags: []
 - type: ticket
   path: agent-working/tickets/todos/TCK-20261111-A-HOLD-MODE-MOVE-STILL-TAKES-A-STEP.md
   ticket_id: TCK-20261111-A-HOLD-MODE-MOVE-STILL-TAKES-A-STEP
