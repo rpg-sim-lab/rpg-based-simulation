@@ -1,0 +1,29 @@
+== 2026-11-11T16:38:15Z loki lines 16:33:00-16:34:20 and all non-info lines
+level=info ts=2026-11-11T16:33:20.791918453Z caller=recalculate_owned_streams.go:49 msg="starting recalculate owned streams job"
+level=info ts=2026-11-11T16:33:20.791982916Z caller=recalculate_owned_streams.go:52 msg="completed recalculate owned streams job"
+level=info ts=2026-11-11T16:33:50.767173207Z caller=table_manager.go:136 index-store=tsdb-2020-10-24 msg="uploading tables"
+level=info ts=2026-11-11T16:33:50.803611034Z caller=recalculate_owned_streams.go:49 msg="starting recalculate owned streams job"
+level=info ts=2026-11-11T16:33:50.803643432Z caller=recalculate_owned_streams.go:52 msg="completed recalculate owned streams job"
+level=warn ts=2026-11-11T16:34:13.889104469Z caller=grpc_logging.go:76 method=/logproto.Pusher/Push duration=25.974µs msg=gRPC err="Ingester is shutting down"
+level=warn ts=2026-11-11T16:34:13.889583398Z caller=logging.go:144 orgID=fake msg="POST /loki/api/v1/push (500) 2.887698ms Response: \"rpc error: code = Unknown desc = Ingester is shutting down\\n\""
+level=warn ts=2026-11-11T16:34:13.946973239Z caller=grpc_logging.go:76 method=/logproto.Pusher/Push duration=25.985µs msg=gRPC err="Ingester is shutting down"
+level=warn ts=2026-11-11T16:34:13.947302841Z caller=logging.go:144 orgID=fake msg="POST /loki/api/v1/push (500) 6.820348ms Response: \"rpc error: code = Unknown desc = Ingester is shutting down\\n\""
+level=warn ts=2026-11-11T16:34:14.635035815Z caller=grpc_logging.go:76 method=/logproto.Pusher/Push duration=50.22µs msg=gRPC err="Ingester is shutting down"
+level=warn ts=2026-11-11T16:34:14.635441246Z caller=logging.go:144 orgID=fake msg="POST /loki/api/v1/push (500) 9.296847ms Response: \"rpc error: code = Unknown desc = Ingester is shutting down\\n\""
+level=warn ts=2026-11-11T16:34:16.538498089Z caller=grpc_logging.go:76 method=/logproto.Pusher/Push duration=27.469µs msg=gRPC err="Ingester is shutting down"
+level=warn ts=2026-11-11T16:34:16.538852388Z caller=logging.go:144 orgID=fake msg="POST /loki/api/v1/push (500) 7.29886ms Response: \"rpc error: code = Unknown desc = Ingester is shutting down\\n\""
+level=warn ts=2026-11-11T16:34:20.537484768Z caller=grpc_logging.go:76 method=/logproto.Pusher/Push duration=35.172µs msg=gRPC err="Ingester is shutting down"
+-- non-info lines by caller:
+     19 grpc_logging.go:76 gRPC err=
+      1 wal.go:215 disk usage exceeded threshold, throttling writes
+      1 ratestore.go:110 error getting ingester clients
+      1 logging.go:144 POST /loki/api/v1/push (500) 9.609633ms Response: \
+      1 logging.go:144 POST /loki/api/v1/push (500) 9.408029ms Response: \
+      1 logging.go:144 POST /loki/api/v1/push (500) 9.296847ms Response: \
+      1 logging.go:144 POST /loki/api/v1/push (500) 7.533359ms Response: \
+      1 logging.go:144 POST /loki/api/v1/push (500) 7.29886ms Response: \
+-- push 204s: 0
+-- alloy loki_write sent/dropped totals
+loki_write_sent_entries_total{job="alloy"} => [('', '0')]
+loki_write_dropped_entries_total{job="alloy"} => [('', '0'), ('', '213'), ('', '0'), ('', '0'), ('', '0')]
+loki_write_request_duration_seconds_count{job="alloy"} => [('500', '19')]

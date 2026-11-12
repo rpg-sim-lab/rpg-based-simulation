@@ -1,0 +1,11 @@
+== 2026-11-11T16:29:13Z ntfy auth checks (topic and credentials redacted)
+anonymous publish -> HTTP 403
+token publish (grafana write-only token) -> HTTP 200
+anonymous read -> HTTP 403
+temp reader user add rc=0
+temp reader access rc=0
+-- messages seen by the temp reader (last 30m):
+<string>:9: DeprecationWarning: datetime.datetime.utcfromtimestamp() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.fromtimestamp(timestamp, datetime.UTC).
+16:28:30Z prio 4 tags ['bell'] | [firing] AiWorkerLagHigh | ai_worker is falling behind or not reporting: consumer-group lag above the limit, or no lag series / Runbook: do
+16:28:47Z prio 4 tags ['bell'] | [resolved] TargetDown | Scrape target tempo is down / Runbook: docs/runbooks/target-down.md
+16:29:13Z prio None tags None |  | compose-bumps proof: authenticated test publish
