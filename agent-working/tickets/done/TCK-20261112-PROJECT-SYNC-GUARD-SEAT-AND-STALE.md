@@ -100,7 +100,7 @@ The lead split P1 (#715, 2026-11-12): **P1a is this ticket.** It's dry-run only,
 77 passed: tests/tools/test_session_project_sync.py and tests/tools/test_session_status*.py (-p no:randomly). New: 13 guard refusals and 2 reads, 2 seat, 5 Stale, 1 entry point, 1 host, 1 registry.
 
 ## Files Changed
-tools/sessions/project_sync.py, registries/session_project.yaml, tests/tools/test_session_project_sync.py, docs/guidelines/session_roles/project_sync_dry_run.md, stored artifacts.
+tools/sessions/project_sync.py, registries/session_project.yaml, tests/tools/test_session_project_sync.py, docs/guidelines/session_roles/project_sync_dry_run.md, stored artifacts; plus (lead, via the planner, repo moved to the rpg-sim-lab org) tools/delivery/repo_name.py (new), tools/delivery/ticket_queue.py, tools/agent-monitoring/record_review.py, tests/tools/test_repo_name.py (new), tests/tools/test_ticket_queue.py, registries/session_project.yaml (project.owner).
 
 ## Completion Summary
-P1a built dry-run only: allowlist guard, honest seat label, Stale status, script entry point and host short-name map. Real dry run on u24: 6 Stale rows including October's abandoned branches. Review: planner's PR review comment is recorded afterwards with record_review.py.
+P1a built dry-run only: allowlist guard, honest seat label, Stale status, script entry point and host short-name map. Real dry run on u24: 6 Stale rows including October's abandoned branches. The repo is derived from `gh repo view` (fallback rpg-sim-lab/rpg-based-simulation) instead of a hard-coded owner in two tools; 131 scoped tests pass; generate_agents.py --check shows no role-card drift. Review: planner's PR review comment is recorded afterwards with record_review.py.

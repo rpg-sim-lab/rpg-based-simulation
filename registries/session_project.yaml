@@ -2,7 +2,7 @@
 # read-only view of ticket state. Design: .claude/handover/drafts/github-project-ticket-view-2026-11-12.md.
 # No field ids live here: the sync looks fields up by name on every run (P1).
 project:
-  owner: PLACEHOLDER   # the owner's login, set when P1 creates the Project
+  owner: rpg-sim-lab   # an organization (the repo moved to the org); P1b creates the Project under it
   number: 0            # the Project number, set in P1
 pilot_lanes: [rpg]     # a ticket qualifies when found on a worktree whose domain (or branch prefix) is one of these
 pilot_start: 2026-11-12  # a Done item is created only when the ticket reached done/ on origin/main on or after this date
