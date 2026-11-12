@@ -1,5 +1,5 @@
 ---
-status: active
+status: historical
 layer: observability
 authority: P2
 audience: agent
@@ -19,3 +19,11 @@ All with an in-memory span exporter and fakeredis-style double or a stub redis c
 6. Boundary: ast scan of src/engine, src/core, src/systems, src/domains for `opentelemetry` imports (and a self-test that the scanner detects a planted import in a temp tree).
 7. Existing: tests/unit/api (test_http_metrics, characterization snapshot of create_v2_app routes/middleware) unchanged and passing.
 8. Hash: plain crowded_frontier s42 5000 ticks, branch vs main, final hash equal (HOST FREE).
+
+## Proof Plan
+
+- Level: unit (tracing module, formatters, scan test) plus one measured engine cell.
+- Proof kind: behavioural tests with an in-memory span exporter; static import scan; a 5000-tick hash comparison.
+- Oracle source: the span exporter's finished spans; `ast` import scan; the plain-cell final_hash from main (cd83111c5, identical src/data/config to main 5e58ae857), e0e20c2044d7ca861ace880ef6495a411074680571a1d4bf90bee091b52c8e35.
+- Expected effect: off means no opentelemetry import and no hook; on means a template-named server span, parented Redis spans only, ratio from the environment, log fields only while a span is active; engine hash unchanged.
+- Selected commands: `pytest tests/unit/api/test_tracing.py tests/unit/api/test_tracing_off.py tests/unit/api/test_tracing_engine_boundary.py -n 1`; `make typecheck-py`; `python -m tools.delivery.ci_lanes --run --all`; the arm_child.py crowded_frontier 42 5000 cell.

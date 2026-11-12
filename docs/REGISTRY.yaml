@@ -8103,7 +8103,7 @@
   - delivery
   - process-improvement
 - type: ticket
-  path: agent-working/tickets/inprogress/TCK-20261112-THE-API-EMITS-NO-REQUEST-TRACES.md
+  path: agent-working/tickets/done/TCK-20261112-THE-API-EMITS-NO-REQUEST-TRACES.md
   ticket_id: TCK-20261112-THE-API-EMITS-NO-REQUEST-TRACES
   title: 'The API emits no request traces: add OpenTelemetry server spans and Redis
     client spans, off unless an OTLP endpoint is set (#622 R3)'
@@ -8116,7 +8116,10 @@
   - src/observability/stream/factory.py, src/observability/stream/adapters.py:139
     (redis client)
   - src/api/routes/live_health.py:11
-  artifact_files: []
+  artifact_files:
+  - agent-working/stored_artifacts/TCK-20261112-THE-API-EMITS-NO-REQUEST-TRACES/investigation.md
+  - agent-working/stored_artifacts/TCK-20261112-THE-API-EMITS-NO-REQUEST-TRACES/plan.md
+  - agent-working/stored_artifacts/TCK-20261112-THE-API-EMITS-NO-REQUEST-TRACES/test_plan.md
   tags:
   - observability
   - api-design
