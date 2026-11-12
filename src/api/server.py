@@ -55,6 +55,7 @@ from src.api.routes import entities as entity_routes
 from src.api.routes import map as map_routes
 from src.api.routes import static as static_routes
 from src.api.routes import stats as stats_routes
+from src.api.tracing import setup_tracing
 from src.api.ws import stream
 from src.config.profiles import RuntimeProfile
 from src.content.repository import CatalogRepository
@@ -189,6 +190,7 @@ def create_v2_app(
     )
     app.add_middleware(GZipMiddleware, minimum_size=512)
     app.add_middleware(RequestDurationMiddleware)  # outermost: times the whole stack (issue #622 R2)
+    setup_tracing(app)  # server + Redis spans and log correlation; a strict no-op unless OTEL_EXPORTER_OTLP_ENDPOINT is set (issue #622 R3)
 
     _register_routers(app, profile)
 
