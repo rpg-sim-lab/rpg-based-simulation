@@ -4915,3 +4915,14 @@
   test_path: tests/unit/tactical/testflight_weighs_free_swing.py
   divergence_note: See docs/guidelines/intentional_divergences.md Section 2.202.
   support_boundary: 'Last felt blow only; non-flight moves off engagement, KITING and KEEP_DISTANCE are not covered; a multi-attacker swing credits its total to the first attacker.'
+
+- id: COMB-352
+  text: 'TCK-20261110-A-NON-FLIGHT-MOVE-OFF-ENGAGEMENT-WALKS-INTO-A-KNOWN-LETHAL-FREE-SWING: MovementSystem.resolve_move does not take a step that would give the free swing (COMB-009) to an engaged hostile the subject has felt will finish it (felt_lethal_attacker: last_attacker_id is engaged and alive, last_hit_damage > 0 and >= hp), whatever chose the step (a flight, an engage or bracketing step, a stored strategic target), unless the step is an evasive retreat. The held step is the blocked-step shape: no position, no stamina, no free swing, no fled learning, no plan-cache entry, the stored target kept, wait_count_delta 0, failure_reason FELT_LETHAL_FREE_SWING.'
+  status: verified
+  priority: P1
+  legacy_evidence: null
+  v2_evidence: 'src/engine/movement.py (resolve_move, the free-swing site), src/engine/felt_swing.py (felt_lethal_attacker, moved from tactical_flight_guard), src/core/enums.py (ReasonCode.FELT_LETHAL_FREE_SWING)'
+  proof_type: regression
+  test_path: tests/unit/movement/test_felt_lethal_free_swing_step.py
+  divergence_note: See docs/guidelines/intentional_divergences.md Section 2.204.
+  support_boundary: 'Last felt blow only (as 2.202); a stored-target step with no felt-lethal hostile still walks while engaged (TCK-20261109-A-COMBAT-RETREAT-PROJECT-WALKS-THE-SUBJECT-AGAINST-THE-HELD-FLIGHT-RULE); a subject can be pinned beside a felt-lethal hostile that stays adjacent and does not strike.'
