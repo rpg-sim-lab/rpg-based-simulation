@@ -26,6 +26,12 @@ Every alert rule in `docker/grafana/provisioning/alerting/rules-base.yaml` has a
 
 Records of measured runs and drills are in `records/`.
 
+Owner-run procedures (nothing an agent runs): [docker-image-store-move.md](docker-image-store-move.md), moving Docker's containerd image store off the root disk (planned, not yet run).
+
+Compose stack API keys (fail-closed by default; two gitignored files hold the pair; nginx adds the key): [compose-api-key.md](compose-api-key.md).
+
+Owner-run: rotating the local ntfy alert topic: [ntfy-topic-rotation.md](ntfy-topic-rotation.md).
+
 ## Common steps
 
 - **Silence an alert:** Grafana, Alerting, Silences, New silence. Match `alertname` (and `job` or `mountpoint`) and set an end time. A silence stops the ntfy message, not the evaluation.

@@ -1,0 +1,20 @@
+== must NOT contain the key or the hash
+OK  image config (docker image inspect) platform-frontend:latest: key occurrences 0, hash occurrences 0  (expected key absent, hash absent)
+OK  image history --no-trunc platform-frontend:latest: key occurrences 0, hash occurrences 0  (expected key absent, hash absent)
+OK  image config (docker image inspect) platform-backend:latest: key occurrences 0, hash occurrences 0  (expected key absent, hash absent)
+OK  image history --no-trunc platform-backend:latest: key occurrences 0, hash occurrences 0  (expected key absent, hash absent)
+OK  the SPA bundle served by nginx (4 files): key occurrences 0, hash occurrences 0  (expected both absent)
+OK  docker compose logs backend: key occurrences 0, hash occurrences 0  (expected key absent, hash absent)
+OK  docker compose logs frontend: key occurrences 0, hash occurrences 0  (expected key absent, hash absent)
+OK  docker compose logs redis: key occurrences 0, hash occurrences 0  (expected key absent, hash absent)
+OK  docker top backend (process arguments): key occurrences 0, hash occurrences 0  (expected key absent, hash absent)
+OK  docker top frontend (process arguments): key occurrences 0, hash occurrences 0  (expected key absent, hash absent)
+OK  this run's evidence files (16 .txt): key occurrences 0, hash occurrences 0  (expected key absent, hash absent)
+OK  the compose build logs: key occurrences 0, hash occurrences 0  (expected key absent, hash absent)
+== where they SHOULD be (expected, and the reason it is stated in the runbook)
+OK  backend container config/env (docker inspect): key occurrences 0, hash occurrences 1  (expected key absent, hash present)
+OK  frontend container config/env (docker inspect): key occurrences 1, hash occurrences 0  (expected key present, hash absent)
+OK  rendered /tmp/api-key.conf in the frontend: key occurrences 1, hash occurrences 0  (expected key present, hash absent)
+   backend sees the raw key at all (it must not): False
+   frontend sees the hash at all (it must not): False
+RESULT: all expectations met

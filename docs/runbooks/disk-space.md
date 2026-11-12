@@ -27,7 +27,7 @@ Rules in group `base`, from node-exporter (`node_filesystem_*`) for the mounts `
 Docker images and build cache; `data/runs` from simulation runs; the Prometheus, Loki and Tempo volumes (retention is short, 24h for Tempo); a runaway log file.
 
 ## Mitigation
-`docker builder prune` and `docker image prune` for build and image space. Remove only your own run directories by run id, with `python3 tools/gate_checks/done_checker_static.py --clean-data-runs --path <run_id>`; never `rm -rf data/runs/*`. Root-owned run directories are the owner's to remove. Do not delete the Grafana, Prometheus, Loki or Tempo volumes to free space without the owner.
+`docker builder prune` and `docker image prune` for build and image space. Remove only your own run directories by run id, with `python3 tools/gate_checks/done_checker_static.py --clean-data-runs --path <run_id>`; never `rm -rf data/runs/*`. Root-owned run directories are the owner's to remove. Do not delete the Grafana, Prometheus, Loki or Tempo volumes to free space without the owner. If it is the root filesystem and the cause is Docker's containerd image store (`/var/lib/containerd`, which `data-root` does not move), see the owner-run [docker-image-store-move.md](docker-image-store-move.md) for the plan to move it to `/data`.
 
 ## Proof without filling a disk
 The committed threshold stays 15 percent and there is no override. The expression is proven by query: run it in Explore or the Prometheus API with a threshold above the current free percent and record the output (see the drill record).

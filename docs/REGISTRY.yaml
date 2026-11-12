@@ -7486,6 +7486,16 @@
   - observability
   - performance
 - type: doc
+  path: docs/runbooks/compose-api-key.md
+  title: 'Runbook: API keys for the compose stack'
+  status: active
+  layer: platform
+  authority: P2
+  audience: agent
+  tags:
+  - platform
+  - security
+- type: doc
   path: docs/runbooks/disk-space.md
   title: 'Runbook: disk space (DiskSpaceLow, DiskWillFillIn24h)'
   status: active
@@ -7496,6 +7506,15 @@
   - platform
   - observability
 - type: doc
+  path: docs/runbooks/docker-image-store-move.md
+  title: 'Runbook: move Docker''s containerd image store off the root disk'
+  status: active
+  layer: platform
+  authority: P2
+  audience: agent
+  tags:
+  - platform
+- type: doc
   path: docs/runbooks/log-shipping.md
   title: 'Runbook: LogShippingErrors'
   status: active
@@ -7505,6 +7524,16 @@
   tags:
   - platform
   - observability
+- type: doc
+  path: docs/runbooks/ntfy-topic-rotation.md
+  title: 'Runbook: rotate the local ntfy alert topic'
+  status: active
+  layer: platform
+  authority: P2
+  audience: agent
+  tags:
+  - platform
+  - security
 - type: doc
   path: docs/runbooks/records/2026-10-18-api-load-test.md
   title: 'API load test (2026-10-18): age effect, /entities page cap and proposed
@@ -8112,6 +8141,39 @@
   tags:
   - testing
 - type: ticket
+  path: agent-working/tickets/done/TCK-20261112-COMPOSE-FRONTEND-API-DOCS-SCHEMA-NOT-PROXIED.md
+  ticket_id: TCK-20261112-COMPOSE-FRONTEND-API-DOCS-SCHEMA-NOT-PROXIED
+  title: In the compose frontend, the API docs page's /openapi.json fetch gets index.html,
+    because nginx proxies only /api/
+  tier: hotfix
+  ticket_type: bug
+  date: '2026-11-12'
+  related_code_areas:
+  - docker/nginx.conf
+  - frontend/src/components/ApiDocsPage.tsx
+  artifact_files: []
+  tags:
+  - platform
+- type: ticket
+  path: agent-working/tickets/done/TCK-20261112-COMPOSE-STACK-HAS-NO-API-KEY.md
+  ticket_id: TCK-20261112-COMPOSE-STACK-HAS-NO-API-KEY
+  title: The compose stack configures no API key, so every backend route except /health
+    answers 401
+  tier: standard
+  ticket_type: bug
+  date: '2026-11-12'
+  related_code_areas:
+  - compose.yaml
+  - docker/frontend.Dockerfile
+  - src/config/loader.py
+  artifact_files:
+  - agent-working/stored_artifacts/TCK-20261112-COMPOSE-STACK-HAS-NO-API-KEY/investigation.md
+  - agent-working/stored_artifacts/TCK-20261112-COMPOSE-STACK-HAS-NO-API-KEY/plan.md
+  - agent-working/stored_artifacts/TCK-20261112-COMPOSE-STACK-HAS-NO-API-KEY/test_plan.md
+  tags:
+  - platform
+  - security
+- type: ticket
   path: agent-working/tickets/done/TCK-20261112-DEPENDABOT-IGNORE-KNOWLEDGE-STACK.md
   ticket_id: TCK-20261112-DEPENDABOT-IGNORE-KNOWLEDGE-STACK
   title: Dependabot's uv entry ignores torch, graphifyy and headroom-ai, so grouped
@@ -8123,6 +8185,22 @@
   - .github/dependabot.yml
   - requirements-knowledge.txt
   artifact_files: []
+  tags:
+  - platform
+- type: ticket
+  path: agent-working/tickets/done/TCK-20261112-DOCKER-IMAGE-STORE-OFF-ROOT-DISK.md
+  ticket_id: TCK-20261112-DOCKER-IMAGE-STORE-OFF-ROOT-DISK
+  title: Plan moving Docker's containerd image store off the root disk, so builds
+    and image layers stop filling /
+  tier: standard
+  ticket_type: chore
+  date: '2026-11-12'
+  related_code_areas:
+  - docs/runbooks/disk-space.md
+  artifact_files:
+  - agent-working/stored_artifacts/TCK-20261112-DOCKER-IMAGE-STORE-OFF-ROOT-DISK/investigation.md
+  - agent-working/stored_artifacts/TCK-20261112-DOCKER-IMAGE-STORE-OFF-ROOT-DISK/plan.md
+  - agent-working/stored_artifacts/TCK-20261112-DOCKER-IMAGE-STORE-OFF-ROOT-DISK/test_plan.md
   tags:
   - platform
 - type: ticket
@@ -8250,17 +8328,16 @@
   - observability
   - api-design
 - type: ticket
-  path: agent-working/tickets/todos/TCK-20261112-COMPOSE-STACK-HAS-NO-API-KEY.md
-  ticket_id: TCK-20261112-COMPOSE-STACK-HAS-NO-API-KEY
-  title: The compose stack configures no API key, so every backend route except /health
-    answers 401
-  tier: standard
-  ticket_type: bug
+  path: agent-working/tickets/inprogress/TCK-20261112-ROTATE-LOCAL-NTFY-TOPIC.md
+  ticket_id: TCK-20261112-ROTATE-LOCAL-NTFY-TOPIC
+  title: Rotate the local ntfy alert topic, which was once echoed in an agent terminal,
+    by an owner-run procedure
+  tier: hotfix
+  ticket_type: chore
   date: '2026-11-12'
   related_code_areas:
   - compose.yaml
-  - docker/frontend.Dockerfile
-  - src/config/loader.py
+  - docker/grafana/provisioning/alerting/contact-points.yaml
   artifact_files: []
   tags:
   - platform

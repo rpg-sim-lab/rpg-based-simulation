@@ -17,3 +17,4 @@
 {"ts":"2026-11-12T08:34:11.128518Z","event":"governing_edit_attempt","seat":"platform-planner","path":".github/workflows/","basis":"mention","attempt":true}
 {"ts":"2026-11-12T11:13:01.570292Z","event":"governing_edit_attempt","seat":"platform-implementer","path":".github/workflows/deploy-docs.yml","basis":"path","attempt":true}
 {"ts":"2026-11-12T11:15:20.898306Z","event":"governing_edit_attempt","seat":"platform-implementer","path":".github/workflows/deploy-docs.yml","basis":"mention","attempt":true}
+{"ts":"2026-11-12T11:11:12.195880Z","event":"governing_edit_attempt","seat":"platform-planner","path":".github/workflows/deploy-docs.yml","basis":"mention","attempt":true}

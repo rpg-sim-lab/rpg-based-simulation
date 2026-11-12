@@ -1,0 +1,21 @@
+== 2026-11-12T16:57:17Z launch gate (API-key proof run)
+branch head: 74ed158108764bb24efd06f137170b7e485a1e9a
+loadavg: 0.33 0.21 0.28 | MemAvailable MiB: 6207 | swap used MiB: 2685 | 16:57:17
+loadavg: 0.30 0.21 0.28 | MemAvailable MiB: 6202 | swap used MiB: 2685 | 16:57:22
+loadavg: 0.28 0.21 0.28 | MemAvailable MiB: 6172 | swap used MiB: 2685 | 16:57:27
+loadavg: 0.26 0.20 0.27 | MemAvailable MiB: 6173 | swap used MiB: 2685 | 16:57:32
+-- df -h / /data
+Filesystem      Size  Used Avail Use% Mounted on
+/dev/sda2        49G   33G   15G  70% /
+/dev/sdb1        99G   79G   16G  84% /data
+-- stat -f
+/ blocks=12821880 free=4397292 avail=3737875
+/data blocks=25721923 free=5269386 avail=4085691
+-- docker system df (before)
+TYPE            TOTAL     ACTIVE    SIZE      RECLAIMABLE
+Images          16        1         6.209GB   434.4MB (6%)
+Containers      2         1         4.096kB   0B (0%)
+Local Volumes   6         0         666.8MB   666.8MB (100%)
+Build Cache     10        0         656.4MB   43.11MB
+-- containers: cool_curie  
+-- key files present (must be none): 2
