@@ -1,10 +1,10 @@
 ---
-status: active
+status: historical
 layer: combat
 authority: P1
 audience: agent
 ticket_id: TCK-20261111-FELT-LETHAL-MEMORY-HAS-NO-RECENCY-WINDOW
-phase: open
+phase: done
 date: 2026-11-11
 tags: []
 ---
@@ -15,7 +15,7 @@ tags: []
 A single felt-lethal hit keeps an engaged subject pinned for 65-71 ticks while the hostile strikes nothing, because the felt-lethal memory has no recency window
 
 ## Status
-OPEN
+DONE
 
 ## Tier
 standard
@@ -24,7 +24,7 @@ standard
 bug
 
 ## Priority
-P2 (raised from P3 by rpg-designer, 2026-11-12, session message, on the frontier_marches s42 e31 lead evidence)
+P3 (back from P2: rpg-designer ruled NO CHANGE, 2026-11-12, session message; the measurement found no defect)
 
 ## Request Summary
 rpg-designer found this on 2026-11-11 while ruling on the PIN STOP in the P2 S1 measurement of TCK-20261110-A-NON-FLIGHT-MOVE-OFF-ENGAGEMENT-WALKS-INTO-A-KNOWN-LETHAL-FREE-SWING. rpg-planner filed it the same day. It is investigation first; there is no fix now. It comes after the current batch.
@@ -78,9 +78,25 @@ The s42 plain twin hash-matched (e0e20c2044d7), as did s43 (609683ccdf2b), so th
 - The rows are from the spied fix cells. The s42 and s43 plain twins hash-matched on 2026-11-11, so the rows count.
 
 ## Implementation Notes
+Investigation only; no src or test change. Owner approval to run: #715 6813227854. Staging artifacts moved to agent-working/stored_artifacts/TCK-20261111-FELT-LETHAL-MEMORY-HAS-NO-RECENCY-WINDOW/.
 
 ## Test Summary
+No code changed, so no tests. Verification: the trace's end hash equals the plain cell (MATCH 908eb3bb1441).
 
 ## Files Changed
+Docs, tickets and artifacts only: this ticket, the stored artifacts, divergence 2.204's Measured line, the 2.204 ticket's Known gaps, and its measurement.md.
 
 ## Completion Summary
+Closed as BY DESIGN, measurement only (hand-orchestrated, path-reason investigation_only). rpg-designer ruled NO CHANGE (2026-11-12, session message).
+
+**Code read (main 5e58ae857).** `felt_lethal_attacker` (src/engine/felt_swing.py:16-29) reads `last_attacker_id` and `last_hit_damage` plus hp (lines 23-24) and the attacker being engaged and alive (lines 26, 29); it never reads `last_hit_tick`. The fields (src/core/state.py:444-446) are written only by `CombatPatch.apply` (src/engine/patches.py:327-338, producers src/engine/combat.py:228, 303, 404, 455, 513) and cleared nowhere. A pin ends when hp exceeds the remembered damage, the attacker leaves adjacency or dies, or a new landed hit replaces the memory. `last_hit_tick` is used with a window only in src/engine/tactical_threat.py:131-132. Consumers: src/engine/tactical_flight_guard.py:67 (2.202) and src/engine/movement.py:178 (2.204). `stalemate_break_update` (src/engine/tactical_hold.py:54-61) has one caller (src/engine/tactical.py:462-464) gated by `not fighting_adjacent` (tactical.py:455), so it cannot release a pin on an engaged hostile.
+
+**Trace.** free_swing_trace_win.py (61a181a5…) on main frontier_marches s42, subjects e31 and e49 over t1950-2000 and e31 over t2395-2407. Output /mnt/data2/rpg-measure/recency/trace_fm42.json, sha256 6d804576803c22d2883882cc1e903b9aa4e1d26f5c9db10350da9b1467d57d0d, MATCH 908eb3bb1441 vs the plain cell. e31 and e49 start a SLEEP collapse at t1961; after that `resolve_move` is called (and held) only on t1969, 1979, 1989, 1999. At t2395-2398 e31 has no engaged hostiles, walks a REGROUP at t2399-2403, and at t2407 is engaged with e48 and goes from hp 12 to 0.
+
+**Ruling and reason.** A sleeping or collapsed hostile still lands the opportunity swing (src/engine/movement.py:356-363, src/engine/combat.py:335, src/engine/legality.py:262-265: readiness is bypassed for opportunity attacks; only frozen and stunned block at :265). So the remembered (e49, 17) blow was a correct prediction and the hold was 2.204 working; standoffs are by design. e31's final DEFEAT from e48 is the documented boundary: the subject knows only what it has felt.
+
+**REOPEN TRIGGER.** A measured hold where the swing would NOT have been lethal, i.e. the remembered damage exceeds what the hostile can deal now (gear or stat change), shown by a trace.
+
+**Findings, not tickets.** (a) A pinned e31 keeps choosing WANDER into a held step instead of HOLD_BETWEEN_BLOWS; this goes to the HOLD-mode ruling. (b) e49's FLEE_THREAT RETREAT `resolve_move` returns null with no failure_reason at t1953-1959; this is an observability gap and goes to the producer-per-ActionIntent investigation.
+
+Known gap: knowledge-index-update not run: worktrees use main's index (lead-planner-u24, 2026-11-12). Nothing else new. 2.204's own text now carries the ruling and the reopen trigger; no figure was changed.
