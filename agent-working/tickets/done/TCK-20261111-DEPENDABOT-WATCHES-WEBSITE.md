@@ -54,8 +54,8 @@ The remaining scope is the Dependabot entry. This is option 1 in the issue.
 - `website/package.json` and `website/package-lock.json` both exist at the branch head, which is what Dependabot's npm
   ecosystem reads (validated).
 - After merge: GitHub's Dependabot config check shows no error, and the next monthly run (2026-12-01) opens at most 2
-  grouped PRs "in /website" (observed after merge; record it on this ticket then). Until then the ticket says:
-  Known gap: the first /website run is not yet observed.
+  grouped PRs "in /website" (observed after merge; record it on this ticket then).
+  Observed 2026-11-11: see the Completion Summary.
 
 ## Related Tickets
 - TCK-20261014-DEPENDABOT-GROUPED-MAJORS-MONTHLY and TCK-20261015-DEPENDABOT-DOCKER-IGNORE-PYTHON-MINOR-AND-UV: same
@@ -99,4 +99,4 @@ satisfies the observed acceptance criteria of both earlier tickets. Record it th
 
 ## Completion Summary
 Dependabot now watches `/website` monthly with at most 2 grouped PRs, so a website advisory gets an update PR. Closes #845 through this ticket ID.
-Known gap: the first /website run is not yet observed. After merge, check that GitHub's Dependabot config check shows no error and that the 2026-12-01 run opens at most 2 grouped PRs "in /website", and record it here.
+Observed (2026-11-11, `gh pr view 879`): the /website entry fired 2 minutes after #875 merged (merged 14:45:11Z, #879 opened 14:47:24Z). It opened one grouped PR, "npm-minor-patch group in /website with 3 updates", labels [dependencies, platform]. The config is valid and the first run is OK. The monthly schedule (2026-12-01) is still to be seen but is not a gap in the config.

@@ -25,5 +25,8 @@ Rule: `increase(grafana_alerting_rule_evaluation_failures_total[5m]) + increase(
 ## Known limit
 If the notifier itself is broken (ntfy down or the token invalid), `GrafanaAlertingFailures` cannot reach ntfy; the Grafana alert state is the only trace. Check the Alerting UI (`http://127.0.0.1:3000/alerting`) when you suspect silence. `TargetDown` for `ntfy` goes through the same broken path.
 
+## Rotating the ntfy topic
+The topic and the access token are gitignored secret files; to change the topic (owner-run, with no value printed), see [ntfy-topic-rotation.md](ntfy-topic-rotation.md).
+
 ## Silence and escalate
 See the README. Escalate to the owner if ntfy delivery stays broken after a restart and a token check (`docker compose exec ntfy ntfy token list`).

@@ -11199,33 +11199,40 @@
   divergence_note: null
   proof_type: contract
 - id: INFRA-378
-  text: Per-client HTTP admission control (src/api/admission_control.py) extends ObservabilityMode's
-    NORMAL/PRESSURE/DEGRADED/SURVIVAL vocabulary (imported from src.observability.event_recorder,
-    never modified) to the HTTP layer, keyed by the ClientIdentity INFRA-377's auth
-    mechanism resolves. A per-client in-memory token bucket (30-token capacity, 3
-    tokens/second refill) produces a 0.0-1.0+ fill_ratio signal, fed into a hysteresis
-    state machine mirroring ResourceGovernor's real escalation/recovery pattern (src/engine/governor.py
-    evaluate()/_can_recover(), NOT PhaseBudgetGovernor, which has no hysteresis of
-    its own) -- escalation is immediate, recovery requires RuntimeProfile.dwell_time_ticks
-    admission-evaluation calls plus confidence_window_ticks consecutive low-pressure
-    readings, stepping down one mode level at a time. Only SURVIVAL rejects a request
-    (HTTP 429 with a Retry-After header; WebSocket close code 1013 on stream.router's
-    3 routes) -- NORMAL/PRESSURE/DEGRADED all admit. Per-client state is bounded by
-    a lazy idle-TTL prune-on-access (1800 seconds, mirroring AlertDeduplicator.prune())
-    plus a 1000-entry max-entries LRU hard cap (mirroring CacheStrategy's dict-plus-
-    list idiom). require_admission/require_admission_header_or_query/ require_admission_ws
-    compose with require_api_key/require_api_key_header_or_query/ require_api_key_ws
-    via a Depends() parameter chain -- 23 of server.py's 27 protected route sites
-    replace the auth-only dependency in place; the 4 sites using the weaker header-or-query/WebSocket
-    auth channel (3 dashboard routes, 1 stream.router wiring site backing 3 WebSocket
-    routes) append the admission dependency alongside the original auth dependency
-    instead, to keep test_only_dashboard_and_websocket_routes_use_weaker_auth_channel's
-    top-level dependant-graph introspection passing unmodified -- see plan.md's Deviations
-    section. /health remains the sole exemption.
+  text: 'Per-client HTTP admission control (src/api/admission_control.py) extends
+    ObservabilityMode''s NORMAL/PRESSURE/DEGRADED/SURVIVAL vocabulary (imported from
+    src.observability.event_recorder, never modified) to the HTTP layer, keyed by
+    the ClientIdentity INFRA-377''s auth mechanism resolves. A per-client in-memory
+    token bucket (30-token capacity, 3 tokens/second refill) produces a 0.0-1.0+ fill_ratio
+    signal, fed into a hysteresis state machine mirroring ResourceGovernor''s real
+    escalation/recovery pattern (src/engine/governor.py evaluate()/_can_recover(),
+    NOT PhaseBudgetGovernor, which has no hysteresis of its own) -- escalation is
+    immediate, recovery requires RuntimeProfile.dwell_time_ticks admission-evaluation
+    calls plus confidence_window_ticks consecutive low-pressure readings, stepping
+    down one mode level at a time. Only SURVIVAL rejects a request (HTTP 429 with
+    a Retry-After header; WebSocket close code 1013 on stream.router''s 3 routes)
+    -- NORMAL/PRESSURE/DEGRADED all admit. Per-client state is bounded by a lazy idle-TTL
+    prune-on-access (1800 seconds, mirroring AlertDeduplicator.prune()) plus a 1000-entry
+    max-entries LRU hard cap (mirroring CacheStrategy''s dict-plus- list idiom). require_admission/require_admission_header_or_query/
+    require_admission_ws compose with require_api_key/require_api_key_header_or_query/
+    require_api_key_ws via a Depends() parameter chain -- 23 of server.py''s 27 protected
+    route sites replace the auth-only dependency in place; the 4 sites using the weaker
+    header-or-query/WebSocket auth channel (3 dashboard routes, 1 stream.router wiring
+    site backing 3 WebSocket routes) append the admission dependency alongside the
+    original auth dependency instead, to keep test_only_dashboard_and_websocket_routes_use_weaker_auth_channel''s
+    top-level dependant-graph introspection passing unmodified -- see plan.md''s Deviations
+    section. /health remains the sole exemption. Idle time counts toward recovery,
+    so the 429''s Retry-After: 5 is a true bound: a call arriving at least _RETRY_AFTER_SECONDS
+    after the client''s previous call steps a SURVIVAL client whose refilled fill_ratio
+    is within the SURVIVAL recovery limit down to DEGRADED, and resets the client
+    to NORMAL when the bucket has refilled to full (_apply_idle_recovery, on the timed
+    path; _evaluate stays time-free and call-counted).'
   status: verified
   priority: P1
   v2_evidence: src/api/admission_control.py, src/api/server.py
-  test_path: tests/api/test_admission_control.py::test_first_request_from_new_client_is_admitted
+  test_path: tests/api/test_admission_control.py::test_first_request_from_new_client_is_admitted,
+    tests/api/test_admission_control.py::test_a_client_that_waits_out_retry_after_is_admitted,
+    tests/api/test_admission_control.py::test_the_first_request_after_a_gap_is_admitted_on_any_route
   divergence_note: null
   proof_type: contract
 - id: INFRA-379

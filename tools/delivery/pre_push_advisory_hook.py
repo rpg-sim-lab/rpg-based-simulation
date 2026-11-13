@@ -228,6 +228,33 @@ def check_registry_fresh(run_command=default_run_command, base_ref: str = "origi
     ]
 
 
+_POST_COMMIT_SCRIPT = "tools/hooks/post-commit-reindex.sh"
+
+
+def check_installed_post_commit_current(run_command=default_run_command) -> List[str]:
+    """Check F (TCK-20261112-REGISTRY-REGEN-SKIPPED-BY-A-STALE-HOOK-OR-AN-UNTRACKED-DOC): the shared post-commit hook is a copy
+    that only `make install-hooks` refreshes, so a stale copy silently skips the registry regeneration after a merge
+    finished with `git commit`. Warn-only; no installed hook, or any error, says nothing."""
+    try:
+        common = run_command(["git", "rev-parse", "--git-common-dir"])
+        if common.returncode != 0:
+            return []
+        installed = Path(common.stdout.strip()) / "hooks" / "post-commit"
+        if not installed.is_file():
+            return []
+        script = run_command(["git", "show", f"HEAD:{_POST_COMMIT_SCRIPT}"])
+        if script.returncode != 0:
+            return []
+        if installed.read_text(encoding="utf-8") == script.stdout:
+            return []
+    except Exception:
+        return []
+    return [
+        "pre-push: the installed post-commit hook differs from HEAD's tools/hooks/post-commit-reindex.sh, so a merge "
+        "finished with `git commit` may skip the docs/REGISTRY.yaml regeneration. Run `make install-hooks` to refresh it."
+    ]
+
+
 def run_all_checks(
     run_command=default_run_command,
     base_ref: str = "origin/main",
@@ -239,6 +266,7 @@ def run_all_checks(
     findings.extend(check_squash_merged_finished(run_command, base_ref))
     findings.extend(check_ci_lanes(run_command, base_ref))
     findings.extend(check_registry_fresh(run_command, base_ref))
+    findings.extend(check_installed_post_commit_current(run_command))
     return findings
 
 

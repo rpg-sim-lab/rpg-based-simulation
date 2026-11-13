@@ -1,0 +1,17 @@
+== 2026-11-12T10:07:07Z dashboard proof (D1, D2, D3)
+dashboard loaded: API (requests, errors, latency, logs, traces) | uid api-v1 | folder: General | panels 17
+[prometheus] Request rate by route: ok, frames=37, points=369, last=0
+[prometheus] Request rate by status class: ok, frames=2, points=37, last=6.363521
+[prometheus] 5xx ratio, overall: ok, frames=1, points=20, last=0
+[prometheus] 5xx ratio by route: ok, frames=1, points=0, last=None
+[prometheus] Latency p50 / p95 / p99, overall: ok, frames=1, points=4, last=0.0025
+[prometheus] Latency p95 by route: ok, frames=7, points=23, last=0.00475
+[loki  ] Backend container logs: ok, frames=1, points=250, last=1794477988433503785_9e03b191
+[tempo ] Recent traces (service.name = rpg-backend): search ok, 20 traces
+[prometheus] ApiLatencyP95High expression: ok, frames=1, points=0, last=None
+[prometheus] p95 latency (value): ok, frames=1, points=1, last=0.00475
+[prometheus] ApiErrorRateHigh expression: ok, frames=1, points=0, last=None
+[prometheus] 5xx ratio (value): ok, frames=1, points=0, last=None
+panel query problems: 0
+p95 at 10:07:08Z  panel(via Grafana)=0.00475  Prometheus(by hand, same expr, same instant)=0.00475
+agree: True

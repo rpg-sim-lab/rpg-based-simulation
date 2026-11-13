@@ -128,3 +128,4 @@ per the user's own explicit preference — the build config, its history, and ma
 `workflow_dispatch` runs all survive. `TCK-20260916-REENABLE-DOCS-PAGES-PUBLISHING` tracks the
 re-enable and stays BLOCKED on the user's own judgement that the docs are ready to publish; not
 picked up here.
+Resolved by `TCK-20260916-REENABLE-DOCS-PAGES-PUBLISHING` (2026-11-12): Pages is enabled (workflow source), the push trigger is restored with a paths filter, and the disable comment is removed.

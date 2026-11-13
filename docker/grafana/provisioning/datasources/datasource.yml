@@ -15,6 +15,14 @@ datasources:
     access: proxy
     editable: false
     uid: loki
+    jsonData:
+      derivedFields:
+        # The backend prints ` trace_id=<32 hex>` on lines logged inside a span (src/logging/formatter.py, plain format). The link opens the trace in Tempo.
+        # Add the JSON regex "trace_id":\s*"(\w+)" only if the container switches to --json-logs.
+        - name: trace_id
+          matcherRegex: 'trace_id=(\w+)'
+          datasourceUid: tempo
+          url: '$${__value.raw}'
 
   - name: Tempo
     type: tempo

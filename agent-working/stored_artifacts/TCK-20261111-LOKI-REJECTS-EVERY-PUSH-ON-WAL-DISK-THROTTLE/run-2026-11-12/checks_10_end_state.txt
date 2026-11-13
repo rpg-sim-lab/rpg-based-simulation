@@ -1,0 +1,31 @@
+== 2026-11-12T10:12:38Z end-state (T3 again, T4 inputs)
+platform-backend-1 oom=false restarts=0 health=healthy
+platform-grafana-1 oom=false restarts=0 health=healthy
+platform-prometheus-1 oom=false restarts=0 health=healthy
+platform-alloy-1 oom=false restarts=0 health=healthy
+platform-redis-1 oom=false restarts=0 health=healthy
+platform-docker-socket-proxy-1 oom=false restarts=0 health=none
+platform-tempo-1 oom=false restarts=0 health=none
+platform-loki-1 oom=false restarts=0 health=none
+platform-redis-exporter-1 oom=false restarts=0 health=none
+platform-node-exporter-1 oom=false restarts=0 health=none
+platform-ntfy-1 oom=false restarts=0 health=healthy
+-- Alloy -> Loki
+loki_write_sent_entries_total{job="alloy"} => [('', '3885')]
+loki_write_dropped_entries_total{job="alloy"} => [('', '0'), ('', '0'), ('', '0'), ('', '0'), ('', '0')]
+loki_write_batch_retries_total{job="alloy"} => [('', '0')]
+loki_write_request_duration_seconds_count{job="alloy"} => [('204', '370')]
+-- Loki: throttle lines: 0, 500s in push log: 0
+-- targets
+9 targets; 9 up; []
+  TargetDown inactive ok
+  PrometheusUnreachable inactive ok
+  GrafanaAlertingFailures inactive ok
+  DiskSpaceLow inactive ok
+  DiskWillFillIn24h inactive ok
+  LogShippingErrors inactive ok
+  RedisDown inactive ok
+  AiWorkerLagHigh firing ok
+  AiWorkerPendingHigh inactive ok
+  ApiLatencyP95High inactive ok
+  ApiErrorRateHigh inactive ok

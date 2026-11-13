@@ -19,10 +19,10 @@ follow the citations below to the primary source for anything not covered here.
 - Debugging why events seem to be missing, dropped, or sampled
 - Working with the Prometheus/Loki export surface
 
-## The 7 Hard Laws (`HardLawMonitor`)
+## The 9 Hard Laws (`HardLawMonitor`)
 
 Source: `docs/observability/hard_law_monitor.md` §1. All are `DirtySet`-scoped and O(1) per tick
-except the last, which is a one-time full scan:
+except `LAW-SPAWN-OCCUPANCY`, which is a one-time full scan:
 
 | Law ID | Scope | Constraint | Severity |
 |---|---|---|---|
@@ -31,11 +31,13 @@ except the last, which is a one-time full scan:
 | `LAW-GOLD-NONNEGATIVE` | `DirtySet.inventory_entities` | Gold ≥ 0 | ERROR |
 | `LAW-STAMINA-NONNEGATIVE` | `DirtySet.biological_entities` | Stamina ≥ 0 | ERROR |
 | `LAW-POSITION-FINITE` | `DirtySet.movement_entities` | x, y finite (no NaN/Infinity) | ERROR |
+| `LAW-POSITION-IN-WORLD` | `DirtySet.all_dirty_entities` | Committed position of an active, alive entity lies inside the world extent (union of declared region bounds) | ERROR |
 | `LAW-OCCUPANCY-COLLISION` | `DirtySet.movement_entities` | ≤1 solid entity per tile | ERROR |
 | `LAW-SPAWN-OCCUPANCY` | `Kernel.__init__` (once, pre-tick) | Full spawn-state occupancy scan (entities + buildings + resource nodes) | ERROR |
+| `LAW-LODGER-INDOORS` | `DirtySet.all_dirty_entities` | An entity with `navigation.lodged_in` set stands on its building's tile and has no navigation target | ERROR |
 
 `LAW-SPAWN-OCCUPANCY` is the one exception to the DirtySet-scoped design: it runs once, before the
-first tick, because nothing has "moved" yet for the other six DirtySet-gated laws to catch — it
+first tick, because nothing has "moved" yet for the other eight DirtySet-gated laws to catch — it
 exists specifically to cover placement collisions `WorldCompiler.compile()` doesn't validate.
 
 ## `ObservabilityMode` Policy
@@ -53,7 +55,7 @@ Source: `docs/observability/hard_law_monitor.md` §2. Governs what happens when 
   falls through both branches silently (neither logged to stdout nor raised). If you're debugging
   "why didn't I see a warning for this violation" under `LONG_RUN` mode, check
   `hard_law_violations.jsonl` and `AlertsManager` directly rather than the log stream — this
-  applies identically to all seven laws above.
+  applies identically to all nine laws above.
 
 Integration point: `HardLawMonitor` runs during the Kernel's **Advancement** phase, before state
 commit and persistence (`docs/engine/kernel.md`'s "Hard Law Compliance Guard" Law) — it operates on

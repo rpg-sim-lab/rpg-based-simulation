@@ -1,0 +1,13 @@
+2026-11-11T16:24:30Z slot re-check ok: loadavg1 0.52, avail 5457 MiB, swap 3050 MiB
+2026-11-11T16:24:41Z real watcher started (MIN_AVAIL 1500, MAX_SWAP 7500, interval 60 s)
+backend image before build: 
+Error response from daemon: No such image: platform-backend:latest; last src commit db42a5e47 2026-11-11T22:58:37+07:00
+2026-11-11T16:24:47Z build backend start
+2026-11-11T16:25:46Z build backend done rc=0
+2026-11-11T16:25:57Z T0 up -d (11 services)
+2026-11-11T16:29:22Z FIRE TEST: stop redis-exporter
+2026-11-11T16:32:50Z FIRE TEST: start redis-exporter (firing message seen in ntfy 16:32:17Z)
+2026-11-11T16:34:30Z elapsed since T0 16:25:57Z
+2026-11-11T16:37:28Z end of observation window (T0+11 min)
+temp reader user removed rc=0
+2026-11-11T16:38:40Z RED CHECK: Loki rejects every push (wal disk threshold 94.8% > 90%); LogShippingErrors pending; stopping, down project

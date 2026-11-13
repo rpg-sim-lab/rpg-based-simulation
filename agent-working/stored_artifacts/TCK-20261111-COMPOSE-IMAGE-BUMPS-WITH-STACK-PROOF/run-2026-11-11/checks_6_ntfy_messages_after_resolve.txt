@@ -1,0 +1,5 @@
+16:28:30Z prio 4 tags ['bell'] | [firing] AiWorkerLagHigh | ai_worker is falling behind or not reporting: consumer-group lag above the limit, or no lag series / Runbook: do
+16:28:47Z prio 4 tags ['bell'] | [resolved] TargetDown | Scrape target tempo is down / Runbook: docs/runbooks/target-down.md
+16:29:13Z prio None tags None |  | compose-bumps proof: authenticated test publish
+16:32:17Z prio 4 tags ['bell'] | [firing] TargetDown | Scrape target redis is down / Runbook: docs/runbooks/target-down.md
+16:37:17Z prio 4 tags ['bell'] | [resolved] TargetDown | Scrape target redis is down / Runbook: docs/runbooks/target-down.md

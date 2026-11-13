@@ -284,3 +284,109 @@ def test_admission_control_covers_every_authenticated_route():
 
     assert neither_paths == {"/health"}
 
+
+
+# --- Idle time counts toward recovery (TCK-20261112-A-THROTTLED-CLIENT-THAT-WAITS-OUT-
+# RETRY-AFTER-IS-STILL-REFUSED). Every test drives _check_admission with explicit times, so
+# no wall clock is involved. ---
+
+_BURST_REQUESTS = 420
+_BURST_SECONDS = 36.0
+
+
+def _burst(client_id: str, start: float = 1000.0) -> tuple[float, int]:
+    """Send the replay burst (420 requests spread evenly over 36 s). Returns the time of the
+    last request and how many were admitted (any mode but SURVIVAL)."""
+    admitted = 0
+    t = start
+    for i in range(_BURST_REQUESTS):
+        t = start + i * (_BURST_SECONDS / _BURST_REQUESTS)
+        if _check_admission(client_id, t) is not ObservabilityMode.SURVIVAL:
+            admitted += 1
+    return t, admitted
+
+
+def test_a_client_that_waits_out_retry_after_is_admitted():
+    """T1: after a burst sends a client to SURVIVAL, one request after the advertised
+    Retry-After (5 s) is admitted, not refused again."""
+    end, _ = _burst("c")
+    assert _check_admission("c", end + 0.1) is ObservabilityMode.SURVIVAL  # still hammering
+    assert _check_admission("c", end + 0.1 + admission_control._RETRY_AFTER_SECONDS) is not ObservabilityMode.SURVIVAL
+
+
+def test_a_client_whose_bucket_refilled_fully_is_back_to_normal():
+    """T2: after a long idle gap that refills the bucket, the next request is admitted
+    and the client is NORMAL with a fresh hysteresis window."""
+    end, _ = _burst("c")
+    mode = _check_admission("c", end + 180.0)
+    assert mode is ObservabilityMode.NORMAL
+    status = admission_status("c")
+    assert status["dwell_count"] == 1  # reset to 0, then this call's own evaluation counts 1
+    assert status["tokens_remaining"] == admission_control._BUCKET_CAPACITY - 1.0
+
+
+def test_a_client_that_keeps_hammering_stays_in_survival():
+    """T3: 10 requests/s for 30 s. Gaps are 0.1 s, far under Retry-After, so no idle step-down
+    applies: once the bucket drains, every later request is SURVIVAL."""
+    modes = [_check_admission("h", 2000.0 + i * 0.1) for i in range(300)]
+    first = modes.index(ObservabilityMode.SURVIVAL)
+    assert all(m is ObservabilityMode.SURVIVAL for m in modes[first:])
+
+
+def test_a_retry_just_under_retry_after_never_takes_the_idle_path():
+    """T3 variant: after a burst, a client retrying every 4.9 s (Retry-After minus 0.1 s)
+    never earns the idle step-down, so it recovers only by the call-counted rule. Exact
+    expectation: the first 4 retries stay SURVIVAL (refused, the same as before the fix),
+    and the 5th is the first DEGRADED, once the confidence window holds 5 low samples."""
+    end, _ = _burst("c")
+    retry = admission_control._RETRY_AFTER_SECONDS - 0.1
+    modes = [_check_admission("c", end + retry * k) for k in range(1, 7)]
+    assert modes[:4] == [ObservabilityMode.SURVIVAL] * 4
+    assert modes[4] is ObservabilityMode.DEGRADED
+
+
+def test_burst_replay_admits_about_forty():
+    """T4: the burst admission count is unchanged by the fix (40 before it; allow +-3)."""
+    _, admitted = _burst("c")
+    assert 37 <= admitted <= 43
+
+
+def test_one_request_per_second_is_never_refused():
+    """T5: positive control (also the paced-client case). A new client at 1 request/s for 300 s
+    is always admitted."""
+    modes = [_check_admission("p", 3000.0 + i) for i in range(300)]
+    assert ObservabilityMode.SURVIVAL not in modes
+
+
+def test_health_stays_exempt_from_admission():
+    """T6: already pinned by test_admission_control_covers_every_authenticated_route above,
+    which asserts /health is the only route carrying neither an admission nor an auth
+    dependency. This test adds the behavioural half: /health answers 200 while the same
+    client's key is in SURVIVAL."""
+    app = create_v2_app(_make_profile())
+    with TestClient(app) as client:
+        state = _ClientAdmissionState(last_active_time=time.time())
+        state.mode = ObservabilityMode.SURVIVAL
+        admission_control._client_state[TEST_CLIENT_ID] = state
+        admission_control._client_order.append(TEST_CLIENT_ID)
+        assert client.get("/api/v1/state", headers={"X-API-Key": TEST_RAW_KEY}).status_code == 429
+        assert client.get("/health").status_code == 200
+
+
+def test_the_first_request_after_a_gap_is_admitted_on_any_route(monkeypatch):
+    """T7: all routes share one per-key state. After a burst, a search route refuses a retry
+    that comes too soon, and once Retry-After has passed the first request is admitted
+    whichever route it hits (platform's run: 4 search 429s, then a manifest 200)."""
+    clock = {"now": 5000.0}
+    monkeypatch.setattr(admission_control.time, "time", lambda: clock["now"])
+    headers = {"X-API-Key": TEST_RAW_KEY}
+    app = create_v2_app(_make_profile())
+    with TestClient(app) as client:
+        end, _ = _burst(TEST_CLIENT_ID, start=clock["now"])
+        clock["now"] = end + 0.1
+        assert client.get("/api/v1/observability/search/runs", headers=headers).status_code == 429
+        retry = admission_control._RETRY_AFTER_SECONDS
+        clock["now"] = end + 0.1 + retry
+        assert client.get("/api/v1/observability/search/runs", headers=headers).status_code != 429
+        clock["now"] += 0.1
+        assert client.get("/api/v1/manifest", headers=headers).status_code != 429

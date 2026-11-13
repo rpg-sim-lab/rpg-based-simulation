@@ -367,3 +367,34 @@ def test_check_e_fires_when_the_only_changed_path_is_the_registry_file():
 
 def test_check_e_is_silent_for_a_registry_only_diff_when_the_registry_is_current():
     assert hook.check_registry_fresh(_registry_runner(["docs/REGISTRY.yaml"], check_rc=0)) == []
+
+
+# TCK-20261112-REGISTRY-REGEN-SKIPPED-BY-A-STALE-HOOK-OR-AN-UNTRACKED-DOC — check F: the installed post-commit hook is stale
+
+def _hook_runner(common_dir, script_text="#!/bin/bash\nnew\n"):
+    def run(cmd, timeout=30):
+        if cmd[:3] == ["git", "rev-parse", "--git-common-dir"]:
+            return ok(f"{common_dir}\n")
+        if cmd[:2] == ["git", "show"]:
+            return ok(script_text)
+        raise AssertionError(f"unexpected {cmd!r}")
+    return run
+
+
+def _install_hook(common_dir, text):
+    path = common_dir / "hooks" / "post-commit"
+    path.parent.mkdir(parents=True)
+    path.write_text(text, encoding="utf-8")
+
+
+def test_check_f_warns_when_the_installed_post_commit_differs_from_the_script(tmp_path):
+    _install_hook(tmp_path, "#!/bin/bash\nold copy\n")
+    findings = hook.check_installed_post_commit_current(_hook_runner(tmp_path))
+    assert len(findings) == 1 and "make install-hooks" in findings[0] and "post-commit" in findings[0]
+
+
+def test_check_f_is_silent_for_an_identical_hook_or_no_hook_or_an_error(tmp_path):
+    _install_hook(tmp_path, "#!/bin/bash\nnew\n")
+    assert hook.check_installed_post_commit_current(_hook_runner(tmp_path)) == []
+    assert hook.check_installed_post_commit_current(_hook_runner(tmp_path / "nowhere")) == []  # no hook installed
+    assert hook.check_installed_post_commit_current(lambda cmd, timeout=30: hook.CommandResult(128, "", "no git")) == []

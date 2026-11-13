@@ -1,0 +1,16 @@
+== 2026-11-12T10:33:13Z run A round trip (API level, through Grafana's datasource proxies)
+Loki derivedFields (as loaded): {"datasourceUid": "tempo", "matcherRegex": "trace_id=(\\w+)", "name": "trace_id", "url": "${__value.raw}"}
+Tempo tracesToLogsV2 (as loaded): {"datasourceUid": "loki", "customQuery": true, "query": "{container=~\".*backend.*\"} |= \"${__trace.traceId}\""}
+Loki lines with trace_id= (Search runs, last hour, limit 20): 20
+chosen line: INFO:api.observability.search:Search runs: scenario_name=ALL status=ALL sort=DEFAULT limit=50 result_count=16 trace_id=56016e92030d5e84ff01352c32300d29 span_id=98f122901ee789ad
+derivedFields regex captured trace id: 56016e92030d5e84ff01352c32300d29 | 32 hex: True
+trace found in Tempo; spans: 3
+  SPAN_KIND_INTERNAL | GET /api/v1/observability/search/runs http send | span jb/yKqnVfJo= parent mPEikB7nia0= | {'http.status_code': '200'}
+  SPAN_KIND_INTERNAL | GET /api/v1/observability/search/runs http send | span XJRXZL91Fls= parent mPEikB7nia0= | {}
+  SPAN_KIND_SERVER | GET /api/v1/observability/search/runs | span mPEikB7nia0= parent - | {'http.method': 'GET', 'http.route': '/api/v1/observability/search/runs', 'http.status_code': '200'}
+server span route: ['/api/v1/observability/search/runs']
+trace-to-logs query: {container=~".*backend.*"} |= "56016e92030d5e84ff01352c32300d29"
+trace -> logs: lines returned: 1
+the original line is among them: True | every returned line carries the trace id: True
+    INFO:api.observability.search:Search runs: scenario_name=ALL status=ALL sort=DEFAULT limit=50 result_count=16 trace_id=56016e92030d5e84ff01352c32300d29 span_id=98f122901ee789ad
+TRACE_ID 56016e92030d5e84ff01352c32300d29
