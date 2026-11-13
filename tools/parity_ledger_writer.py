@@ -245,3 +245,82 @@ def write_entry(shard_filename: str, entry: dict, ledger_dir=None, db_path=None)
         "entry_id": entry["id"],
         "build_report": build_report,
     }
+
+
+# ---- --check: a read-only look at hand-edited shards (TCK-20261113-PRE-PUSH-CHECKS-HAND-EDITED-PARITY-LEDGER-SHARDS) ----
+# Structural check always: the text parses, is a list of mappings, each with a string `id`. validate_entry runs only on entries
+# that are new or whose parsed dict differs from the same id in `base_text`; legacy entries are exempt, because validate_entry's own
+# docstring rules out a sweep of on-disk entries (1428 of 2307 entries on main failed it when this was written: 1424 with a null
+# test_path, 4 with an unparseable one). Nothing here writes.
+
+
+def _load_shard(label: str, text: str):
+    """(entries, problems): entries is None when the text does not parse into a list of mappings."""
+    try:
+        data = yaml.safe_load(text) if text.strip() else []
+    except yaml.YAMLError as exc:
+        mark = getattr(exc, "problem_mark", None)
+        where = f"line {mark.line + 1}" if mark is not None else "unknown line"
+        reason = " ".join(str(getattr(exc, "problem", None) or exc).split())
+        return None, [f"{label}: {where}: YAML does not parse: {reason}"]
+    if data is None:
+        data = []
+    if not isinstance(data, list):
+        return None, [f"{label}: top level: a ledger shard must be a list of entries"]
+    problems = []
+    for index, entry in enumerate(data, 1):
+        if not isinstance(entry, dict):
+            problems.append(f"{label}: entry {index}: must be a mapping")
+        elif not isinstance(entry.get("id"), str) or not entry["id"]:
+            problems.append(f"{label}: entry {index}: needs a non-empty string id")
+    return data, problems
+
+
+def check_shard_text(label: str, text: str, base_text: str | None = None) -> list:
+    """One line per problem, `<file>: <id or line>: <reason>`. `base_text=None` is the structural check only; a string (possibly
+    empty, for a new file) also runs validate_entry on the entries that are new or changed against it."""
+    entries, problems = _load_shard(label, text)
+    if entries is None or base_text is None:
+        return problems
+    base_entries, _ = _load_shard(label, base_text)
+    base_by_id = {e["id"]: e for e in base_entries or [] if isinstance(e, dict) and isinstance(e.get("id"), str)}
+    for entry in entries:
+        if not isinstance(entry, dict) or not isinstance(entry.get("id"), str) or base_by_id.get(entry["id"]) == entry:
+            continue
+        try:
+            validate_entry(entry)
+        except EntryValidationError as exc:
+            problems.append(f"{label}: {entry['id']}: {exc.field}: {exc.reason}")
+    return problems
+
+
+def _git_show(ref: str, path: str):
+    import subprocess
+
+    done = subprocess.run(["git", "show", f"{ref}:{path}"], capture_output=True, text=True, check=False)
+    return done.stdout if done.returncode == 0 else None
+
+
+def main(argv=None) -> int:
+    import argparse
+
+    parser = argparse.ArgumentParser(description="Read-only check of hand-edited docs/parity_ledger shards (writes nothing).")
+    parser.add_argument("--check", nargs="+", metavar="FILE", required=True)
+    parser.add_argument("--base", help="also run validate_entry on entries new or changed against this git ref (opt-in)")
+    args = parser.parse_args(argv)
+    problems = []
+    for name in args.check:
+        try:
+            text = Path(name).read_text(encoding="utf-8")
+        except OSError as exc:
+            problems.append(f"{name}: cannot read: {exc}")
+            continue
+        base_text = None if args.base is None else (_git_show(args.base, Path(name).as_posix()) or "")
+        problems += check_shard_text(name, text, base_text)
+    for line in problems:
+        print(line)
+    return 1 if problems else 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

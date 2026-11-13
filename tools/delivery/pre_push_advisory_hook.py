@@ -18,7 +18,7 @@ confirmed false-positive shape in the corpus (`git push` inside a `grep` pattern
 -n "git commit\\|git push\\|..."`) does not follow any of those three anchors and is excluded by
 construction, not by a special case.
 
-Five checks, each read-only against local refs (no network call — an offline-first design so this
+Checks A-G, each read-only against local refs (no network call — an offline-first design so this
 hook cannot itself become a source of the Fortiguard TLS-block failure mode this epic elsewhere
 defends against):
 
@@ -49,6 +49,10 @@ defends against):
   `agent-working/stored_artifacts/`, the trees `tools/generate_registry.py` reads) does it run
   `python3 tools/generate_registry.py --check` (offline, a few seconds); exit 2 means stale and yields one line naming
   `make docs-registry`. A push that touches none of those pays nothing; any other exit or a timeout says nothing.
+
+- **G — a hand-edited parity ledger shard (advisory, TCK-20261113-PRE-PUSH-CHECKS-HAND-EDITED-PARITY-LEDGER-SHARDS).** Only when
+  the branch diff touches `docs/parity_ledger/*.yaml`: each such shard as pushed must parse into a list of mappings with ids, and
+  its new or changed entries must pass `parity_ledger_writer.validate_entry` (legacy entries are exempt). The line names the writer.
 
 Every check degrades to "no finding" on any git-command failure (detached HEAD, no local
 `origin/main` ref, non-tracking branch) rather than raising — this hook must never traceback, and
@@ -228,6 +232,39 @@ def check_registry_fresh(run_command=default_run_command, base_ref: str = "origi
     ]
 
 
+_LEDGER_SHARD = re.compile(r"^docs/parity_ledger/[^/]+\.yaml$")
+
+
+def check_parity_ledger_shards(run_command=default_run_command, base_ref: str = "origin/main") -> List[str]:
+    """Check G (TCK-20261113-PRE-PUSH-CHECKS-HAND-EDITED-PARITY-LEDGER-SHARDS): a hand-edited docs/parity_ledger/*.yaml that
+    does not parse, or whose new or changed entries break the ledger rules, warns before CI does. Structural check on each
+    changed shard as pushed (HEAD), plus validate_entry on entries new or changed against `base_ref`; legacy entries are exempt.
+    Warn-only; no ledger change, or any error, says nothing."""
+    try:
+        diff = run_command(["git", "diff", "--name-only", f"{base_ref}...HEAD"])
+        if diff.returncode != 0:
+            return []
+        shards = [p for p in diff.stdout.splitlines() if _LEDGER_SHARD.match(p)]
+        if not shards:
+            return []
+        from tools import parity_ledger_writer
+
+        problems: List[str] = []
+        for path in shards:
+            head = run_command(["git", "show", f"HEAD:{path}"])
+            if head.returncode != 0:
+                continue  # deleted on the branch
+            base = run_command(["git", "show", f"{base_ref}:{path}"])
+            problems += parity_ledger_writer.check_shard_text(path, head.stdout, base.stdout if base.returncode == 0 else "")
+    except Exception:
+        return []  # an uncertain check says nothing
+    if not problems:
+        return []
+    return [f"pre-push: parity ledger: {line}" for line in problems] + [
+        "pre-push: edit ledger entries with tools/parity_ledger_writer.py, which validates before it writes (CI will fail on these)."
+    ]
+
+
 _POST_COMMIT_SCRIPT = "tools/hooks/post-commit-reindex.sh"
 
 
@@ -267,6 +304,7 @@ def run_all_checks(
     findings.extend(check_ci_lanes(run_command, base_ref))
     findings.extend(check_registry_fresh(run_command, base_ref))
     findings.extend(check_installed_post_commit_current(run_command))
+    findings.extend(check_parity_ledger_shards(run_command, base_ref))
     return findings
 
 
