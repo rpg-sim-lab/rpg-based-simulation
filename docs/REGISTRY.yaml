@@ -8107,6 +8107,27 @@
   - content
   last_verified: '2026-10-09'
 - type: ticket
+  path: agent-working/tickets/done/TCK-20261113-FIVE-SOCIAL-ACTION-KINDS-MAY-HAVE-NO-ISSUER-IN-PLAY.md
+  ticket_id: TCK-20261113-FIVE-SOCIAL-ACTION-KINDS-MAY-HAVE-NO-ISSUER-IN-PLAY
+  title: 'Five social action kinds may have no issuer in play: find which of TEAM_UP,
+    TRADE, TRAIN, PROPOSE_MARRIAGE and JOIN_CLAN/LEAVE_CLAN anything ever emits, and
+    how their contracts are really created and accepted'
+  tier: standard
+  ticket_type: bug
+  date: '2026-11-13'
+  related_code_areas:
+  - src/engine/domain/action_router.py (:63-84)
+  - src/engine/domain/core_actions.py (execute_* about :175-584)
+  - src/domains/cooperation/services.py, src/domains/cooperation/phase.py
+  - src/systems/social_systems/appraisal.py, contracts.py
+  - src/engine/hostility.py (perceived_hostile), src/engine/legality.py (_is_engagement_hostile),
+    src/systems/movement.py (resolve_move)
+  artifact_files:
+  - agent-working/stored_artifacts/TCK-20261113-FIVE-SOCIAL-ACTION-KINDS-MAY-HAVE-NO-ISSUER-IN-PLAY/investigation.md
+  - agent-working/stored_artifacts/TCK-20261113-FIVE-SOCIAL-ACTION-KINDS-MAY-HAVE-NO-ISSUER-IN-PLAY/plan.md
+  - agent-working/stored_artifacts/TCK-20261113-FIVE-SOCIAL-ACTION-KINDS-MAY-HAVE-NO-ISSUER-IN-PLAY/test_plan.md
+  tags: []
+- type: ticket
   path: agent-working/tickets/done/TCK-20261113-GITHUB-MCP-ENV-FILE-OUTSIDE-REPO.md
   ticket_id: TCK-20261113-GITHUB-MCP-ENV-FILE-OUTSIDE-REPO
   title: The GitHub MCP server reads its token from a per-user file outside the repo,
@@ -8351,6 +8372,20 @@
   tags:
   - platform
   - security
+- type: ticket
+  path: agent-working/tickets/done/TCK-20261112-SEARCH-SERVER-PER-WORKTREE-INDEX-AND-BUILD-MEMORY-GUARD.md
+  ticket_id: TCK-20261112-SEARCH-SERVER-PER-WORKTREE-INDEX-AND-BUILD-MEMORY-GUARD
+  title: A worktree with its own knowledge index starts its own ~400 MB search server,
+    and `knowledge_search.py build` starts with no memory check
+  tier: hotfix
+  ticket_type: bug
+  date: '2026-11-12'
+  related_code_areas:
+  - _resolve_index_dir
+  - cmd_build
+  artifact_files: []
+  tags:
+  - process-improvement
 - type: ticket
   path: agent-working/tickets/done/TCK-20261112-THE-API-EMITS-NO-REQUEST-TRACES.md
   ticket_id: TCK-20261112-THE-API-EMITS-NO-REQUEST-TRACES
