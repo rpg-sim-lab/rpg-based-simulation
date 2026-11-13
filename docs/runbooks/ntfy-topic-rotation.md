@@ -10,6 +10,15 @@ tags: [platform, security]
 
 Owner-run. No agent runs these steps, reads `docker/secrets/ntfy_topic` or `docker/secrets/ntfy_token`, or sees the new value: the new topic is set by you in the secret file and never appears in git, #715, tickets, handovers or agent output. Ticket: `TCK-20261112-ROTATE-LOCAL-NTFY-TOPIC`. The alerting setup this changes is in the header of `compose.yaml` and in [alerting-pipeline.md](alerting-pipeline.md).
 
+**Run from:** the checkout that holds your `docker/secrets/` files (on this host: `/data/vboxuser/Work/rpg-based-simulation/.claude/worktrees/platform`). The compose project name comes from the directory name, because `compose.yaml` sets no top-level `name:`, so that checkout is project `platform`. Running `docker compose` from any other checkout (the main checkout `rpg-based-simulation`, or another worktree) creates a SECOND project. It gets its own fresh volumes, for example `rpg-based-simulation_ntfy_data`, and fails on the missing secret files. This happened on 2026-11-12. Before the first compose command, confirm where you are:
+
+```
+pwd
+docker compose ls
+```
+
+`docker compose ls` must list `platform` (if the stack is up), and `pwd` must be the checkout above. If `docker compose ls` shows a project you didn't mean to start, take it down from the checkout that started it, with `docker compose down` and no `-v`, before you go on.
+
 ## Why, and how much it matters
 
 The local topic in `docker/secrets/ntfy_topic` (gitignored) was echoed in an agent's terminal on 2026-10-26 (an `ntfy access` command prints it on success). Rotate it as hygiene. Know the actual exposure: ntfy here runs with `auth-default-access: deny-all`, so **knowing the topic is not enough** to read or write it. Reading needs a login (your admin user) and writing needs Grafana's token, which belongs to a user with write-only access to that one topic. The topic works as a password only where anonymous access is allowed, and here it is not.
@@ -113,3 +122,5 @@ Expected `1` (only the new token). If it is more, the old token survived: removi
 ## Fire test (after you have rotated; needs lead-planner's slot go)
 
 Stop `redis-exporter` for about three minutes, as in the 2026-11-12 compose-bumps run (`docs/runbooks/records/2026-11-11-compose-image-bumps.md`, section 3, row 4): `TargetDown` for redis fires and a `[firing]` message reaches your client **on the new topic**, then start it again and the `[resolved]` message arrives. The old topic must still answer 403 to an anonymous read (the first check above). No topic value goes into any evidence file; evidence is scanned by counts.
+
+On the named-service proof path (no `ai_worker`), `AiWorkerLagHigh` is already alerting; judge delivery by the ntfy `ntfy_messages_published_success` counter (+1 at firing, +1 at resolved) and not by "no alert at all". The expected state, the counter read and the image caveat are in [alerting-pipeline.md](alerting-pipeline.md), "Proof runs without ai_worker". Observed 2026-11-12: counter 6 -> 7 -> 8, no failures, both messages reached the owner's client (owner-confirmed via lead).
