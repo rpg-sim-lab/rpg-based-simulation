@@ -824,7 +824,7 @@ real Clan membership (`AuthoritativeState.clans`, passed in read-only) as a seco
 
 A `BeliefInstitution` forms for every existing Clan, for every subject with a real `LegendFact`
 (§9) — Chronicle is world-visible history, so every Clan is assumed to have heard of a
-Chronicle-recorded legend. What differs is how strongly each Clan holds the belief:
+Chronicle-recorded legend. No clan exists in play today, so none forms (07, Contract Kinds, Current play). What differs is how strongly each Clan holds the belief:
 
 | Relationship to the legendary subject | `belief_strength` |
 |---|---|
