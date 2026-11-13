@@ -35,7 +35,7 @@ except ImportError:  # pragma: no cover - exercised only on a machine without Py
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_OUT = REPO_ROOT / "website" / "wiki" / "world-knowledge"
-SOURCE_URL = "https://github.com/ttnhan18062000/rpg-based-simulation/blob/main/"
+SOURCE_URL = "https://github.com/rpg-sim-lab/rpg-based-simulation/blob/main/"
 
 # The generated folders under world-knowledge/. Only these are cleared and rewritten; the
 # hand-written landing page (world-knowledge/index.md) is never touched.
