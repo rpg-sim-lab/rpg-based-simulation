@@ -2300,6 +2300,17 @@
   - observability
   - api-design
 - type: doc
+  path: docs/observability/api_request_tracing.md
+  title: API Request Tracing
+  status: active
+  layer: observability
+  authority: P1
+  audience: agent
+  tags:
+  - documentation
+  - observability
+  - api-design
+- type: doc
   path: docs/observability/decision_trace_contract.md
   title: Decision Trace Contract — `decision_trace.jsonl`
   status: active
@@ -5642,6 +5653,17 @@
   - process-improvement
   - governance
 - type: doc
+  path: docs/guidelines/session_roles/project_sync_dry_run.md
+  title: Project sync dry run
+  status: active
+  layer: ai
+  authority: P2
+  audience: agent
+  tags:
+  - ai
+  - process-improvement
+  - governance
+- type: doc
   path: docs/guides/diagram_index.md
   title: Diagram Index
   status: active
@@ -7464,6 +7486,16 @@
   - observability
   - performance
 - type: doc
+  path: docs/runbooks/compose-api-key.md
+  title: 'Runbook: API keys for the compose stack'
+  status: active
+  layer: platform
+  authority: P2
+  audience: agent
+  tags:
+  - platform
+  - security
+- type: doc
   path: docs/runbooks/disk-space.md
   title: 'Runbook: disk space (DiskSpaceLow, DiskWillFillIn24h)'
   status: active
@@ -7474,6 +7506,15 @@
   - platform
   - observability
 - type: doc
+  path: docs/runbooks/docker-image-store-move.md
+  title: 'Runbook: move Docker''s containerd image store off the root disk'
+  status: active
+  layer: platform
+  authority: P2
+  audience: agent
+  tags:
+  - platform
+- type: doc
   path: docs/runbooks/log-shipping.md
   title: 'Runbook: LogShippingErrors'
   status: active
@@ -7483,6 +7524,16 @@
   tags:
   - platform
   - observability
+- type: doc
+  path: docs/runbooks/ntfy-topic-rotation.md
+  title: 'Runbook: rotate the local ntfy alert topic'
+  status: active
+  layer: platform
+  authority: P2
+  audience: agent
+  tags:
+  - platform
+  - security
 - type: doc
   path: docs/runbooks/records/2026-10-18-api-load-test.md
   title: 'API load test (2026-10-18): age effect, /entities page cap and proposed
@@ -7552,6 +7603,26 @@
 - type: doc
   path: docs/runbooks/records/2026-10-28-alloy-log-shipping.md
   title: Log shipping moved from Promtail to Grafana Alloy (2026-10-28)
+  status: active
+  layer: platform
+  authority: P2
+  audience: agent
+  tags:
+  - platform
+  - observability
+- type: doc
+  path: docs/runbooks/records/2026-11-11-compose-image-bumps.md
+  title: Compose image bumps proven on the observability stack (2026-11-11)
+  status: active
+  layer: platform
+  authority: P2
+  audience: agent
+  tags:
+  - platform
+  - observability
+- type: doc
+  path: docs/runbooks/records/2026-11-12-loki-volume-and-api-dashboard.md
+  title: Loki named volume and the API dashboard, proved in one stack run (2026-11-12)
   status: active
   layer: platform
   authority: P2
@@ -8036,6 +8107,309 @@
   - content
   last_verified: '2026-10-09'
 - type: ticket
+  path: agent-working/tickets/done/TCK-20261113-GITHUB-MCP-ENV-FILE-OUTSIDE-REPO.md
+  ticket_id: TCK-20261113-GITHUB-MCP-ENV-FILE-OUTSIDE-REPO
+  title: The GitHub MCP server reads its token from a per-user file outside the repo,
+    so it starts from every worktree
+  tier: hotfix
+  ticket_type: bug
+  date: '2026-11-13'
+  related_code_areas:
+  - .mcp.json
+  - tests/tools/test_mcp_json_registration.py
+  artifact_files: []
+  tags:
+  - mcp
+  - security
+  - setup
+- type: ticket
+  path: agent-working/tickets/done/TCK-20261112-A-THROTTLED-CLIENT-THAT-WAITS-OUT-RETRY-AFTER-IS-STILL-REFUSED.md
+  ticket_id: TCK-20261112-A-THROTTLED-CLIENT-THAT-WAITS-OUT-RETRY-AFTER-IS-STILL-REFUSED
+  title: 'A throttled API client that waits out `Retry-After: 5` is still refused,
+    even after its token bucket has refilled, because admission recovery counts requests
+    instead of elapsed time'
+  tier: hotfix
+  ticket_type: bug
+  date: '2026-11-12'
+  related_code_areas:
+  - _check_admission
+  - tests/api/test_admission_control.py
+  artifact_files: []
+  tags:
+  - architecture
+  - api-design
+- type: ticket
+  path: agent-working/tickets/done/TCK-20261112-CODE-HEALTH-NAMES-AND-REKEYS-MOVED-ROWS.md
+  ticket_id: TCK-20261112-CODE-HEALTH-NAMES-AND-REKEYS-MOVED-ROWS
+  title: The code-health check names a likely move, and one `move` command re-keys
+    the moved rows at unchanged value and ceiling
+  tier: standard
+  ticket_type: feature
+  date: '2026-11-12'
+  related_code_areas:
+  - codebase/health/ratchet.py; codebase/health/registry.py; codebase/health/__main__.py;
+    codebase/health/findings.py; tests/codebase/test_code_health_ratchet_registry.py;
+    tests/codebase/test_code_health_ci_summary.py
+  artifact_files:
+  - agent-working/stored_artifacts/TCK-20261112-CODE-HEALTH-NAMES-AND-REKEYS-MOVED-ROWS/investigation.md
+  - agent-working/stored_artifacts/TCK-20261112-CODE-HEALTH-NAMES-AND-REKEYS-MOVED-ROWS/plan.md
+  - agent-working/stored_artifacts/TCK-20261112-CODE-HEALTH-NAMES-AND-REKEYS-MOVED-ROWS/test_plan.md
+  tags:
+  - testing
+- type: ticket
+  path: agent-working/tickets/done/TCK-20261112-COMPOSE-FRONTEND-API-DOCS-SCHEMA-NOT-PROXIED.md
+  ticket_id: TCK-20261112-COMPOSE-FRONTEND-API-DOCS-SCHEMA-NOT-PROXIED
+  title: In the compose frontend, the API docs page's /openapi.json fetch gets index.html,
+    because nginx proxies only /api/
+  tier: hotfix
+  ticket_type: bug
+  date: '2026-11-12'
+  related_code_areas:
+  - docker/nginx.conf
+  - frontend/src/components/ApiDocsPage.tsx
+  artifact_files: []
+  tags:
+  - platform
+- type: ticket
+  path: agent-working/tickets/done/TCK-20261112-COMPOSE-STACK-HAS-NO-API-KEY.md
+  ticket_id: TCK-20261112-COMPOSE-STACK-HAS-NO-API-KEY
+  title: The compose stack configures no API key, so every backend route except /health
+    answers 401
+  tier: standard
+  ticket_type: bug
+  date: '2026-11-12'
+  related_code_areas:
+  - compose.yaml
+  - docker/frontend.Dockerfile
+  - src/config/loader.py
+  artifact_files:
+  - agent-working/stored_artifacts/TCK-20261112-COMPOSE-STACK-HAS-NO-API-KEY/investigation.md
+  - agent-working/stored_artifacts/TCK-20261112-COMPOSE-STACK-HAS-NO-API-KEY/plan.md
+  - agent-working/stored_artifacts/TCK-20261112-COMPOSE-STACK-HAS-NO-API-KEY/test_plan.md
+  tags:
+  - platform
+  - security
+- type: ticket
+  path: agent-working/tickets/done/TCK-20261112-DEPENDABOT-IGNORE-KNOWLEDGE-STACK.md
+  ticket_id: TCK-20261112-DEPENDABOT-IGNORE-KNOWLEDGE-STACK
+  title: Dependabot's uv entry ignores torch, graphifyy and headroom-ai, so grouped
+    PRs leave requirements-knowledge.txt alone
+  tier: hotfix
+  ticket_type: chore
+  date: '2026-11-12'
+  related_code_areas:
+  - .github/dependabot.yml
+  - requirements-knowledge.txt
+  artifact_files: []
+  tags:
+  - platform
+- type: ticket
+  path: agent-working/tickets/done/TCK-20261112-DOCKER-IMAGE-STORE-OFF-ROOT-DISK.md
+  ticket_id: TCK-20261112-DOCKER-IMAGE-STORE-OFF-ROOT-DISK
+  title: Plan moving Docker's containerd image store off the root disk, so builds
+    and image layers stop filling /
+  tier: standard
+  ticket_type: chore
+  date: '2026-11-12'
+  related_code_areas:
+  - docs/runbooks/disk-space.md
+  artifact_files:
+  - agent-working/stored_artifacts/TCK-20261112-DOCKER-IMAGE-STORE-OFF-ROOT-DISK/investigation.md
+  - agent-working/stored_artifacts/TCK-20261112-DOCKER-IMAGE-STORE-OFF-ROOT-DISK/plan.md
+  - agent-working/stored_artifacts/TCK-20261112-DOCKER-IMAGE-STORE-OFF-ROOT-DISK/test_plan.md
+  tags:
+  - platform
+- type: ticket
+  path: agent-working/tickets/done/TCK-20261112-KNOWLEDGE-STACK-PIN-BUMPS.md
+  ticket_id: TCK-20261112-KNOWLEDGE-STACK-PIN-BUMPS
+  title: requirements-knowledge.txt takes graphifyy 0.9.104 and torch 2.15.0+cpu,
+    each smoke-tested; headroom-ai stays at 0.37.0 (0.43.1 needs mcp 2.x)
+  tier: standard
+  ticket_type: chore
+  date: '2026-11-12'
+  related_code_areas:
+  - requirements-knowledge.txt, tests/tools/test_code_test_index.py, tests/tools/test_graphify_shim.py,
+  - tools/start_headroom_mcp.sh, tools/knowledge_search.py
+  artifact_files:
+  - agent-working/stored_artifacts/TCK-20261112-KNOWLEDGE-STACK-PIN-BUMPS/investigation.md
+  - agent-working/stored_artifacts/TCK-20261112-KNOWLEDGE-STACK-PIN-BUMPS/plan.md
+  - agent-working/stored_artifacts/TCK-20261112-KNOWLEDGE-STACK-PIN-BUMPS/test_plan.md
+  tags:
+  - knowledge-store
+  - setup
+- type: ticket
+  path: agent-working/tickets/done/TCK-20261112-OBSERVABILITY-SKILL-HARD-LAW-COUNT.md
+  ticket_id: TCK-20261112-OBSERVABILITY-SKILL-HARD-LAW-COUNT
+  title: The observability skill and the skills index name all nine HardLawMonitor
+    laws, not seven
+  tier: hotfix
+  ticket_type: chore
+  date: '2026-11-12'
+  related_code_areas:
+  - src/observability/hard_law_monitor.py (read only)
+  artifact_files: []
+  tags:
+  - skills
+  - observability
+- type: ticket
+  path: agent-working/tickets/done/TCK-20261112-PROJECT-SYNC-DRY-RUN.md
+  ticket_id: TCK-20261112-PROJECT-SYNC-DRY-RUN
+  title: '`tools/sessions/project_sync.py --dry-run`: derive each rpg-lane ticket''s
+    Project item from ticket files, u24 worktree branches and open PRs, and print
+    the plan without writing to GitHub'
+  tier: standard
+  ticket_type: feature
+  date: '2026-11-12'
+  related_code_areas:
+  - tools/sessions/status.py, tools/sessions/project_sync.py (new), registries/session_project.yaml
+    (new),
+  - tests/tools/test_session_project_sync.py (new; the tests/tools/ owner split is
+    rpg/agent-working)
+  artifact_files:
+  - agent-working/stored_artifacts/TCK-20261112-PROJECT-SYNC-DRY-RUN/investigation.md
+  - agent-working/stored_artifacts/TCK-20261112-PROJECT-SYNC-DRY-RUN/plan.md
+  - agent-working/stored_artifacts/TCK-20261112-PROJECT-SYNC-DRY-RUN/test_plan.md
+  tags:
+  - planning
+  - delivery
+- type: ticket
+  path: agent-working/tickets/done/TCK-20261112-PROJECT-SYNC-GUARD-SEAT-AND-STALE.md
+  ticket_id: TCK-20261112-PROJECT-SYNC-GUARD-SEAT-AND-STALE
+  title: '`project_sync.py` P1a: a write-safe guard, correct Seat mapping, a `Stale`
+    status for old branches, the script entry point and a short host name, all still
+    dry-run (rpg lanes, u24)'
+  tier: standard
+  ticket_type: feature
+  date: '2026-11-12'
+  related_code_areas:
+  - tools/sessions/project_sync.py, tools/sessions/status.py, registries/session_project.yaml,
+    tests/tools/test_session_project_sync.py
+  artifact_files:
+  - agent-working/stored_artifacts/TCK-20261112-PROJECT-SYNC-GUARD-SEAT-AND-STALE/investigation.md
+  - agent-working/stored_artifacts/TCK-20261112-PROJECT-SYNC-GUARD-SEAT-AND-STALE/plan.md
+  - agent-working/stored_artifacts/TCK-20261112-PROJECT-SYNC-GUARD-SEAT-AND-STALE/test_plan.md
+  tags:
+  - planning
+  - delivery
+- type: ticket
+  path: agent-working/tickets/done/TCK-20261112-REGISTRY-REGEN-SKIPPED-BY-A-STALE-HOOK-OR-AN-UNTRACKED-DOC.md
+  ticket_id: TCK-20261112-REGISTRY-REGEN-SKIPPED-BY-A-STALE-HOOK-OR-AN-UNTRACKED-DOC
+  title: The registry auto-regen is skipped when the installed post-commit hook is
+    a stale copy, or when an untracked doc without frontmatter makes `generate_registry.py
+    --check` return 1
+  tier: hotfix
+  ticket_type: bug
+  date: '2026-11-12'
+  related_code_areas:
+  - generate_registry
+  - tools/delivery/pre_push_advisory_hook.py, tools/hooks/post-commit-reindex.sh (reference,
+    unchanged), tests/tools/
+  artifact_files: []
+  tags:
+  - delivery
+  - process-improvement
+- type: ticket
+  path: agent-working/tickets/done/TCK-20261112-REPO-MOVE-PLATFORM-REFS.md
+  ticket_id: TCK-20261112-REPO-MOVE-PLATFORM-REFS
+  title: Platform files name the new repository owner rpg-sim-lab after the transfer
+  tier: hotfix
+  ticket_type: repair
+  date: '2026-11-12'
+  related_code_areas:
+  - .github/workflows/deploy-docs.yml
+  - infra/terraform/bootstrap/variables.tf
+  artifact_files: []
+  tags:
+  - platform
+  - delivery
+- type: ticket
+  path: agent-working/tickets/done/TCK-20261112-THE-API-EMITS-NO-REQUEST-TRACES.md
+  ticket_id: TCK-20261112-THE-API-EMITS-NO-REQUEST-TRACES
+  title: 'The API emits no request traces: add OpenTelemetry server spans and Redis
+    client spans, off unless an OTLP endpoint is set (#622 R3)'
+  tier: standard
+  ticket_type: feature
+  date: '2026-11-12'
+  related_code_areas:
+  - create_v2_app
+  - RequestDurationMiddleware
+  - src/observability/stream/factory.py, src/observability/stream/adapters.py:139
+    (redis client)
+  - src/api/routes/live_health.py:11
+  artifact_files:
+  - agent-working/stored_artifacts/TCK-20261112-THE-API-EMITS-NO-REQUEST-TRACES/investigation.md
+  - agent-working/stored_artifacts/TCK-20261112-THE-API-EMITS-NO-REQUEST-TRACES/plan.md
+  - agent-working/stored_artifacts/TCK-20261112-THE-API-EMITS-NO-REQUEST-TRACES/test_plan.md
+  tags:
+  - observability
+  - api-design
+- type: ticket
+  path: agent-working/tickets/inprogress/TCK-20261112-ROTATE-LOCAL-NTFY-TOPIC.md
+  ticket_id: TCK-20261112-ROTATE-LOCAL-NTFY-TOPIC
+  title: Rotate the local ntfy alert topic, which was once echoed in an agent terminal,
+    by an owner-run procedure
+  tier: hotfix
+  ticket_type: chore
+  date: '2026-11-12'
+  related_code_areas:
+  - compose.yaml
+  - docker/grafana/provisioning/alerting/contact-points.yaml
+  artifact_files: []
+  tags:
+  - platform
+  - security
+- type: ticket
+  path: agent-working/tickets/todos/TCK-20261112-HAND-ADDED-WORKTREES-ARE-NOT-RECORDED-AGAINST-A-SEAT.md
+  ticket_id: TCK-20261112-HAND-ADDED-WORKTREES-ARE-NOT-RECORDED-AGAINST-A-SEAT
+  title: A worktree a seat creates with a plain `git worktree add` is never recorded
+    against that seat, so status.py and project_sync can't name who works in it
+  tier: hotfix
+  ticket_type: bug
+  date: '2026-11-12'
+  related_code_areas:
+  - --worktree
+  artifact_files: []
+  tags:
+  - planning
+  - delivery
+- type: ticket
+  path: agent-working/tickets/todos/TCK-20261112-THE-API-EMITS-NO-REQUEST-TRACES.md
+  ticket_id: TCK-20261112-THE-API-EMITS-NO-REQUEST-TRACES
+  title: 'The API emits no request traces: add OpenTelemetry server spans and Redis
+    client spans, off unless an OTLP endpoint is set (#622 R3)'
+  tier: standard
+  ticket_type: feature
+  date: '2026-11-12'
+  related_code_areas:
+  - create_v2_app
+  - RequestDurationMiddleware
+  - src/observability/stream/factory.py, src/observability/stream/adapters.py:139
+    (redis client)
+  - src/api/routes/live_health.py:11
+  artifact_files:
+  - agent-working/stored_artifacts/TCK-20261112-THE-API-EMITS-NO-REQUEST-TRACES/investigation.md
+  - agent-working/stored_artifacts/TCK-20261112-THE-API-EMITS-NO-REQUEST-TRACES/plan.md
+  - agent-working/stored_artifacts/TCK-20261112-THE-API-EMITS-NO-REQUEST-TRACES/test_plan.md
+  tags:
+  - observability
+  - api-design
+- type: ticket
+  path: agent-working/tickets/todos/github-project-ticket-view/TCK-20261112-EPIC-GITHUB-PROJECT-TICKET-VIEW.md
+  ticket_id: TCK-20261112-EPIC-GITHUB-PROJECT-TICKET-VIEW
+  title: A GitHub Project as a generated, read-only view of ticket state across seats
+    and hosts
+  tier: epic
+  ticket_type: feature
+  date: '2026-11-12'
+  related_code_areas:
+  - collect()
+  - registries/session_project.yaml (new), tests/tools/test_session_project_sync.py
+    (new)
+  artifact_files: []
+  tags:
+  - planning
+  - delivery
+- type: ticket
   path: agent-working/tickets/done/TCK-20261111-CLAUDE-MD-REGISTRY-DRIVER-WORDING.md
   ticket_id: TCK-20261111-CLAUDE-MD-REGISTRY-DRIVER-WORDING
   title: CLAUDE.md says the registry merge driver regenerates after rebase and cherry-pick;
@@ -8061,6 +8435,20 @@
   artifact_files: []
   tags: []
 - type: ticket
+  path: agent-working/tickets/done/TCK-20261111-COMPOSE-IMAGE-BUMPS-WITH-STACK-PROOF.md
+  ticket_id: TCK-20261111-COMPOSE-IMAGE-BUMPS-WITH-STACK-PROOF
+  title: 'Take Dependabot #878''s compose image bumps by hand, with their comments
+    updated and a short stack proof run'
+  tier: hotfix
+  ticket_type: chore
+  date: '2026-11-11'
+  related_code_areas:
+  - compose.yaml
+  artifact_files: []
+  tags:
+  - platform
+  - observability
+- type: ticket
   path: agent-working/tickets/done/TCK-20261111-DEPENDABOT-WATCHES-WEBSITE.md
   ticket_id: TCK-20261111-DEPENDABOT-WATCHES-WEBSITE
   title: Dependabot watches website/, so a website advisory gets an update PR
@@ -8085,6 +8473,25 @@
   artifact_files: []
   tags: []
 - type: ticket
+  path: agent-working/tickets/done/TCK-20261111-FELT-LETHAL-MEMORY-HAS-NO-RECENCY-WINDOW.md
+  ticket_id: TCK-20261111-FELT-LETHAL-MEMORY-HAS-NO-RECENCY-WINDOW
+  title: A single felt-lethal hit keeps an engaged subject pinned for 65-71 ticks
+    while the hostile strikes nothing, because the felt-lethal memory has no recency
+    window
+  tier: standard
+  ticket_type: bug
+  date: '2026-11-11'
+  related_code_areas:
+  - src/engine/felt_swing.py (felt_lethal_attacker)
+  - src/engine/tactical_flight_guard.py
+  - src/engine/tactical_hold.py (stalemate_break_update)
+  - src/systems/movement.py (resolve_move free-swing site)
+  artifact_files:
+  - agent-working/stored_artifacts/TCK-20261111-FELT-LETHAL-MEMORY-HAS-NO-RECENCY-WINDOW/investigation.md
+  - agent-working/stored_artifacts/TCK-20261111-FELT-LETHAL-MEMORY-HAS-NO-RECENCY-WINDOW/plan.md
+  - agent-working/stored_artifacts/TCK-20261111-FELT-LETHAL-MEMORY-HAS-NO-RECENCY-WINDOW/test_plan.md
+  tags: []
+- type: ticket
   path: agent-working/tickets/done/TCK-20261111-KNOWLEDGE-INDEX-BUILD-MEMORY-BOUNDED.md
   ticket_id: TCK-20261111-KNOWLEDGE-INDEX-BUILD-MEMORY-BOUNDED
   title: 'The knowledge-index build tests get the address space they need: the resource
@@ -8100,6 +8507,24 @@
   - agent-working/stored_artifacts/TCK-20261111-KNOWLEDGE-INDEX-BUILD-MEMORY-BOUNDED/test_plan.md
   tags:
   - delivery
+- type: ticket
+  path: agent-working/tickets/done/TCK-20261111-LOKI-REJECTS-EVERY-PUSH-ON-WAL-DISK-THROTTLE.md
+  ticket_id: TCK-20261111-LOKI-REJECTS-EVERY-PUSH-ON-WAL-DISK-THROTTLE
+  title: Loki accepted no log push during the 2026-11-11 stack run (WAL disk throttle,
+    then "Ingester is shutting down")
+  tier: standard
+  ticket_type: bug
+  date: '2026-11-11'
+  related_code_areas:
+  - compose.yaml
+  - docker/alloy/config.alloy
+  artifact_files:
+  - agent-working/stored_artifacts/TCK-20261111-LOKI-REJECTS-EVERY-PUSH-ON-WAL-DISK-THROTTLE/investigation.md
+  - agent-working/stored_artifacts/TCK-20261111-LOKI-REJECTS-EVERY-PUSH-ON-WAL-DISK-THROTTLE/plan.md
+  - agent-working/stored_artifacts/TCK-20261111-LOKI-REJECTS-EVERY-PUSH-ON-WAL-DISK-THROTTLE/test_plan.md
+  tags:
+  - platform
+  - observability
 - type: ticket
   path: agent-working/tickets/done/TCK-20261111-MECHANISM-SUMMARY-FIELD-SHAPE-CHECK.md
   ticket_id: TCK-20261111-MECHANISM-SUMMARY-FIELD-SHAPE-CHECK
@@ -8279,22 +8704,6 @@
   related_code_areas:
   - src/systems/movement.py (resolve_move)
   - src/engine/pipeline_phases/movement.py (route_movement_intent)
-  artifact_files: []
-  tags: []
-- type: ticket
-  path: agent-working/tickets/todos/TCK-20261111-FELT-LETHAL-MEMORY-HAS-NO-RECENCY-WINDOW.md
-  ticket_id: TCK-20261111-FELT-LETHAL-MEMORY-HAS-NO-RECENCY-WINDOW
-  title: A single felt-lethal hit keeps an engaged subject pinned for 65-71 ticks
-    while the hostile strikes nothing, because the felt-lethal memory has no recency
-    window
-  tier: standard
-  ticket_type: bug
-  date: '2026-11-11'
-  related_code_areas:
-  - src/engine/felt_swing.py (felt_lethal_attacker)
-  - src/engine/tactical_flight_guard.py
-  - src/engine/tactical_hold.py (stalemate_break_update)
-  - src/systems/movement.py (resolve_move free-swing site)
   artifact_files: []
   tags: []
 - type: ticket
@@ -14033,6 +14442,23 @@
   - architecture
   - testing
 - type: ticket
+  path: agent-working/tickets/done/devops-api-dashboard-trace/TCK-20261018-API-DASHBOARD-AND-TRACE-PROOF.md
+  ticket_id: TCK-20261018-API-DASHBOARD-AND-TRACE-PROOF
+  title: 'Grafana: one provisioned API dashboard (rate, errors, latency percentiles
+    by route, backend logs, trace links), and the step-2 end-to-end local proof'
+  tier: standard
+  ticket_type: feature
+  date: '2026-10-18'
+  related_code_areas:
+  - docker/grafana/dashboards/api.json
+  artifact_files:
+  - agent-working/stored_artifacts/TCK-20261018-API-DASHBOARD-AND-TRACE-PROOF/investigation.md
+  - agent-working/stored_artifacts/TCK-20261018-API-DASHBOARD-AND-TRACE-PROOF/plan.md
+  - agent-working/stored_artifacts/TCK-20261018-API-DASHBOARD-AND-TRACE-PROOF/test_plan.md
+  tags:
+  - platform
+  - observability
+- type: ticket
   path: agent-working/tickets/done/devops-s4-base-alerts-local/TCK-20261018-EPIC-DEVOPS-S4-BASE-ALERTS-LOCAL.md
   ticket_id: TCK-20261018-EPIC-DEVOPS-S4-BASE-ALERTS-LOCAL
   title: 'DevOps S4 (host ubuntu): base alerts with no rpg metrics (target down, observability
@@ -14117,20 +14543,6 @@
   tags:
   - architecture
   - documentation
-- type: ticket
-  path: agent-working/tickets/todos/devops-api-dashboard-trace/TCK-20261018-API-DASHBOARD-AND-TRACE-PROOF.md
-  ticket_id: TCK-20261018-API-DASHBOARD-AND-TRACE-PROOF
-  title: 'Grafana: one provisioned API dashboard (rate, errors, latency percentiles
-    by route, backend logs, trace links), and the step-2 end-to-end local proof'
-  tier: standard
-  ticket_type: feature
-  date: '2026-10-18'
-  related_code_areas:
-  - docker/grafana/dashboards/api.json
-  artifact_files: []
-  tags:
-  - platform
-  - observability
 - type: ticket
   path: agent-working/tickets/done/TCK-20261017-FORCED-SCENARIOS-FOR-COVER-CHOKEPOINTS-AND-HIGH-GROUND.md
   ticket_id: TCK-20261017-FORCED-SCENARIOS-FOR-COVER-CHOKEPOINTS-AND-HIGH-GROUND
@@ -29003,6 +29415,20 @@
   - schema
   - simulation-quality
 - type: ticket
+  path: agent-working/tickets/done/TCK-20260916-REENABLE-DOCS-PAGES-PUBLISHING.md
+  ticket_id: TCK-20260916-REENABLE-DOCS-PAGES-PUBLISHING
+  title: Re-enable GitHub Pages docs publishing once the docs site is ready to publish
+    a first version
+  tier: hotfix
+  ticket_type: chore
+  date: '2026-09-16'
+  related_code_areas:
+  - .github/workflows/deploy-docs.yml
+  artifact_files: []
+  tags:
+  - documentation
+  - process-improvement
+- type: ticket
   path: agent-working/tickets/done/headroom-context-compression-trial/TCK-20260916-HEADROOM-CONTEXT-COMPRESSION-EPIC.md
   ticket_id: TCK-20260916-HEADROOM-CONTEXT-COMPRESSION-EPIC
   title: 'Bounded, reversible trial of Headroom context compression — measure real
@@ -29024,20 +29450,6 @@
   - agent-monitoring
   - process-improvement
   - optimization
-- type: ticket
-  path: agent-working/tickets/todos/TCK-20260916-REENABLE-DOCS-PAGES-PUBLISHING.md
-  ticket_id: TCK-20260916-REENABLE-DOCS-PAGES-PUBLISHING
-  title: Re-enable GitHub Pages docs publishing once the docs site is ready to publish
-    a first version
-  tier: standard
-  ticket_type: chore
-  date: '2026-09-16'
-  related_code_areas:
-  - .github/workflows/deploy-docs.yml
-  artifact_files: []
-  tags:
-  - documentation
-  - process-improvement
 - type: ticket
   path: agent-working/tickets/done/TCK-20260915-ARTIFACT-STATE-CONVERGENCE.md
   ticket_id: TCK-20260915-ARTIFACT-STATE-CONVERGENCE
