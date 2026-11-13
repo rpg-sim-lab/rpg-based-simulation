@@ -185,6 +185,7 @@ A `StateUpdate` with `force_full_scan=True` causes downstream `CandidateSelector
 - `src/core/updates.py` — All entity-level and world-level intent types, `StateUpdate`, `EntityUpdate.merge()`, `StateUpdate.merge_many()`, `StateUpdate.compact()`
 - `src/core/update_models/inventory.py` — `InventoryUpdate` (result type only)
 - `src/core/update_models/resources.py` — `ResourceTransferIntent`
+- `src/core/update_models/{social,strategic,combat,body,world}.py` — the per-domain update records moved out of `updates.py` (re-exported from it; see the README there)
 - `src/core/update_models/quests.py` — `QuestUpdate`, MULTI sentinel
 - `src/core/state.py` — `AuthoritativeState.to_readonly()`, `ReadOnlyDict`, `ReadOnlyError`
 - `src/engine/apply.py` — `ApplyPath.apply_generation()` (sole application site)
