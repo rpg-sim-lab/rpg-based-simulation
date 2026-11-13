@@ -81,4 +81,6 @@ src/core/update_models/social.py (4 lines: loop variable renames); codebase/base
 
 ## Completion Summary
 Done. The 6 mypy errors in SocialUpdate.merge are gone and mypy_baseline.txt is exactly 6 lines shorter. Behaviour-neutral renames only; no field, default or merge rule changed.
-Known gap: the plain 5000-tick hash cells are the planner's play-neutrality proof for this change (cells pending HOST FREE at the time of writing).
+Play-neutral proof: plain 5000-tick cells on a git archive of eca569282 (pinned runner, PYTHONHASHSEED=0, MemoryMax 1G): crowded_frontier s42 e0e20c2044d7 and frontier_marches s42 908eb3bb1441, identical to main's references. Ref chain: #901's cells proved those hashes on its final src (9bb59824a), and main's src, data and config equal that reviewed head (`git diff --name-only 9bb59824a origin/main -- src data config` is empty); peaks 191 and 252 MB.
+Known gap: the cells cover crowded_frontier s42 and frontier_marches s42 only.
+Known gap: `make knowledge-index-update` not run: worktrees use main's index; lead-planner-u24, 2026-11-12.
