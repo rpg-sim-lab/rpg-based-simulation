@@ -1,0 +1,26 @@
+ts=2026-11-12T10:28:48.356398643Z level=info msg="Alloy is starting"
+ts=2026-11-12T10:28:48.356632459Z level=info msg="boringcrypto enabled" enabled=false
+ts=2026-11-12T10:28:48.356963947Z level=info msg="GOMEMLIMIT is updated" package=github.com/KimMachineGun/automemlimit/memlimit GOMEMLIMIT=362387865 previous=9223372036854775807
+ts=2026-11-12T10:28:48.357136522Z level=info msg="no peer discovery configured: both join and discover peers are empty" service=cluster
+ts=2026-11-12T10:28:48.369082155Z level=info msg="starting complete graph evaluation" controller_path=/ controller_id="" trace_id=3431b9a2ed14e80ebc1a808f70f637b1
+ts=2026-11-12T10:28:48.369118462Z level=info msg="finished node evaluation" controller_path=/ controller_id="" trace_id=3431b9a2ed14e80ebc1a808f70f637b1 node_id=livedebugging duration=20.311µs
+ts=2026-11-12T10:28:48.369455403Z level=info msg="finished node evaluation" controller_path=/ controller_id="" trace_id=3431b9a2ed14e80ebc1a808f70f637b1 node_id=discovery.docker.containers duration=330.78µs
+ts=2026-11-12T10:28:48.369648346Z level=info msg="finished node evaluation" controller_path=/ controller_id="" trace_id=3431b9a2ed14e80ebc1a808f70f637b1 node_id=discovery.relabel.containers duration=180.12µs
+ts=2026-11-12T10:28:48.369676882Z level=info msg="finished node evaluation" controller_path=/ controller_id="" trace_id=3431b9a2ed14e80ebc1a808f70f637b1 node_id=tracing duration=13.085µs
+ts=2026-11-12T10:28:48.369753606Z level=info msg="finished node evaluation" controller_path=/ controller_id="" trace_id=3431b9a2ed14e80ebc1a808f70f637b1 node_id=remotecfg duration=62.235µs
+ts=2026-11-12T10:28:48.369777268Z level=info msg="applying non-TLS config to HTTP server" service=http
+ts=2026-11-12T10:28:48.369779838Z level=info msg="finished node evaluation" controller_path=/ controller_id="" trace_id=3431b9a2ed14e80ebc1a808f70f637b1 node_id=http duration=23.129µs
+ts=2026-11-12T10:28:48.369788324Z level=info msg="finished node evaluation" controller_path=/ controller_id="" trace_id=3431b9a2ed14e80ebc1a808f70f637b1 node_id=cluster duration=4.428µs
+ts=2026-11-12T10:28:48.369791889Z level=info msg="finished node evaluation" controller_path=/ controller_id="" trace_id=3431b9a2ed14e80ebc1a808f70f637b1 node_id=ui duration=1.925µs
+ts=2026-11-12T10:28:48.369833307Z level=info msg="finished node evaluation" controller_path=/ controller_id="" trace_id=3431b9a2ed14e80ebc1a808f70f637b1 node_id=otel duration=3.246µs
+ts=2026-11-12T10:28:48.369843125Z level=info msg="finished node evaluation" controller_path=/ controller_id="" trace_id=3431b9a2ed14e80ebc1a808f70f637b1 node_id=labelstore duration=6.556µs
+ts=2026-11-12T10:28:48.370361427Z level=info msg="finished node evaluation" controller_path=/ controller_id="" trace_id=3431b9a2ed14e80ebc1a808f70f637b1 node_id=loki.write.loki duration=514.109µs
+ts=2026-11-12T10:28:48.370691061Z level=info msg="finished node evaluation" controller_path=/ controller_id="" trace_id=3431b9a2ed14e80ebc1a808f70f637b1 node_id=loki.process.json duration=322.321µs
+ts=2026-11-12T10:28:48.370974745Z level=info msg="finished node evaluation" controller_path=/ controller_id="" trace_id=3431b9a2ed14e80ebc1a808f70f637b1 node_id=loki.source.docker.containers duration=277.257µs
+ts=2026-11-12T10:28:48.371300751Z level=info msg="finished node evaluation" controller_path=/ controller_id="" trace_id=3431b9a2ed14e80ebc1a808f70f637b1 node_id=logging duration=317.942µs
+ts=2026-11-12T10:28:48.37131222Z level=info msg="finished complete graph evaluation" controller_path=/ controller_id="" trace_id=3431b9a2ed14e80ebc1a808f70f637b1 duration=2.519221ms
+ts=2026-11-12T10:28:48.371495821Z level=info msg="scheduling loaded components and services" controller_id=""
+ts=2026-11-12T10:28:48.372201971Z level=info msg="{^_^} Alloy is running"
+ts=2026-11-12T10:28:48.373393256Z level=info msg="starting cluster node" service=cluster peers_count=0 peers="" advertise_addr=127.0.0.1:12345 minimum_cluster_size=0 minimum_size_wait_timeout=0s
+ts=2026-11-12T10:28:48.373719816Z level=info msg="peers changed" service=cluster peers_count=1 min_cluster_size=0 peers=c8719e34bb28
+ts=2026-11-12T10:28:48.374671536Z level=info msg="now listening for http traffic" service=http addr=0.0.0.0:12345

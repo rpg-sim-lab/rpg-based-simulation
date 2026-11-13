@@ -1,0 +1,9 @@
+== 2026-11-12T10:01:15Z post-build gate
+Filesystem      Size  Used Avail Use% Mounted on
+/dev/sda2        49G   34G   13G  73% /
+/dev/sdb1        99G   78G   16G  84% /data
+/ blocks=12821880 free=4064521 avail=3405104
+/data blocks=25721923 free=5338209 avail=4154514
+platform-backend:latest id=4613dfdaefb5 created=2026-11-12 17:00:40 +0700 +07
+loadavg: 1.29 0.64 0.38 1/1037 185854
+MemAvailable MiB: 6023  swap used MiB: 2249

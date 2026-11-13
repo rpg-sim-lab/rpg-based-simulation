@@ -11,13 +11,18 @@
 # deny-all, so Grafana needs a token. The topic and the token are two more gitignored secret files, never committed. Create them once, after the first ntfy start:
 #   mkdir -p docker/secrets && openssl rand -hex 16 > docker/secrets/ntfy_topic && : > docker/secrets/ntfy_token && chmod 644 docker/secrets/ntfy_topic docker/secrets/ntfy_token   # the files must be world-readable (644) because Grafana's container user (uid 472) reads them through the bind mount (accepted for this single-user host; on a multi-user host use a group-readable mode or a compose-managed secret instead); an empty token file only lets compose parse; Grafana's guard refuses to start until step 4 fills it
 #   docker compose --profile observability up -d ntfy
-#   docker compose exec -T -e NTFY_PASSWORD="$(openssl rand -hex 12)" ntfy ntfy user add grafana                       # a regular user for Grafana; its password is never used (the token is)
-#   docker compose exec -T ntfy ntfy access grafana "$(cat docker/secrets/ntfy_topic)" write-only
+#   NTFY_PASSWORD="$(openssl rand -hex 12)" docker exec -i -e NTFY_PASSWORD "$(docker compose --profile observability ps -q ntfy)" ntfy user add grafana   # a regular user for Grafana; its password is never used (the token is); it goes through the environment, not onto a command line
+#   NTFY_TOPIC="$(cat docker/secrets/ntfy_topic)" docker exec -i -e NTFY_TOPIC "$(docker compose --profile observability ps -q ntfy)" sh -c 'exec ntfy access grafana "$NTFY_TOPIC" write-only' > /dev/null
+#     `ntfy access` takes the topic only as a positional argument (cmd/access.go, ntfy v2.37.2; no stdin, file or env source), so it goes through the environment: off the host command line and out of shell
+#     history. Its output is discarded because it prints the topic on success. The topic is still in the container's process list for the milliseconds the command runs. Rotating it: docs/runbooks/ntfy-topic-rotation.md.
 #   docker compose exec -T ntfy ntfy token add --label=grafana grafana | grep -o 'tk_[A-Za-z0-9]*' > docker/secrets/ntfy_token
 #   docker compose exec ntfy ntfy user add --role=admin <your name>                                                  # your own login, to subscribe from this host (http://127.0.0.1:${NTFY_PORT:-2586}); it prompts for the password, so none lands in shell history
 # Grafana refuses to start on an empty ntfy_topic or ntfy_token (guard in the grafana entrypoint). Never put a real topic or token in a file that is committed.
 # Grafana applies the admin password only when it first creates its database: to change it later, run `grafana cli admin reset-admin-password` in the container or remove the grafana_data volume.
 # Host ports of redis, prometheus, grafana and loki bind to 127.0.0.1 (redis has no auth); services reach each other by service name.
+# API access (TCK-20261112-COMPOSE-STACK-HAS-NO-API-KEY): the backend fails closed (401 on every route except /health) until you create the gitignored
+# docker/secrets/backend.env (the hash) and docker/secrets/frontend.env (the raw key, for nginx); recipe in docs/runbooks/compose-api-key.md.
+# backend and frontend bind to 127.0.0.1 by default (BACKEND_BIND, FRONTEND_BIND); the frontend's nginx adds the key, so it is the authentication boundary.
 # backend, ai_worker and watchdog run as a non-root user (uid/gid 1000). On a host whose user is not 1000, build with APP_UID/APP_GID set
 # (for example `APP_UID=$(id -u) APP_GID=$(id -g) docker compose build`) so the bind-mounted ./data stays writable and files in it stay yours.
 # Every service has a memory limit (mem_limit); see TCK-20261014-COMPOSE-OBSERVABILITY-PROFILE-AND-LIMITS.
@@ -29,8 +34,10 @@ services:
       args:
         APP_UID: ${APP_UID:-1000}
         APP_GID: ${APP_GID:-1000}
+    # Bound to loopback by default, like redis, prometheus, grafana and loki (TCK-20261112-COMPOSE-STACK-HAS-NO-API-KEY): only this machine reaches it.
+    # Set BACKEND_BIND=0.0.0.0 in .env to publish it on every interface. The frontend (nginx) and ai_worker reach it over the compose network and are not affected.
     ports:
-      - "${BACKEND_PORT:-8000}:8000"
+      - "${BACKEND_BIND:-127.0.0.1}:${BACKEND_PORT:-8000}:8000"
     # The unauthenticated metrics port (rpg R1, #648) is reachable only on the compose network, by Prometheus: `expose`, never `ports`.
     # The public 8000/metrics stays behind admission (401).
     expose:
@@ -41,10 +48,19 @@ services:
       # in-process stream and `simulation:events` stays empty, so ai_worker (which consumes that stream) idles.
       - SIM_STREAM_BACKEND=redis
       - SIM_REDIS_URL=redis://redis:6379/0
-      # Tracing is off while the endpoint is empty (ADR D4). With the observability profile set it to http://tempo:4318 (or :4317, matching rpg's exporter, #622).
-      # The sampling variable is added once rpg's middleware defines its name.
+      # Tracing is off while the endpoint is empty (ADR D4). With the observability profile set it to http://tempo:4318 (OTLP HTTP, the port rpg's exporter uses, #622).
+      # OTEL_TRACES_SAMPLER_ARG is the head-sampling ratio (0 to 1). Blank means the code default 0.1 (src/api/tracing.py reads a blank value as unset);
+      # a proof run that must see a trace sets it to 1 (docs/observability/api_request_tracing.md).
       - OTEL_EXPORTER_OTLP_ENDPOINT=${OTEL_EXPORTER_OTLP_ENDPOINT:-}
+      - OTEL_TRACES_SAMPLER_ARG=${OTEL_TRACES_SAMPLER_ARG:-}
       - OTEL_SERVICE_NAME=rpg-backend
+    # API keys (TCK-20261112-COMPOSE-STACK-HAS-NO-API-KEY). The backend fails closed while no key is configured: every route except /health answers 401.
+    # The optional, gitignored file docker/secrets/backend.env holds `RPG_API_KEY_HASHES=local:<sha256 of the raw key>` and nothing else: the backend never holds
+    # the raw key (recipe: docs/runbooks/compose-api-key.md). It is NOT the repo-root .env, which .mcp.json passes wholesale to another container.
+    # A missing file keeps the default (fail-closed).
+    env_file:
+      - path: ./docker/secrets/backend.env
+        required: false
     volumes:
       # Optional: mount data directory for persistent game state / config changes
       - ./data:/app/data
@@ -116,8 +132,17 @@ services:
     build:
       context: .
       dockerfile: docker/frontend.Dockerfile
+    # nginx here is the authentication boundary (TCK-20261112-COMPOSE-STACK-HAS-NO-API-KEY): it adds the API key to every /api/ request, so anyone who can
+    # reach this port is authenticated as that key. Hence loopback by default; set FRONTEND_BIND=0.0.0.0 in .env only if you accept that.
     ports:
-      - "${FRONTEND_PORT:-8080}:8080"
+      - "${FRONTEND_BIND:-127.0.0.1}:${FRONTEND_PORT:-8080}:8080"
+    # FRONTEND_API_KEY is the RAW key nginx sends as X-API-Key (docker/nginx-api-key.conf.template, rendered into /tmp at container start; never in the image).
+    # The tracked defaults file sets it empty (no header, the backend answers 401); the optional, gitignored docker/secrets/frontend.env, listed last so it wins,
+    # carries the real value and nothing else. `docker compose config` prints that value and `docker inspect` shows it. Recipe and warnings: docs/runbooks/compose-api-key.md.
+    env_file:
+      - ./docker/frontend.defaults.env
+      - path: ./docker/secrets/frontend.env
+        required: false
     depends_on:
       backend:
         condition: service_healthy
@@ -252,7 +277,15 @@ services:
     mem_limit: 512m
     ports:
       - "127.0.0.1:${LOKI_PORT:-3100}:3100"
-    command: -config.file=/etc/loki/local-config.yaml
+    # -ingester.wal-dir puts the WAL inside the named volume (the image config sets no ingester block, so its default would sit in the
+    # container layer). Without a volume Loki's data lived in the writable layer, which the containerd image store keeps under
+    # /var/lib/containerd, on the root filesystem. Loki throttles every push (HTTP 500 "Ingester is shutting down", which is ErrReadOnly)
+    # while its disk usage, (Blocks - Bfree) / Blocks of the WAL filesystem, is 0.9 or more; Bfree counts root-reserved blocks as free,
+    # so a full root filesystem reads about 94.8%. The 2026-11-11 run lost every push that way
+    # (docs/runbooks/records/2026-11-11-compose-image-bumps.md, section 5; docs/runbooks/log-shipping.md). The 0.9 threshold is kept.
+    command: -config.file=/etc/loki/local-config.yaml -ingester.wal-dir=/loki/wal
+    volumes:
+      - loki_data:/loki
     restart: unless-stopped
     # No healthcheck: the loki 3.7 image has neither wget nor sh, so nothing in the image can probe itself.
     # Loki readiness is probed from alloy (below), which has bash.
@@ -262,8 +295,11 @@ services:
     # Grafana Alloy v1.20.1 (released 2026-09-28; newest release at least 14 days old on 2026-10-28), pinned by multi-arch index digest.
     # Replaces Promtail, which reached end of life on 2026-03-02 (TCK-20261021-PROMTAIL-TO-ALLOY-LOG-SHIPPING).
     image: grafana/alloy:v1.21.3@sha256:8ab871206bd2d8f89277f53abffee5f452a293980788d52f85fa183a87a505a4
-    # 256m: the 2026-10-28 run (68 min) held anon 71 MiB and anon + active_file 187 MiB, which left no headroom under the first guess of 192m; docs/runbooks/records/2026-10-28-alloy-log-shipping.md section 5.
-    mem_limit: 256m
+    # 384m (was 256m). The 2026-10-28 run (68 min) held anon 71 MiB and anon + active_file 187 MiB, which left no headroom under the first guess of 192m, so it went to 256m
+    # (docs/runbooks/records/2026-10-28-alloy-log-shipping.md section 5). The 2026-11-12 run, with Loki accepting every push, peaked at anon + active_file 246.7 of 256 MiB
+    # (96.4%; memory.current reached 256.0) in 11 minutes with no OOM kill (docs/runbooks/records/2026-11-12-loki-volume-and-api-dashboard.md, finding 3): about 9 MiB of headroom
+    # is too little for a longer run, so the limit is raised by half. The new figure is a margin, not a measurement; re-measure it on the next run that keeps Alloy up for an hour.
+    mem_limit: 384m
     healthcheck:
       # The alloy image has bash but no wget/curl: read the first line of GET /-/ready over /dev/tcp and require HTTP 200.
       # Healthy means alloy's own :12345/-/ready AND loki:3100/ready both answer 200 (loki has no healthcheck of its own).
@@ -368,4 +404,5 @@ volumes:
   grafana_data:
   redis_data:
   tempo_data:
+  loki_data:
   ntfy_data:

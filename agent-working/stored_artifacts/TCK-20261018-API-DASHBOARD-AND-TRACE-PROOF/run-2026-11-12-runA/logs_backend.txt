@@ -1,0 +1,578 @@
+INFO:src.cli.entry:Starting V2 server on 0.0.0.0:8000
+INFO:     Started server process [1]
+INFO:     Waiting for application startup.
+WARNING:src.simulation_quality.wiring:SimQ hub construction failed (non-fatal) — quality scoring disabled for this run
+INFO:src.api.engine_manager:V2 Engine thread started.
+INFO:src.api.metrics_port:backend metrics served on 0.0.0.0:9109
+INFO:src.api.engine_manager:V2EngineManager started.
+INFO:src.api.server:V2 API server started.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
+WARNING:src.engine.kernel:Tick 0 exceeded budget at mid_tick: 434.65ms vs limit 50.00ms.
+CRITICAL:src.observability.alerts.sinks:[ALERT] type=WatchdogTrip run=run_1794479338_5169_1_4ddba95c severity=CRITICAL tick=N/A: Tick compute time 434.65ms exceeded watchdog threshold of 50.00ms (mid_tick) (evidence={'compute_ms': 434.651798, 'threshold_ms': 50.0, 'site': 'mid_tick', 'phase_costs': {'init': 30.407296, 'scheduling': 43.804981, 'collection': 342.667654}})
+WARNING:src.engine.kernel:Tick 36 exceeded budget at end_of_tick: 32.70ms vs limit 30.17ms.
+INFO:     127.0.0.1:38772 - "GET /health HTTP/1.1" 200 OK
+WARNING:src.engine.kernel:Tick 84 exceeded budget at end_of_tick: 47.75ms vs limit 28.84ms.
+WARNING:src.engine.kernel:Tick 88 exceeded budget at end_of_tick: 62.06ms vs limit 50.00ms.
+WARNING:src.engine.kernel:Tick 94 exceeded budget at end_of_tick: 47.33ms vs limit 38.14ms.
+WARNING:src.engine.kernel:Tick 99 exceeded budget at end_of_tick: 51.73ms vs limit 36.89ms.
+WARNING:src.engine.kernel:Tick 100 exceeded budget at end_of_tick: 104.96ms vs limit 50.00ms.
+WARNING:src.engine.kernel:Tick 101 exceeded budget at end_of_tick: 66.48ms vs limit 50.00ms.
+WARNING:src.engine.kernel:Tick 102 exceeded budget at end_of_tick: 70.00ms vs limit 50.00ms.
+WARNING:src.engine.kernel:Tick 103 exceeded budget at end_of_tick: 63.23ms vs limit 50.00ms.
+WARNING:src.engine.kernel:Tick 104 exceeded budget at end_of_tick: 67.75ms vs limit 50.00ms.
+WARNING:src.engine.kernel:Tick 106 exceeded budget at end_of_tick: 48.54ms vs limit 40.36ms.
+WARNING:src.engine.kernel:Tick 109 exceeded budget at end_of_tick: 50.23ms vs limit 50.00ms.
+WARNING:src.engine.kernel:Tick 121 exceeded budget at end_of_tick: 36.28ms vs limit 34.65ms.
+WARNING:src.engine.kernel:Tick 124 exceeded budget at end_of_tick: 65.97ms vs limit 50.00ms.
+WARNING:src.engine.kernel:Tick 127 exceeded budget at end_of_tick: 56.16ms vs limit 50.00ms.
+WARNING:src.engine.kernel:Tick 138 exceeded budget at end_of_tick: 59.83ms vs limit 50.00ms.
+INFO:     127.0.0.1:37090 - "GET /health HTTP/1.1" 200 OK
+WARNING:src.engine.kernel:Tick 159 exceeded budget at end_of_tick: 114.07ms vs limit 50.00ms.
+WARNING:src.engine.kernel:Tick 208 exceeded budget at end_of_tick: 42.62ms vs limit 36.78ms.
+WARNING:src.engine.kernel:Tick 226 exceeded budget at end_of_tick: 42.27ms vs limit 28.83ms.
+WARNING:src.engine.kernel:Tick 228 exceeded budget at end_of_tick: 65.37ms vs limit 50.00ms.
+INFO:     127.0.0.1:54262 - "GET /health HTTP/1.1" 200 OK
+WARNING:src.engine.kernel:Tick 246 exceeded budget at end_of_tick: 42.38ms vs limit 41.51ms.
+WARNING:src.engine.kernel:Tick 248 exceeded budget at end_of_tick: 191.21ms vs limit 43.96ms.
+WARNING:src.engine.kernel:Tick 271 exceeded budget at end_of_tick: 35.43ms vs limit 28.38ms.
+WARNING:src.engine.kernel:Tick 272 exceeded budget at end_of_tick: 50.56ms vs limit 50.00ms.
+WARNING:src.engine.kernel:Tick 302 exceeded budget at end_of_tick: 36.07ms vs limit 32.74ms.
+WARNING:src.engine.kernel:Tick 303 exceeded budget at end_of_tick: 56.54ms vs limit 50.00ms.
+INFO:     127.0.0.1:43718 - "GET /health HTTP/1.1" 200 OK
+WARNING:src.engine.kernel:Tick 368 exceeded budget at end_of_tick: 255.73ms vs limit 38.48ms.
+WARNING:src.engine.kernel:Tick 379 exceeded budget at end_of_tick: 50.73ms vs limit 50.00ms.
+WARNING:src.engine.kernel:Tick 389 exceeded budget at end_of_tick: 25.67ms vs limit 24.05ms.
+WARNING:src.engine.kernel:Tick 398 exceeded budget at end_of_tick: 34.60ms vs limit 28.18ms.
+WARNING:src.engine.kernel:Tick 403 exceeded budget at end_of_tick: 63.10ms vs limit 42.87ms.
+WARNING:src.engine.kernel:Tick 404 exceeded budget at end_of_tick: 68.36ms vs limit 50.00ms.
+WARNING:src.engine.kernel:Tick 408 exceeded budget at end_of_tick: 23.54ms vs limit 20.00ms.
+WARNING:src.engine.kernel:Tick 426 exceeded budget at end_of_tick: 103.82ms vs limit 45.45ms.
+INFO:     127.0.0.1:38496 - "GET /health HTTP/1.1" 200 OK
+WARNING:src.engine.kernel:Tick 428 exceeded budget at end_of_tick: 47.50ms vs limit 36.07ms.
+WARNING:src.engine.kernel:Tick 439 exceeded budget at end_of_tick: 31.48ms vs limit 30.13ms.
+WARNING:src.engine.kernel:Tick 471 exceeded budget at end_of_tick: 42.61ms vs limit 40.01ms.
+WARNING:src.engine.kernel:Tick 472 exceeded budget at end_of_tick: 70.39ms vs limit 50.00ms.
+WARNING:src.engine.kernel:Tick 499 exceeded budget at end_of_tick: 194.40ms vs limit 50.00ms.
+WARNING:src.engine.kernel:Tick 504 exceeded budget at end_of_tick: 51.14ms vs limit 28.95ms.
+INFO:     127.0.0.1:54284 - "GET /health HTTP/1.1" 200 OK
+WARNING:src.engine.kernel:Tick 528 exceeded budget at end_of_tick: 45.33ms vs limit 42.68ms.
+WARNING:src.engine.kernel:Tick 564 exceeded budget at end_of_tick: 120.64ms vs limit 50.00ms.
+CRITICAL:src.observability.alerts.sinks:[ALERT] type=WatchdogTrip run=run_1794479338_5169_1_4ddba95c severity=CRITICAL tick=564: Tick compute time 120.64ms exceeded watchdog threshold of 50.00ms (end_of_tick) (evidence={'compute_ms': 120.63603499999999, 'threshold_ms': 50.0, 'site': 'end_of_tick', 'phase_costs': {'init': 0.29704, 'scheduling': 0.804413, 'collection': 2.358275, 'trust_validity': 0.135314, 'memory_update': 0.009774, 'habit_bias_action_style': 0.004769, 'role_model_selection': 0.003192, 'self_model': 0.009622, 'information_belief': 0.07624, 'information_intent_execution': 0.011097, 'cooperation': 0.25138, 'contracts_production': 0.072856, 'faction_decision': 0.068067, 'faction_awareness': 0.049824, 'information_propagation': 0.005516, 'diplomatic_transitions': 0.921376, 'military_conflict': 0.074376, 'locomotion': 1.276781, 'combat_engagement': 1.915268, 'interaction': 0.222046, 'governance_ecology': 0.429918, 'world_emergence': 0.008666, 'economy': 0.560528, 'progression_conversion': 0.005131, 'faction_sentiment': 0.039901, 'final_integrity': 0.149488, 'resolution_overhead': 101.111796, 'cleanup': 0.049602, 'advancement': 3.63075, 'persistence': 6.083029}})
+INFO:api.observability.search:Search runs: scenario_name=ALL status=ALL sort=DEFAULT limit=50 result_count=16 trace_id=52337f4697a8657e25f43b2272d38168 span_id=56bc2bedaabeed6d
+INFO:     172.20.0.1:34076 - "GET /api/v1/observability/search/runs HTTP/1.1" 200 OK
+WARNING:src.engine.kernel:Tick 588 exceeded budget at end_of_tick: 41.72ms vs limit 29.89ms.
+WARNING:src.engine.kernel:Tick 606 exceeded budget at end_of_tick: 81.65ms vs limit 50.00ms.
+WARNING:src.engine.kernel:Tick 607 exceeded budget at end_of_tick: 181.12ms vs limit 50.00ms.
+INFO:     127.0.0.1:45494 - "GET /health HTTP/1.1" 200 OK
+WARNING:src.engine.kernel:Tick 623 exceeded budget at end_of_tick: 33.50ms vs limit 27.68ms.
+WARNING:src.engine.kernel:Tick 629 exceeded budget at end_of_tick: 27.66ms vs limit 26.27ms.
+WARNING:src.engine.kernel:Tick 648 exceeded budget at end_of_tick: 29.95ms vs limit 29.62ms.
+WARNING:src.engine.kernel:Tick 673 exceeded budget at end_of_tick: 94.74ms vs limit 50.00ms.
+WARNING:src.engine.kernel:Tick 675 exceeded budget at end_of_tick: 62.89ms vs limit 50.00ms.
+INFO:api.observability.search:Search runs: scenario_name=ALL status=ALL sort=DEFAULT limit=50 result_count=16 trace_id=038e7165523c70735a31917e99fb755c span_id=4f745135abd9e6fa
+INFO:     172.20.0.1:53076 - "GET /api/v1/observability/search/runs HTTP/1.1" 200 OK
+INFO:api.observability.search:Search runs: scenario_name=ALL status=ALL sort=DEFAULT limit=50 result_count=16 trace_id=5071a81a5fb6b1356e84086a3a90f0c4 span_id=1e8f00775b42a6dc
+WARNING:src.engine.kernel:Tick 686 exceeded budget at end_of_tick: 45.59ms vs limit 22.87ms.
+INFO:     172.20.0.1:53082 - "GET /api/v1/observability/search/runs HTTP/1.1" 200 OK
+INFO:api.observability.search:Search runs: scenario_name=ALL status=ALL sort=DEFAULT limit=50 result_count=16 trace_id=deed95822d61865a201cc82ee9b9e1aa span_id=553c8a725a59672d
+INFO:     172.20.0.1:53092 - "GET /api/v1/observability/search/runs HTTP/1.1" 200 OK
+WARNING:src.engine.kernel:Tick 706 exceeded budget at end_of_tick: 53.63ms vs limit 49.43ms.
+INFO:api.observability.search:Search runs: scenario_name=ALL status=ALL sort=DEFAULT limit=50 result_count=16 trace_id=f38c1eed0657a8f5fc2c2179fecf1ab8 span_id=3958ed879bae121d
+INFO:     172.20.0.1:53098 - "GET /api/v1/observability/search/runs HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50028 - "GET /health HTTP/1.1" 200 OK
+INFO:api.observability.search:Search runs: scenario_name=ALL status=ALL sort=DEFAULT limit=50 result_count=16 trace_id=bdcdbbd85f357f654d8998daedc877b1 span_id=bce9dcc82f5ffffd
+INFO:     172.20.0.1:54068 - "GET /api/v1/observability/search/runs HTTP/1.1" 200 OK
+WARNING:src.engine.kernel:Tick 719 exceeded budget at end_of_tick: 43.75ms vs limit 37.93ms.
+INFO:api.observability.search:Search runs: scenario_name=ALL status=ALL sort=DEFAULT limit=50 result_count=16 trace_id=2f5d4bf839b4de1825a7c415fde0de3b span_id=28b63f04bbc872c4
+INFO:     172.20.0.1:54082 - "GET /api/v1/observability/search/runs HTTP/1.1" 200 OK
+INFO:api.observability.search:Search runs: scenario_name=ALL status=ALL sort=DEFAULT limit=50 result_count=16 trace_id=680e66f5e4fe42822cfe69673f2cd50a span_id=96a9fc33ece0a15f
+INFO:     172.20.0.1:54086 - "GET /api/v1/observability/search/runs HTTP/1.1" 200 OK
+INFO:api.observability.search:Search runs: scenario_name=ALL status=ALL sort=DEFAULT limit=50 result_count=16 trace_id=cb37f54a3fc53bdb85a708dc379ff071 span_id=f790115217ce74eb
+INFO:     172.20.0.1:54088 - "GET /api/v1/observability/search/runs HTTP/1.1" 200 OK
+INFO:api.observability.search:Search runs: scenario_name=ALL status=ALL sort=DEFAULT limit=50 result_count=16 trace_id=e2a6694e07930a52fd8f6d95b0b35d6f span_id=b3f01a4a04469957
+INFO:     172.20.0.1:54096 - "GET /api/v1/observability/search/runs HTTP/1.1" 200 OK
+WARNING:src.engine.kernel:Tick 764 exceeded budget at end_of_tick: 41.89ms vs limit 38.89ms.
+INFO:api.observability.search:Search runs: scenario_name=ALL status=ALL sort=DEFAULT limit=50 result_count=16 trace_id=3c1b605041dfa2191ee125a4186d0ec4 span_id=42b74d8361ad625a
+INFO:     172.20.0.1:54104 - "GET /api/v1/observability/search/runs HTTP/1.1" 200 OK
+WARNING:src.engine.kernel:Tick 772 exceeded budget at end_of_tick: 41.02ms vs limit 35.25ms.
+INFO:api.observability.search:Search runs: scenario_name=ALL status=ALL sort=DEFAULT limit=50 result_count=16 trace_id=20e4aab2495f16dffb7958b2216e3452 span_id=85cab83bcc5ee704
+INFO:     172.20.0.1:54110 - "GET /api/v1/observability/search/runs HTTP/1.1" 200 OK
+WARNING:src.engine.kernel:Tick 775 exceeded budget at end_of_tick: 205.86ms vs limit 46.73ms.
+INFO:api.observability.search:Search runs: scenario_name=ALL status=ALL sort=DEFAULT limit=50 result_count=16 trace_id=0af24b1da02979840467202ebc02ccbe span_id=60a137fa4d725404
+INFO:     172.20.0.1:54114 - "GET /api/v1/observability/search/runs HTTP/1.1" 200 OK
+INFO:api.observability.search:Search runs: scenario_name=ALL status=ALL sort=DEFAULT limit=50 result_count=16 trace_id=a9b04a249a6625d7b9f82a986621ddd2 span_id=e9c2dea3b567e619
+INFO:     172.20.0.1:54128 - "GET /api/v1/observability/search/runs HTTP/1.1" 200 OK
+WARNING:src.engine.kernel:Tick 799 exceeded budget at end_of_tick: 42.05ms vs limit 38.59ms.
+INFO:api.observability.search:Search runs: scenario_name=ALL status=ALL sort=DEFAULT limit=50 result_count=16 trace_id=a95075dbc5120e987be7a8c2f773bdf3 span_id=94f4a1062e5ba058
+INFO:     172.20.0.1:54138 - "GET /api/v1/observability/search/runs HTTP/1.1" 200 OK
+INFO:     127.0.0.1:37656 - "GET /health HTTP/1.1" 200 OK
+WARNING:src.engine.kernel:Tick 808 exceeded budget at end_of_tick: 53.09ms vs limit 50.00ms.
+WARNING:src.engine.kernel:Tick 810 exceeded budget at end_of_tick: 71.82ms vs limit 46.24ms.
+INFO:api.observability.search:Search runs: scenario_name=ALL status=ALL sort=DEFAULT limit=50 result_count=16 trace_id=a7d5dd122a1ba96588acbf337a84854c span_id=5212a5ae9d7fc65c
+INFO:     172.20.0.1:34834 - "GET /api/v1/observability/search/runs HTTP/1.1" 200 OK
+INFO:api.observability.search:Search runs: scenario_name=ALL status=ALL sort=DEFAULT limit=50 result_count=16 trace_id=11c85865218f7cc220ee9cffa7d8f02c span_id=1046f26f5699f375
+INFO:     172.20.0.1:34850 - "GET /api/v1/observability/search/runs HTTP/1.1" 200 OK
+WARNING:src.engine.kernel:Tick 829 exceeded budget at end_of_tick: 63.26ms vs limit 50.00ms.
+INFO:api.observability.search:Search runs: scenario_name=ALL status=ALL sort=DEFAULT limit=50 result_count=16 trace_id=437b91a4fd5873e091a5f6c04cfd85cb span_id=ef40c9e0dfd87924
+INFO:     172.20.0.1:34852 - "GET /api/v1/observability/search/runs HTTP/1.1" 200 OK
+WARNING:src.engine.kernel:Tick 838 exceeded budget at end_of_tick: 22.64ms vs limit 21.25ms.
+INFO:api.observability.search:Search runs: scenario_name=ALL status=ALL sort=DEFAULT limit=50 result_count=16 trace_id=000ddc383de80ee8b9a5546e04678532 span_id=af37053f345b7873
+INFO:     172.20.0.1:34864 - "GET /api/v1/observability/search/runs HTTP/1.1" 200 OK
+INFO:api.observability.search:Search runs: scenario_name=ALL status=ALL sort=DEFAULT limit=50 result_count=16 trace_id=cc4e427be762c1ca9e788482eb75e167 span_id=183dad5a7317fa24
+INFO:     172.20.0.1:34878 - "GET /api/v1/observability/search/runs HTTP/1.1" 200 OK
+INFO:api.observability.search:Search runs: scenario_name=ALL status=ALL sort=DEFAULT limit=50 result_count=16 trace_id=068756d881d77e4374f9fd8aee4d5e23 span_id=afc6612a2afb2f47
+INFO:     172.20.0.1:34882 - "GET /api/v1/observability/search/runs HTTP/1.1" 200 OK
+INFO:     172.20.0.1:34890 - "GET /api/v1/observability/search/runs HTTP/1.1" 200 OK
+INFO:api.observability.search:Search runs: scenario_name=ALL status=ALL sort=DEFAULT limit=50 result_count=16 trace_id=cb089a9661d68e5e071e4b891aa3a606 span_id=954c5d15b422ca84
+WARNING:src.engine.kernel:Tick 878 exceeded budget at end_of_tick: 202.22ms vs limit 36.80ms.
+INFO:api.observability.search:Search runs: scenario_name=ALL status=ALL sort=DEFAULT limit=50 result_count=16 trace_id=dfdda011e98c11da4d2d488325cdaaff span_id=84a585073137502c
+INFO:     172.20.0.1:34904 - "GET /api/v1/observability/search/runs HTTP/1.1" 200 OK
+WARNING:src.engine.kernel:Tick 885 exceeded budget at end_of_tick: 43.20ms vs limit 31.95ms.
+WARNING:src.engine.kernel:Tick 888 exceeded budget at end_of_tick: 68.81ms vs limit 37.37ms.
+INFO:api.observability.search:Search runs: scenario_name=ALL status=ALL sort=DEFAULT limit=50 result_count=16 trace_id=a442b522e8bfc11e90ac3a7875d0adab span_id=bfcff80f158af9df
+INFO:     172.20.0.1:34906 - "GET /api/v1/observability/search/runs HTTP/1.1" 200 OK
+INFO:api.observability.search:Search runs: scenario_name=ALL status=ALL sort=DEFAULT limit=50 result_count=16 trace_id=a7aceac4914334ba48ff659e08477ac6 span_id=88c30e6b7df078ee
+INFO:     172.20.0.1:34908 - "GET /api/v1/observability/search/runs HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55172 - "GET /health HTTP/1.1" 200 OK
+WARNING:src.engine.kernel:Tick 907 exceeded budget at end_of_tick: 44.84ms vs limit 35.53ms.
+WARNING:src.engine.kernel:Tick 908 exceeded budget at end_of_tick: 139.84ms vs limit 50.00ms.
+WARNING:src.engine.kernel:Tick 910 exceeded budget at end_of_tick: 88.36ms vs limit 50.00ms.
+INFO:api.observability.search:Search runs: scenario_name=ALL status=ALL sort=DEFAULT limit=50 result_count=16 trace_id=06bc3b889bbb8e288445f2992a12e011 span_id=0f409167c2737993
+INFO:     172.20.0.1:35578 - "GET /api/v1/observability/search/runs HTTP/1.1" 200 OK
+WARNING:src.engine.kernel:Tick 914 exceeded budget at end_of_tick: 29.82ms vs limit 29.13ms.
+INFO:api.observability.search:Search runs: scenario_name=ALL status=ALL sort=DEFAULT limit=50 result_count=16 trace_id=81d22628e4dd930c19e2e9d4add38fcb span_id=aa52f0fe9476c6d8
+INFO:     172.20.0.1:35588 - "GET /api/v1/observability/search/runs HTTP/1.1" 200 OK
+INFO:api.observability.search:Search runs: scenario_name=ALL status=ALL sort=DEFAULT limit=50 result_count=16 trace_id=f9446b8a1d430eef77047892c7a664fa span_id=b7ea6f15c723700b
+INFO:     172.20.0.1:35604 - "GET /api/v1/observability/search/runs HTTP/1.1" 200 OK
+INFO:api.observability.search:Search runs: scenario_name=ALL status=ALL sort=DEFAULT limit=50 result_count=16 trace_id=1d79f1815173bb8e3b5ad9d9c34bb9c2 span_id=c073240a4c49c2d8
+INFO:     172.20.0.1:35620 - "GET /api/v1/observability/search/runs HTTP/1.1" 200 OK
+WARNING:src.engine.kernel:Tick 948 exceeded budget at end_of_tick: 40.97ms vs limit 38.59ms.
+INFO:api.observability.search:Search runs: scenario_name=ALL status=ALL sort=DEFAULT limit=50 result_count=16 trace_id=cd2568f75f61da02c64db9cf69ccace2 span_id=c3451f9ffcc1b8c2
+INFO:     172.20.0.1:35634 - "GET /api/v1/observability/search/runs HTTP/1.1" 200 OK
+INFO:api.observability.search:Search runs: scenario_name=ALL status=ALL sort=DEFAULT limit=50 result_count=16 trace_id=3c48e65f162cfd865be37038f1abb2de span_id=b07c6a4fff4290c1
+INFO:     172.20.0.1:35640 - "GET /api/v1/observability/search/runs HTTP/1.1" 200 OK
+INFO:api.observability.search:Search runs: scenario_name=ALL status=ALL sort=DEFAULT limit=50 result_count=16 trace_id=e001bbe0db2b1e21bc785c0c0093f70d span_id=615f4bf8af091255
+INFO:     172.20.0.1:35650 - "GET /api/v1/observability/search/runs HTTP/1.1" 200 OK
+WARNING:src.engine.kernel:Tick 971 exceeded budget at end_of_tick: 38.84ms vs limit 35.30ms.
+INFO:api.observability.search:Search runs: scenario_name=ALL status=ALL sort=DEFAULT limit=50 result_count=16 trace_id=c2f9a2278c9a9c3a6aaa8b1f89472a4d span_id=e1926e3a3637686e
+INFO:     172.20.0.1:35662 - "GET /api/v1/observability/search/runs HTTP/1.1" 200 OK
+INFO:api.observability.search:Search runs: scenario_name=ALL status=ALL sort=DEFAULT limit=50 result_count=16 trace_id=b0ee899140b88e44d05cc870ce15cd21 span_id=a2243b1b10ce1ac9
+INFO:     172.20.0.1:35664 - "GET /api/v1/observability/search/runs HTTP/1.1" 200 OK
+INFO:api.observability.search:Search runs: scenario_name=ALL status=ALL sort=DEFAULT limit=50 result_count=16 trace_id=3c28c9520fef25be4f191b9a7c2bd35f span_id=470b26715adf7d35
+INFO:     172.20.0.1:44124 - "GET /api/v1/observability/search/runs HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56664 - "GET /health HTTP/1.1" 200 OK
+INFO:api.observability.search:Search runs: scenario_name=ALL status=ALL sort=DEFAULT limit=50 result_count=16 trace_id=f9688601541ca8cb4130d8a9b88bf495 span_id=e9122ab61391bda3
+INFO:     172.20.0.1:44138 - "GET /api/v1/observability/search/runs HTTP/1.1" 200 OK
+WARNING:src.engine.kernel:Tick 1009 exceeded budget at end_of_tick: 106.02ms vs limit 47.87ms.
+WARNING:src.engine.kernel:Tick 1010 exceeded budget at end_of_tick: 82.55ms vs limit 50.00ms.
+WARNING:src.engine.kernel:Tick 1011 exceeded budget at end_of_tick: 159.90ms vs limit 50.00ms.
+INFO:api.observability.search:Search runs: scenario_name=ALL status=ALL sort=DEFAULT limit=50 result_count=16 trace_id=0b97c8173e23c86dffd921adc732736b span_id=ddd4abd07fa4b7cb
+INFO:     172.20.0.1:44152 - "GET /api/v1/observability/search/runs HTTP/1.1" 200 OK
+INFO:api.observability.search:Search runs: scenario_name=ALL status=ALL sort=DEFAULT limit=50 result_count=16 trace_id=6f4b5dce6256dfb3c5b1db81939b0ae1 span_id=6fd125bc17d30fcc
+INFO:     172.20.0.1:44162 - "GET /api/v1/observability/search/runs HTTP/1.1" 200 OK
+WARNING:src.engine.kernel:Tick 1028 exceeded budget at end_of_tick: 26.26ms vs limit 25.20ms.
+INFO:api.observability.search:Search runs: scenario_name=ALL status=ALL sort=DEFAULT limit=50 result_count=16 trace_id=68a16b3f40ea9859ba425c2c5d3e2047 span_id=c1176eb1a77914c6
+INFO:     172.20.0.1:44168 - "GET /api/v1/observability/search/runs HTTP/1.1" 200 OK
+INFO:api.observability.search:Search runs: scenario_name=ALL status=ALL sort=DEFAULT limit=50 result_count=16 trace_id=faf60c5b3bfbdd6f03cf1623eefdbb8a span_id=0d439fca61314b40
+INFO:     172.20.0.1:44180 - "GET /api/v1/observability/search/runs HTTP/1.1" 200 OK
+INFO:api.observability.search:Search runs: scenario_name=ALL status=ALL sort=DEFAULT limit=50 result_count=16 trace_id=66f1b228d3a51f2c6b760e43439c65d2 span_id=b8b8501e54fd8afb
+INFO:     172.20.0.1:44194 - "GET /api/v1/observability/search/runs HTTP/1.1" 200 OK
+INFO:api.observability.search:Search runs: scenario_name=ALL status=ALL sort=DEFAULT limit=50 result_count=16 trace_id=be2326ab189da0455de122c6afd68247 span_id=89c0ae396cbd45f7
+INFO:     172.20.0.1:44196 - "GET /api/v1/observability/search/runs HTTP/1.1" 200 OK
+INFO:api.observability.search:Search runs: scenario_name=ALL status=ALL sort=DEFAULT limit=50 result_count=16 trace_id=3be3f23f2b52ce5051bd1252ffae6f03 span_id=0e4c8f9e6c97c8cc
+INFO:     172.20.0.1:44212 - "GET /api/v1/observability/search/runs HTTP/1.1" 200 OK
+INFO:api.observability.search:Search runs: scenario_name=ALL status=ALL sort=DEFAULT limit=50 result_count=16 trace_id=47b4d2149590d0fd3850193ff15ea7a2 span_id=3bb1a297c3384f3b
+INFO:     172.20.0.1:44224 - "GET /api/v1/observability/search/runs HTTP/1.1" 200 OK
+WARNING:src.engine.kernel:Tick 1090 exceeded budget at end_of_tick: 56.04ms vs limit 50.00ms.
+INFO:     172.20.0.1:43450 - "GET /api/v1/observability/search/runs HTTP/1.1" 200 OK
+INFO:api.observability.search:Search runs: scenario_name=ALL status=ALL sort=DEFAULT limit=50 result_count=16 trace_id=e0ac150ad9675071f174e38220a87f36 span_id=2e472ce0e4f77023
+INFO:     127.0.0.1:40378 - "GET /health HTTP/1.1" 200 OK
+INFO:api.observability.search:Search runs: scenario_name=ALL status=ALL sort=DEFAULT limit=50 result_count=16 trace_id=8774653b509ba8fa5d58a2ee341269c9 span_id=898197056d80a2b3
+INFO:     172.20.0.1:43462 - "GET /api/v1/observability/search/runs HTTP/1.1" 200 OK
+INFO:api.observability.search:Search runs: scenario_name=ALL status=ALL sort=DEFAULT limit=50 result_count=16 trace_id=e323f99762da540989053eb5473fc35d span_id=72f806b342adb529
+INFO:     172.20.0.1:43466 - "GET /api/v1/observability/search/runs HTTP/1.1" 200 OK
+WARNING:src.engine.kernel:Tick 1110 exceeded budget at end_of_tick: 75.54ms vs limit 50.00ms.
+INFO:api.observability.search:Search runs: scenario_name=ALL status=ALL sort=DEFAULT limit=50 result_count=16 trace_id=ded353b9f6d8f24e12f7085d2e56762a span_id=34f69e176cf5cc18
+INFO:     172.20.0.1:43472 - "GET /api/v1/observability/search/runs HTTP/1.1" 200 OK
+INFO:api.observability.search:Search runs: scenario_name=ALL status=ALL sort=DEFAULT limit=50 result_count=16 trace_id=1344441afe80e2cf3001e1c0aeef209d span_id=e31320bfe6bc7c8d
+INFO:     172.20.0.1:43482 - "GET /api/v1/observability/search/runs HTTP/1.1" 200 OK
+INFO:api.observability.search:Search runs: scenario_name=ALL status=ALL sort=DEFAULT limit=50 result_count=16 trace_id=3d9007ad21b6c7b84e95aa8732855286 span_id=b3595be70fd7b967
+INFO:     172.20.0.1:43488 - "GET /api/v1/observability/search/runs HTTP/1.1" 200 OK
+INFO:     172.20.0.1:43496 - "GET /api/v1/observability/search/runs HTTP/1.1" 200 OK
+INFO:api.observability.search:Search runs: scenario_name=ALL status=ALL sort=DEFAULT limit=50 result_count=16 trace_id=789c209c434b4b072abe2c301de6bd53 span_id=70a0843c95c0e417
+WARNING:src.engine.kernel:Tick 1148 exceeded budget at end_of_tick: 23.24ms vs limit 22.61ms.
+CRITICAL:src.observability.alerts.sinks:[ALERT] type=WatchdogTrip run=run_1794479338_5169_1_4ddba95c severity=CRITICAL tick=1148: Tick compute time 23.24ms exceeded watchdog threshold of 22.61ms (end_of_tick) (evidence={'compute_ms': 23.244656000000003, 'threshold_ms': 22.608981999999997, 'site': 'end_of_tick', 'phase_costs': {'init': 0.250762, 'scheduling': 1.496866, 'collection': 3.354886, 'trust_validity': 0.148161, 'memory_update': 0.009121, 'habit_bias_action_style': 0.00305, 'role_model_selection': 0.002525, 'self_model': 0.006125, 'information_belief': 0.052877, 'information_intent_execution': 0.004132, 'cooperation': 0.136046, 'contracts_production': 0.071696, 'faction_decision': 0.039851, 'faction_awareness': 0.024808, 'information_propagation': 0.003804, 'diplomatic_transitions': 1.038533, 'military_conflict': 0.173703, 'locomotion': 2.159218, 'combat_engagement': 0.947745, 'interaction': 0.175414, 'governance_ecology': 0.345711, 'world_emergence': 0.004086, 'economy': 0.247537, 'progression_conversion': 0.003146, 'faction_sentiment': 0.019348, 'final_integrity': 0.068187, 'resolution_overhead': 4.071669000000001, 'cleanup': 0.024974, 'advancement': 3.106385, 'persistence': 5.25429}})
+INFO:api.observability.search:Search runs: scenario_name=ALL status=ALL sort=DEFAULT limit=50 result_count=16 trace_id=17c708b2478c90cf5182d881d62ad6e7 span_id=b25e8ba1b4032836
+INFO:     172.20.0.1:43512 - "GET /api/v1/observability/search/runs HTTP/1.1" 200 OK
+INFO:api.observability.search:Search runs: scenario_name=ALL status=ALL sort=DEFAULT limit=50 result_count=16 trace_id=6636a668193a3cf946e728888181ff7a span_id=0649848af905f3f7
+INFO:     172.20.0.1:43520 - "GET /api/v1/observability/search/runs HTTP/1.1" 200 OK
+WARNING:src.engine.kernel:Tick 1168 exceeded budget at end_of_tick: 166.52ms vs limit 26.28ms.
+INFO:api.observability.search:Search runs: scenario_name=ALL status=ALL sort=DEFAULT limit=50 result_count=16 trace_id=549830cdad945f04ef2816cc97ec03f0 span_id=b265a107f23cef7d
+INFO:     172.20.0.1:35188 - "GET /api/v1/observability/search/runs HTTP/1.1" 200 OK
+INFO:api.observability.search:Search runs: scenario_name=ALL status=ALL sort=DEFAULT limit=50 result_count=16 trace_id=2a7df112a4601e4f8766e0c9c56847cd span_id=0a0136542dd8b79b
+INFO:     172.20.0.1:35204 - "GET /api/v1/observability/search/runs HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56312 - "GET /health HTTP/1.1" 200 OK
+INFO:api.observability.search:Search runs: scenario_name=ALL status=ALL sort=DEFAULT limit=50 result_count=16 trace_id=aa9964062ca7add3fc96259c5ffd079d span_id=adb37d6716ba83ba
+INFO:     172.20.0.1:35210 - "GET /api/v1/observability/search/runs HTTP/1.1" 200 OK
+INFO:api.observability.search:Search runs: scenario_name=ALL status=ALL sort=DEFAULT limit=50 result_count=16 trace_id=4ecb13b949657823615d6961ed0e5e3d span_id=afe1273352766ece
+INFO:     172.20.0.1:35214 - "GET /api/v1/observability/search/runs HTTP/1.1" 200 OK
+WARNING:src.engine.kernel:Tick 1211 exceeded budget at end_of_tick: 47.25ms vs limit 29.94ms.
+WARNING:src.engine.kernel:Tick 1212 exceeded budget at end_of_tick: 61.04ms vs limit 50.00ms.
+INFO:api.observability.search:Search runs: scenario_name=ALL status=ALL sort=DEFAULT limit=50 result_count=16 trace_id=3bfc3524a76141b212339e95685edba6 span_id=bc0664b07ee70931
+INFO:     172.20.0.1:35218 - "GET /api/v1/observability/search/runs HTTP/1.1" 200 OK
+INFO:api.observability.search:Search runs: scenario_name=ALL status=ALL sort=DEFAULT limit=50 result_count=16 trace_id=78c1443fc4eeb85976fb8d3aa5ce8fbb span_id=5499d25d8c97800b
+INFO:     172.20.0.1:35222 - "GET /api/v1/observability/search/runs HTTP/1.1" 200 OK
+INFO:api.observability.search:Search runs: scenario_name=ALL status=ALL sort=DEFAULT limit=50 result_count=16 trace_id=eb26008f9fe7432c2ebaabae98d6c2bb span_id=370da71d167b1169
+INFO:     172.20.0.1:35238 - "GET /api/v1/observability/search/runs HTTP/1.1" 200 OK
+INFO:api.observability.search:Search runs: scenario_name=ALL status=ALL sort=DEFAULT limit=50 result_count=16 trace_id=539193b956951ffcb38a9f4077816dca span_id=0a17a1b25068a4ab
+INFO:     172.20.0.1:35254 - "GET /api/v1/observability/search/runs HTTP/1.1" 200 OK
+INFO:api.observability.search:Search runs: scenario_name=ALL status=ALL sort=DEFAULT limit=50 result_count=16 trace_id=139f80673dc0ba014f20f610a674b68b span_id=e25c1a6728851999
+INFO:     172.20.0.1:35268 - "GET /api/v1/observability/search/runs HTTP/1.1" 200 OK
+INFO:api.observability.search:Search runs: scenario_name=ALL status=ALL sort=DEFAULT limit=50 result_count=16 trace_id=26022fcbe18df2af0cb20b07848f9fbc span_id=1bb3af1a06a5f930
+INFO:     172.20.0.1:35270 - "GET /api/v1/observability/search/runs HTTP/1.1" 200 OK
+WARNING:src.engine.kernel:Tick 1266 exceeded budget at end_of_tick: 35.92ms vs limit 31.31ms.
+INFO:api.observability.search:Search runs: scenario_name=ALL status=ALL sort=DEFAULT limit=50 result_count=16 trace_id=7fc284bab55728deada104d52aa3949b span_id=a008adbc43e77cb0
+INFO:     172.20.0.1:53542 - "GET /api/v1/observability/search/runs HTTP/1.1" 200 OK
+WARNING:src.engine.kernel:Tick 1275 exceeded budget at end_of_tick: 41.39ms vs limit 40.10ms.
+INFO:api.observability.search:Search runs: scenario_name=ALL status=ALL sort=DEFAULT limit=50 result_count=16 trace_id=d78f1eec490f1a00c092b2750c271240 span_id=0970629f874ca1f4
+INFO:     172.20.0.1:53546 - "GET /api/v1/observability/search/runs HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53318 - "GET /health HTTP/1.1" 200 OK
+INFO:api.observability.search:Search runs: scenario_name=ALL status=ALL sort=DEFAULT limit=50 result_count=16 trace_id=4da5a0effc747db8746e3516ddbf9c1e span_id=cb08e7b7e6facc81
+INFO:     172.20.0.1:53554 - "GET /api/v1/observability/search/runs HTTP/1.1" 200 OK
+WARNING:src.engine.kernel:Tick 1296 exceeded budget at end_of_tick: 210.52ms vs limit 50.00ms.
+INFO:api.observability.search:Search runs: scenario_name=ALL status=ALL sort=DEFAULT limit=50 result_count=16 trace_id=4cef0f5aeb490f9410a43b91594ad6d0 span_id=bb0f2904cdb962ee
+INFO:     172.20.0.1:53568 - "GET /api/v1/observability/search/runs HTTP/1.1" 200 OK
+INFO:api.observability.search:Search runs: scenario_name=ALL status=ALL sort=DEFAULT limit=50 result_count=16 trace_id=48d9835af8a9e6016cd574d6e3b1b63d span_id=7ed27689394e1170
+INFO:     172.20.0.1:53574 - "GET /api/v1/observability/search/runs HTTP/1.1" 200 OK
+INFO:api.observability.search:Search runs: scenario_name=ALL status=ALL sort=DEFAULT limit=50 result_count=16 trace_id=61581ce2f12eaba8cd7e78189f084022 span_id=6172a94ea293352a
+INFO:     172.20.0.1:53576 - "GET /api/v1/observability/search/runs HTTP/1.1" 200 OK
+WARNING:src.engine.kernel:Tick 1319 exceeded budget at end_of_tick: 25.07ms vs limit 23.16ms.
+WARNING:src.engine.kernel:Tick 1320 exceeded budget at end_of_tick: 69.88ms vs limit 50.00ms.
+INFO:api.observability.search:Search runs: scenario_name=ALL status=ALL sort=DEFAULT limit=50 result_count=16 trace_id=9bf40b34cfa5cdae48575bb6bdaca58a span_id=695ac60097f397b6
+INFO:     172.20.0.1:53586 - "GET /api/v1/observability/search/runs HTTP/1.1" 200 OK
+INFO:api.observability.search:Search runs: scenario_name=ALL status=ALL sort=DEFAULT limit=50 result_count=16 trace_id=285f74a8a912c98eddea142048161fda span_id=7eac1093b98ebc2a
+INFO:     172.20.0.1:53592 - "GET /api/v1/observability/search/runs HTTP/1.1" 200 OK
+INFO:api.observability.search:Search runs: scenario_name=ALL status=ALL sort=DEFAULT limit=50 result_count=16 trace_id=00ec1fc535433f358fa8750e3bec9981 span_id=bc808cc1378f000e
+INFO:     172.20.0.1:53604 - "GET /api/v1/observability/search/runs HTTP/1.1" 200 OK
+WARNING:src.engine.kernel:Tick 1350 exceeded budget at end_of_tick: 51.82ms vs limit 50.00ms.
+INFO:api.observability.search:Search runs: scenario_name=ALL status=ALL sort=DEFAULT limit=50 result_count=16 trace_id=dfccb8836faad4bbfab2115bffb6d578 span_id=4df290397b2dde2e
+INFO:     172.20.0.1:53610 - "GET /api/v1/observability/search/runs HTTP/1.1" 200 OK
+INFO:api.observability.search:Search runs: scenario_name=ALL status=ALL sort=DEFAULT limit=50 result_count=16 trace_id=901f86f4127c571264e4d88324d83f98 span_id=c9403b9d06d3af96
+INFO:     172.20.0.1:44406 - "GET /api/v1/observability/search/runs HTTP/1.1" 200 OK
+INFO:api.observability.search:Search runs: scenario_name=ALL status=ALL sort=DEFAULT limit=50 result_count=16 trace_id=ece8afe46a63693b55119c1b54d574e3 span_id=aa09e7a8cd3bef8a
+INFO:     172.20.0.1:44422 - "GET /api/v1/observability/search/runs HTTP/1.1" 200 OK
+INFO:     127.0.0.1:46728 - "GET /health HTTP/1.1" 200 OK
+INFO:api.observability.search:Search runs: scenario_name=ALL status=ALL sort=DEFAULT limit=50 result_count=16 trace_id=d2c9120733cf0b2dd4b9a18e6e281290 span_id=15d3b4541eb8cac5
+INFO:     172.20.0.1:44428 - "GET /api/v1/observability/search/runs HTTP/1.1" 200 OK
+WARNING:src.engine.kernel:Tick 1386 exceeded budget at end_of_tick: 47.94ms vs limit 30.26ms.
+INFO:     172.20.0.1:44440 - "GET /api/v1/observability/search/runs HTTP/1.1" 200 OK
+INFO:api.observability.search:Search runs: scenario_name=ALL status=ALL sort=DEFAULT limit=50 result_count=16 trace_id=022700c0eadb142351d300e44141a33e span_id=f043a519db99a275
+WARNING:src.engine.kernel:Tick 1399 exceeded budget at end_of_tick: 40.68ms vs limit 38.53ms.
+INFO:     172.20.0.1:44442 - "GET /api/v1/observability/search/runs HTTP/1.1" 200 OK
+INFO:api.observability.search:Search runs: scenario_name=ALL status=ALL sort=DEFAULT limit=50 result_count=16 trace_id=234ba7dd20832d11c38d5ad8ab1276ba span_id=2c28cb48306f9c14
+INFO:api.observability.search:Search runs: scenario_name=ALL status=ALL sort=DEFAULT limit=50 result_count=16 trace_id=5d32255764aeb12b589bb4f067d405c1 span_id=f96805e71ef07958
+INFO:     172.20.0.1:44456 - "GET /api/v1/observability/search/runs HTTP/1.1" 200 OK
+WARNING:src.engine.kernel:Tick 1413 exceeded budget at end_of_tick: 66.24ms vs limit 50.00ms.
+WARNING:src.engine.kernel:Tick 1414 exceeded budget at end_of_tick: 181.89ms vs limit 50.00ms.
+INFO:api.observability.search:Search runs: scenario_name=ALL status=ALL sort=DEFAULT limit=50 result_count=16 trace_id=073e350f72c626b786f94c35ba3024c4 span_id=c32077c35122342e
+INFO:     172.20.0.1:44460 - "GET /api/v1/observability/search/runs HTTP/1.1" 200 OK
+INFO:api.observability.search:Search runs: scenario_name=ALL status=ALL sort=DEFAULT limit=50 result_count=16 trace_id=1f0053ebd3d12e335007530b34129238 span_id=2e9c8821dc94543d
+INFO:     172.20.0.1:44462 - "GET /api/v1/observability/search/runs HTTP/1.1" 200 OK
+WARNING:src.engine.kernel:Tick 1438 exceeded budget at end_of_tick: 47.01ms vs limit 27.14ms.
+INFO:api.observability.search:Search runs: scenario_name=ALL status=ALL sort=DEFAULT limit=50 result_count=16 trace_id=61ef79fbb16091e6ec0fe6173311fc96 span_id=74f582a50e8b3b4b
+INFO:     172.20.0.1:44470 - "GET /api/v1/observability/search/runs HTTP/1.1" 200 OK
+INFO:api.observability.search:Search runs: scenario_name=ALL status=ALL sort=DEFAULT limit=50 result_count=16 trace_id=4dfd140a82d9eee3b95d5bfd5de8289d span_id=6067b4c6595e8423
+INFO:     172.20.0.1:44474 - "GET /api/v1/observability/search/runs HTTP/1.1" 200 OK
+INFO:api.observability.search:Search runs: scenario_name=ALL status=ALL sort=DEFAULT limit=50 result_count=16 trace_id=31263a602cfaff28f9e91f16a3374df8 span_id=f7b3bda04ba68d71
+INFO:     172.20.0.1:35740 - "GET /api/v1/observability/search/runs HTTP/1.1" 200 OK
+WARNING:src.engine.kernel:Tick 1463 exceeded budget at end_of_tick: 37.85ms vs limit 33.88ms.
+INFO:api.observability.search:Search runs: scenario_name=ALL status=ALL sort=DEFAULT limit=50 result_count=16 trace_id=21030cda22e7ec1c457a34d01c88f585 span_id=61eb0692da92beee
+INFO:     172.20.0.1:35752 - "GET /api/v1/observability/search/runs HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51890 - "GET /health HTTP/1.1" 200 OK
+INFO:     172.20.0.1:35760 - "GET /api/v1/observability/search/runs HTTP/1.1" 200 OK
+INFO:api.observability.search:Search runs: scenario_name=ALL status=ALL sort=DEFAULT limit=50 result_count=16 trace_id=55e57fbca75e1230bc8bd0d67d644ccf span_id=0b9197b22fbf77dc
+INFO:api.observability.search:Search runs: scenario_name=ALL status=ALL sort=DEFAULT limit=50 result_count=16 trace_id=38c29c804eeec77b8d6dafa3f3b7a5f7 span_id=4932461625df6e66
+INFO:     172.20.0.1:35762 - "GET /api/v1/observability/search/runs HTTP/1.1" 200 OK
+INFO:api.observability.search:Search runs: scenario_name=ALL status=ALL sort=DEFAULT limit=50 result_count=16 trace_id=ae3447ea626901139b218df866ca5f29 span_id=7fb13d9e7a718e30
+INFO:     172.20.0.1:35768 - "GET /api/v1/observability/search/runs HTTP/1.1" 200 OK
+WARNING:src.engine.kernel:Tick 1505 exceeded budget at end_of_tick: 48.16ms vs limit 47.03ms.
+INFO:api.observability.search:Search runs: scenario_name=ALL status=ALL sort=DEFAULT limit=50 result_count=16 trace_id=73bf2f53855b5d018c1884598ae8f065 span_id=bbf366187bfe654b
+INFO:     172.20.0.1:35774 - "GET /api/v1/observability/search/runs HTTP/1.1" 200 OK
+WARNING:src.engine.kernel:Tick 1515 exceeded budget at end_of_tick: 92.16ms vs limit 44.52ms.
+INFO:api.observability.search:Search runs: scenario_name=ALL status=ALL sort=DEFAULT limit=50 result_count=16 trace_id=33f97e33d0462584eb0d00323788fc88 span_id=3deac91ca716d3a3
+INFO:     172.20.0.1:35784 - "GET /api/v1/observability/search/runs HTTP/1.1" 200 OK
+INFO:api.observability.search:Search runs: scenario_name=ALL status=ALL sort=DEFAULT limit=50 result_count=16 trace_id=56cfa2c0c89d0b98d8d6749b109c402b span_id=8bf9600497623262
+INFO:     172.20.0.1:35796 - "GET /api/v1/observability/search/runs HTTP/1.1" 200 OK
+INFO:api.observability.search:Search runs: scenario_name=ALL status=ALL sort=DEFAULT limit=50 result_count=16 trace_id=50120d7c7422bec7476c104ae3ef9523 span_id=f43927d4db6986d4
+INFO:     172.20.0.1:35800 - "GET /api/v1/observability/search/runs HTTP/1.1" 200 OK
+WARNING:src.engine.kernel:Tick 1538 exceeded budget at end_of_tick: 24.60ms vs limit 20.00ms.
+INFO:api.observability.search:Search runs: scenario_name=ALL status=ALL sort=DEFAULT limit=50 result_count=16 trace_id=7f1a5c2d6ca162031d9af0b26862b46e span_id=8f85d3c0eb5a659c
+INFO:     172.20.0.1:39936 - "GET /api/v1/observability/search/runs HTTP/1.1" 200 OK
+INFO:api.observability.search:Search runs: scenario_name=ALL status=ALL sort=DEFAULT limit=50 result_count=16 trace_id=71bc72953a8ffcd46d50972ca2a2fcd4 span_id=40909a9124bee699
+INFO:     172.20.0.1:39942 - "GET /api/v1/observability/search/runs HTTP/1.1" 200 OK
+WARNING:src.engine.kernel:Tick 1560 exceeded budget at end_of_tick: 46.77ms vs limit 41.43ms.
+INFO:api.observability.search:Search runs: scenario_name=ALL status=ALL sort=DEFAULT limit=50 result_count=16 trace_id=6d10b611c2e78259d6623de4052757c0 span_id=1e0039bb9e7fa435
+INFO:     172.20.0.1:39948 - "GET /api/v1/observability/search/runs HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40874 - "GET /health HTTP/1.1" 200 OK
+INFO:api.observability.search:Search runs: scenario_name=ALL status=ALL sort=DEFAULT limit=50 result_count=16 trace_id=7101a231f6c5ba07788122acb699cd70 span_id=4aa2f8d8fcc017de
+INFO:     172.20.0.1:39960 - "GET /api/v1/observability/search/runs HTTP/1.1" 200 OK
+INFO:api.observability.search:Search runs: scenario_name=ALL status=ALL sort=DEFAULT limit=50 result_count=16 trace_id=d41b0b4c03d529fd8050ee49d8b4e9b5 span_id=c9bef982f2375c53
+INFO:     172.20.0.1:39964 - "GET /api/v1/observability/search/runs HTTP/1.1" 200 OK
+INFO:api.observability.search:Search runs: scenario_name=ALL status=ALL sort=DEFAULT limit=50 result_count=16 trace_id=dcbbc3d9361462425ebd1dc1fe34e65e span_id=de44c3bb5cac1b56
+INFO:     172.20.0.1:39972 - "GET /api/v1/observability/search/runs HTTP/1.1" 200 OK
+INFO:api.observability.search:Search runs: scenario_name=ALL status=ALL sort=DEFAULT limit=50 result_count=16 trace_id=34c5a6955f82fab6908989d9013f8193 span_id=1854c51e010cdd00
+INFO:     172.20.0.1:39976 - "GET /api/v1/observability/search/runs HTTP/1.1" 200 OK
+INFO:api.observability.search:Search runs: scenario_name=ALL status=ALL sort=DEFAULT limit=50 result_count=16 trace_id=218092225d6250ba10754108f9c37f3b span_id=11feb2d19ba7df1f
+INFO:     172.20.0.1:39986 - "GET /api/v1/observability/search/runs HTTP/1.1" 200 OK
+WARNING:src.engine.kernel:Tick 1617 exceeded budget at end_of_tick: 163.14ms vs limit 50.00ms.
+INFO:api.observability.search:Search runs: scenario_name=ALL status=ALL sort=DEFAULT limit=50 result_count=16 trace_id=2a065088af9353164a85526d9452f3a8 span_id=fc405669551b339c
+INFO:     172.20.0.1:39992 - "GET /api/v1/observability/search/runs HTTP/1.1" 200 OK
+INFO:api.observability.search:Search runs: scenario_name=ALL status=ALL sort=DEFAULT limit=50 result_count=16 trace_id=37be641102715fbb47e2828f78bd16b0 span_id=677d07d1861a04e6
+INFO:     172.20.0.1:39994 - "GET /api/v1/observability/search/runs HTTP/1.1" 200 OK
+INFO:api.observability.search:Search runs: scenario_name=ALL status=ALL sort=DEFAULT limit=50 result_count=16 trace_id=4975710672193a1f59d77f024fd96ff7 span_id=397238045e105985
+INFO:     172.20.0.1:53968 - "GET /api/v1/observability/search/runs HTTP/1.1" 200 OK
+INFO:api.observability.search:Search runs: scenario_name=ALL status=ALL sort=DEFAULT limit=50 result_count=16 trace_id=6410d18be8d0a6fc02c5120e3de9a73f span_id=e05726c7f3d53d4e
+INFO:     172.20.0.1:53982 - "GET /api/v1/observability/search/runs HTTP/1.1" 200 OK
+WARNING:src.engine.kernel:Tick 1654 exceeded budget at end_of_tick: 59.47ms vs limit 50.00ms.
+INFO:api.observability.search:Search runs: scenario_name=ALL status=ALL sort=DEFAULT limit=50 result_count=16 trace_id=dfd3413e5bb3ffcad29699fca475ba63 span_id=9a816a42efa38c97
+INFO:     172.20.0.1:53990 - "GET /api/v1/observability/search/runs HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49730 - "GET /health HTTP/1.1" 200 OK
+WARNING:src.engine.kernel:Tick 1668 exceeded budget at end_of_tick: 48.12ms vs limit 24.78ms.
+INFO:api.observability.search:Search runs: scenario_name=ALL status=ALL sort=DEFAULT limit=50 result_count=16 trace_id=dce3390d6bcfee94c07e17f0f4d5a416 span_id=dff2b7cbef27cfe2
+INFO:     172.20.0.1:54000 - "GET /api/v1/observability/search/runs HTTP/1.1" 200 OK
+WARNING:src.engine.kernel:Tick 1679 exceeded budget at end_of_tick: 41.80ms vs limit 34.34ms.
+INFO:api.observability.search:Search runs: scenario_name=ALL status=ALL sort=DEFAULT limit=50 result_count=16 trace_id=250a477cbc4a24ca6a740b8abdae4a01 span_id=a1ac7b65a66476f1
+INFO:     172.20.0.1:54010 - "GET /api/v1/observability/search/runs HTTP/1.1" 200 OK
+INFO:api.observability.search:Search runs: scenario_name=ALL status=ALL sort=DEFAULT limit=50 result_count=16 trace_id=8d99d060978f84cb701dfafaa7228aac span_id=c42603a6421e1ef1
+INFO:     172.20.0.1:54020 - "GET /api/v1/observability/search/runs HTTP/1.1" 200 OK
+INFO:api.observability.search:Search runs: scenario_name=ALL status=ALL sort=DEFAULT limit=50 result_count=16 trace_id=d1fbfd578983ffacbb10e96e1586d4a5 span_id=b8cd4a11c25bbed2
+INFO:     172.20.0.1:54022 - "GET /api/v1/observability/search/runs HTTP/1.1" 200 OK
+INFO:api.observability.search:Search runs: scenario_name=ALL status=ALL sort=DEFAULT limit=50 result_count=16 trace_id=9f20f674aa40a737272ccb3f2fa79a33 span_id=e82d5796d75f5dca
+INFO:     172.20.0.1:54024 - "GET /api/v1/observability/search/runs HTTP/1.1" 200 OK
+WARNING:src.engine.kernel:Tick 1716 exceeded budget at end_of_tick: 59.37ms vs limit 40.56ms.
+CRITICAL:src.observability.alerts.sinks:[ALERT] type=WatchdogTrip run=run_1794479338_5169_1_4ddba95c severity=CRITICAL tick=1716: Tick compute time 59.37ms exceeded watchdog threshold of 40.56ms (end_of_tick) (evidence={'compute_ms': 59.37234, 'threshold_ms': 40.563712, 'site': 'end_of_tick', 'phase_costs': {'init': 0.246142, 'scheduling': 0.791374, 'collection': 1.884182, 'trust_validity': 0.121422, 'memory_update': 0.00691, 'habit_bias_action_style': 0.00225, 'role_model_selection': 0.002388, 'self_model': 0.005051, 'information_belief': 0.038779, 'information_intent_execution': 0.003412, 'cooperation': 0.131783, 'contracts_production': 0.06868, 'faction_decision': 0.02956, 'faction_awareness': 0.017483, 'information_propagation': 0.00242, 'diplomatic_transitions': 0.466331, 'military_conflict': 0.045302, 'locomotion': 1.235553, 'combat_engagement': 0.875503, 'interaction': 0.145264, 'governance_ecology': 0.417166, 'world_emergence': 0.012138, 'economy': 0.273425, 'progression_conversion': 0.005814, 'faction_sentiment': 0.018537, 'final_integrity': 0.069068, 'resolution_overhead': 22.829061, 'cleanup': 0.035065, 'advancement': 20.415543, 'persistence': 9.176734}})
+INFO:api.observability.search:Search runs: scenario_name=ALL status=ALL sort=DEFAULT limit=50 result_count=16 trace_id=d0ba58d66e5c469fc9105d652150b880 span_id=d0266c9dac42c018
+INFO:     172.20.0.1:54036 - "GET /api/v1/observability/search/runs HTTP/1.1" 200 OK
+WARNING:src.engine.kernel:Tick 1719 exceeded budget at end_of_tick: 50.22ms vs limit 48.63ms.
+INFO:api.observability.search:Search runs: scenario_name=ALL status=ALL sort=DEFAULT limit=50 result_count=16 trace_id=f87b666a0b491178ec3fd44da8166bfe span_id=4096d29fd53d57b8
+INFO:     172.20.0.1:36110 - "GET /api/v1/observability/search/runs HTTP/1.1" 200 OK
+INFO:     172.20.0.1:36122 - "GET /api/v1/observability/search/runs HTTP/1.1" 200 OK
+INFO:api.observability.search:Search runs: scenario_name=ALL status=ALL sort=DEFAULT limit=50 result_count=16 trace_id=6aac3473082c5c21d9c54ecea3878301 span_id=220a56d442b726f3
+INFO:api.observability.search:Search runs: scenario_name=ALL status=ALL sort=DEFAULT limit=50 result_count=16 trace_id=be02f08f3c19c6c83e87f823fab3f0c7 span_id=ccb3405ce4c2eff0
+INFO:     172.20.0.1:36132 - "GET /api/v1/observability/search/runs HTTP/1.1" 200 OK
+INFO:api.observability.search:Search runs: scenario_name=ALL status=ALL sort=DEFAULT limit=50 result_count=16 trace_id=3f2c64aa6b52e547fd327a9356f5113e span_id=1716dee5121c860c
+INFO:     172.20.0.1:36134 - "GET /api/v1/observability/search/runs HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40336 - "GET /health HTTP/1.1" 200 OK
+INFO:api.observability.search:Search runs: scenario_name=ALL status=ALL sort=DEFAULT limit=50 result_count=16 trace_id=434cf2c4dc674aaef9e7fb3526ee9955 span_id=6855ecfeeebae63e
+INFO:     172.20.0.1:36148 - "GET /api/v1/observability/search/runs HTTP/1.1" 200 OK
+INFO:api.observability.search:Search runs: scenario_name=ALL status=ALL sort=DEFAULT limit=50 result_count=16 trace_id=163a06901c894fffb5603224c22a8311 span_id=de6510678133bb73
+INFO:     172.20.0.1:36162 - "GET /api/v1/observability/search/runs HTTP/1.1" 200 OK
+INFO:     172.20.0.1:36174 - "GET /api/v1/observability/search/runs HTTP/1.1" 200 OK
+INFO:api.observability.search:Search runs: scenario_name=ALL status=ALL sort=DEFAULT limit=50 result_count=16 trace_id=579fcf84de5c3ff58af1748a17a3d895 span_id=4990d234f403d9b1
+INFO:api.observability.search:Search runs: scenario_name=ALL status=ALL sort=DEFAULT limit=50 result_count=16 trace_id=3144ff53ea993139ca227be4e310ae65 span_id=84737ff08bf3299a
+INFO:     172.20.0.1:36186 - "GET /api/v1/observability/search/runs HTTP/1.1" 200 OK
+INFO:api.observability.search:Search runs: scenario_name=ALL status=ALL sort=DEFAULT limit=50 result_count=16 trace_id=5023256ec9a95bc30f62b4b14abbc523 span_id=93c25d68ca52cfa5
+INFO:     172.20.0.1:36202 - "GET /api/v1/observability/search/runs HTTP/1.1" 200 OK
+INFO:api.observability.search:Search runs: scenario_name=ALL status=ALL sort=DEFAULT limit=50 result_count=16 trace_id=3487ba90e22d8414e0f9d57d9bb0fc03 span_id=39c6ebc001a494ef
+INFO:     172.20.0.1:36216 - "GET /api/v1/observability/search/runs HTTP/1.1" 200 OK
+WARNING:src.engine.kernel:Tick 1817 exceeded budget at end_of_tick: 52.20ms vs limit 47.76ms.
+WARNING:src.engine.kernel:Tick 1818 exceeded budget at end_of_tick: 58.39ms vs limit 50.00ms.
+INFO:api.observability.search:Search runs: scenario_name=ALL status=ALL sort=DEFAULT limit=50 result_count=16 trace_id=3c3cd79fefa51b068556b147f6fbbd44 span_id=87f6e32d37bef529
+INFO:     172.20.0.1:54686 - "GET /api/v1/observability/search/runs HTTP/1.1" 200 OK
+INFO:api.observability.search:Search runs: scenario_name=ALL status=ALL sort=DEFAULT limit=50 result_count=16 trace_id=aee9c3bfaf49986d5762294fda0f48fd span_id=c3c4b90178b10524
+INFO:     172.20.0.1:54702 - "GET /api/v1/observability/search/runs HTTP/1.1" 200 OK
+WARNING:src.engine.kernel:Tick 1831 exceeded budget at end_of_tick: 146.86ms vs limit 50.00ms.
+INFO:api.observability.search:Search runs: scenario_name=ALL status=ALL sort=DEFAULT limit=50 result_count=16 trace_id=66d11d9c260f269c51b3e0fcb6da09b5 span_id=8e9f22add1f16cb5
+INFO:     172.20.0.1:54712 - "GET /api/v1/observability/search/runs HTTP/1.1" 200 OK
+INFO:api.observability.search:Search runs: scenario_name=ALL status=ALL sort=DEFAULT limit=50 result_count=16 trace_id=6e76ee269646fd30ff9e20a395211a53 span_id=2f52c4c12c74fcf5
+INFO:     172.20.0.1:54720 - "GET /api/v1/observability/search/runs HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53498 - "GET /health HTTP/1.1" 200 OK
+INFO:api.observability.search:Search runs: scenario_name=ALL status=ALL sort=DEFAULT limit=50 result_count=16 trace_id=d51c35a9edea0d14a183a98fc3ebe4d9 span_id=a1b2cc4477fe4cc0
+INFO:     172.20.0.1:54728 - "GET /api/v1/observability/search/runs HTTP/1.1" 200 OK
+INFO:api.observability.search:Search runs: scenario_name=ALL status=ALL sort=DEFAULT limit=50 result_count=16 trace_id=efaaeb2c54af1efd674d09756428d26c span_id=9a6663a46731abcd
+INFO:     172.20.0.1:54738 - "GET /api/v1/observability/search/runs HTTP/1.1" 200 OK
+INFO:api.observability.search:Search runs: scenario_name=ALL status=ALL sort=DEFAULT limit=50 result_count=16 trace_id=dbf5542e1d16a83150ae39279ece2df6 span_id=b3d4b292733214f7
+INFO:     172.20.0.1:54740 - "GET /api/v1/observability/search/runs HTTP/1.1" 200 OK
+INFO:api.observability.search:Search runs: scenario_name=ALL status=ALL sort=DEFAULT limit=50 result_count=16 trace_id=54f5b61ca03246559e3e64a12a53245b span_id=d78f16e1c0ba296c
+INFO:     172.20.0.1:54752 - "GET /api/v1/observability/search/runs HTTP/1.1" 200 OK
+INFO:api.observability.search:Search runs: scenario_name=ALL status=ALL sort=DEFAULT limit=50 result_count=16 trace_id=c601291f844328f5a64be07773b61060 span_id=3c6aa6b706de07f5
+INFO:     172.20.0.1:54764 - "GET /api/v1/observability/search/runs HTTP/1.1" 200 OK
+INFO:api.observability.search:Search runs: scenario_name=ALL status=ALL sort=DEFAULT limit=50 result_count=16 trace_id=dad62631a9df9338325e830c2f29c55b span_id=61ddfcf18a33ab87
+INFO:     172.20.0.1:54772 - "GET /api/v1/observability/search/runs HTTP/1.1" 200 OK
+INFO:api.observability.search:Search runs: scenario_name=ALL status=ALL sort=DEFAULT limit=50 result_count=16 trace_id=aa33a18344fc072ab81a1467bfaa457a span_id=8e585e5ebfe1f98e
+INFO:     172.20.0.1:46236 - "GET /api/v1/observability/search/runs HTTP/1.1" 200 OK
+WARNING:src.engine.kernel:Tick 1918 exceeded budget at end_of_tick: 75.34ms vs limit 34.93ms.
+INFO:api.observability.search:Search runs: scenario_name=ALL status=ALL sort=DEFAULT limit=50 result_count=16 trace_id=0b6318bcee324fe17732d245e124db2d span_id=0a5f0ff688476814
+INFO:     172.20.0.1:46242 - "GET /api/v1/observability/search/runs HTTP/1.1" 200 OK
+INFO:api.observability.search:Search runs: scenario_name=ALL status=ALL sort=DEFAULT limit=50 result_count=16 trace_id=b26b1b1596b5eaef39488293125e10d9 span_id=e3c337053c73aba1
+INFO:     172.20.0.1:46244 - "GET /api/v1/observability/search/runs HTTP/1.1" 200 OK
+INFO:api.observability.search:Search runs: scenario_name=ALL status=ALL sort=DEFAULT limit=50 result_count=16 trace_id=37645e57b23533b4434dd72bf5236363 span_id=b57d118e84e0b5fe
+INFO:     172.20.0.1:46248 - "GET /api/v1/observability/search/runs HTTP/1.1" 200 OK
+INFO:     127.0.0.1:41010 - "GET /health HTTP/1.1" 200 OK
+INFO:api.observability.search:Search runs: scenario_name=ALL status=ALL sort=DEFAULT limit=50 result_count=16 trace_id=438fe041fee1aac239e507e26925765e span_id=e998f10b71b3028a
+INFO:     172.20.0.1:46262 - "GET /api/v1/observability/search/runs HTTP/1.1" 200 OK
+INFO:api.observability.search:Search runs: scenario_name=ALL status=ALL sort=DEFAULT limit=50 result_count=16 trace_id=a67c0a40b70d8725623ec4fde7be535b span_id=ad368ce4cf1535c4
+INFO:     172.20.0.1:46274 - "GET /api/v1/observability/search/runs HTTP/1.1" 200 OK
+WARNING:src.engine.kernel:Tick 1970 exceeded budget at end_of_tick: 145.18ms vs limit 50.00ms.
+INFO:api.observability.search:Search runs: scenario_name=ALL status=ALL sort=DEFAULT limit=50 result_count=16 trace_id=242cfec353836d57f74645d24c93ea5b span_id=4c856a6431635954
+INFO:     172.20.0.1:46276 - "GET /api/v1/observability/search/runs HTTP/1.1" 200 OK
+INFO:api.observability.search:Search runs: scenario_name=ALL status=ALL sort=DEFAULT limit=50 result_count=16 trace_id=ab1c199e0fe3aeb59f49591fc94708c6 span_id=785528937cdb9a5b
+INFO:     172.20.0.1:46282 - "GET /api/v1/observability/search/runs HTTP/1.1" 200 OK
+INFO:api.observability.search:Search runs: scenario_name=ALL status=ALL sort=DEFAULT limit=50 result_count=16 trace_id=5498b9667318e30fc5115d4b9919ff5a span_id=df1e1f23bcbf78c2
+INFO:     172.20.0.1:46296 - "GET /api/v1/observability/search/runs HTTP/1.1" 200 OK
+INFO:api.observability.search:Search runs: scenario_name=ALL status=ALL sort=DEFAULT limit=50 result_count=16 trace_id=6057c8476aa22f5ce6375f12e3b69aa2 span_id=ec99564d01be9a16
+INFO:     172.20.0.1:46302 - "GET /api/v1/observability/search/runs HTTP/1.1" 200 OK
+INFO:api.observability.search:Search runs: scenario_name=ALL status=ALL sort=DEFAULT limit=50 result_count=16 trace_id=34d1d16230e924ca788e15625be2e776 span_id=7c8b4c22ed93dd35
+INFO:     172.20.0.1:38874 - "GET /api/v1/observability/search/runs HTTP/1.1" 200 OK
+WARNING:src.engine.kernel:Tick 2019 exceeded budget at end_of_tick: 118.24ms vs limit 42.23ms.
+WARNING:src.engine.kernel:Tick 2020 exceeded budget at end_of_tick: 50.77ms vs limit 50.00ms.
+INFO:api.observability.search:Search runs: scenario_name=ALL status=ALL sort=DEFAULT limit=50 result_count=16 trace_id=1eb637dd8766e5af573a1410c7785652 span_id=411a9d24e82b7b5b
+INFO:     172.20.0.1:38878 - "GET /api/v1/observability/search/runs HTTP/1.1" 200 OK
+INFO:api.observability.search:Search runs: scenario_name=ALL status=ALL sort=DEFAULT limit=50 result_count=16 trace_id=51fc04060b070c83b1581c078fac7d11 span_id=1230e45fe7866bff
+INFO:     172.20.0.1:38884 - "GET /api/v1/observability/search/runs HTTP/1.1" 200 OK
+INFO:api.observability.search:Search runs: scenario_name=ALL status=ALL sort=DEFAULT limit=50 result_count=16 trace_id=41a363e8bcbfc23a85589b76f651ddcc span_id=c71bae851e129cf7
+INFO:     172.20.0.1:38898 - "GET /api/v1/observability/search/runs HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51562 - "GET /health HTTP/1.1" 200 OK
+INFO:api.observability.search:Search runs: scenario_name=ALL status=ALL sort=DEFAULT limit=50 result_count=16 trace_id=43f13a9b1c5d7f8e2e8df0f152e9f7a3 span_id=4b9f2bc9913b041d
+INFO:     172.20.0.1:38906 - "GET /api/v1/observability/search/runs HTTP/1.1" 200 OK
+WARNING:src.engine.kernel:Tick 2058 exceeded budget at end_of_tick: 63.98ms vs limit 30.56ms.
+INFO:api.observability.search:Search runs: scenario_name=ALL status=ALL sort=DEFAULT limit=50 result_count=16 trace_id=da7883c2da78e7ecaf93335d75f00028 span_id=f9a503a09f152209
+INFO:     172.20.0.1:38914 - "GET /api/v1/observability/search/runs HTTP/1.1" 200 OK
+INFO:api.observability.search:Search runs: scenario_name=ALL status=ALL sort=DEFAULT limit=50 result_count=16 trace_id=45af8f22b47178e016e96179037e63d1 span_id=8a4f3343edd532c9
+INFO:     172.20.0.1:38930 - "GET /api/v1/observability/search/runs HTTP/1.1" 200 OK
+INFO:api.observability.search:Search runs: scenario_name=ALL status=ALL sort=DEFAULT limit=50 result_count=16 trace_id=c220d49355eb5ce6b06c88ec370fe722 span_id=658dfd759273170c
+INFO:     172.20.0.1:38932 - "GET /api/v1/observability/search/runs HTTP/1.1" 200 OK
+INFO:api.observability.search:Search runs: scenario_name=ALL status=ALL sort=DEFAULT limit=50 result_count=16 trace_id=4083102b61676f5b8124e0222a38b34e span_id=2b1b736d52aca94b
+INFO:     172.20.0.1:38944 - "GET /api/v1/observability/search/runs HTTP/1.1" 200 OK
+INFO:api.observability.search:Search runs: scenario_name=ALL status=ALL sort=DEFAULT limit=50 result_count=16 trace_id=56016e92030d5e84ff01352c32300d29 span_id=98f122901ee789ad
+INFO:     172.20.0.1:41236 - "GET /api/v1/observability/search/runs HTTP/1.1" 200 OK
+WARNING:src.engine.kernel:Tick 2098 exceeded budget at end_of_tick: 29.70ms vs limit 23.77ms.
+WARNING:src.engine.kernel:Tick 2119 exceeded budget at end_of_tick: 240.94ms vs limit 50.00ms.
+WARNING:src.engine.kernel:Tick 2126 exceeded budget at end_of_tick: 39.93ms vs limit 21.40ms.
+INFO:     127.0.0.1:41600 - "GET /health HTTP/1.1" 200 OK
+WARNING:src.engine.kernel:Tick 2142 exceeded budget at end_of_tick: 35.22ms vs limit 30.46ms.
+WARNING:src.engine.kernel:Tick 2221 exceeded budget at end_of_tick: 57.89ms vs limit 45.43ms.
+INFO:     127.0.0.1:48874 - "GET /health HTTP/1.1" 200 OK
+WARNING:src.engine.kernel:Tick 2255 exceeded budget at end_of_tick: 153.88ms vs limit 50.00ms.
+WARNING:src.engine.kernel:Tick 2278 exceeded budget at end_of_tick: 33.69ms vs limit 26.49ms.
+CRITICAL:src.observability.alerts.sinks:[ALERT] type=WatchdogTrip run=run_1794479338_5169_1_4ddba95c severity=CRITICAL tick=2278: Tick compute time 33.69ms exceeded watchdog threshold of 26.49ms (end_of_tick) (evidence={'compute_ms': 33.686274, 'threshold_ms': 26.491872, 'site': 'end_of_tick', 'phase_costs': {'init': 0.359132, 'scheduling': 1.807884, 'collection': 5.493705, 'trust_validity': 0.291887, 'memory_update': 0.012754, 'habit_bias_action_style': 0.005515, 'role_model_selection': 0.004197, 'self_model': 0.009412, 'information_belief': 0.059266, 'information_intent_execution': 0.004616, 'cooperation': 0.154791, 'contracts_production': 0.09765, 'faction_decision': 0.050425, 'faction_awareness': 0.032208, 'information_propagation': 0.005303, 'diplomatic_transitions': 1.386998, 'military_conflict': 0.108449, 'locomotion': 3.671585, 'combat_engagement': 2.092025, 'interaction': 0.343316, 'governance_ecology': 0.813525, 'world_emergence': 0.011761, 'economy': 0.42811, 'progression_conversion': 0.007249, 'faction_sentiment': 0.024667, 'final_integrity': 0.091567, 'resolution_overhead': 5.957901, 'cleanup': 0.026158, 'advancement': 4.058789, 'persistence': 6.275429}})
+WARNING:src.engine.kernel:Tick 2279 exceeded budget at end_of_tick: 51.02ms vs limit 50.00ms.
+WARNING:src.engine.kernel:Tick 2280 exceeded budget at end_of_tick: 80.18ms vs limit 50.00ms.
+WARNING:src.engine.kernel:Tick 2287 exceeded budget at end_of_tick: 63.52ms vs limit 30.78ms.
+WARNING:src.engine.kernel:Tick 2308 exceeded budget at end_of_tick: 28.21ms vs limit 27.22ms.
+WARNING:src.engine.kernel:Tick 2322 exceeded budget at end_of_tick: 59.21ms vs limit 40.52ms.
+INFO:     127.0.0.1:34368 - "GET /health HTTP/1.1" 200 OK
+WARNING:src.engine.kernel:Tick 2338 exceeded budget at end_of_tick: 42.01ms vs limit 30.19ms.
+WARNING:src.engine.kernel:Tick 2358 exceeded budget at end_of_tick: 31.17ms vs limit 24.63ms.
+WARNING:src.engine.kernel:Tick 2381 exceeded budget at end_of_tick: 54.85ms vs limit 50.00ms.
+WARNING:src.engine.kernel:Tick 2393 exceeded budget at end_of_tick: 43.92ms vs limit 39.90ms.
+WARNING:src.engine.kernel:Tick 2414 exceeded budget at end_of_tick: 152.22ms vs limit 42.68ms.
+WARNING:src.engine.kernel:Tick 2423 exceeded budget at end_of_tick: 52.94ms vs limit 34.04ms.
+INFO:     127.0.0.1:54776 - "GET /health HTTP/1.1" 200 OK
+WARNING:src.engine.kernel:Tick 2445 exceeded budget at end_of_tick: 44.23ms vs limit 36.35ms.
+WARNING:src.engine.kernel:Tick 2454 exceeded budget at end_of_tick: 53.06ms vs limit 50.00ms.
+WARNING:src.engine.kernel:Tick 2459 exceeded budget at end_of_tick: 41.33ms vs limit 39.84ms.
+WARNING:src.engine.kernel:Tick 2475 exceeded budget at end_of_tick: 54.16ms vs limit 50.00ms.
+WARNING:src.engine.kernel:Tick 2488 exceeded budget at end_of_tick: 49.87ms vs limit 44.07ms.
+WARNING:src.engine.kernel:Tick 2493 exceeded budget at end_of_tick: 41.77ms vs limit 38.65ms.
+WARNING:src.engine.kernel:Tick 2494 exceeded budget at end_of_tick: 50.17ms vs limit 50.00ms.
+WARNING:src.engine.kernel:Tick 2499 exceeded budget at end_of_tick: 56.21ms vs limit 33.22ms.
+WARNING:src.engine.kernel:Tick 2524 exceeded budget at end_of_tick: 68.91ms vs limit 50.00ms.
+WARNING:src.engine.kernel:Tick 2525 exceeded budget at end_of_tick: 69.83ms vs limit 50.00ms.
+INFO:     127.0.0.1:58228 - "GET /health HTTP/1.1" 200 OK
+WARNING:src.engine.kernel:Tick 2573 exceeded budget at end_of_tick: 34.44ms vs limit 32.03ms.
+WARNING:src.engine.kernel:Tick 2574 exceeded budget at end_of_tick: 63.18ms vs limit 50.00ms.
+WARNING:src.engine.kernel:Tick 2579 exceeded budget at end_of_tick: 40.91ms vs limit 23.93ms.
+WARNING:src.engine.kernel:Tick 2586 exceeded budget at end_of_tick: 38.97ms vs limit 24.72ms.
+WARNING:src.engine.kernel:Tick 2599 exceeded budget at end_of_tick: 62.71ms vs limit 50.00ms.
+WARNING:src.engine.kernel:Tick 2619 exceeded budget at end_of_tick: 50.96ms vs limit 50.00ms.
+WARNING:src.engine.kernel:Tick 2625 exceeded budget at end_of_tick: 44.04ms vs limit 37.49ms.
+INFO:     127.0.0.1:47574 - "GET /health HTTP/1.1" 200 OK
+WARNING:src.engine.kernel:Tick 2626 exceeded budget at end_of_tick: 122.74ms vs limit 50.00ms.
+WARNING:src.engine.kernel:Tick 2628 exceeded budget at end_of_tick: 44.27ms vs limit 31.00ms.
+WARNING:src.engine.kernel:Tick 2629 exceeded budget at end_of_tick: 53.64ms vs limit 50.00ms.
+WARNING:src.engine.kernel:Tick 2630 exceeded budget at end_of_tick: 75.45ms vs limit 50.00ms.
+WARNING:src.engine.kernel:Tick 2679 exceeded budget at end_of_tick: 41.81ms vs limit 41.62ms.
+WARNING:src.engine.kernel:Tick 2698 exceeded budget at end_of_tick: 51.39ms vs limit 50.00ms.
+WARNING:src.engine.kernel:Tick 2704 exceeded budget at end_of_tick: 71.25ms vs limit 49.85ms.
+WARNING:src.engine.kernel:Tick 2718 exceeded budget at end_of_tick: 30.13ms vs limit 29.96ms.
+INFO:     127.0.0.1:35526 - "GET /health HTTP/1.1" 200 OK
+WARNING:src.engine.kernel:Tick 2726 exceeded budget at end_of_tick: 63.14ms vs limit 50.00ms.
+WARNING:src.engine.kernel:Tick 2728 exceeded budget at end_of_tick: 57.16ms vs limit 50.00ms.
+WARNING:src.engine.kernel:Tick 2758 exceeded budget at end_of_tick: 40.68ms vs limit 38.02ms.
+WARNING:src.engine.kernel:Tick 2759 exceeded budget at end_of_tick: 190.96ms vs limit 50.00ms.
+WARNING:src.engine.kernel:Tick 2773 exceeded budget at end_of_tick: 30.91ms vs limit 29.11ms.
+WARNING:src.engine.kernel:Tick 2799 exceeded budget at end_of_tick: 52.78ms vs limit 50.00ms.
+INFO:     127.0.0.1:33338 - "GET /health HTTP/1.1" 200 OK
+WARNING:src.engine.kernel:Tick 2827 exceeded budget at end_of_tick: 61.42ms vs limit 43.60ms.
+WARNING:src.engine.kernel:Tick 2828 exceeded budget at end_of_tick: 88.96ms vs limit 50.00ms.
+WARNING:src.engine.kernel:Tick 2834 exceeded budget at end_of_tick: 27.04ms vs limit 25.13ms.
+WARNING:src.engine.kernel:Tick 2865 exceeded budget at end_of_tick: 134.02ms vs limit 41.17ms.
+CRITICAL:src.observability.alerts.sinks:[ALERT] type=WatchdogTrip run=run_1794479338_5169_1_4ddba95c severity=CRITICAL tick=2865: Tick compute time 134.02ms exceeded watchdog threshold of 41.17ms (end_of_tick) (evidence={'compute_ms': 134.016649, 'threshold_ms': 41.170834, 'site': 'end_of_tick', 'phase_costs': {'init': 0.399751, 'scheduling': 0.729506, 'collection': 2.449578, 'trust_validity': 0.18785, 'memory_update': 0.012616, 'habit_bias_action_style': 0.003975, 'role_model_selection': 0.003388, 'self_model': 0.008817, 'information_belief': 0.061801, 'information_intent_execution': 0.004152, 'cooperation': 0.149458, 'contracts_production': 0.175053, 'faction_decision': 0.052082, 'faction_awareness': 0.070421, 'information_propagation': 0.00555, 'diplomatic_transitions': 1.264162, 'military_conflict': 0.092516, 'locomotion': 1.529028, 'combat_engagement': 1.413946, 'interaction': 0.170865, 'governance_ecology': 0.237623, 'world_emergence': 0.003679, 'economy': 0.197712, 'progression_conversion': 0.002894, 'faction_sentiment': 0.022472, 'final_integrity': 0.08531, 'resolution_overhead': 116.121124, 'cleanup': 0.029806, 'advancement': 2.744621, 'persistence': 5.786893}})
+WARNING:src.engine.kernel:Tick 2893 exceeded budget at end_of_tick: 58.09ms vs limit 42.51ms.
+INFO:     127.0.0.1:47690 - "GET /health HTTP/1.1" 200 OK
+WARNING:src.engine.kernel:Tick 2928 exceeded budget at end_of_tick: 90.24ms vs limit 29.40ms.
+WARNING:src.engine.kernel:Tick 2937 exceeded budget at end_of_tick: 36.14ms vs limit 21.91ms.
+WARNING:src.engine.kernel:Tick 2948 exceeded budget at end_of_tick: 24.89ms vs limit 22.93ms.
+WARNING:src.engine.kernel:Tick 2952 exceeded budget at end_of_tick: 44.44ms vs limit 43.26ms.
+WARNING:src.engine.kernel:Tick 2971 exceeded budget at end_of_tick: 154.68ms vs limit 50.00ms.
+WARNING:src.engine.kernel:Tick 2995 exceeded budget at end_of_tick: 35.57ms vs limit 35.44ms.
+INFO:     127.0.0.1:41930 - "GET /health HTTP/1.1" 200 OK
+WARNING:src.engine.kernel:Tick 3029 exceeded budget at end_of_tick: 59.63ms vs limit 31.41ms.
+WARNING:src.engine.kernel:Tick 3031 exceeded budget at end_of_tick: 50.36ms vs limit 50.00ms.
+WARNING:src.engine.kernel:Tick 3034 exceeded budget at end_of_tick: 42.95ms vs limit 34.04ms.
+WARNING:src.engine.kernel:Tick 3038 exceeded budget at end_of_tick: 20.68ms vs limit 20.00ms.
+WARNING:src.engine.kernel:Tick 3055 exceeded budget at end_of_tick: 131.93ms vs limit 48.08ms.
+WARNING:src.engine.kernel:Tick 3069 exceeded budget at end_of_tick: 53.28ms vs limit 22.06ms.
+INFO:     127.0.0.1:52242 - "GET /health HTTP/1.1" 200 OK
+WARNING:src.engine.kernel:Tick 3127 exceeded budget at end_of_tick: 57.73ms vs limit 50.00ms.
+WARNING:src.engine.kernel:Tick 3130 exceeded budget at end_of_tick: 56.48ms vs limit 50.00ms.
+WARNING:src.engine.kernel:Tick 3154 exceeded budget at end_of_tick: 159.11ms vs limit 47.64ms.
+WARNING:src.engine.kernel:Tick 3174 exceeded budget at end_of_tick: 20.83ms vs limit 20.81ms.
+WARNING:src.engine.kernel:Tick 3188 exceeded budget at end_of_tick: 54.70ms vs limit 33.87ms.
+INFO:     127.0.0.1:53522 - "GET /health HTTP/1.1" 200 OK
+WARNING:src.engine.kernel:Tick 3208 exceeded budget at end_of_tick: 77.95ms vs limit 38.61ms.
+WARNING:src.engine.kernel:Tick 3218 exceeded budget at end_of_tick: 20.99ms vs limit 20.00ms.
+WARNING:src.engine.kernel:Tick 3219 exceeded budget at end_of_tick: 72.39ms vs limit 41.97ms.
+WARNING:src.engine.kernel:Tick 3221 exceeded budget at end_of_tick: 50.59ms vs limit 50.00ms.
+WARNING:src.engine.kernel:Tick 3231 exceeded budget at end_of_tick: 70.44ms vs limit 38.52ms.
+WARNING:src.engine.kernel:Tick 3232 exceeded budget at end_of_tick: 75.39ms vs limit 50.00ms.
+WARNING:src.engine.kernel:Tick 3233 exceeded budget at end_of_tick: 51.06ms vs limit 50.00ms.
+WARNING:src.engine.kernel:Tick 3238 exceeded budget at end_of_tick: 42.13ms vs limit 23.22ms.
+WARNING:src.engine.kernel:Tick 3241 exceeded budget at end_of_tick: 48.48ms vs limit 40.36ms.
+WARNING:src.engine.kernel:Tick 3248 exceeded budget at end_of_tick: 20.62ms vs limit 20.42ms.
+INFO:     127.0.0.1:43594 - "GET /health HTTP/1.1" 200 OK
+WARNING:src.engine.kernel:Tick 3306 exceeded budget at end_of_tick: 53.20ms vs limit 50.00ms.
+WARNING:src.engine.kernel:Tick 3315 exceeded budget at end_of_tick: 40.22ms vs limit 26.32ms.
+WARNING:src.engine.kernel:Tick 3318 exceeded budget at end_of_tick: 87.55ms vs limit 26.90ms.
+WARNING:src.engine.kernel:Tick 3320 exceeded budget at end_of_tick: 73.50ms vs limit 50.00ms.
+WARNING:src.engine.kernel:Tick 3321 exceeded budget at end_of_tick: 114.48ms vs limit 50.00ms.
+WARNING:src.engine.kernel:Tick 3322 exceeded budget at mid_tick: 106.64ms vs limit 50.00ms.
+WARNING:src.engine.kernel:Tick 3322 exceeded budget at end_of_tick: 278.57ms vs limit 50.00ms.
+WARNING:src.engine.kernel:Tick 3323 exceeded budget at end_of_tick: 56.73ms vs limit 50.00ms.
+WARNING:src.engine.kernel:Tick 3324 exceeded budget at end_of_tick: 59.14ms vs limit 50.00ms.
+WARNING:src.engine.kernel:Tick 3332 exceeded budget at mid_tick: 347.91ms vs limit 50.00ms.
+WARNING:src.engine.kernel:Tick 3332 exceeded budget at end_of_tick: 467.82ms vs limit 50.00ms.
+WARNING:src.engine.kernel:Tick 3333 exceeded budget at end_of_tick: 99.53ms vs limit 50.00ms.
+WARNING:src.engine.kernel:Tick 3334 exceeded budget at end_of_tick: 68.23ms vs limit 50.00ms.
+WARNING:src.engine.kernel:Tick 3335 exceeded budget at end_of_tick: 56.66ms vs limit 50.00ms.
+WARNING:src.engine.kernel:Tick 3356 exceeded budget at end_of_tick: 25.79ms vs limit 23.66ms.
+INFO:     127.0.0.1:38938 - "GET /health HTTP/1.1" 200 OK
+WARNING:src.engine.kernel:Tick 3392 exceeded budget at end_of_tick: 63.44ms vs limit 40.79ms.
+WARNING:src.engine.kernel:Tick 3433 exceeded budget at end_of_tick: 68.78ms vs limit 45.41ms.
+CRITICAL:src.observability.alerts.sinks:[ALERT] type=WatchdogTrip run=run_1794479338_5169_1_4ddba95c severity=CRITICAL tick=3433: Tick compute time 68.78ms exceeded watchdog threshold of 45.41ms (end_of_tick) (evidence={'compute_ms': 68.777011, 'threshold_ms': 45.408294000000005, 'site': 'end_of_tick', 'phase_costs': {'init': 0.206469, 'scheduling': 0.322755, 'collection': 8.488081, 'trust_validity': 0.149149, 'memory_update': 0.007302, 'habit_bias_action_style': 0.002551, 'role_model_selection': 0.002537, 'self_model': 0.005362, 'information_belief': 0.045597, 'information_intent_execution': 0.002795, 'cooperation': 0.111088, 'contracts_production': 0.054113, 'faction_decision': 0.029342, 'faction_awareness': 0.015188, 'information_propagation': 0.002501, 'diplomatic_transitions': 0.548566, 'military_conflict': 0.046918, 'locomotion': 1.348471, 'combat_engagement': 1.179558, 'interaction': 0.255426, 'governance_ecology': 0.35507, 'world_emergence': 0.005166, 'economy': 0.400431, 'progression_conversion': 0.005209, 'faction_sentiment': 0.020089, 'final_integrity': 0.068808, 'resolution_overhead': 10.368599, 'cleanup': 0.022784, 'advancement': 2.329254, 'persistence': 42.377832}})
+WARNING:src.engine.kernel:Tick 3446 exceeded budget at end_of_tick: 207.34ms vs limit 32.02ms.
+WARNING:src.engine.kernel:Tick 3456 exceeded budget at end_of_tick: 29.51ms vs limit 22.26ms.
+WARNING:src.engine.kernel:Tick 3487 exceeded budget at end_of_tick: 77.40ms vs limit 48.27ms.
+INFO:     127.0.0.1:38450 - "GET /health HTTP/1.1" 200 OK
+WARNING:src.engine.kernel:Tick 3488 exceeded budget at end_of_tick: 73.62ms vs limit 50.00ms.
+WARNING:src.engine.kernel:Tick 3494 exceeded budget at end_of_tick: 51.60ms vs limit 37.35ms.
+WARNING:src.engine.kernel:Tick 3534 exceeded budget at end_of_tick: 85.61ms vs limit 47.77ms.
+WARNING:src.engine.kernel:Tick 3535 exceeded budget at end_of_tick: 61.23ms vs limit 50.00ms.
+WARNING:src.engine.kernel:Tick 3557 exceeded budget at end_of_tick: 35.39ms vs limit 24.72ms.
+WARNING:src.engine.kernel:Tick 3571 exceeded budget at end_of_tick: 156.05ms vs limit 47.53ms.
+INFO:     127.0.0.1:37354 - "GET /health HTTP/1.1" 200 OK
+WARNING:src.engine.kernel:Tick 3619 exceeded budget at end_of_tick: 46.69ms vs limit 42.22ms.
+WARNING:src.engine.kernel:Tick 3631 exceeded budget at end_of_tick: 45.07ms vs limit 34.48ms.
+WARNING:src.engine.kernel:Tick 3635 exceeded budget at end_of_tick: 80.33ms vs limit 50.00ms.

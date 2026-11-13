@@ -1,0 +1,10 @@
+window: 10:28:54 to 10:35:12 UTC; samples every 10 s
+container                      n  anon_max anon+active_file_max current_max peak limit(MiB)  anon+af/limit
+platform-alloy-1                30     62.5        189.4        336.5   339.4    384   49.3%
+platform-backend-1              30    127.8        127.9        176.4   192.3   1024   12.5%
+platform-docker-socket-proxy-1  30     17.7         18.2         20.6    21.3     64   28.4%
+platform-grafana-1              28    304.2        810.0        924.2   954.4   1024   79.1%
+platform-loki-1                 30     92.3        170.7        214.9   215.4    512   33.3%
+platform-prometheus-1           29     87.8        114.8        153.5   156.0    512   22.4%
+platform-redis-1                30      5.9         33.2         47.7    57.8    256   13.0%
+platform-tempo-1                30    232.2        280.9        340.7   341.7    512   54.9%

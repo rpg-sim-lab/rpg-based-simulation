@@ -1,0 +1,25 @@
+== 2026-11-12T10:02:28Z Loki checks (T1, T2)
+-- permission-denied / error / warn lines in Loki's log:
+level=error ts=2026-11-12T10:01:29.917604109Z caller=ratestore.go:110 msg="error getting ingester clients" err="empty ring"
+(count of such lines: 1)
+-- WAL dir lines:
+level=info ts=2026-11-12T10:01:29.889825543Z caller=head_manager.go:324 index-store=tsdb-2020-10-24 component=tsdb-head-manager msg="loaded wals by period" groups=0
+level=info ts=2026-11-12T10:01:29.890000591Z caller=head_manager.go:324 index-store=tsdb-2020-10-24 component=tsdb-head-manager msg="loaded wals by period" groups=0
+level=info ts=2026-11-12T10:01:29.917408483Z caller=ingester.go:571 component=ingester msg="recovering from checkpoint"
+level=info ts=2026-11-12T10:01:29.917415716Z caller=checkpoint.go:549 msg="tmp checkpoint cleanup starting"
+level=info ts=2026-11-12T10:01:29.917512368Z caller=checkpoint.go:554 msg="tmp checkpoint cleanup done" duration=60.448µs success=true
+-- throttle lines (must be none):
+0
+-- ready: ready
+-- docker volume inspect
+platform_loki_data driver=local Mountpoint=/data/docker/volumes/platform_loki_data/_data
+-- stat -f of the volume Mountpoint (Loki's WAL fs) and df:
+stat: cannot read file system information for '/data/docker/volumes/platform_loki_data/_data': Permission denied
+df: /data/docker/volumes/platform_loki_data/_data: Permission denied
+Traceback (most recent call last):
+  File "<stdin>", line 2, in <module>
+PermissionError: [Errno 13] Permission denied: '/data/docker/volumes/platform_loki_data/_data'
+-- who owns /loki in the volume (host view):
+stat: cannot stat '/data/docker/volumes/platform_loki_data/_data': Permission denied (os error 13)
+stat: cannot stat '/data/docker/volumes/platform_loki_data/_data/wal': Permission denied (os error 13)
+ls: cannot open file '/data/docker/volumes/platform_loki_data/_data': Permission denied

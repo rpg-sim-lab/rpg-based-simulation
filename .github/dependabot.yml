@@ -79,6 +79,14 @@ updates:
       interval: monthly
     open-pull-requests-limit: 5
     labels: [dependencies, rpg]
+    # The knowledge-stack pins in requirements-knowledge.txt (torch, graphifyy, headroom-ai) are not bumped by
+    # Dependabot (owner decision on #882, option A, #715 6812820923): the grouped PR rewrote torch==2.13.0+cpu to
+    # 2.15.0 (dropping +cpu) and headroom-ai needs mcp 2.x. agent-working bumps them by hand, with its tests.
+    # No `versions`, so every version update for these names is skipped. torch in uv.lock moves the same way.
+    ignore:
+      - dependency-name: torch
+      - dependency-name: graphifyy
+      - dependency-name: headroom-ai
     groups:
       uv-major:
         update-types: [major]

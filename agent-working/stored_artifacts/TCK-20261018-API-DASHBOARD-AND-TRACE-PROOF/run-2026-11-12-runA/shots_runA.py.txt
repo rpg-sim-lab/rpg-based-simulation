@@ -1,0 +1,68 @@
+"""Run A screenshots of both ends of the round trip, with a best-effort click-through of the real links. The admin password is read in-process, never printed."""
+import base64
+import json
+import re
+import sys
+import urllib.parse
+
+from playwright.sync_api import sync_playwright
+
+out, tid = sys.argv[1], sys.argv[2]
+pw = open("docker/secrets/grafana_admin_password").read().strip()
+auth = "Basic " + base64.b64encode(f"admin:{pw}".encode()).decode()
+G = "http://127.0.0.1:3000"
+
+
+def explore(ds, query, qtype=None):
+    q = {"refId": "A", "datasource": {"type": ds, "uid": ds}, "expr": query} if ds == "loki" else {"refId": "A", "datasource": {"type": "tempo", "uid": "tempo"}, "queryType": qtype, "query": query}
+    left = {"datasource": ds, "queries": [q], "range": {"from": "now-1h", "to": "now"}}
+    return G + "/explore?" + urllib.parse.urlencode({"schemaVersion": 1, "panes": json.dumps({"a": left}), "orgId": 1})
+
+
+with sync_playwright() as p:
+    b = p.chromium.launch(executable_path="/usr/bin/google-chrome", headless=True, args=["--no-sandbox"])
+    ctx = b.new_context(viewport={"width": 1600, "height": 1400}, extra_http_headers={"Authorization": auth})
+    page = ctx.new_page()
+    # END 1: the Loki line
+    page.goto(explore("loki", '{container=~".*backend.*"} |= "%s"' % tid), wait_until="networkidle", timeout=60000)
+    page.wait_for_timeout(6000)
+    body = page.inner_text("body")
+    print("loki end: line visible:", "Search runs" in body, "| trace id visible:", tid in body)
+    page.screenshot(path=f"{out}/runA_1_loki_line.png", full_page=False)
+    # follow the derived-field link: expand the row, click the link that targets Tempo
+    followed = False
+    try:
+        page.get_by_text("Search runs").first.click(timeout=8000)
+        page.wait_for_timeout(2500)
+        page.screenshot(path=f"{out}/runA_2_loki_line_expanded.png", full_page=False)
+        link = page.get_by_role("link", name=re.compile("Tempo", re.I)).first
+        link.click(timeout=8000)
+        page.wait_for_timeout(8000)
+        followed = True
+    except Exception as e:
+        print("click-through of the derived-field link failed:", str(e)[:200])
+    t = page.inner_text("body")
+    print("after the derived-field click: Tempo trace shown:", followed and ("GET /api/v1/observability/search/runs" in t), "| followed:", followed)
+    page.screenshot(path=f"{out}/runA_3_after_derived_field_click.png", full_page=False)
+    # END 2: the trace in Tempo, opened by id directly
+    page2 = ctx.new_page()
+    page2.goto(explore("tempo", tid, "traceql"), wait_until="networkidle", timeout=60000)
+    page2.wait_for_timeout(8000)
+    t2 = page2.inner_text("body")
+    print("tempo end: route shown:", "search/runs" in t2)
+    page2.screenshot(path=f"{out}/runA_4_tempo_trace.png", full_page=False)
+    # trace -> logs: open the span details and click "Logs for this span"
+    back = False
+    try:
+        page2.get_by_text("GET /api/v1/observability/search/runs").first.click(timeout=8000)
+        page2.wait_for_timeout(2500)
+        page2.get_by_role("button", name=re.compile("Logs for this span", re.I)).first.click(timeout=8000)
+        page2.wait_for_timeout(8000)
+        back = True
+    except Exception as e:
+        print("click-through of 'Logs for this span' failed:", str(e)[:200])
+    t3 = page2.inner_text("body")
+    print("after 'Logs for this span': the Loki line shown:", back and (tid in t3 and "Search runs" in t3), "| clicked:", back)
+    page2.screenshot(path=f"{out}/runA_5_after_logs_for_span.png", full_page=False)
+    b.close()
+print("screenshots written")
