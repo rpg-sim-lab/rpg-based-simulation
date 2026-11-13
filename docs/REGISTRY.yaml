@@ -8107,6 +8107,22 @@
   - content
   last_verified: '2026-10-09'
 - type: ticket
+  path: agent-working/tickets/done/TCK-20261113-GITHUB-MCP-ENV-FILE-OUTSIDE-REPO.md
+  ticket_id: TCK-20261113-GITHUB-MCP-ENV-FILE-OUTSIDE-REPO
+  title: The GitHub MCP server reads its token from a per-user file outside the repo,
+    so it starts from every worktree
+  tier: hotfix
+  ticket_type: bug
+  date: '2026-11-13'
+  related_code_areas:
+  - .mcp.json
+  - tests/tools/test_mcp_json_registration.py
+  artifact_files: []
+  tags:
+  - mcp
+  - security
+  - setup
+- type: ticket
   path: agent-working/tickets/done/TCK-20261113-PROOF-RUN-EXPECTS-AI-WORKER-LAG-NODATA.md
   ticket_id: TCK-20261113-PROOF-RUN-EXPECTS-AI-WORKER-LAG-NODATA
   title: Stack proof runs without ai_worker always show AiWorkerLagHigh alerting (NoData
