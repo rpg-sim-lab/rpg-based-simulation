@@ -8819,6 +8819,24 @@
   artifact_files: []
   tags: []
 - type: ticket
+  path: agent-working/tickets/done/TCK-20261109-A-COMBAT-RETREAT-PROJECT-WALKS-THE-SUBJECT-AGAINST-THE-HELD-FLIGHT-RULE.md
+  ticket_id: TCK-20261109-A-COMBAT-RETREAT-PROJECT-WALKS-THE-SUBJECT-AGAINST-THE-HELD-FLIGHT-RULE
+  title: A COMBAT_RETREAT project walks its owner to the town centre through the strategic
+    pass, against Bible 04's rule that a chosen retreat takes no step (held flight,
+    memo row 91 (2))
+  tier: standard
+  ticket_type: bug
+  date: '2026-11-09'
+  related_code_areas:
+  - src/systems/strategic_systems/intelligence.py (fused_strategic_pass, :670)
+  - src/ai/goals/scorers.py (CombatRetreatScorer, :248-252)
+  artifact_files:
+  - agent-working/stored_artifacts/TCK-20261109-A-COMBAT-RETREAT-PROJECT-WALKS-THE-SUBJECT-AGAINST-THE-HELD-FLIGHT-RULE/investigation.md
+  - agent-working/stored_artifacts/TCK-20261109-A-COMBAT-RETREAT-PROJECT-WALKS-THE-SUBJECT-AGAINST-THE-HELD-FLIGHT-RULE/measurement.md
+  - agent-working/stored_artifacts/TCK-20261109-A-COMBAT-RETREAT-PROJECT-WALKS-THE-SUBJECT-AGAINST-THE-HELD-FLIGHT-RULE/plan.md
+  - agent-working/stored_artifacts/TCK-20261109-A-COMBAT-RETREAT-PROJECT-WALKS-THE-SUBJECT-AGAINST-THE-HELD-FLIGHT-RULE/test_plan.md
+  tags: []
+- type: ticket
   path: agent-working/tickets/done/TCK-20261109-A-FLIGHT-WEIGHS-THE-FREE-SWING-IT-WOULD-TAKE.md
   ticket_id: TCK-20261109-A-FLIGHT-WEIGHS-THE-FREE-SWING-IT-WOULD-TAKE
   title: A flight weighs the free swing it would take
@@ -9031,20 +9049,6 @@
   date: '2026-11-09'
   related_code_areas:
   - website/package-lock.json
-  artifact_files: []
-  tags: []
-- type: ticket
-  path: agent-working/tickets/todos/TCK-20261109-A-COMBAT-RETREAT-PROJECT-WALKS-THE-SUBJECT-AGAINST-THE-HELD-FLIGHT-RULE.md
-  ticket_id: TCK-20261109-A-COMBAT-RETREAT-PROJECT-WALKS-THE-SUBJECT-AGAINST-THE-HELD-FLIGHT-RULE
-  title: A COMBAT_RETREAT project walks its owner to the town centre through the strategic
-    pass, against Bible 04's rule that a chosen retreat takes no step (held flight,
-    memo row 91 (2))
-  tier: standard
-  ticket_type: bug
-  date: '2026-11-09'
-  related_code_areas:
-  - src/systems/strategic_systems/intelligence.py (fused_strategic_pass, :670)
-  - src/ai/goals/scorers.py (CombatRetreatScorer, :248-252)
   artifact_files: []
   tags: []
 - type: ticket
