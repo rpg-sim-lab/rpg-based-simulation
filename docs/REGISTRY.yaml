@@ -8123,6 +8123,20 @@
   - security
   - setup
 - type: ticket
+  path: agent-working/tickets/done/TCK-20261113-PROOF-RUN-EXPECTS-AI-WORKER-LAG-NODATA.md
+  ticket_id: TCK-20261113-PROOF-RUN-EXPECTS-AI-WORKER-LAG-NODATA
+  title: Stack proof runs without ai_worker always show AiWorkerLagHigh alerting (NoData
+    by design); say so in the run procedure
+  tier: hotfix
+  ticket_type: chore
+  date: '2026-11-13'
+  related_code_areas:
+  - docker/grafana/provisioning/alerting/rules-worker.yaml
+  artifact_files: []
+  tags:
+  - platform
+  - observability
+- type: ticket
   path: agent-working/tickets/done/TCK-20261112-A-THROTTLED-CLIENT-THAT-WAITS-OUT-RETRY-AFTER-IS-STILL-REFUSED.md
   ticket_id: TCK-20261112-A-THROTTLED-CLIENT-THAT-WAITS-OUT-RETRY-AFTER-IS-STILL-REFUSED
   title: 'A throttled API client that waits out `Retry-After: 5` is still refused,
@@ -8323,6 +8337,21 @@
   - platform
   - delivery
 - type: ticket
+  path: agent-working/tickets/done/TCK-20261112-ROTATE-LOCAL-NTFY-TOPIC.md
+  ticket_id: TCK-20261112-ROTATE-LOCAL-NTFY-TOPIC
+  title: Rotate the local ntfy alert topic, which was once echoed in an agent terminal,
+    by an owner-run procedure
+  tier: hotfix
+  ticket_type: chore
+  date: '2026-11-12'
+  related_code_areas:
+  - compose.yaml
+  - docker/grafana/provisioning/alerting/contact-points.yaml
+  artifact_files: []
+  tags:
+  - platform
+  - security
+- type: ticket
   path: agent-working/tickets/done/TCK-20261112-THE-API-EMITS-NO-REQUEST-TRACES.md
   ticket_id: TCK-20261112-THE-API-EMITS-NO-REQUEST-TRACES
   title: 'The API emits no request traces: add OpenTelemetry server spans and Redis
@@ -8343,21 +8372,6 @@
   tags:
   - observability
   - api-design
-- type: ticket
-  path: agent-working/tickets/inprogress/TCK-20261112-ROTATE-LOCAL-NTFY-TOPIC.md
-  ticket_id: TCK-20261112-ROTATE-LOCAL-NTFY-TOPIC
-  title: Rotate the local ntfy alert topic, which was once echoed in an agent terminal,
-    by an owner-run procedure
-  tier: hotfix
-  ticket_type: chore
-  date: '2026-11-12'
-  related_code_areas:
-  - compose.yaml
-  - docker/grafana/provisioning/alerting/contact-points.yaml
-  artifact_files: []
-  tags:
-  - platform
-  - security
 - type: ticket
   path: agent-working/tickets/todos/TCK-20261112-HAND-ADDED-WORKTREES-ARE-NOT-RECORDED-AGAINST-A-SEAT.md
   ticket_id: TCK-20261112-HAND-ADDED-WORKTREES-ARE-NOT-RECORDED-AGAINST-A-SEAT
