@@ -46,17 +46,25 @@ def test_knowledge_search_entry_is_byte_identical_to_its_pre_archival_shape():
     }
 
 
-def test_github_entry_is_byte_identical_to_its_pre_archival_shape():
+def test_github_entry_shape():
     mcp_config = _load_mcp_config()
     assert mcp_config["mcpServers"]["github"] == {
         "command": "docker",
         "args": [
             "run", "-i", "--rm",
-            "--env-file", ".env",
+            "--env-file", "${HOME}/.config/rpg-sim/github-mcp.env",
             "ghcr.io/github/github-mcp-server",
         ],
         "description": "GitHub API — workflow runs, PRs, issues, logs",
     }
+
+
+def test_github_env_file_is_not_a_relative_path():
+    # A relative --env-file resolves against the session's working directory, and only the main
+    # checkout has a .env, so the server never started from a worktree.
+    args = _load_mcp_config()["mcpServers"]["github"]["args"]
+    env_file = args[args.index("--env-file") + 1]
+    assert env_file.startswith(("${HOME}/", "/")), env_file
 
 
 def test_generalized_check_still_fails_if_knowledge_gateway_reappears():

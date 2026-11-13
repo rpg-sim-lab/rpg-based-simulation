@@ -1,0 +1,17 @@
+== 2026-11-12T10:35:47Z run A after down
+platform containers left: 0
+other containers (untouched): cool_curie 
+volumes kept: platform_grafana_data platform_loki_data platform_ntfy_data platform_prometheus_data platform_redis_data platform_tempo_data 
+-- docker system df
+TYPE            TOTAL     ACTIVE    SIZE      RECLAIMABLE
+Images          16        1         7.425GB   1.651GB (22%)
+Containers      2         1         4.096kB   0B (0%)
+Local Volumes   6         0         666.8MB   666.8MB (100%)
+Build Cache     31        0         2.039GB   1.426GB
+-- df -h / /data
+Filesystem      Size  Used Avail Use% Mounted on
+/dev/sda2        49G   34G   13G  73% /
+/dev/sdb1        99G   78G   16G  84% /data
+-- stat -f
+/ blocks=12821880 free=4063065 avail=3403648
+/data blocks=25721923 free=5312468 avail=4128773

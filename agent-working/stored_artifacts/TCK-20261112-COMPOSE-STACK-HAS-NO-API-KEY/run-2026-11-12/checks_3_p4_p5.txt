@@ -1,0 +1,27 @@
+== recipe step 1: both paths gitignored
+ignored-ok
+== recipe step 2: neither file exists yet
+no-key-files-yet
+== recipe step 3: write both from the same key
+files written: backend.env=yes (mode 600) frontend.env=yes (mode 600)
+frontend.env has exactly one line and one variable: 1 line, names: FRONTEND_API_KEY 
+backend.env has exactly one line and one variable: 1 line, names: RPG_API_KEY_HASHES 
+recipe re-run is refused (noclobber): 1
+== recreate backend and frontend (no build, no pull)
+up rc=0
+platform-backend-1 Up 30 seconds (healthy)
+platform-frontend-1 Up 25 seconds (healthy)
+platform-redis-1 Up About a minute (healthy)
+== the runbook's check commands, verbatim (expected 200, 401, 200)
+200
+401
+200
+== P4 more: a WRONG key (random, never printed) direct on the backend, and a second protected route through the frontend
+wrong key direct: 401
+frontend /api/v1/stats (no client key): 200
+backend /health: 200
+== P5b WebSocket handshake through the frontend, no client key (first status line)
+HTTP/1.1 101 Switching Protocols
+== and directly on the backend WITHOUT a key (expect 401/403) and WITH the key (expect 101)
+HTTP/1.1 403 Forbidden
+HTTP/1.1 101 Switching Protocols

@@ -434,6 +434,21 @@ Every session's `search_mcp.py` used to load its own embedding model on its firs
 - **Stopping one by hand:** `kill $(python3 -c 'import json,glob;print(json.load(open(glob.glob("'$XDG_RUNTIME_DIR'/rpg-search/*/server.json")[0]))["pid"])')`; the next search starts a fresh one.
 - The FastAPI `tools/search_server.py` (Docker, `make search-server-docker`) is a separate server with its own search path and different results; it is unchanged. Pointing it at the same core is an agent-working follow-up.
 
+### GitHub MCP server: one per-user token file (`TCK-20261113-GITHUB-MCP-ENV-FILE-OUTSIDE-REPO`)
+
+`.mcp.json` starts the `github` server as `docker run -i --rm --env-file ${HOME}/.config/rpg-sim/github-mcp.env ghcr.io/github/github-mcp-server`. The token file lives outside the repo, in your home directory, so the server starts from every worktree. It used to read a repo-root `.env`, which only the main checkout has, so a seat launched from a worktree never had working GitHub MCP tools. Claude Code expands `${HOME}` in `.mcp.json` arguments.
+
+One-time setup per host, run by the owner (an agent never reads or copies the token):
+
+```
+mkdir -p ~/.config/rpg-sim
+chmod 700 ~/.config/rpg-sim
+cp <main checkout>/.env ~/.config/rpg-sim/github-mcp.env
+chmod 600 ~/.config/rpg-sim/github-mcp.env
+```
+
+A seat reconnects with `/mcp` after the change reaches its worktree. The repo-root `.env` can stay until both hosts have the new file. A test (`tests/tools/test_mcp_json_registration.py`) rejects a relative `--env-file`, which is the form that broke worktrees.
+
 ### When the index is stale
 
 Each worktree searches its own index (`agent-working/.index/knowledge-index/`), so a worktree on another branch, or one whose docs

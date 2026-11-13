@@ -1,0 +1,24 @@
+import json, yaml
+d = json.load(open("docker/grafana/dashboards/api.json"))
+assert "id" not in d, "top-level id present"
+uids = set(); bad = []
+def walk(o):
+    if isinstance(o, dict):
+        if "datasource" in o:
+            ds = o["datasource"]
+            if not (isinstance(ds, dict) and set(ds) == {"type", "uid"}): bad.append(ds)
+            else: uids.add(ds["uid"])
+        for v in o.values(): walk(v)
+    elif isinstance(o, list):
+        for v in o: walk(v)
+walk(d)
+assert not bad, bad
+assert uids <= {"prometheus", "loki", "tempo"}, uids
+rules = {r["uid"]: r for r in yaml.safe_load(open("docker/grafana/provisioning/alerting/rules-slo.yaml"))["groups"][0]["rules"]}
+exprs = {u: next(x for x in r["data"] if x["refId"] == "A")["model"]["expr"] for u, r in rules.items()}
+dash_exprs = [t["expr"] for p in d["panels"] for t in p.get("targets", []) if "expr" in t]
+for u, e in exprs.items():
+    assert e in dash_exprs, ("SLO expr missing verbatim", u)
+    base = e.rsplit(" > ", 1)[0]
+    assert base in dash_exprs, ("companion value expr missing", u)
+print("OK: json parses; no id; datasources by uid only", sorted(uids), "; both SLO expressions verbatim; companion (value) exprs present; panels", len(d["panels"]))

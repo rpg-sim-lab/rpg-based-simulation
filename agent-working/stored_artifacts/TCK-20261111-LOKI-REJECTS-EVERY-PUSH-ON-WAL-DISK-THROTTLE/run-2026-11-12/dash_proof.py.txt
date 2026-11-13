@@ -1,0 +1,103 @@
+"""Run every panel query of api-v1 through Grafana's own datasource API and compare the p95 value with Prometheus. Secrets are read from files, never printed."""
+import base64
+import json
+import sys
+import time
+import urllib.parse
+import urllib.request
+
+GRAFANA = "http://127.0.0.1:3000"
+PROM = "http://127.0.0.1:9090"
+pw = open("docker/secrets/grafana_admin_password").read().strip()
+AUTH = "Basic " + base64.b64encode(f"admin:{pw}".encode()).decode()
+
+
+def gget(path):
+    req = urllib.request.Request(GRAFANA + path, headers={"Authorization": AUTH})
+    return json.load(urllib.request.urlopen(req, timeout=20))
+
+
+def gpost(path, body):
+    req = urllib.request.Request(GRAFANA + path, data=json.dumps(body).encode(), method="POST",
+                                 headers={"Authorization": AUTH, "Content-Type": "application/json"})
+    try:
+        return json.load(urllib.request.urlopen(req, timeout=30))
+    except urllib.error.HTTPError as e:
+        return {"_http_error": e.code, "_body": e.read().decode()[:300]}
+
+
+def prom(q, t):
+    url = PROM + "/api/v1/query?" + urllib.parse.urlencode({"query": q, "time": t})
+    return json.load(urllib.request.urlopen(url, timeout=20))["data"]["result"]
+
+
+d = gget("/api/dashboards/uid/api-v1")
+dash = d["dashboard"]
+print("dashboard loaded:", dash["title"], "| uid", dash["uid"], "| folder:", d["meta"].get("folderTitle"), "| panels", len(dash["panels"]))
+now_ms = int(time.time() * 1000)
+subs = {"$route": ".*", "$status": ".*", "$level": ".*", "${route}": ".*", "${status}": ".*", "${level}": ".*"}
+
+
+def sub(s):
+    for k, v in subs.items():
+        s = s.replace(k, v)
+    return s
+
+
+problems = 0
+for p in dash["panels"]:
+    if p["type"] == "row":
+        continue
+    title = p["title"]
+    tg = p["targets"][0]
+    ds = p["datasource"]
+    if ds["uid"] == "tempo":
+        res = gget_t = None
+        url = GRAFANA + "/api/datasources/proxy/uid/tempo/api/search?" + urllib.parse.urlencode({"tags": "service.name=rpg-backend", "limit": 20})
+        req = urllib.request.Request(url, headers={"Authorization": AUTH})
+        try:
+            r = json.load(urllib.request.urlopen(req, timeout=30))
+            n = len(r.get("traces", []))
+            print(f"[tempo ] {title}: search ok, {n} traces")
+        except Exception as e:
+            problems += 1
+            print(f"[tempo ] {title}: ERROR {e}")
+        continue
+    if ds["uid"] == "loki":
+        q = {"refId": "A", "datasource": ds, "expr": sub(tg["expr"]), "queryType": "range", "maxLines": 50}
+    else:
+        q = {"refId": "A", "datasource": ds, "expr": sub(tg["expr"]), "instant": bool(tg.get("instant")), "range": not tg.get("instant"),
+             "intervalMs": 15000, "maxDataPoints": 500}
+    body = {"queries": [q], "from": str(now_ms - 30 * 60 * 1000), "to": str(now_ms)}
+    out = gpost("/api/ds/query", body)
+    if "_http_error" in out:
+        problems += 1
+        print(f"[{ds['uid']:6}] {title}: HTTP {out['_http_error']} {out['_body']}")
+        continue
+    r = out["results"]["A"]
+    if r.get("error"):
+        problems += 1
+        print(f"[{ds['uid']:6}] {title}: ERROR {r['error'][:160]}")
+        continue
+    frames = r.get("frames", [])
+    vals = []
+    for f in frames:
+        for col in f["data"]["values"][1:]:
+            vals += [v for v in col if v is not None]
+    last = vals[-1] if vals else None
+    print(f"[{ds['uid']:6}] {title}: ok, frames={len(frames)}, points={len(vals)}, last={last if last is None or not isinstance(last, float) else round(last, 6)}")
+
+print("panel query problems:", problems)
+
+# p95 comparison: the stat panel "p95 latency (value)" through Grafana vs the same histogram_quantile run in Prometheus at the same instant.
+panel = next(p for p in dash["panels"] if p["title"] == "p95 latency (value)")
+expr = panel["targets"][0]["expr"]
+t_ms = int(time.time() * 1000)
+g = gpost("/api/ds/query", {"queries": [{"refId": "A", "datasource": panel["datasource"], "expr": expr, "instant": True, "range": False}],
+                           "from": str(t_ms - 60000), "to": str(t_ms)})
+gv = g["results"]["A"]["frames"][0]["data"]["values"][1][-1] if g["results"]["A"].get("frames") else None
+pv = prom(expr, t_ms / 1000.0)
+pvv = float(pv[0]["value"][1]) if pv else None
+print(f"p95 at {time.strftime('%H:%M:%S', time.gmtime(t_ms/1000))}Z  panel(via Grafana)={gv}  Prometheus(by hand, same expr, same instant)={pvv}")
+if gv is not None and pvv is not None:
+    print("agree:", abs(gv - pvv) < 1e-9 or abs(gv - pvv) / max(abs(pvv), 1e-12) < 1e-6)

@@ -1,0 +1,15 @@
+held the key in memory (length 32); now setting FRONTEND_API_KEY empty in frontend.env
+frontend.env now: 18 bytes, value length 0
+up rc=0
+rendered value length in the container: 0
+== P6a no client key, nginx key empty (expect 401: no silent bypass)
+frontend /api/v1/manifest: 401
+== P6b the CLIENT sends the valid key through the frontend while nginx's key is empty
+   (200 would mean nginx forwarded the client's header; 401 means proxy_set_header "" dropped it)
+frontend /api/v1/manifest with a client-sent valid key: 401
+   control, same key directly on the backend (expect 200): 200
+   WebSocket with the client-sent key through the frontend: HTTP/1.1 403 Forbidden
+== restore the pair (rewrite frontend.env with the key held in memory), recreate frontend
+up rc=0
+after restore: frontend /api/v1/manifest (no client key): 200 (expect 200)
+frontend.env mode: 600, one variable: FRONTEND_API_KEY

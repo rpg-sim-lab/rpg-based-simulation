@@ -1,0 +1,1 @@
+proxy_set_header X-API-Key "${FRONTEND_API_KEY}";

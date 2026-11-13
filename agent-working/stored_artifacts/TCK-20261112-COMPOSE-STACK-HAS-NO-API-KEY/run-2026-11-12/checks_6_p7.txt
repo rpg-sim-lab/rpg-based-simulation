@@ -1,0 +1,17 @@
+2026-11-12T17:07:21Z rebuild frontend with the /openapi.json location
+build rc=0 | cached steps in the build log: 6
+platform-frontend:latest id=1a47f019a7ea created=2026-11-13 00:07:22 +0700 +07
+up rc=0
+nginx -t: nginx: configuration file /etc/nginx/nginx.conf test is successful | the location is in the running config: 1
+== P7 /openapi.json AFTER the fix
+through the frontend: status/content-type/size: 200 application/json 51985
+directly on the backend: status/content-type/size: 200 application/json 51985
+bodies identical (sha256 of both equal): yes
+the body parses as an OpenAPI document: True True 56 paths
+no key needed: the request above carried none, and nginx's /openapi.json block sets an empty X-API-Key
+a client-sent X-API-Key is dropped on this path (status with a wrong key is still 200 because the route is ungated): 200
+== regression: /api still works through the frontend, the SPA index still loads, a deep SPA route still falls back to index.html
+frontend /api/v1/manifest (nginx adds the key): 200
+frontend / : 200 text/html; charset=utf-8
+frontend /some/spa/route : 200 text/html; charset=utf-8
+frontend /openapi.json is the only extra path: /docs -> 200 text/html; charset=utf-8 (index.html fallback: not proxied)

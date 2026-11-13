@@ -1,0 +1,7 @@
+# Run-only override (NOT in the repo): gives the backend the committed dev-only API-key hash so the proof burst can get 2xx.
+# The hash is the `make dev` pair from the Makefile (docs/architecture/http_api_key_authentication.md section 6: "not a real secret").
+# The raw key is never written here; the burst reads it from frontend/.env.development and sends it through a curl config on stdin.
+services:
+  backend:
+    environment:
+      - RPG_API_KEY_HASHES=dev:3e90488c475fb2c2997525497f1e72e82dec6d68b5738dc7cebba4371f9f0ee2
