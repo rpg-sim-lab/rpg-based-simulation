@@ -1,10 +1,10 @@
 ---
-status: active
+status: historical
 layer: core
 authority: P1
 audience: agent
 ticket_id: TCK-20261112-SOCIALUPDATE-MERGE-REUSES-ITS-LOOP-KEY-ACROSS-KEY-TYPES
-phase: open
+phase: done
 date: 2026-11-12
 tags: []
 ---
@@ -15,7 +15,7 @@ tags: []
 SocialUpdate carries 6 mypy errors: merge reuses one loop variable across int-keyed and str-keyed dicts
 
 ## Status
-OPEN
+DONE
 
 ## Tier
 hotfix
@@ -65,12 +65,20 @@ A read of SocialUpdate.merge (social.py:80-106) shows the probable cause. One lo
 - codebase/baselines/mypy_baseline.txt
 
 ## Assumptions / Open Questions
-- The cause is a reading of the code, not yet confirmed against the field annotations.
+- The cause was a reading of the code; it is now confirmed against the field annotations (see Implementation Notes).
 
 ## Implementation Notes
+Cause confirmed from the field annotations on SocialUpdate: `trust_delta` and `grudge_delta` are `Dict[int, float]`, `place_attachment_delta` and `regional_reputation_delta` are `Dict[str, float]`. `merge()` used one name `k` for all the delta loops, so mypy fixed `k` as `int` at the trust loop and then flagged the two str-keyed loops: 2 assignment errors (`k` str -> int), 2 invalid-index errors and 2 `get()` overload errors.
+Fix: the two str-keyed loops now use `region_id` (4 lines renamed in `src/core/update_models/social.py`); the int-keyed loops keep `k`. No behaviour change. Approved under S4: #715 6843079519.
 
 ## Test Summary
+- Existing coverage: `test_regional_reputation_delta_merges_by_summing_per_region` (tests/unit/social/test_relationships.py) covers regional_reputation_delta only. Added `test_merge_sums_every_keyed_delta_dict_with_its_own_key_type` for the trust, grudge, place-attachment and combat-loss dicts; it passes both before and after the rename (checked by stashing the fix), as a behaviour-neutral change should.
+- tests/unit/social/test_relationships.py, test_rejection_counts_kept.py and tests/unit/core/test_social_counts.py: 34 passed.
+- `mypy src/ | mypy_baseline filter` (pipefail, raw output kept): 1276 -> 1270 errors, none in update_models/social.py; filter rc 0. `codebase.health check`: OK, 0 worse.
 
 ## Files Changed
+src/core/update_models/social.py (4 lines: loop variable renames); codebase/baselines/mypy_baseline.txt (-6 lines, the 6 social.py entries, no re-key); tests/unit/social/test_relationships.py (+1 test); this ticket.
 
 ## Completion Summary
+Done. The 6 mypy errors in SocialUpdate.merge are gone and mypy_baseline.txt is exactly 6 lines shorter. Behaviour-neutral renames only; no field, default or merge rule changed.
+Known gap: the plain 5000-tick hash cells are the planner's play-neutrality proof for this change (cells pending HOST FREE at the time of writing).
