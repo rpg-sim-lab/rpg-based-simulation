@@ -1,0 +1,5 @@
+== 2026-11-12T18:50:32Z regate
+loadavg: 0.19 0.67 0.76 | MemAvailable MiB: 6205 | swap used MiB: 2750
+/dev/sda2        49G   33G   14G  71% /
+/dev/sdb1        99G   79G   16G  84% /data
+1
