@@ -304,9 +304,25 @@ class TestResolveIndexDir:
         (index_dir / "knowledge.db").write_bytes(b"")
         return index_dir
 
-    def test_own_index_wins_when_present(self, tmp_path: Path) -> None:
+    def test_main_checkout_index_wins_when_both_exist(self, tmp_path: Path) -> None:
+        # TCK-20261112-SEARCH-SERVER-PER-WORKTREE-INDEX-AND-BUILD-MEMORY-GUARD: one shared server, not one per worktree
+        own = self._make_index(tmp_path / "worktree")
+        main_index = self._make_index(tmp_path / "main")
+        assert _mod._resolve_index_dir(own, tmp_path / "worktree", tmp_path / "main", own_index_opt_in=False) == main_index
+
+    def test_own_index_is_used_when_main_has_none(self, tmp_path: Path) -> None:
+        own = self._make_index(tmp_path / "worktree")
+        assert _mod._resolve_index_dir(own, tmp_path / "worktree", tmp_path / "main", own_index_opt_in=False) == own
+
+    def test_own_index_is_used_with_the_opt_in_even_when_main_has_one(self, tmp_path: Path) -> None:
         own = self._make_index(tmp_path / "worktree")
         self._make_index(tmp_path / "main")
+        assert _mod._resolve_index_dir(own, tmp_path / "worktree", tmp_path / "main", own_index_opt_in=True) == own
+
+    def test_the_opt_in_is_read_from_the_environment(self, tmp_path: Path, monkeypatch) -> None:
+        own = self._make_index(tmp_path / "worktree")
+        self._make_index(tmp_path / "main")
+        monkeypatch.setenv("RPG_SEARCH_OWN_INDEX", "1")
         assert _mod._resolve_index_dir(own, tmp_path / "worktree", tmp_path / "main") == own
 
     def test_falls_back_to_main_checkout_index_when_own_missing(self, tmp_path: Path) -> None:
