@@ -21,7 +21,7 @@ Ticket: `TCK-20261112-COMPOSE-STACK-HAS-NO-API-KEY`. The compose stack ships **f
 
 ## Why not the repo-root `.env`
 
-The repository's `.mcp.json` starts the GitHub MCP server with `docker run -i --rm --env-file .env ghcr.io/github/github-mcp-server`, so the root `.env` is passed **wholesale** into that container and already holds its GitHub credentials. Putting the API key there would inject it into that container's environment and mix two unrelated secrets in one file. So the key pair has its own files under `docker/secrets/` (gitignored). Do not open or print `.env` while doing this.
+The repository's `.mcp.json` starts the GitHub MCP server with `docker run -i --rm --env-file ${HOME}/.config/rpg-sim/github-mcp.env ghcr.io/github/github-mcp-server`, so that per-user file is passed **wholesale** into that container and already holds its GitHub credentials (before `TCK-20261113-GITHUB-MCP-ENV-FILE-OUTSIDE-REPO` it was the repo-root `.env`, which can stay until both hosts have the new file). Putting the API key in either file would inject it into that container's environment and mix two unrelated secrets in one file. So the key pair has its own files under `docker/secrets/` (gitignored). Do not open or print `.env` or `github-mcp.env` while doing this.
 
 ## Make a key pair (owner-run)
 
