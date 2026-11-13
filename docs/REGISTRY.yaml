@@ -8373,6 +8373,19 @@
   - planning
   - delivery
 - type: ticket
+  path: agent-working/tickets/todos/TCK-20261112-SOCIALUPDATE-MERGE-REUSES-ITS-LOOP-KEY-ACROSS-KEY-TYPES.md
+  ticket_id: TCK-20261112-SOCIALUPDATE-MERGE-REUSES-ITS-LOOP-KEY-ACROSS-KEY-TYPES
+  title: 'SocialUpdate carries 6 mypy errors: merge reuses one loop variable across
+    int-keyed and str-keyed dicts'
+  tier: hotfix
+  ticket_type: repair
+  date: '2026-11-12'
+  related_code_areas:
+  - src/core/update_models/social.py (SocialUpdate.merge)
+  - codebase/baselines/mypy_baseline.txt
+  artifact_files: []
+  tags: []
+- type: ticket
   path: agent-working/tickets/todos/github-project-ticket-view/TCK-20261112-EPIC-GITHUB-PROJECT-TICKET-VIEW.md
   ticket_id: TCK-20261112-EPIC-GITHUB-PROJECT-TICKET-VIEW
   title: A GitHub Project as a generated, read-only view of ticket state across seats
@@ -8595,6 +8608,24 @@
   tags:
   - delivery
 - type: ticket
+  path: agent-working/tickets/done/TCK-20261111-SPLIT-UPDATES-PY-INTO-UPDATE-MODELS.md
+  ticket_id: TCK-20261111-SPLIT-UPDATES-PY-INTO-UPDATE-MODELS
+  title: Move the per-domain update models out of src/core/updates.py into src/core/update_models/,
+    so the module comes back under its length ceiling
+  tier: standard
+  ticket_type: refactor
+  date: '2026-11-11'
+  related_code_areas:
+  - src/core/updates.py
+  - src/core/update_models/
+  - codebase/baselines/code_health_exceptions.jsonl (the updates.py module-length
+    row)
+  artifact_files:
+  - agent-working/stored_artifacts/TCK-20261111-SPLIT-UPDATES-PY-INTO-UPDATE-MODELS/investigation.md
+  - agent-working/stored_artifacts/TCK-20261111-SPLIT-UPDATES-PY-INTO-UPDATE-MODELS/plan.md
+  - agent-working/stored_artifacts/TCK-20261111-SPLIT-UPDATES-PY-INTO-UPDATE-MODELS/test_plan.md
+  tags: []
+- type: ticket
   path: agent-working/tickets/done/TCK-20261111-THE-WORLD-GLOSSARY-GETS-ITS-SEED-TERMS.md
   ticket_id: TCK-20261111-THE-WORLD-GLOSSARY-GETS-ITS-SEED-TERMS
   title: The world glossary gets its 49 seed terms
@@ -8683,21 +8714,6 @@
   related_code_areas:
   - src/systems/movement.py (resolve_move)
   - src/engine/pipeline_phases/movement.py (route_movement_intent)
-  artifact_files: []
-  tags: []
-- type: ticket
-  path: agent-working/tickets/todos/TCK-20261111-SPLIT-UPDATES-PY-INTO-UPDATE-MODELS.md
-  ticket_id: TCK-20261111-SPLIT-UPDATES-PY-INTO-UPDATE-MODELS
-  title: Move the per-domain update models out of src/core/updates.py into src/core/update_models/,
-    so the module comes back under its length ceiling
-  tier: standard
-  ticket_type: refactor
-  date: '2026-11-11'
-  related_code_areas:
-  - src/core/updates.py
-  - src/core/update_models/
-  - codebase/baselines/code_health_exceptions.jsonl (the updates.py module-length
-    row)
   artifact_files: []
   tags: []
 - type: ticket

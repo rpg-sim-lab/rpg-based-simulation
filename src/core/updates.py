@@ -3,169 +3,60 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field, replace
-from typing import Dict, Any, Optional, TYPE_CHECKING, List, Tuple
+from typing import TYPE_CHECKING, Any, Dict, List, Optional
+
 if TYPE_CHECKING:
-    from src.core.state import GroupRecord, ItemStack, EquipSlot, AttributeComponent, LocalScarState, ChestState, EntityState, GroundItemState, CorpseState, OwedRecord, WoundState, ScarState, StatusEffectState
-    from src.core.quests import QuestStatus
-    from src.core.strategic import (
-        ConcernState, CandidateZone, HypothesisState, SourceTrustEntry,
-        CognitionProfile, BlockerState, LeadState, DirectiveState, ProjectState,
-        ContractState, TurningPointState, CommittedIntention, MarriageState
-    )
-    from src.engine.policy import GovernorPolicy
     from src.core.models.quests import QuestOpportunity, QuestOpportunityStatus
+    from src.core.state import (
+        ChestState,
+        CorpseState,
+        EntityState,
+        GroundItemState,
+        GroupRecord,
+        LocalScarState,
+        OwedRecord,
+        StatusEffectState,
+    )
     from src.engine.intent.action_intent import ActionIntent
-from src.core.state import ItemStack, EquipSlot, AttributeComponent, LifeStage, ItemInstance
-from src.core.models.social import RelationshipRole
-from src.core.movement_modes import MovementMode
-from src.core.death_cause import DeathRecord
-from src.core.enums import ReasonCode, DiplomaticState
+    from src.engine.policy import GovernorPolicy
+from src.core.dirty import DirtySet
 from src.core.group_update_merge import merge_group_fields
-from src.core.social_counts import add_rejection_counts
+from src.core.movement_modes import MovementMode
 from src.core.spawn_source import SpawnSource
+from src.core.state import ItemInstance, ItemStack, LifeStage  # noqa: F401  (ItemStack re-exported: tests import it from here)
+from src.core.update_models.body import (  # noqa: F401  (re-exported)
+    AttributeUpdate,
+    BiologicalUpdate,
+    InteractionUpdate,
+    LifecycleUpdate,
+    RewardUpdate,
+    TaskUpdate,
+)
 from src.core.update_models.buildings import BuildingUpdate  # noqa: F401  (re-exported: updates.py is where callers import it from)
+from src.core.update_models.combat import (  # noqa: F401  (re-exported)
+    CombatIntent,
+    CombatUpdate,
+    EquipmentUpdate,
+    StaminaUpdate,
+    WoundUpdate,
+)
 from src.core.update_models.inventory import InventoryUpdate, ItemInstanceUpdate
 from src.core.update_models.quests import QuestUpdate
 from src.core.update_models.resources import ResourceTransferIntent
-from src.core.dirty import DirtySet
-from src.systems.lifecycle_systems.genetics import GeneticProfile
+from src.core.update_models.social import RejectionEvent, SocialBondUpdate, SocialUpdate  # noqa: F401  (re-exported)
+from src.core.update_models.strategic import StrategicUpdate  # noqa: F401  (re-exported)
+from src.core.update_models.world import (  # noqa: F401  (re-exported)
+    NO_OWNER_SENTINEL,
+    CampUpdate,
+    ChestUpdate,
+    ClanUpdate,
+    FactionUpdate,
+    QuestOpportunityRewardIntent,
+    ResourceNodeUpdate,
+    WorldUpdate,
+    decode_owner_faction_id_set,
+)
 
-
-@dataclass(frozen=True, slots=True)
-class RejectionEvent:
-    """
-    Structured record of an authoritative rejection.
-    Logic ID: RPG-AUTH-009
-    """
-    tick: int
-    actor_id: int
-    action_kind: str
-    reason: ReasonCode
-    target_id: Optional[int | str] = None
-
-
-@dataclass(frozen=True, slots=True)
-class EquipmentUpdate:
-    """Updates to equipped items."""
-    slot_updates: Dict[EquipSlot, str | None] = field(default_factory=dict)
-    durability_delta: Dict[EquipSlot, float] = field(default_factory=dict)
-    durability_set: Dict[EquipSlot, float] = field(default_factory=dict)
-
-    def is_noop(self) -> bool:
-        return not self.slot_updates and not self.durability_delta and not self.durability_set
-
-    def merge(self, other: EquipmentUpdate) -> EquipmentUpdate:
-        """Merge another EquipmentUpdate into this one."""
-        if not other or other.is_noop():
-            return self
-        changes: Dict[str, Any] = {}
-        if other.slot_updates:
-            changes["slot_updates"] = {**self.slot_updates, **other.slot_updates}
-        if other.durability_delta:
-            new_deltas = dict(self.durability_delta)
-            for s, d in other.durability_delta.items():
-                new_deltas[s] = new_deltas.get(s, 0.0) + d
-            changes["durability_delta"] = new_deltas
-        if other.durability_set:
-            changes["durability_set"] = {**self.durability_set, **other.durability_set}
-        return replace(self, **changes)
-
-@dataclass(frozen=True, slots=True)
-class InteractionUpdate:
-    """Multi-tick progress update."""
-    target_node_id: Optional[int] = None
-    progress_delta: float = 0.0
-    reset: bool = False
-    kind: Optional[str] = None
-
-    def is_noop(self) -> bool:
-        return self.target_node_id is None and self.progress_delta == 0.0 and not self.reset and self.kind is None
-
-    def merge(self, other: InteractionUpdate) -> InteractionUpdate:
-        if not other or other.is_noop():
-            return self
-        changes: Dict[str, Any] = {}
-        if other.target_node_id is not None: changes["target_node_id"] = other.target_node_id
-        if other.progress_delta != 0.0: changes["progress_delta"] = self.progress_delta + other.progress_delta
-        if other.reset: changes["reset"] = True
-        if other.kind is not None: changes["kind"] = other.kind
-        return replace(self, **changes)
-
-@dataclass(frozen=True, slots=True)
-class CombatIntent:
-    """A single combat interaction intent within a tick."""
-    attacker_id: int
-    damage: int
-    is_opportunity_attack: bool = False
-    is_lethal: bool = True
-    splash_radius: int = 0
-    splash_damage: int = 0
-    impact_pos: Optional[tuple[float, float]] = None
-
-@dataclass(frozen=True, slots=True)
-class CombatUpdate:
-    """Authoritative combat interaction results."""
-    damage_taken: int = 0
-    hp_delta: int = 0
-    attacker_id: Optional[int] = None
-    hit_tick_set: Optional[int] = None  # the tick a damaging hit took hp; CombatPatch writes it to CombatComponent.last_hit_tick with attacker_id
-    hit_damage_set: Optional[int] = None  # the damage of that same hit; CombatPatch writes it to CombatComponent.last_hit_damage with attacker_id
-    is_opportunity_attack: bool = False
-    alive_set: Optional[bool] = None
-    # Regional hazard drain applied this tick, carried independently of `outcome_kind` so a hazard that lands on an entity combat already resolved stays
-    # observable (hazard_drain_applied) without overwriting the combat outcome. Not a death cause; see Mechanics Bible 01 §4.
-    hazard_damage: int = 0
-    outcome_kind: str = "SURVIVE" # SURVIVE, DEFEAT, KILL, REJECTED
-    is_lethal: bool = False
-    failure_reason: Optional[str] = None
-    max_hp_delta: int = 0
-    permanent_max_hp_bonus_delta: int = 0 # Durable grant accumulator (CombatComponent.permanent_max_hp_bonus)
-    atk_delta: int = 0
-    def_delta: int = 0
-    speed_delta: int = 0
-    simultaneous_intents: List[CombatIntent] = field(default_factory=list)
-    resource_transfers: List[ResourceTransferIntent] = field(default_factory=list)
-    equipment_upd: Optional[EquipmentUpdate] = None # For defender
-    attacker_equipment_upd: Optional[EquipmentUpdate] = None
-    wound_update: Optional[WoundUpdate] = None
-    social_upd: Optional[SocialUpdate] = None
-    strategic_upd: Optional[StrategicUpdate] = None
-    trace: Dict[str, float] = field(default_factory=dict) # Breakdown of modifiers
-
-    def is_noop(self) -> bool:
-        return (self.damage_taken == 0 and self.hp_delta == 0 and self.attacker_id is None and 
-                self.alive_set is None and self.hazard_damage == 0 and self.max_hp_delta == 0 and self.permanent_max_hp_bonus_delta == 0 and self.atk_delta == 0 and 
-                self.def_delta == 0 and self.speed_delta == 0 and 
-                not self.simultaneous_intents and not self.resource_transfers)
-
-    def merge(self, other: CombatUpdate) -> CombatUpdate:
-        """Merges another CombatUpdate into this one, aggregating results."""
-        if not other or other.is_noop():
-            return self
-        changes: Dict[str, Any] = {}
-        if other.damage_taken != 0: changes["damage_taken"] = self.damage_taken + other.damage_taken
-        if other.hp_delta != 0: changes["hp_delta"] = self.hp_delta + other.hp_delta
-        if other.attacker_id is not None: changes.update(attacker_id=other.attacker_id, hit_tick_set=self.hit_tick_set if other.hit_tick_set is None else other.hit_tick_set, hit_damage_set=self.hit_damage_set if other.hit_damage_set is None else other.hit_damage_set)
-        if other.is_opportunity_attack: changes["is_opportunity_attack"] = True
-        if other.alive_set is not None: changes["alive_set"] = other.alive_set
-        if other.hazard_damage != 0: changes["hazard_damage"] = self.hazard_damage + other.hazard_damage
-        if other.outcome_kind != "SURVIVE":
-             changes["outcome_kind"] = other.outcome_kind if (self.outcome_kind == "SURVIVE" or other.outcome_kind == "KILL") else self.outcome_kind
-        if other.is_lethal: changes["is_lethal"] = True
-        if other.max_hp_delta != 0: changes["max_hp_delta"] = self.max_hp_delta + other.max_hp_delta
-        if other.permanent_max_hp_bonus_delta != 0: changes["permanent_max_hp_bonus_delta"] = self.permanent_max_hp_bonus_delta + other.permanent_max_hp_bonus_delta
-        if other.atk_delta != 0: changes["atk_delta"] = self.atk_delta + other.atk_delta
-        if other.def_delta != 0: changes["def_delta"] = self.def_delta + other.def_delta
-        if other.speed_delta != 0: changes["speed_delta"] = self.speed_delta + other.speed_delta
-        if other.simultaneous_intents: changes["simultaneous_intents"] = self.simultaneous_intents + other.simultaneous_intents
-        if other.resource_transfers: changes["resource_transfers"] = self.resource_transfers + other.resource_transfers
-        if other.equipment_upd: changes["equipment_upd"] = other.equipment_upd
-        if other.attacker_equipment_upd: changes["attacker_equipment_upd"] = other.attacker_equipment_upd
-        if other.wound_update: changes["wound_update"] = other.wound_update
-        if other.social_upd: changes["social_upd"] = self.social_upd.merge(other.social_upd) if self.social_upd else other.social_upd
-        if other.strategic_upd: changes["strategic_upd"] = self.strategic_upd.merge(other.strategic_upd) if self.strategic_upd else other.strategic_upd
-        if other.trace: changes["trace"] = {**self.trace, **other.trace}
-        return replace(self, **changes)
 
 @dataclass(frozen=True, slots=True)
 class NavigationUpdate:
@@ -219,25 +110,6 @@ class NavigationUpdate:
         """What a merge takes from this update for the lodging fields (F3): the claim's building, and the leave flag."""
         return {**({"lodged_in_set": self.lodged_in_set} if self.lodged_in_set is not None else {}), **({"lodged_in_clear": True} if self.lodged_in_clear else {})}
 
-@dataclass(frozen=True, slots=True)
-class TaskUpdate:
-    """Updates to next-tick work intent."""
-    work_kind_set: Optional[str] = None
-    payload_set: Optional[Dict[str, Any]] = None
-
-    def is_noop(self) -> bool:
-        return self.work_kind_set is None and not self.payload_set
-
-    def merge(self, other: TaskUpdate) -> TaskUpdate:
-        if not other or other.is_noop():
-            return self
-        changes: Dict[str, Any] = {}
-        if other.work_kind_set is not None: changes["work_kind_set"] = other.work_kind_set
-        if other.payload_set:
-            new_payload = dict(self.payload_set or {})
-            new_payload.update(other.payload_set)
-            changes["payload_set"] = new_payload
-        return replace(self, **changes)
     
 @dataclass(frozen=True, slots=True)
 class IdentityUpdate:
@@ -293,391 +165,10 @@ class IdentityUpdate:
         if other.territory_maturity_delta != 0: changes["territory_maturity_delta"] = self.territory_maturity_delta + other.territory_maturity_delta
         return replace(self, **changes)
 
-@dataclass(frozen=True, slots=True)
-class SocialBondUpdate:
-    """Updates to a first-class directed relationship record."""
-    target_id: int
-    familiarity_delta: float = 0.0
-    sentiment_delta: float = 0.0
-    last_interaction_tick_set: Optional[int] = None
-    role_set: Optional[RelationshipRole] = None
 
-@dataclass(frozen=True, slots=True)
-class SocialUpdate:
-    # PH15 Recovery: Bond updates
-    bond_updates: List[SocialBondUpdate] = field(default_factory=list)
-    trust_delta: Dict[int, float] = field(default_factory=dict)
-    familiarity_delta: Dict[int, float] = field(default_factory=dict)
-    debt_delta: Dict[int, float] = field(default_factory=dict)
-    fear_delta: Dict[int, float] = field(default_factory=dict)
-    grudge_delta: Dict[int, float] = field(default_factory=dict)
-    salience_delta: Dict[int, float] = field(default_factory=dict)
     
-    betrayal_increment: int = 0
-    betrayal_records_add: List[Any] = field(default_factory=list) # List[BetrayalRecord]
-    reputation_set: Optional[float] = None
-    heroism_delta: float = 0.0
-    notoriety_delta: float = 0.0
     
-    # Domain 7 Hardening: Social Fatigue
-    last_offer_tick_set: Optional[int] = None
-    rejection_increment: Dict[int, int] = field(default_factory=dict) # SourceID -> Increment
-    
-    # Domain 4 Hardening
-    nemesis_promotion: List[int] = field(default_factory=list) # EntityIDs to add to nemesis_ids
-    place_attachment_delta: Dict[str, float] = field(default_factory=dict) # RegionID -> Delta
-    regional_reputation_delta: Dict[str, float] = field(default_factory=dict) # RegionID -> Delta
-    combat_loss_delta: Dict[int, int] = field(default_factory=dict) # EntityID -> +1 per defeat by that entity
-    
-    contracts_add: List[ContractState] = field(default_factory=list)
-    contracts_remove: List[str] = field(default_factory=list) # IDs
-    
-    def is_noop(self) -> bool:
-        return (not self.bond_updates and not self.trust_delta and not self.familiarity_delta and 
-                not self.debt_delta and not self.fear_delta and not self.grudge_delta and 
-                not self.salience_delta and self.betrayal_increment == 0 and 
-                not self.betrayal_records_add and self.reputation_set is None and 
-                self.heroism_delta == 0.0 and self.notoriety_delta == 0.0 and 
-                self.last_offer_tick_set is None and not self.rejection_increment and
-                not self.nemesis_promotion and not self.place_attachment_delta and
-                not self.regional_reputation_delta and
-                not self.combat_loss_delta and not self.contracts_add and not self.contracts_remove)
 
-    def merge(self, other: SocialUpdate) -> SocialUpdate:
-        """Merges another SocialUpdate into this one."""
-        if not other or other.is_noop():
-            return self
-        
-        # Merge dictionaries by summing values
-        new_trust = dict(self.trust_delta)
-        for k, v in other.trust_delta.items():
-            new_trust[k] = new_trust.get(k, 0.0) + v
-            
-        new_grudge = dict(self.grudge_delta)
-        for k, v in other.grudge_delta.items():
-            new_grudge[k] = new_grudge.get(k, 0.0) + v
-            
-        new_places = dict(self.place_attachment_delta)
-        for k, v in other.place_attachment_delta.items():
-            new_places[k] = new_places.get(k, 0.0) + v
-
-        new_regional_rep = dict(self.regional_reputation_delta)
-        for k, v in other.regional_reputation_delta.items():
-            new_regional_rep[k] = new_regional_rep.get(k, 0.0) + v
-
-        new_combat_loss = dict(self.combat_loss_delta)
-        for k, v in other.combat_loss_delta.items():
-            new_combat_loss[k] = new_combat_loss.get(k, 0) + v
-
-        return SocialUpdate(
-            bond_updates=self.bond_updates + other.bond_updates,
-            trust_delta=new_trust,
-            familiarity_delta={**self.familiarity_delta, **other.familiarity_delta},
-            debt_delta={**self.debt_delta, **other.debt_delta},
-            fear_delta={**self.fear_delta, **other.fear_delta},
-            grudge_delta=new_grudge,
-            salience_delta={**self.salience_delta, **other.salience_delta},
-            betrayal_increment=self.betrayal_increment + other.betrayal_increment,
-            betrayal_records_add=self.betrayal_records_add + other.betrayal_records_add,
-            reputation_set=other.reputation_set if other.reputation_set is not None else self.reputation_set,
-            heroism_delta=self.heroism_delta + other.heroism_delta,
-            notoriety_delta=self.notoriety_delta + other.notoriety_delta,
-            last_offer_tick_set=other.last_offer_tick_set if other.last_offer_tick_set is not None else self.last_offer_tick_set,
-            rejection_increment=add_rejection_counts(self.rejection_increment, other.rejection_increment),
-            nemesis_promotion=self.nemesis_promotion + other.nemesis_promotion,
-            place_attachment_delta=new_places,
-            regional_reputation_delta=new_regional_rep,
-            combat_loss_delta=new_combat_loss,
-            contracts_add=self.contracts_add + other.contracts_add,
-            contracts_remove=self.contracts_remove + other.contracts_remove
-        )
-    
-@dataclass(frozen=True, slots=True)
-class BiologicalUpdate:
-    """Updates to sleep, hunger, and biological pressures."""
-    sleep_debt_delta: float = 0.0
-    sleep_debt_set: Optional[float] = None
-    hunger_delta: float = 0.0
-    hunger_set: Optional[float] = None
-    rest_pressure_delta: float = 0.0
-    last_meal_tick_set: Optional[int] = None
-    last_sleep_tick_set: Optional[int] = None
-    well_rested_until_set: Optional[int] = None
-    
-    def is_noop(self) -> bool:
-        return (self.sleep_debt_delta == 0.0 and self.sleep_debt_set is None and 
-                self.hunger_delta == 0.0 and self.hunger_set is None and 
-                self.rest_pressure_delta == 0.0 and self.last_meal_tick_set is None and 
-                self.last_sleep_tick_set is None and self.well_rested_until_set is None)
-
-    def merge(self, other: BiologicalUpdate) -> BiologicalUpdate:
-        if not other or other.is_noop():
-            return self
-        return BiologicalUpdate(
-            sleep_debt_delta=self.sleep_debt_delta + other.sleep_debt_delta,
-            sleep_debt_set=other.sleep_debt_set if other.sleep_debt_set is not None else self.sleep_debt_set,
-            hunger_delta=self.hunger_delta + other.hunger_delta,
-            hunger_set=other.hunger_set if other.hunger_set is not None else self.hunger_set,
-            rest_pressure_delta=self.rest_pressure_delta + other.rest_pressure_delta,
-            last_meal_tick_set=other.last_meal_tick_set if other.last_meal_tick_set is not None else self.last_meal_tick_set,
-            last_sleep_tick_set=other.last_sleep_tick_set if other.last_sleep_tick_set is not None else self.last_sleep_tick_set,
-            well_rested_until_set=other.well_rested_until_set if other.well_rested_until_set is not None else self.well_rested_until_set
-        )
-    
-@dataclass(frozen=True, slots=True)
-class AttributeUpdate:
-    """Updates to base attributes."""
-    strength_delta: int = 0
-    agility_delta: int = 0
-    vitality_delta: int = 0
-    endurance_delta: int = 0
-    intelligence_delta: int = 0
-    spirit_delta: int = 0
-    wisdom_delta: int = 0
-    perception_delta: int = 0
-    charisma_delta: int = 0
-    
-    def is_noop(self) -> bool:
-        return (self.strength_delta == 0 and self.agility_delta == 0 and self.vitality_delta == 0 and 
-                self.endurance_delta == 0 and self.intelligence_delta == 0 and 
-                self.spirit_delta == 0 and self.wisdom_delta == 0 and 
-                self.perception_delta == 0 and self.charisma_delta == 0)
-
-    def merge(self, other: AttributeUpdate) -> AttributeUpdate:
-        if not other or other.is_noop():
-            return self
-        changes: Dict[str, Any] = {}
-        if other.strength_delta != 0: changes["strength_delta"] = self.strength_delta + other.strength_delta
-        if other.agility_delta != 0: changes["agility_delta"] = self.agility_delta + other.agility_delta
-        if other.vitality_delta != 0: changes["vitality_delta"] = self.vitality_delta + other.vitality_delta
-        if other.endurance_delta != 0: changes["endurance_delta"] = self.endurance_delta + other.endurance_delta
-        if other.intelligence_delta != 0: changes["intelligence_delta"] = self.intelligence_delta + other.intelligence_delta
-        if other.spirit_delta != 0: changes["spirit_delta"] = self.spirit_delta + other.spirit_delta
-        if other.wisdom_delta != 0: changes["wisdom_delta"] = self.wisdom_delta + other.wisdom_delta
-        if other.perception_delta != 0: changes["perception_delta"] = self.perception_delta + other.perception_delta
-        if other.charisma_delta != 0: changes["charisma_delta"] = self.charisma_delta + other.charisma_delta
-        return replace(self, **changes)
-
-# The scalar fields a later update overwrites (a None leaves the earlier value); the list and dict fields accumulate.
-_LIFECYCLE_SET_FIELDS = ("is_permadeath_set", "death_tick_set", "death_reason_set", "death_record_set", "heir_entity_id_set", "parent_a_entity_id_set",
-                         "parent_b_entity_id_set", "birth_tick_set", "birth_city_id_set", "genetic_profile_set")
-
-
-@dataclass(frozen=True, slots=True)
-class LifecycleUpdate:
-    """Updates to aging and death mechanics."""
-    age_delta: int = 0
-    is_permadeath_set: Optional[bool] = None
-    death_tick_set: Optional[int] = None
-    death_reason_set: Optional[str] = None
-    death_record_set: Optional[DeathRecord] = None
-    heir_entity_id_set: Optional[int] = None
-    heirlooms_add: list[str] = field(default_factory=list)
-    parent_a_entity_id_set: Optional[int] = None
-    parent_b_entity_id_set: Optional[int] = None
-    dependent_entity_ids_add: list[int] = field(default_factory=list)
-    birth_tick_set: Optional[int] = None
-    birth_city_id_set: Optional[int] = None
-    reproduction_cooldowns_add: Dict[int, int] = field(default_factory=dict)  # per-key upsert, NOT wholesale replace
-    genetic_profile_set: Optional[GeneticProfile] = None
-
-    def is_noop(self) -> bool:
-        return (self.age_delta == 0 and
-                self.is_permadeath_set is None and self.death_tick_set is None and
-                self.death_reason_set is None and self.death_record_set is None and self.heir_entity_id_set is None and
-                not self.heirlooms_add and self.parent_a_entity_id_set is None and
-                self.parent_b_entity_id_set is None and not self.dependent_entity_ids_add and
-                self.birth_tick_set is None and
-                self.birth_city_id_set is None and not self.reproduction_cooldowns_add and
-                self.genetic_profile_set is None)
-
-    def merge(self, other: LifecycleUpdate) -> LifecycleUpdate:
-        if not other or other.is_noop():
-            return self
-        changes: Dict[str, Any] = {}
-        if other.age_delta != 0: changes["age_delta"] = self.age_delta + other.age_delta
-        changes.update({name: getattr(other, name) for name in _LIFECYCLE_SET_FIELDS if getattr(other, name) is not None})
-        if other.heirlooms_add: changes["heirlooms_add"] = self.heirlooms_add + other.heirlooms_add
-        if other.dependent_entity_ids_add: changes["dependent_entity_ids_add"] = self.dependent_entity_ids_add + other.dependent_entity_ids_add
-        if other.reproduction_cooldowns_add:
-            changes["reproduction_cooldowns_add"] = {**self.reproduction_cooldowns_add, **other.reproduction_cooldowns_add}
-        return replace(self, **changes)
-
-@dataclass(frozen=True, slots=True)
-class RewardUpdate:
-    """
-    Non-inventory progression rewards (XP, evolution points).
-    Authority: Allowed from workers for pure progression, but verified by ApplyGate.
-    Law: Gold and Items must use ResourceTransferIntent for authoritative conservation.
-    """
-    xp_gain: int = 0
-    evolution_points_delta: int = 0
-    
-    def is_noop(self) -> bool:
-        return self.xp_gain == 0 and self.evolution_points_delta == 0
-
-    def merge(self, other: RewardUpdate) -> RewardUpdate:
-        if not other or other.is_noop():
-            return self
-        changes: Dict[str, Any] = {}
-        if other.xp_gain != 0: changes["xp_gain"] = self.xp_gain + other.xp_gain
-        if other.evolution_points_delta != 0: changes["evolution_points_delta"] = self.evolution_points_delta + other.evolution_points_delta
-        return replace(self, **changes)
-
-@dataclass(frozen=True, slots=True)
-class StrategicUpdate:
-    """Updates to strategic markers (blockers, leads, directives, projects, concerns, etc.)."""
-    # Blockers
-    blockers_add_or_update: list[BlockerState] = field(default_factory=list)
-    blockers_remove: list[str] = field(default_factory=list)
-    # Leads
-    leads_add_or_update: list[LeadState] = field(default_factory=list)
-    leads_remove: list[str] = field(default_factory=list)
-    # Directives
-    directives_add_or_update: list[DirectiveState] = field(default_factory=list)
-    directives_remove: list[str] = field(default_factory=list)
-    # Projects
-    projects_add_or_update: list[ProjectState] = field(default_factory=list)
-    projects_remove: list[str] = field(default_factory=list)
-    current_project_id_set: Optional[str] = None
-    current_objective_id_set: Optional[str] = None
-    # Boredom (PH5 M2)
-    boredom_delta: Dict[str, float] = field(default_factory=dict) # GoalKind -> delta
-    # Concerns
-    concerns_add_or_update: list[ConcernState] = field(default_factory=list)
-    concerns_remove: list[str] = field(default_factory=list)
-    # Candidate Zones
-    candidate_zones_add_or_update: list[CandidateZone] = field(default_factory=list)
-    candidate_zones_remove: list[str] = field(default_factory=list)
-    # Hypotheses
-    hypotheses_add_or_update: list[HypothesisState] = field(default_factory=list)
-    hypotheses_remove: list[str] = field(default_factory=list)
-    # Source Trust
-    source_trust_updates: list[SourceTrustEntry] = field(default_factory=list)
-    # Contracts
-    contracts_add_or_update: list[ContractState] = field(default_factory=list)
-    contracts_remove: list[str] = field(default_factory=list)
-    # Marriages
-    marriages_add_or_update: list[MarriageState] = field(default_factory=list)
-    marriages_remove: list[str] = field(default_factory=list)
-    # Turning Points
-    turning_points_add: list[TurningPointState] = field(default_factory=list)
-    # Overload
-    overload_source_set: Optional[str] = None
-    overload_tick_set: Optional[int] = None
-    # Routing (adventure-route observability restore)
-    last_routing_family_set: Optional[str] = None
-    last_routing_tick_set: Optional[int] = None
-    # Beliefs
-    beliefs_add_or_update: list[Any] = field(default_factory=list)
-    beliefs_remove: list[str] = field(default_factory=list)
-    # Committed Intentions
-    committed_intentions_add_or_update: list[CommittedIntention] = field(default_factory=list)
-    committed_intentions_remove: list[str] = field(default_factory=list)  # by intention_id
-    # Home/Exile (idea 59/65) -- set once at birth, or once at displacement if previously unset;
-    # never overwrites an already-set value (a refugee's home_region_id is their *original* home).
-    home_region_id_set: Optional[str] = None
-
-    def is_noop(self) -> bool:
-        return (not self.blockers_add_or_update and not self.blockers_remove and
-                not self.leads_add_or_update and not self.leads_remove and
-                not self.directives_add_or_update and not self.directives_remove and
-                not self.projects_add_or_update and not self.projects_remove and
-                self.current_project_id_set is None and self.current_objective_id_set is None and
-                not self.boredom_delta and not self.concerns_add_or_update and
-                not self.concerns_remove and not self.candidate_zones_add_or_update and
-                not self.candidate_zones_remove and not self.hypotheses_add_or_update and
-                not self.hypotheses_remove and not self.source_trust_updates and
-                not self.contracts_add_or_update and not self.contracts_remove and
-                not self.marriages_add_or_update and not self.marriages_remove and
-                not self.turning_points_add and self.overload_source_set is None and
-                self.overload_tick_set is None and self.last_routing_family_set is None and
-                self.last_routing_tick_set is None and not self.beliefs_add_or_update and
-                not self.beliefs_remove and not self.committed_intentions_add_or_update and
-                not self.committed_intentions_remove and self.home_region_id_set is None)
-
-    def merge(self, other: StrategicUpdate) -> StrategicUpdate:
-        """Merges another StrategicUpdate into this one."""
-        if not other or other.is_noop():
-            return self
-            
-        # Dictionaries sum deltas
-        new_boredom = dict(self.boredom_delta)
-        for k, v in other.boredom_delta.items():
-            new_boredom[k] = new_boredom.get(k, 0.0) + v
-            
-        return StrategicUpdate(
-            blockers_add_or_update=self.blockers_add_or_update + other.blockers_add_or_update,
-            blockers_remove=self.blockers_remove + other.blockers_remove,
-            leads_add_or_update=self.leads_add_or_update + other.leads_add_or_update,
-            leads_remove=self.leads_remove + other.leads_remove,
-            directives_add_or_update=self.directives_add_or_update + other.directives_add_or_update,
-            directives_remove=self.directives_remove + other.directives_remove,
-            projects_add_or_update=self.projects_add_or_update + other.projects_add_or_update,
-            projects_remove=self.projects_remove + other.projects_remove,
-            current_project_id_set=other.current_project_id_set if other.current_project_id_set is not None else self.current_project_id_set,
-            current_objective_id_set=other.current_objective_id_set if other.current_objective_id_set is not None else self.current_objective_id_set,
-            boredom_delta=new_boredom,
-            concerns_add_or_update=self.concerns_add_or_update + other.concerns_add_or_update,
-            concerns_remove=self.concerns_remove + other.concerns_remove,
-            candidate_zones_add_or_update=self.candidate_zones_add_or_update + other.candidate_zones_add_or_update,
-            candidate_zones_remove=self.candidate_zones_remove + other.candidate_zones_remove,
-            hypotheses_add_or_update=self.hypotheses_add_or_update + other.hypotheses_add_or_update,
-            hypotheses_remove=self.hypotheses_remove + other.hypotheses_remove,
-            source_trust_updates=self.source_trust_updates + other.source_trust_updates,
-            contracts_add_or_update=self.contracts_add_or_update + other.contracts_add_or_update,
-            contracts_remove=self.contracts_remove + other.contracts_remove,
-            marriages_add_or_update=self.marriages_add_or_update + other.marriages_add_or_update,
-            marriages_remove=self.marriages_remove + other.marriages_remove,
-            turning_points_add=self.turning_points_add + other.turning_points_add,
-            overload_source_set=other.overload_source_set if other.overload_source_set is not None else self.overload_source_set,
-            overload_tick_set=other.overload_tick_set if other.overload_tick_set is not None else self.overload_tick_set,
-            last_routing_family_set=other.last_routing_family_set if other.last_routing_family_set is not None else self.last_routing_family_set,
-            last_routing_tick_set=other.last_routing_tick_set if other.last_routing_tick_set is not None else self.last_routing_tick_set,
-            beliefs_add_or_update=self.beliefs_add_or_update + other.beliefs_add_or_update,
-            beliefs_remove=self.beliefs_remove + other.beliefs_remove,
-            committed_intentions_add_or_update=self.committed_intentions_add_or_update + other.committed_intentions_add_or_update,
-            committed_intentions_remove=self.committed_intentions_remove + other.committed_intentions_remove,
-            home_region_id_set=other.home_region_id_set if other.home_region_id_set is not None else self.home_region_id_set
-        )
-
-@dataclass(frozen=True, slots=True)
-class StaminaUpdate:
-    """Updates to stamina resource."""
-    current_delta: float = 0.0
-    current_set: Optional[float] = None
-    max_stamina_set: Optional[float] = None
-
-    def is_noop(self) -> bool:
-        return self.current_delta == 0.0 and self.current_set is None and self.max_stamina_set is None
-
-    def merge(self, other: StaminaUpdate) -> StaminaUpdate:
-        if not other or other.is_noop():
-            return self
-        changes: Dict[str, Any] = {}
-        if other.current_delta != 0.0: changes["current_delta"] = self.current_delta + other.current_delta
-        if other.current_set is not None: changes["current_set"] = other.current_set
-        if other.max_stamina_set is not None: changes["max_stamina_set"] = other.max_stamina_set
-        return replace(self, **changes)
-
-@dataclass(frozen=True, slots=True)
-class WoundUpdate:
-    """New wounds and scar transitions."""
-    wounds_add: List[WoundState] = field(default_factory=list)
-    wounds_heal: List[str] = field(default_factory=list)  # wound IDs to heal
-    scars_add: List[ScarState] = field(default_factory=list)
-
-    def is_noop(self) -> bool:
-        return not self.wounds_add and not self.wounds_heal and not self.scars_add
-
-    def merge(self, other: WoundUpdate) -> WoundUpdate:
-        if not other or other.is_noop():
-            return self
-        changes: Dict[str, Any] = {}
-        if other.wounds_add: changes["wounds_add"] = self.wounds_add + other.wounds_add
-        if other.wounds_heal: changes["wounds_heal"] = self.wounds_heal + other.wounds_heal
-        if other.scars_add: changes["scars_add"] = self.scars_add + other.scars_add
-        return replace(self, **changes)
 
 @dataclass(frozen=True, slots=True)
 class StatusEffectUpdate:
@@ -686,15 +177,18 @@ class StatusEffectUpdate:
     effects_remove: List[str] = field(default_factory=list)  # status `kind` values to remove
 
     def is_noop(self) -> bool:
+        """True when no status effect is added or removed."""
         return not self.effects_add and not self.effects_remove
 
     def merge(self, other: StatusEffectUpdate) -> StatusEffectUpdate:
+        """Fold `other` in: the add and remove lists concatenate."""
         if not other or other.is_noop():
             return self
         changes: Dict[str, Any] = {}
         if other.effects_add: changes["effects_add"] = self.effects_add + other.effects_add
         if other.effects_remove: changes["effects_remove"] = self.effects_remove + other.effects_remove
         return replace(self, **changes)
+
 
 @dataclass(frozen=True, slots=True)
 class EntityUpdate:
@@ -803,205 +297,6 @@ class EntityUpdate:
         if other.pending_action_intent is not None: changes["pending_action_intent"] = other.pending_action_intent
         if other.property_updates: changes["property_updates"] = {**self.property_updates, **other.property_updates}
         return replace(self, **changes)
-
-
-@dataclass(frozen=True, slots=True)
-class ResourceNodeUpdate:
-    """Updates to a harvestable node."""
-    node_id: int
-    charges_delta: int = 0
-    cooldown_set: Optional[int] = None
-
-    def merge(self, other: ResourceNodeUpdate) -> ResourceNodeUpdate:
-        if self.node_id != other.node_id:
-            raise ValueError("Cannot merge ResourceNodeUpdates for different nodes")
-        return replace(self,
-            charges_delta=self.charges_delta + other.charges_delta,
-            cooldown_set=other.cooldown_set if other.cooldown_set is not None else self.cooldown_set
-        )
-
-
-#: In-band sentinel meaning "set the region's owner to None (unowned)".
-#: `owner_faction_id_set=None` already means "no change", so an explicit
-#: clear-to-unowned cannot be expressed with None and needs its own value.
-#: Always decode with `decode_owner_faction_id_set()` before the value reaches
-#: durable state, an event payload, or a `Faction`-keyed lookup -- `-1` is not a
-#: `Faction` member, so indexing by it raises KeyError
-#: (TCK-20261003-REGION-OWNER-NONE-SENTINEL-PERSISTED-RAW).
-NO_OWNER_SENTINEL: int = -1
-
-
-def decode_owner_faction_id_set(value: Optional[int]) -> Optional[int]:
-    """Decode a staged `WorldUpdate.owner_faction_id_set` into a durable owner.
-
-    Returns None both for "no change" and for the explicit unowned sentinel; callers
-    distinguish the two by testing `value is None` first. Mirrors the established
-    `group_id_set` idiom in `src/engine/patches.py`.
-    """
-    if value == NO_OWNER_SENTINEL:
-        return None
-    return value
-
-
-@dataclass(frozen=True, slots=True)
-class WorldUpdate:
-    """Updates to regional world state."""
-    region_id: str
-    hazard_level_set: Optional[float] = None
-    suppression_set: Optional[bool] = None
-    calamity_intensity_set: Optional[float] = None
-    trauma_delta: float = 0.0
-    trauma_score_set: Optional[float] = None
-    retaliation_pressure_delta: float = 0.0
-    retaliation_pressure_set: Optional[float] = None
-    influence_delta: float = 0.0
-    owner_faction_id_set: Optional[int] = None
-    kind_set: Optional[str] = None
-    weather_set: Optional[str] = None
-    modifiers_add: List[str] = field(default_factory=list)
-    modifiers_remove: List[str] = field(default_factory=list)
-    price_modifiers_set: Optional[Dict[str, float]] = None
-    # E52A: Per-region demographic cohort state (Dict[bracket, PopulationCohort])
-    population_cohorts_set: Optional[Dict[str, Any]] = None
-    # TCK-20260902-REPRODUCTION-POPULATION-PRESSURE-CLOSURE: coarse, additive-only nudge
-    # applied on top of population_cohorts_set (never a resync) — see apply_plan.py.
-    population_young_births_delta: int = 0
-    # E53Cb: Siege mechanics
-    service_availability_delta: float = 0.0
-    siege_state_set: Optional[Any] = None   # Optional[SiegeState] — Any to avoid circular import
-    siege_state_clear: bool = False          # True = remove existing siege_state (None is no-op sentinel)
-    siege_progress_delta: float = 0.0
-
-    def merge(self, other: WorldUpdate) -> WorldUpdate:
-        """Merges another WorldUpdate into this one, summing deltas and preferring non-None sets."""
-        if self.region_id != other.region_id:
-            raise ValueError("Cannot merge WorldUpdates for different regions")
-
-        return replace(self,
-            hazard_level_set=other.hazard_level_set if other.hazard_level_set is not None else self.hazard_level_set,
-            suppression_set=other.suppression_set if other.suppression_set is not None else self.suppression_set,
-            calamity_intensity_set=other.calamity_intensity_set if other.calamity_intensity_set is not None else self.calamity_intensity_set,
-            trauma_delta=self.trauma_delta + other.trauma_delta,
-            trauma_score_set=other.trauma_score_set if other.trauma_score_set is not None else self.trauma_score_set,
-            retaliation_pressure_delta=self.retaliation_pressure_delta + other.retaliation_pressure_delta,
-            retaliation_pressure_set=other.retaliation_pressure_set if other.retaliation_pressure_set is not None else self.retaliation_pressure_set,
-            influence_delta=self.influence_delta + other.influence_delta,
-            owner_faction_id_set=other.owner_faction_id_set if other.owner_faction_id_set is not None else self.owner_faction_id_set,
-            kind_set=other.kind_set if other.kind_set is not None else self.kind_set,
-            weather_set=other.weather_set if other.weather_set is not None else self.weather_set,
-            modifiers_add=sorted(set(self.modifiers_add + other.modifiers_add)),
-            modifiers_remove=sorted(set(self.modifiers_remove + other.modifiers_remove)),
-            price_modifiers_set=other.price_modifiers_set if other.price_modifiers_set is not None else self.price_modifiers_set,
-            population_cohorts_set=other.population_cohorts_set if other.population_cohorts_set is not None else self.population_cohorts_set,
-            population_young_births_delta=self.population_young_births_delta + other.population_young_births_delta,
-            service_availability_delta=self.service_availability_delta + other.service_availability_delta,
-            siege_state_set=other.siege_state_set if other.siege_state_set is not None else self.siege_state_set,
-            siege_state_clear=self.siege_state_clear or other.siege_state_clear,
-            siege_progress_delta=self.siege_progress_delta + other.siege_progress_delta,
-        )
-
-
-@dataclass(frozen=True, slots=True)
-class ChestUpdate:
-    """Updates to a world chest."""
-    chest_id: int
-    cooldown_set: Optional[int] = None
-    items_set: Optional[List[ItemStack]] = None
-
-    def merge(self, other: ChestUpdate) -> ChestUpdate:
-        if self.chest_id != other.chest_id:
-            raise ValueError("Cannot merge ChestUpdates for different chests")
-        return replace(self,
-            cooldown_set=other.cooldown_set if other.cooldown_set is not None else self.cooldown_set,
-            items_set=other.items_set if other.items_set is not None else self.items_set
-        )
-
-@dataclass(frozen=True, slots=True)
-class CampUpdate:
-    """Updates to a persistent encampment."""
-    id: str
-    maturity_delta: float = 0.0
-    active_set: Optional[bool] = None
-    last_raid_tick_set: Optional[int] = None
-    totem_tier_set: Optional[int] = None
-    stockpile_delta: float = 0.0
-    palisade_integrity_set: Optional[float] = None
-
-    def merge(self, other: CampUpdate) -> CampUpdate:
-        if self.id != other.id:
-            raise ValueError("Cannot merge CampUpdates for different camps")
-        return replace(self,
-            maturity_delta=self.maturity_delta + other.maturity_delta,
-            active_set=other.active_set if other.active_set is not None else self.active_set,
-            last_raid_tick_set=other.last_raid_tick_set if other.last_raid_tick_set is not None else self.last_raid_tick_set,
-            stockpile_delta=self.stockpile_delta + other.stockpile_delta,
-            totem_tier_set=other.totem_tier_set if other.totem_tier_set is not None else self.totem_tier_set,
-            palisade_integrity_set=other.palisade_integrity_set if other.palisade_integrity_set is not None else self.palisade_integrity_set,
-        )
-
-
-
-@dataclass(frozen=True, slots=True)
-class QuestOpportunityRewardIntent:
-    """
-    Signal that the named entity should receive the reward for the named
-    QuestOpportunity.  The actual reward amounts are read from
-    state.quest_registry[quest_id].reward_spec inside the enforce stage.
-    """
-    entity_id: int
-    quest_id: str
-
-
-@dataclass(frozen=True, slots=True)
-class FactionUpdate:
-    """Typed mutation record for a single faction's durable state (E53Aa)."""
-    faction_id: str
-    tension_delta: float = 0.0
-    military_strength_set: Optional[float] = None
-    territory_add: Tuple[str, ...] = ()
-    territory_remove: Tuple[str, ...] = ()
-    resources_delta: Dict[str, int] = field(default_factory=dict)
-    diplomatic_relations_set: Dict[str, DiplomaticState] = field(default_factory=dict)
-    active_doctrines_set: Optional[Tuple[str, ...]] = None
-    faction_sentiment_delta: Dict[str, float] = field(default_factory=dict)  # target_faction_id -> sentiment delta, from a real interaction (bumps last_interaction_tick)
-    faction_familiarity_delta: Dict[str, float] = field(default_factory=dict)  # target_faction_id -> familiarity delta, from a real interaction (bumps last_interaction_tick)
-    faction_sentiment_decay_set: Dict[str, float] = field(default_factory=dict)  # target_faction_id -> absolute post-decay sentiment value; does NOT bump last_interaction_tick (not a real interaction)
-    pairwise_tension_delta: Dict[str, float] = field(default_factory=dict)  # target_faction_id -> tension delta scoped to THIS rival only (unlike tension_delta, which is ambient and applies broadly -- see FactionState.pairwise_tension)
-
-    def is_noop(self) -> bool:
-        return (
-            self.tension_delta == 0.0
-            and self.military_strength_set is None
-            and not self.territory_add
-            and not self.territory_remove
-            and not self.resources_delta
-            and not self.diplomatic_relations_set
-            and self.active_doctrines_set is None
-            and not self.faction_sentiment_delta
-            and not self.faction_familiarity_delta
-            and not self.faction_sentiment_decay_set
-            and not self.pairwise_tension_delta
-        )
-
-
-@dataclass(frozen=True, slots=True)
-class ClanUpdate:
-    """Typed mutation record for a single clan's durable state (idea 40/M4)."""
-    clan_id: str
-    member_entity_ids_add: Tuple[int, ...] = ()
-    member_entity_ids_remove: Tuple[int, ...] = ()
-    leader_entity_id_set: Optional[int] = None
-    dissolved_tick_set: Optional[int] = None
-    clan_reputation_delta: float = 0.0
-
-    def is_noop(self) -> bool:
-        return (
-            not self.member_entity_ids_add
-            and not self.member_entity_ids_remove
-            and self.leader_entity_id_set is None
-            and self.dissolved_tick_set is None
-            and self.clan_reputation_delta == 0.0
-        )
 
 
 def _merged_spawn_sources(first: "StateUpdate", others: List["StateUpdate"]) -> Dict[int, SpawnSource]:
