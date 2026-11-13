@@ -1,0 +1,7 @@
+19:02:07 ntfy: failure=0 success=6 | grafana: alerts:alerting=2 alerts:normal=19 alerts:pending=0 notifications_total=webhook | up{redis}=['0']
+19:02:16 ntfy: failure=0 success=6 | grafana: alerts:alerting=2 alerts:normal=19 alerts:pending=0 notifications_total=webhook | up{redis}=['0']
+19:02:24 ntfy: failure=0 success=7 | grafana: alerts:alerting=2 alerts:normal=19 alerts:pending=0 notifications_total=webhook | up{redis}=['0']
+19:02:32 ntfy: failure=0 success=7 | grafana: alerts:alerting=2 alerts:normal=19 alerts:pending=0 notifications_total=webhook | up{redis}=['0']
+19:02:40 ntfy: failure=0 success=7 | grafana: alerts:alerting=2 alerts:normal=19 alerts:pending=0 notifications_total=webhook | up{redis}=['0']
+19:02:49 ntfy: failure=0 success=7 | grafana: alerts:alerting=2 alerts:normal=19 alerts:pending=0 notifications_total=webhook | up{redis}=['0']
+started at 19:03:15

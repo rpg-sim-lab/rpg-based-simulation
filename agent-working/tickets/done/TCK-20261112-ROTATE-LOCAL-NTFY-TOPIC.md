@@ -1,10 +1,10 @@
 ---
-status: active
+status: historical
 layer: platform
 authority: P1
 audience: agent
 ticket_id: TCK-20261112-ROTATE-LOCAL-NTFY-TOPIC
-phase: inprogress
+phase: done
 date: 2026-11-12
 tags: [platform, security]
 ---
@@ -15,7 +15,7 @@ tags: [platform, security]
 Rotate the local ntfy alert topic, which was once echoed in an agent terminal, by an owner-run procedure
 
 ## Status
-INPROGRESS
+DONE
 
 ## Tier
 hotfix
@@ -82,9 +82,22 @@ Status 2026-11-12: the runbook and the comment fix are written; the rotation and
 
 ## Files Changed
 - `docs/runbooks/ntfy-topic-rotation.md` (new), `docs/runbooks/README.md`, `docs/runbooks/alerting-pipeline.md`.
+- `agent-working/stored_artifacts/TCK-20261112-ROTATE-LOCAL-NTFY-TOPIC/run-2026-11-12/` (fire-test evidence).
 - `compose.yaml`: the setup comment at the top (the `user add` and `access` lines and a note).
 
 ## Completion Summary
 
-## Status note (2026-11-13)
-Stays INPROGRESS: the runbook is committed, but acceptance needs the owner's rotation and a fire test (a lead slot). Not closed by the batch that carries the runbook.
+The local ntfy topic is rotated and proven end to end. The owner rotated it with the runbook; the owner-reported checks (via lead's relay) were anonymous reads of the old and new topics both 403 and one write-only grant, "all success". The fire test (below) showed ntfy's published-success counter 6 -> 7 (FIRING) -> 8 (RESOLVED) with 0 failures, and the OWNER CONFIRMS (via lead-planner's log on #715) that both TargetDown messages arrived on the client: firing at about 19:02Z and resolved at about 19:07Z (02:02 and 02:07 local).
+
+Known gaps: the owner removes `docker/secrets/ntfy_topic.old` themselves (not this seat's); the access token was deliberately not rotated with the topic (the runbook says why); the Grafana alert name behind the standing `alerting` instance (`AiWorkerLagHigh`) is inferred, not proven (no API credentials read); the ai_worker and watchdog images are not built on this host (see TCK-20261113-PROOF-RUN-EXPECTS-AI-WORKER-LAG-NODATA).
+
+## Fire test (2026-11-12, run notes)
+Evidence: `agent-working/stored_artifacts/TCK-20261112-ROTATE-LOCAL-NTFY-TOPIC/run-2026-11-12/` (counters and states only; no topic or token read, a count scan finds no `tk_` string).
+- **Setup:** branch `platform-implementer-local-ntfy-fire-test` (from `3a7d78daf`), gate at 18:47Z (load 1.32, 6.2 GB free, `/` 71%, `/data` 84%), watcher armed (90%, 1500 MiB, 7500 MiB swap, never triggered). After the owner's image-store move `docker info` still showed `io.containerd.snapshotter.v1` and `DockerRootDir=/data/docker`.
+- **First start failed, by design of the check:** `docker compose --profile observability up --no-build` stopped on the missing `platform-ai_worker` image (`platform-watchdog` is missing too); the seven containers it had only created were removed with `down`. The 11 services of the 2026-11-11/12 proof runs were then started by name: loki, redis, docker-socket-proxy, node-exporter, ntfy, redis-exporter, tempo, backend, alloy, prometheus, grafana. Prometheus showed 9/9 targets up; Grafana loaded 11 rules in four groups (base 6, slo 2, cause worker 2 and cause 1); ntfy healthy.
+- **Pre-existing alert (inferred, not proven):** one Grafana instance was in `alerting` from the start. It is inferred to be `AiWorkerLagHigh` (`noDataState: Alerting`, `for: 2m`, metric `sim_stream_consumer_lag` absent because ai_worker is not in the 11-service set); the name cannot be confirmed without the Grafana API (credentials not read). An earlier note in this run named `GrafanaAlertingFailures`; that was wrong: its own expression evaluated to 0. Finding for follow-up: on the 11-service proof path `AiWorkerLagHigh` is always alerting. ntfy's counter was flat at 6 from 18:52:16 to the fire (6 sends in the first ~1.5 minutes after the cold start, not a one-minute repeat; the policy is group_wait 30s, group_interval 5m, repeat_interval 4h).
+- **Fire:** `ntfy_messages_published_success` baseline 6 (failure 0). redis-exporter stopped 18:59:05Z; `up{job="redis"}` 0 from 18:59:12; instance pending 18:59:58; ALERTING 19:02:00; counter 7 at 19:02:24 (+1). redis-exporter started 19:03:15; up 19:03:31; instance normal 19:04:02; counter 8 at 19:07:20 (+1, the RESOLVED send, about 3 minutes after the state change: the 5m group_interval). No failures. No other counter moved.
+- **Owner-reported (via lead's relay, not seen by this seat):** after the rotation and before the image-store move the owner ran the runbook's checks: anonymous reads of the old and new topics both 403, one write-only grant; "all success".
+- **Teardown:** `down` without `-v`; volumes 6 before and after; `/` 71%, `/data` 84% (unchanged); `docker system df` after: Images 18 / 6.771GB, Containers 2/1, Volumes 6 / 678.9MB (was 665MB), Build Cache 22 / 629.8MB.
+
+Owner-confirmed via lead (#715 log): both messages arrived on the client, firing about 19:02Z and resolved about 19:07Z. Delivery to ntfy itself is shown by the server counters only.
