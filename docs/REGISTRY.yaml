@@ -8107,7 +8107,7 @@
   - content
   last_verified: '2026-10-09'
 - type: ticket
-  path: agent-working/tickets/todos/TCK-20261113-PROOF-RUN-EXPECTS-AI-WORKER-LAG-NODATA.md
+  path: agent-working/tickets/done/TCK-20261113-PROOF-RUN-EXPECTS-AI-WORKER-LAG-NODATA.md
   ticket_id: TCK-20261113-PROOF-RUN-EXPECTS-AI-WORKER-LAG-NODATA
   title: Stack proof runs without ai_worker always show AiWorkerLagHigh alerting (NoData
     by design); say so in the run procedure
@@ -8321,6 +8321,21 @@
   - platform
   - delivery
 - type: ticket
+  path: agent-working/tickets/done/TCK-20261112-ROTATE-LOCAL-NTFY-TOPIC.md
+  ticket_id: TCK-20261112-ROTATE-LOCAL-NTFY-TOPIC
+  title: Rotate the local ntfy alert topic, which was once echoed in an agent terminal,
+    by an owner-run procedure
+  tier: hotfix
+  ticket_type: chore
+  date: '2026-11-12'
+  related_code_areas:
+  - compose.yaml
+  - docker/grafana/provisioning/alerting/contact-points.yaml
+  artifact_files: []
+  tags:
+  - platform
+  - security
+- type: ticket
   path: agent-working/tickets/done/TCK-20261112-THE-API-EMITS-NO-REQUEST-TRACES.md
   ticket_id: TCK-20261112-THE-API-EMITS-NO-REQUEST-TRACES
   title: 'The API emits no request traces: add OpenTelemetry server spans and Redis
@@ -8341,21 +8356,6 @@
   tags:
   - observability
   - api-design
-- type: ticket
-  path: agent-working/tickets/inprogress/TCK-20261112-ROTATE-LOCAL-NTFY-TOPIC.md
-  ticket_id: TCK-20261112-ROTATE-LOCAL-NTFY-TOPIC
-  title: Rotate the local ntfy alert topic, which was once echoed in an agent terminal,
-    by an owner-run procedure
-  tier: hotfix
-  ticket_type: chore
-  date: '2026-11-12'
-  related_code_areas:
-  - compose.yaml
-  - docker/grafana/provisioning/alerting/contact-points.yaml
-  artifact_files: []
-  tags:
-  - platform
-  - security
 - type: ticket
   path: agent-working/tickets/todos/TCK-20261112-HAND-ADDED-WORKTREES-ARE-NOT-RECORDED-AGAINST-A-SEAT.md
   ticket_id: TCK-20261112-HAND-ADDED-WORKTREES-ARE-NOT-RECORDED-AGAINST-A-SEAT

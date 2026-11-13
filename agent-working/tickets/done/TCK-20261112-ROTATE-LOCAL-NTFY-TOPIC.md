@@ -1,10 +1,10 @@
 ---
-status: active
+status: historical
 layer: platform
 authority: P1
 audience: agent
 ticket_id: TCK-20261112-ROTATE-LOCAL-NTFY-TOPIC
-phase: inprogress
+phase: done
 date: 2026-11-12
 tags: [platform, security]
 ---
@@ -15,7 +15,7 @@ tags: [platform, security]
 Rotate the local ntfy alert topic, which was once echoed in an agent terminal, by an owner-run procedure
 
 ## Status
-INPROGRESS
+DONE
 
 ## Tier
 hotfix
@@ -82,12 +82,14 @@ Status 2026-11-12: the runbook and the comment fix are written; the rotation and
 
 ## Files Changed
 - `docs/runbooks/ntfy-topic-rotation.md` (new), `docs/runbooks/README.md`, `docs/runbooks/alerting-pipeline.md`.
+- `agent-working/stored_artifacts/TCK-20261112-ROTATE-LOCAL-NTFY-TOPIC/run-2026-11-12/` (fire-test evidence).
 - `compose.yaml`: the setup comment at the top (the `user add` and `access` lines and a note).
 
 ## Completion Summary
 
-## Status note (2026-11-13)
-Stays INPROGRESS: the runbook is committed, but acceptance needs the owner's rotation and a fire test (a lead slot). Not closed by the batch that carries the runbook.
+The local ntfy topic is rotated and proven end to end. The owner rotated it with the runbook; the owner-reported checks (via lead's relay) were anonymous reads of the old and new topics both 403 and one write-only grant, "all success". The fire test (below) showed ntfy's published-success counter 6 -> 7 (FIRING) -> 8 (RESOLVED) with 0 failures, and the OWNER CONFIRMS (via lead-planner's log on #715) that both TargetDown messages arrived on the client: firing at about 19:02Z and resolved at about 19:07Z (02:02 and 02:07 local).
+
+Known gaps: the owner removes `docker/secrets/ntfy_topic.old` themselves (not this seat's); the access token was deliberately not rotated with the topic (the runbook says why); the Grafana alert name behind the standing `alerting` instance (`AiWorkerLagHigh`) is inferred, not proven (no API credentials read); the ai_worker and watchdog images are not built on this host (see TCK-20261113-PROOF-RUN-EXPECTS-AI-WORKER-LAG-NODATA).
 
 ## Fire test (2026-11-12, run notes)
 Evidence: `agent-working/stored_artifacts/TCK-20261112-ROTATE-LOCAL-NTFY-TOPIC/run-2026-11-12/` (counters and states only; no topic or token read, a count scan finds no `tk_` string).
@@ -98,4 +100,4 @@ Evidence: `agent-working/stored_artifacts/TCK-20261112-ROTATE-LOCAL-NTFY-TOPIC/r
 - **Owner-reported (via lead's relay, not seen by this seat):** after the rotation and before the image-store move the owner ran the runbook's checks: anonymous reads of the old and new topics both 403, one write-only grant; "all success".
 - **Teardown:** `down` without `-v`; volumes 6 before and after; `/` 71%, `/data` 84% (unchanged); `docker system df` after: Images 18 / 6.771GB, Containers 2/1, Volumes 6 / 678.9MB (was 665MB), Build Cache 22 / 629.8MB.
 
-Status: stays INPROGRESS. Acceptance still needs the owner to confirm on the client that the FIRING (about 19:02:20Z) and RESOLVED (about 19:07:15Z) messages arrived; delivery to ntfy is shown by the server counters only.
+Owner-confirmed via lead (#715 log): both messages arrived on the client, firing about 19:02Z and resolved about 19:07Z. Delivery to ntfy itself is shown by the server counters only.

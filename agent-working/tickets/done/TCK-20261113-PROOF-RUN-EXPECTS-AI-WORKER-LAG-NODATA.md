@@ -1,10 +1,10 @@
 ---
-status: active
+status: historical
 layer: platform
 authority: P1
 audience: agent
 ticket_id: TCK-20261113-PROOF-RUN-EXPECTS-AI-WORKER-LAG-NODATA
-phase: open
+phase: done
 date: 2026-11-13
 tags: [platform, observability]
 ---
@@ -15,7 +15,7 @@ tags: [platform, observability]
 Stack proof runs without ai_worker always show AiWorkerLagHigh alerting (NoData by design); say so in the run procedure
 
 ## Status
-OPEN
+DONE
 
 ## Tier
 hotfix
@@ -65,6 +65,19 @@ docker/grafana/provisioning/alerting/rules-worker.yaml
 - Hotfix tier: documentation only, with self-evident intent.
 
 ## Implementation Notes
+- Documentation only. `rules-worker.yaml` is unchanged (`noDataState: Alerting` stays the designed signal).
+- `docs/runbooks/alerting-pipeline.md`: new "Proof runs without ai_worker" section (expected alert from about 2 min after start, the pre-fire check, counter-based attribution, the missing images and the named-service list).
+- `docs/runbooks/ntfy-topic-rotation.md`: a paragraph at the end of "Fire test" with the same expectation and the observed 6 -> 7 -> 8.
+- `docs/runbooks/ai-worker-lag.md`: a pointer after "Why NoData fires the lag alert".
+- Inference check without credentials: strengthened but not proven. Grafana's `/metrics` showed exactly 1 `alerting` instance; the Grafana log showed `rule_uid=cause-ai-worker-lag` handed to the notifier on its 30 s interval for the whole run; `GrafanaAlertingFailures`' own expression evaluated to 0; Prometheus showed 9/9 targets up. The alert name itself cannot be read without the Grafana API, so the docs say "inferred".
+
 ## Test Summary
+- validated: frontmatter of the three runbooks; no line starts with `!`; no 32+ hex string added; `git diff` shows no change to `rules-worker.yaml` or `compose.yaml`; REGISTRY no-drift and paths guard pass. Observation behind it: `agent-working/stored_artifacts/TCK-20261112-ROTATE-LOCAL-NTFY-TOPIC/run-2026-11-12/`.
+
 ## Files Changed
+- `docs/runbooks/alerting-pipeline.md`, `docs/runbooks/ntfy-topic-rotation.md`, `docs/runbooks/ai-worker-lag.md`.
+
 ## Completion Summary
+The three runbooks now state the expected `AiWorkerLagHigh` NoData alert on the named-service proof path, the counter-based attribution and the missing images.
+
+Known gap: the alert name is inferred, not proven, because the Grafana API needs credentials this seat does not read.
