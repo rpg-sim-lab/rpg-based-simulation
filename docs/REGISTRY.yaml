@@ -8107,6 +8107,27 @@
   - content
   last_verified: '2026-10-09'
 - type: ticket
+  path: agent-working/tickets/done/TCK-20261113-FIVE-SOCIAL-ACTION-KINDS-MAY-HAVE-NO-ISSUER-IN-PLAY.md
+  ticket_id: TCK-20261113-FIVE-SOCIAL-ACTION-KINDS-MAY-HAVE-NO-ISSUER-IN-PLAY
+  title: 'Five social action kinds may have no issuer in play: find which of TEAM_UP,
+    TRADE, TRAIN, PROPOSE_MARRIAGE and JOIN_CLAN/LEAVE_CLAN anything ever emits, and
+    how their contracts are really created and accepted'
+  tier: standard
+  ticket_type: bug
+  date: '2026-11-13'
+  related_code_areas:
+  - src/engine/domain/action_router.py (:63-84)
+  - src/engine/domain/core_actions.py (execute_* about :175-584)
+  - src/domains/cooperation/services.py, src/domains/cooperation/phase.py
+  - src/systems/social_systems/appraisal.py, contracts.py
+  - src/engine/hostility.py (perceived_hostile), src/engine/legality.py (_is_engagement_hostile),
+    src/systems/movement.py (resolve_move)
+  artifact_files:
+  - agent-working/stored_artifacts/TCK-20261113-FIVE-SOCIAL-ACTION-KINDS-MAY-HAVE-NO-ISSUER-IN-PLAY/investigation.md
+  - agent-working/stored_artifacts/TCK-20261113-FIVE-SOCIAL-ACTION-KINDS-MAY-HAVE-NO-ISSUER-IN-PLAY/plan.md
+  - agent-working/stored_artifacts/TCK-20261113-FIVE-SOCIAL-ACTION-KINDS-MAY-HAVE-NO-ISSUER-IN-PLAY/test_plan.md
+  tags: []
+- type: ticket
   path: agent-working/tickets/done/TCK-20261113-GITHUB-MCP-ENV-FILE-OUTSIDE-REPO.md
   ticket_id: TCK-20261113-GITHUB-MCP-ENV-FILE-OUTSIDE-REPO
   title: The GitHub MCP server reads its token from a per-user file outside the repo,
@@ -8122,6 +8143,20 @@
   - mcp
   - security
   - setup
+- type: ticket
+  path: agent-working/tickets/done/TCK-20261113-PROOF-RUN-EXPECTS-AI-WORKER-LAG-NODATA.md
+  ticket_id: TCK-20261113-PROOF-RUN-EXPECTS-AI-WORKER-LAG-NODATA
+  title: Stack proof runs without ai_worker always show AiWorkerLagHigh alerting (NoData
+    by design); say so in the run procedure
+  tier: hotfix
+  ticket_type: chore
+  date: '2026-11-13'
+  related_code_areas:
+  - docker/grafana/provisioning/alerting/rules-worker.yaml
+  artifact_files: []
+  tags:
+  - platform
+  - observability
 - type: ticket
   path: agent-working/tickets/done/TCK-20261112-A-THROTTLED-CLIENT-THAT-WAITS-OUT-RETRY-AFTER-IS-STILL-REFUSED.md
   ticket_id: TCK-20261112-A-THROTTLED-CLIENT-THAT-WAITS-OUT-RETRY-AFTER-IS-STILL-REFUSED
@@ -8323,6 +8358,35 @@
   - platform
   - delivery
 - type: ticket
+  path: agent-working/tickets/done/TCK-20261112-ROTATE-LOCAL-NTFY-TOPIC.md
+  ticket_id: TCK-20261112-ROTATE-LOCAL-NTFY-TOPIC
+  title: Rotate the local ntfy alert topic, which was once echoed in an agent terminal,
+    by an owner-run procedure
+  tier: hotfix
+  ticket_type: chore
+  date: '2026-11-12'
+  related_code_areas:
+  - compose.yaml
+  - docker/grafana/provisioning/alerting/contact-points.yaml
+  artifact_files: []
+  tags:
+  - platform
+  - security
+- type: ticket
+  path: agent-working/tickets/done/TCK-20261112-SEARCH-SERVER-PER-WORKTREE-INDEX-AND-BUILD-MEMORY-GUARD.md
+  ticket_id: TCK-20261112-SEARCH-SERVER-PER-WORKTREE-INDEX-AND-BUILD-MEMORY-GUARD
+  title: A worktree with its own knowledge index starts its own ~400 MB search server,
+    and `knowledge_search.py build` starts with no memory check
+  tier: hotfix
+  ticket_type: bug
+  date: '2026-11-12'
+  related_code_areas:
+  - _resolve_index_dir
+  - cmd_build
+  artifact_files: []
+  tags:
+  - process-improvement
+- type: ticket
   path: agent-working/tickets/done/TCK-20261112-SOCIALUPDATE-MERGE-REUSES-ITS-LOOP-KEY-ACROSS-KEY-TYPES.md
   ticket_id: TCK-20261112-SOCIALUPDATE-MERGE-REUSES-ITS-LOOP-KEY-ACROSS-KEY-TYPES
   title: 'SocialUpdate carries 6 mypy errors: merge reuses one loop variable across
@@ -8356,21 +8420,6 @@
   tags:
   - observability
   - api-design
-- type: ticket
-  path: agent-working/tickets/inprogress/TCK-20261112-ROTATE-LOCAL-NTFY-TOPIC.md
-  ticket_id: TCK-20261112-ROTATE-LOCAL-NTFY-TOPIC
-  title: Rotate the local ntfy alert topic, which was once echoed in an agent terminal,
-    by an owner-run procedure
-  tier: hotfix
-  ticket_type: chore
-  date: '2026-11-12'
-  related_code_areas:
-  - compose.yaml
-  - docker/grafana/provisioning/alerting/contact-points.yaml
-  artifact_files: []
-  tags:
-  - platform
-  - security
 - type: ticket
   path: agent-working/tickets/todos/TCK-20261112-HAND-ADDED-WORKTREES-ARE-NOT-RECORDED-AGAINST-A-SEAT.md
   ticket_id: TCK-20261112-HAND-ADDED-WORKTREES-ARE-NOT-RECORDED-AGAINST-A-SEAT
