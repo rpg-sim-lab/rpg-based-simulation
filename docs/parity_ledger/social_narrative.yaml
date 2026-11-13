@@ -1459,7 +1459,7 @@
     \ TCK-20260904-REPUTATION-LOCALITY-SCOPE confirmed this read is unchanged: appraise_contract()\
     \ still reads the retained global public_reputation scalar; region-scoped blending\
     \ into this read was explicitly scoped out as a documented follow-up, not implemented\
-    \ in this ticket. TCK-20260904-CLAN-REPUTATION-ASSOCIATION (SOC-268) extended\
+    \ in this ticket. TCK-20260904-CLAN-REPUTATION-ASSOCIATION (SOC-272) extended\
     \ the no-bond stranger-judgment branch with a third additive term, (clan_trust\
     \ - 0.5) * CLAN_INFLUENCE_WEIGHT (CLAN_INFLUENCE_WEIGHT=0.2), where clan_trust\
     \ = (state.clans[clan_id].clan_reputation / 2.0) if the source belongs to a Clan\
@@ -3607,7 +3607,7 @@
     `tests/unit/social/test_trade.py::test_execute_trade_rejects_on_low_trust_bond`,
     `tests/unit/social/test_appraisal_logic.py::test_trade_merchant_kind_appraisal`'
   divergence_note: null
-  support_boundary: null
+  support_boundary: 'Not reachable in play (TCK-20261113-FIVE-SOCIAL-ACTION-KINDS-MAY-HAVE-NO-ISSUER-IN-PLAY, 2026-11-13): nothing in play issues the TRADE action (no ENTITY_ACT payload or ActionIntent creates it, and no world, scenario or content file names it), so CoreActions.execute_trade and _appraise_trade runs only in unit tests. The code is verified against this entry; the behaviour does not occur in play.'
 - id: SOC-250
   text: "Team-Up appraisal via the new ContractKind.TEAM_UP routes through the shared\
     \ bond.sentiment-priority-else-trust_history prelude before a dedicated pure-trust-gate\
@@ -3629,7 +3629,7 @@
     `tests/unit/social/test_team_up.py::test_execute_team_up_rejects_on_low_trust_bond`,
     `tests/unit/social/test_appraisal_logic.py::test_team_up_kind_appraisal`'
   divergence_note: null
-  support_boundary: null
+  support_boundary: 'Not reachable in play (TCK-20261113-FIVE-SOCIAL-ACTION-KINDS-MAY-HAVE-NO-ISSUER-IN-PLAY, 2026-11-13): nothing in play issues the TEAM_UP action (no ENTITY_ACT payload or ActionIntent creates it, and no world, scenario or content file names it), so CoreActions.execute_team_up and _appraise_team_up runs only in unit tests. The code is verified against this entry; the behaviour does not occur in play.'
 - id: SOC-251
   text: "Paid-Information gating via the new ContractKind.PAID_INFORMATION routes\
     \ through the shared bond.sentiment-priority-else-trust_history prelude before\
@@ -3797,7 +3797,7 @@
   proof_type: regression
   test_path: tests/unit/social/test_teach.py::test_teach_refused_below_trust_hard_cancel_threshold
   divergence_note: null
-  support_boundary: null
+  support_boundary: 'Not reachable in play (TCK-20261113-FIVE-SOCIAL-ACTION-KINDS-MAY-HAVE-NO-ISSUER-IN-PLAY, 2026-11-13): nothing in play issues the TRAIN action (no ENTITY_ACT payload or ActionIntent creates it, and no world, scenario or content file names it), so CoreActions.execute_train and _appraise_teach runs only in unit tests. The code is verified against this entry; the behaviour does not occur in play. No skill is taught in play.'
 - id: SOC-259
   text: 'Birth-record durable schema (idea 32, Reproduction): LifecycleComponent gains
     parent_a_entity_id/parent_b_entity_id (Optional[int], None for a parentless natural-creature/magical
@@ -3895,7 +3895,7 @@
   proof_type: regression
   test_path: tests/unit/social/test_marriage.py::test_marriage_refused_below_trust_hard_cancel_threshold
   divergence_note: null
-  support_boundary: null
+  support_boundary: 'Not reachable in play (TCK-20261113-FIVE-SOCIAL-ACTION-KINDS-MAY-HAVE-NO-ISSUER-IN-PLAY, 2026-11-13): nothing in play issues the PROPOSE_MARRIAGE action (no ENTITY_ACT payload or ActionIntent creates it, and no world, scenario or content file names it), so CoreActions.execute_propose_marriage and _appraise_marriage runs only in unit tests. The code is verified against this entry; the behaviour does not occur in play. No MarriageState is written in play.'
 - id: SOC-262
   text: 'Personal Dependents Route Bias (idea 31, non-parental case): LifecycleComponent.dependent_entity_ids:
     list[int] (src/core/state.py) is a new, genuinely distinct durable field from
@@ -4004,7 +4004,7 @@
     entry was originally written as SOC-263 but was renumbered to SOC-264 during a
     merge-conflict resolution -- an unrelated concurrent session independently used
     SOC-263 for a different entry (SocialComponent canonical-hash gap fix) first.'
-  support_boundary: null
+  support_boundary: 'Not reachable in play (TCK-20261113-FIVE-SOCIAL-ACTION-KINDS-MAY-HAVE-NO-ISSUER-IN-PLAY, 2026-11-13): nothing in play issues the JOIN_CLAN or LEAVE_CLAN action (no ENTITY_ACT payload or ActionIntent creates it, and no world, scenario or content file names it), so CoreActions.execute_join_clan / execute_leave_clan and _appraise_clan runs only in unit tests. The code is verified against this entry; the behaviour does not occur in play. In addition, no clan exists in play: AuthoritativeState.clans starts empty and no producer creates a first clan (apply.py builds a ClanState for an unknown clan_id from a ClanUpdate, but every ClanUpdate producer needs an existing clan), so succession and dissolution never run in play.'
 - id: SOC-269
   text: 'Idea 55 (Feuds Outlive the Feuders): the on-death lineage dispatch hook in
     LifecycleSystem.resolve_lifecycle transfers a weakened version of the deceased''s
@@ -4122,7 +4122,7 @@
   proof_type: parity
   test_path: tests/unit/domains/faction/test_clan_reputation_association.py::test_party_defection_produces_clan_reputation_clan_update
   divergence_note: null
-  support_boundary: null
+  support_boundary: 'Not reachable in play (TCK-20261113-FIVE-SOCIAL-ACTION-KINDS-MAY-HAVE-NO-ISSUER-IN-PLAY, 2026-11-13): no clan exists in play (SOC-264), so find_clan_id_for_entity always returns None, the party-defection producer writes no clan_reputation delta, and the appraisal term is always the no-clan 0.0. The code is verified; the behaviour does not occur in play.'
 - id: SOC-265
   text: 'SocialComponent.nemesis_ids (promoted only from sustained real grudge_history
     >= 3.0, SocialMemoryService.check_nemesis_promotion()) and SocialBond.role (RelationshipRole.FRIEND/RIVAL/NEUTRAL,
