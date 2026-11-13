@@ -7486,6 +7486,16 @@
   - observability
   - performance
 - type: doc
+  path: docs/runbooks/compose-api-key.md
+  title: 'Runbook: API keys for the compose stack'
+  status: active
+  layer: platform
+  authority: P2
+  audience: agent
+  tags:
+  - platform
+  - security
+- type: doc
   path: docs/runbooks/disk-space.md
   title: 'Runbook: disk space (DiskSpaceLow, DiskWillFillIn24h)'
   status: active
@@ -7496,6 +7506,15 @@
   - platform
   - observability
 - type: doc
+  path: docs/runbooks/docker-image-store-move.md
+  title: 'Runbook: move Docker''s containerd image store off the root disk'
+  status: active
+  layer: platform
+  authority: P2
+  audience: agent
+  tags:
+  - platform
+- type: doc
   path: docs/runbooks/log-shipping.md
   title: 'Runbook: LogShippingErrors'
   status: active
@@ -7505,6 +7524,16 @@
   tags:
   - platform
   - observability
+- type: doc
+  path: docs/runbooks/ntfy-topic-rotation.md
+  title: 'Runbook: rotate the local ntfy alert topic'
+  status: active
+  layer: platform
+  authority: P2
+  audience: agent
+  tags:
+  - platform
+  - security
 - type: doc
   path: docs/runbooks/records/2026-10-18-api-load-test.md
   title: 'API load test (2026-10-18): age effect, /entities page cap and proposed
@@ -8078,6 +8107,57 @@
   - content
   last_verified: '2026-10-09'
 - type: ticket
+  path: agent-working/tickets/done/TCK-20261113-FIVE-SOCIAL-ACTION-KINDS-MAY-HAVE-NO-ISSUER-IN-PLAY.md
+  ticket_id: TCK-20261113-FIVE-SOCIAL-ACTION-KINDS-MAY-HAVE-NO-ISSUER-IN-PLAY
+  title: 'Five social action kinds may have no issuer in play: find which of TEAM_UP,
+    TRADE, TRAIN, PROPOSE_MARRIAGE and JOIN_CLAN/LEAVE_CLAN anything ever emits, and
+    how their contracts are really created and accepted'
+  tier: standard
+  ticket_type: bug
+  date: '2026-11-13'
+  related_code_areas:
+  - src/engine/domain/action_router.py (:63-84)
+  - src/engine/domain/core_actions.py (execute_* about :175-584)
+  - src/domains/cooperation/services.py, src/domains/cooperation/phase.py
+  - src/systems/social_systems/appraisal.py, contracts.py
+  - src/engine/hostility.py (perceived_hostile), src/engine/legality.py (_is_engagement_hostile),
+    src/systems/movement.py (resolve_move)
+  artifact_files:
+  - agent-working/stored_artifacts/TCK-20261113-FIVE-SOCIAL-ACTION-KINDS-MAY-HAVE-NO-ISSUER-IN-PLAY/investigation.md
+  - agent-working/stored_artifacts/TCK-20261113-FIVE-SOCIAL-ACTION-KINDS-MAY-HAVE-NO-ISSUER-IN-PLAY/plan.md
+  - agent-working/stored_artifacts/TCK-20261113-FIVE-SOCIAL-ACTION-KINDS-MAY-HAVE-NO-ISSUER-IN-PLAY/test_plan.md
+  tags: []
+- type: ticket
+  path: agent-working/tickets/done/TCK-20261113-GITHUB-MCP-ENV-FILE-OUTSIDE-REPO.md
+  ticket_id: TCK-20261113-GITHUB-MCP-ENV-FILE-OUTSIDE-REPO
+  title: The GitHub MCP server reads its token from a per-user file outside the repo,
+    so it starts from every worktree
+  tier: hotfix
+  ticket_type: bug
+  date: '2026-11-13'
+  related_code_areas:
+  - .mcp.json
+  - tests/tools/test_mcp_json_registration.py
+  artifact_files: []
+  tags:
+  - mcp
+  - security
+  - setup
+- type: ticket
+  path: agent-working/tickets/done/TCK-20261113-PROOF-RUN-EXPECTS-AI-WORKER-LAG-NODATA.md
+  ticket_id: TCK-20261113-PROOF-RUN-EXPECTS-AI-WORKER-LAG-NODATA
+  title: Stack proof runs without ai_worker always show AiWorkerLagHigh alerting (NoData
+    by design); say so in the run procedure
+  tier: hotfix
+  ticket_type: chore
+  date: '2026-11-13'
+  related_code_areas:
+  - docker/grafana/provisioning/alerting/rules-worker.yaml
+  artifact_files: []
+  tags:
+  - platform
+  - observability
+- type: ticket
   path: agent-working/tickets/done/TCK-20261112-A-THROTTLED-CLIENT-THAT-WAITS-OUT-RETRY-AFTER-IS-STILL-REFUSED.md
   ticket_id: TCK-20261112-A-THROTTLED-CLIENT-THAT-WAITS-OUT-RETRY-AFTER-IS-STILL-REFUSED
   title: 'A throttled API client that waits out `Retry-After: 5` is still refused,
@@ -8112,6 +8192,39 @@
   tags:
   - testing
 - type: ticket
+  path: agent-working/tickets/done/TCK-20261112-COMPOSE-FRONTEND-API-DOCS-SCHEMA-NOT-PROXIED.md
+  ticket_id: TCK-20261112-COMPOSE-FRONTEND-API-DOCS-SCHEMA-NOT-PROXIED
+  title: In the compose frontend, the API docs page's /openapi.json fetch gets index.html,
+    because nginx proxies only /api/
+  tier: hotfix
+  ticket_type: bug
+  date: '2026-11-12'
+  related_code_areas:
+  - docker/nginx.conf
+  - frontend/src/components/ApiDocsPage.tsx
+  artifact_files: []
+  tags:
+  - platform
+- type: ticket
+  path: agent-working/tickets/done/TCK-20261112-COMPOSE-STACK-HAS-NO-API-KEY.md
+  ticket_id: TCK-20261112-COMPOSE-STACK-HAS-NO-API-KEY
+  title: The compose stack configures no API key, so every backend route except /health
+    answers 401
+  tier: standard
+  ticket_type: bug
+  date: '2026-11-12'
+  related_code_areas:
+  - compose.yaml
+  - docker/frontend.Dockerfile
+  - src/config/loader.py
+  artifact_files:
+  - agent-working/stored_artifacts/TCK-20261112-COMPOSE-STACK-HAS-NO-API-KEY/investigation.md
+  - agent-working/stored_artifacts/TCK-20261112-COMPOSE-STACK-HAS-NO-API-KEY/plan.md
+  - agent-working/stored_artifacts/TCK-20261112-COMPOSE-STACK-HAS-NO-API-KEY/test_plan.md
+  tags:
+  - platform
+  - security
+- type: ticket
   path: agent-working/tickets/done/TCK-20261112-DEPENDABOT-IGNORE-KNOWLEDGE-STACK.md
   ticket_id: TCK-20261112-DEPENDABOT-IGNORE-KNOWLEDGE-STACK
   title: Dependabot's uv entry ignores torch, graphifyy and headroom-ai, so grouped
@@ -8123,6 +8236,22 @@
   - .github/dependabot.yml
   - requirements-knowledge.txt
   artifact_files: []
+  tags:
+  - platform
+- type: ticket
+  path: agent-working/tickets/done/TCK-20261112-DOCKER-IMAGE-STORE-OFF-ROOT-DISK.md
+  ticket_id: TCK-20261112-DOCKER-IMAGE-STORE-OFF-ROOT-DISK
+  title: Plan moving Docker's containerd image store off the root disk, so builds
+    and image layers stop filling /
+  tier: standard
+  ticket_type: chore
+  date: '2026-11-12'
+  related_code_areas:
+  - docs/runbooks/disk-space.md
+  artifact_files:
+  - agent-working/stored_artifacts/TCK-20261112-DOCKER-IMAGE-STORE-OFF-ROOT-DISK/investigation.md
+  - agent-working/stored_artifacts/TCK-20261112-DOCKER-IMAGE-STORE-OFF-ROOT-DISK/plan.md
+  - agent-working/stored_artifacts/TCK-20261112-DOCKER-IMAGE-STORE-OFF-ROOT-DISK/test_plan.md
   tags:
   - platform
 - type: ticket
@@ -8229,6 +8358,35 @@
   - platform
   - delivery
 - type: ticket
+  path: agent-working/tickets/done/TCK-20261112-ROTATE-LOCAL-NTFY-TOPIC.md
+  ticket_id: TCK-20261112-ROTATE-LOCAL-NTFY-TOPIC
+  title: Rotate the local ntfy alert topic, which was once echoed in an agent terminal,
+    by an owner-run procedure
+  tier: hotfix
+  ticket_type: chore
+  date: '2026-11-12'
+  related_code_areas:
+  - compose.yaml
+  - docker/grafana/provisioning/alerting/contact-points.yaml
+  artifact_files: []
+  tags:
+  - platform
+  - security
+- type: ticket
+  path: agent-working/tickets/done/TCK-20261112-SEARCH-SERVER-PER-WORKTREE-INDEX-AND-BUILD-MEMORY-GUARD.md
+  ticket_id: TCK-20261112-SEARCH-SERVER-PER-WORKTREE-INDEX-AND-BUILD-MEMORY-GUARD
+  title: A worktree with its own knowledge index starts its own ~400 MB search server,
+    and `knowledge_search.py build` starts with no memory check
+  tier: hotfix
+  ticket_type: bug
+  date: '2026-11-12'
+  related_code_areas:
+  - _resolve_index_dir
+  - cmd_build
+  artifact_files: []
+  tags:
+  - process-improvement
+- type: ticket
   path: agent-working/tickets/done/TCK-20261112-THE-API-EMITS-NO-REQUEST-TRACES.md
   ticket_id: TCK-20261112-THE-API-EMITS-NO-REQUEST-TRACES
   title: 'The API emits no request traces: add OpenTelemetry server spans and Redis
@@ -8250,22 +8408,6 @@
   - observability
   - api-design
 - type: ticket
-  path: agent-working/tickets/todos/TCK-20261112-COMPOSE-STACK-HAS-NO-API-KEY.md
-  ticket_id: TCK-20261112-COMPOSE-STACK-HAS-NO-API-KEY
-  title: The compose stack configures no API key, so every backend route except /health
-    answers 401
-  tier: standard
-  ticket_type: bug
-  date: '2026-11-12'
-  related_code_areas:
-  - compose.yaml
-  - docker/frontend.Dockerfile
-  - src/config/loader.py
-  artifact_files: []
-  tags:
-  - platform
-  - security
-- type: ticket
   path: agent-working/tickets/todos/TCK-20261112-HAND-ADDED-WORKTREES-ARE-NOT-RECORDED-AGAINST-A-SEAT.md
   ticket_id: TCK-20261112-HAND-ADDED-WORKTREES-ARE-NOT-RECORDED-AGAINST-A-SEAT
   title: A worktree a seat creates with a plain `git worktree add` is never recorded
@@ -8279,6 +8421,19 @@
   tags:
   - planning
   - delivery
+- type: ticket
+  path: agent-working/tickets/todos/TCK-20261112-SOCIALUPDATE-MERGE-REUSES-ITS-LOOP-KEY-ACROSS-KEY-TYPES.md
+  ticket_id: TCK-20261112-SOCIALUPDATE-MERGE-REUSES-ITS-LOOP-KEY-ACROSS-KEY-TYPES
+  title: 'SocialUpdate carries 6 mypy errors: merge reuses one loop variable across
+    int-keyed and str-keyed dicts'
+  tier: hotfix
+  ticket_type: repair
+  date: '2026-11-12'
+  related_code_areas:
+  - src/core/update_models/social.py (SocialUpdate.merge)
+  - codebase/baselines/mypy_baseline.txt
+  artifact_files: []
+  tags: []
 - type: ticket
   path: agent-working/tickets/todos/github-project-ticket-view/TCK-20261112-EPIC-GITHUB-PROJECT-TICKET-VIEW.md
   ticket_id: TCK-20261112-EPIC-GITHUB-PROJECT-TICKET-VIEW
@@ -8502,6 +8657,24 @@
   tags:
   - delivery
 - type: ticket
+  path: agent-working/tickets/done/TCK-20261111-SPLIT-UPDATES-PY-INTO-UPDATE-MODELS.md
+  ticket_id: TCK-20261111-SPLIT-UPDATES-PY-INTO-UPDATE-MODELS
+  title: Move the per-domain update models out of src/core/updates.py into src/core/update_models/,
+    so the module comes back under its length ceiling
+  tier: standard
+  ticket_type: refactor
+  date: '2026-11-11'
+  related_code_areas:
+  - src/core/updates.py
+  - src/core/update_models/
+  - codebase/baselines/code_health_exceptions.jsonl (the updates.py module-length
+    row)
+  artifact_files:
+  - agent-working/stored_artifacts/TCK-20261111-SPLIT-UPDATES-PY-INTO-UPDATE-MODELS/investigation.md
+  - agent-working/stored_artifacts/TCK-20261111-SPLIT-UPDATES-PY-INTO-UPDATE-MODELS/plan.md
+  - agent-working/stored_artifacts/TCK-20261111-SPLIT-UPDATES-PY-INTO-UPDATE-MODELS/test_plan.md
+  tags: []
+- type: ticket
   path: agent-working/tickets/done/TCK-20261111-THE-WORLD-GLOSSARY-GETS-ITS-SEED-TERMS.md
   ticket_id: TCK-20261111-THE-WORLD-GLOSSARY-GETS-ITS-SEED-TERMS
   title: The world glossary gets its 49 seed terms
@@ -8590,21 +8763,6 @@
   related_code_areas:
   - src/systems/movement.py (resolve_move)
   - src/engine/pipeline_phases/movement.py (route_movement_intent)
-  artifact_files: []
-  tags: []
-- type: ticket
-  path: agent-working/tickets/todos/TCK-20261111-SPLIT-UPDATES-PY-INTO-UPDATE-MODELS.md
-  ticket_id: TCK-20261111-SPLIT-UPDATES-PY-INTO-UPDATE-MODELS
-  title: Move the per-domain update models out of src/core/updates.py into src/core/update_models/,
-    so the module comes back under its length ceiling
-  tier: standard
-  ticket_type: refactor
-  date: '2026-11-11'
-  related_code_areas:
-  - src/core/updates.py
-  - src/core/update_models/
-  - codebase/baselines/code_health_exceptions.jsonl (the updates.py module-length
-    row)
   artifact_files: []
   tags: []
 - type: ticket
@@ -29283,6 +29441,20 @@
   - schema
   - simulation-quality
 - type: ticket
+  path: agent-working/tickets/done/TCK-20260916-REENABLE-DOCS-PAGES-PUBLISHING.md
+  ticket_id: TCK-20260916-REENABLE-DOCS-PAGES-PUBLISHING
+  title: Re-enable GitHub Pages docs publishing once the docs site is ready to publish
+    a first version
+  tier: hotfix
+  ticket_type: chore
+  date: '2026-09-16'
+  related_code_areas:
+  - .github/workflows/deploy-docs.yml
+  artifact_files: []
+  tags:
+  - documentation
+  - process-improvement
+- type: ticket
   path: agent-working/tickets/done/headroom-context-compression-trial/TCK-20260916-HEADROOM-CONTEXT-COMPRESSION-EPIC.md
   ticket_id: TCK-20260916-HEADROOM-CONTEXT-COMPRESSION-EPIC
   title: 'Bounded, reversible trial of Headroom context compression — measure real
@@ -29304,20 +29476,6 @@
   - agent-monitoring
   - process-improvement
   - optimization
-- type: ticket
-  path: agent-working/tickets/todos/TCK-20260916-REENABLE-DOCS-PAGES-PUBLISHING.md
-  ticket_id: TCK-20260916-REENABLE-DOCS-PAGES-PUBLISHING
-  title: Re-enable GitHub Pages docs publishing once the docs site is ready to publish
-    a first version
-  tier: standard
-  ticket_type: chore
-  date: '2026-09-16'
-  related_code_areas:
-  - .github/workflows/deploy-docs.yml
-  artifact_files: []
-  tags:
-  - documentation
-  - process-improvement
 - type: ticket
   path: agent-working/tickets/done/TCK-20260915-ARTIFACT-STATE-CONVERGENCE.md
   ticket_id: TCK-20260915-ARTIFACT-STATE-CONVERGENCE

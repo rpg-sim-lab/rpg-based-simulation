@@ -20,6 +20,8 @@ Rules in `docker/grafana/provisioning/alerting/rules-worker.yaml` (group `worker
 ## Why NoData fires the lag alert
 A stopped ai_worker serves no gauge, so there is no lag series, and that is the failure to catch: the stream backlog grows unseen. The same state occurs while Redis is down (the collector then yields only `sim_stream_consumer_up 0`); `RedisDown` is the cause there and this alert follows it. `TargetDown` for job `ai_worker` fires too when the target is gone.
 
+A stack proof run that does not start `ai_worker` therefore always shows this alert alerting after about 2 minutes: expected, not a fault. See [alerting-pipeline.md](alerting-pipeline.md), "Proof runs without ai_worker".
+
 ## First three checks
 1. `docker compose ps ai_worker`: stopped, restarting, or `unhealthy` (the healthcheck needs `sim_stream_consumer_up 1.0`)?
 2. `docker compose logs --tail=100 ai_worker`; and `sim_stream_consumer_up` in Grafana Explore: 0 means Redis did not answer the worker's query.

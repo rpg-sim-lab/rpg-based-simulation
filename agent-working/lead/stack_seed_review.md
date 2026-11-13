@@ -30,6 +30,7 @@ below.
 ## Inventory seed (main 9a9058808)
 
 - **Python:** see `pyproject.toml`. The code-health tools are exact pins (`ruff`, `import-linter`, `mypy-baseline`); runtime libraries and test libraries are floors.
+- **OpenTelemetry (API tracing, #622 R3, merged in #891):** `opentelemetry-sdk`, `opentelemetry-exporter-otlp-proto-http`, `opentelemetry-instrumentation-fastapi` and `opentelemetry-instrumentation-redis`, locked at 1.45.2 / 0.66b2 (pyproject caps `>=1.45.1,<2` and `>=0.66b1,<0.67`). OTLP over HTTP on port 4318, off by default (`OTEL_EXPORTER_OTLP_ENDPOINT` unset). Code in `src/api/tracing.py`; doc in `docs/observability/api_request_tracing.md`.
 - **Node:** three npm projects, each with its own `package-lock.json` (row 4).
 - **Containers (`compose.yaml`):** redis (floating), prometheus `v2.50.0`, grafana `10.3.3`, loki `3.0.0`, promtail `3.0.0`.
 - **MCP servers:** `.mcp.json` (knowledge-search; lead-owned path).

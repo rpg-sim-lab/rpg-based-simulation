@@ -1,0 +1,9 @@
+2026-11-12T16:57:57Z watcher (real, MAX_DISK_PCT=90, 1500 MiB, 7500 MiB swap, 20 s) + sampler armed
+2026-11-12T16:58:21Z BUILD backend + frontend start (base images not local: python, uv, node, nginx-unprivileged will be pulled by the build)
+2026-11-12T17:02:23Z BUILD done
+2026-11-12T17:03:11Z UP start (backend redis frontend only)
+2026-11-12T17:04:29Z recreate with the pair
+2026-11-12T17:05:42Z P6: recreate frontend with an empty key (hash still set on the backend)
+2026-11-12T17:07:21Z rebuild frontend with the /openapi.json location
+2026-11-12T17:08:45Z TEARDOWN start
+2026-11-12T17:08:51Z TEARDOWN done

@@ -1534,7 +1534,7 @@ This document is the canonical record of intentional behavior shifts in `src` co
   (`region_reputation`/`entity_fidelity`/`entity_fame`/`belief_institutions`).
 - **Status**: RATIFIED
 
-### 2.51 Clan Reputation Folded Into P0-Certified `appraise_contract()` Stranger-Judgment Formula (TCK-20260904-CLAN-REPUTATION-ASSOCIATION) — cross-referenced as SOC-134/SOC-268
+### 2.51 Clan Reputation Folded Into P0-Certified `appraise_contract()` Stranger-Judgment Formula (TCK-20260904-CLAN-REPUTATION-ASSOCIATION) — cross-referenced as SOC-134/SOC-272
 - **Subsystem**: Social/Clan
 - **Old Behavior**: `SocialAppraisalSystem.appraise_contract()`'s no-bond stranger-judgment branch
   (`src/systems/social_systems/appraisal.py`) computed `trust_score = public_trust * 0.7 +
@@ -1557,7 +1557,7 @@ This document is the canonical record of intentional behavior shifts in `src` co
   tests, confirming both the neutral-default pinned case and the real Clan-influenced case),
   `tests/unit/social/test_parity_soc_134.py` (SOC-134's own pinned test, confirmed still passing
   unmodified). `docs/parity_ledger/social_narrative.yaml` SOC-134's `v2_evidence` field was updated
-  in place to describe this extension; SOC-268 records the new `ClanState.clan_reputation` field
+  in place to describe this extension; SOC-272 records the new `ClanState.clan_reputation` field
   itself.
 - **Status**: RATIFIED
 

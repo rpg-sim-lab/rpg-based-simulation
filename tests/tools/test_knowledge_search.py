@@ -2154,3 +2154,41 @@ class TestHybridFusionWiring:
         assert rc == 0
         out = capsys.readouterr().out
         assert "doc-rare" in out, f"lexical-only hit missing from hybrid cmd_query output:\n{out}"
+
+
+@pytest.fixture(autouse=True)
+def _no_memory_guard_for_the_build_tests(monkeypatch):
+    """The build tests must not depend on how much memory the host has free; the guard is tested with an injected reader."""
+    monkeypatch.setenv("RPG_KNOWLEDGE_BUILD_MIN_MEM_MB", "0")
+
+
+# TCK-20261112-SEARCH-SERVER-PER-WORKTREE-INDEX-AND-BUILD-MEMORY-GUARD: a short host refuses the build before the model loads.
+class TestBuildMemoryGuard:
+    def _args(self, force=False):
+        return types.SimpleNamespace(force=force)
+
+    def test_below_the_threshold_is_refused_with_one_line_and_no_model_load(self, capsys):
+        code = _ks._memory_guard(self._args(), read_mem=lambda: 1200, environ={})
+        err = capsys.readouterr().err
+        assert code not in (None, 0) and err.count("\n") == 1 and "1200" in err and "2560" in err
+
+    def test_the_threshold_comes_from_the_environment(self):
+        assert _ks._memory_guard(self._args(), read_mem=lambda: 1200, environ={"RPG_KNOWLEDGE_BUILD_MIN_MEM_MB": "1000"}) is None
+        assert _ks._memory_guard(self._args(), read_mem=lambda: 1200, environ={"RPG_KNOWLEDGE_BUILD_MIN_MEM_MB": "4000"}) == 3
+
+    def test_force_or_unreadable_meminfo_or_enough_memory_proceeds(self):
+        assert _ks._memory_guard(self._args(force=True), read_mem=lambda: 1, environ={}) is None
+        assert _ks._memory_guard(self._args(), read_mem=lambda: None, environ={}) is None
+        assert _ks._memory_guard(self._args(), read_mem=lambda: 8000, environ={}) is None
+
+    def test_cmd_build_returns_the_refusal_before_importing_the_model(self, monkeypatch):
+        monkeypatch.setattr(_ks, "_memory_guard", lambda args: 3)
+        monkeypatch.setitem(sys.modules, "sentence_transformers", None)  # an import would raise ImportError, not return 3
+        assert _ks.cmd_build(self._args()) == 3
+        assert _ks.cmd_build_incremental(self._args()) == 3
+
+    def test_meminfo_is_parsed_and_an_unreadable_file_gives_none(self, tmp_path):
+        info = tmp_path / "meminfo"
+        info.write_text("MemTotal: 16000000 kB\nMemAvailable:    2048000 kB\n")
+        assert _ks._mem_available_mb(info) == 2000
+        assert _ks._mem_available_mb(tmp_path / "missing") is None

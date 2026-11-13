@@ -535,12 +535,14 @@ content-inventory: ## Regenerate config/content_inventory.json from real data/co
 # Requires: pip install -e ".[knowledge]"
 
 knowledge-index: ## Build local semantic knowledge index (developer env only — not CI)
+	@if [ "$$(git rev-parse --git-dir)" != "$$(git rev-parse --git-common-dir)" ]; then echo "worktree: sessions here read the main checkout index, so this build is unused unless RPG_SEARCH_OWN_INDEX=1 is set"; fi
 	@echo "Building knowledge index (requires: pip install -e '.[knowledge]')..."
 	SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt SSL_CERT_DIR=/etc/ssl/certs HF_HUB_ETAG_TIMEOUT=120 \
 	  $(PYTHON_KNOWLEDGE) \
 	  tools/knowledge_search.py build
 
 knowledge-index-update: ## Incremental reindex — only re-embeds changed/new files (fast)
+	@if [ "$$(git rev-parse --git-dir)" != "$$(git rev-parse --git-common-dir)" ]; then echo "worktree: sessions here read the main checkout index, so this build is unused unless RPG_SEARCH_OWN_INDEX=1 is set"; fi
 	SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt SSL_CERT_DIR=/etc/ssl/certs HF_HUB_ETAG_TIMEOUT=120 \
 	  $(PYTHON_KNOWLEDGE) \
 	  tools/knowledge_search.py build --incremental

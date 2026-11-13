@@ -74,6 +74,8 @@ above before kind-specific dispatch:
 
 > **Current play (RECRUITMENT; "Current play" note, `TCK-20261111-NO-RECRUITMENT-APPRAISAL-RUNS-IN-ANY-CORPUS-WORLD`, divergence 2.205).** The trust pipeline above and the RECRUITMENT row are the designed law, and they do not run for recruitment in play. Acceptance currently runs on D-09's minimal accept: any live offer from any entity is accepted by its receiver if the receiver is not already in a group (`find_pending_incoming_offer`, `src/domains/cooperation/services.py`; `CooperationPhase`, `src/domains/cooperation/phase.py:190`). The only code that appraises a RECRUITMENT contract, `CoreActions.execute_recruit`, is dispatched only by `ActionRouter` on the action "RECRUIT", and nothing issues it. The party-commitment check listed in the row has no code.
 
+> **Current play (MERCHANT, TEAM_UP, TEACH, MARRIAGE, CLAN; `TCK-20261113-FIVE-SOCIAL-ACTION-KINDS-MAY-HAVE-NO-ISSUER-IN-PLAY`).** These rows are the designed law, and they do not run in play. Their only callers are `CoreActions.execute_trade`, `execute_team_up`, `execute_train`, `execute_propose_marriage`, `execute_join_clan` and `execute_leave_clan`, dispatched by `ActionRouter` on the actions TRADE, TEAM_UP, TRAIN, PROPOSE_MARRIAGE, JOIN_CLAN and LEAVE_CLAN, and nothing in play issues any of them. No clan exists in play: `AuthoritativeState.clans` starts empty and nothing creates one.
+
 Every dispatch except MERCHANT/RECRUITMENT/POSITION_SWAP is a pure trust-gate — no counter-terms,
 no utility model. On ACCEPTED, the resulting `ContractState` attaches to `EntityUpdate.strategic`
 with **no `ResourceTransferIntent`** for TEAM_UP — no gold changes hands on party formation.

@@ -1,0 +1,8 @@
+2026-11-12T18:48:28Z watcher real armed (90%, 1500 MiB, 7500 MiB swap) + sampler
+2026-11-12T18:48:39Z UP observability profile
+2026-11-12T18:49:42Z STOP: images platform-ai_worker and platform-watchdog missing; down (no -v)
+2026-11-12T18:50:36Z watcher re-armed real
+2026-11-12T18:50:36Z UP 11 services
+2026-11-12T18:59:05Z STOP redis-exporter
+2026-11-12T19:03:15Z START redis-exporter
+2026-11-12T19:07:36Z DOWN (no -v)

@@ -2230,7 +2230,7 @@
     adds a QUEST_OPPORTUNITY personality_bias bonus (strongest fidelity-scaled institution
     among the entity''s real memberships, not summed) -- mirrors the idea 57 Living
     Legend branch''s own real semantic tie between group identity and heroic quest-seeking.
-    See docs/guidelines/intentional_divergences.md section 2.53.'
+    See docs/guidelines/intentional_divergences.md section 2.53. Not reachable in play (TCK-20261113-FIVE-SOCIAL-ACTION-KINDS-MAY-HAVE-NO-ISSUER-IN-PLAY, 2026-11-13): no clan exists in play (SOC-264), so derive() forms no BeliefInstitution, entity_belief_institutions stays empty and the QUEST_OPPORTUNITY bonus never applies in play.'
 - id: WORLD-BELIEF-002
   text: 'BeliefInstitutionDeriver.derive() is pure/stateless/deterministic: calling
     it twice with the same (hierarchy, campaign_state, clans) inputs produces byte-identical

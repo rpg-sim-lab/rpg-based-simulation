@@ -99,3 +99,9 @@ infra/terraform/bootstrap/variables.tf
 The two platform-owned lines that named the old owner now name rpg-sim-lab. No other old-owner value is left in the platform paths.
 Known gap: the first Deploy Docs run under the new owner is not yet observed; after merge it should serve https://rpg-sim-lab.github.io/rpg-based-simulation/.
 Known gap: terraform fmt and validate were not run locally (terraform is not on this host); the IaC workflow on the PR is the check.
+Observed after merge (platform-planner, 2026-11-12):
+- The owner ran Deploy Docs by workflow_dispatch: run 43203095497, at 0539145cb (#894's squash), conclusion success. Setup Node.js, Build, Configure Pages, Upload Pages artifact and Deploy to GitHub Pages all succeeded.
+- `curl` of https://rpg-sim-lab.github.io/rpg-based-simulation/ returns 200 (8883 bytes) with title "RPG Simulation Wiki".
+- `<link rel="canonical">` and `og:url` are https://rpg-sim-lab.github.io/rpg-based-simulation/, so the DOCS_URL change took effect.
+- The first Known gap above is closed.
+- #894's PR run also passed both iac terraform jobs (bootstrap and service), which closes the second gap.
