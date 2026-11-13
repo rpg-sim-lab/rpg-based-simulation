@@ -1,0 +1,10 @@
+9 targets
+alloy up
+grafana up
+loki up
+node-exporter up
+ntfy up
+prometheus up
+redis up
+rpg-backend up
+tempo up
