@@ -1069,6 +1069,8 @@ Marriage is a propose/accept relationship contract following the same `ContractK
 `SocialAppraisalSystem` pattern §Social Systems Contract already documents for `TEACH` and
 `TEAM_UP` -- it is not a scoring function and does not add a new tier-5 project kind.
 
+> **Current play.** Nothing in play issues PROPOSE_MARRIAGE, so this law does not run in play and no `MarriageState` is written (see 07, Contract Kinds, Current play).
+
 **Gate.** `ContractKind.MARRIAGE` routes through `SocialAppraisalSystem.appraise_contract()`'s
 shared trust prelude exactly like every other contract kind, with no marriage-specific
 threshold: hard-cancel to `CANCELLED`/`TOTAL_DISTRUST` when `trust_score < 0.2` or
@@ -1229,6 +1231,8 @@ follows the same propose/accept `ContractKind`/`SocialAppraisalSystem` pattern �
 Proposal Law already documents; leaving and succession are unconditional service-level lifecycle
 transitions, never scoring functions and never a new tier-5 project kind.
 
+> **Current play.** No clan exists in play (`AuthoritativeState.clans` starts empty; nothing creates one; see Out of scope below) and nothing issues JOIN_CLAN or LEAVE_CLAN, so this law and §10a do not run in play (see 07, Contract Kinds, Current play).
+
 **Gate.** `ContractKind.CLAN` routes through `SocialAppraisalSystem.appraise_contract()`'s shared
 trust prelude exactly like every other contract kind, with no Clan-specific threshold: hard-cancel
 to `CANCELLED`/`TOTAL_DISTRUST` when `trust_score < 0.2` or `bond.sentiment < -0.8`; hard-cancel to
@@ -1314,7 +1318,7 @@ pipeline.py` (`clan_lifecycle` phase, run after `groups`); `src/observability/ev
 (`ClanMemberLeftEvent`, `ClanSuccessionEvent`) (TCK-20260903-CLAN-LIFECYCLE-SUCCESSION, SOC-264,
 2026-09-03)
 
-### 10a. Clan Reputation & Guilt-by-Association Law (idea 54/M5, SOC-268)
+### 10a. Clan Reputation & Guilt-by-Association Law (idea 54/M5, SOC-272)
 
 `ClanState` gains a second scalar, `clan_reputation: float = 1.0` (clamped `[0.0, 2.0]`) --
 the Clan's own aggregate standing, structurally distinct from any individual member's
@@ -1367,8 +1371,7 @@ Optional[str]` (`src/systems/social_systems/clan_lifecycle.py:40-51`) is a plain
 scan over `sorted(state.clans.items())`, returning the first Clan whose
 `member_entity_ids` contains `entity_id`. No entity->clan index exists in durable state; a
 scan was chosen over adding an index because no evidence in this repo's fixtures shows
-Clan counts large enough to warrant one (2-6 clans in existing scenarios, the same order as
-Faction counts). Sorted iteration is mandatory here, consistent with `to_canonical_dict()`
+Clan counts large enough to warrant one (unit fixtures build 2-6 clans directly; no world or scenario has a clan, see Current play above). Sorted iteration is mandatory here, consistent with `to_canonical_dict()`
 and the apply.py clan-merge block's own sorting convention.
 
 **Read path -- stranger-judgment blend.** `SocialAppraisalSystem.appraise_contract()`'s
@@ -1420,7 +1423,7 @@ clamp); `src/systems/social_systems/clan_lifecycle.py`
 `src/systems/social_systems/contracts.py`
 (`ContractService.compute_betrayal_clan_reputation_update`);
 `src/systems/social_systems/appraisal.py` (`appraise_contract()`'s stranger-judgment blend,
-`CLAN_INFLUENCE_WEIGHT`) (TCK-20260904-CLAN-REPUTATION-ASSOCIATION, SOC-268, 2026-09-04)
+`CLAN_INFLUENCE_WEIGHT`) (TCK-20260904-CLAN-REPUTATION-ASSOCIATION, SOC-272, 2026-09-04)
 
 ## 11. Information Hub Knowledge Accumulation & Propagation Law (idea 41, M4)
 

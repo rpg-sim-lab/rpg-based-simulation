@@ -1,10 +1,10 @@
 ---
-status: active
+status: historical
 layer: systems
 authority: P1
 audience: agent
 ticket_id: TCK-20261113-FIVE-SOCIAL-ACTION-KINDS-MAY-HAVE-NO-ISSUER-IN-PLAY
-phase: open
+phase: done
 date: 2026-11-13
 tags: []
 ---
@@ -15,7 +15,7 @@ tags: []
 Five social action kinds may have no issuer in play: find which of TEAM_UP, TRADE, TRAIN, PROPOSE_MARRIAGE and JOIN_CLAN/LEAVE_CLAN anything ever emits, and how their contracts are really created and accepted
 
 ## Status
-OPEN
+DONE
 
 ## Tier
 standard
@@ -85,9 +85,18 @@ It also carries one further finding (rpg-designer, 2026-11-13, from TCK-20261109
 - Host: cells queue under the per-job bar.
 
 ## Implementation Notes
+Owner approval: #715 6843004519 and 6843079519; docs-only follow-up per the recruitment precedent (#715 6798982732). rpg-designer's ruling (2026-11-13): the read suffices, no spy. Per kind: BUILT, APPRAISED AND UNREACHABLE IN PLAY with no issuer; JOIN_CLAN doubly dead (no clan exists); LEAVE_CLAN no appraisal and no clan to leave; none has a RECRUIT-style bypass. Scope 4a (perception at distance 1) and 4b (RETREAT null result) are PARKED as findings; the town-regroup point stays with the REGROUP ticket. The exact docs text is the designer's, applied from /mnt/data2/rpg-measure/briefs/five-kinds-docs-ruling.md (sha256 fa98ec10…).
 
 ## Test Summary
+- No cells were run and no spy was written: the designer ruled that the read suffices.
+- The designer's CHECK FIRST (the apply.py:483 clause) was verified against every ClanUpdate producer before SOC-264's text was written: process_leave (clan_lifecycle.py:68) takes the clan_id of an executed LEAVE_CLAN and the phase acts only on outcome SUCCESS, which needs the entity to be a member of an existing clan (core_actions.py:608-613); the join path (pipeline_phases/clan_lifecycle.py:63) takes the payload clan_id but SUCCESS needs `context.clans.get(clan_id)` to exist (core_actions.py:551-557); process_succession (:143) and process_dissolution (:174) use `clan.clan_id` of an entry already in state.clans; groups.py:221 and contracts.py:294 use `find_clan_id_for_entity`, which scans state.clans. No producer can name a new clan_id in play.
+- `make parity-ledger-schema-check`: OK, 2651 schema errors, 0 rose, 0 new, 0 fell (unchanged). Frontmatter validators on all six edited docs: OK. `pytest tests/docs -n 1`: 92 passed, 1 skipped, 1 xfailed. `generate_registry.py --check` after the closure regeneration: see Finalize.
+- Not run: `make knowledge-index-update` (not run: worktrees use main's index; lead-planner-u24, 2026-11-12).
 
 ## Files Changed
+- docs/parity_ledger/social_narrative.yaml (SOC-249, 250, 258, 261, 264, 272: support_boundary added; SOC-134 v2_evidence id SOC-268 -> SOC-272), strategic_cognition.yaml (STRAT-266), town_resource.yaml (TOWN-027), world_dynamics.yaml (WORLD-BELIEF-001, appended). All entries stay verified.
+- docs/mechanics/07_social_political_dynamics.md (a "Current play" blockquote), 04_strategic_cognition.md (Current play notes in section 8 and 10, the fixture sentence at the reverse-lookup paragraph, SOC-268 -> SOC-272 in 10a), 05_world_evolution.md (one sentence), docs/simulation/social_systems_contract.md (a blockquote), docs/engine/known_limitations.md (one bullet), docs/guidelines/intentional_divergences.md (SOC-268 -> SOC-272 in 2.51).
+- agent-working/agent-monitoring shards; tech-stack Inventory seed line in agent-working/lead/stack_seed_review.md (OpenTelemetry, the lead's ride-along, commit d4bf55081).
 
 ## Completion Summary
+Investigation and docs correction; no src change. None of TEAM_UP, TRADE, TRAIN, PROPOSE_MARRIAGE, JOIN_CLAN or LEAVE_CLAN is issued by anything in play (no ENTITY_ACT payload or ActionIntent creates them; no world, scenario or content file names them; only unit tests call them), so their appraisal branches (_appraise_trade, _appraise_team_up, _appraise_teach, _appraise_marriage, _appraise_clan) run only in unit tests, and no clan exists in play. This follows the SOC-280 pattern: play does nothing, so nothing diverges; every ledger entry stays verified with a support_boundary, and the Bible states the current play. Not changed: the DEV-007 and 2.51 texts (apart from the id fix), world_rules/**, and the SOC-268 mentions in code comments, tests and docs/plans/rpg_design_roadmap/rpg_m5_memory_reputation_epic.md:116 (outside the ruling's three places; for the designer to say). Making any kind reachable is an owner gameplay decision. Parked findings: Scope 4a (the sense gate passes; the cause is the wild-creature clause, decision 47, or intruding being unset; kept frontier_marches s42 rows by subject: scout 83, alpha 17, wild_creature 15, predator_hunter 12, raider 9, shaman 7) and Scope 4b (movement.py:240 step_ready on a costly tile fits t1953-1959 best, an observability finding).

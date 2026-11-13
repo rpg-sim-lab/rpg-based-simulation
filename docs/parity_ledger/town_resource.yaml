@@ -338,7 +338,7 @@
   proof_type: null
   test_path: tests/unit/social/test_teach.py::test_teach_resolves_target_capability_blocker_not_teacher
   divergence_note: null
-  support_boundary: null
+  support_boundary: 'Not reachable in play (TCK-20261113-FIVE-SOCIAL-ACTION-KINDS-MAY-HAVE-NO-ISSUER-IN-PLAY, 2026-11-13): nothing in play issues the TRAIN action (no ENTITY_ACT payload or ActionIntent creates it, and no world, scenario or content file names it), so the teach path that resolves the capability blocker runs only in unit tests. The code is verified against this entry; the behaviour does not occur in play. See docs/engine/known_limitations.md (class halls are not integrated).'
 - id: TOWN-028
   text: "`test_visit_blacksmith_crafting_resolution`: Visit blacksmith crafting resolution\
     \ \u2014 Verify that crafting an item emits a strategic resolution for the material\

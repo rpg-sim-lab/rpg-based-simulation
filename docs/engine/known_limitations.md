@@ -21,6 +21,7 @@ This document records the current technical limitations, unsupported features, a
 ### 1.2 Resource loops
 - **No Complex Regeneration**: Resource nodes do not currently support complex regeneration logic (e.g., seasonal growth, depletion cooldowns). Nodes are static or reset on scenario reload.
 - **Town Buildings**: `TownResolutionSystem` currently supports Blacksmith (crafting), Inn (REST), and Tavern (EAT) building types. Guilds, Class Halls, and other building types are not yet functionally integrated.
+- Six social actions (TRADE, TEAM_UP, TRAIN, PROPOSE_MARRIAGE, JOIN_CLAN, LEAVE_CLAN) are built and unit-tested but have no issuer in play, and no clan exists in play (TCK-20261113-FIVE-SOCIAL-ACTION-KINDS-MAY-HAVE-NO-ISSUER-IN-PLAY). Making any of them reachable is an owner gameplay decision.
 
 ### 1.3 Strategic AI
 - **Material-Only Blockers**: The `StrategicIntelligenceSystem` only recognizes and resolves crafting blockers for "Material" resources. Social, capability, or plot-based blockers are unsupported.
