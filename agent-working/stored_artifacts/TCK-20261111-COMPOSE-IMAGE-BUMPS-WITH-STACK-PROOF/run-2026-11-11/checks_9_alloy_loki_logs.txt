@@ -1,0 +1,17 @@
+== 2026-11-11T16:37:56Z alloy logs (errors/warn, last 400 lines, condensed)
+      1 ts=2026-11-11T16:34:13.894647829Z level=error msg="final error sending batch, no retries left, dropping data" component_path=/ component_id=loki.write.loki component=endpoint host=loki:3100 status=500 tenant="" error="server returned HTTP status 500 Internal S
+== loki logs (errors/warn)
+      1 level=warn ts=2026-11-11T16:37:12.272823694Z caller=logging.go:144 orgID=fake msg="POST /loki/api/v1/push (500) 9.609633ms Response: \"rpc error: code = Unknown desc = Ingester is shutting down\\n\""
+      1 level=warn ts=2026-11-11T16:37:12.27240003Z caller=grpc_logging.go:76 method=/logproto.Pusher/Push duration=35.195µs msg=gRPC err="Ingester is shutting down"
+      1 level=warn ts=2026-11-11T16:35:36.795317577Z caller=logging.go:144 orgID=fake msg="POST /loki/api/v1/push (500) 7.533359ms Response: \"rpc error: code = Unknown desc = Ingester is shutting down\\n\""
+      1 level=warn ts=2026-11-11T16:35:36.794939027Z caller=grpc_logging.go:76 method=/logproto.Pusher/Push duration=28.836µs msg=gRPC err="Ingester is shutting down"
+      1 level=warn ts=2026-11-11T16:34:59.512811404Z caller=logging.go:144 orgID=fake msg="POST /loki/api/v1/push (500) 9.408029ms Response: \"rpc error: code = Unknown desc = Ingester is shutting down\\n\""
+      1 level=warn ts=2026-11-11T16:34:59.512288261Z caller=grpc_logging.go:76 method=/logproto.Pusher/Push duration=102.131µs msg=gRPC err="Ingester is shutting down"
+      1 level=warn ts=2026-11-11T16:34:35.830742706Z caller=logging.go:144 orgID=fake msg="POST /loki/api/v1/push (500) 6.851033ms Response: \"rpc error: code = Unknown desc = Ingester is shutting down\\n\""
+      1 level=warn ts=2026-11-11T16:34:35.830291334Z caller=grpc_logging.go:76 method=/logproto.Pusher/Push duration=52.764µs msg=gRPC err="Ingester is shutting down"
+== loki ready / series
+ready
+
+{"status":"success","data":{"resultType":"vector","result":[],"stats":{"summary":{"bytesProcessedPerSecond":0,"linesProcessedPerSecond":0,"totalBytesProcessed":
+{"status":"success"}
+

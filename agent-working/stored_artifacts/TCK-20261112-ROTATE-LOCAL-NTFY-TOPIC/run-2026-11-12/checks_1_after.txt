@@ -1,0 +1,16 @@
+boring_cartwright Up About a minute
+ Exited (2) 4 months ago
+0
+6
+Filesystem      Size  Used Avail Use% Mounted on
+/dev/sda2        49G   33G   14G  71% /
+/dev/sdb1        99G   79G   16G  84% /data
+TYPE            TOTAL     ACTIVE    SIZE      RECLAIMABLE
+Images          18        1         6.771GB   552MB (8%)
+Containers      2         1         4.096kB   0B (0%)
+Local Volumes   6         0         665MB     665MB (100%)
+Build Cache     22        0         629.8MB   43.11MB
+NAME                STATUS              CONFIG FILES
+strays: 2
+97-  ai_worker:
+370-    # No healthcheck: the watchdog is a poller with no HTTP port.

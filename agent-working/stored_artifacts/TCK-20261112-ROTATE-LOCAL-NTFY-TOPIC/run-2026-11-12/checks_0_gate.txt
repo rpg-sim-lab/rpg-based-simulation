@@ -1,0 +1,19 @@
+2026-11-12T18:47:53Z gate, branch 5cd02f351
+loadavg: 1.46 1.07 0.89 | MemAvailable MiB: 6252 | swap used MiB: 2756
+loadavg: 1.34 1.05 0.88 | MemAvailable MiB: 6259 | swap used MiB: 2756
+loadavg: 1.34 1.05 0.88 | MemAvailable MiB: 6261 | swap used MiB: 2756
+loadavg: 1.32 1.05 0.88 | MemAvailable MiB: 6280 | swap used MiB: 2753
+Filesystem      Size  Used Avail Use% Mounted on
+/dev/sda2        49G   33G   14G  71% /
+/dev/sdb1        99G   79G   16G  84% /data
+/ blocks=12821880 free=4258842 avail=3599425
+/data blocks=25721923 free=5169917 avail=3986222
+-- docker info
+driver-type=io.containerd.snapshotter.v1 DockerRootDir=/data/docker containers=1 running=0
+TYPE            TOTAL     ACTIVE    SIZE      RECLAIMABLE
+Images          18        0         6.771GB   487.9MB (7%)
+Containers      1         0         0B        0B
+Local Volumes   6         0         665MB     665MB (100%)
+Build Cache     22        0         629.8MB   43.11MB
+NAME                STATUS              CONFIG FILES
+ Exited (2) 4 months ago

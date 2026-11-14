@@ -1,0 +1,10 @@
+== 2026-11-11T16:37:48Z LogShippingErrors terms
+sum(rate(prometheus_sd_refresh_failures_total{job="alloy"}[5m])) => ['0']
+sum(rate(loki_write_batch_retries_total{job="alloy"}[5m])) => ['0.03389979897419208']
+sum(rate(loki_write_dropped_entries_total{job="alloy"}[5m])) => ['0.7143660907090822']
+prometheus_sd_refresh_failures_total{job="alloy"} => ['0']
+loki_write_batch_retries_total{job="alloy"} => ['19']
+== loki containers shipped (last 10m)
+{}
+DiskSpaceLow pending 600 [('Pending', '16:28:40'), ('Normal', '15:09:40')]
+LogShippingErrors pending 600 [('Pending', '16:28:40')]

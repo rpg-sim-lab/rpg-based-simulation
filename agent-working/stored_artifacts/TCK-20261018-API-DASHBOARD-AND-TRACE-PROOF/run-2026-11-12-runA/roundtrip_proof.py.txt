@@ -1,0 +1,68 @@
+"""Run A: prove the Loki-line -> Tempo-trace -> Loki-line round trip through Grafana's datasource proxies. Secrets read from files, never printed."""
+import base64
+import json
+import re
+import sys
+import time
+import urllib.parse
+import urllib.request
+
+GRAFANA = "http://127.0.0.1:3000"
+pw = open("docker/secrets/grafana_admin_password").read().strip()
+AUTH = "Basic " + base64.b64encode(f"admin:{pw}".encode()).decode()
+
+
+def get(path):
+    req = urllib.request.Request(GRAFANA + path, headers={"Authorization": AUTH})
+    return json.load(urllib.request.urlopen(req, timeout=30))
+
+
+def loki(q, limit=20):
+    now = int(time.time())
+    return get("/api/datasources/proxy/uid/loki/loki/api/v1/query_range?" + urllib.parse.urlencode(
+        {"query": q, "start": (now - 3600) * 10**9, "end": now * 10**9, "limit": limit, "direction": "backward"}))
+
+
+ds = get("/api/datasources/uid/loki")
+df = ds["jsonData"]["derivedFields"][0]
+print("Loki derivedFields (as loaded):", json.dumps(df))
+tds = get("/api/datasources/uid/tempo")
+t2l = tds["jsonData"]["tracesToLogsV2"]
+print("Tempo tracesToLogsV2 (as loaded):", json.dumps({k: t2l[k] for k in ("datasourceUid", "customQuery", "query")}))
+
+# 1. a backend line with trace_id= in Loki
+r = loki('{container=~".*backend.*"} |= "trace_id=" |= "Search runs"')
+lines = [(v[0], v[1]) for s in r["data"]["result"] for v in s["values"]]
+print("Loki lines with trace_id= (Search runs, last hour, limit 20):", len(lines))
+ts, line = lines[0]
+print("chosen line:", line[:230])
+m = re.search(df["matcherRegex"], line)
+tid = m.group(1)
+print("derivedFields regex captured trace id:", tid, "| 32 hex:", bool(re.fullmatch(r"[0-9a-f]{32}", tid)))
+
+# 2. follow the link: the trace in Tempo
+tr = get(f"/api/datasources/proxy/uid/{df['datasourceUid']}/api/traces/{tid}")
+spans = []
+for b in tr.get("batches", []):
+    for ss in b.get("scopeSpans", []) + b.get("instrumentationLibrarySpans", []):
+        for sp in ss.get("spans", []):
+            attrs = {a["key"]: list(a["value"].values())[0] for a in sp.get("attributes", [])}
+            spans.append((sp.get("name"), sp.get("kind"), sp.get("spanId"), sp.get("parentSpanId", ""), attrs))
+print("trace found in Tempo; spans:", len(spans))
+for name, kind, sid, par, attrs in spans:
+    keep = {k: v for k, v in attrs.items() if k in ("http.route", "http.method", "http.status_code")}
+    print(f"  {kind} | {name} | span {sid} parent {par or '-'} | {keep}")
+server = [x for x in spans if "SERVER" in str(x[1])]
+print("server span route:", [x[4].get("http.route") for x in server])
+
+# 3. back: the Tempo trace-to-logs query (customQuery, ${__trace.traceId} substituted) on Loki
+q = t2l["query"].replace("$${__trace.traceId}", tid).replace("${__trace.traceId}", tid)
+print("trace-to-logs query:", q)
+r2 = loki(q)
+back = [(v[0], v[1]) for s in r2["data"]["result"] for v in s["values"]]
+print("trace -> logs: lines returned:", len(back))
+same = [b for b in back if b[0] == ts and b[1] == line]
+print("the original line is among them:", bool(same), "| every returned line carries the trace id:", all(tid in b[1] for b in back))
+for b in back[:2]:
+    print("   ", b[1][:200])
+print("TRACE_ID", tid)

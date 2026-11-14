@@ -18,7 +18,7 @@ confirmed false-positive shape in the corpus (`git push` inside a `grep` pattern
 -n "git commit\\|git push\\|..."`) does not follow any of those three anchors and is excluded by
 construction, not by a special case.
 
-Five checks, each read-only against local refs (no network call — an offline-first design so this
+Checks A-G, each read-only against local refs (no network call — an offline-first design so this
 hook cannot itself become a source of the Fortiguard TLS-block failure mode this epic elsewhere
 defends against):
 
@@ -49,6 +49,10 @@ defends against):
   `agent-working/stored_artifacts/`, the trees `tools/generate_registry.py` reads) does it run
   `python3 tools/generate_registry.py --check` (offline, a few seconds); exit 2 means stale and yields one line naming
   `make docs-registry`. A push that touches none of those pays nothing; any other exit or a timeout says nothing.
+
+- **G — a hand-edited parity ledger shard (advisory, TCK-20261113-PRE-PUSH-CHECKS-HAND-EDITED-PARITY-LEDGER-SHARDS).** Only when
+  the branch diff touches `docs/parity_ledger/*.yaml`: each such shard as pushed must parse into a list of mappings with ids, and
+  its new or changed entries must pass `parity_ledger_writer.validate_entry` (legacy entries are exempt). The line names the writer.
 
 Every check degrades to "no finding" on any git-command failure (detached HEAD, no local
 `origin/main` ref, non-tracking branch) rather than raising — this hook must never traceback, and
@@ -209,7 +213,10 @@ def check_registry_fresh(run_command=default_run_command, base_ref: str = "origi
         diff = run_command(["git", "diff", "--name-only", f"{base_ref}...HEAD"])
         if diff.returncode != 0:
             return []
-        feeds = [p for p in diff.stdout.splitlines() if p.endswith(".md") and p.startswith(_REGISTRY_SOURCE_ROOTS)]
+        # the registry file itself counts too: a branch whose only registry-relevant change is a bad merge of
+        # docs/REGISTRY.yaml (no doc or ticket .md of its own) must still reach the check
+        feeds = [p for p in diff.stdout.splitlines()
+                 if p == "docs/REGISTRY.yaml" or (p.endswith(".md") and p.startswith(_REGISTRY_SOURCE_ROOTS))]
         if not feeds:
             return []
         # default 30 s timeout on purpose: the hook entry sets none, so Claude Code's 60 s covers ALL checks (A-E);
@@ -220,8 +227,68 @@ def check_registry_fresh(run_command=default_run_command, base_ref: str = "origi
     if result.returncode != _REGISTRY_STALE_EXIT:
         return []
     return [
-        "pre-push: this branch changes docs or tickets and docs/REGISTRY.yaml is stale (CI's Registry re-sync gate "
+        "pre-push: this branch changes docs, tickets or docs/REGISTRY.yaml and the registry is stale (CI's Registry re-sync gate "
         "will fail). Run `make docs-registry`, then `git add docs/REGISTRY.yaml` and commit it."
+    ]
+
+
+_LEDGER_SHARD = re.compile(r"^docs/parity_ledger/[^/]+\.yaml$")
+
+
+def check_parity_ledger_shards(run_command=default_run_command, base_ref: str = "origin/main") -> List[str]:
+    """Check G (TCK-20261113-PRE-PUSH-CHECKS-HAND-EDITED-PARITY-LEDGER-SHARDS): a hand-edited docs/parity_ledger/*.yaml that
+    does not parse, or whose new or changed entries break the ledger rules, warns before CI does. Structural check on each
+    changed shard as pushed (HEAD), plus validate_entry on entries new or changed against `base_ref`; legacy entries are exempt.
+    Warn-only; no ledger change, or any error, says nothing."""
+    try:
+        diff = run_command(["git", "diff", "--name-only", f"{base_ref}...HEAD"])
+        if diff.returncode != 0:
+            return []
+        shards = [p for p in diff.stdout.splitlines() if _LEDGER_SHARD.match(p)]
+        if not shards:
+            return []
+        from tools import parity_ledger_writer
+
+        problems: List[str] = []
+        for path in shards:
+            head = run_command(["git", "show", f"HEAD:{path}"])
+            if head.returncode != 0:
+                continue  # deleted on the branch
+            base = run_command(["git", "show", f"{base_ref}:{path}"])
+            problems += parity_ledger_writer.check_shard_text(path, head.stdout, base.stdout if base.returncode == 0 else "")
+    except Exception:
+        return []  # an uncertain check says nothing
+    if not problems:
+        return []
+    return [f"pre-push: parity ledger: {line}" for line in problems] + [
+        "pre-push: edit ledger entries with tools/parity_ledger_writer.py, which validates before it writes (CI will fail on these)."
+    ]
+
+
+_POST_COMMIT_SCRIPT = "tools/hooks/post-commit-reindex.sh"
+
+
+def check_installed_post_commit_current(run_command=default_run_command) -> List[str]:
+    """Check F (TCK-20261112-REGISTRY-REGEN-SKIPPED-BY-A-STALE-HOOK-OR-AN-UNTRACKED-DOC): the shared post-commit hook is a copy
+    that only `make install-hooks` refreshes, so a stale copy silently skips the registry regeneration after a merge
+    finished with `git commit`. Warn-only; no installed hook, or any error, says nothing."""
+    try:
+        common = run_command(["git", "rev-parse", "--git-common-dir"])
+        if common.returncode != 0:
+            return []
+        installed = Path(common.stdout.strip()) / "hooks" / "post-commit"
+        if not installed.is_file():
+            return []
+        script = run_command(["git", "show", f"HEAD:{_POST_COMMIT_SCRIPT}"])
+        if script.returncode != 0:
+            return []
+        if installed.read_text(encoding="utf-8") == script.stdout:
+            return []
+    except Exception:
+        return []
+    return [
+        "pre-push: the installed post-commit hook differs from HEAD's tools/hooks/post-commit-reindex.sh, so a merge "
+        "finished with `git commit` may skip the docs/REGISTRY.yaml regeneration. Run `make install-hooks` to refresh it."
     ]
 
 
@@ -236,6 +303,8 @@ def run_all_checks(
     findings.extend(check_squash_merged_finished(run_command, base_ref))
     findings.extend(check_ci_lanes(run_command, base_ref))
     findings.extend(check_registry_fresh(run_command, base_ref))
+    findings.extend(check_installed_post_commit_current(run_command))
+    findings.extend(check_parity_ledger_shards(run_command, base_ref))
     return findings
 
 

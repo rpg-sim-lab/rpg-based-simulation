@@ -19,12 +19,18 @@ Every alert rule in `docker/grafana/provisioning/alerting/rules-base.yaml` has a
 | `DiskWillFillIn24h` | 30m | [disk-space.md](disk-space.md) | proven by query only |
 | `ApiLatencyP95High` | 2m | [api-latency-slo.md](api-latency-slo.md) | fire test: a Locust step above the knee (see the SLO record) |
 | `ApiErrorRateHigh` | 2m | [api-latency-slo.md](api-latency-slo.md) | not drilled |
-| `LogShippingErrors` | 10m | [log-shipping.md](log-shipping.md) | live proof: a stopped alloy, a fresh alloy against the 403, and a quiet stack (see the [alloy record](records/2026-10-28-alloy-log-shipping.md)) |
+| `LogShippingErrors` | 10m | [log-shipping.md](log-shipping.md) | live proof: a stopped alloy, a fresh alloy against the 403, and a quiet stack (see the [alloy record](records/2026-10-28-alloy-log-shipping.md)); with Loki's named volume, 3,885 and 2,076 entries sent with no 500 and the alert inactive in two runs, and the Loki disk-throttle cause ([2026-11-12 record](records/2026-11-12-loki-volume-and-api-dashboard.md)) |
 | `RedisDown` (cause alert) | 30s | [redis-down.md](redis-down.md) | the Redis-stop drill under load (see `records/`) |
 | `AiWorkerLagHigh` | 2m | [ai-worker-lag.md](ai-worker-lag.md) | stop ai_worker while the engine publishes ([2026-10-26 record](records/2026-10-26-ai-worker-lag-alert.md)) |
 | `AiWorkerPendingHigh` | 2m | [ai-worker-lag.md](ai-worker-lag.md) | not drilled |
 
 Records of measured runs and drills are in `records/`.
+
+Owner-run procedures (nothing an agent runs): [docker-image-store-move.md](docker-image-store-move.md), moving Docker's containerd image store off the root disk (planned, not yet run).
+
+Compose stack API keys (fail-closed by default; two gitignored files hold the pair; nginx adds the key): [compose-api-key.md](compose-api-key.md).
+
+Owner-run: rotating the local ntfy alert topic: [ntfy-topic-rotation.md](ntfy-topic-rotation.md).
 
 ## Common steps
 

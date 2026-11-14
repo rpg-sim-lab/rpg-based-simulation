@@ -1,0 +1,6 @@
+== 2026-11-12T17:06:29Z P9 one key, one bucket (through the frontend; the client sends no key)
+(waited 12 s so the bucket refilled)
+client A: 35 rapid requests ->      31 200;      4 429;
+client B (made no request of its own before): 15 rapid requests ->      15 429;
+retry-after on a 429 (header only): retry-after: 5
+total 200s across both: 

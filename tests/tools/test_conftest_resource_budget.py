@@ -73,12 +73,18 @@ def test_resource_budget_marker_applies_large_to_named_grade_stability_tests(mon
 
     monkeypatch.setattr(signal, "alarm", _spy_alarm)
 
+    if real_setrlimit is not None:
+        hard_before = resource_module.getrlimit(resource_module.RLIMIT_AS)[1]
     item = _FakeItem(budget="medium", marked=True)
     conftest_module.pytest_runtest_setup(item)
 
     assert captured_alarm["time_limit"] == 600
     if real_setrlimit is not None:
-        assert captured_limits["mem"] == (8 * 1024 * 1024 * 1024, 8 * 1024 * 1024 * 1024)
+        # Only the soft limit is lowered; the hard limit stays what the process inherited
+        # (TCK-20261111-KNOWLEDGE-INDEX-BUILD-MEMORY-BOUNDED).
+        large = 8 * 1024 * 1024 * 1024
+        soft = large if hard_before == resource_module.RLIM_INFINITY else min(large, hard_before)
+        assert captured_limits["mem"] == (soft, hard_before)
 
 
 def test_resource_budget_marker_does_not_affect_unmarked_tests(monkeypatch):

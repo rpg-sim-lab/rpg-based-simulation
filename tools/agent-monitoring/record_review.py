@@ -34,11 +34,11 @@ from path_record import full_phases  # noqa: E402
 from run_dedup import dedupe_to_latest_per_execution  # noqa: E402
 from session_role import stamp as stamp_session_role  # noqa: E402
 from tools.agent_working_paths import AGENT_MONITORING  # noqa: E402
+from tools.delivery.repo_name import current_repo  # noqa: E402
 from validate import load_data_glob  # noqa: E402
 from writer import write_line  # noqa: E402
 
 REVIEW_REF = re.compile(r"^[1-9][0-9]*#[1-9][0-9]*$")
-REPO = "ttnhan18062000/rpg-based-simulation"
 
 
 class Refused(Exception):
@@ -48,15 +48,16 @@ class Refused(Exception):
 def check_comment(pr: str, comment: str, runner=subprocess.run) -> str | None:
     """None when the comment exists on PR `pr`; a WARNING text when it could not be checked; raises Refused when it is
     missing or on another PR."""
+    repo = current_repo(lambda cmd: runner(cmd, capture_output=True, text=True, timeout=30))
     try:
-        done = runner(["gh", "api", f"repos/{REPO}/issues/comments/{comment}", "--jq", ".issue_url"],
+        done = runner(["gh", "api", f"repos/{repo}/issues/comments/{comment}", "--jq", ".issue_url"],
                       capture_output=True, text=True, timeout=30)
     except (OSError, subprocess.SubprocessError) as e:
         return f"could not run gh to check comment {comment} ({e}); writing without the check"
     if done.returncode != 0:
         err = (done.stderr or "").strip()
         if "404" in err or "Not Found" in err:
-            raise Refused(f"comment {comment} does not exist in {REPO}")
+            raise Refused(f"comment {comment} does not exist in {repo}")
         return f"could not check comment {comment} ({err[:120] or 'gh failed'}); writing without the check"
     url = (done.stdout or "").strip()
     if not url.endswith(f"/{pr}"):
