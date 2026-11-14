@@ -154,11 +154,17 @@ def test_a_filing_entry_from_another_host_is_not_progress_evidence():
     assert item["Status"] == "To do"
 
 
-def test_apply_and_init_are_refused_and_nothing_runs(monkeypatch, capsys):
+def test_apply_and_init_exit_2_when_the_project_number_is_0_and_nothing_runs(monkeypatch, capsys, tmp_path):
     monkeypatch.setattr(ps, "read_branch_facts", lambda *a, **k: pytest.fail("a reader ran"))
     for flag in ("--apply", "--init"):
-        assert ps.main([flag]) == 2
-    assert "P1" in capsys.readouterr().err
+        assert ps.main(["--root", str(tmp_path), flag]) == 2  # no registries/session_project.yaml there: built-in project.number 0
+    assert "project.number is 0" in capsys.readouterr().err
+
+
+def test_flag_combinations_are_refused(monkeypatch, tmp_path):
+    monkeypatch.setattr(ps, "read_branch_facts", lambda *a, **k: pytest.fail("a reader ran"))
+    for argv in (["--init", "--apply"], ["--apply", "--items", "x.json"], ["--replace-status-options"]):
+        assert ps.main(["--root", str(tmp_path), *argv]) == 2
 
 
 @pytest.mark.parametrize("cmd", [
@@ -368,3 +374,35 @@ def test_the_host_default_comes_from_the_host_names_map_else_the_hostname(monkey
 def test_the_registry_file_maps_this_hosts_long_name_and_sets_the_stale_window():
     cfg = yaml.safe_load((Path(__file__).resolve().parents[2] / ps.CONFIG_REL).read_text(encoding="utf-8"))
     assert cfg["stale_branch_days"] == 14 and cfg["host_names"]["u24desktop-Virtual-Machine"] == "u24desktop"
+
+
+def test_two_items_without_an_id_and_one_title_are_both_archived_by_their_own_ids():
+    a = {"Title": "hand made", "Ticket ID": "", "_item_id": "I1"}
+    b = {"Title": "hand made", "Ticket ID": "", "_item_id": "I2"}
+    plan = _plan({}, [], [a, b])
+    assert plan.archives == [("hand made", "no Ticket ID")] * 2 and plan.archive_item_ids == ["I1", "I2"]
+
+
+def test_a_duplicate_ticket_id_keeps_one_item_and_archives_the_other():
+    c = copy("TCK-20261112-DUP", "inprogress")
+    derived, _ = derive("TCK-20261112-DUP", main=[c], branches=[branch([c])])
+    matching = {**derived, "_item_id": "GOOD"}
+    stale = {**derived, "Sync hash": "not-the-hash", "Status": "Blocked", "_item_id": "BAD"}
+    plan = _plan({"TCK-20261112-DUP": [c]}, [branch([c])], [stale, matching])
+    assert plan.archives == [("TCK-20261112-DUP", "duplicate Ticket ID")] and plan.archive_item_ids == ["BAD"]
+    assert any("duplicate Ticket ID" in f for f in plan.findings) and not plan.updates
+
+
+def test_done_item_on_the_board_with_an_unreadable_done_date_gets_a_note():
+    c = copy("TCK-20261112-D", "done")
+    item, _ = derive("TCK-20261112-D", main=[c])
+    plan = _plan({"TCK-20261112-D": [c]}, [], [item], done_at=lambda p: None)
+    assert "done date unreadable: TCK-20261112-D" in plan.notes and not plan.updates and not plan.archives
+
+
+def test_updates_carry_the_live_item_and_draft_ids():
+    c = copy("TCK-20261112-U", "inprogress")
+    derived, _ = derive("TCK-20261112-U", main=[c], branches=[branch([c])])
+    live = {**derived, "Status": "To do", "_item_id": "ITEM", "_draft_id": "DRAFT"}
+    plan = _plan({"TCK-20261112-U": [c]}, [branch([c])], [live])
+    assert plan.updates[0][0]["_item_id"] == "ITEM" and plan.updates[0][0]["_draft_id"] == "DRAFT"

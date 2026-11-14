@@ -39,3 +39,10 @@ Field ids and option ids come from `load_project()` on that run. Create: `add_dr
 
 ## Out
 P2/P3/P4, views, tokens, creating the Project, `status.py`/launcher/roster, writes back to tickets.
+
+## Amendments (designer OK 2026-11-14, agent-working-designer-u24; these supersede the text above where they differ)
+A. Archive and update by item id. `Plan.updates` derived dicts carry `_item_id` and `_draft_id`; `Plan.archive_item_ids` runs parallel to `Plan.archives` (which stays a list of `(ident, reason)` pairs so P0/P1a tests are unchanged). `apply_plan` never re-matches by title. Test: two no-ID items with one title are both archived by their own ids.
+B. Duplicate Ticket IDs: keep the item whose stored `Sync hash` matches its fields, else the first in list order; archive the rest with reason `duplicate Ticket ID` and print a finding. After `add_draft`, `Ticket ID` is set first. Test: two items, one ID -> 1 kept, 1 archived.
+C. `--init` replaces Status options only when they differ and the Project has no non-archived item; otherwise it reports the difference and the item count, writes nothing, exits non-zero. `--replace-status-options` allows it. Test: differ with 1 item -> refusal, zero mutations; same with the flag -> replaced.
+D. (1) `fieldValues(first: 25)`; if any item reports `hasNextPage`, the read fails loudly. (2) `build_plan` adds the note `done date unreadable: <id>` when a Done ticket already on the board has no readable done date (still skipped); one-line test.
+Files Changed also lists the new `tools/sessions/project_client.py` and `tests/tools/test_project_client.py`.
