@@ -41,7 +41,7 @@ Case: ubuntu groups batch C, Tier 2 crowded s43, churn-on-F3 arm. Victim e10 is 
 
 ## Scope
 1. Add a term to target_score ahead of group_bias: "is this hostile attacking me", meaning it hit this entity within N ticks. A hostile attacking the entity outranks the group's shared target, and the rest of the key keeps its order.
-2. N is a content or tuning value (combat tuning or content data), NOT a number in code. The source of "hit me within N ticks" uses the existing typed attacker record (CombatComponent.last_attacker_id, plus a typed last-hit tick if one exists; else add one with a FieldRule and checkpoint coverage). It is not a free-form metadata read.
+2. N is a named constant registered in the deferred-tuning register (D-13), following D-11/D-12; not an unnamed literal (amended by rpg-designer, #634 6883797779; the original line is quoted under Assumptions / Open Questions). The source of "hit me within N ticks" is the typed hit record: `CombatComponent.last_hit_attackers` (every attacker of the last hit, from TCK-20261103-A-GROUP-HIT-RECORDS-ONLY-ITS-FIRST-ATTACKER) and `last_hit_tick`. It is not a free-form metadata read.
 3. Scope is target selection only. Bracketing movement, REGROUP and hazard weighting stay in ENGAGE-BRACKETING / H1.
 
 ## Out of Scope
@@ -54,7 +54,7 @@ Case: ubuntu groups batch C, Tier 2 crowded s43, churn-on-F3 arm. Victim e10 is 
   - e10's t894 position replayed as a unit case: adjacent shared target 30 vs adjacent attacker 27 that hit within N, so it picks 27;
   - plain focus fire unchanged when nobody is attacking the member: the shared target still wins via group_bias;
   - no change when the attacker is the shared target itself;
-  - N read from content/tuning, with a test that changing it changes the window.
+  - N is the named constant `ATTACKED_RECENTLY_WINDOW_TICKS` (D-13, value 10), with a test that patching it changes the window. No test pins it equal to the row 88 act-test window.
 - Paired deaths under the death-STOP bar (Tier 1 / Tier 2) on the standard seeds, base vs fix. rpg-designer reads any Tier 2 set.
 - Bible ch.02 (combat laws, tactical modifiers) and the parity ledger (combat_movement.yaml) are updated in the same change. An intentional_divergences entry is added if the Bible states the current order.
 - Hot-loop: yes. target_score runs per hostile per evaluating entity. The added term is a field read and a compare. Under the perf pause (#715 6556861718), timing is NOT MEASURED and is covered by checkpoint (a).
@@ -76,7 +76,8 @@ Case: ubuntu groups batch C, Tier 2 crowded s43, churn-on-F3 arm. Victim e10 is 
 - src/core/death_cause.py, CombatComponent.last_attacker_id
 
 ## Assumptions / Open Questions
-- Whether a typed last-hit tick exists on CombatComponent today. The investigation states it.
+- Original scope line 2, replaced by the 2026-11-15 amendment (#634 6883797779): "N is a content or tuning value (combat tuning or content data), NOT a number in code."
+- Resolved: a typed last-hit tick exists (`CombatComponent.last_hit_tick`); the attacker set comes from ticket 1 (`last_hit_attackers`).
 - Whether "attacking me" also covers a hostile whose current target is this entity but that has not hit yet. Assumed no (hit within N) unless rpg-designer widens it.
 
 ## Implementation Notes
