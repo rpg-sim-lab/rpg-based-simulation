@@ -9099,6 +9099,22 @@
   artifact_files: []
   tags: []
 - type: ticket
+  path: agent-working/tickets/todos/TCK-20261110-A-RUN-RESTORED-FROM-A-CHECKPOINT-EQUALS-THE-UNINTERRUPTED-RUN-TICK-BY-TICK.md
+  ticket_id: TCK-20261110-A-RUN-RESTORED-FROM-A-CHECKPOINT-EQUALS-THE-UNINTERRUPTED-RUN-TICK-BY-TICK
+  title: A conformance test shows a run restored from a checkpoint at tick K and continued
+    to N has the same per-tick proof digest as the uninterrupted run, on a realistic
+    world, at several split points
+  tier: standard
+  ticket_type: feature
+  date: '2026-11-10'
+  related_code_areas:
+  - src/engine/scenario_checkpoint.py (restore), src/engine/scenario_runtime.py (_build_kernel)
+  - tests/integration/scenarios/test_scenario_runtime_service.py
+  artifact_files: []
+  tags:
+  - testing
+  - determinism
+- type: ticket
   path: agent-working/tickets/done/TCK-20261109-A-COMBAT-RETREAT-PROJECT-WALKS-THE-SUBJECT-AGAINST-THE-HELD-FLIGHT-RULE.md
   ticket_id: TCK-20261109-A-COMBAT-RETREAT-PROJECT-WALKS-THE-SUBJECT-AGAINST-THE-HELD-FLIGHT-RULE
   title: A COMBAT_RETREAT project walks its owner to the town centre through the strategic
@@ -18264,6 +18280,25 @@
   - documentation
   - certification
 - type: ticket
+  path: agent-working/tickets/done/rpg-regression-gate-report/TCK-20261009-RPG-GATE-REPORT-TESTING-INFRA-EPIC.md
+  ticket_id: TCK-20261009-RPG-GATE-REPORT-TESTING-INFRA-EPIC
+  title: 'Testing-side infrastructure for the rpg regression gate report: harness,
+    baselines, report states, ownership registry, scheduled workflow'
+  tier: epic
+  ticket_type: feature
+  date: '2026-10-09'
+  related_code_areas:
+  - tools/test_architecture/
+  - tools/test_architecture/slow_known_reds.yaml
+  - tests/helpers/kernel_pinning.py
+  - .github/workflows/
+  artifact_files: []
+  tags:
+  - testing
+  - regression
+  - simulation-quality
+  - planning
+- type: ticket
   path: agent-working/tickets/done/session-lead/TCK-20261009-EPIC-SESSION-LEAD-PLANNER.md
   ticket_id: TCK-20261009-EPIC-SESSION-LEAD-PLANNER
   title: 'Epic E — Session lead-planner: one cross-domain seat (project manager +
@@ -18314,25 +18349,6 @@
   - src/simulation_quality/ or tools/ (a new metrics module), src/observability/event_extractor.py.
   artifact_files: []
   tags: []
-- type: ticket
-  path: agent-working/tickets/todos/rpg-regression-gate-report/TCK-20261009-RPG-GATE-REPORT-TESTING-INFRA-EPIC.md
-  ticket_id: TCK-20261009-RPG-GATE-REPORT-TESTING-INFRA-EPIC
-  title: 'Testing-side infrastructure for the rpg regression gate report: harness,
-    baselines, report states, ownership registry, scheduled workflow'
-  tier: epic
-  ticket_type: feature
-  date: '2026-10-09'
-  related_code_areas:
-  - tools/test_architecture/
-  - tools/test_architecture/slow_known_reds.yaml
-  - tests/helpers/kernel_pinning.py
-  - .github/workflows/
-  artifact_files: []
-  tags:
-  - testing
-  - regression
-  - simulation-quality
-  - planning
 - type: ticket
   path: agent-working/tickets/done/TCK-20261007-A-WALKER-BESIDE-A-PERCEIVED-HOSTILE-KEEPS-STEPPING-AND-EATS-AN-OPPORTUNITY-ATTACK-PER-STEP.md
   ticket_id: TCK-20261007-A-WALKER-BESIDE-A-PERCEIVED-HOSTILE-KEEPS-STEPPING-AND-EATS-AN-OPPORTUNITY-ATTACK-PER-STEP

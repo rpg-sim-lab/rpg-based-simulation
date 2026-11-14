@@ -1,10 +1,10 @@
 ---
-status: active
+status: historical
 layer: testing
 authority: P1
 audience: agent
 ticket_id: TCK-20261009-RPG-GATE-REPORT-TESTING-INFRA-EPIC
-phase: open
+phase: done
 date: 2026-10-09
 tags: [testing, regression, simulation-quality, planning]
 ---
@@ -15,7 +15,7 @@ tags: [testing, regression, simulation-quality, planning]
 Testing-side infrastructure for the rpg regression gate report: harness, baselines, report states, ownership registry, scheduled workflow
 
 ## Status
-EPIC_SCOPED
+DONE
 
 ## Tier
 epic
@@ -91,7 +91,7 @@ None.
 - Where the config and baselines live: proposed `tests/simulation_quality/rpg_gate/` (rpg-owned content, testing-owned schema). Child 2 confirms the path with rpg-planner.
 
 ## Open live proofs
-Both are due on the first scheduled run after rpg's metric module (`src/observability/rpg_gate_metrics.py`, rpg-planner's ticket) merges; testing-planner checks them on that run.
+Both were due on the first scheduled run after rpg's metric module (`src/observability/rpg_gate_metrics.py`, rpg-planner's ticket) merged. Both are now MET; see the Completion Summary.
 - Child 5 (`TCK-20261009-RPG-GATE-SCHEDULED-AND-DISPATCH-WORKFLOW`) AC2: the rolling issue created or updated by a scheduled run and untouched by a dispatch.
 - The full-run wall time for 3 worlds x 5 seeds.
 
@@ -99,10 +99,33 @@ Both are due on the first scheduled run after rpg's metric module (`src/observab
 - V8 (item 7, TCK-20261013-RPG-GATE-V8-SPAWN-SOURCE-CHECK) landed 2026-10-19: "every entity added mid-run has a declared source". Required-validity guard in the report and candidate, a self-test that drives rpg's real recorders and `compute` (test_v8_fires.py), and a static spawn-site guard with an OFF ratchet (tests/architecture/test_spawn_sites_declare_source.py).
 
 ## Test Summary
-(implementer)
+No code in this close. The children's own test summaries hold the test evidence. The unstable-state rule is unit-tested in tests/unit/tools/test_rpg_gate_report.py::test_a_rerun_that_disagrees_marks_unstable_and_routes_to_test_infrastructure.
 
 ## Files Changed
-(implementer)
+- This ticket (disposition close); the folder moves to agent-working/tickets/done/rpg-regression-gate-report/.
 
 ## Completion Summary
-(implementer)
+Disposition close, owner approval on issue #715, comment 6875225978 (item 3, "Close 4 empty epics"). It was read on origin/main fc62c8557 on 2026-11-14. Nothing was dropped or moved.
+
+**Children: all 7 DONE.**
+| # | Ticket | Landed |
+|---|---|---|
+| 1 | TCK-20261009-KNOWN-REDS-REGISTRY-SHARED-MODULE | #502, 4cb385343 (2026-10-11) |
+| 2 | TCK-20261009-RPG-GATE-BASELINE-FORMAT-AND-STALENESS | #502, 4cb385343 (2026-10-11) |
+| 3 | TCK-20261009-RPG-GATE-PINNED-FRESH-PROCESS-HARNESS | #502, 4cb385343 (2026-10-11) |
+| 4 | TCK-20261009-RPG-GATE-REPORT-STATES-AND-SAME-SHA-RERUN | #502, 4cb385343 (2026-10-11) |
+| 5 | TCK-20261009-RPG-GATE-SCHEDULED-AND-DISPATCH-WORKFLOW | workflow in #507, f8b558de0 (2026-10-11); ticket closed in #531, 9a9955f0d (2026-10-14), with AC2 open by its own allowance |
+| 6 | TCK-20261011-RPG-GATE-BASELINE-CANDIDATE-FROM-HARNESS-DOCS | #508, f40ccadff (2026-10-11) |
+| 7 | TCK-20261013-RPG-GATE-V8-SPAWN-SOURCE-CHECK | #653, 7f115a3d4 (2026-10-19); in done/ under its own id, AC1-AC7 all checked |
+
+**Epic acceptance criteria.**
+- AC1 MET: all children are closed, including items 6 and 7, which were added after the original five.
+- AC2 MET. Daily report on main: scheduled runs from 2026-10-19 on run the full matrix (e.g. 43432156849 on 96db1f5e8, 2026-11-13). Dispatched report on a branch, end to end: 40734781335 (ref rpg-free-meal-own-step, 2026-10-28). Plan, all three shards, Evaluate (with rerun), the baseline candidate and the report upload succeeded, and the verdict was red, a real non-pass state. The seeded non-pass fixtures are in the children's tests.
+- AC3 MET by unit test (see Test Summary). The finding routes to `test-infrastructure`.
+- AC4 MET: docs/plans/test_architecture/roadmap.md lists the "Broad simulation: rpg gate report (advisory)" layer (line 109) and its states (line 127).
+
+**Open live proofs, now closed.**
+- Child 5 AC2, the rolling issue: #669 was created by github-actions on 2026-10-19 and updated (comment plus title rename) only at scheduled-run times, 12 times between 2026-10-20 and 2026-11-12. The branch dispatch 40734781335 skipped "Update the rolling issue", and no comment falls at any dispatch time. MET.
+- Full-run wall time, 3 worlds x 5 seeds (run 43432156849): shards 13 / 18 / 37 min in parallel (urban_political / crowded_frontier / frontier_living_world), report job 71 min including the bounded rerun, 1 h 49 min end to end.
+
+**Not part of this close.** The gate has been red on main since 2026-11-12 (runs 43231426067 and 43432156849: NEW V3 crowded_frontier/45 and /46). That is ownership work in tools/test_architecture/rpg_gate_known.yaml and rpg-planner's triage, not epic scope. Reported to lead-planner-u24 separately.
