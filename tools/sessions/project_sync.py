@@ -457,8 +457,8 @@ def own_segment(tid: str, mine: list[BranchFact], stale_before: float | None) ->
     return Segment(state, tuple(seats), tuple(sorted({b.domain for b in mine if b.domain})))
 
 
-def derive_status(tid: str, main: list[TicketCopy], prs: list[PrFact] | None,
-                  segments: dict[str, Segment]) -> tuple[str, list[str], list[str]]:
+def derive_status(tid: str, main: list[TicketCopy], prs: list[PrFact] | None, segments: dict[str, Segment],
+                  keep_status: str | None = None) -> tuple[str, list[str], list[str]]:
     """(status, PR urls, findings). First match wins; see the module docstring. Blocked, In progress and Stale come from the
     union of every host's segment, so two hosts derive the same value."""
     findings = []
@@ -470,6 +470,8 @@ def derive_status(tid: str, main: list[TicketCopy], prs: list[PrFact] | None,
     review = [pr for pr in prs or [] if any(ticket_id_of(p) == tid and folder_of(p) in PROGRESS_FOLDERS for p in pr.paths)]
     if review:
         return "In review", [pr.url for pr in review], findings
+    if keep_status:  # only legacy hosts hold it and this host has no copy: their state cannot be read, so the item's Status stays
+        return keep_status, [], findings
     states = [s.state for s in segments.values()]
     if "blocked" in states or (not segments and any(c.blocked for c in main)):
         return "Blocked", [], findings
@@ -572,7 +574,8 @@ def derive_item(tid: str, main: list[TicketCopy], branches: list[BranchFact], pr
     own = own_segment(tid, mine, stale_before)
     if own is not None:
         segments[host] = own
-    status, pr_urls, status_findings = derive_status(tid, main, prs, segments)
+    only_legacy = own is None and bool(segments) and all(s.legacy for s in segments.values())
+    status, pr_urls, status_findings = derive_status(tid, main, prs, segments, (current or {}).get("Status") if only_legacy else None)
     findings += status_findings
     branch_copies = [c for b in mine for c in b.copies if c.id == tid]
     entries = [f"{host}:{b.branch}" + ("" if any(c.id == tid and c.folder in PROGRESS_FOLDERS for c in b.copies) else f" {FILING_SUFFIX}")

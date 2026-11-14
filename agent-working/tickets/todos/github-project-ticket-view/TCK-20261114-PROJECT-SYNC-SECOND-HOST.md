@@ -74,7 +74,7 @@ as a dry run only.
    - `state` is one of `filing | progress | stale | blocked`, from that host's own branch copies. This replaces `[filing]` as the
      carrier of per-host state.
    - The `Branch` display may keep its suffix.
-2. **Status from the union.** In `derive_status`:
+2. **Status from the union** (plus M12: when this host has no own segment and every other segment is a legacy one, Status stays the item's current value, after Done and In review). In `derive_status`:
    - Rules 1 and 2 (Done, In review) are unchanged.
    - **Blocked** when any host's segment is `blocked`. Origin's BLOCKED copy counts only when no segment has a branch copy.
    - **In progress** when any segment is `progress` or `stale`.

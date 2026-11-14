@@ -129,6 +129,22 @@ def test_a_plan_note_names_the_rule_when_two_hosts_hold_the_ticket():
     assert any("held by" in n and "origin's copy" in n for n in plan.notes)
 
 
+def test_only_legacy_hosts_and_no_own_copy_keep_the_items_current_status():
+    legacy = {"Branch": f"{A}:rpg-old"}
+    assert derive(B, [], item("", Status="Stale", **legacy), main=[copy()])[0]["Status"] == "Stale"
+    assert derive(B, [], item("", Status="Blocked", **legacy), main=[copy()])[0]["Status"] == "Blocked"
+    assert derive(B, [], item("", Status="Stale", **legacy), main=[copy(folder="done")])[0]["Status"] == "Done"  # origin still wins
+    own = derive(B, [fact(B)], item("", Status="Stale", **legacy), main=[copy()])[0]
+    assert own["Status"] == "In progress"  # this host has a copy: the normal union applies
+    real = item(facts_text(a=seg("progress", "rpg-implementer-u24")), Status="Blocked", Branch=f"{A}:rpg-old")
+    assert derive(B, [], real, main=[copy()])[0]["Status"] == "In progress"  # the other host has a real segment: union, not the kept value
+    mixed = item(facts_text(a=seg("progress", "rpg-implementer-u24")), Status="In progress", Branch=f"{A}:rpg-old, {B}:rpg-x")
+    blocked_here = derive(B, [fact(B, blocked=True)], mixed, main=[copy()])[0]
+    assert blocked_here["Status"] == "Blocked"  # this host's own segment: the normal union
+    # Blocked set by this host is not copied into a legacy state: with this host's copy gone and a real u24 segment, it clears
+    assert derive(B, [], item(facts_text(a=seg("progress")), Status="Blocked"), main=[copy()])[0]["Status"] == "In progress"
+
+
 # ---- archive guard, legacy segments, hash
 
 def test_archive_guard_keeps_an_item_that_carries_another_hosts_facts():
