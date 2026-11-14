@@ -8180,6 +8180,20 @@
   - security
   - setup
 - type: ticket
+  path: agent-working/tickets/done/TCK-20261113-PRE-PUSH-CHECKS-HAND-EDITED-PARITY-LEDGER-SHARDS.md
+  ticket_id: TCK-20261113-PRE-PUSH-CHECKS-HAND-EDITED-PARITY-LEDGER-SHARDS
+  title: A hand-edited `docs/parity_ledger/*.yaml` shard that doesn't parse, or breaks
+    the ledger rules, reaches CI with no local warning
+  tier: hotfix
+  ticket_type: bug
+  date: '2026-11-13'
+  related_code_areas:
+  - validate_entry
+  artifact_files: []
+  tags:
+  - delivery
+  - process-improvement
+- type: ticket
   path: agent-working/tickets/done/TCK-20261113-PROOF-RUN-EXPECTS-AI-WORKER-LAG-NODATA.md
   ticket_id: TCK-20261113-PROOF-RUN-EXPECTS-AI-WORKER-LAG-NODATA
   title: Stack proof runs without ai_worker always show AiWorkerLagHigh alerting (NoData
