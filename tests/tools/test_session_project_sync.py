@@ -90,7 +90,7 @@ def test_an_open_pr_that_adds_a_todos_ticket_is_to_do_not_in_review():
 
 def test_an_unrecorded_seat_comes_from_the_branch_prefix_else_unknown():
     assert ps.attribute("rpg-hit-wake", []) == ("rpg (seat not recorded)", "rpg")
-    assert ps.attribute("freemeal", []) == ("unknown", "")
+    assert ps.attribute("freemeal", []) == ("unknown", "unknown")
     assert ps.attribute("x-y", [("rpg-implementer", "rpg"), ("rpg-planner", "rpg")]) == ("rpg-implementer/rpg-planner", "rpg")
 
 
@@ -132,9 +132,9 @@ def test_a_done_ticket_from_before_the_pilot_gets_no_item_but_one_after_it_does(
     assert [i["Ticket ID"] for i in plan.creates] == ["TCK-NEW-1"]
 
 
-def test_only_pilot_lane_branches_make_candidates():
+def test_every_lane_makes_candidates_not_only_the_pilot_lane():
     plan = _plan({"TCK-A-1": [copy("TCK-A-1", "todos")]}, [branch([copy("TCK-A-1")], name="eng-x", seat="eng", domain="eng")])
-    assert plan.creates == []
+    assert [c["Ticket ID"] for c in plan.creates] == ["TCK-A-1"] and plan.creates[0]["Domain"] == "eng"
 
 
 def test_a_ticket_in_progress_on_ubuntu_and_in_review_through_a_pr_from_u24_is_in_review_keeping_both_hosts():
@@ -229,7 +229,7 @@ def test_detached_worktrees_are_skipped_counted_and_reported_when_they_change_a_
     entries = [{"worktree": str(tmp_path / "a")}, {"worktree": str(tmp_path / "b"), "branch": "refs/heads/rpg-hit-wake"}]
     infos = {str(tmp_path / "a"): SimpleNamespace(path=tmp_path / "a", branch=None, prunable=False, is_main=False, last_activity=0.0),
              str(tmp_path / "b"): SimpleNamespace(path=tmp_path / "b", branch="rpg-hit-wake", prunable=False, is_main=False, last_activity=0.0)}
-    monkeypatch.setattr(ps, "load_roster", lambda root: SimpleNamespace(roles=[]))
+    monkeypatch.setattr(ps, "load_roster", lambda root: SimpleNamespace(roles=[], domains=[SimpleNamespace(name="rpg")]))
     monkeypatch.setattr(ps, "main_checkout", lambda root: tmp_path / "main")
     monkeypatch.setattr(ps.st, "state_root", lambda root: tmp_path / "state")
     monkeypatch.setattr(ps, "worktree_entries", lambda root: entries)
