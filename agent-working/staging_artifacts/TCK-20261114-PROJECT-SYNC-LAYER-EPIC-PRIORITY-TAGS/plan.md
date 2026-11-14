@@ -46,3 +46,11 @@ Branch `agent-working-project-sync-layer-epic` cut from origin/main 6b8b56eda (#
 
 ## Out
 P3 (Domain single-select, other boards), pacing/retry, new views, other lanes, ubuntu, writes back to tickets.
+
+## Amendments (designer OK 2026-11-14, agent-working-designer-u24; these supersede the text above where they differ)
+A. A folder's epic is the ticket in that folder whose `## Tier` is `epic` (not a filename pattern); none -> the folder name; more than one -> the folder name plus a note. (a) also accepts `done/<folder>/`. An epic ticket's own Epic field is its own id. Tests: an `...-EPIC.md` epic; a folder with no epic; the epic card's own field.
+B. SEQUENCE.md is matched by exact basename. Take the ids in `## Order` if that section exists, else the ids anywhere in the file. A ticket named in more than one folder -> `standalone` plus a note. Test: a SEQUENCE.md with only `## Dependency Notes` still links its ids.
+C. Tags are joined in `registries/tag_registry.jsonl` order; unknown tags last in file order plus a note. One test.
+D. The stored hash is versioned: `v2:<sha>`; `hand_edits` picks the field list from the prefix, an unprefixed value is V1. A V1 item is not a hand edit, is updated once and carries `v2:` afterwards; a `v2:` value is checked against V2 fields only. Replaces the `HASH_FIELDS_V1 OR` idea; a table maps version -> field list.
+E. Status through `merge_options` is append-only (exact, case-sensitive names). An existing option not in STATUSES is kept and reported (`kept, not in STATUSES: <name>`). `--init` appends without the flag even on a Project with items; the "options differ and items exist -> refuse" rule applies only when a change would need a removal (never from merge). `--replace-status-options` stays the explicit id-dropping replace. Tests: append on a Project with items, no refusal, ids kept; an extra option kept and reported.
+Probe uses an existing synced item (the probe field is not in HASH_FIELDS); its read-back goes in the PR body.
