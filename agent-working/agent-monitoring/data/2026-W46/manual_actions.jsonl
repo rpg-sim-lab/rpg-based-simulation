@@ -1,3 +1,4 @@
 {"ts":"2026-11-12T04:13:33.918128Z","category":"handover_recovery","source":"sample","session_id":"10ff952a-b384-40a2-b56a-e3b5408b1a49","session_role":"agent-working-implementer-u24","batch":null,"count":1}
 {"ts":"2026-11-11T10:18:23.885517Z","category":"handover_recovery","source":"sample","session_id":"5b947dd6-7130-427e-b48a-c448dd7d56f4","session_role":"lead-planner","batch":null,"count":1}
 {"ts":"2026-11-14T04:34:12.034737Z","category":"handover_recovery","source":"sample","session_id":"64ec243b-c9de-4c49-b5ba-b9237d6ede16","session_role":"agent-working-planner-u24","batch":null,"count":1}
+{"ts":"2026-11-14T09:40:26.719825Z","category":"handover_recovery","source":"sample","session_id":"05a3e3b2-458c-4807-8405-50189ccbbdf4","session_role":"agent-working-planner-u24","batch":null,"count":1}
