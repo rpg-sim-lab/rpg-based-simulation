@@ -62,6 +62,7 @@ domains:
       - tools/start_*_mcp.sh       # start_search_mcp, start_headroom_mcp
       - tools/*_search.py          # exactly knowledge_search.py and eval_search.py today
       - tools/handover_transit.py   # session/handover tooling (session-lead epic scope)
+      - tools/project_stats.py   # the project facts tool and its generated page docs/architecture/project_facts.md (lead-planner OK 2026-11-14)
       - tools/world_glossary_registry.py   # the tool only; the rows in registries/world_glossary.jsonl are rpg content (routes below)
       - requirements-knowledge.txt
       - tests/tools/**
