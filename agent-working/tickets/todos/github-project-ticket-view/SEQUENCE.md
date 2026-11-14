@@ -8,10 +8,12 @@ Epic `TCK-20261112-EPIC-GITHUB-PROJECT-TICKET-VIEW`, filed by agent-working-plan
 
 1. **DONE** TCK-20261112-PROJECT-SYNC-DRY-RUN (P0, standard): `project_sync.py --dry-run` on u24, rpg lanes. Merged in #889
    (c73d76bad). The owner's go was 6813165811.
-2. TCK-20261112-PROJECT-SYNC-GUARD-SEAT-AND-STALE (P1a, standard): the guard fix first, then seat mapping (investigated first), `Stale`, the
+2. **DONE** TCK-20261112-PROJECT-SYNC-GUARD-SEAT-AND-STALE (P1a, standard): merged in #893 (f62d240d0). Scope: the guard fix first, then seat mapping (investigated first), `Stale`, the
    entry point and the host name. Dry-run only, covered by go 6813165811 (split by the lead on #715).
-3. P1b, not cut: `--init`/`--apply`. Waits for the owner's token result (fine-grained reads tested; writes proven on the first --init;
-   fallback classic `project`), the Project, and a fresh go.
+3. **DONE** TCK-20261114-PROJECT-SYNC-INIT-AND-APPLY (P1b, standard; PR # pending): `--init`/`--apply` on u24, rpg lanes, run by hand. The owner's
+   fresh go is #715 6873359996 (P1b only). It needs the owner's empty org Project under rpg-sim-lab (its number goes into
+   session_project.yaml). The first `--init` is the fine-grained token's write proof; if it is refused, stop, because the classic
+   `project` fallback is the owner's decision.
 
 ## Not cut yet
 
