@@ -1,0 +1,20 @@
+== 2026-11-12T17:02:23Z post-build gate
+Filesystem      Size  Used Avail Use% Mounted on
+/dev/sda2        49G   34G   13G  74% /
+/dev/sdb1        99G   79G   16G  84% /data
+/ blocks=12821880 free=3929905 avail=3270488
+/data blocks=25721923 free=5269409 avail=4085714
+-- images built
+platform-backend:latest id=a15e2832f80c created=2026-11-12 23:59:12 +0700 +07 size=613MB
+platform-frontend:latest id=4d69d51f9591 created=2026-11-12 23:59:06 +0700 +07 size=91.6MB
+-- base images now local (pulled by the build)
+prom/node-exporter:<none> 1b4e4438faca 41MB
+-- docker system df (after the build)
+TYPE            TOTAL     ACTIVE    SIZE      RECLAIMABLE
+Images          17        1         7.938GB   2.09GB (26%)
+Containers      2         1         4.096kB   0B (0%)
+Local Volumes   6         0         666.8MB   666.8MB (100%)
+Build Cache     49        0         2.577GB   2.495GB
+loadavg: 0.45 0.55 0.43 | MemAvailable MiB: 6287 | swap used MiB: 2787
+guard abort file present: 0
+gate-done

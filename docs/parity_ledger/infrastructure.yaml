@@ -1954,26 +1954,27 @@
   divergence_note: null
   support_boundary: "Doc tooling only \u2014 no simulation behavior is involved."
 - id: INFRA-181
-  text: 'Docusaurus 3 site scaffold at website/ with a single plugin-content-docs
-    instance (the classic preset''s docs block, path docs/) publishing the approved
-    developer-facing subset; its exclude list drops superpowers/, specs/, parity_ledger/,
-    scenarios/, entity/, archive/, plans/, audits/, and optimization_audit_ledger.md.
-    The agent-working/tickets/done, stored_artifacts, and agent-working/agent-monitoring/retro plugin-content-docs
-    instances (and their sidebars-*.js files) were removed entirely, along with the
-    matching navbar items and the search-local theme''s docsRouteBasePath entries,
-    per TCK-20260821-DOCS-BUILD-LASTUPDATE-METADATA-OVERHEAD. Makefile targets docs-serve
-    and docs-build available.
+  text: 'Docusaurus 3 site at website/ is a wiki for someone watching the simulation,
+    with three spaces (World Knowledge, Technical, Control Guide), one sidebar and
+    navbar tab each. docs/ is not rendered. World Knowledge fact pages are generated
+    at build time (npm prebuild/prestart run website/scripts/generate_wiki.py) from
+    docs/world_rules/, registries/mechanisms.yaml, registries/system_registry.jsonl,
+    registries/mechanism_causal_edges.yaml, data/content/ and registries/world_glossary.jsonl,
+    and are gitignored, never committed. Broken links fail the build. Per
+    TCK-20261111-WEBSITE-WIKI-VIEWS-OF-STORED-DATA (owner, #715 6789714730 and 6789779149);
+    replaces the TCK-20260821-DOCS-BUILD-LASTUPDATE-METADATA-OVERHEAD docs/ subset.
 
     '
   status: verified
   priority: P2
   legacy_evidence: null
-  v2_evidence: 'website/docusaurus.config.js + website/package.json + Makefile (docs-serve,
-    docs-build targets), refreshed 2026-08-24 for TCK-20260821-DOCS-BUILD-LASTUPDATE-METADATA-OVERHEAD
+  v2_evidence: 'website/docusaurus.config.js + website/sidebars.js + website/package.json
+    + website/scripts/generate_wiki.py + website/.gitignore, refreshed 2026-11-11 for
+    TCK-20261111-WEBSITE-WIKI-VIEWS-OF-STORED-DATA
 
     '
   proof_type: null
-  test_path: tests/static/test_docs_build_content_scope.py
+  test_path: tests/static/test_website_wiki_site_shape.py
   divergence_note: null
   support_boundary: "Doc tooling only \u2014 no simulation behavior is involved."
 - id: INFRA-182
@@ -3657,9 +3658,11 @@
     \ meeting CalamityService's spawn gates directly), but a one-off diagnostic calibration\
     \ run (dungeon_crawl_seed42_5200t, not added to grade_anchors.json) did not naturally\
     \ produce a calamity_spawned event: CalamityService additionally requires calamity_intensity\
-    \ > 0.3 in some region, which is only raised when a hero-kind entity dies in a\
-    \ hazard_level > 0.5 region; in that run's RNG/gameplay, monsters died but no\
-    \ hero died, so intensity never crossed the threshold. This is a separate, pre-existing\
+    \ > 0.3 in some region, which is no producer of calamity_intensity is called in\
+    \ play (the hero-death method has no caller, which tests/architecture/test_calamity_intensity_producer_unwired.py\
+    \ pins), so intensity stays 0.0 everywhere; per ENV-06 / owner decision 10 the\
+    \ escalation producer is not built (TCK-20261114-ENV-06-CALAMITY-ESCALATION-PRODUCER-IS-NOT-BUILT);\
+    \ in that run intensity never crossed the threshold. This is a separate, pre-existing\
     \ content/mechanics precondition, unrelated to and not fixed by this kernel tick-alignment\
     \ fix \u2014 the fix un-blocks calamity_spawned's tick-gate comparison, not its\
     \ content-side intensity precondition. Do not read this entry as claiming calamity_spawned\
@@ -3710,7 +3713,11 @@
     \ that gate (dungeon_crawl_seed42_5200t, not added to grade_anchors.json) confirmed\
     \ the tick-gate comparison itself is fixed (should_spawn's tick-interval math\
     \ is satisfied at tick 5000) but showed 0 calamity_spawned hits because CalamityService's\
-    \ separate high_intensity_regions gate (calamity_intensity > 0.3, hero-death-dependent)\
+    \ separate high_intensity_regions gate (calamity_intensity > 0.3; no producer\
+    \ of calamity_intensity is called in play (the hero-death method has no caller,\
+    \ which tests/architecture/test_calamity_intensity_producer_unwired.py pins),\
+    \ so intensity stays 0.0 everywhere; per ENV-06 / owner decision 10 the escalation\
+    \ producer is not built (TCK-20261114-ENV-06-CALAMITY-ESCALATION-PRODUCER-IS-NOT-BUILT))\
     \ was not met in that run \u2014 see this entry's text for detail. This is a residual\
     \ content/mechanics gap, not a defect in this kernel fix.\n"
 - id: INFRA-259
@@ -3871,11 +3878,14 @@
   v2_evidence: src/simulation_quality/scorers/world_dynamics.py::WorldDynamicsScorer.EVENT_TYPES
   proof_type: null
   test_path: tests/simulation_quality/test_world_dynamics_scorer.py::TestEcologyOwnership
-  divergence_note: calamity_spawned was unreachable through the real per-tick loop
+  divergence_note: 'calamity_spawned was unreachable through the real per-tick loop
     until the kernel tick-alignment fix (INFRA-258, TCK-20260703-SIMQ-INFORMATION-BELIEF-TRIGGER);
-    see that entry for the historical gap, the fix, and the residual hero-death-dependent
-    calamity_intensity precondition that still gates natural firing in calibration
-    content.
+    see that entry for the historical gap, the fix, and the residual calamity_intensity
+    precondition that still gates natural firing in calibration content: no producer
+    of calamity_intensity is called in play (the hero-death method has no caller,
+    which tests/architecture/test_calamity_intensity_producer_unwired.py pins), so
+    intensity stays 0.0 everywhere; per ENV-06 / owner decision 10 the escalation
+    producer is not built (TCK-20261114-ENV-06-CALAMITY-ESCALATION-PRODUCER-IS-NOT-BUILT).'
   support_boundary: null
 - id: INFRA-247
   text: "NarrativeScorer covers all contract \xA75 NARRATIVE rules: quest lifecycle\
@@ -11198,33 +11208,40 @@
   divergence_note: null
   proof_type: contract
 - id: INFRA-378
-  text: Per-client HTTP admission control (src/api/admission_control.py) extends ObservabilityMode's
-    NORMAL/PRESSURE/DEGRADED/SURVIVAL vocabulary (imported from src.observability.event_recorder,
-    never modified) to the HTTP layer, keyed by the ClientIdentity INFRA-377's auth
-    mechanism resolves. A per-client in-memory token bucket (30-token capacity, 3
-    tokens/second refill) produces a 0.0-1.0+ fill_ratio signal, fed into a hysteresis
-    state machine mirroring ResourceGovernor's real escalation/recovery pattern (src/engine/governor.py
-    evaluate()/_can_recover(), NOT PhaseBudgetGovernor, which has no hysteresis of
-    its own) -- escalation is immediate, recovery requires RuntimeProfile.dwell_time_ticks
-    admission-evaluation calls plus confidence_window_ticks consecutive low-pressure
-    readings, stepping down one mode level at a time. Only SURVIVAL rejects a request
-    (HTTP 429 with a Retry-After header; WebSocket close code 1013 on stream.router's
-    3 routes) -- NORMAL/PRESSURE/DEGRADED all admit. Per-client state is bounded by
-    a lazy idle-TTL prune-on-access (1800 seconds, mirroring AlertDeduplicator.prune())
-    plus a 1000-entry max-entries LRU hard cap (mirroring CacheStrategy's dict-plus-
-    list idiom). require_admission/require_admission_header_or_query/ require_admission_ws
-    compose with require_api_key/require_api_key_header_or_query/ require_api_key_ws
-    via a Depends() parameter chain -- 23 of server.py's 27 protected route sites
-    replace the auth-only dependency in place; the 4 sites using the weaker header-or-query/WebSocket
-    auth channel (3 dashboard routes, 1 stream.router wiring site backing 3 WebSocket
-    routes) append the admission dependency alongside the original auth dependency
-    instead, to keep test_only_dashboard_and_websocket_routes_use_weaker_auth_channel's
-    top-level dependant-graph introspection passing unmodified -- see plan.md's Deviations
-    section. /health remains the sole exemption.
+  text: 'Per-client HTTP admission control (src/api/admission_control.py) extends
+    ObservabilityMode''s NORMAL/PRESSURE/DEGRADED/SURVIVAL vocabulary (imported from
+    src.observability.event_recorder, never modified) to the HTTP layer, keyed by
+    the ClientIdentity INFRA-377''s auth mechanism resolves. A per-client in-memory
+    token bucket (30-token capacity, 3 tokens/second refill) produces a 0.0-1.0+ fill_ratio
+    signal, fed into a hysteresis state machine mirroring ResourceGovernor''s real
+    escalation/recovery pattern (src/engine/governor.py evaluate()/_can_recover(),
+    NOT PhaseBudgetGovernor, which has no hysteresis of its own) -- escalation is
+    immediate, recovery requires RuntimeProfile.dwell_time_ticks admission-evaluation
+    calls plus confidence_window_ticks consecutive low-pressure readings, stepping
+    down one mode level at a time. Only SURVIVAL rejects a request (HTTP 429 with
+    a Retry-After header; WebSocket close code 1013 on stream.router''s 3 routes)
+    -- NORMAL/PRESSURE/DEGRADED all admit. Per-client state is bounded by a lazy idle-TTL
+    prune-on-access (1800 seconds, mirroring AlertDeduplicator.prune()) plus a 1000-entry
+    max-entries LRU hard cap (mirroring CacheStrategy''s dict-plus- list idiom). require_admission/require_admission_header_or_query/
+    require_admission_ws compose with require_api_key/require_api_key_header_or_query/
+    require_api_key_ws via a Depends() parameter chain -- 23 of server.py''s 27 protected
+    route sites replace the auth-only dependency in place; the 4 sites using the weaker
+    header-or-query/WebSocket auth channel (3 dashboard routes, 1 stream.router wiring
+    site backing 3 WebSocket routes) append the admission dependency alongside the
+    original auth dependency instead, to keep test_only_dashboard_and_websocket_routes_use_weaker_auth_channel''s
+    top-level dependant-graph introspection passing unmodified -- see plan.md''s Deviations
+    section. /health remains the sole exemption. Idle time counts toward recovery,
+    so the 429''s Retry-After: 5 is a true bound: a call arriving at least _RETRY_AFTER_SECONDS
+    after the client''s previous call steps a SURVIVAL client whose refilled fill_ratio
+    is within the SURVIVAL recovery limit down to DEGRADED, and resets the client
+    to NORMAL when the bucket has refilled to full (_apply_idle_recovery, on the timed
+    path; _evaluate stays time-free and call-counted).'
   status: verified
   priority: P1
   v2_evidence: src/api/admission_control.py, src/api/server.py
-  test_path: tests/api/test_admission_control.py::test_first_request_from_new_client_is_admitted
+  test_path: tests/api/test_admission_control.py::test_first_request_from_new_client_is_admitted,
+    tests/api/test_admission_control.py::test_a_client_that_waits_out_retry_after_is_admitted,
+    tests/api/test_admission_control.py::test_the_first_request_after_a_gap_is_admitted_on_any_route
   divergence_note: null
   proof_type: contract
 - id: INFRA-379

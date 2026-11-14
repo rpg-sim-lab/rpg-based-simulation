@@ -10,7 +10,7 @@
       "command": "docker",
       "args": [
         "run", "-i", "--rm",
-        "--env-file", ".env",
+        "--env-file", "${HOME}/.config/rpg-sim/github-mcp.env",
         "ghcr.io/github/github-mcp-server"
       ],
       "description": "GitHub API — workflow runs, PRs, issues, logs"

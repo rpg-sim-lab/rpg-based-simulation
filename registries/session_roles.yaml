@@ -21,6 +21,7 @@ domains:
       - docs/world_rules/**
       - docs/brainstorm/**
       - registries/mechanisms.yaml
+      - registries/world_glossary.jsonl   # world-term descriptions (the wiki glossary); the tool is agent-working's
       - tests/**
       - docs/observability/prometheus_metrics.md
       - docs/observability/hard_law_monitor.md
@@ -61,6 +62,7 @@ domains:
       - tools/start_*_mcp.sh       # start_search_mcp, start_headroom_mcp
       - tools/*_search.py          # exactly knowledge_search.py and eval_search.py today
       - tools/handover_transit.py   # session/handover tooling (session-lead epic scope)
+      - tools/world_glossary_registry.py   # the tool only; the rows in registries/world_glossary.jsonl are rpg content (routes below)
       - requirements-knowledge.txt
       - tests/tools/**
       - tests/docs/**

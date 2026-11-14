@@ -3,6 +3,7 @@ from __future__ import annotations
 from typing import Dict, Any, TYPE_CHECKING
 from src.core.state import SocialComponent
 from src.core.models.social import RelationshipRole
+from src.core.social_counts import add_rejection_counts
 
 if TYPE_CHECKING:
     from src.core.updates import SocialUpdate
@@ -130,7 +131,7 @@ class RelationshipService:
             heroism_score=social.heroism_score + update.heroism_delta,
             notoriety_score=social.notoriety_score + update.notoriety_delta,
             last_offer_tick=update.last_offer_tick_set if update.last_offer_tick_set is not None else social.last_offer_tick,
-            rejection_count={k: social.rejection_count.get(k, 0) + v for k, v in update.rejection_increment.items()}
+            rejection_count=add_rejection_counts(social.rejection_count, update.rejection_increment)
         )
 
     @staticmethod

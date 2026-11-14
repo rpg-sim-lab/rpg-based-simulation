@@ -28,9 +28,9 @@ for _p in (str(_REPO_ROOT), str(_REPO_ROOT / "tools"), str(_REPO_ROOT / "tools" 
         sys.path.append(_p)
 from generate_registry import _strip_frontmatter, parse_body_section  # noqa: E402
 from pr_status import CommandResult, default_run_command  # noqa: E402
+from repo_name import current_repo  # noqa: E402
 from validate_frontmatter import extract_frontmatter  # noqa: E402
 
-REPO = "ttnhan18062000/rpg-based-simulation"
 TICKET_DIRS = ("agent-working/tickets/todos", "agent-working/tickets/inprogress")
 DONE_DIR = "agent-working/tickets/done"
 ROADMAP = "docs/plans/systemic_world/roadmap.md"
@@ -199,7 +199,8 @@ def fetch_flight(run_command, ids: list[str]):
     file or the PR title names the ID); `#634 comment <id>` for the latest #634 comment naming the ID (a mention, not
     necessarily a claim). `gh` failing gives None and a warning: flight then reads `unknown`."""
     warnings = []
-    prs = run_command(["gh", "pr", "list", "--repo", REPO, "--state", "open", "--limit", str(PR_LIMIT),
+    repo = current_repo(run_command)
+    prs = run_command(["gh", "pr", "list", "--repo", repo, "--state", "open", "--limit", str(PR_LIMIT),
                        "--json", "number,title,files"])
     if prs.returncode != 0:
         return None, [f"gh unavailable ({(prs.stderr or '').strip()[:100] or 'failed'}): flight reads unknown"]
@@ -220,7 +221,7 @@ def fetch_flight(run_command, ids: list[str]):
                 flight[ticket_id].append(f"pr #{pr['number']} closes")
             elif any(Path(f).name == f"{ticket_id}.md" for f in files) or ticket_id in title:
                 flight[ticket_id].append(f"pr #{pr['number']} touches")
-    comments = run_command(["gh", "api", f"repos/{REPO}/issues/{CLAIMS_ISSUE}/comments", "--paginate", "--jq",
+    comments = run_command(["gh", "api", f"repos/{repo}/issues/{CLAIMS_ISSUE}/comments", "--paginate", "--jq",
                             ".[] | [.id, (.body|tostring)] | @json"])
     if comments.returncode != 0:
         warnings.append(f"#634 comments unavailable ({(comments.stderr or '').strip()[:100] or 'failed'}): no #634 labels")

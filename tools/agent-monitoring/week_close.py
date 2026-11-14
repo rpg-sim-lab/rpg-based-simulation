@@ -46,10 +46,16 @@ from tools.agent_working_paths import AGENT_MONITORING  # noqa: E402
 
 #: What a week close folds: the three canonical kinds plus the gate-verdict ledger, so a closed week leaves no per-batch shard
 #: of any family that has them (TCK-20261015-WEEK-CLOSE-ALL-SHARD-KINDS-AND-VOID-ROW). `manual_actions.jsonl`,
-#: `role_boundary.jsonl` and `governing_edits.jsonl` are bare per-week files with no per-batch shards, so there is nothing of theirs to fold.
+#: `role_boundary.jsonl` and `governing_edits.jsonl` are bare per-week files with no per-batch shards, so there is nothing of theirs to fold
+#: from branches. A main-checkout session still writes the bare file, which is why MAIN_CHECKOUT_APPEND_ONLY_KINDS sweeps them.
 CLOSE_KINDS = (*JSONL_KINDS, "gate_verdicts")
 from monitoring_shard_paths import per_identifier_shard_paths  # noqa: E402
 from working_log_writer import consolidate_pending_rows  # noqa: E402
+
+try:  # the weekly doc drift report is advisory: a missing module only drops the report, never the close
+    from gate_checks import doc_drift  # noqa: E402
+except ImportError:  # pragma: no cover - the module ships in the same tree
+    doc_drift = None
 
 _WEEK_RE = re.compile(r"^(\d{4})-W(\d{2})$")
 
@@ -208,7 +214,8 @@ def sweep_main_checkout_tools(week: str, week_dir: Path, main_checkout: object =
 
 #: Append-only shard kinds a session in the main checkout writes as bare `<kind>.jsonl` that no PR branch carries
 #: (TCK-20261110-WEEK-CLOSE-SWEEPS-MAIN-CHECKOUT-NON-TOOL-SHARDS). Swept the same way as `main.tools.jsonl`.
-MAIN_CHECKOUT_APPEND_ONLY_KINDS = ("manual_actions", "reset_boundary", "governing_edits")
+#: TCK-20261111-WEEK-CLOSE-SWEEPS-MAIN-CHECKOUT-ROLE-BOUNDARY added `role_boundary`.
+MAIN_CHECKOUT_APPEND_ONLY_KINDS = ("manual_actions", "reset_boundary", "governing_edits", "role_boundary")
 
 
 def sweep_main_checkout_append_only(week: str, week_dir: Path, main_checkout: object = _UNSET) -> dict:
@@ -363,6 +370,25 @@ def close_week(week: str, data_dir: Path = DEFAULT_DATA_DIR, today: date | None 
     return result
 
 
+def doc_drift_summary(root: Path | None = None) -> list[str]:
+    """Weekly doc drift report (TCK-20261108-DOC-EVIDENCE-FIELDS-AND-DRIFT-REPORT, owner question Q5): report-only lines,
+    HEAD of the checkout the close runs in, resolved and printed as a full SHA. It never raises and never changes the exit
+    status; any failure becomes one line saying so."""
+    try:
+        if doc_drift is None:
+            return ["doc drift report skipped: tools/gate_checks/doc_drift.py is not importable"]
+        repo = doc_drift.Repo(root or Path.cwd(), "HEAD")
+        if not repo.resolve():
+            return ["doc drift report skipped: HEAD does not resolve"]
+        report = doc_drift.drift_report(repo)
+        counts = ", ".join(f"{k}={v}" for k, v in report["counts"].items())
+        lines = [f"doc drift report (advisory) at {report['pin']}: {counts}; docs without any evidence field: {report['docs_without_fields']}"]
+        lines += [f"  {line}" for line in doc_drift.advisory_lines(report)[:10]]
+        return lines
+    except Exception as exc:  # noqa: BLE001 - report-only
+        return [f"doc drift report skipped: {type(exc).__name__}: {exc}"]
+
+
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser(description="Fold a finished ISO week's monitoring shards into canonical files.")
     ap.add_argument("--week", required=True, help="ISO week id, e.g. 2026-W40")
@@ -398,6 +424,8 @@ def main(argv=None) -> int:
         wl = result["working_log"]
         print(f"{args.week} working_log: folded {wl['shard_files']} shard file(s) ({wl['consolidated_rows']} row(s)"
               + (f", {wl['voided_rows']} voided, recorded in working_log_voids.jsonl" if wl.get("voided_rows") else "") + ")")
+        if not args.data_dir:
+            print("\n".join(doc_drift_summary()))
     return 0
 
 

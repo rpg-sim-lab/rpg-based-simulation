@@ -1,0 +1,318 @@
+level=info ts=2026-11-12T10:28:47.809666463Z caller=main.go:105 msg="Starting Tempo" version="(version=v3.1.1, branch=HEAD, revision=9db7df79d)" target=all
+level=info ts=2026-11-12T10:28:47.810421576Z caller=cache.go:90 msg="caches available to storage backend" parquet-footer=false bloom=false parquet-offset-idx=false parquet-column-idx=false trace-id-index=false parquet-page=false
+level=info ts=2026-11-12T10:28:47.81880216Z caller=server.go:296 msg="server listening on addresses" http=[::]:3200 grpc=[::]:9095
+level=warn ts=2026-11-12T10:28:47.823898208Z caller=modules.go:304 msg="metrics-generator is not configured." err="no metrics_generator.storage.path configured, metrics generator will be disabled"
+level=warn ts=2026-11-12T10:28:47.824219501Z caller=modules.go:687 msg="Scheduler address is empty in single binary mode. Attempting automatic worker configuration." address=127.0.0.1:9095
+level=info ts=2026-11-12T10:28:47.82426186Z caller=backendworker.go:81 msg="backend worker starting" worker_id=447610b4cc7d
+level=warn ts=2026-11-12T10:28:47.824540285Z caller=modules.go:409 msg="Worker address is empty in single binary mode. Attempting automatic worker configuration. If queries are unresponsive consider configuring the worker explicitly." address=127.0.0.1:9095
+level=info ts=2026-11-12T10:28:47.824752331Z caller=worker.go:108 msg="Starting querier worker connected to query-frontend" frontend=127.0.0.1:9095
+ts=2026-11-12T10:28:47Z level=info msg="OTel Shim Logger Initialized" component=tempo
+level=info ts=2026-11-12T10:28:47.826311875Z caller=frontend.go:88 msg="creating middleware in query frontend"
+level=info ts=2026-11-12T10:28:47.826404277Z caller=sync_handler_cache.go:131 msg="init frontend cache" role=frontend-search enabled=false
+level=info ts=2026-11-12T10:28:47.826448902Z caller=sync_handler_cache.go:131 msg="init frontend cache" role=frontend-search enabled=false
+level=info ts=2026-11-12T10:28:47.826455519Z caller=sync_handler_cache.go:131 msg="init frontend cache" role=frontend-search enabled=false
+level=info ts=2026-11-12T10:28:47.826465104Z caller=sync_handler_cache.go:131 msg="init frontend cache" role=frontend-search enabled=false
+level=info ts=2026-11-12T10:28:47.826470598Z caller=sync_handler_cache.go:131 msg="init frontend cache" role=frontend-search enabled=false
+level=info ts=2026-11-12T10:28:47.826476499Z caller=sync_handler_cache.go:131 msg="init frontend cache" role=frontend-search enabled=false
+level=info ts=2026-11-12T10:28:47.830927789Z caller=module_service.go:82 msg=starting module=internal-server
+level=info ts=2026-11-12T10:28:47.830912267Z caller=module_service.go:82 msg=starting module=cache-provider
+level=info ts=2026-11-12T10:28:47.831607099Z caller=module_service.go:82 msg=starting module=server
+level=info ts=2026-11-12T10:28:47.832240585Z caller=module_service.go:82 msg=starting module=store
+level=info ts=2026-11-12T10:28:47.832803972Z caller=module_service.go:82 msg=starting module=memberlist-kv
+level=info ts=2026-11-12T10:28:47.832926919Z caller=module_service.go:82 msg=starting module=usage-report
+level=info ts=2026-11-12T10:28:47.833361636Z caller=module_service.go:82 msg=starting module=live-store-ring
+level=info ts=2026-11-12T10:28:47.833488462Z caller=ring.go:390 msg="ring doesn't exist in KV store yet"
+level=info ts=2026-11-12T10:28:47.833586592Z caller=module_service.go:82 msg=starting module=partition-ring
+level=info ts=2026-11-12T10:28:47.833612333Z caller=partition_ring_watcher.go:85 msg="partition ring doesn't exist in KV store yet"
+level=info ts=2026-11-12T10:28:47.834183032Z caller=module_service.go:82 msg=starting module=overrides
+level=info ts=2026-11-12T10:28:47.834282866Z caller=module_service.go:82 msg=starting module=querier
+level=info ts=2026-11-12T10:28:47.834387813Z caller=module_service.go:82 msg=starting module=backend-worker
+level=info ts=2026-11-12T10:28:47.834436066Z caller=tempodb.go:840 msg="polling enabled" interval=5m0s blocklist_concurrency=50
+level=info ts=2026-11-12T10:28:47.834675441Z caller=module_service.go:82 msg=starting module=live-store
+level=info ts=2026-11-12T10:28:47.835681092Z caller=live_store_background.go:311 msg="cleared tombstoned wal blocks at startup" count=4
+level=info ts=2026-11-12T10:28:47.838111995Z caller=live_store_background.go:322 msg="reloading wal blocks"
+level=info ts=2026-11-12T10:28:47.83819871Z caller=wal.go:111 msg="beginning replay" file=2b5c8f52-bd09-4ed3-abd8-984606996fb8+single-tenant+vParquet5 size=4096
+level=info ts=2026-11-12T10:28:47.838603933Z caller=module_service.go:82 msg=starting module=metrics-generator
+level=info ts=2026-11-12T10:28:47.838697113Z caller=module_service.go:82 msg=starting module=overrides-api
+level=info ts=2026-11-12T10:28:47.838936992Z caller=module_service.go:82 msg=starting module=backend-scheduler
+level=info ts=2026-11-12T10:28:47.83897487Z caller=backendscheduler.go:134 msg="backend scheduler starting"
+level=info ts=2026-11-12T10:28:47.842482153Z caller=module_service.go:82 msg=starting module=query-frontend
+level=info ts=2026-11-12T10:28:47.855003024Z caller=worker.go:184 msg="adding connection" addr=127.0.0.1:9095
+level=info ts=2026-11-12T10:28:47.869122895Z caller=wal.go:138 msg="replay complete" file=2b5c8f52-bd09-4ed3-abd8-984606996fb8+single-tenant+vParquet5 duration=30.931519ms
+level=info ts=2026-11-12T10:28:47.869177038Z caller=wal.go:111 msg="beginning replay" file=b015435a-0fb1-4a97-8a24-0dc1350a849e+single-tenant+vParquet5 size=4096
+level=warn ts=2026-11-12T10:28:47.869211015Z caller=wal.go:117 msg="failed to replay block. removing." file=b015435a-0fb1-4a97-8a24-0dc1350a849e+single-tenant+vParquet5 err="error reading wal meta json: /var/tempo/live-store/traces/b015435a-0fb1-4a97-8a24-0dc1350a849e+single-tenant+vParquet5/meta.json: open /var/tempo/live-store/traces/b015435a-0fb1-4a97-8a24-0dc1350a849e+single-tenant+vParquet5/meta.json: no such file or directory"
+level=warn ts=2026-11-12T10:28:47.86939918Z caller=wal.go:101 msg="unowned file entry ignored during wal replay" file=blocks err=null
+level=info ts=2026-11-12T10:28:47.872911966Z caller=worker.go:250 msg="total worker concurrency updated" totalConcurrency=20
+level=info ts=2026-11-12T10:28:47.873711185Z caller=poller.go:302 msg="writing tenant index" tenant=single-tenant metas=7 compactedMetas=19
+level=info ts=2026-11-12T10:28:47.87449892Z caller=live_store_background.go:340 msg="reloaded wal block" block=2b5c8f52-bd09-4ed3-abd8-984606996fb8
+level=info ts=2026-11-12T10:28:47.874536586Z caller=live_store_background.go:343 msg="queueing replayed wal block for completion" block=2b5c8f52-bd09-4ed3-abd8-984606996fb8 size=25299
+level=info ts=2026-11-12T10:28:47.874697773Z caller=live_store_background.go:348 msg="reloaded wal blocks" tenant=single-tenant count=1
+level=info ts=2026-11-12T10:28:47.874714352Z caller=live_store_background.go:357 msg="wal blocks to complete at startup" count=1
+level=info ts=2026-11-12T10:28:47.874725158Z caller=live_store_background.go:362 msg="reloading completed blocks"
+level=info ts=2026-11-12T10:28:47.875117375Z caller=live_store_background.go:380 msg="reloading complete blocks" tenant=single-tenant count=20
+level=info ts=2026-11-12T10:28:47.875133108Z caller=live_store_background.go:383 msg="reloading complete block" block=062dc7d0-7688-4624-a892-13ac63c97ad0
+level=info ts=2026-11-12T10:28:47.878245896Z caller=live_store_background.go:426 msg="reloaded complete block" block=062dc7d0-7688-4624-a892-13ac63c97ad0
+level=info ts=2026-11-12T10:28:47.879529567Z caller=live_store_background.go:383 msg="reloading complete block" block=07464030-c1a1-41f1-ace9-4316a3dac005
+level=info ts=2026-11-12T10:28:47.880315969Z caller=live_store_background.go:426 msg="reloaded complete block" block=07464030-c1a1-41f1-ace9-4316a3dac005
+level=info ts=2026-11-12T10:28:47.882937613Z caller=live_store_background.go:383 msg="reloading complete block" block=0f3c5318-05f5-4cfb-9ae2-9dfef0e96b1f
+level=info ts=2026-11-12T10:28:47.883401998Z caller=live_store_background.go:426 msg="reloaded complete block" block=0f3c5318-05f5-4cfb-9ae2-9dfef0e96b1f
+level=info ts=2026-11-12T10:28:47.883467822Z caller=live_store_background.go:383 msg="reloading complete block" block=167eda4f-7f5a-420e-93d1-70b1e6d8997a
+level=info ts=2026-11-12T10:28:47.884201843Z caller=live_store_background.go:426 msg="reloaded complete block" block=167eda4f-7f5a-420e-93d1-70b1e6d8997a
+level=info ts=2026-11-12T10:28:47.884671373Z caller=live_store_background.go:383 msg="reloading complete block" block=1c3a627d-dc7e-4d97-b82b-ed4bcb04c237
+level=info ts=2026-11-12T10:28:47.88511512Z caller=live_store_background.go:426 msg="reloaded complete block" block=1c3a627d-dc7e-4d97-b82b-ed4bcb04c237
+level=info ts=2026-11-12T10:28:47.885820985Z caller=live_store_background.go:383 msg="reloading complete block" block=1fb12bc7-7770-4e43-881c-9e6124fd8bef
+level=info ts=2026-11-12T10:28:47.88652137Z caller=live_store_background.go:426 msg="reloaded complete block" block=1fb12bc7-7770-4e43-881c-9e6124fd8bef
+level=info ts=2026-11-12T10:28:47.886968606Z caller=live_store_background.go:383 msg="reloading complete block" block=20cf77ec-9a7a-4ae5-b12e-b02fa6b92443
+level=info ts=2026-11-12T10:28:47.888584999Z caller=live_store_background.go:426 msg="reloaded complete block" block=20cf77ec-9a7a-4ae5-b12e-b02fa6b92443
+level=info ts=2026-11-12T10:28:47.889394457Z caller=live_store_background.go:383 msg="reloading complete block" block=39fd084b-4659-4ac1-a13d-dc0caf11007a
+level=info ts=2026-11-12T10:28:47.891485935Z caller=live_store_background.go:426 msg="reloaded complete block" block=39fd084b-4659-4ac1-a13d-dc0caf11007a
+level=info ts=2026-11-12T10:28:47.893483652Z caller=live_store_background.go:383 msg="reloading complete block" block=3fe34f94-3d35-4339-983b-48b17f88db88
+level=info ts=2026-11-12T10:28:47.903371204Z caller=live_store_background.go:426 msg="reloaded complete block" block=3fe34f94-3d35-4339-983b-48b17f88db88
+level=info ts=2026-11-12T10:28:47.90821971Z caller=live_store_background.go:383 msg="reloading complete block" block=42984b95-9477-4c7b-a5dd-080149610b10
+level=info ts=2026-11-12T10:28:47.909385955Z caller=live_store_background.go:426 msg="reloaded complete block" block=42984b95-9477-4c7b-a5dd-080149610b10
+level=info ts=2026-11-12T10:28:47.909761058Z caller=live_store_background.go:383 msg="reloading complete block" block=62de14a0-f2cc-4a84-bc99-7dac7bda8a61
+level=info ts=2026-11-12T10:28:47.910748147Z caller=live_store_background.go:426 msg="reloaded complete block" block=62de14a0-f2cc-4a84-bc99-7dac7bda8a61
+level=info ts=2026-11-12T10:28:47.911307227Z caller=live_store_background.go:383 msg="reloading complete block" block=640e41d6-6e2b-48b0-8eff-f8e70553a5b9
+level=info ts=2026-11-12T10:28:47.913274615Z caller=live_store_background.go:426 msg="reloaded complete block" block=640e41d6-6e2b-48b0-8eff-f8e70553a5b9
+level=info ts=2026-11-12T10:28:47.914229227Z caller=live_store_background.go:383 msg="reloading complete block" block=6a7914af-7eed-4c47-9297-df6e9441e2c4
+level=info ts=2026-11-12T10:28:47.917788712Z caller=live_store_background.go:426 msg="reloaded complete block" block=6a7914af-7eed-4c47-9297-df6e9441e2c4
+level=info ts=2026-11-12T10:28:47.918317444Z caller=live_store_background.go:383 msg="reloading complete block" block=6dd38c4f-10da-4323-be8e-ded0a409f1fb
+level=info ts=2026-11-12T10:28:47.919425536Z caller=live_store_background.go:426 msg="reloaded complete block" block=6dd38c4f-10da-4323-be8e-ded0a409f1fb
+level=info ts=2026-11-12T10:28:47.919872451Z caller=live_store_background.go:383 msg="reloading complete block" block=7a77a032-c578-493c-bb6c-bd0aa2f841c5
+level=info ts=2026-11-12T10:28:47.920884157Z caller=live_store_background.go:426 msg="reloaded complete block" block=7a77a032-c578-493c-bb6c-bd0aa2f841c5
+level=info ts=2026-11-12T10:28:47.923594315Z caller=live_store_background.go:383 msg="reloading complete block" block=8855cc1a-4b0c-4115-afec-7f576ffb59bc
+level=info ts=2026-11-12T10:28:47.926178002Z caller=live_store_background.go:426 msg="reloaded complete block" block=8855cc1a-4b0c-4115-afec-7f576ffb59bc
+level=info ts=2026-11-12T10:28:47.928293929Z caller=live_store_background.go:383 msg="reloading complete block" block=a69593d9-231d-4a02-98f7-3051fde92e0f
+level=info ts=2026-11-12T10:28:47.931189996Z caller=live_store_background.go:426 msg="reloaded complete block" block=a69593d9-231d-4a02-98f7-3051fde92e0f
+level=info ts=2026-11-12T10:28:47.931465458Z caller=poller.go:249 msg="blocklist poll complete" seconds=0.096086061
+level=info ts=2026-11-12T10:28:47.931530652Z caller=backendworker.go:184 msg="backend worker running"
+level=info ts=2026-11-12T10:28:47.933702983Z caller=live_store_background.go:383 msg="reloading complete block" block=cb84e633-4fd0-4f49-a1e9-beae78526890
+level=info ts=2026-11-12T10:28:47.938417582Z caller=live_store_background.go:426 msg="reloaded complete block" block=cb84e633-4fd0-4f49-a1e9-beae78526890
+level=info ts=2026-11-12T10:28:47.941562146Z caller=live_store_background.go:383 msg="reloading complete block" block=dc1be88f-57fb-44e8-94f2-c54a7e71dbd0
+level=info ts=2026-11-12T10:28:47.943082775Z caller=live_store_background.go:426 msg="reloaded complete block" block=dc1be88f-57fb-44e8-94f2-c54a7e71dbd0
+level=info ts=2026-11-12T10:28:47.94344055Z caller=live_store_background.go:383 msg="reloading complete block" block=fc547938-ffcd-4d95-adf5-51888fb6a231
+level=info ts=2026-11-12T10:28:47.94382908Z caller=live_store_background.go:426 msg="reloaded complete block" block=fc547938-ffcd-4d95-adf5-51888fb6a231
+level=info ts=2026-11-12T10:28:47.944087723Z caller=live_store_background.go:445 msg="done reloading completed blocks"
+level=info ts=2026-11-12T10:28:47.944104891Z caller=live_store.go:303 msg="deleting old blocks"
+level=info ts=2026-11-12T10:28:47.944127234Z caller=instance.go:742 tenant=single-tenant msg="deleting complete block" block=dc1be88f-57fb-44e8-94f2-c54a7e71dbd0
+level=info ts=2026-11-12T10:28:47.944390857Z caller=instance.go:742 tenant=single-tenant msg="deleting complete block" block=fc547938-ffcd-4d95-adf5-51888fb6a231
+level=info ts=2026-11-12T10:28:47.944432868Z caller=instance.go:742 tenant=single-tenant msg="deleting complete block" block=42984b95-9477-4c7b-a5dd-080149610b10
+level=info ts=2026-11-12T10:28:47.944546726Z caller=instance.go:742 tenant=single-tenant msg="deleting complete block" block=62de14a0-f2cc-4a84-bc99-7dac7bda8a61
+level=info ts=2026-11-12T10:28:47.944660627Z caller=instance.go:742 tenant=single-tenant msg="deleting complete block" block=07464030-c1a1-41f1-ace9-4316a3dac005
+level=info ts=2026-11-12T10:28:47.944696736Z caller=instance.go:742 tenant=single-tenant msg="deleting complete block" block=6a7914af-7eed-4c47-9297-df6e9441e2c4
+level=info ts=2026-11-12T10:28:47.944726311Z caller=instance.go:742 tenant=single-tenant msg="deleting complete block" block=8855cc1a-4b0c-4115-afec-7f576ffb59bc
+level=info ts=2026-11-12T10:28:47.94474964Z caller=instance.go:742 tenant=single-tenant msg="deleting complete block" block=167eda4f-7f5a-420e-93d1-70b1e6d8997a
+level=info ts=2026-11-12T10:28:47.944798837Z caller=instance.go:742 tenant=single-tenant msg="deleting complete block" block=3fe34f94-3d35-4339-983b-48b17f88db88
+level=info ts=2026-11-12T10:28:47.944831418Z caller=instance.go:742 tenant=single-tenant msg="deleting complete block" block=cb84e633-4fd0-4f49-a1e9-beae78526890
+level=info ts=2026-11-12T10:28:47.944856454Z caller=instance.go:742 tenant=single-tenant msg="deleting complete block" block=1fb12bc7-7770-4e43-881c-9e6124fd8bef
+level=info ts=2026-11-12T10:28:47.944874475Z caller=instance.go:742 tenant=single-tenant msg="deleting complete block" block=6dd38c4f-10da-4323-be8e-ded0a409f1fb
+level=info ts=2026-11-12T10:28:47.944896548Z caller=live_store.go:310 msg="done deleting old blocks"
+level=info ts=2026-11-12T10:28:47.94517903Z caller=partition_instance_lifecycler.go:287 ring=livestore-partitions msg="partition not found in the ring" partition=0
+level=info ts=2026-11-12T10:28:47.94588274Z caller=basic_lifecycler.go:324 msg="instance not found in the ring" instance=447610b4cc7d ring=live-store
+level=info ts=2026-11-12T10:28:47.946130549Z caller=live_store.go:341 msg="starting all background processes"
+level=info ts=2026-11-12T10:28:47.946158631Z caller=live_store.go:344 msg="waiting for ingestion catching up"
+level=info ts=2026-11-12T10:28:47.946165995Z caller=live_store.go:348 msg="done waiting for ingestion catching up"
+level=info ts=2026-11-12T10:28:47.9461736Z caller=live_store.go:353 msg="live-store ready to serve queries"
+level=info ts=2026-11-12T10:28:47.946339318Z caller=live_store_background.go:83 msg="starting completing loop" index=1
+level=info ts=2026-11-12T10:28:47.946476932Z caller=module_service.go:82 msg=starting module=distributor
+level=info ts=2026-11-12T10:28:47.946582747Z caller=live_store_background.go:83 msg="starting completing loop" index=0
+ts=2026-11-12T10:28:47Z level=info msg="Starting GRPC server" component=tempo endpoint=[::]:4317
+ts=2026-11-12T10:28:47Z level=info msg="Starting HTTP server" component=tempo endpoint=[::]:4318
+level=info ts=2026-11-12T10:28:48.040919844Z caller=backendscheduler.go:221 msg="backend scheduler running"
+level=info ts=2026-11-12T10:28:48.040970594Z caller=compaction.go:96 msg="compaction provider started"
+level=info ts=2026-11-12T10:28:48.040989346Z caller=compaction.go:120 msg="compaction provider waiting for poll notification"
+level=info ts=2026-11-12T10:28:48.040936806Z caller=retention.go:56 msg="retention provider started"
+level=info ts=2026-11-12T10:28:48.041001428Z caller=redaction.go:60 msg="redaction provider started"
+level=info ts=2026-11-12T10:28:48.041070494Z caller=app.go:218 msg="Tempo started"
+level=info ts=2026-11-12T10:28:55.755130258Z caller=instance.go:621 tenant=single-tenant msg="completing WAL block" blockSize=25299 blockId=2b5c8f52-bd09-4ed3-abd8-984606996fb8
+level=info ts=2026-11-12T10:28:55.770919838Z caller=instance.go:652 tenant=single-tenant msg="opening newly completed block" blockId=2b5c8f52-bd09-4ed3-abd8-984606996fb8
+level=info ts=2026-11-12T10:28:55.77113505Z caller=instance.go:663 tenant=single-tenant msg="swapping wal block with newly completed block"
+level=info ts=2026-11-12T10:28:55.771278391Z caller=instance.go:704 tenant=single-tenant msg="completed block" id=2b5c8f52-bd09-4ed3-abd8-984606996fb8
+level=info ts=2026-11-12T10:29:02.946671869Z caller=partition_instance_lifecycler.go:367 ring=livestore-partitions msg="switching partition state because enough owners have been registered and minimum waiting time has elapsed" partition=0 from_state=PartitionPending to_state=PartitionActive
+level=warn ts=2026-11-12T10:29:02.947326539Z caller=server.go:1247 method=/tempopb.BackendScheduler/Next duration=15.004685078s msg=gRPC err="rpc error: code = NotFound desc = no jobs found"
+level=error ts=2026-11-12T10:29:02.948120786Z caller=backendworker.go:543 msg="error calling scheduler" err="rpc error: code = NotFound desc = no jobs found" backoff=123.140268ms
+level=info ts=2026-11-12T10:29:17.946933011Z caller=instance.go:590 tenant=single-tenant msg="queueing wal block for completion" block=577bb566-65ed-4dda-870e-7997b536ff85 size=25218
+level=info ts=2026-11-12T10:29:17.94945657Z caller=instance.go:621 tenant=single-tenant msg="completing WAL block" blockSize=25218 blockId=577bb566-65ed-4dda-870e-7997b536ff85
+level=info ts=2026-11-12T10:29:17.958309655Z caller=instance.go:652 tenant=single-tenant msg="opening newly completed block" blockId=577bb566-65ed-4dda-870e-7997b536ff85
+level=info ts=2026-11-12T10:29:17.95839802Z caller=instance.go:663 tenant=single-tenant msg="swapping wal block with newly completed block"
+level=info ts=2026-11-12T10:29:17.958573602Z caller=instance.go:704 tenant=single-tenant msg="completed block" id=577bb566-65ed-4dda-870e-7997b536ff85
+level=warn ts=2026-11-12T10:29:18.830128974Z caller=server.go:1247 method=/tempopb.BackendScheduler/Next duration=15.001091312s msg=gRPC err="rpc error: code = NotFound desc = no jobs found"
+level=error ts=2026-11-12T10:29:18.830514216Z caller=backendworker.go:543 msg="error calling scheduler" err="rpc error: code = NotFound desc = no jobs found" backoff=524.067568ms
+level=warn ts=2026-11-12T10:29:34.697056232Z caller=server.go:1247 method=/tempopb.BackendScheduler/Next duration=15.001100657s msg=gRPC err="rpc error: code = NotFound desc = no jobs found"
+level=error ts=2026-11-12T10:29:34.697557827Z caller=backendworker.go:543 msg="error calling scheduler" err="rpc error: code = NotFound desc = no jobs found" backoff=3.035793433s
+level=info ts=2026-11-12T10:29:52.950198077Z caller=instance.go:590 tenant=single-tenant msg="queueing wal block for completion" block=9ae6795b-5b46-4e4b-b2d9-a55ac55f1fee size=93954
+level=info ts=2026-11-12T10:29:52.952423397Z caller=instance.go:621 tenant=single-tenant msg="completing WAL block" blockSize=93954 blockId=9ae6795b-5b46-4e4b-b2d9-a55ac55f1fee
+level=info ts=2026-11-12T10:29:53.003622899Z caller=instance.go:652 tenant=single-tenant msg="opening newly completed block" blockId=9ae6795b-5b46-4e4b-b2d9-a55ac55f1fee
+level=info ts=2026-11-12T10:29:53.003714038Z caller=instance.go:663 tenant=single-tenant msg="swapping wal block with newly completed block"
+level=info ts=2026-11-12T10:29:53.003960801Z caller=instance.go:704 tenant=single-tenant msg="completed block" id=9ae6795b-5b46-4e4b-b2d9-a55ac55f1fee
+level=warn ts=2026-11-12T10:29:54.78219668Z caller=server.go:1247 method=/tempopb.BackendScheduler/Next duration=15.001981328s msg=gRPC err="rpc error: code = NotFound desc = no jobs found"
+level=error ts=2026-11-12T10:29:54.782574903Z caller=backendworker.go:543 msg="error calling scheduler" err="rpc error: code = NotFound desc = no jobs found" backoff=8.24626872s
+level=warn ts=2026-11-12T10:30:24.005921462Z caller=server.go:1247 method=/tempopb.BackendScheduler/Next duration=15.000677717s msg=gRPC err="rpc error: code = NotFound desc = no jobs found"
+level=error ts=2026-11-12T10:30:24.006478646Z caller=backendworker.go:543 msg="error calling scheduler" err="rpc error: code = NotFound desc = no jobs found" backoff=26.935075871s
+level=info ts=2026-11-12T10:30:27.949678445Z caller=instance.go:590 tenant=single-tenant msg="queueing wal block for completion" block=2a2be285-a559-4e7d-8d96-b40279cf6444 size=123514
+level=info ts=2026-11-12T10:30:27.952950797Z caller=instance.go:621 tenant=single-tenant msg="completing WAL block" blockSize=123514 blockId=2a2be285-a559-4e7d-8d96-b40279cf6444
+level=info ts=2026-11-12T10:30:27.989905015Z caller=instance.go:652 tenant=single-tenant msg="opening newly completed block" blockId=2a2be285-a559-4e7d-8d96-b40279cf6444
+level=info ts=2026-11-12T10:30:27.989990005Z caller=instance.go:663 tenant=single-tenant msg="swapping wal block with newly completed block"
+level=info ts=2026-11-12T10:30:27.990383248Z caller=instance.go:704 tenant=single-tenant msg="completed block" id=2a2be285-a559-4e7d-8d96-b40279cf6444
+level=info ts=2026-11-12T10:30:47.95218193Z caller=live_store_background.go:244 msg="reclaimed block" tenant=single-tenant block_id=dc1be88f-57fb-44e8-94f2-c54a7e71dbd0 block_type=complete
+level=info ts=2026-11-12T10:30:47.952226016Z caller=live_store_background.go:244 msg="reclaimed block" tenant=single-tenant block_id=fc547938-ffcd-4d95-adf5-51888fb6a231 block_type=complete
+level=info ts=2026-11-12T10:30:47.952229984Z caller=live_store_background.go:244 msg="reclaimed block" tenant=single-tenant block_id=42984b95-9477-4c7b-a5dd-080149610b10 block_type=complete
+level=info ts=2026-11-12T10:30:47.952232988Z caller=live_store_background.go:244 msg="reclaimed block" tenant=single-tenant block_id=62de14a0-f2cc-4a84-bc99-7dac7bda8a61 block_type=complete
+level=info ts=2026-11-12T10:30:47.952235325Z caller=live_store_background.go:244 msg="reclaimed block" tenant=single-tenant block_id=07464030-c1a1-41f1-ace9-4316a3dac005 block_type=complete
+level=info ts=2026-11-12T10:30:47.952237657Z caller=live_store_background.go:244 msg="reclaimed block" tenant=single-tenant block_id=6a7914af-7eed-4c47-9297-df6e9441e2c4 block_type=complete
+level=info ts=2026-11-12T10:30:47.952239979Z caller=live_store_background.go:244 msg="reclaimed block" tenant=single-tenant block_id=8855cc1a-4b0c-4115-afec-7f576ffb59bc block_type=complete
+level=info ts=2026-11-12T10:30:47.952242168Z caller=live_store_background.go:244 msg="reclaimed block" tenant=single-tenant block_id=167eda4f-7f5a-420e-93d1-70b1e6d8997a block_type=complete
+level=info ts=2026-11-12T10:30:47.952244376Z caller=live_store_background.go:244 msg="reclaimed block" tenant=single-tenant block_id=3fe34f94-3d35-4339-983b-48b17f88db88 block_type=complete
+level=info ts=2026-11-12T10:30:47.952246608Z caller=live_store_background.go:244 msg="reclaimed block" tenant=single-tenant block_id=cb84e633-4fd0-4f49-a1e9-beae78526890 block_type=complete
+level=info ts=2026-11-12T10:30:47.952248855Z caller=live_store_background.go:244 msg="reclaimed block" tenant=single-tenant block_id=1fb12bc7-7770-4e43-881c-9e6124fd8bef block_type=complete
+level=info ts=2026-11-12T10:30:47.952254676Z caller=live_store_background.go:244 msg="reclaimed block" tenant=single-tenant block_id=6dd38c4f-10da-4323-be8e-ded0a409f1fb block_type=complete
+level=info ts=2026-11-12T10:31:02.950868042Z caller=instance.go:590 tenant=single-tenant msg="queueing wal block for completion" block=852cac23-f261-4b16-9ce7-3bbf8cb6b62e size=182580
+level=info ts=2026-11-12T10:31:02.952083146Z caller=instance.go:621 tenant=single-tenant msg="completing WAL block" blockSize=182580 blockId=852cac23-f261-4b16-9ce7-3bbf8cb6b62e
+level=info ts=2026-11-12T10:31:02.981003826Z caller=instance.go:652 tenant=single-tenant msg="opening newly completed block" blockId=852cac23-f261-4b16-9ce7-3bbf8cb6b62e
+level=info ts=2026-11-12T10:31:02.981054039Z caller=instance.go:663 tenant=single-tenant msg="swapping wal block with newly completed block"
+level=info ts=2026-11-12T10:31:02.981144348Z caller=instance.go:704 tenant=single-tenant msg="completed block" id=852cac23-f261-4b16-9ce7-3bbf8cb6b62e
+level=info ts=2026-11-12T10:31:17.950576651Z caller=live_store_background.go:244 msg="reclaimed block" tenant=single-tenant block_id=2b5c8f52-bd09-4ed3-abd8-984606996fb8 block_type=wal
+level=warn ts=2026-11-12T10:31:37.189106583Z caller=server.go:1247 method=/tempopb.BackendScheduler/Next duration=15.001928274s msg=gRPC err="rpc error: code = NotFound desc = no jobs found"
+level=error ts=2026-11-12T10:31:37.189451708Z caller=backendworker.go:543 msg="error calling scheduler" err="rpc error: code = NotFound desc = no jobs found" backoff=55.9507936s
+level=info ts=2026-11-12T10:31:37.949396516Z caller=instance.go:590 tenant=single-tenant msg="queueing wal block for completion" block=5f88cdfc-f9d4-4ed8-9b85-bfed5c8fb8fd size=182145
+level=info ts=2026-11-12T10:31:37.950735977Z caller=instance.go:621 tenant=single-tenant msg="completing WAL block" blockSize=182145 blockId=5f88cdfc-f9d4-4ed8-9b85-bfed5c8fb8fd
+level=info ts=2026-11-12T10:31:37.986069827Z caller=instance.go:652 tenant=single-tenant msg="opening newly completed block" blockId=5f88cdfc-f9d4-4ed8-9b85-bfed5c8fb8fd
+level=info ts=2026-11-12T10:31:37.98611001Z caller=instance.go:663 tenant=single-tenant msg="swapping wal block with newly completed block"
+level=info ts=2026-11-12T10:31:37.986239536Z caller=instance.go:704 tenant=single-tenant msg="completed block" id=5f88cdfc-f9d4-4ed8-9b85-bfed5c8fb8fd
+level=info ts=2026-11-12T10:31:47.947308382Z caller=live_store_background.go:244 msg="reclaimed block" tenant=single-tenant block_id=577bb566-65ed-4dda-870e-7997b536ff85 block_type=wal
+level=info ts=2026-11-12T10:32:07.951029522Z caller=instance.go:590 tenant=single-tenant msg="queueing wal block for completion" block=033a1dd8-4a6a-4cf0-9277-cd1aa4f03ad1 size=156098
+level=info ts=2026-11-12T10:32:07.95281084Z caller=instance.go:621 tenant=single-tenant msg="completing WAL block" blockSize=156098 blockId=033a1dd8-4a6a-4cf0-9277-cd1aa4f03ad1
+level=info ts=2026-11-12T10:32:07.971407651Z caller=instance.go:652 tenant=single-tenant msg="opening newly completed block" blockId=033a1dd8-4a6a-4cf0-9277-cd1aa4f03ad1
+level=info ts=2026-11-12T10:32:07.971505802Z caller=instance.go:663 tenant=single-tenant msg="swapping wal block with newly completed block"
+level=info ts=2026-11-12T10:32:07.971665048Z caller=instance.go:704 tenant=single-tenant msg="completed block" id=033a1dd8-4a6a-4cf0-9277-cd1aa4f03ad1
+level=info ts=2026-11-12T10:32:17.94678033Z caller=live_store_background.go:244 msg="reclaimed block" tenant=single-tenant block_id=9ae6795b-5b46-4e4b-b2d9-a55ac55f1fee block_type=wal
+level=info ts=2026-11-12T10:32:42.952503377Z caller=instance.go:590 tenant=single-tenant msg="queueing wal block for completion" block=64177608-3470-47f3-bc95-1044b87b737d size=181940
+level=info ts=2026-11-12T10:32:42.955901081Z caller=instance.go:621 tenant=single-tenant msg="completing WAL block" blockSize=181940 blockId=64177608-3470-47f3-bc95-1044b87b737d
+level=info ts=2026-11-12T10:32:43.026016649Z caller=instance.go:652 tenant=single-tenant msg="opening newly completed block" blockId=64177608-3470-47f3-bc95-1044b87b737d
+level=info ts=2026-11-12T10:32:43.026429447Z caller=instance.go:663 tenant=single-tenant msg="swapping wal block with newly completed block"
+level=info ts=2026-11-12T10:32:43.026821532Z caller=instance.go:704 tenant=single-tenant msg="completed block" id=64177608-3470-47f3-bc95-1044b87b737d
+level=warn ts=2026-11-12T10:32:45.467141505Z caller=server.go:1247 method=/tempopb.BackendScheduler/Next duration=15.001071193s msg=gRPC err="rpc error: code = NotFound desc = no jobs found"
+level=error ts=2026-11-12T10:32:45.467517392Z caller=backendworker.go:543 msg="error calling scheduler" err="rpc error: code = NotFound desc = no jobs found" backoff=59.053018405s
+level=info ts=2026-11-12T10:32:47.947473104Z caller=live_store_background.go:244 msg="reclaimed block" tenant=single-tenant block_id=2a2be285-a559-4e7d-8d96-b40279cf6444 block_type=wal
+level=info ts=2026-11-12T10:33:14.105973437Z caller=traceid_handlers.go:46 msg="trace id request" tenant=single-tenant path=/api/traces/56016e92030d5e84ff01352c32300d29
+level=info ts=2026-11-12T10:33:14.137342838Z caller=util.go:147 msg="trace id response" tenant=single-tenant traceID= path=/api/traces/56016e92030d5e84ff01352c32300d29 duration_seconds=0.02722979 inspected_bytes=24252 request_throughput=890642.1973874936 err=null query_type=traces query_weight=2 query_sub_queries=0 query_conditions=0 query_regex_conditions=0 query_has_or=false query_needs_full_trace=false query_select_all=false
+level=info ts=2026-11-12T10:33:14.137473461Z caller=handler.go:139 msg="query stats" tenant=single-tenant method=GET traceID= url=/api/traces/56016e92030d5e84ff01352c32300d29 duration=31.456247ms response_size=2348 status=200
+level=info ts=2026-11-12T10:33:17.947805945Z caller=live_store_background.go:244 msg="reclaimed block" tenant=single-tenant block_id=852cac23-f261-4b16-9ce7-3bbf8cb6b62e block_type=wal
+level=info ts=2026-11-12T10:33:17.949200273Z caller=instance.go:590 tenant=single-tenant msg="queueing wal block for completion" block=6ed47fb7-8975-4623-970d-eaf12d6cf928 size=99530
+level=info ts=2026-11-12T10:33:17.951446872Z caller=instance.go:621 tenant=single-tenant msg="completing WAL block" blockSize=99530 blockId=6ed47fb7-8975-4623-970d-eaf12d6cf928
+level=info ts=2026-11-12T10:33:17.965589279Z caller=instance.go:652 tenant=single-tenant msg="opening newly completed block" blockId=6ed47fb7-8975-4623-970d-eaf12d6cf928
+level=info ts=2026-11-12T10:33:17.965637982Z caller=instance.go:663 tenant=single-tenant msg="swapping wal block with newly completed block"
+level=info ts=2026-11-12T10:33:17.965720511Z caller=instance.go:704 tenant=single-tenant msg="completed block" id=6ed47fb7-8975-4623-970d-eaf12d6cf928
+level=info ts=2026-11-12T10:33:47.946962481Z caller=instance.go:742 tenant=single-tenant msg="deleting complete block" block=1c3a627d-dc7e-4d97-b82b-ed4bcb04c237
+level=info ts=2026-11-12T10:33:47.947818577Z caller=instance.go:742 tenant=single-tenant msg="deleting complete block" block=062dc7d0-7688-4624-a892-13ac63c97ad0
+level=info ts=2026-11-12T10:33:47.948180045Z caller=instance.go:742 tenant=single-tenant msg="deleting complete block" block=0f3c5318-05f5-4cfb-9ae2-9dfef0e96b1f
+level=info ts=2026-11-12T10:33:47.948650777Z caller=instance.go:742 tenant=single-tenant msg="deleting complete block" block=20cf77ec-9a7a-4ae5-b12e-b02fa6b92443
+level=info ts=2026-11-12T10:33:47.948924435Z caller=instance.go:742 tenant=single-tenant msg="deleting complete block" block=a69593d9-231d-4a02-98f7-3051fde92e0f
+level=info ts=2026-11-12T10:33:47.950574632Z caller=instance.go:742 tenant=single-tenant msg="deleting complete block" block=2b5c8f52-bd09-4ed3-abd8-984606996fb8
+level=info ts=2026-11-12T10:33:47.951094766Z caller=instance.go:742 tenant=single-tenant msg="deleting complete block" block=640e41d6-6e2b-48b0-8eff-f8e70553a5b9
+level=info ts=2026-11-12T10:33:47.951385239Z caller=instance.go:742 tenant=single-tenant msg="deleting complete block" block=7a77a032-c578-493c-bb6c-bd0aa2f841c5
+level=info ts=2026-11-12T10:33:47.951651755Z caller=instance.go:742 tenant=single-tenant msg="deleting complete block" block=39fd084b-4659-4ac1-a13d-dc0caf11007a
+level=info ts=2026-11-12T10:33:47.952634383Z caller=live_store_background.go:244 msg="reclaimed block" tenant=single-tenant block_id=5f88cdfc-f9d4-4ed8-9b85-bfed5c8fb8fd block_type=wal
+level=info ts=2026-11-12T10:33:47.954747321Z caller=instance.go:590 tenant=single-tenant msg="queueing wal block for completion" block=19df2977-f7b4-43c9-8d72-e7ab9f81879b size=71023
+level=info ts=2026-11-12T10:33:47.956469871Z caller=instance.go:621 tenant=single-tenant msg="completing WAL block" blockSize=71023 blockId=19df2977-f7b4-43c9-8d72-e7ab9f81879b
+level=info ts=2026-11-12T10:33:47.975208032Z caller=instance.go:652 tenant=single-tenant msg="opening newly completed block" blockId=19df2977-f7b4-43c9-8d72-e7ab9f81879b
+level=info ts=2026-11-12T10:33:47.975245195Z caller=instance.go:663 tenant=single-tenant msg="swapping wal block with newly completed block"
+level=info ts=2026-11-12T10:33:47.975320805Z caller=instance.go:704 tenant=single-tenant msg="completed block" id=19df2977-f7b4-43c9-8d72-e7ab9f81879b
+level=info ts=2026-11-12T10:33:48.014587958Z caller=poller.go:302 msg="writing tenant index" tenant=single-tenant metas=16 compactedMetas=19
+level=info ts=2026-11-12T10:33:48.03167693Z caller=poller.go:249 msg="blocklist poll complete" seconds=0.096715143
+level=info ts=2026-11-12T10:33:48.035615799Z caller=compaction.go:266 msg="new tenant selected" tenant_id=single-tenant
+level=info ts=2026-11-12T10:33:48.0366765Z caller=compaction.go:158 msg="tenant exhausted, skipping to next tenant"
+level=info ts=2026-11-12T10:33:48.041683196Z caller=backendscheduler.go:400 msg="assigned job to worker" job_id=b41d2722-8784-44c4-9434-2e5fb49c20f4 worker=447610b4cc7d
+level=info ts=2026-11-12T10:33:48.047966312Z caller=compactor.go:313 msg="compacting block" version=vParquet5 tenantID=single-tenant blockID=0f3c5318-05f5-4cfb-9ae2-9dfef0e96b1f startTime="2026-11-12 10:11:43 +0000 UTC" endTime="2026-11-12 10:12:04 +0000 UTC" totalObjects=3 size=26535 compactionLevel=0 totalRecords=3 bloomShardCount=1 footerSize=12741 replicationFactor=1
+level=info ts=2026-11-12T10:33:48.049883532Z caller=compactor.go:313 msg="compacting block" version=vParquet5 tenantID=single-tenant blockID=39fd084b-4659-4ac1-a13d-dc0caf11007a startTime="2026-11-12 10:11:13 +0000 UTC" endTime="2026-11-12 10:11:33 +0000 UTC" totalObjects=3 size=26537 compactionLevel=0 totalRecords=3 bloomShardCount=1 footerSize=12741 replicationFactor=1
+level=info ts=2026-11-12T10:33:48.049931372Z caller=compactor.go:313 msg="compacting block" version=vParquet5 tenantID=single-tenant blockID=2b5c8f52-bd09-4ed3-abd8-984606996fb8 startTime="2026-11-12 10:12:55 +0000 UTC" endTime="2026-11-12 10:12:55 +0000 UTC" totalObjects=1 size=25299 compactionLevel=0 totalRecords=1 bloomShardCount=1 footerSize=12714 replicationFactor=1
+level=info ts=2026-11-12T10:33:48.049938973Z caller=compactor.go:313 msg="compacting block" version=vParquet5 tenantID=single-tenant blockID=577bb566-65ed-4dda-870e-7997b536ff85 startTime="2026-11-12 10:29:04 +0000 UTC" endTime="2026-11-12 10:29:04 +0000 UTC" totalObjects=1 size=25218 compactionLevel=0 totalRecords=1 bloomShardCount=1 footerSize=12683 replicationFactor=1
+level=info ts=2026-11-12T10:33:48.128689097Z caller=compactor.go:274 msg="wrote compacted block" version=vParquet5 tenantID=single-tenant blockID=019ca543-95be-4420-8204-f7b2ba9b5add startTime="2026-11-12 10:11:13 +0000 UTC" endTime="2026-11-12 10:29:04 +0000 UTC" totalObjects=8 size=27469 compactionLevel=1 totalRecords=8 bloomShardCount=1 footerSize=12800 replicationFactor=1 dedicatedColumns="[{Scope:resource Name:k8s.cluster.name Type:string Options:[]} {Scope:resource Name:k8s.namespace.name Type:string Options:[]} {Scope:resource Name:k8s.pod.name Type:string Options:[]} {Scope:resource Name:k8s.container.name Type:string Options:[]} {Scope:span Name:http.request.method Type:string Options:[]} {Scope:span Name:http.response.status_code Type:int Options:[]} {Scope:span Name:url.path Type:string Options:[]} {Scope:span Name:url.route Type:string Options:[]} {Scope:span Name:server.address Type:string Options:[]} {Scope:span Name:server.port Type:int Options:[]} {Scope:span Name:http.method Type:string Options:[]} {Scope:span Name:http.url Type:string Options:[]} {Scope:span Name:http.route Type:string Options:[]} {Scope:span Name:http.status_code Type:int Options:[]}]"
+level=info ts=2026-11-12T10:33:48.131713935Z caller=compactor.go:397 msg="compaction complete" elapsed=86.861019ms blockID=019ca543-95be-4420-8204-f7b2ba9b5add
+level=info ts=2026-11-12T10:33:48.132514533Z caller=backendscheduler.go:430 msg="job completed" job_id=b41d2722-8784-44c4-9434-2e5fb49c20f4
+level=info ts=2026-11-12T10:33:48.136848129Z caller=backendscheduler.go:400 msg="assigned job to worker" job_id=52400512-f214-4b3c-84d0-d175c5a0b6ed worker=447610b4cc7d
+level=info ts=2026-11-12T10:33:48.138177226Z caller=compactor.go:313 msg="compacting block" version=vParquet5 tenantID=single-tenant blockID=20cf77ec-9a7a-4ae5-b12e-b02fa6b92443 startTime="2026-11-12 10:12:14 +0000 UTC" endTime="2026-11-12 10:12:45 +0000 UTC" totalObjects=4 size=26886 compactionLevel=0 totalRecords=4 bloomShardCount=1 footerSize=12756 replicationFactor=1
+level=info ts=2026-11-12T10:33:48.138212371Z caller=compactor.go:313 msg="compacting block" version=vParquet5 tenantID=single-tenant blockID=9ae6795b-5b46-4e4b-b2d9-a55ac55f1fee startTime="2026-11-12 10:29:14 +0000 UTC" endTime="2026-11-12 10:29:46 +0000 UTC" totalObjects=4 size=26806 compactionLevel=0 totalRecords=4 bloomShardCount=1 footerSize=12725 replicationFactor=1
+level=info ts=2026-11-12T10:33:48.138219147Z caller=compactor.go:313 msg="compacting block" version=vParquet5 tenantID=single-tenant blockID=6ed47fb7-8975-4623-970d-eaf12d6cf928 startTime="2026-11-12 10:32:38 +0000 UTC" endTime="2026-11-12 10:33:03 +0000 UTC" totalObjects=13 size=30658 compactionLevel=0 totalRecords=13 bloomShardCount=1 footerSize=12954 replicationFactor=1
+level=info ts=2026-11-12T10:33:48.138224704Z caller=compactor.go:313 msg="compacting block" version=vParquet5 tenantID=single-tenant blockID=2a2be285-a559-4e7d-8d96-b40279cf6444 startTime="2026-11-12 10:29:56 +0000 UTC" endTime="2026-11-12 10:30:21 +0000 UTC" totalObjects=13 size=30681 compactionLevel=0 totalRecords=13 bloomShardCount=1 footerSize=12954 replicationFactor=1
+level=info ts=2026-11-12T10:33:48.169007587Z caller=compactor.go:274 msg="wrote compacted block" version=vParquet5 tenantID=single-tenant blockID=ae283c92-fb47-466b-bea5-092b3280a15e startTime="2026-11-12 10:12:14 +0000 UTC" endTime="2026-11-12 10:33:03 +0000 UTC" totalObjects=34 size=37802 compactionLevel=1 totalRecords=34 bloomShardCount=1 footerSize=13250 replicationFactor=1 dedicatedColumns="[{Scope:resource Name:k8s.cluster.name Type:string Options:[]} {Scope:resource Name:k8s.namespace.name Type:string Options:[]} {Scope:resource Name:k8s.pod.name Type:string Options:[]} {Scope:resource Name:k8s.container.name Type:string Options:[]} {Scope:span Name:http.request.method Type:string Options:[]} {Scope:span Name:http.response.status_code Type:int Options:[]} {Scope:span Name:url.path Type:string Options:[]} {Scope:span Name:url.route Type:string Options:[]} {Scope:span Name:server.address Type:string Options:[]} {Scope:span Name:server.port Type:int Options:[]} {Scope:span Name:http.method Type:string Options:[]} {Scope:span Name:http.url Type:string Options:[]} {Scope:span Name:http.route Type:string Options:[]} {Scope:span Name:http.status_code Type:int Options:[]}]"
+level=info ts=2026-11-12T10:33:48.173530422Z caller=compactor.go:397 msg="compaction complete" elapsed=36.014782ms blockID=ae283c92-fb47-466b-bea5-092b3280a15e
+level=info ts=2026-11-12T10:33:48.174523567Z caller=backendscheduler.go:430 msg="job completed" job_id=52400512-f214-4b3c-84d0-d175c5a0b6ed
+level=info ts=2026-11-12T10:33:48.180009512Z caller=backendscheduler.go:400 msg="assigned job to worker" job_id=3d3692e2-03d6-4312-ae49-1da049efe94a worker=447610b4cc7d
+level=info ts=2026-11-12T10:33:48.180934626Z caller=compactor.go:313 msg="compacting block" version=vParquet5 tenantID=single-tenant blockID=64177608-3470-47f3-bc95-1044b87b737d startTime="2026-11-12 10:32:03 +0000 UTC" endTime="2026-11-12 10:32:37 +0000 UTC" totalObjects=37 size=38341 compactionLevel=0 totalRecords=37 bloomShardCount=1 footerSize=13221 replicationFactor=1
+level=info ts=2026-11-12T10:33:48.180984253Z caller=compactor.go:313 msg="compacting block" version=vParquet5 tenantID=single-tenant blockID=852cac23-f261-4b16-9ce7-3bbf8cb6b62e startTime="2026-11-12 10:30:22 +0000 UTC" endTime="2026-11-12 10:30:57 +0000 UTC" totalObjects=37 size=38366 compactionLevel=0 totalRecords=37 bloomShardCount=1 footerSize=13221 replicationFactor=1
+level=info ts=2026-11-12T10:33:48.180991457Z caller=compactor.go:313 msg="compacting block" version=vParquet5 tenantID=single-tenant blockID=033a1dd8-4a6a-4cf0-9277-cd1aa4f03ad1 startTime="2026-11-12 10:31:33 +0000 UTC" endTime="2026-11-12 10:32:02 +0000 UTC" totalObjects=32 size=35139 compactionLevel=0 totalRecords=32 bloomShardCount=1 footerSize=13206 replicationFactor=1
+level=info ts=2026-11-12T10:33:48.18099627Z caller=compactor.go:313 msg="compacting block" version=vParquet5 tenantID=single-tenant blockID=5f88cdfc-f9d4-4ed8-9b85-bfed5c8fb8fd startTime="2026-11-12 10:30:58 +0000 UTC" endTime="2026-11-12 10:31:32 +0000 UTC" totalObjects=38 size=38063 compactionLevel=0 totalRecords=38 bloomShardCount=1 footerSize=13221 replicationFactor=1
+level=info ts=2026-11-12T10:33:48.209396352Z caller=compactor.go:274 msg="wrote compacted block" version=vParquet5 tenantID=single-tenant blockID=7e2b4eb7-62a2-430b-83ac-3ca4eeb12766 startTime="2026-11-12 10:30:22 +0000 UTC" endTime="2026-11-12 10:32:37 +0000 UTC" totalObjects=144 size=63280 compactionLevel=1 totalRecords=144 bloomShardCount=1 footerSize=13417 replicationFactor=1 dedicatedColumns="[{Scope:resource Name:k8s.cluster.name Type:string Options:[]} {Scope:resource Name:k8s.namespace.name Type:string Options:[]} {Scope:resource Name:k8s.pod.name Type:string Options:[]} {Scope:resource Name:k8s.container.name Type:string Options:[]} {Scope:span Name:http.request.method Type:string Options:[]} {Scope:span Name:http.response.status_code Type:int Options:[]} {Scope:span Name:url.path Type:string Options:[]} {Scope:span Name:url.route Type:string Options:[]} {Scope:span Name:server.address Type:string Options:[]} {Scope:span Name:server.port Type:int Options:[]} {Scope:span Name:http.method Type:string Options:[]} {Scope:span Name:http.url Type:string Options:[]} {Scope:span Name:http.route Type:string Options:[]} {Scope:span Name:http.status_code Type:int Options:[]}]"
+level=info ts=2026-11-12T10:33:48.213385575Z caller=compactor.go:397 msg="compaction complete" elapsed=32.750041ms blockID=7e2b4eb7-62a2-430b-83ac-3ca4eeb12766
+level=info ts=2026-11-12T10:33:48.214213499Z caller=backendscheduler.go:430 msg="job completed" job_id=3d3692e2-03d6-4312-ae49-1da049efe94a
+level=info ts=2026-11-12T10:33:48.218292338Z caller=backendscheduler.go:400 msg="assigned job to worker" job_id=eb9f5978-ed04-4836-bfa9-8c251a806494 worker=447610b4cc7d
+level=info ts=2026-11-12T10:33:48.219867832Z caller=compactor.go:313 msg="compacting block" version=vParquet5 tenantID=single-tenant blockID=62d04ada-be30-4983-b2b3-9d9041656283 startTime="2026-11-12 10:06:46 +0000 UTC" endTime="2026-11-12 10:11:02 +0000 UTC" totalObjects=12 size=29555 compactionLevel=1 totalRecords=12 bloomShardCount=1 footerSize=12833 replicationFactor=1
+level=info ts=2026-11-12T10:33:48.219910726Z caller=compactor.go:313 msg="compacting block" version=vParquet5 tenantID=single-tenant blockID=93d5c64d-2284-451b-bb15-39f49720d2f8 startTime="2026-11-12 10:07:47 +0000 UTC" endTime="2026-11-12 10:10:01 +0000 UTC" totalObjects=19 size=31769 compactionLevel=1 totalRecords=19 bloomShardCount=1 footerSize=12924 replicationFactor=1
+level=info ts=2026-11-12T10:33:48.23176232Z caller=compactor.go:274 msg="wrote compacted block" version=vParquet5 tenantID=single-tenant blockID=645dd761-4ed1-445e-9146-6a36ca3b7e76 startTime="2026-11-12 10:06:46 +0000 UTC" endTime="2026-11-12 10:11:02 +0000 UTC" totalObjects=31 size=35499 compactionLevel=2 totalRecords=31 bloomShardCount=1 footerSize=13085 replicationFactor=1 dedicatedColumns="[{Scope:resource Name:k8s.cluster.name Type:string Options:[]} {Scope:resource Name:k8s.namespace.name Type:string Options:[]} {Scope:resource Name:k8s.pod.name Type:string Options:[]} {Scope:resource Name:k8s.container.name Type:string Options:[]} {Scope:span Name:http.request.method Type:string Options:[]} {Scope:span Name:http.response.status_code Type:int Options:[]} {Scope:span Name:url.path Type:string Options:[]} {Scope:span Name:url.route Type:string Options:[]} {Scope:span Name:server.address Type:string Options:[]} {Scope:span Name:server.port Type:int Options:[]} {Scope:span Name:http.method Type:string Options:[]} {Scope:span Name:http.url Type:string Options:[]} {Scope:span Name:http.route Type:string Options:[]} {Scope:span Name:http.status_code Type:int Options:[]}]"
+level=info ts=2026-11-12T10:33:48.233914682Z caller=compactor.go:397 msg="compaction complete" elapsed=15.118055ms blockID=645dd761-4ed1-445e-9146-6a36ca3b7e76
+level=info ts=2026-11-12T10:33:48.235088865Z caller=backendscheduler.go:430 msg="job completed" job_id=eb9f5978-ed04-4836-bfa9-8c251a806494
+level=info ts=2026-11-12T10:33:53.272434789Z caller=traceid_handlers.go:160 msg="trace id request" tenant=single-tenant path=/api/v2/traces/56016e92030d5e84ff01352c32300d29
+level=info ts=2026-11-12T10:33:53.509154207Z caller=util.go:147 msg="trace id response" tenant=single-tenant traceID= path=/api/v2/traces/56016e92030d5e84ff01352c32300d29 inspected_bytes=96614 request_throughput=413214.5812662322 duration_seconds=0.233810723 span_pruning_enabled=false trace_filter_enabled=false err=null query_type=traces query_weight=2 query_sub_queries=0 query_conditions=0 query_regex_conditions=0 query_has_or=false query_needs_full_trace=false query_select_all=false
+level=info ts=2026-11-12T10:33:53.509777715Z caller=handler.go:139 msg="query stats" tenant=single-tenant method=GET traceID= url=/api/v2/traces/56016e92030d5e84ff01352c32300d29 duration=238.502432ms response_size=1138 status=200
+level=warn ts=2026-11-12T10:34:03.238861273Z caller=server.go:1247 method=/tempopb.BackendScheduler/Next duration=15.000156336s msg=gRPC err="rpc error: code = NotFound desc = no jobs found"
+level=error ts=2026-11-12T10:34:03.239613918Z caller=backendworker.go:543 msg="error calling scheduler" err="rpc error: code = NotFound desc = no jobs found" backoff=182.452222ms
+level=info ts=2026-11-12T10:34:03.714345757Z caller=traceid_handlers.go:160 msg="trace id request" tenant=single-tenant path=/api/v2/traces/56016e92030d5e84ff01352c32300d29
+level=info ts=2026-11-12T10:34:03.753644264Z caller=util.go:147 msg="trace id response" tenant=single-tenant traceID= path=/api/v2/traces/56016e92030d5e84ff01352c32300d29 inspected_bytes=96614 request_throughput=2.4672176379170804e+06 duration_seconds=0.039159091 span_pruning_enabled=false trace_filter_enabled=false err=null query_type=traces query_weight=2 query_sub_queries=0 query_conditions=0 query_regex_conditions=0 query_has_or=false query_needs_full_trace=false query_select_all=false
+level=info ts=2026-11-12T10:34:03.754173956Z caller=handler.go:139 msg="query stats" tenant=single-tenant method=GET traceID= url=/api/v2/traces/56016e92030d5e84ff01352c32300d29 duration=39.375632ms response_size=1138 status=200
+level=info ts=2026-11-12T10:34:04.116225229Z caller=tag_handlers.go:571 msg="search tag request" tenant=single-tenant handler=SearchTagsV2 scope= range_seconds=1800
+level=info ts=2026-11-12T10:34:04.133608279Z caller=util.go:147 msg="search tag response" tenant=single-tenant traceID= handler=SearchTagsV2 scope= range_seconds=1800 duration_seconds=0.017372163 inspected_bytes=217918 request_throughput=1.2544091371926455e+07 error=null query_type=metadata query_weight=1 query_sub_queries=0 query_conditions=0 query_regex_conditions=0 query_has_or=false query_needs_full_trace=false query_select_all=false
+level=info ts=2026-11-12T10:34:04.133703887Z caller=handler.go:139 msg="query stats" tenant=single-tenant method=GET traceID= url="/api/v2/search/tags?end=1794479614&limit=5000&start=1794477844" duration=18.657497ms response_size=936 status=200
+level=info ts=2026-11-12T10:34:17.947452623Z caller=live_store_background.go:244 msg="reclaimed block" tenant=single-tenant block_id=033a1dd8-4a6a-4cf0-9277-cd1aa4f03ad1 block_type=wal
+level=info ts=2026-11-12T10:34:18.036441761Z caller=compaction.go:266 msg="new tenant selected" tenant_id=single-tenant
+level=info ts=2026-11-12T10:34:18.036525775Z caller=compaction.go:158 msg="tenant exhausted, skipping to next tenant"
+level=info ts=2026-11-12T10:34:18.038654677Z caller=backendscheduler.go:400 msg="assigned job to worker" job_id=ab0e312f-1829-46e1-b486-f969eafccc91 worker=447610b4cc7d
+level=info ts=2026-11-12T10:34:18.039449848Z caller=compactor.go:313 msg="compacting block" version=vParquet5 tenantID=single-tenant blockID=019ca543-95be-4420-8204-f7b2ba9b5add startTime="2026-11-12 10:11:13 +0000 UTC" endTime="2026-11-12 10:29:04 +0000 UTC" totalObjects=8 size=27469 compactionLevel=1 totalRecords=8 bloomShardCount=1 footerSize=12800 replicationFactor=1
+level=info ts=2026-11-12T10:34:18.039479512Z caller=compactor.go:313 msg="compacting block" version=vParquet5 tenantID=single-tenant blockID=ae283c92-fb47-466b-bea5-092b3280a15e startTime="2026-11-12 10:12:14 +0000 UTC" endTime="2026-11-12 10:33:03 +0000 UTC" totalObjects=34 size=37802 compactionLevel=1 totalRecords=34 bloomShardCount=1 footerSize=13250 replicationFactor=1
+level=info ts=2026-11-12T10:34:18.039485833Z caller=compactor.go:313 msg="compacting block" version=vParquet5 tenantID=single-tenant blockID=7e2b4eb7-62a2-430b-83ac-3ca4eeb12766 startTime="2026-11-12 10:30:22 +0000 UTC" endTime="2026-11-12 10:32:37 +0000 UTC" totalObjects=144 size=63280 compactionLevel=1 totalRecords=144 bloomShardCount=1 footerSize=13417 replicationFactor=1
+level=info ts=2026-11-12T10:34:18.121956045Z caller=compactor.go:274 msg="wrote compacted block" version=vParquet5 tenantID=single-tenant blockID=4a68a9ef-7214-46c8-8c8a-6e9183008f6e startTime="2026-11-12 10:11:13 +0000 UTC" endTime="2026-11-12 10:33:03 +0000 UTC" totalObjects=186 size=75597 compactionLevel=2 totalRecords=186 bloomShardCount=1 footerSize=13454 replicationFactor=1 dedicatedColumns="[{Scope:resource Name:k8s.cluster.name Type:string Options:[]} {Scope:resource Name:k8s.namespace.name Type:string Options:[]} {Scope:resource Name:k8s.pod.name Type:string Options:[]} {Scope:resource Name:k8s.container.name Type:string Options:[]} {Scope:span Name:http.request.method Type:string Options:[]} {Scope:span Name:http.response.status_code Type:int Options:[]} {Scope:span Name:url.path Type:string Options:[]} {Scope:span Name:url.route Type:string Options:[]} {Scope:span Name:server.address Type:string Options:[]} {Scope:span Name:server.port Type:int Options:[]} {Scope:span Name:http.method Type:string Options:[]} {Scope:span Name:http.url Type:string Options:[]} {Scope:span Name:http.route Type:string Options:[]} {Scope:span Name:http.status_code Type:int Options:[]}]"
+level=info ts=2026-11-12T10:34:18.125537885Z caller=compactor.go:397 msg="compaction complete" elapsed=86.2453ms blockID=4a68a9ef-7214-46c8-8c8a-6e9183008f6e
+level=info ts=2026-11-12T10:34:18.126671848Z caller=backendscheduler.go:430 msg="job completed" job_id=ab0e312f-1829-46e1-b486-f969eafccc91
+level=info ts=2026-11-12T10:34:18.131574414Z caller=backendscheduler.go:400 msg="assigned job to worker" job_id=d49d9db1-d9c5-49b4-95bd-fd9c4cad419c worker=447610b4cc7d
+level=info ts=2026-11-12T10:34:18.133113941Z caller=compactor.go:313 msg="compacting block" version=vParquet5 tenantID=single-tenant blockID=4e7b4963-c882-470b-ac43-492b75c49be1 startTime="2026-11-12 10:01:40 +0000 UTC" endTime="2026-11-12 10:06:00 +0000 UTC" totalObjects=467 size=151767 compactionLevel=2 totalRecords=467 bloomShardCount=1 footerSize=13402 replicationFactor=1
+level=info ts=2026-11-12T10:34:18.133164339Z caller=compactor.go:313 msg="compacting block" version=vParquet5 tenantID=single-tenant blockID=645dd761-4ed1-445e-9146-6a36ca3b7e76 startTime="2026-11-12 10:06:46 +0000 UTC" endTime="2026-11-12 10:11:02 +0000 UTC" totalObjects=31 size=35499 compactionLevel=2 totalRecords=31 bloomShardCount=1 footerSize=13085 replicationFactor=1
+level=info ts=2026-11-12T10:34:18.163388088Z caller=compactor.go:274 msg="wrote compacted block" version=vParquet5 tenantID=single-tenant blockID=05029d5e-7938-4321-a6c6-61a38ad09d92 startTime="2026-11-12 10:01:40 +0000 UTC" endTime="2026-11-12 10:11:02 +0000 UTC" totalObjects=498 size=159766 compactionLevel=3 totalRecords=498 bloomShardCount=1 footerSize=13404 replicationFactor=1 dedicatedColumns="[{Scope:resource Name:k8s.cluster.name Type:string Options:[]} {Scope:resource Name:k8s.namespace.name Type:string Options:[]} {Scope:resource Name:k8s.pod.name Type:string Options:[]} {Scope:resource Name:k8s.container.name Type:string Options:[]} {Scope:span Name:http.request.method Type:string Options:[]} {Scope:span Name:http.response.status_code Type:int Options:[]} {Scope:span Name:url.path Type:string Options:[]} {Scope:span Name:url.route Type:string Options:[]} {Scope:span Name:server.address Type:string Options:[]} {Scope:span Name:server.port Type:int Options:[]} {Scope:span Name:http.method Type:string Options:[]} {Scope:span Name:http.url Type:string Options:[]} {Scope:span Name:http.route Type:string Options:[]} {Scope:span Name:http.status_code Type:int Options:[]}]"
+level=info ts=2026-11-12T10:34:18.165577054Z caller=compactor.go:397 msg="compaction complete" elapsed=33.031169ms blockID=05029d5e-7938-4321-a6c6-61a38ad09d92
+level=info ts=2026-11-12T10:34:18.166077167Z caller=backendscheduler.go:430 msg="job completed" job_id=d49d9db1-d9c5-49b4-95bd-fd9c4cad419c
+level=info ts=2026-11-12T10:34:22.946469629Z caller=instance.go:590 tenant=single-tenant msg="queueing wal block for completion" block=02e5f0e0-68a2-43bd-897e-1e58f6de9496 size=71045
+level=info ts=2026-11-12T10:34:22.947784793Z caller=instance.go:621 tenant=single-tenant msg="completing WAL block" blockSize=71045 blockId=02e5f0e0-68a2-43bd-897e-1e58f6de9496
+level=info ts=2026-11-12T10:34:22.965482628Z caller=instance.go:652 tenant=single-tenant msg="opening newly completed block" blockId=02e5f0e0-68a2-43bd-897e-1e58f6de9496
+level=info ts=2026-11-12T10:34:22.965541498Z caller=instance.go:663 tenant=single-tenant msg="swapping wal block with newly completed block"
+level=info ts=2026-11-12T10:34:22.965623381Z caller=instance.go:704 tenant=single-tenant msg="completed block" id=02e5f0e0-68a2-43bd-897e-1e58f6de9496
+level=warn ts=2026-11-12T10:34:33.169174475Z caller=server.go:1247 method=/tempopb.BackendScheduler/Next duration=15.000241595s msg=gRPC err="rpc error: code = NotFound desc = no jobs found"
+level=error ts=2026-11-12T10:34:33.169533872Z caller=backendworker.go:543 msg="error calling scheduler" err="rpc error: code = NotFound desc = no jobs found" backoff=112.50836ms
+level=info ts=2026-11-12T10:34:47.94902245Z caller=live_store_background.go:244 msg="reclaimed block" tenant=single-tenant block_id=64177608-3470-47f3-bc95-1044b87b737d block_type=wal
+level=info ts=2026-11-12T10:34:48.03846551Z caller=compaction.go:136 msg="received empty tenant"
+level=warn ts=2026-11-12T10:34:49.03878126Z caller=server.go:1247 method=/tempopb.BackendScheduler/Next duration=15.001560517s msg=gRPC err="rpc error: code = NotFound desc = no jobs found"
+level=error ts=2026-11-12T10:34:49.039191959Z caller=backendworker.go:543 msg="error calling scheduler" err="rpc error: code = NotFound desc = no jobs found" backoff=759.365283ms
+level=info ts=2026-11-12T10:34:49.924960231Z caller=traceid_handlers.go:160 msg="trace id request" tenant=single-tenant path=/api/v2/traces/56016e92030d5e84ff01352c32300d29
+level=info ts=2026-11-12T10:34:50.011690647Z caller=util.go:147 msg="trace id response" tenant=single-tenant traceID= path=/api/v2/traces/56016e92030d5e84ff01352c32300d29 inspected_bytes=179580 request_throughput=2.0759878606384424e+06 duration_seconds=0.086503396 span_pruning_enabled=false trace_filter_enabled=false err=null query_type=traces query_weight=2 query_sub_queries=0 query_conditions=0 query_regex_conditions=0 query_has_or=false query_needs_full_trace=false query_select_all=false
+level=info ts=2026-11-12T10:34:50.0118389Z caller=handler.go:139 msg="query stats" tenant=single-tenant method=GET traceID= url=/api/v2/traces/56016e92030d5e84ff01352c32300d29 duration=86.83815ms response_size=1138 status=200
+level=info ts=2026-11-12T10:34:50.327620447Z caller=tag_handlers.go:571 msg="search tag request" tenant=single-tenant handler=SearchTagsV2 scope= range_seconds=1800
+level=info ts=2026-11-12T10:34:50.343835175Z caller=util.go:147 msg="search tag response" tenant=single-tenant traceID= handler=SearchTagsV2 scope= range_seconds=1800 duration_seconds=0.01620476 inspected_bytes=245557 request_throughput=1.5153387029490102e+07 error=null query_type=metadata query_weight=1 query_sub_queries=0 query_conditions=0 query_regex_conditions=0 query_has_or=false query_needs_full_trace=false query_select_all=false
+level=info ts=2026-11-12T10:34:50.343902096Z caller=handler.go:139 msg="query stats" tenant=single-tenant method=GET traceID= url="/api/v2/search/tags?end=1794479660&limit=5000&start=1794477890" duration=16.320699ms response_size=936 status=200
+level=info ts=2026-11-12T10:34:57.948972985Z caller=instance.go:590 tenant=single-tenant msg="queueing wal block for completion" block=b16f7abf-84ae-4c40-bda8-4531afa8d20e size=93935
+level=info ts=2026-11-12T10:34:57.951431317Z caller=instance.go:621 tenant=single-tenant msg="completing WAL block" blockSize=93935 blockId=b16f7abf-84ae-4c40-bda8-4531afa8d20e
+level=info ts=2026-11-12T10:34:57.968702626Z caller=instance.go:652 tenant=single-tenant msg="opening newly completed block" blockId=b16f7abf-84ae-4c40-bda8-4531afa8d20e
+level=info ts=2026-11-12T10:34:57.968773979Z caller=instance.go:663 tenant=single-tenant msg="swapping wal block with newly completed block"
+level=info ts=2026-11-12T10:34:57.96929538Z caller=instance.go:704 tenant=single-tenant msg="completed block" id=b16f7abf-84ae-4c40-bda8-4531afa8d20e
+level=info ts=2026-11-12T10:35:00.106117355Z caller=tag_handlers.go:571 msg="search tag request" tenant=single-tenant handler=SearchTagsV2 scope= range_seconds=1800
+level=info ts=2026-11-12T10:35:00.128465662Z caller=util.go:147 msg="search tag response" tenant=single-tenant traceID= handler=SearchTagsV2 scope= range_seconds=1800 duration_seconds=0.022323494 inspected_bytes=221101 request_throughput=9.904408333211638e+06 error=null query_type=metadata query_weight=1 query_sub_queries=0 query_conditions=0 query_regex_conditions=0 query_has_or=false query_needs_full_trace=false query_select_all=false
+level=info ts=2026-11-12T10:35:00.12930617Z caller=handler.go:139 msg="query stats" tenant=single-tenant method=GET traceID= url="/api/v2/search/tags?end=1794479670&limit=5000&start=1794477900" duration=23.259682ms response_size=936 status=200
+level=info ts=2026-11-12T10:35:01.180299749Z caller=tag_handlers.go:571 msg="search tag request" tenant=single-tenant handler=SearchTagsV2 scope= range_seconds=0
+level=info ts=2026-11-12T10:35:01.181627121Z caller=util.go:147 msg="search tag response" tenant=single-tenant traceID= handler=SearchTagsV2 scope= range_seconds=0 duration_seconds=0.001311431 inspected_bytes=0 request_throughput=0 error=null query_type=metadata query_weight=1 query_sub_queries=0 query_conditions=0 query_regex_conditions=0 query_has_or=false query_needs_full_trace=false query_select_all=false
+level=info ts=2026-11-12T10:35:01.181700312Z caller=handler.go:139 msg="query stats" tenant=single-tenant method=GET traceID= url="/api/v2/search/tags?end=1794479567&limit=5000&start=1794479567" duration=1.469939ms response_size=430 status=200
+level=warn ts=2026-11-12T10:35:05.75675933Z caller=server.go:1247 method=/tempopb.BackendScheduler/Next duration=15.000504099s msg=gRPC err="rpc error: code = NotFound desc = no jobs found"
+level=error ts=2026-11-12T10:35:05.757204814Z caller=backendworker.go:543 msg="error calling scheduler" err="rpc error: code = NotFound desc = no jobs found" backoff=2.876195133s
+level=warn ts=2026-11-12T10:35:24.302565657Z caller=server.go:1247 method=/tempopb.BackendScheduler/Next duration=15.00044117s msg=gRPC err="rpc error: code = NotFound desc = no jobs found"
+level=error ts=2026-11-12T10:35:24.302944227Z caller=backendworker.go:543 msg="error calling scheduler" err="rpc error: code = NotFound desc = no jobs found" backoff=7.225982125s
+level=info ts=2026-11-12T10:35:32.946586201Z caller=instance.go:590 tenant=single-tenant msg="queueing wal block for completion" block=082d2c75-7881-4360-87ba-72e072a88778 size=71047
+level=info ts=2026-11-12T10:35:32.948425556Z caller=instance.go:621 tenant=single-tenant msg="completing WAL block" blockSize=71047 blockId=082d2c75-7881-4360-87ba-72e072a88778
+level=info ts=2026-11-12T10:35:32.957242812Z caller=instance.go:652 tenant=single-tenant msg="opening newly completed block" blockId=082d2c75-7881-4360-87ba-72e072a88778
+level=info ts=2026-11-12T10:35:32.957283898Z caller=instance.go:663 tenant=single-tenant msg="swapping wal block with newly completed block"
+level=info ts=2026-11-12T10:35:32.957777596Z caller=instance.go:704 tenant=single-tenant msg="completed block" id=082d2c75-7881-4360-87ba-72e072a88778

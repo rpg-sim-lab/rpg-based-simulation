@@ -1,0 +1,25 @@
+== (a) lanes
+PASS: typecheck
+FAIL: code-health
+FAIL: code-health-sarif
+a_rc=1
+== (b) extractor alone
+12 passed in 46.10s
+b_rc=0
+== (d) main control, same failing tests, detached worktree of origin/main
+FAILED tests/codebase/test_code_health_staged_ratchet.py::test_a_new_violation_in_a_file_without_a_row_is_rejected_with_the_ratchet_message
+FAILED tests/codebase/test_code_health_staged_ratchet.py::test_a_violation_above_the_row_ceiling_is_rejected_as_worse
+FAILED tests/codebase/test_edit_ratchet_hook.py::test_defaults_keep_the_precommit_behaviour
+FAILED tests/codebase/test_edit_ratchet_hook.py::test_new_violation_gives_additional_context
+FAILED tests/codebase/test_edit_ratchet_hook.py::test_relative_path_resolves_against_cwd
+FAILED tests/codebase/test_edit_ratchet_hook.py::test_stdout_is_exactly_one_json_object
+FAILED tests/codebase/test_edit_ratchet_hook.py::test_worse_violation_gives_additional_context
+26 failed in 27.97s
+d_rc=1
+== (d2) same failing tests on the branch tree again, for a like-for-like pair
+FAILED tests/codebase/test_edit_ratchet_hook.py::test_relative_path_resolves_against_cwd
+FAILED tests/codebase/test_edit_ratchet_hook.py::test_stdout_is_exactly_one_json_object
+FAILED tests/codebase/test_edit_ratchet_hook.py::test_worse_violation_gives_additional_context
+26 failed in 29.43s
+d2_rc=1
+scope_rc=0

@@ -1,0 +1,6 @@
+# World Knowledge fact pages are generated from repository data at build time
+# (scripts/generate_wiki.py) and never committed, so they cannot drift from their sources.
+/wiki/world-knowledge/laws/
+/wiki/world-knowledge/mechanisms/
+/wiki/world-knowledge/catalog/
+/wiki/world-knowledge/glossary/

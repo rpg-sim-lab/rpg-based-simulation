@@ -192,6 +192,7 @@ The home-grown part, needed because ruff and ast-grep have no baseline.
 - Rows are **deleted** when debt is paid, so this registry is not append-only. Trend history goes to
   the existing snapshot tool.
 - A moved or renamed function must not resurface as "new". Matching is by file and symbol, not line.
+  A function moved to another file is still new there (the check fails it) and gone in the old file, but `check` now names the pair as a "likely move" and prints the `python3 -m codebase.health move OLD NEW --symbol S` command, which re-keys the row at its existing value and ceiling and refuses anything that would loosen the gate (`TCK-20261112-CODE-HEALTH-NAMES-AND-REKEYS-MOVED-ROWS`).
 
 **M5 note (2026-10-04):** the first ast-grep rules are N3, N4 and E3. T3 (`dict[str, Any]` in public signatures) stays a reviewer rule: a signature-only pattern still matched 185 places on `main` and cannot tell a typed-model candidate from a legitimate JSON passthrough.
 

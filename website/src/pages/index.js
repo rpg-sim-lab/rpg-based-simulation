@@ -1,32 +1,41 @@
 import React from 'react';
 import Layout from '@theme/Layout';
+import Link from '@docusaurus/Link';
 
-const STATS = { docs: 255 };
+const SPACES = [
+  {
+    to: '/wiki/world-knowledge',
+    title: 'World Knowledge',
+    text: 'The laws of the world, the mechanisms that move it, and who and what lives in it.',
+  },
+  {
+    to: '/wiki/technical',
+    title: 'Technical',
+    text: 'How the engine works. Coming later.',
+  },
+  {
+    to: '/wiki/control-guide',
+    title: 'Control Guide',
+    text: 'How to run, watch and replay a simulation. Coming later.',
+  },
+];
 
 export default function Home() {
   return (
-    <Layout title="RPG Simulation Docs" description="Project documentation hub">
+    <Layout title="RPG Simulation Wiki" description="What happens in the simulated world, and why">
       <main style={{padding: '2rem', maxWidth: '900px', margin: '0 auto'}}>
-        <h1>RPG Simulation Documentation</h1>
-        <p style={{color: '#666'}}>
-          {STATS.docs} documents
+        <h1>RPG Simulation Wiki</h1>
+        <p>
+          A world that runs by itself: beings with needs, goals and partial knowledge, factions,
+          settlements and an economy, all following the same laws. This wiki explains what you are
+          seeing while it runs.
         </p>
-        <h2>Quick Links — Authoritative Docs (P0)</h2>
-        <ul>
-          <li><a href="/docs/mechanics/01-entity-anatomy">Entity Anatomy</a> — Core attributes and biological pressures</li>
-          <li><a href="/docs/mechanics/02-combat-laws">Combat Laws</a> — Damage formula and tactical modifiers</li>
-          <li><a href="/docs/mechanics/03-economic-laws">Economic Laws</a> — Atomic conservation and trade</li>
-          <li><a href="/docs/mechanics/04-strategic-cognition">Strategic Cognition</a> — Goal hierarchy and perception</li>
-          <li><a href="/docs/mechanics/05-world-evolution">World Evolution</a> — Tick-to-day time and ecology</li>
-          <li><a href="/docs/mechanics/06-worldbuilding-foundation">Worldbuilding Foundation</a> — Declarative topology</li>
-        </ul>
-        <h2>Content Sections</h2>
-        <ul>
-          <li><a href="/docs/">Docs</a> — Mechanics, engine contracts, architecture, guidelines</li>
-        </ul>
-        <p style={{marginTop: '2rem', fontSize: '0.9em', color: '#888'}}>
-          Run <code>make docs-serve</code> to start this site locally. Run <code>make docs-registry</code> to regenerate the doc registry.
-        </p>
+        {SPACES.map((space) => (
+          <section key={space.to} style={{marginTop: '1.5rem'}}>
+            <h2><Link to={space.to}>{space.title}</Link></h2>
+            <p>{space.text}</p>
+          </section>
+        ))}
       </main>
     </Layout>
   );

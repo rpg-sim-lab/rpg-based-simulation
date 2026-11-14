@@ -1,0 +1,15 @@
+== 2026-11-12T10:35:22Z run A end state
+platform-grafana-1 oom=false restarts=0
+platform-prometheus-1 oom=false restarts=0
+platform-alloy-1 oom=false restarts=0
+platform-backend-1 oom=false restarts=0
+platform-docker-socket-proxy-1 oom=false restarts=0
+platform-redis-1 oom=false restarts=0
+platform-loki-1 oom=false restarts=0
+platform-tempo-1 oom=false restarts=0
+loki_write_sent_entries_total{job="alloy"} => [('', '2076')]
+loki_write_request_duration_seconds_count{job="alloy"} => [('204', '240')]
+loki_write_dropped_entries_total{job="alloy"} => [('', '0'), ('', '0'), ('', '0'), ('', '0'), ('', '0')]
+loki_write_batch_retries_total{job="alloy"} => [('', '0')]
+loki throttle lines: 0, push 500s: 0
+backend lines with trace_id=: 151

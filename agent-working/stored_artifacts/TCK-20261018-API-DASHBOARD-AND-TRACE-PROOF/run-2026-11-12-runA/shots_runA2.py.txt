@@ -1,0 +1,36 @@
+"""Run A, second attempt at trace -> logs through the UI: click 'Related logs' on the trace view. Password read in-process, never printed."""
+import base64
+import json
+import re
+import sys
+import urllib.parse
+
+from playwright.sync_api import sync_playwright
+
+out, tid = sys.argv[1], sys.argv[2]
+pw = open("docker/secrets/grafana_admin_password").read().strip()
+auth = "Basic " + base64.b64encode(f"admin:{pw}".encode()).decode()
+G = "http://127.0.0.1:3000"
+q = {"refId": "A", "datasource": {"type": "tempo", "uid": "tempo"}, "queryType": "traceql", "query": tid}
+left = {"datasource": "tempo", "queries": [q], "range": {"from": "now-1h", "to": "now"}}
+url = G + "/explore?" + urllib.parse.urlencode({"schemaVersion": 1, "panes": json.dumps({"a": left}), "orgId": 1})
+
+with sync_playwright() as p:
+    b = p.chromium.launch(executable_path="/usr/bin/google-chrome", headless=True, args=["--no-sandbox"])
+    ctx = b.new_context(viewport={"width": 1700, "height": 1400}, extra_http_headers={"Authorization": auth})
+    page = ctx.new_page()
+    page.goto(url, wait_until="networkidle", timeout=60000)
+    page.wait_for_timeout(7000)
+    clicked = False
+    try:
+        page.get_by_role("button", name=re.compile("Related logs", re.I)).first.click(timeout=10000)
+        page.wait_for_timeout(9000)
+        clicked = True
+    except Exception as e:
+        print("click on 'Related logs' failed:", str(e)[:200])
+    body = page.inner_text("body")
+    print("clicked 'Related logs':", clicked)
+    print("a Loki pane opened:", "Loki" in body, "| the log line is shown:", "Search runs" in body, "| the trace id is shown in the page:", body.count(tid), "times")
+    page.screenshot(path=f"{out}/runA_6_after_related_logs.png", full_page=False)
+    b.close()
+print("done")

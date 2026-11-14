@@ -122,6 +122,7 @@ mechanisms:
 
   - id: combat_resolution
     layer: entity
+    summary: "Settles a fight when one creature strikes another: damage comes from the attacker's strength against the defender's toughness, and a heavy hit can leave a wound. In current play most fights come from the free swing a creature gets when someone walks away from it, not from a chosen attack."
     systems: [combat]
     depends_on: [movement, status_effects, entity_role]
     state: done
@@ -191,6 +192,7 @@ mechanisms:
         and cannot be targeted or hit from outside; combat skips it as a target, and its own attack is refused as illegal (ATTACKER_INCAPACITATED) while lodged.
   - id: tactical_decision
     layer: entity
+    summary: "Decides in the moment what a creature does when danger is near: attack, hold its ground, back away or run. In current worlds the choice to attack is almost never taken."
     systems: [combat]
     depends_on: []
     state: done
@@ -284,6 +286,7 @@ mechanisms:
         superseded.
   - id: combat_engagement
     layer: entity
+    summary: "Before a creature starts a fight it sizes up the odds, and it skips a fight that looks too risky for its nature. This only changes outcomes in busy, combat-heavy worlds, because in most worlds few attacks are chosen at all."
     systems: [combat]
     depends_on: [personality]
     state: done
@@ -324,6 +327,7 @@ mechanisms:
         TCK-20261008-A-SUBJECT-NOTICES-AN-UNENGAGED-HOSTILE-COMING-ADJACENT-AND-DECIDES-DECISION-32.
   - id: movement
     layer: entity
+    summary: "Moves creatures across the map tile by tile. A creature standing next to an enemy cannot simply wander off: walking away gives that enemy a free swing."
     systems: [combat, world]
     depends_on: []
     state: done
@@ -356,6 +360,7 @@ mechanisms:
   # docs/plans/mechanism_identity_and_change_taxonomy.md §4-5 for the full reasoning.
   - id: action_pacing_readiness
     layer: entity
+    summary: "Makes every creature wait between actions: an attack is refused until the creature has recovered enough readiness, so nobody can strike at every moment."
     systems: [combat]
     depends_on: []
     state: done
@@ -385,6 +390,7 @@ mechanisms:
         (`path::Class::method`) instead of leaving it permanently unbound.
   - id: readiness_speed_scaling
     layer: entity
+    summary: "More agile creatures are meant to recover between actions faster. The rule exists, but in current play it almost never takes effect, so recovery speed barely varies with agility."
     systems: [progression]
     depends_on: []
     state: partial
@@ -427,6 +433,7 @@ mechanisms:
         the reachability reason already recorded.
   - id: interaction_channeling
     layer: entity
+    summary: "Lets a creature spend several ticks on one job, such as harvesting, opening a chest, joining a guild or using a town service, and finishes the job when its progress is complete."
     systems: [social]
     depends_on: []
     state: done
@@ -448,6 +455,7 @@ mechanisms:
         **Corrected 2026-10-27 (TCK-20261027-FIVE-DEAD-SYSTEMS-CLASSES-STILL-CITED-AS-PROOF):** `guilds.py`, `town_service.py` and `loot.py` were dead classes with no caller and are deleted; the loot, inn and town-service channeling steps now run through `InteractionSystem.enforce()` itself, covered by `tests/unit/resource/test_loot_live_path.py`. Re-traced 2026-10-27 on the tree merged with origin/main 4a12f08f6: `chests.py` is also deleted (#757) and `harvesting.py`'s `HarvestSystem` has no caller in `src/` (the `resource_harvesting` entry is `orphan`), so none of the five named files is a live call site. What advances progress live: `CoreActions.execute_interact` (`src/engine/domain/core_actions.py`, `InteractionUpdate(progress_delta=1)`), reached by `action_router.py` for the `INTERACT` action that `src/engine/tactical.py` and `ActionIntentAdapter` (`src/engine/intent/action_intent.py`) emit, and `InteractionPhase` (`src/engine/pipeline_phases/interactions.py`, run from `src/engine/pipeline.py`), which fills the target and a positive delta before `InteractionSystem.enforce()`.
   - id: conversation
     layer: entity
+    summary: "Creatures talking with one another is not yet in the game."
     systems: [social]
     depends_on: []
     state: gap
@@ -459,11 +467,13 @@ mechanisms:
     # evidence, so it is removed rather than left unaudited indefinitely.
   - id: entity_trade
     layer: entity
+    summary: "Direct trading between two creatures is not yet in the game."
     systems: [social, economy]
     depends_on: []
     state: gap
   - id: team_up
     layer: entity
+    summary: "Creatures deliberately inviting one another to team up is not yet in the game as its own mechanism."
     systems: [social]
     depends_on: []
     state: gap
@@ -472,6 +482,7 @@ mechanisms:
 
   - id: attributes_biology
     layer: entity
+    summary: "Every creature has basic attributes and bodily needs. Hunger and tiredness build up over time, and creatures heal naturally, faster when they rest."
     systems: [progression]
     depends_on: []
     state: done
@@ -527,6 +538,7 @@ mechanisms:
         **Rule ratified 2026-10-11 (owner decision 42, memo row 65):** every living body heals naturally, 1 HP every round(9600 / max_hp) life-due ticks awake and round(4800 / max_hp) asleep or resting, none at the starving line and half speed while weakened. Implemented by TCK-20261011-EVERY-LIVING-KIND-HEALS-NATURALLY-FASTER-AT-REST-ROW-65: `src/engine/natural_healing.py` (the table and `hp_gain`), `apply.py` (the HP term).
   - id: derived_stats
     layer: entity
+    summary: "Turns a creature's attributes, training, class and injuries into the numbers a fight uses, such as health and attack. Part of this recalculation is held back for now, so not every change shows up in play."
     systems: [progression]
     depends_on: [attributes_biology]
     state: done
@@ -595,6 +607,7 @@ mechanisms:
         derivation now runs.
   - id: race_archetype
     layer: entity
+    summary: "Each creature belongs to a species, which sets its starting traits and the kinds of work it can take."
     systems: [progression]
     depends_on: []
     state: done
@@ -619,6 +632,7 @@ mechanisms:
         method to two mechanism entries; see `class_assignment`'s own binding below instead.
   - id: class_assignment
     layer: entity
+    summary: "A creature gets its role from those its species allows. Only part of the class system is in place so far."
     systems: [progression]
     depends_on: [race_archetype]
     state: partial
@@ -643,6 +657,7 @@ mechanisms:
         body and would misattribute if bound here instead.
   - id: personality
     layer: entity
+    summary: "Each creature has a personality (greed, bravery, sociability, industry) that nudges its choices in fights, travel and social life."
     systems: [progression, cognition]
     depends_on: []
     state: done
@@ -664,6 +679,7 @@ mechanisms:
         (`state.py` defines many unrelated components, so file-level would be imprecise).
   - id: build_diversity
     layer: entity
+    summary: "Creatures can grow into different class paths, and some branches shut out others. Only this basic branching is in place so far; deeper specialisation is not."
     systems: [progression]
     depends_on: []
     state: partial
@@ -726,6 +742,7 @@ mechanisms:
         to cite DEV-006 and this real infrastructure instead of "not even a stub."
   - id: aging_death
     layer: entity
+    summary: "Creatures grow old and die of old age when they reach their natural lifespan."
     systems: [progression]
     depends_on: []
     state: done
@@ -817,6 +834,7 @@ mechanisms:
         ordinary-per-tick-progression regression coverage this fix required.
   - id: succession
     layer: entity
+    summary: "When a creature dies, an heir is chosen (by the strength of their bond, if none is named) and inherits its heirlooms."
     systems: [progression]
     depends_on: [aging_death]
     state: done
@@ -868,6 +886,7 @@ mechanisms:
         test_natural_aging_death_is_recorded_as_old_age_and_dispatches_succession`.
   - id: genetics_aptitude
     layer: entity
+    summary: "Offspring would inherit a blend of their parents' natural aptitudes. This is switched off for now, so it has no effect on the world."
     systems: [progression]
     depends_on: []
     state: gated
@@ -884,6 +903,7 @@ mechanisms:
         what `gated` means. Found via TCK-20260916-MECHANISM-ORPHAN-STATE-BATCH-VERIFICATION.
   - id: evolution
     layer: entity
+    summary: "Creatures earn experience from kills and level up. The rule works, but fights are too few for most creatures to reach a level-up in practice."
     systems: [progression]
     depends_on: []
     state: partial
@@ -937,6 +957,7 @@ mechanisms:
         fixed): TCK-20260917-XP-LEVEL-UP-THRESHOLD-VS-CORPUS-COMBAT-VOLUME.
   - id: skill_unlocks
     layer: entity
+    summary: "Heroes learn new skills when they level up. This works, but level-ups are rare, so few skills are learned in practice."
     systems: [combat]
     depends_on: []
     state: partial
@@ -962,6 +983,7 @@ mechanisms:
         outcome is fully verified.
   - id: breakthrough_bonuses
     layer: entity
+    summary: "Breakthroughs would give a creature lasting stat bonuses. The bonuses can be applied, but nothing in the world grants a breakthrough yet, so they do not show up in play."
     systems: [progression]
     depends_on: []
     state: partial
@@ -986,6 +1008,7 @@ mechanisms:
         has zero real producers).
   - id: entity_role
     layer: entity
+    summary: "Every creature has a role, such as hero or guard, that decides what it can do and how it grows."
     systems: [progression]
     depends_on: []
     state: done
@@ -1017,6 +1040,7 @@ mechanisms:
 
   - id: trauma
     layer: entity
+    summary: "Heavy blows leave wounds that weaken a creature, and a wound is told apart from a permanent scar. Wounds are in play; nothing produces permanent scars yet."
     systems: [combat]
     depends_on: [combat_resolution]
     state: done
@@ -1085,6 +1109,7 @@ mechanisms:
         directly.
   - id: status_effects
     layer: entity
+    summary: "Lasting conditions laid on a creature are designed and their data structures exist, but nothing in the world applies one yet."
     systems: [combat]
     depends_on: []
     state: orphan
@@ -1151,6 +1176,7 @@ mechanisms:
 
   - id: self_model
     layer: entity
+    summary: "A creature's own picture of itself, its needs and what it can do. This is switched off for now."
     systems: [cognition]
     depends_on: []
     state: gated
@@ -1190,6 +1216,7 @@ mechanisms:
         requirement does not apply to this reachability-claim negative arm.
   - id: declared_cognition_schema
     layer: entity
+    summary: "A declared description of how a creature thinks. The structure is written, but nothing in the world uses it yet."
     systems: [cognition]
     depends_on: []
     state: orphan
@@ -1213,6 +1240,7 @@ mechanisms:
         state_caller_check.py`'s own full-registry run.
   - id: perception
     layer: entity
+    summary: "A general sensing stage for what a creature sees around it. That stage is not wired into the world, so it plays no part today; what creatures notice comes from the sense check instead."
     systems: [cognition]
     depends_on: []
     state: orphan
@@ -1273,6 +1301,7 @@ mechanisms:
         decision 8). Its runtime reach is measured there; its effect is not.
   - id: sense_gated_detection
     layer: entity
+    summary: "A creature notices a neighbour only if it can sense it, using the senses its kind has and the signals the neighbour gives off."
     systems: [cognition]
     depends_on: []
     state: done
@@ -1315,6 +1344,7 @@ mechanisms:
         targeting still produces a result without it.
   - id: emotion
     layer: entity
+    summary: "Creatures have emotions that shift after events, such as a close brush with death."
     systems: [cognition]
     depends_on: []
     state: done
@@ -1351,6 +1381,7 @@ mechanisms:
         per-entity cadence gate at all to trip the `goal_hierarchy`-shaped trap.
   - id: affection_relationship_bonds
     layer: entity
+    summary: "Creatures form bonds with one another and keep track of trust, sentiment and grudges. One part, attachment to places, is recorded but has no effect yet."
     systems: [social]
     depends_on: []
     state: done
@@ -1408,6 +1439,7 @@ mechanisms:
         whole entry.
   - id: motivation_doctrine
     layer: entity
+    summary: "A doctrine-and-values bias on what a creature wants was tried and deliberately removed, so it is not part of the game."
     systems: [cognition]
     depends_on: []
     state: gap
@@ -1458,6 +1490,7 @@ mechanisms:
         that its code is gone.
   - id: role_fit_preference
     layer: entity
+    summary: "A creature's taste for gear, skills, quests and party roles that suit it. It is built, but nothing uses it yet."
     systems: [cognition]
     depends_on: []
     state: orphan
@@ -1490,6 +1523,7 @@ mechanisms:
         `orphan`. Whether to Wire it or Retire it is feature work, frozen by memo row 7.
   - id: commitment_betrayal
     layer: entity
+    summary: "A record of a creature breaking a promise. The record type exists, but nothing in the world creates one."
     systems: [social]
     depends_on: []
     state: orphan
@@ -1512,6 +1546,7 @@ mechanisms:
         Betrayal(FactionDirective) is a separate candidate, see betrayal_siege_war.
   - id: temporal_pressure
     layer: entity
+    summary: "Makes things feel more urgent to a creature as time runs short. It is switched off by default, so it has no effect today."
     systems: [cognition]
     depends_on: []
     state: gated
@@ -1562,6 +1597,7 @@ mechanisms:
         claim, not an accident of staging.
   - id: goal_hierarchy
     layer: entity
+    summary: "Creatures pursue goals in layers, from a standing direction down to projects, objectives and single actions. A creature that runs from danger keeps to its retreat until the threat has been gone for a while."
     systems: [cognition]
     depends_on: [belief_cycle]
     state: done
@@ -1642,6 +1678,7 @@ mechanisms:
         restarts on resume). The tactical flight uses the same present-threat test (`present_threats`).
   - id: belief_cycle
     layer: entity
+    summary: "Creatures hold leads about the world with different levels of certainty. A lead that is confirmed gets firmer, a contradicted one is dropped, and an old one fades to vague."
     systems: [cognition]
     depends_on: []
     state: done
@@ -1679,6 +1716,7 @@ mechanisms:
         declined to act because `10 < stale_threshold(50)`, not merely unevaluated. Verdict stands.
   - id: information_trust_deception
     layer: entity
+    summary: "How far a creature trusts the source of a piece of information, including catching liars. The code exists but nothing calls it, so trust never changes today."
     systems: [cognition]
     depends_on: []
     state: orphan
@@ -1703,6 +1741,7 @@ mechanisms:
         `InformationBeliefPhase` belongs to `belief_cycle`, not here. Probe output: agent-working/stored_artifacts/TCK-20260923-MECHANISM-IMPLEMENTED-BY-RESIDUE-RESOLUTION/
   - id: knowledge_model
     layer: entity
+    summary: "What a creature knows about the world and its dangers. Starting knowledge is given at spawn; keeping it up to date over time is switched off for now."
     systems: [cognition]
     depends_on: []
     state: gated
@@ -1734,6 +1773,7 @@ mechanisms:
         `ENABLE_SELF_MODEL_COGNITION`; the update service stays gated.
   - id: causal_spatial_memory
     layer: entity
+    summary: "A creature's memory of what happened where, used to choose routes. It is switched off by default."
     systems: [cognition]
     depends_on: []
     state: gated
@@ -1766,6 +1806,7 @@ mechanisms:
         `temporal_pressure`'s own entry, same reasoning, not repeated in full).
   - id: adventure_routing
     layer: entity
+    summary: "Decides whether a creature sets out on an adventure and where to, based on its role and personality."
     systems: [cognition, world]
     depends_on: [entity_role, personality, diplomacy]
     state: done
@@ -1786,6 +1827,7 @@ mechanisms:
         pass. No contradiction from `mechanism_state_caller_check.py`'s own full-registry run.
   - id: quest_generation_sourcing
     layer: entity
+    summary: "Would create quests out of troubled regions. The code exists, but nothing calls it, so no quests come from this source today."
     systems: [world, cognition]
     depends_on: []
     state: orphan
@@ -1827,6 +1869,7 @@ mechanisms:
         surface, per this batch's own explicit instruction.
   - id: strategic_intelligence_core
     layer: entity
+    summary: "The main thinking pass each tick, where a creature weighs its concerns and picks what to pursue."
     systems: [cognition]
     depends_on: [belief_cycle]
     state: done
@@ -1873,6 +1916,7 @@ mechanisms:
         goal selection (tactical still runs).
   - id: committed_intentions
     layer: entity
+    summary: "A creature sticking to a plan it has committed to. The structure is written, but nothing uses it yet."
     systems: [cognition]
     depends_on: [goal_hierarchy]
     state: orphan
@@ -1901,6 +1945,7 @@ mechanisms:
         state_caller_check.py`'s own full-registry run.
   - id: cognition_capacity_fatigue
     layer: entity
+    summary: "Limits how much a creature can think about at once. When it has too many concerns it keeps the most urgent and drops the rest."
     systems: [cognition]
     depends_on: []
     state: done
@@ -1968,6 +2013,7 @@ mechanisms:
 
   - id: party_formation
     layer: group
+    summary: "Creatures band into groups, and those groups are formed, updated and broken up as the world runs."
     systems: [social]
     depends_on: [movement]
     state: done
@@ -1990,6 +2036,7 @@ mechanisms:
         had been checked instead of its real caller `GroupPhase`.
   - id: guilds
     layer: group
+    summary: "Guilds hand out quests to heroes who visit them. Guild intelligence gathering is designed but not in effect."
     systems: [social, faction]
     depends_on: []
     state: partial
@@ -2013,6 +2060,7 @@ mechanisms:
 
   - id: diplomacy
     layer: faction
+    summary: "Factions have relations that shift over time between friendly and hostile."
     systems: [faction]
     depends_on: []
     state: done
@@ -2034,6 +2082,7 @@ mechanisms:
         `mechanism_state_caller_check.py`'s own full-registry run.
   - id: betrayal_siege_war
     layer: faction
+    summary: "Factions can besiege one another and go to war. A faction betraying another is written but never triggered in play yet."
     systems: [faction]
     depends_on: []
     state: partial
@@ -2055,6 +2104,7 @@ mechanisms:
         docs/plans/mechanism_identity_and_change_taxonomy.md section 1 -- flagged, not performed.
   - id: social_contracts
     layer: faction
+    summary: "Factions can offer and accept treaties, trade agreements, non-aggression pacts and alliances."
     systems: [faction]
     depends_on: []
     state: done
@@ -2088,6 +2138,7 @@ mechanisms:
         `src/systems/social_contract.py` stays.
   - id: reputation
     layer: faction
+    summary: "Combines how a creature is seen publicly, in its region and in its clan into one reputation."
     systems: [faction]
     depends_on: []
     state: done
@@ -2108,6 +2159,7 @@ mechanisms:
         commitment-specific one.
   - id: social_memory
     layer: faction
+    summary: "Would let a community remember what it witnessed. The code exists but is never run, so it does nothing today."
     systems: [faction]
     depends_on: []
     state: orphan
@@ -2130,6 +2182,7 @@ mechanisms:
         campaigns module, and was left unchanged pending a decision. Probe output: agent-working/stored_artifacts/TCK-20260923-MECHANISM-IMPLEMENTED-BY-RESIDUE-RESOLUTION/
   - id: cross_episode_social_consequences
     layer: faction
+    summary: "In a campaign, what happened between factions in earlier episodes carries over into the next."
     systems: [faction]
     depends_on: []
     state: done
@@ -2155,6 +2208,7 @@ mechanisms:
 
   - id: cross_episode_grief_nemesis
     layer: faction
+    summary: "In a campaign, a creature grieves an ally who died earlier and will not team up with someone who betrayed it repeatedly. It applies only in narrow cases."
     systems: [faction]
     depends_on: []
     state: done
@@ -2175,6 +2229,7 @@ mechanisms:
         `src/domains/campaigns/orchestrator.py:966` and `src/engine/kernel.py:745`.
   - id: country_lifecycle
     layer: faction
+    summary: "Countries, which are factions, make their own decisions as the days pass. Only part of a full country life cycle is in place so far."
     systems: [faction]
     depends_on: []
     state: partial
@@ -2215,6 +2270,7 @@ mechanisms:
   # into `regional_sovereignty` as declared regional content rather than given its own row.
   - id: regional_trauma
     layer: region
+    summary: "Regions build up trauma from violent deaths and destruction, and it fades over time. In current worlds it stays low, and some deaths, such as a creature wounded in a fight that later dies of hazard drain, are not counted yet."
     systems: [world]
     depends_on: []
     state: done
@@ -2254,6 +2310,7 @@ mechanisms:
         engine keeps no record of recent attacker damage (see Bible 05 section 2). Its point-to-region attribution follows LOC-08.
   - id: regional_sovereignty
     layer: region
+    summary: "Regions are held by factions, and a region's owner can change hands over time."
     systems: [world, faction]
     depends_on: [world_compilation]  # was world_generation, split 2026-10-05
     state: done
@@ -2308,6 +2365,7 @@ mechanisms:
           the tooling reads it. That is a decision-7 foundation finding.
   - id: regional_levy_and_conquest_debuffs
     layer: region
+    summary: "Would tax heroes and buildings in an owned region and weaken fighters in a conquered one. It is written but never run, so no tax or penalty applies today."
     systems: [world, faction]
     depends_on: []
     state: orphan
@@ -2347,6 +2405,7 @@ mechanisms:
         as a record, and its regression-test list no longer cites test_long_run_stability.py for taxation).
   - id: demographic_cohort_cycle
     layer: region
+    summary: "Populations are tracked in age groups, with births and deaths over time. The cycle runs, but in practice it produces no births or deaths because the groups are too small."
     systems: [world]
     depends_on: []
     state: done
@@ -2379,6 +2438,7 @@ mechanisms:
 
   - id: campaigns
     layer: world
+    summary: "Chains several runs of a world into one story, carrying the results of one episode into the next."
     systems: [world]
     depends_on: []
     state: done
@@ -2398,6 +2458,7 @@ mechanisms:
         a genuine calibration tool, not a test.
   - id: chronicle
     layer: world
+    summary: "Would compile a written history of what happened. Nothing in a running simulation uses it yet."
     systems: [world]
     depends_on: []
     state: orphan
@@ -2417,6 +2478,7 @@ mechanisms:
         EVIDENCE/runtime_probe_output_1000ticks.jsonl (probe: runtime_probe.py, same folder).
   - id: opportunity_rumor_seeds
     layer: world
+    summary: "Plants rumours and opportunities in the world for creatures to follow. It is switched off by default."
     systems: [world]
     depends_on: []
     state: gated
@@ -2436,6 +2498,7 @@ mechanisms:
         confirming the note's own "flag-gated" framing exactly.
   - id: cultural_drift
     layer: world
+    summary: "Works out each community's culture from what has happened to it."
     systems: [world]
     depends_on: []
     state: done
@@ -2470,6 +2533,7 @@ mechanisms:
   # with this split.
   - id: calamity_intensity
     layer: world
+    summary: "Would make a disaster in a region grow more severe. The code that raises it is never called, so disasters do not intensify today."
     systems: [world]
     depends_on: []
     state: orphan
@@ -2501,6 +2565,7 @@ mechanisms:
         not evidence for this entry.
   - id: world_boss_spawn
     layer: world
+    summary: "Powerful bosses could spawn in badly scarred regions. This is switched off on purpose for now."
     systems: [world]
     depends_on: [regional_trauma]
     state: gated
@@ -2550,6 +2615,7 @@ mechanisms:
   # re-read directly by world-rule-catalog-design.
   - id: world_module_parameterization
     layer: world
+    summary: "Reusable world pieces, such as a village or a goblin camp, are adjusted by their settings, such as danger level, when a world is built."
     systems: [world]
     depends_on: []
     state: done
@@ -2578,6 +2644,7 @@ mechanisms:
         this entry, not a separate mechanism.
   - id: world_composition_assembly
     layer: world
+    summary: "Snaps chosen world pieces together into one world, combining their regions, places, populations, resources, buildings and quests."
     systems: [world]
     depends_on: [world_module_parameterization]
     state: done
@@ -2626,6 +2693,7 @@ mechanisms:
         The "Region OVERLAP is not checked anywhere" sentence above is superseded.
   - id: resolved_world_snapshot
     layer: world
+    summary: "A built world is saved as a ready-made file that the game loads, and that file is kept equal to a fresh build."
     systems: [world]
     depends_on: [world_composition_assembly]
     state: done
@@ -2655,6 +2723,7 @@ mechanisms:
         and stayed inert for three months, which is the failure this stage now guards.
   - id: world_compilation
     layer: world
+    summary: "Turns the finished world description into the live world: its regions, places, resources, buildings and starting creatures."
     systems: [world]
     depends_on: [resolved_world_snapshot]
     state: done
@@ -2709,6 +2778,7 @@ mechanisms:
         entry point.
   - id: procedural_world_generation
     layer: world
+    summary: "Can author a new world from a stated intent by picking and combining world pieces. It is a tool used when designing worlds and does not run during play."
     systems: [world]
     depends_on: [world_composition_assembly]
     state: done
@@ -2741,6 +2811,7 @@ mechanisms:
         nothing resolved its output.
   - id: gods_pantheon_blessings
     layer: world
+    summary: "Gods and blessings are deliberately left out of the game."
     systems: [world]
     depends_on: []
     state: gap  # intentionally excluded per design idea 63 -- not a gap to close, see atlas card
@@ -2749,6 +2820,7 @@ mechanisms:
 
   - id: equipment_scoring
     layer: world
+    summary: "Would rank gear, swap in better items and repair equipment. The code exists, but nothing runs it, so creatures do not do this today."
     systems: [economy]
     depends_on: [inventory_trade_conservation]
     state: orphan
@@ -2768,6 +2840,7 @@ mechanisms:
         EVIDENCE/runtime_probe_output_1000ticks.jsonl (probe: runtime_probe.py, same folder).
   - id: inventory_trade_conservation
     layer: world
+    summary: "Items and gold are never created or lost in a trade or transfer: whatever one side gives up, the other side receives."
     systems: [economy]
     depends_on: []
     state: done
@@ -2786,6 +2859,7 @@ mechanisms:
         claim is the resolver's general atomic-conservation law, not any one branch.
   - id: crafting
     layer: world
+    summary: "Creatures craft items from materials under the same no-loss rules as trade. Crafting works only in part compared with the full design."
     systems: [economy]
     depends_on: [inventory_trade_conservation]
     state: partial
@@ -2819,6 +2893,7 @@ mechanisms:
   # docs/plans/mechanism_identity_and_change_taxonomy.md §4.
   - id: buildings
     layer: world
+    summary: "Towns hold buildings that have health, and some of them provide beds or services."
     systems: [economy]
     depends_on: []
     state: done
@@ -2843,6 +2918,7 @@ mechanisms:
         `navigation.lodged_in` names it (`town_services`).
   - id: town_services
     layer: world
+    summary: "Buildings provide services: inns give beds, and guild halls, shops and blacksmiths work. Church blessings and resurrection are not in play, and no church is placed in any world."
     systems: [economy]
     depends_on: [buildings]
     state: done
@@ -2926,6 +3002,7 @@ mechanisms:
         path and mode as one unit). Total minus both is the stayer count, which must be 0.
   - id: building_sabotage
     layer: world
+    summary: "Buildings can be damaged by sabotage."
     systems: [economy]
     depends_on: [buildings]
     state: done
@@ -2946,6 +3023,7 @@ mechanisms:
 
   - id: city
     layer: region
+    summary: "A city is a region held by a faction. There is no separate city layer in the game yet beyond the region."
     systems: [world]
     depends_on: [regional_sovereignty]
     state: partial
@@ -2970,6 +3048,7 @@ mechanisms:
         is `regional_sovereignty`'s own separate binding.
   - id: camp
     layer: region
+    summary: "Monster camps, such as goblin camps and wolf dens, are placed in the wild and become more established over time."
     systems: [world]
     depends_on: [regional_trauma]
     state: done
@@ -2997,6 +3076,7 @@ mechanisms:
         (TCK-20260920-MECHANISM-WORLD-FACTION- REGION-GROUP-UNBOUND-CLAIMS-RESOLUTION).
   - id: nest
     layer: region
+    summary: "Creature nests are proposed but not yet built."
     systems: [world]
     depends_on: []
     state: gap  # not yet built ("Proposed"); wiring-map only, no atlas JSON card -- see investigation.md
@@ -3005,11 +3085,13 @@ mechanisms:
     # code" (badge "Proposed") -- genuinely aspirational, not a search miss.
   - id: lair
     layer: region
+    summary: "Lairs as a mechanism of their own are proposed but not yet built."
     systems: [world]
     depends_on: []
     state: gap  # not yet built ("Proposed"); wiring-map only, no atlas JSON card -- see investigation.md
   - id: ruins_mines_battlefields
     layer: region
+    summary: "Ruins, mines and battlefields as special places are not yet built; they are ordinary regions today."
     systems: [world]
     depends_on: []
     state: gap
@@ -3040,6 +3122,7 @@ mechanisms:
 
   - id: clan
     layer: faction
+    summary: "Creatures belong to clans that they can leave, that pass leadership on and that can dissolve."
     systems: [faction]
     depends_on: []
     state: done
@@ -3060,6 +3143,7 @@ mechanisms:
         corpus worlds was not measured here.
   - id: race_collective_force
     layer: faction  # PLACEHOLDER layer assignment, not citation-backed -- see header note
+    summary: "A whole species acting together as one force is not yet in the game."
     systems: [faction]
     depends_on: []
     state: gap
@@ -3068,6 +3152,7 @@ mechanisms:
 
   - id: settlement_capacity_axis
     layer: faction  # PLACEHOLDER layer assignment, not citation-backed -- see header note
+    summary: "A limit on how much a settlement can hold is not yet in the game."
     systems: [faction]
     depends_on: []
     state: gap
@@ -3084,6 +3169,7 @@ mechanisms:
 
   - id: cooperation
     layer: entity
+    summary: "Creatures can agree to work together under accepted contracts."
     systems: [social]
     depends_on: []
     state: done
@@ -3103,6 +3189,7 @@ mechanisms:
         this pass). No contradiction from `mechanism_state_caller_check.py`'s own full-registry run.
   - id: progression_conversion
     layer: entity
+    summary: "Lets level-up points be spent on stats. It is switched off by default."
     systems: [progression]
     depends_on: []
     state: gated
@@ -3127,6 +3214,7 @@ mechanisms:
         scarce even once this gate opens, on top of the flag being off today.
   - id: resource_harvesting
     layer: world
+    summary: "Creatures gather wild food and materials from the land, which grows back. The gathering itself runs through the general interact action; the older dedicated harvest routine is unused."
     systems: [economy]
     depends_on: []
     state: orphan
@@ -3147,6 +3235,7 @@ mechanisms:
         **Rule ratified 2026-10-08 (owner decision 29, catalog SURV-06 amendment; designer commits 6a31a61a2 on main and 3458f17d0):** wild food is part of the land: each biome declares how much wild food its land holds and how fast it regrows, never sized to demand, placed in wild land outside settlements. Landed with the Decision 27 batch as the `berry_thicket` kind (`placement: owned_by_declared_region`) declared per wild module (`near_forest` and `sacred_grove` 10 charges, the swamp border 8, the frontier-village biome none). Harvest itself runs through the live INTERACT path, not the orphan `HarvestSystem` bound above.
   - id: fame
     layer: world
+    summary: "Heroes build fame, and legends from one episode carry into later ones."
     systems: [world, social]
     depends_on: [campaigns]
     state: done
@@ -3168,6 +3257,7 @@ mechanisms:
         from `mechanism_state_caller_check.py`'s own full-registry run.
   - id: fidelity_drift
     layer: world
+    summary: "Over a long campaign, tracks how far the world has drifted from how it was first set up."
     systems: [world]
     depends_on: [campaigns]
     state: done
@@ -3187,6 +3277,7 @@ mechanisms:
         all real). No contradiction from `mechanism_state_caller_check.py`'s own full-registry run.
   - id: belief_institution
     layer: world
+    summary: "Beliefs can harden into lasting institutions across a campaign. Only part of this is in place so far."
     systems: [world]
     depends_on: [campaigns]
     state: partial
@@ -3211,6 +3302,7 @@ mechanisms:
         check.py`'s own full-registry run.
   - id: strategic_learning_bias
     layer: entity
+    summary: "What a creature has learned from past results tilts what it chooses next."
     systems: [cognition]
     depends_on: []
     state: done
@@ -3232,6 +3324,7 @@ mechanisms:
         `mechanism_state_caller_check.py`'s own full-registry run.
   - id: strategic_redirection
     layer: entity
+    summary: "A creature changing its plan when circumstances change. It is written, but nothing calls it yet."
     systems: [cognition]
     depends_on: []
     state: orphan
@@ -3250,6 +3343,7 @@ mechanisms:
         `mechanism_state_caller_check.py`'s own full-registry run.
   - id: concern_intake
     layer: entity
+    summary: "Turns what a creature notices into concerns for it to think about."
     systems: [cognition]
     depends_on: []
     state: done
@@ -3268,6 +3362,7 @@ mechanisms:
         full-registry run.
   - id: event_interpretation
     layer: region
+    summary: "Reads events in the world and decides what they mean for a region."
     systems: [world]
     depends_on: []
     state: done
@@ -3287,6 +3382,7 @@ mechanisms:
         caller_check.py`'s own full-registry run.
   - id: narrative_memory
     layer: world
+    summary: "A running memory of the story so far. The code exists, but nothing calls it yet."
     systems: [world]
     depends_on: []
     state: orphan
@@ -3309,6 +3405,7 @@ mechanisms:
 
   - id: group_coordination
     layer: group
+    summary: "Groups coordinating what their members do. Only part of this is in place so far."
     systems: [social]
     depends_on: []
     state: partial
@@ -3332,6 +3429,7 @@ mechanisms:
         full-registry run raises no `orphan_with_callers` contradiction for this entry.
   - id: quest_reward_distribution
     layer: group
+    summary: "Would split a quest's reward among a group. Nothing uses it yet, so rewards are not shared this way today."
     systems: [world]
     depends_on: []
     state: orphan
@@ -3349,6 +3447,7 @@ mechanisms:
         full-registry run raises no `orphan_with_callers` contradiction for this entry.
   - id: commitment_pressure_consequences
     layer: entity
+    summary: "Breaking a quest promise costs a creature reputation, and abandoning a quest is noticed. Only part of the pressure and impact of broken promises is in effect so far."
     systems: [social]
     depends_on: []
     state: partial
@@ -3386,6 +3485,7 @@ mechanisms:
 
   - id: resource_ecology_regrowth
     layer: world
+    summary: "Resources, including wild food, grow back over time at a set rate for each kind of land."
     systems: [world, economy]
     depends_on: []
     state: done
@@ -3401,6 +3501,7 @@ mechanisms:
 
   - id: regional_transformation
     layer: region
+    summary: "A region's land can change kind when its conditions cross set thresholds."
     systems: [world]
     depends_on: []
     state: done
@@ -3415,6 +3516,7 @@ mechanisms:
 
   - id: production_role_vacancy
     layer: region
+    summary: "When a worker dies, the world records that its production role is now vacant."
     systems: [world, economy]
     depends_on: []
     state: done
@@ -3429,6 +3531,7 @@ mechanisms:
 
   - id: veterancy_rank
     layer: entity
+    summary: "Fighters earn veterancy points and ranks, and each rank adds about 5 percent to their strength."
     systems: [progression]
     depends_on: [evolution]
     state: done
@@ -3443,6 +3546,7 @@ mechanisms:
 
   - id: quest_lifecycle_resolution
     layer: world
+    summary: "Quests move from started to completed to rewarded, and the rewards are paid out."
     systems: [world, economy]
     depends_on: [quest_generation_sourcing]
     state: done
@@ -3457,6 +3561,7 @@ mechanisms:
 
   - id: intent_requirement_gating
     layer: entity
+    summary: "Checks whether a creature can do what it intends, such as having enough gold, an item, space or a service nearby, and suggests a detour if it cannot."
     systems: [cognition, economy]
     depends_on: []
     state: done
@@ -3471,6 +3576,7 @@ mechanisms:
 
   - id: regional_hazard_drain
     layer: region
+    summary: "Harsh land, such as deep or cursed regions, drains health from creatures, with weather and auras changing how much."
     systems: [world]
     depends_on: []
     state: done
@@ -3486,6 +3592,7 @@ mechanisms:
 
   - id: humanoid_reproduction
     layer: entity
+    summary: "Adults would pair up and have children. This is switched off by default."
     systems: [world]
     depends_on: []
     state: gated
@@ -3502,6 +3609,7 @@ mechanisms:
 
   - id: role_model_imitation
     layer: entity
+    summary: "A creature would watch others and pick a role model. This is switched off by default."
     systems: [cognition]
     depends_on: []
     state: gated
@@ -3516,6 +3624,7 @@ mechanisms:
 
   - id: faction_raid
     layer: faction
+    summary: "Camp raids on factions are not in the game: the earlier raid, which conjured raiders from nothing, was removed."
     systems: [faction, world]
     depends_on: [camp]
     state: gap
@@ -3531,6 +3640,7 @@ mechanisms:
 
   - id: refugee_displacement
     layer: region
+    summary: "Would move people out of disaster areas. It cannot start yet, because the disaster severity it reacts to never rises."
     systems: [world]
     depends_on: [calamity_intensity]
     state: partial

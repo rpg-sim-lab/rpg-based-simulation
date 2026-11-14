@@ -1,0 +1,39 @@
+"""Screenshots of the api-v1 dashboard and the stream-health trace in Grafana. The admin password is read from its file inside this process (never argv, never printed)."""
+import base64
+import json
+import sys
+import urllib.parse
+
+from playwright.sync_api import sync_playwright
+
+out = sys.argv[1]
+trace_id = sys.argv[2]
+pw = open("docker/secrets/grafana_admin_password").read().strip()
+auth = "Basic " + base64.b64encode(f"admin:{pw}".encode()).decode()
+
+dash_url = "http://127.0.0.1:3000/d/api-v1/api?orgId=1&from=now-15m&to=now&kiosk"
+left = {"datasource": "tempo", "queries": [{"refId": "A", "queryType": "traceql", "query": trace_id}], "range": {"from": "now-1h", "to": "now"}}
+explore_url = "http://127.0.0.1:3000/explore?" + urllib.parse.urlencode({"schemaVersion": 1, "panes": json.dumps({"a": left}), "orgId": 1})
+
+with sync_playwright() as p:
+    b = p.chromium.launch(executable_path="/usr/bin/google-chrome", headless=True, args=["--no-sandbox"])
+    ctx = b.new_context(viewport={"width": 1600, "height": 2400}, extra_http_headers={"Authorization": auth})
+    page = ctx.new_page()
+    errors = []
+    page.on("console", lambda m: errors.append(m.text[:160]) if m.type == "error" else None)
+    page.goto(dash_url, wait_until="networkidle", timeout=60000)
+    page.wait_for_timeout(8000)
+    page.screenshot(path=f"{out}/dashboard_api-v1.png", full_page=True)
+    body = page.inner_text("body")
+    for needle in ("datasource", "not found", "Error", "error"):
+        print(f"dashboard text contains {needle!r}:", needle in body)
+    print("panel titles visible:", sum(t in body for t in ["Request rate by route", "5xx ratio, overall", "Latency p50", "Backend container logs", "Recent traces", "p95 latency (value)"]), "of 6 probed")
+    page2 = ctx.new_page()
+    page2.goto(explore_url, wait_until="networkidle", timeout=60000)
+    page2.wait_for_timeout(8000)
+    page2.screenshot(path=f"{out}/trace_{trace_id}.png", full_page=True)
+    t2 = page2.inner_text("body")
+    print("explore shows PING:", "PING" in t2, "| shows the route:", "stream-health" in t2)
+    print("console errors (first 3):", errors[:3])
+    b.close()
+print("screenshots written")

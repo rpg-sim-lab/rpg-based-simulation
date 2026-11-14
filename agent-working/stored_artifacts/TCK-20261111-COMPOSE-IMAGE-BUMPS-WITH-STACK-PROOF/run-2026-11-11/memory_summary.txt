@@ -1,0 +1,13 @@
+container                    samples anon_max anon+active_file_max current_max peak limit  (MiB)
+platform-alloy-1                 44     64.3      225.9        256.0   256.0    256
+platform-backend-1               43    123.4      145.3        246.1   258.1   1024
+platform-docker-socket-proxy-1   44     17.7       25.2         38.5    38.8     64
+platform-grafana-1               42    268.9      860.2       1024.0  1025.4   1024
+platform-loki-1                  44     75.4       75.5        226.7   227.7    512
+platform-node-exporter-1         44      7.1        7.1         27.8    28.1     32
+platform-ntfy-1                  44     19.9       24.9         86.5    96.0     96
+platform-prometheus-1            43    106.8      137.4        292.4   303.8    512
+platform-redis-1                 44      7.2       15.3         74.4    88.6    256
+platform-redis-exporter-1        28      9.5       19.7         21.5    21.7     32
+platform-tempo-1                 44     35.9       35.9        151.3   152.0    512
+sum of per-service anon+active_file maxima: 1572.4

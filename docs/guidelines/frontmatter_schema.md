@@ -52,8 +52,17 @@ Applies to all files under `docs/` that are not in an archive subdirectory.
 | `tags` | no | list of strings | free-form unless `tags_enforced: true` — see `docs/guidelines/tag_taxonomy.md` |
 | `tags_enforced` | no | boolean | opt-in tag-enforcement marker for this file; default false/absent (see `docs/guidelines/tag_taxonomy.md`'s Enforcement section) |
 | `last_verified` | conditional | ISO 8601 date | required when `status: authoritative` |
+| `evidence_paths` | no | list of file paths | the code and test files the doc describes (see Evidence fields below) |
+| `verified_by` | no | TCK-ID or `"#<PR>"` | the ticket or PR that checked every behaviour claim in the doc |
+| `verified_at` | no | 7-40 lowercase hex | the commit SHA of the code that was read |
+| `reviewed_by` | no | TCK-ID or `"#<PR>"` | triaged, no staleness found; weaker than `verified_by`, never shown as verified |
 
 **Conditional rule:** `last_verified` is required when `status` is `authoritative`.
+
+**Evidence fields** (`TCK-20261108-DOC-EVIDENCE-FIELDS-AND-DRIFT-REPORT`; meaning and rules in `docs/guides/delivery_process.md`, "Docs as the review source"). All four are optional, and a doc without them stays valid and shows as unverified. The validator checks shape only:
+- `evidence_paths`: an inline list of repo-relative file paths. No absolute path, no trailing `/`, no glob character (`* ? [ ] { }`), no `..` component. It does not check that a file exists: a file deleted later is drift, which `python3 tools/gate_checks/doc_drift.py` reports, and a corpus-wide existence check would turn every PR's frontmatter test red.
+- `verified_by`, `reviewed_by`: a ticket ID (`TCK-YYYYMMDD-...`) or a PR number written `"#123"`. Quote the PR form: an unquoted `#` starts a YAML comment.
+- `verified_at`: 7-40 lowercase hex characters.
 
 Example:
 ```yaml

@@ -339,10 +339,10 @@ typecheck-pyrefly-baseline-sync: ## Rewrite codebase/baselines/pyrefly_baseline.
 docs-artifacts: ## Generate stored_artifacts index pages
 	$(PYTHON3) tools/generate_artifact_pages.py
 
-docs-serve: docs-artifacts ## Start Docusaurus dev server (http://localhost:3000)
+docs-serve: ## Start the website wiki dev server (http://localhost:3000); generates World Knowledge first
 	cd website && npm run start
 
-docs-build: docs-artifacts ## Build Docusaurus static site to website/build/
+docs-build: ## Build the website wiki to website/build/; generates World Knowledge first
 	cd website && npm run build
 
 docs-registry: ## Regenerate docs/REGISTRY.yaml from frontmatter
@@ -535,12 +535,14 @@ content-inventory: ## Regenerate config/content_inventory.json from real data/co
 # Requires: pip install -e ".[knowledge]"
 
 knowledge-index: ## Build local semantic knowledge index (developer env only — not CI)
+	@if [ "$$(git rev-parse --git-dir)" != "$$(git rev-parse --git-common-dir)" ]; then echo "worktree: sessions here read the main checkout index, so this build is unused unless RPG_SEARCH_OWN_INDEX=1 is set"; fi
 	@echo "Building knowledge index (requires: pip install -e '.[knowledge]')..."
 	SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt SSL_CERT_DIR=/etc/ssl/certs HF_HUB_ETAG_TIMEOUT=120 \
 	  $(PYTHON_KNOWLEDGE) \
 	  tools/knowledge_search.py build
 
 knowledge-index-update: ## Incremental reindex — only re-embeds changed/new files (fast)
+	@if [ "$$(git rev-parse --git-dir)" != "$$(git rev-parse --git-common-dir)" ]; then echo "worktree: sessions here read the main checkout index, so this build is unused unless RPG_SEARCH_OWN_INDEX=1 is set"; fi
 	SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt SSL_CERT_DIR=/etc/ssl/certs HF_HUB_ETAG_TIMEOUT=120 \
 	  $(PYTHON_KNOWLEDGE) \
 	  tools/knowledge_search.py build --incremental
@@ -569,7 +571,7 @@ search-server: ## FALLBACK ONLY — start search server directly via uvicorn (ex
 	@echo "[search-server] Fallback mode — use make search-server-docker for persistent deployment"
 	uvicorn tools.search_server:app --host 127.0.0.1 --port 8765 --reload
 
-install-hooks: ## Install git hooks (post-commit incremental reindex when docs/ or agent-working/tickets/done/ changed). OVERWRITES an existing post-commit hook; install-prek-hooks does not
+install-hooks: ## Install git hooks (post-commit: registry regen after a stale merge commit; the incremental knowledge reindex is opt-in via git config --bool knowledge.reindexOnCommit true). OVERWRITES an existing post-commit hook; install-prek-hooks does not
 	cp tools/hooks/post-commit-reindex.sh .git/hooks/post-commit
 	chmod +x .git/hooks/post-commit
 	@echo "[hooks] post-commit hook installed"
