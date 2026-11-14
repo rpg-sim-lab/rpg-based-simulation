@@ -65,6 +65,8 @@ Raw data: /mnt/data2/scratch-b/fst_out/def2_c43.json.
 
 ## Implementation Notes
 
+Design approval (rpg-designer, 2026-11-14, session message): HOLD plan v3 at d7b872287 (plan.md sha256 1e71d299…, test_plan.md 71d0407f…) is approved as a DESIGN only. The build waits for the owner's answer on the HOLD row (lead-planner-u24 carries it); no src edit and no push before then. BUILD CONDITION: the limit stated at plan.md line 43 ("Limit, said plainly: the predicate is 'an action task is live', not 'THE task that entered the HOLD is live': the state does not store which task entered the HOLD. It errs toward keeping HOLD: a typed-wait HOLD that persists while the subject has since started an unrelated live action (e.g. an ATTACK) is not reset by a walk decision until that action ends. That is the safe direction (it never makes a walk cheaper than today), and it costs at most the time until that action ends.") is written in the same words into the Disclosed line of divergence 2.206 and into the tactical_contract.md :89 note; no ledger row may claim "the entering task" anywhere.
+
 ## Test Summary
 
 ## Files Changed
