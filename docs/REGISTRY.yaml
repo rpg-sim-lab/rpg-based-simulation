@@ -10072,6 +10072,24 @@
   artifact_files: []
   tags: []
 - type: ticket
+  path: agent-working/tickets/done/TCK-20261103-A-MEASUREMENT-NOT-ON-THE-PINNED-RUNNER-CALLS-ITSELF-EVIDENCE.md
+  ticket_id: TCK-20261103-A-MEASUREMENT-NOT-ON-THE-PINNED-RUNNER-CALLS-ITSELF-EVIDENCE
+  title: 'A behaviour measurement run on the unpinned `_run_engine` can be presented
+    as evidence: such a run should refuse to call itself evidence'
+  tier: standard
+  ticket_type: repair
+  date: '2026-11-03'
+  related_code_areas:
+  - _run_engine
+  artifact_files:
+  - agent-working/stored_artifacts/TCK-20261103-A-MEASUREMENT-NOT-ON-THE-PINNED-RUNNER-CALLS-ITSELF-EVIDENCE/investigation.md
+  - agent-working/stored_artifacts/TCK-20261103-A-MEASUREMENT-NOT-ON-THE-PINNED-RUNNER-CALLS-ITSELF-EVIDENCE/plan.md
+  - agent-working/stored_artifacts/TCK-20261103-A-MEASUREMENT-NOT-ON-THE-PINNED-RUNNER-CALLS-ITSELF-EVIDENCE/test_plan.md
+  tags:
+  - testing
+  - determinism
+  - observability
+- type: ticket
   path: agent-working/tickets/done/TCK-20261103-DELIVERY-GUIDE-PINNED-RUNNER-EVIDENCE-RULE.md
   ticket_id: TCK-20261103-DELIVERY-GUIDE-PINNED-RUNNER-EVIDENCE-RULE
   title: The delivery guide states that behaviour evidence comes from the pinned runner
@@ -10135,21 +10153,6 @@
   - agent-working/stored_artifacts/TCK-20261103-THE-STARVATION-RECORD-MISSES-MEALS-WITHOUT-AN-INTENT-RESULT/plan.md
   - agent-working/stored_artifacts/TCK-20261103-THE-STARVATION-RECORD-MISSES-MEALS-WITHOUT-AN-INTENT-RESULT/test_plan.md
   tags: []
-- type: ticket
-  path: agent-working/tickets/inprogress/TCK-20261103-A-MEASUREMENT-NOT-ON-THE-PINNED-RUNNER-CALLS-ITSELF-EVIDENCE.md
-  ticket_id: TCK-20261103-A-MEASUREMENT-NOT-ON-THE-PINNED-RUNNER-CALLS-ITSELF-EVIDENCE
-  title: 'A behaviour measurement run on the unpinned `_run_engine` can be presented
-    as evidence: such a run should refuse to call itself evidence'
-  tier: standard
-  ticket_type: repair
-  date: '2026-11-03'
-  related_code_areas:
-  - _run_engine
-  artifact_files: []
-  tags:
-  - testing
-  - determinism
-  - observability
 - type: ticket
   path: agent-working/tickets/todos/TCK-20261103-A-CREATURE-WITH-BOTH-NEEDS-PRESSING-NEITHER-SLEEPS-NOR-FEEDS-ENOUGH.md
   ticket_id: TCK-20261103-A-CREATURE-WITH-BOTH-NEEDS-PRESSING-NEITHER-SLEEPS-NOR-FEEDS-ENOUGH

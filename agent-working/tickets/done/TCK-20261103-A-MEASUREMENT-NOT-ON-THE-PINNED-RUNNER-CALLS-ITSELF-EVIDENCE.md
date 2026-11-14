@@ -1,10 +1,10 @@
 ---
-status: active
+status: historical
 layer: testing
 authority: P1
 audience: agent
 ticket_id: TCK-20261103-A-MEASUREMENT-NOT-ON-THE-PINNED-RUNNER-CALLS-ITSELF-EVIDENCE
-phase: inprogress
+phase: done
 date: 2026-11-03
 tags: [testing, determinism, observability]
 ---
@@ -15,7 +15,7 @@ tags: [testing, determinism, observability]
 A behaviour measurement run on the unpinned `_run_engine` can be presented as evidence: such a run should refuse to call itself evidence
 
 ## Status
-INPROGRESS
+DONE
 
 ## Tier
 standard
@@ -47,8 +47,8 @@ Standing rule for rpg-planner's lanes until this lands: measure on the pinned ru
 - Re-measuring #826 (rpg-designer's call) or #828 (already ruled to re-run pinned).
 
 ## Acceptance Criteria
-- Tests: a `_run_engine` run is labelled not pinned; a build_kernel run is labelled pinned; the report helper refuses the former; SIMQ tools still run.
-- The run hash does not change (marker is outside hashed state), shown by a hash-equal run.
+- [x] Tests: a `_run_engine` run is labelled not pinned; a build_kernel run is labelled pinned; the report helper refuses the former; SIMQ tools still run.
+- [x] The run hash does not change (marker is outside hashed state), shown by a hash-equal run (frontier_marches and crowded_frontier, s42, 1000 ticks, equal to main 5ba65854c).
 - Hot-loop: no (run setup and report only).
 
 ## Related Tickets
@@ -109,7 +109,19 @@ Implementer progress (testing-implementer, 2026-11-15), code and tests built, ev
 - The replacement for the delivery_process.md:170 fragment is drafted and goes to the owner through the lead before any edit; docs/guides/delivery_process.md is not touched in this batch.
 
 ## Test Summary
+- tests/unit/kernel/test_run_conditions_record.py: 16 passed. tests/tools/test_evidence_runner_advisory.py: 6 passed (positive control: the advisory flags 18 lines in TCK-20261031-A-RETREAT-PROJECT-OUTLIVES-ITS-THREAT/evidence). tests/unit/kernel/test_executor_context_parity.py: 26 passed. Scoped done-checker tests: 232 passed. tests/unit/kernel + tests/tools, single process: 6120 passed, 57 skipped, 1 xfailed. SIMQ anchors and paired-arms tests pass.
+- Evidence run (rpg-planner HOST FREE, accepted by rpg-planner 2026-11-15): tree 967ab45af3abd930d2c4a365ff48d1032c1b7702 against origin/main 5ba65854c02ec9d132adb985a30b945fa8525d29, seed 42, 1000 ticks, pinned build_kernel. frontier_marches 8dd82ff4e53692f1e2c5fa2d95f65377b119f6e20addce60a527ea9f4aa4e8a1 on both sides; crowded_frontier 3a8bd80eb8ece2d729eeb3aaabfb74d95c779bab8f32a983747d6316812753b9 on both sides. Both new runs classify PINNED; a `_run_engine` run classifies NOT_PINNED and the helper refuses it (full text in the stored investigation).
 
 ## Files Changed
+- src/observability/reporting/artifact_repository.py (RunConditions, RunManifest.run_conditions)
+- src/engine/kernel.py (one update_manifest after executor selection)
+- tools/test_architecture/pinned_runner.py, tools/test_architecture/evidence_runner_advisory.py (new)
+- tools/rpg_measure/arm_child.py (uses the PINNED definition)
+- tools/gate_checks/done_checker_static.py (advisory hook, lazy import; agent-working-planner-u24 OK 2026-11-15)
+- tests/unit/kernel/test_run_conditions_record.py, tests/tools/test_evidence_runner_advisory.py (new)
+- docs/engine/kernel.md, docs/parity_ledger/infrastructure.yaml (INFRA-440)
+- agent-working/stored_artifacts/TCK-20261103-A-MEASUREMENT-NOT-ON-THE-PINNED-RUNNER-CALLS-ITSELF-EVIDENCE/ (plan, investigation, test_plan)
+- NOT changed: docs/guides/delivery_process.md (the :170 sentence waits for the owner's yes through the lead).
 
 ## Completion Summary
+Runs now record what they were built with, and a run that is not on the pinned runner cannot be reported as evidence. The kernel writes a typed `run_conditions` record into the manifest after executor selection; `tools/test_architecture/pinned_runner.py` is the one PINNED definition, read by the classifier, the refusing evidence helper and `arm_child.py`; a close-time advisory flags `_run_engine` in stored evidence scripts. The record is outside hashed state and events (hash-equal to main on two worlds). Known gaps: an observability-OFF run has no manifest and classifies NOT_PINNED (arm_child refuses it); PINNED names `tests.helpers.kernel_pinning.PinnedNormalGovernor` by module path (a test ties it to `build_kernel`); the advisory sees only evidence scripts stored in the repo; the delivery_process.md:170 sentence is not applied yet (owner yes via the lead).
