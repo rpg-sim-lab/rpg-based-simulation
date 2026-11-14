@@ -161,7 +161,7 @@ files infrastructure's) and may re-order them with a stated reason.
 Defined by child tickets.
 
 ## Files Changed
-none — decision-only. This close moved the epic file and filed `agent-working/tickets/todos/TCK-20261114-PARITY-LEDGER-TEST-PATH-ERRORS-REMAIN-IN-SEVEN-FILES.md`.
+none — decision-only. This close moved the epic folder to `agent-working/tickets/done/parity-ledger-paydown/` and filed `agent-working/tickets/todos/TCK-20261114-PARITY-LEDGER-TEST-PATH-ERRORS-REMAIN-IN-SEVEN-FILES.md`.
 
 ## Completion Summary
 Closed 2026-11-14 as SUPERSEDED (see Disposition). One of eight files paid down; the other seven moved to `TCK-20261114-PARITY-LEDGER-TEST-PATH-ERRORS-REMAIN-IN-SEVEN-FILES`. Nothing dropped.

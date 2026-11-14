@@ -8176,6 +8176,20 @@
   tags:
   - world
 - type: ticket
+  path: agent-working/tickets/todos/TCK-20261114-PARITY-LEDGER-TEST-PATH-ERRORS-REMAIN-IN-SEVEN-FILES.md
+  ticket_id: TCK-20261114-PARITY-LEDGER-TEST-PATH-ERRORS-REMAIN-IN-SEVEN-FILES
+  title: Seven parity-ledger files still carry 2,651 schema errors, most of them P0
+    entries with no test_path
+  tier: standard
+  ticket_type: repair
+  date: '2026-11-14'
+  related_code_areas:
+  - docs/parity_ledger/*.yaml
+  - codebase/baselines/parity_ledger_schema_baseline.json
+  artifact_files: []
+  tags:
+  - testing
+- type: ticket
   path: agent-working/tickets/done/TCK-20261113-FIVE-SOCIAL-ACTION-KINDS-MAY-HAVE-NO-ISSUER-IN-PLAY.md
   ticket_id: TCK-20261113-FIVE-SOCIAL-ACTION-KINDS-MAY-HAVE-NO-ISSUER-IN-PLAY
   title: 'Five social action kinds may have no issuer in play: find which of TEAM_UP,
@@ -16902,19 +16916,6 @@
   artifact_files: []
   tags: []
 - type: ticket
-  path: agent-working/tickets/done/TCK-20261010-EPIC-PARITY-LEDGER-PAYDOWN.md
-  ticket_id: TCK-20261010-EPIC-PARITY-LEDGER-PAYDOWN
-  title: 'Epic — Parity-ledger paydown: clear the ~1,300 P0 entries with no test_path,
-    one ledger file at a time, smallest first'
-  tier: epic
-  ticket_type: repair
-  date: '2026-10-10'
-  related_code_areas:
-  - docs/parity_ledger/*.yaml
-  - codebase/baselines/parity_ledger_schema_baseline.json
-  artifact_files: []
-  tags: []
-- type: ticket
   path: agent-working/tickets/done/TCK-20261010-PARITY-LEDGER-BASELINE-TIGHTEN.md
   ticket_id: TCK-20261010-PARITY-LEDGER-BASELINE-TIGHTEN
   title: Tighten the parity-ledger schema baseline to the counts that have fallen
@@ -17148,6 +17149,19 @@
   - agent-working/stored_artifacts/TCK-20261010-WILD-LAND-CARRIES-PLANT-COVER-AND-FORAGE-DECLARED-PER-BIOME-GRAZING-D59/investigation.md
   - agent-working/stored_artifacts/TCK-20261010-WILD-LAND-CARRIES-PLANT-COVER-AND-FORAGE-DECLARED-PER-BIOME-GRAZING-D59/plan.md
   - agent-working/stored_artifacts/TCK-20261010-WILD-LAND-CARRIES-PLANT-COVER-AND-FORAGE-DECLARED-PER-BIOME-GRAZING-D59/test_plan.md
+  tags: []
+- type: ticket
+  path: agent-working/tickets/done/parity-ledger-paydown/TCK-20261010-EPIC-PARITY-LEDGER-PAYDOWN.md
+  ticket_id: TCK-20261010-EPIC-PARITY-LEDGER-PAYDOWN
+  title: 'Epic — Parity-ledger paydown: clear the ~1,300 P0 entries with no test_path,
+    one ledger file at a time, smallest first'
+  tier: epic
+  ticket_type: repair
+  date: '2026-10-10'
+  related_code_areas:
+  - docs/parity_ledger/*.yaml
+  - codebase/baselines/parity_ledger_schema_baseline.json
+  artifact_files: []
   tags: []
 - type: ticket
   path: agent-working/tickets/done/visual-asset-slices/TCK-20261010-EPIC-VISUAL-ASSET-SLICES.md
