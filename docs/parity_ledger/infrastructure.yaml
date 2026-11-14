@@ -3658,9 +3658,11 @@
     \ meeting CalamityService's spawn gates directly), but a one-off diagnostic calibration\
     \ run (dungeon_crawl_seed42_5200t, not added to grade_anchors.json) did not naturally\
     \ produce a calamity_spawned event: CalamityService additionally requires calamity_intensity\
-    \ > 0.3 in some region, which is only raised when a hero-kind entity dies in a\
-    \ hazard_level > 0.5 region; in that run's RNG/gameplay, monsters died but no\
-    \ hero died, so intensity never crossed the threshold. This is a separate, pre-existing\
+    \ > 0.3 in some region, which is no producer of calamity_intensity is called in\
+    \ play (the hero-death method has no caller, which tests/architecture/test_calamity_intensity_producer_unwired.py\
+    \ pins), so intensity stays 0.0 everywhere; per ENV-06 / owner decision 10 the\
+    \ escalation producer is not built (TCK-20261114-ENV-06-CALAMITY-ESCALATION-PRODUCER-IS-NOT-BUILT);\
+    \ in that run intensity never crossed the threshold. This is a separate, pre-existing\
     \ content/mechanics precondition, unrelated to and not fixed by this kernel tick-alignment\
     \ fix \u2014 the fix un-blocks calamity_spawned's tick-gate comparison, not its\
     \ content-side intensity precondition. Do not read this entry as claiming calamity_spawned\
@@ -3711,7 +3713,11 @@
     \ that gate (dungeon_crawl_seed42_5200t, not added to grade_anchors.json) confirmed\
     \ the tick-gate comparison itself is fixed (should_spawn's tick-interval math\
     \ is satisfied at tick 5000) but showed 0 calamity_spawned hits because CalamityService's\
-    \ separate high_intensity_regions gate (calamity_intensity > 0.3, hero-death-dependent)\
+    \ separate high_intensity_regions gate (calamity_intensity > 0.3; no producer\
+    \ of calamity_intensity is called in play (the hero-death method has no caller,\
+    \ which tests/architecture/test_calamity_intensity_producer_unwired.py pins),\
+    \ so intensity stays 0.0 everywhere; per ENV-06 / owner decision 10 the escalation\
+    \ producer is not built (TCK-20261114-ENV-06-CALAMITY-ESCALATION-PRODUCER-IS-NOT-BUILT))\
     \ was not met in that run \u2014 see this entry's text for detail. This is a residual\
     \ content/mechanics gap, not a defect in this kernel fix.\n"
 - id: INFRA-259
@@ -3872,11 +3878,14 @@
   v2_evidence: src/simulation_quality/scorers/world_dynamics.py::WorldDynamicsScorer.EVENT_TYPES
   proof_type: null
   test_path: tests/simulation_quality/test_world_dynamics_scorer.py::TestEcologyOwnership
-  divergence_note: calamity_spawned was unreachable through the real per-tick loop
+  divergence_note: 'calamity_spawned was unreachable through the real per-tick loop
     until the kernel tick-alignment fix (INFRA-258, TCK-20260703-SIMQ-INFORMATION-BELIEF-TRIGGER);
-    see that entry for the historical gap, the fix, and the residual hero-death-dependent
-    calamity_intensity precondition that still gates natural firing in calibration
-    content.
+    see that entry for the historical gap, the fix, and the residual calamity_intensity
+    precondition that still gates natural firing in calibration content: no producer
+    of calamity_intensity is called in play (the hero-death method has no caller,
+    which tests/architecture/test_calamity_intensity_producer_unwired.py pins), so
+    intensity stays 0.0 everywhere; per ENV-06 / owner decision 10 the escalation
+    producer is not built (TCK-20261114-ENV-06-CALAMITY-ESCALATION-PRODUCER-IS-NOT-BUILT).'
   support_boundary: null
 - id: INFRA-247
   text: "NarrativeScorer covers all contract \xA75 NARRATIVE rules: quest lifecycle\

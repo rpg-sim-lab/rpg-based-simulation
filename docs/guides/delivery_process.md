@@ -400,6 +400,10 @@ option changes a rule the owner set.
    Check E (`TCK-20261024-PRE-PUSH-WARNS-ON-A-STALE-DOCS-REGISTRY`) runs `python3 tools/generate_registry.py --check` only when the
    branch diff touches a `.md` under `docs/`, the tickets or the stored artifacts, and adds one advisory line naming
    `make docs-registry` when `docs/REGISTRY.yaml` is stale (exit 2); any other result or a timeout says nothing.
+   Check G (`TCK-20261113-PRE-PUSH-CHECKS-HAND-EDITED-PARITY-LEDGER-SHARDS`) runs only when the branch diff touches
+   `docs/parity_ledger/*.yaml`: each such shard as pushed must parse into a list of mappings with ids, and its new or changed entries
+   must pass `parity_ledger_writer.validate_entry` (legacy entries are exempt). It warns, naming `tools/parity_ledger_writer.py`;
+   `python3 tools/parity_ledger_writer.py --check <files> [--base <ref>]` runs the same check by hand and writes nothing.
 3. **Push** the branch, then **create the PR** (`gh pr create`). The title and the generated body
    sections (`## What landed` through `## Verification`/`## Known gaps`, plus the `Closes:` line)
    come from `python3 tools/delivery/pr_render.py` — run it plain for readable stdout

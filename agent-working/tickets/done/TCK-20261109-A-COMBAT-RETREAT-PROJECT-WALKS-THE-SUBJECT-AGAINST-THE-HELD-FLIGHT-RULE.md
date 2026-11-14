@@ -1,10 +1,10 @@
 ---
-status: active
+status: historical
 layer: strategy
 authority: P1
 audience: agent
 ticket_id: TCK-20261109-A-COMBAT-RETREAT-PROJECT-WALKS-THE-SUBJECT-AGAINST-THE-HELD-FLIGHT-RULE
-phase: open
+phase: done
 date: 2026-11-09
 tags: []
 ---
@@ -15,7 +15,7 @@ tags: []
 A COMBAT_RETREAT project walks its owner to the town centre through the strategic pass, against Bible 04's rule that a chosen retreat takes no step (held flight, memo row 91 (2))
 
 ## Status
-OPEN
+DONE
 
 ## Tier
 standard
@@ -69,7 +69,24 @@ Found by rpg-implementer on 2026-11-09 with a unit-run spy on NavigationUpdate; 
 - intelligence.py stays on the hands-off list for this ticket. It is also the next-gen stage 3 slice (contract spec §8), and architecture-planner-u24 waits for this ticket to clear.
 
 ## Test Summary
+No code lands. The tests written for shape (iii) lived on the parked branch `rpg-stored-target-engaged-step` (ea6417079, never pushed): scoped set 1 failed, 1248 passed, 3 skipped, 1 xfailed; the one failure was the corpus DEFEAT test, deliberately left red. Verification of this close: the spy cells' end hashes equal their plain twins (listed in `measurement.md`).
 
 ## Files Changed
+Tickets, stored artifacts and two doc notes only. No src, tests, data or config. docs/parity_ledger/combat_movement.yaml COMB-342 `support_boundary` and docs/guidelines/intentional_divergences.md 2.89 "Disclosed shortfall" each gain the designer's re-measurement sentence (rpg-designer, 2026-11-13; owner). The Bible does not change.
 
 ## Completion Summary
+Closed as MEASURED, NO CHANGE (hand-orchestrated, path-reason investigation_only). Owner decision: "(b) No change" (#715 6842890741, 2026-11-13); dispatch #715 6813573421; "(a) build and measure, then decide" #715 6818590421.
+
+**Answer to the question.** Yes: a stored target (REGROUP, RETREAT, HOLD or WANDER) steps beside a hostile that is perceived and adjacent but not engaged, because the CONFLICT-04 movement gate (`MovementCandidateSelector.movement_target`, candidate_selector.py:176-178) counts only an *engaged* hostile (`hostility.is_engaged`: either side's task payload names the other), while the opportunity attack (`LegalityServiceV2.get_engaged_hostiles`) counts whoever is adjacent. Of the stepped rows, a perceived-but-unnamed hostile swung 63/64 (frontier_marches) and 75/75 (crowded_frontier); an unperceived one 1/68. An empty held `ENTITY_ACT` is not covered by 2.84, which needs a payload.
+
+**What shape (iii) did.** Counting a perceived adjacent hostile in the gate (`adjacent_perceived_hostile`, shared with `move_ends_here`) cut undecided free-swing damage on fm s42 from 835 to 34, but brought the freeze back even with Decision 32's wake in place: 9440 gate-hold ticks (base 377), 23 holds of 50+ ticks in which the hostile landed no hit (longest 801, subject 7 vs 68, t3549-4349), and 3 holds still in force at tick 4999. That tripped the owner's freeze limit in the first fix cell; S2 stopped after 2 of 30 spied runs, the designer ruled the stop final, and the owner chose no change. **28 spied cells were never run**; the DEFEAT, COMBAT and STARVATION bars were not evaluated.
+
+**Evidence.** `measurement.md` (hashes, sha256s, tables), `investigation.md` (code read with file:line), the two spies (stored_target_spy.py 8a122160, stored_target_fix_spy.py 9b3d3ca8) and the S2 driver. Raw results: /mnt/data2/rpg-measure/stored_target_s2/ (fix frontier_marches_42.json fcab40cb66f5…, base c48cb8e7beea…, four plain twins) and /mnt/data2/rpg-measure/storedtarget/.
+
+**Never to land from the parked branch** (`rpg-stored-target-engaged-step` @ ea6417079): the Bible 02 §7 text, divergence 2.206, the COMB-342 text/evidence-name/boundary edits, the world_rules conflict-combat.md edit, the 2.89 "superseded by 2.206" note, the `adjacent_perceived_hostile` rename in candidate_selector.py and the test edits. Deleting the branch/worktrees is the user's call: delete list `rpg-stored-target-engaged-step`, worktrees `storedtarget`, `wt-st-base`, `wt-st-fix` (and `stclose` after merge).
+
+**Known gap:** the loop behind the long holds is an UNTRACED hypothesis (a held subject and a hostile re-deciding into the held step: in the longest hold the stored_or_live and target_set_no_move_task branches alternate 401/400); the trace that would test it (fm s42 fix, subject 7 vs 68, t3549-3600) was not run.
+
+**Findings, not tickets:** (a) fm's 149-row slice of a catalog-hostile adjacent neighbour the subject does not perceive at distance 1 goes to the producer investigation; (b) 4 crowded and 3 fm rows took swing damage while NOT stepping (LEGAL, occupancy or exhaustion failure), noted only.
+
+Known gap: knowledge-index-update not run: worktrees use main's index (lead-planner-u24, 2026-11-12).

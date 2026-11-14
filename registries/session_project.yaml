@@ -3,7 +3,7 @@
 # No field ids live here: the sync looks fields up by name on every run (P1).
 project:
   owner: rpg-sim-lab   # an organization (the repo moved to the org); P1b creates the Project under it
-  number: 0            # the Project number, set in P1
+  number: 1            # the Project number (github.com/orgs/rpg-sim-lab/projects/1, owner #715 6873428846)
 pilot_lanes: [rpg]     # a ticket qualifies when found on a worktree whose domain (or branch prefix) is one of these
 pilot_start: 2026-11-12  # a Done item is created only when the ticket reached done/ on origin/main on or after this date
 done_window_days: 14   # a Done item is archived this many days after the ticket reached done/

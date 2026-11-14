@@ -1,0 +1,2 @@
+18:59:05 ntfy: failure=0 success=6 | grafana: alerts:alerting=1 alerts:normal=20 alerts:pending=0 notifications_total=webhook | up{redis}=['1']
+stopped at 18:59:05

@@ -10,6 +10,15 @@ tags: [platform]
 
 Owner-run. No agent runs any command in this file: every `sudo` step, every edit of a file under `/etc`, and every stop or start of docker or containerd is the owner's. Ticket: `TCK-20261112-DOCKER-IMAGE-STORE-OFF-ROOT-DISK` (planning only; the restart needs its own owner yes and timing). Evidence and sources: `agent-working/staging_artifacts/TCK-20261112-DOCKER-IMAGE-STORE-OFF-ROOT-DISK/` (investigation, plan, test plan). Nothing in this file prints or takes a secret.
 
+**Run from (for the `docker compose` steps only; the `systemctl`, `rsync` and `/etc` steps work from anywhere):** the checkout that holds your `docker/secrets/` files (on this host: `/data/vboxuser/Work/rpg-based-simulation/.claude/worktrees/platform`). The compose project name comes from the directory name, because `compose.yaml` sets no top-level `name:`, so that checkout is project `platform`. Running `docker compose` from any other checkout (the main checkout `rpg-based-simulation`, or another worktree) creates a SECOND project. It gets its own fresh volumes, for example `rpg-based-simulation_ntfy_data`, and fails on the missing secret files. This happened on 2026-11-12. Before the first compose command, confirm where you are:
+
+```
+pwd
+docker compose ls
+```
+
+`docker compose ls` must list `platform` (if the stack is up), and `pwd` must be the checkout above. If `docker compose ls` shows a project you didn't mean to start, take it down from the checkout that started it, with `docker compose down` and no `-v`, before you go on.
+
 ## Why
 
 Docker 29 on this host uses the containerd image store. Docker's `data-root` (`/data/docker`, in `/etc/docker/daemon.json`) does not apply to it: image content, snapshots and the build cache live under containerd's own root, `/var/lib/containerd`, on `/` (49G). On 2026-11-11 `/` reached 100% (two backend builds, about 1.4 GB of cache each, on top of the images), which is what made Loki refuse every push (`docs/runbooks/records/2026-11-12-loki-volume-and-api-dashboard.md`). This runbook moves that root to `/data`.

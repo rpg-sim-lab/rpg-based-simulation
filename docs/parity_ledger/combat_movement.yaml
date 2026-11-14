@@ -4822,7 +4822,7 @@
   proof_type: regression
   test_path: tests/mechanic_scenarios/test_conflict04_movement_layer.py
   divergence_note: See docs/guidelines/intentional_divergences.md Section 2.89.
-  support_boundary: 'Most remaining free hits have a non-engaged adjacent hostile as attacker (urban seed 45: 131 of 131 pairs); dropping the engagement condition froze entities up to 219 ticks and is not shipped (decision 32: notice and decide, a separate ticket). An idle task can stay blocked up to 19 ticks. The stale PURSUE movement-mode label on an idle task after a completed pursuit is unchanged.'
+  support_boundary: 'Most remaining free hits have a non-engaged adjacent hostile as attacker (urban seed 45: 131 of 131 pairs); dropping the engagement condition froze entities up to 219 ticks and is not shipped (decision 32: notice and decide, a separate ticket). Re-measured with decision 32''s wake in place (TCK-20261109-A-COMBAT-RETREAT-PROJECT-WALKS-THE-SUBJECT-AGAINST-THE-HELD-FLIGHT-RULE, frontier_marches s42, 5000 ticks): the freeze returns, up to 801 ticks beside a hostile that never hits, 23 holds of 50+ ticks with no hit and 3 still held at the last tick; not shipped (owner, 2026-11-13). An idle task can stay blocked up to 19 ticks. The stale PURSUE movement-mode label on an idle task after a completed pursuit is unchanged.'
 - id: COMB-343
   text: 'TCK-20261008-A-SUBJECT-NOTICES-AN-UNENGAGED-HOSTILE-COMING-ADJACENT-AND-DECIDES-DECISION-32: a subject beside a perceived hostile it is not engaged with is woken for the brain within two ticks (ADJACENCY_WAKE_COOLDOWN) and decides by its own combat-engagement verdict (ignore keeps walking, avoid steps away, watch stands and observes, else as before) (owner decision 32).'
   status: verified

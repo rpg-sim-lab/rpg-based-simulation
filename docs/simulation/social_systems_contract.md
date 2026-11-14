@@ -79,6 +79,8 @@ was previously declared but unhandled (fell through to `CANCELLED, UNKNOWN`); it
 `SocialBond.sentiment` field (see Relationships section) — no new field was added for any of the
 three new kinds.
 
+> These rows are the designed law, and they do not run in play. Their only callers are `CoreActions.execute_trade`, `execute_team_up`, `execute_train`, `execute_propose_marriage`, `execute_join_clan` and `execute_leave_clan`, dispatched by `ActionRouter` on the actions TRADE, TEAM_UP, TRAIN, PROPOSE_MARRIAGE, JOIN_CLAN and LEAVE_CLAN, and nothing in play issues any of them. No clan exists in play: `AuthoritativeState.clans` starts empty and nothing creates one. See `docs/mechanics/07_social_political_dynamics.md`, Contract Kinds, Current play.
+
 ### Re-appraisal triggers
 
 Re-appraisal occurs on: new contract offer received, betrayal event witnessed, entity's public_reputation changes significantly (±0.3), party dissolution.

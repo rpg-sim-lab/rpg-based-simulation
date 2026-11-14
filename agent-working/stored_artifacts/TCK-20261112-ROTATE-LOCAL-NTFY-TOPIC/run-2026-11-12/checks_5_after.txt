@@ -1,0 +1,13 @@
+boring_cartwright Up 19 minutes
+ Exited (2) 4 months ago
+volumes: 6
+Filesystem      Size  Used Avail Use% Mounted on
+/dev/sda2        49G   33G   14G  71% /
+/dev/sdb1        99G   79G   16G  84% /data
+TYPE            TOTAL     ACTIVE    SIZE      RECLAIMABLE
+Images          18        1         6.771GB   552MB (8%)
+Containers      2         1         4.096kB   0B (0%)
+Local Volumes   6         0         678.9MB   678.9MB (100%)
+Build Cache     22        0         629.8MB   43.11MB
+driver-type=io.containerd.snapshotter.v1 DockerRootDir=/data/docker
+1

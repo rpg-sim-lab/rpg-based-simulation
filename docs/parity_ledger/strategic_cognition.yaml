@@ -4136,7 +4136,7 @@
   proof_type: regression
   test_path: tests/unit/social/test_marriage.py::test_marriage_accepted_writes_typed_marriagestate_on_both_parties
   divergence_note: null
-  support_boundary: null
+  support_boundary: 'Not reachable in play (TCK-20261113-FIVE-SOCIAL-ACTION-KINDS-MAY-HAVE-NO-ISSUER-IN-PLAY, 2026-11-13): the only writer of a MarriageState is CoreActions.execute_propose_marriage, and nothing in play issues PROPOSE_MARRIAGE (SOC-261), so StrategicComponent.marriages stays empty in play. The plumbing is verified; the behaviour does not occur in play.'
 - id: STRAT-267
   text: A genuinely weighted (personality + parental-occupation + regional-need),
     seeded-RNG archetype-choice roll fires exactly once inside LifecycleSystem.resolve_lifecycle()
