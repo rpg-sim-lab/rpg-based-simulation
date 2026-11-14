@@ -52,6 +52,7 @@ DEFAULTS = {
     "stale_host_hours": 24,
     "stale_branch_days": 14,
     "host_names": {},
+    "write_pacing": {},  # ProjectClient's Pacing; empty means its defaults (TCK-20261114-PROJECT-CLIENT-WRITE-PACING)
 }
 PR_LIMIT = 300  # the value of ticket_queue.PR_LIMIT: gh's own default is 30
 FOLDERS = ("todos", "inprogress", "done")
@@ -781,12 +782,12 @@ def render(plan: Plan, host: str, sha: str, age_hours: float | None, detached: i
 
 def _client(config: dict, notes: list[str] | None = None):
     """The one GraphQL client, built lazily so a plain dry run never imports it. Raises ClientRefused when the Project isn't configured."""
-    from tools.sessions.project_client import ClientRefused, ProjectClient
+    from tools.sessions.project_client import ClientRefused, Pacing, ProjectClient
 
     number = int(config["project"].get("number") or 0)
     if number <= 0:
         raise ClientRefused("project.number is 0 in registries/session_project.yaml: set it to the Project's number first")
-    return ProjectClient(str(config["project"]["owner"]), number)
+    return ProjectClient(str(config["project"]["owner"]), number, pacing=Pacing.from_config(config.get("write_pacing")))
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -857,10 +858,12 @@ def main(argv: list[str] | None = None) -> int:
     print(render(plan, args.host, sha, None if stamp is None else (time.time() - stamp) / 3600, detached, len(items),
                  None if prs is None else len(prs), mode))
     if args.apply:
-        from tools.sessions.project_client import apply_plan
+        from tools.sessions.project_client import Pacing, apply_plan, partial_item
         try:
             project = client.load_project()
-            done, not_done, error = apply_plan(client, project, plan)
+            pacing = Pacing.from_config(config.get("write_pacing"))
+            done, not_done, error = apply_plan(client, project, plan, progress=lambda m: print(m, file=sys.stderr, flush=True),
+                                               every=pacing.progress_every)
         except ClientRefused as exc:
             print(f"project_sync: refused: {exc}", file=sys.stderr)
             return 2
@@ -871,6 +874,9 @@ def main(argv: list[str] | None = None) -> int:
         if error:
             print(f"error: {error}", file=sys.stderr)
             print("not done: " + "; ".join(not_done), file=sys.stderr)
+            partial = partial_item(done, not_done)
+            if partial:
+                print(f"partial: {partial} (its next-run hand-edit lines come from this stop; the rerun overwrites them)", file=sys.stderr)
             return 1
     return 0
 
