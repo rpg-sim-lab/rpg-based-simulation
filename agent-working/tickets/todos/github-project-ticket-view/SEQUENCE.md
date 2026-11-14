@@ -17,18 +17,24 @@ Epic `TCK-20261112-EPIC-GITHUB-PROJECT-TICKET-VIEW`, filed by agent-working-plan
 
 4. **DONE** TCK-20261114-PROJECT-SYNC-LAYER-EPIC-PRIORITY-TAGS (P1c, standard; merged in #910, fc62c8557): Layer, Epic, Priority and
    Tags fields, rpg lane. The owner's go was #715 6874493351.
-5. TCK-20261114-PROJECT-SYNC-SECOND-HOST (P2, standard): ubuntu writes Project 1 as a second host, rpg lane, run by ubuntu's
-   agent-working-implementer. It settles the two-writer question with host-scoped ownership (a `Host facts` field; Status, Seat
-   and Domain come from the union of all hosts, and nothing is archived while another host has facts for the item). The owner's
-   go is #715 6875225978 item 2. The ubuntu token is in place (lead-planner-u24, 2026-11-14). No u24 `--apply` from ubuntu's
-   first `--init` until P2 merges.
+5. **DONE** TCK-20261114-PROJECT-SYNC-SECOND-HOST (P2, standard; merged in #913, 6822509a8): ubuntu writes Project 1 as a second
+   host, rpg lane. It settled the two-writer question with host-scoped ownership: a `Host facts` field; Status, Seat and Domain come
+   from the union of all hosts, and nothing is archived while another host has facts for the item. The owner's go was #715
+   6875225978 item 2. The hold on u24 `--apply` lifts when u24 runs P2 code (its first P2 `--apply`, owner #715 6878981927).
+6. TCK-20261114-PROJECT-CLIENT-WRITE-PACING (P3a, standard): write pacing and `retry-after`. Dispatched on 2026-11-15 to
+   agent-working-implementer-u24 (owner #715 6881411615 item 3).
+7. TCK-20261115-PROJECT-SYNC-ALL-LANES (P3b, standard): all lanes, Domain as a single-select (the old text field is renamed, not
+   deleted), the `attribute()` prefix fix, the Epic (a) fix, `--fetch`, a last-run file, and a heartbeat with the stale-host flag.
+   Its first load is run by hand. Dispatched after P3a merges.
+8. TCK-20261115-PROJECT-SYNC-HOST-TIMER (P3c, hotfix): systemd user timer templates (hourly; u24 at :00, ubuntu at :30; capped;
+   exempt from HOST FREE) and the install doc. The owner installs them, and that install is the owner's standing approval for
+   unattended writes (6881411615 item 1). Dispatched after P3b merges.
 
-P3 prerequisite, not cut: TCK-20261114-PROJECT-CLIENT-WRITE-PACING (write pacing and retry-after). It is filed in this folder and is not
-implemented until P3 is dispatched.
+P3 options and decisions: main-checkout `.claude/handover/drafts/project-sync-p3-timer-options-2026-11-15.md`, decided in #715
+6881411615.
 
 ## Not cut yet
 
-- **P3:** all lanes and a per-host timer. Needs the owner's timer decision.
 - **P4:** the claim-rule change. Needs the owner's decision after P3.
 
 ## Rules
