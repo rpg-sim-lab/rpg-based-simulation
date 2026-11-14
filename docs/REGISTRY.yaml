@@ -8424,6 +8424,19 @@
   tags:
   - process-improvement
 - type: ticket
+  path: agent-working/tickets/done/TCK-20261112-SOCIALUPDATE-MERGE-REUSES-ITS-LOOP-KEY-ACROSS-KEY-TYPES.md
+  ticket_id: TCK-20261112-SOCIALUPDATE-MERGE-REUSES-ITS-LOOP-KEY-ACROSS-KEY-TYPES
+  title: 'SocialUpdate carries 6 mypy errors: merge reuses one loop variable across
+    int-keyed and str-keyed dicts'
+  tier: hotfix
+  ticket_type: repair
+  date: '2026-11-12'
+  related_code_areas:
+  - src/core/update_models/social.py (SocialUpdate.merge)
+  - codebase/baselines/mypy_baseline.txt
+  artifact_files: []
+  tags: []
+- type: ticket
   path: agent-working/tickets/done/TCK-20261112-THE-API-EMITS-NO-REQUEST-TRACES.md
   ticket_id: TCK-20261112-THE-API-EMITS-NO-REQUEST-TRACES
   title: 'The API emits no request traces: add OpenTelemetry server spans and Redis
@@ -8458,19 +8471,6 @@
   tags:
   - planning
   - delivery
-- type: ticket
-  path: agent-working/tickets/todos/TCK-20261112-SOCIALUPDATE-MERGE-REUSES-ITS-LOOP-KEY-ACROSS-KEY-TYPES.md
-  ticket_id: TCK-20261112-SOCIALUPDATE-MERGE-REUSES-ITS-LOOP-KEY-ACROSS-KEY-TYPES
-  title: 'SocialUpdate carries 6 mypy errors: merge reuses one loop variable across
-    int-keyed and str-keyed dicts'
-  tier: hotfix
-  ticket_type: repair
-  date: '2026-11-12'
-  related_code_areas:
-  - src/core/update_models/social.py (SocialUpdate.merge)
-  - codebase/baselines/mypy_baseline.txt
-  artifact_files: []
-  tags: []
 - type: ticket
   path: agent-working/tickets/todos/github-project-ticket-view/TCK-20261112-EPIC-GITHUB-PROJECT-TICKET-VIEW.md
   ticket_id: TCK-20261112-EPIC-GITHUB-PROJECT-TICKET-VIEW

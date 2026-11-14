@@ -93,12 +93,12 @@ class SocialUpdate:
             new_grudge[k] = new_grudge.get(k, 0.0) + v
             
         new_places = dict(self.place_attachment_delta)
-        for k, v in other.place_attachment_delta.items():
-            new_places[k] = new_places.get(k, 0.0) + v
+        for region_id, v in other.place_attachment_delta.items():
+            new_places[region_id] = new_places.get(region_id, 0.0) + v
 
         new_regional_rep = dict(self.regional_reputation_delta)
-        for k, v in other.regional_reputation_delta.items():
-            new_regional_rep[k] = new_regional_rep.get(k, 0.0) + v
+        for region_id, v in other.regional_reputation_delta.items():
+            new_regional_rep[region_id] = new_regional_rep.get(region_id, 0.0) + v
 
         new_combat_loss = dict(self.combat_loss_delta)
         for k, v in other.combat_loss_delta.items():
