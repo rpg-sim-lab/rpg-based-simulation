@@ -1,10 +1,10 @@
 ---
-status: active
+status: historical
 layer: ai
 authority: P1
 audience: agent
 ticket_id: TCK-20261108-EPIC-DOCS-AS-REVIEW-SOURCE
-phase: open
+phase: done
 date: 2026-11-08
 tags: [ai, documentation, governance, delivery, process-improvement]
 ---
@@ -78,4 +78,4 @@ Children, in SEQUENCE.md order:
 (to be filled by the implementer)
 
 ## Completion Summary
-(to be filled by the implementer)
+All children are done and in `agent-working/tickets/done/`: TCK-20261108-DOCS-REQUIRING-UPDATE-BUILT-BY-SEARCH, TCK-20261108-DOC-UPDATER-SATELLITE-STEP-AND-STALENESS-ADVISORY, TCK-20261108-DOC-STEP-ON-HAND-CLOSES-AND-REVIEW-RULES, TCK-20261108-DOC-EVIDENCE-FIELDS-AND-DRIFT-REPORT, TCK-20261108-STALE-DOC-DETECTION-PILOT and, last, TCK-20261108-PROJECT-FACTS-PAGE-GENERATED (P2: `tools/project_stats.py` and the generated `docs/architecture/project_facts.md`). Plan acceptance criterion 6 is met by that last ticket. The follow-ups it names (other docs citing the facts page, wiring `project_stats.py --check` into CI, who refreshes the page) are in that ticket's Completion Summary; J3 of the plan remains not approved.
