@@ -111,7 +111,7 @@ and a run on one host never undoes the other's. This corrects design section 5, 
   `unassigned`. Never from `layer`. A branch name's domain is the longest registered domain followed by `-` (`agent-working-x` is
   `agent-working`, not `agent`); no match is `unknown`. Two hosts naming different domains: the sorted first, with a finding.
 - **`--fetch`** runs `git fetch origin main` first (60 s timeout). On failure or timeout the run carries on, adds a finding and prints the age of
-  `origin/main`. The read-only guard still refuses every other git write.
+  `origin/main`. The plan header says `fetched`, `fetch FAILED` or `no fetch` to match what happened. The read-only guard still refuses every other git write.
 - **`last-run.json`**: every `--apply` (any outcome) writes `~/.local/state/rpg-project-sync/last-run.json` (mode 600): UTC time, host, rc,
   steps done and left, the first error (redacted), the heartbeat result, stale hosts and `failed_streak`. A dry run writes nothing. The
   SessionStart hook prints one line when the last two runs failed.
@@ -124,7 +124,7 @@ and a run on one host never undoes the other's. This corrects design section 5, 
   lead). To keep it out of the board views the owner filters views 1-4 by hand in the UI: try `has:status` first (the sync sets Status on every
   ticket item and never on the heartbeat), else `-title:"_sync heartbeat"`.
 - **Limits.** (a) The SEQUENCE.md filing-seat rule was dropped: no reliable carrier (4-5 of 6 name a filer in free text; 140 flat todos sit in no
-  folder). Tickets whose named code has no single owner stay `unassigned` (37 of 161 on 2026-11-15: 21 mixed, 10 with no path, 6 not routed).
+  folder). Tickets whose named code has no single owner stay `unassigned` (37 of 161 on 2026-11-15: 21 mixed, 10 with no path, 6 not routed). The run's `domain: N tickets unassigned` note counts every candidate, existing items included, so it can be larger than the `unassigned` creates.
   (b) Both hosts get the same Domain from the code areas only when they run on the same roster; with different checkouts the last writer wins
   until both are on the same `origin/main` (as for the content rule). (c) **Never run `--apply` on pre-P3b code, on either host, once the
   heartbeat exists**: P1c and P2 code archive "an item with no Ticket ID", so the heartbeat would be lost. A pre-P3b dry run showing `archive

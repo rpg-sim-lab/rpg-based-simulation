@@ -312,3 +312,15 @@ def test_convergence_a_then_b_then_a_over_all_lanes_reaches_nothing_to_do():
         items = list(by_id.values())
     assert last.creates == [] and last.updates == [] and last.archives == []
     assert {i["Ticket ID"]: i["Domain"] for i in items} == {"TCK-1": "rpg", "TCK-2": "agent-working"}
+
+
+def test_the_header_says_what_the_fetch_did():
+    for label in ("no fetch", "fetched", "fetch FAILED"):
+        assert f", {label})" in ps.render(ps.Plan(), HOST, "abcdef123", 0.5, 0, 0, 0, fetch=label).splitlines()[0]
+    assert ", no fetch)" in ps.render(ps.Plan(), HOST, "abcdef123", 0.5, 0, 0, 0).splitlines()[0]
+
+
+def test_a_branch_with_no_registered_domain_has_seat_plain_unknown_not_unknown_seat_not_recorded():
+    fact = ps.BranchFact(HOST, "free-meal-step4", "/wt", *ps.attribute("free-meal-step4", [], DOMAINS), (copy("TCK-7", "inprogress"),))
+    plan = plan_for({"TCK-7": [copy("TCK-7", "inprogress")]}, [fact])
+    assert plan.creates[0]["Seat"] == "unknown" and plan.creates[0]["Domain"] == "unknown"

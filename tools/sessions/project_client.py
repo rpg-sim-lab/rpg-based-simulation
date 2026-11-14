@@ -291,7 +291,7 @@ def replace_options(field: ProjectField, wanted: list[tuple[str, str]]) -> list[
 
 def init_fields(client, statuses: tuple[str, ...], replace_status_options: bool = False,
                 layers: tuple[str, ...] = (), domains: tuple[str, ...] = ()) -> tuple[list[str], int]:
-    """Create the missing fields by name; never delete or rename. Returns (report lines, exit code). All checks come before any write."""
+    """Create the missing fields by name; the only rename is the P3b text `Domain` -> `Domain (old)`; never a delete. Returns (report lines, exit code). All checks come before any write."""
     project = client.load_project()
     lines: list[str] = []
     problems = []

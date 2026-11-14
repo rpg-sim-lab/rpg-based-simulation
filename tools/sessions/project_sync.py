@@ -685,7 +685,7 @@ def derive_item(tid: str, main: list[TicketCopy], branches: list[BranchFact], pr
             findings += epic_notes
     legacy = any(s.legacy for s in segments.values())
     seats = {x for s in segments.values() if s.state != "filing" and not s.legacy
-             for x in (s.seats or (f"{s.domains[0]} (seat not recorded)" if s.domains else "unknown",))}
+             for x in (s.seats or (f"{s.domains[0]} (seat not recorded)" if s.domains and s.domains[0] != UNKNOWN else UNKNOWN,))}
     domains = {d for s in segments.values() if not s.legacy for d in s.domains}
     if legacy:  # a host that has not written a segment yet: its seats and domains are unknown, so the current entries stay
         seats |= set(_split(cur.get("Seat", "")))
@@ -895,9 +895,9 @@ def load_config(root: Path, notes: list[str]) -> dict:
 
 
 def render(plan: Plan, host: str, sha: str, age_hours: float | None, detached: int, items_n: int, prs_n: int | None,
-           mode: str = "DRY RUN (no GitHub or repo write)") -> str:
+           mode: str = "DRY RUN (no GitHub or repo write)", fetch: str = "no fetch") -> str:
     age = "unknown age" if age_hours is None else f"{age_hours:.1f} h old"
-    lines = [f"project_sync {mode} host={host} origin/main={sha[:9]} ({age}, no fetch) "
+    lines = [f"project_sync {mode} host={host} origin/main={sha[:9]} ({age}, {fetch}) "
              f"items-in={items_n} open-PRs={'unknown' if prs_n is None else prs_n} detached-skipped={detached}"]
     for item in plan.creates:
         lines.append(f"create  {item['Ticket ID']}  {item['Status']}  domain={item['Domain'] or '-'}  seat={item['Seat'] or '-'}  branch={item['Branch'] or '-'}  pr={item['PR'] or '-'}")
@@ -1071,7 +1071,7 @@ def _main(argv: list[str] | None, info: dict) -> int:
     info["stale_hosts"] = plan.stale_hosts
     mode = "APPLY (writes to the GitHub Project)" if args.apply else ("DRY RUN, live read (no write)" if client is not None else "DRY RUN (no GitHub or repo write)")
     print(render(plan, args.host, sha, None if stamp is None else (time.time() - stamp) / 3600, detached, len(items),
-                 None if prs is None else len(prs), mode))
+                 None if prs is None else len(prs), mode, "no fetch" if not args.fetch else ("fetch FAILED" if fetch_failure else "fetched")))
     if args.apply:
         from tools.sessions.project_client import Pacing, apply_plan, partial_item
         try:
