@@ -43,5 +43,6 @@ Needs `project.number` in `registries/session_project.yaml` (the org Project `rp
 - **`--apply`** (not with `--init` or `--items`): prints the plan, then carries it out. Create = draft item, then `Ticket ID` first and `Sync hash`
   last; update = changed fields, `Sync hash` last; archive = `archiveProjectV2Item`. A failing step stops the run and prints what was done
   and what was not; the next run reconciles. Items and fields are found by id read on each run; none is stored.
+- **`--apply` needs known PR facts:** if `gh pr list` fails, or any PR's file list cannot be read, `--apply` exits 1 and writes nothing (a dry run only notes it), because In review and PR would be written wrong.
 - **Never deleted:** the module has no delete mutation. Items without a `Ticket ID`, duplicates of one `Ticket ID`, and items whose ticket
   file is gone are archived, by their own item id.

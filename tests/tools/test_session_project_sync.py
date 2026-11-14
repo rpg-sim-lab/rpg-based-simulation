@@ -406,3 +406,28 @@ def test_updates_carry_the_live_item_and_draft_ids():
     live = {**derived, "Status": "To do", "_item_id": "ITEM", "_draft_id": "DRAFT"}
     plan = _plan({"TCK-20261112-U": [c]}, [branch([c])], [live])
     assert plan.updates[0][0]["_item_id"] == "ITEM" and plan.updates[0][0]["_draft_id"] == "DRAFT"
+
+
+def test_a_failed_per_pr_files_call_marks_the_pr_list_incomplete_and_notes_it():
+    listing = json.dumps([{"number": 7, "url": "u7"}])
+    def run(args, cwd):
+        return SimpleNamespace(returncode=1 if "pulls" in " ".join(args) else 0, stdout=listing if "list" in args else "", stderr="")
+    notes = []
+    prs = ps.read_open_prs(Path("."), notes, run)
+    assert prs is not None and prs.complete is False and len(prs) == 1 and any("PR #7" in n for n in notes)
+
+
+@pytest.mark.parametrize("prs", [None, ps.PrList()])
+def test_apply_is_refused_with_nothing_written_when_the_open_prs_are_not_fully_known(monkeypatch, tmp_path, capsys, prs):
+    from tools.sessions import project_client as pc
+    if prs is not None:
+        prs.complete = False
+    (tmp_path / "registries").mkdir()
+    (tmp_path / "registries" / "session_project.yaml").write_text("project: {owner: o, number: 1}\n")
+    monkeypatch.setattr(ps, "_client", lambda cfg, notes=None: SimpleNamespace(list_items=lambda: [], load_project=lambda: pytest.fail("wrote")))
+    monkeypatch.setattr(ps, "origin_info", lambda root: ("abc", None))
+    monkeypatch.setattr(ps, "read_branch_facts", lambda *a, **k: ([], 0))
+    monkeypatch.setattr(ps, "read_open_prs", lambda root, notes, run=None: prs)
+    monkeypatch.setattr(pc, "apply_plan", lambda *a, **k: pytest.fail("wrote"))
+    assert ps.main(["--root", str(tmp_path), "--apply"]) == 1
+    assert "nothing written" in capsys.readouterr().err

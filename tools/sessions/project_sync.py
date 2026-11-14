@@ -311,6 +311,12 @@ def _worktree_ticket_copies(wt: Path, run: Runner) -> list[TicketCopy]:
 # ---------------------------------------------------------------- pull requests
 
 
+class PrList(list):
+    """The open PRs; `complete` is False when a per-PR file list could not be read, so rule 2 (In review) may be wrong for some ticket."""
+
+    complete = True
+
+
 def read_open_prs(root: Path, notes: list[str], run: Runner = run_command) -> list[PrFact] | None:
     """Open PRs and the ticket files each adds or changes; GETs only. None when gh cannot answer (rule 2 is then skipped)."""
     listed = run(["gh", "pr", "list", "--state", "open", "--limit", str(PR_LIMIT), "--json", "number,url"], root)
@@ -324,9 +330,12 @@ def read_open_prs(root: Path, notes: list[str], run: Runner = run_command) -> li
         return None
     if len(prs) >= PR_LIMIT:
         notes.append(f"gh returned {PR_LIMIT} open PRs, the limit: some PRs may be missing")
-    facts = []
+    facts = PrList()
     for pr in prs:
         files = run(["gh", "api", "--paginate", f"repos/{{owner}}/{{repo}}/pulls/{pr['number']}/files", "--jq", ".[].filename"], root)
+        if files.returncode != 0:
+            facts.complete = False
+            notes.append(f"files of PR #{pr['number']} unknown (gh failed): its tickets may show the wrong status this run")
         names = files.stdout.split() if files.returncode == 0 else []
         facts.append(PrFact(int(pr["number"]), pr["url"], frozenset(n for n in names if ticket_id_of(n) and folder_of(n))))
     return facts
@@ -572,6 +581,10 @@ def main(argv: list[str] | None = None) -> int:
     now = datetime.now(timezone.utc)
     branches, detached = read_branch_facts(args.root, args.host, plan_notes)
     prs = read_open_prs(args.root, plan_notes)
+    if args.apply and (prs is None or not getattr(prs, "complete", True)):
+        print("project_sync: --apply refused, nothing written: the open PRs or one PR's files could not be read, so In review / PR would be "
+              "written wrong. Re-run when gh answers.", file=sys.stderr)
+        return 1
     index = read_main_index(args.root)
     source = f"{sha[:9]} @ {now.strftime('%Y-%m-%dT%H:%MZ')}"
     plan = build_plan(index, lambda path: read_main_copy(args.root, path), branches, prs, items, args.host, source, config,
