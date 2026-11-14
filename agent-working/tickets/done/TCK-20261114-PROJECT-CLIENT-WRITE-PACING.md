@@ -1,10 +1,10 @@
 ---
-status: active
+status: historical
 layer: ticket
 authority: P1
 audience: agent
 ticket_id: TCK-20261114-PROJECT-CLIENT-WRITE-PACING
-phase: inprogress
+phase: done
 date: 2026-11-14
 tags: [planning, delivery]
 ---
@@ -15,7 +15,7 @@ tags: [planning, delivery]
 `project_client.py` paces its writes and honours GitHub's rate-limit answers, so the P3 all-lanes first load can run (P3 prerequisite)
 
 ## Status
-INPROGRESS
+DONE
 
 ## Tier
 standard
@@ -82,7 +82,12 @@ The P1b client (#909) sends every mutation back to back with no pacing, and stop
 - A stop inside one item prints `partial: <ticket id>`; its next-run hand-edit lines come from the stop.
 
 ## Test Summary
+- 12 new no-network tests in `tests/tools/test_project_client.py` with an injected clock, sleep and runner (no real sleeps): pacing, first mutation undelayed, queries unpaced, `retry-after` honoured and capped, backoff at least 60 s and bounded, primary limit stops at once, plain 403 and other errors not retried, stop after the last try with the token redacted, progress every N steps, partial-item naming, rerun does only the rest, config fallbacks.
+- Scoped run: `test_project_client` + `test_session_project_sync` + `test_session_project_sync_second_host` + `test_session_status` = 145 passed (planner reproduced it on fb79c4030).
+- AC2 live check: a read-only dry run on the branch head against Project 1 (after the P2 apply) shows only the expected finding and "nothing to do". The `--apply` was **skipped**: with nothing to do it would be a no-op and would not exercise pacing, and the permission classifier blocks it for this seat. The first real paced load is P3b's.
 
 ## Files Changed
+`tools/sessions/project_client.py`, `tools/sessions/project_sync.py`, `registries/session_project.yaml`, `tests/tools/test_project_client.py`, `docs/guidelines/session_roles/project_sync_dry_run.md`, ticket and staging artifacts, monitoring shards.
 
 ## Completion Summary
+`ProjectClient` now paces mutations (`write_pacing` in `session_project.yaml`, about 1/s; queries unpaced), stops at once on a primary limit (`RATE_LIMITED`; intended deviation from "wait as told"), waits and retries a secondary limit (429, or 403 saying "rate limit") with a 60 s minimum and bounded backoff, then stops as P1b does. `apply_plan` reports progress every N steps and names a partly-written item (`partial: <ticket id>`). Known limits are in the guide: `retry-after` rarely shows in gh's text, so each retry waits 60 s.
