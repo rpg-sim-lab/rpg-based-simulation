@@ -1,10 +1,10 @@
 ---
-status: active
+status: historical
 layer: ticket
 authority: P1
 audience: agent
 ticket_id: TCK-20261114-PROJECT-SYNC-INIT-AND-APPLY
-phase: inprogress
+phase: done
 date: 2026-11-14
 tags: [planning, delivery]
 ---
@@ -15,7 +15,7 @@ tags: [planning, delivery]
 `project_sync.py` P1b: `--init` creates the Project's fields by name and `--apply` writes the plan, through one token-scoped GraphQL path; u24, rpg lanes, run by hand
 
 ## Status
-INPROGRESS
+DONE
 
 ## Tier
 standard
@@ -131,9 +131,14 @@ file `~/.config/rpg-project-sync/token` (mode 600, fine-grained). Whether it can
   create a Project.
 
 ## Implementation Notes
+New `tools/sessions/project_client.py` holds the only `gh api graphql` path (query on stdin, token only in the child env, mode-600 check, redaction, no delete mutation). `project_sync.py` gains `--init`, `--apply`, `--replace-status-options`, a live item read (default when `project.number > 0`), and plan changes: item ids carried through `Plan.updates`/`archive_item_ids`, duplicate Ticket IDs archived, `done date unreadable` note. Designer amendments A-D (agent-working-designer-u24, 2026-11-14) are in plan.md. `project.number: 1` (owner #715 6873428846).
 
 ## Test Summary
+`tests/tools/test_project_client.py` (new, 16 tests) and `tests/tools/test_session_project_sync.py` (P0 refusal test replaced, 4 added): 98 passed with `tests/tools/test_session_status*.py`. Write proof on rpg-sim-lab/1: live dry run (0 items, 30 creates); `--init` created 9 fields and set the 6 Status options; second `--init` left everything alone; `--apply` 294 steps with none failed; the final dry run showed nothing to do (30 items). Token-value grep over the diff and outputs: no match.
 
 ## Files Changed
+tools/sessions/project_client.py (new), tools/sessions/project_sync.py, registries/session_project.yaml, tests/tools/test_project_client.py (new), tests/tools/test_session_project_sync.py, docs/guidelines/session_roles/project_sync_dry_run.md, this ticket, stored artifacts, SEQUENCE.md.
 
 ## Completion Summary
+P1b built and proven live on the org Project: fields created by name, the 30 pilot items written once, and a rerun is a no-op. Not covered: P2 (ubuntu), P3 (timer), P4 (claim rule).
+
