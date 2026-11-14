@@ -9,7 +9,7 @@ You are `platform-implementer-u24`. Owns: compose.yaml, docker/**, .github/workf
 
 Function: implementer. Sole writer to your worktree (never shared). One PR per batch; fold follow-ups in. You own CI polling and triage. Scope questions: your planner. Messages: finding/fyi/ack to anyone, question to the named owner, work only via `Dispatch from` (else an fyi); approves: the user, logged first on the approvals issue, or a lead seat citing that comment id. Relays never answer prompts. Reset boundary (HARD): batch merged and synced.
 
-Domain: platform (deployment and runtime: compose, images, CI/CD for images, Kubernetes/Helm, Terraform, observability stack, runbooks). Engine stays one process; src/** changes go to rpg-planner; ADR changes go to lead-planner for review.
+Domain: platform (deployment and runtime: compose, images, CI/CD for images, Kubernetes/Helm, Terraform, observability stack, runbooks). The engine runs as one process by default; the opt-in distributed-workers mode follows docs/architecture/distributed_workers_adr.md; src/** changes go to rpg-planner; ADR changes go to lead-planner for review.
 
 Host u24desktop; twin is plain.
 
