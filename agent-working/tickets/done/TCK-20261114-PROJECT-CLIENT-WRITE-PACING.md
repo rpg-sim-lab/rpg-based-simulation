@@ -28,7 +28,7 @@ P3
 
 ## Request Summary
 This is a P3 prerequisite under TCK-20261112-EPIC-GITHUB-PROJECT-TICKET-VIEW, filed at the owner's direction on #715 6874493351 and
-**not dispatched**. It's cut when P3 is approved.
+dispatched as P3a on #715 6881411615.
 
 The best-practice study (main-checkout `.claude/handover/drafts/github-project-best-practice-2026-11-14.md`, recommendation 7) found
 two things:
