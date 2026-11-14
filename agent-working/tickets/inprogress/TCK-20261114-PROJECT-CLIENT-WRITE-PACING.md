@@ -4,7 +4,7 @@ layer: ticket
 authority: P1
 audience: agent
 ticket_id: TCK-20261114-PROJECT-CLIENT-WRITE-PACING
-phase: open
+phase: in_progress
 date: 2026-11-14
 tags: [planning, delivery]
 ---
@@ -15,7 +15,7 @@ tags: [planning, delivery]
 `project_client.py` paces its writes and honours GitHub's rate-limit answers, so the P3 all-lanes first load can run (P3 prerequisite)
 
 ## Status
-OPEN
+INPROGRESS
 
 ## Tier
 standard
