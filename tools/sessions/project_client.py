@@ -12,8 +12,10 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import stat
 import subprocess
+import time
 from collections.abc import Callable
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -22,7 +24,33 @@ TOKEN_PATH = Path.home() / ".config" / "rpg-project-sync" / "token"
 TOKEN_ENV_NAMES = ("GH_TOKEN", "GITHUB_TOKEN", "GH_ENTERPRISE_TOKEN")
 FIELD_VALUES_PAGE = 25
 
+DEFAULT_PACING = {"min_interval_s": 1.0, "progress_every": 25, "max_tries": 5, "backoff_base_s": 2.0, "backoff_cap_s": 120.0,
+                  "secondary_min_wait_s": 60.0}
+_RETRY_AFTER = re.compile(r"retry-after:?\s*(\d+(?:\.\d+)?)", re.IGNORECASE)
+
 GhRunner = Callable[[list[str], dict, str], "subprocess.CompletedProcess[str]"]
+
+
+@dataclass(frozen=True)
+class Pacing:
+    """Write pacing and rate-limit settings (`write_pacing` in registries/session_project.yaml; TCK-20261114-PROJECT-CLIENT-WRITE-PACING)."""
+    min_interval_s: float = 1.0
+    progress_every: int = 25
+    max_tries: int = 5
+    backoff_base_s: float = 2.0
+    backoff_cap_s: float = 120.0
+    secondary_min_wait_s: float = 60.0
+
+    @classmethod
+    def from_config(cls, raw: object) -> "Pacing":
+        """Missing, non-numeric or non-positive values fall back to the defaults (a bad config never stops the sync)."""
+        raw = raw if isinstance(raw, dict) else {}
+        out = {}
+        for key, default in DEFAULT_PACING.items():
+            val = raw.get(key, default)
+            ok = isinstance(val, (int, float)) and not isinstance(val, bool) and val > 0
+            out[key] = type(default)(val) if ok else default
+        return cls(**out)
 
 
 class ClientRefused(Exception):
@@ -89,12 +117,21 @@ fieldValues(first:%d){pageInfo{hasNextPage} nodes{__typename
 
 
 class ProjectClient:
-    def __init__(self, owner: str, number: int, token_path: Path = TOKEN_PATH, runner: GhRunner = _run_gh) -> None:
+    def __init__(self, owner: str, number: int, token_path: Path = TOKEN_PATH, runner: GhRunner = _run_gh,
+                 pacing: Pacing | None = None, clock: Callable[[], float] = time.monotonic, sleep: Callable[[float], None] = time.sleep) -> None:
         self.owner, self.number, self.token_path, self._runner = owner, number, token_path, runner
+        self.pacing, self._clock, self._sleep = pacing or Pacing(), clock, sleep
+        self._last_send: float | None = None  # when the last mutation attempt started (the one clock for pacing and retries)
 
     # ---- the single GraphQL call
-    def graphql(self, query: str, variables: dict | None = None) -> dict:
+    def _send(self, query: str, variables: dict | None, paced: bool) -> tuple[dict, str, str]:
+        """One `gh api graphql` call. Returns (parsed body, failure detail or "", token). Paced calls wait for the min interval first."""
         token = read_token(self.token_path)
+        if paced:
+            now = self._clock()
+            if self._last_send is not None and now - self._last_send < self.pacing.min_interval_s:
+                self._sleep(self.pacing.min_interval_s - (now - self._last_send))
+            self._last_send = self._clock()
         env = {k: v for k, v in os.environ.items() if k not in TOKEN_ENV_NAMES}
         env["GH_TOKEN"] = token
         body = json.dumps({"query": query, "variables": variables or {}})
@@ -106,12 +143,36 @@ class ProjectClient:
             data = {}
         if done.returncode != 0 or data.get("errors") or "data" not in data:
             detail = json.dumps(data.get("errors")) if data.get("errors") else (done.stderr or out or "no response")
-            raise ProjectError(_redact(f"GitHub GraphQL call failed: {detail}", token)[:2000])
-        return data["data"]
+            return data, _redact(f"GitHub GraphQL call failed: {detail}", token)[:2000], token
+        return data, "", token
+
+    def _wait_for(self, detail: str, attempt: int) -> float:
+        """Seconds to wait after a secondary limit: retry-after if gh's text shows one, else bounded backoff of at least the minimum wait."""
+        p = self.pacing
+        found = _RETRY_AFTER.search(detail)
+        wait = float(found.group(1)) if found else max(p.secondary_min_wait_s, p.backoff_base_s * 2 ** attempt)
+        return min(p.backoff_cap_s, wait)
+
+    def graphql(self, query: str, variables: dict | None = None, paced: bool = False) -> dict:
+        """Run a call. A primary limit (RATE_LIMITED) stops at once; a secondary one waits and retries up to `max_tries`. Others raise."""
+        for attempt in range(self.pacing.max_tries):
+            data, detail, _ = self._send(query, variables, paced)
+            if not detail:
+                return data["data"]
+            low = detail.lower()
+            if "rate_limited" in low:
+                raise ProjectError("primary rate limit: rerun after the hourly reset")
+            secondary = "secondary rate limit" in low or "http 429" in low or ("http 403" in low and "rate limit" in low)
+            if not secondary:
+                raise ProjectError(detail)
+            if attempt + 1 >= self.pacing.max_tries:
+                raise ProjectError(f"secondary rate limit: gave up after {self.pacing.max_tries} tries")
+            self._sleep(self._wait_for(detail, attempt))
+        raise ProjectError("rate limited")  # unreachable: max_tries >= 1
 
     def _mutate(self, name: str, input_type: str, payload: dict, selection: str = "clientMutationId") -> dict:
         query = f"mutation($input:{input_type}!){{{name}(input:$input){{{selection}}}}}"
-        return self.graphql(query, {"input": payload})[name]
+        return self.graphql(query, {"input": payload}, paced=True)[name]
 
     # ---- reads
     def load_project(self) -> Project:
@@ -282,7 +343,20 @@ VALUE_ORDER = ("Ticket ID", "Status", "Domain", "Seat", "Host", "Branch", "PR", 
 SELECT_FIELDS = ("Status", "Tier", "Layer", "Priority")
 
 
-def apply_plan(client, project: Project, plan, body_of: Callable[[dict], str] | None = None) -> tuple[list[str], list[str], str | None]:
+def partial_item(done: list[str], not_done: list[str]) -> str | None:
+    """The ticket id of the item a stop fell inside (some of its steps done, the rest not), else None. Its Sync hash is still the old one,
+    so the next run reports "hand edit" lines for it that come from the stop, not from a person."""
+    if not not_done:
+        return None
+    parts = not_done[0].split(" ", 2)
+    if len(parts) < 2 or parts[0] not in ("create", "update"):
+        return None
+    prefix = f"{parts[0]} {parts[1].rstrip(':')}:"
+    return parts[1].rstrip(":") if any(d.startswith(prefix) for d in done) else None
+
+
+def apply_plan(client, project: Project, plan, body_of: Callable[[dict], str] | None = None,
+               progress: Callable[[str], None] | None = None, every: int = 25) -> tuple[list[str], list[str], str | None]:
     """Carry out plan.creates / plan.updates / plan.archives. Returns (done, not_done, error). A failing mutation stops the run."""
     needed = list(VALUE_ORDER) + ["Source", "Sync hash"]
     missing = [n for n in needed if n not in project.fields]
@@ -331,4 +405,6 @@ def apply_plan(client, project: Project, plan, body_of: Callable[[dict], str] | 
         except (ProjectError, ClientRefused) as exc:
             return done, [d for d, _ in steps[i:]], f"{desc}: {exc}"
         done.append(desc)
+        if progress is not None and every > 0 and len(done) % every == 0:
+            progress(f"progress: {len(done)}/{len(steps)} steps done")
     return done, [], None

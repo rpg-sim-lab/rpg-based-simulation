@@ -295,3 +295,156 @@ def test_host_facts_is_a_text_field_init_creates_by_name_and_apply_writes_before
     again = Fake(project(status_options=STATUSES))
     pc.init_fields(again, STATUSES, layers=LAYERS)
     assert again.calls == []
+
+
+# ---- TCK-20261114-PROJECT-CLIENT-WRITE-PACING: pacing, rate limits, progress (injected clock/sleep/runner, no real sleeps)
+class Clock:
+    def __init__(self):
+        self.t, self.sleeps = 1000.0, []
+
+    def now(self):
+        return self.t
+
+    def sleep(self, s):
+        self.sleeps.append(s)
+        self.t += s
+
+
+def paced_client(tmp_path, replies, pacing=None):
+    """A client whose runner answers from `replies` (one per gh call, last one repeats) and whose clock is fake."""
+    clock, calls, it = Clock(), [], iter(replies)
+    last = {}
+
+    def runner(args, env, stdin):
+        calls.append(clock.t)
+        try:
+            last["r"] = next(it)
+        except StopIteration:
+            pass
+        return last["r"]
+
+    c = pc.ProjectClient("o", 1, token_file(tmp_path), runner, pacing or pc.Pacing(), clock.now, clock.sleep)
+    return c, clock, calls
+
+
+OK = SimpleNamespace(returncode=0, stdout=json.dumps({"data": {"m": {"clientMutationId": None}}}), stderr="")
+READ_OK = SimpleNamespace(returncode=0, stdout=json.dumps({"data": {"organization": None}}), stderr="")
+
+
+def limited(text, rc=1):
+    return SimpleNamespace(returncode=rc, stdout="", stderr=text)
+
+
+def test_mutations_are_paced_the_first_is_not_delayed_and_queries_never_wait(tmp_path):
+    c, clock, calls = paced_client(tmp_path, [OK])
+    for _ in range(3):
+        c._mutate("m", "I", {})
+    assert clock.sleeps == [1.0, 1.0] and calls == [1000.0, 1001.0, 1002.0]
+    c2, clock2, _ = paced_client(tmp_path, [READ_OK])
+    for _ in range(3):
+        c2.graphql("query{x}")
+    assert clock2.sleeps == []
+
+
+def test_a_mutation_after_a_long_gap_waits_only_the_rest_of_the_interval(tmp_path):
+    c, clock, _ = paced_client(tmp_path, [OK])
+    c._mutate("m", "I", {})
+    clock.t += 0.4
+    c._mutate("m", "I", {})
+    assert clock.sleeps == [pytest.approx(0.6)]
+    clock.t += 5
+    c._mutate("m", "I", {})
+    assert len(clock.sleeps) == 1
+
+
+def test_retry_after_in_gh_text_is_waited_then_the_call_succeeds_and_pacing_counts_from_the_clock(tmp_path):
+    c, clock, calls = paced_client(tmp_path, [limited("gh: You have exceeded a secondary rate limit (HTTP 403)\nretry-after: 90"), OK])
+    c._mutate("m", "I", {})
+    assert clock.sleeps == [90.0] and len(calls) == 2
+    assert calls == [1000.0, 1090.0]  # the retry itself added no 1 s: the 90 s backoff already covered the interval
+    c._mutate("m", "I", {})  # counts from the retried attempt's start (1090), not from a fixed 1 s after the backoff
+    assert clock.sleeps == [90.0, 1.0] and calls[-1] == 1091.0
+
+
+def test_a_retry_after_longer_than_the_cap_is_capped(tmp_path):
+    c, clock, _ = paced_client(tmp_path, [limited("secondary rate limit (HTTP 429) retry-after: 9999"), OK])
+    c._mutate("m", "I", {})
+    assert clock.sleeps == [120.0]
+
+
+def test_without_a_wait_time_the_backoff_is_at_least_a_minute_grows_and_is_bounded(tmp_path):
+    p = pc.Pacing(max_tries=6, backoff_base_s=2.0, backoff_cap_s=100.0, secondary_min_wait_s=60.0)
+    c, clock, _ = paced_client(tmp_path, [limited("secondary rate limit (HTTP 403)")] * 5 + [OK], p)
+    c._mutate("m", "I", {})
+    assert clock.sleeps == [60.0, 60.0, 60.0, 60.0, 60.0]
+    p = pc.Pacing(max_tries=6, backoff_base_s=40.0, backoff_cap_s=100.0, secondary_min_wait_s=10.0)
+    c, clock, _ = paced_client(tmp_path, [limited("HTTP 429")] * 5 + [OK], p)
+    c._mutate("m", "I", {})
+    assert clock.sleeps == [40.0, 80.0, 100.0, 100.0, 100.0]
+
+
+def test_the_primary_limit_stops_at_once_with_no_retry_and_no_sleep(tmp_path):
+    body = json.dumps({"errors": [{"type": "RATE_LIMITED", "message": "API rate limit exceeded"}]})
+    c, clock, calls = paced_client(tmp_path, [SimpleNamespace(returncode=0, stdout=body, stderr="")])
+    with pytest.raises(pc.ProjectError, match="primary rate limit: rerun after the hourly reset"):
+        c._mutate("m", "I", {})
+    assert len(calls) == 1 and clock.sleeps == []
+
+
+def test_a_permission_403_and_other_errors_are_not_retried(tmp_path):
+    for text in ("HTTP 403: Resource not accessible by personal access token", "HTTP 500 boom"):
+        c, clock, calls = paced_client(tmp_path, [limited(text)])
+        with pytest.raises(pc.ProjectError):
+            c._mutate("m", "I", {})
+        assert len(calls) == 1 and clock.sleeps == []
+
+
+def test_after_the_last_try_it_stops_and_the_message_never_holds_the_token(tmp_path):
+    p = pc.Pacing(max_tries=3)
+    c, clock, calls = paced_client(tmp_path, [limited(f"secondary rate limit (HTTP 403) {SENTINEL}")], p)
+    with pytest.raises(pc.ProjectError, match="secondary rate limit: gave up after 3 tries") as exc:
+        c._mutate("m", "I", {})
+    assert len(calls) == 3 and len(clock.sleeps) == 2 and SENTINEL not in str(exc.value)
+
+
+def test_a_query_that_hits_a_secondary_limit_is_retried_but_still_not_paced(tmp_path):
+    c, clock, _ = paced_client(tmp_path, [limited("HTTP 429 retry-after: 5"), READ_OK])
+    c.graphql("query{x}")
+    assert clock.sleeps == [5.0]
+
+
+def test_pacing_from_config_falls_back_to_defaults_on_missing_or_bad_values():
+    assert pc.Pacing.from_config(None) == pc.Pacing() and pc.Pacing.from_config({}) == pc.Pacing()
+    p = pc.Pacing.from_config({"min_interval_s": 0.5, "max_tries": 3, "progress_every": 0, "backoff_cap_s": "x", "secondary_min_wait_s": True})
+    assert p.min_interval_s == 0.5 and p.max_tries == 3 and p.progress_every == 25 and p.backoff_cap_s == 120.0 and p.secondary_min_wait_s == 60.0
+    assert pc.Pacing.from_config(ps.load_config(Path(__file__).resolve().parents[2], [])["write_pacing"]) == pc.Pacing()  # shipped file = defaults
+
+
+def plan_of(n):
+    d = lambda i: {"Ticket ID": f"TCK-{i}", "Title": "t", "Body": "b", "_item_id": f"I{i}", "_draft_id": f"D{i}", "Status": "Done", "Sync hash": f"h{i}",
+                   "Source": "s"}
+    return SimpleNamespace(creates=[], updates=[(d(i), ["Status"]) for i in range(n)], archives=[], archive_item_ids=[])
+
+
+def test_progress_is_reported_every_n_steps_and_apply_stays_quiet_without_a_callback():
+    fake = Fake(project())
+    seen = []
+    done, not_done, err = pc.apply_plan(fake, fake.proj, plan_of(5), progress=seen.append, every=4)  # 5 items x 3 steps (Status, Source, hash)
+    assert err is None and len(done) == 15 and seen == ["progress: 4/15 steps done", "progress: 8/15 steps done", "progress: 12/15 steps done"]
+    assert pc.apply_plan(Fake(project()), fake.proj, plan_of(2))[2] is None
+
+
+def test_a_stop_names_the_partial_item_and_the_rerun_does_only_the_rest():
+    fake = Fake(project(), fail_on=4)  # 3 steps per item: item 0 done, item 1 stops after its first step
+    done, not_done, err = pc.apply_plan(fake, fake.proj, plan_of(3))
+    assert err and len(done) == 4 and len(not_done) == 5 and pc.partial_item(done, not_done) == "TCK-1"
+    # a rerun over the unfinished items does only those (the planner recomputes; here items 1 and 2 remain)
+    again = Fake(project())
+    done2, nd2, err2 = pc.apply_plan(again, again.proj, SimpleNamespace(creates=[], updates=plan_of(3).updates[1:], archives=[], archive_item_ids=[]))
+    assert err2 is None and not nd2 and all("TCK-0" not in d for d in done2) and len(done2) == 6
+
+
+def test_a_stop_on_an_items_first_step_or_a_create_or_archive_is_not_partial():
+    assert pc.partial_item(["update TCK-0: set Status"], ["update TCK-1: set Status", "update TCK-1: set Source"]) is None
+    assert pc.partial_item([], ["create TCK-9: draft item"]) is None and pc.partial_item(["x"], ["archive TCK-2 (gone)"]) is None
+    assert pc.partial_item(["update TCK-0: set Status"], []) is None
