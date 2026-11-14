@@ -12,3 +12,10 @@ stale_branch_days: 14  # a ticket whose working branches are all older than this
 host_names:            # hostname -> the short host tag used in Branch/Host entries; an unlisted hostname is used as is
   u24desktop-Virtual-Machine: u24desktop
   ubuntu: ubuntu
+write_pacing:          # ProjectClient writes (TCK-20261114-PROJECT-CLIENT-WRITE-PACING); queries are never paced
+  min_interval_s: 1.0        # at least this long between two mutations
+  progress_every: 25         # print "progress: n/total steps done" (stderr) every this many steps
+  max_tries: 5               # tries per call on a secondary rate limit, then stop as P1b does
+  backoff_base_s: 2.0        # backoff base: wait = max(secondary_min_wait_s, base * 2**k), or retry-after when gh shows one
+  backoff_cap_s: 120.0       # no single wait is longer than this
+  secondary_min_wait_s: 60.0 # GitHub's guidance: wait at least a minute after a secondary limit
