@@ -21,8 +21,8 @@ Epic `TCK-20261112-EPIC-GITHUB-PROJECT-TICKET-VIEW`, filed by agent-working-plan
    host, rpg lane. It settled the two-writer question with host-scoped ownership: a `Host facts` field; Status, Seat and Domain come
    from the union of all hosts, and nothing is archived while another host has facts for the item. The owner's go was #715
    6875225978 item 2. The hold on u24 `--apply` lifts when u24 runs P2 code (its first P2 `--apply`, owner #715 6878981927).
-6. TCK-20261114-PROJECT-CLIENT-WRITE-PACING (P3a, standard): write pacing and `retry-after`. Dispatched on 2026-11-15 to
-   agent-working-implementer-u24 (owner #715 6881411615 item 3).
+6. **DONE** TCK-20261114-PROJECT-CLIENT-WRITE-PACING (P3a, standard): write pacing and `retry-after`, closed in the PR that files
+   P3b and P3c. Dispatched on 2026-11-15 (owner #715 6881411615 item 3). A primary rate limit stops the run; a secondary one waits.
 7. TCK-20261115-PROJECT-SYNC-ALL-LANES (P3b, standard): all lanes, Domain as a single-select (the old text field is renamed, not
    deleted), the `attribute()` prefix fix, the Epic (a) fix, `--fetch`, a last-run file, and a heartbeat with the stale-host flag.
    Its first load is run by hand. Dispatched after P3a merges.
