@@ -4,7 +4,7 @@ layer: ticket
 authority: P1
 audience: agent
 ticket_id: TCK-20261114-PROJECT-CLIENT-WRITE-PACING
-phase: in_progress
+phase: inprogress
 date: 2026-11-14
 tags: [planning, delivery]
 ---

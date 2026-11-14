@@ -3,7 +3,7 @@ status: active
 layer: ticket
 authority: P2
 audience: agent
-phase: in_progress
+phase: inprogress
 ticket_id: TCK-20261114-PROJECT-CLIENT-WRITE-PACING
 artifact_type: investigation
 tags: [planning, delivery]
