@@ -1,9 +1,9 @@
 ---
-status: active
+status: historical
 layer: ticket
 authority: P2
 audience: agent
-phase: inprogress
+phase: done
 ticket_id: TCK-20261115-PROJECT-SYNC-ALL-LANES
 artifact_type: test_plan
 tags: [planning, delivery]
