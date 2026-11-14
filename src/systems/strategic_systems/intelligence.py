@@ -62,6 +62,7 @@ if TYPE_CHECKING:
     from src.engine.cadence import SystemCadence
 
 from src.core.state import EntityState, AuthoritativeState
+from src.engine.hold_mode import hold_reset_kwargs
 from src.core.enums import EntityRole
 from src.core.updates import (
     StrategicUpdate, InventoryUpdate, EntityUpdate, StateUpdate,
@@ -646,7 +647,7 @@ class StrategicIntelligenceSystem:
                         if entity.navigation.target != coords:
                             has_nav_update = True
                             existing_nav = ent_upd.navigation or NavigationUpdate()
-                            ent_upd = replace(ent_upd, navigation=replace(existing_nav, target_set=coords), interaction=InteractionUpdate(reset=True))
+                            ent_upd = replace(ent_upd, navigation=replace(existing_nav, target_set=coords, **hold_reset_kwargs(entity, ent_upd)), interaction=InteractionUpdate(reset=True))
                     except (ValueError, AttributeError) as lead_ex: logger.debug(f"[Tick {state.tick}] material lead for {target_mat!r} has a non-coordinate detail {match_lead.detail!r}: {lead_ex}")
             
             if not has_nav_update and current_project_id:
@@ -667,7 +668,7 @@ class StrategicIntelligenceSystem:
                             if target_pos:
                                  has_nav_update = True
                                  if entity.navigation.target != target_pos:
-                                     ent_upd = replace(ent_upd, navigation=replace(ent_upd.navigation or NavigationUpdate(), target_set=target_pos))
+                                     ent_upd = replace(ent_upd, navigation=replace(ent_upd.navigation or NavigationUpdate(), target_set=target_pos, **hold_reset_kwargs(entity, ent_upd)))
             
             if not has_nav_update:
                 town_target = nearest_town_tile(state.town_tiles, entity.navigation.position) or state.town_center

@@ -619,7 +619,7 @@ class TacticalDecisionSystem:
                   if dist_to_target > entity.combat.range:
                        return EntityUpdate(
                            entity_id=entity.id,
-                           navigation=NavigationUpdate(movement_mode_set=MovementMode.HOLD),
+                           navigation=NavigationUpdate(movement_mode_set=MovementMode.HOLD, target_clear=True),
                            task=TaskUpdate(
                                work_kind_set="ENTITY_ACT",
                                payload_set={"action": "HOLD", "reason": "HOLD_CHOKEPOINT", "target_id": target.id}

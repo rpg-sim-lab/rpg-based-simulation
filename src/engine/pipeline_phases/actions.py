@@ -80,6 +80,19 @@ def _hold_in_place(update: EntityUpdate) -> EntityUpdate:
     return replace(update, navigation=update.navigation.merge(hold) if update.navigation else hold)
 
 
+def _hold_ends_with_task(update: EntityUpdate, entity: object) -> EntityUpdate:
+    """``update`` with the movement mode reset to the navigation default (WANDER) when a HOLD is in force: a collapse's HOLD ends with its sleep, in the update
+    that ends the task. Neither the typed waits nor a kill reset here: a typed wait's task ends in the tick it runs and a killing blow ends its task in the
+    kill tick itself (``killing`` is part of the task-end condition below), so both HOLDs have no live task and end at the subject's next walk decision
+    (``hold_mode.hold_reset_kwargs``)."""
+    nav = update.navigation
+    mode = nav.movement_mode_set if nav is not None and nav.movement_mode_set is not None else entity.navigation.movement_mode
+    if mode != MovementMode.HOLD:
+        return update
+    reset = NavigationUpdate(movement_mode_set=MovementMode.WANDER)
+    return replace(update, navigation=nav.merge(reset) if nav else reset)
+
+
 def _killing_blow(action: str, outcome: str, actor_id: int, action_updates: dict) -> bool:
     """True when a successful ATTACK by ``actor_id`` killed its target this tick (the target's combat update sets it not alive)."""
     return action == "ATTACK" and outcome == "SUCCESS" and any(
@@ -326,7 +339,9 @@ class ActionRoutingPhase:
                 # entity hit TARGET_INCAPACITATED 73 times in a 2000-tick run with a non-empty-but-
                 # actionless payload, vs. ~4 with a genuinely empty one.
                 annotated_task = replace(task_upd, payload_set={})
+                task_ends = True
             else:
+                task_ends = False
                 base_payload = _annotation_base_payload(payload)
                 annotated_task = replace(task_upd, payload_set={**base_payload, "outcome": outcome, **({"reason": reason_value} if reason_value else {})})
 
@@ -336,6 +351,8 @@ class ActionRoutingPhase:
                 if action_eid == eid:
                     merged = replace(merged, task=annotated_task)
                     merged = _hold_in_place(merged) if killing else merged
+                    if task_ends and action in SLEEP_ACTIONS:
+                        merged = _hold_ends_with_task(merged, working_entity)  # a collapse's HOLD ends with its sleep (a kill's task ends in the kill tick itself, see below)
                 refined_entity_updates[action_eid] = merged
                 # Update sliding entities for later actors
                 if action_eid in working_entities:

@@ -9,6 +9,7 @@ from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple
 
 from src.core.movement_modes import MovementMode
 from src.core.updates import EntityUpdate, NavigationUpdate, TaskUpdate
+from src.engine.hold_mode import hold_reset_kwargs
 from src.engine.hostility import is_engaged
 from src.engine.legality import LegalityServiceV2
 from src.engine.rpg_depth import LeashService
@@ -96,7 +97,7 @@ def notice_unengaged_hostile(
             return EntityUpdate(entity_id=entity.id, strategic=strat_up)
         return EntityUpdate(
             entity_id=entity.id, strategic=strat_up,
-            navigation=NavigationUpdate(target_set=goal, movement_mode_set=entity.navigation.movement_mode),
+            navigation=NavigationUpdate(target_set=goal, **{"movement_mode_set": entity.navigation.movement_mode, **hold_reset_kwargs(entity)}),
             task=TaskUpdate(work_kind_set="ENTITY_MOVE", payload_set={"target_position": goal, "reason": "KEEP_WALKING"}),
         )
     if posture == "watch":
@@ -104,7 +105,7 @@ def notice_unengaged_hostile(
         # multiplier 0) until the next decision, which the adjacency wake brings within ADJACENCY_WAKE_COOLDOWN ticks.
         return EntityUpdate(
             entity_id=entity.id, strategic=strat_up,
-            navigation=NavigationUpdate(movement_mode_set=MovementMode.HOLD),
+            navigation=NavigationUpdate(movement_mode_set=MovementMode.HOLD, target_clear=True),
             task=TaskUpdate(work_kind_set="ENTITY_ACT", payload_set={"action": "HOLD", "reason": "WATCH_HOSTILE", "target_id": target.id}),
         )
     if posture == "avoid":
@@ -113,7 +114,7 @@ def notice_unengaged_hostile(
             # No route away: a typed wait, not a fall-through to an attack the verdict refused (same record shape as WATCH_HOSTILE).
             return EntityUpdate(
                 entity_id=entity.id, strategic=strat_up,
-                navigation=NavigationUpdate(movement_mode_set=MovementMode.HOLD),
+                navigation=NavigationUpdate(movement_mode_set=MovementMode.HOLD, target_clear=True),
                 task=TaskUpdate(work_kind_set="ENTITY_ACT", payload_set={"action": "HOLD", "reason": "AVOID_NO_ROUTE", "target_id": target.id}),
             )
         return EntityUpdate(
