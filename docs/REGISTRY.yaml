@@ -8117,6 +8117,20 @@
   - content
   last_verified: '2026-10-09'
 - type: ticket
+  path: agent-working/tickets/todos/TCK-20261115-M1-A-TEST-KIND-DECLARED-ONLY-IN-CONTENT-PERCEIVES-EATS-AND-FIGHTS.md
+  ticket_id: TCK-20261115-M1-A-TEST-KIND-DECLARED-ONLY-IN-CONTENT-PERCEIVES-EATS-AND-FIGHTS
+  title: 'Milestone 1''s content-alone probe: a test kind declared only in test content,
+    with no code change, perceives, eats and fights by its declarations through the
+    real kernel'
+  tier: standard
+  ticket_type: feature
+  date: '2026-11-15'
+  related_code_areas:
+  - tests/integration/, test content (read-only for src/)
+  artifact_files: []
+  tags:
+  - testing
+- type: ticket
   path: agent-working/tickets/todos/github-project-ticket-view/TCK-20261115-PROJECT-SYNC-ALL-LANES.md
   ticket_id: TCK-20261115-PROJECT-SYNC-ALL-LANES
   title: '`project_sync.py` P3b: every lane goes on Project 1, Domain becomes a single-select,
@@ -9251,6 +9265,24 @@
   - testing
   - regression
 - type: ticket
+  path: agent-working/tickets/done/TCK-20261109-M1-NO-NAME-CHECKS-PROBE-AND-CONTENT-ALONE-KIND-PROBE.md
+  ticket_id: TCK-20261109-M1-NO-NAME-CHECKS-PROBE-AND-CONTENT-ALONE-KIND-PROBE
+  title: 'Milestone 1''s name-check probe: no role, kind or faction name switch left
+    in a decision path, as a green-from-day-one ratchet whose allowlist empties as
+    the retirements land (the content-alone probe is split to TCK-20261115-M1-A-TEST-KIND-DECLARED-ONLY-IN-CONTENT-PERCEIVES-EATS-AND-FIGHTS)'
+  tier: standard
+  ticket_type: feature
+  date: '2026-11-09'
+  related_code_areas:
+  - tests/, decision code (read only)
+  artifact_files:
+  - agent-working/stored_artifacts/TCK-20261109-M1-NO-NAME-CHECKS-PROBE-AND-CONTENT-ALONE-KIND-PROBE/investigation.md
+  - agent-working/stored_artifacts/TCK-20261109-M1-NO-NAME-CHECKS-PROBE-AND-CONTENT-ALONE-KIND-PROBE/plan.md
+  - agent-working/stored_artifacts/TCK-20261109-M1-NO-NAME-CHECKS-PROBE-AND-CONTENT-ALONE-KIND-PROBE/test_plan.md
+  tags:
+  - testing
+  - architecture
+- type: ticket
   path: agent-working/tickets/done/TCK-20261109-MAKEFILE-RECIPES-USE-THE-RESOLVED-INTERPRETER.md
   ticket_id: TCK-20261109-MAKEFILE-RECIPES-USE-THE-RESOLVED-INTERPRETER
   title: Makefile recipes run a bare `python3` instead of the resolved `$(PYTHON3)`,
@@ -9457,18 +9489,6 @@
   date: '2026-11-09'
   related_code_areas:
   - src/core/ (entity identity), content schemas
-  artifact_files: []
-  tags: []
-- type: ticket
-  path: agent-working/tickets/todos/TCK-20261109-M1-NO-NAME-CHECKS-PROBE-AND-CONTENT-ALONE-KIND-PROBE.md
-  ticket_id: TCK-20261109-M1-NO-NAME-CHECKS-PROBE-AND-CONTENT-ALONE-KIND-PROBE
-  title: 'Milestone 1''s two gate probes: no name switch in a decision path, and a
-    test kind declared only in content perceives, eats and fights'
-  tier: standard
-  ticket_type: feature
-  date: '2026-11-09'
-  related_code_areas:
-  - tests/, decision code (read only)
   artifact_files: []
   tags: []
 - type: ticket
@@ -10150,7 +10170,10 @@
   related_code_areas:
   - _run_engine
   artifact_files: []
-  tags: []
+  tags:
+  - testing
+  - determinism
+  - observability
 - type: ticket
   path: agent-working/tickets/todos/TCK-20261103-BROKE-HUNGRY-WORKERS-STILL-TAKE-NO-SHIFT-ON-MAIN.md
   ticket_id: TCK-20261103-BROKE-HUNGRY-WORKERS-STILL-TAKE-NO-SHIFT-ON-MAIN

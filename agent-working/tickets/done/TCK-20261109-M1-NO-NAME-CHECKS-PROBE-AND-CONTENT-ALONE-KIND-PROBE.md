@@ -1,10 +1,10 @@
 ---
-status: active
+status: historical
 layer: testing
 authority: P1
 audience: agent
 ticket_id: TCK-20261109-M1-NO-NAME-CHECKS-PROBE-AND-CONTENT-ALONE-KIND-PROBE
-phase: open
+phase: done
 date: 2026-11-09
 tags: [testing, architecture]
 ---
@@ -15,7 +15,7 @@ tags: [testing, architecture]
 Milestone 1's name-check probe: no role, kind or faction name switch left in a decision path, as a green-from-day-one ratchet whose allowlist empties as the retirements land (the content-alone probe is split to TCK-20261115-M1-A-TEST-KIND-DECLARED-ONLY-IN-CONTENT-PERCEIVES-EATS-AND-FIGHTS)
 
 ## Status
-OPEN
+DONE
 
 ## Tier
 standard
@@ -42,7 +42,7 @@ Filed by rpg-planner on 2026-11-09 as a filing only (no code), on lead-planner-u
 - §12.4 (packs, herds, territory), milestones 2 and 3, and any rule work not listed in §12.3 (owner ruling only).
 
 ## Acceptance Criteria
-- The name-check probe runs in CI and reports every name switch it finds. It goes green only when milestone 1's retirements are done.
+- [x] The name-check probe runs in CI (tests/architecture) and reports every name switch it finds (`python -m tools.test_architecture.name_switch_scan`, text and `--json`). Per the planner ruling it is green from day one as a ratchet; "done" is an empty allowlist (replaces "goes green only when retirements are done").
 - (moved to the split ticket) The content-alone probe passes on the milestone 1 record commit.
 
 ## Related Tickets
@@ -87,8 +87,23 @@ Planner rulings (testing-planner + rpg-planner, 2026-11-15; owner dispatch #715 
 - **Tests:** a synthetic package (each switch shape found; data-by-id not found; excluded package not scanned; report-only package reported, not gating; a new switch fails; a stale row fails), plus the real tree green with the committed allowlist.
 - Cheap: no host slot needed. Single process; no pytest -n>1 while rpg cells run.
 
+Review fixes and rulings applied (testing-planner relaying rpg-planner, 2026-11-15):
+- `getattr(x, "<role|kind|faction>", d)` counts as `x.<word>`; a local name counts when assigned from such an expression earlier in the same function (one step). Found the 16 `party_composition.py` `infer_party_role` rows.
+- src/runtime moves to EXCLUDE (bootstrap.py only); a row found there is reported to rpg-planner.
+- core/builder.py birth record (`parent_a_role == HERO and parent_b_role == HERO`) is GATING through a data entry, `PROMOTED_GATING = {(file, symbol)}`, with src/core still report-only; a stale promotion fails.
+- entities/identity_resolver.py `_ROLE_COMPAT` / `_FACTION_COMPAT` are EXCLUDED with the reason "identity projection: renames a legacy enum to its string id; chooses nothing; whether the map itself goes is for the retire ticket, depending on whether EntityRole stays pure classification", at file+symbol level (`REASONED_EXCLUSIONS`). Condition: a resolved id compared to a string literal is a switch; `role_id` / `faction_id` match on any receiver, `species` / `archetype` (with `_id` / `_name`) were added; 0 new rows today.
+- src/content_semantics moves to SCAN (gating).
+- src/world and src/core stay REPORT_ONLY until the PR; rpg-planner rules row by row (expects `world/boss.py:217` and `world/region_threat_classifier.py:158` to become gating).
+- The PR attaches the full inventory, counted, with the report-only rows listed.
+
 ## Test Summary
+58 tests in tests/architecture/test_no_name_switches_in_decision_paths.py pass (synthetic package: every shape found, data-by-id and other kinds not found, excluded/report-only packages, new/stale/over/under rows fail; real tree green). Neighbouring architecture guards (spawn sites, enum boundaries): 61 passed with it. Two real-tree perturbations failed the test as intended and were restored.
 
 ## Files Changed
+- tools/test_architecture/name_switch_scan.py (new)
+- tests/architecture/test_no_name_switches_in_decision_paths.py (new)
+- tests/architecture/name_switch_allowlist.yaml (new, 105 rows / 114 switches)
+- agent-working/stored_artifacts/TCK-20261109-M1-NO-NAME-CHECKS-PROBE-AND-CONTENT-ALONE-KIND-PROBE/ (plan, investigation with the counted inventory and the 10-row sample, test_plan)
 
 ## Completion Summary
+The name-check probe is in. Inventory after the review fixes and rulings: 139 switches, 114 gating (105 allowlist rows), 15 report-only (all in src/world, listed for rpg-planner's row-by-row ruling), 10 excluded (the identity compat maps). A 10-row hand-checked sample: 10 true positives. Known gaps: a switch spelt another way (`monster_type == ...`), a name read via `EntityRole.__members__`, a `kind` on a non-entity receiver, and a local table not named for role, faction, species, archetype or entity kind (`progression/leveling.py` `role_scores`) are not found; the probe sees only string literals and the legacy enums EntityRole and Faction (no other entity-kind enum exists in src today); allowlist reasons are one line per group of rows; the `species`/`archetype`/`*_id` words add 0 rows today (grep evidence in the stored investigation).
