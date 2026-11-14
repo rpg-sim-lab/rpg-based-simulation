@@ -27,10 +27,14 @@ below.
 | 5 | `compose.yaml` `redis:7-alpine` floats; Prometheus `v2.50.0`, Grafana `10.3.3`, Loki and Promtail `3.0.0` are pinned. Redis backs `src/observability` (stream consumer, anomaly worker, readiness harness). | yes | pin an exact `7.x.y-alpine` tag, matching the observability images | rpg (consumer of redis); `compose.yaml` is lead-owned, so the lead reviews the diff | #515 (`for:rpg-planner`) |
 | 6 | Root clutter. | partly | The tracked tree is clean: `uvicorn.log`, `replay_v2.json/`, `scratch/`, `tmp/` and `reviews/` are git-ignored or gone. Still **untracked**, not ignored, in the main checkout: `agent-monitoring/` and `stored_artifacts/` (27 files, old pre-`agent-working/` layout, written 2026-10-03). | owner (deleting data) | on `board.md`'s residue list |
 
-## Inventory seed (main 9a9058808)
+## Inventory seed (main 96db1f5e8, 2026-11-14)
 
-- **Python:** see `pyproject.toml`. The code-health tools are exact pins (`ruff`, `import-linter`, `mypy-baseline`); runtime libraries and test libraries are floors.
+The findings table above is the 2026-10-11 review and stays as a dated record. This inventory is refreshed in place; the previous one was on `main` 9a9058808.
+
+- **Python:** see `pyproject.toml`. The code-health tools are exact pins: `mypy==2.4.0`, `mypy-baseline==0.7.4`, `ruff==0.17.0`, `complexipy==8.0.1`, `import-linter==2.15`, `pyrefly==1.3.2` (finding 1 is resolved: mypy is now pinned). Runtime and test libraries are floors.
+- **Knowledge stack (`requirements-knowledge.txt`, the manual `.venv-knowledge`):** `torch==2.15.0+cpu` (CPU wheel index), `sentence-transformers==6.1.0`, `mcp==1.30.0`, `graphifyy==0.9.104`, `headroom-ai==0.37.0` (held: 0.43 needs `mcp` 2.x). Dependabot ignores torch, graphifyy and headroom-ai (#894); they move by hand with their tests (#890).
 - **OpenTelemetry (API tracing, #622 R3, merged in #891):** `opentelemetry-sdk`, `opentelemetry-exporter-otlp-proto-http`, `opentelemetry-instrumentation-fastapi` and `opentelemetry-instrumentation-redis`, locked at 1.45.2 / 0.66b2 (pyproject caps `>=1.45.1,<2` and `>=0.66b1,<0.67`). OTLP over HTTP on port 4318, off by default (`OTEL_EXPORTER_OTLP_ENDPOINT` unset). Code in `src/api/tracing.py`; doc in `docs/observability/api_request_tracing.md`.
-- **Node:** three npm projects, each with its own `package-lock.json` (row 4).
-- **Containers (`compose.yaml`):** redis (floating), prometheus `v2.50.0`, grafana `10.3.3`, loki `3.0.0`, promtail `3.0.0`.
-- **MCP servers:** `.mcp.json` (knowledge-search; lead-owned path).
+- **Node:** three npm projects, each with its own `package-lock.json` (row 4): `frontend/` (react `^19.2.0`, vite `^8.3.5`, tailwindcss `^4.1.18`, typescript `~5.9.3`), `dashboard-frontend/`, and `website/` (Docusaurus `^3.10.1`, react `^19.3.1`). Dependabot watches `frontend/` and `website/`, not `dashboard-frontend/`.
+- **Containers (`compose.yaml`, all pinned by tag and digest):** redis `8.10.3-alpine`, prometheus `v3.16.0`, grafana `13.3.0`, loki `3.7.9` (WAL on the `loki_data` volume, #895), tempo `3.1.1`, alloy `v1.21.3` (replaced Promtail, #786), ntfy `v2.37.2`, redis_exporter `v1.97.0`, node-exporter `v1.12.1`, docker-socket-proxy `v0.5.0`. Run from the checkout that holds `docker/secrets` (`docs/runbooks/ntfy-topic-rotation.md`, "Run from").
+- **MCP servers (`.mcp.json`, lead-owned):** `knowledge-search`, `github` (token from `${HOME}/.config/rpg-sim/github-mcp.env`, #899), `headroom` (trial), `aseprite-pixel-art`.
+- **Host runtime (ubuntu):** Docker 29 with the containerd image store, moved to `/data/containerd` (`docs/runbooks/docker-image-store-move.md`); docs site on GitHub Pages at `rpg-sim-lab.github.io/rpg-based-simulation`, deployed on main (#897).

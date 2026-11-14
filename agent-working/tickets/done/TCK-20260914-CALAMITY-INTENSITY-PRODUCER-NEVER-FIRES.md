@@ -1,10 +1,10 @@
 ---
-status: active
+status: historical
 layer: world
 authority: P1
 audience: agent
 ticket_id: TCK-20260914-CALAMITY-INTENSITY-PRODUCER-NEVER-FIRES
-phase: open
+phase: done
 date: 2026-09-14
 tags: [world]
 ---
@@ -17,7 +17,7 @@ calamity-intensity system (both its producer and its propagator) appears to be i
 not just the maturity-independent `world_boss` spawn path that consumes it
 
 ## Status
-BLOCKED (on TCK-20260914-LAIR-REGION-TRAUMA-NEVER-ACCUMULATES; scope superseded by ENV-06)
+DONE
 
 ## Tier
 standard
@@ -318,29 +318,19 @@ run length are the implementation's engineering choices and need that fact. Unve
 `bandit_road` and `goblin_camp` comes from their overlapping bounds counting one death in both regions.
 
 ## Test Summary
-_(not started)_
+No behavior change. tests/architecture/test_calamity_intensity_producer_unwired.py: docstring only (2 passed). The parity-ledger schema gate and the parity-index tests are run on the final head (see the PR).
 
 ## Files Changed
-_(not started)_
+Docs (ecology_and_calamity_contract, threat_and_consequences_contract, home_exile_refugee_contract, Bible 05), docs/parity_ledger/world_dynamics.yaml (through tools/parity_ledger_writer.py), the architecture pin's docstring, this ticket and its stored artifacts, and the new todo TCK-20261114-ENV-06-CALAMITY-ESCALATION-PRODUCER-IS-NOT-BUILT. No src.
 
 ## Completion Summary
-**Parked by explicit user decision, not abandoned or unresolved.** The root cause is fully known
-and doubly confirmed: the reference world the original probe used has zero `hero`-kind entities
-composed into it at all, and even a world that does compose heroes hardcodes their spawn region
-to a zero-hazard area. Both facts confirmed by direct inspection of the real compiled entity
-roster and the authored content, not inferred. Two real candidate fix directions are recorded
-above. The user's explicit decision, given the investment cap on this cluster, was to record the
-finding and not build a fix now — "we know exactly why this doesn't fire and chose not to fix it
-now" is the accurate state, distinct from "this doesn't fire and we don't know why." See
-`docs/plans/world_composition_precondition_gap_finding.md` for the durable record of this finding
-alongside its two sibling instances.
+Closed as a DOCS-ONLY close (hand-orchestrated, path-reason investigation_only), by rpg-designer's ruling (2026-11-14, session message, saved as `designer_ruling.md`): no spy, no re-scope. Owner approval to read: #715 6843938212.
 
-**Status update, 2026-09-20**: a stronger, compounding finding was added above (zero real callers
-for the producer at all, not merely an unreachable trigger condition) — still parked, not fixed,
-but this ticket's own eventual scope needs to cover both the wiring gap and the composition gap
-when picked up, not the composition gap alone.
+**Root cause (read-only, main 00f09e05a).** `CalamityService.apply_calamity_consequences` (src/world/calamity.py:87-107, +0.05 per hero death when hazard_level > 0.5) has no caller anywhere under src/ (tests only; pinned by the architecture test), and `CalamityPressurePropagator.propagate_seasonal` (calamity.py:124-170) only spreads existing intensity above 0.10, so `calamity_intensity` is 0.0 in every region in play. It is dead by wiring, not by data: hazard > 0.5 regions exist in all five corpus worlds, and three worlds have hero recipes, all spawning at hometown (hazard 0.0). Owner decision 10 / ENV-06 (2026-10-05) already ruled that this method is NOT the producer to wire: intensity is the escalation of sustained instability, with no single event raising it.
 
-**Verdict as of 2026-09-30: `DEFECT`** (from PR #258, recorded not re-investigated); see Implementation Notes. Still `OPEN`.
+**Consumers inert in play.** The 0.3 boss and magical/demonic gate (calamity.py:37-46, also flag-gated off), displacement at 0.6 (displacement.py:27, 38), regional drain scaling (environment.py:34-36, reduces to plain hazard_level), transformation requirements (transformation.py:57-59).
 
-## 2026-10-31 cleanup re-verification (rpg-planner, owner go #715 6543261623; origin/main 96f623a62)
-- Zero callers confirmed (src/world/calamity.py:87, only tests/architecture/test_calamity_intensity_producer_unwired.py). Original AC1-3 superseded by ENV-06 (environment.md:174). Kept open, BLOCKED on TCK-20260914-LAIR-REGION-TRAUMA-NEVER-ACCUMULATES; re-file as ENV-06 implementation after LAIR.
+**What changed.** The rewritten, noted and ledger edits listed in `investigation.md` (Outcome). The ENV-06 producer is the new P2 todo TCK-20261114-ENV-06-CALAMITY-ESCALATION-PRODUCER-IS-NOT-BUILT, sequenced after TCK-20260914-LAIR-REGION-TRAUMA-NEVER-ACCUMULATES.
+
+Also corrected, by rpg-planner's ruling (factual parity fixes inside this close): INFRA-258 (text and support_boundary) and INFRA-246 (divergence_note) no longer call the `> 0.3` precondition "hero-death-dependent"; they state that no producer is called in play and intensity stays 0.0 (status unchanged). WORLD-062 (region transformation) gains a support_boundary: MOUNTAIN->VOLCANIC (calamity >= 0.8) can never fire in play and WASTELAND->PLAINS is gated by trauma alone; it stays verified. All through tools/parity_ledger_writer.py.
+Known gap: knowledge-index-update not run: worktrees use main's index (lead-planner-u24, 2026-11-12).
