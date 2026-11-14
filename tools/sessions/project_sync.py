@@ -70,6 +70,7 @@ HASH_VERSIONS = {"v1": HASH_FIELDS_V1, "v2": HASH_FIELDS_V2, "v3": HASH_FIELDS} 
 CURRENT_HASH_VERSION = "v3"
 HOST_STATES = ("filing", "progress", "stale", "blocked")
 PRIORITIES = ("P0", "P1", "P2", "P3")
+TIERS = ("hotfix", "standard", "epic")
 STATUSES = ("To do", "In progress", "Stale", "In review", "Blocked", "Done")
 FILING_SUFFIX = "[filing]"
 BODY = "Generated from {path} by tools/sessions/project_sync.py — edits are overwritten."
@@ -663,7 +664,7 @@ def derive_item(tid: str, main: list[TicketCopy], branches: list[BranchFact], pr
     extras = extras or Extras()
     cur = current or {}
     title = best.title if best else ""
-    layer, priority, tags, epic = "", "", "", "standalone"
+    layer, priority, tags, epic, tier = "", "", "", "standalone", ""
     if best and not keep:
         layer = best.layer
         if layer and extras.layers is not None and layer not in extras.layers:
@@ -680,6 +681,11 @@ def derive_item(tid: str, main: list[TicketCopy], branches: list[BranchFact], pr
         if unknown:
             findings.append(f"{tid}: tags not in registries/tag_registry.jsonl, put last: {', '.join(unknown)}")
         tags = " ".join(known + unknown) if order is not None else " ".join(best.tags)
+        lead_tier = re.match(r"(hotfix|standard|epic)(?![0-9A-Za-z])", best.tier)  # "standard (provisional)" is standard: the leading token is the value
+        tier = lead_tier.group(1) if lead_tier else best.tier
+        if tier and tier not in TIERS:
+            findings.append(f"{tid}: tier '{tier}' is not one of {', '.join(TIERS)}: Tier left empty")
+            tier = ""
         if extras.epic_of:
             epic, epic_notes = extras.epic_of(tid, best.path, best.tier)
             findings += epic_notes
@@ -701,7 +707,7 @@ def derive_item(tid: str, main: list[TicketCopy], branches: list[BranchFact], pr
         "Host": merge_host_entries(cur.get("Host", ""), [host] if mine else [], host),
         "Branch": merge_host_entries(cur.get("Branch", ""), entries, f"{host}:"),
         "PR": ", ".join(pr_urls),
-        "Tier": cur.get("Tier", "") if keep else (best.tier if best else ""),
+        "Tier": cur.get("Tier", "") if keep else tier,
         "Layer": cur.get("Layer", "") if keep else layer,
         "Priority": cur.get("Priority", "") if keep else priority,
         "Epic": cur.get("Epic", "") if keep else epic,
@@ -1066,6 +1072,12 @@ def _main(argv: list[str] | None, info: dict) -> int:
     plan = build_plan(index, load_main, branches, prs, items, args.host, source, config,
                       lambda path: done_date(args.root, path), now, extras)
     plan.notes = plan_notes + plan.notes
+    if client is not None and not args.apply:  # a live dry run also says what --apply would refuse (the same check, before any write)
+        from tools.sessions.project_client import check_plan_options
+        try:
+            plan.findings += [f"apply would refuse: {p}" for p in check_plan_options(client.load_project(), plan)]
+        except (ClientRefused, ProjectError) as exc:
+            plan.notes.append(f"option check skipped: {str(exc)[:120]}")
     if fetch_failure:
         plan.findings.append(f"git fetch origin main failed ({fetch_failure}): origin/main may be out of date")
     info["stale_hosts"] = plan.stale_hosts

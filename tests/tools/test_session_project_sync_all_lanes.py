@@ -212,7 +212,7 @@ def test_the_start_hook_warns_after_two_failed_runs_only(tmp_path):
 def test_main_writes_last_run_on_apply_even_when_refused_and_not_on_a_dry_run(monkeypatch, tmp_path):
     (tmp_path / "registries").mkdir()
     (tmp_path / "registries" / "session_project.yaml").write_text("project: {owner: o, number: 1}\n")
-    monkeypatch.setattr(ps, "_client", lambda cfg, notes=None: SimpleNamespace(list_items=lambda: [], load_project=lambda: pytest.fail("wrote")))
+    monkeypatch.setattr(ps, "_client", lambda cfg, notes=None: SimpleNamespace(list_items=lambda: [], load_project=lambda: _project()))  # a read
     monkeypatch.setattr(ps, "origin_info", lambda root: ("abc", None))
     monkeypatch.setattr(ps, "read_branch_facts", lambda *a, **k: ([], 0))
     monkeypatch.setattr(ps, "read_open_prs", lambda root, notes, run=None: ps.PrList())
@@ -324,3 +324,62 @@ def test_a_branch_with_no_registered_domain_has_seat_plain_unknown_not_unknown_s
     fact = ps.BranchFact(HOST, "free-meal-step4", "/wt", *ps.attribute("free-meal-step4", [], DOMAINS), (copy("TCK-7", "inprogress"),))
     plan = plan_for({"TCK-7": [copy("TCK-7", "inprogress")]}, [fact])
     assert plan.creates[0]["Seat"] == "unknown" and plan.creates[0]["Domain"] == "unknown"
+
+
+# ---- Tier leading token and the whole-plan option check
+def _tier_item(tier):
+    c = ps.TicketCopy("TCK-T", "todos", f"{T}/todos/TCK-T.md", "t", tier)
+    return ps.derive_item("TCK-T", [c], [], [], None, HOST, "s", None, extras())
+
+
+def test_a_provisional_tier_is_its_leading_token_and_a_junk_tier_is_empty_with_a_finding():
+    item, findings = _tier_item("standard (provisional)")
+    assert item["Tier"] == "standard" and not any("tier" in f for f in findings)
+    assert _tier_item("epic")[0]["Tier"] == "epic" and _tier_item("")[0]["Tier"] == ""
+    item, findings = _tier_item("standardish")
+    assert item["Tier"] == "" and any("TCK-T: tier 'standardish' is not one of hotfix, standard, epic: Tier left empty" in f for f in findings)
+
+
+def _plan_with(creates=(), updates=()):
+    return SimpleNamespace(creates=list(creates), updates=list(updates), archives=[], archive_item_ids=[])
+
+
+def test_check_plan_options_names_every_bad_select_value_in_creates_and_changed_update_fields():
+    project = _project(domain_type="SINGLE_SELECT")
+    project.fields["Domain"] = pc.ProjectField("F_Domain", "Domain", "SINGLE_SELECT", tuple((n, f"O_{n}") for n in WANTED))
+    ok = {"Ticket ID": "TCK-OK", "Tier": "standard", "Status": "To do", "Domain": "rpg", "Layer": "combat", "Priority": "P1"}
+    bad_create = {**ok, "Ticket ID": "TCK-A", "Tier": "standard (provisional)", "Priority": "P9"}
+    bad_update = {**ok, "Ticket ID": "TCK-B", "Layer": "nonesuch", "Tier": "weird"}
+    plan = _plan_with([ok, bad_create], [(bad_update, ["Layer"]), ({**ok, "Ticket ID": "TCK-C", "Tier": "weird"}, ["Status"])])
+    assert pc.check_plan_options(project, plan) == ["TCK-A Tier 'standard (provisional)'", "TCK-A Priority 'P9'", "TCK-B Layer 'nonesuch'"]
+    assert pc.check_plan_options(project, _plan_with([ok])) == []
+
+
+def test_apply_refuses_before_the_first_mutation_and_names_all_the_problems():
+    fake = FakeClient()
+    project = _project(domain_type="SINGLE_SELECT")
+    bad = {"Ticket ID": "TCK-A", "Title": "t", "Body": "b", "Tier": "weird", "Priority": "P9", "Status": "To do"}
+    with pytest.raises(pc.ClientRefused, match=r"2 value\(s\) are not options.*TCK-A Tier 'weird'; TCK-A Priority 'P9'"):
+        pc.apply_plan(fake, project, _plan_with([bad]))
+    assert fake.calls == []  # no mutation
+
+
+def test_a_live_dry_run_prints_apply_would_refuse_findings_and_nothing_else_changes(monkeypatch, tmp_path, capsys):
+    (tmp_path / "registries").mkdir()
+    (tmp_path / "registries" / "session_project.yaml").write_text("project: {owner: o, number: 1}\n")
+    project = _project(domain_type="SINGLE_SELECT")
+    project.fields["Domain"] = pc.ProjectField("F_Domain", "Domain", "SINGLE_SELECT", tuple((n, f"O_{n}") for n in WANTED))
+    client = SimpleNamespace(list_items=lambda: [], load_project=lambda: project)
+    monkeypatch.setattr(ps, "_client", lambda cfg, notes=None: client)
+    monkeypatch.setattr(ps, "origin_info", lambda root: ("abc", None))
+    monkeypatch.setattr(ps, "read_branch_facts", lambda *a, **k: ([], 0))
+    monkeypatch.setattr(ps, "read_open_prs", lambda root, notes, run=None: ps.PrList())
+    monkeypatch.setattr(ps, "read_main_index", lambda root: {"TCK-W": [("todos", f"{T}/todos/TCK-W.md")]})
+    monkeypatch.setattr(ps, "read_main_copy", lambda root, path, **k: ps.TicketCopy("TCK-W", "todos", path, "w", "standard"))
+    monkeypatch.setattr(ps, "done_date", lambda root, path: None)
+    assert ps.main(["--root", str(tmp_path)]) == 0
+    out = capsys.readouterr().out
+    assert "create  TCK-W" in out and "finding: apply would refuse:" not in out  # Tier 'standard' and Domain 'unassigned' are options
+    project.fields["Domain"] = pc.ProjectField("F_Domain", "Domain", "SINGLE_SELECT", (("rpg", "O_rpg"),))  # Domain options lack the derived value
+    assert ps.main(["--root", str(tmp_path)]) == 0
+    assert "finding: apply would refuse: TCK-W Domain 'unassigned'" in capsys.readouterr().out

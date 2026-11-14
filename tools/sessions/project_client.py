@@ -385,6 +385,18 @@ def partial_item(done: list[str], not_done: list[str]) -> str | None:
     return parts[1].rstrip(":") if any(d.startswith(prefix) for d in done) else None
 
 
+def check_plan_options(project: Project, plan) -> list[str]:
+    """Every select value the plan would write (all of a create's, the changed ones of an update) that is not an option of its field, as
+    `<ticket id> <field> '<value>'`. One function for `--apply` (refuse before the first mutation) and the live dry run (a finding)."""
+    problems = []
+    for derived, changed in [(d, SELECT_FIELDS) for d in plan.creates] + [(d, [c for c in ch if c in SELECT_FIELDS]) for d, ch in plan.updates]:
+        for name in changed:
+            value, fld = derived.get(name, ""), project.fields.get(name)
+            if value and fld is not None and fld.option_id(value) is None:
+                problems.append(f"{derived.get('Ticket ID', '?')} {name} '{value}'")
+    return problems
+
+
 def apply_plan(client, project: Project, plan, body_of: Callable[[dict], str] | None = None,
                progress: Callable[[str], None] | None = None, every: int = 25) -> tuple[list[str], list[str], str | None]:
     """Carry out plan.creates / plan.updates / plan.archives. Returns (done, not_done, error). A failing mutation stops the run."""
@@ -392,6 +404,9 @@ def apply_plan(client, project: Project, plan, body_of: Callable[[dict], str] | 
     missing = [n for n in needed if n not in project.fields]
     if missing:
         raise ClientRefused(f"the Project has no field(s) {', '.join(missing)}: run --init first")
+    bad = check_plan_options(project, plan)
+    if bad:
+        raise ClientRefused(f"{len(bad)} value(s) are not options of their field (nothing written): " + "; ".join(bad))
 
     def put(get_id: Callable[[], str], name: str, value: str, clear_if_empty: bool) -> Callable[[], None] | None:
         f = project.fields[name]
