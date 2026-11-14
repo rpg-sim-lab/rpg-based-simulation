@@ -158,6 +158,7 @@ class Plan:
     creates: list[dict] = field(default_factory=list)
     updates: list[tuple[dict, list[str]]] = field(default_factory=list)
     archives: list[tuple[str, str]] = field(default_factory=list)  # (ticket id or item title, reason)
+    archive_item_ids: list[str] = field(default_factory=list)  # parallel to `archives`: the live item's id ("" when read from --items)
     hand_edits: list[str] = field(default_factory=list)
     findings: list[str] = field(default_factory=list)
     notes: list[str] = field(default_factory=list)
@@ -310,6 +311,12 @@ def _worktree_ticket_copies(wt: Path, run: Runner) -> list[TicketCopy]:
 # ---------------------------------------------------------------- pull requests
 
 
+class PrList(list):
+    """The open PRs; `complete` is False when a per-PR file list could not be read, so rule 2 (In review) may be wrong for some ticket."""
+
+    complete = True
+
+
 def read_open_prs(root: Path, notes: list[str], run: Runner = run_command) -> list[PrFact] | None:
     """Open PRs and the ticket files each adds or changes; GETs only. None when gh cannot answer (rule 2 is then skipped)."""
     listed = run(["gh", "pr", "list", "--state", "open", "--limit", str(PR_LIMIT), "--json", "number,url"], root)
@@ -323,9 +330,12 @@ def read_open_prs(root: Path, notes: list[str], run: Runner = run_command) -> li
         return None
     if len(prs) >= PR_LIMIT:
         notes.append(f"gh returned {PR_LIMIT} open PRs, the limit: some PRs may be missing")
-    facts = []
+    facts = PrList()
     for pr in prs:
         files = run(["gh", "api", "--paginate", f"repos/{{owner}}/{{repo}}/pulls/{pr['number']}/files", "--jq", ".[].filename"], root)
+        if files.returncode != 0:
+            facts.complete = False
+            notes.append(f"files of PR #{pr['number']} unknown (gh failed): its tickets may show the wrong status this run")
         names = files.stdout.split() if files.returncode == 0 else []
         facts.append(PrFact(int(pr["number"]), pr["url"], frozenset(n for n in names if ticket_id_of(n) and folder_of(n))))
     return facts
@@ -421,7 +431,23 @@ def build_plan(main_index: dict[str, list[tuple[str, str]]], load_main: Callable
                prs: list[PrFact] | None, items: list[dict], host: str, source: str, config: dict,
                done_at: Callable[[str], datetime | None], now: datetime) -> Plan:
     plan = Plan()
-    by_id = {i.get("Ticket ID"): i for i in items if i.get("Ticket ID")}
+    by_id: dict[str, dict] = {}
+    for item in items:
+        tid = item.get("Ticket ID")
+        if not tid:
+            continue
+        first = by_id.get(tid)
+        if first is None:
+            by_id[tid] = item
+            continue
+        # duplicate Ticket ID (a half-made create, or two writers): keep the item whose stored Sync hash still matches, else the first
+        keep_new = bool(item.get("Sync hash")) and sync_hash(item) == item["Sync hash"] and not (
+            first.get("Sync hash") and sync_hash(first) == first["Sync hash"])
+        loser = first if keep_new else item
+        by_id[tid] = item if keep_new else first
+        plan.archives.append((tid, "duplicate Ticket ID"))
+        plan.archive_item_ids.append(loser.get("_item_id", ""))
+        plan.findings.append(f"duplicate Ticket ID {tid}: one item kept, the other archived")
     pilot_start = date.fromisoformat(str(config["pilot_start"]))
     window = int(config["done_window_days"])
     stale_before = now.timestamp() - int(config.get("stale_branch_days", 14)) * 86400
@@ -437,11 +463,14 @@ def build_plan(main_index: dict[str, list[tuple[str, str]]], load_main: Callable
         finished = done_at(done_path) if done_path else None
         current = by_id.get(tid)
         if derived["Status"] == "Done":
+            if finished is None and current is not None:
+                plan.notes.append(f"done date unreadable: {tid}")
             if finished is None or finished.date() < pilot_start and current is None:
                 continue
             if finished is not None and (now - finished).days > window:
                 if current is not None:
                     plan.archives.append((tid, f"Done more than {window} days ago ({finished.date()})"))
+                    plan.archive_item_ids.append(current.get("_item_id", ""))
                 continue
         if current is None:
             plan.creates.append(derived)
@@ -449,13 +478,16 @@ def build_plan(main_index: dict[str, list[tuple[str, str]]], load_main: Callable
         plan.hand_edits += hand_edits(current, derived)
         changed = [f for f in HASH_FIELDS if current.get(f, "") != derived[f]]
         if changed:
-            plan.updates.append((derived, changed))
+            carried = {**derived, "_item_id": current.get("_item_id", ""), "_draft_id": current.get("_draft_id", "")}
+            plan.updates.append((carried, changed))
     for item in items:
         tid = item.get("Ticket ID", "")
         if not tid:
             plan.archives.append((item.get("Title", "(untitled item)"), "no Ticket ID"))
-        elif tid not in known:
+            plan.archive_item_ids.append(item.get("_item_id", ""))
+        elif tid not in known and by_id.get(tid) is item:
             plan.archives.append((tid, "no ticket file for this ID"))
+            plan.archive_item_ids.append(item.get("_item_id", ""))
     return plan
 
 
@@ -472,9 +504,10 @@ def load_config(root: Path, notes: list[str]) -> dict:
     return cfg
 
 
-def render(plan: Plan, host: str, sha: str, age_hours: float | None, detached: int, items_n: int, prs_n: int | None) -> str:
+def render(plan: Plan, host: str, sha: str, age_hours: float | None, detached: int, items_n: int, prs_n: int | None,
+           mode: str = "DRY RUN (no GitHub or repo write)") -> str:
     age = "unknown age" if age_hours is None else f"{age_hours:.1f} h old"
-    lines = [f"project_sync DRY RUN (no GitHub or repo write) host={host} origin/main={sha[:9]} ({age}, no fetch) "
+    lines = [f"project_sync {mode} host={host} origin/main={sha[:9]} ({age}, no fetch) "
              f"items-in={items_n} open-PRs={'unknown' if prs_n is None else prs_n} detached-skipped={detached}"]
     for item in plan.creates:
         lines.append(f"create  {item['Ticket ID']}  {item['Status']}  seat={item['Seat'] or '-'}  branch={item['Branch'] or '-'}  pr={item['PR'] or '-'}")
@@ -488,33 +521,94 @@ def render(plan: Plan, host: str, sha: str, age_hours: float | None, detached: i
     return "\n".join(lines)
 
 
+def _client(config: dict, notes: list[str] | None = None):
+    """The one GraphQL client, built lazily so a plain dry run never imports it. Raises ClientRefused when the Project isn't configured."""
+    from tools.sessions.project_client import ClientRefused, ProjectClient
+
+    number = int(config["project"].get("number") or 0)
+    if number <= 0:
+        raise ClientRefused("project.number is 0 in registries/session_project.yaml: set it to the Project's number first")
+    return ProjectClient(str(config["project"]["owner"]), number)
+
+
 def main(argv: list[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(description="Derive the ticket-state Project plan (dry run only; writes nothing).")
+    parser = argparse.ArgumentParser(description="Derive the ticket-state Project plan. Default: dry run (writes nothing). --init creates the "
+                                                 "Project's fields; --apply carries out the plan. Items are never deleted, only archived.")
     parser.add_argument("--root", type=Path, default=REPO_ROOT)
     parser.add_argument("--host", default=None, help="this host's tag for Branch/Host entries (default: host_names[hostname] in session_project.yaml, else the hostname)")
-    parser.add_argument("--items", type=Path, help="JSON file of the current Project items (P1 replaces this with a live read)")
-    parser.add_argument("--dry-run", action="store_true", help="accepted; the only mode in P0")
-    parser.add_argument("--apply", action="store_true")
-    parser.add_argument("--init", action="store_true")
+    parser.add_argument("--items", type=Path, help="JSON file of the current Project items, for offline runs (default: a live read when the Project is configured)")
+    parser.add_argument("--dry-run", action="store_true", help="accepted; the default mode")
+    parser.add_argument("--apply", action="store_true", help="write the plan to the Project (needs project.number and the token file)")
+    parser.add_argument("--init", action="store_true", help="create the Project's missing fields by name; writes nothing else")
+    parser.add_argument("--replace-status-options", action="store_true", help="with --init: allow replacing the Status options on a Project that has items")
     args = parser.parse_args(argv)
-    if args.apply or args.init:
-        print("project_sync: --apply and --init are P1 and are not built; P0 is a dry run only.", file=sys.stderr)
+    if (args.init and args.apply) or (args.apply and args.items) or (args.replace_status_options and not args.init):
+        print("project_sync: use --init and --apply as separate runs, --apply never with --items, --replace-status-options only with --init.", file=sys.stderr)
         return 2
     plan_notes: list[str] = []
     config = load_config(args.root, plan_notes)
     args.host = args.host or config["host_names"].get(socket.gethostname(), socket.gethostname())
-    items = json.loads(args.items.read_text(encoding="utf-8")) if args.items else []
+    from tools.sessions.project_client import ClientRefused, ProjectError, init_fields
+
+    client = None
+    if args.init or args.apply or (not args.items and int(config["project"].get("number") or 0) > 0):
+        try:
+            client = _client(config)
+            if args.init:
+                lines, code = init_fields(client, STATUSES, args.replace_status_options)
+                print("\n".join(lines))
+                return code
+        except ClientRefused as exc:
+            if args.init or args.apply:
+                print(f"project_sync: refused: {exc}", file=sys.stderr)
+                return 2
+            plan_notes.append(f"live read skipped: {exc}")
+        except ProjectError as exc:
+            print(f"project_sync: GitHub refused: {exc}", file=sys.stderr)
+            return 1
+    try:
+        if client is not None:
+            items = client.list_items()
+        else:
+            items = json.loads(args.items.read_text(encoding="utf-8")) if args.items else []
+    except ClientRefused as exc:
+        print(f"project_sync: refused: {exc}", file=sys.stderr)
+        return 2
+    except ProjectError as exc:
+        print(f"project_sync: GitHub refused: {exc}", file=sys.stderr)
+        return 1
     sha, stamp = origin_info(args.root)
     now = datetime.now(timezone.utc)
     branches, detached = read_branch_facts(args.root, args.host, plan_notes)
     prs = read_open_prs(args.root, plan_notes)
+    if args.apply and (prs is None or not getattr(prs, "complete", True)):
+        print("project_sync: --apply refused, nothing written: the open PRs or one PR's files could not be read, so In review / PR would be "
+              "written wrong. Re-run when gh answers.", file=sys.stderr)
+        return 1
     index = read_main_index(args.root)
     source = f"{sha[:9]} @ {now.strftime('%Y-%m-%dT%H:%MZ')}"
     plan = build_plan(index, lambda path: read_main_copy(args.root, path), branches, prs, items, args.host, source, config,
                       lambda path: done_date(args.root, path), now)
     plan.notes = plan_notes + plan.notes
+    mode = "APPLY (writes to the GitHub Project)" if args.apply else ("DRY RUN, live read (no write)" if client is not None else "DRY RUN (no GitHub or repo write)")
     print(render(plan, args.host, sha, None if stamp is None else (time.time() - stamp) / 3600, detached, len(items),
-                 None if prs is None else len(prs)))
+                 None if prs is None else len(prs), mode))
+    if args.apply:
+        from tools.sessions.project_client import apply_plan
+        try:
+            project = client.load_project()
+            done, not_done, error = apply_plan(client, project, plan)
+        except ClientRefused as exc:
+            print(f"project_sync: refused: {exc}", file=sys.stderr)
+            return 2
+        except ProjectError as exc:
+            print(f"project_sync: GitHub refused: {exc}", file=sys.stderr)
+            return 1
+        print(f"applied {len(done)} step(s)" + (f"; STOPPED, {len(not_done)} not done" if error else "; nothing left"))
+        if error:
+            print(f"error: {error}", file=sys.stderr)
+            print("not done: " + "; ".join(not_done), file=sys.stderr)
+            return 1
     return 0
 
 
