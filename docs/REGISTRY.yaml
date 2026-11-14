@@ -8117,6 +8117,38 @@
   - content
   last_verified: '2026-10-09'
 - type: ticket
+  path: agent-working/tickets/todos/github-project-ticket-view/TCK-20261115-PROJECT-SYNC-ALL-LANES.md
+  ticket_id: TCK-20261115-PROJECT-SYNC-ALL-LANES
+  title: '`project_sync.py` P3b: every lane goes on Project 1, Domain becomes a single-select,
+    the sync can fetch origin/main itself, and each host leaves a last-run file and
+    a cross-host heartbeat'
+  tier: standard
+  ticket_type: feature
+  date: '2026-11-15'
+  related_code_areas:
+  - tools/sessions/project_sync.py
+  - tools/sessions/project_client.py
+  - registries/session_project.yaml
+  - tests/tools/test_session_project_sync*.py
+  artifact_files: []
+  tags:
+  - planning
+  - delivery
+- type: ticket
+  path: agent-working/tickets/todos/github-project-ticket-view/TCK-20261115-PROJECT-SYNC-HOST-TIMER.md
+  ticket_id: TCK-20261115-PROJECT-SYNC-HOST-TIMER
+  title: '`project_sync.py` P3c: systemd user timer templates that run the sync hourly
+    on each host, capped and staggered, with the owner''s install step documented'
+  tier: hotfix
+  ticket_type: feature
+  date: '2026-11-15'
+  related_code_areas:
+  - tools/sessions/systemd/
+  artifact_files: []
+  tags:
+  - planning
+  - delivery
+- type: ticket
   path: agent-working/tickets/done/TCK-20261114-LEAD-BOARD-FOURTH-PASS.md
   ticket_id: TCK-20261114-LEAD-BOARD-FOURTH-PASS
   title: The lead board shows the epics as they stand on 2026-11-14, and the stack

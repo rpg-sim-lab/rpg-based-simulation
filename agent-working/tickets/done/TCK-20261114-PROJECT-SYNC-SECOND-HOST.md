@@ -144,8 +144,7 @@ as a dry run only.
 - `tests/tools/test_session_project_sync.py`
 
 ## Assumptions / Open Questions
-- Seat names already carry their host (the `-u24` / `-ubuntu` suffixes). The segment holds the seat as-is, so no roster lookup is
-  needed.
+- ~~Seat names already carry their host.~~ Corrected in review (#913): ubuntu seats are bare or end in `-ubuntu`, so a seat name alone cannot be attributed to a host; each `Host facts` segment stores its own seat list.
 - If the owner prefers the zero-code single-writer option, see the simpler-fix check above.
 
 ## Implementation Notes
