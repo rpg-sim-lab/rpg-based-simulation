@@ -402,6 +402,7 @@ class CombatResolutionSystem:
             damage_taken=total_damage,
             hp_delta=-total_damage,
             attacker_id=valid_attackers[0].id, hit_tick_set=state.tick, hit_damage_set=total_damage,
+            hit_attackers_set=tuple(i.attacker_id for i in intents), hit_damages_set=tuple(i.damage for i in intents),
             is_opportunity_attack=is_opportunity_attack,
             alive_set=alive,
             outcome_kind=outcome,

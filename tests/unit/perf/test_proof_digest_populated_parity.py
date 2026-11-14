@@ -108,4 +108,4 @@ def test_the_digest_covers_each_seeded_field(seeded_final_state: AuthoritativeSt
 
 
 def test_the_digest_scheme_is_v4():
-    assert PROOF_DIGEST_SCHEME == "flat-sha256-v4"
+    assert PROOF_DIGEST_SCHEME == "flat-sha256-v5"

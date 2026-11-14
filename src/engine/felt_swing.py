@@ -16,14 +16,23 @@ if TYPE_CHECKING:
 def felt_lethal_attacker(state: "AuthoritativeState", entity: "EntityState") -> Optional["EntityState"]:
     """The hostile whose last felt blow would finish the subject, if that hostile is engaged with it now; else None.
 
-    swing = last_hit_damage if last_attacker_id is engaged else 0 (the sum over engaged hostiles of what the subject has felt from each is only ever the
-    last attacker's); lethal = swing > 0 and swing >= hp.
+    swing = the sum of the shares of the last hit's attackers that are engaged with the subject now and alive (a group hit has several; every other hit has one,
+    holding the whole blow); lethal = swing > 0 and swing >= hp. The hostile returned is the first such attacker in attacker-list order (divergence 2.204).
     """
     combat = entity.combat
-    swing = combat.last_hit_damage
-    if combat.last_attacker_id is None or not swing or swing < combat.hp:
+    shares = tuple(zip(combat.last_hit_attackers, combat.last_hit_damages))
+    if not shares:
         return None
-    if combat.last_attacker_id not in LegalityServiceV2.get_engaged_hostiles(entity, state):
-        return None
-    attacker = state.entities.get(combat.last_attacker_id)
-    return attacker if attacker is not None and attacker.combat.alive else None
+    engaged = LegalityServiceV2.get_engaged_hostiles(entity, state)
+    swing = 0
+    first: Optional["EntityState"] = None
+    for attacker_id, share in shares:
+        if attacker_id not in engaged:
+            continue
+        attacker = state.entities.get(attacker_id)
+        if attacker is None or not attacker.combat.alive:
+            continue
+        swing += share
+        if first is None:
+            first = attacker
+    return first if swing > 0 and swing >= combat.hp else None

@@ -4,7 +4,7 @@ layer: combat
 authority: P1
 audience: agent
 ticket_id: TCK-20261101-A-HOSTILE-ATTACKING-YOU-OUTRANKS-THE-GROUP-SHARED-TARGET
-phase: open
+phase: implement
 date: 2026-11-01
 tags: []
 ---
@@ -15,7 +15,7 @@ tags: []
 A group member keeps attacking the group's shared target while an adjacent hostile kills it: self-defence must outrank group_bias in target_score
 
 ## Status
-OPEN
+INPROGRESS
 
 ## Tier
 standard

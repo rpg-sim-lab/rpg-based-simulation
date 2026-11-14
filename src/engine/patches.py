@@ -330,12 +330,17 @@ class CombatPatch(ComponentPatch):
             last_attacker = u_com.attacker_id if (u_com.attacker_id is not None and u_com.damage_taken > 0) else new_combat.last_attacker_id
             # The tick of that same hit, so (last_attacker_id, last_hit_tick) always name one hit; a hit that carries no tick leaves it as it was.
             hit_landed = u_com.attacker_id is not None and u_com.damage_taken > 0 and u_com.hit_tick_set is not None
+            # The attackers of that hit and the share each took: a hit that names no group is one attacker holding the whole damage, so every landed hit leaves the pair in step with last_attacker_id / last_hit_damage.
+            hit_attackers = u_com.hit_attackers_set if u_com.hit_attackers_set is not None else ((u_com.attacker_id,) if u_com.attacker_id is not None else ())
+            hit_damages = u_com.hit_damages_set if u_com.hit_damages_set is not None else ((u_com.hit_damage_set if u_com.hit_damage_set is not None else u_com.damage_taken,) if u_com.attacker_id is not None else ())
             new_combat = replace(new_combat, 
                 hp=new_hp, 
                 max_hp=new_max_hp,
                 last_attacker_id=last_attacker,
                 last_hit_tick=u_com.hit_tick_set if hit_landed else new_combat.last_hit_tick,
                 last_hit_damage=u_com.hit_damage_set if (hit_landed and u_com.hit_damage_set is not None) else new_combat.last_hit_damage,
+                last_hit_attackers=hit_attackers if hit_landed else new_combat.last_hit_attackers,
+                last_hit_damages=hit_damages if hit_landed else new_combat.last_hit_damages,
                 permanent_max_hp_bonus=new_combat.permanent_max_hp_bonus + u_com.permanent_max_hp_bonus_delta,
                 alive=(new_hp > 0) if u_com.alive_set is None else u_com.alive_set,
                 atk=new_combat.atk + u_com.atk_delta,

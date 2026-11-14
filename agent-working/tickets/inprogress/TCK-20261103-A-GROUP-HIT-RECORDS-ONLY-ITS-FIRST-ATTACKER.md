@@ -4,7 +4,7 @@ layer: combat
 authority: P1
 audience: agent
 ticket_id: TCK-20261103-A-GROUP-HIT-RECORDS-ONLY-ITS-FIRST-ATTACKER
-phase: open
+phase: implement
 date: 2026-11-03
 tags: []
 ---
@@ -15,7 +15,7 @@ tags: []
 A simultaneous group hit records only its first attacker, so row 88's act test reads the others as not acting
 
 ## Status
-OPEN
+INPROGRESS
 
 ## Tier
 standard
@@ -80,6 +80,9 @@ Open: whether it explains the s44 victims. They were hit by scout 17 alone as fa
 2026-11-03 rpg-designer, two ties for the fix shape:
 - The self-defence rider (TCK-20261101-A-HOSTILE-ATTACKING-YOU-OUTRANKS-THE-GROUP-SHARED-TARGET, lane C, unpushed, `self_defence_rank` via `hostile_hit_subject_within`) reads the same `last_attacker_id`. A group hit would make the rider favour the first hitter and ignore the rest. Whatever the fix, the rider's key and row 88 (b) read the same field, and both get a grid row with a two-attacker group hit.
 - A typed per-attacker field is new durable state: it needs the digest (TCK-20261103-STATE-DIGEST-MAY-OMIT-FIELDS-THAT-DECISIONS-READ), a checkpoint field rule (append-only; FIELD_RULES derive-or-refuse; restore can't derive it, so it is refused or defaulted per the checkpoint ruling), and parity rows. Prefer a smaller fix if counts allow it: each attacker of a group hit writes last_attacker_id in a fixed order, so the latest wins, as for single hits.
+
+2026-11-15 rpg-designer ruling (#634 6883450273, filed as staging rpg_designer_ruling_2026-11-14.md): shape C accepted (`last_hit_attackers: tuple[int, ...]` sharing `last_hit_tick`); felt_swing option (b) with a per-attacker share tuple.
+Departure the ruling invited: the share tuple `last_hit_damages` is typed `tuple[int, ...]`, not float, because hp, last_hit_damage and calculate_damage are int, so the shares sum exactly to last_hit_damage (rpg-planner-ubuntu checked combat.py:53 and state.py:417 and is putting it on record with the designer).
 
 ## Test Summary
 

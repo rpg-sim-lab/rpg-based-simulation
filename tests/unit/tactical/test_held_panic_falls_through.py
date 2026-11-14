@@ -75,7 +75,7 @@ def test_a_starving_wounded_subject_does_not_flee_a_hunter_that_is_only_beside_i
 def test_a_starving_wounded_subject_still_flees_a_hunter_that_just_hit_it():
     """(b) of the act test: the hunter rests, but it took hp from the merchant inside one brain cadence."""
     state, merchant = _scene((30.0, 30.0), (30.0, 29.0), hp=10)
-    merchant = replace(merchant, combat=replace(merchant.combat, last_attacker_id=HUNTER, last_hit_tick=state.tick))
+    merchant = replace(merchant, combat=replace(merchant.combat, last_attacker_id=HUNTER, last_hit_attackers=(HUNTER,), last_hit_tick=state.tick))
     object.__setattr__(state, "entities", {**state.entities, MERCHANT: merchant})
     assert _reason(_decide(state, merchant)) == "PANIC_RETREAT"
 
