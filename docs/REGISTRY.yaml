@@ -8698,6 +8698,23 @@
   - agent-working/stored_artifacts/TCK-20261111-SPLIT-UPDATES-PY-INTO-UPDATE-MODELS/test_plan.md
   tags: []
 - type: ticket
+  path: agent-working/tickets/done/TCK-20261111-THE-STORED-REGROUP-TARGET-OSCILLATES-TICK-TO-TICK.md
+  ticket_id: TCK-20261111-THE-STORED-REGROUP-TARGET-OSCILLATES-TICK-TO-TICK
+  title: The REGROUP target that fused_strategic_pass stores (~:678) flips between
+    neighbouring tiles tick to tick, walking the subject into contact and out of it
+  tier: standard
+  ticket_type: bug
+  date: '2026-11-11'
+  related_code_areas:
+  - src/systems/strategic_systems/intelligence.py (~:670-:680 slow-path navigation
+    writes)
+  artifact_files:
+  - agent-working/stored_artifacts/TCK-20261111-THE-STORED-REGROUP-TARGET-OSCILLATES-TICK-TO-TICK/investigation.md
+  - agent-working/stored_artifacts/TCK-20261111-THE-STORED-REGROUP-TARGET-OSCILLATES-TICK-TO-TICK/measurement.md
+  - agent-working/stored_artifacts/TCK-20261111-THE-STORED-REGROUP-TARGET-OSCILLATES-TICK-TO-TICK/plan.md
+  - agent-working/stored_artifacts/TCK-20261111-THE-STORED-REGROUP-TARGET-OSCILLATES-TICK-TO-TICK/test_plan.md
+  tags: []
+- type: ticket
   path: agent-working/tickets/done/TCK-20261111-THE-WORLD-GLOSSARY-GETS-ITS-SEED-TERMS.md
   ticket_id: TCK-20261111-THE-WORLD-GLOSSARY-GETS-ITS-SEED-TERMS
   title: The world glossary gets its 49 seed terms
@@ -8786,19 +8803,6 @@
   related_code_areas:
   - src/systems/movement.py (resolve_move)
   - src/engine/pipeline_phases/movement.py (route_movement_intent)
-  artifact_files: []
-  tags: []
-- type: ticket
-  path: agent-working/tickets/todos/TCK-20261111-THE-STORED-REGROUP-TARGET-OSCILLATES-TICK-TO-TICK.md
-  ticket_id: TCK-20261111-THE-STORED-REGROUP-TARGET-OSCILLATES-TICK-TO-TICK
-  title: The REGROUP target that fused_strategic_pass stores (~:678) flips between
-    neighbouring tiles tick to tick, walking the subject into contact and out of it
-  tier: standard
-  ticket_type: bug
-  date: '2026-11-11'
-  related_code_areas:
-  - src/systems/strategic_systems/intelligence.py (~:670-:680 slow-path navigation
-    writes)
   artifact_files: []
   tags: []
 - type: ticket
@@ -8905,6 +8909,24 @@
   - src/engine/scenario_checkpoint.py:95-121
   - src/engine/scenario_runtime.py:140-160, :405-424
   artifact_files: []
+  tags: []
+- type: ticket
+  path: agent-working/tickets/done/TCK-20261109-A-COMBAT-RETREAT-PROJECT-WALKS-THE-SUBJECT-AGAINST-THE-HELD-FLIGHT-RULE.md
+  ticket_id: TCK-20261109-A-COMBAT-RETREAT-PROJECT-WALKS-THE-SUBJECT-AGAINST-THE-HELD-FLIGHT-RULE
+  title: A COMBAT_RETREAT project walks its owner to the town centre through the strategic
+    pass, against Bible 04's rule that a chosen retreat takes no step (held flight,
+    memo row 91 (2))
+  tier: standard
+  ticket_type: bug
+  date: '2026-11-09'
+  related_code_areas:
+  - src/systems/strategic_systems/intelligence.py (fused_strategic_pass, :670)
+  - src/ai/goals/scorers.py (CombatRetreatScorer, :248-252)
+  artifact_files:
+  - agent-working/stored_artifacts/TCK-20261109-A-COMBAT-RETREAT-PROJECT-WALKS-THE-SUBJECT-AGAINST-THE-HELD-FLIGHT-RULE/investigation.md
+  - agent-working/stored_artifacts/TCK-20261109-A-COMBAT-RETREAT-PROJECT-WALKS-THE-SUBJECT-AGAINST-THE-HELD-FLIGHT-RULE/measurement.md
+  - agent-working/stored_artifacts/TCK-20261109-A-COMBAT-RETREAT-PROJECT-WALKS-THE-SUBJECT-AGAINST-THE-HELD-FLIGHT-RULE/plan.md
+  - agent-working/stored_artifacts/TCK-20261109-A-COMBAT-RETREAT-PROJECT-WALKS-THE-SUBJECT-AGAINST-THE-HELD-FLIGHT-RULE/test_plan.md
   tags: []
 - type: ticket
   path: agent-working/tickets/done/TCK-20261109-A-FLIGHT-WEIGHS-THE-FREE-SWING-IT-WOULD-TAKE.md
@@ -9119,20 +9141,6 @@
   date: '2026-11-09'
   related_code_areas:
   - website/package-lock.json
-  artifact_files: []
-  tags: []
-- type: ticket
-  path: agent-working/tickets/todos/TCK-20261109-A-COMBAT-RETREAT-PROJECT-WALKS-THE-SUBJECT-AGAINST-THE-HELD-FLIGHT-RULE.md
-  ticket_id: TCK-20261109-A-COMBAT-RETREAT-PROJECT-WALKS-THE-SUBJECT-AGAINST-THE-HELD-FLIGHT-RULE
-  title: A COMBAT_RETREAT project walks its owner to the town centre through the strategic
-    pass, against Bible 04's rule that a chosen retreat takes no step (held flight,
-    memo row 91 (2))
-  tier: standard
-  ticket_type: bug
-  date: '2026-11-09'
-  related_code_areas:
-  - src/systems/strategic_systems/intelligence.py (fused_strategic_pass, :670)
-  - src/ai/goals/scorers.py (CombatRetreatScorer, :248-252)
   artifact_files: []
   tags: []
 - type: ticket
