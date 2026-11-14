@@ -1,10 +1,10 @@
 ---
-status: active
+status: historical
 layer: architecture
 authority: P1
 audience: agent
 ticket_id: TCK-20261002-EPIC-SEMANTIC-FOUNDATION-COMPLETION
-phase: open
+phase: done
 date: 2026-10-02
 tags: [architecture, documentation, simulation-quality]
 ---
@@ -16,7 +16,28 @@ Epic: complete the semantic foundation to the bound owner decision 7 sets — re
 then the rule map sliced by mechanism cluster, with a yield checkpoint that can stop it
 
 ## Status
-EPIC_SCOPED
+DONE
+
+## Disposition
+SUPERSEDED
+
+## Disposition Rationale
+Closed as superseded by roadmap §12 (the foundation path the owner confirmed on 2026-10-09) by the owner's ruling #715 6875278006 (owner, via lead-planner-u24; audit asked under #715 6875225978): "Close, drop map, keep B2 (Recommended)".
+
+- Child A done: `TCK-20260909-WORLD-COMPOSITION-CONTENT-RECONCILIATION`, `1c59e01f4` (#328).
+- Child B (row 7 (b)) holds. The pass bound 17 of the 25 modules and excluded one. The dead modules went in #760 (`2afdba653`) and motivation doctrine / perception contract in #757 (`6e3ffea3f`). One run of the check on this branch, merged with main `db918c517`:
+```
+$ PYTHONPATH=. python3 tools/mechanism_registry/mechanism_registry_completeness_check.py
+99 of 110 mechanisms have a real implemented_by code binding.
+11 are state: gap -- no implementing code exists, so implemented_by does not apply; not counted as unbound. Coverage where it applies: 99 of 99.
+Enumerated 58 mechanism-bearing code targets under src/domains/ and src/systems/ (real subpackage files, shims resolved).
+54 confirmed bound to a mechanism via implemented_by.
+4 confirmed infrastructure exclusion(s), each with a recorded reason.
+0 unbound (not yet checkable) -- NOT asserted to be gaps.
+  18 recorded infrastructure exclusion(s), 1 pending an identity decision, 0 undispositioned.
+```
+- Child B2 (`TCK-20260920-VALUE-DIFFERENTIAL-VERIFICATION-INSTRUMENT-GAP`) is **kept as a standalone todo**, by the owner's ruling. It is no longer gated to a rule-map slice.
+- **Dropped by the owner: the rule-map slices (row 7 (a), children C…) and the yield checkpoint.** None was ever taken. The ACs on row 7 (a), the checkpoint and per-child pipeline cost are void by this ruling, not met.
 
 ## Tier
 epic
@@ -217,7 +238,7 @@ _(epic — not implemented directly; children carry implementation)_
 _(epic — children carry their own tests)_
 
 ## Files Changed
-_(epic — no direct changes)_
+none — decision-only
 
 ## Completion Summary
-_(not started)_
+Closed SUPERSEDED on 2026-11-14 by rpg-planner under #715 6875278006 (owner, via lead-planner-u24; audit asked under #715 6875225978). See Disposition Rationale.
