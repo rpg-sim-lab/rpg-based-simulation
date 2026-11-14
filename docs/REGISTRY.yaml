@@ -16902,6 +16902,19 @@
   artifact_files: []
   tags: []
 - type: ticket
+  path: agent-working/tickets/done/TCK-20261010-EPIC-PARITY-LEDGER-PAYDOWN.md
+  ticket_id: TCK-20261010-EPIC-PARITY-LEDGER-PAYDOWN
+  title: 'Epic — Parity-ledger paydown: clear the ~1,300 P0 entries with no test_path,
+    one ledger file at a time, smallest first'
+  tier: epic
+  ticket_type: repair
+  date: '2026-10-10'
+  related_code_areas:
+  - docs/parity_ledger/*.yaml
+  - codebase/baselines/parity_ledger_schema_baseline.json
+  artifact_files: []
+  tags: []
+- type: ticket
   path: agent-working/tickets/done/TCK-20261010-PARITY-LEDGER-BASELINE-TIGHTEN.md
   ticket_id: TCK-20261010-PARITY-LEDGER-BASELINE-TIGHTEN
   title: Tighten the parity-ledger schema baseline to the counts that have fallen
@@ -17379,19 +17392,6 @@
   - agent-working/stored_artifacts/TCK-20261010-VISUAL-ASSETS-STORE-TOOLING-DOCS-AND-CLOSE/test_plan.md
   tags:
   - planning
-- type: ticket
-  path: agent-working/tickets/todos/parity-ledger-paydown/TCK-20261010-EPIC-PARITY-LEDGER-PAYDOWN.md
-  ticket_id: TCK-20261010-EPIC-PARITY-LEDGER-PAYDOWN
-  title: 'Epic — Parity-ledger paydown: clear the ~1,300 P0 entries with no test_path,
-    one ledger file at a time, smallest first'
-  tier: epic
-  ticket_type: repair
-  date: '2026-10-10'
-  related_code_areas:
-  - docs/parity_ledger/*.yaml
-  - codebase/baselines/parity_ledger_schema_baseline.json
-  artifact_files: []
-  tags: []
 - type: ticket
   path: agent-working/tickets/done/TCK-20261008-RECIPE-NODES-LAND-ON-TILES-THEIR-REGION-DOES-NOT-OWN-P3.md
   ticket_id: TCK-20261008-RECIPE-NODES-LAND-ON-TILES-THEIR-REGION-DOES-NOT-OWN-P3
