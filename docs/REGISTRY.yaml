@@ -8107,6 +8107,21 @@
   - content
   last_verified: '2026-10-09'
 - type: ticket
+  path: agent-working/tickets/done/TCK-20261114-ROLE-CARDS-CITE-AMENDED-DECISIONS.md
+  ticket_id: TCK-20261114-ROLE-CARDS-CITE-AMENDED-DECISIONS
+  title: The architecture and platform role cards cite decisions that the distributed-workers
+    ADR amended
+  tier: hotfix
+  ticket_type: repair
+  date: '2026-11-14'
+  related_code_areas:
+  - tools/sessions/generate_agents.py, .claude/agents/session-{architecture,platform}-*.md
+  artifact_files: []
+  tags:
+  - ai
+  - governance
+  - documentation
+- type: ticket
   path: agent-working/tickets/done/TCK-20261114-STACK-SEED-INVENTORY-REFRESH.md
   ticket_id: TCK-20261114-STACK-SEED-INVENTORY-REFRESH
   title: The tech-stack seed's inventory is refreshed to current main
