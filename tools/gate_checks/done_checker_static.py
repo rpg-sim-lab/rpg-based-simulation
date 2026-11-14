@@ -71,7 +71,6 @@ from monitoring_shard_paths import shard_paths  # noqa: E402
 import gate_verdicts  # noqa: E402
 from gate_checks.proof_plan_advisory import check_proof_plan_fields  # noqa: E402
 from gate_checks.cited_evidence_advisory import check_cited_evidence_paths  # noqa: E402
-from tools.test_architecture.evidence_runner_advisory import check_evidence_runner  # noqa: E402
 _REPO_ROOT_STR = str(Path(__file__).resolve().parents[2])
 if _REPO_ROOT_STR not in sys.path:
     sys.path.append(_REPO_ROOT_STR)
@@ -1475,6 +1474,8 @@ def run_advisory_checks(ticket_id: str, tier: str) -> list[dict]:
     part of `run_static_precheck()`: statuses here are OK/WARN/NA, never PASS/FAIL, so no existing
     consumer of the precheck list (implement-ticket.js, the done-checker `DONE_SCHEMA.checklist`)
     sees a new status value, and nothing here can change a close verdict."""
+    from tools.test_architecture.evidence_runner_advisory import check_evidence_runner  # lazy: needs the repo root on sys.path, which cited_evidence_advisory sets
+
     checks = (
         ("test_plan_proof_fields", check_proof_plan_fields(ticket_id, tier)),
         ("cited_evidence_tracked", check_cited_evidence_paths(ticket_id, tier)),
