@@ -4,7 +4,7 @@ layer: ticket
 authority: P1
 audience: agent
 ticket_id: TCK-20261115-PROJECT-SYNC-ALL-LANES
-phase: open
+phase: inprogress
 date: 2026-11-15
 tags: [planning, delivery]
 ---
@@ -15,7 +15,7 @@ tags: [planning, delivery]
 `project_sync.py` P3b: every lane goes on Project 1, Domain becomes a single-select, the sync can fetch origin/main itself, and each host leaves a last-run file and a cross-host heartbeat
 
 ## Status
-OPEN
+INPROGRESS
 
 ## Tier
 standard
