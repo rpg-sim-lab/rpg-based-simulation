@@ -51,6 +51,9 @@ Needs `project.number` in `registries/session_project.yaml` (the org Project `rp
   after the last try the run stops as above. A plain 403 (permission) is not retried. Progress goes to stderr every `progress_every` steps.
   **A stop inside one item** leaves its new field values with the old `Sync hash`, so the next run prints "hand edit" lines for that ticket: the
   stop prints `partial: <ticket id>`, and those lines come from the stop, not from a person; the rerun overwrites them.
+  **Known limits:** `retry-after` almost never shows in gh's text, so each secondary-limit retry waits 60 s (about 4 min worst case per call); a
+  primary limit stops at once instead of waiting (an hourly reset does not fit a timer run; deviation from "wait as told", by design); and a
+  secondary limit tagged `RATE_LIMITED` would also stop (fails safe: the rerun reconciles).
 - **`--apply` needs known PR facts:** if `gh pr list` fails, or any PR's file list cannot be read, `--apply` exits 1 and writes nothing (a dry run only notes it), because In review and PR would be written wrong.
 - **Never deleted:** the module has no delete mutation. Items without a `Ticket ID`, duplicates of one `Ticket ID`, and items whose ticket
   file is gone are archived, by their own item id.

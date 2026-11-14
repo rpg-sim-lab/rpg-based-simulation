@@ -77,6 +77,9 @@ The P1b client (#909) sends every mutation back to back with no pacing, and stop
 - The exact point costs are unconfirmed in the study. Measure the real cost on the first P3 load.
 
 ## Implementation Notes
+- **Intended deviation from scope item 2:** a GraphQL `RATE_LIMITED` (primary, hourly budget) stops the run at once instead of waiting; an hourly reset does not fit a 15-min timer run. Designer and planner agreed. Secondary limits (429 / 403 with "rate limit") wait max(60 s, backoff) up to `max_tries`.
+- `--include` not used (headers would enter the stdout P1b parses); `retry-after` is honoured only when it shows in gh's text, so in practice 60 s per retry.
+- A stop inside one item prints `partial: <ticket id>`; its next-run hand-edit lines come from the stop.
 
 ## Test Summary
 

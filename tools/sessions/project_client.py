@@ -12,8 +12,8 @@ from __future__ import annotations
 
 import json
 import os
-import stat
 import re
+import stat
 import subprocess
 import time
 from collections.abc import Callable
