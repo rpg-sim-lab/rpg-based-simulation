@@ -900,7 +900,7 @@ def render(plan: Plan, host: str, sha: str, age_hours: float | None, detached: i
     lines = [f"project_sync {mode} host={host} origin/main={sha[:9]} ({age}, no fetch) "
              f"items-in={items_n} open-PRs={'unknown' if prs_n is None else prs_n} detached-skipped={detached}"]
     for item in plan.creates:
-        lines.append(f"create  {item['Ticket ID']}  {item['Status']}  seat={item['Seat'] or '-'}  branch={item['Branch'] or '-'}  pr={item['PR'] or '-'}")
+        lines.append(f"create  {item['Ticket ID']}  {item['Status']}  domain={item['Domain'] or '-'}  seat={item['Seat'] or '-'}  branch={item['Branch'] or '-'}  pr={item['PR'] or '-'}")
     for item, changed in plan.updates:
         lines.append(f"update  {item['Ticket ID']}  {item['Status']}  changed: {', '.join(changed)}")
     for ident, reason in plan.archives:

@@ -17,6 +17,12 @@ CFG = {"pilot_lanes": ["rpg"], "pilot_start": "2026-11-12", "done_window_days": 
 HOST = "u24desktop"
 
 
+@pytest.fixture(autouse=True)
+def _last_run_in_tmp(tmp_path_factory, monkeypatch):
+    """An `--apply` run leaves last-run.json: never in the real home (TCK-20261115-PROJECT-SYNC-ALL-LANES)."""
+    monkeypatch.setattr(ps, "LAST_RUN_PATH", tmp_path_factory.mktemp("state") / "last-run.json")
+
+
 def copy(tid="TCK-20261112-X", folder="inprogress", title="A title", tier="hotfix", blocked=False, date="2026-11-12"):
     return ps.TicketCopy(tid, folder, f"{T}/{folder}/{tid}.md", title, tier, blocked, date)
 
