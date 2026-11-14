@@ -1,10 +1,10 @@
 ---
-status: active
+status: historical
 layer: ticket
 authority: P1
 audience: agent
 ticket_id: TCK-20261114-PROJECT-SYNC-LAYER-EPIC-PRIORITY-TAGS
-phase: inprogress
+phase: done
 date: 2026-11-14
 tags: [planning, delivery]
 ---
@@ -15,7 +15,7 @@ tags: [planning, delivery]
 `project_sync.py` P1c: Layer, Epic, Priority and Tags fields, so that one domain's board can be split further (rpg lane, u24)
 
 ## Status
-INPROGRESS
+DONE
 
 ## Tier
 standard
@@ -126,9 +126,14 @@ P1c builds on P1b (#909, TCK-20261114-PROJECT-SYNC-INIT-AND-APPLY). **Write code
 - Tags matched by wildcard also match substrings (`*ai*` matches "chain"). That's accepted for a filter-only field.
 
 ## Implementation Notes
+Probe first (by hand, Project 1, 2026-11-14 08:29Z): a single-select updated with the existing option ids kept every item's value, so Layer is SINGLE_SELECT. `set_select_options` now takes (name, colour, id); `merge_options` is append-only and keeps ids and colours; `replace_options` (the `--replace-status-options` path) sends exactly STATUSES in order with existing ids. `--init` adds Layer (registry options), Priority (P0-P3), Epic and Tags and appends missing options. Derivation in `project_sync.py`: `TicketCopy` gains layer, priority (leading P0-P3 token), tags (registry order, unknown last); Epic = folder epic by `## Tier: epic` (todos/ or done/ folder), else exactly-one SEQUENCE.md (exact basename; `## Order` or whole file), else standalone. Sync hash is versioned (`v2:<sha>`; unprefixed = v1), a v1 item is updated once, not reported as a hand edit. Designer amendments A-E and E2 in plan.md. The probe field `zz-option-probe` was deleted by hand afterwards (the only delete); the owner's approval for that delete is #715 6874643227, posted after the delete ran (timeline logged by the lead on #715).
 
 ## Test Summary
+tests/tools/test_session_project_sync.py and test_project_client.py plus test_session_status*: 113 passed at 4cca60a8c, the commit `--init` ran on; final scoped count with test_generate_registry's no-drift test is in the PR body. Live runs on rpg-sim-lab/1: dry run, `--init` (created Epic, Tags, Priority, Layer), second `--init` (all left alone), `--apply` 160 steps (30 updates), final dry run: nothing to do, 0 hand edits. Token-value grep over the diff and outputs: no match.
 
 ## Files Changed
+tools/sessions/project_client.py, tools/sessions/project_sync.py, tests/tools/test_project_client.py, tests/tools/test_session_project_sync.py, docs/guidelines/session_roles/project_sync_dry_run.md, SEQUENCE.md, this ticket and stored artifacts, TCK-20261114-PROJECT-CLIENT-WRITE-PACING.md (filing only, in todos/).
 
 ## Completion Summary
+P1c built and applied on the org Project: 30 items now carry Layer, Priority, Epic and Tags; a rerun is a no-op. 29 of 30 are Epic=standalone (the planner audited that against origin/main). Not covered: P3 (Domain single-select, other boards, pacing ticket), P2.
+

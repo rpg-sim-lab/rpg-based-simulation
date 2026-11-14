@@ -1,9 +1,9 @@
 ---
-status: active
+status: historical
 layer: ticket
 authority: P2
 audience: agent
-phase: open
+phase: done
 ticket_id: TCK-20261114-PROJECT-SYNC-LAYER-EPIC-PRIORITY-TAGS
 artifact_type: investigation
 tags: [planning, delivery]
