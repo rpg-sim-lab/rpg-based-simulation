@@ -4,7 +4,7 @@ layer: testing
 authority: P1
 audience: agent
 ticket_id: TCK-20261103-A-MEASUREMENT-NOT-ON-THE-PINNED-RUNNER-CALLS-ITSELF-EVIDENCE
-phase: open
+phase: inprogress
 date: 2026-11-03
 tags: [testing, determinism, observability]
 ---
@@ -15,7 +15,7 @@ tags: [testing, determinism, observability]
 A behaviour measurement run on the unpinned `_run_engine` can be presented as evidence: such a run should refuse to call itself evidence
 
 ## Status
-OPEN
+INPROGRESS
 
 ## Tier
 standard
@@ -100,6 +100,13 @@ Planner rulings (testing-planner, 2026-11-15; owner dispatch #715 6883358041; rp
 - **Test plan must include (lead C5):** tests/unit/kernel/test_executor_context_parity.py stays green, since kernel.py is touched.
 - **Evidence run (rpg-planner):** fm and crowded at s42 for 1000 ticks, each hash-equal to main. The new runs classify PINNED. One `_run_engine` run classifies NOT_PINNED, and the helper refuses it. It runs only on rpg-planner's HOST FREE (queued after HOLD stage 1 and the V3 trace). Single process, no pytest -n>1 while cells run, 8 GB host.
 - No behaviour re-measure (observability only; rpg-planner agrees).
+
+Implementer progress (testing-implementer, 2026-11-15), code and tests built, evidence run waiting for rpg-planner's HOST FREE:
+- `RunConditions` (governor, executor, max_tick_budget_ms, audit_mode, no_frame_pacing) and `RunManifest.run_conditions: Optional[RunConditions] = None` in src/observability/reporting/artifact_repository.py; one `update_manifest(run_id, run_conditions=...)` in Kernel.__init__ right after executor selection (create_run_directory and the rng order untouched).
+- `tools/test_architecture/pinned_runner.py`: the single PINNED definition, `classify` / `classify_manifest` (record only), `require_pinned`, `evidence_row`, a CLI that exits 1 on NOT_PINNED. tools/rpg_measure/arm_child.py imports it and refuses a build whose governor, executor or budget is not pinned, read from the manifest record.
+- `tools/test_architecture/evidence_runner_advisory.py`, wired into `done_checker_static.run_advisory_checks` as `evidence_runner_pinned` (report-only OK/WARN/NA; one import and one tuple line in tools/gate_checks, a cross-route touch flagged in the PR). Positive control: it flags 18 lines in TCK-20261031-A-RETREAT-PROJECT-OUTLIVES-ITS-THREAT/evidence.
+- Docs: docs/engine/kernel.md manifest line; parity ledger INFRA-440 written with tools/parity_ledger_writer.py.
+- The replacement for the delivery_process.md:170 fragment is drafted and goes to the owner through the lead before any edit; docs/guides/delivery_process.md is not touched in this batch.
 
 ## Test Summary
 

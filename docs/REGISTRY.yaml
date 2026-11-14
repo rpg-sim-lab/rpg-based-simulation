@@ -10136,6 +10136,21 @@
   - agent-working/stored_artifacts/TCK-20261103-THE-STARVATION-RECORD-MISSES-MEALS-WITHOUT-AN-INTENT-RESULT/test_plan.md
   tags: []
 - type: ticket
+  path: agent-working/tickets/inprogress/TCK-20261103-A-MEASUREMENT-NOT-ON-THE-PINNED-RUNNER-CALLS-ITSELF-EVIDENCE.md
+  ticket_id: TCK-20261103-A-MEASUREMENT-NOT-ON-THE-PINNED-RUNNER-CALLS-ITSELF-EVIDENCE
+  title: 'A behaviour measurement run on the unpinned `_run_engine` can be presented
+    as evidence: such a run should refuse to call itself evidence'
+  tier: standard
+  ticket_type: repair
+  date: '2026-11-03'
+  related_code_areas:
+  - _run_engine
+  artifact_files: []
+  tags:
+  - testing
+  - determinism
+  - observability
+- type: ticket
   path: agent-working/tickets/todos/TCK-20261103-A-CREATURE-WITH-BOTH-NEEDS-PRESSING-NEITHER-SLEEPS-NOR-FEEDS-ENOUGH.md
   ticket_id: TCK-20261103-A-CREATURE-WITH-BOTH-NEEDS-PRESSING-NEITHER-SLEEPS-NOR-FEEDS-ENOUGH
   title: 'A wild creature with hunger and sleep both pressing collapses again and
@@ -10159,21 +10174,6 @@
   - src/engine/combat.py:315-410, src/engine/patches.py:330-337, src/engine/tactical_threat.py:141-143
   artifact_files: []
   tags: []
-- type: ticket
-  path: agent-working/tickets/todos/TCK-20261103-A-MEASUREMENT-NOT-ON-THE-PINNED-RUNNER-CALLS-ITSELF-EVIDENCE.md
-  ticket_id: TCK-20261103-A-MEASUREMENT-NOT-ON-THE-PINNED-RUNNER-CALLS-ITSELF-EVIDENCE
-  title: 'A behaviour measurement run on the unpinned `_run_engine` can be presented
-    as evidence: such a run should refuse to call itself evidence'
-  tier: standard
-  ticket_type: repair
-  date: '2026-11-03'
-  related_code_areas:
-  - _run_engine
-  artifact_files: []
-  tags:
-  - testing
-  - determinism
-  - observability
 - type: ticket
   path: agent-working/tickets/todos/TCK-20261103-BROKE-HUNGRY-WORKERS-STILL-TAKE-NO-SHIFT-ON-MAIN.md
   ticket_id: TCK-20261103-BROKE-HUNGRY-WORKERS-STILL-TAKE-NO-SHIFT-ON-MAIN
