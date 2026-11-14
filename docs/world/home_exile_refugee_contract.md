@@ -70,7 +70,7 @@ reads `AuthoritativeState`, returns a `StateUpdate`. Every tick, for every regio
 (`entity.lifecycle.active and entity.combat.alive`) currently resolved into that region is
 relocated to its lowest-`calamity_intensity` adjacent region (ties broken by region id), via
 `EntityUpdate.new_position` — the same field `src/engine/movement.py` already uses for teleport,
-applied through `NavigationPatch.apply()` -> `ApplyPath._fast_replace_navigation`.
+applied through `NavigationPatch.apply()` -> `ApplyPath._fast_replace_navigation`. Current play: calamity_intensity has no producer (ENV-06 not built) and is 0.0 in every region, so this does not trigger in play (TCK-20260914-CALAMITY-INTENSITY-PRODUCER-NEVER-FIRES).
 
 If the entity's `home_region_id` is still unset at the moment of displacement, the struck region
 is recorded as their home via `StrategicUpdate(home_region_id_set=region.id)`. If it is already

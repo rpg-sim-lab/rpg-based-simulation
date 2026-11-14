@@ -15,6 +15,15 @@ This test is a "welcome failure" by design: the moment a real caller is wired in
 failing -- that failure is the signal that J1's DEFECT classification needs to be re-examined and
 the registry label correction (owned by the other ticket) picked up, not a bug in the test.
 
+WHY THE METHOD STAYS UNWIRED (owner decision 10, catalog rule ENV-06, 2026-10-05; docs-only close of
+TCK-20260914-CALAMITY-INTENSITY-PRODUCER-NEVER-FIRES, 2026-11-14): calamity intensity is the
+escalation of sustained instability (trauma held above the instability threshold), and no single
+event -- a hero's death, a boss defeat -- changes it directly. `apply_calamity_consequences`
+(+0.05 per hero death in a hazard_level > 0.5 region) is therefore NOT the producer to wire; it is
+unwired legacy, kept only behind this pin. The ENV-06 producer is not built yet (it follows
+TCK-20260914-LAIR-REGION-TRAUMA-NEVER-ACCUMULATES), so in current play calamity_intensity is 0.0 in
+every region. A caller appearing for THIS method is a rule violation to review, not progress.
+
 Follows the same inspect.getsource()/source-text-scan technique as
 tests/architecture/test_displacement_write_paths.py.
 """

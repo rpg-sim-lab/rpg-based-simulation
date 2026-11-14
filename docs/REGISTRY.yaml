@@ -8130,6 +8130,19 @@
   tags:
   - documentation
 - type: ticket
+  path: agent-working/tickets/todos/TCK-20261114-ENV-06-CALAMITY-ESCALATION-PRODUCER-IS-NOT-BUILT.md
+  ticket_id: TCK-20261114-ENV-06-CALAMITY-ESCALATION-PRODUCER-IS-NOT-BUILT
+  title: The ENV-06 calamity escalation (owner decision 10) is not built, so `calamity_intensity`
+    is 0.0 in every region in play
+  tier: standard
+  ticket_type: feature
+  date: '2026-11-14'
+  related_code_areas:
+  - src/world/calamity.py, src/engine/world_dynamics.py, src/world/displacement.py
+  artifact_files: []
+  tags:
+  - world
+- type: ticket
   path: agent-working/tickets/done/TCK-20261113-FIVE-SOCIAL-ACTION-KINDS-MAY-HAVE-NO-ISSUER-IN-PLAY.md
   ticket_id: TCK-20261113-FIVE-SOCIAL-ACTION-KINDS-MAY-HAVE-NO-ISSUER-IN-PLAY
   title: 'Five social action kinds may have no issuer in play: find which of TEAM_UP,
@@ -30226,6 +30239,30 @@
   - observability
   - world
 - type: ticket
+  path: agent-working/tickets/done/TCK-20260914-CALAMITY-INTENSITY-PRODUCER-NEVER-FIRES.md
+  ticket_id: TCK-20260914-CALAMITY-INTENSITY-PRODUCER-NEVER-FIRES
+  title: '`calamity_intensity` never left `0.0` in any region across a real 5000-tick
+    run — the entire
+
+    calamity-intensity system (both its producer and its propagator) appears to be
+    inert in practice,
+
+    not just the maturity-independent `world_boss` spawn path that consumes it'
+  tier: standard
+  ticket_type: repair
+  date: '2026-09-14'
+  related_code_areas:
+  - src/world/calamity.py
+  - CalamityPressurePropagator.propagate_seasonal()
+  - region.hazard_level
+  artifact_files:
+  - agent-working/stored_artifacts/TCK-20260914-CALAMITY-INTENSITY-PRODUCER-NEVER-FIRES/designer_ruling.md
+  - agent-working/stored_artifacts/TCK-20260914-CALAMITY-INTENSITY-PRODUCER-NEVER-FIRES/investigation.md
+  - agent-working/stored_artifacts/TCK-20260914-CALAMITY-INTENSITY-PRODUCER-NEVER-FIRES/plan.md
+  - agent-working/stored_artifacts/TCK-20260914-CALAMITY-INTENSITY-PRODUCER-NEVER-FIRES/test_plan.md
+  tags:
+  - world
+- type: ticket
   path: agent-working/tickets/done/TCK-20260914-CALAMITY-RANDOM-CHANCE-UNUSED-CONSTANT.md
   ticket_id: TCK-20260914-CALAMITY-RANDOM-CHANCE-UNUSED-CONSTANT
   title: '`CalamityService.CALAMITY_RANDOM_CHANCE = 0.005` is declared but has zero
@@ -30591,26 +30628,6 @@
   tags:
   - ai
   - process-improvement
-- type: ticket
-  path: agent-working/tickets/todos/TCK-20260914-CALAMITY-INTENSITY-PRODUCER-NEVER-FIRES.md
-  ticket_id: TCK-20260914-CALAMITY-INTENSITY-PRODUCER-NEVER-FIRES
-  title: '`calamity_intensity` never left `0.0` in any region across a real 5000-tick
-    run — the entire
-
-    calamity-intensity system (both its producer and its propagator) appears to be
-    inert in practice,
-
-    not just the maturity-independent `world_boss` spawn path that consumes it'
-  tier: standard
-  ticket_type: repair
-  date: '2026-09-14'
-  related_code_areas:
-  - src/world/calamity.py
-  - CalamityPressurePropagator.propagate_seasonal()
-  - region.hazard_level
-  artifact_files: []
-  tags:
-  - world
 - type: ticket
   path: agent-working/tickets/todos/TCK-20260914-LAIR-REGION-TRAUMA-NEVER-ACCUMULATES.md
   ticket_id: TCK-20260914-LAIR-REGION-TRAUMA-NEVER-ACCUMULATES
