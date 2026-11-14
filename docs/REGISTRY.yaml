@@ -8125,6 +8125,24 @@
   - planning
   - delivery
 - type: ticket
+  path: agent-working/tickets/done/TCK-20261114-PROJECT-SYNC-LAYER-EPIC-PRIORITY-TAGS.md
+  ticket_id: TCK-20261114-PROJECT-SYNC-LAYER-EPIC-PRIORITY-TAGS
+  title: '`project_sync.py` P1c: Layer, Epic, Priority and Tags fields, so that one
+    domain''s board can be split further (rpg lane, u24)'
+  tier: standard
+  ticket_type: feature
+  date: '2026-11-14'
+  related_code_areas:
+  - tools/sessions/project_sync.py, tools/sessions/project_client.py, tests/tools/test_session_project_sync.py,
+  - tests/tools/test_project_client.py
+  artifact_files:
+  - agent-working/stored_artifacts/TCK-20261114-PROJECT-SYNC-LAYER-EPIC-PRIORITY-TAGS/investigation.md
+  - agent-working/stored_artifacts/TCK-20261114-PROJECT-SYNC-LAYER-EPIC-PRIORITY-TAGS/plan.md
+  - agent-working/stored_artifacts/TCK-20261114-PROJECT-SYNC-LAYER-EPIC-PRIORITY-TAGS/test_plan.md
+  tags:
+  - planning
+  - delivery
+- type: ticket
   path: agent-working/tickets/done/TCK-20261114-ROLE-CARDS-CITE-AMENDED-DECISIONS.md
   ticket_id: TCK-20261114-ROLE-CARDS-CITE-AMENDED-DECISIONS
   title: The architecture and platform role cards cite decisions that the distributed-workers
@@ -8175,6 +8193,20 @@
   artifact_files: []
   tags:
   - world
+- type: ticket
+  path: agent-working/tickets/todos/github-project-ticket-view/TCK-20261114-PROJECT-CLIENT-WRITE-PACING.md
+  ticket_id: TCK-20261114-PROJECT-CLIENT-WRITE-PACING
+  title: '`project_client.py` paces its writes and honours GitHub''s rate-limit answers,
+    so the P3 all-lanes first load can run (P3 prerequisite)'
+  tier: standard
+  ticket_type: feature
+  date: '2026-11-14'
+  related_code_areas:
+  - tools/sessions/project_client.py, tests/tools/test_project_client.py, registries/session_project.yaml
+  artifact_files: []
+  tags:
+  - planning
+  - delivery
 - type: ticket
   path: agent-working/tickets/done/TCK-20261113-FIVE-SOCIAL-ACTION-KINDS-MAY-HAVE-NO-ISSUER-IN-PLAY.md
   ticket_id: TCK-20261113-FIVE-SOCIAL-ACTION-KINDS-MAY-HAVE-NO-ISSUER-IN-PLAY
