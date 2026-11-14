@@ -125,7 +125,7 @@ resolves the entity's catalog faction id and checks it against the region's `haz
 if the entity's faction endures that hazard kind, drain is **zero**; otherwise the drain
 formula above applies unchanged. This endurance check is **unconditional** — it applies before
 and independent of `calamity_intensity` scaling or the `MIASMA` modifier, and it does not
-consult hostility relationships between factions.
+consult hostility relationships between factions. Current play: calamity_intensity has no producer (ENV-06 not built) and is 0.0 in every region, so the drain formula reduces to plain `hazard_level` in play (TCK-20260914-CALAMITY-INTENSITY-PRODUCER-NEVER-FIRES).
 
 This means endurance is strictly a property a faction declares for itself, never an inference
 from being hostile (or not) to another faction. A hazard kind that no faction present has
@@ -348,7 +348,7 @@ demographic signal, and this path already never *reads* the population-pressure 
 
 ## 6. Calamities & World Threats
 When the global `Maturity` and regional `Trauma` scores are sufficiently high, the simulation triggers "Macro Events."
-*   **Boss Spawns**: Unique, high-threat entities appear in traumatized regions. **Inert while the feature is deferred** (owner decision 14, 2026-10-05): all three branches (`BossService.check_for_boss_spawn`, `BossService.check_for_lair_spawn`, and the calamity boss in `CalamityService.process_world_dynamics`) spawn only when `ENABLE_WORLD_BOSS_SPAWN` is `ON` (default `OFF`). The code, gates and thresholds are unchanged; the calamity trigger still advances `last_calamity_tick` either way.
+*   **Boss Spawns**: Unique, high-threat entities appear in traumatized regions. **Inert while the feature is deferred** (owner decision 14, 2026-10-05): all three branches (`BossService.check_for_boss_spawn`, `BossService.check_for_lair_spawn`, and the calamity boss in `CalamityService.process_world_dynamics`) spawn only when `ENABLE_WORLD_BOSS_SPAWN` is `ON` (default `OFF`). The code, gates and thresholds are unchanged; the calamity trigger still advances `last_calamity_tick` either way. Current play: calamity_intensity has no producer (ENV-06 not built) and is 0.0 in every region, so this does not trigger in play (TCK-20260914-CALAMITY-INTENSITY-PRODUCER-NEVER-FIRES).
 *   **Raids**: Faction-based attacks on town centers or resource hubs.
 *   **Threat Evolution**: Monsters in high-hazard regions evolve to higher `Evolution Levels`, becoming deadlier and granting better rewards.
 
@@ -494,7 +494,7 @@ state.last_calamity_tick >= CALAMITY_MIN_INTERVAL` (2000), `state.tick % CALAMIT
 0` (5000), and the region filter `calamity_intensity > 0.3` — all existing named constants already
 used by the boss-spawn block in the same function, not new authored numbers. The magical/demonic
 entity spawns at the same `target_region.center` already selected for the boss, not a separately
-computed region.
+computed region. Current play: calamity_intensity has no producer (ENV-06 not built) and is 0.0 in every region, so this does not trigger in play (TCK-20260914-CALAMITY-INTENSITY-PRODUCER-NEVER-FIRES).
 
 **Parentless birth record:** the entity is built via `EntityGenerator.spawn_magical_demonic_entity()`,
 which calls `V2EntityBuilder.birth_record(parent_a_entity_id=None, parent_b_entity_id=None,

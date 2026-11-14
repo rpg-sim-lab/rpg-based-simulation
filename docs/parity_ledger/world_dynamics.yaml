@@ -351,7 +351,10 @@
     tests/unit/worldassembly/test_corpus_diversity.py::test_generated_frontier_3_42_extended_population_stability,
     tests/unit/worldbuilding/test_world_compiler.py::test_urban_political_resolved_bandit_road_hazard_kind_matches_source
   divergence_note: null
-  support_boundary: null
+  support_boundary: 'Inert in play (TCK-20260914-CALAMITY-INTENSITY-PRODUCER-NEVER-FIRES):
+    calamity_intensity has no producer (the ENV-06 producer is not built; apply_calamity_consequences
+    has no caller), so it is 0.0 in every region and this branch never triggers in
+    play.'
 - id: WORLD-060
   text: Regional hazards drain HP/Readiness based on intensity.
   status: verified
@@ -388,7 +391,10 @@
     tests/unit/worldassembly/test_corpus_diversity.py::test_generated_frontier_3_42_extended_population_stability,
     tests/unit/worldbuilding/test_world_compiler.py::test_urban_political_resolved_bandit_road_hazard_kind_matches_source
   divergence_note: null
-  support_boundary: null
+  support_boundary: 'Inert in play (TCK-20260914-CALAMITY-INTENSITY-PRODUCER-NEVER-FIRES):
+    calamity_intensity has no producer (the ENV-06 producer is not built; apply_calamity_consequences
+    has no caller), so it is 0.0 in every region and this branch never triggers in
+    play.'
 - id: WORLD-061
   text: Weather affects perception, evasion, and movement speed.
   status: missing
@@ -419,10 +425,15 @@
   proof_type: parity
   test_path: tests/unit/world/test_transformations.py
   divergence_note: null
-  support_boundary: Original tests_v2/world/test_transformations.py citation was a
-    phantom -- that path never existed in this repository's history (TCK-20260904-PARITY-TESTPATH-STALE-CITATIONS-AUDIT).
+  support_boundary: 'Original tests_v2/world/test_transformations.py citation was
+    a phantom -- that path never existed in this repository''s history (TCK-20260904-PARITY-TESTPATH-STALE-CITATIONS-AUDIT).
     Repointed to a real, passing successor under the same real tests/unit/world/ directory,
     which directly exercises both trauma-only and trauma+calamity transformation thresholds.
+    Inert in play for the calamity thresholds (ENV-06 / owner decision 10; TCK-20261114-ENV-06-CALAMITY-ESCALATION-PRODUCER-IS-NOT-BUILT):
+    with calamity_intensity at 0.0 in every region (no producer is built), MOUNTAIN->VOLCANIC
+    (needs calamity >= 0.8, transformation.py:25-30 and :57) can never fire, and WASTELAND->PLAINS''s
+    calamity_less 0.1 is always met, so that shift is gated by trauma alone. The calamity
+    thresholds are verified in unit tests, not reached in play.'
   evidence_kind: invocation
 - id: WORLD-030
   text: Camp reinforcements occur on schedule.
@@ -772,7 +783,10 @@
   proof_type: null
   test_path: tests/unit/world/test_calamity_intensity_scales_regional_drain.py
   divergence_note: null
-  support_boundary: null
+  support_boundary: 'Inert in play (TCK-20260914-CALAMITY-INTENSITY-PRODUCER-NEVER-FIRES):
+    calamity_intensity has no producer (the ENV-06 producer is not built; apply_calamity_consequences
+    has no caller), so it is 0.0 in every region and this branch never triggers in
+    play.'
 - id: WORLD-064
   text: World seed controls world generation.
   status: verified
@@ -1026,7 +1040,9 @@
     (test_calamity_boss_spawn), but CalamityService.apply_calamity_consequences, which
     raises regional calamity_intensity when significant entities die, has no caller
     in src/ (pinned by tests/architecture/test_calamity_intensity_producer_unwired.py);
-    see TCK-20260914-CALAMITY-INTENSITY-PRODUCER-NEVER-FIRES.
+    see TCK-20260914-CALAMITY-INTENSITY-PRODUCER-NEVER-FIRES. The intended producer
+    is ENV-06's sustained-instability escalation (owner decision 10, 2026-10-05),
+    not this per-hero-death method; this method stays unwired by design.
   support_boundary: null
 - id: WORLD-085
   text: World boss spawn rule is deterministic.
@@ -1422,7 +1438,10 @@
     No prior calamity intensity propagation between regions existed.
 
     '
-  support_boundary: null
+  support_boundary: 'Inert in play (TCK-20260914-CALAMITY-INTENSITY-PRODUCER-NEVER-FIRES):
+    calamity_intensity has no producer (the ENV-06 producer is not built; apply_calamity_consequences
+    has no caller), so it is 0.0 in every region and this branch never triggers in
+    play.'
 - id: WORLD-106
   text: 'Trauma region concern injection (E52F): when an active, alive entity has
     navigation.region_id pointing to a region with trauma_score > TRAUMA_CONCERN_THRESHOLD=0.5,
@@ -1935,7 +1954,10 @@
     tests/unit/world/test_calamity_magical_demonic_reproduction.py::test_magical_demonic_birth_nudge_decision
   divergence_note: null
   proof_type: parity
-  support_boundary: null
+  support_boundary: 'Inert in play (TCK-20260914-CALAMITY-INTENSITY-PRODUCER-NEVER-FIRES):
+    calamity_intensity has no producer (the ENV-06 producer is not built; apply_calamity_consequences
+    has no caller), so it is 0.0 in every region and this branch never triggers in
+    play.'
 - id: WORLD-122
   text: 'Behind ENABLE_REPRODUCTION_HUMANOID_PATH (default OFF), WorldDynamicsSystem.resolve_dynamics()
     gains a new "3.10 Humanoid Reproduction" step nested inside the existing cadence.world_dynamics
@@ -2281,10 +2303,13 @@
   proof_type: parity
   test_path: tests/unit/world/test_displacement.py, tests/architecture/test_displacement_write_paths.py
   divergence_note: null
-  support_boundary: DISPLACEMENT_THRESHOLD (0.6) is a new, independent constant one
-    tier above CalamityService.apply_calamity_consequences()'s existing hazard_level
+  support_boundary: 'DISPLACEMENT_THRESHOLD (0.6) is a new, independent constant one
+    tier above CalamityService.apply_calamity_consequences()''s existing hazard_level
     > 0.5 growth gate -- deliberately distinct events on the same underlying signal,
-    not a shared threshold.
+    not a shared threshold. Inert in play (TCK-20260914-CALAMITY-INTENSITY-PRODUCER-NEVER-FIRES):
+    calamity_intensity has no producer (the ENV-06 producer is not built; apply_calamity_consequences
+    has no caller), so it is 0.0 in every region and this branch never triggers in
+    play.'
 - id: WORLD-125
   text: 'All three world-boss spawn branches are inert unless ENABLE_WORLD_BOSS_SPAWN
     is explicitly ON in state.feature_flags (default OFF; owner decision 14): BossService.check_for_boss_spawn

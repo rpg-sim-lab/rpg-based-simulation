@@ -76,7 +76,7 @@ Calamity fires on **forced 5000-tick intervals**, subject to a minimum gap of **
 2. Current tick mod 5000 == 0 (forced interval gate)
 3. Target region must have `intensity > 0.3`
 
-The region with the highest calamity intensity is selected.
+The region with the highest calamity intensity is selected. Current play: calamity_intensity has no producer (ENV-06 not built) and is 0.0 in every region, so this does not trigger in play (TCK-20260914-CALAMITY-INTENSITY-PRODUCER-NEVER-FIRES).
 
 **Dead code note:** A `CALAMITY_RANDOM_CHANCE = 0.005` constant is defined but is not wired into any active code path. Only the forced-interval path fires calamities in the current implementation.
 
@@ -89,7 +89,9 @@ When triggered, a calamity:
 
 ### Calamity intensity accumulation
 
-Hero death in a region with `hazard_level > 0.5` raises that region's `calamity_intensity` by **+0.05** per death. Intensity decays naturally if the region stabilises (no hazard deaths for many ticks).
+Superseded by ENV-06 (owner decision 10, 2026-10-05): calamity intensity is the escalation of sustained instability; no single event (a hero's death, a boss defeat) changes it directly. The ENV-06 producer is not built yet; in current play calamity_intensity is 0.0 in every region (TCK-20260914-CALAMITY-INTENSITY-PRODUCER-NEVER-FIRES). CalamityService.apply_calamity_consequences (+0.05 per hero death) is unwired legacy, kept only behind its architecture pin.
+
+Intensity decays naturally if the region stabilises (no hazard deaths for many ticks). (ENV-06; not built: no decay code exists, and in current play intensity is 0.0 everywhere.)
 
 ---
 
