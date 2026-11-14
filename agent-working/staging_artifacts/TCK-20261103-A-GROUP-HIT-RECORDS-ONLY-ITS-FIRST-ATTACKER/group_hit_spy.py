@@ -8,7 +8,7 @@ After each tick, for each two-attacker hit within 12 ticks, the subject's hp, en
 and under the NEW rule (sum of the shares of last_hit_attackers that are engaged and alive; null in a tree without the fields), and whether the subject was held that tick.
   python group_hit_spy.py <world> <seed> <ticks> <out.json> [<plain_cell.json>]
 With <plain_cell.json> (the plain twin's result holding "final_hash") the end hash is compared; a mismatch exits 3 and the file must not be used.
-Output: meta, final_hash, match, hits[], held_ticks_total, held_runs_total, held_total_length, longest_run, held_at_last_tick[], runs_ge_50[{entity, ticks, first_tick, no_hit}], deaths.
+Output: meta, final_hash, final_hash_v4_form (fix tree only: the v5 state hashed as v4, comparable with a base tree's final_hash), match, hits[], held_ticks_total, held_runs_total, held_total_length, longest_run, held_at_last_tick[], runs_ge_50[{entity, ticks, first_tick, no_hit}], deaths.
 A run is "no_hit" when the subject's last_hit_tick did not change between the first and the last held tick of the run.
 """
 from __future__ import annotations
@@ -97,6 +97,14 @@ def main(argv):
     state = kernel.state
     kernel.shutdown()
     final_hash = CanonicalStateHasher.get_hash(state)
+    v4_form_hash = None
+    if any(hasattr(e.combat, "last_hit_attackers") for e in state.entities.values()):
+        # the fix tree's digest is flat-sha256-v5; the v4 form (the two new combat keys removed) is the hash a v4 tree computes, so base and fix are comparable
+        import hashlib
+        data = CanonicalStateHasher.to_canonical_data(state)
+        for ent in data["entities"].values():
+            ent["combat"] = {k: v for k, v in ent["combat"].items() if k not in ("last_hit_attackers", "last_hit_damages")}
+        v4_form_hash = hashlib.sha256(json.dumps(data, sort_keys=True, separators=(",", ":")).encode("utf-8")).hexdigest()
     want = json.loads(Path(cell).read_text(encoding="utf-8"))["final_hash"] if cell else None
     ok = None if want is None else final_hash == want
 
@@ -131,7 +139,7 @@ def main(argv):
         if not e.combat.alive:
             rec = getattr(e.lifecycle, "death_record", None)
             deaths[str(e.id)] = [None if rec is None else rec.tick, _cause(e), e.kind]
-    res = {"meta": {"world": world, "seed": seed, "ticks": ticks, "cwd": os.getcwd()}, "final_hash": final_hash, "cell_final_hash": want, "match": ok, "hits": hits,
+    res = {"meta": {"world": world, "seed": seed, "ticks": ticks, "cwd": os.getcwd()}, "final_hash": final_hash, "final_hash_v4_form": v4_form_hash, "cell_final_hash": want, "match": ok, "hits": hits,
            "held_ticks_total": sum(len({r[0] for r in v}) for v in held.values()), "held_runs_total": len(all_runs), "held_total_length": sum(n for _, _, n in all_runs), "longest_run": longest,
            "held_at_last_tick": at_last, "runs_ge_50": ge50, "held_by_entity": {str(k): sorted({r[0] for r in v}) for k, v in held.items()}, "deaths": deaths, "deaths_total": len(deaths)}
     Path(out).write_text(json.dumps(res, sort_keys=True, default=str), encoding="utf-8")
