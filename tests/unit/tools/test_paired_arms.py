@@ -9,14 +9,17 @@ import pytest
 from tools.rpg_measure import paired
 from tools.test_architecture import paired_arms as pa
 
+ENV = {"runner": "ci:ubuntu24-20260101.1.0", "python": "3.13.1", "os": "Linux 6.8.0", "uv_lock": "1" * 64, "uv_lock_source": "tool", "dists": "d" * 64}
 BASE, NEW = "a" * 40, "b" * 40
 W = "frontier_living_world"
-RUNNER = {"name": "GitHub Actions 7", "image": "ubuntu24-20260101.1.0", "cpu_model": "AMD EPYC 7763", "nproc": 4, "mem_total_mb": 16000, "python": "3.13.1", "os": "Ubuntu 24.04.1 LTS"}
+E8 = paired.env_key(ENV)
+RUNNER = {"name": "GitHub Actions 7", "image": "ubuntu24-20260101.1.0", "cpu_model": "AMD EPYC 7763", "nproc": 4, "mem_total_mb": 16000, "python": "3.13.1", "os": "Ubuntu 24.04.1 LTS", "uv_lock": "1" * 64}
 
 
 def _write(job: Path, sha: str, world: str, seed: int, *, repeat=False, runner=None, doc='{"runner": "PINNED"}', ticks=5000, child="c0ffee00"):
-    directory = job / "results" / f"{sha[:12]}-{child}-{ticks}{'-repeat' if repeat else ''}"
+    directory = job / "results" / f"{sha[:12]}-{child}-{ticks}-{paired.env_key(ENV)}{'-repeat' if repeat else ''}"
     directory.mkdir(parents=True, exist_ok=True)
+    (directory / paired.ENV_FILE).write_text(json.dumps(ENV, sort_keys=True, indent=2) + "\n")
     (directory / f"{world}_{seed}.json").write_text(doc)
     (directory / f"{world}_{seed}.cost.json").write_text(json.dumps({"wall_seconds": 1.5, "peak_rss_mb": 200.0, "runner": runner or RUNNER}))
 
@@ -78,6 +81,23 @@ def test_the_plan_cli_prints_the_github_output_lines(capsys):
     assert pa.main(["plan", "--worlds", "x", "--seeds", "42"]) == 2
 
 
+def test_an_evidence_dispatch_refuses_self_check_off_and_keeps_the_repeat_jobs():
+    """AC6 (g): an evidence set must include its self-checks; off is refused, seed42 and full still plan the base-vs-base repeat jobs."""
+    with pytest.raises(pa.ArmsRefused, match="self_check off is refused for an evidence dispatch"):
+        pa.plan_matrix(",".join(paired.WORLDS), "42", "off", evidence=True)
+    for mode in ("seed42", "full"):
+        kinds = {e["kind"] for e in pa.plan_matrix(",".join(paired.WORLDS), "42", mode, evidence=True)["include"]}
+        assert kinds == {"pair", "self"}
+    assert pa.plan_matrix(",".join(paired.WORLDS), "42", "off")["include"]  # not an evidence dispatch: still allowed
+
+
+def test_the_plan_cli_refuses_off_with_evidence_and_exits_2(capsys):
+    args = ["plan", "--worlds", ",".join(paired.WORLDS), "--seeds", "42", "--self-check", "off"]
+    assert pa.main(args + ["--evidence"]) == 2
+    assert "evidence dispatch" in capsys.readouterr().err
+    assert pa.main(args) == 0
+
+
 # ---- run one arm (paired's own functions, faked)
 
 def test_run_arm_uses_paireds_cache_key_and_writes_the_cost_beside_the_result(tmp_path, monkeypatch):
@@ -102,6 +122,26 @@ def test_run_arm_uses_paireds_cache_key_and_writes_the_cost_beside_the_result(tm
         pa.run_arm(tmp_path, "main", "other", W, 42, 100, tmp_path / "cache")
 
 
+# ---- AC7 (h): the tool checkout's uv.lock sha256 is in the runner identity
+
+def test_the_runner_identity_carries_the_sha256_of_the_tool_checkouts_uv_lock(tmp_path):
+    import hashlib
+    (tmp_path / "uv.lock").write_bytes(b"version = 1\n")
+    assert pa.runner_identity({}, tool_root=tmp_path)["uv_lock"] == hashlib.sha256(b"version = 1\n").hexdigest()
+    (tmp_path / "uv.lock").write_bytes(b"version = 2\n")
+    assert pa.runner_identity({}, tool_root=tmp_path)["uv_lock"] != hashlib.sha256(b"version = 1\n").hexdigest()
+    assert pa.runner_identity({}, tool_root=tmp_path / "none")["uv_lock"] == "missing"
+    assert pa.runner_identity({})["uv_lock"] == hashlib.sha256((Path(pa.__file__).resolve().parents[2] / "uv.lock").read_bytes()).hexdigest()  # default: this tool checkout
+
+
+def test_assemble_refuses_a_result_whose_runner_record_has_no_uv_lock(tmp_path):
+    root = tmp_path / "arms"
+    old = {k: v for k, v in RUNNER.items() if k != "uv_lock"}
+    _pair_job(root, runner=old)
+    with pytest.raises(pa.ArmsRefused, match="uv_lock"):
+        _assemble(root)
+
+
 # ---- assemble
 
 def _assemble(root: Path, **kw):
@@ -117,13 +157,13 @@ def test_assemble_merges_the_jobs_into_one_paired_cache_root(tmp_path):
     _write(self_job, BASE, W, 42, repeat=True)
     summary = _assemble(root)
     collected = tmp_path / "collected"
-    assert sorted(p.name for p in (collected / "results").iterdir()) == sorted([f"{BASE[:12]}-c0ffee00-5000", f"{NEW[:12]}-c0ffee00-5000", f"{BASE[:12]}-c0ffee00-5000-repeat"])
-    assert (collected / "results" / f"{BASE[:12]}-c0ffee00-5000" / f"{W}_43.json").is_file()
+    assert sorted(p.name for p in (collected / "results").iterdir()) == sorted([f"{BASE[:12]}-c0ffee00-5000-{E8}", f"{NEW[:12]}-c0ffee00-5000-{E8}", f"{BASE[:12]}-c0ffee00-5000-{E8}-repeat"])
+    assert (collected / "results" / f"{BASE[:12]}-c0ffee00-5000-{E8}" / f"{W}_43.json").is_file()
     assert len(summary["jobs"]) == 3 and len(summary["arms"]) == 6 and json.loads((collected / "identities.json").read_text()) == summary
 
 
-@pytest.mark.parametrize("field, other", [("python", "3.13.2"), ("os", "Ubuntu 22.04.5 LTS")])
-def test_assemble_refuses_jobs_that_differ_in_python_version_or_os(tmp_path, field, other):
+@pytest.mark.parametrize("field, other", [("python", "3.13.2"), ("os", "Ubuntu 22.04.5 LTS"), ("uv_lock", "2" * 64)])
+def test_assemble_refuses_jobs_that_differ_in_python_version_os_or_uv_lock(tmp_path, field, other):
     root = tmp_path / "arms"
     _pair_job(root, seed=42)
     _pair_job(root, seed=43, runner={**RUNNER, field: other})
@@ -204,7 +244,7 @@ def test_the_assemble_cli_exits_2_with_the_refusal_and_0_on_a_good_set(tmp_path,
 def _doc(world: str, seed: int) -> dict:
     """A minimal result document in the shape paired.py reads (no simulation): two people alive, audit flags True."""
     return {"world": world, "seed": seed, "start": [[1, "merchant", 1, 1], [2, "guard", 1, 1]], "final": {"1": [1, None, "merchant"], "2": [1, None, "guard"]},
-            "counters": None, "perception_samples": 5, "final_hash": "h", "start_hash": "s", "audit_mode": True, "signals_zeroed": True, "adds": {}, "runner": "PINNED"}
+            "counters": None, "perception_samples": 5, "final_hash": "h", "start_hash": "s", "audit_mode": True, "signals_zeroed": True, "adds": {}, "runner": "PINNED", "dists": paired.current_env()["dists"]}
 
 
 def test_jobs_run_by_run_arm_and_assembled_are_accepted_by_paireds_real_collected_compare(tmp_path, monkeypatch, capsys):

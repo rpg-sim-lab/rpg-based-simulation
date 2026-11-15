@@ -75,6 +75,21 @@ Platform's runner facts (#593 issuecomment-6345851046):
 - [ ] AC3: per-arm wall time and peak RSS are in the results (T1).
 - [x] AC4: the workflow is pinned (the pin guard passes), it is `workflow_dispatch`-only, and a static test asserts that it has no `pull_request` / `push` trigger and that its concurrency does not cancel.
 - [x] AC5: rpg's collected-results option (its own PR) is reviewed by testing-planner, and the STOP and host-independence refusals are tested there.
+- Added 2026-11-15 (testing-planner), from rpg-designer's runner-evidence rule (#634, items a-f accepted plus g-j; relayed by lead-planner-u24). These ACs are built only after the owner's go on a proposal with cost (#715 6891576449 item 3):
+- [x] AC6 (g) (done in TCK-20261115-PAIRED-ARMS-EVIDENCE-SETS-NEED-THEIR-REPEAT-AND-ONE-LOCKED-ENVIRONMENT): an evidence set must include self-checks. `plan --self-check off` is refused for an evidence dispatch, and the base-vs-base repeat runs on the runner (tested).
+- [x] AC7 (h) (done in TCK-20261115-PAIRED-ARMS-EVIDENCE-SETS-NEED-THEIR-REPEAT-AND-ONE-LOCKED-ENVIRONMENT): the runner identity carries the sha256 of the tool checkout's `uv.lock`, and assembly refuses a set whose jobs differ in it (tested on fake artifacts).
+- [x] AC8 (i) (done in TCK-20261115-PAIRED-ARMS-EVIDENCE-SETS-NEED-THEIR-REPEAT-AND-ONE-LOCKED-ENVIRONMENT): the paired cache key becomes `<sha12>-<child hash8>-<ticks>-<env8>[-repeat]`, as ruled by rpg-planner (lead relay, 2026-11-15).
+  - env8 is the first 8 hex characters of the sha256 of the canonical JSON {runner: "local:<host>" | "ci:<label>", python: major.minor.micro, os: system + release, uv_lock: the sha256 of the tool checkout's uv.lock (falling back to the arm tree's, recorded as which one)}.
+  - Each result dir gets an env.json holding that object, and `--collected` refuses a mismatch.
+  - Old-format entries are a miss and are never deleted.
+  - Tests: a local and a CI env give different keys; the same env gives the same key; a uv.lock change gives a new key; an old entry is a miss; a mismatched env.json is refused.
+  - paired.py is rpg's file, under rpg-planner's ruling.
+- [ ] AC9 (j) HELD: built as a T2 follow-on on the spy hook of TCK-20261115-PAIRED-PASS-RECORDS-THE-HOLD-LINE-AND-CHECKS-ITS-BASE after that lands; no second hook (rpg-planner and lead-planner-u24, 2026-11-15; testing-planner relay; owner scope 6893752032). The plain-twin control (rpg-designer, #634):
+  - A spied arm cell is compared with its plain twin: the same tree, world, seed, ticks and flags, through the same arm-child entry, in the same job. It passes if the full final_hash is equal and the spied run has 0 exceptions.
+  - The fix arm has at least 3 controls (1 per world, rotated seeds, recorded). The base arm has 1 control per cache build.
+  - A controlled job runs 3 arm children on one VM.
+  - A failed control voids the set, with no retry (tested).
+- [ ] AC10: the AC1 comparison uses one fixed post-fix tool commit for both the local step (ubuntu's heavy slot) and the CI dispatch. Its DET-PORT tier is stated as DET-PORT-2 (testing-planner ruling, 2026-11-15). Equality is evidence for that step only, not a portability claim.
 
 ## Related Tickets
 - TCK-20261023-MEASURED-STEP-RUN-AND-RERUN-LEDGER (T1)
@@ -99,10 +114,18 @@ Platform's runner facts (#593 issuecomment-6345851046):
 ## Implementation Notes
 Testing half built 2026-10-26; see the staging investigation.md / plan.md. Contract with rpg-planner for `paired.py --collected` is recorded there (cost.json per result with the runner record; `--verdict-json`; exit 0/1/2; one extra `- runners:` line). Choices beyond the ticket text: runner identity lives in each result's cost.json (rpg's request), not a per-job file; a boolean `legacy_base` input passes `--legacy-base`; `--neutral`, `--report-only`, `--legacy-new`, `--div` are not offered; the plan job imports paired.py's WORLDS and TERRAIN_WORLD (no copy, per testing-planner). The aggregate calls rpg's option and fails with a clear message until it is on main. The T1 ledger row waits for T1 on main.
 
+- 2026-11-15, ACs 6-8 built (owner 6893752032 (A), build only, no runs; testing-planner dispatch):
+  - AC6: `paired_arms plan --evidence` (and `plan_matrix(evidence=True)`) refuses `--self-check off`; the workflow gets an `evidence` boolean input, default true, passed to the plan step. The base-vs-base repeat already runs on the runner as the `-self` job. Choice beyond the ticket text: "evidence dispatch" is the `evidence` input (default true), so a non-evidence exploratory run must opt out.
+  - AC7: `runner_identity` adds `uv_lock` (sha256 of the TOOL checkout's uv.lock; "missing" if absent); it is a required identity field, and assembly refuses jobs, and the arms of a key, that differ in it.
+  - AC8: `paired.py` key = ordered components `key_components` (sha12, child8, ticks, env8) joined by `result_key`, then `-repeat`; a later spy component is added in `key_components` only. env8 = first 8 hex of sha256 of the canonical JSON of `run_env()` ({runner `local:<host>`|`ci:<ImageOS>-<ImageVersion>`, python micro, os system+release, uv_lock, uv_lock_source tool|arm_tree|none}). `env.json` is written in each result dir by `run_one` and `paired_arms.run_arm`. `--collected` finds the dir by prefix (the aggregate's own env is not needed) and `env_problems` refuses: no env.json, env.json not hashing to the dir's env8, several dirs for one arm, or arms built under different env8. Old-format dirs are never read (a miss) and never deleted. The uv.lock arm-tree fallback exists in `uv_lock_digest(arm_tree=)` but the local and CI flows always have the tool checkout's lock.
+  - AC9 added no spy argument, env read or hook to arm_child or paired.py.
+
 ## Test Summary
 - tests/static/test_ci_paired_arms_workflow_shape.py (new, 10) and tests/unit/tools/test_paired_arms.py (new, ~30, fake artifacts): pass, with the rest of tests/static (196 passed together with the workflow-support tests). AC2 refusals (mixed Python or OS) tested on fake artifacts; AC4 static test and the pin and context guards cover the workflow.
 - AC1 (off-host table equals the local one except the `- runners:` line) and AC3's ledger row are pending: they need a dispatch on main after rpg's `--collected` and T1. No heavy run was done locally.
 - 2026-10-28, after rpg's `--collected` (#752) and T1 (#773) reached main: checked T2 against the merged reader (results/<sha12>-<child hash>-<ticks>[-repeat]/, cost.json `wall_seconds`, `peak_rss_mb`, `runner`{name, image, cpu_model, nproc, mem_total_mb, python, os}); they match. Added `test_jobs_run_by_run_arm_and_assembled_are_accepted_by_paireds_real_collected_compare`: every planned job (3 worlds x seeds 42,43 plus the seed-42 self jobs) is written by `run_arm` into its own cache with only the child faked, assembled, and compared by the real `paired.main(["--collected", ...])`: exit 0, self-check spread 0 over 3 runs, exactly one `- runners` line, nothing executed. Mutation check: writing the cost file as `.costs.json` makes it fail. tests/unit/tools/test_paired_arms.py: 25 passed.
+
+- 2026-11-15, ACs 6-8: tests/unit/tools/test_paired_arms.py (AC6 x2, AC7 x2 + the uv_lock refusal case), tests/unit/tools/test_paired_env_key.py (new, 9: local vs CI, same env, uv.lock change, ordered components, old entry a miss and kept, collected found by its own env8, mismatched env.json, missing env.json and two environments, run_arm writes env.json), tests/static/test_ci_paired_arms_workflow_shape.py (+1). 85 passed across test_paired_env_key, test_rpg_measure, test_rpg_measure_collected, test_paired_arms; 16 static; run_ledger 76. No run of any kind.
 
 ## Files Changed
 - .github/workflows/paired-arms.yml (new)
@@ -111,6 +134,7 @@ Testing half built 2026-10-26; see the staging investigation.md / plan.md. Contr
 - tests/static/test_ci_paired_arms_workflow_shape.py (new)
 - tests/unit/tools/test_paired_arms.py (new; + the real --collected round-trip test)
 - docs/plans/test_architecture/reference/run_ledger.md (T1 review nit, lead-planner-u24 on #773: an invocation writes a started row and an end row, not one row)
+- ACs 6-8: tools/test_architecture/paired_arms.py, tools/rpg_measure/paired.py (rpg's file, under rpg-planner's env8 ruling), .github/workflows/paired-arms.yml, tests/unit/tools/test_paired_env_key.py (new) and the tests above
 - tests/static/test_workflow_actions_pinned_by_sha.py, tests/static/test_workflow_run_blocks_take_github_context_via_env.py (cover the new workflow)
 
 ## Completion Summary

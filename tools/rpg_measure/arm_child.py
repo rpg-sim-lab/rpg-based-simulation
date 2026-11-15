@@ -40,6 +40,20 @@ def _pinned_runner():
     return module
 
 
+def _env_digest():
+    """``tools/rpg_measure/env_digest.py``, loaded by file path from THIS tool checkout (stdlib only), never through the arm tree: the same function ``paired`` keys the
+    cache with, so the arm document's ``dists`` and the key's can be compared."""
+    path = Path(__file__).resolve().with_name("env_digest.py")
+    name = "_arm_child_env_digest"
+    if name in sys.modules:
+        return sys.modules[name]
+    spec = importlib.util.spec_from_file_location(name, path)
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[name] = module
+    spec.loader.exec_module(module)
+    return module
+
+
 def _qualname(obj) -> str:
     return f"{type(obj).__module__}.{type(obj).__qualname__}"
 
@@ -122,7 +136,7 @@ def main(argv: list[str]) -> int:
     doc = {
         "world": world, "seed": seed, "ticks": ticks, "hashseed": os.environ.get("PYTHONHASHSEED"),
         "start_hash": start_hash, "final_hash": CanonicalStateHasher.get_hash(state),
-        "forced_flags": forced, "runner": pinned.verdict, "run_conditions_source": source, "audit_mode": manifest.get("audit_mode"), "signals_zeroed": manifest.get("signals_zeroed"),
+        "forced_flags": forced, "dists": _env_digest().installed_dists_digest(), "runner": pinned.verdict, "run_conditions_source": source, "audit_mode": manifest.get("audit_mode"), "signals_zeroed": manifest.get("signals_zeroed"),
         "start": start, "final": final,
         "counters": (tally or {}).get("behaviour") if tally and "behaviour" in tally else None,
         "perception_samples": (tally or {}).get("perception_samples"),

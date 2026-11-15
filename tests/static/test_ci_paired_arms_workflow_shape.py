@@ -175,3 +175,12 @@ def test_the_arms_job_still_fetches_the_two_shas_anonymously_by_sha():
     fetch = next(step for step in _wf()["jobs"]["arms"]["steps"] if step.get("name") == "Fetch the base and new commits")
     assert fetch["run"] == 'git fetch --no-tags --depth=1 origin "${BASE_SHA}" "${NEW_SHA}"'
     assert "env" not in fetch or "TOKEN" not in str(fetch["env"])
+
+
+def test_evidence_defaults_true_and_the_plan_step_passes_it_through():
+    """AC6 (g): the evidence input defaults to true and reaches `paired_arms plan --evidence`, so self_check off is refused unless the dispatcher opts out."""
+    spec = _on()["workflow_dispatch"]["inputs"]["evidence"]
+    assert spec["type"] == "boolean" and spec["default"] is True
+    step = next(s for s in _wf()["jobs"]["plan"]["steps"] if s.get("id") == "plan")
+    assert step["env"]["EVIDENCE"] == "${{ inputs.evidence }}"
+    assert '--evidence' in step["run"] and 'EVIDENCE}" = "true"' in step["run"]
