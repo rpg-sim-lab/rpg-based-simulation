@@ -109,13 +109,25 @@ Why now: the group-combat check (TCK-20261101-A-HOSTILE-ATTACKING-YOU-OUTRANKS-T
 - tools/test_architecture/run_ledger.py (testing's; an outcome value change routes to testing-planner)
 
 ## Assumptions / Open Questions
-- Q1: do the run-ledger outcome values allow VOID? If not, it is REFUSED with a detail, or testing-planner adds VOID. Ask before building.
-- Q2: the seed-rotation rule. Proposed: control seed index = (run counter or the date's ordinal) mod the seed count, per world offset by the world's index. Recorded in the report either way.
+- Q1 (RESOLVED 2026-11-15, rpg-planner-ubuntu): no schema change. run-ledger/v1 OUTCOMES are PASS|STOP|REFUSED|KILLED|ERROR (tools/test_architecture/run_ledger.py:53), and paired's verdict-json uses the same values. A control mismatch is the same class as today's self-check mismatch (paired.py:396-399, refused), so the outcome is REFUSED with outcome_detail starting "control mismatch:" and naming the cells; exit 2. The report heads it VOID in words. testing-planner is not needed.
+- Q2 (RESOLVED as default, rpg-planner-ubuntu; rpg-designer may override at review): control seed for world index i (in paired.WORLDS order) = seeds[(D + i) mod len(seeds)], where D = the run's UTC start date as days since 1970-01-01. It rotates daily, differs per world, is reproducible from the recorded start time, and is printed and recorded in the report. The base-arm control cell, on first build, uses world index 0 and the same rule.
 - Q3: the hold-line rule is quoted from #634 6884784984 at planning (fetch the body; do not paraphrase).
 - Assumption: wrapping read-only functions does not change the state hash. The cell run on 2026-11-15 showed MATCH on both arms (crowded s42 2000t); the twin controls are what prove it each time.
 
 ## Implementation Notes
 Size estimate: medium. About 150-250 lines in tools/rpg_measure plus tests, no src/ change, no heavy run beyond one real cell for AC1/AC5 (that cell needs lead's go and the heavy slot). Dispatch is the owner's, via lead-planner.
+
+Dispatch: owner yes #715 6891711816 (2026-11-15), to rpg-implementer-ubuntu, via lead-planner. Starts only after all three gates:
+1. the #918 arm_child fix (testing's digest-light item 3, u24 rpg-planner's rule) is on main;
+2. testing's off-host AC1 comparison (TCK-20261023-PAIRED-ARMS-RUN-OFF-THE-SHARED-HOST) has been read;
+3. the ubuntu group-combat batch has gone to the owner's push ask.
+Before then: planning only, no code. The one real cell needs lead-planner's heavy-slot go, with --jobs 2 (#715 6891576449).
+
+Order with the two OPEN paired-child todos (rpg-planner-ubuntu, 2026-11-15):
+1. this ticket (owner-dispatched);
+2. TCK-20261023-PAIRED-WRITES-ONE-RUN-LEDGER-ROW-PER-INVOCATION. Its T1 dependency (run_ledger.py) is on main, but it needs its own dispatch go. Its runs[] then lists spy-control twins as their own entries, so it lands after this ticket's control shape is fixed.
+3. TCK-20261023-PAIRED-ARMS-RUN-WITHOUT-THE-PER-TICK-REPLAY-DIGEST: still blocked on perf-planner's PERF-D1 A2 ruling.
+Each of the three moves the child hash and cache keys; each says so in its PR.
 
 ## Test Summary
 (not started)
