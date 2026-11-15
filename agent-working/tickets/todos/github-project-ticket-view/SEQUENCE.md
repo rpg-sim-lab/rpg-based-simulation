@@ -30,9 +30,9 @@ Epic `TCK-20261112-EPIC-GITHUB-PROJECT-TICKET-VIEW`, filed by agent-working-plan
    exempt from HOST FREE) and the install doc. The owner installs them, and that install is the owner's standing approval for
    unattended writes (6881411615 item 1). Dispatched after P3b merges.
 
-9. TCK-20261115-PROJECT-SYNC-FILED-DATE-AND-BACKLOG-VIEW (hotfix): a `Filed` date field from the frontmatter date, and the owner's
-   Backlog view (To do, grouped by Domain, sorted by Priority and Filed). Owner concern #715 6883358041, go "File + dispatch after
-   P3b" (6883401913). It is dispatched after P3b merges, before or alongside P3c.
+9. **DONE** TCK-20261115-PROJECT-SYNC-FILED-DATE-AND-BACKLOG-VIEW (hotfix; closed in the PR that carries this line; load 2026-11-15, 634 steps, nothing to do): a `Filed` date
+   field from the frontmatter date, hash v4. The owner saves the Backlog view (To do, grouped by Domain, sorted by Priority and Filed) in the UI. Owner concern #715 6883358041, go
+   "File + dispatch after P3b" (6883401913). **Next: P3c (item 8).**
 
 P3 options and decisions: main-checkout `.claude/handover/drafts/project-sync-p3-timer-options-2026-11-15.md`, decided in #715
 6881411615.

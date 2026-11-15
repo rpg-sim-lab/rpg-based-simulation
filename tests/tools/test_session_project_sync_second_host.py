@@ -172,8 +172,8 @@ def test_hash_v3_a_v2_item_with_no_host_facts_is_a_hash_only_update_and_a_segmen
     v2_fields = {k: v for k, v in derived.items() if k in ps.HASH_FIELDS_V2}
     live = {**v2_fields, "Sync hash": ps.sync_hash(v2_fields, "v2"), "_item_id": "I", "_draft_id": "D"}
     plan = plan_for(A, [], [live], main=c)
-    assert plan.hand_edits == [] and [ch for _, ch in plan.updates] == [["Sync hash"]]
-    assert plan.updates[0][0]["Sync hash"].startswith("v3:")
+    assert plan.hand_edits == [] and [ch for _, ch in plan.updates] == [["Filed"]]  # the v4 field; the hash follows
+    assert plan.updates[0][0]["Sync hash"].startswith("v4:")
     with_branch = plan_for(A, [fact(A)], [live], main=c)
     assert with_branch.hand_edits == [] and "Host facts" in with_branch.updates[0][1]
 
