@@ -5169,6 +5169,16 @@
   - determinism
   - review
 - type: doc
+  path: docs/architecture/project_facts.md
+  title: Project facts
+  status: active
+  layer: architecture
+  authority: P2
+  audience: agent
+  tags:
+  - architecture
+  - documentation
+- type: doc
   path: docs/architecture/system_overview.md
   title: System overview
   status: active
@@ -8107,6 +8117,128 @@
   - content
   last_verified: '2026-10-09'
 - type: ticket
+  path: agent-working/tickets/done/TCK-20261115-M1-THE-NAME-SWITCH-PROBE-GATES-WORLD-AND-CORE-TOO.md
+  ticket_id: TCK-20261115-M1-THE-NAME-SWITCH-PROBE-GATES-WORLD-AND-CORE-TOO
+  title: The name-switch probe gates `src/world` and `src/core` as well, so the 15
+    world switches it only reported now count against the ratchet
+  tier: hotfix
+  ticket_type: chore
+  date: '2026-11-15'
+  related_code_areas:
+  - tools/test_architecture/name_switch_scan.py
+  - tests/architecture/name_switch_allowlist.yaml
+  - tests/architecture/test_no_name_switches_in_decision_paths.py
+  artifact_files: []
+  tags:
+  - testing
+  - architecture
+- type: ticket
+  path: agent-working/tickets/done/TCK-20261115-PROJECT-SYNC-ALL-LANES.md
+  ticket_id: TCK-20261115-PROJECT-SYNC-ALL-LANES
+  title: '`project_sync.py` P3b: every lane goes on Project 1, Domain becomes a single-select,
+    the sync can fetch origin/main itself, and each host leaves a last-run file and
+    a cross-host heartbeat'
+  tier: standard
+  ticket_type: feature
+  date: '2026-11-15'
+  related_code_areas:
+  - tools/sessions/project_sync.py
+  - tools/sessions/project_client.py
+  - registries/session_project.yaml
+  - tests/tools/test_session_project_sync*.py
+  artifact_files:
+  - agent-working/stored_artifacts/TCK-20261115-PROJECT-SYNC-ALL-LANES/investigation.md
+  - agent-working/stored_artifacts/TCK-20261115-PROJECT-SYNC-ALL-LANES/plan.md
+  - agent-working/stored_artifacts/TCK-20261115-PROJECT-SYNC-ALL-LANES/test_plan.md
+  tags:
+  - planning
+  - delivery
+- type: ticket
+  path: agent-working/tickets/done/TCK-20261115-PROJECT-SYNC-FILED-DATE-AND-BACKLOG-VIEW.md
+  ticket_id: TCK-20261115-PROJECT-SYNC-FILED-DATE-AND-BACKLOG-VIEW
+  title: '`project_sync.py`: a `Filed` date field from each ticket''s frontmatter
+    date, so the owner''s Backlog view can show the open-ticket pile by Domain, Priority
+    and age'
+  tier: hotfix
+  ticket_type: feature
+  date: '2026-11-15'
+  related_code_areas:
+  - tools/sessions/project_sync.py
+  artifact_files: []
+  tags:
+  - planning
+  - delivery
+- type: ticket
+  path: agent-working/tickets/todos/TCK-20261115-M1-A-TEST-KIND-DECLARED-ONLY-IN-CONTENT-PERCEIVES-EATS-AND-FIGHTS.md
+  ticket_id: TCK-20261115-M1-A-TEST-KIND-DECLARED-ONLY-IN-CONTENT-PERCEIVES-EATS-AND-FIGHTS
+  title: 'Milestone 1''s content-alone probe: a test kind declared only in test content,
+    with no code change, perceives, eats and fights by its declarations through the
+    real kernel'
+  tier: standard
+  ticket_type: feature
+  date: '2026-11-15'
+  related_code_areas:
+  - tests/integration/, test content (read-only for src/)
+  artifact_files: []
+  tags:
+  - testing
+- type: ticket
+  path: agent-working/tickets/todos/TCK-20261115-MULTI-RUN-INDEX-FLOW-HEALTH-SCORE-DEPENDS-ON-HOST-TICK-SPEED.md
+  ticket_id: TCK-20261115-MULTI-RUN-INDEX-FLOW-HEALTH-SCORE-DEPENDS-ON-HOST-TICK-SPEED
+  title: 'test_multi_run_index_and_cli_flow fails on a loaded host: one HighCPULatencyRule
+    WARNING scores a run 95, not 100'
+  tier: hotfix
+  ticket_type: repair
+  date: '2026-11-15'
+  related_code_areas:
+  - tests/integration/observability/test_multi_run_index_flow.py:38-47, :88
+  - tests/integration/observability/conftest.py (tick_cost_ms)
+  artifact_files: []
+  tags: []
+- type: ticket
+  path: agent-working/tickets/todos/github-project-ticket-view/TCK-20261115-PROJECT-SYNC-HOST-TIMER.md
+  ticket_id: TCK-20261115-PROJECT-SYNC-HOST-TIMER
+  title: '`project_sync.py` P3c: systemd user timer templates that run the sync hourly
+    on each host, capped and staggered, with the owner''s install step documented'
+  tier: hotfix
+  ticket_type: feature
+  date: '2026-11-15'
+  related_code_areas:
+  - tools/sessions/systemd/
+  artifact_files: []
+  tags:
+  - planning
+  - delivery
+- type: ticket
+  path: agent-working/tickets/done/TCK-20261114-LEAD-BOARD-FOURTH-PASS.md
+  ticket_id: TCK-20261114-LEAD-BOARD-FOURTH-PASS
+  title: The lead board shows the epics as they stand on 2026-11-14, and the stack
+    seed page no longer calls Epic E open
+  tier: hotfix
+  ticket_type: chore
+  date: '2026-11-14'
+  related_code_areas: []
+  artifact_files: []
+  tags:
+  - governance
+- type: ticket
+  path: agent-working/tickets/done/TCK-20261114-PROJECT-CLIENT-WRITE-PACING.md
+  ticket_id: TCK-20261114-PROJECT-CLIENT-WRITE-PACING
+  title: '`project_client.py` paces its writes and honours GitHub''s rate-limit answers,
+    so the P3 all-lanes first load can run (P3 prerequisite)'
+  tier: standard
+  ticket_type: feature
+  date: '2026-11-14'
+  related_code_areas:
+  - tools/sessions/project_client.py, tests/tools/test_project_client.py, registries/session_project.yaml
+  artifact_files:
+  - agent-working/stored_artifacts/TCK-20261114-PROJECT-CLIENT-WRITE-PACING/investigation.md
+  - agent-working/stored_artifacts/TCK-20261114-PROJECT-CLIENT-WRITE-PACING/plan.md
+  - agent-working/stored_artifacts/TCK-20261114-PROJECT-CLIENT-WRITE-PACING/test_plan.md
+  tags:
+  - planning
+  - delivery
+- type: ticket
   path: agent-working/tickets/done/TCK-20261114-PROJECT-SYNC-INIT-AND-APPLY.md
   ticket_id: TCK-20261114-PROJECT-SYNC-INIT-AND-APPLY
   title: '`project_sync.py` P1b: `--init` creates the Project''s fields by name and
@@ -8124,6 +8256,63 @@
   tags:
   - planning
   - delivery
+- type: ticket
+  path: agent-working/tickets/done/TCK-20261114-PROJECT-SYNC-LAYER-EPIC-PRIORITY-TAGS.md
+  ticket_id: TCK-20261114-PROJECT-SYNC-LAYER-EPIC-PRIORITY-TAGS
+  title: '`project_sync.py` P1c: Layer, Epic, Priority and Tags fields, so that one
+    domain''s board can be split further (rpg lane, u24)'
+  tier: standard
+  ticket_type: feature
+  date: '2026-11-14'
+  related_code_areas:
+  - tools/sessions/project_sync.py, tools/sessions/project_client.py, tests/tools/test_session_project_sync.py,
+  - tests/tools/test_project_client.py
+  artifact_files:
+  - agent-working/stored_artifacts/TCK-20261114-PROJECT-SYNC-LAYER-EPIC-PRIORITY-TAGS/investigation.md
+  - agent-working/stored_artifacts/TCK-20261114-PROJECT-SYNC-LAYER-EPIC-PRIORITY-TAGS/plan.md
+  - agent-working/stored_artifacts/TCK-20261114-PROJECT-SYNC-LAYER-EPIC-PRIORITY-TAGS/test_plan.md
+  tags:
+  - planning
+  - delivery
+- type: ticket
+  path: agent-working/tickets/done/TCK-20261114-PROJECT-SYNC-SECOND-HOST.md
+  ticket_id: TCK-20261114-PROJECT-SYNC-SECOND-HOST
+  title: '`project_sync.py` P2: host ubuntu writes Project 1 too, and neither host''s
+    run can rewrite or archive the other host''s facts (rpg lane)'
+  tier: standard
+  ticket_type: feature
+  date: '2026-11-14'
+  related_code_areas:
+  - tools/sessions/project_sync.py
+  - tools/sessions/project_client.py
+  - registries/session_project.yaml
+  - tests/tools/test_session_project_sync.py
+  artifact_files:
+  - agent-working/stored_artifacts/TCK-20261114-PROJECT-SYNC-SECOND-HOST/investigation.md
+  - agent-working/stored_artifacts/TCK-20261114-PROJECT-SYNC-SECOND-HOST/plan.md
+  - agent-working/stored_artifacts/TCK-20261114-PROJECT-SYNC-SECOND-HOST/test_plan.md
+  tags:
+  - planning
+  - delivery
+- type: ticket
+  path: agent-working/tickets/done/TCK-20261114-ROLE-CARD-DECISION-CITATION-INDEX.md
+  ticket_id: TCK-20261114-ROLE-CARD-DECISION-CITATION-INDEX
+  title: Link each decision doc to the role cards that cite it, so an amended decision
+    flags its cards
+  tier: standard
+  ticket_type: feature
+  date: '2026-11-14'
+  related_code_areas:
+  - tools/sessions/generate_agents.py, tools/sessions/card.py, registries/session_roles.yaml,
+    tests/tools/
+  artifact_files:
+  - agent-working/stored_artifacts/TCK-20261114-ROLE-CARD-DECISION-CITATION-INDEX/investigation.md
+  - agent-working/stored_artifacts/TCK-20261114-ROLE-CARD-DECISION-CITATION-INDEX/plan.md
+  - agent-working/stored_artifacts/TCK-20261114-ROLE-CARD-DECISION-CITATION-INDEX/test_plan.md
+  tags:
+  - ai
+  - governance
+  - process-improvement
 - type: ticket
   path: agent-working/tickets/done/TCK-20261114-ROLE-CARDS-CITE-AMENDED-DECISIONS.md
   ticket_id: TCK-20261114-ROLE-CARDS-CITE-AMENDED-DECISIONS
@@ -9057,6 +9246,22 @@
   artifact_files: []
   tags: []
 - type: ticket
+  path: agent-working/tickets/todos/TCK-20261110-A-RUN-RESTORED-FROM-A-CHECKPOINT-EQUALS-THE-UNINTERRUPTED-RUN-TICK-BY-TICK.md
+  ticket_id: TCK-20261110-A-RUN-RESTORED-FROM-A-CHECKPOINT-EQUALS-THE-UNINTERRUPTED-RUN-TICK-BY-TICK
+  title: A conformance test shows a run restored from a checkpoint at tick K and continued
+    to N has the same per-tick proof digest as the uninterrupted run, on a realistic
+    world, at several split points
+  tier: standard
+  ticket_type: feature
+  date: '2026-11-10'
+  related_code_areas:
+  - src/engine/scenario_checkpoint.py (restore), src/engine/scenario_runtime.py (_build_kernel)
+  - tests/integration/scenarios/test_scenario_runtime_service.py
+  artifact_files: []
+  tags:
+  - testing
+  - determinism
+- type: ticket
   path: agent-working/tickets/done/TCK-20261109-A-COMBAT-RETREAT-PROJECT-WALKS-THE-SUBJECT-AGAINST-THE-HELD-FLIGHT-RULE.md
   ticket_id: TCK-20261109-A-COMBAT-RETREAT-PROJECT-WALKS-THE-SUBJECT-AGAINST-THE-HELD-FLIGHT-RULE
   title: A COMBAT_RETREAT project walks its owner to the town centre through the strategic
@@ -9192,6 +9397,24 @@
   tags:
   - testing
   - regression
+- type: ticket
+  path: agent-working/tickets/done/TCK-20261109-M1-NO-NAME-CHECKS-PROBE-AND-CONTENT-ALONE-KIND-PROBE.md
+  ticket_id: TCK-20261109-M1-NO-NAME-CHECKS-PROBE-AND-CONTENT-ALONE-KIND-PROBE
+  title: 'Milestone 1''s name-check probe: no role, kind or faction name switch left
+    in a decision path, as a green-from-day-one ratchet whose allowlist empties as
+    the retirements land (the content-alone probe is split to TCK-20261115-M1-A-TEST-KIND-DECLARED-ONLY-IN-CONTENT-PERCEIVES-EATS-AND-FIGHTS)'
+  tier: standard
+  ticket_type: feature
+  date: '2026-11-09'
+  related_code_areas:
+  - tests/, decision code (read only)
+  artifact_files:
+  - agent-working/stored_artifacts/TCK-20261109-M1-NO-NAME-CHECKS-PROBE-AND-CONTENT-ALONE-KIND-PROBE/investigation.md
+  - agent-working/stored_artifacts/TCK-20261109-M1-NO-NAME-CHECKS-PROBE-AND-CONTENT-ALONE-KIND-PROBE/plan.md
+  - agent-working/stored_artifacts/TCK-20261109-M1-NO-NAME-CHECKS-PROBE-AND-CONTENT-ALONE-KIND-PROBE/test_plan.md
+  tags:
+  - testing
+  - architecture
 - type: ticket
   path: agent-working/tickets/done/TCK-20261109-MAKEFILE-RECIPES-USE-THE-RESOLVED-INTERPRETER.md
   ticket_id: TCK-20261109-MAKEFILE-RECIPES-USE-THE-RESOLVED-INTERPRETER
@@ -9399,18 +9622,6 @@
   date: '2026-11-09'
   related_code_areas:
   - src/core/ (entity identity), content schemas
-  artifact_files: []
-  tags: []
-- type: ticket
-  path: agent-working/tickets/todos/TCK-20261109-M1-NO-NAME-CHECKS-PROBE-AND-CONTENT-ALONE-KIND-PROBE.md
-  ticket_id: TCK-20261109-M1-NO-NAME-CHECKS-PROBE-AND-CONTENT-ALONE-KIND-PROBE
-  title: 'Milestone 1''s two gate probes: no name switch in a decision path, and a
-    test kind declared only in content perceives, eats and fights'
-  tier: standard
-  ticket_type: feature
-  date: '2026-11-09'
-  related_code_areas:
-  - tests/, decision code (read only)
   artifact_files: []
   tags: []
 - type: ticket
@@ -9800,6 +10011,24 @@
   tags:
   - performance
 - type: ticket
+  path: agent-working/tickets/done/TCK-20261108-PROJECT-FACTS-PAGE-GENERATED.md
+  ticket_id: TCK-20261108-PROJECT-FACTS-PAGE-GENERATED
+  title: Project numbers come from one stats tool and a generated facts page with
+    a --check.
+  tier: standard
+  ticket_type: feature
+  date: '2026-11-08'
+  related_code_areas:
+  - tools/project_stats.py (new), docs/architecture/project_facts.md (new)
+  artifact_files:
+  - agent-working/stored_artifacts/TCK-20261108-PROJECT-FACTS-PAGE-GENERATED/investigation.md
+  - agent-working/stored_artifacts/TCK-20261108-PROJECT-FACTS-PAGE-GENERATED/plan.md
+  - agent-working/stored_artifacts/TCK-20261108-PROJECT-FACTS-PAGE-GENERATED/test_plan.md
+  tags:
+  - ai
+  - documentation
+  - governance
+- type: ticket
   path: agent-working/tickets/done/TCK-20261108-README-DEBUG-RUN-NAMES-AN-ENV-VAR-THE-CODE-NEVER-READS.md
   ticket_id: TCK-20261108-README-DEBUG-RUN-NAMES-AN-ENV-VAR-THE-CODE-NEVER-READS
   title: The README's full-observability run sets OBS_MODE, which the code never reads,
@@ -9844,7 +10073,7 @@
   artifact_files: []
   tags: []
 - type: ticket
-  path: agent-working/tickets/todos/docs-as-review-source/TCK-20261108-EPIC-DOCS-AS-REVIEW-SOURCE.md
+  path: agent-working/tickets/done/docs-as-review-source/TCK-20261108-EPIC-DOCS-AS-REVIEW-SOURCE.md
   ticket_id: TCK-20261108-EPIC-DOCS-AS-REVIEW-SOURCE
   title: 'Documents are the review source and stay correct: agent-working''s batches
     B, C, D, E1, E2, J1-J2 and Q5.'
@@ -9861,21 +10090,6 @@
   - governance
   - delivery
   - process-improvement
-- type: ticket
-  path: agent-working/tickets/todos/docs-as-review-source/TCK-20261108-PROJECT-FACTS-PAGE-GENERATED.md
-  ticket_id: TCK-20261108-PROJECT-FACTS-PAGE-GENERATED
-  title: Project numbers come from one stats tool and a generated facts page with
-    a --check.
-  tier: standard
-  ticket_type: feature
-  date: '2026-11-08'
-  related_code_areas:
-  - tools/project_stats.py (new), docs/architecture/project_facts.md (new)
-  artifact_files: []
-  tags:
-  - ai
-  - documentation
-  - governance
 - type: ticket
   path: agent-working/tickets/done/TCK-20261107-A-HARVEST-IS-REJECTED-ONE-CHARGE-EARLY-WITHIN-A-TICK.md
   ticket_id: TCK-20261107-A-HARVEST-IS-REJECTED-ONE-CHARGE-EARLY-WITHIN-A-TICK
@@ -10009,6 +10223,24 @@
   artifact_files: []
   tags: []
 - type: ticket
+  path: agent-working/tickets/done/TCK-20261103-A-MEASUREMENT-NOT-ON-THE-PINNED-RUNNER-CALLS-ITSELF-EVIDENCE.md
+  ticket_id: TCK-20261103-A-MEASUREMENT-NOT-ON-THE-PINNED-RUNNER-CALLS-ITSELF-EVIDENCE
+  title: 'A behaviour measurement run on the unpinned `_run_engine` can be presented
+    as evidence: such a run should refuse to call itself evidence'
+  tier: standard
+  ticket_type: repair
+  date: '2026-11-03'
+  related_code_areas:
+  - _run_engine
+  artifact_files:
+  - agent-working/stored_artifacts/TCK-20261103-A-MEASUREMENT-NOT-ON-THE-PINNED-RUNNER-CALLS-ITSELF-EVIDENCE/investigation.md
+  - agent-working/stored_artifacts/TCK-20261103-A-MEASUREMENT-NOT-ON-THE-PINNED-RUNNER-CALLS-ITSELF-EVIDENCE/plan.md
+  - agent-working/stored_artifacts/TCK-20261103-A-MEASUREMENT-NOT-ON-THE-PINNED-RUNNER-CALLS-ITSELF-EVIDENCE/test_plan.md
+  tags:
+  - testing
+  - determinism
+  - observability
+- type: ticket
   path: agent-working/tickets/done/TCK-20261103-DELIVERY-GUIDE-PINNED-RUNNER-EVIDENCE-RULE.md
   ticket_id: TCK-20261103-DELIVERY-GUIDE-PINNED-RUNNER-EVIDENCE-RULE
   title: The delivery guide states that behaviour evidence comes from the pinned runner
@@ -10094,18 +10326,6 @@
   date: '2026-11-03'
   related_code_areas:
   - src/engine/combat.py:315-410, src/engine/patches.py:330-337, src/engine/tactical_threat.py:141-143
-  artifact_files: []
-  tags: []
-- type: ticket
-  path: agent-working/tickets/todos/TCK-20261103-A-MEASUREMENT-NOT-ON-THE-PINNED-RUNNER-CALLS-ITSELF-EVIDENCE.md
-  ticket_id: TCK-20261103-A-MEASUREMENT-NOT-ON-THE-PINNED-RUNNER-CALLS-ITSELF-EVIDENCE
-  title: 'A behaviour measurement run on the unpinned `_run_engine` can be presented
-    as evidence: such a run should refuse to call itself evidence'
-  tier: standard
-  ticket_type: repair
-  date: '2026-11-03'
-  related_code_areas:
-  - _run_engine
   artifact_files: []
   tags: []
 - type: ticket
@@ -10914,7 +11134,7 @@
   ticket_id: TCK-20261031-SIMULATION-EVENT-ID-IS-A-RANDOM-UUID-SO-NO-EVENT-STREAM-IS-REPRODUCIBLE
   title: SimulationEvent.event_id is a random uuid4, so no event stream is byte-reproducible
     and any consumer that orders by it is nondeterministic
-  tier: standard (provisional)
+  tier: standard
   ticket_type: bug
   date: '2026-10-31'
   related_code_areas:
@@ -18237,6 +18457,44 @@
   - documentation
   - certification
 - type: ticket
+  path: agent-working/tickets/done/rpg-regression-gate-report/TCK-20261009-RPG-GATE-REPORT-TESTING-INFRA-EPIC.md
+  ticket_id: TCK-20261009-RPG-GATE-REPORT-TESTING-INFRA-EPIC
+  title: 'Testing-side infrastructure for the rpg regression gate report: harness,
+    baselines, report states, ownership registry, scheduled workflow'
+  tier: epic
+  ticket_type: feature
+  date: '2026-10-09'
+  related_code_areas:
+  - tools/test_architecture/
+  - tools/test_architecture/slow_known_reds.yaml
+  - tests/helpers/kernel_pinning.py
+  - .github/workflows/
+  artifact_files: []
+  tags:
+  - testing
+  - regression
+  - simulation-quality
+  - planning
+- type: ticket
+  path: agent-working/tickets/done/session-lead/TCK-20261009-EPIC-SESSION-LEAD-PLANNER.md
+  ticket_id: TCK-20261009-EPIC-SESSION-LEAD-PLANNER
+  title: 'Epic E — Session lead-planner: one cross-domain seat (project manager +
+    technical lead) that tracks every session on every host, owns the cross-domain
+    dependency and priority board, governs the tech stack, and advises the planners'
+  tier: epic
+  ticket_type: feature
+  date: '2026-10-09'
+  related_code_areas:
+  - tools/sessions/
+  - registries/session_roles.yaml
+  - pyproject.toml
+  - docs/architecture/
+  artifact_files: []
+  tags:
+  - ai
+  - process-improvement
+  - governance
+- type: ticket
   path: agent-working/tickets/done/visual-asset-icon-release-candidate/TCK-20261009-VISUAL-ASSETS-ICON-RELEASE-CANDIDATE.md
   ticket_id: TCK-20261009-VISUAL-ASSETS-ICON-RELEASE-CANDIDATE
   title: Build the 36 adopted icons and assemble the first release candidate that
@@ -18268,44 +18526,6 @@
   - src/simulation_quality/ or tools/ (a new metrics module), src/observability/event_extractor.py.
   artifact_files: []
   tags: []
-- type: ticket
-  path: agent-working/tickets/todos/rpg-regression-gate-report/TCK-20261009-RPG-GATE-REPORT-TESTING-INFRA-EPIC.md
-  ticket_id: TCK-20261009-RPG-GATE-REPORT-TESTING-INFRA-EPIC
-  title: 'Testing-side infrastructure for the rpg regression gate report: harness,
-    baselines, report states, ownership registry, scheduled workflow'
-  tier: epic
-  ticket_type: feature
-  date: '2026-10-09'
-  related_code_areas:
-  - tools/test_architecture/
-  - tools/test_architecture/slow_known_reds.yaml
-  - tests/helpers/kernel_pinning.py
-  - .github/workflows/
-  artifact_files: []
-  tags:
-  - testing
-  - regression
-  - simulation-quality
-  - planning
-- type: ticket
-  path: agent-working/tickets/todos/session-lead/TCK-20261009-EPIC-SESSION-LEAD-PLANNER.md
-  ticket_id: TCK-20261009-EPIC-SESSION-LEAD-PLANNER
-  title: 'Epic E — Session lead-planner: one cross-domain seat (project manager +
-    technical lead) that tracks every session on every host, owns the cross-domain
-    dependency and priority board, governs the tech stack, and advises the planners'
-  tier: epic
-  ticket_type: feature
-  date: '2026-10-09'
-  related_code_areas:
-  - tools/sessions/
-  - registries/session_roles.yaml
-  - pyproject.toml
-  - docs/architecture/
-  artifact_files: []
-  tags:
-  - ai
-  - process-improvement
-  - governance
 - type: ticket
   path: agent-working/tickets/done/TCK-20261007-A-WALKER-BESIDE-A-PERCEIVED-HOSTILE-KEEPS-STEPPING-AND-EATS-AN-OPPORTUNITY-ATTACK-PER-STEP.md
   ticket_id: TCK-20261007-A-WALKER-BESIDE-A-PERCEIVED-HOSTILE-KEEPS-STEPPING-AND-EATS-AN-OPPORTUNITY-ATTACK-PER-STEP
@@ -24692,6 +24912,21 @@
   - planning
   - tracking
 - type: ticket
+  path: agent-working/tickets/done/session-layer/TCK-20261002-EPIC-SESSION-LAYER-MEASUREMENT-AND-REVIEW.md
+  ticket_id: TCK-20261002-EPIC-SESSION-LAYER-MEASUREMENT-AND-REVIEW
+  title: 'Epic D — Session-layer measurement and evidence review: does the owner repeat
+    fewer instructions, and which advisory rules earn hardening'
+  tier: epic
+  ticket_type: feature
+  date: '2026-10-02'
+  related_code_areas:
+  - tools/agent-monitoring/
+  artifact_files: []
+  tags:
+  - ai
+  - process-improvement
+  - agent-monitoring
+- type: ticket
   path: agent-working/tickets/done/visual-asset-foundation/TCK-20261002-EPIC-VISUAL-ASSET-FOUNDATION.md
   ticket_id: TCK-20261002-EPIC-VISUAL-ASSET-FOUNDATION
   title: 'Visual asset foundation: in-project drawing tools and asset store under
@@ -24709,21 +24944,6 @@
   - mcp
   - architecture
   - documentation
-- type: ticket
-  path: agent-working/tickets/todos/session-layer/TCK-20261002-EPIC-SESSION-LAYER-MEASUREMENT-AND-REVIEW.md
-  ticket_id: TCK-20261002-EPIC-SESSION-LAYER-MEASUREMENT-AND-REVIEW
-  title: 'Epic D — Session-layer measurement and evidence review: does the owner repeat
-    fewer instructions, and which advisory rules earn hardening'
-  tier: epic
-  ticket_type: feature
-  date: '2026-10-02'
-  related_code_areas:
-  - tools/agent-monitoring/
-  artifact_files: []
-  tags:
-  - ai
-  - process-improvement
-  - agent-monitoring
 - type: ticket
   path: agent-working/tickets/done/TCK-20260930-IMPLEMENT-TICKET-PARSE-AND-NONDETERMINISM-FIX.md
   ticket_id: TCK-20260930-IMPLEMENT-TICKET-PARSE-AND-NONDETERMINISM-FIX
@@ -70633,7 +70853,7 @@
   tags:
   - fixtests
 - type: ticket
-  path: agent-working/tickets/done/test-architecture/INDEX.md
+  path: agent-working/tickets/done/session-layer/INDEX.md
   ticket_id: INDEX
   title: ''
   tier: ''
@@ -70643,7 +70863,7 @@
   artifact_files: []
   tags: []
 - type: ticket
-  path: agent-working/tickets/todos/session-layer/INDEX.md
+  path: agent-working/tickets/done/test-architecture/INDEX.md
   ticket_id: INDEX
   title: ''
   tier: ''
