@@ -45,9 +45,9 @@ Since TCK-20261112-SEARCH-SERVER-PER-WORKTREE-INDEX-AND-BUILD-MEMORY-GUARD (#888
 - Whether a worktree should search its own branch content: Phase 5 item 3.
 
 ## Acceptance Criteria
-1. In a worktree that reads the main index, `search_docs` reports no `stale` key when the main checkout's corpus matches the manifest. Shown by a test, and by one live check from a worktree recorded in the Test Summary. A worktree's running MCP server still holds the pre-fix code, so the live check is either `python3 tools/knowledge_search.py query "<q>" --top-k 1` run in that worktree, if AC3 makes the CLI follow the same root rule, or a `search_docs` call after that server restarts. Say which.
+1. In a worktree that reads the main index, `search_docs` reports no `stale` key when the main checkout's corpus matches the manifest. Shown by a test, and by one live check from a worktree recorded in the Test Summary. The live check is `python3 tools/knowledge_search.py query "<q>" --top-k 1 --db-path <the main checkout's index>`, run in a worktree, which AC3's rule makes compare against the main checkout. Record the command in the Test Summary.
 2. A real change in the indexed checkout is still reported, with a test.
-3. The MCP and CLI paths use the same root rule, with a test or a stated reason.
+3. The MCP and CLI paths use the same root rule: when no corpus root is passed, `index_staleness` derives it from `db_path`, the checkout that owns the index, and falls back to `_REPO_ROOT_STR` only when that can't be derived. A test shows a call with a `db_path` in another checkout compares against that checkout.
 4. The scoped `tests/tools` files pass. Before the run counts a failure in a test with a timing assertion, it is classified per the CI Failure Triage (docs/guides/delivery_process.md). Known case: four `@pytest.mark.slow` tests in `tests/tools/test_knowledge_search.py`, all with time or real-build bounds. They are `TestQueryHappyPath::test_query_completes_within_2_seconds` and three in `TestLiveQueryDocsMechanics`: `test_build_docs_chunk_count_exceeds_500`, `test_build_completes_under_five_minutes` and `test_existing_ticket_query_still_works`. They failed on this 2-core host in agent-working-implementer's local runs on 2026-11-12. The failures are noted, without names, as a Known gap in TCK-20261111-KNOWLEDGE-INDEX-BUILD-MEMORY-BOUNDED. CI never runs them (`-m "not slow and not extra_slow"`), so there is no CI evidence either way. The Test Summary states the marker filter the Test phase used.
 
 ## Related Tickets
@@ -70,6 +70,7 @@ Since TCK-20261112-SEARCH-SERVER-PER-WORKTREE-INDEX-AND-BUILD-MEMORY-GUARD (#888
 ## Assumptions / Open Questions
 - The main checkout's own files may be on a different branch than the index build. The manifest records mtimes, not a ref, so "stale" still means "the files changed since the build". That is the intended meaning.
 - Run through the native implement-ticket pipeline (TCK-20260930-NATIVE-PORT-SMALL-TICKET-NATIVE-RUN's run plan). Its first attempt carries a deliberate probe tag, and that tag is removed before the pass run.
+- AC3 root rule decided by agent-working-planner on 2026-11-15, option (b), after the native pass run wf_d6a35058-f5d stopped at the plan gate (NEEDS_HUMAN_INPUT) to ask. Option (a), keeping the CLI's own-index rule with a stated reason, was not taken because it leaves two rules that can drift.
 
 ## Implementation Notes
 (to be filled by the implementer)
