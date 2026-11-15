@@ -8196,6 +8196,20 @@
   tags:
   - testing
 - type: ticket
+  path: agent-working/tickets/todos/distributed-workers-experiment/TCK-20261115-DISTRIBUTED-WORKERS-REMOTE-WORKER-MANAGER.md
+  ticket_id: TCK-20261115-DISTRIBUTED-WORKERS-REMOTE-WORKER-MANAGER
+  title: 'Distributed workers child 3: a RemoteWorkerManager behind the existing executor
+    adapter, its transport, the slow or dead worker rule, and its tests (filing only,
+    not built)'
+  tier: standard
+  ticket_type: feature
+  date: '2026-11-15'
+  related_code_areas:
+  - _execute_locally
+  - tests/unit/kernel/test_executor_context_parity.py, tests/integration/kernel/test_executor_equivalence_long.py
+  artifact_files: []
+  tags: []
+- type: ticket
   path: agent-working/tickets/todos/github-project-ticket-view/TCK-20261115-PROJECT-SYNC-HOST-TIMER.md
   ticket_id: TCK-20261115-PROJECT-SYNC-HOST-TIMER
   title: '`project_sync.py` P3c: systemd user timer templates that run the sync hourly
