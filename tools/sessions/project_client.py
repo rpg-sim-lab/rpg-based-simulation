@@ -114,7 +114,8 @@ _ITEMS_Q = """query($owner:String!,$number:Int!,$after:String){organization(logi
 items(first:100,after:$after){pageInfo{hasNextPage endCursor} nodes{id isArchived content{__typename ... on DraftIssue{id title}}
 fieldValues(first:%d){pageInfo{hasNextPage} nodes{__typename
 ... on ProjectV2ItemFieldTextValue{text field{... on ProjectV2FieldCommon{name}}}
-... on ProjectV2ItemFieldSingleSelectValue{name field{... on ProjectV2FieldCommon{name}}}}}}}}}}""" % FIELD_VALUES_PAGE
+... on ProjectV2ItemFieldSingleSelectValue{name field{... on ProjectV2FieldCommon{name}}}
+... on ProjectV2ItemFieldDateValue{date field{... on ProjectV2FieldCommon{name}}}}}}}}}}""" % FIELD_VALUES_PAGE
 
 
 class ProjectClient:
@@ -218,7 +219,7 @@ class ProjectClient:
                 for val in node["fieldValues"]["nodes"]:
                     name = ((val or {}).get("field") or {}).get("name")
                     if name:
-                        item[name] = val.get("text", val.get("name", ""))
+                        item[name] = val.get("text", val.get("name", val.get("date", "")))
                 items.append(item)
             if not page["pageInfo"]["hasNextPage"]:
                 return items
@@ -254,6 +255,14 @@ class ProjectClient:
         self._mutate("updateProjectV2ItemFieldValue", "UpdateProjectV2ItemFieldValueInput",
                      {"projectId": project_id, "itemId": item_id, "fieldId": field_id, "value": {"text": text}})
 
+    def set_date(self, project_id: str, item_id: str, field_id: str, date: str) -> None:
+        """`date` is YYYY-MM-DD. An empty value is not written here: the caller clears the field (clear_value)."""
+        self._mutate("updateProjectV2ItemFieldValue", "UpdateProjectV2ItemFieldValueInput",
+                     {"projectId": project_id, "itemId": item_id, "fieldId": field_id, "value": {"date": date}})
+
+    def create_date_field(self, project_id: str, name: str) -> None:
+        self._mutate("createProjectV2Field", "CreateProjectV2FieldInput", {"projectId": project_id, "dataType": "DATE", "name": name})
+
     def set_option(self, project_id: str, item_id: str, field_id: str, option_id: str) -> None:
         self._mutate("updateProjectV2ItemFieldValue", "UpdateProjectV2ItemFieldValueInput",
                      {"projectId": project_id, "itemId": item_id, "fieldId": field_id, "value": {"singleSelectOptionId": option_id}})
@@ -269,6 +278,7 @@ class ProjectClient:
 # ---------------------------------------------------------------- --init
 
 TEXT_FIELDS = ("Ticket ID", "Seat", "Host", "Branch", "PR", "Source", "Sync hash", "Epic", "Tags", "Host facts", "Last run")
+DATE_FIELDS = ("Filed",)
 OLD_DOMAIN = "Domain (old)"  # the P1b text field `Domain`, renamed by --init (P3b); it is never deleted
 TIER_OPTIONS = [("hotfix", "ORANGE"), ("standard", "BLUE"), ("epic", "PURPLE")]
 PRIORITY_OPTIONS = [("P0", "RED"), ("P1", "ORANGE"), ("P2", "YELLOW"), ("P3", "GRAY")]
@@ -311,6 +321,10 @@ def init_fields(client, statuses: tuple[str, ...], replace_status_options: bool 
         f = project.fields.get(name)
         if f is not None and f.type != "TEXT":
             problems.append(f"field '{name}' exists as {f.type}, wanted TEXT")
+    for name in DATE_FIELDS:
+        f = project.fields.get(name)
+        if f is not None and f.type != "DATE":
+            problems.append(f"field '{name}' exists as {f.type}, wanted DATE")
     for name in selects:
         f = project.fields.get(name)
         if name == "Domain" and rename_domain:
@@ -341,6 +355,12 @@ def init_fields(client, statuses: tuple[str, ...], replace_status_options: bool 
         else:
             client.create_text_field(project.id, name)
             lines.append(f"created: {name}")
+    for name in DATE_FIELDS:
+        if name in project.fields:
+            lines.append(f"left alone: {name}")
+        else:
+            client.create_date_field(project.id, name)
+            lines.append(f"created: {name}")
     if rename_domain:
         client.rename_field(project.fields["Domain"].id, OLD_DOMAIN)
         lines.append(f"renamed: Domain -> {OLD_DOMAIN} (kept, never deleted)")
@@ -369,7 +389,7 @@ def init_fields(client, statuses: tuple[str, ...], replace_status_options: bool 
 
 # ---------------------------------------------------------------- --apply
 
-VALUE_ORDER = ("Ticket ID", "Status", "Domain", "Seat", "Host", "Branch", "PR", "Tier", "Layer", "Priority", "Epic", "Tags", "Host facts")  # Source, then Sync hash, are always last
+VALUE_ORDER = ("Ticket ID", "Status", "Domain", "Seat", "Host", "Branch", "PR", "Tier", "Layer", "Priority", "Epic", "Tags", "Host facts", "Filed")  # Source, then Sync hash, are always last
 SELECT_FIELDS = ("Status", "Tier", "Layer", "Priority", "Domain")
 
 
@@ -412,6 +432,8 @@ def apply_plan(client, project: Project, plan, body_of: Callable[[dict], str] | 
         f = project.fields[name]
         if value == "":
             return (lambda: client.clear_value(project.id, get_id(), f.id)) if clear_if_empty else None
+        if name in DATE_FIELDS:
+            return lambda: client.set_date(project.id, get_id(), f.id, value)
         if name in SELECT_FIELDS:
             oid = f.option_id(value)
             if oid is None:

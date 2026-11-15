@@ -65,9 +65,10 @@ FOLDERS = ("todos", "inprogress", "done")
 PROGRESS_FOLDERS = ("inprogress", "done")  # only these count as progress; todos/ on a branch or PR is filing
 HASH_FIELDS_V1 = ("Title", "Ticket ID", "Status", "Domain", "Seat", "Host", "Branch", "PR", "Tier")
 HASH_FIELDS_V2 = HASH_FIELDS_V1 + ("Layer", "Priority", "Epic", "Tags")
-HASH_FIELDS = HASH_FIELDS_V2 + ("Host facts",)  # the current version (v3)
-HASH_VERSIONS = {"v1": HASH_FIELDS_V1, "v2": HASH_FIELDS_V2, "v3": HASH_FIELDS}  # a stored hash is "v3:<sha>"; an unprefixed value is v1
-CURRENT_HASH_VERSION = "v3"
+HASH_FIELDS_V3 = HASH_FIELDS_V2 + ("Host facts",)
+HASH_FIELDS = HASH_FIELDS_V3 + ("Filed",)  # the current version (v4)
+HASH_VERSIONS = {"v1": HASH_FIELDS_V1, "v2": HASH_FIELDS_V2, "v3": HASH_FIELDS_V3, "v4": HASH_FIELDS}  # a stored hash is "v4:<sha>"; an unprefixed value is v1
+CURRENT_HASH_VERSION = "v4"
 HOST_STATES = ("filing", "progress", "stale", "blocked")
 PRIORITIES = ("P0", "P1", "P2", "P3")
 TIERS = ("hotfix", "standard", "epic")
@@ -639,6 +640,19 @@ def pick_domain(tid: str, segment_domains: set[str], source: TicketCopy | None, 
     return value, from_areas
 
 
+def filed_date(tid: str, raw: str, findings: list[str]) -> str:
+    """The ticket's frontmatter `date:` as YYYY-MM-DD, else "" (the field stays empty) plus a finding. It is the filing date, not the last activity."""
+    text = str(raw or "").strip()
+    try:
+        if re.fullmatch(r"\d{4}-\d{2}-\d{2}", text):
+            date.fromisoformat(text)
+            return text
+    except ValueError:
+        pass
+    findings.append(f"{tid}: frontmatter date '{text}' is " + ("not a valid YYYY-MM-DD date" if text else "missing") + ": Filed left empty")
+    return ""
+
+
 def derive_item(tid: str, main: list[TicketCopy], branches: list[BranchFact], prs: list[PrFact] | None, current: dict | None,
                 host: str, source: str, stale_before: float | None = None, extras: Extras | None = None,
                 notes: list[str] | None = None) -> tuple[dict, list[str]]:
@@ -664,8 +678,9 @@ def derive_item(tid: str, main: list[TicketCopy], branches: list[BranchFact], pr
     extras = extras or Extras()
     cur = current or {}
     title = best.title if best else ""
-    layer, priority, tags, epic, tier = "", "", "", "standalone", ""
+    layer, priority, tags, epic, tier, filed = "", "", "", "standalone", "", ""
     if best and not keep:
+        filed = filed_date(tid, best.date, findings)
         layer = best.layer
         if layer and extras.layers is not None and layer not in extras.layers:
             findings.append(f"{tid}: layer '{layer}' is not in registries/layer_registry.jsonl: Layer left empty")
@@ -713,6 +728,7 @@ def derive_item(tid: str, main: list[TicketCopy], branches: list[BranchFact], pr
         "Epic": cur.get("Epic", "") if keep else epic,
         "Tags": cur.get("Tags", "") if keep else tags,
         "Host facts": format_host_facts(segments),
+        "Filed": cur.get("Filed", "") if keep else filed,
         "Body": BODY.format(path=body_src.path if body_src else "agent-working/tickets/"),
         "Source": source,
     }
