@@ -244,7 +244,7 @@ def test_the_assemble_cli_exits_2_with_the_refusal_and_0_on_a_good_set(tmp_path,
 def _doc(world: str, seed: int) -> dict:
     """A minimal result document in the shape paired.py reads (no simulation): two people alive, audit flags True."""
     return {"world": world, "seed": seed, "start": [[1, "merchant", 1, 1], [2, "guard", 1, 1]], "final": {"1": [1, None, "merchant"], "2": [1, None, "guard"]},
-            "counters": None, "perception_samples": 5, "final_hash": "h", "start_hash": "s", "audit_mode": True, "signals_zeroed": True, "adds": {}, "runner": "PINNED"}
+            "counters": None, "perception_samples": 5, "final_hash": "h", "start_hash": "s", "audit_mode": True, "signals_zeroed": True, "adds": {}, "runner": "PINNED", "dists": paired.current_env()["dists"]}
 
 
 def test_jobs_run_by_run_arm_and_assembled_are_accepted_by_paireds_real_collected_compare(tmp_path, monkeypatch, capsys):

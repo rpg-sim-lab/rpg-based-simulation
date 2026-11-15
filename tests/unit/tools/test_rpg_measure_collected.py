@@ -23,7 +23,7 @@ def _run(world, seed, new_dead=0, final_hash="h", start_hash="s"):
     rows = [[i, k, c, 1] for i, k, c in START]
     fin = {"1": [0 if new_dead >= 1 else 1, "COMBAT" if new_dead >= 1 else None, "merchant"], "2": [0 if new_dead >= 2 else 1, "COMBAT" if new_dead >= 2 else None, "guard"], "3": [1, None, "wolf"]}
     return {"world": world, "seed": seed, "start": rows, "final": fin, "counters": None, "perception_samples": 5, "final_hash": final_hash,
-            "start_hash": start_hash, "audit_mode": True, "signals_zeroed": True, "adds": {}, "runner": "PINNED"}
+            "start_hash": start_hash, "audit_mode": True, "signals_zeroed": True, "adds": {}, "runner": "PINNED", "dists": paired.current_env()["dists"]}
 
 
 def _put(cache: Path, sha: str, w: str, s: int, run: dict, ticks=TICKS, repeat=False, runner=None, wall=1.5):

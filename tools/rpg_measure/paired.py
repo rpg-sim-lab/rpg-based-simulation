@@ -30,7 +30,6 @@ from __future__ import annotations
 
 import argparse
 import hashlib
-import importlib.metadata
 import json
 import os
 import platform
@@ -44,6 +43,7 @@ from typing import Any, Dict, List, Optional, Sequence, Tuple
 
 from src.observability.reporting.run_determinism import NonAuditRunError, require_host_independent_runs
 from tools.rpg_measure import stats
+from tools.rpg_measure.env_digest import installed_dists_digest  # noqa: F401 - re-exported: the one function the keys and the child use
 
 WORLDS = ("frontier_living_world", "urban_political", "crowded_frontier")
 TERRAIN_WORLD = "highland_traverse"
@@ -113,25 +113,6 @@ def uv_lock_digest(tool_root: Optional[Path] = None, arm_tree: Optional[Path] = 
         if root is not None and (root / "uv.lock").is_file():
             return hashlib.sha256((root / "uv.lock").read_bytes()).hexdigest(), source
     return "missing", "none"
-
-
-def installed_dists_digest() -> str:
-    """The sha256 of the sorted, newline-joined ``name==version`` of ``importlib.metadata.distributions()`` in the RUNNING interpreter (``sys.executable``'s environment,
-    the one the arm children inherit): names lowercased and PEP 503 normalised, duplicates kept. ``"empty"`` or ``"unreadable"`` (never a sha256) when the list is empty
-    or cannot be read, so ``env_problem`` refuses it. Why it sits beside ``uv_lock``: one main-checkout .venv can serve many worktrees, so the tool checkout's uv.lock
-    can claim a dependency set the run did not have."""
-    try:
-        rows = []
-        for dist in importlib.metadata.distributions():
-            name, version = dist.metadata["Name"], dist.version
-            if not name or version is None:
-                return "unreadable"
-            rows.append(f"{re.sub(r'[-_.]+', '-', name).lower()}=={version}")
-    except Exception:  # noqa: BLE001 - any failure to read the environment is a refusal, not a crash
-        return "unreadable"
-    if not rows:
-        return "empty"
-    return hashlib.sha256("\n".join(sorted(rows)).encode("utf-8")).hexdigest()
 
 
 def run_env(environ: Optional[Dict[str, str]] = None, hostname: Optional[str] = None, tool_root: Optional[Path] = None, arm_tree: Optional[Path] = None, dists: Optional[str] = None) -> Dict[str, str]:
@@ -259,7 +240,9 @@ def run_arm(tree: Path, cache: Path, sha: str, jobs: Sequence[Key], ticks: int, 
             todo.append((world, seed, out))
     with ThreadPoolExecutor(max_workers=workers) as pool:
         list(pool.map(lambda j: run_one(tree, j[0], j[1], ticks, j[2]), todo))
-    return {(w, s): json.loads(result_path(cache, sha, ticks, w, s, repeat).read_text(encoding="utf-8")) for w, s in jobs}
+    runs = {(w, s): json.loads(result_path(cache, sha, ticks, w, s, repeat).read_text(encoding="utf-8")) for w, s in jobs}
+    refuse_wrong_dists(f"{sha[:12]}{'-repeat' if repeat else ''}", runs, current_env()["dists"])
+    return runs
 
 
 class NotPinnedArmError(ValueError):
@@ -273,6 +256,27 @@ def refuse_non_pinned(arm: str, runs: Dict[Key, Dict[str, Any]]) -> None:
     bad = sorted(f"{arm}:{w}:{s}" for (w, s), r in runs.items() if r.get("runner") != "PINNED")
     if bad:
         raise NotPinnedArmError(f"arm documents not marked runner PINNED (a run on a non-sequential executor, or an older arm): {bad}")
+
+
+class DistsMismatchError(ValueError):
+    """An arm document's ``dists`` is missing or differs from the ``dists`` of the environment that keyed its directory."""
+
+
+def refuse_wrong_dists(arm: str, runs: Dict[Key, Dict[str, Any]], expected: str) -> None:
+    """The arm child computed ``dists`` itself (``arm_child`` loads ``env_digest`` from the tool checkout); it must equal the env's ``dists`` that keyed the result
+    directory, else the run did not have the dependency set its key claims. Applies to local and ``--collected`` results alike; the message names both digests."""
+    bad = sorted(f"{arm}:{w}:{s} child {r.get('dists')!r} != key {expected!r}" for (w, s), r in runs.items() if r.get("dists") != expected)
+    if bad:
+        raise DistsMismatchError(f"arm documents whose dists is missing or differs from the environment that keyed their directory (installed distributions differ from the key): {bad}")
+
+
+def collected_dists(cache: Path, sha: str, ticks: int, repeat: bool) -> str:
+    """The ``dists`` recorded in the env.json of a collected arm's directory ("" when there is none: every arm doc then differs and is refused)."""
+    _prefix, dirs = _arm_dirs(cache, sha, ticks, repeat)
+    try:
+        return str(json.loads((dirs[0] / ENV_FILE).read_text(encoding="utf-8")).get("dists")) if len(dirs) == 1 else ""
+    except (OSError, ValueError, AttributeError):
+        return ""
 
 
 def runner_sources(arm: str, runs: Dict[Key, Dict[str, Any]]) -> str:
@@ -526,6 +530,12 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         write_verdict(a.verdict_json, verdict)
 
 
+def _collected_runs(cache: Path, sha: str, ticks: int, jobs: Sequence[Key], repeat: bool = False) -> Dict[Key, Dict[str, Any]]:
+    runs = {k: json.loads(collected_path(cache, sha, ticks, *k, repeat).read_text(encoding="utf-8")) for k in jobs}
+    refuse_wrong_dists(f"{sha[:12]}{'-repeat' if repeat else ''}", runs, collected_dists(cache, sha, ticks, repeat))
+    return runs
+
+
 def _run(a: argparse.Namespace, verdict: Dict[str, Any]) -> int:
     collected = a.collected is not None
     legacy_msg = "--legacy-base / --legacy-new need --self-check full (the audit is proven only by a byte-identical repeat of every seed and world)"
@@ -554,7 +564,7 @@ def _run(a: argparse.Namespace, verdict: Dict[str, Any]) -> int:
         mismatched, _runners = runner_identity(cache, entries)
         if mismatched:
             return _refuse(verdict, f"runner identity differs {mismatched}", f"runner python/os/image differs between arms of a key: {mismatched}; the pair is not host-independent")
-        read = lambda sha: {k: json.loads(collected_path(cache, sha, NEUTRAL_TICKS, *k).read_text(encoding="utf-8")) for k in jobs}
+        read = lambda sha: _collected_runs(cache, sha, NEUTRAL_TICKS, jobs)
         rc, bad = neutral_report(read(bsha), read(nsha), bsha, nsha)
         _neutral_verdict(verdict, bad)
         return rc
@@ -580,7 +590,7 @@ def _run(a: argparse.Namespace, verdict: Dict[str, Any]) -> int:
         if mismatched:
             return _refuse(verdict, f"runner identity differs {mismatched}", f"runner python/os/image differs between arms of a key: {mismatched}; the pair is not host-independent")
         runner_lines = ["- runners (collected off host): " + ("; ".join(runners) if runners else "none recorded (no cost.json beside the results)")]
-        load = lambda sha, js, repeat=False: {k: json.loads(collected_path(cache, sha, a.ticks, *k, repeat).read_text(encoding="utf-8")) for k in js}
+        load = lambda sha, js, repeat=False: _collected_runs(cache, sha, a.ticks, js, repeat)
         base, new = load(bsha, jobs), load(nsha, jobs)
     else:
         (bsha, btree), (nsha, ntree) = prepare_tree(repo, a.base, cache), prepare_tree(repo, a.new, cache)

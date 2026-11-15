@@ -67,11 +67,13 @@ Commits cb37b8a48 (AC1), 5f754072b (AC2), 3ef5ca62f (AC3), then the fail-closed 
 
 Review additions (2026-11-15): the CI runner label is the image, else `ci:self-hosted:<RUNNER_NAME>`, else refused (rpg-planner); `dists` (sha256 of the running interpreter's installed distributions, PEP 503 names, duplicates kept) joins the env object beside uv_lock, fail closed when empty or unreadable (testing-planner ruling on rpg-planner-ubuntu's review; rpg-planner to confirm it amends env8); the `os` field is the kernel release on purpose.
 
+rpg-planner's condition on `dists` (confirmed 2026-11-15): `arm_child` computes `dists` itself with the same function (`tools/rpg_measure/env_digest.py`, stdlib only, loaded by file path from the tool checkout like pinned_runner) and writes it into the arm doc; paired refuses, after each arm run (local `run_arm`, and every `--collected` read including neutral and repeats), an arm doc whose `dists` is missing or differs from the env's that keyed the dir, naming both digests. NOTE FOR THE PR: the arm_child change moves the child hash again, so every paired cache key moves.
+
 ## Test Summary
 tests/unit/tools/test_paired_env_key.py, test_paired_arms.py, test_rpg_measure.py, test_rpg_measure_collected.py and tests/static/test_ci_paired_arms_workflow_shape.py pass; no run of any kind.
 
 ## Files Changed
-- tools/test_architecture/paired_arms.py, tools/rpg_measure/paired.py, .github/workflows/paired-arms.yml
+- tools/test_architecture/paired_arms.py, tools/rpg_measure/paired.py, tools/rpg_measure/arm_child.py, tools/rpg_measure/env_digest.py (new), .github/workflows/paired-arms.yml
 - tests/unit/tools/test_paired_env_key.py (new), test_paired_arms.py, test_rpg_measure_collected.py, tests/static/test_ci_paired_arms_workflow_shape.py
 - docs/plans/test_architecture/reference/paired_arms_off_host.md
 

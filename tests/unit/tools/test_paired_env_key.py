@@ -7,7 +7,7 @@ from pathlib import Path
 
 import pytest
 
-from tools.rpg_measure import paired
+from tools.rpg_measure import env_digest, paired
 from tools.test_architecture import paired_arms as pa
 
 SHA = "a" * 40
@@ -178,7 +178,7 @@ class _Dist:
 
 
 def _installed(monkeypatch, *pairs):
-    monkeypatch.setattr(paired.importlib.metadata, "distributions", lambda: [_Dist(n, v) for n, v in pairs])
+    monkeypatch.setattr(env_digest.importlib.metadata, "distributions", lambda: [_Dist(n, v) for n, v in pairs])
 
 
 def test_the_same_installed_set_gives_the_same_digest_whatever_its_order_and_spelling(monkeypatch):
@@ -206,7 +206,7 @@ def test_an_empty_or_unreadable_distribution_list_is_refused(tmp_path, monkeypat
     _installed(monkeypatch)
     env = _env(tmp_path)
     assert env["dists"] == "empty" and "dists" in paired.env_problem(env)
-    monkeypatch.setattr(paired.importlib.metadata, "distributions", lambda: (_ for _ in ()).throw(OSError("no")))
+    monkeypatch.setattr(env_digest.importlib.metadata, "distributions", lambda: (_ for _ in ()).throw(OSError("no")))
     assert paired.installed_dists_digest() == "unreadable"
     _installed(monkeypatch, ("a", None))
     assert paired.installed_dists_digest() == "unreadable"
@@ -221,3 +221,40 @@ def test_collected_refuses_an_env_json_whose_dists_differ_from_its_name_or_are_u
     other = tmp_path / "second"
     _stage(other, {**env, "dists": "unreadable"})
     assert "dists" in paired.env_problems(other, entries)[0]
+
+
+# ---- the arm child reports its own dists; paired refuses an arm whose dists is not the key's
+
+def test_a_local_arm_whose_child_reports_other_dists_is_refused_naming_both_digests(tmp_path, monkeypatch):
+    key = paired.current_env()["dists"]
+    def stub(doc):
+        def run_one(tree, w, s, t, out):
+            out.parent.mkdir(parents=True, exist_ok=True)
+            out.write_text(json.dumps(doc))
+        return run_one
+
+    monkeypatch.setattr(paired, "run_one", stub({"runner": "PINNED", "dists": "c" * 64}))
+    with pytest.raises(paired.DistsMismatchError) as err:
+        paired.run_arm(tmp_path / "tree", tmp_path / "cache", SHA, [("w", 42)], 10, 1)
+    assert "c" * 64 in str(err.value) and key in str(err.value)
+    monkeypatch.setattr(paired, "run_one", stub({"runner": "PINNED"}))  # no dists at all
+    with pytest.raises(paired.DistsMismatchError):
+        paired.run_arm(tmp_path / "tree", tmp_path / "cache2", SHA, [("w", 42)], 10, 1)
+
+
+def test_a_collected_arm_with_other_dists_is_refused_and_no_table_is_printed(tmp_path, capsys):
+    from tests.unit.tools.test_rpg_measure_collected import BASE, NEW, TICKS, _put, _run, collected
+    for w in paired.WORLDS:
+        for s in (42, 43):
+            _put(tmp_path, BASE, w, s, _run(w, s), runner=None)
+            _put(tmp_path, NEW, w, s, {**_run(w, s), "dists": "c" * 64}, runner=None)  # the new arm's child had other dependencies
+        _put(tmp_path, BASE, w, 42, _run(w, 42), repeat=True)
+    with pytest.raises(paired.DistsMismatchError, match="c" * 64):
+        collected(tmp_path)
+    out = capsys.readouterr().out
+    assert "| Step |" not in out and "People deaths" not in out
+
+
+def test_the_arm_child_writes_dists_from_the_tool_checkouts_own_module():
+    source = (Path(paired.__file__).with_name("arm_child.py")).read_text(encoding="utf-8")
+    assert '"dists": _env_digest().installed_dists_digest()' in source and 'with_name("env_digest.py")' in source
