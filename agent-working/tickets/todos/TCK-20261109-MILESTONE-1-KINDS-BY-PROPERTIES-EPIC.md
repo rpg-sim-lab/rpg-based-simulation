@@ -43,7 +43,8 @@ Child tickets, one per §12.5 in-scope item, plus the gate probes and the record
 - TCK-20261109-M1-THE-HERO-IS-WORK-AND-THE-GUILD-IS-MEMBERSHIP
 - TCK-20261109-M1-BASIC-WILD-BIRTHS-FOR-EVERY-LIVING-KIND
 - TCK-20261109-M1-WHO-A-PLACE-REFUSES
-- TCK-20261109-M1-NO-NAME-CHECKS-PROBE-AND-CONTENT-ALONE-KIND-PROBE
+- TCK-20261109-M1-NO-NAME-CHECKS-PROBE-AND-CONTENT-ALONE-KIND-PROBE (name-check probe only since 2026-11-15)
+- TCK-20261115-M1-A-TEST-KIND-DECLARED-ONLY-IN-CONTENT-PERCEIVES-EATS-AND-FIGHTS (content-alone probe, split from the line above 2026-11-15; HELD until rpg-planner says the retirements allow green)
 - TCK-20261109-M1-RECORD-AND-M1-DISCLOSURE
 
 Also in milestone 1's scope, and tracked by their own tickets: the repairs that close a v1 disclosure row (§12.5). Under the owner's ruling #715 6731822583, the TOWN-RETURN and ESC-SWITCH precedence sites get unit precedence-grid rows only, with a behaviour step only if a count shows a defect. FLEE-LINE stays a full fix.
@@ -72,7 +73,8 @@ Also in milestone 1's scope, and tracked by their own tickets: the repairs that 
 - TCK-20261109-M1-THE-HERO-IS-WORK-AND-THE-GUILD-IS-MEMBERSHIP
 - TCK-20261109-M1-BASIC-WILD-BIRTHS-FOR-EVERY-LIVING-KIND
 - TCK-20261109-M1-WHO-A-PLACE-REFUSES
-- TCK-20261109-M1-NO-NAME-CHECKS-PROBE-AND-CONTENT-ALONE-KIND-PROBE
+- TCK-20261109-M1-NO-NAME-CHECKS-PROBE-AND-CONTENT-ALONE-KIND-PROBE (name-check probe only since 2026-11-15)
+- TCK-20261115-M1-A-TEST-KIND-DECLARED-ONLY-IN-CONTENT-PERCEIVES-EATS-AND-FIGHTS (content-alone probe, split from the line above 2026-11-15; HELD until rpg-planner says the retirements allow green)
 - TCK-20261109-M1-RECORD-AND-M1-DISCLOSURE
 - TCK-20261007-COMPILED-ENTITIES-GET-DEFAULT-NEED-AND-DRIVE-PROFILES-WITH-VISIBLE-PROVENANCE (moved in, #715 6875278006)
 - TCK-20260913-NO-MECHANISM-RECORDS-PER-ENEMY-KIND-DANGER (moved in, #715 6875278006)

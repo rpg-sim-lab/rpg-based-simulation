@@ -1474,9 +1474,12 @@ def run_advisory_checks(ticket_id: str, tier: str) -> list[dict]:
     part of `run_static_precheck()`: statuses here are OK/WARN/NA, never PASS/FAIL, so no existing
     consumer of the precheck list (implement-ticket.js, the done-checker `DONE_SCHEMA.checklist`)
     sees a new status value, and nothing here can change a close verdict."""
+    from tools.test_architecture.evidence_runner_advisory import check_evidence_runner  # lazy: needs the repo root on sys.path, which cited_evidence_advisory sets
+
     checks = (
         ("test_plan_proof_fields", check_proof_plan_fields(ticket_id, tier)),
         ("cited_evidence_tracked", check_cited_evidence_paths(ticket_id, tier)),
+        ("evidence_runner_pinned", check_evidence_runner(ticket_id, tier)),
     )
     return [
         {"condition": name, "status": status, "evidence": evidence}

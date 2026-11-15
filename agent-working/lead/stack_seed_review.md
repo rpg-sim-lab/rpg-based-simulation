@@ -8,13 +8,14 @@ tags: [ai, governance]
 
 # Tech-stack seed review
 
-Epic E, child E6, seed review (`TCK-20261009-EPIC-SESSION-LEAD-PLANNER`). It re-checks the lead's 2026-10-09
+Written as Epic E child E6's seed review (`TCK-20261009-EPIC-SESSION-LEAD-PLANNER`). It re-checks the lead's 2026-10-09
 stack findings on `main` 9a9058808 (2026-10-11) and gives each one a recommendation and an owner. **Advice
-only**: the fixes are tickets in the owning domain (the epic's out-of-scope list says so), and the
-registry/drift-check tooling is E6's own work for agent-working.
+only**: the fixes are tickets in the owning domain.
 
-When `registries/tech_stack.yaml` exists, it should be seeded from this list and from the inventory
-below.
+Epic E was closed by disposition in #911 (2026-11-14). The owner dropped E6's `registries/tech_stack.yaml`
+registry, drift check and guideline (#715 6875391153), so no registry will be seeded from this page. It stays
+as the lead's dated record of the stack: the findings table below is from 2026-10-11, and the inventory was
+refreshed on 2026-11-14.
 
 ## Findings
 
