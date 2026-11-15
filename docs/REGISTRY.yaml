@@ -8117,6 +8117,27 @@
   - content
   last_verified: '2026-10-09'
 - type: ticket
+  path: agent-working/tickets/done/TCK-20261115-PROJECT-SYNC-ALL-LANES.md
+  ticket_id: TCK-20261115-PROJECT-SYNC-ALL-LANES
+  title: '`project_sync.py` P3b: every lane goes on Project 1, Domain becomes a single-select,
+    the sync can fetch origin/main itself, and each host leaves a last-run file and
+    a cross-host heartbeat'
+  tier: standard
+  ticket_type: feature
+  date: '2026-11-15'
+  related_code_areas:
+  - tools/sessions/project_sync.py
+  - tools/sessions/project_client.py
+  - registries/session_project.yaml
+  - tests/tools/test_session_project_sync*.py
+  artifact_files:
+  - agent-working/stored_artifacts/TCK-20261115-PROJECT-SYNC-ALL-LANES/investigation.md
+  - agent-working/stored_artifacts/TCK-20261115-PROJECT-SYNC-ALL-LANES/plan.md
+  - agent-working/stored_artifacts/TCK-20261115-PROJECT-SYNC-ALL-LANES/test_plan.md
+  tags:
+  - planning
+  - delivery
+- type: ticket
   path: agent-working/tickets/todos/TCK-20261115-M1-A-TEST-KIND-DECLARED-ONLY-IN-CONTENT-PERCEIVES-EATS-AND-FIGHTS.md
   ticket_id: TCK-20261115-M1-A-TEST-KIND-DECLARED-ONLY-IN-CONTENT-PERCEIVES-EATS-AND-FIGHTS
   title: 'Milestone 1''s content-alone probe: a test kind declared only in test content,
@@ -8131,19 +8152,16 @@
   tags:
   - testing
 - type: ticket
-  path: agent-working/tickets/todos/github-project-ticket-view/TCK-20261115-PROJECT-SYNC-ALL-LANES.md
-  ticket_id: TCK-20261115-PROJECT-SYNC-ALL-LANES
-  title: '`project_sync.py` P3b: every lane goes on Project 1, Domain becomes a single-select,
-    the sync can fetch origin/main itself, and each host leaves a last-run file and
-    a cross-host heartbeat'
-  tier: standard
+  path: agent-working/tickets/todos/github-project-ticket-view/TCK-20261115-PROJECT-SYNC-FILED-DATE-AND-BACKLOG-VIEW.md
+  ticket_id: TCK-20261115-PROJECT-SYNC-FILED-DATE-AND-BACKLOG-VIEW
+  title: '`project_sync.py`: a `Filed` date field from each ticket''s frontmatter
+    date, so the owner''s Backlog view can show the open-ticket pile by Domain, Priority
+    and age'
+  tier: hotfix
   ticket_type: feature
   date: '2026-11-15'
   related_code_areas:
   - tools/sessions/project_sync.py
-  - tools/sessions/project_client.py
-  - registries/session_project.yaml
-  - tests/tools/test_session_project_sync*.py
   artifact_files: []
   tags:
   - planning
