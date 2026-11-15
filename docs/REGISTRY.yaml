@@ -8117,6 +8117,18 @@
   - content
   last_verified: '2026-10-09'
 - type: ticket
+  path: agent-working/tickets/done/TCK-20261115-LEAD-BOARD-FIFTH-PASS.md
+  ticket_id: TCK-20261115-LEAD-BOARD-FIFTH-PASS
+  title: The lead board records the owner's 2026-11-15 epic decisions in one place,
+    with the pauses still in force stated first
+  tier: hotfix
+  ticket_type: chore
+  date: '2026-11-15'
+  related_code_areas: []
+  artifact_files: []
+  tags:
+  - governance
+- type: ticket
   path: agent-working/tickets/done/TCK-20261115-M1-THE-NAME-SWITCH-PROBE-GATES-WORLD-AND-CORE-TOO.md
   ticket_id: TCK-20261115-M1-THE-NAME-SWITCH-PROBE-GATES-WORLD-AND-CORE-TOO
   title: The name-switch probe gates `src/world` and `src/core` as well, so the 15
@@ -8182,6 +8194,20 @@
   - planning
   - delivery
 - type: ticket
+  path: agent-working/tickets/done/TCK-20261115-PROJECT-SYNC-HOST-TIMER.md
+  ticket_id: TCK-20261115-PROJECT-SYNC-HOST-TIMER
+  title: '`project_sync.py` P3c: systemd user timer templates that run the sync hourly
+    on each host, capped and staggered, with the owner''s install step documented'
+  tier: hotfix
+  ticket_type: feature
+  date: '2026-11-15'
+  related_code_areas:
+  - tools/sessions/systemd/
+  artifact_files: []
+  tags:
+  - planning
+  - delivery
+- type: ticket
   path: agent-working/tickets/todos/TCK-20261115-M1-A-TEST-KIND-DECLARED-ONLY-IN-CONTENT-PERCEIVES-EATS-AND-FIGHTS.md
   ticket_id: TCK-20261115-M1-A-TEST-KIND-DECLARED-ONLY-IN-CONTENT-PERCEIVES-EATS-AND-FIGHTS
   title: 'Milestone 1''s content-alone probe: a test kind declared only in test content,
@@ -8209,20 +8235,6 @@
   - tests/unit/kernel/test_executor_context_parity.py, tests/integration/kernel/test_executor_equivalence_long.py
   artifact_files: []
   tags: []
-- type: ticket
-  path: agent-working/tickets/todos/github-project-ticket-view/TCK-20261115-PROJECT-SYNC-HOST-TIMER.md
-  ticket_id: TCK-20261115-PROJECT-SYNC-HOST-TIMER
-  title: '`project_sync.py` P3c: systemd user timer templates that run the sync hourly
-    on each host, capped and staggered, with the owner''s install step documented'
-  tier: hotfix
-  ticket_type: feature
-  date: '2026-11-15'
-  related_code_areas:
-  - tools/sessions/systemd/
-  artifact_files: []
-  tags:
-  - planning
-  - delivery
 - type: ticket
   path: agent-working/tickets/done/TCK-20261114-LEAD-BOARD-FOURTH-PASS.md
   ticket_id: TCK-20261114-LEAD-BOARD-FOURTH-PASS
