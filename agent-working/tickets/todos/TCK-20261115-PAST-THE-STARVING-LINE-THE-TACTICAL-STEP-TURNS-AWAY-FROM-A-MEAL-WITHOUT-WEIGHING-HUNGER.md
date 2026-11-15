@@ -67,6 +67,15 @@ None.
 - Dispatch is the owner's yes, through lead, after the designer's design.
 
 ## Implementation Notes
+- 2026-11-15 (rpg-planner): rpg-designer's design v1 is FINAL, at main-checkout .claude/handover/drafts/rpg-designer-d1-starving-tactical-design.md. Step 0 (owner #715 6893555631; spy f349e5fd; a.json 15fb056c and b.json 4889b9d4, both REPRO_OK) confirmed the hypothesis:
+  - A, t2155: e34 at distance 5 still counts as acting only through the hit term, so the subject panics away from an inn 2 ticks off.
+  - B, t3226: e36 at distance 2 acts only through the hit term, so need_yields.
+- The fix: past STARVING_LINE only, `_hit_acts_on` requires the hitter to still reach the subject (Manhattan <= max(1, hostile.combat.range)). Term (a) is unchanged, and the memo row 88 window below the line is unchanged. It is one predicate shared by need_yields, _panic_holds and acting_threat_to, and adds no new number.
+- Dropped from v0: (i), engage only acting hostiles. B's target order comes from the group shared-target bias in TCK-20261101-A-HOSTILE-ATTACKING-YOU-OUTRANKS-THE-GROUP-SHARED-TARGET (ubuntu), to be re-checked after that lands. The hp<15% branch order stays parked (0 of 8 attack returns were below 15%).
+- Docs: Bible 04 LAW P, a Bug Fix divergence cross-referencing 2.135 and row 88, and a ledger row by COMB-346.
+- Tests: 5 unit, 1 tactical and 1 real-kernel integration test (listed in the draft).
+- Measurement: the paired 3x5 death bar, plus r1 (people starvation within 3 ticks of an open way) and r2 (COMBAT/DEFEAT of past-line subjects). An r2 Tier 1 rise is a STOP to rpg-designer. Then re-read the V3 cells.
+- The plan goes to rpg-designer for review before Implement.
 
 ## Test Summary
 
