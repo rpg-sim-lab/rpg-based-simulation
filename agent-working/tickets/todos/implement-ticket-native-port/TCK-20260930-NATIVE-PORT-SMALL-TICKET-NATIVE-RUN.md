@@ -15,7 +15,7 @@ tags: [ai, agent-monitoring]
 Run one small ticket through the native implement-ticket and verify gate outcomes
 
 ## Status
-BLOCKED
+OPEN
 
 ## Tier
 standard
@@ -60,6 +60,22 @@ Epic AC1 and AC3: no `bash(` in implement-ticket.js and one native run of a smal
 - **2026-10-06, blocked by the environment, not run.** The owner approved this run on 2026-10-06 (answering "Run it"). Two attempts never reached Scope: the named workflow resolved the main checkout's `implement-ticket.js` (no attested sites) and returned the old `NATIVE_GATE_SITES_UNPORTED` refusal; a `scriptPath` run of the worktree file died with `agent type 'ticket-scoper' not found`, because the session was launched from `/mnt/data/Working` and the repo's `.claude/agents` were not registered. About 240k tokens were spent; no gate was reached and no repo state changed. A rerun needs a session started in a repo worktree, after the PR that lands `TCK-20260930-NATIVE-PORT-ATTESTED-GATE-SITES` merges, with `scriptPath` pointing at that tree's `implement-ticket.js`. The refusal run rows stay in the monitoring shard as a true record.
 
 ## Implementation Notes
+**Run plan v3 (agent-working-planner, 2026-11-15; supersedes the 10-09 plan's vehicle, landing and environment lines).**
+- Owner: resume (#715 6889470987). Vehicle chosen, with the cost stated (#715 6889489078). **The Workflow opt-in is not given yet.** It is asked in the implementer session immediately before the fail run; the pass run is a second ask unless the owner covers both in that one answer. The 10-06 and 10-09 opt-ins do not carry over.
+- Vehicle: TCK-20261115-SEARCH-STALE-FLAG-CHECKS-THE-INDEXED-CHECKOUT (standard, P2), a real one-function fix in tools/search_mcp.py and tools/knowledge_search.py with tests. Standard tier, so every gate site is reached.
+- Preconditions, checked at the run's base by the implementer and reported before the opt-in ask:
+  1. `python3 tools/workflow_bash_sites.py .claude/workflows/implement-ticket.js` reports 0 sites. True at origin/main 0f1c35206.
+  2. The run starts from the agent-working-implementer session, launched in its own repo worktree, so `.claude/agents` resolve (the 10-06 `ticket-scoper not found` failure).
+  3. `scriptPath` is that worktree's `.claude/workflows/implement-ticket.js`, on a branch cut from origin/main, `git diff origin/main -- .claude/workflows/` empty. Never use the named workflow; it resolves the main checkout (10-06 failure 1).
+  4. The run branch is cut from origin/agent-working-planner-next (dbb360234 or later), so the PR also carries the SDLC rescope commits and the shard rows the implementer carried (its local ba1f5d013, rebased). No other session runs a Workflow, perf run or heavy test run on ubuntu at the same time; lead-planner gives the slot. The pipeline's Test phase ran 4,691 tests in tests/tools in the 10-09 run, outside the usual 3G cap, so lead decides whether that is acceptable or the run waits for a quiet host.
+  5. No project_sync --apply (HOLD-v4); the run doesn't need one.
+- Fail run: add the unregistered tag `native-run-probe` to the vehicle's frontmatter, uncommitted, in the run worktree. Run with `ticket_id` = the vehicle. Expected: `Scope:tag_registry.check_tags_registered` FAIL through `shAttested('tag_check')`, `TAGS_NOT_REGISTERED`, Scope only. 10-09 measured 293,821 tokens and 81.9 s. If the scoper drops or rewrites the tag instead of reporting it, stop and report: that is a finding.
+- Pass run: remove the probe tag and rerun the same `ticket_id`. Expected: every reached gate PASS (or a real failure handled by the pipeline's own loop), ending DONE. Estimate 1.4-1.8M tokens and 35-60 min: the 10-09 pass run used 925,732 tokens and 27.8 min before dying at the Test site's transport, and Test, Parity, Verify and Finalize remain. If it dies on a harness fault (WORKFLOW_ERROR, attestation mismatch twice, agent not found), stop, record it, and don't retry without a new owner ask. The vehicle is then hand-finished, as on 10-09.
+- New since 10-09, and never run natively: the TRANSPORT-LOSSY fix (f446a2bc8: `cmd_sha`, short `gate_cli.py` calls, one retry), and the 11-11 docs-as-review changes to implement-ticket.js (#859, #864; +23/-2 lines). A failure in either is a finding about the pipeline, not about the vehicle.
+- AC3 per run: compare the orchestrator backstop's verdicts with the attested rows in `gate_verdicts.jsonl`, and record any disagreement.
+- Evidence in this ticket's Test Summary, per run: workflow run id, each gate site's outcome, the backstop comparison, tokens, wall-clock. This is also input to OD-5 (retire the pipeline), which agent-working-designer brings to the owner later.
+- Landing (replaces "local batch, no push"): one PR on the agent-working track closing the vehicle and this ticket. If AC2 and AC3 hold, it also closes the epic TCK-20260930-IMPLEMENT-TICKET-NATIVE-PORT and moves `todos/implement-ticket-native-port/` to `done/`. The PR carries the SDLC rescope commits. Push and merge are owner asks on the exact SHA.
+
 **Run plan (planner, 2026-10-09; owner opt-in for this run given in the planner session 2026-10-09, "go with your recommendations").**
 - Precondition (checked 2026-10-09): `tools/workflow_bash_sites.py .claude/workflows/implement-ticket.js` reports 0 sites at main 42ce987b6. Re-check it at the run's base.
 - Environment, from the 2026-10-06 failure: the run must start from the `agent-working-implementer` session, which was launched in a repo worktree so `.claude/agents` resolve. Pass `scriptPath` = that worktree's `.claude/workflows/implement-ticket.js`, synced to origin/main. Do not run the named workflow, which resolves the main checkout.

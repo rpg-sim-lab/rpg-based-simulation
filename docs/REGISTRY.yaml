@@ -8138,6 +8138,21 @@
   - planning
   - delivery
 - type: ticket
+  path: agent-working/tickets/todos/TCK-20261115-SEARCH-STALE-FLAG-CHECKS-THE-INDEXED-CHECKOUT.md
+  ticket_id: TCK-20261115-SEARCH-STALE-FLAG-CHECKS-THE-INDEXED-CHECKOUT
+  title: search_docs's stale flag checks the checkout the index was built from, so
+    a worktree no longer reports a current index as stale.
+  tier: standard
+  ticket_type: bug
+  date: '2026-11-15'
+  related_code_areas:
+  - _resolve_index_dir
+  - index_staleness
+  - tests/tools/test_search_mcp.py, tests/tools/test_knowledge_search.py
+  artifact_files: []
+  tags:
+  - ai
+- type: ticket
   path: agent-working/tickets/todos/ai-first-sdlc-evolution/TCK-20261115-SDLC-BASELINE-TAG-RULESET.md
   ticket_id: TCK-20261115-SDLC-BASELINE-TAG-RULESET
   title: A tag ruleset protects the four frozen SDLC baseline tags, applied by the

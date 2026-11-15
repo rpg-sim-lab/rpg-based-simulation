@@ -24,6 +24,8 @@ remaining work.
 
 **Status after 2026-10-06:** items 1-4 are done. Item 5 (SMALL-TICKET-NATIVE-RUN) is still the remaining work: its native run was blocked by the environment (see that ticket's Assumptions / Open Questions). The parent epic `TCK-20260930-IMPLEMENT-TICKET-NATIVE-PORT` stays OPEN.
 
+**Resumed 2026-11-15 (owner, #715 6889470987).** Item 6 is unblocked. Its new vehicle is TCK-20261115-SEARCH-STALE-FLAG-CHECKS-THE-INDEXED-CHECKOUT (#715 6889489078). The run plan v3 is in item 6's ticket, and the Workflow opt-in is asked just before the run.
+
 ## Why This Order Matters
 
 Written by hand. The attestation design found a nonce-hash gate result forgeable by an agent told to cheat, so the

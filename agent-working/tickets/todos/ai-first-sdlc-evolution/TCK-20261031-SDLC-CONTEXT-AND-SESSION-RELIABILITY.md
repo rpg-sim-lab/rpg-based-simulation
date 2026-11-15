@@ -32,7 +32,7 @@ Phase 5 (plan section 39). It needs no owner decision, is independent of the oth
 Owner decision 2026-11-15 (#715 6889309909, 6889318166): this is the epic's next ticket, dispatched to the agent-working seats after the ticket view epic (P3c and the backlog view) lands.
 
 ## Scope
-1. Fix the search staleness root; the stale flag is correct in worktrees.
+1. ~~Fix the search staleness root; the stale flag is correct in worktrees.~~ Split out on 2026-11-15 as TCK-20261115-SEARCH-STALE-FLAG-CHECKS-THE-INDEXED-CHECKOUT, the owner's vehicle for the native implement-ticket run (#715 6889489078).
 2. Add an authority field and history down-weighting.
 3. Mark branch content as not indexed.
 4. Rebuild the graph on a schedule and print its build SHA.
@@ -47,7 +47,7 @@ Owner decision 2026-11-15 (#715 6889309909, 6889318166): this is the epic's next
 - Thresholds the plan leaves to the owner: propose after the baseline; do not set them.
 
 ## Acceptance Criteria
-1. The stale flag is correct in worktrees, with a test.
+1. ~~The stale flag is correct in worktrees, with a test.~~ Moved to TCK-20261115-SEARCH-STALE-FLAG-CHECKS-THE-INDEXED-CHECKOUT.
 2. E3 baseline and after-numbers are recorded over 20 authority queries; the owner sets the share.
 3. No handover over the cap without a write-time warning.
 4. `tests/tools/` passes in a lead slot.
