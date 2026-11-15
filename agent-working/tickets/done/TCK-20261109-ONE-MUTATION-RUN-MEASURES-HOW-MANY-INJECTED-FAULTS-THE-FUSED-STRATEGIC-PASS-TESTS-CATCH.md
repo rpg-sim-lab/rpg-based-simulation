@@ -1,10 +1,10 @@
 ---
-status: active
+status: historical
 layer: testing
 authority: P2
 audience: agent
 ticket_id: TCK-20261109-ONE-MUTATION-RUN-MEASURES-HOW-MANY-INJECTED-FAULTS-THE-FUSED-STRATEGIC-PASS-TESTS-CATCH
-phase: open
+phase: done
 date: 2026-11-09
 tags: [testing]
 ---
@@ -15,7 +15,7 @@ tags: [testing]
 One report-only mutmut run measures how many injected faults in fused_strategic_pass its current tests catch, recorded as a mutation baseline under tests/mutation/baselines/
 
 ## Status
-OPEN
+DONE
 
 ## Tier
 hotfix
@@ -42,9 +42,9 @@ Owner go on issue #715, comment 6736269441 (item 2, E): one mutmut run on fused_
 - A re-run after C lands. That is optional evidence on C's PR, recorded as a `_v2` file if done, with the same method.
 
 ## Acceptance Criteria
-- [ ] AC1: The baseline JSON exists, follows the existing baselines' schema, and names the exact source sha, the function line range, the test list, the counts, the runtime, and survivors by line.
-- [ ] AC2: The run happened inside the gap rpg-planner named ("HOST FREE for E"). Start and finish were messaged to rpg-planner. The wall time was at most 90 min; if it ran longer, it was stopped and the partial result recorded as `run.kind: partial` with the reason.
-- [ ] AC3: No change to pyproject.toml, requirements, or any file outside tests/mutation/baselines/ and this ticket. The scratch copy and venv are removed after the run.
+- [x] AC1: The baseline JSON exists, follows the existing baselines' schema, and names the exact source sha, the function line range, the test list, the counts, the runtime, and survivors by line.
+- [x] AC2: The run happened inside the gap rpg-planner named ("HOST FREE for E"). Start and finish were messaged to rpg-planner. The wall time was at most 90 min; if it ran longer, it was stopped and the partial result recorded as `run.kind: partial` with the reason. (Ran 11:28:30Z-12:58:29Z, stopped at the 90-min cap, recorded run.kind partial.)
+- [x] AC3: No change to pyproject.toml, requirements, or any file outside tests/mutation/baselines/ and this ticket. The scratch copy and venv are removed after the run.
 
 ## Related Tickets
 - TCK-20261109-FUSED-STRATEGIC-PASS-FAST-PATH-IS-PINNED-BRANCH-BY-BRANCH-AND-AGAINST-THE-SLOW-PATH (C; the tests this measures before and after)
