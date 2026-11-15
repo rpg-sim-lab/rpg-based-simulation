@@ -8158,6 +8158,21 @@
   artifact_files: []
   tags: []
 - type: ticket
+  path: agent-working/tickets/done/TCK-20261115-PAIRED-ARMS-RUNS-ONLY-COMMITS-ON-A-REPO-BRANCH.md
+  ticket_id: TCK-20261115-PAIRED-ARMS-RUNS-ONLY-COMMITS-ON-A-REPO-BRANCH
+  title: The paired-arms workflow keeps no token on disk and refuses a base or new
+    commit that is not on a repo branch, before any arm runs.
+  tier: hotfix
+  ticket_type: repair
+  date: '2026-11-15'
+  related_code_areas:
+  - .github/workflows/paired-arms.yml
+  - tests/static/test_ci_paired_arms_workflow_shape.py
+  artifact_files: []
+  tags:
+  - platform
+  - security
+- type: ticket
   path: agent-working/tickets/done/TCK-20261115-PROJECT-SYNC-ALL-LANES.md
   ticket_id: TCK-20261115-PROJECT-SYNC-ALL-LANES
   title: '`project_sync.py` P3b: every lane goes on Project 1, Domain becomes a single-select,
@@ -8232,6 +8247,22 @@
   related_code_areas:
   - tests/integration/observability/test_multi_run_index_flow.py:38-47, :88
   - tests/integration/observability/conftest.py (tick_cost_ms)
+  artifact_files: []
+  tags: []
+- type: ticket
+  path: agent-working/tickets/todos/TCK-20261115-THE-GATE-METRICS-EMIT-THE-OUTCOME-BAND-ROWS.md
+  ticket_id: TCK-20261115-THE-GATE-METRICS-EMIT-THE-OUTCOME-BAND-ROWS
+  title: 'The RPG gate metrics emit the outcome-band rows (B1, B2, B3, B4): a starving-line
+    flag, a typed meal-source record that includes the free core relief, and the people
+    alive share at checkpoints'
+  tier: standard
+  ticket_type: feature
+  date: '2026-11-15'
+  related_code_areas:
+  - src/observability/rpg_gate_metrics.py
+  - src/engine/domain/core_actions.py (eat_update, :123)
+  - src/engine/building_services.py (service_delta, :92)
+  - src/systems/resource_transactions (resolver)
   artifact_files: []
   tags: []
 - type: ticket
