@@ -1,10 +1,10 @@
 ---
-status: active
+status: historical
 layer: platform
 authority: P1
 audience: agent
 ticket_id: TCK-20261115-WORLD-FARM-RUNS-WORLDS-SIDE-BY-SIDE-WITHOUT-CLASHING
-phase: inprogress
+phase: done
 date: 2026-11-15
 tags: [platform, architecture, observability, lab-agent]
 ---
@@ -16,7 +16,7 @@ World farm, step one: two worlds run at the same time on one host without sharin
 data, or interleaving a ledger line.
 
 ## Status
-INPROGRESS
+DONE
 
 ## Tier
 standard
@@ -163,7 +163,7 @@ Written by platform-implementer under rpg-planner-ubuntu's option (b) (these lin
 - `agent-working/`: the investigation (section 3 classification), the child-4 ticket's child-3 citations (ride-along for platform-planner).
 
 ## Completion Summary
-Open: implemented and green locally; awaiting the push ask after re-review.
+Closed: implemented, reviewed by message (rpg-planner-ubuntu: OK on the follow-up, platform-planner: F1 to F5 resolved) and green locally; the PR review comment is recorded after the PR opens.
 
 Limits (stated, not hidden):
 - **What the claim leaves open:** (1) the kernel side, `create_run_directory(..., overwrite=True)` (`src/engine/run_identity.py:33-35`). After `claim_run_dir` the kernel still gets an explicit id and replaces the directory we just claimed; if that replace is remove-then-create there is a short window where the path does not exist and a second claimer of the same id could create it and then lose it. That also covers anything that reaches it directly without the lab, sweeper or mining controller. Filed by rpg-planner-ubuntu as

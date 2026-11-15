@@ -8208,7 +8208,7 @@
   - planning
   - delivery
 - type: ticket
-  path: agent-working/tickets/inprogress/TCK-20261115-WORLD-FARM-RUNS-WORLDS-SIDE-BY-SIDE-WITHOUT-CLASHING.md
+  path: agent-working/tickets/done/TCK-20261115-WORLD-FARM-RUNS-WORLDS-SIDE-BY-SIDE-WITHOUT-CLASHING.md
   ticket_id: TCK-20261115-WORLD-FARM-RUNS-WORLDS-SIDE-BY-SIDE-WITHOUT-CLASHING
   title: 'World farm, step one: two worlds run at the same time on one host without
     sharing an event stream, deleting each other''s lab run
@@ -8225,7 +8225,10 @@
   - src/lab/repository.py
   - src/lab/store.py
   - tools/test_architecture/run_ledger.py
-  artifact_files: []
+  artifact_files:
+  - agent-working/stored_artifacts/TCK-20261115-WORLD-FARM-RUNS-WORLDS-SIDE-BY-SIDE-WITHOUT-CLASHING/investigation.md
+  - agent-working/stored_artifacts/TCK-20261115-WORLD-FARM-RUNS-WORLDS-SIDE-BY-SIDE-WITHOUT-CLASHING/plan.md
+  - agent-working/stored_artifacts/TCK-20261115-WORLD-FARM-RUNS-WORLDS-SIDE-BY-SIDE-WITHOUT-CLASHING/test_plan.md
   tags:
   - platform
   - architecture
