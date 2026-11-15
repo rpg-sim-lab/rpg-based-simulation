@@ -5,6 +5,7 @@ from datetime import datetime, timezone
 from typing import Optional, List, Dict, Any, Literal
 
 from src.lab.session import LabSessionStore, LabSessionManifest, LabSessionError
+from src.observability.world_farm_io import append_line
 
 def safe_path_resolution(base_dir: Path, target_path_str: str) -> Path:
     """Safely resolves target path within base directory, preventing traversal breakouts."""
@@ -131,9 +132,8 @@ class LabAuditTrail:
             "details": details
         }
         
-        # Append-only write
-        with open(audit_file, "a", encoding="utf-8") as f:
-            f.write(json.dumps(entry) + "\n")
+        # Append-only write: one write on an O_APPEND fd, so two processes on one session never split a line
+        append_line(str(audit_file), json.dumps(entry))
             
         return entry
 

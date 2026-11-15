@@ -5,7 +5,7 @@ import shutil
 import logging
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Optional, Dict, Any
+from typing import Iterable, Optional, Dict, Any
 
 from src.lab.schema import LabRunManifest, InvalidLabRunManifestError
 from src.lab.repository import (
@@ -21,8 +21,19 @@ from src.worldbuilding.validator import WorldValidator
 from src.lab.validator import ScenarioValidator, ExperimentValidator
 from src.observability.config import ObservabilityConfig, ObservabilityMode
 from src.config.loader import ConfigLoader
+from src.observability.world_farm_io import claim_run_dir, ensure_run_dir_free
 
 logger = logging.getLogger(__name__)
+
+
+def ensure_seed_run_dirs_free(lab_run_id: str, seeds: Iterable[int]) -> None:
+    """Refuse a run-id prefix (the lab run id by default) whose per-seed run directory under ``data/runs`` already exists.
+
+    A run directory that exists belongs to another run (the kernel would overwrite an explicit id); this never deletes it.
+    """
+    for seed in seeds:
+        run_id = f"run_{lab_run_id}_seed_{seed}"
+        ensure_run_dir_free(os.path.abspath(os.path.join("data/runs", run_id)), label=f"run directory for lab run '{lab_run_id}'")
 
 
 class ScenarioLabOrchestrator:
@@ -39,12 +50,17 @@ class ScenarioLabOrchestrator:
         world_repo: WorldRepository,
         scenario_repo: ScenarioRepository,
         experiment_repo: ExperimentRepository,
-        lab_run_repo: LabRunRepository
+        lab_run_repo: LabRunRepository,
+        run_id_prefix: Optional[str] = None,
     ):
         self.world_repo = world_repo
         self.scenario_repo = scenario_repo
         self.experiment_repo = experiment_repo
         self.lab_run_repo = lab_run_repo
+        # Names the per-seed runs under data/runs (run_{prefix}_seed_{seed}); defaults to the lab run id at run time. A caller that
+        # runs several labs under one lab run id (the mutation lab names every variant "lab_run") passes a prefix unique per lab,
+        # so concurrent or repeated labs never share a run directory. The prefix is a name only.
+        self.run_id_prefix = run_id_prefix
 
     @staticmethod
     def _resolve_obs_mode(mode_str: str) -> ObservabilityMode:
@@ -73,6 +89,7 @@ class ScenarioLabOrchestrator:
         """
         Executes a Scenario Lab execution from end-to-end sequentially.
         """
+        run_prefix = self.run_id_prefix or lab_run_id
         # 1. Load Experiment Spec
         experiment_spec = self.experiment_repo.load_experiment(experiment_id)
 
@@ -142,6 +159,9 @@ class ScenarioLabOrchestrator:
             storage_usage_mb=0.0
         )
 
+        # 6b. World farm: never reuse (or delete) a run directory another run holds
+        ensure_seed_run_dirs_free(run_prefix, experiment_spec.run.seeds)
+
         # 7. Create safe folder layout (raises FileExistsError if folder already exists)
         run_dir = self.lab_run_repo.create_lab_run(manifest)
 
@@ -168,15 +188,13 @@ class ScenarioLabOrchestrator:
             failed_count = 0
 
             for seed in experiment_spec.run.seeds:
-                run_id = f"run_{lab_run_id}_seed_{seed}"
+                run_id = f"run_{run_prefix}_seed_{seed}"
                 temp_run_dir = os.path.abspath(os.path.join("data/runs", run_id))
-                if os.path.exists(temp_run_dir):
-                    shutil.rmtree(temp_run_dir)
 
+                # The exclusive create is the claim (the up-front check above is the early, friendly error)
+                claim_run_dir(temp_run_dir, label=f"run directory for lab run '{lab_run_id}'")
                 run_success = False
                 try:
-                    os.makedirs(temp_run_dir, exist_ok=True)
-                    
                     # Load compile context and resolved paths if resolved files exist
                     world_dir = self.world_repo.worlds_dir / scenario_spec.world_id
                     compile_context_path = world_dir / "resolved" / "compile_context.json"
@@ -269,9 +287,7 @@ class ScenarioLabOrchestrator:
                 # Copy run artifacts from data/runs/run_id to isolated lab folder
                 target_run_dir = run_dir / "runs" / run_id
                 if os.path.exists(temp_run_dir):
-                    if target_run_dir.exists():
-                        shutil.rmtree(target_run_dir)
-                    shutil.copytree(temp_run_dir, target_run_dir)
+                    shutil.copytree(temp_run_dir, target_run_dir)  # the lab run dir is new (refused above), so never overwrites
 
                 # Persist incremental progress manifest
                 manifest.completed_run_count = completed_count
@@ -284,7 +300,7 @@ class ScenarioLabOrchestrator:
             missing_reports = []
             
             for seed in experiment_spec.run.seeds:
-                run_id = f"run_{lab_run_id}_seed_{seed}"
+                run_id = f"run_{run_prefix}_seed_{seed}"
                 target_run_dir = run_dir / "runs" / run_id
                 report_path = target_run_dir / "run_report.json"
                 

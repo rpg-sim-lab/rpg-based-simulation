@@ -114,6 +114,8 @@ All five endpoints return `{"enabled": false}` when disabled.
 | `SIM_REDIS_URL` / `RPG_REDIS_URL` | unset (falls through to `redis://localhost:6379/0`) | Producer-side Redis URL; `QUALITY_BROKER_URL` defaults onto this | Engine (producer, `src/observability/config.py`) |
 | `SIM_STREAM_BACKEND` / `RPG_STREAM_BACKEND` | unset (deployment-profile-derived) | Selects `redis`/`null`/`in_process` event stream backend | Engine (producer, `src/observability/config.py`) |
 
+**One world, one stream name.** The producer, the live anomaly worker (`python -m src.observability.anomaly.worker`) and the quality feed all resolve the stream name and the Redis URL through `ObservabilityConfig` (`SIM_` first, then `RPG_`, then the default), so a world started with its own `SIM_STREAM_NAME` has all of its consumers on that one stream; two worlds on one host use two names and get separate consumer groups and dead-letter streams (`<name>:dlq`). Since the world farm change the anomaly worker no longer has its own defaults: a bare `python -m src.observability.anomaly.worker` with no `SIM_REDIS_URL` now connects to the producer's default `redis://localhost:6379/0` (it used to default to `redis://redis:6379/0`). Compose sets `SIM_REDIS_URL` explicitly, so the compose stack is unchanged.
+
 ---
 
 ## Grade scale
