@@ -1,0 +1,17 @@
+# TCK-20261115-PROJECT-SYNC-HOST-TIMER (P3c). Template: replace @REPO@ with this host's MAIN checkout (see "Running on a timer" in
+# docs/guidelines/session_roles/project_sync_dry_run.md). The owner installs it; no seat installs, enables or starts it.
+[Unit]
+Description=Sync the ticket files to GitHub Project 1 (project_sync.py --apply --fetch)
+Documentation=file://@REPO@/docs/guidelines/session_roles/project_sync_dry_run.md
+
+[Service]
+Type=oneshot
+WorkingDirectory=@REPO@
+# Skip (not fail) when MemAvailable is below 1 GB: awk exits 1, which ExecCondition treats as "skip this run" (1-254 = skip, 255 or a signal = failure).
+ExecCondition=/usr/bin/awk '/^MemAvailable:/ { exit ($$2 < 1048576) ? 1 : 0 }' /proc/meminfo
+ExecStart=@REPO@/.venv/bin/python tools/sessions/project_sync.py --apply --fetch
+Nice=19
+IOSchedulingClass=idle
+CPUQuota=25%
+MemoryMax=256M
+TimeoutStartSec=15min

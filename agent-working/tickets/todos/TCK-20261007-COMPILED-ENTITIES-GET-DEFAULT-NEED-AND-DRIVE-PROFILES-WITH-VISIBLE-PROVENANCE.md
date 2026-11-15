@@ -69,6 +69,7 @@ Rule, decided by world-rule-catalog-design under the owner's delegation on 2026-
 `src/world/motivation/pressure_resolver.py`, `src/worldbuilding/compiler.py`, `src/worldassembly/resolver.py`, `src/core/state.py`, `data/content/living/species.yaml`
 
 ## Assumptions / Open Questions
+- 2026-11-14 (rpg-planner): Moved under TCK-20261109-MILESTONE-1-KINDS-BY-PROPERTIES-EPIC by the owner (#715 6875278006) when TCK-20261007-EPIC-DECISION-CORE-LIVE-MOTIVATION-AND-HONEST-FIGHT-OR-FLEE-INPUTS closed. Re-scoped at dispatch: defaults read species and occupation, not role (M1-KIND-ALWAYS-MEANS-SPECIES-AND-OCCUPATION-IS-ITS-OWN-FIELD). **Dropped by the owner: the role-based drive defaults** (WORKER→cautious_commoner, GUARD/HERO→disciplined_protector, SHOPKEEPER→profit_seeker). The MONSTER per-species drive goes with M1-EACH-MONSTER-KIND-DECLARES-WHY-IT-FIGHTS. Re-read this ticket's scope against milestone 1 before any dispatch.
 
 ## Implementation Notes
 
