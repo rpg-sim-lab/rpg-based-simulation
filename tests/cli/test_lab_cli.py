@@ -5,6 +5,13 @@ import json
 import yaml
 from pathlib import Path
 from src.lab.schema import LabRunManifest
+from tests.named_run_dirs import remove_named_run_dirs  # noqa: F401
+
+# Run ids this module's tests name, removed by name after each test (see tests/named_run_dirs.py).
+RUN_ID_PREFIXES = {
+    "test_run_command_creates_lab_run": ('cli_lab_run_01',),
+}
+pytestmark = pytest.mark.usefixtures("remove_named_run_dirs")
 
 @pytest.fixture
 def lab_setup(tmp_path: Path):

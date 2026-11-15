@@ -1,4 +1,6 @@
+import os
 import sys
+import uuid
 import argparse
 import json
 from pathlib import Path
@@ -21,6 +23,16 @@ from src.lab import (
     MutationRepository,
     MutationLabOrchestrator
 )
+
+def default_lab_run_id(now: datetime | None = None, prefix: str = "labrun") -> str:
+    """A lab (or mutation lab) id that two runs started in the same second still do not share.
+
+    The id is a name only (it is in no state hash and draws nothing from the simulation RNG), so the process id and a short random
+    nonce are safe to add: ``{prefix}_{UTC time}_{pid}_{8 hex}``.
+    """
+    stamp = (now or datetime.now(timezone.utc)).strftime("%Y%m%d_%H%M%S")
+    return f"{prefix}_{stamp}_{os.getpid()}_{uuid.uuid4().hex[:8]}"
+
 
 def main(args=None):
     parser = argparse.ArgumentParser(
@@ -153,8 +165,7 @@ def main(args=None):
             # Auto-generate lab run ID if not provided
             lab_run_id = parsed.lab_run_id
             if not lab_run_id:
-                timestamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
-                lab_run_id = f"labrun_{timestamp}"
+                lab_run_id = default_lab_run_id()
                 
             print(f"Executing lab experiment '{parsed.experiment_id}' (Lab Run ID: {lab_run_id})...")
             orchestrator = ScenarioLabOrchestrator(world_repo, scenario_repo, experiment_repo, lab_run_repo)
@@ -274,8 +285,7 @@ def main(args=None):
         elif parsed.command == "run-mutation":
             mutation_lab_id = parsed.mutation_lab_id
             if not mutation_lab_id:
-                timestamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
-                mutation_lab_id = f"mutlab_{timestamp}"
+                mutation_lab_id = default_lab_run_id(prefix="mutlab")
 
             print(f"Executing mutation lab sweep '{parsed.mutation_id}' (Mutation Lab ID: {mutation_lab_id})...")
             

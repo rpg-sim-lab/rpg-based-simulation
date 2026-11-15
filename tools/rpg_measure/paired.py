@@ -4,7 +4,7 @@
     python -m tools.rpg_measure.paired --base <rev> --new <rev> --neutral        # byte-identical state-hash check, 3 worlds, 1 seed
 
 Each arm is the ``git archive`` of a commit, run by ``arm_child.py`` with that tree as its working directory; results are cached by commit
-(``<cache>/results/<sha>-<child hash>-<ticks>/``) so step N's child arm is step N+1's parent arm and is never re-run. A base-vs-base repeat of the base arm
+(``<cache>/results/<sha12>-<child hash8>-<ticks>-<env8>/``; env8 hashes the runner, Python, OS and ``uv.lock``, held in the directory's ``env.json``) so step N's child arm is step N+1's parent arm and is never re-run. A base-vs-base repeat of the base arm
 (seed 42 of every world, or all seeds with ``--self-check full``) must be byte-identical; otherwise the pair is refused. Runs whose manifest is not
 ``signals_zeroed`` are refused (``require_host_independent_runs``). People are the base arm's tick-0 keeps_coin roster matched by id (see ``stats.py``).
 The cache root is ``$RPG_MEASURE_CACHE``, else ``$XDG_CACHE_HOME/rpg-measure``, else ``~/.cache/rpg-measure``, read when the command runs; an unusable
@@ -15,7 +15,7 @@ Run data is removed by the child by run id; ``--clean-cache`` also removes the e
     python -m tools.rpg_measure.paired --collected DIR --base <40-hex sha> --new <40-hex sha> [same flags]
 
 ``--collected DIR`` compares results that were produced elsewhere (a CI matrix job per world x seed) and never executes a run: DIR is a paired cache root
-(``DIR/results/<sha12>-<child hash>-<ticks>[-repeat]/<world>_<seed>.json``, plus an optional ``<world>_<seed>.cost.json`` of ``wall_seconds``,
+(``DIR/results/<sha12>-<child hash8>-<ticks>-<env8>[-repeat]/<world>_<seed>.json``, ``env.json``, plus an optional ``<world>_<seed>.cost.json`` of ``wall_seconds``,
 ``peak_rss_mb`` and ``runner`` {name, image, cpu_model, nproc, mem_total_mb, python, os}). There is no git call and no tree extraction, so ``--base``/``--new``
 are full shas and ``--repo`` is unused; ``--jobs`` and ``--clean-cache`` are rejected. A result that should exist and does not is REFUSED (exit 2) with its
 (arm, world, seed) keys; a repeat result is read and never unlinked; a runner whose python, os or image differs between the arms (and the repeat) of a key
@@ -32,7 +32,9 @@ import argparse
 import hashlib
 import json
 import os
+import platform
 import re
+import socket
 import subprocess
 import sys
 from concurrent.futures import ThreadPoolExecutor
@@ -41,6 +43,7 @@ from typing import Any, Dict, List, Optional, Sequence, Tuple
 
 from src.observability.reporting.run_determinism import NonAuditRunError, require_host_independent_runs
 from tools.rpg_measure import stats
+from tools.rpg_measure.env_digest import installed_dists_digest  # noqa: F401 - re-exported: the one function the keys and the child use
 
 WORLDS = ("frontier_living_world", "urban_political", "crowded_frontier")
 TERRAIN_WORLD = "highland_traverse"
@@ -94,8 +97,128 @@ def prepare_tree(repo: Path, rev: str, cache: Path) -> Tuple[str, Path]:
     return sha, tree
 
 
-def result_path(cache: Path, sha: str, ticks: int, world: str, seed: int, repeat: bool = False) -> Path:
-    return cache / "results" / f"{sha[:12]}-{child_hash()}-{ticks}{'-repeat' if repeat else ''}" / f"{world}_{seed}.json"
+TOOL_ROOT = Path(__file__).resolve().parents[2]
+ENV_FILE = "env.json"
+_ENV8 = re.compile(r"^[0-9a-f]{8}$")
+_CURRENT_ENV: Optional[Dict[str, str]] = None
+
+
+class EnvRefused(ValueError):
+    """A collected result's environment record is missing, does not match its cache key, or differs between the arms of the set."""
+
+
+def uv_lock_digest(tool_root: Optional[Path] = None, arm_tree: Optional[Path] = None) -> Tuple[str, str]:
+    """(sha256 of ``uv.lock``, which checkout it came from): the TOOL checkout's, else the arm tree's; ``("missing", "none")`` when neither has one."""
+    for source, root in (("tool", Path(tool_root) if tool_root is not None else TOOL_ROOT), ("arm_tree", Path(arm_tree) if arm_tree is not None else None)):
+        if root is not None and (root / "uv.lock").is_file():
+            return hashlib.sha256((root / "uv.lock").read_bytes()).hexdigest(), source
+    return "missing", "none"
+
+
+def run_env(environ: Optional[Dict[str, str]] = None, hostname: Optional[str] = None, tool_root: Optional[Path] = None, arm_tree: Optional[Path] = None, dists: Optional[str] = None) -> Dict[str, str]:
+    """The environment a result was built under (rpg-planner's env8 ruling, 2026-11-15): ``runner`` is ``local:<host>`` or ``ci:<runner image>``, plus the Python
+    micro version, the OS (system + release; ``platform.release()`` is the kernel: a kernel update moves every local env8 and drops the local cache, a full base re-run,
+    kept on purpose since a changed kernel is a changed environment), the ``uv.lock`` sha256 with the checkout it came from, and ``dists`` (``installed_dists_digest``). The key is its canonical-JSON hash, see ``env_key``."""
+    environ = os.environ if environ is None else environ
+    if environ.get("GITHUB_ACTIONS") == "true":
+        image = "-".join(part for part in (environ.get("ImageOS"), environ.get("ImageVersion")) if part)
+        if environ.get("ImageOS"):
+            runner = "ci:" + image  # a GitHub-hosted runner: the image, not RUNNER_NAME (which differs per job)
+        elif environ.get("RUNNER_NAME"):
+            runner = "ci:self-hosted:" + environ["RUNNER_NAME"]  # no ImageOS: a self-hosted runner, named by its own name
+        else:
+            runner = UNIDENTIFIED_RUNNER
+    else:
+        runner = "local:" + (hostname if hostname is not None else socket.gethostname())
+    uv_lock, source = uv_lock_digest(tool_root, arm_tree)
+    return {"runner": runner, "python": platform.python_version(), "os": f"{platform.system()} {platform.release()}", "uv_lock": uv_lock, "uv_lock_source": source, "dists": installed_dists_digest() if dists is None else dists}
+
+
+UNIDENTIFIED_RUNNER = "ci:unidentified"  # GITHUB_ACTIONS with neither ImageOS nor RUNNER_NAME: refused, never keyed
+_SHA256 = re.compile(r"^[0-9a-f]{64}$")
+
+
+def lock_problem(uv_lock: Any) -> Optional[str]:
+    """Why a recorded ``uv_lock`` cannot stand for a dependency set (fail closed): anything but a 64-hex sha256, e.g. ``"missing"``. None when it is one."""
+    if isinstance(uv_lock, str) and _SHA256.match(uv_lock):
+        return None
+    return f"uv_lock is {uv_lock!r}, not a sha256: the dependency set the arms ran under is unknown, so results are not cached or compared under it"
+
+
+def env_problem(env: Dict[str, Any]) -> Optional[str]:
+    """Why ``env`` cannot key a result (fail closed): an unknown dependency lock, or a CI runner with neither ``ImageOS`` nor ``RUNNER_NAME``. None when it can."""
+    if env.get("runner") == UNIDENTIFIED_RUNNER:
+        return "runner is unidentified (GITHUB_ACTIONS is set with neither ImageOS nor RUNNER_NAME): results are not cached or compared under it"
+    bad = lock_problem(env.get("uv_lock"))
+    if bad:
+        return bad
+    dists = env.get("dists")
+    if not (isinstance(dists, str) and _SHA256.match(dists)):
+        return f"dists is {dists!r}, not a sha256: the installed distributions could not be read (or none are installed), so results are not cached or compared under it"
+    return None
+
+
+def env_key(env: Dict[str, str]) -> str:
+    """env8: the first 8 hex characters of the sha256 of the canonical JSON of ``env``."""
+    return hashlib.sha256(json.dumps(env, sort_keys=True, separators=(",", ":")).encode("utf-8")).hexdigest()[:8]
+
+
+def current_env() -> Dict[str, str]:
+    """``run_env()`` for this process, computed once."""
+    global _CURRENT_ENV
+    if _CURRENT_ENV is None:
+        _CURRENT_ENV = run_env()
+    return _CURRENT_ENV
+
+
+def key_components(sha: str, ticks: int, env: Optional[Dict[str, str]] = None) -> List[str]:
+    """The cache key's components, in order: sha12, child hash8, ticks, env8. ``result_key`` joins them; a repeat arm appends ``repeat`` after the last. A component
+    added later (the spy sha of TCK-20261115-PAIRED-PASS-RECORDS-THE-HOLD-LINE-AND-CHECKS-ITS-BASE) is added here, in one place."""
+    return [sha[:12], child_hash(), str(ticks), env_key(current_env() if env is None else env)]
+
+
+def result_key(components: Sequence[str], repeat: bool = False) -> str:
+    return "-".join([*components, *(["repeat"] if repeat else [])])
+
+
+def result_path(cache: Path, sha: str, ticks: int, world: str, seed: int, repeat: bool = False, env: Optional[Dict[str, str]] = None) -> Path:
+    """``<cache>/results/<sha12>-<child8>-<ticks>-<env8>[-repeat]/<world>_<seed>.json``. An entry in the older ``<sha12>-<child8>-<ticks>[-repeat]`` shape is never
+    read (a miss) and never deleted."""
+    return cache / "results" / result_key(key_components(sha, ticks, env), repeat) / f"{world}_{seed}.json"
+
+
+def write_env_json(directory: Path, env: Optional[Dict[str, str]] = None) -> None:
+    """``env.json`` in a result directory: the environment object the env8 in its name was hashed from."""
+    directory.mkdir(parents=True, exist_ok=True)
+    (directory / ENV_FILE).write_text(json.dumps(current_env() if env is None else env, sort_keys=True, indent=2) + "\n", encoding="utf-8")
+
+
+def env_json_problem(directory: Path) -> Optional[str]:
+    """Why ``directory``'s ``env.json`` does not match the env8 in the directory name; None when it does."""
+    name = directory.name[: -len("-repeat")] if directory.name.endswith("-repeat") else directory.name
+    claimed = name.rsplit("-", 1)[-1]
+    try:
+        recorded = json.loads((directory / ENV_FILE).read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return f"{directory.name}: no readable {ENV_FILE}"
+    if not isinstance(recorded, dict) or not _ENV8.match(claimed) or env_key(recorded) != claimed:
+        return f"{directory.name}: {ENV_FILE} hashes to {env_key(recorded) if isinstance(recorded, dict) else 'nothing'}, not the env8 {claimed!r} in the directory name"
+    bad = env_problem(recorded)
+    return f"{directory.name}: {ENV_FILE} {bad}" if bad else None
+
+
+def _arm_dirs(cache: Path, sha: str, ticks: int, repeat: bool) -> Tuple[str, List[Path]]:
+    """(the key prefix ``<sha12>-<child8>-<ticks>-``, the result directories of one arm in a collected cache: that prefix, 8 hex of env8, and ``-repeat`` iff a repeat)."""
+    prefix = "-".join([sha[:12], child_hash(), str(ticks)]) + "-"
+    tail = len("-repeat") if repeat else 0
+    return prefix, sorted(d for d in (cache / "results").glob(prefix + "*") if d.is_dir() and d.name.endswith("-repeat") == repeat and len(d.name) == len(prefix) + 8 + tail and _ENV8.match(d.name[len(prefix):len(prefix) + 8]))
+
+
+def collected_path(cache: Path, sha: str, ticks: int, world: str, seed: int, repeat: bool = False) -> Path:
+    """The result file in a COLLECTED cache, whose env8 was set by the machine that produced it: the one directory ``<sha12>-<child8>-<ticks>-<env8>[-repeat]``.
+    None or several such directories give a path that does not exist (the older no-env8 shape is never read) (reported as missing / by ``env_problems``)."""
+    prefix, found = _arm_dirs(cache, sha, ticks, repeat)
+    return (found[0] if len(found) == 1 else cache / "results" / (prefix + "no-env8-found" + ("-repeat" if repeat else ""))) / f"{world}_{seed}.json"
 
 
 def run_one(tree: Path, world: str, seed: int, ticks: int, out: Path) -> None:
@@ -103,6 +226,7 @@ def run_one(tree: Path, world: str, seed: int, ticks: int, out: Path) -> None:
     proc = subprocess.run([sys.executable, str(CHILD), world, str(seed), str(ticks), str(out)], cwd=tree, env=env, capture_output=True, text=True)
     if proc.returncode != 0 or not out.exists():
         raise RuntimeError(f"arm run failed ({tree.name} {world} {seed}): {proc.stderr.strip()[-400:]}")
+    write_env_json(out.parent)
 
 
 def run_arm(tree: Path, cache: Path, sha: str, jobs: Sequence[Key], ticks: int, workers: int, repeat: bool = False) -> Dict[Key, Dict[str, Any]]:
@@ -116,7 +240,54 @@ def run_arm(tree: Path, cache: Path, sha: str, jobs: Sequence[Key], ticks: int, 
             todo.append((world, seed, out))
     with ThreadPoolExecutor(max_workers=workers) as pool:
         list(pool.map(lambda j: run_one(tree, j[0], j[1], ticks, j[2]), todo))
-    return {(w, s): json.loads(result_path(cache, sha, ticks, w, s, repeat).read_text(encoding="utf-8")) for w, s in jobs}
+    runs = {(w, s): json.loads(result_path(cache, sha, ticks, w, s, repeat).read_text(encoding="utf-8")) for w, s in jobs}
+    refuse_wrong_dists(f"{sha[:12]}{'-repeat' if repeat else ''}", runs, current_env()["dists"])
+    return runs
+
+
+class NotPinnedArmError(ValueError):
+    """An arm document is not marked as run on the pinned runner."""
+
+
+def refuse_non_pinned(arm: str, runs: Dict[Key, Dict[str, Any]]) -> None:
+    """Every arm document says ``runner: "PINNED"`` (written by ``arm_child`` from ``pinned_runner.require_pinned``), else it is refused: one without the field
+    (an older arm, or one made by another tool) or with another value is not behaviour evidence. Applies to local and ``--collected`` results alike
+    (TCK-20261115-A-NON-SEQUENTIAL-RUN-IS-REFUSED-BY-THE-GATE-CANDIDATE-PAIRED-ARMS-AND-RPG-MEASURE)."""
+    bad = sorted(f"{arm}:{w}:{s}" for (w, s), r in runs.items() if r.get("runner") != "PINNED")
+    if bad:
+        raise NotPinnedArmError(f"arm documents not marked runner PINNED (a run on a non-sequential executor, or an older arm): {bad}")
+
+
+class DistsMismatchError(ValueError):
+    """An arm document's ``dists`` is missing or differs from the ``dists`` of the environment that keyed its directory."""
+
+
+def refuse_wrong_dists(arm: str, runs: Dict[Key, Dict[str, Any]], expected: str) -> None:
+    """The arm child computed ``dists`` itself (``arm_child`` loads ``env_digest`` from the tool checkout); it must equal the env's ``dists`` that keyed the result
+    directory, else the run did not have the dependency set its key claims. Applies to local and ``--collected`` results alike; the message names both digests."""
+    bad = sorted(f"{arm}:{w}:{s} child {r.get('dists')!r} != key {expected!r}" for (w, s), r in runs.items() if r.get("dists") != expected)
+    if bad:
+        raise DistsMismatchError(f"arm documents whose dists is missing or differs from the environment that keyed their directory (installed distributions differ from the key): {bad}")
+
+
+def collected_dists(cache: Path, sha: str, ticks: int, repeat: bool) -> str:
+    """The ``dists`` recorded in the env.json of a collected arm's directory ("" when there is none: every arm doc then differs and is refused)."""
+    _prefix, dirs = _arm_dirs(cache, sha, ticks, repeat)
+    try:
+        return str(json.loads((dirs[0] / ENV_FILE).read_text(encoding="utf-8")).get("dists")) if len(dirs) == 1 else ""
+    except (OSError, ValueError, AttributeError):
+        return ""
+
+
+def runner_sources(arm: str, runs: Dict[Key, Dict[str, Any]]) -> str:
+    """Which check made each arm document PINNED, for the table: ``manifest`` (the kernel's own run_conditions record) or ``derived_from_kernel`` (an arm tree older than the
+    record, classified from its live kernel); a document that names none is ``unrecorded``. Both are accepted; only a document not marked PINNED is refused.
+    ``unrecorded`` = an arm doc with no run_conditions_source (written by an older tool, e.g. a --collected result); accepted only if its runner is PINNED."""
+    counts: Dict[str, int] = {}
+    for r in runs.values():
+        key = str(r.get("run_conditions_source") or "unrecorded")
+        counts[key] = counts.get(key, 0) + 1
+    return f"{arm} " + ", ".join(f"{k} x{v}" for k, v in sorted(counts.items()))
 
 
 def refuse_non_audit(arm: str, runs: Dict[Key, Dict[str, Any]], legacy: bool = False) -> None:
@@ -229,7 +400,27 @@ Entry = Tuple[str, str, Sequence[Key], int, bool]  # (arm label, sha, jobs, tick
 
 def missing_results(cache: Path, entries: Sequence[Entry]) -> List[str]:
     """Every (arm, world, seed) whose result file is not in a collected cache."""
-    return [f"{arm}{'-repeat' if rep else ''}:{w}:{s}" for arm, sha, js, ticks, rep in entries for w, s in js if not result_path(cache, sha, ticks, w, s, rep).exists()]
+    return [f"{arm}{'-repeat' if rep else ''}:{w}:{s}" for arm, sha, js, ticks, rep in entries for w, s in js if not collected_path(cache, sha, ticks, w, s, rep).exists()]
+
+
+def env_problems(cache: Path, entries: Sequence[Entry]) -> List[str]:
+    """What is wrong with the environment records of a collected cache (AC8): a result directory with no ``env.json`` or one that does not hash to the env8 in its
+    name; several directories for one arm (ambiguous); or arms of the set that were built under different environments."""
+    problems: List[str] = []
+    seen: Dict[str, str] = {}
+    for arm, sha, js, ticks, rep in entries:
+        prefix, dirs = _arm_dirs(cache, sha, ticks, rep)
+        if len(dirs) > 1:
+            problems.append(f"{arm}{'-repeat' if rep else ''}: {len(dirs)} result directories {[d.name for d in dirs]} for one arm")
+        for d in dirs[:1]:
+            bad = env_json_problem(d)
+            if bad:
+                problems.append(bad)
+            else:
+                seen[d.name] = d.name[len(prefix):][:8]
+    if len(set(seen.values())) > 1:
+        problems.append(f"the arms were built under different environments (env8 {sorted(set(seen.values()))}: {seen})")
+    return problems
 
 
 def runner_identity(cache: Path, entries: Sequence[Entry]) -> Tuple[List[str], List[str]]:
@@ -238,7 +429,7 @@ def runner_identity(cache: Path, entries: Sequence[Entry]) -> Tuple[List[str], L
     seen = set()
     for _arm, sha, js, ticks, rep in entries:
         for w, s in js:
-            cost = load_cost(result_path(cache, sha, ticks, w, s, rep))
+            cost = load_cost(collected_path(cache, sha, ticks, w, s, rep))
             runner = (cost or {}).get("runner")
             if not isinstance(runner, dict):
                 continue
@@ -253,6 +444,8 @@ def runner_identity(cache: Path, entries: Sequence[Entry]) -> Tuple[List[str], L
 def neutral_report(base: Dict[Key, Dict[str, Any]], new: Dict[Key, Dict[str, Any]], bsha: str, nsha: str) -> Tuple[int, List[str]]:
     """(exit code, differing worlds) of the byte-identical check; prints the per-world lines and the verdict line."""
     jobs = [(w, 42) for w in WORLDS]
+    refuse_non_pinned("base", base)
+    refuse_non_pinned("new", new)
     bad = [w for (w, _s) in jobs if base[(w, 42)]["final_hash"] != new[(w, 42)]["final_hash"] or base[(w, 42)]["start_hash"] != new[(w, 42)]["start_hash"]]
     for (w, _s) in jobs:
         print(f"{w} seed 42 {NEUTRAL_TICKS}t: base {base[(w, 42)]['final_hash'][:16]} new {new[(w, 42)]['final_hash'][:16]} {'IDENTICAL' if w not in bad else 'DIFFERENT'}")
@@ -337,6 +530,12 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         write_verdict(a.verdict_json, verdict)
 
 
+def _collected_runs(cache: Path, sha: str, ticks: int, jobs: Sequence[Key], repeat: bool = False) -> Dict[Key, Dict[str, Any]]:
+    runs = {k: json.loads(collected_path(cache, sha, ticks, *k, repeat).read_text(encoding="utf-8")) for k in jobs}
+    refuse_wrong_dists(f"{sha[:12]}{'-repeat' if repeat else ''}", runs, collected_dists(cache, sha, ticks, repeat))
+    return runs
+
+
 def _run(a: argparse.Namespace, verdict: Dict[str, Any]) -> int:
     collected = a.collected is not None
     legacy_msg = "--legacy-base / --legacy-new need --self-check full (the audit is proven only by a byte-identical repeat of every seed and world)"
@@ -348,6 +547,9 @@ def _run(a: argparse.Namespace, verdict: Dict[str, Any]) -> int:
         problem = cache_problem(cache)
         if problem:
             return _refuse(verdict, f"cache {cache} unusable: {problem}", f"cache directory {cache} is not usable ({problem}); set RPG_MEASURE_CACHE or pass --cache")
+        unlocked = env_problem(current_env())
+        if unlocked:
+            return _refuse(verdict, unlocked, unlocked)
         if a.neutral:
             return neutral(repo, a.base, a.new, cache, a.jobs, verdict)
     if collected and a.neutral:
@@ -356,10 +558,13 @@ def _run(a: argparse.Namespace, verdict: Dict[str, Any]) -> int:
         missing = missing_results(cache, entries)
         if missing:
             return _refuse(verdict, f"missing results {missing}", f"missing collected results (arm:world:seed) {missing}")
+        env_bad = env_problems(cache, entries)
+        if env_bad:
+            return _refuse(verdict, f"environment records {env_bad}", f"collected results were not all built under one recorded environment: {env_bad}")
         mismatched, _runners = runner_identity(cache, entries)
         if mismatched:
             return _refuse(verdict, f"runner identity differs {mismatched}", f"runner python/os/image differs between arms of a key: {mismatched}; the pair is not host-independent")
-        read = lambda sha: {k: json.loads(result_path(cache, sha, NEUTRAL_TICKS, *k).read_text(encoding="utf-8")) for k in jobs}
+        read = lambda sha: _collected_runs(cache, sha, NEUTRAL_TICKS, jobs)
         rc, bad = neutral_report(read(bsha), read(nsha), bsha, nsha)
         _neutral_verdict(verdict, bad)
         return rc
@@ -378,11 +583,14 @@ def _run(a: argparse.Namespace, verdict: Dict[str, Any]) -> int:
         missing = missing_results(cache, entries)
         if missing:
             return _refuse(verdict, f"missing results {missing}", f"missing collected results (arm:world:seed) {missing}")
+        env_bad = env_problems(cache, entries)
+        if env_bad:
+            return _refuse(verdict, f"environment records {env_bad}", f"collected results were not all built under one recorded environment: {env_bad}")
         mismatched, runners = runner_identity(cache, entries)
         if mismatched:
             return _refuse(verdict, f"runner identity differs {mismatched}", f"runner python/os/image differs between arms of a key: {mismatched}; the pair is not host-independent")
         runner_lines = ["- runners (collected off host): " + ("; ".join(runners) if runners else "none recorded (no cost.json beside the results)")]
-        load = lambda sha, js, repeat=False: {k: json.loads(result_path(cache, sha, a.ticks, *k, repeat).read_text(encoding="utf-8")) for k in js}
+        load = lambda sha, js, repeat=False: _collected_runs(cache, sha, a.ticks, js, repeat)
         base, new = load(bsha, jobs), load(nsha, jobs)
     else:
         (bsha, btree), (nsha, ntree) = prepare_tree(repo, a.base, cache), prepare_tree(repo, a.new, cache)
@@ -390,9 +598,12 @@ def _run(a: argparse.Namespace, verdict: Dict[str, Any]) -> int:
         load = lambda sha, js, repeat=False: run_arm(btree if sha == bsha else ntree, cache, sha, js, a.ticks, a.jobs, repeat=repeat)
         if (a.legacy_base or a.legacy_new) and a.self_check != "full":
             return _refuse(verdict, legacy_msg)
+    refuse_non_pinned("base", base)
+    refuse_non_pinned("new", new)
     refuse_non_audit("base", base, legacy=a.legacy_base)
     refuse_non_audit("new", new, legacy=a.legacy_new)
     repeat = load(bsha, check_jobs, True) if check_jobs else {}
+    refuse_non_pinned("base-repeat", repeat)
     bad = stats.self_check_spread([base[k] for k in check_jobs], [repeat[k] for k in check_jobs])
     if a.legacy_new:
         repeat_new = load(nsha, check_jobs, True)
@@ -404,6 +615,7 @@ def _run(a: argparse.Namespace, verdict: Dict[str, Any]) -> int:
              *(["- **legacy new arm, audit proven by repeat**: the new arm also predates the determinism fix; its kernel was verified forced and its own full repeat is byte-identical"] if a.legacy_new else []),
              f"- base {bsha[:12]} -> new {nsha[:12]}; {', '.join(worlds)}; seeds {a.seeds}; {a.ticks} ticks; PYTHONHASHSEED={HASHSEED}; audit_mode and signals_zeroed recorded True in every run of " + ("the new arm (base: see the legacy line)" if a.legacy_base and not a.legacy_new else "neither arm (see the legacy lines)" if a.legacy_new else "both arms"),
              (f"- base-vs-base self-check ({a.self_check}, {len(check_jobs)} runs): spread 0 (byte-identical final and start hashes, fates and counters)" if check_jobs else "- base-vs-base self-check: NOT RUN (--self-check off)"),
+             f"- runner check: {runner_sources('base', base)}; {runner_sources('new', new)}",
              *runner_lines,
              f"- SE = sd(per-seed new-base)/sqrt({len(a.seeds)}); STOP = more people deaths by > {stats.SE_MULTIPLE:g}·SE AND > floor ({a.floor_per_seed:g} per seed = {a.floor_per_seed * len(a.seeds):g} total); fewer past both is REPORT-ONLY; SD 0 is not special-cased",
              ""]

@@ -12,6 +12,10 @@ name: Paired arms (off-host)
 #   - aggregate: downloads every artifact, refuses a set whose jobs differ in Python version or OS (DET-PORT-0), merges them into one paired cache root and calls
 #     paired.py --collected. An off-host result is never compared with a local one, except in the ticket's one-time byte-equality proof (AC1).
 # Run it after rpg's --collected option is on main; the aggregate fails clearly if it is not. The run-ledger row (T1) is added when T1 is on main.
+# Hardening (TCK-20261115-PAIRED-ARMS-RUNS-ONLY-COMMITS-ON-A-REPO-BRANCH): checkouts keep no token (persist-credentials: false), and plan refuses a base/new sha that
+# no repo branch contains, before any arm runs. Not guarded: a collaborator with push access can put any commit on a branch; other workflows' checkouts still persist
+# the token; a sha reachable only through refs/pull/* (a fork pull request, or a branch that was deleted) is refused on purpose.
+# With persist-credentials: false, the arms' by-sha fetch is anonymous, so it needs the repo to stay public; if it goes private, the arms fail closed (no fetch), never run with a token.
 
 on:
   workflow_dispatch:
@@ -41,6 +45,11 @@ on:
         description: "Base-vs-base repeat: seed42 (seed 42 of every world, ALWAYS added even if seeds omits 42, as paired.py expects), full (every run) or off"
         required: false
         default: "seed42"
+      evidence:
+        description: "An evidence dispatch (default true): self_check off is refused, so the set carries its base-vs-base repeats run on the runner. Set false only for a non-evidence exploratory run."
+        required: false
+        type: boolean
+        default: true
       legacy_base:
         description: "Pass --legacy-base to paired.py (a base older than the determinism fix; needs self_check full)"
         required: false
@@ -64,6 +73,26 @@ jobs:
       slug: ${{ steps.plan.outputs.slug }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with: { persist-credentials: false }
+      # TCK-20261115-PAIRED-ARMS-RUNS-ONLY-COMMITS-ON-A-REPO-BRANCH: the arms run code from the two dispatched shas, so refuse a sha that no
+      # repo branch contains (a fork pull request's commit, or a mistyped sha) before any arm starts. The checkout is depth 1, which cannot
+      # prove containment, so every branch is fetched in full history but without blobs. `arms` needs `plan`, so a refusal stops every arm.
+      - name: Refuse a commit that no repo branch contains
+        env:
+          BASE_SHA: ${{ inputs.base_sha }}
+          NEW_SHA: ${{ inputs.new_sha }}
+        run: |
+          for name in BASE_SHA NEW_SHA; do
+            [[ "${!name}" =~ ^[0-9a-f]{40}$ ]] || { echo "::error::${name} must be a full 40-character lowercase hex sha"; exit 1; }
+          done
+          unshallow=()
+          if [ "$(git rev-parse --is-shallow-repository)" = "true" ]; then unshallow=(--unshallow); fi
+          git fetch --no-tags --filter=blob:none "${unshallow[@]}" origin '+refs/heads/*:refs/remotes/origin/*'
+          for name in BASE_SHA NEW_SHA; do
+            sha="${!name}"
+            git cat-file -e "${sha}^{commit}" 2>/dev/null || { echo "::error::${name} (${sha}) is not a commit on any repo branch: it was not found after fetching every branch"; exit 1; }
+            [ -n "$(git branch -r --contains "${sha}")" ] || { echo "::error::${name} (${sha}) is not contained in any repo branch"; exit 1; }
+          done
       # The plan imports paired.py's world constants (never copies them), and paired.py imports from src/, so the environment is synced.
       - uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
         with: { version: "0.11.2", python-version: "3.13", activate-environment: true, enable-cache: true }
@@ -78,13 +107,16 @@ jobs:
           SEEDS: ${{ inputs.seeds }}
           TICKS: ${{ inputs.ticks }}
           SELF_CHECK: ${{ inputs.self_check }}
+          EVIDENCE: ${{ inputs.evidence }}
         run: |
           for name in BASE_SHA NEW_SHA; do
             [[ "${!name}" =~ ^[0-9a-f]{40}$ ]] || { echo "::error::${name} must be a full 40-character lowercase hex sha"; exit 1; }
           done
+          evidence_flag=()
+          if [ "${EVIDENCE}" = "true" ]; then evidence_flag+=(--evidence); fi
           [[ "${TICKS}" =~ ^[0-9]+$ ]] || { echo "::error::ticks must be a number"; exit 1; }
           # No pipe: a refused plan must fail this step (the default shell has no pipefail).
-          python -m tools.test_architecture.paired_arms plan --worlds "${WORLDS}" --seeds "${SEEDS}" --self-check "${SELF_CHECK}" --step "${STEP_LABEL}" > plan.txt
+          python -m tools.test_architecture.paired_arms plan --worlds "${WORLDS}" --seeds "${SEEDS}" --self-check "${SELF_CHECK}" "${evidence_flag[@]}" --step "${STEP_LABEL}" > plan.txt
           cat plan.txt
           cat plan.txt >> "$GITHUB_OUTPUT"
 
@@ -106,6 +138,7 @@ jobs:
       SEED: ${{ matrix.seed }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with: { persist-credentials: false }
       - uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
         with: { version: "0.11.2", python-version: "3.13", activate-environment: true, enable-cache: true }
       - run: uv sync --locked --no-install-project --no-group lint
@@ -153,6 +186,7 @@ jobs:
       TERRAIN: ${{ needs.plan.outputs.terrain }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with: { persist-credentials: false }
       - uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
         with: { version: "0.11.2", python-version: "3.13", activate-environment: true, enable-cache: true }
       - run: uv sync --locked --no-install-project --no-group lint

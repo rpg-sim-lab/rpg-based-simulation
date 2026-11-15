@@ -3658,9 +3658,11 @@
     \ meeting CalamityService's spawn gates directly), but a one-off diagnostic calibration\
     \ run (dungeon_crawl_seed42_5200t, not added to grade_anchors.json) did not naturally\
     \ produce a calamity_spawned event: CalamityService additionally requires calamity_intensity\
-    \ > 0.3 in some region, which is only raised when a hero-kind entity dies in a\
-    \ hazard_level > 0.5 region; in that run's RNG/gameplay, monsters died but no\
-    \ hero died, so intensity never crossed the threshold. This is a separate, pre-existing\
+    \ > 0.3 in some region, which is no producer of calamity_intensity is called in\
+    \ play (the hero-death method has no caller, which tests/architecture/test_calamity_intensity_producer_unwired.py\
+    \ pins), so intensity stays 0.0 everywhere; per ENV-06 / owner decision 10 the\
+    \ escalation producer is not built (TCK-20261114-ENV-06-CALAMITY-ESCALATION-PRODUCER-IS-NOT-BUILT);\
+    \ in that run intensity never crossed the threshold. This is a separate, pre-existing\
     \ content/mechanics precondition, unrelated to and not fixed by this kernel tick-alignment\
     \ fix \u2014 the fix un-blocks calamity_spawned's tick-gate comparison, not its\
     \ content-side intensity precondition. Do not read this entry as claiming calamity_spawned\
@@ -3711,7 +3713,11 @@
     \ that gate (dungeon_crawl_seed42_5200t, not added to grade_anchors.json) confirmed\
     \ the tick-gate comparison itself is fixed (should_spawn's tick-interval math\
     \ is satisfied at tick 5000) but showed 0 calamity_spawned hits because CalamityService's\
-    \ separate high_intensity_regions gate (calamity_intensity > 0.3, hero-death-dependent)\
+    \ separate high_intensity_regions gate (calamity_intensity > 0.3; no producer\
+    \ of calamity_intensity is called in play (the hero-death method has no caller,\
+    \ which tests/architecture/test_calamity_intensity_producer_unwired.py pins),\
+    \ so intensity stays 0.0 everywhere; per ENV-06 / owner decision 10 the escalation\
+    \ producer is not built (TCK-20261114-ENV-06-CALAMITY-ESCALATION-PRODUCER-IS-NOT-BUILT))\
     \ was not met in that run \u2014 see this entry's text for detail. This is a residual\
     \ content/mechanics gap, not a defect in this kernel fix.\n"
 - id: INFRA-259
@@ -3872,11 +3878,14 @@
   v2_evidence: src/simulation_quality/scorers/world_dynamics.py::WorldDynamicsScorer.EVENT_TYPES
   proof_type: null
   test_path: tests/simulation_quality/test_world_dynamics_scorer.py::TestEcologyOwnership
-  divergence_note: calamity_spawned was unreachable through the real per-tick loop
+  divergence_note: 'calamity_spawned was unreachable through the real per-tick loop
     until the kernel tick-alignment fix (INFRA-258, TCK-20260703-SIMQ-INFORMATION-BELIEF-TRIGGER);
-    see that entry for the historical gap, the fix, and the residual hero-death-dependent
-    calamity_intensity precondition that still gates natural firing in calibration
-    content.
+    see that entry for the historical gap, the fix, and the residual calamity_intensity
+    precondition that still gates natural firing in calibration content: no producer
+    of calamity_intensity is called in play (the hero-death method has no caller,
+    which tests/architecture/test_calamity_intensity_producer_unwired.py pins), so
+    intensity stays 0.0 everywhere; per ENV-06 / owner decision 10 the escalation
+    producer is not built (TCK-20261114-ENV-06-CALAMITY-ESCALATION-PRODUCER-IS-NOT-BUILT).'
   support_boundary: null
 - id: INFRA-247
   text: "NarrativeScorer covers all contract \xA75 NARRATIVE rules: quest lifecycle\
@@ -13140,3 +13149,32 @@
     passes use_processes=True) and has no pass-through test. The field-parity test
     runs in the PR lane on fixture stages (t0, mid-run, after lodging, after a building
     change) and, extra_slow, on crowded_frontier s45 at t0/150/600 (50 s).'
+- id: INFRA-440
+  text: 'TCK-20261103-A-MEASUREMENT-NOT-ON-THE-PINNED-RUNNER-CALLS-ITSELF-EVIDENCE:
+    the run manifest carries a typed run_conditions record (RunConditions: governor
+    and executor class names, max_tick_budget_ms, audit_mode, no_frame_pacing, and worker_manager,
+    the class behind a non-sequential executor, None when sequential), written
+    by one update_manifest call after the kernel has chosen its executor. It is run
+    setup only: not hashed state, not in the event stream, Optional so older manifests
+    load. A testing classifier (tools/test_architecture/pinned_runner.py, the one
+    PINNED definition) derives PINNED or NOT_PINNED from the record alone; the evidence
+    helper refuses NOT_PINNED and tools/rpg_measure/arm_child.py refuses a build whose
+    governor, executor or budget is not pinned. TCK-20261115-A-NON-SEQUENTIAL-RUN-IS-REFUSED-BY-THE-GATE-CANDIDATE-PAIRED-ARMS-AND-RPG-MEASURE:
+    the gate candidate, paired.py (local and --collected) and paired_arms.assemble also
+    refuse a document not marked runner PINNED.'
+  status: verified
+  priority: P1
+  legacy_evidence: null
+  v2_evidence: src/observability/reporting/artifact_repository.py (RunConditions,
+    RunManifest.run_conditions); src/engine/kernel.py (Kernel.__init__, the update_manifest
+    call after executor selection); tools/test_architecture/pinned_runner.py; tools/rpg_measure/arm_child.py;
+    tools/rpg_measure/paired.py; tools/test_architecture/{rpg_gate_run,rpg_gate_candidate,paired_arms}.py
+  proof_type: contract
+  test_path: tests/unit/kernel/test_run_conditions_record.py
+  divergence_note: null
+  support_boundary: Records what the kernel was built with; it does not say the pinned
+    runner gives the production path's world (that is tests/unit/kernel/test_executor_context_parity.py
+    and the executor equivalence tests). The record exists only when observability
+    writes a manifest. A run on a lane scratch script outside the repo is classified
+    only if its manifest is offered to the helper; the close-time advisory sees only
+    evidence scripts stored in the repo.

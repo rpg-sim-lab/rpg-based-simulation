@@ -5,6 +5,15 @@ from unittest.mock import patch
 from src.observability.sweeper import ScenarioSweepConfig, ScenarioSweeper
 from src.observability.config import ObservabilityMode
 from src.engine.kernel import Kernel
+from tests.named_run_dirs import remove_named_run_dirs  # noqa: F401
+
+# Run ids this module's tests name, removed by name after each test (see tests/named_run_dirs.py).
+RUN_ID_PREFIXES = {
+    "test_sweep_execution_failure_isolation": ('integration_fail_isolation_sweep',),
+    "test_sweep_execution_success": ('integration_success_sweep',),
+    "test_sweep_stop_on_critical": ('integration_stop_critical_sweep',),
+}
+pytestmark = pytest.mark.usefixtures("remove_named_run_dirs")
 
 
 def test_sweep_execution_success(tmp_path):

@@ -11,6 +11,15 @@ from src.worldbuilding.schema import WorldSpec
 from src.worldbuilding.repository import WorldRepository
 from src.lab.orchestrator import ScenarioLabOrchestrator
 from src.observability.anomaly.pipeline import AnalysisPipeline
+from tests.named_run_dirs import remove_named_run_dirs  # noqa: F401
+
+# Run ids this module's tests name, removed by name after each test (see tests/named_run_dirs.py).
+RUN_ID_PREFIXES = {
+    "test_observatory_integration_complete_failure": ('lab_run_all_fail',),
+    "test_observatory_integration_partial_failure": ('lab_run_partial_obs',),
+    "test_observatory_integration_successful_sweep": ('lab_run_obs_sweep',),
+}
+pytestmark = pytest.mark.usefixtures("remove_named_run_dirs")
 
 
 @pytest.fixture

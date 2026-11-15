@@ -18,4 +18,4 @@ Every page here is built from the repository's own records each time the site is
 
 ## Exact formulas
 
-Exact numbers and formulas are not on this site. They live in the [Mechanics Bible](https://github.com/ttnhan18062000/rpg-based-simulation/tree/main/docs/mechanics) in the repository.
+Exact numbers and formulas are not on this site. They live in the [Mechanics Bible](https://github.com/rpg-sim-lab/rpg-based-simulation/tree/main/docs/mechanics) in the repository.

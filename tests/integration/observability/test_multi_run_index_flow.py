@@ -8,9 +8,17 @@ from src.observability.sweeper import ScenarioSweepConfig, ScenarioSweeper
 from src.observability.config import ObservabilityMode
 from src.observability.reporting.run_set_repository import RunSetArtifactRepository
 from src.cli.entry import _run_list_sweeps, _run_inspect_sweep
+from tests.named_run_dirs import remove_named_run_dirs  # noqa: F401
+
+# Run ids this module's tests name, removed by name after each test (see tests/named_run_dirs.py).
+RUN_ID_PREFIXES = {
+    "test_multi_run_index_and_cli_flow": ('test_multi_run_index_sweep',),
+}
+pytestmark = pytest.mark.usefixtures("remove_named_run_dirs")
 
 
-def test_multi_run_index_and_cli_flow(tmp_path):
+def test_multi_run_index_and_cli_flow(tmp_path, tick_cost_ms):
+    tick_cost_ms(5.0)  # the health scores below must read 100: no run may be scored down for this host's tick speed
     output_dir = str(tmp_path / "run_sets")
     sweep_id = "test_multi_run_index_sweep"
 

@@ -10,6 +10,14 @@ from src.lab.repository import ScenarioRepository, ExperimentRepository, LabRunR
 from src.worldbuilding.schema import WorldSpec
 from src.worldbuilding.repository import WorldRepository
 from src.lab.orchestrator import ScenarioLabOrchestrator
+from tests.named_run_dirs import remove_named_run_dirs  # noqa: F401
+
+# Run ids this module's tests name, removed by name after each test (see tests/named_run_dirs.py).
+RUN_ID_PREFIXES = {
+    "test_multi_seed_flow_all_succeed": ('lab_run_all_success',),
+    "test_multi_seed_flow_partial_failure": ('lab_run_partial_success',),
+}
+pytestmark = pytest.mark.usefixtures("remove_named_run_dirs")
 
 
 @pytest.fixture
