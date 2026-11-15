@@ -41,7 +41,9 @@ Scoping only. Nothing is built under this epic until child 0 is accepted.
 
 **Owner review gate (#715 6731938042).** The deliverable is a complete plan, then STOP: child 0 (ADR), child 1 (design, with its
 testing strategy) and children 2-5 cut, each with its cost and what it leaves out. No implementation child (2 to 5, including the
-packet-cost run on the heavy slot) starts until the owner has reviewed the whole plan. Owner's words: "complete the plan and stop,
+packet-cost run on the heavy slot) starts until the owner has reviewed the whole plan. **Exceptions, owner #715 6889952914:**
+child 6 (evidence guard) is filed and built now (item A); child 2's cheap form is exempt from the perf pause (item C); children 3-5
+are filed as tickets only, and this gate still holds for their implementation (item D). Owner's words: "complete the plan and stop,
 we need to review it carefully before starting, also, the plan should include the testing strategies, may re-use the existing
 since we have complex testing layers and strategies".
 
@@ -87,11 +89,11 @@ because each is another domain's ticket:
 |---|---|---|---|---|---|
 | 0 | `TCK-20261109-DISTRIBUTED-WORKERS-ADR-AMENDMENT` (filed) | lead-planner (ubuntu) | one doc session, no runs | anything built; the engine-side contract text (child 5) | owner choice recorded (#715 6731714291); ubuntu's `lead-docs-review-source` batch landing (it edits `kernel_concurrency_design_philosophy.md`; its topic map covers `system_overview.md`'s neighbours, `kernel.md` and `worker_contract.md`) |
 | 1 | `TCK-20261109-DISTRIBUTED-WORKERS-DESIGN` (filed) | architecture (planner-u24 / implementer-u24) | one doc session, no runs | code, measurement, compose | child 0 |
-| 2 | packet-cost measurement | perf-planner | **cheap form first:** pickled packet size and encode/decode time on 3 worlds at seed 42, in-process, no containers (minutes on the heavy slot). Full form only if the cheap one is inconclusive: loopback round trip through one worker container (about an hour) | real multi-host networks; contention with other containers; tail latency | child 1 (wire format); u24 heavy slot behind the RPG queue, lead-planner-u24 told before it runs |
-| 3 | remote executor | rpg-planner (src/engine) | code + unit tests; equivalence on 3 gate worlds at seed 42, 300 ticks, remote (loopback) vs `LocalSequentialExecutor`: identical final hash under the current proof scheme (`PROOF_DIGEST_SCHEME`) and `TICK_END` trail; `tests/unit/kernel/test_executor_context_parity.py` (#837) stays green and covers the new adapter as a third packet consumer. About 6 short runs | real container deploy (child 4); multi-host | child 1; child 2's cheap form |
-| 4 | worker entry point + `distributed` compose profile, and the opt-in workflow for its smoke run (not `test.yml` or `slow-regression.yml`) | platform-planner (to confirm; testing-planner reviews test content on request) | image + profile; one containerized smoke run repeating child 3's equivalence on one world; `docker compose up` with no profile unchanged | k8s/Helm; scaling beyond one host; the API/engine split | child 3 |
-| 5 | `worker_contract.md` §5 and `infrastructure_overview.md` (the new mode, and the `ai_worker` wording of fact 5); `intentional_divergences.md` only if behaviour differs | docs/engine owner via lead-planner | doc only | everything else | child 0; ubuntu's docs-as-review-source batch (#715 6720445592) |
-| 6 | evidence guard: the run manifest records the executor mode; the gate candidate, paired arms and `rpg_measure` refuse a non-sequential executor, with a unit test each | testing-planner scopes it (gate candidate in `tools/test_architecture`); `rpg_measure` and the manifest field with rpg-planner | code + 3 small unit tests, no runs | anything beyond refusing | child 0; owner review |
+| 2 | packet-cost measurement | perf-planner | **cheap form first:** pickled packet size and encode/decode time on 3 worlds at seed 42, in-process, no containers (minutes on the heavy slot). Full form only if the cheap one is inconclusive: loopback round trip through one worker container (about an hour) | real multi-host networks; contention with other containers; tail latency | child 1 (wire format); u24 heavy slot behind the RPG queue, lead-planner-u24 told before it runs. **Cheap form unblocked** (owner #715 6889952914, item C: perf-pause exemption, measurement only); filed by perf-planner as `TCK-20261115-WHAT-A-WORKER-CHUNK-COSTS-TO-ENCODE-AND-SHIP` |
+| 3 | remote executor | rpg-planner (src/engine) | code + unit tests; equivalence on 3 gate worlds at seed 42, 300 ticks, remote (loopback) vs `LocalSequentialExecutor`: identical final hash under the current proof scheme (`PROOF_DIGEST_SCHEME`) and `TICK_END` trail; `tests/unit/kernel/test_executor_context_parity.py` (#837) stays green and covers the new adapter as a third packet consumer. About 6 short runs | real container deploy (child 4); multi-host | child 1; child 2's cheap form; to be filed as a ticket only by rpg-planner (owner item D); implementation waits on the owner's whole-plan review and on Milestone 1 (`src/engine`) |
+| 4 | worker entry point + `distributed` compose profile, and the opt-in workflow for its smoke run (not `test.yml` or `slow-regression.yml`) | platform-planner (to confirm; testing-planner reviews test content on request) | image + profile; one containerized smoke run repeating child 3's equivalence on one world; `docker compose up` with no profile unchanged | k8s/Helm; scaling beyond one host; the API/engine split | child 3; filed as a ticket only by platform-planner, `TCK-20261115-DISTRIBUTED-ENGINE-WORKER-ENTRY-POINT-AND-COMPOSE-PROFILE` (owner item D), BLOCKED on child 3 and the owner's whole-plan review |
+| 5 | `worker_contract.md` §5 and `infrastructure_overview.md` (the new mode, and the `ai_worker` wording of fact 5); `intentional_divergences.md` only if behaviour differs | docs/engine owner via lead-planner | doc only | everything else | child 0; ubuntu's docs-as-review-source batch (#715 6720445592); to be filed as a ticket only through the ubuntu lead (owner item D); implementation waits on the owner's whole-plan review |
+| 6 | evidence guard: the run manifest records the executor mode; the gate candidate, paired arms and `rpg_measure` refuse a non-sequential executor, with a unit test each | testing-planner scopes it (gate candidate in `tools/test_architecture`); `rpg_measure` and the manifest field with rpg-planner | code + 3 small unit tests, no runs | anything beyond refusing | child 0. **Unblocked: file and build** (owner #715 6889952914, item A), the one exception to the owner review gate |
 
 The equivalence proof lives in children 3 and 4 as acceptance criteria rather than its own child (the simpler shape: it tests the
 code those children write). The testing strategy for all children is §8 of child 1's design, reusing the existing layers, with testing-planner's placement
@@ -111,6 +113,7 @@ code those children write). The testing strategy for all children is §8 of chil
 ## Acceptance Criteria
 1. Child 0 is accepted, or the owner withdraws the idea; nothing under children 1-5 is built before child 0.
 1a. The owner has reviewed the complete plan (children 0 and 1 written, 2-5 cut) before any of children 2-5 starts (#715 6731938042).
+    Exceptions (#715 6889952914): child 6 is built now, and child 2's cheap form runs under its perf-pause exemption.
 2. With the mode off, the default path is untouched: no change to `kernel.py:193-198` selection, to `LocalSequentialExecutor`,
    `ConcurrentExecutionAdapter` or `docker compose up`, and existing gate and paired hashes are unchanged.
 3. With the mode on, the same world and seed give an identical final hash under the current proof scheme (`PROOF_DIGEST_SCHEME`) and `TICK_END` trail to
@@ -161,6 +164,15 @@ at `f517f1fdf`.
 **Carried to child 3's ticket and its security review** (the ubuntu lead's non-blocking note at the re-check): the per-response MAC
 binds chunk id, codec and payload hash, but not the tick or the request. So an old valid response could be replayed. Bind the tick,
 or a per-call nonce the worker echoes in its response. The accepted design text is not edited for this; child 3 carries it.
+
+**Owner decision 2026-11-15 (#715 6889952914; owner's words 6889947724).**
+- A: child 6 is filed and built.
+- C: child 2's cheap form is exempt from the perf pause (`TCK-20261101-PERF-BENCH-KNOWN-REDS-PARKED-DURING-THE-PAUSE`).
+- D: children 3, 4 and 5 are filed as tickets only. The whole-plan review still gates their implementation.
+- Still paused:
+  - the languages/architecture re-design (#715 6875162764);
+  - all `src/engine` work until after Milestone 1.
+- SEQUENCE.md carries the same record.
 
 ## Test Summary
 Not applicable at epic level.
