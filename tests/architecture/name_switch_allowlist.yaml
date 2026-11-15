@@ -633,3 +633,93 @@ rows:
   count: 1
   reason: routine utility boost by role (SHOPKEEPER, HERO, WORKER, GUARD)
   ticket: TCK-20261109-M1-RETIRE-ROLE-KIND-AND-FACTION-NAME-BRANCHES-IN-STAGES
+- file: src/world/boss.py
+  symbol: BossService.check_for_boss_spawn._is_active_living_boss
+  name: '''world_boss'''
+  count: 1
+  reason: boss spawn control, finds a living boss by the kind name world_boss
+  ticket: TCK-20261109-M1-RETIRE-ROLE-KIND-AND-FACTION-NAME-BRANCHES-IN-STAGES
+- file: src/world/boss.py
+  symbol: BossService.check_for_lair_spawn._is_active_living_lair_occupant
+  name: '''dragonkin'''
+  count: 1
+  reason: lair spawn control, finds a living lair occupant by the kind name dragonkin
+  ticket: TCK-20261109-M1-RETIRE-ROLE-KIND-AND-FACTION-NAME-BRANCHES-IN-STAGES
+- file: src/world/calamity.py
+  symbol: CalamityService.apply_calamity_consequences
+  name: '''hero'''
+  count: 1
+  reason: calamity consequences pick out entities by the kind name hero
+  ticket: TCK-20261109-M1-RETIRE-ROLE-KIND-AND-FACTION-NAME-BRANCHES-IN-STAGES
+- file: src/world/creature_territory.py
+  symbol: CreatureTerritoryService.process_territories
+  name: EntityRole.MONSTER
+  count: 1
+  reason: territory processing picks out entities by the role MONSTER
+  ticket: TCK-20261109-M1-RETIRE-ROLE-KIND-AND-FACTION-NAME-BRANCHES-IN-STAGES
+- file: src/world/environment.py
+  symbol: EnvironmentService.get_aura_multipliers
+  name: Faction.HERO_GUILD
+  count: 1
+  reason: environment aura multiplier chosen by the faction HERO_GUILD
+  ticket: TCK-20261109-M1-RETIRE-ROLE-KIND-AND-FACTION-NAME-BRANCHES-IN-STAGES
+- file: src/world/occupation_config.py
+  symbol: <module>[BASE_OCCUPATION_DENSITY]
+  name: EntityRole.SHOPKEEPER
+  count: 1
+  reason: base occupation density table, keyed on role
+  ticket: TCK-20261109-M1-RETIRE-ROLE-KIND-AND-FACTION-NAME-BRANCHES-IN-STAGES
+- file: src/world/occupation_config.py
+  symbol: <module>[BASE_OCCUPATION_DENSITY]
+  name: EntityRole.WORKER
+  count: 1
+  reason: base occupation density table, keyed on role
+  ticket: TCK-20261109-M1-RETIRE-ROLE-KIND-AND-FACTION-NAME-BRANCHES-IN-STAGES
+- file: src/world/occupation_config.py
+  symbol: <module>[BASE_OCCUPATION_DENSITY]
+  name: EntityRole.GUARD
+  count: 1
+  reason: base occupation density table, keyed on role
+  ticket: TCK-20261109-M1-RETIRE-ROLE-KIND-AND-FACTION-NAME-BRANCHES-IN-STAGES
+- file: src/world/region_threat_classifier.py
+  symbol: RegionThreatClassifier._classify_legacy._is_hostile_bucket
+  name: Faction.MONSTER_HORDE
+  count: 1
+  reason: region threat bucket, hostile when the faction is MONSTER_HORDE
+  ticket: TCK-20261109-M1-RETIRE-ROLE-KIND-AND-FACTION-NAME-BRANCHES-IN-STAGES
+- file: src/world/region_threat_classifier.py
+  symbol: RegionThreatClassifier._classify_legacy._is_friendly_bucket
+  name: Faction.HERO_GUILD
+  count: 1
+  reason: region threat bucket, friendly when the faction is HERO_GUILD
+  ticket: TCK-20261109-M1-RETIRE-ROLE-KIND-AND-FACTION-NAME-BRANCHES-IN-STAGES
+- file: src/world/region_threat_classifier.py
+  symbol: RegionThreatClassifier._classify_legacy._is_friendly_bucket
+  name: Faction.TOWN_COUNCIL
+  count: 1
+  reason: region threat bucket, friendly when the faction is TOWN_COUNCIL
+  ticket: TCK-20261109-M1-RETIRE-ROLE-KIND-AND-FACTION-NAME-BRANCHES-IN-STAGES
+- file: src/world/regional_sovereignty.py
+  symbol: RegionalSovereigntyService.process_taxation
+  name: EntityRole.HERO
+  count: 1
+  reason: sovereignty tax applies to entities by the role HERO
+  ticket: TCK-20261109-M1-RETIRE-ROLE-KIND-AND-FACTION-NAME-BRANCHES-IN-STAGES
+- file: src/world/regional_sovereignty.py
+  symbol: RegionalSovereigntyService.apply_sovereignty_debuffs
+  name: EntityRole.HERO
+  count: 1
+  reason: sovereignty debuffs apply to entities by the role HERO
+  ticket: TCK-20261109-M1-RETIRE-ROLE-KIND-AND-FACTION-NAME-BRANCHES-IN-STAGES
+- file: src/world/regional_sovereignty.py
+  symbol: RegionalSovereigntyService.apply_sovereignty_debuffs
+  name: Faction.MONSTER_HORDE
+  count: 1
+  reason: sovereignty debuffs depend on the owning faction MONSTER_HORDE
+  ticket: TCK-20261109-M1-RETIRE-ROLE-KIND-AND-FACTION-NAME-BRANCHES-IN-STAGES
+- file: src/world/threat.py
+  symbol: ThreatService.process_threat_evolution
+  name: '''world_boss'''
+  count: 1
+  reason: threat evolution picks out entities by the kind name world_boss
+  ticket: TCK-20261109-M1-RETIRE-ROLE-KIND-AND-FACTION-NAME-BRANCHES-IN-STAGES

@@ -8117,6 +8117,22 @@
   - content
   last_verified: '2026-10-09'
 - type: ticket
+  path: agent-working/tickets/done/TCK-20261115-M1-THE-NAME-SWITCH-PROBE-GATES-WORLD-AND-CORE-TOO.md
+  ticket_id: TCK-20261115-M1-THE-NAME-SWITCH-PROBE-GATES-WORLD-AND-CORE-TOO
+  title: The name-switch probe gates `src/world` and `src/core` as well, so the 15
+    world switches it only reported now count against the ratchet
+  tier: hotfix
+  ticket_type: chore
+  date: '2026-11-15'
+  related_code_areas:
+  - tools/test_architecture/name_switch_scan.py
+  - tests/architecture/name_switch_allowlist.yaml
+  - tests/architecture/test_no_name_switches_in_decision_paths.py
+  artifact_files: []
+  tags:
+  - testing
+  - architecture
+- type: ticket
   path: agent-working/tickets/done/TCK-20261115-PROJECT-SYNC-ALL-LANES.md
   ticket_id: TCK-20261115-PROJECT-SYNC-ALL-LANES
   title: '`project_sync.py` P3b: every lane goes on Project 1, Domain becomes a single-select,
