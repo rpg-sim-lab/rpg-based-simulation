@@ -28,6 +28,7 @@ CLI::
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import os
 import platform
@@ -39,9 +40,9 @@ import time
 from pathlib import Path
 from typing import Any, Dict, List, Mapping, Optional, Sequence, Tuple
 
-IDENTITY_FIELDS = ("name", "image", "cpu_model", "nproc", "mem_total_mb", "python", "os")
-COMPARED_ACROSS_JOBS = ("python", "os")  # an assembled set whose jobs differ in these is not compared
-COMPARED_WITHIN_KEY = ("python", "os", "image")  # the arms of one (world, seed) must agree on these (paired.py refuses too)
+IDENTITY_FIELDS = ("name", "image", "cpu_model", "nproc", "mem_total_mb", "python", "os", "uv_lock")
+COMPARED_ACROSS_JOBS = ("python", "os", "uv_lock")  # an assembled set whose jobs differ in these is not compared
+COMPARED_WITHIN_KEY = ("python", "os", "image", "uv_lock")  # the arms of one (world, seed) must agree on these (paired.py refuses too)
 SELF_CHECKS = ("seed42", "full", "off")
 KINDS = ("pair", "self")
 ARMS = ("base", "new", "self")
@@ -67,13 +68,17 @@ def step_slug(step: str) -> str:
     return slug or "step"
 
 
-def plan_matrix(worlds: str, seeds: str, self_check: str) -> Dict[str, Any]:
+def plan_matrix(worlds: str, seeds: str, self_check: str, *, evidence: bool = False) -> Dict[str, Any]:
     """``{"include": [...], "terrain": bool}``: a ``pair`` entry per (world, seed), plus ``self`` entries (the base arm and its repeat, on one runner) per ``self_check``:
     seed 42 of every world for ``seed42`` (as ``paired.py`` expects, whatever ``seeds`` holds), every (world, seed) for ``full``.
+
+    ``evidence=True`` (an evidence dispatch, rpg-designer #634 item g) refuses ``off``: an evidence set carries its base-vs-base repeats, run on the runner itself.
 
     ``paired.py`` derives its worlds from its own constants (``WORLDS``, plus ``TERRAIN_WORLD`` with ``--terrain``), imported here, so ``worlds`` must be exactly that set."""
     if self_check not in SELF_CHECKS:
         raise ArmsRefused(f"self_check must be one of {SELF_CHECKS}, got {self_check!r}")
+    if evidence and self_check == "off":
+        raise ArmsRefused("self_check off is refused for an evidence dispatch: an evidence set must include its base-vs-base repeats, run on the runner (use seed42 or full, or dispatch with evidence=false for a non-evidence run)")
     from tools.rpg_measure import paired  # rpg's world set (WORLDS, TERRAIN_WORLD) is imported, never duplicated; the plan job syncs the environment for it
 
     world_list = _csv(worlds, "worlds")
@@ -124,8 +129,18 @@ def _mem_total_mb() -> Optional[int]:
     return None
 
 
-def runner_identity(env: Optional[Mapping[str, str]] = None) -> Dict[str, Any]:
-    """A description of the runner, written beside every result. It describes the machine; it does not pin one (the CPU model varies between runners)."""
+def tool_uv_lock_sha256(root: Optional[Path] = None) -> str:
+    """The sha256 of the TOOL checkout's ``uv.lock`` (the checkout that runs paired, not an arm tree): the dependency set the arms ran under. ``"missing"`` when absent."""
+    path = (Path(root) if root is not None else Path(__file__).resolve().parents[2]) / "uv.lock"
+    try:
+        return hashlib.sha256(path.read_bytes()).hexdigest()
+    except OSError:
+        return "missing"
+
+
+def runner_identity(env: Optional[Mapping[str, str]] = None, *, tool_root: Optional[Path] = None) -> Dict[str, Any]:
+    """A description of the runner, written beside every result. It describes the machine; it does not pin one (the CPU model varies between runners).
+    ``uv_lock`` is the sha256 of the tool checkout's ``uv.lock`` (rpg-designer #634 item h): a set whose jobs differ in it is not assembled."""
     env = os.environ if env is None else env
     image = "-".join(part for part in (env.get("ImageOS"), env.get("ImageVersion")) if part)
     return {
@@ -136,6 +151,7 @@ def runner_identity(env: Optional[Mapping[str, str]] = None) -> Dict[str, Any]:
         "mem_total_mb": _mem_total_mb(),
         "python": platform.python_version(),
         "os": _read_os_release(),
+        "uv_lock": tool_uv_lock_sha256(tool_root),
     }
 
 
@@ -146,6 +162,9 @@ def run_arm(repo: Path, sha: str, arm: str, world: str, seed: int, ticks: int, c
         raise ArmsRefused(f"arm must be one of {ARMS}, got {arm!r}")
     from tools.rpg_measure import paired  # rpg's module, imported (never copied) so the cache key and the child call are paired's
 
+    unlocked = paired.env_problem(paired.current_env())
+    if unlocked:
+        raise ArmsRefused(unlocked)
     full_sha, tree = paired.prepare_tree(repo, sha, cache)
     out = paired.result_path(cache, full_sha, ticks, world, seed, repeat)
     out.parent.mkdir(parents=True, exist_ok=True)
@@ -158,6 +177,7 @@ def run_arm(repo: Path, sha: str, arm: str, world: str, seed: int, ticks: int, c
         started = time.monotonic()
         paired.run_one(tree, world, seed, ticks, out)
         wall = time.monotonic() - started
+    paired.write_env_json(out.parent)  # the env.json the env8 in the directory name was hashed from (a cached entry already has it; this is idempotent)
     after = resource.getrusage(resource.RUSAGE_CHILDREN).ru_maxrss  # KiB on Linux; the largest child so far in THIS process, which runs one arm
     cost = {"wall_seconds": round(wall, 3), "peak_rss_mb": None if cached or after <= 0 else round(max(after, before) / 1024, 1), "runner": runner_identity()}
     out.with_name(out.name[: -len(".json")] + ".cost.json").write_text(json.dumps(cost, sort_keys=True) + "\n", encoding="utf-8")
@@ -173,11 +193,13 @@ def _check_sha(name: str, value: str) -> str:
 def assemble(src: Path, out: Path, *, base: str, new: str) -> Dict[str, Any]:
     """Merge the downloaded job artifacts under ``src`` (one directory each) into one paired cache directory ``out``; refuse mixed runners or missing arms.
 
-    Refuses when a result has no ``cost.json`` with a full ``runner`` record; when the jobs differ in Python version or OS; when the arms of one (world, seed)
-    differ in Python version, OS or image; when two jobs wrote the same file with different bytes (for a self-check job that is the base arm not reproducing);
+    Refuses when a result has no ``cost.json`` with a full ``runner`` record; when the jobs differ in Python version, OS or uv.lock sha256; when the arms of one (world, seed)
+    differ in Python version, OS, image or uv.lock; when two jobs wrote the same file with different bytes (for a self-check job that is the base arm not reproducing);
     when an arm document is not marked ``runner: "PINNED"`` (TCK-20261115-A-NON-SEQUENTIAL-RUN-IS-REFUSED-BY-THE-GATE-CANDIDATE-PAIRED-ARMS-AND-RPG-MEASURE);
     or when a ``pair`` job (a directory without the ``-self`` suffix) lacks either the base or the new arm of its (world, seed) from that same job.
     Returns ``{"jobs": {name: [runner...]}, "arms": [cost...]}`` and writes it to ``out/identities.json``."""
+    from tools.rpg_measure import paired  # lock_problem: the one fail-closed rule for a recorded uv.lock
+
     base12, new12 = _check_sha("--base", base)[:12], _check_sha("--new", new)[:12]
     jobs = sorted(p for p in Path(src).iterdir() if p.is_dir())
     if not jobs:
@@ -206,6 +228,9 @@ def assemble(src: Path, out: Path, *, base: str, new: str) -> Dict[str, Any]:
             if not isinstance(arm_doc, dict) or arm_doc.get("runner") != "PINNED":
                 got = arm_doc.get("runner") if isinstance(arm_doc, dict) else None
                 raise ArmsRefused(f"{job.name}/{result_path.relative_to(job)}: runner is {got!r}, not 'PINNED'; an arm that was not run on the pinned runner is not assembled")
+            unlocked = paired.lock_problem(runner.get("uv_lock"))
+            if unlocked:
+                raise ArmsRefused(f"{job.name}/{cost_path.relative_to(job)}: {unlocked}")
             runners.setdefault(job.name, runner)
             by_key.setdefault(stem, []).append((f"{job.name}:{directory}", runner))
             if not directory.endswith("-repeat"):
@@ -221,7 +246,7 @@ def assemble(src: Path, out: Path, *, base: str, new: str) -> Dict[str, Any]:
             values.setdefault(str(runner[field]), []).append(name)
         if len(values) > 1:
             detail = "; ".join(f"{value!r}: {', '.join(names)}" for value, names in sorted(values.items()))
-            raise ArmsRefused(f"the jobs ran on different {field} values ({detail}); arms from runners that differ in Python version or OS are not compared")
+            raise ArmsRefused(f"the jobs ran on different {field} values ({detail}); arms from runners that differ in Python version, OS or the tool checkout's uv.lock are not compared")
     for stem, entries in sorted(by_key.items()):
         for field in COMPARED_WITHIN_KEY:
             if len({str(r[field]) for _d, r in entries}) > 1:
@@ -247,6 +272,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     plan.add_argument("--worlds", required=True)
     plan.add_argument("--seeds", required=True)
     plan.add_argument("--self-check", default="seed42")
+    plan.add_argument("--evidence", action="store_true", help="an evidence dispatch: refuses --self-check off")
     plan.add_argument("--step", default="step", help="the step label; printed as an artifact-safe slug")
     arm = sub.add_parser("run-arm")
     arm.add_argument("--repo", type=Path, default=Path("."))
@@ -265,7 +291,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     args = parser.parse_args(argv)
     try:
         if args.command == "plan":
-            planned = plan_matrix(args.worlds, args.seeds, args.self_check)
+            planned = plan_matrix(args.worlds, args.seeds, args.self_check, evidence=args.evidence)
             print("matrix=" + json.dumps({"include": planned["include"]}, separators=(",", ":")))
             print("terrain=" + ("true" if planned["terrain"] else "false"))
             print("slug=" + step_slug(args.step))

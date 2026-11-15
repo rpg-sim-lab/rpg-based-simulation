@@ -23,13 +23,14 @@ def _run(world, seed, new_dead=0, final_hash="h", start_hash="s"):
     rows = [[i, k, c, 1] for i, k, c in START]
     fin = {"1": [0 if new_dead >= 1 else 1, "COMBAT" if new_dead >= 1 else None, "merchant"], "2": [0 if new_dead >= 2 else 1, "COMBAT" if new_dead >= 2 else None, "guard"], "3": [1, None, "wolf"]}
     return {"world": world, "seed": seed, "start": rows, "final": fin, "counters": None, "perception_samples": 5, "final_hash": final_hash,
-            "start_hash": start_hash, "audit_mode": True, "signals_zeroed": True, "adds": {}, "runner": "PINNED"}
+            "start_hash": start_hash, "audit_mode": True, "signals_zeroed": True, "adds": {}, "runner": "PINNED", "dists": paired.current_env()["dists"]}
 
 
 def _put(cache: Path, sha: str, w: str, s: int, run: dict, ticks=TICKS, repeat=False, runner=None, wall=1.5):
     path = paired.result_path(cache, sha, ticks, w, s, repeat)
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(run), encoding="utf-8")
+    paired.write_env_json(path.parent)
     if runner is not None:
         paired.cost_path(path).write_text(json.dumps({"wall_seconds": wall, "peak_rss_mb": None, "runner": runner}), encoding="utf-8")
     return path
@@ -92,7 +93,7 @@ def test_a_different_runner_name_or_cpu_is_not_a_refusal(tmp_path, capsys):
 
 def test_a_repeat_file_is_read_and_never_unlinked(tmp_path):
     stage(tmp_path)
-    repeats = sorted(p for p in tmp_path.rglob("*.json") if "-repeat" in str(p.parent) and ".cost." not in p.name)
+    repeats = sorted(p for p in tmp_path.rglob("*.json") if "-repeat" in str(p.parent) and ".cost." not in p.name and p.name != paired.ENV_FILE)
     assert repeats
     assert collected(tmp_path) == 0
     assert all(p.exists() and paired.cost_path(p).exists() for p in repeats)
