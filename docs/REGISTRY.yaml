@@ -8117,6 +8117,19 @@
   - content
   last_verified: '2026-10-09'
 - type: ticket
+  path: agent-working/tickets/done/TCK-20261115-MULTI-RUN-INDEX-FLOW-HEALTH-SCORE-DEPENDS-ON-HOST-TICK-SPEED.md
+  ticket_id: TCK-20261115-MULTI-RUN-INDEX-FLOW-HEALTH-SCORE-DEPENDS-ON-HOST-TICK-SPEED
+  title: 'test_multi_run_index_and_cli_flow fails on a loaded host: one HighCPULatencyRule
+    WARNING scores a run 95, not 100'
+  tier: hotfix
+  ticket_type: repair
+  date: '2026-11-15'
+  related_code_areas:
+  - tests/integration/observability/test_multi_run_index_flow.py:38-47, :88
+  - tests/integration/observability/conftest.py (tick_cost_ms)
+  artifact_files: []
+  tags: []
+- type: ticket
   path: agent-working/tickets/done/TCK-20261115-PROJECT-SYNC-ALL-LANES.md
   ticket_id: TCK-20261115-PROJECT-SYNC-ALL-LANES
   title: '`project_sync.py` P3b: every lane goes on Project 1, Domain becomes a single-select,
@@ -8151,19 +8164,6 @@
   artifact_files: []
   tags:
   - testing
-- type: ticket
-  path: agent-working/tickets/todos/TCK-20261115-MULTI-RUN-INDEX-FLOW-HEALTH-SCORE-DEPENDS-ON-HOST-TICK-SPEED.md
-  ticket_id: TCK-20261115-MULTI-RUN-INDEX-FLOW-HEALTH-SCORE-DEPENDS-ON-HOST-TICK-SPEED
-  title: 'test_multi_run_index_and_cli_flow fails on a loaded host: one HighCPULatencyRule
-    WARNING scores a run 95, not 100'
-  tier: hotfix
-  ticket_type: repair
-  date: '2026-11-15'
-  related_code_areas:
-  - tests/integration/observability/test_multi_run_index_flow.py:38-47, :88
-  - tests/integration/observability/conftest.py (tick_cost_ms)
-  artifact_files: []
-  tags: []
 - type: ticket
   path: agent-working/tickets/todos/github-project-ticket-view/TCK-20261115-PROJECT-SYNC-FILED-DATE-AND-BACKLOG-VIEW.md
   ticket_id: TCK-20261115-PROJECT-SYNC-FILED-DATE-AND-BACKLOG-VIEW
