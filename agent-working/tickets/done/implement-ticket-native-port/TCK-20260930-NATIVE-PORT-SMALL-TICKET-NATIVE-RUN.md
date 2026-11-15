@@ -1,10 +1,10 @@
 ---
-status: active
+status: historical
 layer: ai
 authority: P1
 audience: agent
 ticket_id: TCK-20260930-NATIVE-PORT-SMALL-TICKET-NATIVE-RUN
-phase: open
+phase: done
 date: 2026-10-01
 tags: [ai, agent-monitoring]
 ---
@@ -15,7 +15,7 @@ tags: [ai, agent-monitoring]
 Run one small ticket through the native implement-ticket and verify gate outcomes
 
 ## Status
-OPEN
+DONE
 
 ## Tier
 standard
@@ -36,9 +36,9 @@ Epic AC1 and AC3: no `bash(` in implement-ticket.js and one native run of a smal
 - Any other workflow script; sites owned by a sibling child.
 
 ## Acceptance Criteria
-1. `tools/workflow_bash_sites.py` reports 0 real sites.
-2. One native run completes with correct pass and fail outcomes, recorded as evidence in `.jsonl`/`.md`.
-3. The orchestrator backstop agrees with the run's gate verdicts.
+1. `tools/workflow_bash_sites.py` reports 0 real sites. **MET** (0 at 3d1a05c36 and at e2986e03a).
+2. One native run completes with correct pass and fail outcomes, recorded as evidence in `.jsonl`/`.md`. **PARTLY MET**: the fail path and the plan gate behaved correctly, but no run completed end to end (see the Test Summary).
+3. The orchestrator backstop agrees with the run's gate verdicts. **MET for the sites reached** (see the Test Summary); Parity, Verify and Finalize were not run natively.
 
 ## Related Tickets
 - TCK-20260930-IMPLEMENT-TICKET-NATIVE-PORT (parent epic)
@@ -102,6 +102,38 @@ Epic AC1 and AC3: no `bash(` in implement-ticket.js and one native run of a smal
 - Result: BLOCKED on TCK-20261009-NATIVE-ATTESTED-COMMAND-TRANSPORT-LOSSY. The vehicle is hand-finished instead (its
   closure records that path). A rerun needs a new vehicle ticket and the owner's Workflow opt-in.
 
+**2026-11-15, run plan v3 (vehicle TCK-20261115-SEARCH-STALE-FLAG-CHECKS-THE-INDEXED-CHECKOUT; the owner's opt-ins were asked in the agent-working-implementer session just before each run; worktree `scriptPath`, never the named workflow):**
+
+| run | id | verdict | agents | subagent tokens | wall time |
+|---|---|---|---|---|---|
+| fail (probe tag `native-run-probe`) | wf_b59e5ed2-5d3 | `TAGS_NOT_REGISTERED` at Scope, as designed | 8 | 449,009 | 80.8 s |
+| pass attempt 1 | wf_d6a35058-f5d | `NEEDS_HUMAN_INPUT` at the Plan gate (the AC3 CLI-rule question; a correct stop) | 11 | 673,649 | 224.6 s |
+| pass attempt 2 | wf_f48f4fae-569 | `TESTS_FAILED` at Test | 21 | 1,282,824 | 2,907 s (48.5 min) |
+
+The fail run cost 449k tokens against 294k on 2026-10-09 (about 1.5x). Lowest MemAvailable was 4.09 GB in attempt 1 and 3.71 GB in attempt 2 (5 s watcher, never below the 1.5 GB stop line). The shared-host window with rpg's scoped pytest was 66 s, 12:20:00Z-12:21:06Z, before attempt 2's Test phase.
+
+**Gate sites reached, per run** (`gate_verdicts.jsonl`, `agent-working-native-port-run` shard):
+- Fail run: `start_sha` and `tag_check` attested PASS; `Scope:tag_registry.check_tags_registered` FAIL (blocking); `Scope:conflicts` PASS. Scope only.
+- Attempt 1: `start_sha`, `tag_check`, `plan_unresolved_questions` attested PASS; backstop `Scope:tag_registry.check_tags_registered` PASS and `Scope:conflicts` PASS; `Plan:...plan_has_unresolved_questions` FAIL (blocking), which is the question that went to the owner.
+- Attempt 2: attested `start_sha`, `tag_check`, `plan_unresolved_questions`, `doc_staleness`, `test_scope_coverage` all PASS; backstop PASS for `Scope:tag_registry...`, `Scope:conflicts`, `Plan:...`, `Implement:...doc_staleness_check`, `Test:files_changed_vs_git`, `Test:...test_scope_coverage_static`; agent verdicts `Review` and `Architecture-Verify` APPROVED; `Test:passed` FAIL (blocking).
+
+**AC3, backstop against attested rows, per run:** the fail run's attested `tag_check` exited 0 (the command ran) while the backstop's `check_tags_registered` returned FAIL with `unregistered=1`; that is the designed split (an attested row reports that the command ran, the backstop reports the verdict). In attempts 1 and 2 every attested PASS has a matching backstop PASS, with no disagreement. The first full native run to reach the `test_scope_coverage` site, which died on the truncated command on 2026-10-09, now passes it: the TRANSPORT-LOSSY fix (f446a2bc8) held for five attested sites in attempt 2.
+
+**Result:** no run reached DONE. Attempt 2 ran the attested gates through Test and ended `TESTS_FAILED`: one real failure (a hardcoded literal in the vehicle's new test) plus 57 failures and 7 errors, all `OSError: Cannot allocate memory` from the Test agent's uncapped single `tests/tools` process; the same tests passed when run capped (6,025 passed across six chunks). Parity, Verify and Finalize were never run natively. The owner chose to hand-finish the vehicle (#715 6894904885).
+
+**What the native run reported against what was checked** (input to OD-5):
+- "No deviations from the plan": false, plan test 4 was dropped.
+- Live check "40 changed, 57 new": re-run gave 41 and 58 (the main checkout kept changing).
+- Doc said "the CLI's `--corpus-root` overrides": wrong, `query` has no such option.
+- "61 passed" and "88 passed, 28 deselected": consistent with the capped runs.
+- The Test agent ran the whole of `tests/tools/` in one uncapped process although the ticket said to run scoped files (filed: TCK-20261115-TEST-PHASE-RUNS-TESTS-TOOLS-UNCAPPED-IN-ONE-PROCESS).
+
 ## Files Changed
+- agent-working/tickets/done/implement-ticket-native-port/TCK-20260930-NATIVE-PORT-SMALL-TICKET-NATIVE-RUN.md (this ticket; evidence only)
+- agent-working/agent-monitoring/data/2026-W46/agent-working-native-port-run.{events,gate_verdicts,runs,tools}.jsonl (the runs' rows)
 
 ## Completion Summary
+Three Workflow runs on the vehicle TCK-20261115-SEARCH-STALE-FLAG-CHECKS-THE-INDEXED-CHECKOUT: the fail run and the plan-gate stop behaved as designed, and the third ran the attested gates through Test before ending `TESTS_FAILED`. AC1 is met. AC2 is partly met and AC3 is met for the sites reached; no run completed end to end. The vehicle was hand-finished on the owner's answer (#715 6894904885).
+
+Known gap: Parity, Verify and Finalize have never run on the native path, so their attested gate sites are untested. The Test agent's uncapped `tests/tools` run is filed as TCK-20261115-TEST-PHASE-RUNS-TESTS-TOOLS-UNCAPPED-IN-ONE-PROCESS.
+

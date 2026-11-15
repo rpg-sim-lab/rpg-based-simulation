@@ -8117,6 +8117,19 @@
   - content
   last_verified: '2026-10-09'
 - type: ticket
+  path: agent-working/tickets/todos/TCK-20261116-UBUNTU-COMMITTED-MEMORY-OVER-COMMIT-LIMIT.md
+  ticket_id: TCK-20261116-UBUNTU-COMMITTED-MEMORY-OVER-COMMIT-LIMIT
+  title: On host ubuntu, committed memory sits above the commit limit, so one large
+    uncapped process gets ENOMEM even while MemAvailable is several GB.
+  tier: standard
+  ticket_type: bug
+  date: '2026-11-16'
+  related_code_areas: []
+  artifact_files: []
+  tags:
+  - ai
+  - testing
+- type: ticket
   path: agent-working/tickets/done/TCK-20261115-LEAD-BOARD-FIFTH-PASS.md
   ticket_id: TCK-20261115-LEAD-BOARD-FIFTH-PASS
   title: The lead board records the owner's 2026-11-15 epic decisions in one place,
@@ -8223,6 +8236,24 @@
   - planning
   - delivery
 - type: ticket
+  path: agent-working/tickets/done/TCK-20261115-SEARCH-STALE-FLAG-CHECKS-THE-INDEXED-CHECKOUT.md
+  ticket_id: TCK-20261115-SEARCH-STALE-FLAG-CHECKS-THE-INDEXED-CHECKOUT
+  title: search_docs's stale flag checks the checkout the index was built from, so
+    a worktree no longer reports a current index as stale.
+  tier: standard
+  ticket_type: bug
+  date: '2026-11-15'
+  related_code_areas:
+  - _resolve_index_dir
+  - index_staleness
+  - tests/tools/test_search_mcp.py, tests/tools/test_knowledge_search.py
+  artifact_files:
+  - agent-working/stored_artifacts/TCK-20261115-SEARCH-STALE-FLAG-CHECKS-THE-INDEXED-CHECKOUT/investigation.md
+  - agent-working/stored_artifacts/TCK-20261115-SEARCH-STALE-FLAG-CHECKS-THE-INDEXED-CHECKOUT/plan.md
+  - agent-working/stored_artifacts/TCK-20261115-SEARCH-STALE-FLAG-CHECKS-THE-INDEXED-CHECKOUT/test_plan.md
+  tags:
+  - ai
+- type: ticket
   path: agent-working/tickets/todos/TCK-20261115-M1-A-TEST-KIND-DECLARED-ONLY-IN-CONTENT-PERCEIVES-EATS-AND-FIGHTS.md
   ticket_id: TCK-20261115-M1-A-TEST-KIND-DECLARED-ONLY-IN-CONTENT-PERCEIVES-EATS-AND-FIGHTS
   title: 'Milestone 1''s content-alone probe: a test kind declared only in test content,
@@ -8237,20 +8268,21 @@
   tags:
   - testing
 - type: ticket
-  path: agent-working/tickets/todos/TCK-20261115-SEARCH-STALE-FLAG-CHECKS-THE-INDEXED-CHECKOUT.md
-  ticket_id: TCK-20261115-SEARCH-STALE-FLAG-CHECKS-THE-INDEXED-CHECKOUT
-  title: search_docs's stale flag checks the checkout the index was built from, so
-    a worktree no longer reports a current index as stale.
+  path: agent-working/tickets/todos/TCK-20261115-TEST-PHASE-RUNS-TESTS-TOOLS-UNCAPPED-IN-ONE-PROCESS.md
+  ticket_id: TCK-20261115-TEST-PHASE-RUNS-TESTS-TOOLS-UNCAPPED-IN-ONE-PROCESS
+  title: implement-ticket's Test phase runs the whole of tests/tools in one uncapped
+    process, so on a loaded host the pipeline reports memory failures as test failures.
   tier: standard
   ticket_type: bug
   date: '2026-11-15'
   related_code_areas:
-  - _resolve_index_dir
-  - index_staleness
-  - tests/tools/test_search_mcp.py, tests/tools/test_knowledge_search.py
+  - .claude/workflows/implement-ticket.js (Test phase, test-scope gate)
+  - .claude/agents/test-scoper.md
+  - tools/gate_checks/test_scope_coverage_static.py
   artifact_files: []
   tags:
   - ai
+  - testing
 - type: ticket
   path: agent-working/tickets/todos/ai-first-sdlc-evolution/TCK-20261115-SDLC-BASELINE-TAG-RULESET.md
   ticket_id: TCK-20261115-SDLC-BASELINE-TAG-RULESET
@@ -25411,6 +25443,37 @@
   tags:
   - data-quality
 - type: ticket
+  path: agent-working/tickets/done/implement-ticket-native-port/TCK-20260930-IMPLEMENT-TICKET-NATIVE-PORT.md
+  ticket_id: TCK-20260930-IMPLEMENT-TICKET-NATIVE-PORT
+  title: Port implement-ticket.js to the native Workflow runtime in the classified
+    order
+  tier: epic
+  ticket_type: refactor
+  date: '2026-10-01'
+  related_code_areas:
+  - .claude/workflows/implement-ticket.js
+  artifact_files: []
+  tags:
+  - ai
+  - agent-monitoring
+- type: ticket
+  path: agent-working/tickets/done/implement-ticket-native-port/TCK-20260930-NATIVE-PORT-SMALL-TICKET-NATIVE-RUN.md
+  ticket_id: TCK-20260930-NATIVE-PORT-SMALL-TICKET-NATIVE-RUN
+  title: Run one small ticket through the native implement-ticket and verify gate
+    outcomes
+  tier: standard
+  ticket_type: refactor
+  date: '2026-10-01'
+  related_code_areas:
+  - .claude/workflows/implement-ticket.js
+  artifact_files:
+  - agent-working/stored_artifacts/TCK-20260930-NATIVE-PORT-SMALL-TICKET-NATIVE-RUN/investigation.md
+  - agent-working/stored_artifacts/TCK-20260930-NATIVE-PORT-SMALL-TICKET-NATIVE-RUN/plan.md
+  - agent-working/stored_artifacts/TCK-20260930-NATIVE-PORT-SMALL-TICKET-NATIVE-RUN/test_plan.md
+  tags:
+  - ai
+  - agent-monitoring
+- type: ticket
   path: agent-working/tickets/todos/TCK-20261001-SPAWN-AND-DERIVATION-HOLD-INCOMPATIBLE-DERIVED-STAT-MODELS.md
   ticket_id: TCK-20261001-SPAWN-AND-DERIVATION-HOLD-INCOMPATIBLE-DERIVED-STAT-MODELS
   title: 'Spawn and the combat-stat derivation hold incompatible models of the derived-stat
@@ -25436,34 +25499,6 @@
   - progression
   - combat
   - architecture
-- type: ticket
-  path: agent-working/tickets/todos/implement-ticket-native-port/TCK-20260930-IMPLEMENT-TICKET-NATIVE-PORT.md
-  ticket_id: TCK-20260930-IMPLEMENT-TICKET-NATIVE-PORT
-  title: Port implement-ticket.js to the native Workflow runtime in the classified
-    order
-  tier: epic
-  ticket_type: refactor
-  date: '2026-10-01'
-  related_code_areas:
-  - .claude/workflows/implement-ticket.js
-  artifact_files: []
-  tags:
-  - ai
-  - agent-monitoring
-- type: ticket
-  path: agent-working/tickets/todos/implement-ticket-native-port/TCK-20260930-NATIVE-PORT-SMALL-TICKET-NATIVE-RUN.md
-  ticket_id: TCK-20260930-NATIVE-PORT-SMALL-TICKET-NATIVE-RUN
-  title: Run one small ticket through the native implement-ticket and verify gate
-    outcomes
-  tier: standard
-  ticket_type: refactor
-  date: '2026-10-01'
-  related_code_areas:
-  - .claude/workflows/implement-ticket.js
-  artifact_files: []
-  tags:
-  - ai
-  - agent-monitoring
 - type: ticket
   path: agent-working/tickets/done/TCK-20260930-CITED-EVIDENCE-PATH-GITIGNORE-CHECK.md
   ticket_id: TCK-20260930-CITED-EVIDENCE-PATH-GITIGNORE-CHECK

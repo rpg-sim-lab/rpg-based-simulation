@@ -32,3 +32,5 @@ Written by hand. The attestation design found a nonce-hash gate result forgeable
 orchestrator-side re-run (child 3) must land before any gate is routed through the attested path (child 4): enforcement must not rest
 on attestation. Advisory and bookkeeping sites come first because they carry the dispatch-cost batching decision the later children
 inherit. The native run is last: it is the only child that needs a real Workflow run.
+
+**Closed 2026-11-16 (owner, #715 6894904885).** Item 6 ran three times (wf_b59e5ed2-5d3, wf_d6a35058-f5d, wf_f48f4fae-569) and the owner chose to hand-finish the vehicle. No run reached DONE; the epic closes with AC3 partly met (see its Completion Summary).
