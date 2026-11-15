@@ -8117,6 +8117,22 @@
   - content
   last_verified: '2026-10-09'
 - type: ticket
+  path: agent-working/tickets/done/TCK-20261115-M1-THE-NAME-SWITCH-PROBE-GATES-WORLD-AND-CORE-TOO.md
+  ticket_id: TCK-20261115-M1-THE-NAME-SWITCH-PROBE-GATES-WORLD-AND-CORE-TOO
+  title: The name-switch probe gates `src/world` and `src/core` as well, so the 15
+    world switches it only reported now count against the ratchet
+  tier: hotfix
+  ticket_type: chore
+  date: '2026-11-15'
+  related_code_areas:
+  - tools/test_architecture/name_switch_scan.py
+  - tests/architecture/name_switch_allowlist.yaml
+  - tests/architecture/test_no_name_switches_in_decision_paths.py
+  artifact_files: []
+  tags:
+  - testing
+  - architecture
+- type: ticket
   path: agent-working/tickets/done/TCK-20261115-MULTI-RUN-INDEX-FLOW-HEALTH-SCORE-DEPENDS-ON-HOST-TICK-SPEED.md
   ticket_id: TCK-20261115-MULTI-RUN-INDEX-FLOW-HEALTH-SCORE-DEPENDS-ON-HOST-TICK-SPEED
   title: 'test_multi_run_index_and_cli_flow fails on a loaded host: one HighCPULatencyRule
@@ -8151,21 +8167,7 @@
   - planning
   - delivery
 - type: ticket
-  path: agent-working/tickets/todos/TCK-20261115-M1-A-TEST-KIND-DECLARED-ONLY-IN-CONTENT-PERCEIVES-EATS-AND-FIGHTS.md
-  ticket_id: TCK-20261115-M1-A-TEST-KIND-DECLARED-ONLY-IN-CONTENT-PERCEIVES-EATS-AND-FIGHTS
-  title: 'Milestone 1''s content-alone probe: a test kind declared only in test content,
-    with no code change, perceives, eats and fights by its declarations through the
-    real kernel'
-  tier: standard
-  ticket_type: feature
-  date: '2026-11-15'
-  related_code_areas:
-  - tests/integration/, test content (read-only for src/)
-  artifact_files: []
-  tags:
-  - testing
-- type: ticket
-  path: agent-working/tickets/todos/github-project-ticket-view/TCK-20261115-PROJECT-SYNC-FILED-DATE-AND-BACKLOG-VIEW.md
+  path: agent-working/tickets/done/TCK-20261115-PROJECT-SYNC-FILED-DATE-AND-BACKLOG-VIEW.md
   ticket_id: TCK-20261115-PROJECT-SYNC-FILED-DATE-AND-BACKLOG-VIEW
   title: '`project_sync.py`: a `Filed` date field from each ticket''s frontmatter
     date, so the owner''s Backlog view can show the open-ticket pile by Domain, Priority
@@ -8179,6 +8181,20 @@
   tags:
   - planning
   - delivery
+- type: ticket
+  path: agent-working/tickets/todos/TCK-20261115-M1-A-TEST-KIND-DECLARED-ONLY-IN-CONTENT-PERCEIVES-EATS-AND-FIGHTS.md
+  ticket_id: TCK-20261115-M1-A-TEST-KIND-DECLARED-ONLY-IN-CONTENT-PERCEIVES-EATS-AND-FIGHTS
+  title: 'Milestone 1''s content-alone probe: a test kind declared only in test content,
+    with no code change, perceives, eats and fights by its declarations through the
+    real kernel'
+  tier: standard
+  ticket_type: feature
+  date: '2026-11-15'
+  related_code_areas:
+  - tests/integration/, test content (read-only for src/)
+  artifact_files: []
+  tags:
+  - testing
 - type: ticket
   path: agent-working/tickets/todos/github-project-ticket-view/TCK-20261115-PROJECT-SYNC-HOST-TIMER.md
   ticket_id: TCK-20261115-PROJECT-SYNC-HOST-TIMER
