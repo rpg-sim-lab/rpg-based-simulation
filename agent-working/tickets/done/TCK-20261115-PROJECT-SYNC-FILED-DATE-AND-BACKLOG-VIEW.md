@@ -1,10 +1,10 @@
 ---
-status: active
+status: historical
 layer: ticket
 authority: P1
 audience: agent
 ticket_id: TCK-20261115-PROJECT-SYNC-FILED-DATE-AND-BACKLOG-VIEW
-phase: open
+phase: done
 date: 2026-11-15
 tags: [planning, delivery]
 ---
@@ -15,7 +15,7 @@ tags: [planning, delivery]
 `project_sync.py`: a `Filed` date field from each ticket's frontmatter date, so the owner's Backlog view can show the open-ticket pile by Domain, Priority and age
 
 ## Status
-OPEN
+DONE
 
 ## Tier
 hotfix
@@ -96,9 +96,19 @@ through lead-planner-u24, and the owner chose "File + dispatch after P3b" (#715 
   after the OK is the working practice. A count-based gate is not proposed here.
 
 ## Implementation Notes
+- `project_client.py`: `set_date`, `create_date_field`, `DATE_FIELDS`; `list_items` reads `ProjectV2ItemFieldDateValue`; `init_fields` creates `Filed` (a wrong type is refused before any write); `Filed` is last in `VALUE_ORDER` and written as a date or cleared when empty.
+- `project_sync.py`: `filed_date()` (strict `YYYY-MM-DD`, valid calendar date, else empty plus a `Filed left empty` finding); `Filed` joins the hash as v4 (`HASH_FIELDS_V3` kept); the keep-current rule keeps the current value.
+- Doc: `docs/guidelines/session_roles/project_sync_dry_run.md`, section "Filed date and the Backlog view".
 
 ## Test Summary
+`tests/tools/test_session_project_sync_filed.py` (5 tests) plus fixture updates in 4 project-sync test files: 164 passed (scoped, no network). Live (lead's terminal, #715 6883401913): `--init` created Filed, second `--init` all "left alone"; plan matched the planner's OK; `--apply` rc 0, 634 steps, 04:51:33Z to 05:06:55Z; final dry run "nothing to do", 0 updates, 0 hand edits; failed_streak 0; no token leak.
 
 ## Files Changed
+`tools/sessions/project_client.py`, `tools/sessions/project_sync.py`, `tests/tools/test_session_project_sync_filed.py` (new), `tests/tools/test_project_client.py`, `tests/tools/test_session_project_sync.py`, `tests/tools/test_session_project_sync_all_lanes.py`, `tests/tools/test_session_project_sync_second_host.py`, `docs/guidelines/session_roles/project_sync_dry_run.md`, `docs/REGISTRY.yaml`, ticket, monitoring shards.
 
 ## Completion Summary
+**Load (lead's terminal, #715 6883401913):** `--init` created `Filed` and a second `--init` was all "left alone". `--apply` ran 04:51:33Z to 05:06:55Z: rc 0, **634 steps**, "nothing left". That is more than the ~400 estimated because every update writes Source and Sync hash as well as Filed (3 steps for each of 181 updates = 543), and the 4 new-since-P3b creates, the other changed fields (status, branch, PR, host facts) and the heartbeat make up the rest. Final dry run: "nothing to do", 0 updates, 0 hand edits (so the DATE read-back equals the YYYY-MM-DD we write); last-run.json rc 0, failed_streak 0; no token leak.
+
+**Owner UI step (not code):** save the Backlog view on https://github.com/orgs/rpg-sim-lab/projects/1: table view, filter `status:"To do"`, group by Domain, sort by Priority then Filed; for age add `filed:<@today-30d` (sort by Filed if the UI rejects it).
+
+The Project has a `Filed` date field filled from each ticket's frontmatter date, under hash v4, loaded on 183 items with no hand edits. The owner's Backlog view is a UI step (status "To do", group by Domain, sort by Priority then Filed), named in the PR body and the doc. Two limits lines added: Filed is the filing date, not activity; the Done lane needs a worktree on the branch.
