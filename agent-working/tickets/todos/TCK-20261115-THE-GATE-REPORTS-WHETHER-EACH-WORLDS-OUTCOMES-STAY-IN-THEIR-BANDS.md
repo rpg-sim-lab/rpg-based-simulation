@@ -90,6 +90,19 @@ P2
 - The baseline is stale (the harness hash moved in a25619971), and bands do not depend on it. They can land before the next re-record.
 
 ## Implementation Notes
+- **Row interface, agreed with rpg-planner on 2026-11-15** (its TCK-20261115-THE-GATE-METRICS-EMIT-THE-OUTCOME-BAND-ROWS Scope 5, seat-8 e8f6c6378).
+  - Every band row is `{id, class: "outcome", scope, world, group, value, band: true}`, with NO `k` or `floor`.
+  - The judge and report key ONLY on `band: true`. A `band: true` row is excluded from drift, validity, the baseline candidate and the row set, and a test pins that.
+  - The rows:
+    - B1 `O1.seeds_reaching_starving_line` (pooled, people; print-only fields `starvation_deaths_by_kind`, `first_starving_tick`);
+    - B2a `O4.meal_sources_with_a_meal` (run, people);
+    - B2b `O4.meal_source_max_share` (pooled, people; `by_source` with keys CARRIED_FOOD, CORPSE_FOOD, TOWN_SERVICE, FREE_CORE_RELIEF);
+    - B3a `O2.seeds_with_combat_death` (pooled, all);
+    - B3b `O2.max_cause_share` (pooled, all; `pooled_deaths` for the at-least-10 rule, plus `by_cause`);
+    - B4a `O2.people_alive_share_min` (run, people; `by_checkpoint`);
+    - B4b `O2.seeds_people_all_alive` (pooled, people);
+    - `O4.meal_sources_animals` (run, unbanded, print-only).
+- **Pooling is rpg's module, not the judge.** The harness calls the module's pool function twice: on `seeds` (42-46) for the change gate, unchanged, and on `seeds` + `band_seeds` (42-51), written to a separately named pooled band document. Pooled band rows are read only from that document. Run-level band rows come from each of the 10 seeds' documents.
 
 ## Test Summary
 
