@@ -41,8 +41,8 @@ Not reproduced in 8 control runs on either tree. Cause unproven.
 
 From the test's code on origin/main:
 - l.16: a FIXED port, 8021;
-- l.33: a fixed  before the first request, with no readiness poll;
-- l.105-108: the finally block closes and , also after a failure, so the server's own startup and bind lines are gone exactly when they are needed.
+- l.33: a fixed `time.sleep(4.0)` before the first request, with no readiness poll;
+- l.105-108: the finally block closes the log and calls `os.remove("uvicorn_health_obs.log")`, also after a failure, so the server's own startup and bind lines are gone exactly when they are needed.
 In the controls' read-only copies of that log, startup completed and bound 127.0.0.1:8021 well inside 4 s on an idle slot. The same may not hold on 2 loaded cores; that is not measured.
 
 ## Scope
