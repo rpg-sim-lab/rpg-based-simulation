@@ -51,7 +51,9 @@ through lead-planner-u24, and the owner chose "File + dispatch after P3b" (#715 
    - the field;
    - the owner's Backlog view, as a UI step: filter `status:"To do"`, group by Domain, sort by Priority, then Filed. For age, a filter
      such as `filed:<@today-30d`;
-   - a limits line saying that age is the filing date, not the last activity.
+   - a limits line saying that age is the filing date, not the last activity;
+   - a limits line saying that a merged ticket gets a Done item only while some host's worktree still has its branch checked out (seen in
+     P3b AC3.5 on ubuntu, #917). The Done lane is therefore not a full list of recent closes. This is a doc line only, with no code change.
 5. **Tests, no network** (about 4):
    - Filed from the frontmatter date;
    - a bad or missing date gives empty plus a finding;
