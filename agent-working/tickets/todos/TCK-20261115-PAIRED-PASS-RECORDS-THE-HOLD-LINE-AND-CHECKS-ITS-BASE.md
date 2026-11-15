@@ -61,6 +61,28 @@ Why now: the group-combat check (TCK-20261101-A-HOSTILE-ATTACKING-YOU-OUTRANKS-T
    - a no-spy run is unchanged: same cache paths as today except the added `none` component, same report.
    - Positive controls: a deliberately state-changing test spy must be caught by the twin check, and a fix not on the base must be refused.
 
+### Binding spec for the spy hook (rpg-designer, 2026-11-15; u24 rpg-planner and testing-planner agree; relayed by lead-planner)
+This supersedes items 1-3 above where they differ. testing's T2 (TCK-20261023-PAIRED-ARMS-RUN-OFF-THE-SHARED-HOST) dropped its AC9 (j) in favour of this hook, so this ticket carries the plain-twin control for both. Rule (j)'s definition is #634 6891643371.
+1. **Data.**
+   - The arm doc gets `"spy": {"sha256", "name", "errors"}`, or JSON null for a plain run.
+   - The spy's report goes in a side file `<world>_<seed>.spy.json` under the same cache key. It carries its doc's identity: world, seed, ticks, arm sha, final_hash, spy sha256.
+   - Every reader (cache load, `--collected`, the report) refuses an identity mismatch.
+   - A spy set with no side file counts as no-data, never as a pass.
+2. **Interface.**
+   - `--spy <path> --spy-sha <sha256>`. A file whose sha256 differs exits 2.
+   - The spy is loaded by FILE PATH from the tool checkout (`importlib.util.spec_from_file_location`, like `_pinned_runner`), never through the arm tree.
+   - The protocol: `install(world, seed, ticks) -> handle` before build_kernel; `handle.report(state)` after the last tick; `uninstall()` in a finally.
+   - Wraps are read-only, write and delete nothing, and count their errors.
+3. **Twin check.**
+   - Pass = `final_hash` equal AND `spy.errors == 0`.
+   - Compare only state-derived fields (final_hash, start_hash, fates, counters), never the spy block.
+   - A failure voids the whole set, deaths result included. No retry.
+4. **Key and controls.**
+   - The spy component of the key is `none` for a plain run, in both the key and the path.
+   - Controls as in #634 6891643371: at least 3 fix-arm cells (one per world, rotated seeds, recorded) and 1 base cell per base-cache build, on the same VM and in the same job as the cell each one checks.
+   - Spy shas go to rpg-designer before any run.
+5. **Key order.** Proposed by testing-planner, confirmed by rpg-planner-ubuntu 2026-11-15: `<sha12>-<child8>-<ticks>-<env8>-<spy>[-repeat]`, where `<spy>` = the spy sha256's first 12 hex characters, or `none`. Whichever of T2 (which adds env8) and this ticket lands second treats old-format keys as a cache miss and deletes nothing.
+
 ## Out of Scope
 - The GitHub Actions runner proposal (owner's step 3; the designer wants the rule first). Separate.
 - Changing the death bar (D76 plus the 2026-11-11 Tier 1/2 ruling stay as is).
