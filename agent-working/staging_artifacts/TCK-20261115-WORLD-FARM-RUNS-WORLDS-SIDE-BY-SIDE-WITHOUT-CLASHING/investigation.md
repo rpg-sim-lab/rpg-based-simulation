@@ -84,6 +84,14 @@ Code-derived on origin/main `0a8f65c3f`, 2026-11-15, by platform-planner. rpg-pl
   nothing once run ids are unique (§2).
 - Anything in `src/engine`, `tools/perf` or `tools/test_architecture` is reported to its owner, not changed.
 
+### Classification (implementer, 2026-11-15)
+
+1. `src/lab/audit.py` (`audit_log.jsonl`, one file per lab session): shared only by processes that log to the same session. It now goes through `append_line` (one `os.write` on an `O_APPEND` fd). **This makes the guarantee explicit; the old code passed the positive control too**: the old open-write-close per call, run under two spawn processes with rows over 8 KiB, also gave 400 parseable lines. So no bug was seen here, and the new test (`tests/unit/lab_agent/test_audit_concurrent_append.py`) pins the rule.
+2. `src/lab/workflows/update_simulation_knowledge.py` (`decision_log.jsonl` in the knowledge store): shared across sessions. Same helper.
+3. **Shared by default, a real gap:** `src/observability/anomaly/worker.py:_write_anomaly_to_file` writes under the run dir `default` when no run id is set (`status_record.current_run_id or "default"`), so two worlds without a run id share `default/anomaly_events.jsonl`. It goes through `append_line` in the same change as the stream-name edit to that file.
+4. Per run, nothing to do once run ids are unique: the review store, `quality_scores.jsonl` (`simulation_quality/persistence.py`, a long-lived handle inside the run dir), the event, metric, cognition and personality recorders. The sweeper's default id is already unique (`sweep_{time}_{uuid6}`); only an explicit `sweep_id` or mining `experiment_id` can collide (the sweeper used `makedirs(exist_ok=True)` and mining never checked), so both get the refuse rule.
+5. Report only, no change: `narrative_ledger.py` (the caller passes the path), `src/engine/kernel.py:828,912` (engine; per run), `tools/perf/tripwire.py:309` (perf's), `tools/test_architecture/run_ledger.py` (already one `os.write` on `O_APPEND`; testing's).
+
 ## 4. Overlap
 
 - No open PR touches these files.

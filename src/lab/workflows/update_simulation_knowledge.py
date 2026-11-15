@@ -12,6 +12,7 @@ from src.lab.results import UpdateSimulationKnowledgeResult
 from src.lab.session import LabSessionStore
 from src.lab.request import WorkflowRequest
 from src.lab.audit import LabAuditTrail
+from src.observability.world_farm_io import append_line
 from src.lab.workflows._path_safety import safe_path_resolution
 
 logger = logging.getLogger(__name__)
@@ -202,8 +203,7 @@ class UpdateSimulationKnowledgeWorkflow:
             "approved_by": approved_by,
             "timestamp": datetime.now(timezone.utc).isoformat()
         }
-        with open(decision_file, "a", encoding="utf-8") as f:
-            f.write(json.dumps(log_entry) + "\n")
+        append_line(str(decision_file), json.dumps(log_entry))  # shared across sessions: one write on an O_APPEND fd
 
         # 9. Format Markdown Report
         report_md = self._format_knowledge_report_md(session_id, stored_insights, stored_patches, decision_note)

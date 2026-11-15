@@ -56,7 +56,7 @@ Recorded now, for when the gates open:
 4. A runbook in `docs/runbooks/` for starting the profile and reading the smoke result.
 
 ## Out of Scope
-- Anything built before both gates: child 3 (`RemoteWorkerManager`, rpg-planner) merged, and the owner's whole-plan review
+- Anything built before both gates: child 3 (`TCK-20261115-DISTRIBUTED-WORKERS-REMOTE-WORKER-MANAGER`, rpg-planner) merged, and the owner's whole-plan review
   (6731938042).
 - The remote executor, transport, codec and handshake code (child 3, rpg-planner, `src/engine`).
 - Kubernetes or Helm; scaling beyond one host; the API/engine split; API reach (design §5).
@@ -78,6 +78,7 @@ Recorded now, for when the gates open:
 - TCK-20261109-EPIC-DISTRIBUTED-WORKERS-EXPERIMENT (parent; child 4)
 - TCK-20261109-DISTRIBUTED-WORKERS-DESIGN (the design)
 - TCK-20261115-WORLD-FARM-RUNS-WORLDS-SIDE-BY-SIDE-WITHOUT-CLASHING (separate epic; filed the same day)
+- TCK-20261115-DISTRIBUTED-WORKERS-REMOTE-WORKER-MANAGER (child 3, rpg-planner; filed on u24, ticket only; this ticket waits on it)
 
 ## Related Docs
 - docs/architecture/distributed_workers_adr.md
@@ -111,4 +112,4 @@ Not started.
 - none yet
 
 ## Completion Summary
-Open. BLOCKED on child 3 and the owner's whole-plan review (#715 6731938042).
+Open. BLOCKED on child 3 (TCK-20261115-DISTRIBUTED-WORKERS-REMOTE-WORKER-MANAGER) and the owner's whole-plan review (#715 6731938042).

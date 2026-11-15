@@ -3,6 +3,7 @@ import pytest
 from src.observability.sweeper import ScenarioSweepConfig, ScenarioSweeper
 from src.observability.config import ObservabilityMode
 from src.observability.reporting.run_set_repository import RunSetArtifactRepository
+from src.observability.world_farm_io import RunDirectoryInUseError
 
 
 def test_index_builder_with_missing_and_failed_runs(tmp_path):
@@ -45,16 +46,15 @@ def test_index_builder_with_missing_and_failed_runs(tmp_path):
     if os.path.exists(report_file):
         os.remove(report_file)
 
-    # Re-run a sweep or invoke index generation again on same specs
-    # ScenarioSweeper's internal indexing method is robust. Let's test that it handles
-    # missing manifest / report files without throwing Exceptions.
-    # We can invoke ScenarioSweeper.run_sweep again or just test its internal indexing block.
-    # To test robust parsing, let's run again on same config
-    manifest2 = ScenarioSweeper.run_sweep(config)
-    assert manifest2.status == "COMPLETED"
+    # World farm: a sweep id that is in use belongs to that sweep, so running the same sweep again is refused and
+    # nothing is regenerated or deleted. (This step used to re-run the same sweep id to recreate the files; that is
+    # exactly the reuse the refusal forbids.) The index already written must still read cleanly with run 1's
+    # manifest and report gone, and the refused re-run must leave the corrupted run dir as it was.
+    with pytest.raises(RunDirectoryInUseError):
+        ScenarioSweeper.run_sweep(config)
+    assert not os.path.exists(manifest_file)
+    assert not os.path.exists(report_file)
 
-    # Assert that index generation did not crash and records still parsed cleanly
     records2 = repo.read_run_index(sweep_id)
     assert len(records2) == 2
-    # Seed 1 (re-executed successfully, recreating files) works!
     assert records2[0].run_id == "run_test_resilient_sweep_seed_1"

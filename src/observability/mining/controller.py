@@ -13,6 +13,7 @@ from typing import List, Dict, Any, Optional
 from pydantic import BaseModel, Field, field_validator
 
 from src.observability.config import ObservabilityConfig, ObservabilityMode
+from src.observability.world_farm_io import ensure_run_dir_free
 from src.observability.reporting.artifact_repository import RunArtifactRepository
 from src.config.profiles import RuntimeProfile
 from src.config.loader import ConfigLoader
@@ -87,7 +88,8 @@ class MiningRunMatrixBuilder:
     """Builder generating concrete, sequential run specifications based on configuration profiles."""
     
     @classmethod
-    def build_matrix(cls, config: MiningExperimentConfig, experiment_dir: str) -> List[MiningRunSpec]:
+    def plan_runs(cls, config: MiningExperimentConfig) -> List[MiningRunSpec]:
+        """The run specs for a config, with no file written: callers check the run ids before anything is created."""
         run_specs: List[MiningRunSpec] = []
         
         # Determine runs based on type
@@ -123,6 +125,12 @@ class MiningRunMatrixBuilder:
                         ticks=config.ticks
                     ))
                     
+        return run_specs
+
+    @classmethod
+    def build_matrix(cls, config: MiningExperimentConfig, experiment_dir: str) -> List[MiningRunSpec]:
+        run_specs = cls.plan_runs(config)
+
         # Write matrix specifications to disk
         matrix_path = os.path.join(experiment_dir, "run_matrix.jsonl")
         with open(matrix_path, "w", encoding="utf-8") as f:
@@ -144,16 +152,19 @@ class MiningExperimentController:
             config = config.model_copy(update={"experiment_id": experiment_id})
             
         experiment_dir = os.path.abspath(os.path.join(config.output_dir, experiment_id))
-        os.makedirs(experiment_dir, exist_ok=True)
+        # World farm: an experiment id in use (its dir or a per-run dir under data/runs) belongs to another run; refuse, never delete
+        run_specs = MiningRunMatrixBuilder.plan_runs(config)
+        ensure_run_dir_free(experiment_dir, label=f"experiment directory for '{experiment_id}'")
+        for spec in run_specs:
+            ensure_run_dir_free(os.path.abspath(os.path.join("data/runs", spec.run_id)), label=f"run directory for experiment '{experiment_id}'")
+        os.makedirs(experiment_dir)
+        MiningRunMatrixBuilder.build_matrix(config, experiment_dir)  # writes run_matrix.jsonl
         
         # Save config
         with open(os.path.join(experiment_dir, "experiment_config.json"), "w", encoding="utf-8") as f:
             f.write(config.model_dump_json(indent=2))
             
         started_at = datetime.now(timezone.utc).isoformat()
-        
-        # 2. Build parameter matrix
-        run_specs = MiningRunMatrixBuilder.build_matrix(config, experiment_dir)
         
         manifest = MiningExperimentManifest(
             experiment_id=experiment_id,
@@ -254,9 +265,7 @@ class MiningExperimentController:
                 os.makedirs(os.path.dirname(target_run_dir), exist_ok=True)
                 
                 if os.path.exists(temp_run_dir):
-                    if os.path.exists(target_run_dir):
-                        shutil.rmtree(target_run_dir)
-                    shutil.move(temp_run_dir, target_run_dir)
+                    shutil.move(temp_run_dir, target_run_dir)  # the experiment dir is new (refused above), so never overwrites
                     
                 if run_success:
                     completed_count += 1

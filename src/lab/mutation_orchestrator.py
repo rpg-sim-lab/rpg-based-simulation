@@ -201,7 +201,8 @@ class MutationLabOrchestrator:
                 world_repo=world_repo_var,
                 scenario_repo=scenario_repo_var,
                 experiment_repo=self.experiment_repo,
-                lab_run_repo=lab_run_repo_var
+                lab_run_repo=lab_run_repo_var,
+                run_id_prefix=f"{mutation_lab_id}_{var_id}",  # unique per mutation lab and variant: no shared data/runs dir
             )
 
             try:

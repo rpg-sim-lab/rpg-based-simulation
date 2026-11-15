@@ -13,6 +13,7 @@ from typing import List, Dict, Any, Optional
 from pydantic import BaseModel, Field, field_validator
 
 from src.observability.config import ObservabilityConfig, ObservabilityMode
+from src.observability.world_farm_io import ensure_run_dir_free
 from src.observability.reporting.artifact_repository import RunArtifactRepository, RunManifest
 from src.config.profiles import RuntimeProfile
 from src.config.loader import ConfigLoader
@@ -111,7 +112,13 @@ class ScenarioSweeper:
             config = config.model_copy(update={"sweep_id": sweep_id})
 
         sweep_dir = os.path.abspath(os.path.join(config.output_dir, sweep_id))
-        os.makedirs(sweep_dir, exist_ok=True)
+        # World farm: a sweep id in use (its sweep dir or a per-seed run dir) belongs to another run; refuse, never reuse or delete
+        ensure_run_dir_free(sweep_dir, label=f"sweep directory for sweep '{sweep_id}'")
+        for seed in config.seeds:
+            ensure_run_dir_free(
+                os.path.abspath(os.path.join("data/runs", f"run_{sweep_id}_seed_{seed}")), label=f"run directory for sweep '{sweep_id}'"
+            )
+        os.makedirs(sweep_dir)
 
         # Write active configuration
         with open(os.path.join(sweep_dir, "sweep_config.json"), "w", encoding="utf-8") as f:
@@ -234,9 +241,7 @@ class ScenarioSweeper:
                 os.makedirs(os.path.dirname(target_run_dir), exist_ok=True)
                 
                 if os.path.exists(temp_run_dir):
-                    if os.path.exists(target_run_dir):
-                        shutil.rmtree(target_run_dir)
-                    shutil.copytree(temp_run_dir, target_run_dir)
+                    shutil.copytree(temp_run_dir, target_run_dir)  # the sweep dir is new (refused above), so never overwrites
 
                 if run_success:
                     completed_count += 1

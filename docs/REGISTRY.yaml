@@ -8169,6 +8169,30 @@
   - planning
   - delivery
 - type: ticket
+  path: agent-working/tickets/inprogress/TCK-20261115-WORLD-FARM-RUNS-WORLDS-SIDE-BY-SIDE-WITHOUT-CLASHING.md
+  ticket_id: TCK-20261115-WORLD-FARM-RUNS-WORLDS-SIDE-BY-SIDE-WITHOUT-CLASHING
+  title: 'World farm, step one: two worlds run at the same time on one host without
+    sharing an event stream, deleting each other''s lab run
+
+    data, or interleaving a ledger line.'
+  tier: standard
+  ticket_type: feature
+  date: '2026-11-15'
+  related_code_areas:
+  - src/observability/config.py
+  - src/observability/anomaly/worker.py
+  - src/simulation_quality/worker.py
+  - src/lab/orchestrator.py
+  - src/lab/repository.py
+  - src/lab/store.py
+  - tools/test_architecture/run_ledger.py
+  artifact_files: []
+  tags:
+  - platform
+  - architecture
+  - observability
+  - lab-agent
+- type: ticket
   path: agent-working/tickets/todos/TCK-20261115-M1-A-TEST-KIND-DECLARED-ONLY-IN-CONTENT-PERCEIVES-EATS-AND-FIGHTS.md
   ticket_id: TCK-20261115-M1-A-TEST-KIND-DECLARED-ONLY-IN-CONTENT-PERCEIVES-EATS-AND-FIGHTS
   title: 'Milestone 1''s content-alone probe: a test kind declared only in test content,
@@ -8217,30 +8241,6 @@
   tags:
   - planning
   - delivery
-- type: ticket
-  path: agent-working/tickets/todos/next-generation-engine/TCK-20261115-WORLD-FARM-RUNS-WORLDS-SIDE-BY-SIDE-WITHOUT-CLASHING.md
-  ticket_id: TCK-20261115-WORLD-FARM-RUNS-WORLDS-SIDE-BY-SIDE-WITHOUT-CLASHING
-  title: 'World farm, step one: two worlds run at the same time on one host without
-    sharing an event stream, deleting each other''s lab run
-
-    data, or interleaving a ledger line.'
-  tier: standard
-  ticket_type: feature
-  date: '2026-11-15'
-  related_code_areas:
-  - src/observability/config.py
-  - src/observability/anomaly/worker.py
-  - src/simulation_quality/worker.py
-  - src/lab/orchestrator.py
-  - src/lab/repository.py
-  - src/lab/store.py
-  - tools/test_architecture/run_ledger.py
-  artifact_files: []
-  tags:
-  - platform
-  - architecture
-  - observability
-  - lab-agent
 - type: ticket
   path: agent-working/tickets/done/TCK-20261114-LEAD-BOARD-FOURTH-PASS.md
   ticket_id: TCK-20261114-LEAD-BOARD-FOURTH-PASS

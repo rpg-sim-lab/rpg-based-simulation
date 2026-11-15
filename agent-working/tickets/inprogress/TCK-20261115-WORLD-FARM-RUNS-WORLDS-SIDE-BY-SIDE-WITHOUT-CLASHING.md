@@ -4,7 +4,7 @@ layer: platform
 authority: P1
 audience: agent
 ticket_id: TCK-20261115-WORLD-FARM-RUNS-WORLDS-SIDE-BY-SIDE-WITHOUT-CLASHING
-phase: open
+phase: inprogress
 date: 2026-11-15
 tags: [platform, architecture, observability, lab-agent]
 ---
@@ -16,7 +16,7 @@ World farm, step one: two worlds run at the same time on one host without sharin
 data, or interleaving a ledger line.
 
 ## Status
-OPEN
+INPROGRESS
 
 ## Tier
 standard
@@ -134,16 +134,29 @@ review calls it the largest item, and a one-world-per-process farm never needs i
 - Whether other files are appended by every world (lab summaries, `data/ledgers/`, monitoring) is the investigation's first question.
 
 ## Implementation Notes
-Standard tier: `plan.md`, `investigation.md` and `test_plan.md` are in `agent-working/staging_artifacts/<this id>/`, written by
-platform-planner on 2026-11-15. Key finding: the kernel's `create_run_directory` overwrites a dir for an explicit id
-(`src/engine/run_identity.py`), so the lab refuses before it reaches the kernel; nothing in `src/engine` changes. No
-heavy-slot run and no container start is needed. If one turns out to be, it goes through lead-planner first.
+Written by platform-implementer under rpg-planner-ubuntu's option (b) (these lines are plumbing; rpg reviews the diff by message before the push ask). Overlap check clear on both hosts (ubuntu: no remote branch or open PR; u24: lead-planner-u24, rpg-planner). No `src/engine/**`, compose, Bible or parity change; no container started; no run over 20 ticks.
+1. **One stream per world** (`src/observability/anomaly/worker.py`): new module-level `config_from_env()` builds the worker config with `ObservabilityConfig.get_stream_name()` and `get_redis_url()` (SIM_ then RPG_ then the producer's default), so the worker and the producer agree under SIM_ only, RPG_ only, both and neither. The `__main__` block calls it. With nothing set the name is still `simulation:events`.
+   - **Behaviour change, outside compose:** a bare `python -m src.observability.anomaly.worker` with no URL set moves from `redis://redis:6379/0` to the producer's `redis://localhost:6379/0`. Compose sets `SIM_REDIS_URL` explicitly, so the compose stack is unchanged.
+2. **Refuse, never delete** (new `src/observability/world_farm_io.py`: `ensure_run_dir_free`, `RunDirectoryInUseError(FileExistsError)`): the lab orchestrator (`ensure_seed_run_dirs_free`, called before the lab dir is created), the sweeper (sweep dir and per-seed run dirs) and the mining controller (experiment dir and per-run dirs, checked before anything is created through a new pure `MiningRunMatrixBuilder.plan_runs`) refuse an existing target. All four `rmtree` calls on these paths are gone (their targets sit inside a directory the same call just refused or created).
+3. **Unique default lab id** (`src/lab/cli.py`): `default_lab_run_id()` = `labrun_{UTC time}_{pid}_{8 hex}`.
+4. **Found by the work, beyond the plan: the mutation lab shared one run directory across every variant and every mutation lab.** `src/lab/mutation_orchestrator.py` ran every variant under `lab_run_id="lab_run"`, so all of them used `data/runs/run_lab_run_seed_<n>` (the old `rmtree` hid it; two concurrent mutation labs overwrote each other). `ScenarioLabOrchestrator` now takes an optional `run_id_prefix` (a name only) and the mutation lab passes `{mutation_lab_id}_{variant_id}`. The prefix is on the constructor, not on `run_lab`, so `run_lab`'s argument count does not grow.
+5. **Append safety** (investigation §3): `append_line` (one `os.write` on an `O_APPEND` fd) is used by `src/lab/audit.py`, `update_simulation_knowledge.py` (decision log) and the anomaly worker's `default` run dir fallback. The old audit append also passed the positive control (it makes the guarantee explicit). Per-run files need nothing once ids are unique; engine, perf and run_ledger files are reported, not changed.
+6. **Test hygiene forced by the refusal:** a run directory that a test leaves behind is now refused on the next run (the old code deleted it silently), so `tests/lab_run_dir_cleanup.py` (registered once in `tests/conftest.py`) removes only the `*_seed_*` directories a test itself created. `tests/unit/observability/test_run_index_builder.py` re-ran the same sweep id to regenerate files; that is the reuse now refused, so its second step asserts the refusal and the untouched corrupted run dir (it no longer exercises the index builder's handling of a freshly corrupted run; the builder is inline in `run_sweep`).
+7. **Docs:** `docs/guides/simulation_quality.md` (one stream per world; the Redis URL default change), `docs/simulation/lab_contract.md` (run ids, refuse rule, append rule), and the regenerated `docs/performance/wall_clock_inventory.{md,json}` (reads moved into named functions; line numbers in the table refreshed).
 
 ## Test Summary
-Not started.
+- **observed (this host, ubuntu):**
+  - New tests: `tests/unit/observability/test_world_farm_io.py` (5; two spawn processes x 500 rows, a fifth of them over 8 KiB: 1000 lines all `json.loads`, none lost), `tests/unit/lab_agent/test_audit_concurrent_append.py` (2 x 200 audit rows), `tests/unit/observability/test_stream_name_resolution.py` (T1-T3, 4 env cases x name and URL, two worlds, the default), `tests/unit/lab/test_lab_run_id_uniqueness.py` (T4, T5), `tests/integration/observability/test_world_farm_run_id_rules.py` (T6 sweep and mining refusals, T7 the same seed under two sweep ids gives the same final state hash, 20 ticks).
+  - Scoped suites `tests/cli tests/unit/lab tests/integration/lab tests/unit/lab_agent tests/integration/lab_agent tests/unit/observability tests/integration/observability tests/integration/test_anomaly_worker_failure.py`: 1642 passed, 6 skipped, run TWICE back to back with no seed run dir left in `data/runs` (the second run proves reruns are safe).
+  - `tests/architecture tests/static`: pass. Perf inventories in sync (20 passed), REGISTRY no-drift and paths guard pass.
+- **not run here (environment):** `tests/codebase` code-health family (47 failures) needs `ruff`, `mypy_baseline`, `ast-grep` from the `lint` dependency group, which this venv lacks. I ran the repo's pinned `ruff==0.17.0` through `uvx --from ruff==0.17.0 ruff check` (a download of that one pinned tool) on every edited `src` file: the new file has no findings, no edited file gained one (orchestrator 33 -> 32, the rest unchanged). The CI `Code health` job is the first real run of the ratchet.
+- No simulation result changes: nothing in `src/engine` or the tick changed; T7 shows the id is a name only.
 
 ## Files Changed
-- none yet
+- `src/observability/world_farm_io.py` (new), `src/observability/anomaly/worker.py`, `src/observability/sweeper.py`, `src/observability/mining/controller.py`, `src/lab/cli.py`, `src/lab/orchestrator.py`, `src/lab/mutation_orchestrator.py`, `src/lab/audit.py`, `src/lab/workflows/update_simulation_knowledge.py`.
+- Tests: the five new files above, `tests/lab_run_dir_cleanup.py` (new), `tests/conftest.py` (one import), `tests/unit/observability/test_run_index_builder.py` (second step).
+- Docs: `docs/guides/simulation_quality.md`, `docs/simulation/lab_contract.md`, `docs/performance/wall_clock_inventory.{md,json}`, `docs/REGISTRY.yaml`.
+- `agent-working/`: the investigation (section 3 classification), the child-4 ticket's child-3 citations (ride-along for platform-planner).
 
 ## Completion Summary
-Open.
+Open: implemented and green locally; awaiting rpg-planner-ubuntu's diff review and platform-planner's review before the push ask.
