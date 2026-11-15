@@ -13149,3 +13149,28 @@
     passes use_processes=True) and has no pass-through test. The field-parity test
     runs in the PR lane on fixture stages (t0, mid-run, after lodging, after a building
     change) and, extra_slow, on crowded_frontier s45 at t0/150/600 (50 s).'
+- id: INFRA-440
+  text: 'TCK-20261103-A-MEASUREMENT-NOT-ON-THE-PINNED-RUNNER-CALLS-ITSELF-EVIDENCE:
+    the run manifest carries a typed run_conditions record (RunConditions: governor
+    and executor class names, max_tick_budget_ms, audit_mode, no_frame_pacing), written
+    by one update_manifest call after the kernel has chosen its executor. It is run
+    setup only: not hashed state, not in the event stream, Optional so older manifests
+    load. A testing classifier (tools/test_architecture/pinned_runner.py, the one
+    PINNED definition) derives PINNED or NOT_PINNED from the record alone; the evidence
+    helper refuses NOT_PINNED and tools/rpg_measure/arm_child.py refuses a build whose
+    governor, executor or budget is not pinned.'
+  status: verified
+  priority: P1
+  legacy_evidence: null
+  v2_evidence: src/observability/reporting/artifact_repository.py (RunConditions,
+    RunManifest.run_conditions); src/engine/kernel.py (Kernel.__init__, the update_manifest
+    call after executor selection); tools/test_architecture/pinned_runner.py; tools/rpg_measure/arm_child.py
+  proof_type: contract
+  test_path: tests/unit/kernel/test_run_conditions_record.py
+  divergence_note: null
+  support_boundary: Records what the kernel was built with; it does not say the pinned
+    runner gives the production path's world (that is tests/unit/kernel/test_executor_context_parity.py
+    and the executor equivalence tests). The record exists only when observability
+    writes a manifest. A run on a lane scratch script outside the repo is classified
+    only if its manifest is offered to the helper; the close-time advisory sees only
+    evidence scripts stored in the repo.
