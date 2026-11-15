@@ -8117,7 +8117,7 @@
   - content
   last_verified: '2026-10-09'
 - type: ticket
-  path: agent-working/tickets/todos/github-project-ticket-view/TCK-20261115-PROJECT-SYNC-ALL-LANES.md
+  path: agent-working/tickets/done/TCK-20261115-PROJECT-SYNC-ALL-LANES.md
   ticket_id: TCK-20261115-PROJECT-SYNC-ALL-LANES
   title: '`project_sync.py` P3b: every lane goes on Project 1, Domain becomes a single-select,
     the sync can fetch origin/main itself, and each host leaves a last-run file and
@@ -8130,7 +8130,10 @@
   - tools/sessions/project_client.py
   - registries/session_project.yaml
   - tests/tools/test_session_project_sync*.py
-  artifact_files: []
+  artifact_files:
+  - agent-working/stored_artifacts/TCK-20261115-PROJECT-SYNC-ALL-LANES/investigation.md
+  - agent-working/stored_artifacts/TCK-20261115-PROJECT-SYNC-ALL-LANES/plan.md
+  - agent-working/stored_artifacts/TCK-20261115-PROJECT-SYNC-ALL-LANES/test_plan.md
   tags:
   - planning
   - delivery
