@@ -87,6 +87,8 @@ Why now: the group-combat check (TCK-20261101-A-HOSTILE-ATTACKING-YOU-OUTRANKS-T
 > 3. rebase and re-pair.
 >
 > No path is exempt. A spy that records extra data runs inside the paired pass, read-only. At least 3 spied fix-arm cells (one per world, seeds rotated and recorded), plus one base cell when the base arm is first built, are re-run without the spy and must hash-equal. One mismatch voids the whole pass, deaths result included, and the spy goes back to its author. A spy is approved by its sha, and a changed spy needs approval again.
+>
+> **Run data (owner, #715 6893767224).** Standard measurement tools on main, such as tools/rpg_measure's arm_child and paired and the gate runner, follow CLAUDE.md: each run deletes only its own `data/runs/<run_id>`, by run id. One-off diagnostic scripts written outside git, such as spies and traces, delete nothing. They print their `run_dir`, and it goes on the owner's delete list. A spy built into a standard tool, such as this ticket's `--spy` hook, runs inside that tool's child and is covered by the tool's own by-run-id cleanup. The spy file itself deletes nothing.
 
 ## Related Tickets
 - TCK-20261015-STANDARD-PAIRED-MEASUREMENT-COMMAND-FOR-BEHAVIOUR-STEPS (done): the paired tool.
