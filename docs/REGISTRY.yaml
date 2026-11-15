@@ -8117,6 +8117,18 @@
   - content
   last_verified: '2026-10-09'
 - type: ticket
+  path: agent-working/tickets/done/TCK-20261115-LEAD-BOARD-FIFTH-PASS.md
+  ticket_id: TCK-20261115-LEAD-BOARD-FIFTH-PASS
+  title: The lead board records the owner's 2026-11-15 epic decisions in one place,
+    with the pauses still in force stated first
+  tier: hotfix
+  ticket_type: chore
+  date: '2026-11-15'
+  related_code_areas: []
+  artifact_files: []
+  tags:
+  - governance
+- type: ticket
   path: agent-working/tickets/done/TCK-20261115-M1-THE-NAME-SWITCH-PROBE-GATES-WORLD-AND-CORE-TOO.md
   ticket_id: TCK-20261115-M1-THE-NAME-SWITCH-PROBE-GATES-WORLD-AND-CORE-TOO
   title: The name-switch probe gates `src/world` and `src/core` as well, so the 15
