@@ -29,7 +29,7 @@ P1
 ## Request Summary
 Dispatched by agent-working-designer from the plan (section 72 summary, section 38 dependencies). Owner decisions #715 6529263880: OD-1 yes; OD-2 + OD-10 yes; OD-3 as M1, subject to E6b; OD-14 yes; OD-15 yes; E6b yes. Scope is Phases 0-5 plus research R0-R1. Children are cut only as far as the decisions go; see SEQUENCE.md.
 
-**Rescoped 2026-11-15 by the owner (#715 6889309909, 6889318166).** The owner's words: "complete the epic without 'Agents get their own non-admin machine account, and your credentials leave both hosts.'"
+**Rescoped 2026-11-15 by the owner (#715 6889309909, 6889318166).** The owner's words, in full: "I think we can ignore this for now, complete the epic without 'Agents get their own non-admin machine account, and your credentials leave both hosts.'" The words "for now" are why these items are deferred, not dropped.
 - **Deferred:** the machine account and credential removal (TCK-20261031-SDLC-MACHINE-USER-AND-OWNER-CREDENTIAL-REMOVAL), E6b (TCK-20261031-SDLC-E6B-THROWAWAY-REPO-GITHUB-BEHAVIOURS), and the M1 merge rule (TCK-20261031-SDLC-RULESET-M1-AND-TAG-PROTECTION). Phase 1's core is out of live scope. OD-2, OD-3 and OD-10 stay decided, but nothing executes them.
 - **Kept:** the tag ruleset for the baseline tags, split out as TCK-20261115-SDLC-BASELINE-TAG-RULESET, which the owner applies.
 - **Order:** Phase 5 first (TCK-20261031-SDLC-CONTEXT-AND-SESSION-RELIABILITY). Then agent-working-designer brings OD-4, OD-5, OD-6, OD-11, OD-12 and OD-13 to the owner, each with options and a recommendation. Phases 2-4 are cut only after the owner decides them, and their Phase 1 prerequisite is re-read in that pack. R1-R5 stay deferred.

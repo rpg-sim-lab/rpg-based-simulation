@@ -18,7 +18,7 @@ Epic `TCK-20261031-EPIC-AI-FIRST-SDLC-EVOLUTION`, filed by agent-working-planner
 
 ## Rescoped 2026-11-15 (owner, #715 6889309909, 6889318166)
 
-Done: items 1 and 3 except Phase 5 (#794, #796, #800). The live order from here, after the ticket view epic (P3c and the backlog view) lands:
+Done: TCK-20261031-SDLC-PLAN-DOCUMENTS-LAND (#794); TCK-20261031-SDLC-HAND-PATH-OFFICIAL-AND-BASELINES-FROZEN, TCK-20261031-SDLC-RULESET-EXPORT-AND-LOGIN-ASSUMPTION-INVENTORY and TCK-20261031-SDLC-R0-INVENTORY-AND-BASELINE-TAGS (#796); TCK-20261031-SDLC-GUARD-PAYLOADS-AND-SECRET-REDACTION and TCK-20261031-SDLC-PLAN-REVIEW-FIXES-AND-EVIDENCE (#800). The live order from here, after the ticket view epic (P3c and the backlog view) lands:
 
 1. TCK-20261031-SDLC-CONTEXT-AND-SESSION-RELIABILITY (Phase 5). Its 11-15 recheck is in the ticket.
 2. TCK-20261115-SDLC-BASELINE-TAG-RULESET. The owner applies it, and it can go any time on its own ask.
