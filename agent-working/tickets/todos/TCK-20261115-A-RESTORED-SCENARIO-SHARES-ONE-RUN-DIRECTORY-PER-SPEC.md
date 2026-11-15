@@ -55,6 +55,8 @@ Root, checked on origin/main by rpg-planner-ubuntu:
 
 ## Related Tickets
 TCK-20261115-AN-EXPLICIT-RUN-ID-DELETES-AN-EXISTING-RUN-DIRECTORY; TCK-20261115-WORLD-FARM-RUNS-WORLDS-SIDE-BY-SIDE-WITHOUT-CLASHING (#926, where it surfaced).
+- TCK-20261110-A-RESTORED-SCENARIO-DROPS-ITS-GOVERNOR-AND-EVENT-RECORDER (u24, P3 hotfix) is on the same restore path (scenario_checkpoint.py). It is NOT folded in: whichever lands second re-syncs on top (u24 rpg-planner's overlap check, 2026-11-15).
+- TCK-20261110-A-RUN-RESTORED-FROM-A-CHECKPOINT-EQUALS-THE-UNINTERRUPTED-RUN-TICK-BY-TICK (testing) has a strict xfail citing the GOVERNOR ticket. Unique run ids should not move its hashes; testing re-checks the xfail reason after this fix lands, so tell testing-planner at merge.
 
 ## Related Docs
 docs/engine/ (the restore contract, if one exists)
