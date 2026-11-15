@@ -145,6 +145,7 @@ norecursedirs = [
 ]
 markers = [
     "slow: marks tests as slow (deselect with '-m \"not slow\"')",
+    "unwired_subject(reason): the test deliberately exercises a src/systems symbol the authoritative pipeline never reaches, and says why; read by tools/test_architecture/unwired_subject_check.py (advisory)",
     "real_data_runs: the test deliberately reads or writes the real data/runs (every other test's Kernel run output goes to tmp_path)",
     "extra_slow: marks tests as extremely slow (>60s, deselect with '-m \"not extra_slow\"'); runs under the large resource budget (600s/8GB) like resource_budget_large (TCK-20261006-EXTRA-SLOW-TESTS-LOCAL-RESOURCE-BUDGET)",
     "world_long_run: long-run living-world stability tests",

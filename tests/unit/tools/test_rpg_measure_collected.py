@@ -23,7 +23,7 @@ def _run(world, seed, new_dead=0, final_hash="h", start_hash="s"):
     rows = [[i, k, c, 1] for i, k, c in START]
     fin = {"1": [0 if new_dead >= 1 else 1, "COMBAT" if new_dead >= 1 else None, "merchant"], "2": [0 if new_dead >= 2 else 1, "COMBAT" if new_dead >= 2 else None, "guard"], "3": [1, None, "wolf"]}
     return {"world": world, "seed": seed, "start": rows, "final": fin, "counters": None, "perception_samples": 5, "final_hash": final_hash,
-            "start_hash": start_hash, "audit_mode": True, "signals_zeroed": True, "adds": {}}
+            "start_hash": start_hash, "audit_mode": True, "signals_zeroed": True, "adds": {}, "runner": "PINNED"}
 
 
 def _put(cache: Path, sha: str, w: str, s: int, run: dict, ticks=TICKS, repeat=False, runner=None, wall=1.5):
@@ -186,3 +186,42 @@ def test_the_collected_table_is_the_local_table_plus_one_runners_line(tmp_path, 
     extra = [ln for ln in collected_out.splitlines() if ln not in local_out.splitlines()]
     assert len(extra) == 1 and extra[0].startswith("- runners (collected off host):")
     assert [ln for ln in collected_out.splitlines() if not ln.startswith("- runners (collected")] == local_out.splitlines()
+
+
+# ---- the pinned runner (TCK-20261115-A-NON-SEQUENTIAL-RUN-IS-REFUSED-BY-THE-GATE-CANDIDATE-PAIRED-ARMS-AND-RPG-MEASURE)
+
+@pytest.mark.parametrize("runner", [None, "NOT_PINNED", "pinned", ""])
+def test_refuse_non_pinned_names_every_arm_document_that_is_not_marked_pinned(runner):
+    """Tested on ``paired`` directly, not through arm_child: a document with no ``runner`` or another value is refused, with its arm, world and seed."""
+    good = _run("urban_political", 42)
+    bad = {k: v for k, v in _run("crowded_frontier", 43).items() if k != "runner"}
+    if runner is not None:
+        bad["runner"] = runner
+    paired.refuse_non_pinned("new", {("urban_political", 42): good})
+    with pytest.raises(paired.NotPinnedArmError, match=r"new:crowded_frontier:43"):
+        paired.refuse_non_pinned("new", {("urban_political", 42): good, ("crowded_frontier", 43): bad})
+
+
+def _unpin(path: Path, value="NOT_PINNED"):
+    doc = json.loads(path.read_text(encoding="utf-8"))
+    if value is None:
+        doc.pop("runner")
+    else:
+        doc["runner"] = value
+    path.write_text(json.dumps(doc), encoding="utf-8")
+
+
+@pytest.mark.parametrize("arm_sha, repeat", [(NEW, False), (BASE, False), (BASE, True)])
+def test_a_collected_compare_refuses_an_arm_that_is_not_pinned_and_prints_no_table(tmp_path, capsys, arm_sha, repeat):
+    stage(tmp_path)
+    _unpin(paired.result_path(tmp_path, arm_sha, TICKS, "urban_political", 42, repeat), None)
+    with pytest.raises(paired.NotPinnedArmError, match="urban_political:42"):
+        collected(tmp_path)
+    assert "## Paired measurement" not in capsys.readouterr().out
+
+
+def test_a_collected_neutral_compare_refuses_an_arm_that_is_not_pinned(tmp_path):
+    stage(tmp_path, neutral=True)
+    _unpin(paired.result_path(tmp_path, NEW, paired.NEUTRAL_TICKS, "urban_political", 42))
+    with pytest.raises(paired.NotPinnedArmError, match="new:urban_political:42"):
+        paired.main(["--collected", str(tmp_path), "--base", BASE, "--new", NEW, "--neutral"])

@@ -175,6 +175,7 @@ def assemble(src: Path, out: Path, *, base: str, new: str) -> Dict[str, Any]:
 
     Refuses when a result has no ``cost.json`` with a full ``runner`` record; when the jobs differ in Python version or OS; when the arms of one (world, seed)
     differ in Python version, OS or image; when two jobs wrote the same file with different bytes (for a self-check job that is the base arm not reproducing);
+    when an arm document is not marked ``runner: "PINNED"`` (TCK-20261115-A-NON-SEQUENTIAL-RUN-IS-REFUSED-BY-THE-GATE-CANDIDATE-PAIRED-ARMS-AND-RPG-MEASURE);
     or when a ``pair`` job (a directory without the ``-self`` suffix) lacks either the base or the new arm of its (world, seed) from that same job.
     Returns ``{"jobs": {name: [runner...]}, "arms": [cost...]}`` and writes it to ``out/identities.json``."""
     base12, new12 = _check_sha("--base", base)[:12], _check_sha("--new", new)[:12]
@@ -197,6 +198,14 @@ def assemble(src: Path, out: Path, *, base: str, new: str) -> Dict[str, Any]:
                 raise ArmsRefused(f"{job.name}/{cost_path.relative_to(job)}: no runner record with {missing}; every result carries its runner identity")
             stem = cost_path.name[: -len(".cost.json")]
             directory = cost_path.parent.name
+            result_path = cost_path.with_name(stem + ".json")
+            try:
+                arm_doc = json.loads(result_path.read_text(encoding="utf-8"))
+            except (OSError, ValueError) as exc:
+                raise ArmsRefused(f"{job.name}/{result_path.relative_to(job)}: the arm document is missing or unreadable ({exc.__class__.__name__}); every cost.json sits beside its result") from None
+            if not isinstance(arm_doc, dict) or arm_doc.get("runner") != "PINNED":
+                got = arm_doc.get("runner") if isinstance(arm_doc, dict) else None
+                raise ArmsRefused(f"{job.name}/{result_path.relative_to(job)}: runner is {got!r}, not 'PINNED'; an arm that was not run on the pinned runner is not assembled")
             runners.setdefault(job.name, runner)
             by_key.setdefault(stem, []).append((f"{job.name}:{directory}", runner))
             if not directory.endswith("-repeat"):

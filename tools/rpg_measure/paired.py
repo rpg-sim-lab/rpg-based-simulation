@@ -119,6 +119,30 @@ def run_arm(tree: Path, cache: Path, sha: str, jobs: Sequence[Key], ticks: int, 
     return {(w, s): json.loads(result_path(cache, sha, ticks, w, s, repeat).read_text(encoding="utf-8")) for w, s in jobs}
 
 
+class NotPinnedArmError(ValueError):
+    """An arm document is not marked as run on the pinned runner."""
+
+
+def refuse_non_pinned(arm: str, runs: Dict[Key, Dict[str, Any]]) -> None:
+    """Every arm document says ``runner: "PINNED"`` (written by ``arm_child`` from ``pinned_runner.require_pinned``), else it is refused: one without the field
+    (an older arm, or one made by another tool) or with another value is not behaviour evidence. Applies to local and ``--collected`` results alike
+    (TCK-20261115-A-NON-SEQUENTIAL-RUN-IS-REFUSED-BY-THE-GATE-CANDIDATE-PAIRED-ARMS-AND-RPG-MEASURE)."""
+    bad = sorted(f"{arm}:{w}:{s}" for (w, s), r in runs.items() if r.get("runner") != "PINNED")
+    if bad:
+        raise NotPinnedArmError(f"arm documents not marked runner PINNED (a run on a non-sequential executor, or an older arm): {bad}")
+
+
+def runner_sources(arm: str, runs: Dict[Key, Dict[str, Any]]) -> str:
+    """Which check made each arm document PINNED, for the table: ``manifest`` (the kernel's own run_conditions record) or ``derived_from_kernel`` (an arm tree older than the
+    record, classified from its live kernel); a document that names none is ``unrecorded``. Both are accepted; only a document not marked PINNED is refused.
+    ``unrecorded`` = an arm doc with no run_conditions_source (written by an older tool, e.g. a --collected result); accepted only if its runner is PINNED."""
+    counts: Dict[str, int] = {}
+    for r in runs.values():
+        key = str(r.get("run_conditions_source") or "unrecorded")
+        counts[key] = counts.get(key, 0) + 1
+    return f"{arm} " + ", ".join(f"{k} x{v}" for k, v in sorted(counts.items()))
+
+
 def refuse_non_audit(arm: str, runs: Dict[Key, Dict[str, Any]], legacy: bool = False) -> None:
     """Both flags recorded by the run's own manifest: audit_mode and signals_zeroed must be True, else the comparison measures host speed.
 
@@ -253,6 +277,8 @@ def runner_identity(cache: Path, entries: Sequence[Entry]) -> Tuple[List[str], L
 def neutral_report(base: Dict[Key, Dict[str, Any]], new: Dict[Key, Dict[str, Any]], bsha: str, nsha: str) -> Tuple[int, List[str]]:
     """(exit code, differing worlds) of the byte-identical check; prints the per-world lines and the verdict line."""
     jobs = [(w, 42) for w in WORLDS]
+    refuse_non_pinned("base", base)
+    refuse_non_pinned("new", new)
     bad = [w for (w, _s) in jobs if base[(w, 42)]["final_hash"] != new[(w, 42)]["final_hash"] or base[(w, 42)]["start_hash"] != new[(w, 42)]["start_hash"]]
     for (w, _s) in jobs:
         print(f"{w} seed 42 {NEUTRAL_TICKS}t: base {base[(w, 42)]['final_hash'][:16]} new {new[(w, 42)]['final_hash'][:16]} {'IDENTICAL' if w not in bad else 'DIFFERENT'}")
@@ -390,9 +416,12 @@ def _run(a: argparse.Namespace, verdict: Dict[str, Any]) -> int:
         load = lambda sha, js, repeat=False: run_arm(btree if sha == bsha else ntree, cache, sha, js, a.ticks, a.jobs, repeat=repeat)
         if (a.legacy_base or a.legacy_new) and a.self_check != "full":
             return _refuse(verdict, legacy_msg)
+    refuse_non_pinned("base", base)
+    refuse_non_pinned("new", new)
     refuse_non_audit("base", base, legacy=a.legacy_base)
     refuse_non_audit("new", new, legacy=a.legacy_new)
     repeat = load(bsha, check_jobs, True) if check_jobs else {}
+    refuse_non_pinned("base-repeat", repeat)
     bad = stats.self_check_spread([base[k] for k in check_jobs], [repeat[k] for k in check_jobs])
     if a.legacy_new:
         repeat_new = load(nsha, check_jobs, True)
@@ -404,6 +433,7 @@ def _run(a: argparse.Namespace, verdict: Dict[str, Any]) -> int:
              *(["- **legacy new arm, audit proven by repeat**: the new arm also predates the determinism fix; its kernel was verified forced and its own full repeat is byte-identical"] if a.legacy_new else []),
              f"- base {bsha[:12]} -> new {nsha[:12]}; {', '.join(worlds)}; seeds {a.seeds}; {a.ticks} ticks; PYTHONHASHSEED={HASHSEED}; audit_mode and signals_zeroed recorded True in every run of " + ("the new arm (base: see the legacy line)" if a.legacy_base and not a.legacy_new else "neither arm (see the legacy lines)" if a.legacy_new else "both arms"),
              (f"- base-vs-base self-check ({a.self_check}, {len(check_jobs)} runs): spread 0 (byte-identical final and start hashes, fates and counters)" if check_jobs else "- base-vs-base self-check: NOT RUN (--self-check off)"),
+             f"- runner check: {runner_sources('base', base)}; {runner_sources('new', new)}",
              *runner_lines,
              f"- SE = sd(per-seed new-base)/sqrt({len(a.seeds)}); STOP = more people deaths by > {stats.SE_MULTIPLE:g}·SE AND > floor ({a.floor_per_seed:g} per seed = {a.floor_per_seed * len(a.seeds):g} total); fewer past both is REPORT-ONLY; SD 0 is not special-cased",
              ""]
