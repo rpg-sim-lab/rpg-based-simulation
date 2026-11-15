@@ -119,6 +119,7 @@ class FakeInit:
     def create_select_field(self, pid, name, options): self.calls.append(("create_select", name, [n for n, _ in options]))
     def set_select_options(self, fid, options): self.calls.append(("options", fid))
     def rename_field(self, fid, name): self.calls.append(("rename", fid, name))
+    def create_date_field(self, pid, name): self.calls.append(("create_date", name))
 
 
 def _project(domain_type="TEXT", extra=()):
@@ -130,6 +131,7 @@ def _project(domain_type="TEXT", extra=()):
     fields["Priority"] = pc.ProjectField("F_Priority", "Priority", "SINGLE_SELECT", tuple((n, f"O_{n}") for n, _ in pc.PRIORITY_OPTIONS))
     fields["Layer"] = pc.ProjectField("F_Layer", "Layer", "SINGLE_SELECT", (("combat", "O_combat"),))
     fields["Domain"] = pc.ProjectField("F_Domain", "Domain", domain_type)
+    fields["Filed"] = pc.ProjectField("F_Filed", "Filed", "DATE")
     for f in extra:
         fields[f.name] = f
     return pc.Project("P1", fields)
