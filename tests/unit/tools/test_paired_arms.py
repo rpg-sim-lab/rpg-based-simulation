@@ -14,7 +14,7 @@ W = "frontier_living_world"
 RUNNER = {"name": "GitHub Actions 7", "image": "ubuntu24-20260101.1.0", "cpu_model": "AMD EPYC 7763", "nproc": 4, "mem_total_mb": 16000, "python": "3.13.1", "os": "Ubuntu 24.04.1 LTS"}
 
 
-def _write(job: Path, sha: str, world: str, seed: int, *, repeat=False, runner=None, doc="{}", ticks=5000, child="c0ffee00"):
+def _write(job: Path, sha: str, world: str, seed: int, *, repeat=False, runner=None, doc='{"runner": "PINNED"}', ticks=5000, child="c0ffee00"):
     directory = job / "results" / f"{sha[:12]}-{child}-{ticks}{'-repeat' if repeat else ''}"
     directory.mkdir(parents=True, exist_ok=True)
     (directory / f"{world}_{seed}.json").write_text(doc)
@@ -113,7 +113,7 @@ def test_assemble_merges_the_jobs_into_one_paired_cache_root(tmp_path):
     _pair_job(root, seed=42)
     _pair_job(root, seed=43)
     self_job = root / f"paired-arms-s-{W}-s42-self"
-    _write(self_job, BASE, W, 42, doc="{}")  # the same bytes the pair job wrote
+    _write(self_job, BASE, W, 42, doc='{"runner": "PINNED"}')  # the same bytes the pair job wrote
     _write(self_job, BASE, W, 42, repeat=True)
     summary = _assemble(root)
     collected = tmp_path / "collected"
@@ -175,9 +175,9 @@ def test_assemble_refuses_a_result_without_a_runner_record(tmp_path):
 
 def test_assemble_refuses_two_jobs_writing_different_bytes_to_one_result(tmp_path):
     root = tmp_path / "arms"
-    _pair_job(root, seed=42, doc='{"a": 1}')
+    _pair_job(root, seed=42, doc='{"runner": "PINNED", "a": 1}')
     self_job = root / f"paired-arms-s-{W}-s42-self"
-    _write(self_job, BASE, W, 42, doc='{"a": 2}')
+    _write(self_job, BASE, W, 42, doc='{"runner": "PINNED", "a": 2}')
     with pytest.raises(pa.ArmsRefused, match="different bytes"):
         _assemble(root)
 
@@ -204,7 +204,7 @@ def test_the_assemble_cli_exits_2_with_the_refusal_and_0_on_a_good_set(tmp_path,
 def _doc(world: str, seed: int) -> dict:
     """A minimal result document in the shape paired.py reads (no simulation): two people alive, audit flags True."""
     return {"world": world, "seed": seed, "start": [[1, "merchant", 1, 1], [2, "guard", 1, 1]], "final": {"1": [1, None, "merchant"], "2": [1, None, "guard"]},
-            "counters": None, "perception_samples": 5, "final_hash": "h", "start_hash": "s", "audit_mode": True, "signals_zeroed": True, "adds": {}}
+            "counters": None, "perception_samples": 5, "final_hash": "h", "start_hash": "s", "audit_mode": True, "signals_zeroed": True, "adds": {}, "runner": "PINNED"}
 
 
 def test_jobs_run_by_run_arm_and_assembled_are_accepted_by_paireds_real_collected_compare(tmp_path, monkeypatch, capsys):
@@ -231,3 +231,19 @@ def test_jobs_run_by_run_arm_and_assembled_are_accepted_by_paireds_real_collecte
     out = capsys.readouterr().out
     assert "## Paired measurement" in out and "self-check (seed42, 3 runs): spread 0" in out
     assert [line for line in out.splitlines() if line.startswith("- runners")] == [f"- runners (collected off host): {RUNNER['name']}/{RUNNER['image']} python {RUNNER['python']} {RUNNER['os']} ({RUNNER['cpu_model']}, nproc {RUNNER['nproc']})"]
+
+
+# ---- the pinned runner (TCK-20261115-A-NON-SEQUENTIAL-RUN-IS-REFUSED-BY-THE-GATE-CANDIDATE-PAIRED-ARMS-AND-RPG-MEASURE)
+
+@pytest.mark.parametrize("doc, said", [('{"runner": "NOT_PINNED"}', "'NOT_PINNED'"), ("{}", "None"), ("[]", "None")])
+def test_assemble_refuses_an_arm_document_that_is_not_marked_pinned(tmp_path, doc, said):
+    _pair_job(tmp_path / "in", doc=doc)
+    with pytest.raises(pa.ArmsRefused, match=f"runner is {said}, not 'PINNED'"):
+        pa.assemble(tmp_path / "in", tmp_path / "out", base=BASE, new=NEW)
+
+
+def test_assemble_refuses_a_cost_file_with_no_arm_document_beside_it(tmp_path):
+    job = _pair_job(tmp_path / "in")
+    next(job.glob("results/*/*_42.json")).unlink()
+    with pytest.raises(pa.ArmsRefused, match="the arm document is missing or unreadable"):
+        pa.assemble(tmp_path / "in", tmp_path / "out", base=BASE, new=NEW)

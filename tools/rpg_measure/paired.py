@@ -119,6 +119,19 @@ def run_arm(tree: Path, cache: Path, sha: str, jobs: Sequence[Key], ticks: int, 
     return {(w, s): json.loads(result_path(cache, sha, ticks, w, s, repeat).read_text(encoding="utf-8")) for w, s in jobs}
 
 
+class NotPinnedArmError(ValueError):
+    """An arm document is not marked as run on the pinned runner."""
+
+
+def refuse_non_pinned(arm: str, runs: Dict[Key, Dict[str, Any]]) -> None:
+    """Every arm document says ``runner: "PINNED"`` (written by ``arm_child`` from ``pinned_runner.require_pinned``), else it is refused: one without the field
+    (an older arm, or one made by another tool) or with another value is not behaviour evidence. Applies to local and ``--collected`` results alike
+    (TCK-20261115-A-NON-SEQUENTIAL-RUN-IS-REFUSED-BY-THE-GATE-CANDIDATE-PAIRED-ARMS-AND-RPG-MEASURE)."""
+    bad = sorted(f"{arm}:{w}:{s}" for (w, s), r in runs.items() if r.get("runner") != "PINNED")
+    if bad:
+        raise NotPinnedArmError(f"arm documents not marked runner PINNED (a run on a non-sequential executor, or an older arm): {bad}")
+
+
 def refuse_non_audit(arm: str, runs: Dict[Key, Dict[str, Any]], legacy: bool = False) -> None:
     """Both flags recorded by the run's own manifest: audit_mode and signals_zeroed must be True, else the comparison measures host speed.
 
@@ -253,6 +266,8 @@ def runner_identity(cache: Path, entries: Sequence[Entry]) -> Tuple[List[str], L
 def neutral_report(base: Dict[Key, Dict[str, Any]], new: Dict[Key, Dict[str, Any]], bsha: str, nsha: str) -> Tuple[int, List[str]]:
     """(exit code, differing worlds) of the byte-identical check; prints the per-world lines and the verdict line."""
     jobs = [(w, 42) for w in WORLDS]
+    refuse_non_pinned("base", base)
+    refuse_non_pinned("new", new)
     bad = [w for (w, _s) in jobs if base[(w, 42)]["final_hash"] != new[(w, 42)]["final_hash"] or base[(w, 42)]["start_hash"] != new[(w, 42)]["start_hash"]]
     for (w, _s) in jobs:
         print(f"{w} seed 42 {NEUTRAL_TICKS}t: base {base[(w, 42)]['final_hash'][:16]} new {new[(w, 42)]['final_hash'][:16]} {'IDENTICAL' if w not in bad else 'DIFFERENT'}")
@@ -390,9 +405,12 @@ def _run(a: argparse.Namespace, verdict: Dict[str, Any]) -> int:
         load = lambda sha, js, repeat=False: run_arm(btree if sha == bsha else ntree, cache, sha, js, a.ticks, a.jobs, repeat=repeat)
         if (a.legacy_base or a.legacy_new) and a.self_check != "full":
             return _refuse(verdict, legacy_msg)
+    refuse_non_pinned("base", base)
+    refuse_non_pinned("new", new)
     refuse_non_audit("base", base, legacy=a.legacy_base)
     refuse_non_audit("new", new, legacy=a.legacy_new)
     repeat = load(bsha, check_jobs, True) if check_jobs else {}
+    refuse_non_pinned("base-repeat", repeat)
     bad = stats.self_check_spread([base[k] for k in check_jobs], [repeat[k] for k in check_jobs])
     if a.legacy_new:
         repeat_new = load(nsha, check_jobs, True)

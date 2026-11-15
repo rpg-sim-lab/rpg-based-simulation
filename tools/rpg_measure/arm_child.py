@@ -57,7 +57,7 @@ def main(argv: list[str]) -> int:
         raise RuntimeError(f"this arm's build_kernel did not force audit_mode and no_frame_pacing: {forced}")
     # The governor, executor and budget too, read from the manifest record the kernel wrote (one PINNED definition: tools/test_architecture/pinned_runner.py).
     manifest_path = Path("data") / "runs" / run_id / "run_manifest.json"
-    require_pinned(read_manifest(manifest_path) if manifest_path.exists() else {}, what="this arm's build_kernel")
+    pinned = require_pinned(read_manifest(manifest_path) if manifest_path.exists() else {}, what="this arm's build_kernel")
     start = _roster(kernel.state, keeps_coin)
     start_hash = CanonicalStateHasher.get_hash(kernel.state)
     for _ in range(ticks):
@@ -71,7 +71,7 @@ def main(argv: list[str]) -> int:
     doc = {
         "world": world, "seed": seed, "ticks": ticks, "hashseed": os.environ.get("PYTHONHASHSEED"),
         "start_hash": start_hash, "final_hash": CanonicalStateHasher.get_hash(state),
-        "forced_flags": forced, "audit_mode": manifest.get("audit_mode"), "signals_zeroed": manifest.get("signals_zeroed"),
+        "forced_flags": forced, "runner": pinned.verdict, "audit_mode": manifest.get("audit_mode"), "signals_zeroed": manifest.get("signals_zeroed"),
         "start": start, "final": final,
         "counters": (tally or {}).get("behaviour") if tally and "behaviour" in tally else None,
         "perception_samples": (tally or {}).get("perception_samples"),

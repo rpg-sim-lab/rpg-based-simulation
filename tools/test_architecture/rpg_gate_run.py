@@ -66,6 +66,30 @@ def build_kernel(world: str, seed: int, run_id: str):
     )
 
 
+def runner_header(run_dir: Path) -> Dict[str, Any]:
+    """The pinned-runner verdict for one run, read from the manifest the kernel wrote (``pinned_runner.classify_manifest``): ``{verdict, differences}``.
+    A run with no readable manifest classifies NOT_PINNED, like any run with no ``run_conditions`` record (TCK-20261115-A-NON-SEQUENTIAL-RUN-IS-REFUSED-BY-THE-GATE-CANDIDATE-PAIRED-ARMS-AND-RPG-MEASURE)."""
+    from tools.test_architecture import pinned_runner
+
+    try:
+        manifest = pinned_runner.read_manifest(run_dir / "run_manifest.json")
+    except (OSError, ValueError):
+        manifest = {}
+    verdict = pinned_runner.classify_manifest(manifest if isinstance(manifest, dict) else {})
+    return {"verdict": verdict.verdict, "differences": list(verdict.differences)}
+
+
+def pooled_runner(docs: List[Dict[str, Any]]) -> Dict[str, Any]:
+    """A pooled document's runner header: PINNED only when every document it pools is PINNED; otherwise NOT_PINNED, naming each document that is not."""
+    differences = [
+        f"pooled document {i} is not PINNED" for i, d in enumerate(docs)
+        if not isinstance(d.get("runner"), dict) or d["runner"].get("verdict") != "PINNED"
+    ]
+    if not docs:
+        differences.append("no documents were pooled")
+    return {"verdict": "NOT_PINNED" if differences else "PINNED", "differences": differences}
+
+
 def _no_data(args: argparse.Namespace, reason: str, exc: BaseException, seed: Optional[int]) -> Dict[str, Any]:
     doc = {"schema": SCHEMA, "status": "no-data", "reason": reason, "error": f"{type(exc).__name__}: {exc}", "exception_type": type(exc).__name__,
            "world": args.world, "ticks": args.ticks, "sha": args.sha, "harness_hash": args.harness_hash, "metrics": []}
@@ -101,7 +125,7 @@ def run(args: argparse.Namespace) -> int:
         _write(out, _no_data(args, "metric_error", exc, args.seed))
         return 0
     metrics = result["metrics"] if isinstance(result, dict) else result  # rpg returns a whole document; the harness writes the header itself
-    doc = {"schema": SCHEMA, "status": "ok", "world": args.world, "seed": args.seed, "ticks": args.ticks, "sha": args.sha, "harness_hash": args.harness_hash, "floor_seeds": list(args.seeds), "metrics": list(metrics)}
+    doc = {"schema": SCHEMA, "status": "ok", "world": args.world, "seed": args.seed, "ticks": args.ticks, "sha": args.sha, "harness_hash": args.harness_hash, "floor_seeds": list(args.seeds), "runner": runner_header(run_dir), "metrics": list(metrics)}
     _write(out, doc)
     _write(out.with_name(out.name + ".cost.json"), {"peak_rss_mb": _peak_rss_mb()})
     return 0
@@ -115,7 +139,7 @@ def pool(args: argparse.Namespace) -> int:
     except Exception as exc:  # noqa: BLE001
         _write(Path(args.out), _no_data(args, "metric_error", exc, None))
         return 0
-    _write(Path(args.out), {"schema": SCHEMA, "status": "ok", "world": args.world, "ticks": args.ticks, "sha": args.sha, "harness_hash": args.harness_hash, "floor_seeds": list(args.seeds), "metrics": list(metrics)})
+    _write(Path(args.out), {"schema": SCHEMA, "status": "ok", "world": args.world, "ticks": args.ticks, "sha": args.sha, "harness_hash": args.harness_hash, "floor_seeds": list(args.seeds), "runner": pooled_runner(docs), "metrics": list(metrics)})
     return 0
 
 
