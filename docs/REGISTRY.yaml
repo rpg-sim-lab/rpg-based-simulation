@@ -8183,6 +8183,27 @@
   tags:
   - testing
 - type: ticket
+  path: agent-working/tickets/todos/distributed-workers-experiment/TCK-20261115-DISTRIBUTED-ENGINE-WORKER-ENTRY-POINT-AND-COMPOSE-PROFILE.md
+  ticket_id: TCK-20261115-DISTRIBUTED-ENGINE-WORKER-ENTRY-POINT-AND-COMPOSE-PROFILE
+  title: 'An `engine-worker` container entry point and an opt-in `distributed` compose
+    profile, so the distributed-workers mode can run its
+
+    Collection pool in a container. `docker compose up` with no profile starts exactly
+    today''s services.'
+  tier: standard
+  ticket_type: feature
+  date: '2026-11-15'
+  related_code_areas:
+  - compose.yaml
+  - docker/backend.Dockerfile
+  - .github/workflows/
+  artifact_files: []
+  tags:
+  - platform
+  - architecture
+  - determinism
+  - security
+- type: ticket
   path: agent-working/tickets/todos/github-project-ticket-view/TCK-20261115-PROJECT-SYNC-HOST-TIMER.md
   ticket_id: TCK-20261115-PROJECT-SYNC-HOST-TIMER
   title: '`project_sync.py` P3c: systemd user timer templates that run the sync hourly
@@ -8196,6 +8217,30 @@
   tags:
   - planning
   - delivery
+- type: ticket
+  path: agent-working/tickets/todos/next-generation-engine/TCK-20261115-WORLD-FARM-RUNS-WORLDS-SIDE-BY-SIDE-WITHOUT-CLASHING.md
+  ticket_id: TCK-20261115-WORLD-FARM-RUNS-WORLDS-SIDE-BY-SIDE-WITHOUT-CLASHING
+  title: 'World farm, step one: two worlds run at the same time on one host without
+    sharing an event stream, deleting each other''s lab run
+
+    data, or interleaving a ledger line.'
+  tier: standard
+  ticket_type: feature
+  date: '2026-11-15'
+  related_code_areas:
+  - src/observability/config.py
+  - src/observability/anomaly/worker.py
+  - src/simulation_quality/worker.py
+  - src/lab/orchestrator.py
+  - src/lab/repository.py
+  - src/lab/store.py
+  - tools/test_architecture/run_ledger.py
+  artifact_files: []
+  tags:
+  - platform
+  - architecture
+  - observability
+  - lab-agent
 - type: ticket
   path: agent-working/tickets/done/TCK-20261114-LEAD-BOARD-FOURTH-PASS.md
   ticket_id: TCK-20261114-LEAD-BOARD-FOURTH-PASS
