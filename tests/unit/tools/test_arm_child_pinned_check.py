@@ -19,7 +19,9 @@ import pytest
 
 REPO = Path(__file__).resolve().parents[3]
 ARM_CHILD = REPO / "tools" / "rpg_measure" / "arm_child.py"
-PRE_RECORD = ("5ba65854c", "96db1f5e8")  # both older than b6ac7dabb: no RunConditions model, no pinned_runner module
+# Both older than b6ac7dabb: no RunConditions model, no pinned_runner module. Full shas, because CI fetches them by sha (the unit-infra job's "Fetch the pre-record arm
+# trees" step; tests/static/test_ci_paired_arms_workflow_shape.py holds the two lists equal).
+PRE_RECORD = ("5ba65854c02ec9d132adb985a30b945fa8525d29", "96db1f5e8ddedc685d4bf56aa367cec512045bb6")
 WORLD = "urban_political"
 
 
@@ -40,10 +42,29 @@ def _run_child(tree: Path, out: Path, ticks: int = 0) -> subprocess.CompletedPro
     return subprocess.run([sys.executable, str(ARM_CHILD), WORLD, "42", str(ticks), str(out)], cwd=tree, env=env, capture_output=True, text=True, timeout=300)
 
 
+def _need_commit(sha: str) -> None:
+    """In CI a missing arm tree FAILS (the control would otherwise be skipped and prove nothing); elsewhere a shallow clone may skip."""
+    if _commit_exists(sha):
+        return
+    reason = f"{sha} is not in this clone"
+    if os.environ.get("CI") == "true":
+        pytest.fail(reason + ": the unit-infra job in .github/workflows/test.yml must run its 'Fetch the pre-record arm trees' step before this test, or the control proves nothing")
+    pytest.skip(reason + " (outside CI a shallow clone may lack it; `git fetch origin <sha>`)")
+
+
+def test_a_missing_arm_tree_fails_in_ci_and_skips_elsewhere(monkeypatch):
+    absent = "0" * 40
+    monkeypatch.setenv("CI", "true")
+    with pytest.raises(pytest.fail.Exception, match="Fetch the pre-record arm trees"):
+        _need_commit(absent)
+    monkeypatch.delenv("CI")
+    with pytest.raises(pytest.skip.Exception, match="not in this clone"):
+        _need_commit(absent)
+
+
 @pytest.fixture(scope="module", params=PRE_RECORD)
 def old_tree(request, tmp_path_factory):
-    if not _commit_exists(request.param):
-        pytest.skip(f"{request.param} is not in this clone")
+    _need_commit(request.param)
     return request.param, _archive(request.param, tmp_path_factory.mktemp("arm") / "tree")
 
 

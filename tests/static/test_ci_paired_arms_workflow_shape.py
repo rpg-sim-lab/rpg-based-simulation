@@ -104,3 +104,20 @@ def test_no_step_pipes_a_refusable_command_into_tee():
     for name, job in _wf()["jobs"].items():
         for step in job["steps"]:
             assert "| tee" not in str(step.get("run", "")), f"{name}/{step.get('name')}: the default shell has no pipefail, a pipe hides the exit status"
+
+
+def test_unit_infra_fetches_exactly_the_pre_record_arm_trees_arm_childs_test_declares():
+    """unit-infra checks out at depth 1, so the two old arm trees must be fetched by sha before the tests that archive them run; the step and the test's list are held equal
+    so they cannot drift (TCK-20261115-A-NON-SEQUENTIAL-RUN-IS-REFUSED-BY-THE-GATE-CANDIDATE-PAIRED-ARMS-AND-RPG-MEASURE)."""
+    from tests.unit.tools import test_arm_child_pinned_check as arm_test
+
+    workflow = yaml.safe_load((Path(__file__).resolve().parents[2] / ".github" / "workflows" / "test.yml").read_text(encoding="utf-8"))
+    steps = workflow["jobs"]["unit-infra"]["steps"]
+    fetches = [(i, st) for i, st in enumerate(steps) if str(st.get("name", "")).startswith("Fetch the pre-record arm trees")]
+    assert len(fetches) == 1, "exactly one such step (the base-branch collect-only step has its own, unrelated git fetch)"
+    index, step = fetches[0]
+    assert str(steps[0].get("uses", "")).startswith("actions/checkout@") and index == 1, "right after checkout, before setup-uv"
+    assert str(steps[2].get("uses", "")).startswith("astral-sh/setup-uv@")
+    words = step["run"].split()
+    assert words[:5] == ["git", "fetch", "--no-tags", "--depth=1", "origin"]
+    assert sorted(words[5:]) == sorted(arm_test.PRE_RECORD) and all(len(w) == 40 for w in words[5:])

@@ -134,7 +134,8 @@ def refuse_non_pinned(arm: str, runs: Dict[Key, Dict[str, Any]]) -> None:
 
 def runner_sources(arm: str, runs: Dict[Key, Dict[str, Any]]) -> str:
     """Which check made each arm document PINNED, for the table: ``manifest`` (the kernel's own run_conditions record) or ``derived_from_kernel`` (an arm tree older than the
-    record, classified from its live kernel); a document that names none is ``unrecorded``. Both are accepted; only a document not marked PINNED is refused."""
+    record, classified from its live kernel); a document that names none is ``unrecorded``. Both are accepted; only a document not marked PINNED is refused.
+    ``unrecorded`` = an arm doc with no run_conditions_source (written by an older tool, e.g. a --collected result); accepted only if its runner is PINNED."""
     counts: Dict[str, int] = {}
     for r in runs.values():
         key = str(r.get("run_conditions_source") or "unrecorded")

@@ -66,7 +66,7 @@ This ticket closes the rest of child 6, as scoped by testing-planner and rpg-pla
 3. [x] No run (owner #715 6889952914 item A: "Small, no runs"; rpg-planner withdrew its run ask, 2026-11-15). The proof is AC2's unit test: a threads-built kernel records its `worker_manager`, and `CanonicalStateHasher.get_hash` is unmoved by the record (#918's hash-equal runs already showed writing RunConditions is hash-neutral).
 4. [x] Harness hash: `rpg_gate_run.py` is a `_HARNESS_SOURCES` file, so this ticket moves `harness_hash`. The PR states that, and the gate baseline's drift comparison treats the move as declared (per the gate-baseline rule: hash-moving edits are declared at review).
 5. [x] The existing tests pass: `tests/unit/kernel/test_run_conditions_record.py`, `test_executor_context_parity.py`, the rpg_gate and paired_arms tool tests, and `tests/unit/tools` for known_reds and rpg_gate_baseline.
-6. [ ] `arm_child` runs an arm tree older than b6ac7dabb (pre-record path), proven by one byte-identical base-vs-base repeat, the single short run under owner 6890216919 (base 5ba65854c, one world, seed 42, about 200 ticks, arm plus `-repeat`, local, one process; both arm documents' sha256 recorded here).
+6. [ ] `arm_child` runs an arm tree older than b6ac7dabb (pre-record path), proven by one byte-identical base-vs-base repeat, the single short run approved by the owner at #715 6891712419 (urban_political s42, about 200 ticks, base 5ba65854c, arm then `-repeat`, local, one process, byte-identical required, no second run; both arm documents' sha256 recorded here).
 
 ## Related Tickets
 - TCK-20261109-EPIC-DISTRIBUTED-WORKERS-EXPERIMENT (child 6)
