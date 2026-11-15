@@ -9,7 +9,7 @@ import pytest
 from tools.rpg_measure import paired
 from tools.test_architecture import paired_arms as pa
 
-ENV = {"runner": "ci:ubuntu24-20260101.1.0", "python": "3.13.1", "os": "Linux 6.8.0", "uv_lock": "1" * 64, "uv_lock_source": "tool"}
+ENV = {"runner": "ci:ubuntu24-20260101.1.0", "python": "3.13.1", "os": "Linux 6.8.0", "uv_lock": "1" * 64, "uv_lock_source": "tool", "dists": "d" * 64}
 BASE, NEW = "a" * 40, "b" * 40
 W = "frontier_living_world"
 E8 = paired.env_key(ENV)

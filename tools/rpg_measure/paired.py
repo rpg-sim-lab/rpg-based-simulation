@@ -30,6 +30,7 @@ from __future__ import annotations
 
 import argparse
 import hashlib
+import importlib.metadata
 import json
 import os
 import platform
@@ -114,9 +115,29 @@ def uv_lock_digest(tool_root: Optional[Path] = None, arm_tree: Optional[Path] = 
     return "missing", "none"
 
 
-def run_env(environ: Optional[Dict[str, str]] = None, hostname: Optional[str] = None, tool_root: Optional[Path] = None, arm_tree: Optional[Path] = None) -> Dict[str, str]:
+def installed_dists_digest() -> str:
+    """The sha256 of the sorted, newline-joined ``name==version`` of ``importlib.metadata.distributions()`` in the RUNNING interpreter (``sys.executable``'s environment,
+    the one the arm children inherit): names lowercased and PEP 503 normalised, duplicates kept. ``"empty"`` or ``"unreadable"`` (never a sha256) when the list is empty
+    or cannot be read, so ``env_problem`` refuses it. Why it sits beside ``uv_lock``: one main-checkout .venv can serve many worktrees, so the tool checkout's uv.lock
+    can claim a dependency set the run did not have."""
+    try:
+        rows = []
+        for dist in importlib.metadata.distributions():
+            name, version = dist.metadata["Name"], dist.version
+            if not name or version is None:
+                return "unreadable"
+            rows.append(f"{re.sub(r'[-_.]+', '-', name).lower()}=={version}")
+    except Exception:  # noqa: BLE001 - any failure to read the environment is a refusal, not a crash
+        return "unreadable"
+    if not rows:
+        return "empty"
+    return hashlib.sha256("\n".join(sorted(rows)).encode("utf-8")).hexdigest()
+
+
+def run_env(environ: Optional[Dict[str, str]] = None, hostname: Optional[str] = None, tool_root: Optional[Path] = None, arm_tree: Optional[Path] = None, dists: Optional[str] = None) -> Dict[str, str]:
     """The environment a result was built under (rpg-planner's env8 ruling, 2026-11-15): ``runner`` is ``local:<host>`` or ``ci:<runner image>``, plus the Python
-    micro version, the OS (system + release) and the ``uv.lock`` sha256 with the checkout it came from. The key is its canonical-JSON hash, see ``env_key``."""
+    micro version, the OS (system + release; ``platform.release()`` is the kernel: a kernel update moves every local env8 and drops the local cache, a full base re-run,
+    kept on purpose since a changed kernel is a changed environment), the ``uv.lock`` sha256 with the checkout it came from, and ``dists`` (``installed_dists_digest``). The key is its canonical-JSON hash, see ``env_key``."""
     environ = os.environ if environ is None else environ
     if environ.get("GITHUB_ACTIONS") == "true":
         image = "-".join(part for part in (environ.get("ImageOS"), environ.get("ImageVersion")) if part)
@@ -129,7 +150,7 @@ def run_env(environ: Optional[Dict[str, str]] = None, hostname: Optional[str] = 
     else:
         runner = "local:" + (hostname if hostname is not None else socket.gethostname())
     uv_lock, source = uv_lock_digest(tool_root, arm_tree)
-    return {"runner": runner, "python": platform.python_version(), "os": f"{platform.system()} {platform.release()}", "uv_lock": uv_lock, "uv_lock_source": source}
+    return {"runner": runner, "python": platform.python_version(), "os": f"{platform.system()} {platform.release()}", "uv_lock": uv_lock, "uv_lock_source": source, "dists": installed_dists_digest() if dists is None else dists}
 
 
 UNIDENTIFIED_RUNNER = "ci:unidentified"  # GITHUB_ACTIONS with neither ImageOS nor RUNNER_NAME: refused, never keyed
@@ -147,7 +168,13 @@ def env_problem(env: Dict[str, Any]) -> Optional[str]:
     """Why ``env`` cannot key a result (fail closed): an unknown dependency lock, or a CI runner with neither ``ImageOS`` nor ``RUNNER_NAME``. None when it can."""
     if env.get("runner") == UNIDENTIFIED_RUNNER:
         return "runner is unidentified (GITHUB_ACTIONS is set with neither ImageOS nor RUNNER_NAME): results are not cached or compared under it"
-    return lock_problem(env.get("uv_lock"))
+    bad = lock_problem(env.get("uv_lock"))
+    if bad:
+        return bad
+    dists = env.get("dists")
+    if not (isinstance(dists, str) and _SHA256.match(dists)):
+        return f"dists is {dists!r}, not a sha256: the installed distributions could not be read (or none are installed), so results are not cached or compared under it"
+    return None
 
 
 def env_key(env: Dict[str, str]) -> str:

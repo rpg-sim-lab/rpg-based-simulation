@@ -168,3 +168,56 @@ def test_a_ci_runner_with_neither_imageos_nor_runner_name_is_refused_everywhere(
         pa.run_arm(tmp_path, SHA, "base", "w", 42, 10, tmp_path / "cache2")
     _stage(tmp_path, env)  # and a collected dir that records it
     assert "unidentified" in paired.env_problems(tmp_path, [("base", SHA, [("w", 42)], 10, False)])[0]
+
+
+# ---- dists: the interpreter's installed distributions (testing-planner ruling, rpg-planner-ubuntu review)
+
+class _Dist:
+    def __init__(self, name, version):
+        self.metadata, self.version = {"Name": name}, version
+
+
+def _installed(monkeypatch, *pairs):
+    monkeypatch.setattr(paired.importlib.metadata, "distributions", lambda: [_Dist(n, v) for n, v in pairs])
+
+
+def test_the_same_installed_set_gives_the_same_digest_whatever_its_order_and_spelling(monkeypatch):
+    _installed(monkeypatch, ("Foo_Bar", "1.0"), ("baz", "2.0"))
+    first = paired.installed_dists_digest()
+    _installed(monkeypatch, ("baz", "2.0"), ("foo.bar", "1.0"))  # PEP 503: Foo_Bar == foo.bar
+    assert paired.installed_dists_digest() == first and len(first) == 64
+
+
+def test_adding_or_changing_a_distribution_gives_a_new_key_and_duplicates_count(tmp_path, monkeypatch):
+    _installed(monkeypatch, ("a", "1"))
+    base = paired.env_key(_env(tmp_path))
+    _installed(monkeypatch, ("a", "1"), ("b", "1"))
+    assert paired.env_key(_env(tmp_path)) != base
+    _installed(monkeypatch, ("a", "2"))
+    assert paired.env_key(_env(tmp_path)) != base
+    _installed(monkeypatch, ("a", "1"), ("a", "1"))  # duplicates are kept
+    _installed(monkeypatch, ("a", "1"))
+    one = paired.installed_dists_digest()
+    _installed(monkeypatch, ("a", "1"), ("a", "1"))
+    assert paired.installed_dists_digest() != one
+
+
+def test_an_empty_or_unreadable_distribution_list_is_refused(tmp_path, monkeypatch):
+    _installed(monkeypatch)
+    env = _env(tmp_path)
+    assert env["dists"] == "empty" and "dists" in paired.env_problem(env)
+    monkeypatch.setattr(paired.importlib.metadata, "distributions", lambda: (_ for _ in ()).throw(OSError("no")))
+    assert paired.installed_dists_digest() == "unreadable"
+    _installed(monkeypatch, ("a", None))
+    assert paired.installed_dists_digest() == "unreadable"
+
+
+def test_collected_refuses_an_env_json_whose_dists_differ_from_its_name_or_are_unreadable(tmp_path, monkeypatch):
+    _installed(monkeypatch, ("a", "1"))
+    env = _env(tmp_path, CI)
+    _stage(tmp_path, {**env, "dists": "e" * 64}, name_env=env)  # env.json says other dists than the directory name's env8
+    entries = [("base", SHA, [("w", 42)], 10, False)]
+    assert "not the env8" in paired.env_problems(tmp_path, entries)[0]
+    other = tmp_path / "second"
+    _stage(other, {**env, "dists": "unreadable"})
+    assert "dists" in paired.env_problems(other, entries)[0]

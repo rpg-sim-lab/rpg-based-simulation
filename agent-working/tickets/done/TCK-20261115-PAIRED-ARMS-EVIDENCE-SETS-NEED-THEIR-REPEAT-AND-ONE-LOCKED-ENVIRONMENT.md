@@ -65,6 +65,8 @@ Child of TCK-20261023-PAIRED-ARMS-RUN-OFF-THE-SHARED-HOST: its ACs 6-8 as built,
 ## Implementation Notes
 Commits cb37b8a48 (AC1), 5f754072b (AC2), 3ef5ca62f (AC3), then the fail-closed fix. See the parent ticket's Implementation Notes for the choices (the `evidence` input default; the CI runner label is the image, not RUNNER_NAME).
 
+Review additions (2026-11-15): the CI runner label is the image, else `ci:self-hosted:<RUNNER_NAME>`, else refused (rpg-planner); `dists` (sha256 of the running interpreter's installed distributions, PEP 503 names, duplicates kept) joins the env object beside uv_lock, fail closed when empty or unreadable (testing-planner ruling on rpg-planner-ubuntu's review; rpg-planner to confirm it amends env8); the `os` field is the kernel release on purpose.
+
 ## Test Summary
 tests/unit/tools/test_paired_env_key.py, test_paired_arms.py, test_rpg_measure.py, test_rpg_measure_collected.py and tests/static/test_ci_paired_arms_workflow_shape.py pass; no run of any kind.
 
