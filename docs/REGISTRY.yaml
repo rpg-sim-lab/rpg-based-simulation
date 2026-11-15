@@ -8117,6 +8117,27 @@
   - content
   last_verified: '2026-10-09'
 - type: ticket
+  path: agent-working/tickets/done/TCK-20261115-A-NON-SEQUENTIAL-RUN-IS-REFUSED-BY-THE-GATE-CANDIDATE-PAIRED-ARMS-AND-RPG-MEASURE.md
+  ticket_id: TCK-20261115-A-NON-SEQUENTIAL-RUN-IS-REFUSED-BY-THE-GATE-CANDIDATE-PAIRED-ARMS-AND-RPG-MEASURE
+  title: A run on a non-sequential executor is refused by the gate candidate, the
+    paired arms and rpg_measure, and its manifest says which worker manager it ran
+    on
+  tier: standard
+  ticket_type: feature
+  date: '2026-11-15'
+  related_code_areas:
+  - tools/test_architecture/{rpg_gate_run,rpg_gate_candidate,paired_arms,pinned_runner}.py
+  - tools/rpg_measure/{arm_child,paired}.py
+  - src/observability/reporting/artifact_repository.py (RunConditions), src/engine/kernel.py
+    (the one write)
+  artifact_files:
+  - agent-working/stored_artifacts/TCK-20261115-A-NON-SEQUENTIAL-RUN-IS-REFUSED-BY-THE-GATE-CANDIDATE-PAIRED-ARMS-AND-RPG-MEASURE/investigation.md
+  - agent-working/stored_artifacts/TCK-20261115-A-NON-SEQUENTIAL-RUN-IS-REFUSED-BY-THE-GATE-CANDIDATE-PAIRED-ARMS-AND-RPG-MEASURE/plan.md
+  - agent-working/stored_artifacts/TCK-20261115-A-NON-SEQUENTIAL-RUN-IS-REFUSED-BY-THE-GATE-CANDIDATE-PAIRED-ARMS-AND-RPG-MEASURE/test_plan.md
+  tags:
+  - testing
+  - architecture
+- type: ticket
   path: agent-working/tickets/done/TCK-20261115-LEAD-BOARD-FIFTH-PASS.md
   ticket_id: TCK-20261115-LEAD-BOARD-FIFTH-PASS
   title: The lead board records the owner's 2026-11-15 epic decisions in one place,
@@ -8222,6 +8243,19 @@
   tags:
   - planning
   - delivery
+- type: ticket
+  path: agent-working/tickets/done/TCK-20261115-THE-SLOW-LANE-LOG-SHOWS-EACH-TESTS-WALL-TIME.md
+  ticket_id: TCK-20261115-THE-SLOW-LANE-LOG-SHOWS-EACH-TESTS-WALL-TIME
+  title: The slow-regression log shows each slow test's wall time, so a "under 540
+    s" rule can be checked from CI
+  tier: hotfix
+  ticket_type: chore
+  date: '2026-11-15'
+  related_code_areas:
+  - .github/workflows/slow-regression.yml
+  artifact_files: []
+  tags:
+  - testing
 - type: ticket
   path: agent-working/tickets/done/TCK-20261115-WORLD-FARM-RUNS-WORLDS-SIDE-BY-SIDE-WITHOUT-CLASHING.md
   ticket_id: TCK-20261115-WORLD-FARM-RUNS-WORLDS-SIDE-BY-SIDE-WITHOUT-CLASHING
@@ -9376,6 +9410,25 @@
   tags:
   - economy
 - type: ticket
+  path: agent-working/tickets/done/TCK-20261109-AN-ADVISORY-GUARD-LISTS-TESTS-WHOSE-SUBJECT-SYSTEM-THE-PIPELINE-NEVER-RUNS.md
+  ticket_id: TCK-20261109-AN-ADVISORY-GUARD-LISTS-TESTS-WHOSE-SUBJECT-SYSTEM-THE-PIPELINE-NEVER-RUNS
+  title: An advisory guard lists src/systems classes the authoritative pipeline never
+    reaches, and the tests that import them without a stated reason, so a fix's regression
+    test is seen to prove a path that does not run
+  tier: standard
+  ticket_type: feature
+  date: '2026-11-09'
+  related_code_areas:
+  - src/engine/pipeline.py, src/systems/**
+  - tools/test_architecture/, tests/architecture/
+  artifact_files:
+  - agent-working/stored_artifacts/TCK-20261109-AN-ADVISORY-GUARD-LISTS-TESTS-WHOSE-SUBJECT-SYSTEM-THE-PIPELINE-NEVER-RUNS/investigation.md
+  - agent-working/stored_artifacts/TCK-20261109-AN-ADVISORY-GUARD-LISTS-TESTS-WHOSE-SUBJECT-SYSTEM-THE-PIPELINE-NEVER-RUNS/plan.md
+  - agent-working/stored_artifacts/TCK-20261109-AN-ADVISORY-GUARD-LISTS-TESTS-WHOSE-SUBJECT-SYSTEM-THE-PIPELINE-NEVER-RUNS/test_plan.md
+  tags:
+  - testing
+  - regression
+- type: ticket
   path: agent-working/tickets/done/TCK-20261109-ANY-SOCIAL-UPDATE-WIPES-THE-REJECTION-COUNTS-IT-DOES-NOT-NAME.md
   ticket_id: TCK-20261109-ANY-SOCIAL-UPDATE-WIPES-THE-REJECTION-COUNTS-IT-DOES-NOT-NAME
   title: Any social update wipes the rejection counts it does not name, so recruitment's
@@ -9518,6 +9571,20 @@
   - determinism
   - planning
 - type: ticket
+  path: agent-working/tickets/done/TCK-20261109-ONE-MUTATION-RUN-MEASURES-HOW-MANY-INJECTED-FAULTS-THE-FUSED-STRATEGIC-PASS-TESTS-CATCH.md
+  ticket_id: TCK-20261109-ONE-MUTATION-RUN-MEASURES-HOW-MANY-INJECTED-FAULTS-THE-FUSED-STRATEGIC-PASS-TESTS-CATCH
+  title: One report-only mutmut run measures how many injected faults in fused_strategic_pass
+    its current tests catch, recorded as a mutation baseline under tests/mutation/baselines/
+  tier: hotfix
+  ticket_type: chore
+  date: '2026-11-09'
+  related_code_areas:
+  - src/systems/strategic_systems/intelligence.py
+  - tests/mutation/baselines/
+  artifact_files: []
+  tags:
+  - testing
+- type: ticket
   path: agent-working/tickets/done/TCK-20261109-README-NAMES-A-CHECKPOINT-SEED-DEFECT-THAT-IS-FIXED.md
   ticket_id: TCK-20261109-README-NAMES-A-CHECKPOINT-SEED-DEFECT-THAT-IS-FIXED
   title: 'The README still lists the restored-checkpoint seed-0 defect as open, but
@@ -9572,22 +9639,6 @@
   - src/engine/tactical.py, src/engine/tactical_objective.py (the need path)
   artifact_files: []
   tags: []
-- type: ticket
-  path: agent-working/tickets/todos/TCK-20261109-AN-ADVISORY-GUARD-LISTS-TESTS-WHOSE-SUBJECT-SYSTEM-THE-PIPELINE-NEVER-RUNS.md
-  ticket_id: TCK-20261109-AN-ADVISORY-GUARD-LISTS-TESTS-WHOSE-SUBJECT-SYSTEM-THE-PIPELINE-NEVER-RUNS
-  title: An advisory guard lists src/systems classes the authoritative pipeline never
-    reaches, and the tests that import them without a stated reason, so a fix's regression
-    test is seen to prove a path that does not run
-  tier: standard
-  ticket_type: feature
-  date: '2026-11-09'
-  related_code_areas:
-  - src/engine/pipeline.py, src/systems/**
-  - tools/test_architecture/, tests/architecture/
-  artifact_files: []
-  tags:
-  - testing
-  - regression
 - type: ticket
   path: agent-working/tickets/todos/TCK-20261109-AN-INN-MEAL-DOES-NOT-STAMP-LAST-MEAL-TICK.md
   ticket_id: TCK-20261109-AN-INN-MEAL-DOES-NOT-STAMP-LAST-MEAL-TICK
@@ -9741,20 +9792,6 @@
   related_code_areas: []
   artifact_files: []
   tags: []
-- type: ticket
-  path: agent-working/tickets/todos/TCK-20261109-ONE-MUTATION-RUN-MEASURES-HOW-MANY-INJECTED-FAULTS-THE-FUSED-STRATEGIC-PASS-TESTS-CATCH.md
-  ticket_id: TCK-20261109-ONE-MUTATION-RUN-MEASURES-HOW-MANY-INJECTED-FAULTS-THE-FUSED-STRATEGIC-PASS-TESTS-CATCH
-  title: One report-only mutmut run measures how many injected faults in fused_strategic_pass
-    its current tests catch, recorded as a mutation baseline under tests/mutation/baselines/
-  tier: hotfix
-  ticket_type: chore
-  date: '2026-11-09'
-  related_code_areas:
-  - src/systems/strategic_systems/intelligence.py
-  - tests/mutation/baselines/
-  artifact_files: []
-  tags:
-  - testing
 - type: ticket
   path: agent-working/tickets/todos/TCK-20261109-RECRUITMENT-FATIGUE-HAS-NO-RECENT-WINDOW.md
   ticket_id: TCK-20261109-RECRUITMENT-FATIGUE-HAS-NO-RECENT-WINDOW
@@ -10393,7 +10430,8 @@
   related_code_areas:
   - to_canonical_dict
   - src/core/strategic.py, src/core/cognition.py, src/core/self_model.py, src/core/models/
-  artifact_files: []
+  artifact_files:
+  - agent-working/stored_artifacts/TCK-20261103-STATE-DIGEST-MAY-OMIT-FIELDS-THAT-DECISIONS-READ/digest_coverage_report.md
   tags: []
 - type: ticket
   path: agent-working/tickets/todos/TCK-20261103-TWO-UNOWNED-V3-STARVATIONS-APPEARED-ON-MAIN-WITH-THE-RETREAT-FIX.md
