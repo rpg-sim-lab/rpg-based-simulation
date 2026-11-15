@@ -37,6 +37,38 @@ from src.lab.orchestrator import ScenarioLabOrchestrator
 logger = logging.getLogger(__name__)
 
 
+def _variant_lab_orchestrator(
+    mutation_lab_dir: Path,
+    mutation_lab_id: str,
+    var_manifest: VariantManifest,
+    base_ids: tuple[str, str],
+    experiment_repo: ExperimentRepository,
+) -> ScenarioLabOrchestrator:
+    """The lab orchestrator for one variant: transient isolated repos, its own lab run repo, and a run-id prefix unique per mutation lab and variant.
+
+    ``base_ids`` is the base (world id, scenario id).
+    """
+    world_id, scenario_id = base_ids
+    var_id = var_manifest.variant_id
+    temp_repo_dir = mutation_lab_dir / "temp_repos" / var_id
+    temp_worlds_dir = temp_repo_dir / "worlds"
+    temp_scenarios_dir = temp_repo_dir / "scenarios"
+
+    (temp_worlds_dir / world_id).mkdir(parents=True, exist_ok=True)
+    (temp_scenarios_dir / scenario_id).mkdir(parents=True, exist_ok=True)
+
+    shutil.copy2(var_manifest.world_spec_path, temp_worlds_dir / world_id / "world.yaml")
+    shutil.copy2(var_manifest.scenario_spec_path, temp_scenarios_dir / scenario_id / "scenario.yaml")
+
+    return ScenarioLabOrchestrator(
+        world_repo=WorldRepository(temp_worlds_dir),
+        scenario_repo=ScenarioRepository(temp_scenarios_dir),
+        experiment_repo=experiment_repo,
+        lab_run_repo=LabRunRepository(mutation_lab_dir / "variants" / var_id),  # isolated lab run repo: variants/{var_id}/lab_run
+        run_id_prefix=f"{mutation_lab_id}_{var_id}",
+    )
+
+
 class MutationLabOrchestrator:
     """
     Central workflow orchestrator for Mutation and Balance sweeps.
@@ -178,31 +210,8 @@ class MutationLabOrchestrator:
                 }
                 continue
 
-            # Create transient isolated repos for world compiler & scenario loader compatibility
-            temp_repo_dir = mutation_lab_dir / "temp_repos" / var_id
-            temp_worlds_dir = temp_repo_dir / "worlds"
-            temp_scenarios_dir = temp_repo_dir / "scenarios"
-
-            (temp_worlds_dir / base_world.world_id).mkdir(parents=True, exist_ok=True)
-            (temp_scenarios_dir / base_scenario.scenario_id).mkdir(parents=True, exist_ok=True)
-
-            shutil.copy2(var_manifest.world_spec_path, temp_worlds_dir / base_world.world_id / "world.yaml")
-            shutil.copy2(var_manifest.scenario_spec_path, temp_scenarios_dir / base_scenario.scenario_id / "scenario.yaml")
-
-            # Instantiate virtual repositories
-            world_repo_var = WorldRepository(temp_worlds_dir)
-            scenario_repo_var = ScenarioRepository(temp_scenarios_dir)
-            
-            # Isolated lab run repo for this variant under: variants/{var_id}/lab_run
-            var_lab_run_dir = variants_dir / var_id
-            lab_run_repo_var = LabRunRepository(var_lab_run_dir)
-
-            orchestrator = ScenarioLabOrchestrator(
-                world_repo=world_repo_var,
-                scenario_repo=scenario_repo_var,
-                experiment_repo=self.experiment_repo,
-                lab_run_repo=lab_run_repo_var,
-                run_id_prefix=f"{mutation_lab_id}_{var_id}",  # unique per mutation lab and variant: no shared data/runs dir
+            orchestrator = _variant_lab_orchestrator(
+                mutation_lab_dir, mutation_lab_id, var_manifest, (base_world.world_id, base_scenario.scenario_id), self.experiment_repo
             )
 
             try:
