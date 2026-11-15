@@ -108,6 +108,7 @@ _(none yet — filed as a finding, not yet investigated)_
 ## Assumptions / Open Questions
 - Which of the two candidate explanations (optimistic-first-contact-by-design vs. a real
   under-weighting defect) is correct is not yet known — check before assuming either.
+- 2026-11-14 (rpg-planner): Moved under TCK-20261109-MILESTONE-1-KINDS-BY-PROPERTIES-EPIC by the owner (#715 6875278006) when TCK-20261007-EPIC-DECISION-CORE-LIVE-MOTIVATION-AND-HONEST-FIGHT-OR-FLEE-INPUTS closed. Re-scoped at dispatch: measured in M1-COARSE-PROPERTY-BANDS-AND-THE-APPRAISAL. Decision 62 replaces faction hostility for monsters, so re-check the faction-authored mismatch premise first.
 
 ## Implementation Notes
 _(none — filed as a finding, not yet investigated)_
