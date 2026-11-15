@@ -70,7 +70,7 @@ Since TCK-20261112-SEARCH-SERVER-PER-WORKTREE-INDEX-AND-BUILD-MEMORY-GUARD (#888
 ## Assumptions / Open Questions
 - The main checkout's own files may be on a different branch than the index build. The manifest records mtimes, not a ref, so "stale" still means "the files changed since the build". That is the intended meaning.
 - Run through the native implement-ticket pipeline (TCK-20260930-NATIVE-PORT-SMALL-TICKET-NATIVE-RUN's run plan). Its first attempt carries a deliberate probe tag, and that tag is removed before the pass run.
-- AC3 root rule decided by agent-working-planner on 2026-11-15, option (b), after the native pass run wf_d6a35058-f5d stopped at the plan gate (NEEDS_HUMAN_INPUT) to ask. Option (a), keeping the CLI's own-index rule with a stated reason, was not taken because it leaves two rules that can drift.
+- AC3 root rule decided by the owner on 2026-11-15, option (b) (#715 6894176292), after the native pass run wf_d6a35058-f5d stopped at the plan gate (NEEDS_HUMAN_INPUT, gv-6b41f8f548964201) to ask. Option (a), keeping the CLI's own-index rule with a stated reason, was not taken because it leaves two rules that can drift.
 
 ## Implementation Notes
 (to be filled by the implementer)
