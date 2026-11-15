@@ -138,11 +138,19 @@ def test_the_plan_refuses_a_commit_no_repo_branch_contains_before_it_writes_the_
     assert step["env"] == {"BASE_SHA": "${{ inputs.base_sha }}", "NEW_SHA": "${{ inputs.new_sha }}"}
     run = step["run"]
     assert "${{" not in run, "inputs reach the script only through env"
-    assert "--filter=blob:none" in run and "refs/heads/*" in run and "--no-tags" in run
+    assert "--filter=blob:none" in run and "--no-tags" in run
+    assert "'+refs/heads/*:refs/remotes/origin/*'" in run, "every branch, mapped to remote-tracking refs, is the whole fetch"
+    assert "refs/pull" not in run, "pull refs stay outside the fetch: a fork pull request's commit must not count as contained"
     assert "--unshallow" in run, "the checkout is depth 1, which cannot prove containment"
     assert "cat-file -e" in run and "^{commit}" in run
     assert "branch -r --contains" in run, "a commit that exists locally but sits on no branch must still be refused"
     assert run.count("exit 1") >= 3
+
+
+def test_the_header_comment_states_the_hardening_and_what_it_does_not_guard():
+    header = _PATH.read_text(encoding="utf-8").split("\non:", 1)[0]
+    assert "persist-credentials: false" in header and "refuses a base/new sha that" in header
+    assert "push access" in header and "other workflows' checkouts still persist" in header
 
 
 def test_the_arms_job_still_fetches_the_two_shas_anonymously_by_sha():

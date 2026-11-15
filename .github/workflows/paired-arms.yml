@@ -12,6 +12,9 @@ name: Paired arms (off-host)
 #   - aggregate: downloads every artifact, refuses a set whose jobs differ in Python version or OS (DET-PORT-0), merges them into one paired cache root and calls
 #     paired.py --collected. An off-host result is never compared with a local one, except in the ticket's one-time byte-equality proof (AC1).
 # Run it after rpg's --collected option is on main; the aggregate fails clearly if it is not. The run-ledger row (T1) is added when T1 is on main.
+# Hardening (TCK-20261115-PAIRED-ARMS-RUNS-ONLY-COMMITS-ON-A-REPO-BRANCH): checkouts keep no token (persist-credentials: false), and plan refuses a base/new sha that
+# no repo branch contains, before any arm runs. Not guarded: a collaborator with push access can put any commit on a branch; other workflows' checkouts still persist
+# the token; a sha reachable only through refs/pull/* (a fork pull request, or a branch that was deleted) is refused on purpose.
 
 on:
   workflow_dispatch:
