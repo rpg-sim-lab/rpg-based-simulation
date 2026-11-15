@@ -69,6 +69,8 @@ Ran 2026-11-09 11:28:30Z to 12:58:29Z on origin/main 1fb40ac76 (after C), mutmut
 ## Test Summary
 Unmutated selection: 567 passed, 3 xfailed. Positive control: the first killed mutants in the run.
 
+2026-11-15: The baseline-record schema test (tests/unit/tools/test_mutation_baseline_records.py, run by the unit-infra lane) was not run at close and failed on PR #924: the record lacked `target_selection` and `counts.total`. The record was conformed with true values only, no result changed: `counts.total` = 105 (tested = killed + survived + timeout + suspicious, with a `total_note`), and `target_selection` (owner #715 6736269441 item E, 2026-11-09, reason from this ticket, exclusions: lines 396-707 not reached at the cap, mutants outside the function).
+
 ## Files Changed
 - tests/mutation/baselines/src_systems_strategic_intelligence_fused_v1.json (new)
 

@@ -53,6 +53,8 @@
   "counts": {
     "mutants_in_function_range": 452,
     "tested": 105,
+    "total": 105,
+    "total_note": "total = tested mutants (the schema's sum); 452 are in the function's range, 347 not reached at the cap",
     "not_reached": 347,
     "killed": 61,
     "survived": 44,
@@ -69,6 +71,21 @@
     "timeout": "none",
     "suspicious": "none",
     "equivalent": "mutmut does not classify equivalent mutants; none were classified here"
+  },
+  "target_selection": {
+    "confirmed_by": "owner, #715 6736269441 item E (answering the fragile hot-function proposal 6736224900)",
+    "confirmed_on": "2026-11-09",
+    "reason": "TCK-20261109-ONE-MUTATION-RUN-MEASURES-HOW-MANY-INJECTED-FAULTS-THE-FUSED-STRATEGIC-PASS-TESTS-CATCH asks how many injected faults in fused_strategic_pass its current tests catch; the function is the fragile hot function of the owner's proposal, whose fast path the C characterisation tests (#852) pin and which this record measures 'after C'",
+    "excluded": [
+      {
+        "path": "src/systems/strategic_systems/intelligence.py:396-707 (fused_strategic_pass)",
+        "why": "347 of the 452 in-range mutants were not reached: the run stopped at the 90-minute cap rpg-planner set for the HOST FREE, and mutmut runs in source order (run.kind partial)"
+      },
+      {
+        "path": "mutants outside fused_strategic_pass (128 skipped, 650 not reached)",
+        "why": "outside the target by design: only mutants inside the function's line range 301-707 are kept"
+      }
+    ]
   },
   "stale_after": {
     "target_sha256_changes": true,
