@@ -3,6 +3,19 @@
 Epic `TCK-20261109-EPIC-NEXT-GENERATION-ENGINE`, filed by architecture-planner-u24, 2026-11-09. Owner decisions and delivery
 model: #715 6735575831. Scoping only; no implementation authorised.
 
+## Owner decision 2026-11-15 (#715 6889952914, owner's words 6889947724)
+
+This supersedes any older gate text below where they differ.
+- **Child 3, world farm: unblocked.** Owner item B: platform-planner (ubuntu) files and builds it. No `src/engine` change. Its
+  filing is recorded in item 1.
+- **Child 1, stage 0 re-measure: unblocked.** Owner item C exempts it from the perf pause (#715 6556861718). The exemption is
+  measurement only and is recorded in `TCK-20261101-PERF-BENCH-KNOWN-REDS-PARKED-DURING-THE-PAUSE`. perf-planner filed it as
+  `TCK-20261115-PER-PHASE-TICK-COST-AFTER-THE-HOSTILITY-AND-COOPERATION-FIXES`. It takes the heavy slot in turn through the leads.
+  The pause stays for everything else.
+- **Still paused:**
+  - the languages/architecture re-design (owner, 2026-11-14, #715 6875162764): no stage 3 cut, no contract spec draft 3;
+  - all `src/engine` work under this epic until after Milestone 1.
+
 ## Order
 
 1. **World farm** (to be cut by platform-planner, the ubuntu seat, as filed; lead-planner-u24 may reassign it to platform-planner-u24)
@@ -12,14 +25,16 @@ model: #715 6735575831. Scoping only; no implementation authorised.
 2. `TCK-20261109-NEXT-GENERATION-ENGINE-ADR`: **DONE 2026-11-09**, accepted by the owner (#715 6742854335) and adopted as `docs/architecture/next_generation_engine_adr.md`. Was: lead-planner (ubuntu) reviews it; it then goes to the owner for acceptance. It depends
    only on that review and the owner's yes (ubuntu review R5). It stays separate from `TCK-20261109-DISTRIBUTED-WORKERS-ADR-AMENDMENT`
    (R1: split).
-3. `TCK-20261109-NEXT-GENERATION-ENGINE-ACCESS-AUDIT` (stage 1): plan done (`next_generation_engine_access_audit_plan.md`); code by
-   rpg-implementer-2, sequenced by rpg-planner (#715 6743082252). Code after 2, after the three RPG heads (LOW-HP,
-   hardening, hit-wake) are pushed, in a gap rpg-planner names, under rpg-planner's conditions in the ticket.
-4. `TCK-20261109-NEXT-GENERATION-ENGINE-CONTRACT-SPEC`: architecture. Draft 1 written (#715 6743047506); draft 2 with 1's and 3's results.
+3. `TCK-20261109-NEXT-GENERATION-ENGINE-ACCESS-AUDIT` (stage 1): **DONE**, merged as #863 (`5c6990e51`). The report is
+   `docs/plans/architecture/next_generation_engine_access_audit_report.md`. Code by rpg-implementer-2, sequenced by rpg-planner
+   (#715 6743082252).
+4. `TCK-20261109-NEXT-GENERATION-ENGINE-CONTRACT-SPEC`: architecture. Draft 2 is written with 3's results and approved by ubuntu
+   (`ea0446ffe`, #715 6785056608). Draft 3 waits on child 1's costs, and on the re-design pause lifting.
 5. **Stages 3 to 5:** not cut. They come after M1 completes and 4 is accepted. The parallel executor also needs Gate B.
-   - **Stage 3 entry condition:** `src/systems/strategic_systems/intelligence.py` is off the hands-off list (the COMBAT-RETREAT P2),
-     because the §8 slice is `fused_strategic_pass` (ubuntu review A-n2).
-   - Stage 3 is cut only after rpg-planner's explicit sign-off on the spec's §8 (A-n1).
+   - **Stage 3 entry condition: CLEARED 2026-11-12.** rpg-planner took `src/systems/strategic_systems/intelligence.py` off its
+     hands-off list (spec §8). The §8 slice is `fused_strategic_pass` (ubuntu review A-n2).
+   - rpg-planner signed off on the spec's §8 (A-n1) on 2026-11-11.
+   - Stage 3 is still not cut. That waits on M1, the re-design pause, and child 1's costs for the slice order.
 
 ## Rules
 

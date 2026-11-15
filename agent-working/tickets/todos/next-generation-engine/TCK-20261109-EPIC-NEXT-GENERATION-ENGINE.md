@@ -70,11 +70,11 @@ Scoping only. Nothing is built under this epic until child 0 (the ADR) is accept
 | # | Child | Owner | Filed | Gate |
 |---|---|---|---|---|
 | 0 | `TCK-20261109-NEXT-GENERATION-ENGINE-ADR` | lead-planner (ubuntu); kept separate from the distributed-workers ADR (`TCK-20261109-DISTRIBUTED-WORKERS-ADR-AMENDMENT`), which alone edits the "one process" bullet (review R1) | yes | ubuntu's review, then the owner's acceptance (review R5) |
-| 1 | stage 0: re-measure after H1 (#751) and H2 (#771) on a quiet host; per-phase ms with denominators; Resolution profile incl. `fused_strategic_pass`. Measurement only | perf-planner | to be cut by perf-planner | none |
-| 2 | `TCK-20261109-NEXT-GENERATION-ENGINE-ACCESS-AUDIT`: stage 1, declarations plus a shadow access audit; observe-only, off by default, hash-neutral; rpg-planner's conditions (2026-11-09) in the ticket | architecture's implementer, reviewed by rpg-planner (the implementer's write scope must grow first) | yes | design now; code after child 0, after the three RPG heads are pushed, in a gap rpg-planner names |
-| 3 | world farm: a Redis stream per world (`SIM_STREAM_NAME`), unique lab run ids (`src/lab/orchestrator.py:171-174`), process-safe ledger appends, N worlds per host measured | platform-planner; perf-planner for the measurement | to be cut by platform-planner | none (first in priority) |
-| 4 | `TCK-20261109-NEXT-GENERATION-ENGINE-CONTRACT-SPEC` | architecture | yes | child 0 accepted; children 1 and 2 results |
-| 5 | stages 3 to 5: serial prototype (`fused_strategic_pass` slice), migration, measured parallel executor | rpg-planner; perf-planner for the executor | **not cut** | M1 complete; child 4 accepted; for the executor, Gate B (C-10, PERF-M6-T05) |
+| 1 | stage 0: re-measure after H1 (#751) and H2 (#771) on a quiet host; per-phase ms with denominators; Resolution profile incl. `fused_strategic_pass`. Measurement only | perf-planner | filed by perf-planner as `TCK-20261115-PER-PHASE-TICK-COST-AFTER-THE-HOSTILITY-AND-COOPERATION-FIXES` | **unblocked** (owner #715 6889952914, item C: perf-pause exemption, measurement only; heavy slot in turn through the leads) |
+| 2 | `TCK-20261109-NEXT-GENERATION-ENGINE-ACCESS-AUDIT`: stage 1, declarations plus a shadow access audit; observe-only, off by default, hash-neutral; rpg-planner's conditions (2026-11-09) in the ticket | rpg-implementer-2, sequenced by rpg-planner (#715 6743082252) | yes | **DONE**, merged as #863 (`5c6990e51`) |
+| 3 | world farm: a Redis stream per world (`SIM_STREAM_NAME`), unique lab run ids (`src/lab/orchestrator.py:171-174`), process-safe ledger appends, N worlds per host measured | platform-planner (ubuntu) files and builds; perf-planner for the N-worlds measurement | filed by platform-planner as `TCK-20261115-WORLD-FARM-RUNS-WORLDS-SIDE-BY-SIDE-WITHOUT-CLASHING` | **unblocked** (owner #715 6889952914, item B; no `src/engine` change; first in priority) |
+| 4 | `TCK-20261109-NEXT-GENERATION-ENGINE-CONTRACT-SPEC` | architecture | yes | draft 2 approved by ubuntu (`ea0446ffe`); draft 3 waits on child 1's costs and on the re-design pause lifting |
+| 5 | stages 3 to 5: serial prototype (`fused_strategic_pass` slice), migration, measured parallel executor | rpg-planner; perf-planner for the executor | **not cut** | M1 complete; child 4 accepted; the re-design pause lifted; for the executor, Gate B (C-10, PERF-M6-T05). Stage 3's entry condition (`intelligence.py` off the hands-off list) cleared 2026-11-12 |
 
 **Decisions this runs into** (feasibility review §10):
 - `docs/architecture/system_overview.md` "What is deliberately not distributed": the single writer is kept, so this epic does not
@@ -135,6 +135,15 @@ Scoping only. Nothing is built under this epic until child 0 (the ADR) is accept
 
 ## Implementation Notes
 Filing rides in a later implementation PR on this track (owner rule, #715 6697748243), not a PR of its own.
+
+**Owner decision 2026-11-15 (#715 6889952914; owner's words 6889947724).**
+- Item B: platform-planner (ubuntu) files and builds child 3, the world farm, with no `src/engine` change.
+- Item C: child 1, the stage 0 re-measure, is exempt from the perf pause. It is measurement only, and the exemption is recorded in
+  `TCK-20261101-PERF-BENCH-KNOWN-REDS-PARKED-DURING-THE-PAUSE`.
+- Still paused:
+  - the languages/architecture re-design (owner, 2026-11-14, #715 6875162764);
+  - all `src/engine` work under this epic until after Milestone 1.
+- SEQUENCE.md carries the same record.
 
 ## Test Summary
 Not applicable at epic level.
