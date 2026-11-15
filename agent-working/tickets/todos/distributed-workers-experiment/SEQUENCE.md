@@ -7,13 +7,14 @@ Epic `TCK-20261109-EPIC-DISTRIBUTED-WORKERS-EXPERIMENT`, filed by architecture-p
 
 This supersedes any older gate text below where they differ.
 - **Child 6, the evidence guard: file and build** (owner item A). testing-planner scopes it; rpg-planner does `rpg_measure` and the
-  manifest field. It is small, with no runs. It is the one exception to the owner review gate in Rules.
+  manifest field. It is small, with no runs. rpg-planner's ruling: `RunConditions` gets an Optional `worker_manager` qualname,
+  which testing-planner builds under item A. It is the one exception to the owner review gate in Rules.
 - **Child 2, the packet-cost measurement, cheap form: exempt from the perf pause** (owner item C, #715 6556861718). It is
   measurement only, and the exemption is recorded in `TCK-20261101-PERF-BENCH-KNOWN-REDS-PARKED-DURING-THE-PAUSE`. perf-planner
   filed it as `TCK-20261115-WHAT-A-WORKER-CHUNK-COSTS-TO-ENCODE-AND-SHIP`. It takes the heavy slot in turn through the leads. The
   full (container) form is not covered.
 - **Children 3, 4 and 5: filed as tickets only, nothing built** (owner item D):
-  - child 3, the remote worker manager: rpg-planner;
+  - child 3, the remote worker manager: rpg-planner, filed as `TCK-20261115-DISTRIBUTED-WORKERS-REMOTE-WORKER-MANAGER`;
   - child 4, the engine-worker entry point and compose profile: platform-planner (ubuntu); recorded under Not cut yet;
   - child 5, the contract docs: through the ubuntu lead.
   The owner's whole-plan review (#715 6731938042) still gates their implementation.
@@ -32,7 +33,9 @@ This supersedes any older gate text below where they differ.
 ## Not cut yet
 
 Children 2-6 (packet-cost measurement, remote executor, worker entry point and compose profile, contract docs, evidence guard) are cut by their
-owning planners after 1 lands; the epic's table gives each one's owner, cost, what it leaves out and its gate.
+owning planners after 1 lands; the epic's table gives each one's owner, cost, what it leaves out and its gate. **Child 3 is filed
+2026-11-15 as a ticket only:** `TCK-20261115-DISTRIBUTED-WORKERS-REMOTE-WORKER-MANAGER` (rpg-planner; owner #715 6889952914, item
+D). Nothing is built. It is gated by the owner review gate below and by the `src/engine` pause until after Milestone 1.
 
 ## Rules
 
