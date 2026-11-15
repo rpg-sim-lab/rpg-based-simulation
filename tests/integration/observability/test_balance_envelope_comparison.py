@@ -10,6 +10,13 @@ from src.observability.reporting.run_set_repository import RunSetArtifactReposit
 from src.observability.reporting.baseline_generator import BaselineGenerator
 from src.observability.reporting.baseline_comparator import BaselineComparator
 from src.cli.entry import _run_compare_run, _run_compare_sweep
+from tests.named_run_dirs import remove_named_run_dirs  # noqa: F401
+
+# Run ids this module's tests name, removed by name after each test (see tests/named_run_dirs.py).
+RUN_ID_PREFIXES = {
+    "test_balance_envelope_integration_and_cli_flow": ('test_env_compare_sweep',),
+}
+pytestmark = pytest.mark.usefixtures("remove_named_run_dirs")
 
 
 def test_balance_envelope_integration_and_cli_flow(tmp_path):

@@ -8257,6 +8257,33 @@
   tags:
   - testing
 - type: ticket
+  path: agent-working/tickets/done/TCK-20261115-WORLD-FARM-RUNS-WORLDS-SIDE-BY-SIDE-WITHOUT-CLASHING.md
+  ticket_id: TCK-20261115-WORLD-FARM-RUNS-WORLDS-SIDE-BY-SIDE-WITHOUT-CLASHING
+  title: 'World farm, step one: two worlds run at the same time on one host without
+    sharing an event stream, deleting each other''s lab run
+
+    data, or interleaving a ledger line.'
+  tier: standard
+  ticket_type: feature
+  date: '2026-11-15'
+  related_code_areas:
+  - src/observability/config.py
+  - src/observability/anomaly/worker.py
+  - src/simulation_quality/worker.py
+  - src/lab/orchestrator.py
+  - src/lab/repository.py
+  - src/lab/store.py
+  - tools/test_architecture/run_ledger.py
+  artifact_files:
+  - agent-working/stored_artifacts/TCK-20261115-WORLD-FARM-RUNS-WORLDS-SIDE-BY-SIDE-WITHOUT-CLASHING/investigation.md
+  - agent-working/stored_artifacts/TCK-20261115-WORLD-FARM-RUNS-WORLDS-SIDE-BY-SIDE-WITHOUT-CLASHING/plan.md
+  - agent-working/stored_artifacts/TCK-20261115-WORLD-FARM-RUNS-WORLDS-SIDE-BY-SIDE-WITHOUT-CLASHING/test_plan.md
+  tags:
+  - platform
+  - architecture
+  - observability
+  - lab-agent
+- type: ticket
   path: agent-working/tickets/todos/TCK-20261115-M1-A-TEST-KIND-DECLARED-ONLY-IN-CONTENT-PERCEIVES-EATS-AND-FIGHTS.md
   ticket_id: TCK-20261115-M1-A-TEST-KIND-DECLARED-ONLY-IN-CONTENT-PERCEIVES-EATS-AND-FIGHTS
   title: 'Milestone 1''s content-alone probe: a test kind declared only in test content,
@@ -8270,6 +8297,27 @@
   artifact_files: []
   tags:
   - testing
+- type: ticket
+  path: agent-working/tickets/todos/distributed-workers-experiment/TCK-20261115-DISTRIBUTED-ENGINE-WORKER-ENTRY-POINT-AND-COMPOSE-PROFILE.md
+  ticket_id: TCK-20261115-DISTRIBUTED-ENGINE-WORKER-ENTRY-POINT-AND-COMPOSE-PROFILE
+  title: 'An `engine-worker` container entry point and an opt-in `distributed` compose
+    profile, so the distributed-workers mode can run its
+
+    Collection pool in a container. `docker compose up` with no profile starts exactly
+    today''s services.'
+  tier: standard
+  ticket_type: feature
+  date: '2026-11-15'
+  related_code_areas:
+  - compose.yaml
+  - docker/backend.Dockerfile
+  - .github/workflows/
+  artifact_files: []
+  tags:
+  - platform
+  - architecture
+  - determinism
+  - security
 - type: ticket
   path: agent-working/tickets/todos/distributed-workers-experiment/TCK-20261115-DISTRIBUTED-WORKERS-REMOTE-WORKER-MANAGER.md
   ticket_id: TCK-20261115-DISTRIBUTED-WORKERS-REMOTE-WORKER-MANAGER
