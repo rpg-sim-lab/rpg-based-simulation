@@ -8152,6 +8152,19 @@
   tags:
   - testing
 - type: ticket
+  path: agent-working/tickets/todos/TCK-20261115-MULTI-RUN-INDEX-FLOW-HEALTH-SCORE-DEPENDS-ON-HOST-TICK-SPEED.md
+  ticket_id: TCK-20261115-MULTI-RUN-INDEX-FLOW-HEALTH-SCORE-DEPENDS-ON-HOST-TICK-SPEED
+  title: 'test_multi_run_index_and_cli_flow fails on a loaded host: one HighCPULatencyRule
+    WARNING scores a run 95, not 100'
+  tier: hotfix
+  ticket_type: repair
+  date: '2026-11-15'
+  related_code_areas:
+  - tests/integration/observability/test_multi_run_index_flow.py:38-47, :88
+  - tests/integration/observability/conftest.py (tick_cost_ms)
+  artifact_files: []
+  tags: []
+- type: ticket
   path: agent-working/tickets/todos/github-project-ticket-view/TCK-20261115-PROJECT-SYNC-FILED-DATE-AND-BACKLOG-VIEW.md
   ticket_id: TCK-20261115-PROJECT-SYNC-FILED-DATE-AND-BACKLOG-VIEW
   title: '`project_sync.py`: a `Filed` date field from each ticket''s frontmatter
@@ -8323,6 +8336,19 @@
   tags:
   - documentation
 - type: ticket
+  path: agent-working/tickets/todos/TCK-20261114-A-COLLAPSED-SLEEPER-WALKS-UNDER-A-LIVE-SLEEP-TASK.md
+  ticket_id: TCK-20261114-A-COLLAPSED-SLEEPER-WALKS-UNDER-A-LIVE-SLEEP-TASK
+  title: A collapsed sleeper with a live SLEEP task walks, under HOLD, to a MOVE_TO
+    target
+  tier: standard
+  ticket_type: bug
+  date: '2026-11-14'
+  related_code_areas:
+  - src/engine/intent/action_intent.py:137 (MOVE_TO), src/engine/sleep_debt.py:71
+    (collapse HOLD writer)
+  artifact_files: []
+  tags: []
+- type: ticket
   path: agent-working/tickets/todos/TCK-20261114-ENV-06-CALAMITY-ESCALATION-PRODUCER-IS-NOT-BUILT.md
   ticket_id: TCK-20261114-ENV-06-CALAMITY-ESCALATION-PRODUCER-IS-NOT-BUILT
   title: The ENV-06 calamity escalation (owner decision 10) is not built, so `calamity_intensity`
@@ -8335,6 +8361,37 @@
   artifact_files: []
   tags:
   - world
+- type: ticket
+  path: agent-working/tickets/todos/TCK-20261114-NAVIGATION-CLEAR-TARGET-FLAG-IS-NEVER-APPLIED.md
+  ticket_id: TCK-20261114-NAVIGATION-CLEAR-TARGET-FLAG-IS-NEVER-APPLIED
+  title: NavigationUpdate.clear_target is never applied, so three writers that mean
+    to drop a stored target drop nothing
+  tier: standard
+  ticket_type: bug
+  date: '2026-11-14'
+  related_code_areas:
+  - src/core/updates.py (NavigationUpdate.clear_target, merge :208), src/core/patches.py:284
+  - src/engine/movement.py:413, src/engine/pipeline_phases/actor_validity.py:76/:116,
+    src/engine/blacksmith.py:250
+  artifact_files: []
+  tags:
+  - engine
+- type: ticket
+  path: agent-working/tickets/todos/TCK-20261114-REROUTE-RUNG-STEPS-PAST-THE-READINESS-GATE-AND-STATUS-BLOCK.md
+  ticket_id: TCK-20261114-REROUTE-RUNG-STEPS-PAST-THE-READINESS-GATE-AND-STATUS-BLOCK
+  title: The congestion ladder's reroute rung steps a subject past the readiness gate
+    and the frozen/stunned block, in every movement mode
+  tier: standard
+  ticket_type: bug
+  date: '2026-11-14'
+  related_code_areas:
+  - src/engine/movement.py:258, :287-300
+  - src/engine/legality.py:100-130, :183-208
+  artifact_files: []
+  tags:
+  - combat
+  - legality
+  - engine
 - type: ticket
   path: agent-working/tickets/done/TCK-20261113-FIVE-SOCIAL-ACTION-KINDS-MAY-HAVE-NO-ISSUER-IN-PLAY.md
   ticket_id: TCK-20261113-FIVE-SOCIAL-ACTION-KINDS-MAY-HAVE-NO-ISSUER-IN-PLAY
@@ -8400,6 +8457,27 @@
   tags:
   - platform
   - observability
+- type: ticket
+  path: agent-working/tickets/todos/TCK-20261113-FIVE-SOCIAL-ACTION-KINDS-MAY-HAVE-NO-ISSUER-IN-PLAY.md
+  ticket_id: TCK-20261113-FIVE-SOCIAL-ACTION-KINDS-MAY-HAVE-NO-ISSUER-IN-PLAY
+  title: 'Five social action kinds may have no issuer in play: find which of TEAM_UP,
+    TRADE, TRAIN, PROPOSE_MARRIAGE and JOIN_CLAN/LEAVE_CLAN anything ever emits, and
+    how their contracts are really created and accepted'
+  tier: standard
+  ticket_type: bug
+  date: '2026-11-13'
+  related_code_areas:
+  - src/engine/domain/action_router.py (:63-84)
+  - src/engine/domain/core_actions.py (execute_* about :175-584)
+  - src/domains/cooperation/services.py, src/domains/cooperation/phase.py
+  - src/systems/social_systems/appraisal.py, contracts.py
+  - src/engine/hostility.py (perceived_hostile), src/engine/legality.py (_is_engagement_hostile),
+    src/systems/movement.py (resolve_move)
+  artifact_files:
+  - agent-working/stored_artifacts/TCK-20261113-FIVE-SOCIAL-ACTION-KINDS-MAY-HAVE-NO-ISSUER-IN-PLAY/investigation.md
+  - agent-working/stored_artifacts/TCK-20261113-FIVE-SOCIAL-ACTION-KINDS-MAY-HAVE-NO-ISSUER-IN-PLAY/plan.md
+  - agent-working/stored_artifacts/TCK-20261113-FIVE-SOCIAL-ACTION-KINDS-MAY-HAVE-NO-ISSUER-IN-PLAY/test_plan.md
+  tags: []
 - type: ticket
   path: agent-working/tickets/done/TCK-20261112-A-THROTTLED-CLIENT-THAT-WAITS-OUT-RETRY-AFTER-IS-STILL-REFUSED.md
   ticket_id: TCK-20261112-A-THROTTLED-CLIENT-THAT-WAITS-OUT-RETRY-AFTER-IS-STILL-REFUSED
@@ -8677,6 +8755,27 @@
   tags:
   - planning
   - delivery
+- type: ticket
+  path: agent-working/tickets/todos/TCK-20261112-THE-API-EMITS-NO-REQUEST-TRACES.md
+  ticket_id: TCK-20261112-THE-API-EMITS-NO-REQUEST-TRACES
+  title: 'The API emits no request traces: add OpenTelemetry server spans and Redis
+    client spans, off unless an OTLP endpoint is set (#622 R3)'
+  tier: standard
+  ticket_type: feature
+  date: '2026-11-12'
+  related_code_areas:
+  - create_v2_app
+  - RequestDurationMiddleware
+  - src/observability/stream/factory.py, src/observability/stream/adapters.py:139
+    (redis client)
+  - src/api/routes/live_health.py:11
+  artifact_files:
+  - agent-working/stored_artifacts/TCK-20261112-THE-API-EMITS-NO-REQUEST-TRACES/investigation.md
+  - agent-working/stored_artifacts/TCK-20261112-THE-API-EMITS-NO-REQUEST-TRACES/plan.md
+  - agent-working/stored_artifacts/TCK-20261112-THE-API-EMITS-NO-REQUEST-TRACES/test_plan.md
+  tags:
+  - observability
+  - api-design
 - type: ticket
   path: agent-working/tickets/todos/github-project-ticket-view/TCK-20261112-EPIC-GITHUB-PROJECT-TICKET-VIEW.md
   ticket_id: TCK-20261112-EPIC-GITHUB-PROJECT-TICKET-VIEW
@@ -9632,6 +9731,24 @@
   - src/core/state.py (town_center, :1345)
   - src/ai/goals/scorers.py (:168, :250, :273, :313)
   artifact_files: []
+  tags: []
+- type: ticket
+  path: agent-working/tickets/todos/TCK-20261109-THE-FAST-STRATEGIC-PATH-SENDS-AN-ENTITY-TARGET-PURSUER-HOME-WITH-ITS-ITEMS.md
+  ticket_id: TCK-20261109-THE-FAST-STRATEGIC-PATH-SENDS-AN-ENTITY-TARGET-PURSUER-HOME-WITH-ITS-ITEMS
+  title: On an off-cadence tick, fused_strategic_pass's fast path sends a loaded entity
+    with an entity-typed objective home (REGROUP), off its pursuit. The slow path
+    does not.
+  tier: standard
+  ticket_type: bug
+  date: '2026-11-09'
+  related_code_areas:
+  - src/systems/strategic_systems/intelligence.py::fused_strategic_pass (fast path
+    ~:380-410, slow path ~:655-680, ~:348, ~:518, ~:621-625, ~:650)
+  - tests/unit/strategic/test_fused_strategic_pass_fast_path_characterisation.py
+  artifact_files:
+  - agent-working/stored_artifacts/TCK-20261109-THE-FAST-STRATEGIC-PATH-SENDS-AN-ENTITY-TARGET-PURSUER-HOME-WITH-ITS-ITEMS/investigation.md
+  - agent-working/stored_artifacts/TCK-20261109-THE-FAST-STRATEGIC-PATH-SENDS-AN-ENTITY-TARGET-PURSUER-HOME-WITH-ITS-ITEMS/plan.md
+  - agent-working/stored_artifacts/TCK-20261109-THE-FAST-STRATEGIC-PATH-SENDS-AN-ENTITY-TARGET-PURSUER-HOME-WITH-ITS-ITEMS/test_plan.md
   tags: []
 - type: ticket
   path: agent-working/tickets/todos/distributed-workers-experiment/TCK-20261109-DISTRIBUTED-WORKERS-DESIGN.md
@@ -11001,7 +11118,7 @@
   ticket_id: TCK-20261031-SIMULATION-EVENT-ID-IS-A-RANDOM-UUID-SO-NO-EVENT-STREAM-IS-REPRODUCIBLE
   title: SimulationEvent.event_id is a random uuid4, so no event stream is byte-reproducible
     and any consumer that orders by it is nondeterministic
-  tier: standard (provisional)
+  tier: standard
   ticket_type: bug
   date: '2026-10-31'
   related_code_areas:
@@ -19293,6 +19410,21 @@
   - world
   - engine
 - type: ticket
+  path: agent-working/tickets/done/TCK-20261007-EPIC-DECISION-CORE-LIVE-MOTIVATION-AND-HONEST-FIGHT-OR-FLEE-INPUTS.md
+  ticket_id: TCK-20261007-EPIC-DECISION-CORE-LIVE-MOTIVATION-AND-HONEST-FIGHT-OR-FLEE-INPUTS
+  title: 'Decision core: make motivation live for compiled characters, make biology
+    follow each kind''s needs, and give fight-or-flee honest inputs (Tier 1 of the
+    owner''s layer-by-frequency ranking)'
+  tier: epic
+  ticket_type: feature
+  date: '2026-10-07'
+  related_code_areas:
+  - src/world/motivation/pressure_resolver.py
+  artifact_files: []
+  tags:
+  - simulation-quality
+  - combat
+- type: ticket
   path: agent-working/tickets/done/TCK-20261007-LAUNCHER-RELAUNCH-FIXES.md
   ticket_id: TCK-20261007-LAUNCHER-RELAUNCH-FIXES
   title: 'Launcher relaunch fixes A-E: legacy-name transcripts, handover path line,
@@ -19698,21 +19830,6 @@
   artifact_files:
   - agent-working/stored_artifacts/TCK-20261007-EAT-BESIDE-THE-INN-FEEDS-A-SUBJECT-THAT-CANNOT-PAY-FREE-MEAL/removal_evidence_divergence_2_89_as_drafted.md
   tags: []
-- type: ticket
-  path: agent-working/tickets/todos/TCK-20261007-EPIC-DECISION-CORE-LIVE-MOTIVATION-AND-HONEST-FIGHT-OR-FLEE-INPUTS.md
-  ticket_id: TCK-20261007-EPIC-DECISION-CORE-LIVE-MOTIVATION-AND-HONEST-FIGHT-OR-FLEE-INPUTS
-  title: 'Decision core: make motivation live for compiled characters, make biology
-    follow each kind''s needs, and give fight-or-flee honest inputs (Tier 1 of the
-    owner''s layer-by-frequency ranking)'
-  tier: epic
-  ticket_type: feature
-  date: '2026-10-07'
-  related_code_areas:
-  - src/world/motivation/pressure_resolver.py
-  artifact_files: []
-  tags:
-  - simulation-quality
-  - combat
 - type: ticket
   path: agent-working/tickets/todos/TCK-20261007-NOBODY-EATS-OR-SLEEPS-AND-EVERY-ENTITY-STARVES-BY-TICK-1100.md
   ticket_id: TCK-20261007-NOBODY-EATS-OR-SLEEPS-AND-EVERY-ENTITY-STARVES-BY-TICK-1100
@@ -24384,6 +24501,28 @@
   tags:
   - testing
 - type: ticket
+  path: agent-working/tickets/done/TCK-20261002-EPIC-SEMANTIC-FOUNDATION-COMPLETION.md
+  ticket_id: TCK-20261002-EPIC-SEMANTIC-FOUNDATION-COMPLETION
+  title: 'Epic: complete the semantic foundation to the bound owner decision 7 sets
+    — registry bindings first,
+
+    then the rule map sliced by mechanism cluster, with a yield checkpoint that can
+    stop it'
+  tier: epic
+  ticket_type: chore
+  date: '2026-10-02'
+  related_code_areas:
+  - registries/mechanisms.yaml
+  - registries/rule_mechanism_edges.yaml
+  - tools/mechanism_registry/mechanism_registry_completeness_check.py
+  - tools/semantic_control_plane/registry.py
+  - docs/world_rules/
+  artifact_files: []
+  tags:
+  - architecture
+  - documentation
+  - simulation-quality
+- type: ticket
   path: agent-working/tickets/done/TCK-20261002-EPIC-SESSION-LAYER-COMMUNICATION-AND-AUTHORITY.md
   ticket_id: TCK-20261002-EPIC-SESSION-LAYER-COMMUNICATION-AND-AUTHORITY
   title: 'Epic B — Session-layer communication and authority: owner lookup, message
@@ -24790,28 +24929,6 @@
   - architecture
   - documentation
 - type: ticket
-  path: agent-working/tickets/todos/TCK-20261002-EPIC-SEMANTIC-FOUNDATION-COMPLETION.md
-  ticket_id: TCK-20261002-EPIC-SEMANTIC-FOUNDATION-COMPLETION
-  title: 'Epic: complete the semantic foundation to the bound owner decision 7 sets
-    — registry bindings first,
-
-    then the rule map sliced by mechanism cluster, with a yield checkpoint that can
-    stop it'
-  tier: epic
-  ticket_type: chore
-  date: '2026-10-02'
-  related_code_areas:
-  - registries/mechanisms.yaml
-  - registries/rule_mechanism_edges.yaml
-  - tools/mechanism_registry/mechanism_registry_completeness_check.py
-  - tools/semantic_control_plane/registry.py
-  - docs/world_rules/
-  artifact_files: []
-  tags:
-  - architecture
-  - documentation
-  - simulation-quality
-- type: ticket
   path: agent-working/tickets/done/TCK-20260930-IMPLEMENT-TICKET-PARSE-AND-NONDETERMINISM-FIX.md
   ticket_id: TCK-20260930-IMPLEMENT-TICKET-PARSE-AND-NONDETERMINISM-FIX
   title: Make implement-ticket.js parse under the native Workflow runtime and remove
@@ -24984,6 +25101,48 @@
   - agent-working/stored_artifacts/TCK-20261001-EPIC-B-SCENARIO-LANE-COST-RECORD/test_plan.md
   tags:
   - testing
+- type: ticket
+  path: agent-working/tickets/done/TCK-20261001-EPIC-BODY-RECOVERY-AND-SURVIVABLE-DEFEAT-FOUNDATION.md
+  ticket_id: TCK-20261001-EPIC-BODY-RECOVERY-AND-SURVIVABLE-DEFEAT-FOUNDATION
+  title: 'The world has no recovery and no survivable defeat — a foundational gap
+    nobody chose, made visible by
+
+    PR #276. Design recovery first, then survivable defeat; resurrection stays out.'
+  tier: epic
+  ticket_type: feature
+  date: '2026-10-01'
+  related_code_areas:
+  - src/cognition/need_interpretation.py
+  - src/core/state.py
+  - src/systems/lifecycle_systems/lifecycle.py
+  - src/engine/apply.py
+  artifact_files: []
+  tags:
+  - architecture
+  - lifecycle
+  - combat
+  - world
+- type: ticket
+  path: agent-working/tickets/done/TCK-20261001-EPIC-DEHERO-ROLE-GATED-PRIVILEGE-INVENTORY.md
+  ticket_id: TCK-20261001-EPIC-DEHERO-ROLE-GATED-PRIVILEGE-INVENTORY
+  title: 'Stop relying on `EntityRole.HERO` as a privileged status — inventory every
+    HERO-gated behaviour first,
+
+    then re-ground real capabilities on real state'
+  tier: epic
+  ticket_type: refactor
+  date: '2026-10-01'
+  related_code_areas:
+  - src/core/enums.py
+  - src/engine/combat_rewards.py
+  - src/observability/event_extractor.py
+  - data/worlds/
+  artifact_files: []
+  tags:
+  - architecture
+  - lifecycle
+  - combat
+  - progression
 - type: ticket
   path: agent-working/tickets/done/TCK-20261001-FRONTIER-MARCHES-NARRATIVE-ANCHOR-ZERO-SCORE-REBASELINE.md
   ticket_id: TCK-20261001-FRONTIER-MARCHES-NARRATIVE-ANCHOR-ZERO-SCORE-REBASELINE
@@ -25225,48 +25384,6 @@
   artifact_files: []
   tags:
   - data-quality
-- type: ticket
-  path: agent-working/tickets/todos/TCK-20261001-EPIC-BODY-RECOVERY-AND-SURVIVABLE-DEFEAT-FOUNDATION.md
-  ticket_id: TCK-20261001-EPIC-BODY-RECOVERY-AND-SURVIVABLE-DEFEAT-FOUNDATION
-  title: 'The world has no recovery and no survivable defeat — a foundational gap
-    nobody chose, made visible by
-
-    PR #276. Design recovery first, then survivable defeat; resurrection stays out.'
-  tier: epic
-  ticket_type: feature
-  date: '2026-10-01'
-  related_code_areas:
-  - src/cognition/need_interpretation.py
-  - src/core/state.py
-  - src/systems/lifecycle_systems/lifecycle.py
-  - src/engine/apply.py
-  artifact_files: []
-  tags:
-  - architecture
-  - lifecycle
-  - combat
-  - world
-- type: ticket
-  path: agent-working/tickets/todos/TCK-20261001-EPIC-DEHERO-ROLE-GATED-PRIVILEGE-INVENTORY.md
-  ticket_id: TCK-20261001-EPIC-DEHERO-ROLE-GATED-PRIVILEGE-INVENTORY
-  title: 'Stop relying on `EntityRole.HERO` as a privileged status — inventory every
-    HERO-gated behaviour first,
-
-    then re-ground real capabilities on real state'
-  tier: epic
-  ticket_type: refactor
-  date: '2026-10-01'
-  related_code_areas:
-  - src/core/enums.py
-  - src/engine/combat_rewards.py
-  - src/observability/event_extractor.py
-  - data/worlds/
-  artifact_files: []
-  tags:
-  - architecture
-  - lifecycle
-  - combat
-  - progression
 - type: ticket
   path: agent-working/tickets/todos/TCK-20261001-SPAWN-AND-DERIVATION-HOLD-INCOMPATIBLE-DERIVED-STAT-MODELS.md
   ticket_id: TCK-20261001-SPAWN-AND-DERIVATION-HOLD-INCOMPATIBLE-DERIVED-STAT-MODELS
