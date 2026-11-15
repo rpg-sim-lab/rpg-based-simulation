@@ -75,6 +75,21 @@ Platform's runner facts (#593 issuecomment-6345851046):
 - [ ] AC3: per-arm wall time and peak RSS are in the results (T1).
 - [x] AC4: the workflow is pinned (the pin guard passes), it is `workflow_dispatch`-only, and a static test asserts that it has no `pull_request` / `push` trigger and that its concurrency does not cancel.
 - [x] AC5: rpg's collected-results option (its own PR) is reviewed by testing-planner, and the STOP and host-independence refusals are tested there.
+- Added 2026-11-15 (testing-planner), from rpg-designer's runner-evidence rule (#634, items a-f accepted plus g-j; relayed by lead-planner-u24). These ACs are built only after the owner's go on a proposal with cost (#715 6891576449 item 3):
+- [ ] AC6 (g): an evidence set must include self-checks. `plan --self-check off` is refused for an evidence dispatch, and the base-vs-base repeat runs on the runner (tested).
+- [ ] AC7 (h): the runner identity carries the sha256 of the tool checkout's `uv.lock`, and assembly refuses a set whose jobs differ in it (tested on fake artifacts).
+- [ ] AC8 (i): the paired cache key becomes `<sha12>-<child hash8>-<ticks>-<env8>[-repeat]`, as ruled by rpg-planner (lead relay, 2026-11-15).
+  - env8 is the first 8 hex characters of the sha256 of the canonical JSON {runner: "local:<host>" | "ci:<label>", python: major.minor.micro, os: system + release, uv_lock: the sha256 of the tool checkout's uv.lock (falling back to the arm tree's, recorded as which one)}.
+  - Each result dir gets an env.json holding that object, and `--collected` refuses a mismatch.
+  - Old-format entries are a miss and are never deleted.
+  - Tests: a local and a CI env give different keys; the same env gives the same key; a uv.lock change gives a new key; an old entry is a miss; a mismatched env.json is refused.
+  - paired.py is rpg's file, under rpg-planner's ruling.
+- [ ] AC9 (j): the plain-twin control (rpg-designer, #634).
+  - A spied arm cell is compared with its plain twin: the same tree, world, seed, ticks and flags, through the same arm-child entry, in the same job. It passes if the full final_hash is equal and the spied run has 0 exceptions.
+  - The fix arm has at least 3 controls (1 per world, rotated seeds, recorded). The base arm has 1 control per cache build.
+  - A controlled job runs 3 arm children on one VM.
+  - A failed control voids the set, with no retry (tested).
+- [ ] AC10: the AC1 comparison uses one fixed post-fix tool commit for both the local step (ubuntu's heavy slot) and the CI dispatch. Its DET-PORT tier is stated as DET-PORT-2 (testing-planner ruling, 2026-11-15). Equality is evidence for that step only, not a portability claim.
 
 ## Related Tickets
 - TCK-20261023-MEASURED-STEP-RUN-AND-RERUN-LEDGER (T1)
