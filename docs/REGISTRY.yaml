@@ -9240,7 +9240,7 @@
   - documentation
   - reference
 - type: ticket
-  path: agent-working/tickets/todos/TCK-20261111-A-HOLD-MODE-MOVE-STILL-TAKES-A-STEP.md
+  path: agent-working/tickets/inprogress/TCK-20261111-A-HOLD-MODE-MOVE-STILL-TAKES-A-STEP.md
   ticket_id: TCK-20261111-A-HOLD-MODE-MOVE-STILL-TAKES-A-STEP
   title: A subject whose movement mode is HOLD still takes a step toward its stored
     target
