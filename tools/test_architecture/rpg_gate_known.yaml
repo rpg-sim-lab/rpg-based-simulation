@@ -66,3 +66,21 @@ known:
     cases:
       - {world: frontier_living_world, seed: 45, entity_id: 53}
     note: "Accepted by the owner on issue #715 (comment 6702815851), #828's combined run. Owns EXACTLY frontier_living_world/45 wild creature 53 (starved t2572). Expires when the owning ticket's fix lands or on 2026-11-30, whichever is first: the fix PR deletes this entry; if the subject still starves on the fix's pinned run, the entry stays and the case goes to the owner, with no new date. Any other V3 fail, or another entity on this (world, seed), is a regression."
+  - match: "V3"
+    ticket: TCK-20261115-PAST-THE-STARVING-LINE-THE-TACTICAL-STEP-TURNS-AWAY-FROM-A-MEAL-WITHOUT-WEIGHING-HUNGER
+    owner: rpg-planner
+    added_on: "2026-11-15"
+    expires_on: "2026-12-31"
+    state: fail
+    cases:
+      - {world: crowded_frontier, seed: 45, entity_id: 5}
+    note: "Owned by the owner's choice on issue #715 (comment 6893303548), after the V3 trace (spy b1500149, tree 824483949, cell hash-matched). The red first appeared after #884 (2.204), gate #669. Owns EXACTLY crowded_frontier/45 worker 5 (starved t2161: PANIC_RETREAT at t2155, hp 1, hunger 100, inn 2 ticks away). Expires when the owning ticket's fix lands or on 2026-12-31, whichever is first: the fix PR deletes this entry; if the subject still starves on the fix's pinned run, the entry stays and the case goes to the owner, with no new date. Any other V3 fail, or another entity on this (world, seed), is a regression."
+  - match: "V3"
+    ticket: TCK-20261115-PAST-THE-STARVING-LINE-THE-TACTICAL-STEP-TURNS-AWAY-FROM-A-MEAL-WITHOUT-WEIGHING-HUNGER
+    owner: rpg-planner
+    added_on: "2026-11-15"
+    expires_on: "2026-12-31"
+    state: fail
+    cases:
+      - {world: crowded_frontier, seed: 46, entity_id: 4}
+    note: "Owned by the owner's choice on issue #715 (comment 6893303548), after the V3 trace (spy b1500149, tree 824483949, cell hash-matched). The red first appeared after #884 (2.204), gate #669. Owns EXACTLY crowded_frontier/46 worker 4 (starved t3245: pursued e35 at t3226, hp 32, hunger 100, inn 1 tick away). It also reached the starving line late because of TCK-20261115-THE-GO-TO-TOWN-STEP-RESETS-THE-WALK-TARGET-ON-A-TOWN-TILE (a 171-tick walk to the inn). Expires when the owning ticket's fix lands or on 2026-12-31, whichever is first: the fix PR deletes this entry; if the subject still starves on the fix's pinned run, the entry stays and the case goes to the owner, with no new date. Any other V3 fail, or another entity on this (world, seed), is a regression."
