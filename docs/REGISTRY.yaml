@@ -8138,7 +8138,7 @@
   - planning
   - delivery
 - type: ticket
-  path: agent-working/tickets/inprogress/TCK-20261115-PROJECT-SYNC-FILED-DATE-AND-BACKLOG-VIEW.md
+  path: agent-working/tickets/done/TCK-20261115-PROJECT-SYNC-FILED-DATE-AND-BACKLOG-VIEW.md
   ticket_id: TCK-20261115-PROJECT-SYNC-FILED-DATE-AND-BACKLOG-VIEW
   title: '`project_sync.py`: a `Filed` date field from each ticket''s frontmatter
     date, so the owner''s Backlog view can show the open-ticket pile by Domain, Priority
