@@ -8130,6 +8130,42 @@
   - ai
   - testing
 - type: ticket
+  path: agent-working/tickets/done/TCK-20261115-A-NON-SEQUENTIAL-RUN-IS-REFUSED-BY-THE-GATE-CANDIDATE-PAIRED-ARMS-AND-RPG-MEASURE.md
+  ticket_id: TCK-20261115-A-NON-SEQUENTIAL-RUN-IS-REFUSED-BY-THE-GATE-CANDIDATE-PAIRED-ARMS-AND-RPG-MEASURE
+  title: A run on a non-sequential executor is refused by the gate candidate, the
+    paired arms and rpg_measure, and its manifest says which worker manager it ran
+    on
+  tier: standard
+  ticket_type: feature
+  date: '2026-11-15'
+  related_code_areas:
+  - tools/test_architecture/{rpg_gate_run,rpg_gate_candidate,paired_arms,pinned_runner}.py
+  - tools/rpg_measure/{arm_child,paired}.py
+  - src/observability/reporting/artifact_repository.py (RunConditions), src/engine/kernel.py
+    (the one write)
+  artifact_files:
+  - agent-working/stored_artifacts/TCK-20261115-A-NON-SEQUENTIAL-RUN-IS-REFUSED-BY-THE-GATE-CANDIDATE-PAIRED-ARMS-AND-RPG-MEASURE/investigation.md
+  - agent-working/stored_artifacts/TCK-20261115-A-NON-SEQUENTIAL-RUN-IS-REFUSED-BY-THE-GATE-CANDIDATE-PAIRED-ARMS-AND-RPG-MEASURE/plan.md
+  - agent-working/stored_artifacts/TCK-20261115-A-NON-SEQUENTIAL-RUN-IS-REFUSED-BY-THE-GATE-CANDIDATE-PAIRED-ARMS-AND-RPG-MEASURE/test_plan.md
+  tags:
+  - testing
+  - architecture
+- type: ticket
+  path: agent-working/tickets/done/TCK-20261115-A-PAIRED-ARMS-REFUSAL-EXITS-2-WITH-ONE-LINE-NOT-A-TRACEBACK.md
+  ticket_id: TCK-20261115-A-PAIRED-ARMS-REFUSAL-EXITS-2-WITH-ONE-LINE-NOT-A-TRACEBACK
+  title: An arm that is not runner PINNED, or whose dists differ from its key, is
+    refused with exit 2 and one line, not exit 1 and a traceback
+  tier: hotfix
+  ticket_type: bug
+  date: '2026-11-15'
+  related_code_areas:
+  - tools/rpg_measure/paired.py
+  - tests/unit/tools/test_paired_env_key.py
+  artifact_files: []
+  tags:
+  - testing
+  - determinism
+- type: ticket
   path: agent-working/tickets/done/TCK-20261115-LEAD-BOARD-FIFTH-PASS.md
   ticket_id: TCK-20261115-LEAD-BOARD-FIFTH-PASS
   title: The lead board records the owner's 2026-11-15 epic decisions in one place,
@@ -8170,6 +8206,21 @@
   - tests/integration/observability/conftest.py (tick_cost_ms)
   artifact_files: []
   tags: []
+- type: ticket
+  path: agent-working/tickets/done/TCK-20261115-PAIRED-ARMS-EVIDENCE-SETS-NEED-THEIR-REPEAT-AND-ONE-LOCKED-ENVIRONMENT.md
+  ticket_id: TCK-20261115-PAIRED-ARMS-EVIDENCE-SETS-NEED-THEIR-REPEAT-AND-ONE-LOCKED-ENVIRONMENT
+  title: A paired-arms evidence set carries its base-vs-base repeats and was built
+    under one recorded environment with a known dependency lock
+  tier: hotfix
+  ticket_type: feature
+  date: '2026-11-15'
+  related_code_areas:
+  - tools/test_architecture/paired_arms.py, tools/rpg_measure/paired.py (rpg's file,
+    rpg-planner's env8 ruling), .github/workflows/paired-arms.yml
+  artifact_files: []
+  tags:
+  - testing
+  - determinism
 - type: ticket
   path: agent-working/tickets/done/TCK-20261115-PAIRED-ARMS-RUNS-ONLY-COMMITS-ON-A-REPO-BRANCH.md
   ticket_id: TCK-20261115-PAIRED-ARMS-RUNS-ONLY-COMMITS-ON-A-REPO-BRANCH
@@ -8254,6 +8305,46 @@
   tags:
   - ai
 - type: ticket
+  path: agent-working/tickets/done/TCK-20261115-THE-SLOW-LANE-LOG-SHOWS-EACH-TESTS-WALL-TIME.md
+  ticket_id: TCK-20261115-THE-SLOW-LANE-LOG-SHOWS-EACH-TESTS-WALL-TIME
+  title: The slow-regression log shows each slow test's wall time, so a "under 540
+    s" rule can be checked from CI
+  tier: hotfix
+  ticket_type: chore
+  date: '2026-11-15'
+  related_code_areas:
+  - .github/workflows/slow-regression.yml
+  artifact_files: []
+  tags:
+  - testing
+- type: ticket
+  path: agent-working/tickets/done/TCK-20261115-WORLD-FARM-RUNS-WORLDS-SIDE-BY-SIDE-WITHOUT-CLASHING.md
+  ticket_id: TCK-20261115-WORLD-FARM-RUNS-WORLDS-SIDE-BY-SIDE-WITHOUT-CLASHING
+  title: 'World farm, step one: two worlds run at the same time on one host without
+    sharing an event stream, deleting each other''s lab run
+
+    data, or interleaving a ledger line.'
+  tier: standard
+  ticket_type: feature
+  date: '2026-11-15'
+  related_code_areas:
+  - src/observability/config.py
+  - src/observability/anomaly/worker.py
+  - src/simulation_quality/worker.py
+  - src/lab/orchestrator.py
+  - src/lab/repository.py
+  - src/lab/store.py
+  - tools/test_architecture/run_ledger.py
+  artifact_files:
+  - agent-working/stored_artifacts/TCK-20261115-WORLD-FARM-RUNS-WORLDS-SIDE-BY-SIDE-WITHOUT-CLASHING/investigation.md
+  - agent-working/stored_artifacts/TCK-20261115-WORLD-FARM-RUNS-WORLDS-SIDE-BY-SIDE-WITHOUT-CLASHING/plan.md
+  - agent-working/stored_artifacts/TCK-20261115-WORLD-FARM-RUNS-WORLDS-SIDE-BY-SIDE-WITHOUT-CLASHING/test_plan.md
+  tags:
+  - platform
+  - architecture
+  - observability
+  - lab-agent
+- type: ticket
   path: agent-working/tickets/todos/TCK-20261115-M1-A-TEST-KIND-DECLARED-ONLY-IN-CONTENT-PERCEIVES-EATS-AND-FIGHTS.md
   ticket_id: TCK-20261115-M1-A-TEST-KIND-DECLARED-ONLY-IN-CONTENT-PERCEIVES-EATS-AND-FIGHTS
   title: 'Milestone 1''s content-alone probe: a test kind declared only in test content,
@@ -8284,6 +8375,22 @@
   - ai
   - testing
 - type: ticket
+  path: agent-working/tickets/todos/TCK-20261115-THE-GATE-REPORTS-WHETHER-EACH-WORLDS-OUTCOMES-STAY-IN-THEIR-BANDS.md
+  ticket_id: TCK-20261115-THE-GATE-REPORTS-WHETHER-EACH-WORLDS-OUTCOMES-STAY-IN-THEIR-BANDS
+  title: The RPG gate reports, in its own report-only Bands section, whether each
+    world's outcomes over 10 seeds stay inside the fiction's bands
+  tier: standard
+  ticket_type: feature
+  date: '2026-11-15'
+  related_code_areas:
+  - tests/simulation_quality/rpg_gate/config.yaml
+  - tools/test_architecture/{rpg_gate_plan,rpg_gate_harness,rpg_gate_report,rpg_gate_baseline,rpg_gate_issue}.py
+  - .github/workflows/rpg-gate-report.yml
+  artifact_files: []
+  tags:
+  - testing
+  - simulation-quality
+- type: ticket
   path: agent-working/tickets/todos/ai-first-sdlc-evolution/TCK-20261115-SDLC-BASELINE-TAG-RULESET.md
   ticket_id: TCK-20261115-SDLC-BASELINE-TAG-RULESET
   title: A tag ruleset protects the four frozen SDLC baseline tags, applied by the
@@ -8296,6 +8403,27 @@
   tags:
   - ai
   - governance
+  - security
+- type: ticket
+  path: agent-working/tickets/todos/distributed-workers-experiment/TCK-20261115-DISTRIBUTED-ENGINE-WORKER-ENTRY-POINT-AND-COMPOSE-PROFILE.md
+  ticket_id: TCK-20261115-DISTRIBUTED-ENGINE-WORKER-ENTRY-POINT-AND-COMPOSE-PROFILE
+  title: 'An `engine-worker` container entry point and an opt-in `distributed` compose
+    profile, so the distributed-workers mode can run its
+
+    Collection pool in a container. `docker compose up` with no profile starts exactly
+    today''s services.'
+  tier: standard
+  ticket_type: feature
+  date: '2026-11-15'
+  related_code_areas:
+  - compose.yaml
+  - docker/backend.Dockerfile
+  - .github/workflows/
+  artifact_files: []
+  tags:
+  - platform
+  - architecture
+  - determinism
   - security
 - type: ticket
   path: agent-working/tickets/todos/distributed-workers-experiment/TCK-20261115-DISTRIBUTED-WORKERS-REMOTE-WORKER-MANAGER.md
@@ -9389,6 +9517,25 @@
   tags:
   - economy
 - type: ticket
+  path: agent-working/tickets/done/TCK-20261109-AN-ADVISORY-GUARD-LISTS-TESTS-WHOSE-SUBJECT-SYSTEM-THE-PIPELINE-NEVER-RUNS.md
+  ticket_id: TCK-20261109-AN-ADVISORY-GUARD-LISTS-TESTS-WHOSE-SUBJECT-SYSTEM-THE-PIPELINE-NEVER-RUNS
+  title: An advisory guard lists src/systems classes the authoritative pipeline never
+    reaches, and the tests that import them without a stated reason, so a fix's regression
+    test is seen to prove a path that does not run
+  tier: standard
+  ticket_type: feature
+  date: '2026-11-09'
+  related_code_areas:
+  - src/engine/pipeline.py, src/systems/**
+  - tools/test_architecture/, tests/architecture/
+  artifact_files:
+  - agent-working/stored_artifacts/TCK-20261109-AN-ADVISORY-GUARD-LISTS-TESTS-WHOSE-SUBJECT-SYSTEM-THE-PIPELINE-NEVER-RUNS/investigation.md
+  - agent-working/stored_artifacts/TCK-20261109-AN-ADVISORY-GUARD-LISTS-TESTS-WHOSE-SUBJECT-SYSTEM-THE-PIPELINE-NEVER-RUNS/plan.md
+  - agent-working/stored_artifacts/TCK-20261109-AN-ADVISORY-GUARD-LISTS-TESTS-WHOSE-SUBJECT-SYSTEM-THE-PIPELINE-NEVER-RUNS/test_plan.md
+  tags:
+  - testing
+  - regression
+- type: ticket
   path: agent-working/tickets/done/TCK-20261109-ANY-SOCIAL-UPDATE-WIPES-THE-REJECTION-COUNTS-IT-DOES-NOT-NAME.md
   ticket_id: TCK-20261109-ANY-SOCIAL-UPDATE-WIPES-THE-REJECTION-COUNTS-IT-DOES-NOT-NAME
   title: Any social update wipes the rejection counts it does not name, so recruitment's
@@ -9531,6 +9678,20 @@
   - determinism
   - planning
 - type: ticket
+  path: agent-working/tickets/done/TCK-20261109-ONE-MUTATION-RUN-MEASURES-HOW-MANY-INJECTED-FAULTS-THE-FUSED-STRATEGIC-PASS-TESTS-CATCH.md
+  ticket_id: TCK-20261109-ONE-MUTATION-RUN-MEASURES-HOW-MANY-INJECTED-FAULTS-THE-FUSED-STRATEGIC-PASS-TESTS-CATCH
+  title: One report-only mutmut run measures how many injected faults in fused_strategic_pass
+    its current tests catch, recorded as a mutation baseline under tests/mutation/baselines/
+  tier: hotfix
+  ticket_type: chore
+  date: '2026-11-09'
+  related_code_areas:
+  - src/systems/strategic_systems/intelligence.py
+  - tests/mutation/baselines/
+  artifact_files: []
+  tags:
+  - testing
+- type: ticket
   path: agent-working/tickets/done/TCK-20261109-README-NAMES-A-CHECKPOINT-SEED-DEFECT-THAT-IS-FIXED.md
   ticket_id: TCK-20261109-README-NAMES-A-CHECKPOINT-SEED-DEFECT-THAT-IS-FIXED
   title: 'The README still lists the restored-checkpoint seed-0 defect as open, but
@@ -9585,22 +9746,6 @@
   - src/engine/tactical.py, src/engine/tactical_objective.py (the need path)
   artifact_files: []
   tags: []
-- type: ticket
-  path: agent-working/tickets/todos/TCK-20261109-AN-ADVISORY-GUARD-LISTS-TESTS-WHOSE-SUBJECT-SYSTEM-THE-PIPELINE-NEVER-RUNS.md
-  ticket_id: TCK-20261109-AN-ADVISORY-GUARD-LISTS-TESTS-WHOSE-SUBJECT-SYSTEM-THE-PIPELINE-NEVER-RUNS
-  title: An advisory guard lists src/systems classes the authoritative pipeline never
-    reaches, and the tests that import them without a stated reason, so a fix's regression
-    test is seen to prove a path that does not run
-  tier: standard
-  ticket_type: feature
-  date: '2026-11-09'
-  related_code_areas:
-  - src/engine/pipeline.py, src/systems/**
-  - tools/test_architecture/, tests/architecture/
-  artifact_files: []
-  tags:
-  - testing
-  - regression
 - type: ticket
   path: agent-working/tickets/todos/TCK-20261109-AN-INN-MEAL-DOES-NOT-STAMP-LAST-MEAL-TICK.md
   ticket_id: TCK-20261109-AN-INN-MEAL-DOES-NOT-STAMP-LAST-MEAL-TICK
@@ -9754,20 +9899,6 @@
   related_code_areas: []
   artifact_files: []
   tags: []
-- type: ticket
-  path: agent-working/tickets/todos/TCK-20261109-ONE-MUTATION-RUN-MEASURES-HOW-MANY-INJECTED-FAULTS-THE-FUSED-STRATEGIC-PASS-TESTS-CATCH.md
-  ticket_id: TCK-20261109-ONE-MUTATION-RUN-MEASURES-HOW-MANY-INJECTED-FAULTS-THE-FUSED-STRATEGIC-PASS-TESTS-CATCH
-  title: One report-only mutmut run measures how many injected faults in fused_strategic_pass
-    its current tests catch, recorded as a mutation baseline under tests/mutation/baselines/
-  tier: hotfix
-  ticket_type: chore
-  date: '2026-11-09'
-  related_code_areas:
-  - src/systems/strategic_systems/intelligence.py
-  - tests/mutation/baselines/
-  artifact_files: []
-  tags:
-  - testing
 - type: ticket
   path: agent-working/tickets/todos/TCK-20261109-RECRUITMENT-FATIGUE-HAS-NO-RECENT-WINDOW.md
   ticket_id: TCK-20261109-RECRUITMENT-FATIGUE-HAS-NO-RECENT-WINDOW
@@ -10406,7 +10537,8 @@
   related_code_areas:
   - to_canonical_dict
   - src/core/strategic.py, src/core/cognition.py, src/core/self_model.py, src/core/models/
-  artifact_files: []
+  artifact_files:
+  - agent-working/stored_artifacts/TCK-20261103-STATE-DIGEST-MAY-OMIT-FIELDS-THAT-DECISIONS-READ/digest_coverage_report.md
   tags: []
 - type: ticket
   path: agent-working/tickets/todos/TCK-20261103-TWO-UNOWNED-V3-STARVATIONS-APPEARED-ON-MAIN-WITH-THE-RETREAT-FIX.md

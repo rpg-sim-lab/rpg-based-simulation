@@ -1,0 +1,722 @@
+# State-digest coverage allowlist (TCK-20261103-STATE-DIGEST-MAY-OMIT-FIELDS-THAT-DECISIONS-READ, item 1).
+# Every field path reachable from AuthoritativeState that a type-correct change does NOT move the canonical digest for is a row here (GAP or EXCLUDE), with its reason.
+# GAP = anything outside observability reads it across a tick: a recorded known gap, not a pass. EXCLUDE needs (i) rebuilt from hashed state (site cited), (ii) run setup
+# recorded in the manifest, or (iii) write-only (tag no_reader, grep cited). A path under an unhashed container is covered by the container's row.
+# A new unhashed field fails the test; a row whose field is now hashed, or gone, fails it too. Reasons are ruled by rpg-planner (2026-11-15).
+# The unexercised list is "not proven": it is pinned and can only shrink.
+rows:
+- path: state.MAX_PROCESSED_IDS
+  status: EXCLUDE
+  group: B
+  basis: ii
+  reason: class constant bounding the processed-id set; fixed by the build, not by the run
+- path: state.MAX_TRACE_SIZE
+  status: EXCLUDE
+  group: B
+  basis: ii
+  reason: class constant bounding the transaction trace; fixed by the build, not by the run
+- path: state._force_full_scan
+  status: EXCLUDE
+  group: B
+  basis: ii
+  reason: 'run flag set at build, carried unchanged: src/engine/apply.py:552'
+- path: state._opt_profile
+  status: EXCLUDE
+  group: B
+  basis: ii
+  reason: 'run setup: resolved once from the profile and flags at src/engine/kernel.py:95 and re-stamped from the kernel each tick (kernel.py:784); carried unchanged by the apply (src/engine/apply.py:550); nothing in the run writes a different value'
+- path: state.buildings[].inventory.items[].properties
+  status: GAP
+  group: F
+  reason: the name is read outside observability, model definitions, harness and compile-time code (grep; unverified as a cross-tick decision read)
+  reader: grep (unverified) src/entities/identity_resolver.py:39
+- path: state.buildings[].inventory.max_weight
+  status: GAP
+  group: F
+  reason: the name is read outside observability, model definitions, harness and compile-time code (grep; unverified as a cross-tick decision read)
+  reader: grep (unverified) src/core/builder.py:255
+- path: state.chests[].items[].properties
+  status: GAP
+  group: F
+  reason: the name is read outside observability, model definitions, harness and compile-time code (grep; unverified as a cross-tick decision read)
+  reader: grep (unverified) src/entities/identity_resolver.py:39
+- path: state.corpses[].items[].properties
+  status: GAP
+  group: F
+  reason: the name is read outside observability, model definitions, harness and compile-time code (grep; unverified as a cross-tick decision read)
+  reader: grep (unverified) src/entities/identity_resolver.py:39
+- path: state.current_mode
+  status: GAP
+  group: B
+  reason: changes in a normal run (src/engine/apply.py:519 current_mode=new_mode); a governance policy reads it; constant only under the pinned runner
+- path: state.entities[].cognition.commitment.abandoned_commitments[].id
+  status: GAP
+  group: F
+  reason: 'default GAP: no reader located by grep over src (excluding model definitions, observability, harness and compile-time code); to be named by rpg-planner'
+  reader: unlocated
+- path: state.entities[].cognition.commitment.abandoned_commitments[].penalty
+  status: GAP
+  group: F
+  reason: 'default GAP: no reader located by grep over src (excluding model definitions, observability, harness and compile-time code); to be named by rpg-planner'
+  reader: unlocated
+- path: state.entities[].cognition.commitment.abandoned_commitments[].tick_abandoned
+  status: GAP
+  group: F
+  reason: 'default GAP: no reader located by grep over src (excluding model definitions, observability, harness and compile-time code); to be named by rpg-planner'
+  reader: unlocated
+- path: state.entities[].cognition.commitment.active_commitments[].created_tick
+  status: GAP
+  group: F
+  reason: the name is read outside observability, model definitions, harness and compile-time code (grep; unverified as a cross-tick decision read)
+  reader: grep (unverified) src/domains/commitment/impact.py:19
+- path: state.entities[].cognition.commitment.active_commitments[].deadline_tick
+  status: GAP
+  group: F
+  reason: the name is read outside observability, model definitions, harness and compile-time code (grep; unverified as a cross-tick decision read)
+  reader: grep (unverified) src/domains/commitment/pressure.py:19
+- path: state.entities[].cognition.commitment.active_commitments[].id
+  status: GAP
+  group: F
+  reason: the name is read outside observability, model definitions, harness and compile-time code (grep; unverified as a cross-tick decision read)
+  reader: grep (unverified) src/domains/commitment/impact.py:19
+- path: state.entities[].cognition.commitment.active_commitments[].kind
+  status: GAP
+  group: F
+  reason: the name is read outside observability, model definitions, harness and compile-time code (grep; unverified as a cross-tick decision read)
+  reader: grep (unverified) src/domains/commitment/impact.py:19
+- path: state.entities[].cognition.commitment.active_commitments[].strength
+  status: GAP
+  group: F
+  reason: the name is read outside observability, model definitions, harness and compile-time code (grep; unverified as a cross-tick decision read)
+  reader: grep (unverified) src/domains/commitment/impact.py:19
+- path: state.entities[].cognition.commitment.active_commitments[].target_id
+  status: GAP
+  group: F
+  reason: the name is read outside observability, model definitions, harness and compile-time code (grep; unverified as a cross-tick decision read)
+  reader: grep (unverified) src/domains/commitment/impact.py:19
+- path: state.entities[].cognition.commitment.contract_obligations
+  status: GAP
+  group: F
+  reason: 'default GAP: no reader located by grep over src (excluding model definitions, observability, harness and compile-time code); to be named by rpg-planner'
+  reader: unlocated
+- path: state.entities[].cognition.commitment.party_obligations
+  status: GAP
+  group: F
+  reason: 'default GAP: no reader located by grep over src (excluding model definitions, observability, harness and compile-time code); to be named by rpg-planner'
+  reader: unlocated
+- path: state.entities[].cognition.commitment.quest_obligations
+  status: GAP
+  group: F
+  reason: 'default GAP: no reader located by grep over src (excluding model definitions, observability, harness and compile-time code); to be named by rpg-planner'
+  reader: unlocated
+- path: state.entities[].cognition.memory.causal.entries[].confidence
+  status: GAP
+  group: F
+  reason: the name is read outside observability, model definitions, harness and compile-time code (grep; unverified as a cross-tick decision read)
+  reader: grep (unverified) src/domains/chronicle/renderer.py:42
+- path: state.entities[].cognition.memory.causal.entries[].event_id
+  status: GAP
+  group: F
+  reason: the name is read outside observability, model definitions, harness and compile-time code (grep; unverified as a cross-tick decision read)
+  reader: grep (unverified) src/domains/campaigns/behavior_change.py:24
+- path: state.entities[].cognition.memory.causal.entries[].event_kind
+  status: GAP
+  group: F
+  reason: the name appears outside its definition (attribute form not matched, so the read is unconfirmed)
+  reader: grep (unverified) src/systems/world_systems/events.py:189
+- path: state.entities[].cognition.memory.causal.entries[].future_advice
+  status: GAP
+  group: F
+  reason: the name is read outside observability, model definitions, harness and compile-time code (grep; unverified as a cross-tick decision read)
+  reader: grep (unverified) src/domains/adventure/scoring.py:348
+- path: state.entities[].cognition.memory.causal.entries[].interpreted_causes
+  status: GAP
+  group: F
+  reason: 'default GAP: no reader located by grep over src (excluding model definitions, observability, harness and compile-time code); to be named by rpg-planner'
+  reader: unlocated
+- path: state.entities[].cognition.memory.causal.entries[].region_id
+  status: GAP
+  group: F
+  reason: the name is read outside observability, model definitions, harness and compile-time code (grep; unverified as a cross-tick decision read)
+  reader: grep (unverified) src/domains/chronicle/renderer.py:42
+- path: state.entities[].cognition.memory.causal.entries[].tick
+  status: GAP
+  group: F
+  reason: the name is read outside observability, model definitions, harness and compile-time code (grep; unverified as a cross-tick decision read)
+  reader: grep (unverified) src/domains/chronicle/renderer.py:42
+- path: state.entities[].cognition.memory.combat.opponent_stats[].confidence
+  status: GAP
+  group: F
+  reason: the name is read outside observability, model definitions, harness and compile-time code (grep; unverified as a cross-tick decision read)
+  reader: grep (unverified) src/domains/combat_engagement/phase.py:154
+- path: state.entities[].cognition.memory.combat.opponent_stats[].estimated_power
+  status: GAP
+  group: F
+  reason: the name is read outside observability, model definitions, harness and compile-time code (grep; unverified as a cross-tick decision read)
+  reader: grep (unverified) src/domains/combat_engagement/perception.py:105
+- path: state.entities[].cognition.memory.combat.opponent_stats[].known_skill_ids
+  status: GAP
+  group: F
+  reason: the name is read outside observability, model definitions, harness and compile-time code (grep; unverified as a cross-tick decision read)
+  reader: grep (unverified) src/domains/combat_engagement/learning.py:45
+- path: state.entities[].cognition.memory.combat.opponent_stats[].last_updated_tick
+  status: GAP
+  group: F
+  reason: the name is read outside observability, model definitions, harness and compile-time code (grep; unverified as a cross-tick decision read)
+  reader: grep (unverified) src/core/group_record.py:70
+- path: state.entities[].cognition.memory.combat.opponent_stats[].outcomes
+  status: GAP
+  group: F
+  reason: the name appears outside its definition (attribute form not matched, so the read is unconfirmed)
+  reader: grep (unverified) src/systems/strategic_systems/intelligence.py:7
+- path: state.entities[].cognition.memory.combat.opponent_stats[].salience
+  status: GAP
+  group: F
+  reason: the name is read outside observability, model definitions, harness and compile-time code (grep; unverified as a cross-tick decision read)
+  reader: grep (unverified) src/systems/strategic_systems/learning.py:21
+- path: state.entities[].cognition.memory.combat.opponent_stats[].subject_key
+  status: GAP
+  group: F
+  reason: the name is read outside observability, model definitions, harness and compile-time code (grep; unverified as a cross-tick decision read)
+  reader: grep (unverified) src/domains/combat_engagement/perception.py:106
+- path: state.entities[].cognition.memory.combat.opponent_stats[].uncertainty
+  status: GAP
+  group: F
+  reason: the name is read outside observability, model definitions, harness and compile-time code (grep; unverified as a cross-tick decision read)
+  reader: grep (unverified) src/domains/combat_engagement/risk_evaluator.py:72
+- path: state.entities[].cognition.memory.experience.records
+  status: GAP
+  group: F
+  reason: the name is read outside observability, model definitions, harness and compile-time code (grep; unverified as a cross-tick decision read)
+  reader: grep (unverified) src/engine/checkpoint_fields.py:107
+- path: state.entities[].cognition.memory.social.coop_outcomes
+  status: EXCLUDE
+  group: F
+  basis: iii
+  tag: no_reader
+  reason: 'no reader outside the writer and observability: grep -rnwE ''coop_outcomes'' src (excluding observability, api, perf, lab, views, rendering, cli, replay, access_audit, and the field''s own definition) finds no use'
+- path: state.entities[].cognition.memory.spatial.dangerous_routes
+  status: GAP
+  group: F
+  reason: 'default GAP: no reader located by grep over src (excluding model definitions, observability, harness and compile-time code); to be named by rpg-planner'
+  reader: unlocated
+- path: state.entities[].cognition.memory.spatial.failed_search_locations
+  status: GAP
+  group: F
+  reason: 'default GAP: no reader located by grep over src (excluding model definitions, observability, harness and compile-time code); to be named by rpg-planner'
+  reader: unlocated
+- path: state.entities[].cognition.memory.spatial.known_resource_sites
+  status: GAP
+  group: F
+  reason: the name is read outside observability, model definitions, harness and compile-time code (grep; unverified as a cross-tick decision read)
+  reader: grep (unverified) src/domains/memory/spatial_update.py:67
+- path: state.entities[].cognition.memory.spatial.safe_routes
+  status: GAP
+  group: F
+  reason: 'default GAP: no reader located by grep over src (excluding model definitions, observability, harness and compile-time code); to be named by rpg-planner'
+  reader: unlocated
+- path: state.entities[].cognition.memory.spatial.visited_regions[].familiarity
+  status: GAP
+  group: F
+  reason: the name is read outside observability, model definitions, harness and compile-time code (grep; unverified as a cross-tick decision read)
+  reader: grep (unverified) src/domains/memory/spatial_update.py:28
+- path: state.entities[].cognition.memory.spatial.visited_regions[].is_dangerous
+  status: GAP
+  group: F
+  reason: the name appears outside its definition (attribute form not matched, so the read is unconfirmed)
+  reader: grep (unverified) src/domains/memory/spatial_update.py:46
+- path: state.entities[].cognition.memory.spatial.visited_regions[].region_id
+  status: GAP
+  group: F
+  reason: the name is read outside observability, model definitions, harness and compile-time code (grep; unverified as a cross-tick decision read)
+  reader: grep (unverified) src/domains/memory/spatial_update.py:28
+- path: state.entities[].cognition.memory.spatial.visited_regions[].visit_count
+  status: GAP
+  group: F
+  reason: 'default GAP: no reader located by grep over src (excluding model definitions, observability, harness and compile-time code); to be named by rpg-planner'
+  reader: unlocated
+- path: state.entities[].cognition.motivation.role_fit.party_role_tags
+  status: GAP
+  group: F
+  reason: the name is read outside observability, model definitions, harness and compile-time code (grep; unverified as a cross-tick decision read)
+  reader: grep (unverified) src/domains/motivation/evaluator.py:36
+- path: state.entities[].cognition.motivation.role_fit.quest_tags
+  status: GAP
+  group: F
+  reason: the name is read outside observability, model definitions, harness and compile-time code (grep; unverified as a cross-tick decision read)
+  reader: grep (unverified) src/domains/motivation/evaluator.py:40
+- path: state.entities[].cognition.motivation.role_fit.skill_tags
+  status: GAP
+  group: F
+  reason: the name is read outside observability, model definitions, harness and compile-time code (grep; unverified as a cross-tick decision read)
+  reader: grep (unverified) src/domains/motivation/evaluator.py:32
+- path: state.entities[].cognition.relationships.known_partners
+  status: EXCLUDE
+  group: F
+  basis: iii
+  tag: no_reader
+  reason: 'no reader outside the writer and observability: grep -rnwE ''known_partners'' src (excluding observability, api, perf, lab, views, rendering, cli, replay, access_audit, and the field''s own definition) finds no use'
+- path: state.entities[].cognition.relationships.private_trust[].bond_strength
+  status: GAP
+  group: F
+  reason: 'default GAP: no reader located by grep over src (excluding model definitions, observability, harness and compile-time code); to be named by rpg-planner'
+  reader: unlocated
+- path: state.entities[].cognition.relationships.private_trust[].entity_id
+  status: GAP
+  group: F
+  reason: 'default GAP: no reader located by grep over src (excluding model definitions, observability, harness and compile-time code); to be named by rpg-planner'
+  reader: unlocated
+- path: state.entities[].cognition.relationships.private_trust[].value
+  status: GAP
+  group: F
+  reason: 'default GAP: no reader located by grep over src (excluding model definitions, observability, harness and compile-time code); to be named by rpg-planner'
+  reader: unlocated
+- path: state.entities[].cognition.subjective.knowledge.facts[].subject
+  status: GAP
+  group: F
+  reason: the name is read outside observability, model definitions, harness and compile-time code (grep; unverified as a cross-tick decision read)
+  reader: grep (unverified) src/cognition/common_knowledge.py:51
+- path: state.entities[].cognition.subjective.knowledge.unknowns[].subject
+  status: GAP
+  group: F
+  reason: the name is read outside observability, model definitions, harness and compile-time code (grep; unverified as a cross-tick decision read)
+  reader: grep (unverified) src/cognition/knowledge_model.py:93
+- path: state.entities[].cognition.subjective.perception.ignored_signals[].reason
+  status: GAP
+  group: F
+  reason: 'default GAP: no reader located by grep over src (excluding model definitions, observability, harness and compile-time code); to be named by rpg-planner'
+  reader: unlocated
+- path: state.entities[].cognition.subjective.perception.ignored_signals[].signal_id
+  status: GAP
+  group: F
+  reason: the name is read outside observability, model definitions, harness and compile-time code (grep; unverified as a cross-tick decision read)
+  reader: grep (unverified) src/domains/perception/filter.py:87
+- path: state.entities[].cognition.subjective.perception.ignored_signals[].tick
+  status: GAP
+  group: F
+  reason: 'default GAP: no reader located by grep over src (excluding model definitions, observability, harness and compile-time code); to be named by rpg-planner'
+  reader: unlocated
+- path: state.entities[].cognition.subjective.perception.perceived_entities[].confidence
+  status: GAP
+  group: F
+  reason: 'default GAP: no reader located by grep over src (excluding model definitions, observability, harness and compile-time code); to be named by rpg-planner'
+  reader: unlocated
+- path: state.entities[].cognition.subjective.perception.perceived_entities[].entity_id
+  status: GAP
+  group: F
+  reason: 'default GAP: no reader located by grep over src (excluding model definitions, observability, harness and compile-time code); to be named by rpg-planner'
+  reader: unlocated
+- path: state.entities[].cognition.subjective.perception.perceived_entities[].kind
+  status: GAP
+  group: F
+  reason: 'default GAP: no reader located by grep over src (excluding model definitions, observability, harness and compile-time code); to be named by rpg-planner'
+  reader: unlocated
+- path: state.entities[].cognition.subjective.perception.perceived_entities[].position
+  status: GAP
+  group: F
+  reason: 'default GAP: no reader located by grep over src (excluding model definitions, observability, harness and compile-time code); to be named by rpg-planner'
+  reader: unlocated
+- path: state.entities[].cognition.subjective.perception.perceived_opportunities[].kind
+  status: GAP
+  group: F
+  reason: 'default GAP: no reader located by grep over src (excluding model definitions, observability, harness and compile-time code); to be named by rpg-planner'
+  reader: unlocated
+- path: state.entities[].cognition.subjective.perception.perceived_opportunities[].opportunity_id
+  status: GAP
+  group: F
+  reason: 'default GAP: no reader located by grep over src (excluding model definitions, observability, harness and compile-time code); to be named by rpg-planner'
+  reader: unlocated
+- path: state.entities[].cognition.subjective.perception.perceived_resources[].confidence
+  status: GAP
+  group: F
+  reason: 'default GAP: no reader located by grep over src (excluding model definitions, observability, harness and compile-time code); to be named by rpg-planner'
+  reader: unlocated
+- path: state.entities[].cognition.subjective.perception.perceived_resources[].kind
+  status: GAP
+  group: F
+  reason: 'default GAP: no reader located by grep over src (excluding model definitions, observability, harness and compile-time code); to be named by rpg-planner'
+  reader: unlocated
+- path: state.entities[].cognition.subjective.perception.perceived_resources[].node_id
+  status: GAP
+  group: F
+  reason: the name is read outside observability, model definitions, harness and compile-time code (grep; unverified as a cross-tick decision read)
+  reader: grep (unverified) src/core/update_models/world.py:22
+- path: state.entities[].cognition.subjective.perception.perceived_resources[].position
+  status: GAP
+  group: F
+  reason: 'default GAP: no reader located by grep over src (excluding model definitions, observability, harness and compile-time code); to be named by rpg-planner'
+  reader: unlocated
+- path: state.entities[].cognition.subjective.perception.perceived_services[].position
+  status: GAP
+  group: F
+  reason: 'default GAP: no reader located by grep over src (excluding model definitions, observability, harness and compile-time code); to be named by rpg-planner'
+  reader: unlocated
+- path: state.entities[].cognition.subjective.perception.perceived_services[].service_id
+  status: GAP
+  group: F
+  reason: the name appears outside its definition (attribute form not matched, so the read is unconfirmed)
+  reader: grep (unverified) src/core/registries.py:159
+- path: state.entities[].cognition.subjective.perception.perceived_threats[].position
+  status: GAP
+  group: F
+  reason: the name is read outside observability, model definitions, harness and compile-time code (grep; unverified as a cross-tick decision read)
+  reader: grep (unverified) src/engine/work_wake.py:3
+- path: state.entities[].cognition.subjective.perception.perceived_threats[].threat_id
+  status: GAP
+  group: F
+  reason: 'default GAP: no reader located by grep over src (excluding model definitions, observability, harness and compile-time code); to be named by rpg-planner'
+  reader: unlocated
+- path: state.entities[].cognition.subjective.perception.perceived_threats[].threat_level
+  status: GAP
+  group: F
+  reason: 'default GAP: no reader located by grep over src (excluding model definitions, observability, harness and compile-time code); to be named by rpg-planner'
+  reader: unlocated
+- path: state.entities[].cognition.subjective.time.delay_risks
+  status: EXCLUDE
+  group: F
+  basis: iii
+  tag: no_reader
+  reason: 'no reader outside the writer and observability: grep -rnwE ''delay_risks'' src (excluding observability, api, perf, lab, views, rendering, cli, replay, access_audit, and the field''s own definition) finds no use'
+- path: state.entities[].equipment.durability
+  status: GAP
+  group: F
+  reason: the name is read outside observability, model definitions, harness and compile-time code (grep; unverified as a cross-tick decision read)
+  reader: grep (unverified) src/world/providers/services.py:36
+- path: state.entities[].identity.cooldowns
+  status: GAP
+  group: E
+  reason: read across ticks
+  reader: rpg-planner ruling 2026-11-15 src/engine/tactical.py:704, src/engine/domain/skill_actions.py:48
+- path: state.entities[].identity.craft_target
+  status: GAP
+  group: E
+  reason: the name is read outside observability, model definitions, harness and compile-time code (grep; unverified as a cross-tick decision read)
+  reader: grep (unverified) src/core/updates.py:137
+- path: state.entities[].identity.latest_intent_results
+  status: GAP
+  group: E
+  reason: read across ticks
+  reader: rpg-planner ruling 2026-11-15 src/systems/strategic_systems/work_queue.py:56
+- path: state.entities[].identity.traits
+  status: GAP
+  group: E
+  reason: read across ticks
+  reader: rpg-planner ruling 2026-11-15 src/systems/social_systems/appraisal.py:146
+- path: state.entities[].identity.veterancy_points
+  status: GAP
+  group: E
+  reason: the name is read outside observability, model definitions, harness and compile-time code (grep; unverified as a cross-tick decision read)
+  reader: grep (unverified) src/progression/veterancy.py:34
+- path: state.entities[].inventory.items[].properties
+  status: GAP
+  group: F
+  reason: the name is read outside observability, model definitions, harness and compile-time code (grep; unverified as a cross-tick decision read)
+  reader: grep (unverified) src/entities/identity_resolver.py:39
+- path: state.entities[].inventory.max_weight
+  status: GAP
+  group: F
+  reason: the name is read outside observability, model definitions, harness and compile-time code (grep; unverified as a cross-tick decision read)
+  reader: grep (unverified) src/core/builder.py:255
+- path: state.entities[].self_model.capabilities.estimates[].capability_key
+  status: GAP
+  group: F
+  reason: 'default GAP: no reader located by grep over src (excluding model definitions, observability, harness and compile-time code); to be named by rpg-planner'
+  reader: unlocated
+- path: state.entities[].self_model.knowledge.facts[].subject
+  status: GAP
+  group: F
+  reason: the name is read outside observability, model definitions, harness and compile-time code (grep; unverified as a cross-tick decision read)
+  reader: grep (unverified) src/cognition/common_knowledge.py:51
+- path: state.entities[].self_model.knowledge.unknowns[].subject
+  status: GAP
+  group: F
+  reason: the name is read outside observability, model definitions, harness and compile-time code (grep; unverified as a cross-tick decision read)
+  reader: grep (unverified) src/cognition/knowledge_model.py:93
+- path: state.entities[].self_model.needs.active_needs[].key
+  status: GAP
+  group: F
+  reason: the name is read outside observability, model definitions, harness and compile-time code (grep; unverified as a cross-tick decision read)
+  reader: grep (unverified) src/cognition/self_model_phase.py:194
+- path: state.entities[].stamina.current
+  status: GAP
+  group: E
+  reason: stamina is read in many systems (see the reader)
+  reader: grep (unverified) src/systems/strategic_systems/work_queue.py:88
+- path: state.entities[].stamina.exhaustion_penalty
+  status: GAP
+  group: E
+  reason: stamina is read in many systems (see the reader)
+  reader: grep (unverified) src/systems/strategic_systems/work_queue.py:88
+- path: state.entities[].stamina.exhaustion_threshold
+  status: GAP
+  group: E
+  reason: stamina is read in many systems (see the reader)
+  reader: grep (unverified) src/systems/strategic_systems/work_queue.py:88
+- path: state.entities[].stamina.max_stamina
+  status: GAP
+  group: E
+  reason: stamina is read in many systems (see the reader)
+  reader: grep (unverified) src/systems/strategic_systems/work_queue.py:88
+- path: state.entities[].stamina.regen_rate
+  status: GAP
+  group: E
+  reason: stamina is read in many systems (see the reader)
+  reader: grep (unverified) src/systems/strategic_systems/work_queue.py:88
+- path: state.entities[].stamina.rest_regen_rate
+  status: GAP
+  group: E
+  reason: stamina is read in many systems (see the reader)
+  reader: grep (unverified) src/systems/strategic_systems/work_queue.py:88
+- path: state.entities[].strategic.profile.detour_breadth
+  status: GAP
+  group: F
+  reason: 'CognitionProfile is left out of the digest on the premise that it derives from attributes already hashed (src/core/state.py:925-927 comment); decisions read it. reader: grep (unverified) src/systems/strategic_systems/detour.py:71'
+  reader: grep (unverified) src/systems/strategic_systems/detour.py:71
+- path: state.entities[].strategic.profile.interruption_resistance
+  status: GAP
+  group: F
+  reason: 'CognitionProfile is left out of the digest on the premise that it derives from attributes already hashed (src/core/state.py:925-927 comment); decisions read it. reader: grep (unverified) src/systems/strategic_systems/intelligence.py:1091'
+  reader: grep (unverified) src/systems/strategic_systems/intelligence.py:1091
+- path: state.entities[].strategic.profile.max_active_projects
+  status: GAP
+  group: F
+  reason: 'CognitionProfile is left out of the digest on the premise that it derives from attributes already hashed (src/core/state.py:925-927 comment); decisions read it. reader: grep (unverified) src/town/guild.py:90'
+  reader: grep (unverified) src/town/guild.py:90
+- path: state.entities[].strategic.profile.max_candidate_zones
+  status: GAP
+  group: F
+  reason: 'CognitionProfile is left out of the digest on the premise that it derives from attributes already hashed (src/core/state.py:925-927 comment); decisions read it. reader: grep (unverified) src/engine/pipeline_phases/capacity_enforcement.py:113'
+  reader: grep (unverified) src/engine/pipeline_phases/capacity_enforcement.py:113
+- path: state.entities[].strategic.profile.max_committed_intentions
+  status: GAP
+  group: F
+  reason: 'CognitionProfile is left out of the digest on the premise that it derives from attributes already hashed (src/core/state.py:925-927 comment); decisions read it. reader: grep (unverified) src/engine/pipeline_phases/capacity_enforcement.py:128'
+  reader: grep (unverified) src/engine/pipeline_phases/capacity_enforcement.py:128
+- path: state.entities[].strategic.profile.max_concerns
+  status: GAP
+  group: F
+  reason: 'CognitionProfile is left out of the digest on the premise that it derives from attributes already hashed (src/core/state.py:925-927 comment); decisions read it. reader: grep (unverified) src/systems/strategic_systems/detour.py:190'
+  reader: grep (unverified) src/systems/strategic_systems/detour.py:190
+- path: state.entities[].strategic.profile.max_hypotheses
+  status: GAP
+  group: F
+  reason: 'CognitionProfile is left out of the digest on the premise that it derives from attributes already hashed (src/core/state.py:925-927 comment); decisions read it. reader: grep (unverified) src/systems/strategic_systems/detour.py:200'
+  reader: grep (unverified) src/systems/strategic_systems/detour.py:200
+- path: state.entities[].strategic.profile.max_leads
+  status: GAP
+  group: F
+  reason: 'CognitionProfile is left out of the digest on the premise that it derives from attributes already hashed (src/core/state.py:925-927 comment); decisions read it. reader: grep (unverified) src/strategy/leads.py:28'
+  reader: grep (unverified) src/strategy/leads.py:28
+- path: state.entities[].strategic.profile.max_turning_points
+  status: GAP
+  group: F
+  reason: 'CognitionProfile is left out of the digest on the premise that it derives from attributes already hashed (src/core/state.py:925-927 comment); decisions read it. reader: grep (unverified) src/engine/patches.py:492'
+  reader: grep (unverified) src/engine/patches.py:492
+- path: state.entities[].strategic.profile.reserved_detour_depth
+  status: GAP
+  group: F
+  reason: 'CognitionProfile is left out of the digest on the premise that it derives from attributes already hashed (src/core/state.py:925-927 comment); decisions read it. reader: grep (unverified) src/core/builder.py:450'
+  reader: grep (unverified) src/core/builder.py:450
+- path: state.entities[].strategic.profile.resistance_multiplier
+  status: GAP
+  group: F
+  reason: 'CognitionProfile is left out of the digest on the premise that it derives from attributes already hashed (src/core/state.py:925-927 comment); decisions read it. reader: grep (unverified) src/systems/strategic_systems/intelligence.py:1091'
+  reader: grep (unverified) src/systems/strategic_systems/intelligence.py:1091
+- path: state.entities[].strategic.projects[].created_tick
+  status: GAP
+  group: F
+  reason: the name is read outside observability, model definitions, harness and compile-time code (grep; unverified as a cross-tick decision read)
+  reader: grep (unverified) src/town/guild.py:90
+- path: state.entities[].strategic.projects[].failure_count
+  status: GAP
+  group: F
+  reason: the name is read outside observability, model definitions, harness and compile-time code (grep; unverified as a cross-tick decision read)
+  reader: grep (unverified) src/systems/strategic_systems/detour.py:89
+- path: state.entities[].strategic.projects[].id
+  status: GAP
+  group: F
+  reason: the name is read outside observability, model definitions, harness and compile-time code (grep; unverified as a cross-tick decision read)
+  reader: grep (unverified) src/town/guild.py:90
+- path: state.entities[].strategic.projects[].lock_until_tick
+  status: GAP
+  group: F
+  reason: the name is read outside observability, model definitions, harness and compile-time code (grep; unverified as a cross-tick decision read)
+  reader: grep (unverified) src/systems/strategic_systems/intelligence.py:1095
+- path: state.entities[].strategic.projects[].score
+  status: GAP
+  group: F
+  reason: the name is read outside observability, model definitions, harness and compile-time code (grep; unverified as a cross-tick decision read)
+  reader: grep (unverified) src/town/guild.py:90
+- path: state.entities[].timeline
+  status: GAP
+  group: E
+  reason: per-entity event timeline; deque
+  reader: grep (unverified) src/domains/cooperation/phase.py:38
+- path: state.feature_flags
+  status: EXCLUDE
+  group: B
+  basis: ii
+  reason: 'run setup: set at kernel init (src/engine/kernel.py:118) and carried unchanged (src/engine/apply.py:570); pipeline.py:84-91 only reads it. The EFFECTIVE flags also depend on pressure_signals (a GAP row, owning ticket TCK-20261023-PRESSURE-SIGNALS-SWITCH-FEATURE-FLAGS-OUTSIDE-THE-HASH)'
+- path: state.ground_items[].dropped_tick
+  status: GAP
+  group: F
+  reason: the name appears outside its definition (attribute form not matched, so the read is unconfirmed)
+  reader: grep (unverified) src/engine/world_dynamics.py:360
+- path: state.ground_items[].source_entity_id
+  status: GAP
+  group: F
+  reason: the name is read outside observability, model definitions, harness and compile-time code (grep; unverified as a cross-tick decision read)
+  reader: grep (unverified) src/systems/strategic_systems/detour.py:297
+- path: state.groups[].member_ids
+  status: GAP
+  group: F
+  reason: 'hashed only conditionally (samples disagree): a path whose hashing depends on state'
+  reader: grep (unverified) src/systems/social_systems/group_service.py:16
+  note: 'samples disagree: unhashed vs covered'
+- path: state.home_storage[].items[].properties
+  status: GAP
+  group: F
+  reason: the name is read outside observability, model definitions, harness and compile-time code (grep; unverified as a cross-tick decision read)
+  reader: grep (unverified) src/entities/identity_resolver.py:39
+- path: state.home_storage[].max_weight
+  status: GAP
+  group: F
+  reason: the name is read outside observability, model definitions, harness and compile-time code (grep; unverified as a cross-tick decision read)
+  reader: grep (unverified) src/core/builder.py:255
+- path: state.movement_cache
+  status: GAP
+  group: A
+  reason: persists across ticks (src/engine/apply.py:382-385 carries it and invalidates only for the dirty set) and movement reads it
+- path: state.next_entity_id
+  status: GAP
+  group: D
+  reason: 'id counter: the next spawned entity''s id comes from it (src/engine/apply.py new_next_entity)'
+- path: state.next_item_instance_id
+  status: GAP
+  group: D
+  reason: 'id counter: the next item instance''s id comes from it (src/engine/apply.py new_next_item_instance)'
+- path: state.next_node_id
+  status: GAP
+  group: D
+  reason: 'id counter: the next resource node''s id comes from it (src/engine/apply.py new_next_node)'
+- path: state.pending_information_responses
+  status: GAP
+  group: D
+  reason: queue carried across ticks and consumed by the information phase
+- path: state.pending_self_model_information_events
+  status: GAP
+  group: D
+  reason: queue carried across ticks and consumed by the self-model phase
+- path: state.pressure_signals
+  status: GAP
+  group: C
+  reason: owning ticket TCK-20261023-PRESSURE-SIGNALS-SWITCH-FEATURE-FLAGS-OUTSIDE-THE-HASH
+- path: state.processed_transaction_ids
+  status: GAP
+  group: C
+  reason: 'idempotency: whether a transaction applies depends on this set (src/engine/apply.py new_processed)'
+- path: state.rejection_registry
+  status: GAP
+  group: C
+  reason: read across ticks by social systems; see TCK-20261109-ANY-SOCIAL-UPDATE-WIPES-THE-REJECTION-COUNTS-IT-DOES-NOT-NAME
+- path: state.route_plans
+  status: GAP
+  group: D
+  reason: a stored route plan steers steps for several ticks (src/engine/apply.py:538 carries it); see the ticket's 2026-11-03 note
+- path: state.terrain
+  status: GAP
+  group: B
+  reason: carried from the prior state (src/engine/apply.py:520); no manifest fingerprint of the terrain was found, so it is not shown to be fixed and recorded
+- path: state.town_entity_ids
+  status: GAP
+  group: D
+  reason: built once by the compiler (src/worldbuilding/compiler.py:792) and carried; read by src/core/dirty.py:293; no rebuild site found, so not shown to be derived
+- path: state.transaction_trace
+  status: EXCLUDE
+  group: C
+  basis: iii
+  tag: no_reader
+  reason: '(iii) audit trail: bounded log appended by the apply (apply.py new_trace); no reader outside the writer and observability'
+- path: state.transient_claims
+  status: GAP
+  group: F
+  reason: the name is read outside observability, model definitions, harness and compile-time code (grep; unverified as a cross-tick decision read)
+  reader: grep (unverified) src/domains/campaigns/survivor_placement.py:78
+patterns:
+- name: derived caches
+  regex: ^state(\.entities\[\]|\.camps\[\]|\.resource_nodes\[\])?\._[a-z_]*cache$
+  status: EXCLUDE
+  group: A
+  basis: i
+  reason: memo caches reset on every state construction (src/core/state.py __post_init__) or recomputed at apply; each leaf's site is in matched
+  matched:
+  - path: state._building_map_cache
+    site: 'recomputed at apply from the new buildings: src/engine/apply.py:541 (new_bldg_map)'
+  - path: state._building_region_map_cache
+    site: 'reset on every state construction: src/core/state.py:1446 (__post_init__)'
+  - path: state._corpse_map_cache
+    site: 'reset on every state construction: src/core/state.py:1441 (__post_init__)'
+  - path: state._ground_item_map_cache
+    site: 'reset on every state construction: src/core/state.py:1442 (__post_init__)'
+  - path: state._has_contracts_cache
+    site: 'recomputed from the entities on every construction: src/core/state.py:1453-1460, src/engine/apply.py:543'
+  - path: state._has_hostiles_or_dead_cache
+    site: 'recomputed from the entities on every construction: src/core/state.py:1453-1460, src/engine/apply.py:542'
+  - path: state._node_map_cache
+    site: 'reset on every state construction: src/core/state.py:1438 (__post_init__)'
+  - path: state._occupancy_map_cache
+    site: 'reset on every state construction: src/core/state.py:1436 (__post_init__)'
+  - path: state._readonly_cache
+    site: 'reset on every state construction: src/core/state.py:1433 (__post_init__)'
+  - path: state._readonly_entities_cache
+    site: 'reset on every state construction: src/core/state.py:1433 (__post_init__)'
+  - path: state._region_index_cache
+    site: 'reset on every state construction: src/core/state.py:1445 (__post_init__)'
+  - path: state._region_list_cache
+    site: 'reset on every state construction: src/core/state.py:1435 (__post_init__)'
+  - path: state._spatial_grid_cache
+    site: 'reset on every state construction: src/core/state.py:1434 (__post_init__)'
+  - path: state.camps[]._readonly_cache
+    site: 'reset on every state construction: src/core/state.py:1433 (__post_init__)'
+  - path: state.entities[]._readonly_cache
+    site: 'reset on every state construction: src/core/state.py:1433 (__post_init__)'
+  - path: state.entities[]._spatial_grid_cache
+    site: 'reset on every state construction: src/core/state.py:1434 (__post_init__)'
+- name: index containers
+  names:
+  - state.world_indexes
+  - state.semantic_entity_indexes
+  - state.occupancy_snapshot
+  - state._apply_time_dirty_set
+  - state._active_nodes_grid
+  - state._regions_global_bounds
+  - state._index_hits
+  - state._index_misses
+  status: EXCLUDE
+  group: A
+  basis: i
+  reason: per-tick rebuilt indexes and telemetry counters; each leaf's site is in matched
+  matched:
+  - path: state._active_nodes_grid
+    site: 'recomputed at apply from the new state''s nodes: src/engine/apply.py:540 (new_active_nodes)'
+  - path: state._apply_time_dirty_set
+    site: 'reset on every state construction and repopulated by the apply: src/core/state.py:1451, src/engine/apply.py:605'
+  - path: state._index_hits
+    site: 'telemetry counter; read only by the kernel metrics: src/engine/kernel.py:641'
+  - path: state._index_misses
+    site: 'telemetry counter; read only by the kernel metrics: src/engine/kernel.py:642'
+  - path: state._regions_global_bounds
+    site: 'reset on every state construction: src/core/state.py:1447 (__post_init__)'
+  - path: state.occupancy_snapshot
+    site: 'rebuilt each tick from the state when its tick is stale: src/engine/pipeline.py:65-66'
+  - path: state.semantic_entity_indexes
+    site: 'rebuilt each tick from the state (tick-keyed): src/engine/semantic_entity_index.py:60-72'
+  - path: state.world_indexes
+    site: 'rebuilt each tick from the state (tick-keyed; sub-indexes reused only while CacheInvalidationPolicy says clean): src/engine/world_index.py:106-132'
+unexercised:
+- path: state.entities[].strategic.beliefs
+  reason: 'type never populated in sample states; synthesis failed: hashing raised on a type-correct value. Declared Any, so no typed record can be built from the hint.'
+- path: state.information_source_profiles
+  reason: 'type never populated in sample states; synthesis failed: hashing raised on a type-correct value. Declared Any, so no typed record can be built from the hint.'
+- path: state.regions[].population_cohorts
+  reason: 'type never populated in sample states; synthesis failed: hashing raised on a type-correct value. Declared Any, so no typed record can be built from the hint.'

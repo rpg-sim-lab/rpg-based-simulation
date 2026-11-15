@@ -13152,19 +13152,23 @@
 - id: INFRA-440
   text: 'TCK-20261103-A-MEASUREMENT-NOT-ON-THE-PINNED-RUNNER-CALLS-ITSELF-EVIDENCE:
     the run manifest carries a typed run_conditions record (RunConditions: governor
-    and executor class names, max_tick_budget_ms, audit_mode, no_frame_pacing), written
+    and executor class names, max_tick_budget_ms, audit_mode, no_frame_pacing, and worker_manager,
+    the class behind a non-sequential executor, None when sequential), written
     by one update_manifest call after the kernel has chosen its executor. It is run
     setup only: not hashed state, not in the event stream, Optional so older manifests
     load. A testing classifier (tools/test_architecture/pinned_runner.py, the one
     PINNED definition) derives PINNED or NOT_PINNED from the record alone; the evidence
     helper refuses NOT_PINNED and tools/rpg_measure/arm_child.py refuses a build whose
-    governor, executor or budget is not pinned.'
+    governor, executor or budget is not pinned. TCK-20261115-A-NON-SEQUENTIAL-RUN-IS-REFUSED-BY-THE-GATE-CANDIDATE-PAIRED-ARMS-AND-RPG-MEASURE:
+    the gate candidate, paired.py (local and --collected) and paired_arms.assemble also
+    refuse a document not marked runner PINNED.'
   status: verified
   priority: P1
   legacy_evidence: null
   v2_evidence: src/observability/reporting/artifact_repository.py (RunConditions,
     RunManifest.run_conditions); src/engine/kernel.py (Kernel.__init__, the update_manifest
-    call after executor selection); tools/test_architecture/pinned_runner.py; tools/rpg_measure/arm_child.py
+    call after executor selection); tools/test_architecture/pinned_runner.py; tools/rpg_measure/arm_child.py;
+    tools/rpg_measure/paired.py; tools/test_architecture/{rpg_gate_run,rpg_gate_candidate,paired_arms}.py
   proof_type: contract
   test_path: tests/unit/kernel/test_run_conditions_record.py
   divergence_note: null

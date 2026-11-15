@@ -28,6 +28,15 @@ from src.lab.guardrails import (
 from src.lab.orchestrator import ScenarioLabOrchestrator
 from src.worldbuilding.repository import WorldRepository
 from src.lab.repository import ScenarioRepository, ExperimentRepository, LabRunRepository
+from tests.named_run_dirs import remove_named_run_dirs  # noqa: F401
+
+# Run ids this module's tests name, removed by name after each test (see tests/named_run_dirs.py).
+RUN_ID_PREFIXES = {
+    "test_budget_warning_appears_in_lab_summary": ('run_warn_summary_check',),
+    "test_force_flag_is_audited": ('run_block_force',),
+    "test_local_profile_requires_confirmation_for_warning": ('run_warn_success',),
+}
+pytestmark = pytest.mark.usefixtures("remove_named_run_dirs")
 
 @pytest.fixture(autouse=True)
 def mock_simulation_loop():
