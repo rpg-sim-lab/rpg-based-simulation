@@ -1,10 +1,10 @@
 ---
-status: active
+status: historical
 layer: testing
 authority: P2
 audience: agent
 ticket_id: TCK-20261115-M1-THE-NAME-SWITCH-PROBE-GATES-WORLD-AND-CORE-TOO
-phase: open
+phase: done
 date: 2026-11-15
 tags: [testing, architecture]
 ---
@@ -15,7 +15,7 @@ tags: [testing, architecture]
 The name-switch probe gates `src/world` and `src/core` as well, so the 15 world switches it only reported now count against the ratchet
 
 ## Status
-OPEN (filed; needs its own owner dispatch via lead-planner-u24 before work starts)
+DONE
 
 ## Tier
 hotfix
@@ -67,9 +67,13 @@ rpg-planner ruled on PR #918 (comment 6889044816, 2026-11-15) that all 15 report
 - 129 = 114 + 15. Re-count on the head at build time, because a src/ merge in between can move it.
 
 ## Implementation Notes
+Dispatched by testing-planner (owner #715 6889056382). `world` and `core` moved from `REPORT_ONLY` to `SCAN`; `REPORT_ONLY` is `()` and `PROMOTED_GATING` is an empty frozenset (machinery kept; the tests that exercised it now pass an explicit `report_only=`). 15 `src/world` rows appended to the allowlist (105 → 120), each citing TCK-20261109-M1-RETIRE-ROLE-KIND-AND-FACTION-NAME-BRANCHES-IN-STAGES; the `core/builder.py:690` row stays. Re-count on the head (origin/main b6ac7dabb): 139 switches = 129 gating, 0 report-only, 10 excluded, as the ticket predicted.
 
 ## Test Summary
+`tests/architecture/test_no_name_switches_in_decision_paths.py` 58 passed; `check_rulings` returns no problems. Perturbation: a `kind == "hero"` compare appended to `src/world/threat.py` failed the ratchet test (new name switch); restored, 58 passed again.
 
 ## Files Changed
+`tools/test_architecture/name_switch_scan.py`, `tests/architecture/name_switch_allowlist.yaml`, `tests/architecture/test_no_name_switches_in_decision_paths.py`.
 
 ## Completion Summary
+The name-switch ratchet now gates `src/world` and `src/core`: 129 gating, 0 report-only, 10 excluded; 120 allowlist rows. AC4 (rpg-planner confirms the row diff against its 6889044816 list) is with testing-planner, who forwards the diff.

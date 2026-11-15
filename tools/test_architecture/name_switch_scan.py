@@ -24,7 +24,7 @@ item, lead, place and skill kinds), so that is a recorded limit and not a gap. T
 A switch spelt some other way (``monster_type == "goblin"``) is not found; that limit is recorded in the test and the PR, not hidden. ``PROMOTED_GATING`` and
 ``REASONED_EXCLUSIONS`` are the two per-row rulings (a report-only row that gates, a found switch that is ruled out), kept as data.
 
-Packages are sorted by ruling (rpg-planner, 2026-11-15): ``SCAN`` is gating (src/content_semantics included), ``REPORT_ONLY`` is reported but never fails, ``EXCLUDE`` is not looked at. Every
+Packages are sorted by ruling (rpg-planner, 2026-11-15): ``SCAN`` is gating (src/content_semantics, src/world and src/core included), ``REPORT_ONLY`` is reported but never fails, ``EXCLUDE`` is not looked at. Every
 directory under ``src/`` must be in exactly one list, so a new package is classified before it can hide a switch.
 
 Run ``python -m tools.test_architecture.name_switch_scan`` for the text rows, ``--json`` for the same as JSON, ``--gating-only`` to drop the report-only rows.
@@ -44,10 +44,10 @@ REPO = Path(__file__).resolve().parents[2]
 
 # Gating: code run while an entity's action is chosen or resolved. ``src/domains`` is every subpackage of it.
 SCAN: Tuple[str, ...] = (
-    "ai", "cognition", "strategy", "actions", "engine", "systems", "domains", "economy", "town", "quests", "progression", "entities", "content_semantics",
+    "ai", "cognition", "strategy", "actions", "engine", "systems", "domains", "economy", "town", "quests", "progression", "entities", "content_semantics", "world", "core",
 )
-# Reported on the first run, never failing. rpg-planner rules each hit; a row then moves into SCAN or into a reasoned exclusion.
-REPORT_ONLY: Tuple[str, ...] = ("world", "core")
+# Reported, never failing. Empty since rpg-planner ruled all 15 src/world rows gating (#918 6889044816); the list and its machinery stay for the next package that needs a first look.
+REPORT_ONLY: Tuple[str, ...] = ()
 # Not looked at: output, tooling, harness and world-declaration packages; ``content`` declares kinds by name on purpose.
 EXCLUDE: Tuple[str, ...] = (
     "api", "views", "rendering", "observability", "logging", "replay", "cli", "lab", "perf", "certification", "simulation_quality", "testing", "scenarios",
@@ -57,9 +57,7 @@ EXCLUDE: Tuple[str, ...] = (
 
 # A row in a report-only package that gates anyway: (file, symbol of the enclosing function or ``<module>[TABLE]``). rpg-planner rules the rest of the
 # report-only rows one by one; a promotion that matches no switch is stale and fails, like a stale allowlist row.
-PROMOTED_GATING: frozenset = frozenset({
-    ("src/core/builder.py", "V2EntityBuilder.birth_record"),  # parent_a_role == HERO and parent_b_role == HERO: a role switch in birth (rpg-planner, 2026-11-15)
-})
+PROMOTED_GATING: frozenset = frozenset()
 
 # A switch that is found and ruled out, with the reason: (file, symbol) -> reason. Reported as ``excluded``, never gating, and a stale entry fails.
 REASONED_EXCLUSIONS: Dict[Tuple[str, str], str] = {

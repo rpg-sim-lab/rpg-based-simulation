@@ -6,8 +6,8 @@ run is a row of ``name_switch_allowlist.yaml`` that cites the retirement ticket.
 too, so the list only shrinks. "Done" is an empty allowlist.
 
 What the scan does not see, on purpose: a switch spelt some other way (``monster_type == "goblin"``), a name read through ``EntityRole.__members__``, and a
-``kind`` on a receiver that is not entity-like. The report-only packages (src/world and src/core) are listed in the scan output
-but do not gate until rpg-planner rules their rows.
+``kind`` on a receiver that is not entity-like. src/world and src/core gate (rpg-planner, #918 6889044816). The report-only list is empty but keeps its machinery,
+which the tests below exercise with an explicit list.
 """
 from __future__ import annotations
 
@@ -57,19 +57,18 @@ def test_every_allowlist_row_has_a_reason_and_cites_the_retirement_ticket():
         assert (REPO / r["file"]).exists(), r
 
 
-def test_the_real_scan_reports_report_only_rows_without_gating_on_them():
+def test_the_real_scan_gates_every_package_in_scan_and_reports_nothing():
     rows = scan.scan_tree(REPO)
-    assert {s.status for s in rows} == {"gating", "report-only", "excluded"}
-    promoted = {(s.file, s.symbol) for s in rows if s.status == "gating" and s.file.split("/")[1] in scan.REPORT_ONLY}
-    assert promoted == set(scan.PROMOTED_GATING)
-    assert all(s.file.split("/")[1] in scan.SCAN for s in rows if s.status == "gating" and (s.file, s.symbol) not in promoted)
-    assert all(s.file.split("/")[1] in scan.REPORT_ONLY for s in rows if s.status == "report-only")
+    assert {s.status for s in rows} == {"gating", "excluded"}
+    assert scan.REPORT_ONLY == () and scan.PROMOTED_GATING == frozenset()
+    assert all(s.file.split("/")[1] in scan.SCAN for s in rows if s.status == "gating")
+    assert {"world", "core"} <= set(scan.SCAN)
 
 
 def test_the_rulings_of_2026_11_15_hold_on_the_real_tree():
     rows = scan.scan_tree(REPO)
-    # runtime is excluded; content_semantics gates; world and core report; the identity compat maps are excluded with a reason, as rows, by file and symbol
-    assert "runtime" in scan.EXCLUDE and "content_semantics" in scan.SCAN and {"world", "core"} == set(scan.REPORT_ONLY)
+    # runtime is excluded; content_semantics gates; world and core gate; the identity compat maps are excluded with a reason, as rows, by file and symbol
+    assert "runtime" in scan.EXCLUDE and "content_semantics" in scan.SCAN and {"world", "core"} <= set(scan.SCAN)
     assert {(s.file, s.symbol) for s in rows if s.status == "excluded"} == set(scan.REASONED_EXCLUSIONS)
     assert not [s for s in rows if s.file.startswith("src/entities/") and s.status == "excluded" and "identity_resolver" not in s.file]
     assert any(s.file == "src/systems/social_systems/party_composition.py" and s.symbol.endswith("infer_party_role") and s.status == "gating" for s in rows)
@@ -162,7 +161,7 @@ def test_a_package_that_is_excluded_is_not_scanned(tmp_path):
 def test_a_report_only_package_is_reported_but_not_gating(tmp_path):
     body = "def f(e):\n    return e.identity.role == EntityRole.HERO\n"
     root = _tree(tmp_path, {"world/mod.py": body})
-    rows = scan.scan_tree(root)
+    rows = scan.scan_tree(root, scan=(), report_only=("world",))
     assert [(s.status, s.name) for s in rows] == [("report-only", "EntityRole.HERO")]
     assert scan.check_allowlist(rows, {}) == []
 
@@ -177,7 +176,7 @@ def test_a_promoted_row_gates_inside_a_report_only_package_and_a_stale_promotion
     body = "class B:\n    def birth(self, a):\n        return a.role == EntityRole.HERO\n\n    def other(self, a):\n        return a.role == EntityRole.GUARD\n"
     root = _tree(tmp_path, {"core/b.py": body})
     promoted = frozenset({("src/core/b.py", "B.birth")})
-    rows = scan.scan_tree(root, promoted=promoted)
+    rows = scan.scan_tree(root, scan=(), report_only=("core",), promoted=promoted)
     assert [(s.symbol, s.status) for s in rows] == [("B.birth", "gating"), ("B.other", "report-only")]
     assert scan.check_rulings(rows, promoted, {}) == []
     stale = scan.check_rulings(rows, frozenset({("src/core/b.py", "B.gone")}), {})
