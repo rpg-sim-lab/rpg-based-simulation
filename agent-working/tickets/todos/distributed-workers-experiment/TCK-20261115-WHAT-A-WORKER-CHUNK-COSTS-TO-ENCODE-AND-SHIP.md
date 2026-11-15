@@ -78,8 +78,9 @@ None.
 - tools/perf/quiet_gate.py
 
 ## Assumptions / Open Questions
-- **Open: the probe is new code.** The pause holds new perf tooling, and the exemption names the measurement. I read the probe as part of it, a small throwaway or test-local helper. lead-planner or the owner confirms before it is written.
-- The epic's SEQUENCE says no heavy-slot run until the owner has reviewed the whole plan. I read 6889952914 as that go for this measurement, and lead-planner confirms it with the slot.
+- **Settled (lead-planner, 2026-11-15, citing #715 6889952914 item C): the probe is inside the exemption, on conditions.** It lives in this ticket's staging artifacts (`agent-working/staging_artifacts/TCK-20261115-WHAT-A-WORKER-CHUNK-COSTS-TO-ENCODE-AND-SHIP/`), which move to stored_artifacts as evidence. It does not go in `tools/`, and there is no `src/` edit. If it needs a permanent home in `tools/` or a `src` hook, that is new perf tooling: stop and bring it to lead-planner for the owner.
+- **Settled:** it runs on the pinned runner (#918, `tools/test_architecture/pinned_runner.py::require_pinned`), whose executor is `LocalSequentialExecutor`, which builds no packets or chunks. So the probe drives the pinned kernel (`tools/test_architecture/rpg_gate_run.build_kernel`), and on each measured tick it builds, off the run, what `ConcurrentExecutionAdapter.execute` would build (`_batch_views` plus the `WorkerPacket`s, `executor.py:221-330`). It then chunks them the way the worker manager does and times pickle and unpickle around them. That side path reads state only and must not change the run: the probe checks the final hash against a probe-free run. The part of Collection's split that only a concurrent run has (dispatch, worker compute per chunk) is marked unknown or taken from the full form.
+- **Settled:** item C supersedes the epic SEQUENCE's "no heavy-slot run until the owner has reviewed the whole plan" for this cheap form only. lead-planner tells lead-planner-u24 when it queues the run.
 - Whether the chunking today (chunk size, worker count) is the one the experiment would use: design §4 decides. This ticket measures today's.
 
 ## Implementation Notes

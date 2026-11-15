@@ -38,7 +38,7 @@ The numbers today are PROVISIONAL and come from a loaded host before both fixes 
 - Each figure carries its denominator: the share of the whole tick, plus the tick's own ms, ticks measured, warmup and contract.
 - A Resolution profile that names `fused_strategic_pass` (`src/engine/pipeline.py:394`) and its share of Resolution and of the tick.
   - Check first whether the `final_integrity` timer fix of `tick_cost_growth.md` H5 is on main. `pipeline.py` now has a t0..t8 breakdown, which suggests it is. If it is, read the pass from the kernel's own costs. If not, use the process-local wrapper of the H5 attribution (no `src/` edit).
-- Existing tools only: `tools/perf/profile_tick.py` (`--scenario corpus:<world>`, `--sampler none` for the timed runs, one py-spy run for the profile). No new perf tooling.
+- No new perf tooling in `tools/` and no `src/` edit. The runner question (pinned, #918) is under Open Questions.
 - Quiet host under `docs/performance/perf_baseline_policy.md` §2.2 (`tools/perf/quiet_gate.py`), on the heavy slot lead-planner grants, one run at a time, under the 3G cap.
 - Write the results into `docs/performance/tick_cost_growth.md` as a dated section with the sha, host and gate readings, and mark the older figures as superseded where these replace them.
 
@@ -77,6 +77,7 @@ None.
 - src/engine/pipeline.py (read only)
 
 ## Assumptions / Open Questions
+- **Open (asked of lead-planner 2026-11-15): the runner.** #918 makes measurement evidence come from the pinned runner (`pinned_runner.require_pinned`: pinned governor, `LocalSequentialExecutor`, budget >= 1e9, audit mode, no frame pacing). `tools/perf/profile_tick.py`'s contracts never meet that: its `pinned` contract fixes the governor only, keeps audit mode off, and leaves the executor and budget at the profile's. So "existing tools only" and "pinned" conflict. Proposed: a staging-artifact probe on `rpg_gate_run.build_kernel` that reads the kernel's own per-phase costs, plus one py-spy run over it for the Resolution profile, under the same conditions lead set for the packet-cost probe. The per-phase numbers are then those of the sequential executor, which is what the serial next-gen stages compare against; that caveat is stated with the result.
 - Ticks and warmup are fixed in the run spec sent to lead-planner before the slot, not here.
 - Host: the ubuntu VM has had host-side vCPU stalls. A quiet-gate pass does not rule them out, so the spread check carries that risk.
 - Whether `tick_cost_growth.md`'s older figures stay comparable: measurements from before the 10-25 venv sync are not comparable (handover), so only the post-fix numbers are reported as current.
