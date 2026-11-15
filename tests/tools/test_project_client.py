@@ -12,6 +12,7 @@ from tools.sessions import project_sync as ps
 SENTINEL = "ghp_SENTINEL_TOKEN_VALUE_123"
 STATUSES = ps.STATUSES
 LAYERS = ("combat", "world")
+DOMAINS = ("rpg", "agent-working", "unassigned", "unknown")
 
 
 def field(name, typ, options=()):
@@ -25,6 +26,7 @@ def project(extra=(), status_options=("Todo", "In Progress", "Done"), skip=()):
     fields["Tier"] = field("Tier", "SINGLE_SELECT", [n for n, _ in pc.TIER_OPTIONS])
     fields["Priority"] = field("Priority", "SINGLE_SELECT", [n for n, _ in pc.PRIORITY_OPTIONS])
     fields["Layer"] = field("Layer", "SINGLE_SELECT", LAYERS)
+    fields["Domain"] = field("Domain", "SINGLE_SELECT", DOMAINS)
     for n in skip:
         fields.pop(n)
     for f in extra:

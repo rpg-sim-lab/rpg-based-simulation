@@ -84,8 +84,9 @@ def test_stale_only_when_every_working_host_is_stale():
 
 def test_seat_and_domain_are_the_union_of_the_segments_and_shrink_when_a_host_leaves():
     both = item(facts_text(seg("progress", "rpg-implementer-u24"), seg("progress", "rpg-implementer", "perf")))
-    derived, _ = derive(A, [fact(A)], both)
-    assert derived["Seat"] == "rpg-implementer, rpg-implementer-u24" and derived["Domain"] == "perf, rpg"
+    derived, findings = derive(A, [fact(A)], both)
+    assert derived["Seat"] == "rpg-implementer, rpg-implementer-u24" and derived["Domain"] == "perf"  # a select holds one value: the sorted first
+    assert any("held in domains perf, rpg" in f for f in findings)
     left, _ = derive(B, [fact(B)], item(facts_text(a=seg("progress", "rpg-implementer-u24"))))
     assert left["Seat"] == "rpg-implementer, rpg-implementer-u24"
     only_b, _ = derive(A, [], item(facts_text(a=seg("progress", "rpg-implementer-u24"), b=seg("progress", "rpg-implementer"))))
@@ -224,7 +225,7 @@ def test_convergence_one_holder_per_ticket_a_then_b_then_a_leaves_an_empty_third
         plan = plan_multi(host, branches[host], items)
         plans.append(plan)
         items = settle(items, plan)
-    assert main and plans[0].creates and plans[1].creates
+    assert main and plans[0].creates and (plans[1].creates or plans[1].updates)  # origin's inprogress copy is a candidate on every host
     assert plans[2].updates == [] and plans[2].archives == [] and plans[2].creates == []
 
 
