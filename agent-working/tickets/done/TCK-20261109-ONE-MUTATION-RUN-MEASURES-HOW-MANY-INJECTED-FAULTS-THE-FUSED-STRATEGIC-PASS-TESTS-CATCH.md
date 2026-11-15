@@ -1,10 +1,10 @@
 ---
-status: active
+status: historical
 layer: testing
 authority: P2
 audience: agent
 ticket_id: TCK-20261109-ONE-MUTATION-RUN-MEASURES-HOW-MANY-INJECTED-FAULTS-THE-FUSED-STRATEGIC-PASS-TESTS-CATCH
-phase: open
+phase: done
 date: 2026-11-09
 tags: [testing]
 ---
@@ -15,7 +15,7 @@ tags: [testing]
 One report-only mutmut run measures how many injected faults in fused_strategic_pass its current tests catch, recorded as a mutation baseline under tests/mutation/baselines/
 
 ## Status
-OPEN
+DONE
 
 ## Tier
 hotfix
@@ -42,9 +42,9 @@ Owner go on issue #715, comment 6736269441 (item 2, E): one mutmut run on fused_
 - A re-run after C lands. That is optional evidence on C's PR, recorded as a `_v2` file if done, with the same method.
 
 ## Acceptance Criteria
-- [ ] AC1: The baseline JSON exists, follows the existing baselines' schema, and names the exact source sha, the function line range, the test list, the counts, the runtime, and survivors by line.
-- [ ] AC2: The run happened inside the gap rpg-planner named ("HOST FREE for E"). Start and finish were messaged to rpg-planner. The wall time was at most 90 min; if it ran longer, it was stopped and the partial result recorded as `run.kind: partial` with the reason.
-- [ ] AC3: No change to pyproject.toml, requirements, or any file outside tests/mutation/baselines/ and this ticket. The scratch copy and venv are removed after the run.
+- [x] AC1: The baseline JSON exists, follows the existing baselines' schema, and names the exact source sha, the function line range, the test list, the counts, the runtime, and survivors by line.
+- [x] AC2: The run happened inside the gap rpg-planner named ("HOST FREE for E"). Start and finish were messaged to rpg-planner. The wall time was at most 90 min; if it ran longer, it was stopped and the partial result recorded as `run.kind: partial` with the reason. (Ran 11:28:30Z-12:58:29Z, stopped at the 90-min cap, recorded run.kind partial.)
+- [x] AC3: No change to pyproject.toml, requirements, or any file outside tests/mutation/baselines/ and this ticket. The scratch copy and venv are removed after the run.
 
 ## Related Tickets
 - TCK-20261109-FUSED-STRATEGIC-PASS-FAST-PATH-IS-PINNED-BRANCH-BY-BRANCH-AND-AGAINST-THE-SLOW-PATH (C; the tests this measures before and after)
@@ -64,13 +64,20 @@ Owner go on issue #715, comment 6736269441 (item 2, E): one mutmut run on fused_
 - mutmut's version is pinned in the baseline's source_note.
 
 ## Implementation Notes
-(implementer)
+Ran 2026-11-09 11:28:30Z to 12:58:29Z on origin/main 1fb40ac76 (after C), mutmut 2.5.1, scratch on /mnt/data2. Stopped at the 90-min cap: PARTIAL. 452 mutants in the function range; 105 tested (61 killed, 44 survived), source lines 309-395 only; 347 not reached (lines 396-707). Baseline: tests/mutation/baselines/src_systems_strategic_intelligence_fused_v1.json (run.kind partial). A full pass needs a further host slot via rpg-planner.
 
 ## Test Summary
-(implementer)
+Unmutated selection: 567 passed, 3 xfailed. Positive control: the first killed mutants in the run.
+
+2026-11-15: The baseline-record schema test (tests/unit/tools/test_mutation_baseline_records.py, run by the unit-infra lane) was not run at close and failed on PR #924: the record lacked `target_selection` and `counts.total`. The record was conformed with true values only, no result changed: `counts.total` = 105 (tested = killed + survived + timeout + suspicious, with a `total_note`), and `target_selection` (owner #715 6736269441 item E, 2026-11-09, reason from this ticket, exclusions: lines 396-707 not reached at the cap, mutants outside the function).
 
 ## Files Changed
-(implementer)
+- tests/mutation/baselines/src_systems_strategic_intelligence_fused_v1.json (new)
 
 ## Completion Summary
-(implementer)
+Partial result, accepted by testing-planner as E's result (AC2 allows a run stopped at the 90-min cap, recorded as run.kind partial).
+- 452 mutants in range (lines 301-707); 105 tested: 61 killed, 44 survived, 0 timeout.
+- Lines not reached: 396-707 (347 mutants). Covered: 309-395, which holds the guard and the fast-path entry that C's rows were aimed at.
+- Survivors are listed in the baseline, not fixed.
+- No follow-up run planned; if wanted, a _v2 run needs an owner go.
+- Closes in the digest-light PR.

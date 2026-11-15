@@ -26,8 +26,11 @@ def _config(**over) -> base.GateConfig:
     return base.GateConfig(**args)
 
 
+PINNED = {"verdict": "PINNED", "differences": []}
+
+
 def _seed_doc(seed, *, v3=0, sha=SHA, hhash=HASH, ticks=100, k=2.0, floor=1.0, value=None, floor_rel=None):
-    return {"schema": "rpg-gate-metrics/v1", "status": "ok", "world": "w", "seed": seed, "ticks": ticks, "sha": sha, "harness_hash": hhash, "metrics": [
+    return {"schema": "rpg-gate-metrics/v1", "status": "ok", "world": "w", "seed": seed, "ticks": ticks, "sha": sha, "harness_hash": hhash, "runner": PINNED, "metrics": [
         {"id": "O1", "class": "outcome", "scope": "run", "group": "*", "key": "DEATHS", "tick": 100, "value": 10.0 + seed if value is None else value, "k": k, "floor": floor, **({"floor_rel": floor_rel} if floor_rel is not None else {})},
         {"id": "V1", "class": "validity", "scope": "run", "group": "*", "violations": 0, "examples": [], "oracle": ORACLE},
         {"id": "V3", "class": "validity", "scope": "run", "group": "wolves", "violations": v3, "examples": ["x"] if v3 else [], "oracle": ORACLE},
@@ -35,7 +38,7 @@ def _seed_doc(seed, *, v3=0, sha=SHA, hhash=HASH, ticks=100, k=2.0, floor=1.0, v
 
 
 def _pooled_doc(*, v3=0, sha=SHA, hhash=HASH):
-    return {"schema": "rpg-gate-metrics/v1", "status": "ok", "world": "w", "ticks": 100, "sha": sha, "harness_hash": hhash, "metrics": [
+    return {"schema": "rpg-gate-metrics/v1", "status": "ok", "world": "w", "ticks": 100, "sha": sha, "harness_hash": hhash, "runner": PINNED, "metrics": [
         {"id": "V3", "class": "validity", "scope": "pooled", "group": "wolves", "violations": v3, "examples": [], "oracle": ORACLE},
         {"id": "O9", "class": "outcome", "scope": "pooled", "group": "*", "value": 0.4, "floor": 0.1},
     ]}
@@ -554,3 +557,52 @@ def test_two_scoped_owners_of_one_row_are_both_recorded_so_each_expiry_is_rechec
     assert run_rows == [("V3:run:w:wolves", "TCK-A"), ("V3:run:w:wolves", "TCK-B")]
     with pytest.raises(base.RebaselineRefused, match="expired"):
         base.rebaseline(candidate, _config(), tmp_path / "b", pr=None, cites=["TCK-METRIC-SET"], known=[first, {**second, "expires_on": "2026-10-01"}], today=TODAY)
+
+
+# ---- the pinned runner (TCK-20261115-A-NON-SEQUENTIAL-RUN-IS-REFUSED-BY-THE-GATE-CANDIDATE-PAIRED-ARMS-AND-RPG-MEASURE)
+
+NOT_PINNED = {"verdict": "NOT_PINNED", "differences": ["executor is 'src.engine.executor.ConcurrentExecutionAdapter', pinned is 'src.engine.executor.LocalSequentialExecutor'"]}
+
+
+@pytest.mark.parametrize("which", [("w", 1), ("w", None)])
+def test_a_document_whose_runner_is_not_pinned_refuses_naming_the_document_and_the_difference(tmp_path, which):
+    docs = {**{("w", s): _seed_doc(s) for s in SEEDS}, ("w", None): _pooled_doc()}
+    docs[which] = {**docs[which], "runner": NOT_PINNED}
+    name = f"w__s{which[1]}.json" if which[1] is not None else "w__pooled.json"
+    with pytest.raises(cand.CandidateRefused, match=f"{name}: runner is not PINNED.*ConcurrentExecutionAdapter"):
+        _build(_write(tmp_path / "docs", docs))
+
+
+@pytest.mark.parametrize("which", [("w", 2), ("w", None)])
+def test_a_document_with_no_runner_field_refuses(tmp_path, which):
+    docs = {**{("w", s): _seed_doc(s) for s in SEEDS}, ("w", None): _pooled_doc()}
+    docs[which] = {k: v for k, v in docs[which].items() if k != "runner"}
+    with pytest.raises(cand.CandidateRefused, match="runner is not PINNED \\(no runner field\\)"):
+        _build(_write(tmp_path / "docs", docs))
+
+
+def test_runner_header_reads_the_manifest_and_a_missing_manifest_is_not_pinned(tmp_path):
+    from tools.test_architecture import rpg_gate_run as gate_run
+    from tools.test_architecture.pinned_runner import PINNED
+
+    record = {"governor": PINNED.governor, "executor": PINNED.executor, "max_tick_budget_ms": 1e9, "audit_mode": True, "no_frame_pacing": True, "worker_manager": None}
+    (tmp_path / "ok").mkdir()
+    (tmp_path / "ok" / "run_manifest.json").write_text(json.dumps({"run_id": "r", "run_conditions": record}))
+    assert gate_run.runner_header(tmp_path / "ok") == {"verdict": "PINNED", "differences": []}
+    (tmp_path / "threads").mkdir()
+    (tmp_path / "threads" / "run_manifest.json").write_text(json.dumps({"run_conditions": {**record, "executor": "src.engine.executor.ConcurrentExecutionAdapter", "worker_manager": "src.engine.worker_manager.WorkerManager"}}))
+    threads = gate_run.runner_header(tmp_path / "threads")
+    assert threads["verdict"] == "NOT_PINNED" and len(threads["differences"]) == 1 and threads["differences"][0].startswith("executor is")
+    assert gate_run.runner_header(tmp_path / "nowhere")["verdict"] == "NOT_PINNED"
+    (tmp_path / "bad").mkdir()
+    (tmp_path / "bad" / "run_manifest.json").write_text("[1]")
+    assert gate_run.runner_header(tmp_path / "bad")["verdict"] == "NOT_PINNED"
+
+
+def test_a_pooled_document_is_pinned_only_when_every_document_it_pools_is():
+    from tools.test_architecture import rpg_gate_run as gate_run
+
+    assert gate_run.pooled_runner([{"runner": PINNED}, {"runner": PINNED}]) == {"verdict": "PINNED", "differences": []}
+    mixed = gate_run.pooled_runner([{"runner": PINNED}, {"runner": NOT_PINNED}, {}])
+    assert mixed["verdict"] == "NOT_PINNED" and len(mixed["differences"]) == 2
+    assert gate_run.pooled_runner([])["verdict"] == "NOT_PINNED"

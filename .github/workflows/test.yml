@@ -163,6 +163,8 @@ jobs:
     if: ${{ !cancelled() && (needs.resync-gate.result != 'success' || needs.resync-gate.outputs.pr_content_unchanged != 'true') }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Fetch the pre-record arm trees arm_child's controls need
+        run: git fetch --no-tags --depth=1 origin 5ba65854c02ec9d132adb985a30b945fa8525d29 96db1f5e8ddedc685d4bf56aa367cec512045bb6
       - uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
         with: { version: "0.11.2", python-version: "3.13", activate-environment: true, enable-cache: true }
       - run: uv sync --locked --no-install-project --no-group lint

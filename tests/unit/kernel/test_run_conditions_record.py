@@ -31,6 +31,7 @@ PINNED_RECORD = {
     "max_tick_budget_ms": 1e9,
     "audit_mode": True,
     "no_frame_pacing": True,
+    "worker_manager": None,
 }
 
 
@@ -202,6 +203,81 @@ def test_arm_child_refuses_a_build_whose_governor_executor_or_budget_is_not_pinn
     try:
         with pytest.raises(pr.NotPinnedError, match="governor"):
             arm_child.main(["urban_political", "42", "1", str(tmp_path / "out.json")])
+    finally:
+        for kernel in built:
+            kernel.shutdown()
+
+
+# --------------------------------------------------------------------------------------------- worker_manager (TCK-20261115-A-NON-SEQUENTIAL-RUN-IS-REFUSED-BY-THE-GATE-CANDIDATE-PAIRED-ARMS-AND-RPG-MEASURE)
+def _threads_kernel(run_id: str):
+    """A pinned governor, budget and flags on the concurrent executor (a WorkerManager with threads): the one thing not pinned is the executor."""
+    from src.engine.executor import ConcurrentExecutionAdapter
+    from src.engine.worker_manager import WorkerManager
+
+    profile = PROD_SMALL.model_copy(update={"max_tick_budget_ms": 1e9})
+    manager = WorkerManager(max_workers=2, max_queue_depth=profile.max_queue_depth)
+    return Kernel(profile, compile_world("urban_political", 42), DeterministicRNG(42), governor=PinnedNormalGovernor(),
+                  executor=ConcurrentExecutionAdapter(manager), flags={"audit_mode": True, "no_frame_pacing": True}, run_id=run_id)
+
+
+def _threads_run(run_id: str, *, drop_record: bool = False, monkeypatch=None):
+    if drop_record:
+        original = RunArtifactRepository.update_manifest
+        monkeypatch.setattr(RunArtifactRepository, "update_manifest", lambda self, rid, **kw: original(self, rid, **{k: v for k, v in kw.items() if k != "run_conditions"}))
+    kernel = _threads_kernel(run_id)
+    try:
+        repo = kernel._artifact_repo
+        for _ in range(2):
+            kernel.tick_once()
+        digest = CanonicalStateHasher.get_hash(kernel.state)
+    finally:
+        kernel.shutdown()
+    return json.loads(Path(repo.base_dir, run_id, "run_manifest.json").read_text(encoding="utf-8")), digest
+
+
+def test_a_threads_built_kernel_records_its_worker_manager_and_a_sequential_one_records_none(tmp_path, cleanup):
+    cleanup.extend(["rc_unit_threads", "rc_unit_seq_wm"])
+    threads, _ = _threads_run("rc_unit_threads")
+    assert threads["run_conditions"]["worker_manager"] == "src.engine.worker_manager.WorkerManager"
+    assert threads["run_conditions"]["executor"] == "src.engine.executor.ConcurrentExecutionAdapter"
+    sequential, _, _ = _run(tmp_path, pinned=True, run_id="rc_unit_seq_wm")
+    assert sequential["run_conditions"]["worker_manager"] is None
+
+
+def test_the_worker_manager_record_does_not_move_the_state_hash(cleanup, monkeypatch):
+    cleanup.extend(["rc_unit_wm_with", "rc_unit_wm_without"])
+    with_record, hash_with = _threads_run("rc_unit_wm_with")
+    without_record, hash_without = _threads_run("rc_unit_wm_without", drop_record=True, monkeypatch=monkeypatch)
+    assert with_record["run_conditions"]["worker_manager"] and without_record["run_conditions"] is None
+    assert hash_with == hash_without
+
+
+def test_a_threads_run_classifies_not_pinned_by_its_executor_alone(cleanup):
+    cleanup.append("rc_unit_threads_cls")
+    manifest, _ = _threads_run("rc_unit_threads_cls")
+    verdict = pr.classify_manifest(manifest)
+    assert verdict.verdict == "NOT_PINNED" and [d.split(" ")[0] for d in verdict.differences] == ["executor"]
+
+
+def test_arm_child_refuses_a_build_on_the_concurrent_executor(monkeypatch, tmp_path, cleanup):
+    """The executor case on its own: governor, budget and both flags are the pinned ones, so only the executor can be the reason."""
+    import os
+
+    from tools.rpg_measure import arm_child
+    import tools.test_architecture.rpg_gate_run as gate_run
+
+    cleanup.append(f"rpgm_urban_political_42_{os.getpid()}")
+    built: list = []
+
+    def threads_build(world, seed, run_id):
+        built.append(_threads_kernel(run_id))
+        return built[0]
+
+    monkeypatch.setattr(gate_run, "build_kernel", threads_build)
+    try:
+        with pytest.raises(pr.NotPinnedError, match="executor") as raised:
+            arm_child.main(["urban_political", "42", "1", str(tmp_path / "out.json")])
+        assert "governor" not in str(raised.value) and "max_tick_budget_ms" not in str(raised.value)
     finally:
         for kernel in built:
             kernel.shutdown()
