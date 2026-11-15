@@ -144,3 +144,53 @@ and a run on one host never undoes the other's. This corrects design section 5, 
 - **Limits.** (a) `Filed` is the filing date, not the last activity: a ticket filed long ago and worked on yesterday still looks old.
   (b) A merged ticket gets a Done item only while some host's worktree still has its branch checked out (seen in P3b AC3.5 on ubuntu, #917), so the
   Done lane is not a full list of recent closes. This is documented only; no code changes it.
+
+## Running on a timer (P3c, `TCK-20261115-PROJECT-SYNC-HOST-TIMER`)
+
+Two templates in `tools/sessions/systemd/` run `project_sync.py --apply --fetch` hourly on each host: `project-sync.service` (a oneshot, so runs
+cannot overlap) and `project-sync.timer` (`OnCalendar=*-*-* *:00:00`, `Persistent=true`, `RandomizedDelaySec=60`). u24 runs at :00 and ubuntu
+at :30. **No seat installs, enables or starts either unit; the owner does, on each host.**
+
+- **Standing approval.** Installing the timer on a host is the owner's standing approval for unattended `--apply` writes to Project 1 from
+  that host (owner decision #715 6881411615, item 1). Removing it withdraws the approval.
+- **Caps.** `Nice=19`, `IOSchedulingClass=idle`, `CPUQuota=25%`, `MemoryMax=256M`, `TimeoutStartSec=15min` (a hung run is stopped).
+  `ExecCondition` skips a run when `MemAvailable` is below 1 GB: `awk` exits 1, which systemd treats as a **skip** (exit codes 1 to 254 of an
+  `ExecCondition` skip the unit without failing it; 255 or a signal is a failure). A skipped run leaves `last-run.json` as it was.
+  `CPUQuota` and `MemoryMax` need the `cpu` and `memory` controllers delegated to the user manager (u24 has both; check on ubuntu with
+  `cat /sys/fs/cgroup/user.slice/user-$(id -u).slice/user@$(id -u).service/cgroup.controllers`); without them the two caps are ignored and
+  `Nice`, the idle I/O class and the timeout still hold.
+- **HOST FREE exemption.** The timer does not wait for a host's HOST FREE slot. One run measured 43 s, 38 MB and about 0.5 CPU on 2026-11-15
+  (P3b load, u24), far under the caps above.
+- **Preconditions.** (1) Install only on code at or after the current `origin/main`, never older code once the heartbeat exists: pre-P3b code
+  archives the `_sync heartbeat` item, and pre-v4 code rewrites every hash (amendment B). (2) The main checkout must sit on `main`; the sync reads
+  git refs, not the working tree, but `--fetch` runs `git fetch origin main` in `WorkingDirectory`, so that must be a checkout with a working
+  `origin` and credentials a user service can reach (no ssh agent in a user unit: use an unencrypted key or an https credential helper). A
+  failed fetch is not fatal: the run adds a finding and uses the old `origin/main`. (3) The token file `~/.config/rpg-project-sync/token` (mode
+  600) must exist for that user; the templates name no token path or value. (4) **`gh` auth.** The sync reads open PRs with `gh pr list`. If `gh` cannot answer inside the
+  user service, every `--apply` refuses with rc 1 (`open PRs unknown, nothing written`) and the SessionStart line warns after 2 runs. That
+  happens when the `gh` token sits in the system keyring and no login session or D-Bus unlocks it. Check with `gh auth status`: the token must
+  come from `~/.config/gh/hosts.yml` (as on u24) or from `GH_TOKEN` in a drop-in. The owner checks this on ubuntu before installing.
+- **Install (per host, by the owner).** `@REPO@` is the host's main checkout (u24: `/mnt/data/Working/rpg-based-simulation`; ubuntu: its own path).
+  ```
+  REPO=/path/to/the/main/checkout
+  mkdir -p ~/.config/systemd/user
+  for u in project-sync.service project-sync.timer; do sed "s|@REPO@|$REPO|g" "$REPO/tools/sessions/systemd/$u" > ~/.config/systemd/user/$u; done
+  systemd-analyze --user verify ~/.config/systemd/user/project-sync.service ~/.config/systemd/user/project-sync.timer
+  # ubuntu only: stagger to :30 with a drop-in
+  mkdir -p ~/.config/systemd/user/project-sync.timer.d
+  printf '[Timer]\nOnCalendar=\nOnCalendar=*-*-* *:30:00\n' > ~/.config/systemd/user/project-sync.timer.d/stagger.conf
+  systemctl --user daemon-reload
+  systemctl --user enable --now project-sync.timer
+  loginctl enable-linger "$USER"      # so the timer runs with no login session
+  ```
+- **Read it.** `systemctl --user list-timers project-sync.timer` (next and last run), `journalctl --user -u project-sync` (progress lines, the
+  `applied N step(s)` line, the exit status), and `~/.local/state/rpg-project-sync/last-run.json` (rc, steps, `failed_streak`; the SessionStart
+  hook warns after two failures in a row). A skipped run shows `Condition check resulted in ... being skipped` in the journal.
+- **Stop it.** `systemctl --user disable --now project-sync.timer`; delete the two files in `~/.config/systemd/user/` to remove it (a delete is
+  the owner's).
+- **Limits.** (a) A host that is off at :00 runs once on the next boot (`Persistent=true`), at most one catch-up run. (b) A primary rate limit
+  stops a run at once and the next hourly run carries on; two failed runs in a row show up in the SessionStart line. (c) **The 15 min timeout stops a large rewrite.** The FILED-DATE load took 15m22s, so a mass rewrite (a first load, a new field or
+  a hash-version bump) runs by hand first, as the P3b and FILED-DATE loads did, then the timer only carries deltas. A killed run is safe: writes
+  reconcile and the next run carries on. But `project_sync.py` handles no signal, so a run stopped by the timeout (SIGTERM) writes no
+  `last-run.json` (the previous file stays) and no heartbeat (both are written only when the run ends). (d) Not measured yet: how
+  the two hosts interact over many hourly runs; AC3 of the ticket reads the first runs back after the owner installs.

@@ -26,7 +26,7 @@ Epic `TCK-20261112-EPIC-GITHUB-PROJECT-TICKET-VIEW`, filed by agent-working-plan
 7. **DONE** TCK-20261115-PROJECT-SYNC-ALL-LANES (P3b, standard; closed in the PR that carries this line; first load 2026-11-14, 1608 steps, 183 items): all lanes, Domain as a single-select (the old text field is renamed, not
    deleted), the `attribute()` prefix fix, the Epic (a) fix, `--fetch`, a last-run file, and a heartbeat with the stale-host flag.
    Its first load was run by hand in the lead's terminal (owner #715 6883401913).
-8. TCK-20261115-PROJECT-SYNC-HOST-TIMER (P3c, hotfix): systemd user timer templates (hourly; u24 at :00, ubuntu at :30; capped;
+8. **DONE** (templates, doc and tests; AC3 is the owner's install and read-back) TCK-20261115-PROJECT-SYNC-HOST-TIMER (P3c, hotfix): systemd user timer templates (hourly; u24 at :00, ubuntu at :30; capped;
    exempt from HOST FREE) and the install doc. The owner installs them, and that install is the owner's standing approval for
    unattended writes (6881411615 item 1). Dispatched after P3b merges.
 

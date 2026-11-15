@@ -18,7 +18,7 @@ SimulationEvent.event_id is a random uuid4, so no event stream is byte-reproduci
 OPEN (seated by rpg-planner 2026-10-31; not dispatched)
 
 ## Tier
-standard (provisional)
+standard
 
 ## Type
 bug
@@ -53,6 +53,7 @@ src/observability/events.py:56: `event_id = Field(default_factory=lambda: uuid.u
 - src/observability/events.py, src/domains/campaigns/, src/simulation_quality/pillar_accumulator.py
 
 ## Assumptions / Open Questions
+- Tier is provisional: `standard` was set at filing before the fix shape was known; re-check it at dispatch (moved from the Tier field 2026-11-15 so tools/ticket_field_values.py accepts the ticket).
 - Is CampaignEvent.event_id copied from SimulationEvent.event_id?
 - rpg-planner-ubuntu (SimQ probes README, ed1d208d5, 2026-10-31): nothing in the simulation core reads event_id; outside observability/simulation_quality the only readers are campaign post-analysis (not run by the single-episode path) and source_event_id fields built from category/region/tick strings. So the exposure is the campaign post-analysis path only.
 
