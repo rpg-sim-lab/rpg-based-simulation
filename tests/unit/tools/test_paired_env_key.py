@@ -178,7 +178,7 @@ class _Dist:
 
 
 def _installed(monkeypatch, *pairs):
-    monkeypatch.setattr(env_digest.importlib.metadata, "distributions", lambda: [_Dist(n, v) for n, v in pairs])
+    monkeypatch.setattr(env_digest.importlib.metadata, "distributions", lambda **kw: [_Dist(n, v) for n, v in pairs])
 
 
 def test_the_same_installed_set_gives_the_same_digest_whatever_its_order_and_spelling(monkeypatch):
@@ -206,7 +206,7 @@ def test_an_empty_or_unreadable_distribution_list_is_refused(tmp_path, monkeypat
     _installed(monkeypatch)
     env = _env(tmp_path)
     assert env["dists"] == "empty" and "dists" in paired.env_problem(env)
-    monkeypatch.setattr(env_digest.importlib.metadata, "distributions", lambda: (_ for _ in ()).throw(OSError("no")))
+    monkeypatch.setattr(env_digest.importlib.metadata, "distributions", lambda **kw: (_ for _ in ()).throw(OSError("no")))
     assert paired.installed_dists_digest() == "unreadable"
     _installed(monkeypatch, ("a", None))
     assert paired.installed_dists_digest() == "unreadable"
@@ -258,3 +258,52 @@ def test_a_collected_arm_with_other_dists_is_refused_and_no_table_is_printed(tmp
 def test_the_arm_child_writes_dists_from_the_tool_checkouts_own_module():
     source = (Path(paired.__file__).with_name("arm_child.py")).read_text(encoding="utf-8")
     assert '"dists": _env_digest().installed_dists_digest()' in source and 'with_name("env_digest.py")' in source
+
+
+# ---- the digest sees only the interpreter's own site-packages (rpg-planner review at c84269c33)
+
+def _fake_dist(directory: Path, name: str, version: str, kind: str = "dist-info") -> None:
+    info = directory / f"{name.replace('-', '_')}-{version}.{kind}"
+    info.mkdir(parents=True, exist_ok=True)
+    (info / ("METADATA" if kind == "dist-info" else "PKG-INFO")).write_text(f"Metadata-Version: 2.1\nName: {name}\nVersion: {version}\n")
+
+
+def test_a_dist_in_the_cwd_or_on_sys_path_or_the_project_itself_never_moves_the_digest(tmp_path, monkeypatch):
+    import sys
+    before = env_digest.installed_dists_digest()
+    cwd, extra = tmp_path / "cwd", tmp_path / "extra"
+    cwd.mkdir()
+    for name, kind in (("not-in-site", "egg-info"), ("rpg-based-simulation", "egg-info"), ("also-not", "dist-info")):
+        _fake_dist(cwd, name, "9", kind)
+        _fake_dist(extra, name, "9", kind)
+    monkeypatch.chdir(cwd)
+    monkeypatch.setattr(sys, "path", [str(cwd), str(extra), *sys.path])  # what PYTHONPATH / cwd do to sys.path in an arm child
+    assert env_digest.installed_dists_digest() == before
+    assert str(cwd.resolve()) not in env_digest.site_dirs() and str(extra.resolve()) not in env_digest.site_dirs()
+
+
+def test_the_projects_own_distribution_is_never_counted_even_inside_site_packages(tmp_path, monkeypatch):
+    site = tmp_path / "site"
+    _fake_dist(site, "a", "1")
+    monkeypatch.setattr(env_digest, "site_dirs", lambda: [str(site)])
+    first = env_digest.installed_dists_digest()
+    _fake_dist(site, "Rpg_Based.Simulation", "0.1", "dist-info")  # PEP 503: the same project, spelled differently
+    assert env_digest.installed_dists_digest() == first
+
+
+def test_changing_a_distribution_in_site_packages_still_moves_the_digest(tmp_path, monkeypatch):
+    site = tmp_path / "site"
+    _fake_dist(site, "a", "1")
+    monkeypatch.setattr(env_digest, "site_dirs", lambda: [str(site)])
+    first = env_digest.installed_dists_digest()
+    _fake_dist(site, "b", "1")
+    second = env_digest.installed_dists_digest()
+    assert second != first and len(second) == 64
+    _fake_dist(site, "a", "2")
+    assert env_digest.installed_dists_digest() not in (first, second)
+
+
+def test_site_dirs_are_the_interpreters_own_and_exist():
+    import sysconfig
+    dirs = env_digest.site_dirs()
+    assert dirs and str(Path(sysconfig.get_paths()["purelib"]).resolve()) in dirs and all(Path(d).is_dir() for d in dirs)
