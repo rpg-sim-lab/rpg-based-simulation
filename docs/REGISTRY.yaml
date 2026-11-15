@@ -8271,6 +8271,22 @@
   tags:
   - testing
 - type: ticket
+  path: agent-working/tickets/todos/TCK-20261115-THE-GATE-REPORTS-WHETHER-EACH-WORLDS-OUTCOMES-STAY-IN-THEIR-BANDS.md
+  ticket_id: TCK-20261115-THE-GATE-REPORTS-WHETHER-EACH-WORLDS-OUTCOMES-STAY-IN-THEIR-BANDS
+  title: The RPG gate reports, in its own report-only Bands section, whether each
+    world's outcomes over 10 seeds stay inside the fiction's bands
+  tier: standard
+  ticket_type: feature
+  date: '2026-11-15'
+  related_code_areas:
+  - tests/simulation_quality/rpg_gate/config.yaml
+  - tools/test_architecture/{rpg_gate_plan,rpg_gate_harness,rpg_gate_report,rpg_gate_baseline,rpg_gate_issue}.py
+  - .github/workflows/rpg-gate-report.yml
+  artifact_files: []
+  tags:
+  - testing
+  - simulation-quality
+- type: ticket
   path: agent-working/tickets/todos/distributed-workers-experiment/TCK-20261115-DISTRIBUTED-WORKERS-REMOTE-WORKER-MANAGER.md
   ticket_id: TCK-20261115-DISTRIBUTED-WORKERS-REMOTE-WORKER-MANAGER
   title: 'Distributed workers child 3: a RemoteWorkerManager behind the existing executor
