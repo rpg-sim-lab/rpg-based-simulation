@@ -95,6 +95,7 @@ Why now: the group-combat check (TCK-20261101-A-HOSTILE-ATTACKING-YOU-OUTRANKS-T
 - TCK-20261023-PAIRED-WRITES-ONE-RUN-LEDGER-ROW-PER-INVOCATION (todo, OPEN): run-ledger outcome values; a VOID outcome must fit its schema.
 - TCK-20261103-A-MEASUREMENT-NOT-ON-THE-PINNED-RUNNER-CALLS-ITSELF-EVIDENCE (#918): `require_pinned` in arm_child.py.
 - TCK-20261101-A-HOSTILE-ATTACKING-YOU-OUTRANKS-THE-GROUP-SHARED-TARGET / TCK-20261103-A-GROUP-HIT-RECORDS-ONLY-ITS-FIRST-ATTACKER: the source of the hold-line spy.
+- DEPENDS ON, start after both: (1) the arm_child pinned_runner fix in testing's digest-light item 3. Since #918 (b6ac7dabb), arm_child imports tools.test_architecture.pinned_runner while paired puts the ARM tree on PYTHONPATH, so a pre-#918 arm tree fails with ModuleNotFoundError. u24 rpg-planner ruled the fix: load pinned_runner from the tool checkout, and derive the record from the live kernel for pre-record arm trees. (2) The positive control of TCK-20261023-PAIRED-ARMS-RUN-OFF-THE-SHARED-HOST (paired-arms.yml) read against the 2026-11-15 ghpair table, so that control and this ticket compare one tool version. Until (1) is on main, run paired only from a tool checkout older than b6ac7dabb.
 
 ## Related Docs
 - docs/guides/delivery_process.md ("Behaviour evidence comes from the pinned runner")
