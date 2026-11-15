@@ -21,3 +21,4 @@
 {"ts":"2026-11-11T02:22:04.475380Z","event":"governing_edit_attempt","seat":"lead-planner","path":"tools/hooks/registry_post_merge_regen.sh","basis":"mention","attempt":true}
 {"ts":"2026-11-11T09:22:56.988375Z","event":"governing_edit_attempt","seat":"lead-planner","path":"tools/hooks/post-commit-reindex.sh","basis":"mention","attempt":true}
 {"ts":"2026-11-14T14:08:31.451853Z","event":"governing_edit_attempt","seat":"agent-working-implementer","path":".github/workflows/test.yml","basis":"mention","attempt":true}
+{"ts":"2026-11-15T08:33:38.203901Z","event":"governing_edit_attempt","seat":"rpg-planner-ubuntu","path":".github/workflows/test.yml","basis":"mention","attempt":true}
