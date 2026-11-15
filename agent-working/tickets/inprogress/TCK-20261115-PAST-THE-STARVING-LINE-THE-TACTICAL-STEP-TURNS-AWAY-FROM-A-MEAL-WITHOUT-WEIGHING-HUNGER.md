@@ -76,6 +76,7 @@ None.
 - Tests: 5 unit, 1 tactical and 1 real-kernel integration test (listed in the draft).
 - Measurement: the paired 3x5 death bar, plus r1 (people starvation within 3 ticks of an open way) and r2 (COMBAT/DEFEAT of past-line subjects). An r2 Tier 1 rise is a STOP to rpg-designer. Then re-read the V3 cells.
 - The plan goes to rpg-designer for review before Implement.
+- 2026-11-15 (rpg-implementer-3): implemented in commit 0efe62c12 (not pushed): `_hit_acts_on` reach test past STARVING_LINE; 7 unit tests, a 4-test tactical scene with a discriminating old-predicate control, Bible 04, divergence 2.207, ledger STRAT-300. Real-kernel test 7 is open: four kernel fixtures eat on the inn arrival under the old predicate too, so none discriminates (an untracked draft stays out of the commit; rpg-designer decides between the tactical scene and a crowded_frontier raider fixture). Mechanism-registry changed-code advisory (`tactical_decision`, tactical_threat.py): judged by rpg-planner 2026-11-15 as no entry edit needed (its summary and implemented_by, which already lists hostile_acts_on, still hold). Gates (lanes, mypy, health, import-layers, docs checks) and the paired measurement not yet run.
 
 ## Test Summary
 
