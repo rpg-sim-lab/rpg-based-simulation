@@ -8138,6 +8138,21 @@
   - testing
   - architecture
 - type: ticket
+  path: agent-working/tickets/done/TCK-20261115-A-PAIRED-ARMS-REFUSAL-EXITS-2-WITH-ONE-LINE-NOT-A-TRACEBACK.md
+  ticket_id: TCK-20261115-A-PAIRED-ARMS-REFUSAL-EXITS-2-WITH-ONE-LINE-NOT-A-TRACEBACK
+  title: An arm that is not runner PINNED, or whose dists differ from its key, is
+    refused with exit 2 and one line, not exit 1 and a traceback
+  tier: hotfix
+  ticket_type: bug
+  date: '2026-11-15'
+  related_code_areas:
+  - tools/rpg_measure/paired.py
+  - tests/unit/tools/test_paired_env_key.py
+  artifact_files: []
+  tags:
+  - testing
+  - determinism
+- type: ticket
   path: agent-working/tickets/done/TCK-20261115-LEAD-BOARD-FIFTH-PASS.md
   ticket_id: TCK-20261115-LEAD-BOARD-FIFTH-PASS
   title: The lead board records the owner's 2026-11-15 epic decisions in one place,
