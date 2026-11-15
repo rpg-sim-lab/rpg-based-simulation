@@ -1,10 +1,10 @@
 ---
-status: active
+status: historical
 layer: simulation
 authority: P1
 audience: agent
 ticket_id: TCK-20261007-EPIC-DECISION-CORE-LIVE-MOTIVATION-AND-HONEST-FIGHT-OR-FLEE-INPUTS
-phase: open
+phase: done
 date: 2026-10-07
 tags: [simulation-quality, combat]
 ---
@@ -15,7 +15,19 @@ tags: [simulation-quality, combat]
 Decision core: make motivation live for compiled characters, make biology follow each kind's needs, and give fight-or-flee honest inputs (Tier 1 of the owner's layer-by-frequency ranking)
 
 ## Status
-EPIC_SCOPED
+DONE
+
+## Disposition
+SUPERSEDED
+
+## Disposition Rationale
+Closed by the owner's ruling #715 6875278006 (owner, via lead-planner-u24; audit asked under #715 6875225978): "Move 2/4/5 to M1 (Recommended)".
+
+- Done children: 1 `TCK-20260921-BIOLOGICAL-PRESSURE-ACCUMULATION-UNIFORM-ACROSS-ENTITIES` (`0647a2eeb` #402, `0a03c2448` #407); 3 `TCK-20260912-CAPABILITY-CONTEXT-REGION-ENEMY-DATA-ALWAYS-EMPTY` (`3a9f93c33` #412); `TCK-20261007-SAFETY-DISPOSITION-TRIGGERS-RETREAT-ON-SIGHT-AGENCY-07` (`d9fc65e8c` #398).
+- Moved under `TCK-20261109-MILESTONE-1-KINDS-BY-PROPERTIES-EPIC`, re-scoped at dispatch:
+  - child 2 `TCK-20261007-COMPILED-ENTITIES-GET-DEFAULT-NEED-AND-DRIVE-PROFILES-WITH-VISIBLE-PROVENANCE` reads species and occupation, not role (`TCK-20261109-M1-KIND-ALWAYS-MEANS-SPECIES-AND-OCCUPATION-IS-ITS-OWN-FIELD`; MONSTER drive with `TCK-20261109-M1-EACH-MONSTER-KIND-DECLARES-WHY-IT-FIGHTS`);
+  - child 4 `TCK-20260913-NO-MECHANISM-RECORDS-PER-ENEMY-KIND-DANGER` and child 5 `TCK-20260915-COMBAT-RISK-EVALUATION-ACCEPTABLE-AT-3X-MISMATCH` are measured in `TCK-20261109-M1-COARSE-PROPERTY-BANDS-AND-THE-APPRAISAL`.
+- **Dropped by the owner: child 2's role-based drive defaults** (WORKER/GUARD/HERO/SHOPKEEPER → drive), since milestone 1 retires role as a kind (decision 63). The epic's remaining ACs are carried by milestone 1, not met here.
 
 ## Tier
 epic
@@ -48,7 +60,7 @@ Children, in dispatch order:
 3. `TCK-20260912-CAPABILITY-CONTEXT-REGION-ENEMY-DATA-ALWAYS-EMPTY`, owner Lane B.
 4. `TCK-20260913-NO-MECHANISM-RECORDS-PER-ENEMY-KIND-DANGER`, owner Lane A.
 5. `TCK-20260915-COMBAT-RISK-EVALUATION-ACCEPTABLE-AT-3X-MISMATCH`, owner Lane A.
-Done: `TCK-20261007-SAFETY-DISPOSITION-TRIGGERS-RETREAT-ON-SIGHT-AGENCY-07` (#398).
+Done: `TCK-20261007-SAFETY-DISPOSITION-TRIGGERS-RETREAT-ON-SIGHT-AGENCY-07` (`d9fc65e8c` #398).
 
 ## Out of Scope
 - Wiring the five pressure dimensions that have no reader (hunger, wealth, curiosity, aggression, purpose). Under SURV-04 they stay inert bookkeeping until a consumer exists.
@@ -81,5 +93,7 @@ Done: `TCK-20261007-SAFETY-DISPOSITION-TRIGGERS-RETREAT-ON-SIGHT-AGENCY-07` (#39
 ## Test Summary
 
 ## Files Changed
+none — decision-only
 
 ## Completion Summary
+Closed SUPERSEDED on 2026-11-14 by rpg-planner under #715 6875278006 (owner, via lead-planner-u24; audit asked under #715 6875225978). See Disposition Rationale.
