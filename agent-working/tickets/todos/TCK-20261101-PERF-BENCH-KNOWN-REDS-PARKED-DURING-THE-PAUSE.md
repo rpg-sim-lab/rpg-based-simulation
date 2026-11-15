@@ -78,6 +78,11 @@ None.
 - The causes of the four `tests.perf.*` reds are not established by this ticket.
 
 ## Implementation Notes
+**Pause exemptions (owner, #715 6889952914, the owner's words 6889947724, recorded 2026-11-15): the perf pause (6556861718) is not total.** Two measurement-only items are exempt, and only these two; the pause stays for everything else, these five entries included:
+- `TCK-20261115-PER-PHASE-TICK-COST-AFTER-THE-HOSTILITY-AND-COOPERATION-FIXES` (next-generation engine stage 0)
+- `TCK-20261115-WHAT-A-WORKER-CHUNK-COSTS-TO-ENCODE-AND-SHIP` (distributed-workers packet cost, cheap form first)
+Each run still needs lead-planner's heavy-slot go.
+
 **`test_arena_stress_50v50`, one exempted run, 2026-11-01 (#715 6557042733): PASSED, so the failing check is NOT named.**
 - Local: `systemd-run --user --scope -q -p MemoryMax=3G -p MemorySwapMax=0 taskset -c 4-5 .venv/bin/python -m pytest tests/arena/test_arena_stress.py::test_arena_stress_50v50 --resource-budget large -vv -s`, the test alone in its process, at f8e05dc87 (origin/main code plus tickets), Python 3.13.7, 67.57 s. Certification PASS, hash status MATCHED, peak RSS 122.1 MB, tick compute about 50-81 ms in the ticks the report shows. One run, no retry.
 - CI: run 41230865672 at e523f92b2, JUnit from the `slow-junit` artifact. It failed twice in that run (`slow_tests.xml` 64.2 s, `legacy_regression.xml` 63.8 s), both at line 26 `assert result.conformance_passed`, so this is the conformance assertion and not the peak RSS one. pytest's repr is cut in the middle, so `failure_kind` and `failure_reason` are not in the JUnit. The `certification-report` artifact covers only IDLE_CLEAN and RAM_PRESSURE, not this scenario.
