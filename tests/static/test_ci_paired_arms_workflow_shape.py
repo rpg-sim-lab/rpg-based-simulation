@@ -104,3 +104,57 @@ def test_no_step_pipes_a_refusable_command_into_tee():
     for name, job in _wf()["jobs"].items():
         for step in job["steps"]:
             assert "| tee" not in str(step.get("run", "")), f"{name}/{step.get('name')}: the default shell has no pipefail, a pipe hides the exit status"
+
+
+# TCK-20261115-PAIRED-ARMS-RUNS-ONLY-COMMITS-ON-A-REPO-BRANCH: no token on disk while the arms run dispatched code, and only repo-branch commits run.
+def _checkout_steps() -> list[tuple[str, dict]]:
+    return [
+        (job_name, step)
+        for job_name, job in _wf()["jobs"].items()
+        for step in job["steps"]
+        if str(step.get("uses", "")).startswith("actions/checkout@")
+    ]
+
+
+def test_every_checkout_keeps_no_token_on_disk():
+    checkouts = _checkout_steps()
+    assert {job for job, _ in checkouts} == {"plan", "arms", "aggregate"}
+    for job, step in checkouts:
+        assert step.get("with", {}).get("persist-credentials") is False, f"{job}: a checkout persists GITHUB_TOKEN in .git/config"
+
+
+def _plan_steps() -> list[dict]:
+    return _wf()["jobs"]["plan"]["steps"]
+
+
+def _step_index(prefix: str) -> int:
+    return next(i for i, step in enumerate(_plan_steps()) if str(step.get("name", "")).startswith(prefix))
+
+
+def test_the_plan_refuses_a_commit_no_repo_branch_contains_before_it_writes_the_matrix():
+    refuse, plan = _step_index("Refuse a commit"), _step_index("Plan")
+    assert refuse < plan, "the containment check must run before the step that writes the matrix output"
+    step = _plan_steps()[refuse]
+    assert step["env"] == {"BASE_SHA": "${{ inputs.base_sha }}", "NEW_SHA": "${{ inputs.new_sha }}"}
+    run = step["run"]
+    assert "${{" not in run, "inputs reach the script only through env"
+    assert "--filter=blob:none" in run and "--no-tags" in run
+    assert "'+refs/heads/*:refs/remotes/origin/*'" in run, "every branch, mapped to remote-tracking refs, is the whole fetch"
+    assert "refs/pull" not in run, "pull refs stay outside the fetch: a fork pull request's commit must not count as contained"
+    assert "--unshallow" in run, "the checkout is depth 1, which cannot prove containment"
+    assert "cat-file -e" in run and "^{commit}" in run
+    assert "branch -r --contains" in run, "a commit that exists locally but sits on no branch must still be refused"
+    assert run.count("exit 1") >= 3
+
+
+def test_the_header_comment_states_the_hardening_and_what_it_does_not_guard():
+    header = _PATH.read_text(encoding="utf-8").split("\non:", 1)[0]
+    assert "persist-credentials: false" in header and "refuses a base/new sha that" in header
+    assert "push access" in header and "other workflows' checkouts still persist" in header
+    assert "anonymous, so it needs the repo to stay public" in header and "fail closed" in header
+
+
+def test_the_arms_job_still_fetches_the_two_shas_anonymously_by_sha():
+    fetch = next(step for step in _wf()["jobs"]["arms"]["steps"] if step.get("name") == "Fetch the base and new commits")
+    assert fetch["run"] == 'git fetch --no-tags --depth=1 origin "${BASE_SHA}" "${NEW_SHA}"'
+    assert "env" not in fetch or "TOKEN" not in str(fetch["env"])

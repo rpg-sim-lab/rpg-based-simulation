@@ -47,6 +47,7 @@ def main(argv: list[str]) -> int:
     world, seed, ticks, out = argv[0], int(argv[1]), int(argv[2]), argv[3]
     from src.engine.checkpoint import CanonicalStateHasher
     from src.engine.serves import keeps_coin
+    from tools.test_architecture.pinned_runner import read_manifest, require_pinned
     from tools.test_architecture.rpg_gate_run import build_kernel
 
     run_id = f"rpgm_{world}_{seed}_{os.getpid()}"
@@ -54,6 +55,9 @@ def main(argv: list[str]) -> int:
     forced = {"audit_mode": getattr(kernel, "_audit_mode", None), "no_frame_pacing": getattr(kernel, "_no_frame_pacing", None)}
     if forced["audit_mode"] is not True or forced["no_frame_pacing"] is not True:
         raise RuntimeError(f"this arm's build_kernel did not force audit_mode and no_frame_pacing: {forced}")
+    # The governor, executor and budget too, read from the manifest record the kernel wrote (one PINNED definition: tools/test_architecture/pinned_runner.py).
+    manifest_path = Path("data") / "runs" / run_id / "run_manifest.json"
+    require_pinned(read_manifest(manifest_path) if manifest_path.exists() else {}, what="this arm's build_kernel")
     start = _roster(kernel.state, keeps_coin)
     start_hash = CanonicalStateHasher.get_hash(kernel.state)
     for _ in range(ticks):

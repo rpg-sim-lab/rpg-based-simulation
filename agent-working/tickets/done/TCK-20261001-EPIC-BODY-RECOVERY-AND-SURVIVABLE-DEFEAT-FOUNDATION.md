@@ -1,10 +1,10 @@
 ---
-status: active
+status: historical
 layer: architecture
 authority: P1
 audience: agent
 ticket_id: TCK-20261001-EPIC-BODY-RECOVERY-AND-SURVIVABLE-DEFEAT-FOUNDATION
-phase: open
+phase: done
 date: 2026-10-01
 tags: [architecture, lifecycle, combat, world]
 ---
@@ -16,7 +16,19 @@ The world has no recovery and no survivable defeat — a foundational gap nobody
 PR #276. Design recovery first, then survivable defeat; resurrection stays out.
 
 ## Status
-EPIC_SCOPED
+DONE
+
+## Disposition
+SUPERSEDED
+
+## Disposition Rationale
+Closed by the owner's ruling #715 6875278006 (owner, via lead-planner-u24; audit asked under #715 6875225978): "Close, drop survivable (Recommended)".
+
+- Child 1 (body recovery) is realised. Owner decision 65 (`docs/plans/systemic_world/owner_decision_memo.md` row 65, 2026-10-11) made every living kind heal slowly, faster at rest. It landed in `b396080cc` (#536) and is stated in `docs/mechanics/01_entity_anatomy.md` ("Natural Healing"). The healing need read at `src/cognition/need_interpretation.py:68` now has a fulfilling process (rest and time), so AC 1-2 hold.
+- The other recovery ways (treatment, potions, whether a town tile heals free) are in roadmap §12.3 milestone 3, "Bodies heal, food ends, fire cooks" (`docs/plans/systemic_world/roadmap.md`).
+- Child 3 (population check) is covered by `TCK-20261109-M1-BASIC-WILD-BIRTHS-FOR-EVERY-LIVING-KIND` (survival by kind group, decisions 67/70) and by milestone 2 (ECOL-03).
+- **Dropped by the owner: survivable defeat (child 2, LIFE-02's defeat-to-continued-existence route).** Every defeat stays lethal. AC 3-4 are void by this ruling, not met. LIFE-01/LIFE-02's non-permanence halves stay *permitted, not currently realised*.
+- No child ticket was ever filed under this epic. The PR #276 death batch it cites is done (#276, #281).
 
 ## Tier
 epic
@@ -146,8 +158,7 @@ _Epic — tracks child tickets; no direct implementation._
 _Epic — no direct implementation._
 
 ## Files Changed
-_Epic — no direct implementation._
+none — decision-only
 
 ## Completion Summary
-_Epic — closes when its child tickets are done, or when the user records the harsh-world property as a
-deliberate design decision._
+Closed SUPERSEDED on 2026-11-14 by rpg-planner under #715 6875278006 (owner, via lead-planner-u24; audit asked under #715 6875225978). See Disposition Rationale.
