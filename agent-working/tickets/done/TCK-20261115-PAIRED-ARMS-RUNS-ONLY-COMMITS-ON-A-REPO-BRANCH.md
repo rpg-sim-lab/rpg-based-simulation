@@ -121,7 +121,8 @@ P2
 The paired-arms workflow keeps no token on disk, and refuses a base or new commit that no repo branch contains before any arm runs, so a mistyped or pasted fork-PR sha cannot start a measurement. Testing-planner reviews the diff before the push ask.
 
 Known gaps:
-- Not executed on a runner (no dispatch by scope); proven locally on a depth-1 clone with the extracted script.
+- Not executed on a runner (no dispatch by scope); the behaviour proof is local only (a depth-1 clone with the extracted script), so the first dispatch is the first runner execution (testing-planner's review point a).
+- With `persist-credentials: false` the arms' by-sha fetch is anonymous, so it needs the repo to stay public; if it goes private, the arms fail closed (no fetch), never run with a token (review point b; also in the workflow header).
 - A branch that contains the sha at dispatch time is enough: a sha that sits on a short-lived branch someone later deletes was still a repo commit when it ran. Branches are not the same as protected branches; anyone with push access can put a commit on a branch.
 - Other workflows' checkouts still persist the token (out of scope; own ticket if it matters).
 - tests/static/test_ci_paired_arms_workflow_shape.py is also being edited by testing-digest-light (44d91a0b8); whichever lands second merges both and reruns the file.

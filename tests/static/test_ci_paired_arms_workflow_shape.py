@@ -151,6 +151,7 @@ def test_the_header_comment_states_the_hardening_and_what_it_does_not_guard():
     header = _PATH.read_text(encoding="utf-8").split("\non:", 1)[0]
     assert "persist-credentials: false" in header and "refuses a base/new sha that" in header
     assert "push access" in header and "other workflows' checkouts still persist" in header
+    assert "anonymous, so it needs the repo to stay public" in header and "fail closed" in header
 
 
 def test_the_arms_job_still_fetches_the_two_shas_anonymously_by_sha():

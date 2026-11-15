@@ -15,6 +15,7 @@ name: Paired arms (off-host)
 # Hardening (TCK-20261115-PAIRED-ARMS-RUNS-ONLY-COMMITS-ON-A-REPO-BRANCH): checkouts keep no token (persist-credentials: false), and plan refuses a base/new sha that
 # no repo branch contains, before any arm runs. Not guarded: a collaborator with push access can put any commit on a branch; other workflows' checkouts still persist
 # the token; a sha reachable only through refs/pull/* (a fork pull request, or a branch that was deleted) is refused on purpose.
+# With persist-credentials: false, the arms' by-sha fetch is anonymous, so it needs the repo to stay public; if it goes private, the arms fail closed (no fetch), never run with a token.
 
 on:
   workflow_dispatch:
