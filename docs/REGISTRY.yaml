@@ -8145,6 +8145,21 @@
   - testing
   - architecture
 - type: ticket
+  path: agent-working/tickets/done/TCK-20261115-PAIRED-ARMS-RUNS-ONLY-COMMITS-ON-A-REPO-BRANCH.md
+  ticket_id: TCK-20261115-PAIRED-ARMS-RUNS-ONLY-COMMITS-ON-A-REPO-BRANCH
+  title: The paired-arms workflow keeps no token on disk and refuses a base or new
+    commit that is not on a repo branch, before any arm runs.
+  tier: hotfix
+  ticket_type: repair
+  date: '2026-11-15'
+  related_code_areas:
+  - .github/workflows/paired-arms.yml
+  - tests/static/test_ci_paired_arms_workflow_shape.py
+  artifact_files: []
+  tags:
+  - platform
+  - security
+- type: ticket
   path: agent-working/tickets/done/TCK-20261115-PROJECT-SYNC-ALL-LANES.md
   ticket_id: TCK-20261115-PROJECT-SYNC-ALL-LANES
   title: '`project_sync.py` P3b: every lane goes on Project 1, Domain becomes a single-select,

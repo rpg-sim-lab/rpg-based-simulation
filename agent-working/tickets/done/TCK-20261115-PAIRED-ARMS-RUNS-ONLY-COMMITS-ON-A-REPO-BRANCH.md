@@ -1,10 +1,10 @@
 ---
-status: active
+status: historical
 layer: platform
 authority: P1
 audience: agent
 ticket_id: TCK-20261115-PAIRED-ARMS-RUNS-ONLY-COMMITS-ON-A-REPO-BRANCH
-phase: open
+phase: done
 date: 2026-11-15
 tags: [platform, security]
 ---
@@ -15,7 +15,7 @@ tags: [platform, security]
 The paired-arms workflow keeps no token on disk and refuses a base or new commit that is not on a repo branch, before any arm runs.
 
 ## Status
-OPEN
+DONE
 
 ## Tier
 hotfix
@@ -100,15 +100,27 @@ P2
   command.
 
 ## Implementation Notes
-- Hotfix tier, so no staging artifacts.
-- Dispatch is under S4 (#715 6473439661): testing-planner, the workflow's domain owner, OK'd the shape.
-- It is built after the world farm's review fixes, on the same branch and PR (same platform track).
+- Hotfix tier, so no staging artifacts. Dispatch under S4 (#715 6473439661): testing-planner, the workflow's domain owner, OK'd the shape. Built on its own branch from origin/main (platform-planner's change of plan: it gates testing's first dispatch).
+- `.github/workflows/paired-arms.yml`:
+  - `persist-credentials: false` on all three checkouts (plan, arms, aggregate). The arms job's `git fetch --no-tags --depth=1 origin "${BASE_SHA}" "${NEW_SHA}"` is unchanged and works anonymously (the repo is public).
+  - New plan-job step "Refuse a commit that no repo branch contains", placed right after the plan checkout (so a bad sha fails before the environment sync) and before the Plan step: `BASE_SHA`/`NEW_SHA` come through `env:` only; a 40-hex check; `git fetch --no-tags --filter=blob:none [--unshallow] origin '+refs/heads/*:refs/remotes/origin/*'` (the checkout is depth 1, which cannot prove containment, so `--unshallow` is added when the repo is shallow); then each sha must pass `git cat-file -e <sha>^{commit}` AND `git branch -r --contains <sha>` must print something. `arms` needs `plan`, so a refusal stops every arm.
+- Tests: three new tests and one helper block in `tests/static/test_ci_paired_arms_workflow_shape.py` (every checkout has `persist-credentials: false`; the containment step runs before the Plan step, reads `BASE_SHA`/`NEW_SHA` from `env`, has no `${{` in `run`, uses the blob-less all-branches fetch, `--unshallow`, `cat-file -e` and `branch -r --contains`; the arms job's anonymous fetch line is unchanged).
 
 ## Test Summary
-Not started.
+- **observed locally (the step's `run` script extracted from the YAML and run with `bash -e` in a depth-1 clone of the public repo, as `actions/checkout` makes it):** a branch tip as base and new: exit 0; a commit 40 back on main's history: exit 0 (the `--unshallow` matters); a well-formed sha that does not exist: refused with `::error::NEW_SHA ... is not a commit on any repo branch`; a short sha: refused by the 40-hex check; a pre-squash PR head whose branch was deleted (4ad08c5e7, reachable on GitHub only under `refs/pull/898/head`; the repo has no fork pull requests to use): refused, as either input, with `::error:: ... is not contained in any repo branch`. In that run the commit object WAS present locally (a pack delivered it) while no ref contained it, so the `cat-file` check alone would have passed it and the `--contains` check is what refuses it.
+- **Timing:** the blob-less, unshallowing fetch of all 213 branches took about 5 s (a depth-1 clone of the repo took 22 s).
+- **validated:** `tests/static/test_ci_paired_arms_workflow_shape.py`, `test_workflow_actions_pinned_by_sha.py` and `test_workflow_run_blocks_take_github_context_via_env.py`: 44 passed; mutation controls: removing one `persist-credentials` line and weakening `branch -r --contains` each make exactly one new test fail; the YAML parses; `actionlint` is not installed here. REGISTRY no-drift and paths guard pass.
+- **not run:** the workflow itself (no dispatch, no Actions run, by scope). The step has not run on a GitHub runner; the first dispatch will be its first execution there.
 
 ## Files Changed
-- none yet
+- `.github/workflows/paired-arms.yml` (testing's workflow; unowned in the route registry).
+- `tests/static/test_ci_paired_arms_workflow_shape.py` (testing's own AC4 guard; routes to rpg by `tests/**`).
 
 ## Completion Summary
-Open.
+The paired-arms workflow keeps no token on disk, and refuses a base or new commit that no repo branch contains before any arm runs, so a mistyped or pasted fork-PR sha cannot start a measurement. Testing-planner reviews the diff before the push ask.
+
+Known gaps:
+- Not executed on a runner (no dispatch by scope); proven locally on a depth-1 clone with the extracted script.
+- A branch that contains the sha at dispatch time is enough: a sha that sits on a short-lived branch someone later deletes was still a repo commit when it ran. Branches are not the same as protected branches; anyone with push access can put a commit on a branch.
+- Other workflows' checkouts still persist the token (out of scope; own ticket if it matters).
+- tests/static/test_ci_paired_arms_workflow_shape.py is also being edited by testing-digest-light (44d91a0b8); whichever lands second merges both and reruns the file.
