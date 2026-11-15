@@ -8250,6 +8250,20 @@
   artifact_files: []
   tags: []
 - type: ticket
+  path: agent-working/tickets/todos/TCK-20261115-PAST-THE-STARVING-LINE-THE-TACTICAL-STEP-TURNS-AWAY-FROM-A-MEAL-WITHOUT-WEIGHING-HUNGER.md
+  ticket_id: TCK-20261115-PAST-THE-STARVING-LINE-THE-TACTICAL-STEP-TURNS-AWAY-FROM-A-MEAL-WITHOUT-WEIGHING-HUNGER
+  title: Past the starving line, with a meal 1-2 ticks away, the tactical fight-or-flee
+    step (a panic retreat or a chase) takes the subject away from the meal without
+    weighing starvation (SURV-07)
+  tier: standard
+  ticket_type: bug
+  date: '2026-11-15'
+  related_code_areas:
+  - src/engine/tactical.py (PANIC_RETREAT sites ~:279/:535; pursuit ~:773; the branch
+    order ~:508)
+  artifact_files: []
+  tags: []
+- type: ticket
   path: agent-working/tickets/todos/TCK-20261115-THE-GATE-METRICS-EMIT-THE-OUTCOME-BAND-ROWS.md
   ticket_id: TCK-20261115-THE-GATE-METRICS-EMIT-THE-OUTCOME-BAND-ROWS
   title: 'The RPG gate metrics emit the outcome-band rows (B1, B2, B3, B4): a starving-line
@@ -8263,6 +8277,21 @@
   - src/engine/domain/core_actions.py (eat_update, :123)
   - src/engine/building_services.py (service_delta, :92)
   - src/systems/resource_transactions (resolver)
+  artifact_files: []
+  tags: []
+- type: ticket
+  path: agent-working/tickets/todos/TCK-20261115-THE-GO-TO-TOWN-STEP-RESETS-THE-WALK-TARGET-ON-A-TOWN-TILE.md
+  ticket_id: TCK-20261115-THE-GO-TO-TOWN-STEP-RESETS-THE-WALK-TARGET-ON-A-TOWN-TILE
+  title: The go-to-town step for item carriers resets the walk target to the subject's
+    own tile when it stands on a town tile, so it overrides a walk to food chosen
+    in the same tick
+  tier: standard
+  ticket_type: bug
+  date: '2026-11-15'
+  related_code_areas:
+  - src/systems/strategic_systems/intelligence.py (:394-406, :675-681, :699)
+  - src/systems/strategic_systems/town_targeting.py:5-20
+  - src/engine/tactical_objective.py:42
   artifact_files: []
   tags: []
 - type: ticket
