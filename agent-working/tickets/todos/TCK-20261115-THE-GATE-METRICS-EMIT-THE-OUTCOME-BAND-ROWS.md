@@ -44,7 +44,22 @@ The owner decided on report-only outcome bands (#715 6892728142, direction 68925
    - pooled: B1, B2b, B3a, B3b, B4b;
    - run-level: B2a, B4a.
    - B3b's pooled death count is emitted as its own field, so the judged-only-when-10-or-more rule reads it directly.
-5. **Interface, agreed with testing-planner and stated in this ticket before the build:** each row's id, scope (run or pooled), `group` and value field, in the same shape as `O2.seeds_with_survivors`.
+5. **Interface, agreed with testing-planner on 2026-11-15.** Every row has the shape {id, class: "outcome", scope, world, group, value, band: true}. Band rows carry no `k` or `floor`, and `band: true` keeps them out of the change gate's drift and validity judgement, so the candidate and baseline row set doesn't change.
+
+   | band | id | scope | group | value |
+   |---|---|---|---|---|
+   | B1 | `O1.seeds_reaching_starving_line` | pooled | people | int; print-only fields `starvation_deaths_by_kind` and `first_starving_tick` |
+   | B2a | `O4.meal_sources_with_a_meal` | run | people | int |
+   | B2b | `O4.meal_source_max_share` | pooled | people | float; `by_source` {CARRIED_FOOD, CORPSE_FOOD, TOWN_SERVICE, FREE_CORE_RELIEF} |
+   | B3a | `O2.seeds_with_combat_death` | pooled | all | int (COMBAT or DEFEAT) |
+   | B3b | `O2.max_cause_share` | pooled | all | float; `pooled_deaths` (int) and `by_cause` |
+   | B4a | `O2.people_alive_share_min` | run | people | float; `by_checkpoint` |
+   | B4b | `O2.seeds_people_all_alive` | pooled | people | int |
+   | (none) | `O4.meal_sources_animals` | run | animals | unbanded |
+
+   - **Pooling is done by this module,** like O2.seeds_with_survivors. The harness calls the pool function twice: once on 42-46, the change gate, and once on 42-51, which produces a separately named pooled band document.
+   - The pool function takes whatever seed list the documents carry and never assumes 5 seeds.
+   - Run-level rows, and the per-seed parts that pooled rows need, come from each seed's document.
 
 ## Out of Scope
 - The band config, the judgement and the report section (the testing ticket).
