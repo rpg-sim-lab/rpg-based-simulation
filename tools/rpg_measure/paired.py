@@ -522,6 +522,8 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     verdict: Dict[str, Any] = {"outcome": None, "mode": "neutral" if a.neutral else "report_only" if a.report_only else "step", "detail": None}
     try:
         return _run(a, verdict)
+    except (NotPinnedArmError, DistsMismatchError) as exc:  # the two refusals raised from deep in the run/collected readers: exit 2 with one line, like every other refusal; nothing broader is caught
+        return _refuse(verdict, str(exc))
     except BaseException as exc:
         if verdict["outcome"] is None:
             verdict.update(outcome="REFUSED", detail=f"{type(exc).__name__}: {str(exc)[:300]}")
