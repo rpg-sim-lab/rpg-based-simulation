@@ -8183,6 +8183,21 @@
   tags:
   - testing
 - type: ticket
+  path: agent-working/tickets/todos/TCK-20261115-PAIRED-ARMS-RUNS-ONLY-COMMITS-ON-A-REPO-BRANCH.md
+  ticket_id: TCK-20261115-PAIRED-ARMS-RUNS-ONLY-COMMITS-ON-A-REPO-BRANCH
+  title: The paired-arms workflow keeps no token on disk and refuses a base or new
+    commit that is not on a repo branch, before any arm runs.
+  tier: hotfix
+  ticket_type: repair
+  date: '2026-11-15'
+  related_code_areas:
+  - .github/workflows/paired-arms.yml
+  - tests/static/test_ci_paired_arms_workflow_shape.py
+  artifact_files: []
+  tags:
+  - platform
+  - security
+- type: ticket
   path: agent-working/tickets/todos/distributed-workers-experiment/TCK-20261115-DISTRIBUTED-ENGINE-WORKER-ENTRY-POINT-AND-COMPOSE-PROFILE.md
   ticket_id: TCK-20261115-DISTRIBUTED-ENGINE-WORKER-ENTRY-POINT-AND-COMPOSE-PROFILE
   title: 'An `engine-worker` container entry point and an opt-in `distributed` compose
