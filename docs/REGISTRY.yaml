@@ -8169,6 +8169,19 @@
   - planning
   - delivery
 - type: ticket
+  path: agent-working/tickets/done/TCK-20261115-THE-SLOW-LANE-LOG-SHOWS-EACH-TESTS-WALL-TIME.md
+  ticket_id: TCK-20261115-THE-SLOW-LANE-LOG-SHOWS-EACH-TESTS-WALL-TIME
+  title: The slow-regression log shows each slow test's wall time, so a "under 540
+    s" rule can be checked from CI
+  tier: hotfix
+  ticket_type: chore
+  date: '2026-11-15'
+  related_code_areas:
+  - .github/workflows/slow-regression.yml
+  artifact_files: []
+  tags:
+  - testing
+- type: ticket
   path: agent-working/tickets/todos/TCK-20261115-A-NON-SEQUENTIAL-RUN-IS-REFUSED-BY-THE-GATE-CANDIDATE-PAIRED-ARMS-AND-RPG-MEASURE.md
   ticket_id: TCK-20261115-A-NON-SEQUENTIAL-RUN-IS-REFUSED-BY-THE-GATE-CANDIDATE-PAIRED-ARMS-AND-RPG-MEASURE
   title: A run on a non-sequential executor is refused by the gate candidate, the
@@ -8197,19 +8210,6 @@
   date: '2026-11-15'
   related_code_areas:
   - tests/integration/, test content (read-only for src/)
-  artifact_files: []
-  tags:
-  - testing
-- type: ticket
-  path: agent-working/tickets/todos/TCK-20261115-THE-SLOW-LANE-LOG-SHOWS-EACH-TESTS-WALL-TIME.md
-  ticket_id: TCK-20261115-THE-SLOW-LANE-LOG-SHOWS-EACH-TESTS-WALL-TIME
-  title: The slow-regression log shows each slow test's wall time, so a "under 540
-    s" rule can be checked from CI
-  tier: hotfix
-  ticket_type: chore
-  date: '2026-11-15'
-  related_code_areas:
-  - .github/workflows/slow-regression.yml
   artifact_files: []
   tags:
   - testing
