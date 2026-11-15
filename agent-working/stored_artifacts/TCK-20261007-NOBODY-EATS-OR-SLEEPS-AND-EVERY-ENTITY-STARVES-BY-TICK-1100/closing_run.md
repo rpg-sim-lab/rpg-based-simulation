@@ -42,5 +42,5 @@ Run by rpg-implementer-2 (lane B) on rpg-planner's HOST FREE, read-only. Owner g
 - The horizon is 5000 ticks, well past t≈950, and there is no collapse at the starvation line. The old 13.3 to 5.5 collapse is not reproduced (alive_avg 20.42).
 - Caveat: this run is NOT_PINNED. The test's own build uses ConcurrentExecutionAdapter with a 500 ms budget; the governor is PinnedNormalGovernor and audit_mode is on. It ran once, with no twin. It states the horizon, as the AC asks; it is not pinned behaviour evidence.
 
-## Scratch
-The scratch is on /mnt/data2/rpg-measure/nobody-eats/ and is not deleted; deleting it is the owner's call.
+## Files
+The run's own files are committed next to this note in closing_run_files/: the per-cell JSONs and logs, b5k.json, REPORT.txt, status.txt, the cell scripts and main_sha.txt. Every number above is also stated in this note. The arm tree is not kept, because it is `git archive 746417022` and can be rebuilt from that sha. The /mnt/data2/rpg-measure/nobody-eats/ scratch was only the working copy.

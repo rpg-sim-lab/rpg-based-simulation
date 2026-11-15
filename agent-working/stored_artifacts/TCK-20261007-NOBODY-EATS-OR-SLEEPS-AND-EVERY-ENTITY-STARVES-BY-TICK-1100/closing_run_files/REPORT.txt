@@ -1,0 +1,3 @@
+NOBODY-EATS closing run. tree = git archive of origin/main 746417022cb6caea2b795a522018c7a394ce8b32 (main is now 1dbf8b6a8 after #923, tests/tickets only).
+World cells: pinned (run_conditions PINNED), s42, 2000 ticks, twin pairs hash-equal: frontier_living_world e99d369365aab2eca10fc427e54d68f9f467980e8c7f79f71f2046a68acfcdcb ; crowded_frontier 8596e6b3ac1c70ec5317c9ad4b052e54c6b1882cb4b039f9c52e3a426244d843
+Peak RSS kb: flw a 218428 b 217320 ; crowded a 159216 b 154384 ; b5k 146500. HOST FREE at 16:33:14 (b5k end).
