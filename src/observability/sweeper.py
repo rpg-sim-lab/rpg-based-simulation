@@ -13,7 +13,7 @@ from typing import List, Dict, Any, Optional
 from pydantic import BaseModel, Field, field_validator
 
 from src.observability.config import ObservabilityConfig, ObservabilityMode
-from src.observability.world_farm_io import ensure_run_dir_free
+from src.observability.world_farm_io import claim_run_dir, ensure_run_dir_free
 from src.observability.reporting.artifact_repository import RunArtifactRepository, RunManifest
 from src.config.profiles import RuntimeProfile
 from src.config.loader import ConfigLoader
@@ -103,6 +103,19 @@ class RunSetManifest(BaseModel):
 class ScenarioSweeper:
     """Sequential engine sweeper executing parameterized simulation matrices."""
 
+    @staticmethod
+    def _open_sweep_dir(config: ScenarioSweepConfig, sweep_id: str, sweep_dir: str) -> None:
+        """World farm: refuse a sweep id in use (its sweep dir or a per-seed run dir), never reuse or delete, then create the dir.
+
+        Everything is checked before anything is created.
+        """
+        ensure_run_dir_free(sweep_dir, label=f"sweep directory for sweep '{sweep_id}'")
+        for seed in config.seeds:
+            ensure_run_dir_free(
+                os.path.abspath(os.path.join("data/runs", f"run_{sweep_id}_seed_{seed}")), label=f"run directory for sweep '{sweep_id}'"
+            )
+        os.makedirs(sweep_dir)
+
     @classmethod
     def run_sweep(cls, config: ScenarioSweepConfig) -> RunSetManifest:
         # 1. Setup sweep directory
@@ -112,13 +125,7 @@ class ScenarioSweeper:
             config = config.model_copy(update={"sweep_id": sweep_id})
 
         sweep_dir = os.path.abspath(os.path.join(config.output_dir, sweep_id))
-        # World farm: a sweep id in use (its sweep dir or a per-seed run dir) belongs to another run; refuse, never reuse or delete
-        ensure_run_dir_free(sweep_dir, label=f"sweep directory for sweep '{sweep_id}'")
-        for seed in config.seeds:
-            ensure_run_dir_free(
-                os.path.abspath(os.path.join("data/runs", f"run_{sweep_id}_seed_{seed}")), label=f"run directory for sweep '{sweep_id}'"
-            )
-        os.makedirs(sweep_dir)
+        cls._open_sweep_dir(config, sweep_id, sweep_dir)
 
         # Write active configuration
         with open(os.path.join(sweep_dir, "sweep_config.json"), "w", encoding="utf-8") as f:
@@ -181,6 +188,7 @@ class ScenarioSweeper:
 
                 run_success = False
                 temp_run_dir = os.path.abspath(os.path.join("data/runs", spec.run_id))
+                claim_run_dir(temp_run_dir, label=f"run directory for sweep '{sweep_id}'")
                 
                 try:
                     builder = SCENARIO_BUILDERS[spec.scenario_name]

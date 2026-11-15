@@ -21,7 +21,7 @@ from src.worldbuilding.validator import WorldValidator
 from src.lab.validator import ScenarioValidator, ExperimentValidator
 from src.observability.config import ObservabilityConfig, ObservabilityMode
 from src.config.loader import ConfigLoader
-from src.observability.world_farm_io import ensure_run_dir_free
+from src.observability.world_farm_io import claim_run_dir, ensure_run_dir_free
 
 logger = logging.getLogger(__name__)
 
@@ -191,10 +191,10 @@ class ScenarioLabOrchestrator:
                 run_id = f"run_{run_prefix}_seed_{seed}"
                 temp_run_dir = os.path.abspath(os.path.join("data/runs", run_id))
 
+                # The exclusive create is the claim (the up-front check above is the early, friendly error)
+                claim_run_dir(temp_run_dir, label=f"run directory for lab run '{lab_run_id}'")
                 run_success = False
                 try:
-                    os.makedirs(temp_run_dir, exist_ok=True)
-                    
                     # Load compile context and resolved paths if resolved files exist
                     world_dir = self.world_repo.worlds_dir / scenario_spec.world_id
                     compile_context_path = world_dir / "resolved" / "compile_context.json"

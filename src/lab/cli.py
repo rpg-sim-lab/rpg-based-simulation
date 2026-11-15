@@ -24,14 +24,14 @@ from src.lab import (
     MutationLabOrchestrator
 )
 
-def default_lab_run_id(now: datetime | None = None) -> str:
-    """A lab run id that two runs started in the same second still do not share.
+def default_lab_run_id(now: datetime | None = None, prefix: str = "labrun") -> str:
+    """A lab (or mutation lab) id that two runs started in the same second still do not share.
 
     The id is a name only (it is in no state hash and draws nothing from the simulation RNG), so the process id and a short random
-    nonce are safe to add: ``labrun_{UTC time}_{pid}_{8 hex}``.
+    nonce are safe to add: ``{prefix}_{UTC time}_{pid}_{8 hex}``.
     """
     stamp = (now or datetime.now(timezone.utc)).strftime("%Y%m%d_%H%M%S")
-    return f"labrun_{stamp}_{os.getpid()}_{uuid.uuid4().hex[:8]}"
+    return f"{prefix}_{stamp}_{os.getpid()}_{uuid.uuid4().hex[:8]}"
 
 
 def main(args=None):
@@ -285,8 +285,7 @@ def main(args=None):
         elif parsed.command == "run-mutation":
             mutation_lab_id = parsed.mutation_lab_id
             if not mutation_lab_id:
-                timestamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
-                mutation_lab_id = f"mutlab_{timestamp}"
+                mutation_lab_id = default_lab_run_id(prefix="mutlab")
 
             print(f"Executing mutation lab sweep '{parsed.mutation_id}' (Mutation Lab ID: {mutation_lab_id})...")
             

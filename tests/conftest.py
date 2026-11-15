@@ -53,9 +53,6 @@ from src.core.registries import (
     RegionRegistry,
     ServiceRegistry,
 )
-
-# World farm: remove the *_seed_* run dirs a test creates (a run dir that exists is now refused, never deleted).
-from tests.lab_run_dir_cleanup import remove_seed_run_dirs_this_test_created  # noqa: E402,F401
 _CANONICAL_CATALOG_REGISTRY_STATE: tuple = tuple(
     (cls, attr, dict(getattr(cls, attr)))
     for cls, attr in (

@@ -5,7 +5,7 @@ import multiprocessing as mp
 
 import pytest
 
-from src.observability.world_farm_io import RunDirectoryInUseError, append_line, ensure_run_dir_free
+from src.observability.world_farm_io import RunDirectoryInUseError, append_line, claim_run_dir, ensure_run_dir_free
 
 
 def test_ensure_run_dir_free_passes_for_a_new_path(tmp_path):
@@ -20,6 +20,17 @@ def test_ensure_run_dir_free_refuses_an_existing_dir_and_deletes_nothing(tmp_pat
         ensure_run_dir_free(str(existing), label="run directory")
     assert str(existing) in str(err.value)
     assert (existing / "keep.txt").read_text(encoding="utf-8") == "mine"
+
+
+def test_claim_run_dir_creates_it_and_a_second_claim_is_refused_without_deleting(tmp_path):
+    target = tmp_path / "data" / "runs" / "run_a_seed_1"
+    claim_run_dir(str(target), label="run directory")
+    assert target.is_dir()
+    (target / "keep.txt").write_text("mine", encoding="utf-8")
+    with pytest.raises(RunDirectoryInUseError) as err:
+        claim_run_dir(str(target), label="run directory")  # the exclusive create is the claim
+    assert str(target) in str(err.value)
+    assert (target / "keep.txt").read_text(encoding="utf-8") == "mine"
 
 
 def test_refusal_is_a_file_exists_error(tmp_path):

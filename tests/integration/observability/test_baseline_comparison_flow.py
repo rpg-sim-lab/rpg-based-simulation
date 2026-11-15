@@ -10,6 +10,16 @@ from src.observability.reporting.run_set_repository import RunSetArtifactReposit
 from src.observability.reporting.baseline_generator import BaselineGenerator
 from src.observability.reporting.baseline_comparator import BaselineComparator
 from src.cli.entry import _run_compare_run, _run_compare_sweep
+from tests.named_run_dirs import remove_named_run_dirs  # noqa: F401
+
+# Run ids this module's tests name, removed by name after each test (see tests/named_run_dirs.py).
+RUN_ID_PREFIXES = {
+    "test_a_pinned_fast_tick_leaves_every_run_unscored": ('fast_sweep',),
+    "test_a_slow_tick_is_what_trips_the_cpu_latency_rule": ('slow_sweep',),
+    "test_baseline_comparison_and_cli_flow": ('test_compare_sweep',),
+    "test_freshly_generated_baseline_gives_a_tick_cost_verdict_not_inconclusive": ('fresh_baseline_cost_sweep',),
+}
+pytestmark = pytest.mark.usefixtures("remove_named_run_dirs")
 
 
 SLOW_TICK_MS = 59.0  # above the HighCPULatencyRule's 50 ms limit: what a loaded host produced

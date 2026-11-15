@@ -2,6 +2,8 @@
 
 import json
 import os
+import shutil
+import uuid
 from pathlib import Path
 
 import pytest
@@ -85,12 +87,18 @@ def _final_state_hash(sets_dir: Path, sweep_id: str, seed: int) -> str:
     return manifest["state_hash"]
 
 
-def test_the_run_id_is_a_name_only_the_same_seed_gives_the_same_final_hash(tmp_path, monkeypatch):
-    monkeypatch.chdir(tmp_path)
-    os.makedirs("data/runs")
-    hashes = []
-    for sweep_id in ("farm_name_one", "farm_name_two_is_longer"):
-        manifest = ScenarioSweeper.run_sweep(_sweep(sweep_id, str(tmp_path / "sets"), seeds=(7,), ticks=20))
-        assert manifest.status == "COMPLETED"
-        hashes.append(_final_state_hash(tmp_path / "sets", sweep_id, 7))
-    assert hashes[0] == hashes[1]
+def test_the_run_id_is_a_name_only_the_same_seed_gives_the_same_final_hash(tmp_path):
+    # No chdir here: the engine loads the content catalog from relative paths, and a catalog first loaded from a temp folder would
+    # be empty for every later test in the worker. The ids are unique, and exactly those run dirs are removed by name afterwards.
+    suffix = uuid.uuid4().hex[:8]
+    sweep_ids = (f"farm_name_one_{suffix}", f"farm_name_two_is_longer_{suffix}")
+    try:
+        hashes = []
+        for sweep_id in sweep_ids:
+            manifest = ScenarioSweeper.run_sweep(_sweep(sweep_id, str(tmp_path / "sets"), seeds=(7,), ticks=20))
+            assert manifest.status == "COMPLETED"
+            hashes.append(_final_state_hash(tmp_path / "sets", sweep_id, 7))
+        assert hashes[0] == hashes[1]
+    finally:
+        for sweep_id in sweep_ids:
+            shutil.rmtree(Path(os.path.abspath("data/runs")) / f"run_{sweep_id}_seed_7", ignore_errors=True)
