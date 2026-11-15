@@ -8154,21 +8154,7 @@
   - planning
   - delivery
 - type: ticket
-  path: agent-working/tickets/todos/TCK-20261115-M1-A-TEST-KIND-DECLARED-ONLY-IN-CONTENT-PERCEIVES-EATS-AND-FIGHTS.md
-  ticket_id: TCK-20261115-M1-A-TEST-KIND-DECLARED-ONLY-IN-CONTENT-PERCEIVES-EATS-AND-FIGHTS
-  title: 'Milestone 1''s content-alone probe: a test kind declared only in test content,
-    with no code change, perceives, eats and fights by its declarations through the
-    real kernel'
-  tier: standard
-  ticket_type: feature
-  date: '2026-11-15'
-  related_code_areas:
-  - tests/integration/, test content (read-only for src/)
-  artifact_files: []
-  tags:
-  - testing
-- type: ticket
-  path: agent-working/tickets/todos/github-project-ticket-view/TCK-20261115-PROJECT-SYNC-FILED-DATE-AND-BACKLOG-VIEW.md
+  path: agent-working/tickets/done/TCK-20261115-PROJECT-SYNC-FILED-DATE-AND-BACKLOG-VIEW.md
   ticket_id: TCK-20261115-PROJECT-SYNC-FILED-DATE-AND-BACKLOG-VIEW
   title: '`project_sync.py`: a `Filed` date field from each ticket''s frontmatter
     date, so the owner''s Backlog view can show the open-ticket pile by Domain, Priority
@@ -8182,6 +8168,20 @@
   tags:
   - planning
   - delivery
+- type: ticket
+  path: agent-working/tickets/todos/TCK-20261115-M1-A-TEST-KIND-DECLARED-ONLY-IN-CONTENT-PERCEIVES-EATS-AND-FIGHTS.md
+  ticket_id: TCK-20261115-M1-A-TEST-KIND-DECLARED-ONLY-IN-CONTENT-PERCEIVES-EATS-AND-FIGHTS
+  title: 'Milestone 1''s content-alone probe: a test kind declared only in test content,
+    with no code change, perceives, eats and fights by its declarations through the
+    real kernel'
+  tier: standard
+  ticket_type: feature
+  date: '2026-11-15'
+  related_code_areas:
+  - tests/integration/, test content (read-only for src/)
+  artifact_files: []
+  tags:
+  - testing
 - type: ticket
   path: agent-working/tickets/todos/github-project-ticket-view/TCK-20261115-PROJECT-SYNC-HOST-TIMER.md
   ticket_id: TCK-20261115-PROJECT-SYNC-HOST-TIMER

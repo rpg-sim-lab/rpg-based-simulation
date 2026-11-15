@@ -129,3 +129,18 @@ and a run on one host never undoes the other's. This corrects design section 5, 
   until both are on the same `origin/main` (as for the content rule). (c) **Never run `--apply` on pre-P3b code, on either host, once the
   heartbeat exists**: P1c and P2 code archive "an item with no Ticket ID", so the heartbeat would be lost. A pre-P3b dry run showing `archive
   _sync heartbeat` is expected, not a finding. (g) The sync sees only branches checked out in a worktree on this host; a branch with no worktree (parked) falls back to main's copy, so the plan can change when a branch is checked out or removed. (d) `Domain (old)` stays on the board until the owner asks for it to be deleted. (e) **Tier** is the leading token of the ticket's `## Tier` line (`standard (provisional)` is `standard`); anything else outside hotfix/standard/epic is a finding and Tier is left empty. (f) A live dry run checks every select value the plan would write (Status, Tier, Layer, Priority, Domain) against the live field's options and prints `finding: apply would refuse: <id> <field> '<value>'` for each; `--apply` runs the same check before its first mutation and refuses (rc 2, nothing written), naming all of them.
+
+## Filed date and the Backlog view (`TCK-20261115-PROJECT-SYNC-FILED-DATE-AND-BACKLOG-VIEW`)
+
+- **`Filed`** is a DATE field that `--init` creates (a second `--init` leaves it alone; an existing `Filed` of another type is refused before any
+  write). Its value is the `date:` of the ticket's frontmatter (`YYYY-MM-DD`) from the copy the content rule picks. A missing or invalid date
+  leaves the field empty and adds a finding `Filed left empty`. When another host's lower tag holds the content, the current value is kept, as for
+  the other content fields. An empty value clears the field.
+- **Sync hash v4** is the v3 fields plus `Filed` (`v4:<sha>`). A v1, v2 or v3 item is not a hand edit; its first run writes `Filed` (and the hash)
+  once. Pre-v4 code reads `v4:` as an unknown version, so do not `--apply` from a checkout older than this change.
+- **Backlog view (owner UI step, no code).** Add a table view on https://github.com/orgs/rpg-sim-lab/projects/1: filter `status:"To do"`, group
+  by Domain, sort by Priority and then Filed. For the age of the pile add a filter such as `filed:<@today-30d`; if the UI does not accept that
+  syntax, sort by Filed instead. GitHub shows the item count per group, so no count is stored anywhere.
+- **Limits.** (a) `Filed` is the filing date, not the last activity: a ticket filed long ago and worked on yesterday still looks old.
+  (b) A merged ticket gets a Done item only while some host's worktree still has its branch checked out (seen in P3b AC3.5 on ubuntu, #917), so the
+  Done lane is not a full list of recent closes. This is documented only; no code changes it.
