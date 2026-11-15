@@ -142,3 +142,29 @@ def test_local_paired_refuses_to_cache_under_a_missing_lock(tmp_path, monkeypatc
     assert not (tmp_path / "cache" / "results").exists()
     with pytest.raises(pa.ArmsRefused, match="not a sha256"):  # paired_arms run-arm too
         pa.run_arm(tmp_path, SHA, "base", "w", 42, 10, tmp_path / "cache2")
+
+
+# ---- the CI runner label (rpg-planner review): image on a hosted runner, RUNNER_NAME on a self-hosted one, else refused
+
+def test_a_hosted_runner_is_keyed_by_its_image_not_its_runner_name(tmp_path):
+    env = _env(tmp_path, {**CI, "RUNNER_NAME": "GitHub Actions 7"})
+    assert env["runner"] == "ci:ubuntu24-20260101.1.0"
+    assert paired.env_key(env) == paired.env_key(_env(tmp_path, {**CI, "RUNNER_NAME": "GitHub Actions 9"}))
+
+
+def test_a_self_hosted_runner_without_imageos_is_keyed_by_its_runner_name(tmp_path):
+    env = _env(tmp_path, {"GITHUB_ACTIONS": "true", "RUNNER_NAME": "farm-3"})
+    assert env["runner"] == "ci:self-hosted:farm-3" and paired.env_problem(env) is None
+    assert paired.env_key(env) != paired.env_key(_env(tmp_path, {"GITHUB_ACTIONS": "true", "RUNNER_NAME": "farm-4"}))
+
+
+def test_a_ci_runner_with_neither_imageos_nor_runner_name_is_refused_everywhere(tmp_path, monkeypatch, capsys):
+    env = _env(tmp_path, {"GITHUB_ACTIONS": "true"})
+    assert env["runner"] == paired.UNIDENTIFIED_RUNNER and "unidentified" in paired.env_problem(env)
+    monkeypatch.setattr(paired, "_CURRENT_ENV", env)
+    assert paired.main(["--base", "HEAD", "--new", "HEAD", "--cache", str(tmp_path / "cache")]) == 2
+    assert "unidentified" in capsys.readouterr().err and not (tmp_path / "cache" / "results").exists()
+    with pytest.raises(pa.ArmsRefused, match="unidentified"):
+        pa.run_arm(tmp_path, SHA, "base", "w", 42, 10, tmp_path / "cache2")
+    _stage(tmp_path, env)  # and a collected dir that records it
+    assert "unidentified" in paired.env_problems(tmp_path, [("base", SHA, [("w", 42)], 10, False)])[0]

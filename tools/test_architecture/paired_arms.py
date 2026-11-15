@@ -162,7 +162,7 @@ def run_arm(repo: Path, sha: str, arm: str, world: str, seed: int, ticks: int, c
         raise ArmsRefused(f"arm must be one of {ARMS}, got {arm!r}")
     from tools.rpg_measure import paired  # rpg's module, imported (never copied) so the cache key and the child call are paired's
 
-    unlocked = paired.lock_problem(paired.current_env()["uv_lock"])
+    unlocked = paired.env_problem(paired.current_env())
     if unlocked:
         raise ArmsRefused(unlocked)
     full_sha, tree = paired.prepare_tree(repo, sha, cache)

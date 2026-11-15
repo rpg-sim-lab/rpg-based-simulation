@@ -119,13 +119,20 @@ def run_env(environ: Optional[Dict[str, str]] = None, hostname: Optional[str] = 
     micro version, the OS (system + release) and the ``uv.lock`` sha256 with the checkout it came from. The key is its canonical-JSON hash, see ``env_key``."""
     environ = os.environ if environ is None else environ
     if environ.get("GITHUB_ACTIONS") == "true":
-        runner = "ci:" + ("-".join(part for part in (environ.get("ImageOS"), environ.get("ImageVersion")) if part) or "unknown")
+        image = "-".join(part for part in (environ.get("ImageOS"), environ.get("ImageVersion")) if part)
+        if environ.get("ImageOS"):
+            runner = "ci:" + image  # a GitHub-hosted runner: the image, not RUNNER_NAME (which differs per job)
+        elif environ.get("RUNNER_NAME"):
+            runner = "ci:self-hosted:" + environ["RUNNER_NAME"]  # no ImageOS: a self-hosted runner, named by its own name
+        else:
+            runner = UNIDENTIFIED_RUNNER
     else:
         runner = "local:" + (hostname if hostname is not None else socket.gethostname())
     uv_lock, source = uv_lock_digest(tool_root, arm_tree)
     return {"runner": runner, "python": platform.python_version(), "os": f"{platform.system()} {platform.release()}", "uv_lock": uv_lock, "uv_lock_source": source}
 
 
+UNIDENTIFIED_RUNNER = "ci:unidentified"  # GITHUB_ACTIONS with neither ImageOS nor RUNNER_NAME: refused, never keyed
 _SHA256 = re.compile(r"^[0-9a-f]{64}$")
 
 
@@ -134,6 +141,13 @@ def lock_problem(uv_lock: Any) -> Optional[str]:
     if isinstance(uv_lock, str) and _SHA256.match(uv_lock):
         return None
     return f"uv_lock is {uv_lock!r}, not a sha256: the dependency set the arms ran under is unknown, so results are not cached or compared under it"
+
+
+def env_problem(env: Dict[str, Any]) -> Optional[str]:
+    """Why ``env`` cannot key a result (fail closed): an unknown dependency lock, or a CI runner with neither ``ImageOS`` nor ``RUNNER_NAME``. None when it can."""
+    if env.get("runner") == UNIDENTIFIED_RUNNER:
+        return "runner is unidentified (GITHUB_ACTIONS is set with neither ImageOS nor RUNNER_NAME): results are not cached or compared under it"
+    return lock_problem(env.get("uv_lock"))
 
 
 def env_key(env: Dict[str, str]) -> str:
@@ -181,7 +195,7 @@ def env_json_problem(directory: Path) -> Optional[str]:
         return f"{directory.name}: no readable {ENV_FILE}"
     if not isinstance(recorded, dict) or not _ENV8.match(claimed) or env_key(recorded) != claimed:
         return f"{directory.name}: {ENV_FILE} hashes to {env_key(recorded) if isinstance(recorded, dict) else 'nothing'}, not the env8 {claimed!r} in the directory name"
-    bad = lock_problem(recorded.get("uv_lock"))
+    bad = env_problem(recorded)
     return f"{directory.name}: {ENV_FILE} {bad}" if bad else None
 
 
@@ -496,9 +510,9 @@ def _run(a: argparse.Namespace, verdict: Dict[str, Any]) -> int:
         problem = cache_problem(cache)
         if problem:
             return _refuse(verdict, f"cache {cache} unusable: {problem}", f"cache directory {cache} is not usable ({problem}); set RPG_MEASURE_CACHE or pass --cache")
-        unlocked = lock_problem(current_env()["uv_lock"])
+        unlocked = env_problem(current_env())
         if unlocked:
-            return _refuse(verdict, unlocked, f"{unlocked}; this tool checkout has no uv.lock")
+            return _refuse(verdict, unlocked, unlocked)
         if a.neutral:
             return neutral(repo, a.base, a.new, cache, a.jobs, verdict)
     if collected and a.neutral:
