@@ -132,6 +132,16 @@ def refuse_non_pinned(arm: str, runs: Dict[Key, Dict[str, Any]]) -> None:
         raise NotPinnedArmError(f"arm documents not marked runner PINNED (a run on a non-sequential executor, or an older arm): {bad}")
 
 
+def runner_sources(arm: str, runs: Dict[Key, Dict[str, Any]]) -> str:
+    """Which check made each arm document PINNED, for the table: ``manifest`` (the kernel's own run_conditions record) or ``derived_from_kernel`` (an arm tree older than the
+    record, classified from its live kernel); a document that names none is ``unrecorded``. Both are accepted; only a document not marked PINNED is refused."""
+    counts: Dict[str, int] = {}
+    for r in runs.values():
+        key = str(r.get("run_conditions_source") or "unrecorded")
+        counts[key] = counts.get(key, 0) + 1
+    return f"{arm} " + ", ".join(f"{k} x{v}" for k, v in sorted(counts.items()))
+
+
 def refuse_non_audit(arm: str, runs: Dict[Key, Dict[str, Any]], legacy: bool = False) -> None:
     """Both flags recorded by the run's own manifest: audit_mode and signals_zeroed must be True, else the comparison measures host speed.
 
@@ -422,6 +432,7 @@ def _run(a: argparse.Namespace, verdict: Dict[str, Any]) -> int:
              *(["- **legacy new arm, audit proven by repeat**: the new arm also predates the determinism fix; its kernel was verified forced and its own full repeat is byte-identical"] if a.legacy_new else []),
              f"- base {bsha[:12]} -> new {nsha[:12]}; {', '.join(worlds)}; seeds {a.seeds}; {a.ticks} ticks; PYTHONHASHSEED={HASHSEED}; audit_mode and signals_zeroed recorded True in every run of " + ("the new arm (base: see the legacy line)" if a.legacy_base and not a.legacy_new else "neither arm (see the legacy lines)" if a.legacy_new else "both arms"),
              (f"- base-vs-base self-check ({a.self_check}, {len(check_jobs)} runs): spread 0 (byte-identical final and start hashes, fates and counters)" if check_jobs else "- base-vs-base self-check: NOT RUN (--self-check off)"),
+             f"- runner check: {runner_sources('base', base)}; {runner_sources('new', new)}",
              *runner_lines,
              f"- SE = sd(per-seed new-base)/sqrt({len(a.seeds)}); STOP = more people deaths by > {stats.SE_MULTIPLE:g}·SE AND > floor ({a.floor_per_seed:g} per seed = {a.floor_per_seed * len(a.seeds):g} total); fewer past both is REPORT-ONLY; SD 0 is not special-cased",
              ""]
