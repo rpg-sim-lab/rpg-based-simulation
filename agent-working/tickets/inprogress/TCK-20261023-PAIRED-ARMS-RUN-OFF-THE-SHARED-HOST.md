@@ -76,9 +76,9 @@ Platform's runner facts (#593 issuecomment-6345851046):
 - [x] AC4: the workflow is pinned (the pin guard passes), it is `workflow_dispatch`-only, and a static test asserts that it has no `pull_request` / `push` trigger and that its concurrency does not cancel.
 - [x] AC5: rpg's collected-results option (its own PR) is reviewed by testing-planner, and the STOP and host-independence refusals are tested there.
 - Added 2026-11-15 (testing-planner), from rpg-designer's runner-evidence rule (#634, items a-f accepted plus g-j; relayed by lead-planner-u24). These ACs are built only after the owner's go on a proposal with cost (#715 6891576449 item 3):
-- [x] AC6 (g): an evidence set must include self-checks. `plan --self-check off` is refused for an evidence dispatch, and the base-vs-base repeat runs on the runner (tested).
-- [x] AC7 (h): the runner identity carries the sha256 of the tool checkout's `uv.lock`, and assembly refuses a set whose jobs differ in it (tested on fake artifacts).
-- [x] AC8 (i): the paired cache key becomes `<sha12>-<child hash8>-<ticks>-<env8>[-repeat]`, as ruled by rpg-planner (lead relay, 2026-11-15).
+- [x] AC6 (g) (done in TCK-20261115-PAIRED-ARMS-EVIDENCE-SETS-NEED-THEIR-REPEAT-AND-ONE-LOCKED-ENVIRONMENT): an evidence set must include self-checks. `plan --self-check off` is refused for an evidence dispatch, and the base-vs-base repeat runs on the runner (tested).
+- [x] AC7 (h) (done in TCK-20261115-PAIRED-ARMS-EVIDENCE-SETS-NEED-THEIR-REPEAT-AND-ONE-LOCKED-ENVIRONMENT): the runner identity carries the sha256 of the tool checkout's `uv.lock`, and assembly refuses a set whose jobs differ in it (tested on fake artifacts).
+- [x] AC8 (i) (done in TCK-20261115-PAIRED-ARMS-EVIDENCE-SETS-NEED-THEIR-REPEAT-AND-ONE-LOCKED-ENVIRONMENT): the paired cache key becomes `<sha12>-<child hash8>-<ticks>-<env8>[-repeat]`, as ruled by rpg-planner (lead relay, 2026-11-15).
   - env8 is the first 8 hex characters of the sha256 of the canonical JSON {runner: "local:<host>" | "ci:<label>", python: major.minor.micro, os: system + release, uv_lock: the sha256 of the tool checkout's uv.lock (falling back to the arm tree's, recorded as which one)}.
   - Each result dir gets an env.json holding that object, and `--collected` refuses a mismatch.
   - Old-format entries are a miss and are never deleted.

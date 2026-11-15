@@ -8179,6 +8179,21 @@
   artifact_files: []
   tags: []
 - type: ticket
+  path: agent-working/tickets/done/TCK-20261115-PAIRED-ARMS-EVIDENCE-SETS-NEED-THEIR-REPEAT-AND-ONE-LOCKED-ENVIRONMENT.md
+  ticket_id: TCK-20261115-PAIRED-ARMS-EVIDENCE-SETS-NEED-THEIR-REPEAT-AND-ONE-LOCKED-ENVIRONMENT
+  title: A paired-arms evidence set carries its base-vs-base repeats and was built
+    under one recorded environment with a known dependency lock
+  tier: hotfix
+  ticket_type: feature
+  date: '2026-11-15'
+  related_code_areas:
+  - tools/test_architecture/paired_arms.py, tools/rpg_measure/paired.py (rpg's file,
+    rpg-planner's env8 ruling), .github/workflows/paired-arms.yml
+  artifact_files: []
+  tags:
+  - testing
+  - determinism
+- type: ticket
   path: agent-working/tickets/done/TCK-20261115-PAIRED-ARMS-RUNS-ONLY-COMMITS-ON-A-REPO-BRANCH.md
   ticket_id: TCK-20261115-PAIRED-ARMS-RUNS-ONLY-COMMITS-ON-A-REPO-BRANCH
   title: The paired-arms workflow keeps no token on disk and refuses a base or new

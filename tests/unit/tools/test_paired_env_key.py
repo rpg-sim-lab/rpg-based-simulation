@@ -107,3 +107,38 @@ def test_run_arm_writes_env_json_beside_the_result(tmp_path, monkeypatch):
     pa.run_arm(tmp_path, SHA, "base", "w", 42, 10, tmp_path / "cache")
     out = paired.result_path(tmp_path / "cache", SHA, 10, "w", 42)
     assert json.loads((out.parent / paired.ENV_FILE).read_text()) == paired.current_env() and paired.env_json_problem(out.parent) is None
+
+
+# ---- fail closed on a missing lock (testing-planner review of AC7/AC8): "missing" is never a dependency set
+
+@pytest.mark.parametrize("value", ["missing", "", None, "abc", "G" * 64, "A" * 64])
+def test_lock_problem_accepts_only_a_lowercase_sha256(value):
+    assert paired.lock_problem(value)
+    assert paired.lock_problem("0" * 64) is None
+
+
+def test_assembly_refuses_a_set_whose_jobs_all_record_a_missing_lock(tmp_path):
+    from tests.unit.tools import test_paired_arms as tpa
+    root = tmp_path / "arms"
+    unlocked = {**tpa.RUNNER, "uv_lock": "missing"}
+    tpa._pair_job(root, seed=42, runner=unlocked)
+    tpa._pair_job(root, seed=43, runner=unlocked)  # all jobs agree, which used to assemble as matching
+    with pytest.raises(pa.ArmsRefused, match="not a sha256"):
+        pa.assemble(root, tmp_path / "out", base=tpa.BASE, new=tpa.NEW)
+
+
+def test_collected_refuses_an_env_json_that_records_a_missing_lock(tmp_path):
+    ci = _env(tmp_path, CI, lock=None)
+    assert ci["uv_lock"] == "missing"
+    _stage(tmp_path, ci)  # the name and env.json agree; the lock is what is wrong
+    problem = paired.env_problems(tmp_path, [("base", SHA, [("w", 42)], 10, False)])
+    assert problem and "not a sha256" in problem[0]
+
+
+def test_local_paired_refuses_to_cache_under_a_missing_lock(tmp_path, monkeypatch, capsys):
+    monkeypatch.setattr(paired, "_CURRENT_ENV", _env(tmp_path, lock=None))
+    rc = paired.main(["--base", "HEAD", "--new", "HEAD", "--cache", str(tmp_path / "cache")])
+    assert rc == 2 and "not a sha256" in capsys.readouterr().err
+    assert not (tmp_path / "cache" / "results").exists()
+    with pytest.raises(pa.ArmsRefused, match="not a sha256"):  # paired_arms run-arm too
+        pa.run_arm(tmp_path, SHA, "base", "w", 42, 10, tmp_path / "cache2")

@@ -126,6 +126,16 @@ def run_env(environ: Optional[Dict[str, str]] = None, hostname: Optional[str] = 
     return {"runner": runner, "python": platform.python_version(), "os": f"{platform.system()} {platform.release()}", "uv_lock": uv_lock, "uv_lock_source": source}
 
 
+_SHA256 = re.compile(r"^[0-9a-f]{64}$")
+
+
+def lock_problem(uv_lock: Any) -> Optional[str]:
+    """Why a recorded ``uv_lock`` cannot stand for a dependency set (fail closed): anything but a 64-hex sha256, e.g. ``"missing"``. None when it is one."""
+    if isinstance(uv_lock, str) and _SHA256.match(uv_lock):
+        return None
+    return f"uv_lock is {uv_lock!r}, not a sha256: the dependency set the arms ran under is unknown, so results are not cached or compared under it"
+
+
 def env_key(env: Dict[str, str]) -> str:
     """env8: the first 8 hex characters of the sha256 of the canonical JSON of ``env``."""
     return hashlib.sha256(json.dumps(env, sort_keys=True, separators=(",", ":")).encode("utf-8")).hexdigest()[:8]
@@ -171,7 +181,8 @@ def env_json_problem(directory: Path) -> Optional[str]:
         return f"{directory.name}: no readable {ENV_FILE}"
     if not isinstance(recorded, dict) or not _ENV8.match(claimed) or env_key(recorded) != claimed:
         return f"{directory.name}: {ENV_FILE} hashes to {env_key(recorded) if isinstance(recorded, dict) else 'nothing'}, not the env8 {claimed!r} in the directory name"
-    return None
+    bad = lock_problem(recorded.get("uv_lock"))
+    return f"{directory.name}: {ENV_FILE} {bad}" if bad else None
 
 
 def _arm_dirs(cache: Path, sha: str, ticks: int, repeat: bool) -> Tuple[str, List[Path]]:
@@ -485,6 +496,9 @@ def _run(a: argparse.Namespace, verdict: Dict[str, Any]) -> int:
         problem = cache_problem(cache)
         if problem:
             return _refuse(verdict, f"cache {cache} unusable: {problem}", f"cache directory {cache} is not usable ({problem}); set RPG_MEASURE_CACHE or pass --cache")
+        unlocked = lock_problem(current_env()["uv_lock"])
+        if unlocked:
+            return _refuse(verdict, unlocked, f"{unlocked}; this tool checkout has no uv.lock")
         if a.neutral:
             return neutral(repo, a.base, a.new, cache, a.jobs, verdict)
     if collected and a.neutral:

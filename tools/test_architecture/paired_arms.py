@@ -162,6 +162,9 @@ def run_arm(repo: Path, sha: str, arm: str, world: str, seed: int, ticks: int, c
         raise ArmsRefused(f"arm must be one of {ARMS}, got {arm!r}")
     from tools.rpg_measure import paired  # rpg's module, imported (never copied) so the cache key and the child call are paired's
 
+    unlocked = paired.lock_problem(paired.current_env()["uv_lock"])
+    if unlocked:
+        raise ArmsRefused(unlocked)
     full_sha, tree = paired.prepare_tree(repo, sha, cache)
     out = paired.result_path(cache, full_sha, ticks, world, seed, repeat)
     out.parent.mkdir(parents=True, exist_ok=True)
@@ -195,6 +198,8 @@ def assemble(src: Path, out: Path, *, base: str, new: str) -> Dict[str, Any]:
     when an arm document is not marked ``runner: "PINNED"`` (TCK-20261115-A-NON-SEQUENTIAL-RUN-IS-REFUSED-BY-THE-GATE-CANDIDATE-PAIRED-ARMS-AND-RPG-MEASURE);
     or when a ``pair`` job (a directory without the ``-self`` suffix) lacks either the base or the new arm of its (world, seed) from that same job.
     Returns ``{"jobs": {name: [runner...]}, "arms": [cost...]}`` and writes it to ``out/identities.json``."""
+    from tools.rpg_measure import paired  # lock_problem: the one fail-closed rule for a recorded uv.lock
+
     base12, new12 = _check_sha("--base", base)[:12], _check_sha("--new", new)[:12]
     jobs = sorted(p for p in Path(src).iterdir() if p.is_dir())
     if not jobs:
@@ -223,6 +228,9 @@ def assemble(src: Path, out: Path, *, base: str, new: str) -> Dict[str, Any]:
             if not isinstance(arm_doc, dict) or arm_doc.get("runner") != "PINNED":
                 got = arm_doc.get("runner") if isinstance(arm_doc, dict) else None
                 raise ArmsRefused(f"{job.name}/{result_path.relative_to(job)}: runner is {got!r}, not 'PINNED'; an arm that was not run on the pinned runner is not assembled")
+            unlocked = paired.lock_problem(runner.get("uv_lock"))
+            if unlocked:
+                raise ArmsRefused(f"{job.name}/{cost_path.relative_to(job)}: {unlocked}")
             runners.setdefault(job.name, runner)
             by_key.setdefault(stem, []).append((f"{job.name}:{directory}", runner))
             if not directory.endswith("-repeat"):
