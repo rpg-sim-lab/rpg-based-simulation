@@ -108,6 +108,56 @@ def test_a_never_hit_subject_has_no_last_hit():
     assert not _acts(_hostile())
 
 
+# ---- (b) past the starving line a hit acts only while its hitter can still reach the subject (TCK-20261115-PAST-THE-STARVING-LINE-...) ------------------------------------
+
+def _hit_subject(hunger, ago=3):
+    subject = _subject()
+    return replace(subject, biological=replace(subject.biological, hunger=hunger),
+                   combat=replace(subject.combat, last_attacker_id=2, last_hit_tick=TICK - ago))
+
+
+def _ranged(at, reach):
+    hostile = _hostile(at=at)
+    return replace(hostile, combat=replace(hostile.combat, range=reach))
+
+
+def test_past_the_starving_line_a_hit_by_a_hitter_out_of_reach_and_not_pursuing_does_not_act():
+    from src.engine.starvation import STARVING_LINE
+
+    assert not _acts(_hostile(at=(5.0, 0.0)), _hit_subject(STARVING_LINE))
+
+
+def test_past_the_starving_line_a_hit_by_an_adjacent_hitter_acts():
+    assert _acts(_hostile(at=(1.0, 0.0)), _hit_subject(100.0))
+
+
+def test_past_the_starving_line_a_hitter_out_of_reach_that_pursues_the_subject_acts_through_the_task():
+    pursuing = _hostile(TaskComponent(work_kind="ENTITY_MOVE", payload={"target_position": (0.0, 0.0), "target_id": 1}), mode=MovementMode.PURSUE, at=(5.0, 0.0))
+    assert _acts(pursuing, _hit_subject(100.0))
+
+
+def test_below_the_starving_line_a_hit_by_a_hitter_out_of_reach_still_acts_for_the_window():
+    from src.engine.starvation import STARVING_LINE
+
+    assert _acts(_hostile(at=(5.0, 0.0)), _hit_subject(STARVING_LINE - 0.5))
+
+
+def test_past_the_starving_line_a_ranged_hitter_acts_while_the_subject_is_inside_its_range():
+    assert _acts(_ranged((3.0, 0.0), 4), _hit_subject(100.0))
+    assert not _acts(_ranged((5.0, 0.0), 4), _hit_subject(100.0))
+
+
+def test_the_reach_is_inclusive_and_never_below_one_tile():
+    zero_range = _ranged((1.0, 0.0), 0)  # a range of 0 still reaches the adjacent tile: max(1, range)
+    assert _acts(zero_range, _hit_subject(100.0))
+    assert _acts(_ranged((2.0, 2.0), 4), _hit_subject(100.0)) and not _acts(_ranged((3.0, 2.0), 4), _hit_subject(100.0))  # Manhattan 4 reaches, 5 does not
+
+
+def test_the_window_is_unchanged_past_the_line_a_hit_inside_it_and_reach_acts_and_one_tick_after_it_does_not():
+    assert _acts(_hostile(at=(1.0, 0.0)), _hit_subject(100.0, ago=NEED_WAKE_CADENCE))
+    assert not _acts(_hostile(at=(1.0, 0.0)), _hit_subject(100.0, ago=NEED_WAKE_CADENCE + 1))
+
+
 # ---- last_hit_tick: written by the patch with its attacker, hashed ---------------------------------------------------------------------------
 
 def _apply(entity, combat_update):

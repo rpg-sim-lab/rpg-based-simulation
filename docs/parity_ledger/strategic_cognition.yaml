@@ -4691,3 +4691,14 @@
   test_path: tests/unit/tactical/test_low_hp_retreat_gate.py
   divergence_note: See docs/guidelines/intentional_divergences.md Section 2.200.
   support_boundary: 'Unit rows: the low-hp retreat grid ({pressing y/n} x {no hostile, perceived only, adjacent not acting, acting}) with and without a destination, the acceptance scene, the panic freeze with prey in sight, and the reading 3 below-line row. Paired measurement pending.'
+
+- id: STRAT-300
+  text: 'TCK-20261115-PAST-THE-STARVING-LINE-THE-TACTICAL-STEP-TURNS-AWAY-FROM-A-MEAL-WITHOUT-WEIGHING-HUNGER (SURV-07 LAW P, memo row 88, divergence 2.207): past the starving line (hunger at or above 95) a hit acts on the subject only while its hitter can still reach it (Manhattan distance at the decision tick <= max(1, the hitter''s range), no line of sight) or pursues or attacks it; a swing left behind no longer makes the need yield, keeps a panic standing or makes acting_threat_to true. Below the line the ten-tick hit window is unchanged.'
+  status: verified
+  priority: P1
+  legacy_evidence: null
+  v2_evidence: 'src/engine/tactical_threat.py (_hit_acts_on, hostile_acts_on, need_yields), src/engine/tactical.py (_panic_holds, _need_path_first), src/ai/goals/present_threat.py (acting_threat_to), docs/mechanics/04_strategic_cognition.md (LAW P paragraph), docs/guidelines/intentional_divergences.md Section 2.207.'
+  proof_type: regression
+  test_path: tests/unit/engine/test_acting_hostile_is_an_act_not_a_state.py, tests/unit/tactical/test_starving_hit_left_behind_does_not_hold_a_panic.py
+  divergence_note: See docs/guidelines/intentional_divergences.md Section 2.207.
+  support_boundary: 'Unit rows and one tactical scene (the traced shape A). No real-kernel tick-loop test discriminates the old and new predicate (the kernel fixtures eat on the inn arrival either way); the paired 3-world x s42-46 x 5000-tick measurement and the V3 cell re-read are pending (after HOLD stage 2). Reach has no line-of-sight test; engagement ordering after a yielded need (group shared-target bias) is out of scope.'

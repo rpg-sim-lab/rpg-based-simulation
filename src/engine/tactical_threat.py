@@ -23,6 +23,7 @@ from src.core.movement_modes import MovementMode
 from src.core.state import EntityState
 from src.domains.combat_engagement.power import apparent_power
 from src.engine.need_wake import NEED_WAKE_CADENCE
+from src.engine.starvation import STARVING_LINE
 
 # A subject whose safety disposition is above this is "cautious" for the SAFETY_PRESSURE_RETREAT branch (the
 # value that gate has always used; content has levels 0.9 and 0.75 and below, so it separates high from the rest).
@@ -127,9 +128,17 @@ def _task_acts_on(hostile: EntityState, subject_id: int) -> bool:
 
 
 def _hit_acts_on(hostile: EntityState, subject: EntityState, tick: int) -> bool:
-    """(b) The hostile is the body that last took hp from the subject, and that hit is within one brain cadence (opportunity hits included: they are hits)."""
+    """(b) The hostile is the body that last took hp from the subject, and that hit is within one brain cadence (opportunity hits included: they are hits).
+
+    Past the starving line (the subject's hunger at or above `STARVING_LINE`) a hit acts only while its hitter can still reach the subject: Manhattan distance, at
+    the decision tick, within max(1, the hitter's `combat.range`), with no line-of-sight test. A swing left behind (the free swing the subject's own walk to a meal
+    provoked) then no longer holds a starving subject off its meal; a hitter that pursues or attacks it still acts through term (a). Below the line the window is as before."""
     hit_tick = subject.combat.last_hit_tick
-    return hit_tick is not None and subject.combat.last_attacker_id == hostile.id and tick - hit_tick <= NEED_WAKE_CADENCE
+    if hit_tick is None or subject.combat.last_attacker_id != hostile.id or tick - hit_tick > NEED_WAKE_CADENCE:
+        return False
+    if subject.biological.hunger >= STARVING_LINE:
+        return _distance(subject, hostile.navigation.position) <= max(1, hostile.combat.range)
+    return True
 
 
 def hostile_acts_on(hostile: EntityState, subject: EntityState, tick: int) -> bool:
