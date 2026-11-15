@@ -28,6 +28,7 @@ CLI::
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import os
 import platform
@@ -39,9 +40,9 @@ import time
 from pathlib import Path
 from typing import Any, Dict, List, Mapping, Optional, Sequence, Tuple
 
-IDENTITY_FIELDS = ("name", "image", "cpu_model", "nproc", "mem_total_mb", "python", "os")
-COMPARED_ACROSS_JOBS = ("python", "os")  # an assembled set whose jobs differ in these is not compared
-COMPARED_WITHIN_KEY = ("python", "os", "image")  # the arms of one (world, seed) must agree on these (paired.py refuses too)
+IDENTITY_FIELDS = ("name", "image", "cpu_model", "nproc", "mem_total_mb", "python", "os", "uv_lock")
+COMPARED_ACROSS_JOBS = ("python", "os", "uv_lock")  # an assembled set whose jobs differ in these is not compared
+COMPARED_WITHIN_KEY = ("python", "os", "image", "uv_lock")  # the arms of one (world, seed) must agree on these (paired.py refuses too)
 SELF_CHECKS = ("seed42", "full", "off")
 KINDS = ("pair", "self")
 ARMS = ("base", "new", "self")
@@ -128,8 +129,18 @@ def _mem_total_mb() -> Optional[int]:
     return None
 
 
-def runner_identity(env: Optional[Mapping[str, str]] = None) -> Dict[str, Any]:
-    """A description of the runner, written beside every result. It describes the machine; it does not pin one (the CPU model varies between runners)."""
+def tool_uv_lock_sha256(root: Optional[Path] = None) -> str:
+    """The sha256 of the TOOL checkout's ``uv.lock`` (the checkout that runs paired, not an arm tree): the dependency set the arms ran under. ``"missing"`` when absent."""
+    path = (Path(root) if root is not None else Path(__file__).resolve().parents[2]) / "uv.lock"
+    try:
+        return hashlib.sha256(path.read_bytes()).hexdigest()
+    except OSError:
+        return "missing"
+
+
+def runner_identity(env: Optional[Mapping[str, str]] = None, *, tool_root: Optional[Path] = None) -> Dict[str, Any]:
+    """A description of the runner, written beside every result. It describes the machine; it does not pin one (the CPU model varies between runners).
+    ``uv_lock`` is the sha256 of the tool checkout's ``uv.lock`` (rpg-designer #634 item h): a set whose jobs differ in it is not assembled."""
     env = os.environ if env is None else env
     image = "-".join(part for part in (env.get("ImageOS"), env.get("ImageVersion")) if part)
     return {
@@ -140,6 +151,7 @@ def runner_identity(env: Optional[Mapping[str, str]] = None) -> Dict[str, Any]:
         "mem_total_mb": _mem_total_mb(),
         "python": platform.python_version(),
         "os": _read_os_release(),
+        "uv_lock": tool_uv_lock_sha256(tool_root),
     }
 
 
@@ -177,8 +189,8 @@ def _check_sha(name: str, value: str) -> str:
 def assemble(src: Path, out: Path, *, base: str, new: str) -> Dict[str, Any]:
     """Merge the downloaded job artifacts under ``src`` (one directory each) into one paired cache directory ``out``; refuse mixed runners or missing arms.
 
-    Refuses when a result has no ``cost.json`` with a full ``runner`` record; when the jobs differ in Python version or OS; when the arms of one (world, seed)
-    differ in Python version, OS or image; when two jobs wrote the same file with different bytes (for a self-check job that is the base arm not reproducing);
+    Refuses when a result has no ``cost.json`` with a full ``runner`` record; when the jobs differ in Python version, OS or uv.lock sha256; when the arms of one (world, seed)
+    differ in Python version, OS, image or uv.lock; when two jobs wrote the same file with different bytes (for a self-check job that is the base arm not reproducing);
     when an arm document is not marked ``runner: "PINNED"`` (TCK-20261115-A-NON-SEQUENTIAL-RUN-IS-REFUSED-BY-THE-GATE-CANDIDATE-PAIRED-ARMS-AND-RPG-MEASURE);
     or when a ``pair`` job (a directory without the ``-self`` suffix) lacks either the base or the new arm of its (world, seed) from that same job.
     Returns ``{"jobs": {name: [runner...]}, "arms": [cost...]}`` and writes it to ``out/identities.json``."""
@@ -225,7 +237,7 @@ def assemble(src: Path, out: Path, *, base: str, new: str) -> Dict[str, Any]:
             values.setdefault(str(runner[field]), []).append(name)
         if len(values) > 1:
             detail = "; ".join(f"{value!r}: {', '.join(names)}" for value, names in sorted(values.items()))
-            raise ArmsRefused(f"the jobs ran on different {field} values ({detail}); arms from runners that differ in Python version or OS are not compared")
+            raise ArmsRefused(f"the jobs ran on different {field} values ({detail}); arms from runners that differ in Python version, OS or the tool checkout's uv.lock are not compared")
     for stem, entries in sorted(by_key.items()):
         for field in COMPARED_WITHIN_KEY:
             if len({str(r[field]) for _d, r in entries}) > 1:

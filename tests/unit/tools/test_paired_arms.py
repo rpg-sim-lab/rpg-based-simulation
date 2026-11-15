@@ -11,7 +11,7 @@ from tools.test_architecture import paired_arms as pa
 
 BASE, NEW = "a" * 40, "b" * 40
 W = "frontier_living_world"
-RUNNER = {"name": "GitHub Actions 7", "image": "ubuntu24-20260101.1.0", "cpu_model": "AMD EPYC 7763", "nproc": 4, "mem_total_mb": 16000, "python": "3.13.1", "os": "Ubuntu 24.04.1 LTS"}
+RUNNER = {"name": "GitHub Actions 7", "image": "ubuntu24-20260101.1.0", "cpu_model": "AMD EPYC 7763", "nproc": 4, "mem_total_mb": 16000, "python": "3.13.1", "os": "Ubuntu 24.04.1 LTS", "uv_lock": "1" * 64}
 
 
 def _write(job: Path, sha: str, world: str, seed: int, *, repeat=False, runner=None, doc='{"runner": "PINNED"}', ticks=5000, child="c0ffee00"):
@@ -119,6 +119,26 @@ def test_run_arm_uses_paireds_cache_key_and_writes_the_cost_beside_the_result(tm
         pa.run_arm(tmp_path, "main", "other", W, 42, 100, tmp_path / "cache")
 
 
+# ---- AC7 (h): the tool checkout's uv.lock sha256 is in the runner identity
+
+def test_the_runner_identity_carries_the_sha256_of_the_tool_checkouts_uv_lock(tmp_path):
+    import hashlib
+    (tmp_path / "uv.lock").write_bytes(b"version = 1\n")
+    assert pa.runner_identity({}, tool_root=tmp_path)["uv_lock"] == hashlib.sha256(b"version = 1\n").hexdigest()
+    (tmp_path / "uv.lock").write_bytes(b"version = 2\n")
+    assert pa.runner_identity({}, tool_root=tmp_path)["uv_lock"] != hashlib.sha256(b"version = 1\n").hexdigest()
+    assert pa.runner_identity({}, tool_root=tmp_path / "none")["uv_lock"] == "missing"
+    assert pa.runner_identity({})["uv_lock"] == hashlib.sha256((Path(pa.__file__).resolve().parents[2] / "uv.lock").read_bytes()).hexdigest()  # default: this tool checkout
+
+
+def test_assemble_refuses_a_result_whose_runner_record_has_no_uv_lock(tmp_path):
+    root = tmp_path / "arms"
+    old = {k: v for k, v in RUNNER.items() if k != "uv_lock"}
+    _pair_job(root, runner=old)
+    with pytest.raises(pa.ArmsRefused, match="uv_lock"):
+        _assemble(root)
+
+
 # ---- assemble
 
 def _assemble(root: Path, **kw):
@@ -139,8 +159,8 @@ def test_assemble_merges_the_jobs_into_one_paired_cache_root(tmp_path):
     assert len(summary["jobs"]) == 3 and len(summary["arms"]) == 6 and json.loads((collected / "identities.json").read_text()) == summary
 
 
-@pytest.mark.parametrize("field, other", [("python", "3.13.2"), ("os", "Ubuntu 22.04.5 LTS")])
-def test_assemble_refuses_jobs_that_differ_in_python_version_or_os(tmp_path, field, other):
+@pytest.mark.parametrize("field, other", [("python", "3.13.2"), ("os", "Ubuntu 22.04.5 LTS"), ("uv_lock", "2" * 64)])
+def test_assemble_refuses_jobs_that_differ_in_python_version_os_or_uv_lock(tmp_path, field, other):
     root = tmp_path / "arms"
     _pair_job(root, seed=42)
     _pair_job(root, seed=43, runner={**RUNNER, field: other})
