@@ -19523,6 +19523,22 @@
   - agent-monitoring
   - data-quality
 - type: ticket
+  path: agent-working/tickets/done/TCK-20261007-NOBODY-EATS-OR-SLEEPS-AND-EVERY-ENTITY-STARVES-BY-TICK-1100.md
+  ticket_id: TCK-20261007-NOBODY-EATS-OR-SLEEPS-AND-EVERY-ENTITY-STARVES-BY-TICK-1100
+  title: Nobody eats or sleeps in 2000 ticks and every entity starves between tick
+    950 and tick 1100 (a never-worked defect, a chain of breaks)
+  tier: epic
+  ticket_type: bug
+  date: '2026-10-07'
+  related_code_areas:
+  - src/ai/goals/scorers.py
+  artifact_files:
+  - agent-working/stored_artifacts/TCK-20261007-NOBODY-EATS-OR-SLEEPS-AND-EVERY-ENTITY-STARVES-BY-TICK-1100/closing_run.md
+  tags:
+  - strategy
+  - cognition
+  - bug
+- type: ticket
   path: agent-working/tickets/done/TCK-20261007-PROJECT-SWITCH-COMPARES-A-LIVE-CANDIDATE-SCORE-TO-THE-CURRENT-PROJECTS-CREATION-TIME-SCORE.md
   ticket_id: TCK-20261007-PROJECT-SWITCH-COMPARES-A-LIVE-CANDIDATE-SCORE-TO-THE-CURRENT-PROJECTS-CREATION-TIME-SCORE
   title: The project-switch comparison sets a live candidate utility against the current
@@ -19885,21 +19901,6 @@
   artifact_files:
   - agent-working/stored_artifacts/TCK-20261007-EAT-BESIDE-THE-INN-FEEDS-A-SUBJECT-THAT-CANNOT-PAY-FREE-MEAL/removal_evidence_divergence_2_89_as_drafted.md
   tags: []
-- type: ticket
-  path: agent-working/tickets/todos/TCK-20261007-NOBODY-EATS-OR-SLEEPS-AND-EVERY-ENTITY-STARVES-BY-TICK-1100.md
-  ticket_id: TCK-20261007-NOBODY-EATS-OR-SLEEPS-AND-EVERY-ENTITY-STARVES-BY-TICK-1100
-  title: Nobody eats or sleeps in 2000 ticks and every entity starves between tick
-    950 and tick 1100 (a never-worked defect, a chain of breaks)
-  tier: epic
-  ticket_type: bug
-  date: '2026-10-07'
-  related_code_areas:
-  - src/ai/goals/scorers.py
-  artifact_files: []
-  tags:
-  - strategy
-  - cognition
-  - bug
 - type: ticket
   path: agent-working/tickets/todos/TCK-20261007-SHOP-AND-BLACKSMITH-TOWN-PATHS-NEVER-RAN-IN-A-COMPILED-WORLD.md
   ticket_id: TCK-20261007-SHOP-AND-BLACKSMITH-TOWN-PATHS-NEVER-RAN-IN-A-COMPILED-WORLD
