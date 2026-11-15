@@ -13,6 +13,10 @@ import struct
 
 import pytest
 
+from tests.named_run_dirs import remove_restored_run_dirs  # noqa: F401
+
+pytestmark = pytest.mark.usefixtures("remove_restored_run_dirs")
+
 from src.core.state import AuthoritativeState, GroupRecord, seeded_next_group_id
 from src.engine.apply import ApplyPath
 from src.engine.checkpoint import CanonicalStateHasher
