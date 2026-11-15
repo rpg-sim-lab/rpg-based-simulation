@@ -95,3 +95,37 @@ and a run on one host never undoes the other's. This corrects design section 5, 
 - **Known gaps:** a host that stops running leaves its segment saying `progress`; the stale-host flag that would catch it is P3. Until u24 runs P2 code, u24's Blocked and Stale cannot be seen from ubuntu. So when this host has no copy of a ticket and every other holder is a legacy segment, Status stays the item's current value
   (Done and In review from origin still win); it clears when u24 writes its own segment. **Limit: with only legacy u24 segments, Status freezes until u24 runs P2 code**; the hold on u24 `--apply` lifts only after u24's first P2 `--apply`, which should follow soon after P2 lands on main. If this host has its own segment, the normal union applies. The current Status is never copied into a legacy segment's state. P1c code reads `v3:` as an unknown version, so a P1c-code dry run reports a hand edit on every v3 item; do not run `--apply` from a checkout on P1c code.
   Hiding `Host facts` in the Project views is an owner step in the view settings (the API cannot do it); the sync does not depend on it.
+
+## All lanes, Domain, `--fetch`, last run and heartbeat (P3b)
+
+- **All lanes.** The sync no longer filters by `pilot_lanes` (the key stays in `registries/session_project.yaml` and is ignored). Every ticket
+  on any host's branch, every ticket in `todos/` or `inprogress/` on `origin/main`, and every existing item is a candidate. A Done ticket that
+  only `origin/main` holds still gets no new item (no mass Done creates); `pilot_start` and `done_window_days` apply as before.
+- **Domain is a single-select** with one option per registered domain (`registries/session_roles.yaml`) plus `unassigned` and `unknown`. `--init`
+  renames the old text field to `Domain (old)` and creates the select; it never deletes anything (deleting `Domain (old)` is a separate owner
+  ask once P3 is proven). A second `--init` prints "left alone". After the rename the first run reads the old values from `Domain (old)` for the
+  hash check, so it prints no false hand edits and plans only the Domain writes.
+- **Where a ticket's Domain comes from**, first match wins: (1) the domain recorded for a branch copy on any host (`Host facts`); (2) the owner
+  of the code the ticket names: the repo paths in `## Related Code Areas` (globs and braces skipped), each routed through
+  `tools/sessions/route.py` on the loaded roster; when every owned path gives the same domain, that is the Domain (not a guess); (3)
+  `unassigned`. Never from `layer`. A branch name's domain is the longest registered domain followed by `-` (`agent-working-x` is
+  `agent-working`, not `agent`); no match is `unknown`. Two hosts naming different domains: the sorted first, with a finding.
+- **`--fetch`** runs `git fetch origin main` first (60 s timeout). On failure or timeout the run carries on, adds a finding and prints the age of
+  `origin/main`. The plan header says `fetched`, `fetch FAILED` or `no fetch` to match what happened. The read-only guard still refuses every other git write.
+- **`last-run.json`**: every `--apply` (any outcome) writes `~/.local/state/rpg-project-sync/last-run.json` (mode 600): UTC time, host, rc,
+  steps done and left, the first error (redacted), the heartbeat result, stale hosts and `failed_streak`. A dry run writes nothing. The
+  SessionStart hook prints one line when the last two runs failed.
+- **Heartbeat.** One draft item `_sync heartbeat` (no Ticket ID, no Status) holds a `Last run` text with one segment per host
+  (`u24desktop: 2026-11-15T10:00Z rc=0`). Each `--apply` rewrites only its own segment, as the last step, in one paced attempt with no retry; a
+  failed write prints `heartbeat: not written (...)` and changes neither rc nor the first error. It is written on every `--apply`, even when
+  nothing else changed (one mutation per run buys an honest liveness signal). Any other host older than `stale_host_hours` is reported as
+  `stale-host:` in the output and the last-run file; this only reports. The item is never archived and never counted as a ticket. Two heartbeat
+  items (a create race) are all read, the first is written, a finding names the extra, and the owner removes it by hand (a delete, through the
+  lead). To keep it out of the board views the owner filters views 1-4 by hand in the UI: try `has:status` first (the sync sets Status on every
+  ticket item and never on the heartbeat), else `-title:"_sync heartbeat"`.
+- **Limits.** (a) The SEQUENCE.md filing-seat rule was dropped: no reliable carrier (4-5 of 6 name a filer in free text; 140 flat todos sit in no
+  folder). Tickets whose named code has no single owner stay `unassigned` (37 of 161 on 2026-11-15: 21 mixed, 10 with no path, 6 not routed). The run's `domain: N tickets unassigned` note counts every candidate, existing items included, so it can be larger than the `unassigned` creates.
+  (b) Both hosts get the same Domain from the code areas only when they run on the same roster; with different checkouts the last writer wins
+  until both are on the same `origin/main` (as for the content rule). (c) **Never run `--apply` on pre-P3b code, on either host, once the
+  heartbeat exists**: P1c and P2 code archive "an item with no Ticket ID", so the heartbeat would be lost. A pre-P3b dry run showing `archive
+  _sync heartbeat` is expected, not a finding. (g) The sync sees only branches checked out in a worktree on this host; a branch with no worktree (parked) falls back to main's copy, so the plan can change when a branch is checked out or removed. (d) `Domain (old)` stays on the board until the owner asks for it to be deleted. (e) **Tier** is the leading token of the ticket's `## Tier` line (`standard (provisional)` is `standard`); anything else outside hotfix/standard/epic is a finding and Tier is left empty. (f) A live dry run checks every select value the plan would write (Status, Tier, Layer, Priority, Domain) against the live field's options and prints `finding: apply would refuse: <id> <field> '<value>'` for each; `--apply` runs the same check before its first mutation and refuses (rc 2, nothing written), naming all of them.

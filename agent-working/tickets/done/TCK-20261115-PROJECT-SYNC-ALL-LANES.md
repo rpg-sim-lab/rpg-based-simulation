@@ -1,10 +1,10 @@
 ---
-status: active
+status: historical
 layer: ticket
 authority: P1
 audience: agent
 ticket_id: TCK-20261115-PROJECT-SYNC-ALL-LANES
-phase: open
+phase: done
 date: 2026-11-15
 tags: [planning, delivery]
 ---
@@ -15,7 +15,7 @@ tags: [planning, delivery]
 `project_sync.py` P3b: every lane goes on Project 1, Domain becomes a single-select, the sync can fetch origin/main itself, and each host leaves a last-run file and a cross-host heartbeat
 
 ## Status
-OPEN
+DONE
 
 ## Tier
 standard
@@ -137,9 +137,22 @@ Child P3b of TCK-20261112-EPIC-GITHUB-PROJECT-TICKET-VIEW.
 - Whether SEQUENCE.md has a reliable filing-seat carrier (scope 2, second rule) is for the investigation.
 
 ## Implementation Notes
+- Plan amendments from the designer (A-F) and the planner: the SEQUENCE.md filing-seat rule was **dropped** (no reliable carrier: 4-5 of 6 SEQUENCE.md name a filer in free text, 140 flat todos sit in no folder); a main-only ticket's Domain is its host segment, else the owner of the code it names (`## Related Code Areas` routed through `route()`), else `unassigned`. Measured on origin/main: 124 of 161 resolve (120 rpg, 2 agent-working, 1 asset, 1 platform); 37 stay unassigned (21 mixed, 10 no path, 6 not routed).
+- Heartbeat: written last in `--apply`, one paced attempt, oldest item, nothing archived; the first load wrote it.
+- Found during the first load: `## Tier` of one ticket read "standard (provisional)", which the dry run never validated, so `--apply` refused (rc 2, nothing written). Fixed in the same ticket: the leading token is the Tier, and `check_plan_options` runs in both the live dry run (a finding) and `--apply` (refuse before the first write, naming all).
+- Gate lesson: the plan-diff gate did its job twice: the plan changes whenever a branch appears or disappears between the OK'd dry run and the apply, so a stop there is information, not an obstacle. The dry run could not show attempt 1's refusal, which is why it now checks option values.
+- The sync sees only branches checked out in a worktree on this host; a branch with no worktree (parked) falls back to main's copy.
+- Known limits are in the guide (retry-after rarely shown; pre-P3b `--apply` archives the heartbeat; Domain from code areas needs the same roster on both hosts).
 
 ## Test Summary
+- 21 + 7 new no-network tests in `tests/tools/test_session_project_sync_all_lanes.py` (lanes from the roster, main-only Domain rules, `attribute()` prefix, Domain select findings, `--init` rename / second `--init` / refusal, Epic (a), `--fetch` success/failure/timeout, last-run file and the start-hook line, heartbeat own segment / two heartbeats / failed write, stale hosts, heartbeat never archived, A→B→A convergence, no false hand edits after the rename, Tier leading token, whole-plan option check in both modes). Scoped runs: test_project_client + test_session_project_sync (+second_host, all_lanes) + test_session_status = 172 passed; registry no-drift 71 passed.
+- **AC3 first load (by hand, in the lead's terminal, #715 6881411615 / 6883251620):** round 1 `--init` rc 0, second `--init` all "left alone". Dry run: 140 creates, 41 updates (Domain only), 0 archives, 0 hand edits. **Three stopped attempts, nothing written by any of them:** attempt 1 was the `--apply` refusal on Tier "standard (provisional)" (rc 2; #715 6883316665); attempts 2 and 3 were stopped by the plan-diff gate (`pre.txt` against the OK'd plan) on branch drift (#715 6883415582 and the next one), e.g. a parked branch with no worktree on this host falling back to main's copy (testing-planner's epic in attempt 3). The Tier fix and the option check came out of attempt 1. Round 2 `--apply`: **rc 0, 1608 steps, "nothing left", 2232 s (20:05:12-20:42:24Z, about 1.4 s per step with the 1 s pacing), final dry run "nothing to do", last-run.json rc 0, failed_streak 0, no token leak.**
+- **Rate-limit evidence (for the study):** no secondary-limit wait and no stop in `apply.err` (it holds only progress lines). The GraphQL `rateLimit` primary budget (5,000/hour) read used=114 before; the window reset at 20:23:38Z mid-run, and used=17 after (about 800 steps in the new window), so mutations count at most a few points each against that budget: it was never close to its limit. Real per-mutation point cost is therefore not measurable from these two readings beyond that bound.
+- Final state: items-in=183 (42 + 140 + the heartbeat), 6 expected findings, last-run.json rc 0, failed_streak 0.
+- **Not done at close (follow-up):** AC3.5, ubuntu's one convergence dry run on the pushed sha, goes via the leads; it is pending.
 
 ## Files Changed
+`tools/sessions/project_sync.py`, `tools/sessions/project_client.py`, `tools/sessions/session_start_hook.py`, `registries/session_project.yaml`, `docs/guidelines/session_roles/project_sync_dry_run.md`, `tests/tools/test_session_project_sync_all_lanes.py`, `tests/tools/test_session_project_sync.py`, `tests/tools/test_session_project_sync_second_host.py`, `tests/tools/test_project_client.py`, ticket and stored artifacts, REGISTRY.yaml, monitoring shards.
 
 ## Completion Summary
+Every registered domain is now a lane on Project 1; Domain is a single-select (the old text field is kept as `Domain (old)`); the first load wrote 140 new items and 41 Domain updates in 1608 paced steps with no rate-limit stop. `--fetch`, a last-run file with a two-failure start-hook warning, a cross-host heartbeat with a stale-host flag, the Tier leading-token rule and a whole-plan option check (live dry run and `--apply`) are built, tested and documented. The SEQUENCE.md filing-seat rule was dropped (no reliable carrier). Open: AC3.5 (ubuntu dry run), the owner's `has:status` view filter, deleting `Domain (old)` (separate owner ask).
