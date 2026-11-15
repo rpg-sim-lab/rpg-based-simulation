@@ -1,10 +1,10 @@
 ---
-status: active
+status: historical
 layer: testing
 authority: P1
 audience: agent
 ticket_id: TCK-20261115-A-NON-SEQUENTIAL-RUN-IS-REFUSED-BY-THE-GATE-CANDIDATE-PAIRED-ARMS-AND-RPG-MEASURE
-phase: inprogress
+phase: done
 date: 2026-11-15
 tags: [testing, architecture]
 ---
@@ -15,7 +15,7 @@ tags: [testing, architecture]
 A run on a non-sequential executor is refused by the gate candidate, the paired arms and rpg_measure, and its manifest says which worker manager it ran on
 
 ## Status
-INPROGRESS (built; waits for the one proof run, AC6)
+DONE
 
 ## Tier
 standard
@@ -66,7 +66,7 @@ This ticket closes the rest of child 6, as scoped by testing-planner and rpg-pla
 3. [x] No run (owner #715 6889952914 item A: "Small, no runs"; rpg-planner withdrew its run ask, 2026-11-15). The proof is AC2's unit test: a threads-built kernel records its `worker_manager`, and `CanonicalStateHasher.get_hash` is unmoved by the record (#918's hash-equal runs already showed writing RunConditions is hash-neutral).
 4. [x] Harness hash: `rpg_gate_run.py` is a `_HARNESS_SOURCES` file, so this ticket moves `harness_hash`. The PR states that, and the gate baseline's drift comparison treats the move as declared (per the gate-baseline rule: hash-moving edits are declared at review).
 5. [x] The existing tests pass: `tests/unit/kernel/test_run_conditions_record.py`, `test_executor_context_parity.py`, the rpg_gate and paired_arms tool tests, and `tests/unit/tools` for known_reds and rpg_gate_baseline.
-6. [ ] `arm_child` runs an arm tree older than b6ac7dabb (pre-record path), proven by one byte-identical base-vs-base repeat, the single short run approved by the owner at #715 6891712419 (urban_political s42, about 200 ticks, base 5ba65854c, arm then `-repeat`, local, one process, byte-identical required, no second run; both arm documents' sha256 recorded here).
+6. [x] `arm_child` runs an arm tree older than b6ac7dabb (pre-record path), proven by one byte-identical base-vs-base repeat, the single short run approved by the owner at #715 6891712419 and ordered first by 6892133979 (urban_political s42, 200 ticks, base 5ba65854c02ec9d132adb985a30b945fa8525d29, arm then `-repeat` through `paired.run_arm` on a `prepare_tree`, fresh empty cache, one process, tool head fdb803dbd, child hash c4726f3c, 2026-11-15 09:10:46Z to 09:11:09Z, wall 23.2 s, children max RSS 186 MB, min host MemAvailable 4477 MB). Both arm documents have sha256 3e88144322362a1d66a98be7766eac68d1ebb45bac0364d261267234373434c9 (byte-equal); `runner: PINNED`, `run_conditions_source: derived_from_kernel`; start_hash 61483d5868d598e78a30112e64c92f79e6552b29693c916023792f0b1cec1f7d, final_hash b0bb86cc93327cc70b84838578d1da65f2b5a2799bb88a2d8895e126b2254efd in both. No second run.
 
 ## Related Tickets
 - TCK-20261109-EPIC-DISTRIBUTED-WORKERS-EXPERIMENT (child 6)
@@ -105,5 +105,5 @@ Built as filed. `RunConditions.worker_manager` (Optional str, None for `LocalSeq
 src/engine/kernel.py; src/observability/reporting/artifact_repository.py; tools/test_architecture/{rpg_gate_run,rpg_gate_candidate,paired_arms}.py; tools/rpg_measure/{arm_child,paired}.py; docs/engine/kernel.md; docs/parity_ledger/infrastructure.yaml (INFRA-440); tests/unit/kernel/test_run_conditions_record.py; tests/unit/tools/{test_rpg_gate_candidate,test_rpg_gate_harness,test_paired_arms,test_rpg_measure_collected}.py; stored artifacts.
 
 ## Completion Summary
-(Reopened 2026-11-15 for the arm_child follow-up; closes again when AC6's proof run is recorded.)
+(Reopened 2026-11-15 for the arm_child follow-up; closed again with AC6's proof run, see AC6.)
 The gate candidate, the paired arms (local and collected), the neutral compare and the arm assembly refuse a run that was not on the pinned runner, and a manifest names the worker manager. No run, by ruling. Two items remain with their owners: the design §8 row 6 and epic child-6 lines; AC4's baseline drift declaration is made in the PR.
