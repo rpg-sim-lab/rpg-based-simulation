@@ -8458,27 +8458,6 @@
   - platform
   - observability
 - type: ticket
-  path: agent-working/tickets/todos/TCK-20261113-FIVE-SOCIAL-ACTION-KINDS-MAY-HAVE-NO-ISSUER-IN-PLAY.md
-  ticket_id: TCK-20261113-FIVE-SOCIAL-ACTION-KINDS-MAY-HAVE-NO-ISSUER-IN-PLAY
-  title: 'Five social action kinds may have no issuer in play: find which of TEAM_UP,
-    TRADE, TRAIN, PROPOSE_MARRIAGE and JOIN_CLAN/LEAVE_CLAN anything ever emits, and
-    how their contracts are really created and accepted'
-  tier: standard
-  ticket_type: bug
-  date: '2026-11-13'
-  related_code_areas:
-  - src/engine/domain/action_router.py (:63-84)
-  - src/engine/domain/core_actions.py (execute_* about :175-584)
-  - src/domains/cooperation/services.py, src/domains/cooperation/phase.py
-  - src/systems/social_systems/appraisal.py, contracts.py
-  - src/engine/hostility.py (perceived_hostile), src/engine/legality.py (_is_engagement_hostile),
-    src/systems/movement.py (resolve_move)
-  artifact_files:
-  - agent-working/stored_artifacts/TCK-20261113-FIVE-SOCIAL-ACTION-KINDS-MAY-HAVE-NO-ISSUER-IN-PLAY/investigation.md
-  - agent-working/stored_artifacts/TCK-20261113-FIVE-SOCIAL-ACTION-KINDS-MAY-HAVE-NO-ISSUER-IN-PLAY/plan.md
-  - agent-working/stored_artifacts/TCK-20261113-FIVE-SOCIAL-ACTION-KINDS-MAY-HAVE-NO-ISSUER-IN-PLAY/test_plan.md
-  tags: []
-- type: ticket
   path: agent-working/tickets/done/TCK-20261112-A-THROTTLED-CLIENT-THAT-WAITS-OUT-RETRY-AFTER-IS-STILL-REFUSED.md
   ticket_id: TCK-20261112-A-THROTTLED-CLIENT-THAT-WAITS-OUT-RETRY-AFTER-IS-STILL-REFUSED
   title: 'A throttled API client that waits out `Retry-After: 5` is still refused,
@@ -8755,27 +8734,6 @@
   tags:
   - planning
   - delivery
-- type: ticket
-  path: agent-working/tickets/todos/TCK-20261112-THE-API-EMITS-NO-REQUEST-TRACES.md
-  ticket_id: TCK-20261112-THE-API-EMITS-NO-REQUEST-TRACES
-  title: 'The API emits no request traces: add OpenTelemetry server spans and Redis
-    client spans, off unless an OTLP endpoint is set (#622 R3)'
-  tier: standard
-  ticket_type: feature
-  date: '2026-11-12'
-  related_code_areas:
-  - create_v2_app
-  - RequestDurationMiddleware
-  - src/observability/stream/factory.py, src/observability/stream/adapters.py:139
-    (redis client)
-  - src/api/routes/live_health.py:11
-  artifact_files:
-  - agent-working/stored_artifacts/TCK-20261112-THE-API-EMITS-NO-REQUEST-TRACES/investigation.md
-  - agent-working/stored_artifacts/TCK-20261112-THE-API-EMITS-NO-REQUEST-TRACES/plan.md
-  - agent-working/stored_artifacts/TCK-20261112-THE-API-EMITS-NO-REQUEST-TRACES/test_plan.md
-  tags:
-  - observability
-  - api-design
 - type: ticket
   path: agent-working/tickets/todos/github-project-ticket-view/TCK-20261112-EPIC-GITHUB-PROJECT-TICKET-VIEW.md
   ticket_id: TCK-20261112-EPIC-GITHUB-PROJECT-TICKET-VIEW
@@ -9731,24 +9689,6 @@
   - src/core/state.py (town_center, :1345)
   - src/ai/goals/scorers.py (:168, :250, :273, :313)
   artifact_files: []
-  tags: []
-- type: ticket
-  path: agent-working/tickets/todos/TCK-20261109-THE-FAST-STRATEGIC-PATH-SENDS-AN-ENTITY-TARGET-PURSUER-HOME-WITH-ITS-ITEMS.md
-  ticket_id: TCK-20261109-THE-FAST-STRATEGIC-PATH-SENDS-AN-ENTITY-TARGET-PURSUER-HOME-WITH-ITS-ITEMS
-  title: On an off-cadence tick, fused_strategic_pass's fast path sends a loaded entity
-    with an entity-typed objective home (REGROUP), off its pursuit. The slow path
-    does not.
-  tier: standard
-  ticket_type: bug
-  date: '2026-11-09'
-  related_code_areas:
-  - src/systems/strategic_systems/intelligence.py::fused_strategic_pass (fast path
-    ~:380-410, slow path ~:655-680, ~:348, ~:518, ~:621-625, ~:650)
-  - tests/unit/strategic/test_fused_strategic_pass_fast_path_characterisation.py
-  artifact_files:
-  - agent-working/stored_artifacts/TCK-20261109-THE-FAST-STRATEGIC-PATH-SENDS-AN-ENTITY-TARGET-PURSUER-HOME-WITH-ITS-ITEMS/investigation.md
-  - agent-working/stored_artifacts/TCK-20261109-THE-FAST-STRATEGIC-PATH-SENDS-AN-ENTITY-TARGET-PURSUER-HOME-WITH-ITS-ITEMS/plan.md
-  - agent-working/stored_artifacts/TCK-20261109-THE-FAST-STRATEGIC-PATH-SENDS-AN-ENTITY-TARGET-PURSUER-HOME-WITH-ITS-ITEMS/test_plan.md
   tags: []
 - type: ticket
   path: agent-working/tickets/todos/distributed-workers-experiment/TCK-20261109-DISTRIBUTED-WORKERS-DESIGN.md
