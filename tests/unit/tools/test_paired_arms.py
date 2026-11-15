@@ -78,6 +78,23 @@ def test_the_plan_cli_prints_the_github_output_lines(capsys):
     assert pa.main(["plan", "--worlds", "x", "--seeds", "42"]) == 2
 
 
+def test_an_evidence_dispatch_refuses_self_check_off_and_keeps_the_repeat_jobs():
+    """AC6 (g): an evidence set must include its self-checks; off is refused, seed42 and full still plan the base-vs-base repeat jobs."""
+    with pytest.raises(pa.ArmsRefused, match="self_check off is refused for an evidence dispatch"):
+        pa.plan_matrix(",".join(paired.WORLDS), "42", "off", evidence=True)
+    for mode in ("seed42", "full"):
+        kinds = {e["kind"] for e in pa.plan_matrix(",".join(paired.WORLDS), "42", mode, evidence=True)["include"]}
+        assert kinds == {"pair", "self"}
+    assert pa.plan_matrix(",".join(paired.WORLDS), "42", "off")["include"]  # not an evidence dispatch: still allowed
+
+
+def test_the_plan_cli_refuses_off_with_evidence_and_exits_2(capsys):
+    args = ["plan", "--worlds", ",".join(paired.WORLDS), "--seeds", "42", "--self-check", "off"]
+    assert pa.main(args + ["--evidence"]) == 2
+    assert "evidence dispatch" in capsys.readouterr().err
+    assert pa.main(args) == 0
+
+
 # ---- run one arm (paired's own functions, faked)
 
 def test_run_arm_uses_paireds_cache_key_and_writes_the_cost_beside_the_result(tmp_path, monkeypatch):

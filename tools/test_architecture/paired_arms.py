@@ -67,13 +67,17 @@ def step_slug(step: str) -> str:
     return slug or "step"
 
 
-def plan_matrix(worlds: str, seeds: str, self_check: str) -> Dict[str, Any]:
+def plan_matrix(worlds: str, seeds: str, self_check: str, *, evidence: bool = False) -> Dict[str, Any]:
     """``{"include": [...], "terrain": bool}``: a ``pair`` entry per (world, seed), plus ``self`` entries (the base arm and its repeat, on one runner) per ``self_check``:
     seed 42 of every world for ``seed42`` (as ``paired.py`` expects, whatever ``seeds`` holds), every (world, seed) for ``full``.
+
+    ``evidence=True`` (an evidence dispatch, rpg-designer #634 item g) refuses ``off``: an evidence set carries its base-vs-base repeats, run on the runner itself.
 
     ``paired.py`` derives its worlds from its own constants (``WORLDS``, plus ``TERRAIN_WORLD`` with ``--terrain``), imported here, so ``worlds`` must be exactly that set."""
     if self_check not in SELF_CHECKS:
         raise ArmsRefused(f"self_check must be one of {SELF_CHECKS}, got {self_check!r}")
+    if evidence and self_check == "off":
+        raise ArmsRefused("self_check off is refused for an evidence dispatch: an evidence set must include its base-vs-base repeats, run on the runner (use seed42 or full, or dispatch with evidence=false for a non-evidence run)")
     from tools.rpg_measure import paired  # rpg's world set (WORLDS, TERRAIN_WORLD) is imported, never duplicated; the plan job syncs the environment for it
 
     world_list = _csv(worlds, "worlds")
@@ -247,6 +251,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     plan.add_argument("--worlds", required=True)
     plan.add_argument("--seeds", required=True)
     plan.add_argument("--self-check", default="seed42")
+    plan.add_argument("--evidence", action="store_true", help="an evidence dispatch: refuses --self-check off")
     plan.add_argument("--step", default="step", help="the step label; printed as an artifact-safe slug")
     arm = sub.add_parser("run-arm")
     arm.add_argument("--repo", type=Path, default=Path("."))
@@ -265,7 +270,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     args = parser.parse_args(argv)
     try:
         if args.command == "plan":
-            planned = plan_matrix(args.worlds, args.seeds, args.self_check)
+            planned = plan_matrix(args.worlds, args.seeds, args.self_check, evidence=args.evidence)
             print("matrix=" + json.dumps({"include": planned["include"]}, separators=(",", ":")))
             print("terrain=" + ("true" if planned["terrain"] else "false"))
             print("slug=" + step_slug(args.step))
