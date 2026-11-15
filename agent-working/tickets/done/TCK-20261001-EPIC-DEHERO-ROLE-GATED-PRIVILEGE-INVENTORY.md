@@ -1,10 +1,10 @@
 ---
-status: active
+status: historical
 layer: architecture
 authority: P1
 audience: agent
 ticket_id: TCK-20261001-EPIC-DEHERO-ROLE-GATED-PRIVILEGE-INVENTORY
-phase: open
+phase: done
 date: 2026-10-01
 tags: [architecture, lifecycle, combat, progression]
 ---
@@ -16,7 +16,17 @@ Stop relying on `EntityRole.HERO` as a privileged status — inventory every HER
 then re-ground real capabilities on real state
 
 ## Status
-EPIC_SCOPED
+DONE
+
+## Disposition
+DUPLICATE
+
+## Disposition Rationale
+Closed as a duplicate of milestone 1 by the owner's ruling #715 6875278006 (owner, via lead-planner-u24; audit asked under #715 6875225978): "Merge into M1 (Recommended)". Nothing is dropped.
+
+- Child 1 (the inventory) was never produced: no stored artifact exists. The live instance it named first, `HERO_KILL` at `src/engine/combat_rewards.py:14` and `:43`, is still there.
+- Its scope now lives in `TCK-20261109-M1-RETIRE-ROLE-KIND-AND-FACTION-NAME-BRANCHES-IN-STAGES`, whose inventory step now carries this epic's three categories (remove / re-ground on real state / harmless naming), the per-row code citation and real-state gate (CAUSE-04, ID-02), and the open `HERO_KILL` question. Hero-as-work is `TCK-20261109-M1-THE-HERO-IS-WORK-AND-THE-GUILD-IS-MEMBERSHIP` (decision 63). Both already listed this epic to adopt.
+- The rebirth retirement it depended on is done (`TCK-20261001-RETIRE-HERO-REBIRTH-UNDECLARED-RESURRECTION`, #276/#281).
 
 ## Tier
 epic
@@ -130,7 +140,7 @@ _Epic — tracks child tickets; no direct implementation._
 _Epic — no direct implementation._
 
 ## Files Changed
-_Epic — no direct implementation._
+none — decision-only
 
 ## Completion Summary
-_Epic — closes when its child tickets are done._
+Closed DUPLICATE on 2026-11-14 by rpg-planner under #715 6875278006 (owner, via lead-planner-u24; audit asked under #715 6875225978). See Disposition Rationale.

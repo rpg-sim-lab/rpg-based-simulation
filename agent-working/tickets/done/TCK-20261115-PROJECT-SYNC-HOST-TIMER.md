@@ -1,10 +1,10 @@
 ---
-status: active
+status: historical
 layer: ticket
 authority: P1
 audience: agent
 ticket_id: TCK-20261115-PROJECT-SYNC-HOST-TIMER
-phase: open
+phase: done
 date: 2026-11-15
 tags: [planning, delivery]
 ---
@@ -15,7 +15,7 @@ tags: [planning, delivery]
 `project_sync.py` P3c: systemd user timer templates that run the sync hourly on each host, capped and staggered, with the owner's install step documented
 
 ## Status
-OPEN
+DONE
 
 ## Tier
 hotfix
@@ -93,9 +93,16 @@ Child P3c of TCK-20261112-EPIC-GITHUB-PROJECT-TICKET-VIEW.
 - The epic closes when P3 runs on both hosts (epic AC3).
 
 ## Implementation Notes
+- `tools/sessions/systemd/project-sync.service`: oneshot, `WorkingDirectory=@REPO@`, `ExecStart=@REPO@/.venv/bin/python tools/sessions/project_sync.py --apply --fetch`, `Nice=19`, `IOSchedulingClass=idle`, `CPUQuota=25%`, `MemoryMax=256M`, `TimeoutStartSec=15min`. `ExecCondition` is `awk` on `/proc/meminfo`: exit 1 when `MemAvailable` < 1 GiB, which systemd treats as a skip (1-254 skip, 255 or a signal fails). `$$2` is the systemd escape for awk's `$2`.
+- `project-sync.timer`: `OnCalendar=*-*-* *:00:00`, `Persistent=true`, `RandomizedDelaySec=60`. ubuntu's :30 is a drop-in (`OnCalendar=` then `*:30:00`) given in the doc.
+- Host paths differ, so the templates carry the placeholder `@REPO@`; the install step fills it with `sed`. The doc states the main-checkout, `origin`/credential and token-file preconditions, amendment B, the HOST FREE exemption (43 s, 38 MB, about 0.5 CPU, 2026-11-15) and the standing-approval sentence.
+- Doc: `docs/guidelines/session_roles/project_sync_dry_run.md`, section "Running on a timer (P3c)".
 
 ## Test Summary
+`tests/tools/test_project_sync_systemd_templates.py`: 5 passed (caps and skip condition; ExecStart names `--apply --fetch` and the venv python; timer lines; no token path or value in either template). AC2: `systemd-analyze --user verify` on both templates (placeholder filled in a scratchpad copy, never installed): no output, rc 0; `systemd-analyze calendar` shows `*:00:00` and `*:30:00` normalise and elapse as intended; the awk condition returns 0 now and 1 with a 100 TB threshold. The u24 user manager delegates cpu and memory.
 
 ## Files Changed
+`tools/sessions/systemd/project-sync.service` and `.timer` (new), `tests/tools/test_project_sync_systemd_templates.py` (new), `docs/guidelines/session_roles/project_sync_dry_run.md`, `docs/REGISTRY.yaml`, ticket, monitoring shards.
 
 ## Completion Summary
+Templates, doc section and tests are built; AC1 and AC2 are met. **AC3 is open and the owner's:** after the merge the owner installs on u24 and on ubuntu (commands in the doc); the first timer run on each host must show rc 0 in the journal and in `last-run.json`, and a later dry run must show nothing to do. The planner also checks that a u24 dry run shows no update on ubuntu's 7 AC3.5 items after ubuntu's first run. No seat installed, enabled or started anything.
