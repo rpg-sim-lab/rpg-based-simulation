@@ -8130,7 +8130,10 @@
   - tools/rpg_measure/{arm_child,paired}.py
   - src/observability/reporting/artifact_repository.py (RunConditions), src/engine/kernel.py
     (the one write)
-  artifact_files: []
+  artifact_files:
+  - agent-working/stored_artifacts/TCK-20261115-A-NON-SEQUENTIAL-RUN-IS-REFUSED-BY-THE-GATE-CANDIDATE-PAIRED-ARMS-AND-RPG-MEASURE/investigation.md
+  - agent-working/stored_artifacts/TCK-20261115-A-NON-SEQUENTIAL-RUN-IS-REFUSED-BY-THE-GATE-CANDIDATE-PAIRED-ARMS-AND-RPG-MEASURE/plan.md
+  - agent-working/stored_artifacts/TCK-20261115-A-NON-SEQUENTIAL-RUN-IS-REFUSED-BY-THE-GATE-CANDIDATE-PAIRED-ARMS-AND-RPG-MEASURE/test_plan.md
   tags:
   - testing
   - architecture
@@ -9261,6 +9264,22 @@
   tags:
   - economy
 - type: ticket
+  path: agent-working/tickets/done/TCK-20261109-AN-ADVISORY-GUARD-LISTS-TESTS-WHOSE-SUBJECT-SYSTEM-THE-PIPELINE-NEVER-RUNS.md
+  ticket_id: TCK-20261109-AN-ADVISORY-GUARD-LISTS-TESTS-WHOSE-SUBJECT-SYSTEM-THE-PIPELINE-NEVER-RUNS
+  title: An advisory guard lists src/systems classes the authoritative pipeline never
+    reaches, and the tests that import them without a stated reason, so a fix's regression
+    test is seen to prove a path that does not run
+  tier: standard
+  ticket_type: feature
+  date: '2026-11-09'
+  related_code_areas:
+  - src/engine/pipeline.py, src/systems/**
+  - tools/test_architecture/, tests/architecture/
+  artifact_files: []
+  tags:
+  - testing
+  - regression
+- type: ticket
   path: agent-working/tickets/done/TCK-20261109-ANY-SOCIAL-UPDATE-WIPES-THE-REJECTION-COUNTS-IT-DOES-NOT-NAME.md
   ticket_id: TCK-20261109-ANY-SOCIAL-UPDATE-WIPES-THE-REJECTION-COUNTS-IT-DOES-NOT-NAME
   title: Any social update wipes the rejection counts it does not name, so recruitment's
@@ -9471,22 +9490,6 @@
   - src/engine/tactical.py, src/engine/tactical_objective.py (the need path)
   artifact_files: []
   tags: []
-- type: ticket
-  path: agent-working/tickets/todos/TCK-20261109-AN-ADVISORY-GUARD-LISTS-TESTS-WHOSE-SUBJECT-SYSTEM-THE-PIPELINE-NEVER-RUNS.md
-  ticket_id: TCK-20261109-AN-ADVISORY-GUARD-LISTS-TESTS-WHOSE-SUBJECT-SYSTEM-THE-PIPELINE-NEVER-RUNS
-  title: An advisory guard lists src/systems classes the authoritative pipeline never
-    reaches, and the tests that import them without a stated reason, so a fix's regression
-    test is seen to prove a path that does not run
-  tier: standard
-  ticket_type: feature
-  date: '2026-11-09'
-  related_code_areas:
-  - src/engine/pipeline.py, src/systems/**
-  - tools/test_architecture/, tests/architecture/
-  artifact_files: []
-  tags:
-  - testing
-  - regression
 - type: ticket
   path: agent-working/tickets/todos/TCK-20261109-AN-INN-MEAL-DOES-NOT-STAMP-LAST-MEAL-TICK.md
   ticket_id: TCK-20261109-AN-INN-MEAL-DOES-NOT-STAMP-LAST-MEAL-TICK
