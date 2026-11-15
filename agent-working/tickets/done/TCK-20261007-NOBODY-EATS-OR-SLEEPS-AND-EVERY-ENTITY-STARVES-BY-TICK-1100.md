@@ -82,7 +82,12 @@ Closed 2026-11-15 on the closing run (owner #715 6889629052; order 6892133979). 
 - AC1: eat and sleep completions are above 0 after the thresholds in both worlds.
 - AC2: STARVATION is 0 deaths in both worlds; alive at t=1100 is 38 of 55 and 11 of 38 (on 10-07 it was 0).
 - AC3: behavioral_5k runs 5000 ticks, past t≈950, with no collapse at the starvation line (alive_avg 20.42). That run is not pinned; it uses the test's own build.
-Observation, not a failing AC: sleep starts late (t=1100 and t=1400), and some eat buckets after the threshold are 0. Whether that onset is right is a question for rpg-designer; no ticket is filed on it here.
+Observation, not a failing AC: sleep starts late (t=1100 and t=1400), and some eat buckets after the threshold are 0. rpg-designer ruled on 2026-11-15 that the onset is intended:
+- debt accrues at 0.05 a tick from 0;
+- the wake and onset line is 0.6×98 ≈ 58.8, reached at about t=1176;
+- a sleep is held until the debt falls below that line, so no completion can happen before about t=1180;
+- crowded starts later because of bed reach and the 0.85 rough-rest line (about t=1666).
+This matches SURV-02, decision 41 and SURV-07. The zero eat buckets are lockstep, an observation and not a defect. Found alongside: the night check never wraps (TCK-20261115-THE-NIGHT-CHECK-READS-RAW-WORLD-TIME-SO-EVERY-TICK-AFTER-1800-IS-NIGHT). It only touches t=1800-2000 of this close.
 
 ## 2026-10-31 cleanup re-verification (rpg-planner, owner go #715 6543261623; origin/main 96f623a62)
 - Child tickets done; gate baseline v1 shows starvation 0.2/seed per world. AC1 UNPROVEN (eating evidence indirect via O4 transfers; no sleep row in the gate). AC3 UNPROVEN (no behavioral_5k re-measure).
