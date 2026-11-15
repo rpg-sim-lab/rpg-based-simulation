@@ -2,7 +2,7 @@
 
 Past the starving line a hit acts only while its hitter can still reach the subject. A starving, wounded subject with a held panic whose last hitter has fallen behind
 (out of reach, resting, not pursuing) no longer holds the panic: the tick falls to the need path. With the hitter adjacent the panic stands. Real frontier_living_world
-seed-42 merchant 37 (wounded, gold 0, hunger 100) with predator_hunter 45 and a hunger project on inn 20003, as in test_held_panic_falls_through.py.
+seed-42 merchant 37 (wounded, gold 0, hunger 100) with raider 24 and a hunger project on inn 20003, as in test_held_panic_falls_through.py.
 """
 from __future__ import annotations
 
@@ -13,7 +13,8 @@ from src.core.strategic import ObjectiveKind, ObjectiveState, ObjectiveStatus, P
 from src.engine.tactical import TacticalDecisionSystem
 from tests.helpers.scenario import compile_world
 
-MERCHANT, HUNTER = 37, 45
+MERCHANT = 37
+HUNTER = 24  # raider 24: a faction-hostile non-predator, the traced shape (crowded raiders); a predator_hunter would be avoided by its own branch (FLEE_THREAT) instead
 INN = (40.0, 31.0)
 
 
@@ -38,7 +39,8 @@ def _reason(update):
 def test_a_starving_wounded_subject_hit_by_a_hitter_out_of_reach_does_not_hold_a_panic_and_takes_the_need_path():
     state, merchant = _scene((30.0, 25.0))  # five tiles behind, resting
     update = TacticalDecisionSystem.evaluate_entity_intent(state, merchant)
-    assert _reason(update) != "PANIC_RETREAT"  # (the tick falls through the existing order; a predator that can eat the merchant is still avoided by its own branch, which this change does not touch)
+    assert _reason(update) is None  # no flight reason of any kind
+    assert update.navigation is not None and tuple(update.navigation.target_set) == INN  # the need path: the step toward the inn the hunger project points at
 
 
 def test_the_control_with_the_old_ten_tick_hit_window_holds_the_panic(monkeypatch):
