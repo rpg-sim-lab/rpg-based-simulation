@@ -386,7 +386,7 @@ rows:
   status: GAP
   group: E
   reason: read across ticks
-  reader: src/engine/tactical.py:704, src/engine/domain/skill_actions.py:48
+  reader: rpg-planner ruling 2026-11-15 src/engine/tactical.py:704, src/engine/domain/skill_actions.py:48
 - path: state.entities[].identity.craft_target
   status: GAP
   group: E
@@ -396,12 +396,12 @@ rows:
   status: GAP
   group: E
   reason: read across ticks
-  reader: src/systems/strategic_systems/work_queue.py:56
+  reader: rpg-planner ruling 2026-11-15 src/systems/strategic_systems/work_queue.py:56
 - path: state.entities[].identity.traits
   status: GAP
   group: E
   reason: read across ticks
-  reader: src/systems/social_systems/appraisal.py:146
+  reader: rpg-planner ruling 2026-11-15 src/systems/social_systems/appraisal.py:146
 - path: state.entities[].identity.veterancy_points
   status: GAP
   group: E

@@ -12,7 +12,7 @@ tags: [testing, determinism]
 
 # TCK-20261103-STATE-DIGEST-MAY-OMIT-FIELDS-THAT-DECISIONS-READ: per-field digest coverage report (item 1)
 
-Generated from tests/architecture/state_digest_allowlist.yaml by `report()` in tests/architecture/test_state_digest_covers_every_field.py. Samples: urban_political s42 t0, crowded_frontier s42 t60. Readers marked `grep (unverified)` are places a name is read, found by an automated grep; none is stated as a decision read (rpg-planner's item 1b verifies readers). GAP rows are rpg-planner's omission list for the v4 question; the unexercised list is "not proven"; the no_reader rows are for the unwired triage.
+Generated from tests/architecture/state_digest_allowlist.yaml by `report()` in tests/architecture/test_state_digest_covers_every_field.py. Samples: urban_political s42 t0, crowded_frontier s42 t60. Every reader is labelled by source: `rpg-planner ruling 2026-11-15` (named by rpg-planner), `grep (unverified)` (found by an automated grep; these are places a name is read, found by an automated grep; none is stated as a decision read; rpg-planner's item 1b verifies readers), or `unlocated`. GAP rows are rpg-planner's omission list for the v4 question; the unexercised list is "not proven"; the no_reader rows are for the unwired triage.
 
 ```
 # 120 GAP rows, 33 EXCLUDE rows, 3 unexercised
@@ -85,10 +85,10 @@ state.entities[].cognition.subjective.perception.perceived_threats[].position [F
 state.entities[].cognition.subjective.perception.perceived_threats[].threat_id [F] unlocated
 state.entities[].cognition.subjective.perception.perceived_threats[].threat_level [F] unlocated
 state.entities[].equipment.durability [F] grep (unverified) src/world/providers/services.py:36
-state.entities[].identity.cooldowns [E] src/engine/tactical.py:704, src/engine/domain/skill_actions.py:48
+state.entities[].identity.cooldowns [E] rpg-planner ruling 2026-11-15 src/engine/tactical.py:704, src/engine/domain/skill_actions.py:48
 state.entities[].identity.craft_target [E] grep (unverified) src/core/updates.py:137
-state.entities[].identity.latest_intent_results [E] src/systems/strategic_systems/work_queue.py:56
-state.entities[].identity.traits [E] src/systems/social_systems/appraisal.py:146
+state.entities[].identity.latest_intent_results [E] rpg-planner ruling 2026-11-15 src/systems/strategic_systems/work_queue.py:56
+state.entities[].identity.traits [E] rpg-planner ruling 2026-11-15 src/systems/social_systems/appraisal.py:146
 state.entities[].identity.veterancy_points [E] grep (unverified) src/progression/veterancy.py:34
 state.entities[].inventory.items[].properties [F] grep (unverified) src/entities/identity_resolver.py:39
 state.entities[].inventory.max_weight [F] grep (unverified) src/core/builder.py:255
