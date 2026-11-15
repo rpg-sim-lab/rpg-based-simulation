@@ -281,7 +281,7 @@ not an owner approval). Levels are `docs/testing/test_taxonomy.md` §5; markers 
 **Behaviour evidence does not change.** The rpg gate, paired arms and the gate baseline
 (`tests/simulation_quality/rpg_gate/baselines/rpg_gate_v1.json`) run on the pinned sequential runner (`tools/rpg_measure`) only.
 This is a **guard, not only policy** (testing-planner): the run manifest records the executor mode, and the gate candidate, paired
-arms and `rpg_measure` each refuse a non-sequential executor, with a unit test per refusal (child 6). The mode's one claim is
+arms and `rpg_measure` each refuse a non-sequential executor, with a unit test per refusal (child 6). The executor mode is recorded as `RunConditions.executor` plus `RunConditions.worker_manager` (Optional qualname, None when sequential), read by `tools/test_architecture/pinned_runner.py`'s classifier; there is no mode enum (rpg-planner, 2026-11-15; TCK-20261115-A-NON-SEQUENTIAL-RUN-IS-REFUSED-BY-THE-GATE-CANDIDATE-PAIRED-ARMS-AND-RPG-MEASURE). The mode's one claim is
 **equivalence**, DET-PORT-1 under PERF-D2 (a backend counts only in a passing parity matrix), proved the way
 `tests/integration/kernel/test_executor_equivalence_long.py` proves threads against sequential: the **field-by-field content compare
 is the primary check and the canonical hash secondary**, because the digest may omit fields that decisions read
@@ -296,7 +296,7 @@ is the primary check and the canonical hash secondary**, because the digest may 
 | 3 | extra_slow: a **sibling file**, remote vs sequential, not a third arm on `test_executor_equivalence_long.py` (its cases sit at the alarm: urban s42 548.7 s locally, frontier s44 alarmed at 601 s). Start with `crowded_frontier` s45 (it carries the known seed cause); more cases only with measured times. **Each new slow-lane test needs testing-planner's sign-off with a measured wall on the slow VM under 540 s**; the slow job is already about 1 h 40 | the same matrix, one more backend: the DET-PORT-1 claim's evidence | `slow-regression.yml` (runs `slow or extra_slow`) |
 | 4 compose profile | containerized smoke: the integration case run through the `distributed` profile on one world; `level("kernel_integration")` if it is a pytest | nothing runs compose with an engine worker; `test.yml`'s `docker-build` job builds the image only | a new opt-in workflow or manual dispatch, **platform-planner's call** (not testing's: its globs are `test.yml`, `slow-regression*.yml`, `rpg-gate-report.yml`); kept out of `test.yml` and `slow-regression.yml`; testing-planner reviews its content and placement on request |
 | 5 contract docs | none new; existing docs tests (`tests/unit/docs`) keep passing | doc only | PR, `unit-infra` |
-| 6 evidence guard | unit: one refusal test each for the gate candidate, paired arms and `rpg_measure`, plus the manifest's executor-mode field | today only policy keeps the mode out of behaviour evidence | PR, the lanes of those tools |
+| 6 evidence guard | unit: one refusal test each for the gate candidate, paired arms and `rpg_measure`, plus the manifest's `RunConditions.worker_manager` field (the executor is already recorded since #918) | today only policy keeps the mode out of behaviour evidence | PR, the lanes of those tools |
 
 Left out: multi-host networks, tail latency, real container networking beyond one host, and any timing claim.
 
@@ -389,7 +389,7 @@ multi-service transaction); Canary, Shadow / Traffic replay, Synthetic monitorin
 | 3 | `RemoteWorkerManager`, transport, rule of §6, the tests of §8 | rpg-planner | code + unit and integration tests; the extra_slow arm adds about 4 x 2000-tick runs to the slow lane | the container (child 4); API reach (§5) |
 | 4 | `engine-worker` entry point and the `distributed` profile | platform-planner | image entry point and profile; one containerized smoke run | k8s/Helm; scaling beyond one host |
 | 5 | `worker_contract.md` §5 and `infrastructure_overview.md` (the mode; the `ai_worker` wording at `:159`) | docs/engine owner via lead-planner | doc only | everything else |
-| 6 | executor-mode field in the run manifest; refusal of a non-sequential executor in the gate candidate (`tools/test_architecture`), paired arms and `rpg_measure`, with a unit test each | testing-planner scopes it (the gate candidate is its domain); `rpg_measure` and the manifest field with rpg-planner | code + 3 small unit tests, no runs | anything beyond refusing; the mode itself |
+| 6 | the manifest's `RunConditions.worker_manager` field (the executor is already recorded since #918); refusal of a non-sequential executor in the gate candidate (`tools/test_architecture`), paired arms and `rpg_measure`, with a unit test each | testing-planner scopes it (the gate candidate is its domain); `rpg_measure` and the manifest field with rpg-planner | code + 3 small unit tests, no runs | anything beyond refusing; the mode itself |
 
 Order: 6 first (cheap, and it makes the evidence rule a guard before the mode exists), 2's cheap form, then 3, then 4; 5 any time after
 child 0 and ubuntu's docs batch. Every child waits for the owner's review.
