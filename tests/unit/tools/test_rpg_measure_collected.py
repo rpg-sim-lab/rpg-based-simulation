@@ -30,6 +30,7 @@ def _put(cache: Path, sha: str, w: str, s: int, run: dict, ticks=TICKS, repeat=F
     path = paired.result_path(cache, sha, ticks, w, s, repeat)
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(run), encoding="utf-8")
+    paired.write_env_json(path.parent)
     if runner is not None:
         paired.cost_path(path).write_text(json.dumps({"wall_seconds": wall, "peak_rss_mb": None, "runner": runner}), encoding="utf-8")
     return path
@@ -92,7 +93,7 @@ def test_a_different_runner_name_or_cpu_is_not_a_refusal(tmp_path, capsys):
 
 def test_a_repeat_file_is_read_and_never_unlinked(tmp_path):
     stage(tmp_path)
-    repeats = sorted(p for p in tmp_path.rglob("*.json") if "-repeat" in str(p.parent) and ".cost." not in p.name)
+    repeats = sorted(p for p in tmp_path.rglob("*.json") if "-repeat" in str(p.parent) and ".cost." not in p.name and p.name != paired.ENV_FILE)
     assert repeats
     assert collected(tmp_path) == 0
     assert all(p.exists() and paired.cost_path(p).exists() for p in repeats)

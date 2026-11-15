@@ -9,14 +9,17 @@ import pytest
 from tools.rpg_measure import paired
 from tools.test_architecture import paired_arms as pa
 
+ENV = {"runner": "ci:ubuntu24-20260101.1.0", "python": "3.13.1", "os": "Linux 6.8.0", "uv_lock": "1" * 64, "uv_lock_source": "tool"}
 BASE, NEW = "a" * 40, "b" * 40
 W = "frontier_living_world"
+E8 = paired.env_key(ENV)
 RUNNER = {"name": "GitHub Actions 7", "image": "ubuntu24-20260101.1.0", "cpu_model": "AMD EPYC 7763", "nproc": 4, "mem_total_mb": 16000, "python": "3.13.1", "os": "Ubuntu 24.04.1 LTS", "uv_lock": "1" * 64}
 
 
 def _write(job: Path, sha: str, world: str, seed: int, *, repeat=False, runner=None, doc='{"runner": "PINNED"}', ticks=5000, child="c0ffee00"):
-    directory = job / "results" / f"{sha[:12]}-{child}-{ticks}{'-repeat' if repeat else ''}"
+    directory = job / "results" / f"{sha[:12]}-{child}-{ticks}-{paired.env_key(ENV)}{'-repeat' if repeat else ''}"
     directory.mkdir(parents=True, exist_ok=True)
+    (directory / paired.ENV_FILE).write_text(json.dumps(ENV, sort_keys=True, indent=2) + "\n")
     (directory / f"{world}_{seed}.json").write_text(doc)
     (directory / f"{world}_{seed}.cost.json").write_text(json.dumps({"wall_seconds": 1.5, "peak_rss_mb": 200.0, "runner": runner or RUNNER}))
 
@@ -154,8 +157,8 @@ def test_assemble_merges_the_jobs_into_one_paired_cache_root(tmp_path):
     _write(self_job, BASE, W, 42, repeat=True)
     summary = _assemble(root)
     collected = tmp_path / "collected"
-    assert sorted(p.name for p in (collected / "results").iterdir()) == sorted([f"{BASE[:12]}-c0ffee00-5000", f"{NEW[:12]}-c0ffee00-5000", f"{BASE[:12]}-c0ffee00-5000-repeat"])
-    assert (collected / "results" / f"{BASE[:12]}-c0ffee00-5000" / f"{W}_43.json").is_file()
+    assert sorted(p.name for p in (collected / "results").iterdir()) == sorted([f"{BASE[:12]}-c0ffee00-5000-{E8}", f"{NEW[:12]}-c0ffee00-5000-{E8}", f"{BASE[:12]}-c0ffee00-5000-{E8}-repeat"])
+    assert (collected / "results" / f"{BASE[:12]}-c0ffee00-5000-{E8}" / f"{W}_43.json").is_file()
     assert len(summary["jobs"]) == 3 and len(summary["arms"]) == 6 and json.loads((collected / "identities.json").read_text()) == summary
 
 

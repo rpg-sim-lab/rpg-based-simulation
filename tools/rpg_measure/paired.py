@@ -4,7 +4,7 @@
     python -m tools.rpg_measure.paired --base <rev> --new <rev> --neutral        # byte-identical state-hash check, 3 worlds, 1 seed
 
 Each arm is the ``git archive`` of a commit, run by ``arm_child.py`` with that tree as its working directory; results are cached by commit
-(``<cache>/results/<sha>-<child hash>-<ticks>/``) so step N's child arm is step N+1's parent arm and is never re-run. A base-vs-base repeat of the base arm
+(``<cache>/results/<sha12>-<child hash8>-<ticks>-<env8>/``; env8 hashes the runner, Python, OS and ``uv.lock``, held in the directory's ``env.json``) so step N's child arm is step N+1's parent arm and is never re-run. A base-vs-base repeat of the base arm
 (seed 42 of every world, or all seeds with ``--self-check full``) must be byte-identical; otherwise the pair is refused. Runs whose manifest is not
 ``signals_zeroed`` are refused (``require_host_independent_runs``). People are the base arm's tick-0 keeps_coin roster matched by id (see ``stats.py``).
 The cache root is ``$RPG_MEASURE_CACHE``, else ``$XDG_CACHE_HOME/rpg-measure``, else ``~/.cache/rpg-measure``, read when the command runs; an unusable
@@ -15,7 +15,7 @@ Run data is removed by the child by run id; ``--clean-cache`` also removes the e
     python -m tools.rpg_measure.paired --collected DIR --base <40-hex sha> --new <40-hex sha> [same flags]
 
 ``--collected DIR`` compares results that were produced elsewhere (a CI matrix job per world x seed) and never executes a run: DIR is a paired cache root
-(``DIR/results/<sha12>-<child hash>-<ticks>[-repeat]/<world>_<seed>.json``, plus an optional ``<world>_<seed>.cost.json`` of ``wall_seconds``,
+(``DIR/results/<sha12>-<child hash8>-<ticks>-<env8>[-repeat]/<world>_<seed>.json``, ``env.json``, plus an optional ``<world>_<seed>.cost.json`` of ``wall_seconds``,
 ``peak_rss_mb`` and ``runner`` {name, image, cpu_model, nproc, mem_total_mb, python, os}). There is no git call and no tree extraction, so ``--base``/``--new``
 are full shas and ``--repo`` is unused; ``--jobs`` and ``--clean-cache`` are rejected. A result that should exist and does not is REFUSED (exit 2) with its
 (arm, world, seed) keys; a repeat result is read and never unlinked; a runner whose python, os or image differs between the arms (and the repeat) of a key
@@ -32,7 +32,9 @@ import argparse
 import hashlib
 import json
 import os
+import platform
 import re
+import socket
 import subprocess
 import sys
 from concurrent.futures import ThreadPoolExecutor
@@ -94,8 +96,96 @@ def prepare_tree(repo: Path, rev: str, cache: Path) -> Tuple[str, Path]:
     return sha, tree
 
 
-def result_path(cache: Path, sha: str, ticks: int, world: str, seed: int, repeat: bool = False) -> Path:
-    return cache / "results" / f"{sha[:12]}-{child_hash()}-{ticks}{'-repeat' if repeat else ''}" / f"{world}_{seed}.json"
+TOOL_ROOT = Path(__file__).resolve().parents[2]
+ENV_FILE = "env.json"
+_ENV8 = re.compile(r"^[0-9a-f]{8}$")
+_CURRENT_ENV: Optional[Dict[str, str]] = None
+
+
+class EnvRefused(ValueError):
+    """A collected result's environment record is missing, does not match its cache key, or differs between the arms of the set."""
+
+
+def uv_lock_digest(tool_root: Optional[Path] = None, arm_tree: Optional[Path] = None) -> Tuple[str, str]:
+    """(sha256 of ``uv.lock``, which checkout it came from): the TOOL checkout's, else the arm tree's; ``("missing", "none")`` when neither has one."""
+    for source, root in (("tool", Path(tool_root) if tool_root is not None else TOOL_ROOT), ("arm_tree", Path(arm_tree) if arm_tree is not None else None)):
+        if root is not None and (root / "uv.lock").is_file():
+            return hashlib.sha256((root / "uv.lock").read_bytes()).hexdigest(), source
+    return "missing", "none"
+
+
+def run_env(environ: Optional[Dict[str, str]] = None, hostname: Optional[str] = None, tool_root: Optional[Path] = None, arm_tree: Optional[Path] = None) -> Dict[str, str]:
+    """The environment a result was built under (rpg-planner's env8 ruling, 2026-11-15): ``runner`` is ``local:<host>`` or ``ci:<runner image>``, plus the Python
+    micro version, the OS (system + release) and the ``uv.lock`` sha256 with the checkout it came from. The key is its canonical-JSON hash, see ``env_key``."""
+    environ = os.environ if environ is None else environ
+    if environ.get("GITHUB_ACTIONS") == "true":
+        runner = "ci:" + ("-".join(part for part in (environ.get("ImageOS"), environ.get("ImageVersion")) if part) or "unknown")
+    else:
+        runner = "local:" + (hostname if hostname is not None else socket.gethostname())
+    uv_lock, source = uv_lock_digest(tool_root, arm_tree)
+    return {"runner": runner, "python": platform.python_version(), "os": f"{platform.system()} {platform.release()}", "uv_lock": uv_lock, "uv_lock_source": source}
+
+
+def env_key(env: Dict[str, str]) -> str:
+    """env8: the first 8 hex characters of the sha256 of the canonical JSON of ``env``."""
+    return hashlib.sha256(json.dumps(env, sort_keys=True, separators=(",", ":")).encode("utf-8")).hexdigest()[:8]
+
+
+def current_env() -> Dict[str, str]:
+    """``run_env()`` for this process, computed once."""
+    global _CURRENT_ENV
+    if _CURRENT_ENV is None:
+        _CURRENT_ENV = run_env()
+    return _CURRENT_ENV
+
+
+def key_components(sha: str, ticks: int, env: Optional[Dict[str, str]] = None) -> List[str]:
+    """The cache key's components, in order: sha12, child hash8, ticks, env8. ``result_key`` joins them; a repeat arm appends ``repeat`` after the last. A component
+    added later (the spy sha of TCK-20261115-PAIRED-PASS-RECORDS-THE-HOLD-LINE-AND-CHECKS-ITS-BASE) is added here, in one place."""
+    return [sha[:12], child_hash(), str(ticks), env_key(current_env() if env is None else env)]
+
+
+def result_key(components: Sequence[str], repeat: bool = False) -> str:
+    return "-".join([*components, *(["repeat"] if repeat else [])])
+
+
+def result_path(cache: Path, sha: str, ticks: int, world: str, seed: int, repeat: bool = False, env: Optional[Dict[str, str]] = None) -> Path:
+    """``<cache>/results/<sha12>-<child8>-<ticks>-<env8>[-repeat]/<world>_<seed>.json``. An entry in the older ``<sha12>-<child8>-<ticks>[-repeat]`` shape is never
+    read (a miss) and never deleted."""
+    return cache / "results" / result_key(key_components(sha, ticks, env), repeat) / f"{world}_{seed}.json"
+
+
+def write_env_json(directory: Path, env: Optional[Dict[str, str]] = None) -> None:
+    """``env.json`` in a result directory: the environment object the env8 in its name was hashed from."""
+    directory.mkdir(parents=True, exist_ok=True)
+    (directory / ENV_FILE).write_text(json.dumps(current_env() if env is None else env, sort_keys=True, indent=2) + "\n", encoding="utf-8")
+
+
+def env_json_problem(directory: Path) -> Optional[str]:
+    """Why ``directory``'s ``env.json`` does not match the env8 in the directory name; None when it does."""
+    name = directory.name[: -len("-repeat")] if directory.name.endswith("-repeat") else directory.name
+    claimed = name.rsplit("-", 1)[-1]
+    try:
+        recorded = json.loads((directory / ENV_FILE).read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return f"{directory.name}: no readable {ENV_FILE}"
+    if not isinstance(recorded, dict) or not _ENV8.match(claimed) or env_key(recorded) != claimed:
+        return f"{directory.name}: {ENV_FILE} hashes to {env_key(recorded) if isinstance(recorded, dict) else 'nothing'}, not the env8 {claimed!r} in the directory name"
+    return None
+
+
+def _arm_dirs(cache: Path, sha: str, ticks: int, repeat: bool) -> Tuple[str, List[Path]]:
+    """(the key prefix ``<sha12>-<child8>-<ticks>-``, the result directories of one arm in a collected cache: that prefix, 8 hex of env8, and ``-repeat`` iff a repeat)."""
+    prefix = "-".join([sha[:12], child_hash(), str(ticks)]) + "-"
+    tail = len("-repeat") if repeat else 0
+    return prefix, sorted(d for d in (cache / "results").glob(prefix + "*") if d.is_dir() and d.name.endswith("-repeat") == repeat and len(d.name) == len(prefix) + 8 + tail and _ENV8.match(d.name[len(prefix):len(prefix) + 8]))
+
+
+def collected_path(cache: Path, sha: str, ticks: int, world: str, seed: int, repeat: bool = False) -> Path:
+    """The result file in a COLLECTED cache, whose env8 was set by the machine that produced it: the one directory ``<sha12>-<child8>-<ticks>-<env8>[-repeat]``.
+    None or several such directories give a path that does not exist (the older no-env8 shape is never read) (reported as missing / by ``env_problems``)."""
+    prefix, found = _arm_dirs(cache, sha, ticks, repeat)
+    return (found[0] if len(found) == 1 else cache / "results" / (prefix + "no-env8-found" + ("-repeat" if repeat else ""))) / f"{world}_{seed}.json"
 
 
 def run_one(tree: Path, world: str, seed: int, ticks: int, out: Path) -> None:
@@ -103,6 +193,7 @@ def run_one(tree: Path, world: str, seed: int, ticks: int, out: Path) -> None:
     proc = subprocess.run([sys.executable, str(CHILD), world, str(seed), str(ticks), str(out)], cwd=tree, env=env, capture_output=True, text=True)
     if proc.returncode != 0 or not out.exists():
         raise RuntimeError(f"arm run failed ({tree.name} {world} {seed}): {proc.stderr.strip()[-400:]}")
+    write_env_json(out.parent)
 
 
 def run_arm(tree: Path, cache: Path, sha: str, jobs: Sequence[Key], ticks: int, workers: int, repeat: bool = False) -> Dict[Key, Dict[str, Any]]:
@@ -253,7 +344,27 @@ Entry = Tuple[str, str, Sequence[Key], int, bool]  # (arm label, sha, jobs, tick
 
 def missing_results(cache: Path, entries: Sequence[Entry]) -> List[str]:
     """Every (arm, world, seed) whose result file is not in a collected cache."""
-    return [f"{arm}{'-repeat' if rep else ''}:{w}:{s}" for arm, sha, js, ticks, rep in entries for w, s in js if not result_path(cache, sha, ticks, w, s, rep).exists()]
+    return [f"{arm}{'-repeat' if rep else ''}:{w}:{s}" for arm, sha, js, ticks, rep in entries for w, s in js if not collected_path(cache, sha, ticks, w, s, rep).exists()]
+
+
+def env_problems(cache: Path, entries: Sequence[Entry]) -> List[str]:
+    """What is wrong with the environment records of a collected cache (AC8): a result directory with no ``env.json`` or one that does not hash to the env8 in its
+    name; several directories for one arm (ambiguous); or arms of the set that were built under different environments."""
+    problems: List[str] = []
+    seen: Dict[str, str] = {}
+    for arm, sha, js, ticks, rep in entries:
+        prefix, dirs = _arm_dirs(cache, sha, ticks, rep)
+        if len(dirs) > 1:
+            problems.append(f"{arm}{'-repeat' if rep else ''}: {len(dirs)} result directories {[d.name for d in dirs]} for one arm")
+        for d in dirs[:1]:
+            bad = env_json_problem(d)
+            if bad:
+                problems.append(bad)
+            else:
+                seen[d.name] = d.name[len(prefix):][:8]
+    if len(set(seen.values())) > 1:
+        problems.append(f"the arms were built under different environments (env8 {sorted(set(seen.values()))}: {seen})")
+    return problems
 
 
 def runner_identity(cache: Path, entries: Sequence[Entry]) -> Tuple[List[str], List[str]]:
@@ -262,7 +373,7 @@ def runner_identity(cache: Path, entries: Sequence[Entry]) -> Tuple[List[str], L
     seen = set()
     for _arm, sha, js, ticks, rep in entries:
         for w, s in js:
-            cost = load_cost(result_path(cache, sha, ticks, w, s, rep))
+            cost = load_cost(collected_path(cache, sha, ticks, w, s, rep))
             runner = (cost or {}).get("runner")
             if not isinstance(runner, dict):
                 continue
@@ -382,10 +493,13 @@ def _run(a: argparse.Namespace, verdict: Dict[str, Any]) -> int:
         missing = missing_results(cache, entries)
         if missing:
             return _refuse(verdict, f"missing results {missing}", f"missing collected results (arm:world:seed) {missing}")
+        env_bad = env_problems(cache, entries)
+        if env_bad:
+            return _refuse(verdict, f"environment records {env_bad}", f"collected results were not all built under one recorded environment: {env_bad}")
         mismatched, _runners = runner_identity(cache, entries)
         if mismatched:
             return _refuse(verdict, f"runner identity differs {mismatched}", f"runner python/os/image differs between arms of a key: {mismatched}; the pair is not host-independent")
-        read = lambda sha: {k: json.loads(result_path(cache, sha, NEUTRAL_TICKS, *k).read_text(encoding="utf-8")) for k in jobs}
+        read = lambda sha: {k: json.loads(collected_path(cache, sha, NEUTRAL_TICKS, *k).read_text(encoding="utf-8")) for k in jobs}
         rc, bad = neutral_report(read(bsha), read(nsha), bsha, nsha)
         _neutral_verdict(verdict, bad)
         return rc
@@ -404,11 +518,14 @@ def _run(a: argparse.Namespace, verdict: Dict[str, Any]) -> int:
         missing = missing_results(cache, entries)
         if missing:
             return _refuse(verdict, f"missing results {missing}", f"missing collected results (arm:world:seed) {missing}")
+        env_bad = env_problems(cache, entries)
+        if env_bad:
+            return _refuse(verdict, f"environment records {env_bad}", f"collected results were not all built under one recorded environment: {env_bad}")
         mismatched, runners = runner_identity(cache, entries)
         if mismatched:
             return _refuse(verdict, f"runner identity differs {mismatched}", f"runner python/os/image differs between arms of a key: {mismatched}; the pair is not host-independent")
         runner_lines = ["- runners (collected off host): " + ("; ".join(runners) if runners else "none recorded (no cost.json beside the results)")]
-        load = lambda sha, js, repeat=False: {k: json.loads(result_path(cache, sha, a.ticks, *k, repeat).read_text(encoding="utf-8")) for k in js}
+        load = lambda sha, js, repeat=False: {k: json.loads(collected_path(cache, sha, a.ticks, *k, repeat).read_text(encoding="utf-8")) for k in js}
         base, new = load(bsha, jobs), load(nsha, jobs)
     else:
         (bsha, btree), (nsha, ntree) = prepare_tree(repo, a.base, cache), prepare_tree(repo, a.new, cache)

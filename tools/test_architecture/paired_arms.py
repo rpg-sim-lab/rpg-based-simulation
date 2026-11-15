@@ -174,6 +174,7 @@ def run_arm(repo: Path, sha: str, arm: str, world: str, seed: int, ticks: int, c
         started = time.monotonic()
         paired.run_one(tree, world, seed, ticks, out)
         wall = time.monotonic() - started
+    paired.write_env_json(out.parent)  # the env.json the env8 in the directory name was hashed from (a cached entry already has it; this is idempotent)
     after = resource.getrusage(resource.RUSAGE_CHILDREN).ru_maxrss  # KiB on Linux; the largest child so far in THIS process, which runs one arm
     cost = {"wall_seconds": round(wall, 3), "peak_rss_mb": None if cached or after <= 0 else round(max(after, before) / 1024, 1), "runner": runner_identity()}
     out.with_name(out.name[: -len(".json")] + ".cost.json").write_text(json.dumps(cost, sort_keys=True) + "\n", encoding="utf-8")
