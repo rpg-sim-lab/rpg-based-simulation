@@ -8193,6 +8193,21 @@
   artifact_files: []
   tags: []
 - type: ticket
+  path: agent-working/tickets/todos/TCK-20261116-PRE-PUSH-ADVISORY-CHECKS-THE-PUSH-TARGET.md
+  ticket_id: TCK-20261116-PRE-PUSH-ADVISORY-CHECKS-THE-PUSH-TARGET
+  title: The pre-push advisory checks the directory and branch being pushed, not the
+    session's own directory, and fires only on real push commands.
+  tier: hotfix
+  ticket_type: bug
+  date: '2026-11-16'
+  related_code_areas:
+  - default_run_command
+  - tests/tools/test_delivery_pre_push_advisory.py
+  artifact_files: []
+  tags:
+  - ai
+  - delivery
+- type: ticket
   path: agent-working/tickets/todos/ai-first-sdlc-evolution/TCK-20261116-CHANGED-CODE-CHECK-REPORT-ONLY-WITH-PROOF-ESCAPE.md
   ticket_id: TCK-20261116-CHANGED-CODE-CHECK-REPORT-ONLY-WITH-PROOF-ESCAPE
   title: The mechanism changed-code check runs report-only in CI, and a 'no behaviour
