@@ -12,11 +12,11 @@ tags: [ai, agent-monitoring]
 
 ## Were the 57 failures and 7 errors environmental?
 
-Yes. Evidence, all in the vehicle's Test Summary (`agent-working/tickets/done/TCK-20261115-SEARCH-STALE-FLAG-CHECKS-THE-INDEXED-CHECKOUT.md`) and its capped confirmation:
+Yes, and that part is confirmed: the same tests passed capped, with no ENOMEM. Why the environment refused the allocations is open (below). Evidence, all in the vehicle's Test Summary (`agent-working/tickets/done/TCK-20261115-SEARCH-STALE-FLAG-CHECKS-THE-INDEXED-CHECKOUT.md`) and its capped confirmation:
 
 - The native Test phase ran `python3 -m pytest tests/tools/ -m "not slow and not extra_slow" -q --tb=line -rf -p no:cacheprovider`: one process, no `-n`, no memory cap, no CPU pinning. It reported 1 real failure plus 57 failures and 7 errors, all `OSError: Cannot allocate memory` in subprocesses, and a pytest `MemoryError` INTERNALERROR on a first attempt.
 - The same tests, run capped (`systemd-run --user --scope -q -p MemoryMax=3G -p MemorySwapMax=0 taskset -c 4-5`, `-n 0`, the CI marker filter) as the 59 failing node ids and then as six chunks of `tests/tools`, gave 6,025 passed, no ENOMEM and no MemoryError in any log. The only failures were registry drift on an uncommitted branch and one flake that passed alone.
-- A 5 s MemAvailable watcher never saw less than 3.71 GB, yet the Test agent saw ENOMEM at about 1.8 GB free. Committed_AS (13.4-14.8 GB) sat above CommitLimit (13.48 GB) with `vm.overcommit_memory=0`, so a fork can be refused while MemAvailable looks healthy. Why the commit is that high is TCK-20261116-UBUNTU-COMMITTED-MEMORY-OVER-COMMIT-LIMIT's question, not this ticket's.
+- A 5 s MemAvailable watcher never saw less than 3.71 GB, yet the Test agent saw ENOMEM at about 1.8 GB free; Committed_AS (13.4-14.8 GB) sat above CommitLimit (13.48 GB). **The mechanism is not established.** Under `vm.overcommit_memory=0` the kernel (upstream v6.17) never compares Committed_AS with CommitLimit, and a 99-test rerun also hit the ENOMEM while a 4,300-test single process ran clean under the cap. So neither commit pressure nor "one uncapped process" is shown to be the cause; what is shown is that the same tests, run capped and chunked, did not fail. See TCK-20261116-UBUNTU-COMMITTED-MEMORY-OVER-COMMIT-LIMIT.
 
 ## How the Test phase works now
 

@@ -1,5 +1,5 @@
 ---
-status: active
+status: historical
 layer: ai
 authority: P2
 audience: agent
@@ -71,6 +71,6 @@ In mode 0 the only refusal is a **single request larger than total RAM plus swap
 If step 2 is also clean, the honest result for AC2 is: commit-pressure rejected on mechanism and by step 1; the original ENOMEM cause is unresolved, with candidates (a)-(c); the recommendation is unchanged, to keep heavy runs capped and chunked, which the Test phase now does.
 
 ## Step 2 result (the `tests/tools` f-z half, one process, 3G scope, CPUs 4-5, `-n 0`, 505 s, started at 6.07 GB MemAvailable)
-- **No ENOMEM and no MemoryError** anywhere in the log. The pytest process peaked at 0.75 GB RSS and 0.77 GB accounted memory. MemAvailable never fell below 3.84 GB and Committed_AS peaked at 15.01 GB (limit 13.48 GB). The 1 s sampler logged 498 samples.
+- **No ENOMEM and no MemoryError** anywhere in the log. The pytest process peaked at 0.79 GB RSS and 0.81 GB accounted memory. MemAvailable never fell below 4.02 GB and Committed_AS peaked at 15.74 GB (limit 13.48 GB). The 1 s sampler logged 498 samples.
 - 15 tests failed, for a reason unrelated to memory: a defect in the TEST-PHASE ticket's `implement-ticket.js` edit (a stray backtick in a template literal, and a gate id that did not match the repo's convention), now fixed and recorded in that ticket's Test Summary.
-- The result: a capped single process of about 4,300 tests uses under 1 GB. So "one pytest process grew very large over 6,000 tests" is also not what happened on 2026-11-15; this host and process can run the whole half without a failure at the current commit level.
+- The result: a capped single process of about 4,300 tests used under 1 GB. So "one pytest process grew very large over 6,000 tests" is also not what happened on 2026-11-15; this host and process can run the whole half without a failure at the current commit level.

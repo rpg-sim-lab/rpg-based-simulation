@@ -173,3 +173,17 @@ def test_a_value_after_a_value_taking_flag_is_never_a_target(tmp_path, monkeypat
     targets, passthrough = cp.split_args(["-c", "pytest.ini", "tests", "--rootdir", ".", "--ignore", "tests", "-m", "x"])
     assert targets == ["tests"]
     assert passthrough == ["-c", "pytest.ini", "--rootdir", ".", "--ignore", "tests", "-m", "x"]
+
+
+def test_a_clean_collect_listing_that_quotes_the_signatures_in_a_parameter_id_is_not_an_environment_failure():
+    """The helper run over its own test file: collect-only lists ids like `test_x[1-tests/x.py:9: OSError: [Errno 12] ...]`."""
+    listing = COLLECT + "\ntests/tools/test_a.py::test_dies[1-tests/x.py:9: OSError: [Errno 12] Cannot allocate memory]\n"
+    assert cp.is_environment_failure(0, listing) is False
+    result = _run(FakeRun(collect=(0, listing)))
+    assert result["environment_failure"] is False and result["passed"] is True
+
+
+def test_a_failed_summary_line_that_names_a_signature_in_its_id_is_a_test_failure():
+    out = ("FAILED tests/x.py::test_a[OSError: [Errno 12] Cannot allocate memory] - assert 0\n"
+           "ERROR tests/x.py::test_b[INTERNALERROR> MemoryError]\n1 failed, 1 error in 0.3s")
+    assert cp.is_environment_failure(1, out) is False

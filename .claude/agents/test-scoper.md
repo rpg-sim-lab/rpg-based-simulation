@@ -164,6 +164,7 @@ under `tests/` before falling back to `tests/tools/`. This fallback does NOT app
   never a subset — do not try to guess which of its 100+ files are "relevant" by filename alone;
   the whole directory runs in well under the resource budget and the cost of guessing wrong is a
   real broken-CI incident.
+- If a changed file is under `.claude/workflows/` (for example `implement-ticket.js`), `node --check` and the tests of your own change are not enough: many tests load the workflow file or read its source. Also run every test file that references it, found with `grep -l "<workflow file name>" tests -r`, and the orchestration directories `tests/agent_orchestration/`, `tests/agent_orchestration_claude_adapter/` and `tests/agent_replay/`. A backtick inside one of the file's template-literal prompts, for example, still passes `node --check` (it parses as a tagged template) but breaks every harness that loads the file; the gate ids it records must also match `<Phase>:<result_field>` in `agent-working/agent-orchestration/gate-policy.yaml` (found by TCK-20261115-TEST-PHASE-RUNS-TESTS-TOOLS-UNCAPPED-IN-ONE-PROCESS).
 - Never output `pytest tests/` — always scope to specific paths or use `-m "not slow"` at minimum.
 - If a changed file has no corresponding test directory, flag it explicitly as untested.
 

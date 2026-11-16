@@ -8147,10 +8147,11 @@
   - testing
   - determinism
 - type: ticket
-  path: agent-working/tickets/inprogress/TCK-20261116-UBUNTU-COMMITTED-MEMORY-OVER-COMMIT-LIMIT.md
+  path: agent-working/tickets/done/TCK-20261116-UBUNTU-COMMITTED-MEMORY-OVER-COMMIT-LIMIT.md
   ticket_id: TCK-20261116-UBUNTU-COMMITTED-MEMORY-OVER-COMMIT-LIMIT
-  title: On host ubuntu, committed memory sits above the commit limit, so one large
-    uncapped process gets ENOMEM even while MemAvailable is several GB.
+  title: On host ubuntu, ENOMEM appeared in the implement-ticket Test phase while
+    MemAvailable was several GB and committed memory sat above the commit limit; the
+    cause is open.
   tier: standard
   ticket_type: bug
   date: '2026-11-16'

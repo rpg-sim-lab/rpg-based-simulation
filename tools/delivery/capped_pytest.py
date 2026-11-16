@@ -130,8 +130,20 @@ def plan_chunks(counts: dict[str, int], max_tests: int) -> list[list[str]]:
     return chunks
 
 
+_TEST_ID_LINE = re.compile(r"^(?:FAILED |ERROR |PASSED |SKIPPED )|^\S+\.py::")
+
+
 def is_environment_failure(returncode: int, output: str) -> bool:
-    return returncode in ENVIRONMENT_RETURN_CODES or ENVIRONMENT_TEXT.search(output) is not None
+    """A SIGKILL return code, or an environment signature in the output. A zero return code is never an environment
+    death, and lines that only name a test (a collect-only listing, `FAILED path::test[param]` summary lines) are not
+    searched: a parameter id may contain the very words the signatures look for. Found by running this helper over its
+    own test file, whose parameter ids quote them."""
+    if returncode in ENVIRONMENT_RETURN_CODES:
+        return True
+    if returncode == 0:
+        return False
+    text = "\n".join(ln for ln in output.splitlines() if not _TEST_ID_LINE.match(ln))
+    return ENVIRONMENT_TEXT.search(text) is not None
 
 
 def parse_counts(output: str) -> dict[str, int]:
