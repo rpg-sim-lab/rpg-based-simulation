@@ -8117,6 +8117,21 @@
   - content
   last_verified: '2026-10-09'
 - type: ticket
+  path: agent-working/tickets/done/TCK-20261116-AN-ARM-RUNS-WHEN-THE-CACHE-PATH-IS-RELATIVE.md
+  ticket_id: TCK-20261116-AN-ARM-RUNS-WHEN-THE-CACHE-PATH-IS-RELATIVE
+  title: 'An arm runs when the cache path is relative: the child gets the arm tree
+    as an absolute path, so the off-host paired-arms jobs can import `src`'
+  tier: hotfix
+  ticket_type: bug
+  date: '2026-11-16'
+  related_code_areas:
+  - tools/rpg_measure/paired.py
+  - tools/test_architecture/paired_arms.py
+  artifact_files: []
+  tags:
+  - testing
+  - determinism
+- type: ticket
   path: agent-working/tickets/todos/TCK-20261116-UBUNTU-COMMITTED-MEMORY-OVER-COMMIT-LIMIT.md
   ticket_id: TCK-20261116-UBUNTU-COMMITTED-MEMORY-OVER-COMMIT-LIMIT
   title: On host ubuntu, committed memory sits above the commit limit, so one large

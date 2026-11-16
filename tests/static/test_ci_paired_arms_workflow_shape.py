@@ -14,7 +14,7 @@ from tests.static import test_workflow_actions_pinned_by_sha as pins
 from tests.static import test_workflow_run_blocks_take_github_context_via_env as ctx
 
 _PATH = Path(__file__).resolve().parents[2] / ".github" / "workflows" / "paired-arms.yml"
-INPUTS = {"base_sha", "new_sha", "step", "worlds", "seeds", "ticks", "self_check"}
+INPUTS = {"base_sha", "new_sha", "step", "worlds", "seeds", "ticks", "self_check", "div"}
 
 
 def _wf() -> dict:
@@ -184,3 +184,13 @@ def test_evidence_defaults_true_and_the_plan_step_passes_it_through():
     step = next(s for s in _wf()["jobs"]["plan"]["steps"] if s.get("id") == "plan")
     assert step["env"]["EVIDENCE"] == "${{ inputs.evidence }}"
     assert '--evidence' in step["run"] and 'EVIDENCE}" = "true"' in step["run"]
+
+
+def test_div_is_an_optional_label_input_defaulting_to_dash_and_reaches_the_compare_step_through_env():
+    """B1: the CI table header and watch rows carry the step's div (AC1 compares them with the local table); with no input the output is today's `(div -)`."""
+    spec = _on()["workflow_dispatch"]["inputs"]["div"]
+    assert spec["default"] == "-" and not spec.get("required")
+    aggregate = _wf()["jobs"]["aggregate"]
+    assert aggregate["env"]["DIV"] == "${{ inputs.div }}"
+    compare = next(s for s in aggregate["steps"] if s.get("name") == "Compare with paired.py --collected")["run"]
+    assert '--div "${DIV}"' in compare and "${{" not in compare
