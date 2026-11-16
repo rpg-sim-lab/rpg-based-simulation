@@ -24,7 +24,7 @@ def _state():
     f = state.entities[F]
     f = replace(f, task=TaskComponent(work_kind="ENTITY_ACT", payload={}),
                 navigation=replace(f.navigation, target=STORED_TARGET, movement_mode=MovementMode.REGROUP),
-                combat=replace(f.combat, hp=20, last_attacker_id=H, last_hit_tick=0, last_hit_damage=23))
+                combat=replace(f.combat, hp=20, last_attacker_id=H, last_hit_tick=0, last_hit_damage=23, last_hit_attackers=(H,), last_hit_damages=(23,)))
     h = state.entities[H]
     h = replace(h, task=TaskComponent(work_kind="ENTITY_ACT", payload={}))  # neither names the other as its target: the movement layer's CONFLICT-04 test (is_engaged) does not hold, as in the traced rows
     object.__setattr__(state, "entities", {**state.entities, F: f, H: h})

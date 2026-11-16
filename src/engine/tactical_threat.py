@@ -127,9 +127,24 @@ def _task_acts_on(hostile: EntityState, subject_id: int) -> bool:
 
 
 def _hit_acts_on(hostile: EntityState, subject: EntityState, tick: int) -> bool:
-    """(b) The hostile is the body that last took hp from the subject, and that hit is within one brain cadence (opportunity hits included: they are hits)."""
+    """(b) The hostile is one of the bodies that took hp from the subject in its last hit, and that hit is within one brain cadence (opportunity hits included: they are hits).
+
+    A simultaneous group hit has several attackers; each of them struck the subject (`last_hit_attackers`)."""
     hit_tick = subject.combat.last_hit_tick
-    return hit_tick is not None and subject.combat.last_attacker_id == hostile.id and tick - hit_tick <= NEED_WAKE_CADENCE
+    return hit_tick is not None and hostile.id in subject.combat.last_hit_attackers and tick - hit_tick <= NEED_WAKE_CADENCE
+
+
+# D-13 (docs/plans/deferred_tuning_decisions_register.md): how recent a hit makes its attacker "attacking me" in target selection. 10 ticks today because that equals the row 88 act-test
+# window (NEED_WAKE_CADENCE); a separate constant on purpose, since the two mean different things and may be retuned apart. No test pins them equal.
+ATTACKED_RECENTLY_WINDOW_TICKS = 10
+
+
+def attacked_me_recently(hostile: EntityState, subject: EntityState, tick: int) -> bool:
+    """True when `hostile` is one of the bodies that took hp from `subject` in its last hit and that hit is within ATTACKED_RECENTLY_WINDOW_TICKS (target_score's self-defence term).
+
+    Reads the typed hit record (`last_hit_attackers`, `last_hit_tick`); a hostile that targets the subject but has not hit it does not count."""
+    hit_tick = subject.combat.last_hit_tick
+    return hit_tick is not None and hostile.id in subject.combat.last_hit_attackers and tick - hit_tick <= ATTACKED_RECENTLY_WINDOW_TICKS
 
 
 def hostile_acts_on(hostile: EntityState, subject: EntityState, tick: int) -> bool:
