@@ -8107,6 +8107,20 @@
   - content
   last_verified: '2026-10-09'
 - type: ticket
+  path: agent-working/tickets/todos/TCK-20261116-TIMING-RUNS-SHARE-THEIR-CPUS-WITH-IDLE-SEATS.md
+  ticket_id: TCK-20261116-TIMING-RUNS-SHARE-THEIR-CPUS-WITH-IDLE-SEATS
+  title: 'Proposal: keep the Claude seat processes off CPUs 4-5 while timing runs
+    use them on the ubuntu host'
+  tier: standard
+  ticket_type: chore
+  date: '2026-11-16'
+  related_code_areas:
+  - tools/perf/quiet_gate.py
+  - _gate_reading
+  artifact_files: []
+  tags:
+  - performance
+- type: ticket
   path: agent-working/tickets/todos/distributed-workers-experiment/TCK-20261115-WHAT-A-WORKER-CHUNK-COSTS-TO-ENCODE-AND-SHIP.md
   ticket_id: TCK-20261115-WHAT-A-WORKER-CHUNK-COSTS-TO-ENCODE-AND-SHIP
   title: Measure what a Collection chunk costs to encode and decode, and Collection's
