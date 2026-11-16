@@ -1,10 +1,10 @@
 ---
-status: active
+status: historical
 layer: ai
 authority: P2
 audience: agent
 ticket_id: TCK-20261116-THIRTEEN-DEAD-KNOWLEDGE-GATEWAY-DOCS-MOVE-TO-THE-ARCHIVE
-phase: inprogress
+phase: done
 date: 2026-11-16
 tags: [documentation, mcp]
 ---
@@ -15,7 +15,7 @@ tags: [documentation, mcp]
 Thirteen knowledge-gateway (KGMCP) documents whose code was removed in #147 still sit in docs/engine/contracts as if current; move them to docs/archive/knowledge_gateway_mcp/, keep the one live spec, and leave no dead path behind
 
 ## Status
-INPROGRESS
+DONE
 
 ## Tier
 hotfix
@@ -147,9 +147,21 @@ None. The move list is the main checkout's untracked `.claude/handover/drafts/kg
 - The docs search index, rebuilt by `make knowledge-index-update` from the main checkout, will drop the old paths. That runs after merge, not in this change.
 
 ## Implementation Notes
+- Out of Scope narrowed by rpg-planner-ubuntu: the nine .json files are not moved; one description string in evidence_identity_kinds.schema.json is rewritten to the archive path so it does not become a dead path. (Ruling in the dispatch thread.)
+- Parity ledger: edited by exact-line replacement, not tools/parity_ledger_writer.py (its CLI is --check only; its write_entry rewrites the whole shard, which is the churn the ticket rule meant to avoid; accepted by rpg-planner-ubuntu). `git diff --stat docs/parity_ledger/infrastructure.yaml`: before empty, after 18 insertions and 18 deletions, on exactly lines 9473, 9513, 9578, 9587, 9863, 9896, 9983, 10055, 10213, 10343, 10542, 10560, 10565, 10575, 10598, 10685, 10715, 10812. `parity_ledger_writer.py --check` exit 0.
+- Fixture tests/tools/fixtures/kgmcp_phase4_direct_tool_comparison_results.json left unchanged: recorded measurement text, no test asserts those paths (tests/docs/test_phase4_direct_tool_comparison_doc.py reads entry ids, routing shapes and verdicts; test_knowledge_gateway_archival.py lists only the file name), and it sits under tests/, outside AC3's docs/ measure. Excluded from AC2 for that reason.
+- redaction_retention_policy.md stays active in place. Its 22 dead tool/test paths (pointing at gateway files removed in #147 or their archive copies) were reworded without a directory path (the file name stays as a name); 9 paths to moved docs were rewritten to the archive. tools/write_path_guard.py::ALLOWED_SOURCE_TYPES is a live file the measure flags only because of its `::` suffix; unchanged.
+- tools/retrieval_cache.py lines 802 and 883: docstring-only, no function replaced the removed status reporter, so they say "the knowledge-status report (gateway removed in #147)".
+- Rule B was applied inside the 13 moved files; knowledge_gateway_mcp_contract.md has status historical.
 
 ## Test Summary
+Scoped run (3 GB scope, swap 0, CPUs 4-5, PYTHONHASHSEED=0): tests/docs/test_phase4_direct_tool_comparison_doc.py, test_phase4_workflow_recommendation_doc.py, test_redaction_retention_policy_doc.py, tests/tools/test_evidence_cache_identity_contract.py, test_write_path_guard.py, test_retrieval_cache.py, the three parity ledger tests (tests/tools/test_parity_ledger_schema.py, test_parity_ledger_check.py, tests/codebase/test_parity_ledger_schema_gate.py) and tests/tools/test_knowledge_gateway_archival.py: 202 passed. After the schema string edit and registry regeneration: test_evidence_cache_identity_contract, tests/docs/test_doc_path_existence.py, tests/tools/test_generate_registry.py: 90 passed, 1 xfailed.
+AC2: the specified `git grep -nE` prints nothing with tests/tools/fixtures/kgmcp_phase4_direct_tool_comparison_results.json excluded (recorded text, see Implementation Notes); with it included it prints that fixture's 15 lines only.
+AC3 dead-path measure (backticked src/tools/tests/.claude/.github/registries/docs/frontend/scripts paths in tracked docs/**/*.md except docs/archive/, checked against git ls-files and parent dirs; script per docs_truth_plan.md section 6, sha256 98c39dbeaa7c5daa..., run at the same base 026e18323 plus this branch): before total dead 1476 (KGMCP-related 150, 309 files with dead paths); after 1355 (KGMCP-related 39, 297 files). No dead path is new once the file move is accounted for (0). Of the drop, 99 dead references lived in the 13 moved files, which leave the measure because it skips docs/archive/; the other KGMCP drop is the 18 rewritten + 22 reworded paths in live files.
+Known gap: the measure treats a `path::symbol` token as a dead path, so tools/write_path_guard.py::ALLOWED_SOURCE_TYPES (a live file) still counts.
+Known gap: this change moves docs only; no sim runs, no src change, hot-loop timing not applicable.
 
 ## Files Changed
 
 ## Completion Summary
+Thirteen dead knowledge-gateway documents moved to docs/archive/knowledge_gateway_mcp/ by git mv (history kept); the contract is status historical; redaction_retention_policy.md and the nine .json files stay (one schema description string rewritten). Every live reference follows rule B, the test path-from-parts are split, and the dead-path count over docs/ fell from 1476 to 1355. Two-lane review pending: rpg-planner-ubuntu (ledger, divergences, move and status, redaction fixes) and agent-working (tests/docs, tests/tools, tools/). Not pushed.

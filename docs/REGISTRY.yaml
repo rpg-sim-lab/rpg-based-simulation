@@ -1339,151 +1339,8 @@
   audience: developer
   tags: []
 - type: doc
-  path: docs/engine/contracts/knowledge_gateway_mcp/audit_phase0_5.md
-  title: Knowledge Gateway MCP — Consolidated Audit, Phases 0-5
-  status: historical
-  layer: ai
-  authority: P1
-  audience: agent
-  tags:
-  - ai
-  - mcp
-  - testing
-- type: doc
-  path: docs/engine/contracts/knowledge_gateway_mcp/cache_migration_plan.md
-  title: Knowledge Gateway MCP — Cache Migration Plan (Design Only)
-  status: historical
-  layer: ai
-  authority: P1
-  audience: agent
-  tags:
-  - ai
-  - schema
-  - mcp
-- type: doc
-  path: docs/engine/contracts/knowledge_gateway_mcp/evidence_cache_identity_contract.md
-  title: Knowledge Gateway MCP — Evidence & Cache Identity Contract
-  status: historical
-  layer: ai
-  authority: P1
-  audience: agent
-  tags:
-  - ai
-  - schema
-  - mcp
-- type: doc
-  path: docs/engine/contracts/knowledge_gateway_mcp/keep_or_deprecate_decision.md
-  title: 'Knowledge Gateway MCP — Keep, Invest Further, or Deprecate: The Decision'
-  status: historical
-  layer: ai
-  authority: P1
-  audience: agent
-  tags:
-  - ai
-  - mcp
-- type: doc
-  path: docs/engine/contracts/knowledge_gateway_mcp/measurement_baseline_contract.md
-  title: Knowledge Gateway MCP — Measurement Baseline Contract
-  status: historical
-  layer: ai
-  authority: P1
-  audience: agent
-  tags:
-  - ai
-  - schema
-  - mcp
-- type: doc
-  path: docs/engine/contracts/knowledge_gateway_mcp/phase1_baseline_comparison.md
-  title: Knowledge Gateway MCP — Phase 1 Baseline Comparison Results
-  status: historical
-  layer: ai
-  authority: P1
-  audience: agent
-  tags:
-  - ai
-  - mcp
-  - testing
-- type: doc
-  path: docs/engine/contracts/knowledge_gateway_mcp/phase2_baseline_recomparison.md
-  title: Knowledge Gateway MCP — Phase 2 Baseline Recomparison Results
-  status: historical
-  layer: ai
-  authority: P1
-  audience: agent
-  tags:
-  - ai
-  - mcp
-  - testing
-- type: doc
-  path: docs/engine/contracts/knowledge_gateway_mcp/phase3_pilot_acceptance_measurement.md
-  title: Knowledge Gateway MCP — Phase 3 Pilot Acceptance Measurement Results
-  status: historical
-  layer: ai
-  authority: P1
-  audience: agent
-  tags:
-  - ai
-  - mcp
-  - testing
-- type: doc
-  path: docs/engine/contracts/knowledge_gateway_mcp/phase4_direct_tool_comparison.md
-  title: Knowledge Gateway MCP — Phase 4 Direct-Tool Comparison Results
-  status: historical
-  layer: ai
-  authority: P1
-  audience: agent
-  tags:
-  - ai
-  - mcp
-  - testing
-- type: doc
-  path: docs/engine/contracts/knowledge_gateway_mcp/phase4_warm_direct_tool_comparison.md
-  title: Knowledge Gateway MCP — Warm-Gateway Direct-Tool Comparison Results
-  status: historical
-  layer: ai
-  authority: P1
-  audience: agent
-  tags:
-  - ai
-  - mcp
-  - testing
-  - performance
-- type: doc
-  path: docs/engine/contracts/knowledge_gateway_mcp/phase4_workflow_recommendation.md
-  title: Knowledge Gateway MCP — Phase 4 Workflow Integration Recommendation
-  status: historical
-  layer: ai
-  authority: P1
-  audience: agent
-  tags:
-  - ai
-  - mcp
-  - testing
-- type: doc
-  path: docs/engine/contracts/knowledge_gateway_mcp/phase5_repeated_demand_measurement.md
-  title: Knowledge Gateway MCP — Phase 5 Repeated-Demand Measurement Results
-  status: historical
-  layer: ai
-  authority: P1
-  audience: agent
-  tags:
-  - ai
-  - mcp
-  - testing
-- type: doc
   path: docs/engine/contracts/knowledge_gateway_mcp/redaction_retention_policy.md
   title: Knowledge Gateway MCP — Redaction and Retention Policy
-  status: active
-  layer: ai
-  authority: P1
-  audience: agent
-  tags:
-  - ai
-  - schema
-  - mcp
-- type: doc
-  path: docs/engine/contracts/knowledge_gateway_mcp_contract.md
-  title: Knowledge Gateway MCP Contract
   status: active
   layer: ai
   authority: P1
@@ -8179,6 +8036,27 @@
   tags:
   - testing
   - determinism
+- type: ticket
+  path: agent-working/tickets/done/TCK-20261116-THIRTEEN-DEAD-KNOWLEDGE-GATEWAY-DOCS-MOVE-TO-THE-ARCHIVE.md
+  ticket_id: TCK-20261116-THIRTEEN-DEAD-KNOWLEDGE-GATEWAY-DOCS-MOVE-TO-THE-ARCHIVE
+  title: 'Thirteen knowledge-gateway (KGMCP) documents whose code was removed in #147
+    still sit in docs/engine/contracts as if current; move them to docs/archive/knowledge_gateway_mcp/,
+    keep the one live spec, and leave no dead path behind'
+  tier: hotfix
+  ticket_type: chore
+  date: '2026-11-16'
+  related_code_areas:
+  - tools/write_path_guard.py
+  - tools/retrieval_cache.py
+  - tests/docs/test_phase4_*_doc.py
+  - tests/docs/test_redaction_retention_policy_doc.py
+  - tests/tools/test_evidence_cache_identity_contract.py
+  - tests/tools/test_retrieval_cache.py
+  - tests/tools/test_write_path_guard.py
+  artifact_files: []
+  tags:
+  - documentation
+  - mcp
 - type: ticket
   path: agent-working/tickets/done/TCK-20261116-UBUNTU-COMMITTED-MEMORY-OVER-COMMIT-LIMIT.md
   ticket_id: TCK-20261116-UBUNTU-COMMITTED-MEMORY-OVER-COMMIT-LIMIT

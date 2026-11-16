@@ -526,8 +526,8 @@ class TestCrashRecovery:
         """This test verifies rebuild of the schema that exists today (three marker-only
         tables: retrieval_index_cache_rows, retrieval_query_cache_rows,
         retrieval_packet_cache_rows). It does not and cannot test payload-row recovery,
-        because no payload column exists yet (cache_migration_plan.md confirms Level 1/2
-        payload tables are unimplemented Phase 2/3 work). A future ticket that adds payload
+        because no payload column exists yet (docs/archive/knowledge_gateway_mcp/cache_migration_plan.md
+        confirms Level 1/2 payload tables are unimplemented Phase 2/3 work). A future ticket that adds payload
         tables must extend this test, not treat it as already covering that case.
         """
         rc.write_index_cache("hash-a", "emb-v1", "chunk-v1", source_id="doc-1")
@@ -561,8 +561,8 @@ class TestCrashRecovery:
         _init_schema(), so after a raw file delete, reconnecting via _get_connection() brings back
         only the 3 marker-only tables (today's existing behavior) — the Level 1 table stays absent
         until migration_001_add_level1_tables is explicitly re-run. This is the decided, correct
-        behavior, not an oversight: cache_migration_plan.md §5 defers any auto-apply-on-connect
-        ('migrate') policy to a future ticket.
+        behavior, not an oversight: docs/archive/knowledge_gateway_mcp/cache_migration_plan.md §5 defers any
+        auto-apply-on-connect ('migrate') policy to a future ticket.
         """
         conn = rc._get_connection()
         rc.migration_001_add_level1_tables(conn)

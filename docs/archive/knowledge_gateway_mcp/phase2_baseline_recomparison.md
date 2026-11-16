@@ -210,9 +210,9 @@ this ticket does not itself make or recommend that decision, per its own Out of 
   comparison this recomparison measures against (read-only, never modified by this ticket).
 - `tests/tools/fixtures/kgmcp_measurement_baseline_corpus_results.json` — the frozen Phase 0
   baseline both comparisons measure against (read-only).
-- `docs/engine/contracts/knowledge_gateway_mcp/measurement_baseline_contract.md` §4 — the three
+- `docs/archive/knowledge_gateway_mcp/measurement_baseline_contract.md` §4 — the three
   predeclared threshold formulas this document reports against, unedited.
-- `docs/engine/contracts/knowledge_gateway_mcp/phase1_baseline_comparison.md` — the Phase 1 result
+- `docs/archive/knowledge_gateway_mcp/phase1_baseline_comparison.md` — the Phase 1 result
   this recomparison extends, never edited by this ticket.
 - `tools/knowledge_gateway_redaction.py::check_size_cap()`,
   `tools/knowledge_gateway_redaction.py::MAX_PAYLOAD_BYTES` — the real 8 KB cache-write size cap
