@@ -47,6 +47,65 @@ D1 from the V3 trace. Owner choice: #715 6893303548, "(a) Two defect tickets (Re
 - The paired run is inside its stop rules. The V3 rows cf/45 e5 and cf/46 e4 are resolved, or re-owned with a stated reason.
 - Docs, ledger and divergence entry in the same change.
 
+- SUPERSEDED: the ~30-run paired measurement (3 worlds x s42-46 x 5000t) named in the criteria above is replaced by the section below (owner #715 6912138476). Balance rows r1/r2 are report-only there.
+
+### Own-job counts (HARD, fixed before data; rpg-designer, owner 6912138476)
+Copied verbatim from `.claude/handover/drafts/rpg-designer-d1-own-job-counts.md` (sha256 0a1cd679201872182f5fa4fba86235953532119f51425ff67d609c36965e2972); only the section heading level is lowered by one (`##` to `###`).
+
+Ticket: TCK-20261115-PAST-THE-STARVING-LINE-THE-TACTICAL-STEP-TURNS-AWAY-FROM-A-MEAL-WITHOUT-WEIGHING-HUNGER.
+- Owner rulings: M1 pace (a), #715 6912138476; memo row 96.
+- Design: drafts/rpg-designer-d1-starving-tactical-design.md.
+- These counts are fixed BEFORE any data and are never rewritten after. rpg-planner copies this section into the ticket's Acceptance Criteria verbatim.
+
+### What the fix claims
+Past the starving line (hunger ≥ `STARVING_LINE`, 95), a last-attacker hit makes the hitter "acting" only while:
+- the hitter is within its own reach of the subject (Manhattan distance ≤ max(1, hitter `combat.range`)); or
+- term (a), `_task_acts_on`, holds.
+
+Below the line, memo row 88's 10-tick hit window is unchanged. Every caller (`need_yields`, `_panic_holds`, `acting_threat_to`) reads the same predicate.
+
+### Run shape
+- Merged main with D1 (the fix arm) only. The counts compare the new predicate with the old rule on the same call, so the own job needs no base arm.
+- frontier_marches, crowded_frontier and urban_political, s42, 5000 ticks.
+- Each world gets a spied run plus its plain twin (6 processes).
+- The spy wraps the hit-acting predicate (the `_hit_acts_on` path, or `hostile_acts_on` if the fix threads the hunger state there) and each of its 3 callers. It records, per call:
+  - tick, subject, hitter;
+  - the subject's hunger;
+  - distance, and the hitter's range;
+  - the term (a) value;
+  - the ticks since the hit;
+  - the returned value.
+- The spy prints inputs and the returned value only. I compute the old-rule value myself (hit within 10 ticks means acting) and assign the classes.
+
+### Own-job counts (HARD: any failure is a trip; one trace cycle, then the owner)
+- **J1, below the line unchanged.** Calls with hunger < 95 whose returned value differs from the old rule: **0**.
+- **J2, in reach still acts.** Calls with hunger ≥ 95, hit within 10 ticks, and the hitter in reach or term (a) true, that return not-acting: **0**.
+- **J3, out of reach stops acting.** Calls with hunger ≥ 95, hit within 10 ticks, the hitter out of reach and term (a) false, that return acting: **0**.
+- **J4, one predicate.** For the same (tick, subject, hitter), the 3 callers disagree on the value: **0**.
+- **J5, the line is ≥, not >.** Calls at hunger exactly 95 are classed as past the line in J2 and J3. Reported separately, with no separate bar.
+
+### Not vacuous
+- J3 needs at least 1 qualifying call over the 3 worlds.
+- If there are 0, crowded_frontier s45 and s46 (the V3 cells, cf/45 e5 and cf/46 e4) run on the fix arm, spied plus twin (4 more processes), before I rule.
+- If those still give 0, that's a trip: the fix's own case never occurred.
+
+### HARD evidence checks (as always)
+- spied == plain twin hash;
+- the spy's exceptions and logging_errors are empty;
+- spy and runner pinned at the shas I approve;
+- no crash or ENOMEM.
+
+### Reported, not blocking (BALANCE)
+- A base arm (merged main, plain) on the same 3 cells gives these rows for the PR body. If it isn't run, they're read at the next pooled reading.
+  - **r1:** people STARVATION deaths within 3 ticks of an open food way, base vs fix.
+  - **r2:** COMBAT/DEFEAT deaths at or past the starving line, base vs fix. A r2 reading past 2× its Tier-1 bar is a FLAGGED owner line, per the amendment.
+- The V3 known-red rows for cf/45 and cf/46 close only if the rpg gate shows both subjects no longer starve. Otherwise they stay, owned by D1.
+- **The pooled extinction line:** D1 doesn't remove a food or survival path, so it takes the normal every-3-steps reading, not an extra one.
+
+### Simpler option
+Rely only on the unit and real-kernel integration tests, with no 5000-tick run.
+- Cost: J1 and J4 are proven only on the built fixtures, not across a real world's callers. A caller that re-derives the predicate (J4) would go unseen.
+
 ## Related Tickets
 - TCK-20261115-THE-GO-TO-TOWN-STEP-RESETS-THE-WALK-TARGET-ON-A-TOWN-TILE (D2)
 - TCK-20261110-A-NON-FLIGHT-MOVE-OFF-ENGAGEMENT-WALKS-INTO-A-KNOWN-LETHAL-FREE-SWING (#884, 2.204, where the V3 rows came from)
