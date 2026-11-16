@@ -20,7 +20,7 @@ CHILD_SOURCE = (
     "world, seed, ticks, out = sys.argv[1:5]\n"
     "from pathlib import Path\n"
     "Path(out).parent.mkdir(parents=True, exist_ok=True)\n"
-    "Path(out).write_text(json.dumps({'world': world, 'seed': int(seed), 'marker': VALUE, 'runner': 'PINNED'}))\n"
+    "Path(out).write_text(json.dumps({'world': world, 'seed': int(seed), 'marker': VALUE, 'runner': 'PINNED', 'final_hash': 'f1', 'start_hash': 's1'}))\n"
 )
 
 
@@ -66,6 +66,15 @@ def _fake_prepare(cache: Path):
 
 def _run_arm_cli(cache: str) -> int:
     return pa.main(["run-arm", "--repo", ".", "--sha", SHA, "--arm", "base", "--world", W, "--seed", str(SEED), "--ticks", str(TICKS), "--cache", cache])
+
+
+def test_the_run_arm_console_line_carries_the_arm_documents_hashes(tmp_path, monkeypatch, stub_child, capsys):
+    """AC4: the CI log carries final_hash and start_hash beside the wall time, readable even when artifacts cannot be downloaded."""
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setattr(paired, "prepare_tree", _fake_prepare(Path("arm-cache")))
+    assert _run_arm_cli("arm-cache") == 0
+    line = capsys.readouterr().out.strip().splitlines()[-1]
+    assert line.startswith(f"base {W} seed {SEED}: ") and "final_hash=" in line and "start_hash=" in line and "final_hash=f1" in line and "start_hash=s1" in line
 
 
 def test_run_arm_with_a_relative_cache_writes_result_cost_and_env_under_the_resolved_cache(tmp_path, monkeypatch, stub_child):

@@ -65,7 +65,7 @@ systems ─────────→ core + engine (pinned exceptions, see Cou
 produced this doc never assigned it a layer. It is added here as a freeze-at-baseline: the 13
 `systems → engine` sites found at that ticket's audit are pinned as grandfathered exceptions
 (see Coupling Inventory below), not eliminated. This is not a claim that the boundary is
-cleanly honored — it is 13 sites frozen at their current count, with growth past that count
+cleanly honored — it is 12 sites frozen at their current count (13 at the audit; #931 removed a dead function-local `should_run` duplicate in intelligence.py), with growth past that count
 blocked by the new test.
 
 `optimization` domain is explicitly permitted cross-cutting — any domain may use it.
@@ -261,25 +261,25 @@ set requires updating both this doc and that test together, not a silent additio
 ### Layer: `src/systems/` — upward dependency into `src/engine/`
 
 `src/systems/` has no documented position prior to this ticket (see Layer Architecture above).
-13 real, currently-shipping `systems → engine` imports exist across 5 files, both module-level
+12 real, currently-shipping `systems → engine` imports exist across 5 files, both module-level
 and lazy:
 
 | File | Imported names | Occurrences |
 |---|---|---|
-| `systems/strategic_systems/intelligence.py` | `GovernorPolicy` (`engine.policy`); `SpatialQueryService` (`engine.spatial_query`); `SystemCadence`, `should_run` (`engine.cadence`); `SimulationDomainLogic` (`engine.domain_logic`, ×2 identical sites); `should_run` alone (`engine.cadence`); `SystemCadence as DefaultCadence`, `should_run` (`engine.cadence`, ×2 identical sites); `AppraisalSystem` (`engine.cognition`) | 9 |
+| `systems/strategic_systems/intelligence.py` | `GovernorPolicy` (`engine.policy`); `SpatialQueryService` (`engine.spatial_query`); `SystemCadence`, `should_run` (`engine.cadence`); `SimulationDomainLogic` (`engine.domain_logic`, ×2 identical sites); `SystemCadence as DefaultCadence`, `should_run` (`engine.cadence`, ×2 identical sites); `AppraisalSystem` (`engine.cognition`) | 8 |
 | `systems/strategic_systems/detour.py` | `LeadRoutingSystem` (`engine.domain.lead_routing`) | 1 |
 | `systems/strategic_systems/redirection.py` | `SystemCadence`, `should_run` (`engine.cadence`) | 1 |
 | `systems/economy_systems/market.py` | `LegalityServiceV2` (`engine.legality`) | 1 |
 | `systems/world_systems/routine.py` | `LegalityServiceV2` (`engine.legality`) | 1 |
 
-All 13 sites are enforced-pinned by
+All 12 sites are enforced-pinned by
 `tests/architecture/test_phase18_import_boundaries.py::test_systems_do_not_import_engine_outside_pinned_exceptions`
 (added by `TCK-20260817-ARCHITECTURE-BOUNDARY-HARDENING-EPIC`) — a `(file, module, imported
 names)`-exact list with an expected occurrence count per key, not a `(file, lineno)` grandfather
 list and not a general allowlist (`TCK-20260909-ARCHITECTURE-BOUNDARY-LINE-KEYED-PINNING-BRITTLE`,
 so an unrelated line-shifting edit above a pinned import no longer breaks the pin). This is a
 freeze-at-baseline, not a clean, fully honored boundary: the pinned sites remain exactly as
-found, no new violation past the pinned 13 is permitted, and expanding the pinned set requires
+found, no new violation past the pinned 12 is permitted, and expanding the pinned set requires
 updating both this doc and that test together, not a silent addition.
 
 ---

@@ -44,8 +44,8 @@ class GroupRecord:
     dissolution_tick: Optional[int] = None
     composition_score: float = 0.0  # PartyCompositionScorer result at formation (SOC-232)
     _canonical_cache: Any = field(default=None, init=False, repr=False, compare=False)
-    # New fields go AFTER _canonical_cache: a slotted dataclass unpickles positionally, so an older checkpoint's tuple must keep lining up
-    # with this class's field order (the added slots stay absent and are filled by checkpoint_fields.fill_missing_fields).
+    # New fields go AFTER _canonical_cache: an append keeps older checkpoints restorable (the absent slots are filled by checkpoint_fields.fill_missing_fields);
+    # an insert is refused by the checkpoint schema check, since a slotted dataclass unpickles positionally.
     contract_holder_id: Optional[int] = None  # entity holding `contract_id`; set once at formation, bound groups only
     dissolution_reason: Optional[GroupDissolutionReason] = None  # typed end reason; bound groups only, set with dissolution_tick
     dissolution_contract_status: Optional[ContractStatus] = None  # status the binding contract had when BINDING_CONTRACT_NOT_ACTIVE ended the group

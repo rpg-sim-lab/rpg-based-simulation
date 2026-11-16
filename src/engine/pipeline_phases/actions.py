@@ -10,7 +10,7 @@ from src.core.updates import (
     NavigationUpdate,
     RejectionEvent,
 )
-from src.core.state import _readonly_mapping
+from src.core.state import EntityState, _readonly_mapping
 from src.engine.domain_logic import SimulationDomainLogic
 from src.engine.legality import LegalityServiceV2
 from src.engine.apply import ApplyPath
@@ -78,6 +78,26 @@ def _hold_in_place(update: EntityUpdate) -> EntityUpdate:
     """``update`` with the entity's movement set to HOLD and its stored navigation target cleared: it stays where it is until its next decision."""
     hold = NavigationUpdate(target_clear=True, movement_mode_set=MovementMode.HOLD)
     return replace(update, navigation=update.navigation.merge(hold) if update.navigation else hold)
+
+
+def _hold_ends_with_task(update: EntityUpdate, entity: EntityState) -> EntityUpdate:
+    """``update`` with the movement mode reset to the navigation default (WANDER) when a HOLD is in force: a collapse's HOLD ends with its sleep, in the update
+    that ends the task. Neither the typed waits nor a kill reset here: a typed wait's task ends in the tick it runs and a killing blow ends its task in the
+    kill tick itself (``killing`` is part of the task-end condition below), so both HOLDs have no live task and end at the subject's next walk decision
+    (``hold_mode.hold_reset_kwargs``)."""
+    nav = update.navigation
+    mode = nav.movement_mode_set if nav is not None and nav.movement_mode_set is not None else entity.navigation.movement_mode
+    if mode != MovementMode.HOLD:
+        return update
+    reset = NavigationUpdate(movement_mode_set=MovementMode.WANDER)
+    return replace(update, navigation=nav.merge(reset) if nav else reset)
+
+
+def _collapse_hold_ends(update: EntityUpdate, entity: EntityState, action: str) -> EntityUpdate:
+    """``update`` through ``_hold_ends_with_task`` when it ends a SLEEP action's task (the ending branch writes an emptied payload); any other update is returned unchanged."""
+    if action in SLEEP_ACTIONS and update.task is not None and update.task.payload_set == {}:
+        return _hold_ends_with_task(update, entity)
+    return update
 
 
 def _killing_blow(action: str, outcome: str, actor_id: int, action_updates: dict) -> bool:
@@ -335,7 +355,7 @@ class ActionRoutingPhase:
                 merged = existing_upd.merge(action_upd)
                 if action_eid == eid:
                     merged = replace(merged, task=annotated_task)
-                    merged = _hold_in_place(merged) if killing else merged
+                    merged = _collapse_hold_ends(_hold_in_place(merged) if killing else merged, working_entity, action)  # a collapse's HOLD ends with its sleep (a kill's task ends in the kill tick itself)
                 refined_entity_updates[action_eid] = merged
                 # Update sliding entities for later actors
                 if action_eid in working_entities:

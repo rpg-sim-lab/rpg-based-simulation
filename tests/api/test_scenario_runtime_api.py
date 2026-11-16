@@ -7,6 +7,7 @@ import pytest
 from unittest.mock import MagicMock
 from fastapi.testclient import TestClient
 
+from src.engine.checkpoint_schema import CheckpointHeaderError, CheckpointSchemaMismatchError, CheckpointSchemaMissingError
 from src.engine.scenario_runtime import ScenarioObjectiveState
 import src.engine.scenario_registry as registry
 
@@ -166,6 +167,24 @@ def test_restore_endpoint_400_on_spec_id_mismatch(client, mock_scenario_svc, mon
     monkeypatch.setattr("src.api.routes.scenarios.ScenarioCheckpointer.restore", _raise)
     response = client.post("/api/v1/scenarios/test-scenario/restore/wrong-save")
     assert response.status_code == 400
+
+
+# TCK-20261101-A-CHECKPOINT-HAS-NO-FORMAT-VERSION: a refused checkpoint schema is a client error with a shaped detail; any other ValueError keeps its string.
+@pytest.mark.parametrize("error, reason", [
+    (CheckpointSchemaMissingError("no fingerprint"), "missing"),
+    (CheckpointSchemaMismatchError("changed", [{"class": "a.B", "change": "fields reordered"}]), "mismatch"),
+    (CheckpointHeaderError("unreadable"), "header"),
+], ids=["missing", "mismatch", "header"])
+def test_restore_endpoint_400_with_a_shaped_detail_on_a_schema_refusal(client, mock_scenario_svc, monkeypatch, error, reason):
+    def _raise(path, spec):
+        raise error
+
+    monkeypatch.setattr("src.api.routes.scenarios.ScenarioCheckpointer.restore", _raise)
+    response = client.post("/api/v1/scenarios/test-scenario/restore/old-save")
+    assert response.status_code == 400
+    detail = response.json()["detail"]
+    assert detail["error"] == "checkpoint_schema" and detail["reason"] == reason and detail["message"] == str(error)
+    assert detail["classes"] == error.classes
 
 
 # ---------------------------------------------------------------------------
