@@ -39,7 +39,11 @@ P3 options and decisions: main-checkout `.claude/handover/drafts/project-sync-p3
 
 ## Not cut yet
 
-- **P4:** the claim-rule change. Needs the owner's decision after P3.
+- **P4:** the claim-rule change was moved out of this epic and not dropped (owner #715 6892295458). It stays the owner's decision, and is filed as a standalone ticket if taken up.
+
+## Closed
+
+The epic closed 2026-11-15: P3 runs on both hosts (u24 and ubuntu timers, first runs rc 0), and the cross-host check is clean both ways. The owner decided the close: #715 6892295458.
 
 ## Rules
 
