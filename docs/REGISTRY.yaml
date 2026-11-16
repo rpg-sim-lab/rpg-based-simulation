@@ -10349,6 +10349,24 @@
   artifact_files: []
   tags: []
 - type: ticket
+  path: agent-working/tickets/done/TCK-20261103-A-GROUP-HIT-RECORDS-ONLY-ITS-FIRST-ATTACKER.md
+  ticket_id: TCK-20261103-A-GROUP-HIT-RECORDS-ONLY-ITS-FIRST-ATTACKER
+  title: A simultaneous group hit records only its first attacker, so row 88's act
+    test reads the others as not acting
+  tier: standard
+  ticket_type: bug
+  date: '2026-11-03'
+  related_code_areas:
+  - src/engine/combat.py:315-410, src/engine/patches.py:330-337, src/engine/tactical_threat.py:141-143
+  artifact_files:
+  - agent-working/stored_artifacts/TCK-20261103-A-GROUP-HIT-RECORDS-ONLY-ITS-FIRST-ATTACKER/investigation.md
+  - agent-working/stored_artifacts/TCK-20261103-A-GROUP-HIT-RECORDS-ONLY-ITS-FIRST-ATTACKER/measurement_cell_crowded_s42.md
+  - agent-working/stored_artifacts/TCK-20261103-A-GROUP-HIT-RECORDS-ONLY-ITS-FIRST-ATTACKER/plan.md
+  - agent-working/stored_artifacts/TCK-20261103-A-GROUP-HIT-RECORDS-ONLY-ITS-FIRST-ATTACKER/rpg_designer_ruling_2026-11-14.md
+  - agent-working/stored_artifacts/TCK-20261103-A-GROUP-HIT-RECORDS-ONLY-ITS-FIRST-ATTACKER/rpg_designer_ruling_2026-11-15.md
+  - agent-working/stored_artifacts/TCK-20261103-A-GROUP-HIT-RECORDS-ONLY-ITS-FIRST-ATTACKER/test_plan.md
+  tags: []
+- type: ticket
   path: agent-working/tickets/done/TCK-20261103-A-MEASUREMENT-NOT-ON-THE-PINNED-RUNNER-CALLS-ITSELF-EVIDENCE.md
   ticket_id: TCK-20261103-A-MEASUREMENT-NOT-ON-THE-PINNED-RUNNER-CALLS-ITSELF-EVIDENCE
   title: 'A behaviour measurement run on the unpinned `_run_engine` can be presented
@@ -10429,18 +10447,6 @@
   - agent-working/stored_artifacts/TCK-20261103-THE-STARVATION-RECORD-MISSES-MEALS-WITHOUT-AN-INTENT-RESULT/investigation.md
   - agent-working/stored_artifacts/TCK-20261103-THE-STARVATION-RECORD-MISSES-MEALS-WITHOUT-AN-INTENT-RESULT/plan.md
   - agent-working/stored_artifacts/TCK-20261103-THE-STARVATION-RECORD-MISSES-MEALS-WITHOUT-AN-INTENT-RESULT/test_plan.md
-  tags: []
-- type: ticket
-  path: agent-working/tickets/inprogress/TCK-20261103-A-GROUP-HIT-RECORDS-ONLY-ITS-FIRST-ATTACKER.md
-  ticket_id: TCK-20261103-A-GROUP-HIT-RECORDS-ONLY-ITS-FIRST-ATTACKER
-  title: A simultaneous group hit records only its first attacker, so row 88's act
-    test reads the others as not acting
-  tier: standard
-  ticket_type: bug
-  date: '2026-11-03'
-  related_code_areas:
-  - src/engine/combat.py:315-410, src/engine/patches.py:330-337, src/engine/tactical_threat.py:141-143
-  artifact_files: []
   tags: []
 - type: ticket
   path: agent-working/tickets/todos/TCK-20261103-A-CREATURE-WITH-BOTH-NEEDS-PRESSING-NEITHER-SLEEPS-NOR-FEEDS-ENOUGH.md
@@ -10539,6 +10545,23 @@
   tags:
   - delivery
 - type: ticket
+  path: agent-working/tickets/done/TCK-20261101-A-HOSTILE-ATTACKING-YOU-OUTRANKS-THE-GROUP-SHARED-TARGET.md
+  ticket_id: TCK-20261101-A-HOSTILE-ATTACKING-YOU-OUTRANKS-THE-GROUP-SHARED-TARGET
+  title: 'A group member keeps attacking the group''s shared target while an adjacent
+    hostile kills it: self-defence must outrank group_bias in target_score'
+  tier: standard
+  ticket_type: bug
+  date: '2026-11-01'
+  related_code_areas:
+  - src/engine/tactical.py:390-428 (target_score), :542/:552 (VANGUARD BRACKETING)
+  - src/core/death_cause.py, CombatComponent.last_attacker_id
+  artifact_files:
+  - agent-working/stored_artifacts/TCK-20261101-A-HOSTILE-ATTACKING-YOU-OUTRANKS-THE-GROUP-SHARED-TARGET/investigation.md
+  - agent-working/stored_artifacts/TCK-20261101-A-HOSTILE-ATTACKING-YOU-OUTRANKS-THE-GROUP-SHARED-TARGET/plan.md
+  - agent-working/stored_artifacts/TCK-20261101-A-HOSTILE-ATTACKING-YOU-OUTRANKS-THE-GROUP-SHARED-TARGET/rpg_designer_ruling_2026-11-15_n_window.md
+  - agent-working/stored_artifacts/TCK-20261101-A-HOSTILE-ATTACKING-YOU-OUTRANKS-THE-GROUP-SHARED-TARGET/test_plan.md
+  tags: []
+- type: ticket
   path: agent-working/tickets/done/TCK-20261101-PHASE19-CONTRACT-NAMES-ITS-RUNTIME-TEST.md
   ticket_id: TCK-20261101-PHASE19-CONTRACT-NAMES-ITS-RUNTIME-TEST
   title: The phase19 import contract names its runtime test, drops drifting kernel
@@ -10610,19 +10633,6 @@
   artifact_files: []
   tags:
   - testing
-- type: ticket
-  path: agent-working/tickets/inprogress/TCK-20261101-A-HOSTILE-ATTACKING-YOU-OUTRANKS-THE-GROUP-SHARED-TARGET.md
-  ticket_id: TCK-20261101-A-HOSTILE-ATTACKING-YOU-OUTRANKS-THE-GROUP-SHARED-TARGET
-  title: 'A group member keeps attacking the group''s shared target while an adjacent
-    hostile kills it: self-defence must outrank group_bias in target_score'
-  tier: standard
-  ticket_type: bug
-  date: '2026-11-01'
-  related_code_areas:
-  - src/engine/tactical.py:390-428 (target_score), :542/:552 (VANGUARD BRACKETING)
-  - src/core/death_cause.py, CombatComponent.last_attacker_id
-  artifact_files: []
-  tags: []
 - type: ticket
   path: agent-working/tickets/todos/TCK-20261101-A-CHECKPOINT-HAS-NO-FORMAT-VERSION.md
   ticket_id: TCK-20261101-A-CHECKPOINT-HAS-NO-FORMAT-VERSION

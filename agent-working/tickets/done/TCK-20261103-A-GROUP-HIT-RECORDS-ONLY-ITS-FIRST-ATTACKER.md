@@ -1,10 +1,10 @@
 ---
-status: active
+status: historical
 layer: combat
 authority: P1
 audience: agent
 ticket_id: TCK-20261103-A-GROUP-HIT-RECORDS-ONLY-ITS-FIRST-ATTACKER
-phase: implement
+phase: done
 date: 2026-11-03
 tags: []
 ---
@@ -15,7 +15,7 @@ tags: []
 A simultaneous group hit records only its first attacker, so row 88's act test reads the others as not acting
 
 ## Status
-INPROGRESS
+DONE
 
 ## Tier
 standard
