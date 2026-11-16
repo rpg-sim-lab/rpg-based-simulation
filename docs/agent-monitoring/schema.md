@@ -116,6 +116,7 @@ One record per workflow invocation.
 | `BLOCKED` | Architecture review found fundamental conflict. |
 | `DOC_STALENESS_BLOCKED` | A behavior-changing `src/` or `.claude/workflows/*.js` diff has no `docs/` path in `files_changed` — caught right after Implement, before Architecture-Verify/Test/Parity/Verify (`TCK-20260720-GATE-CHECK-WIRING-DECISIONS`, wiring `tools/gate_checks/doc_staleness_check.py`). |
 | `TESTS_FAILED` | Tests failed after implementation. |
+| `TESTS_ENVIRONMENT_FAILED` | The Test run died of the environment (`Cannot allocate memory`, `MemoryError`, ENOMEM, a killed process, or a floor-miss reported by `tools/delivery/capped_pytest.py`), not because a test failed. Recorded instead of `TESTS_FAILED`, with only a `Test:environment` gate row (`TCK-20261115-TEST-PHASE-RUNS-TESTS-TOOLS-UNCAPPED-IN-ONE-PROCESS`). |
 | `DATA_RUNS_CLEAN_FAILED` | Post-Test auto-clean of `data/runs/*`/`reports/release_proof/*` failed (permissions/lock issue) — resolved manually, then re-run. |
 | `PARITY_INCOMPLETE` | A committed `src/` path mapped to a parity-ledger subsystem was not cross-referenced in the Parity phase's ledger update. |
 | `SECURITY_BLOCKED` | Security review rejected the change (fires only for tickets whose tags include `security`, or whose derived `suggested_skills` includes `/security-review`). |

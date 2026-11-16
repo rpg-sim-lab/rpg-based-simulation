@@ -72,6 +72,11 @@ gates:
     pass_value: true
     on_fail_status: [TESTS_FAILED]    # implement-ticket.js:1119-1122
   - phase: Test
+    gate_type: agent_result_field
+    result_field: environment_failure   # optional in TEST_SCHEMA; absent counts as false; checked before `passed` and wins over it
+    pass_value: false
+    on_fail_status: [TESTS_ENVIRONMENT_FAILED]
+  - phase: Test
     gate_type: static_check
     invocation: import
     check_module: gate_checks.done_checker_static

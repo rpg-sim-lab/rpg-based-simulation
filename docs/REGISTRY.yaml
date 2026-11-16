@@ -8335,6 +8335,25 @@
   tags:
   - ai
 - type: ticket
+  path: agent-working/tickets/done/TCK-20261115-TEST-PHASE-RUNS-TESTS-TOOLS-UNCAPPED-IN-ONE-PROCESS.md
+  ticket_id: TCK-20261115-TEST-PHASE-RUNS-TESTS-TOOLS-UNCAPPED-IN-ONE-PROCESS
+  title: implement-ticket's Test phase runs the whole of tests/tools in one uncapped
+    process, so on a loaded host the pipeline reports memory failures as test failures.
+  tier: standard
+  ticket_type: bug
+  date: '2026-11-15'
+  related_code_areas:
+  - .claude/workflows/implement-ticket.js (Test phase, test-scope gate)
+  - .claude/agents/test-scoper.md
+  - tools/gate_checks/test_scope_coverage_static.py
+  artifact_files:
+  - agent-working/stored_artifacts/TCK-20261115-TEST-PHASE-RUNS-TESTS-TOOLS-UNCAPPED-IN-ONE-PROCESS/investigation.md
+  - agent-working/stored_artifacts/TCK-20261115-TEST-PHASE-RUNS-TESTS-TOOLS-UNCAPPED-IN-ONE-PROCESS/plan.md
+  - agent-working/stored_artifacts/TCK-20261115-TEST-PHASE-RUNS-TESTS-TOOLS-UNCAPPED-IN-ONE-PROCESS/test_plan.md
+  tags:
+  - ai
+  - testing
+- type: ticket
   path: agent-working/tickets/done/TCK-20261115-THE-SLOW-LANE-LOG-SHOWS-EACH-TESTS-WALL-TIME.md
   ticket_id: TCK-20261115-THE-SLOW-LANE-LOG-SHOWS-EACH-TESTS-WALL-TIME
   title: The slow-regression log shows each slow test's wall time, so a "under 540
@@ -8387,22 +8406,6 @@
   - tests/integration/, test content (read-only for src/)
   artifact_files: []
   tags:
-  - testing
-- type: ticket
-  path: agent-working/tickets/todos/TCK-20261115-TEST-PHASE-RUNS-TESTS-TOOLS-UNCAPPED-IN-ONE-PROCESS.md
-  ticket_id: TCK-20261115-TEST-PHASE-RUNS-TESTS-TOOLS-UNCAPPED-IN-ONE-PROCESS
-  title: implement-ticket's Test phase runs the whole of tests/tools in one uncapped
-    process, so on a loaded host the pipeline reports memory failures as test failures.
-  tier: standard
-  ticket_type: bug
-  date: '2026-11-15'
-  related_code_areas:
-  - .claude/workflows/implement-ticket.js (Test phase, test-scope gate)
-  - .claude/agents/test-scoper.md
-  - tools/gate_checks/test_scope_coverage_static.py
-  artifact_files: []
-  tags:
-  - ai
   - testing
 - type: ticket
   path: agent-working/tickets/todos/TCK-20261115-THE-GATE-REPORTS-WHETHER-EACH-WORLDS-OUTCOMES-STAY-IN-THEIR-BANDS.md

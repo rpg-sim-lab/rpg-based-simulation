@@ -1550,6 +1550,8 @@ const TEST_SCHEMA = {
     failed_tests: { type: 'array', items: { type: 'string' } },
     coverage_gaps: { type: 'array', items: { type: 'string' } },
     summary: { type: 'string', description: 'One sentence: pass/fail result (≤200 chars)' },
+    environment_failure: { type: 'boolean', description: 'true when the run died of the environment (Cannot allocate memory, MemoryError, ENOMEM, a killed process, or capped_pytest says so), not because a test failed; omit or false otherwise' },
+    environment_note: { type: 'string', description: 'When environment_failure is true: which chunk or step died and the exact text seen' },
     ts: { type: 'string', description: 'ISO timestamp from `date -u +%Y-%m-%dT%H:%M:%SZ` at start of this phase' },
   },
 }
@@ -1610,9 +1612,9 @@ Step 2 — ${tier !== 'hotfix' ? `Check agent-working/staging_artifacts/${tid}/t
 
 Step 3 — Build the scoped pytest command as bare directory paths, including every directory from the computed floor above (never individual files from within one). Never use bare "pytest tests/".
 
-Step 4 — Run the command via Bash. Capture stdout/stderr.
+Step 4 — Run the command via Bash. Capture stdout/stderr. First run `python3 -m tools.delivery.host_test_caps`: on a host that prints a cap (not `cap=none`), run the command as `python3 -m tools.delivery.capped_pytest <the same bare directories and flags>` (see .claude/agents/test-scoper.md, "Hosts that set a Test-phase cap"); the test-scope gate rejects a command that skips it there. Never retry a chunk that died of the environment.
 
-Step 5 — Report: pytest_command used, pass_count, fail_count, failed_tests (empty if all pass), coverage_gaps (changed files with no test coverage), summary (one sentence: pass/fail result, ≤200 chars).`,
+Step 5 — Report: pytest_command used, pass_count, fail_count, failed_tests (empty if all pass), coverage_gaps (changed files with no test coverage), summary (one sentence: pass/fail result, ≤200 chars). Set environment_failure=true (with environment_note) when capped_pytest reports it, or when the output shows Cannot allocate memory, MemoryError, ENOMEM or a killed process: that is an environment failure, never a test failure.`,
   { label: 'test-scope-and-run', schema: TEST_SCHEMA, agentType: 'test-scoper' }
 )
 
@@ -1666,6 +1668,24 @@ if (testScopeGaps.length > 0) {
   }
 }
 
+// A run that died of the environment (memory, a killed chunk) is not a test result (TCK-20261115-TEST-PHASE-RUNS-TESTS-TOOLS-
+// UNCAPPED-IN-ONE-PROCESS). environment_failure takes precedence over `passed`, even when `passed` is true because the other
+// chunks passed: a chunk that died never counts as a pass. Only Test:environment is recorded for it, never a Test:passed row,
+// so the gate ledger shows an environment death and not a test-failure verdict.
+if (testResult.environment_failure) {
+  pushGate('Test:environment', 'agent_result_field', 'Test', 'FAIL', true, `environment_failure: ${testResult.environment_note || 'no note'}`)
+  pushEvent('Test', 'test-scoper', 'failed', 'Environment failure, not a test failure: ' + (testResult.environment_note || testResult.summary || ''), testTs)
+  log(`Test run died of the environment: ${testResult.environment_note || 'no note'}`)
+  await writeMonitoring('TESTS_ENVIRONMENT_FAILED')
+  return {
+    status: 'TESTS_ENVIRONMENT_FAILED',
+    ticket_id: tid,
+    pytest_command: testResult.pytest_command,
+    environment_note: testResult.environment_note,
+    failed_tests: testResult.failed_tests,
+    message: 'The Test run died of the environment (memory or a killed process), not because a test failed. Free the host or wait for its slot, then re-run with ticket_id="' + tid + '".',
+  }
+}
 pushGate('Test:passed', 'agent_result_field', 'Test', testResult.passed ? 'PASS' : 'FAIL', !testResult.passed, `fail_count=${testResult.fail_count}`)
 if (!testResult.passed) {
   pushEvent('Test', 'test-scoper', 'failed', testResult.summary || testResult.fail_count + ' tests failing: ' + testResult.failed_tests.slice(0, 3).join(', '), testTs)

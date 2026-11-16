@@ -127,7 +127,7 @@ optional `tier_override`. Its return values include `EPIC_CREATED`, `NOTHING_TO_
 child ticket's gate status.
 
 Across these workflows, the literal gate/return-status vocabulary is: `CONFLICTS_DETECTED`,
-`TAGS_NOT_REGISTERED`, `NEEDS_HUMAN_INPUT`, `NEEDS_CHANGES`, `BLOCKED`, `TESTS_FAILED`,
+`TAGS_NOT_REGISTERED`, `NEEDS_HUMAN_INPUT`, `NEEDS_CHANGES`, `BLOCKED`, `TESTS_FAILED`, `TESTS_ENVIRONMENT_FAILED`,
 `SECURITY_BLOCKED`, `DOD_BLOCKED`, `DONE`. `agent-working/agent-monitoring/events.jsonl` additionally carries an
 optional `reason_code` on some `Scope`/`Structure`/`Verify` events, disambiguating a status that
 collapses more than one cause into one value (e.g. `DOD_BLOCKED` alone doesn't say whether the
