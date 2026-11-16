@@ -94,6 +94,7 @@ Recommendation: (a), because no checkpoint exists to keep and (b)'s check is wea
 Out of scope still: non-slotted dataclasses unpickle by name, so they cannot shift. The fingerprint may still list them for renames and removals; the implementer says which.
 
 Before dispatch: ask u24 (lead to lead) whether its F3-checkpoint restore-randoms branch touches `scenario_checkpoint.py` (it is not on origin here), and claim the files on #634. Dispatch is standard tier, owner go needed.
+- 2026-11-16, lead-planner: lead-planner-u24 says u24's F3-checkpoint fix (rpg-checkpoint-restore-randoms d690c808a, unpushed) does edit `src/engine/scenario_checkpoint.py`. lead-planner proposed that F3-checkpoint lands first (a HARD repair before the M1-base record) and this ticket rebases after it. Hold the #634 claim and the dispatch ask until u24 answers.
 
 ## Implementation Notes
 ## Test Summary
