@@ -37,6 +37,21 @@ Decided, but not an OD:
 
 **No credential or ruleset change on this repository is authorised** by A or B. Execution comes later by ticket, each with its own ask.
 
+## 2026-11-15: epic rescoped
+
+Sources: **C** = #715 6889309909 (owner's exact words) and **D** = #715 6889318166 (owner's AskUserQuestion answers). Both were recorded by lead-planner on 2026-11-15.
+
+| Item | Decision | Source | Exact scope |
+|---|---|---|---|
+| Machine account and credential removal (OD-2, OD-10 execution) | Deferred ("for now", so not dropped) | C, D | "I think we can ignore this for now, complete the epic without 'Agents get their own non-admin machine account, and your credentials leave both hosts.'" OD-2 and OD-10 stay decided; nothing executes them. |
+| E6b and the M1 merge rule (OD-3 execution) | Deferred | D | "Drop E6b, keep tag ruleset": E6b and M1 are deferred with the machine account. OD-3 stays M1 on paper. |
+| Tag ruleset for the baseline tags | Kept; the owner applies it | D | Only the tag ruleset protecting the 4 baseline tags stays. |
+| Order | Phase 5, then Phases 2-4 | D | Phase 5 is dispatched. agent-working-designer brings OD-4/5/6/11/12/13 with options and a recommendation; Phases 2-4 are filed after the owner decides. R1-R5 stay deferred. |
+| Timing | After the ticket view epic | D | "After the ticket view epic": once P3c and the backlog view land. |
+| Stale input (a fact, not a decision) | Redo, don't reuse | repo settings | The repository has been owned by the rpg-sim-lab organization since 2026-11-12 (#715 6818960465). The plan's GitHub analysis assumes a personal repo, so it is redone for OD-13 and for any deferred item that reopens. |
+
+This changes no row under Undecided below. In particular, OD-4, OD-5, OD-6, OD-11, OD-12 and OD-13 stay undecided, and go to the owner in agent-working-designer's option pack.
+
 ## Undecided
 
 All of these read undecided as of 2026-10-31 (A and B both say so). Nothing below is decided by being listed in the plan, the summary or a ticket.

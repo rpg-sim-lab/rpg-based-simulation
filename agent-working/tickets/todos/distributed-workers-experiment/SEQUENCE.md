@@ -16,6 +16,9 @@ Epic `TCK-20261109-EPIC-DISTRIBUTED-WORKERS-EXPERIMENT`, filed by architecture-p
 Children 2-6 (packet-cost measurement, remote executor, worker entry point and compose profile, contract docs, evidence guard) are cut by their
 owning planners after 1 lands; the epic's table gives each one's owner, cost, what it leaves out and its gate.
 
+- **Child 4, filed 2026-11-15 as a ticket only:** `TCK-20261115-DISTRIBUTED-ENGINE-WORKER-ENTRY-POINT-AND-COMPOSE-PROFILE`
+  (platform-planner; owner #715 6889952914, item D). Nothing is built. It is BLOCKED on child 3 and on the owner review gate below.
+
 ## Rules
 
 - **Owner review gate (#715 6731938042):** the plan is complete when 1 and 2 are written and children 2-5 are cut; then STOP.

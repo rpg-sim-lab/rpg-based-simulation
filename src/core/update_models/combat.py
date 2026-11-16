@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field, replace
-from typing import TYPE_CHECKING, Any, Dict, List, Optional
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple
 
 from src.core.update_models.resources import ResourceTransferIntent
 from src.core.update_models.social import SocialUpdate
@@ -60,6 +60,8 @@ class CombatUpdate:
     attacker_id: Optional[int] = None
     hit_tick_set: Optional[int] = None  # the tick a damaging hit took hp; CombatPatch writes it to CombatComponent.last_hit_tick with attacker_id
     hit_damage_set: Optional[int] = None  # the damage of that same hit; CombatPatch writes it to CombatComponent.last_hit_damage with attacker_id
+    hit_attackers_set: Optional[Tuple[int, ...]] = None  # every attacker of that same hit, in attacker-list order; CombatPatch writes it to CombatComponent.last_hit_attackers with attacker_id
+    hit_damages_set: Optional[Tuple[int, ...]] = None  # the share each of those attackers took, parallel to hit_attackers_set; CombatPatch writes it to CombatComponent.last_hit_damages
     is_opportunity_attack: bool = False
     alive_set: Optional[bool] = None
     # Regional hazard drain applied this tick, carried independently of `outcome_kind` so a hazard that lands on an entity combat already resolved stays
@@ -96,7 +98,7 @@ class CombatUpdate:
         changes: Dict[str, Any] = {}
         if other.damage_taken != 0: changes["damage_taken"] = self.damage_taken + other.damage_taken
         if other.hp_delta != 0: changes["hp_delta"] = self.hp_delta + other.hp_delta
-        if other.attacker_id is not None: changes.update(attacker_id=other.attacker_id, hit_tick_set=self.hit_tick_set if other.hit_tick_set is None else other.hit_tick_set, hit_damage_set=self.hit_damage_set if other.hit_damage_set is None else other.hit_damage_set)
+        if other.attacker_id is not None: changes.update(attacker_id=other.attacker_id, hit_tick_set=self.hit_tick_set if other.hit_tick_set is None else other.hit_tick_set, hit_damage_set=self.hit_damage_set if other.hit_damage_set is None else other.hit_damage_set, hit_attackers_set=other.hit_attackers_set, hit_damages_set=other.hit_damages_set)  # the later hit replaces the whole set: its attackers and shares go together, never mixed with an earlier hit's
         if other.is_opportunity_attack: changes["is_opportunity_attack"] = True
         if other.alive_set is not None: changes["alive_set"] = other.alive_set
         if other.hazard_damage != 0: changes["hazard_damage"] = self.hazard_damage + other.hazard_damage

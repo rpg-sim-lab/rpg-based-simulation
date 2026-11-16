@@ -16,6 +16,13 @@ from src.lab.repository import (
     MutationRepository
 )
 from src.lab.mutation_orchestrator import MutationLabOrchestrator
+from tests.named_run_dirs import remove_named_run_dirs  # noqa: F401
+
+# Run ids this module's tests name, removed by name after each test (see tests/named_run_dirs.py).
+RUN_ID_PREFIXES = {
+    "test_mutation_lab_orchestrator_end_to_end": ('test_mutlab_run_base', 'test_mutlab_run_var_one_wood_low'),
+}
+pytestmark = pytest.mark.usefixtures("remove_named_run_dirs")
 
 
 @pytest.fixture

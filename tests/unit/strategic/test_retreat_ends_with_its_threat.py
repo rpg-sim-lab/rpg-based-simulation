@@ -82,7 +82,7 @@ def test_it_holds_while_a_hostile_is_adjacent():
 
 def test_it_holds_while_a_hostile_acts_on_the_subject_from_a_distance():
     hero, foe, project = _hero()
-    hero = replace(hero, combat=replace(hero.combat, last_hit_tick=TICK - 1, last_attacker_id=2))
+    hero = replace(hero, combat=replace(hero.combat, last_hit_tick=TICK - 1, last_attacker_id=2, last_hit_attackers=(2,)))
     far_foe = replace(foe, navigation=replace(foe.navigation, position=(10.0, 14.0)))
     assert objective_outcome(hero, _state(hero, far_foe), project, _objective(project)) is None
 

@@ -15,7 +15,7 @@ tags: [ai, governance, delivery]
 The GitHub behaviours the merge and credential design depends on are tested on a throwaway public repo.
 
 ## Status
-OPEN
+BLOCKED
 
 ## Tier
 standard
@@ -27,6 +27,8 @@ feature
 P1
 
 ## Request Summary
+**Deferred.** Owner decision 2026-11-15 (#715 6889309909, 6889318166): "Drop E6b, keep tag ruleset". E6b is deferred with the machine account and the M1 merge rule, and stays BLOCKED until the owner reopens it. The owner never created the account or the throwaway repo, so nothing ran. If it reopens, the test list is rewritten for an organization repo (rpg-sim-lab since 2026-11-12).
+
 E6b (plan section 27a) is approved as a test by #715 6529263880. It comes first among the authority work because OD-3's M1 is subject to it. The owner creates the repo and the machine account; no agent does either. No production settings are touched.
 
 ## Scope

@@ -18,6 +18,9 @@ class RunConditions(BaseModel):
     max_tick_budget_ms: float
     audit_mode: bool
     no_frame_pacing: bool
+    # The class (``module.QualName``) of the worker manager behind a non-sequential executor; None when the executor is sequential. The executor class alone cannot tell
+    # a threads run from a remote one (TCK-20261115-A-NON-SEQUENTIAL-RUN-IS-REFUSED-BY-THE-GATE-CANDIDATE-PAIRED-ARMS-AND-RPG-MEASURE).
+    worker_manager: Optional[str] = None
 
 
 class RunManifest(BaseModel):

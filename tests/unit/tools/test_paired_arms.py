@@ -9,14 +9,17 @@ import pytest
 from tools.rpg_measure import paired
 from tools.test_architecture import paired_arms as pa
 
+ENV = {"runner": "ci:ubuntu24", "python": "3.13.1", "python_build": "3.13.1 (main, Jan 1 2026) [GCC 13.3.0]", "libc": "glibc-2.39", "os": "Linux 6.8.0", "uv_lock": "1" * 64, "uv_lock_source": "tool", "dists": "d" * 64}
 BASE, NEW = "a" * 40, "b" * 40
 W = "frontier_living_world"
-RUNNER = {"name": "GitHub Actions 7", "image": "ubuntu24-20260101.1.0", "cpu_model": "AMD EPYC 7763", "nproc": 4, "mem_total_mb": 16000, "python": "3.13.1", "os": "Ubuntu 24.04.1 LTS"}
+E8 = paired.env_key(ENV)
+RUNNER = {"name": "GitHub Actions 7", "image": "ubuntu24-20260101.1.0", "image_os": "ubuntu24", "image_version": "20260101.1.0", "python_build": "3.13.1 (main, Jan 1 2026) [GCC 13.3.0]", "libc": "glibc-2.39", "cpu_model": "AMD EPYC 7763", "nproc": 4, "mem_total_mb": 16000, "python": "3.13.1", "os": "Ubuntu 24.04.1 LTS", "uv_lock": "1" * 64}
 
 
-def _write(job: Path, sha: str, world: str, seed: int, *, repeat=False, runner=None, doc="{}", ticks=5000, child="c0ffee00"):
-    directory = job / "results" / f"{sha[:12]}-{child}-{ticks}{'-repeat' if repeat else ''}"
+def _write(job: Path, sha: str, world: str, seed: int, *, repeat=False, runner=None, doc='{"runner": "PINNED"}', ticks=5000, child="c0ffee00"):
+    directory = job / "results" / f"{sha[:12]}-{child}-{ticks}-{paired.env_key(ENV)}{'-repeat' if repeat else ''}"
     directory.mkdir(parents=True, exist_ok=True)
+    (directory / paired.ENV_FILE).write_text(json.dumps(ENV, sort_keys=True, indent=2) + "\n")
     (directory / f"{world}_{seed}.json").write_text(doc)
     (directory / f"{world}_{seed}.cost.json").write_text(json.dumps({"wall_seconds": 1.5, "peak_rss_mb": 200.0, "runner": runner or RUNNER}))
 
@@ -78,6 +81,23 @@ def test_the_plan_cli_prints_the_github_output_lines(capsys):
     assert pa.main(["plan", "--worlds", "x", "--seeds", "42"]) == 2
 
 
+def test_an_evidence_dispatch_refuses_self_check_off_and_keeps_the_repeat_jobs():
+    """AC6 (g): an evidence set must include its self-checks; off is refused, seed42 and full still plan the base-vs-base repeat jobs."""
+    with pytest.raises(pa.ArmsRefused, match="self_check off is refused for an evidence dispatch"):
+        pa.plan_matrix(",".join(paired.WORLDS), "42", "off", evidence=True)
+    for mode in ("seed42", "full"):
+        kinds = {e["kind"] for e in pa.plan_matrix(",".join(paired.WORLDS), "42", mode, evidence=True)["include"]}
+        assert kinds == {"pair", "self"}
+    assert pa.plan_matrix(",".join(paired.WORLDS), "42", "off")["include"]  # not an evidence dispatch: still allowed
+
+
+def test_the_plan_cli_refuses_off_with_evidence_and_exits_2(capsys):
+    args = ["plan", "--worlds", ",".join(paired.WORLDS), "--seeds", "42", "--self-check", "off"]
+    assert pa.main(args + ["--evidence"]) == 2
+    assert "evidence dispatch" in capsys.readouterr().err
+    assert pa.main(args) == 0
+
+
 # ---- run one arm (paired's own functions, faked)
 
 def test_run_arm_uses_paireds_cache_key_and_writes_the_cost_beside_the_result(tmp_path, monkeypatch):
@@ -102,6 +122,26 @@ def test_run_arm_uses_paireds_cache_key_and_writes_the_cost_beside_the_result(tm
         pa.run_arm(tmp_path, "main", "other", W, 42, 100, tmp_path / "cache")
 
 
+# ---- AC7 (h): the tool checkout's uv.lock sha256 is in the runner identity
+
+def test_the_runner_identity_carries_the_sha256_of_the_tool_checkouts_uv_lock(tmp_path):
+    import hashlib
+    (tmp_path / "uv.lock").write_bytes(b"version = 1\n")
+    assert pa.runner_identity({}, tool_root=tmp_path)["uv_lock"] == hashlib.sha256(b"version = 1\n").hexdigest()
+    (tmp_path / "uv.lock").write_bytes(b"version = 2\n")
+    assert pa.runner_identity({}, tool_root=tmp_path)["uv_lock"] != hashlib.sha256(b"version = 1\n").hexdigest()
+    assert pa.runner_identity({}, tool_root=tmp_path / "none")["uv_lock"] == "missing"
+    assert pa.runner_identity({})["uv_lock"] == hashlib.sha256((Path(pa.__file__).resolve().parents[2] / "uv.lock").read_bytes()).hexdigest()  # default: this tool checkout
+
+
+def test_assemble_refuses_a_result_whose_runner_record_has_no_uv_lock(tmp_path):
+    root = tmp_path / "arms"
+    old = {k: v for k, v in RUNNER.items() if k != "uv_lock"}
+    _pair_job(root, runner=old)
+    with pytest.raises(pa.ArmsRefused, match="uv_lock"):
+        _assemble(root)
+
+
 # ---- assemble
 
 def _assemble(root: Path, **kw):
@@ -113,17 +153,17 @@ def test_assemble_merges_the_jobs_into_one_paired_cache_root(tmp_path):
     _pair_job(root, seed=42)
     _pair_job(root, seed=43)
     self_job = root / f"paired-arms-s-{W}-s42-self"
-    _write(self_job, BASE, W, 42, doc="{}")  # the same bytes the pair job wrote
+    _write(self_job, BASE, W, 42, doc='{"runner": "PINNED"}')  # the same bytes the pair job wrote
     _write(self_job, BASE, W, 42, repeat=True)
     summary = _assemble(root)
     collected = tmp_path / "collected"
-    assert sorted(p.name for p in (collected / "results").iterdir()) == sorted([f"{BASE[:12]}-c0ffee00-5000", f"{NEW[:12]}-c0ffee00-5000", f"{BASE[:12]}-c0ffee00-5000-repeat"])
-    assert (collected / "results" / f"{BASE[:12]}-c0ffee00-5000" / f"{W}_43.json").is_file()
+    assert sorted(p.name for p in (collected / "results").iterdir()) == sorted([f"{BASE[:12]}-c0ffee00-5000-{E8}", f"{NEW[:12]}-c0ffee00-5000-{E8}", f"{BASE[:12]}-c0ffee00-5000-{E8}-repeat"])
+    assert (collected / "results" / f"{BASE[:12]}-c0ffee00-5000-{E8}" / f"{W}_43.json").is_file()
     assert len(summary["jobs"]) == 3 and len(summary["arms"]) == 6 and json.loads((collected / "identities.json").read_text()) == summary
 
 
-@pytest.mark.parametrize("field, other", [("python", "3.13.2"), ("os", "Ubuntu 22.04.5 LTS")])
-def test_assemble_refuses_jobs_that_differ_in_python_version_or_os(tmp_path, field, other):
+@pytest.mark.parametrize("field, other", [("python", "3.13.2"), ("os", "Ubuntu 22.04.5 LTS"), ("uv_lock", "2" * 64), ("libc", "glibc-2.40"), ("python_build", "3.13.1 (main, Feb 1 2026) [GCC 14.1.0]"), ("image_os", "ubuntu26")])
+def test_assemble_refuses_jobs_that_differ_in_an_env_key_field_of_their_cost_record(tmp_path, field, other):
     root = tmp_path / "arms"
     _pair_job(root, seed=42)
     _pair_job(root, seed=43, runner={**RUNNER, field: other})
@@ -139,11 +179,94 @@ def test_assemble_allows_a_different_cpu_model_runner_name_and_image_across_jobs
     assert len(_assemble(root)["jobs"]) == 2  # the CPU model varies between runners: it is a description, not a pin
 
 
-def test_assemble_refuses_the_arms_of_one_key_that_ran_on_different_images(tmp_path):
+def test_assemble_refuses_the_arms_of_one_key_that_ran_on_different_image_families(tmp_path):
     root = tmp_path / "arms"
     job = _pair_job(root, seed=42)
-    _write(job, NEW, W, 42, runner={**RUNNER, "image": "ubuntu24-20260201.1.0"})
-    with pytest.raises(pa.ArmsRefused, match=f"{W}_42: its arms ran on different image"):
+    _write(job, NEW, W, 42, runner={**RUNNER, "image": "ubuntu26-20260201.1.0", "image_os": "ubuntu26"})
+    with pytest.raises(pa.ArmsRefused, match=f"{W}_42: its arms ran on different image_os"):
+        _assemble(root)
+
+
+def test_assemble_allows_jobs_and_arms_that_differ_only_in_the_image_patch_version(tmp_path):
+    """The run 43805965260 shape: one job on another image patch. It is one environment (the env8 does not key ImageVersion) and it assembles; the versions are listed."""
+    root = tmp_path / "arms"
+    _pair_job(root, seed=42)
+    _pair_job(root, seed=43, runner={**RUNNER, "image": "ubuntu24-20260201.1.0", "image_version": "20260201.1.0"})
+    summary = _assemble(root)
+    assert len(summary["jobs"]) == 2 and summary["image_versions"] == ["20260101.1.0", "20260201.1.0"]
+    job = _pair_job(tmp_path / "arms2", seed=42)
+    _write(job, NEW, W, 42, runner={**RUNNER, "image": "ubuntu24-20260201.1.0", "image_version": "20260201.1.0"})  # the two arms of ONE key on two patch versions
+    assert _assemble(tmp_path / "arms2")["jobs"]
+
+
+def _self_job(root: Path, runner, seed=42) -> Path:
+    job = root / f"paired-arms-s-{W}-s{seed}-self"
+    _write(job, BASE, W, seed, runner=runner)
+    _write(job, BASE, W, seed, repeat=True, runner=runner)
+    return job
+
+
+OTHER_PATCH = {**RUNNER, "image": "ubuntu24-20260201.1.0", "image_version": "20260201.1.0"}
+
+
+def test_the_pair_and_self_seed_42_jobs_on_two_image_patches_show_cross_patch_identity(tmp_path, capsys):
+    """The pair job and the self job share the base arm's result document; on two image patches the same-bytes check is a cross-patch identity proof, and it is recorded."""
+    root = tmp_path / "arms"
+    _pair_job(root, seed=42)  # RUNNER: image 20260101.1.0
+    _self_job(root, OTHER_PATCH)  # the self job was served the other patch
+    summary = _assemble(root)
+    shared = f"{BASE[:12]}-c0ffee00-5000-{E8}"
+    assert summary["cross_patch_identity"] == [f"cross-patch identity shown: {shared} 20260101.1.0 = 20260201.1.0 (1 documents)"]
+    assert json.loads((tmp_path / "collected" / "identities.json").read_text())["cross_patch_identity"] == summary["cross_patch_identity"]
+    capsys.readouterr()
+    rc = pa.main(["assemble", "--in", str(root), "--out", str(tmp_path / "collected2"), "--base", BASE, "--new", NEW])
+    out = capsys.readouterr().out
+    assert rc == 0 and f"cross-patch identity shown: {shared} 20260101.1.0 = 20260201.1.0 (1 documents)" in out
+
+
+def test_run_43805965260s_shape_a_different_patch_on_a_non_shared_job_does_not_exercise_the_proof(tmp_path, capsys):
+    root = tmp_path / "arms"
+    _pair_job(root, seed=42)
+    _self_job(root, RUNNER)  # same patch as the pair job's: the shared document is written twice, on one version
+    _pair_job(root, seed=43, runner=OTHER_PATCH)  # the odd job is a pair job nobody shares a document with
+    summary = _assemble(root)
+    assert summary["image_versions"] == ["20260101.1.0", "20260201.1.0"] and summary["cross_patch_identity"] == ["cross-patch identity not exercised in this set"]
+    capsys.readouterr()
+    assert pa.main(["assemble", "--in", str(root), "--out", str(tmp_path / "collected2"), "--base", BASE, "--new", NEW]) == 0
+    assert "cross-patch identity not exercised in this set" in capsys.readouterr().out
+
+
+@pytest.mark.parametrize("missing", ["unknown", "", None])
+def test_a_shared_document_with_a_writer_that_has_no_image_version_is_not_a_shown_proof(tmp_path, missing):
+    """A false 'shown' would be cited as proof: a job with no ImageVersion and a job with a real one are not two patches."""
+    root = tmp_path / "arms"
+    _pair_job(root, seed=42)
+    runner = {**RUNNER, "image_version": missing}
+    if missing is None:
+        runner.pop("image_version")
+        runner["image_version"] = None  # str(None) -> "None" in the record
+    _self_job(root, runner)
+    assert _assemble(root)["cross_patch_identity"] == ["cross-patch identity not exercised in this set"]
+
+
+def test_a_shared_document_that_differs_across_two_patches_is_refused(tmp_path):
+    root = tmp_path / "arms"
+    _pair_job(root, seed=42)
+    job = _self_job(root, OTHER_PATCH)
+    shared = next(job.glob(f"results/{BASE[:12]}-*-{E8}/{W}_42.json"))
+    shared.write_text('{"runner": "PINNED", "final_hash": "different"}')
+    with pytest.raises(pa.ArmsRefused, match="two jobs wrote different bytes"):
+        _assemble(root)
+
+
+def test_assemble_refuses_jobs_whose_env_json_differs_in_a_field_the_cost_record_does_not_carry(tmp_path):
+    """AC3: the whole env.json is compared across jobs (dists, uv_lock_source, ...), not only the identity fields; the refusal names the field."""
+    root = tmp_path / "arms"
+    _pair_job(root, seed=42)
+    other = _pair_job(root, seed=43)
+    for env_file in other.glob(f"results/*/{paired.ENV_FILE}"):
+        env_file.write_text(json.dumps({**ENV, "dists": "e" * 64}, sort_keys=True, indent=2) + "\n")
+    with pytest.raises(pa.ArmsRefused, match="built under different environments: dists differs"):
         _assemble(root)
 
 
@@ -175,9 +298,9 @@ def test_assemble_refuses_a_result_without_a_runner_record(tmp_path):
 
 def test_assemble_refuses_two_jobs_writing_different_bytes_to_one_result(tmp_path):
     root = tmp_path / "arms"
-    _pair_job(root, seed=42, doc='{"a": 1}')
+    _pair_job(root, seed=42, doc='{"runner": "PINNED", "a": 1}')
     self_job = root / f"paired-arms-s-{W}-s42-self"
-    _write(self_job, BASE, W, 42, doc='{"a": 2}')
+    _write(self_job, BASE, W, 42, doc='{"runner": "PINNED", "a": 2}')
     with pytest.raises(pa.ArmsRefused, match="different bytes"):
         _assemble(root)
 
@@ -204,7 +327,7 @@ def test_the_assemble_cli_exits_2_with_the_refusal_and_0_on_a_good_set(tmp_path,
 def _doc(world: str, seed: int) -> dict:
     """A minimal result document in the shape paired.py reads (no simulation): two people alive, audit flags True."""
     return {"world": world, "seed": seed, "start": [[1, "merchant", 1, 1], [2, "guard", 1, 1]], "final": {"1": [1, None, "merchant"], "2": [1, None, "guard"]},
-            "counters": None, "perception_samples": 5, "final_hash": "h", "start_hash": "s", "audit_mode": True, "signals_zeroed": True, "adds": {}}
+            "counters": None, "perception_samples": 5, "final_hash": "h", "start_hash": "s", "audit_mode": True, "signals_zeroed": True, "adds": {}, "runner": "PINNED", "dists": paired.current_env()["dists"]}
 
 
 def test_jobs_run_by_run_arm_and_assembled_are_accepted_by_paireds_real_collected_compare(tmp_path, monkeypatch, capsys):
@@ -231,3 +354,19 @@ def test_jobs_run_by_run_arm_and_assembled_are_accepted_by_paireds_real_collecte
     out = capsys.readouterr().out
     assert "## Paired measurement" in out and "self-check (seed42, 3 runs): spread 0" in out
     assert [line for line in out.splitlines() if line.startswith("- runners")] == [f"- runners (collected off host): {RUNNER['name']}/{RUNNER['image']} python {RUNNER['python']} {RUNNER['os']} ({RUNNER['cpu_model']}, nproc {RUNNER['nproc']})"]
+
+
+# ---- the pinned runner (TCK-20261115-A-NON-SEQUENTIAL-RUN-IS-REFUSED-BY-THE-GATE-CANDIDATE-PAIRED-ARMS-AND-RPG-MEASURE)
+
+@pytest.mark.parametrize("doc, said", [('{"runner": "NOT_PINNED"}', "'NOT_PINNED'"), ("{}", "None"), ("[]", "None")])
+def test_assemble_refuses_an_arm_document_that_is_not_marked_pinned(tmp_path, doc, said):
+    _pair_job(tmp_path / "in", doc=doc)
+    with pytest.raises(pa.ArmsRefused, match=f"runner is {said}, not 'PINNED'"):
+        pa.assemble(tmp_path / "in", tmp_path / "out", base=BASE, new=NEW)
+
+
+def test_assemble_refuses_a_cost_file_with_no_arm_document_beside_it(tmp_path):
+    job = _pair_job(tmp_path / "in")
+    next(job.glob("results/*/*_42.json")).unlink()
+    with pytest.raises(pa.ArmsRefused, match="the arm document is missing or unreadable"):
+        pa.assemble(tmp_path / "in", tmp_path / "out", base=BASE, new=NEW)

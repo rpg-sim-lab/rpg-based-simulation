@@ -2847,7 +2847,7 @@
     \ / RunManifest.verification_level / run_report metadata.verification_level \u2014\
     \ see INFRA-363 (TCK-20260817-DETERMINISM-VERIFICATION-GAP-EPIC). The per-tick value
     \ is the payload key hash of a TICK_END TraceEvent (no warehouse field named tick_hash
-    \ exists). Naming and coverage caveats (proof digest flat-sha256-v4 since TCK-20261109-A-FLIGHT-WEIGHS-THE-FREE-SWING-IT-WOULD-TAKE, flat-sha256-v3 since TCK-20261024-PROOF-DIGEST-HASHES-THE-CARRIED-STATE-IT-OMITS, flat-sha256-v2 since TCK-20261004-WORK-DEBT-RETIRE-STEP2-CODE; the MD5 fingerprint
+    \ exists). Naming and coverage caveats (proof digest flat-sha256-v5 since TCK-20261103-A-GROUP-HIT-RECORDS-ONLY-ITS-FIRST-ATTACKER, flat-sha256-v4 since TCK-20261109-A-FLIGHT-WEIGHS-THE-FREE-SWING-IT-WOULD-TAKE, flat-sha256-v3 since TCK-20261024-PROOF-DIGEST-HASHES-THE-CARRIED-STATE-IT-OMITS, flat-sha256-v2 since TCK-20261004-WORK-DEBT-RETIRE-STEP2-CODE; the MD5 fingerprint
     \ is a stability check, not proof; pressure_signals is outside the proof digest)
     \ are in docs/engine/deterministic_execution.md (PERF-D5, TCK-20261003-PERF-M0-T09-P1-DOC-ALIGNMENT).\n"
   proof_type: null
@@ -12891,6 +12891,7 @@
     selects only CRITICAL entity work and its dropped count is a constant 0. The proof digest scheme is
     flat-sha256-v2: v1 minus the two removed state keys, with nothing else changed (the v1 form of the pinned
     fixture, rebuilt, reproduces the old v1 digest exactly). A v2 digest is never compared with a v1 digest. Superseded as the current scheme by
+    flat-sha256-v5 (TCK-20261103-A-GROUP-HIT-RECORDS-ONLY-ITS-FIRST-ATTACKER): v4 plus CombatComponent.last_hit_attackers and last_hit_damages, with nothing else changed (the v4 form of the pinned carried-state fixture reproduces the v4 digest exactly).
     flat-sha256-v4 (TCK-20261109-A-FLIGHT-WEIGHS-THE-FREE-SWING-IT-WOULD-TAKE): v3 plus CombatComponent.last_hit_damage, with nothing else changed.
     flat-sha256-v3 (TCK-20261024-PROOF-DIGEST-HASHES-THE-CARRIED-STATE-IT-OMITS): v2 plus item_instances, recent_world_events, quest_registry, factions, clans,
     information_providers and CombatComponent.last_hit_tick, with nothing else changed (the v2 form of the pinned carried-state fixture reproduces the v2 digest exactly).
@@ -13152,19 +13153,23 @@
 - id: INFRA-440
   text: 'TCK-20261103-A-MEASUREMENT-NOT-ON-THE-PINNED-RUNNER-CALLS-ITSELF-EVIDENCE:
     the run manifest carries a typed run_conditions record (RunConditions: governor
-    and executor class names, max_tick_budget_ms, audit_mode, no_frame_pacing), written
+    and executor class names, max_tick_budget_ms, audit_mode, no_frame_pacing, and worker_manager,
+    the class behind a non-sequential executor, None when sequential), written
     by one update_manifest call after the kernel has chosen its executor. It is run
     setup only: not hashed state, not in the event stream, Optional so older manifests
     load. A testing classifier (tools/test_architecture/pinned_runner.py, the one
     PINNED definition) derives PINNED or NOT_PINNED from the record alone; the evidence
     helper refuses NOT_PINNED and tools/rpg_measure/arm_child.py refuses a build whose
-    governor, executor or budget is not pinned.'
+    governor, executor or budget is not pinned. TCK-20261115-A-NON-SEQUENTIAL-RUN-IS-REFUSED-BY-THE-GATE-CANDIDATE-PAIRED-ARMS-AND-RPG-MEASURE:
+    the gate candidate, paired.py (local and --collected) and paired_arms.assemble also
+    refuse a document not marked runner PINNED.'
   status: verified
   priority: P1
   legacy_evidence: null
   v2_evidence: src/observability/reporting/artifact_repository.py (RunConditions,
     RunManifest.run_conditions); src/engine/kernel.py (Kernel.__init__, the update_manifest
-    call after executor selection); tools/test_architecture/pinned_runner.py; tools/rpg_measure/arm_child.py
+    call after executor selection); tools/test_architecture/pinned_runner.py; tools/rpg_measure/arm_child.py;
+    tools/rpg_measure/paired.py; tools/test_architecture/{rpg_gate_run,rpg_gate_candidate,paired_arms}.py
   proof_type: contract
   test_path: tests/unit/kernel/test_run_conditions_record.py
   divergence_note: null
