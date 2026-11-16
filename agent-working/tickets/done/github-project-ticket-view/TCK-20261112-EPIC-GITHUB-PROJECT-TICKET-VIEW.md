@@ -1,10 +1,10 @@
 ---
-status: active
+status: historical
 layer: ticket
 authority: P1
 audience: agent
 ticket_id: TCK-20261112-EPIC-GITHUB-PROJECT-TICKET-VIEW
-phase: open
+phase: done
 date: 2026-11-12
 tags: [planning, delivery]
 ---
@@ -15,7 +15,7 @@ tags: [planning, delivery]
 A GitHub Project as a generated, read-only view of ticket state across seats and hosts
 
 ## Status
-EPIC_SCOPED
+DONE
 
 ## Tier
 epic
@@ -100,3 +100,29 @@ Decisions agreed in the design:
 ## Files Changed
 
 ## Completion Summary
+Closed 2026-11-15 on the owner's decision (#715 6892295458, "Close now, P4 moved out (Recommended)"). All 3 acceptance criteria are met.
+1. **P0** TCK-20261112-PROJECT-SYNC-DRY-RUN merged in #889, with its plan reviewed against u24 state.
+2. **Children, each closed:**
+   - P1a TCK-20261112-PROJECT-SYNC-GUARD-SEAT-AND-STALE (#893);
+   - P1b TCK-20261114-PROJECT-SYNC-INIT-AND-APPLY (#909);
+   - P1c TCK-20261114-PROJECT-SYNC-LAYER-EPIC-PRIORITY-TAGS (#910);
+   - P2 TCK-20261114-PROJECT-SYNC-SECOND-HOST (#913);
+   - P3a TCK-20261114-PROJECT-CLIENT-WRITE-PACING (#916);
+   - P3b TCK-20261115-PROJECT-SYNC-ALL-LANES (#917, first load 1608 steps);
+   - follow-on TCK-20261115-PROJECT-SYNC-FILED-DATE-AND-BACKLOG-VIEW (#919, 634 steps);
+   - P3c TCK-20261115-PROJECT-SYNC-HOST-TIMER (#921).
+3. **P3 runs on both hosts** (2026-11-15). The owner installed the systemd user timers.
+   - ubuntu: the first run at 15:30 +07 had rc 0 and 230 steps.
+   - u24: the first run at 16:20 +07 had rc 0 and 139 steps. `last-run.json` shows rc 0, failed_streak 0 and the heartbeat written.
+   - Cross-host check, both ways. After ubuntu's run, a u24 dry run planned nothing for ubuntu's 7 AC3.5 items from #917 and flagged no stale host. After u24's run, ubuntu's dry run at 1dbf8b6a8 planned 3 creates, all of them ubuntu's own new filings, with 0 updates and 0 archives.
+   - No token leak was found.
+
+**P4, the claim-rule change (design §7), was moved out and not dropped.** It stays the owner's decision. If the owner takes it up, it is filed as a standalone ticket that cites this epic.
+
+**Left open, outside this epic:**
+- owner deletes: the field "Domain (old)" and remote branch agent-working-planner-u24-p2-ticket;
+- owner board steps: hide Host facts, turn off the default workflows, and save "All" grouped by Domain;
+- findings for the owning planners: 5 orphaned in-progress tickets and 31 Domain-unassigned tickets.
+
+Limits are recorded in `docs/guidelines/session_roles/project_sync_dry_run.md`. Close proposal: main-checkout
+`.claude/handover/drafts/epic-github-project-ticket-view-close-proposal-2026-11-15.md`.

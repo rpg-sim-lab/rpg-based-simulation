@@ -246,6 +246,35 @@ def test_prose_mentioning_gap_does_not_surface(tmp_path):
     body = _render_with_summary(tmp_path, completion_summary="No gaps remain, except as stated in the record, and a known gap: lowercase.")
     assert pr_render.KNOWN_GAPS_NONE_STATED in body
 
+# TCK-20261116-PR-RENDER-REVERT-EVIDENCE-READ-AS-KNOWN-GAP
+def _gap_lines(body):
+    return [ln for ln in body.splitlines() if ln.startswith("  - TCK-20260924-A:")]
+
+
+def test_a_revert_evidence_line_with_fail_is_not_a_gap(tmp_path):
+    summary = "- Revert evidence: with the fix reverted, 3 tests FAIL\n* Revert evidence: lone star item FAIL"
+    assert pr_render.extract_known_gaps({"test_summary": summary}) == []
+    body = _render_with_summary(tmp_path, test_summary=summary)
+    assert _gap_lines(body) == [] and "none stated" in body  # the Tests line quotes the summary; only the Known gaps lines count
+
+
+def test_a_real_fail_line_that_is_not_revert_evidence_still_lands_in_known_gaps(tmp_path):
+    body = _render_with_summary(tmp_path, test_summary="- Revert evidence: with the fix reverted, 3 tests FAIL\n2 FAIL (pre-existing)")
+    assert body.count("  - TCK-20260924-A: 2 FAIL (pre-existing)") == 1 and len(_gap_lines(body)) == 1
+    assert pr_render.extract_known_gaps({"test_summary": "- Revert evidence (lower: revert evidence FAIL)\nrevert evidence: 1 FAIL"}) == [
+        "revert evidence: 1 FAIL"]  # only the exact, case-sensitive prefix is skipped
+
+
+def test_a_known_gap_line_is_still_a_gap_next_to_revert_evidence(tmp_path):
+    body = _render_with_summary(tmp_path, completion_summary="- Known gap: x not proven.\n- Revert evidence: 2 tests FAIL")
+    assert body.count("  - TCK-20260924-A: Known gap: x not proven.") == 1 and len(_gap_lines(body)) == 1
+
+
+def test_a_ticket_whose_only_fail_line_is_revert_evidence_renders_known_gaps_none_stated(tmp_path):
+    body = _render_with_summary(tmp_path, test_summary="12 passed.\n- Revert evidence: with X reverted, 3 tests FAIL")
+    assert pr_render.KNOWN_GAPS_NONE_STATED in body
+
+
 
 def test_no_ticket_path_uses_the_same_empty_wording(tmp_path):
     tickets_root = tmp_path / TICKETS
