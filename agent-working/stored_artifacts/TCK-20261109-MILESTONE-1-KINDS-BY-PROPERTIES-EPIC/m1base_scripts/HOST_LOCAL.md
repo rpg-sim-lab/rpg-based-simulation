@@ -12,3 +12,6 @@ These are the exact scripts that record M1-base on u24 (owner #715 6912633288; m
 Two lessons are built in:
 - paired.py `run_arm(repeat=True)` unlinks and reruns repeat arms, so the assembler step uses `--collected`, which executes nothing;
 - `tools/rpg_measure/arm_child.py` deletes its run dir (:147), so the wrapper MOVES it to events/ for the offline SimQ read after D80C.
+
+## busy_gate v2 (2026-11-16, rpg-designer approved)
+`busy_gate_v2.sh`, sha256 f35f1f9178a961c3f274327021584d1ec5407b9bc74e6fc1a79eb7a74f3dc4a9: adds `keep_events_child` to RPG_HEAVY_WORDS, so a running M1-base cell is visible to other runners' gates. `fill_cache` is deliberately NOT listed (it calls the gate itself). The recorded M1-base used v1 (94fe052a); fill_cache.py pins v1, so a rerun bumps that pin under review.
