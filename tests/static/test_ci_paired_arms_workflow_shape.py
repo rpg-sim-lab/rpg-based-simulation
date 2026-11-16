@@ -194,3 +194,14 @@ def test_div_is_an_optional_label_input_defaulting_to_dash_and_reaches_the_compa
     assert aggregate["env"]["DIV"] == "${{ inputs.div }}"
     compare = next(s for s in aggregate["steps"] if s.get("name") == "Compare with paired.py --collected")["run"]
     assert '--div "${DIV}"' in compare and "${{" not in compare
+
+
+def test_the_table_and_verdict_are_printed_to_the_log_and_the_summary_lists_the_image_versions():
+    """The runner host here cannot download artifacts (403), so the AC1 byte comparison reads the CI table from the log. The step runs even when the compare failed."""
+    steps = _wf()["jobs"]["aggregate"]["steps"]
+    names = [s.get("name") for s in steps]
+    printing = steps[names.index("Print the table and the verdict to the log")]
+    assert names.index("Compare with paired.py --collected") < names.index("Print the table and the verdict to the log")
+    assert printing["if"] == "always()" and "cat \"$f\"" in printing["run"] and "table.md verdict.json" in printing["run"] and '[ -f "$f" ]' in printing["run"]
+    summary = steps[names.index("Step summary")]["run"]
+    assert "image_versions" in summary and "runner image versions in the set" in summary and "${{" not in summary

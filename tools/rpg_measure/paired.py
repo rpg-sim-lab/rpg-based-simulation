@@ -118,12 +118,15 @@ def uv_lock_digest(tool_root: Optional[Path] = None, arm_tree: Optional[Path] = 
 def run_env(environ: Optional[Dict[str, str]] = None, hostname: Optional[str] = None, tool_root: Optional[Path] = None, arm_tree: Optional[Path] = None, dists: Optional[str] = None) -> Dict[str, str]:
     """The environment a result was built under (rpg-planner's env8 ruling, 2026-11-15): ``runner`` is ``local:<host>`` or ``ci:<runner image>``, plus the Python
     micro version, the OS (system + release; ``platform.release()`` is the kernel: a kernel update moves every local env8 and drops the local cache, a full base re-run,
-    kept on purpose since a changed kernel is a changed environment), the ``uv.lock`` sha256 with the checkout it came from, and ``dists`` (``installed_dists_digest``). The key is its canonical-JSON hash, see ``env_key``."""
+    kept on purpose since a changed kernel is a changed environment), the ``uv.lock`` sha256 with the checkout it came from, and ``dists`` (``installed_dists_digest``).
+    Two fields an image patch could change in the simulation's bytes: ``libc`` (``platform.libc_ver()``: Python's math goes through the system libm) and ``python_build``
+    (``sys.version``, the full build string). ``ImageVersion`` is NOT in this dict (see ``image_version``): it is recorded beside it, never keyed
+    (TCK-20261116-A-CI-SET-ON-TWO-IMAGE-PATCHES-IS-ONE-ENVIRONMENT-WHEN-LIBC-AND-PYTHON-MATCH; a set split only by an image patch is one environment, and the base-vs-base
+    repeats are the evidence that the bytes did not move). The key is its canonical-JSON hash, see ``env_key``."""
     environ = os.environ if environ is None else environ
     if environ.get("GITHUB_ACTIONS") == "true":
-        image = "-".join(part for part in (environ.get("ImageOS"), environ.get("ImageVersion")) if part)
         if environ.get("ImageOS"):
-            runner = "ci:" + image  # a GitHub-hosted runner: the image, not RUNNER_NAME (which differs per job)
+            runner = "ci:" + environ["ImageOS"]  # a GitHub-hosted runner: the image family (ImageOS), not RUNNER_NAME (differs per job) and not ImageVersion (a patch GitHub rolls out gradually)
         elif environ.get("RUNNER_NAME"):
             runner = "ci:self-hosted:" + environ["RUNNER_NAME"]  # no ImageOS: a self-hosted runner, named by its own name
         else:
@@ -131,7 +134,8 @@ def run_env(environ: Optional[Dict[str, str]] = None, hostname: Optional[str] = 
     else:
         runner = "local:" + (hostname if hostname is not None else socket.gethostname())
     uv_lock, source = uv_lock_digest(tool_root, arm_tree)
-    return {"runner": runner, "python": platform.python_version(), "os": f"{platform.system()} {platform.release()}", "uv_lock": uv_lock, "uv_lock_source": source, "dists": installed_dists_digest() if dists is None else dists}
+    return {"runner": runner, "python": platform.python_version(), "python_build": sys.version, "libc": "-".join(platform.libc_ver()), "os": f"{platform.system()} {platform.release()}",
+            "uv_lock": uv_lock, "uv_lock_source": source, "dists": installed_dists_digest() if dists is None else dists}
 
 
 UNIDENTIFIED_RUNNER = "ci:unidentified"  # GITHUB_ACTIONS with neither ImageOS nor RUNNER_NAME: refused, never keyed
@@ -187,10 +191,20 @@ def result_path(cache: Path, sha: str, ticks: int, world: str, seed: int, repeat
     return cache / "results" / result_key(key_components(sha, ticks, env), repeat) / f"{world}_{seed}.json"
 
 
-def write_env_json(directory: Path, env: Optional[Dict[str, str]] = None) -> None:
-    """``env.json`` in a result directory: the environment object the env8 in its name was hashed from."""
+IMAGE_FILE = "image.json"
+
+
+def image_version(environ: Optional[Dict[str, str]] = None) -> str:
+    """The runner image's patch version (``ImageVersion``; "" off GitHub). Recorded beside a result, never part of the env8."""
+    return str((os.environ if environ is None else environ).get("ImageVersion", ""))
+
+
+def write_env_json(directory: Path, env: Optional[Dict[str, str]] = None, image: Optional[str] = None) -> None:
+    """``env.json`` in a result directory: the environment object the env8 in its name was hashed from. ``image.json`` beside it records the image patch version,
+    outside the hashed object so it does not key."""
     directory.mkdir(parents=True, exist_ok=True)
     (directory / ENV_FILE).write_text(json.dumps(current_env() if env is None else env, sort_keys=True, indent=2) + "\n", encoding="utf-8")
+    (directory / IMAGE_FILE).write_text(json.dumps({"image_version": image_version() if image is None else image}, sort_keys=True) + "\n", encoding="utf-8")
 
 
 def env_json_problem(directory: Path) -> Optional[str]:
@@ -406,6 +420,20 @@ def missing_results(cache: Path, entries: Sequence[Entry]) -> List[str]:
     return [f"{arm}{'-repeat' if rep else ''}:{w}:{s}" for arm, sha, js, ticks, rep in entries for w, s in js if not collected_path(cache, sha, ticks, w, s, rep).exists()]
 
 
+def _split_detail(dirs: Sequence[Path]) -> str:
+    """``<env8> (<field>=<value>, ...) vs <env8> (...)``: the directories of one arm, each with the env fields that differ between them (read from their env.json)."""
+    envs: List[Dict[str, Any]] = []
+    for d in dirs:
+        try:
+            loaded = json.loads((d / ENV_FILE).read_text(encoding="utf-8"))
+            envs.append(loaded if isinstance(loaded, dict) else {})
+        except (OSError, ValueError):
+            envs.append({})
+    differing = sorted(k for k in {k for e in envs for k in e} if len({json.dumps(e.get(k), sort_keys=True) for e in envs}) > 1)
+    label = lambda d: (d.name[: -len("-repeat")] if d.name.endswith("-repeat") else d.name)[-8:]  # the env8
+    return " vs ".join(f"{label(d)} ({', '.join(f'{k}={str(e.get(k))[:60]!r}' for k in differing) or 'env.json unreadable'})" for d, e in zip(dirs, envs))
+
+
 def env_problems(cache: Path, entries: Sequence[Entry]) -> List[str]:
     """What is wrong with the environment records of a collected cache (AC8): a result directory with no ``env.json`` or one that does not hash to the env8 in its
     name; several directories for one arm (ambiguous); or arms of the set that were built under different environments."""
@@ -414,7 +442,7 @@ def env_problems(cache: Path, entries: Sequence[Entry]) -> List[str]:
     for arm, sha, js, ticks, rep in entries:
         prefix, dirs = _arm_dirs(cache, sha, ticks, rep)
         if len(dirs) > 1:
-            problems.append(f"{arm}{'-repeat' if rep else ''}: {len(dirs)} result directories {[d.name for d in dirs]} for one arm")
+            problems.append(f"{arm}{'-repeat' if rep else ''}: results built under {len(dirs)} environments: {_split_detail(dirs)}")
         for d in dirs[:1]:
             bad = env_json_problem(d)
             if bad:
@@ -427,7 +455,8 @@ def env_problems(cache: Path, entries: Sequence[Entry]) -> List[str]:
 
 
 def runner_identity(cache: Path, entries: Sequence[Entry]) -> Tuple[List[str], List[str]]:
-    """(mismatches, distinct runners): python, os and image must agree across the base, new and repeat results of every key (DET-PORT-0)."""
+    """(mismatches, distinct runners): python, os, image family (ImageOS), libc and the Python build must agree across the base, new and repeat results of every key
+    (DET-PORT-0): the same fields the env8 keys, never stricter (the image PATCH version is not compared) or looser."""
     by_key: Dict[Key, Dict[str, set]] = {}
     seen = set()
     for _arm, sha, js, ticks, rep in entries:
@@ -437,7 +466,7 @@ def runner_identity(cache: Path, entries: Sequence[Entry]) -> Tuple[List[str], L
             if not isinstance(runner, dict):
                 continue
             seen.add(f"{runner.get('name')}/{runner.get('image')} python {runner.get('python')} {runner.get('os')} ({runner.get('cpu_model')}, nproc {runner.get('nproc')})")
-            slot = by_key.setdefault((w, s), {f: set() for f in ("python", "os", "image")})
+            slot = by_key.setdefault((w, s), {f: set() for f in ("python", "os", "image_os", "libc", "python_build")})
             for f in slot:
                 slot[f].add(str(runner.get(f)))
     bad = [f"{w}:{s} {f} {sorted(v)}" for (w, s), slot in sorted(by_key.items()) for f, v in slot.items() if len(v) > 1]
@@ -560,15 +589,15 @@ def _run(a: argparse.Namespace, verdict: Dict[str, Any]) -> int:
     if collected and a.neutral:
         jobs = [(w, 42) for w in WORLDS]
         entries: List[Entry] = [("base", bsha, jobs, NEUTRAL_TICKS, False), ("new", nsha, jobs, NEUTRAL_TICKS, False)]
+        env_bad = env_problems(cache, entries)  # before the missing check: a set split over several environments is named as such, not reported as missing
+        if env_bad:
+            return _refuse(verdict, f"environment records {env_bad}", f"collected results were not all built under one recorded environment: {env_bad}")
         missing = missing_results(cache, entries)
         if missing:
             return _refuse(verdict, f"missing results {missing}", f"missing collected results (arm:world:seed) {missing}")
-        env_bad = env_problems(cache, entries)
-        if env_bad:
-            return _refuse(verdict, f"environment records {env_bad}", f"collected results were not all built under one recorded environment: {env_bad}")
         mismatched, _runners = runner_identity(cache, entries)
         if mismatched:
-            return _refuse(verdict, f"runner identity differs {mismatched}", f"runner python/os/image differs between arms of a key: {mismatched}; the pair is not host-independent")
+            return _refuse(verdict, f"runner identity differs {mismatched}", f"runner python/os/image_os/libc/python_build differs between arms of a key: {mismatched}; the pair is not host-independent")
         read = lambda sha: _collected_runs(cache, sha, NEUTRAL_TICKS, jobs)
         rc, bad = neutral_report(read(bsha), read(nsha), bsha, nsha)
         _neutral_verdict(verdict, bad)
@@ -585,15 +614,15 @@ def _run(a: argparse.Namespace, verdict: Dict[str, Any]) -> int:
             entries.append(("base", bsha, check_jobs, a.ticks, True))
             if a.legacy_new:
                 entries.append(("new", nsha, check_jobs, a.ticks, True))
+        env_bad = env_problems(cache, entries)  # before the missing check: a set split over several environments is named as such, not reported as missing
+        if env_bad:
+            return _refuse(verdict, f"environment records {env_bad}", f"collected results were not all built under one recorded environment: {env_bad}")
         missing = missing_results(cache, entries)
         if missing:
             return _refuse(verdict, f"missing results {missing}", f"missing collected results (arm:world:seed) {missing}")
-        env_bad = env_problems(cache, entries)
-        if env_bad:
-            return _refuse(verdict, f"environment records {env_bad}", f"collected results were not all built under one recorded environment: {env_bad}")
         mismatched, runners = runner_identity(cache, entries)
         if mismatched:
-            return _refuse(verdict, f"runner identity differs {mismatched}", f"runner python/os/image differs between arms of a key: {mismatched}; the pair is not host-independent")
+            return _refuse(verdict, f"runner identity differs {mismatched}", f"runner python/os/image_os/libc/python_build differs between arms of a key: {mismatched}; the pair is not host-independent")
         runner_lines = ["- runners (collected off host): " + ("; ".join(runners) if runners else "none recorded (no cost.json beside the results)")]
         load = lambda sha, js, repeat=False: _collected_runs(cache, sha, a.ticks, js, repeat)
         base, new = load(bsha, jobs), load(nsha, jobs)
