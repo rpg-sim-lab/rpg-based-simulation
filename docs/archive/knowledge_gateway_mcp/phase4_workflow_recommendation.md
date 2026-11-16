@@ -26,7 +26,7 @@ mirrored in `.claude/agents/investigator.md:12-13`), `.claude/workflows/simq-aud
 `.claude/skills/create-tickets/SKILL.md:49-59`.
 
 **Evidence:** Phase 1 cold-call measurements
-(`docs/engine/contracts/knowledge_gateway_mcp/phase1_baseline_comparison.md`) show gateway calls
+(`docs/archive/knowledge_gateway_mcp/phase1_baseline_comparison.md`) show gateway calls
 at 1469.7–5325.8 ms and 2649–7633 tokens per entry, against a re-derived Phase 0 baseline of
 1870.64 ms / 2527.14 tokens for the existing `search_docs` + `graphify` pair. The real, mixed
 result: 4 of 7 corpus entries measure slower (1.35x–2.85x), while the 3 fastest entries (Q3, Q4,
@@ -36,7 +36,7 @@ Token count, by contrast, is heavier for all 7 entries without exception (1.05x�
 overhead is universal for tokens but not for latency. These four call sites issue
 a one-shot query keyed on a per-ticket title/summary, which is textually unique per ticket, so a
 genuinely warm Level 2 cache hit — the only measured configuration
-(`docs/engine/contracts/knowledge_gateway_mcp/phase3_pilot_acceptance_measurement.md`) where the
+(`docs/archive/knowledge_gateway_mcp/phase3_pilot_acceptance_measurement.md`) where the
 gateway beats the baseline on latency (median 1438.21 ms vs. 2521.78 ms cold / 1543.32 ms
 Level-1-warm) — is structurally rare at these call sites, since Level 2 only pays off on a
 semantically-identical repeat of the same query. The realistic case here is the cold case.
@@ -102,7 +102,7 @@ realistically landing in the cold case, which measures heavier in tokens for all
 (1.05x-3.0x) and slower in latency for 4 of 7 (1.35x-2.85x) — the 3 fastest gateway calls in the
 corpus (Q3, Q4, Q6) do beat the baseline on latency alone, but token overhead remains universal.
 Separately, Phase 3's own measurement
-(`docs/engine/contracts/knowledge_gateway_mcp/phase3_pilot_acceptance_measurement.md`) discloses
+(`docs/archive/knowledge_gateway_mcp/phase3_pilot_acceptance_measurement.md`) discloses
 two still-open gaps even in the best-case warm scenario: budget enforcement (§21 #12) FAILs for
 5/7 entries because `assemble_within_budget()` only accounts `statements[]`, not
 `context[]`/`evidence[]`/`conflicts[]`, so the full payload a caller actually pays for is
