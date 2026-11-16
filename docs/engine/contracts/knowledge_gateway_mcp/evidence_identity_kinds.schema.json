@@ -1,7 +1,7 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
   "title": "Knowledge Gateway MCP — Evidence Identity Kinds",
-  "description": "Phase 0 contract-only, per docs/plans/knowledge-gateway-mcp-proposal.md §12.1. A closed set of exactly 8 evidence identity kinds. Each kind names a stable_identity_form (the deterministic string identity used to reference an evidence record) and a preferred_fingerprint (the strongest available freshness signal for that kind — content hash, entry-id + fragment hash, etc.). PROVIDER_GENERATION is the sole kind with no finer-grained fingerprint available, which is why docs/engine/contracts/knowledge_gateway_mcp/evidence_cache_identity_contract.md §4 documents it as fallback-only, never a default dependency for the other 7 kinds. normalization_rules covers the four required cases from AC2: rename, delete, duplicate_name, schema_version_change.",
+  "description": "Phase 0 contract-only, per docs/plans/knowledge-gateway-mcp-proposal.md §12.1. A closed set of exactly 8 evidence identity kinds. Each kind names a stable_identity_form (the deterministic string identity used to reference an evidence record) and a preferred_fingerprint (the strongest available freshness signal for that kind — content hash, entry-id + fragment hash, etc.). PROVIDER_GENERATION is the sole kind with no finer-grained fingerprint available, which is why docs/archive/knowledge_gateway_mcp/evidence_cache_identity_contract.md §4 documents it as fallback-only, never a default dependency for the other 7 kinds. normalization_rules covers the four required cases from AC2: rename, delete, duplicate_name, schema_version_change.",
   "schema_version": 1,
   "definitions": {
     "evidence_identity_kind": {

@@ -17,8 +17,7 @@ _REPO_ROOT = Path(__file__).parent.parent.parent
 _RECOMMENDATION_DOC = (
     _REPO_ROOT
     / "docs"
-    / "engine"
-    / "contracts"
+    / "archive"
     / "knowledge_gateway_mcp"
     / "phase4_workflow_recommendation.md"
 )
@@ -27,24 +26,21 @@ _REAL_CITED_PATHS = {
     "phase1_baseline_comparison.md": (
         _REPO_ROOT
         / "docs"
-        / "engine"
-        / "contracts"
+        / "archive"
         / "knowledge_gateway_mcp"
         / "phase1_baseline_comparison.md"
     ),
     "phase2_baseline_recomparison.md": (
         _REPO_ROOT
         / "docs"
-        / "engine"
-        / "contracts"
+        / "archive"
         / "knowledge_gateway_mcp"
         / "phase2_baseline_recomparison.md"
     ),
     "phase3_pilot_acceptance_measurement.md": (
         _REPO_ROOT
         / "docs"
-        / "engine"
-        / "contracts"
+        / "archive"
         / "knowledge_gateway_mcp"
         / "phase3_pilot_acceptance_measurement.md"
     ),

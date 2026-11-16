@@ -1295,7 +1295,7 @@ This document is the canonical record of intentional behavior shifts in `src` co
   `migration_002_add_level2_tables`), not a modification of prior behavior.
 - **New Behavior**: The new table carries `freshness` and `verification` columns on the same row
   as lookup-identity fields (`packet_id`, `normalized_intent`, `query_key_hash`), which
-  `docs/engine/contracts/knowledge_gateway_mcp/evidence_cache_identity_contract.md` §3's
+  `docs/archive/knowledge_gateway_mcp/evidence_cache_identity_contract.md` §3's
   Non-collapse rule Bullet 1 says a lookup-table row should "never" carry.
 - **Rationale**: **Bounded**. The divergence is schema-only and explicitly bounded: no lookup
   function exists on this table yet (this ticket adds no `check_*`/`write_*`-style function,
@@ -1315,7 +1315,7 @@ This document is the canonical record of intentional behavior shifts in `src` co
 
 ### 2.45 Level 2 Lookup Identity Includes Exact `budget_tokens`, Not `budget_class` (TCK-20260816-KGMCP-P3-PACKET-CACHE-READ-WRITE-WIRING)
 - **Subsystem**: Knowledge Gateway MCP / Packet Cache
-- **Old Behavior**: `docs/engine/contracts/knowledge_gateway_mcp/evidence_cache_identity_contract.md`
+- **Old Behavior**: `docs/archive/knowledge_gateway_mcp/evidence_cache_identity_contract.md`
   §1 states `budget_class` is "the caller's budget tier (token/latency budget bucket), not the raw
   numeric budget," and names it as the only budget-related field in lookup identity. Level 1's
   `compute_lookup_identity()` (`tools/knowledge_gateway_cache.py:137-154`, unmodified by this

@@ -156,9 +156,9 @@ separate, later, human-reviewer call.
   `_extract_graphify_source_paths()` regex extractor.
 - `tests/tools/fixtures/kgmcp_phase4_direct_tool_comparison_results.json` — full per-entry, real
   committed data, including the hand-authored `quality.reviewer_judgment` objects.
-- `docs/engine/contracts/knowledge_gateway_mcp/phase1_baseline_comparison.md` — the cold-path
+- `docs/archive/knowledge_gateway_mcp/phase1_baseline_comparison.md` — the cold-path
   baseline comparison methodology this ticket's `_compute_threshold_4_3()` reuse builds on.
-- `docs/engine/contracts/knowledge_gateway_mcp/phase3_pilot_acceptance_measurement.md` — the
+- `docs/archive/knowledge_gateway_mcp/phase3_pilot_acceptance_measurement.md` — the
   warm-cache latency/token measurement this ticket's own cold-call numbers do not contradict (a
   different, cache-warm comparison).
 - `docs/plans/knowledge-gateway-mcp-proposal.md` §20 Phase 4's fourth bullet ("Compare gateway
