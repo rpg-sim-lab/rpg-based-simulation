@@ -22,7 +22,8 @@ def effective_movement_mode(entity: Any, ent_upd: Optional[Any]) -> MovementMode
     """The mode in force after this tick's pending update: its ``movement_mode_set`` when it carries one, else the entity's own."""
     nav = getattr(ent_upd, "navigation", None) if ent_upd is not None else None
     mode = getattr(nav, "movement_mode_set", None) if nav is not None else None
-    return mode if mode is not None else entity.navigation.movement_mode
+    current: MovementMode = entity.navigation.movement_mode
+    return mode if mode is not None else current
 
 
 def action_task_is_live(entity: Any, ent_upd: Optional[Any]) -> bool:
