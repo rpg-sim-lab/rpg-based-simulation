@@ -1,0 +1,83 @@
+---
+status: active
+layer: world
+authority: P2
+audience: agent
+ticket_id: TCK-20261030-WORLD-GENERATOR-RESOURCE-TYPE-PICK-FOLLOWS-PYTHONHASHSEED
+phase: open
+date: 2026-10-30
+tags: [determinism]
+---
+
+# TCK-20261030-WORLD-GENERATOR-RESOURCE-TYPE-PICK-FOLLOWS-PYTHONHASHSEED
+
+## Title
+The intent-driven world generator picks each node's resource type with the RNG from a list built by list(set(...)), so the generated world depends on PYTHONHASHSEED. Sort the list.
+
+## Status
+OPEN
+
+## Tier
+standard
+
+## Type
+bug
+
+## Priority
+P2
+
+## Request Summary
+**2026-10-30: re-tiered STANDARD after the STOP.** Seed-0 content changes with the fix (16/16, 19/20, 26/30 nodes). There are no pinned outputs, and the generator has no production caller. rpg-planner's ruling, relayed via lead-planner-u24 and lead-planner, is word for word in `agent-working/staging_artifacts/TCK-20261030-WORLD-GENERATOR-RESOURCE-TYPE-PICK-FOLLOWS-PYTHONHASHSEED/rpg_planner_ruling_2026-10-30.md`. Its Scope/AC replace the hotfix Scope/AC below wherever they differ. Dispatch needs the owner's standard-dispatch go; write no fix code until then.
+
+Found by the (B) audit of TCK-20261029-STATE-SET-ORDER-FOLLOWS-PYTHONHASHSEED (item 5e, investigation at 16f7eb1f1). `src/worldgeneration/generator.py:220` builds `resource_types = list(set(r.resource_type ...))` and then calls `rng.choice(..., resource_types, ...)` per node. The RNG is seeded, but the list it indexes is in hash-seed order. So the same seed and catalog give different generated worlds across processes. This affects the intent-driven `WorldGenerator` path only, not the declarative worlds in `data/worlds`.
+
+rpg-planner ruled on 2026-10-30 (ruling 3, Q2, in `TCK-20261029-STATE-SET-ORDER-FOLLOWS-PYTHONHASHSEED/rpg_planner_ruling_2026-10-29.md`): this goes in a SEPARATE ticket, P2, in the ubuntu queue, not in B.
+
+## Scope
+1. First step: list every pinned generator output, meaning snapshots, golden worlds and content assertions that read `WorldGenerator` output, with file:line. Grep tests/ and tools/ for `WorldGenerator`, `generator.generate` and fixtures built from it.
+2. Change the site to `sorted(set(...))` with a stable key (the resource type id string, or `.value` if it is an Enum).
+3. STOP before any re-pin (rpg-planner's plan-OK condition, 2026-10-30) and report to rpg-planner-ubuntu if either:
+   - step 1 finds ANY pinned generator output; or
+   - seed-0 generated content changes (a different resource pick under PYTHONHASHSEED=0). Compare the per-node resource types for a fixed seed and intent on main and on the fix, both at PYTHONHASHSEED=0.
+   A content change in a generated world is a world-content change. The ticket then becomes STANDARD with a divergence entry. If nothing is pinned and seed 0 is unchanged, it stays a hotfix.
+4. Add a test: generate the same seed and intent in subprocesses at PYTHONHASHSEED 0 and 1, and assert identical resource types per node. Positive control: the comparison fails on main.
+
+## Out of Scope
+- data/worlds declarative assembly.
+- Any other set-order site (those are TCK-20261029-STATE-SET-ORDER-FOLLOWS-PYTHONHASHSEED).
+
+## Acceptance Criteria
+1. The pinned-output inventory is in Implementation Notes, before any code change.
+2. The generator site iterates a sorted, stable-key list.
+3. The cross-seed test passes, and its positive control is shown.
+4. The seed-0 comparison (main against the fix, PYTHONHASHSEED=0) is recorded: unchanged, or a STOP.
+5. Scoped tests pass (`tests/` for worldgeneration, `-m "not slow"`), and generate_registry --check and paths-guard pass.
+
+## Related Tickets
+- TCK-20261029-STATE-SET-ORDER-FOLLOWS-PYTHONHASHSEED (B; the audit that found it)
+- TCK-20261029-EVENT-EMIT-ORDER-FOLLOWS-PYTHONHASHSEED (A, #790)
+
+## Related Docs
+- docs/engine/kernel.md (determinism)
+- docs/mechanics/06_worldbuilding_foundation.md
+
+## Related Stored Artifacts
+- agent-working/staging_artifacts/TCK-20261029-STATE-SET-ORDER-FOLLOWS-PYTHONHASHSEED/rpg_planner_ruling_2026-10-29.md (ruling 3, Q2)
+
+## Related Code Areas
+- src/worldgeneration/generator.py
+
+## Assumptions / Open Questions
+- Originally a hotfix dispatched under S4. It STOPPED on Scope 3 (seed-0 content changes) and was re-tiered STANDARD per rpg-planner's ruling. Owner standard-DISPATCH GO: #715 comment 6525127552, sequenced after TCK-20261029-STATE-SET-ORDER-FOLLOWS-PYTHONHASHSEED and the SimQ re-anchor work.
+- It queues behind the corpus hotfix and B on rpg-implementer-ubuntu.
+
+## Implementation Notes
+2026-11-16 (rpg-implementer-ubuntu), re-verified at origin/main db6b4579d, before any code change; full detail in staging_artifacts/<ticket>/investigation.md.
+- Pinned-output inventory: no test, fixture, tool or data file pins a generated resource type or a hash-seed-dependent value. The only reader is tests/unit/worldgeneration/test_generator.py (lines 32-291); its determinism test (95-98) compares two runs inside one process. No caller in src other than the class itself; cli.py uses ProceduralCompositionGenerator.
+- Seed-0 comparison (main at PYTHONHASHSEED=0 versus the sorted(set) fix): resource_type differs at 16/16 nodes (seed 12345, density 0.8), 19/20 (seed 42, density 1.0), 26/30 (seed 7, density 1.5); ids, counts and regions do not change. Main gives four different worlds at hash seeds 0-3; the fix gives one. Main is not the reference (its pick was a hash accident).
+- The 10-30 stash (471ef6fe6, rpg-impl-ubuntu-generator-hold-20261031) holds only an older copy of this ticket with an empty Implementation Notes section; its seed-0 counts above are reproduced here from /data/vboxuser/Work/b_runs/gen_probe/ and a fresh run.
+- ProceduralCompositionGenerator shares no code path with the pick (separate class; its sets are membership-only).
+
+## Test Summary
+## Files Changed
+## Completion Summary
