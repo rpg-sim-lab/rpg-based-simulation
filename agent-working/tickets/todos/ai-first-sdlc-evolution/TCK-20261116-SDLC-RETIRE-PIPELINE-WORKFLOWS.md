@@ -43,7 +43,7 @@ The evidence is `agent-working/stored_artifacts/sdlc-decisions/od5_evidence_pack
    - the first step summary showing both lines, with its PR and date;
    - two weeks of runs after it;
    - the floor and verdict counts from that window.
-2. **Plan Phase 4 prerequisites.**
+2. **Plan Phase 4 prerequisites** (plan §39 Phase 4 item 6). These are plan prerequisites, not owner conditions: OD-5 named only the two lines and the 2-week run, so the owner may drop any of them, for example if Phase 3 stalls.
    - Phase 2 is in force (gate 1).
    - Phase 3 has landed (TCK-20261116-SDLC-CLOSURE-RECORD-AND-EVIDENCE-LAYERS is closed).
    - The R0 tags exist: the four `baseline/sdlc-*` tags, shown by `git ls-remote --tags origin 'baseline/*'`.
