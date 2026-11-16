@@ -80,6 +80,7 @@ Counts first:
 - Dispatch needs an owner yes.
 
 ## Implementation Notes
+- 2026-11-16 (rpg-designer ruling, rpg-planner): its V3 case frontier_living_world/45/53 no longer fails at 9c398a068 (M1-base; rpg gate run 43840618903, stale_known_entries); the known entry is removed from tools/test_architecture/rpg_gate_known.yaml. This ticket still owes its own-job counts. If the case fails again, under M1 pace it is a BALANCE red (an m1_disclosure row), not a stop.
 
 ## Test Summary
 
