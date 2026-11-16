@@ -29,7 +29,7 @@ def test_an_environment_failure_returns_its_own_verdict_before_any_test_passed_r
     passed_row = _JS.index("pushGate('Test:passed'")
     assert branch < passed_row < _JS.index("if (!testResult.passed) {")
     body = _JS[branch:passed_row]
-    assert "pushGate('Test:environment'" in body
+    assert "pushGate('Test:environment_failure'" in body
     assert "writeMonitoring('TESTS_ENVIRONMENT_FAILED')" in body
     assert "status: 'TESTS_ENVIRONMENT_FAILED'" in body
     assert "Test:passed" not in body and "TESTS_FAILED" not in body
@@ -83,3 +83,12 @@ def test_the_environment_message_says_when_real_failures_came_with_it():
     branch = _JS[_JS.index("if (testResult.environment_failure) {"):_JS.index("pushGate('Test:passed'")]
     assert "other test(s) also failed and are listed in failed_tests: read them before re-running." in branch
     assert "died of the environment (memory or a killed process), not because a test failed." in branch
+
+
+def test_the_test_phase_prompt_template_has_no_stray_backtick():
+    """The Test-phase prompt is a JS template literal: a backtick inside Step 4 or Step 5 ends it, and the rest parses as a
+    tagged template, so `node --check` still passes while the prompt is broken. Only the closing one may appear."""
+    lines = [ln for ln in _JS.splitlines() if ln.startswith(("Step 4 — Run the command", "Step 5 — Report:"))]
+    assert len(lines) == 2
+    assert lines[0].count("`") == 0
+    assert lines[1].count("`") == 1 and lines[1].rstrip().endswith("`,")

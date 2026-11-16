@@ -49,3 +49,28 @@ Common to every run (no strace and no perf on any run; the probe and sampler log
 3. **Real suite, uncapped (about 20 min, the risky one). Conditional:** runs only if steps 1 and 2 are inconclusive, and then only on a separate lead go. The same f-z half with no cap, aborted at the MemAvailable floor above. Count `ENOMEM` and the parent's size when the first one appears. If step 2 shows no ENOMEM and step 3 does, the cap matters; if neither does, the original failure came from a squeeze at that time (H2) and a host-wide sampler at 1 s decides it.
 
 Decision rule: ENOMEM in step 1 above a parent size confirms H1 and gives the size; ENOMEM only in step 3 points at the suite; none anywhere leaves H2, and the finding is that the pipeline's cap and chunking removed the failure whatever the cause was.
+
+## Mechanism, from the kernel source (v6.17 tag)
+`__vm_enough_memory` in `mm/util.c` (fetched from the v6.17 tag; the running kernel is Ubuntu's 6.17.0-41, which may carry patches, so this is the upstream behaviour, not a check of the Ubuntu build):
+
+```
+if (sysctl_overcommit_memory == OVERCOMMIT_GUESS) {
+	if (pages > totalram_pages() + total_swap_pages)
+		goto error;
+	return 0;
+}
+```
+
+In mode 0 the only refusal is a **single request larger than total RAM plus swap**. Committed_AS is compared with the commit limit only on the strict path (mode 2), which this branch returns before reaching. So **Committed_AS above CommitLimit cannot cause an ENOMEM in mode 0**: the commit-pressure hypothesis is rejected on mechanism. Step 1 is the empirical confirmation: with Committed_AS at 15.7 GB (limit 13.48 GB) and a 2 GB parent, 1,200 spawns produced no failure. (The documentation page for mode 0 could not be fetched; the code above is the evidence.)
+
+## What remains, and what step 2 can separate
+- (a) A real momentary exhaustion: the kernel could not get pages for the child's page tables or task structure in a spike a 5 s sampler missed. Step 2's 1 s sampler can show one if it recurs, but a clean run cannot rule it out.
+- (b) A `memory.max` or `pids.max` limit on whatever scope the Workflow's agents ran in on 2026-11-15. The scope in use that day is unknown, and today's check shows none. Step 2 runs in our own scope, so it **cannot** test this.
+- (c) Something specific to `posix_spawn` or `vfork` in Python 3.13 under pressure. Step 1 made 1,200 spawns with no failure at parents of 0.5-2 GB, so there is no evidence for it; step 2 adds the suite's own subprocess calls.
+
+If step 2 is also clean, the honest result for AC2 is: commit-pressure rejected on mechanism and by step 1; the original ENOMEM cause is unresolved, with candidates (a)-(c); the recommendation is unchanged, to keep heavy runs capped and chunked, which the Test phase now does.
+
+## Step 2 result (the `tests/tools` f-z half, one process, 3G scope, CPUs 4-5, `-n 0`, 505 s, started at 6.07 GB MemAvailable)
+- **No ENOMEM and no MemoryError** anywhere in the log. The pytest process peaked at 0.75 GB RSS and 0.77 GB accounted memory. MemAvailable never fell below 3.84 GB and Committed_AS peaked at 15.01 GB (limit 13.48 GB). The 1 s sampler logged 498 samples.
+- 15 tests failed, for a reason unrelated to memory: a defect in the TEST-PHASE ticket's `implement-ticket.js` edit (a stray backtick in a template literal, and a gate id that did not match the repo's convention), now fixed and recorded in that ticket's Test Summary.
+- The result: a capped single process of about 4,300 tests uses under 1 GB. So "one pytest process grew very large over 6,000 tests" is also not what happened on 2026-11-15; this host and process can run the whole half without a failure at the current commit level.
