@@ -204,7 +204,7 @@ class EntityGenerator:
             .kind(kind)
             .location(*pos)
             .identity(role=EntityRole.MONSTER, faction=Faction.MONSTER_HORDE,
-                      evolution_level=evolution_level, life_stage=LifeStage.CHILD)
+                      evolution_level=evolution_level, life_stage=LifeStage.CHILD, occupation=kind)
             .navigation(home_position=pos, leash_radius=10.0)
             .combat(hp=int(base_hp), max_hp=int(base_hp), atk=int(base_atk), def_stat=int(base_def), readiness=100.0)
             .inventory(gold=int(base_gold))
@@ -284,7 +284,7 @@ class EntityGenerator:
             .kind(kind)
             .location(*pos)
             .identity(role=EntityRole.CITIZEN, faction=Faction.TOWN_COUNCIL,
-                      evolution_level=evolution_level, life_stage=LifeStage.CHILD)
+                      evolution_level=evolution_level, life_stage=LifeStage.CHILD, occupation=kind)
             .combat(hp=int(base_hp), max_hp=int(base_hp), atk=int(base_atk), def_stat=int(base_def), readiness=100.0)
             .inventory(gold=int(base_gold))
             .strategic(home_region_id=home_region_id)

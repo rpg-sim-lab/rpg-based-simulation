@@ -102,20 +102,111 @@ def _contract(**kw) -> ResolvedEntityRuntimeContract:
     return ResolvedEntityRuntimeContract(**defaults)
 
 
-def test_the_archetype_path_writes_the_role_id_and_falls_back_to_the_profession_id():
-    factory = ArchetypeEntityFactory()
-    assert factory.build_entity(1, _contract(role_id="guard"), EntitySpawnContext()).identity.occupation == "guard"
-    assert factory.build_entity(2, _contract(role_id="", profession_id="smith"), EntitySpawnContext()).identity.occupation == "smith"
-    assert factory.build_entity(3, _contract(role_id=""), EntitySpawnContext()).identity.occupation is None
+# K2 v1.1 (rpg-designer step-2 review 39dcca3d): in step 2 EVERY writer of `kind` writes the exact same string into `occupation`, because step 3 moves the label readers to
+# `occupation` and is neutral only if occupation == today's kind on every built entity. One test per writer builds one entity through that path. The true labels (role_id,
+# profession_id; None for newborns and camp offspring and the goblin spawner) arrive in step 4.
+
+def test_writer_archetype_factory_occupation_is_the_kind_string():
+    entity = ArchetypeEntityFactory().build_entity(1, _contract(role_id="guard", kind="human"), EntitySpawnContext())
+    assert entity.kind == "human" and entity.identity.occupation == entity.kind
 
 
-def test_the_generator_spawners_write_the_label_they_pass_today_and_a_newborn_has_none():
+def test_writer_entity_spawner_legacy_guard_occupation_is_the_kind_string():
+    from src.worldassembly.entity_spawner import WorldEntitySpawner
+    from src.worldassembly.models import ResolvedEntityProfile
+
+    profile = ResolvedEntityProfile(legacy_role=0, legacy_faction=0, hp=10, max_hp=10, atk=1, attack_range=1, readiness=100.0, species_id="wolf", role_id="hunter", faction_id="wild", **{"def": 1})
+    entity = WorldEntitySpawner()._spawn_legacy_guard(1, profile, EntitySpawnContext(), 42)
+    assert entity.kind == "wolf" and entity.identity.occupation == entity.kind
+    no_species = ResolvedEntityProfile(legacy_role=0, legacy_faction=0, hp=10, max_hp=10, atk=1, attack_range=1, readiness=100.0, role_id="hunter", **{"def": 1})
+    fallback = WorldEntitySpawner()._spawn_legacy_guard(2, no_species, EntitySpawnContext(), 42)
+    assert fallback.identity.occupation == fallback.kind
+
+
+def test_writer_generator_hero_occupation_is_the_kind_string():
+    entity = EntityGenerator(7).spawn_hero((5.0, 5.0))
+    assert entity.identity.occupation == entity.kind == "hero"
+
+
+def test_writer_generator_monster_occupation_is_the_kind_string():
     gen = EntityGenerator(7)
-    assert gen.spawn_hero((5.0, 5.0)).identity.occupation == "hero"
-    assert gen.spawn_monster((5.0, 5.0), kind="world_boss").identity.occupation == "world_boss"
-    assert gen.spawn_goblin((5.0, 5.0)).identity.occupation == "goblin"
-    assert gen.spawn_magical_demonic_entity((5.0, 5.0), kind="dragonkin").identity.occupation == "dragonkin"
-    assert gen.spawn_natural_creature_offspring((5.0, 5.0), kind="wolf").identity.occupation is None
+    for kind in ("world_boss", "ancient_sentinel", "dragonkin", "monster"):
+        entity = gen.spawn_monster((5.0, 5.0), kind=kind)
+        assert entity.identity.occupation == entity.kind == kind
+
+
+def test_writer_generator_natural_creature_offspring_occupation_is_the_kind_string():
+    entity = EntityGenerator(7).spawn_natural_creature_offspring((5.0, 5.0), kind="wolf")
+    assert entity.identity.occupation == entity.kind == "wolf"
+
+
+def test_writer_generator_magical_entity_occupation_is_the_kind_string():
+    entity = EntityGenerator(7).spawn_magical_demonic_entity((5.0, 5.0), kind="dragonkin")
+    assert entity.identity.occupation == entity.kind == "dragonkin"
+
+
+def test_writer_generator_humanoid_offspring_occupation_is_the_kind_string():
+    from src.core.state import AuthoritativeState
+
+    entity = EntityGenerator(7).spawn_humanoid_offspring((5.0, 5.0), AuthoritativeState(tick=0, seed=1), "worker", 1, 2, 0, None, None, None, 3, 3)
+    assert entity.identity.occupation == entity.kind == "worker"
+
+
+def test_writer_generator_goblin_occupation_is_the_kind_string():
+    entity = EntityGenerator(7).spawn_goblin((5.0, 5.0))
+    assert entity.identity.occupation == entity.kind == "goblin"
+
+
+def test_writer_world_compiler_occupation_is_the_kind_string_on_one_tiny_world():
+    import os
+
+    from src.worldbuilding.compiler import WorldCompiler
+    from src.worldbuilding.repository import WorldRepository
+
+    spec, context = WorldRepository(os.path.join("data", "worlds")).load_world_with_context("unit_faction_tension")
+    state, _ = WorldCompiler.compile(spec, 42, context=context)
+    assert state.entities and all(e.identity.occupation == e.kind for e in state.entities.values())
+
+
+def test_writer_campaign_runner_occupation_is_the_kind_string():
+    from src.domains.campaigns.runner import SimulationAnalysisRunner
+    from src.domains.campaigns.spec import CampaignSpecLoader
+
+    spec = CampaignSpecLoader.load_from_yaml("campaign_id: k2\nseed: 42\nticks: 1\nworld_pack: phase1_adventure_seed\nactors:\n  count: 2\n  start_region: hometown\n  start_level: 1\nexpected_arc_families:\n  - cautious_growth\nforbidden_behavior:\n  - action_after_death\n")
+    state = SimulationAnalysisRunner().run(spec).final_state
+    assert state.entities and all(e.identity.occupation == e.kind == "hero" for e in state.entities.values())
+
+
+def test_writer_campaign_survivor_rebuild_keeps_the_occupation_it_carried():
+    from src.domains.campaigns.orchestrator import CampaignOrchestrator
+    from src.domains.campaigns.state import EntityCarryForward
+    from tests.unit.domains.campaigns.test_campaign_orchestrator import _make_manifest, _real_episode_spec
+
+    orch = CampaignOrchestrator(_make_manifest(n_episodes=2))
+    orch.state.persistent_entities[42] = EntityCarryForward(entity_id=42, level=4, xp=900, equipment={}, reputation=0.8, alive=True, kind="guard", occupation="guard")
+    entity = orch._build_initial_state(11, _real_episode_spec()).entities[42]
+    assert entity.kind == "guard" and entity.identity.occupation == entity.kind
+
+
+def test_every_production_kind_writer_is_one_of_the_tested_sites():
+    """The writers above are the whole list: a new `.kind(...)` builder call in src fails here until it is added to the list and tested (K2 v1.1)."""
+    root = Path(__file__).resolve().parents[3]
+    sites = set()
+    for path in sorted((root / "src").rglob("*.py")):
+        tree = ast.parse(path.read_text(encoding="utf-8"))
+        for n in ast.walk(tree):
+            if isinstance(n, ast.Call) and isinstance(n.func, ast.Attribute) and n.func.attr == "kind" and len(n.args) == 1:
+                base = n.func.value
+                while isinstance(base, ast.Call) and isinstance(base.func, ast.Attribute):
+                    base = base.func.value
+                if isinstance(base, ast.Call) and isinstance(base.func, ast.Name) and base.func.id == "V2EntityBuilder":
+                    sites.add(str(path.relative_to(root)))
+    assert sites == {
+        "src/domains/campaigns/orchestrator.py", "src/domains/campaigns/runner.py", "src/entities/archetype_factory.py", "src/systems/world_systems/generator.py",
+        "src/worldassembly/entity_spawner.py", "src/worldbuilding/compiler.py",
+        # the scenario fixtures (designer ruling (a), 2026-11-16): tested in test_occupation_fixture_writers.py
+        "src/certification/scenarios.py", "src/perf/scenarios.py", "src/testing/scenario_runner.py",
+    }, sorted(sites)
 
 
 def test_every_gate_world_entity_has_an_occupation_equal_to_its_kind_at_t0():
@@ -142,7 +233,7 @@ def test_every_gate_world_entity_has_an_occupation_equal_to_its_kind_at_t0():
 # ---- copies keep it ------------------------------------------------------------------------------------------------------------------------
 
 def test_the_entity_copies_in_the_archetype_factory_keep_occupation():
-    entity = ArchetypeEntityFactory().build_entity(1, _contract(role_id="guard"), EntitySpawnContext())
+    entity = ArchetypeEntityFactory().build_entity(1, _contract(role_id="guard", kind="guard"), EntitySpawnContext())
     from src.core.state import InventoryComponent
 
     assert _replace_inventory(entity, InventoryComponent(items=(), gold=3)).identity.occupation == "guard"

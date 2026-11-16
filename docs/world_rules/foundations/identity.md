@@ -74,9 +74,9 @@ design-preparation.md` §4), not an Identity-family problem — the identity bou
     `src/`, and `Faction.HERO_GUILD` in 30. The kind string `HERO` no longer evolves to `LEGEND_HERO`
     (divergence 2.133). Retired in milestone 1 with the other name branches, in measured stages.
 
-- **Repository evidence, occupation as its own field (M1 step 2, `TCK-20261109-M1-KIND-ALWAYS-MEANS-SPECIES-AND-OCCUPATION-IS-ITS-OWN-FIELD`).** `IdentityComponent.occupation` now holds the
-  role label the content gave a body, apart from `kind` (species, step 4) and `role` (the coarse enum). Every build path writes it; the survivor rebuild and the entity copies carry it; a
-  newborn has none. This makes the ID-02 separation of identity, kind, role and occupation a stored fact, not a convention. Nothing branches on it yet.
+- **Repository evidence, occupation as its own field (M1 step 2, `TCK-20261109-M1-KIND-ALWAYS-MEANS-SPECIES-AND-OCCUPATION-IS-ITS-OWN-FIELD`).** `IdentityComponent.occupation` now exists apart
+  from `kind` (species, step 4) and `role` (the coarse enum). In step 2 every build path writes it as the exact string it writes to `kind`; the survivor rebuild and the entity copies carry
+  it; the true labels (and none for a newborn) arrive in step 4. This makes the ID-02 separation of identity, kind, role and occupation a stored fact, not a convention. Nothing branches on it yet.
 
 **Scenarios:** [FND-S01](../scenarios/foundational-batch-01.md#fnd-s01), [FND-S13](../scenarios/foundational-batch-01.md#fnd-s13) (adversarial expansion — repeated-exposure form change).
 

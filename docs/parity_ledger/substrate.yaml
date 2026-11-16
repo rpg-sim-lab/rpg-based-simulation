@@ -5243,11 +5243,12 @@
     closes a latent hazard; no run changes because of it.
 
 - id: SUB-402
-  text: An entity carries its occupation (the role label its content gave it) as its own typed
-    field, IdentityComponent.occupation, appended last and left out of the canonical dict while
-    None. Every build path writes it, the campaign survivor rebuild and the entity copies carry
-    it, the presenter shows it next to kind, and species_of is the one way to read a species.
-    Nothing branches on it yet (M1 step 2; kind becomes the species in step 4).
+  text: An entity carries its occupation (a role label) as its own typed field,
+    IdentityComponent.occupation, appended last and left out of the canonical dict while None.
+    In step 2 every build path writes the exact string it writes to kind, the campaign survivor
+    rebuild and the entity copies carry it, the presenter shows it next to kind, and species_of
+    is the one way to read a species. Nothing branches on it yet; the true labels and kind
+    becoming the species are step 4.
   status: verified
   priority: P1
   legacy_evidence: null

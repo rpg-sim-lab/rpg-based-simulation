@@ -34,6 +34,7 @@ def build_idle_state(
         entity_id: (
             V2EntityBuilder(entity_id)
             .kind("hero")
+            .identity(occupation="hero")  # M1 step 2: the exact string written to kind
             .location(float(entity_id % 100), float(entity_id // 100))
             .identity(
                 role=EntityRole.HERO,
@@ -75,6 +76,7 @@ def build_resource_state(
         entity_id: (
             V2EntityBuilder(entity_id)
             .kind("hero")
+            .identity(occupation="hero")  # M1 step 2: the exact string written to kind
             .location(float(entity_id % 100), float(entity_id // 100))
             .identity(
                 role=EntityRole.WORKER,
@@ -141,6 +143,7 @@ def build_movement_state(
         entities[entity_id] = (
             V2EntityBuilder(entity_id)
             .kind("hero")
+            .identity(occupation="hero")  # M1 step 2: the exact string written to kind
             .location(x, y)
             .navigation(
                 target=(tx, ty),
@@ -187,6 +190,7 @@ def build_combat_arena_state(
         entities[entity_id] = (
             V2EntityBuilder(entity_id)
             .kind("hero")
+            .identity(occupation="hero")  # M1 step 2: the exact string written to kind
             .location(0.0, float(i))
             .identity(
                 role=EntityRole.HERO,
@@ -210,6 +214,7 @@ def build_combat_arena_state(
         entities[entity_id] = (
             V2EntityBuilder(entity_id)
             .kind("monster")
+            .identity(occupation="monster")  # M1 step 2: the exact string written to kind
             .location(5.0, float(i)) # Close enough to trigger combat
             .identity(
                 role=EntityRole.MONSTER,
@@ -258,6 +263,7 @@ def build_strategic_state(
         entities[entity_id] = (
             V2EntityBuilder(entity_id)
             .kind("hero")
+            .identity(occupation="hero")  # M1 step 2: the exact string written to kind
             .location(float(i % 100), float(i // 100))
             .identity(
                 role=EntityRole.HERO,

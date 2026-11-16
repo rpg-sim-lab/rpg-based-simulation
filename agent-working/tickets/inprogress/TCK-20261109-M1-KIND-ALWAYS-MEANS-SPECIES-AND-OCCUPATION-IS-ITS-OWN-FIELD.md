@@ -295,6 +295,61 @@ src/core/ (entity identity), content schemas
   - quest kill credits by target_kind (row 9);
   - humanoid pairings by species and occupation, base vs fix (row 24).
 
+- 2026-11-16 (rpg-planner relay of rpg-designer): the designer's step-2 review, FINAL; it amends the base ruling and the step-1 rulings on one point before any data. Copied verbatim from `.claude/handover/drafts/rpg-designer-kind-is-species-step2-review.md` (sha256 39dcca3d5bf88e2f76a747d0e9a3f6c9d685ccbe667a804b3799a212983e0232); heading levels lowered.
+
+
+- Reviewed: lane C step 2 at fdfa1bb5b, the src diff /mnt/data2/rpg-measure/m1step2/step2_src.diff (sha 91a38249), plus generator.py read at fdfa1bb5b :195-210 and :276-300.
+- Base rulings: 67cc6f6d (the plan), 665b9718 (step 1).
+- This note amends both on one point, before any step-2 or step-3 data.
+
+##### The change needed: step 2 copies `kind` into `occupation` on EVERY writer
+- Step 3's claim is "neutral by construction, because occupation == today's kind". That holds only if every writer of `kind` writes the same string into `occupation`.
+- fdfa1bb5b breaks it on four writers:
+  1. **generator.py:204** (camp or natural offspring) writes `kind=kind` and no occupation, so None.
+  2. **generator.py:284** (humanoid newborn) writes `kind=kind`, the parent's role string on the classic path, and no occupation, so None.
+     - After step 3, a newborn "worker" stops counting as SUPPORT in party_composition, because occupation is None.
+     - So step 3 would change behaviour on every birth.
+  3. **archetype_factory.py:106** writes `occupation = role_id or profession_id`, while `kind` there is the species.
+     - After step 3, `occupation == "hero"` would match archetype-path heroes that `kind == "hero"` never matched. That's a behaviour change inside a "neutral" step.
+  4. **entity_spawner.py:144** writes `occupation = profile.role_id`, while `kind` = the species. Same problem as 3.
+- **Ruling (amends 67cc6f6d's "on the archetype path it comes from role_id" and 665b9718's A2 occupation values):**
+  - In step 2, every writer sets `occupation` = the exact string it writes to `kind`, including :204 and :284 and the archetype and spawner paths.
+  - The TRUE labels move to step 4, which is the measured behaviour step:
+    - role_id or profession_id on the archetype and spawner paths;
+    - None for newborns;
+    - None for generator.py:321 "goblin" and for camp offspring.
+  - Step 4's disclosure names them.
+- The rest of the diff is as ruled and APPROVED:
+  - `IdentityComponent.occupation` appended last and None-omitted;
+  - the EntityState view copy;
+  - the apply.py:704 hand-copy fix (a good catch);
+  - FIELD_RULES None;
+  - campaign carry-forward (serialise when set, from_dict);
+  - the orchestrator rebuild;
+  - runner.py occupation=role (already equal to its kind);
+  - the generator :139 / :165 / :238 / :321 copies;
+  - the compiler;
+  - the presenter;
+  - `species_of`.
+
+##### K2 tightened (before any data)
+- K2 as written ("at t0 over paired.WORLDS") can't see births or spawns.
+- **K2 v1.1:** for every writer of `kind` in src (table A2 plus :204 and :284), a unit test builds one entity through that path and asserts `occupation == kind`: **0** failures.
+- The t0 test over paired.WORLDS stays alongside it.
+
+##### Answers on the runner (16dc9031, 1bccef76)
+- **K1 includes `dists` and `final`. YES:** compare everything except the top-level start_hash and final_hash, as compare_projection.py already does.
+  - `final` rows carry kind, which step 2 doesn't change.
+  - `dists` must be equal, since it's one venv.
+  - A difference in either is a K1 failure, not noise.
+- Both scripts read in full: runner 16dc9031 and comparer 1bccef76 are fine as drafted.
+  - The gate's word list should match lib/busy_gate.sh v2 f35f1f91, i.e. add `keep_events_child`.
+  - Send the final shas after the pin commit that carries the change above. I approve those shas, not these.
+
+- 2026-11-16 (rpg-planner judgment, relayed): mechanism-registry changed-code advisory on step 2 (7 findings: attributes_biology/apply.py, personality, buildings and city/state.py, campaigns/orchestrator.py, world_compilation/compiler.py, camp/state.py and generator.py): no `registries/mechanisms.yaml` edit. Each is one-field identity plumbing (a carry, copy or write of `occupation`) that does not change what any mechanism does.
+
+- 2026-11-16 (rpg-planner relay of rpg-designer's ruling (a), on lane C's finding that the step-1 scan skipped src/certification, src/perf and src/testing): the 25 scenario-fixture `V2EntityBuilder(...).kind(...)` chains (certification/scenarios.py 18, perf/scenarios.py 6, testing/scenario_runner.py 1) each also set `occupation` to the same expression as `kind`. K2 v1.1 is one per-file test iterating that file's chains (tests/unit/core/test_occupation_fixture_writers.py). STOP condition: a certification, arena or perf test that pins a state hash or canonical dict the field moves is reported before it is changed; a certification expectation change needs the owner's OK. None moved in the step-2 run (certification 86 passed, arena 4 passed under the not-slow filter, perf 501 passed, scenario API 20 passed). **Recorded for step 4 (not blocking steps 2-3):** before step 4, re-run the step-1 scan over src/certification, src/perf and src/testing (readers AND writers) and bring the rows to the designer, because their kind literals ("HERO", "MONSTER", "actor", "GOBLIN") are not species ids.
+
 ## Test Summary
 
 ## Files Changed

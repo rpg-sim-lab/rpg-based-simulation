@@ -666,9 +666,10 @@ class IdentityComponent:
     properties: Dict[str, Any] = field(default_factory=dict)
     latest_intent_results: List["IntentResult"] = field(default_factory=list)
     _canonical_cache: Any = field(default=None, init=False, repr=False, compare=False)
-    # M1 (kind means species): the role label the content gave the body ("worker", "guard", "world_boss"; decision 50: a display label). Appended LAST so a checkpoint
-    # that predates it is refused or filled by the schema rule (checkpoint_fields.FIELD_RULES), never shifted. None = no label (newborns have no job yet); omitted from the
-    # canonical dict while None, so the form of a body without one is unchanged. Nothing but tests and the presenter reads it yet (step 2).
+    # M1 (kind means species): the role label of the body (decision 50: a display label). In step 2 every writer sets it to the exact string it writes to `kind`, so step 3 can
+    # move the label readers onto it behaviour-neutrally; the true labels (role_id / profession_id, None for newborns) arrive in step 4, when `kind` becomes the species.
+    # Appended LAST so a checkpoint that predates it is refused or filled by the schema rule (checkpoint_fields.FIELD_RULES), never shifted. Omitted from the canonical dict
+    # while None. Nothing but tests, the carry sites and the presenter reads it yet.
     occupation: Optional[str] = None
 
     def to_canonical_dict(self) -> Dict[str, Any]:

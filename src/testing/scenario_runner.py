@@ -51,6 +51,7 @@ class ScenarioRunner:
             
             hero = (V2EntityBuilder(actor_id)
                     .kind(actor_spec.get("role", "HERO"))
+                    .identity(occupation=actor_spec.get("role", "HERO"))  # M1 step 2: the exact string written to kind
                     .location(0.0, 0.0)
                     .identity(class_id=actor_spec.get("class_id", "warrior"))
                     .inventory(gold=actor_spec.get("gold", 60))

@@ -70,7 +70,7 @@ state:
 - **`role: int`** — an `EntityRole` value (`src/core/enums.py:6-12`): `HERO`, `SHOPKEEPER`,
   `MONSTER`, `CITIZEN`, `WORKER`, `GUARD`.
 - **`faction: int`** — a `Faction` value; see "Factions" below.
-- **`occupation: Optional[str]`** — the role label the content gave the body (`worker`, `guard`, `world_boss`), a display label (decision 50); `None` for a newborn. Appended last, left out of the canonical dict while `None`, and read only through the carry sites and the presenter so far (M1 step 2).
+- **`occupation: Optional[str]`** — the role label of the body (`worker`, `guard`, `world_boss`), a display label (decision 50). In M1 step 2 every writer sets it to the exact string it writes to `kind`; the true labels (and `None` for a newborn) come in step 4. Appended last, left out of the canonical dict while `None`, and read only through the carry sites and the presenter so far (M1 step 2).
 - **`known_recipes`**, **`craft_target`** — crafting knowledge and current craft target.
 - **`evolution_level`**, **`evolution_points`** — evolution progression state.
 - **`veterancy_points`**, **`veterancy_rank`** — veterancy progression state.
