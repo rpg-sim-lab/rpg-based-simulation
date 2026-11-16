@@ -77,3 +77,9 @@ def test_the_gate_policy_vocabulary_and_contract_list_the_environment_gate():
     assert gates["passed"]["on_fail_status"] == ["TESTS_FAILED"]
     counts = count_agent_result_field_call_sites(_REPO_ROOT / ".claude" / "workflows" / "implement-ticket.js")
     assert counts["environment_failure"] == 1 and counts["passed"] >= 1
+
+
+def test_the_environment_message_says_when_real_failures_came_with_it():
+    branch = _JS[_JS.index("if (testResult.environment_failure) {"):_JS.index("pushGate('Test:passed'")]
+    assert "other test(s) also failed and are listed in failed_tests: read them before re-running." in branch
+    assert "died of the environment (memory or a killed process), not because a test failed." in branch

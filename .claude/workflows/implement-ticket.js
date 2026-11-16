@@ -1683,7 +1683,10 @@ if (testResult.environment_failure) {
     pytest_command: testResult.pytest_command,
     environment_note: testResult.environment_note,
     failed_tests: testResult.failed_tests,
-    message: 'The Test run died of the environment (memory or a killed process), not because a test failed. Free the host or wait for its slot, then re-run with ticket_id="' + tid + '".',
+    message: (testResult.failed_tests && testResult.failed_tests.length > 0
+      ? 'The Test run died of the environment; ' + testResult.failed_tests.length + ' other test(s) also failed and are listed in failed_tests: read them before re-running.'
+      : 'The Test run died of the environment (memory or a killed process), not because a test failed.')
+      + ' Free the host or wait for its slot, then re-run with ticket_id="' + tid + '".',
   }
 }
 pushGate('Test:passed', 'agent_result_field', 'Test', testResult.passed ? 'PASS' : 'FAIL', !testResult.passed, `fail_count=${testResult.fail_count}`)

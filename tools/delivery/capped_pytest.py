@@ -9,8 +9,9 @@ directories the test-scope floor requires, plus ordinary pytest flags. It then:
    `max_tests_per_chunk` collected tests, so the boundaries are deterministic and every collected test runs;
 3. runs each chunk as its own process under `systemd-run --user --scope -p MemoryMax=... -p MemorySwapMax=... taskset -c ...`,
    checking `MemAvailable` against the floor first (below the floor is an environment failure, never a wait loop);
-4. sums pass, fail and error counts across chunks, and names any chunk that died of the environment (`Cannot allocate
-   memory`, `MemoryError`, ENOMEM, a SIGKILL or exit 137). It never retries: a retry would mask the signal;
+4. sums pass, fail and error counts across chunks, and names any chunk that died of the environment (`OSError: [Errno 12]
+   Cannot allocate memory`, a `MemoryError` INTERNALERROR, a bare `Killed` line, a SIGKILL or exit 137). A run passes only if
+   every chunk passed. It never retries: a retry would mask the signal;
 5. prints one `CAPPED_PYTEST_RESULT:{json}` line. Exit code: 0 all passed, 1 test failures, 2 usage error, 3 an
    environment failure. A test failure and an environment failure are never reported as the same thing.
 
@@ -37,10 +38,18 @@ Runner = Callable[[list[str]], tuple[int, str]]
 EXIT_PASS, EXIT_FAIL, EXIT_USAGE, EXIT_ENVIRONMENT = 0, 1, 2, 3
 RESULT_MARKER = "CAPPED_PYTEST_RESULT:"
 ENVIRONMENT_RETURN_CODES = frozenset({-9, 137})
+# Case-sensitive and anchored to how an environment death actually appears, so a failing test whose output merely mentions
+# one of these words (an assertion on the message, a parameter id) stays a test failure. An OOM kill is recognised by its
+# return code (ENVIRONMENT_RETURN_CODES), never by free text.
 ENVIRONMENT_TEXT = re.compile(
-    r"Cannot allocate memory|MemoryError|\bENOMEM\b|Out of memory|oom-kill|std::bad_alloc|(?m:^Killed$)", re.IGNORECASE
+    r"OSError: \[Errno 12\] Cannot allocate memory|INTERNALERROR>.*MemoryError|(?m:^E\s+MemoryError\b)|(?m:^Killed$)"
 )
 _BASE_FLAGS = ["-q", "--tb=line", "-rfE", "-p", "no:cacheprovider"]
+# Flags that take a separate value. The value after one of these is passed to pytest as given, even when it names an
+# existing path (`-c pytest.ini`, `--rootdir .`, `--ignore tests/x`). Any other flag must be value-free or use `--flag=value`.
+VALUE_FLAGS = frozenset({
+    "-m", "-k", "-c", "-p", "-o", "--rootdir", "--confcutdir", "--ignore", "--ignore-glob", "--deselect", "--junitxml",
+})
 _COUNT_NAMES = {"passed": "passed", "failed": "failed", "error": "errors", "errors": "errors", "skipped": "skipped"}
 
 
@@ -69,9 +78,22 @@ def wrap(cap: HostCap | None, cmd: list[str]) -> list[str]:
 
 
 def split_args(argv: list[str]) -> tuple[list[str], list[str]]:
-    """Targets are the arguments that name an existing path; everything else is passed to pytest as given."""
-    targets = [a for a in argv if not a.startswith("-") and os.path.exists(a)]
-    passthrough = [a for a in argv if a not in targets]
+    """Targets are the arguments that name an existing path and are not the value of a flag in `VALUE_FLAGS`;
+    everything else is passed to pytest as given."""
+    targets: list[str] = []
+    passthrough: list[str] = []
+    after_value_flag = False
+    for arg in argv:
+        if after_value_flag:
+            passthrough.append(arg)
+            after_value_flag = False
+        elif arg in VALUE_FLAGS:
+            passthrough.append(arg)
+            after_value_flag = True
+        elif not arg.startswith("-") and os.path.exists(arg):
+            targets.append(arg)
+        else:
+            passthrough.append(arg)
     return targets, passthrough
 
 
@@ -135,19 +157,29 @@ def _result(mode: str, host: str | None) -> dict:
 
 
 def _finish(result: dict) -> dict:
+    """passed needs every chunk to have passed, not just zero parsed failures: a chunk that failed without a summary line
+    (a usage error, a non-memory INTERNALERROR, a crash) must never read as a pass."""
     result["passed"] = (
         not result["environment_failure"] and result["fail_count"] == 0 and result["error_count"] == 0
-        and bool(result["chunks"])
+        and bool(result["chunks"]) and all(c["status"] == "pass" for c in result["chunks"])
     )
+    other = result["fail_count"] + result["error_count"]
+    if result["environment_failure"] and other:
+        result["environment_note"] += (
+            f"; {other} other test(s) also failed and are listed in failed_tests: read them before re-running"
+        )
     return result
 
 
-def _add(result: dict, counts: dict[str, int], output: str) -> None:
+def _add(result: dict, counts: dict[str, int], output: str, name: str = "run", code: int | None = None, status: str = "pass") -> None:
     result["pass_count"] += counts["passed"]
     result["fail_count"] += counts["failed"]
     result["error_count"] += counts["errors"]
     result["skipped_count"] += counts["skipped"]
     result["failed_tests"] += failed_ids(output)
+    if status == "fail" and counts["failed"] == 0 and counts["errors"] == 0:
+        result["error_count"] += 1
+        result["failed_tests"].append(f"{name} (rc {code}, no failures parsed)")
 
 
 def run_unwrapped(targets: list[str], passthrough: list[str], run: Runner) -> dict:
@@ -155,7 +187,7 @@ def run_unwrapped(targets: list[str], passthrough: list[str], run: Runner) -> di
     code, output = run(pytest_cmd(_BASE_FLAGS + passthrough + targets))
     status = "environment" if is_environment_failure(code, output) else ("pass" if code == 0 else "fail")
     result["chunks"].append({"name": "all", "files": len(targets), "rc": code, "status": status})
-    _add(result, parse_counts(output), output)
+    _add(result, parse_counts(output), output, "all", code, status)
     if status == "environment":
         result["environment_failure"] = True
         result["environment_note"] = "the single unwrapped run died of the environment (memory text or SIGKILL)"
@@ -195,7 +227,7 @@ def run_capped(
         env = is_environment_failure(code, output)
         status = "environment" if env else ("pass" if code in (0, 5) else "fail")
         result["chunks"].append({"name": name, "files": len(files), "rc": code, "status": status})
-        _add(result, parse_counts(output), output)
+        _add(result, parse_counts(output), output, name, code, status)
         if env:
             result["environment_failure"] = True
             result["environment_note"] = f"{name} died of the environment (memory text or SIGKILL); later chunks not run"

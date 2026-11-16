@@ -72,7 +72,7 @@ def test_a_test_failure_is_a_failure_not_an_environment_failure():
 
 @pytest.mark.parametrize(
     "returncode,text",
-    [(1, "OSError: Cannot allocate memory"), (1, "INTERNALERROR> MemoryError"), (137, ""), (-9, ""), (1, "Killed\n")],
+    [(1, "tests/x.py:9: OSError: [Errno 12] Cannot allocate memory"), (1, "INTERNALERROR> MemoryError"), (137, ""), (-9, ""), (1, "Killed\n"), (1, "E   MemoryError")],
 )
 def test_a_chunk_that_dies_of_the_environment_is_named_and_never_retried(returncode, text):
     fake = FakeRun({"tests/tools/test_a.py": (returncode, text)})
@@ -92,7 +92,7 @@ def test_memavailable_below_the_floor_is_an_environment_failure_not_a_wait():
 
 
 def test_a_collection_step_that_dies_of_the_environment_is_labelled():
-    result = _run(FakeRun(collect=(1, "MemoryError")))
+    result = _run(FakeRun(collect=(1, "INTERNALERROR> MemoryError")))
     assert result["environment_failure"] is True and result["chunks"][0]["name"] == "collect"
 
 
@@ -120,7 +120,7 @@ def test_a_host_with_no_cap_runs_pytest_once_unwrapped(monkeypatch, capsys):
 def test_main_exit_codes_separate_failure_from_environment(monkeypatch, capsys):
     monkeypatch.setattr(cp, "load_cap", lambda root: None)
     assert cp.main(["tests/tools/"], lambda c: (1, "1 failed in 0.1s")) == cp.EXIT_FAIL
-    assert cp.main(["tests/tools/"], lambda c: (1, "OSError: Cannot allocate memory")) == cp.EXIT_ENVIRONMENT
+    assert cp.main(["tests/tools/"], lambda c: (1, "x.py:1: OSError: [Errno 12] Cannot allocate memory")) == cp.EXIT_ENVIRONMENT
     assert cp.main(["-q"], lambda c: (0, "")) == cp.EXIT_USAGE
     capsys.readouterr()
 
@@ -131,3 +131,45 @@ def test_summary_line_parsing():
     }
     assert cp.parse_counts("2 errors in 0.5s")["errors"] == 2
     assert cp.parse_counts("no summary here") == {"passed": 0, "failed": 0, "errors": 0, "skipped": 0}
+
+
+def test_a_chunk_that_fails_without_a_summary_line_is_never_a_pass():
+    fake = FakeRun({"tests/tools/test_a.py": (3, "INTERNALERROR> Traceback (most recent call last):\nINTERNALERROR> ValueError: boom")})
+    result = _run(fake)
+    assert result["passed"] is False and result["environment_failure"] is False
+    assert result["error_count"] == 1 and "chunk 1/2 (rc 3, no failures parsed)" in result["failed_tests"]
+
+
+def test_the_unwrapped_path_does_not_pass_on_a_failure_without_a_summary_either(monkeypatch, capsys):
+    monkeypatch.setattr(cp, "load_cap", lambda root: None)
+    assert cp.main(["tests/tools/"], lambda c: (2, "usage: pytest [options]\nerror: unrecognized arguments")) == cp.EXIT_FAIL
+    assert cp.main(["tests/tools/"], lambda c: (3, "INTERNALERROR> ValueError: boom")) == cp.EXIT_FAIL
+    capsys.readouterr()
+
+
+def test_a_real_failure_that_only_mentions_a_memory_message_is_a_test_failure():
+    out = (
+        "FAILED tests/x.py::test_enomem_message - AssertionError: 'Cannot allocate memory' != 'x'\n"
+        "tests/x.py:7: AssertionError: assert 'MemoryError' in 'ok'\n1 failed, 3 passed in 0.4s"
+    )
+    result = _run(FakeRun({"tests/tools/test_a.py": (1, out)}))
+    assert result["environment_failure"] is False and result["passed"] is False and result["fail_count"] == 1
+    assert cp.is_environment_failure(1, out) is False
+    assert cp.is_environment_failure(0, "test_memoryerror_in_the_parameter_id PASSED killed") is False
+
+
+def test_an_environment_death_with_real_failures_says_so_in_the_note():
+    out = "FAILED tests/tools/test_a.py::t1 - assert 0\n1 failed in 0.2s\nOSError: [Errno 12] Cannot allocate memory"
+    result = _run(FakeRun({"tests/tools/test_a.py": (1, out)}))
+    assert result["environment_failure"] is True
+    assert "1 other test(s) also failed and are listed in failed_tests: read them before re-running" in result["environment_note"]
+    assert result["failed_tests"] == ["tests/tools/test_a.py::t1"]
+
+
+def test_a_value_after_a_value_taking_flag_is_never_a_target(tmp_path, monkeypatch):
+    for name in ("tests", "pytest.ini"):
+        (tmp_path / name).mkdir() if name == "tests" else (tmp_path / name).write_text("")
+    monkeypatch.chdir(tmp_path)
+    targets, passthrough = cp.split_args(["-c", "pytest.ini", "tests", "--rootdir", ".", "--ignore", "tests", "-m", "x"])
+    assert targets == ["tests"]
+    assert passthrough == ["-c", "pytest.ini", "--rootdir", ".", "--ignore", "tests", "-m", "x"]

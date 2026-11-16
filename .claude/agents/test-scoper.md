@@ -177,7 +177,7 @@ has a cap, run the scoped command through the helper, with the same bare directo
 python3 -m tools.delivery.capped_pytest tests/tools/ tests/unit/content/ -m "not slow and not extra_slow"
 ```
 
-The helper chunks the run by test file under the host's memory and CPU cap and prints one `CAPPED_PYTEST_RESULT:` JSON line. It
+Pytest flags that take a separate value are limited to `-m`, `-k`, `-c`, `-p`, `-o`, `--rootdir`, `--confcutdir`, `--ignore`, `--ignore-glob`, `--deselect` and `--junitxml`; any other flag must be value-free or written `--flag=value`, or its value is read as a test directory. The helper chunks the run by test file under the host's memory and CPU cap and prints one `CAPPED_PYTEST_RESULT:` JSON line. It
 changes nothing about the rules above: every required bare directory still appears in the command, and every collected test still
 runs. Report its counts as `pass_count`/`fail_count`, and set `environment_failure: true` when the result says so. Also set it
 when you see `Cannot allocate memory`, `MemoryError`, `ENOMEM` or a killed process in raw pytest output, whatever ran it. Never
