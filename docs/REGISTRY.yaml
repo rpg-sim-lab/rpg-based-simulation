@@ -8197,6 +8197,20 @@
   - ai
   - testing
 - type: ticket
+  path: agent-working/tickets/todos/TCK-20261116-BRAINSTORM-DOCUMENTS-WITHOUT-A-STATUS-GET-ONE.md
+  ticket_id: TCK-20261116-BRAINSTORM-DOCUMENTS-WITHOUT-A-STATUS-GET-ONE
+  title: Fourteen docs/brainstorm documents carry no status, so search cannot rank
+    them below current documents as the owner decided; give each one a status taken
+    from the document itself
+  tier: hotfix
+  ticket_type: chore
+  date: '2026-11-16'
+  related_code_areas:
+  - tools/validate_frontmatter.py
+  artifact_files: []
+  tags:
+  - documentation
+- type: ticket
   path: agent-working/tickets/todos/TCK-20261116-LIVE-HEALTH-API-TEST-WAITS-A-FIXED-FOUR-SECONDS-ON-A-FIXED-PORT.md
   ticket_id: TCK-20261116-LIVE-HEALTH-API-TEST-WAITS-A-FIXED-FOUR-SECONDS-ON-A-FIXED-PORT
   title: The live-health API test starts uvicorn on fixed port 8021, waits a fixed
@@ -8209,6 +8223,75 @@
   - tests/api/test_live_health_api.py
   artifact_files: []
   tags: []
+- type: ticket
+  path: agent-working/tickets/todos/TCK-20261116-PARITY-TEST-PATH-BECOMES-A-LIST.md
+  ticket_id: TCK-20261116-PARITY-TEST-PATH-BECOMES-A-LIST
+  title: A parity ledger row's test_path is one free-text string (paths joined by
+    `;`, `+` or `,`, with backticks and prose mixed in), so no check can resolve it;
+    make it a list of test node ids with the prose in a separate note field
+  tier: standard
+  ticket_type: refactor
+  date: '2026-11-16'
+  related_code_areas:
+  - tools/parity_ledger_writer.py
+  - tools/parity_ledger_check.py
+  - tools/parity_ledger_scan.py
+  - tests/codebase/test_parity_ledger_schema_gate.py
+  artifact_files: []
+  tags:
+  - schema
+  - documentation
+- type: ticket
+  path: agent-working/tickets/todos/TCK-20261116-THIRTEEN-DEAD-KNOWLEDGE-GATEWAY-DOCS-MOVE-TO-THE-ARCHIVE.md
+  ticket_id: TCK-20261116-THIRTEEN-DEAD-KNOWLEDGE-GATEWAY-DOCS-MOVE-TO-THE-ARCHIVE
+  title: 'Thirteen knowledge-gateway (KGMCP) documents whose code was removed in #147
+    still sit in docs/engine/contracts as if current; move them to docs/archive/knowledge_gateway_mcp/,
+    keep the one live spec, and leave no dead path behind'
+  tier: hotfix
+  ticket_type: chore
+  date: '2026-11-16'
+  related_code_areas:
+  - tools/write_path_guard.py
+  - tools/retrieval_cache.py
+  - tests/docs/test_phase4_*_doc.py
+  - tests/docs/test_redaction_retention_policy_doc.py
+  - tests/tools/test_evidence_cache_identity_contract.py
+  - tests/tools/test_retrieval_cache.py
+  - tests/tools/test_write_path_guard.py
+  artifact_files: []
+  tags:
+  - documentation
+  - mcp
+- type: ticket
+  path: agent-working/tickets/todos/TCK-20261116-THREE-PARITY-ROWS-CITE-A-TEST-THAT-DOES-NOT-EXIST.md
+  ticket_id: TCK-20261116-THREE-PARITY-ROWS-CITE-A-TEST-THAT-DOES-NOT-EXIST
+  title: Three verified parity rows (COMB-351, STRAT-280, TOWN-019) cite a test file
+    or node that does not exist on main, so their stated proof points at nothing
+  tier: hotfix
+  ticket_type: repair
+  date: '2026-11-16'
+  related_code_areas:
+  - tests/unit/tactical/test_flight_weighs_free_swing.py
+  - tests/unit/engine/test_need_pull.py
+  - tests/unit/world/test_building_interaction_contract.py
+  artifact_files: []
+  tags:
+  - documentation
+- type: ticket
+  path: agent-working/tickets/todos/TCK-20261116-WORLD-ASSEMBLY-REPORTS-LIST-WARNINGS-IN-HASH-SEED-ORDER.md
+  ticket_id: TCK-20261116-WORLD-ASSEMBLY-REPORTS-LIST-WARNINGS-IN-HASH-SEED-ORDER
+  title: The generated world's assembly_report.json and validation_report.json list
+    their warnings in an order that changes with PYTHONHASHSEED, so the same seed
+    gives byte-different reports in two processes
+  tier: hotfix
+  ticket_type: bug
+  date: '2026-11-16'
+  related_code_areas:
+  - src/worldgeneration/generator.py (ProceduralCompositionGenerator)
+  - src/worldassembly/ (report writers)
+  artifact_files: []
+  tags:
+  - determinism
 - type: ticket
   path: agent-working/tickets/done/TCK-20261115-A-NON-SEQUENTIAL-RUN-IS-REFUSED-BY-THE-GATE-CANDIDATE-PAIRED-ARMS-AND-RPG-MEASURE.md
   ticket_id: TCK-20261115-A-NON-SEQUENTIAL-RUN-IS-REFUSED-BY-THE-GATE-CANDIDATE-PAIRED-ARMS-AND-RPG-MEASURE
