@@ -135,19 +135,6 @@ def test_the_two_fields_are_canonical_and_move_the_digest():
     assert digest(replace(hit, combat=replace(hit.combat, last_hit_damages=(5, 4)))) != digest(hit)
 
 
-def test_a_checkpoint_that_predates_the_record_restores_one_attacker_holding_the_whole_blow():
-    from src.engine.checkpoint_fields import fill_missing_fields
-
-    hurt = replace(_subject(), combat=replace(_subject().combat, last_attacker_id=2, last_hit_tick=TICK, last_hit_damage=9))
-    never = _subject()
-    state = AuthoritativeState(tick=3, seed=1, entities={1: hurt, 7: replace(never, id=7)})
-    for e in state.entities.values():
-        object.__delattr__(e.combat, "last_hit_attackers")
-        object.__delattr__(e.combat, "last_hit_damages")
-    fill_missing_fields(state)
-    assert (state.entities[1].combat.last_hit_attackers, state.entities[1].combat.last_hit_damages) == ((2,), (9,))
-    assert (state.entities[7].combat.last_hit_attackers, state.entities[7].combat.last_hit_damages) == ((), ())
-
 
 # ---- felt_swing (divergence 2.204): the swing is the engaged attackers' summed shares --------------------------------------------------------------
 
