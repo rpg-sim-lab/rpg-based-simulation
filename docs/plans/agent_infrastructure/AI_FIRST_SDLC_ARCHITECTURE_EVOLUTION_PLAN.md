@@ -144,7 +144,7 @@ Everything else stays agent-driven and flexible. That includes planning, design,
 
 ## 6. Critical Owner Decisions
 
-**DECIDED-OWNER, 2026-10-31 (#715 6529263880):** OD-1 yes; OD-2 and OD-10 yes; OD-3 as M1, subject to E6b; OD-14 yes; OD-15 yes; E6b yes. Everything else stays undecided. **No credential or ruleset change is authorised by this:** each gets its own ask, by ticket. "Recommended" in the tables below is kept as written for the record.
+**DECIDED-OWNER, 2026-10-31 (#715 6529263880):** OD-1 yes; OD-2 and OD-10 yes; OD-3 as M1, subject to E6b; OD-14 yes; OD-15 yes; E6b yes. OD-5 decided 2026-11-16 (#715 6911091662): retire `implement-ticket.js`, `implement-epic.js` and the skill imitation together in Phase 4, only after the OD-4 close check has run 2 weeks carrying a mechanical test-scope floor and an architecture verdict on `src`-touching PRs. Everything else stays undecided, apart from the later decisions recorded in `SDLC_DECISION_RECORD.md`. **No credential or ruleset change is authorised by this:** each gets its own ask, by ticket. "Recommended" in the tables below is kept as written for the record.
 
 | # | Decision | Recommended | Why it matters |
 |---|---|---|---|
@@ -1055,6 +1055,8 @@ Governs §32 and §34 for the components listed. "Freeze" means an annotated git
 | `create-tickets.js` | High | Low | Low | — | **Preserve** | — |
 | Hand path + recorder | **Core** | High: production baseline | Medium | — | **Harden** | — |
 
+**Decided 2026-11-16 (OD-5, #715 6911091662):** the two JS workflows and the skill imitation are retired in Phase 4, after the close-check conditions in §6, not frozen in place. The tags in the Freeze column stay the recovery path. **OD-6 (#715 6910853925)** went the other way from the Codex and provider-neutral rows above: they are kept and marked legacy support (provider-agnostic), not frozen (TCK-20261116-SDLC-CODEX-TRACK-MARKED-LEGACY).
+
 **Order that follows:** tag baselines (R0) → production path proven (Phase 2) → removal (Phase 4). Removal never precedes the tag.
 
 ## 33. Reusable Existing Infrastructure
@@ -1271,7 +1273,7 @@ Phase 3 can start in parallel with Phase 2. The close-check condition "a closure
 2. **Problems.** P-3, P-7.
 3. **Changes.**
    - Freeze and remove `implement-ticket.js`, `implement-epic.js`, pipeline-only gate sites and source-pinned tests; retire the skill imitation (§32a).
-   - Freeze and remove the provider-neutral contract and the Codex track (per OD-6).
+   - Keep the provider-neutral contract and the Codex track, marked legacy support (provider-agnostic) (OD-6, #715 6910853925); the label ticket is TCK-20261116-SDLC-CODEX-TRACK-MARKED-LEGACY.
    - Archive the context packet, headroom and `retrieval_cache` (unless wired in).
    - Generate the CLAUDE.md tier and process tables from code; regenerate `.agents/rules`.
    - Rewrite CLAUDE.md procedure sections as pointers.
@@ -1282,7 +1284,7 @@ Phase 3 can start in parallel with Phase 2. The close-check condition "a closure
 7. **Deliverables.** Archive commits and generated docs.
 8. **Validation.** E7: measure LOC, test files and CI minutes before and after; run a "change amplification" probe (files touched to change one process rule).
 9. **Acceptance.**
-   - The dormant inventory is reduced as decided.
+   - The dormant inventory is reduced as decided (the Codex track is excluded: OD-6 keeps it).
    - CI stays green.
    - CLAUDE.md contains no mechanism claims that the code contradicts. A generated-table drift test passes.
 10. **Risks.**

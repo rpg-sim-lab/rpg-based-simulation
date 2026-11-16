@@ -45,7 +45,7 @@ Independent, any time:
 
 ## Not cut yet
 
-- Phase 4 waits on OD-5. The owner asked for an evidence pack first, from both this project's observation and external research (agent-working-designer). The pack may add a Phase 2 acceptance item: either the close check covers the pipeline-only checks, or the owner accepts losing them.
+- Phase 4: OD-5 is decided (#715 6911091662): option A with both conditions. TCK-20261116-SDLC-RETIRE-PIPELINE-WORKFLOWS is filed BLOCKED. Its gate: the close check has run 2 weeks carrying the test-scope floor line and the architecture-verdict line (the clock starts on the first day it carries both), Phase 3 has landed, and the R0 tags cover the files. Dispatch then needs an owner go.
 - R1 stays deferred.
 
 ## Rules

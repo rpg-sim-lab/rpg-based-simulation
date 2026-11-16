@@ -8263,6 +8263,23 @@
   - ai
   - governance
 - type: ticket
+  path: agent-working/tickets/todos/ai-first-sdlc-evolution/TCK-20261116-SDLC-RETIRE-PIPELINE-WORKFLOWS.md
+  ticket_id: TCK-20261116-SDLC-RETIRE-PIPELINE-WORKFLOWS
+  title: '`implement-ticket.js`, `implement-epic.js` and the skill imitation are removed
+    together, once the close check has run two weeks with both OD-5 lines.'
+  tier: standard
+  ticket_type: refactor
+  date: '2026-11-16'
+  related_code_areas:
+  - .claude/workflows/implement-ticket.js, .claude/workflows/implement-epic.js
+  - .claude/skills/ (implement-ticket, implement-epic)
+  - tests/tools/ (the source-pinned tests)
+  artifact_files: []
+  tags:
+  - ai
+  - governance
+  - delivery
+- type: ticket
   path: agent-working/tickets/todos/ai-first-sdlc-evolution/TCK-20261116-SDLC-WORK-CLOSE-CLI.md
   ticket_id: TCK-20261116-SDLC-WORK-CLOSE-CLI
   title: A `work close` command closes a ticket in one step and refuses when a validator
