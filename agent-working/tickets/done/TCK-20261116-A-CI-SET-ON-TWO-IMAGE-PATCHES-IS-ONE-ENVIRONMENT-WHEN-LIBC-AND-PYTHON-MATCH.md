@@ -74,6 +74,9 @@ lead-planner-u24's condition: dropping the version from the key is a determinism
 - [x] AC5: the ticket and PR body state that cross-image-patch identity is unproven by run 43805965260, that keys move, and that old cache entries are a miss, not reused.
 - [x] AC6: `test_paired_env_key.py`, `test_paired_relative_cache.py`, `test_paired_arms_workflow_end_to_end.py`, `test_paired_arms.py`, `test_rpg_measure_collected.py`, `test_rpg_measure.py`, `test_arm_child_pinned_check.py` and the workflow shape tests pass. Unit tests only, `-n 1`.
 
+- [x] AC7 (rpg-planner review): `assemble` records whether the same-bytes check proved identity across image patches: "cross-patch identity shown: <dir> <v1> = <v2> (<n> documents)" per result directory, or "cross-patch identity not exercised in this set", in its console line and in `identities.json` (`cross_patch_identity`). Tests: pair and self seed-42 jobs on two versions (shown); the run 43805965260 shape (a different version on a non-shared job: not exercised); a shared document that differs across two patches is refused.
+- [x] AC8 (rpg-planner review): the runner-identity refusal names the fields actually compared (`python/os/image_os/libc/python_build`), pinned by a test.
+
 ## Related Tickets
 - TCK-20261023-PAIRED-ARMS-RUN-OFF-THE-SHARED-HOST (parent T2; AC1 is blocked on this)
 - TCK-20261116-AN-ARM-RUNS-WHEN-THE-CACHE-PATH-IS-RELATIVE (#930)
@@ -111,6 +114,7 @@ None.
 - AC3: `assemble` refuses jobs that differ in libc, python_build, image_os, python, os or uv_lock (cost record) or dists (env.json only); it assembles jobs and arms that differ only in image version and lists both versions.
 - AC4: the `run-arm` line carries `final_hash=f1 start_hash=s1` (stub child); the shape test pins the print step and the summary line. The end-to-end test now serves one job a different `ImageVersion` (the run 43805965260 shape) and still assembles and compares to PASS, with both versions in `identities.json`.
 - Revert evidence: with `ImageVersion` keyed again (`ci:<ImageOS>-<ImageVersion>`), 5 tests FAIL (both end-to-end tests, the CI-vs-local key test, the hosted-runner key test, `test_two_image_patch_versions_are_one_environment`). With the missing check put back before the env check, `test_a_prefix_split_across_two_env8_directories_is_refused_by_name_before_the_missing_check` FAILS. Both reverts undone before commit.
+- Added after review (AC7, AC8): `paired_arms.assemble` collects, per result document, the image versions of the jobs that wrote it; a document written by two jobs on different versions and with equal bytes (a difference is refused) is a shown cross-patch identity, counted per directory. The refusal text in `paired.py` now reads `runner python/os/image_os/libc/python_build differs between arms of a key`. The full set of 10 files: 204 passed in 17 s at `-n 1`, unit and static only.
 
 ## Files Changed
 - tools/rpg_measure/paired.py

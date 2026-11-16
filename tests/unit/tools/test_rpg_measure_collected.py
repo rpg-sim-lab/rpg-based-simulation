@@ -76,6 +76,7 @@ def test_a_runner_whose_python_os_or_image_differs_is_refused(tmp_path, capsys, 
     assert collected(tmp_path) == 2
     err = capsys.readouterr().err
     assert "urban_political:43" in err and field in err
+    assert "runner python/os/image_os/libc/python_build differs between arms of a key" in err  # names the fields actually compared (never the old "python/os/image")
 
 
 def test_a_repeat_runner_that_differs_from_its_base_is_refused(tmp_path, capsys):

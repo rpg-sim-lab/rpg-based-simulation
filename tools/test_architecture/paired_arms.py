@@ -273,9 +273,12 @@ def assemble(src: Path, out: Path, *, base: str, new: str) -> Dict[str, Any]:
         for field in COMPARED_WITHIN_KEY:
             if len({str(r[field]) for _d, r in entries}) > 1:
                 raise ArmsRefused(f"{stem}: its arms ran on different {field} values ({'; '.join(f'{d}: {r[field]!r}' for d, r in entries)})")
+    writers: Dict[str, List[Tuple[str, str]]] = {}  # result document -> [(job, that job's image version)], for the cross-patch identity record
     for job in jobs:
         for path in sorted(job.glob("results/*/*")):
             target = Path(out) / path.relative_to(job)
+            if path.suffix == ".json" and not (path.name.endswith(".cost.json") or path.name in ("image.json", paired.ENV_FILE)):
+                writers.setdefault(str(path.relative_to(job)), []).append((job.name, str(runners[job.name].get("image_version"))))
             recorded_only = path.name.endswith(".cost.json") or path.name == "image.json"  # per-job records (the image patch version differs between jobs by design): the first stays
             if target.exists() and not recorded_only and target.read_bytes() != path.read_bytes():
                 raise ArmsRefused(f"{path.relative_to(job)}: two jobs wrote different bytes to the same result file (a self-check arm that does not reproduce?)")
@@ -283,9 +286,28 @@ def assemble(src: Path, out: Path, *, base: str, new: str) -> Dict[str, Any]:
             if not (target.exists() and recorded_only):  # the first cost/image record of a shared result stays; a later job's identical result adds none
                 shutil.copyfile(path, target)
     Path(out).mkdir(parents=True, exist_ok=True)
-    summary = {"jobs": runners, "arms": arms, "image_versions": sorted({str(r.get("image_version")) for r in runners.values()})}
+    summary = {"jobs": runners, "arms": arms, "image_versions": sorted({str(r.get("image_version")) for r in runners.values()}), "cross_patch_identity": _cross_patch_identity(writers)}
     (Path(out) / "identities.json").write_text(json.dumps(summary, sort_keys=True, indent=2) + "\n", encoding="utf-8")
     return summary
+
+
+NOT_EXERCISED = "cross-patch identity not exercised in this set"
+
+
+def _cross_patch_identity(writers: Mapping[str, List[Tuple[str, str]]]) -> List[str]:
+    """What the same-bytes check proved across image patches. A result document written by two jobs that ran on different image patch versions was compared byte for byte
+    (assemble refuses a difference), so when such documents exist the set shows the simulation's bytes did not move across the patches. One line per result directory:
+    ``cross-patch identity shown: <dir> <v1> = <v2> (<n> documents)``; ``NOT_EXERCISED`` when no document spans two versions."""
+    by_dir: Dict[str, Tuple[set, int]] = {}
+    for rel, entries in writers.items():
+        versions = {v for _j, v in entries}
+        if len(entries) > 1 and len(versions) > 1:
+            directory = rel.split("/")[1]
+            seen, count = by_dir.get(directory, (set(), 0))
+            by_dir[directory] = (seen | versions, count + 1)
+    if not by_dir:
+        return [NOT_EXERCISED]
+    return [f"cross-patch identity shown: {directory} {' = '.join(sorted(versions))} ({count} documents)" for directory, (versions, count) in sorted(by_dir.items())]
 
 
 def main(argv: Optional[Sequence[str]] = None) -> int:
@@ -327,6 +349,8 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         else:
             summary = assemble(args.src, args.out, base=args.base, new=args.new)
             print(f"assembled {len(summary['jobs'])} job(s), {len(summary['arms'])} arm run(s) into {args.out}; image versions in the set: {summary['image_versions']}")
+            for line in summary["cross_patch_identity"]:
+                print(line)
     except ArmsRefused as exc:
         print(f"REFUSED: {exc}", file=sys.stderr)
         return 2

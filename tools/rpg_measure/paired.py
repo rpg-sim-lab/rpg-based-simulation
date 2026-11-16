@@ -597,7 +597,7 @@ def _run(a: argparse.Namespace, verdict: Dict[str, Any]) -> int:
             return _refuse(verdict, f"missing results {missing}", f"missing collected results (arm:world:seed) {missing}")
         mismatched, _runners = runner_identity(cache, entries)
         if mismatched:
-            return _refuse(verdict, f"runner identity differs {mismatched}", f"runner python/os/image differs between arms of a key: {mismatched}; the pair is not host-independent")
+            return _refuse(verdict, f"runner identity differs {mismatched}", f"runner python/os/image_os/libc/python_build differs between arms of a key: {mismatched}; the pair is not host-independent")
         read = lambda sha: _collected_runs(cache, sha, NEUTRAL_TICKS, jobs)
         rc, bad = neutral_report(read(bsha), read(nsha), bsha, nsha)
         _neutral_verdict(verdict, bad)
@@ -622,7 +622,7 @@ def _run(a: argparse.Namespace, verdict: Dict[str, Any]) -> int:
             return _refuse(verdict, f"missing results {missing}", f"missing collected results (arm:world:seed) {missing}")
         mismatched, runners = runner_identity(cache, entries)
         if mismatched:
-            return _refuse(verdict, f"runner identity differs {mismatched}", f"runner python/os/image differs between arms of a key: {mismatched}; the pair is not host-independent")
+            return _refuse(verdict, f"runner identity differs {mismatched}", f"runner python/os/image_os/libc/python_build differs between arms of a key: {mismatched}; the pair is not host-independent")
         runner_lines = ["- runners (collected off host): " + ("; ".join(runners) if runners else "none recorded (no cost.json beside the results)")]
         load = lambda sha, js, repeat=False: _collected_runs(cache, sha, a.ticks, js, repeat)
         base, new = load(bsha, jobs), load(nsha, jobs)
