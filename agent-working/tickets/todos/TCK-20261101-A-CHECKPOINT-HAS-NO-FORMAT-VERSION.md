@@ -34,12 +34,14 @@ rpg-designer asked for this ticket (ruling word for word in TCK-20261031-A-PAIR-
 Restoring also runs `pickle.loads` on the file, which is outside this ticket's question but is the reason to refuse before unpickling.
 
 ## Scope
-Raised to P1 and shape lean given by rpg-designer (below). Lands soon after the second of F3 and the churn fix; blocks neither.
+Raised to P1 and shape lean given by rpg-designer (below); its fifth bullet is withdrawn by ruling (a), 2026-11-16. F3 and the churn fix have landed.
 1. A schema fingerprint in the header: the ordered field names of every slotted state record.
 2. Restore's accept and refuse rules per the lean, before any value is used.
-3. Whether the header check can run before unpickling, which the first ruling asked for: comparing a fingerprint needs only the header, but a headerless checkpoint's shape can only be judged from its pickle. Say how.
+3. Every check runs on the header before `pickle.loads`. A checkpoint without a fingerprint header is refused with a typed error (rpg-designer ruling (a), 2026-11-16, below). The spec_id check also moves before `pickle.loads` and stays ahead of the fingerprint check, so a checkpoint of another scenario is still refused for that reason (the contract of `test_checkpoint_group_fields.py:224`).
 4. FIELD_RULES rows in `src/engine/checkpoint_fields.py` stay the fill step. The field-order pin from the group batch may be retired by this; say whether.
-5. A guard that the fingerprint covers every slotted state record. If it belongs in tests/architecture, ask testing-planner.
+5. A guard that the fingerprint covers every slotted state record: recorded at save from the payload (re-scope below), checked by a unit test.
+6. Tests that restore a hand-written checkpoint are re-pointed, never weakened (ruling below).
+7. Docs and parity in the same change: `docs/engine/scenario_runtime_contract.md` "Checkpoint Format" (header fields and the refusal rule), the INFRA-215 row in `docs/parity_ledger/infrastructure.yaml`, and the route's client-error shape.
 
 ## Out of Scope
 - The group batch's own restore step (TCK-20261031-A-PAIR-RE-FORMS-AND-LEAVES-A-GROUP-EVERY-TWO-TICKS).
@@ -47,7 +49,7 @@ Raised to P1 and shape lean given by rpg-designer (below). Lands soon after the 
 - Replacing pickle.
 
 ## Acceptance Criteria
-1. An insert, reorder, rename or removal is refused with a typed error before any value is used; fields appended at the end and named in FIELD_RULES are accepted and filled; a headerless checkpoint is accepted only if its shape matches the pre-fingerprint schema (tests for each).
+1. An insert, reorder, rename or removal is refused with a typed error before any value is used; fields appended at the end and named in FIELD_RULES are accepted and filled; a checkpoint without a fingerprint header is refused with a typed error before unpickling (test proves pickle.loads is not called) (tests for each).
 2. A current checkpoint round-trips byte-equal (test).
 3. The API routes report the refusal as a client error, in a shaped response.
 4. Docs for the checkpoint format are updated, and the parity entry if one exists.
@@ -74,6 +76,19 @@ None yet.
 ### rpg-designer's raise and shape lean
 Word for word in TCK-20261031-A-PAIR-RE-FORMS-AND-LEAVES-A-GROUP-EVERY-TWO-TICKS ("on the two corrections", point 1). F3 found the same defect: BuildingState.beds inserted before _canonical_cache, moved last with an old-shape test.
 
+### rpg-designer ruling on headerless checkpoints, 2026-11-16 (u24; relayed by lead-planner-u24 and lead-planner). In substance, as relayed:
+"Ruling (a): refuse EVERY checkpoint without a fingerprint, with a typed error, before pickle.loads.
+Why: no committed .ckpt or checkpoint blob exists (git ls-files), so none is a kept artifact; (b) can't tell an insert from an append, which is the exact hazard (next_group_id, beds); (c) breaks refuse-before-unpickle; (a) is the simplest (6698958617), and its cost (pre-fix checkpoints can't be restored) is acceptable since none is kept.
+The lean's 5th bullet ("headerless accepted only if its shape matches") is WITHDRAWN. AC1's last clause becomes: "a checkpoint without a fingerprint header is refused with a typed error before unpickling (test proves pickle.loads is not called)."
+Tests, with no weakening. Two tests in tests/unit/engine/test_checkpoint_group_fields.py restore a HEADERLESS old-shape blob through restore(): test_restore_refuses_a_bound_group_checkpoint_before_building_a_kernel (:119) and test_restore_fills_an_old_shape_checkpoint_before_the_kernel_is_built_and_reads_it (:146). RE-POINT both to an old-shape checkpoint WITH a fingerprint header listing the pre-append field order, so the FIELD_RULES fill and the bound-group refusal stay tested through restore(). Don't delete them or turn them into header-refusal tests. The pickle-level tests (:60-:109) are unaffected. ADD a separate headerless-refusal test.
+Docs/parity in the same change: scenario_runtime_contract.md "Checkpoint Format" (header fields plus the refusal rule), its INFRA-215 ledger row, and the API route's client-error shape (AC3)."
+
+Planner note (rpg-planner-ubuntu, applying the ruling's no-weakening rule): three more tests write a headerless checkpoint and call restore(), and the ruling did not name them. Each is re-pointed the same way, keeping what it asserts:
+- `tests/unit/engine/test_checkpoint_group_fields.py:215`, a pre-F3 checkpoint refused for the missing `beds`. It gets a fingerprint header listing BuildingState without `beds`, so the FIELD_RULES refusal is still reached through restore().
+- `:224`, a pre-F3 checkpoint of another scenario raising the spec_id error and not the field error. Same header; the spec check stays first.
+- `tests/unit/engine/test_scenario_checkpointer.py:55-73`, the spec_id mismatch on a dummy payload. It gets a valid fingerprint header so it still tests the spec check.
+`_write_checkpoint` (`:191`) and the inline header writers at `:124` and `:164` are the places to change; a shared helper that writes an old-shape header is the natural form. The API tests mock restore() and are unaffected. The integration tests save with the real writer and are unaffected.
+
 ### Re-scope against main 789f0f729 (rpg-planner-ubuntu, 2026-11-16)
 What changed since filing:
 - The designer's precondition is met: F3 and the churn fix both landed. FIELD_RULES (`src/engine/checkpoint_fields.py`) now has 9 rows: lodged_in, beds (refuse), cleared_since, next_group_id, the three group fields, and the last_hit pair. Scope item 4: FIELD_RULES stays the fill step, unchanged in shape.
@@ -85,7 +100,7 @@ What changed since filing:
 
 Scope item 5, recommendation: record the fingerprint at save from the payload itself, not from a static walk of type hints. A `pickle.Pickler` subclass whose `reducer_override` notes the type of each dataclass it writes gives exactly the classes in that payload, so the header covers every record by construction. A static walk misses fields typed `Any` or `object`, and a sample-based walk (like `tests/architecture/state_digest_probe.py`) only sees what the sample contains. With save-time recording, the guard is an ordinary unit test (the classes met on load equal the header's) and nothing goes to tests/architecture, so no ask to testing-planner. On 3.13.7 it saw nested slotted frozen dataclasses, including one inside a dict (toy, 2026-11-16; not yet on a real state, where memoised repeats and custom `__reduce__` methods need checking). If it misses any on a real state, fall back to the type walk and send the ask.
 
-Scope item 3, the headerless (today's) checkpoint, needs a choice. A fingerprint is compared from the header alone. A checkpoint with no fingerprint can only be judged from its payload. Options:
+Scope item 3, the headerless (today's) checkpoint. RESOLVED 2026-11-16: rpg-designer chose (a), recorded above. A fingerprint is compared from the header alone. A checkpoint with no fingerprint can only be judged from its payload. Options:
 - (a) Refuse every checkpoint without a fingerprint, before unpickling, with a typed error saying to re-create it on a current build. Simplest, and fully before-unpickle. It departs from the lean's fifth bullet. Costs nothing on this host (no checkpoints).
 - (b) Read the payload's opcodes with `pickletools.genops`, which does not run the pickle, and accept only if each class's saved field count equals the pre-fingerprint schema (main's shape when this lands); otherwise refuse. Keeps the lean and stays before-unpickle. Limit: a count cannot tell an insert from an append, so it accepts only an exact-count match and fills nothing. Memo references make the scan more code than (a).
 - (c) Unpickle and then compare. Rejected: it runs `pickle.loads` on a file of unknown shape, which the first ruling asked to avoid.
