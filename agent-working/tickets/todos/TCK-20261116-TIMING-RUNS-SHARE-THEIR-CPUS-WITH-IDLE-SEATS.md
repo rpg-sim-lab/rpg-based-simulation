@@ -62,10 +62,10 @@ Recommendation: A, with B as a stopgap until A lands. Either way, add steal time
 - Swap sizing and the VM's host-side configuration.
 
 ## Acceptance Criteria
-- [ ] The owner's choice recorded on #715 and cited here.
-- [ ] The chosen fence in place (or option D recorded).
-- [ ] Steal time and swap counters in timing records, or a reason they are not.
-- [ ] Frontier's 3 timed runs re-run after the change, with the spread stated.
+- [x] The owner's choice recorded on #715 and cited here (#715 6917238009).
+- [x] The chosen fence in place (or option D recorded): option D recorded for now; option A becomes a condition of lifting the pause.
+- [ ] Steal time and swap counters in timing records, or a reason they are not. (A lift condition.)
+- [ ] Frontier's 3 timed runs re-run after the change, with the spread stated. (After A is in place.)
 
 ## Related Tickets
 - TCK-20261115-PER-PHASE-TICK-COST-AFTER-THE-HOSTILITY-AND-COOPERATION-FIXES (evidence)
@@ -89,6 +89,11 @@ None yet.
 - Whether two CPUs are enough for the seats at peak; RPG work has priority, so option A trades seat speed for timing quality.
 
 ## Implementation Notes
+- 2026-11-16: **owner decision (#715 6917238009, relayed by lead-planner): "D now, A when the pause lifts".** No host change now: the quiet gate and the spread rule stand, and a world whose spread is over about 10 % is reported INCONCLUSIVE. Two items become conditions of lifting the perf pause, refining the condition in #715 6911604017:
+  1. option A, the seats-slice fence (Claude seats limited to CPUs 0-3, timing scopes on 4-5), routed by lead-planner to the launcher's owner when the lift is prepared;
+  2. steal time and swap counters in every timing record (perf tooling, done as part of the lift).
+  Not chosen: A now, B per window, C another host.
+- This ticket stays OPEN as the lift checklist for these two items and the frontier re-run (AC3, AC4). It closes when the pause lifts and those are done, not in the next perf PR.
 
 ## Test Summary
 
