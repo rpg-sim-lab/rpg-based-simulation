@@ -1,10 +1,10 @@
 ---
-status: active
+status: historical
 layer: combat
 authority: P1
 audience: agent
 ticket_id: TCK-20261103-A-GROUP-HIT-RECORDS-ONLY-ITS-FIRST-ATTACKER
-phase: open
+phase: done
 date: 2026-11-03
 tags: []
 ---
@@ -15,7 +15,7 @@ tags: []
 A simultaneous group hit records only its first attacker, so row 88's act test reads the others as not acting
 
 ## Status
-OPEN
+DONE
 
 ## Tier
 standard
@@ -81,8 +81,27 @@ Open: whether it explains the s44 victims. They were hit by scout 17 alone as fa
 - The self-defence rider (TCK-20261101-A-HOSTILE-ATTACKING-YOU-OUTRANKS-THE-GROUP-SHARED-TARGET, lane C, unpushed, `self_defence_rank` via `hostile_hit_subject_within`) reads the same `last_attacker_id`. A group hit would make the rider favour the first hitter and ignore the rest. Whatever the fix, the rider's key and row 88 (b) read the same field, and both get a grid row with a two-attacker group hit.
 - A typed per-attacker field is new durable state: it needs the digest (TCK-20261103-STATE-DIGEST-MAY-OMIT-FIELDS-THAT-DECISIONS-READ), a checkpoint field rule (append-only; FIELD_RULES derive-or-refuse; restore can't derive it, so it is refused or defaulted per the checkpoint ruling), and parity rows. Prefer a smaller fix if counts allow it: each attacker of a group hit writes last_attacker_id in a fixed order, so the latest wins, as for single hits.
 
+2026-11-15 rpg-designer ruling (#634 6883450273, filed as staging rpg_designer_ruling_2026-11-14.md): shape C accepted (`last_hit_attackers: tuple[int, ...]` sharing `last_hit_tick`); felt_swing option (b) with a per-attacker share tuple.
+Departure the ruling invited: the share tuple `last_hit_damages` is typed `tuple[int, ...]`, not float, because hp, last_hit_damage and calculate_damage are int, so the shares sum exactly to last_hit_damage (rpg-planner-ubuntu checked combat.py:53 and state.py:417 and is putting it on record with the designer).
+
+### Known gaps (measured, disclosed)
+- Long felt-lethal holds on frontier s42, new arm: e36 held 107 ticks from t3754; e12 was held at the last tick. Both are untraced. The one traced, e7 (a2 re-run, spy fb478ec8, #634 6905649093): e7's 56-tick hold: its only felt attacker, e30, stayed engaged (orthogonally adjacent) throughout without targeting it. The free swing runs with is_lethal=False, so stepping away would have ended in a terminal DEFEAT rather than a COMBAT death; the felt estimate was right that stepping away was terminal. e7 died COMBAT at t4222 from e30's hit of 23 against hp 6. These are the existing 2.204 hold reached more often on ticket 2's trajectory; ticket 1 alone is byte-identical to base (a1).
+- Urban fight deaths 34 -> 43, mostly seed 45 (people deaths 10 -> 20). Up in 2 of 5 seeds; no Tier 1 trip.
+- Worker fight deaths up in every world: frontier 17 -> 25, urban 3 -> 11, crowded 36 -> 39. Untraced. Observed only; they are NOT ticket 2's intent.
+- Urban flee episodes 64 -> 233, and perceived-hostile samples 1859 -> 3815.
+- Measurement: base 5ba65854c vs new 437160ac3, ghpair Phase 1 PASS (D76 no drift in all 3 worlds), Phase 2 HOLD_STOP at frontier s42 (new 3 qualifying holds vs base 0); rpg-designer #634 6893463789; owner chose land-and-disclose, #715 6906659466. Hot-loop timing is NOT MEASURED (perf pause #715 6556861718).
+
 ## Test Summary
+Run on merge head (origin/main c9279925b merged), pinned to CPUs 4-5, `-m "not slow"`: tests/architecture, tests/mechanic_scenarios, tests/unit/{ai,engine,movement,perf,progression,strategic,tactical}: 2790 passed, 3 skipped, 1 xfailed, 2 failed (run twice, same result).
+- tests/architecture/test_no_name_switches_in_decision_paths.py: 58 passed (now gates src/world and src/core).
+- Fail 1: tests/unit/perf/test_benchmark_record.py cpu_affinity case: the test's changed value "4-5" equals the pin used for the run; passes unpinned (67 passed). Environment artefact of the pin.
+- Fail 2: tests/unit/tactical/test_low_hp_retreat_gate.py::test_a_held_retreat_does_not_walk_a_stored_target_through_the_kernel: seen before merging main; fixed on main by #932 (TCK-20261116-A-TEST-KERNEL-DOES-NOT-DEGRADE-BECAUSE-AN-EARLIER-TEST-USED-MEMORY); the failing pair passes at this head.
+- Code identity: the src/tests diff differs from the measured one (5ba65854c..437160ac3, 5b91a901...) only by the code-health refactor 69c840b1e..750e9a242 (combat.py `_hit_outcome`, patches.py `_hit_attackers_and_damages`), hash-proven neutral (owner #715 6907423637: s42, 5000 ticks, identical final hashes on frontier/urban/crowded). `git diff origin/main <head> -- src tests` = `git diff c9279925b 750e9a242 -- src tests` = bc5169fb826696334aaba3d737df75675f77b53b4b5d7448fe58c8c379f72535.
+- Gates at the merged head (origin/main dc2f4c07e): codebase.health check OK; name-switch test plus paths guard plus the batch's tests 131 passed.
+Known gap: hot-loop timing NOT MEASURED (perf pause #715 6556861718).
+Known gap: tests/unit/perf/test_benchmark_record.py cpu_affinity case fails only under a taskset 4-5 pin (its changed value equals the pin); passes unpinned.
 
 ## Files Changed
 
 ## Completion Summary
+Landed with disclosures (owner #715 6906659466, 'Land, disclose'; rpg-designer #634 6893463789): see Known gaps. Measurement base 5ba65854c vs new 437160ac3: ghpair Phase 1 PASS, Phase 2 HOLD_STOP at frontier s42. Not pushed; push needs an owner ask.

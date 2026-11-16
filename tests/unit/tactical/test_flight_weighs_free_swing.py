@@ -25,7 +25,7 @@ def _scene(hp=15, damage=17, attacker=HUNTER, readiness=100.0, hunter_at=(30.0, 
     state = compile_world("frontier_living_world", 42)
     m, h = state.entities[MERCHANT], state.entities[hostile]
     attacker = hostile if attacker == HUNTER else attacker
-    combat = replace(m.combat, hp=hp, max_hp=300, readiness=readiness, last_attacker_id=attacker, last_hit_tick=state.tick, last_hit_damage=damage)
+    combat = replace(m.combat, hp=hp, max_hp=300, readiness=readiness, last_attacker_id=attacker, last_hit_tick=state.tick, last_hit_damage=damage, last_hit_attackers=(attacker,), last_hit_damages=(damage,))
     if style is not None:
         combat = replace(combat, action_style=style)
     m = replace(m, navigation=replace(m.navigation, position=HERE, movement_mode=MovementMode.REGROUP), combat=combat,

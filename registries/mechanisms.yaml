@@ -190,6 +190,8 @@ mechanisms:
         **Note, added 2026-11-01 (TCK-20261031-A-SLEEPER-HOLDS-A-DOOR-OR-SERVICE-TILE, divergence
         2.155, owner #715 6543182195):** a lodged entity (`navigation.lodged_in` set) has no tile
         and cannot be targeted or hit from outside; combat skips it as a target, and its own attack is refused as illegal (ATTACKER_INCAPACITATED) while lodged.
+
+        **Note, added 2026-11-16 (TCK-20261103-A-GROUP-HIT-RECORDS-ONLY-ITS-FIRST-ATTACKER):** `resolve_multi_attack` now records every attacker of a group hit and its share (`hit_attackers_set` / `hit_damages_set`, applied in `CombatPatch.apply` onto `CombatComponent.last_hit_attackers` / `last_hit_damages`; a single hit records a 1-tuple), beside `last_attacker_id` / `last_hit_damage`. Recording only: it does not change whether or how a hit resolves.
   - id: tactical_decision
     layer: entity
     summary: "Decides in the moment what a creature does when danger is near: attack, hold its ground, back away or run. In current worlds the choice to attack is almost never taken."
@@ -284,6 +286,8 @@ mechanisms:
         as its own mechanism, `sense_gated_detection`. The reasoning above for keeping it out of
         THIS entry's `implemented_by` still holds; only "NOT registered as its own mechanism" is
         superseded.
+
+        **Note, added 2026-11-16 (TCK-20261103-A-GROUP-HIT-RECORDS-ONLY-ITS-FIRST-ATTACKER and TCK-20261101-A-HOSTILE-ATTACKING-YOU-OUTRANKS-THE-GROUP-SHARED-TARGET, divergences 2.148 and 2.149):** `tactical_threat._hit_acts_on` now counts a hostile as acting on the subject when it is among the subject's `last_hit_attackers` (any member of a group hit), not only the single `last_attacker_id`, with the same window. `attacked_me_recently` (ATTACKED_RECENTLY_WINDOW_TICKS = 10, D-13) adds a `not_attacking_me` key to `target_score`, after `not_adjacent` and before `group_bias`: it reorders which hostile is targeted and adds no new path into the ATTACK branch. **Re-check pending:** whether the reordered target choice changes how often the ATTACK branch fires (this entry's `contradicted` verdict, 2026-09-19) has not been re-measured; the batch's phase 1 counted flee and deaths, not ATTACK decisions. The verdict stands until a corpus count says otherwise.
   - id: combat_engagement
     layer: entity
     summary: "Before a creature starts a fight it sizes up the odds, and it skips a fight that looks too risky for its nature. This only changes outcomes in busy, combat-heavy worlds, because in most worlds few attacks are chosen at all."

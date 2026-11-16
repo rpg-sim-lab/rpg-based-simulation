@@ -53,6 +53,23 @@ def _buildings(state: Any) -> Iterable[Any]:
         yield (f"building {b.id}", b)
 
 
+def _combats(state: Any) -> Iterable[Any]:
+    for e in (getattr(state, "entities", None) or {}).values():
+        yield (f"entity {e.id}", e.combat)
+
+
+def _last_hit_attackers_from_primary(state: Any, combat: Any) -> Any:
+    """A state that predates the group record knew one attacker per hit: the primary one (empty when never hit)."""
+    attacker = getattr(combat, "last_attacker_id", None)
+    return () if attacker is None else (attacker,)
+
+
+def _last_hit_damages_from_blow(state: Any, combat: Any) -> Any:
+    """The shares of that one attacker: the whole summed blow (empty when never hit or the blow was not recorded)."""
+    blow = getattr(combat, "last_hit_damage", None)
+    return () if getattr(combat, "last_attacker_id", None) is None or blow is None else (blow,)
+
+
 def _state_itself(state: Any) -> Iterable[Any]:
     yield ("state", state)
 
@@ -89,6 +106,9 @@ FIELD_RULES: List[FieldRule] = [
     FieldRule("next_group_id", _state_itself, "next_group_id", fill=_seed_next_group_id, ruling="rpg-designer 2026-10-31, group id allocation (addition 4)"),
     FieldRule("group.contract_holder_id", _groups, "contract_holder_id", fill=_none_on_unbound_group, ruling=_GROUP_RULING),
     FieldRule("group.dissolution_reason", _groups, "dissolution_reason", fill=_none_on_unbound_group, ruling=_GROUP_RULING),
+    # A state that predates the group hit record (TCK-20261103-A-GROUP-HIT-RECORDS-ONLY-ITS-FIRST-ATTACKER) held one attacker per hit, so the pair is exactly the primary attacker and the blow.
+    FieldRule("last_hit_attackers", _combats, "last_hit_attackers", fill=_last_hit_attackers_from_primary, ruling="rpg-designer 2026-11-14 (#634 6883450273): a pre-group-hit state recorded one attacker per hit"),
+    FieldRule("last_hit_damages", _combats, "last_hit_damages", fill=_last_hit_damages_from_blow, ruling="rpg-designer 2026-11-14 (#634 6883450273): a pre-group-hit state recorded one attacker per hit"),
     FieldRule("group.dissolution_contract_status", _groups, "dissolution_contract_status", fill=_none_on_unbound_group, ruling=_GROUP_RULING),
 ]
 
