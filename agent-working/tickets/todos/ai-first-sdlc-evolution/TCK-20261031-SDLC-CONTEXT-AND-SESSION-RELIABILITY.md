@@ -33,7 +33,7 @@ Owner decision 2026-11-15 (#715 6889309909, 6889318166): this is the epic's next
 
 ## Scope
 1. ~~Fix the search staleness root; the stale flag is correct in worktrees.~~ Split out on 2026-11-15 as TCK-20261115-SEARCH-STALE-FLAG-CHECKS-THE-INDEXED-CHECKOUT, the owner's vehicle for the native implement-ticket run (#715 6889489078).
-2. Add an authority field and history down-weighting.
+2. Add an authority field and history down-weighting. Owner decision (#715 6911224913, Q2): historical plans and status-less `docs/brainstorm` documents rank lower in default search but stay searchable, and brainstorm documents get a status first (TCK-20261116-DOC-CLASSIFICATION-LIST supplies the list; the status edit is rpg-planner's).
 3. Mark branch content as not indexed.
 4. Rebuild the graph on a schedule and print its build SHA.
 5. A handover header and a write-time cap.
@@ -51,6 +51,7 @@ Owner decision 2026-11-15 (#715 6889309909, 6889318166): this is the epic's next
 2. E3 baseline and after-numbers are recorded over 20 authority queries; the owner sets the share.
 3. No handover over the cap without a write-time warning.
 4. `tests/tools/` passes in a lead slot.
+5. Historical plans and status-less brainstorm documents rank below current documents in default `search_docs`, and a query that asks for one of them by name still returns it. A test with a fixture shows both.
 
 ## Related Tickets
 - TCK-20261031-EPIC-AI-FIRST-SDLC-EVOLUTION

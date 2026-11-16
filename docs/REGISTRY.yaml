@@ -8193,6 +8193,82 @@
   artifact_files: []
   tags: []
 - type: ticket
+  path: agent-working/tickets/todos/ai-first-sdlc-evolution/TCK-20261116-CHANGED-CODE-CHECK-REPORT-ONLY-WITH-PROOF-ESCAPE.md
+  ticket_id: TCK-20261116-CHANGED-CODE-CHECK-REPORT-ONLY-WITH-PROOF-ESCAPE
+  title: The mechanism changed-code check runs report-only in CI, and a 'no behaviour
+    change' claim for `implemented_by` code must carry proof.
+  tier: standard
+  ticket_type: feature
+  date: '2026-11-16'
+  related_code_areas:
+  - tools/mechanism_registry/mechanism_registry_changed_code_check.py
+  - .github/workflows/test.yml
+  artifact_files: []
+  tags:
+  - ai
+  - governance
+- type: ticket
+  path: agent-working/tickets/todos/ai-first-sdlc-evolution/TCK-20261116-DOC-CITATION-RESOLVER-REPORT-ONLY.md
+  ticket_id: TCK-20261116-DOC-CITATION-RESOLVER-REPORT-ONLY
+  title: A report-only resolver checks that every backticked citation in the authoritative
+    documents names a file and symbol that exist.
+  tier: standard
+  ticket_type: feature
+  date: '2026-11-16'
+  related_code_areas:
+  - tools/gate_checks/ (new resolver; doc_drift.py and docs_search.py are related)
+  - .github/workflows/test.yml
+  artifact_files: []
+  tags:
+  - ai
+  - governance
+  - testing
+- type: ticket
+  path: agent-working/tickets/todos/ai-first-sdlc-evolution/TCK-20261116-DOC-CLASSIFICATION-LIST.md
+  ticket_id: TCK-20261116-DOC-CLASSIFICATION-LIST
+  title: A read-only script lists every non-archive document with its status, last
+    change, dead-path count and any document that restates it.
+  tier: hotfix
+  ticket_type: chore
+  date: '2026-11-16'
+  related_code_areas:
+  - tools/ (new script)
+  artifact_files: []
+  tags:
+  - ai
+  - governance
+- type: ticket
+  path: agent-working/tickets/todos/ai-first-sdlc-evolution/TCK-20261116-FRESHNESS-STAMPS-REPORT-ONLY.md
+  ticket_id: TCK-20261116-FRESHNESS-STAMPS-REPORT-ONLY
+  title: An optional freshness stamp on a Bible chapter or engine contract reports,
+    without blocking, when a file the chapter cites has changed since the stamp.
+  tier: standard
+  ticket_type: feature
+  date: '2026-11-16'
+  related_code_areas:
+  - tools/gate_checks/
+  - docs/mechanics/ (read only)
+  artifact_files: []
+  tags:
+  - ai
+  - governance
+- type: ticket
+  path: agent-working/tickets/todos/ai-first-sdlc-evolution/TCK-20261116-PARITY-NEW-ROW-TEST-PATH-RATCHET-REPORT-ONLY.md
+  ticket_id: TCK-20261116-PARITY-NEW-ROW-TEST-PATH-RATCHET-REPORT-ONLY
+  title: A report-only check requires a `verified` parity row added or changed after
+    the cutover to have a test path that resolves to a collected test.
+  tier: standard
+  ticket_type: feature
+  date: '2026-11-16'
+  related_code_areas:
+  - tools/parity_ledger_writer.py (agent-working's)
+  - tools/gate_checks/ (new check)
+  artifact_files: []
+  tags:
+  - ai
+  - governance
+  - testing
+- type: ticket
   path: agent-working/tickets/todos/ai-first-sdlc-evolution/TCK-20261116-SDLC-ATTRIBUTION-FIELDS-AND-COORDINATION-METRICS.md
   ticket_id: TCK-20261116-SDLC-ATTRIBUTION-FIELDS-AND-COORDINATION-METRICS
   title: Monitoring rows carry their tool call and work item, events say whether they

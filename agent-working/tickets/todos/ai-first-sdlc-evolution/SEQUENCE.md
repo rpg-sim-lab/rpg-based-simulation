@@ -43,6 +43,16 @@ Independent, any time:
 - TCK-20261116-SDLC-ATTRIBUTION-FIELDS-AND-COORDINATION-METRICS (Phase 3, P3): tool-call and work-item ids, provenance labels, SessionEnd, and coordination metrics.
 - TCK-20261116-SDLC-CODEX-TRACK-MARKED-LEGACY (OD-6, hotfix): marks the track as legacy support, and splits the CI lane only if it also runs tests/agent_orchestration.
 
+## Docs-truth track filed 2026-11-16 (owner #715 6911224913, 6911534263; plan "Docs-truth track")
+
+Filing only, all P3 and behind RPG (#715 6911759453). Dispatch is a separate owner go. Order:
+1. TCK-20261116-DOC-CITATION-RESOLVER-REPORT-ONLY and TCK-20261116-DOC-CLASSIFICATION-LIST have no prerequisite.
+2. In rpg's lane, after rpg-planner-ubuntu agrees: the `test_path`-as-a-list change (F3a) and the 14 brainstorm statuses (F5b). These are not filed here.
+3. TCK-20261116-PARITY-NEW-ROW-TEST-PATH-RATCHET-REPORT-ONLY, after F3a.
+4. TCK-20261116-CHANGED-CODE-CHECK-REPORT-ONLY-WITH-PROOF-ESCAPE and TCK-20261116-FRESHNESS-STAMPS-REPORT-ONLY, after the resolver has run clean.
+
+Already filed elsewhere: the knowledge-gateway docs move, TCK-20261116-THIRTEEN-DEAD-KNOWLEDGE-GATEWAY-DOCS-MOVE-TO-THE-ARCHIVE, in rpg's lane. Search ranking is Phase 5 item 2 in TCK-20261031-SDLC-CONTEXT-AND-SESSION-RELIABILITY. The prose-reading sample is held: `agent-working/stored_artifacts/sdlc-decisions/prose_sample_draw_and_protocol.md`.
+
 ## Not cut yet
 
 - Phase 4: OD-5 is decided (#715 6911091662): option A with both conditions. TCK-20261116-SDLC-RETIRE-PIPELINE-WORKFLOWS is filed BLOCKED. Its gate: the close check has run 2 weeks carrying the test-scope floor line and the architecture-verdict line (the clock starts on the first day it carries both), Phase 3 has landed, and the R0 tags cover the files. Dispatch then needs an owner go.

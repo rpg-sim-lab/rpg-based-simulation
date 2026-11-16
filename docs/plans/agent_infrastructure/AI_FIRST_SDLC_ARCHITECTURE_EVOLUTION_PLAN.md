@@ -1294,6 +1294,27 @@ Phase 3 can start in parallel with Phase 2. The close-check condition "a closure
 12. **Owner decisions.** OD-5, OD-6.
 13. **Advance when** acceptance holds.
 
+### Docs-truth track (owner decisions 2026-11-16: #715 6911224913, 6911534263)
+
+Problem: documents drift from code, and a fact can have more than one home. The goal for the authoritative RPG documents (`docs/mechanics/`, `docs/engine/`, `docs/parity_ledger/`, `docs/guidelines/intentional_divergences.md`, `docs/world_rules/`, `registries/mechanisms.yaml`) is "kept true", not "fewer"; the goal for the rest is a single home per kind of fact and an honest status on every document. Measurement and reasoning: `agent-working/stored_artifacts/sdlc-decisions/docs_truth_plan.md`.
+
+Decided:
+- The 13 dead knowledge-gateway documents move to `docs/archive/knowledge_gateway_mcp/`; `redaction_retention_policy.md` stays as active (it is the spec of the live `tools/write_path_guard.py`) and its dead paths get fixed (#715 6911534263). Filed and dispatched: TCK-20261116-THIRTEEN-DEAD-KNOWLEDGE-GATEWAY-DOCS-MOVE-TO-THE-ARCHIVE, whose scope covers fixing that document's dead paths (it lists them with the dead-path script and decides per path).
+- Historical plans and status-less brainstorm documents rank lower in default search, still searchable; brainstorm documents get a status first. This is Phase 5 item 2 (authority field and history down-weighting) in TCK-20261031-SDLC-CONTEXT-AND-SESSION-RELIABILITY, not a new ticket.
+- Four checks start report-only, and none is blocking (owner): a citation resolver (AST-based, with its own positive controls); a changed-code check, report-only, where a "no behaviour change" claim for code a mechanism lists as `implemented_by` must carry proof; a parity `test_path` ratchet, where `test_path` becomes a list first; and freshness stamps, dropped if noisy.
+
+Proposed, not owner-decided (design from the lanes and agent-working-designer; the owner has not seen these details):
+- The resolver resolves files, functions, flags and test paths, not line numbers; a line number may sit beside a symbol and only the symbol is checked.
+- The proof forms for the "no behaviour change" claim: a hash-neutral run (pinned cell, world, seed, ticks, both final hashes equal), or rpg-designer's sign-off for annotation-only changes, with rpg-planner checking the proof.
+- The ratchet applies to `verified` rows added or changed after the cutover; the existing untested rows are burned down under TCK-20261114-PARITY-LEDGER-TEST-PATH-ERRORS-REMAIN-IN-SEVEN-FILES.
+- Stamps are keyed on the files a chapter cites.
+- At least 2 weeks of report-only counts before the owner decides whether any check becomes required.
+- Nothing flips to required while HOLD stage 2 or the D1 measurement PRs are in flight (rpg-planner says when).
+
+Baseline at db6b4579d: 636 of 11,714 backticked repo paths in non-archive docs are dead (5.4%); mechanics 1.4%, world_rules 0.5%, engine 5.8% excluding the knowledge-gateway set; all 23 documented Bible constants match the code. The symbol-level check failed its control and its numbers are not used.
+
+Not decided: whether to read a sample of prose claims (held; see `docs_truth_plan.md` section 7); the REGISTRY-in-CI question (a reader count comes first); the coordination items (heavy-slot lock, fewer open seats, a lighter path for no-code changes).
+
 ### Phase 5 — Context and session reliability
 
 1. **Objective.** Agents can trust the freshness and authority of their context.
