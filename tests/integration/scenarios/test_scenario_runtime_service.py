@@ -13,6 +13,8 @@ from __future__ import annotations
 
 import json
 import pytest
+
+from tests.named_run_dirs import remove_restored_run_dirs  # noqa: F401
 from unittest.mock import MagicMock
 
 
@@ -331,6 +333,7 @@ class TestTerminalStateGuards:
 # ── E31C: checkpoint / restore ────────────────────────────────────────────────
 
 
+@pytest.mark.usefixtures("remove_restored_run_dirs")
 class TestCheckpointRestore:
     """AC coverage for TCK-20260619-E31C-CHECKPOINT."""
 
@@ -438,6 +441,40 @@ class TestCheckpointRestore:
             restored.abort()
 
         assert restored_tail == ref_tail
+
+    def test_two_restores_of_one_spec_get_two_run_directories_and_neither_removes_the_other(self, tmp_path, remove_restored_run_dirs):
+        """TCK-20261115-A-RESTORED-SCENARIO-SHARES-ONE-RUN-DIRECTORY-PER-SPEC: the restored kernel's run id is unique per restore.
+
+        create_run_directory replaces a directory of the same id, so a shared id made the second restore delete the first one's run directory
+        (the xdist race on #926's CI). The id stays explicit, so the Domain.INIT RNG draw stays suppressed (the determinism tests above are unchanged).
+        """
+        import os
+        from pathlib import Path
+
+        from src.engine.scenario_checkpoint import ScenarioCheckpointer
+
+        spec = _make_spec()
+        svc = _make_service()
+        try:
+            svc.start(tick_limit=3)
+            path = tmp_path / "ckpt.bin"
+            ScenarioCheckpointer.save(svc, path)
+        finally:
+            svc.abort()
+
+        first = ScenarioCheckpointer.restore(path, spec)
+        second = ScenarioCheckpointer.restore(path, spec)
+        try:
+            ids = (first._kernel._run_id, second._kernel._run_id)
+            assert ids[0] != ids[1]
+            assert all(i.startswith(f"restored_{spec.id}_") for i in ids)
+            root = Path(os.path.abspath("data/runs"))
+            assert (root / ids[0]).is_dir(), "building the second restore removed the first one's run directory"
+            assert (root / ids[1]).is_dir()
+            assert remove_restored_run_dirs == list(ids)
+        finally:
+            first.abort()
+            second.abort()
 
     def test_checkpoint_file_contains_rng_checkpoint(self, tmp_path):
         """Checkpoint header contains rng_checkpoint field."""

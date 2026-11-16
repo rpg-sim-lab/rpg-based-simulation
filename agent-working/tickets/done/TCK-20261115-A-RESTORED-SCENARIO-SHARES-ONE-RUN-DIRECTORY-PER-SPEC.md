@@ -1,10 +1,10 @@
 ---
-status: active
+status: historical
 layer: engine
 authority: P2
 audience: agent
 ticket_id: TCK-20261115-A-RESTORED-SCENARIO-SHARES-ONE-RUN-DIRECTORY-PER-SPEC
-phase: open
+phase: done
 date: 2026-11-15
 tags: [determinism]
 ---
@@ -15,7 +15,7 @@ tags: [determinism]
 Every restore of one scenario spec builds its kernel under the same run id, so concurrent restores delete each other's run directory
 
 ## Status
-OPEN
+DONE
 
 ## Tier
 hotfix
@@ -74,10 +74,20 @@ src/engine/scenario_checkpoint.py; src/engine/run_identity.py; tests/integration
 Implementer: rpg-implementer-ubuntu, once free; after #926 merges. Small: one line plus tests.
 
 ## Test Summary
-(not started)
+CI's earlier red (#926 job 132779887252, the xdist race on restored_test_scenario) was the first evidence of the race; the local passes below are the local evidence. Scope: tests/integration/scenarios, tests/unit/engine, tests/api at `-m "not slow"`, plus the new test and the two slow restore tests by node id; CPUs 4-5, PYTHONHASHSEED=0, 3 GB memory cap.
+- Pass 1 (serial, on 943a3323b): 1368 passed, 4 skipped, 0 failed; part B 3 passed; 0 restored_* dirs left.
+- Pass 2 (`-n 2 --dist loadgroup`, on 943a3323b): 1367 passed, 4 skipped, 1 failure: tests/api/test_live_health_api.py::test_live_health_api_suite[asyncio]; part B 3 passed; 0 restored_* dirs left. The test passes alone (1 passed in 4.56 s). It starts uvicorn on a fixed port (8021) and sleeps a fixed 4 s; no traceback was kept for that run, so the cause is unproven.
+- Pass 3 (`-n 2`, on 943a3323b): 1368 passed, 4 skipped, 0 failed; part B 3 passed; 0 restored_* dirs left.
+- Planner controls: 8 runs on clean branch and main archives, live-health failure not reproduced.
+- Merged head f40ec81e7 (origin/main 7bf4a5670 merged), `-n 2 --dist loadgroup`: part A 1392 passed, 4 skipped, 0 failed (live-health passed); part B 3 passed; 0 restored_* dirs left. Full output kept.
+Verdict: 1 failure in 3 -n 2 passes (pass 2: tests/api/test_live_health_api.py::test_live_health_api_suite), not reproduced in 8 controls on branch or main, cause unproven, ticket TCK-20261116-LIVE-HEALTH-API-TEST-WAITS-A-FIXED-FOUR-SECONDS-ON-A-FIXED-PORT
+Known gap: the live-health test failure above is a separate test with its own ticket; this ticket does not change it.
+Known gap: data/runs in this worktree holds hundreds of run directories written by other tests (574 before the merged-head pass, 768 after); none is a restored_* dir; they are for the owner's delete list.
+Known gap: hot-loop timing is not affected by this change (a run id string) and was not measured.
 
 ## Files Changed
-(not started)
+src/engine/scenario_checkpoint.py; tests/named_run_dirs.py; tests/integration/scenarios/test_scenario_runtime_service.py; tests/unit/engine/test_scenario_checkpointer.py; tests/unit/engine/test_checkpoint_group_fields.py; docs/engine/scenario_runtime_contract.md
 
 ## Completion Summary
-(not started)
+The restore path no longer shares one run directory per spec: `ScenarioCheckpointer.restore` builds its kernel with `run_id=f"restored_{spec.id}_{pid}_{uuid8}"`, still an explicit id so the Domain.INIT RNG draw stays suppressed. Tests get an opt-in fixture that removes exactly the run dirs a test's restores created, and a new test shows two restores of one spec get two directories and neither removes the other. Related, not folded in: TCK-20261110-A-RESTORED-SCENARIO-DROPS-ITS-GOVERNOR-AND-EVENT-RECORDER (u24); testing-planner is told at merge (TCK-20261110 strict xfail re-check). Not pushed; push needs an owner ask.
+The restore id (pid plus a uuid4 fragment) names run directories, manifests and recorder paths only. It never seeds or draws the simulation RNG and is never part of WorldState; CheckpointManager.compute_digest (src/engine/checkpoint.py:259) takes state, tick and reason, never run_id. The wall-clock inventory records one new entropy read (scenario_checkpoint.py uuid.uuid4 in ScenarioCheckpointer.restore), not reachable from the kernel; docs/performance/wall_clock_inventory.{json,md} are regenerated as generated (perf-planner OK).
