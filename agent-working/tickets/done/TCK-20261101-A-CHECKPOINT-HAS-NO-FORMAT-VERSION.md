@@ -1,10 +1,10 @@
 ---
-status: active
+status: historical
 layer: engine
 authority: P1
 audience: agent
 ticket_id: TCK-20261101-A-CHECKPOINT-HAS-NO-FORMAT-VERSION
-phase: open
+phase: done
 date: 2026-11-01
 tags: []
 ---
@@ -15,7 +15,7 @@ tags: []
 A scenario checkpoint has no format version, so a checkpoint older than a slotted state record's newest field loads without error and fails later on first read.
 
 ## Status
-OPEN
+DONE
 
 ## Tier
 standard
@@ -125,7 +125,30 @@ Before dispatch: ask u24 (lead to lead) whether its F3-checkpoint restore-random
 - 2026-11-16, lead-planner: lead-planner-u24 says u24's F3-checkpoint fix (rpg-checkpoint-restore-randoms d690c808a, unpushed) does edit `src/engine/scenario_checkpoint.py`. lead-planner proposed that F3-checkpoint lands first (a HARD repair before the M1-base record) and this ticket rebases after it. Hold the #634 claim and the dispatch ask until u24 answers.
 - 2026-11-16, correction (u24, verified by lead-planner and by rpg-planner-ubuntu): the F3-checkpoint fix (restore draws from seed 0) is already on main by #848 (66d08dd56, TCK-20261107-A-RESTORED-SCENARIO-CHECKPOINT-DRAWS-FROM-SEED-0, in done/); origin/main `src/engine/scenario_checkpoint.py:94` is `DeterministicRNG(base_seed=state.seed)`. u24's d690c808a is a duplicate. Nothing to order behind. This ticket now waits only on rpg-designer's (a)/(b)/(c) ruling on headerless checkpoints (relayed by u24), then the #634 claim and the owner dispatch ask.
 
+### Rulings recorded during implementation (2026-11-16; rpg-planner-ubuntu relaying rpg-designer u24, in substance)
+- Retiring the append-last position asserts is NOT a weakening, on conditions: (1) the refusal test covers insert, reorder, rename AND removal as four separate cases, each asserting the typed error and that `pickle.loads` is never called; (2) "FIELD_RULES covers lodged_in and beds" survives, and a fingerprinted checkpoint missing an appended field with NO row is refused through `restore()`; (3) the `cleared_since` last-field assert in the project-restore test may go, the restore half stays.
+- Divergence 2.160, class Hardened (re-checked at merge; main's highest was 2.157).
+- Finding: `CombatComponent.last_hit_attackers` and `last_hit_damages` are declared before `_canonical_cache` (#933), so a checkpoint lacking them is an INSERT, not an append. Between #933 and this ticket a headerless pre-#933 checkpoint would have unpickled shifted on main (the pair taking the old cache slot); no checkpoint exists on this host or in git. rpg-designer ruled: DELETE the two last_hit FIELD_RULES rows and their fill functions, no by-name exemption, field order stays; KEEP the test that a pre-#933-shaped header is refused as an insert, the limits line and the PR-body disclosure. Divergence 2.148 Disclosed item (2) is rewritten to match.
+
 ## Implementation Notes
+- New `src/engine/checkpoint_schema.py`: `_SchemaPickler` (reducer_override notes each dataclass; output bytes equal `pickle.dumps`), `dump_with_schema`, `read_header`, `check_schema`, and `CheckpointSchemaError(ValueError)` with `CheckpointHeaderError`, `CheckpointSchemaMissingError`, `CheckpointSchemaMismatchError` (`to_detail()` is the route's 400 body). Classes are resolved only under `src`.
+- `ScenarioCheckpointer.save` writes `schema` into the header; `restore` order is now header, spec_id, schema, `pickle.loads`, fill, counter check. Signature unchanged (keyword parameters go after `spec`).
+- `FieldRule` gained a defaulted `record` (class qualname); every row sets it. The two last_hit rows and their fill functions are removed (ruling above).
+- Route: `except CheckpointSchemaError` ahead of `ValueError`, 400 with the shaped detail.
+- Field-order comments reworded in `src/core/state.py` (3), `src/core/group_record.py` (1), `src/engine/checkpoint_fields.py` (docstring and trailing comment). `CombatComponent` untouched.
+- Docs: `scenario_runtime_contract.md` "Checkpoint Format", INFRA-215 (sentences added; the set_state() sentence untouched, only the closing `convenience.` line now continues and `v2_evidence` lists checkpoint_schema.py), divergence 2.160 (new) and 2.148 Disclosed (2) (rewritten).
+- `tests/unit/tools/test_mechanism_registry_completeness_check.py` pins moved with the new src file: scope_files 369 -> 370, unbound_files 262 -> 263.
+
 ## Test Summary
+Unit: `tests/unit/engine/test_checkpoint_schema.py` (new), `test_checkpoint_group_fields.py`, `test_checkpoint_fields.py`, `test_scenario_checkpointer.py`, `test_group_hit_records_every_attacker.py`, `tests/unit/social/test_group_id_allocation.py`, `tests/unit/tools/test_mechanism_registry_completeness_check.py`, `tests/api/test_scenario_runtime_api.py`, `tests/tools/test_generate_registry.py`, `tests/tools/test_agent_working_paths_guard.py`: 207 passed. Real-writer: `tests/unit/engine/test_scenario_checkpointer.py` + `tests/integration/scenarios/test_scenario_runtime_service.py` under the 3G/cores 4-5 cap, PYTHONHASHSEED=0: 34 passed (54 s).
+
 ## Files Changed
+See the branch diff against origin/main.
+
 ## Completion Summary
+Checkpoints now carry a schema fingerprint and are refused, typed and before `pickle.loads`, unless it matches (an append named in FIELD_RULES is filled). Headerless checkpoints, insert/reorder/rename/removal and unreadable headers answer 400 with a shaped detail.
+- Removed position asserts and their replacements: `test_checkpoint_fields.py` `test_every_rule_field_is_the_last_field_of_its_record...` (:33 `lodged_in` last, :34 `beds` last) replaced by `test_lodged_in_and_beds_have_field_rules_naming_their_record` plus the four refusal cases (insert, reorder, rename, removal) and `test_every_field_rule_names_a_record_and_a_real_field_of_it` in `test_checkpoint_schema.py`; the `cleared_since` last-field assert (:94) is dropped, the restore half stays.
+- Deleted test: `test_group_hit_records_every_attacker.py::test_a_checkpoint_that_predates_the_record_restores_one_attacker_holding_the_whole_blow` (it exercised the deleted last_hit rows); replaced by `test_a_pre_933_shaped_combat_header_is_refused_as_an_insert`.
+- Re-pointed, assertions unchanged: `test_checkpoint_group_fields.py` (:119, :146, :215, :224) and `test_scenario_checkpointer.py` (:55-73), through `tests/unit/engine/checkpoint_helpers.py`.
+- Disclosure: between #933 and this ticket a headerless pre-#933 checkpoint would have unpickled shifted on main (`CombatComponent.last_hit_attackers`/`last_hit_damages` take the old cache slot). No checkpoint exists on the ubuntu host or in git.
+- Not measured: hot-loop timing (save now runs a Python-level `reducer_override` per object; perf pause #715 6556861718). Not run: any simulation beyond the short checkpoint round-trip tests.

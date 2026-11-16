@@ -9,6 +9,7 @@ from pydantic import BaseModel
 
 from src.observability.reporting.history_query import sanitize_id
 from src.engine.scenario_registry import get, register
+from src.engine.checkpoint_schema import CheckpointSchemaError
 from src.engine.scenario_checkpoint import ScenarioCheckpointer
 from src.api.presenters.scenarios import ScenarioPresenter
 
@@ -99,6 +100,8 @@ async def restore_checkpoint(scenario_id: str, checkpoint_name: str, body: Optio
         restored_svc = ScenarioCheckpointer.restore(path, spec)
     except FileNotFoundError as e:
         raise HTTPException(status_code=404, detail=str(e))
+    except CheckpointSchemaError as e:
+        raise HTTPException(status_code=400, detail=e.to_detail()) from e
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
 

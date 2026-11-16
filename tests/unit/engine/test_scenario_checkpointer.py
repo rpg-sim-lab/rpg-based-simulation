@@ -58,7 +58,7 @@ def test_restore_raises_on_spec_id_mismatch(tmp_path):
 
     # Write a minimal valid checkpoint file with spec_id "scenario_a"
     path = tmp_path / "ckpt.bin"
-    header = {"tick": 5, "spec_id": "scenario_a", "rng_checkpoint": None}
+    header = {"tick": 5, "spec_id": "scenario_a", "rng_checkpoint": None, "schema": {}}  # a valid fingerprint (the dummy payload holds no dataclass): the spec check is what refuses
     header_bytes = json.dumps(header).encode("utf-8")
     # Need a valid pickle blob — use a dummy object
     import pickle
