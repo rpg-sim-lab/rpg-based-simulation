@@ -16,7 +16,7 @@ BASE, NEW = "a" * 40, "b" * 40
 TICKS = 10
 SEEDS = (42, 43)
 START = [(1, "merchant", 1), (2, "guard", 1), (3, "wolf", 0)]
-RUNNER = {"name": "gh-1", "image": "ubuntu-24.04", "cpu_model": "x", "nproc": 4, "mem_total_mb": 16000, "python": "3.12.3", "os": "Linux 6.8"}
+RUNNER = {"name": "gh-1", "image": "ubuntu-24.04-1.0", "image_os": "ubuntu-24.04", "image_version": "1.0", "libc": "glibc-2.39", "python_build": "3.12.3 (main) [GCC 13]", "cpu_model": "x", "nproc": 4, "mem_total_mb": 16000, "python": "3.12.3", "os": "Linux 6.8"}
 
 
 def _run(world, seed, new_dead=0, final_hash="h", start_hash="s"):
@@ -55,7 +55,7 @@ def test_a_complete_collected_cache_gives_the_report_and_exit_0(tmp_path, capsys
     stage(tmp_path)
     assert collected(tmp_path) == 0
     out = capsys.readouterr().out
-    assert "## Paired measurement" in out and "- runners (collected off host): gh-1/ubuntu-24.04 python 3.12.3 Linux 6.8" in out
+    assert "## Paired measurement" in out and "- runners (collected off host): gh-1/ubuntu-24.04-1.0 python 3.12.3 Linux 6.8" in out
 
 
 def test_a_missing_result_is_refused_with_its_keys_and_nothing_runs(tmp_path, capsys, monkeypatch):
@@ -69,13 +69,14 @@ def test_a_missing_result_is_refused_with_its_keys_and_nothing_runs(tmp_path, ca
     assert "new:urban_political:43" in err and "base-repeat:crowded_frontier:42" in err and err.startswith("REFUSED")
 
 
-@pytest.mark.parametrize("field,value", [("python", "3.11.9"), ("os", "Linux 5.15"), ("image", "ubuntu-22.04")])
+@pytest.mark.parametrize("field,value", [("python", "3.11.9"), ("os", "Linux 5.15"), ("image_os", "ubuntu-22.04"), ("libc", "glibc-2.40"), ("python_build", "3.12.3 (main) [GCC 14]")])
 def test_a_runner_whose_python_os_or_image_differs_is_refused(tmp_path, capsys, field, value):
     stage(tmp_path)
     _put(tmp_path, NEW, "urban_political", 43, _run("urban_political", 43), runner={**RUNNER, field: value})
     assert collected(tmp_path) == 2
     err = capsys.readouterr().err
     assert "urban_political:43" in err and field in err
+    assert "runner python/os/image_os/libc/python_build differs between arms of a key" in err  # names the fields actually compared (never the old "python/os/image")
 
 
 def test_a_repeat_runner_that_differs_from_its_base_is_refused(tmp_path, capsys):
@@ -93,7 +94,7 @@ def test_a_different_runner_name_or_cpu_is_not_a_refusal(tmp_path, capsys):
 
 def test_a_repeat_file_is_read_and_never_unlinked(tmp_path):
     stage(tmp_path)
-    repeats = sorted(p for p in tmp_path.rglob("*.json") if "-repeat" in str(p.parent) and ".cost." not in p.name and p.name != paired.ENV_FILE)
+    repeats = sorted(p for p in tmp_path.rglob("*.json") if "-repeat" in str(p.parent) and ".cost." not in p.name and p.name not in (paired.ENV_FILE, paired.IMAGE_FILE))
     assert repeats
     assert collected(tmp_path) == 0
     assert all(p.exists() and paired.cost_path(p).exists() for p in repeats)
@@ -212,17 +213,37 @@ def _unpin(path: Path, value="NOT_PINNED"):
     path.write_text(json.dumps(doc), encoding="utf-8")
 
 
+def refused_with_one_line(rc, capsys, verdict, needle):
+    """Exit 2, exactly one ``REFUSED:`` stderr line naming ``needle``, no traceback, no table on stdout, and a REFUSED verdict document."""
+    captured = capsys.readouterr()
+    lines = [ln for ln in captured.err.splitlines() if ln.strip()]
+    assert rc == 2 and len(lines) == 1 and lines[0].startswith("REFUSED:") and needle in lines[0], captured.err
+    assert "Traceback" not in captured.err and "## Paired measurement" not in captured.out and "| Step |" not in captured.out
+    got = _verdict(verdict)
+    assert got["outcome"] == "REFUSED" and needle in got["detail"]
+
+
 @pytest.mark.parametrize("arm_sha, repeat", [(NEW, False), (BASE, False), (BASE, True)])
 def test_a_collected_compare_refuses_an_arm_that_is_not_pinned_and_prints_no_table(tmp_path, capsys, arm_sha, repeat):
     stage(tmp_path)
     _unpin(paired.result_path(tmp_path, arm_sha, TICKS, "urban_political", 42, repeat), None)
-    with pytest.raises(paired.NotPinnedArmError, match="urban_political:42"):
-        collected(tmp_path)
-    assert "## Paired measurement" not in capsys.readouterr().out
+    verdict = tmp_path / "v.json"
+    refused_with_one_line(collected(tmp_path, "--verdict-json", str(verdict)), capsys, verdict, "urban_political:42")
 
 
-def test_a_collected_neutral_compare_refuses_an_arm_that_is_not_pinned(tmp_path):
+def test_a_collected_neutral_compare_refuses_an_arm_that_is_not_pinned(tmp_path, capsys):
     stage(tmp_path, neutral=True)
     _unpin(paired.result_path(tmp_path, NEW, paired.NEUTRAL_TICKS, "urban_political", 42))
-    with pytest.raises(paired.NotPinnedArmError, match="new:urban_political:42"):
-        paired.main(["--collected", str(tmp_path), "--base", BASE, "--new", NEW, "--neutral"])
+    verdict = tmp_path / "v.json"
+    rc = paired.main(["--collected", str(tmp_path), "--base", BASE, "--new", NEW, "--neutral", "--verdict-json", str(verdict)])
+    refused_with_one_line(rc, capsys, verdict, "new:urban_political:42")
+
+
+def test_a_local_run_refuses_an_arm_that_is_not_pinned_with_one_line(tmp_path, capsys, monkeypatch):
+    """The local path: the arm child stubbed to write a document whose runner is not PINNED; no git, no tree, no simulation."""
+    monkeypatch.setattr(paired, "_git", lambda *a, **k: str(tmp_path))
+    monkeypatch.setattr(paired, "prepare_tree", lambda repo, rev, cache: (rev, tmp_path))
+    monkeypatch.setattr(paired, "run_one", lambda tree, world, seed, ticks, out: (out.parent.mkdir(parents=True, exist_ok=True), out.write_text(json.dumps({**_run(world, seed), "runner": "NOT_PINNED"}), encoding="utf-8")))
+    verdict = tmp_path / "v.json"
+    rc = paired.main(["--base", BASE, "--new", NEW, "--cache", str(tmp_path / "cache"), "--seeds", "42", "43", "--ticks", str(TICKS), "--jobs", "1", "--verdict-json", str(verdict)])
+    refused_with_one_line(rc, capsys, verdict, "not marked runner PINNED")

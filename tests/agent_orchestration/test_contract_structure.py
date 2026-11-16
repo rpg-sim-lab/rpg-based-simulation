@@ -161,7 +161,7 @@ def test_load_contract_validates_continuation_policy_and_terminal_statuses():
     assert bundle.continuation_policy.mode == "continue_until_terminal_or_hard_gate"
     assert bundle.continuation_policy.instruction.strip()
     assert bundle.continuation_policy.non_gates
-    assert len(bundle.terminal_statuses) == 18  # was 17; NATIVE_GATE_SITES_UNPORTED added 2026-10-04 (WORKFLOW_ERROR 2026-10-03 (was 15 before TEST_SCOPE_COVERAGE_FAILED, 2026-08-18)
+    assert len(bundle.terminal_statuses) == 19  # was 18 before TESTS_ENVIRONMENT_FAILED (2026-11-16); was 17; NATIVE_GATE_SITES_UNPORTED added 2026-10-04 (WORKFLOW_ERROR 2026-10-03 (was 15 before TEST_SCOPE_COVERAGE_FAILED, 2026-08-18)
     assert {entry["value"] for entry in bundle.terminal_statuses} >= {
         "DONE", "EPIC_SCOPED", "NEEDS_HUMAN_INPUT", "NEEDS_CHANGES", "BLOCKED",
         "DOD_BLOCKED", "CONFLICTS_DETECTED", "TAGS_NOT_REGISTERED", "SECURITY_BLOCKED",

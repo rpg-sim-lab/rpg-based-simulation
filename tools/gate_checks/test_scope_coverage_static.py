@@ -217,7 +217,33 @@ def _directory_is_covered(expected_dir: str, command: str) -> bool:
     return re.search(pattern, command) is not None
 
 
-def check_test_scope_coverage(files_changed, pytest_command: str) -> "list[dict]":
+CAPPED_HELPER_TOKENS = ("tools.delivery.capped_pytest", "tools/delivery/capped_pytest.py")
+
+
+def check_capped_runner(pytest_command: str, runner_policy) -> "list[dict]":
+    """On a host that sets a Test-phase cap (`registries/session_test_caps.yaml`, passed in as `runner_policy`), the
+    command must run through `tools/delivery/capped_pytest.py`, which chunks the run under the cap and labels an
+    environment failure. With no policy (CI, a host with no entry) there is nothing to check and the result is empty, so
+    the floor's results are unchanged. TCK-20261115-TEST-PHASE-RUNS-TESTS-TOOLS-UNCAPPED-IN-ONE-PROCESS."""
+    if runner_policy is None:
+        return []
+    command = pytest_command or ""
+    used = any(token in command for token in CAPPED_HELPER_TOKENS)
+    host = getattr(runner_policy, "host", "this host")
+    return [{
+        "condition": "test_runs_through_capped_helper",
+        "status": "PASS" if used else "FAIL",
+        "evidence": (
+            f"pytest_command runs through tools/delivery/capped_pytest.py (host {host} sets a Test-phase cap)"
+            if used else
+            f"host {host} sets a Test-phase cap in registries/session_test_caps.yaml, but pytest_command does not run through "
+            f"tools/delivery/capped_pytest.py. Re-run as `python3 -m tools.delivery.capped_pytest <the same bare test "
+            f"directories and flags>` so the run is chunked under the cap and a memory kill is labelled, not reported as a test failure."
+        ),
+    }]
+
+
+def check_test_scope_coverage(files_changed, pytest_command: str, runner_policy=None) -> "list[dict]":
     """For each changed file with a known expected test directory (`expected_test_dirs_for`),
     check whether the real `pytest_command` references that directory as a bare, whole-directory
     token (`_directory_is_covered`) — not just a specific file inside it. Returns a flat
@@ -256,4 +282,4 @@ def check_test_scope_coverage(files_changed, pytest_command: str) -> "list[dict]
             ),
         })
 
-    return results
+    return results + check_capped_runner(command, runner_policy)

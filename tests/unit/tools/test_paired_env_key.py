@@ -25,7 +25,7 @@ def _env(tmp_path, environ=LOCAL, host="u24desktop", lock=b"v1\n", arm_tree=None
 
 def test_a_local_and_a_ci_environment_give_different_keys(tmp_path):
     local, ci = _env(tmp_path), _env(tmp_path, CI)
-    assert local["runner"] == "local:u24desktop" and ci["runner"] == "ci:ubuntu24-20260101.1.0"
+    assert local["runner"] == "local:u24desktop" and ci["runner"] == "ci:ubuntu24"
     assert paired.env_key(local) != paired.env_key(ci)
     assert paired.env_key(local) != paired.env_key(_env(tmp_path, host="other-host"))
 
@@ -146,9 +146,9 @@ def test_local_paired_refuses_to_cache_under_a_missing_lock(tmp_path, monkeypatc
 
 # ---- the CI runner label (rpg-planner review): image on a hosted runner, RUNNER_NAME on a self-hosted one, else refused
 
-def test_a_hosted_runner_is_keyed_by_its_image_not_its_runner_name(tmp_path):
+def test_a_hosted_runner_is_keyed_by_its_image_family_not_its_runner_name_or_patch_version(tmp_path):
     env = _env(tmp_path, {**CI, "RUNNER_NAME": "GitHub Actions 7"})
-    assert env["runner"] == "ci:ubuntu24-20260101.1.0"
+    assert env["runner"] == "ci:ubuntu24"
     assert paired.env_key(env) == paired.env_key(_env(tmp_path, {**CI, "RUNNER_NAME": "GitHub Actions 9"}))
 
 
@@ -242,22 +242,98 @@ def test_a_local_arm_whose_child_reports_other_dists_is_refused_naming_both_dige
         paired.run_arm(tmp_path / "tree", tmp_path / "cache2", SHA, [("w", 42)], 10, 1)
 
 
-def test_a_collected_arm_with_other_dists_is_refused_and_no_table_is_printed(tmp_path, capsys):
-    from tests.unit.tools.test_rpg_measure_collected import BASE, NEW, TICKS, _put, _run, collected
+def test_a_collected_arm_with_other_dists_is_refused_with_one_line_and_no_table(tmp_path, capsys):
+    from tests.unit.tools.test_rpg_measure_collected import BASE, NEW, _put, _run, collected, refused_with_one_line
     for w in paired.WORLDS:
         for s in (42, 43):
             _put(tmp_path, BASE, w, s, _run(w, s), runner=None)
             _put(tmp_path, NEW, w, s, {**_run(w, s), "dists": "c" * 64}, runner=None)  # the new arm's child had other dependencies
         _put(tmp_path, BASE, w, 42, _run(w, 42), repeat=True)
-    with pytest.raises(paired.DistsMismatchError, match="c" * 64):
-        collected(tmp_path)
-    out = capsys.readouterr().out
-    assert "| Step |" not in out and "People deaths" not in out
+    verdict = tmp_path / "v.json"
+    refused_with_one_line(collected(tmp_path, "--verdict-json", str(verdict)), capsys, verdict, "c" * 64)
 
 
-def test_the_arm_child_writes_dists_from_the_tool_checkouts_own_module():
-    source = (Path(paired.__file__).with_name("arm_child.py")).read_text(encoding="utf-8")
-    assert '"dists": _env_digest().installed_dists_digest()' in source and 'with_name("env_digest.py")' in source
+def test_a_local_run_whose_child_reports_other_dists_is_refused_with_one_line(tmp_path, capsys, monkeypatch):
+    from tests.unit.tools.test_rpg_measure_collected import BASE, NEW, _run, refused_with_one_line
+    monkeypatch.setattr(paired, "_git", lambda *a, **k: str(tmp_path))
+    monkeypatch.setattr(paired, "prepare_tree", lambda repo, rev, cache: (rev, tmp_path))
+    monkeypatch.setattr(paired, "run_one", lambda tree, w, s, t, out: (out.parent.mkdir(parents=True, exist_ok=True), out.write_text(json.dumps({**_run(w, s), "dists": "c" * 64}), encoding="utf-8")))
+    verdict = tmp_path / "v.json"
+    rc = paired.main(["--base", BASE, "--new", NEW, "--cache", str(tmp_path / "cache"), "--seeds", "42", "--ticks", "10", "--jobs", "1", "--verdict-json", str(verdict)])
+    refused_with_one_line(rc, capsys, verdict, paired.current_env()["dists"])
+
+
+def test_only_the_two_named_refusals_are_mapped_other_errors_still_propagate(tmp_path, monkeypatch):
+    """No broad ``except`` in main(): an unrelated error is still a traceback, and the verdict still records REFUSED for it."""
+    monkeypatch.setattr(paired, "_git", lambda *a, **k: (_ for _ in ()).throw(RuntimeError("boom")))
+    verdict = tmp_path / "v.json"
+    with pytest.raises(RuntimeError, match="boom"):
+        paired.main(["--base", SHA, "--new", "b" * 40, "--cache", str(tmp_path / "cache"), "--verdict-json", str(verdict)])
+    assert json.loads(verdict.read_text(encoding="utf-8"))["outcome"] == "REFUSED"
+
+
+# ---- where the arm child's dists comes from, by behaviour (a stub child, no simulation)
+
+ARM_CHILD = Path(paired.__file__).with_name("arm_child.py")
+STUB_DIGEST = "def installed_dists_digest():\n    return {mark!r}\n"
+
+
+def _tool_checkout(root: Path, mark: str | None) -> Path:
+    """A copy of the tool checkout's arm_child (and the stdlib-only pinned_runner it loads by path); env_digest is a stub returning ``mark``, or the real file when None."""
+    rpg = root / "tools" / "rpg_measure"
+    rpg.mkdir(parents=True)
+    (rpg / "arm_child.py").write_text(ARM_CHILD.read_text(encoding="utf-8"), encoding="utf-8")
+    (rpg / "env_digest.py").write_text(STUB_DIGEST.format(mark=mark) if mark else ARM_CHILD.with_name("env_digest.py").read_text(encoding="utf-8"), encoding="utf-8")
+    arch = root / "tools" / "test_architecture"
+    arch.mkdir(parents=True)
+    (arch / "pinned_runner.py").write_text(
+        "class _P:\n    verdict = 'PINNED'\n\n\ndef require_pinned(evidence, what=''):\n    return _P()\n\n\ndef read_manifest(path):\n    return {}\n", encoding="utf-8")
+    return rpg / "arm_child.py"
+
+
+def _arm_tree(root: Path, mark: str) -> Path:
+    """A stub ARM source tree (the child's working directory and PYTHONPATH): the few modules arm_child imports, a fake kernel, and its OWN env_digest saying ``mark``."""
+    files = {
+        "src/__init__.py": "", "src/engine/__init__.py": "", "src/observability/__init__.py": "", "src/observability/reporting/__init__.py": "",
+        "src/observability/reporting/artifact_repository.py": "",  # no RunConditions: the pre-record path, classified from the live kernel
+        "src/engine/checkpoint.py": "class CanonicalStateHasher:\n    @staticmethod\n    def get_hash(state):\n        return 'h'\n",
+        "src/engine/serves.py": "def keeps_coin(*a):\n    return False\n",
+        "tools/__init__.py": "", "tools/test_architecture/__init__.py": "", "tools/rpg_measure/__init__.py": "",
+        "tools/rpg_measure/env_digest.py": STUB_DIGEST.format(mark=mark),
+        "tools/test_architecture/rpg_gate_run.py": (
+            "class _Profile:\n    max_tick_budget_ms = 1.0\n\n\nclass _State:\n    entities = {}\n\n\n"
+            "class _Kernel:\n    _audit_mode = True\n    _no_frame_pacing = True\n    _governor = object()\n    _executor = object()\n    _profile = _Profile()\n    state = _State()\n"
+            "    def tick_once(self):\n        pass\n    def shutdown(self):\n        pass\n\n\n"
+            "def build_kernel(world, seed, run_id):\n    return _Kernel()\n"),
+    }
+    for rel, text in files.items():
+        path = root / rel
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(text, encoding="utf-8")
+    return root
+
+
+def _child_dists(tmp_path: Path, name: str, tool_mark: str | None, arm_mark: str = "FROM-THE-ARM-TREE") -> str:
+    import os
+    import subprocess
+    import sys
+    tool_child = _tool_checkout(tmp_path / f"{name}-tool", tool_mark)
+    arm = _arm_tree(tmp_path / f"{name}-arm", arm_mark)
+    out = tmp_path / f"{name}.json"
+    done = subprocess.run([sys.executable, str(tool_child), "w", "1", "0", str(out)], cwd=arm, env={**os.environ, "PYTHONPATH": str(arm), "PYTHONHASHSEED": "0"},
+                          capture_output=True, text=True, timeout=120)
+    assert done.returncode == 0, done.stderr[-800:]
+    return json.loads(out.read_text(encoding="utf-8"))["dists"]
+
+
+def test_the_arm_child_takes_dists_from_the_tool_checkout_never_the_arm_tree(tmp_path):
+    """The arm tree (cwd and PYTHONPATH) carries its own env_digest saying something else; the document must carry the TOOL checkout's, and follow it when it changes."""
+    assert _child_dists(tmp_path, "one", "TOOL-ONE") == "TOOL-ONE"
+    assert _child_dists(tmp_path, "two", "TOOL-TWO") == "TOOL-TWO"
+
+
+def test_the_arm_child_reports_the_real_digest_of_the_tool_checkout_in_a_stub_tree(tmp_path):
+    assert _child_dists(tmp_path, "real", None) == env_digest.installed_dists_digest()
 
 
 # ---- the digest sees only the interpreter's own site-packages (rpg-planner review at c84269c33)
@@ -307,3 +383,69 @@ def test_site_dirs_are_the_interpreters_own_and_exist():
     import sysconfig
     dirs = env_digest.site_dirs()
     assert dirs and str(Path(sysconfig.get_paths()["purelib"]).resolve()) in dirs and all(Path(d).is_dir() for d in dirs)
+
+
+# ---- TCK-20261116-A-CI-SET-ON-TWO-IMAGE-PATCHES-IS-ONE-ENVIRONMENT-WHEN-LIBC-AND-PYTHON-MATCH
+
+def _ci(tmp_path, **environ):
+    return _env(tmp_path, {**CI, **environ})
+
+
+def test_two_image_patch_versions_are_one_environment(tmp_path):
+    """AC1: the image PATCH version (ImageVersion) is not keyed; a set split by it is one environment."""
+    a, b = _ci(tmp_path, ImageVersion="20261111.82.6"), _ci(tmp_path, ImageVersion="20261111.196.1")
+    assert a == b and paired.env_key(a) == paired.env_key(b)
+    assert "ImageVersion" not in json.dumps(a) and "20261111" not in json.dumps(a)
+
+
+@pytest.mark.parametrize("field, value", [
+    ("libc", "glibc-2.40"), ("python_build", "3.13.14 (main, Jan 2 2026) [GCC 14.2.0]"), ("python", "3.13.99"), ("os", "Linux 9.9.9"),
+    ("dists", "f" * 64), ("uv_lock", "e" * 64), ("runner", "ci:ubuntu26")])
+def test_a_change_in_any_other_env_field_gives_a_different_key(tmp_path, field, value):
+    env = _ci(tmp_path)
+    assert paired.env_key({**env, field: value}) != paired.env_key(env)
+
+
+def test_the_env_carries_libc_and_the_python_build_for_every_runner_local_included(tmp_path):
+    for env in (_env(tmp_path), _ci(tmp_path)):
+        assert env["libc"] == "-".join(__import__("platform").libc_ver()) and env["python_build"] == __import__("sys").version
+
+
+def test_the_image_version_is_recorded_beside_env_json_and_does_not_key(tmp_path):
+    env = _ci(tmp_path)
+    directory = tmp_path / "res"
+    paired.write_env_json(directory, env, image="20261111.82.6")
+    assert json.loads((directory / paired.IMAGE_FILE).read_text()) == {"image_version": "20261111.82.6"}
+    assert paired.env_key(json.loads((directory / paired.ENV_FILE).read_text())) == paired.env_key(env)
+    paired.write_env_json(directory, env, image="20261111.196.1")  # another patch version: same env.json bytes
+    assert json.loads((directory / paired.ENV_FILE).read_text()) == env
+
+
+def test_a_prefix_split_across_two_env8_directories_is_refused_by_name_before_the_missing_check(tmp_path, capsys):
+    """AC2: results under two environments (here: libc differs) are refused with 'built under 2 environments' naming the differing field. The missing check would have
+    reported the same cache as 'missing collected results' for every key; the split is named first."""
+    from tests.unit.tools.test_rpg_measure_collected import BASE, NEW, TICKS, SEEDS, _put, _run, collected
+    first = paired.current_env()
+    second = {**first, "libc": "glibc-2.99"}
+    for world in paired.WORLDS:
+        for seed in SEEDS:
+            _put(tmp_path, BASE, world, seed, _run(world, seed))
+            _put(tmp_path, NEW, world, seed, _run(world, seed))
+    odd = paired.result_path(tmp_path, NEW, TICKS, "urban_political", 43, False, second)  # a second env8 for one pair job's new arm
+    odd.parent.mkdir(parents=True, exist_ok=True)
+    odd.write_text(json.dumps(_run("urban_political", 43)))
+    paired.write_env_json(odd.parent, second, image="2")
+    verdict = tmp_path / "v.json"
+    rc = collected(tmp_path, "--verdict-json", str(verdict))
+    err = capsys.readouterr().err
+    assert rc == 2 and err.startswith("REFUSED:") and "built under 2 environments" in err and "libc" in err and "glibc-2.99" in err
+    assert "missing collected results" not in err
+    assert json.loads(verdict.read_text())["outcome"] == "REFUSED"
+
+
+def test_a_cache_split_only_by_image_version_is_one_environment_and_compares(tmp_path, capsys):
+    from tests.unit.tools.test_rpg_measure_collected import BASE, NEW, SEEDS, TICKS, _put, _run, collected, stage
+    stage(tmp_path)
+    for directory in (tmp_path / "results").iterdir():
+        (directory / paired.IMAGE_FILE).write_text(json.dumps({"image_version": f"20261111.{len(directory.name)}.1"}))  # different patch versions recorded, same env.json
+    assert collected(tmp_path) == 0

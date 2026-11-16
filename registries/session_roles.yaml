@@ -52,7 +52,7 @@ domains:
       - docs/guides/cross_session_messages.md   # the guide behind the role cards
       - agent-working/agent-orchestration/**
       - agent-working/agent-monitoring/retro/**
-      - registries/session_*.yaml   # exactly session_roles.yaml and session_authority.yaml today; one glob keeps the card within its token budget
+      - registries/session_*.yaml   # every registries/session_*.yaml file; one glob keeps the card within its token budget
       - .claude/agents/**
       - .graphifyignore
       - tools/graphify_link.py

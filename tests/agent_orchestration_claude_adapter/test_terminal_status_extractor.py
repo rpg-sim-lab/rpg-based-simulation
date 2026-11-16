@@ -26,6 +26,7 @@ _EXPECTED_LITERAL_VALUES_MULTISET = [
     "NEEDS_HUMAN_INPUT",
     "DOC_STALENESS_BLOCKED",
     "TESTS_FAILED",
+    "TESTS_ENVIRONMENT_FAILED",
     "TEST_SCOPE_COVERAGE_FAILED",
     "DATA_RUNS_CLEAN_FAILED",
     "PARITY_INCOMPLETE",
@@ -38,20 +39,21 @@ _EXPECTED_LITERAL_VALUES_MULTISET = [
 ]
 
 
-def test_terminal_status_extractor_finds_all_15_literal_call_sites():
+def test_terminal_status_extractor_finds_all_16_literal_call_sites():
     """Was 13 (TCK-20260721-CLAUDE-CONFORMANCE-ADAPTER); TEST_SCOPE_COVERAGE_FAILED added
     2026-08-18 by TCK-20260818-KGMCP-TICKET-VERIFY-SCOPED-REGRESSION-GAP — a genuine new terminal
     status, not drift. 15 with WORKFLOW_ERROR (TCK-20261003-IMPLEMENT-TICKET-JS-NO-MONITORING-ON-EXCEPTION),
-    the status the top-level exception recorder writes."""
+    the status the top-level exception recorder writes. 16 with TESTS_ENVIRONMENT_FAILED
+    (TCK-20261115-TEST-PHASE-RUNS-TESTS-TOOLS-UNCAPPED-IN-ONE-PROCESS), the Test phase's environment-death verdict."""
     entries = extract_literal_statuses(_WORKFLOW_JS_PATH)
 
-    assert len(entries) == 15, f"expected 15 literal call sites, found {len(entries)}"
+    assert len(entries) == 16, f"expected 16 literal call sites, found {len(entries)}"
     assert sorted(e["value"] for e in entries) == sorted(_EXPECTED_LITERAL_VALUES_MULTISET)
     assert all(e["kind"] == "literal" for e in entries)
 
     distinct_values = {e["value"] for e in entries}
-    assert len(distinct_values) == 14, (
-        f"expected 14 distinct literal values (FINALIZE_INCOMPLETE deduping to one value from "
+    assert len(distinct_values) == 15, (
+        f"expected 15 distinct literal values (FINALIZE_INCOMPLETE deduping to one value from "
         f"two call sites), got {len(distinct_values)}: {sorted(distinct_values)}"
     )
 
@@ -94,8 +96,8 @@ def test_scope_agent_failed_handling_is_an_explicit_documented_decision():
 def test_extract_all_terminal_statuses_dedupes_by_value_not_call_site_count():
     all_statuses = extract_all_terminal_statuses(_WORKFLOW_JS_PATH)
 
-    assert len(all_statuses) == 18, (
-        f"expected 18 distinct terminal-status values (14 literal + 2 verdict-derived + 2 "
+    assert len(all_statuses) == 19, (
+        f"expected 19 distinct terminal-status values (15 literal + 2 verdict-derived + 2 "
         f"bypass), got {len(all_statuses)}: {sorted(e['value'] for e in all_statuses)}"
     )
 

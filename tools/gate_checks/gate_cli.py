@@ -75,10 +75,12 @@ def _search_result(files: list[str], start_sha: str) -> dict | None:
 
 
 def site_test_scope(args: argparse.Namespace) -> None:
+    from delivery.host_test_caps import load_cap
     from gate_checks.test_scope_coverage_static import check_test_scope_coverage
     files = derive_changed_files(args.start_sha)
     print("DERIVED_FILES_JSON:" + json.dumps(files))
-    print("TEST_SCOPE_CHECK_JSON:" + json.dumps(check_test_scope_coverage(files, args.pytest_command)))
+    cap = load_cap(Path(__file__).resolve().parents[2])
+    print("TEST_SCOPE_CHECK_JSON:" + json.dumps(check_test_scope_coverage(files, args.pytest_command, cap)))
 
 
 def site_data_runs_cleanup(args: argparse.Namespace) -> None:

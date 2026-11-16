@@ -93,8 +93,8 @@ def test_blocking_contract_fields_are_present() -> None:
     assert wire["result"]["cost_accounting_version"] == COST_ACCOUNTING_VERSION == "DEV-017"
 
 
-@pytest.mark.parametrize("bad", ["flat-sha256-v5", "sha256", "", "FLAT-SHA256-V2"])
-def test_hash_scheme_rejects_anything_but_the_four_schemes(bad: str) -> None:
+@pytest.mark.parametrize("bad", ["flat-sha256-v6", "sha256", "", "FLAT-SHA256-V2"])
+def test_hash_scheme_rejects_anything_but_the_five_schemes(bad: str) -> None:
     with pytest.raises(BenchmarkRecordError):
         Validity(final_state_hash="ab", hash_scheme=bad)  # type: ignore[arg-type]
 
@@ -104,6 +104,7 @@ def test_hash_scheme_accepts_both_schemes_and_a_hash_needs_one() -> None:
     assert Validity(final_state_hash="ab", hash_scheme="flat-sha256-v2").hash_scheme is HashScheme.FLAT_SHA256_V2
     assert Validity(final_state_hash="ab", hash_scheme="flat-sha256-v3").hash_scheme is HashScheme.FLAT_SHA256_V3
     assert Validity(final_state_hash="ab", hash_scheme="flat-sha256-v4").hash_scheme is HashScheme.FLAT_SHA256_V4
+    assert Validity(final_state_hash="ab", hash_scheme="flat-sha256-v5").hash_scheme is HashScheme.FLAT_SHA256_V5
     with pytest.raises(BenchmarkRecordError):
         Validity(final_state_hash="ab")
 

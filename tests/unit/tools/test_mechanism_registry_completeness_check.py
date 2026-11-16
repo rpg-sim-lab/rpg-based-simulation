@@ -303,7 +303,8 @@ def test_wider_scope_numbers_pinned():
     # 361 -> 362 on 2026-11-11 (TCK-20261109-ANY-SOCIAL-UPDATE-WIPES-THE-REJECTION-COUNTS-IT-DOES-NOT-NAME, SOC-280): +src/core/social_counts.py (add_rejection_counts, the one sum rule the social apply and SocialUpdate.merge share; a helper of the existing social code, unbound).
     # 362 + 1 = 363 on 2026-11-12 (merge of origin/main 373625027 into rpg-non-flight-free-swing): both histories above hold; the figure is the check's own output on the merged tree.
     # 363 -> 368 on 2026-11-12 (TCK-20261111-SPLIT-UPDATES-PY-INTO-UPDATE-MODELS, rpg-planner ok, from the check's own output): +src/core/update_models/{social,strategic,combat,body,world}.py (a pure move out of updates.py; no mechanism of its own).
-    assert wider["scope_files"] == 368
+    # 368 -> 369 on 2026-11-16 (TCK-20261111-A-HOLD-MODE-MOVE-STILL-TAKES-A-STEP, divergence 2.206, rpg-planner ok, from the check's own output): +src/core/hold_mode.py (hold_reset_kwargs, bound under `tactical_decision`; first landed as src/engine/hold_mode.py and moved to src/core because systems may not import engine), so unbound_files stays.
+    assert wider["scope_files"] == 369
     # 233 -> 227 on 2026-10-05: the world-building split names six more files (worldmodules/normalizer,
     # worldassembly/resolve_io, worldbuilding/repository and validator, worldgeneration/generator and scorer).
     # Then +1 for the unbound entity_target_objective.py module (TCK-20261002-COMBAT-OBJECTIVE-TARGETS-...).

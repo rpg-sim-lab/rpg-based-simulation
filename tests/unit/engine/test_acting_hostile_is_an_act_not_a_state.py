@@ -93,13 +93,13 @@ def test_wounded_adjacent_closing_and_outmatched_are_threat_terms_but_not_acts()
 @pytest.mark.parametrize("ago,expected", [(0, True), (NEED_WAKE_CADENCE, True), (NEED_WAKE_CADENCE + 1, False)])
 def test_a_hit_by_the_hostile_acts_for_one_brain_cadence(ago, expected):
     subject = _subject()
-    subject = replace(subject, combat=replace(subject.combat, last_attacker_id=2, last_hit_tick=TICK - ago))
+    subject = replace(subject, combat=replace(subject.combat, last_attacker_id=2, last_hit_attackers=(2,), last_hit_tick=TICK - ago))
     assert _acts(_hostile(), subject) is expected
 
 
 def test_a_hit_by_another_body_does_not_make_this_hostile_act():
     subject = _subject()
-    subject = replace(subject, combat=replace(subject.combat, last_attacker_id=99, last_hit_tick=TICK))
+    subject = replace(subject, combat=replace(subject.combat, last_attacker_id=99, last_hit_attackers=(99,), last_hit_tick=TICK))
     assert not _acts(_hostile(), subject)
 
 
@@ -113,7 +113,7 @@ def test_a_never_hit_subject_has_no_last_hit():
 def _hit_subject(hunger, ago=3):
     subject = _subject()
     return replace(subject, biological=replace(subject.biological, hunger=hunger),
-                   combat=replace(subject.combat, last_attacker_id=2, last_hit_tick=TICK - ago))
+                   combat=replace(subject.combat, last_attacker_id=2, last_hit_attackers=(2,), last_hit_tick=TICK - ago))
 
 
 def _ranged(at, reach):
@@ -156,6 +156,18 @@ def test_the_reach_is_inclusive_and_never_below_one_tile():
 def test_the_window_is_unchanged_past_the_line_a_hit_inside_it_and_reach_acts_and_one_tick_after_it_does_not():
     assert _acts(_hostile(at=(1.0, 0.0)), _hit_subject(100.0, ago=NEED_WAKE_CADENCE))
     assert not _acts(_hostile(at=(1.0, 0.0)), _hit_subject(100.0, ago=NEED_WAKE_CADENCE + 1))
+
+
+def test_past_the_starving_line_each_member_of_a_group_hit_is_judged_on_its_own_reach():
+    from src.engine.starvation import STARVING_LINE
+    from src.engine.tactical_threat import need_yields
+
+    near, far = _hostile(at=(1.0, 0.0)), replace(_hostile(at=(5.0, 0.0)), id=3)
+    group = _hit_subject(STARVING_LINE)
+    group = replace(group, combat=replace(group.combat, last_hit_attackers=(2, 3)))
+    assert _acts(near, group) and not _acts(far, group)
+    assert need_yields(group, [near, far], TICK)  # yields through the adjacent member alone
+    assert not need_yields(group, [far], TICK)  # with the adjacent member out of the set, the far one does not hold the need
 
 
 # ---- last_hit_tick: written by the patch with its attacker, hashed ---------------------------------------------------------------------------
@@ -204,7 +216,7 @@ def test_last_hit_tick_survives_a_scenario_checkpoint_round_trip():
     """The checkpoint pickles the state, so the excluded-from-digest field is still carried across save and restore."""
     import pickle
 
-    subject = replace(_subject(), combat=replace(_subject().combat, last_attacker_id=2, last_hit_tick=TICK))
+    subject = replace(_subject(), combat=replace(_subject().combat, last_attacker_id=2, last_hit_attackers=(2,), last_hit_tick=TICK))
     state = AuthoritativeState(tick=3, seed=1, entities={1: subject})
     restored = pickle.loads(pickle.dumps(state, protocol=pickle.HIGHEST_PROTOCOL))
     assert (restored.entities[1].combat.last_attacker_id, restored.entities[1].combat.last_hit_tick) == (2, TICK)

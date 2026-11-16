@@ -50,7 +50,7 @@ D1 from the V3 trace. Owner choice: #715 6893303548, "(a) Two defect tickets (Re
 - SUPERSEDED: the ~30-run paired measurement (3 worlds x s42-46 x 5000t) named in the criteria above is replaced by the section below (owner #715 6912138476). Balance rows r1/r2 are report-only there.
 
 ### Own-job counts (HARD, fixed before data; rpg-designer, owner 6912138476)
-Copied verbatim from `.claude/handover/drafts/rpg-designer-d1-own-job-counts.md` (sha256 0a1cd679201872182f5fa4fba86235953532119f51425ff67d609c36965e2972); only the section heading level is lowered by one (`##` to `###`).
+Copied verbatim from `.claude/handover/drafts/rpg-designer-d1-own-job-counts.md` v2 (sha256 55d94a58db647beb4764aab6f77227f615ac187e3132024ba00a01de2617a43d; supersedes v1 0a1cd679); only the section heading level is lowered by one (`##` to `###`).
 
 Ticket: TCK-20261115-PAST-THE-STARVING-LINE-THE-TACTICAL-STEP-TURNS-AWAY-FROM-A-MEAL-WITHOUT-WEIGHING-HUNGER.
 - Owner rulings: M1 pace (a), #715 6912138476; memo row 96.
@@ -64,6 +64,8 @@ Past the starving line (hunger ≥ `STARVING_LINE`, 95), a last-attacker hit mak
 
 Below the line, memo row 88's 10-tick hit window is unchanged. Every caller (`need_yields`, `_panic_holds`, `acting_threat_to`) reads the same predicate.
 
+**v2, after #933.** The hit test is now membership in `subject.combat.last_hit_attackers` (every body in the last hit), not `last_attacker_id`. The D1 rule applies to each member on its own: each hitter in the set acts past the line only while it is within its own reach, or term (a) holds. Here, "the hitter" means the `hostile` of the call, a member of `last_hit_attackers`. The "old rule" means main's post-#933 rule: member, and the hit within 10 ticks.
+
 ### Run shape
 - Merged main with D1 (the fix arm) only. The counts compare the new predicate with the old rule on the same call, so the own job needs no base arm.
 - frontier_marches, crowded_frontier and urban_political, s42, 5000 ticks.
@@ -74,6 +76,7 @@ Below the line, memo row 88's 10-tick hit window is unchanged. Every caller (`ne
   - distance, and the hitter's range;
   - the term (a) value;
   - the ticks since the hit;
+  - `last_hit_attackers` (the full set), whether the hostile is a member, and `last_attacker_id`;
   - the returned value.
 - The spy prints inputs and the returned value only. I compute the old-rule value myself (hit within 10 ticks means acting) and assign the classes.
 
@@ -82,6 +85,7 @@ Below the line, memo row 88's 10-tick hit window is unchanged. Every caller (`ne
 - **J2, in reach still acts.** Calls with hunger ≥ 95, hit within 10 ticks, and the hitter in reach or term (a) true, that return not-acting: **0**.
 - **J3, out of reach stops acting.** Calls with hunger ≥ 95, hit within 10 ticks, the hitter out of reach and term (a) false, that return acting: **0**.
 - **J4, one predicate.** For the same (tick, subject, hitter), the 3 callers disagree on the value: **0**.
+- **J6, group hits per member.** Past the line, in the same call tick for the same subject, a member in reach must act and a member out of reach (with no term (a)) must not. Any call that breaks this is already counted in J2 or J3. J6 reports how many group-hit cases (set size ≥ 2) occurred, with no separate bar.
 - **J5, the line is ≥, not >.** Calls at hunger exactly 95 are classed as past the line in J2 and J3. Reported separately, with no separate bar.
 
 ### Not vacuous

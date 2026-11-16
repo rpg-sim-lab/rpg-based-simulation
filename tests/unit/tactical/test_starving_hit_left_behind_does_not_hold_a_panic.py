@@ -22,7 +22,7 @@ def _scene(hunter_at, hunger=100.0, ago=3):
     state = compile_world("frontier_living_world", 42)
     m, h = state.entities[MERCHANT], state.entities[HUNTER]
     m = replace(m, navigation=replace(m.navigation, position=(30.0, 30.0), movement_mode=MovementMode.REGROUP, target=INN),
-                combat=replace(m.combat, hp=10, max_hp=85, last_attacker_id=HUNTER, last_hit_tick=state.tick - ago),
+                combat=replace(m.combat, hp=10, max_hp=85, last_attacker_id=HUNTER, last_hit_attackers=(HUNTER,), last_hit_tick=state.tick - ago),
                 biological=replace(m.biological, hunger=hunger), inventory=replace(m.inventory, gold=0))
     h = replace(h, navigation=replace(h.navigation, position=hunter_at))
     obj = ObjectiveState(id="hunger_20003", kind=ObjectiveKind.REACH_LOCATION, target="20003", status=ObjectiveStatus.ACTIVE)
@@ -48,7 +48,7 @@ def test_the_control_with_the_old_ten_tick_hit_window_holds_the_panic(monkeypatc
 
     def old_hit_acts_on(hostile, subject, tick):  # the predicate before the reach test
         hit_tick = subject.combat.last_hit_tick
-        return hit_tick is not None and subject.combat.last_attacker_id == hostile.id and tick - hit_tick <= threat.NEED_WAKE_CADENCE
+        return hit_tick is not None and hostile.id in subject.combat.last_hit_attackers and tick - hit_tick <= threat.NEED_WAKE_CADENCE
 
     monkeypatch.setattr(threat, "_hit_acts_on", old_hit_acts_on)
     state, merchant = _scene((30.0, 25.0))

@@ -451,9 +451,11 @@ A seat reconnects with `/mcp` after the change reaches its worktree. The repo-ro
 
 ### When the index is stale
 
-Each worktree searches its own index (`agent-working/.index/knowledge-index/`), so a worktree on another branch, or one whose docs
-and tickets changed since the last `make knowledge-index-update`, quietly searches an older corpus. Both search paths now compare
-the index's `manifest.json` (source path to mtime) with the files on disk, by `stat` only (about 0.1 s on the real corpus), and say so:
+A worktree reads the main checkout's index when it has one (`tools/search_mcp.py::_resolve_index_dir`; `RPG_SEARCH_OWN_INDEX=1` opts
+into its own), so its search can run against an older corpus than its own files. Both search paths compare the index's `manifest.json`
+(source path to mtime) with the files of the checkout that owns the index, derived from the `db_path` (a non-standard layout falls back
+to the calling checkout), by `stat` only (about 0.1 s on the real corpus), and say so. "Stale"
+means files changed since the build, including a main checkout that is on another branch:
 
 - CLI `tools/knowledge_search.py query` prints one stderr line, `knowledge index is stale: N changed, N new, N removed -- run make knowledge-index-update`.
 - MCP `search_docs` returns `{"results": [...], "stale": {"changed": N, "new": N, "removed": N}}` instead of the bare list. A current index still returns the bare list.

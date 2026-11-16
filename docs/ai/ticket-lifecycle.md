@@ -444,7 +444,7 @@ directory list if any gap is found, regardless of whether `test-scoper` itself r
 `passed: true` — a reported PASS with an uncovered directory is a false PASS. The user re-scopes
 the Test phase to include the missing directory and re-runs with `ticket_id`.
 
-**Gate:** Returns `TESTS_FAILED` with failing test names. The user fixes the tests and re-runs with `ticket_id`. The workflow resumes from the Test phase.
+**Gate:** Returns `TESTS_FAILED` with failing test names. The user fixes the tests and re-runs with `ticket_id`. The workflow resumes from the Test phase. A run that died of the environment (memory, a killed chunk) returns `TESTS_ENVIRONMENT_FAILED` instead, with no `Test:passed` row; on a host that sets a cap (`registries/session_test_caps.yaml`) the Test phase runs through `tools/delivery/capped_pytest.py` and the test-scope gate rejects a command that skips it.
 
 **Post-Test cleanup checkpoint:** Immediately after Test phase completes (before Parity), the
 orchestrator runs `tools/gate_checks/done_checker_static.py::clean_data_runs_early(start_ts)`
@@ -754,6 +754,7 @@ their own.
 | `NEEDS_CHANGES` | Architecture violations in plan | Fix `plan.md` per violation list | Re-run with `ticket_id` |
 | `BLOCKED` | Fundamental architectural conflict | Revisit scope, possibly split ticket | Re-run with `ticket_id` or new `request` |
 | `TESTS_FAILED` | Tests failing after implementation | Fix the code or tests | Re-run with `ticket_id` |
+| `TESTS_ENVIRONMENT_FAILED` | The Test run died of the environment (memory, a killed process), not because a test failed | Free the host or wait for its slot | Re-run with `ticket_id` |
 | `DATA_RUNS_CLEAN_FAILED` | Legacy status: the post-Test checkpoint no longer deletes (TCK-20261004-DATA-RUNS-CLEAN-NOT-SESSION-SCOPED), so it no longer produces this. Kept so older runs' records stay readable | None | — |
 | `SECURITY_BLOCKED` | Security review found a vulnerability | Fix the flagged code | Re-run with `ticket_id` |
 | `DOD_BLOCKED` | DoD condition(s) not met | Fix each failing item listed | Re-run with `ticket_id` |

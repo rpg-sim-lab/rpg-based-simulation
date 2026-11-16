@@ -35,7 +35,7 @@ def _run(run_id):
             if i == 0:
                 worker = replace(worker, navigation=replace(worker.navigation, position=(42.0, 31.0)), combat=replace(worker.combat, hp=10, max_hp=100),
                                  biological=replace(worker.biological, hunger=100.0, sleep_debt=0.0), inventory=replace(worker.inventory, gold=0))
-            worker = replace(worker, combat=replace(worker.combat, last_attacker_id=RAIDER, last_hit_tick=state.tick - 3))
+            worker = replace(worker, combat=replace(worker.combat, last_attacker_id=RAIDER, last_hit_attackers=(RAIDER,), last_hit_tick=state.tick - 3))
             entities[WORKER] = worker
             entities[RAIDER] = replace(raider, navigation=replace(raider.navigation, position=(42.0, 26.0)), task=TaskComponent(work_kind="ENTITY_ACT", payload={}))
             object.__setattr__(state, "entities", entities)
@@ -58,7 +58,7 @@ def test_the_same_worker_with_the_old_ten_tick_hit_window_does_not_eat_in_the_sa
 
     def old_hit_acts_on(hostile, subject, tick):  # the predicate before the reach test: the hit acts for one brain cadence wherever the hitter is
         hit_tick = subject.combat.last_hit_tick
-        return hit_tick is not None and subject.combat.last_attacker_id == hostile.id and tick - hit_tick <= threat.NEED_WAKE_CADENCE
+        return hit_tick is not None and hostile.id in subject.combat.last_hit_attackers and tick - hit_tick <= threat.NEED_WAKE_CADENCE
 
     monkeypatch.setattr(threat, "_hit_acts_on", old_hit_acts_on)
     assert _run("d1_hit_reach_cf_control") >= 90.0

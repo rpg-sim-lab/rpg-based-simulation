@@ -3,8 +3,10 @@
 from __future__ import annotations
 
 import json
+import os
 import pickle
 import struct
+import uuid
 from pathlib import Path
 from typing import TYPE_CHECKING
 
@@ -107,12 +109,14 @@ class ScenarioCheckpointer:
         # Pass run_id explicitly to suppress the Domain.INIT RNG draw in
         # Kernel.__init__ that would otherwise advance the stream by 1 after
         # set_state() restores it, breaking the determinism AC.
+        # The id is unique per restore (pid plus a uuid4, which is not the simulation RNG): create_run_directory replaces an existing directory of the
+        # same id, so one id per spec made two restores of one spec delete each other's run directory.
         kernel = Kernel(
             profile,
             state,
             rng,
             flags={"no_replay": True},
-            run_id=f"restored_{spec.id}",
+            run_id=f"restored_{spec.id}_{os.getpid()}_{uuid.uuid4().hex[:8]}",
         )
 
         svc = ScenarioRuntimeService(spec)
