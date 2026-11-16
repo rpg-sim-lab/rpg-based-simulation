@@ -88,7 +88,7 @@ Backticked strings starting with `src/`, `tools/`, `tests/`, `.claude/`, `.githu
 ## 7. Added 2026-11-16: constants sample, and the owner's decisions (#715 6911224913, 6911534263)
 
 ### Owner decisions on this plan
-- KGMCP: archive the other 13 documents, keep `redaction_retention_policy.md` in place as active and fix its dead paths; `evidence_cache_identity_contract.md` moves with the 13 (option B). Filing: rpg-planner via lead-planner-u24, one change with both lanes reviewing. Exact edits: `kgmcp_archive_move_list.md`.
+- KGMCP: archive the other 13 documents, keep `redaction_retention_policy.md` in place as active and fix its dead paths; `evidence_cache_identity_contract.md` moves with the 13 (option B). Filing: rpg-planner via lead-planner-u24, one change with both lanes reviewing. Exact edits: TCK-20261116-THIRTEEN-DEAD-KNOWLEDGE-GATEWAY-DOCS-MOVE-TO-THE-ARCHIVE.
 - Search ranking: historical plans and status-less brainstorm documents rank lower by default, still searchable; brainstorm documents get a status first.
 - Doc-truth checks, all report-only and none blocking: the citation resolver (AST-based, with positive controls), the changed-code check (the escape needs proof), the parity `test_path` ratchet (`test_path` becomes a list first), and freshness stamps (dropped if noisy).
 - Priority (#715 6911759453): RPG is the highest priority. This plan continues at lower priority and yields to any RPG review.
