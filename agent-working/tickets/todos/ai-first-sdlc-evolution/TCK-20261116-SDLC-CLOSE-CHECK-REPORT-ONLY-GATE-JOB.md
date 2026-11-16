@@ -54,6 +54,7 @@ Under the owner's 11-15 rescope (#715 6889309909, 6889318166), Phase 1 (authorit
    Condition 6 (a closure record exists) stays off until TCK-20261116-SDLC-CLOSURE-RECORD-AND-EVIDENCE-LAYERS lands, and is listed as such.
 2. **The three OD-4 layers,** each reported as its own line:
    - (1) the project test lanes for the paths the PR touches (condition 7);
+     - a sub-line under (1), the **test-scope floor**: for each ticket closed, do the tests that ran cover every test directory the changed paths require (`tools/gate_checks/test_scope_coverage_static.py::expected_test_dirs_for`)? The pipeline enforces this floor, but the hand path does not, so a hand Test phase can leave out a required directory without anyone noticing (agent-working-designer's OD-5 pack, conclusion 1). If this is too heavy for the first version, move it to Out of Scope with the reason; don't drop it silently;
    - (2) the agent-working tool tests (`tools-a-e`, `tools-f-z`, `agent-orchestration`) when `tools/`, `.claude/workflows/` or `.claude/agents/` change;
    - (3) the gate ledger: no unresolved blocking gate verdict for any ticket the PR closes (condition 8).
 3. **OD-12 detection line:** a ticket closed by this PR that another open PR also closes is reported, not blocked.
@@ -65,6 +66,7 @@ Under the owner's 11-15 rescope (#715 6889309909, 6889318166), Phase 1 (authorit
 5. **E1-replay:**
    - Run the condition set read-only over the last 50 merged PRs that closed a ticket.
    - Report per condition and per layer: flags, the ones judged false positives (with the reason), and the expected ~5 unresolved verdicts and 1-2 premature closes (§39 Phase 2 item 8).
+   - For each flagged close, also record which of the pipeline-only checks the hand close lacked: the test-scope floor, the capped-pytest enforcement, and an independent review verdict. This gives OD-5's evidence pack a measured count, read-only, from the same 50 PRs.
    - The replay is a read-only tool run, not a heavy run.
 
 ## Out of Scope
@@ -77,7 +79,7 @@ Under the owner's 11-15 rescope (#715 6889309909, 6889318166), Phase 1 (authorit
 ## Acceptance Criteria
 1. The post-close set exists with tests for each condition, pass and fail, using temp trees. Existing done_checker tests pass unchanged.
 2. The gate job runs on every PR (shown by one PR that touches only docs and one that touches only `tools/`), reports the three layers and the OD-12 line, and never fails the PR on a finding.
-3. The E1-replay report over 50 merged closing PRs is committed as a stored artifact. It gives counts per condition and layer, and lists every flag judged a false positive with its reason.
+3. The E1-replay report over 50 merged closing PRs is committed as a stored artifact. It gives counts per condition and layer, and lists every flag judged a false positive with its reason. It also gives the per-close count of missing pipeline-only checks.
 4. The ticket and the docs (`docs/guides/delivery_process.md`, "PR Lifecycle") say plainly that the job is report-only, and that "required" means owner practice while M1 is deferred.
 
 ## Related Tickets
@@ -102,7 +104,7 @@ Under the owner's 11-15 rescope (#715 6889309909, 6889318166), Phase 1 (authorit
 ## Assumptions / Open Questions
 - Whether the org repo offers an organization-level required workflow (OD-13 C) is not checked. It matters only if M1 or M2 is reopened.
 - A sync-only push skips lanes as `pr_content_unchanged`. The job must read a skip as "ran on the prior content head", not as a pass, and say which it was.
-- Record OD-4, OD-12 and OD-13 in SDLC_DECISION_RECORD.md with the #715 id, unless agent-working-designer has already done it.
+- OD-4, OD-6, OD-11, OD-12 and OD-13 are recorded in `docs/plans/agent_infrastructure/SDLC_DECISION_RECORD.md` (section "2026-11-16"), filed with this ticket.
 
 ## Implementation Notes
 (to be filled by the implementer)

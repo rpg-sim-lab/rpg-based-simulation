@@ -8193,6 +8193,93 @@
   artifact_files: []
   tags: []
 - type: ticket
+  path: agent-working/tickets/todos/ai-first-sdlc-evolution/TCK-20261116-SDLC-ATTRIBUTION-FIELDS-AND-COORDINATION-METRICS.md
+  ticket_id: TCK-20261116-SDLC-ATTRIBUTION-FIELDS-AND-COORDINATION-METRICS
+  title: Monitoring rows carry their tool call and work item, events say whether they
+    were derived or narrated, sessions record their end, and the retro shows coordination
+    cost.
+  tier: standard
+  ticket_type: feature
+  date: '2026-11-16'
+  related_code_areas:
+  - tools/agent-monitoring/ (tool hook, record_events.py, generate_retro.py)
+  - tools/sessions/session_start_hook.py
+  - .claude/settings.json (hook entry; governing)
+  artifact_files: []
+  tags:
+  - ai
+  - agent-monitoring
+  - observability
+- type: ticket
+  path: agent-working/tickets/todos/ai-first-sdlc-evolution/TCK-20261116-SDLC-CLOSE-CHECK-REPORT-ONLY-GATE-JOB.md
+  ticket_id: TCK-20261116-SDLC-CLOSE-CHECK-REPORT-ONLY-GATE-JOB
+  title: One always-run CI gate job runs a post-close check on every PR that closes
+    a ticket, report-only, covering the project tests, the agent-working tool tests
+    and the gate ledger.
+  tier: standard
+  ticket_type: feature
+  date: '2026-11-16'
+  related_code_areas:
+  - tools/gate_checks/done_checker_static.py
+  - tools/agent-monitoring/gate_ledger.py
+  - changed-files
+  artifact_files: []
+  tags:
+  - ai
+  - delivery
+  - governance
+  - testing
+- type: ticket
+  path: agent-working/tickets/todos/ai-first-sdlc-evolution/TCK-20261116-SDLC-CLOSURE-RECORD-AND-EVIDENCE-LAYERS.md
+  ticket_id: TCK-20261116-SDLC-CLOSURE-RECORD-AND-EVIDENCE-LAYERS
+  title: Every ticket close writes one closure record, and a derived view links ticket,
+    sessions, PR, CI and decision, with no database.
+  tier: standard
+  ticket_type: feature
+  date: '2026-11-16'
+  related_code_areas:
+  - tools/agent-monitoring/record_hand_orchestrated_closure.py
+  - tools/agent-monitoring/ (week close, generate_retro.py)
+  - tools/agent-monitoring/gate_ledger.py
+  artifact_files: []
+  tags:
+  - ai
+  - agent-monitoring
+  - observability
+- type: ticket
+  path: agent-working/tickets/todos/ai-first-sdlc-evolution/TCK-20261116-SDLC-CODEX-TRACK-MARKED-LEGACY.md
+  ticket_id: TCK-20261116-SDLC-CODEX-TRACK-MARKED-LEGACY
+  title: The Codex / provider-neutral track is marked "legacy support (provider-agnostic)"
+    where a reader meets it first, and its CI lane is split only if it also carries
+    the agent-orchestration tests.
+  tier: hotfix
+  ticket_type: chore
+  date: '2026-11-16'
+  related_code_areas:
+  - agent-orchestration
+  - tools/agent_orchestration/, tools/agent_replay/
+  artifact_files: []
+  tags:
+  - ai
+  - governance
+- type: ticket
+  path: agent-working/tickets/todos/ai-first-sdlc-evolution/TCK-20261116-SDLC-WORK-CLOSE-CLI.md
+  ticket_id: TCK-20261116-SDLC-WORK-CLOSE-CLI
+  title: A `work close` command closes a ticket in one step and refuses when a validator
+    fails.
+  tier: standard
+  ticket_type: feature
+  date: '2026-11-16'
+  related_code_areas:
+  - tools/agent-monitoring/record_hand_orchestrated_closure.py
+  - tools/working_log_writer.py
+  - tools/gate_checks/done_checker_static.py
+  - tools/mechanism_registry/mechanism_registry_changed_code_check.py
+  artifact_files: []
+  tags:
+  - ai
+  - delivery
+- type: ticket
   path: agent-working/tickets/done/TCK-20261115-A-NON-SEQUENTIAL-RUN-IS-REFUSED-BY-THE-GATE-CANDIDATE-PAIRED-ARMS-AND-RPG-MEASURE.md
   ticket_id: TCK-20261115-A-NON-SEQUENTIAL-RUN-IS-REFUSED-BY-THE-GATE-CANDIDATE-PAIRED-ARMS-AND-RPG-MEASURE
   title: A run on a non-sequential executor is refused by the gate candidate, the

@@ -34,18 +34,18 @@ Deferred, out of live scope until the owner reopens them:
 
 Filing only. Dispatch is a separate owner go. Phase 1 is deferred, so "required" means required by owner practice.
 
-Phase 2 (verifiable completion):
-1. TCK-20261116-SDLC-CLOSE-CHECK-REPORT-ONLY-GATE-JOB: the post-close check in one always-run gate job, report-only. It covers the three OD-4 layers and the OD-12 two-PR detection line, and includes the E1-replay over 50 merged closing PRs.
-2. TCK-20261116-SDLC-WORK-CLOSE-CLI: the one-step close command. Its CLAUDE.md pointer needs the owner's direct OK.
+Dispatch order:
+1. TCK-20261116-SDLC-CLOSE-CHECK-REPORT-ONLY-GATE-JOB (Phase 2, P2), first. It is report-only and covers the three OD-4 layers, the test-scope floor line and the OD-12 two-PR detection line. It also runs the E1-replay over 50 merged closing PRs, counting the pipeline-only checks each hand close lacked.
+2. TCK-20261116-SDLC-CLOSURE-RECORD-AND-EVIDENCE-LAYERS (Phase 3, P2), after 1. It depends on 1 only through close-check condition 6, which it switches on. It covers L1, L2 and L3 (OD-11), plus E5.
 
-Phase 3 (evidence and attribution), in parallel with Phase 2:
-3. TCK-20261116-SDLC-CLOSURE-RECORD-AND-EVIDENCE-LAYERS: L1, L2 and L3 (OD-11), plus E5. It switches on close-check condition 6.
-4. TCK-20261116-SDLC-ATTRIBUTION-FIELDS-AND-COORDINATION-METRICS: tool-call and work-item ids, provenance labels, SessionEnd, and coordination metrics in the retro.
+Independent, any time:
+- TCK-20261116-SDLC-WORK-CLOSE-CLI (Phase 2, P3): the one-step close command. Its CLAUDE.md pointer needs the owner's direct OK.
+- TCK-20261116-SDLC-ATTRIBUTION-FIELDS-AND-COORDINATION-METRICS (Phase 3, P3): tool-call and work-item ids, provenance labels, SessionEnd, and coordination metrics.
+- TCK-20261116-SDLC-CODEX-TRACK-MARKED-LEGACY (OD-6, hotfix): marks the track as legacy support, and splits the CI lane only if it also runs tests/agent_orchestration.
 
 ## Not cut yet
 
-- Phase 4 waits on OD-5. The owner asked for an evidence pack first, from both this project's observation and external research (agent-working-designer).
-- OD-6 keeps the Codex track as legacy support, if it causes no issue. No ticket is cut for it yet.
+- Phase 4 waits on OD-5. The owner asked for an evidence pack first, from both this project's observation and external research (agent-working-designer). The pack may add a Phase 2 acceptance item: either the close check covers the pipeline-only checks, or the owner accepts losing them.
 - R1 stays deferred.
 
 ## Rules

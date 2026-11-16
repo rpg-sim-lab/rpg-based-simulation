@@ -51,7 +51,13 @@ Acceptance (plan): unattributed `session_role` below 5%, and coordination metric
    - `provenance: derived | narrated` on events;
    - `session_role` always resolved, or the literal `unattributed` with a reason.
 3. **SessionEnd.** A SessionEnd hook writes one span row per session: session id, role, start and end, and counts. No message content, and no command lines or env. The `.claude/settings.json` hook entry is a governing change, so the exact diff goes to the owner before commit.
-4. **Coordination metrics in the retro:** cross-session messages per close, and owner touches per PR (#715 decision comments that cite the PR). It counts messages; it never stores their text.
+4. **Coordination metrics in the retro.** It counts messages and never stores their text. Two metrics:
+   - Cross-session messages per close.
+   - Owner touches per PR. **Definition, to be pinned by a fixture test:** a touch is a #715 comment that records an owner answer or decision. It carries the marker `owner answer` or `owner decision` (case-insensitive), or the owner's quoted words after `exact:`. That includes lead-planner's relays of owner answers.
+     - It excludes lead-planner's own notes: merge records, S7 re-sync records and fyi notes.
+     - Author is not a test: every #715 comment is posted from the owner's account, including the relays.
+     - A touch counts toward PR N when its text names `#N`, or names a ticket that PR N closes. One comment that touches two PRs counts once for each.
+     - The fixture must include a relay, a merge note and a two-PR comment.
 5. **Retro reads from main.** `generate_retro.py` regenerates its evidence sections from main's shards, not from the local checkout.
 
 ## Out of Scope
@@ -64,7 +70,7 @@ Acceptance (plan): unattributed `session_role` below 5%, and coordination metric
 1. The baseline from scope 1 and the after-measurement over one full week are both recorded. Unattributed `session_role` is reported against the plan's 5% target, without tuning the numbers to meet it.
 2. The new fields are in `docs/agent-monitoring/schema.md`. A reader test passes on a shard without them.
 3. The SessionEnd hook writes one row per session end in a test harness, and never fails the session if the write fails.
-4. The retro shows the two coordination metrics for a test week.
+4. The retro shows the two coordination metrics for a test week. The owner-touch definition is pinned by its fixture.
 5. Redaction is unchanged: a test shows that no message text, command line or env value reaches a row.
 
 ## Related Tickets
