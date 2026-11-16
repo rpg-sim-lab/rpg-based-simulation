@@ -13,7 +13,7 @@ whole-plan review (#715 6910997558).**
 - §13 is now a per-purpose mode choice: single and distributed coexist.
 - §14 answers ubuntu's review and records child 2's result. Child 2 is CONCLUSIVE: as designed, child 3 costs more than it
   offloads.
-- Children 3 and 4 are HELD.
+- Children 3 and 4 are SHELVED: the owner chose R5 now, R3 later (#715 6917359910).
 The status paragraph below is the history.
 
 **Status: DRAFT, revised after the owner answered §10 (#715 6776551375): local recompute, CLI and harness only, gRPC, pickle with
@@ -394,8 +394,8 @@ multi-service transaction); Canary, Shadow / Traffic replay, Synthetic monitorin
 | # | Child | Owner | Cost (measurement included) | Leaves out |
 |---|---|---|---|---|
 | 2 | packet-cost measurement. **CONCLUSIVE 2026-11-16, so the full form is not needed:** the per-chunk pickle round trip is 34-60 ms against 0.2-1.2 ms of compute, 44-146x at the median. None of about 4,400 chunks had codec time under compute time. In-process Collection is 1.3-2.3 ms per tick in total. The cause is the shared world views in every chunk (§14). Evidence: `TCK-20261115-WHAT-A-WORKER-CHUNK-COSTS-TO-ENCODE-AND-SHIP` at `5c9496a33` (on origin `perf-planner-next`, verified 2026-11-16), `agent-working/staging_artifacts/TCK-20261115-WHAT-A-WORKER-CHUNK-COSTS-TO-ENCODE-AND-SHIP/evidence.md`: 9/9 runs, with the final hash identical across thread, process and no-probe | perf-planner | **cheap form:** per-chunk pickled size and encode/decode time on the 3 gate worlds at seed 42, in-process (minutes). It also records Collection's internal split (packet build, encode, compute per chunk, decode, validate), marking any item it cannot measure as unknown (§12). **Full form** only if inconclusive: loopback round trip through one worker container (about an hour) | multi-host; contention; tail latency |
-| 3 | `RemoteWorkerManager`, transport, rule of §6, the tests of §8. **HELD (#715 6910997558); no-go as designed (§14)** | rpg-planner | code + unit and integration tests; the extra_slow arm adds about 4 x 2000-tick runs to the slow lane | the container (child 4); API reach (§5) |
-| 4 | `engine-worker` entry point and the `distributed` profile. **HELD (#715 6910997558)** | platform-planner | image entry point and profile; one containerized smoke run | k8s/Helm; scaling beyond one host |
+| 3 | `RemoteWorkerManager`, transport, rule of §6, the tests of §8. **SHELVED (R5, #715 6917359910); re-cut as R3 after M1 and the contract spec (§14.2)** | rpg-planner | code + unit and integration tests; the extra_slow arm adds about 4 x 2000-tick runs to the slow lane | the container (child 4); API reach (§5) |
+| 4 | `engine-worker` entry point and the `distributed` profile. **SHELVED with child 3 (#715 6917359910)** | platform-planner | image entry point and profile; one containerized smoke run | k8s/Helm; scaling beyond one host |
 | 5 | `worker_contract.md` §5 and `infrastructure_overview.md` (the mode; the `ai_worker` wording at `:159`) | docs/engine owner via lead-planner | doc only | everything else |
 | 6 | the manifest's `RunConditions.worker_manager` field (the executor is already recorded since #918); refusal of a non-sequential executor in the gate candidate (`tools/test_architecture`), paired arms and `rpg_measure`, with a unit test each | testing-planner scopes it (the gate candidate is its domain); `rpg_measure` and the manifest field with rpg-planner | code + 5 small unit tests (4 refusals plus the `worker_manager` record test), no runs | anything beyond refusing; the mode itself |
 
@@ -405,7 +405,7 @@ child 0 and ubuntu's docs batch. Every child waits for the owner's review.
 - Child 6 is filed and built (6889952914 A).
 - Child 2 is done and conclusive.
 - Child 5, the doc only, may proceed. rpg-planner filed it on `rpg-planner-seat-8` (`f283de1ad`), and it rides rpg's next PR.
-- Children 3 and 4 are held. They go back to the owner with §14's redesign options and the next-gen contract spec.
+- Children 3 and 4 are shelved (R5, #715 6917359910). Child 3 is re-cut as R3 after M1 and the next-gen contract spec.
 
 ## 10. Choices for the owner (answered)
 
@@ -629,11 +629,18 @@ step units (`fused_strategic_pass` is 92-99 % of `resolution_overhead`, §12), a
 - The typed codec is R3's wire format from the first build (point 4).
 - Single mode is untouched throughout (§13).
 
-**What R3 changes in this design, if the owner takes it:**
+**Owner's choice (#715 6917359910): "R5 now, R3 later (Recommended)".**
+- Children 3 and 4 are shelved now.
+- After Milestone 1 and the next-gen contract spec, child 3 is re-cut as R3.
+- The re-cut is gated on the one cheap in-process measurement above (a tick's delta size and encode time, 3 worlds, seed 42),
+  run only when the slot is free of RPG work.
+- Single mode stays untouched. The typed codec is a build precondition.
+
+**What R3 changes in this design, when child 3 is re-cut:**
 - §4: the chunk carries ids and the tick's delta, not the views, and the codec is typed.
 - §6: the dead-worker rule gains "replica digest mismatch means local recompute".
 - §12: the "no state between ticks" line is reversed for the replica.
 - §13: promotion gate 3 becomes a build precondition.
 
-These edits are made after the owner's choice, not before. The rest stands: the one writer, the selection seam, the gRPC
+These edits are made at the re-cut, not now. The rest stands: the one writer, the selection seam, the gRPC
 transport, two-way auth, mTLS as a gate, and the evidence guard.

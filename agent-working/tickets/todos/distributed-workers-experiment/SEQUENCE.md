@@ -3,6 +3,16 @@
 Epic `TCK-20261109-EPIC-DISTRIBUTED-WORKERS-EXPERIMENT`, filed by architecture-planner-u24, 2026-11-09. Routed by the owner
 (#715 6731692652); shape chosen by the owner (#715 6731714291, "Epic + ADR first"). Scoping only.
 
+## Owner decision 2026-11-16, later: child 3 redesign, "R5 now, R3 later (Recommended)" (#715 6917359910)
+
+- **Children 3 and 4 are SHELVED now** (R5).
+- **After Milestone 1 and the next-gen contract spec, child 3 is re-cut as R3:** a worker-resident replica plus typed per-tick
+  deltas, with a replica digest check (design §14.2).
+- The re-cut is gated on one cheap in-process measurement: a tick's delta size and encode time, 3 worlds, seed 42. It runs only
+  when the slot is free of RPG work.
+- Single mode is untouched. The typed codec is a build precondition, so pickle never ships in a lasting mode.
+- This supersedes "Child 3: HELD, no-go as designed" in the block below.
+
 ## Owner decision 2026-11-16: whole-plan review decided, option B (#715 6910997558)
 
 The owner's words: "yes, go with B, remember that don't touch the original design, just build a multi-modes core, like we can use
