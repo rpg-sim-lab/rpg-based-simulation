@@ -301,6 +301,18 @@ class NavigationPatch(ComponentPatch):
             changes["navigation"] = new_nav
 
 
+def _hit_attackers_and_damages(u_com: Any) -> tuple:
+    """The attackers of a hit and the share each took, from a CombatUpdate: the group fields when set, else one attacker holding the whole damage (none when the update names no attacker)."""
+    attackers = u_com.hit_attackers_set
+    if attackers is None:
+        attackers = (u_com.attacker_id,) if u_com.attacker_id is not None else ()
+    damages = u_com.hit_damages_set
+    if damages is None:
+        whole = u_com.hit_damage_set if u_com.hit_damage_set is not None else u_com.damage_taken
+        damages = (whole,) if u_com.attacker_id is not None else ()
+    return attackers, damages
+
+
 @dataclass(frozen=True, slots=True)
 class CombatPatch(ComponentPatch):
     combat: Optional[Any] = None # CombatUpdate
@@ -331,8 +343,7 @@ class CombatPatch(ComponentPatch):
             # The tick of that same hit, so (last_attacker_id, last_hit_tick) always name one hit; a hit that carries no tick leaves it as it was.
             hit_landed = u_com.attacker_id is not None and u_com.damage_taken > 0 and u_com.hit_tick_set is not None
             # The attackers of that hit and the share each took: a hit that names no group is one attacker holding the whole damage, so every landed hit leaves the pair in step with last_attacker_id / last_hit_damage.
-            hit_attackers = u_com.hit_attackers_set if u_com.hit_attackers_set is not None else ((u_com.attacker_id,) if u_com.attacker_id is not None else ())
-            hit_damages = u_com.hit_damages_set if u_com.hit_damages_set is not None else ((u_com.hit_damage_set if u_com.hit_damage_set is not None else u_com.damage_taken,) if u_com.attacker_id is not None else ())
+            hit_attackers, hit_damages = _hit_attackers_and_damages(u_com)
             new_combat = replace(new_combat, 
                 hp=new_hp, 
                 max_hp=new_max_hp,

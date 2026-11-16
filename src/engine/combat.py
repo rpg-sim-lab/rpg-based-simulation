@@ -31,6 +31,13 @@ def _biological_attack_modifiers(bio: Any) -> Dict[str, float]:
     return out
 
 
+def _hit_outcome(hp_after: int, is_lethal: bool) -> Tuple[str, bool]:
+    """The outcome label and the defender's alive flag for a resolved hit, from the hp it leaves."""
+    if hp_after <= 0:
+        return ("KILL" if is_lethal else "DEFEAT"), False
+    return "SURVIVE", True
+
+
 class CombatResolutionSystem:
     """
     Authoritative logic for combat interactions and outcomes.
@@ -363,12 +370,7 @@ class CombatResolutionSystem:
                 failure_reason=ReasonCode.TARGET_INVALID
             )
 
-        new_hp = defender.combat.hp - total_damage
-        outcome = "SURVIVE"
-        alive = True
-        if new_hp <= 0:
-            outcome = "KILL" if is_lethal else "DEFEAT"
-            alive = False
+        outcome, alive = _hit_outcome(defender.combat.hp - total_damage, is_lethal)
 
         xp_gain = 0
         resource_transfers = []
