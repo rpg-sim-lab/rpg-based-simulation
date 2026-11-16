@@ -444,6 +444,10 @@ class CombatComponent:
     last_attacker_id: Optional[int] = None
     last_hit_tick: Optional[int] = None  # the tick of that same hit (CombatPatch, with last_attacker_id): the act test's window; None until first hit
     last_hit_damage: Optional[int] = None  # the damage of that same hit (CombatPatch, with last_attacker_id): what the subject has felt from that body; None until first hit
+    # Every body that took hp from this one by that same hit, in attacker-list order (a simultaneous group hit has several; every other hit has one), and the share each took: parallel to
+    # last_hit_attackers, summing to last_hit_damage. The next damaging hit replaces both; empty until first hit. last_attacker_id stays the primary (first) attacker.
+    last_hit_attackers: Tuple[int, ...] = ()
+    last_hit_damages: Tuple[int, ...] = ()
     _canonical_cache: Any = field(default=None, init=False, repr=False, compare=False)
 
     def to_canonical_dict(self) -> Dict[str, Any]:
@@ -458,6 +462,8 @@ class CombatComponent:
             "last_attacker_id": self.last_attacker_id,
             "last_hit_tick": self.last_hit_tick,
             "last_hit_damage": self.last_hit_damage,
+            "last_hit_attackers": list(self.last_hit_attackers),
+            "last_hit_damages": list(self.last_hit_damages),
             "hp": self.hp,
             "max_hp": self.max_hp,
             "atk": self.atk,

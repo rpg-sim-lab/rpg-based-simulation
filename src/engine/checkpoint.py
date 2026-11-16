@@ -17,7 +17,8 @@ from src.core.state import GROUP_ID_BASE, AuthoritativeState
 # v3 (TCK-20261024-PROOF-DIGEST-HASHES-THE-CARRIED-STATE-IT-OMITS): v2 plus the seven carried-state fields it omitted (`item_instances`, `recent_world_events`,
 # `quest_registry`, `factions`, `clans`, `information_providers`, `CombatComponent.last_hit_tick`); nothing else changed, so a v3 digest is not comparable with a v2 one.
 # v4 (TCK-20261109-A-FLIGHT-WEIGHS-THE-FREE-SWING-IT-WOULD-TAKE): v3 plus `CombatComponent.last_hit_damage`; nothing else changed, so a v4 digest is not comparable with a v3 one.
-PROOF_DIGEST_SCHEME = "flat-sha256-v4"
+# v5 (TCK-20261103-A-GROUP-HIT-RECORDS-ONLY-ITS-FIRST-ATTACKER): v4 plus `CombatComponent.last_hit_attackers` and `last_hit_damages`; nothing else changed, so a v5 digest is not comparable with a v4 one.
+PROOF_DIGEST_SCHEME = "flat-sha256-v5"
 
 
 class DigestStatus(str, Enum):
