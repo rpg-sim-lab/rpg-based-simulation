@@ -8156,7 +8156,10 @@
   ticket_type: bug
   date: '2026-11-16'
   related_code_areas: []
-  artifact_files: []
+  artifact_files:
+  - agent-working/stored_artifacts/TCK-20261116-UBUNTU-COMMITTED-MEMORY-OVER-COMMIT-LIMIT/investigation.md
+  - agent-working/stored_artifacts/TCK-20261116-UBUNTU-COMMITTED-MEMORY-OVER-COMMIT-LIMIT/plan.md
+  - agent-working/stored_artifacts/TCK-20261116-UBUNTU-COMMITTED-MEMORY-OVER-COMMIT-LIMIT/test_plan.md
   tags:
   - ai
   - testing
