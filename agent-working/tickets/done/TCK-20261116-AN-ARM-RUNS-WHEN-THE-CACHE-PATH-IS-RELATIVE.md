@@ -50,6 +50,8 @@ Local `paired.py --cache <relative>` has the same bug.
 - [x] AC1: a relative cache runs an arm on the local path and on the `run-arm` path. The tests in Scope 3 pass and the revert evidence is recorded.
 - [x] AC2: `arm_child.py` is unchanged and `child_hash()` equals its value at f94417e6f. The PR body says the cache keys do not move.
 - [x] AC3: `test_paired_arms.py`, `test_paired_env_key.py`, `test_rpg_measure_collected.py`, `test_rpg_measure.py` and `test_arm_child_pinned_check.py` pass. Unit tests only, `-n 1` at most.
+- [x] AC4 (B1, testing-planner review): `paired-arms.yml` has an optional `div` input (default `-`), passed to the compare step as `--div "${DIV}"`, so the CI table header and watch rows carry the step's div. `div` is a LABEL only (rpg-planner): it feeds no verdict, threshold or bar. With no input the output is exactly as before (`(div -)`, `| - |`); with `div=2.204` the verdict.json bytes are identical and the table differs only in the label. Pinned by `test_ci_paired_arms_workflow_shape.py` and the end-to-end test.
+- [x] AC5 (B2): one end-to-end test runs the workflow's own commands in sequence in relative-cwd temp dirs (plan, every arm job, the Collect step in real bash, `assemble`, `paired --collected`), exit 0.
 
 ## Related Tickets
 - TCK-20261023-PAIRED-ARMS-RUN-OFF-THE-SHARED-HOST (parent T2. AC1's off-host run is blocked by this.)
@@ -82,7 +84,14 @@ None.
 - 146 passed (`-n 0`, unit and static only) across the new file, test_paired_arms, test_paired_env_key, test_rpg_measure_collected, test_rpg_measure, test_arm_child_pinned_check and test_ci_paired_arms_workflow_shape.
 - Revert evidence: with `paired.py` at f94417e6f, `test_run_one_runs_an_arm_whose_tree_and_out_are_relative` FAILS with `ModuleNotFoundError: No module named 'src'` (the CI failure), and `test_a_relative_out_lands_where_the_caller_means_not_inside_the_tree` FAILS (`arm run failed`). With `paired_arms.py` at f94417e6f, both `run-arm` tests FAIL (the CLI path). The `run-arm` tests pass with only the paired.py revert because the parse-time resolve already makes the cache absolute (defence in depth, as the ticket intends).
 
+- Added after review: (B1) the `div` input and `--div "${DIV}"` in `.github/workflows/paired-arms.yml`; (B2) `tests/unit/tools/test_paired_arms_workflow_end_to_end.py`. The test PARSES the arm steps, the assemble step and the compare command from the yml (`${VAR}` expanded from the job env) and runs them in-process, so the commands cannot drift; the Collect step runs as real bash. Retyped, because they are bash scripts with arrays: the `plan` arguments, and the artifact-name template is read from the upload step with its expressions filled in. Stubs: the arm child (writes a fixed valid document) and `prepare_tree` (no git); `run_one` is the real one in a real subprocess.
+- End-to-end revert evidence: with `paired.py` at f94417e6f AND the `--cache` parse-time resolve removed, the test FAILS with `arm run failed` (the CI failure); with `paired_arms.py` at f94417e6f it FAILS with `KeyError: 'cached'`. With only `paired.py` reverted it passes, because the parse-time resolve covers it (the two layers). Removing `--div "${DIV}"` from the compare step FAILS the div test and the static shape test.
+- 180 passed (`-n 0`): the new end-to-end file, test_paired_relative_cache, test_paired_arms, test_paired_env_key, test_rpg_measure_collected, test_rpg_measure, test_arm_child_pinned_check, the workflow shape test and the two workflow-guard tests.
+
 ## Files Changed
+- .github/workflows/paired-arms.yml
+- tests/unit/tools/test_paired_arms_workflow_end_to_end.py
+- tests/static/test_ci_paired_arms_workflow_shape.py
 - tools/rpg_measure/paired.py
 - tools/test_architecture/paired_arms.py
 - tests/unit/tools/test_paired_relative_cache.py

@@ -45,6 +45,10 @@ on:
         description: "Base-vs-base repeat: seed42 (seed 42 of every world, ALWAYS added even if seeds omits 42, as paired.py expects), full (every run) or off"
         required: false
         default: "seed42"
+      div:
+        description: "The step's divergence number, a LABEL only: it names the table header and the watch rows (paired.py --div) and feeds no verdict, threshold or bar. Default - (the same output as before)."
+        required: false
+        default: "-"
       evidence:
         description: "An evidence dispatch (default true): self_check off is refused, so the set carries its base-vs-base repeats run on the runner. Set false only for a non-evidence exploratory run."
         required: false
@@ -179,6 +183,7 @@ jobs:
       BASE_SHA: ${{ inputs.base_sha }}
       NEW_SHA: ${{ inputs.new_sha }}
       STEP_LABEL: ${{ inputs.step }}
+      DIV: ${{ inputs.div }}
       SEEDS: ${{ inputs.seeds }}
       TICKS: ${{ inputs.ticks }}
       SELF_CHECK: ${{ inputs.self_check }}
@@ -207,7 +212,7 @@ jobs:
           flags=()
           if [ "${TERRAIN}" = "true" ]; then flags+=(--terrain); fi
           if [ "${LEGACY_BASE}" = "true" ]; then flags+=(--legacy-base); fi
-          python -m tools.rpg_measure.paired --collected collected --base "${BASE_SHA}" --new "${NEW_SHA}" --step "${STEP_LABEL}" \
+          python -m tools.rpg_measure.paired --collected collected --base "${BASE_SHA}" --new "${NEW_SHA}" --step "${STEP_LABEL}" --div "${DIV}" \
             --ticks "${TICKS}" --seeds "${seeds[@]}" --self-check "${SELF_CHECK}" "${flags[@]}" \
             --out table.md --verdict-json verdict.json
       - name: Step summary
