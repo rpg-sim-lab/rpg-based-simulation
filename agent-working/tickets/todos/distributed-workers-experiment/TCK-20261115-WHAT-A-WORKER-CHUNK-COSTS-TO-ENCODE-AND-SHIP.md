@@ -86,6 +86,10 @@ None.
 ## Implementation Notes
 - 2026-11-16: the owner reviewed the plan and chose option B (#715 6910997558, relayed by lead-planner). The cheap form may proceed; its result decides whether child 3 starts, so the verdict states encode/decode time against per-chunk compute plainly. A heavy-slot go is still needed per run; it queues after the stage 0 timing run.
 - The probe, `chunk_cost_probe.py`, and plan/investigation/test_plan are in this ticket's staging folder. Compute is measured in-process on the decoded chunk (`_process_chunk_wrapper`), so it is not marked unknown; network transfer is unknown in the cheap form (bytes are reported). A local 5-tick smoke run matched `final_hash` with and without the probe (investigation.md).
+- 2026-11-16: cheap form run in the same slot as stage 0 (lead-planner's go), origin/main `db6b4579d`, 9 runs rc=0. The control hash matched on all 3 worlds. Peak RSS 262 MB or less. Figures in the staging `evidence.md`.
+- **Verdict: CONCLUSIVE.** With pickle chunks of today's packets, the codec round trip (request encode and decode plus result encode and decode) is 44-146x the compute per chunk at the median (p90 248-422x). Not one of about 4,400 chunks had codec time under compute time. One chunk's codec (16-60 ms) costs more than the whole tick's in-process Collection (1.3-2.3 ms). The request is 0.7-1.1 MB per chunk, nearly all shared world views; private caches are under 1 KB. Per-packet encoding is 1.1-5x larger.
+- Unknown in the cheap form: network transfer, and compute on a cold remote copy. Neither can close a gap of 40x or more, so the full form is not needed for this verdict.
+- Design §9's child 2 row is not a perf doc: the result goes to its owner through lead-planner to cite.
 
 ## Test Summary
 
