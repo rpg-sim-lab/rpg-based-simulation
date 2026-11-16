@@ -95,9 +95,11 @@ Departure the ruling invited: the share tuple `last_hit_damages` is typed `tuple
 Run on merge head (origin/main c9279925b merged), pinned to CPUs 4-5, `-m "not slow"`: tests/architecture, tests/mechanic_scenarios, tests/unit/{ai,engine,movement,perf,progression,strategic,tactical}: 2790 passed, 3 skipped, 1 xfailed, 2 failed (run twice, same result).
 - tests/architecture/test_no_name_switches_in_decision_paths.py: 58 passed (now gates src/world and src/core).
 - Fail 1: tests/unit/perf/test_benchmark_record.py cpu_affinity case: the test's changed value "4-5" equals the pin used for the run; passes unpinned (67 passed). Environment artefact of the pin.
-- Fail 2: tests/unit/tactical/test_low_hp_retreat_gate.py::test_a_held_retreat_does_not_walk_a_stored_target_through_the_kernel: fails when run after tests/architecture; passes alone and with every other directory. It fails the same way on a clean origin/main c9279925b archive (255 passed, 1 failed), so it is not from this batch. Cause not investigated; not fixed here.
-- No code changed after the measurement: `git diff origin/main HEAD -- src tests` and `git diff 5ba65854c 437160ac3 -- src tests` hash alike (5b91a901...).
-- Hot-loop timing: NOT MEASURED (perf pause #715 6556861718).
+- Fail 2: tests/unit/tactical/test_low_hp_retreat_gate.py::test_a_held_retreat_does_not_walk_a_stored_target_through_the_kernel: seen before merging main; fixed on main by #932 (TCK-20261116-A-TEST-KERNEL-DOES-NOT-DEGRADE-BECAUSE-AN-EARLIER-TEST-USED-MEMORY); the failing pair passes at this head.
+- Code identity: the src/tests diff differs from the measured one (5ba65854c..437160ac3, 5b91a901...) only by the code-health refactor 69c840b1e..750e9a242 (combat.py `_hit_outcome`, patches.py `_hit_attackers_and_damages`), hash-proven neutral (owner #715 6907423637: s42, 5000 ticks, identical final hashes on frontier/urban/crowded). `git diff origin/main <head> -- src tests` = `git diff c9279925b 750e9a242 -- src tests` = bc5169fb826696334aaba3d737df75675f77b53b4b5d7448fe58c8c379f72535.
+- Gates at the merged head (origin/main dc2f4c07e): codebase.health check OK; name-switch test plus paths guard plus the batch's tests 131 passed.
+Known gap: hot-loop timing NOT MEASURED (perf pause #715 6556861718).
+Known gap: tests/unit/perf/test_benchmark_record.py cpu_affinity case fails only under a taskset 4-5 pin (its changed value equals the pin); passes unpinned.
 
 ## Files Changed
 
