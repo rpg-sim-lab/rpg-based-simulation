@@ -84,6 +84,8 @@ None.
 - Whether the chunking today (chunk size, worker count) is the one the experiment would use: design §4 decides. This ticket measures today's.
 
 ## Implementation Notes
+- 2026-11-16: the owner reviewed the plan and chose option B (#715 6910997558, relayed by lead-planner). The cheap form may proceed; its result decides whether child 3 starts, so the verdict states encode/decode time against per-chunk compute plainly. A heavy-slot go is still needed per run; it queues after the stage 0 timing run.
+- The probe, `chunk_cost_probe.py`, and plan/investigation/test_plan are in this ticket's staging folder. Compute is measured in-process on the decoded chunk (`_process_chunk_wrapper`), so it is not marked unknown; network transfer is unknown in the cheap form (bytes are reported). A local 5-tick smoke run matched `final_hash` with and without the probe (investigation.md).
 
 ## Test Summary
 
