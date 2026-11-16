@@ -3,6 +3,29 @@
 Epic `TCK-20261109-EPIC-DISTRIBUTED-WORKERS-EXPERIMENT`, filed by architecture-planner-u24, 2026-11-09. Routed by the owner
 (#715 6731692652); shape chosen by the owner (#715 6731714291, "Epic + ADR first"). Scoping only.
 
+## Owner decision 2026-11-16: whole-plan review decided, option B (#715 6910997558)
+
+The owner's words: "yes, go with B, remember that don't touch the original design, just build a multi-modes core, like we can use
+single mode for some purposes and distributed mode for some other purposes". This supersedes older gate text where they differ,
+including the 2026-11-15 block below.
+- **The owner review gate (#715 6731938042) is decided.**
+- **Direction: a multi-mode core.** Single mode and its design stay unchanged. Distributed is a separate, opt-in mode, chosen per
+  purpose. Behaviour evidence and gates always use single (child 6). Design §13 now gives the per-purpose choice, not a "default
+  at scale".
+- **Child 2: DONE, CONCLUSIVE.** `TCK-20261115-WHAT-A-WORKER-CHUNK-COSTS-TO-ENCODE-AND-SHIP` at `5c9496a33` (origin
+  `perf-planner-next`). The codec costs 44-146x the compute per chunk, and in-process Collection is 1.32-2.34 ms per tick. The
+  full form is not needed.
+- **Child 3: HELD, no-go as designed** (design §14). It goes back to the owner with §14.2's redesign options and the next-gen
+  contract spec. The recommendation is R5 now (keep it held), then R3 (worker-resident replica + typed per-tick deltas) as the
+  re-cut, after the contract defines typed deltas, post-M1.
+- **Child 4: HELD**, behind child 3.
+- **Child 5, the contract docs: may proceed, doc only.** rpg-planner filed it on `rpg-planner-seat-8` (`f283de1ad`); it rides
+  rpg's next PR.
+- **Child 6:** as on 2026-11-15, filed and built.
+- **Constraints:**
+  - RPG first (#715 6911759453): this epic takes no heavy-slot time or rpg-seat time an RPG job needs;
+  - all `src/engine` work stays after Milestone 1, per both ADRs.
+
 ## Owner decision 2026-11-15 (#715 6889952914, owner's words 6889947724)
 
 This supersedes any older gate text below where they differ.
@@ -42,7 +65,8 @@ D). Nothing is built. It is gated by the owner review gate below and by the `src
 
 ## Rules
 
-- **Owner review gate (#715 6731938042):** the plan is complete when 1 and 2 are written and children 2-5 are cut; then STOP.
+- **Owner review gate (#715 6731938042), decided 2026-11-16 as option B (#715 6910997558):** see the block at the top. The
+  original text follows. The plan is complete when 1 and 2 are written and children 2-5 are cut; then STOP.
   No implementation child starts, and no heavy-slot run, until the owner has reviewed the whole plan.
   - **Exceptions (owner #715 6889952914):** child 6, the evidence guard, is filed and built now (item A). Child 2's cheap form
     runs under its perf-pause exemption (item C). Children 3-5 are filed only (item D), and this gate still holds for their

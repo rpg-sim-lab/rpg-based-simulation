@@ -8,6 +8,14 @@ tags: [architecture, engine, determinism, platform]
 
 # Distributed-workers experiment mode: design (DRAFT)
 
+**Current status (2026-11-16): accepted at `f517f1fdf` (#715 6777076537), then amended for the owner's decision B on the
+whole-plan review (#715 6910997558).**
+- §13 is now a per-purpose mode choice: single and distributed coexist.
+- §14 answers ubuntu's review and records child 2's result. Child 2 is CONCLUSIVE: as designed, child 3 costs more than it
+  offloads.
+- Children 3 and 4 are HELD.
+The status paragraph below is the history.
+
 **Status: DRAFT, revised after the owner answered §10 (#715 6776551375): local recompute, CLI and harness only, gRPC, pickle with
 guards.** For ubuntu's review 2/2, together with the ADR amendment. Design only: no code, tests or runs were written for it, and no
 number here is measured. Written by architecture-planner-u24 for `TCK-20261109-DISTRIBUTED-WORKERS-DESIGN`, child 1 of
@@ -227,8 +235,8 @@ Why this rather than a new `IWorkExecutor`:
   - a test that the worker port is never published to the host (child 4, §8a);
   - a security-tagged review of child 3;
   - a typed encoding is mandatory before the mode leaves "experiment".
-  This is the **first build of a mode that may become the default at scale** (owner, #715 6776564953). It ships as an opt-in
-  profile; promotion is gated (§13).
+  This is the **first build of a lasting mode** (owner, #715 6776564953). Since #715 6910997558 that means a mode chosen per
+  purpose beside single mode, not one that replaces it (§13). It ships as an opt-in profile; promotion is gated (§13).
 - **Same build, or refuse.** In the `Handshake` RPC, the worker reports its image digest and a content fingerprint, both bound into
   the HMAC above. The engine refuses a worker whose build differs (a different build is DET-PORT-2, not claimable).
 
@@ -385,14 +393,19 @@ multi-service transaction); Canary, Shadow / Traffic replay, Synthetic monitorin
 
 | # | Child | Owner | Cost (measurement included) | Leaves out |
 |---|---|---|---|---|
-| 2 | packet-cost measurement | perf-planner | **cheap form:** per-chunk pickled size and encode/decode time on the 3 gate worlds at seed 42, in-process (minutes). It also records Collection's internal split (packet build, encode, compute per chunk, decode, validate), marking any item it cannot measure as unknown (§12). **Full form** only if inconclusive: loopback round trip through one worker container (about an hour) | multi-host; contention; tail latency |
-| 3 | `RemoteWorkerManager`, transport, rule of §6, the tests of §8 | rpg-planner | code + unit and integration tests; the extra_slow arm adds about 4 x 2000-tick runs to the slow lane | the container (child 4); API reach (§5) |
-| 4 | `engine-worker` entry point and the `distributed` profile | platform-planner | image entry point and profile; one containerized smoke run | k8s/Helm; scaling beyond one host |
+| 2 | packet-cost measurement. **CONCLUSIVE 2026-11-16, so the full form is not needed:** the per-chunk pickle round trip is 34-60 ms against 0.2-1.2 ms of compute, 44-146x at the median. None of about 4,400 chunks had codec time under compute time. In-process Collection is 1.3-2.3 ms per tick in total. The cause is the shared world views in every chunk (§14). Evidence: `TCK-20261115-WHAT-A-WORKER-CHUNK-COSTS-TO-ENCODE-AND-SHIP` at `5c9496a33` (on origin `perf-planner-next`, verified 2026-11-16), `agent-working/staging_artifacts/TCK-20261115-WHAT-A-WORKER-CHUNK-COSTS-TO-ENCODE-AND-SHIP/evidence.md`: 9/9 runs, with the final hash identical across thread, process and no-probe | perf-planner | **cheap form:** per-chunk pickled size and encode/decode time on the 3 gate worlds at seed 42, in-process (minutes). It also records Collection's internal split (packet build, encode, compute per chunk, decode, validate), marking any item it cannot measure as unknown (§12). **Full form** only if inconclusive: loopback round trip through one worker container (about an hour) | multi-host; contention; tail latency |
+| 3 | `RemoteWorkerManager`, transport, rule of §6, the tests of §8. **HELD (#715 6910997558); no-go as designed (§14)** | rpg-planner | code + unit and integration tests; the extra_slow arm adds about 4 x 2000-tick runs to the slow lane | the container (child 4); API reach (§5) |
+| 4 | `engine-worker` entry point and the `distributed` profile. **HELD (#715 6910997558)** | platform-planner | image entry point and profile; one containerized smoke run | k8s/Helm; scaling beyond one host |
 | 5 | `worker_contract.md` §5 and `infrastructure_overview.md` (the mode; the `ai_worker` wording at `:159`) | docs/engine owner via lead-planner | doc only | everything else |
 | 6 | the manifest's `RunConditions.worker_manager` field (the executor is already recorded since #918); refusal of a non-sequential executor in the gate candidate (`tools/test_architecture`), paired arms and `rpg_measure`, with a unit test each | testing-planner scopes it (the gate candidate is its domain); `rpg_measure` and the manifest field with rpg-planner | code + 5 small unit tests (4 refusals plus the `worker_manager` record test), no runs | anything beyond refusing; the mode itself |
 
 Order: 6 first (cheap, and it makes the evidence rule a guard before the mode exists), 2's cheap form, then 3, then 4; 5 any time after
 child 0 and ubuntu's docs batch. Every child waits for the owner's review.
+**Since #715 6910997558 (decision B):**
+- Child 6 is filed and built (6889952914 A).
+- Child 2 is done and conclusive.
+- Child 5, the doc only, may proceed. rpg-planner filed it on `rpg-planner-seat-8` (`f283de1ad`), and it rides rpg's next PR.
+- Children 3 and 4 are held. They go back to the owner with §14's redesign options and the next-gen contract spec.
 
 ## 10. Choices for the owner (answered)
 
@@ -477,15 +490,33 @@ boundary cost? K × N is worth an experiment only if multi-host is ever reopened
 concurrent, and 1 × N. A K × N row is cut by the depth rule (#715 6731764470), because its gain over 1 × (K·N) on one host is nil.
 
 **Direction.** Keep the first build bounded, with the current design, and do not defer it. (Superseded in part by the owner's
-direction, #715 6776564953: the mode may become the default at scale, so the seams that promotion needs are built now. See §13.)
+direction, #715 6776564953, and then by its decision B, #715 6910997558: a lasting mode chosen per purpose, so the seams that
+promotion needs are built now. See §13.)
 The review justifies two changes, both made here:
 - §1 now labels the 6 to 26 % figures as PROVISIONAL shares;
 - child 2 records Collection's internal split, with unknowns marked.
 
-## 13. From first build to a default mode at scale (owner, #715 6776564953)
+## 13. A multi-mode core: each mode chosen per purpose (owner, #715 6776564953, amended by #715 6910997558)
 
-The owner: "Remember this is not pure experiment but maybe the main mode in the future when the engine scale up". The §10 answers
-stand for the first build. This section keeps the design from locking the mode into experiment-only.
+The owner first said: "Remember this is not pure experiment but maybe the main mode in the future when the engine scale up". The
+owner then decided the whole-plan review: "yes, go with B, remember that don't touch the original design, just build a multi-modes
+core, like we can use single mode for some purposes and distributed mode for some other purposes" (#715 6910997558). The second
+statement sets the direction. **No mode becomes "the default" for every purpose.**
+- **Single mode stays as it is.** That is `LocalSequentialExecutor`, the `kernel.py:193-198` selection and `docker compose up` with
+  no profile. Its design and code are not changed for this mode (constraint 3, §2).
+- **Each purpose picks its mode explicitly.** The run records which mode it used (child 6, `RunConditions.executor` +
+  `worker_manager`):
+
+  | Purpose | Mode | Why |
+  |---|---|---|
+  | behaviour evidence: gates, paired arms, `rpg_measure`, Bible and parity proofs | single, always | child 6 refuses anything else; the reference path is what evidence means |
+  | default runs: API, `docker compose up`, local play | single | unchanged; the API passes no executor (§5) |
+  | research or scale runs where one process is the bottleneck | distributed, opt-in | only after the promotion gates below, and only where it measurably pays (§14) |
+  | equivalence and boundary tests of the distributed mode itself | both, compared | the mode is claimed only by equal final hash and `TICK_END` trail to single (§2.4) |
+
+- **Promotion makes distributed a supported choice for its purposes, never a replacement for single.** "Promotion" below means
+  exactly this.
+- The §10 answers stand for the first build. This section keeps the design from locking the mode into experiment-only.
 
 **Built now so promotion doesn't need a rewrite:**
 - the codec seam (§4), so a typed codec replaces pickle without touching the transport or the manager;
@@ -496,14 +527,14 @@ stand for the first build. This section keeps the design from locking the mode i
 - **One engine and one writer.** Every result is validated, sorted and applied by the one kernel.
 - **Resolution stays serial.** C-10 (`docs/architecture/performance_optimization_decisions.md`) and the Gate B evaluation
   (PERF-M6-T05) are unchanged.
-- **Fan-out is Collection only.** Collection is 14 to 26 % of a tick in py-spy shares (`tick_cost_growth.md` §2) and 5.2 to 16 %
+- **Fan-out is Collection only, and child 2 shows that alone cannot pay (§14).** Collection is 14 to 26 % of a tick in py-spy shares (`tick_cost_growth.md` §2) and 5.2 to 16 %
   in the benchmark records (`tests/perf/baselines/*.v0001.json`), both PROVISIONAL (§1). So this mode alone caps near 1.05 to
-  1.35x: 1.05 from the 5.2 % record share, 1.35 from the 26 % py-spy share. A default mode at scale needs Resolution's work to fan
-  out too, and only after the Gate B evaluation (PERF-M6-T05) and under the next-gen phase contract.
+  1.35x: 1.05 from the 5.2 % record share, 1.35 from the 26 % py-spy share. A distributed mode worth choosing for scale needs
+  Resolution's work to fan out too, and only after the Gate B evaluation (PERF-M6-T05) and under the next-gen phase contract.
 
 **Where it meets the next-gen engine.** That second step is the accepted next-generation engine ADR
 (`docs/architecture/next_generation_engine_adr.md`, #715 6742854335): the kernel/logic phase contract, Level A by default, with
-child 2's access audit as its evidence. This doc does not restate it. A future main mode must fit that contract, not fork it:
+child 2's access audit as its evidence. This doc does not restate it. A distributed mode chosen for scale must fit that contract, not fork it:
 - remote work units are the contract's declared step units;
 - results come back as its typed deltas, merged and committed by the kernel under its commit key;
 - the one-writer rule holds.
@@ -517,5 +548,92 @@ This mode's transport, codec and dead-worker rule are meant to carry those units
 4. **Multi-host auth:** mTLS (§4).
 5. **API reach:** `engine_manager.py:139` passes an executor (§5).
 6. **The `grpcio` extra moves to core dependencies,** through the leads.
-7. **A new ADR.** Promotion to a default, and any multi-host deploy, reopens `system_overview.md`'s "deliberately not distributed"
+7. **A new ADR.** Promotion to a supported per-purpose mode, and any multi-host deploy, reopens `system_overview.md`'s "deliberately not distributed"
    beyond child 0's amendment. That decision is lead-planner's and the owner's, not this design's.
+
+## 14. Whole-plan review, child 2's result, and redesign options (2026-11-16)
+
+**Inputs.**
+- The ubuntu lead's seven-point review, given to the owner before decision B, relayed word for word by lead-planner-u24 on
+  2026-11-16.
+- The owner's decision B (#715 6910997558).
+- Child 2's cheap form (§9 row 2): CONCLUSIVE.
+
+**What child 2 measured** (perf-planner, `5c9496a33`, verified; medians over 3 worlds × thread/process chunking; §9 row 2):
+
+| Per chunk, gate worlds | Value |
+|---|---|
+| encoded request size | 679-1,112 KB |
+| pickle codec round trip | 34-60 ms (p90 48-86) |
+| compute | 0.2-1.2 ms |
+| codec / compute, median | 44-146x |
+| chunks with codec under compute | 0 of 4,398 |
+| chunks per tick | 2-5 |
+| whole in-process Collection phase, per tick | 1.32-2.34 ms |
+| encode alone, one chunk | 19-34 ms |
+
+The cause is §4's design choice. Each chunk carries the batch's shared world views (`_batch_views`, `executor.py:221-232`). So the
+encoded size follows the world, not the chunk's work. **One chunk's codec cost is about 15 to 46 times the whole in-process
+Collection phase** (34 ms / 2.3 ms to 60 ms / 1.3 ms). No transport, worker count or chunk size closes that gap. The wire format
+has to stop carrying the world.
+
+### 14.1 Answers to the review
+
+1. **Not a speed-up; read nothing as a speed claim.** Agreed. This is stated in §1 and §11. Child 6 makes it a guard: the gate
+   candidate, paired arms and `rpg_measure` refuse a non-sequential executor.
+2. **Child 3 builds ahead of an unwritten contract.** Agreed, and child 2 makes it stronger: every option below that can pay
+   ships the contract's typed deltas and step units. So child 3 waits for the next-gen contract spec. That spec's draft 3 waits
+   on stage 0 and on the re-design pause (#715 6875162764). Child 3 is HELD (#715 6910997558). When it is re-cut, its transport
+   is built for the contract's units, not for today's `WorkerPacket` chunks.
+3. **Child 2 decides whether child 3 starts.** Decided: **no-go for child 3 as designed.** The review's condition ("if encoding a
+   chunk costs about as much as computing it") is exceeded 44-146x. The review proposes the typed encoding as the next step. That
+   is right for security (point 4), but it is not enough for cost: option R1 below.
+4. **A compromised worker means a compromised engine, and this is now a lasting mode.** Agreed. **The typed codec becomes a
+   precondition of any re-cut child 3, not promotion gate 3.** Pickle never ships in a distributed mode that is meant to last.
+   Every option below has a typed codec on the engine's decode side from the first build, and §8a's bounded fuzz runs from day
+   one. The as-designed pickle build, whose accepted risk this was (§4 D2), is not built.
+5. **Memory is tight on both hosts.** Agreed.
+   - Each worker holds the views it decodes. The engine's working set is about 101-130 MB (`tick_cost_growth.md` §5), which is
+     the review's per-worker figure. It is an estimate: child 2 ran in-process and measured only whole-run RSS (120-262 MB per world), not a worker's.
+   - Under R3 below, that copy is resident for the whole run: about 100-130 MB per worker process, steady.
+   - Every container run takes the capped heavy slot, like any heavy job. That includes child 4's smoke run and any measurement.
+   - Under the owner's RPG-first rule (#715 6911759453), no such run takes the slot or memory an RPG job needs.
+   - Any future distributed measurement records peak RSS per worker.
+6. **Hidden reads outside the packet.** This stays first in child 3, before the transport (§6 open check). Under R3, the worker's
+   content fingerprint at handshake covers the content catalog side.
+7. **`grpcio` as an extra goes through the ubuntu lead.** Noted. §4 already routes the `pyproject.toml`/`uv.lock` edit through the
+   leads.
+
+### 14.2 Redesign options for child 3 (for the owner, through lead-planner-u24)
+
+The limit every option must beat: Collection is 1.3-2.3 ms per tick in-process. A remote design pays only if, per tick, its
+transfer plus coordination costs less than the work it moves out. The only work that has enough compute per unit is the Resolution
+step units (`fused_strategic_pass` is 92-99 % of `resolution_overhead`, §12), and only under the next-gen contract.
+
+| | Option | Fixes security (point 4) | Fixes cost | What it needs | Verdict |
+|---|---|---|---|---|---|
+| R1 | **Typed codec, same per-chunk shape** | yes | **no**: it still ships the world per chunk; it would need to be more than 30x faster than C pickle on the same data | a canonical encoder for every view type | necessary, not sufficient |
+| R2 | **Views once per tick per worker**, chunks carry ids only | with R1 | **no**: one encode per tick is still one chunk's encode (19-34 ms) against a 1.3-2.3 ms phase | R1; a per-tick broadcast | not sufficient |
+| R3 | **Worker-resident replica + per-tick typed deltas**: the worker keeps the views across ticks, and the engine ships only the tick's committed changes, plus each unit's id | yes (deltas are typed) | **likely**: transfer follows what changed, not world size. Unmeasured: the delta size per tick | the next-gen contract's typed deltas and commit key; a replica digest check per tick; on mismatch, §6's local recompute; workers become stateful, which reverses §12's "workers hold no state between ticks" | **recommended**, as the design of a re-cut child 3 |
+| R4 | **Shared memory, one host** | with R1 | **no** unless the engine's state is held in a flat typed layout natively; otherwise each tick still serialises into the segment (= R2) | same-host only; an engine-state representation change far larger than this epic | not recommended |
+| R5 | **Shelve children 3 and 4** until the next-gen contract has typed deltas (post-M1) | n/a | n/a | nothing now; children 5 and 6 continue | **recommended for now** |
+
+**Recommendation: R5 now, R3 as the re-cut design.**
+- Keep children 3 and 4 held, as tickets.
+- Re-cut child 3 as R3 when the next-gen contract spec defines typed deltas and step units. That is after M1, both ADRs'
+  ordering.
+- Before any build, run one cheap in-process measurement: the encoded size and encode time of one tick's committed delta on the
+  3 gate worlds at seed 42, against the 1.3-2.3 ms Collection budget and against the Resolution step units' compute. It runs in
+  minutes, in-process, with no container, and only when the heavy slot is free of RPG work. R3 goes ahead only if the delta
+  costs clearly less than the work it moves.
+- The typed codec is R3's wire format from the first build (point 4).
+- Single mode is untouched throughout (§13).
+
+**What R3 changes in this design, if the owner takes it:**
+- §4: the chunk carries ids and the tick's delta, not the views, and the codec is typed.
+- §6: the dead-worker rule gains "replica digest mismatch means local recompute".
+- §12: the "no state between ticks" line is reversed for the replica.
+- §13: promotion gate 3 becomes a build precondition.
+
+These edits are made after the owner's choice, not before. The rest stands: the one writer, the selection seam, the gRPC
+transport, two-way auth, mTLS as a gate, and the evidence guard.
