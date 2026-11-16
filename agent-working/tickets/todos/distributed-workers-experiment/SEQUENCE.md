@@ -18,6 +18,9 @@ owning planners after 1 lands; the epic's table gives each one's owner, cost, wh
 
 - **Child 4, filed 2026-11-15 as a ticket only:** `TCK-20261115-DISTRIBUTED-ENGINE-WORKER-ENTRY-POINT-AND-COMPOSE-PROFILE`
   (platform-planner; owner #715 6889952914, item D). Nothing is built. It is BLOCKED on child 3 and on the owner review gate below.
+- **Child 5, filed 2026-11-16 as a ticket only:** `TCK-20261116-DISTRIBUTED-WORKERS-CONTRACT-DOCS` (rpg-planner, docs/engine; owner #715
+  6910997558, option B). Doc only, and nothing is written yet. Under B it may proceed, but its wording follows child 3's contract and the next-gen spec. The single-process mode stays unchanged; the two modes coexist per purpose.
+- Under B (6910997558), children 3 and 4 stay HELD until child 2's cost result and the next-gen contract spec are in; then they go back to the owner.
 
 ## Rules
 
