@@ -3883,7 +3883,7 @@
 - id: SUBSTRATE-NEW-002
   text: "WorldProceduralGenerator (WORLD-GEN-003/004) is fully deterministic: uses\
     \ a DeterministicRNG(seed) instance (src/platform/rng.py) \u2014 global random\
-    \ state is never read or written. Same (intent, catalog_repo) inputs produce bit-identical\
+    \ state is never read or written. Same (intent, catalog_repo) inputs produce, in any process and at any PYTHONHASHSEED, bit-identical\
     \ WorldSpec, CompileContext, and ProvenanceManifest (except created_at timestamp).\
     \ Validation failures (GENERATED_WORLD context) are reported but do NOT abort\
     \ generation.\n"
@@ -3903,7 +3903,7 @@
     \ dict iteration order over `factions` which is itself built by iterating `self.catalog_repo.factions`\
     \ in file-load order). `test_procedural_generator_determinism` (existing, unmodified)\
     \ re-confirms bit-identical output for same-seed reruns after this change -- not\
-    \ just assumed unaffected.\n"
+    \ just assumed unaffected.\nUPDATE 2026-11-16 (TCK-20261030-WORLD-GENERATOR-RESOURCE-TYPE-PICK-FOLLOWS-PYTHONHASHSEED): the resource-type candidate list was list(set(...)), so the same seed and intent gave a different set of resource types per process; it is now sorted(set(...)). Cross-process proof: tests/unit/worldgeneration/test_generator_hash_seed_independence.py (subprocess per PYTHONHASHSEED 0-3). Divergence 2.145.\n"
   proof_type: null
   test_path: tests/unit/worldgeneration/test_generator.py
   divergence_note: "created_at in ProvenanceManifest is wall-clock (datetime.now(timezone.utc))\
