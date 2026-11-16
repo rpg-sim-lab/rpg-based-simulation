@@ -4963,7 +4963,7 @@
   support_boundary: 'A walk decision resets HOLD only while no action task is live,
     and the state does not record which task started the HOLD, so a typed wait''s
     HOLD that persists while the subject has since started an unrelated live action
-    is not reset until that action ends. The effect against the base (stage 1: frontier_marches
-    and crowded_frontier, seed 42, 5000 ticks) is recorded in divergence 2.206 when
-    measured. Not changed here: the congestion ladder''s reroute rung, the collapsed
+    is not reset until that action ends. The effect against the base (stage 1 and stage 2) is recorded in
+    divergence 2.206 (Measured). One death traced to this limit: a cornered hold that
+    ends on a live attack task, followed up in TCK-20261116-A-CORNERED-HOLD-ENDS-ON-A-LIVE-ACTION-TASK-AND-WALKS-BACK-INTO-THE-FIGHT. Not changed here: the congestion ladder''s reroute rung, the collapsed
     sleeper''s MOVE_TO walk, the unapplied clear_target flag.'
