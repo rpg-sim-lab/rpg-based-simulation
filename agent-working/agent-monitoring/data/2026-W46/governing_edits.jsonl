@@ -29,3 +29,7 @@
 {"ts":"2026-11-15T08:41:40.628136Z","event":"governing_edit_attempt","seat":"platform-implementer","path":".github/workflows/paired-arms.yml","basis":"mention","attempt":true}
 {"ts":"2026-11-15T09:05:30.560127Z","event":"governing_edit_attempt","seat":"platform-implementer","path":".github/workflows/paired-arms.yml","basis":"mention","attempt":true}
 {"ts":"2026-11-15T08:33:38.203901Z","event":"governing_edit_attempt","seat":"rpg-planner-ubuntu","path":".github/workflows/test.yml","basis":"mention","attempt":true}
+{"ts":"2026-11-15T08:17:15.211764Z","event":"governing_edit_attempt","seat":"lead-planner","path":".github/workflows/ci.yml","basis":"mention","attempt":true}
+{"ts":"2026-11-15T08:17:19.717682Z","event":"governing_edit_attempt","seat":"lead-planner","path":".github/workflows/ci.yml","basis":"mention","attempt":true}
+{"ts":"2026-11-15T08:17:23.742690Z","event":"governing_edit_attempt","seat":"lead-planner","path":".github/workflows/ci.yml","basis":"mention","attempt":true}
+{"ts":"2026-11-15T08:19:42.694082Z","event":"governing_edit_attempt","seat":"lead-planner","path":".github/workflows/","basis":"mention","attempt":true}
