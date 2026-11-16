@@ -8021,6 +8021,18 @@
   - testing
   - determinism
 - type: ticket
+  path: agent-working/tickets/done/TCK-20261116-LEAD-BOARD-SIXTH-PASS.md
+  ticket_id: TCK-20261116-LEAD-BOARD-SIXTH-PASS
+  title: The lead board records the owner's 2026-11-16 decisions, with RPG-first and
+    the Milestone 1 pace stated first, and the distributed-workers ADR reads per purpose
+  tier: hotfix
+  ticket_type: chore
+  date: '2026-11-16'
+  related_code_areas: []
+  artifact_files: []
+  tags:
+  - governance
+- type: ticket
   path: agent-working/tickets/done/TCK-20261116-PR-RENDER-REVERT-EVIDENCE-READ-AS-KNOWN-GAP.md
   ticket_id: TCK-20261116-PR-RENDER-REVERT-EVIDENCE-READ-AS-KNOWN-GAP
   title: '`pr_render.py` lists a "Revert evidence" line under Known gaps because the
