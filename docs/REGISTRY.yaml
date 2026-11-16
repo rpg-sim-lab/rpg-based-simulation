@@ -8269,6 +8269,22 @@
   - governance
   - testing
 - type: ticket
+  path: agent-working/tickets/todos/ai-first-sdlc-evolution/TCK-20261116-READ-COUNTER-FOR-PROCESS-DOCUMENTS.md
+  ticket_id: TCK-20261116-READ-COUNTER-FOR-PROCESS-DOCUMENTS
+  title: Read rows record what kind of file was read, from the full path, so a 2-4
+    week report can show which process documents other sessions actually read.
+  tier: standard
+  ticket_type: feature
+  date: '2026-11-16'
+  related_code_areas:
+  - _input_summary
+  - tools/agent-monitoring/ (new report)
+  artifact_files: []
+  tags:
+  - ai
+  - agent-monitoring
+  - process-improvement
+- type: ticket
   path: agent-working/tickets/todos/ai-first-sdlc-evolution/TCK-20261116-SDLC-ATTRIBUTION-FIELDS-AND-COORDINATION-METRICS.md
   ticket_id: TCK-20261116-SDLC-ATTRIBUTION-FIELDS-AND-COORDINATION-METRICS
   title: Monitoring rows carry their tool call and work item, events say whether they
@@ -8372,6 +8388,22 @@
   tags:
   - ai
   - delivery
+- type: ticket
+  path: agent-working/tickets/todos/ai-first-sdlc-evolution/TCK-20261116-WORKAROUND-FLAG-REPORT-ONLY.md
+  ticket_id: TCK-20261116-WORKAROUND-FLAG-REPORT-ONLY
+  title: A report-only check flags added comments that say TODO, HACK, workaround
+    or "for now" without a ticket id.
+  tier: standard
+  ticket_type: feature
+  date: '2026-11-16'
+  related_code_areas:
+  - tools/gate_checks/done_checker_static.py
+  - tools/gate_checks/ (new function)
+  artifact_files: []
+  tags:
+  - ai
+  - governance
+  - process-improvement
 - type: ticket
   path: agent-working/tickets/done/TCK-20261115-A-NON-SEQUENTIAL-RUN-IS-REFUSED-BY-THE-GATE-CANDIDATE-PAIRED-ARMS-AND-RPG-MEASURE.md
   ticket_id: TCK-20261115-A-NON-SEQUENTIAL-RUN-IS-REFUSED-BY-THE-GATE-CANDIDATE-PAIRED-ARMS-AND-RPG-MEASURE

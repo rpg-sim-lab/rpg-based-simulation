@@ -53,6 +53,13 @@ Filing only, all P3 and behind RPG (#715 6911759453). Dispatch is a separate own
 
 Already filed elsewhere: the knowledge-gateway docs move, TCK-20261116-THIRTEEN-DEAD-KNOWLEDGE-GATEWAY-DOCS-MOVE-TO-THE-ARCHIVE, in rpg's lane. Search ranking is Phase 5 item 2 in TCK-20261031-SDLC-CONTEXT-AND-SESSION-RELIABILITY. The prose-reading sample is held: `agent-working/stored_artifacts/sdlc-decisions/prose_sample_draw_and_protocol.md`.
 
+## Agent-practice decisions filed 2026-11-16 (owner #715 6913007039: 1A, 2A, 3A)
+
+Filing only, all P3 and behind RPG. Dispatch is a separate owner go.
+- TCK-20261116-WORKAROUND-FLAG-REPORT-ONLY (1A): its function is independent, and its close-check line waits on the gate job.
+- 2A is an amendment to TCK-20261116-DOC-CITATION-RESOLVER-REPORT-ONLY: comment and docstring pointers, scope item 5 and AC5.
+- TCK-20261116-READ-COUNTER-FOR-PROCESS-DOCUMENTS (3A): independent. It runs 2-4 weeks before any decision.
+
 ## Not cut yet
 
 - Phase 4: OD-5 is decided (#715 6911091662): option A with both conditions. TCK-20261116-SDLC-RETIRE-PIPELINE-WORKFLOWS is filed BLOCKED. Its gate: the close check has run 2 weeks carrying the test-scope floor line and the architecture-verdict line (the clock starts on the first day it carries both), Phase 3 has landed, and the R0 tags cover the files. Dispatch then needs an owner go.
