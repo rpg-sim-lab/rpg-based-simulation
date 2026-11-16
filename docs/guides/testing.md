@@ -54,6 +54,12 @@ pytest tests/architecture/ -v
 pytest tests/certification/ -v
 ```
 
+**On a host that sets a Test-phase cap** (`registries/session_test_caps.yaml`; `python3 -m tools.delivery.host_test_caps` prints it), run the implement-ticket
+Test phase, or any run of a whole directory such as `tests/tools/`, through `python3 -m tools.delivery.capped_pytest <the same directories and flags>`. It
+chunks the run by test file under the host's memory and CPU cap and reports a run killed by the environment as an environment failure
+(`TESTS_ENVIRONMENT_FAILED` in the pipeline), never as a failing test. A host with no entry runs pytest as before. A full `tests/tools` run still needs
+the lead's per-run go.
+
 ---
 
 ## Test markers
