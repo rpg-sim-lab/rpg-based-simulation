@@ -1,10 +1,10 @@
 ---
-status: active
+status: historical
 layer: architecture
 authority: P1
 audience: agent
 ticket_id: TCK-20261109-DISTRIBUTED-WORKERS-DESIGN
-phase: open
+phase: done
 date: 2026-11-09
 tags: [architecture, engine, determinism, platform]
 ---
@@ -15,7 +15,7 @@ tags: [architecture, engine, determinism, platform]
 Design the distributed-workers experiment mode: seam, wire format, selection, slow or dead worker rule, equivalence proof and compose profile.
 
 ## Status
-BLOCKED
+DONE
 
 ## Tier
 standard
@@ -80,7 +80,7 @@ Write `docs/plans/architecture/distributed_workers_experiment_design.md`, coveri
 - docs/plans/architecture/conformance_suite_design.md (Mode 3 matrix; the same equivalence form)
 
 ## Related Stored Artifacts
-- none
+- agent-working/stored_artifacts/TCK-20261109-DISTRIBUTED-WORKERS-DESIGN/ (plan, investigation, test_plan; reconstructed at close, not pre-work)
 
 ## Related Code Areas
 - src/engine/executor.py
@@ -98,10 +98,21 @@ DRAFT written 2026-11-09 by owner leave (#715 6731956846): `docs/plans/architect
 Testing placement from testing-planner (2026-11-09) folded into §8. Stops for the owner's review with child 0.
 
 ## Test Summary
-Doc only.
+Doc only. No tests run (doc deliverable). Frontmatter validated on the design doc and the three artifacts.
 
 ## Files Changed
-None yet.
+- docs/plans/architecture/distributed_workers_experiment_design.md
+- agent-working/stored_artifacts/TCK-20261109-DISTRIBUTED-WORKERS-DESIGN/
+- agent-working/tickets/todos/distributed-workers-experiment/ (SEQUENCE.md, the epic)
 
 ## Completion Summary
-Open.
+DONE 2026-11-16. The deliverable is `docs/plans/architecture/distributed_workers_experiment_design.md`, which covers scope items 1-8
+(map in the stored plan).
+- **Accepted** at `f517f1fdf` by the owner (#715 6777076537), after ubuntu review 2/2 (D1-D5 fixed, re-check clean).
+- **Amended for decision B** (#715 6910997558). §13 is now a multi-mode core with the mode chosen per purpose; single mode is
+  unchanged. §14 answers the ubuntu lead's review and records child 2's CONCLUSIVE result (`5c9496a33`).
+- **Amended for the owner's "R5 now, R3 later"** (#715 6917359910). Children 3 and 4 are shelved. Child 3 is re-cut as R3 after
+  Milestone 1 and the next-gen contract spec.
+- One deviation from scope item 1: the seam is a `RemoteWorkerManager` behind the existing adapter, not a new `IWorkExecutor`
+  (design §3).
+- Gap stated: the three staging artifacts were reconstructed at close. This ticket had none while it was worked.
