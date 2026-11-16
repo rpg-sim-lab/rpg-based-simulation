@@ -1,10 +1,10 @@
 ---
-status: active
+status: historical
 layer: testing
 authority: P1
 audience: agent
 ticket_id: TCK-20261116-AN-ARM-RUNS-WHEN-THE-CACHE-PATH-IS-RELATIVE
-phase: open
+phase: done
 date: 2026-11-16
 tags: [testing, determinism]
 ---
@@ -15,7 +15,7 @@ tags: [testing, determinism]
 An arm runs when the cache path is relative: the child gets the arm tree as an absolute path, so the off-host paired-arms jobs can import `src`
 
 ## Status
-OPEN
+DONE
 
 ## Tier
 hotfix
@@ -47,9 +47,9 @@ Local `paired.py --cache <relative>` has the same bug.
 - Re-dispatching the workflow. That needs a separate owner ask after this merges, with the AC10 tool-commit question attached (see Assumptions).
 
 ## Acceptance Criteria
-- [ ] AC1: a relative cache runs an arm on the local path and on the `run-arm` path. The tests in Scope 3 pass and the revert evidence is recorded.
-- [ ] AC2: `arm_child.py` is unchanged and `child_hash()` equals its value at f94417e6f. The PR body says the cache keys do not move.
-- [ ] AC3: `test_paired_arms.py`, `test_paired_env_key.py`, `test_rpg_measure_collected.py`, `test_rpg_measure.py` and `test_arm_child_pinned_check.py` pass. Unit tests only, `-n 1` at most.
+- [x] AC1: a relative cache runs an arm on the local path and on the `run-arm` path. The tests in Scope 3 pass and the revert evidence is recorded.
+- [x] AC2: `arm_child.py` is unchanged and `child_hash()` equals its value at f94417e6f. The PR body says the cache keys do not move.
+- [x] AC3: `test_paired_arms.py`, `test_paired_env_key.py`, `test_rpg_measure_collected.py`, `test_rpg_measure.py` and `test_arm_child_pinned_check.py` pass. Unit tests only, `-n 1` at most.
 
 ## Related Tickets
 - TCK-20261023-PAIRED-ARMS-RUN-OFF-THE-SHARED-HOST (parent T2. AC1's off-host run is blocked by this.)
@@ -72,9 +72,20 @@ None.
   - (B) amend AC10 to say the two tool commits may differ only by this fix, then dispatch on the post-fix commit and compare against the existing local table.
 
 ## Implementation Notes
+- `paired.run_one` resolves `tree` and `out` to absolute paths before the child starts (cwd, PYTHONPATH and the `out` argv are all absolute). `out` matters too: the child's cwd is the tree, so a relative `out` was written inside the tree and the parent never found it. Path resolution only: env keys, `PYTHONHASHSEED` and the argv order are unchanged.
+- `paired_arms run-arm` resolves `--cache` once at argument parsing.
+- A second bug found while testing the CLI path, fixed in the same change: `run-arm` printed `cost['cached']`, a key `run_arm` never returns, so every `run-arm` raised `KeyError: 'cached'` AFTER the arm had finished and its files were written (the job would have failed even with the path fix). The console line now says `cached` when the recorded wall is 0.0 (a cached arm records no wall and no RSS). The cost file and `run_arm`'s return value are unchanged (an existing test holds them equal).
+- `arm_child.py` is unchanged: `child_hash()` is still `9d13c131`, asserted in a test, so no cache key moves (the AC1 keys `4eaab4d8b0a0-9d13c131-5000-aa066c26` stay valid).
 
 ## Test Summary
+- New `tests/unit/tools/test_paired_relative_cache.py` (6 tests): run_one with a relative tree and out, absolute paths unchanged, relative out lands where the caller means, `run-arm` with a relative cache, the same key for an absolute and a relative cache, `child_hash() == "9d13c131"`. The stub child imports `src` from the stub arm tree.
+- 146 passed (`-n 0`, unit and static only) across the new file, test_paired_arms, test_paired_env_key, test_rpg_measure_collected, test_rpg_measure, test_arm_child_pinned_check and test_ci_paired_arms_workflow_shape.
+- Revert evidence: with `paired.py` at f94417e6f, `test_run_one_runs_an_arm_whose_tree_and_out_are_relative` FAILS with `ModuleNotFoundError: No module named 'src'` (the CI failure), and `test_a_relative_out_lands_where_the_caller_means_not_inside_the_tree` FAILS (`arm run failed`). With `paired_arms.py` at f94417e6f, both `run-arm` tests FAIL (the CLI path). The `run-arm` tests pass with only the paired.py revert because the parse-time resolve already makes the cache absolute (defence in depth, as the ticket intends).
 
 ## Files Changed
+- tools/rpg_measure/paired.py
+- tools/test_architecture/paired_arms.py
+- tests/unit/tools/test_paired_relative_cache.py
 
 ## Completion Summary
+A relative `--cache` (the workflow's `arm-cache`) now runs an arm on the local and `run-arm` paths, and `run-arm` no longer crashes after finishing an arm. `arm_child.py` is unchanged, so the cache keys do not move.
