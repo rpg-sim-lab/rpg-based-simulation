@@ -138,9 +138,19 @@ _AGENT_RESULT_FIELD_GATES: tuple[dict, ...] = (
         "pass_value": True,
         "on_fail_status": ["TESTS_FAILED"],
     },
+    {
+        # Optional field: absent counts as false. Checked BEFORE `passed` and wins over it
+        # (TCK-20261115-TEST-PHASE-RUNS-TESTS-TOOLS-UNCAPPED-IN-ONE-PROCESS).
+        "phase": "Test",
+        "gate_type": "agent_result_field",
+        "result_field": "environment_failure",
+        "pass_value": False,
+        "on_fail_status": ["TESTS_ENVIRONMENT_FAILED"],
+    },
 )
 _CONFLICTS_LITERAL_RE = re.compile(r"ticketInfo\.conflicts\.length > 0")
 _TESTS_FAILED_LITERAL_RE = re.compile(r"!testResult\.passed")
+_ENVIRONMENT_FAILURE_LITERAL_RE = re.compile(r"if \(testResult\.environment_failure\)")
 
 
 def _nearest_preceding_phase(text: str, offset: int) -> str | None:
@@ -322,6 +332,7 @@ def count_agent_result_field_call_sites(workflow_js_path: Path) -> dict[str, int
     return {
         "conflicts": len(_CONFLICTS_LITERAL_RE.findall(text)),
         "passed": len(_TESTS_FAILED_LITERAL_RE.findall(text)),
+        "environment_failure": len(_ENVIRONMENT_FAILURE_LITERAL_RE.findall(text)),
     }
 
 

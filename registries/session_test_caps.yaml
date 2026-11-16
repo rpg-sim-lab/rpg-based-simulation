@@ -1,0 +1,24 @@
+# Per-host bounds for the implement-ticket pipeline's local Test phase and for hand-run Test phases
+# (TCK-20261115-TEST-PHASE-RUNS-TESTS-TOOLS-UNCAPPED-IN-ONE-PROCESS). Read by tools/delivery/host_test_caps.py and
+# tools/delivery/capped_pytest.py. Holds only a host tag and cap numbers: no credentials, no other host facts.
+#
+# A host with an entry runs the Test phase through `python3 -m tools.delivery.capped_pytest`; a host with no entry
+# (CI, a laptop, a new VM) runs pytest unwrapped, exactly as before. lead-planner sets the values; a change goes
+# through lead-planner. The host tag is `host_names[hostname]` in registries/session_project.yaml, else the hostname.
+# Dispatch: #715 6908488337. File name and owner (agent-working, through the registries/session_*.yaml glob): #715 6908596463. u24desktop numbers: #715 6908508876. (all owner answers)
+#
+# Env overrides, per run: RPG_TEST_CAP_MEMORY_MAX, RPG_TEST_CAP_MEMORY_SWAP_MAX, RPG_TEST_CAP_CPUS,
+# RPG_TEST_CAP_MEM_AVAILABLE_FLOOR_GB, RPG_TEST_CAP_MAX_TESTS_PER_CHUNK.
+hosts:
+  ubuntu:
+    memory_max: 3G                  # systemd-run -p MemoryMax=
+    memory_swap_max: 0              # systemd-run -p MemorySwapMax=
+    cpus: "4-5"                     # taskset -c
+    mem_available_floor_gb: 3       # a chunk does not start below this MemAvailable; that is an environment failure, not a wait
+    max_tests_per_chunk: 700        # chunks are whole test files, packed in sorted order up to this many collected tests
+  u24desktop:                       # values from lead-planner-u24
+    memory_max: 2.5G
+    memory_swap_max: 0
+    cpus: "4-5"
+    mem_available_floor_gb: 3
+    max_tests_per_chunk: 700

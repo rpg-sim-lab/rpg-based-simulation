@@ -126,6 +126,7 @@ Workflow({ name: 'implement-ticket', args: { ticket_id: 'TCK-20260606-PHASE28-RU
 | `BLOCKED` | Architecture fundamental conflict — plan (Review phase) or diff (Architecture-Verify phase) | Review: revisit scope. Architecture-Verify: fix the flagged code. Re-run with `ticket_id` either way |
 | `DOC_STALENESS_BLOCKED` | A behavior-changing `src/` or `.claude/workflows/*.js` diff has no `docs/` path in `files_changed` (`tools/gate_checks/doc_staleness_check.py`) | Add a `docs/` update reflecting the behavior change, re-run with `ticket_id` |
 | `TESTS_FAILED` | One or more tests failing | Fix failing tests, re-run with `ticket_id` |
+| `TESTS_ENVIRONMENT_FAILED` | The Test run died of the environment (memory, a killed process), not a test | Free the host or wait for its slot, re-run with `ticket_id` |
 | `DATA_RUNS_CLEAN_FAILED` | Post-Test auto-clean of `data/runs/*`/`reports/release_proof/*` failed | Resolve manually (check permissions/locks), re-run with `ticket_id` |
 | `SECURITY_BLOCKED` | Security review rejected the change | Fix violations, re-run with `ticket_id` |
 | `DOD_BLOCKED` | DoD conditions not met | Fix listed items, re-run with `ticket_id` |
