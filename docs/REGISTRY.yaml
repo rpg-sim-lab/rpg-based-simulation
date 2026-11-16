@@ -8132,7 +8132,7 @@
   - testing
   - determinism
 - type: ticket
-  path: agent-working/tickets/todos/TCK-20261116-THE-SEMANTIC-DRIFT-CERTIFICATION-TEST-DOES-NOT-FAIL-ON-A-SLOW-RUNNER.md
+  path: agent-working/tickets/done/TCK-20261116-THE-SEMANTIC-DRIFT-CERTIFICATION-TEST-DOES-NOT-FAIL-ON-A-SLOW-RUNNER.md
   ticket_id: TCK-20261116-THE-SEMANTIC-DRIFT-CERTIFICATION-TEST-DOES-NOT-FAIL-ON-A-SLOW-RUNNER
   title: 'The semantic-drift certification test does not fail on a slow runner: its
     healthy-run half is not judged against a 10 ms wall-clock tick budget'
