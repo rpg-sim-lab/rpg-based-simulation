@@ -7,7 +7,7 @@ if TYPE_CHECKING:
     from src.core.updates import StateUpdate, EntityUpdate, StrategicUpdate
     from src.engine.cadence import SystemCadence
 from src.core.movement_modes import MovementMode
-from src.engine.hold_mode import hold_reset_kwargs
+from src.core.hold_mode import hold_reset_kwargs
 from src.core.strategic import ProjectStatus, ObjectiveStatus
 from src.core.updates import EntityUpdate, NavigationUpdate, StrategicUpdate, InteractionUpdate
 from src.systems.strategic_systems.town_targeting import nearest_town_tile

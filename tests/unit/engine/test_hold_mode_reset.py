@@ -1,7 +1,7 @@
 """A HOLD ends when its holding task is over: the walk-decision reset and the sleep-end reset (TCK-20261111-A-HOLD-MODE-MOVE-STILL-TAKES-A-STEP, P3).
 
 * A walk decision (a writer of a mode-less navigation target) resets the movement mode HOLD to WANDER in the update that sets the target,
-  through ONE helper (``src.engine.hold_mode.hold_reset_kwargs``), unless an action task is live. The test for "live" is typed state (work kind and
+  through ONE helper (``src.core.hold_mode.hold_reset_kwargs``), unless an action task is live. The test for "live" is typed state (work kind and
   payload truthiness, plus the pending update's task), never a reason string.
 * A collapse's HOLD ends with its SLEEP (the actions phase, ``_hold_ends_with_task``). A typed wait's task ends in its own tick and a killing blow
   ends its task in the kill tick, so neither is reset there: they end at the subject's next walk decision.
@@ -19,7 +19,7 @@ from src.core.builder import V2EntityBuilder
 from src.core.movement_modes import MovementMode
 from src.core.state import TaskComponent
 from src.core.updates import EntityUpdate, NavigationUpdate, TaskUpdate
-from src.engine.hold_mode import action_task_is_live, effective_movement_mode, hold_reset_kwargs
+from src.core.hold_mode import action_task_is_live, effective_movement_mode, hold_reset_kwargs
 from src.engine.pipeline_phases.actions import _hold_ends_with_task
 
 REPO = Path(__file__).resolve().parents[3]

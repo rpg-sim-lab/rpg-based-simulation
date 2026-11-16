@@ -4949,7 +4949,7 @@
   status: verified
   priority: P1
   legacy_evidence: null
-  v2_evidence: 'src/engine/hold_mode.py (action_task_is_live, hold_reset_kwargs);
+  v2_evidence: 'src/core/hold_mode.py (action_task_is_live, hold_reset_kwargs);
     src/engine/candidate_selector.py (movement_target: a pending target_clear with
     no target_set returns None); src/engine/tactical_hold.py (WATCH_HOSTILE and AVOID_NO_ROUTE
     carry target_clear; KEEP_WALKING no longer inherits HOLD); src/engine/tactical.py

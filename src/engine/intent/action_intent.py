@@ -6,7 +6,7 @@ from src.core.state import EntityState, ItemStack
 from src.core.updates import EntityUpdate, NavigationUpdate, InventoryUpdate, BiologicalUpdate, ResourceTransferIntent, IdentityUpdate
 from src.world.providers.requirements import Requirement, RequirementEvaluator
 from src.engine.domain.action_router import ActionRouter
-from src.engine.hold_mode import hold_reset_kwargs
+from src.core.hold_mode import hold_reset_kwargs
 from src.core.registries import RecipeRegistry, ItemRegistry, ResourceRegistry
 from src.town.shop import ShopService
 

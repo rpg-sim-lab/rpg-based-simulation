@@ -7,9 +7,9 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple
 
+from src.core.hold_mode import hold_reset_kwargs
 from src.core.movement_modes import MovementMode
 from src.core.updates import EntityUpdate, NavigationUpdate, TaskUpdate
-from src.engine.hold_mode import hold_reset_kwargs
 from src.engine.hostility import is_engaged
 from src.engine.legality import LegalityServiceV2
 from src.engine.rpg_depth import LeashService
