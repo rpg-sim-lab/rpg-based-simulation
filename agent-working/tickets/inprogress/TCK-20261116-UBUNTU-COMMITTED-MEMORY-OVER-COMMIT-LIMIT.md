@@ -15,7 +15,7 @@ tags: [ai, testing]
 On host ubuntu, committed memory sits above the commit limit, so one large uncapped process gets ENOMEM even while MemAvailable is several GB.
 
 ## Status
-OPEN
+INPROGRESS
 
 ## Tier
 standard

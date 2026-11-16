@@ -95,6 +95,7 @@ Hand-orchestrated (the owner allows no Workflow runs, #715 6894904885), dispatch
 - `test_test_scope_coverage_static.py` passes unchanged (AC3): the floor's directories and the bare-directory rule are untouched.
 - Real run of the helper on this host: `python3 -m tools.delivery.capped_pytest tests/tools/test_host_test_caps.py tests/tools/test_test_scope_coverage_static.py -m "not slow and not extra_slow"` ran one chunk under `systemd-run` (3G, CPUs 4-5), 44 passed, `environment_failure` false.
 - Cards: `test_session_cards.py` passes with the final `registries/` (the first attempt failed the token budget; see Implementation Notes).
+- Positive control for the environment patterns, on real output: the Test agent's pytest output kept in `wf_f48f4fae-569`'s transcript (only a 1,175-character excerpt of a 99-test rerun survives, not the full 57 failures and 7 errors, which is a stated gap). It shows `/usr/lib/python3.13/subprocess.py:1801: OSError: [Errno 12] Cannot allocate memory: '/usr/bin/python3'` three times, so the real text does have the errno form. `is_environment_failure` matches it (3 matches), and does not match the real failure's lines (`test_no_live_code_names_a_moved_root`, `tests/tools/test_knowledge_index_staleness.py:160: 'knowledge-index'`). Three tests in that excerpt (`test_ticket_field_values.py` CLI tests) hit the ENOMEM and one (the paths guard) was the real failure.
 - No full `tests/tools` run was made (it needs the lead's per-run go); CI runs it.
 
 ## Files Changed
