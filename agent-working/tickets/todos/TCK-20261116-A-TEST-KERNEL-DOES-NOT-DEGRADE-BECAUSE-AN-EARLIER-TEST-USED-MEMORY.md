@@ -43,7 +43,7 @@ Evidence (same process, `-p no:xdist -p no:randomly`):
 - `lodging_kernel.kernel()` given `governor=PinnedNormalGovernor()` (from `tests/helpers/kernel_pinning.py`): the parse-then-target pair and the real pair both pass.
 
 ## Scope
-1. `tests/unit/engine/lodging_kernel.kernel()` passes `governor=PinnedNormalGovernor()`. That is the shared pin for tests that run a real Kernel and must not depend on the host. Nine test files use this helper (`tests/unit/engine/test_*lodg*`, `test_beds_survive_a_checkpoint_restore`, `test_checkpoint_fields`, `test_checkpoint_group_fields`, and `tests/unit/tactical/test_low_hp_retreat_gate`). All of them must still pass.
+1. `tests/unit/engine/lodging_kernel.kernel()` takes `governor=None`, which defaults to `PinnedNormalGovernor()`; a caller can still pass its own. That is the shared pin for tests that run a real Kernel and must not depend on the host. Nine test files use this helper (`tests/unit/engine/test_*lodg*`, `test_beds_survive_a_checkpoint_restore`, `test_checkpoint_fields`, `test_checkpoint_group_fields`, and `tests/unit/tactical/test_low_hp_retreat_gate`). All of them must still pass.
 2. A regression test that needs no heavy run. In one process, raise the signal the governor reads (patch `KernelObservability`'s cached RSS, or the platform signal, above `max_ram_mb`), build `lodging_kernel.kernel()`, and assert that it stays NORMAL and that the low-hp test's decision count is unchanged. The test must fail with the pin removed.
 3. Report only, no fixes: list the other test helpers or tests under `tests/` that build a real `Kernel(` with no `governor=` pin and no `audit_mode`, and attach the list to the ticket for a follow-on sweep.
 
@@ -72,7 +72,10 @@ None.
 - `src/engine/governor.py`, `src/engine/observability.py`, `src/engine/signal_source.py` (read only)
 
 ## Assumptions / Open Questions
-- `tests/unit/engine/` and `tests/unit/tactical/` belong to rpg. I'm asking rpg-planner whether it takes this, or whether testing builds it with rpg reviewing (as on #928 and #930). It is a test-only change and behaviour does not change.
+- RESOLVED 2026-11-16 (rpg-planner): testing builds this and rpg-planner reviews the diff, the same arrangement as #928 and #930. rpg-planner's conditions:
+  (1) Before pinning, check that none of the 9 files asserts anything that depends on the governor's tier (a DEGRADED or LOD path, a cadence count under pressure, or a decision count that only holds at NORMAL by accident). If one does, that test builds its own governor explicitly. Don't bend it.
+  (2) Pin at the helper with a keyword default (`governor=None` becomes `PinnedNormalGovernor()`), so a caller can still pass its own. No assertion or expected value changes in those files. The suite must pass at `-n 1` in both orders: with the unwired test first, and alone.
+  (3) Scope 3's list is report-only. Builders in RPG areas go to rpg-planner as a finding, and rpg-planner decides per file.
 
 ## Implementation Notes
 
