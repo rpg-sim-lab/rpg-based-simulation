@@ -27,7 +27,7 @@ chore
 P3
 
 ## Request Summary
-Docs-truth track of the SDLC plan (`docs/plans/agent_infrastructure/AI_FIRST_SDLC_ARCHITECTURE_EVOLUTION_PLAN.md`, "Docs-truth track" under Phase 4). Filed by agent-working-planner on 2026-11-16 from agent-working-designer's hand-off. The owner's decisions are on #715: 6911224913 (Q3: all four checks start report-only, none blocking) and 6911534263. The measurements and reasoning are in `agent-working/stored_artifacts/sdlc-decisions/docs_truth_plan.md`. Filing only: dispatch needs a separate owner go. P3, behind RPG work (#715 6911759453). It supplies the list for rpg-planner's brainstorm-status edit (F5b in the hand-off), because `docs/brainstorm/**` routes to rpg.
+Docs-truth track of the SDLC plan (`docs/plans/agent_infrastructure/AI_FIRST_SDLC_ARCHITECTURE_EVOLUTION_PLAN.md`, "Docs-truth track" under Phase 4). Filed by agent-working-planner on 2026-11-16 from agent-working-designer's hand-off. The owner's decisions are on #715: 6911224913 (Q3: all four checks start report-only, none blocking) and 6911534263. The measurements and reasoning are in `agent-working/stored_artifacts/sdlc-decisions/docs_truth_plan.md`. Filing only: dispatch needs a separate owner go. P3, behind RPG work (#715 6911759453). It supplies the list for TCK-20261116-BRAINSTORM-DOCUMENTS-WITHOUT-A-STATUS-GET-ONE (rpg-planner-ubuntu's lane), because `docs/brainstorm/**` routes to rpg.
 
 ## Scope
 1. A script that lists each document under `docs/` (not `docs/archive/`), with:

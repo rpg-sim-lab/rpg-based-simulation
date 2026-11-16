@@ -27,12 +27,12 @@ feature
 P3
 
 ## Request Summary
-Docs-truth track of the SDLC plan (`docs/plans/agent_infrastructure/AI_FIRST_SDLC_ARCHITECTURE_EVOLUTION_PLAN.md`, "Docs-truth track" under Phase 4). Filed by agent-working-planner on 2026-11-16 from agent-working-designer's hand-off. The owner's decisions are on #715: 6911224913 (Q3: all four checks start report-only, none blocking) and 6911534263. The measurements and reasoning are in `agent-working/stored_artifacts/sdlc-decisions/docs_truth_plan.md`. Filing only: dispatch needs a separate owner go. P3, behind RPG work (#715 6911759453). It depends on rpg-planner's ticket that changes `test_path` to a list (F3a in the hand-off). That ticket is filed in rpg's lane, because `docs/parity_ledger/**` routes to rpg-planner.
+Docs-truth track of the SDLC plan (`docs/plans/agent_infrastructure/AI_FIRST_SDLC_ARCHITECTURE_EVOLUTION_PLAN.md`, "Docs-truth track" under Phase 4). Filed by agent-working-planner on 2026-11-16 from agent-working-designer's hand-off. The owner's decisions are on #715: 6911224913 (Q3: all four checks start report-only, none blocking) and 6911534263. The measurements and reasoning are in `agent-working/stored_artifacts/sdlc-decisions/docs_truth_plan.md`. Filing only: dispatch needs a separate owner go. P3, behind RPG work (#715 6911759453). It depends on TCK-20261116-PARITY-TEST-PATH-BECOMES-A-LIST (rpg-planner-ubuntu's lane, because `docs/parity_ledger/**` routes to rpg-planner; its dispatch also needs rpg-planner (u24)'s yes on the schema shape).
 
 ## Scope
 1. After the `test_path`-as-a-list cutover, a report-only check covers each `verified` row added or changed since the cutover. Its `test_path` entries must resolve to a collected test.
    - Rows that rest on slow or integration tests CI does not run may say `verified_offline`.
-   - A test node that is gone or no longer collects is reported as such. There are 3 such rows today: TOWN-019, STRAT-280 and COMB-351, which rpg-planner files separately.
+   - A test node that is gone or no longer collects is reported as such. The 3 rows found today (TOWN-019, STRAT-280 and COMB-351) are fixed first under TCK-20261116-THREE-PARITY-ROWS-CITE-A-TEST-THAT-DOES-NOT-EXIST.
 2. Split on `;`, `+` and `,`, strip backticks, and accept directories and non-Python tests. Without that, about 21 prose fragments read as missing files (the designer's measurement).
 
 ## Out of Scope
@@ -47,7 +47,8 @@ Docs-truth track of the SDLC plan (`docs/plans/agent_infrastructure/AI_FIRST_SDL
 ## Related Tickets
 - TCK-20261031-EPIC-AI-FIRST-SDLC-EVOLUTION
 - TCK-20261114-PARITY-LEDGER-TEST-PATH-ERRORS-REMAIN-IN-SEVEN-FILES
-- rpg-planner's `test_path`-as-a-list ticket (prerequisite; id to add when filed)
+- TCK-20261116-PARITY-TEST-PATH-BECOMES-A-LIST (prerequisite)
+- TCK-20261116-THREE-PARITY-ROWS-CITE-A-TEST-THAT-DOES-NOT-EXIST
 
 ## Related Docs
 - docs/plans/agent_infrastructure/AI_FIRST_SDLC_ARCHITECTURE_EVOLUTION_PLAN.md (Docs-truth track)

@@ -47,8 +47,8 @@ Independent, any time:
 
 Filing only, all P3 and behind RPG (#715 6911759453). Dispatch is a separate owner go. Order:
 1. TCK-20261116-DOC-CITATION-RESOLVER-REPORT-ONLY and TCK-20261116-DOC-CLASSIFICATION-LIST have no prerequisite.
-2. In rpg's lane, after rpg-planner-ubuntu agrees: the `test_path`-as-a-list change (F3a) and the 14 brainstorm statuses (F5b). These are not filed here.
-3. TCK-20261116-PARITY-NEW-ROW-TEST-PATH-RATCHET-REPORT-ONLY, after F3a.
+2. In rpg's lane, filed by rpg-planner-ubuntu: TCK-20261116-THREE-PARITY-ROWS-CITE-A-TEST-THAT-DOES-NOT-EXIST, then TCK-20261116-PARITY-TEST-PATH-BECOMES-A-LIST (also gated on rpg-planner (u24)'s yes on the schema shape); and TCK-20261116-BRAINSTORM-DOCUMENTS-WITHOUT-A-STATUS-GET-ONE, after the classification list.
+3. TCK-20261116-PARITY-NEW-ROW-TEST-PATH-RATCHET-REPORT-ONLY, after TCK-20261116-PARITY-TEST-PATH-BECOMES-A-LIST.
 4. TCK-20261116-CHANGED-CODE-CHECK-REPORT-ONLY-WITH-PROOF-ESCAPE and TCK-20261116-FRESHNESS-STAMPS-REPORT-ONLY, after the resolver has run clean.
 
 Already filed elsewhere: the knowledge-gateway docs move, TCK-20261116-THIRTEEN-DEAD-KNOWLEDGE-GATEWAY-DOCS-MOVE-TO-THE-ARCHIVE, in rpg's lane. Search ranking is Phase 5 item 2 in TCK-20261031-SDLC-CONTEXT-AND-SESSION-RELIABILITY. The prose-reading sample is held: `agent-working/stored_artifacts/sdlc-decisions/prose_sample_draw_and_protocol.md`.
