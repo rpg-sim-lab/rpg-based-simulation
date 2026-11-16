@@ -295,7 +295,7 @@ not corpus queries). This section's field names (`intent`, `entity_id`, `normali
 - `tools/retrieval_events.py` — the 3 Wrapper functions cited in §2 as instrumentation precedent
   (`wrap_hybrid_retrieval()`, `wrap_retrieval_cache_check()`, `wrap_context_packet_assembly()`),
   each implemented but not invoked by any live call site.
-- `docs/engine/contracts/knowledge_gateway_mcp/evidence_cache_identity_contract.md` — the lookup/
+- `docs/archive/knowledge_gateway_mcp/evidence_cache_identity_contract.md` — the lookup/
   validity identity fields and Non-collapse rule §2 cites, and the `entity_id` forms §5.1 reuses;
   referenced by citation only, never redefined here.
 - `docs/engine/contracts/knowledge_gateway_mcp/redaction_retention_policy.md` §6/§8 — the 4

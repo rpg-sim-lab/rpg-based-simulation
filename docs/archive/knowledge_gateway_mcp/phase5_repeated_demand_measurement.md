@@ -94,12 +94,12 @@ at face value as *some* real, non-zero repeated-question demand, the decisive qu
 **resolving** that demand via broader cache-hit matching would be net-positive, given Phase 3/4's own
 real, already-measured per-hit economics:
 
-- **Phase 3** (`docs/engine/contracts/knowledge_gateway_mcp/phase3_pilot_acceptance_measurement.md`):
+- **Phase 3** (`docs/archive/knowledge_gateway_mcp/phase3_pilot_acceptance_measurement.md`):
   a real **FAIL, 2/7** on budget-tolerance (`context_search`-routed queries' full response payload
   runs 2.3x-2.4x over the ±20% tolerance). The token half of criterion #18 is also a real **FAIL** —
   a genuine Level-2-warm cache **hit**'s own median full-payload token count (2865) is *larger* than
   both the cold baseline (2846) and the Level-1-warm baseline (2615).
-- **Phase 4** (`docs/engine/contracts/knowledge_gateway_mcp/phase4_direct_tool_comparison.md`): a
+- **Phase 4** (`docs/archive/knowledge_gateway_mcp/phase4_direct_tool_comparison.md`): a
   fresh, live, paired run found the gateway slower (1.31x-3.76x) and heavier in tokens
   (1.04x-2.93x) than direct tool use for all 7 of 7 corpus entries, with hand-written quality
   judgments favoring direct tools 6 of 7 times and 0 of 7 favoring the gateway.
@@ -132,7 +132,7 @@ reproducible measurement and the reasoning drawn from it, nothing more.
   numbers (primary: full 17-pair list; secondary: a 20-pair sample of the full 372).
 - `tests/tools/fixtures/kgmcp_phase5_events_investigate_snapshot.json` /
   `kgmcp_phase5_working_log_snapshot.json` — the frozen input snapshots.
-- `docs/engine/contracts/knowledge_gateway_mcp/phase3_pilot_acceptance_measurement.md`,
+- `docs/archive/knowledge_gateway_mcp/phase3_pilot_acceptance_measurement.md`,
   `phase4_direct_tool_comparison.md` — the real per-hit economics findings this recommendation
   weighs.
 - `docs/plans/knowledge-gateway-mcp-proposal.md` §11.2, §20 Phase 5.

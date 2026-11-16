@@ -406,7 +406,7 @@ rather than rewritten to chase a re-run this ticket was not scoped to re-litigat
 - `docs/engine/contracts/knowledge_gateway_mcp/redaction_retention_policy.md` §8 — the already-
   ratified ±20% budget tolerance and `LOCAL_PATH_PLACEHOLDER` redaction behavior this document
   measures against and discloses, respectively.
-- `docs/engine/contracts/knowledge_gateway_mcp/phase2_baseline_recomparison.md` — the honest
+- `docs/archive/knowledge_gateway_mcp/phase2_baseline_recomparison.md` — the honest
   0/7→7/7 Level 1 result this ticket's Level 2 measurement builds on, never edited by this ticket.
 - `tools/knowledge_gateway_packet_assembly.py::assemble_within_budget()`/
   `truncate_conflicts_within_budget()` — the real, post-fix accounting this document's "Post-fix

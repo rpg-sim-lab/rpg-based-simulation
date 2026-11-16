@@ -12,7 +12,7 @@ This document defines a **contract for a future implementation**. No `src/` or `
 implementing evidence-identity resolution, cache invalidation, or a live gateway exists yet, and
 none is added by this ticket (`TCK-20260814-KGMCP-EVIDENCE-CACHE-IDENTITY`). It is placed under
 `docs/engine/contracts/knowledge_gateway_mcp/` alongside the sibling wire-contract document,
-`docs/engine/contracts/knowledge_gateway_mcp_contract.md`, whose own `:17-19` explicitly assigns
+`docs/archive/knowledge_gateway_mcp/knowledge_gateway_mcp_contract.md`, whose own `:17-19` explicitly assigns
 evidence identity, cache-lookup identity, and repository/branch/working-tree cache scope to this
 ticket rather than to itself. This document is Phase 0's identity-freeze half:
 `docs/plans/knowledge-gateway-mcp-proposal.md` §11.1/§11.2 (lookup vs. validity identity), §12.1
@@ -176,13 +176,13 @@ Per §12.3, cache-scope compatibility follows these rules:
 - `docs/engine/contracts/knowledge_gateway_mcp/evidence_identity_kinds.schema.json` — the 8 closed
   evidence identity kinds, each with its stable-identity form, preferred fingerprint, and
   normalization rules (§12.1).
-- `docs/engine/contracts/knowledge_gateway_mcp/cache_migration_plan.md` — the migration design
+- `docs/archive/knowledge_gateway_mcp/cache_migration_plan.md` — the migration design
   document for adding new tables to `agent-working/.index/knowledge-index/retrieval_cache.db` in place (§10.1/§19).
 - `docs/engine/contracts/knowledge_gateway_mcp/shared_enums.schema.json` — `freshness`/`verification`
   enum definitions, referenced by §2, not redefined here.
 - `docs/engine/contracts/knowledge_gateway_mcp/knowledge_context_request.schema.json` — the
   `changed_paths` request field, referenced by §5, not redefined here.
-- `docs/engine/contracts/knowledge_gateway_mcp_contract.md` — the sibling wire-contract document;
+- `docs/archive/knowledge_gateway_mcp/knowledge_gateway_mcp_contract.md` — the sibling wire-contract document;
   its `:17-19` assigns this document's content area to this ticket.
 
 No `docs/parity_ledger/` entry accompanies this document — this subsystem is
