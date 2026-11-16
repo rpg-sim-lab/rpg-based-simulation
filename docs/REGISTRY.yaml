@@ -1339,151 +1339,8 @@
   audience: developer
   tags: []
 - type: doc
-  path: docs/engine/contracts/knowledge_gateway_mcp/audit_phase0_5.md
-  title: Knowledge Gateway MCP — Consolidated Audit, Phases 0-5
-  status: historical
-  layer: ai
-  authority: P1
-  audience: agent
-  tags:
-  - ai
-  - mcp
-  - testing
-- type: doc
-  path: docs/engine/contracts/knowledge_gateway_mcp/cache_migration_plan.md
-  title: Knowledge Gateway MCP — Cache Migration Plan (Design Only)
-  status: historical
-  layer: ai
-  authority: P1
-  audience: agent
-  tags:
-  - ai
-  - schema
-  - mcp
-- type: doc
-  path: docs/engine/contracts/knowledge_gateway_mcp/evidence_cache_identity_contract.md
-  title: Knowledge Gateway MCP — Evidence & Cache Identity Contract
-  status: historical
-  layer: ai
-  authority: P1
-  audience: agent
-  tags:
-  - ai
-  - schema
-  - mcp
-- type: doc
-  path: docs/engine/contracts/knowledge_gateway_mcp/keep_or_deprecate_decision.md
-  title: 'Knowledge Gateway MCP — Keep, Invest Further, or Deprecate: The Decision'
-  status: historical
-  layer: ai
-  authority: P1
-  audience: agent
-  tags:
-  - ai
-  - mcp
-- type: doc
-  path: docs/engine/contracts/knowledge_gateway_mcp/measurement_baseline_contract.md
-  title: Knowledge Gateway MCP — Measurement Baseline Contract
-  status: historical
-  layer: ai
-  authority: P1
-  audience: agent
-  tags:
-  - ai
-  - schema
-  - mcp
-- type: doc
-  path: docs/engine/contracts/knowledge_gateway_mcp/phase1_baseline_comparison.md
-  title: Knowledge Gateway MCP — Phase 1 Baseline Comparison Results
-  status: historical
-  layer: ai
-  authority: P1
-  audience: agent
-  tags:
-  - ai
-  - mcp
-  - testing
-- type: doc
-  path: docs/engine/contracts/knowledge_gateway_mcp/phase2_baseline_recomparison.md
-  title: Knowledge Gateway MCP — Phase 2 Baseline Recomparison Results
-  status: historical
-  layer: ai
-  authority: P1
-  audience: agent
-  tags:
-  - ai
-  - mcp
-  - testing
-- type: doc
-  path: docs/engine/contracts/knowledge_gateway_mcp/phase3_pilot_acceptance_measurement.md
-  title: Knowledge Gateway MCP — Phase 3 Pilot Acceptance Measurement Results
-  status: historical
-  layer: ai
-  authority: P1
-  audience: agent
-  tags:
-  - ai
-  - mcp
-  - testing
-- type: doc
-  path: docs/engine/contracts/knowledge_gateway_mcp/phase4_direct_tool_comparison.md
-  title: Knowledge Gateway MCP — Phase 4 Direct-Tool Comparison Results
-  status: historical
-  layer: ai
-  authority: P1
-  audience: agent
-  tags:
-  - ai
-  - mcp
-  - testing
-- type: doc
-  path: docs/engine/contracts/knowledge_gateway_mcp/phase4_warm_direct_tool_comparison.md
-  title: Knowledge Gateway MCP — Warm-Gateway Direct-Tool Comparison Results
-  status: historical
-  layer: ai
-  authority: P1
-  audience: agent
-  tags:
-  - ai
-  - mcp
-  - testing
-  - performance
-- type: doc
-  path: docs/engine/contracts/knowledge_gateway_mcp/phase4_workflow_recommendation.md
-  title: Knowledge Gateway MCP — Phase 4 Workflow Integration Recommendation
-  status: historical
-  layer: ai
-  authority: P1
-  audience: agent
-  tags:
-  - ai
-  - mcp
-  - testing
-- type: doc
-  path: docs/engine/contracts/knowledge_gateway_mcp/phase5_repeated_demand_measurement.md
-  title: Knowledge Gateway MCP — Phase 5 Repeated-Demand Measurement Results
-  status: historical
-  layer: ai
-  authority: P1
-  audience: agent
-  tags:
-  - ai
-  - mcp
-  - testing
-- type: doc
   path: docs/engine/contracts/knowledge_gateway_mcp/redaction_retention_policy.md
   title: Knowledge Gateway MCP — Redaction and Retention Policy
-  status: active
-  layer: ai
-  authority: P1
-  audience: agent
-  tags:
-  - ai
-  - schema
-  - mcp
-- type: doc
-  path: docs/engine/contracts/knowledge_gateway_mcp_contract.md
-  title: Knowledge Gateway MCP Contract
   status: active
   layer: ai
   authority: P1
@@ -8117,6 +7974,23 @@
   - content
   last_verified: '2026-10-09'
 - type: ticket
+  path: agent-working/tickets/done/TCK-20261116-A-CI-SET-ON-TWO-IMAGE-PATCHES-IS-ONE-ENVIRONMENT-WHEN-LIBC-AND-PYTHON-MATCH.md
+  ticket_id: TCK-20261116-A-CI-SET-ON-TWO-IMAGE-PATCHES-IS-ONE-ENVIRONMENT-WHEN-LIBC-AND-PYTHON-MATCH
+  title: A CI set on two image patch versions is one environment when libc and the
+    Python build match; a split is refused by name, and the AC1 table is readable
+    from the log
+  tier: hotfix
+  ticket_type: bug
+  date: '2026-11-16'
+  related_code_areas:
+  - tools/rpg_measure/paired.py
+  - tools/test_architecture/paired_arms.py
+  - .github/workflows/paired-arms.yml
+  artifact_files: []
+  tags:
+  - testing
+  - determinism
+- type: ticket
   path: agent-working/tickets/done/TCK-20261116-A-TEST-KERNEL-DOES-NOT-DEGRADE-BECAUSE-AN-EARLIER-TEST-USED-MEMORY.md
   ticket_id: TCK-20261116-A-TEST-KERNEL-DOES-NOT-DEGRADE-BECAUSE-AN-EARLIER-TEST-USED-MEMORY
   title: 'A test kernel does not degrade because an earlier test used memory: the
@@ -8163,6 +8037,27 @@
   - testing
   - determinism
 - type: ticket
+  path: agent-working/tickets/done/TCK-20261116-THIRTEEN-DEAD-KNOWLEDGE-GATEWAY-DOCS-MOVE-TO-THE-ARCHIVE.md
+  ticket_id: TCK-20261116-THIRTEEN-DEAD-KNOWLEDGE-GATEWAY-DOCS-MOVE-TO-THE-ARCHIVE
+  title: 'Thirteen knowledge-gateway (KGMCP) documents whose code was removed in #147
+    still sit in docs/engine/contracts as if current; move them to docs/archive/knowledge_gateway_mcp/,
+    keep the one live spec, and leave no dead path behind'
+  tier: hotfix
+  ticket_type: chore
+  date: '2026-11-16'
+  related_code_areas:
+  - tools/write_path_guard.py
+  - tools/retrieval_cache.py
+  - tests/docs/test_phase4_*_doc.py
+  - tests/docs/test_redaction_retention_policy_doc.py
+  - tests/tools/test_evidence_cache_identity_contract.py
+  - tests/tools/test_retrieval_cache.py
+  - tests/tools/test_write_path_guard.py
+  artifact_files: []
+  tags:
+  - documentation
+  - mcp
+- type: ticket
   path: agent-working/tickets/done/TCK-20261116-UBUNTU-COMMITTED-MEMORY-OVER-COMMIT-LIMIT.md
   ticket_id: TCK-20261116-UBUNTU-COMMITTED-MEMORY-OVER-COMMIT-LIMIT
   title: On host ubuntu, ENOMEM appeared in the implement-ticket Test phase while
@@ -8180,6 +8075,20 @@
   - ai
   - testing
 - type: ticket
+  path: agent-working/tickets/todos/TCK-20261116-BRAINSTORM-DOCUMENTS-WITHOUT-A-STATUS-GET-ONE.md
+  ticket_id: TCK-20261116-BRAINSTORM-DOCUMENTS-WITHOUT-A-STATUS-GET-ONE
+  title: Fourteen docs/brainstorm documents carry no status, so search cannot rank
+    them below current documents as the owner decided; give each one a status taken
+    from the document itself
+  tier: hotfix
+  ticket_type: chore
+  date: '2026-11-16'
+  related_code_areas:
+  - tools/validate_frontmatter.py
+  artifact_files: []
+  tags:
+  - documentation
+- type: ticket
   path: agent-working/tickets/todos/TCK-20261116-LIVE-HEALTH-API-TEST-WAITS-A-FIXED-FOUR-SECONDS-ON-A-FIXED-PORT.md
   ticket_id: TCK-20261116-LIVE-HEALTH-API-TEST-WAITS-A-FIXED-FOUR-SECONDS-ON-A-FIXED-PORT
   title: The live-health API test starts uvicorn on fixed port 8021, waits a fixed
@@ -8192,6 +8101,24 @@
   - tests/api/test_live_health_api.py
   artifact_files: []
   tags: []
+- type: ticket
+  path: agent-working/tickets/todos/TCK-20261116-PARITY-TEST-PATH-BECOMES-A-LIST.md
+  ticket_id: TCK-20261116-PARITY-TEST-PATH-BECOMES-A-LIST
+  title: A parity ledger row's test_path is one free-text string (paths joined by
+    `;`, `+` or `,`, with backticks and prose mixed in), so no check can resolve it;
+    make it a list of test node ids with the prose in a separate note field
+  tier: standard
+  ticket_type: refactor
+  date: '2026-11-16'
+  related_code_areas:
+  - tools/parity_ledger_writer.py
+  - tools/parity_ledger_check.py
+  - tools/parity_ledger_scan.py
+  - tests/codebase/test_parity_ledger_schema_gate.py
+  artifact_files: []
+  tags:
+  - schema
+  - documentation
 - type: ticket
   path: agent-working/tickets/todos/TCK-20261116-PRE-PUSH-ADVISORY-CHECKS-THE-PUSH-TARGET.md
   ticket_id: TCK-20261116-PRE-PUSH-ADVISORY-CHECKS-THE-PUSH-TARGET
@@ -8207,6 +8134,36 @@
   tags:
   - ai
   - delivery
+- type: ticket
+  path: agent-working/tickets/todos/TCK-20261116-THREE-PARITY-ROWS-CITE-A-TEST-THAT-DOES-NOT-EXIST.md
+  ticket_id: TCK-20261116-THREE-PARITY-ROWS-CITE-A-TEST-THAT-DOES-NOT-EXIST
+  title: Three verified parity rows (COMB-351, STRAT-280, TOWN-019) cite a test file
+    or node that does not exist on main, so their stated proof points at nothing
+  tier: hotfix
+  ticket_type: repair
+  date: '2026-11-16'
+  related_code_areas:
+  - tests/unit/tactical/test_flight_weighs_free_swing.py
+  - tests/unit/engine/test_need_pull.py
+  - tests/unit/world/test_building_interaction_contract.py
+  artifact_files: []
+  tags:
+  - documentation
+- type: ticket
+  path: agent-working/tickets/todos/TCK-20261116-WORLD-ASSEMBLY-REPORTS-LIST-WARNINGS-IN-HASH-SEED-ORDER.md
+  ticket_id: TCK-20261116-WORLD-ASSEMBLY-REPORTS-LIST-WARNINGS-IN-HASH-SEED-ORDER
+  title: The generated world's assembly_report.json and validation_report.json list
+    their warnings in an order that changes with PYTHONHASHSEED, so the same seed
+    gives byte-different reports in two processes
+  tier: hotfix
+  ticket_type: bug
+  date: '2026-11-16'
+  related_code_areas:
+  - src/worldgeneration/generator.py (ProceduralCompositionGenerator)
+  - src/worldassembly/ (report writers)
+  artifact_files: []
+  tags:
+  - determinism
 - type: ticket
   path: agent-working/tickets/todos/ai-first-sdlc-evolution/TCK-20261116-CHANGED-CODE-CHECK-REPORT-ONLY-WITH-PROOF-ESCAPE.md
   ticket_id: TCK-20261116-CHANGED-CODE-CHECK-REPORT-ONLY-WITH-PROOF-ESCAPE
@@ -8456,6 +8413,19 @@
   - testing
   - determinism
 - type: ticket
+  path: agent-working/tickets/done/TCK-20261115-A-RESTORED-SCENARIO-SHARES-ONE-RUN-DIRECTORY-PER-SPEC.md
+  ticket_id: TCK-20261115-A-RESTORED-SCENARIO-SHARES-ONE-RUN-DIRECTORY-PER-SPEC
+  title: Every restore of one scenario spec builds its kernel under the same run id,
+    so concurrent restores delete each other's run directory
+  tier: hotfix
+  ticket_type: bug
+  date: '2026-11-15'
+  related_code_areas:
+  - src/engine/scenario_checkpoint.py; src/engine/run_identity.py; tests/integration/scenarios/test_scenario_runtime_service.py
+  artifact_files: []
+  tags:
+  - determinism
+- type: ticket
   path: agent-working/tickets/done/TCK-20261115-LEAD-BOARD-FIFTH-PASS.md
   ticket_id: TCK-20261115-LEAD-BOARD-FIFTH-PASS
   title: The lead board records the owner's 2026-11-15 epic decisions in one place,
@@ -8526,6 +8496,23 @@
   tags:
   - platform
   - security
+- type: ticket
+  path: agent-working/tickets/done/TCK-20261115-PAST-THE-STARVING-LINE-THE-TACTICAL-STEP-TURNS-AWAY-FROM-A-MEAL-WITHOUT-WEIGHING-HUNGER.md
+  ticket_id: TCK-20261115-PAST-THE-STARVING-LINE-THE-TACTICAL-STEP-TURNS-AWAY-FROM-A-MEAL-WITHOUT-WEIGHING-HUNGER
+  title: Past the starving line, with a meal 1-2 ticks away, the tactical fight-or-flee
+    step (a panic retreat or a chase) takes the subject away from the meal without
+    weighing starvation (SURV-07)
+  tier: standard
+  ticket_type: bug
+  date: '2026-11-15'
+  related_code_areas:
+  - src/engine/tactical.py (PANIC_RETREAT sites ~:279/:535; pursuit ~:773; the branch
+    order ~:508)
+  artifact_files:
+  - agent-working/stored_artifacts/TCK-20261115-PAST-THE-STARVING-LINE-THE-TACTICAL-STEP-TURNS-AWAY-FROM-A-MEAL-WITHOUT-WEIGHING-HUNGER/investigation.md
+  - agent-working/stored_artifacts/TCK-20261115-PAST-THE-STARVING-LINE-THE-TACTICAL-STEP-TURNS-AWAY-FROM-A-MEAL-WITHOUT-WEIGHING-HUNGER/plan.md
+  - agent-working/stored_artifacts/TCK-20261115-PAST-THE-STARVING-LINE-THE-TACTICAL-STEP-TURNS-AWAY-FROM-A-MEAL-WITHOUT-WEIGHING-HUNGER/test_plan.md
+  tags: []
 - type: ticket
   path: agent-working/tickets/done/TCK-20261115-PROJECT-SYNC-ALL-LANES.md
   ticket_id: TCK-20261115-PROJECT-SYNC-ALL-LANES
@@ -8667,19 +8654,6 @@
   - architecture
   - observability
   - lab-agent
-- type: ticket
-  path: agent-working/tickets/todos/TCK-20261115-A-RESTORED-SCENARIO-SHARES-ONE-RUN-DIRECTORY-PER-SPEC.md
-  ticket_id: TCK-20261115-A-RESTORED-SCENARIO-SHARES-ONE-RUN-DIRECTORY-PER-SPEC
-  title: Every restore of one scenario spec builds its kernel under the same run id,
-    so concurrent restores delete each other's run directory
-  tier: hotfix
-  ticket_type: bug
-  date: '2026-11-15'
-  related_code_areas:
-  - src/engine/scenario_checkpoint.py; src/engine/run_identity.py; tests/integration/scenarios/test_scenario_runtime_service.py
-  artifact_files: []
-  tags:
-  - determinism
 - type: ticket
   path: agent-working/tickets/todos/TCK-20261115-AN-EXPLICIT-RUN-ID-DELETES-AN-EXISTING-RUN-DIRECTORY.md
   ticket_id: TCK-20261115-AN-EXPLICIT-RUN-ID-DELETES-AN-EXISTING-RUN-DIRECTORY
@@ -9388,6 +9362,22 @@
   - planning
   - delivery
 - type: ticket
+  path: agent-working/tickets/done/TCK-20261111-A-HOLD-MODE-MOVE-STILL-TAKES-A-STEP.md
+  ticket_id: TCK-20261111-A-HOLD-MODE-MOVE-STILL-TAKES-A-STEP
+  title: A subject whose movement mode is HOLD still takes a step toward its stored
+    target
+  tier: standard
+  ticket_type: bug
+  date: '2026-11-11'
+  related_code_areas:
+  - src/systems/movement.py (resolve_move)
+  - src/engine/pipeline_phases/movement.py (route_movement_intent)
+  artifact_files:
+  - agent-working/stored_artifacts/TCK-20261111-A-HOLD-MODE-MOVE-STILL-TAKES-A-STEP/investigation.md
+  - agent-working/stored_artifacts/TCK-20261111-A-HOLD-MODE-MOVE-STILL-TAKES-A-STEP/plan.md
+  - agent-working/stored_artifacts/TCK-20261111-A-HOLD-MODE-MOVE-STILL-TAKES-A-STEP/test_plan.md
+  tags: []
+- type: ticket
   path: agent-working/tickets/done/TCK-20261111-CLAUDE-MD-REGISTRY-DRIVER-WORDING.md
   ticket_id: TCK-20261111-CLAUDE-MD-REGISTRY-DRIVER-WORDING
   title: CLAUDE.md says the registry merge driver regenerates after rebase and cherry-pick;
@@ -9706,19 +9696,6 @@
   tags:
   - documentation
   - reference
-- type: ticket
-  path: agent-working/tickets/todos/TCK-20261111-A-HOLD-MODE-MOVE-STILL-TAKES-A-STEP.md
-  ticket_id: TCK-20261111-A-HOLD-MODE-MOVE-STILL-TAKES-A-STEP
-  title: A subject whose movement mode is HOLD still takes a step toward its stored
-    target
-  tier: hotfix
-  ticket_type: bug
-  date: '2026-11-11'
-  related_code_areas:
-  - src/systems/movement.py (resolve_move)
-  - src/engine/pipeline_phases/movement.py (route_movement_intent)
-  artifact_files: []
-  tags: []
 - type: ticket
   path: agent-working/tickets/done/TCK-20261110-A-NON-FLIGHT-MOVE-OFF-ENGAGEMENT-WALKS-INTO-A-KNOWN-LETHAL-FREE-SWING.md
   ticket_id: TCK-20261110-A-NON-FLIGHT-MOVE-OFF-ENGAGEMENT-WALKS-INTO-A-KNOWN-LETHAL-FREE-SWING
@@ -10983,6 +10960,24 @@
   tags:
   - delivery
 - type: ticket
+  path: agent-working/tickets/done/TCK-20261101-A-CHECKPOINT-HAS-NO-FORMAT-VERSION.md
+  ticket_id: TCK-20261101-A-CHECKPOINT-HAS-NO-FORMAT-VERSION
+  title: A scenario checkpoint has no format version, so a checkpoint older than a
+    slotted state record's newest field loads without error and fails later on first
+    read.
+  tier: standard
+  ticket_type: bug
+  date: '2026-11-01'
+  related_code_areas:
+  - src/engine/scenario_checkpoint.py
+  - src/api/routes/scenarios.py
+  - src/core/state.py
+  artifact_files:
+  - agent-working/stored_artifacts/TCK-20261101-A-CHECKPOINT-HAS-NO-FORMAT-VERSION/investigation.md
+  - agent-working/stored_artifacts/TCK-20261101-A-CHECKPOINT-HAS-NO-FORMAT-VERSION/plan.md
+  - agent-working/stored_artifacts/TCK-20261101-A-CHECKPOINT-HAS-NO-FORMAT-VERSION/test_plan.md
+  tags: []
+- type: ticket
   path: agent-working/tickets/done/TCK-20261101-A-HOSTILE-ATTACKING-YOU-OUTRANKS-THE-GROUP-SHARED-TARGET.md
   ticket_id: TCK-20261101-A-HOSTILE-ATTACKING-YOU-OUTRANKS-THE-GROUP-SHARED-TARGET
   title: 'A group member keeps attacking the group''s shared target while an adjacent
@@ -11071,21 +11066,6 @@
   artifact_files: []
   tags:
   - testing
-- type: ticket
-  path: agent-working/tickets/todos/TCK-20261101-A-CHECKPOINT-HAS-NO-FORMAT-VERSION.md
-  ticket_id: TCK-20261101-A-CHECKPOINT-HAS-NO-FORMAT-VERSION
-  title: A scenario checkpoint has no format version, so a checkpoint older than a
-    slotted state record's newest field loads without error and fails later on first
-    read.
-  tier: standard
-  ticket_type: bug
-  date: '2026-11-01'
-  related_code_areas:
-  - src/engine/scenario_checkpoint.py
-  - src/api/routes/scenarios.py
-  - src/core/state.py
-  artifact_files: []
-  tags: []
 - type: ticket
   path: agent-working/tickets/todos/TCK-20261101-A-CONGESTION-BLOCKER-RESOLUTION-SENDS-A-SUBJECT-TO-THE-TOWN-CENTRE.md
   ticket_id: TCK-20261101-A-CONGESTION-BLOCKER-RESOLUTION-SENDS-A-SUBJECT-TO-THE-TOWN-CENTRE
@@ -11838,6 +11818,24 @@
   tags:
   - ai
   - process-improvement
+- type: ticket
+  path: agent-working/tickets/done/TCK-20261030-WORLD-GENERATOR-RESOURCE-TYPE-PICK-FOLLOWS-PYTHONHASHSEED.md
+  ticket_id: TCK-20261030-WORLD-GENERATOR-RESOURCE-TYPE-PICK-FOLLOWS-PYTHONHASHSEED
+  title: The intent-driven world generator picks each node's resource type with the
+    RNG from a list built by list(set(...)), so the generated world depends on PYTHONHASHSEED.
+    Sort the list.
+  tier: standard
+  ticket_type: bug
+  date: '2026-10-30'
+  related_code_areas:
+  - src/worldgeneration/generator.py
+  artifact_files:
+  - agent-working/stored_artifacts/TCK-20261030-WORLD-GENERATOR-RESOURCE-TYPE-PICK-FOLLOWS-PYTHONHASHSEED/investigation.md
+  - agent-working/stored_artifacts/TCK-20261030-WORLD-GENERATOR-RESOURCE-TYPE-PICK-FOLLOWS-PYTHONHASHSEED/plan.md
+  - agent-working/stored_artifacts/TCK-20261030-WORLD-GENERATOR-RESOURCE-TYPE-PICK-FOLLOWS-PYTHONHASHSEED/rpg_planner_ruling_2026-10-30.md
+  - agent-working/stored_artifacts/TCK-20261030-WORLD-GENERATOR-RESOURCE-TYPE-PICK-FOLLOWS-PYTHONHASHSEED/test_plan.md
+  tags:
+  - determinism
 - type: ticket
   path: agent-working/tickets/todos/TCK-20261030-SIMQ-ANCHOR-REDS-SINCE-V1-REANCHOR-NEED-A-BISECT.md
   ticket_id: TCK-20261030-SIMQ-ANCHOR-REDS-SINCE-V1-REANCHOR-NEED-A-BISECT
