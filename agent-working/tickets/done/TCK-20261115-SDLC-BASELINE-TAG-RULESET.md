@@ -1,10 +1,10 @@
 ---
-status: active
+status: historical
 layer: ai
 authority: P1
 audience: agent
 ticket_id: TCK-20261115-SDLC-BASELINE-TAG-RULESET
-phase: open
+phase: done
 date: 2026-11-15
 tags: [ai, governance, security]
 ---
@@ -15,7 +15,7 @@ tags: [ai, governance, security]
 A tag ruleset protects the four frozen SDLC baseline tags, applied by the owner.
 
 ## Status
-OPEN
+DONE
 
 ## Tier
 hotfix
@@ -86,13 +86,29 @@ The owner wanted this applied now. Under RPG-first (#715 6911759453), lead-plann
 
 **Item 2, prepared, not run** (lead-planner): a new ruleset `protect_baseline_tags`, target tag, enforcement active, include `refs/tags/baseline/sdlc-*`, rules deletion, update and non_fast_forward, with the same bypass (RepositoryRole 5, always). The branch ruleset is untouched. The JSON is held in lead-planner's scratchpad; the owner applies it with `gh api` POST (item 3).
 
-**Still open:** item 3 (the owner applies it, logged on #715) and item 4 (the after-read plus the AC3 tag check, which lead-planner will send). AC4 stays "not verified".
+**Item 3, applied:** the owner applied it on 2026-11-16, logged by lead-planner at #715 6917273988. The new ruleset is 27374064 `protect_baseline_tags`.
+
+**Item 4, after-state** (lead-planner; agent-working-planner re-read it the same day and it matches):
+- Two rulesets now exist:
+  - 27374064 `protect_baseline_tags`: target tag, active, include `refs/tags/baseline/sdlc-*`, rules deletion, update and non_fast_forward, bypass RepositoryRole 5 always;
+  - 14220945 `protect_branches`: unchanged in its conditions, its rules (deletion, non_fast_forward, update, required_status_checks) and its bypass.
+- AC3: all four tags are unchanged on both SHAs. The tag objects are 643b26a4…, 7924b36e…, 060f25e4… and 91ef2ac8…, as listed in AC3, and each peels to 6fdfdf5556548105e28ab370832f36bc96241561.
+- AC4: not verified. No non-admin identity exists to test with, since the machine account is deferred.
 
 ## Test Summary
-(to be filled by the implementer)
+No code changed. Verification was by read:
+- `gh api .../rulesets` and `.../rulesets/<id>`, before and after;
+- `git ls-remote --tags origin 'baseline/*'`, before and after.
+
+AC1, AC2 and AC3 hold. AC4 is stated as not verified.
 
 ## Files Changed
-(to be filled by the implementer)
+- This ticket only.
+- The change itself is a GitHub repository setting (ruleset 27374064), which the owner applied.
 
 ## Completion Summary
-(to be filled by the implementer)
+The four frozen SDLC baseline tags are now protected against deletion, update and non-fast-forward by tag ruleset 27374064. The admin role keeps its bypass, and the branch ruleset is unchanged.
+
+lead-planner did the before-read, prepared the ruleset and did the after-read. The owner applied it (#715 6917273988). agent-working-planner recorded the work and re-verified both reads.
+
+Gap stated: AC4, whether a non-bypass identity is refused, is not verified until a non-admin identity exists (deferred with the machine account).
