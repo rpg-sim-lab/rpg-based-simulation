@@ -33,7 +33,7 @@ Owner decision 2026-11-15 (#715 6889309909, 6889318166): this is the epic's next
 
 ## Scope
 1. ~~Fix the search staleness root; the stale flag is correct in worktrees.~~ Split out on 2026-11-15 as TCK-20261115-SEARCH-STALE-FLAG-CHECKS-THE-INDEXED-CHECKOUT, the owner's vehicle for the native implement-ticket run (#715 6889489078).
-2. Add an authority field and history down-weighting.
+2. Add an authority field and history down-weighting. Owner decision (#715 6911224913, Q2): historical plans and status-less `docs/brainstorm` documents rank lower in default search but stay searchable, and brainstorm documents get a status first (TCK-20261116-DOC-CLASSIFICATION-LIST supplies the list; the status edit is rpg-planner's).
 3. Mark branch content as not indexed.
 4. Rebuild the graph on a schedule and print its build SHA.
 5. A handover header and a write-time cap.
@@ -51,6 +51,7 @@ Owner decision 2026-11-15 (#715 6889309909, 6889318166): this is the epic's next
 2. E3 baseline and after-numbers are recorded over 20 authority queries; the owner sets the share.
 3. No handover over the cap without a write-time warning.
 4. `tests/tools/` passes in a lead slot.
+5. Historical plans and status-less brainstorm documents rank below current documents in default `search_docs`, and a query that asks for one of them by name still returns it. A test with a fixture shows both.
 
 ## Related Tickets
 - TCK-20261031-EPIC-AI-FIRST-SDLC-EVOLUTION
@@ -71,7 +72,7 @@ Owner decision 2026-11-15 (#715 6889309909, 6889318166): this is the epic's next
 - No credential or ruleset change is authorised by the epic; each gets its own owner ask, by ticket.
 - Undecided, and not to be written as decided: OD-4 to OD-9, OD-11 to OD-13, OD-16 to OD-21.
 - Recheck against main 0f1c35206 (agent-working-planner, 2026-11-15), before dispatch. Scope items as filed:
-  1. **Still open, live.** TCK-20261112-SEARCH-SERVER-PER-WORKTREE-INDEX-AND-BUILD-MEMORY-GUARD (#888) made worktree sessions read the main checkout's index. But `tools/knowledge_search.py::index_staleness` still compares the manifest's mtimes against this checkout's root, so a worktree reports a stale index that isn't. Evidence: `search_docs` in the agent-working-planner worktree on 2026-11-15 returned `stale: {changed: 5683, new: 30, removed: 0}`. The fix compares against the corpus root the index was built from.
+  1. **Done (2026-11-16 update).** Split to TCK-20261115-SEARCH-STALE-FLAG-CHECKS-THE-INDEXED-CHECKOUT and merged in #929 (dc2f4c07e): `index_staleness` now derives the corpus root from the index's own path. A `search_docs` server started before the merge still runs the old code and still reports the false `changed: 5683` until it restarts.
   2. **Partly there.** `tools/hybrid_retrieval.py` already resolves authority and freshness from the registry, as an opt-in pre-fusion filter. `search_docs` doesn't use it, and there is no history down-weighting.
   3. **Partly overtaken by #888.** Worktree sessions read main's index, so branch content is not indexed by construction, but nothing tells the reader so.
   4. **Open.** The worktree link to the shared graph exists (`tools/graphify_link.py`, #506) and so does pruning. There is no scheduled rebuild, and no build SHA is printed.
