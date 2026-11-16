@@ -93,7 +93,13 @@ Planner note (rpg-planner-ubuntu, applying the ruling's no-weakening rule): thre
 "NO objection to extending ruling (a). Re-pointing :215, :224 and test_scenario_checkpointer.py:55-73 to old-shape fingerprint headers, with each assertion kept, is the same rule. The order spec_id check -> fingerprint check -> pickle.loads is right; spec_id is in the JSON header, so moving it ahead tightens before-unpickle. One non-blocking ask: add a test pinning the order, so a headerless checkpoint whose spec_id also mismatches gets the spec_id error."
 Taken into scope: that order test is part of item 6.
 
-### File claim and overlap (2026-11-16, open)
+### File claim, final (2026-11-16, rpg-planner u24 via lead-planner-u24 and lead-planner, checked against origin/main)
+This ticket LANDS FIRST; both u24 overlaps rebase onto it. The claimed files may be edited.
+1. LIVE, not dispatched: rpg-d80b/rpg-d80c add `observers=()` to `ScenarioCheckpointer.restore(path, spec, ...)`, passed to `Kernel(...)` and `ScenarioRuntimeService(spec, observers=...)`, and the route calls `restore(..., observers=default_observer_factories())`. Keep `restore()`'s signature easy to extend (keyword parameters after `spec`; no positional reshuffle).
+2. LIVE, unpushed: rpg-planner-seat-8 (0584db7ee) edits the same INFRA-215 row. Ask: do not rewrite the sentence "reconstructs RNG via DeterministicRNG.set_state()". Add the fingerprint and refusal text as new sentences. If that sentence must change, say so in the PR body so rpg-planner folds its base-seed clause into the new wording.
+3. STALE: rpg-sleeper-lodges (squash-merged as #823).
+
+### File claim and overlap (2026-11-16, superseded by the final answer above)
 Dispatched to investigate and plan only. No edit to the claimed files until u24's final claim answer arrives via lead-planner. Preliminary answer from lead-planner-u24: u24's D80C branch (rpg-d80c, TCK-20261019-D80C-SIMQ-READS-THE-LOSSLESS-EVENT-FILE-OFFLINE) is likely live and edits `src/engine/scenario_checkpoint.py` and `src/api/routes/scenarios.py`. Measured by rpg-planner-ubuntu at origin/rpg-d80c 74fcae318 (2026-10-20, 235 commits behind main): 8 added and 3 removed lines over the two files. It adds an `observers` parameter to `restore()`, passes it to `Kernel` and `ScenarioRuntimeService`, and adds one import. rpg-d80b carries the same two-file change. Still being checked by u24: rpg-sleeper-lodges (scenario_checkpoint.py, checkpoint_fields.py; possibly merged) and rpg-planner-seat-8's infrastructure.yaml row. If D80C is live, the plan says which lands first and how small the overlap is in each file.
 
 ### Re-scope against main 789f0f729 (rpg-planner-ubuntu, 2026-11-16)
