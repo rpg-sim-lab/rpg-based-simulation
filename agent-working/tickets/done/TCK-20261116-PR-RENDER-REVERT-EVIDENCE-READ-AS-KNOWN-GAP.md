@@ -1,10 +1,10 @@
 ---
-status: active
+status: historical
 layer: ai
 authority: P1
 audience: agent
 ticket_id: TCK-20261116-PR-RENDER-REVERT-EVIDENCE-READ-AS-KNOWN-GAP
-phase: open
+phase: done
 date: 2026-11-16
 tags: [delivery, ai]
 ---
@@ -15,7 +15,7 @@ tags: [delivery, ai]
 `pr_render.py` lists a "Revert evidence" line under Known gaps because the line contains `FAIL`
 
 ## Status
-OPEN
+DONE
 
 ## Tier
 hotfix
@@ -85,9 +85,16 @@ agent-working-planner-u24 checked it against origin/main on 2026-11-16.
   `Revert evidence` and contains `Known gap:`, the skip wins. A closing agent puts a real gap on its own line.
 
 ## Implementation Notes
+- `tools/delivery/pr_render.py`: `REVERT_EVIDENCE_MARKER = "Revert evidence"`; `extract_known_gaps` skips (before the `FAIL` and `Known gap:` checks) a line whose stripped text, after the list marker, starts with it (case-sensitive). The failing-test rule is unchanged. One sentence added to the module docstring and the function docstring.
+- `docs/guides/delivery_process.md`: the same sentence in the paragraph that starts "`pr_render.py` fills that line"; no other paragraph changed.
 
 ## Test Summary
+`tests/tools/test_delivery_pr_render.py`: 96 passed (4 new). The new tests cover AC1 (a revert-evidence line, with a `-` or `*` marker, is no gap), AC2 (a failing-test line that is not revert evidence, `2` failing `(pre-existing)`, still lands in Known gaps once; so does a `Known gap:` line; lower-case `revert evidence` is still read, the match is exact) and AC3 (a ticket whose only failing-test line is revert evidence renders `KNOWN_GAPS_NONE_STATED`).
+
+- Revert evidence: with the pr_render.py change stashed, 4 of the new tests FAIL
 
 ## Files Changed
+`tools/delivery/pr_render.py`, `tests/tools/test_delivery_pr_render.py`, `docs/guides/delivery_process.md`, `docs/REGISTRY.yaml`, ticket, monitoring shards. The planner's ride-along (epic close, the filing) comes in by merge.
 
 ## Completion Summary
+A ticket line that starts `Revert evidence` no longer shows under "Known gaps" in the rendered PR body; every other failing-test line and every `Known gap:` line still does. The skip is stated in both docstrings and in `delivery_process.md`. Not done, by scope: other spellings ("Revert check", lower case) and re-rendering open or merged PR bodies.
