@@ -31,12 +31,14 @@ P3
 Child 4 of `TCK-20261109-EPIC-DISTRIBUTED-WORKERS-EXPERIMENT`. The cut line is in
 `docs/plans/architecture/distributed_workers_experiment_design.md` §9, and the shape in §7.
 - The owner approved **filing it as a ticket only, nothing built** (#715 6889952914, item D; owner's words 6889947724).
-- **Its implementation waits for the owner's whole-plan review of the distributed plan (#715 6731938042)**, which still gates every
-  implementation child of that epic.
+- **HELD/shelved: no-go as designed, see design §14; owner #715 6917359910 ("R5 now, R3 later").** Child 3 is re-cut after
+  Milestone 1 and the next-gen contract spec as a worker-resident replica with typed per-tick deltas (design §14). This ticket's
+  scope below is written against the old child 3 and is re-scoped when that re-cut lands. This replaces the earlier gate (the
+  owner's whole-plan review, #715 6731938042).
 - The ADR is `docs/architecture/distributed_workers_adr.md`, accepted #715 6777076537.
 
 ## Scope
-Recorded now, for when the gates open:
+Recorded now, against the old child 3 design (re-scoped when the R3 re-cut lands):
 1. **Image entry point.**
    - An `engine-worker` service from the same backend image (`docker/backend.Dockerfile`), holding N worker processes behind one
      gRPC listener (design §7, §4).
@@ -56,8 +58,7 @@ Recorded now, for when the gates open:
 4. A runbook in `docs/runbooks/` for starting the profile and reading the smoke result.
 
 ## Out of Scope
-- Anything built before both gates: child 3 (`TCK-20261115-DISTRIBUTED-WORKERS-REMOTE-WORKER-MANAGER`, rpg-planner) merged, and the owner's whole-plan review
-  (6731938042).
+- Anything built while shelved (owner 6917359910; design §14).
 - The remote executor, transport, codec and handshake code (child 3, rpg-planner, `src/engine`).
 - Kubernetes or Helm; scaling beyond one host; the API/engine split; API reach (design §5).
 - mTLS, unless child 3's security review moves it into the first build (design §4).
@@ -102,8 +103,8 @@ Recorded now, for when the gates open:
 - Compose edits are made from `.claude/worktrees/platform` only.
 
 ## Implementation Notes
-Filed only (owner, 6889952914 item D). No staging artifacts until both gates open; then the standard-tier artifacts are written
-before dispatch.
+Filed only (owner, 6889952914 item D). Shelved (owner 6917359910). No staging artifacts until the R3 re-cut of child 3 exists;
+then this ticket is re-scoped and the standard-tier artifacts are written before dispatch.
 
 ## Test Summary
 Not started.
@@ -112,4 +113,4 @@ Not started.
 - none yet
 
 ## Completion Summary
-Open. BLOCKED on child 3 (TCK-20261115-DISTRIBUTED-WORKERS-REMOTE-WORKER-MANAGER) and the owner's whole-plan review (#715 6731938042).
+Open. HELD/shelved, no-go as designed, see design §14; owner #715 6917359910.
