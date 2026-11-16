@@ -24,6 +24,7 @@ own recorded text is the historically accurate answer a PR reviewer wants. "Know
 scan of those two sections for a line containing the substring `FAIL` or a line beginning `Known gap:`
 (after an optional list marker; case-sensitive), surfacing the containing line. The `Known gap:` marker
 is the one explicit way to state a gap that is not a `FAIL`; prose that merely mentions a gap is not read.
+A line beginning `Revert evidence` is proof a test catches the bug, not a gap, and is skipped.
 
 **Ticket discovery**: commit-subject `TCK-` IDs (`git log <base>..HEAD --format=%s`) are the
 *primary* signal (Scope item 2); ticket IDs implied by changed paths under `agent-working/tickets/` are a
@@ -398,6 +399,7 @@ def choose_scope(tickets: list, layer_registry_path: Path = _DEFAULT_LAYER_REGIS
 
 
 KNOWN_GAP_MARKER = "Known gap:"
+REVERT_EVIDENCE_MARKER = "Revert evidence"
 KNOWN_GAPS_NONE_STATED = (
     "- Known gaps: none stated (no FAIL or Known gap: line in any ticket's Test/Completion Summary)"
 )
@@ -405,11 +407,13 @@ KNOWN_GAPS_NONE_STATED = (
 
 def extract_known_gaps(ticket: dict) -> list:
     """A line is a gap when it contains `FAIL`, or begins `Known gap:` after an optional list marker.
-    A line matching both appears once."""
+    A line matching both appears once. A line beginning `Revert evidence` is proof a test catches the bug, not a gap, and is skipped."""
     gaps = []
     for section in ("test_summary", "completion_summary"):
         for line in ticket.get(section, "").splitlines():
             stripped = line.strip().lstrip("-*").strip()
+            if stripped.startswith(REVERT_EVIDENCE_MARKER):
+                continue
             if "FAIL" in line or stripped.startswith(KNOWN_GAP_MARKER):
                 gaps.append(stripped)
     return gaps
