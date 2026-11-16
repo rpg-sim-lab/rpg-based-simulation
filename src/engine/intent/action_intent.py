@@ -6,6 +6,7 @@ from src.core.state import EntityState, ItemStack
 from src.core.updates import EntityUpdate, NavigationUpdate, InventoryUpdate, BiologicalUpdate, ResourceTransferIntent, IdentityUpdate
 from src.world.providers.requirements import Requirement, RequirementEvaluator
 from src.engine.domain.action_router import ActionRouter
+from src.core.hold_mode import hold_reset_kwargs
 from src.core.registries import RecipeRegistry, ItemRegistry, ResourceRegistry
 from src.town.shop import ShopService
 
@@ -136,7 +137,7 @@ class ActionIntentAdapter:
             cls._traces.append(trace)
             return {entity.id: EntityUpdate(
                 entity_id=entity.id,
-                navigation=NavigationUpdate(target_set=intent.payload.get("position"))
+                navigation=NavigationUpdate(target_set=intent.payload.get("position"), **hold_reset_kwargs(entity))
             )}
 
         elif intent.kind == "REST_AT_INN":

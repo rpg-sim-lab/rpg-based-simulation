@@ -197,6 +197,19 @@ class Kernel:
         else:
             self._executor = LocalSequentialExecutor()
 
+        if self._artifact_repo is not None:
+            # After executor selection, so the record names the executor the run really has; run setup only: not hashed state, no event.
+            from src.observability.reporting.artifact_repository import RunConditions
+            manager = None if isinstance(self._executor, LocalSequentialExecutor) else getattr(self._executor, "_worker_manager", self._worker_manager)
+            self._artifact_repo.update_manifest(self._run_id, run_conditions=RunConditions(
+                governor=f"{type(self._governor).__module__}.{type(self._governor).__qualname__}",
+                executor=f"{type(self._executor).__module__}.{type(self._executor).__qualname__}",
+                max_tick_budget_ms=float(profile.max_tick_budget_ms),
+                audit_mode=bool(self._audit_mode),
+                no_frame_pacing=bool(flags.get("no_frame_pacing", False)) if flags else False,
+                worker_manager=None if manager is None else f"{type(manager).__module__}.{type(manager).__qualname__}",
+            ))
+
         self._current_world_time = state.world_time
         
         from src.engine.policy import GovernorPolicy

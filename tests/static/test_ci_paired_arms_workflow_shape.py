@@ -14,7 +14,7 @@ from tests.static import test_workflow_actions_pinned_by_sha as pins
 from tests.static import test_workflow_run_blocks_take_github_context_via_env as ctx
 
 _PATH = Path(__file__).resolve().parents[2] / ".github" / "workflows" / "paired-arms.yml"
-INPUTS = {"base_sha", "new_sha", "step", "worlds", "seeds", "ticks", "self_check"}
+INPUTS = {"base_sha", "new_sha", "step", "worlds", "seeds", "ticks", "self_check", "div"}
 
 
 def _wf() -> dict:
@@ -104,3 +104,104 @@ def test_no_step_pipes_a_refusable_command_into_tee():
     for name, job in _wf()["jobs"].items():
         for step in job["steps"]:
             assert "| tee" not in str(step.get("run", "")), f"{name}/{step.get('name')}: the default shell has no pipefail, a pipe hides the exit status"
+
+
+def test_unit_infra_fetches_exactly_the_pre_record_arm_trees_arm_childs_test_declares():
+    """unit-infra checks out at depth 1, so the two old arm trees must be fetched by sha before the tests that archive them run; the step and the test's list are held equal
+    so they cannot drift (TCK-20261115-A-NON-SEQUENTIAL-RUN-IS-REFUSED-BY-THE-GATE-CANDIDATE-PAIRED-ARMS-AND-RPG-MEASURE)."""
+    from tests.unit.tools import test_arm_child_pinned_check as arm_test
+
+    workflow = yaml.safe_load((Path(__file__).resolve().parents[2] / ".github" / "workflows" / "test.yml").read_text(encoding="utf-8"))
+    steps = workflow["jobs"]["unit-infra"]["steps"]
+    fetches = [(i, st) for i, st in enumerate(steps) if str(st.get("name", "")).startswith("Fetch the pre-record arm trees")]
+    assert len(fetches) == 1, "exactly one such step (the base-branch collect-only step has its own, unrelated git fetch)"
+    index, step = fetches[0]
+    assert str(steps[0].get("uses", "")).startswith("actions/checkout@") and index == 1, "right after checkout, before setup-uv"
+    assert str(steps[2].get("uses", "")).startswith("astral-sh/setup-uv@")
+    words = step["run"].split()
+    assert words[:5] == ["git", "fetch", "--no-tags", "--depth=1", "origin"]
+    assert sorted(words[5:]) == sorted(arm_test.PRE_RECORD) and all(len(w) == 40 for w in words[5:])
+
+
+# TCK-20261115-PAIRED-ARMS-RUNS-ONLY-COMMITS-ON-A-REPO-BRANCH: no token on disk while the arms run dispatched code, and only repo-branch commits run.
+def _checkout_steps() -> list[tuple[str, dict]]:
+    return [
+        (job_name, step)
+        for job_name, job in _wf()["jobs"].items()
+        for step in job["steps"]
+        if str(step.get("uses", "")).startswith("actions/checkout@")
+    ]
+
+
+def test_every_checkout_keeps_no_token_on_disk():
+    checkouts = _checkout_steps()
+    assert {job for job, _ in checkouts} == {"plan", "arms", "aggregate"}
+    for job, step in checkouts:
+        assert step.get("with", {}).get("persist-credentials") is False, f"{job}: a checkout persists GITHUB_TOKEN in .git/config"
+
+
+def _plan_steps() -> list[dict]:
+    return _wf()["jobs"]["plan"]["steps"]
+
+
+def _step_index(prefix: str) -> int:
+    return next(i for i, step in enumerate(_plan_steps()) if str(step.get("name", "")).startswith(prefix))
+
+
+def test_the_plan_refuses_a_commit_no_repo_branch_contains_before_it_writes_the_matrix():
+    refuse, plan = _step_index("Refuse a commit"), _step_index("Plan")
+    assert refuse < plan, "the containment check must run before the step that writes the matrix output"
+    step = _plan_steps()[refuse]
+    assert step["env"] == {"BASE_SHA": "${{ inputs.base_sha }}", "NEW_SHA": "${{ inputs.new_sha }}"}
+    run = step["run"]
+    assert "${{" not in run, "inputs reach the script only through env"
+    assert "--filter=blob:none" in run and "--no-tags" in run
+    assert "'+refs/heads/*:refs/remotes/origin/*'" in run, "every branch, mapped to remote-tracking refs, is the whole fetch"
+    assert "refs/pull" not in run, "pull refs stay outside the fetch: a fork pull request's commit must not count as contained"
+    assert "--unshallow" in run, "the checkout is depth 1, which cannot prove containment"
+    assert "cat-file -e" in run and "^{commit}" in run
+    assert "branch -r --contains" in run, "a commit that exists locally but sits on no branch must still be refused"
+    assert run.count("exit 1") >= 3
+
+
+def test_the_header_comment_states_the_hardening_and_what_it_does_not_guard():
+    header = _PATH.read_text(encoding="utf-8").split("\non:", 1)[0]
+    assert "persist-credentials: false" in header and "refuses a base/new sha that" in header
+    assert "push access" in header and "other workflows' checkouts still persist" in header
+    assert "anonymous, so it needs the repo to stay public" in header and "fail closed" in header
+
+
+def test_the_arms_job_still_fetches_the_two_shas_anonymously_by_sha():
+    fetch = next(step for step in _wf()["jobs"]["arms"]["steps"] if step.get("name") == "Fetch the base and new commits")
+    assert fetch["run"] == 'git fetch --no-tags --depth=1 origin "${BASE_SHA}" "${NEW_SHA}"'
+    assert "env" not in fetch or "TOKEN" not in str(fetch["env"])
+
+
+def test_evidence_defaults_true_and_the_plan_step_passes_it_through():
+    """AC6 (g): the evidence input defaults to true and reaches `paired_arms plan --evidence`, so self_check off is refused unless the dispatcher opts out."""
+    spec = _on()["workflow_dispatch"]["inputs"]["evidence"]
+    assert spec["type"] == "boolean" and spec["default"] is True
+    step = next(s for s in _wf()["jobs"]["plan"]["steps"] if s.get("id") == "plan")
+    assert step["env"]["EVIDENCE"] == "${{ inputs.evidence }}"
+    assert '--evidence' in step["run"] and 'EVIDENCE}" = "true"' in step["run"]
+
+
+def test_div_is_an_optional_label_input_defaulting_to_dash_and_reaches_the_compare_step_through_env():
+    """B1: the CI table header and watch rows carry the step's div (AC1 compares them with the local table); with no input the output is today's `(div -)`."""
+    spec = _on()["workflow_dispatch"]["inputs"]["div"]
+    assert spec["default"] == "-" and not spec.get("required")
+    aggregate = _wf()["jobs"]["aggregate"]
+    assert aggregate["env"]["DIV"] == "${{ inputs.div }}"
+    compare = next(s for s in aggregate["steps"] if s.get("name") == "Compare with paired.py --collected")["run"]
+    assert '--div "${DIV}"' in compare and "${{" not in compare
+
+
+def test_the_table_and_verdict_are_printed_to_the_log_and_the_summary_lists_the_image_versions():
+    """The runner host here cannot download artifacts (403), so the AC1 byte comparison reads the CI table from the log. The step runs even when the compare failed."""
+    steps = _wf()["jobs"]["aggregate"]["steps"]
+    names = [s.get("name") for s in steps]
+    printing = steps[names.index("Print the table and the verdict to the log")]
+    assert names.index("Compare with paired.py --collected") < names.index("Print the table and the verdict to the log")
+    assert printing["if"] == "always()" and "cat \"$f\"" in printing["run"] and "table.md verdict.json" in printing["run"] and '[ -f "$f" ]' in printing["run"]
+    summary = steps[names.index("Step summary")]["run"]
+    assert "image_versions" in summary and "runner image versions in the set" in summary and "${{" not in summary

@@ -444,6 +444,10 @@ class CombatComponent:
     last_attacker_id: Optional[int] = None
     last_hit_tick: Optional[int] = None  # the tick of that same hit (CombatPatch, with last_attacker_id): the act test's window; None until first hit
     last_hit_damage: Optional[int] = None  # the damage of that same hit (CombatPatch, with last_attacker_id): what the subject has felt from that body; None until first hit
+    # Every body that took hp from this one by that same hit, in attacker-list order (a simultaneous group hit has several; every other hit has one), and the share each took: parallel to
+    # last_hit_attackers, summing to last_hit_damage. The next damaging hit replaces both; empty until first hit. last_attacker_id stays the primary (first) attacker.
+    last_hit_attackers: Tuple[int, ...] = ()
+    last_hit_damages: Tuple[int, ...] = ()
     _canonical_cache: Any = field(default=None, init=False, repr=False, compare=False)
 
     def to_canonical_dict(self) -> Dict[str, Any]:
@@ -458,6 +462,8 @@ class CombatComponent:
             "last_attacker_id": self.last_attacker_id,
             "last_hit_tick": self.last_hit_tick,
             "last_hit_damage": self.last_hit_damage,
+            "last_hit_attackers": list(self.last_hit_attackers),
+            "last_hit_damages": list(self.last_hit_damages),
             "hp": self.hp,
             "max_hp": self.max_hp,
             "atk": self.atk,
@@ -518,7 +524,7 @@ class NavigationComponent:
     # 0.0 = never stepped (free to step).
     step_ready_tick: float = 0.0
 
-    lodged_in: Optional[int] = None  # F3 (2.155): the building this subject LODGES in (position is its tile, on no tile held); set and cleared only by the apply path; LAST field (positional unpickle)
+    lodged_in: Optional[int] = None  # F3 (2.155): the building this subject LODGES in (position is its tile, on no tile held); set and cleared only by the apply path; LAST field (an insert is refused by the checkpoint schema check; an append needs a FIELD_RULES row)
 
     def to_canonical_dict(self) -> Dict[str, Any]:
         """The navigation block of the entity's canonical form. `step_ready_tick` (D75) is present only once non-zero, so the form of an
@@ -1209,7 +1215,7 @@ class BuildingState:
     # Commercial paid work (content ``hires_for_pay``, ruling 66): a shift is paid from the building's own purse only.
     hires_for_pay: bool = False
     _canonical_cache: Any = field(default=None, init=False, repr=False, compare=False)
-    beds: int = 0  # F3 (2.155), content: beds lodged at once (0 = none); occupancy is derived from entities' lodged_in; LAST field (positional unpickle: a pre-F3 pickle reads it missing, then refused)
+    beds: int = 0  # F3 (2.155), content: beds lodged at once (0 = none); occupancy is derived from entities' lodged_in; LAST field (an insert is refused by the checkpoint schema check; a pre-F3 pickle reads it missing, then refused)
 
     def to_canonical_dict(self) -> Dict[str, Any]:
         if self._canonical_cache is not None:
@@ -1501,8 +1507,8 @@ class AuthoritativeState:
     # Group id counter (TCK-20261031-A-NEW-GROUP-ID-OVERWRITES-A-LIVE-GROUP): only rises; decision
     # code reads it, ApplyPath advances it from StateUpdate.next_group_id_set. Squad records (hash
     # ids, FACTION_SQUAD role) never advance it.
-    # Keep this the LAST field: a slotted dataclass unpickles positionally (zip of fields and the saved tuple), so a field inserted mid-class
-    # would receive the older checkpoint's next field's value instead of being absent.
+    # Keep this the LAST field: an append keeps older checkpoints restorable (FIELD_RULES fills the absent slot); an insert is refused by the
+    # checkpoint schema check (a slotted dataclass unpickles positionally, so it would shift the saved values).
     next_group_id: int = GROUP_ID_BASE  # never None; nothing seeds it at construction. A checkpoint that lacks the slot is filled by checkpoint_fields (FIELD_RULES) at restore, then checked there
 
     def to_readonly(self) -> AuthoritativeState:

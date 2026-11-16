@@ -82,19 +82,56 @@ def test_a_diagonal_pair_strikes_within_two_brain_cadences(monkeypatch):
     assert tick is not None and tick <= BOUND, f"first strike at tick {tick}, bound {BOUND}"
 
 
-def test_control_without_the_completion_tick_guard_the_pursuer_overshoots_and_strikes_late(monkeypatch):
-    """Disabling control: the guard restored to the old rule (only `moved_this_tick` settles an entity) puts the
-    first strike a whole cadence later, past the bound."""
+def _disable_the_completion_tick_guard(monkeypatch):
+    """The guard restored to the old rule (only `moved_this_tick` settles an entity)."""
     monkeypatch.setattr(movement_phase, "_already_settled_this_tick", lambda ent_upd: bool(ent_upd) and ent_upd.moved_this_tick)
-    # CONFLICT-04 at the movement layer would also stop the overshoot step (the pursuer is engaged with an adjacent hostile), so
-    # switch it off to keep this control about the completion-tick guard alone.
+
+
+def _disable_conflict_04(monkeypatch):
+    """CONFLICT-04 at the movement layer would also stop the overshoot step (the pursuer is engaged with an adjacent hostile), so switch it off to
+    keep the control about the completion tick alone."""
     from src.engine.candidate_selector import MovementCandidateSelector
 
     monkeypatch.setattr(MovementCandidateSelector, "engaged_adjacent_hostile", staticmethod(lambda *a, **k: False))
 
+
+def _disable_pending_target_clear(monkeypatch):
+    """P1 of divergence 2.206 removed: `movement_target` ignores a pending `navigation.target_clear` again (the rule before TCK-20261111-A-HOLD-MODE-MOVE-STILL-TAKES-A-STEP)."""
+    from src.engine.candidate_selector import MovementCandidateSelector
+
+    original = MovementCandidateSelector.movement_target
+
+    def without_the_pending_clear(entity, ent_upd, entities, index=None):
+        nav = ent_upd.navigation if ent_upd else None
+        if nav is not None and nav.target_set is None and nav.target_clear:
+            ent_upd = replace(ent_upd, navigation=replace(nav, target_clear=False))
+        return original(entity, ent_upd, entities, index)
+
+    monkeypatch.setattr(MovementCandidateSelector, "movement_target", staticmethod(without_the_pending_clear))
+
+
+def test_control_without_the_completion_tick_guard_and_the_pending_clear_the_pursuer_overshoots_and_strikes_late(monkeypatch):
+    """Disabling control: the guard restored to the old rule AND the pending `target_clear` ignored (P1 of divergence 2.206), the rule before the HOLD
+    fix: the completion tick still steps the pursuer past adjacency and the first strike lands a whole cadence later, past the bound. Two independent
+    protections stop that step now (the guard and P1), so the control must remove both."""
+    _disable_the_completion_tick_guard(monkeypatch)
+    _disable_pending_target_clear(monkeypatch)
+    _disable_conflict_04(monkeypatch)
+
     tick = _first_strike_tick(monkeypatch)
 
-    assert tick is None or tick > BOUND, f"first strike at tick {tick} should miss the bound {BOUND} without the guard"
+    assert tick is None or tick > BOUND, f"first strike at tick {tick} should miss the bound {BOUND} without the guard and the pending clear"
+
+
+def test_the_pending_target_clear_alone_stops_the_overshoot_without_the_completion_tick_guard(monkeypatch):
+    """P1 alone (divergence 2.206): with the completion-tick guard disabled and CONFLICT-04 off, the completion tick's update still carries
+    `target_clear`, `movement_target` returns no target for it, and the pursuer stays adjacent and strikes within the bound."""
+    _disable_the_completion_tick_guard(monkeypatch)
+    _disable_conflict_04(monkeypatch)
+
+    tick = _first_strike_tick(monkeypatch)
+
+    assert tick is not None and tick <= BOUND, f"first strike at tick {tick}, bound {BOUND}"
 
 
 def test_a_bracketing_flank_landing_ends_only_in_orthogonal_reach():

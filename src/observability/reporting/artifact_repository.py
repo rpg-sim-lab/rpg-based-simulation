@@ -5,6 +5,24 @@ import shutil
 from typing import Optional, Dict
 from pydantic import BaseModel, Field
 
+class RunConditions(BaseModel):
+    """The conditions a run was built under, written once by the kernel after it has chosen its executor (TCK-20261103-A-MEASUREMENT-NOT-ON-THE-PINNED-RUNNER-CALLS-ITSELF-EVIDENCE).
+
+    A record, not a label: the governor and executor are the class names the kernel actually holds (``module.QualName``), the budget is the profile's. Whether those
+    amount to the pinned runner is decided by a classifier that reads this record (``tools/test_architecture/pinned_runner.py``), never by the run. Kept out of hashed
+    state and the event stream: it is run setup, read after the run.
+    """
+
+    governor: str
+    executor: str
+    max_tick_budget_ms: float
+    audit_mode: bool
+    no_frame_pacing: bool
+    # The class (``module.QualName``) of the worker manager behind a non-sequential executor; None when the executor is sequential. The executor class alone cannot tell
+    # a threads run from a remote one (TCK-20261115-A-NON-SEQUENTIAL-RUN-IS-REFUSED-BY-THE-GATE-CANDIDATE-PAIRED-ARMS-AND-RPG-MEASURE).
+    worker_manager: Optional[str] = None
+
+
 class RunManifest(BaseModel):
     run_id: str
     scenario_name: str
@@ -41,6 +59,9 @@ class RunManifest(BaseModel):
     # that is not True (``require_host_independent_runs``).
     audit_mode: Optional[bool] = None
     signals_zeroed: Optional[bool] = None
+    # The governor, executor, tick budget, audit mode and frame pacing the run was built with (``RunConditions``). Written after executor selection, so a manifest of
+    # a run that stopped before that, and every older manifest, has None; a classifier treats None as not showing the run was pinned.
+    run_conditions: Optional[RunConditions] = None
 
 class RunArtifactRepository:
     def __init__(self, base_dir: str = "data/runs"):

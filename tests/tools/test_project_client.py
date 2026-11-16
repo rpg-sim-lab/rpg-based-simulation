@@ -11,6 +11,8 @@ from tools.sessions import project_sync as ps
 
 SENTINEL = "ghp_SENTINEL_TOKEN_VALUE_123"
 STATUSES = ps.STATUSES
+LAYERS = ("combat", "world")
+DOMAINS = ("rpg", "agent-working", "unassigned", "unknown")
 
 
 def field(name, typ, options=()):
@@ -22,6 +24,10 @@ def project(extra=(), status_options=("Todo", "In Progress", "Done"), skip=()):
     for n in pc.TEXT_FIELDS:
         fields[n] = field(n, "TEXT")
     fields["Tier"] = field("Tier", "SINGLE_SELECT", [n for n, _ in pc.TIER_OPTIONS])
+    fields["Priority"] = field("Priority", "SINGLE_SELECT", [n for n, _ in pc.PRIORITY_OPTIONS])
+    fields["Layer"] = field("Layer", "SINGLE_SELECT", LAYERS)
+    fields["Domain"] = field("Domain", "SINGLE_SELECT", DOMAINS)
+    fields["Filed"] = field("Filed", "DATE")
     for n in skip:
         fields.pop(n)
     for f in extra:
@@ -48,7 +54,9 @@ class Fake:
 
     def create_text_field(self, pid, name): self._rec("create_text", name)
     def create_select_field(self, pid, name, options): self._rec("create_select", name)
-    def set_select_options(self, fid, options): self._rec("status_options", [n for n, _ in options])
+    def create_date_field(self, pid, name): self._rec("create_date", name)
+    def set_date(self, pid, iid, fid, value): self._rec("set_date", iid, value)
+    def set_select_options(self, fid, options): self._rec("options", fid, [(n, i) for n, _, i in options])
     def add_draft(self, pid, title, body):
         self._rec("add_draft", title)
         return "ITEM-NEW", "DRAFT-NEW"
@@ -60,44 +68,89 @@ class Fake:
 
 
 # ---- init
+def status_project(options):
+    return project(status_options=options)
+
+
 def test_init_creates_missing_fields_and_leaves_present_ones_alone():
-    fake = Fake(project(skip=("Host", "Tier")))
-    lines, code = pc.init_fields(fake, STATUSES)
-    assert code == 0 and ("create_text", "Host") in fake.calls and ("create_select", "Tier") in fake.calls
+    fake = Fake(project(status_options=STATUSES, skip=("Host", "Tier", "Epic")))
+    lines, code = pc.init_fields(fake, STATUSES, layers=LAYERS)
+    assert code == 0 and ("create_text", "Host") in fake.calls and ("create_text", "Epic") in fake.calls and ("create_select", "Tier") in fake.calls
     assert "left alone: Seat" in lines and "created: Host" in lines
-    assert [c for c in fake.calls if c[0].startswith("create")] == [("create_text", "Host"), ("create_select", "Tier")]
 
 
 def test_a_second_init_creates_and_updates_nothing():
     fake = Fake(project(status_options=STATUSES))
-    lines, code = pc.init_fields(fake, STATUSES)
+    lines, code = pc.init_fields(fake, STATUSES, layers=LAYERS)
     assert code == 0 and fake.calls == [] and not any(l.startswith(("created", "updated")) for l in lines)
 
 
-def test_init_sets_the_status_options_on_an_empty_project():
+def test_init_sets_exactly_the_status_options_on_an_empty_project():
     fake = Fake(project())
-    pc.init_fields(fake, STATUSES)
-    assert fake.calls == [("status_options", list(STATUSES))]
+    pc.init_fields(fake, STATUSES, layers=LAYERS)
+    assert fake.calls == [("options", "F_Status", [(n, "O_Done" if n == "Done" else None) for n in STATUSES])]  # GitHub's default Done keeps its id
 
 
-def test_init_refuses_to_replace_status_options_on_a_project_with_items_unless_flagged():
-    fake = Fake(project(skip=("Host",)), items=[{"_item_id": "I1"}])
-    lines, code = pc.init_fields(fake, STATUSES)
-    assert code == 1 and fake.calls == [] and "1 item" in lines[0]
-    lines, code = pc.init_fields(fake, STATUSES, replace_status_options=True)
-    assert code == 0 and ("status_options", list(STATUSES)) in fake.calls
+def test_init_appends_status_options_on_a_board_with_items_keeping_ids_and_reporting_extras():
+    fake = Fake(project(status_options=("To do", "Legacy", "Done")), items=[{"_item_id": "I1"}])
+    lines, code = pc.init_fields(fake, STATUSES, layers=LAYERS)
+    assert code == 0 and "kept, not in STATUSES: Legacy" in lines
+    (call,) = fake.calls
+    assert call[2][:3] == [("To do", "O_To do"), ("Legacy", "O_Legacy"), ("Done", "O_Done")]  # existing ids, order kept
+    assert [n for n, i in call[2][3:]] == ["In progress", "Stale", "In review", "Blocked"] and all(i is None for _, i in call[2][3:])
+
+
+def test_the_replace_flag_drops_only_the_option_left_out_and_keeps_the_other_ids():
+    fake = Fake(project(status_options=("To do", "Legacy", "Done")), items=[{"_item_id": "I1"}])
+    pc.init_fields(fake, STATUSES, replace_status_options=True, layers=LAYERS)
+    (call,) = fake.calls
+    got = dict(call[2])
+    assert [n for n, _ in call[2]] == list(STATUSES) and "Legacy" not in got
+    assert got["To do"] == "O_To do" and got["Done"] == "O_Done" and got["Stale"] is None
+
+
+def test_the_replace_flag_with_statuses_reordered_keeps_every_id():
+    fake = Fake(project(status_options=tuple(reversed(STATUSES))), items=[{"_item_id": "I1"}])
+    pc.init_fields(fake, STATUSES, replace_status_options=True, layers=LAYERS)
+    (call,) = fake.calls
+    assert [n for n, _ in call[2]] == list(STATUSES) and all(i == f"O_{n}" for n, i in call[2])
+
+
+def test_merge_options_keeps_ids_and_order_and_appends_without_dropping():
+    f = field("X", "SINGLE_SELECT", ("a", "b"))
+    merged = pc.merge_options(f, [("b", "RED"), ("c", "GREEN")])
+    assert merged == [("a", "GRAY", "O_a"), ("b", "GRAY", "O_b"), ("c", "GREEN", None)]
+
+
+def test_set_select_options_sends_the_id_only_for_kept_options(tmp_path):
+    seen = []
+    c, _ = client_with(tmp_path, lambda a, e, s: (seen.append(json.loads(s)), SimpleNamespace(returncode=0, stdout=json.dumps({"data": {"updateProjectV2Field": {}}}), stderr=""))[1])
+    c.set_select_options("F1", [("a", "GRAY", "O_a"), ("c", "GREEN", None)])
+    assert seen[0]["variables"]["input"]["singleSelectOptions"] == [
+        {"id": "O_a", "name": "a", "color": "GRAY", "description": ""}, {"name": "c", "color": "GREEN", "description": ""}]
+
+
+def test_init_adds_a_newly_registered_layer_option_and_a_rerun_is_a_no_op():
+    fake = Fake(project(status_options=STATUSES))
+    lines, _ = pc.init_fields(fake, STATUSES, layers=LAYERS + ("platform",))
+    (call,) = fake.calls
+    assert call[1] == "F_Layer" and call[2] == [("combat", "O_combat"), ("world", "O_world"), ("platform", None)]
+    assert "updated: Layer options + platform" in lines
+    fake2 = Fake(project(status_options=STATUSES))
+    pc.init_fields(fake2, STATUSES, layers=LAYERS)
+    assert fake2.calls == []
 
 
 def test_init_refuses_a_same_named_field_of_the_wrong_type_and_writes_nothing():
     fake = Fake(project(extra=[field("Seat", "NUMBER")], skip=("Host",)))
-    lines, code = pc.init_fields(fake, STATUSES)
+    lines, code = pc.init_fields(fake, STATUSES, layers=LAYERS)
     assert code == 1 and fake.calls == [] and "Seat" in lines[0]
 
 
 # ---- apply
 def derived(tid="TCK-1", **kw):
     d = {"Title": f"{tid}: t", "Ticket ID": tid, "Status": "In progress", "Domain": "rpg", "Seat": "s", "Host": "h", "Branch": "h:b",
-         "PR": "", "Tier": "hotfix", "Body": "b", "Source": "src", "Sync hash": "H"}
+         "PR": "", "Tier": "hotfix", "Layer": "combat", "Priority": "P1", "Epic": "standalone", "Tags": "a b", "Body": "b", "Source": "src", "Sync hash": "H"}
     d.update(kw)
     return d
 
@@ -115,7 +168,7 @@ def test_apply_turns_creates_updates_and_archives_into_the_expected_mutations_wi
     assert error is None and not not_done
     first = [c for c in fake.calls]
     assert first[0] == ("add_draft", "TCK-1: t")
-    create_sets = first[1:10]  # nine value sets: PR is empty, so skipped
+    create_sets = first[1:14]  # thirteen value sets: PR is empty, so skipped
     assert [c[2] for c in create_sets][0] == "F_Ticket ID" and create_sets[-1][2] == "F_Sync hash"  # Ticket ID first, Sync hash last; PR "" skipped
     assert not any(c[2] == "F_PR" for c in create_sets) and all(c[1] == "ITEM-NEW" for c in create_sets)
     upd = [c for c in first if c[0] in ("update_draft", "clear") or c[1:2] == ("I2",)]
@@ -237,3 +290,166 @@ def test_project_sync_never_runs_graphql_itself_and_the_client_has_no_delete_mut
     assert '"--input"' not in (root / "project_sync.py").read_text(encoding="utf-8")  # the graphql subprocess call lives only in the client
     client_src = (root / "project_client.py").read_text(encoding="utf-8").lower()
     assert "deleteprojectv2" not in client_src and "def delete" not in client_src
+
+
+def test_host_facts_is_a_text_field_init_creates_by_name_and_apply_writes_before_source():
+    assert "Host facts" in pc.TEXT_FIELDS and pc.VALUE_ORDER[-2:] == ("Host facts", "Filed")
+    fake = Fake(project(status_options=STATUSES, skip=("Host facts",)))
+    lines, code = pc.init_fields(fake, STATUSES, layers=LAYERS)
+    assert code == 0 and ("create_text", "Host facts") in fake.calls and "created: Host facts" in lines
+    again = Fake(project(status_options=STATUSES))
+    pc.init_fields(again, STATUSES, layers=LAYERS)
+    assert again.calls == []
+
+
+# ---- TCK-20261114-PROJECT-CLIENT-WRITE-PACING: pacing, rate limits, progress (injected clock/sleep/runner, no real sleeps)
+class Clock:
+    def __init__(self):
+        self.t, self.sleeps = 1000.0, []
+
+    def now(self):
+        return self.t
+
+    def sleep(self, s):
+        self.sleeps.append(s)
+        self.t += s
+
+
+def paced_client(tmp_path, replies, pacing=None):
+    """A client whose runner answers from `replies` (one per gh call, last one repeats) and whose clock is fake."""
+    clock, calls, it = Clock(), [], iter(replies)
+    last = {}
+
+    def runner(args, env, stdin):
+        calls.append(clock.t)
+        try:
+            last["r"] = next(it)
+        except StopIteration:
+            pass
+        return last["r"]
+
+    c = pc.ProjectClient("o", 1, token_file(tmp_path), runner, pacing or pc.Pacing(), clock.now, clock.sleep)
+    return c, clock, calls
+
+
+OK = SimpleNamespace(returncode=0, stdout=json.dumps({"data": {"m": {"clientMutationId": None}}}), stderr="")
+READ_OK = SimpleNamespace(returncode=0, stdout=json.dumps({"data": {"organization": None}}), stderr="")
+
+
+def limited(text, rc=1):
+    return SimpleNamespace(returncode=rc, stdout="", stderr=text)
+
+
+def test_mutations_are_paced_the_first_is_not_delayed_and_queries_never_wait(tmp_path):
+    c, clock, calls = paced_client(tmp_path, [OK])
+    for _ in range(3):
+        c._mutate("m", "I", {})
+    assert clock.sleeps == [1.0, 1.0] and calls == [1000.0, 1001.0, 1002.0]
+    c2, clock2, _ = paced_client(tmp_path, [READ_OK])
+    for _ in range(3):
+        c2.graphql("query{x}")
+    assert clock2.sleeps == []
+
+
+def test_a_mutation_after_a_long_gap_waits_only_the_rest_of_the_interval(tmp_path):
+    c, clock, _ = paced_client(tmp_path, [OK])
+    c._mutate("m", "I", {})
+    clock.t += 0.4
+    c._mutate("m", "I", {})
+    assert clock.sleeps == [pytest.approx(0.6)]
+    clock.t += 5
+    c._mutate("m", "I", {})
+    assert len(clock.sleeps) == 1
+
+
+def test_retry_after_in_gh_text_is_waited_then_the_call_succeeds_and_pacing_counts_from_the_clock(tmp_path):
+    c, clock, calls = paced_client(tmp_path, [limited("gh: You have exceeded a secondary rate limit (HTTP 403)\nretry-after: 90"), OK])
+    c._mutate("m", "I", {})
+    assert clock.sleeps == [90.0] and len(calls) == 2
+    assert calls == [1000.0, 1090.0]  # the retry itself added no 1 s: the 90 s backoff already covered the interval
+    c._mutate("m", "I", {})  # counts from the retried attempt's start (1090), not from a fixed 1 s after the backoff
+    assert clock.sleeps == [90.0, 1.0] and calls[-1] == 1091.0
+
+
+def test_a_retry_after_longer_than_the_cap_is_capped(tmp_path):
+    c, clock, _ = paced_client(tmp_path, [limited("secondary rate limit (HTTP 429) retry-after: 9999"), OK])
+    c._mutate("m", "I", {})
+    assert clock.sleeps == [120.0]
+
+
+def test_without_a_wait_time_the_backoff_is_at_least_a_minute_grows_and_is_bounded(tmp_path):
+    p = pc.Pacing(max_tries=6, backoff_base_s=2.0, backoff_cap_s=100.0, secondary_min_wait_s=60.0)
+    c, clock, _ = paced_client(tmp_path, [limited("secondary rate limit (HTTP 403)")] * 5 + [OK], p)
+    c._mutate("m", "I", {})
+    assert clock.sleeps == [60.0, 60.0, 60.0, 60.0, 60.0]
+    p = pc.Pacing(max_tries=6, backoff_base_s=40.0, backoff_cap_s=100.0, secondary_min_wait_s=10.0)
+    c, clock, _ = paced_client(tmp_path, [limited("HTTP 429")] * 5 + [OK], p)
+    c._mutate("m", "I", {})
+    assert clock.sleeps == [40.0, 80.0, 100.0, 100.0, 100.0]
+
+
+def test_the_primary_limit_stops_at_once_with_no_retry_and_no_sleep(tmp_path):
+    body = json.dumps({"errors": [{"type": "RATE_LIMITED", "message": "API rate limit exceeded"}]})
+    c, clock, calls = paced_client(tmp_path, [SimpleNamespace(returncode=0, stdout=body, stderr="")])
+    with pytest.raises(pc.ProjectError, match="primary rate limit: rerun after the hourly reset"):
+        c._mutate("m", "I", {})
+    assert len(calls) == 1 and clock.sleeps == []
+
+
+def test_a_permission_403_and_other_errors_are_not_retried(tmp_path):
+    for text in ("HTTP 403: Resource not accessible by personal access token", "HTTP 500 boom"):
+        c, clock, calls = paced_client(tmp_path, [limited(text)])
+        with pytest.raises(pc.ProjectError):
+            c._mutate("m", "I", {})
+        assert len(calls) == 1 and clock.sleeps == []
+
+
+def test_after_the_last_try_it_stops_and_the_message_never_holds_the_token(tmp_path):
+    p = pc.Pacing(max_tries=3)
+    c, clock, calls = paced_client(tmp_path, [limited(f"secondary rate limit (HTTP 403) {SENTINEL}")], p)
+    with pytest.raises(pc.ProjectError, match="secondary rate limit: gave up after 3 tries") as exc:
+        c._mutate("m", "I", {})
+    assert len(calls) == 3 and len(clock.sleeps) == 2 and SENTINEL not in str(exc.value)
+
+
+def test_a_query_that_hits_a_secondary_limit_is_retried_but_still_not_paced(tmp_path):
+    c, clock, _ = paced_client(tmp_path, [limited("HTTP 429 retry-after: 5"), READ_OK])
+    c.graphql("query{x}")
+    assert clock.sleeps == [5.0]
+
+
+def test_pacing_from_config_falls_back_to_defaults_on_missing_or_bad_values():
+    assert pc.Pacing.from_config(None) == pc.Pacing() and pc.Pacing.from_config({}) == pc.Pacing()
+    p = pc.Pacing.from_config({"min_interval_s": 0.5, "max_tries": 3, "progress_every": 0, "backoff_cap_s": "x", "secondary_min_wait_s": True})
+    assert p.min_interval_s == 0.5 and p.max_tries == 3 and p.progress_every == 25 and p.backoff_cap_s == 120.0 and p.secondary_min_wait_s == 60.0
+    assert pc.Pacing.from_config(ps.load_config(Path(__file__).resolve().parents[2], [])["write_pacing"]) == pc.Pacing()  # shipped file = defaults
+
+
+def plan_of(n):
+    d = lambda i: {"Ticket ID": f"TCK-{i}", "Title": "t", "Body": "b", "_item_id": f"I{i}", "_draft_id": f"D{i}", "Status": "Done", "Sync hash": f"h{i}",
+                   "Source": "s"}
+    return SimpleNamespace(creates=[], updates=[(d(i), ["Status"]) for i in range(n)], archives=[], archive_item_ids=[])
+
+
+def test_progress_is_reported_every_n_steps_and_apply_stays_quiet_without_a_callback():
+    fake = Fake(project())
+    seen = []
+    done, not_done, err = pc.apply_plan(fake, fake.proj, plan_of(5), progress=seen.append, every=4)  # 5 items x 3 steps (Status, Source, hash)
+    assert err is None and len(done) == 15 and seen == ["progress: 4/15 steps done", "progress: 8/15 steps done", "progress: 12/15 steps done"]
+    assert pc.apply_plan(Fake(project()), fake.proj, plan_of(2))[2] is None
+
+
+def test_a_stop_names_the_partial_item_and_the_rerun_does_only_the_rest():
+    fake = Fake(project(), fail_on=4)  # 3 steps per item: item 0 done, item 1 stops after its first step
+    done, not_done, err = pc.apply_plan(fake, fake.proj, plan_of(3))
+    assert err and len(done) == 4 and len(not_done) == 5 and pc.partial_item(done, not_done) == "TCK-1"
+    # a rerun over the unfinished items does only those (the planner recomputes; here items 1 and 2 remain)
+    again = Fake(project())
+    done2, nd2, err2 = pc.apply_plan(again, again.proj, SimpleNamespace(creates=[], updates=plan_of(3).updates[1:], archives=[], archive_item_ids=[]))
+    assert err2 is None and not nd2 and all("TCK-0" not in d for d in done2) and len(done2) == 6
+
+
+def test_a_stop_on_an_items_first_step_or_a_create_or_archive_is_not_partial():
+    assert pc.partial_item(["update TCK-0: set Status"], ["update TCK-1: set Status", "update TCK-1: set Source"]) is None
+    assert pc.partial_item([], ["create TCK-9: draft item"]) is None and pc.partial_item(["x"], ["archive TCK-2 (gone)"]) is None
+    assert pc.partial_item(["update TCK-0: set Status"], []) is None

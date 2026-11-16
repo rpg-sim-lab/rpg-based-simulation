@@ -291,6 +291,25 @@ def _graphify_line(root: Path) -> str:
         return ""
 
 
+SYNC_STREAK_WARN = 2
+
+
+def _sync_line(path: Path | None = None) -> str:
+    """One line when the Project sync's last two `--apply` runs failed (its `last-run.json`); "" otherwise, when the file is absent or unreadable,
+    or on any error. One small file read (TCK-20261115-PROJECT-SYNC-ALL-LANES)."""
+    try:
+        from tools.sessions.project_sync import read_last_run
+
+        data = read_last_run(path)
+        streak = int(data.get("failed_streak", 0))
+        if streak < SYNC_STREAK_WARN:
+            return ""
+        return (f"project-sync: the last {streak} --apply runs on {data.get('host', 'this host')} failed (last {data.get('time', '?')}): "
+                f"{str(data.get('error') or 'no error recorded')[:160]}. Look: `python3 tools/sessions/project_sync.py` (dry run); the writes are the owner's.")
+    except Exception:
+        return ""
+
+
 def build_context(payload: dict, environ=os.environ, root: Path = _REPO_ROOT, state_root: Path | None = None,
                   proc_root: Path = Path("/proc")) -> str:
     """The full additionalContext for a payload; "" for nothing. Raises on error (main() fails open)."""
@@ -309,7 +328,7 @@ def build_context(payload: dict, environ=os.environ, root: Path = _REPO_ROOT, st
         fallback = build_additional_context(handover_base(root) / HANDOVER_DIR) if payload.get("source") == "clear" else ""
         context = "\n".join(p for p in (fallback, LAUNCH_HINT) if p)
     notice = build_transit_notice(root / "agent-working" / "handover-transit")
-    return "\n".join(p for p in (context, notice, _disk_line(root), _graphify_line(root)) if p)
+    return "\n".join(p for p in (context, notice, _disk_line(root), _graphify_line(root), _sync_line()) if p)
 
 
 def main() -> int:

@@ -1,0 +1,36 @@
+# Implementation Sequence — implement-ticket-native-port
+
+Tickets must be implemented in this order. `implement-epic` reads this file to override
+alphabetical order.
+
+## Order
+
+1. TCK-20260930-NATIVE-PORT-BOOKKEEPING-ADVISORY-SITES  (no deps in this batch)
+2. TCK-20260930-NATIVE-PORT-INPUT-SITES  (depends on: TCK-20260930-NATIVE-PORT-BOOKKEEPING-ADVISORY-SITES)
+3. TCK-20260930-NATIVE-PORT-ORCHESTRATOR-BACKSTOP  (no deps in this batch)
+4. TCK-20260930-NATIVE-PORT-ATTESTED-GATE-SITES  (depends on: TCK-20260930-NATIVE-PORT-ORCHESTRATOR-BACKSTOP, TCK-20260930-NATIVE-PORT-INPUT-SITES)
+5. TCK-20261009-NATIVE-ATTESTED-COMMAND-TRANSPORT-LOSSY  (depends on: TCK-20260930-NATIVE-PORT-ATTESTED-GATE-SITES; added 2026-10-09 after the first full native run died on a corrupted attested command)
+6. TCK-20260930-NATIVE-PORT-SMALL-TICKET-NATIVE-RUN  (depends on: TCK-20261009-NATIVE-ATTESTED-COMMAND-TRANSPORT-LOSSY; needs the user's Workflow opt-in)
+
+## Partial run (user decision, 2026-10-01)
+
+Only items 1-3 are run now. Items 4 (ATTESTED-GATE-SITES) and 5 (SMALL-TICKET-NATIVE-RUN) are deliberately deferred: the design
+measured about 450k tokens and about 3 minutes extra per run if all 9 gate sites are reached, so the user decides on them after
+seeing the cheap children's measured cost. The epic stays OPEN; this is a recorded exception to the epic all-or-nothing rule,
+not a violation of it. Do not run `implement-epic` on this folder expecting items 4-5 to be skipped silently: they are the
+remaining work.
+
+**Release of items 4-5 (owner, 2026-10-06, batch answer "Native-port children 4-5"):** the owner released both without waiting for the cheap children's measured cost. The backstop child (3) has landed, so the item 4 order condition holds. Item 5 still needs the owner's Workflow opt-in just before its run.
+
+**Status after 2026-10-06:** items 1-4 are done. Item 5 (SMALL-TICKET-NATIVE-RUN) is still the remaining work: its native run was blocked by the environment (see that ticket's Assumptions / Open Questions). The parent epic `TCK-20260930-IMPLEMENT-TICKET-NATIVE-PORT` stays OPEN.
+
+**Resumed 2026-11-15 (owner, #715 6889470987).** Item 6 is unblocked. Its new vehicle is TCK-20261115-SEARCH-STALE-FLAG-CHECKS-THE-INDEXED-CHECKOUT (#715 6889489078). The run plan v3 is in item 6's ticket, and the Workflow opt-in is asked just before the run.
+
+## Why This Order Matters
+
+Written by hand. The attestation design found a nonce-hash gate result forgeable by an agent told to cheat, so the
+orchestrator-side re-run (child 3) must land before any gate is routed through the attested path (child 4): enforcement must not rest
+on attestation. Advisory and bookkeeping sites come first because they carry the dispatch-cost batching decision the later children
+inherit. The native run is last: it is the only child that needs a real Workflow run.
+
+**Closed 2026-11-16 (owner, #715 6894904885).** Item 6 ran three times (wf_b59e5ed2-5d3, wf_d6a35058-f5d, wf_f48f4fae-569) and the owner chose to hand-finish the vehicle. No run reached DONE; the epic closes with AC3 partly met (see its Completion Summary).

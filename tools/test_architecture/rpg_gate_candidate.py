@@ -26,6 +26,8 @@ A candidate is never partial. :func:`build_candidate` raises :class:`CandidateRe
   runs (budget): a finding the rerun did not reproduce, or never got to confirm, is not a baseline. A first-pass fail/drift the rerun confirmed is accepted
   (it is what the baseline records as it stands). The report must also come from the documents' ``sha`` and ``harness_hash``;
 * a document is missing, unexpected for the config's worlds and seeds, unreadable, or ``no-data`` (any reason: a baseline can not be recorded from a run that did not run);
+* a document's ``runner.verdict`` is not ``PINNED``, or it has no ``runner`` field (``rpg_gate_run`` writes it from the run's manifest; a pooled document is PINNED only
+  when every document it pools is): behaviour evidence comes only from the pinned runner;
 * the documents disagree on ``sha`` or ``harness_hash`` (or ``sha`` differs from ``commit_sha`` when one is given);
 * a document's ``ticks`` or ``world`` / ``seed`` differs from the config or its file name;
 * a validity row has ``violations > 0`` with no current owner, or no integer ``violations`` / no ``oracle``. A baseline holds validity rows at 0 only, and
@@ -110,6 +112,10 @@ def _load(docs_dir: Path, config: GateConfig) -> Dict[Tuple[str, Optional[int]],
             raise CandidateRefused(f"{name}: not a JSON object")
         if doc.get("status") != "ok":
             raise CandidateRefused(f"{name}: no-data ({doc.get('reason', 'unknown reason')}): a baseline can not be recorded from a run without data")
+        runner = doc.get("runner")
+        if not isinstance(runner, dict) or runner.get("verdict") != "PINNED":
+            why = "no runner field" if not isinstance(runner, dict) else "; ".join(runner.get("differences") or []) or f"verdict {runner.get('verdict')!r}"
+            raise CandidateRefused(f"{name}: runner is not PINNED ({why}): a baseline can not be recorded from a run that was not on the pinned runner")
         if (doc.get("world"), doc.get("seed")) != (key[0], key[1]):
             raise CandidateRefused(f"{name}: records world {doc.get('world')!r} seed {doc.get('seed')!r}, not {key[0]!r} seed {key[1]!r}")
         if doc.get("ticks") != config.ticks:

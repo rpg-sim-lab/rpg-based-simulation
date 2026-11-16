@@ -7,6 +7,7 @@ if TYPE_CHECKING:
     from src.core.updates import StateUpdate, EntityUpdate, StrategicUpdate
     from src.engine.cadence import SystemCadence
 from src.core.movement_modes import MovementMode
+from src.core.hold_mode import hold_reset_kwargs
 from src.core.strategic import ProjectStatus, ObjectiveStatus
 from src.core.updates import EntityUpdate, NavigationUpdate, StrategicUpdate, InteractionUpdate
 from src.systems.strategic_systems.town_targeting import nearest_town_tile
@@ -94,7 +95,7 @@ class StrategicRedirectionSystem:
                         
                         if entity.navigation.target != coords:
                              existing_nav = ent_upd.navigation or NavigationUpdate()
-                             new_nav = replace(existing_nav, target_set=coords)
+                             new_nav = replace(existing_nav, target_set=coords, **hold_reset_kwargs(entity, ent_upd))
                              
                              ent_upd = replace(ent_upd, 
                                  navigation=new_nav,
@@ -125,7 +126,7 @@ class StrategicRedirectionSystem:
                                  has_nav_update = True
                                  if entity.navigation.target != target_pos:
                                      existing_nav = ent_upd.navigation or NavigationUpdate()
-                                     new_nav = replace(existing_nav, target_set=target_pos)
+                                     new_nav = replace(existing_nav, target_set=target_pos, **hold_reset_kwargs(entity, ent_upd))
                                      ent_upd = replace(ent_upd, navigation=new_nav)
                                      refined_entity_updates[e_id] = ent_upd
             

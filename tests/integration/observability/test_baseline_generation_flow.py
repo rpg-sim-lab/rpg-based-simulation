@@ -8,6 +8,13 @@ from src.observability.config import ObservabilityMode
 from src.observability.reporting.run_set_repository import RunSetArtifactRepository
 from src.observability.reporting.baseline_generator import BaselineGenerator
 from src.cli.entry import _run_generate_baseline
+from tests.named_run_dirs import remove_named_run_dirs  # noqa: F401
+
+# Run ids this module's tests name, removed by name after each test (see tests/named_run_dirs.py).
+RUN_ID_PREFIXES = {
+    "test_baseline_generation_and_cli_flow": ('test_baseline_sweep',),
+}
+pytestmark = pytest.mark.usefixtures("remove_named_run_dirs")
 
 
 def test_baseline_generation_and_cli_flow(tmp_path, tick_cost_ms):

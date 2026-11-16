@@ -18,7 +18,7 @@ from src.core.skills import SKILL_REGISTRY, SkillDefinition
 from src.engine.rpg_depth import WoundService
 from src.cognition.common_knowledge import combat_capability_against
 from src.engine.tactical_destinations import retreat_destination, wander_destination
-from src.engine.tactical_threat import hostile_acts_on, need_yields, perceived_threats, present_threats, safety_retreat_warranted
+from src.engine.tactical_threat import attacked_me_recently, hostile_acts_on, need_yields, perceived_threats, present_threats, safety_retreat_warranted
 from src.engine.need_pull import HUNGER_LINE, SLEEP_LINE, entity_hunger_is_pressing, entity_need_is_pressing
 from src.engine.tactical_rest import in_place_survival_update
 from src.engine.behavior_consumers import get_entity_signals, get_perception_gate
@@ -379,7 +379,7 @@ class TacticalDecisionSystem:
         if hunt_prey:
             hostiles = hunt_prey    # non-prey, non-acting hostiles are not engaged by a hunter under a pressing hunger
         group = state.groups.get(entity.identity.group_id) if entity.identity.group_id is not None else None
-        def target_score(h: EntityState) -> Tuple[int, float, int, float, float, float, int]:
+        def target_score(h: EntityState) -> Tuple[int, int, float, int, float, float, float, int]:
             dist = abs(h.navigation.position[0] - entity.navigation.position[0]) + abs(h.navigation.position[1] - entity.navigation.position[1])
 
             # Logic ID: COMB-316 -- subjective capability estimate against the hostile's species, from the entity's own
@@ -417,7 +417,9 @@ class TacticalDecisionSystem:
 
             # CONFLICT-04: a fighter stands its ground, so an adjacent hostile outranks a farther one.
             not_adjacent = 0 if LegalityServiceV2.is_adjacent(entity.navigation.position, h.navigation.position) else 1
-            return (not_adjacent, group_bias, is_current_target, -capability_confidence, h.combat.hp, dist * pressure_dist_mod, h.id)
+            # TCK-20261101-A-HOSTILE-ATTACKING-YOU-OUTRANKS-THE-GROUP-SHARED-TARGET: a hostile that hit this entity within the window outranks the group's shared target (D-13)
+            not_attacking_me = 0 if attacked_me_recently(h, entity, state.tick) else 1
+            return (not_adjacent, not_attacking_me, group_bias, is_current_target, -capability_confidence, h.combat.hp, dist * pressure_dist_mod, h.id)
 
         logger.debug(f"DEBUG: entity {entity.id} evaluating targets. Group target: {group.shared_target_id if group else None}")
         for h in hostiles:
@@ -619,7 +621,7 @@ class TacticalDecisionSystem:
                   if dist_to_target > entity.combat.range:
                        return EntityUpdate(
                            entity_id=entity.id,
-                           navigation=NavigationUpdate(movement_mode_set=MovementMode.HOLD),
+                           navigation=NavigationUpdate(movement_mode_set=MovementMode.HOLD, target_clear=True),
                            task=TaskUpdate(
                                work_kind_set="ENTITY_ACT",
                                payload_set={"action": "HOLD", "reason": "HOLD_CHOKEPOINT", "target_id": target.id}

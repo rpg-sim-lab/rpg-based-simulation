@@ -121,6 +121,8 @@ How to read it:
 `docs/guidelines/session_roles/` (`functions/<f>.md`, `domains/<d>.md`). The
 `--agent` files `.claude/agents/session-<role>.md` are **generated** from these (never hand-written);
 M0d may force a separate directory (12.3).
+A card names recorded decisions only through the vocabulary in `registries/session_decisions.yaml` and lists them under
+`## Cites`; the rule for a PR that accepts or amends a decision is in `docs/guides/delivery_process.md` ("Decisions named on role cards").
 
 **Why a registry, not memory**: memory is per-user, per-machine, shared by every session in the
 directory, and unversioned. A role is per-session and must survive a machine change, a review, and
@@ -822,7 +824,7 @@ identity signal is stable; whether a minimal inbox is needed (M0c).
 ### 12.5 Deferred on purpose
 Auto-wake of idle sessions (a documented mechanism exists; decided on M0c evidence); automatic dispatch
 without a planner; **hardening of semantic boundaries beyond advisory** (the authority guardrails
-themselves are in v1); the home-directory authority-digest pin; cross-machine sessions; a batch
+themselves are in v1); the home-directory authority-digest pin; cross-machine sessions (no longer deferred: lead seats on both hosts, TCK-20261009-EPIC-SESSION-LEAD-PLANNER, closed 2026-11-14); a batch
 registry separate from PR bodies; expanded retro analytics (M6b); any change to agent definitions or
 `Workflow` scripts.
 
@@ -832,8 +834,8 @@ registry separate from PR bodies; expanded retro analytics (M6b); any change to 
 - `docs/guides/agent_session_reset_boundaries.md` (handover format, HARD/SOFT/NEVER)
 - `docs/guides/delivery_process.md` (worktree and branch contract, PR lifecycle, `pr_render`)
 - `tools/agent-monitoring/session_start_handover_hook.py` (the hook this replaces the listing of)
-- Epics: `agent-working/tickets/todos/session-layer/INDEX.md` (A foundation, B communication and authority, C operations,
-  D measurement and review)
+- Epics: `agent-working/tickets/done/session-layer/INDEX.md` (A foundation, B communication and authority, C operations,
+  D measurement and review; all closed, D on 2026-11-14 with M7 moved to TCK-20261031-EPIC-AI-FIRST-SDLC-EVOLUTION)
 - External review record: `agent-working/stored_artifacts/TCK-20261002-EPIC-SESSION-LAYER-FOUNDATION/external_reviews/`
 - Evidence tickets: `TCK-20260921-SESSION-CONTEXT-RESET-TRIAL`, `TCK-20260824-SIDECAR-CROSS-SESSION-SCOPE`,
   `TCK-20260920-MECHANISM-REGISTRY-CHANGED-CODE-ADVISORY-AT-CLOSE` (content-vs-tooling split),

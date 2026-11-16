@@ -43,12 +43,17 @@ Child tickets, one per §12.5 in-scope item, plus the gate probes and the record
 - TCK-20261109-M1-THE-HERO-IS-WORK-AND-THE-GUILD-IS-MEMBERSHIP
 - TCK-20261109-M1-BASIC-WILD-BIRTHS-FOR-EVERY-LIVING-KIND
 - TCK-20261109-M1-WHO-A-PLACE-REFUSES
-- TCK-20261109-M1-NO-NAME-CHECKS-PROBE-AND-CONTENT-ALONE-KIND-PROBE
+- TCK-20261109-M1-NO-NAME-CHECKS-PROBE-AND-CONTENT-ALONE-KIND-PROBE (name-check probe only since 2026-11-15)
+- TCK-20261115-M1-A-TEST-KIND-DECLARED-ONLY-IN-CONTENT-PERCEIVES-EATS-AND-FIGHTS (content-alone probe, split from the line above 2026-11-15; HELD until rpg-planner says the retirements allow green)
 - TCK-20261109-M1-RECORD-AND-M1-DISCLOSURE
 
 Also in milestone 1's scope, and tracked by their own tickets: the repairs that close a v1 disclosure row (§12.5). Under the owner's ruling #715 6731822583, the TOWN-RETURN and ESC-SWITCH precedence sites get unit precedence-grid rows only, with a behaviour step only if a count shows a defect. FLEE-LINE stays a full fix.
 - Rule work before code (§12.3, "How the path runs"): the catalog text and kernel spec come first. Owner-level choices go to the owner as questions with options and a recommendation when the milestone starts. The forward design's proposed recommendations are not rulings.
 - Measured as its own step, once at fold against its parent (decision 76), on the cumulative watch that restarts at v1.1, with the §12.5 per-step stop rules. Those rules and the watch are not trimmed without an owner ruling (#715 6731822583). The measurement tier is stated at dispatch under the standing depth rule (#715 6731764470). It is never below the floor (#715 6731822583): the paired default tier plus every world where an affected known entry lives. A hash-equal check alone proves only an observability change. Decision 76 (§12.3) sets a behaviour step at 3 worlds x 5 seeds x 5000 ticks per arm, and going below it needs an owner ruling.
+- Moved in from the closed decision-core epic (TCK-20261007-EPIC-DECISION-CORE-LIVE-MOTIVATION-AND-HONEST-FIGHT-OR-FLEE-INPUTS), owner #715 6875278006, re-scoped at dispatch:
+  - TCK-20261007-COMPILED-ENTITIES-GET-DEFAULT-NEED-AND-DRIVE-PROFILES-WITH-VISIBLE-PROVENANCE: reads species and occupation, not role. Its role-based drive defaults are dropped (owner). Sequenced with M1-KIND-ALWAYS-MEANS-SPECIES-AND-OCCUPATION-IS-ITS-OWN-FIELD and M1-EACH-MONSTER-KIND-DECLARES-WHY-IT-FIGHTS.
+  - TCK-20260913-NO-MECHANISM-RECORDS-PER-ENEMY-KIND-DANGER and TCK-20260915-COMBAT-RISK-EVALUATION-ACCEPTABLE-AT-3X-MISMATCH: measured in M1-COARSE-PROPERTY-BANDS-AND-THE-APPRAISAL.
+- The de-hero inventory (closed epic TCK-20261001-EPIC-DEHERO-ROLE-GATED-PRIVILEGE-INVENTORY, DUPLICATE, owner #715 6875278006) is carried by M1-RETIRE-ROLE-KIND-AND-FACTION-NAME-BRANCHES-IN-STAGES's inventory step.
 
 ## Out of Scope
 - §12.4 (packs, herds, territory), milestones 2 and 3, and any rule work not listed in §12.3 (owner ruling only).
@@ -68,8 +73,13 @@ Also in milestone 1's scope, and tracked by their own tickets: the repairs that 
 - TCK-20261109-M1-THE-HERO-IS-WORK-AND-THE-GUILD-IS-MEMBERSHIP
 - TCK-20261109-M1-BASIC-WILD-BIRTHS-FOR-EVERY-LIVING-KIND
 - TCK-20261109-M1-WHO-A-PLACE-REFUSES
-- TCK-20261109-M1-NO-NAME-CHECKS-PROBE-AND-CONTENT-ALONE-KIND-PROBE
+- TCK-20261109-M1-NO-NAME-CHECKS-PROBE-AND-CONTENT-ALONE-KIND-PROBE (name-check probe only since 2026-11-15)
+- TCK-20261115-M1-A-TEST-KIND-DECLARED-ONLY-IN-CONTENT-PERCEIVES-EATS-AND-FIGHTS (content-alone probe, split from the line above 2026-11-15; HELD until rpg-planner says the retirements allow green)
 - TCK-20261109-M1-RECORD-AND-M1-DISCLOSURE
+- TCK-20261007-COMPILED-ENTITIES-GET-DEFAULT-NEED-AND-DRIVE-PROFILES-WITH-VISIBLE-PROVENANCE (moved in, #715 6875278006)
+- TCK-20260913-NO-MECHANISM-RECORDS-PER-ENEMY-KIND-DANGER (moved in, #715 6875278006)
+- TCK-20260915-COMBAT-RISK-EVALUATION-ACCEPTABLE-AT-3X-MISMATCH (moved in, #715 6875278006)
+- TCK-20261001-EPIC-DEHERO-ROLE-GATED-PRIVILEGE-INVENTORY (closed DUPLICATE into this epic, #715 6875278006)
 
 ## Related Docs
 - docs/plans/systemic_world/roadmap.md (§12.3 milestone 1, §12.5 done criteria)

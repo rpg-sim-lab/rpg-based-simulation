@@ -25,7 +25,7 @@ TARGET = (30.0, 33.0)  # away from the hunter at (30, 29): a step to (30, 31) le
 def _scene(hp=15, damage=17, attacker=HUNTER, hunter_at=(30.0, 29.0), style=1, extra=None):
     state = compile_world("frontier_living_world", 42)
     m, h = state.entities[MERCHANT], state.entities[HUNTER]
-    combat = replace(m.combat, hp=hp, max_hp=300, readiness=100.0, last_attacker_id=attacker, last_hit_tick=state.tick, last_hit_damage=damage, action_style=style)
+    combat = replace(m.combat, hp=hp, max_hp=300, readiness=100.0, last_attacker_id=attacker, last_hit_tick=state.tick, last_hit_damage=damage, last_hit_attackers=(attacker,), last_hit_damages=(damage,), action_style=style)
     m = replace(m, navigation=replace(m.navigation, position=HERE, target=TARGET, step_ready_tick=0), combat=combat)
     h = replace(h, navigation=replace(h.navigation, position=hunter_at))
     entities = {MERCHANT: m, HUNTER: h}

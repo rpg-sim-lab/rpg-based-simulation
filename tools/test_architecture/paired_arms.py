@@ -28,6 +28,7 @@ CLI::
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import os
 import platform
@@ -39,9 +40,11 @@ import time
 from pathlib import Path
 from typing import Any, Dict, List, Mapping, Optional, Sequence, Tuple
 
-IDENTITY_FIELDS = ("name", "image", "cpu_model", "nproc", "mem_total_mb", "python", "os")
-COMPARED_ACROSS_JOBS = ("python", "os")  # an assembled set whose jobs differ in these is not compared
-COMPARED_WITHIN_KEY = ("python", "os", "image")  # the arms of one (world, seed) must agree on these (paired.py refuses too)
+IDENTITY_FIELDS = ("name", "image", "image_os", "image_version", "cpu_model", "nproc", "mem_total_mb", "python", "python_build", "libc", "os", "uv_lock")
+# The fields the env8 keys (image FAMILY, not the image patch version): an assembled set whose jobs differ in these is not compared, and a set that differs only in
+# image_version IS assembled (TCK-20261116-A-CI-SET-ON-TWO-IMAGE-PATCHES-IS-ONE-ENVIRONMENT-WHEN-LIBC-AND-PYTHON-MATCH).
+COMPARED_ACROSS_JOBS = ("python", "python_build", "libc", "os", "image_os", "uv_lock")
+COMPARED_WITHIN_KEY = ("python", "python_build", "libc", "os", "image_os", "uv_lock")  # the arms of one (world, seed) must agree on these (paired.py refuses too)
 SELF_CHECKS = ("seed42", "full", "off")
 KINDS = ("pair", "self")
 ARMS = ("base", "new", "self")
@@ -67,13 +70,17 @@ def step_slug(step: str) -> str:
     return slug or "step"
 
 
-def plan_matrix(worlds: str, seeds: str, self_check: str) -> Dict[str, Any]:
+def plan_matrix(worlds: str, seeds: str, self_check: str, *, evidence: bool = False) -> Dict[str, Any]:
     """``{"include": [...], "terrain": bool}``: a ``pair`` entry per (world, seed), plus ``self`` entries (the base arm and its repeat, on one runner) per ``self_check``:
     seed 42 of every world for ``seed42`` (as ``paired.py`` expects, whatever ``seeds`` holds), every (world, seed) for ``full``.
+
+    ``evidence=True`` (an evidence dispatch, rpg-designer #634 item g) refuses ``off``: an evidence set carries its base-vs-base repeats, run on the runner itself.
 
     ``paired.py`` derives its worlds from its own constants (``WORLDS``, plus ``TERRAIN_WORLD`` with ``--terrain``), imported here, so ``worlds`` must be exactly that set."""
     if self_check not in SELF_CHECKS:
         raise ArmsRefused(f"self_check must be one of {SELF_CHECKS}, got {self_check!r}")
+    if evidence and self_check == "off":
+        raise ArmsRefused("self_check off is refused for an evidence dispatch: an evidence set must include its base-vs-base repeats, run on the runner (use seed42 or full, or dispatch with evidence=false for a non-evidence run)")
     from tools.rpg_measure import paired  # rpg's world set (WORLDS, TERRAIN_WORLD) is imported, never duplicated; the plan job syncs the environment for it
 
     world_list = _csv(worlds, "worlds")
@@ -124,18 +131,33 @@ def _mem_total_mb() -> Optional[int]:
     return None
 
 
-def runner_identity(env: Optional[Mapping[str, str]] = None) -> Dict[str, Any]:
-    """A description of the runner, written beside every result. It describes the machine; it does not pin one (the CPU model varies between runners)."""
+def tool_uv_lock_sha256(root: Optional[Path] = None) -> str:
+    """The sha256 of the TOOL checkout's ``uv.lock`` (the checkout that runs paired, not an arm tree): the dependency set the arms ran under. ``"missing"`` when absent."""
+    path = (Path(root) if root is not None else Path(__file__).resolve().parents[2]) / "uv.lock"
+    try:
+        return hashlib.sha256(path.read_bytes()).hexdigest()
+    except OSError:
+        return "missing"
+
+
+def runner_identity(env: Optional[Mapping[str, str]] = None, *, tool_root: Optional[Path] = None) -> Dict[str, Any]:
+    """A description of the runner, written beside every result. It describes the machine; it does not pin one (the CPU model varies between runners).
+    ``uv_lock`` is the sha256 of the tool checkout's ``uv.lock`` (rpg-designer #634 item h): a set whose jobs differ in it is not assembled."""
     env = os.environ if env is None else env
     image = "-".join(part for part in (env.get("ImageOS"), env.get("ImageVersion")) if part)
     return {
         "name": env.get("RUNNER_NAME") or "unknown",
-        "image": image or "unknown",
+        "image": image or "unknown",  # the full image, patch version included, for the reader
+        "image_os": env.get("ImageOS") or "unknown",  # the family: this is what is keyed and compared
+        "image_version": env.get("ImageVersion") or "unknown",  # recorded, never keyed
         "cpu_model": _cpu_model(),
         "nproc": os.cpu_count() or 1,
         "mem_total_mb": _mem_total_mb(),
         "python": platform.python_version(),
+        "python_build": sys.version,
+        "libc": "-".join(platform.libc_ver()),
         "os": _read_os_release(),
+        "uv_lock": tool_uv_lock_sha256(tool_root),
     }
 
 
@@ -146,6 +168,9 @@ def run_arm(repo: Path, sha: str, arm: str, world: str, seed: int, ticks: int, c
         raise ArmsRefused(f"arm must be one of {ARMS}, got {arm!r}")
     from tools.rpg_measure import paired  # rpg's module, imported (never copied) so the cache key and the child call are paired's
 
+    unlocked = paired.env_problem(paired.current_env())
+    if unlocked:
+        raise ArmsRefused(unlocked)
     full_sha, tree = paired.prepare_tree(repo, sha, cache)
     out = paired.result_path(cache, full_sha, ticks, world, seed, repeat)
     out.parent.mkdir(parents=True, exist_ok=True)
@@ -158,6 +183,7 @@ def run_arm(repo: Path, sha: str, arm: str, world: str, seed: int, ticks: int, c
         started = time.monotonic()
         paired.run_one(tree, world, seed, ticks, out)
         wall = time.monotonic() - started
+    paired.write_env_json(out.parent)  # the env.json the env8 in the directory name was hashed from (a cached entry already has it; this is idempotent)
     after = resource.getrusage(resource.RUSAGE_CHILDREN).ru_maxrss  # KiB on Linux; the largest child so far in THIS process, which runs one arm
     cost = {"wall_seconds": round(wall, 3), "peak_rss_mb": None if cached or after <= 0 else round(max(after, before) / 1024, 1), "runner": runner_identity()}
     out.with_name(out.name[: -len(".json")] + ".cost.json").write_text(json.dumps(cost, sort_keys=True) + "\n", encoding="utf-8")
@@ -173,15 +199,19 @@ def _check_sha(name: str, value: str) -> str:
 def assemble(src: Path, out: Path, *, base: str, new: str) -> Dict[str, Any]:
     """Merge the downloaded job artifacts under ``src`` (one directory each) into one paired cache directory ``out``; refuse mixed runners or missing arms.
 
-    Refuses when a result has no ``cost.json`` with a full ``runner`` record; when the jobs differ in Python version or OS; when the arms of one (world, seed)
-    differ in Python version, OS or image; when two jobs wrote the same file with different bytes (for a self-check job that is the base arm not reproducing);
+    Refuses when a result has no ``cost.json`` with a full ``runner`` record; when the jobs differ in Python version, OS or uv.lock sha256; when the arms of one (world, seed)
+    differ in Python version, OS, image or uv.lock; when two jobs wrote the same file with different bytes (for a self-check job that is the base arm not reproducing);
+    when an arm document is not marked ``runner: "PINNED"`` (TCK-20261115-A-NON-SEQUENTIAL-RUN-IS-REFUSED-BY-THE-GATE-CANDIDATE-PAIRED-ARMS-AND-RPG-MEASURE);
     or when a ``pair`` job (a directory without the ``-self`` suffix) lacks either the base or the new arm of its (world, seed) from that same job.
     Returns ``{"jobs": {name: [runner...]}, "arms": [cost...]}`` and writes it to ``out/identities.json``."""
+    from tools.rpg_measure import paired  # lock_problem: the one fail-closed rule for a recorded uv.lock
+
     base12, new12 = _check_sha("--base", base)[:12], _check_sha("--new", new)[:12]
     jobs = sorted(p for p in Path(src).iterdir() if p.is_dir())
     if not jobs:
         raise ArmsRefused(f"{src}: no job artifacts to assemble")
     runners: Dict[str, Dict[str, Any]] = {}  # job -> its (first) runner record
+    envs: Dict[str, Dict[str, Any]] = {}  # job -> its (first) env.json: the object the env8 in the result directory's name was hashed from
     by_key: Dict[str, List[Tuple[str, Dict[str, Any]]]] = {}  # "<world>_<seed>" -> [(result dir, runner)]
     arms: List[Dict[str, Any]] = []
     for job in jobs:
@@ -197,7 +227,26 @@ def assemble(src: Path, out: Path, *, base: str, new: str) -> Dict[str, Any]:
                 raise ArmsRefused(f"{job.name}/{cost_path.relative_to(job)}: no runner record with {missing}; every result carries its runner identity")
             stem = cost_path.name[: -len(".cost.json")]
             directory = cost_path.parent.name
+            result_path = cost_path.with_name(stem + ".json")
+            try:
+                arm_doc = json.loads(result_path.read_text(encoding="utf-8"))
+            except (OSError, ValueError) as exc:
+                raise ArmsRefused(f"{job.name}/{result_path.relative_to(job)}: the arm document is missing or unreadable ({exc.__class__.__name__}); every cost.json sits beside its result") from None
+            if not isinstance(arm_doc, dict) or arm_doc.get("runner") != "PINNED":
+                got = arm_doc.get("runner") if isinstance(arm_doc, dict) else None
+                raise ArmsRefused(f"{job.name}/{result_path.relative_to(job)}: runner is {got!r}, not 'PINNED'; an arm that was not run on the pinned runner is not assembled")
+            unlocked = paired.lock_problem(runner.get("uv_lock"))
+            if unlocked:
+                raise ArmsRefused(f"{job.name}/{cost_path.relative_to(job)}: {unlocked}")
             runners.setdefault(job.name, runner)
+            if job.name not in envs:
+                try:
+                    recorded = json.loads((cost_path.parent / paired.ENV_FILE).read_text(encoding="utf-8"))
+                except (OSError, ValueError):
+                    raise ArmsRefused(f"{job.name}/{directory}: no readable {paired.ENV_FILE}; every result directory records the environment its env8 was hashed from") from None
+                if not isinstance(recorded, dict):
+                    raise ArmsRefused(f"{job.name}/{directory}: {paired.ENV_FILE} is not an object")
+                envs[job.name] = recorded
             by_key.setdefault(stem, []).append((f"{job.name}:{directory}", runner))
             if not directory.endswith("-repeat"):
                 have_in_job.setdefault(stem, set()).add(directory[:12])
@@ -212,23 +261,55 @@ def assemble(src: Path, out: Path, *, base: str, new: str) -> Dict[str, Any]:
             values.setdefault(str(runner[field]), []).append(name)
         if len(values) > 1:
             detail = "; ".join(f"{value!r}: {', '.join(names)}" for value, names in sorted(values.items()))
-            raise ArmsRefused(f"the jobs ran on different {field} values ({detail}); arms from runners that differ in Python version or OS are not compared")
+            raise ArmsRefused(f"the jobs ran on different {field} values ({detail}); arms from runners that differ in Python version, OS or the tool checkout's uv.lock are not compared")
+    for field in sorted({k for e in envs.values() for k in e}):  # every env-key field (the whole env.json), not only the identity ones
+        values = {}
+        for name, recorded in envs.items():
+            values.setdefault(json.dumps(recorded.get(field), sort_keys=True), []).append(name)
+        if len(values) > 1:
+            detail = "; ".join(f"{value[:80]}: {', '.join(names)}" for value, names in sorted(values.items()))
+            raise ArmsRefused(f"the jobs were built under different environments: {field} differs ({detail}); a set that differs in an env-key field is not one environment (only the image patch version may differ)")
     for stem, entries in sorted(by_key.items()):
         for field in COMPARED_WITHIN_KEY:
             if len({str(r[field]) for _d, r in entries}) > 1:
                 raise ArmsRefused(f"{stem}: its arms ran on different {field} values ({'; '.join(f'{d}: {r[field]!r}' for d, r in entries)})")
+    writers: Dict[str, List[Tuple[str, str]]] = {}  # result document -> [(job, that job's image version)], for the cross-patch identity record
     for job in jobs:
         for path in sorted(job.glob("results/*/*")):
             target = Path(out) / path.relative_to(job)
-            if target.exists() and not path.name.endswith(".cost.json") and target.read_bytes() != path.read_bytes():
+            if path.suffix == ".json" and not (path.name.endswith(".cost.json") or path.name in ("image.json", paired.ENV_FILE)):
+                writers.setdefault(str(path.relative_to(job)), []).append((job.name, str(runners[job.name].get("image_version"))))
+            recorded_only = path.name.endswith(".cost.json") or path.name == "image.json"  # per-job records (the image patch version differs between jobs by design): the first stays
+            if target.exists() and not recorded_only and target.read_bytes() != path.read_bytes():
                 raise ArmsRefused(f"{path.relative_to(job)}: two jobs wrote different bytes to the same result file (a self-check arm that does not reproduce?)")
             target.parent.mkdir(parents=True, exist_ok=True)
-            if not (target.exists() and path.name.endswith(".cost.json")):  # the first cost file of a shared result stays; a later job's identical result adds none
+            if not (target.exists() and recorded_only):  # the first cost/image record of a shared result stays; a later job's identical result adds none
                 shutil.copyfile(path, target)
     Path(out).mkdir(parents=True, exist_ok=True)
-    summary = {"jobs": runners, "arms": arms}
+    summary = {"jobs": runners, "arms": arms, "image_versions": sorted({str(r.get("image_version")) for r in runners.values()}), "cross_patch_identity": _cross_patch_identity(writers)}
     (Path(out) / "identities.json").write_text(json.dumps(summary, sort_keys=True, indent=2) + "\n", encoding="utf-8")
     return summary
+
+
+NOT_EXERCISED = "cross-patch identity not exercised in this set"
+NO_VERSION = ("None", "", "unknown")  # runner_identity records "unknown" when ImageVersion is not set; a missing field reads "None"
+
+
+def _cross_patch_identity(writers: Mapping[str, List[Tuple[str, str]]]) -> List[str]:
+    """What the same-bytes check proved across image patches. A result document written by two jobs that ran on different image patch versions was compared byte for byte
+    (assemble refuses a difference), so when such documents exist the set shows the simulation's bytes did not move across the patches. One line per result directory:
+    ``cross-patch identity shown: <dir> <v1> = <v2> (<n> documents)``; ``NOT_EXERCISED`` when no document spans two versions."""
+    by_dir: Dict[str, Tuple[set, int]] = {}
+    for rel, entries in writers.items():
+        real = [(j, v) for j, v in entries if v not in NO_VERSION]  # a writer with no recorded version proves nothing across patches
+        versions = {v for _j, v in real}
+        if len(real) > 1 and len(versions) > 1:
+            directory = rel.split("/")[1]
+            seen, count = by_dir.get(directory, (set(), 0))
+            by_dir[directory] = (seen | versions, count + 1)
+    if not by_dir:
+        return [NOT_EXERCISED]
+    return [f"cross-patch identity shown: {directory} {' = '.join(sorted(versions))} ({count} documents)" for directory, (versions, count) in sorted(by_dir.items())]
 
 
 def main(argv: Optional[Sequence[str]] = None) -> int:
@@ -238,6 +319,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     plan.add_argument("--worlds", required=True)
     plan.add_argument("--seeds", required=True)
     plan.add_argument("--self-check", default="seed42")
+    plan.add_argument("--evidence", action="store_true", help="an evidence dispatch: refuses --self-check off")
     plan.add_argument("--step", default="step", help="the step label; printed as an artifact-safe slug")
     arm = sub.add_parser("run-arm")
     arm.add_argument("--repo", type=Path, default=Path("."))
@@ -246,7 +328,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     arm.add_argument("--world", required=True)
     arm.add_argument("--seed", type=int, required=True)
     arm.add_argument("--ticks", type=int, required=True)
-    arm.add_argument("--cache", type=Path, required=True)
+    arm.add_argument("--cache", type=lambda value: Path(value).resolve(), required=True, help="resolved once here, so a relative path names the same place for the child, the cost file and env.json")
     arm.add_argument("--repeat", action="store_true")
     asm = sub.add_parser("assemble")
     asm.add_argument("--in", dest="src", type=Path, required=True)
@@ -256,16 +338,21 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     args = parser.parse_args(argv)
     try:
         if args.command == "plan":
-            planned = plan_matrix(args.worlds, args.seeds, args.self_check)
+            planned = plan_matrix(args.worlds, args.seeds, args.self_check, evidence=args.evidence)
             print("matrix=" + json.dumps({"include": planned["include"]}, separators=(",", ":")))
             print("terrain=" + ("true" if planned["terrain"] else "false"))
             print("slug=" + step_slug(args.step))
         elif args.command == "run-arm":
             cost = run_arm(args.repo, args.sha, args.arm, args.world, args.seed, args.ticks, args.cache, repeat=args.repeat)
-            print(f"{args.arm} {args.world} seed {args.seed}: {'cached' if cost['cached'] else str(cost['wall_seconds']) + 's'}")
+            from tools.rpg_measure import paired
+            doc = json.loads(paired.result_path(args.cache, args.sha, args.ticks, args.world, args.seed, args.repeat).read_text(encoding="utf-8"))
+            # the hashes in the log: the CI evidence that the bytes did not move across image patches, readable even when the artifacts cannot be downloaded
+            print(f"{args.arm} {args.world} seed {args.seed}: {'cached' if cost['wall_seconds'] == 0.0 else str(cost['wall_seconds']) + 's'} final_hash={doc.get('final_hash')} start_hash={doc.get('start_hash')}")
         else:
             summary = assemble(args.src, args.out, base=args.base, new=args.new)
-            print(f"assembled {len(summary['jobs'])} job(s), {len(summary['arms'])} arm run(s) into {args.out}")
+            print(f"assembled {len(summary['jobs'])} job(s), {len(summary['arms'])} arm run(s) into {args.out}; image versions in the set: {summary['image_versions']}")
+            for line in summary["cross_patch_identity"]:
+                print(line)
     except ArmsRefused as exc:
         print(f"REFUSED: {exc}", file=sys.stderr)
         return 2
