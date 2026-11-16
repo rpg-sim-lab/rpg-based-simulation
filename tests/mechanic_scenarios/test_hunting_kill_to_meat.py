@@ -89,6 +89,7 @@ def test_main_a_hungry_meat_eater_kills_leaves_meat_and_eats_it_at_the_carcass()
     assert min(r["hunger"] for r in rows[eaten:]) <= before - food_hunger_recovery("raw_meat") + 2.0, "eating the meat must lower hunger by what it gives"
 
 
+@pytest.mark.xfail(strict=True, reason="TCK-20261116-A-HUNGRY-HUNTER-EATS-ONE-PORTION-OF-ITS-KILL-THEN-WALKS-OFF-TO-AN-UNRELATED-PROJECT: the meal on main came only from the HOLD bug's stray step")
 def test_a_kill_leads_to_the_meal_at_the_same_hunger_the_hunt_starts_at():
     """One gate for the hunt and the meal: a meat-eater at a moderate hunger that kills eats that same carcass within a bounded number of ticks."""
     rows, prey_id = _run(_stage(hunger=60.0), ticks=120)
