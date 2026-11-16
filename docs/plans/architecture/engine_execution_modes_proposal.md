@@ -189,6 +189,10 @@ Execution Mode and RuntimeMode on a claim). **Results are compared only within o
   speed** (PERF-D1 amendment A2).
 
 ### Mode 5: dropped (2026-10-26)
+**Reopened for one opt-in mode only, by ADR** (`docs/architecture/distributed_workers_adr.md`, #715 6777076537). The owner's
+experiment choice replaces the condition "a world one machine cannot hold" for this mode. Relaxed or distributed execution otherwise
+stays out of this plan. The text below is the 2026-10-26 decision as it stands for everything else.
+
 Relaxed or distributed execution is **not in this plan**. The owner set the target scale to offline research on one machine
 (#715, comment 6408481790), and it conflicts with `docs/architecture/system_overview.md` ("What is deliberately not distributed")
 and the devops amendment's single replica. It reopens only by an ADR amendment (lead-planner), and only if the owner names a world

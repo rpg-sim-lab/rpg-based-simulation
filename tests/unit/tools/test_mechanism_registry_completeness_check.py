@@ -303,7 +303,9 @@ def test_wider_scope_numbers_pinned():
     # 361 -> 362 on 2026-11-11 (TCK-20261109-ANY-SOCIAL-UPDATE-WIPES-THE-REJECTION-COUNTS-IT-DOES-NOT-NAME, SOC-280): +src/core/social_counts.py (add_rejection_counts, the one sum rule the social apply and SocialUpdate.merge share; a helper of the existing social code, unbound).
     # 362 + 1 = 363 on 2026-11-12 (merge of origin/main 373625027 into rpg-non-flight-free-swing): both histories above hold; the figure is the check's own output on the merged tree.
     # 363 -> 368 on 2026-11-12 (TCK-20261111-SPLIT-UPDATES-PY-INTO-UPDATE-MODELS, rpg-planner ok, from the check's own output): +src/core/update_models/{social,strategic,combat,body,world}.py (a pure move out of updates.py; no mechanism of its own).
-    assert wider["scope_files"] == 368
+    # 368 -> 369 on 2026-11-16 (TCK-20261111-A-HOLD-MODE-MOVE-STILL-TAKES-A-STEP, divergence 2.206, rpg-planner ok, from the check's own output): +src/core/hold_mode.py (hold_reset_kwargs, bound under `tactical_decision`; first landed as src/engine/hold_mode.py and moved to src/core because systems may not import engine), so unbound_files stays.
+    # 369 -> 370 on 2026-11-16 (TCK-20261101-A-CHECKPOINT-HAS-NO-FORMAT-VERSION, INFRA-215): +src/engine/checkpoint_schema.py (the checkpoint schema fingerprint and its refusals; functions and error types, no mechanism of its own).
+    assert wider["scope_files"] == 370
     # 233 -> 227 on 2026-10-05: the world-building split names six more files (worldmodules/normalizer,
     # worldassembly/resolve_io, worldbuilding/repository and validator, worldgeneration/generator and scorer).
     # Then +1 for the unbound entity_target_objective.py module (TCK-20261002-COMBAT-OBJECTIVE-TARGETS-...).
@@ -371,7 +373,8 @@ def test_wider_scope_numbers_pinned():
     # 255 -> 256 on 2026-11-11 (TCK-20261109-ANY-SOCIAL-UPDATE-WIPES-THE-REJECTION-COUNTS-IT-DOES-NOT-NAME): +src/core/social_counts.py is an unbound helper (the shared rejection-count sum rule, no mechanism of its own); candidates and wired are unchanged.
     # 256 + 1 = 257 on 2026-11-12 (same merge, from the check's own output): both new files are unbound helpers; candidates and wired are unchanged.
     # 257 -> 262 on 2026-11-12 (same ticket, from the check's own output): the same 5 files, unbound (moved update records, no mechanism of their own); candidates (67) and wired (19) are unchanged.
-    assert wider["unbound_files"] == 262
+    # 262 -> 263 on 2026-11-16 (TCK-20261101-A-CHECKPOINT-HAS-NO-FORMAT-VERSION, from the check's own output): src/engine/checkpoint_schema.py is unbound (no mechanism of its own); candidates and wired are unchanged.
+    assert wider["unbound_files"] == 263
     # 73 -> 72 on 2026-10-07 (row 7 (b) pass): src/quests/generator.py::QuestGenerator is now bound under `guilds`.
     # 72 -> 71 on 2026-10-11 (#500, D57): src/engine/rpg_depth.py::LeashService is cited under `tactical_decision` (it became wired when
     # the hunger and fatigue goals started calling `way_in_range`), so it is no longer an unbound candidate.

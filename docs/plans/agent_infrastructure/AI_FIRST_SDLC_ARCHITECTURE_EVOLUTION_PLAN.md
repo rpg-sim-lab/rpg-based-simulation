@@ -144,7 +144,7 @@ Everything else stays agent-driven and flexible. That includes planning, design,
 
 ## 6. Critical Owner Decisions
 
-**DECIDED-OWNER, 2026-10-31 (#715 6529263880):** OD-1 yes; OD-2 and OD-10 yes; OD-3 as M1, subject to E6b; OD-14 yes; OD-15 yes; E6b yes. Everything else stays undecided. **No credential or ruleset change is authorised by this:** each gets its own ask, by ticket. "Recommended" in the tables below is kept as written for the record.
+**DECIDED-OWNER, 2026-10-31 (#715 6529263880):** OD-1 yes; OD-2 and OD-10 yes; OD-3 as M1, subject to E6b; OD-14 yes; OD-15 yes; E6b yes. OD-5 decided 2026-11-16 (#715 6911091662): retire `implement-ticket.js`, `implement-epic.js` and the skill imitation together in Phase 4, only after the OD-4 close check has run 2 weeks carrying a mechanical test-scope floor and an architecture verdict on `src`-touching PRs. Everything else stays undecided, apart from the later decisions recorded in `SDLC_DECISION_RECORD.md`. **No credential or ruleset change is authorised by this:** each gets its own ask, by ticket. "Recommended" in the tables below is kept as written for the record.
 
 | # | Decision | Recommended | Why it matters |
 |---|---|---|---|
@@ -1055,6 +1055,8 @@ Governs §32 and §34 for the components listed. "Freeze" means an annotated git
 | `create-tickets.js` | High | Low | Low | — | **Preserve** | — |
 | Hand path + recorder | **Core** | High: production baseline | Medium | — | **Harden** | — |
 
+**Decided 2026-11-16 (OD-5, #715 6911091662):** the two JS workflows and the skill imitation are retired in Phase 4, after the close-check conditions in §6, not frozen in place. The tags in the Freeze column stay the recovery path. **OD-6 (#715 6910853925)** went the other way from the Codex and provider-neutral rows above: they are kept and marked legacy support (provider-agnostic), not frozen (TCK-20261116-SDLC-CODEX-TRACK-MARKED-LEGACY).
+
 **Order that follows:** tag baselines (R0) → production path proven (Phase 2) → removal (Phase 4). Removal never precedes the tag.
 
 ## 33. Reusable Existing Infrastructure
@@ -1271,7 +1273,7 @@ Phase 3 can start in parallel with Phase 2. The close-check condition "a closure
 2. **Problems.** P-3, P-7.
 3. **Changes.**
    - Freeze and remove `implement-ticket.js`, `implement-epic.js`, pipeline-only gate sites and source-pinned tests; retire the skill imitation (§32a).
-   - Freeze and remove the provider-neutral contract and the Codex track (per OD-6).
+   - Keep the provider-neutral contract and the Codex track, marked legacy support (provider-agnostic) (OD-6, #715 6910853925); the label ticket is TCK-20261116-SDLC-CODEX-TRACK-MARKED-LEGACY.
    - Archive the context packet, headroom and `retrieval_cache` (unless wired in).
    - Generate the CLAUDE.md tier and process tables from code; regenerate `.agents/rules`.
    - Rewrite CLAUDE.md procedure sections as pointers.
@@ -1282,7 +1284,7 @@ Phase 3 can start in parallel with Phase 2. The close-check condition "a closure
 7. **Deliverables.** Archive commits and generated docs.
 8. **Validation.** E7: measure LOC, test files and CI minutes before and after; run a "change amplification" probe (files touched to change one process rule).
 9. **Acceptance.**
-   - The dormant inventory is reduced as decided.
+   - The dormant inventory is reduced as decided (the Codex track is excluded: OD-6 keeps it).
    - CI stays green.
    - CLAUDE.md contains no mechanism claims that the code contradicts. A generated-table drift test passes.
 10. **Risks.**
@@ -1291,6 +1293,27 @@ Phase 3 can start in parallel with Phase 2. The close-check condition "a closure
 11. **Rollback.** Revert the archive commit.
 12. **Owner decisions.** OD-5, OD-6.
 13. **Advance when** acceptance holds.
+
+### Docs-truth track (owner decisions 2026-11-16: #715 6911224913, 6911534263)
+
+Problem: documents drift from code, and a fact can have more than one home. The goal for the authoritative RPG documents (`docs/mechanics/`, `docs/engine/`, `docs/parity_ledger/`, `docs/guidelines/intentional_divergences.md`, `docs/world_rules/`, `registries/mechanisms.yaml`) is "kept true", not "fewer"; the goal for the rest is a single home per kind of fact and an honest status on every document. Measurement and reasoning: `agent-working/stored_artifacts/sdlc-decisions/docs_truth_plan.md`.
+
+Decided:
+- The 13 dead knowledge-gateway documents move to `docs/archive/knowledge_gateway_mcp/`; `redaction_retention_policy.md` stays as active (it is the spec of the live `tools/write_path_guard.py`) and its dead paths get fixed (#715 6911534263). Filed and dispatched: TCK-20261116-THIRTEEN-DEAD-KNOWLEDGE-GATEWAY-DOCS-MOVE-TO-THE-ARCHIVE, whose scope covers fixing that document's dead paths (it lists them with the dead-path script and decides per path).
+- Historical plans and status-less brainstorm documents rank lower in default search, still searchable; brainstorm documents get a status first. This is Phase 5 item 2 (authority field and history down-weighting) in TCK-20261031-SDLC-CONTEXT-AND-SESSION-RELIABILITY, not a new ticket.
+- Four checks start report-only, and none is blocking (owner): a citation resolver (AST-based, with its own positive controls); a changed-code check, report-only, where a "no behaviour change" claim for code a mechanism lists as `implemented_by` must carry proof; a parity `test_path` ratchet, where `test_path` becomes a list first; and freshness stamps, dropped if noisy.
+
+Proposed, not owner-decided (design from the lanes and agent-working-designer; the owner has not seen these details):
+- The resolver resolves files, functions, flags and test paths, not line numbers; a line number may sit beside a symbol and only the symbol is checked.
+- The proof forms for the "no behaviour change" claim: a hash-neutral run (pinned cell, world, seed, ticks, both final hashes equal), or rpg-designer's sign-off for annotation-only changes, with rpg-planner checking the proof.
+- The ratchet applies to `verified` rows added or changed after the cutover; the existing untested rows are burned down under TCK-20261114-PARITY-LEDGER-TEST-PATH-ERRORS-REMAIN-IN-SEVEN-FILES.
+- Stamps are keyed on the files a chapter cites.
+- At least 2 weeks of report-only counts before the owner decides whether any check becomes required.
+- Nothing flips to required while HOLD stage 2 or the D1 measurement PRs are in flight (rpg-planner says when).
+
+Baseline at db6b4579d: 636 of 11,714 backticked repo paths in non-archive docs are dead (5.4%); mechanics 1.4%, world_rules 0.5%, engine 5.8% excluding the knowledge-gateway set; all 23 documented Bible constants match the code. The symbol-level check failed its control and its numbers are not used.
+
+Not decided: whether to read a sample of prose claims (held; see `docs_truth_plan.md` section 7); the REGISTRY-in-CI question (a reader count comes first); the coordination items (heavy-slot lock, fewer open seats, a lighter path for no-code changes).
 
 ### Phase 5 — Context and session reliability
 

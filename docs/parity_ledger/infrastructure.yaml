@@ -2585,17 +2585,23 @@
     reconstructs RNG via DeterministicRNG.set_state() on a DeterministicRNG built with the episode base seed state.seed (stateless draws and lazily seeded domains derive from it; #848, TCK-20261107-A-RESTORED-SCENARIO-CHECKPOINT-DRAWS-FROM-SEED-0); passes run_id to Kernel to
     suppress Domain.INIT RNG draw and preserve determinism. Restored service tick
     counter matches checkpoint tick. Re-exported from scenario_runtime.py for single-import
-    convenience.'
+    convenience. The header also carries a schema fingerprint (ordered field names of every
+    dataclass in the payload, recorded by the pickler at save); restore checks the header,
+    spec_id and fingerprint before pickle.loads and refuses a missing fingerprint, an unreadable
+    header, or any insert, reorder, rename or removal with a typed ValueError (the route answers
+    400 with a shaped detail); a field appended last and named in FIELD_RULES is accepted and
+    filled.'
   status: verified
   priority: P1
   legacy_evidence: null
-  v2_evidence: src/engine/scenario_checkpoint.py::ScenarioCheckpointer + src/engine/scenario_runtime.py
-    (re-export)
+  v2_evidence: src/engine/scenario_checkpoint.py::ScenarioCheckpointer + src/engine/checkpoint_schema.py
+    + src/engine/scenario_runtime.py (re-export)
   proof_type: feature
   test_path: tests/unit/engine/test_scenario_checkpointer.py::test_save_raises_when_kernel_none
     + tests/integration/scenarios/test_scenario_runtime_service.py::TestCheckpointRestore::test_checkpoint_restore_determinism
     + tests/integration/scenarios/test_scenario_runtime_service.py::TestCheckpointRestore::test_restore_keeps_the_state_seed_and_the_per_tick_digest
     + tests/api/test_scenario_runtime_api.py::test_checkpoint_endpoint_returns_path_and_tick
+    + tests/unit/engine/test_checkpoint_schema.py
   divergence_note: null
   support_boundary: null
 - id: INFRA-216
@@ -9471,7 +9477,7 @@
     The tool''s own honest, real output is that all 3 predeclared thresholds FAIL
     for all 7 corpus entries (0/7 pass on Sec.4.1, Sec.4.2, and Sec.4.3 alike), reported
     in full with supporting numbers and no threshold redefined, narrowed, or excluded
-    to force a pass -- see docs/engine/contracts/knowledge_gateway_mcp/phase1_baseline_comparison.md
+    to force a pass -- see docs/archive/knowledge_gateway_mcp/phase1_baseline_comparison.md
     for the full per-entry breakdown and root-cause analysis (a structural Sec.4.1
     warm-hit-vs-Phase-1-has-no-cache gap, Sec.4.2''s richer structured-payload overhead,
     and a genuine doc_id-vs-source_path path-truncation divergence between tools/search_mcp.py''s
@@ -9511,7 +9517,7 @@
     in `tools/knowledge_search.py::_collect_docs_chunks()` -- TCK-20260815-HOTFIX-DOC-ID-NESTED-PATH-TRUNCATION.
     `doc_id` was derived as `f"{section}/{stem}"` where `section` was only `rel_parts[0]`
     (the immediate subdirectory of `docs/`), silently discarding any deeper nesting
-    -- e.g. `docs/engine/contracts/knowledge_gateway_mcp/measurement_baseline_contract.md`
+    -- e.g. `docs/archive/knowledge_gateway_mcp/measurement_baseline_contract.md`
     collapsed to `doc_id = "engine/measurement_baseline_contract"`, dropping `contracts/knowledge_gateway_mcp/`.
     This created a real (confirmed non-collided, quantified by investigation.md at
     0 actual collisions / 338 files / 120 truncated-but-non-colliding) identity-collision
@@ -9576,7 +9582,7 @@
 - id: INFRA-341
   text: 'New Level 1 provider-result cache schema/migration in tools/retrieval_cache.py
     -- TCK-20260815-KGMCP-P2-CACHE-SCHEMA-MIGRATIONS (1st child of TCK-20260815-KNOWLEDGE-GATEWAY-MCP-PHASE2-EPIC),
-    implementing docs/engine/contracts/knowledge_gateway_mcp/cache_migration_plan.md''s
+    implementing docs/archive/knowledge_gateway_mcp/cache_migration_plan.md''s
     frozen design (itself frozen by the DONE TCK-20260814-KGMCP-EVIDENCE-CACHE-IDENTITY)
     as real code for the first time. Adds `retrieval_cache_schema_version: int = 1`,
     a new module constant distinct from and never aliased to `RETRIEVAL_VERSION` (cache-key-derivation
@@ -9585,7 +9591,7 @@
     version axes docs/observability/redaction_retention_policy.md Sec.6 names. Adds
     the `LEVEL1_CACHE_COLUMNS: frozenset[str]` allowlist constant (21 columns), mapping
     docs/plans/knowledge-gateway-mcp-proposal.md Sec.10.2''s Level 1 provider-result-cache
-    row shape 1:1 onto column names: contract-literal names reused verbatim from docs/engine/contracts/knowledge_gateway_mcp/evidence_cache_identity_contract.md
+    row shape 1:1 onto column names: contract-literal names reused verbatim from docs/archive/knowledge_gateway_mcp/evidence_cache_identity_contract.md
     Sec.1 (lookup identity: normalized_intent, resolved_entity_ids, filters, budget_class,
     routing_policy_version, repo_branch_scope) and Sec.2 (validity identity: evidence_fingerprints,
     validated_negative_scopes, adapter_version_at_validation, working_tree_overlap,
@@ -9861,7 +9867,7 @@
     occurrences), so all 3 predeclared thresholds FAIL for all 7 entries (Sec.4.1
     0/7, Sec.4.2-cold 0/7, Sec.4.2-warm 0/7, Sec.4.3 0/7) -- exactly mirroring Phase
     1''s own honest all-FAIL result. No threshold was redefined, narrowed, or excluded
-    to force a pass; no corpus entry was excluded or substituted. See docs/engine/contracts/knowledge_gateway_mcp/phase2_baseline_recomparison.md
+    to force a pass; no corpus entry was excluded or substituted. See docs/archive/knowledge_gateway_mcp/phase2_baseline_recomparison.md
     for the full per-entry breakdown.'
   status: unsupported
   priority: P1
@@ -9894,7 +9900,7 @@
     agent''s own git diff --stat HEAD scoping of those 6 paths against this ticket''s
     new/changed file list confirms zero overlap: this ticket''s own changes are limited
     to tools/agent-monitoring/kgmcp_phase2_gateway_runner.py, tests/tools/fixtures/kgmcp_phase2_baseline_recomparison_results.json,
-    docs/engine/contracts/knowledge_gateway_mcp/phase2_baseline_recomparison.md, tests/tools/test_kgmcp_phase2_baseline_recomparison.py,
+    docs/archive/knowledge_gateway_mcp/phase2_baseline_recomparison.md, tests/tools/test_kgmcp_phase2_baseline_recomparison.py,
     and an appended paragraph in docs/plans/knowledge-gateway-mcp-proposal.md). Exact
     Phase 1 request-shape parity was maintained per DD1''s Architecture Review ruling
     -- no budget_tokens override was used anywhere to force a different (more favorable)
@@ -9981,7 +9987,7 @@
 - id: INFRA-346
   text: "Level 2 assembled context-packet cache schema/migration added -- TCK-20260816-KGMCP-P3-PACKET-CACHE-SCHEMA-MIGRATIONS\
     \ (1st child of TCK-20260816-KNOWLEDGE-GATEWAY-MCP-PHASE3-EPIC), implementing\
-    \ the already-reserved `migration_002_add_level2_tables(conn)` ordinal from docs/engine/contracts/knowledge_gateway_mcp/cache_migration_plan.md\
+    \ the already-reserved `migration_002_add_level2_tables(conn)` ordinal from docs/archive/knowledge_gateway_mcp/cache_migration_plan.md\
     \ \xA72 as real code for the first time, per proposal \xA710.2's Level 2 row shape\
     \ and \xA710.3's conceptual CachedPacket field list. Adds `LEVEL2_CACHE_COLUMNS`\
     \ (28-column frozenset allowlist, one field renamed from the proposal's literal\
@@ -10053,7 +10059,7 @@
     \ by this ticket. `agent-working/.index/knowledge-index/retrieval_cache.db` remains the single cache\
     \ database file -- no second database created (see test_migration_002_never_creates_a_second_database_file\
     \ above). This entry also carries a known, formally-recorded intentional divergence\
-    \ from docs/engine/contracts/knowledge_gateway_mcp/evidence_cache_identity_contract.md\
+    \ from docs/archive/knowledge_gateway_mcp/evidence_cache_identity_contract.md\
     \ \xA73's Non-collapse rule: the new table's `freshness`/`verification` columns\
     \ sit on the same row as lookup-identity fields, which \xA73 Bullet 1 says a lookup-table\
     \ row should never carry. Recorded in docs/guidelines/intentional_divergences.md\
@@ -10211,7 +10217,7 @@
     source) and DD4 (fail-closed default when select_validation_basis() returns "FINER"
     and Level 2's schema has no fingerprint column to verify against) were independently
     confirmed genuine, non-vacuous behavior by Architecture-Verify via live break/restore
-    testing -- not check-passing busywork. tools/knowledge_gateway_router.py and docs/engine/contracts/knowledge_gateway_mcp/evidence_cache_identity_contract.md
+    testing -- not check-passing busywork. tools/knowledge_gateway_router.py and docs/archive/knowledge_gateway_mcp/evidence_cache_identity_contract.md
     remain byte-unchanged; no junction table or new SQLite table was introduced (test_no_junction_table_or_new_sqlite_table_introduced_by_this_ticket).
 - id: INFRA-349
   text: 'Level 2 assembled context-packet cache wired genuinely live into the production
@@ -10341,7 +10347,7 @@
     \ honestly False against both baselines; recall is regression-free (0/7, identical\
     \ to both predecessors' recorded counts); all 4 invalidation criteria PASS. No\
     \ threshold was redefined, narrowed, or excluded to force a pass; no corpus entry\
-    \ was excluded or substituted. See docs/engine/contracts/knowledge_gateway_mcp/phase3_pilot_acceptance_measurement.md\
+    \ was excluded or substituted. See docs/archive/knowledge_gateway_mcp/phase3_pilot_acceptance_measurement.md\
     \ for the full per-entry breakdown."
   status: unsupported
   priority: P1
@@ -10540,7 +10546,7 @@
     (Scope and Investigate phases'' search_docs+graphify sequence, Document-Update/doc-updater''s
     absence of any knowledge-tool call, Architecture Review''s docs/REGISTRY.yaml
     filter, and the dormant SHADOW_CONTEXT_PACKET_ENABLED hook) and evaluates each
-    against the real, committed Phase 1-3 latency/token measurements (docs/engine/contracts/knowledge_gateway_mcp/phase1_baseline_comparison.md,
+    against the real, committed Phase 1-3 latency/token measurements (docs/archive/knowledge_gateway_mcp/phase1_baseline_comparison.md,
     phase2_baseline_recomparison.md, phase3_pilot_acceptance_measurement.md) and agent-working/agent-monitoring/retro/RETRO-2026-W33.md.
     This entry certifies that this evaluation''s methodology was sound -- real call
     sites were surveyed with real citations, real measured numbers were used without
@@ -10558,12 +10564,12 @@
     (Document-Update, a genuine capability mismatch against knowledge_status_response.schema.json),
     and the shadow-packet hook flagged as a future-only candidate, conditioned on
     Phase 3''s own disclosed budget-enforcement (Sec.21 #12) and token-count (AC4/Sec.18)
-    gaps closing first. See docs/engine/contracts/knowledge_gateway_mcp/phase4_workflow_recommendation.md
+    gaps closing first. See docs/archive/knowledge_gateway_mcp/phase4_workflow_recommendation.md
     for the full per-candidate breakdown.'
   status: verified
   priority: P2
   legacy_evidence: null
-  v2_evidence: docs/engine/contracts/knowledge_gateway_mcp/phase4_workflow_recommendation.md
+  v2_evidence: docs/archive/knowledge_gateway_mcp/phase4_workflow_recommendation.md
   test_path: tests/docs/test_phase4_workflow_recommendation_doc.py
   proof_type: regression
   divergence_note: null
@@ -10573,7 +10579,7 @@
     2 Architecture-Review passes). It does NOT certify that any evaluated workflow
     integration is correct or beneficial -- none was implemented in this ticket. The
     evaluation''s real, honest outcome: recommend against 3 of 4 candidates, insufficient
-    evidence at 1. Full numeric detail lives in docs/engine/contracts/knowledge_gateway_mcp/phase4_workflow_recommendation.md,
+    evidence at 1. Full numeric detail lives in docs/archive/knowledge_gateway_mcp/phase4_workflow_recommendation.md,
     not restated here.'
 - id: INFRA-354
   text: 'Knowledge Gateway MCP Phase 4 direct-tool comparison -- TCK-20260816-KGMCP-P4-DIRECT-TOOL-COMPARISON.
@@ -10596,7 +10602,7 @@
     (1.04x-2.93x) than the direct-tool combination for all 7 of 7 corpus entries in
     this fresh, cold-cache run; hand-written, mechanically-verified reviewer_judgment
     field recorded 6/7 entries direct_equal_or_better, 1/7 (Q3_requirement_completeness)
-    mixed, 0/7 gateway_equal_or_better. Full per-query-type detail: docs/engine/contracts/knowledge_gateway_mcp/phase4_direct_tool_comparison.md.
+    mixed, 0/7 gateway_equal_or_better. Full per-query-type detail: docs/archive/knowledge_gateway_mcp/phase4_direct_tool_comparison.md.
     Trustworthiness of the measurement itself is evidenced by 2 real pre-implementation
     fixes Architecture Review required and confirmed applied (the derivation-string
     false provenance claim above, and an unfalsifiable subjective reviewer_judgment
@@ -10683,7 +10689,7 @@
     real budget-tolerance FAIL and Phase 4''s real 7/7 negative gateway-vs-direct-tool
     comparison to recommend proceeding with Phase 5''s remaining two bullets only
     after Phase 3''s own disclosed gaps close -- not now, not never. Full detail:
-    docs/engine/contracts/knowledge_gateway_mcp/phase5_repeated_demand_measurement.md.'
+    docs/archive/knowledge_gateway_mcp/phase5_repeated_demand_measurement.md.'
   status: unsupported
   priority: P2
   legacy_evidence: null
@@ -10713,7 +10719,7 @@
     pairs in the primary source (agent-working/agent-monitoring/events.jsonl, 5.8% of tickets involved),
     372/1411 in the secondary source (agent-working/tickets/working_log.csv, 18.5% of tickets involved)
     -- a small, real, mostly-non-literal signal, not proof of material repeated demand.
-    Full numeric detail: docs/engine/contracts/knowledge_gateway_mcp/phase5_repeated_demand_measurement.md.'
+    Full numeric detail: docs/archive/knowledge_gateway_mcp/phase5_repeated_demand_measurement.md.'
 - id: INFRA-356
   text: 'Knowledge Gateway MCP budget-tolerance/dedup-coverage closure -- TCK-20260816-KGMCP-BUDGET-TOLERANCE-DEDUP-COVERAGE-CLOSURE
     (sibling of INFRA-344/INFRA-350/INFRA-353/INFRA-355, same ''certify methodology,
@@ -10810,7 +10816,7 @@
     reproducibility): Sec.21 #12 budget-tolerance pass rate is now 7/7, up from 2/7
     -- every previously-failing context_search-routed entry dropped from the post-INFRA-356
     range of 2200-2450 tokens to 1038-1171, comfortably under the 1200-token (1000
-    x 1.2) threshold. Full per-entry table in docs/engine/contracts/knowledge_gateway_mcp/phase3_pilot_acceptance_measurement.md''s
+    x 1.2) threshold. Full per-entry table in docs/archive/knowledge_gateway_mcp/phase3_pilot_acceptance_measurement.md''s
     own ''Further accounting closure'' section (Real re-measurement subsection). Verified
     via 49+92 passing unit/integration tests, including a new shared-source-of-truth
     test proving response[''statements'']/[''context'']/[''evidence'']/[''conflicts'']
