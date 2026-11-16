@@ -68,11 +68,32 @@ None yet.
 - src/core/state.py
 
 ## Assumptions / Open Questions
-- No checkpoint files found tracked in git or under data/, so refusing old ones is expected to cost nothing; a running service's `checkpoints/` directory was not searched.
-- Not dispatched. Order against the u24 side's F3 fields to be agreed with rpg-planner.
+- No checkpoint files found tracked in git or under data/, so refusing old ones is expected to cost nothing; a running service's `checkpoints/` directory was not searched. (2026-11-16: none on the ubuntu host either; see the re-scope.)
+- Not dispatched. The F3 ordering is settled (both landed); the remaining questions are in the re-scope below.
 
 ### rpg-designer's raise and shape lean
 Word for word in TCK-20261031-A-PAIR-RE-FORMS-AND-LEAVES-A-GROUP-EVERY-TWO-TICKS ("on the two corrections", point 1). F3 found the same defect: BuildingState.beds inserted before _canonical_cache, moved last with an old-shape test.
+
+### Re-scope against main 789f0f729 (rpg-planner-ubuntu, 2026-11-16)
+What changed since filing:
+- The designer's precondition is met: F3 and the churn fix both landed. FIELD_RULES (`src/engine/checkpoint_fields.py`) now has 9 rows: lodged_in, beds (refuse), cleared_since, next_group_id, the three group fields, and the last_hit pair. Scope item 4: FIELD_RULES stays the fill step, unchanged in shape.
+- The field-order "pin" is four comments, not a test: `src/core/state.py:527`, `:1218`, `:1510` and `src/core/group_record.py:47`. Once a fingerprint refuses inserts, appending last stops being a correctness rule and only keeps old checkpoints restorable; those four comments are reworded to say that (they are lines this ticket touches).
+- #936 (restore run id) changed the Kernel run_id only; the header and payload are unchanged.
+- The hazard is reproduced on the project's Python 3.13.7, still on a toy: a field inserted mid-class takes the next field's saved value and the last field is unset. Not yet shown on a real AuthoritativeState; the tests in AC1 do that.
+- No `.ckpt` file exists on the ubuntu host (searched /data/vboxuser/Work and /home/vboxuser). The API writes `checkpoints/<scenario>/<name>.ckpt` under the service cwd. u24's host was not searched.
+- The restore route already answers 400 on a ValueError (`GroupCounterBehindStoreError` relies on it), so AC3 needs a typed ValueError subclass and a shaped detail, not a new route branch.
+
+Scope item 5, recommendation: record the fingerprint at save from the payload itself, not from a static walk of type hints. A `pickle.Pickler` subclass whose `reducer_override` notes the type of each dataclass it writes gives exactly the classes in that payload, so the header covers every record by construction. A static walk misses fields typed `Any` or `object`, and a sample-based walk (like `tests/architecture/state_digest_probe.py`) only sees what the sample contains. With save-time recording, the guard is an ordinary unit test (the classes met on load equal the header's) and nothing goes to tests/architecture, so no ask to testing-planner. On 3.13.7 it saw nested slotted frozen dataclasses, including one inside a dict (toy, 2026-11-16; not yet on a real state, where memoised repeats and custom `__reduce__` methods need checking). If it misses any on a real state, fall back to the type walk and send the ask.
+
+Scope item 3, the headerless (today's) checkpoint, needs a choice. A fingerprint is compared from the header alone. A checkpoint with no fingerprint can only be judged from its payload. Options:
+- (a) Refuse every checkpoint without a fingerprint, before unpickling, with a typed error saying to re-create it on a current build. Simplest, and fully before-unpickle. It departs from the lean's fifth bullet. Costs nothing on this host (no checkpoints).
+- (b) Read the payload's opcodes with `pickletools.genops`, which does not run the pickle, and accept only if each class's saved field count equals the pre-fingerprint schema (main's shape when this lands); otherwise refuse. Keeps the lean and stays before-unpickle. Limit: a count cannot tell an insert from an append, so it accepts only an exact-count match and fills nothing. Memo references make the scan more code than (a).
+- (c) Unpickle and then compare. Rejected: it runs `pickle.loads` on a file of unknown shape, which the first ruling asked to avoid.
+Recommendation: (a), because no checkpoint exists to keep and (b)'s check is weaker than its wording suggests. This needs rpg-designer's yes, since it changes a bullet of the lean. If the answer is (b), AC1's third clause stands as written; if (a), it reads "a checkpoint without a fingerprint is refused before unpickling (test)".
+
+Out of scope still: non-slotted dataclasses unpickle by name, so they cannot shift. The fingerprint may still list them for renames and removals; the implementer says which.
+
+Before dispatch: ask u24 (lead to lead) whether its F3-checkpoint restore-randoms branch touches `scenario_checkpoint.py` (it is not on origin here), and claim the files on #634. Dispatch is standard tier, owner go needed.
 
 ## Implementation Notes
 ## Test Summary
