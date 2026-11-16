@@ -52,6 +52,36 @@ Sources: **C** = #715 6889309909 (owner's exact words) and **D** = #715 68893181
 
 This changes no row under Undecided below. In particular, OD-4, OD-5, OD-6, OD-11, OD-12 and OD-13 stay undecided, and go to the owner in agent-working-designer's option pack.
 
+## 2026-11-16: OD-4, OD-6, OD-11, OD-12 and OD-13 decided; OD-5 not decided
+
+Source: **E** = #715 6910853925, the owner's answers on agent-working-designer's option pack (first cut, 2026-11-16), recorded by lead-planner on 2026-11-16. The owner's exact words:
+
+> "OD-4 - the test (deep layer testings, not just the project tests but the agent working gates.  OD-5 - we  can but need a strong evidences from both our project observation and research/studies, recommendations from people. OD-06 - if it cause no issue, keep it and mark as legacy support (provider-agnostic). OD-11 - OD-13 you can go with recommendations"
+
+| ID | Decision | Source | Exact scope |
+|---|---|---|---|
+| OD-4 | Decided: the close check goes deep, beyond the project tests | E | The owner's words are above. **Reading, not the owner's words** (lead-planner's, confirmed by agent-working-designer): three layers, each reported on its own: (1) the project test lanes for the paths the PR touches; (2) the agent-working tool tests when `tools/` or the workflows change; (3) the gate ledger, with no unresolved blocking verdict (plan §28 condition 8). All are report-only first, and measured in the E1-replay. If the owner meant fewer layers, the others drop at the end of the report-only window. |
+| OD-6 | Decided: keep the Codex / provider-neutral track, marked legacy | E | "if it cause no issue, keep it and mark as legacy support (provider-agnostic)". No removal. |
+| OD-11 | Decided: the pack's recommendation | E | Three linked layers (L1 closure record, L2 derived view, L3 appended by week close), no database (plan §29a). |
+| OD-12 | Decided: the pack's recommendation | E | Claims stay advisory. The gate job detects a ticket closed in two open PRs. The ref-per-ticket claim (option B) can come later. |
+| OD-13 | Decided: the pack's recommendation | E | One always-run gate job. While M1 is deferred, "required" means required by owner practice, not enforced by a ruleset. |
+| OD-5 | **Not decided** | E | Retiring the pipeline is acceptable only on "strong evidences from both our project observation and research/studies, recommendations from people". An evidence pack comes first (agent-working-designer). Phase 4 waits on it. |
+
+Phases 2 and 3 are filed from E, as filings only: dispatch is a separate owner go (`agent-working/tickets/todos/ai-first-sdlc-evolution/SEQUENCE.md`). The Undecided table below still lists the 10-31 state. Rows decided in A, B, C, D or E override it.
+
+## 2026-11-16 (later): OD-5 decided
+
+Source: **F** = #715 6911091662, the owner's answers by AskUserQuestion on agent-working-designer's OD-5 evidence pack, recorded by lead-planner on 2026-11-16. The text below gives the options the owner chose, as lead-planner recorded them; it is not the owner's own words.
+
+| ID | Decision | Source | Exact scope |
+|---|---|---|---|
+| OD-5 | Decided: option A, retire in Phase 4, with both conditions | F | Remove `implement-ticket.js` only after the OD-4 close check has run 2 weeks and carries (1) a mechanical test-scope floor and (2) an architecture verdict on `src`-touching PRs. Neither condition is waived. Baseline tags make removal recoverable. |
+| `implement-epic.js` and the skill imitation | Decided: follow OD-5, removed together in Phase 4 | F | Not removed sooner and not kept. |
+
+Not chosen: retiring with a condition waived; B (finish the native port); C (leave as is). The evidence is `agent-working/stored_artifacts/sdlc-decisions/od5_evidence_pack.md`. This supersedes the OD-5 row in the section above ("Not decided").
+
+The "run 2 weeks" clock starts on the first day the check carries both conditions. A check that runs without them does not start the clock.
+
 ## Undecided
 
 All of these read undecided as of 2026-10-31 (A and B both say so). Nothing below is decided by being listed in the plan, the summary or a ticket.
