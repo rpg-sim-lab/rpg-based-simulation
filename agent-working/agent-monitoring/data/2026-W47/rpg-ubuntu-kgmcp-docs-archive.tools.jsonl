@@ -1,0 +1,1 @@
+{"session_id":"1c66ad95-ea01-4645-b546-f93d1c46192e","run_id":null,"seq":null,"phase":null,"agent":null,"ts":"2026-11-16T08:43:52.947943Z","tool":"Bash","input_summary":"git cat-file -t 026e18323 && git checkout -b rpg-ubuntu-kgmcp-docs-archive 026e1","read_ranged":null,"status":"ok","duration_ms":313,"execution_id":null,"provider":null,"ticket_id":null}

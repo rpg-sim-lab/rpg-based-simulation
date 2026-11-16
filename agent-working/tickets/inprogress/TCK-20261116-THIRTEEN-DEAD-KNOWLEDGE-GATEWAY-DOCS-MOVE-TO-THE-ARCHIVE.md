@@ -4,7 +4,7 @@ layer: ai
 authority: P2
 audience: agent
 ticket_id: TCK-20261116-THIRTEEN-DEAD-KNOWLEDGE-GATEWAY-DOCS-MOVE-TO-THE-ARCHIVE
-phase: open
+phase: inprogress
 date: 2026-11-16
 tags: [documentation, mcp]
 ---
@@ -15,7 +15,7 @@ tags: [documentation, mcp]
 Thirteen knowledge-gateway (KGMCP) documents whose code was removed in #147 still sit in docs/engine/contracts as if current; move them to docs/archive/knowledge_gateway_mcp/, keep the one live spec, and leave no dead path behind
 
 ## Status
-OPEN
+INPROGRESS
 
 ## Tier
 hotfix
