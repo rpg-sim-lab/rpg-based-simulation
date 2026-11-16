@@ -8,7 +8,7 @@ tags: [performance, benchmarking, regression]
 
 # Where the tick cost grew, and what to fix first (TCK-20261014-PERF-TICK-COST-GROWTH-INVESTIGATION)
 
-**Status: PROVISIONAL evidence.** Measurement only: nothing in `src/` outside `src/perf/` was changed. Every number comes from one run on one loaded development VM (6 vCPU, 1-minute load 1.2 to 6.4, `py-spy` at 250 Hz), so **absolute milliseconds are inflated** (about 2x a CI runner) and **the comparisons below are phase shares within a run**, which a uniform sampling overhead does not bias. `py-spy` overhead is not resolvable below the roughly 18 % run-to-run noise of this host (measured: 0.94 and 1.04 at 250 Hz, `investigation.md` in the ticket's artifacts). Nothing here is a baseline or a capacity claim.
+**Current figures for the gate worlds after H1 and H2 are in section 9 (2026-11-16); sections 1 to 8 are the 2026-10 investigation, from before both fixes and the 10-25 venv sync, and are not comparable with section 9 in milliseconds.** **Status: PROVISIONAL evidence.** Measurement only: nothing in `src/` outside `src/perf/` was changed. Every number comes from one run on one loaded development VM (6 vCPU, 1-minute load 1.2 to 6.4, `py-spy` at 250 Hz), so **absolute milliseconds are inflated** (about 2x a CI runner) and **the comparisons below are phase shares within a run**, which a uniform sampling overhead does not bias. `py-spy` overhead is not resolvable below the roughly 18 % run-to-run noise of this host (measured: 0.94 and 1.04 at 250 Hz, `investigation.md` in the ticket's artifacts). Nothing here is a baseline or a capacity claim.
 
 ## 1. What was held fixed
 
@@ -128,3 +128,41 @@ T08 recorded `simq_corpus_frontier_extended` at 1703 MB and `frontier_marches` a
 ## 8. Limits of this evidence
 
 One run per profile, a loaded host (load 1.2 to 6.4, other sessions' suites running), `py-spy` sampling (shares, not ms), 30 to 40 measured ticks (10 at 2000 entities), pinned fixes the mode only, `no_replay` profiles (replay-on costs are not measured), the movement 5000 point not run, `resolution_overhead` not broken down, old trees run under the live contract and compared by share. Re-measure on a quiet host before quoting a millisecond.
+
+## 9. Stage 0 re-measure after H1 and H2 (`TCK-20261115-PER-PHASE-TICK-COST-AFTER-THE-HOSTILITY-AND-COOPERATION-FIXES`, 2026-11-16)
+
+**Held fixed.** origin/main `db6b4579d` (contains H1 `35e80fb56` and H2 `dc059c49e`), run from the perf-planner worktree detached at that sha. `tools/perf/profile_tick.py --world <w> --seed 42 --profile PROD_SMALL --contract pinned --warmup 20 --ticks 200`; executor `ConcurrentExecutionAdapter`, 2 thread workers (the PROD_SMALL default); runtime mode NORMAL throughout. Python 3.13.7, ubuntu VM, 6 vCPU, each run `systemd-run --scope -p MemoryMax=3G -p MemorySwapMax=0 taskset -c 4-5`, one at a time, quiet gate (`perf_baseline_policy.md` §2.2) passed before every run (load 0.06 to 0.82, MemAvailable 5188 to 5703 MB, CPUs 4 and 5 under 10 % busy, swap in+out 0 pages). Peak RSS 86 to 99 MB.
+
+**Host limit.** The gate is not a strictly quiet host: idle Claude seat processes are not pinned off CPUs 4 and 5 (only `system.slice` is on 0 to 3) and run there at about 0.5 to 2 % each; swap held 3.9 of 8 GB. The ubuntu VM has also shown host-side vCPU stalls, which no guest gate sees. Not comparable with u24 figures: different host.
+
+**Per phase**, median over 3 unprofiled (`--sampler none`) runs; range across the runs in brackets; share of the mean tick. Phases under 1 % are left out (they are in the run output).
+
+| phase | `urban_political` ms | share | `crowded_frontier` ms | share |
+|---|---|---|---|---|
+| (tick) | 24.36 [23.75 to 25.34] | 100 % | 26.81 [26.23 to 28.31] | 100 % |
+| resolution_overhead | 6.79 [6.46 to 7.08] | 27.9 % | 5.92 [5.80 to 6.15] | 22.1 % |
+| advancement | 4.80 [4.67 to 4.97] | 19.7 % | 5.64 [5.50 to 5.96] | 21.0 % |
+| combat_engagement | 3.92 [3.87 to 4.19] | 16.3 % | 4.09 [3.98 to 4.24] | 15.2 % |
+| collection | 2.52 [2.48 to 2.53] | 10.4 % | 2.78 [2.74 to 3.08] | 10.4 % |
+| locomotion | 1.79 [1.78 to 1.85] | 7.3 % | 2.63 [2.58 to 2.86] | 9.8 % |
+| cooperation | 1.64 [1.63 to 1.68] | 6.7 % | 2.02 [2.02 to 2.17] | 7.7 % |
+| governance_ecology | 0.43 | 1.8 % | 1.12 | 4.2 % |
+| diplomatic_transitions | 0.44 | 1.9 % | 0.44 | 1.6 % |
+| scheduling | 0.43 | 1.8 % | 0.40 | 1.5 % |
+| economy | 0.39 | 1.5 % | 0.45 | 1.6 % |
+
+Spread of the run means: `urban_political` 6.5 %, `crowded_frontier` 7.8 %.
+
+**`frontier_living_world`: INCONCLUSIVE on this host.** Six timed runs, same spec, none voided: mean tick 57.55, 34.61, 42.65 ms (runs 1 to 3), then 39.75, 43.92, 37.16 ms (runs 4 to 6, re-run with lead-planner's go). Spread 54 % over runs 1 to 3, 17 % over runs 4 to 6, 56 % over all six. Run 1 is high in every phase, not one. Swap is ruled out for runs 4 to 6 (`pswpout` unchanged; `pswpin` +13, +4, +0 pages; `vmstat` si/so 0/0 before and after each run), and every gate read swap in+out 0. Cause not found; steal time was not recorded. Phase shares are stable across the runs (resolution_overhead 25.7 %, advancement 19.7 %, combat_engagement 16.4 %, collection 10.9 % at the median), but no millisecond figure is reported for this world.
+
+**Resolution profile.** One `py-spy` run per world at 250 Hz (shares only; the sampler inflates ms). `fused_strategic_pass` (`src/engine/pipeline.py:394`) is not timed as its own sub-phase, so it sits in `resolution_overhead` (`kernel.py:441`, the Resolution total minus the recorded sub-phases). From the folded stacks:
+
+| world | Resolution, % of tick | `fused_strategic_pass`, % of Resolution | % of tick | largest callee inside the pass |
+|---|---|---|---|---|
+| `frontier_living_world` | 73.9 % | 35.8 % | 26.4 % | `nearest_town_tile` 50 %, `evaluate_strategic_intent` 16 % |
+| `urban_political` | 71.6 % | 32.4 % | 23.2 % | `nearest_town_tile` 50 %, `evaluate_strategic_intent` 17 % |
+| `crowded_frontier` | 67.6 % | 28.6 % | 19.3 % | `nearest_town_tile` 31 %, `evaluate_strategic_intent` 23 % |
+
+Cross-check: the pass's share of the tick (19 to 26 %) is close to `resolution_overhead`'s unprofiled share (22 to 28 %), as H5 found (section 3). Method: sampled stacks, no wrapper; `final_integrity` has its own timer on this tree (0.1 ms). `nearest_town_tile` inside the pass is the largest single item named here; that is a finding for rpg through lead-planner, not a fix.
+
+**Limits.** 200 measured ticks after 20 warmup (early ticks; section 7 item 6 still applies to long runs), one seed, PROD_SMALL with the concurrent executor only, one py-spy run per world, `frontier_living_world` unresolved, the host limit above.

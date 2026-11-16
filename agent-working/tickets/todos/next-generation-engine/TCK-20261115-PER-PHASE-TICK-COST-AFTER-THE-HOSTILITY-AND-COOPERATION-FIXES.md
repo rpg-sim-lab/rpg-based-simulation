@@ -83,6 +83,11 @@ None.
 - Whether `tick_cost_growth.md`'s older figures stay comparable: measurements from before the 10-25 venv sync are not comparable (handover), so only the post-fix numbers are reported as current.
 
 ## Implementation Notes
+- 2026-11-16: run on lead-planner's go, origin/main `db6b4579d`, worktree detached at that sha (path `.claude/worktrees/perf-planner`). 12 runs rc=0, then 3 frontier re-runs on a second go, with swap counters. Results in `docs/performance/tick_cost_growth.md` §9; full readings in the staging `evidence.md`.
+- `urban_political` 24.36 ms per tick (spread 6.5 %) and `crowded_frontier` 26.81 ms (7.8 %). `frontier_living_world` is INCONCLUSIVE (6 runs, 17-56 % spread; swap ruled out; no run voided).
+- `fused_strategic_pass` is 29-36 % of Resolution and 19-26 % of the tick (py-spy folded stacks; it has no sub-phase timer and sits in `resolution_overhead`). `nearest_town_tile` is the largest callee inside it: a finding for rpg through lead-planner.
+- Host limits: seats are not fenced off CPUs 4-5, swap held 3.9 of 8 GB, and the VM has host-side stalls. The proposal is filed as `TCK-20261116-TIMING-RUNS-SHARE-THEIR-CPUS-WITH-IDLE-SEATS`.
+- Run data cleaned by id (24 dirs, with child 2's).
 
 ## Test Summary
 
