@@ -60,6 +60,8 @@ None.
 ## Implementation Notes
 - Dry run 2026-11-16 into a scratch copy of baselines/: accepted; v2, milestone M1, 274 metric rows, 3 omitted validity rows (owned by the V1 free-meal entry), 0 undefined, 101 rows changed vs v1, 0 stop lines crossed; lint clean.
 
+- The command (dry run used --dir <scratch copy> and --pr "#DRYRUN"): `python3 -m tools.test_architecture.rpg_gate_baseline rebaseline --candidate <rpg-gate-candidate-e72270894.json> --config tests/simulation_quality/rpg_gate/config.yaml --dir tests/simulation_quality/rpg_gate/baselines --known tools/test_architecture/rpg_gate_known.yaml --memo-row "owner_decision_memo row 97" --pr "#N" --milestone M1 --cite "rpg gate run 43895014837 on main e72270894; src identical to 6b59284ee, shown hash-neutral against M1-base 9c398a068 at s42 only (owner 6917174751)" --owner-ruling-ref "#715 6920465555" --owner-ruling-date 2026-11-16`.
+
 ## Test Summary
 
 ## Files Changed
