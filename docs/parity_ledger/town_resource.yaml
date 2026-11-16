@@ -2541,7 +2541,7 @@
   proof_type: parity
   test_path: tests/mechanic_scenarios/test_hunting_kill_to_meat.py
   divergence_note: 'Intentional divergence 2.107 (Intentional Gameplay Change). Divergent since 2026-11-16 (TCK-20261116-A-HUNGRY-HUNTER-EATS-ONE-PORTION-OF-ITS-KILL-THEN-WALKS-OFF-TO-AN-UNRELATED-PROJECT):
-    a hungry hunter eats one portion of its own fresh kill and then walks off to an unrelated project (region_stabilization outranks the available scavenge step); tests/mechanic_scenarios/test_hunting_kill_to_meat.py is xfail(strict) until that ticket lands. The test passed on main only through the HOLD bug''s stray step (TCK-20261111-A-HOLD-MODE-MOVE-STILL-TAKES-A-STEP). The rest of decision 44 (corpse meat, diet gates, raw vs prepared, the hunt way, grazing) is unaffected.'
+    a hungry hunter eats one portion of its own fresh kill and then walks off to an unrelated project (region_stabilization outranks the available scavenge step); tests/mechanic_scenarios/test_hunting_kill_to_meat.py is xfail(strict) until that ticket lands. The first portion is eaten with and without the fix; on main the rest of the meal came only from the HOLD bug''s stray step (TCK-20261111-A-HOLD-MODE-MOVE-STILL-TAKES-A-STEP), which is why the test passed there. The rest of decision 44 (corpse meat, diet gates, raw vs prepared, the hunt way, grazing) is unaffected.'
   support_boundary: 'Held out: cooking (a cooked equivalent of raw meat), people hunting for sale, and individual births of game (ECOL-03).'
 - id: TOWN-206
   text: 'A sale at a shop and a wage at an inn pay a tenth of the proceeds, rounded down per transaction, to the treasury of the faction holding the building''s region, in the same transaction; there is no periodic levy.'
