@@ -8134,6 +8134,21 @@
   - schema
   - documentation
 - type: ticket
+  path: agent-working/tickets/todos/TCK-20261116-PRE-PUSH-ADVISORY-CHECKS-THE-PUSH-TARGET.md
+  ticket_id: TCK-20261116-PRE-PUSH-ADVISORY-CHECKS-THE-PUSH-TARGET
+  title: The pre-push advisory checks the directory and branch being pushed, not the
+    session's own directory, and fires only on real push commands.
+  tier: hotfix
+  ticket_type: bug
+  date: '2026-11-16'
+  related_code_areas:
+  - default_run_command
+  - tests/tools/test_delivery_pre_push_advisory.py
+  artifact_files: []
+  tags:
+  - ai
+  - delivery
+- type: ticket
   path: agent-working/tickets/todos/TCK-20261116-THREE-PARITY-ROWS-CITE-A-TEST-THAT-DOES-NOT-EXIST.md
   ticket_id: TCK-20261116-THREE-PARITY-ROWS-CITE-A-TEST-THAT-DOES-NOT-EXIST
   title: Three verified parity rows (COMB-351, STRAT-280, TOWN-019) cite a test file
@@ -8163,6 +8178,218 @@
   artifact_files: []
   tags:
   - determinism
+- type: ticket
+  path: agent-working/tickets/todos/ai-first-sdlc-evolution/TCK-20261116-CHANGED-CODE-CHECK-REPORT-ONLY-WITH-PROOF-ESCAPE.md
+  ticket_id: TCK-20261116-CHANGED-CODE-CHECK-REPORT-ONLY-WITH-PROOF-ESCAPE
+  title: The mechanism changed-code check runs report-only in CI, and a 'no behaviour
+    change' claim for `implemented_by` code must carry proof.
+  tier: standard
+  ticket_type: feature
+  date: '2026-11-16'
+  related_code_areas:
+  - tools/mechanism_registry/mechanism_registry_changed_code_check.py
+  - .github/workflows/test.yml
+  artifact_files: []
+  tags:
+  - ai
+  - governance
+- type: ticket
+  path: agent-working/tickets/todos/ai-first-sdlc-evolution/TCK-20261116-DOC-CITATION-RESOLVER-REPORT-ONLY.md
+  ticket_id: TCK-20261116-DOC-CITATION-RESOLVER-REPORT-ONLY
+  title: A report-only resolver checks that every backticked citation in the authoritative
+    documents names a file and symbol that exist.
+  tier: standard
+  ticket_type: feature
+  date: '2026-11-16'
+  related_code_areas:
+  - tools/gate_checks/ (new resolver; doc_drift.py and docs_search.py are related)
+  - .github/workflows/test.yml
+  artifact_files: []
+  tags:
+  - ai
+  - governance
+  - testing
+- type: ticket
+  path: agent-working/tickets/todos/ai-first-sdlc-evolution/TCK-20261116-DOC-CLASSIFICATION-LIST.md
+  ticket_id: TCK-20261116-DOC-CLASSIFICATION-LIST
+  title: A read-only script lists every non-archive document with its status, last
+    change, dead-path count and any document that restates it.
+  tier: hotfix
+  ticket_type: chore
+  date: '2026-11-16'
+  related_code_areas:
+  - tools/ (new script)
+  artifact_files: []
+  tags:
+  - ai
+  - governance
+- type: ticket
+  path: agent-working/tickets/todos/ai-first-sdlc-evolution/TCK-20261116-FRESHNESS-STAMPS-REPORT-ONLY.md
+  ticket_id: TCK-20261116-FRESHNESS-STAMPS-REPORT-ONLY
+  title: An optional freshness stamp on a Bible chapter or engine contract reports,
+    without blocking, when a file the chapter cites has changed since the stamp.
+  tier: standard
+  ticket_type: feature
+  date: '2026-11-16'
+  related_code_areas:
+  - tools/gate_checks/
+  - docs/mechanics/ (read only)
+  artifact_files: []
+  tags:
+  - ai
+  - governance
+- type: ticket
+  path: agent-working/tickets/todos/ai-first-sdlc-evolution/TCK-20261116-PARITY-NEW-ROW-TEST-PATH-RATCHET-REPORT-ONLY.md
+  ticket_id: TCK-20261116-PARITY-NEW-ROW-TEST-PATH-RATCHET-REPORT-ONLY
+  title: A report-only check requires a `verified` parity row added or changed after
+    the cutover to have a test path that resolves to a collected test.
+  tier: standard
+  ticket_type: feature
+  date: '2026-11-16'
+  related_code_areas:
+  - tools/parity_ledger_writer.py (agent-working's)
+  - tools/gate_checks/ (new check)
+  artifact_files: []
+  tags:
+  - ai
+  - governance
+  - testing
+- type: ticket
+  path: agent-working/tickets/todos/ai-first-sdlc-evolution/TCK-20261116-READ-COUNTER-FOR-PROCESS-DOCUMENTS.md
+  ticket_id: TCK-20261116-READ-COUNTER-FOR-PROCESS-DOCUMENTS
+  title: Read rows record what kind of file was read, from the full path, so a 2-4
+    week report can show which process documents other sessions actually read.
+  tier: standard
+  ticket_type: feature
+  date: '2026-11-16'
+  related_code_areas:
+  - _input_summary
+  - tools/agent-monitoring/ (new report)
+  artifact_files: []
+  tags:
+  - ai
+  - agent-monitoring
+  - process-improvement
+- type: ticket
+  path: agent-working/tickets/todos/ai-first-sdlc-evolution/TCK-20261116-SDLC-ATTRIBUTION-FIELDS-AND-COORDINATION-METRICS.md
+  ticket_id: TCK-20261116-SDLC-ATTRIBUTION-FIELDS-AND-COORDINATION-METRICS
+  title: Monitoring rows carry their tool call and work item, events say whether they
+    were derived or narrated, sessions record their end, and the retro shows coordination
+    cost.
+  tier: standard
+  ticket_type: feature
+  date: '2026-11-16'
+  related_code_areas:
+  - tools/agent-monitoring/ (tool hook, record_events.py, generate_retro.py)
+  - tools/sessions/session_start_hook.py
+  - .claude/settings.json (hook entry; governing)
+  artifact_files: []
+  tags:
+  - ai
+  - agent-monitoring
+  - observability
+- type: ticket
+  path: agent-working/tickets/todos/ai-first-sdlc-evolution/TCK-20261116-SDLC-CLOSE-CHECK-REPORT-ONLY-GATE-JOB.md
+  ticket_id: TCK-20261116-SDLC-CLOSE-CHECK-REPORT-ONLY-GATE-JOB
+  title: One always-run CI gate job runs a post-close check on every PR that closes
+    a ticket, report-only, covering the project tests, the agent-working tool tests
+    and the gate ledger.
+  tier: standard
+  ticket_type: feature
+  date: '2026-11-16'
+  related_code_areas:
+  - tools/gate_checks/done_checker_static.py
+  - tools/agent-monitoring/gate_ledger.py
+  - changed-files
+  artifact_files: []
+  tags:
+  - ai
+  - delivery
+  - governance
+  - testing
+- type: ticket
+  path: agent-working/tickets/todos/ai-first-sdlc-evolution/TCK-20261116-SDLC-CLOSURE-RECORD-AND-EVIDENCE-LAYERS.md
+  ticket_id: TCK-20261116-SDLC-CLOSURE-RECORD-AND-EVIDENCE-LAYERS
+  title: Every ticket close writes one closure record, and a derived view links ticket,
+    sessions, PR, CI and decision, with no database.
+  tier: standard
+  ticket_type: feature
+  date: '2026-11-16'
+  related_code_areas:
+  - tools/agent-monitoring/record_hand_orchestrated_closure.py
+  - tools/agent-monitoring/ (week close, generate_retro.py)
+  - tools/agent-monitoring/gate_ledger.py
+  artifact_files: []
+  tags:
+  - ai
+  - agent-monitoring
+  - observability
+- type: ticket
+  path: agent-working/tickets/todos/ai-first-sdlc-evolution/TCK-20261116-SDLC-CODEX-TRACK-MARKED-LEGACY.md
+  ticket_id: TCK-20261116-SDLC-CODEX-TRACK-MARKED-LEGACY
+  title: The Codex / provider-neutral track is marked "legacy support (provider-agnostic)"
+    where a reader meets it first, and its CI lane is split only if it also carries
+    the agent-orchestration tests.
+  tier: hotfix
+  ticket_type: chore
+  date: '2026-11-16'
+  related_code_areas:
+  - agent-orchestration
+  - tools/agent_orchestration/, tools/agent_replay/
+  artifact_files: []
+  tags:
+  - ai
+  - governance
+- type: ticket
+  path: agent-working/tickets/todos/ai-first-sdlc-evolution/TCK-20261116-SDLC-RETIRE-PIPELINE-WORKFLOWS.md
+  ticket_id: TCK-20261116-SDLC-RETIRE-PIPELINE-WORKFLOWS
+  title: '`implement-ticket.js`, `implement-epic.js` and the skill imitation are removed
+    together, once the close check has run two weeks with both OD-5 lines.'
+  tier: standard
+  ticket_type: refactor
+  date: '2026-11-16'
+  related_code_areas:
+  - .claude/workflows/implement-ticket.js, .claude/workflows/implement-epic.js
+  - .claude/skills/ (implement-ticket, implement-epic)
+  - tests/tools/ (the source-pinned tests)
+  artifact_files: []
+  tags:
+  - ai
+  - governance
+  - delivery
+- type: ticket
+  path: agent-working/tickets/todos/ai-first-sdlc-evolution/TCK-20261116-SDLC-WORK-CLOSE-CLI.md
+  ticket_id: TCK-20261116-SDLC-WORK-CLOSE-CLI
+  title: A `work close` command closes a ticket in one step and refuses when a validator
+    fails.
+  tier: standard
+  ticket_type: feature
+  date: '2026-11-16'
+  related_code_areas:
+  - tools/agent-monitoring/record_hand_orchestrated_closure.py
+  - tools/working_log_writer.py
+  - tools/gate_checks/done_checker_static.py
+  - tools/mechanism_registry/mechanism_registry_changed_code_check.py
+  artifact_files: []
+  tags:
+  - ai
+  - delivery
+- type: ticket
+  path: agent-working/tickets/todos/ai-first-sdlc-evolution/TCK-20261116-WORKAROUND-FLAG-REPORT-ONLY.md
+  ticket_id: TCK-20261116-WORKAROUND-FLAG-REPORT-ONLY
+  title: A report-only check flags added comments that say TODO, HACK, workaround
+    or "for now" without a ticket id.
+  tier: standard
+  ticket_type: feature
+  date: '2026-11-16'
+  related_code_areas:
+  - tools/gate_checks/done_checker_static.py
+  - tools/gate_checks/ (new function)
+  artifact_files: []
+  tags:
+  - ai
+  - governance
+  - process-improvement
 - type: ticket
   path: agent-working/tickets/done/TCK-20261115-A-NON-SEQUENTIAL-RUN-IS-REFUSED-BY-THE-GATE-CANDIDATE-PAIRED-ARMS-AND-RPG-MEASURE.md
   ticket_id: TCK-20261115-A-NON-SEQUENTIAL-RUN-IS-REFUSED-BY-THE-GATE-CANDIDATE-PAIRED-ARMS-AND-RPG-MEASURE
@@ -8351,6 +8578,20 @@
   - planning
   - delivery
 - type: ticket
+  path: agent-working/tickets/done/TCK-20261115-SDLC-BASELINE-TAG-RULESET.md
+  ticket_id: TCK-20261115-SDLC-BASELINE-TAG-RULESET
+  title: A tag ruleset protects the four frozen SDLC baseline tags, applied by the
+    owner.
+  tier: hotfix
+  ticket_type: chore
+  date: '2026-11-15'
+  related_code_areas: []
+  artifact_files: []
+  tags:
+  - ai
+  - governance
+  - security
+- type: ticket
   path: agent-working/tickets/done/TCK-20261115-SEARCH-STALE-FLAG-CHECKS-THE-INDEXED-CHECKOUT.md
   ticket_id: TCK-20261115-SEARCH-STALE-FLAG-CHECKS-THE-INDEXED-CHECKOUT
   title: search_docs's stale flag checks the checkout the index was built from, so
@@ -8528,20 +8769,6 @@
   tags:
   - testing
   - simulation-quality
-- type: ticket
-  path: agent-working/tickets/todos/ai-first-sdlc-evolution/TCK-20261115-SDLC-BASELINE-TAG-RULESET.md
-  ticket_id: TCK-20261115-SDLC-BASELINE-TAG-RULESET
-  title: A tag ruleset protects the four frozen SDLC baseline tags, applied by the
-    owner.
-  tier: hotfix
-  ticket_type: chore
-  date: '2026-11-15'
-  related_code_areas: []
-  artifact_files: []
-  tags:
-  - ai
-  - governance
-  - security
 - type: ticket
   path: agent-working/tickets/todos/distributed-workers-experiment/TCK-20261115-DISTRIBUTED-ENGINE-WORKER-ENTRY-POINT-AND-COMPOSE-PROFILE.md
   ticket_id: TCK-20261115-DISTRIBUTED-ENGINE-WORKER-ENTRY-POINT-AND-COMPOSE-PROFILE
