@@ -95,6 +95,7 @@ Out of scope still: non-slotted dataclasses unpickle by name, so they cannot shi
 
 Before dispatch: ask u24 (lead to lead) whether its F3-checkpoint restore-randoms branch touches `scenario_checkpoint.py` (it is not on origin here), and claim the files on #634. Dispatch is standard tier, owner go needed.
 - 2026-11-16, lead-planner: lead-planner-u24 says u24's F3-checkpoint fix (rpg-checkpoint-restore-randoms d690c808a, unpushed) does edit `src/engine/scenario_checkpoint.py`. lead-planner proposed that F3-checkpoint lands first (a HARD repair before the M1-base record) and this ticket rebases after it. Hold the #634 claim and the dispatch ask until u24 answers.
+- 2026-11-16, correction (u24, verified by lead-planner and by rpg-planner-ubuntu): the F3-checkpoint fix (restore draws from seed 0) is already on main by #848 (66d08dd56, TCK-20261107-A-RESTORED-SCENARIO-CHECKPOINT-DRAWS-FROM-SEED-0, in done/); origin/main `src/engine/scenario_checkpoint.py:94` is `DeterministicRNG(base_seed=state.seed)`. u24's d690c808a is a duplicate. Nothing to order behind. This ticket now waits only on rpg-designer's (a)/(b)/(c) ruling on headerless checkpoints (relayed by u24), then the #634 claim and the owner dispatch ask.
 
 ## Implementation Notes
 ## Test Summary
