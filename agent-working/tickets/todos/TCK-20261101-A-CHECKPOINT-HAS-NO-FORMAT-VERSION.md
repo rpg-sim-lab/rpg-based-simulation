@@ -89,6 +89,13 @@ Planner note (rpg-planner-ubuntu, applying the ruling's no-weakening rule): thre
 - `tests/unit/engine/test_scenario_checkpointer.py:55-73`, the spec_id mismatch on a dummy payload. It gets a valid fingerprint header so it still tests the spec check.
 `_write_checkpoint` (`:191`) and the inline header writers at `:124` and `:164` are the places to change; a shared helper that writes an old-shape header is the natural form. The API tests mock restore() and are unaffected. The integration tests save with the real writer and are unaffected.
 
+### rpg-designer on the planner extension, 2026-11-16 (u24; relayed by lead-planner). In substance, as relayed:
+"NO objection to extending ruling (a). Re-pointing :215, :224 and test_scenario_checkpointer.py:55-73 to old-shape fingerprint headers, with each assertion kept, is the same rule. The order spec_id check -> fingerprint check -> pickle.loads is right; spec_id is in the JSON header, so moving it ahead tightens before-unpickle. One non-blocking ask: add a test pinning the order, so a headerless checkpoint whose spec_id also mismatches gets the spec_id error."
+Taken into scope: that order test is part of item 6.
+
+### File claim and overlap (2026-11-16, open)
+Dispatched to investigate and plan only. No edit to the claimed files until u24's final claim answer arrives via lead-planner. Preliminary answer from lead-planner-u24: u24's D80C branch (rpg-d80c, TCK-20261019-D80C-SIMQ-READS-THE-LOSSLESS-EVENT-FILE-OFFLINE) is likely live and edits `src/engine/scenario_checkpoint.py` and `src/api/routes/scenarios.py`. Measured by rpg-planner-ubuntu at origin/rpg-d80c 74fcae318 (2026-10-20, 235 commits behind main): 8 added and 3 removed lines over the two files. It adds an `observers` parameter to `restore()`, passes it to `Kernel` and `ScenarioRuntimeService`, and adds one import. rpg-d80b carries the same two-file change. Still being checked by u24: rpg-sleeper-lodges (scenario_checkpoint.py, checkpoint_fields.py; possibly merged) and rpg-planner-seat-8's infrastructure.yaml row. If D80C is live, the plan says which lands first and how small the overlap is in each file.
+
 ### Re-scope against main 789f0f729 (rpg-planner-ubuntu, 2026-11-16)
 What changed since filing:
 - The designer's precondition is met: F3 and the churn fix both landed. FIELD_RULES (`src/engine/checkpoint_fields.py`) now has 9 rows: lodged_in, beds (refuse), cleared_since, next_group_id, the three group fields, and the last_hit pair. Scope item 4: FIELD_RULES stays the fill step, unchanged in shape.
