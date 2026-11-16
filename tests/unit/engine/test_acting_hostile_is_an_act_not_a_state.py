@@ -93,13 +93,13 @@ def test_wounded_adjacent_closing_and_outmatched_are_threat_terms_but_not_acts()
 @pytest.mark.parametrize("ago,expected", [(0, True), (NEED_WAKE_CADENCE, True), (NEED_WAKE_CADENCE + 1, False)])
 def test_a_hit_by_the_hostile_acts_for_one_brain_cadence(ago, expected):
     subject = _subject()
-    subject = replace(subject, combat=replace(subject.combat, last_attacker_id=2, last_hit_tick=TICK - ago))
+    subject = replace(subject, combat=replace(subject.combat, last_attacker_id=2, last_hit_attackers=(2,), last_hit_tick=TICK - ago))
     assert _acts(_hostile(), subject) is expected
 
 
 def test_a_hit_by_another_body_does_not_make_this_hostile_act():
     subject = _subject()
-    subject = replace(subject, combat=replace(subject.combat, last_attacker_id=99, last_hit_tick=TICK))
+    subject = replace(subject, combat=replace(subject.combat, last_attacker_id=99, last_hit_attackers=(99,), last_hit_tick=TICK))
     assert not _acts(_hostile(), subject)
 
 

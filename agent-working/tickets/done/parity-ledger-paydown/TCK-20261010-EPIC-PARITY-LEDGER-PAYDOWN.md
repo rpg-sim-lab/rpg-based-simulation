@@ -1,10 +1,10 @@
 ---
-status: active
+status: historical
 layer: core
 authority: P1
 audience: agent
 ticket_id: TCK-20261010-EPIC-PARITY-LEDGER-PAYDOWN
-phase: open
+phase: done
 date: 2026-10-10
 tags: []
 ---
@@ -15,7 +15,7 @@ tags: []
 Epic — Parity-ledger paydown: clear the ~1,300 P0 entries with no test_path, one ledger file at a time, smallest first
 
 ## Status
-EPIC_SCOPED
+DONE
 
 ## Tier
 epic
@@ -25,6 +25,51 @@ repair
 
 ## Priority
 P2
+
+## Disposition
+SUPERSEDED
+
+## Disposition Rationale
+Closed on 2026-11-14 by owner decision, logged on #715 as comment 6875225978:
+
+```
+3. "Close 4 empty epics": each owner files a disposition close for parity-ledger-paydown (rpg),
+rpg-regression-gate-report (testing), session-layer and session-lead (agent-working), recording
+done vs dropped/moved.
+```
+
+Done: `world_dynamics.yaml` went from 87 / 88 errors to 0 / 0 through two children,
+`TCK-20261028-PARITY-PAYDOWN-WORLD-DYNAMICS` and
+`TCK-20261028-PARITY-PAYDOWN-WORLD-DYNAMICS-STATUS-CHANGES` (#783 f102085e0, #784 abcf14869; 26 of
+its entries were retired as `unsupported` by owner decision in that PR). No child was filed for
+the other seven files.
+
+Moved, nothing dropped: all seven remaining files go to
+`TCK-20261114-PARITY-LEDGER-TEST-PATH-ERRORS-REMAIN-IN-SEVEN-FILES`, with the same rules. No file
+has an owner-recorded exception, because no exception mechanism exists. Counts on origin/main
+db918c517, gate output:
+
+```
+$ python3 -m codebase.gates.parity_ledger_schema check
+OK: 2651 schema error(s) in the ledger, 0 rule(s) rose, 0 new, 0 fell
+```
+
+| Ledger file | At epic open (A / B, proof_type) | Now (A / B, proof_type) |
+|---|---|---|
+| world_dynamics | 87 / 88, 0 | 0 / 0, 0 (done) |
+| progression | 89 / 99, 0 | 83 / 93, 0 |
+| town_resource | 130 / 144, 1 | 129 / 142, 1 |
+| strategic_cognition | 142 / 198, 0 | 142 / 197, 0 |
+| infrastructure | 149 / 162, 19 | 149 / 162, 19 |
+| social_narrative | 164 / 208, 0 | 164 / 206, 0 |
+| combat_movement | 238 / 265, 4 | 235 / 261, 4 |
+| substrate | 308 / 355, 1 | 308 / 355, 1 |
+
+A is rule `allOf/0` (a verified or divergent entry with no test_path), the epic's "P0" column. B is
+rule `allOf/2/else` (a P0 entry that is not missing or unsupported and has no test_path), its "all"
+column. The epic's roughly 1,300 is column A: 1307 at open, 1210 now. Column B is 1416 now. Outside
+world_dynamics, the small drops came from other domains' PRs in passing, not from this epic.
+Total errors: 2851 at epic open (#489 9515caeae), 2651 now.
 
 ## Request Summary
 `TCK-20261003-PARITY-LEDGER-REMEDIATION-EPIC` (codebase) was closed by the owner on 2026-10-10 under
@@ -116,7 +161,7 @@ files infrastructure's) and may re-order them with a stated reason.
 Defined by child tickets.
 
 ## Files Changed
-(Child tickets.)
+none — decision-only. This close moved the epic folder to `agent-working/tickets/done/parity-ledger-paydown/` and filed `agent-working/tickets/todos/TCK-20261114-PARITY-LEDGER-TEST-PATH-ERRORS-REMAIN-IN-SEVEN-FILES.md`.
 
 ## Completion Summary
-(Open.)
+Closed 2026-11-14 as SUPERSEDED (see Disposition). One of eight files paid down; the other seven moved to `TCK-20261114-PARITY-LEDGER-TEST-PATH-ERRORS-REMAIN-IN-SEVEN-FILES`. Nothing dropped.
