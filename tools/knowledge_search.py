@@ -670,15 +670,25 @@ def _corpus_source_paths(corpus_root: Path) -> list[str]:
     return paths
 
 
+def _index_owner_root(db_path: Path) -> Path | None:
+    """The checkout root that owns an index at the standard layout `<root>/agent-working/.index/knowledge-index/<db>`."""
+    tail = KNOWLEDGE_INDEX.parts
+    dir_parts = db_path.parent.parts
+    if len(dir_parts) > len(tail) and dir_parts[-len(tail):] == tail:
+        return Path(*dir_parts[:-len(tail)])
+    return None
+
+
 def index_staleness(db_path: Path, corpus_root: Path | None = None) -> dict | None:
     """How far the index at `db_path` is behind the corpus, by manifest mtimes (TCK-20261006-KNOWLEDGE-INDEX-STALE-WARNING).
 
-    `corpus_root` defaults to this checkout's root, the same anchor as the index. Returns None when current,
+    `corpus_root` defaults to the checkout that owns `db_path` (derived from the standard index layout), falling back to this
+    checkout's root when `db_path` has another shape. Returns None when current,
     {"changed": n, "new": n, "removed": n} when not, or {"unknown": True} when the manifest is missing or unreadable. Stat
     only: no embedding, no file read. Never raises. The CLI `query` and MCP `search_docs` both call this, so the two paths
     cannot disagree."""
     try:
-        root = corpus_root if corpus_root is not None else Path(_REPO_ROOT_STR)
+        root = corpus_root if corpus_root is not None else (_index_owner_root(db_path) or Path(_REPO_ROOT_STR))
         paths = json.loads((db_path.parent / "manifest.json").read_text()).get("paths")
         if not isinstance(paths, dict):
             return {"unknown": True}

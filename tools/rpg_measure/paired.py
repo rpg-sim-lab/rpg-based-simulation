@@ -222,6 +222,9 @@ def collected_path(cache: Path, sha: str, ticks: int, world: str, seed: int, rep
 
 
 def run_one(tree: Path, world: str, seed: int, ticks: int, out: Path) -> None:
+    # The child runs with the arm tree as its working directory, so every path it is given must be absolute: a relative ``tree`` (a relative --cache) would resolve a second
+    # time from inside the tree for PYTHONPATH, and a relative ``out`` would be written under the tree instead of the cache (TCK-20261116-AN-ARM-RUNS-WHEN-THE-CACHE-PATH-IS-RELATIVE).
+    tree, out = tree.resolve(), out.resolve()
     env = {**os.environ, "PYTHONHASHSEED": HASHSEED, "PYTHONPATH": str(tree)}
     proc = subprocess.run([sys.executable, str(CHILD), world, str(seed), str(ticks), str(out)], cwd=tree, env=env, capture_output=True, text=True)
     if proc.returncode != 0 or not out.exists():
