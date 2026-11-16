@@ -42,6 +42,8 @@ FIXTURE_DIGEST_V2 = "41b03d22dc75548914f32c96aab57ab6d520842b818245d46c491cdcf7a
 FIXTURE_DIGEST_V3 = "37679334c2e549023f515e742db36c97d6d028d9f3778b85f6661a59625a619a"
 # v4 (`flat-sha256-v4`) `get_hash` of `_carried_state()`: v3 plus `CombatComponent.last_hit_damage` (None in the fixture). It must never change without a new scheme version.
 FIXTURE_DIGEST_V4 = "b7dd6509b1f0069ad3ed53ed1c15de6f40cd832562e47e4816dff7a8a359f8d2"
+# v5 (`flat-sha256-v5`) `get_hash` of `_carried_state()`: v4 plus `CombatComponent.last_hit_attackers` and `last_hit_damages` (both empty in the fixture). It must never change without a new scheme version.
+FIXTURE_DIGEST_V5 = "79b9ffa163c5f16d97ffc830360aee16b9d12c57d91f3021a5b465c4cd919287"
 V3_ADDED_KEYS = ("item_instances", "recent_world_events", "quest_registry", "factions", "clans", "information_providers")
 REMOVED_KEYS = ("periodic_due_ticks", "work_debt")
 
@@ -99,9 +101,15 @@ def _evolved_state(scenario: str, ticks: int = 8) -> AuthoritativeState:
 # 1. Byte-identity of the flat hash
 # ---------------------------------------------------------------------------
 
-def test_flat_hash_of_carried_fixture_is_pinned_under_v4():
-    assert PROOF_DIGEST_SCHEME == "flat-sha256-v4"
-    assert CanonicalStateHasher.get_hash(_carried_state()) == FIXTURE_DIGEST_V4
+def test_flat_hash_of_carried_fixture_is_pinned_under_v5():
+    assert PROOF_DIGEST_SCHEME == "flat-sha256-v5"
+    assert CanonicalStateHasher.get_hash(_carried_state()) == FIXTURE_DIGEST_V5
+
+
+def test_v5_is_v4_plus_the_last_hit_attackers_and_their_shares():
+    """Migration proof: drop `last_hit_attackers` and `last_hit_damages` and the v4 digest is reproduced exactly, so nothing else changed."""
+    assert _digest_of(_v4_form(_carried_state())) == FIXTURE_DIGEST_V4
+    assert CanonicalStateHasher.get_hash(_carried_state()) != FIXTURE_DIGEST_V4
 
 
 def test_v4_is_v3_plus_the_last_felt_blow():
@@ -117,7 +125,15 @@ def _v2_form(state: AuthoritativeState) -> Dict[str, Any]:
     for key in V3_ADDED_KEYS:
         del data[key]
     for entity in data["entities"].values():
-        entity["combat"] = {k: v for k, v in entity["combat"].items() if k not in ("last_hit_tick", "last_hit_damage")}
+        entity["combat"] = {k: v for k, v in entity["combat"].items() if k not in ("last_hit_tick", "last_hit_damage", "last_hit_attackers", "last_hit_damages")}
+    return data
+
+
+def _v4_form(state: AuthoritativeState) -> Dict[str, Any]:
+    """The v4 canonical data of a state: v5 data minus the entities' `last_hit_attackers` and `last_hit_damages`."""
+    data = CanonicalStateHasher.to_canonical_data(state)
+    for entity in data["entities"].values():
+        entity["combat"] = {k: v for k, v in entity["combat"].items() if k not in ("last_hit_attackers", "last_hit_damages")}
     return data
 
 
@@ -125,7 +141,7 @@ def _v3_form(state: AuthoritativeState) -> Dict[str, Any]:
     """The v3 canonical data of a state: v4 data minus the entities' `last_hit_damage`."""
     data = CanonicalStateHasher.to_canonical_data(state)
     for entity in data["entities"].values():
-        entity["combat"] = {k: v for k, v in entity["combat"].items() if k != "last_hit_damage"}
+        entity["combat"] = {k: v for k, v in entity["combat"].items() if k not in ("last_hit_damage", "last_hit_attackers", "last_hit_damages")}
     return data
 
 
@@ -146,6 +162,10 @@ def _vary(state: AuthoritativeState, field_name: str) -> AuthoritativeState:
     if field_name == "last_hit_damage":
         hero = state.entities[1]
         return dataclasses.replace(state, entities={**state.entities, 1: dataclasses.replace(hero, combat=dataclasses.replace(hero.combat, last_hit_damage=9))})
+    if field_name in ("last_hit_attackers", "last_hit_damages"):
+        hero = state.entities[1]
+        value = (2, 3) if field_name == "last_hit_attackers" else (4, 5)
+        return dataclasses.replace(state, entities={**state.entities, 1: dataclasses.replace(hero, combat=dataclasses.replace(hero.combat, **{field_name: value}))})
     if field_name == "last_hit_tick":
         hero = state.entities[1]
         return dataclasses.replace(state, entities={**state.entities, 1: dataclasses.replace(hero, combat=dataclasses.replace(hero.combat, last_hit_tick=3))})
@@ -164,7 +184,7 @@ def _vary(state: AuthoritativeState, field_name: str) -> AuthoritativeState:
     raise AssertionError(field_name)
 
 
-@pytest.mark.parametrize("field_name", [*V3_ADDED_KEYS, "last_hit_tick", "last_hit_damage"])
+@pytest.mark.parametrize("field_name", [*V3_ADDED_KEYS, "last_hit_tick", "last_hit_damage", "last_hit_attackers", "last_hit_damages"])
 def test_each_carried_state_field_alone_changes_the_v3_digest(field_name: str):
     """Positive control: the digest sees a divergence in that one field (the seven fields were invisible under v2)."""
     base = _carried_state()

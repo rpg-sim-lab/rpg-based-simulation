@@ -4914,7 +4914,9 @@
   proof_type: regression
   test_path: tests/unit/tactical/testflight_weighs_free_swing.py
   divergence_note: See docs/guidelines/intentional_divergences.md Section 2.202.
-  support_boundary: 'Last felt blow only; non-flight moves off engagement, KITING and KEEP_DISTANCE are not covered; a multi-attacker swing credits its total to the first attacker.'
+  support_boundary: Last felt blow only; non-flight moves off engagement, KITING and
+    KEEP_DISTANCE are not covered; a multi-attacker swing is the sum of the shares
+    of the engaged, alive attackers of the last hit (COMB-354, divergence 2.148).
 
 - id: COMB-352
   text: 'TCK-20261110-A-NON-FLIGHT-MOVE-OFF-ENGAGEMENT-WALKS-INTO-A-KNOWN-LETHAL-FREE-SWING: MovementSystem.resolve_move does not take a step that would give the free swing (COMB-009) to an engaged hostile the subject has felt will finish it (felt_lethal_attacker: last_attacker_id is engaged and alive, last_hit_damage > 0 and >= hp), whatever chose the step (a flight, an engage or bracketing step, a stored strategic target), unless the step is an evasive retreat. The held step is the blocked-step shape: no position, no stamina, no free swing, no fled learning, no plan-cache entry, the stored target kept, wait_count_delta 0, failure_reason FELT_LETHAL_FREE_SWING.'
@@ -4926,3 +4928,47 @@
   test_path: tests/unit/movement/test_felt_lethal_free_swing_step.py
   divergence_note: See docs/guidelines/intentional_divergences.md Section 2.204.
   support_boundary: 'Last felt blow only (as 2.202); a stored-target step with no felt-lethal hostile still walks while engaged (TCK-20261109-A-COMBAT-RETREAT-PROJECT-WALKS-THE-SUBJECT-AGAINST-THE-HELD-FLIGHT-RULE); a subject can be pinned beside a felt-lethal hostile that stays adjacent and does not strike.'
+- id: COMB-354
+  text: 'TCK-20261103-A-GROUP-HIT-RECORDS-ONLY-ITS-FIRST-ATTACKER: a simultaneous
+    group hit (resolve_multi_attack, called by the opportunity-attack step of MovementSystem.resolve_move)
+    records every attacker in CombatComponent.last_hit_attackers (attacker-list order)
+    and the share each took in last_hit_damages (parallel, int, summing to last_hit_damage),
+    written by CombatPatch with last_hit_tick; every other hit records a 1-tuple;
+    last_attacker_id stays the first attacker. Row 88 hit test (b) is membership in
+    the set within NEED_WAKE_CADENCE. felt_lethal_attacker sums the shares of the
+    set''s attackers that are engaged and alive now (lethal when the sum is above
+    0 and at least hp). The next damaging hit replaces the set. Proof digest flat-sha256-v5;
+    a pre-v5 checkpoint restores one attacker holding the whole blow.'
+  status: verified
+  priority: P1
+  legacy_evidence: null
+  v2_evidence: src/core/state.py (CombatComponent.last_hit_attackers, last_hit_damages),
+    src/core/update_models/combat.py (CombatUpdate.hit_attackers_set, hit_damages_set,
+    merge), src/engine/patches.py (CombatPatch), src/engine/combat.py (resolve_multi_attack),
+    src/engine/tactical_threat.py (_hit_acts_on), src/engine/felt_swing.py (felt_lethal_attacker),
+    src/engine/checkpoint.py (flat-sha256-v5), src/engine/checkpoint_fields.py (FIELD_RULES).
+  proof_type: regression
+  test_path: tests/unit/engine/test_group_hit_records_every_attacker.py
+  divergence_note: See docs/guidelines/intentional_divergences.md Section 2.148.
+  support_boundary: Only the latest damaging hit is remembered (the next hit replaces
+    the set); group hits come only from opportunity attacks and are rare (6 of 391
+    multi-attack calls at s42, 3 worlds, 2000 ticks).
+- id: COMB-355
+  text: 'TCK-20261101-A-HOSTILE-ATTACKING-YOU-OUTRANKS-THE-GROUP-SHARED-TARGET: target_score
+    ranks a hostile that hit the entity within ATTACKED_RECENTLY_WINDOW_TICKS (10,
+    D-13) ahead of the group''s shared target (group_bias) and behind adjacency; the
+    hit is read from the typed record (last_hit_attackers, last_hit_tick). A hostile
+    that targets the entity but has not hit it does not count. No role, kind or faction
+    name is read.'
+  status: verified
+  priority: P1
+  legacy_evidence: null
+  v2_evidence: src/engine/tactical.py (target_score, not_attacking_me), src/engine/tactical_threat.py
+    (ATTACKED_RECENTLY_WINDOW_TICKS, attacked_me_recently), docs/plans/deferred_tuning_decisions_register.md
+    (D-13).
+  proof_type: regression
+  test_path: tests/unit/tactical/test_attacker_outranks_group_target.py
+  divergence_note: See docs/guidelines/intentional_divergences.md Section 2.149.
+  support_boundary: 'Only the latest hit is remembered (COMB-354); the window is a
+    registered tuning constant, not derived from fight data; timing of the target_score
+    hot loop is NOT MEASURED (perf pause #715 6556861718).'

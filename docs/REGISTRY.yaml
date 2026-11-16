@@ -8164,6 +8164,19 @@
   - ai
   - testing
 - type: ticket
+  path: agent-working/tickets/todos/TCK-20261116-LIVE-HEALTH-API-TEST-WAITS-A-FIXED-FOUR-SECONDS-ON-A-FIXED-PORT.md
+  ticket_id: TCK-20261116-LIVE-HEALTH-API-TEST-WAITS-A-FIXED-FOUR-SECONDS-ON-A-FIXED-PORT
+  title: The live-health API test starts uvicorn on fixed port 8021, waits a fixed
+    4 s and then requests, and deletes its own server log even on failure, so an xdist
+    failure leaves no evidence
+  tier: standard
+  ticket_type: bug
+  date: '2026-11-16'
+  related_code_areas:
+  - tests/api/test_live_health_api.py
+  artifact_files: []
+  tags: []
+- type: ticket
   path: agent-working/tickets/done/TCK-20261115-A-NON-SEQUENTIAL-RUN-IS-REFUSED-BY-THE-GATE-CANDIDATE-PAIRED-ARMS-AND-RPG-MEASURE.md
   ticket_id: TCK-20261115-A-NON-SEQUENTIAL-RUN-IS-REFUSED-BY-THE-GATE-CANDIDATE-PAIRED-ARMS-AND-RPG-MEASURE
   title: A run on a non-sequential executor is refused by the gate candidate, the
@@ -8398,6 +8411,47 @@
   - observability
   - lab-agent
 - type: ticket
+  path: agent-working/tickets/todos/TCK-20261115-A-RESTORED-SCENARIO-SHARES-ONE-RUN-DIRECTORY-PER-SPEC.md
+  ticket_id: TCK-20261115-A-RESTORED-SCENARIO-SHARES-ONE-RUN-DIRECTORY-PER-SPEC
+  title: Every restore of one scenario spec builds its kernel under the same run id,
+    so concurrent restores delete each other's run directory
+  tier: hotfix
+  ticket_type: bug
+  date: '2026-11-15'
+  related_code_areas:
+  - src/engine/scenario_checkpoint.py; src/engine/run_identity.py; tests/integration/scenarios/test_scenario_runtime_service.py
+  artifact_files: []
+  tags:
+  - determinism
+- type: ticket
+  path: agent-working/tickets/todos/TCK-20261115-AN-EXPLICIT-RUN-ID-DELETES-AN-EXISTING-RUN-DIRECTORY.md
+  ticket_id: TCK-20261115-AN-EXPLICIT-RUN-ID-DELETES-AN-EXISTING-RUN-DIRECTORY
+  title: A kernel given an explicit run id deletes an existing run directory of that
+    name (rmtree, then create), so two runs that share an id destroy each other's
+    data
+  tier: standard
+  ticket_type: bug
+  date: '2026-11-15'
+  related_code_areas:
+  - src/engine/run_identity.py, src/observability/reporting/artifact_repository.py,
+    src/engine/kernel.py:188
+  artifact_files: []
+  tags: []
+- type: ticket
+  path: agent-working/tickets/todos/TCK-20261115-ENGINE-AND-API-TESTS-LEAVE-THEIR-RUN-DIRECTORIES-BEHIND.md
+  ticket_id: TCK-20261115-ENGINE-AND-API-TESTS-LEAVE-THEIR-RUN-DIRECTORIES-BEHIND
+  title: Tests in tests/integration/scenarios, tests/unit/engine and tests/api build
+    real kernels under default run ids and leave every run directory in data/runs
+  tier: standard
+  ticket_type: bug
+  date: '2026-11-15'
+  related_code_areas:
+  - tests/unit/engine/lodging_kernel.py; tests/api/test_api_key_auth.py; tests/api/test_admission_control.py;
+    tests/integration/scenarios/; tests/named_run_dirs.py; src/observability/reporting/artifact_repository.py
+    (base_dir)
+  artifact_files: []
+  tags: []
+- type: ticket
   path: agent-working/tickets/todos/TCK-20261115-M1-A-TEST-KIND-DECLARED-ONLY-IN-CONTENT-PERCEIVES-EATS-AND-FIGHTS.md
   ticket_id: TCK-20261115-M1-A-TEST-KIND-DECLARED-ONLY-IN-CONTENT-PERCEIVES-EATS-AND-FIGHTS
   title: 'Milestone 1''s content-alone probe: a test kind declared only in test content,
@@ -8411,6 +8465,49 @@
   artifact_files: []
   tags:
   - testing
+- type: ticket
+  path: agent-working/tickets/todos/TCK-20261115-PAIRED-PASS-RECORDS-THE-HOLD-LINE-AND-CHECKS-ITS-BASE.md
+  ticket_id: TCK-20261115-PAIRED-PASS-RECORDS-THE-HOLD-LINE-AND-CHECKS-ITS-BASE
+  title: The paired measurement records a spy's data in the same pass, proves the
+    spy changes nothing with plain-twin controls, and refuses a fix arm that is not
+    built on the announced base
+  tier: standard
+  ticket_type: feature
+  date: '2026-11-15'
+  related_code_areas:
+  - tools/rpg_measure/paired.py, tools/rpg_measure/arm_child.py, tools/rpg_measure/stats
+    (verdicts)
+  - tools/test_architecture/run_ledger.py (testing's; an outcome value change routes
+    to testing-planner)
+  artifact_files: []
+  tags:
+  - determinism
+  - benchmarking
+- type: ticket
+  path: agent-working/tickets/todos/TCK-20261115-SPECIES-HOSTILITY-TEST-EDITS-A-TRACKED-DATA-FILE-IN-PLACE.md
+  ticket_id: TCK-20261115-SPECIES-HOSTILITY-TEST-EDITS-A-TRACKED-DATA-FILE-IN-PLACE
+  title: The slow species-hostility metamorphic test rewrites the tracked data/content/social/species_relations.yaml
+    in place, so a killed run leaves the repo dirty and breaks the next run
+  tier: standard
+  ticket_type: bug
+  date: '2026-11-15'
+  related_code_areas:
+  - tests/integration/lab/test_species_relations_metamorphic_validation.py; the species-relations
+    content loader (src/content/).
+  artifact_files: []
+  tags: []
+- type: ticket
+  path: agent-working/tickets/todos/TCK-20261115-SWEEP-RUN-INDEX-BUILDER-CANNOT-BE-CALLED-ON-ITS-OWN.md
+  ticket_id: TCK-20261115-SWEEP-RUN-INDEX-BUILDER-CANNOT-BE-CALLED-ON-ITS-OWN
+  title: The sweep's run-index builder is inline in ScenarioSweeper.run_sweep, so
+    "the index survives a freshly corrupted run" can no longer be tested
+  tier: standard
+  ticket_type: refactor
+  date: '2026-11-15'
+  related_code_areas:
+  - src/observability/sweeper.py; tests/unit/observability/test_run_index_builder.py
+  artifact_files: []
+  tags: []
 - type: ticket
   path: agent-working/tickets/todos/TCK-20261115-THE-GATE-REPORTS-WHETHER-EACH-WORLDS-OUTCOMES-STAY-IN-THEIR-BANDS.md
   ticket_id: TCK-20261115-THE-GATE-REPORTS-WHETHER-EACH-WORLDS-OUTCOMES-STAY-IN-THEIR-BANDS
@@ -8659,6 +8756,20 @@
   artifact_files: []
   tags:
   - engine
+- type: ticket
+  path: agent-working/tickets/todos/TCK-20261114-PARITY-LEDGER-TEST-PATH-ERRORS-REMAIN-IN-SEVEN-FILES.md
+  ticket_id: TCK-20261114-PARITY-LEDGER-TEST-PATH-ERRORS-REMAIN-IN-SEVEN-FILES
+  title: Seven parity-ledger files still carry 2,651 schema errors, most of them P0
+    entries with no test_path
+  tier: standard
+  ticket_type: repair
+  date: '2026-11-14'
+  related_code_areas:
+  - docs/parity_ledger/*.yaml
+  - codebase/baselines/parity_ledger_schema_baseline.json
+  artifact_files: []
+  tags:
+  - testing
 - type: ticket
   path: agent-working/tickets/todos/TCK-20261114-REROUTE-RUNG-STEPS-PAST-THE-READINESS-GATE-AND-STATUS-BLOCK.md
   ticket_id: TCK-20261114-REROUTE-RUNG-STEPS-PAST-THE-READINESS-GATE-AND-STATUS-BLOCK
@@ -10433,6 +10544,24 @@
   artifact_files: []
   tags: []
 - type: ticket
+  path: agent-working/tickets/done/TCK-20261103-A-GROUP-HIT-RECORDS-ONLY-ITS-FIRST-ATTACKER.md
+  ticket_id: TCK-20261103-A-GROUP-HIT-RECORDS-ONLY-ITS-FIRST-ATTACKER
+  title: A simultaneous group hit records only its first attacker, so row 88's act
+    test reads the others as not acting
+  tier: standard
+  ticket_type: bug
+  date: '2026-11-03'
+  related_code_areas:
+  - src/engine/combat.py:315-410, src/engine/patches.py:330-337, src/engine/tactical_threat.py:141-143
+  artifact_files:
+  - agent-working/stored_artifacts/TCK-20261103-A-GROUP-HIT-RECORDS-ONLY-ITS-FIRST-ATTACKER/investigation.md
+  - agent-working/stored_artifacts/TCK-20261103-A-GROUP-HIT-RECORDS-ONLY-ITS-FIRST-ATTACKER/measurement_cell_crowded_s42.md
+  - agent-working/stored_artifacts/TCK-20261103-A-GROUP-HIT-RECORDS-ONLY-ITS-FIRST-ATTACKER/plan.md
+  - agent-working/stored_artifacts/TCK-20261103-A-GROUP-HIT-RECORDS-ONLY-ITS-FIRST-ATTACKER/rpg_designer_ruling_2026-11-14.md
+  - agent-working/stored_artifacts/TCK-20261103-A-GROUP-HIT-RECORDS-ONLY-ITS-FIRST-ATTACKER/rpg_designer_ruling_2026-11-15.md
+  - agent-working/stored_artifacts/TCK-20261103-A-GROUP-HIT-RECORDS-ONLY-ITS-FIRST-ATTACKER/test_plan.md
+  tags: []
+- type: ticket
   path: agent-working/tickets/done/TCK-20261103-A-MEASUREMENT-NOT-ON-THE-PINNED-RUNNER-CALLS-ITSELF-EVIDENCE.md
   ticket_id: TCK-20261103-A-MEASUREMENT-NOT-ON-THE-PINNED-RUNNER-CALLS-ITSELF-EVIDENCE
   title: 'A behaviour measurement run on the unpinned `_run_engine` can be presented
@@ -10527,18 +10656,6 @@
   artifact_files: []
   tags: []
 - type: ticket
-  path: agent-working/tickets/todos/TCK-20261103-A-GROUP-HIT-RECORDS-ONLY-ITS-FIRST-ATTACKER.md
-  ticket_id: TCK-20261103-A-GROUP-HIT-RECORDS-ONLY-ITS-FIRST-ATTACKER
-  title: A simultaneous group hit records only its first attacker, so row 88's act
-    test reads the others as not acting
-  tier: standard
-  ticket_type: bug
-  date: '2026-11-03'
-  related_code_areas:
-  - src/engine/combat.py:315-410, src/engine/patches.py:330-337, src/engine/tactical_threat.py:141-143
-  artifact_files: []
-  tags: []
-- type: ticket
   path: agent-working/tickets/todos/TCK-20261103-BROKE-HUNGRY-WORKERS-STILL-TAKE-NO-SHIFT-ON-MAIN.md
   ticket_id: TCK-20261103-BROKE-HUNGRY-WORKERS-STILL-TAKE-NO-SHIFT-ON-MAIN
   title: 'After #789, broke hungry frontier workers still take no work shift and starve
@@ -10622,6 +10739,23 @@
   artifact_files: []
   tags:
   - delivery
+- type: ticket
+  path: agent-working/tickets/done/TCK-20261101-A-HOSTILE-ATTACKING-YOU-OUTRANKS-THE-GROUP-SHARED-TARGET.md
+  ticket_id: TCK-20261101-A-HOSTILE-ATTACKING-YOU-OUTRANKS-THE-GROUP-SHARED-TARGET
+  title: 'A group member keeps attacking the group''s shared target while an adjacent
+    hostile kills it: self-defence must outrank group_bias in target_score'
+  tier: standard
+  ticket_type: bug
+  date: '2026-11-01'
+  related_code_areas:
+  - src/engine/tactical.py:390-428 (target_score), :542/:552 (VANGUARD BRACKETING)
+  - src/core/death_cause.py, CombatComponent.last_attacker_id
+  artifact_files:
+  - agent-working/stored_artifacts/TCK-20261101-A-HOSTILE-ATTACKING-YOU-OUTRANKS-THE-GROUP-SHARED-TARGET/investigation.md
+  - agent-working/stored_artifacts/TCK-20261101-A-HOSTILE-ATTACKING-YOU-OUTRANKS-THE-GROUP-SHARED-TARGET/plan.md
+  - agent-working/stored_artifacts/TCK-20261101-A-HOSTILE-ATTACKING-YOU-OUTRANKS-THE-GROUP-SHARED-TARGET/rpg_designer_ruling_2026-11-15_n_window.md
+  - agent-working/stored_artifacts/TCK-20261101-A-HOSTILE-ATTACKING-YOU-OUTRANKS-THE-GROUP-SHARED-TARGET/test_plan.md
+  tags: []
 - type: ticket
   path: agent-working/tickets/done/TCK-20261101-PHASE19-CONTRACT-NAMES-ITS-RUNTIME-TEST.md
   ticket_id: TCK-20261101-PHASE19-CONTRACT-NAMES-ITS-RUNTIME-TEST
@@ -10720,19 +10854,6 @@
   related_code_areas:
   - src/systems/strategic_systems/intelligence.py:670 (active-objective redirect),
     :678 (town-return fallback)
-  artifact_files: []
-  tags: []
-- type: ticket
-  path: agent-working/tickets/todos/TCK-20261101-A-HOSTILE-ATTACKING-YOU-OUTRANKS-THE-GROUP-SHARED-TARGET.md
-  ticket_id: TCK-20261101-A-HOSTILE-ATTACKING-YOU-OUTRANKS-THE-GROUP-SHARED-TARGET
-  title: 'A group member keeps attacking the group''s shared target while an adjacent
-    hostile kills it: self-defence must outrank group_bias in target_score'
-  tier: standard
-  ticket_type: bug
-  date: '2026-11-01'
-  related_code_areas:
-  - src/engine/tactical.py:390-428 (target_score), :542/:552 (VANGUARD BRACKETING)
-  - src/core/death_cause.py, CombatComponent.last_attacker_id
   artifact_files: []
   tags: []
 - type: ticket
@@ -17672,6 +17793,19 @@
   - agent-working/stored_artifacts/TCK-20261010-WILD-LAND-CARRIES-PLANT-COVER-AND-FORAGE-DECLARED-PER-BIOME-GRAZING-D59/test_plan.md
   tags: []
 - type: ticket
+  path: agent-working/tickets/done/parity-ledger-paydown/TCK-20261010-EPIC-PARITY-LEDGER-PAYDOWN.md
+  ticket_id: TCK-20261010-EPIC-PARITY-LEDGER-PAYDOWN
+  title: 'Epic — Parity-ledger paydown: clear the ~1,300 P0 entries with no test_path,
+    one ledger file at a time, smallest first'
+  tier: epic
+  ticket_type: repair
+  date: '2026-10-10'
+  related_code_areas:
+  - docs/parity_ledger/*.yaml
+  - codebase/baselines/parity_ledger_schema_baseline.json
+  artifact_files: []
+  tags: []
+- type: ticket
   path: agent-working/tickets/done/visual-asset-slices/TCK-20261010-EPIC-VISUAL-ASSET-SLICES.md
   ticket_id: TCK-20261010-EPIC-VISUAL-ASSET-SLICES
   title: 'Visual asset slices: named slices with 9-slice centres and pivots, read
@@ -17914,19 +18048,6 @@
   - agent-working/stored_artifacts/TCK-20261010-VISUAL-ASSETS-STORE-TOOLING-DOCS-AND-CLOSE/test_plan.md
   tags:
   - planning
-- type: ticket
-  path: agent-working/tickets/todos/parity-ledger-paydown/TCK-20261010-EPIC-PARITY-LEDGER-PAYDOWN.md
-  ticket_id: TCK-20261010-EPIC-PARITY-LEDGER-PAYDOWN
-  title: 'Epic — Parity-ledger paydown: clear the ~1,300 P0 entries with no test_path,
-    one ledger file at a time, smallest first'
-  tier: epic
-  ticket_type: repair
-  date: '2026-10-10'
-  related_code_areas:
-  - docs/parity_ledger/*.yaml
-  - codebase/baselines/parity_ledger_schema_baseline.json
-  artifact_files: []
-  tags: []
 - type: ticket
   path: agent-working/tickets/done/TCK-20261008-RECIPE-NODES-LAND-ON-TILES-THEIR-REGION-DOES-NOT-OWN-P3.md
   ticket_id: TCK-20261008-RECIPE-NODES-LAND-ON-TILES-THEIR-REGION-DOES-NOT-OWN-P3

@@ -442,6 +442,19 @@ make then, against real data.
 
 ---
 
+### D-13 · `ATTACKED_RECENTLY_WINDOW_TICKS`: how recent a hit makes its attacker "attacking me" in target selection (`02_combat_laws.md` §7, divergence 2.149)
+**Deferred from:** `TCK-20261101-A-HOSTILE-ATTACKING-YOU-OUTRANKS-THE-GROUP-SHARED-TARGET`
+
+`target_score` (`src/engine/tactical.py`) ranks a hostile that hit the entity within the window ahead of the group's shared target. The window is the named constant `ATTACKED_RECENTLY_WINDOW_TICKS` in `src/engine/tactical_threat.py`, read through `attacked_me_recently`, which reads the typed hit record (`CombatComponent.last_hit_attackers`, `last_hit_tick`).
+
+**Value: 10 ticks.** It equals the row 88 act-test window (`NEED_WAKE_CADENCE`, 10), and that equality is the reason for the value: "attacked me" and "acting on me" then cover the same width and agree. It is a separate constant on purpose: the two mean different things (a scheduler cadence against a target-selection window) and may be retuned apart, so no test pins them equal (rpg-designer, #634 6883797779).
+
+**What is genuinely undecided:** whether 10 is the right width for target selection. It was chosen to agree with the act test, not derived from fight data. **Evidence:** the e10 position at t894 (ubuntu groups batch C, crowded_frontier s43): shared target 30 and attacker 27 adjacent, the bias held e10 on 30 while 27 hit it.
+
+**Accepted outcome:** ships with 10. A future balance pass may retune it against real fight data.
+
+---
+
 ## Related
 
 - `docs/audits/D04_balance_tuning.md` — existing balance audit; this register feeds it.

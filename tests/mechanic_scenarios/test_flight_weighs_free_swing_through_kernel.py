@@ -23,7 +23,7 @@ HP, FELT = 40, 60
 def _state():
     state = _stage(empty_inventories(compile_world(WORLD_ID)), h_pos=ADJ, need_profile=CAUTIOUS, readiness=100.0, hp=HP)
     f = state.entities[F]
-    felt = replace(f, combat=replace(f.combat, last_attacker_id=H, last_hit_tick=0, last_hit_damage=FELT))
+    felt = replace(f, combat=replace(f.combat, last_attacker_id=H, last_hit_tick=0, last_hit_damage=FELT, last_hit_attackers=(H,), last_hit_damages=(FELT,)))
     object.__setattr__(state, "entities", {**state.entities, F: felt})
     return state
 
