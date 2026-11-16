@@ -62,6 +62,7 @@ Behaviour:
 - `ScenarioCheckpointer.restore(path, spec)` raises `ValueError` if `checkpoint.spec_id != spec.id`.
 - The restored service's `_tick` counter is set to the checkpoint tick.
 - RNG stream is restored via `DeterministicRNG.set_state(rng_checkpoint)`.
+- The restored kernel is built under an explicit run id, `restored_<spec id>_<pid>_<8 hex of a uuid4>`, unique per restore (TCK-20261115-A-RESTORED-SCENARIO-SHARES-ONE-RUN-DIRECTORY-PER-SPEC). An explicit id suppresses the `Domain.INIT` RNG draw that would break restore determinism; the uuid is not the simulation RNG. Two restores of one spec therefore never share, or replace, a run directory.
 - `spec_path` must be provided in the restore POST body when calling via REST (see below). If omitted, a sentinel spec is constructed from the `scenario_id` path parameter.
 
 ---
