@@ -2585,16 +2585,22 @@
     reconstructs RNG via DeterministicRNG.set_state(); passes run_id to Kernel to
     suppress Domain.INIT RNG draw and preserve determinism. Restored service tick
     counter matches checkpoint tick. Re-exported from scenario_runtime.py for single-import
-    convenience.'
+    convenience. The header also carries a schema fingerprint (ordered field names of every
+    dataclass in the payload, recorded by the pickler at save); restore checks the header,
+    spec_id and fingerprint before pickle.loads and refuses a missing fingerprint, an unreadable
+    header, or any insert, reorder, rename or removal with a typed ValueError (the route answers
+    400 with a shaped detail); a field appended last and named in FIELD_RULES is accepted and
+    filled.'
   status: verified
   priority: P1
   legacy_evidence: null
-  v2_evidence: src/engine/scenario_checkpoint.py::ScenarioCheckpointer + src/engine/scenario_runtime.py
-    (re-export)
+  v2_evidence: src/engine/scenario_checkpoint.py::ScenarioCheckpointer + src/engine/checkpoint_schema.py
+    + src/engine/scenario_runtime.py (re-export)
   proof_type: feature
   test_path: tests/unit/engine/test_scenario_checkpointer.py::test_save_raises_when_kernel_none
     + tests/integration/scenarios/test_scenario_runtime_service.py::TestCheckpointRestore::test_checkpoint_restore_determinism
     + tests/api/test_scenario_runtime_api.py::test_checkpoint_endpoint_returns_path_and_tick
+    + tests/unit/engine/test_checkpoint_schema.py
   divergence_note: null
   support_boundary: null
 - id: INFRA-216
