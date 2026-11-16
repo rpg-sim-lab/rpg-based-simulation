@@ -1,0 +1,6 @@
+{"t": 0.2, "MemAvailable": 5477232, "SwapFree": 4406916, "CommitLimit": 13479272, "Committed_AS": 14144092, "VmRSS": 537620, "VmData": 540164, "ac_kb": 540340}
+{"t": 1.2, "MemAvailable": 5455136, "SwapFree": 4406916, "CommitLimit": 13479272, "Committed_AS": 14165196, "VmRSS": 537956, "VmData": 540164, "ac_kb": 540340}
+{"t": 2.2, "MemAvailable": 5455052, "SwapFree": 4406916, "CommitLimit": 13479272, "Committed_AS": 14167132, "VmRSS": 537960, "VmData": 540164, "ac_kb": 540340}
+{"t": 3.3, "MemAvailable": 5455052, "SwapFree": 4406916, "CommitLimit": 13479272, "Committed_AS": 14165620, "VmRSS": 537960, "VmData": 540164, "ac_kb": 540340}
+{"t": 4.3, "MemAvailable": 5451192, "SwapFree": 4406916, "CommitLimit": 13479272, "Committed_AS": 14163760, "VmRSS": 537960, "VmData": 540164, "ac_kb": 540340}
+{"t": 5.3, "MemAvailable": 5456052, "SwapFree": 4406916, "CommitLimit": 13479272, "Committed_AS": 14165424, "VmRSS": 537960, "VmData": 540164, "ac_kb": 540340}

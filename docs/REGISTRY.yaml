@@ -8117,6 +8117,23 @@
   - content
   last_verified: '2026-10-09'
 - type: ticket
+  path: agent-working/tickets/done/TCK-20261116-A-CI-SET-ON-TWO-IMAGE-PATCHES-IS-ONE-ENVIRONMENT-WHEN-LIBC-AND-PYTHON-MATCH.md
+  ticket_id: TCK-20261116-A-CI-SET-ON-TWO-IMAGE-PATCHES-IS-ONE-ENVIRONMENT-WHEN-LIBC-AND-PYTHON-MATCH
+  title: A CI set on two image patch versions is one environment when libc and the
+    Python build match; a split is refused by name, and the AC1 table is readable
+    from the log
+  tier: hotfix
+  ticket_type: bug
+  date: '2026-11-16'
+  related_code_areas:
+  - tools/rpg_measure/paired.py
+  - tools/test_architecture/paired_arms.py
+  - .github/workflows/paired-arms.yml
+  artifact_files: []
+  tags:
+  - testing
+  - determinism
+- type: ticket
   path: agent-working/tickets/done/TCK-20261116-A-TEST-KERNEL-DOES-NOT-DEGRADE-BECAUSE-AN-EARLIER-TEST-USED-MEMORY.md
   ticket_id: TCK-20261116-A-TEST-KERNEL-DOES-NOT-DEGRADE-BECAUSE-AN-EARLIER-TEST-USED-MEMORY
   title: 'A test kernel does not degrade because an earlier test used memory: the
@@ -8163,6 +8180,23 @@
   - testing
   - determinism
 - type: ticket
+  path: agent-working/tickets/done/TCK-20261116-UBUNTU-COMMITTED-MEMORY-OVER-COMMIT-LIMIT.md
+  ticket_id: TCK-20261116-UBUNTU-COMMITTED-MEMORY-OVER-COMMIT-LIMIT
+  title: On host ubuntu, ENOMEM appeared in the implement-ticket Test phase while
+    MemAvailable was several GB and committed memory sat above the commit limit; the
+    cause is open.
+  tier: standard
+  ticket_type: bug
+  date: '2026-11-16'
+  related_code_areas: []
+  artifact_files:
+  - agent-working/stored_artifacts/TCK-20261116-UBUNTU-COMMITTED-MEMORY-OVER-COMMIT-LIMIT/investigation.md
+  - agent-working/stored_artifacts/TCK-20261116-UBUNTU-COMMITTED-MEMORY-OVER-COMMIT-LIMIT/plan.md
+  - agent-working/stored_artifacts/TCK-20261116-UBUNTU-COMMITTED-MEMORY-OVER-COMMIT-LIMIT/test_plan.md
+  tags:
+  - ai
+  - testing
+- type: ticket
   path: agent-working/tickets/todos/TCK-20261116-LIVE-HEALTH-API-TEST-WAITS-A-FIXED-FOUR-SECONDS-ON-A-FIXED-PORT.md
   ticket_id: TCK-20261116-LIVE-HEALTH-API-TEST-WAITS-A-FIXED-FOUR-SECONDS-ON-A-FIXED-PORT
   title: The live-health API test starts uvicorn on fixed port 8021, waits a fixed
@@ -8175,19 +8209,6 @@
   - tests/api/test_live_health_api.py
   artifact_files: []
   tags: []
-- type: ticket
-  path: agent-working/tickets/todos/TCK-20261116-UBUNTU-COMMITTED-MEMORY-OVER-COMMIT-LIMIT.md
-  ticket_id: TCK-20261116-UBUNTU-COMMITTED-MEMORY-OVER-COMMIT-LIMIT
-  title: On host ubuntu, committed memory sits above the commit limit, so one large
-    uncapped process gets ENOMEM even while MemAvailable is several GB.
-  tier: standard
-  ticket_type: bug
-  date: '2026-11-16'
-  related_code_areas: []
-  artifact_files: []
-  tags:
-  - ai
-  - testing
 - type: ticket
   path: agent-working/tickets/done/TCK-20261115-A-NON-SEQUENTIAL-RUN-IS-REFUSED-BY-THE-GATE-CANDIDATE-PAIRED-ARMS-AND-RPG-MEASURE.md
   ticket_id: TCK-20261115-A-NON-SEQUENTIAL-RUN-IS-REFUSED-BY-THE-GATE-CANDIDATE-PAIRED-ARMS-AND-RPG-MEASURE
@@ -8364,6 +8385,25 @@
   tags:
   - ai
 - type: ticket
+  path: agent-working/tickets/done/TCK-20261115-TEST-PHASE-RUNS-TESTS-TOOLS-UNCAPPED-IN-ONE-PROCESS.md
+  ticket_id: TCK-20261115-TEST-PHASE-RUNS-TESTS-TOOLS-UNCAPPED-IN-ONE-PROCESS
+  title: implement-ticket's Test phase runs the whole of tests/tools in one uncapped
+    process, so on a loaded host the pipeline reports memory failures as test failures.
+  tier: standard
+  ticket_type: bug
+  date: '2026-11-15'
+  related_code_areas:
+  - .claude/workflows/implement-ticket.js (Test phase, test-scope gate)
+  - .claude/agents/test-scoper.md
+  - tools/gate_checks/test_scope_coverage_static.py
+  artifact_files:
+  - agent-working/stored_artifacts/TCK-20261115-TEST-PHASE-RUNS-TESTS-TOOLS-UNCAPPED-IN-ONE-PROCESS/investigation.md
+  - agent-working/stored_artifacts/TCK-20261115-TEST-PHASE-RUNS-TESTS-TOOLS-UNCAPPED-IN-ONE-PROCESS/plan.md
+  - agent-working/stored_artifacts/TCK-20261115-TEST-PHASE-RUNS-TESTS-TOOLS-UNCAPPED-IN-ONE-PROCESS/test_plan.md
+  tags:
+  - ai
+  - testing
+- type: ticket
   path: agent-working/tickets/done/TCK-20261115-THE-SLOW-LANE-LOG-SHOWS-EACH-TESTS-WALL-TIME.md
   ticket_id: TCK-20261115-THE-SLOW-LANE-LOG-SHOWS-EACH-TESTS-WALL-TIME
   title: The slow-regression log shows each slow test's wall time, so a "under 540
@@ -8501,22 +8541,6 @@
   - src/observability/sweeper.py; tests/unit/observability/test_run_index_builder.py
   artifact_files: []
   tags: []
-- type: ticket
-  path: agent-working/tickets/todos/TCK-20261115-TEST-PHASE-RUNS-TESTS-TOOLS-UNCAPPED-IN-ONE-PROCESS.md
-  ticket_id: TCK-20261115-TEST-PHASE-RUNS-TESTS-TOOLS-UNCAPPED-IN-ONE-PROCESS
-  title: implement-ticket's Test phase runs the whole of tests/tools in one uncapped
-    process, so on a loaded host the pipeline reports memory failures as test failures.
-  tier: standard
-  ticket_type: bug
-  date: '2026-11-15'
-  related_code_areas:
-  - .claude/workflows/implement-ticket.js (Test phase, test-scope gate)
-  - .claude/agents/test-scoper.md
-  - tools/gate_checks/test_scope_coverage_static.py
-  artifact_files: []
-  tags:
-  - ai
-  - testing
 - type: ticket
   path: agent-working/tickets/todos/TCK-20261115-THE-GATE-REPORTS-WHETHER-EACH-WORLDS-OUTCOMES-STAY-IN-THEIR-BANDS.md
   ticket_id: TCK-20261115-THE-GATE-REPORTS-WHETHER-EACH-WORLDS-OUTCOMES-STAY-IN-THEIR-BANDS

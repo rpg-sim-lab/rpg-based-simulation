@@ -164,8 +164,27 @@ under `tests/` before falling back to `tests/tools/`. This fallback does NOT app
   never a subset — do not try to guess which of its 100+ files are "relevant" by filename alone;
   the whole directory runs in well under the resource budget and the cost of guessing wrong is a
   real broken-CI incident.
+- If a changed file is under `.claude/workflows/` (for example `implement-ticket.js`), `node --check` and the tests of your own change are not enough: many tests load the workflow file or read its source. Also run every test file that references it, found with `grep -l "<workflow file name>" tests -r`, and the orchestration directories `tests/agent_orchestration/`, `tests/agent_orchestration_claude_adapter/` and `tests/agent_replay/`. A backtick inside one of the file's template-literal prompts, for example, still passes `node --check` (it parses as a tagged template) but breaks every harness that loads the file; the gate ids it records must also match `<Phase>:<result_field>` in `agent-working/agent-orchestration/gate-policy.yaml` (found by TCK-20261115-TEST-PHASE-RUNS-TESTS-TOOLS-UNCAPPED-IN-ONE-PROCESS).
 - Never output `pytest tests/` — always scope to specific paths or use `-m "not slow"` at minimum.
 - If a changed file has no corresponding test directory, flag it explicitly as untested.
+
+## Hosts that set a Test-phase cap
+
+Check the host first: `python3 -m tools.delivery.host_test_caps` prints `cap=none (unwrapped)` or the cap
+(`registries/session_test_caps.yaml`; TCK-20261115-TEST-PHASE-RUNS-TESTS-TOOLS-UNCAPPED-IN-ONE-PROCESS). On a host that
+has a cap, run the scoped command through the helper, with the same bare directories and flags you would give pytest:
+
+```
+python3 -m tools.delivery.capped_pytest tests/tools/ tests/unit/content/ -m "not slow and not extra_slow"
+```
+
+Pytest flags that take a separate value are limited to `-m`, `-k`, `-c`, `-p`, `-o`, `--rootdir`, `--confcutdir`, `--ignore`, `--ignore-glob`, `--deselect` and `--junitxml`; any other flag must be value-free or written `--flag=value`, or its value is read as a test directory. The helper chunks the run by test file under the host's memory and CPU cap and prints one `CAPPED_PYTEST_RESULT:` JSON line. It
+changes nothing about the rules above: every required bare directory still appears in the command, and every collected test still
+runs. Report its counts as `pass_count`/`fail_count`, and set `environment_failure: true` when the result says so. Also set it
+when you see `Cannot allocate memory`, `MemoryError`, `ENOMEM` or a killed process in raw pytest output, whatever ran it. Never
+retry a chunk that died of the environment, and never report an environment failure as a test failure; the pipeline gives it its
+own verdict. On a host with no cap, run pytest as before. The `test_scope_coverage` gate rejects a command that skips the helper
+on a host that has a cap.
 
 ## Output
 

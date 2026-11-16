@@ -9,11 +9,11 @@ import pytest
 from tools.rpg_measure import paired
 from tools.test_architecture import paired_arms as pa
 
-ENV = {"runner": "ci:ubuntu24-20260101.1.0", "python": "3.13.1", "os": "Linux 6.8.0", "uv_lock": "1" * 64, "uv_lock_source": "tool", "dists": "d" * 64}
+ENV = {"runner": "ci:ubuntu24", "python": "3.13.1", "python_build": "3.13.1 (main, Jan 1 2026) [GCC 13.3.0]", "libc": "glibc-2.39", "os": "Linux 6.8.0", "uv_lock": "1" * 64, "uv_lock_source": "tool", "dists": "d" * 64}
 BASE, NEW = "a" * 40, "b" * 40
 W = "frontier_living_world"
 E8 = paired.env_key(ENV)
-RUNNER = {"name": "GitHub Actions 7", "image": "ubuntu24-20260101.1.0", "cpu_model": "AMD EPYC 7763", "nproc": 4, "mem_total_mb": 16000, "python": "3.13.1", "os": "Ubuntu 24.04.1 LTS", "uv_lock": "1" * 64}
+RUNNER = {"name": "GitHub Actions 7", "image": "ubuntu24-20260101.1.0", "image_os": "ubuntu24", "image_version": "20260101.1.0", "python_build": "3.13.1 (main, Jan 1 2026) [GCC 13.3.0]", "libc": "glibc-2.39", "cpu_model": "AMD EPYC 7763", "nproc": 4, "mem_total_mb": 16000, "python": "3.13.1", "os": "Ubuntu 24.04.1 LTS", "uv_lock": "1" * 64}
 
 
 def _write(job: Path, sha: str, world: str, seed: int, *, repeat=False, runner=None, doc='{"runner": "PINNED"}', ticks=5000, child="c0ffee00"):
@@ -162,8 +162,8 @@ def test_assemble_merges_the_jobs_into_one_paired_cache_root(tmp_path):
     assert len(summary["jobs"]) == 3 and len(summary["arms"]) == 6 and json.loads((collected / "identities.json").read_text()) == summary
 
 
-@pytest.mark.parametrize("field, other", [("python", "3.13.2"), ("os", "Ubuntu 22.04.5 LTS"), ("uv_lock", "2" * 64)])
-def test_assemble_refuses_jobs_that_differ_in_python_version_os_or_uv_lock(tmp_path, field, other):
+@pytest.mark.parametrize("field, other", [("python", "3.13.2"), ("os", "Ubuntu 22.04.5 LTS"), ("uv_lock", "2" * 64), ("libc", "glibc-2.40"), ("python_build", "3.13.1 (main, Feb 1 2026) [GCC 14.1.0]"), ("image_os", "ubuntu26")])
+def test_assemble_refuses_jobs_that_differ_in_an_env_key_field_of_their_cost_record(tmp_path, field, other):
     root = tmp_path / "arms"
     _pair_job(root, seed=42)
     _pair_job(root, seed=43, runner={**RUNNER, field: other})
@@ -179,11 +179,94 @@ def test_assemble_allows_a_different_cpu_model_runner_name_and_image_across_jobs
     assert len(_assemble(root)["jobs"]) == 2  # the CPU model varies between runners: it is a description, not a pin
 
 
-def test_assemble_refuses_the_arms_of_one_key_that_ran_on_different_images(tmp_path):
+def test_assemble_refuses_the_arms_of_one_key_that_ran_on_different_image_families(tmp_path):
     root = tmp_path / "arms"
     job = _pair_job(root, seed=42)
-    _write(job, NEW, W, 42, runner={**RUNNER, "image": "ubuntu24-20260201.1.0"})
-    with pytest.raises(pa.ArmsRefused, match=f"{W}_42: its arms ran on different image"):
+    _write(job, NEW, W, 42, runner={**RUNNER, "image": "ubuntu26-20260201.1.0", "image_os": "ubuntu26"})
+    with pytest.raises(pa.ArmsRefused, match=f"{W}_42: its arms ran on different image_os"):
+        _assemble(root)
+
+
+def test_assemble_allows_jobs_and_arms_that_differ_only_in_the_image_patch_version(tmp_path):
+    """The run 43805965260 shape: one job on another image patch. It is one environment (the env8 does not key ImageVersion) and it assembles; the versions are listed."""
+    root = tmp_path / "arms"
+    _pair_job(root, seed=42)
+    _pair_job(root, seed=43, runner={**RUNNER, "image": "ubuntu24-20260201.1.0", "image_version": "20260201.1.0"})
+    summary = _assemble(root)
+    assert len(summary["jobs"]) == 2 and summary["image_versions"] == ["20260101.1.0", "20260201.1.0"]
+    job = _pair_job(tmp_path / "arms2", seed=42)
+    _write(job, NEW, W, 42, runner={**RUNNER, "image": "ubuntu24-20260201.1.0", "image_version": "20260201.1.0"})  # the two arms of ONE key on two patch versions
+    assert _assemble(tmp_path / "arms2")["jobs"]
+
+
+def _self_job(root: Path, runner, seed=42) -> Path:
+    job = root / f"paired-arms-s-{W}-s{seed}-self"
+    _write(job, BASE, W, seed, runner=runner)
+    _write(job, BASE, W, seed, repeat=True, runner=runner)
+    return job
+
+
+OTHER_PATCH = {**RUNNER, "image": "ubuntu24-20260201.1.0", "image_version": "20260201.1.0"}
+
+
+def test_the_pair_and_self_seed_42_jobs_on_two_image_patches_show_cross_patch_identity(tmp_path, capsys):
+    """The pair job and the self job share the base arm's result document; on two image patches the same-bytes check is a cross-patch identity proof, and it is recorded."""
+    root = tmp_path / "arms"
+    _pair_job(root, seed=42)  # RUNNER: image 20260101.1.0
+    _self_job(root, OTHER_PATCH)  # the self job was served the other patch
+    summary = _assemble(root)
+    shared = f"{BASE[:12]}-c0ffee00-5000-{E8}"
+    assert summary["cross_patch_identity"] == [f"cross-patch identity shown: {shared} 20260101.1.0 = 20260201.1.0 (1 documents)"]
+    assert json.loads((tmp_path / "collected" / "identities.json").read_text())["cross_patch_identity"] == summary["cross_patch_identity"]
+    capsys.readouterr()
+    rc = pa.main(["assemble", "--in", str(root), "--out", str(tmp_path / "collected2"), "--base", BASE, "--new", NEW])
+    out = capsys.readouterr().out
+    assert rc == 0 and f"cross-patch identity shown: {shared} 20260101.1.0 = 20260201.1.0 (1 documents)" in out
+
+
+def test_run_43805965260s_shape_a_different_patch_on_a_non_shared_job_does_not_exercise_the_proof(tmp_path, capsys):
+    root = tmp_path / "arms"
+    _pair_job(root, seed=42)
+    _self_job(root, RUNNER)  # same patch as the pair job's: the shared document is written twice, on one version
+    _pair_job(root, seed=43, runner=OTHER_PATCH)  # the odd job is a pair job nobody shares a document with
+    summary = _assemble(root)
+    assert summary["image_versions"] == ["20260101.1.0", "20260201.1.0"] and summary["cross_patch_identity"] == ["cross-patch identity not exercised in this set"]
+    capsys.readouterr()
+    assert pa.main(["assemble", "--in", str(root), "--out", str(tmp_path / "collected2"), "--base", BASE, "--new", NEW]) == 0
+    assert "cross-patch identity not exercised in this set" in capsys.readouterr().out
+
+
+@pytest.mark.parametrize("missing", ["unknown", "", None])
+def test_a_shared_document_with_a_writer_that_has_no_image_version_is_not_a_shown_proof(tmp_path, missing):
+    """A false 'shown' would be cited as proof: a job with no ImageVersion and a job with a real one are not two patches."""
+    root = tmp_path / "arms"
+    _pair_job(root, seed=42)
+    runner = {**RUNNER, "image_version": missing}
+    if missing is None:
+        runner.pop("image_version")
+        runner["image_version"] = None  # str(None) -> "None" in the record
+    _self_job(root, runner)
+    assert _assemble(root)["cross_patch_identity"] == ["cross-patch identity not exercised in this set"]
+
+
+def test_a_shared_document_that_differs_across_two_patches_is_refused(tmp_path):
+    root = tmp_path / "arms"
+    _pair_job(root, seed=42)
+    job = _self_job(root, OTHER_PATCH)
+    shared = next(job.glob(f"results/{BASE[:12]}-*-{E8}/{W}_42.json"))
+    shared.write_text('{"runner": "PINNED", "final_hash": "different"}')
+    with pytest.raises(pa.ArmsRefused, match="two jobs wrote different bytes"):
+        _assemble(root)
+
+
+def test_assemble_refuses_jobs_whose_env_json_differs_in_a_field_the_cost_record_does_not_carry(tmp_path):
+    """AC3: the whole env.json is compared across jobs (dists, uv_lock_source, ...), not only the identity fields; the refusal names the field."""
+    root = tmp_path / "arms"
+    _pair_job(root, seed=42)
+    other = _pair_job(root, seed=43)
+    for env_file in other.glob(f"results/*/{paired.ENV_FILE}"):
+        env_file.write_text(json.dumps({**ENV, "dists": "e" * 64}, sort_keys=True, indent=2) + "\n")
+    with pytest.raises(pa.ArmsRefused, match="built under different environments: dists differs"):
         _assemble(root)
 
 

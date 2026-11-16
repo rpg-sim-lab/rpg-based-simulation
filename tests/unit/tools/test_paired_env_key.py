@@ -25,7 +25,7 @@ def _env(tmp_path, environ=LOCAL, host="u24desktop", lock=b"v1\n", arm_tree=None
 
 def test_a_local_and_a_ci_environment_give_different_keys(tmp_path):
     local, ci = _env(tmp_path), _env(tmp_path, CI)
-    assert local["runner"] == "local:u24desktop" and ci["runner"] == "ci:ubuntu24-20260101.1.0"
+    assert local["runner"] == "local:u24desktop" and ci["runner"] == "ci:ubuntu24"
     assert paired.env_key(local) != paired.env_key(ci)
     assert paired.env_key(local) != paired.env_key(_env(tmp_path, host="other-host"))
 
@@ -146,9 +146,9 @@ def test_local_paired_refuses_to_cache_under_a_missing_lock(tmp_path, monkeypatc
 
 # ---- the CI runner label (rpg-planner review): image on a hosted runner, RUNNER_NAME on a self-hosted one, else refused
 
-def test_a_hosted_runner_is_keyed_by_its_image_not_its_runner_name(tmp_path):
+def test_a_hosted_runner_is_keyed_by_its_image_family_not_its_runner_name_or_patch_version(tmp_path):
     env = _env(tmp_path, {**CI, "RUNNER_NAME": "GitHub Actions 7"})
-    assert env["runner"] == "ci:ubuntu24-20260101.1.0"
+    assert env["runner"] == "ci:ubuntu24"
     assert paired.env_key(env) == paired.env_key(_env(tmp_path, {**CI, "RUNNER_NAME": "GitHub Actions 9"}))
 
 
@@ -383,3 +383,69 @@ def test_site_dirs_are_the_interpreters_own_and_exist():
     import sysconfig
     dirs = env_digest.site_dirs()
     assert dirs and str(Path(sysconfig.get_paths()["purelib"]).resolve()) in dirs and all(Path(d).is_dir() for d in dirs)
+
+
+# ---- TCK-20261116-A-CI-SET-ON-TWO-IMAGE-PATCHES-IS-ONE-ENVIRONMENT-WHEN-LIBC-AND-PYTHON-MATCH
+
+def _ci(tmp_path, **environ):
+    return _env(tmp_path, {**CI, **environ})
+
+
+def test_two_image_patch_versions_are_one_environment(tmp_path):
+    """AC1: the image PATCH version (ImageVersion) is not keyed; a set split by it is one environment."""
+    a, b = _ci(tmp_path, ImageVersion="20261111.82.6"), _ci(tmp_path, ImageVersion="20261111.196.1")
+    assert a == b and paired.env_key(a) == paired.env_key(b)
+    assert "ImageVersion" not in json.dumps(a) and "20261111" not in json.dumps(a)
+
+
+@pytest.mark.parametrize("field, value", [
+    ("libc", "glibc-2.40"), ("python_build", "3.13.14 (main, Jan 2 2026) [GCC 14.2.0]"), ("python", "3.13.99"), ("os", "Linux 9.9.9"),
+    ("dists", "f" * 64), ("uv_lock", "e" * 64), ("runner", "ci:ubuntu26")])
+def test_a_change_in_any_other_env_field_gives_a_different_key(tmp_path, field, value):
+    env = _ci(tmp_path)
+    assert paired.env_key({**env, field: value}) != paired.env_key(env)
+
+
+def test_the_env_carries_libc_and_the_python_build_for_every_runner_local_included(tmp_path):
+    for env in (_env(tmp_path), _ci(tmp_path)):
+        assert env["libc"] == "-".join(__import__("platform").libc_ver()) and env["python_build"] == __import__("sys").version
+
+
+def test_the_image_version_is_recorded_beside_env_json_and_does_not_key(tmp_path):
+    env = _ci(tmp_path)
+    directory = tmp_path / "res"
+    paired.write_env_json(directory, env, image="20261111.82.6")
+    assert json.loads((directory / paired.IMAGE_FILE).read_text()) == {"image_version": "20261111.82.6"}
+    assert paired.env_key(json.loads((directory / paired.ENV_FILE).read_text())) == paired.env_key(env)
+    paired.write_env_json(directory, env, image="20261111.196.1")  # another patch version: same env.json bytes
+    assert json.loads((directory / paired.ENV_FILE).read_text()) == env
+
+
+def test_a_prefix_split_across_two_env8_directories_is_refused_by_name_before_the_missing_check(tmp_path, capsys):
+    """AC2: results under two environments (here: libc differs) are refused with 'built under 2 environments' naming the differing field. The missing check would have
+    reported the same cache as 'missing collected results' for every key; the split is named first."""
+    from tests.unit.tools.test_rpg_measure_collected import BASE, NEW, TICKS, SEEDS, _put, _run, collected
+    first = paired.current_env()
+    second = {**first, "libc": "glibc-2.99"}
+    for world in paired.WORLDS:
+        for seed in SEEDS:
+            _put(tmp_path, BASE, world, seed, _run(world, seed))
+            _put(tmp_path, NEW, world, seed, _run(world, seed))
+    odd = paired.result_path(tmp_path, NEW, TICKS, "urban_political", 43, False, second)  # a second env8 for one pair job's new arm
+    odd.parent.mkdir(parents=True, exist_ok=True)
+    odd.write_text(json.dumps(_run("urban_political", 43)))
+    paired.write_env_json(odd.parent, second, image="2")
+    verdict = tmp_path / "v.json"
+    rc = collected(tmp_path, "--verdict-json", str(verdict))
+    err = capsys.readouterr().err
+    assert rc == 2 and err.startswith("REFUSED:") and "built under 2 environments" in err and "libc" in err and "glibc-2.99" in err
+    assert "missing collected results" not in err
+    assert json.loads(verdict.read_text())["outcome"] == "REFUSED"
+
+
+def test_a_cache_split_only_by_image_version_is_one_environment_and_compares(tmp_path, capsys):
+    from tests.unit.tools.test_rpg_measure_collected import BASE, NEW, SEEDS, TICKS, _put, _run, collected, stage
+    stage(tmp_path)
+    for directory in (tmp_path / "results").iterdir():
+        (directory / paired.IMAGE_FILE).write_text(json.dumps({"image_version": f"20261111.{len(directory.name)}.1"}))  # different patch versions recorded, same env.json
+    assert collected(tmp_path) == 0
