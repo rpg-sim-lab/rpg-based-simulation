@@ -1,10 +1,10 @@
 ---
-status: active
+status: historical
 layer: combat
 authority: P1
 audience: agent
 ticket_id: TCK-20261115-PAST-THE-STARVING-LINE-THE-TACTICAL-STEP-TURNS-AWAY-FROM-A-MEAL-WITHOUT-WEIGHING-HUNGER
-phase: open
+phase: done
 date: 2026-11-15
 tags: []
 ---
@@ -15,7 +15,7 @@ tags: []
 Past the starving line, with a meal 1-2 ticks away, the tactical fight-or-flee step (a panic retreat or a chase) takes the subject away from the meal without weighing starvation (SURV-07)
 
 ## Status
-INPROGRESS
+DONE
 
 ## Tier
 standard
@@ -144,13 +144,16 @@ None.
 - J4 static (rpg-designer, at f727390f2): `last_hit_tick` is read only in `tactical_threat` (`_hit_acts_on`, `attacked_me_recently`); `felt_swing` reads `last_hit_attackers` for the 2.204 felt-lethal hold, a different meaning.
 
 ## Test Summary
-- Unit (single process): tests/unit/engine/test_acting_hostile_is_an_act_not_a_state.py 31 passed (7 new; 3 of them fail on the old predicate, the others are controls). tests/unit/tactical/test_starving_hit_left_behind_does_not_hold_a_panic.py 4 passed (raider 24 five tiles behind: no flight reason and the step heads to the inn; adjacent keeps PANIC_RETREAT; below the line keeps it; the old-predicate control returns PANIC_RETREAT).
-- Real kernel: tests/integration/observability/test_starving_subject_eats_past_a_hitter_left_behind_through_the_real_kernel.py 2 passed (crowded_frontier s42, starving wounded worker 2 tiles from inn 20003, raider held idle 5 tiles away with the hit re-stamped 3 ticks old each tick, 40 ticks: eats; old predicate monkeypatched in: does not).
-- Related existing set 181 passed, no existing test edited; scoped D1 set 141 passed.
-- Gates on head 04018e329, one step at a time under a 3500 MB cap, no xdist: mypy_gate PASS; codebase.health PASS (OK: 2 new, 2 worse, 79 improved; the 2 new and 2 worse are report-only jscpd duplicate blocks in src/observability files this change does not touch); pr_body_lint PASS; ci_lanes unit-core-world PASS (3112 passed, 3 skipped), unit-gameplay PASS (1992 passed, 1 skipped), integration PASS (1133 passed, 6 skipped). perf-cert-arena path-filtered, not touched. Not run locally: pyrefly (not installed, advisory), the known local-only failures (ruff Makefile test, http snapshot, simq drift).
-- Known gap: not measured yet. The paired measurement (3 worlds x s42-46 x 5000t, rows r1 and r2, V3 cell re-read crowded/45 and /46, rpg_gate_known.yaml) is pending, after HOLD stage 2.
+- Unit (single process): tests/unit/engine/test_acting_hostile_is_an_act_not_a_state.py (8 new tests, including the group-hit per-member test the designer asked for; the fixtures also set `last_hit_attackers`, no assertion changed meaning); tests/unit/tactical/test_starving_hit_left_behind_does_not_hold_a_panic.py 4 passed (raider five tiles behind: no flight reason, the step heads to the inn; adjacent keeps PANIC_RETREAT; below the line keeps it; the old-predicate control returns PANIC_RETREAT).
+- Real kernel: tests/integration/observability/test_starving_subject_eats_past_a_hitter_left_behind_through_the_real_kernel.py 2 passed (crowded_frontier s42, starving wounded worker 2 tiles from inn 20003, raider held idle 5 tiles away, hit re-stamped 3 ticks old each tick, 40 ticks: eats; the old predicate patched in: does not).
+- Rebase: merged origin/main 9c398a068 (#931 HOLD, #933 group attackers) into the branch at f727390f2; `_hit_acts_on` resolved as rpg-designer ruled (main's `last_hit_attackers` test plus the starving-line reach rule, each member judged on its own reach; `attacked_me_recently` untouched); divergence 2.207 placed after main's 2.206.
+- Verify gates on f727390f2, one step at a time under a 3500 MB cap, single process, no PYTEST_ADDOPTS: mypy_gate PASS (rc 0); codebase.health PASS (2 new, 2 worse, 85 improved; the 2 new and 2 worse are report-only); scoped D1 set (the engine test file, tests/unit/tactical, the real-kernel test) 148 passed. The full ci_lanes ran on head 04018e329 before the merge (unit-core-world 3112, unit-gameplay 1992, integration 1133 passed) and is re-run at the final head before the push ask.
+- Own-job check (HARD counts, rpg-designer's v2 file 55d94a58; owner #715 6912996368; runner a87a54af, spy 08bd56fb; fix arm only; frontier_marches, crowded_frontier, urban_political, s42, 5000 ticks; each a plain twin plus a spied run): the spied hash equals the plain twin in all 3 worlds (fm 7afa7746, crowded e3ed046d, urban e2f7e779), PINNED, exceptions {}, logging_errors 0, peak RSS at most 233 MB. J1, J2, J3, J4, J5 violations 0 and J4_input_diff 0 in every world; J6 group-hit cases 0; J3_qualifying 1 (frontier_marches tick 1250, subject 30 at hunger 100, sole hitter 8 at distance 5, range 1, no term (a): returned not-acting). The designer ruled the check PASS. Cells: /mnt/data2/rpg-measure/d1own/cells (spy fm 77694be1, crowded 5f0c2150, urban eb158927; plain fm 1eba8f4e, crowded 78bbb72e, urban 0f0f3a98).
+- On s42 the final state hash in frontier_marches and crowded_frontier equals the pre-D1 merged arm; the predicate changed its answer on 1 call (frontier t1250) and that call changed no outcome visible in the final state.
+- Known gaps (disclosed): (1) past-line calls outside the 10-tick window (frontier_marches 567, crowded_frontier 5) are covered for members only by the static diff (the window conjunct is kept); (2) the J6 group-hit was not exercised in the run (0 cases) and is covered by the unit test only; (3) `panic_holds` was hit only 2 times (frontier_marches). BALANCE rows r1 and r2 were not run and are read at the next pooled reading. The V3 known-red rows for crowded/45 and /46 stay open, owned by D1.
 
 ## Files Changed
-src/engine/tactical_threat.py; tests/unit/engine/test_acting_hostile_is_an_act_not_a_state.py; tests/unit/tactical/test_starving_hit_left_behind_does_not_hold_a_panic.py; tests/integration/observability/test_starving_subject_eats_past_a_hitter_left_behind_through_the_real_kernel.py; docs/mechanics/04_strategic_cognition.md; docs/guidelines/intentional_divergences.md (2.207); docs/parity_ledger/strategic_cognition.yaml (STRAT-300); this ticket and its staging artifacts.
+src/engine/tactical_threat.py; tests/unit/engine/test_acting_hostile_is_an_act_not_a_state.py; tests/unit/tactical/test_starving_hit_left_behind_does_not_hold_a_panic.py; tests/integration/observability/test_starving_subject_eats_past_a_hitter_left_behind_through_the_real_kernel.py; docs/mechanics/04_strategic_cognition.md; docs/guidelines/intentional_divergences.md (2.207); docs/parity_ledger/strategic_cognition.yaml (STRAT-300); docs/REGISTRY.yaml; this ticket and its stored artifacts.
 
 ## Completion Summary
+Past the starving line (hunger >= 95) a hit now acts on the subject only while its hitter can still reach it (Manhattan <= max(1, range) at the decision tick, no line of sight) or pursues or attacks it; below the line the 10-tick window is unchanged. Each member of a group hit (#933 `last_hit_attackers`) is judged on its own reach. One predicate (`_hit_acts_on`), so `need_yields`, `_panic_holds` and `acting_threat_to` all get it; no new number; `attacked_me_recently` is untouched. Fixes the traced V3 shapes: crowded s45 e5 t2155 (panic away from an inn 2 ticks off, held by a hitter 5 tiles back) and s46 e4 t3226 (need yielded to a hitter 2 tiles away that had hit 10 ticks earlier). Verified by the unit, tactical and real-kernel tests and by the designer-ruled own-job run (all HARD bars 0; J3_qualifying 1). Not in this change: narrowing the engagement list after a yielded need (group shared-target bias, ubuntu TCK-20261101-A-HOSTILE-ATTACKING-YOU-OUTRANKS-THE-GROUP-SHARED-TARGET; re-check after it lands) and the hp < 15% branch order. Not measured: BALANCE rows r1 and r2 (read at the next pooled reading); the V3 cf/45 and cf/46 rows stay open, owned by D1. Divergence 2.207 (Bug Fix), ledger STRAT-300, Bible 04 LAW P.

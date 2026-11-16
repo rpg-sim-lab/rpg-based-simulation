@@ -1,11 +1,11 @@
 ---
-status: active
+status: historical
 layer: combat
 authority: P1
 audience: agent
 artifact_type: investigation
 ticket_id: TCK-20261115-PAST-THE-STARVING-LINE-THE-TACTICAL-STEP-TURNS-AWAY-FROM-A-MEAL-WITHOUT-WEIGHING-HUNGER
-phase: open
+phase: done
 date: 2026-11-15
 tags: []
 ---
