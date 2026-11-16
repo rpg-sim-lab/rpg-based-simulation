@@ -8,6 +8,7 @@ from src.core.state import AuthoritativeState, BuildingState, RegionState, TaskC
 from src.core.strategic import GoalKind, ObjectiveKind, ObjectiveState, ObjectiveStatus, ProjectState, ProjectStatus
 from src.engine.kernel import Kernel
 from src.platform.rng import DeterministicRNG
+from tests.helpers.kernel_pinning import PinnedNormalGovernor
 
 INN_ID = 20003
 INN_AT = (10.0, 10.0)
@@ -32,14 +33,16 @@ def hero(eid, pos, debt=90.0, gold=50, action="REST", project=True):
     return h
 
 
-def kernel(entities, beds=2, inn_gold=0, extra_buildings=None):
+def kernel(entities, beds=2, inn_gold=0, extra_buildings=None, governor=None):
+    """A real Kernel. ``governor`` defaults to the shared ``PinnedNormalGovernor`` so the tier (and so the decision cadence) never depends on the process's live RSS or the host's speed
+    (TCK-20261116-A-TEST-KERNEL-DOES-NOT-DEGRADE-BECAUSE-AN-EARLIER-TEST-USED-MEMORY); a test about a tier passes its own."""
     region = RegionState(id="r1", name="R", kind="FOREST", bounds=(0, 0, 100, 100), hazard_level=0.0)
     from src.core.state import InventoryComponent
     inn = BuildingState(id=INN_ID, kind="inn", position=INN_AT, functional=True, beds=beds)
     buildings = {INN_ID: inn, **(extra_buildings or {})}
     state = AuthoritativeState(tick=1, seed=1, entities={e.id: e for e in entities}, regions={"r1": region}, buildings=buildings,
                                next_entity_id=max(e.id for e in entities) + 1, next_node_id=1000, terrain={(x, y): "plain" for x in range(30) for y in range(30)})
-    return Kernel(profile(), state, DeterministicRNG(1))
+    return Kernel(profile(), state, DeterministicRNG(1), governor=PinnedNormalGovernor() if governor is None else governor)
 
 
 def run(k, ticks):
