@@ -284,6 +284,17 @@ mechanisms:
         as its own mechanism, `sense_gated_detection`. The reasoning above for keeping it out of
         THIS entry's `implemented_by` still holds; only "NOT registered as its own mechanism" is
         superseded.
+
+        **Note, added 2026-11-16 (TCK-20261111-A-HOLD-MODE-MOVE-STILL-TAKES-A-STEP, divergence 2.206):** a
+        hold holds. The typed waits (WATCH_HOSTILE, AVOID_NO_ROUTE, HOLD_CHOKEPOINT) carry `target_clear` in
+        the update that sets HOLD, and `movement_target` returns no target for a pending update that clears
+        the target and sets none, so the subject takes no step on the deciding tick or before its next
+        decision. HOLD ends at the subject's next decision that sets a walk (`hold_mode.hold_reset_kwargs`,
+        never while an action task is live) or, for a collapse, with its sleep. Known follow-up: an
+        AVOID_NO_ROUTE hold ends one tick later on a live self-decided action task and the subject can walk
+        back into the fight
+        (TCK-20261116-A-CORNERED-HOLD-ENDS-ON-A-LIVE-ACTION-TASK-AND-WALKS-BACK-INTO-THE-FIGHT; 1 death in the
+        stage-2 urban read, owner #715 6906654192).
   - id: combat_engagement
     layer: entity
     summary: "Before a creature starts a fight it sizes up the odds, and it skips a fight that looks too risky for its nature. This only changes outcomes in busy, combat-heavy worlds, because in most worlds few attacks are chosen at all."
@@ -1914,6 +1925,11 @@ mechanisms:
         **Note, added 2026-11-01 (TCK-20261031-A-RETREAT-PROJECT-OUTLIVES-ITS-THREAT, divergence 2.156):** a tick
         on which a retreat's clear window opens or drops returns early from evaluate_strategic_intent with no
         goal selection (tactical still runs).
+
+        **Note, added 2026-11-16 (TCK-20261111-A-HOLD-MODE-MOVE-STILL-TAKES-A-STEP, divergence 2.206):** when
+        this system sets a walk target (a material lead, a project target or a redirection), it also ends a
+        HOLD in force through `hold_mode.hold_reset_kwargs` (reset to the navigation default; never while an
+        action task is live). Goal and target choice are unchanged.
   - id: committed_intentions
     layer: entity
     summary: "A creature sticking to a plan it has committed to. The structure is written, but nothing uses it yet."
@@ -3341,6 +3357,11 @@ mechanisms:
         TCK-20260920-MECHANISM-BOUND-UNVERIFIED-INSTRUMENT-RUN (batch 3). Formalizes this entry's
         own already-documented zero-caller check above. No contradiction from
         `mechanism_state_caller_check.py`'s own full-registry run.
+
+        **Note, added 2026-11-16 (TCK-20261111-A-HOLD-MODE-MOVE-STILL-TAKES-A-STEP, divergence 2.206):** when
+        this system sets a walk target (a material lead, a project target or a redirection), it also ends a
+        HOLD in force through `hold_mode.hold_reset_kwargs` (reset to the navigation default; never while an
+        action task is live). Goal and target choice are unchanged.
   - id: concern_intake
     layer: entity
     summary: "Turns what a creature notices into concerns for it to think about."
