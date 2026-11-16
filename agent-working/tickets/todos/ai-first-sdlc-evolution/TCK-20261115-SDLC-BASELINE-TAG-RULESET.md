@@ -75,7 +75,18 @@ Split from TCK-20261031-SDLC-RULESET-M1-AND-TAG-PROTECTION on 2026-11-15. The ow
 - Timing: the owner ordered this epic's work after the ticket view epic (P3c and backlog view).
 
 ## Implementation Notes
-(to be filled by the implementer)
+The owner wanted this applied now. Under RPG-first (#715 6911759453), lead-planner did items 1 and 2 itself rather than spend a seat; agent-working-planner records them here.
+
+**Item 1, before-state** (lead-planner, read fresh 2026-11-16 at main 18af29f5e; agent-working-planner re-read the same day and it matches):
+- One ruleset: 14220945 `protect_branches`, target branch, enforcement active, include `~DEFAULT_BRANCH`, exclude none.
+- Its rules: deletion, non_fast_forward, update, required_status_checks.
+- Its bypass: actor type RepositoryRole, actor_id 5 (admin), mode always.
+- No tag ruleset exists.
+- Tags, from `git ls-remote --tags origin 'baseline/*'`: the four tag objects match AC3 exactly, and all four peel to 6fdfdf5556548105e28ab370832f36bc96241561.
+
+**Item 2, prepared, not run** (lead-planner): a new ruleset `protect_baseline_tags`, target tag, enforcement active, include `refs/tags/baseline/sdlc-*`, rules deletion, update and non_fast_forward, with the same bypass (RepositoryRole 5, always). The branch ruleset is untouched. The JSON is held in lead-planner's scratchpad; the owner applies it with `gh api` POST (item 3).
+
+**Still open:** item 3 (the owner applies it, logged on #715) and item 4 (the after-read plus the AC3 tag check, which lead-planner will send). AC4 stays "not verified".
 
 ## Test Summary
 (to be filled by the implementer)
