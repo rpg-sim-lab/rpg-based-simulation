@@ -20,6 +20,5 @@ tags: [performance]
 
 ## Smoke (2026-11-16, local, NOT a measurement: CPU 3, not the quiet gate, 2 warmup + 3 ticks, frontier_living_world)
 - `final_hash` identical across probe (thread), probe (process) and `--no-probe`: fdc12732...
-- About 470 KB per chunk at early ticks (7-8 packets per tick); private caches about 0.5 KB of it.
-- Encode about 14 ms and decode about 12 ms per chunk against compute about 0.5 ms (thread chunking, 1-2 packets per chunk). Early-tick shape only; the real run decides.
+- Smoke timings and sizes are not recorded here: an unrepresentative 5-tick run on an ungated core is not a figure (lead-planner, 2026-11-16). The measured run reports them.
 - Smoke run dirs cleaned by id.
