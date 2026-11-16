@@ -1258,6 +1258,19 @@ This section is written once, before milestone 1 starts. It answers the lesson o
 date and the freeze each moved step by step. Changing anything below takes an owner ruling, recorded as an owner-memo row
 and logged on the approvals issue (#715) before anyone acts on it. A change is never made by editing this text alone.
 
+**Amended by the owner on 2026-11-16 (#715 6912138476, memo row 96): Milestone 1 pace.**
+- **Check classes.** Every per-step check is HARD or BALANCE:
+  - HARD: world laws (tile occupancy, the world-rules catalog, the hard-law monitor), conservation (V2, H7), determinism and hash identity (twin self-check spread 0), neutral-claim proofs, evidence truth (a spy that is hash-neutral, pinned and error-free; empty logging_errors), no crash or ENOMEM, Bible/parity truth, and never weakening a test. Also HARD: the ticket's own job by its claimed route, written per ticket before data and measured at 1 seed per world; liveness (no state that can never exit); and one pooled per-world extinction line, counting only a role or kind alive in at least 3 parent seeds, with the owner ruling a trip.
+  - The own-job check trips only on the fix's claimed mechanism counts, which rpg-designer fixes per ticket before data. Downstream behaviour of a diverged trajectory is BALANCE. A trip gets at most one trace cycle, then an owner decision.
+  - Instrument hygiene: a diagnostic (spy, probe, wrapper) must leave the run unchanged: spy/no-spy and twin hash match. A diagnostic that changes the run is never allowed to stand.
+  - BALANCE: everything else (deaths, flight, starvation, Tier-1 and Tier-2, D76, SimQ, per-seed extinction). A BALANCE reading past 2× its bar, or a 3rd consecutive trip of the same check, is a FLAGGED line for the owner in the step's PR body. It still doesn't block.
+- **Extinction line cadence.** The pooled per-world line reads 5 seeds (42-46) on the head, against M1-base's counts: at M1-base, after every 3 steps, right after decision 73 and after any step whose own job removes a food or survival path, and at the record. A trip goes to the owner. Per step, a 1-seed extinction is a report row for the designer.
+- **Blocking.** HARD blocks. BALANCE is report-only during milestone 1: recorded in the step's PR and in `m1_disclosure.md`, with a backlog ticket for each trip.
+- **Base.** The milestone 1 items measure against M1-base, a main commit recorded under its own owner run ask (sha and date written here when recorded) (gate, fingerprints, 5k behaviour, SimQ anchors, 3-world hash check). M1-base replaces v1.1 as the start of the items' cumulative watch, which becomes report-only.
+- **Order.** The items start on M1-base. The remaining repairs go ahead of or alongside the items only if HARD or needed by a named item. Every other repair and new balance defect goes to the milestone 1 backlog.
+- **Decision 73.** Decision 73 (free meal removed) is a free-standing step, with no position in the items' order. It lands before the V1 free-meal known entry expires (2026-12-31).
+- **What this supersedes.** It supersedes, in this section: the Order paragraph and the v1 → v1.1 and v1.1 bullets of **Base**; "each single step keeps the per-seed extinction stop"; and, in the reds table, "only with an owner acceptance before the cutoff, scoped per case", which becomes "accepted by the owner in one batch at the milestone 1 record". Unchanged: the conservation and determinism "never" rows, R2 at the record, the prerequisites of the record (F3-checkpoint, F4), the freeze, and done 1-6.
+
 **Base.** Milestone 1 spans baseline v1 (record commit 341f700d0, simulation e8df8b96d, gate baseline
 `rpg_gate_v1.json`) to the milestone 1 record; 903239fbe is history. Clarified by the owner on 2026-10-23 (#715 6356509993,
 memo row 89):
