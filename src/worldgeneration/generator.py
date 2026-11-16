@@ -217,7 +217,7 @@ class WorldProceduralGenerator:
         # 5. Resource Spawning (Wilderness distribution based on resource_density scalar)
         catalog_resources = list(self.catalog_repo.resources.values())
         if catalog_resources:
-            resource_types = list(set(r.resource_type for r in catalog_resources))
+            resource_types = sorted(set(r.resource_type for r in catalog_resources))
         else:
             resource_types = ["wood", "iron_ore"]
 

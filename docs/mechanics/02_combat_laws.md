@@ -232,6 +232,14 @@ tactical pass has always chosen).
     adjacency and took an opportunity attack (COMB-009/272). The cost: an attacker whose target steps away no longer closes the gap
     through live tracking; it closes after OUT_OF_RANGE returns it to the brain, which for an idle entity runs once per
     `strategic_intelligence` cadence (10 in the live NORMAL policy, `policy.py:92`).
+    A target that this tick's OWN update clears and does not set (`navigation.target_clear`: a typed wait's HOLD, an ATTACK or
+    SKILL emission, a kill, a collapse) is not walked on that tick either: the movement phase reads the tick-start entity, which
+    still carries the target the update is removing, so `movement_target` returns no target for such an update
+    (`TCK-20261111-A-HOLD-MODE-MOVE-STILL-TAKES-A-STEP`). The movement mode HOLD means "takes no step of its own until a decision
+    moves it": the typed waits (WATCH_HOSTILE, AVOID_NO_ROUTE, HOLD_CHOKEPOINT) clear the stored target in the update that sets
+    HOLD; HOLD ends at the subject's next decision that sets a walk (reset to WANDER) and, for a collapse, when its sleep ends; a
+    reset never ends a HOLD while an action task is live (`hold_mode.hold_reset_kwargs`; the limit is stated in
+    `docs/engine/contracts/tactical_contract.md`, chokepoint hold).
 *   **Withheld-Action Task Reset**: The action router (`ActionRouter.execute_action`,
     `src/engine/domain/action_router.py`) reports `ReasonCode.ACTION_WITHHELD_BY_POSTURE` when its
     combat-posture gate withholds an `ATTACK`/`SKILL` (the attacker's recorded

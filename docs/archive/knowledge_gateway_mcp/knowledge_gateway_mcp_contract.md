@@ -1,5 +1,5 @@
 ---
-status: active
+status: historical
 layer: ai
 authority: P1
 audience: agent
@@ -267,12 +267,12 @@ descriptor's values (particularly `timeout`/`cancellation`) can honestly change 
   `knowledge_context` response contract (success/partial/error, three-dimension status, `conflicts[]`).
 - `docs/engine/contracts/knowledge_gateway_mcp/knowledge_status_response.schema.json` — the
   `knowledge_status` response contract.
-- `docs/engine/contracts/knowledge_gateway_mcp/evidence_cache_identity_contract.md` — the
+- `docs/archive/knowledge_gateway_mcp/evidence_cache_identity_contract.md` — the
   lookup-identity vs. evidence-validity-identity split (§11.1/§11.2) and repository/branch/
   working-tree cache scope (§12.3), owned by the sibling `KGMCP-EVIDENCE-CACHE-IDENTITY` ticket.
 - `docs/engine/contracts/knowledge_gateway_mcp/evidence_identity_kinds.schema.json` — the 8 closed
   evidence identity kinds (§12.1), owned by the same sibling ticket.
-- `docs/engine/contracts/knowledge_gateway_mcp/cache_migration_plan.md` — the migration design for
+- `docs/archive/knowledge_gateway_mcp/cache_migration_plan.md` — the migration design for
   evolving `agent-working/.index/knowledge-index/retrieval_cache.db` in place (§10.1/§19), owned by the same sibling
   ticket.
 - `docs/engine/contracts/knowledge_gateway_mcp/redaction_retention_policy.md` — the cached-payload
@@ -281,7 +281,7 @@ descriptor's values (particularly `timeout`/`cancellation`) can honestly change 
   method, SQLite operational limits (§9), and cache-GC defaults (§10), owned by the sibling
   `KGMCP-REDACTION-RETENTION-POLICY` ticket. Drafted, not ratified — see that document's §11
   (Ratification Status).
-- `docs/engine/contracts/knowledge_gateway_mcp/measurement_baseline_contract.md` — the fixed,
+- `docs/archive/knowledge_gateway_mcp/measurement_baseline_contract.md` — the fixed,
   versioned representative-query corpus and its real recorded direct-tool baseline, the 5-point
   latency measurement/instrumentation contract (lookup, evidence-validation, provider-fallback,
   packet-assembly, end-to-end), baseline-derived promotion thresholds, and the §18.1 repeated-demand

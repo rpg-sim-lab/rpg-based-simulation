@@ -15,6 +15,10 @@ from __future__ import annotations
 import json
 import pytest
 
+from tests.named_run_dirs import remove_restored_run_dirs  # noqa: F401
+
+pytestmark = pytest.mark.usefixtures("remove_restored_run_dirs")
+
 
 def _make_spec(**kwargs):
     from src.scenarios.schema import SimulationScenarioDefinition

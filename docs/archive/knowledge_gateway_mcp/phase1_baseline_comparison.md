@@ -207,7 +207,7 @@ section.
   threshold committed data.
 - `tests/tools/fixtures/kgmcp_measurement_baseline_corpus_results.json` — the frozen Phase 0
   baseline this comparison measures against (read-only, never modified by this ticket).
-- `docs/engine/contracts/knowledge_gateway_mcp/measurement_baseline_contract.md` §4 — the three
+- `docs/archive/knowledge_gateway_mcp/measurement_baseline_contract.md` §4 — the three
   predeclared threshold formulas this document reports against, unedited.
 - `tools/knowledge_gateway_router.py::ROUTING_TABLE` — the real, frozen 7-row routing table
   responsible for Q2/Q5's expected recall miss.

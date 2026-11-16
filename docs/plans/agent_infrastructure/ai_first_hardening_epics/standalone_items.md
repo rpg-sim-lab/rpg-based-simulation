@@ -43,7 +43,7 @@ where it conflicts.
 **Revised during the 2026-09-04 `create-tickets` investigation pass (PR #124)**: this item directly
 conflicts with an already-ratified decision. **`TCK-20260824-KGMCP-KEEP-OR-DEPRECATE`** (closed
 2026-08-24) ratified "Option A — keep as-is, no further investment," and its decision doc
-(`docs/engine/contracts/knowledge_gateway_mcp/keep_or_deprecate_decision.md` §3) states explicitly:
+(`docs/archive/knowledge_gateway_mcp/keep_or_deprecate_decision.md` §3) states explicitly:
 "No changes to `tools/knowledge_gateway_mcp.py` or any related module are authorized by this
 decision." That ratification's own §1 already considered and rejected "Option C — Deprecate/
 remove" — the option this item re-proposes. This item's evidence (below) was gathered without
