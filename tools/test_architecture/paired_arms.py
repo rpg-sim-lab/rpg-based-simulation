@@ -281,7 +281,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     arm.add_argument("--world", required=True)
     arm.add_argument("--seed", type=int, required=True)
     arm.add_argument("--ticks", type=int, required=True)
-    arm.add_argument("--cache", type=Path, required=True)
+    arm.add_argument("--cache", type=lambda value: Path(value).resolve(), required=True, help="resolved once here, so a relative path names the same place for the child, the cost file and env.json")
     arm.add_argument("--repeat", action="store_true")
     asm = sub.add_parser("assemble")
     asm.add_argument("--in", dest="src", type=Path, required=True)
@@ -297,7 +297,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
             print("slug=" + step_slug(args.step))
         elif args.command == "run-arm":
             cost = run_arm(args.repo, args.sha, args.arm, args.world, args.seed, args.ticks, args.cache, repeat=args.repeat)
-            print(f"{args.arm} {args.world} seed {args.seed}: {'cached' if cost['cached'] else str(cost['wall_seconds']) + 's'}")
+            print(f"{args.arm} {args.world} seed {args.seed}: {'cached' if cost['wall_seconds'] == 0.0 else str(cost['wall_seconds']) + 's'}")
         else:
             summary = assemble(args.src, args.out, base=args.base, new=args.new)
             print(f"assembled {len(summary['jobs'])} job(s), {len(summary['arms'])} arm run(s) into {args.out}")
