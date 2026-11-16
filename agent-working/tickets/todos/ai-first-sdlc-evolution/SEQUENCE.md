@@ -30,9 +30,23 @@ Deferred, out of live scope until the owner reopens them:
 - TCK-20261031-SDLC-RULESET-M1-AND-TAG-PROTECTION (the M1 part);
 - R1-R5.
 
+## Phases 2 and 3 filed 2026-11-16 (owner OD decisions, #715 6910853925)
+
+Filing only. Dispatch is a separate owner go. Phase 1 is deferred, so "required" means required by owner practice.
+
+Phase 2 (verifiable completion):
+1. TCK-20261116-SDLC-CLOSE-CHECK-REPORT-ONLY-GATE-JOB: the post-close check in one always-run gate job, report-only. It covers the three OD-4 layers and the OD-12 two-PR detection line, and includes the E1-replay over 50 merged closing PRs.
+2. TCK-20261116-SDLC-WORK-CLOSE-CLI: the one-step close command. Its CLAUDE.md pointer needs the owner's direct OK.
+
+Phase 3 (evidence and attribution), in parallel with Phase 2:
+3. TCK-20261116-SDLC-CLOSURE-RECORD-AND-EVIDENCE-LAYERS: L1, L2 and L3 (OD-11), plus E5. It switches on close-check condition 6.
+4. TCK-20261116-SDLC-ATTRIBUTION-FIELDS-AND-COORDINATION-METRICS: tool-call and work-item ids, provenance labels, SessionEnd, and coordination metrics in the retro.
+
 ## Not cut yet
 
-Phases 2, 3, 4 and R1: see the epic's table for the decisions each waits on. They are cut after those decisions are recorded.
+- Phase 4 waits on OD-5. The owner asked for an evidence pack first, from both this project's observation and external research (agent-working-designer).
+- OD-6 keeps the Codex track as legacy support, if it causes no issue. No ticket is cut for it yet.
+- R1 stays deferred.
 
 ## Rules
 
