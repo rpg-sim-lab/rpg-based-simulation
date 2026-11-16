@@ -717,7 +717,6 @@ class StrategicIntelligenceSystem:
         Resolve strategic blockers that are satisfied by the current or pending
         authoritative inventory state.
         """
-        from src.engine.cadence import should_run
         cadence = cadence or SystemCadence()
         
         from dataclasses import replace
