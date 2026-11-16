@@ -1,4 +1,16 @@
-# N10: when a SUSPENDED project resumes or ends, and the own-job counts (rpg-designer, 2026-11-16, v1)
+---
+status: active
+layer: ai
+authority: P1
+audience: agent
+artifact_type: investigation
+ticket_id: TCK-20261020-SUSPENDED-PROJECTS-ARE-NEVER-RESUMED-SLOT-LEAK
+phase: open
+date: 2026-11-16
+tags: []
+---
+
+# N10: when a SUSPENDED project resumes or ends, and the own-job counts (rpg-designer, 2026-11-16, v1.1)
 
 - Ticket: TCK-20261020-SUSPENDED-PROJECTS-ARE-NEVER-RESUMED-SLOT-LEAK.
 - Dispatched to ubuntu as a HARD liveness repair (#715 6916732562). M1 pace (a): #715 6912138476, memo row 96.

@@ -14034,7 +14034,8 @@
   related_code_areas:
   - src/ai/intelligence.py (~L1771 capacity gate)
   - src/core/strategic.py (is_live_project, has_project_capacity)
-  artifact_files: []
+  artifact_files:
+  - agent-working/stored_artifacts/TCK-20261020-SUSPENDED-PROJECTS-ARE-NEVER-RESUMED-SLOT-LEAK/rpg_designer_ruling_2026-11-16.md
   tags: []
 - type: ticket
   path: agent-working/tickets/todos/TCK-20261020-TERMINAL-PROJECTS-ARE-RECORDS-WITH-NO-RETENTION-BOUND.md
