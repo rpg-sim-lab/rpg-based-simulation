@@ -12,6 +12,7 @@ from tools.sessions import project_sync as ps
 SENTINEL = "ghp_SENTINEL_TOKEN_VALUE_123"
 STATUSES = ps.STATUSES
 LAYERS = ("combat", "world")
+DOMAINS = ("rpg", "agent-working", "unassigned", "unknown")
 
 
 def field(name, typ, options=()):
@@ -25,6 +26,8 @@ def project(extra=(), status_options=("Todo", "In Progress", "Done"), skip=()):
     fields["Tier"] = field("Tier", "SINGLE_SELECT", [n for n, _ in pc.TIER_OPTIONS])
     fields["Priority"] = field("Priority", "SINGLE_SELECT", [n for n, _ in pc.PRIORITY_OPTIONS])
     fields["Layer"] = field("Layer", "SINGLE_SELECT", LAYERS)
+    fields["Domain"] = field("Domain", "SINGLE_SELECT", DOMAINS)
+    fields["Filed"] = field("Filed", "DATE")
     for n in skip:
         fields.pop(n)
     for f in extra:
@@ -51,6 +54,8 @@ class Fake:
 
     def create_text_field(self, pid, name): self._rec("create_text", name)
     def create_select_field(self, pid, name, options): self._rec("create_select", name)
+    def create_date_field(self, pid, name): self._rec("create_date", name)
+    def set_date(self, pid, iid, fid, value): self._rec("set_date", iid, value)
     def set_select_options(self, fid, options): self._rec("options", fid, [(n, i) for n, _, i in options])
     def add_draft(self, pid, title, body):
         self._rec("add_draft", title)
@@ -288,7 +293,7 @@ def test_project_sync_never_runs_graphql_itself_and_the_client_has_no_delete_mut
 
 
 def test_host_facts_is_a_text_field_init_creates_by_name_and_apply_writes_before_source():
-    assert "Host facts" in pc.TEXT_FIELDS and pc.VALUE_ORDER[-1] == "Host facts"
+    assert "Host facts" in pc.TEXT_FIELDS and pc.VALUE_ORDER[-2:] == ("Host facts", "Filed")
     fake = Fake(project(status_options=STATUSES, skip=("Host facts",)))
     lines, code = pc.init_fields(fake, STATUSES, layers=LAYERS)
     assert code == 0 and ("create_text", "Host facts") in fake.calls and "created: Host facts" in lines

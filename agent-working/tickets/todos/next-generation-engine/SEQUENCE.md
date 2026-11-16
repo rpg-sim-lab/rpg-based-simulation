@@ -8,7 +8,11 @@ model: #715 6735575831. Scoping only; no implementation authorised.
 1. **World farm** (to be cut by platform-planner, the ubuntu seat, as filed; lead-planner-u24 may reassign it to platform-planner-u24)
    and **stage 0 re-measure** (to be cut by perf-planner). Both are independent, and the farm comes first in priority (owner Q3).
    - Stage 0 needs an owner exemption from the perf pause (#715 6556861718) or the end of that pause (ubuntu review N1).
-   - No platform seat is running on either host, so the farm waits for one to launch (N2).
+   - **World farm: filed 2026-11-15 as `TCK-20261115-WORLD-FARM-RUNS-WORLDS-SIDE-BY-SIDE-WITHOUT-CLASHING`** (platform-planner,
+     ubuntu; claim #634 6889978228). The owner approved filing and building it (#715 6889952914, item B), covering the review's §7
+     blockers 1 to 3 only, with no `src/engine` change. platform-implementer writes it; rpg-planner-ubuntu reviews (its answer of
+     2026-11-15 is in the ticket). Blocker 4 (N worlds per host) is perf-planner's, under the exemption in item C. Was: no platform
+     seat running (N2).
 2. `TCK-20261109-NEXT-GENERATION-ENGINE-ADR`: **DONE 2026-11-09**, accepted by the owner (#715 6742854335) and adopted as `docs/architecture/next_generation_engine_adr.md`. Was: lead-planner (ubuntu) reviews it; it then goes to the owner for acceptance. It depends
    only on that review and the owner's yes (ubuntu review R5). It stays separate from `TCK-20261109-DISTRIBUTED-WORKERS-ADR-AMENDMENT`
    (R1: split).

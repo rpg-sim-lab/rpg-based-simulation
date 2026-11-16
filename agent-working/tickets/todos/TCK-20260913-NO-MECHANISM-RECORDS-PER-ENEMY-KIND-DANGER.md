@@ -147,6 +147,7 @@ None yet — standard tier, staging artifacts created when picked up.
 - Whether combat resolution itself is the right place to produce this data (an entity naturally
   "learns" an enemy kind's danger by surviving or losing to it) versus some other mechanism — not
   decided here.
+- 2026-11-14 (rpg-planner): Moved under TCK-20261109-MILESTONE-1-KINDS-BY-PROPERTIES-EPIC by the owner (#715 6875278006) when TCK-20261007-EPIC-DECISION-CORE-LIVE-MOTIVATION-AND-HONEST-FIGHT-OR-FLEE-INPUTS closed. Re-scoped at dispatch: measured in M1-COARSE-PROPERTY-BANDS-AND-THE-APPRAISAL. The appraisal by property bands (KNOW-04: power and danger) may be the declaration this ticket found missing in 2026-09.
 
 ## Implementation Notes
 Ran the declared-intent check before writing any code, per explicit instruction. Full evidence in

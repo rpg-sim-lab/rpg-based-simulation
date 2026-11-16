@@ -106,7 +106,7 @@ def test_an_arm_already_in_the_cache_is_not_run_again_and_a_repeat_always_is(tmp
     def fake(tree, world, seed, ticks, out):
         calls.append((world, seed))
         out.parent.mkdir(parents=True, exist_ok=True)
-        out.write_text('{"world": "%s", "seed": %d}' % (world, seed), encoding="utf-8")
+        out.write_text('{"world": "%s", "seed": %d, "dists": "%s"}' % (world, seed, paired.current_env()["dists"]), encoding="utf-8")
 
     monkeypatch.setattr(paired, "run_one", fake)
     jobs = [("w", 42), ("w", 43)]

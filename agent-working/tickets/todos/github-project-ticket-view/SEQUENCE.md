@@ -23,12 +23,16 @@ Epic `TCK-20261112-EPIC-GITHUB-PROJECT-TICKET-VIEW`, filed by agent-working-plan
    6875225978 item 2. The hold on u24 `--apply` lifts when u24 runs P2 code (its first P2 `--apply`, owner #715 6878981927).
 6. **DONE** TCK-20261114-PROJECT-CLIENT-WRITE-PACING (P3a, standard): write pacing and `retry-after`, closed in the PR that files
    P3b and P3c. Dispatched on 2026-11-15 (owner #715 6881411615 item 3). A primary rate limit stops the run; a secondary one waits.
-7. TCK-20261115-PROJECT-SYNC-ALL-LANES (P3b, standard): all lanes, Domain as a single-select (the old text field is renamed, not
+7. **DONE** TCK-20261115-PROJECT-SYNC-ALL-LANES (P3b, standard; closed in the PR that carries this line; first load 2026-11-14, 1608 steps, 183 items): all lanes, Domain as a single-select (the old text field is renamed, not
    deleted), the `attribute()` prefix fix, the Epic (a) fix, `--fetch`, a last-run file, and a heartbeat with the stale-host flag.
-   Its first load is run by hand. Dispatched after P3a merges.
-8. TCK-20261115-PROJECT-SYNC-HOST-TIMER (P3c, hotfix): systemd user timer templates (hourly; u24 at :00, ubuntu at :30; capped;
+   Its first load was run by hand in the lead's terminal (owner #715 6883401913).
+8. **DONE** (templates, doc and tests; AC3 is the owner's install and read-back) TCK-20261115-PROJECT-SYNC-HOST-TIMER (P3c, hotfix): systemd user timer templates (hourly; u24 at :00, ubuntu at :30; capped;
    exempt from HOST FREE) and the install doc. The owner installs them, and that install is the owner's standing approval for
    unattended writes (6881411615 item 1). Dispatched after P3b merges.
+
+9. **DONE** TCK-20261115-PROJECT-SYNC-FILED-DATE-AND-BACKLOG-VIEW (hotfix; closed in the PR that carries this line; load 2026-11-15, 634 steps, nothing to do): a `Filed` date
+   field from the frontmatter date, hash v4. The owner saves the Backlog view (To do, grouped by Domain, sorted by Priority and Filed) in the UI. Owner concern #715 6883358041, go
+   "File + dispatch after P3b" (6883401913). **Next: P3c (item 8).**
 
 P3 options and decisions: main-checkout `.claude/handover/drafts/project-sync-p3-timer-options-2026-11-15.md`, decided in #715
 6881411615.

@@ -16,7 +16,8 @@ import re
 import stat
 import subprocess
 import time
-from collections.abc import Callable
+from collections.abc import Callable, Iterator
+from contextlib import contextmanager
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -113,7 +114,8 @@ _ITEMS_Q = """query($owner:String!,$number:Int!,$after:String){organization(logi
 items(first:100,after:$after){pageInfo{hasNextPage endCursor} nodes{id isArchived content{__typename ... on DraftIssue{id title}}
 fieldValues(first:%d){pageInfo{hasNextPage} nodes{__typename
 ... on ProjectV2ItemFieldTextValue{text field{... on ProjectV2FieldCommon{name}}}
-... on ProjectV2ItemFieldSingleSelectValue{name field{... on ProjectV2FieldCommon{name}}}}}}}}}}""" % FIELD_VALUES_PAGE
+... on ProjectV2ItemFieldSingleSelectValue{name field{... on ProjectV2FieldCommon{name}}}
+... on ProjectV2ItemFieldDateValue{date field{... on ProjectV2FieldCommon{name}}}}}}}}}}""" % FIELD_VALUES_PAGE
 
 
 class ProjectClient:
@@ -121,6 +123,7 @@ class ProjectClient:
                  pacing: Pacing | None = None, clock: Callable[[], float] = time.monotonic, sleep: Callable[[float], None] = time.sleep) -> None:
         self.owner, self.number, self.token_path, self._runner = owner, number, token_path, runner
         self.pacing, self._clock, self._sleep = pacing or Pacing(), clock, sleep
+        self._single_attempt = False
         self._last_send: float | None = None  # when the last mutation attempt started (the one clock for pacing and retries)
 
     # ---- the single GraphQL call
@@ -146,6 +149,15 @@ class ProjectClient:
             return data, _redact(f"GitHub GraphQL call failed: {detail}", token)[:2000], token
         return data, "", token
 
+    @contextmanager
+    def no_retry(self) -> Iterator[None]:
+        """One paced attempt per call, no wait-and-retry loop (the heartbeat write must not hold up a run that a rate limit has stopped)."""
+        self._single_attempt = True
+        try:
+            yield
+        finally:
+            self._single_attempt = False
+
     def _wait_for(self, detail: str, attempt: int) -> float:
         """Seconds to wait after a secondary limit: retry-after if gh's text shows one, else bounded backoff of at least the minimum wait."""
         p = self.pacing
@@ -155,7 +167,8 @@ class ProjectClient:
 
     def graphql(self, query: str, variables: dict | None = None, paced: bool = False) -> dict:
         """Run a call. A primary limit (RATE_LIMITED) stops at once; a secondary one waits and retries up to `max_tries`. Others raise."""
-        for attempt in range(self.pacing.max_tries):
+        tries = 1 if self._single_attempt else self.pacing.max_tries
+        for attempt in range(tries):
             data, detail, _ = self._send(query, variables, paced)
             if not detail:
                 return data["data"]
@@ -165,8 +178,8 @@ class ProjectClient:
             secondary = "secondary rate limit" in low or "http 429" in low or ("http 403" in low and "rate limit" in low)
             if not secondary:
                 raise ProjectError(detail)
-            if attempt + 1 >= self.pacing.max_tries:
-                raise ProjectError(f"secondary rate limit: gave up after {self.pacing.max_tries} tries")
+            if attempt + 1 >= tries:
+                raise ProjectError(f"secondary rate limit: gave up after {tries} tries")
             self._sleep(self._wait_for(detail, attempt))
         raise ProjectError("rate limited")  # unreachable: max_tries >= 1
 
@@ -206,7 +219,7 @@ class ProjectClient:
                 for val in node["fieldValues"]["nodes"]:
                     name = ((val or {}).get("field") or {}).get("name")
                     if name:
-                        item[name] = val.get("text", val.get("name", ""))
+                        item[name] = val.get("text", val.get("name", val.get("date", "")))
                 items.append(item)
             if not page["pageInfo"]["hasNextPage"]:
                 return items
@@ -215,6 +228,9 @@ class ProjectClient:
     # ---- writes (no delete anywhere)
     def create_text_field(self, project_id: str, name: str) -> None:
         self._mutate("createProjectV2Field", "CreateProjectV2FieldInput", {"projectId": project_id, "dataType": "TEXT", "name": name})
+
+    def rename_field(self, field_id: str, name: str) -> None:
+        self._mutate("updateProjectV2Field", "UpdateProjectV2FieldInput", {"fieldId": field_id, "name": name})
 
     def create_select_field(self, project_id: str, name: str, options: list[tuple[str, str]]) -> None:
         opts = [{"name": n, "color": c, "description": ""} for n, c in options]
@@ -239,6 +255,14 @@ class ProjectClient:
         self._mutate("updateProjectV2ItemFieldValue", "UpdateProjectV2ItemFieldValueInput",
                      {"projectId": project_id, "itemId": item_id, "fieldId": field_id, "value": {"text": text}})
 
+    def set_date(self, project_id: str, item_id: str, field_id: str, date: str) -> None:
+        """`date` is YYYY-MM-DD. An empty value is not written here: the caller clears the field (clear_value)."""
+        self._mutate("updateProjectV2ItemFieldValue", "UpdateProjectV2ItemFieldValueInput",
+                     {"projectId": project_id, "itemId": item_id, "fieldId": field_id, "value": {"date": date}})
+
+    def create_date_field(self, project_id: str, name: str) -> None:
+        self._mutate("createProjectV2Field", "CreateProjectV2FieldInput", {"projectId": project_id, "dataType": "DATE", "name": name})
+
     def set_option(self, project_id: str, item_id: str, field_id: str, option_id: str) -> None:
         self._mutate("updateProjectV2ItemFieldValue", "UpdateProjectV2ItemFieldValueInput",
                      {"projectId": project_id, "itemId": item_id, "fieldId": field_id, "value": {"singleSelectOptionId": option_id}})
@@ -253,7 +277,9 @@ class ProjectClient:
 
 # ---------------------------------------------------------------- --init
 
-TEXT_FIELDS = ("Ticket ID", "Domain", "Seat", "Host", "Branch", "PR", "Source", "Sync hash", "Epic", "Tags", "Host facts")
+TEXT_FIELDS = ("Ticket ID", "Seat", "Host", "Branch", "PR", "Source", "Sync hash", "Epic", "Tags", "Host facts", "Last run")
+DATE_FIELDS = ("Filed",)
+OLD_DOMAIN = "Domain (old)"  # the P1b text field `Domain`, renamed by --init (P3b); it is never deleted
 TIER_OPTIONS = [("hotfix", "ORANGE"), ("standard", "BLUE"), ("epic", "PURPLE")]
 PRIORITY_OPTIONS = [("P0", "RED"), ("P1", "ORANGE"), ("P2", "YELLOW"), ("P3", "GRAY")]
 STATUS_COLORS = {"To do": "GRAY", "In progress": "BLUE", "Stale": "ORANGE", "In review": "PURPLE", "Blocked": "RED", "Done": "GREEN"}
@@ -274,20 +300,35 @@ def replace_options(field: ProjectField, wanted: list[tuple[str, str]]) -> list[
 
 
 def init_fields(client, statuses: tuple[str, ...], replace_status_options: bool = False,
-                layers: tuple[str, ...] = ()) -> tuple[list[str], int]:
-    """Create the missing fields by name; never delete or rename. Returns (report lines, exit code). All checks come before any write."""
+                layers: tuple[str, ...] = (), domains: tuple[str, ...] = ()) -> tuple[list[str], int]:
+    """Create the missing fields by name; the only rename is the P3b text `Domain` -> `Domain (old)`; never a delete. Returns (report lines, exit code). All checks come before any write."""
     project = client.load_project()
     lines: list[str] = []
     problems = []
     selects = {"Tier": TIER_OPTIONS, "Priority": PRIORITY_OPTIONS}
     if layers:
         selects["Layer"] = [(n, "GRAY") for n in layers]
+    rename_domain = False
+    if domains:
+        selects["Domain"] = [(n, "GRAY") for n in domains]
+        old = project.fields.get("Domain")
+        if old is not None and old.type == "TEXT":
+            if OLD_DOMAIN in project.fields:
+                problems.append(f"field 'Domain' is still TEXT and '{OLD_DOMAIN}' already exists: not renaming over it")
+            else:
+                rename_domain = True
     for name in TEXT_FIELDS:
         f = project.fields.get(name)
         if f is not None and f.type != "TEXT":
             problems.append(f"field '{name}' exists as {f.type}, wanted TEXT")
+    for name in DATE_FIELDS:
+        f = project.fields.get(name)
+        if f is not None and f.type != "DATE":
+            problems.append(f"field '{name}' exists as {f.type}, wanted DATE")
     for name in selects:
         f = project.fields.get(name)
+        if name == "Domain" and rename_domain:
+            continue
         if f is not None and f.type != "SINGLE_SELECT":
             problems.append(f"field '{name}' exists as {f.type}, wanted SINGLE_SELECT")
     status = project.fields.get("Status")
@@ -314,9 +355,18 @@ def init_fields(client, statuses: tuple[str, ...], replace_status_options: bool 
         else:
             client.create_text_field(project.id, name)
             lines.append(f"created: {name}")
+    for name in DATE_FIELDS:
+        if name in project.fields:
+            lines.append(f"left alone: {name}")
+        else:
+            client.create_date_field(project.id, name)
+            lines.append(f"created: {name}")
+    if rename_domain:
+        client.rename_field(project.fields["Domain"].id, OLD_DOMAIN)
+        lines.append(f"renamed: Domain -> {OLD_DOMAIN} (kept, never deleted)")
     for name, wanted in selects.items():
         f = project.fields.get(name)
-        if f is None:
+        if f is None or (name == "Domain" and rename_domain):
             client.create_select_field(project.id, name, wanted)
             lines.append(f"created: {name}")
             continue
@@ -339,8 +389,8 @@ def init_fields(client, statuses: tuple[str, ...], replace_status_options: bool 
 
 # ---------------------------------------------------------------- --apply
 
-VALUE_ORDER = ("Ticket ID", "Status", "Domain", "Seat", "Host", "Branch", "PR", "Tier", "Layer", "Priority", "Epic", "Tags", "Host facts")  # Source, then Sync hash, are always last
-SELECT_FIELDS = ("Status", "Tier", "Layer", "Priority")
+VALUE_ORDER = ("Ticket ID", "Status", "Domain", "Seat", "Host", "Branch", "PR", "Tier", "Layer", "Priority", "Epic", "Tags", "Host facts", "Filed")  # Source, then Sync hash, are always last
+SELECT_FIELDS = ("Status", "Tier", "Layer", "Priority", "Domain")
 
 
 def partial_item(done: list[str], not_done: list[str]) -> str | None:
@@ -355,6 +405,18 @@ def partial_item(done: list[str], not_done: list[str]) -> str | None:
     return parts[1].rstrip(":") if any(d.startswith(prefix) for d in done) else None
 
 
+def check_plan_options(project: Project, plan) -> list[str]:
+    """Every select value the plan would write (all of a create's, the changed ones of an update) that is not an option of its field, as
+    `<ticket id> <field> '<value>'`. One function for `--apply` (refuse before the first mutation) and the live dry run (a finding)."""
+    problems = []
+    for derived, changed in [(d, SELECT_FIELDS) for d in plan.creates] + [(d, [c for c in ch if c in SELECT_FIELDS]) for d, ch in plan.updates]:
+        for name in changed:
+            value, fld = derived.get(name, ""), project.fields.get(name)
+            if value and fld is not None and fld.option_id(value) is None:
+                problems.append(f"{derived.get('Ticket ID', '?')} {name} '{value}'")
+    return problems
+
+
 def apply_plan(client, project: Project, plan, body_of: Callable[[dict], str] | None = None,
                progress: Callable[[str], None] | None = None, every: int = 25) -> tuple[list[str], list[str], str | None]:
     """Carry out plan.creates / plan.updates / plan.archives. Returns (done, not_done, error). A failing mutation stops the run."""
@@ -362,11 +424,16 @@ def apply_plan(client, project: Project, plan, body_of: Callable[[dict], str] | 
     missing = [n for n in needed if n not in project.fields]
     if missing:
         raise ClientRefused(f"the Project has no field(s) {', '.join(missing)}: run --init first")
+    bad = check_plan_options(project, plan)
+    if bad:
+        raise ClientRefused(f"{len(bad)} value(s) are not options of their field (nothing written): " + "; ".join(bad))
 
     def put(get_id: Callable[[], str], name: str, value: str, clear_if_empty: bool) -> Callable[[], None] | None:
         f = project.fields[name]
         if value == "":
             return (lambda: client.clear_value(project.id, get_id(), f.id)) if clear_if_empty else None
+        if name in DATE_FIELDS:
+            return lambda: client.set_date(project.id, get_id(), f.id, value)
         if name in SELECT_FIELDS:
             oid = f.option_id(value)
             if oid is None:

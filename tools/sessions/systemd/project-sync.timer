@@ -1,0 +1,11 @@
+# TCK-20261115-PROJECT-SYNC-HOST-TIMER (P3c). u24 runs at :00; ubuntu overrides OnCalendar to :30 with a drop-in (see the doc).
+[Unit]
+Description=Hourly project_sync.py run (u24 at :00, ubuntu at :30)
+
+[Timer]
+OnCalendar=*-*-* *:00:00
+Persistent=true
+RandomizedDelaySec=60
+
+[Install]
+WantedBy=timers.target

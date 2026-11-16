@@ -84,8 +84,9 @@ def test_stale_only_when_every_working_host_is_stale():
 
 def test_seat_and_domain_are_the_union_of_the_segments_and_shrink_when_a_host_leaves():
     both = item(facts_text(seg("progress", "rpg-implementer-u24"), seg("progress", "rpg-implementer", "perf")))
-    derived, _ = derive(A, [fact(A)], both)
-    assert derived["Seat"] == "rpg-implementer, rpg-implementer-u24" and derived["Domain"] == "perf, rpg"
+    derived, findings = derive(A, [fact(A)], both)
+    assert derived["Seat"] == "rpg-implementer, rpg-implementer-u24" and derived["Domain"] == "perf"  # a select holds one value: the sorted first
+    assert any("held in domains perf, rpg" in f for f in findings)
     left, _ = derive(B, [fact(B)], item(facts_text(a=seg("progress", "rpg-implementer-u24"))))
     assert left["Seat"] == "rpg-implementer, rpg-implementer-u24"
     only_b, _ = derive(A, [], item(facts_text(a=seg("progress", "rpg-implementer-u24"), b=seg("progress", "rpg-implementer"))))
@@ -171,8 +172,8 @@ def test_hash_v3_a_v2_item_with_no_host_facts_is_a_hash_only_update_and_a_segmen
     v2_fields = {k: v for k, v in derived.items() if k in ps.HASH_FIELDS_V2}
     live = {**v2_fields, "Sync hash": ps.sync_hash(v2_fields, "v2"), "_item_id": "I", "_draft_id": "D"}
     plan = plan_for(A, [], [live], main=c)
-    assert plan.hand_edits == [] and [ch for _, ch in plan.updates] == [["Sync hash"]]
-    assert plan.updates[0][0]["Sync hash"].startswith("v3:")
+    assert plan.hand_edits == [] and [ch for _, ch in plan.updates] == [["Filed"]]  # the v4 field; the hash follows
+    assert plan.updates[0][0]["Sync hash"].startswith("v4:")
     with_branch = plan_for(A, [fact(A)], [live], main=c)
     assert with_branch.hand_edits == [] and "Host facts" in with_branch.updates[0][1]
 
@@ -224,7 +225,7 @@ def test_convergence_one_holder_per_ticket_a_then_b_then_a_leaves_an_empty_third
         plan = plan_multi(host, branches[host], items)
         plans.append(plan)
         items = settle(items, plan)
-    assert main and plans[0].creates and plans[1].creates
+    assert main and plans[0].creates and (plans[1].creates or plans[1].updates)  # origin's inprogress copy is a candidate on every host
     assert plans[2].updates == [] and plans[2].archives == [] and plans[2].creates == []
 
 

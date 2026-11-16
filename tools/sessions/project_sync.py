@@ -38,6 +38,7 @@ from tools.sessions import state as st
 from tools.sessions.launch import _worktree_entries as worktree_entries
 from tools.sessions.launch import main_checkout
 from tools.sessions.roster import REPO_ROOT, load_roster
+from tools.sessions.route import route
 
 # Deliberate reuse of status.py's private `_worktree_for` (seat -> physical worktree): same package, and renaming it would only
 # churn status.py's unchanged tests (designer review of plan.md, 2026-11-12).
@@ -54,16 +55,23 @@ DEFAULTS = {
     "host_names": {},
     "write_pacing": {},  # ProjectClient's Pacing; empty means its defaults (TCK-20261114-PROJECT-CLIENT-WRITE-PACING)
 }
+HEARTBEAT_TITLE = "_sync heartbeat"
+HEARTBEAT_FIELD = "Last run"
+UNASSIGNED, UNKNOWN = "unassigned", "unknown"
+LAST_RUN_PATH = Path.home() / ".local" / "state" / "rpg-project-sync" / "last-run.json"
+FETCH_TIMEOUT_S = 60
 PR_LIMIT = 300  # the value of ticket_queue.PR_LIMIT: gh's own default is 30
 FOLDERS = ("todos", "inprogress", "done")
 PROGRESS_FOLDERS = ("inprogress", "done")  # only these count as progress; todos/ on a branch or PR is filing
 HASH_FIELDS_V1 = ("Title", "Ticket ID", "Status", "Domain", "Seat", "Host", "Branch", "PR", "Tier")
 HASH_FIELDS_V2 = HASH_FIELDS_V1 + ("Layer", "Priority", "Epic", "Tags")
-HASH_FIELDS = HASH_FIELDS_V2 + ("Host facts",)  # the current version (v3)
-HASH_VERSIONS = {"v1": HASH_FIELDS_V1, "v2": HASH_FIELDS_V2, "v3": HASH_FIELDS}  # a stored hash is "v3:<sha>"; an unprefixed value is v1
-CURRENT_HASH_VERSION = "v3"
+HASH_FIELDS_V3 = HASH_FIELDS_V2 + ("Host facts",)
+HASH_FIELDS = HASH_FIELDS_V3 + ("Filed",)  # the current version (v4)
+HASH_VERSIONS = {"v1": HASH_FIELDS_V1, "v2": HASH_FIELDS_V2, "v3": HASH_FIELDS_V3, "v4": HASH_FIELDS}  # a stored hash is "v4:<sha>"; an unprefixed value is v1
+CURRENT_HASH_VERSION = "v4"
 HOST_STATES = ("filing", "progress", "stale", "blocked")
 PRIORITIES = ("P0", "P1", "P2", "P3")
+TIERS = ("hotfix", "standard", "epic")
 STATUSES = ("To do", "In progress", "Stale", "In review", "Blocked", "Done")
 FILING_SUFFIX = "[filing]"
 BODY = "Generated from {path} by tools/sessions/project_sync.py — edits are overwritten."
@@ -143,6 +151,7 @@ class TicketCopy:
     layer: str = ""
     priority: str = ""
     tags: tuple[str, ...] = ()
+    code_areas: tuple[str, ...] = ()  # repo-relative path tokens of `## Related Code Areas` (read only to name the owning domain)
 
 
 @dataclass(frozen=True)
@@ -172,6 +181,9 @@ class Plan:
     hand_edits: list[str] = field(default_factory=list)
     findings: list[str] = field(default_factory=list)
     notes: list[str] = field(default_factory=list)
+    heartbeats: list[dict] = field(default_factory=list)  # the live `_sync heartbeat` items, oldest first; never archived, never a ticket
+    stale_hosts: list[str] = field(default_factory=list)  # other hosts whose heartbeat segment is older than stale_host_hours
+    unassigned_code_areas: int = 0  # tickets whose Domain is `unassigned` because their code areas have no or mixed owners
 
 
 # ---------------------------------------------------------------- ticket files
@@ -190,6 +202,20 @@ def folder_of(path: str) -> str | None:
     return head if head in FOLDERS else None
 
 
+_AREA_TOKEN = re.compile(r"[\w.\-*{}]+(?:/[\w.\-*{}]+)+(?:::\w+|:\d+)?")
+
+
+def code_area_paths(section: str) -> tuple[str, ...]:
+    """Repo-relative path tokens of a `## Related Code Areas` section: backticks, a trailing `::name` / `:line` and trailing punctuation
+    stripped; a token holding a glob or a brace is skipped (it names no single file)."""
+    out: list[str] = []
+    for tok in _AREA_TOKEN.findall(section.replace("`", " ")):
+        tok = re.sub(r"(::\w+|:\d+)$", "", tok).rstrip(".,;:)")
+        if "/" in tok and not any(c in tok for c in "*{}") and tok not in out:
+            out.append(tok)
+    return tuple(out)
+
+
 def parse_copy(path: str, text: str) -> TicketCopy:
     def section(name: str) -> str:
         m = re.search(rf"^## {name}\s*\n+([^\n#][^\n]*)", text, re.M)
@@ -198,11 +224,13 @@ def parse_copy(path: str, text: str) -> TicketCopy:
     fm = re.search(r"^date:\s*(\S+)", text, re.M)
     layer = re.search(r"^layer:\s*(\S+)", text, re.M)
     tags = re.search(r"^tags:\s*\[([^\]]*)\]", text, re.M)
+    areas = re.search(r"^## Related Code Areas\s*\n(.*?)(?=^## |\Z)", text, re.M | re.S)
     return TicketCopy(
         id=ticket_id_of(path) or "", folder=folder_of(path) or "", path=path, title=section("Title"), tier=section("Tier").lower(),
         blocked=section("Status").upper() == "BLOCKED", date=fm.group(1) if fm else "",
         layer=layer.group(1) if layer else "", priority=section("Priority").upper(),
         tags=tuple(x.strip().strip("'\"") for x in tags.group(1).split(",") if x.strip()) if tags else (),
+        code_areas=code_area_paths(areas.group(1)) if areas else (),
     )
 
 
@@ -242,19 +270,32 @@ def done_date(root: Path, path: str, run: Runner = run_command, ref: str = "orig
 # ---------------------------------------------------------------- worktrees
 
 
-def attribute(branch: str, seats: list[tuple[str, str]]) -> tuple[str, str]:
-    """(Seat, Domain): the seat the launcher recorded (status.py mapping); else `<domain> (seat not recorded)` from the branch prefix,
-    a known gap (hand-made batch worktrees have no record); else `unknown`."""
+def _default_domains() -> tuple[str, ...]:
+    try:
+        return tuple(d.name for d in load_roster(REPO_ROOT).domains)
+    except Exception:
+        return ()
+
+
+def attribute(branch: str, seats: list[tuple[str, str]], domains: tuple[str, ...] | None = None) -> tuple[str, str]:
+    """(Seat, Domain): the seat the launcher recorded (status.py mapping); else `<domain> (seat not recorded)` where the domain is the
+    longest registered domain that is a prefix of the branch name followed by `-` (a known gap: hand-made batch worktrees have no record);
+    else `unknown` for both. `domains` defaults to the roster's."""
     if seats:
         return "/".join(s for s, _ in seats), seats[0][1]
-    prefix = branch.split("-", 1)[0]
-    return (f"{prefix} (seat not recorded)", prefix) if "-" in branch else ("unknown", "")
+    known = _default_domains() if domains is None else domains
+    hits = [d for d in known if branch.startswith(d + "-")]
+    if hits:
+        best = max(hits, key=len)
+        return f"{best} (seat not recorded)", best
+    return UNKNOWN, UNKNOWN
 
 
 def read_branch_facts(root: Path, host: str, lanes_note: list[str], run: Runner = run_command) -> tuple[list[BranchFact], int]:
     """(branch facts for this host, count of detached worktrees skipped). Read-only: status.py's builders, then per worktree
     `git diff --name-status <merge-base> HEAD` and `git status --porcelain`, both limited to the ticket folders."""
     roster = load_roster(root)
+    domain_names = tuple(d.name for d in getattr(roster, "domains", ())) or None
     main = main_checkout(root)
     try:
         state_root = st.state_root(root)
@@ -278,7 +319,7 @@ def read_branch_facts(root: Path, host: str, lanes_note: list[str], run: Runner 
             continue
         if not copies:
             continue
-        seat, domain = attribute(info.branch, seat_of.get(info.path.resolve(), []))
+        seat, domain = attribute(info.branch, seat_of.get(info.path.resolve(), []), domain_names)
         facts.append(BranchFact(host, info.branch, str(info.path), seat, domain, tuple(copies), info.last_activity))
     return facts, detached
 
@@ -492,6 +533,8 @@ class Extras:
     layers: frozenset[str] | None = None
     tag_order: tuple[str, ...] | None = None
     epic_of: Callable[[str, str, str], tuple[str, list[str]]] | None = None  # (ticket id, best copy path, tier) -> (value, notes)
+    domains: frozenset[str] | None = None  # the Domain select's options; a value outside them is a finding
+    code_domain: Callable[[TicketCopy | None], str | None] | None = None  # the one domain that owns every path a ticket names, else None
 
 
 _ID_RE = re.compile(r"TCK-[A-Z0-9][A-Z0-9-]*[A-Z0-9]")
@@ -535,7 +578,7 @@ def make_epic_resolver(main_index: dict[str, list[tuple[str, str]]], load_main: 
         return cache[key]
 
     def resolve(tid: str, path: str, tier: str) -> tuple[str, list[str]]:
-        key = folder_key(path)
+        key = folder_key(path) or next((k for _, p in main_index.get(tid, []) if (k := folder_key(p))), None)  # origin's path counts too
         if key:
             if tier == "epic" and key not in members:
                 return tid, []
@@ -548,6 +591,18 @@ def make_epic_resolver(main_index: dict[str, list[tuple[str, str]]], load_main: 
         return "standalone", []
 
     return resolve
+
+
+def make_code_domain(roster) -> Callable[[TicketCopy | None], str | None]:
+    """The one domain that owns every path a ticket's `## Related Code Areas` names (route() on the loaded roster, in process; unowned paths
+    are skipped; a split path counts all its domains). None when no path routes or the owners differ."""
+    def code_domain(copy: TicketCopy | None) -> str | None:
+        owners: set[str] = set()
+        for path in (copy.code_areas if copy else ()):
+            owners.update(route(path, roster).domains)
+        return next(iter(owners)) if len(owners) == 1 else None
+
+    return code_domain
 
 
 def content_source(host: str, segments: dict[str, Segment], own_best: TicketCopy | None,
@@ -564,6 +619,38 @@ def content_source(host: str, segments: dict[str, Segment], own_best: TicketCopy
     if holders[0] == host:
         return own_best, False, f"{host}'s copy (lowest host tag)"
     return None, True, "the current value (another host has the lowest host tag)"
+
+
+def pick_domain(tid: str, segment_domains: set[str], source: TicketCopy | None, extras: Extras, findings: list[str]) -> tuple[str, bool]:
+    """(Domain value, whether it came from the code areas): a host segment's domain; else the owner of the code the ticket names; else
+    `unassigned`. Never from `layer`. Several segment domains: the sorted-first, with a finding (every host picks the same one). A value that
+    is not an option of the Domain select is a finding and the field stays empty."""
+    from_areas = False
+    if segment_domains:
+        ordered = sorted(segment_domains)
+        value = ordered[0]
+        if len(ordered) > 1:
+            findings.append(f"{tid}: held in domains {', '.join(ordered)}: Domain is {value}")
+    else:
+        from_areas = True
+        value = (extras.code_domain(source) if extras.code_domain else None) or UNASSIGNED
+    if extras.domains is not None and value not in extras.domains:
+        findings.append(f"{tid}: domain '{value}' is not an option of the Domain field: Domain left empty")
+        value = ""
+    return value, from_areas
+
+
+def filed_date(tid: str, raw: str, findings: list[str]) -> str:
+    """The ticket's frontmatter `date:` as YYYY-MM-DD, else "" (the field stays empty) plus a finding. It is the filing date, not the last activity."""
+    text = str(raw or "").strip()
+    try:
+        if re.fullmatch(r"\d{4}-\d{2}-\d{2}", text):
+            date.fromisoformat(text)
+            return text
+    except ValueError:
+        pass
+    findings.append(f"{tid}: frontmatter date '{text}' is " + ("not a valid YYYY-MM-DD date" if text else "missing") + ": Filed left empty")
+    return ""
 
 
 def derive_item(tid: str, main: list[TicketCopy], branches: list[BranchFact], prs: list[PrFact] | None, current: dict | None,
@@ -591,8 +678,9 @@ def derive_item(tid: str, main: list[TicketCopy], branches: list[BranchFact], pr
     extras = extras or Extras()
     cur = current or {}
     title = best.title if best else ""
-    layer, priority, tags, epic = "", "", "", "standalone"
+    layer, priority, tags, epic, tier, filed = "", "", "", "standalone", "", ""
     if best and not keep:
+        filed = filed_date(tid, best.date, findings)
         layer = best.layer
         if layer and extras.layers is not None and layer not in extras.layers:
             findings.append(f"{tid}: layer '{layer}' is not in registries/layer_registry.jsonl: Layer left empty")
@@ -608,36 +696,44 @@ def derive_item(tid: str, main: list[TicketCopy], branches: list[BranchFact], pr
         if unknown:
             findings.append(f"{tid}: tags not in registries/tag_registry.jsonl, put last: {', '.join(unknown)}")
         tags = " ".join(known + unknown) if order is not None else " ".join(best.tags)
+        lead_tier = re.match(r"(hotfix|standard|epic)(?![0-9A-Za-z])", best.tier)  # "standard (provisional)" is standard: the leading token is the value
+        tier = lead_tier.group(1) if lead_tier else best.tier
+        if tier and tier not in TIERS:
+            findings.append(f"{tid}: tier '{tier}' is not one of {', '.join(TIERS)}: Tier left empty")
+            tier = ""
         if extras.epic_of:
             epic, epic_notes = extras.epic_of(tid, best.path, best.tier)
             findings += epic_notes
     legacy = any(s.legacy for s in segments.values())
     seats = {x for s in segments.values() if s.state != "filing" and not s.legacy
-             for x in (s.seats or (f"{s.domains[0]} (seat not recorded)" if s.domains else "unknown",))}
+             for x in (s.seats or (f"{s.domains[0]} (seat not recorded)" if s.domains and s.domains[0] != UNKNOWN else UNKNOWN,))}
     domains = {d for s in segments.values() if not s.legacy for d in s.domains}
     if legacy:  # a host that has not written a segment yet: its seats and domains are unknown, so the current entries stay
         seats |= set(_split(cur.get("Seat", "")))
         domains |= set(_split(cur.get("Domain", "")))
+    domain, from_code_areas = pick_domain(tid, domains, best or origin_best or own_best, extras, findings)
     body_src = best or origin_best or own_best
     fields = {
         "Title": cur.get("Title", "") if keep else (f"{tid}: {title}".rstrip(": ") if title else tid),
         "Ticket ID": tid,
         "Status": status,
-        "Domain": ", ".join(sorted(domains)) or cur.get("Domain", ""),
+        "Domain": domain,
         "Seat": ", ".join(sorted(seats)) or ("" if status == "To do" else cur.get("Seat", "")),
         "Host": merge_host_entries(cur.get("Host", ""), [host] if mine else [], host),
         "Branch": merge_host_entries(cur.get("Branch", ""), entries, f"{host}:"),
         "PR": ", ".join(pr_urls),
-        "Tier": cur.get("Tier", "") if keep else (best.tier if best else ""),
+        "Tier": cur.get("Tier", "") if keep else tier,
         "Layer": cur.get("Layer", "") if keep else layer,
         "Priority": cur.get("Priority", "") if keep else priority,
         "Epic": cur.get("Epic", "") if keep else epic,
         "Tags": cur.get("Tags", "") if keep else tags,
         "Host facts": format_host_facts(segments),
+        "Filed": cur.get("Filed", "") if keep else filed,
         "Body": BODY.format(path=body_src.path if body_src else "agent-working/tickets/"),
         "Source": source,
     }
     fields["Sync hash"] = sync_hash(fields)
+    fields["_code_unassigned"] = from_code_areas and domain == UNASSIGNED
     return fields, findings
 
 
@@ -652,8 +748,46 @@ def hand_edits(item: dict, derived: dict) -> list[str]:
     return [f"hand edit: {derived['Ticket ID']} {f} '{item.get(f, '')}' -> '{derived[f]}'" for f in HASH_VERSIONS[version] if item.get(f, "") != derived[f]]
 
 
-def in_pilot_lane(fact: BranchFact, lanes: list[str]) -> bool:
-    return fact.domain in lanes or any(fact.branch.startswith(f"{lane}-") for lane in lanes)
+def parse_last_run(text: str) -> dict[str, tuple[str, str]]:
+    """`host: 2026-11-15T10:00Z rc=0; host2: ...` -> {host: (timestamp, rc)}. A malformed segment is skipped."""
+    out: dict[str, tuple[str, str]] = {}
+    for raw in (text or "").split(";"):
+        host, sep, rest = raw.strip().partition(":")
+        parts = rest.split()
+        if sep and host.strip() and len(parts) == 2 and parts[1].startswith("rc="):
+            out[host.strip()] = (parts[0], parts[1][3:])
+    return out
+
+
+def format_last_run(segments: dict[str, tuple[str, str]]) -> str:
+    return "; ".join(f"{h}: {ts} rc={rc}" for h, (ts, rc) in sorted(segments.items()))
+
+
+def merged_last_run(heartbeats: list[dict], host: str, stamp: str, rc: int) -> str:
+    """The `Last run` text to write: every heartbeat's segments (the oldest wins a clash), this host's segment replaced."""
+    merged: dict[str, tuple[str, str]] = {}
+    for beat in reversed(heartbeats):
+        merged.update(parse_last_run(beat.get(HEARTBEAT_FIELD, "")))
+    merged[host] = (stamp, str(rc))
+    return format_last_run(merged)
+
+
+def stale_hosts_of(heartbeats: list[dict], host: str, now: datetime, hours: float) -> list[str]:
+    seen: dict[str, tuple[str, str]] = {}
+    for beat in reversed(heartbeats):
+        seen.update(parse_last_run(beat.get(HEARTBEAT_FIELD, "")))
+    out = []
+    for other, (stamp, rc) in sorted(seen.items()):
+        if other == host:
+            continue
+        try:
+            age = (now - datetime.strptime(stamp, "%Y-%m-%dT%H:%MZ").replace(tzinfo=timezone.utc)).total_seconds() / 3600
+        except ValueError:
+            out.append(f"{other} (last run unreadable)")
+            continue
+        if age > hours:
+            out.append(f"{other} (last run {stamp} rc={rc}, {age:.0f} h ago)")
+    return out
 
 
 def build_plan(main_index: dict[str, list[tuple[str, str]]], load_main: Callable[[str], TicketCopy], branches: list[BranchFact],
@@ -661,6 +795,19 @@ def build_plan(main_index: dict[str, list[tuple[str, str]]], load_main: Callable
                done_at: Callable[[str], datetime | None], now: datetime, extras: Extras | None = None) -> Plan:
     plan = Plan()
     by_id: dict[str, dict] = {}
+    heartbeats = [i for i in items if not i.get("Ticket ID") and i.get("Title") == HEARTBEAT_TITLE]
+    plan.heartbeats = heartbeats  # list order is the oldest first; never archived, never a ticket
+    if len(heartbeats) > 1:
+        plan.findings.append(f"{len(heartbeats)} '{HEARTBEAT_TITLE}' items: segments are read from all, this host writes the first; "
+                             "the owner removes the extra by hand (a delete, through the lead)")
+    plan.stale_hosts = stale_hosts_of(heartbeats, host, now, float(config.get("stale_host_hours", 24)))
+    items = [i for i in items if i not in heartbeats]
+    # After --init renames the text field, an item's old value sits under `Domain (old)` and the new select reads "": hash and compare with
+    # the old value (no false hand edits); the raw select value is kept to plan the Domain write.
+    for item in items:
+        if "Domain (old)" in item and not item.get("Domain"):
+            item["_raw_domain"] = item.get("Domain", "")
+            item["Domain"] = item["Domain (old)"]
     for item in items:
         tid = item.get("Ticket ID")
         if not tid:
@@ -680,7 +827,8 @@ def build_plan(main_index: dict[str, list[tuple[str, str]]], load_main: Callable
     pilot_start = date.fromisoformat(str(config["pilot_start"]))
     window = int(config["done_window_days"])
     stale_before = now.timestamp() - int(config.get("stale_branch_days", 14)) * 86400
-    candidates = {c.id for b in branches if in_pilot_lane(b, config["pilot_lanes"]) for c in b.copies} | set(by_id)
+    on_origin = {tid for tid, entries in main_index.items() if any(folder in ("todos", "inprogress") for folder, _ in entries)}
+    candidates = {c.id for b in branches for c in b.copies} | on_origin | set(by_id)  # every lane: no pilot filter
     known = set(main_index) | {c.id for b in branches for c in b.copies}
     for tid in sorted(candidates):
         if tid not in known:
@@ -688,6 +836,7 @@ def build_plan(main_index: dict[str, list[tuple[str, str]]], load_main: Callable
         main = [load_main(path) for _, path in main_index.get(tid, [])]
         derived, findings = derive_item(tid, main, branches, prs, by_id.get(tid), host, source, stale_before, extras, plan.notes)
         plan.findings += findings
+        plan.unassigned_code_areas += 1 if derived.pop("_code_unassigned", False) else 0
         done_path = next((c.path for c in main if c.folder == "done"), None)
         finished = done_at(done_path) if done_path else None
         current = by_id.get(tid)
@@ -705,7 +854,8 @@ def build_plan(main_index: dict[str, list[tuple[str, str]]], load_main: Callable
             plan.creates.append(derived)
             continue
         plan.hand_edits += hand_edits(current, derived)
-        changed = [f for f in HASH_VERSIONS[CURRENT_HASH_VERSION] if current.get(f, "") != derived[f]]
+        changed = [f for f in HASH_VERSIONS[CURRENT_HASH_VERSION]
+                   if current.get("_raw_domain" if f == "Domain" and "_raw_domain" in current else f, "") != derived[f]]
         if not changed and current.get("Sync hash", "") != derived["Sync hash"]:
             changed = ["Sync hash"]  # same values, older hash version: rewrite the hash only
         if changed:
@@ -724,6 +874,9 @@ def build_plan(main_index: dict[str, list[tuple[str, str]]], load_main: Callable
                 continue
             plan.archives.append((tid, "no ticket file for this ID"))
             plan.archive_item_ids.append(item.get("_item_id", ""))
+    if plan.unassigned_code_areas:
+        plan.notes.append(f"domain: {plan.unassigned_code_areas} tickets unassigned (no or mixed code-area owners)")
+    plan.notes += [f"stale-host: {h}" for h in plan.stale_hosts]
     return plan
 
 
@@ -764,12 +917,12 @@ def load_config(root: Path, notes: list[str]) -> dict:
 
 
 def render(plan: Plan, host: str, sha: str, age_hours: float | None, detached: int, items_n: int, prs_n: int | None,
-           mode: str = "DRY RUN (no GitHub or repo write)") -> str:
+           mode: str = "DRY RUN (no GitHub or repo write)", fetch: str = "no fetch") -> str:
     age = "unknown age" if age_hours is None else f"{age_hours:.1f} h old"
-    lines = [f"project_sync {mode} host={host} origin/main={sha[:9]} ({age}, no fetch) "
+    lines = [f"project_sync {mode} host={host} origin/main={sha[:9]} ({age}, {fetch}) "
              f"items-in={items_n} open-PRs={'unknown' if prs_n is None else prs_n} detached-skipped={detached}"]
     for item in plan.creates:
-        lines.append(f"create  {item['Ticket ID']}  {item['Status']}  seat={item['Seat'] or '-'}  branch={item['Branch'] or '-'}  pr={item['PR'] or '-'}")
+        lines.append(f"create  {item['Ticket ID']}  {item['Status']}  domain={item['Domain'] or '-'}  seat={item['Seat'] or '-'}  branch={item['Branch'] or '-'}  pr={item['PR'] or '-'}")
     for item, changed in plan.updates:
         lines.append(f"update  {item['Ticket ID']}  {item['Status']}  changed: {', '.join(changed)}")
     for ident, reason in plan.archives:
@@ -790,7 +943,75 @@ def _client(config: dict, notes: list[str] | None = None):
     return ProjectClient(str(config["project"]["owner"]), number, pacing=Pacing.from_config(config.get("write_pacing")))
 
 
+def fetch_origin(root: Path, runner=subprocess.run) -> str | None:
+    """`git fetch origin main`, nothing else (argv fixed, so `_guard` stays read-only). None on success, else the short reason."""
+    try:
+        done = runner(["git", "fetch", "origin", "main"], cwd=str(root), capture_output=True, text=True, timeout=FETCH_TIMEOUT_S, check=False)
+    except subprocess.TimeoutExpired:
+        return f"timed out after {FETCH_TIMEOUT_S} s"
+    except (OSError, subprocess.SubprocessError) as exc:
+        return str(exc)[:200]
+    return None if done.returncode == 0 else ((done.stderr or "").strip().splitlines() or ["git fetch failed"])[-1][:200]
+
+
+def read_last_run(path: Path | None = None) -> dict:
+    try:
+        data = json.loads((path or LAST_RUN_PATH).read_text(encoding="utf-8"))
+        return data if isinstance(data, dict) else {}
+    except (OSError, ValueError):
+        return {}
+
+
+def write_last_run(record: dict, path: Path | None = None) -> None:
+    """`last-run.json` (mode 600). `failed_streak` counts consecutive runs with rc != 0. Never raises: a write failure never fails the run."""
+    target = path or LAST_RUN_PATH
+    try:
+        previous = read_last_run(target)
+        streak = int(previous.get("failed_streak", 0)) + 1 if record.get("rc") else 0
+        target.parent.mkdir(parents=True, exist_ok=True)
+        tmp = target.with_suffix(".tmp")
+        tmp.write_text(json.dumps({**record, "failed_streak": streak}, indent=1, sort_keys=True), encoding="utf-8")
+        tmp.chmod(0o600)
+        tmp.replace(target)
+    except (OSError, ValueError, TypeError):
+        pass
+
+
+def write_heartbeat(client, project, plan: Plan, host: str, stamp: str, rc: int) -> str | None:
+    """One paced attempt, no retry: create the heartbeat item or rewrite only this host's segment of the oldest one. None on success, else
+    the redacted reason (the caller prints it; it never changes the run's rc)."""
+    from contextlib import nullcontext
+
+    from tools.sessions.project_client import ClientRefused, ProjectError
+
+    field_ = project.fields.get(HEARTBEAT_FIELD)
+    if field_ is None:
+        return f"the Project has no '{HEARTBEAT_FIELD}' field: run --init"
+    text = merged_last_run(plan.heartbeats, host, stamp, rc)
+    try:
+        with getattr(client, "no_retry", nullcontext)():
+            if plan.heartbeats:
+                client.set_text(project.id, plan.heartbeats[0]["_item_id"], field_.id, text)
+            else:
+                item_id, _ = client.add_draft(project.id, HEARTBEAT_TITLE, "Generated by tools/sessions/project_sync.py: one line per host, last --apply.")
+                client.set_text(project.id, item_id, field_.id, text)
+    except (ProjectError, ClientRefused) as exc:
+        return str(exc)[:300]
+    return None
+
+
 def main(argv: list[str] | None = None) -> int:
+    """Runs the sync; an `--apply` run (any outcome) leaves `last-run.json`."""
+    info: dict = {"apply": False}
+    rc = _main(argv, info)
+    if info.get("apply"):
+        write_last_run({"time": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%MZ"), "host": info.get("host", ""), "rc": rc,
+                        "done": info.get("done", 0), "left": info.get("left", 0), "error": info.get("error", ""),
+                        "heartbeat": info.get("heartbeat", ""), "stale_hosts": info.get("stale_hosts", [])})
+    return rc
+
+
+def _main(argv: list[str] | None, info: dict) -> int:
     parser = argparse.ArgumentParser(description="Derive the ticket-state Project plan. Default: dry run (writes nothing). --init creates the "
                                                  "Project's fields; --apply carries out the plan. Items are never deleted, only archived.")
     parser.add_argument("--root", type=Path, default=REPO_ROOT)
@@ -799,14 +1020,23 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--dry-run", action="store_true", help="accepted; the default mode")
     parser.add_argument("--apply", action="store_true", help="write the plan to the Project (needs project.number and the token file)")
     parser.add_argument("--init", action="store_true", help="create the Project's missing fields by name; writes nothing else")
+    parser.add_argument("--fetch", action="store_true", help="run `git fetch origin main` first (60 s timeout); on failure carry on and add a finding")
     parser.add_argument("--replace-status-options", action="store_true", help="with --init: allow replacing the Status options on a Project that has items")
     args = parser.parse_args(argv)
+    info["apply"] = args.apply
     if (args.init and args.apply) or (args.apply and args.items) or (args.replace_status_options and not args.init):
         print("project_sync: use --init and --apply as separate runs, --apply never with --items, --replace-status-options only with --init.", file=sys.stderr)
         return 2
     plan_notes: list[str] = []
     config = load_config(args.root, plan_notes)
     args.host = args.host or config["host_names"].get(socket.gethostname(), socket.gethostname())
+    info["host"] = args.host
+    try:
+        roster = load_roster(args.root)
+        domain_names = tuple(d.name for d in getattr(roster, "domains", ()))
+    except Exception as exc:  # an unreadable roster stops nothing: Domain is then not validated and no code area routes
+        roster, domain_names = None, ()
+        plan_notes.append(f"registries/session_roles.yaml unreadable ({str(exc)[:80]}): Domain not validated")
     from tools.sessions.project_client import ClientRefused, ProjectError, init_fields
 
     client = None
@@ -815,7 +1045,7 @@ def main(argv: list[str] | None = None) -> int:
             client = _client(config)
             if args.init:
                 layers = read_registry(args.root, "registries/layer_registry.jsonl", "layer", plan_notes) or ()
-                lines, code = init_fields(client, STATUSES, args.replace_status_options, layers)
+                lines, code = init_fields(client, STATUSES, args.replace_status_options, layers, domain_names + (UNASSIGNED, UNKNOWN))
                 print("\n".join(lines))
                 return code
         except ClientRefused as exc:
@@ -837,6 +1067,7 @@ def main(argv: list[str] | None = None) -> int:
     except ProjectError as exc:
         print(f"project_sync: GitHub refused: {exc}", file=sys.stderr)
         return 1
+    fetch_failure = fetch_origin(args.root) if args.fetch else None
     sha, stamp = origin_info(args.root)
     now = datetime.now(timezone.utc)
     branches, detached = read_branch_facts(args.root, args.host, plan_notes)
@@ -844,19 +1075,31 @@ def main(argv: list[str] | None = None) -> int:
     if args.apply and (prs is None or not getattr(prs, "complete", True)):
         print("project_sync: --apply refused, nothing written: the open PRs or one PR's files could not be read, so In review / PR would be "
               "written wrong. Re-run when gh answers.", file=sys.stderr)
+        info["error"] = "open PRs unknown, nothing written"
         return 1
     index = read_main_index(args.root)
     source = f"{sha[:9]} @ {now.strftime('%Y-%m-%dT%H:%MZ')}"
     load_main = lambda path: read_main_copy(args.root, path)  # noqa: E731
     layers = read_registry(args.root, "registries/layer_registry.jsonl", "layer", plan_notes)
     extras = Extras(frozenset(layers) if layers is not None else None, read_registry(args.root, "registries/tag_registry.jsonl", "tag", plan_notes),
-                    make_epic_resolver(index, load_main, read_sequences(args.root)))
+                    make_epic_resolver(index, load_main, read_sequences(args.root)),
+                    frozenset(domain_names) | {UNASSIGNED, UNKNOWN} if domain_names else None,
+                    make_code_domain(roster) if roster is not None else None)
     plan = build_plan(index, load_main, branches, prs, items, args.host, source, config,
                       lambda path: done_date(args.root, path), now, extras)
     plan.notes = plan_notes + plan.notes
+    if client is not None and not args.apply:  # a live dry run also says what --apply would refuse (the same check, before any write)
+        from tools.sessions.project_client import check_plan_options
+        try:
+            plan.findings += [f"apply would refuse: {p}" for p in check_plan_options(client.load_project(), plan)]
+        except (ClientRefused, ProjectError) as exc:
+            plan.notes.append(f"option check skipped: {str(exc)[:120]}")
+    if fetch_failure:
+        plan.findings.append(f"git fetch origin main failed ({fetch_failure}): origin/main may be out of date")
+    info["stale_hosts"] = plan.stale_hosts
     mode = "APPLY (writes to the GitHub Project)" if args.apply else ("DRY RUN, live read (no write)" if client is not None else "DRY RUN (no GitHub or repo write)")
     print(render(plan, args.host, sha, None if stamp is None else (time.time() - stamp) / 3600, detached, len(items),
-                 None if prs is None else len(prs), mode))
+                 None if prs is None else len(prs), mode, "no fetch" if not args.fetch else ("fetch FAILED" if fetch_failure else "fetched")))
     if args.apply:
         from tools.sessions.project_client import Pacing, apply_plan, partial_item
         try:
@@ -866,11 +1109,18 @@ def main(argv: list[str] | None = None) -> int:
                                                every=pacing.progress_every)
         except ClientRefused as exc:
             print(f"project_sync: refused: {exc}", file=sys.stderr)
+            info["error"] = str(exc)[:300]
             return 2
         except ProjectError as exc:
             print(f"project_sync: GitHub refused: {exc}", file=sys.stderr)
+            info["error"] = str(exc)[:300]
             return 1
+        rc = 1 if error else 0
+        beat = write_heartbeat(client, project, plan, args.host, datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%MZ"), rc)
+        info.update(done=len(done), left=len(not_done), error=error or "", heartbeat=beat or "")
         print(f"applied {len(done)} step(s)" + (f"; STOPPED, {len(not_done)} not done" if error else "; nothing left"))
+        if beat:
+            print(f"heartbeat: not written ({beat})", file=sys.stderr)
         if error:
             print(f"error: {error}", file=sys.stderr)
             print("not done: " + "; ".join(not_done), file=sys.stderr)
