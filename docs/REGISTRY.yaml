@@ -8021,6 +8021,20 @@
   - testing
   - determinism
 - type: ticket
+  path: agent-working/tickets/done/TCK-20261116-PR-RENDER-REVERT-EVIDENCE-READ-AS-KNOWN-GAP.md
+  ticket_id: TCK-20261116-PR-RENDER-REVERT-EVIDENCE-READ-AS-KNOWN-GAP
+  title: '`pr_render.py` lists a "Revert evidence" line under Known gaps because the
+    line contains `FAIL`'
+  tier: hotfix
+  ticket_type: bug
+  date: '2026-11-16'
+  related_code_areas:
+  - tools/delivery/pr_render.py
+  artifact_files: []
+  tags:
+  - delivery
+  - ai
+- type: ticket
   path: agent-working/tickets/done/TCK-20261116-THE-SEMANTIC-DRIFT-CERTIFICATION-TEST-DOES-NOT-FAIL-ON-A-SLOW-RUNNER.md
   ticket_id: TCK-20261116-THE-SEMANTIC-DRIFT-CERTIFICATION-TEST-DOES-NOT-FAIL-ON-A-SLOW-RUNNER
   title: 'The semantic-drift certification test does not fail on a slow runner: its
@@ -9332,21 +9346,7 @@
   - observability
   - api-design
 - type: ticket
-  path: agent-working/tickets/todos/TCK-20261112-HAND-ADDED-WORKTREES-ARE-NOT-RECORDED-AGAINST-A-SEAT.md
-  ticket_id: TCK-20261112-HAND-ADDED-WORKTREES-ARE-NOT-RECORDED-AGAINST-A-SEAT
-  title: A worktree a seat creates with a plain `git worktree add` is never recorded
-    against that seat, so status.py and project_sync can't name who works in it
-  tier: hotfix
-  ticket_type: bug
-  date: '2026-11-12'
-  related_code_areas:
-  - --worktree
-  artifact_files: []
-  tags:
-  - planning
-  - delivery
-- type: ticket
-  path: agent-working/tickets/todos/github-project-ticket-view/TCK-20261112-EPIC-GITHUB-PROJECT-TICKET-VIEW.md
+  path: agent-working/tickets/done/github-project-ticket-view/TCK-20261112-EPIC-GITHUB-PROJECT-TICKET-VIEW.md
   ticket_id: TCK-20261112-EPIC-GITHUB-PROJECT-TICKET-VIEW
   title: A GitHub Project as a generated, read-only view of ticket state across seats
     and hosts
@@ -9357,6 +9357,20 @@
   - collect()
   - registries/session_project.yaml (new), tests/tools/test_session_project_sync.py
     (new)
+  artifact_files: []
+  tags:
+  - planning
+  - delivery
+- type: ticket
+  path: agent-working/tickets/todos/TCK-20261112-HAND-ADDED-WORKTREES-ARE-NOT-RECORDED-AGAINST-A-SEAT.md
+  ticket_id: TCK-20261112-HAND-ADDED-WORKTREES-ARE-NOT-RECORDED-AGAINST-A-SEAT
+  title: A worktree a seat creates with a plain `git worktree add` is never recorded
+    against that seat, so status.py and project_sync can't name who works in it
+  tier: hotfix
+  ticket_type: bug
+  date: '2026-11-12'
+  related_code_areas:
+  - --worktree
   artifact_files: []
   tags:
   - planning
