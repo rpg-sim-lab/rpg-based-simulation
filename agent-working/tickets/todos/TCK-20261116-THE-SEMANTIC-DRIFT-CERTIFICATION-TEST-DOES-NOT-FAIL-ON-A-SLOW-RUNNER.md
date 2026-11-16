@@ -36,11 +36,13 @@ The CI log could not be read for the exact `fail_reason`, so confirming it is Sc
 ## Scope
 1. Confirm the failing check without a heavy run. Make `CertificationHarness`'s tick timing report one tick above 15 ms (for example, patch the timer that feeds `tick_compute_ms`), then assert that `conformance_passed` is False with a "Tick budget violation" `fail_reason`. If the `fail_reason` turns out to be something else (a required NORMAL mode, or a telemetry gap), stop and report back before changing anything.
 2. Fix it at the test, with a test-only change. Give the drift test's profile a tick budget that never binds, for example `max_tick_budget_ms=10000.0`, the same value `test_authoritative_outcome_truth` uses. Its hash assertions stay unchanged.
-3. Check the other three guarded tests for the same exposure:
+3. Check the other guarded tests for the same exposure (rpg-planner's caution: read what each one asserts first). Widen a budget only if the test's own claim doesn't depend on it. If the claim needs a binding budget (for example, `test_harness_detects_missing_degradation_mode` may need pressure), make the slow tick deterministic, such as a simulated tick cost, instead of widening it. Write down which case each test is in:
    - `test_envelope_violations` (two profiles at 10 ms): does its expected outcome depend on the budget?
    - `test_resilience_recovery` (100 ms).
    Change one only if its subject is not timing, and record the reasoning either way.
 4. The regression test: under the patched slow tick from Scope 1, the drift test's healthy half still passes. It fails with the old 10 ms budget; record that revert.
+5. Keep Scope 1's confirmation as a permanent test: a deterministic slow tick fails conformance with "Tick budget violation", so the budget check stays tested with no wall-clock dependence (lead-planner-u24's ask). Before writing it, search `tests/` for an existing budget-exceeded conformance test, and state in the PR whether one exists.
+6. The drift claim: today's test asserts only the healthy half, even though its name and comment promise drift detection. Check whether `tests/` already proves that the harness fails on a baseline/final hash mismatch ("Authoritative divergence"). If nothing does, add that half: simulate a final hash that differs and assert `conformance_passed` is False with that `fail_reason`. State the answer in the PR.
 
 ## Out of Scope
 - `src/certification/` and its wall-clock checks. Those are production certification semantics and rpg's domain.
@@ -68,7 +70,7 @@ None.
 - `src/certification/conformance.py:62` (read only)
 
 ## Assumptions / Open Questions
-- The certification semantics are rpg's (`src/certification`). I'm asking rpg-planner to review, as on #928, #930 and #932. The change is test-only.
+- RESOLVED 2026-11-16: testing builds this, and rpg-planner reviews the diff before the push, as on #928, #930 and #932. The change is test-only. lead-planner-u24's condition for the push ask: show that the drift half still fails on real drift, and that budget-exceeded conformance is still tested (Scopes 5 and 6).
 
 ## Implementation Notes
 
