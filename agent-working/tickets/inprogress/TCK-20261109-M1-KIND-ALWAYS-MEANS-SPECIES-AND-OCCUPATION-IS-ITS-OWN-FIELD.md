@@ -167,6 +167,17 @@ Every run: the 3 gate worlds of paired.WORLDS, s42, 5000 ticks.
   - spy and runner pinned at the shas I approve;
   - no crash or ENOMEM.
 
+#### (copied verbatim from the designer's step-1 rulings, sha256 665b97185fab88b8d5c00553669f150f1e88f81c413bad48e0af87bee0ca4c40; placed here next to the base counts)
+### Amendment to the counts, v1.1, before any step-4 data
+- **K6b, kind never changes in a run:** entities whose `kind` at any tick differs from their `kind` at birth or t0: **0**.
+  - The base ruling relies on D79, but lane C found the `kind_set` plumbing live, and an observability comment (event_shapers.py:1065) says EvolutionSystem writes it.
+  - At step 4, a `kind_set` that changes a species is refused in the apply path (typed), and K6b counts it.
+  - This is added before any step-4 data, so it is not a rewrite.
+- **K10 rows added (reported):**
+  - goblin gear assignments by tier (row 8);
+  - quest kill credits by target_kind (row 9);
+  - humanoid pairings by species and occupation, base vs fix (row 24).
+
 ### Simpler option
 Do it in one step: flip `kind` and move the readers in a single commit.
 - Cost:
@@ -193,7 +204,96 @@ src/core/ (entity identity), content schemas
 - Owner-level choices are asked when the milestone starts, not guessed here.
 
 ## Implementation Notes
-None yet.
+
+- 2026-11-16 (rpg-planner relay of rpg-designer): the designer's step-1 rulings on the inventory, FINAL. Copied verbatim from `.claude/handover/drafts/rpg-designer-kind-is-species-step1-rulings.md` (sha256 665b97185fab88b8d5c00553669f150f1e88f81c413bad48e0af87bee0ca4c40); heading levels lowered by two.
+
+
+- Ticket: TCK-20261109-M1-KIND-ALWAYS-MEANS-SPECIES-AND-OCCUPATION-IS-ITS-OWN-FIELD.
+- Base ruling: drafts/rpg-designer-kind-is-species-ruling.md, 67cc6f6d.
+- Evidence ruled on: lane C commit 00d68bd57, stored_artifacts/.../evidence/step1_kind_inventory.md (tables A, A2, B, C).
+
+#### The one principle these rulings apply
+**Step 3 moves every LABEL compare to `occupation`, with the same string. Step 4 changes only what is truly SPECIES.**
+
+- Step 2 makes `occupation` equal today's `kind` string on every entity.
+- So any reader that compares `kind` against a label moves to `occupation` with the same literal in step 3, and stays behaviour-neutral. Labels include:
+  - jobs;
+  - compounds like goblin_raider and goblin_warrior;
+  - boss labels like world_boss and ancient_sentinel;
+  - structures like stronghold.
+- Only readers that mean species stay on `kind`, through `species_of()`. They change behaviour at step 4, when `kind` becomes the species.
+- No label string is renamed in this item. Cleaning labels up is the name-branch retirement item's job.
+
+#### Table A: readers
+| Row | Ruling | Step |
+|---|---|---|
+| 1-7, 14 (display, export, hash, fingerprint, plumbing, events) | stay on `kind`. They show or serialise both fields where a payload has room (presenter rows 1, export row 2). Events keep `kind` and add `occupation` only where the shaper already emits identity | 2 (presenter), else none |
+| 8 evolution.py:100-104 | the "goblin" substring means species → `species_of(e) == "goblin"`. The tier-digit branches ("1"/"2" in kind) are UNREACHABLE: no writer in A2 produces a digit. They are removed, and the default tier kept. This is a behaviour change, since on the gate worlds `kind` is never "goblin" today, so goblins start getting goblin gear at step 4. It is reported under K10 | 4 |
+| 9 quest kill credit | species; stays on `kind`. "wolf" quests start crediting wolf kills at step 4. Reported under K10 | 4 |
+| 10-13 (party roles, hero compares) | occupation, same strings | 3 |
+| 15 event_shapers.py:1189 goblin_raider | label compare → `occupation == "goblin_raider"`, same string | 3 |
+| 16, 17 (BOSS_ENTITY_KINDS, SPAWN_CADENCE_EXCLUDED_KINDS) | label sets → read `occupation`, same members. None stays a member | 3 |
+| 18, 19, 21 (world_boss) | label → `occupation == "world_boss"` | 3 |
+| 20 boss.py:217 dragonkin | the lair-occupant LABEL → `occupation == "dragonkin"`. Its spawner (boss.py:259) writes occupation "dragonkin" and, at step 4, kind "dragonkin", which is a species id | 3 (read), 4 (kind) |
+| 22 environment.py:86 stronghold | label → `occupation == "stronghold"` at step 3. At step 4 its `kind` goes on the named non-living allowlist (below) | 3, 4 |
+| 23 creature_territory.py:52, 63 | the rate lookup is keyed by the label → `occupation` (B1), same keys. The respawn at :63 passes BOTH the parent's species and occupation | 3 (lookup), 4 (respawn species) |
+| 24 reproduction_humanoid.py:57, 89 | species: pairs by `species_of`; the newborn's kind = the parents' species; its occupation = None | 4 |
+| 25 generator.py:67 / B4 | keyed by the spawn LABEL → stays a label table, read with the spawner's occupation argument | 3 |
+
+#### Table A2: writers, all at step 4 unless marked
+- **Every writer writes two values:** `kind` = a species id from species.yaml, and `occupation` = the label it writes today. No code default species is allowed: no `or "human"`, no `or "entity"`, no `"monster"` default.
+- **Where the species comes from**, in this order:
+  1. the population or profile's declared species_id;
+  2. the archetype of the same id in entities/entity_archetypes.yaml, if it declares a species_id;
+  3. a declared content mapping, label → species, added in content, never in code.
+- **If none exists, it's a typed refusal at build or spawn,** except for the named allowlist below. Lane C lists every label that falls through, with which spawner and which worlds or tests reach it.
+- **compiler.py:766:** kind = properties species_id (all gate populations have one); occupation = `pop_spec.role.lower()`.
+- **entity_spawner.py:130 (finding 2):** the `"human"` default goes. A profile with no species_id is a typed refusal. Lane C lists every content profile that would fail, and each gets its species declared in content.
+- **generator.py:139 "hero":** occupation "hero"; species from step (2) or (3), never chosen by code.
+- **generator.py:165/204/238/284:** the functions take `species` and `occupation` as separate arguments, and each caller passes both.
+- **generator.py:321 "goblin":** kind "goblin", occupation None. There's no label today, so none is invented.
+- **orchestrator.py:820, survivor rebuild:** carries kind and occupation as saved. The `or "entity"` fallback becomes a typed error, since a survivor with no kind is a defect.
+- **campaigns/runner.py:69:** occupation = role; species via (1)-(3).
+- **camp.py:** already species (wolf, spider, troll, slime). Occupation None. No change beyond passing both.
+
+#### Table B: constants
+| Row | Ruling |
+|---|---|
+| B1 TERRITORY_MATURITY_RATES | keyed by occupation, same keys; the default is unchanged (step 3) |
+| B2 SPAWN_CADENCE_EXCLUDED_KINDS, B3 BOSS_ENTITY_KINDS | membership by occupation, same members. Rename the constants to `…_OCCUPATIONS` (a name only, step 3) |
+| B4 SPAWN_KIND_CATALOG_FACTION | keyed by the spawn label (occupation), same keys. bandit, bear, harpy and golem have no species: they fall through to the A2 rule at step 4 (refusal unless content declares one) |
+| B5 goblin_raider branch | as row 15 |
+| B6 quests/generator.py:83 "wolf" | species; unchanged. The comment becomes true on every path at step 4 |
+| B7 certification/scenarios.py:297 "GOBLIN" | change it to "goblin" at step 4. It never matched, which is a latent defect. If any certification expectation relied on it never matching, lane C reports that to rpg-planner first, since it's a test-expectation change |
+| B8 evolution | as row 8 |
+| B9 PartyRole by kind | occupation, same strings (step 3) |
+| B10 boss and dragonkin compares | as rows 18-21 |
+| B11 stronghold | as row 22 |
+| B12 hero compares | occupation (step 3). Retiring them is the hero-as-work item |
+| B13 | not an entity kind; no change |
+
+#### Table C: findings
+1. **YES, in step 2.** Survivor reconstruction (orchestrator.py:544, 820) and the archetype copies (archetype_factory.py:142, 168) carry `occupation`.
+   - Add a step-2 test: a survivor rebuilt from a run, and a copied entity, keep `occupation` equal to the source's (ID-02's survivor-equivalence rule).
+2. As A2, entity_spawner.py:130: the default goes at step 4, and the content gets declared.
+3. As row 8: the digit branches are unreachable and are removed, with a static proof in the step-4 report (no A2 writer produces a digit).
+4. As B7.
+5. **dragonkin is a species and also the lair label**: it's written as both. world_boss and ancient_sentinel are labels only, so their species comes via A2 (2)/(3), else the allowlist with a ticket. stronghold, bandit, bear, harpy and golem: as A2 / B4.
+
+#### The non-living allowlist (step 4)
+- A named list in the ticket of kind values allowed that are NOT species ids, each with its owning ticket and a reason.
+- Expected candidates: stronghold (a structure as an entity), plus any boss label that content can't give a species to yet.
+- K6 counts against this list only. An entry with no owning ticket is a K6 failure.
+
+#### Amendment to the counts, v1.1, before any step-4 data
+- **K6b, kind never changes in a run:** entities whose `kind` at any tick differs from their `kind` at birth or t0: **0**.
+  - The base ruling relies on D79, but lane C found the `kind_set` plumbing live, and an observability comment (event_shapers.py:1065) says EvolutionSystem writes it.
+  - At step 4, a `kind_set` that changes a species is refused in the apply path (typed), and K6b counts it.
+  - This is added before any step-4 data, so it is not a rewrite.
+- **K10 rows added (reported):**
+  - goblin gear assignments by tier (row 8);
+  - quest kill credits by target_kind (row 9);
+  - humanoid pairings by species and occupation, base vs fix (row 24).
 
 ## Test Summary
 
