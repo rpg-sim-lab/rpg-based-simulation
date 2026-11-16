@@ -40,9 +40,11 @@ import time
 from pathlib import Path
 from typing import Any, Dict, List, Mapping, Optional, Sequence, Tuple
 
-IDENTITY_FIELDS = ("name", "image", "cpu_model", "nproc", "mem_total_mb", "python", "os", "uv_lock")
-COMPARED_ACROSS_JOBS = ("python", "os", "uv_lock")  # an assembled set whose jobs differ in these is not compared
-COMPARED_WITHIN_KEY = ("python", "os", "image", "uv_lock")  # the arms of one (world, seed) must agree on these (paired.py refuses too)
+IDENTITY_FIELDS = ("name", "image", "image_os", "image_version", "cpu_model", "nproc", "mem_total_mb", "python", "python_build", "libc", "os", "uv_lock")
+# The fields the env8 keys (image FAMILY, not the image patch version): an assembled set whose jobs differ in these is not compared, and a set that differs only in
+# image_version IS assembled (TCK-20261116-A-CI-SET-ON-TWO-IMAGE-PATCHES-IS-ONE-ENVIRONMENT-WHEN-LIBC-AND-PYTHON-MATCH).
+COMPARED_ACROSS_JOBS = ("python", "python_build", "libc", "os", "image_os", "uv_lock")
+COMPARED_WITHIN_KEY = ("python", "python_build", "libc", "os", "image_os", "uv_lock")  # the arms of one (world, seed) must agree on these (paired.py refuses too)
 SELF_CHECKS = ("seed42", "full", "off")
 KINDS = ("pair", "self")
 ARMS = ("base", "new", "self")
@@ -145,11 +147,15 @@ def runner_identity(env: Optional[Mapping[str, str]] = None, *, tool_root: Optio
     image = "-".join(part for part in (env.get("ImageOS"), env.get("ImageVersion")) if part)
     return {
         "name": env.get("RUNNER_NAME") or "unknown",
-        "image": image or "unknown",
+        "image": image or "unknown",  # the full image, patch version included, for the reader
+        "image_os": env.get("ImageOS") or "unknown",  # the family: this is what is keyed and compared
+        "image_version": env.get("ImageVersion") or "unknown",  # recorded, never keyed
         "cpu_model": _cpu_model(),
         "nproc": os.cpu_count() or 1,
         "mem_total_mb": _mem_total_mb(),
         "python": platform.python_version(),
+        "python_build": sys.version,
+        "libc": "-".join(platform.libc_ver()),
         "os": _read_os_release(),
         "uv_lock": tool_uv_lock_sha256(tool_root),
     }
@@ -205,6 +211,7 @@ def assemble(src: Path, out: Path, *, base: str, new: str) -> Dict[str, Any]:
     if not jobs:
         raise ArmsRefused(f"{src}: no job artifacts to assemble")
     runners: Dict[str, Dict[str, Any]] = {}  # job -> its (first) runner record
+    envs: Dict[str, Dict[str, Any]] = {}  # job -> its (first) env.json: the object the env8 in the result directory's name was hashed from
     by_key: Dict[str, List[Tuple[str, Dict[str, Any]]]] = {}  # "<world>_<seed>" -> [(result dir, runner)]
     arms: List[Dict[str, Any]] = []
     for job in jobs:
@@ -232,6 +239,14 @@ def assemble(src: Path, out: Path, *, base: str, new: str) -> Dict[str, Any]:
             if unlocked:
                 raise ArmsRefused(f"{job.name}/{cost_path.relative_to(job)}: {unlocked}")
             runners.setdefault(job.name, runner)
+            if job.name not in envs:
+                try:
+                    recorded = json.loads((cost_path.parent / paired.ENV_FILE).read_text(encoding="utf-8"))
+                except (OSError, ValueError):
+                    raise ArmsRefused(f"{job.name}/{directory}: no readable {paired.ENV_FILE}; every result directory records the environment its env8 was hashed from") from None
+                if not isinstance(recorded, dict):
+                    raise ArmsRefused(f"{job.name}/{directory}: {paired.ENV_FILE} is not an object")
+                envs[job.name] = recorded
             by_key.setdefault(stem, []).append((f"{job.name}:{directory}", runner))
             if not directory.endswith("-repeat"):
                 have_in_job.setdefault(stem, set()).add(directory[:12])
@@ -247,6 +262,13 @@ def assemble(src: Path, out: Path, *, base: str, new: str) -> Dict[str, Any]:
         if len(values) > 1:
             detail = "; ".join(f"{value!r}: {', '.join(names)}" for value, names in sorted(values.items()))
             raise ArmsRefused(f"the jobs ran on different {field} values ({detail}); arms from runners that differ in Python version, OS or the tool checkout's uv.lock are not compared")
+    for field in sorted({k for e in envs.values() for k in e}):  # every env-key field (the whole env.json), not only the identity ones
+        values = {}
+        for name, recorded in envs.items():
+            values.setdefault(json.dumps(recorded.get(field), sort_keys=True), []).append(name)
+        if len(values) > 1:
+            detail = "; ".join(f"{value[:80]}: {', '.join(names)}" for value, names in sorted(values.items()))
+            raise ArmsRefused(f"the jobs were built under different environments: {field} differs ({detail}); a set that differs in an env-key field is not one environment (only the image patch version may differ)")
     for stem, entries in sorted(by_key.items()):
         for field in COMPARED_WITHIN_KEY:
             if len({str(r[field]) for _d, r in entries}) > 1:
@@ -254,13 +276,14 @@ def assemble(src: Path, out: Path, *, base: str, new: str) -> Dict[str, Any]:
     for job in jobs:
         for path in sorted(job.glob("results/*/*")):
             target = Path(out) / path.relative_to(job)
-            if target.exists() and not path.name.endswith(".cost.json") and target.read_bytes() != path.read_bytes():
+            recorded_only = path.name.endswith(".cost.json") or path.name == "image.json"  # per-job records (the image patch version differs between jobs by design): the first stays
+            if target.exists() and not recorded_only and target.read_bytes() != path.read_bytes():
                 raise ArmsRefused(f"{path.relative_to(job)}: two jobs wrote different bytes to the same result file (a self-check arm that does not reproduce?)")
             target.parent.mkdir(parents=True, exist_ok=True)
-            if not (target.exists() and path.name.endswith(".cost.json")):  # the first cost file of a shared result stays; a later job's identical result adds none
+            if not (target.exists() and recorded_only):  # the first cost/image record of a shared result stays; a later job's identical result adds none
                 shutil.copyfile(path, target)
     Path(out).mkdir(parents=True, exist_ok=True)
-    summary = {"jobs": runners, "arms": arms}
+    summary = {"jobs": runners, "arms": arms, "image_versions": sorted({str(r.get("image_version")) for r in runners.values()})}
     (Path(out) / "identities.json").write_text(json.dumps(summary, sort_keys=True, indent=2) + "\n", encoding="utf-8")
     return summary
 
@@ -297,10 +320,13 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
             print("slug=" + step_slug(args.step))
         elif args.command == "run-arm":
             cost = run_arm(args.repo, args.sha, args.arm, args.world, args.seed, args.ticks, args.cache, repeat=args.repeat)
-            print(f"{args.arm} {args.world} seed {args.seed}: {'cached' if cost['wall_seconds'] == 0.0 else str(cost['wall_seconds']) + 's'}")
+            from tools.rpg_measure import paired
+            doc = json.loads(paired.result_path(args.cache, args.sha, args.ticks, args.world, args.seed, args.repeat).read_text(encoding="utf-8"))
+            # the hashes in the log: the CI evidence that the bytes did not move across image patches, readable even when the artifacts cannot be downloaded
+            print(f"{args.arm} {args.world} seed {args.seed}: {'cached' if cost['wall_seconds'] == 0.0 else str(cost['wall_seconds']) + 's'} final_hash={doc.get('final_hash')} start_hash={doc.get('start_hash')}")
         else:
             summary = assemble(args.src, args.out, base=args.base, new=args.new)
-            print(f"assembled {len(summary['jobs'])} job(s), {len(summary['arms'])} arm run(s) into {args.out}")
+            print(f"assembled {len(summary['jobs'])} job(s), {len(summary['arms'])} arm run(s) into {args.out}; image versions in the set: {summary['image_versions']}")
     except ArmsRefused as exc:
         print(f"REFUSED: {exc}", file=sys.stderr)
         return 2
