@@ -27,6 +27,8 @@ feature
 P1
 
 ## Request Summary
+**Deferred.** Owner decision 2026-11-15 (#715 6889309909, 6889318166): "complete the epic without" the machine account and credential removal. This ticket stays BLOCKED, outside the epic's live scope, until the owner reopens it. The epic can close with it recorded as deferred (epic AC1). The plan's GitHub analysis behind it assumes a personal repo; the repo has been an organization repo (rpg-sim-lab) since 2026-11-12, so it is redone, not reused, if this reopens.
+
 Phase 1 execution (plan sections 27a and 39). OD-2 and OD-10 are decided yes, and OD-14 sets the rollback: agents never regain the owner's token. Authorised by none of this: execution has its own owner ask. BLOCKED until the conditions below hold.
 
 ## Scope
