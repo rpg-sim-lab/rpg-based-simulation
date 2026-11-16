@@ -10733,6 +10733,24 @@
   tags:
   - delivery
 - type: ticket
+  path: agent-working/tickets/done/TCK-20261101-A-CHECKPOINT-HAS-NO-FORMAT-VERSION.md
+  ticket_id: TCK-20261101-A-CHECKPOINT-HAS-NO-FORMAT-VERSION
+  title: A scenario checkpoint has no format version, so a checkpoint older than a
+    slotted state record's newest field loads without error and fails later on first
+    read.
+  tier: standard
+  ticket_type: bug
+  date: '2026-11-01'
+  related_code_areas:
+  - src/engine/scenario_checkpoint.py
+  - src/api/routes/scenarios.py
+  - src/core/state.py
+  artifact_files:
+  - agent-working/stored_artifacts/TCK-20261101-A-CHECKPOINT-HAS-NO-FORMAT-VERSION/investigation.md
+  - agent-working/stored_artifacts/TCK-20261101-A-CHECKPOINT-HAS-NO-FORMAT-VERSION/plan.md
+  - agent-working/stored_artifacts/TCK-20261101-A-CHECKPOINT-HAS-NO-FORMAT-VERSION/test_plan.md
+  tags: []
+- type: ticket
   path: agent-working/tickets/done/TCK-20261101-A-HOSTILE-ATTACKING-YOU-OUTRANKS-THE-GROUP-SHARED-TARGET.md
   ticket_id: TCK-20261101-A-HOSTILE-ATTACKING-YOU-OUTRANKS-THE-GROUP-SHARED-TARGET
   title: 'A group member keeps attacking the group''s shared target while an adjacent
@@ -10821,21 +10839,6 @@
   artifact_files: []
   tags:
   - testing
-- type: ticket
-  path: agent-working/tickets/todos/TCK-20261101-A-CHECKPOINT-HAS-NO-FORMAT-VERSION.md
-  ticket_id: TCK-20261101-A-CHECKPOINT-HAS-NO-FORMAT-VERSION
-  title: A scenario checkpoint has no format version, so a checkpoint older than a
-    slotted state record's newest field loads without error and fails later on first
-    read.
-  tier: standard
-  ticket_type: bug
-  date: '2026-11-01'
-  related_code_areas:
-  - src/engine/scenario_checkpoint.py
-  - src/api/routes/scenarios.py
-  - src/core/state.py
-  artifact_files: []
-  tags: []
 - type: ticket
   path: agent-working/tickets/todos/TCK-20261101-A-CONGESTION-BLOCKER-RESOLUTION-SENDS-A-SUBJECT-TO-THE-TOWN-CENTRE.md
   ticket_id: TCK-20261101-A-CONGESTION-BLOCKER-RESOLUTION-SENDS-A-SUBJECT-TO-THE-TOWN-CENTRE
