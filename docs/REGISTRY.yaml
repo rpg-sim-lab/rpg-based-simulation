@@ -8117,6 +8117,21 @@
   - content
   last_verified: '2026-10-09'
 - type: ticket
+  path: agent-working/tickets/done/TCK-20261116-A-TEST-KERNEL-DOES-NOT-DEGRADE-BECAUSE-AN-EARLIER-TEST-USED-MEMORY.md
+  ticket_id: TCK-20261116-A-TEST-KERNEL-DOES-NOT-DEGRADE-BECAUSE-AN-EARLIER-TEST-USED-MEMORY
+  title: 'A test kernel does not degrade because an earlier test used memory: the
+    lodging test kernel pins its governor'
+  tier: hotfix
+  ticket_type: bug
+  date: '2026-11-16'
+  related_code_areas:
+  - tests/unit/engine/lodging_kernel.py
+  - src/engine/governor.py
+  artifact_files: []
+  tags:
+  - testing
+  - determinism
+- type: ticket
   path: agent-working/tickets/done/TCK-20261115-A-NON-SEQUENTIAL-RUN-IS-REFUSED-BY-THE-GATE-CANDIDATE-PAIRED-ARMS-AND-RPG-MEASURE.md
   ticket_id: TCK-20261115-A-NON-SEQUENTIAL-RUN-IS-REFUSED-BY-THE-GATE-CANDIDATE-PAIRED-ARMS-AND-RPG-MEASURE
   title: A run on a non-sequential executor is refused by the gate candidate, the
