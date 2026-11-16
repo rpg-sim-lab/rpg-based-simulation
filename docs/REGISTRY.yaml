@@ -8120,27 +8120,6 @@
   - schema
   - documentation
 - type: ticket
-  path: agent-working/tickets/todos/TCK-20261116-THIRTEEN-DEAD-KNOWLEDGE-GATEWAY-DOCS-MOVE-TO-THE-ARCHIVE.md
-  ticket_id: TCK-20261116-THIRTEEN-DEAD-KNOWLEDGE-GATEWAY-DOCS-MOVE-TO-THE-ARCHIVE
-  title: 'Thirteen knowledge-gateway (KGMCP) documents whose code was removed in #147
-    still sit in docs/engine/contracts as if current; move them to docs/archive/knowledge_gateway_mcp/,
-    keep the one live spec, and leave no dead path behind'
-  tier: hotfix
-  ticket_type: chore
-  date: '2026-11-16'
-  related_code_areas:
-  - tools/write_path_guard.py
-  - tools/retrieval_cache.py
-  - tests/docs/test_phase4_*_doc.py
-  - tests/docs/test_redaction_retention_policy_doc.py
-  - tests/tools/test_evidence_cache_identity_contract.py
-  - tests/tools/test_retrieval_cache.py
-  - tests/tools/test_write_path_guard.py
-  artifact_files: []
-  tags:
-  - documentation
-  - mcp
-- type: ticket
   path: agent-working/tickets/todos/TCK-20261116-THREE-PARITY-ROWS-CITE-A-TEST-THAT-DOES-NOT-EXIST.md
   ticket_id: TCK-20261116-THREE-PARITY-ROWS-CITE-A-TEST-THAT-DOES-NOT-EXIST
   title: Three verified parity rows (COMB-351, STRAT-280, TOWN-019) cite a test file
