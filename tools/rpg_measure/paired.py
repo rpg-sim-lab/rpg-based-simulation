@@ -222,6 +222,9 @@ def collected_path(cache: Path, sha: str, ticks: int, world: str, seed: int, rep
 
 
 def run_one(tree: Path, world: str, seed: int, ticks: int, out: Path) -> None:
+    # The child runs with the arm tree as its working directory, so every path it is given must be absolute: a relative ``tree`` (a relative --cache) would resolve a second
+    # time from inside the tree for PYTHONPATH, and a relative ``out`` would be written under the tree instead of the cache (TCK-20261116-AN-ARM-RUNS-WHEN-THE-CACHE-PATH-IS-RELATIVE).
+    tree, out = tree.resolve(), out.resolve()
     env = {**os.environ, "PYTHONHASHSEED": HASHSEED, "PYTHONPATH": str(tree)}
     proc = subprocess.run([sys.executable, str(CHILD), world, str(seed), str(ticks), str(out)], cwd=tree, env=env, capture_output=True, text=True)
     if proc.returncode != 0 or not out.exists():
@@ -522,6 +525,8 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     verdict: Dict[str, Any] = {"outcome": None, "mode": "neutral" if a.neutral else "report_only" if a.report_only else "step", "detail": None}
     try:
         return _run(a, verdict)
+    except (NotPinnedArmError, DistsMismatchError) as exc:  # the two refusals raised from deep in the run/collected readers: exit 2 with one line, like every other refusal; nothing broader is caught
+        return _refuse(verdict, str(exc))
     except BaseException as exc:
         if verdict["outcome"] is None:
             verdict.update(outcome="REFUSED", detail=f"{type(exc).__name__}: {str(exc)[:300]}")
