@@ -34,12 +34,13 @@ The local AC1 run (step 1, PASS) used the absolute cache `/mnt/data2/rpg-measure
 Local `paired.py --cache <relative>` has the same bug.
 
 ## Scope
-1. `paired.run_one`: pass the child an absolute tree, both `cwd` and `PYTHONPATH` from `tree.resolve()`. That way a relative cache works on every path: local, `run-arm`, and anywhere `prepare_tree` returns a relative tree.
+1. `paired.run_one`: pass the child an absolute tree, both `cwd` and `PYTHONPATH` from `tree.resolve()`, and an absolute `out` (`out.resolve()`, since the child runs with cwd=tree; rpg-planner ask 1). Only path resolution changes. The env keys, `PYTHONHASHSEED` and the argv order stay exactly as they are (rpg-planner ask 2). That way a relative cache works on every path: local, `run-arm`, and anywhere `prepare_tree` returns a relative tree.
 2. `tools/test_architecture/paired_arms.py run-arm`: resolve `--cache` once at argument parsing as defence in depth, so the cost and env files land at the same absolute place.
 3. Tests, all with a relative cache under `monkeypatch.chdir(tmp_path)`:
    - (a) `run_one` with a stub arm tree whose `src` package the child needs to import. It succeeds, and it FAILS on f94417e6f's `run_one`. Show that revert in the Test Summary.
    - (b) `paired_arms run-arm` with a relative `--cache` and only the child faked. It writes the result, cost.json and env.json under the resolved cache.
    - (c) An absolute cache behaves byte-for-byte as before: the same result path and the same env.json.
+   - (d) `run_one` given a relative `out` writes the result at the caller-relative location, not inside the tree.
 
 ## Out of Scope
 - Changing `arm_child.py`, the cache key, env8 or any refusal. `child_hash()` must not move.
@@ -65,7 +66,7 @@ None.
 - `tools/test_architecture/paired_arms.py` (`run-arm`)
 
 ## Assumptions / Open Questions
-- `paired.py` is an rpg_measure tool. I'm asking rpg-planner to confirm that testing builds this and rpg-planner reviews it, the same arrangement as #928.
+- RESOLVED 2026-11-16 (rpg-planner): testing builds this, and rpg-planner reviews the design before the push, the same arrangement as #928. rpg-planner does not object to option (B) below. Its reasons: for an absolute path, `resolve()` is the identity except for symlinks, `/mnt/data2/rpg-measure` has none, and the child_hash-equal assertion covers it. The owner row must say that the local table was run at tool f94417e6f, before the fix, and why the path change cannot move its hashes.
 - AC10 (one fixed tool commit for both the local and CI sides) is open for the owner. The local PASS used f94417e6f with an absolute cache. For an absolute path, `tree.resolve()` returns the same path, so the local outputs do not depend on this fix. The choice:
   - (A) re-run the local step on the post-fix commit, about 2.2 h of host time, and keep AC10 strict;
   - (B) amend AC10 to say the two tool commits may differ only by this fix, then dispatch on the post-fix commit and compare against the existing local table.
