@@ -28,7 +28,7 @@ P2
 
 ## Request Summary
 rpg-planner reported this on 2026-11-16, at lead-planner-u24's suggestion. On #931's CI (run 43805317187, job 133094635683), `tests/architecture/test_rss_bound_tests_pass_in_a_large_process.py` failed. Inside it, the third guarded test failed: `tests/certification/test_harness_contract.py::test_certification_detects_semantic_drift`, at `assert result.conformance_passed` (line 40).
-That run's log shows "Replay finalize: Skipping final rotation due to insufficient budget (Remaining: -0.000s)". #931 touches nothing on this path, and the test passes locally (9.25 s).
+That run's log shows "Replay finalize: Skipping final rotation due to insufficient budget (Remaining: -0.000s)" (benign: the harness's baseline run shuts down with timeout_s=0.0 at harness.py:312, so this line appears on every run; unrelated to the failure). #931 touches nothing on this path, and the test passes locally (9.25 s).
 
 Likely cause: the test's profile sets `max_tick_budget_ms=10.0`. `src/certification/conformance.py:62` fails a scenario when any tick's wall-clock `tick_compute_ms` exceeds `max_tick_budget_ms * 1.5`, which is 15 ms here. The RSS guard runs this test in a subprocess that first holds a 1200 MB ballast, on a shared GitHub runner. A single slow tick there fails conformance. The test checks something else: the baseline hash equals the final hash, and a healthy DET_EQUIV run passes. Its tick budget is incidental, just as its RAM ceiling was in TCK-20261023-FOUR-TESTS-FAIL-ONLY-IN-A-WIDE-SCOPED-RUN-ORDER-DEPENDENT.
 The CI log could not be read for the exact `fail_reason`, so confirming it is Scope 1.
