@@ -29,3 +29,33 @@ def remove_named_run_dirs(request):
     _remove(wanted)  # before: a crashed or killed earlier run leaves a dir that would refuse this run
     yield
     _remove(wanted)  # after
+
+
+def remove_run_dir(run_id):
+    """Remove exactly ``data/runs/<run_id>`` (one id, never a glob or a time window); a name that is not a single path component is refused."""
+    if not run_id or os.path.basename(run_id) != run_id or run_id in (".", ".."):
+        raise ValueError(f"not a single run id: {run_id!r}")
+    shutil.rmtree(Path(os.path.abspath("data/runs")) / run_id, ignore_errors=True)
+
+
+@pytest.fixture
+def remove_restored_run_dirs(monkeypatch):
+    """Opt-in: every ``ScenarioCheckpointer.restore`` the test makes records its kernel's run id, and exactly those run directories are removed after the test.
+
+    A restore builds a real kernel, which creates ``data/runs/restored_<spec id>_<pid>_<uuid>``. Use it as
+    ``pytestmark = pytest.mark.usefixtures("remove_restored_run_dirs")`` after importing the fixture. It wraps ``restore`` and returns its real result unchanged.
+    """
+    from src.engine.scenario_checkpoint import ScenarioCheckpointer
+
+    real = ScenarioCheckpointer.restore
+    made = []
+
+    def restore(*args, **kwargs):
+        svc = real(*args, **kwargs)
+        made.append(svc._kernel._run_id)
+        return svc
+
+    monkeypatch.setattr(ScenarioCheckpointer, "restore", staticmethod(restore))
+    yield made
+    for run_id in made:
+        remove_run_dir(run_id)

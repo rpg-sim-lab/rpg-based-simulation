@@ -28,7 +28,7 @@ separate, later human-reviewer call, and that remains true here. The real, measu
 gathered so far is mixed-to-negative on this proposal's own core latency/token hypothesis (see §25's
 "Status update" for the honest summary) — this status line exists so a reader does not mistake
 "Phases 0-5 built" for "Phases 0-5 justified the investment." See
-`docs/engine/contracts/knowledge_gateway_mcp/audit_phase0_5.md` for a full, consolidated audit of
+`docs/archive/knowledge_gateway_mcp/audit_phase0_5.md` for a full, consolidated audit of
 what was built, what was honestly measured, and what remains open.
 
 ### Architectural Invariants
@@ -923,7 +923,7 @@ This closes the previously-disclosed gap where `context[]`/`evidence[]`/`conflic
 structurally unbudgeted — but the accounting still does not include JSON structural overhead or
 untouched response fields (`statement_id`, `classification`, `kind`, `EvidenceEntry.source_id`,
 etc.), so it remains a real, honestly-disclosed underestimate of the true serialized response
-size; see `docs/engine/contracts/knowledge_gateway_mcp/phase3_pilot_acceptance_measurement.md`'s
+size; see `docs/archive/knowledge_gateway_mcp/phase3_pilot_acceptance_measurement.md`'s
 "Post-fix re-measurement" section for the real measured gap.
 
 ## 16. Failure and Fallback Semantics
@@ -1087,10 +1087,10 @@ If migration is unsafe, deleting and rebuilding the cache must remain a valid re
   frozen `schema_version: 1` JSON Schema files under `docs/engine/contracts/knowledge_gateway_mcp/`
   (`shared_enums.schema.json`, `knowledge_context_request.schema.json`,
   `knowledge_context_response.schema.json`, `knowledge_status_response.schema.json`); prose contract
-  at `docs/engine/contracts/knowledge_gateway_mcp_contract.md`.
+  at `docs/archive/knowledge_gateway_mcp/knowledge_gateway_mcp_contract.md`.
 - Define provider adapter invocation, timeout, version, and fixture contracts. **Done**
   (`TCK-20260814-KGMCP-CONTRACT-SCHEMAS`) — see
-  `docs/engine/contracts/knowledge_gateway_mcp_contract.md` §1 (adapter invocation contract table,
+  `docs/archive/knowledge_gateway_mcp/knowledge_gateway_mcp_contract.md` §1 (adapter invocation contract table,
   grounded in direct observation of `tools/search_mcp.py` and the installed `graphify` CLI binary).
 - Define and test provider capability descriptors for Context Search and Graphify. **Done**
   (`TCK-20260814-KGMCP-CONTRACT-SCHEMAS`) — `docs/engine/contracts/knowledge_gateway_mcp/
@@ -1108,7 +1108,7 @@ If migration is unsafe, deleting and rebuilding the cache must remain a valid re
   `evidence_granularities[]` field (frozen by the sibling `TCK-20260814-KGMCP-CONTRACT-SCHEMAS`).
 - Freeze separate cache-lookup and evidence-validity identity contracts. **Done**
   (`TCK-20260814-KGMCP-EVIDENCE-CACHE-IDENTITY`) — see
-  `docs/engine/contracts/knowledge_gateway_mcp/evidence_cache_identity_contract.md` §1 (lookup
+  `docs/archive/knowledge_gateway_mcp/evidence_cache_identity_contract.md` §1 (lookup
   identity), §2 (evidence-validity identity), §3 (non-collapse rule), §4 (`PROVIDER_GENERATION`
   fallback rule).
 - Record current latency, tool-call counts, repeated-demand signals, and returned-token estimates
@@ -1118,21 +1118,21 @@ If migration is unsafe, deleting and rebuilding the cache must remain a valid re
   (latency, tool-call counts, sources recalled, serialized-token estimate) at
   `tests/tools/fixtures/kgmcp_measurement_baseline_corpus_results.json`, produced by
   `tools/agent-monitoring/kgmcp_baseline_runner.py`; see
-  `docs/engine/contracts/knowledge_gateway_mcp/measurement_baseline_contract.md` §1.
+  `docs/archive/knowledge_gateway_mcp/measurement_baseline_contract.md` §1.
 - Define separate measurement for lookup, evidence validation, provider fallback, packet assembly,
   and end-to-end latency. **Done** (`TCK-20260814-KGMCP-MEASUREMENT-BASELINE`) — see
-  `docs/engine/contracts/knowledge_gateway_mcp/measurement_baseline_contract.md` §2 (the 5
+  `docs/archive/knowledge_gateway_mcp/measurement_baseline_contract.md` §2 (the 5
   measurement-point definitions, each citing `tools/retrieval_events.py`'s Wrapper functions where
   a live precedent exists) and §2.6 (the fixture-baseline-vs-future-gateway-latency
   non-conflation rule).
 - Predeclare measurable promotion thresholds from that baseline. **Done**
   (`TCK-20260814-KGMCP-MEASUREMENT-BASELINE`) — see
-  `docs/engine/contracts/knowledge_gateway_mcp/measurement_baseline_contract.md` §4 (minimum
+  `docs/archive/knowledge_gateway_mcp/measurement_baseline_contract.md` §4 (minimum
   latency, minimum token-reduction, and no-regression-recall thresholds, each a formula over the
   recorded-baseline fixture's fields) and §5 (the §18.1 repeated-demand estimation design).
 - Define repository, branch, and working-tree cache identity. **Done**
   (`TCK-20260814-KGMCP-EVIDENCE-CACHE-IDENTITY`) — see
-  `docs/engine/contracts/knowledge_gateway_mcp/evidence_cache_identity_contract.md` §5.
+  `docs/archive/knowledge_gateway_mcp/evidence_cache_identity_contract.md` §5.
 - Ratify the cached-payload redaction and retention policy. **Done (ratified 2026-08-15)**
   (`TCK-20260814-KGMCP-REDACTION-RETENTION-POLICY`, ratified by
   `TCK-20260815-HOTFIX-KGMCP-PHASE0-RATIFICATION`) — see
@@ -1141,7 +1141,7 @@ If migration is unsafe, deleting and rebuilding the cache must remain a valid re
   implementation is still a separate, un-started future ticket.
 - Define migrations that evolve the existing `retrieval_cache.db` rather than creating a parallel
   store. **Done** (`TCK-20260814-KGMCP-EVIDENCE-CACHE-IDENTITY`) — design-only migration plan at
-  `docs/engine/contracts/knowledge_gateway_mcp/cache_migration_plan.md` (scoped
+  `docs/archive/knowledge_gateway_mcp/cache_migration_plan.md` (scoped
   `retrieval_cache_schema_version` constant, ordered `migration_00N_*` function list, same-file
   in-place evolution; zero edits to `tools/retrieval_cache.py`).
 - Define a reproducible token-counting method, budget tolerance, SQLite operating limits, and
@@ -1226,7 +1226,7 @@ additional structural cause discovered during measurement (Phase 0's `doc_id` an
 `source_path`-derived evidence identity diverge for documents nested more than one directory
 level under `docs/`). Full per-threshold numbers, root-cause analysis, and the committed
 comparison fixture are at
-`docs/engine/contracts/knowledge_gateway_mcp/phase1_baseline_comparison.md` and
+`docs/archive/knowledge_gateway_mcp/phase1_baseline_comparison.md` and
 `tests/tools/fixtures/kgmcp_phase1_baseline_comparison_results.json`. This is not characterized as
 Phase 1 "succeeding" against its own predeclared bar — it did not — and no threshold was
 redefined or narrowed to obscure the miss. Whether and how to proceed toward Phase 2 in light of
@@ -1314,7 +1314,7 @@ same documented single-primary-provider routing reason, and the non-Q2/Q5 recall
 identical to Phase 1's own recorded counts (the doc_id fix was already fully reflected by Phase 1's
 own measurement, so no further change was expected or found). Full per-threshold numbers and the
 committed recomparison fixture are at
-`docs/engine/contracts/knowledge_gateway_mcp/phase2_baseline_recomparison.md` and
+`docs/archive/knowledge_gateway_mcp/phase2_baseline_recomparison.md` and
 `tests/tools/fixtures/kgmcp_phase2_baseline_recomparison_results.json`. This is not characterized as
 Phase 2 "succeeding" against its own predeclared bar — the real cache, as deployed, cannot
 demonstrate a genuine warm-hit path against this gateway's real, default-shaped response sizes.
@@ -1371,7 +1371,7 @@ design is a separate, later human-reviewer decision, out of this ticket's own sc
   a synthetic incompatible branch argument — not a full round trip through an actual second git
   branch, since the frozen 7-entry corpus cannot organically produce one; disclosed as such in both
   the committed fixture's `technique_disclosure` field and
-  `docs/engine/contracts/knowledge_gateway_mcp/phase3_pilot_acceptance_measurement.md`'s AC6
+  `docs/archive/knowledge_gateway_mcp/phase3_pilot_acceptance_measurement.md`'s AC6
   section. See §21 below for the two Phase 3 pilot acceptance criteria (budget tolerance, conflict
   visibility) this same measurement ticket found did NOT pass or could not be exercised — targeted
   invalidation's own criteria are the ones that did.
@@ -1384,7 +1384,7 @@ opt-in advisory tool with approved payload policy and acceptance tests, not mand
 boundary's §21 Pilot Acceptance Criteria against the live Level 2 cache path — a real, mixed
 result (5/8 newly-measurable criteria PASS, 1 FAIL, 1 disclosed coverage limitation, 1 PARTIAL on
 the closing criterion; see §21 and
-`docs/engine/contracts/knowledge_gateway_mcp/phase3_pilot_acceptance_measurement.md` for full
+`docs/archive/knowledge_gateway_mcp/phase3_pilot_acceptance_measurement.md` for full
 detail). This measurement does not itself declare Phase 3 production-capable or close this pilot
 boundary — that determination is a separate, later human-reviewer call based on these real numbers.
 
@@ -1423,7 +1423,7 @@ boundary — that determination is a separate, later human-reviewer call based o
   than explicitly allowlisted — see
   `docs/engine/contracts/knowledge_gateway_mcp/redaction_retention_policy.md` §2 for the full
   disclosure. See
-  `docs/engine/contracts/knowledge_gateway_mcp_contract.md` §3's new "Parity Ledger" subsection for
+  `docs/archive/knowledge_gateway_mcp/knowledge_gateway_mcp_contract.md` §3's new "Parity Ledger" subsection for
   the full per-field capability evidence.
 - Add changed-path-aware task context. **Done** (`TCK-20260816-KGMCP-P4-CHANGED-PATH-CONTEXT`) —
   `changed_paths` is a real, optional `knowledge_context` field
@@ -1450,7 +1450,7 @@ boundary — that determination is a separate, later human-reviewer call based o
   not a measured regression); the dormant `SHADOW_CONTEXT_PACKET_ENABLED` hook flagged as a future-
   only candidate conditioned on Phase 3's own disclosed budget-enforcement and token-count gaps
   closing first. No code, workflow, or skill file changed by this ticket. See
-  `docs/engine/contracts/knowledge_gateway_mcp/phase4_workflow_recommendation.md` for the full
+  `docs/archive/knowledge_gateway_mcp/phase4_workflow_recommendation.md` for the full
   breakdown.
 - Compare gateway packets against existing direct-tool behavior. **Done**
   (`TCK-20260816-KGMCP-P4-DIRECT-TOOL-COMPARISON`) — a real, paired, fresh (no Phase 1-3 fixture
@@ -1470,7 +1470,7 @@ boundary — that determination is a separate, later human-reviewer call based o
   the gateway as broadly superior or inferior to direct tool use, nor does it declare Phase 4
   complete — per this ticket's own Out of Scope, that determination is a separate, later,
   human-reviewer call. See
-  `docs/engine/contracts/knowledge_gateway_mcp/phase4_direct_tool_comparison.md` for full per-entry
+  `docs/archive/knowledge_gateway_mcp/phase4_direct_tool_comparison.md` for full per-entry
   detail.
 
 ### Phase 5: Entity-Aware Reuse
@@ -1486,7 +1486,7 @@ and cannot demonstrate repeated demand by design). Primary source
 (`agent-working/agent-monitoring/events.jsonl` Investigate-phase summaries, 521 distinct tickets): 17
 conservative repeated-demand pairs. Secondary/corroborating source (`agent-working/tickets/working_log.csv`,
 1,411 tickets): 372 conservative repeated-demand pairs. See
-`docs/engine/contracts/knowledge_gateway_mcp/phase5_repeated_demand_measurement.md` for full
+`docs/archive/knowledge_gateway_mcp/phase5_repeated_demand_measurement.md` for full
 per-source detail, method, and figures. The finding is a small, real, but mostly-non-literal
 signal — most matched pairs are natural incremental/sequential investigation of an evolving
 codebase, not the same question asked twice with different wording. Cross-referenced against
@@ -1552,7 +1552,7 @@ end-to-end latency genuinely improved against both the Phase 1 cold baseline and
 freshly-measured Level 1 warm baseline, but delivered-token count did not improve against either
 baseline, so `pass: false` is reported honestly; recall stayed regression-free at 0/7). Full
 per-criterion detail, real numbers, and disclosed limitations are in
-`docs/engine/contracts/knowledge_gateway_mcp/phase3_pilot_acceptance_measurement.md`. No criterion
+`docs/archive/knowledge_gateway_mcp/phase3_pilot_acceptance_measurement.md`. No criterion
 above is marked satisfied by this note — the real, mixed result stands as measured.
 
 **Update (`TCK-20260816-KGMCP-BUDGET-TOLERANCE-DEDUP-COVERAGE-CLOSURE`):** the budget-tolerance
@@ -1714,15 +1714,15 @@ that this proposal's original latency/token hypothesis is not yet empirically su
 gateway's cold/warm-cache-mixed real-world corpus performance, and Phase 6 (or any further
 production-promotion decision) should be weighed against these real numbers, not against the
 optimistic framing in this section's original text above. See
-`docs/engine/contracts/knowledge_gateway_mcp/audit_phase0_5.md` for the full consolidated audit.
+`docs/archive/knowledge_gateway_mcp/audit_phase0_5.md` for the full consolidated audit.
 
 **Status update (2026-08-24):** the repository owner has ratified a decision against these numbers
 — keep the gateway as-is, no further investment. See
-`docs/engine/contracts/knowledge_gateway_mcp/keep_or_deprecate_decision.md` for the full record.
+`docs/archive/knowledge_gateway_mcp/keep_or_deprecate_decision.md` for the full record.
 No Phase 5+/Phase 6 work is authorized by this ratification.
 
 **Status update (2026-09-07):** the 2026-08-24 ratification above has been superseded. See
-`docs/engine/contracts/knowledge_gateway_mcp/keep_or_deprecate_decision.md` §4 for the full record
+`docs/archive/knowledge_gateway_mcp/keep_or_deprecate_decision.md` §4 for the full record
 — re-ratified against a month of real usage data and external research: Option C —
 deprecate/remove. Execution proceeds per `TCK-20260907-KGMCP-DEPRECATION-EPIC`.
 

@@ -154,6 +154,8 @@ resource_count = max(5, int(20 × resource_density))
 
 For each node: `resource_type` and `region` are chosen via `rng.choice()`. `count` is `rng.randint(5, 15)`.
 
+The `resource_type` candidates are the catalog's distinct resource types in sorted (id) order, so the pick does not depend on the process's `PYTHONHASHSEED` (divergence §2.145).
+
 Resource ID format: `res_node_{index}`.
 
 ### Step 6 — Population Allocation (area/hazard-aware, TCK-20260808-WORLDGEN-AREA-AWARE-DENSITY)

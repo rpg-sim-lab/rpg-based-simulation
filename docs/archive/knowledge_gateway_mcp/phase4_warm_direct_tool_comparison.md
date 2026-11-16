@@ -115,9 +115,9 @@ human-reviewer call — not decided here.
   produced this measurement.
 - `tests/tools/fixtures/kgmcp_phase4_warm_direct_tool_comparison_results.json` — full per-entry,
   real committed data, including the hand-authored `quality.reviewer_judgment` objects.
-- `docs/engine/contracts/knowledge_gateway_mcp/phase4_direct_tool_comparison.md` — the cold-cache
+- `docs/archive/knowledge_gateway_mcp/phase4_direct_tool_comparison.md` — the cold-cache
   comparison this ticket reruns warm (never edited — this doc cross-references it instead).
-- `docs/engine/contracts/knowledge_gateway_mcp/phase3_pilot_acceptance_measurement.md` — the
+- `docs/archive/knowledge_gateway_mcp/phase3_pilot_acceptance_measurement.md` — the
   §4.1/§4.2 absolute-threshold warm measurement (FAIL 0/7) and the §21 #12 budget-tolerance
   measurement (now 7/7 PASS) — both distinct from, and not in tension with, this doc's relative
   comparison.

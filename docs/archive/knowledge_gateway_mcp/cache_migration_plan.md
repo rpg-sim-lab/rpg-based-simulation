@@ -235,7 +235,7 @@ nothing in this design assumes a retention policy that has not yet been written.
 
 ## 7. Cross-references
 
-- `docs/engine/contracts/knowledge_gateway_mcp/evidence_cache_identity_contract.md` — the
+- `docs/archive/knowledge_gateway_mcp/evidence_cache_identity_contract.md` — the
   lookup-identity/evidence-validity-identity split and repository/branch/working-tree cache scope
   these future tables must respect.
 - `docs/engine/contracts/knowledge_gateway_mcp/evidence_identity_kinds.schema.json` — the 8 evidence
