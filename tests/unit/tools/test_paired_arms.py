@@ -236,6 +236,19 @@ def test_run_43805965260s_shape_a_different_patch_on_a_non_shared_job_does_not_e
     assert "cross-patch identity not exercised in this set" in capsys.readouterr().out
 
 
+@pytest.mark.parametrize("missing", ["unknown", "", None])
+def test_a_shared_document_with_a_writer_that_has_no_image_version_is_not_a_shown_proof(tmp_path, missing):
+    """A false 'shown' would be cited as proof: a job with no ImageVersion and a job with a real one are not two patches."""
+    root = tmp_path / "arms"
+    _pair_job(root, seed=42)
+    runner = {**RUNNER, "image_version": missing}
+    if missing is None:
+        runner.pop("image_version")
+        runner["image_version"] = None  # str(None) -> "None" in the record
+    _self_job(root, runner)
+    assert _assemble(root)["cross_patch_identity"] == ["cross-patch identity not exercised in this set"]
+
+
 def test_a_shared_document_that_differs_across_two_patches_is_refused(tmp_path):
     root = tmp_path / "arms"
     _pair_job(root, seed=42)

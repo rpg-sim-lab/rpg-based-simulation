@@ -292,6 +292,7 @@ def assemble(src: Path, out: Path, *, base: str, new: str) -> Dict[str, Any]:
 
 
 NOT_EXERCISED = "cross-patch identity not exercised in this set"
+NO_VERSION = ("None", "", "unknown")  # runner_identity records "unknown" when ImageVersion is not set; a missing field reads "None"
 
 
 def _cross_patch_identity(writers: Mapping[str, List[Tuple[str, str]]]) -> List[str]:
@@ -300,8 +301,9 @@ def _cross_patch_identity(writers: Mapping[str, List[Tuple[str, str]]]) -> List[
     ``cross-patch identity shown: <dir> <v1> = <v2> (<n> documents)``; ``NOT_EXERCISED`` when no document spans two versions."""
     by_dir: Dict[str, Tuple[set, int]] = {}
     for rel, entries in writers.items():
-        versions = {v for _j, v in entries}
-        if len(entries) > 1 and len(versions) > 1:
+        real = [(j, v) for j, v in entries if v not in NO_VERSION]  # a writer with no recorded version proves nothing across patches
+        versions = {v for _j, v in real}
+        if len(real) > 1 and len(versions) > 1:
             directory = rel.split("/")[1]
             seen, count = by_dir.get(directory, (set(), 0))
             by_dir[directory] = (seen | versions, count + 1)
