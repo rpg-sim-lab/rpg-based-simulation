@@ -212,6 +212,7 @@ mechanisms:
       - src/engine/rpg_depth.py::LeashService
       - src/world/motivation/pressure_resolver.py::MotivationPressureResolver
       - src/engine/tactical_threat.py::present_threats
+      - src/engine/hold_mode.py::hold_reset_kwargs
     verified:
       instrument: corpus_run
       verdict: contradicted
