@@ -10140,6 +10140,17 @@
   artifact_files: []
   tags: []
 - type: ticket
+  path: agent-working/tickets/inprogress/TCK-20261109-M1-KIND-ALWAYS-MEANS-SPECIES-AND-OCCUPATION-IS-ITS-OWN-FIELD.md
+  ticket_id: TCK-20261109-M1-KIND-ALWAYS-MEANS-SPECIES-AND-OCCUPATION-IS-ITS-OWN-FIELD
+  title: '`kind` always means species, and occupation is a separate field'
+  tier: standard
+  ticket_type: feature
+  date: '2026-11-09'
+  related_code_areas:
+  - src/core/ (entity identity), content schemas
+  artifact_files: []
+  tags: []
+- type: ticket
   path: agent-working/tickets/todos/TCK-20261109-A-CROWDED-HERO-STARVES-WITH-NO-WAY-TRIED-AFTER-ITS-LAST-MEAL.md
   ticket_id: TCK-20261109-A-CROWDED-HERO-STARVES-WITH-NO-WAY-TRIED-AFTER-ITS-LAST-MEAL
   title: Crowded_frontier s45 hero 31 starves at t2439 with no way tried after its
@@ -10222,17 +10233,6 @@
   date: '2026-11-09'
   related_code_areas:
   - src/strategy/ and perception code, content schemas
-  artifact_files: []
-  tags: []
-- type: ticket
-  path: agent-working/tickets/todos/TCK-20261109-M1-KIND-ALWAYS-MEANS-SPECIES-AND-OCCUPATION-IS-ITS-OWN-FIELD.md
-  ticket_id: TCK-20261109-M1-KIND-ALWAYS-MEANS-SPECIES-AND-OCCUPATION-IS-ITS-OWN-FIELD
-  title: '`kind` always means species, and occupation is a separate field'
-  tier: standard
-  ticket_type: feature
-  date: '2026-11-09'
-  related_code_areas:
-  - src/core/ (entity identity), content schemas
   artifact_files: []
   tags: []
 - type: ticket

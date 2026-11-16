@@ -8,10 +8,15 @@ only, `kind` itself. So the helper reads `properties["species_id"]` and falls ba
 """
 from __future__ import annotations
 
-from typing import Any
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from src.core.state import EntityState
 
 
-def species_of(entity: Any) -> str:
+def species_of(entity: "EntityState") -> str:
     """The species id of `entity`: `identity.properties["species_id"]`, else `kind` (the archetype path, where `kind` already is the species)."""
     species_id = entity.identity.properties.get("species_id")
-    return species_id if species_id else entity.kind
+    if isinstance(species_id, str) and species_id:
+        return species_id
+    return entity.kind
