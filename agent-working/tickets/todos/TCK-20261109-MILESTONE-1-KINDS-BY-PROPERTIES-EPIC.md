@@ -96,6 +96,7 @@ See the child tickets.
 - Owner-level choices are asked when the milestone starts, not guessed here.
 
 ## Implementation Notes
+- 2026-11-16 (rpg-planner): M1-base RECORDED at 9c398a068 (#715 6912633288); gate reference re-baselined to v2 from main run 43895014837 (memo row 97; owner 6920465555, 6920528237). Item order on u24 (rpg-designer, under the M1 pace rules, owner 6912138476): kind=species (dispatched, owner 6920334481; step 2 proven neutral, owner GO 6921470279) → coarse bands and the appraisal → honest perception defaults → places from perception and memory → activity period (A' folded in) → hero-as-work. Name-branch retirement in stages: camp tether after places, faction hostility after ubuntu's why-it-fights, hero role after hero-as-work. Ubuntu lane (owner 6916732562): N10, births (code after kind=species step 2 is on main, species read only through species_of()), why-it-fights after kind=species.
 None yet.
 
 ## Test Summary

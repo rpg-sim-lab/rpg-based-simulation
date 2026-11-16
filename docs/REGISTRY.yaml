@@ -8802,23 +8802,6 @@
   - determinism
   - benchmarking
 - type: ticket
-  path: agent-working/tickets/todos/TCK-20261115-PAST-THE-STARVING-LINE-THE-TACTICAL-STEP-TURNS-AWAY-FROM-A-MEAL-WITHOUT-WEIGHING-HUNGER.md
-  ticket_id: TCK-20261115-PAST-THE-STARVING-LINE-THE-TACTICAL-STEP-TURNS-AWAY-FROM-A-MEAL-WITHOUT-WEIGHING-HUNGER
-  title: Past the starving line, with a meal 1-2 ticks away, the tactical fight-or-flee
-    step (a panic retreat or a chase) takes the subject away from the meal without
-    weighing starvation (SURV-07)
-  tier: standard
-  ticket_type: bug
-  date: '2026-11-15'
-  related_code_areas:
-  - src/engine/tactical.py (PANIC_RETREAT sites ~:279/:535; pursuit ~:773; the branch
-    order ~:508)
-  artifact_files:
-  - agent-working/stored_artifacts/TCK-20261115-PAST-THE-STARVING-LINE-THE-TACTICAL-STEP-TURNS-AWAY-FROM-A-MEAL-WITHOUT-WEIGHING-HUNGER/investigation.md
-  - agent-working/stored_artifacts/TCK-20261115-PAST-THE-STARVING-LINE-THE-TACTICAL-STEP-TURNS-AWAY-FROM-A-MEAL-WITHOUT-WEIGHING-HUNGER/plan.md
-  - agent-working/stored_artifacts/TCK-20261115-PAST-THE-STARVING-LINE-THE-TACTICAL-STEP-TURNS-AWAY-FROM-A-MEAL-WITHOUT-WEIGHING-HUNGER/test_plan.md
-  tags: []
-- type: ticket
   path: agent-working/tickets/todos/TCK-20261115-SPECIES-HOSTILITY-TEST-EDITS-A-TRACKED-DATA-FILE-IN-PLACE.md
   ticket_id: TCK-20261115-SPECIES-HOSTILITY-TEST-EDITS-A-TRACKED-DATA-FILE-IN-PLACE
   title: The slow species-hostility metamorphic test rewrites the tracked data/content/social/species_relations.yaml
