@@ -90,7 +90,7 @@ The hook never blocks (it always exits 0). The harm is that the warnings lose cr
 - tests/tools/test_delivery_pre_push_advisory.py
 
 ## Assumptions / Open Questions
-- The other PreToolUse hooks that match `git push` by regex (if any) may have the same heredoc false positive. Check with a grep, and list any in the ticket. Fix them only if they are in `tools/delivery/`.
+- Answered 2026-11-16 by agent-working-designer, with a grep of `tools/` and `.claude/`, excluding tests: no other hook has the push-detection pattern or `is_git_push`. The only hits are in `tools/delivery/pre_push_advisory_hook.py` (lines 79, 98-99, 315), so the fix stays in that file.
 
 ## Implementation Notes
 (to be filled by the implementer)
