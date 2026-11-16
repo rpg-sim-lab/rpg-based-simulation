@@ -4707,7 +4707,7 @@
   divergence_note: See docs/guidelines/intentional_divergences.md Section 2.200.
   support_boundary: 'Unit rows: the low-hp retreat grid ({pressing y/n} x {no hostile, perceived only, adjacent not acting, acting}) with and without a destination, the acceptance scene, the panic freeze with prey in sight, and the reading 3 below-line row. Paired measurement pending.'
 
-- id: STRAT-300
+- id: STRAT-350
   text: 'TCK-20261115-PAST-THE-STARVING-LINE-THE-TACTICAL-STEP-TURNS-AWAY-FROM-A-MEAL-WITHOUT-WEIGHING-HUNGER (SURV-07 LAW P, memo row 88, divergence 2.207): past the starving line (hunger at or above 95) a hit acts on the subject only while its hitter can still reach it (Manhattan distance at the decision tick <= max(1, the hitter''s range), no line of sight) or pursues or attacks it; a swing left behind no longer makes the need yield, keeps a panic standing or makes acting_threat_to true. Below the line the ten-tick hit window is unchanged.'
   status: verified
   priority: P1
