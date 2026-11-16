@@ -1343,6 +1343,7 @@ Each item becomes a ticket under the milestone 1 epic before work starts.
 **Prerequisites of the record.** TCK-20261023-CHECKPOINT-RESTORE-DRAWS-STATELESS-RANDOMS-FROM-SEED-ZERO (F3) and
 TCK-20261023-SALTED-HASH-IN-HASHED-STATE-FACTION-SQUAD-GROUP-ID (F4) are fixed before the record ticket is dispatched.
 Otherwise the record cannot claim cross-process determinism. F5 stays P3.
+Status (2026-11-16, factual mapping, not a rule change): the F3 fix landed on main in #848 (66d08dd56, 2026-11-08) under TCK-20261107-A-RESTORED-SCENARIO-CHECKPOINT-DRAWS-FROM-SEED-0 (`ScenarioCheckpointer` restore builds `DeterministicRNG(base_seed=state.seed)`; regression test `tests/integration/scenarios/test_scenario_runtime_service.py::TestCheckpointRestore::test_restore_keeps_the_state_seed_and_the_per_tick_digest`). The earlier unpushed branch for TCK-20261023-CHECKPOINT-RESTORE-DRAWS-STATELESS-RANDOMS-FROM-SEED-ZERO duplicates it and is dropped. F4 landed in #765. Both prerequisites are met.
 
 **When the record ticket is dispatched.** Only when done #1, #4 and #5 already hold, so the freeze covers
 measurement and record (days), not a work phase.
