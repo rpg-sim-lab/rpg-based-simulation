@@ -242,22 +242,98 @@ def test_a_local_arm_whose_child_reports_other_dists_is_refused_naming_both_dige
         paired.run_arm(tmp_path / "tree", tmp_path / "cache2", SHA, [("w", 42)], 10, 1)
 
 
-def test_a_collected_arm_with_other_dists_is_refused_and_no_table_is_printed(tmp_path, capsys):
-    from tests.unit.tools.test_rpg_measure_collected import BASE, NEW, TICKS, _put, _run, collected
+def test_a_collected_arm_with_other_dists_is_refused_with_one_line_and_no_table(tmp_path, capsys):
+    from tests.unit.tools.test_rpg_measure_collected import BASE, NEW, _put, _run, collected, refused_with_one_line
     for w in paired.WORLDS:
         for s in (42, 43):
             _put(tmp_path, BASE, w, s, _run(w, s), runner=None)
             _put(tmp_path, NEW, w, s, {**_run(w, s), "dists": "c" * 64}, runner=None)  # the new arm's child had other dependencies
         _put(tmp_path, BASE, w, 42, _run(w, 42), repeat=True)
-    with pytest.raises(paired.DistsMismatchError, match="c" * 64):
-        collected(tmp_path)
-    out = capsys.readouterr().out
-    assert "| Step |" not in out and "People deaths" not in out
+    verdict = tmp_path / "v.json"
+    refused_with_one_line(collected(tmp_path, "--verdict-json", str(verdict)), capsys, verdict, "c" * 64)
 
 
-def test_the_arm_child_writes_dists_from_the_tool_checkouts_own_module():
-    source = (Path(paired.__file__).with_name("arm_child.py")).read_text(encoding="utf-8")
-    assert '"dists": _env_digest().installed_dists_digest()' in source and 'with_name("env_digest.py")' in source
+def test_a_local_run_whose_child_reports_other_dists_is_refused_with_one_line(tmp_path, capsys, monkeypatch):
+    from tests.unit.tools.test_rpg_measure_collected import BASE, NEW, _run, refused_with_one_line
+    monkeypatch.setattr(paired, "_git", lambda *a, **k: str(tmp_path))
+    monkeypatch.setattr(paired, "prepare_tree", lambda repo, rev, cache: (rev, tmp_path))
+    monkeypatch.setattr(paired, "run_one", lambda tree, w, s, t, out: (out.parent.mkdir(parents=True, exist_ok=True), out.write_text(json.dumps({**_run(w, s), "dists": "c" * 64}), encoding="utf-8")))
+    verdict = tmp_path / "v.json"
+    rc = paired.main(["--base", BASE, "--new", NEW, "--cache", str(tmp_path / "cache"), "--seeds", "42", "--ticks", "10", "--jobs", "1", "--verdict-json", str(verdict)])
+    refused_with_one_line(rc, capsys, verdict, paired.current_env()["dists"])
+
+
+def test_only_the_two_named_refusals_are_mapped_other_errors_still_propagate(tmp_path, monkeypatch):
+    """No broad ``except`` in main(): an unrelated error is still a traceback, and the verdict still records REFUSED for it."""
+    monkeypatch.setattr(paired, "_git", lambda *a, **k: (_ for _ in ()).throw(RuntimeError("boom")))
+    verdict = tmp_path / "v.json"
+    with pytest.raises(RuntimeError, match="boom"):
+        paired.main(["--base", SHA, "--new", "b" * 40, "--cache", str(tmp_path / "cache"), "--verdict-json", str(verdict)])
+    assert json.loads(verdict.read_text(encoding="utf-8"))["outcome"] == "REFUSED"
+
+
+# ---- where the arm child's dists comes from, by behaviour (a stub child, no simulation)
+
+ARM_CHILD = Path(paired.__file__).with_name("arm_child.py")
+STUB_DIGEST = "def installed_dists_digest():\n    return {mark!r}\n"
+
+
+def _tool_checkout(root: Path, mark: str | None) -> Path:
+    """A copy of the tool checkout's arm_child (and the stdlib-only pinned_runner it loads by path); env_digest is a stub returning ``mark``, or the real file when None."""
+    rpg = root / "tools" / "rpg_measure"
+    rpg.mkdir(parents=True)
+    (rpg / "arm_child.py").write_text(ARM_CHILD.read_text(encoding="utf-8"), encoding="utf-8")
+    (rpg / "env_digest.py").write_text(STUB_DIGEST.format(mark=mark) if mark else ARM_CHILD.with_name("env_digest.py").read_text(encoding="utf-8"), encoding="utf-8")
+    arch = root / "tools" / "test_architecture"
+    arch.mkdir(parents=True)
+    (arch / "pinned_runner.py").write_text(
+        "class _P:\n    verdict = 'PINNED'\n\n\ndef require_pinned(evidence, what=''):\n    return _P()\n\n\ndef read_manifest(path):\n    return {}\n", encoding="utf-8")
+    return rpg / "arm_child.py"
+
+
+def _arm_tree(root: Path, mark: str) -> Path:
+    """A stub ARM source tree (the child's working directory and PYTHONPATH): the few modules arm_child imports, a fake kernel, and its OWN env_digest saying ``mark``."""
+    files = {
+        "src/__init__.py": "", "src/engine/__init__.py": "", "src/observability/__init__.py": "", "src/observability/reporting/__init__.py": "",
+        "src/observability/reporting/artifact_repository.py": "",  # no RunConditions: the pre-record path, classified from the live kernel
+        "src/engine/checkpoint.py": "class CanonicalStateHasher:\n    @staticmethod\n    def get_hash(state):\n        return 'h'\n",
+        "src/engine/serves.py": "def keeps_coin(*a):\n    return False\n",
+        "tools/__init__.py": "", "tools/test_architecture/__init__.py": "", "tools/rpg_measure/__init__.py": "",
+        "tools/rpg_measure/env_digest.py": STUB_DIGEST.format(mark=mark),
+        "tools/test_architecture/rpg_gate_run.py": (
+            "class _Profile:\n    max_tick_budget_ms = 1.0\n\n\nclass _State:\n    entities = {}\n\n\n"
+            "class _Kernel:\n    _audit_mode = True\n    _no_frame_pacing = True\n    _governor = object()\n    _executor = object()\n    _profile = _Profile()\n    state = _State()\n"
+            "    def tick_once(self):\n        pass\n    def shutdown(self):\n        pass\n\n\n"
+            "def build_kernel(world, seed, run_id):\n    return _Kernel()\n"),
+    }
+    for rel, text in files.items():
+        path = root / rel
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(text, encoding="utf-8")
+    return root
+
+
+def _child_dists(tmp_path: Path, name: str, tool_mark: str | None, arm_mark: str = "FROM-THE-ARM-TREE") -> str:
+    import os
+    import subprocess
+    import sys
+    tool_child = _tool_checkout(tmp_path / f"{name}-tool", tool_mark)
+    arm = _arm_tree(tmp_path / f"{name}-arm", arm_mark)
+    out = tmp_path / f"{name}.json"
+    done = subprocess.run([sys.executable, str(tool_child), "w", "1", "0", str(out)], cwd=arm, env={**os.environ, "PYTHONPATH": str(arm), "PYTHONHASHSEED": "0"},
+                          capture_output=True, text=True, timeout=120)
+    assert done.returncode == 0, done.stderr[-800:]
+    return json.loads(out.read_text(encoding="utf-8"))["dists"]
+
+
+def test_the_arm_child_takes_dists_from_the_tool_checkout_never_the_arm_tree(tmp_path):
+    """The arm tree (cwd and PYTHONPATH) carries its own env_digest saying something else; the document must carry the TOOL checkout's, and follow it when it changes."""
+    assert _child_dists(tmp_path, "one", "TOOL-ONE") == "TOOL-ONE"
+    assert _child_dists(tmp_path, "two", "TOOL-TWO") == "TOOL-TWO"
+
+
+def test_the_arm_child_reports_the_real_digest_of_the_tool_checkout_in_a_stub_tree(tmp_path):
+    assert _child_dists(tmp_path, "real", None) == env_digest.installed_dists_digest()
 
 
 # ---- the digest sees only the interpreter's own site-packages (rpg-planner review at c84269c33)

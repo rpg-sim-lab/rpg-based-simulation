@@ -212,17 +212,37 @@ def _unpin(path: Path, value="NOT_PINNED"):
     path.write_text(json.dumps(doc), encoding="utf-8")
 
 
+def refused_with_one_line(rc, capsys, verdict, needle):
+    """Exit 2, exactly one ``REFUSED:`` stderr line naming ``needle``, no traceback, no table on stdout, and a REFUSED verdict document."""
+    captured = capsys.readouterr()
+    lines = [ln for ln in captured.err.splitlines() if ln.strip()]
+    assert rc == 2 and len(lines) == 1 and lines[0].startswith("REFUSED:") and needle in lines[0], captured.err
+    assert "Traceback" not in captured.err and "## Paired measurement" not in captured.out and "| Step |" not in captured.out
+    got = _verdict(verdict)
+    assert got["outcome"] == "REFUSED" and needle in got["detail"]
+
+
 @pytest.mark.parametrize("arm_sha, repeat", [(NEW, False), (BASE, False), (BASE, True)])
 def test_a_collected_compare_refuses_an_arm_that_is_not_pinned_and_prints_no_table(tmp_path, capsys, arm_sha, repeat):
     stage(tmp_path)
     _unpin(paired.result_path(tmp_path, arm_sha, TICKS, "urban_political", 42, repeat), None)
-    with pytest.raises(paired.NotPinnedArmError, match="urban_political:42"):
-        collected(tmp_path)
-    assert "## Paired measurement" not in capsys.readouterr().out
+    verdict = tmp_path / "v.json"
+    refused_with_one_line(collected(tmp_path, "--verdict-json", str(verdict)), capsys, verdict, "urban_political:42")
 
 
-def test_a_collected_neutral_compare_refuses_an_arm_that_is_not_pinned(tmp_path):
+def test_a_collected_neutral_compare_refuses_an_arm_that_is_not_pinned(tmp_path, capsys):
     stage(tmp_path, neutral=True)
     _unpin(paired.result_path(tmp_path, NEW, paired.NEUTRAL_TICKS, "urban_political", 42))
-    with pytest.raises(paired.NotPinnedArmError, match="new:urban_political:42"):
-        paired.main(["--collected", str(tmp_path), "--base", BASE, "--new", NEW, "--neutral"])
+    verdict = tmp_path / "v.json"
+    rc = paired.main(["--collected", str(tmp_path), "--base", BASE, "--new", NEW, "--neutral", "--verdict-json", str(verdict)])
+    refused_with_one_line(rc, capsys, verdict, "new:urban_political:42")
+
+
+def test_a_local_run_refuses_an_arm_that_is_not_pinned_with_one_line(tmp_path, capsys, monkeypatch):
+    """The local path: the arm child stubbed to write a document whose runner is not PINNED; no git, no tree, no simulation."""
+    monkeypatch.setattr(paired, "_git", lambda *a, **k: str(tmp_path))
+    monkeypatch.setattr(paired, "prepare_tree", lambda repo, rev, cache: (rev, tmp_path))
+    monkeypatch.setattr(paired, "run_one", lambda tree, world, seed, ticks, out: (out.parent.mkdir(parents=True, exist_ok=True), out.write_text(json.dumps({**_run(world, seed), "runner": "NOT_PINNED"}), encoding="utf-8")))
+    verdict = tmp_path / "v.json"
+    rc = paired.main(["--base", BASE, "--new", NEW, "--cache", str(tmp_path / "cache"), "--seeds", "42", "43", "--ticks", str(TICKS), "--jobs", "1", "--verdict-json", str(verdict)])
+    refused_with_one_line(rc, capsys, verdict, "not marked runner PINNED")
