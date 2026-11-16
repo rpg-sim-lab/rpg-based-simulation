@@ -141,6 +141,7 @@ class WorldEntitySpawner:
                     "population_id": spawn.population_id,
                 },
                 personality=personality,
+                occupation=profile.role_id,
             )
             .combat(
                 hp=profile.hp,

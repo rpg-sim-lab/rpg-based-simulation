@@ -771,7 +771,8 @@ class WorldCompiler:
                             faction=faction_enum,
                             class_id=ent_class_id,
                             personality=personality,
-                            properties=ent_properties
+                            properties=ent_properties,
+                            occupation=pop_spec.role.lower(),
                         )
                         .combat(
                             hp=hp,

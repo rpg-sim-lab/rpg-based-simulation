@@ -43,6 +43,11 @@ def _navigations(state: Any) -> Iterable[Any]:
         yield (f"entity {e.id}", e.navigation)
 
 
+def _identities(state: Any) -> Iterable[Any]:
+    for e in (getattr(state, "entities", None) or {}).values():
+        yield (f"entity {e.id}", e.identity)
+
+
 def _projects(state: Any) -> Iterable[Any]:
     for e in (getattr(state, "entities", None) or {}).values():
         for project in ((getattr(getattr(e, "strategic", None), "projects", None)) or {}).values():
@@ -91,6 +96,8 @@ FIELD_RULES: List[FieldRule] = [
     FieldRule("group.contract_holder_id", _groups, "contract_holder_id", fill=_none_on_unbound_group, ruling=_GROUP_RULING, record="GroupRecord"),
     FieldRule("group.dissolution_reason", _groups, "dissolution_reason", fill=_none_on_unbound_group, ruling=_GROUP_RULING, record="GroupRecord"),
     FieldRule("group.dissolution_contract_status", _groups, "dissolution_contract_status", fill=_none_on_unbound_group, ruling=_GROUP_RULING, record="GroupRecord"),
+    # M1 (kind means species): a state that predates the occupation label gave no body one, so None is exactly that state.
+    FieldRule("occupation", _identities, "occupation", fill=lambda state, owner: None, ruling="rpg-designer 2026-11-16, kind-is-species ruling step 2: a state that predates the occupation label had none", record="IdentityComponent"),
 ]
 
 

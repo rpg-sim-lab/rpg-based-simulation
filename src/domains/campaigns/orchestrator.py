@@ -576,6 +576,7 @@ class CampaignOrchestrator:
                 veterancy_points=entity.identity.veterancy_points,
                 veterancy_rank=entity.identity.veterancy_rank,
                 known_recipes=tuple(sorted(entity.identity.known_recipes)),
+                occupation=entity.identity.occupation,
             )
 
         return result
@@ -843,6 +844,7 @@ class CampaignOrchestrator:
                     veterancy_points=cf.veterancy_points,
                     veterancy_rank=cf.veterancy_rank,
                     known_recipes=set(cf.known_recipes),
+                    occupation=cf.occupation,
                 )
                 .attributes(
                     strength=cf.attributes.get("strength"),

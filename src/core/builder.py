@@ -204,6 +204,7 @@ class V2EntityBuilder:
         life_stage: Optional[LifeStage] = None,
         group_id: Optional[int] = None,
         properties: Optional[Dict[str, Any]] = None,
+        occupation: Optional[str] = None,
     ) -> V2EntityBuilder:
         current = self._identity_to_dict()
 
@@ -226,6 +227,7 @@ class V2EntityBuilder:
             "life_stage": life_stage,
             "group_id": group_id,
             "properties": _copy_dict(properties) if properties is not None else None,
+            "occupation": occupation,
         }
 
         for key, value in updates.items():

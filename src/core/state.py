@@ -666,6 +666,10 @@ class IdentityComponent:
     properties: Dict[str, Any] = field(default_factory=dict)
     latest_intent_results: List["IntentResult"] = field(default_factory=list)
     _canonical_cache: Any = field(default=None, init=False, repr=False, compare=False)
+    # M1 (kind means species): the role label the content gave the body ("worker", "guard", "world_boss"; decision 50: a display label). Appended LAST so a checkpoint
+    # that predates it is refused or filled by the schema rule (checkpoint_fields.FIELD_RULES), never shifted. None = no label (newborns have no job yet); omitted from the
+    # canonical dict while None, so the form of a body without one is unchanged. Nothing but tests and the presenter reads it yet (step 2).
+    occupation: Optional[str] = None
 
     def to_canonical_dict(self) -> Dict[str, Any]:
         if self._canonical_cache is not None:
@@ -685,6 +689,8 @@ class IdentityComponent:
             "personality": self.personality.to_canonical_dict(),
             "life_stage": str(self.life_stage)
         }
+        if self.occupation is not None:
+            res["occupation"] = self.occupation
         object.__setattr__(self, "_canonical_cache", res)
         return res
 
@@ -1071,7 +1077,8 @@ class EntityState:
                 life_stage=id_comp.life_stage,
                 group_id=id_comp.group_id,
                 properties=ReadOnlyDict(id_comp.properties),
-                latest_intent_results=tuple(id_comp.latest_intent_results)
+                latest_intent_results=tuple(id_comp.latest_intent_results),
+                occupation=id_comp.occupation,
             )
 
         inv_comp = self.inventory

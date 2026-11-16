@@ -77,6 +77,16 @@ Base stats for the standard entity classes.
 
 ---
 
+### Identity Fields: Kind, Occupation, Role (M1, TCK-20261109-M1-KIND-ALWAYS-MEANS-SPECIES-AND-OCCUPATION-IS-ITS-OWN-FIELD)
+An entity names what it is and what it does in three separate fields:
+- **`EntityState.kind`** is the species id (an id in `data/content/living/species.yaml`). It is set once at build and is never renamed in a run.
+- **`IdentityComponent.occupation`** (optional string) is the role label the content gave the body (`worker`, `guard`, `merchant`, `world_boss`). It is a display label (owner decision 50: role names stay as display labels only). A newborn has none.
+- **`IdentityComponent.role`** (`EntityRole`) is the coarse legacy enum. It is unchanged and is being retired.
+
+Step 2 (this change) adds `occupation`, written at build on every path, carried by the campaign survivor rebuild and the entity copies, and shown next to `kind` by the presenter; `species_of(entity)` is the one way to read a species. `kind` still holds the build path's type string until step 4 makes it the species on every path (the classic world compiler writes the role string there today); nothing branches on `occupation` yet. A body without a label leaves `occupation` out of its canonical form.
+
+---
+
 ## 4. Biological Laws (Decay & Needs)
 The simulation tracks biological "Pressures" that degrade over time.
 
