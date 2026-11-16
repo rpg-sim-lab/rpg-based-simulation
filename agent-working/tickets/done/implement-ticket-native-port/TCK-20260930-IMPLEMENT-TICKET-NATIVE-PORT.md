@@ -1,10 +1,10 @@
 ---
-status: active
+status: historical
 layer: ai
 authority: P1
 audience: agent
 ticket_id: TCK-20260930-IMPLEMENT-TICKET-NATIVE-PORT
-phase: blocked
+phase: done
 date: 2026-10-01
 tags: [ai, agent-monitoring]
 ---
@@ -15,7 +15,7 @@ tags: [ai, agent-monitoring]
 Port implement-ticket.js to the native Workflow runtime in the classified order
 
 ## Status
-BLOCKED
+DONE
 
 ## Tier
 epic
@@ -37,9 +37,9 @@ Follows the classification: advisory and bookkeeping sites first, then input sit
 - Any other workflow script.
 
 ## Acceptance Criteria
-1. No `bash(` remains in implement-ticket.js.
-2. Every gate-class site uses the attested route or stays orchestrator-side by an explicit, recorded decision.
-3. One native run of a small ticket completes with correct gate outcomes.
+1. No `bash(` remains in implement-ticket.js. **MET** (`workflow_bash_sites.py` reports 0).
+2. Every gate-class site uses the attested route or stays orchestrator-side by an explicit, recorded decision. **MET** (the attested gate sites and the orchestrator backstop).
+3. One native run of a small ticket completes with correct gate outcomes. **PARTLY MET**: the fail path, the plan gate, and the attested gates through Test behaved correctly across three runs, but no run completed end to end.
 
 ## Related Tickets
 - TCK-20260930-IMPLEMENT-TICKET-GATE-VS-BOOKKEEPING-CLASSIFICATION (the classification this follows from)
@@ -65,7 +65,13 @@ Follows the classification: advisory and bookkeeping sites first, then input sit
 Scoped 2026-10-01 into 5 children (see `SEQUENCE.md`). Epic closes when all children are done; 3 of 5 are done, 2 deferred by user decision (see Assumptions).
 
 ## Test Summary
+Evidence is in TCK-20260930-NATIVE-PORT-SMALL-TICKET-NATIVE-RUN's Test Summary: wf_b59e5ed2-5d3 (`TAGS_NOT_REGISTERED` at Scope, as designed), wf_d6a35058-f5d (`NEEDS_HUMAN_INPUT` at the Plan gate, a correct stop) and wf_f48f4fae-569 (attested gates through Test, ended `TESTS_FAILED`).
 
 ## Files Changed
+See the children. This ticket changes no files beyond its own move to `done/`.
 
 ## Completion Summary
+Closed on the owner's answer to hand-finish the vehicle (#715 6894904885). AC1 and AC2 are met. AC3 is partly met and the gap is named below. Closing the epic drops the unmet part of AC3 from scope, so the closure itself rests on the owner's yes on the PR (#715 6875225978).
+
+Known gap: no native run has completed end to end. Parity, Verify and Finalize have never run on the native path, so their attested gate sites are untested. The Test phase runs the whole of `tests/tools` in one uncapped process (filed: TCK-20261115-TEST-PHASE-RUNS-TESTS-TOOLS-UNCAPPED-IN-ONE-PROCESS). Whether the pipeline is retired instead is OD-5, which agent-working-designer brings to the owner.
+
