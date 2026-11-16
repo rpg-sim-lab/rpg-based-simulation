@@ -8132,6 +8132,21 @@
   - testing
   - determinism
 - type: ticket
+  path: agent-working/tickets/done/TCK-20261116-AN-ARM-RUNS-WHEN-THE-CACHE-PATH-IS-RELATIVE.md
+  ticket_id: TCK-20261116-AN-ARM-RUNS-WHEN-THE-CACHE-PATH-IS-RELATIVE
+  title: 'An arm runs when the cache path is relative: the child gets the arm tree
+    as an absolute path, so the off-host paired-arms jobs can import `src`'
+  tier: hotfix
+  ticket_type: bug
+  date: '2026-11-16'
+  related_code_areas:
+  - tools/rpg_measure/paired.py
+  - tools/test_architecture/paired_arms.py
+  artifact_files: []
+  tags:
+  - testing
+  - determinism
+- type: ticket
   path: agent-working/tickets/done/TCK-20261115-A-NON-SEQUENTIAL-RUN-IS-REFUSED-BY-THE-GATE-CANDIDATE-PAIRED-ARMS-AND-RPG-MEASURE.md
   ticket_id: TCK-20261115-A-NON-SEQUENTIAL-RUN-IS-REFUSED-BY-THE-GATE-CANDIDATE-PAIRED-ARMS-AND-RPG-MEASURE
   title: A run on a non-sequential executor is refused by the gate candidate, the
