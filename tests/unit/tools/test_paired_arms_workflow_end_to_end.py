@@ -8,6 +8,7 @@ Only the arm child is a stub (it writes a fixed valid document); prepare_tree is
 from __future__ import annotations
 
 import importlib
+import os
 import json
 import re
 import shlex
@@ -89,8 +90,9 @@ def workflow_run(tmp_path, monkeypatch, capsys):
         "dists": paired.current_env()["dists"]}), encoding="utf-8")
     monkeypatch.setattr(paired, "CHILD", child)
     monkeypatch.setattr(paired, "prepare_tree", _fake_prepare_tree)
-    monkeypatch.setattr(pa, "runner_identity", lambda env=None, **kw: {"name": "gh-1", "image": "ubuntu24-1", "cpu_model": "x", "nproc": 4, "mem_total_mb": 16000, "python": "3.13.1",
-                                                                       "os": "Ubuntu", "uv_lock": paired.current_env()["uv_lock"]})
+    monkeypatch.setattr(pa, "runner_identity", lambda env=None, **kw: {
+        "name": "gh-1", "image": "ubuntu24-" + os.environ.get("ImageVersion", "?"), "image_os": "ubuntu24", "image_version": os.environ.get("ImageVersion", "?"), "libc": "glibc-2.39",
+        "python_build": "3.13.1 (main) [GCC 13]", "cpu_model": "x", "nproc": 4, "mem_total_mb": 16000, "python": "3.13.1", "os": "Ubuntu", "uv_lock": paired.current_env()["uv_lock"]})
     # plan (retyped: the workflow step is a bash script with an array)
     assert pa.main(["plan", "--worlds", ",".join(paired.WORLDS), "--seeds", SEEDS, "--self-check", "seed42", "--evidence", "--step", STEP]) == 0
     plan = dict(line.split("=", 1) for line in capsys.readouterr().out.splitlines() if "=" in line)
@@ -101,6 +103,7 @@ def workflow_run(tmp_path, monkeypatch, capsys):
         workdir = tmp_path / "jobs" / str(n)  # each job a fresh checkout-like cwd; --cache arm-cache is RELATIVE to it
         workdir.mkdir(parents=True)
         monkeypatch.chdir(workdir)
+        monkeypatch.setenv("ImageVersion", "20261111.82.6" if n == 1 else "20261111.196.1")  # run 43805965260: one job was served the older image patch
         env = {"BASE_SHA": BASE, "NEW_SHA": NEW, "TICKS": TICKS, "WORLD": job["world"], "SEED": str(job["seed"])}
         for step in (s for s in _workflow()["jobs"]["arms"]["steps"] if s.get("name") in ("Base arm", "New arm", "Base-vs-base repeat arm")):
             if _runs(step, job["kind"]):
@@ -131,6 +134,7 @@ def test_the_workflows_own_commands_run_end_to_end_with_a_relative_cache_and_pas
     assert "## Paired measurement: nonflight-move-off-engagement (div -)" in table and "self-check (seed42, 3 runs): spread 0" in table
     assert json.loads(verdict) == {"outcome": "PASS", "mode": "step", "detail": None}
     assert (agg / "collected").is_dir()
+    assert json.loads((agg / "collected" / "identities.json").read_text())["image_versions"] == ["20261111.196.1", "20261111.82.6"]  # two patch versions, one environment
 
 
 def test_div_is_a_label_only_the_same_verdict_bytes_and_a_table_that_differs_only_in_the_label(workflow_run, monkeypatch, capsys):

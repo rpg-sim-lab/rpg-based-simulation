@@ -215,11 +215,21 @@ jobs:
           python -m tools.rpg_measure.paired --collected collected --base "${BASE_SHA}" --new "${NEW_SHA}" --step "${STEP_LABEL}" --div "${DIV}" \
             --ticks "${TICKS}" --seeds "${seeds[@]}" --self-check "${SELF_CHECK}" "${flags[@]}" \
             --out table.md --verdict-json verdict.json
+      # This host cannot download artifacts (blob storage returns 403 behind its firewall), so the table and the verdict are printed to the log too.
+      - name: Print the table and the verdict to the log
+        if: always()
+        run: |
+          for f in table.md verdict.json; do
+            if [ -f "$f" ]; then echo "::group::$f"; cat "$f"; echo "::endgroup::"; fi
+          done
       - name: Step summary
         if: always()
         run: |
+          versions=unknown
+          if [ -f collected/identities.json ]; then versions=$(python -c 'import json; print(", ".join(json.load(open("collected/identities.json")).get("image_versions", [])) or "unknown")') || versions=unknown; fi
           {
             echo "### Paired arms: ${STEP_LABEL}"
+            echo "- runner image versions in the set: ${versions} (recorded, not keyed: a set split only by an image patch is one environment)"
             echo "- base \`${BASE_SHA}\`, new \`${NEW_SHA}\`, ${TICKS} ticks, seeds ${SEEDS}, self-check ${SELF_CHECK}"
             echo "- off-host result: never compare it with a local one except in the one-time equality proof"
             if [ -f verdict.json ]; then echo '```json'; cat verdict.json; echo '```'; fi
