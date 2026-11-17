@@ -4728,3 +4728,14 @@
   test_path: tests/unit/strategic/test_suspension_expiry.py, tests/unit/engine/test_checkpoint_fields.py
   divergence_note: See docs/guidelines/intentional_divergences.md Section 2.212.
   support_boundary: 'Unit rows plus the own-job counts at 67b507f8c: 3 gate worlds x s42 x 5000 ticks, spied and plain twin (hashes equal, PINNED, no exceptions, no logging errors): L1 = L2 = L3 = L4 = 0, SUSPENSION_EXPIRED 126 / 60 / 60 (frontier_living_world / urban_political / crowded_frontier), oldest SUSPENDED 218 < bar 219 (TTL 200 + cadence 20 - 1). 200 is a BALANCE value; the harm join is withdrawn. evaluate_all_strategic_intents has no production caller and skips the pass (TCK-20261117-EVALUATE-ALL-STRATEGIC-INTENTS-IS-DEAD-CODE-THAT-SKIPS-THE-SUSPENSION-EXPIRY).'
+
+- id: STRAT-355
+  text: 'TCK-20261117-A-RESOLVE-BLOCKER-PROJECT-IS-RE-CREATED-EVERY-80-TICKS-AND-STALLS-COOPERATION (divergence 2.214): a re-inference of a stored blocker merges into it (keeps suppression_until_tick and failure_count; refreshes last_seen_tick, severity, resolved) instead of replacing it; the resolve_blocker 50-tick timeout ends the project ABANDONED with ended_by BLOCKER_TIMEOUT through end_record, increments the blocker failure_count and suppresses it for 100 x 2^(failures-1) ticks, capped at 800; a congestion blocker whose suppression is over and that was not re-inferred for 200 ticks is removed (typed event BLOCKER_REMOVED, reason QUIET_SPELL) and a live resolve_blocker project naming it ends COMPLETED with ended_by BLOCKER_CLEARED.'
+  status: verified
+  priority: P1
+  legacy_evidence: null
+  v2_evidence: 'src/core/strategic.py (BlockerState.failure_count and last_seen_tick, ProjectEnd.BLOCKER_TIMEOUT and BLOCKER_CLEARED, BlockerRemoval, blocker_timeout_suppression, merge_inferred_blocker, quiet_blockers), src/systems/strategic_systems/intelligence.py (the inference merge, quiet_spell_update, the resolve_blocker timeout branch), src/core/update_models/strategic.py (blockers_removed_for), src/observability/event_shapers.py (BLOCKER_REMOVED), src/engine/checkpoint_fields.py, docs/mechanics/04_strategic_cognition.md section 4, docs/guidelines/intentional_divergences.md Section 2.214.'
+  proof_type: regression
+  test_path: tests/unit/strategic/test_blocker_lifecycle.py, tests/unit/engine/test_checkpoint_fields.py
+  divergence_note: See docs/guidelines/intentional_divergences.md Section 2.214.
+  support_boundary: 'Unit rows only until the own-job counts (B1-B6, not vacuous) on the three gate worlds, s42, 5000 ticks are read. 100, 800 and 200 are BALANCE values. The material (resource) and social (suitable_partner) blockers are out of scope (own ticket).'
