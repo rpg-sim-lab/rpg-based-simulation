@@ -353,9 +353,9 @@ src/core/ (entity identity), content schemas
 - 2026-11-17 (rpg-planner relay of rpg-designer, step 3): (1) B4 `SPAWN_KIND_CATALOG_FACTION` needs NO change in step 3: it reads the spawner's label argument, never an entity's kind; at step 4 it is looked up with the occupation argument, same keys (this corrects 665b9718's listing). (2) The rescan of src/certification, src/perf and src/testing is accepted (no entity-kind reader there; the one non-builder hit, perf/scenarios.py:459, is a building kind); the moves list and the two renames (`BOSS_ENTITY_KINDS` to `BOSS_ENTITY_OCCUPATIONS`, `SPAWN_CADENCE_EXCLUDED_KINDS` to `SPAWN_CADENCE_EXCLUDED_OCCUPATIONS`, a name only) match the rulings. (3) Fixtures: adding `occupation=` equal to the fixture's kind literal wherever a hand-built test entity reaches a moved reader is OK with NO assertion changes; if a test still fails after its fixture has occupation, it is a reader that is not a plain label compare: stop and report.
 
 ## Test Summary
-Step 2 of 5 is closed as its own child ticket, TCK-20261117-AN-ENTITY-CARRIES-ITS-OCCUPATION-LABEL-AND-ONE-SPECIES-READ-SPECIES-OF (Test Summary, Files Changed and Completion Summary live there). Steps 3-5 are open.
+Steps 2 and 3 are closed as their own child tickets (TCK-20261117-AN-ENTITY-CARRIES-ITS-OCCUPATION-LABEL-AND-ONE-SPECIES-READ-SPECIES-OF and TCK-20261117-THE-LABEL-READERS-READ-OCCUPATION-NOT-KIND). Steps 4 and 5 are open.
 
 ## Files Changed
-Step 2: see TCK-20261117-AN-ENTITY-CARRIES-ITS-OCCUPATION-LABEL-AND-ONE-SPECIES-READ-SPECIES-OF. Steps 3-5 open.
+Steps 2 and 3: see the child tickets. Steps 4 and 5 open.
 
 ## Completion Summary
