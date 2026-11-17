@@ -484,6 +484,11 @@ the world, which contradicts SURV-03 (a need is modeled for its real, causal con
     undeclared until a Rule declares it. The fixed tether is a leftover of the monster role,
     against decision 46. Milestone 1 replaces it with a home range taken from the kind's
     properties, and until then the food sits inside it.
+    - **Amendment, the home range (ruled by rpg-designer, 2026-11-17, memo row 57; Milestone 1's
+      retirement stage R1).** A kind that keeps a home declares a home range (none, small, medium,
+      large). A subject strays from it for a need or a chase and drifts back when nothing pulls it
+      away: a low-utility strategic return, never a per-tick tactical snap. No fixed leash, and no
+      role or spawn path sets the range. Home is the camp or den position. M1 items 2-6 rule text, drafts/rpg-designer-m1-items-2-6-rule-text.md sha256 800027b5; kernel spec docs/plans/systemic_world/m1_kernel_spec_items_2_6.md.
     - **Evidence: SUPPORTED for goblin camps since #505 (`20f67b744`)**, divergence 2.106. The
       module `goblin_camp_forage` places one berry thicket within 4 tiles of each camp, nine
       composed worlds use it, and `src/worldbuilding/camp_food.py` reports any camp with no food
@@ -1017,6 +1022,27 @@ the escalation and the present-threat gate shipped in #414 (`c2e18b182`).** Lane
   it can pay;
 - a hungry subject with no gold, no food and no step it can take stays hungry and is reported as
   having no open way.
+
+---
+
+## SURV-08 — Each kind declares when it is active; a subject prefers to rest outside its active period, as a pull, never a schedule that overrides a pressing need or a present threat
+
+> A kind is active by day, by night, or at any hour. Outside its active period a subject's pull
+> to rest is stronger; inside it, weaker. It is one pull among the others (SURV-07): a pressing
+> need or a present threat still wins.
+
+**Disposition: ACCEPT — ruled by rpg-designer, 2026-11-17 (RPG track), roadmap §12.2 "activity
+period"; Milestone 1's activity-period item (TCK-20261109-M1-ACTIVITY-PERIOD-AND-HAZARD-TOLERANCE).**
+
+- **Amendment, the clock (decided by the owner, 2026-11-17, Q1(a), owner answers #715 6937049127 (recommended option on every question)).** Time of day is one
+  helper, `world_time % TICKS_PER_DAY`; every night reader uses it
+  (TCK-20261115-THE-NIGHT-CHECK-READS-RAW-WORLD-TIME-SO-EVERY-TICK-AFTER-1800-IS-NIGHT).
+- **Amendment, the periods (decided by the owner, 2026-11-17, Q5(a)).** Diurnal: human, elf, dwarf,
+  orc, lizardfolk, small_plant_eater, dragonkin. Nocturnal: goblin, wolf, spider, undead, troll.
+  Any hour: slime, spirit.
+- **Repository evidence: MISSING (2026-11-17).** No kind declares a period; one night window applies
+  to every kind (roadmap §12.1), and the night checks read the raw clock, so every tick after 1800
+  counts as night. Fixed in Milestone 1: M1 items 2-6 rule text, drafts/rpg-designer-m1-items-2-6-rule-text.md sha256 800027b5; kernel spec docs/plans/systemic_world/m1_kernel_spec_items_2_6.md.
 
 ---
 
