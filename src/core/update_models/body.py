@@ -148,6 +148,7 @@ class LifecycleUpdate:
     birth_tick_set: Optional[int] = None
     birth_city_id_set: Optional[int] = None
     reproduction_cooldowns_add: Dict[int, int] = field(default_factory=dict)  # per-key upsert, NOT wholesale replace
+    reproduction_cooldowns_remove: tuple[int, ...] = ()  # partner ids dropped before the adds apply; an absent id is a no-op
     genetic_profile_set: Optional[GeneticProfile] = None
 
     def is_noop(self) -> bool:
@@ -158,7 +159,7 @@ class LifecycleUpdate:
                 not self.heirlooms_add and self.parent_a_entity_id_set is None and
                 self.parent_b_entity_id_set is None and not self.dependent_entity_ids_add and
                 self.birth_tick_set is None and
-                self.birth_city_id_set is None and not self.reproduction_cooldowns_add and
+                self.birth_city_id_set is None and not self.reproduction_cooldowns_add and not self.reproduction_cooldowns_remove and
                 self.genetic_profile_set is None)
 
     def merge(self, other: LifecycleUpdate) -> LifecycleUpdate:
@@ -172,6 +173,8 @@ class LifecycleUpdate:
         if other.dependent_entity_ids_add: changes["dependent_entity_ids_add"] = self.dependent_entity_ids_add + other.dependent_entity_ids_add
         if other.reproduction_cooldowns_add:
             changes["reproduction_cooldowns_add"] = {**self.reproduction_cooldowns_add, **other.reproduction_cooldowns_add}
+        if other.reproduction_cooldowns_remove:
+            changes["reproduction_cooldowns_remove"] = tuple(sorted({*self.reproduction_cooldowns_remove, *other.reproduction_cooldowns_remove}))
         return replace(self, **changes)
 
 

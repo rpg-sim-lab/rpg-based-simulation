@@ -752,6 +752,27 @@ def test_lifecycle_patch_apply_writes_birth_fields_through_authoritative_path():
     assert baseline_lifecycle.parent_a_entity_id is None
 
 
+def test_cooldown_remove_applies_before_add_and_ignores_absent_keys():
+    """reproduction_cooldowns_remove drops partner ids before the adds apply, so a same-update re-add survives, and an id the map does not hold is a no-op."""
+    body = V2EntityBuilder(1).location(0.0, 0.0).lifecycle(reproduction_cooldowns={5: 90, 6: 400, 7: 50}).build()
+    state = AuthoritativeState(tick=100, seed=42, entities={1: body})
+    life_upd = LifecycleUpdate(reproduction_cooldowns_remove=(5, 7, 99), reproduction_cooldowns_add={7: 700})
+    update = StateUpdate(entity_updates={1: EntityUpdate(entity_id=1, lifecycle=life_upd)})
+
+    next_state = ApplyPath.apply_generation(state, update, 101, 101)
+
+    assert next_state.entities[1].lifecycle.reproduction_cooldowns == {6: 400, 7: 700}
+    assert state.entities[1].lifecycle.reproduction_cooldowns == {5: 90, 6: 400, 7: 50}
+
+
+def test_cooldown_remove_counts_for_noop_and_merge_unions_the_lists():
+    assert not LifecycleUpdate(reproduction_cooldowns_remove=(3,)).is_noop()
+    merged = LifecycleUpdate(reproduction_cooldowns_remove=(3, 9)).merge(LifecycleUpdate(reproduction_cooldowns_remove=(9, 4)))
+    assert merged.reproduction_cooldowns_remove == (3, 4, 9)
+    kept = LifecycleUpdate(reproduction_cooldowns_remove=(3,), reproduction_cooldowns_add={1: 10}).merge(LifecycleUpdate(reproduction_cooldowns_add={2: 20}))
+    assert kept.reproduction_cooldowns_remove == (3,) and kept.reproduction_cooldowns_add == {1: 10, 2: 20}
+
+
 def test_builder_birth_record_path_two_parent_case():
     """birth_record() populates all new Lifecycle fields exactly as passed for a two-parent
     birth."""
