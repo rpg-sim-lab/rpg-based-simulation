@@ -37,6 +37,8 @@ Code read on main dca5a8dbb by rpg-planner (no run):
 
 SECOND TRIGGER (rpg-planner-ubuntu's cause read, relayed 2026-11-18; rpg-planner confirmed the code on main dca5a8dbb): a group member with NO help need also re-decides every tick. The skip test lets an entity through when `identity.group_id is not None`, and `select_for_own_needs` then returns SOLO with trace reason "No help needs detected." (services.py ~:180-189), and the phase writes last_cooperation_decision again. Births head: entities 10 and 28 are in group 10018 (formed t918, live at t1000), so this trigger, not a standing need, may be the whole cause there. Main: entity 18 emits 460 per-tick events while in groups.
 
+DESIGNER NOTE (rpg-designer side note (a), relayed by lead-planner-u24 on 2026-11-18, report-only): the event side is an event-on-no-change defect at P2. cooperation_event should be emitted only when the decision changes. This is folded into this ticket because it is the same code path as the second trigger. Step 2 still rules the decision side: whether to re-decide, and what a grouped subject with no need holds.
+
 Whether SOLO leads to any action, and why the two subjects' need never clears, is NOT read. That is step 1.
 
 ## Scope
@@ -51,6 +53,7 @@ Whether SOLO leads to any action, and why the two subjects' need never clears, i
 
 ## Acceptance Criteria
 - A group member with no help need doesn't re-emit SOLO every tick. A test pins it.
+- cooperation_event is emitted only when a subject's decision changes (rpg-designer). A test pins that an unchanged decision emits nothing.
 - No subject emits the same cooperation posture on consecutive ticks unless its inputs changed, or the ruled hold rule allows it. A test pins it.
 - The step 1 table is delivered, and the cause is named before the fix.
 
