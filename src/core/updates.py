@@ -96,8 +96,7 @@ class NavigationUpdate:
         if other.path_set is not None: changes["path_set"] = other.path_set
         if other.moved_recently_set is not None: changes["moved_recently_set"] = other.moved_recently_set
         if other.movement_mode_set is not None: changes["movement_mode_set"] = other.movement_mode_set
-        if other.failure_reason is not None: changes["failure_reason"] = other.failure_reason
-        if other.failure_reason_clear: changes["failure_reason_clear"] = True
+        changes.update(other._failure_changes())
         if other.clear_target: changes["clear_target"] = True
         if other.clear_path: changes["clear_path"] = True
         if other.wait_count_delta != 0: changes["wait_count_delta"] = self.wait_count_delta + other.wait_count_delta
@@ -107,6 +106,10 @@ class NavigationUpdate:
         if other.step_ready_tick_set is not None: changes["step_ready_tick_set"] = other.step_ready_tick_set
         changes.update(other._lodging_changes())
         return replace(self, **changes)
+
+    def _failure_changes(self) -> Dict[str, Any]:
+        """What a merge takes from this update for the failure fields: the code if one is set, and the clear flag (a successful step; ``NavigationPatch`` lets a code win over the clear)."""
+        return {**({"failure_reason": self.failure_reason} if self.failure_reason is not None else {}), **({"failure_reason_clear": True} if self.failure_reason_clear else {})}
 
     def _lodging_changes(self) -> Dict[str, Any]:
         """What a merge takes from this update for the lodging fields (F3): the claim's building, and the leave flag."""
