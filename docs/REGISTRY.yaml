@@ -7986,6 +7986,19 @@
   - content
   last_verified: '2026-10-09'
 - type: ticket
+  path: agent-working/tickets/todos/TCK-20261118-QUALITY-SCORES-REWARD-SILENCE-OVER-LATE-ACTIVITY.md
+  ticket_id: TCK-20261118-QUALITY-SCORES-REWARD-SILENCE-OVER-LATE-ACTIVITY
+  title: Quality pillar scores rate a world that goes silent, or never acts, above
+    one that keeps acting or acts late
+  tier: standard
+  ticket_type: bug
+  date: '2026-11-18'
+  related_code_areas:
+  - src/simulation_quality/quality_report.py, src/simulation_quality/pillar_accumulator.py,
+    src/simulation_quality/scorers/, src/observability/event_shapers.py
+  artifact_files: []
+  tags: []
+- type: ticket
   path: agent-working/tickets/todos/TCK-20261118-RESOLVE-PENDING-INFORMATION-PICKS-BY-DICT-INSERTION-ORDER.md
   ticket_id: TCK-20261118-RESOLVE-PENDING-INFORMATION-PICKS-BY-DICT-INSERTION-ORDER
   title: resolve_pending_information picks a population's actor by dict insertion
@@ -10706,6 +10719,9 @@
   related_code_areas: []
   artifact_files:
   - agent-working/stored_artifacts/TCK-20261109-M1-BASIC-WILD-BIRTHS-FOR-EVERY-LIVING-KIND/rpg_designer_births_answers_2026-11-17.md
+  - agent-working/stored_artifacts/TCK-20261109-M1-BASIC-WILD-BIRTHS-FOR-EVERY-LIVING-KIND/rpg_designer_ubuntu_births_grade_predictions_2026-11-18.md
+  - agent-working/stored_artifacts/TCK-20261109-M1-BASIC-WILD-BIRTHS-FOR-EVERY-LIVING-KIND/rpg_designer_ubuntu_births_grade_predictions_correction_2026-11-18.md
+  - agent-working/stored_artifacts/TCK-20261109-M1-BASIC-WILD-BIRTHS-FOR-EVERY-LIVING-KIND/rpg_designer_ubuntu_births_grade_trace_ruling_2026-11-18.md
   - agent-working/stored_artifacts/TCK-20261109-M1-BASIC-WILD-BIRTHS-FOR-EVERY-LIVING-KIND/rpg_designer_ubuntu_births_placement_review_2026-11-18.md
   - agent-working/stored_artifacts/TCK-20261109-M1-BASIC-WILD-BIRTHS-FOR-EVERY-LIVING-KIND/rpg_designer_ubuntu_births_rulings_2026-11-17.md
   - agent-working/stored_artifacts/TCK-20261109-M1-BASIC-WILD-BIRTHS-FOR-EVERY-LIVING-KIND/rpg_designer_ubuntu_births_rulings_d3_picks_2026-11-18.md
