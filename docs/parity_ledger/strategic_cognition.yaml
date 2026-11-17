@@ -4728,3 +4728,13 @@
   test_path: tests/unit/strategic/test_suspension_expiry.py, tests/unit/engine/test_checkpoint_fields.py
   divergence_note: See docs/guidelines/intentional_divergences.md Section 2.212.
   support_boundary: 'Unit rows plus the own-job counts at 67b507f8c: 3 gate worlds x s42 x 5000 ticks, spied and plain twin (hashes equal, PINNED, no exceptions, no logging errors): L1 = L2 = L3 = L4 = 0, SUSPENSION_EXPIRED 126 / 60 / 60 (frontier_living_world / urban_political / crowded_frontier), oldest SUSPENDED 218 < bar 219 (TTL 200 + cadence 20 - 1). 200 is a BALANCE value; the harm join is withdrawn. evaluate_all_strategic_intents has no production caller and skips the pass (TCK-20261117-EVALUATE-ALL-STRATEGIC-INTENTS-IS-DEAD-CODE-THAT-SKIPS-THE-SUSPENSION-EXPIRY).'
+- id: STRAT-351
+  text: 'TCK-20261115-THE-NIGHT-CHECK-READS-RAW-WORLD-TIME-SO-EVERY-TICK-AFTER-1800-IS-NIGHT (SURV-08 clock amendment, memo row 98 Q1, divergence 2.209): night is the night half of the time of day (world_time % 2400: ticks 1800-2399 and 0-599), so tick 2400+k is classified as tick k. The sleep bias (SleepScorer +30, routine sleep urgency +0.3, routine sleep boost x2) applies in the night half of every day; the old raw-clock rule agrees with this below t=3000, and from t=3000 it counted every tick as night.'
+  status: verified
+  priority: P1
+  legacy_evidence: null
+  v2_evidence: 'src/core/calendar.py (time_of_day, is_night), src/ai/goals/scorers.py (SleepScorer), src/systems/world_systems/routine.py (evaluate_biological_needs, get_routine_utility_boost), docs/mechanics/04_strategic_cognition.md Tier 2 Biological, docs/guidelines/intentional_divergences.md Section 2.209.'
+  proof_type: regression
+  test_path: tests/unit/core/test_time_of_day.py
+  divergence_note: See docs/guidelines/intentional_divergences.md Section 2.209.
+  support_boundary: 'Unit rows: the helper at ticks 0, 599, 600, 1799, 1800, 2399, 2400, 2999, 3000 and 4200; night is 1200 of every 2400 ticks; the three readers agree at t and t plus whole days; no raw night literal in src outside calendar.py.'

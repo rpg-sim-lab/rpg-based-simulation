@@ -585,7 +585,7 @@ class StrategicIntelligenceSystem:
             if should_run(state.tick, e_id, cadence.concern_evaluation):
                 # Combine all routine evaluation logic
                 routine_concerns = (
-                    RoutineService.evaluate_biological_needs(entity, state.tick % 2400) +
+                    RoutineService.evaluate_biological_needs(entity, state.world_time) +
                     RoutineService.evaluate_environmental_concerns(entity) +
                     RoutineService.evaluate_anchored_behavior(entity, state)
                 )
