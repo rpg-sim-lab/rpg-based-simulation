@@ -22,9 +22,11 @@ Computed at the births branch head from `paired.WORLDS` compiled at seed 42 (see
 | spider | 50/14 (frontier only) | cave_spider (50/14) | 0.0 | none | chosen |
 | orc | 150/18 (crowded only) | orc_brute (150/18) | 0.0 | orc_warchief excluded (leader) | chosen |
 | small_plant_eater | 20/3 (frontier only) | wild_small_plant_eater (20/3) | 0.0 | none | chosen |
-| dwarf | no t0 reference | dwarven_hunter (95/13) | n/a | none | single option, no t0 reference; kept pending the no-t0 ruling |
-| troll | no t0 reference | swamp_troll (260/28) | n/a | none | single option, no t0 reference; kept pending the no-t0 ruling |
-| elf | no t0 reference | NOT PICKED (forest_ranger 95/13 or forest_druid 85/4) | n/a | | held: elf has no reproduction_profile in content until ruled, so no elf births |
-| lizardfolk | no t0 reference | NOT PICKED (lizardfolk_scout 70/18 or lizardfolk_shaman 70/14) | n/a | | held: no reproduction_profile until ruled |
+| dwarf | no t0 reference | PLACEHOLDER (only rule-1 option: dwarven_hunter 95/13; provisional: no t0 reference) | n/a | none | rule 5: no t0 reference, not picked; placeholder here, nothing in content YAML |
+| troll | no t0 reference | PLACEHOLDER (only rule-1 option: swamp_troll 260/28; provisional: no t0 reference) | n/a | none | rule 5: no t0 reference, not picked; placeholder here, nothing in content YAML |
+| elf | no t0 reference | NOT PICKED; rule-1 options: forest_ranger 95/13, forest_druid 85/4 | n/a | | rule 5: no reproduction_profile in content until rpg-designer-ubuntu fills the pick, so no elf births |
+| lizardfolk | no t0 reference | NOT PICKED; rule-1 options: lizardfolk_scout 70/18, lizardfolk_shaman 70/14 | n/a | | rule 5: no reproduction_profile until rpg-designer-ubuntu fills the pick |
 
 No species is more than 50% off t0 (disclosure threshold): none of the chosen with a t0 reference is. dwarf and troll cannot be measured (no t0 reference); troll swamp_troll is 260 hp/28 atk against humans at about 94/10.
+
+Rule 5 (b5554f6b): elf, dwarf, troll and lizardfolk have no t0 body in any gate world, so no parents there and no M1 figure or bar moves. Their species.yaml carries no reproduction_profile or newborn_archetype until the designer fills the pick (marked provisional: no t0 reference); the rule-2 revisit goes on the births name-branch/retirement backlog line and the PR lists them with the Q6 territory line and the interim newborn role row.
