@@ -94,3 +94,12 @@ tags: []
 - **Cause, if the control matches:** the same post-split trajectory divergence as COGNITION. A different set of kills gives different negative cross-faction bond swings, and that gives one transition.
 - The -36 comes from the scorer artefacts on scope line 2 (diplomacy_dormant on a late first transition) and from the events that follow it. No births defect is shown.
 - Tension and bond values aren't logged, so the exact swing is not traced. I don't require that trace for a cause ruling.
+
+## FINAL (control result from rpg-planner-ubuntu)
+- **The chance-0 control matches main 3aafdb383 in both worlds.** The births-off control was head 1f2cd368b with the 4 profiles' birth_chance_per_check set to 0.0, s42, 1000 ticks, then restored.
+  - start and final hash are equal: urban af1807fe858da5eb, hero 1861807b558c5425;
+  - the normalised events are byte-identical: urban 6256 lines, hero 3646 lines;
+  - positive control: main against births-on head reads DIFFERENT, and main against main reads identical.
+- **Ruling:** the SOCIAL, COGNITION, WORLD and FACTION causes above are final, and births alone cause the moves. No hook-off run is needed.
+- **Not isolated, and not required for the cause ruling:** which birth-time effect (placement tile, ids or newborn presence) tips the first divergence at about tick 140.
+- Whether this is enough for rule (a) is lead-planner-u24's call.
