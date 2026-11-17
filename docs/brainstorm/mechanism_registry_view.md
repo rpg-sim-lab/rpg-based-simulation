@@ -6,7 +6,7 @@ All 110 mechanisms, one row each, sorted by priority (`layer weight × transitiv
 
 **Node-set note**: this is the first view generated after `TCK-20260916-MECHANISM-REGISTRY-COMPLETENESS-PASS` confirmed the registry's own node set was incomplete (75 mechanisms, atlas-only seed) and registered 11 real mechanisms the original seed never carded (now 86, for `src/domains/`/`src/systems/` — `src/engine/`/`src/core/`/`src/ai/` remain out of that pass's scope). Any earlier figure computed against the 75-mechanism set — the prior unverified count, priority ranking, or dependency-hub count — was computed against a node set later found to be missing 11 real mechanisms and should be treated as superseded by this view.
 
-**50 runtime-verified, 52 static (`code_trace`)-verified, 8 unverified** — of 110 total.
+**49 runtime-verified, 53 static (`code_trace`)-verified, 8 unverified** — of 110 total.
 
 | Mechanism | Layer | State | Evidence | Verdict | Priority | Transitive Dependents |
 |---|---|---|---|---|---|---|
@@ -70,11 +70,11 @@ All 110 mechanisms, one row each, sorted by priority (`layer weight × transitiv
 | `faction_raid` | faction | gap | runtime | observed | 0 | 0 |
 | `fame` | world | done | static | observed | 0 | 0 |
 | `fidelity_drift` | world | done | static | observed | 0 | 0 |
-| `genetics_aptitude` | entity | gated | static | observed | 0 | 0 |
+| `genetics_aptitude` | entity | partial | static | observed | 0 | 0 |
 | `gods_pantheon_blessings` | world | gap | unverified | unverified | 0 | 0 |
 | `group_coordination` | group | partial | static | observed | 0 | 0 |
 | `guilds` | group | partial | static | observed | 0 | 0 |
-| `humanoid_reproduction` | entity | gated | runtime | observed | 0 | 0 |
+| `humanoid_reproduction` | entity | partial | static | observed | 0 | 0 |
 | `information_trust_deception` | entity | orphan | runtime | observed | 0 | 0 |
 | `intent_requirement_gating` | entity | done | runtime | inconclusive | 0 | 0 |
 | `interaction_channeling` | entity | done | static | observed | 0 | 0 |

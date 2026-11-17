@@ -3138,7 +3138,7 @@ mechanisms:
         ABSENCE-VERDICTS-NEED-RUNTIME-EVIDENCE/runtime_probe_output_1000ticks.jsonl (probe:
         runtime_probe.py, same folder). Bound to CampState itself 2026-09-20
         (TCK-20260920-MECHANISM-WORLD-FACTION- REGION-GROUP-UNBOUND-CLAIMS-RESOLUTION).
-        EntityGenerator binding removed by TCK-20261109-M1-BASIC-WILD-BIRTHS-FOR-EVERY-LIVING-KIND: the flag-OFF nest-spread offspring path it served was deleted with the M1 births, and CampService.process_camps calls nothing on its generator argument (D70, 2.125: a camp spawns nothing).
+        EntityGenerator binding removed by TCK-20261109-M1-BASIC-WILD-BIRTHS-FOR-EVERY-LIVING-KIND: the flag-OFF nest-spread offspring path it served was deleted with the M1 births, and CampService.process_camps takes no generator argument any more (D70, 2.125: a camp spawns nothing).
   - id: nest
     layer: region
     summary: "Creature nests are proposed but not yet built."
@@ -3669,12 +3669,14 @@ mechanisms:
     implemented_by:
       - src/world/births.py::BirthService
       - src/core/spawn_source.py::SpawnSource
+      - src/systems/world_systems/generator.py::EntityGenerator
     verified:
       instrument: code_trace
       verdict: observed
       date: "2026-11-18"
       note: >-
         Re-bound by TCK-20261109-M1-BASIC-WILD-BIRTHS-FOR-EVERY-LIVING-KIND (v2.2 Q5): src/world/births.py::BirthService replaces the retired src/world/reproduction_humanoid.py::HumanoidReproductionService, and the ENABLE_REPRODUCTION_HUMANOID_PATH flag is removed, so births run unflagged. Code trace: WorldDynamicsSystem.resolve_dynamics (src/engine/world_dynamics.py) calls BirthService.process_births every cadence.births ticks (30); the world_dynamics phase passes no feature flag and is must_run_every_tick (phase_graph.py). Runtime evidence is the births own-job; this entry stays `partial` until that is recorded. Earlier record (2026-09-30, corpus_run): 0 calls under the retired flag.
+        BirthService draws each birth from the world_dynamics EntityGenerator's seeded RNG (generator.rng, Domain.SPAWN) and allocates each newborn's id and spawn position through it (get_next_id, free_spawn_position), so EntityGenerator is bound here; the camp entry held its last binding until the nest-spread offspring path was deleted by TCK-20261109-M1-BASIC-WILD-BIRTHS-FOR-EVERY-LIVING-KIND.
         Pairs existing adults into a tracked-parent birth (atlas idea 32). `aging_death`/`succession` are lifecycle exits; `demographic_cohort_cycle` is aggregate.
 
   - id: role_model_imitation

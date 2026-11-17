@@ -3,7 +3,7 @@
 import pytest
 
 from src.core.builder import V2EntityBuilder
-from src.core.enums import EntityRole
+from src.core.enums import Domain, EntityRole
 from src.core.spawn_source import SpawnKind
 from src.core.state import AuthoritativeState, LifeStage, RegionState
 from src.core.updates import StateUpdate
@@ -181,3 +181,20 @@ def test_the_region_nudge_counts_newborns_not_pairs(monkeypatch):
     region = RegionState(id="town", name="Town", kind="town", bounds=(0, 0, 100, 100), population_cohorts={})
     update = _run(_state(_body(1), _body(2), regions={"town": region}))
     assert len(update.entities_add) == 2 and update.world_updates["town"].population_young_births_delta == 2
+
+
+def _draw(seed, tick, mother_id=1):
+    """The birth draw as BirthService makes it, from the tick's generator built by the one factory."""
+    state = AuthoritativeState(tick=tick, seed=seed, entities={mother_id: _body(mother_id)}, next_entity_id=mother_id + 1)
+    return EntityGenerator.for_state(state).rng.get_float(Domain.SPAWN, tick, mother_id, sub_id=births.BIRTH_DRAW_SUB_ID)
+
+
+def test_two_world_seeds_give_different_birth_draws_for_the_same_tick_and_mother():
+    assert _draw(42, 30) == _draw(42, 30)
+    assert _draw(42, 30) != _draw(43, 30)
+
+
+def test_the_birth_draw_does_not_alias_across_seed_and_tick_pairs_that_share_a_sum():
+    # DeterministicRNG: base = seed + tick, then base ^ (domain << 48) ^ (tick << 32) ^ (id << 16) ^ sub_id; the tick term separates equal bases.
+    assert 42 + 60 == 72 + 30
+    assert _draw(42, 60) != _draw(72, 30)
