@@ -3362,6 +3362,18 @@
   - documentation
   - schema
 - type: doc
+  path: docs/plans/systemic_world/m1_kernel_spec_items_2_6.md
+  title: 'Milestone 1 kernel spec: items 2-6'
+  status: active
+  layer: architecture
+  authority: P1
+  audience: agent
+  tags:
+  - architecture
+  - world
+  - roadmap
+  last_verified: '2026-11-17'
+- type: doc
   path: docs/plans/test_architecture/phase2_social_scale_out.md
   title: 'Test Architecture Phase 2: Scale-Out to Social (plan)'
   status: active
@@ -8003,6 +8015,60 @@
   tags:
   - governance
 - type: ticket
+  path: agent-working/tickets/done/TCK-20261117-RPG-IMPLEMENTER-SEATS-RISE-TO-FOUR.md
+  ticket_id: TCK-20261117-RPG-IMPLEMENTER-SEATS-RISE-TO-FOUR
+  title: The rpg-implementer role allows four sessions, so the owner's fourth RPG
+    lane (rpg-implementer-4) can launch
+  tier: hotfix
+  ticket_type: chore
+  date: '2026-11-17'
+  related_code_areas:
+  - registries/session_roles.yaml
+  artifact_files: []
+  tags: []
+- type: ticket
+  path: agent-working/tickets/todos/TCK-20261117-BIBLE-02-KILL-REWARD-TABLE-OMITS-THE-HOSTILE-FIRST-STEP.md
+  ticket_id: TCK-20261117-BIBLE-02-KILL-REWARD-TABLE-OMITS-THE-HOSTILE-FIRST-STEP
+  title: Bible 02's kill-reward table omits the hostile-first step
+  tier: standard
+  ticket_type: repair
+  date: '2026-11-17'
+  related_code_areas: []
+  artifact_files: []
+  tags: []
+- type: ticket
+  path: agent-working/tickets/todos/TCK-20261117-INTELLIGENCE-RAW-TIME-PATHS-ARE-UNCALLED.md
+  ticket_id: TCK-20261117-INTELLIGENCE-RAW-TIME-PATHS-ARE-UNCALLED
+  title: intelligence.py :912 and :1005-1016 are uncalled paths that read raw world
+    time
+  tier: standard
+  ticket_type: chore
+  date: '2026-11-17'
+  related_code_areas: []
+  artifact_files: []
+  tags: []
+- type: ticket
+  path: agent-working/tickets/todos/TCK-20261117-LEAD-CREATE-AND-RESOURCE-SITE-RECORD-HAVE-NO-CALLER.md
+  ticket_id: TCK-20261117-LEAD-CREATE-AND-RESOURCE-SITE-RECORD-HAVE-NO-CALLER
+  title: LeadService.create_lead and SpatialMemory.record_resource_site have no caller
+  tier: standard
+  ticket_type: chore
+  date: '2026-11-17'
+  related_code_areas: []
+  artifact_files: []
+  tags: []
+- type: ticket
+  path: agent-working/tickets/todos/TCK-20261117-NEAREST-SERVICE-IS-PASSED-A-REGION-ID-AS-ITS-SUBJECT.md
+  ticket_id: TCK-20261117-NEAREST-SERVICE-IS-PASSED-A-REGION-ID-AS-ITS-SUBJECT
+  title: TownNavigation.get_nearest_service is passed a region id as its subject,
+    so near_service probably never matches
+  tier: standard
+  ticket_type: bug
+  date: '2026-11-17'
+  related_code_areas: []
+  artifact_files: []
+  tags: []
+- type: ticket
   path: agent-working/tickets/todos/TCK-20261117-PAY-DOWN-THE-NINE-LINE-CEILINGS-THE-OCCUPATION-FIELD-RAISED.md
   ticket_id: TCK-20261117-PAY-DOWN-THE-NINE-LINE-CEILINGS-THE-OCCUPATION-FIELD-RAISED
   title: Pay down the nine code-health line ceilings that the occupation field raised
@@ -8012,6 +8078,37 @@
   date: '2026-11-17'
   related_code_areas:
   - _fast_replace_identity
+  artifact_files: []
+  tags: []
+- type: ticket
+  path: agent-working/tickets/todos/TCK-20261117-RECOVER-SCORER-FALLS-BACK-TO-THE-TOWN-CENTRE-AT-ANY-DISTANCE.md
+  ticket_id: TCK-20261117-RECOVER-SCORER-FALLS-BACK-TO-THE-TOWN-CENTRE-AT-ANY-DISTANCE
+  title: RecoverScorer falls back to the town centre at any distance
+  tier: standard
+  ticket_type: bug
+  date: '2026-11-17'
+  related_code_areas: []
+  artifact_files: []
+  tags: []
+- type: ticket
+  path: agent-working/tickets/todos/TCK-20261117-ROUTINE-BOOSTS-KEYED-SLEEP-AND-EATING-NEVER-MATCH-A-GOAL-KIND.md
+  ticket_id: TCK-20261117-ROUTINE-BOOSTS-KEYED-SLEEP-AND-EATING-NEVER-MATCH-A-GOAL-KIND
+  title: The routine boosts keyed "sleep" and "eating" never match a GoalKind value,
+    so they are dead
+  tier: standard
+  ticket_type: bug
+  date: '2026-11-17'
+  related_code_areas: []
+  artifact_files: []
+  tags: []
+- type: ticket
+  path: agent-working/tickets/todos/TCK-20261117-WEATHER-PERCEPTION-MULTIPLIER-HAS-NO-READER.md
+  ticket_id: TCK-20261117-WEATHER-PERCEPTION-MULTIPLIER-HAS-NO-READER
+  title: Weather's perception multiplier is written but never read
+  tier: standard
+  ticket_type: bug
+  date: '2026-11-17'
+  related_code_areas: []
   artifact_files: []
   tags: []
 - type: ticket
