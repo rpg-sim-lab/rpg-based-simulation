@@ -99,6 +99,16 @@ See the child tickets.
 - 2026-11-16 (rpg-planner): M1-base RECORDED at 9c398a068 (#715 6912633288); gate reference re-baselined to v2 from main run 43895014837 (memo row 97; owner 6920465555, 6920528237). Item order on u24 (rpg-designer, under the M1 pace rules, owner 6912138476): kind=species (dispatched, owner 6920334481; step 2 proven neutral, owner GO 6921470279) → coarse bands and the appraisal → honest perception defaults → places from perception and memory → activity period (A' folded in) → hero-as-work. Name-branch retirement in stages: camp tether after places, faction hostility after ubuntu's why-it-fights, hero role after hero-as-work. Ubuntu lane (owner 6916732562): N10, births (code after kind=species step 2 is on main, species read only through species_of()), why-it-fights after kind=species.
 None yet.
 
+- 2026-11-17, MEASUREMENT PLAN (owner rulings on #715): 6936783692 (3 batches) and 6936842047 (5 domain runs) are superseded by 6936893143 (3 PHASES).
+  - Phase 1: implement every item; each PR merges on CI + the hard checks + its own job. The extinction line + liveness are read on the host at each domain boundary (6937306315; S9 scope 6937352120).
+  - Phase 2: RPG-first lifts.
+  - Phase 3: each boundary is measured against the previous one (3x5x5000), then the strict M1 record + the content-alone probe.
+  - Slow corpus grade pins: rule (a), 6941107808.
+- PHASE 1 BOUNDARY LIST. Rules: a boundary is recorded before every domain switch; no ping-pong; neutral steps are their own segments; docs-, ticket- and registry-only PRs ride the open segment.
+  - B0 = bb26e4e5f: main at the start of Phase 1, after #948.
+  - B1 = efba7d95c: #949, kind=species step 3, a NEUTRAL segment B0→B1 (K4 IDENTICAL).
+  - Open segment after B1: none yet. #950 (doc-only) rides it.
+
 ## Test Summary
 
 ## Files Changed
