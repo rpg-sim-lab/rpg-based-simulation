@@ -37,6 +37,7 @@ def _entity(eid: int = 1, trust: dict | None = None, reputation: float = 0.0):
     e.social.trust_history = dict(trust or {})
     e.social.public_reputation = reputation
     e.social.last_cooperation_decision = None
+    e.identity.occupation = "hero"
     return e
 
 

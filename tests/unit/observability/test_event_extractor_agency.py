@@ -30,6 +30,7 @@ def _entity(eid: int = 1):
     e.identity.evolution_level = 1
     e.strategic = MagicMock()
     e.strategic.projects = {}
+    e.identity.occupation = "hero"
     return e
 
 

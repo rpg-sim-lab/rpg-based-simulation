@@ -31,6 +31,7 @@ def test_calamity_intensity_shift():
     from src.core.builder import V2EntityBuilder
     hero = (V2EntityBuilder(1)
         .kind("hero")
+        .identity(occupation="hero")
         .location(5.0, 5.0)
         .identity(faction=Faction.HERO_GUILD)
         .combat(hp=0)

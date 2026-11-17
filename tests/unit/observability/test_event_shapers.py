@@ -25,7 +25,7 @@ def _entity(eid: int = 1, hp: int = 100, max_hp: int = 100, active: bool = True,
     e.kind = kind
     e.combat = MagicMock(hp=hp, max_hp=max_hp, atk=atk, def_stat=def_stat, action_style=action_style)
     e.lifecycle = MagicMock(active=active)
-    e.identity = MagicMock(
+    e.identity = MagicMock(occupation=kind,
         evolution_level=evolution_level,
         role=role,
         properties={"faction_id": faction_id, "species_id": species_id},

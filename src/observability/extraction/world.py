@@ -5,8 +5,9 @@ from __future__ import annotations
 import logging
 from typing import Any
 
+from src.core.species import occupation_of
 from src.core.updates import decode_owner_faction_id_set
-from src.observability.entity_kind_constants import BOSS_ENTITY_KINDS
+from src.observability.entity_kind_constants import BOSS_ENTITY_OCCUPATIONS
 from src.observability.events import SimulationEvent
 from src.observability.extraction.context import ExtractContext
 
@@ -109,7 +110,8 @@ def boss_spawn_events(ctx: ExtractContext) -> list[SimulationEvent]:
     # (TCK-20260806-PUSH-CUTOVER-PHASE2), same rollback pattern.
     for new_ent in ([] if _push_shapers_phase2_active else (getattr(update, "entities_add", None) or [])):
         kind = getattr(new_ent, "kind", None)
-        if kind in BOSS_ENTITY_KINDS:
+        occupation = occupation_of(new_ent)
+        if occupation in BOSS_ENTITY_OCCUPATIONS:
             events.append(SimulationEvent(
                 event_type="boss_spawned", event_category="lifecycle",
                 tick=tick, entity_id=getattr(new_ent, "id", None), severity="WARNING",
@@ -127,7 +129,7 @@ def boss_spawn_events(ctx: ExtractContext) -> list[SimulationEvent]:
                 message="",
                 payload={"milestone": "first_boss_spawned", "kind": kind},
             ))
-        elif kind == "goblin_raider":
+        elif occupation == "goblin_raider":
             events.append(SimulationEvent(
                 event_type="raid_party_spawned", event_category="lifecycle",
                 tick=tick, entity_id=getattr(new_ent, "id", None), severity="WARNING",
