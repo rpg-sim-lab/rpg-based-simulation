@@ -526,6 +526,11 @@ class NavigationComponent:
 
     lodged_in: Optional[int] = None  # F3 (2.155): the building this subject LODGES in (position is its tile, on no tile held); set and cleared only by the apply path; LAST field (an insert is refused by the checkpoint schema check; an append needs a FIELD_RULES row)
 
+    # 2.213 (COMB-356): the bounded give-up for the oscillation way-round. The way-round steps taken on the stored target with no net progress, and the best (lowest) Manhattan
+    # distance to the target seen at those steps. Set and reset only by the navigation patch (movement's apply path): reset when the target changes or clears, and on progress.
+    wayround_count: int = 0
+    wayround_best_distance: Optional[int] = None
+
     def to_canonical_dict(self) -> Dict[str, Any]:
         """The navigation block of the entity's canonical form. `step_ready_tick` (D75) is present only once non-zero, so the form of an
         entity that never stepped is unchanged; `lodged_in` (F3) likewise, only while lodged."""
@@ -550,6 +555,10 @@ class NavigationComponent:
             res["step_ready_tick"] = self.step_ready_tick
         if self.lodged_in is not None:
             res["lodged_in"] = self.lodged_in  # present only while lodged, so the form of a subject that never lodged is unchanged (F3)
+        if self.wayround_count:
+            res["wayround_count"] = self.wayround_count  # present only while a way-round count is open (2.213), so the form of a subject that never needed one is unchanged
+        if self.wayround_best_distance is not None:
+            res["wayround_best_distance"] = self.wayround_best_distance
         return res
 
 

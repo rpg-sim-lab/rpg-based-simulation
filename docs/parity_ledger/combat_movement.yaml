@@ -278,11 +278,11 @@
   status: legacy_verified
   priority: P0
   legacy_evidence: null
-  v2_evidence: Implementation proven via exhaustive checklist audit Phase 1-11
+  v2_evidence: "Implementation proven via exhaustive checklist audit Phase 1-11. Oscillation replan (3 cycles on the looped step): since 2026-11 (divergence 2.213, COMB-356) the rung ladder runs before the replan gives up; the replan's clear_target now clears the stored target."
   proof_type: parity
-  test_path: null
-  divergence_note: null
-  support_boundary: null
+  test_path: tests/unit/movement/test_osc_replan_ladder.py
+  divergence_note: See docs/guidelines/intentional_divergences.md Section 2.213.
+  support_boundary: "The 3-cycle trigger at the movement layer (src/engine/movement.py, the oscillation branch of resolve_move) first looks for a way round the loop and replans only when there is none; the tactical stalemate breaker (STALEMATE_BREAK, tactical.py) is a different trigger and did not fire in the diagnostic cells (bb26e4e5f, 3 cells x 5000 ticks)."
 - id: COMB-021
   text: "`test_high_ground_bonus`: High ground bonus \u2014 Verify High Ground bonus\
     \ applies when attacker is on MOUNTAIN and defender is on FLOOR.."
@@ -626,10 +626,10 @@
   status: verified
   priority: P0
   legacy_evidence: null
-  v2_evidence: Implementation proven via exhaustive checklist audit Phase 1-11
+  v2_evidence: "Implementation proven via exhaustive checklist audit Phase 1-11. Oscillation replan (3 cycles on the looped step): since 2026-11 (divergence 2.213, COMB-356) the rung ladder runs before the replan gives up; the replan's clear_target now clears the stored target."
   proof_type: null
-  test_path: null
-  divergence_note: null
+  test_path: tests/unit/movement/test_osc_replan_ladder.py
+  divergence_note: See docs/guidelines/intentional_divergences.md Section 2.213.
   support_boundary: null
 - id: COMB-053
   text: "`test_reroute_hysteresis`: Reroute hysteresis \u2014 Verify minor reroutes\
@@ -4968,7 +4968,7 @@
     is not reset until that action ends. The effect against the base (stage 1 and stage 2) is recorded in
     divergence 2.206 (Measured). One death traced to this limit: a cornered hold that
     ends on a live attack task, followed up in TCK-20261116-A-CORNERED-HOLD-ENDS-ON-A-LIVE-ACTION-TASK-AND-WALKS-BACK-INTO-THE-FIGHT. Not changed here: the congestion ladder''s reroute rung, the collapsed
-    sleeper''s MOVE_TO walk, the unapplied clear_target flag.'
+    sleeper''s MOVE_TO walk. (The clear_target flag is applied from COMB-356 on.)'
 - id: COMB-354
   text: 'TCK-20261103-A-GROUP-HIT-RECORDS-ONLY-ITS-FIRST-ATTACKER: a simultaneous
     group hit (resolve_multi_attack, called by the opportunity-attack step of MovementSystem.resolve_move)
@@ -5013,3 +5013,33 @@
   support_boundary: 'Only the latest hit is remembered (COMB-354); the window is a
     registered tuning constant, not derived from fight data; timing of the target_score
     hot loop is NOT MEASURED (perf pause #715 6556861718).'
+- id: COMB-356
+  text: 'TCK-20261030-STALEMATE-BREAK-OVERWRITES-A-PROJECT-MOVE-EVERY-TICK: NavigationUpdate.clear_target
+    is applied to the stored target by the navigation patch, next to target_clear
+    (a target_set in the same update still wins); the three writers (the oscillation
+    replan in MovementSystem.resolve_move, ActorValidityPhase, BlacksmithSystem.enforce)
+    now clear it. An oscillation replan (oscillation_count at 3 and the step back
+    onto the tile just left) runs the rung ladder before it gives up: the sidestep
+    around the looped step, else the nearest legal orthogonal neighbour to the target,
+    never the tile just left and never the current tile; found, the subject steps
+    there with the oscillation and wait counters reset and keeps its target; none
+    found, or on the third way-round with no net progress on one target (bound N =
+    2, NavigationComponent.wayround_count and wayround_best_distance, reset on a
+    new or cleared target and on progress), the replan clears target and path.'
+  status: verified
+  priority: P1
+  legacy_evidence: null
+  v2_evidence: src/engine/patches.py (NavigationPatch.apply), src/engine/movement.py
+    (MovementSystem._find_way_round_loop, WAYROUND_LIMIT, the oscillation branch of resolve_move),
+    src/core/state.py (NavigationComponent.wayround_count, wayround_best_distance), src/engine/checkpoint_fields.py
+    (two FIELD_RULES rows), src/replay/fingerprint.py, src/engine/apply.py (the move carries both fields).
+  proof_type: regression
+  test_path: tests/unit/movement/test_osc_replan_ladder.py
+  divergence_note: See docs/guidelines/intentional_divergences.md Section 2.213.
+  support_boundary: 'Paired effect against bb26e4e5f NOT MEASURED yet (own-job counts
+    S1-S3 pending). The diagnostic (3 cells x 5000 ticks) found 1496-2027 oscillation
+    replans per cell that kept their target, up to 403 for one subject; those counts
+    are lower bounds (a spy exception dropped replans labelled LEGAL with a None path).
+    The tactical stalemate breaker was not reproduced there; the way-round tile is
+    chosen locally and may still lengthen the walk. A legal tile near a door two or
+    more steps away is not searched (rungs read only the subject''s four neighbours).'

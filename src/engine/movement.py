@@ -51,6 +51,10 @@ def live_action_style(entity: "EntityState", state_or_context: Any) -> int:
     return style
 
 
+# 2.213 (COMB-356): way-round steps allowed on one target with no net progress before the oscillation replan is the real one (rpg-designer 2026-11-17, N = 2).
+WAYROUND_LIMIT = 2
+
+
 class MovementSystem:
     """ Authoritative handler for grid-based movement in V2. """
 
@@ -105,6 +109,29 @@ class MovementSystem:
             )
             if s_ok:
                 return side_tile
+        return None
+
+    @staticmethod
+    def _find_way_round_loop(
+        entity: EntityState,
+        looped_step: Tuple[float, float],
+        target_pos: Tuple[float, float],
+        state_or_context: Any,
+        move_speed_mult: float,
+    ) -> Optional[Tuple[float, float]]:
+        """The legal tile that gets an A-B oscillation out of the loop, or None: the sidestep around the looped step (3.1), else the nearest legal orthogonal
+        neighbour to the target (3.3), never the tile just left (`looped_step`) and never the current tile."""
+        here = (int(entity.navigation.position[0]), int(entity.navigation.position[1]))
+        side_tile = MovementSystem._find_sidestep(entity, looped_step, target_pos, state_or_context, move_speed_mult)
+        if side_tile is not None and (int(side_tile[0]), int(side_tile[1])) != (int(looped_step[0]), int(looped_step[1])):
+            return side_tile
+        x, y = entity.navigation.position
+        ring = sorted(((x - 1, y), (x + 1, y), (x, y - 1), (x, y + 1)), key=lambda t: LegalityServiceV2.get_manhattan_dist(t, target_pos))
+        for tile in ring:
+            if (int(tile[0]), int(tile[1])) in {here, (int(looped_step[0]), int(looped_step[1]))}:
+                continue
+            if LegalityServiceV2.verify_movement_legality(entity, tile, state_or_context, move_speed_mult=move_speed_mult)[0]:
+                return tile
         return None
 
     @staticmethod
@@ -265,6 +292,8 @@ class MovementSystem:
         wait_delta = 0
         osc_delta = 0
         replan = False
+        wayround_set: Optional[Tuple[int, int]] = None
+        wayround_clear = False
         pending_plan = None
 
         if not success and MovementSystem._has_arrived_beside_unenterable_target(entity, effective_target, target_pos, reason_code):
@@ -304,11 +333,26 @@ class MovementSystem:
             # Oscillation Detection
             if effective_target == entity.navigation.last_position:
                 if entity.navigation.oscillation_count >= 3:
-                    replan = True
-                    success = False
-                    effective_target = None
+                    # The rung ladder runs before the replan gives up (TCK-20261030-STALEMATE-BREAK-OVERWRITES-A-PROJECT-MOVE-EVERY-TICK): a step back onto the
+                    # tile just left is the A-B loop, so look for a legal tile that is neither it nor the current tile before dropping the target.
+                    way_round = MovementSystem._find_way_round_loop(entity, effective_target, target_pos, state_or_context, move_speed_mult)
                     osc_delta = -entity.navigation.oscillation_count
                     wait_delta = -entity.navigation.wait_count
+                    # The bounded give-up (2.213): a way-round that makes no net progress on this target counts; the count past WAYROUND_LIMIT is the real replan.
+                    dist_now = int(abs(target_pos[0] - entity.navigation.position[0]) + abs(target_pos[1] - entity.navigation.position[1]))
+                    best = entity.navigation.wayround_best_distance
+                    if best is None or dist_now < best:
+                        wayround_count, wayround_best = 1, dist_now  # progress (or the first event on this target): the baseline moves down
+                    else:
+                        wayround_count, wayround_best = entity.navigation.wayround_count + 1, best
+                    if way_round is not None and wayround_count <= WAYROUND_LIMIT:
+                        effective_target = way_round
+                        wayround_set = (wayround_count, wayround_best)
+                    else:
+                        replan = True
+                        success = False
+                        effective_target = None
+                        wayround_clear = True
                 else:
                     osc_delta = 1
             else:
@@ -409,6 +453,9 @@ class MovementSystem:
             wait_count_delta=wait_delta,
             # VERIFIED v2: stalemate_breaker
             oscillation_count_delta=osc_delta,
+            wayround_count_set=wayround_set[0] if wayround_set else None,
+            wayround_best_distance_set=wayround_set[1] if wayround_set else None,
+            wayround_clear=wayround_clear,
             last_position_set=entity.navigation.position if success else None,
             clear_target=replan,
             clear_path=replan,

@@ -41,14 +41,17 @@ def test_a_navigation_without_lodged_in_restores_to_none_keeps_every_other_field
     try:
         st = k._state
         nav = st.entities[1].navigation
-        old = _old_shape(nav, ["lodged_in"])
+        # lodged_in is no longer the last slot: the 2.213 way-round fields follow it, so the pre-F3 shape lacks all three trailing fields
+        trailing = ["lodged_in", "wayround_count", "wayround_best_distance"]
+        old = _old_shape(nav, trailing)
         with pytest.raises(AttributeError):
             old.lodged_in
         object.__setattr__(st.entities[1], "navigation", old)
-        fill_missing_fields(st, [r for r in FIELD_RULES if r.field == "lodged_in"])
+        fill_missing_fields(st, [r for r in FIELD_RULES if r.field in trailing])
         restored = st.entities[1].navigation
         assert restored.lodged_in is None
-        assert _values(restored, skip=("lodged_in",)) == _values(nav, skip=("lodged_in",))      # nothing shifted
+        assert (restored.wayround_count, restored.wayround_best_distance) == (0, None)
+        assert _values(restored, skip=tuple(trailing)) == _values(nav, skip=tuple(trailing))      # nothing shifted
         r = Kernel(profile(), pickle.loads(pickle.dumps(st, protocol=pickle.HIGHEST_PROTOCOL)), DeterministicRNG(1))
         try:
             r.tick_once()

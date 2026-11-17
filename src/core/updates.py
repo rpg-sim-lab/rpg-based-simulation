@@ -78,13 +78,17 @@ class NavigationUpdate:
     step_ready_tick_set: Optional[float] = None  # D75: the earliest tick of the entity's next step
     lodged_in_set: Optional[int] = None  # F3: the building the subject lodges in from this tick (a lodge claim until `grant_beds` grants it)
     lodged_in_clear: bool = False  # F3: the subject leaves the building it lodges in
+    wayround_count_set: Optional[int] = None  # 2.213: the way-round steps taken on this target with no net progress, and the best distance seen (written by resolve_move only)
+    wayround_best_distance_set: Optional[int] = None
+    wayround_clear: bool = False  # 2.213: the way-round count ends (the give-up replan)
 
     def is_noop(self) -> bool:
         return (self.target_set is None and not self.target_clear and self.path_set is None and self.step_ready_tick_set is None and 
                 self.moved_recently_set is None and self.movement_mode_set is None and 
                 self.failure_reason is None and not self.clear_target and not self.clear_path and 
                 self.wait_count_delta == 0 and self.oscillation_count_delta == 0 and 
-                self.last_position_set is None and self.region_id_set is None and self.lodged_in_set is None and not self.lodged_in_clear)
+                self.last_position_set is None and self.region_id_set is None and self.lodged_in_set is None and not self.lodged_in_clear and
+                self.wayround_count_set is None and self.wayround_best_distance_set is None and not self.wayround_clear)
 
     def merge(self, other: NavigationUpdate) -> NavigationUpdate:
         if not other or other.is_noop():
@@ -104,6 +108,9 @@ class NavigationUpdate:
         if other.region_id_set is not None: changes["region_id_set"] = other.region_id_set
         if other.step_ready_tick_set is not None: changes["step_ready_tick_set"] = other.step_ready_tick_set
         changes.update(other._lodging_changes())
+        if other.wayround_count_set is not None: changes["wayround_count_set"] = other.wayround_count_set
+        if other.wayround_best_distance_set is not None: changes["wayround_best_distance_set"] = other.wayround_best_distance_set
+        if other.wayround_clear: changes["wayround_clear"] = True
         return replace(self, **changes)
 
     def _lodging_changes(self) -> Dict[str, Any]:

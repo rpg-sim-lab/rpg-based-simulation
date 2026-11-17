@@ -281,7 +281,7 @@ class NavigationPatch(ComponentPatch):
             u_nav = self.navigation
             new_nav = replace(
                 new_nav,
-                target=u_nav.target_set if u_nav.target_set is not None else (None if u_nav.target_clear else new_nav.target),
+                target=u_nav.target_set if u_nav.target_set is not None else (None if (u_nav.target_clear or u_nav.clear_target) else new_nav.target),
                 movement_mode=u_nav.movement_mode_set if u_nav.movement_mode_set is not None else new_nav.movement_mode,
                 path=u_nav.path_set if u_nav.path_set is not None else (None if u_nav.clear_path else new_nav.path),
                 moved_recently=u_nav.moved_recently_set if u_nav.moved_recently_set is not None else new_nav.moved_recently,
@@ -293,6 +293,11 @@ class NavigationPatch(ComponentPatch):
                 step_ready_tick=u_nav.step_ready_tick_set if u_nav.step_ready_tick_set is not None else new_nav.step_ready_tick,
                 lodged_in=None if u_nav.lodged_in_clear else (u_nav.lodged_in_set if u_nav.lodged_in_set is not None else new_nav.lodged_in),
             )
+            # 2.213 (COMB-356): the way-round count belongs to one stored target. A changed or cleared target ends it; otherwise the movement update's count and best distance land.
+            if new_nav.target != changes.get("navigation", entity.navigation).target or u_nav.wayround_clear:
+                new_nav = replace(new_nav, wayround_count=0, wayround_best_distance=None)
+            elif u_nav.wayround_count_set is not None:
+                new_nav = replace(new_nav, wayround_count=u_nav.wayround_count_set, wayround_best_distance=u_nav.wayround_best_distance_set)
         if self.new_position:
             if self.new_position != entity.navigation.position:
                 new_nav = ApplyPath._fast_replace_navigation(new_nav, self.new_position, None)

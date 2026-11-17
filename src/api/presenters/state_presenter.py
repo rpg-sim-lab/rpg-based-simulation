@@ -184,6 +184,8 @@ class StatePresenter:
                 "moved_recently": entity.navigation.moved_recently,
                 "wait_count": entity.navigation.wait_count,
                 "oscillation_count": entity.navigation.oscillation_count,
+                "wayround_count": entity.navigation.wayround_count,
+                "wayround_best_distance": entity.navigation.wayround_best_distance,
                 "last_failure": entity.navigation.last_failure_reason,
                 "mode": entity.navigation.movement_mode.name if hasattr(entity.navigation.movement_mode, 'name') else str(entity.navigation.movement_mode)
             },
