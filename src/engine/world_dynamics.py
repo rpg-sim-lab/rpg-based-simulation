@@ -300,11 +300,11 @@ class WorldDynamicsSystem:
             if not displacement_update.is_noop():
                 update = update.merge(displacement_update)
 
-        # 3.10 Births: its own cadence, outside the world_dynamics gate (30 does not divide 50), unflagged.
+        # Births run on their own cadence outside the world_dynamics gate: 30 does not divide 50 (Q9). ApplyPath advances next_entity_id past every added id.
         if should_run(state.tick, None, cadence.births):
             births_update = BirthService.process_births(state, generator)
             if not births_update.is_noop():
-                update = update.merge(births_update).replace(next_entity_id_set=max(generator._last_id + 1, update.next_entity_id_set or 0))
+                update = update.merge(births_update)
 
         # 4. Regional Transformations (Type Shifting)
         from src.world.transformation import TransformationService

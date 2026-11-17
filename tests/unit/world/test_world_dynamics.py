@@ -466,7 +466,6 @@ def test_births_and_world_dynamics_apply_in_one_fixed_order_on_a_tick_where_both
     ids = [e.id for e in refined.entities_add]
     born = [e.id for e in refined.entities_add if e.lifecycle.parent_a_entity_id == 1]
     assert len(born) == 1 and ids == sorted(ids) and born[0] == max(ids)
-    assert refined.next_entity_id_set == max(ids) + 1
 
 
 def test_resolve_dynamics_threads_faction_directives_to_camp_service():

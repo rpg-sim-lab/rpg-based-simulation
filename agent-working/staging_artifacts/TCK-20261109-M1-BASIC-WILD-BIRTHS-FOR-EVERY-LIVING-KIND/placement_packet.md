@@ -12,7 +12,7 @@ tags: []
 
 # Births hook placement packet (for rpg-designer-ubuntu)
 
-Cited at branch head 073f415e9 (`rpg-ubuntu-wild-births-impl`). Line numbers are from that commit.
+Cited at branch head 073f415e9 (line numbers then: hook at world_dynamics.py:303-307; after the id-counter simplification it is :303-307 still, 5 lines) (`rpg-ubuntu-wild-births-impl`). Line numbers are from that commit.
 
 ## 1. Exact position
 - Counted phase: unchanged. `src/engine/pipeline.py:339` opens "Phase 5: Governance & Ecology"; `:343` builds the tick's one generator (`EntityGenerator.for_state(state, update)`), `:344` runs `run_phase("world_dynamics", ...)` which calls `WorldDynamicsSystem.resolve_dynamics`. The hook runs inside that existing phase call. `refine()` gains no phase and loses none.
@@ -21,7 +21,7 @@ Cited at branch head 073f415e9 (`rpg-ubuntu-wild-births-impl`). Line numbers are
 
 ## 2. What it reads and writes
 - Reads (state only, no mutation): `state.tick`, `state.seed`, `state.entities` (`identity.life_stage/role/faction/properties`, `combat.alive`, `lifecycle.active/reproduction_cooldowns/genetic_profile`, `biological.hunger`, `navigation.position/home_position/leash_radius`, `strategic.home_region_id`, `social.public_reputation`), `state.regions` (region at the mother's position), the spatial index (`SpatialQueryService.nearby_entities`), the warmed content catalog (species, reproduction profile, newborn archetype).
-- Writes, as typed updates through the apply path only: `StateUpdate.entities_add` (the newborn), `entity_spawn_sources` (`SpawnSource(BIRTH, parent_ids)`), `entity_updates` (mother `BiologicalUpdate.hunger_delta`; both parents `LifecycleUpdate.reproduction_cooldowns_add/remove`; the parent-bond updates), `world_updates` (`population_young_births_delta=1` for the mother's region), and `next_entity_id_set` (folded to `max(generator._last_id + 1, existing)`).
+- Writes, as typed updates through the apply path only: `StateUpdate.entities_add` (the newborn), `entity_spawn_sources` (`SpawnSource(BIRTH, parent_ids)`), `entity_updates` (mother `BiologicalUpdate.hunger_delta`; both parents `LifecycleUpdate.reproduction_cooldowns_add/remove`; the parent-bond updates), `world_updates` (`population_young_births_delta=1` for the mother's region). `next_entity_id` is advanced past every added id by ApplyPath (`_counter_past_adds`), so the hook writes no id counter and reads no private generator attribute.
 - Order on a tick where both fire (tick % 150 == 0): the world_dynamics block first, then births, both through the same generator, so births ids follow every id the block allocated. Pinned by `tests/unit/world/test_world_dynamics.py::test_births_and_world_dynamics_apply_in_one_fixed_order_on_a_tick_where_both_fire`.
 
 ## 3. Cadence key

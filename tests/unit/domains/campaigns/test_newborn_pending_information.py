@@ -69,3 +69,73 @@ def test_a_roster_with_a_t0_member_and_a_newborn_resolves_to_the_first_in_roster
     # The resolver takes the first match in roster (dict insertion) order; nothing sorts the roster by id.
     assert _resolved_actor(99, 150) == 99
     assert _resolved_actor(150, 99) == 150
+
+
+# ---- the real flow: a newborn produced by the births apply path in an episode, carried into the next roster -----------------------------------------
+
+def _episode_with_a_real_birth(monkeypatch):
+    """Run the real kernel on frontier_living_world with the birth chance forced to 1 until a newborn exists; return (final_state, t0 ids)."""
+    from src.config.profiles import PROD_SMALL
+    from src.engine.kernel import Kernel
+    from src.platform.rng import DeterministicRNG
+    from src.world import births
+    from tools.calibrate_simq import _load_world_state
+
+    real = births.get_catalog()
+
+    class _CertainCatalog:
+        def get_reproduction_profile(self, profile_id):
+            return real.get_reproduction_profile(profile_id).model_copy(update={"birth_chance_per_check": 1.0})
+
+        def __getattr__(self, name):
+            return getattr(real, name)
+
+    monkeypatch.setattr(births, "get_catalog", lambda: _CertainCatalog())
+    state, _ = _load_world_state("frontier_living_world", seed=42)
+    t0_ids = set(state.entities)
+    kernel = Kernel(profile=PROD_SMALL, state=state, rng=DeterministicRNG(42), flags={"no_frame_pacing": True})
+    try:
+        for _ in range(61):
+            kernel.tick_once()
+        return kernel.state, t0_ids
+    finally:
+        kernel.shutdown()
+
+
+def _carry_into_next_roster(final_state):
+    orch = CampaignOrchestrator(_make_manifest(n_episodes=2))
+    orch.state.persistent_entities.update(orch._extract_entity_carry_forwards(final_state))
+    return orch
+
+
+def test_real_flow_every_t0_id_precedes_the_newborn_in_the_final_state_and_in_the_rebuilt_roster(monkeypatch):
+    final_state, t0_ids = _episode_with_a_real_birth(monkeypatch)
+    newborns = [eid for eid, e in final_state.entities.items() if e.lifecycle.parent_a_entity_id is not None and eid not in t0_ids]
+    assert newborns, "precondition: the births apply path produced a newborn in the episode"
+    order = list(final_state.entities)
+    survivors_t0 = [eid for eid in order if eid in t0_ids]
+    assert max(order.index(t) for t in survivors_t0) < min(order.index(n) for n in newborns)
+
+    orch = _carry_into_next_roster(final_state)
+    roster = list(orch._get_spawn_entities())
+    assert max(roster.index(t) for t in roster if t in t0_ids) < min(roster.index(n) for n in newborns if n in roster)
+
+    state = orch._build_initial_state(7, _real_episode_spec(world_id="frontier_living_world"))
+    for response in state.pending_information_responses:
+        assert response["actor_id"] in t0_ids
+
+
+def _round_trip(orch, sort_keys):
+    from src.domains.campaigns.state import CampaignState
+    import json
+
+    return CampaignState.from_dict(json.loads(json.dumps(orch.state.to_dict(), sort_keys=sort_keys)))
+
+
+def test_a_campaign_state_round_trip_rebuilds_the_roster_in_serialized_key_order(monkeypatch):
+    final_state, t0_ids = _episode_with_a_real_birth(monkeypatch)
+    orch = _carry_into_next_roster(final_state)
+    plain = list(_round_trip(orch, sort_keys=False).persistent_entities)
+    assert plain == list(orch.state.persistent_entities)  # to_dict writes ascending ids; a plain dump keeps them
+    keyed = list(_round_trip(orch, sort_keys=True).persistent_entities)
+    assert keyed == sorted(plain, key=str)  # key-sorted JSON is lexicographic: "100" sorts before "99", which can put a newborn first
