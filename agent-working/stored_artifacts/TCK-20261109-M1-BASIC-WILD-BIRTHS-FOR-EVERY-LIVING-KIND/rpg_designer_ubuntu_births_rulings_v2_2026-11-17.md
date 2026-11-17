@@ -150,3 +150,15 @@ Every arm on the decision-76 tier. Fix arm spied, plus a plain twin.
 
 ### cc, agreed
 - Births are unflagged, so every default run's state hash moves. The plan lists each golden hash, baseline and regression reference row that moves, each one an owner ask.
+
+## rpg-designer's answers on v2.1 (relayed by lead-planner from u24) [v2.2]
+- v2.1 (009bc090) is acked, and D1-D4 bind.
+- **Q11(a) wording, binding (option (a); option (b) rejected).** The ECOL-06 / Bible ch05 placeholder and the Unified divergence entry use this text exactly:
+  > "A newborn's body is its species' declared newborn body (newborn_archetype) at life stage CHILD; no child stat scaling in M1. It can differ from the t0 population-profile stats of its parents."
+  The same disclosure goes in the step report. This replaces the earlier "its species' t0 body" wording everywhere.
+- **D3, the personality draw (binding):** keyed by (world seed, newborn id), not by the id alone, so there's no hidden cross-seed coupling. If the existing draw is already seeded per run, the PR says so and cites the line.
+- **The shared species.yaml key: no separate question, on three conditions:**
+  1. `newborn_archetype` is required ONLY on a species with a `reproduction_profile`. Every other species loads exactly as today, and a test pins that.
+  2. The species.yaml schema doc is updated in the same PR.
+  3. u24's content lanes get an fyi before merge (u24 has already told rpg-planner (u24)).
+  - Making the key required on every species later is a question to rpg-designer.

@@ -101,6 +101,20 @@ Source: the same stored v2 file, now v2.1 (body sha256 009bc090; an append-only 
 - D4: disclosed in the step report and the ch05 placeholder. Backlog: TCK-20261117-A-NEWBORN-NEVER-GROWS-UP-INSIDE-A-RUN-NEEDS-A-MATURATION-CLOCK.
 - Births ship unflagged, so every moved golden hash, baseline and regression reference row is listed, each one an owner ask.
 
+### Amendment 2026-11-18 (v2.2, and lead-planner's routing)
+Source: the same stored v2 file, now v2.2 (body sha256 d12d3498; append-only from 009bc090). rpg-designer acked v2.1.
+- The text below is fixed word for word. It goes in the ch05/ECOL-06 placeholder, the Unified divergence entry and the step report: "A newborn's body is its species' declared newborn body (newborn_archetype) at life stage CHILD; no child stat scaling in M1. It can differ from the t0 population-profile stats of its parents."
+- The personality draw is keyed by (world seed, newborn id). If the existing draw is already seeded per run, the PR says so and cites the line.
+- `newborn_archetype` is required ONLY with a `reproduction_profile`. Every other species loads exactly as today, and a test pins that. The species.yaml schema doc is updated in the same PR. u24's content lanes get an fyi before the merge.
+- Rows that move go four ways (lead-planner, relaying lead-planner-u24):
+  - (1) Grade/corpus pins fall under rule (a), #715 6941107808. Send the rows, their attribution, rpg-designer-ubuntu's predicted direction and any flags (more than 2x the bar, or an unpredicted direction) to lead-planner. lead-planner passes them to lead-planner-u24, which verifies and records them on #715 before the push.
+  - (2) Golden hashes, fixtures, asserts and gate baselines are test-expectation changes. rpg-designer-ubuntu rules on them first. Then they go to the owner as ONE ask via lead-planner, listing old, new and cause.
+  - (3) Census pins (+1 per new file) fall under S8.
+  - (4) A code-health ceiling raise is its own owner ask and names a retiring ticket.
+  - A push carrying re-pinned grade rows waits for both records (the S10 record and lead-planner-u24's).
+- Overlap with u24 PERC-02a (lane D, likely to merge first): it adds the compile check `require_declared_population_species` (a usable sense profile plus a declared diet). Each `newborn_archetype`'s species must pass that check. After PERC-02a lands, births resyncs on main and runs the check. A text conflict is only possible near the troll block in species.yaml.
+- When the PR opens, its number and head go to lead-planner, which passes them to lead-planner-u24 to re-diff species.yaml against the u24 branches before the merge ask.
+
 ## Out of Scope
 - §12.4 (packs, herds, territory), milestones 2 and 3, and any rule work not listed in §12.3 (owner ruling only).
 - Calamity (magical/demonic), boss, lair and creature-territory spawns. These are arrivals or flagged-off spawns, so no code there moves (Q5, Q6). Q6 adds a backlog line for the territory spawn, which creates creatures with no parents.
