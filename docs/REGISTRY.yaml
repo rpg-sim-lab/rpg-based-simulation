@@ -10657,7 +10657,8 @@
   ticket_type: feature
   date: '2026-11-09'
   related_code_areas: []
-  artifact_files: []
+  artifact_files:
+  - agent-working/stored_artifacts/TCK-20261109-M1-BASIC-WILD-BIRTHS-FOR-EVERY-LIVING-KIND/rpg_designer_ubuntu_births_rulings_2026-11-17.md
   tags: []
 - type: ticket
   path: agent-working/tickets/todos/TCK-20261109-M1-COARSE-PROPERTY-BANDS-AND-THE-APPRAISAL.md
