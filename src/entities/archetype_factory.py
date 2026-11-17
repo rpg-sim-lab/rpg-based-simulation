@@ -3,7 +3,9 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Optional
 
+from src.core.enums import EntityRole
 from src.core.state import (
+    LifeStage,
     EntityState,
     IdentityComponent,
     CombatComponent,
@@ -16,6 +18,7 @@ from src.content_semantics.personality import build_personality_for_entity, get_
 from src.entities.runtime_contract import ResolvedEntityRuntimeContract
 from src.content.common_knowledge_seed import default_self_model
 from src.content.species_senses import require_species_sense_profile
+from src.systems.lifecycle_systems.genetics import GeneticsSystem
 
 
 @dataclass(frozen=True)
@@ -139,6 +142,88 @@ class ArchetypeEntityFactory:
             entity = _replace_lifecycle(entity, active=False)
 
         return entity
+
+    def build_newborn(
+        self,
+        entity_id: int,
+        contract: ResolvedEntityRuntimeContract,
+        species_traits: tuple[str, ...],
+        mother: EntityState,
+        mate: EntityState,
+        position: tuple[float, float],
+        tick: int,
+        seed: int,
+        home_region_id: Optional[str] = None,
+    ) -> EntityState:
+        """A newborn of `mother` and `mate`: the BODY of the species' newborn archetype (stats, body model, personality draw
+        keyed by (world seed, newborn id)) at life stage CHILD, and nothing of its job. Role, occupation, equipment,
+        inventory and job traits are not taken from the archetype: the role follows the mother (MONSTER stays MONSTER,
+        anything else CITIZEN), gold is 0 and traits are the species' own declared traits (M1 births, rulings v2.2 D3).
+        population_id and spawn_region are the mother's (omitted when she has none): on a newborn, spawn_region names its
+        population's declared region, not where it was born, and in campaign mode a surviving newborn can receive its
+        population's pending information in a later episode when no earlier roster member survives (G1 addendum A1)."""
+        mother_faction_id = mother.identity.properties.get("faction_id")
+        properties: dict = {"species_id": contract.species_id}
+        if mother_faction_id is not None:
+            properties["faction_id"] = mother_faction_id
+        for key in ("population_id", "spawn_region"):
+            inherited = mother.identity.properties.get(key)
+            if inherited is not None:
+                properties[key] = inherited
+        for key, value in (
+            ("need_profile_id", contract.need_profile_id),
+            ("sense_profile_id", contract.sense_profile_id),
+            ("cognition_profile_id", contract.cognition_profile_id),
+            ("drive_profile_id", contract.drive_profile_id),
+        ):
+            if value is not None:
+                properties[key] = value
+
+        personality = build_personality_for_entity(entity_id, mother_faction_id, seed)
+        # birth_record() combines genetics only when a parent profile is supplied; first-generation parents carry none.
+        a_profile = mother.lifecycle.genetic_profile or GeneticsSystem.generate_profile_from_seed(mother.id)
+        b_profile = mate.lifecycle.genetic_profile or GeneticsSystem.generate_profile_from_seed(mate.id)
+        role = EntityRole.MONSTER if mother.identity.role == EntityRole.MONSTER else EntityRole.CITIZEN
+
+        return (
+            V2EntityBuilder(entity_id)
+            .kind(contract.kind)
+            .location(*position)
+            .identity(
+                role=role,
+                faction=mother.identity.faction,
+                traits=set(species_traits),
+                properties=properties,
+                personality=personality,
+                life_stage=LifeStage.CHILD,
+                occupation=None,
+            )
+            .navigation(home_position=mother.navigation.home_position, leash_radius=mother.navigation.leash_radius)
+            .strategic(home_region_id=home_region_id)
+            .combat(
+                hp=contract.hp,
+                max_hp=contract.max_hp,
+                atk=contract.atk,
+                def_stat=contract.def_stat,
+                attack_range=contract.attack_range,
+                readiness=contract.readiness,
+                action_style=get_action_style_for_bravery(personality.bravery),
+            )
+            .birth_record(
+                parent_a_entity_id=mother.id,
+                parent_b_entity_id=mate.id,
+                birth_tick=tick,
+                parent_a_genetic_profile=a_profile,
+                parent_b_genetic_profile=b_profile,
+                parent_a_role=mother.identity.role,
+                parent_b_role=mate.identity.role,
+                parent_a_public_reputation=mother.social.public_reputation,
+                parent_b_public_reputation=mate.social.public_reputation,
+            )
+            .spawn_combat_stats_are_final()
+            .replace_self_model(default_self_model())
+            .build()
+        )
 
 
 def _replace_inventory(entity: EntityState, inv: InventoryComponent) -> EntityState:

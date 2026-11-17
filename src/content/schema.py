@@ -211,6 +211,7 @@ class SpeciesDefinition(CatalogBaseDefinition):
     body_model: str = Field(..., description="Referenced BodyModelDefinition ID")
     need_profile: str = Field(..., description="Referenced NeedProfileDefinition ID")
     reproduction_profile: Optional[str] = Field(None, min_length=1, description="Referenced ReproductionProfileDefinition ID; absent means the kind has no births")
+    newborn_archetype: Optional[str] = Field(None, min_length=1, description="Referenced EntityArchetypeDefinition ID whose body (stats, attributes, body model, personality draw) a newborn of this species takes; required exactly when reproduction_profile is set, and the archetype's species must be this one")
     sense_profile: str = Field(..., description="Referenced SenseProfileDefinition ID")
     cognition_profile: str = Field(..., description="Referenced CognitionProfileDefinition ID")
     drive_profile: str = Field(..., description="Referenced DriveProfileDefinition ID")
