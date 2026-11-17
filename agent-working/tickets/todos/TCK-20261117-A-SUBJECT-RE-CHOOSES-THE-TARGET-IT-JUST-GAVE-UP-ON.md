@@ -35,7 +35,13 @@ Found by the STALEMATE fix's own-job run (S9 #715 6947037311, fixtree 08b9dcae8)
 The give-up clears the target, but nothing remembers that it was given up, so target choice picks it again. The rpg-designer ruling (draft .claude/handover/drafts/rpg-designer-stalemate-s3-ruling.md, sha prefix 82f62819) makes this F2: a separate Phase-1 liveness ticket in run 1. It was first filed as not gating the STALEMATE F1 PR, with one exception: any subject giving up the same anchor 5 or more times in 5000 ticks comes back to the designer before merge. UPDATE 2026-11-17 (designer ruling, draft section 06149efe): F1's own-job (S9 #715 6949902550) showed 30/39/17 subject-anchors with 5 or more give-ups, max 194 (frontier eid 42 at (140,40)). That is a never-exit loop, so F2 now GATES F1's merge, and F1+F2 land together.
 
 ## Scope
-1. DESIGN BY rpg-designer, pending. A typed give-up memory, durable with a defined lifecycle and expiry, that target choice respects.
+1. DESIGN: FINAL v2 by rpg-designer, main-checkout .claude/handover/drafts/rpg-designer-f2-giveup-memory.md (sha prefix 78152d88; the v2 section supersedes everything above it). In short:
+   - NavigationComponent.giveup_records (typed, at most 4): movement appends at the give-up, and the next strategic pass consumes them.
+   - Consuming files an ACCESS blocker on the current project through the churn lifecycle, with the subject from the shared access_subject(tile) helper.
+   - destination_suppressed() is checked by both target writers. The tactical skip is the typed outcome OBJECTIVE_DESTINATION_SUPPRESSED, with no fall-through.
+   - BLOCKER_TIMEOUT ends the project.
+   Hard bars G1-G5 plus F1's S1-S3 are FIXED in v2.
+   ORDER: N10 -> churn -> SPLIT-INTELLIGENCE-PY -> F1+F2. F2 adds nothing to intelligence.py before the split.
 2. Implementation, tests and a measured rerun, after the design.
 
 ## Out of Scope

@@ -35,7 +35,8 @@ Found by lane A's read-only F2 code read (2026-11-17, F1 head 46ac46e40; the cit
 - The way-round give-up itself sets failure_reason None (movement.py:362-365, :459), so it leaves the stale value in place and writes no code of its own.
 
 ## Scope
-1. Rule (rpg-designer) when last_failure_reason ends: for example cleared on a successful step, on a new target, or after a give-up, with the typed WAYROUND_GIVE_UP value of F2.
+1. RULED by rpg-designer (F2 v2, 2026-11-17): last_failure_reason = the outcome of the LAST step. A successful step clears it with an explicit typed NavigationUpdate.failure_reason_clear, and a None never carries it forward. F2 does not use last_failure_reason.
+   SCHEDULE: land before or with the churn fix, because a stale reason re-infers blockers against the churn lifecycle.
 2. A typed clear in NavigationUpdate, applied in patches.py; tests; parity and Bible text.
 3. Measure whether stale re-inference happens today: count access blockers inferred while the current failure is more than N ticks old.
 
