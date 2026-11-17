@@ -10,6 +10,10 @@ from typing import Dict, Iterator, List, Optional, Any, Type, TypeVar, Union
 from pydantic import BaseModel
 
 
+class ReproductionProfileError(ValueError):
+    """A species declares a reproduction profile it cannot have: the profile does not exist, or the kind's need profile has no hunger, so "well fed" is undefined."""
+
+
 class ContentHotPathViolation(RuntimeError):
     """Raised when CatalogRepository.load_all() is called while a kernel tick is active.
 
@@ -31,6 +35,7 @@ from src.content.schema import (
     AttributeDefinition,
     ElementDefinition,
     NeedProfileDefinition,
+    ReproductionProfileDefinition,
     SenseProfileDefinition,
     BodyModelDefinition,
     DriveProfileDefinition,
@@ -104,6 +109,7 @@ CANONICAL_FAMILIES: List[ContentFamilySpec] = [
     # 2. Living
     ContentFamilySpec("living.species", "living/species.yaml", SpeciesDefinition, "species"),
     ContentFamilySpec("living.need_profiles", "living/need_profiles.yaml", NeedProfileDefinition, "need_profiles"),
+    ContentFamilySpec("living.reproduction_profiles", "living/reproduction_profiles.yaml", ReproductionProfileDefinition, "reproduction_profiles", required=False),
     ContentFamilySpec("living.sense_profiles", "living/sense_profiles.yaml", SenseProfileDefinition, "sense_profiles"),
     ContentFamilySpec("living.body_models", "living/body_models.yaml", BodyModelDefinition, "body_models"),
     ContentFamilySpec("living.drive_profiles", "living/drive_profiles.yaml", DriveProfileDefinition, "drive_profiles"),
@@ -199,6 +205,7 @@ class CatalogRepository:
         # Living Profiles
         self.species: Dict[str, SpeciesDefinition] = {}
         self.need_profiles: Dict[str, NeedProfileDefinition] = {}
+        self.reproduction_profiles: Dict[str, ReproductionProfileDefinition] = {}
         self.sense_profiles: Dict[str, SenseProfileDefinition] = {}
         self.body_models: Dict[str, BodyModelDefinition] = {}
         self.drive_profiles: Dict[str, DriveProfileDefinition] = {}
@@ -391,6 +398,8 @@ class CatalogRepository:
                     setattr(self, spec.repository_index, results)
                 record_counts[spec.family] = len(results)
 
+        self._check_reproduction_profiles()
+
         # Detect ignored files
         ignored_files = self._find_ignored_files()
 
@@ -408,7 +417,7 @@ class CatalogRepository:
             record_counts=record_counts,
             missing_required_files=missing_required_files,
             missing_optional_files=missing_optional_files,
-            ignored_files=sorted(ignored_files),
+            ignored_files=ignored_files,
             duplicate_ids=duplicate_ids,
             schema_errors=schema_errors,
             fingerprint=self.fingerprint
@@ -463,8 +472,24 @@ class CatalogRepository:
     def get_species(self, def_id: str) -> Optional[SpeciesDefinition]:
         return self.species.get(def_id)
 
+    def _check_reproduction_profiles(self) -> None:
+        """Births are only for kinds that eat (owner B2): refuse, typed, a profile that is missing or sits on a species whose need profile declares no hunger."""
+        for species_id, species in self.species.items():
+            profile_id = species.reproduction_profile
+            if profile_id is None:
+                continue
+            if profile_id not in self.reproduction_profiles:
+                raise ReproductionProfileError(f"species {species_id!r} names reproduction profile {profile_id!r}, which is not declared")
+            need_profile = self.need_profiles.get(species.need_profile)
+            if need_profile is not None and need_profile.needs.get("hunger") == "none":
+                raise ReproductionProfileError(f"species {species_id!r} declares reproduction profile {profile_id!r} but its need profile {species.need_profile!r} has hunger 'none': a kind that does not eat has no births")
+
     def get_need_profile(self, def_id: str) -> Optional[NeedProfileDefinition]:
         return self.need_profiles.get(def_id)
+
+    def get_reproduction_profile(self, def_id: str) -> Optional[ReproductionProfileDefinition]:
+        """The reproduction profile with this id, or None."""
+        return self.reproduction_profiles.get(def_id)
 
     def get_sense_profile(self, def_id: str) -> Optional[SenseProfileDefinition]:
         return self.sense_profiles.get(def_id)
@@ -561,6 +586,7 @@ class CatalogRepository:
             "element": self.elements,
             "species": self.species,
             "need_profile": self.need_profiles,
+            "reproduction_profile": self.reproduction_profiles,
             "sense_profile": self.sense_profiles,
             "body_model": self.body_models,
             "drive_profile": self.drive_profiles,
@@ -605,6 +631,7 @@ class CatalogRepository:
             ("element", self.elements),
             ("species", self.species),
             ("need_profile", self.need_profiles),
+            ("reproduction_profile", self.reproduction_profiles),
             ("sense_profile", self.sense_profiles),
             ("body_model", self.body_models),
             ("drive_profile", self.drive_profiles),

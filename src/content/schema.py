@@ -78,6 +78,16 @@ class NeedProfileDefinition(CatalogBaseDefinition):
     needs: Dict[str, str] = Field(default_factory=dict, description="Motivation/need values (e.g. high, medium)")
 
 
+class ReproductionProfileDefinition(CatalogBaseDefinition):
+    """How a kind that eats has young (M1 births): a chance per 30-tick check for a fed adult with a mate of its kind nearby. A kind with no profile has no births."""
+    birth_chance_per_check: float = Field(..., ge=0.0, le=1.0, description="Chance an eligible mother births at one check")
+    min_birth_interval_ticks: int = Field(..., ge=1, description="Ticks both parents stay ineligible after a birth")
+    litter_size: int = Field(..., ge=1, description="Newborns made by one birth event")
+    mate_radius_tiles: float = Field(..., gt=0.0, description="Chebyshev radius in tiles within which a same-kind adult counts as a mate")
+    fed_line: float = Field(..., ge=0.0, le=100.0, description="Highest mother hunger (0 fed to 100 starving) that still counts as well fed")
+    birth_hunger_cost: float = Field(..., gt=0.0, le=100.0, description="Hunger the mother gains at a birth")
+
+
 class SenseProfileDefinition(CatalogBaseDefinition):
     """Schema for sensory perception factors."""
     vision: Optional[str] = Field(None)
@@ -200,6 +210,7 @@ class SpeciesDefinition(CatalogBaseDefinition):
     renamed from RaceDefinition, part of the race->species terminology migration)."""
     body_model: str = Field(..., description="Referenced BodyModelDefinition ID")
     need_profile: str = Field(..., description="Referenced NeedProfileDefinition ID")
+    reproduction_profile: Optional[str] = Field(None, min_length=1, description="Referenced ReproductionProfileDefinition ID; absent means the kind has no births")
     sense_profile: str = Field(..., description="Referenced SenseProfileDefinition ID")
     cognition_profile: str = Field(..., description="Referenced CognitionProfileDefinition ID")
     drive_profile: str = Field(..., description="Referenced DriveProfileDefinition ID")
