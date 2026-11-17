@@ -1,10 +1,10 @@
 ---
-status: active
+status: historical
 layer: simulation
 authority: P1
 audience: agent
 ticket_id: TCK-20261007-NOBODY-EATS-OR-SLEEPS-AND-EVERY-ENTITY-STARVES-BY-TICK-1100
-phase: open
+phase: done
 date: 2026-10-07
 tags: [strategy, cognition, bug]
 ---
@@ -15,7 +15,7 @@ tags: [strategy, cognition, bug]
 Nobody eats or sleeps in 2000 ticks and every entity starves between tick 950 and tick 1100 (a never-worked defect, a chain of breaks)
 
 ## Status
-INPROGRESS
+DONE
 
 ## Tier
 epic
@@ -45,9 +45,9 @@ Measured 2026-10-07 on main `f8f1b69fd` / `cc3f00a11` (seed 42, `audit_mode`, bu
 - Tuning hunger or sleep rates; adding taverns or a targetless eat fallback before the SURV-06 ruling.
 
 ## Acceptance Criteria
-- [ ] In `frontier_living_world` and `crowded_frontier` (seed 42, 2000 ticks, `audit_mode`) entities eat and sleep: eat and sleep completions > 0 in the buckets after the thresholds are crossed
-- [ ] STARVATION is no longer the majority cause of death, and the population does not go extinct by t=1100
-- [ ] The `behavioral_5k` alive collapse is re-measured and its horizon against tick about 950 is stated
+- [x] In `frontier_living_world` and `crowded_frontier` (seed 42, 2000 ticks, `audit_mode`) entities eat and sleep: eat and sleep completions > 0 in the buckets after the thresholds are crossed
+- [x] STARVATION is no longer the majority cause of death, and the population does not go extinct by t=1100
+- [x] The `behavioral_5k` alive collapse is re-measured and its horizon against tick about 950 is stated
 
 ## Related Tickets
 - TCK-20261007-STRATEGIC-CAPACITY-GATE-COUNTS-TERMINAL-PROJECTS-SO-NO-NEW-PROJECT-KIND-CAN-START (done: break 2)
@@ -58,6 +58,7 @@ Measured 2026-10-07 on main `f8f1b69fd` / `cc3f00a11` (seed 42, `audit_mode`, bu
 - `docs/world_rules/life-body/survival-needs.md` (SURV-02, SURV-06); `docs/mechanics/04_strategic_cognition.md`; `docs/guidelines/intentional_divergences.md` 2.77
 
 ## Related Stored Artifacts
+- `agent-working/stored_artifacts/TCK-20261007-NOBODY-EATS-OR-SLEEPS-AND-EVERY-ENTITY-STARVES-BY-TICK-1100/closing_run.md` (the 2026-11-15 closing run)
 - `agent-working/stored_artifacts/TCK-20261007-STRATEGIC-CAPACITY-GATE-COUNTS-TERMINAL-PROJECTS-SO-NO-NEW-PROJECT-KIND-CAN-START/investigation.md`
 
 ## Related Code Areas
@@ -71,13 +72,22 @@ Measured 2026-10-07 on main `f8f1b69fd` / `cc3f00a11` (seed 42, `audit_mode`, bu
 Diagnosis only so far; the first fix is `TCK-20261007-STRATEGIC-CAPACITY-GATE-COUNTS-TERMINAL-PROJECTS-SO-NO-NEW-PROJECT-KIND-CAN-START`.
 
 ## Test Summary
-None yet.
+Closing run on 2026-11-15, read-only on main 746417022: frontier_living_world and crowded_frontier at s42 for 2000 ticks, pinned, each run twice and hash-equal; plus behavioral_5k once. See closing_run.md.
 
 ## Files Changed
-None yet.
+None in this close: the fixes landed in the child tickets. This close adds closing_run.md.
 
 ## Completion Summary
-None yet.
+Closed 2026-11-15 on the closing run (owner #715 6889629052; order 6892133979). Each AC is cited to closing_run.md:
+- AC1: eat and sleep completions are above 0 after the thresholds in both worlds.
+- AC2: STARVATION is 0 deaths in both worlds; alive at t=1100 is 38 of 55 and 11 of 38 (on 10-07 it was 0).
+- AC3: behavioral_5k runs 5000 ticks, past t≈950, with no collapse at the starvation line (alive_avg 20.42). That run is not pinned; it uses the test's own build.
+Observation, not a failing AC: sleep starts late (t=1100 and t=1400), and some eat buckets after the threshold are 0. rpg-designer ruled on 2026-11-15 that the onset is intended:
+- debt accrues at 0.05 a tick from 0;
+- the wake and onset line is 0.6×98 ≈ 58.8, reached at about t=1176;
+- a sleep is held until the debt falls below that line, so no completion can happen before about t=1180;
+- crowded starts later because of bed reach and the 0.85 rough-rest line (about t=1666).
+This matches SURV-02, decision 41 and SURV-07. The zero eat buckets are lockstep, an observation and not a defect. Found alongside: the night check never wraps (TCK-20261115-THE-NIGHT-CHECK-READS-RAW-WORLD-TIME-SO-EVERY-TICK-AFTER-1800-IS-NIGHT). It only touches t=1800-2000 of this close.
 
 ## 2026-10-31 cleanup re-verification (rpg-planner, owner go #715 6543261623; origin/main 96f623a62)
 - Child tickets done; gate baseline v1 shows starvation 0.2/seed per world. AC1 UNPROVEN (eating evidence indirect via O4 transfers; no sleep row in the gate). AC3 UNPROVEN (no behavioral_5k re-measure).

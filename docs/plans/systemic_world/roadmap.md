@@ -1258,6 +1258,19 @@ This section is written once, before milestone 1 starts. It answers the lesson o
 date and the freeze each moved step by step. Changing anything below takes an owner ruling, recorded as an owner-memo row
 and logged on the approvals issue (#715) before anyone acts on it. A change is never made by editing this text alone.
 
+**Amended by the owner on 2026-11-16 (#715 6912138476, memo row 96): Milestone 1 pace.**
+- **Check classes.** Every per-step check is HARD or BALANCE:
+  - HARD: world laws (tile occupancy, the world-rules catalog, the hard-law monitor), conservation (V2, H7), determinism and hash identity (twin self-check spread 0), neutral-claim proofs, evidence truth (a spy that is hash-neutral, pinned and error-free; empty logging_errors), no crash or ENOMEM, Bible/parity truth, and never weakening a test. Also HARD: the ticket's own job by its claimed route, written per ticket before data and measured at 1 seed per world; liveness (no state that can never exit); and one pooled per-world extinction line, counting only a role or kind alive in at least 3 parent seeds, with the owner ruling a trip.
+  - The own-job check trips only on the fix's claimed mechanism counts, which rpg-designer fixes per ticket before data. Downstream behaviour of a diverged trajectory is BALANCE. A trip gets at most one trace cycle, then an owner decision.
+  - Instrument hygiene: a diagnostic (spy, probe, wrapper) must leave the run unchanged: spy/no-spy and twin hash match. A diagnostic that changes the run is never allowed to stand.
+  - BALANCE: everything else (deaths, flight, starvation, Tier-1 and Tier-2, D76, SimQ, per-seed extinction). A BALANCE reading past 2× its bar, or a 3rd consecutive trip of the same check, is a FLAGGED line for the owner in the step's PR body. It still doesn't block.
+- **Extinction line cadence.** The pooled per-world line reads 5 seeds (42-46) on the head, against M1-base's counts: at M1-base, after every 3 steps, right after decision 73 and after any step whose own job removes a food or survival path, and at the record. A trip goes to the owner. Per step, a 1-seed extinction is a report row for the designer.
+- **Blocking.** HARD blocks. BALANCE is report-only during milestone 1: recorded in the step's PR and in `m1_disclosure.md`, with a backlog ticket for each trip.
+- **Base.** The milestone 1 items measure against M1-base (gate, fingerprints, 5k behaviour, SimQ anchors, 3-world hash check), a main commit recorded under its own owner run ask: **9c398a068, recorded 2026-11-16** (#715 6912633288; 18 of 18 runs rc 0, `paired.py --collected` PASS, self-check spread 0; s42 hashes reproduced on the ubuntu host). The gate's reference is re-baselined to v2 from main run 43895014837 at e72270894 (src hash-neutral with M1-base at s42 only; memo row 97). M1-base replaces v1.1 as the start of the items' cumulative watch, which becomes report-only.
+- **Order.** The items start on M1-base. The remaining repairs go ahead of or alongside the items only if HARD or needed by a named item. Every other repair and new balance defect goes to the milestone 1 backlog.
+- **Decision 73.** Decision 73 (free meal removed) is a free-standing step, with no position in the items' order. It lands before the V1 free-meal known entry expires (2026-12-31).
+- **What this supersedes.** It supersedes, in this section: the Order paragraph and the v1 → v1.1 and v1.1 bullets of **Base**; "each single step keeps the per-seed extinction stop"; and, in the reds table, "only with an owner acceptance before the cutoff, scoped per case", which becomes "accepted by the owner in one batch at the milestone 1 record". Unchanged: the conservation and determinism "never" rows, R2 at the record, the prerequisites of the record (F3-checkpoint, F4), the freeze, and done 1-6.
+
 **Base.** Milestone 1 spans baseline v1 (record commit 341f700d0, simulation e8df8b96d, gate baseline
 `rpg_gate_v1.json`) to the milestone 1 record; 903239fbe is history. Clarified by the owner on 2026-10-23 (#715 6356509993,
 memo row 89):
@@ -1330,6 +1343,7 @@ Each item becomes a ticket under the milestone 1 epic before work starts.
 **Prerequisites of the record.** TCK-20261023-CHECKPOINT-RESTORE-DRAWS-STATELESS-RANDOMS-FROM-SEED-ZERO (F3) and
 TCK-20261023-SALTED-HASH-IN-HASHED-STATE-FACTION-SQUAD-GROUP-ID (F4) are fixed before the record ticket is dispatched.
 Otherwise the record cannot claim cross-process determinism. F5 stays P3.
+Status (2026-11-16, factual mapping, not a rule change): the F3 fix landed on main in #848 (66d08dd56, 2026-11-08) under TCK-20261107-A-RESTORED-SCENARIO-CHECKPOINT-DRAWS-FROM-SEED-0 (`ScenarioCheckpointer` restore builds `DeterministicRNG(base_seed=state.seed)`; regression test `tests/integration/scenarios/test_scenario_runtime_service.py::TestCheckpointRestore::test_restore_keeps_the_state_seed_and_the_per_tick_digest`). The earlier unpushed branch for TCK-20261023-CHECKPOINT-RESTORE-DRAWS-STATELESS-RANDOMS-FROM-SEED-ZERO duplicates it and is dropped. F4 landed in #765. Both prerequisites are met.
 
 **When the record ticket is dispatched.** Only when done #1, #4 and #5 already hold, so the freeze covers
 measurement and record (days), not a work phase.

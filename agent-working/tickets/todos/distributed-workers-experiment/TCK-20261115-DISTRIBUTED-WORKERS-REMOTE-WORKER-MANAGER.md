@@ -78,7 +78,7 @@ None.
 - tests/unit/kernel/test_executor_context_parity.py, tests/integration/kernel/test_executor_equivalence_long.py
 
 ## Assumptions / Open Questions
-- Gated: nothing starts before the owner's whole-plan review (#715 6731938042), and src/engine work under this epic waits until after Milestone 1 (#715 6889952914).
+- HELD/shelved: no-go as designed, see design §14; owner #715 6917359910 ("R5 now, R3 later"). After Milestone 1 and the next-gen contract spec it is re-cut as R3 (a worker-resident replica plus typed per-tick deltas). The whole-plan review (#715 6731938042) is decided (6910997558); src/engine work under this epic waits until after Milestone 1 (#715 6889952914).
 - The §6 open check (process-global reads by the worker function) may change the transport design. If it fails, this ticket returns to the owner with options before any build.
 - The measurement tier and lanes are stated at dispatch.
 
