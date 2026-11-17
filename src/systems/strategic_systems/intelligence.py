@@ -72,7 +72,7 @@ from src.engine.policy import GovernorPolicy
 from src.core.strategic import (
     BlockerState, LeadState, LeadCertainty,
     ProjectState, ProjectStatus, ObjectiveState, ObjectiveStatus,
-    CognitionProfile, ProjectKind, GoalKind, ObjectiveKind, has_project_capacity, restart_clear_window, suspend_record, expire_suspended, end_record, ProjectEnd, BlockerRemoval, blocker_timeout_suppression, merge_inferred_blocker, quiet_blockers, CONGESTION_BLOCKER_ID, with_live_current_score
+    CognitionProfile, ProjectKind, GoalKind, ObjectiveKind, has_project_capacity, restart_clear_window, suspend_record, expire_suspended, end_record, typed_completion, ProjectEnd, BlockerRemoval, blocker_timeout_suppression, merge_inferred_blocker, quiet_blockers, CONGESTION_BLOCKER_ID, with_live_current_score
 )
 from src.engine.spatial_query import SpatialQueryService
 from src.core.lodging_rules import is_lodged_stayer
@@ -263,6 +263,18 @@ class StrategicIntelligenceSystem:
             unique_blockers[b.id] = b
             
         return StrategicUpdate(blockers_add_or_update=list(unique_blockers.values()))
+
+    @staticmethod
+    def reinferred_blockers_update(entity: EntityState, staged: StrategicUpdate, inferred: StrategicUpdate, tick: int) -> StrategicUpdate:
+        """``staged`` with this pass's blocker inference folded in (divergence 2.214): a re-inferred blocker MERGES into the stored one (keeps its suppression and failure count, refreshes what is
+        observed; `merge_inferred_blocker`), never replaces it; then the quiet-spell removals (`quiet_spell_update`) are merged on top."""
+        additions = list(staged.blockers_add_or_update)
+        for b in inferred.blockers_add_or_update:
+            if b.id not in [x.id for x in additions]:
+                additions.append(merge_inferred_blocker(entity.strategic.blockers.get(b.id), b, tick))
+        staged = replace(staged, blockers_add_or_update=additions)
+        quiet = StrategicIntelligenceSystem.quiet_spell_update(entity, staged, tick)
+        return staged if quiet is None else staged.merge(quiet)
 
     @staticmethod
     def quiet_spell_update(entity: EntityState, staged: StrategicUpdate, tick: int) -> Optional[StrategicUpdate]:
@@ -523,17 +535,7 @@ class StrategicIntelligenceSystem:
                 current_project=current_proj
             )
             
-            new_additions = list(strat_up.blockers_add_or_update)
-            if inferred_up.blockers_add_or_update:
-                for b in inferred_up.blockers_add_or_update:
-                    if b.id not in [x.id for x in new_additions]:
-                        # Divergence 2.214: a re-inference MERGES into the stored blocker (keeps its suppression and failure count; refreshes what is observed), never replaces it.
-                        new_additions.append(merge_inferred_blocker(entity.strategic.blockers.get(b.id), b, state.tick))
-            
-            strat_up = replace(strat_up, blockers_add_or_update=new_additions)
-            quiet_up = StrategicIntelligenceSystem.quiet_spell_update(entity, strat_up, state.tick)
-            if quiet_up is not None:
-                strat_up = strat_up.merge(quiet_up)
+            strat_up = StrategicIntelligenceSystem.reinferred_blockers_update(entity, strat_up, inferred_up, state.tick)
             removals = set(strat_up.blockers_remove)
             resolved_ids = set()
             for b_id, b in entity.strategic.blockers.items():
@@ -578,9 +580,7 @@ class StrategicIntelligenceSystem:
                         if all_blockers_resolved:
                             new_obj = replace(active_obj, status=ObjectiveStatus.RESOLVED)
                             project_upd = replace(project, objectives=[new_obj if o.id == new_obj.id else o for o in project.objectives], status=ProjectStatus.COMPLETED)
-                            if project.kind == "resolve_blocker":
-                                # Divergence 2.214: one rule for every path (the blocker removed, absent or resolved): a resolve_blocker project never completes untyped.
-                                project_upd = end_record(project_upd, ProjectStatus.COMPLETED, ProjectEnd.BLOCKER_CLEARED)
+                            project_upd = typed_completion(project_upd)
 
             # (Update strat_up with results)
             new_additions = list(strat_up.blockers_add_or_update)
@@ -1861,7 +1861,7 @@ class StrategicIntelligenceSystem:
                 # fires when the winning candidate is THIS tick's synthesized committed-intention
                 # candidate (matched by the metadata tag set at injection, above) -- a live
                 # scorer's candidate for the same GoalKind must not advance the sequence.
-                extra_ci = {}
+                extra_ci: dict[str, Any] = {}
                 if strat.committed_intentions and best_candidate.metadata.get("committed_intention_id") == strat.committed_intentions[0].intention_id:
                     extra_ci["committed_intentions_add_or_update"] = [replace(strat.committed_intentions[0], status="active")]
                 # TCK-20260813-ADVENTURE-ROUTE-LAST-ROUTING-FAMILY-RESTORE: restore
@@ -1869,7 +1869,7 @@ class StrategicIntelligenceSystem:
                 # ADVENTURE_ROUTE candidate. .value is required -- RouteFamily(str, Enum) means
                 # str(route_family) yields "RouteFamily.X", not the deleted phase's original
                 # "x" contract that event_shapers.py/event_extractor.py read.
-                extra_routing = {}
+                extra_routing: dict[str, Any] = {}
                 if best_candidate.kind == GoalKind.ADVENTURE_ROUTE:
                     route_family = best_candidate.metadata.get("route_family")
                     if route_family is not None:

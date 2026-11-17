@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING, Any, Dict, Optional
 
 if TYPE_CHECKING:
     from src.core.strategic import (
+        BlockerRemoval,
         BlockerState,
         CandidateZone,
         CommittedIntention,
@@ -14,7 +15,6 @@ if TYPE_CHECKING:
         DirectiveState,
         HypothesisState,
         LeadState,
-        BlockerRemoval,
         MarriageState,
         ProjectState,
         SourceTrustEntry,

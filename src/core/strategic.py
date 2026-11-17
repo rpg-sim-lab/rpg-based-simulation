@@ -336,7 +336,7 @@ CONGESTION_BLOCKER_ID = "blocker_congestion"
 
 def blocker_timeout_suppression(failure_count: int) -> int:
     """Ticks a blocker stays suppressed after its ``failure_count``-th resolve_blocker timeout: 100, 200, 400, 800, 800, ..."""
-    return min(BLOCKER_BACKOFF_BASE_TICKS * 2 ** max(failure_count - 1, 0), BLOCKER_BACKOFF_CAP_TICKS)
+    return min(BLOCKER_BACKOFF_BASE_TICKS << max(failure_count - 1, 0), BLOCKER_BACKOFF_CAP_TICKS)
 
 
 def merge_inferred_blocker(stored: Optional[BlockerState], inferred: BlockerState, tick: int) -> BlockerState:
@@ -489,6 +489,13 @@ def end_record(project: ProjectState, status: ProjectStatus, ended_by: ProjectEn
     if project.ended_by is not None:
         raise ValueError(f"project {project.id} already ended by {project.ended_by.value}")
     return dataclasses.replace(project, status=status, ended_by=ended_by, suspended_since=None)  # a terminal record has no suspension clock (N10)
+
+
+def typed_completion(project: ProjectState) -> ProjectState:
+    """``project`` (already COMPLETED by an objective resolving) with its typed end: a resolve_blocker project ends `BLOCKER_CLEARED` (divergence 2.214), so it never completes untyped; any other kind is returned as it is."""
+    if project.kind != "resolve_blocker":
+        return project
+    return end_record(project, ProjectStatus.COMPLETED, ProjectEnd.BLOCKER_CLEARED)
 
 
 def note_threat_state(project: ProjectState, present: bool, tick: int) -> ProjectState:

@@ -32,6 +32,7 @@ from src.observability.event_extractor import (
     _XP_PLATEAU_TICKS,
 )
 from src.observability.events import SimulationEvent, QuestEvent
+from src.observability.extraction.strategy import blocker_removed_events
 from src.core.quests import QuestState
 from src.core.strategic import ProjectStatus
 from src.domains.commitment.abandonment import AbandonmentEvaluator, AbandonmentCategory
@@ -788,14 +789,7 @@ class StrategyShaper:
                     payload={"entity_id": eid, "reason": defer_reason, "tick": tick},
                 ))
 
-            # COGNITION: blocker_removed (divergence 2.214): a blocker removed with a typed reason (QUIET_SPELL); the reason lives on the event only, never in state.
-            for blocker_id, removal in sorted((getattr(getattr(e_upd, "strategic", None), "blockers_removed_for", None) or {}).items()):
-                events.append(SimulationEvent(
-                    event_type="blocker_removed", event_category="strategy",
-                    tick=tick, entity_id=eid, severity="INFO",
-                    source_system="event_shapers", message="",
-                    payload={"entity_id": eid, "blocker_id": blocker_id, "reason": getattr(removal, "value", str(removal)), "tick": tick},
-                ))
+            events.extend(blocker_removed_events(eid, e_upd, tick))  # COGNITION: blocker_removed (divergence 2.214)
 
             # COGNITION: self_model_updated
             if getattr(e_upd, "self_model_bundle_set", None) is not None:
