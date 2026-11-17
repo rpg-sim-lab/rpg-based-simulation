@@ -197,7 +197,7 @@ class ArchetypeEntityFactory:
             .birth_record(
                 parent_a_entity_id=mother.id, parent_b_entity_id=mate.id, birth_tick=birth.tick,
                 parent_a_genetic_profile=birth.mother_genetics, parent_b_genetic_profile=birth.mate_genetics,
-                parent_a_role=mother.identity.role, parent_b_role=mate.identity.role,
+                parent_a_role=mother.identity.role, parent_b_role=mate.identity.role, world_seed=birth.seed,
             )
             .spawn_combat_stats_are_final()
             .replace_self_model(default_self_model())
