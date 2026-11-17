@@ -278,10 +278,10 @@ def test_a_population_failing_both_declarations_raises_the_diet_error_first():
 
 
 def test_a_population_with_a_diet_but_no_usable_profile_raises_the_sense_error(broken_human):
-    """With the diet declared, the second check runs: a typed SenseProfileError naming the world and the population."""
+    """With the diet declared, the second check runs: a typed SenseProfileError naming the species and the dangling profile."""
     from types import SimpleNamespace
     from src.worldbuilding.diet_declaration import require_declared_population_species
     pop = SimpleNamespace(role="merchant", faction="merchant_league")
     with pytest.raises(SenseProfileError) as err:
         require_declared_population_species("w1", "p", pop, "human")
-    assert "world 'w1' population 'p'" in str(err.value) and "'human'" in str(err.value)
+    assert "'human'" in str(err.value) and "no usable sense profile" in str(err.value)  # a content species with a dangling profile; the unnamed-species case carries the world and population
