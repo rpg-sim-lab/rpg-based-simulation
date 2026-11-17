@@ -24,6 +24,8 @@ Entities evaluate multiple "Concerns" and select the one with the highest calcul
 
 Night is the night half of the time of day (`calendar.is_night`: ticks 1800-2399 and 0-599 of each 2400-tick day); the sleep bias in `SleepScorer` and the routine sleep urgency read it, not the never-wrapping `world_time` (SURV-08 clock amendment, memo row 98 Q1; divergence 2.209).
 
+Perception is by the body's own senses (PERC-02): the perception gate reads the sense profile of the observer's species, scores it against what the observed body gives off (`emitted_signals`: visibility by size band; noise and vibration by whether it moved, is still, or is asleep or lodged; scent and life for a living body, none of life for undead and spirit bodies), and at night counts the observer's vision two levels lower unless its profile declares `night_vision`. A gate error is not perception. (divergence 2.210.)
+
 ---
 
 ### Standing Needs Escalate (TCK-20261007-BIOLOGICAL-NEEDS-ESCALATE-ABOVE-ORDINARY-GOALS-BEFORE-THE-CONSEQUENCE-LINE-SURV-07)
