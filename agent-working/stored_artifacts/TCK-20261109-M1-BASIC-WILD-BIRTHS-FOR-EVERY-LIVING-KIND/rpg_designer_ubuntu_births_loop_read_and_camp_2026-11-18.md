@@ -57,3 +57,19 @@ tags: []
   - **Rule text:** docs/world_rules/life-body/ecology-population.md:88. It is catalog text, which I don't edit, so it goes to rpg-designer as a B5 item.
   - **Contract doc:** docs/world/raid_boss_camp_contract.md:53, the "Nest fork" section. rpg-planner-ubuntu should say whose doc it is; it needs the same one-line removal note.
   - **Plan:** rpg_m4_beyond_city_epic.md:62 is a dated plan, so it is left as history.
+
+## Rows 2 and 3, from rpg-planner-ubuntu's data cuts (kept runs, true counts)
+### Row 3: urban_political_selfmodel_probe WORLD 0.19 -> 0.25: NO never-exit loop
+- The whole move is 2 `demographic_birth` events (+8) plus 1 extra `region_trauma_delta` (+4), over a denominator of 200.
+- `hazard_drain_applied`, the flagged tag, is identical in all three arms: 8 events, entity 21 at ticks 47-59 plus entity 20 once.
+- Births-off equals main.
+
+### Row 2: urban_political SOCIAL: NO per-tick hold. One check is left before "no never-exit loop" is stated
+- No entity emits on every tick. The denominator moves from 551 to 1000 because of two original bodies that still cooperate late on head:
+  - entity 10: 262 events, ticks 427-1000, on 46% of the ticks in that span;
+  - entity 28: 89 events, ticks 299-1000, sparse.
+- The newborns stop by tick 221 and tick 585. The raw score is flat: 4246 events against 4249.
+- Entity 10 does emit to the end of the run, but intermittently. That fits either ordinary repeated decisions or a fixed-period oscillation, which would also be a never-exit loop.
+- **The check:** the gaps between successive events, plus the `decision` payload values, for entities 10 and 28 on head. This comes from the same logs; no new run.
+  - **If the gaps are irregular, or the decisions vary:** no never-exit loop. State it for u24.
+  - **If there is a fixed period with one repeated decision to tick 1000:** it is a never-exit cycle behind the denominator, and row 2 is not re-pinned.
