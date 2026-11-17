@@ -9,7 +9,7 @@ from src.core.builder import build_parent_bond_updates_for_birth
 from src.core.enums import Domain
 from src.core.species import species_of
 from src.core.spawn_source import SpawnKind, SpawnSource
-from src.core.state import EntityState, LifeStage
+from src.core.state import EntityState, GeneticProfile, LifeStage
 from src.core.updates import BiologicalUpdate, EntityUpdate, LifecycleUpdate, StateUpdate, WorldUpdate
 from src.content.resolver import EntityArchetypeResolver
 from src.engine.behavior_consumers import get_catalog
@@ -105,8 +105,8 @@ def _birth(
     for _ in range(profile.litter_size):
         birth = NewbornBirth(
             mother, mate, generator.free_spawn_position(mother.navigation.position, state), state.tick, state.seed,
-            mother.lifecycle.genetic_profile or GeneticsSystem.generate_profile_from_seed(mother.id),
-            mate.lifecycle.genetic_profile or GeneticsSystem.generate_profile_from_seed(mate.id), home_region_id,
+            mother.lifecycle.genetic_profile or _fallback_genetics(state, mother),
+            mate.lifecycle.genetic_profile or _fallback_genetics(state, mate), home_region_id,
         )
         newborns.append(ArchetypeEntityFactory().build_newborn(generator.get_next_id(), contracts[species_id], birth))
 
@@ -122,12 +122,17 @@ def _birth(
             ),
             mate.id: EntityUpdate(entity_id=mate.id, lifecycle=_cooldown_update(mate, mother.id, expiry, state.tick)),
         },
-        world_updates={region.id: WorldUpdate(region_id=region.id, population_young_births_delta=1)} if region is not None else {},
+        world_updates={region.id: WorldUpdate(region_id=region.id, population_young_births_delta=len(newborns))} if region is not None else {},
     )
     for newborn in newborns:
         bonds = build_parent_bond_updates_for_birth([mother.id, mate.id], newborn.id, state.tick)
         update = update.merge(StateUpdate(entity_updates={u.entity_id: u for u in bonds}))
     return update
+
+
+def _fallback_genetics(state: AuthoritativeState, parent: EntityState) -> GeneticProfile:
+    """A parent with no genetic profile (every t0 body) gets one derived from (world seed, id), so the same id does not breed the same genes in every seed."""
+    return GeneticsSystem.generate_profile_from_seed(state.seed * 1_000_003 + parent.id)
 
 
 def _cooldown_update(parent: EntityState, partner_id: int, expiry: int, tick: int) -> LifecycleUpdate:
