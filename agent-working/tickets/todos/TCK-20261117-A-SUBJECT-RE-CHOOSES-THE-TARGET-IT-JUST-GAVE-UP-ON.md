@@ -24,7 +24,7 @@ standard
 bug
 
 ## Priority
-P1
+P0
 
 ## Request Summary
 Found by the STALEMATE fix's own-job run (S9 #715 6947037311, fixtree 08b9dcae8). After a way-round give-up, the given-up target is chosen again within 200 ticks:
@@ -32,7 +32,7 @@ Found by the STALEMATE fix's own-job run (S9 #715 6947037311, fixtree 08b9dcae8)
 - frontier_living_world: 37 of 38 subjects, 1093 events;
 - urban_political: 20 of 20 subjects, 477 events.
 
-The give-up clears the target, but nothing remembers that it was given up, so target choice picks it again. The rpg-designer ruling (draft .claude/handover/drafts/rpg-designer-stalemate-s3-ruling.md, sha prefix 82f62819) makes this F2: a separate Phase-1 liveness ticket in run 1. It does NOT gate the STALEMATE F1 PR, with one exception: if F1's rerun shows any subject giving up the same anchor 5 or more times in 5000 ticks, it comes back to the designer before merge.
+The give-up clears the target, but nothing remembers that it was given up, so target choice picks it again. The rpg-designer ruling (draft .claude/handover/drafts/rpg-designer-stalemate-s3-ruling.md, sha prefix 82f62819) makes this F2: a separate Phase-1 liveness ticket in run 1. It was first filed as not gating the STALEMATE F1 PR, with one exception: any subject giving up the same anchor 5 or more times in 5000 ticks comes back to the designer before merge. UPDATE 2026-11-17 (designer ruling, draft section 06149efe): F1's own-job (S9 #715 6949902550) showed 30/39/17 subject-anchors with 5 or more give-ups, max 194 (frontier eid 42 at (140,40)). That is a never-exit loop, so F2 now GATES F1's merge, and F1+F2 land together.
 
 ## Scope
 1. DESIGN BY rpg-designer, pending. A typed give-up memory, durable with a defined lifecycle and expiry, that target choice respects.
