@@ -256,3 +256,32 @@ def test_compile_path_refuses_a_content_species_without_a_usable_profile(broken_
     spec, context = WorldRepository("data/worlds").load_world_with_context("urban_political")
     with pytest.raises(SenseProfileError):
         WorldCompiler.compile(spec, 42, context=context)
+
+
+# --- the compile check is one helper: the diet declaration is checked first, then the sense profile ---------------------------------------------
+
+def test_a_population_failing_both_declarations_raises_the_diet_error_first():
+    """An unknown species fails the diet declaration AND the sense profile; the diet error (InvalidWorldSpecError) is the one raised."""
+    from types import SimpleNamespace
+    from src.worldbuilding.diet_declaration import require_declared_population_species
+    from src.worldbuilding.schema import InvalidWorldSpecError
+    from src.content.species_senses import require_species_sense_profile
+    pop = SimpleNamespace(role="merchant", faction="merchant_league")
+    with pytest.raises(SenseProfileError):
+        require_species_sense_profile("no_such_species_xyz", "w1")  # the sense check alone would refuse it too
+    with pytest.raises(InvalidWorldSpecError) as err:
+        require_declared_population_species("w1", "p", pop, "no_such_species_xyz")
+    assert not isinstance(err.value, SenseProfileError)
+    assert "w1" in str(err.value) and "'p'" in str(err.value) and "does not declare" in str(err.value)
+    with pytest.raises(InvalidWorldSpecError, match="no species"):
+        require_declared_population_species("w1", "p", pop, None)
+
+
+def test_a_population_with_a_diet_but_no_usable_profile_raises_the_sense_error(broken_human):
+    """With the diet declared, the second check runs: a typed SenseProfileError naming the world and the population."""
+    from types import SimpleNamespace
+    from src.worldbuilding.diet_declaration import require_declared_population_species
+    pop = SimpleNamespace(role="merchant", faction="merchant_league")
+    with pytest.raises(SenseProfileError) as err:
+        require_declared_population_species("w1", "p", pop, "human")
+    assert "world 'w1' population 'p'" in str(err.value) and "'human'" in str(err.value)
