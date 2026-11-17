@@ -197,6 +197,16 @@ Source: `agent-working/stored_artifacts/TCK-20261109-M1-BASIC-WILD-BIRTHS-FOR-EV
 - The packet is now at impl commit a75d1103e, sha256 088701b6. It supersedes 2aa4beb7; only the optional Births Law bullet was removed.
 - Disclosure: every t0 body at s42 has no genetic_profile, so the seeded fallback fires for every first-generation parent.
 - Open with rpg-designer-ubuntu as Q19: `birth_record`'s combo_seed (builder.py:695) carries no world seed.
+- rpg-designer's placement RULING (relayed by lead-planner-u24 and lead-planner on 2026-11-18; recorded here): (a) APPROVED.
+  - Position: inside the world_dynamics phase call, after the gated block and before the regional transformations. Cadence: births = 30 on the absolute tick. Order on a co-fire tick: world_dynamics, then births, through one generator, pinned by a test. One births step; the old humanoid step is removed.
+  - refine(), the counted list and kernel.md are unchanged. Running inside the gate was rejected.
+  - Bullet to place verbatim after the single `- **Sovereignty Law**:` bullet in docs/engine/authoritative_pipeline.md: "- **Births Law**: Every 30 ticks (absolute kernel tick), a mother eligible under her species' reproduction profile, with an eligible same-species mate in range, may bear one newborn at life stage CHILD, by the profile's chance per check, drawn from the run's seeded RNG. The step runs inside this phase, outside its 50-tick gate, and commits only typed updates (the newborn, its birth source, the parents' cooldowns and the mother's hunger cost, the region's birth count)." B5 checks that the code matches it.
+  - B5 also carries the old step's trail: ch05 "Humanoid Reproduction" (~524) and its paths list (~338-345), the parity rows that cite it, and any divergence rows that cite it.
+  - A tick-cost line goes in the step report.
+- rpg-designer's UPDATE on newborn reads (supersedes its first hold):
+  - The newborn's `home_region_id` and `home_position`/`leash_radius` are ALLOWED, as newborn values only, and must never gate eligibility.
+  - `public_reputation` stays REMOVED (no read, no seeding by births) until rpg-designer answers Q18a, which is now a question.
+  - rpg-designer acks the three code-level rulings and cover v2.
 - No Births Law text is committed until rpg-designer rules.
 
 ## Out of Scope
