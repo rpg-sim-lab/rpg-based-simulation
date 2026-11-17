@@ -306,7 +306,8 @@ def test_wider_scope_numbers_pinned():
     # 368 -> 369 on 2026-11-16 (TCK-20261111-A-HOLD-MODE-MOVE-STILL-TAKES-A-STEP, divergence 2.206, rpg-planner ok, from the check's own output): +src/core/hold_mode.py (hold_reset_kwargs, bound under `tactical_decision`; first landed as src/engine/hold_mode.py and moved to src/core because systems may not import engine), so unbound_files stays.
     # 369 -> 370 on 2026-11-16 (TCK-20261101-A-CHECKPOINT-HAS-NO-FORMAT-VERSION, INFRA-215): +src/engine/checkpoint_schema.py (the checkpoint schema fingerprint and its refusals; functions and error types, no mechanism of its own).
     # 370 -> 371 on 2026-11-16 (TCK-20261109-M1-KIND-ALWAYS-MEANS-SPECIES-AND-OCCUPATION-IS-ITS-OWN-FIELD, rpg-planner ok): +src/core/species.py (species_of, the one species read; functions only, no class); it is unbound, see unbound_files below.
-    assert wider["scope_files"] == 371
+    # 371 -> 372 on 2026-11-17 (TCK-20261117-KIND-IS-THE-SPECIES-AT-EVERY-WRITER, a pure move; S8 CI fix): +src/content/hero_species.py (hero_species_id, moved unchanged out of src/systems/world_systems/generator.py so the campaign runner may import it under the registry layer order; one function, no class).
+    assert wider["scope_files"] == 372
     # 233 -> 227 on 2026-10-05: the world-building split names six more files (worldmodules/normalizer,
     # worldassembly/resolve_io, worldbuilding/repository and validator, worldgeneration/generator and scorer).
     # Then +1 for the unbound entity_target_objective.py module (TCK-20261002-COMBAT-OBJECTIVE-TARGETS-...).
