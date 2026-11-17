@@ -270,6 +270,13 @@ spawning and camp systems, content
 
 ## Implementation Notes
 - Carry-forward from kind=species step 4 (rpg-designer): this item's own-job counts include K6 (kind is a species at birth) and K8 (newborn kind = the parents' species), on a world/seed where births actually happen.
+- 2026-11-18, the cooperation loop on the births head is a HARD item for the births MERGE, if confirmed. It does not block the feature-branch push (rpg-designer on u24, relayed by lead-planner).
+  - Cause read (ii): entities 10 and 28 in urban_political s42 emit cooperation SOLO on every tick because they are members of group 10018. The group forms at tick 918 and has not dissolved by the end of the 1000-tick run. Every earlier group, in both arms, ended within about 100 ticks.
+  - rpg-designer-ubuntu's loop read is stored at 9a9007ab.
+  - Stated expectation before the S9 data (rpg-designer): group 10018 dissolves about 100-200 ticks after forming, so by about tick 1120.
+  - The S9 2000-tick frozen-tree diagnostic on main 3aafdb383 and on the births head decides it. If the group dissolves, it is BALANCE and disclosed. If it persists to tick 2000 on head and is absent on main, the fix is a births one when newborn-specific, or a separate ticket on the old cohesion code that gates the merge.
+  - The run waits for rpg-designer's answer on a group that persists but stays active.
+  - Row 2 (urban_political SOCIAL) is held until then.
 - Observation (BALANCE, Phase 3): 0 camp spawns and 0 respawns in 5000t in all 3 gate worlds at s42. Either the camps don't spawn in that horizon, or a spawn path is gated off (decision 70: camps refill only by births).
 
 ## Test Summary

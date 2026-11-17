@@ -85,7 +85,8 @@ src/simulation_quality/quality_report.py, src/simulation_quality/pillar_accumula
 - Option offered to lead-planner-u24 (its call): show the raw score and the denominator next to each normalised corpus row value.
 
 ## Implementation Notes
-None yet.
+- Report-only, from rpg-designer (u24), 2026-11-18: SOCIAL's grade moves on last_event_tick alone. In urban_political s42 1000t, moving the denominator from 551 to 1000 roughly halved the grade (36.50 -> 20.19) on a flat raw score. On the births head, the late events are two group members' per-tick SOLO re-decisions in group 10018, which forms at tick 918. Scope line 1 is the fix.
+- The emit-only-on-change fix for the per-tick SOLO write belongs to rpg-planner's TCK-20261118-A-SUBJECT-WITH-A-STANDING-HELP-NEED-RE-DECIDES-SOLO-EVERY-TICK (u24), not to this ticket.
 
 ## Test Summary
 
