@@ -77,7 +77,7 @@ None.
 One helper pair in src/core/calendar.py (time_of_day, is_night; int in, designer R1). SleepScorer and both RoutineService readers call is_night. intelligence.py:588 passes state.world_time. raid.py unused TICKS_PER_DAY removed. intelligence.py:912 left (deeper issue 4, own Phase-3 ticket). Divergence 2.209 (Bug Fix); ledger STRAT-351.
 
 ## Test Summary
-Targeted pytest -n 1, 2026-11-17: 120 passed (test_time_of_day, test_calendar, test_biological_needs, test_routine_biasing, test_strategic_lifecycle, test_calamity_raid, test_global_raid_retired, test_sleep_pull_nearest_open_way, test_service_admission). No sim run (designer R2). CI-equivalent run pending in its own slot.
+Targeted pytest -n 1, 2026-11-17: 120 passed (test_time_of_day, test_calendar, test_biological_needs, test_routine_biasing, test_strategic_lifecycle, test_calamity_raid, test_global_raid_retired, test_sleep_pull_nearest_open_way, test_service_admission). No sim run (designer R2). CI plus the hard validity rows of an rpg-gate-report dispatch on the pushed head (started by rpg-planner); the extinction line is read on the host at the run-2 domain boundary (owner 6937306315), not in CI. The CI-equivalent run is pending in its own slot.
 
 ## Files Changed
 src/core/calendar.py, src/ai/goals/scorers.py, src/systems/world_systems/routine.py, src/systems/strategic_systems/intelligence.py, src/world/raid.py, src/api/presenters/state_presenter.py, tests/unit/core/test_time_of_day.py, docs/world_rules/life-body/survival-needs.md, docs/mechanics/04_strategic_cognition.md, docs/guidelines/intentional_divergences.md, docs/parity_ledger/strategic_cognition.yaml
