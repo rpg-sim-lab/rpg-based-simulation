@@ -42,6 +42,7 @@ def _entity(eid: int = 1, identity=None, generation: int = 1, gold: float = 0.0,
     e.strategic.current_project_id = None
     e.strategic.concerns = {}
     e.group_id = None
+    e.identity.occupation = "hero"
     return e
 
 

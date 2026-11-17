@@ -5,6 +5,7 @@ from __future__ import annotations
 from typing import Any
 
 from src.core.combat_constants import NEAR_DEATH_HP_RATIO
+from src.core.species import occupation_of
 from src.observability.config import ObservabilityMode
 from src.observability.events import CombatDamageEvent, CombatKillEvent, SimulationEvent
 from src.observability.extraction.context import ExtractContext
@@ -79,7 +80,7 @@ def _hero_death_events(ctx: ExtractContext, eid: int, entity: Any) -> list[Simul
     # "a hero died and nothing else recorded it" narrative-gap signal, not a
     # combat-specific one — a hero dying of old age with no other tracking is just
     # as real an "unrecorded" gap as a hero dying in unattributed combat.
-    if getattr(entity, "kind", None) == "hero":
+    if occupation_of(entity) == "hero":
         events.append(SimulationEvent(
             event_type="hero_death_unrecorded",
             event_category="lifecycle",

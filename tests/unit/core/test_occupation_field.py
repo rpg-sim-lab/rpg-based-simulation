@@ -255,18 +255,18 @@ def test_the_presenter_shows_null_for_a_body_with_no_label(shape):
 
 # ---- K3: nobody reads the new field yet ----------------------------------------------------------------------------------------------------
 
-# The only production files that mention `.occupation` after step 2, each for a reason that is not a decision: the field's own canonical dict and read-only copy, the apply path's hand-copy of the record, the builder's
+# The production files that read the `.occupation` attribute: the carry, copy and presentation sites of step 2 (each for a reason that is not a decision): the field's own canonical dict and read-only copy, the apply path's hand-copy of the record, the builder's
 # carry, the campaign carry-forward (extract, save, rebuild), the presenter. Step 3 moves the label readers to `occupation`, and this list is then extended on purpose.
 _OCCUPATION_ATTRIBUTE_ALLOWLIST = {
-    "src/core/state.py",
-    "src/engine/apply.py",
-    "src/domains/campaigns/orchestrator.py",
-    "src/domains/campaigns/state.py",
-    "src/api/presenters/state_presenter.py",
+    # the field itself, the carry and the copy sites, the presenter (step 2)
+    "src/core/state.py", "src/engine/apply.py", "src/domains/campaigns/orchestrator.py", "src/domains/campaigns/state.py", "src/api/presenters/state_presenter.py",
+    # the helper that reads it for the duck-typed readers, and the label readers step 3 moved off `kind` (rpg-designer 665b9718, rows 10-13, 15-23, B1-B3, B5, B9-B12)
+    "src/world/calamity.py", "src/world/boss.py", "src/world/threat.py", "src/world/environment.py", "src/world/creature_territory.py",
+    "src/systems/world_systems/navigation.py",
 }
 
 
-def test_k3_no_production_code_reads_occupation_outside_the_carry_and_presentation_sites():
+def test_k3_no_production_code_reads_occupation_attribute_outside_the_carry_presentation_and_moved_label_reader_sites():
     root = Path(__file__).resolve().parents[3]
     readers = set()
     for path in sorted((root / "src").rglob("*.py")):

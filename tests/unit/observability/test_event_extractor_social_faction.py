@@ -44,6 +44,7 @@ def _entity(eid: int = 1):
     e.group_id = None
     e.social = MagicMock()
     e.social.public_reputation = 0.0
+    e.identity.occupation = "hero"
     return e
 
 
@@ -633,6 +634,7 @@ def _make_entity_with_faction(eid: int, faction_id: str, hp: int = 100):
     e.group_id = None
     e.social = MagicMock()
     e.social.public_reputation = 0.0
+    e.identity.occupation = "hero"
     return e
 
 
