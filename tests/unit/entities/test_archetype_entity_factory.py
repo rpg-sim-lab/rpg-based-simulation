@@ -140,10 +140,11 @@ def test_combat_values_match_contract():
 
 
 def test_archetype_id_preserved_in_identity_properties():
-    c = _contract(archetype_id="test_arch", species_id="test_species")
+    # PERC-02a (rpg-designer): the archetype path refuses a species that is not in content, so the fixture names a real one; the test still checks that the species is preserved.
+    c = _contract(archetype_id="test_arch", species_id="human")
     entity = FACTORY.build_entity(7, c, _spawn())
     assert entity.identity.properties["archetype_id"] == "test_arch"
-    assert entity.identity.properties["species_id"] == "test_species"
+    assert entity.identity.properties["species_id"] == "human"
 
 
 def test_inventory_items_and_gold_from_contract():
