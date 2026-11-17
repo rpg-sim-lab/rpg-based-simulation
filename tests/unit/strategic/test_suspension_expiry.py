@@ -70,6 +70,11 @@ def test_a_suspended_record_with_no_clock_is_stamped_on_first_sight_and_counts_f
     assert expire_suspended({"p": stamped}, T0 + SUSPENSION_TTL_TICKS)[0].ended_by == ProjectEnd.SUSPENSION_EXPIRED
 
 
+def test_a_terminal_record_carries_no_clock():
+    (ended,) = expire_suspended({"p": _proj()}, T0 + SUSPENSION_TTL_TICKS)
+    assert ended.suspended_since is None
+
+
 def test_the_typed_end_is_written_once():
     (ended,) = expire_suspended({"p": _proj()}, T0 + SUSPENSION_TTL_TICKS)
     assert expire_suspended({ended.id: ended}, T0 + 10_000) == []

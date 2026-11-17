@@ -437,7 +437,7 @@ def end_record(project: ProjectState, status: ProjectStatus, ended_by: ProjectEn
     """The one writer of ``ended_by``: ``project`` with the terminal ``status`` and its typed end. A record that already has an end is never rewritten (ValueError: a caller bug, not a state)."""
     if project.ended_by is not None:
         raise ValueError(f"project {project.id} already ended by {project.ended_by.value}")
-    return dataclasses.replace(project, status=status, ended_by=ended_by)
+    return dataclasses.replace(project, status=status, ended_by=ended_by, suspended_since=None)  # a terminal record has no suspension clock (N10)
 
 
 def note_threat_state(project: ProjectState, present: bool, tick: int) -> ProjectState:
