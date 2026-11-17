@@ -3362,6 +3362,18 @@
   - documentation
   - schema
 - type: doc
+  path: docs/plans/systemic_world/m1_kernel_spec_items_2_6.md
+  title: 'Milestone 1 kernel spec: items 2-6'
+  status: active
+  layer: architecture
+  authority: P1
+  audience: agent
+  tags:
+  - architecture
+  - world
+  - roadmap
+  last_verified: '2026-11-17'
+- type: doc
   path: docs/plans/test_architecture/phase2_social_scale_out.md
   title: 'Test Architecture Phase 2: Scale-Out to Social (plan)'
   status: active
@@ -7991,6 +8003,33 @@
   - agent-working/stored_artifacts/TCK-20261117-AN-ENTITY-CARRIES-ITS-OCCUPATION-LABEL-AND-ONE-SPECIES-READ-SPECIES-OF/test_plan.md
   tags: []
 - type: ticket
+  path: agent-working/tickets/done/TCK-20261117-KIND-IS-THE-SPECIES-AT-EVERY-WRITER.md
+  ticket_id: TCK-20261117-KIND-IS-THE-SPECIES-AT-EVERY-WRITER
+  title: '`kind` is the species id at every writer, and the label lives in `occupation`
+    (M1 step 4 of 5)'
+  tier: standard
+  ticket_type: feature
+  date: '2026-11-17'
+  related_code_areas:
+  - kind
+  artifact_files:
+  - agent-working/stored_artifacts/TCK-20261117-KIND-IS-THE-SPECIES-AT-EVERY-WRITER/investigation.md
+  - agent-working/stored_artifacts/TCK-20261117-KIND-IS-THE-SPECIES-AT-EVERY-WRITER/plan.md
+  - agent-working/stored_artifacts/TCK-20261117-KIND-IS-THE-SPECIES-AT-EVERY-WRITER/test_plan.md
+  tags: []
+- type: ticket
+  path: agent-working/tickets/done/TCK-20261117-LEAD-BOARD-SEVENTH-PASS.md
+  ticket_id: TCK-20261117-LEAD-BOARD-SEVENTH-PASS
+  title: The lead board records Milestone 1's three-phase plan, its boundaries and
+    the 2026-11-17 standing approvals, and shows ubuntu with only its RPG seats running
+  tier: hotfix
+  ticket_type: chore
+  date: '2026-11-17'
+  related_code_areas: []
+  artifact_files: []
+  tags:
+  - governance
+- type: ticket
   path: agent-working/tickets/done/TCK-20261117-LEAD-M1-BASE-GATE-EVIDENCE.md
   ticket_id: TCK-20261117-LEAD-M1-BASE-GATE-EVIDENCE
   title: The rpg gate reports behind the Milestone 1 re-baseline are kept on main,
@@ -8002,6 +8041,19 @@
   artifact_files: []
   tags:
   - governance
+- type: ticket
+  path: agent-working/tickets/done/TCK-20261117-RPG-IMPLEMENTER-SEATS-RISE-TO-FOUR.md
+  ticket_id: TCK-20261117-RPG-IMPLEMENTER-SEATS-RISE-TO-FOUR
+  title: The rpg-implementer role allows four sessions, so the owner's fourth RPG
+    lane (rpg-implementer-4) can launch
+  tier: hotfix
+  ticket_type: chore
+  date: '2026-11-17'
+  related_code_areas:
+  - registries/session_roles.yaml
+  - tests/tools/test_session_launch.py
+  artifact_files: []
+  tags: []
 - type: ticket
   path: agent-working/tickets/done/TCK-20261117-THE-LABEL-READERS-READ-OCCUPATION-NOT-KIND.md
   ticket_id: TCK-20261117-THE-LABEL-READERS-READ-OCCUPATION-NOT-KIND
@@ -8017,6 +8069,107 @@
   - agent-working/stored_artifacts/TCK-20261117-THE-LABEL-READERS-READ-OCCUPATION-NOT-KIND/test_plan.md
   tags: []
 - type: ticket
+  path: agent-working/tickets/todos/TCK-20261117-A-BLOCKED-WALKER-HAS-NO-MEMORY-OF-ITS-DETOUR-HEADING.md
+  ticket_id: TCK-20261117-A-BLOCKED-WALKER-HAS-NO-MEMORY-OF-ITS-DETOUR-HEADING
+  title: A subject blocked by an obstacle longer than one step has no memory of its
+    detour heading
+  tier: standard
+  ticket_type: bug
+  date: '2026-11-17'
+  related_code_areas: []
+  artifact_files: []
+  tags: []
+- type: ticket
+  path: agent-working/tickets/todos/TCK-20261117-A-DANGER-CONCERN-IS-NEVER-REMOVED-ONCE-ITS-HOSTILE-NO-LONGER-MATTERS.md
+  ticket_id: TCK-20261117-A-DANGER-CONCERN-IS-NEVER-REMOVED-ONCE-ITS-HOSTILE-NO-LONGER-MATTERS
+  title: A danger_hostile concern is never removed or refreshed once its hostile no
+    longer matters
+  tier: standard
+  ticket_type: bug
+  date: '2026-11-17'
+  related_code_areas: []
+  artifact_files: []
+  tags: []
+- type: ticket
+  path: agent-working/tickets/todos/TCK-20261117-A-MAGICAL-DEMONIC-ENTITY-BODY-DECLARES-A-SPECIES.md
+  ticket_id: TCK-20261117-A-MAGICAL-DEMONIC-ENTITY-BODY-DECLARES-A-SPECIES
+  title: A magical or demonic entity body declares a species, and `magical_demonic_entity`
+    leaves the non-living allowlist
+  tier: standard
+  ticket_type: refactor
+  date: '2026-11-17'
+  related_code_areas:
+  - src/core/species.py, src/world/
+  artifact_files: []
+  tags: []
+- type: ticket
+  path: agent-working/tickets/todos/TCK-20261117-A-WORLD-BOSS-BODY-DECLARES-A-SPECIES.md
+  ticket_id: TCK-20261117-A-WORLD-BOSS-BODY-DECLARES-A-SPECIES
+  title: A world boss body declares a species, and `world_boss` leaves the non-living
+    allowlist
+  tier: standard
+  ticket_type: refactor
+  date: '2026-11-17'
+  related_code_areas:
+  - src/core/species.py, src/world/
+  artifact_files: []
+  tags: []
+- type: ticket
+  path: agent-working/tickets/todos/TCK-20261117-BIBLE-02-KILL-REWARD-TABLE-OMITS-THE-HOSTILE-FIRST-STEP.md
+  ticket_id: TCK-20261117-BIBLE-02-KILL-REWARD-TABLE-OMITS-THE-HOSTILE-FIRST-STEP
+  title: Bible 02's kill-reward table omits the hostile-first step
+  tier: standard
+  ticket_type: repair
+  date: '2026-11-17'
+  related_code_areas: []
+  artifact_files: []
+  tags: []
+- type: ticket
+  path: agent-working/tickets/todos/TCK-20261117-EVALUATE-ALL-STRATEGIC-INTENTS-IS-DEAD-CODE-THAT-SKIPS-THE-SUSPENSION-EXPIRY.md
+  ticket_id: TCK-20261117-EVALUATE-ALL-STRATEGIC-INTENTS-IS-DEAD-CODE-THAT-SKIPS-THE-SUSPENSION-EXPIRY
+  title: StrategicIntelligenceSystem.evaluate_all_strategic_intents has no production
+    caller, and its direct call to evaluate_strategic_intent would skip N10's suspension
+    expiry
+  tier: hotfix
+  ticket_type: chore
+  date: '2026-11-17'
+  related_code_areas:
+  - src/systems/strategic_systems/intelligence.py (evaluate_all_strategic_intents)
+  artifact_files: []
+  tags: []
+- type: ticket
+  path: agent-working/tickets/todos/TCK-20261117-INTELLIGENCE-RAW-TIME-PATHS-ARE-UNCALLED.md
+  ticket_id: TCK-20261117-INTELLIGENCE-RAW-TIME-PATHS-ARE-UNCALLED
+  title: intelligence.py :912 and :1005-1016 are uncalled paths that read raw world
+    time
+  tier: standard
+  ticket_type: chore
+  date: '2026-11-17'
+  related_code_areas: []
+  artifact_files: []
+  tags: []
+- type: ticket
+  path: agent-working/tickets/todos/TCK-20261117-LEAD-CREATE-AND-RESOURCE-SITE-RECORD-HAVE-NO-CALLER.md
+  ticket_id: TCK-20261117-LEAD-CREATE-AND-RESOURCE-SITE-RECORD-HAVE-NO-CALLER
+  title: LeadService.create_lead and SpatialMemory.record_resource_site have no caller
+  tier: standard
+  ticket_type: chore
+  date: '2026-11-17'
+  related_code_areas: []
+  artifact_files: []
+  tags: []
+- type: ticket
+  path: agent-working/tickets/todos/TCK-20261117-NEAREST-SERVICE-IS-PASSED-A-REGION-ID-AS-ITS-SUBJECT.md
+  ticket_id: TCK-20261117-NEAREST-SERVICE-IS-PASSED-A-REGION-ID-AS-ITS-SUBJECT
+  title: TownNavigation.get_nearest_service is passed a region id as its subject,
+    so near_service probably never matches
+  tier: standard
+  ticket_type: bug
+  date: '2026-11-17'
+  related_code_areas: []
+  artifact_files: []
+  tags: []
+- type: ticket
   path: agent-working/tickets/todos/TCK-20261117-PAY-DOWN-THE-NINE-LINE-CEILINGS-THE-OCCUPATION-FIELD-RAISED.md
   ticket_id: TCK-20261117-PAY-DOWN-THE-NINE-LINE-CEILINGS-THE-OCCUPATION-FIELD-RAISED
   title: Pay down the nine code-health line ceilings that the occupation field raised
@@ -8029,6 +8182,39 @@
   artifact_files: []
   tags: []
 - type: ticket
+  path: agent-working/tickets/todos/TCK-20261117-PAY-DOWN-THE-STEP-4-KIND-IS-SPECIES-CEILING-RAISES.md
+  ticket_id: TCK-20261117-PAY-DOWN-THE-STEP-4-KIND-IS-SPECIES-CEILING-RAISES
+  title: Pay down the code-health ceilings that M1 step 4 (kind is the species) raised
+  tier: standard
+  ticket_type: refactor
+  date: '2026-11-17'
+  related_code_areas:
+  - src/world/, src/worldassembly/, src/worldbuilding/, src/systems/world_systems/generator.py,
+    src/domains/campaigns/, src/testing/
+  artifact_files: []
+  tags: []
+- type: ticket
+  path: agent-working/tickets/todos/TCK-20261117-RECOVER-SCORER-FALLS-BACK-TO-THE-TOWN-CENTRE-AT-ANY-DISTANCE.md
+  ticket_id: TCK-20261117-RECOVER-SCORER-FALLS-BACK-TO-THE-TOWN-CENTRE-AT-ANY-DISTANCE
+  title: RecoverScorer falls back to the town centre at any distance
+  tier: standard
+  ticket_type: bug
+  date: '2026-11-17'
+  related_code_areas: []
+  artifact_files: []
+  tags: []
+- type: ticket
+  path: agent-working/tickets/todos/TCK-20261117-ROUTINE-BOOSTS-KEYED-SLEEP-AND-EATING-NEVER-MATCH-A-GOAL-KIND.md
+  ticket_id: TCK-20261117-ROUTINE-BOOSTS-KEYED-SLEEP-AND-EATING-NEVER-MATCH-A-GOAL-KIND
+  title: The routine boosts keyed "sleep" and "eating" never match a GoalKind value,
+    so they are dead
+  tier: standard
+  ticket_type: bug
+  date: '2026-11-17'
+  related_code_areas: []
+  artifact_files: []
+  tags: []
+- type: ticket
   path: agent-working/tickets/todos/TCK-20261117-SPLIT-EVENT-SHAPERS-BELOW-ITS-LINE-CEILINGS.md
   ticket_id: TCK-20261117-SPLIT-EVENT-SHAPERS-BELOW-ITS-LINE-CEILINGS
   title: Split the per-domain shapers out of event_shapers.py so it comes back under
@@ -8038,6 +8224,65 @@
   date: '2026-11-17'
   related_code_areas:
   - src/observability/event_shapers.py; tests/unit/observability/
+  artifact_files: []
+  tags: []
+- type: ticket
+  path: agent-working/tickets/todos/TCK-20261117-TEST-FIXTURES-DECLARE-A-SPECIES-THROUGH-A-HELPER-AND-THE-BUILDER-DEFAULT-GOES.md
+  ticket_id: TCK-20261117-TEST-FIXTURES-DECLARE-A-SPECIES-THROUGH-A-HELPER-AND-THE-BUILDER-DEFAULT-GOES
+  title: Test fixtures declare a species through a helper, and the `V2EntityBuilder`
+    default kind goes
+  tier: standard
+  ticket_type: refactor
+  date: '2026-11-17'
+  related_code_areas:
+  - src/core/species.py, src/world/
+  artifact_files: []
+  tags: []
+- type: ticket
+  path: agent-working/tickets/todos/TCK-20261117-THE-COGNITION-SCORER-COUNTS-ONE-STALE-DIVERGENCE-ONCE-PER-TICK.md
+  ticket_id: TCK-20261117-THE-COGNITION-SCORER-COUNTS-ONE-STALE-DIVERGENCE-ONCE-PER-TICK
+  title: The SimQ COGNITION scorer counts decision_divergence_detected once per tick,
+    so one stale cause reads as an S or A grade
+  tier: standard
+  ticket_type: bug
+  date: '2026-11-17'
+  related_code_areas: []
+  artifact_files: []
+  tags: []
+- type: ticket
+  path: agent-working/tickets/todos/TCK-20261117-THE-GATE-REPORTS-ALIVE-COUNTS-PER-KIND-AND-A-POOLED-EXTINCTION-ROW-THAT-CAN-GO-RED.md
+  ticket_id: TCK-20261117-THE-GATE-REPORTS-ALIVE-COUNTS-PER-KIND-AND-A-POOLED-EXTINCTION-ROW-THAT-CAN-GO-RED
+  title: The rpg gate report gives final alive counts per kind and per occupation,
+    plus a pooled validity row ("alive in ≥3 reference seeds, alive in 0 head seeds")
+    that can go red
+  tier: standard
+  ticket_type: feature
+  date: '2026-11-17'
+  related_code_areas:
+  - .github/workflows/rpg-gate-report.yml, tools/test_architecture/ (gate metrics,
+    kind_group.py), src/observability/
+  artifact_files: []
+  tags: []
+- type: ticket
+  path: agent-working/tickets/todos/TCK-20261117-THE-SLOW-CORPUS-GRADE-PINS-ARE-STALE-ON-MAIN.md
+  ticket_id: TCK-20261117-THE-SLOW-CORPUS-GRADE-PINS-ARE-STALE-ON-MAIN
+  title: The slow corpus grade-stability pins in test_corpus_diversity.py fail on
+    main, so they are stale; re-anchor them in Phase 3 with the boundary reads
+  tier: standard
+  ticket_type: repair
+  date: '2026-11-17'
+  related_code_areas:
+  - tests/unit/worldassembly/test_corpus_diversity.py
+  artifact_files: []
+  tags: []
+- type: ticket
+  path: agent-working/tickets/todos/TCK-20261117-WEATHER-PERCEPTION-MULTIPLIER-HAS-NO-READER.md
+  ticket_id: TCK-20261117-WEATHER-PERCEPTION-MULTIPLIER-HAS-NO-READER
+  title: Weather's perception multiplier is written but never read
+  tier: standard
+  ticket_type: bug
+  date: '2026-11-17'
+  related_code_areas: []
   artifact_files: []
   tags: []
 - type: ticket
