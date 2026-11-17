@@ -405,6 +405,7 @@ class MovementSystem:
             step_ready_tick_set=MovementSystem._step_ready_tick(entity, success, effective_target, current_tick, state_or_context),
             moved_recently_set=True,
             failure_reason=None if success else reason_code,
+            failure_reason_clear=bool(success),  # a successful step ends the last failure
             # VERIFIED v2: movement_priority_tiebreak
             wait_count_delta=wait_delta,
             # VERIFIED v2: stalemate_breaker

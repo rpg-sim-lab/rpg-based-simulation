@@ -5013,3 +5013,22 @@
   support_boundary: 'Only the latest hit is remembered (COMB-354); the window is a
     registered tuning constant, not derived from fight data; timing of the target_score
     hot loop is NOT MEASURED (perf pause #715 6556861718).'
+- id: COMB-357
+  text: 'TCK-20261117-A-NAVIGATION-FAILURE-REASON-IS-NEVER-CLEARED-AND-KEEPS-FEEDING-BLOCKER-INFERENCE: NavigationComponent.last_failure_reason holds the outcome of the
+    subject''s last step. Any action writer may set a failure code (movement, combat, action router, AOE, combat and core actions); ONLY a successful movement step clears it: MovementSystem.resolve_move
+    emits NavigationUpdate.failure_reason_clear
+    (applied in NavigationPatch, the field becomes None), and an update with neither
+    (a held step) leaves the stored value as it was. A code in
+    the same update wins over the clear. A stale failure therefore never re-files an
+    ACCESS blocker in infer_blockers after the subject has moved on.'
+  status: verified
+  priority: P1
+  legacy_evidence: null
+  v2_evidence: src/engine/movement.py (MovementSystem.resolve_move, failure_reason_clear=bool(success)),
+    src/engine/patches.py (NavigationPatch), src/core/updates.py (NavigationUpdate.failure_reason_clear).
+  proof_type: regression
+  test_path: tests/unit/movement/test_failure_reason_lifecycle.py
+  divergence_note: See docs/guidelines/intentional_divergences.md Section 2.214.
+  support_boundary: 'The clear is a field of the update, not of the state; checkpoint and fingerprint
+    are unchanged. Whether a stale reason filed a wrong blocker in a real run is measured by the
+    own-job (R1/R2/R3), not claimed here.'

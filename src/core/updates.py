@@ -67,6 +67,7 @@ class NavigationUpdate:
     moved_recently_set: Optional[bool] = None
     movement_mode_set: Optional[MovementMode] = None
     failure_reason: Optional[str] = None
+    failure_reason_clear: bool = False  # the last step succeeded: last_failure_reason is the outcome of the LAST step, so it is set to None here; codes come from any action writer, ONLY a successful movement step clears it, and a None `failure_reason` alone never clears it
     clear_target: bool = False
     clear_path: bool = False
     
@@ -82,7 +83,7 @@ class NavigationUpdate:
     def is_noop(self) -> bool:
         return (self.target_set is None and not self.target_clear and self.path_set is None and self.step_ready_tick_set is None and 
                 self.moved_recently_set is None and self.movement_mode_set is None and 
-                self.failure_reason is None and not self.clear_target and not self.clear_path and 
+                self.failure_reason is None and not self.failure_reason_clear and not self.clear_target and not self.clear_path and 
                 self.wait_count_delta == 0 and self.oscillation_count_delta == 0 and 
                 self.last_position_set is None and self.region_id_set is None and self.lodged_in_set is None and not self.lodged_in_clear)
 
@@ -96,6 +97,7 @@ class NavigationUpdate:
         if other.moved_recently_set is not None: changes["moved_recently_set"] = other.moved_recently_set
         if other.movement_mode_set is not None: changes["movement_mode_set"] = other.movement_mode_set
         if other.failure_reason is not None: changes["failure_reason"] = other.failure_reason
+        if other.failure_reason_clear: changes["failure_reason_clear"] = True
         if other.clear_target: changes["clear_target"] = True
         if other.clear_path: changes["clear_path"] = True
         if other.wait_count_delta != 0: changes["wait_count_delta"] = self.wait_count_delta + other.wait_count_delta
