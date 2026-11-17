@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field, replace
-from typing import TYPE_CHECKING, Any, Dict, List, Optional
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple
 
 if TYPE_CHECKING:
     from src.core.models.quests import QuestOpportunity, QuestOpportunityStatus
@@ -80,6 +80,8 @@ class NavigationUpdate:
     lodged_in_clear: bool = False  # F3: the subject leaves the building it lodges in
     wayround_count_set: Optional[int] = None  # 2.213: the way-round steps taken on this target with no net progress, and the best distance seen (written by resolve_move only)
     wayround_best_distance_set: Optional[int] = None
+    wayround_anchor_set: Optional[Tuple[int, int]] = None  # F1 (2.213): the tile the count opened on, and the tick of this event (written by resolve_move only)
+    wayround_last_tick_set: Optional[int] = None
     wayround_clear: bool = False  # 2.213: the way-round count ends (the give-up replan)
 
     def is_noop(self) -> bool:
@@ -88,7 +90,8 @@ class NavigationUpdate:
                 self.failure_reason is None and not self.clear_target and not self.clear_path and 
                 self.wait_count_delta == 0 and self.oscillation_count_delta == 0 and 
                 self.last_position_set is None and self.region_id_set is None and self.lodged_in_set is None and not self.lodged_in_clear and
-                self.wayround_count_set is None and self.wayround_best_distance_set is None and not self.wayround_clear)
+                self.wayround_count_set is None and self.wayround_best_distance_set is None and self.wayround_anchor_set is None and
+                self.wayround_last_tick_set is None and not self.wayround_clear)
 
     def merge(self, other: NavigationUpdate) -> NavigationUpdate:
         if not other or other.is_noop():
@@ -110,6 +113,8 @@ class NavigationUpdate:
         changes.update(other._lodging_changes())
         if other.wayround_count_set is not None: changes["wayround_count_set"] = other.wayround_count_set
         if other.wayround_best_distance_set is not None: changes["wayround_best_distance_set"] = other.wayround_best_distance_set
+        if other.wayround_anchor_set is not None: changes["wayround_anchor_set"] = other.wayround_anchor_set
+        if other.wayround_last_tick_set is not None: changes["wayround_last_tick_set"] = other.wayround_last_tick_set
         if other.wayround_clear: changes["wayround_clear"] = True
         return replace(self, **changes)
 

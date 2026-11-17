@@ -53,6 +53,7 @@ def live_action_style(entity: "EntityState", state_or_context: Any) -> int:
 
 # 2.213 (COMB-356): way-round steps allowed on one target with no net progress before the oscillation replan is the real one (rpg-designer 2026-11-17, N = 2).
 WAYROUND_LIMIT = 2
+WAYROUND_QUIET_TICKS = 200  # F1 (2.213): the longest gap between two events of one pursuit; past it the next event opens a fresh count
 
 
 class MovementSystem:
@@ -292,7 +293,7 @@ class MovementSystem:
         wait_delta = 0
         osc_delta = 0
         replan = False
-        wayround_set: Optional[Tuple[int, int]] = None
+        wayround_set: Optional[Tuple[int, int, Tuple[int, int], int]] = None
         wayround_clear = False
         pending_plan = None
 
@@ -341,13 +342,20 @@ class MovementSystem:
                     # The bounded give-up (2.213): a way-round that makes no net progress on this target counts; the count past WAYROUND_LIMIT is the real replan.
                     dist_now = int(abs(target_pos[0] - entity.navigation.position[0]) + abs(target_pos[1] - entity.navigation.position[1]))
                     best = entity.navigation.wayround_best_distance
-                    if best is None or dist_now < best:
-                        wayround_count, wayround_best = 1, dist_now  # progress (or the first event on this target): the baseline moves down
+                    anchor = entity.navigation.wayround_anchor
+                    last_ev = entity.navigation.wayround_last_tick
+                    # F1 (amends 2.213): the count continues while it is open, the target is within one tile (Chebyshev) of the tile it opened on, and the last event is at most WAYROUND_QUIET_TICKS ago.
+                    continues = (entity.navigation.wayround_count > 0 and best is not None and anchor is not None and last_ev is not None
+                                 and max(abs(target_tile[0] - int(anchor[0])), abs(target_tile[1] - int(anchor[1]))) <= 1 and current_tick - last_ev <= WAYROUND_QUIET_TICKS)
+                    if not continues:
+                        wayround_count, wayround_best, wayround_anchor = 1, dist_now, target_tile  # a fresh count opens on this target
+                    elif dist_now < best:
+                        wayround_count, wayround_best, wayround_anchor = 1, dist_now, (int(anchor[0]), int(anchor[1]))  # progress: the baseline moves down, the anchor stays
                     else:
-                        wayround_count, wayround_best = entity.navigation.wayround_count + 1, best
+                        wayround_count, wayround_best, wayround_anchor = entity.navigation.wayround_count + 1, best, (int(anchor[0]), int(anchor[1]))
                     if way_round is not None and wayround_count <= WAYROUND_LIMIT:
                         effective_target = way_round
-                        wayround_set = (wayround_count, wayround_best)
+                        wayround_set = (wayround_count, wayround_best, wayround_anchor, current_tick)
                     else:
                         replan = True
                         success = False
@@ -455,6 +463,8 @@ class MovementSystem:
             oscillation_count_delta=osc_delta,
             wayround_count_set=wayround_set[0] if wayround_set else None,
             wayround_best_distance_set=wayround_set[1] if wayround_set else None,
+            wayround_anchor_set=wayround_set[2] if wayround_set else None,
+            wayround_last_tick_set=wayround_set[3] if wayround_set else None,
             wayround_clear=wayround_clear,
             last_position_set=entity.navigation.position if success else None,
             clear_target=replan,

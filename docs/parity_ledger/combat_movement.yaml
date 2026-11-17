@@ -5024,15 +5024,19 @@
     never the tile just left and never the current tile; found, the subject steps
     there with the oscillation and wait counters reset and keeps its target; none
     found, or on the third way-round with no net progress on one target (bound N =
-    2, NavigationComponent.wayround_count and wayround_best_distance, reset on a
-    new or cleared target and on progress), the replan clears target and path.'
+    2, NavigationComponent.wayround_count and wayround_best_distance, anchored to
+    the pursuit by wayround_anchor and wayround_last_tick: the count continues
+    across target re-writes within one tile of the anchor and up to 200 ticks between
+    events, restarts at 1 on progress, and ends at the give-up), the replan clears
+    target and path.'
   status: verified
   priority: P1
   legacy_evidence: null
   v2_evidence: src/engine/patches.py (NavigationPatch.apply), src/engine/movement.py
     (MovementSystem._find_way_round_loop, WAYROUND_LIMIT, the oscillation branch of resolve_move),
-    src/core/state.py (NavigationComponent.wayround_count, wayround_best_distance), src/engine/checkpoint_fields.py
-    (two FIELD_RULES rows), src/replay/fingerprint.py, src/engine/apply.py (the move carries both fields).
+    src/core/state.py (NavigationComponent.wayround_count, wayround_best_distance, wayround_anchor,
+    wayround_last_tick), src/engine/checkpoint_fields.py (four FIELD_RULES rows), src/replay/fingerprint.py,
+    src/engine/apply.py (the move carries the four fields).
   proof_type: regression
   test_path: tests/unit/movement/test_osc_replan_ladder.py
   divergence_note: See docs/guidelines/intentional_divergences.md Section 2.213.

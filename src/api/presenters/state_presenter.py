@@ -186,6 +186,8 @@ class StatePresenter:
                 "oscillation_count": entity.navigation.oscillation_count,
                 "wayround_count": entity.navigation.wayround_count,
                 "wayround_best_distance": entity.navigation.wayround_best_distance,
+                "wayround_anchor": entity.navigation.wayround_anchor,
+                "wayround_last_tick": entity.navigation.wayround_last_tick,
                 "last_failure": entity.navigation.last_failure_reason,
                 "mode": entity.navigation.movement_mode.name if hasattr(entity.navigation.movement_mode, 'name') else str(entity.navigation.movement_mode)
             },

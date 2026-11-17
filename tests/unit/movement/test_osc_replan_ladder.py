@@ -134,7 +134,7 @@ def test_the_wall_probe_gives_up_after_two_no_progress_way_rounds_and_does_not_c
 def test_progress_resets_the_way_round_count():
     """A way-round at a distance below the best seen is progress: the count restarts at 1 and the baseline moves down."""
     hero = _hero(target=(9, 5), last_position=(6, 5), oscillation_count=3)
-    hero = replace(hero, navigation=replace(hero.navigation, wayround_count=2, wayround_best_distance=2))
+    hero = replace(hero, navigation=replace(hero.navigation, wayround_count=2, wayround_best_distance=2, wayround_anchor=(9, 5), wayround_last_tick=0))
     upd = MovementSystem.resolve_move(_state(hero), hero, (9, 5))[1]  # distance 4 is not below 2: no progress -> the third event gives up
     assert upd.navigation.wayround_clear is True and upd.navigation.clear_target is True
     hero = replace(hero, navigation=replace(hero.navigation, wayround_best_distance=9))
@@ -142,16 +142,88 @@ def test_progress_resets_the_way_round_count():
     assert upd.navigation.wayround_count_set == 1 and upd.navigation.wayround_best_distance_set == 4 and upd.new_position is not None
 
 
-def test_a_new_target_or_a_cleared_target_resets_the_count_in_the_patch():
+def _open_count(hero, count=2, best=4, anchor=(9, 5), last_tick=0):
+    return replace(hero, navigation=replace(hero.navigation, wayround_count=count, wayround_best_distance=best, wayround_anchor=anchor, wayround_last_tick=last_tick))
+
+
+def test_a_target_rewrite_or_clear_no_longer_ends_the_count_in_the_patch_only_the_give_up_does():
+    """F1 (amends 2.213): the count belongs to the pursuit. The patch keeps it across a new, cleared or re-issued target; only wayround_clear ends it (all four fields together)."""
+    hero = _open_count(_hero(target=(9, 5)))
+    for update in (NavigationUpdate(target_set=(2, 2)), NavigationUpdate(target_clear=True), NavigationUpdate(clear_target=True), NavigationUpdate(target_set=(9, 5))):
+        nav = _apply_nav(hero, update)
+        assert (nav.wayround_count, nav.wayround_best_distance, nav.wayround_anchor, nav.wayround_last_tick) == (2, 4, (9, 5), 0)
+    nav = _apply_nav(hero, NavigationUpdate(wayround_clear=True, clear_target=True))
+    assert (nav.wayround_count, nav.wayround_best_distance, nav.wayround_anchor, nav.wayround_last_tick) == (0, None, None, None)
+
+
+def _event(hero, target, tick):
+    """One oscillation event on an open map: the hero stands at (5,5) with the A-B loop armed; returns resolve_move's navigation update."""
+    h = replace(hero, navigation=replace(hero.navigation, last_position=(6, 5), oscillation_count=3, position=(5, 5)))
+    state = AuthoritativeState(entities={1: h}, tick=tick, seed=1)
+    return MovementSystem.resolve_move(state, h, target)[1].navigation
+
+
+def test_a_one_tile_jitter_of_the_target_continues_the_count():
+    hero = _open_count(_hero(target=(9, 5)), count=1, best=4, anchor=(9, 5), last_tick=0)
+    for jitter in ((9, 6), (8, 5), (10, 6), (8, 4)):  # Chebyshev <= 1 from the anchor (9,5)
+        nav = _event(hero, jitter, 5)
+        assert nav.wayround_count_set == 2 and nav.wayround_anchor_set == (9, 5) and nav.wayround_last_tick_set == 5
+
+
+def test_a_jump_of_two_or_more_tiles_opens_a_fresh_count():
+    hero = _open_count(_hero(target=(9, 5)), count=2, best=4, anchor=(9, 5), last_tick=0)
+    nav = _event(hero, (11, 5), 5)
+    assert nav.wayround_count_set == 1 and nav.wayround_anchor_set == (11, 5) and nav.wayround_best_distance_set == 6
+
+
+def test_a_gap_of_more_than_200_ticks_opens_a_fresh_count_and_exactly_200_continues():
+    hero = _open_count(_hero(target=(9, 5)), count=1, best=4, anchor=(9, 5), last_tick=0)
+    assert _event(hero, (9, 5), 200).wayround_count_set == 2
+    nav = _event(hero, (9, 5), 201)
+    assert nav.wayround_count_set == 1 and nav.wayround_anchor_set == (9, 5) and nav.wayround_last_tick_set == 201
+
+
+def test_progress_rebaselines_the_count_and_keeps_the_anchor():
+    hero = _open_count(_hero(target=(9, 5)), count=2, best=9, anchor=(9, 5), last_tick=0)
+    nav = _event(hero, (9, 6), 5)  # distance 5 is below the best 9
+    assert nav.wayround_count_set == 1 and nav.wayround_best_distance_set == 5 and nav.wayround_anchor_set == (9, 5)
+
+
+def test_a_clear_then_a_reset_of_the_target_continues_the_count_through_the_patch():
+    hero = _open_count(_hero(target=(9, 5)), count=1, best=4, anchor=(9, 5), last_tick=0)
+    nav = _apply_nav(hero, NavigationUpdate(clear_target=True))
+    hero = replace(hero, navigation=nav)
+    nav = _apply_nav(hero, NavigationUpdate(target_set=(9, 6)))
+    hero = replace(hero, navigation=nav)
+    assert nav.target == (9, 6) and nav.wayround_count == 1
+    assert _event(hero, (9, 6), 8).wayround_count_set == 2
+
+
+def test_the_give_up_fires_after_two_way_rounds_across_a_one_tile_jitter():
+    """The v7 trace defect: the task layer rewrites the target by one tile every few ticks, and the give-up must still fire on the third event."""
     hero = _hero(target=(9, 5))
-    hero = replace(hero, navigation=replace(hero.navigation, wayround_count=2, wayround_best_distance=4))
-    for update in (NavigationUpdate(target_set=(2, 2)), NavigationUpdate(target_clear=True), NavigationUpdate(clear_target=True)):
-        changes = {}
-        NavigationPatch(entity_id=1, navigation=update).apply(hero, changes)
-        assert changes["navigation"].wayround_count == 0 and changes["navigation"].wayround_best_distance is None
-    changes = {}
-    NavigationPatch(entity_id=1, navigation=NavigationUpdate(target_set=(9, 5))).apply(hero, changes)  # the SAME target re-issued keeps the count
-    assert changes["navigation"].wayround_count == 2 and changes["navigation"].wayround_best_distance == 4
+    for tick, tgt in ((0, (9, 5)), (5, (9, 6)), (10, (9, 5))):
+        nav_u = _event(hero, tgt, tick)
+        if tick < 10:
+            assert nav_u.wayround_count_set == (1 if tick == 0 else 2) and nav_u.wayround_clear is False
+        else:
+            assert nav_u.wayround_clear is True and nav_u.clear_target is True and nav_u.clear_path is True and nav_u.wayround_count_set is None
+        nav = _apply_nav(hero, nav_u)
+        hero = replace(hero, navigation=nav)
+        hero = replace(hero, navigation=replace(hero.navigation, target=tgt if tick < 10 else hero.navigation.target))
+    assert (hero.navigation.wayround_count, hero.navigation.wayround_anchor, hero.navigation.wayround_last_tick) == (0, None, None)
+
+
+def test_the_anchor_fields_omit_when_none_and_show_in_the_canonical_form_and_fingerprint_only_while_a_count_is_open():
+    from src.replay.fingerprint import StateFingerprinter
+    closed = _hero(target=(9, 5))
+    canon = closed.navigation.to_canonical_dict()
+    assert "wayround_anchor" not in canon and "wayround_last_tick" not in canon and "wayround_count" not in canon
+    assert "wayround=" not in str(StateFingerprinter.get_fingerprint(_state(closed)))
+    opened = _open_count(closed, count=1, best=4, anchor=(9, 5), last_tick=7)
+    canon = opened.navigation.to_canonical_dict()
+    assert canon["wayround_anchor"] == (9, 5) and canon["wayround_last_tick"] == 7
+    assert "wayround=1@4" in str(StateFingerprinter.get_fingerprint(_state(opened)))
 
 
 def test_best_distance_is_none_exactly_when_the_count_is_zero_on_every_patch_path():
@@ -165,8 +237,8 @@ def test_best_distance_is_none_exactly_when_the_count_is_zero_on_every_patch_pat
     hero = _hero(target=(9, 5))
     assert invariant(hero.navigation)
     paths = [
-        NavigationUpdate(wayround_count_set=1, wayround_best_distance_set=4),  # the first way-round: set together
-        NavigationUpdate(wayround_count_set=2, wayround_best_distance_set=4),
+        NavigationUpdate(wayround_count_set=1, wayround_best_distance_set=4, wayround_anchor_set=(9, 5), wayround_last_tick_set=3),  # the first way-round: set together
+        NavigationUpdate(wayround_count_set=2, wayround_best_distance_set=4, wayround_anchor_set=(9, 5), wayround_last_tick_set=8),
         NavigationUpdate(wayround_clear=True),  # the give-up
         NavigationUpdate(target_set=(2, 2)),  # a new target
         NavigationUpdate(target_clear=True),
@@ -176,10 +248,13 @@ def test_best_distance_is_none_exactly_when_the_count_is_zero_on_every_patch_pat
     ]
     for start in (pair(hero.navigation), (2, 4)):
         for update in paths:
-            h = replace(hero, navigation=replace(hero.navigation, wayround_count=start[0], wayround_best_distance=start[1] if start[0] else None))
+            h = replace(hero, navigation=replace(hero.navigation, wayround_count=start[0], wayround_best_distance=start[1] if start[0] else None,
+                                                 wayround_anchor=(9, 5) if start[0] else None, wayround_last_tick=0 if start[0] else None))
             changes = {}
             NavigationPatch(entity_id=1, navigation=update).apply(h, changes)
-            assert invariant(changes["navigation"]), (start, update)
+            n = changes["navigation"]
+            assert invariant(n), (start, update)
+            assert (n.wayround_anchor is None) == (n.wayround_count == 0) and (n.wayround_last_tick is None) == (n.wayround_count == 0), (start, update)
     # and through resolve_move: the first way-round sets the pair together, the give-up clears it together
     h = _hero(target=(9, 5), last_position=(6, 5), oscillation_count=3)
     upd = MovementSystem.resolve_move(_state(h), h, (9, 5))[1]

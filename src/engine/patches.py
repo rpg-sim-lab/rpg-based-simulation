@@ -293,11 +293,13 @@ class NavigationPatch(ComponentPatch):
                 step_ready_tick=u_nav.step_ready_tick_set if u_nav.step_ready_tick_set is not None else new_nav.step_ready_tick,
                 lodged_in=None if u_nav.lodged_in_clear else (u_nav.lodged_in_set if u_nav.lodged_in_set is not None else new_nav.lodged_in),
             )
-            # 2.213 (COMB-356): the way-round count belongs to one stored target. A changed or cleared target ends it; otherwise the movement update's count and best distance land.
-            if new_nav.target != changes.get("navigation", entity.navigation).target or u_nav.wayround_clear:
-                new_nav = replace(new_nav, wayround_count=0, wayround_best_distance=None)
+            # 2.213 (COMB-356, F1): the way-round count belongs to the pursuit, not to one stored tile. Only the give-up (wayround_clear) ends it here; a target re-write or a clear does not,
+            # and resolve_move's anchor and quiet tests at the next event decide whether the count continues. The movement update's count, best distance, anchor and tick land.
+            if u_nav.wayround_clear:
+                new_nav = replace(new_nav, wayround_count=0, wayround_best_distance=None, wayround_anchor=None, wayround_last_tick=None)
             elif u_nav.wayround_count_set is not None:
-                new_nav = replace(new_nav, wayround_count=u_nav.wayround_count_set, wayround_best_distance=u_nav.wayround_best_distance_set)
+                new_nav = replace(new_nav, wayround_count=u_nav.wayround_count_set, wayround_best_distance=u_nav.wayround_best_distance_set,
+                                  wayround_anchor=u_nav.wayround_anchor_set, wayround_last_tick=u_nav.wayround_last_tick_set)
         if self.new_position:
             if self.new_position != entity.navigation.position:
                 new_nav = ApplyPath._fast_replace_navigation(new_nav, self.new_position, None)

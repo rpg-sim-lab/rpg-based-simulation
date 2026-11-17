@@ -90,6 +90,8 @@ FIELD_RULES: List[FieldRule] = [
     # 2.213 (COMB-356): a state that predates the way-round give-up had no way-round count open.
     FieldRule("wayround_count", _navigations, "wayround_count", fill=lambda state, owner: 0, ruling="2.213: a state that predates the way-round give-up had no count open", record="NavigationComponent"),
     FieldRule("wayround_best_distance", _navigations, "wayround_best_distance", fill=lambda state, owner: None, ruling="2.213: a state that predates the way-round give-up had no best distance", record="NavigationComponent"),
+    FieldRule("wayround_anchor", _navigations, "wayround_anchor", fill=lambda state, owner: None, ruling="2.213 F1: a state that predates the pursuit-anchored count had no anchor", record="NavigationComponent"),
+    FieldRule("wayround_last_tick", _navigations, "wayround_last_tick", fill=lambda state, owner: None, ruling="2.213 F1: a state that predates the pursuit-anchored count had no last-event tick", record="NavigationComponent"),
     FieldRule("lodged_in", _navigations, "lodged_in", fill=lambda state, owner: None, ruling="2.155: a state that predates lodging lodged no one", record="NavigationComponent"),
     FieldRule("beds", _buildings, "beds", fill=None, ruling="2.155: beds are copied from content at compile; the checkpoint carries no compiled content", record="BuildingState"),
     # A pre-2.156 state kept no retreat clear window, so a project that predates it has none yet (it opens on the first clear observation); None is exactly that state.

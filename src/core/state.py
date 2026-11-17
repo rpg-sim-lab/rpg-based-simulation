@@ -527,9 +527,13 @@ class NavigationComponent:
     lodged_in: Optional[int] = None  # F3 (2.155): the building this subject LODGES in (position is its tile, on no tile held); set and cleared only by the apply path; LAST field (an insert is refused by the checkpoint schema check; an append needs a FIELD_RULES row)
 
     # 2.213 (COMB-356): the bounded give-up for the oscillation way-round. The way-round steps taken on the stored target with no net progress, and the best (lowest) Manhattan
-    # distance to the target seen at those steps. Set and reset only by the navigation patch (movement's apply path): reset when the target changes or clears, and on progress.
+    # distance to the target seen at those steps. Set and reset only by the navigation patch (movement's apply path). F1 (amends 2.213): the count belongs to the PURSUIT, not to one
+    # exact stored tile: `wayround_anchor` is the tile the count opened on and `wayround_last_tick` the tick of its last event. The count ends at the give-up or when the next event
+    # is more than one tile from the anchor or more than WAYROUND_QUIET_TICKS after the last event; a target re-write or a clear does not end it.
     wayround_count: int = 0
     wayround_best_distance: Optional[int] = None
+    wayround_anchor: Optional[Tuple[int, int]] = None
+    wayround_last_tick: Optional[int] = None
 
     def to_canonical_dict(self) -> Dict[str, Any]:
         """The navigation block of the entity's canonical form. `step_ready_tick` (D75) is present only once non-zero, so the form of an
@@ -559,6 +563,10 @@ class NavigationComponent:
             res["wayround_count"] = self.wayround_count  # present only while a way-round count is open (2.213), so the form of a subject that never needed one is unchanged
         if self.wayround_best_distance is not None:
             res["wayround_best_distance"] = self.wayround_best_distance
+        if self.wayround_anchor is not None:
+            res["wayround_anchor"] = self.wayround_anchor  # F1 (2.213): present only while a count is open
+        if self.wayround_last_tick is not None:
+            res["wayround_last_tick"] = self.wayround_last_tick
         return res
 
 
