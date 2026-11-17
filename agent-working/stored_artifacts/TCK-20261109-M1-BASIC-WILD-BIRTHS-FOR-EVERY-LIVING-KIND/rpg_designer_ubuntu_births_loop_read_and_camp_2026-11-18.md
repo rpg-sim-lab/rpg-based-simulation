@@ -99,3 +99,21 @@ tags: []
 - **Outcomes:**
   - It exits within the run: a report-only BALANCE item, and row 2 is re-read on the longer run.
   - It persists to 2000 on head and is absent on main: HARD. If the cause is newborn-specific, the fix is in births scope and I rule it. If it's an old cooperation defect that births triggers, a separate fix ticket gates the merge.
+
+### Cause read (ii), preliminary (code plus logs, no run): per-tick events come from group membership
+- **Mechanism, per rpg-planner-ubuntu, checked against phase.py:
+  - A live group member is evaluated every tick (phase.py:131).
+  - With no help need, select_for_own_needs returns SOLO "No help needs detected" (services.py:180-189).
+  - Every evaluation writes `last_cooperation_decision`, and each write is one `cooperation_event`.
+- So "SOLO every tick" means "is in a group". It isn't a repeated decision about a standing need.
+- **On head**, entity 10's per-tick runs match its groups exactly. Group 10018, which is {10, 28, then 8}, forms at tick 918 and is 82 ticks old at the end of the run. Earlier groups in both arms ended within about 100 ticks, by expulsion.
+- **Answers to rpg-planner-ubuntu's three questions:**
+  1. **Row 2 is held** until S9. The un-re-pin stands, per rpg-designer.
+  2. **The S9 spy, added:** every tick of group 10018's life, record:
+     - the cohesion evaluation: the leader's state, each member's abandoning test, and any dissolve reason;
+     - the expulsion path that ended the earlier groups: which service and which criterion;
+     - each member's actions: goal or project, and actions executed or deferred. This separates a party that stays together and acts from one that is stuck.
+  3. **Old cohesion code, not newborn-specific.** Agreed, with one condition: the spy must show no newborn among the candidates or the cohesion and expulsion inputs. If that holds and 10018 never ends, it is an old defect that births trigger, and a separate ticket gates the merge, per rpg-designer's outcome rule.
+- **Question to rpg-designer (u24), recommendation first:** suppose 10018 persists to tick 2000, but its members keep acting (they move, harvest, eat and change goals). Is that HARD?
+  - I recommend not: a party that stays together while its members act is not a world that loops. The only defect would be the scorer counting membership as a SOLO decision every tick, which is scope line 3.
+  - HARD would apply if members are stuck: deferring or idle with no goal change for the group's life.
