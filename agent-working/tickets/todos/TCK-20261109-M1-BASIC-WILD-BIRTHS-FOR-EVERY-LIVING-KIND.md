@@ -55,6 +55,17 @@ The domain is M1 run 5 (births). It lands as its own Phase 1 segment, and the PR
 6. The pair interval uses the existing `LifecycleComponent.reproduction_cooldowns` (state.py:187). An entity is eligible when its largest expiry is at or before the current tick. A new durable field goes to rpg-designer first (Q3).
 7. The own-job run follows Part C. It runs at the decision-76 tier (3 gate worlds x 5 seeds x 5000 ticks per arm), with the fix arm spied plus a plain twin. The counts K6, K6b, K8 and W1 to W5 must each be 0. Zero births in total is a STOP to rpg-designer-ubuntu. The spy and runner shas are sent to rpg-designer-ubuntu after each pin commit. The heavy run needs lead-planner's go for each run.
 
+### Amendment 2026-11-17 (rpg-designer's answers and the owner's B2)
+Source: `agent-working/stored_artifacts/TCK-20261109-M1-BASIC-WILD-BIRTHS-FOR-EVERY-LIVING-KIND/rpg_designer_births_answers_2026-11-17.md` (body sha256 8c2c9fab). The owner's B2 ruling is #715 6950737100. Where this amendment differs from the re-scope above, the amendment wins.
+- Item 4: a newborn's role is MONSTER when the mother is MONSTER, and CITIZEN otherwise. Faction is the mother's. This is an interim row of the name-branch item.
+- Item 6: expired `reproduction_cooldowns` entries are pruned at the check. The field's doc and comment state its new meaning. A FIELD_RULES row is needed only if the field's shape changes.
+- Item 7: the own-job is the fix arm (spied) plus its plain twin, with no base arm in Phase 1. Bars W1, W3, W4 and W5 are sharpened per Part C of the source file.
+- B1: the rule is ECOL-06, "A new body is born, not made". Its text is in the source file and goes into `docs/world_rules/life-body/ecology-population.md` in this item.
+- B2 (owner): only kinds that eat get births. Undead, spirit, slime and dragonkin are excluded. The backlog ticket TCK-20261117-SLIME-AND-DRAGONKIN-NEED-A-NON-FOOD-BIRTH-CONDITION covers slime and dragonkin (not M1).
+- B3: no kind is exempt from the extinction line. The undead decline is disclosed as BALANCE text.
+- B4: ECOL-03 keeps statistical cohorts. The +1 real-birth nudge is generalised to every birth. The ECOL-03 status line reads "partly met".
+- B5: Bible ch05 gets the births law, and the reproduction parity rows move. One divergence entry, class Unified. The texts go to rpg-designer before the implementation PR.
+
 ## Out of Scope
 - §12.4 (packs, herds, territory), milestones 2 and 3, and any rule work not listed in §12.3 (owner ruling only).
 - Calamity (magical/demonic), boss, lair and creature-territory spawns. These are arrivals or flagged-off spawns, so no code there moves (Q5, Q6). Q6 adds a backlog line for the territory spawn, which creates creatures with no parents.
@@ -84,7 +95,9 @@ spawning and camp systems, content
 - Order (roadmap §12.5, memo rows 89/93/95): the v1-disclosure repairs, then D80C, then the decision-73 step (#781, the v1.1 record), then the §12.3 items. Starting this item needs the owner's dispatch yes, brought by rpg-planner via lead-planner-u24.
 - Owner-level choices are asked when the milestone starts, not guessed here.
 - 2026-11-17: the read-only map's claim that creature territory is ungated was wrong. `world_dynamics.py:286-287` runs it only with `ENABLE_CREATURE_TERRITORY_LIFECYCLE` ON (default OFF, `feature_flags.py:149`). Each claim taken from the map is to be re-verified against the code before the plan cites it.
-- Open, held: Part B1 to B5 (catalog Rule ID, which kinds count as living, extinction line, ECOL-03, Bible/parity/divergence texts). They are with rpg-designer via lead-planner.
+- Part B1 to B5 were answered on 2026-11-17 (see the amendment above).
+- Open: newborn body stats. The old spawn paths give every newborn generic tier-1 stats (generator.py), not the stats of its species. The question is with rpg-designer-ubuntu.
+- Open: pruning cooldowns needs a typed removal on LifecycleUpdate, which has no remove field today. Whether that counts as a new durable shape is with rpg-designer-ubuntu.
 
 ## Implementation Notes
 - Carry-forward from kind=species step 4 (rpg-designer): this item's own-job counts include K6 (kind is a species at birth) and K8 (newborn kind = the parents' species), on a world/seed where births actually happen.
