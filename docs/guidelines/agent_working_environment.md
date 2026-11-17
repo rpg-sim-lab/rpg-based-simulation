@@ -65,6 +65,12 @@ So `torch==2.12.1+cpu` cannot be installed for a new Python version from `u24des
 - `pip --trusted-host`: identical, because skipping verification just accepts the block page.
 - `uv`: `invalid peer certificate: Other(OtherError(CaUsedAsEndEntity))`.
 
+**2026-10-24 (`TCK-20261024-KNOWLEDGE-STACK-SECURITY-BUMPS`):** `requirements-knowledge.txt` now pins `torch==2.13.0+cpu`, which comes only from `download.pytorch.org` and so cannot be installed on `u24desktop-Virtual-Machine`. Its `.venv-knowledge` stays at `torch==2.12.1+cpu` (the text above is kept as history) and the low-severity torch alert stands for that host. The new `mcp` and `graphifyy` pins come from PyPI, but their upgrade there is not verified on `u24desktop-Virtual-Machine`.
+
+**2026-11-12 (`TCK-20261112-KNOWLEDGE-STACK-PIN-BUMPS`, from closed Dependabot #882, owner decision #715 6812820923):** `requirements-knowledge.txt` now pins `torch==2.15.0+cpu` (still the CPU wheel from `download.pytorch.org`; a plain PyPI install would pull CUDA) and `graphifyy==0.9.104`. On a scratch tree built from the same commit, the fresh index scored the same with torch 2.15.0+cpu as with 2.13.0+cpu (Recall@5 0.4074, Recall@10 0.6481, MRR@10 0.2741, 17407 documents, identical top-5 for the five spot queries), and `graphify update .` and `graphify query` ran with 0.9.104 on a copy of the graph. `headroom-ai` stays at 0.37.0: 0.43.1 needs `mcp>=2.2.0,<3.0.0` and crashes at start under the repo's `mcp==1.30.0`. A 0.9.104 `graphify` command rewrites the user-scope skill folders (`~/.claude/skills/graphify`, `~/.agents/skills/graphify`) on its first call; set `GRAPHIFY_NO_AUTO_REFRESH=1` for any run you do not want that from.
+
+**Which `graphify` runs (`TCK-20261024-GRAPHIFY-ON-PATH-IS-NOT-THE-PINNED-VERSION`, owner decision 2026-10-26, #715):** the `graphify` that the PostToolUse edit hook and every `graphify query` run must be the one pinned in `requirements-knowledge.txt` (`graphifyy`), which lives in the main checkout's `.venv-knowledge/bin/graphify`. A bare `graphify` used to resolve to `~/.local/bin/graphify`, a pip user-site script (host ubuntu, 0.6.7) or a uv-tool shim (host u24desktop, 0.8.39), and two versions writing one `graphify-out/` can corrupt it (0.9 re-keys node IDs). Run `make graphify-shim` once per host: it links `~/.local/bin/graphify` to the venv's graphify (`tools/graphify_shim.py`; `--dry-run` shows the change first). It replaces only a pip user-site script or a uv-tool graphifyy shim, refuses any other file, writes nothing else and uses no sudo. If `.venv-knowledge` lacks the pinned graphifyy it fails with the exact `pip install graphifyy==<pin>` command and changes nothing; it never installs. A SessionStart line (`graphify-version:`) warns when the `graphify` on PATH is not the pin; it prints nothing when graphify is missing, slow or fine. After the shim, `graphify` reports the pin; `graphify --version` is not a command, so check with `.venv-knowledge/bin/python3 -c "import importlib.metadata as m; print(m.version('graphifyy'))"`. The one-time shared-graph rebuild under the pin is run from the main checkout on `main` (`graphify update . --force`, then `python3 tools/graphify_prune.py`) after the batch merges: AST only, no API key, and `--force` lets the rebuilt graph replace one with more nodes (u24desktop, 2026-10-27: 58,389 nodes, 167,562 links, 97.9 MB graph.json). Do not use `graphify extract` for this: it needs a path, and without `--code-only` it also runs semantic LLM extraction over every doc through whichever API key is set. graphify also warns when its agent skills (`~/.claude`, `~/.copilot`, `~/.agents` under `skills/graphify`) are older than the package (0.6.7 on ubuntu and 0.8.39 on u24desktop when the pin was 0.9.70): `graphify install --platform <name>` refreshes one; the shim does not touch them. `graphify watch` also warns that the repo's `.hcl` files add nothing to the graph without the `graphifyy[terraform]` extra. That is expected, and the extra is not needed.
+
 ### TLS interception — a separate problem that looks the same
 
 This network also intercepts TLS generally, via a corporate CA in the system store (`/usr/local/share/ca-certificates/tma-ADCA-CA.crt`). Tools shipping their own trust store fail with *unknown issuer* until pointed at the system one:
@@ -224,9 +230,12 @@ automatically (no make target, script, CI step or session hook), and CI stays th
   and rejects the commit only for a violation that is **new or above its row** in
   `codebase/baselines/code_health_exceptions.jsonl` (a commit touching only grandfathered code passes; it uses the
   ratchet's own NEW / WORSE report); `uv-lock-check` runs `uv lock --check --offline` only when
-  `pyproject.toml` or `uv.lock` is staged (no network, ever). `post-commit` is the incremental knowledge reindex
-  (`tools/hooks/post-commit-reindex.sh`, a no-op unless docs/ or `agent-working/tickets/done/` changed and a
-  knowledge index exists). The check sees the **staged** content: prek stashes unstaged changes while the
+  `pyproject.toml` or `uv.lock` is staged (no network, ever). `post-commit` (`tools/hooks/post-commit-reindex.sh`) does two things. By default it only regenerates
+  `docs/REGISTRY.yaml` after a merge commit that left it stale. The incremental knowledge reindex is **opt-in per
+  clone**: it runs only after `git config --bool knowledge.reindexOnCommit true` (shared by every worktree of the clone), and
+  then only when docs/ or `agent-working/tickets/done/` changed and a knowledge index exists. Without the opt-in, such a
+  commit prints one skip line naming the opt-in and `make knowledge-index-update`; the reindex loads the embedding model (about
+  1.4-1.6 GB RSS, uncapped under the hook; `TCK-20261111-KNOWLEDGE-INDEX-BUILD-MEMORY-BOUNDED`). The check sees the **staged** content: prek stashes unstaged changes while the
   hooks run and restores them afterwards.
 - **Install affects every worktree of this clone's host.** `.git/hooks` is the common directory shared by all
   worktrees of this repository, so once anyone installs, the pre-commit hook runs on every commit in every
@@ -425,11 +434,28 @@ Every session's `search_mcp.py` used to load its own embedding model on its firs
 - **Stopping one by hand:** `kill $(python3 -c 'import json,glob;print(json.load(open(glob.glob("'$XDG_RUNTIME_DIR'/rpg-search/*/server.json")[0]))["pid"])')`; the next search starts a fresh one.
 - The FastAPI `tools/search_server.py` (Docker, `make search-server-docker`) is a separate server with its own search path and different results; it is unchanged. Pointing it at the same core is an agent-working follow-up.
 
+### GitHub MCP server: one per-user token file (`TCK-20261113-GITHUB-MCP-ENV-FILE-OUTSIDE-REPO`)
+
+`.mcp.json` starts the `github` server as `docker run -i --rm --env-file ${HOME}/.config/rpg-sim/github-mcp.env ghcr.io/github/github-mcp-server`. The token file lives outside the repo, in your home directory, so the server starts from every worktree. It used to read a repo-root `.env`, which only the main checkout has, so a seat launched from a worktree never had working GitHub MCP tools. Claude Code expands `${HOME}` in `.mcp.json` arguments.
+
+One-time setup per host, run by the owner (an agent never reads or copies the token):
+
+```
+mkdir -p ~/.config/rpg-sim
+chmod 700 ~/.config/rpg-sim
+cp <main checkout>/.env ~/.config/rpg-sim/github-mcp.env
+chmod 600 ~/.config/rpg-sim/github-mcp.env
+```
+
+A seat reconnects with `/mcp` after the change reaches its worktree. The repo-root `.env` can stay until both hosts have the new file. A test (`tests/tools/test_mcp_json_registration.py`) rejects a relative `--env-file`, which is the form that broke worktrees.
+
 ### When the index is stale
 
-Each worktree searches its own index (`agent-working/.index/knowledge-index/`), so a worktree on another branch, or one whose docs
-and tickets changed since the last `make knowledge-index-update`, quietly searches an older corpus. Both search paths now compare
-the index's `manifest.json` (source path to mtime) with the files on disk, by `stat` only (about 0.1 s on the real corpus), and say so:
+A worktree reads the main checkout's index when it has one (`tools/search_mcp.py::_resolve_index_dir`; `RPG_SEARCH_OWN_INDEX=1` opts
+into its own), so its search can run against an older corpus than its own files. Both search paths compare the index's `manifest.json`
+(source path to mtime) with the files of the checkout that owns the index, derived from the `db_path` (a non-standard layout falls back
+to the calling checkout), by `stat` only (about 0.1 s on the real corpus), and say so. "Stale"
+means files changed since the build, including a main checkout that is on another branch:
 
 - CLI `tools/knowledge_search.py query` prints one stderr line, `knowledge index is stale: N changed, N new, N removed -- run make knowledge-index-update`.
 - MCP `search_docs` returns `{"results": [...], "stale": {"changed": N, "new": N, "removed": N}}` instead of the bare list. A current index still returns the bare list.

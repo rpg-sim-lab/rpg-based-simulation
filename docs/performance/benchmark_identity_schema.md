@@ -6,9 +6,9 @@ audience: agent
 tags: [performance, benchmarking, schema, documentation]
 ---
 
-# Benchmark Identity and Result Schema (schema 1.2)
+# Benchmark Identity and Result Schema (schema 1.5)
 
-> **Status: the contract for schema version `1.3`** (`1.2` plus the optional `working_set_*` keys of `result.memory_mb`, §3.1 and §3.2; `1.2` was `1.1` plus the optional after-collect keys of `result.memory_mb`; `1.1` was `1.0` plus the optional `identity.runner` section, §3.1; all are MINOR bumps, so a `1.0`, `1.1` or `1.2` record stays comparable). It is implemented by `src/perf/benchmark_record.py`
+> **Status: the contract for schema version `1.5`** (`1.4` plus the optional `identity.runtime.cpu_affinity` (blocking; the CPU set the run was allowed to use, so a pinned run and an unpinned run are not compared) and `identity.runtime.dependency_fingerprint` (blocking) and `identity.runtime.dependency_count` (recorded only), §3.1 and §4: the sha256 of the installed runtime dependency closure, so a changed installed stack is no longer invisible to `compare()`; `1.4` was `1.3` plus the optional `outcome.check`, §3.1: the `compare()` check that produced a non-`PASS` outcome, so a known-debt entry matches `state` + `check` and never the free-text `reason`; `1.3` was `1.2` plus the optional `working_set_*` keys of `result.memory_mb`, §3.1 and §3.2; `1.2` was `1.1` plus the optional after-collect keys of `result.memory_mb`; `1.1` was `1.0` plus the optional `identity.runner` section, §3.1; all are MINOR bumps, so a `1.0`, `1.1` or `1.2` record stays comparable). It is implemented by `src/perf/benchmark_record.py`
 > (`BenchmarkRecord`, `compare`), adopted by `PERF-M2-T02b` (`TCK-20261010-PERF-M2-T02B-RECORD`).
 > It began as the design draft of `PERF-M2-T02` (`TCK-20261003-PERF-M2-T02-BENCHMARK-IDENTITY-SCHEMA`),
 > written from code read on 2026-10-03; §1 and §2 are that inventory and still describe the formats as
@@ -156,7 +156,7 @@ provides it.
 
 | Field | Type | Req. | Source |
 |---|---|---|---|
-| `schema_version` | string `MAJOR.MINOR` | required | today: `benchmark_record.SCHEMA_VERSION` (`1.2`) |
+| `schema_version` | string `MAJOR.MINOR` | required | today: `benchmark_record.SCHEMA_VERSION` (`1.5`) |
 | `scenario.id` | string | required | today: `BenchHarness` `scenario_id`. Note: an id must not map to `build_metropolis_state()` until `TCK-20260919-PERF-SCENARIO-METROPOLIS-SPAWN-COLLISION` is fixed |
 | `scenario.builder` | string (module path and function) | required | not yet (`PERF-M2-T03`); builders live in `src/perf/scenarios.py` |
 | `scenario.builder_version` | string (content hash of the builder source) | optional | not yet |
@@ -185,6 +185,9 @@ provides it.
 | `runtime.hardware_class` | string (`certification_contract.md` §3) | required | today, **detected** from cores and RAM by `HardwareClassifier.detect_class()` (OD-4). `PERF_*` profiles take their class from it; the hard-coded `CLASS_A` is gone. `PERF_HARDWARE_CLASS` (F11) stays an env label outside this schema |
 | `runtime.declared_hardware_class` | string or null | required (null = no claim) | today: the profile's `hardware_class`. A runner may declare a class only to match the detected one; a declared class that differs from `runtime.hardware_class` makes the record `INCONCLUSIVE` (OD-4) |
 | `runtime.det_port_tier` | enum `DET-PORT-0/1/2` | required | not yet; derived from the fields above and the "Scope of the guarantee" section of `deterministic_execution.md` |
+| `runtime.dependency_fingerprint` | string `deps-v1:<sha256 hex>` or `unknown` | optional (`1.5`), **blocking** | today: `src/perf/dependency_fingerprint.py`. The sha256 of the sorted, PEP 503-canonical `name==version` lines of the **installed closure** of `pyproject.toml` `[project].dependencies`: each requirement whose marker holds for the running interpreter, then the `Requires-Dist` of its installed distribution, with the extras actually requested along the path. A required distribution that is not installed is a `name==MISSING` line, so an incomplete venv does not match a complete one. The `deps-v1:` tag makes a later change of method a visible mismatch. Not a hash of `uv.lock`: a lock hash moves for dev-only or extra-only packages that cannot affect a tick, and describes the lock rather than what is installed. **Known blind spot:** a package the engine imports that is not reachable from `[project].dependencies` (imported only through an optional extra or a dependency group) is not in it. A record from before `1.5` reads `unknown` |
+| `runtime.dependency_count` | integer or null | optional (`1.5`), recorded only | the number of lines hashed into `dependency_fingerprint`; a diagnostic, never compared |
+| `runtime.cpu_affinity` | string (canonical CPU range list, e.g. `"4-5"`, `"0-5"`, `"0,2-3"`) or `unknown` | optional (`1.5`), **blocking** | today: `src/perf/cpu_affinity.py`, from the sorted `os.sched_getaffinity(0)` of the measuring process (so `taskset`, `systemd-run -p AllowedCPUs=` and a cgroup cpuset show). **`logical_cores` and `hardware_class` read the host and are NOT affected by pinning**: a run pinned to `4-5` still records the host's 6 logical cores, which is why the affinity is a separate field. A record from before `1.5`, or a platform without `sched_getaffinity`, reads `unknown` |
 | `contract.signal_contract` | enum `live`, `canonical` | required, **blocking** (R-1) | today: `RuntimeProfile.signal_contract`. Replaces the draft's `contract.determinism`: `canonical` is the canonical contract, `live` is PERF-D1's live-bounded one (the name `live_bounded` in OD-3 means `live`) |
 | `contract.work_model_version` | string | required, **blocking** (R-1) | today: `src.engine.work_units.WORK_MODEL_VERSION`. Under `canonical` the mode sequence depends on it, so a V1 and a V2 run do different work |
 | `contract.verification_level` | string (for example `FULL`, `REDUCED`) | required | not yet; runs that reach DEGRADED or SURVIVAL keep a `REDUCED` label (C-04) |
@@ -220,10 +223,11 @@ provides it.
 | `scaling_slope` | object or null | optional | not yet (M4) |
 | `runtime_mode_sequence` | array of `{mode, ticks}` (run-length) | required | today: `mode_sequence` per tick; toolkit compresses |
 | `work` | object name → number | required (may be empty) | today: the kernel's `metrics` per-tick means under the names it emits. The processed / dropped / coalesced split is not named yet, and the collector does not invent counts. Work debt is gone (DEV-019), so there is no debt counter to describe (R-5) |
-| `validity` | object `{replay_ok, final_state_hash, hash_scheme}` | required for `capacity_run` | today: `final_state_hash` only in F22. `hash_scheme` is an enum `flat-sha256-v1`, `flat-sha256-v2` (R-3; v2 since DEV-019); a hash needs its scheme |
+| `validity` | object `{replay_ok, final_state_hash, hash_scheme}` | required for `capacity_run` | today: `final_state_hash` only in F22. `hash_scheme` is an enum `flat-sha256-v1`, `flat-sha256-v2`, `flat-sha256-v3` (R-3; v2 since DEV-019, v3 since `TCK-20261024-PROOF-DIGEST-HASHES-THE-CARRIED-STATE-IT-OMITS`); a hash needs its scheme |
 | `phases` | object phase → latency object | optional | today: `phase_breakdown` |
 | `outcome.state` | enum `PASS`, `REGRESSION`, `INCONCLUSIVE`, `NOT_APPLICABLE` | required | `performance_contract.md` §3.3; not implemented anywhere today |
 | `outcome.reason` | enum code plus free text | required | not yet |
+| `outcome.check` | one of `schema`, `each_side`, `blocking_fields`, `hash_scheme`, `mode_sequences`, `latency` (`CHECK_NAMES` in `src/perf/benchmark_record.py`), or absent | optional (`1.4`) | the `compare()` check that decided a non-`PASS` outcome; absent for a `PASS` and for an outcome made outside `compare()` |
 | `recorded_at` | string RFC 3339 | required | today: `benchmark_record.utc_now()` (the harness dict keeps its epoch `timestamp`) |
 | `cost_accounting_version` | string | required, **blocking** (R-2) | today: `benchmark_record.COST_ACCOUNTING_VERSION` = `DEV-017`, a constant (no engine edit, OD-8). DEV-017 changed what a tick's and a phase's reported cost means, so a record without this value, or with another one, is not comparable on tick cost |
 
@@ -306,7 +310,10 @@ provides it.
             "native_kernels": {"type": "object", "additionalProperties": {"type": "string"}},
             "hardware_class": {"type": "string"},
             "declared_hardware_class": {"type": ["string", "null"]},
-            "det_port_tier": {"enum": ["DET-PORT-0", "DET-PORT-1", "DET-PORT-2"]}
+            "det_port_tier": {"enum": ["DET-PORT-0", "DET-PORT-1", "DET-PORT-2"]},
+            "dependency_fingerprint": {"type": "string"},
+            "dependency_count": {"type": ["integer", "null"], "minimum": 0},
+            "cpu_affinity": {"type": "string"}
           }
         },
         "contract": {
@@ -439,7 +446,7 @@ provides it.
           "properties": {
             "replay_ok": {"type": ["boolean", "null"]},
             "final_state_hash": {"type": ["string", "null"]},
-            "hash_scheme": {"enum": ["flat-sha256-v1", "flat-sha256-v2", null]}
+            "hash_scheme": {"enum": ["flat-sha256-v1", "flat-sha256-v2", "flat-sha256-v3", null]}
           }
         },
         "phases": {"type": "object", "additionalProperties": {"type": "object"}},
@@ -448,7 +455,8 @@ provides it.
           "required": ["state", "reason"],
           "properties": {
             "state": {"enum": ["PASS", "REGRESSION", "INCONCLUSIVE", "NOT_APPLICABLE"]},
-            "reason": {"type": "string", "minLength": 1}
+            "reason": {"type": "string", "minLength": 1},
+            "check": {"enum": ["schema", "each_side", "blocking_fields", "hash_scheme", "mode_sequences", "latency", null]}
           }
         },
         "recorded_at": {"type": "string", "format": "date-time"}
@@ -484,6 +492,9 @@ never a skip that reads as success. A missing baseline, a baseline with a differ
 | `runtime.python_version` patch | recorded only | not part of the DET-PORT-0 definition |
 | `runtime.logical_cores`, `runtime.ram_mb`, `runtime.hardware_class` | blocking | hardware class is defined by them |
 | `runtime.det_port_tier` | blocking | a hash proof is comparable only within its tier |
+| `runtime.dependency_fingerprint` | blocking | a different installed runtime closure is different code under test; `unknown` against a fingerprint is a mismatch (`INCONCLUSIVE`, `check == blocking_fields`) |
+| `runtime.dependency_count` | recorded only | a diagnostic of how many lines were hashed |
+| `runtime.cpu_affinity` | blocking | a run confined to other CPUs shares them with other work differently (the owner's split, 2026-10-30: Docker on 0-3, perf on 4-5); `unknown` against a set is a mismatch (`INCONCLUSIVE`, `check == blocking_fields`) |
 | `contract.signal_contract`, `contract.work_model_version`, `contract.verification_level` | blocking | different contract or work model, different work (R-1) |
 | `result.cost_accounting_version` | blocking; a record without it is `INCONCLUSIVE` | cost accounting changed at DEV-017 (R-2). This is the vacuous-pass gap of `TCK-20261009-PERF-GATE-PASSES-VACUOUSLY-AGAINST-PRE-M1-BASELINE`, expressed as a schema field |
 | `runtime.declared_hardware_class` | `INCONCLUSIVE` when it differs from the detected `runtime.hardware_class` on either side | a runner may declare a class only to match the detected one (OD-4) |
@@ -493,7 +504,7 @@ never a skip that reads as success. A missing baseline, a baseline with a differ
 | `runner.controlled`, `runner.name` | blocking | an uncontrolled result is not comparable with a controlled one, and a capacity result is read only against the same host |
 | `protocol.*` (warmup, measured ticks, repetitions, percentile method, clock, gc) | blocking | a 20-tick and a 1000-tick sample are not comparable (finding 3) |
 | `runtime_mode_sequence` | see the excursion rule below | an excursion changes the work done (`RuntimeMode` can leave `NORMAL`) |
-| `validity.hash_scheme` | blocking when both carry a hash; digests of different schemes are not comparable (PERF-D5) | two digests produced by different hash schemes can differ with identical state, so a mismatch proves nothing. The enum is `flat-sha256-v1`, `flat-sha256-v2` (R-3) |
+| `validity.hash_scheme` | blocking when both carry a hash; digests of different schemes are not comparable (PERF-D5) | two digests produced by different hash schemes can differ with identical state, so a mismatch proves nothing. The enum is `flat-sha256-v1`, `flat-sha256-v2`, `flat-sha256-v3` (R-3) |
 | `recorded_at`, host name, load average | recorded only | noise context; load average may add a variance warning, not a verdict |
 
 **Excursion rule (OD-3).** `compare` reads `runtime_mode_sequence` after every blocking field has matched.
@@ -518,7 +529,7 @@ perf-only result field, so a gate report outside `src/perf/` can reuse it.
 **Schema version change.** A MAJOR bump invalidates every stored baseline of the older MAJOR for
 comparison. They stay readable and are reported `INCONCLUSIVE` until migrated or re-recorded by an
 owner-approved baseline update (`PERF-M2-T05`), which records the cause ticket and the before and
-after identities. A MINOR bump only adds optional fields (`1.1`: `identity.runner`; `1.2`: the after-collect keys of `memory_mb`; `1.3`: the `working_set_*` keys of `memory_mb`; `compare` reads only the MAJOR, so a `1.3` candidate against a `1.1` baseline, or the reverse, is compared exactly as two records of one version). The reader never guesses a missing
+after identities. A MINOR bump only adds optional fields (`1.1`: `identity.runner`; `1.2`: the after-collect keys of `memory_mb`; `1.3`: the `working_set_*` keys of `memory_mb`; `1.4`: `outcome.check`; `1.5`: `identity.runtime.dependency_fingerprint` (blocking; a record without it reads `unknown`, so against a fingerprinted head it is `INCONCLUSIVE`, not `PASS`) and `dependency_count`, and `identity.runtime.cpu_affinity` (blocking, same `unknown` rule; `logical_cores` and `hardware_class` read the host and are not affected by pinning); `compare` reads only the MAJOR, so a `1.4` candidate against a `1.1` baseline, or the reverse, is compared exactly as two records of one version). The reader never guesses a missing
 required field.
 
 ## 5. Tool mapping
@@ -579,7 +590,7 @@ records as `extra_info`. Choosing the tool is `PERF-M2-T03`.
 | F15 profiling toolkit | Keep outside the schema as diagnostic evidence stamped PROVISIONAL; align its header names to `identity` where the names overlap so a profile can cite a record |
 | F16, F17, F18, F20, F21 | Keep outside the schema: profiles with profiler overhead, whole-suite memory, a leak probe, payload sizes and a stress run, none of which is a benchmark result in this sense |
 | F19 WS payload | Keep outside the schema (bytes, not time); its `attempted/aborted/abort_reason` is the model for `outcome.reason` codes |
-| F22 long-run report | **Done by `PERF-M2-T04`.** `LongRunStabilityHarness.to_record` maps it into a `comparative`-tier record (its checks compare the start and the end of one run, `performance_contract.md` §3.3; `gate.projection = long_run_stability`, `runner.controlled = false`, raw ticks as a pointer, the mode at every tick, `final_state_hash` with `flat-sha256-v2`). The report no longer has `passed_certification`: it has `outcome` (`PASS` when the four invariants held, otherwise `REGRESSION` naming the ones that did not), and its `to_dict` keeps `warmup_ticks`, `sample_interval_ticks` and every sample with its `active_mode`. Its window percentiles are nearest-rank |
+| F22 long-run report | **Done by `PERF-M2-T04`.** `LongRunStabilityHarness.to_record` maps it into a `comparative`-tier record (its checks compare the start and the end of one run, `performance_contract.md` §3.3; `gate.projection = long_run_stability`, `runner.controlled = false`, raw ticks as a pointer, the mode at every tick, `final_state_hash` with `flat-sha256-v3`). The report no longer has `passed_certification`: it has `outcome` (`PASS` when the four invariants held, otherwise `REGRESSION` naming the ones that did not), and its `to_dict` keeps `warmup_ticks`, `sample_interval_ticks` and every sample with its `active_mode`. Its window percentiles are nearest-rank |
 | F23 `PhaseTimingRecord` | Candidate source for `phases` and `work` if the kernel ever calls it (M3); not a result record |
 | F24 kernel signals | Source, not a format |
 | F25 `simq_isolation_overhead.md` | Keep (named comparative result); a machine-readable `comparative` record is future work |
@@ -618,7 +629,7 @@ findings, and what each changed in this schema:
 |---|---|---|---|
 | R-1 | Nothing recorded whether a run's governor read a modelled or a measured cost, or which work model it used | DEV-018 (#448); `RuntimeProfile.signal_contract`; `WORK_MODEL_VERSION` | `contract.signal_contract` and `contract.work_model_version`, both blocking |
 | R-2 | Tick and phase totals changed meaning at DEV-017 but `engine.commit` is recorded only, so a pre-#448 record compared as comparable | DEV-017 (#448) | `result.cost_accounting_version`, blocking; a record without it is `INCONCLUSIVE` |
-| R-3 | `validity.hash_scheme` was a free string | DEV-019 (#455) | An enum (`flat-sha256-v1`, `flat-sha256-v2`); the rule is unchanged |
+| R-3 | `validity.hash_scheme` was a free string | DEV-019 (#455) | An enum (`flat-sha256-v1`, `flat-sha256-v2`, later `flat-sha256-v3`); the rule is unchanged |
 | R-4 | The zero-worker `DEGRADED` mistrigger | `PERF-M1-T01` (#352) | None: covered by `executor.worker_count` (blocking) and the all-`NORMAL` rule |
 | R-5 | Work debt is gone, so the draft's M1-T02 row ("debt-related counters") had nothing to describe | DEV-019 (#455) | The debt wording is dropped; `work` holds the kernel's metric means and invents no counts |
 

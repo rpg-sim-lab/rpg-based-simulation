@@ -1,0 +1,39 @@
+WORLD urban_political: seeds with both runs: [42, 43, 44, 45, 46]
+  HAZARD: base total 10, branch total 9, rise -1, threshold 2, seeds rising [] (per seed base,branch {42: (2, 1), 43: (2, 2), 44: (2, 2), 45: (2, 2), 46: (2, 2)}) -> no rise
+  COMBAT: base total 19, branch total 21, rise 2, threshold 2, seeds rising [42, 44] (per seed base,branch {42: (3, 6), 43: (4, 4), 44: (2, 3), 45: (6, 5), 46: (4, 3)}) -> TIER2_REVIEW
+    seed 42 extra COMBAT victim 6 died t328; groups within 50 ticks before death: []; group formed within 50 ticks after death: 0; OUTCOME: NOT SHOWN (needs the trace)
+    seed 42 extra COMBAT victim 16 died t453; groups within 50 ticks before death: [{"gid": 10020, "formed": 304, "members": [14, 16], "contract": "cnt_recruit_16_14_302", "holder": 16, "dissolved": [403, "BINDING_CONTRACT_NOT_ACTIVE", "FULFILLED"], "reform_of_same_members_within_50": false, "prior_contract": []}, {"gid": 10027, "formed": 417, "members": [14, 16], "contract": "cnt_recruit_14_16_415", "holder": 14, "dissolved": [422, "BINDING_HOLDER_LEFT", null], "reform_of_same_members_within_50": true, "prior_contract": ["cnt_recruit_16_14_302"]}]; group formed within 50 ticks after death: 0; OUTCOME: NOT SHOWN (needs the trace)
+    seed 42 extra COMBAT victim 23 died t1687; groups within 50 ticks before death: [{"gid": 10047, "formed": 1668, "members": [23, 24], "contract": "cnt_recruit_24_23_1666", "holder": 24, "dissolved": [1686, "MEMBERS_BELOW_TWO", null], "reform_of_same_members_within_50": false, "prior_contract": []}]; group formed within 50 ticks after death: 0; OUTCOME: NOT SHOWN (needs the trace)
+    seed 42 extra COMBAT victim 17 died t1726; groups within 50 ticks before death: []; group formed within 50 ticks after death: 0; OUTCOME: NOT SHOWN (needs the trace)
+    seed 44 extra COMBAT victim 14 died t291; groups within 50 ticks before death: []; group formed within 50 ticks after death: 0; OUTCOME: NOT SHOWN (needs the trace)
+  DEFEAT: base total 19, branch total 15, rise -4, threshold 2, seeds rising [] (per seed base,branch {42: (3, 3), 43: (2, 2), 44: (2, 1), 45: (8, 5), 46: (4, 4)}) -> no rise
+  all-cause per pair:
+    seed 42: base 8 {'HAZARD': 2, 'DEFEAT': 3, 'COMBAT': 3} branch 10 {'HAZARD': 1, 'DEFEAT': 3, 'COMBAT': 6} rises {'COMBAT': (3, 6)} extra victims [(328, 6, 'COMBAT'), (453, 16, 'COMBAT'), (1687, 23, 'COMBAT'), (1726, 17, 'COMBAT')]
+    seed 43: base 8 {'HAZARD': 2, 'DEFEAT': 2, 'COMBAT': 4} branch 8 {'HAZARD': 2, 'DEFEAT': 2, 'COMBAT': 4} rises {} extra victims []
+    seed 44: base 6 {'HAZARD': 2, 'COMBAT': 2, 'DEFEAT': 2} branch 6 {'HAZARD': 2, 'COMBAT': 3, 'DEFEAT': 1} rises {'COMBAT': (2, 3)} extra victims [(291, 14, 'COMBAT')]
+    seed 45: base 16 {'HAZARD': 2, 'DEFEAT': 8, 'COMBAT': 6} branch 12 {'HAZARD': 2, 'DEFEAT': 5, 'COMBAT': 5} rises {} extra victims []
+    seed 46: base 10 {'HAZARD': 2, 'DEFEAT': 4, 'COMBAT': 4} branch 9 {'HAZARD': 2, 'DEFEAT': 4, 'COMBAT': 3} rises {} extra victims []
+TIER1_NOT_FIRED
+seed 42: field_found base True arm True | lodger-ticks 3338 -> 5105 | enters 441 -> 208 | leaves 434 -> 202 | group members lodged at a group decision 455 -> 1454 (over 2000 ticks)
+   extra victim 6 (COMBAT, t328): last lodged tick None, last bed-leave tick None -> not lodged within 50 ticks
+   extra victim 14 (DEFEAT, t423): last lodged tick None, last bed-leave tick None -> not lodged within 50 ticks
+   extra victim 16 (COMBAT, t453): last lodged tick None, last bed-leave tick None -> not lodged within 50 ticks
+   extra victim 23 (COMBAT, t1687): last lodged tick 1661, last bed-leave tick 1662 -> STOP: lodged or left a bed within 50 ticks
+   extra victim 17 (COMBAT, t1726): last lodged tick 1646, last bed-leave tick 1647 -> not lodged within 50 ticks
+seed 43: field_found base True arm True | lodger-ticks 4790 -> 4470 | enters 131 -> 222 | leaves 122 -> 217 | group members lodged at a group decision 402 -> 1155 (over 2000 ticks)
+seed 44: field_found base True arm True | lodger-ticks 5759 -> 5319 | enters 604 -> 471 | leaves 595 -> 467 | group members lodged at a group decision 352 -> 901 (over 2000 ticks)
+   extra victim 14 (COMBAT, t291): last lodged tick None, last bed-leave tick None -> not lodged within 50 ticks
+seed 45: field_found base True arm True | lodger-ticks 3582 -> 4432 | enters 381 -> 376 | leaves 374 -> 369 | group members lodged at a group decision 34 -> 20 (over 2000 ticks)
+   extra victim 22 (COMBAT, t238): last lodged tick None, last bed-leave tick None -> not lodged within 50 ticks
+   extra victim 15 (COMBAT, t280): last lodged tick None, last bed-leave tick None -> not lodged within 50 ticks
+   extra victim 8 (DEFEAT, t313): last lodged tick None, last bed-leave tick None -> not lodged within 50 ticks
+   extra victim 14 (DEFEAT, t331): last lodged tick None, last bed-leave tick None -> not lodged within 50 ticks
+   extra victim 13 (COMBAT, t411): last lodged tick None, last bed-leave tick None -> not lodged within 50 ticks
+   extra victim 16 (COMBAT, t482): last lodged tick None, last bed-leave tick None -> not lodged within 50 ticks
+seed 46: field_found base True arm True | lodger-ticks 5326 -> 5256 | enters 298 -> 275 | leaves 290 -> 269 | group members lodged at a group decision 0 -> 0 (over 2000 ticks)
+   extra victim 16 (DEFEAT, t205): last lodged tick None, last bed-leave tick None -> not lodged within 50 ticks
+LODGER_STOP
+  SUMMARY urban_political base: deaths {'HAZARD': 10, 'DEFEAT': 19, 'COMBAT': 19} formations 805 dissolutions 760 same-member-set re-forms 44 duplicate group ids 595 FULFILLED ends 0 (lag>0: 0) hard_law {}
+  SUMMARY urban_political branch: deaths {'HAZARD': 9, 'DEFEAT': 15, 'COMBAT': 21} formations 218 dissolutions 207 same-member-set re-forms 26 duplicate group ids 0 FULFILLED ends 186 (lag>0: 0) hard_law {}
+WORLD_DONE urban_political check_rc=9 total_wall_s=2202
+RUN15F_STOP world end rc=9 in urban_political (7 tier-1, 9 lodged victim, 10 hard law)

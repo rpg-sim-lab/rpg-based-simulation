@@ -1,0 +1,12 @@
+boring_cartwright Up 3 minutes
+platform-alloy-1 Up About a minute (healthy)
+platform-backend-1 Up About a minute (healthy)
+platform-docker-socket-proxy-1 Up About a minute
+platform-grafana-1 Up About a minute (healthy)
+platform-loki-1 Up About a minute
+platform-node-exporter-1 Up About a minute
+platform-ntfy-1 Up About a minute (healthy)
+platform-prometheus-1 Up About a minute (healthy)
+platform-redis-1 Up About a minute (healthy)
+platform-redis-exporter-1 Up About a minute
+platform-tempo-1 Up About a minute

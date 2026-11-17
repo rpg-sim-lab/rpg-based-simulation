@@ -23,6 +23,18 @@ class ContextFilter(logging.Filter):
                     setattr(record, attr, val)
         return True
 
+class TraceAwareFormatter(logging.Formatter):
+    """The plain-text formatter: appends ` trace_id=<hex> span_id=<hex>` to a line logged while a span is active.
+
+    Records carry those attributes only when API tracing is on (src/api/tracing.py); without them the line is unchanged."""
+    def format(self, record: logging.LogRecord) -> str:
+        """Format the record as usual, then append the trace fields when it carries them."""
+        line = super().format(record)
+        trace_id = getattr(record, "trace_id", None)
+        if trace_id:
+            line += f" trace_id={trace_id} span_id={getattr(record, 'span_id', '')}"
+        return line
+
 class JsonFormatter(logging.Formatter):
     """
     JSON formatter for V2 engine logs.
@@ -42,6 +54,12 @@ class JsonFormatter(logging.Formatter):
             if val is not None:
                 log_record[attr] = val
                 
+        # Inject trace correlation (set by src/api/tracing.py only while a span is active)
+        for attr in ('trace_id', 'span_id'):
+            val = getattr(record, attr, None)
+            if val is not None:
+                log_record[attr] = val
+
         # Inject 'extra' fields
         if hasattr(record, "extra"):
             log_record.update(record.extra)
@@ -58,7 +76,7 @@ def setup_v2_logging(level: str = "INFO", json_format: bool = False):
         handler.setFormatter(JsonFormatter())
     else:
         # Standard legacy-adjacent format
-        formatter = logging.Formatter('%(levelname)s:%(name)s:%(message)s')
+        formatter = TraceAwareFormatter('%(levelname)s:%(name)s:%(message)s')
         handler.setFormatter(formatter)
         
     handler.addFilter(ContextFilter())

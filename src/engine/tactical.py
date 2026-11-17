@@ -11,23 +11,24 @@ logger = logging.getLogger(__name__)
 from src.core.updates import EntityUpdate, StrategicUpdate, TaskUpdate, NavigationUpdate
 from src.engine.legality import LegalityServiceV2
 from src.engine.positioning import PositioningService
-from src.core.strategic import ProjectStatus, ObjectiveKind
+from src.core.strategic import GoalKind, ProjectStatus
 from src.core.movement_modes import MovementMode
 from src.core.enums import ActionStyle, ReasonCode, EntityRole, Faction
-from src.core.skills import SKILL_REGISTRY
+from src.core.skills import SKILL_REGISTRY, SkillDefinition
 from src.engine.rpg_depth import WoundService
 from src.cognition.common_knowledge import combat_capability_against
-from src.content_semantics.faction import are_entities_hostile
-from src.content_semantics.relation import RelationContext
 from src.engine.tactical_destinations import retreat_destination, wander_destination
-from src.engine.tactical_threat import safety_retreat_warranted
+from src.engine.tactical_threat import attacked_me_recently, hostile_acts_on, need_yields, perceived_threats, present_threats, safety_retreat_warranted
+from src.engine.need_pull import HUNGER_LINE, SLEEP_LINE, entity_hunger_is_pressing, entity_need_is_pressing
 from src.engine.tactical_rest import in_place_survival_update
-from src.engine.building_arrival import building_arrival_update
 from src.engine.behavior_consumers import get_entity_signals, get_perception_gate
 from src.engine.sleep_debt import collapse_update, must_collapse
 from src.engine.tactical_hold import held_swing_update, leash_return_update, notice_unengaged_hostile, stalemate_break_update
-from src.engine.hostility import source_identity
-from src.engine.tactical_avoid import avoid_what_can_eat_me, classify_neighbours, eat_at_hunger_corpse
+from src.engine.appraisal import Relation
+from src.engine.hostility import relation, source_identity
+from src.engine.tactical_objective import pursue_objective
+from src.engine.tactical_avoid import avoid_what_can_eat_me, classify_neighbours
+from src.engine.tactical_flight_guard import FlightSite, flight_weighs_free_swing
 
 if TYPE_CHECKING:
     from src.core.state import EntityState, AuthoritativeState
@@ -91,17 +92,14 @@ def _target_still_perceived(entity: "EntityState", target: "EntityState") -> boo
         return True  # gate failure: permissive, as the hostile list does
 
 
-def _perceived_threats(entity: "EntityState", neighbors: List["EntityState"]) -> List["EntityState"]:
-    """Perceived neighbors the entity's appraisal counts as hostile (same predicate as
-    AppraisalSystem.evaluate_emotional_state), so a retreat flees what the panic gate saw."""
-    sx, sy = entity.navigation.position
-    return [
-        n for n in neighbors
-        if are_entities_hostile(entity, n, RelationContext(
-            distance=abs(n.navigation.position[0] - sx) + abs(n.navigation.position[1] - sy),
-            combat_engaged=True,
-        ))
-    ]
+def _panic_holds(entity: "EntityState", threats: List["EntityState"], tick: int) -> bool:
+    """True when a panic retreat (and its freeze) stands: there are perceived threats, and no need outranks them. Past its consequence line (hunger 95, sleep debt 98)
+    a need already takes health, so it is itself a present threat (SURV-07, row 83) and the panic yields to it unless a perceived hostile is ACTING on the subject, by
+    an act and not a state (memo row 88). Below the line a panic flight stands as before."""
+    if not threats:
+        return False
+    past_line = entity.biological.hunger >= HUNGER_LINE or entity.biological.sleep_debt >= SLEEP_LINE
+    return not past_line or any(hostile_acts_on(h, entity, tick) for h in threats)
 
 
 def _has_tactical_hostiles(entity: "EntityState", neighbors: List["EntityState"]) -> bool:
@@ -112,6 +110,61 @@ def _has_tactical_hostiles(entity: "EntityState", neighbors: List["EntityState"]
 def _destination_or_hold(entity: "EntityState", destination: Optional[Tuple[float, float]]) -> Tuple[float, float]:
     """MOV-03: with no valid destination the entity holds position; never a sentinel coordinate."""
     return destination if destination is not None else entity.navigation.position
+
+
+def _serves_a_need(entity: "EntityState") -> bool:
+    """True when the subject's current project is a hunger or fatigue project: the project whose objective is the way to meet the need."""
+    strat = entity.strategic
+    project = strat.projects.get(strat.current_project_id) if strat.current_project_id else None
+    return project is not None and project.status == ProjectStatus.ACTIVE and project.kind in (GoalKind.HUNGER, GoalKind.FATIGUE)
+
+
+def _need_way_is_not_a_hunt(entity: "EntityState") -> bool:
+    """True when the subject has an active need project whose current objective does not name a living target (an inn, a shop, work, a forage node, a carcass,
+    a bed): that walk is its way and a prey in sight does not take it off. A hunger project that names a living target IS the hunt and is not this."""
+    if not _serves_a_need(entity):
+        return False
+    strat = entity.strategic
+    project = strat.projects.get(strat.current_project_id or "")
+    if project is None:
+        return False
+    objective = next((o for o in project.objectives if o.id == strat.current_objective_id), None)
+    return objective is None or objective.target_entity_id is None
+
+
+def _hunt_project_names_prey(entity: "EntityState", prey: List["EntityState"]) -> bool:
+    """True when the subject's current need project (HUNGER or FATIGUE) names a living target that is in `prey`: the hunt itself, which a threat in sight does not suspend.
+    A COMBAT_ENGAGE project is not a need project and keeps today's behaviour; a project naming X with prey Y also in view stays current for X."""
+    if not _serves_a_need(entity):
+        return False
+    strat = entity.strategic
+    project = strat.projects.get(strat.current_project_id or "")
+    if project is None:
+        return False
+    objective = next((o for o in project.objectives if o.id == strat.current_objective_id), None)
+    return objective is not None and objective.target_entity_id is not None and any(h.id == objective.target_entity_id for h in prey)
+
+
+def _prey_in_sight(entity: "EntityState", hostiles: List["EntityState"]) -> List["EntityState"]:
+    """The hostiles the subject regards as prey (`Relation.PREDATION`, the test `opening_steps._hunt_step` uses): the fight a pressing HUNGER does not stop."""
+    return [h for h in hostiles if relation(entity, h) is Relation.PREDATION]
+
+
+def _need_path_first(entity: "EntityState", hostiles: List["EntityState"], tick: int) -> Tuple[bool, List["EntityState"]]:
+    """SURV-07 LAW P: whether the need path runs ahead of everything that reacts to a hostile in sight, and the prey that makes the hunt the need's way.
+
+    A need past its escalation onset gives way only to a hostile ACTING on the subject (`need_yields`). The hunt exemption (designer's ruling on LAW P): with HUNGER pressing and
+    prey in sight, the fight with the prey is the need's way, unless the subject has an active need project whose objective names no living target (that walk stays on the
+    need path). Exempt: the need path does not run first and the target is taken from the prey only. The one place this is computed: the panic freeze and the main order read it."""
+    need_first = bool(hostiles) and entity_need_is_pressing(entity) and not need_yields(entity, hostiles, tick)
+    hunt_prey = _prey_in_sight(entity, hostiles) if need_first and entity_hunger_is_pressing(entity) and not _need_way_is_not_a_hunt(entity) else []
+    return need_first and not hunt_prey, hunt_prey
+
+
+def _panic_yields_to_need(entity: "EntityState", neighbors: List["EntityState"], tick: int) -> bool:
+    """A panic with no destination does not freeze against a pressing need while nothing acts on the subject and no prey is in sight (rpg-designer, scope 2(c)): the same
+    `need_first` the main order computes, over the same tactical hostiles, so the yielded tick takes the need path and never falls through to engagement."""
+    return _need_path_first(entity, classify_neighbours(entity, neighbors, source_identity(entity)).hostiles, tick)[0]
 
 
 def _suspend_project_for_threat(entity: "EntityState", hostiles: List["EntityState"]) -> Optional[StrategicUpdate]:
@@ -126,6 +179,14 @@ def _suspend_project_for_threat(entity: "EntityState", hostiles: List["EntitySta
             current_objective_id_set="",
         )
     return None
+
+
+def pick_highest_power_skill(available_skills: List[SkillDefinition]) -> SkillDefinition:
+    """Choice Bias (COMB-264/265): the highest-power skill; deterministic tie-break: power, then skill id.
+
+    ``learned_skills`` is a set, so without the id key an equal-power tie would follow PYTHONHASHSEED.
+    """
+    return min(available_skills, key=lambda skill: (-skill.power, skill.id))
 
 
 class TacticalDecisionSystem:
@@ -201,27 +262,27 @@ class TacticalDecisionSystem:
             social_context=entity.social
         )
         
-        threats = _perceived_threats(entity, neighbors)
+        threats = present_threats(entity, perceived_threats(entity, neighbors))  # a flight needs a PRESENT threat (AGENCY-07 terms), the test the retreat goal begins and ends on (divergence 2.156)
         panic_destination = retreat_destination(state, entity, threats) if (emotion.is_fleeing and threats) else None
         # A flight with no destination is not flight (designer ruling, V3): a panic that resolves to the subject's own tile is not taken, and the tick
         # falls through the existing order (in-place survival, then the arrival at a building). A real tactical hostile keeps the old freeze, so the
         # fall-through never turns a held panic into a fight the subject would not otherwise start.
-        if emotion.is_fleeing and threats and (panic_destination is not None or _has_tactical_hostiles(entity, neighbors)):  # no threat in sight, no flight: low HP, dread and grudge feed the panic but never flee alone (divergence 2.114)
+        if emotion.is_fleeing and _panic_holds(entity, threats, state.tick) and (panic_destination is not None or (_has_tactical_hostiles(entity, neighbors) and not _panic_yields_to_need(entity, neighbors, state.tick))):  # no threat in sight, no flight: low HP, dread and grudge feed the panic but never flee alone (divergence 2.114)
              # PANIC: Move away from the perceived threats, inside the current region
              # (MOV-01 / LOC-01); hold position when no valid destination exists (MOV-03).
              retreat_to = _destination_or_hold(entity, panic_destination)
-             return EntityUpdate(
+             return flight_weighs_free_swing(state, entity, EntityUpdate(
                  entity_id=entity.id,
                  navigation=NavigationUpdate(target_set=retreat_to, movement_mode_set=MovementMode.RETREAT),
                  task=TaskUpdate(
                      work_kind_set="ENTITY_MOVE",
                      payload_set={"target_position": retreat_to, "reason": "PANIC_RETREAT"}
                  )
-             )
+             ), FlightSite.PANIC_RETREAT)
 
         # Section 8: Mob Leashing (GAP-T08)
         if (leash_return := leash_return_update(entity)) is not None:
-            return leash_return
+            return flight_weighs_free_swing(state, entity, leash_return, FlightSite.LEASH_RETURN)
 
         from src.engine.behavior_consumers import get_pressure_resolver
         from src.world.motivation.pressure_resolver import MotivationPressureSet
@@ -236,13 +297,18 @@ class TacticalDecisionSystem:
         hood = classify_neighbours(entity, neighbors, (_src_faction_id, _src_identity_source))
         hostiles, hostile_identity_sources = hood.hostiles, hood.hostile_identity_sources
 
-        # 4. Strategic Persistence (Pillar 5.1)
-        strat_up = _suspend_project_for_threat(entity, hostiles)
+        # SURV-07 LAW P (TCK-20261031-AN-ENGAGEMENT-OVERRIDES-A-PRESSING-NEED): a need past its escalation onset gives way only to a hostile ACTING on the subject
+        # (`need_yields`). With hostiles in sight and none acting, the need path runs first: before the presence test below, role obligation, cohesion and target
+        # selection (so a follower too takes no part in the group's target). Flight keeps AGENCY-07's `present_threat_to`. The hunt exemption is inside `_need_path_first`.
+        need_first, hunt_prey = _need_path_first(entity, hostiles, state.tick)
+
+        # 4. Strategic Persistence (Pillar 5.1): a need project the subject is walking to is not suspended for a hostile that is not acting on it
+        strat_up = None if (need_first and _serves_a_need(entity)) or (hunt_prey and _hunt_project_names_prey(entity, hunt_prey)) else _suspend_project_for_threat(entity, hostiles)
 
         # Safety pressure (AGENCY-07): a cautious entity retreats from a present threat, never from a hostile merely seen
         if safety_retreat_warranted(entity, hostiles, entity_pressures.safety_pressure):
             retreat_to = _destination_or_hold(entity, retreat_destination(state, entity, hostiles))
-            return EntityUpdate(
+            return flight_weighs_free_swing(state, entity, EntityUpdate(
                 entity_id=entity.id,
                 strategic=strat_up,
                 navigation=NavigationUpdate(target_set=retreat_to, movement_mode_set=MovementMode.RETREAT),
@@ -250,98 +316,26 @@ class TacticalDecisionSystem:
                     work_kind_set="ENTITY_MOVE",
                     payload_set={"target_position": retreat_to, "reason": "SAFETY_PRESSURE_RETREAT"}
                 )
-            )
+            ), FlightSite.SAFETY_PRESSURE_RETREAT)
 
         if (avoid_update := avoid_what_can_eat_me(state, entity, hood, strat_up)) is not None:
-            return avoid_update
+            return flight_weighs_free_swing(state, entity, avoid_update, FlightSite.FLEE_THREAT)
 
         rest_update = in_place_survival_update(state, entity, hostiles)
         if rest_update is not None:
             return rest_update
 
+        if need_first:
+            # LAW P: the need path (the hunger arrival, or the building arrival that serves the need) runs with hostiles in sight. A subject whose project is not
+            # a need project has nothing for the need to do here; it does not engage (it waits for the brain, which a pressing need wakes) while nothing acts on it.
+            if _serves_a_need(entity) and (need_update := pursue_objective(state, entity, neighbors, TacticalDecisionSystem._resolve_target_position, hostiles)) is not None:
+                return need_update
+            return EntityUpdate(entity_id=entity.id, strategic=strat_up)
+
         if not hostiles:
-            # Pillar 5.1: Objective Pursuit
-            if entity.strategic.current_objective_id:
-                obj_id = entity.strategic.current_objective_id
-                # Find the objective in projects
-                project = entity.strategic.projects.get(entity.strategic.current_project_id or "")
-                if project:
-                    obj = next((o for o in project.objectives if o.id == obj_id), None)
-                    if obj and obj.kind == "reach_location" and obj.target:
-                        target_pos, node_id, building_id = TacticalDecisionSystem._resolve_target_position(state, obj)
+            if (objective_update := pursue_objective(state, entity, neighbors, TacticalDecisionSystem._resolve_target_position)) is not None:
+                return objective_update
 
-                        if target_pos:
-                            dist = abs(target_pos[0] - entity.navigation.position[0]) + abs(target_pos[1] - entity.navigation.position[1])
-                            if dist <= 1.0:
-                                if node_id is not None:
-                                    from src.core.updates import InteractionUpdate
-                                    return EntityUpdate(
-                                        entity_id=entity.id,
-                                        task=TaskUpdate(
-                                            work_kind_set="ENTITY_ACT",
-                                            payload_set={"action": "INTERACT", "target_id": node_id}
-                                        ),
-                                        interaction=InteractionUpdate(target_node_id=node_id, progress_delta=1)
-                                    )
-                                elif building_id is not None:
-                                    return building_arrival_update(state, entity, project, building_id)
-                                else:
-                                    # Arrived at a carcass the hunger goal pointed at (decision 44): eat where it lies.
-                                    return eat_at_hunger_corpse(entity, state, project, obj) or EntityUpdate(entity_id=entity.id)
-                            else:
-                                # Still en-route — update nav target and stay idle
-                                # so the brain re-evaluates on each cadence tick.
-                                return EntityUpdate(
-                                    entity_id=entity.id,
-                                    navigation=NavigationUpdate(target_set=target_pos, movement_mode_set=MovementMode.WANDER),
-                                )
-                    elif obj and obj.kind not in (ObjectiveKind.REACH_LOCATION, ObjectiveKind.DEFEAT_ENEMY):
-                        # Pillar 5.1 continued: every other ObjectiveKind System A/B can
-                        # produce reaches real execution via ObjectiveIntentResolver +
-                        # ActionIntentAdapter, not just REACH_LOCATION. DEFEAT_ENEMY is
-                        # excluded — handled entirely by the hostile-engagement branch
-                        # below (gated on `hostiles`, not `obj.kind`).
-                        target_pos = None
-                        node_id = None
-                        if obj.target:
-                            target_pos, node_id, _ = TacticalDecisionSystem._resolve_target_position(state, obj)
-
-                        if target_pos:
-                            dist = abs(target_pos[0] - entity.navigation.position[0]) + abs(target_pos[1] - entity.navigation.position[1])
-                            if dist > 1.0:
-                                return EntityUpdate(
-                                    entity_id=entity.id,
-                                    navigation=NavigationUpdate(target_set=target_pos, movement_mode_set=MovementMode.WANDER),
-                                )
-                            if obj.kind == ObjectiveKind.REACH_RESOURCE and node_id is not None:
-                                # Arrived at the resource node: transition to a harvest
-                                # action instead of falling through to
-                                # ObjectiveIntentResolver's REACH_RESOURCE -> MOVE_TO
-                                # mapping, which would re-issue navigation forever.
-                                from src.engine.intent.action_intent import ActionIntent, ActionIntentAdapter
-
-                                harvest_intent = ActionIntent(
-                                    kind="HARVEST_RESOURCE",
-                                    actor_id=entity.id,
-                                    target_id=node_id,
-                                    source_opportunity_id=obj.id,
-                                    reason=f"Arrived at resource node {node_id} for objective {obj.id}",
-                                )
-                                updates = ActionIntentAdapter.execute(
-                                    entity, harvest_intent, current_tick=state.tick, neighbor_view=neighbors, context=state
-                                )
-                                return updates.get(entity.id, EntityUpdate(entity_id=entity.id))
-
-                        from src.domains.adventure.resolver import ObjectiveIntentResolver
-                        from src.engine.intent.action_intent import ActionIntentAdapter
-
-                        intent = ObjectiveIntentResolver.resolve(
-                            entity.id, obj, payload={"position": target_pos} if target_pos else {}
-                        )
-                        updates = ActionIntentAdapter.execute(
-                            entity, intent, current_tick=state.tick, neighbor_view=neighbors, context=state
-                        )
-                        return updates.get(entity.id, EntityUpdate(entity_id=entity.id))
 
             # 4.1 Role-Based Obligation (Phase 7)
             group = state.groups.get(entity.identity.group_id) if entity.identity.group_id is not None else None
@@ -382,8 +376,10 @@ class TacticalDecisionSystem:
             return EntityUpdate(entity_id=entity.id)
 
         # 4. Target Selection with Focus Fire
+        if hunt_prey:
+            hostiles = hunt_prey    # non-prey, non-acting hostiles are not engaged by a hunter under a pressing hunger
         group = state.groups.get(entity.identity.group_id) if entity.identity.group_id is not None else None
-        def target_score(h: EntityState) -> Tuple[int, float, int, float, float, float, int]:
+        def target_score(h: EntityState) -> Tuple[int, int, float, int, float, float, float, int]:
             dist = abs(h.navigation.position[0] - entity.navigation.position[0]) + abs(h.navigation.position[1] - entity.navigation.position[1])
 
             # Logic ID: COMB-316 -- subjective capability estimate against the hostile's species, from the entity's own
@@ -421,7 +417,9 @@ class TacticalDecisionSystem:
 
             # CONFLICT-04: a fighter stands its ground, so an adjacent hostile outranks a farther one.
             not_adjacent = 0 if LegalityServiceV2.is_adjacent(entity.navigation.position, h.navigation.position) else 1
-            return (not_adjacent, group_bias, is_current_target, -capability_confidence, h.combat.hp, dist * pressure_dist_mod, h.id)
+            # TCK-20261101-A-HOSTILE-ATTACKING-YOU-OUTRANKS-THE-GROUP-SHARED-TARGET: a hostile that hit this entity within the window outranks the group's shared target (D-13)
+            not_attacking_me = 0 if attacked_me_recently(h, entity, state.tick) else 1
+            return (not_adjacent, not_attacking_me, group_bias, is_current_target, -capability_confidence, h.combat.hp, dist * pressure_dist_mod, h.id)
 
         logger.debug(f"DEBUG: entity {entity.id} evaluating targets. Group target: {group.shared_target_id if group else None}")
         for h in hostiles:
@@ -470,7 +468,7 @@ class TacticalDecisionSystem:
         # Decision 32: beside a hostile it is not engaged with, the subject decides now (keep walking, step away, or fight below).
         noticed = notice_unengaged_hostile(state, entity, target, hostiles, strat_up)
         if noticed is not None:
-            return noticed
+            return flight_weighs_free_swing(state, entity, noticed, FlightSite.AVOID_HOSTILE)
 
         # Tactical Role Logic
         role = entity.combat.tactical_role
@@ -521,18 +519,24 @@ class TacticalDecisionSystem:
                          )
                      )
              
-             # Pure Retreat if HP is very low and engaged
+             # Pure retreat if hp is very low and engaged. Below 15% hp the WOUNDED term of `present_threat_terms` always holds, so every perceived hostile is a present
+             # threat here and the flight stands as before; the pressing-need rows never reach this line (`need_first` returned above, law P). With nowhere to go the
+             # retreat is not taken as a move: no PANIC_RETREAT task, and the tick does not become a fight either.
              if hp_percent < 0.15:
-                  # Away from all hostiles, inside the current region; hold when none is valid.
-                  retreat_pos = _destination_or_hold(entity, retreat_destination(state, entity, hostiles))
-                  return EntityUpdate(
+                  retreat_pos = retreat_destination(state, entity, hostiles)
+                  if retreat_pos is None:
+                      # Nowhere to go: hold on the subject's own tile in RETREAT mode with no task (so no PANIC_RETREAT). An idle update would leave a stored target in place for the
+                      # movement phase to walk; RETREAT mode on a pinned tile is inert (routing skips position == target). Not HOLD mode: it changes swap eligibility at movement.py.
+                      return EntityUpdate(entity_id=entity.id, strategic=strat_up,
+                                          navigation=NavigationUpdate(target_set=entity.navigation.position, movement_mode_set=MovementMode.RETREAT))
+                  return flight_weighs_free_swing(state, entity, EntityUpdate(
                       entity_id=entity.id,
                       navigation=NavigationUpdate(target_set=retreat_pos, movement_mode_set=MovementMode.RETREAT),
                       task=TaskUpdate(
                           work_kind_set="ENTITY_MOVE",
                           payload_set={"target_position": retreat_pos, "reason": "PANIC_RETREAT"}
                       )
-                  )
+                  ), FlightSite.LOW_HP_RETREAT)
 
         # 5.2 Bracketing Logic (Task 4.3)
         if role == "VANGUARD" and group:
@@ -617,7 +621,7 @@ class TacticalDecisionSystem:
                   if dist_to_target > entity.combat.range:
                        return EntityUpdate(
                            entity_id=entity.id,
-                           navigation=NavigationUpdate(movement_mode_set=MovementMode.HOLD),
+                           navigation=NavigationUpdate(movement_mode_set=MovementMode.HOLD, target_clear=True),
                            task=TaskUpdate(
                                work_kind_set="ENTITY_ACT",
                                payload_set={"action": "HOLD", "reason": "HOLD_CHOKEPOINT", "target_id": target.id}
@@ -706,9 +710,7 @@ class TacticalDecisionSystem:
                             available_skills.append(skill)
                 
                 if available_skills:
-                    # Choice Bias: Pick highest power
-                    available_skills.sort(key=lambda s: s.power, reverse=True)
-                    chosen_skill_id = available_skills[0].id
+                    chosen_skill_id = pick_highest_power_skill(available_skills).id
 
             # Logic ID: COMB-267 (Exhaustion affects tactical choice)
             # If stamina is low and no free skills, might favor basic attack or rest

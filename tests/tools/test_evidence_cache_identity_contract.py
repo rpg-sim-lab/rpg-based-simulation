@@ -2,9 +2,10 @@
 (TCK-20260814-KGMCP-EVIDENCE-CACHE-IDENTITY).
 
 Phase 0 is contract-only: no gateway, routing, cache-invalidation, or migration code exists yet.
-These tests structurally validate the frozen contract artifacts under
-`docs/engine/contracts/knowledge_gateway_mcp/` (`evidence_cache_identity_contract.md`,
-`evidence_identity_kinds.schema.json`, `cache_migration_plan.md`), using the same raw-`json.loads()`
+These tests structurally validate the frozen contract artifacts: the two `.md` files
+(`evidence_cache_identity_contract.md`, `cache_migration_plan.md`) now live in
+`docs/archive/knowledge_gateway_mcp/`, and the schema (`evidence_identity_kinds.schema.json`) stays
+under `docs/engine/contracts/knowledge_gateway_mcp/`. They use the same raw-`json.loads()`
 /`Path.read_text()`/`ast.parse()` pattern `tests/tools/test_retrieval_cache.py::TestStaticGuards`
 uses — no `jsonschema` dependency, no import of live cache-invalidation code (none exists to import
 at Phase 0). (The former sibling cross-check against `test_knowledge_gateway_contract_schemas.py`
@@ -25,10 +26,11 @@ import pytest
 
 _REPO_ROOT = Path(__file__).parent.parent.parent
 _CONTRACTS_DIR = _REPO_ROOT / "docs" / "engine" / "contracts" / "knowledge_gateway_mcp"
+_ARCHIVE_DIR = _REPO_ROOT / "docs" / "archive" / "knowledge_gateway_mcp"
 
-_IDENTITY_CONTRACT_MD = _CONTRACTS_DIR / "evidence_cache_identity_contract.md"
+_IDENTITY_CONTRACT_MD = _ARCHIVE_DIR / "evidence_cache_identity_contract.md"
 _EVIDENCE_KINDS_SCHEMA = _CONTRACTS_DIR / "evidence_identity_kinds.schema.json"
-_MIGRATION_PLAN_MD = _CONTRACTS_DIR / "cache_migration_plan.md"
+_MIGRATION_PLAN_MD = _ARCHIVE_DIR / "cache_migration_plan.md"
 _SHARED_ENUMS = _CONTRACTS_DIR / "shared_enums.schema.json"
 _REQUEST_SCHEMA = _CONTRACTS_DIR / "knowledge_context_request.schema.json"
 

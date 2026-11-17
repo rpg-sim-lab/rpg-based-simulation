@@ -51,7 +51,7 @@ Binary format (cite INFRA-215):
 
 ```
 [4 bytes] little-endian uint32: length of JSON header in bytes
-[N bytes] UTF-8 JSON header: {"tick": <int>, "spec_id": "<str>", "rng_checkpoint": <any>}
+[N bytes] UTF-8 JSON header: {"tick": <int>, "spec_id": "<str>", "rng_checkpoint": <any>, "schema": {"<module>.<Qualname>": ["<field>", ...]}}
 [rest]    pickle blob of AuthoritativeState
 ```
 
@@ -60,8 +60,12 @@ Behaviour:
 - `ScenarioCheckpointer.save(svc, path)` raises `RuntimeError` when kernel not started.
 - `ScenarioCheckpointer.restore(path, spec)` raises `FileNotFoundError` if the checkpoint file does not exist.
 - `ScenarioCheckpointer.restore(path, spec)` raises `ValueError` if `checkpoint.spec_id != spec.id`.
+- `schema` lists, for every dataclass in the payload (recorded by the pickler at save), its ordered field names. `restore` checks the header, then `spec_id`, then `schema`, and only then calls `pickle.loads`; the `FIELD_RULES` fill and the group-counter check follow the unpickle.
+- A class whose current fields equal the saved ones is accepted. A field appended last and named by a `FIELD_RULES` row (`record` + `field`) is accepted and filled. An insert, reorder, rename or removal, a class that no longer exists, an append no row fills, and a checkpoint with no `schema` are refused with `CheckpointSchemaMismatchError` / `CheckpointSchemaMissingError`; a header that cannot be read (shorter than its length prefix, a length past the end, bad UTF-8 or JSON, not an object with `tick` and `spec_id`) with `CheckpointHeaderError`. All are `ValueError`s (`CheckpointSchemaError`) and never reach `pickle.loads`. The restore route answers 400 with `{"error": "checkpoint_schema", "reason": "header" | "missing" | "mismatch", "message": ..., "classes": [...]}`.
+- Limits (TCK-20261101-A-CHECKPOINT-HAS-NO-FORMAT-VERSION, divergence 2.160): names and order only. Enum member renames, changed field types or defaults, and a field that keeps its name but changes meaning are not detected. A checkpoint written before the fingerprint existed is refused, not migrated; between the group-hit batch (#933) and this change a headerless pre-#933 checkpoint would have unpickled with `CombatComponent.last_hit_attackers` and `last_hit_damages` shifted into the old cache slot, and a fingerprinted one lacking that pair is refused as an insert.
 - The restored service's `_tick` counter is set to the checkpoint tick.
 - RNG stream is restored via `DeterministicRNG.set_state(rng_checkpoint)`.
+- The restored kernel is built under an explicit run id, `restored_<spec id>_<pid>_<8 hex of a uuid4>`, unique per restore (TCK-20261115-A-RESTORED-SCENARIO-SHARES-ONE-RUN-DIRECTORY-PER-SPEC). An explicit id suppresses the `Domain.INIT` RNG draw that would break restore determinism; the uuid is not the simulation RNG. Two restores of one spec therefore never share, or replace, a run directory.
 - `spec_path` must be provided in the restore POST body when calling via REST (see below). If omitted, a sentinel spec is constructed from the `scenario_id` path parameter.
 
 ---

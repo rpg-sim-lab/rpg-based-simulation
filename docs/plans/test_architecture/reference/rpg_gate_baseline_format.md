@@ -143,8 +143,17 @@ It refuses (exit 2, nothing written) on any `no-data` document, a missing or une
 fail with a current, unexpired `state: fail` entry in `rpg_gate_known.yaml` is instead left out of `metrics` and listed in `omitted_validity`
 (`{row, known_match, ticket}`), because validity is judged absolutely on every run and never against a baseline. The lint rejects a listed row still present in `metrics`, and `rebaseline --known FILE` re-checks each omission's owner against the current registry (refuses when it is gone, no longer `state: fail`, or expired).
 
+A known entry may be SCOPED with `cases: [{world, seed, entity_id?}]` (allowed on `state: fail` entries only; `world` and `seed` required, `entity_id` optional, no other key; a non-empty list). An unscoped entry owns by `match` alone, as before. A scoped entry owns a validity fail only when it is a run-scope fail whose (world, seed) is one of its cases and, if the case names an `entity_id`, `violations == len(examples)` (no example was cut by the module's example cap) and every example's `entity_id` is one of the case ids for that (world, seed). What cannot be verified is unowned: more violations than examples, an example with no `entity_id`, a new entity, an uncovered (world, seed). A scoped entry never owns a pooled fail. When its cases do not cover a finding the next entry is tried, so scoped entries may share a `match` (the ticket tells them apart in `omitted_validity`). The candidate and the report use the same matcher (`known_reds.owner_of_finding`); the report lists a scoped entry's stale cases as `<match> <world>/<seed>[/<entity_id>]` in `stale_known_entries.fail`. Lint: two entries (or two cases) naming the same (world, seed[, entity_id]) are an error, an unscoped entry before a scoped one with the same pattern shadows it, `cases` on a `drift` entry or in the slow registry is an error.
+
 The `RPG gate report` job writes `rpg-gate-candidate.json` into its report artifact on every run where the builder accepts (a refusal is a line in the step
 summary, never a job failure). A run that is not main's is built with `--evidence-only`, and `rebaseline` refuses such a candidate.
+
+The candidate's `provenance` also records where it came from (TCK-20261023-RPG-GATE-CANDIDATE-RECORDS-ITS-CI-RUN-AND-KNOWN-FILE):
+
+- `known_file_sha256`: the sha256 of the exact bytes of the `--known` file it was judged against (that file decided which owned validity rows were omitted).
+- `ci`: `{run_id, run_attempt, event_name, ref}` read from `GITHUB_RUN_ID`, `GITHUB_RUN_ATTEMPT`, `GITHUB_EVENT_NAME` and `GITHUB_REF`. It is `null` unless all four are set and non-empty (a local build); it is never guessed.
+
+`rebaseline` refuses a candidate whose `ci` is null or missing, whose `ci.ref` is not `refs/heads/main`, or that has no `known_file_sha256`; the message says to re-dispatch the gate on main. There is no override. The recorded run id is evidence for the reviewer, not a verified fact: nothing calls the GitHub API. From version 2 on the baseline lint requires both fields (and `ci.ref == refs/heads/main`); `rpg_gate_v1.json` predates the rule and is exempt by its version number.
 
 Recording v1 (rpg, after the metric module and config are on main; the milestone is rpg's to name):
 
@@ -153,4 +162,4 @@ Recording v1 (rpg, after the metric module and config are on main; the milestone
    (add `--owner-ruling-ref ... --owner-ruling-date ...` when a stop line is crossed).
 3. Commit `tests/simulation_quality/rpg_gate/baselines/rpg_gate_v1.json` in a PR that cites the same ticket.
 
-To rebuild a candidate from a downloaded `gate-docs` directory: `python -m tools.test_architecture.rpg_gate_candidate --config ... --docs gate-docs --known tools/test_architecture/rpg_gate_known.yaml --report rpg-gate-report.json --out candidate.json --milestone M0`.
+To inspect a candidate from a downloaded `gate-docs` directory (a local build has `ci: null`, so `rebaseline` refuses it; record from the run's own `rpg-gate-candidate.json`): `python -m tools.test_architecture.rpg_gate_candidate --config ... --docs gate-docs --known tools/test_architecture/rpg_gate_known.yaml --report rpg-gate-report.json --out candidate.json --milestone M0`.

@@ -62,6 +62,7 @@ if TYPE_CHECKING:
     from src.engine.cadence import SystemCadence
 
 from src.core.state import EntityState, AuthoritativeState
+from src.core.hold_mode import hold_reset_kwargs
 from src.core.enums import EntityRole
 from src.core.updates import (
     StrategicUpdate, InventoryUpdate, EntityUpdate, StateUpdate,
@@ -71,9 +72,10 @@ from src.engine.policy import GovernorPolicy
 from src.core.strategic import (
     BlockerState, LeadState, LeadCertainty,
     ProjectState, ProjectStatus, ObjectiveState, ObjectiveStatus,
-    CognitionProfile, ProjectKind, GoalKind, ObjectiveKind, has_project_capacity, with_live_current_score
+    CognitionProfile, ProjectKind, GoalKind, ObjectiveKind, has_project_capacity, restart_clear_window, with_live_current_score
 )
 from src.engine.spatial_query import SpatialQueryService
+from src.core.lodging_rules import is_lodged_stayer
 from src.content_semantics.faction import are_entities_hostile
 from src.content_semantics.relation import RelationContext
 from src.strategy.cognition_capacity import CapacityService
@@ -84,12 +86,13 @@ from src.core.updates import NavigationUpdate, InteractionUpdate
 from src.systems.world_systems.routine import RoutineService
 from src.systems.world_systems.intake import ConcernIntakeSystem
 from src.engine.domain_logic import SimulationDomainLogic
-from src.ai.goals import GoalRegistry
+from src.ai.goals import GoalRegistry, escalated_need_wins
 from src.ai.goals.base import GoalScore
+from src.ai.goals.live_record_route import orphan_switch_candidate, route_live_record, supersede_on_win
 from src.ai.score_modifiers import ScoreModifierSystem
 from src.domains.adventure.mapper import RouteToProjectMapper
 from src.systems.party import PartyCoordinationSystem
-from src.systems.strategic_systems.detour import DetourSuggestionSystem
+from src.systems.strategic_systems.detour import DetourSuggestionSystem, merge_concerns_in_cap_order
 from src.systems.strategic_systems.entity_target_objective import close_entity_target_project, contract_project_id
 from src.systems.strategic_systems.work_queue import StrategicWorkQueue
 from src.core.dirty import get_dirty_set
@@ -343,7 +346,7 @@ class StrategicIntelligenceSystem:
                     break
             has_hostiles_or_dead = (has_diff or has_dead)
             try: object.__setattr__(state, "_has_hostiles_or_dead_cache", has_hostiles_or_dead)
-            except: pass
+            except (AttributeError, TypeError) as cache_ex: logger.debug(f"[Tick {state.tick}] fused pass: hostiles/dead cache not stored on this state: {cache_ex}")
 
         # Evaluation of routine blockers and concerns must run across candidate entities
         # Logic ID: PERF-006 (Dirty Entity Tracking for specific sub-phases, but routine pass is global)
@@ -364,6 +367,7 @@ class StrategicIntelligenceSystem:
             ent_upd = refined_entity_updates.get(e_id)
             has_existing_upd = ent_upd is not None
             strat_up = ent_upd.strategic if ent_upd else None
+            lodged_stayer = is_lodged_stayer(entity)   # F3: a lodger whose rest goes on has no movement intent; the walk-target writers below skip it
             
             pending_inventory = entity.inventory
             if ent_upd and ent_upd.inventory:
@@ -389,7 +393,7 @@ class StrategicIntelligenceSystem:
                             if target_pos and entity.navigation.target != target_pos:
                                 nav_changed = True
                 if not nav_changed and not proj_resolved:
-                    if not (curr_proj_id and project and project.status == ProjectStatus.ACTIVE and active_obj and getattr(active_obj, 'target_position', None) is not None):
+                    if not lodged_stayer and not (active_obj and (getattr(active_obj, 'target_position', None) is not None or getattr(active_obj, 'target_entity_id', None) is not None)):  # an ACTIVE project's active objective with a point OR an entity target owns the direction, as on the slow path (~:663); the objective's own status is not checked here (pre-existing, see TCK-20261101-FUSED-STRATEGIC-PASS-RESTRUCTURE)
                         town_target = nearest_town_tile(state.town_tiles, entity.navigation.position) or state.town_center
                         if len(pending_inventory.items) > 0 and entity.navigation.position != (0.0, 0.0) and town_target and entity.navigation.target != town_target:
                             if ent_upd:
@@ -512,7 +516,7 @@ class StrategicIntelligenceSystem:
                             dx = entity.navigation.position[0] - coords[0]
                             dy = entity.navigation.position[1] - coords[1]
                             if (dx*dx + dy*dy)**0.5 < 0.5: resolved_ids.add(b_id)
-                    except: pass
+                    except (ValueError, SyntaxError, TypeError) as access_ex: logger.debug(f"[Tick {state.tick}] access blocker {b_id} subject {b.subject!r} is not a coordinate pair: {access_ex}")
                 elif b.kind == "inventory" and b.subject == "capacity":
                     if len(pending_inventory.items) < pending_inventory.max_slots:
                         resolved_ids.add(b_id)
@@ -554,7 +558,7 @@ class StrategicIntelligenceSystem:
                     b_obj = entity.strategic.blockers.get(b_id)
                     if b_obj: new_additions.append(replace(b_obj, resolved=True))
             
-            new_removals = list(set(strat_up.blockers_remove) | resolved_ids)
+            new_removals = sorted(set(strat_up.blockers_remove) | resolved_ids)
             new_projects = list(strat_up.projects_add_or_update)
             if project_upd: new_projects.append(project_upd)
             
@@ -615,11 +619,11 @@ class StrategicIntelligenceSystem:
                 intent_up = StrategicIntelligenceSystem.evaluate_strategic_intent(state, temp_entity, force=True, cadence=cadence)
                 strat_up = strat_up.merge(intent_up)
 
-            # --- 4. Capacity Enforcement (unconditional, every tick) ---
+            # --- 4. Capacity Enforcement (every slow-path evaluation; a fast-path hit skips this block) ---
             # Enforces profile limits on leads, concerns, hypotheses, and projects.
             # Runs after all cognition items are accumulated so final removals are
             # applied before navigation decisions read from strat_up.
-            # Logic ID: STRAT-012 (Cognition capacity is enforced unconditionally)
+            # Logic ID: STRAT-006, STRAT-007 (leads and concerns are retained under profile limits); enforce_bandwidth also caps hypotheses and projects, which have no ledger row
             capacity_up = DetourSuggestionSystem.enforce_bandwidth(entity, state.tick)
             if not capacity_up.is_noop():
                 strat_up = strat_up.merge(capacity_up)
@@ -627,7 +631,7 @@ class StrategicIntelligenceSystem:
             # --- 5. Redirection (Bridge to Navigation) ---
             # (Hoisted logic from StrategicRedirectionSystem)
             
-            has_nav_update = ent_upd.navigation and ent_upd.navigation.target_set is not None
+            has_nav_update = lodged_stayer or (ent_upd.navigation and ent_upd.navigation.target_set is not None)
             current_project_id = strat_up.current_project_id_set if strat_up.current_project_id_set is not None else entity.strategic.current_project_id
             
             active_blockers = [b for b_id, b in entity.strategic.blockers.items() if b_id not in new_removals and not b.resolved]
@@ -637,14 +641,14 @@ class StrategicIntelligenceSystem:
             if mat_blockers:
                 target_mat = mat_blockers[0].subject
                 match_lead = next((l for l in entity.strategic.leads.values() if l.subject == target_mat and l.kind == 'location'), None)
-                if match_lead:
+                if match_lead and not lodged_stayer:
                     try:
                         coords = tuple(map(float, match_lead.detail.split(',')))
                         if entity.navigation.target != coords:
                             has_nav_update = True
                             existing_nav = ent_upd.navigation or NavigationUpdate()
-                            ent_upd = replace(ent_upd, navigation=replace(existing_nav, target_set=coords), interaction=InteractionUpdate(reset=True))
-                    except: pass
+                            ent_upd = replace(ent_upd, navigation=replace(existing_nav, target_set=coords, **hold_reset_kwargs(entity, ent_upd)), interaction=InteractionUpdate(reset=True))
+                    except (ValueError, AttributeError) as lead_ex: logger.debug(f"[Tick {state.tick}] material lead for {target_mat!r} has a non-coordinate detail {match_lead.detail!r}: {lead_ex}")
             
             if not has_nav_update and current_project_id:
                 project = next((p for p in strat_up.projects_add_or_update if p.id == current_project_id), None) or entity.strategic.projects.get(current_project_id)
@@ -664,7 +668,7 @@ class StrategicIntelligenceSystem:
                             if target_pos:
                                  has_nav_update = True
                                  if entity.navigation.target != target_pos:
-                                     ent_upd = replace(ent_upd, navigation=replace(ent_upd.navigation or NavigationUpdate(), target_set=target_pos))
+                                     ent_upd = replace(ent_upd, navigation=replace(ent_upd.navigation or NavigationUpdate(), target_set=target_pos, **hold_reset_kwargs(entity, ent_upd)))
             
             if not has_nav_update:
                 town_target = nearest_town_tile(state.town_tiles, entity.navigation.position) or state.town_center
@@ -713,7 +717,6 @@ class StrategicIntelligenceSystem:
         Resolve strategic blockers that are satisfied by the current or pending
         authoritative inventory state.
         """
-        from src.engine.cadence import should_run
         cadence = cadence or SystemCadence()
         
         from dataclasses import replace
@@ -924,7 +927,7 @@ class StrategicIntelligenceSystem:
             ent_upd = refined_entity_updates.get(e_id, EntityUpdate(entity_id=e_id))
             strat_up = ent_upd.strategic or StrategicUpdate()
 
-            new_concerns = list(set(strat_up.concerns_add_or_update + concerns))
+            new_concerns = merge_concerns_in_cap_order(strat_up.concerns_add_or_update, concerns)
             
             # Law 194: Enforce Strategic Bandwidth for concerns
             # Logic ID: 194
@@ -936,7 +939,7 @@ class StrategicIntelligenceSystem:
             new_strat_up = replace(
                 strat_up,
                 concerns_add_or_update=new_concerns,
-                concerns_remove=list(set(strat_up.concerns_remove + bandwidth_upd.concerns_remove))
+                concerns_remove=sorted(set(strat_up.concerns_remove + bandwidth_upd.concerns_remove))
             )
             refined_entity_updates[e_id] = replace(ent_upd, strategic=new_strat_up)
                 
@@ -1144,7 +1147,7 @@ class StrategicIntelligenceSystem:
         if not project or project.status != ProjectStatus.SUSPENDED:
             return None
 
-        resumed = replace(project, status=ProjectStatus.ACTIVE)
+        resumed = restart_clear_window(replace(project, status=ProjectStatus.ACTIVE))  # a suspended retreat's clear window was not observed: it restarts on resume
         return StrategicUpdate(
             projects_add_or_update=[resumed],
             current_project_id_set=project_id,
@@ -1303,7 +1306,7 @@ class StrategicIntelligenceSystem:
         current_tick = state.tick
         strat = entity.strategic
         
-        boredom_upd = {}
+        boredom_upd: Dict[str, float] = {}
         if strat.current_project_id:
             proj = strat.projects.get(strat.current_project_id)
             if proj and proj.status == ProjectStatus.ACTIVE:
@@ -1398,8 +1401,8 @@ class StrategicIntelligenceSystem:
                 if _closed_project is not None:
                     return StrategicUpdate(
                         projects_add_or_update=[_closed_project],
-                        current_project_id_set="",
-                        current_objective_id_set="",
+                        current_project_id_set="" if _closed_project.status != ProjectStatus.ACTIVE else None,  # a retreat's clear window moving (still ACTIVE) keeps the project current
+                        current_objective_id_set="" if _closed_project.status != ProjectStatus.ACTIVE else None,
                         boredom_delta=boredom_upd,
                         leads_add_or_update=memory_upd.leads_add_or_update,
                         leads_remove=memory_upd.leads_remove
@@ -1605,17 +1608,11 @@ class StrategicIntelligenceSystem:
 
             
         if best_candidate:
-            existing = next((p for p in strat.projects.values() if p.kind == best_candidate.kind), None)
-            
-            if existing and existing.status == ProjectStatus.SUSPENDED:
-                resumed_up = StrategicIntelligenceSystem.resume_project(entity, existing.id)
-                if resumed_up:
-                    return replace(resumed_up,
-                         boredom_delta=boredom_upd,
-                         leads_add_or_update=memory_upd.leads_add_or_update,
-                         leads_remove=memory_upd.leads_remove
-                    )
-            
+            # TCK-20261027-CAPACITY-GATE-FIRST-RECORD-OF-KIND-IS-DEAD-SO-LIVE-SIBLING-NEVER-RESUMED: a goal continues, resumes or contests the LIVE record of its kind (live_record_route), never the first stored one.
+            route = route_live_record(entity, best_candidate, StrategicIntelligenceSystem.resume_project)
+            if route.update is not None:
+                return replace(route.update, boredom_delta=boredom_upd, leads_add_or_update=memory_upd.leads_add_or_update, leads_remove=memory_upd.leads_remove)
+
             if best_candidate.kind == GoalKind.ADVENTURE_ROUTE:
                 # AC3/AC4: materialize via RouteToProjectMapper using the RAW route score
                 # (metadata["raw_score"]), never best_candidate.utility. _score_scale_max()
@@ -1768,12 +1765,15 @@ class StrategicIntelligenceSystem:
                     score=best_candidate.utility
                 )
 
-            if not existing and not has_project_capacity(strat.projects, strat.profile.max_active_projects):
+            candidate_proj = orphan_switch_candidate(route, candidate_proj, best_candidate.utility, current_tick)
+
+            if not route.existing and not has_project_capacity(strat.projects, strat.profile.max_active_projects) and not escalated_need_wins(entity, best_candidate.kind):
                 if boredom_upd:
                     return StrategicUpdate(boredom_delta=boredom_upd)
                 return StrategicUpdate()
 
             switch_up = StrategicIntelligenceSystem.evaluate_project_switch(with_live_current_score(entity, modified_scores), candidate_proj, current_tick, state=state)
+            switch_up = supersede_on_win(switch_up, route, candidate_proj)
             if switch_up:
                 # TCK-20260812-COMMITTED-INTENTION-SEQUENCE: win-transition bookkeeping. Only
                 # fires when the winning candidate is THIS tick's synthesized committed-intention
@@ -1800,7 +1800,9 @@ class StrategicIntelligenceSystem:
                     **extra_ci,
                     **extra_routing
                 )
-            
+            if route.orphan is not None:
+                return replace(StrategicUpdate(), boredom_delta=boredom_upd, leads_add_or_update=memory_upd.leads_add_or_update, leads_remove=memory_upd.leads_remove)
+
             # Law 194-197: Enforce Strategic Bandwidth
             # Logic ID: 195, 196
             bandwidth_upd = DetourSuggestionSystem.enforce_bandwidth(entity, current_tick)
@@ -1808,7 +1810,7 @@ class StrategicIntelligenceSystem:
                 # Merge with current state of updates
                 return StrategicUpdate(
                     leads_add_or_update=memory_upd.leads_add_or_update,
-                    leads_remove=list(set(memory_upd.leads_remove + bandwidth_upd.leads_remove)),
+                    leads_remove=sorted(set(memory_upd.leads_remove + bandwidth_upd.leads_remove)),
                     concerns_remove=bandwidth_upd.concerns_remove,
                     overload_source_set=bandwidth_upd.overload_source_set,
                     overload_tick_set=bandwidth_upd.overload_tick_set,

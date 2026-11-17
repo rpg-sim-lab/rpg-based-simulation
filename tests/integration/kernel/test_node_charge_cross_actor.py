@@ -2,14 +2,14 @@
 
 Parity ``TOWN-122``: two actors completing the same node charge in one tick cannot duplicate the
 yield. Resolver-level branches are covered in ``tests/unit/resource/test_node_charge_accounting.py``;
-this test proves the pipeline accumulates the reservation across the two actors' intents.
+this file proves the pipeline counts every accepted harvest of a node once, through the node's in-tick charges_delta.
 """
 
 import pytest
 
 from src.core.models.inventory import ItemStack
 from src.core.update_models.resources import ResourceTransferIntent
-from src.core.updates import EntityUpdate, StateUpdate
+from src.core.updates import EntityUpdate, NavigationUpdate, StateUpdate
 from src.engine.pipeline import AuthoritativeApplyPipeline
 from tests.helpers.entities import make_entity
 from tests.helpers.resources import make_resource_node, make_resource_state
@@ -46,3 +46,46 @@ def test_two_actors_on_the_last_charge_yield_exactly_once():
     yields = [u for u in refined.entity_updates.values() if u.inventory is not None]
     assert len(yields) == 1
     assert refined.node_updates[_NODE_ID].charges_delta == -1
+
+
+def test_two_actors_on_a_two_charge_node_both_yield_and_a_third_is_rejected():
+    actors = [make_entity(1), make_entity(2), make_entity(3)]
+    bystander = make_entity(4)
+    node = make_resource_node(_NODE_ID, remaining_charges=2, max_charges=2)
+    state = make_resource_state(entities=[*actors, bystander], nodes=[node])
+    update = StateUpdate(
+        entity_updates={
+            actor.id: EntityUpdate(
+                entity_id=actor.id,
+                resource_transfers=[
+                    ResourceTransferIntent(
+                        transaction_id=f"txn-{actor.id}",
+                        source_id=_NODE_ID,
+                        source_kind="NODE",
+                        items_add=[ItemStack("iron_ore", 1)],
+                        transfer_kind="HARVEST",
+                    )
+                ],
+            )
+            for actor in actors
+        }
+        | {bystander.id: EntityUpdate(entity_id=bystander.id, navigation=NavigationUpdate(target_set=(50.0, 50.0)))}
+    )
+
+    refined = AuthoritativeApplyPipeline.refine(state, update)
+
+    yielding = sorted(i for i, u in refined.entity_updates.items() if i != bystander.id and u.inventory is not None)
+    # exact credit: each yielding actor gains exactly one iron_ore and no gold
+    for actor_id in yielding:
+        inv = refined.entity_updates[actor_id].inventory
+        assert inv.items_add == [ItemStack("iron_ore", 1)]
+        assert inv.gold_delta == 0
+    # exact debit: the node loses exactly one charge per accepted harvest
+    assert len(yielding) == 2
+    assert refined.node_updates[_NODE_ID].charges_delta == -2
+    # recipient: the items went to exactly the first two actors; the rejected third gets no item and no gold change
+    assert yielding == [1, 2]
+    rejected = refined.entity_updates.get(3)
+    assert rejected is None or rejected.inventory is None
+    # a bystander's unrelated update still commits in the same tick
+    assert refined.entity_updates[bystander.id].navigation.target_set == (50.0, 50.0)

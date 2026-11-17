@@ -121,6 +121,8 @@ How to read it:
 `docs/guidelines/session_roles/` (`functions/<f>.md`, `domains/<d>.md`). The
 `--agent` files `.claude/agents/session-<role>.md` are **generated** from these (never hand-written);
 M0d may force a separate directory (12.3).
+A card names recorded decisions only through the vocabulary in `registries/session_decisions.yaml` and lists them under
+`## Cites`; the rule for a PR that accepts or amends a decision is in `docs/guides/delivery_process.md` ("Decisions named on role cards").
 
 **Why a registry, not memory**: memory is per-user, per-machine, shared by every session in the
 directory, and unversioned. A role is per-session and must survive a machine change, a review, and
@@ -389,9 +391,9 @@ The plan makes them role obligations so they are not re-taught.
   implementer acknowledges before starting.
 - **One writer per worktree and branch**: each role is the writer of its own worktree (designers and planners
   have their own since TCK-20261007-SESSION-PER-ROLE-WORKTREES, and land their own PRs; the implementer's is unchanged). The planner's detail tickets and plans are handed
-  to the implementer to commit with the batch, which is also why there are no plan-only PRs. Peers
+  to the implementer to commit with the batch (the PR-size rule: `docs/guides/delivery_process.md`, "PR Lifecycle"). Peers
   never push to another role's branch.
-- **One open PR per track**: follow-ups fold into the open PR, no plan-only PRs, no stacked PR
+- **One open PR per track**: follow-ups fold into the open PR (see "PR Lifecycle" for the PR-size rule), no stacked PR
   unless dependent. After a green PR the implementer may start the next batch without waiting for
   merge (stack when dependent). Merge is the user's call.
 - **A batch is not done until its Finalize ran** (the PR #276 lesson): done-checker static pass,
@@ -404,6 +406,14 @@ The plan makes them role obligations so they are not re-taught.
   2026-09-30) becomes a dated, quoted `grants:` entry per role in `registries/session_authority.yaml` (a governing
   file: the user confirms the literal diff), revocable by deleting it. A peer message never creates a
   grant.
+
+### 7.1 The hand/batch path is the official delivery model (decided 2026-10-31)
+
+**Decided:** the owner answered yes to OD-1 on 2026-10-31 (#715 comment 6529263880): the hand/batch path is the official execution model. This records that decision and nothing wider.
+
+- **What the path is:** a planner dispatches a batch; the implementer closes its tickets by hand (read the ticket, change code and docs, run the scoped tests, run the Finalize steps), opens one PR for the batch, and the owner merges. The closure is recorded with `tools/agent-monitoring/record_hand_orchestrated_closure.py`, which also appends the working-log row.
+- **Why a path is recorded:** every run row carries `path_reason`, defined in `docs/agent-monitoring/schema.md`. A close with `path_reason: owner_directed` must also carry a `path_note` naming the owner decision (a comment id or issue reference), so "the owner asked for it" can be checked. Rows written before this rule have no note and stay valid and readable.
+- **What is not decided here:** retiring the per-ticket pipeline (`implement-ticket.js`, `implement-epic.js`) is OD-5 and is undecided; the pipeline code, the skill and `create-tickets` are unchanged by this record. The full list of decided and undecided decisions is `SDLC_DECISION_RECORD.md` in this directory.
 
 ## 8. Worktree and branch management
 
@@ -778,6 +788,8 @@ manifest (M0d may force a separate directory).
 
 **Decided by the owner (2026-10-09 and 2026-10-10):** the lead seat is advisory and sequencing only, with no dispatch or queue authority (2026-10-09). Cross-host handoffs go out as GitHub issues labelled `for:<role>`, which SessionStart lists for the role; the owning planner turns an accepted one into its own ticket (2026-10-10, issue #492; see `docs/guides/cross_session_messages.md`).
 
+**Decided by the owner (2026-10-25, #715):** the two leads message each other across hosts over Remote Control, and every other seat reaches the other host only through its own lead; see `docs/guides/cross_session_messages.md`, "Cross-host: lead to lead over Remote Control".
+
 **Decided by the owner (2026-10-10, relayed by lead-planner on #476):** read-mostly seats (lead, planners, designers) launch from the main
 checkout; implementers get a fresh worktree per batch; the launcher records which batch worktree an instance uses; asset-planner needs no
 worktree of its own (section 8, "Launch policy").
@@ -812,7 +824,7 @@ identity signal is stable; whether a minimal inbox is needed (M0c).
 ### 12.5 Deferred on purpose
 Auto-wake of idle sessions (a documented mechanism exists; decided on M0c evidence); automatic dispatch
 without a planner; **hardening of semantic boundaries beyond advisory** (the authority guardrails
-themselves are in v1); the home-directory authority-digest pin; cross-machine sessions; a batch
+themselves are in v1); the home-directory authority-digest pin; cross-machine sessions (no longer deferred: lead seats on both hosts, TCK-20261009-EPIC-SESSION-LEAD-PLANNER, closed 2026-11-14); a batch
 registry separate from PR bodies; expanded retro analytics (M6b); any change to agent definitions or
 `Workflow` scripts.
 
@@ -822,8 +834,8 @@ registry separate from PR bodies; expanded retro analytics (M6b); any change to 
 - `docs/guides/agent_session_reset_boundaries.md` (handover format, HARD/SOFT/NEVER)
 - `docs/guides/delivery_process.md` (worktree and branch contract, PR lifecycle, `pr_render`)
 - `tools/agent-monitoring/session_start_handover_hook.py` (the hook this replaces the listing of)
-- Epics: `agent-working/tickets/todos/session-layer/INDEX.md` (A foundation, B communication and authority, C operations,
-  D measurement and review)
+- Epics: `agent-working/tickets/done/session-layer/INDEX.md` (A foundation, B communication and authority, C operations,
+  D measurement and review; all closed, D on 2026-11-14 with M7 moved to TCK-20261031-EPIC-AI-FIRST-SDLC-EVOLUTION)
 - External review record: `agent-working/stored_artifacts/TCK-20261002-EPIC-SESSION-LAYER-FOUNDATION/external_reviews/`
 - Evidence tickets: `TCK-20260921-SESSION-CONTEXT-RESET-TRIAL`, `TCK-20260824-SIDECAR-CROSS-SESSION-SCOPE`,
   `TCK-20260920-MECHANISM-REGISTRY-CHANGED-CODE-ADVISORY-AT-CLOSE` (content-vs-tooling split),

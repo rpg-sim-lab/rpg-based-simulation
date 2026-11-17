@@ -50,7 +50,11 @@ def test_pr_template_spec_marks_review_notes_as_the_only_hand_written_section():
 def test_pr_template_spec_section_order_matches_the_actual_template():
     spec = json.loads(_SPEC.read_text(encoding="utf-8"))
     body = _pr_template_body_only()
-    heading_sections = [s["heading"] for s in spec["sections"] if s["heading"].startswith("##")]
+    conditional = [s["heading"] for s in spec["sections"] if s.get("conditional")]
+    # A conditional section is absent from the template on purpose (it renders only when it has something to show), so only
+    # it is exempt here, and the exemption must not grow silently (TCK-20261031-GOVERNING-FILE-EDITS-VISIBLE-TO-OWNER).
+    assert conditional == ["## Governing paths touched"]
+    heading_sections = [s["heading"] for s in spec["sections"] if s["heading"].startswith("##") and not s.get("conditional")]
     positions = [body.index(h) for h in heading_sections]
     assert positions == sorted(positions)
 

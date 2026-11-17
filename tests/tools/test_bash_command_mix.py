@@ -391,3 +391,66 @@ def test_cli_ref_mode_never_touches_working_tree():
     assert not deleted
     shrunk = {p: (pre_sizes[p], post_sizes[p]) for p in pre_sizes if p in post_sizes and post_sizes[p] < pre_sizes[p]}
     assert not shrunk
+
+
+# ---------------------------------------------------------------------------
+# TCK-20261110-DELIVERY-COST-REF-MODE-READS-NO-BRANCH-SHARDS
+# ---------------------------------------------------------------------------
+
+def _git_repo_with_shards(tmp_path, files):
+    """A throwaway git repo whose tree holds `files` ({relative shard name: [rows]}) under data/<week>/."""
+    import json as _json
+    import subprocess as _sp
+
+    from tools.agent_working_paths import AGENT_MONITORING
+
+    repo = tmp_path / "repo"
+    for name, rows in files.items():
+        path = repo / AGENT_MONITORING / "data" / name
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text("".join(_json.dumps(r) + "\n" for r in rows))
+    for cmd in (["init", "-q"], ["add", "-A"],
+                ["-c", "user.name=t", "-c", "user.email=t@t", "commit", "-qm", "x"]):
+        _sp.run(["git", *cmd], cwd=repo, check=True, capture_output=True)
+    return repo
+
+
+def _gh(n, ts="2026-10-28T10:00:00Z"):
+    return {"tool": "Bash", "ts": ts, "run_id": None, "input_summary": f"gh pr view {n}"}
+
+
+def test_ref_loader_reads_branch_shards_of_an_unclosed_week(tmp_path):
+    repo = _git_repo_with_shards(tmp_path, {
+        "2026-W44/branch-a.tools.jsonl": [_gh(1), _gh(2)],
+        "2026-W44/branch-b.tools.jsonl": [_gh(3)],
+    })
+    rows, _ = load_tools_rows_from_ref("HEAD", "tools", "2026-W44", "2026-W44", repo_root=repo)
+    assert len(rows) == 3
+
+
+def test_ref_loader_counts_a_row_in_canonical_and_a_branch_shard_once(tmp_path):
+    repo = _git_repo_with_shards(tmp_path, {
+        "2026-W44/tools.jsonl": [_gh(1), _gh(2)],
+        "2026-W44/branch-a.tools.jsonl": [_gh(2), _gh(3)],
+    })
+    rows, _ = load_tools_rows_from_ref("HEAD", "tools", "2026-W44", "2026-W44", repo_root=repo)
+    assert len(rows) == 3
+
+
+def test_ref_loader_on_a_closed_week_reads_the_canonical_file_unchanged(tmp_path):
+    repo = _git_repo_with_shards(tmp_path, {"2026-W43/tools.jsonl": [_gh(1), _gh(2)]})
+    rows, _ = load_tools_rows_from_ref("HEAD", "tools", "2026-W43", "2026-W43", repo_root=repo)
+    assert len(rows) == 2
+
+
+def test_ref_and_working_tree_readings_of_the_same_shards_agree(tmp_path):
+    repo = _git_repo_with_shards(tmp_path, {
+        "2026-W44/tools.jsonl": [_gh(1)],
+        "2026-W44/branch-a.tools.jsonl": [_gh(1), _gh(2)],
+        "2026-W44/branch-b.tools.jsonl": [_gh(2), _gh(3)],
+    })
+    from tools.agent_working_paths import AGENT_MONITORING
+
+    ref_rows, _ = load_tools_rows_from_ref("HEAD", "tools", "2026-W44", "2026-W44", repo_root=repo)
+    fs_rows = load_tools_rows(repo / AGENT_MONITORING / "data", "2026-W44", "2026-W44")
+    assert len(ref_rows) == len(fs_rows) == 3

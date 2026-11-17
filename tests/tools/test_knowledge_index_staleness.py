@@ -4,6 +4,7 @@ from __future__ import annotations
 import importlib.util
 import json
 import os
+import sqlite3
 import sys
 import types
 from argparse import Namespace
@@ -11,7 +12,11 @@ from pathlib import Path
 
 import pytest
 
-from tools.agent_working_paths import STORED_ARTIFACTS, TICKETS
+from tools.agent_working_paths import KNOWLEDGE_INDEX, STORED_ARTIFACTS, TICKETS
+
+# The real embedding builds load the sentence-transformers model and need about 4.7-4.9 GB of virtual address space (peak RSS
+# stays near 1.4-1.6 GB), more than the medium budget's 4 GB RLIMIT_AS (TCK-20261111-KNOWLEDGE-INDEX-BUILD-MEMORY-BOUNDED).
+pytestmark = pytest.mark.resource_budget_large
 
 _REPO_ROOT = Path(__file__).parent.parent.parent
 
@@ -100,10 +105,12 @@ def test_a_missing_or_unreadable_manifest_is_unknown_and_never_raises(corpus, ma
 
 def _query(root, db):
     """Run the CLI query. The warning is printed before any model work, so a lean environment without the embedding
-    packages (the search itself then fails on import) still shows it."""
+    packages (the search itself then fails on import) still shows it. The same holds where the packages ARE installed: the fixture's
+    db is an empty file, so the search then fails on the missing `knowledge_vec` table, after the warning was printed
+    (TCK-20261111-KNOWLEDGE-INDEX-BUILD-MEMORY-BOUNDED: that failure is not a build that died, it is this fixture)."""
     try:
         _ks.cmd_query(Namespace(db_path=str(db), corpus_root=str(root), query="thing", top_k=1, mode="keyword"))
-    except ImportError:
+    except (ImportError, sqlite3.OperationalError):
         pass
 
 
@@ -148,3 +155,84 @@ def test_mcp_never_wraps_an_error(corpus, monkeypatch):
     root, db = corpus
     err = {"error": "index not found", "action": "run make knowledge-index"}
     assert _mcp(monkeypatch, db, root, err)._run_search("q", with_staleness=True) == err
+
+
+def _checkout(root: Path) -> None:
+    _write(root / TICKETS / "done" / "TCK-20260101-A.md", "# TCK-20260101-A\n\n## Request Summary\nFix the thing.\n\n## Scope\nx\n")
+    _write(root / "docs" / "mechanics" / "one.md", "# One\n\nBody of one.\n")
+
+
+@pytest.fixture()
+def two_checkouts(tmp_path, monkeypatch):
+    """A main checkout holding the built index at the real layout, and a worktree with the same files at other mtimes."""
+    main, wt = tmp_path / "main", tmp_path / "wt"
+    _checkout(main)
+    _checkout(wt)
+    for f in wt.rglob("*.md"):
+        _bump(f)
+    db = main / KNOWLEDGE_INDEX / "knowledge.db"
+    db.parent.mkdir(parents=True)
+    db.touch()
+    monkeypatch.chdir(main)
+    _ks._write_manifest(_ks._collect_corpus(Path(".")), db)
+    monkeypatch.setattr(_ks, "_REPO_ROOT_STR", str(wt))
+    return main, wt, db
+
+
+def test_worktree_reading_the_main_index_is_not_stale(two_checkouts):
+    _, _, db = two_checkouts
+    assert _ks.index_staleness(db) is None
+
+
+def test_a_change_in_the_indexed_checkout_is_reported_once(two_checkouts):
+    main, _, db = two_checkouts
+    _bump(main / "docs" / "mechanics" / "one.md")
+    assert _ks.index_staleness(db) == {"changed": 1, "new": 0, "removed": 0}
+
+
+def test_root_is_derived_from_db_path_not_repo_root(two_checkouts):
+    main, wt, db = two_checkouts
+    assert _ks.index_staleness(db) is None
+    assert _ks.index_staleness(db, wt) == {"changed": 2, "new": 0, "removed": 0}
+
+
+def test_non_standard_db_layout_falls_back_to_repo_root(corpus, monkeypatch):
+    root, db = corpus
+    monkeypatch.setattr(_ks, "_REPO_ROOT_STR", str(root))
+    assert _ks.index_staleness(db) is None
+    _bump(root / "docs" / "mechanics" / "one.md")
+    assert _ks.index_staleness(db) == {"changed": 1, "new": 0, "removed": 0}
+    assert _ks.index_staleness(Path("knowledge.db")) == {"unknown": True}
+
+
+def test_own_index_opt_in_compares_against_the_worktree(two_checkouts):
+    _, wt, _ = two_checkouts
+    own = wt / KNOWLEDGE_INDEX / "knowledge.db"
+    own.parent.mkdir(parents=True)
+    own.touch()
+    os.chdir(wt)
+    _ks._write_manifest(_ks._collect_corpus(Path(".")), own)
+    assert _ks.index_staleness(own) is None
+    _bump(wt / "docs" / "mechanics" / "one.md")
+    assert _ks.index_staleness(own) == {"changed": 1, "new": 0, "removed": 0}
+
+
+def test_cli_query_and_mcp_agree(two_checkouts, capsys, monkeypatch):
+    main, _, db = two_checkouts
+    mod = _load("search_mcp_staleness_agree", _REPO_ROOT / "tools" / "search_mcp.py")
+    monkeypatch.setattr(mod, "_ks", _ks)
+    monkeypatch.setattr(mod, "_DB_PATH", db)
+    monkeypatch.setattr(mod, "_search", lambda *a, **k: [{"doc_id": "d"}])
+
+    def cli_err() -> str:
+        try:
+            _ks.cmd_query(Namespace(db_path=str(db), corpus_root=None, query="thing", top_k=1, mode="keyword"))
+        except (ImportError, sqlite3.OperationalError):
+            pass
+        return capsys.readouterr().err
+
+    assert "stale" not in cli_err()
+    assert mod._run_search("q", with_staleness=True) == [{"doc_id": "d"}]
+    _bump(main / "docs" / "mechanics" / "one.md")
+    assert "knowledge index is stale: 1 changed" in cli_err()
+    assert mod._run_search("q", with_staleness=True)["stale"] == {"changed": 1, "new": 0, "removed": 0}

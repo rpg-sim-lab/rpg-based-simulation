@@ -28,8 +28,14 @@
     {
       "severity": "WARNING",
       "rule_id": "CAT-DEAD-001",
-      "message": "Terrain 'sand' is active but never consumed by any downstream component",
-      "target": "sand"
+      "message": "Terrain 'hill' is active but never consumed by any downstream component",
+      "target": "hill"
+    },
+    {
+      "severity": "WARNING",
+      "rule_id": "CAT-DEAD-001",
+      "message": "Terrain 'floor' is active but never consumed by any downstream component",
+      "target": "floor"
     },
     {
       "severity": "WARNING",
@@ -40,14 +46,8 @@
     {
       "severity": "WARNING",
       "rule_id": "CAT-DEAD-001",
-      "message": "Terrain 'hill' is active but never consumed by any downstream component",
-      "target": "hill"
-    },
-    {
-      "severity": "WARNING",
-      "rule_id": "CAT-DEAD-001",
-      "message": "Terrain 'floor' is active but never consumed by any downstream component",
-      "target": "floor"
+      "message": "Terrain 'sand' is active but never consumed by any downstream component",
+      "target": "sand"
     },
     {
       "severity": "WARNING",
@@ -876,8 +876,14 @@
     {
       "severity": "WARNING",
       "rule_id": "CAT-DEAD-001",
-      "message": "Terrain 'sand' is active but never consumed by any downstream component",
-      "target": "sand"
+      "message": "Terrain 'hill' is active but never consumed by any downstream component",
+      "target": "hill"
+    },
+    {
+      "severity": "WARNING",
+      "rule_id": "CAT-DEAD-001",
+      "message": "Terrain 'floor' is active but never consumed by any downstream component",
+      "target": "floor"
     },
     {
       "severity": "WARNING",
@@ -888,14 +894,8 @@
     {
       "severity": "WARNING",
       "rule_id": "CAT-DEAD-001",
-      "message": "Terrain 'hill' is active but never consumed by any downstream component",
-      "target": "hill"
-    },
-    {
-      "severity": "WARNING",
-      "rule_id": "CAT-DEAD-001",
-      "message": "Terrain 'floor' is active but never consumed by any downstream component",
-      "target": "floor"
+      "message": "Terrain 'sand' is active but never consumed by any downstream component",
+      "target": "sand"
     },
     {
       "severity": "WARNING",
@@ -1709,7 +1709,7 @@
     }
   ],
   "fingerprints": {
-    "catalog": "db0cd1bff0c3623cb6291155577e09bae4dc7a4ba5217da2128e50a30a3a079f",
+    "catalog": "effdfb9a05687bbb85415b7019a42d51f1a7a9e61f0b7da6786b99b96fd4d8b7",
     "modules": {
       "frontier_village_core": "3ef51465da6b68679ecacc3493851ce19353bd132303533efaaa7839a8544c7b",
       "hero_adventurers": "9b0ff1d383b294faebd459136cfd085f19277a5b0f0bc57c18438ef3b8956c84"

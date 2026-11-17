@@ -1,0 +1,40 @@
+== 2026-11-12T17:03:11Z UP: backend redis frontend only, no build, no pull
+up rc=0
+cool_curie Up 15 hours
+platform-backend-1 Up 26 seconds (healthy)
+platform-frontend-1 Up 20 seconds (healthy)
+platform-redis-1 Up 31 seconds (healthy)
+key files present: backend.env=no frontend.env=no
+== P1 fail-closed default
+backend /health: 200
+backend /api/v1/manifest (no key): 401
+frontend /api/v1/manifest (nginx, no key configured): 401
+frontend / (the SPA index): 200
+frontend /health is NOT proxied (under /api/ only): 200 (index.html fallback expected)
+== P5a WebSocket handshake through the frontend with no key configured (first status line only)
+HTTP/1.1 403 Forbidden
+== P2 /openapi.json BEFORE the fix
+through the frontend: status/content-type/size: 200 text/html; charset=utf-8 459
+directly on the backend: status/content-type/size: 200 application/json 51985
+bodies identical: no | frontend body starts with '<!doctype html': 1
+== P3 templates step on the pinned image
+envsubst entrypoint ran (log lines naming a template and an output path): 1
+   /docker-entrypoint.sh: Launching /docker-entrypoint.d/20-envsubst-on-templates.sh
+   20-envsubst-on-templates.sh: Running envsubst on /etc/nginx/templates/api-key.conf.template to /tmp/api-key.conf
+invalid container name or ID: value is empty
+/tmp/api-key.conf exists in the container: 
+invalid container name or ID: value is empty
+proxy_set_header X-API-Key lines in it: 
+invalid container name or ID: value is empty
+its value length (0 = empty, header not sent): 
+invalid container name or ID: value is empty
+nginx running as:  | nginx -t: invalid container name or ID: value is empty
+nginx access/error logs mention an API key header (count of 'X-API-Key' in frontend logs): 0
+== 2026-11-12T17:03:57Z P3 in-container checks (rerun with the container id looked up after start)
+container id found: yes
+/tmp/api-key.conf exists: yes
+proxy_set_header X-API-Key lines in it: 1
+its value length (0 = empty, so no header is sent): 0
+the rendered file's line count: 1
+nginx user id: 101 | nginx -t: nginx: configuration file /etc/nginx/nginx.conf test is successful
+FRONTEND_API_KEY defined in the container env: 1 | its length: 0

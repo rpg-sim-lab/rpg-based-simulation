@@ -2,6 +2,7 @@
   "$comment": "Machine-readable PR body section spec (TCK-20260924-DELIVERY-CONTRACT-AND-TEMPLATES, plan.md §3.6). TCK-20260924-DELIVERY-PR-RENDERER consumes this instead of hardcoding the layout, so the renderer and .github/pull_request_template.md cannot disagree. Order is the order sections appear in the PR body.",
   "sections": [
     {"heading": "## What landed", "rendered": true, "source": "batch theme, or the single ticket's Request Summary"},
+    {"heading": "## Governing paths touched", "rendered": true, "conditional": true, "source": "governing paths (tools/sessions/classify.py) touched by the PR diff against base; the whole section is absent when none is touched, so the template does not list it"},
     {"heading": "## Tickets", "rendered": true, "source": "table of ticket id/tier/title for every ticket on the branch"},
     {"heading": "## Why", "rendered": true, "source": "each ticket's Request Summary"},
     {"heading": "## Verification", "rendered": true, "source": "scoped test commands + results, done_checker_static result, and known gaps per ticket"},

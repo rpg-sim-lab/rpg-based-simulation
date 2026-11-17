@@ -1,0 +1,20 @@
+== victim 17 (death t406, killer 10): first hit by killer inside window: t394; killer in Euclid-10 of victim from t357; victim group at window start None
+   victim last traced pick before contact: (363, 'tgt', 13, 'ret', 739, None, 'tuple', [0, 1.0, 1, -0.778, 90, 1.0, 13])
+   killer last traced pick before contact: (394, 'tgt', 17, 'ret', 739, None, 'tuple', [0, 0.25, 1, -0.46, 40, 1.0, 17])
+   group/role branch FIRED (returned/entered body/group_bias!=1) before contact: victim [] killer [(360, ['BRACKETING returned', '5.2_bracket_pos', 'group_bias!=1: [0.25]']), (394, ['group_bias!=1: [0.25]'])]
+   traced calls before contact: victim 2 killer 2
+== victim 28 (death t880, killer 1): first hit by killer inside window: t879; killer in Euclid-10 of victim from t863; victim group at window start None
+   victim last traced pick before contact: (872, 'tgt', 5, 'ret', 739, None, 'tuple', [0, 1.0, 1, -0.441, 100, 1.0, 5])
+   killer last traced pick before contact: (879, 'tgt', 28, 'ret', 739, None, 'tuple', [0, 1.0, 1, -0.516, 10, 1.0, 28])
+   group/role branch FIRED (returned/entered body/group_bias!=1) before contact: victim [] killer []
+   traced calls before contact: victim 6 killer 2
+== victim 22 (death t891, killer 1): first hit by killer inside window: t890; killer in Euclid-10 of victim from t870; victim group at window start None
+   victim last traced pick before contact: (878, 'tgt', 11, 'ret', 739, None, 'tuple', [0, 1.0, 1, -0.244, 120, 1.0, 11])
+   killer last traced pick before contact: (883, 'tgt', 22, 'ret', 761, 'HOLD_BETWEEN_BLOWS', 'tuple', [0, 1.0, 1, -0.527, 15, 1.0, 22])
+   group/role branch FIRED (returned/entered body/group_bias!=1) before contact: victim [(868, ['BRACKETING returned', '5.2_bracket_pos', 'group_bias!=1: [0.2]']), (876, ['group_bias!=1: [0.2]']), (878, ['group_bias!=1: [0.2]'])] killer []
+   traced calls before contact: victim 6 killer 3
+== victim 24 (death t929, killer 3): first hit by killer inside window: t917; killer in Euclid-10 of victim from t886; victim group at window start 10063
+   victim last traced pick before contact: (908, 'tgt', 13, 'ret', 761, 'HOLD_BETWEEN_BLOWS', 'tuple', [0, 1.0, 1, -0.417, 39, 1.0, 13])
+   killer last traced pick before contact: (917, 'tgt', 24, 'ret', 739, None, 'tuple', [0, 1.0, 1, -0.486, 34, 1.0, 24])
+   group/role branch FIRED (returned/entered body/group_bias!=1) before contact: victim [(876, ['4.1_role_read', '4.2_dist_check'])] killer []
+   traced calls before contact: victim 4 killer 3

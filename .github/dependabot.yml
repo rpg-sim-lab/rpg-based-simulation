@@ -1,7 +1,7 @@
 # Dependabot version updates (TCK-20261014-DEPENDABOT-AND-BASE-IMAGE-PINS, TCK-20261014-DEPENDABOT-GROUPED-MAJORS-MONTHLY).
 # Monthly. Each ecosystem opens at most two PRs a month: one for major updates, one for minor/patch. We stay current on majors.
 # Review routing by the file a PR changes (labels below): uv.lock and frontend/** -> rpg; test.yml actions -> testing;
-# everything else -> platform.
+# website/** -> lead (platform triages); everything else -> platform.
 version: 2
 updates:
   - package-ecosystem: docker
@@ -62,12 +62,31 @@ updates:
         update-types: [major]
       npm-minor-patch:
         update-types: [minor, patch]
+  - package-ecosystem: npm
+    directory: /website
+    schedule:
+      interval: monthly
+    open-pull-requests-limit: 5
+    labels: [dependencies, platform]
+    groups:
+      npm-major:
+        update-types: [major]
+      npm-minor-patch:
+        update-types: [minor, patch]
   - package-ecosystem: uv
     directory: /
     schedule:
       interval: monthly
     open-pull-requests-limit: 5
     labels: [dependencies, rpg]
+    # The knowledge-stack pins in requirements-knowledge.txt (torch, graphifyy, headroom-ai) are not bumped by
+    # Dependabot (owner decision on #882, option A, #715 6812820923): the grouped PR rewrote torch==2.13.0+cpu to
+    # 2.15.0 (dropping +cpu) and headroom-ai needs mcp 2.x. agent-working bumps them by hand, with its tests.
+    # No `versions`, so every version update for these names is skipped. torch in uv.lock moves the same way.
+    ignore:
+      - dependency-name: torch
+      - dependency-name: graphifyy
+      - dependency-name: headroom-ai
     groups:
       uv-major:
         update-types: [major]

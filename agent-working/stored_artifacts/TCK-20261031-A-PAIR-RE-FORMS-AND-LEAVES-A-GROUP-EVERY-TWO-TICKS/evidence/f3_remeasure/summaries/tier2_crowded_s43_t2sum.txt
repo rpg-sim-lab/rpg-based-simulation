@@ -1,0 +1,35 @@
+== victim 36 (death t347, killer 11): first hit by killer inside window: t300; killer in Euclid-10 of victim from t287; victim group at window start None
+   victim last traced pick before contact: (300, 'tgt', None, 'ret', 217, 'PANIC_RETREAT', 'tuple', None)
+   killer last traced pick before contact: (289, 'tgt', 36, 'ret', 607, 'INTERCEPTING', 'tuple', [1, 1.0, 1, -0.575, 28, 11.0, 36])
+   group/role branch FIRED (returned/entered body/group_bias!=1) before contact: victim [] killer []
+   traced calls before contact: victim 2 killer 1
+== victim 9 (death t394, killer 34): first hit by killer inside window: t338; killer in Euclid-10 of victim from t334; victim group at window start None
+   victim last traced pick before contact: None
+   killer last traced pick before contact: (338, 'tgt', 9, 'ret', 739, None, 'tuple', [0, 1.0, 1, -0.345, 120, 1.0, 9])
+   group/role branch FIRED (returned/entered body/group_bias!=1) before contact: victim [] killer [(338, ['group_bias!=1: [0.25]'])]
+   traced calls before contact: victim 0 killer 1
+== victim 34 (death t584, killer 31): first hit by killer inside window: t561; killer in Euclid-10 of victim from t524; victim group at window start None
+   victim last traced pick before contact: (544, 'tgt', 13, 'ret', 739, None, 'tuple', [0, 1.0, 1, -0.408, 90, 1.0, 13])
+   killer last traced pick before contact: (561, 'tgt', 34, 'ret', 739, None, 'tuple', [0, 1.0, 1, -0.329, 49, 1.0, 34])
+   group/role branch FIRED (returned/entered body/group_bias!=1) before contact: victim [] killer [(557, ['BRACKETING returned', '5.2_bracket_pos']), (561, ['5.2_bracket_pos'])]
+   traced calls before contact: victim 1 killer 3
+== victim 17 (death t679, killer 38): first hit by killer inside window: t678; killer in Euclid-10 of victim from t619; victim group at window start None
+   victim last traced pick before contact: (663, 'tgt', None, 'ret', 217, 'PANIC_RETREAT', 'tuple', None)
+   killer last traced pick before contact: (678, 'tgt', 17, 'ret', 739, None, 'tuple', [0, 1.0, 1, -0.311, 6, 1.0, 17])
+   group/role branch FIRED (returned/entered body/group_bias!=1) before contact: victim [] killer []
+   traced calls before contact: victim 5 killer 2
+== victim 10 (death t927, killer 27): first hit by killer inside window: t893; killer in Euclid-10 of victim from t885; victim group at window start 10043
+   victim last traced pick before contact: (890, 'tgt', 30, 'ret', 552, 'BRACKETING', 'tuple', [0, 0.1, 1, -0.718, 120, 1.0, 30])
+   killer last traced pick before contact: (893, 'tgt', 10, 'ret', 739, None, 'tuple', [0, 1.0, 1, -0.455, 103, 1.0, 10])
+   group/role branch FIRED (returned/entered body/group_bias!=1) before contact: victim [(890, ['BRACKETING returned', '5.2_bracket_pos', 'group_bias!=1: [0.1]'])] killer []
+   traced calls before contact: victim 3 killer 1
+== victim 27 (death t964, killer 31): first hit by killer inside window: t941; killer in Euclid-10 of victim from t904; victim group at window start 10048
+   victim last traced pick before contact: (941, 'tgt', 31, 'ret', 739, None, 'tuple', [0, 1.0, 1, -0.21, 50, 1.0, 31])
+   killer last traced pick before contact: (941, 'tgt', 27, 'ret', 739, None, 'tuple', [0, 1.0, 1, -0.257, 18, 1.0, 27])
+   group/role branch FIRED (returned/entered body/group_bias!=1) before contact: victim [] killer []
+   traced calls before contact: victim 2 killer 2
+== victim 6 (death t1875, killer 30): first hit by killer inside window: t1840; killer in Euclid-10 of victim from t1815; victim group at window start None
+   victim last traced pick before contact: (1834, 'tgt', 30, 'ret', 607, 'INTERCEPTING', 'tuple', [1, 1.0, 1, -0.08, 120, 7.0, 30])
+   killer last traced pick before contact: (1840, 'tgt', 6, 'ret', 739, None, 'tuple', [0, 1.0, 1, -1.0, 21, 1.0, 6])
+   group/role branch FIRED (returned/entered body/group_bias!=1) before contact: victim [] killer []
+   traced calls before contact: victim 3 killer 3

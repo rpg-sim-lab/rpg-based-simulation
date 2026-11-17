@@ -26,7 +26,7 @@ standard
 repair
 
 ## Priority
-P1
+P3
 
 ## Request Summary
 Found while closing `cognition_capacity_fatigue`'s own runtime-verification scenario
@@ -138,3 +138,8 @@ was not found in the corpus run, which bears on the ticket's `P1` but is not thi
 (none yet)
 
 **Verdict as of 2026-09-30: `UNDECLARED`** — behaviour is declared as PERF-007 in code but its consequence is not adjudicated; 0 over-cap observations in a measured run; see Implementation Notes. Still `OPEN`.
+
+## 2026-10-31 cleanup re-verification (rpg-planner, owner go #715 6543261623; origin/main 96f623a62)
+- Path correction: the code is src/engine/pipeline_phases/capacity_enforcement.py:40-41 (`if not ent_upd or not ent_upd.strategic: continue`, under PERF-007 dirty-set iteration :30-32), unchanged.
+- The decision it waits on: is capacity enforcement intentionally opportunistic (only re-check an entity whose strategic state another phase proposed this tick, a PERF-007 cost choice), or must an entity quietly over its max_leads/max_concerns cap eventually be trimmed (then an unconditional check in enforce() or a sweep/dirty-set entry)? No memo row covers it.
+- No measured effect: 0 over-cap entities in 10,916 entity-checks (this ticket's 1500t measurement). Lowered to P3; a design question for rpg-designer, not an owner row unless it becomes material.

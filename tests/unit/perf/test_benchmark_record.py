@@ -71,7 +71,7 @@ def replace_identity(record: BenchmarkRecord, section: str, **changes: Any) -> B
 
 def test_record_is_frozen_and_versioned() -> None:
     record = make_record()
-    assert record.schema_version == SCHEMA_VERSION == "1.3"
+    assert record.schema_version == SCHEMA_VERSION == "1.5"
     with pytest.raises(dataclasses.FrozenInstanceError):
         record.schema_version = "2.0"  # type: ignore[misc]
     with pytest.raises(dataclasses.FrozenInstanceError):
@@ -93,8 +93,8 @@ def test_blocking_contract_fields_are_present() -> None:
     assert wire["result"]["cost_accounting_version"] == COST_ACCOUNTING_VERSION == "DEV-017"
 
 
-@pytest.mark.parametrize("bad", ["flat-sha256-v3", "sha256", "", "FLAT-SHA256-V2"])
-def test_hash_scheme_rejects_anything_but_the_two_schemes(bad: str) -> None:
+@pytest.mark.parametrize("bad", ["flat-sha256-v6", "sha256", "", "FLAT-SHA256-V2"])
+def test_hash_scheme_rejects_anything_but_the_five_schemes(bad: str) -> None:
     with pytest.raises(BenchmarkRecordError):
         Validity(final_state_hash="ab", hash_scheme=bad)  # type: ignore[arg-type]
 
@@ -102,6 +102,9 @@ def test_hash_scheme_rejects_anything_but_the_two_schemes(bad: str) -> None:
 def test_hash_scheme_accepts_both_schemes_and_a_hash_needs_one() -> None:
     assert Validity(final_state_hash="ab", hash_scheme="flat-sha256-v1").hash_scheme is HashScheme.FLAT_SHA256_V1
     assert Validity(final_state_hash="ab", hash_scheme="flat-sha256-v2").hash_scheme is HashScheme.FLAT_SHA256_V2
+    assert Validity(final_state_hash="ab", hash_scheme="flat-sha256-v3").hash_scheme is HashScheme.FLAT_SHA256_V3
+    assert Validity(final_state_hash="ab", hash_scheme="flat-sha256-v4").hash_scheme is HashScheme.FLAT_SHA256_V4
+    assert Validity(final_state_hash="ab", hash_scheme="flat-sha256-v5").hash_scheme is HashScheme.FLAT_SHA256_V5
     with pytest.raises(BenchmarkRecordError):
         Validity(final_state_hash="ab")
 
@@ -252,6 +255,8 @@ def test_a_different_cost_accounting_version_is_inconclusive() -> None:
         ("contract", {"signal_contract": SignalContract.CANONICAL}, "identity.contract.signal_contract"),
         ("workload", {"entity_count": 21}, "identity.workload.entity_count"),
         ("runtime", {"cpu_model": "other cpu"}, "identity.runtime.cpu_model"),
+        ("runtime", {"dependency_fingerprint": "deps-v1:" + "a" * 64}, "identity.runtime.dependency_fingerprint"),
+        ("runtime", {"cpu_affinity": "4-5"}, "identity.runtime.cpu_affinity"),
         ("executor", {"worker_count": 4}, "identity.executor.worker_count"),
         ("gate", {"tier": GateTier.CAPACITY_RUN}, "identity.gate.tier"),
         ("observer", {"level": "replay"}, "identity.observer.level"),
@@ -284,6 +289,31 @@ def test_python_patch_version_is_recorded_only() -> None:
     assert compare(base, head).state is OutcomeState.PASS
     other_minor = replace_identity(make_record(), "runtime", python_version="3.13.0")
     assert compare(base, other_minor).state is OutcomeState.INCONCLUSIVE
+
+
+def test_a_dependency_fingerprint_mismatch_is_inconclusive_through_the_blocking_fields_check() -> None:
+    base = replace_identity(make_record(), "runtime", dependency_fingerprint="deps-v1:" + "a" * 64, dependency_count=30)
+    head = replace_identity(make_record(), "runtime", dependency_fingerprint="deps-v1:" + "b" * 64, dependency_count=30)
+    outcome = compare(base, head)
+    assert outcome.state is OutcomeState.INCONCLUSIVE and outcome.check == "blocking_fields"
+    assert "identity.runtime.dependency_fingerprint" in outcome.reason
+
+
+def test_the_dependency_count_is_recorded_only() -> None:
+    base = replace_identity(make_record(), "runtime", dependency_fingerprint="deps-v1:" + "a" * 64, dependency_count=30)
+    head = replace_identity(make_record(), "runtime", dependency_fingerprint="deps-v1:" + "a" * 64, dependency_count=31)
+    assert compare(base, head).state is OutcomeState.PASS
+
+
+def test_a_record_without_the_dependency_fields_loads_and_is_inconclusive_against_a_fingerprinted_head() -> None:
+    data = make_record().to_dict()
+    for key in ("dependency_fingerprint", "dependency_count"):
+        data["identity"]["runtime"].pop(key, None)
+    old = BenchmarkRecord.from_dict(data)
+    assert old.identity.runtime.dependency_fingerprint == UNKNOWN and old.identity.runtime.dependency_count is None
+    head = replace_identity(make_record(), "runtime", dependency_fingerprint="deps-v1:" + "a" * 64, dependency_count=30)
+    outcome = compare(old, head)
+    assert outcome.state is OutcomeState.INCONCLUSIVE and "identity.runtime.dependency_fingerprint" in outcome.reason
 
 
 def test_engine_commit_and_dirty_flag_are_recorded_only() -> None:
@@ -359,3 +389,26 @@ def test_compare_does_not_mutate_its_inputs() -> None:
     before = (base.to_dict(), head.to_dict())
     compare(base, head)
     assert (base.to_dict(), head.to_dict()) == before
+
+
+def test_a_cpu_affinity_difference_is_inconclusive_through_the_blocking_fields_check() -> None:
+    base = replace_identity(make_record(), "runtime", cpu_affinity="0-5")
+    head = replace_identity(make_record(), "runtime", cpu_affinity="4-5")
+    outcome = compare(base, head)
+    assert outcome.state is OutcomeState.INCONCLUSIVE and outcome.check == "blocking_fields"
+    assert "identity.runtime.cpu_affinity" in outcome.reason
+
+
+def test_a_record_without_cpu_affinity_loads_as_unknown_and_is_inconclusive_against_a_pinned_head() -> None:
+    data = make_record().to_dict()
+    data["identity"]["runtime"].pop("cpu_affinity", None)
+    old = BenchmarkRecord.from_dict(data)
+    assert old.identity.runtime.cpu_affinity == UNKNOWN
+    head = replace_identity(make_record(), "runtime", cpu_affinity="4-5")
+    assert compare(old, head).state is OutcomeState.INCONCLUSIVE
+
+
+def test_pinning_does_not_change_the_host_fields() -> None:
+    base = replace_identity(make_record(), "runtime", cpu_affinity="4-5")
+    assert base.identity.runtime.logical_cores == make_record().identity.runtime.logical_cores
+    assert base.identity.runtime.hardware_class == make_record().identity.runtime.hardware_class

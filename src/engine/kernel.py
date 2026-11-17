@@ -14,6 +14,7 @@ from pathlib import Path
 from src.engine.phases import get_authoritative_phases
 from src.core.updates import StateUpdate, EntityUpdate
 from src.core.grief_triggers import pending_grief_triggers
+from src.core.concurrency_law import ConcurrencyLaw
 from src.core.governance import RuntimeMode
 from src.core.diagnostic import TraceEvent
 from src.core.lifecycle import LifecycleOutcome, ShutdownResult
@@ -196,6 +197,19 @@ class Kernel:
         else:
             self._executor = LocalSequentialExecutor()
 
+        if self._artifact_repo is not None:
+            # After executor selection, so the record names the executor the run really has; run setup only: not hashed state, no event.
+            from src.observability.reporting.artifact_repository import RunConditions
+            manager = None if isinstance(self._executor, LocalSequentialExecutor) else getattr(self._executor, "_worker_manager", self._worker_manager)
+            self._artifact_repo.update_manifest(self._run_id, run_conditions=RunConditions(
+                governor=f"{type(self._governor).__module__}.{type(self._governor).__qualname__}",
+                executor=f"{type(self._executor).__module__}.{type(self._executor).__qualname__}",
+                max_tick_budget_ms=float(profile.max_tick_budget_ms),
+                audit_mode=bool(self._audit_mode),
+                no_frame_pacing=bool(flags.get("no_frame_pacing", False)) if flags else False,
+                worker_manager=None if manager is None else f"{type(manager).__module__}.{type(manager).__qualname__}",
+            ))
+
         self._current_world_time = state.world_time
         
         from src.engine.policy import GovernorPolicy
@@ -228,40 +242,14 @@ class Kernel:
             run_dir_str = str(self._replay._run_dir)
 
         # Build SimQ hub before EventRecorder so quality_fn is wired at worker construction.
-        self._quality_hub = None
-        self._quality_feed = None
-        _quality_fn = None
+        self._quality_feed = self._quality_hub = None
         if obs_mode != ObservabilityMode.OFF:
-            from src.simulation_quality.feed import build_feed_from_env, BrokerQualityFeed
-            _feed = build_feed_from_env()
-            if _feed is not None:
-                self._quality_feed = _feed
-                if not isinstance(_feed, BrokerQualityFeed):
-                    from src.simulation_quality.weights import ScoringWeights
-                    from src.simulation_quality.quality_hub import QualityHub
-                    from src.simulation_quality.persistence import QualityPersistence
-                    from src.simulation_quality.scorers import build_all_scorers
-                    try:
-                        _q_profile = os.environ.get("QUALITY_PROFILE", "default")
-                        _weights = ScoringWeights.load(
-                            "config/simulation_quality/scoring_weights.yaml",
-                            "config/simulation_quality/grade_thresholds.yaml",
-                            "config/simulation_quality/detection_params.yaml",
-                            _q_profile,
-                        )
-                        _q_run_dir = run_dir_str or f"data/runs/{self._run_id}"
-                        _hub = QualityHub(
-                            scorers=build_all_scorers(_weights),
-                            weights=_weights,
-                            persistence=QualityPersistence(_q_run_dir),
-                            run_id=self._run_id,
-                        )
-                        _quality_fn = _hub.on_envelope
-                        self._quality_hub = _hub
-                    except Exception:
-                        logger.warning("SimQ hub construction failed (non-fatal) — quality scoring disabled for this run")
+            from src.simulation_quality.wiring import build_quality_wiring
+            self._quality_feed, self._quality_hub = build_quality_wiring(self._run_id, run_dir_str)
+        _quality_fn = self._quality_hub.on_envelope if self._quality_hub is not None else None
 
-        self._event_recorder = EventRecorder(
+        self._event_recorder = EventRecorder.for_run(
+            self._run_id,
             run_dir=run_dir_str,
             max_events=5000,
             enabled=(obs_mode != ObservabilityMode.OFF),
@@ -602,8 +590,7 @@ class Kernel:
         from src.core.updates import StateUpdate, EntityUpdate
         from src.core.protocol_validator import ProtocolViolationError
         from src.engine.pipeline import AuthoritativeApplyPipeline
-        
-        self._final_results.sort(key=lambda r: (r.class_priority, -r.local_priority, r.entity_id))
+        self._final_results.sort(key=ConcurrencyLaw.commit_key)
         
         entity_updates: Dict[int, EntityUpdate] = {}
         overrun_reported = False

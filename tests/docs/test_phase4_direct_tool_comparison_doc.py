@@ -13,8 +13,7 @@ _REPO_ROOT = Path(__file__).resolve().parent.parent.parent
 _DOC_PATH = (
     _REPO_ROOT
     / "docs"
-    / "engine"
-    / "contracts"
+    / "archive"
     / "knowledge_gateway_mcp"
     / "phase4_direct_tool_comparison.md"
 )

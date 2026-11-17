@@ -16,6 +16,7 @@ from src.content_semantics.faction import (
 )
 from src.content_semantics.relation import RelationContext
 from src.core.enums import EntityRole, ReasonCode
+from src.core.lodging_rules import is_lodged
 from src.core.skills import SKILL_REGISTRY
 from src.engine.domain.view import DomainView
 from src.engine.hostility import attack_allowed
@@ -25,6 +26,16 @@ from src.world.environment import EnvironmentService
 
 if TYPE_CHECKING:
     from src.core.state import AuthoritativeState, EntityState, RegionState
+
+
+def _state_invalid_reason(attacker: Any, target: Any) -> Optional[ReasonCode]:
+    """Why an attack cannot start from the entities' own state, else None. F3 (divergence 2.155): a lodger is indoors, so it cannot be attacked from outside and, seeing no one outside,
+    cannot attack out; a stale target id (captured before the target lodged) lands here and ends the held attack like any incapacitated target."""
+    if not attacker.lifecycle.active or not attacker.combat.alive:
+        return ReasonCode.ATTACKER_INCAPACITATED
+    if not target.lifecycle.active or not target.combat.alive or is_lodged(target):
+        return ReasonCode.TARGET_INCAPACITATED
+    return ReasonCode.ATTACKER_INCAPACITATED if is_lodged(attacker) else None
 
 
 def _static_obstruction(target_grid_pos: Tuple[int, int], state_or_context: Any) -> Optional[ReasonCode]:
@@ -48,6 +59,9 @@ def _static_obstruction(target_grid_pos: Tuple[int, int], state_or_context: Any)
         if (int(b.position[0]), int(b.position[1])) == target_grid_pos:
             return ReasonCode.BUILDING_OBSTRUCTION
     return None
+
+
+static_obstruction = _static_obstruction  # the public name for callers outside this module (F3: lodging.leave_tile)
 
 
 class LegalityServiceV2:
@@ -236,11 +250,10 @@ class LegalityServiceV2:
         Logic ID: COMB-286 (Combat tests cover invalid target rejection)
         Logic ID: COMB-287 (Combat tests cover dead target rejection)
         """
-        # 1. State Validity
-        if not attacker.lifecycle.active or not attacker.combat.alive:
-            return False, ReasonCode.ATTACKER_INCAPACITATED
-        if not target.lifecycle.active or not target.combat.alive:
-            return False, ReasonCode.TARGET_INCAPACITATED
+        # 1. State Validity (and, F3: a lodger cannot be attacked from outside)
+        invalid = _state_invalid_reason(attacker, target)
+        if invalid is not None:
+            return False, invalid
         if attacker.id == target.id:
             return False, ReasonCode.SELF_ATTACK_ILLEGAL
 

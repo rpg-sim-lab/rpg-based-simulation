@@ -25,6 +25,8 @@ from src.observability.anomaly.rules import (
 )
 from src.observability.live.event_publisher import LiveEventSubscriber, SubscriptionFilter, LiveEventPublisher
 from src.observability.stream.consumer import RedisStreamConsumer
+from src.observability.config import ObservabilityConfig
+from src.observability.world_farm_io import append_line
 
 logger = logging.getLogger(__name__)
 
@@ -347,8 +349,8 @@ class LiveAnomalyWorker:
 
         file_path = os.path.join(run_dir, "anomaly_events.jsonl")
         try:
-            with open(file_path, "a", encoding="utf-8") as f:
-                f.write(anomaly.model_dump_json() + "\n")
+            # One write on an O_APPEND fd: two worlds that share the "default" run dir never split a line
+            append_line(file_path, anomaly.model_dump_json())
         except Exception as e:
             logger.error(f"Failed to append anomaly event to file: {e}")
 
@@ -408,17 +410,27 @@ class LiveAnomalyWorker:
             logger.error(f"Failed to write worker status file: {e}")
 
 
+def config_from_env() -> LiveWorkerConfig:
+    """Build the worker config from the environment.
+
+    The stream name and the Redis URL come from the producer's own resolvers (SIM_ first, then RPG_, then the producer's default),
+    so a world started with its own stream name has its producer and this consumer on that one name. Outside compose, a bare
+    worker with no URL set now uses the producer's default (localhost) instead of ``redis://redis:6379/0``; compose sets
+    ``SIM_REDIS_URL`` explicitly, so it is unchanged.
+    """
+    return LiveWorkerConfig(
+        stream_backend=os.environ.get("SIM_STREAM_BACKEND", "redis"),
+        stream_name=ObservabilityConfig.get_stream_name(),
+        redis_url=ObservabilityConfig.get_redis_url(),
+        consumer_group=os.environ.get("SIM_CONSUMER_GROUP", "observatory:consumers"),
+    )
+
+
 if __name__ == "__main__":
     from src.logging.formatter import setup_v2_logging
     setup_v2_logging(os.environ.get("LOG_LEVEL", "INFO"))
-    
-    # Load settings from environment variables
-    config = LiveWorkerConfig(
-        stream_backend=os.environ.get("SIM_STREAM_BACKEND", "redis"),
-        stream_name=os.environ.get("SIM_STREAM_NAME", "simulation:events"),
-        redis_url=os.environ.get("SIM_REDIS_URL", "redis://redis:6379/0"),
-        consumer_group=os.environ.get("SIM_CONSUMER_GROUP", "observatory:consumers"),
-    )
+
+    config = config_from_env()
     
     logger.info("Starting LiveAnomalyWorker with config: %s", config)
 

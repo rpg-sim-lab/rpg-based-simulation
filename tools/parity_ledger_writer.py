@@ -131,6 +131,49 @@ def _dump(items: list) -> str:
 
 
 _TOP_LEVEL_ITEM = re.compile(r"^-(?:\s|$)")
+# A top-level key of an entry block: on the `- key:` line or at two-space indent. Anything else
+# (deeper indent, `  - ` sequence items, blank lines) continues the previous key.
+_ENTRY_KEY = re.compile(r"^(?:- |  )([A-Za-z_][A-Za-z0-9_-]*):(?:\s|$)")
+
+
+def _field_splice_block(old_lines: list, old_entry: dict, entry: dict):
+    """Return the entry block with each unchanged top-level key keeping its original bytes.
+
+    Only keys whose parsed value changed (or that are new) are dumped; removed keys are dropped;
+    existing keys keep their order and new keys are appended. Returns None when the old block does
+    not split into key segments cleanly; the caller then falls back to a whole-entry dump."""
+    segments: list = []  # (key, [lines])
+    for line in old_lines:
+        match = _ENTRY_KEY.match(line)
+        if match:
+            segments.append((match.group(1), [line]))
+        elif segments:
+            segments[-1][1].append(line)
+        else:
+            return None
+    if not segments or [k for k, _ in segments] != list(old_entry):
+        return None
+    out: list = []
+    for key, seg_lines in segments:
+        if key not in entry:
+            continue
+        if entry[key] == old_entry[key]:
+            out.extend(seg_lines)
+        else:
+            out.extend(_dump([{key: entry[key]}]).splitlines(keepends=True))
+    for key in entry:
+        if key not in old_entry:
+            out.extend(_dump([{key: entry[key]}]).splitlines(keepends=True))
+    if not out:
+        return None
+    # normalise indent: the first line carries the `- `, every later key line the two-space indent
+    fixed = []
+    for line in out:
+        match = _ENTRY_KEY.match(line)
+        if match:
+            line = ("- " if not fixed else "  ") + line[2:]
+        fixed.append(line)
+    return fixed
 
 
 def _splice_entry(text: str, entries: list, entry: dict) -> str:
@@ -140,8 +183,10 @@ def _splice_entry(text: str, entries: list, entry: dict) -> str:
     shards reformats hundreds of lines (hand-written quoting and wrapping), which made agents
     deviate from the mandated writer (TCK-20261004-PARITY-LEDGER-WRITER-WHOLE-SHARD-REWRITE-CHURN).
     The i-th column-0 `- ` line starts the i-th entry; an update replaces that block, an add appends
-    one. Anything unexpected (item count mismatch, or the spliced text not parsing back to exactly
-    the intended entries) falls back to a whole-shard dump, so the result is always correct."""
+    one. Within an updated entry, a key whose value did not change keeps its original lines
+    (`_field_splice_block`); only changed or added keys are re-dumped. Anything unexpected (item
+    count mismatch, or the spliced text not parsing back to exactly the intended entries) falls
+    back one level (whole-entry dump, then whole-shard dump), so the result is always correct."""
     lines = text.splitlines(keepends=True)
     starts = [i for i, line in enumerate(lines) if _TOP_LEVEL_ITEM.match(line)]
     expected = [dict(e) for e in entries]
@@ -155,18 +200,23 @@ def _splice_entry(text: str, entries: list, entry: dict) -> str:
         block = _dump([entry])
         if position is None:
             body = text if text.endswith("\n") or not text else text + "\n"
-            candidate = body + block
+            candidates = [body + block]
         else:
             end = starts[position + 1] if position + 1 < len(starts) else len(lines)
             # keep blank/comment lines that trail the old block: they belong to the gap, not the entry
             while end - 1 > starts[position] and (not lines[end - 1].strip() or lines[end - 1].lstrip().startswith("#")):
                 end -= 1
-            candidate = "".join(lines[: starts[position]]) + block + "".join(lines[end:])
-        try:
-            if yaml.safe_load(candidate) == expected:
-                return candidate
-        except yaml.YAMLError:
-            pass
+            candidates = []
+            field_block = _field_splice_block(lines[starts[position]:end], entries[position], entry)
+            if field_block is not None:
+                candidates.append("".join(lines[: starts[position]]) + "".join(field_block) + "".join(lines[end:]))
+            candidates.append("".join(lines[: starts[position]]) + block + "".join(lines[end:]))
+        for attempt in candidates:
+            try:
+                if yaml.safe_load(attempt) == expected:
+                    return attempt
+            except yaml.YAMLError:
+                pass
     return _dump(expected)
 
 
@@ -195,3 +245,82 @@ def write_entry(shard_filename: str, entry: dict, ledger_dir=None, db_path=None)
         "entry_id": entry["id"],
         "build_report": build_report,
     }
+
+
+# ---- --check: a read-only look at hand-edited shards (TCK-20261113-PRE-PUSH-CHECKS-HAND-EDITED-PARITY-LEDGER-SHARDS) ----
+# Structural check always: the text parses, is a list of mappings, each with a string `id`. validate_entry runs only on entries
+# that are new or whose parsed dict differs from the same id in `base_text`; legacy entries are exempt, because validate_entry's own
+# docstring rules out a sweep of on-disk entries (1428 of 2307 entries on main failed it when this was written: 1424 with a null
+# test_path, 4 with an unparseable one). Nothing here writes.
+
+
+def _load_shard(label: str, text: str):
+    """(entries, problems): entries is None when the text does not parse into a list of mappings."""
+    try:
+        data = yaml.safe_load(text) if text.strip() else []
+    except yaml.YAMLError as exc:
+        mark = getattr(exc, "problem_mark", None)
+        where = f"line {mark.line + 1}" if mark is not None else "unknown line"
+        reason = " ".join(str(getattr(exc, "problem", None) or exc).split())
+        return None, [f"{label}: {where}: YAML does not parse: {reason}"]
+    if data is None:
+        data = []
+    if not isinstance(data, list):
+        return None, [f"{label}: top level: a ledger shard must be a list of entries"]
+    problems = []
+    for index, entry in enumerate(data, 1):
+        if not isinstance(entry, dict):
+            problems.append(f"{label}: entry {index}: must be a mapping")
+        elif not isinstance(entry.get("id"), str) or not entry["id"]:
+            problems.append(f"{label}: entry {index}: needs a non-empty string id")
+    return data, problems
+
+
+def check_shard_text(label: str, text: str, base_text: str | None = None) -> list:
+    """One line per problem, `<file>: <id or line>: <reason>`. `base_text=None` is the structural check only; a string (possibly
+    empty, for a new file) also runs validate_entry on the entries that are new or changed against it."""
+    entries, problems = _load_shard(label, text)
+    if entries is None or base_text is None:
+        return problems
+    base_entries, _ = _load_shard(label, base_text)
+    base_by_id = {e["id"]: e for e in base_entries or [] if isinstance(e, dict) and isinstance(e.get("id"), str)}
+    for entry in entries:
+        if not isinstance(entry, dict) or not isinstance(entry.get("id"), str) or base_by_id.get(entry["id"]) == entry:
+            continue
+        try:
+            validate_entry(entry)
+        except EntryValidationError as exc:
+            problems.append(f"{label}: {entry['id']}: {exc.field}: {exc.reason}")
+    return problems
+
+
+def _git_show(ref: str, path: str):
+    import subprocess
+
+    done = subprocess.run(["git", "show", f"{ref}:{path}"], capture_output=True, text=True, check=False)
+    return done.stdout if done.returncode == 0 else None
+
+
+def main(argv=None) -> int:
+    import argparse
+
+    parser = argparse.ArgumentParser(description="Read-only check of hand-edited docs/parity_ledger shards (writes nothing).")
+    parser.add_argument("--check", nargs="+", metavar="FILE", required=True)
+    parser.add_argument("--base", help="also run validate_entry on entries new or changed against this git ref (opt-in)")
+    args = parser.parse_args(argv)
+    problems = []
+    for name in args.check:
+        try:
+            text = Path(name).read_text(encoding="utf-8")
+        except OSError as exc:
+            problems.append(f"{name}: cannot read: {exc}")
+            continue
+        base_text = None if args.base is None else (_git_show(args.base, Path(name).as_posix()) or "")
+        problems += check_shard_text(name, text, base_text)
+    for line in problems:
+        print(line)
+    return 1 if problems else 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

@@ -30,14 +30,14 @@
     {
       "severity": "WARNING",
       "rule_id": "CAT-DEAD-001",
-      "message": "Terrain 'grass' is active but never consumed by any downstream component",
-      "target": "grass"
+      "message": "Terrain 'sand' is active but never consumed by any downstream component",
+      "target": "sand"
     },
     {
       "severity": "WARNING",
       "rule_id": "CAT-DEAD-001",
-      "message": "Terrain 'hill' is active but never consumed by any downstream component",
-      "target": "hill"
+      "message": "Terrain 'grass' is active but never consumed by any downstream component",
+      "target": "grass"
     },
     {
       "severity": "WARNING",
@@ -48,8 +48,8 @@
     {
       "severity": "WARNING",
       "rule_id": "CAT-DEAD-001",
-      "message": "Terrain 'sand' is active but never consumed by any downstream component",
-      "target": "sand"
+      "message": "Terrain 'hill' is active but never consumed by any downstream component",
+      "target": "hill"
     },
     {
       "severity": "WARNING",
@@ -905,14 +905,14 @@
     {
       "severity": "WARNING",
       "rule_id": "CAT-DEAD-001",
-      "message": "Terrain 'grass' is active but never consumed by any downstream component",
-      "target": "grass"
+      "message": "Terrain 'sand' is active but never consumed by any downstream component",
+      "target": "sand"
     },
     {
       "severity": "WARNING",
       "rule_id": "CAT-DEAD-001",
-      "message": "Terrain 'hill' is active but never consumed by any downstream component",
-      "target": "hill"
+      "message": "Terrain 'grass' is active but never consumed by any downstream component",
+      "target": "grass"
     },
     {
       "severity": "WARNING",
@@ -923,8 +923,8 @@
     {
       "severity": "WARNING",
       "rule_id": "CAT-DEAD-001",
-      "message": "Terrain 'sand' is active but never consumed by any downstream component",
-      "target": "sand"
+      "message": "Terrain 'hill' is active but never consumed by any downstream component",
+      "target": "hill"
     },
     {
       "severity": "WARNING",
@@ -1762,7 +1762,7 @@
     }
   ],
   "fingerprints": {
-    "catalog": "db0cd1bff0c3623cb6291155577e09bae4dc7a4ba5217da2128e50a30a3a079f",
+    "catalog": "effdfb9a05687bbb85415b7019a42d51f1a7a9e61f0b7da6786b99b96fd4d8b7",
     "modules": {
       "forest_deep_ecology": "6baaf90058bc583806e9644af7e4fc5313fcf8964e8d8c6aa1f015834387ac65",
       "survivor_camp_shelter": "c017935a30d51e3b5b293be4cc2c54cc8ef7a0f4a72a0932be26983db7ddc355",

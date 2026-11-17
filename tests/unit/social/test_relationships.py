@@ -189,6 +189,31 @@ def test_regional_reputation_delta_merges_by_summing_per_region():
     assert heroism_merge.heroism_delta == pytest.approx(0.3)
 
 
+def test_merge_sums_every_keyed_delta_dict_with_its_own_key_type():
+    """TCK-20261112-SOCIALUPDATE-MERGE-REUSES-ITS-LOOP-KEY-ACROSS-KEY-TYPES: merge() sums the int-keyed
+    trust, grudge and combat-loss deltas and the str-keyed place-attachment delta, each by its own key
+    (the regional-reputation delta has its own test above). Keys on one side only are kept."""
+    first = SocialUpdate(
+        trust_delta={1: 0.2, 2: 0.1},
+        grudge_delta={1: 0.3},
+        place_attachment_delta={"region_a": 0.2},
+        combat_loss_delta={7: 1},
+    )
+    second = SocialUpdate(
+        trust_delta={1: 0.1, 3: 0.4},
+        grudge_delta={1: 0.1, 4: 0.2},
+        place_attachment_delta={"region_a": 0.1, "region_b": 0.3},
+        combat_loss_delta={7: 2, 8: 1},
+    )
+
+    merged = first.merge(second)
+
+    assert merged.trust_delta == {1: pytest.approx(0.3), 2: pytest.approx(0.1), 3: pytest.approx(0.4)}
+    assert merged.grudge_delta == {1: pytest.approx(0.4), 4: pytest.approx(0.2)}
+    assert merged.place_attachment_delta == {"region_a": pytest.approx(0.3), "region_b": pytest.approx(0.3)}
+    assert merged.combat_loss_delta == {7: 3, 8: 1}
+
+
 def test_heroism_and_notoriety_deltas_apply_identically_to_birth_seeded_reputation():
     """TCK-20260904-INHERITED-REPUTATION-SEED (AC4): a birth-seeded public_reputation value
     (simulated here via V2EntityBuilder's construction-time seed, standing in for

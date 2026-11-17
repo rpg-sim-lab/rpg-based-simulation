@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import datetime as dt
+import hashlib
 import json
 from pathlib import Path
 
@@ -14,6 +15,8 @@ from tools.test_architecture import rpg_gate_report as rep
 TODAY = dt.date(2026, 10, 11)
 SEEDS = (1, 2, 3)
 SHA, HASH = "abc123", "hash1"
+KNOWN_SHA = "a" * 64
+MAIN_CI_ENV = {"GITHUB_RUN_ID": "39799337778", "GITHUB_RUN_ATTEMPT": "1", "GITHUB_EVENT_NAME": "workflow_dispatch", "GITHUB_REF": "refs/heads/main"}
 ORACLE = "docs/mechanics/02_combat_laws.md"
 
 
@@ -23,8 +26,11 @@ def _config(**over) -> base.GateConfig:
     return base.GateConfig(**args)
 
 
+PINNED = {"verdict": "PINNED", "differences": []}
+
+
 def _seed_doc(seed, *, v3=0, sha=SHA, hhash=HASH, ticks=100, k=2.0, floor=1.0, value=None, floor_rel=None):
-    return {"schema": "rpg-gate-metrics/v1", "status": "ok", "world": "w", "seed": seed, "ticks": ticks, "sha": sha, "harness_hash": hhash, "metrics": [
+    return {"schema": "rpg-gate-metrics/v1", "status": "ok", "world": "w", "seed": seed, "ticks": ticks, "sha": sha, "harness_hash": hhash, "runner": PINNED, "metrics": [
         {"id": "O1", "class": "outcome", "scope": "run", "group": "*", "key": "DEATHS", "tick": 100, "value": 10.0 + seed if value is None else value, "k": k, "floor": floor, **({"floor_rel": floor_rel} if floor_rel is not None else {})},
         {"id": "V1", "class": "validity", "scope": "run", "group": "*", "violations": 0, "examples": [], "oracle": ORACLE},
         {"id": "V3", "class": "validity", "scope": "run", "group": "wolves", "violations": v3, "examples": ["x"] if v3 else [], "oracle": ORACLE},
@@ -32,7 +38,7 @@ def _seed_doc(seed, *, v3=0, sha=SHA, hhash=HASH, ticks=100, k=2.0, floor=1.0, v
 
 
 def _pooled_doc(*, v3=0, sha=SHA, hhash=HASH):
-    return {"schema": "rpg-gate-metrics/v1", "status": "ok", "world": "w", "ticks": 100, "sha": sha, "harness_hash": hhash, "metrics": [
+    return {"schema": "rpg-gate-metrics/v1", "status": "ok", "world": "w", "ticks": 100, "sha": sha, "harness_hash": hhash, "runner": PINNED, "metrics": [
         {"id": "V3", "class": "validity", "scope": "pooled", "group": "wolves", "violations": v3, "examples": [], "oracle": ORACLE},
         {"id": "O9", "class": "outcome", "scope": "pooled", "group": "*", "value": 0.4, "floor": 0.1},
     ]}
@@ -55,6 +61,8 @@ def _report(*findings, skipped=(), sha=SHA):
 
 
 def _build(directory, known=(), **kw):
+    kw.setdefault("known_file_sha256", KNOWN_SHA)
+    kw.setdefault("env", MAIN_CI_ENV)  # a main CI run, so the candidate can become a baseline; the tests that need no CI pass env={}
     return cand.build_candidate(directory, kw.pop("config", _config()), list(known), kw.pop("report", _report()), today=TODAY, **kw)
 
 
@@ -78,7 +86,8 @@ def test_documents_to_candidate_to_v1_to_an_all_pass_report(tmp_path):
 
 def test_candidate_rows_carry_the_statistics_and_thresholds(tmp_path):
     candidate = _build(_write(tmp_path / "docs"), milestone="M0", commit_sha=SHA)
-    assert candidate["provenance"] == {"commit_sha": SHA, "harness_hash": HASH, "worlds": ["w"], "seeds": [1, 2, 3], "ticks": 100}
+    assert candidate["provenance"] == {"commit_sha": SHA, "harness_hash": HASH, "worlds": ["w"], "seeds": [1, 2, 3], "ticks": 100,
+                                    "known_file_sha256": KNOWN_SHA, "ci": {"run_id": "39799337778", "run_attempt": "1", "event_name": "workflow_dispatch", "ref": "refs/heads/main"}}
     rows = {(r["id"], r["scope"]): r for r in candidate["metrics"]}
     o1 = rows[("O1", "run")]
     assert o1["per_seed"] == {"1": 11.0, "2": 12.0, "3": 13.0} and o1["mean"] == 12.0 and o1["se"] == pytest.approx(1 / 3 ** 0.5)
@@ -207,6 +216,49 @@ def test_an_evidence_only_candidate_cannot_become_a_baseline(tmp_path):
     assert candidate["evidence_only"] is True
     with pytest.raises(base.RebaselineRefused, match="evidence only"):
         base.rebaseline(candidate, _config(), tmp_path / "b", pr=None, cites=["T"])
+
+
+# ---- the CI run and the known file are recorded (TCK-20261023-RPG-GATE-CANDIDATE-RECORDS-ITS-CI-RUN-AND-KNOWN-FILE)
+
+def test_a_candidate_records_the_ci_run_and_the_known_file_hash(tmp_path):
+    prov = _build(_write(tmp_path / "d"))["provenance"]
+    assert prov["known_file_sha256"] == KNOWN_SHA
+    assert prov["ci"] == {"run_id": "39799337778", "run_attempt": "1", "event_name": "workflow_dispatch", "ref": "refs/heads/main"}
+
+
+@pytest.mark.parametrize("env", [{}, {"GITHUB_RUN_ID": "1"}, {**MAIN_CI_ENV, "GITHUB_REF": ""}, {k: v for k, v in MAIN_CI_ENV.items() if k != "GITHUB_EVENT_NAME"}])
+def test_ci_is_null_unless_all_four_run_variables_are_set(tmp_path, env):
+    assert _build(_write(tmp_path / "d"), env=env)["provenance"]["ci"] is None
+
+
+def test_a_candidate_with_no_ci_run_or_off_main_cannot_become_a_baseline(tmp_path):
+    for env, match in (({}, "ci must carry"), ({**MAIN_CI_ENV, "GITHUB_REF": "refs/heads/some-branch"}, "ci.ref must be refs/heads/main")):
+        candidate = _build(_write(tmp_path / "d"), env=env)
+        with pytest.raises(base.RebaselineRefused, match=match):
+            base.rebaseline(candidate, _config(), tmp_path / "b", pr=None, cites=["T"])
+    assert not (tmp_path / "b").exists()
+    assert base.rebaseline(_build(_write(tmp_path / "d"), milestone="M1"), _config(), tmp_path / "b", pr=None, cites=["T"]).name == "rpg_gate_v1.json"
+
+
+def test_the_cli_records_the_sha256_of_the_known_file_bytes_and_the_run_from_the_environment(tmp_path, monkeypatch):
+    config = tmp_path / "config.yaml"
+    config.write_text("worlds: [w]\nseeds: [1, 2, 3]\nticks: 100\nstale_after_days: 30\n")
+    known = tmp_path / "known.yaml"
+    known.write_text("known: []\n# exact bytes, comment included\n")
+    report = tmp_path / "report.json"
+    report.write_text(json.dumps(_report()))
+    args = ["--report", str(report), "--config", str(config), "--docs", str(_write(tmp_path / "ok")), "--known", str(known)]
+    for var in MAIN_CI_ENV:
+        monkeypatch.delenv(var, raising=False)
+    local = tmp_path / "local.json"
+    assert cand.main([*args, "--out", str(local)]) == 0
+    prov = json.loads(local.read_text())["provenance"]
+    assert prov["known_file_sha256"] == hashlib.sha256(known.read_bytes()).hexdigest() and prov["ci"] is None
+    for var, value in MAIN_CI_ENV.items():
+        monkeypatch.setenv(var, value)
+    ci_out = tmp_path / "ci.json"
+    assert cand.main([*args, "--out", str(ci_out)]) == 0
+    assert json.loads(ci_out.read_text())["provenance"]["ci"]["run_id"] == "39799337778"
 
 
 def test_the_cli_writes_the_file_or_refuses_without_writing(tmp_path, capsys):
@@ -452,3 +504,105 @@ def test_floor_rel_must_agree_across_the_documents_of_a_world(tmp_path):
     docs = _rel_docs([40.0, 50.0, 60.0])
     docs[("w", 2)]["metrics"][0]["floor_rel"] = 0.2
     _refused(_write(tmp_path / "d", docs), "threshold mismatch for O1")
+
+
+# ---- TCK-20261022-RPG-GATE-KNOWN-ENTRY-CAN-NAME-A-WORLD-AND-SEED: scoped entries in the candidate
+
+def _scoped_v3(cases, ticket="TCK-S"):
+    return {**_entry(match="V3:wolves", ticket=ticket), "cases": cases}
+
+
+def _v3_docs(by_seed, pooled_v3=0):
+    """Seed documents with V3 fails given as {seed: [entity ids]} (violations == len(ids))."""
+    docs = {("w", s): _seed_doc(s) for s in SEEDS}
+    for seed, ids in by_seed.items():
+        row = next(m for m in docs[("w", seed)]["metrics"] if m["id"] == "V3")
+        row["violations"], row["examples"] = len(ids), [{"entity_id": i} for i in ids]
+    docs[("w", None)] = _pooled_doc(v3=pooled_v3)
+    return docs
+
+
+def test_a_scoped_entry_omits_exactly_its_covered_fail(tmp_path):
+    known = [_scoped_v3([{"world": "w", "seed": 2, "entity_id": 28}])]
+    candidate = _build(_write(tmp_path / "d", _v3_docs({2: [28]})), known, milestone="M0")
+    assert not [r for r in candidate["metrics"] if r["id"] == "V3" and r["scope"] == "run"]
+    assert {"row": "V3:run:w:wolves", "known_match": "V3:wolves", "ticket": "TCK-S"} in candidate["omitted_validity"]
+
+
+def test_a_fail_on_an_uncovered_seed_or_entity_refuses_the_candidate(tmp_path):
+    known = [_scoped_v3([{"world": "w", "seed": 2, "entity_id": 28}])]
+    _refused(_write(tmp_path / "a", _v3_docs({2: [28], 3: [28]})), r"w__s3\.json: validity row V3 has 1 violation\(s\) and no owner", known)
+    _refused(_write(tmp_path / "b", _v3_docs({2: [28, 29]})), r"w__s2\.json: validity row V3 has 2 violation\(s\) and no owner", known)
+
+
+def test_a_pooled_fail_is_not_owned_by_a_scoped_entry(tmp_path):
+    known = [_scoped_v3([{"world": "w", "seed": 2, "entity_id": 28}])]
+    _refused(_write(tmp_path / "p", _v3_docs({2: [28]}, pooled_v3=1)), r"w__pooled\.json: validity row V3 has 1 violation\(s\) and no owner", known)
+
+
+def test_a_missing_required_row_is_not_owned_by_a_scoped_entry(tmp_path):
+    cfg = _config(required_validity={"run": ("V3",), "pooled": ()})
+    docs = _v3_docs({})
+    for doc in docs.values():
+        doc["metrics"] = [m for m in doc["metrics"] if m["id"] != "V3"]
+    _refused(_write(tmp_path / "m", docs), "required validity row V3 is missing", [_scoped_v3([{"world": "w", "seed": 2}])], config=cfg)
+
+
+def test_two_scoped_owners_of_one_row_are_both_recorded_so_each_expiry_is_rechecked(tmp_path):
+    first = _scoped_v3([{"world": "w", "seed": 2, "entity_id": 28}], ticket="TCK-A")
+    second = _scoped_v3([{"world": "w", "seed": 3, "entity_id": 38}], ticket="TCK-B")
+    docs = _v3_docs({2: [28], 3: [38]})
+    candidate = _build(_write(tmp_path / "d", docs), [first, second], milestone="M0")
+    run_rows = [(o["row"], o["ticket"]) for o in candidate["omitted_validity"] if ":run:" in o["row"]]
+    assert run_rows == [("V3:run:w:wolves", "TCK-A"), ("V3:run:w:wolves", "TCK-B")]
+    with pytest.raises(base.RebaselineRefused, match="expired"):
+        base.rebaseline(candidate, _config(), tmp_path / "b", pr=None, cites=["TCK-METRIC-SET"], known=[first, {**second, "expires_on": "2026-10-01"}], today=TODAY)
+
+
+# ---- the pinned runner (TCK-20261115-A-NON-SEQUENTIAL-RUN-IS-REFUSED-BY-THE-GATE-CANDIDATE-PAIRED-ARMS-AND-RPG-MEASURE)
+
+NOT_PINNED = {"verdict": "NOT_PINNED", "differences": ["executor is 'src.engine.executor.ConcurrentExecutionAdapter', pinned is 'src.engine.executor.LocalSequentialExecutor'"]}
+
+
+@pytest.mark.parametrize("which", [("w", 1), ("w", None)])
+def test_a_document_whose_runner_is_not_pinned_refuses_naming_the_document_and_the_difference(tmp_path, which):
+    docs = {**{("w", s): _seed_doc(s) for s in SEEDS}, ("w", None): _pooled_doc()}
+    docs[which] = {**docs[which], "runner": NOT_PINNED}
+    name = f"w__s{which[1]}.json" if which[1] is not None else "w__pooled.json"
+    with pytest.raises(cand.CandidateRefused, match=f"{name}: runner is not PINNED.*ConcurrentExecutionAdapter"):
+        _build(_write(tmp_path / "docs", docs))
+
+
+@pytest.mark.parametrize("which", [("w", 2), ("w", None)])
+def test_a_document_with_no_runner_field_refuses(tmp_path, which):
+    docs = {**{("w", s): _seed_doc(s) for s in SEEDS}, ("w", None): _pooled_doc()}
+    docs[which] = {k: v for k, v in docs[which].items() if k != "runner"}
+    with pytest.raises(cand.CandidateRefused, match="runner is not PINNED \\(no runner field\\)"):
+        _build(_write(tmp_path / "docs", docs))
+
+
+def test_runner_header_reads_the_manifest_and_a_missing_manifest_is_not_pinned(tmp_path):
+    from tools.test_architecture import rpg_gate_run as gate_run
+    from tools.test_architecture.pinned_runner import PINNED
+
+    record = {"governor": PINNED.governor, "executor": PINNED.executor, "max_tick_budget_ms": 1e9, "audit_mode": True, "no_frame_pacing": True, "worker_manager": None}
+    (tmp_path / "ok").mkdir()
+    (tmp_path / "ok" / "run_manifest.json").write_text(json.dumps({"run_id": "r", "run_conditions": record}))
+    assert gate_run.runner_header(tmp_path / "ok") == {"verdict": "PINNED", "differences": []}
+    (tmp_path / "threads").mkdir()
+    (tmp_path / "threads" / "run_manifest.json").write_text(json.dumps({"run_conditions": {**record, "executor": "src.engine.executor.ConcurrentExecutionAdapter", "worker_manager": "src.engine.worker_manager.WorkerManager"}}))
+    threads = gate_run.runner_header(tmp_path / "threads")
+    assert threads["verdict"] == "NOT_PINNED" and len(threads["differences"]) == 1 and threads["differences"][0].startswith("executor is")
+    assert gate_run.runner_header(tmp_path / "nowhere")["verdict"] == "NOT_PINNED"
+    (tmp_path / "bad").mkdir()
+    (tmp_path / "bad" / "run_manifest.json").write_text("[1]")
+    assert gate_run.runner_header(tmp_path / "bad")["verdict"] == "NOT_PINNED"
+
+
+def test_a_pooled_document_is_pinned_only_when_every_document_it_pools_is():
+    from tools.test_architecture import rpg_gate_run as gate_run
+
+    assert gate_run.pooled_runner([{"runner": PINNED}, {"runner": PINNED}]) == {"verdict": "PINNED", "differences": []}
+    mixed = gate_run.pooled_runner([{"runner": PINNED}, {"runner": NOT_PINNED}, {}])
+    assert mixed["verdict"] == "NOT_PINNED" and len(mixed["differences"]) == 2
+    assert gate_run.pooled_runner([])["verdict"] == "NOT_PINNED"

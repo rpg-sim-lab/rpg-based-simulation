@@ -161,9 +161,9 @@ def test_find_group_for_contract_returns_matching_group():
     lookup finds the real group formed from a genuine recruitment contract."""
     leader = V2EntityBuilder(10).kind("human").location(0, 0).combat(readiness=100.0).build()
     member = V2EntityBuilder(1).kind("human").location(0, 0).combat(readiness=100.0).build()
-    other_group = GroupRecord(id=200, leader_id=99, member_ids={99}, anchor=(5, 5), contract_id="other_contract")
+    other_group = GroupRecord(id=200, leader_id=99, member_ids={99}, anchor=(5, 5), contract_id="other_contract", contract_holder_id=99)
     target_group = GroupRecord(
-        id=100, leader_id=10, member_ids={1, 10}, anchor=(0, 0), contract_id="rec_contract_1",
+        id=100, leader_id=10, member_ids={1, 10}, anchor=(0, 0), contract_id="rec_contract_1", contract_holder_id=10,
     )
     state = AuthoritativeState(
         tick=1, seed=1, entities={1: member, 10: leader}, groups={100: target_group, 200: other_group},
@@ -179,7 +179,7 @@ def test_find_group_for_contract_returns_none_when_no_group_formed():
     """A contract that never drove a group formation (e.g. still OFFERED, or rejected) returns
     None rather than raising -- proves the lookup doesn't assume a group always exists."""
     leader = V2EntityBuilder(10).kind("human").location(0, 0).combat(readiness=100.0).build()
-    group = GroupRecord(id=100, leader_id=10, member_ids={1, 10}, anchor=(0, 0), contract_id="rec_contract_1")
+    group = GroupRecord(id=100, leader_id=10, member_ids={1, 10}, anchor=(0, 0), contract_id="rec_contract_1", contract_holder_id=10)
     state = AuthoritativeState(tick=1, seed=1, entities={10: leader}, groups={100: group})
 
     found = GroupSystem.find_group_for_contract(state, "contract_never_formed_a_group")
@@ -195,7 +195,7 @@ def test_find_group_for_contract_answers_the_question_after_dissolution():
     before (the group used to be removed outright, and this would return None)."""
     leader = V2EntityBuilder(10).kind("human").location(0, 0).combat(readiness=100.0, alive=True).build()
     member = V2EntityBuilder(1).kind("human").location(0, 0).combat(readiness=100.0, alive=True).build()
-    group = GroupRecord(id=100, leader_id=10, member_ids={1, 10}, anchor=(0, 0), contract_id="rec_contract_1")
+    group = GroupRecord(id=100, leader_id=10, member_ids={1, 10}, anchor=(0, 0), contract_id="rec_contract_1", contract_holder_id=10)
 
     state = AuthoritativeState(
         tick=5, seed=1, entities={1: member, 10: leader}, groups={100: group},

@@ -1,0 +1,17 @@
+== 2026-11-12T17:08:50Z after
+cool_curie Up 16 hours
+ Exited (2) 4 months ago
+volumes: 6
+Filesystem      Size  Used Avail Use% Mounted on
+/dev/sda2        49G   34G   13G  74% /
+/dev/sdb1        99G   79G   16G  84% /data
+-- docker system df (after)
+TYPE            TOTAL     ACTIVE    SIZE      RECLAIMABLE
+Images          17        1         7.918GB   2.07GB (26%)
+Containers      2         1         4.096kB   0B (0%)
+Local Volumes   6         0         667.1MB   667.1MB (100%)
+Build Cache     51        0         2.557GB   2.474GB
+guard abort file: 0
+guard log lines with trigger: 0
+stray procs: 2
+ M docker/nginx.conf

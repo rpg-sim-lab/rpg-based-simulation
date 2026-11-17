@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING
 
 from src.core.strategic import ContractStatus
 from src.core.updates import EntityUpdate, StrategicUpdate
-from src.systems.social_systems.contracts import ContractService
+from src.systems.social_systems.contracts import ContractService, contract_is_due
 
 if TYPE_CHECKING:
     from src.core.state import AuthoritativeState
@@ -83,10 +83,7 @@ class ContractLifecyclePhase:
             entity = state.entities[entity_id]
             for contract_id in sorted(entity.strategic.contracts.keys()):
                 contract = entity.strategic.contracts[contract_id]
-                if contract.expiry_tick == -1:
-                    continue
-
-                if state.tick < contract.expiry_tick:
+                if not contract_is_due(contract, state.tick):
                     continue
 
                 if contract.status == ContractStatus.ACTIVE:

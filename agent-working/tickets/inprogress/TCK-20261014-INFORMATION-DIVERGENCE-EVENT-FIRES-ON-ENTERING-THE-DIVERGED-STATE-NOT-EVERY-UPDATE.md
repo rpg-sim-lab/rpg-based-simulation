@@ -68,3 +68,7 @@ src/observability/{divergence_episode,event_extractor,event_shapers}.py; tests/u
 
 ## Completion Summary
 Pending PR.
+
+## 2026-10-31 cleanup re-verification (rpg-planner, owner go #715 6543261623; origin/main 96f623a62)
+- AC1 met (divergence_episode.py used by event_shapers.py:904-905 and extraction/leads.py:149-150; reset at event_extractor.py:318). AC2 met as recorded; re-anchored in #747.
+- Left (docs only): the planned Bug Fix divergence entry for decision_diverged_by_belief was never written (none in intentional_divergences.md), and the parity ledger touch (strategic_cognition.yaml ~3020-3029). rpg-planner numbers it at the next fold; then close.

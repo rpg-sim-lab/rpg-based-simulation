@@ -708,3 +708,45 @@ def test_new_reports_never_change_the_exit_code_or_write_a_shard(tmp_path, monke
     snapshot = sorted((p.name, p.read_bytes()) for p in (tmp_path / "data").rglob("*") if p.is_file())
     assert "Missing execution_id Report" in out and "Skipped tools.jsonl Rows Report" in out
     assert snapshot == sorted((p.name, p.read_bytes()) for p in (tmp_path / "data").rglob("*") if p.is_file())
+
+
+class TestStaleIndexWarning:
+    """TCK-20261110-MONITORING-VALIDATE-WARNS-ON-A-STALE-INDEX: validate reads the index db, so a shard
+    written after the last build is invisible to it; say so, count the shards, and offer --rebuild."""
+
+    def _db_and_shards(self, tmp_path, shard_newer):
+        import os
+
+        db_path = _build_db(tmp_path, runs=[dict(_BASE_RUN, run_id="TCK-STALE")], events=[])
+        data = tmp_path / "data" / "2026-W46"
+        data.mkdir(parents=True)
+        shard = data / "runs.jsonl"
+        shard.write_text("{}\n")
+        base = db_path.stat().st_mtime
+        os.utime(shard, (base + (100 if shard_newer else -100),) * 2)
+        return db_path, tmp_path / "data"
+
+    @staticmethod
+    def _main(argv):
+        try:
+            validate.main(argv)
+        except SystemExit:
+            pass  # the fixture run has no events, so validation itself may exit 1; only stderr matters here
+
+    def test_a_shard_newer_than_the_index_gets_the_warning_with_its_count(self, tmp_path, capsys):
+        db_path, data_dir = self._db_and_shards(tmp_path, shard_newer=True)
+        self._main(["--db-path", str(db_path), "--data-dir", str(data_dir)])
+        err = capsys.readouterr().err
+        assert "WARNING: index older than 1 shard file(s); run make agent-monitoring-index" in err
+
+    def test_a_fresh_index_gets_no_warning(self, tmp_path, capsys):
+        db_path, data_dir = self._db_and_shards(tmp_path, shard_newer=False)
+        self._main(["--db-path", str(db_path), "--data-dir", str(data_dir)])
+        assert "index older than" not in capsys.readouterr().err
+
+    def test_rebuild_flag_calls_the_builder_before_validating(self, tmp_path, monkeypatch):
+        db_path, data_dir = self._db_and_shards(tmp_path, shard_newer=False)
+        calls = []
+        monkeypatch.setattr(validate, "rebuild_index", lambda path: calls.append(path))
+        self._main(["--db-path", str(db_path), "--data-dir", str(data_dir), "--rebuild"])
+        assert calls == [db_path]

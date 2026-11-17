@@ -48,6 +48,7 @@ def _entity(eid: int = 1, contracts: dict | None = None):
     e.social.trust_history = {}
     e.social.public_reputation = 0.0
     e.social.last_cooperation_decision = None
+    e.identity.occupation = "hero"
     return e
 
 

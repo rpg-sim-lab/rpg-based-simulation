@@ -21,8 +21,10 @@ text, never a live re-run of `done_checker_static.py`.** A live re-run reflects 
 working tree (e.g. `data_runs_clean` scans `data/runs/` as it exists right now, which drifts
 constantly in a shared worktree), not what was true when that ticket actually closed. The ticket's
 own recorded text is the historically accurate answer a PR reviewer wants. "Known gaps" is a literal
-scan for the substring `FAIL` in those two sections, surfacing the containing line — formalizing the
-convention this repo's own tickets already use by hand.
+scan of those two sections for a line containing the substring `FAIL` or a line beginning `Known gap:`
+(after an optional list marker; case-sensitive), surfacing the containing line. The `Known gap:` marker
+is the one explicit way to state a gap that is not a `FAIL`; prose that merely mentions a gap is not read.
+A line beginning `Revert evidence` is proof a test catches the bug, not a gap, and is skipped.
 
 **Ticket discovery**: commit-subject `TCK-` IDs (`git log <base>..HEAD --format=%s`) are the
 *primary* signal (Scope item 2); ticket IDs implied by changed paths under `agent-working/tickets/` are a
@@ -67,6 +69,7 @@ _REPO_ROOT_STR = str(Path(__file__).resolve().parents[2])
 if _REPO_ROOT_STR not in sys.path:
     sys.path.append(_REPO_ROOT_STR)
 from tools.agent_working_paths import STORED_ARTIFACTS, TICKETS, posix  # noqa: E402
+from tools.sessions.classify import is_governing_path  # noqa: E402
 
 _TICKET_ID_RE = re.compile(r"TCK-[0-9]{8}-[A-Z0-9-]+")
 _REVIEW_NOTES_PLACEHOLDER = "<!-- UNFILLED: write review notes by hand before opening the PR -->"
@@ -131,41 +134,75 @@ def discover_changed_files(run_command=default_run_command, base_ref: str = "ori
     return sorted({line.strip() for line in result.stdout.splitlines() if line.strip()})
 
 
-# Raw probe output under stored_artifacts/**/probes/ (TCK-20261009-PR-RENDER-RAW-PROBE-OUTPUT-ADVISORY). Measured on
-# origin/main 2026-10-09: 414 probe files, 5.3 MB, mostly raw per-run .jsonl. Rule agreed with the rpg domain: commit the
-# probe scripts and summary tables, no raw per-run output unless a ticket cites it. A probe file counts as raw output when
-# its extension is not a script or a summary. 200 KB is where one probe batch starts to be worth a second look.
-RAW_PROBE_WARN_BYTES = 200 * 1024
-_PROBE_NON_RAW_SUFFIXES = frozenset({".py", ".sh", ".md", ".txt"})
-_RAW_PROBE_TOP = 5
+def discover_governing_files(run_command=default_run_command, base_ref: str = "origin/main") -> tuple:
+    """(files this branch changed against its merge base with `base_ref`, whether git could say).
+
+    Three dots, as `ci_lanes.py` does: `base..HEAD` is a TREE diff, so once the branch is behind main it lists files that only
+    main changed. This is the section's own call; `discover_changed_files` keeps its two-dot form for its other callers (the
+    raw-probe warning and the ticketless file summary). A failure returns ([], False) so the caller can say so, instead of
+    showing the same nothing as a clean PR."""
+    result = run_command(["git", "diff", "--name-only", f"{base_ref}...HEAD"])
+    if result.returncode != 0:
+        return [], False
+    return sorted({line.strip() for line in result.stdout.splitlines() if line.strip()}), True
 
 
-def raw_probe_warning(files: list, root: Path = Path(".")) -> Optional[str]:
-    """One non-blocking warning when the changed files include more than `RAW_PROBE_WARN_BYTES` of raw probe output.
-    Sizes come from the working tree; a file that is gone (a deletion) counts for nothing."""
+# Raw output anywhere under stored_artifacts/ (TCK-20261009-PR-RENDER-RAW-PROBE-OUTPUT-ADVISORY, widened by
+# TCK-20261102-PR-RENDER-RAW-OUTPUT-ADVISORY-SCANS-ONLY-PROBES). Measured on origin/main 2026-10-09: 414 probe files, 5.3 MB, mostly
+# raw per-run .jsonl. Rule agreed with the rpg domain: commit the probe scripts and summary tables, no raw per-run output
+# unless a ticket cites it. PR #828 (9716c6785) added 287 stored-artifact files, 4.65 MiB, all under evidence/ or at a ticket
+# folder's top, which the probes/-only scan never saw. A file counts as raw output when its extension is not a script or a
+# summary. 200 KB is where one batch of raw output starts to be worth a second look.
+RAW_OUTPUT_WARN_BYTES = 200 * 1024
+_NON_RAW_SUFFIXES = frozenset({".py", ".sh", ".md", ".txt"})
+_RAW_OUTPUT_TOP = 5
+
+
+def raw_output_warning(files: list, root: Path = Path(".")) -> Optional[str]:
+    """One non-blocking warning when the PR's files under `agent-working/stored_artifacts/` include more than
+    `RAW_OUTPUT_WARN_BYTES` of raw output (any subfolder, or a ticket folder's top). `files` should be the three-dot list
+    (`discover_governing_files`): on a branch behind main a two-dot list also names files only main changed. Sizes come from
+    the working tree; a file that is gone (a deletion) counts for nothing. Scripts and summaries are left out of the threshold
+    but counted in the printed totals."""
     prefix = posix(STORED_ARTIFACTS) + "/"
-    sized = []
+    raw, all_count, all_bytes = [], 0, 0
     for rel in files:
-        if not (rel.startswith(prefix) and "/probes/" in rel[len(prefix):]):
-            continue
-        if Path(rel).suffix.lower() in _PROBE_NON_RAW_SUFFIXES:
+        if not rel.startswith(prefix):
             continue
         try:
             size = (root / rel).stat().st_size
         except OSError:
             continue
-        sized.append((size, rel))
-    total = sum(size for size, _ in sized)
-    if total <= RAW_PROBE_WARN_BYTES:
+        all_count += 1
+        all_bytes += size
+        if Path(rel).suffix.lower() not in _NON_RAW_SUFFIXES:
+            raw.append((size, rel))
+    total = sum(size for size, _ in raw)
+    if total <= RAW_OUTPUT_WARN_BYTES:
         return None
-    top = ", ".join(f"{rel} ({size // 1024} KB)" for size, rel in sorted(sized, key=lambda item: (-item[0], item[1]))[:_RAW_PROBE_TOP])
-    return (f"raw probe output: {len(sized)} file(s), {total // 1024} KB under {prefix}**/probes/ (largest: {top}); "
+    top = ", ".join(f"{rel} ({size // 1024} KB)" for size, rel in sorted(raw, key=lambda item: (-item[0], item[1]))[:_RAW_OUTPUT_TOP])
+    return (f"raw output: {len(raw)} file(s), {total // 1024} KB under {prefix} (the whole folder, not only probes/; largest: {top}); "
+            f"all stored_artifacts in this PR: {all_count} file(s), {all_bytes // 1024} KB; "
             "keep only files a ticket cites; summarize the rest in investigation.md")
 
 
 def find_ticket_file(ticket_id: str, tickets_root: Path = _DEFAULT_TICKETS_ROOT) -> Optional[Path]:
     matches = sorted(tickets_root.rglob(f"{ticket_id}.md"))
     return matches[0] if matches else None
+
+
+def _status_dirs(ticket_id: str, tickets_root: Path = _DEFAULT_TICKETS_ROOT) -> list:
+    """The distinct status folders (first path part under `tickets_root`) holding a file for this ticket, sorted.
+    More than one means the ticket is both open and closed in the tree (TCK-20261101-PR-RENDER-LEAVES-OUT-A-TICKET-IN-TWO-STATUS-FOLDERS)."""
+    dirs = set()
+    for path in tickets_root.rglob(f"{ticket_id}.md"):
+        try:
+            parts = path.relative_to(tickets_root).parts
+        except ValueError:
+            continue
+        if len(parts) > 1:
+            dirs.add(parts[0])
+    return sorted(dirs)
 
 
 _NOT_CLOSED_DIRS = ("todos", "inprogress")
@@ -255,7 +292,8 @@ def discover_tickets(
     TICKET-EXCLUSION AC5).
 
     A ticket whose file sits under `todos/` or `inprogress/` is left out with a warning, with no flag
-    needed: a PR that files a follow-up names it in a commit subject, but cannot have closed it."""
+    needed: a PR that files a follow-up names it in a commit subject, but cannot have closed it.
+    So is one with files in two status folders."""
     exclusions = exclusions or {}
     commit_ids = discover_commit_ticket_ids(run_command, base_ref)
     changed_ids = discover_changed_ticket_ids(run_command, base_ref)
@@ -293,6 +331,14 @@ def discover_tickets(
             warnings.append(
                 f"{ticket_id}: named in a commit subject but its ticket file is not changed by this "
                 f"branch -- cited, not closed; left out of Closes:"
+            )
+            continue
+        dirs = _status_dirs(ticket_id, tickets_root)
+        if len(dirs) > 1:
+            # done/ sorts first, so find_ticket_file would load the closed copy and hide the open one
+            warnings.append(
+                f"{ticket_id}: ticket file exists under {', '.join(d + '/' for d in dirs)} -- left out of Closes: "
+                f"(one ticket in two status folders; keep one copy before this PR lands)"
             )
             continue
         open_dir = _not_closed_dir(path, tickets_root)
@@ -352,12 +398,24 @@ def choose_scope(tickets: list, layer_registry_path: Path = _DEFAULT_LAYER_REGIS
     return scope, tie_warning, unregistered_warning
 
 
+KNOWN_GAP_MARKER = "Known gap:"
+REVERT_EVIDENCE_MARKER = "Revert evidence"
+KNOWN_GAPS_NONE_STATED = (
+    "- Known gaps: none stated (no FAIL or Known gap: line in any ticket's Test/Completion Summary)"
+)
+
+
 def extract_known_gaps(ticket: dict) -> list:
+    """A line is a gap when it contains `FAIL`, or begins `Known gap:` after an optional list marker.
+    A line matching both appears once. A line beginning `Revert evidence` is proof a test catches the bug, not a gap, and is skipped."""
     gaps = []
     for section in ("test_summary", "completion_summary"):
         for line in ticket.get(section, "").splitlines():
-            if "FAIL" in line:
-                gaps.append(line.strip().lstrip("-").strip())
+            stripped = line.strip().lstrip("-*").strip()
+            if stripped.startswith(REVERT_EVIDENCE_MARKER):
+                continue
+            if "FAIL" in line or stripped.startswith(KNOWN_GAP_MARKER):
+                gaps.append(stripped)
     return gaps
 
 
@@ -417,7 +475,7 @@ def _render_section(heading: str, tickets: list, warnings: list) -> str:
             lines.append(f"- {t['ticket_id']} Tests: {t['test_summary'] or '(none recorded)'}")
         gaps_by_ticket = [(t["ticket_id"], gap) for t in tickets for gap in extract_known_gaps(t)]
         if not gaps_by_ticket:
-            lines.append("- Known gaps: none stated")
+            lines.append(KNOWN_GAPS_NONE_STATED)
         else:
             # One bullet per gap, tagged with its owning ticket -- a single semicolon-joined line
             # across tickets left a reader unable to tell where one ticket's gap ended and
@@ -434,11 +492,42 @@ def _render_section(heading: str, tickets: list, warnings: list) -> str:
     return ""
 
 
-def render_body(tickets: list, spec: dict, warnings: list, exclusions: Optional[Dict[str, str]] = None) -> str:
+GOVERNING_HEADING = "## Governing paths touched"
+GOVERNING_LIMIT = (
+    "This list is computed from the PR's own code (`tools/sessions/classify.py`, `tools/delivery/pr_render.py`), so a PR "
+    "that edits those controls it. `.github/` changes are still checked on GitHub's files tab (plan section 28a)."
+)
+
+
+GOVERNING_UNREADABLE = "The diff against base could not be read, so the governing paths this PR touches are unknown."
+
+
+def render_governing_section(files: Optional[list], diff_ok: bool = True) -> str:
+    """The `## Governing paths touched` block for the PR's changed files, or "" when it touches none.
+
+    TCK-20261031-GOVERNING-FILE-EDITS-VISIBLE-TO-OWNER. The one path definition is `tools/sessions/classify.py`. Report-only: it
+    shows the owner what to look at, never gates. It is a `conditional` section of `pr_template_spec.json`: absent when no
+    governing path is touched (so `.github/pull_request_template.md` does not list it), compared by `--check` like any other
+    generated section otherwise, so a live body that lacks it or lists different paths shows as a difference."""
+    if not diff_ok:
+        return "\n".join([GOVERNING_HEADING, "", GOVERNING_UNREADABLE, "", GOVERNING_LIMIT, ""])
+    touched = sorted({f for f in (files or []) if is_governing_path(f)})
+    if not touched:
+        return ""
+    return "\n".join([GOVERNING_HEADING, "", *(f"- `{path}`" for path in touched), "", GOVERNING_LIMIT, ""])
+
+
+def render_body(tickets: list, spec: dict, warnings: list, exclusions: Optional[Dict[str, str]] = None,
+                changed_files: Optional[list] = None, diff_ok: bool = True) -> str:
     parts = []
     for section in spec["sections"]:
         heading = section["heading"]
         if heading == "Closes:":
+            continue
+        if section.get("conditional"):
+            governing = render_governing_section(changed_files, diff_ok)
+            if governing:
+                parts.append(governing)
             continue
         parts.append(heading)
         parts.append(_render_section(heading, tickets, warnings))
@@ -449,6 +538,16 @@ def render_body(tickets: list, spec: dict, warnings: list, exclusions: Optional[
         for ticket_id in sorted(exclusions):
             parts.append(render_exclusion_comment(ticket_id, exclusions[ticket_id]))
     return "\n".join(parts).strip() + "\n"
+
+
+TICKETLESS_TITLE_SUFFIX = " (no tickets)"
+
+TICKETLESS_WARNING = (
+    "this PR closes no ticket. Rule: every PR closes at least one completed ticket; filings, evidence records "
+    "and seat-ticket notes ride in the next implementation PR on that track. The only exceptions are Dependabot "
+    "PRs and the handover-transit export; week-close and retro batches need a ticket of their own or ride in the "
+    "next agent-working implementation PR. See docs/guides/delivery_process.md, \"PR Lifecycle\". Report-only."
+)
 
 
 def render(
@@ -463,9 +562,10 @@ def render(
     why: Optional[str] = None,
 ) -> dict:
     tickets, warnings = discover_tickets(run_command, tickets_root, base_ref, exclusions=exclusions)
-    probe_warning = raw_probe_warning(discover_changed_files(run_command, base_ref))
-    if probe_warning:
-        warnings.append(probe_warning)
+    governing_files, diff_ok = discover_governing_files(run_command, base_ref)
+    raw_warning = raw_output_warning(governing_files)
+    if raw_warning:
+        warnings.append(raw_warning)
     if not tickets:
         warnings = warnings + ["no tickets discovered"]
         if not (theme and scope and why):
@@ -480,9 +580,10 @@ def render(
         spec = json.loads(Path(spec_path).read_text(encoding="utf-8"))
         files = discover_changed_files(run_command, base_ref)
         return {
-            "title": f"{scope}: {_collapse_whitespace(theme)} (no tickets)",
+            "title": f"{scope}: {_collapse_whitespace(theme)}{TICKETLESS_TITLE_SUFFIX}",
             "body": render_ticketless_body(
                 _collapse_whitespace(theme), why.strip(), files, spec, warnings, exclusions=exclusions,
+                governing_files=governing_files, diff_ok=diff_ok,
             ),
             "warnings": warnings,
             "hints": [],
@@ -495,7 +596,8 @@ def render(
 
     spec = json.loads(Path(spec_path).read_text(encoding="utf-8"))
     title = render_title(tickets, scope, theme)
-    body = render_body(tickets, spec, warnings, exclusions=exclusions)
+    body = render_body(tickets, spec, warnings, exclusions=exclusions,
+                       changed_files=governing_files, diff_ok=diff_ok)
     hints = []
     if theme is None and len(tickets) > 1:
         hints.append(
@@ -536,6 +638,7 @@ def summarize_changed_files(files: list, max_lines: int = _MAX_FILE_SUMMARY_LINE
 
 def render_ticketless_body(
     theme: str, why: str, files: list, spec: dict, warnings: list, exclusions: Optional[Dict[str, str]] = None,
+    governing_files: Optional[list] = None, diff_ok: bool = True,
 ) -> str:
     """Body for a branch that closes no ticket (docs-only or record-only). Nothing here is invented:
     the theme and the why come from the caller, the file summary from the diff, and `Closes:` is
@@ -546,7 +649,7 @@ def render_ticketless_body(
         "## What landed": f"{theme}\n\nChanged files ({len(files)}):\n{summary}" if files else theme,
         "## Tickets": "(none: this PR closes no ticket)",
         "## Why": why,
-        "## Verification": "- Tests: (none recorded: no ticket on this branch)\n- Known gaps: none stated"
+        "## Verification": f"- Tests: (none recorded: no ticket on this branch)\n{KNOWN_GAPS_NONE_STATED}"
         + (f"\n- Discovery warnings: {'; '.join(warnings)}" if warnings else ""),
         "## Review notes": _REVIEW_NOTES_PLACEHOLDER,
     }
@@ -554,6 +657,11 @@ def render_ticketless_body(
     for section in spec["sections"]:
         heading = section["heading"]
         if heading == "Closes:":
+            continue
+        if section.get("conditional"):
+            governing = render_governing_section(files if governing_files is None else governing_files, diff_ok)
+            if governing:
+                parts.append(governing)
             continue
         parts += [heading, sections[heading], ""]
     parts.append("Closes: (none)")
@@ -731,6 +839,9 @@ def main(argv=None) -> int:
     except Exception as exc:  # noqa: BLE001 - the one deliberate non-zero-exit path
         print(f"INTERNAL ERROR: {exc}", file=sys.stderr)
         return 1
+
+    if not args.check and (result.get("title") or "").endswith(TICKETLESS_TITLE_SUFFIX):
+        print(f"WARNING: {TICKETLESS_WARNING}", file=sys.stderr)
 
     if args.json:
         print("MARKER:" + json.dumps(result))

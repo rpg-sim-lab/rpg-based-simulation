@@ -60,16 +60,22 @@ def _main_checkout_root(start: Path) -> Path | None:
     return _ss.main_checkout_root(start)
 
 
-def _resolve_index_dir(own_index_dir: Path, own_root: Path, main_root: Path | None) -> Path:
-    """This checkout's own knowledge index, or the main checkout's when this one has none.
+def _resolve_index_dir(own_index_dir: Path, own_root: Path, main_root: Path | None, own_index_opt_in: bool | None = None) -> Path:
+    """The main checkout's knowledge index whenever it exists; this checkout's own only when the main checkout has none, or when
+    `RPG_SEARCH_OWN_INDEX=1` asks for it (and this checkout has one).
 
-    The index is generated and gitignored, so a fresh git worktree has none and every
-    search_docs call there answered "index not found"
-    (TCK-20261010-SEARCH-MCP-WORKTREE-VENV-RESOLUTION). Querying reads the main checkout's index
-    instead; building one (`make knowledge-index`) still writes only to the checkout it runs in.
+    The index is generated and gitignored, so a fresh git worktree has none and every search_docs call there answered "index
+    not found" (TCK-20261010-SEARCH-MCP-WORKTREE-VENV-RESOLUTION). The shared server's state dir is keyed by the db path, so a
+    worktree-local copy meant one ~400 MB server per worktree; preferring the main checkout's index makes the worktrees share one
+    (TCK-20261112-SEARCH-SERVER-PER-WORKTREE-INDEX-AND-BUILD-MEMORY-GUARD). Building one (`make knowledge-index`) still writes
+    only to the checkout it runs in.
     """
     db_name = _ks._DEFAULT_DB.name
-    if (own_index_dir / db_name).exists() or main_root is None:
+    if main_root is None:
+        return own_index_dir
+    if own_index_opt_in is None:
+        own_index_opt_in = os.environ.get("RPG_SEARCH_OWN_INDEX") == "1"
+    if own_index_opt_in and (own_index_dir / db_name).exists():
         return own_index_dir
     try:
         main_index_dir = main_root / own_index_dir.relative_to(own_root)

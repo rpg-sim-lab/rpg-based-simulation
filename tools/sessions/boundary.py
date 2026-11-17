@@ -167,8 +167,8 @@ def first_time(root: Path, session_id: str, key: str) -> bool:
         return False
 
 
-def write_event(record: dict, data_dir: Path | None = None) -> bool:
-    """Append one record to this week's role_boundary.jsonl through the shared locked writer. Never raises."""
+def write_event(record: dict, data_dir: Path | None = None, family: str = "role_boundary.jsonl") -> bool:
+    """Append one record to this week's `family` file (default role_boundary.jsonl) through the shared locked writer. Never raises."""
     try:
         sys.path.insert(0, str(_REPO_ROOT / "tools" / "agent-monitoring"))
         from writer import write_line
@@ -177,7 +177,7 @@ def write_event(record: dict, data_dir: Path | None = None) -> bool:
 
         now = datetime.now(timezone.utc)
         base = Path(data_dir) if data_dir is not None else Path(AGENT_MONITORING) / "data"
-        target = base / now.strftime("%G-W%V") / "role_boundary.jsonl"
+        target = base / now.strftime("%G-W%V") / family
         target.parent.mkdir(parents=True, exist_ok=True)
         return bool(write_line(target, json.dumps(record, separators=(",", ":"))))
     except Exception:  # noqa: BLE001

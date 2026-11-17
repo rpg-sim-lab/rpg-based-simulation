@@ -82,7 +82,7 @@ class BossService:
 
         def _is_active_living_boss(entity) -> bool:
             return (
-                entity.kind == "world_boss"
+                entity.identity.occupation == "world_boss"
                 and entity.lifecycle.active
                 and entity.combat.alive
             )
@@ -214,7 +214,7 @@ class BossService:
 
         def _is_active_living_lair_occupant(entity) -> bool:
             return (
-                entity.kind == "dragonkin"
+                entity.identity.occupation == "dragonkin"
                 and entity.lifecycle.active
                 and entity.combat.alive
             )
@@ -292,7 +292,7 @@ class BossService:
         """
         Rule: Boss death provides high-tier loot via transaction law.
         """
-        # This is handled by LootSystem/QuestResolution if tied to a quest,
+        # This is handled by the quest-reward and ground-loot transaction paths if tied to a quest,
         # but here we ensure regional threat reduction.
         boss = state.entities.get(boss_id)
         if not boss: return StateUpdate()

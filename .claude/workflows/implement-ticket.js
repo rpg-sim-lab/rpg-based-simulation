@@ -945,7 +945,7 @@ Read:
 Produce two files:
 
 FILE 1: agent-working/staging_artifacts/${tid}/investigation.md
-Sections: Current Behavior (file:line refs) | Mechanics/Engine Constraints | Docs Requiring Update (every specific docs/ path this ticket must change if implemented as scoped — empty/"None" only if no doc anywhere needs to change. REQUIRED FORMAT, machine-parsed by done-checker's static coverage check: one bullet per path, backtick-wrapped, immediately after "- ", e.g. "- \`docs/mechanics/03_economic_laws.md\`: one-line reason". If none apply, write exactly "None." with no bullets — any other format is treated as a format regression, not a clean "nothing required" case) | Parity Ledger Overlap (IDs + status) | Prior Work | Risks and Open Questions | Anti-Drift Hazards
+Sections: Current Behavior (file:line refs) | Mechanics/Engine Constraints | Docs Requiring Update (first run: python3 tools/gate_checks/docs_search.py --changed-file <code path> ... for the ticket's code paths and follow investigator.md's "Build the list by search" block: confirmed required docs as the bullets below; candidate and excluded docs in separate tables, never as backticked-docs/ bullets — every specific docs/ path this ticket must change if implemented as scoped — empty/"None" only if no doc anywhere needs to change. REQUIRED FORMAT, machine-parsed by done-checker's static coverage check: one bullet per path, backtick-wrapped, immediately after "- ", e.g. "- \`docs/mechanics/03_economic_laws.md\`: one-line reason". If none apply, write exactly "None." with no bullets — any other format is treated as a format regression, not a clean "nothing required" case) | Parity Ledger Overlap (IDs + status) | Prior Work | Risks and Open Questions | Anti-Drift Hazards
 
 FILE 2: agent-working/staging_artifacts/${tid}/test_plan.md
 Sections: Regression Surface (existing tests that must pass) | New Tests Required (per AC) | Scoped Pytest Commands | Anti-Drift Test Guards
@@ -1247,6 +1247,10 @@ const DOC_UPDATE_SCHEMA = {
   },
 }
 
+// Satellite search (TCK-20261108-DOC-UPDATER-SATELLITE-STEP-AND-STALENESS-ADVISORY): doc-updater runs this ready command (it
+// has Bash), so no new attested gate site is needed. --start-sha makes docs_search derive the changed files with the same
+// function the doc-staleness gate uses (gate_checks/changed_files.py), so doc-updater never computes its own diff.
+const satelliteSearchCmd = `python3 tools/gate_checks/docs_search.py --start-sha ${startSha}`
 const docUpdateTs = await captureTs()
 await writeSidecar(events.length + 1 + seqOffset, 'Document-Update', 'doc-updater')
 const docUpdate = await agent(
@@ -1259,6 +1263,8 @@ ${tier !== 'hotfix'
 Implementation summary: ${implementation.implementation_summary}
 Files changed: ${implementation.files_changed.join(', ')}
 Behavior changed: ${implementation.behavior_changed}
+
+Satellite search command (run it first; see "Satellite step" in your agent definition): ${satelliteSearchCmd}
 
 Follow the per-family rules in your own agent definition (.claude/agents/doc-updater.md) for how to update each doc family.
 
@@ -1306,7 +1312,11 @@ if (docStalenessMarkerIndex !== -1) {
   catch (e) { docStalenessResults = null }
 }
 const docStalenessFailure = docStalenessResults && docStalenessResults.find(r => r.status === 'FAIL')
-const docStalenessAdvisory = docStalenessResults && docStalenessResults.find(r => r.status === 'ADVISORY')
+// Every ADVISORY entry (docs_to_update coverage, and the docs-search list of untouched docs that cite a changed file) is shown, joined.
+const docStalenessAdvisoryRows = docStalenessResults ? docStalenessResults.filter(r => r.status === 'ADVISORY') : []
+const docStalenessAdvisory = docStalenessAdvisoryRows.length
+  ? { evidence: docStalenessAdvisoryRows.map(r => r.evidence).join(' | ') }
+  : null
 if (docStalenessResults) pushStaticGate('Implement:gate_checks.doc_staleness_check.check_doc_staleness', 'static_check', 'Implement', docStalenessFailure ? 'FAIL' : 'PASS', Boolean(docStalenessFailure), docStalenessFailure ? docStalenessFailure.evidence : '')
 
 // Files-Changed-omission early warning (TCK-20260831-HOTFIX-FILES-CHANGED-DOC-OMISSION-EARLY-
@@ -1540,6 +1550,8 @@ const TEST_SCHEMA = {
     failed_tests: { type: 'array', items: { type: 'string' } },
     coverage_gaps: { type: 'array', items: { type: 'string' } },
     summary: { type: 'string', description: 'One sentence: pass/fail result (≤200 chars)' },
+    environment_failure: { type: 'boolean', description: 'true when the run died of the environment (Cannot allocate memory, MemoryError, ENOMEM, a killed process, or capped_pytest says so), not because a test failed; omit or false otherwise' },
+    environment_note: { type: 'string', description: 'When environment_failure is true: which chunk or step died and the exact text seen' },
     ts: { type: 'string', description: 'ISO timestamp from `date -u +%Y-%m-%dT%H:%M:%SZ` at start of this phase' },
   },
 }
@@ -1600,9 +1612,9 @@ Step 2 — ${tier !== 'hotfix' ? `Check agent-working/staging_artifacts/${tid}/t
 
 Step 3 — Build the scoped pytest command as bare directory paths, including every directory from the computed floor above (never individual files from within one). Never use bare "pytest tests/".
 
-Step 4 — Run the command via Bash. Capture stdout/stderr.
+Step 4 — Run the command via Bash. Capture stdout/stderr. First run python3 -m tools.delivery.host_test_caps: on a host that prints a cap (not cap=none), run the command as python3 -m tools.delivery.capped_pytest <the same bare directories and flags> (see .claude/agents/test-scoper.md, "Hosts that set a Test-phase cap"); the test-scope gate rejects a command that skips it there. Never retry a chunk that died of the environment.
 
-Step 5 — Report: pytest_command used, pass_count, fail_count, failed_tests (empty if all pass), coverage_gaps (changed files with no test coverage), summary (one sentence: pass/fail result, ≤200 chars).`,
+Step 5 — Report: pytest_command used, pass_count, fail_count, failed_tests (empty if all pass), coverage_gaps (changed files with no test coverage), summary (one sentence: pass/fail result, ≤200 chars). Set environment_failure=true (with environment_note) when capped_pytest reports it, or when the output shows Cannot allocate memory, MemoryError, ENOMEM or a killed process: that is an environment failure, never a test failure.`,
   { label: 'test-scope-and-run', schema: TEST_SCHEMA, agentType: 'test-scoper' }
 )
 
@@ -1656,6 +1668,27 @@ if (testScopeGaps.length > 0) {
   }
 }
 
+// A run that died of the environment (memory, a killed chunk) is not a test result (TCK-20261115-TEST-PHASE-RUNS-TESTS-TOOLS-
+// UNCAPPED-IN-ONE-PROCESS). environment_failure takes precedence over `passed`, even when `passed` is true because the other
+// chunks passed: a chunk that died never counts as a pass. Only Test:environment_failure is recorded for it, never a Test:passed row,
+// so the gate ledger shows an environment death and not a test-failure verdict.
+if (testResult.environment_failure) {
+  pushGate('Test:environment_failure', 'agent_result_field', 'Test', 'FAIL', true, `environment_failure: ${testResult.environment_note || 'no note'}`)
+  pushEvent('Test', 'test-scoper', 'failed', 'Environment failure, not a test failure: ' + (testResult.environment_note || testResult.summary || ''), testTs)
+  log(`Test run died of the environment: ${testResult.environment_note || 'no note'}`)
+  await writeMonitoring('TESTS_ENVIRONMENT_FAILED')
+  return {
+    status: 'TESTS_ENVIRONMENT_FAILED',
+    ticket_id: tid,
+    pytest_command: testResult.pytest_command,
+    environment_note: testResult.environment_note,
+    failed_tests: testResult.failed_tests,
+    message: (testResult.failed_tests && testResult.failed_tests.length > 0
+      ? 'The Test run died of the environment; ' + testResult.failed_tests.length + ' other test(s) also failed and are listed in failed_tests: read them before re-running.'
+      : 'The Test run died of the environment (memory or a killed process), not because a test failed.')
+      + ' Free the host or wait for its slot, then re-run with ticket_id="' + tid + '".',
+  }
+}
 pushGate('Test:passed', 'agent_result_field', 'Test', testResult.passed ? 'PASS' : 'FAIL', !testResult.passed, `fail_count=${testResult.fail_count}`)
 if (!testResult.passed) {
   pushEvent('Test', 'test-scoper', 'failed', testResult.summary || testResult.fail_count + ' tests failing: ' + testResult.failed_tests.slice(0, 3).join(', '), testTs)
@@ -2358,6 +2391,17 @@ if (mechDriftCheck !== null && (mechDriftCheck.drift.length > 0 || mechDriftChec
   ]
   pushEvent('Finalize', 'finalizer', 'failed', 'mechanism_registry_changed_code: ' + names.join(', '))
   log(`ADVISORY: ${tid} changed code cited by mechanism(s) [${names.join(', ')}] without an entry update — worth a look, not a block. See tools/mechanism_registry/mechanism_registry_changed_code_check.py.`)
+}
+
+// Advisory-only doc drift report (TCK-20261108-DOC-EVIDENCE-FIELDS-AND-DRIFT-REPORT): a Finalize-tail advisory like the
+// mechanism check above. It lists docs that carry evidence fields (verified_by / reviewed_by) and now need re-verifying,
+// counting this ticket's files (committed since startSha or not) as changed evidence. Read-only at HEAD, never gates
+// the close, and the tool exits 0 even when it fails (a failure prints a MARKER error line, which is logged, not raised).
+const docDriftOutput = await sh(
+  `python3 tools/gate_checks/doc_drift.py --format advisory --start-sha ${startSha} || true`
+)
+if (docDriftOutput && docDriftOutput.trim()) {
+  log(`ADVISORY: ${tid} doc drift report (docs with evidence fields that need re-verifying, not a block): ${docDriftOutput.trim().split('\n').join(' | ')}`)
 }
 
 return {

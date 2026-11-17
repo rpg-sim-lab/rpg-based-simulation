@@ -5,11 +5,9 @@ from typing import TYPE_CHECKING, List
 
 from src.content_semantics.faction import are_entities_hostile
 from src.content_semantics.relation import RelationContext
+from src.core.combat_constants import ENTITY_TARGET_PERCEPTION_RADIUS
 from src.engine.cognition import SensoryFilter
 from src.engine.domain_logic import SimulationDomainLogic
-from src.systems.strategic_systems.entity_target_objective import (
-    ENTITY_TARGET_PERCEPTION_RADIUS,
-)
 
 if TYPE_CHECKING:
     from src.core.state import AuthoritativeState, EntityState

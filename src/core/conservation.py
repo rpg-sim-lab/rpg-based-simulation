@@ -317,11 +317,9 @@ class ResourceTransactionResolver:
             remaining = node.remaining_charges
             if node_overrides and intent.source_id in node_overrides:
                 remaining += node_overrides[intent.source_id].charges_delta
-            
-            # P0.2 Refinement: Account for in-tick reservations
-            if reservations:
-                remaining -= reservations.get(("NODE", intent.source_id), 0)
-                
+
+            # No NODE reservation: node_overrides' charges_delta already counts every accepted harvest and
+            # every earlier node change this tick; subtracting a reservation as well counted one harvest twice.
             if remaining <= 0:
                 return TransactionResult(accepted=False, reason=ReasonCode.SOURCE_DEPLETED)
             

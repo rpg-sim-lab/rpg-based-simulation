@@ -146,6 +146,9 @@ planner means drafting and review by `perf-planner`.
 | C-16 | documentation-status drift | Adopted. The owner makes `docs/architecture/performance_optimization.md`'s status and scope unambiguous: keep verified surviving decisions, mark the removed RabbitMQ mechanism historical or superseded, do not revive removed transport design. | carried | P1-owner (PERF-M0-T09) | Treat the RabbitMQ mechanism as historical; this ticket does not edit the document. |
 | C-17 | authority-blocking | **Resolved**, updated from T01: the proposal and the performance_optimization/ folder (11 files) are tracked in git since PR #185, and the folder is registered in `docs/REGISTRY.yaml`. Residual: the source proposal sits under the registry-skipped `docs/brainstorm/` tree and is never registered (T01 finding F-05). | T01 (`git ls-files`, `git log --diff-filter=A` showing `2f6b1551`; source_inventory.md §2) | none | The planning chain is durable; the residual registration gap does not block releasing evidence-only tickets. |
 
+**C-10 evidence route for the T05 evaluation:** the next-generation engine ADR
+(`docs/architecture/next_generation_engine_adr.md`, Decision 7; accepted #715 6742854335). C-10 itself is unchanged.
+
 ## 3. PERF-D decision records
 
 ### 3.1 Record template
@@ -585,6 +588,13 @@ Each follows §3.1 and is intentionally empty.
   one. The scheme name is recorded beside the certification artifact and the long-run `final_state_hash`. The
   alternative was to keep v1 and write both keys as constant `{}`; it was rejected because it leaves two permanent
   dead keys.
+- **Update 2026-10-26 (owner decision 2026-10-24, #715 issuecomment-6384423281, `TCK-20261024-PROOF-DIGEST-HASHES-THE-CARRIED-STATE-IT-OMITS`):** the proof
+  digest becomes **`flat-sha256-v3`**: the `flat-sha256-v2` canonical data plus the seven carried-state fields the
+  digest omitted (`item_instances`, `recent_world_events` as the ordered window, `quest_registry`, `factions`, `clans`,
+  `information_providers` and `CombatComponent.last_hit_tick`), nothing else changed. Every state digest moves once;
+  outcomes (fates, counters) do not. The step-B exclusion of `last_hit_tick` (ruling (ii)) is removed. Every
+  digest-bearing baseline is invalidated by the scheme (`baseline_invalidation_ledger.md`), and the v1 base is
+  re-recorded under v3 before any M1 paired or gate comparison uses it (roadmap section 12.5). Owner sign-off: recorded in this PR.
 
 #### PERF-D6 — Phase-catalog authority
 

@@ -24,6 +24,8 @@ class DomainView:
         Uses a spatial grid to optimize O(N^2) lookups.
         VERIFIED v2: spatial_query_optimization
         """
+        if subject.navigation.lodged_in is not None:
+            return []  # F3 (divergence 2.155): a lodger perceives nothing outside while it lodges
         grid = DomainView._get_cached_spatial_grid(state)
         tuples = grid.get_neighbor_tuples(subject.navigation.position, radius, subject.id)
         # Sort by entity ID for absolute determinism in tactical selection

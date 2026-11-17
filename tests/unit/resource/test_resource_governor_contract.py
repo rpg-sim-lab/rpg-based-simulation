@@ -72,10 +72,12 @@ def test_real_kernel_with_workers_disabled_stays_normal_absent_real_pressure():
     pressure. Before the fix, WorkerManager.get_stats()'s own 1.0 sentinel for max_workers<=0 was
     read by ResourceGovernor as genuine 90%+ saturation, forcing DEGRADED unconditionally from
     tick 1 -- confirmed independent of entity count or world contents."""
+    # The ceiling is deliberately out of reach: "absent real compute pressure" must not include the pytest process's own RSS, which a
+    # wide run grows past 512 MB (TCK-20261018-TWO-BARE-KERNEL-TESTS-DEPEND-ON-HOST-MEMORY). Not pinned: the mode is still derived live.
     profile = RuntimeProfile(
         name="test-worker-util-zero",
         hardware_class=HardwareClass.CLASS_B,
-        max_ram_mb=512,
+        max_ram_mb=1_000_000,
         max_cpu_percent=100.0,
         max_worker_count=0,
         max_queue_depth=1000,

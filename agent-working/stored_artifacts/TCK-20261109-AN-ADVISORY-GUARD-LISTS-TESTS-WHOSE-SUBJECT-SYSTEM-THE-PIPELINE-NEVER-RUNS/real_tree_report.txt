@@ -1,0 +1,54 @@
+# unwired-subject check (advisory): root src/engine/pipeline.py (43 run_phase calls read), roots ['src.engine.pipeline']
+# 63 src/systems public symbols: 29 wired, 15 dispatch-reached, 19 unwired; 26 test file(s) flagged, 0 acknowledged
+
+## unwired src/systems symbols
+src.systems.economy_systems.economy.DynamicPriceService (class, src/systems/economy_systems/economy.py:4): re-export only [src.systems.economy]; tests: 2
+src.systems.social_systems.consequence_events.evaluate_social_consequence (function, src/systems/social_systems/consequence_events.py:61): used only by src module(s) the pipeline does not reach [src.domains.campaigns.orchestrator]; tests: 1
+src.systems.social_systems.group_service.GroupService (class, src/systems/social_systems/group_service.py:5): test-only; tests: 1
+src.systems.social_systems.loyalty_drift.LoyaltyDriftService (class, src/systems/social_systems/loyalty_drift.py:32): used only by src module(s) the pipeline does not reach [src.domains.campaigns.orchestrator]; tests: 2
+src.systems.social_systems.memory.SocialMemoryService (class, src/systems/social_systems/memory.py:7): import-only (imported, never used) [src.engine.apply, src.systems.social_memory]; tests: 5
+src.systems.social_systems.reward_distribution.compute_fair_share (function, src/systems/social_systems/reward_distribution.py:33): test-only; tests: 1
+src.systems.social_systems.reward_distribution.build_reward_transfer_intents (function, src/systems/social_systems/reward_distribution.py:84): test-only; tests: 1
+src.systems.strategic_systems.cognition_export.CognitionGraphNode (class, src/systems/strategic_systems/cognition_export.py:20): re-export only [src.systems.cognition_export]; tests: 0
+src.systems.strategic_systems.cognition_export.CognitionGraphEdge (class, src/systems/strategic_systems/cognition_export.py:29): re-export only [src.systems.cognition_export]; tests: 0
+src.systems.strategic_systems.cognition_export.CognitionGraph (class, src/systems/strategic_systems/cognition_export.py:37): re-export only [src.systems.cognition_export]; tests: 0
+src.systems.strategic_systems.cognition_export.CognitionGraphExporter (class, src/systems/strategic_systems/cognition_export.py:45): used only by src module(s) the pipeline does not reach [src.observability.cognition.recorder, src.systems.cognition_export]; tests: 3
+src.systems.strategic_systems.redirection.StrategicRedirectionSystem (class, src/systems/strategic_systems/redirection.py:14): re-export only [src.systems.redirection]; tests: 5
+src.systems.world_systems.events.EventInterpreter (class, src/systems/world_systems/events.py:29): used only by src module(s) the pipeline does not reach [src.ai.goals.region_stabilization_scorer, src.systems.event_interpreter]; tests: 1
+src.systems.world_systems.harvesting.HarvestSystem (class, src/systems/world_systems/harvesting.py:6): re-export only [src.systems.harvest_system]; tests: 3
+src.systems.world_systems.narrative.NarrativeMemory (class, src/systems/world_systems/narrative.py:19): re-export only [src.systems.narrative]; tests: 1
+src.systems.world_systems.narrative.NarrativeMemorySystem (class, src/systems/world_systems/narrative.py:26): re-export only [src.systems.narrative]; tests: 2
+src.systems.world_systems.quests.QuestObjective (class, src/systems/world_systems/quests.py:23): unreferenced; tests: 0
+src.systems.world_systems.quests.QuestTemplate (class, src/systems/world_systems/quests.py:34): unreferenced; tests: 0
+src.systems.world_systems.quests.QuestGenerationSystem (class, src/systems/world_systems/quests.py:44): re-export only [src.systems.quests]; tests: 3
+
+## tests that import an unwired symbol without pytest.mark.unwired_subject
+tests/integration/culture/test_loyalty_drift_campaign.py: src.systems.social_systems.loyalty_drift.LoyaltyDriftService
+tests/integration/kernel/test_resource_conservation.py: src.systems.world_systems.harvesting.HarvestSystem
+tests/integration/kernel/test_resource_conservation_v2.py: src.systems.world_systems.harvesting.HarvestSystem
+tests/mechanic_scenarios/test_quest_generation_sourcing_orphan_calibration.py: src.systems.world_systems.quests.QuestGenerationSystem
+tests/refactor/test_import_compatibility.py: src.systems.social_systems.memory.SocialMemoryService, src.systems.strategic_systems.redirection.StrategicRedirectionSystem
+tests/refactor/test_public_facades.py: src.systems.social_systems.memory.SocialMemoryService, src.systems.strategic_systems.redirection.StrategicRedirectionSystem, src.systems.world_systems.narrative.NarrativeMemorySystem
+tests/simulation_quality/test_relationship_role_grudge_corpus.py: src.systems.social_systems.memory.SocialMemoryService
+tests/unit/engine/test_region_lookup_policy.py: src.systems.social_systems.memory.SocialMemoryService
+tests/unit/progression/test_progression_quests.py: src.systems.world_systems.quests.QuestGenerationSystem
+tests/unit/resource/test_buy_price_independent_of_host_timing.py: src.systems.economy_systems.economy.DynamicPriceService
+tests/unit/resource/test_economy_hardening.py: src.systems.economy_systems.economy.DynamicPriceService
+tests/unit/resource/test_harvest_channeling.py: src.systems.world_systems.harvesting.HarvestSystem
+tests/unit/social/test_groups.py: src.systems.social_systems.group_service.GroupService
+tests/unit/social/test_loyalty_drift.py: src.systems.social_systems.loyalty_drift.LoyaltyDriftService
+tests/unit/social/test_party_lifecycle.py: src.systems.social_systems.reward_distribution.build_reward_transfer_intents, src.systems.social_systems.reward_distribution.compute_fair_share
+tests/unit/social/test_social_memory.py: src.systems.social_systems.consequence_events.evaluate_social_consequence
+tests/unit/social/test_social_memory_service.py: src.systems.social_systems.memory.SocialMemoryService
+tests/unit/strategic/test_cognition_graph_export.py: src.systems.strategic_systems.cognition_export.CognitionGraphExporter
+tests/unit/strategic/test_event_interpretation.py: src.systems.world_systems.events.EventInterpreter
+tests/unit/strategic/test_intelligence_routine_blockers.py: src.systems.strategic_systems.redirection.StrategicRedirectionSystem
+tests/unit/strategic/test_narrative_memory.py: src.systems.world_systems.narrative.NarrativeMemory, src.systems.world_systems.narrative.NarrativeMemorySystem
+tests/unit/strategic/test_project_end_record.py: src.systems.strategic_systems.cognition_export.CognitionGraphExporter
+tests/unit/strategic/test_project_lookup_live_record_first.py: src.systems.strategic_systems.cognition_export.CognitionGraphExporter
+tests/unit/strategic/test_redirection.py: src.systems.strategic_systems.redirection.StrategicRedirectionSystem
+tests/unit/strategic/test_redirection_entity_objective.py: src.systems.strategic_systems.redirection.StrategicRedirectionSystem
+tests/unit/systems/test_quest_activation_pathway.py: src.systems.world_systems.quests.QuestGenerationSystem
+
+## acknowledged (marked) tests
+(none)

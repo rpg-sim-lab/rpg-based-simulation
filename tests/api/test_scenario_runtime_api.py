@@ -7,6 +7,7 @@ import pytest
 from unittest.mock import MagicMock
 from fastapi.testclient import TestClient
 
+from src.engine.checkpoint_schema import CheckpointHeaderError, CheckpointSchemaMismatchError, CheckpointSchemaMissingError
 from src.engine.scenario_runtime import ScenarioObjectiveState
 import src.engine.scenario_registry as registry
 
@@ -168,6 +169,24 @@ def test_restore_endpoint_400_on_spec_id_mismatch(client, mock_scenario_svc, mon
     assert response.status_code == 400
 
 
+# TCK-20261101-A-CHECKPOINT-HAS-NO-FORMAT-VERSION: a refused checkpoint schema is a client error with a shaped detail; any other ValueError keeps its string.
+@pytest.mark.parametrize("error, reason", [
+    (CheckpointSchemaMissingError("no fingerprint"), "missing"),
+    (CheckpointSchemaMismatchError("changed", [{"class": "a.B", "change": "fields reordered"}]), "mismatch"),
+    (CheckpointHeaderError("unreadable"), "header"),
+], ids=["missing", "mismatch", "header"])
+def test_restore_endpoint_400_with_a_shaped_detail_on_a_schema_refusal(client, mock_scenario_svc, monkeypatch, error, reason):
+    def _raise(path, spec):
+        raise error
+
+    monkeypatch.setattr("src.api.routes.scenarios.ScenarioCheckpointer.restore", _raise)
+    response = client.post("/api/v1/scenarios/test-scenario/restore/old-save")
+    assert response.status_code == 400
+    detail = response.json()["detail"]
+    assert detail["error"] == "checkpoint_schema" and detail["reason"] == reason and detail["message"] == str(error)
+    assert detail["classes"] == error.classes
+
+
 # ---------------------------------------------------------------------------
 # T-09: presenter does not expose raw domain objects
 # ---------------------------------------------------------------------------
@@ -311,3 +330,19 @@ def test_restore_endpoint_default_spec_branch_unaffected_by_containment(client, 
     response = client.post("/api/v1/scenarios/test-scenario/restore/my-save")
     assert response.status_code == 200
     assert response.json()["tick"] == 7
+
+
+# ---------------------------------------------------------------------------
+# A checkpoint that predates the group-contract binding is refused as a client error, not a 500
+# ---------------------------------------------------------------------------
+
+def test_restore_endpoint_400_when_the_checkpoint_predates_a_required_field(client, mock_scenario_svc, monkeypatch):
+    from src.engine.checkpoint_fields import CheckpointFieldMissingError
+
+    def _raise(path, spec):
+        raise CheckpointFieldMissingError("Checkpoint predates the group-contract binding: group 10004 ...")
+
+    monkeypatch.setattr("src.api.routes.scenarios.ScenarioCheckpointer.restore", _raise)
+    response = client.post("/api/v1/scenarios/test-scenario/restore/old-save")
+    assert response.status_code == 400
+    assert "group-contract binding" in response.text

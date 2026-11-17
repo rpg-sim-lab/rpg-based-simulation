@@ -1,0 +1,4 @@
+chain cnt_recruit_1_8_542, crowded_frontier s42 edb638b6a, t540-646 (raw: scratch out_trace/chain1_8_edb638b6a.jsonl, 2 MB, not copied)
+elections that changed leader 1->8: 52 sociability {'8': 0.8448855753557046, '1': 0.257837506275442}
+formations of [1,8]: 52 dissolutions: 51
+live-group ticks by (leader, branch the replica read, contract): {(8, 'none(contract absent)', 'cnt_recruit_1_8_542'): 50, (8, 'none(contract absent)', 'cnt_recruit_1_8_544'): 1}

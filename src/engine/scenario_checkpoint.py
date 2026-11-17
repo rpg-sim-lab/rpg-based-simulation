@@ -3,10 +3,15 @@
 from __future__ import annotations
 
 import json
+import os
 import pickle
 import struct
+import uuid
 from pathlib import Path
 from typing import TYPE_CHECKING
+
+from src.engine.checkpoint_fields import check_group_counter, fill_missing_fields
+from src.engine.checkpoint_schema import check_schema, dump_with_schema, read_header
 
 if TYPE_CHECKING:
     from src.engine.scenario_runtime import ScenarioRuntimeService
@@ -18,7 +23,7 @@ class ScenarioCheckpointer:
 
     File format (binary):
       - 4-byte little-endian uint32: length of JSON header in bytes
-      - JSON header bytes (UTF-8): {"tick": N, "spec_id": "...", "rng_checkpoint": ...}
+      - JSON header bytes (UTF-8): {"tick": N, "spec_id": "...", "rng_checkpoint": ..., "schema": {class: [field names]}}
       - Remainder: pickle blob of AuthoritativeState
     """
 
@@ -38,8 +43,8 @@ class ScenarioCheckpointer:
             "spec_id": svc._spec.id,
             "rng_checkpoint": state.rng_checkpoint,
         }
+        payload, header["schema"] = dump_with_schema(state)
         header_bytes = json.dumps(header).encode("utf-8")
-        payload = pickle.dumps(state, protocol=pickle.HIGHEST_PROTOCOL)
         path = Path(path)
         path.parent.mkdir(parents=True, exist_ok=True)
         with path.open("wb") as f:
@@ -61,6 +66,8 @@ class ScenarioCheckpointer:
         Raises:
             FileNotFoundError: if *path* does not exist.
             ValueError: if the checkpoint spec_id does not match *spec.id*.
+            CheckpointSchemaError: (a ValueError) if the header is unreadable, has no schema fingerprint, or names records that differ from the current ones; always before unpickling.
+            CheckpointFieldMissingError: (a ValueError) if the checkpoint predates a field that cannot be derived (a group with a contract_id).
         """
         from src.engine.scenario_runtime import ScenarioRuntimeService
         from src.config.profiles import RuntimeProfile, HardwareClass
@@ -69,20 +76,24 @@ class ScenarioCheckpointer:
 
         path = Path(path)
         with path.open("rb") as f:
-            header_len = struct.unpack("<I", f.read(4))[0]
-            header = json.loads(f.read(header_len).decode("utf-8"))
+            header = read_header(f)
+            # spec first: a checkpoint of another scenario is refused for that reason, whatever else it lacks
+            if header["spec_id"] != spec.id:
+                raise ValueError(
+                    f"Checkpoint spec_id {header['spec_id']!r} does not match "
+                    f"supplied spec id {spec.id!r}."
+                )
+            check_schema(header.get("schema"))
             state = pickle.loads(f.read())
 
-        if header["spec_id"] != spec.id:
-            raise ValueError(
-                f"Checkpoint spec_id {header['spec_id']!r} does not match "
-                f"supplied spec id {spec.id!r}."
-            )
+        fill_missing_fields(state)  # the one post-unpickle step: fill a field the checkpoint predates (only where a ruling derives it) or refuse with a typed error
+        check_group_counter(state)  # after the fill: the counter must be above every non-squad stored group id (GroupCounterBehindStoreError)
 
         # Reconstruct RNG from the checkpoint embedded in state.
-        # base_seed=0 matches _build_kernel(); the stream is immediately
-        # overwritten by set_state() so base_seed is irrelevant post-restore.
-        rng = DeterministicRNG(base_seed=0)
+        # base_seed=state.seed matches _build_kernel() for a service built with an initial state.
+        # set_state() restores only the per-domain stream generators; the stateless draws
+        # (get_float, get_int, ...) seed from base_seed, so it must be the run's seed.
+        rng = DeterministicRNG(base_seed=state.seed)
         if state.rng_checkpoint is not None:
             rng.set_state(state.rng_checkpoint)
 
@@ -100,12 +111,14 @@ class ScenarioCheckpointer:
         # Pass run_id explicitly to suppress the Domain.INIT RNG draw in
         # Kernel.__init__ that would otherwise advance the stream by 1 after
         # set_state() restores it, breaking the determinism AC.
+        # The id is unique per restore (pid plus a uuid4, which is not the simulation RNG): create_run_directory replaces an existing directory of the
+        # same id, so one id per spec made two restores of one spec delete each other's run directory.
         kernel = Kernel(
             profile,
             state,
             rng,
             flags={"no_replay": True},
-            run_id=f"restored_{spec.id}",
+            run_id=f"restored_{spec.id}_{os.getpid()}_{uuid.uuid4().hex[:8]}",
         )
 
         svc = ScenarioRuntimeService(spec)

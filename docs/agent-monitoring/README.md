@@ -58,7 +58,7 @@ indefinitely (the sections after this one) does not belong here at all.
 
 | Ticket | What landed | Metric | Baseline (ref) | Check when | Verdict |
 |---|---|---|---|---|---|
-| `TCK-20260924-DELIVERY-COST-MEASUREMENT` | `gh`-calls-per-PR delivery-cost measurement tool (`tools/delivery/delivery_cost_measurement.py`) | `gh_calls_per_pr` | 16.04 @ `0e0ff8f2172634226b1e8a04338fec8b5972a2c6` (W30–W39, `origin/main`, pre-epic) | After several PRs have been delivered through this epic's own delivery tooling (`gh pr create` via `pr_render.py`, CI polling via `pr_status.py`) in ordinary day-to-day use — **not** from this implementation batch's own corpus, whose `gh`/git traffic reflects building the tooling, not using it, for the identical reason the "before" baseline itself recorded no "after" | _(pending — 2026-09-30 check: W40 @ `833b60306` = 6.0 gh calls/PR over only 3 PRs, vs 16.04 baseline; too few PRs and partly tooling-building to call a verdict, recheck after ~10 ordinary PRs; 2026-10-06 check: W40–W41 @ `9299891a9` = 11.3 gh calls/PR but only 3 `gh pr create` seen of 109 PRs merged, because the tool only sees committed tools shards; still not checkable, recheck after tools-shard coverage is fixed by TCK-20261006-HAND-CLOSURE-COST-ATTRIBUTION — see RETRO-2026-W41 Notes; 2026-10-20 check: W42–W43 @ `c35648e75` = 195 gh calls but 2 `gh pr create` (97.5/PR, a coverage artefact), still not checkable, recheck after TCK-20261016-TOOLS-HOOK-LOADED-AND-LATE-ROWS-FLUSH — see RETRO-2026-W43 Notes)_ |
+| `TCK-20260924-DELIVERY-COST-MEASUREMENT` | `gh`-calls-per-PR delivery-cost measurement tool (`tools/delivery/delivery_cost_measurement.py`) | `gh_calls_per_pr` | 16.04 @ `0e0ff8f2172634226b1e8a04338fec8b5972a2c6` (W30–W39, `origin/main`, pre-epic) | After several PRs have been delivered through this epic's own delivery tooling (`gh pr create` via `pr_render.py`, CI polling via `pr_status.py`) in ordinary day-to-day use — **not** from this implementation batch's own corpus, whose `gh`/git traffic reflects building the tooling, not using it, for the identical reason the "before" baseline itself recorded no "after" | _(pending — 2026-09-30 check: W40 @ `833b60306` = 6.0 gh calls/PR over only 3 PRs, vs 16.04 baseline; too few PRs and partly tooling-building to call a verdict, recheck after ~10 ordinary PRs; 2026-10-06 check: W40–W41 @ `9299891a9` = 11.3 gh calls/PR but only 3 `gh pr create` seen of 109 PRs merged, because the tool only sees committed tools shards; still not checkable, recheck after tools-shard coverage is fixed by TCK-20261006-HAND-CLOSURE-COST-ATTRIBUTION — see RETRO-2026-W41 Notes; 2026-10-20 check: W42–W43 @ `c35648e75` = 195 gh calls but 2 `gh pr create` (97.5/PR, a coverage artefact), still not checkable, recheck after TCK-20261016-TOOLS-HOOK-LOADED-AND-LATE-ROWS-FLUSH — see RETRO-2026-W43 Notes); 2026-11-10 check: W44–W46 @ `cefa99b07` = 0 gh calls, 0 `gh pr create` seen, against 91 subjects; still not checkable: since W42 no tools.jsonl row carries a run_id, so the tool sees none of them (RETRO-2026-W45 Notes, anomaly 1); 2026-11-10 correction @ `0ba4530fd`: the null-`run_id` cause above is wrong, `delivery_cost_measurement` never joins on `run_id`. `--ref` read 0 because `bash_command_mix.load_tools_rows_from_ref` read only a week's canonical `tools.jsonl`, and an unclosed week holds only `<branch>.tools.jsonl` files; fixed by TCK-20261110-DELIVERY-COST-REF-MODE-READS-NO-BRANCH-SHARDS. After the fix W44 gives 489 gh calls and 1 `gh pr create` from both the working tree and `--ref origin/main` (before it: 492 from the working tree, 0 from `--ref`). 492 drops to 489 through full-row de-duplication (43 duplicate rows, 3 of them gh), which also lowers the bash-command-mix report's W44 rows by 43, so it is not new data. Still not checkable: one `gh pr create` per week is a coverage artefact of hand closes; recheck with `--ref`_ |
 
 ## Baseline Metrics Snapshot (one-off)
 
@@ -255,7 +255,29 @@ when the tier plan marks the phase `full` and the closer narrated none, and prin
 and Architecture-Verify are `skipped` with `skip_reason: no_hand_tool`. Document-Update is `ok` (derived by the recorder,
 naming up to three files) when the ticket's own changed files include a `docs/` file other than `docs/REGISTRY.yaml` and
 `docs/parity_ledger/**`; otherwise, or when git cannot say what changed, it is `skipped` with `no_hand_tool`. A narrated
-event always wins, and no other phase is added. The run row's `agent_count` is `null` for a hand closure (unknown: the recorder cannot see agent calls), so neither these events nor the narrated ones are counted as agent calls. A hotfix gets only Document-Update (its Review and Architecture-Verify are
+event always wins, and no other phase is added.
+
+The default Review `skipped` hides a review that did happen: every standard ticket reaches main through a PR its domain
+planner reviews by comment. `--review-ref <PR#>#<comment id>` (`TCK-20261031-HAND-CLOSE-REVIEW-PHASE-RECORDS-THE-PR-REVIEW`,
+owner option (a), #715 6545962757) records Review as `ok`, its summary naming the PR and the comment, so the retro's
+Paths table counts it as ran and stops offering Review as a routing candidate for those runs. Give it only once the review
+comment exists. A close without it keeps `skipped`/`no_hand_tool`, so a PR that really had no review still shows. The
+flag is refused for a tier with no Review step (hotfix) and when a Review event was narrated.
+
+**Normal order: close, PR, review, then `record_review.py`.** A hand close is recorded before its PR exists, so the review
+comment usually does not exist yet. After it does, the planner (or the implementer on the planner's word) runs
+`python3 tools/agent-monitoring/record_review.py --ticket-id <TCK-ID> --review-ref <PR#>#<comment id>`
+(`TCK-20261101-RECORD-REVIEW-AFTER-THE-PR-REVIEW-EXISTS`). It checks read-only that the comment exists on that PR (a
+WARNING, not a failure, when `gh` or the network is unavailable), then appends one Review `ok` event with a fresh `seq` and
+`supersedes` naming the folded skip; nothing already written changes. It refuses, writing nothing, for a ticket with no hand
+close, a tier with no Review step, a bad ref, a comment that is missing or on another PR, and a Review already `ok`.
+`--review-ref` at close stays valid for the rare case where the review already exists.
+The comment id is a PR conversation comment (`gh pr comment`, the issues/comments endpoint); an inline review-thread comment id is refused as not found.
+
+**Where the appended row is committed.** It is created after the PR head is pinned, and pushing it to that PR changes the
+head (a fresh owner ask and re-review). So by default the row rides the closer's NEXT batch PR, or a monitoring-only PR (like
+#805). Adding it to the same PR is the exception. Architecture-Verify is not
+affected: it stays `skipped` unless the closer narrates one. The run row's `agent_count` is `null` for a hand closure (unknown: the recorder cannot see agent calls), so neither these events nor the narrated ones are counted as agent calls. A hotfix gets only Document-Update (its Review and Architecture-Verify are
 `skipped_event` in the plan).
 
 `tool_call_count`/`cost_proxy_score` are only ever added to an event when real `tools.jsonl` rows
@@ -297,12 +319,22 @@ make agent-monitoring-close-week WEEK=2026-W39
 - `retro_nudge_hook.py` adds a report-only line when a finished week still holds shards. It never blocks
   and the close is never scheduled: one session closes one week, and the implementer commits it.
 
+- **Retro tool rows are selected by their own `ts`** (`TCK-20261110-RETRO-READERS-SELECT-TOOL-ROWS-BY-TS`). Tool rows have carried
+  `run_id=None` since W42 (adhoc-null attribution), so `generate_retro.py` picks a week's or `--days` window's tool rows with
+  `tools_in_period()` (the row's `iso_week(ts)`), keeps an exact-duplicate row once, and reports rows with no usable `ts` in a note
+  line. Per-run tool tables over null-`run_id` rows print "not attributable since W42" instead of one fake run. Retros regenerated
+  for W42 or later therefore show different tool numbers; published retros are not rewritten. Period edges differ by reader: the
+  retro uses the tool row's `ts` week, `delivery_cost_measurement.py` the shard directory's week, runs their `start_ts`, so a
+  session crossing Sunday midnight UTC can split differently in each. `delivery_cost_measurement.py` never used `run_id` and needed no change.
+
 - **Main-checkout tool rows** (`TCK-20261021-WEEK-CLOSE-SWEEPS-MAIN-CHECKOUT-TOOL-ROWS`; see "Tool rows that never reach `main`"
   above for the reminder lines). A session launched in the main checkout (lead, planners) is on branch `main`, so the hook writes
   `main.tools.jsonl`, a file no PR branch carries, and a reminder cannot get it committed. A close run from a worktree finds the main
   checkout with `git rev-parse --git-common-dir` and appends that week's rows that the canonical `tools.jsonl` lacks (full-row
   identity, so a row also in a branch shard or already folded counts once; a torn line is skipped). It is read-only on the main
-  checkout: its `main.tools.jsonl` is never truncated, rewritten or staged. The close prints one line with the swept count. Two
+  checkout: its `main.tools.jsonl` is never truncated, rewritten or staged. The close prints one line with the swept count. The same sweep
+  covers the main checkout's bare `manual_actions.jsonl`, `reset_boundary.jsonl`, `governing_edits.jsonl` and `role_boundary.jsonl` for the closed week
+  (`TCK-20261110-WEEK-CLOSE-SWEEPS-MAIN-CHECKOUT-NON-TOOL-SHARDS`, `TCK-20261111-WEEK-CLOSE-SWEEPS-MAIN-CHECKOUT-ROLE-BOUNDARY`), one printed line per kind. Two
   limits: the other host's main checkout (u24desktop) is a different machine and is not swept, and a week that was already closed
   only gains these rows on a re-close, which is back-fill and is done deliberately, not by this sweep. A close run in the main
   checkout itself folds `main.tools.jsonl` like any other shard. The sweep adds rows, so it improves row coverage; it does not change
@@ -315,6 +347,11 @@ make agent-monitoring-close-week WEEK=2026-W39
   dropped, so the run is never counted twice. It prints one line with the counts and is idempotent. Limits: cost (`cost_proxy_score`,
   `tool_call_count`) is not re-derived; only a finished week is closed, so only then is a duration re-derived; rows that sit only in
   the other host's checkout count only once they are merged.
+
+- **Doc drift report** (`TCK-20261108-DOC-EVIDENCE-FIELDS-AND-DRIFT-REPORT`, owner question Q5). After the fold, a close (without
+  `--data-dir`) prints a short summary of `tools/gate_checks/doc_drift.py` at HEAD of the checkout it runs in, with the full SHA:
+  counts per state and the first docs that need re-verifying. It is report-only: a failure becomes one "skipped" line, the exit status
+  is unchanged, and it writes nothing. The meaning of the states is in `docs/guides/delivery_process.md` ("Docs as the review source").
 
 Code: `tools/agent-monitoring/week_close.py`, `week_close_nudge.py`.
 

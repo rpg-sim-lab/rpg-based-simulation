@@ -329,4 +329,4 @@ def test_done_with_trailing_content_after_proper_tier_heading_passes(tmp_path):
 def test_makefile_wires_status_drift_check():
     makefile_text = (_REPO_ROOT / "Makefile").read_text(encoding="utf-8")
     assert "status-drift-check:" in makefile_text
-    assert "python3 tools/gate_checks/status_drift_check.py" in makefile_text
+    assert "$(PYTHON3) tools/gate_checks/status_drift_check.py" in makefile_text

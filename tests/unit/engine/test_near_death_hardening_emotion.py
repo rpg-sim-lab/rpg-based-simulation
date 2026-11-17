@@ -39,7 +39,7 @@ def test_near_death_hardening_updates_emotional_model():
 
     update = StateUpdate(
         entity_updates={
-            1: EntityUpdate(entity_id=1, combat=CombatUpdate(hp_delta=-95)),
+            1: EntityUpdate(entity_id=1, combat=CombatUpdate(hp_delta=-95, damage_taken=95, attacker_id=2, hit_tick_set=0)),
         }
     )
 
@@ -67,7 +67,7 @@ def test_near_death_hardening_only_changes_emotion_subfield():
 
     update = StateUpdate(
         entity_updates={
-            1: EntityUpdate(entity_id=1, combat=CombatUpdate(hp_delta=-95)),
+            1: EntityUpdate(entity_id=1, combat=CombatUpdate(hp_delta=-95, damage_taken=95, attacker_id=2, hit_tick_set=0)),
         }
     )
 
@@ -104,7 +104,7 @@ def test_near_death_hardening_preserves_same_tick_cognition_bundle_set():
         entity_updates={
             1: EntityUpdate(
                 entity_id=1,
-                combat=CombatUpdate(hp_delta=-95),
+                combat=CombatUpdate(hp_delta=-95, damage_taken=95, attacker_id=2, hit_tick_set=0),
                 cognition_bundle_set=prior_phase_cognition,
             ),
         }

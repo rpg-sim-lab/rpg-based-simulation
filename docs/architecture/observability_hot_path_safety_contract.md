@@ -121,7 +121,9 @@ blocking or looping indefinitely.
 | Failure | Handling |
 |---|---|
 | Malformed payload (missing/unparseable `payload`, or invalid `SimulationEvent`) | ACK + drop immediately — unchanged, never retried. |
-| Handler raises an exception | Left un-ACKed (stays in the consumer group's PEL) for reclaim, up to `MAX_DELIVERY_ATTEMPTS = 3` total delivery attempts (first delivery + reclaim retries), then routed to the DLQ stream and ACKed off the source stream. |
+| Handler raises an exception | Left un-ACKed (stays in the consumer group's PEL) for reclaim, up to `MAX_DELIVERY_ATTEMPTS = 3` total delivery attempts (first delivery + reclaim retries), then routed to the DLQ stream and ACKed off the source stream. The ACK happens only after the DLQ write succeeds. |
+| DLQ write fails for an exhausted message | Not ACKed: the message stays in the PEL, and the next reclaim sweep retries the DLQ write. The failure is logged at error level and counted on the consumer. There is no bounded give-up, so a permanently failing DLQ leaves a visible pending entry rather than a silent loss. |
+| Exhausted message whose source entry is gone (`XRANGE` empty, e.g. trimmed by `MAXLEN`) | A DLQ tombstone is written (`dlq_source_id`, `dlq_reason = "source entry no longer readable"`, `dlq_delivery_count`, `dlq_failed_at`, no payload), and the entry is ACKed only if that write succeeds. Every exhausted message leaves a DLQ record. |
 | Process dies after a successful handler call but before ACK | Message stays in the PEL; a later reclaim sweep (by this or another live consumer in the same group) claims and redelivers it via `XCLAIM`. |
 | Redis connection failure (`connect()`) | Reconnect attempts back off with jitter, capped, reset after a successful connect. |
 
@@ -141,7 +143,8 @@ so an in-flight, still-processing message on a live-but-slow consumer is never m
 for orphaned). Entries with `times_delivered < MAX_DELIVERY_ATTEMPTS` are claimed via
 `XCLAIM` and retried through the same `_handle_message` path used for freshly-read
 messages; entries at `times_delivered >= MAX_DELIVERY_ATTEMPTS` are routed to the DLQ
-and ACKed. Redis's own delivery counter (not an in-memory dict) is authoritative here
+and ACKed only once the DLQ write succeeds (see the failure-handling table for a failed
+DLQ write and for a source entry that is no longer readable). Redis's own delivery counter (not an in-memory dict) is authoritative here
 because a reclaim can be performed by a different `RedisStreamConsumer` instance,
 possibly in a different process, than the one that first read the message — an
 in-process counter would not be visible to that peer.

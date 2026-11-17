@@ -1,0 +1,107 @@
+===== flight_c42.json 12:4971 match True
+ u=4970 hp 2->2 pos [41.0, 30.0]->[41.0, 30.0] navT [25.0, 25.0]->[40.0, 30.0] task ENTITY_ACT {}
+   engaged [30] adj [7, 30] group 10125 [7, 12]
+   last staged nav write before u: tick 4969 set=[25.0, 25.0] clear=True/False via ['src/systems/strategic_systems/intelligence.py:fused_strategic_pass:670', 'src/engine/pipeline.py:<lambda>:393']
+   decisions [(None, None, None, None, None)]
+   resolve_move target [25.0, 25.0] mode MovementMode.RETREAT -> None called from ['src/engine/pipeline_phases/movement.py:route_movement_intent:261']
+ u=4971 hp 2->0 pos [41.0, 30.0]->[41.0, 29.0] navT [40.0, 30.0]->[40.0, 30.0] task ENTITY_ACT {}
+   engaged [30] adj [7, 30] group 10125 [7, 12]
+   last staged nav write before u: tick 4970 set=[40.0, 30.0] clear=False/True via ['src/systems/strategic_systems/intelligence.py:fused_strategic_pass:678', 'src/engine/pipeline.py:<lambda>:393']
+   decisions []
+   resolve_move target [40.0, 30.0] mode MovementMode.REGROUP -> [41.0, 29.0] called from ['src/engine/pipeline_phases/movement.py:route_movement_intent:261']
+   OPP resolve_multi_attack attackers [30] hp_before 2 is_lethal_arg False damage 21 hp_delta -21 DEFEAT from ['src/engine/movement.py:resolve_move:332', 'src/engine/pipeline_phases/movement.py:route_movement_intent:261']
+===== flight_c42.json 14:323 match True
+ u=322 hp 6->6 pos [42.0, 40.0]->[42.0, 40.0] navT [40.0, 40.0]->[40.0, 40.0] task ENTITY_ACT {'action': 'ATTACK', 'outcome': 'SUCCESS', 'recent_positions': [[42, 40]], 'stale_ticks': 0, 'target_id': 34, 'target_identity_source': 'clean_metadata'}
+   engaged [34] adj [34] group None None
+   last staged nav write before u: tick 279 set=[40.0, 40.0] clear=False/False via ['src/systems/strategic_systems/intelligence.py:fused_strategic_pass:678', 'src/engine/pipeline.py:<lambda>:393']
+   decisions []
+ u=323 hp 6->0 pos [42.0, 40.0]->[42.0, 41.0] navT [40.0, 40.0]->[40.0, 40.0] task ENTITY_ACT {}
+   engaged [34] adj [34] group None None
+   last staged nav write before u: tick 279 set=[40.0, 40.0] clear=False/False via ['src/systems/strategic_systems/intelligence.py:fused_strategic_pass:678', 'src/engine/pipeline.py:<lambda>:393']
+   decisions []
+   resolve_move target [40.0, 40.0] mode MovementMode.REGROUP -> [42.0, 41.0] called from ['src/engine/pipeline_phases/movement.py:route_movement_intent:261']
+   OPP resolve_multi_attack attackers [34] hp_before 6 is_lethal_arg False damage 11 hp_delta -11 DEFEAT from ['src/engine/movement.py:resolve_move:332', 'src/engine/pipeline_phases/movement.py:route_movement_intent:261']
+===== flight_c42.json 3:2050 match True
+ u=2049 hp 26->26 pos [38.0, 30.0]->[39.0, 30.0] navT [39.0, 30.0]->[38.0, 30.0] task ENTITY_ACT {}
+   engaged [] adj [] group 10082 [3, 32]
+   last staged nav write before u: tick 2048 set=[39.0, 30.0] clear=False/False via ['src/systems/strategic_systems/intelligence.py:fused_strategic_pass:678', 'src/engine/pipeline.py:<lambda>:393']
+   decisions []
+   resolve_move target [39.0, 30.0] mode MovementMode.REGROUP -> [39.0, 30.0] called from ['src/engine/pipeline_phases/movement.py:route_movement_intent:261']
+ u=2050 hp 26->0 pos [39.0, 30.0]->[38.0, 30.0] navT [38.0, 30.0]->[39.0, 30.0] task ENTITY_ACT {}
+   engaged [30, 38] adj [30, 38] group 10082 [3, 32]
+   last staged nav write before u: tick 2049 set=[38.0, 30.0] clear=False/False via ['src/systems/strategic_systems/intelligence.py:fused_strategic_pass:678', 'src/engine/pipeline.py:<lambda>:393']
+   decisions []
+   resolve_move target [38.0, 30.0] mode MovementMode.REGROUP -> [38.0, 30.0] called from ['src/engine/pipeline_phases/movement.py:route_movement_intent:261']
+   OPP resolve_multi_attack attackers [30, 38] hp_before 26 is_lethal_arg False damage 40 hp_delta -40 DEFEAT from ['src/engine/movement.py:resolve_move:332', 'src/engine/pipeline_phases/movement.py:route_movement_intent:261']
+===== flight_c43.json 12:3053 match True
+ u=3052 hp 13->13 pos [34.0, 40.0]->[35.0, 40.0] navT [35.0, 40.0]->[34.0, 40.0] task ENTITY_ACT {}
+   engaged [] adj [] group None None
+   last staged nav write before u: tick 3051 set=[35.0, 40.0] clear=False/False via ['src/systems/strategic_systems/intelligence.py:fused_strategic_pass:678', 'src/engine/pipeline.py:<lambda>:393']
+   decisions []
+   resolve_move target [35.0, 40.0] mode MovementMode.REGROUP -> [35.0, 40.0] called from ['src/engine/pipeline_phases/movement.py:route_movement_intent:261']
+ u=3053 hp 13->0 pos [35.0, 40.0]->[34.0, 40.0] navT [34.0, 40.0]->[35.0, 40.0] task ENTITY_ACT {}
+   engaged [30] adj [30] group None None
+   last staged nav write before u: tick 3052 set=[34.0, 40.0] clear=False/False via ['src/systems/strategic_systems/intelligence.py:fused_strategic_pass:678', 'src/engine/pipeline.py:<lambda>:393']
+   decisions []
+   resolve_move target [34.0, 40.0] mode MovementMode.REGROUP -> [34.0, 40.0] called from ['src/engine/pipeline_phases/movement.py:route_movement_intent:261']
+   OPP resolve_multi_attack attackers [30] hp_before 13 is_lethal_arg False damage 21 hp_delta -21 DEFEAT from ['src/engine/movement.py:resolve_move:332', 'src/engine/pipeline_phases/movement.py:route_movement_intent:261']
+===== flight_c43.json 37:1632 match True
+ u=1631 hp 11->11 pos [35.0, 40.0]->[34.0, 40.0] navT [31.0, 40.0]->[31.0, 40.0] task ENTITY_ACT {}
+   engaged [] adj [] group None None
+   last staged nav write before u: tick 1626 set=[31.0, 40.0] clear=True/False via ['src/systems/strategic_systems/intelligence.py:fused_strategic_pass:670', 'src/engine/pipeline.py:<lambda>:393']
+   decisions []
+   resolve_move target [31.0, 40.0] mode MovementMode.RETREAT -> [34.0, 40.0] called from ['src/engine/pipeline_phases/movement.py:route_movement_intent:261']
+ u=1632 hp 11->0 pos [34.0, 40.0]->[34.0, 41.0] navT [31.0, 40.0]->[31.0, 40.0] task ENTITY_ACT {}
+   engaged [30] adj [30] group None None
+   last staged nav write before u: tick 1626 set=[31.0, 40.0] clear=True/False via ['src/systems/strategic_systems/intelligence.py:fused_strategic_pass:670', 'src/engine/pipeline.py:<lambda>:393']
+   decisions []
+   resolve_move target [31.0, 40.0] mode MovementMode.RETREAT -> [34.0, 41.0] called from ['src/engine/pipeline_phases/movement.py:route_movement_intent:261']
+   OPP resolve_multi_attack attackers [30] hp_before 11 is_lethal_arg False damage 12 hp_delta -12 DEFEAT from ['src/engine/movement.py:resolve_move:332', 'src/engine/pipeline_phases/movement.py:route_movement_intent:261']
+===== def2_c43.json 1:2942 match True
+ u=2941 hp 9->9 pos [26.0, 40.0]->[26.0, 39.0] navT [25.0, 25.0]->[25.0, 25.0] task ENTITY_ACT {}
+   engaged [] adj [] group 10115 [1, 19]
+   last staged nav write before u: tick 2939 set=[25.0, 25.0] clear=False/False via ['src/systems/strategic_systems/intelligence.py:fused_strategic_pass:670', 'src/engine/pipeline.py:<lambda>:393']
+   decisions []
+   resolve_move target [25.0, 25.0] mode MovementMode.HOLD -> [26.0, 39.0] called from ['src/engine/pipeline_phases/movement.py:route_movement_intent:261']
+ u=2942 hp 9->0 pos [26.0, 39.0]->[26.0, 38.0] navT [25.0, 25.0]->[25.0, 25.0] task ENTITY_ACT {}
+   engaged [30] adj [30] group 10115 [1, 19]
+   last staged nav write before u: tick 2939 set=[25.0, 25.0] clear=False/False via ['src/systems/strategic_systems/intelligence.py:fused_strategic_pass:670', 'src/engine/pipeline.py:<lambda>:393']
+   decisions []
+   resolve_move target [25.0, 25.0] mode MovementMode.HOLD -> [26.0, 38.0] called from ['src/engine/pipeline_phases/movement.py:route_movement_intent:261']
+   OPP resolve_multi_attack attackers [30] hp_before 9 is_lethal_arg False damage 23 hp_delta -23 DEFEAT from ['src/engine/movement.py:resolve_move:324', 'src/engine/pipeline_phases/movement.py:route_movement_intent:261']
+===== def2_c43.json 8:2795 match True
+ u=2794 hp 7->7 pos [26.0, 41.0]->[27.0, 41.0] navT [31.0, 40.0]->[31.0, 40.0] task ENTITY_ACT {}
+   engaged [] adj [] group None None
+   last staged nav write before u: tick 2792 set=[31.0, 40.0] clear=False/False via ['src/engine/pipeline_phases/movement.py:route_movement_intent:274', 'src/engine/pipeline.py:_route_movement_intent:559']
+   decisions []
+   resolve_move target [31.0, 40.0] mode MovementMode.WANDER -> [27.0, 41.0] called from ['src/engine/pipeline_phases/movement.py:route_movement_intent:261']
+ u=2795 hp 7->0 pos [27.0, 41.0]->[28.0, 41.0] navT [31.0, 40.0]->[31.0, 40.0] task ENTITY_ACT {}
+   engaged [30] adj [30] group None None
+   last staged nav write before u: tick 2792 set=[31.0, 40.0] clear=False/False via ['src/engine/pipeline_phases/movement.py:route_movement_intent:274', 'src/engine/pipeline.py:_route_movement_intent:559']
+   decisions []
+   resolve_move target [31.0, 40.0] mode MovementMode.WANDER -> [28.0, 41.0] called from ['src/engine/pipeline_phases/movement.py:route_movement_intent:261']
+   OPP resolve_multi_attack attackers [30] hp_before 7 is_lethal_arg False damage 23 hp_delta -23 DEFEAT from ['src/engine/movement.py:resolve_move:324', 'src/engine/pipeline_phases/movement.py:route_movement_intent:261']
+===== def2_c45.json 5:1300 match True
+ u=1299 hp 20->20 pos [26.0, 26.0]->[26.0, 25.0] navT [25.0, 25.0]->[25.0, 25.0] task ENTITY_ACT {}
+   engaged [] adj [] group None None
+   last staged nav write before u: tick 1295 set=[25.0, 25.0] clear=False/False via ['src/systems/strategic_systems/intelligence.py:fused_strategic_pass:670', 'src/engine/pipeline.py:<lambda>:393']
+   decisions []
+   resolve_move target [25.0, 25.0] mode MovementMode.REGROUP -> [26.0, 25.0] called from ['src/engine/pipeline_phases/movement.py:route_movement_intent:261']
+ u=1300 hp 20->0 pos [26.0, 25.0]->[26.0, 26.0] navT [25.0, 25.0]->[25.0, 25.0] task ENTITY_ACT {}
+   engaged [30] adj [30] group None None
+   last staged nav write before u: tick 1295 set=[25.0, 25.0] clear=False/False via ['src/systems/strategic_systems/intelligence.py:fused_strategic_pass:670', 'src/engine/pipeline.py:<lambda>:393']
+   decisions []
+   resolve_move target [25.0, 25.0] mode MovementMode.REGROUP -> [26.0, 26.0] called from ['src/engine/pipeline_phases/movement.py:route_movement_intent:261']
+   OPP resolve_multi_attack attackers [30] hp_before 20 is_lethal_arg False damage 23 hp_delta -23 DEFEAT from ['src/engine/movement.py:resolve_move:324', 'src/engine/pipeline_phases/movement.py:route_movement_intent:261']
+===== e24_u46.json 24:2418 match True
+ u=2417 hp 17->17 pos [30.0, 20.0]->[30.0, 20.0] navT [31.0, 20.0]->[25.0, 25.0] task ENTITY_MOVE {'recent_positions': [[30, 21]], 'stale_ticks': 1, 'target_id': 16, 'target_identity_source': 'clean_metadata', 'target_position': [31.0, 20.0]}
+   engaged [16] adj [16, 26] group 10034 [3, 24]
+   last staged nav write before u: tick 2416 set=[31.0, 20.0] clear=False/False via ['src/engine/pipeline_phases/movement.py:route_movement_intent:274', 'src/engine/pipeline.py:_route_movement_intent:559']
+   decisions []
+ u=2418 hp 17->0 pos [30.0, 20.0]->[30.0, 21.0] navT [25.0, 25.0]->[31.0, 21.0] task ENTITY_ACT {}
+   engaged [16] adj [16] group 10034 [3, 24]
+   last staged nav write before u: tick 2417 set=[25.0, 25.0] clear=True/False via ['src/systems/strategic_systems/intelligence.py:fused_strategic_pass:670', 'src/engine/pipeline.py:<lambda>:393']
+   decisions [('ENTITY_MOVE', None, 'BRACKETING', 16, [31.0, 21.0])]
+   resolve_move target [31.0, 21.0] mode MovementMode.REPOSITION -> [30.0, 21.0] called from ['src/engine/pipeline_phases/movement.py:route_movement_intent:261']
+   bracketing {'ally': 3, 'result': [31.0, 21.0], 'stack': ['src/engine/tactical.py:evaluate_entity_intent:528', '/mnt/data2/scratch-b/free_swing_trace_5c4b5da11.py:dspy:156', 'src/engine/domain/cognition.py:execute_brain:77', 'src/engine/domain_logic.py:execute_brain:39', 'src/engine/executor.py:execute:171', 'src/engine/kernel.py:_phase_collection:549'], 'target': 16}
+   OPP resolve_multi_attack attackers [16] hp_before 17 is_lethal_arg False damage 17 hp_delta -17 DEFEAT from ['src/engine/movement.py:resolve_move:324', 'src/engine/pipeline_phases/movement.py:route_movement_intent:261']

@@ -20,6 +20,7 @@ from src.engine.sabotage import BuildingSabotageSystem
 from src.engine.town_resolution import TownResolutionSystem
 from src.engine.world_dynamics import WorldDynamicsSystem
 from src.engine.shop import ShopSystem
+from src.engine.lodging import grant_beds, place_leavers
 from src.engine.evolution import EvolutionSystem
 from src.systems.strategic import StrategicIntelligenceSystem
 from src.systems.lifecycle import LifecycleSystem
@@ -27,6 +28,7 @@ from src.engine.pipeline_phases.capacity_enforcement import CapacityEnforcementP
 from src.systems.world_systems.generator import EntityGenerator
 from src.engine.compactor import StateUpdateCompactor
 from src.engine.phase_graph import PhaseDependencyGraph
+from src.engine.access_audit.hook import dispatch_phase
 
 logger = logging.getLogger(__name__)
 
@@ -114,7 +116,7 @@ class AuthoritativeApplyPipeline:
                 metric_counters["phase_runs"] = metric_counters.get("phase_runs", 0) + 1
                 metric_counters[f"run_{phase_name}"] = metric_counters.get(f"run_{phase_name}", 0) + 1
                 
-                phase_upd = phase_fn(upd)
+                phase_upd = dispatch_phase(ff_manager, phase_name, state, upd, phase_fn)  # access audit (stage 1): phase_fn(upd) unless ENABLE_ACCESS_AUDIT is on
                 
                 # 3. Strictly enforce SHADOW mode: discard all aspect mutations from update
                 if mode == FeatureMode.SHADOW:
@@ -368,7 +370,7 @@ class AuthoritativeApplyPipeline:
         from src.engine.pipeline_phases.paid_information import PaidInformationTransactionSystem
         update = run_phase("paid_information", update, lambda u: PaidInformationTransactionSystem.enforce(state, u))
 
-        update = run_phase("resource_transactions", update, lambda u: AuthoritativeApplyPipeline._resolve_resource_transactions(state, u))
+        update = run_phase("resource_transactions", update, lambda u: AuthoritativeApplyPipeline._resolve_resource_transactions(state, grant_beds(state, u)))  # F3: a bed is granted before its service is delivered
         # Refresh dirty set to capture reward_upd set by resource_transactions (XP rewards)
         dirty_builder.mark_from_update(state, update)
         update = update.replace(dirty_set=dirty_builder.build())
@@ -563,7 +565,7 @@ class AuthoritativeApplyPipeline:
         update: StateUpdate,
     ) -> StateUpdate:
         from src.engine.pipeline_phases.occupancy import OccupancyPhase
-        return OccupancyPhase.resolve(state, update)
+        return OccupancyPhase.resolve(state, place_leavers(state, update))  # F3: lodgers whose rest is over step out first, through the same position update a move uses, vetted by resolve
 
 
 def _resolve_death_transfers(state: AuthoritativeState, update: StateUpdate) -> StateUpdate:

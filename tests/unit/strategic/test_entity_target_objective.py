@@ -12,10 +12,8 @@ from src.core.enums import EntityRole, Faction
 from src.core.state import AuthoritativeState, ResourceNodeState
 from src.core.strategic import ObjectiveKind, ObjectiveState, ObjectiveStatus, ProjectState, ProjectStatus
 from src.engine.tactical import TacticalDecisionSystem
-from src.systems.strategic_systems.entity_target_objective import (
-    ENTITY_TARGET_PERCEPTION_RADIUS,
-    entity_target_outcome as _entity_target_outcome,
-)
+from src.core.combat_constants import ENTITY_TARGET_PERCEPTION_RADIUS
+from src.systems.strategic_systems.entity_target_objective import entity_target_outcome as _entity_target_outcome
 from src.systems.strategic_systems.intelligence import StrategicIntelligenceSystem
 from src.systems.strategic_systems.work_queue import StrategicWorkQueue
 

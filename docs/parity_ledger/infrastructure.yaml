@@ -1954,26 +1954,27 @@
   divergence_note: null
   support_boundary: "Doc tooling only \u2014 no simulation behavior is involved."
 - id: INFRA-181
-  text: 'Docusaurus 3 site scaffold at website/ with a single plugin-content-docs
-    instance (the classic preset''s docs block, path docs/) publishing the approved
-    developer-facing subset; its exclude list drops superpowers/, specs/, parity_ledger/,
-    scenarios/, entity/, archive/, plans/, audits/, and optimization_audit_ledger.md.
-    The agent-working/tickets/done, stored_artifacts, and agent-working/agent-monitoring/retro plugin-content-docs
-    instances (and their sidebars-*.js files) were removed entirely, along with the
-    matching navbar items and the search-local theme''s docsRouteBasePath entries,
-    per TCK-20260821-DOCS-BUILD-LASTUPDATE-METADATA-OVERHEAD. Makefile targets docs-serve
-    and docs-build available.
+  text: 'Docusaurus 3 site at website/ is a wiki for someone watching the simulation,
+    with three spaces (World Knowledge, Technical, Control Guide), one sidebar and
+    navbar tab each. docs/ is not rendered. World Knowledge fact pages are generated
+    at build time (npm prebuild/prestart run website/scripts/generate_wiki.py) from
+    docs/world_rules/, registries/mechanisms.yaml, registries/system_registry.jsonl,
+    registries/mechanism_causal_edges.yaml, data/content/ and registries/world_glossary.jsonl,
+    and are gitignored, never committed. Broken links fail the build. Per
+    TCK-20261111-WEBSITE-WIKI-VIEWS-OF-STORED-DATA (owner, #715 6789714730 and 6789779149);
+    replaces the TCK-20260821-DOCS-BUILD-LASTUPDATE-METADATA-OVERHEAD docs/ subset.
 
     '
   status: verified
   priority: P2
   legacy_evidence: null
-  v2_evidence: 'website/docusaurus.config.js + website/package.json + Makefile (docs-serve,
-    docs-build targets), refreshed 2026-08-24 for TCK-20260821-DOCS-BUILD-LASTUPDATE-METADATA-OVERHEAD
+  v2_evidence: 'website/docusaurus.config.js + website/sidebars.js + website/package.json
+    + website/scripts/generate_wiki.py + website/.gitignore, refreshed 2026-11-11 for
+    TCK-20261111-WEBSITE-WIKI-VIEWS-OF-STORED-DATA
 
     '
   proof_type: null
-  test_path: tests/static/test_docs_build_content_scope.py
+  test_path: tests/static/test_website_wiki_site_shape.py
   divergence_note: null
   support_boundary: "Doc tooling only \u2014 no simulation behavior is involved."
 - id: INFRA-182
@@ -2581,19 +2582,26 @@
     across process restarts. File format: 4-byte LE uint32 header length + JSON header
     (tick, spec_id, rng_checkpoint) + pickle blob of AuthoritativeState. save() raises
     RuntimeError when kernel not started. restore() raises ValueError on spec_id mismatch;
-    reconstructs RNG via DeterministicRNG.set_state(); passes run_id to Kernel to
+    reconstructs RNG via DeterministicRNG.set_state() on a DeterministicRNG built with the episode base seed state.seed (stateless draws and lazily seeded domains derive from it; #848, TCK-20261107-A-RESTORED-SCENARIO-CHECKPOINT-DRAWS-FROM-SEED-0); passes run_id to Kernel to
     suppress Domain.INIT RNG draw and preserve determinism. Restored service tick
     counter matches checkpoint tick. Re-exported from scenario_runtime.py for single-import
-    convenience.'
+    convenience. The header also carries a schema fingerprint (ordered field names of every
+    dataclass in the payload, recorded by the pickler at save); restore checks the header,
+    spec_id and fingerprint before pickle.loads and refuses a missing fingerprint, an unreadable
+    header, or any insert, reorder, rename or removal with a typed ValueError (the route answers
+    400 with a shaped detail); a field appended last and named in FIELD_RULES is accepted and
+    filled.'
   status: verified
   priority: P1
   legacy_evidence: null
-  v2_evidence: src/engine/scenario_checkpoint.py::ScenarioCheckpointer + src/engine/scenario_runtime.py
-    (re-export)
+  v2_evidence: src/engine/scenario_checkpoint.py::ScenarioCheckpointer + src/engine/checkpoint_schema.py
+    + src/engine/scenario_runtime.py (re-export)
   proof_type: feature
   test_path: tests/unit/engine/test_scenario_checkpointer.py::test_save_raises_when_kernel_none
     + tests/integration/scenarios/test_scenario_runtime_service.py::TestCheckpointRestore::test_checkpoint_restore_determinism
+    + tests/integration/scenarios/test_scenario_runtime_service.py::TestCheckpointRestore::test_restore_keeps_the_state_seed_and_the_per_tick_digest
     + tests/api/test_scenario_runtime_api.py::test_checkpoint_endpoint_returns_path_and_tick
+    + tests/unit/engine/test_checkpoint_schema.py
   divergence_note: null
   support_boundary: null
 - id: INFRA-216
@@ -2742,8 +2750,12 @@
   test_path: tests/unit/domains/feature_packs/test_loader.py::test_load_demo_escort_pack_registers_escort_dignitary
   divergence_note: null
 - id: INFRA-221
-  text: 'All 10 Phase 10 feature flags in FeatureFlagManager default to FeatureMode.OFF.
-    Balance and behavioural scenarios must explicitly enable flags via set_flag_mode()
+  text: 'Eight of the 11 Phase 10 feature flags in FeatureFlagManager default to FeatureMode.OFF;
+    ENABLE_COMBAT_ENGAGEMENT, ENABLE_BELIEF_ASSIMILATION and ENABLE_SOCIAL_COOPERATION default
+    to FeatureMode.ON (deliberate flips, TCK-20260914-COMBAT-ENGAGEMENT-PERCEIVED-POWER and
+    TCK-20260824-ROLLOUT-FLAG-DECISIONS; docs/engine/known_limitations.md 1.5, corrected by
+    TCK-20261021-KNOWN-LIMITATIONS-PHASE10-FLAG-DEFAULTS-DRIFT). Balance and behavioural scenarios
+    must explicitly enable the flags that default OFF via set_flag_mode()
     or the overrides constructor argument. The sentinel test test_adventure_routing_defaults_off()
     guards the ENABLE_ADVENTURE_ROUTING default and will fail with instructions if
     the default is changed without re-running tools/balance_measure.py to establish
@@ -2842,7 +2854,7 @@
     \ / RunManifest.verification_level / run_report metadata.verification_level \u2014\
     \ see INFRA-363 (TCK-20260817-DETERMINISM-VERIFICATION-GAP-EPIC). The per-tick value
     \ is the payload key hash of a TICK_END TraceEvent (no warehouse field named tick_hash
-    \ exists). Naming and coverage caveats (proof digest flat-sha256-v2 since TCK-20261004-WORK-DEBT-RETIRE-STEP2-CODE; the MD5 fingerprint
+    \ exists). Naming and coverage caveats (proof digest flat-sha256-v5 since TCK-20261103-A-GROUP-HIT-RECORDS-ONLY-ITS-FIRST-ATTACKER, flat-sha256-v4 since TCK-20261109-A-FLIGHT-WEIGHS-THE-FREE-SWING-IT-WOULD-TAKE, flat-sha256-v3 since TCK-20261024-PROOF-DIGEST-HASHES-THE-CARRIED-STATE-IT-OMITS, flat-sha256-v2 since TCK-20261004-WORK-DEBT-RETIRE-STEP2-CODE; the MD5 fingerprint
     \ is a stability check, not proof; pressure_signals is outside the proof digest)
     \ are in docs/engine/deterministic_execution.md (PERF-D5, TCK-20261003-PERF-M0-T09-P1-DOC-ALIGNMENT).\n"
   proof_type: null
@@ -3653,9 +3665,11 @@
     \ meeting CalamityService's spawn gates directly), but a one-off diagnostic calibration\
     \ run (dungeon_crawl_seed42_5200t, not added to grade_anchors.json) did not naturally\
     \ produce a calamity_spawned event: CalamityService additionally requires calamity_intensity\
-    \ > 0.3 in some region, which is only raised when a hero-kind entity dies in a\
-    \ hazard_level > 0.5 region; in that run's RNG/gameplay, monsters died but no\
-    \ hero died, so intensity never crossed the threshold. This is a separate, pre-existing\
+    \ > 0.3 in some region, which is no producer of calamity_intensity is called in\
+    \ play (the hero-death method has no caller, which tests/architecture/test_calamity_intensity_producer_unwired.py\
+    \ pins), so intensity stays 0.0 everywhere; per ENV-06 / owner decision 10 the\
+    \ escalation producer is not built (TCK-20261114-ENV-06-CALAMITY-ESCALATION-PRODUCER-IS-NOT-BUILT);\
+    \ in that run intensity never crossed the threshold. This is a separate, pre-existing\
     \ content/mechanics precondition, unrelated to and not fixed by this kernel tick-alignment\
     \ fix \u2014 the fix un-blocks calamity_spawned's tick-gate comparison, not its\
     \ content-side intensity precondition. Do not read this entry as claiming calamity_spawned\
@@ -3665,8 +3679,9 @@
   legacy_evidence: null
   v2_evidence: "src/engine/kernel.py:702-736 (Kernel._phase_advancement(), prior_state/self._state\
     \ reassignment ordering); src/engine/kernel.py:806-855 (_phase_observability(),\
-    \ the prior_state.tick fix at line 836); src/observability/event_extractor.py:286,899\
-    \ (the two prior_state.tick fixes); src/domains/information/phase.py:77 (last_assimilated_tick\
+    \ the prior_state.tick fix at line 836); src/observability/extraction/strategy.py\
+    \ and src/observability/extraction/world.py (the two prior_state.tick fixes: last_assimilated_tick,\
+    \ last_calamity_tick_set); src/domains/information/phase.py:77 (last_assimilated_tick\
     \ stamped with pre-advance state.tick); src/world/calamity.py:57 (last_calamity_tick_set\
     \ stamped with pre-advance state.tick); src/engine/runtime_status.py:79 (reset_dwell\
     \ stamps last_transition_tick with the current_tick argument, called pre-advance\
@@ -3705,7 +3720,11 @@
     \ that gate (dungeon_crawl_seed42_5200t, not added to grade_anchors.json) confirmed\
     \ the tick-gate comparison itself is fixed (should_spawn's tick-interval math\
     \ is satisfied at tick 5000) but showed 0 calamity_spawned hits because CalamityService's\
-    \ separate high_intensity_regions gate (calamity_intensity > 0.3, hero-death-dependent)\
+    \ separate high_intensity_regions gate (calamity_intensity > 0.3; no producer\
+    \ of calamity_intensity is called in play (the hero-death method has no caller,\
+    \ which tests/architecture/test_calamity_intensity_producer_unwired.py pins),\
+    \ so intensity stays 0.0 everywhere; per ENV-06 / owner decision 10 the escalation\
+    \ producer is not built (TCK-20261114-ENV-06-CALAMITY-ESCALATION-PRODUCER-IS-NOT-BUILT))\
     \ was not met in that run \u2014 see this entry's text for detail. This is a residual\
     \ content/mechanics gap, not a defect in this kernel fix.\n"
 - id: INFRA-259
@@ -3866,11 +3885,14 @@
   v2_evidence: src/simulation_quality/scorers/world_dynamics.py::WorldDynamicsScorer.EVENT_TYPES
   proof_type: null
   test_path: tests/simulation_quality/test_world_dynamics_scorer.py::TestEcologyOwnership
-  divergence_note: calamity_spawned was unreachable through the real per-tick loop
+  divergence_note: 'calamity_spawned was unreachable through the real per-tick loop
     until the kernel tick-alignment fix (INFRA-258, TCK-20260703-SIMQ-INFORMATION-BELIEF-TRIGGER);
-    see that entry for the historical gap, the fix, and the residual hero-death-dependent
-    calamity_intensity precondition that still gates natural firing in calibration
-    content.
+    see that entry for the historical gap, the fix, and the residual calamity_intensity
+    precondition that still gates natural firing in calibration content: no producer
+    of calamity_intensity is called in play (the hero-death method has no caller,
+    which tests/architecture/test_calamity_intensity_producer_unwired.py pins), so
+    intensity stays 0.0 everywhere; per ENV-06 / owner decision 10 the escalation
+    producer is not built (TCK-20261114-ENV-06-CALAMITY-ESCALATION-PRODUCER-IS-NOT-BUILT).'
   support_boundary: null
 - id: INFRA-247
   text: "NarrativeScorer covers all contract \xA75 NARRATIVE rules: quest lifecycle\
@@ -4076,15 +4098,16 @@
     \ bug fix) and FACTION (7 new) pillar emission. Blocked gaps documented in test_event_extractor_social_faction.py\
     \ gap tests S-23, S-24, F-23, F-24. Translation mappings: leadership_changed,\
     \ betrayal_desertion, alliance_formed added to quality_hub.py. Tests: tests/unit/observability/test_event_extractor_social_faction.py\
-    \ (53 tests). src/observability/event_extractor.py; src/simulation_quality/quality_hub.py;\
-    \ src/observability/events.py (faction EventCategory). TCK-20260629-SIMQ-EMIT-NARRATIVE\
-    \ implements NARRATIVE pillar (7 new emission hooks): chronicle_entry_created\
-    \ (CampaignOrchestrator._emit_chronicle_events()), world_emergence_event + narrative_milestone\
-    \ (EventExtractor from world_events_add \u2014 war/boss/sovereignty), hero_death_unrecorded\
-    \ (EventExtractor entity diff active\u2192inactive for kind=hero), scenario_stalled\
-    \ + scenario_objective_completed (ScenarioRuntimeService event_recorder injection).\
-    \ Gap: scenario_objective_progressed (binary ObjectiveEvaluator \u2014 no partial\
-    \ progress). Tests: tests/unit/observability/test_event_extractor_narrative.py\
+    \ (53 tests). src/observability/extraction/social.py, src/observability/extraction/contracts.py,\
+    \ src/observability/extraction/faction.py and src/observability/event_extractor.py\
+    \ (world-event loop); src/simulation_quality/quality_hub.py; src/observability/events.py\
+    \ (faction EventCategory). TCK-20260629-SIMQ-EMIT-NARRATIVE implements NARRATIVE\
+    \ pillar (7 new emission hooks): chronicle_entry_created (CampaignOrchestrator._emit_chronicle_events()),\
+    \ world_emergence_event + narrative_milestone (EventExtractor from world_events_add\
+    \ \u2014 war/boss/sovereignty), hero_death_unrecorded (EventExtractor entity diff\
+    \ active\u2192inactive for kind=hero), scenario_stalled + scenario_objective_completed\
+    \ (ScenarioRuntimeService event_recorder injection). Gap: scenario_objective_progressed\
+    \ (binary ObjectiveEvaluator \u2014 no partial progress). Tests: tests/unit/observability/test_event_extractor_narrative.py\
     \ (N-01..N-18, 2 gap skips). TCK-20260701-SIMQ-EMIT-AGENCY2: adds defer_with_reason,\
     \ commitment_abandoned, rejection_cascade_tick, route_family_first_use emitters;\
     \ all 4 tested in tests/unit/observability/test_event_extractor_agency2.py (24\
@@ -4297,7 +4320,10 @@
   priority: P2
   legacy_evidence: null
   v2_evidence: 'tools/gate_checks/done_checker_static.py::check_registry_entry_regenerated
-    + .claude/workflows/implement-ticket.js (run_finalize_selfcheck 4th tuple element)
+    + .claude/workflows/implement-ticket.js (run_finalize_selfcheck 4th tuple element); the read-only
+    check also fails with reason class ticket_not_staged, naming the git add -> make docs-registry
+    -> git add docs/REGISTRY.yaml order, when the done/ ticket is neither tracked nor staged
+    (tests/tools/test_done_checker_static.py::test_registry_reason_ticket_not_staged_names_the_working_order)
 
     '
   proof_type: null
@@ -4414,7 +4440,7 @@
   v2_evidence: 'src/domains/information/router.py:102-103 (candidate ranking by (-expected_certainty,
     cost_gold)); src/domains/information/phase.py:92-105 (Branch B, no fallback past
     candidates[0]); src/domains/information/resolver.py:65-69 (affordability gate
-    returns None); src/observability/event_extractor.py:276-299 (last_assimilated_subject/tick
+    returns None); src/observability/extraction/strategy.py (last_assimilated_subject/tick
     mapped, last_routed_query_subject/tick absent); src/cognition/knowledge_model.py:67-70
     ("insufficient_gold" answer_kind branch has no producer today)
 
@@ -4464,8 +4490,8 @@
     gate returns a structured insufficient_gold signal; payload additively gains expected_certainty/source_kind
     alongside the unchanged subject/query_kind/cost_paid keys); src/domains/information/phase.py
     (InformationBeliefPhase.apply()''s Branch B now loops over router.route()''s candidates
-    instead of only trying candidates[0]); src/observability/event_extractor.py (new
-    additive route_new_query branch, gated on last_routed_query_tick == prior_state.tick,
+    instead of only trying candidates[0]); src/observability/extraction/strategy.py
+    (new additive route_new_query branch, gated on last_routed_query_tick == prior_state.tick,
     mirroring the belief_assimilated/belief_updated pattern); src/engine/intent/action_intent.py
     (ActionIntentAdapter.execute()''s ASK_INFORMATION branch discriminated by "query_kind"
     in intent.payload; information-domain path closes the loop via InformationResponseNormalizer.normalize()
@@ -8247,7 +8273,7 @@
     by default with no REDIS_AVAILABLE env var ever set): (1) the new test''s SimulationEvent
     construction used event_category="action", not a valid EventCategory literal --
     fixed to "strategy", matching the existing event_type="action_executed" pairing
-    already used in src/observability/event_extractor.py:249; (2) test_broker_feed_graceful_when_redis_unavailable
+    already used in src/observability/extraction/strategy.py; (2) test_broker_feed_graceful_when_redis_unavailable
     mocked "src.simulation_quality.feed.RedisStreamConsumer" (wrong patch target --
     RedisStreamConsumer is lazily imported inside BrokerQualityFeed.start(), not present
     in feed.py''s module namespace) and used side_effect=ConnectionError(...) when
@@ -8539,14 +8565,15 @@
   status: verified
   priority: P1
   legacy_evidence: null
-  v2_evidence: 'src/observability/event_extractor.py:22-43 (`_NON_COMBAT_OUTCOME_KINDS`,
-    `_real_combat_update()`), :127 (despawn-branch has_attacker fix), :160-175 (combat_damage,
-    now gated on `_real_combat_update(e_upd) is not None`), :177-187 (Kill-events
-    killer_id fix, CombatKillEvent''s own firing condition intentionally left unchanged),
-    :202-215 (combat_initiated gated), :217-227 (near_death_survival gated, previously
-    ungated entirely). Cross-checked against every real hp_delta-setting call site
-    in src/ (combat.py''s 5 sites, all set attacker_id; world_dynamics.py hazard drain
-    and biological.py starvation/exhaustion, both never set it; town_resolution.py/town_service.py
+  v2_evidence: 'src/observability/extraction/combat.py:20-41 (`_NON_COMBAT_OUTCOME_KINDS`,
+    `real_combat_update()`), src/observability/extraction/lifecycle.py:32 (despawn-branch
+    has_attacker fix), src/observability/extraction/combat.py:43-71 (combat_damage,
+    now gated on `real_combat_update(e_upd) is not None`), :96-147 (Kill-events killer_id
+    fix, CombatKillEvent''s own firing condition intentionally left unchanged), :149-172
+    (combat_initiated gated), :174-198 (near_death_survival gated, previously ungated
+    entirely). Cross-checked against every real hp_delta-setting call site in src/
+    (combat.py''s 5 sites, all set attacker_id; world_dynamics.py hazard drain and
+    biological.py starvation/exhaustion, both never set it; town_resolution.py/town_service.py
     healing paths are positive-only, irrelevant to the hp_diff<0 branch; evolution.py''s
     level-up heal bonus only adds to an existing hp_delta, inherits whatever attacker_id
     was already present; sabotage.py''s hp_delta is on BuildingState, not entity combat.hp,
@@ -8894,6 +8921,7 @@
     have delivered these two events live immediately with no independent verification
     window, the same double-fire-risk reasoning that gave NarrativeShaper its own
     flag apart from ENABLE_PUSH_EVENT_SHAPERS_PHASE2 in the first place). src/observability/event_extractor.py
+    (commitment_abandoned) and src/observability/extraction/strategy.py (rejection_cascade_tick)
     -- both blocks gated behind `not _push_shapers_agency_active` (rollback path).
     src/domains/optimization/feature_flags.py -- new ENABLE_PUSH_EVENT_SHAPERS_AGENCY,
     default ON. Real-kernel-adjacent verification (direct EventExtractor.extract()
@@ -9449,7 +9477,7 @@
     The tool''s own honest, real output is that all 3 predeclared thresholds FAIL
     for all 7 corpus entries (0/7 pass on Sec.4.1, Sec.4.2, and Sec.4.3 alike), reported
     in full with supporting numbers and no threshold redefined, narrowed, or excluded
-    to force a pass -- see docs/engine/contracts/knowledge_gateway_mcp/phase1_baseline_comparison.md
+    to force a pass -- see docs/archive/knowledge_gateway_mcp/phase1_baseline_comparison.md
     for the full per-entry breakdown and root-cause analysis (a structural Sec.4.1
     warm-hit-vs-Phase-1-has-no-cache gap, Sec.4.2''s richer structured-payload overhead,
     and a genuine doc_id-vs-source_path path-truncation divergence between tools/search_mcp.py''s
@@ -9489,7 +9517,7 @@
     in `tools/knowledge_search.py::_collect_docs_chunks()` -- TCK-20260815-HOTFIX-DOC-ID-NESTED-PATH-TRUNCATION.
     `doc_id` was derived as `f"{section}/{stem}"` where `section` was only `rel_parts[0]`
     (the immediate subdirectory of `docs/`), silently discarding any deeper nesting
-    -- e.g. `docs/engine/contracts/knowledge_gateway_mcp/measurement_baseline_contract.md`
+    -- e.g. `docs/archive/knowledge_gateway_mcp/measurement_baseline_contract.md`
     collapsed to `doc_id = "engine/measurement_baseline_contract"`, dropping `contracts/knowledge_gateway_mcp/`.
     This created a real (confirmed non-collided, quantified by investigation.md at
     0 actual collisions / 338 files / 120 truncated-but-non-colliding) identity-collision
@@ -9554,7 +9582,7 @@
 - id: INFRA-341
   text: 'New Level 1 provider-result cache schema/migration in tools/retrieval_cache.py
     -- TCK-20260815-KGMCP-P2-CACHE-SCHEMA-MIGRATIONS (1st child of TCK-20260815-KNOWLEDGE-GATEWAY-MCP-PHASE2-EPIC),
-    implementing docs/engine/contracts/knowledge_gateway_mcp/cache_migration_plan.md''s
+    implementing docs/archive/knowledge_gateway_mcp/cache_migration_plan.md''s
     frozen design (itself frozen by the DONE TCK-20260814-KGMCP-EVIDENCE-CACHE-IDENTITY)
     as real code for the first time. Adds `retrieval_cache_schema_version: int = 1`,
     a new module constant distinct from and never aliased to `RETRIEVAL_VERSION` (cache-key-derivation
@@ -9563,7 +9591,7 @@
     version axes docs/observability/redaction_retention_policy.md Sec.6 names. Adds
     the `LEVEL1_CACHE_COLUMNS: frozenset[str]` allowlist constant (21 columns), mapping
     docs/plans/knowledge-gateway-mcp-proposal.md Sec.10.2''s Level 1 provider-result-cache
-    row shape 1:1 onto column names: contract-literal names reused verbatim from docs/engine/contracts/knowledge_gateway_mcp/evidence_cache_identity_contract.md
+    row shape 1:1 onto column names: contract-literal names reused verbatim from docs/archive/knowledge_gateway_mcp/evidence_cache_identity_contract.md
     Sec.1 (lookup identity: normalized_intent, resolved_entity_ids, filters, budget_class,
     routing_policy_version, repo_branch_scope) and Sec.2 (validity identity: evidence_fingerprints,
     validated_negative_scopes, adapter_version_at_validation, working_tree_overlap,
@@ -9839,7 +9867,7 @@
     occurrences), so all 3 predeclared thresholds FAIL for all 7 entries (Sec.4.1
     0/7, Sec.4.2-cold 0/7, Sec.4.2-warm 0/7, Sec.4.3 0/7) -- exactly mirroring Phase
     1''s own honest all-FAIL result. No threshold was redefined, narrowed, or excluded
-    to force a pass; no corpus entry was excluded or substituted. See docs/engine/contracts/knowledge_gateway_mcp/phase2_baseline_recomparison.md
+    to force a pass; no corpus entry was excluded or substituted. See docs/archive/knowledge_gateway_mcp/phase2_baseline_recomparison.md
     for the full per-entry breakdown.'
   status: unsupported
   priority: P1
@@ -9872,7 +9900,7 @@
     agent''s own git diff --stat HEAD scoping of those 6 paths against this ticket''s
     new/changed file list confirms zero overlap: this ticket''s own changes are limited
     to tools/agent-monitoring/kgmcp_phase2_gateway_runner.py, tests/tools/fixtures/kgmcp_phase2_baseline_recomparison_results.json,
-    docs/engine/contracts/knowledge_gateway_mcp/phase2_baseline_recomparison.md, tests/tools/test_kgmcp_phase2_baseline_recomparison.py,
+    docs/archive/knowledge_gateway_mcp/phase2_baseline_recomparison.md, tests/tools/test_kgmcp_phase2_baseline_recomparison.py,
     and an appended paragraph in docs/plans/knowledge-gateway-mcp-proposal.md). Exact
     Phase 1 request-shape parity was maintained per DD1''s Architecture Review ruling
     -- no budget_tokens override was used anywhere to force a different (more favorable)
@@ -9959,7 +9987,7 @@
 - id: INFRA-346
   text: "Level 2 assembled context-packet cache schema/migration added -- TCK-20260816-KGMCP-P3-PACKET-CACHE-SCHEMA-MIGRATIONS\
     \ (1st child of TCK-20260816-KNOWLEDGE-GATEWAY-MCP-PHASE3-EPIC), implementing\
-    \ the already-reserved `migration_002_add_level2_tables(conn)` ordinal from docs/engine/contracts/knowledge_gateway_mcp/cache_migration_plan.md\
+    \ the already-reserved `migration_002_add_level2_tables(conn)` ordinal from docs/archive/knowledge_gateway_mcp/cache_migration_plan.md\
     \ \xA72 as real code for the first time, per proposal \xA710.2's Level 2 row shape\
     \ and \xA710.3's conceptual CachedPacket field list. Adds `LEVEL2_CACHE_COLUMNS`\
     \ (28-column frozenset allowlist, one field renamed from the proposal's literal\
@@ -10031,7 +10059,7 @@
     \ by this ticket. `agent-working/.index/knowledge-index/retrieval_cache.db` remains the single cache\
     \ database file -- no second database created (see test_migration_002_never_creates_a_second_database_file\
     \ above). This entry also carries a known, formally-recorded intentional divergence\
-    \ from docs/engine/contracts/knowledge_gateway_mcp/evidence_cache_identity_contract.md\
+    \ from docs/archive/knowledge_gateway_mcp/evidence_cache_identity_contract.md\
     \ \xA73's Non-collapse rule: the new table's `freshness`/`verification` columns\
     \ sit on the same row as lookup-identity fields, which \xA73 Bullet 1 says a lookup-table\
     \ row should never carry. Recorded in docs/guidelines/intentional_divergences.md\
@@ -10189,7 +10217,7 @@
     source) and DD4 (fail-closed default when select_validation_basis() returns "FINER"
     and Level 2's schema has no fingerprint column to verify against) were independently
     confirmed genuine, non-vacuous behavior by Architecture-Verify via live break/restore
-    testing -- not check-passing busywork. tools/knowledge_gateway_router.py and docs/engine/contracts/knowledge_gateway_mcp/evidence_cache_identity_contract.md
+    testing -- not check-passing busywork. tools/knowledge_gateway_router.py and docs/archive/knowledge_gateway_mcp/evidence_cache_identity_contract.md
     remain byte-unchanged; no junction table or new SQLite table was introduced (test_no_junction_table_or_new_sqlite_table_introduced_by_this_ticket).
 - id: INFRA-349
   text: 'Level 2 assembled context-packet cache wired genuinely live into the production
@@ -10319,7 +10347,7 @@
     \ honestly False against both baselines; recall is regression-free (0/7, identical\
     \ to both predecessors' recorded counts); all 4 invalidation criteria PASS. No\
     \ threshold was redefined, narrowed, or excluded to force a pass; no corpus entry\
-    \ was excluded or substituted. See docs/engine/contracts/knowledge_gateway_mcp/phase3_pilot_acceptance_measurement.md\
+    \ was excluded or substituted. See docs/archive/knowledge_gateway_mcp/phase3_pilot_acceptance_measurement.md\
     \ for the full per-entry breakdown."
   status: unsupported
   priority: P1
@@ -10518,7 +10546,7 @@
     (Scope and Investigate phases'' search_docs+graphify sequence, Document-Update/doc-updater''s
     absence of any knowledge-tool call, Architecture Review''s docs/REGISTRY.yaml
     filter, and the dormant SHADOW_CONTEXT_PACKET_ENABLED hook) and evaluates each
-    against the real, committed Phase 1-3 latency/token measurements (docs/engine/contracts/knowledge_gateway_mcp/phase1_baseline_comparison.md,
+    against the real, committed Phase 1-3 latency/token measurements (docs/archive/knowledge_gateway_mcp/phase1_baseline_comparison.md,
     phase2_baseline_recomparison.md, phase3_pilot_acceptance_measurement.md) and agent-working/agent-monitoring/retro/RETRO-2026-W33.md.
     This entry certifies that this evaluation''s methodology was sound -- real call
     sites were surveyed with real citations, real measured numbers were used without
@@ -10536,12 +10564,12 @@
     (Document-Update, a genuine capability mismatch against knowledge_status_response.schema.json),
     and the shadow-packet hook flagged as a future-only candidate, conditioned on
     Phase 3''s own disclosed budget-enforcement (Sec.21 #12) and token-count (AC4/Sec.18)
-    gaps closing first. See docs/engine/contracts/knowledge_gateway_mcp/phase4_workflow_recommendation.md
+    gaps closing first. See docs/archive/knowledge_gateway_mcp/phase4_workflow_recommendation.md
     for the full per-candidate breakdown.'
   status: verified
   priority: P2
   legacy_evidence: null
-  v2_evidence: docs/engine/contracts/knowledge_gateway_mcp/phase4_workflow_recommendation.md
+  v2_evidence: docs/archive/knowledge_gateway_mcp/phase4_workflow_recommendation.md
   test_path: tests/docs/test_phase4_workflow_recommendation_doc.py
   proof_type: regression
   divergence_note: null
@@ -10551,7 +10579,7 @@
     2 Architecture-Review passes). It does NOT certify that any evaluated workflow
     integration is correct or beneficial -- none was implemented in this ticket. The
     evaluation''s real, honest outcome: recommend against 3 of 4 candidates, insufficient
-    evidence at 1. Full numeric detail lives in docs/engine/contracts/knowledge_gateway_mcp/phase4_workflow_recommendation.md,
+    evidence at 1. Full numeric detail lives in docs/archive/knowledge_gateway_mcp/phase4_workflow_recommendation.md,
     not restated here.'
 - id: INFRA-354
   text: 'Knowledge Gateway MCP Phase 4 direct-tool comparison -- TCK-20260816-KGMCP-P4-DIRECT-TOOL-COMPARISON.
@@ -10574,7 +10602,7 @@
     (1.04x-2.93x) than the direct-tool combination for all 7 of 7 corpus entries in
     this fresh, cold-cache run; hand-written, mechanically-verified reviewer_judgment
     field recorded 6/7 entries direct_equal_or_better, 1/7 (Q3_requirement_completeness)
-    mixed, 0/7 gateway_equal_or_better. Full per-query-type detail: docs/engine/contracts/knowledge_gateway_mcp/phase4_direct_tool_comparison.md.
+    mixed, 0/7 gateway_equal_or_better. Full per-query-type detail: docs/archive/knowledge_gateway_mcp/phase4_direct_tool_comparison.md.
     Trustworthiness of the measurement itself is evidenced by 2 real pre-implementation
     fixes Architecture Review required and confirmed applied (the derivation-string
     false provenance claim above, and an unfalsifiable subjective reviewer_judgment
@@ -10661,7 +10689,7 @@
     real budget-tolerance FAIL and Phase 4''s real 7/7 negative gateway-vs-direct-tool
     comparison to recommend proceeding with Phase 5''s remaining two bullets only
     after Phase 3''s own disclosed gaps close -- not now, not never. Full detail:
-    docs/engine/contracts/knowledge_gateway_mcp/phase5_repeated_demand_measurement.md.'
+    docs/archive/knowledge_gateway_mcp/phase5_repeated_demand_measurement.md.'
   status: unsupported
   priority: P2
   legacy_evidence: null
@@ -10691,7 +10719,7 @@
     pairs in the primary source (agent-working/agent-monitoring/events.jsonl, 5.8% of tickets involved),
     372/1411 in the secondary source (agent-working/tickets/working_log.csv, 18.5% of tickets involved)
     -- a small, real, mostly-non-literal signal, not proof of material repeated demand.
-    Full numeric detail: docs/engine/contracts/knowledge_gateway_mcp/phase5_repeated_demand_measurement.md.'
+    Full numeric detail: docs/archive/knowledge_gateway_mcp/phase5_repeated_demand_measurement.md.'
 - id: INFRA-356
   text: 'Knowledge Gateway MCP budget-tolerance/dedup-coverage closure -- TCK-20260816-KGMCP-BUDGET-TOLERANCE-DEDUP-COVERAGE-CLOSURE
     (sibling of INFRA-344/INFRA-350/INFRA-353/INFRA-355, same ''certify methodology,
@@ -10788,7 +10816,7 @@
     reproducibility): Sec.21 #12 budget-tolerance pass rate is now 7/7, up from 2/7
     -- every previously-failing context_search-routed entry dropped from the post-INFRA-356
     range of 2200-2450 tokens to 1038-1171, comfortably under the 1200-token (1000
-    x 1.2) threshold. Full per-entry table in docs/engine/contracts/knowledge_gateway_mcp/phase3_pilot_acceptance_measurement.md''s
+    x 1.2) threshold. Full per-entry table in docs/archive/knowledge_gateway_mcp/phase3_pilot_acceptance_measurement.md''s
     own ''Further accounting closure'' section (Real re-measurement subsection). Verified
     via 49+92 passing unit/integration tests, including a new shared-source-of-truth
     test proving response[''statements'']/[''context'']/[''evidence'']/[''conflicts'']
@@ -11057,7 +11085,7 @@
   status: verified
   priority: P2
   v2_evidence: src/rendering/connectivity.py
-  test_path: tests/unit/rendering/test_connectivity.py::test_dungeon_crawl_matches_documented_evidence
+  test_path: tests/unit/rendering/test_connectivity.py::test_frozen_reference_dungeon_crawl_matches_documented_evidence
   divergence_note: null
   proof_type: parity
 - id: INFRA-371
@@ -11068,7 +11096,7 @@
   status: verified
   priority: P2
   v2_evidence: src/rendering/density.py
-  test_path: tests/unit/rendering/test_density.py::test_dungeon_crawl_reproduces_documented_cv
+  test_path: tests/unit/rendering/test_density.py::test_frozen_reference_dungeon_crawl_reproduces_documented_cv
   divergence_note: null
   proof_type: parity
 - id: INFRA-372
@@ -11084,20 +11112,21 @@
   status: verified
   priority: P2
   v2_evidence: src/rendering/shape.py
-  test_path: tests/unit/rendering/test_shape.py::test_dungeon_crawl_forest_is_two_components_of_1116_tiles_each
+  test_path: tests/unit/rendering/test_shape.py::test_frozen_reference_dungeon_crawl_forest_is_two_components_of_1116_tiles_each
   divergence_note: null
   proof_type: parity
 - id: INFRA-373
-  text: total_variation_distance(h1, h2) over normalized terrain-type-proportion histograms
-    reproduces the documented TVD(sandbox_world, dungeon_crawl) == 0.23161981243456373
-    cross-spec anchor at seed 42 (rounds to the PROPOSAL.md-cited 0.2315). Same-spec/different-seed
-    TVD is exactly 0.0 for dungeon_crawl (seeds 42 and 137) -- structurally seed-invariant,
-    since none of its four composed modules (ruins_mystery_quest, goblin_camp_conflict,
-    old_mine_resource_loop, scalable_bandit_camp) declare terrain_variants. sandbox_world
-    is deliberately NOT used as a same-spec-seed-invariance anchor -- its current
-    seed-invariance is an artifact of a stale resolved/world.resolved.yaml cache predating
-    wolf_den_near_forest.yaml's terrain_variants field (TCK-20260821-WOLF-DEN-NOISE-MIGRATION),
-    not a structural property of its composition -- see agent-working/stored_artifacts/TCK-20260821-VISUAL-VARIANTS-METRIC/investigation.md.
+  text: 'total_variation_distance(h1, h2) over normalized terrain-type-proportion
+    histograms has two anchors at seed 42. FROZEN REFERENCE (tests/fixtures/rendering/dungeon_crawl_pre_balance_fix.resolved.yaml,
+    the pre-balance-fix world kept deliberately; it is NOT the live dungeon_crawl):
+    TVD(sandbox_world, frozen dungeon_crawl) = 0.23153614062704975 (rounds 0.2315).
+    LIVE: TVD(sandbox_world, frontier_living_world) = 0.264502519629673 (rounds 0.2645).
+    Same-spec/different-seed TVD is exactly 0.0 for live dungeon_crawl (seeds 42 and
+    137), structurally seed-invariant, since none of its composed modules declare
+    terrain_variants; sandbox_world and frontier_living_world are not seed-invariant
+    anchors. Live dungeon_crawl vs sandbox_world is 0.196; the 0.2867 once recorded
+    there does not reproduce and has no known origin. Rebaseline owner for the live
+    number: rpg-planner (u24).'
   status: verified
   priority: P2
   v2_evidence: src/rendering/variants.py
@@ -11186,33 +11215,40 @@
   divergence_note: null
   proof_type: contract
 - id: INFRA-378
-  text: Per-client HTTP admission control (src/api/admission_control.py) extends ObservabilityMode's
-    NORMAL/PRESSURE/DEGRADED/SURVIVAL vocabulary (imported from src.observability.event_recorder,
-    never modified) to the HTTP layer, keyed by the ClientIdentity INFRA-377's auth
-    mechanism resolves. A per-client in-memory token bucket (30-token capacity, 3
-    tokens/second refill) produces a 0.0-1.0+ fill_ratio signal, fed into a hysteresis
-    state machine mirroring ResourceGovernor's real escalation/recovery pattern (src/engine/governor.py
-    evaluate()/_can_recover(), NOT PhaseBudgetGovernor, which has no hysteresis of
-    its own) -- escalation is immediate, recovery requires RuntimeProfile.dwell_time_ticks
-    admission-evaluation calls plus confidence_window_ticks consecutive low-pressure
-    readings, stepping down one mode level at a time. Only SURVIVAL rejects a request
-    (HTTP 429 with a Retry-After header; WebSocket close code 1013 on stream.router's
-    3 routes) -- NORMAL/PRESSURE/DEGRADED all admit. Per-client state is bounded by
-    a lazy idle-TTL prune-on-access (1800 seconds, mirroring AlertDeduplicator.prune())
-    plus a 1000-entry max-entries LRU hard cap (mirroring CacheStrategy's dict-plus-
-    list idiom). require_admission/require_admission_header_or_query/ require_admission_ws
-    compose with require_api_key/require_api_key_header_or_query/ require_api_key_ws
-    via a Depends() parameter chain -- 23 of server.py's 27 protected route sites
-    replace the auth-only dependency in place; the 4 sites using the weaker header-or-query/WebSocket
-    auth channel (3 dashboard routes, 1 stream.router wiring site backing 3 WebSocket
-    routes) append the admission dependency alongside the original auth dependency
-    instead, to keep test_only_dashboard_and_websocket_routes_use_weaker_auth_channel's
-    top-level dependant-graph introspection passing unmodified -- see plan.md's Deviations
-    section. /health remains the sole exemption.
+  text: 'Per-client HTTP admission control (src/api/admission_control.py) extends
+    ObservabilityMode''s NORMAL/PRESSURE/DEGRADED/SURVIVAL vocabulary (imported from
+    src.observability.event_recorder, never modified) to the HTTP layer, keyed by
+    the ClientIdentity INFRA-377''s auth mechanism resolves. A per-client in-memory
+    token bucket (30-token capacity, 3 tokens/second refill) produces a 0.0-1.0+ fill_ratio
+    signal, fed into a hysteresis state machine mirroring ResourceGovernor''s real
+    escalation/recovery pattern (src/engine/governor.py evaluate()/_can_recover(),
+    NOT PhaseBudgetGovernor, which has no hysteresis of its own) -- escalation is
+    immediate, recovery requires RuntimeProfile.dwell_time_ticks admission-evaluation
+    calls plus confidence_window_ticks consecutive low-pressure readings, stepping
+    down one mode level at a time. Only SURVIVAL rejects a request (HTTP 429 with
+    a Retry-After header; WebSocket close code 1013 on stream.router''s 3 routes)
+    -- NORMAL/PRESSURE/DEGRADED all admit. Per-client state is bounded by a lazy idle-TTL
+    prune-on-access (1800 seconds, mirroring AlertDeduplicator.prune()) plus a 1000-entry
+    max-entries LRU hard cap (mirroring CacheStrategy''s dict-plus- list idiom). require_admission/require_admission_header_or_query/
+    require_admission_ws compose with require_api_key/require_api_key_header_or_query/
+    require_api_key_ws via a Depends() parameter chain -- 23 of server.py''s 27 protected
+    route sites replace the auth-only dependency in place; the 4 sites using the weaker
+    header-or-query/WebSocket auth channel (3 dashboard routes, 1 stream.router wiring
+    site backing 3 WebSocket routes) append the admission dependency alongside the
+    original auth dependency instead, to keep test_only_dashboard_and_websocket_routes_use_weaker_auth_channel''s
+    top-level dependant-graph introspection passing unmodified -- see plan.md''s Deviations
+    section. /health remains the sole exemption. Idle time counts toward recovery,
+    so the 429''s Retry-After: 5 is a true bound: a call arriving at least _RETRY_AFTER_SECONDS
+    after the client''s previous call steps a SURVIVAL client whose refilled fill_ratio
+    is within the SURVIVAL recovery limit down to DEGRADED, and resets the client
+    to NORMAL when the bucket has refilled to full (_apply_idle_recovery, on the timed
+    path; _evaluate stays time-free and call-counted).'
   status: verified
   priority: P1
   v2_evidence: src/api/admission_control.py, src/api/server.py
-  test_path: tests/api/test_admission_control.py::test_first_request_from_new_client_is_admitted
+  test_path: tests/api/test_admission_control.py::test_first_request_from_new_client_is_admitted,
+    tests/api/test_admission_control.py::test_a_client_that_waits_out_retry_after_is_admitted,
+    tests/api/test_admission_control.py::test_the_first_request_after_a_gap_is_admitted_on_any_route
   divergence_note: null
   proof_type: contract
 - id: INFRA-379
@@ -12692,8 +12728,8 @@
     of src/ or of the seeded registry.'
 - id: INFRA-420
   text: 'Worker-result resolution order does not change the committed state, because no two results
-    can tie. Kernel._phase_resolution sorts results by (class_priority, -local_priority, entity_id)
-    with a stable sort, and the key is unique: entity results have a unique entity_id, a second result
+    can tie. Kernel._phase_resolution sorts results by ConcurrencyLaw.commit_key = (class_priority, -local_priority, entity_id)
+    (class_priority lower is earlier, local_priority higher is earlier) with a stable sort, and the key is unique: entity results have a unique entity_id, a second result
     for one entity is rejected by ProtocolValidator.validate_result_batch and by the resolution guard,
     and an entity_id 0 result (the former DRAIN_DEBT system-result slot, the only results that tied) is
     rejected by the validator because nothing produces one (TCK-20261004-WORK-DEBT-RETIRE-STEP2-CODE).
@@ -12704,9 +12740,9 @@
   status: verified
   priority: P1
   legacy_evidence: null
-  v2_evidence: src/engine/kernel.py::Kernel._phase_resolution; src/core/protocol_validator.py::ProtocolValidator.validate_result_batch
+  v2_evidence: src/engine/kernel.py::Kernel._phase_resolution; src/core/concurrency_law.py::ConcurrencyLaw.commit_key; src/core/work.py::packet_work_id (the executor carries WorkItem.priority onto the result through it, TCK-20261021-WORK-ITEM-PRIORITY-LOOKUP-KEY-MISMATCH); src/core/protocol_validator.py::ProtocolValidator.validate_result_batch
   proof_type: contract
-  test_path: tests/integration/kernel/test_tied_worker_result_order.py
+  test_path: tests/integration/kernel/test_tied_worker_result_order.py, tests/unit/engine/test_work_item_priority_reaches_the_result.py
   divergence_note: DEV-019 (entity-0 results are always rejected)
   support_boundary: 'Unique-key ordering (TCK-20261004-PERF-M1-TIED-WORKER-RESULT-VERIFICATION, rewritten
     by TCK-20261004-WORK-DEBT-RETIRE-STEP2-CODE). The earlier bounded commutative merge rule for system
@@ -12861,7 +12897,11 @@
     diagnostic_verbosity or metrics_detail, and WorkerResult no work_debt_update or subsystem_id. The scheduler
     selects only CRITICAL entity work and its dropped count is a constant 0. The proof digest scheme is
     flat-sha256-v2: v1 minus the two removed state keys, with nothing else changed (the v1 form of the pinned
-    fixture, rebuilt, reproduces the old v1 digest exactly). A v2 digest is never compared with a v1 digest.
+    fixture, rebuilt, reproduces the old v1 digest exactly). A v2 digest is never compared with a v1 digest. Superseded as the current scheme by
+    flat-sha256-v5 (TCK-20261103-A-GROUP-HIT-RECORDS-ONLY-ITS-FIRST-ATTACKER): v4 plus CombatComponent.last_hit_attackers and last_hit_damages, with nothing else changed (the v4 form of the pinned carried-state fixture reproduces the v4 digest exactly).
+    flat-sha256-v4 (TCK-20261109-A-FLIGHT-WEIGHS-THE-FREE-SWING-IT-WOULD-TAKE): v3 plus CombatComponent.last_hit_damage, with nothing else changed.
+    flat-sha256-v3 (TCK-20261024-PROOF-DIGEST-HASHES-THE-CARRIED-STATE-IT-OMITS): v2 plus item_instances, recent_world_events, quest_registry, factions, clans,
+    information_providers and CombatComponent.last_hit_tick, with nothing else changed (the v2 form of the pinned carried-state fixture reproduces the v2 digest exactly).
     Governor modes and signals on the Live contract are unchanged (the Live golden passes with only the removed
     key dropped). The certification result schema_version is certification_result.v2, the API payload and the
     snapshot lose work_debt_total, and the Prometheus metric sim_work_debt_total is removed.'
@@ -12878,49 +12918,80 @@
     dead hasattr(state, "periodic_due_ticks") guard (follow-up for the RPG side).
 
 - id: INFRA-430
-  text: 'TCK-20261010-PERF-M2-T02B-RECORD (PERF-M2 OD-1, OD-3, OD-4, OD-6): benchmark identity and result schema 1.0 is binding in
-    docs/performance/benchmark_identity_schema.md and implemented by src/perf/benchmark_record.py. BenchmarkRecord is frozen and round-trips
-    through to_dict/from_dict. compare(base, head, thresholds) returns PASS, REGRESSION, INCONCLUSIVE or NOT_APPLICABLE with a reason: a
-    missing base, a MAJOR schema_version mismatch, a missing or different result.cost_accounting_version, a declared hardware class that is
-    not the detected one, or any blocking identity field that differs is INCONCLUSIVE and names the field; a head-side non-NORMAL
-    RuntimeMode against an all-NORMAL base is REGRESSION under the canonical signal contract and INCONCLUSIVE under the live one.
-    compare reads no perf-only result field. Percentiles are nearest-rank ceil(q*n) (protocol.percentile_method, blocking). BenchHarness
-    leaves a BenchmarkRecord in last_record, embedding raw samples for a tripwire and a {uri, sha256} pointer for a capacity run, and its
-    result dict is unchanged. PERF_* profiles take hardware_class from HardwareClassifier.detect_class(). Every PERF_* profile has a
-    PERF_CANONICAL_PROFILES variant (name suffix _CANONICAL) with signal_contract=CANONICAL; the defaults stay LIVE. No gate behaviour
-    changes and no check becomes blocking.'
+  text: 'TCK-20261010-PERF-M2-T02B-RECORD (PERF-M2 OD-1, OD-3, OD-4, OD-6): benchmark
+    identity and result schema 1.5 (src/perf/benchmark_record.py SCHEMA_VERSION) is
+    binding in docs/performance/benchmark_identity_schema.md and implemented by src/perf/benchmark_record.py.
+    BenchmarkRecord is frozen and round-trips through to_dict/from_dict. compare(base,
+    head, thresholds) returns PASS, REGRESSION, INCONCLUSIVE or NOT_APPLICABLE with
+    a reason: a missing base, a MAJOR schema_version mismatch (only a MAJOR mismatch
+    is INCONCLUSIVE; the steps from 1.0 to 1.5 were all additive MINOR bumps: 1.1
+    the optional identity.runner section, 1.2 the optional after-collect keys of result.memory_mb,
+    1.3 the optional working_set_* keys of result.memory_mb, 1.4 the optional outcome.check,
+    1.5 the optional blocking identity.runtime.cpu_affinity and identity.runtime.dependency_fingerprint
+    and the recorded-only identity.runtime.dependency_count; a record from before 1.5 reads unknown
+    on both blocking fields, so against a 1.5 head it is INCONCLUSIVE with check blocking_fields,
+    not PASS),
+    a missing or different result.cost_accounting_version, a declared hardware class
+    that is not the detected one, or any blocking identity field that differs is INCONCLUSIVE
+    and names the field; a head-side non-NORMAL RuntimeMode against an all-NORMAL
+    base is REGRESSION under the canonical signal contract and INCONCLUSIVE under
+    the live one. compare reads no perf-only result field. Percentiles are nearest-rank
+    ceil(q*n) (protocol.percentile_method, blocking). BenchHarness leaves a BenchmarkRecord
+    in last_record, embedding raw samples for a tripwire and a {uri, sha256} pointer
+    for a capacity run, and its result dict is unchanged. PERF_* profiles take hardware_class
+    from HardwareClassifier.detect_class(). Every PERF_* profile has a PERF_CANONICAL_PROFILES
+    variant (name suffix _CANONICAL) with signal_contract=CANONICAL; the defaults
+    stay LIVE. compare() is not adopted by any gate here: no gate behaviour changes and
+    no check becomes blocking. tools/perf/quiet_gate.py and the rerun_baselines refusals
+    guard recording a baseline only; they are not compare() gates.'
   status: verified
   priority: P1
   legacy_evidence: null
-  v2_evidence: src/perf/benchmark_record.py (BenchmarkRecord, compare, nearest_rank, collect_identity); src/perf/bench_harness.py (BenchHarness.run_benchmark, _build_record, _calculate_stats); src/perf/profiles.py (detected_hardware_class, canonical_variant, PERF_CANONICAL_PROFILES)
+  v2_evidence: src/perf/benchmark_record.py (BenchmarkRecord, compare, nearest_rank,
+    collect_identity); src/perf/bench_harness.py (BenchHarness.run_benchmark, _build_record,
+    _calculate_stats); src/perf/profiles.py (detected_hardware_class, canonical_variant,
+    PERF_CANONICAL_PROFILES); src/perf/dependency_fingerprint.py (collect_dependency_fingerprint);
+    src/perf/cpu_affinity.py (collect_cpu_affinity); tests/unit/perf/test_dependency_fingerprint.py;
+    tests/unit/perf/test_cpu_affinity.py
   proof_type: contract
   test_path: tests/unit/perf/test_benchmark_record.py
   divergence_note: DEV-020 (Bug Fix)
-  support_boundary: Measurements stay provisional and no check is blocking; a gate adopts compare() in PERF-M2-T03/T04/T05. content_hash,
-    builder_version, det_port_tier and verification_level hold the "unknown" sentinel (no source yet), so a PASS lists them as unverified.
-    src/perf/regression_gate.py is not deleted (outside the OD-8 lift). long_run_harness.py is not migrated to nearest-rank or the record
+  support_boundary: Measurements stay provisional and no check is blocking; a gate
+    adopts compare() in PERF-M2-T03/T04/T05. content_hash, builder_version, det_port_tier
+    and verification_level hold the "unknown" sentinel (no source yet), so a PASS
+    lists them as unverified. src/perf/regression_gate.py is not deleted (outside
+    the OD-8 lift). long_run_harness.py is not migrated to nearest-rank or the record
     (PERF-M2-T04).
 
 - id: INFRA-431
-  text: 'TCK-20261010-PERF-M2-T05-BASELINE-LIFECYCLE: a performance baseline is added only by tools/perf/baseline_lifecycle.py promote,
-    which refuses (exit 2, every applicable reason printed, nothing written) a candidate that is not a valid BenchmarkRecord, has
-    engine.dirty_src true, left NORMAL or has no mode sequence, lacks the current result.cost_accounting_version, or cites no cause (an
-    existing ticket id, a recorded DEV-nnn divergence, or a PR number). A promotion writes the next <name>.vNNNN.json, never touches an
-    earlier version, links it through identity.baseline_ref (id, schema_version, record_digest) and records the cause, the before identity
-    and the after identity in a promotion object that BenchmarkRecord.from_dict ignores. The check subcommand requires every
-    tests/perf/baselines/*.json to be a valid BenchmarkRecord or named in LEGACY_TRIPWIRE_REFERENCES (the 15 pre-schema files) and each
-    version chain to be intact. docs/performance/perf_baseline_policy.md is the lifecycle policy. No check becomes blocking and no baseline
-    is re-recorded.'
+  text: 'TCK-20261010-PERF-M2-T05-BASELINE-LIFECYCLE: a performance baseline is added
+    only by tools/perf/baseline_lifecycle.py promote, which refuses (exit 2, every
+    applicable reason printed, nothing written) a candidate that is not a valid BenchmarkRecord,
+    has engine.dirty_src true, left NORMAL or has no mode sequence, lacks the current
+    result.cost_accounting_version, or cites no cause (an existing ticket id, a recorded
+    DEV-nnn divergence, or a PR number). A promotion writes the next <name>.vNNNN.json,
+    never touches an earlier version, links it through identity.baseline_ref (id,
+    schema_version, record_digest) and records the cause, the before identity and
+    the after identity in a promotion object that BenchmarkRecord.from_dict ignores.
+    The check subcommand requires every tests/perf/baselines/*.json to be a valid
+    BenchmarkRecord or named in LEGACY_TRIPWIRE_REFERENCES (the 6 pre-schema files
+    that remain: mixed_200_concurrent.json, mixed_200_local.json, simq_corpus_frontier_extended.json,
+    simq_corpus_frontier_marches.json, strategic_100_concurrent.json, strategic_100_local.json)
+    and each version chain to be intact. docs/performance/perf_baseline_policy.md
+    is the lifecycle policy. No check becomes blocking and no baseline is re-recorded.'
   status: verified
   priority: P2
   legacy_evidence: null
-  v2_evidence: tools/perf/baseline_lifecycle.py (promote, refusals, check, LEGACY_TRIPWIRE_REFERENCES); docs/performance/perf_baseline_policy.md
+  v2_evidence: tools/perf/baseline_lifecycle.py (promote, refusals, check, LEGACY_TRIPWIRE_REFERENCES);
+    docs/performance/perf_baseline_policy.md
   proof_type: contract
   test_path: tests/unit/perf/test_baseline_lifecycle.py
   divergence_note: null
-  support_boundary: The known-debt ledger (owner, expiry, expected_signature) is PERF-M2-T05b and waits for the shared known-reds module. The shared
-    baseline_change_policy.md does not exist yet and is cited as a forward reference. A cited PR number is accepted by shape (not checkable
-    offline). The 15 legacy files are not re-recorded (PERF-M2-T08).
+  support_boundary: The known-debt ledger (owner, expiry, expected_signature) is PERF-M2-T05b
+    and waits for the shared known-reds module. The shared baseline_change_policy.md
+    does not exist yet and is cited as a forward reference. A cited PR number is accepted
+    by shape (not checkable offline). The 6 remaining legacy files are not re-recorded
+    (15 at the start of PERF-M2-T08, which promoted five; the rest were promoted since).
 
 - id: INFRA-432
   text: 'TCK-20261010-PERF-M2-T04-CAPACITY-RUN (PERF-M2 OD-5, OD-6, OD-7): tools/perf/capacity_run.py runs N repetitions of BenchHarness (default 100
@@ -12970,6 +13041,17 @@
   divergence_note: null
   support_boundary: 'Report-only (OD-8), nothing consumes the ledger to gate a lane yet; T06 conformance and T08 add the first entries and the matching of a real outcome against an entry.'
 
+- id: INFRA-435
+  text: 'TCK-20261011-PERF-M2-T03B-CI-PAIRED-STEP: the perf-cert-arena job runs the paired base/head tripwire (tools/perf/tripwire.py run) on pull_request events, report-only. The base is a second checkout at the PR base SHA under perf-base/, each side runs in a fresh process on the same runner, the verdict table goes to the step summary, and the perf-tripwire artifact records both SHAs and the runner CPU model. A REGRESSION or INCONCLUSIVE never fails the job; only an infrastructure failure or the 15-minute job timeout does. A non-PR event skips the step and says why.'
+  status: verified
+  priority: P2
+  legacy_evidence: null
+  v2_evidence: .github/workflows/test.yml (perf-cert-arena); tools/perf/tripwire.py (provenance, summary_markdown)
+  proof_type: contract
+  test_path: tests/static/test_ci_perf_tripwire_step.py
+  divergence_note: DEV-022 (Stabilized)
+  support_boundary: 'Report-only (OD-8). The 1.40 threshold stays provisional; the CI-runner A/A calibration (workflow_dispatch) measured 0.025 and a tighter value is proposed to the owner, not applied.'
+
 - id: INFRA-436
   text: 'TCK-20261010-PERF-M2-T08-CANONICAL-RERUNS: 5 of the 15 legacy tests/perf/baselines files are re-recorded as benchmark-identity schema records (canonical variant, provisional, claims none) through tools/perf/baseline_lifecycle.py promote, from tools/perf/rerun_baselines.py (3 fresh-process runs per record, the median avg promoted, a spread above 15 % is NOISY and not promoted, a run that leaves NORMAL is not a baseline). docs/observability/baselines/latest.json is a generated BaselineConfig (baseline_v1, cost_accounting_version DEV-017) that src gate and compare-sweep parse; the 14 per-profile matrix files were deleted.'
   status: verified
@@ -13007,3 +13089,100 @@
     tests/codebase/test_pyrefly_report.py::test_makefile_targets_exist_and_say_advisory
   divergence_note: null
   support_boundary: null
+- id: INFRA-437
+  text: 'TCK-20261021-WORKER-CHUNK-EXCEPTION-DROPS-RESULTS-WITHOUT-FAILURE-NOOPS: when a pooled chunk future raises, WorkerManager.execute_batch answers every packet of that chunk with
+    a FAILURE no-op (an empty EntityUpdate for the packet''s own entity, the packet''s packet_id and work_id), in packet order, instead of dropping the chunk''s results. The other
+    chunks still commit and each entity keeps its one result slot (bounded_concurrency_contract §4). future.result() has no timeout: a hung chunk is the watchdog''s liveness
+    matter, not the commit path''s, so what a run commits never depends on host speed; the contract''s TIMEOUT status stays a named, unused value.'
+  status: verified
+  priority: P1
+  legacy_evidence: null
+  v2_evidence: src/engine/worker_manager.py::failure_no_op; src/engine/worker_manager.py::WorkerManager.execute_batch (collect loop); docs/engine/contracts/bounded_concurrency_contract.md §4
+  proof_type: contract
+  test_path: tests/unit/engine/test_worker_chunk_exception_becomes_failure_no_ops.py
+  divergence_note: null
+  support_boundary: 'Thread and process pools; a chunk that raises as a whole (an error inside one packet was already a per-packet FAILURE no-op). Not covered: a hung chunk (no timeout by ruling).
+    The rpg gate runs inject LocalSequentialExecutor, so they never reach execute_batch.'
+- id: INFRA-438
+  text: 'TCK-20261021-WATCHDOG-POLLS-AN-ADMISSION-GATED-METRICS-ENDPOINT: the external SimulationWatchdog reads sim_current_tick from the backend''s internal metrics port (METRICS_URL, default
+    http://backend:9109/metrics, the same registry the API''s key-gated /metrics serves), not from /metrics on the API port, which answers 401 to a poller without an API key. A 401 or 403 from the
+    metrics endpoint is reported as "Metrics gated (HTTP <status>)", is not counted toward consecutive_failures (no stall alert), and raises its own WatchdogBlind alert (severity ERROR, once per the
+    alert router''s dedup window). A refused connection, a timeout, any other non-200 status and a tick that does not advance remain failures. The tick sample is matched by exact metric name.'
+  status: verified
+  priority: P2
+  legacy_evidence: null
+  v2_evidence: src/observability/watchdog.py::SimulationWatchdog.check_metrics, ::parse_tick, ::_route_blind_alert; src/observability/alerts/models.py::AlertEvent.create_watchdog_blind; src/api/metrics_port.py::start_metrics_port; docs/architecture/simulation_watchdog.md
+  proof_type: contract
+  test_path: tests/unit/observability/test_watchdog_metrics_source.py
+  divergence_note: null
+  support_boundary: 'Unit level: a real prometheus_client registry served by start_metrics_port and a local HTTP server answering 401/403/500; check_metrics is never patched. The compose deployment is not run
+    here (the observability profile); compose.yaml is unchanged because the code default covers it.'
+- id: INFRA-439
+  text: 'TCK-20261103-THE-CONCURRENT-AND-SEQUENTIAL-EXECUTORS-GIVE-DIFFERENT-WORLDS:
+    the concurrent executor hands domain logic the same world as the sequential one.
+    The WorkerPacket carries the world seed (not a per-packet seed), the state''s
+    feature_flags, building_tiles, town_center, clans and blocked_tiles (the state''s
+    own values, set by the executor); an executor-side read of an AuthoritativeState
+    field the packet neither carries nor lists in PACKET_DERIVED_CACHE_NAMES raises
+    PacketFieldMissingError instead of answering a getattr default, and that error
+    passes through every worker_manager handler and stops the run (bounded_concurrency_contract
+    section 4, one written exception); every other worker exception keeps Failure-to-No-Op
+    and is counted by wrapping failure_no_op, the count being zero in the long test.
+    Before: a STALEMATE_BREAK wander read the per-packet seed (crowded s45, #828 arm,
+    hash split at t601), combat learning was skipped on the packet (ENABLE_COMBAT_ENGAGEMENT
+    read OFF; 153 vs 241 learning calls to t2000), join/leave clan read no clans on
+    a packet. Second cause (crowded s42, hash split t1974): blocked_tiles had a default
+    the executor never set, so a worker saw the inn tile as walkable (find_intercept_position,
+    e37, t1973); fixed, sequential and concurrent both end at aa2fa3053507 at t2000.
+    A field-parity test over dataclasses.fields(WorkerPacket) compares every packet
+    field with the state by content (derived structures with fresh rebuilds) or lists
+    it with a reason and an owner.'
+  status: verified
+  priority: P1
+  legacy_evidence: null
+  v2_evidence: src/core/worker_protocol.py::WorkerPacket, ::PacketFieldMissingError,
+    ::PACKET_DERIVED_CACHE_NAMES; src/engine/executor.py::ConcurrentExecutionAdapter.execute;
+    src/engine/worker_manager.py::_process_chunk_wrapper, ::WorkerManager._collect,
+    ::WorkerManager._wrap_work; docs/engine/contracts/bounded_concurrency_contract.md
+    section 4
+  proof_type: contract
+  test_path: tests/unit/kernel/test_executor_context_parity.py
+  divergence_note: null
+  support_boundary: 'Unit level on every carried field, the guard, the pass-through
+    on the thread pool and the clans case; the horizon proof is tests/integration/kernel/test_executor_equivalence_long.py
+    (extra_slow): both executors live, hash and entity/state field content every 100
+    ticks, 2200 ticks on crowded s45 and 2000 on the other named worlds and seeds;
+    its strength is limited by the digest (TCK-20261103-STATE-DIGEST-MAY-OMIT-FIELDS-THAT-DECISIONS-READ).
+    The process-pool path of WorkerManager is not reachable from the kernel (no caller
+    passes use_processes=True) and has no pass-through test. The field-parity test
+    runs in the PR lane on fixture stages (t0, mid-run, after lodging, after a building
+    change) and, extra_slow, on crowded_frontier s45 at t0/150/600 (50 s).'
+- id: INFRA-440
+  text: 'TCK-20261103-A-MEASUREMENT-NOT-ON-THE-PINNED-RUNNER-CALLS-ITSELF-EVIDENCE:
+    the run manifest carries a typed run_conditions record (RunConditions: governor
+    and executor class names, max_tick_budget_ms, audit_mode, no_frame_pacing, and worker_manager,
+    the class behind a non-sequential executor, None when sequential), written
+    by one update_manifest call after the kernel has chosen its executor. It is run
+    setup only: not hashed state, not in the event stream, Optional so older manifests
+    load. A testing classifier (tools/test_architecture/pinned_runner.py, the one
+    PINNED definition) derives PINNED or NOT_PINNED from the record alone; the evidence
+    helper refuses NOT_PINNED and tools/rpg_measure/arm_child.py refuses a build whose
+    governor, executor or budget is not pinned. TCK-20261115-A-NON-SEQUENTIAL-RUN-IS-REFUSED-BY-THE-GATE-CANDIDATE-PAIRED-ARMS-AND-RPG-MEASURE:
+    the gate candidate, paired.py (local and --collected) and paired_arms.assemble also
+    refuse a document not marked runner PINNED.'
+  status: verified
+  priority: P1
+  legacy_evidence: null
+  v2_evidence: src/observability/reporting/artifact_repository.py (RunConditions,
+    RunManifest.run_conditions); src/engine/kernel.py (Kernel.__init__, the update_manifest
+    call after executor selection); tools/test_architecture/pinned_runner.py; tools/rpg_measure/arm_child.py;
+    tools/rpg_measure/paired.py; tools/test_architecture/{rpg_gate_run,rpg_gate_candidate,paired_arms}.py
+  proof_type: contract
+  test_path: tests/unit/kernel/test_run_conditions_record.py
+  divergence_note: null
+  support_boundary: Records what the kernel was built with; it does not say the pinned
+    runner gives the production path's world (that is tests/unit/kernel/test_executor_context_parity.py
+    and the executor equivalence tests). The record exists only when observability
+    writes a manifest. A run on a lane scratch script outside the repo is classified
+    only if its manifest is offered to the helper; the close-time advisory sees only
+    evidence scripts stored in the repo.

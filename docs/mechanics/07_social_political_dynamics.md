@@ -11,7 +11,7 @@ last_verified: 2026-09-07
 This chapter describes the "Social Laws" governing trust, contracts, reputation, relationship
 history, and party/group coordination — how entities judge, bond with, and organize around each
 other. Source: `src/systems/social_systems/` (appraisal.py, contracts.py, relationships.py,
-guilds.py, party.py, party_composition.py, memory.py, group_service.py, reputation.py,
+party.py, party_composition.py, memory.py, group_service.py, reputation.py,
 party_lifecycle.py), `src/domains/commitment/reputation.py`.
 
 **Provenance note:** this chapter promotes and corrects `docs/simulation/social_systems_contract.md`
@@ -71,6 +71,10 @@ above before kind-specific dispatch:
 | TEACH | Always ACCEPTED once the prelude passes. On ACCEPTED: `IdentityUpdate(recipes_learned=[skill_id])` set directly on the student — no gold cost (trust replaces the never-enforced legacy `TRAIN_COST`; see `docs/guidelines/intentional_divergences.md` DEV-007) |
 | MARRIAGE | Always ACCEPTED once the prelude passes — no utility/risk model, no `familiarity` threshold. On ACCEPTED, a durable `MarriageState` is written on **both** parties via `StrategicUpdate.marriages_add_or_update`. Bigamy prevention and aging/duration thresholds are deliberately out of scope — see `docs/mechanics/04_strategic_cognition.md` §8 |
 | CLAN | Clan-membership contract kind — see `docs/systems/faction_contract.md` for Clan formation/succession rules this chapter does not duplicate |
+
+> **Current play (RECRUITMENT; "Current play" note, `TCK-20261111-NO-RECRUITMENT-APPRAISAL-RUNS-IN-ANY-CORPUS-WORLD`, divergence 2.205).** The trust pipeline above and the RECRUITMENT row are the designed law, and they do not run for recruitment in play. Acceptance currently runs on D-09's minimal accept: any live offer from any entity is accepted by its receiver if the receiver is not already in a group (`find_pending_incoming_offer`, `src/domains/cooperation/services.py`; `CooperationPhase`, `src/domains/cooperation/phase.py:190`). The only code that appraises a RECRUITMENT contract, `CoreActions.execute_recruit`, is dispatched only by `ActionRouter` on the action "RECRUIT", and nothing issues it. The party-commitment check listed in the row has no code.
+
+> **Current play (MERCHANT, TEAM_UP, TEACH, MARRIAGE, CLAN; `TCK-20261113-FIVE-SOCIAL-ACTION-KINDS-MAY-HAVE-NO-ISSUER-IN-PLAY`).** These rows are the designed law, and they do not run in play. Their only callers are `CoreActions.execute_trade`, `execute_team_up`, `execute_train`, `execute_propose_marriage`, `execute_join_clan` and `execute_leave_clan`, dispatched by `ActionRouter` on the actions TRADE, TEAM_UP, TRAIN, PROPOSE_MARRIAGE, JOIN_CLAN and LEAVE_CLAN, and nothing in play issues any of them. No clan exists in play: `AuthoritativeState.clans` starts empty and nothing creates one.
 
 Every dispatch except MERCHANT/RECRUITMENT/POSITION_SWAP is a pure trust-gate — no counter-terms,
 no utility model. On ACCEPTED, the resulting `ContractState` attaches to `EntityUpdate.strategic`
@@ -293,15 +297,15 @@ receives less, net world gold unchanged.
 
 ## 7. Guild Intelligence
 
-**Corrected — `GuildMembership`/guild dues/guild rank do not exist anywhere in `src/`.** The real
-mechanism, `GuildIntelSystem.update()` (`guilds.py`), is an intel-gathering interaction: an entity
-interacting with a functional guild `BuildingState` (`interaction.kind == "guild"`) accumulates
-`interaction.progress` by `+1.0`/tick; at `progress >= 10.0`, the guild identifies the region with
-the **highest `trauma_score`** in the world and creates a real rumor `LeadState`/`BeliefState` about
-danger there (`BeliefCycleSystem.process_rumor()`), and — if that region's `trauma_score > 5.0` — a
-`ConcernState(kind="danger")` scaled by `trauma_score / 10.0`. The entity's interaction then resets.
+**Designed, not in effect. No implementing code.** The simulation has no guild-intelligence mechanism: nothing turns a guild visit into a danger rumor. `GuildMembership`, guild dues and guild rank do not exist anywhere in `src/` either.
 
-**Implementing code:** `src/systems/social_systems/guilds.py`.
+What a guild visit does today is the guild-visit path under the `guilds` mechanism. `GuildVisitPhase` (phase `guild_visit`, gated by `ENABLE_GUILD_QUEST_GENERATION`, default ON) resolves an entity's guild-visit objective once the entity is within distance 1.0 of the guild building, then calls `GuildAction.visit()`. That call grants up to two `VAGUE` location leads on `iron_vein` resource nodes the entity holds no lead for yet, chosen deterministically, and one quest when the entity has project capacity. It produces no danger rumor, belief or concern.
+
+**Design that is not in effect** (kept so a later feature starts from it): an entity interacting with a functional guild building would accumulate channel progress at +1.0 per tick; at 10.0 the guild would pick the region with the highest `trauma_score` and give the entity a rumor lead and belief about danger there (through `BeliefCycleSystem.process_rumor()`), plus, above a `trauma_score` of 5.0, a danger concern scaled by `trauma_score / 10.0`. The class that held this logic (`GuildIntelSystem`) was never called and has been deleted.
+
+Bringing this back is an **Introduce** (a new, declared feature with its own owner decision, proof and registry entry), not a revert.
+
+**Implementing code:** none for guild intelligence. The live guild visit is `src/town/guild.py` (`GuildAction.visit`) and `src/engine/pipeline_phases/guild_visit.py` (`GuildVisitPhase`).
 
 ---
 
@@ -331,7 +335,33 @@ Leadership acts only through `apply_leadership_influence()`'s goal injection abo
 ### Leadership Election & Defection (`party_lifecycle.py`, SOC-228/SOC-230)
 - **Election:** every `LEADERSHIP_CHECK_INTERVAL` ticks, if the highest-sociability member exceeds
   the current leader's sociability by `>= 0.2`, that member (lowest id as tiebreaker) is elected and
-  a `LeadershipChangedEvent` fires.
+  a `LeadershipChangedEvent` fires. The cadence starts at formation: a new group is stamped
+  `last_leadership_check_tick = formation tick`, so its first election is `LEADERSHIP_CHECK_INTERVAL`
+  ticks later, never on the formation tick.
+- **Contract binding (SOC-279):** a group formed by a contract is bound to it. `contract_id` is the
+  one stored id of that contract and `contract_holder_id` the entity whose `strategic.contracts`
+  holds it (the formation scan's `entity_a`, the contract's source). Both are written once, at
+  formation; a leadership change never moves them. A `GroupRecord` with a `contract_id` and no
+  `contract_holder_id` is invalid (`GroupBindingError`). Groups not formed by a contract (squads)
+  have neither. The group lives while the binding contract is ACTIVE on the holder and the holder is
+  alive, active and a member. At formation the group binds the **live contract with the latest
+  `expiry_tick`** among the contracts that qualified a partner (`expiry_tick == -1`, no expiry, ranks
+  latest; a tie takes the lowest contract id; the holder stays the initiator). "Live" is one shared
+  test, `contract_is_live` (ACTIVE and not due, due meaning `expiry_tick != -1` and
+  `tick >= expiry_tick`), used by the contracts phase, group formation and the dissolution check, so a
+  contract due this tick forms no group. The group dissolves **on the tick** the binding ends (a
+  same-tick contract write on the holder counts; a contract that reaches its `expiry_tick` ends the
+  group on that tick as `BINDING_CONTRACT_NOT_ACTIVE` with status `FULFILLED`, whether or not the
+  contracts phase has written the status yet), all members are released, and the record is kept. The contract is read from the holder, never from the current leader. A group
+  does not rebind to the pair's next ACTIVE contract.
+- **Typed end reason (bound groups only; `GroupRecord.dissolution_reason`, `GroupDissolutionReason`):**
+  one reason per dissolution, in this precedence when several apply on one tick:
+  `BINDING_HOLDER_LEFT` > `BINDING_CONTRACT_MISSING` > `BINDING_CONTRACT_NOT_ACTIVE`
+  (with `dissolution_contract_status`, the typed `ContractStatus`; a contract that reached its expiry
+  records `FULFILLED`, never `EXPIRED`) >
+  `LEADER_LOST` > `DEFECTION` > `MEMBERS_BELOW_TWO`. A pair whose holder dies is `BINDING_HOLDER_LEFT`,
+  not `MEMBERS_BELOW_TWO`: the cause outranks the consequence, also when a non-leader holder drifts
+  out of a pair (the size rule fires the same tick; the holder having left is recorded). Unbound groups carry no reason.
 - **Defection:** an entity defects when `len(group.grievance_log) >= effective_defection_threshold(group)`:
   ```
   threshold = max(1, 3 + round(composition_score * 2) - round(loyalty_pressure * 2))
@@ -394,7 +424,7 @@ cross-import from a domain into `src/systems/social_systems/` violates this boun
    handling in `contracts.py`, add tests.
 2. New relationship dimension → extend `SocialComponent`/`SocialUpdate`, add clamping in
    `RelationshipService.process_update()`.
-3. New guild benefit → extend `guilds.py`; guild-derived signals must be readable by the adventure
+3. New guild benefit → extend `src/town/guild.py` (`GuildAction.visit`); guild-derived signals must be readable by the adventure
    domain without importing social systems directly.
 4. Never read social state in a domain service.
 

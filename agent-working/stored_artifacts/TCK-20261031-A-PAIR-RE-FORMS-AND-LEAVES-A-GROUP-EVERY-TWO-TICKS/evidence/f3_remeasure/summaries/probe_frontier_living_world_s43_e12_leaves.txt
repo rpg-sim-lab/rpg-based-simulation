@@ -1,0 +1,36 @@
+hook cohesion True decision rows 71 leave rows 10 claim rows 10
+== leaves of e12:
+   {'t': 1301, 'e': 12, 'bld': 20003, 'bld_functional': True, 'task_in_update': True, 'work': 'ENTITY_ACT', 'reason': None, 'action': None, 'obj': 'fatigue_20003', 'project': 'proj_fatigue_1228'}
+   {'t': 1311, 'e': 12, 'bld': 20003, 'bld_functional': True, 'task_in_update': True, 'work': 'ENTITY_ACT', 'reason': None, 'action': None, 'obj': 'fatigue_20003', 'project': 'proj_fatigue_1228'}
+   {'t': 1322, 'e': 12, 'bld': 20003, 'bld_functional': True, 'task_in_update': True, 'work': 'ENTITY_ACT', 'reason': None, 'action': None, 'obj': 'fatigue_20003', 'project': 'proj_fatigue_1228'}
+   {'t': 1331, 'e': 12, 'bld': 20003, 'bld_functional': True, 'task_in_update': True, 'work': 'ENTITY_ACT', 'reason': None, 'action': None, 'obj': 'fatigue_20003', 'project': 'proj_fatigue_1228'}
+   {'t': 1341, 'e': 12, 'bld': 20003, 'bld_functional': True, 'task_in_update': True, 'work': 'ENTITY_ACT', 'reason': None, 'action': None, 'obj': 'fatigue_20003', 'project': 'proj_fatigue_1228'}
+   {'t': 1352, 'e': 12, 'bld': 20003, 'bld_functional': True, 'task_in_update': True, 'work': 'ENTITY_ACT', 'reason': None, 'action': None, 'obj': 'fatigue_20003', 'project': 'proj_fatigue_1228'}
+   {'t': 1361, 'e': 12, 'bld': 20003, 'bld_functional': True, 'task_in_update': True, 'work': 'ENTITY_ACT', 'reason': None, 'action': None, 'obj': 'fatigue_20003', 'project': 'proj_fatigue_1228'}
+   {'t': 1371, 'e': 12, 'bld': 20003, 'bld_functional': True, 'task_in_update': True, 'work': 'ENTITY_ACT', 'reason': None, 'action': None, 'obj': 'fatigue_20003', 'project': 'proj_fatigue_1228'}
+   {'t': 1382, 'e': 12, 'bld': 20003, 'bld_functional': True, 'task_in_update': True, 'work': 'ENTITY_ACT', 'reason': None, 'action': None, 'obj': 'fatigue_20003', 'project': 'proj_fatigue_1228'}
+   {'t': 1391, 'e': 12, 'bld': 20003, 'bld_functional': True, 'task_in_update': True, 'work': 'ENTITY_ACT', 'reason': None, 'action': None, 'obj': 'fatigue_20003', 'project': 'proj_fatigue_1228'}
+== claims involving e12 (t>=1360):
+   {'t': 1368, 'bld': 20003, 'beds': 10, 'held': 0, 'claimants': [12], 'granted': [12]}
+   {'t': 1378, 'bld': 20003, 'beds': 10, 'held': 0, 'claimants': [12], 'granted': [12]}
+   {'t': 1388, 'bld': 20003, 'beds': 10, 'held': 0, 'claimants': [12], 'granted': [12]}
+== counts by (phase, kind, role-before, chosen, bound, change within 10 ticks):
+  60 ('groups', 'NO_CHANGE', 'other', '-', '-', 'same')
+  6 ('groups', 'NO_CHANGE', 'other', '-', '-', 'loc')
+  3 ('groups', 'NO_CHANGE', 'other', '-', '-', 'goal+loc')
+  1 ('groups', 'DISSOLVED:BINDING_CONTRACT_NOT_ACTIVE', 'other', '-', '-', 'loc')
+  1 ('groups', 'FORMATION', 'other', '-', '-', 'loc')
+== by kind x change: {('NO_CHANGE', 'same'): 60, ('NO_CHANGE', 'loc'): 6, ('DISSOLVED:BINDING_CONTRACT_NOT_ACTIVE', 'loc'): 1, ('FORMATION', 'loc'): 1, ('NO_CHANGE', 'goal+loc'): 3}
+== total split: {'same': 60, 'loc': 8, 'goal+loc': 3}
+== lodged stayers CHOSEN leader or BOUND holder: 0
+== DEFEAT deaths:
+   {'t': 233, 'e': 38, 'cause': 'DEFEAT', 'killer': 17, 'hazard': None, 'gid': 10021, 'role': 'VANGUARD', 'grp_leader': 11} last_lodged None last_leave None near_lodge50 False groups_within50 [(10021, 172)]
+   {'t': 319, 'e': 2, 'cause': 'DEFEAT', 'killer': 39, 'hazard': None, 'gid': 10036, 'role': 'VANGUARD', 'grp_leader': 10} last_lodged None last_leave None near_lodge50 False groups_within50 [(10036, 282)]
+   {'t': 322, 'e': 11, 'cause': 'DEFEAT', 'killer': 17, 'hazard': None, 'gid': 10035, 'role': 'LEADER', 'grp_leader': 11} last_lodged None last_leave None near_lodge50 False groups_within50 [(10035, 279)]
+   {'t': 357, 'e': 4, 'cause': 'DEFEAT', 'killer': 17, 'hazard': None, 'gid': 10038, 'role': 'VANGUARD', 'grp_leader': 6} last_lodged None last_leave None near_lodge50 False groups_within50 [(10038, 336)]
+   {'t': 1115, 'e': 39, 'cause': 'DEFEAT', 'killer': 9, 'hazard': None, 'gid': 10077, 'role': 'LEADER', 'grp_leader': 39} last_lodged None last_leave None near_lodge50 False groups_within50 [(10077, 1062)]
+   {'t': 1211, 'e': 18, 'cause': 'DEFEAT', 'killer': 17, 'hazard': None, 'gid': None, 'role': None, 'grp_leader': None} last_lodged None last_leave None near_lodge50 False groups_within50 []
+   {'t': 1433, 'e': 12, 'cause': 'DEFEAT', 'killer': 30, 'hazard': None, 'gid': 10088, 'role': 'LEADER', 'grp_leader': 12} last_lodged 1391 last_leave 1392 near_lodge50 True groups_within50 [(10085, 1296), (10088, 1396)]
+   {'t': 1454, 'e': 36, 'cause': 'DEFEAT', 'killer': 30, 'hazard': None, 'gid': 10086, 'role': 'LEADER', 'grp_leader': 36} last_lodged None last_leave None near_lodge50 False groups_within50 [(10086, 1369)]
+   {'t': 1482, 'e': 9, 'cause': 'DEFEAT', 'killer': 30, 'hazard': None, 'gid': 10087, 'role': 'VANGUARD', 'grp_leader': 19} last_lodged None last_leave None near_lodge50 False groups_within50 [(10087, 1384)]
+   {'t': 1511, 'e': 19, 'cause': 'DEFEAT', 'killer': 30, 'hazard': None, 'gid': 10090, 'role': 'VANGUARD', 'grp_leader': 48} last_lodged None last_leave None near_lodge50 False groups_within50 [(10087, 1384), (10090, 1483)]

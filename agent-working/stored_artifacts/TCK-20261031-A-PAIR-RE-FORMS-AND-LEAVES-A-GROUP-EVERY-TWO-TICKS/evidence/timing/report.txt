@@ -1,0 +1,60 @@
+METHOD: non-audit, pinned FULL (PinnedNormalGovernor), ConcurrentExecutionAdapter; s42, 2000 ticks, PROD_SMALL, cores 4-5. Production on this host is not measured by this method (smoke: frontier s42 base 600t default governor FULL 66 / MINIMAL 281 / OFF 253).
+
+=== crowded_frontier
+ base c9b9a50f4: tick-sum s per run (rep1,2,3) [149.1, 164.0, 168.9] median 164.0 spread 12.1% | hashes ['3ffb7e977126', '3ffb7e977126', '3ffb7e977126'] IDENTICAL | policy [{'FULL/True/None': 2000}, {'FULL/True/None': 2000}, {'FULL/True/None': 2000}] all_full [True, True, True] | store [19, 19, 19] ghosts [21, 21, 21] overwrites [199, 199, 199] | executor ['ConcurrentExecutionAdapter'] governor ['PinnedNormalGovernor']
+   swap per run (pswpin pages, pswpout pages, min MemAvailable kB): [(324, 12303, 4579640), (736, 6242, 4223756), (12459, 0, 5030916)]
+ branch 59f0e78bd: tick-sum s per run (rep1,2,3) [129.1, 140.4, 143.1] median 140.4 spread 10.0% | hashes ['66101cd32511', '66101cd32511', '66101cd32511'] IDENTICAL | policy [{'FULL/True/None': 2000}, {'FULL/True/None': 2000}, {'FULL/True/None': 2000}] all_full [True, True, True] | store [45, 45, 45] ghosts [0, 0, 0] overwrites [0, 0, 0] | executor ['ConcurrentExecutionAdapter'] governor ['PinnedNormalGovernor']
+   swap per run (pswpin pages, pswpout pages, min MemAvailable kB): [(226, 6071, 4644876), (57278, 2491, 4737012), (72, 0, 5141040)]
+ total tick: median base 164.0 s, branch 140.4 s, rise -14.4% ; ranges base [149.1,168.9] branch [129.1,143.1] -> no resolved rise >5%
+ RULED PHASE TEST: bar = 5% of base median total tick 82.0 ms = 4.10 ms/tick; distance of the branch median outside base's [min,max]:
+   cooperation (kernel phase, per-run median ms/tick): base runs [1.425, 1.562, 1.576] median 1.562 ; branch runs [1.188, 1.26, 1.266] median 1.260 ; spread of base [1.425, 1.576] ; distance outside 0.164 -> within the bar
+   groups phase (GroupPhase.resolve wall, per-run mean ms/tick = group_phase_ms_total / 2000): base runs [0.276, 0.328, 0.475] median 0.328 ; branch runs [0.412, 0.426, 0.453] median 0.426 ; spread of base [0.276, 0.475] ; distance outside 0.000 -> within the bar
+ OTHER PHASES (not under the ruled test; reported as differences only, no pass/fail), top 6 by |branch-base| median, with the distance outside base's [min,max]:
+   persistence: base 40.652 branch 29.763 diff -10.889 ms/tick, outside base spread by 7.658
+   combat_engagement: base 1.945 branch 1.577 diff -0.368 ms/tick, outside base spread by 0.164
+   cooperation: base 1.562 branch 1.260 diff -0.302 ms/tick, outside base spread by 0.164
+   resolution_overhead: base 8.567 branch 8.288 diff -0.279 ms/tick, outside base spread by 0.000
+   contracts_production: base 0.417 branch 0.269 diff -0.148 ms/tick, outside base spread by 0.111
+   scheduling: base 0.232 branch 0.318 diff +0.087 ms/tick, outside base spread by 0.084
+ pairwise by rep (branch vs base, same rep): [-13.4, -14.4, -15.3]% ; branch slower in 0 of 3 pairs
+ HOLD RULE (as ruled): total tick resolved rise>5%: False; store>2000: False (max 45); ruled phases (groups, cooperation) outside base spread by >5% of base total: none
+
+=== frontier_living_world
+ base c9b9a50f4: tick-sum s per run (rep1,2,3) [268.8, 251.2, 289.7] median 268.8 spread 14.3% | hashes ['93a1944fe116', '93a1944fe116', '93a1944fe116'] IDENTICAL | policy [{'FULL/True/None': 2000}, {'FULL/True/None': 2000}, {'FULL/True/None': 2000}] all_full [True, True, True] | store [28, 28, 28] ghosts [22, 22, 22] overwrites [142, 142, 142] | executor ['ConcurrentExecutionAdapter'] governor ['PinnedNormalGovernor']
+   swap per run (pswpin pages, pswpout pages, min MemAvailable kB): [(2836, 1673, 3765144), (230, 2801, 5204812), (882, 6835, 4044504)]
+ branch 59f0e78bd: tick-sum s per run (rep1,2,3) [288.0, 306.6, 294.9] median 294.9 spread 6.3% | hashes ['a872018bf494', 'a872018bf494', 'a872018bf494'] IDENTICAL | policy [{'FULL/True/None': 2000}, {'FULL/True/None': 2000}, {'FULL/True/None': 2000}] all_full [True, True, True] | store [110, 110, 110] ghosts [0, 0, 0] overwrites [0, 0, 0] | executor ['ConcurrentExecutionAdapter'] governor ['PinnedNormalGovernor']
+   swap per run (pswpin pages, pswpout pages, min MemAvailable kB): [(833, 0, 4957584), (2214, 10624, 4024084), (974, 4773, 4134956)]
+ total tick: median base 268.8 s, branch 294.9 s, rise +9.7% ; ranges base [251.2,289.7] branch [288.0,306.6] -> rise >5% but ranges overlap (unresolved)
+ RULED PHASE TEST: bar = 5% of base median total tick 134.4 ms = 6.72 ms/tick; distance of the branch median outside base's [min,max]:
+   cooperation (kernel phase, per-run median ms/tick): base runs [4.36, 4.202, 4.819] median 4.360 ; branch runs [3.431, 3.698, 3.624] median 3.624 ; spread of base [4.202, 4.819] ; distance outside 0.578 -> within the bar
+   groups phase (GroupPhase.resolve wall, per-run mean ms/tick = group_phase_ms_total / 2000): base runs [0.27, 0.261, 0.31] median 0.270 ; branch runs [1.09, 0.99, 0.936] median 0.990 ; spread of base [0.261, 0.310] ; distance outside 0.680 -> within the bar
+ OTHER PHASES (not under the ruled test; reported as differences only, no pass/fail), top 6 by |branch-base| median, with the distance outside base's [min,max]:
+   resolution_overhead: base 17.987 branch 21.293 diff +3.306 ms/tick, outside base spread by 1.929
+   persistence: base 51.512 branch 53.606 diff +2.094 ms/tick, outside base spread by 0.000
+   combat_engagement: base 5.000 branch 6.729 diff +1.729 ms/tick, outside base spread by 1.319
+   advancement: base 9.589 branch 10.577 diff +0.987 ms/tick, outside base spread by 0.319
+   collection: base 4.034 branch 4.992 diff +0.957 ms/tick, outside base spread by 0.594
+   cooperation: base 4.360 branch 3.624 diff -0.736 ms/tick, outside base spread by 0.578
+ pairwise by rep (branch vs base, same rep): [7.2, 22.1, 1.8]% ; branch slower in 3 of 3 pairs
+ HOLD RULE (as ruled): total tick resolved rise>5%: False (rise over 5 percent on medians but the ranges overlap by 1.7 s, resting on one base run of 289.7 s: UNRESOLVED, not within noise: the branch was slower in 3 of 3 pairs); store>2000: False (max 110); ruled phases (groups, cooperation) outside base spread by >5% of base total: none
+
+=== urban_political
+ base c9b9a50f4: tick-sum s per run (rep1,2,3) [175.0, 167.7, 178.1] median 175.0 spread 5.9% | hashes ['327f8e441f2b', '327f8e441f2b', '327f8e441f2b'] IDENTICAL | policy [{'FULL/True/None': 2000}, {'FULL/True/None': 2000}, {'FULL/True/None': 2000}] all_full [True, True, True] | store [19, 19, 19] ghosts [13, 13, 13] overwrites [58, 58, 58] | executor ['ConcurrentExecutionAdapter'] governor ['PinnedNormalGovernor']
+   swap per run (pswpin pages, pswpout pages, min MemAvailable kB): [(879, 560, 5055356), (1514, 0, 5290520), (3092, 3545, 5180384)]
+ branch 59f0e78bd: tick-sum s per run (rep1,2,3) [179.1, 168.2, 180.5] median 179.1 spread 6.9% | hashes ['ae41db137ac7', 'ae41db137ac7', 'ae41db137ac7'] IDENTICAL | policy [{'FULL/True/None': 2000}, {'FULL/True/None': 2000}, {'FULL/True/None': 2000}] all_full [True, True, True] | store [79, 79, 79] ghosts [0, 0, 0] overwrites [0, 0, 0] | executor ['ConcurrentExecutionAdapter'] governor ['PinnedNormalGovernor']
+   swap per run (pswpin pages, pswpout pages, min MemAvailable kB): [(15513, 6422, 4546176), (3124, 42, 5309316), (18751, 1434, 5202100)]
+ total tick: median base 175.0 s, branch 179.1 s, rise +2.3% ; ranges base [167.7,178.1] branch [168.2,180.5] -> no resolved rise >5%
+ RULED PHASE TEST: bar = 5% of base median total tick 87.5 ms = 4.37 ms/tick; distance of the branch median outside base's [min,max]:
+   cooperation (kernel phase, per-run median ms/tick): base runs [6.564, 6.302, 6.853] median 6.564 ; branch runs [2.635, 2.392, 2.583] median 2.583 ; spread of base [6.302, 6.853] ; distance outside 3.719 -> within the bar
+   groups phase (GroupPhase.resolve wall, per-run mean ms/tick = group_phase_ms_total / 2000): base runs [0.369, 0.394, 0.423] median 0.394 ; branch runs [0.631, 0.578, 0.651] median 0.631 ; spread of base [0.369, 0.423] ; distance outside 0.208 -> within the bar
+ OTHER PHASES (not under the ruled test; reported as differences only, no pass/fail), top 6 by |branch-base| median, with the distance outside base's [min,max]:
+   cooperation: base 6.564 branch 2.583 diff -3.981 ms/tick, outside base spread by 3.719
+   combat_engagement: base 3.891 branch 5.191 diff +1.300 ms/tick, outside base spread by 1.259
+   resolution_overhead: base 12.944 branch 13.719 diff +0.775 ms/tick, outside base spread by 0.637
+   advancement: base 6.552 branch 6.067 diff -0.485 ms/tick, outside base spread by 0.060
+   locomotion: base 3.520 branch 3.319 diff -0.201 ms/tick, outside base spread by 0.030
+   collection: base 3.685 branch 3.872 diff +0.186 ms/tick, outside base spread by 0.156
+ pairwise by rep (branch vs base, same rep): [2.3, 0.2, 1.3]% ; branch slower in 3 of 3 pairs
+ HOLD RULE (as ruled): total tick resolved rise>5%: False; store>2000: False (max 79); ruled phases (groups, cooperation) outside base spread by >5% of base total: none
+
+HOLD SUMMARY {'crowded_frontier': {'total': False, 'store': False, 'ruled_phase': []}, 'frontier_living_world': {'total': False, 'store': False, 'ruled_phase': []}, 'urban_political': {'total': False, 'store': False, 'ruled_phase': []}}

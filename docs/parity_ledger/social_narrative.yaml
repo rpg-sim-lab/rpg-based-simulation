@@ -1,6 +1,6 @@
 - id: SOC-001
   text: Private betrayal history can override public recruiter reputation.
-  status: verified
+  status: divergent
   priority: P0
   legacy_evidence: null
   v2_evidence: '`src/systems/social_systems/appraisal.py` (`SocialAppraisalSystem.appraise_contract`
@@ -10,7 +10,7 @@
     social-systems package split, function renamed from `evaluate_recruitment_offer`)'
   proof_type: parity
   test_path: '`tests/unit/social/test_betrayal_consequence.py::test_betrayal_trauma_blocks_recruitment`'
-  divergence_note: null
+  divergence_note: 'In play, recruitment acceptance runs on cooperation''s minimal accept (services.py find_pending_incoming_offer -> phase.py:190 accept_contract, D-09: any live offer, if the receiver is not in a group), and the trust appraisal never runs: execute_recruit, the only caller that appraises a RECRUITMENT contract, has no issuer (action_router.py:63-64). The betrayal gate in appraise_contract is therefore not reached by recruitment in play. See docs/guidelines/intentional_divergences.md Section 2.205 and TCK-20261111-NO-RECRUITMENT-APPRAISAL-RUNS-IN-ANY-CORPUS-WORLD.'
   support_boundary: null
 - id: SOC-002
   text: Social learning updates familiarity/trust-like bonds from interaction evidence.
@@ -95,7 +95,7 @@
   support_boundary: null
 - id: SOC-008
   text: Recruitment evaluates trust, debt, greed, capability fit, and prior trauma.
-  status: verified
+  status: divergent
   priority: P0
   legacy_evidence: null
   v2_evidence: '`src/systems/social_systems/appraisal.py` (`SocialAppraisalSystem.calculate_recruitment_cost`,
@@ -104,7 +104,7 @@
     function renamed from `evaluate_recruitment_offer`)'
   proof_type: parity
   test_path: '`tests/unit/social/test_recruitment.py`, `tests/unit/social/test_betrayal_consequence.py::test_betrayal_trauma_blocks_recruitment`'
-  divergence_note: null
+  divergence_note: 'In play, recruitment acceptance runs on cooperation''s minimal accept (services.py find_pending_incoming_offer -> phase.py:190 accept_contract, D-09: any live offer, if the receiver is not in a group), and the trust appraisal never runs: execute_recruit, the only caller that appraises a RECRUITMENT contract, has no issuer (action_router.py:63-64). The calculate_recruitment_cost this row''s v2_evidence cites (appraisal.py:508) has no caller in play. See docs/guidelines/intentional_divergences.md Section 2.205 and TCK-20261111-NO-RECRUITMENT-APPRAISAL-RUNS-IN-ANY-CORPUS-WORLD.'
   support_boundary: null
 - id: SOC-009
   text: "`test_arena_structural_determinism`: Arena structural determinism \u2014\
@@ -464,13 +464,13 @@
 - id: SOC-042
   text: "`test_near_death_hardening`: Near death hardening \u2014 Verify that surviving\
     \ at low HP increases Max HP.."
-  status: legacy_verified
+  status: verified
   priority: P0
   legacy_evidence: null
-  v2_evidence: Implementation proven via exhaustive checklist audit Phase 1-11
+  v2_evidence: 'NearDeathHardeningPhase.apply (src/engine/pipeline_phases/hardening.py) grants +5 max HP and the near_death emotion only when this tick''s CombatUpdate records a combat hit (attacker_id, damage_taken > 0, hit_tick_set == tick, as patches.py:332-337) and the subject survives at or below 10% of max HP; a town heal or a hazard grants nothing.'
   proof_type: parity
-  test_path: null
-  divergence_note: null
+  test_path: tests/unit/engine/test_near_death_hardening_hit_gate.py
+  divergence_note: 'Divergence 2.201 (TCK-20261103-NEAR-DEATH-HARDENING-FIRES-WITH-NOTHING-HITTING-THE-SUBJECT): the grant needs a combat hit taken this tick; a heal or a hazard grants nothing.'
   support_boundary: null
 - id: SOC-043
   text: "`test_stat_decay_inactivity`: Stat decay inactivity \u2014 Verify that idling\
@@ -1133,7 +1133,7 @@
   support_boundary: null
 - id: SOC-104
   text: '`python -m src serve` accepts the original `--host`, `--port`, `--seed`,
-    `--entities`, `--workers`, `--log-level` arguments.'
+    `--workers`, `--log-level` arguments. (Text corrected 2026-10-26: `serve` never had an `--entities` flag; documentation correction, no behaviour change.)'
   status: legacy_verified
   priority: P0
   legacy_evidence: null
@@ -1143,19 +1143,22 @@
   divergence_note: null
   support_boundary: null
 - id: SOC-105
-  text: '`python -m src cli` accepts the original `--ticks`, `--entities`, `--seed`,
-    `--workers`, `--grid-width`, `--grid-height`, `--replay`, `--log-level` arguments.'
-  status: legacy_verified
+  text: '`python -m src cli` accepts the original `--ticks`, `--seed`, `--workers`,
+    `--grid-width`, `--grid-height`, `--replay`, `--log-level` arguments.'
+  status: divergent
   priority: P0
   legacy_evidence: null
-  v2_evidence: Implementation proven via exhaustive checklist audit Phase 1-11
+  v2_evidence: '`cli` no longer has an `--entities` flag: it was parsed and never
+    read in V2, and is now rejected as an unrecognized argument (src/cli/entry.py).'
   proof_type: parity
-  test_path: null
-  divergence_note: null
+  test_path: tests/cli/test_entry_parity.py::test_cli_rejects_the_entities_flag
+  divergence_note: 'docs/guidelines/intentional_divergences.md §2.140 (the --entities
+    removal, #617, TCK-20261026-CLI-ENTITIES-FLAG-PARSED-NEVER-READ): the original --entities
+    argument was accepted and ignored; it is now rejected.'
   support_boundary: null
 - id: SOC-106
   text: '`python -m src inspect` accepts the original `--id`, `--seed`, `--ticks`,
-    `--entities`, `--workers`, `--log-level` arguments.'
+    `--workers`, `--log-level` arguments. (Text corrected 2026-10-26: `inspect` never had an `--entities` flag; documentation correction, no behaviour change.)'
   status: legacy_verified
   priority: P0
   legacy_evidence: null
@@ -1456,7 +1459,7 @@
     \ TCK-20260904-REPUTATION-LOCALITY-SCOPE confirmed this read is unchanged: appraise_contract()\
     \ still reads the retained global public_reputation scalar; region-scoped blending\
     \ into this read was explicitly scoped out as a documented follow-up, not implemented\
-    \ in this ticket. TCK-20260904-CLAN-REPUTATION-ASSOCIATION (SOC-268) extended\
+    \ in this ticket. TCK-20260904-CLAN-REPUTATION-ASSOCIATION (SOC-272) extended\
     \ the no-bond stranger-judgment branch with a third additive term, (clan_trust\
     \ - 0.5) * CLAN_INFLUENCE_WEIGHT (CLAN_INFLUENCE_WEIGHT=0.2), where clan_trust\
     \ = (state.clans[clan_id].clan_reputation / 2.0) if the source belongs to a Clan\
@@ -2444,7 +2447,7 @@
     safe immutable defaults for backward compatibility with existing callers.
 
     '
-  status: verified
+  status: divergent
   priority: P1
   legacy_evidence: null
   v2_evidence: 'src/core/state.py GroupRecord class body (formation_tick..dissolution_tick
@@ -2454,7 +2457,13 @@
     '
   proof_type: parity
   test_path: tests/unit/social/test_group_lifecycle_fields.py
-  divergence_note: null
+  divergence_note: 'formation_tick is declared and serialized, but no group-creation path writes
+    it (groups.py recruit-contract party, military_conflict.py faction squad), so
+    every group carries 0, not its formation tick. The fix is built but parked with
+    hit-wake (#715 6776436829); see TCK-20261107-GROUP-FORMATION-TICK-IS-NEVER-WRITTEN.
+    The other five fields are unaffected.
+
+    '
   support_boundary: null
 - id: SOC-228
   text: 'PartyLifecycleService.check_leadership() evaluates sociability-based leadership
@@ -3022,21 +3031,22 @@
   status: verified
   priority: P1
   legacy_evidence: null
-  v2_evidence: "src/observability/event_extractor.py (cooperation_event emit block;\
-    \ reputation_delta emit block with REPUTATION_DELTA_THRESHOLD=0.05 guard). src/domains/cooperation/phase.py\
-    \ (CooperationPhase.resolve \u2014 property_updates now stores posture string\
-    \ value, not raw CooperationDecisionResult). src/engine/apply.py (apply_generation\
-    \ \u2014 feature_flags preserved on AuthoritativeState tick reconstruction). config/simulation_quality/profiles/urban_political.yaml\
-    \ (feature_flags: {ENABLE_SOCIAL_COOPERATION: \"ON\"}). config/simulation_quality/profiles/frontier_living_world.yaml,\
+  v2_evidence: "src/observability/extraction/strategy.py (cooperation_event emit block);\
+    \ src/observability/extraction/social.py (reputation_delta emit block with REPUTATION_DELTA_THRESHOLD=0.05\
+    \ guard). src/domains/cooperation/phase.py (CooperationPhase.resolve \u2014 property_updates\
+    \ now stores posture string value, not raw CooperationDecisionResult). src/engine/apply.py\
+    \ (apply_generation \u2014 feature_flags preserved on AuthoritativeState tick\
+    \ reconstruction). config/simulation_quality/profiles/urban_political.yaml (feature_flags:\
+    \ {ENABLE_SOCIAL_COOPERATION: \"ON\"}). config/simulation_quality/profiles/frontier_living_world.yaml,\
     \ config/simulation_quality/profiles/highland_traverse.yaml (feature_flags: {ENABLE_SOCIAL_COOPERATION:\
     \ \"ON\"}; SOCIAL grade C\u2192S at 3 seeds each). (TCK-20260629-SIMQ-EMIT-SOCIAL-FACTION,\
     \ TCK-20260702-SIMQ-UPLIFT-SOCIAL-ZERO, TCK-20260710-SIMQ-DEPTH-SOCIAL) As of\
     \ the push-shaper migrations, cooperation_event is now also derived by the live-default\
     \ apply-layer StrategyShaper (cross-domain colocation, see SOC-239), and reputation_delta\
     \ is now also derived by the live-default apply-layer SocialShaper (see SOC-240);\
-    \ both in src/observability/event_shapers.py. event_extractor.py's blocks above\
-    \ are now the flag-gated (_push_shapers_phase2_active) rollback path, not the\
-    \ sole terminus.\n"
+    \ both in src/observability/event_shapers.py. the extraction/ blocks above are\
+    \ now the flag-gated (_push_shapers_phase2_active) rollback path, not the sole\
+    \ terminus.\n"
   proof_type: parity
   test_path: 'tests/unit/observability/test_event_extractor_social_faction.py::test_cooperation_event_emitted_when_decision_in_property_updates;
     tests/unit/observability/test_event_extractor_social_faction.py::test_reputation_delta_emitted_on_significant_change;
@@ -3055,11 +3065,11 @@
   status: verified
   priority: P1
   legacy_evidence: null
-  v2_evidence: 'src/observability/event_extractor.py (contract_completed: status ==
-    ContractStatus.FULFILLED; contract_lapsed: prior==ACTIVE and new==EXPIRED; contract_expired_offer:
-    prior==OFFERED and new==EXPIRED or reap-removed). (TCK-20260629-SIMQ-EMIT-SOCIAL-FACTION)
+  v2_evidence: 'src/observability/extraction/contracts.py (contract_completed: status
+    == ContractStatus.FULFILLED; contract_lapsed: prior==ACTIVE and new==EXPIRED;
+    contract_expired_offer: prior==OFFERED and new==EXPIRED or reap-removed). (TCK-20260629-SIMQ-EMIT-SOCIAL-FACTION)
     As of the push-shaper migrations, all 3 event types are also derived by the live-default
-    apply-layer SocialShaper (src/observability/event_shapers.py, see SOC-240); event_extractor.py''s
+    apply-layer SocialShaper (src/observability/event_shapers.py, see SOC-240); src/observability/extraction/contracts.py''s
     blocks above are now the flag-gated (_push_shapers_phase2_active) rollback path,
     not the sole terminus.
 
@@ -3087,20 +3097,20 @@
   status: verified
   priority: P1
   legacy_evidence: null
-  v2_evidence: 'src/observability/event_extractor.py (faction_updates loop: diplomatic_transition
+  v2_evidence: 'src/observability/extraction/faction.py (faction_updates loop: diplomatic_transition
     with frozenset dedup set; alliance_accepted guard; territory_ownership_changed;
-    faction_tension_delta; world_events_add loop: war_declared, military_conflict_resolved;
-    entity-scan: faction_extinct). src/observability/events.py (EventCategory Literal
-    += "faction"). src/simulation_quality/quality_hub.py (TRANSLATION_MAP additions:
-    leadership_changed, alliance_formed, betrayal_desertion). (TCK-20260629-SIMQ-EMIT-SOCIAL-FACTION)
+    faction_tension_delta; entity-scan: faction_extinct); src/observability/event_extractor.py
+    (world_events_add loop: war_declared, military_conflict_resolved). src/observability/events.py
+    (EventCategory Literal += "faction"). src/simulation_quality/quality_hub.py (TRANSLATION_MAP
+    additions: leadership_changed, alliance_formed, betrayal_desertion). (TCK-20260629-SIMQ-EMIT-SOCIAL-FACTION)
     As of the push-shaper migrations, diplomatic_transition, alliance_accepted, territory_ownership_changed,
     faction_tension_delta, war_declared, and military_conflict_resolved are also derived
     by the live-default apply-layer FactionShaper (src/observability/event_shapers.py).
     faction_extinct, despite sitting in this same entry alongside those 6 FactionShaper-derived
     events, is derived by the separate DeferredInstrumentationShaper (src/observability/event_shapers.py),
-    not FactionShaper. event_extractor.py''s blocks above are now the flag-gated (_push_shapers_active
-    for the first 6, _push_shapers_phase2_active for faction_extinct) rollback path,
-    not the sole terminus.
+    not FactionShaper. those blocks above (extraction/faction.py, event_extractor.py)
+    are now the flag-gated (_push_shapers_active for the first 6, _push_shapers_phase2_active
+    for faction_extinct) rollback path, not the sole terminus.
 
     '
   proof_type: null
@@ -3137,10 +3147,11 @@
   status: verified
   priority: P1
   legacy_evidence: null
-  v2_evidence: "src/observability/event_extractor.py \u2014 alliance_proposed block\
+  v2_evidence: "src/observability/extraction/faction.py \u2014 alliance_proposed block\
     \ inside alliance_accepted guard; resource_seized block inside territory_add loop\
-    \ with tension_delta guard; paid_info_transaction second emit in INFORMATION_PURCHASE\
-    \ branch; conservation_law_verified block at tick % 50 with economy_event_types\
+    \ with tension_delta guard; src/observability/extraction/economy.py \u2014 paid_info_transaction\
+    \ second emit in INFORMATION_PURCHASE branch; src/observability/extraction/resources.py\
+    \ \u2014 conservation_law_verified block at tick % 50 with economy_event_types\
     \ guard. src/engine/scenario_runtime.py \u2014 scenario_objective_progressed emit\
     \ in _evaluate_after_tick() when result == RUNNING. As of the push-shaper migrations,\
     \ alliance_proposed and resource_seized are also derived by the live-default apply-layer\
@@ -3148,7 +3159,7 @@
     \ EconomyShaper; conservation_law_verified is now derived by run_shadow_shapers()\
     \ as a cross-shaper aggregation, not any single per-domain shaper class (all in\
     \ src/observability/event_shapers.py). scenario_objective_progressed remains scenario_runtime.py-only\
-    \ \u2014 not shaper-migrated. event_extractor.py's blocks above are now the flag-gated\
+    \ \u2014 not shaper-migrated. the extraction/ blocks above are now the flag-gated\
     \ (_push_shapers_active for alliance_proposed/resource_seized/paid_info_transaction,\
     \ _push_shapers_phase2_active for conservation_law_verified) rollback path, not\
     \ the sole terminus.\n"
@@ -3170,13 +3181,14 @@
   status: verified
   priority: P1
   legacy_evidence: null
-  v2_evidence: "src/observability/event_extractor.py \u2014 contract_milestone_completed\
+  v2_evidence: "src/observability/extraction/contracts.py \u2014 contract_milestone_completed\
     \ block inside strategic.contracts loop; isinstance guards on expiry_tick/created_tick;\
     \ progress = elapsed / (expiry - created); thresholds (0.25, 0.50, 0.75); _emitted_contract_milestones\
-    \ class-level set gate; reset in reset_run_state(). As of the push-shaper migrations,\
-    \ this event is also derived by the live-default apply-layer SocialShaper (src/observability/event_shapers.py,\
-    \ see SOC-240); event_extractor.py's block above is now the flag-gated (_push_shapers_phase2_active)\
-    \ rollback path, not the sole terminus.\n"
+    \ class-level set gate; reset in reset_run_state() (src/observability/event_extractor.py).\
+    \ As of the push-shaper migrations, this event is also derived by the live-default\
+    \ apply-layer SocialShaper (src/observability/event_shapers.py, see SOC-240);\
+    \ src/observability/extraction/contracts.py's block above is now the flag-gated\
+    \ (_push_shapers_phase2_active) rollback path, not the sole terminus.\n"
   proof_type: parity
   test_path: tests/unit/observability/test_event_extractor_contract_milestone.py
   divergence_note: null
@@ -3189,13 +3201,14 @@
   status: verified
   priority: P1
   legacy_evidence: null
-  v2_evidence: "src/observability/event_extractor.py \u2014 social_memory_created\
+  v2_evidence: "src/observability/extraction/social.py \u2014 social_memory_created\
     \ block after reputation_delta block, inside social section; compares curr_trust\
     \ vs prior_trust per entity per tick; _emitted_social_memory class-level set gate;\
-    \ reset in reset_run_state(). As of the push-shaper migrations, this event is\
-    \ also derived by the live-default apply-layer SocialShaper (src/observability/event_shapers.py,\
-    \ see SOC-240); event_extractor.py's block above is now the flag-gated (_push_shapers_phase2_active)\
-    \ rollback path, not the sole terminus.\n"
+    \ reset in reset_run_state() (src/observability/event_extractor.py). As of the\
+    \ push-shaper migrations, this event is also derived by the live-default apply-layer\
+    \ SocialShaper (src/observability/event_shapers.py, see SOC-240); src/observability/extraction/social.py's\
+    \ block above is now the flag-gated (_push_shapers_phase2_active) rollback path,\
+    \ not the sole terminus.\n"
   proof_type: parity
   test_path: tests/unit/observability/test_event_extractor_social_memory.py
   divergence_note: null
@@ -3303,13 +3316,14 @@
   status: verified
   priority: P2
   legacy_evidence: null
-  v2_evidence: 'src/observability/event_extractor.py -- QuestState import, isinstance-gated
+  v2_evidence: 'src/observability/extraction/quests.py -- QuestState import, isinstance-gated
     QuestEvent construction reading .quest_status with explicit payload={"status":
-    ...}, commitment_abandoned kept structurally independent (still reads generic
-    .status, applies to any project kind). Real-kernel verification (dungeon_crawl_seed42_500t):
-    quest_event count dropped from 700 (pre-fix, 100% mislabeled) to 0 (post-fix --
-    correctly excludes non-quest projects; 0 expected since TCK-20260807-QUEST-GUILDACTION-DEAD-WIRING,
-    still open, means no real QuestState quests exist in live gameplay yet).'
+    ...}; src/observability/event_extractor.py -- commitment_abandoned kept structurally
+    independent (still reads generic .status, applies to any project kind). Real-kernel
+    verification (dungeon_crawl_seed42_500t): quest_event count dropped from 700 (pre-fix,
+    100% mislabeled) to 0 (post-fix -- correctly excludes non-quest projects; 0 expected
+    since TCK-20260807-QUEST-GUILDACTION-DEAD-WIRING, still open, means no real QuestState
+    quests exist in live gameplay yet).'
   proof_type: parity
   test_path: tests/unit/observability/test_event_extractor_narrative.py::TestQuestEventConfirmation;
     tests/unit/observability/test_event_extractor_agency2.py
@@ -3350,8 +3364,8 @@
     flag, deliberately NOT folded into ENABLE_PUSH_EVENT_SHAPERS_PHASE2 which already
     defaults ON -- reusing it would have delivered live immediately with no SHADOW
     window, the identical double-fire-risk mistake TCK-20260806-PUSH-SHAPER-REGISTRY-STRATEGY
-    already found and fixed once for Phase 2 itself). src/observability/event_extractor.py
-    -- event_extractor.py''s own quest_event construction now gated behind `not _push_shapers_quest_active`
+    already found and fixed once for Phase 2 itself). src/observability/extraction/quests.py
+    -- the extractor''s own quest_event construction now gated behind `not _push_shapers_quest_active`
     (rollback path; commitment_abandoned in the same loop deliberately left ungated
     -- separate signal, not migrated by this ticket, see SOC-243). src/domains/optimization/feature_flags.py
     -- new ENABLE_PUSH_EVENT_SHAPERS_QUEST, default ON. Real-kernel-adjacent verification
@@ -3375,8 +3389,8 @@
     WorldEvent(category=QUEST_COMPLETED) (src/engine/pipeline_phases/quest_opportunity_rewards.py)
     -- a different mechanism for a different registry (state.quest_registry''s QuestOpportunity
     entries, E23C), not the entity-project QuestState lifecycle quest_event actually
-    tracks. Historical ticket files in agent-working/tickets/done/ are not edited after close; this
-    entry is the correction of record going forward.'
+    tracks. Historical ticket files in agent-working/tickets/done/ are not edited
+    after close; this entry is the correction of record going forward.'
   support_boundary: 'Observability delivery-mechanism migration only -- no change
     to NarrativeScorer''s scoring logic, no change to which statuses fire (byte-identical
     to SOC-241''s fix, just delivered via a different code path). grade_anchors.json
@@ -3593,7 +3607,7 @@
     `tests/unit/social/test_trade.py::test_execute_trade_rejects_on_low_trust_bond`,
     `tests/unit/social/test_appraisal_logic.py::test_trade_merchant_kind_appraisal`'
   divergence_note: null
-  support_boundary: null
+  support_boundary: 'Not reachable in play (TCK-20261113-FIVE-SOCIAL-ACTION-KINDS-MAY-HAVE-NO-ISSUER-IN-PLAY, 2026-11-13): nothing in play issues the TRADE action (no ENTITY_ACT payload or ActionIntent creates it, and no world, scenario or content file names it), so CoreActions.execute_trade and _appraise_trade runs only in unit tests. The code is verified against this entry; the behaviour does not occur in play.'
 - id: SOC-250
   text: "Team-Up appraisal via the new ContractKind.TEAM_UP routes through the shared\
     \ bond.sentiment-priority-else-trust_history prelude before a dedicated pure-trust-gate\
@@ -3615,7 +3629,7 @@
     `tests/unit/social/test_team_up.py::test_execute_team_up_rejects_on_low_trust_bond`,
     `tests/unit/social/test_appraisal_logic.py::test_team_up_kind_appraisal`'
   divergence_note: null
-  support_boundary: null
+  support_boundary: 'Not reachable in play (TCK-20261113-FIVE-SOCIAL-ACTION-KINDS-MAY-HAVE-NO-ISSUER-IN-PLAY, 2026-11-13): nothing in play issues the TEAM_UP action (no ENTITY_ACT payload or ActionIntent creates it, and no world, scenario or content file names it), so CoreActions.execute_team_up and _appraise_team_up runs only in unit tests. The code is verified against this entry; the behaviour does not occur in play.'
 - id: SOC-251
   text: "Paid-Information gating via the new ContractKind.PAID_INFORMATION routes\
     \ through the shared bond.sentiment-priority-else-trust_history prelude before\
@@ -3783,7 +3797,7 @@
   proof_type: regression
   test_path: tests/unit/social/test_teach.py::test_teach_refused_below_trust_hard_cancel_threshold
   divergence_note: null
-  support_boundary: null
+  support_boundary: 'Not reachable in play (TCK-20261113-FIVE-SOCIAL-ACTION-KINDS-MAY-HAVE-NO-ISSUER-IN-PLAY, 2026-11-13): nothing in play issues the TRAIN action (no ENTITY_ACT payload or ActionIntent creates it, and no world, scenario or content file names it), so CoreActions.execute_train and _appraise_teach runs only in unit tests. The code is verified against this entry; the behaviour does not occur in play. No skill is taught in play.'
 - id: SOC-259
   text: 'Birth-record durable schema (idea 32, Reproduction): LifecycleComponent gains
     parent_a_entity_id/parent_b_entity_id (Optional[int], None for a parentless natural-creature/magical
@@ -3881,7 +3895,7 @@
   proof_type: regression
   test_path: tests/unit/social/test_marriage.py::test_marriage_refused_below_trust_hard_cancel_threshold
   divergence_note: null
-  support_boundary: null
+  support_boundary: 'Not reachable in play (TCK-20261113-FIVE-SOCIAL-ACTION-KINDS-MAY-HAVE-NO-ISSUER-IN-PLAY, 2026-11-13): nothing in play issues the PROPOSE_MARRIAGE action (no ENTITY_ACT payload or ActionIntent creates it, and no world, scenario or content file names it), so CoreActions.execute_propose_marriage and _appraise_marriage runs only in unit tests. The code is verified against this entry; the behaviour does not occur in play. No MarriageState is written in play.'
 - id: SOC-262
   text: 'Personal Dependents Route Bias (idea 31, non-parental case): LifecycleComponent.dependent_entity_ids:
     list[int] (src/core/state.py) is a new, genuinely distinct durable field from
@@ -3990,7 +4004,7 @@
     entry was originally written as SOC-263 but was renumbered to SOC-264 during a
     merge-conflict resolution -- an unrelated concurrent session independently used
     SOC-263 for a different entry (SocialComponent canonical-hash gap fix) first.'
-  support_boundary: null
+  support_boundary: 'Not reachable in play (TCK-20261113-FIVE-SOCIAL-ACTION-KINDS-MAY-HAVE-NO-ISSUER-IN-PLAY, 2026-11-13): nothing in play issues the JOIN_CLAN or LEAVE_CLAN action (no ENTITY_ACT payload or ActionIntent creates it, and no world, scenario or content file names it), so CoreActions.execute_join_clan / execute_leave_clan and _appraise_clan runs only in unit tests. The code is verified against this entry; the behaviour does not occur in play. In addition, no clan exists in play: AuthoritativeState.clans starts empty and no producer creates a first clan (apply.py builds a ClanState for an unknown clan_id from a ClanUpdate, but every ClanUpdate producer needs an existing clan), so succession and dissolution never run in play.'
 - id: SOC-269
   text: 'Idea 55 (Feuds Outlive the Feuders): the on-death lineage dispatch hook in
     LifecycleSystem.resolve_lifecycle transfers a weakened version of the deceased''s
@@ -4108,7 +4122,7 @@
   proof_type: parity
   test_path: tests/unit/domains/faction/test_clan_reputation_association.py::test_party_defection_produces_clan_reputation_clan_update
   divergence_note: null
-  support_boundary: null
+  support_boundary: 'Not reachable in play (TCK-20261113-FIVE-SOCIAL-ACTION-KINDS-MAY-HAVE-NO-ISSUER-IN-PLAY, 2026-11-13): no clan exists in play (SOC-264), so find_clan_id_for_entity always returns None, the party-defection producer writes no clan_reputation delta, and the appraisal term is always the no-clan 0.0. The code is verified; the behaviour does not occur in play.'
 - id: SOC-265
   text: 'SocialComponent.nemesis_ids (promoted only from sustained real grudge_history
     >= 3.0, SocialMemoryService.check_nemesis_promotion()) and SocialBond.role (RelationshipRole.FRIEND/RIVAL/NEUTRAL,
@@ -4306,4 +4320,51 @@
   proof_type: parity
   test_path: tests/integration/campaigns/test_mid_episode_grief_trigger.py::test_observability_off_and_on_give_the_same_authoritative_outcome
   divergence_note: 'Divergence 2.134: the owed triggers are derived from state and drained by a typed watermark instead of a kernel list built in the observability phase.'
+  support_boundary: null
+- id: SOC-278
+  text: 'A group id is never re-issued: a new GroupRecord takes the next free id from
+    AuthoritativeState.next_group_id (starts at 10000, only rises; decision code reads
+    it, ApplyPath advances it from StateUpdate.next_group_id_set; the allocator steps
+    past every id in the store, in the tick''s update and handed out earlier in the
+    call). New records travel in StateUpdate.groups_add; groups_add_or_update carries
+    only in-place updates. Apply rejects an add whose id is already taken (live or
+    dissolved, or added earlier in the tick): the row is dropped, rejection_registry[''group_add_id_taken'']
+    counts it, and the group_id_set writes aimed at that id are removed, so no member
+    points at a group that does not list it. A state built with groups and no counter
+    seeds it from the highest non-squad id; the counter joins the canonical data and
+    the replay fingerprint only once it differs from 10000.'
+  status: divergent
+  priority: P1
+  legacy_evidence: null
+  v2_evidence: src/core/state.py (next_group_id, seeded_next_group_id); src/core/updates.py
+    (groups_add, next_group_id_set); src/systems/world_systems/groups.py (allocator);
+    src/engine/apply_plan.py (resolve_group_adds, GROUP_ADD_ID_TAKEN); src/engine/apply.py;
+    src/engine/pipeline_phases/groups.py; src/engine/military_conflict.py (squad adds);
+    src/engine/checkpoint.py and src/replay/fingerprint.py (counter). Divergence 2.146.
+    (TCK-20261031-A-NEW-GROUP-ID-OVERWRITES-A-LIVE-GROUP)
+  proof_type: parity
+  test_path: tests/unit/social/test_group_id_allocation.py::test_formation_over_a_gap_does_not_overwrite_a_live_group
+  divergence_note: 'Divergence 2.146: the new-group id comes from a typed, only-rising
+    counter instead of a count of the store plus the tick''s update rows, and an add
+    over a taken id is a counted rejection instead of a silent replace.'
+  support_boundary: null
+- id: SOC-279
+  text: 'A group formed by a contract is bound to it and lives while the binding contract is ACTIVE on its holder. GroupRecord.contract_id is the one stored id of the contract and GroupRecord.contract_holder_id the entity whose strategic.contracts holds it; both are written once at formation (the formation scan''s entity_a) and a leadership change never moves them. The dissolution check reads the contract from the holder, never from the current leader, and dissolves the whole group on the tick the binding ends: holder not a live, active member, or the holder having drifted out of a pair that then falls below two (BINDING_HOLDER_LEFT), contract absent from the holder (BINDING_CONTRACT_MISSING), contract not live (BINDING_CONTRACT_NOT_ACTIVE, with the typed ContractStatus; a contract that reaches its expiry_tick ends the group on that tick as FULFILLED, never EXPIRED). Liveness is the one shared test contract_is_live (ACTIVE and not due) used by the contracts phase, group formation and the dissolution check. Formation binds the live contract with the latest expiry_tick among those that qualified a partner (expiry -1 ranks latest, a tie takes the lowest contract id, the holder stays entity_a). Every end of a bound group records a GroupDissolutionReason (those three plus LEADER_LOST, DEFECTION, MEMBERS_BELOW_TWO, one per dissolution in that precedence); unbound groups carry none. A new group stamps last_leadership_check_tick with its formation tick, so its first election is LEADERSHIP_CHECK_INTERVAL ticks later. A GroupRecord with a contract_id and no contract_holder_id is invalid (GroupBindingError). The new fields are omitted from the canonical dict when None; the holder joins the replay fingerprint string for bound groups. An older checkpoint is completed by one post-unpickle step: group fields None on unbound groups, a group with a contract_id refused (CheckpointFieldMissingError).'
+  status: divergent
+  priority: P1
+  legacy_evidence: null
+  v2_evidence: src/core/state.py (GroupRecord.contract_holder_id, dissolution_reason, dissolution_contract_status, GroupBindingError); src/core/enums.py (GroupDissolutionReason); src/systems/world_systems/groups.py (formation stamp and holder, _binding_end, dissolution reasons); src/systems/social_systems/party_lifecycle.py (defection reason); src/replay/fingerprint.py; src/engine/checkpoint_fields.py and src/engine/scenario_checkpoint.py (old-shape restore). Divergence 2.146. (TCK-20261031-A-PAIR-RE-FORMS-AND-LEAVES-A-GROUP-EVERY-TWO-TICKS)
+  proof_type: parity
+  test_path: tests/unit/social/test_group_contract_binding.py::test_election_that_moves_the_leader_off_the_holder_does_not_dissolve_a_bound_group
+  divergence_note: 'Divergence 2.146 (to be rewritten after the re-measure): the group is bound to the contract and its holder instead of reading the contract from whoever leads, and ends with a typed reason.'
+  support_boundary: null
+- id: SOC-280
+  text: 'An applied SocialUpdate keeps the rejection counts it does not name, and adds its rejection_increment to them: a trust-only or familiarity-only update no longer empties SocialComponent.rejection_count, and an increment for one offerer leaves every other offerer''s count. SocialUpdate.merge sums rejection_increment per key (two same-tick rejections from one offerer count twice); the other keyed deltas stay last-writer-wins. The recruitment social-fatigue penalty (appraisal, -0.1 per rejection, capped at 0.5) therefore reads a count that survives. Counts are lifetime, bounded by the 0.5 cap (5 rejections); there is no recent window (TCK-20261109-RECRUITMENT-FATIGUE-HAS-NO-RECENT-WINDOW).'
+  status: verified
+  priority: P1
+  legacy_evidence: null
+  v2_evidence: src/core/social_counts.py (add_rejection_counts, the one sum rule); src/systems/social_systems/relationships.py (RelationshipService.process_update calls it); src/core/updates.py (SocialUpdate.merge calls it); src/systems/social_systems/appraisal.py (_appraise_recruitment reads the count); src/core/state.py (rejection_count in the canonical dict).
+  proof_type: regression
+  test_path: tests/unit/social/test_rejection_counts_kept.py::test_a_trust_only_update_leaves_the_rejection_counts_intact; tests/unit/core/test_social_counts.py
+  divergence_note: 'The update and merge behaviour is real and unit-tested, but _appraise_recruitment, which reads the count, is not reached by recruitment in play: acceptance runs on cooperation''s minimal accept (services.py find_pending_incoming_offer -> phase.py:190 accept_contract, D-09), and execute_recruit, the only caller that appraises a RECRUITMENT contract, has no issuer (action_router.py:63-64). So the recruitment social-fatigue penalty this row''s text describes has no in-play effect today. See docs/guidelines/intentional_divergences.md Section 2.205 and TCK-20261111-NO-RECRUITMENT-APPRAISAL-RUNS-IN-ANY-CORPUS-WORLD.'
   support_boundary: null

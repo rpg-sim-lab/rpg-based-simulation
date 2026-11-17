@@ -19,7 +19,7 @@ def mock_deps():
     profile = RuntimeProfile(
         name="test",
         hardware_class=HardwareClass.CLASS_B,
-        max_ram_mb=512,
+        max_ram_mb=1_000_000,
         max_cpu_percent=50.0,
         max_worker_count=0,
         max_queue_depth=10,

@@ -1,4 +1,4 @@
-src.ai.goals.adventure_scorer -> src.observability.cognition.decision_trace_writer
+src.ai.goals.adventure_scorer -> src.observability.active_decision_trace
 src.cognition.knowledge_model -> src.world.providers.information
 src.config.optimization_profiles -> src.engine.cache_registry
 src.config.profiles -> src.engine.cadence
@@ -14,9 +14,9 @@ src.core.state -> src.domains.culture.model
 src.core.state -> src.domains.fame.legend
 src.core.state -> src.replay.fingerprint
 src.core.state -> src.systems.lifecycle_systems.genetics
+src.core.update_models.body -> src.systems.lifecycle_systems.genetics
 src.core.updates -> src.engine
 src.core.updates -> src.engine.policy
-src.core.updates -> src.systems.lifecycle_systems.genetics
 src.domains.adventure.generator -> src.systems.social_systems.party_composition
 src.domains.adventure.generator -> src.world.providers.resources
 src.domains.adventure.resolver -> src.engine
@@ -75,11 +75,7 @@ src.engine.kernel -> src.observability.hard_law_monitor
 src.engine.kernel -> src.observability.personality.recorder
 src.engine.kernel -> src.observability.reporting.artifact_repository
 src.engine.kernel -> src.observability.reporting.metric_recorder
-src.engine.kernel -> src.simulation_quality.feed
-src.engine.kernel -> src.simulation_quality.persistence
-src.engine.kernel -> src.simulation_quality.quality_hub
-src.engine.kernel -> src.simulation_quality.scorers
-src.engine.kernel -> src.simulation_quality.weights
+src.engine.kernel -> src.simulation_quality.wiring
 src.engine.kernel -> src.world.providers.requirements
 src.engine.legality -> src.world.environment
 src.engine.movement -> src.systems.world_systems.navigation

@@ -25,7 +25,7 @@ class OccupancySnapshot:
         prio: Dict[int, int] = {}
 
         for e_id, entity in state.entities.items():
-            if entity.lifecycle.active and entity.combat.alive:
+            if entity.lifecycle.active and entity.combat.alive and entity.navigation.lodged_in is None:  # a lodger stands on no tile (F3)
                 pos = (int(entity.navigation.position[0]), int(entity.navigation.position[1]))
                 occ[pos] = e_id
 

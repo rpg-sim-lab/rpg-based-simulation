@@ -1,0 +1,20 @@
+== 2026-11-12T10:07:50Z trace proof, take 2 (a 200 stream-health trace)
+traces found for service.name=rpg-backend: 100
+root span names: {'GET /health': 22, 'GET /api/v1/observability/live/stream-health': 14, 'GET /api/v1/economy/health': 11, 'GET /api/v1/stats': 10, 'GET /api/v1/metadata/classes': 10, 'GET /api/v1/metadata/items': 11, 'GET /api/v1/manifest': 12, 'GET /api/v1/quality/status': 10}
+  stream-health trace 246ee6cbfff7bc2d079f179b3db7b460 statuses ['429']
+  stream-health trace b2b77731ef49b1d7fac1ba0dfe5cf21f statuses ['429']
+  stream-health trace cdc298f50bbb805df10f57a0b290eba0 statuses ['429']
+  stream-health trace c411c3d3bf312be92baad64948a756aa statuses ['429']
+  stream-health trace 2b10da1c5a31289f0c91df963fd852f2 statuses ['429']
+  stream-health trace b97bc419c7316b64bb7a1d0ca976bf6a statuses ['200']
+chosen trace id: b97bc419c7316b64bb7a1d0ca976bf6a | root: GET /api/v1/observability/live/stream-health
+spans in trace: 4
+  SPAN_KIND_SERVER | GET /api/v1/observability/live/stream-health | span Ps/zem6qNM4= parent - | service rpg-backend | {'http.method': 'GET', 'http.route': '/api/v1/observability/live/stream-health', 'http.status_code': '200'}
+  SPAN_KIND_INTERNAL | GET /api/v1/observability/live/stream-health http send | span pb1o5fjiZ4E= parent Ps/zem6qNM4= | service rpg-backend | {'http.status_code': '200'}
+  SPAN_KIND_INTERNAL | GET /api/v1/observability/live/stream-health http send | span xhZ4OzB8ixA= parent Ps/zem6qNM4= | service rpg-backend | {}
+  SPAN_KIND_CLIENT | PING | span TX1eMDgo1X4= parent Ps/zem6qNM4= | service rpg-backend | {'db.statement': 'PING', 'db.system': 'redis'}
+server span(s): 1 | route attr: ['/api/v1/observability/live/stream-health']
+redis client span(s): 1 | child of the server span: [True]
+trace -> logs: Loki lines containing the trace id: 0
+Loki datasource derivedFields as loaded by Grafana: {"datasourceUid": "tempo", "matcherRegex": "trace_id=(\\w+)", "name": "trace_id", "url": "${__value.raw}"}
+-- backend lines carrying trace_id= (count): 0

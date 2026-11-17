@@ -1,14 +1,20 @@
 // @ts-check
 
+// The site is a wiki for someone watching the simulation run. Its World Knowledge pages are a
+// view of the repository's stored data (world rules, mechanism registry, content catalog),
+// generated at build time by scripts/generate_wiki.py; docs/ itself is not rendered here
+// (owner, #715 6789714730 and 6789779149).
+
 /** @type {import('@docusaurus/types').Config} */
 const config = {
-  title: 'RPG Simulation Docs',
+  title: 'RPG Simulation Wiki',
   url: process.env.DOCS_URL || 'http://localhost',
   baseUrl: process.env.DOCS_BASE_URL || '/',
-  onBrokenLinks: 'warn',
+  onBrokenLinks: 'throw',
   trailingSlash: false,
   markdown: {
     format: 'md',
+    hooks: { onBrokenMarkdownLinks: 'throw' },
   },
 
   plugins: [],
@@ -18,7 +24,7 @@ const config = {
       require.resolve('@easyops-cn/docusaurus-search-local'),
       {
         hashed: false,
-        docsRouteBasePath: ['docs'],
+        docsRouteBasePath: ['wiki'],
         indexBlog: false,
       },
     ],
@@ -29,22 +35,9 @@ const config = {
       'classic',
       {
         docs: {
-          path: '../docs',
-          routeBasePath: 'docs',
-          exclude: [
-            'superpowers/**',
-            'specs/**',
-            'parity_ledger/**',
-            'scenarios/**',
-            'entity/**',
-            'archive/**',
-            'plans/**',
-            'audits/**',
-            'optimization_audit_ledger.md',
-          ],
+          path: 'wiki',
+          routeBasePath: 'wiki',
           sidebarPath: require.resolve('./sidebars.js'),
-          showLastUpdateTime: true,
-          showLastUpdateAuthor: true,
         },
         blog: false,
         theme: { customCss: [require.resolve('./src/css/custom.css')] },
@@ -54,9 +47,11 @@ const config = {
 
   themeConfig: {
     navbar: {
-      title: 'RPG Simulation Docs',
+      title: 'RPG Simulation Wiki',
       items: [
-        { to: '/docs/', label: 'Docs', position: 'left' },
+        { type: 'docSidebar', sidebarId: 'worldKnowledge', label: 'World Knowledge', position: 'left' },
+        { type: 'docSidebar', sidebarId: 'technical', label: 'Technical', position: 'left' },
+        { type: 'docSidebar', sidebarId: 'controlGuide', label: 'Control Guide', position: 'left' },
       ],
     },
   },

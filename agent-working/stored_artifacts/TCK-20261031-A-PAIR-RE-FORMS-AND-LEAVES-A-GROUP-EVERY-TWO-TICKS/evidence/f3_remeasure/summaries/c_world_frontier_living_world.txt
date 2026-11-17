@@ -1,0 +1,74 @@
+WORLD frontier_living_world: seeds with both runs: [42, 43, 44, 45, 46]
+  HAZARD: base total 42, branch total 37, rise -5, threshold 5, seeds rising [43, 46] (per seed base,branch {42: (9, 5), 43: (9, 13), 44: (7, 6), 45: (14, 9), 46: (3, 4)}) -> REPORT_ONLY (per-seed rise inside a total that did not rise)
+    report only: seed 43 HAZARD extra victims (branch, absent on base) [(442, 8), (443, 13), (452, 5), (453, 1), (454, 7), (455, 3)]
+    report only: seed 46 HAZARD extra victims (branch, absent on base) [(869, 4)]
+  COMBAT: base total 62, branch total 63, rise 1, threshold 7, seeds rising [43, 45] (per seed base,branch {42: (13, 12), 43: (9, 12), 44: (15, 15), 45: (7, 9), 46: (18, 15)}) -> TIER2_REVIEW
+    seed 43 extra COMBAT victim 15 died t283; groups within 50 ticks before death: [{"gid": 10016, "formed": 145, "members": [15, 17], "contract": "cnt_recruit_17_15_143", "holder": 17, "dissolved": [244, "BINDING_CONTRACT_NOT_ACTIVE", "FULFILLED"], "reform_of_same_members_within_50": false, "prior_contract": []}, {"gid": 10028, "formed": 246, "members": [15, 17], "contract": "cnt_recruit_15_17_240", "holder": 15, "dissolved": [282, "BINDING_HOLDER_LEFT", null], "reform_of_same_members_within_50": true, "prior_contract": ["cnt_recruit_17_15_143"]}]; group formed within 50 ticks after death: 0; OUTCOME: NOT SHOWN (needs the trace)
+    seed 43 extra COMBAT victim 29 died t894; groups within 50 ticks before death: [{"gid": 10067, "formed": 874, "members": [24, 29], "contract": "cnt_recruit_29_24_872", "holder": 29, "dissolved": [893, "BINDING_HOLDER_LEFT", null], "reform_of_same_members_within_50": false, "prior_contract": []}]; group formed within 50 ticks after death: 0; OUTCOME: NOT SHOWN (needs the trace)
+    seed 43 extra COMBAT victim 53 died t1516; groups within 50 ticks before death: [{"gid": 10091, "formed": 1514, "members": [50, 53], "contract": "cnt_recruit_53_50_1512", "holder": 53, "dissolved": [1515, "BINDING_HOLDER_LEFT", null], "reform_of_same_members_within_50": false, "prior_contract": []}]; group formed within 50 ticks after death: 0; OUTCOME: NOT SHOWN (needs the trace)
+    seed 43 extra COMBAT victim 10 died t1549; groups within 50 ticks before death: [{"gid": 10089, "formed": 1454, "members": [6, 10], "contract": "cnt_recruit_10_6_1434", "holder": 10, "dissolved": [1535, "BINDING_CONTRACT_NOT_ACTIVE", "FULFILLED"], "reform_of_same_members_within_50": false, "prior_contract": []}]; group formed within 50 ticks after death: 0; OUTCOME: NOT SHOWN (needs the trace)
+    seed 43 extra COMBAT victim 6 died t1956; groups within 50 ticks before death: []; group formed within 50 ticks after death: 0; OUTCOME: NOT SHOWN (needs the trace)
+    seed 45 extra COMBAT victim 17 died t406; groups within 50 ticks before death: [{"gid": 10035, "formed": 403, "members": [17, 38], "contract": "cnt_recruit_17_38_401", "holder": 17, "dissolved": [405, "BINDING_HOLDER_LEFT", null], "reform_of_same_members_within_50": false, "prior_contract": []}]; group formed within 50 ticks after death: 0; OUTCOME: NOT SHOWN (needs the trace)
+    seed 45 extra COMBAT victim 28 died t880; groups within 50 ticks before death: [{"gid": 10065, "formed": 850, "members": [22, 28], "contract": "cnt_recruit_28_22_848", "holder": 28, "dissolved": [879, "BINDING_HOLDER_LEFT", null], "reform_of_same_members_within_50": false, "prior_contract": []}]; group formed within 50 ticks after death: 0; OUTCOME: NOT SHOWN (needs the trace)
+    seed 45 extra COMBAT victim 22 died t891; groups within 50 ticks before death: [{"gid": 10065, "formed": 850, "members": [22, 28], "contract": "cnt_recruit_28_22_848", "holder": 28, "dissolved": [879, "BINDING_HOLDER_LEFT", null], "reform_of_same_members_within_50": false, "prior_contract": []}]; group formed within 50 ticks after death: 0; OUTCOME: NOT SHOWN (needs the trace)
+    seed 45 extra COMBAT victim 24 died t929; groups within 50 ticks before death: [{"gid": 10063, "formed": 814, "members": [24, 26], "contract": "cnt_recruit_24_26_812", "holder": 24, "dissolved": [888, "MEMBERS_BELOW_TWO", null], "reform_of_same_members_within_50": false, "prior_contract": []}, {"gid": 10072, "formed": 917, "members": [23, 24], "contract": "cnt_recruit_23_24_915", "holder": 23, "dissolved": [928, "MEMBERS_BELOW_TWO", null], "reform_of_same_members_within_50": false, "prior_contract": []}]; group formed within 50 ticks after death: 0; OUTCOME: NOT SHOWN (needs the trace)
+  DEFEAT: base total 35, branch total 31, rise -4, threshold 4, seeds rising [43] (per seed base,branch {42: (3, 3), 43: (3, 10), 44: (11, 5), 45: (7, 3), 46: (11, 10)}) -> REPORT_ONLY (per-seed rise inside a total that did not rise)
+    report only: seed 43 DEFEAT extra victims (branch, absent on base) [(233, 38), (319, 2), (322, 11), (357, 4), (1433, 12), (1454, 36), (1482, 9), (1511, 19)]
+  all-cause per pair:
+    seed 42: base 25 {'COMBAT': 13, 'HAZARD': 9, 'DEFEAT': 3} branch 20 {'COMBAT': 12, 'HAZARD': 5, 'DEFEAT': 3} rises {} extra victims []
+    seed 43: base 21 {'HAZARD': 9, 'COMBAT': 9, 'DEFEAT': 3} branch 35 {'HAZARD': 13, 'COMBAT': 12, 'DEFEAT': 10} rises {'HAZARD': (9, 13), 'COMBAT': (9, 12), 'DEFEAT': (3, 10)} extra victims [(233, 38, 'DEFEAT'), (283, 15, 'COMBAT'), (319, 2, 'DEFEAT'), (322, 11, 'DEFEAT'), (357, 4, 'DEFEAT'), (442, 8, 'HAZARD'), (443, 13, 'HAZARD'), (452, 5, 'HAZARD'), (453, 1, 'HAZARD'), (454, 7, 'HAZARD'), (455, 3, 'HAZARD'), (894, 29, 'COMBAT'), (1433, 12, 'DEFEAT'), (1454, 36, 'DEFEAT'), (1482, 9, 'DEFEAT'), (1511, 19, 'DEFEAT'), (1516, 53, 'COMBAT'), (1549, 10, 'COMBAT'), (1956, 6, 'COMBAT')]
+    seed 44: base 33 {'HAZARD': 7, 'COMBAT': 15, 'DEFEAT': 11} branch 26 {'HAZARD': 6, 'COMBAT': 15, 'DEFEAT': 5} rises {} extra victims []
+    seed 45: base 28 {'HAZARD': 14, 'COMBAT': 7, 'DEFEAT': 7} branch 21 {'HAZARD': 9, 'COMBAT': 9, 'DEFEAT': 3} rises {'COMBAT': (7, 9)} extra victims [(406, 17, 'COMBAT'), (880, 28, 'COMBAT'), (891, 22, 'COMBAT'), (929, 24, 'COMBAT')]
+    seed 46: base 32 {'HAZARD': 3, 'DEFEAT': 11, 'COMBAT': 18} branch 29 {'HAZARD': 4, 'DEFEAT': 10, 'COMBAT': 15} rises {'HAZARD': (3, 4)} extra victims [(869, 4, 'HAZARD')]
+TIER1_NOT_FIRED
+seed 42: field_found base True arm True | lodger-ticks 2552 -> 274 | enters 93 -> 19 | leaves 92 -> 19 | group members lodged at a group decision 19 -> 26 (over 2000 ticks)
+   extra victim 19 (DEFEAT, t529): last lodged tick None, last bed-leave tick None -> not lodged within 50 ticks
+   extra victim 10 (COMBAT, t567): last lodged tick None, last bed-leave tick None -> not lodged within 50 ticks
+   extra victim 30 (DEFEAT, t631): last lodged tick None, last bed-leave tick None -> not lodged within 50 ticks
+   extra victim 55 (COMBAT, t1004): last lodged tick None, last bed-leave tick None -> not lodged within 50 ticks
+seed 43: field_found base True arm True | lodger-ticks 0 -> 73 | enters 0 -> 10 | leaves 0 -> 10 | group members lodged at a group decision 0 -> 70 (over 2000 ticks)
+   extra victim 38 (DEFEAT, t233): last lodged tick None, last bed-leave tick None -> not lodged within 50 ticks
+   extra victim 15 (COMBAT, t283): last lodged tick None, last bed-leave tick None -> not lodged within 50 ticks
+   extra victim 2 (DEFEAT, t319): last lodged tick None, last bed-leave tick None -> not lodged within 50 ticks
+   extra victim 11 (DEFEAT, t322): last lodged tick None, last bed-leave tick None -> not lodged within 50 ticks
+   extra victim 4 (DEFEAT, t357): last lodged tick None, last bed-leave tick None -> not lodged within 50 ticks
+   extra victim 8 (HAZARD, t442): last lodged tick None, last bed-leave tick None -> not lodged within 50 ticks
+   extra victim 13 (HAZARD, t443): last lodged tick None, last bed-leave tick None -> not lodged within 50 ticks
+   extra victim 5 (HAZARD, t452): last lodged tick None, last bed-leave tick None -> not lodged within 50 ticks
+   extra victim 1 (HAZARD, t453): last lodged tick None, last bed-leave tick None -> not lodged within 50 ticks
+   extra victim 7 (HAZARD, t454): last lodged tick None, last bed-leave tick None -> not lodged within 50 ticks
+   extra victim 3 (HAZARD, t455): last lodged tick None, last bed-leave tick None -> not lodged within 50 ticks
+   extra victim 29 (COMBAT, t894): last lodged tick None, last bed-leave tick None -> not lodged within 50 ticks
+   extra victim 12 (DEFEAT, t1433): last lodged tick 1391, last bed-leave tick 1392 -> STOP: lodged or left a bed within 50 ticks
+   extra victim 36 (DEFEAT, t1454): last lodged tick None, last bed-leave tick None -> not lodged within 50 ticks
+   extra victim 9 (DEFEAT, t1482): last lodged tick None, last bed-leave tick None -> not lodged within 50 ticks
+   extra victim 19 (DEFEAT, t1511): last lodged tick None, last bed-leave tick None -> not lodged within 50 ticks
+   extra victim 53 (COMBAT, t1516): last lodged tick None, last bed-leave tick None -> not lodged within 50 ticks
+   extra victim 10 (COMBAT, t1549): last lodged tick None, last bed-leave tick None -> not lodged within 50 ticks
+   extra victim 6 (COMBAT, t1956): last lodged tick None, last bed-leave tick None -> not lodged within 50 ticks
+seed 44: field_found base True arm True | lodger-ticks 200 -> 1894 | enters 18 -> 116 | leaves 17 -> 114 | group members lodged at a group decision 0 -> 738 (over 2000 ticks)
+   extra victim 16 (COMBAT, t263): last lodged tick None, last bed-leave tick None -> not lodged within 50 ticks
+   extra victim 15 (COMBAT, t296): last lodged tick None, last bed-leave tick None -> not lodged within 50 ticks
+   extra victim 13 (COMBAT, t424): last lodged tick None, last bed-leave tick None -> not lodged within 50 ticks
+   extra victim 10 (HAZARD, t556): last lodged tick None, last bed-leave tick None -> not lodged within 50 ticks
+   extra victim 11 (HAZARD, t557): last lodged tick None, last bed-leave tick None -> not lodged within 50 ticks
+   extra victim 55 (COMBAT, t979): last lodged tick None, last bed-leave tick None -> not lodged within 50 ticks
+   extra victim 9 (COMBAT, t1121): last lodged tick 842, last bed-leave tick 843 -> not lodged within 50 ticks
+   extra victim 2 (COMBAT, t1245): last lodged tick 839, last bed-leave tick 840 -> not lodged within 50 ticks
+   extra victim 30 (DEFEAT, t1581): last lodged tick None, last bed-leave tick None -> not lodged within 50 ticks
+seed 45: field_found base True arm True | lodger-ticks 1195 -> 1652 | enters 324 -> 22 | leaves 323 -> 22 | group members lodged at a group decision 0 -> 1192 (over 2000 ticks)
+   extra victim 17 (COMBAT, t406): last lodged tick None, last bed-leave tick None -> not lodged within 50 ticks
+   extra victim 9 (HAZARD, t848): last lodged tick 522, last bed-leave tick 523 -> not lodged within 50 ticks
+   extra victim 28 (COMBAT, t880): last lodged tick None, last bed-leave tick None -> not lodged within 50 ticks
+   extra victim 22 (COMBAT, t891): last lodged tick None, last bed-leave tick None -> not lodged within 50 ticks
+   extra victim 24 (COMBAT, t929): last lodged tick None, last bed-leave tick None -> not lodged within 50 ticks
+   extra victim 11 (HAZARD, t1031): last lodged tick 480, last bed-leave tick 481 -> not lodged within 50 ticks
+seed 46: field_found base True arm True | lodger-ticks 632 -> 630 | enters 4 -> 34 | leaves 3 -> 32 | group members lodged at a group decision 7 -> 3 (over 2000 ticks)
+   extra victim 3 (COMBAT, t497): last lodged tick None, last bed-leave tick None -> not lodged within 50 ticks
+   extra victim 12 (DEFEAT, t756): last lodged tick None, last bed-leave tick None -> not lodged within 50 ticks
+   extra victim 9 (COMBAT, t783): last lodged tick None, last bed-leave tick None -> not lodged within 50 ticks
+   extra victim 4 (HAZARD, t869): last lodged tick None, last bed-leave tick None -> not lodged within 50 ticks
+LODGER_STOP
+  SUMMARY frontier_living_world base: deaths {'COMBAT': 62, 'HAZARD': 42, 'DEFEAT': 35} formations 934 dissolutions 851 same-member-set re-forms 67 duplicate group ids 810 FULFILLED ends 0 (lag>0: 0) hard_law {}
+  SUMMARY frontier_living_world branch: deaths {'COMBAT': 63, 'HAZARD': 37, 'DEFEAT': 31} formations 504 dissolutions 488 same-member-set re-forms 89 duplicate group ids 0 FULFILLED ends 356 (lag>0: 0) hard_law {}
+WORLD_DONE frontier_living_world check_rc=9 total_wall_s=4162

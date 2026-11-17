@@ -1612,13 +1612,13 @@
   support_boundary: null
 - id: STRAT-142
   text: '`test_near_death_hardening`: near-death hardening'
-  status: legacy_verified
+  status: verified
   priority: P0
   legacy_evidence: null
-  v2_evidence: Implementation proven via exhaustive checklist audit Phase 1-11
+  v2_evidence: 'NearDeathHardeningPhase.apply (src/engine/pipeline_phases/hardening.py) grants +5 max HP and the near_death emotion only when this tick''s CombatUpdate records a combat hit (attacker_id, damage_taken > 0, hit_tick_set == tick, as patches.py:332-337) and the subject survives at or below 10% of max HP; a town heal or a hazard grants nothing.'
   proof_type: parity
-  test_path: null
-  divergence_note: null
+  test_path: tests/unit/engine/test_near_death_hardening_hit_gate.py
+  divergence_note: 'Divergence 2.201 (TCK-20261103-NEAR-DEATH-HARDENING-FIRES-WITH-NOTHING-HITTING-THE-SUBJECT): the grant needs a combat hit taken this tick; a heal or a hazard grants nothing.'
   support_boundary: null
 - id: STRAT-143
   text: '`test_nemesis_recognition_and_fear_bias`: nemesis recognition and fear bias'
@@ -2984,11 +2984,11 @@
   status: verified
   priority: P1
   legacy_evidence: null
-  v2_evidence: "src/observability/event_extractor.py \u2014 lead_certainty_updated\
+  v2_evidence: "src/observability/extraction/leads.py \u2014 lead_certainty_updated\
     \ block; _CERTAINTY_FLOAT = {PRECISE:1.0, APPROXIMATE:0.5, VAGUE:0.25, EXHAUSTED:0.0}\
     \ As of the push-shaper migrations (see STRAT-247), this event is also derived\
     \ by the live-default apply-layer StrategyShaper (src/observability/event_shapers.py);\
-    \ event_extractor.py's block above is now the flag-gated (_push_shapers_phase2_active)\
+    \ src/observability/extraction/leads.py's block above is now the flag-gated (_push_shapers_phase2_active)\
     \ rollback path, not the sole terminus.\n"
   proof_type: parity
   test_path: tests/unit/observability/test_event_extractor_information2.py::TestLeadCertaintyUpdated
@@ -3004,11 +3004,12 @@
   status: verified
   priority: P1
   legacy_evidence: null
-  v2_evidence: "src/observability/event_extractor.py \u2014 belief_stale block; _BELIEF_STALE_TICKS\
-    \ = 50; _emitted_stale_leads class-level dict reset in reset_run_state(). config/simulation_quality/detection_params.yaml\
-    \ \u2014 belief_stale_threshold: 50 As of the push-shaper migrations (see STRAT-247),\
-    \ this event is also derived by the live-default apply-layer StrategyShaper (src/observability/event_shapers.py);\
-    \ event_extractor.py's block above is now the flag-gated (_push_shapers_phase2_active)\
+  v2_evidence: "src/observability/extraction/leads.py \u2014 belief_stale block; _BELIEF_STALE_TICKS\
+    \ = 50; _emitted_stale_leads class-level dict reset in reset_run_state() (src/observability/event_extractor.py).\
+    \ config/simulation_quality/detection_params.yaml \u2014 belief_stale_threshold:\
+    \ 50 As of the push-shaper migrations (see STRAT-247), this event is also derived\
+    \ by the live-default apply-layer StrategyShaper (src/observability/event_shapers.py);\
+    \ src/observability/extraction/leads.py's block above is now the flag-gated (_push_shapers_phase2_active)\
     \ rollback path, not the sole terminus.\n"
   proof_type: parity
   test_path: tests/unit/observability/test_event_extractor_information2.py::TestBeliefStale
@@ -3025,11 +3026,11 @@
   status: verified
   priority: P1
   legacy_evidence: null
-  v2_evidence: "src/observability/event_extractor.py \u2014 decision_diverged_by_belief\
+  v2_evidence: "src/observability/extraction/leads.py \u2014 decision_diverged_by_belief\
     \ and decision_divergence_detected blocks; _NON_SURVIVAL_PROJECT_KINDS frozenset\
     \ constant. As of the push-shaper migrations (see STRAT-247), both events are\
     \ also derived by the live-default apply-layer StrategyShaper (src/observability/event_shapers.py);\
-    \ event_extractor.py's block above is now the flag-gated (_push_shapers_phase2_active)\
+    \ src/observability/extraction/leads.py's block above is now the flag-gated (_push_shapers_phase2_active)\
     \ rollback path, not the sole terminus.\n"
   proof_type: parity
   test_path: tests/unit/observability/test_event_extractor_information2.py::TestDecisionDivergedByBelief;
@@ -3157,7 +3158,7 @@
     ) into the existing, unmodified ResourceTransactionResolver.resolve() \"CRAFTING\"\
     /\"SHOP_BUY\" branches (src/core/conservation.py:133,155) \u2014 the same authoritative\
     \ mutation path src/engine/blacksmith.py and src/town/shop.py already use \u2014\
-    \ deliberately not CraftingSystem.craft() directly, which would bypass intent_results/event_extractor.py's\
+    \ deliberately not CraftingSystem.craft() directly, which would bypass intent_results/src/observability/extraction/economy.py's\
     \ item_crafted derivation. AdventureDecisionPhase.apply also now calls ServiceOpportunityProvider.get_opportunities\
     \ (src/domains/adventure/phase.py), previously never wired in, so craft_item/buy_item/repair_gear/ask_information/rest_inn\
     \ opportunities are generated at all.\nTCK-20260714-SIMQ-HARVEST-RESOURCE-ARRIVAL-TRANSITION.\
@@ -3603,11 +3604,12 @@
     on the same `_ADVENTURE_ROUTE_SCORE_MAX = 2.9` scale as adventure routes via `_score_scale_max()`''s
     `isinstance(kind, ProjectKind)` classification -- a deliberate, disclosed design
     choice (reusing the existing scale rather than extending the classifier), not
-    an oversight. Disclosed scope boundary: `accept_contract()` itself has no production
-    caller today, but `SocialContractGoalScorer` is confirmed live-reachable via `CoreActions.execute_recruit()`
-    (src/engine/domain/core_actions.py:96-105), which builds ACTIVE RECRUITMENT contracts
-    directly -- so this fix has real production impact without requiring `accept_contract()`
-    to be wired into a live call site.'
+    an oversight. Disclosed scope boundary (reworded under TCK-20261111-NO-RECRUITMENT-APPRAISAL-RUNS-IN-ANY-CORPUS-WORLD): in current play every RECRUITMENT contract
+    is made by the cooperation domain and made ACTIVE by `ContractService.accept_contract()`
+    (src/domains/cooperation/phase.py:190), so `SocialContractGoalScorer` reaches the
+    contracts that accept makes ACTIVE. `CoreActions.execute_recruit()` is never called in play
+    (nothing issues the RECRUIT action, action_router.py:63-64), and the trust appraisal does
+    not decide recruitment acceptance in play (divergence 2.205).'
   status: verified
   priority: P2
   legacy_evidence: null
@@ -3636,10 +3638,10 @@
   support_boundary: Real, registered, unit-tested code, reachable through the live
     tier-5 pipeline path (StrategicIntelligenceSystem.evaluate_strategic_intent(),
     driven every tick by the unconditional src/engine/pipeline.py:"strategic_intelligence"
-    phase) via any ACTIVE RECRUITMENT/LOAN contract regardless of provenance -- including
-    execute_recruit()-originated contracts, which bypass accept_contract() entirely.
-    accept_contract() itself remains reachable only from tests today (no production
-    caller), a disclosed, not a hidden, gap.
+    phase) via any ACTIVE RECRUITMENT/LOAN contract regardless of provenance -- in current
+    play the contracts the cooperation accept makes ACTIVE (phase.py:190 calls accept_contract).
+    execute_recruit() has no issuer in play (action_router.py:63-64), so no contract reaches
+    the scorer by that route (reworded under TCK-20261111-NO-RECRUITMENT-APPRAISAL-RUNS-IN-ANY-CORPUS-WORLD; divergence 2.205).
 - id: STRAT-255
   text: 'TCK-20260811-REGION-STABILIZATION-GOAL-SCORER -- a new `RegionStabilizationGoalScorer`
     (implementing the existing `GoalScorer` protocol) exists, is registered under
@@ -4134,7 +4136,7 @@
   proof_type: regression
   test_path: tests/unit/social/test_marriage.py::test_marriage_accepted_writes_typed_marriagestate_on_both_parties
   divergence_note: null
-  support_boundary: null
+  support_boundary: 'Not reachable in play (TCK-20261113-FIVE-SOCIAL-ACTION-KINDS-MAY-HAVE-NO-ISSUER-IN-PLAY, 2026-11-13): the only writer of a MarriageState is CoreActions.execute_propose_marriage, and nothing in play issues PROPOSE_MARRIAGE (SOC-261), so StrategicComponent.marriages stays empty in play. The plumbing is verified; the behaviour does not occur in play.'
 - id: STRAT-267
   text: A genuinely weighted (personality + parental-occupation + regional-need),
     seeded-RNG archetype-choice roll fires exactly once inside LifecycleSystem.resolve_lifecycle()
@@ -4412,7 +4414,7 @@
   divergence_note: See docs/guidelines/intentional_divergences.md Section 2.72.
   support_boundary: The corpus measure after the change is 0 because the self-targeted
     projects no longer form; termination is exercised only by constructed cases, and
-    the other holder (the recruit) has no production producer. 195 scorer wins versus
+    the other holder (the recruit) never holds the contract; cooperation stores it on the offerer only (services.py:283-305; phase.py:174-195), and execute_recruit, the only path that writes it to both sides, has no issuer in play (reworded under TCK-20261111-NO-RECRUITMENT-APPRAISAL-RUNS-IN-ANY-CORPUS-WORLD; divergence 2.205). 195 scorer wins versus
     2 materialized projects was not investigated.
 - id: STRAT-277
   text: 'TCK-20261005-REGIONAL-TRAUMA-FED-INTO-PANIC-AS-IF-NORMALISED-MAKES-EVERYONE-FLEE
@@ -4572,3 +4574,146 @@
   test_path: tests/unit/ai/test_starvation_is_a_present_threat_weighed_in_goal_selection.py
   divergence_note: See docs/guidelines/intentional_divergences.md Section 2.135.
   support_boundary: 'Does not add a meal path for a subject with no hunger project (the in-reach meal stays after v1); gate V3 on frontier_living_world seed 42 (5000 ticks) is 0 with this change. A hunter closing on a starving subject is not seen before contact (strategic cadence, v1 row C5).'
+
+- id: STRAT-285
+  text: 'TCK-20261020-A-DEAD-BODY-IS-NOT-A-PERCEIVED-THREAT (SURV-07, memo row 84 (1)): threat perception (_perceived_threats), emotional appraisal (hostile, ally, nemesis) and saliency ranking read only the living; a dead body is in the neighbour view but is no threat, no hostile or ally, and earns no hostility bonus. Grief, mourning and vengeance are unchanged.'
+  status: verified
+  priority: P1
+  legacy_evidence: null
+  v2_evidence: 'src/engine/tactical.py (_perceived_threats), src/engine/cognition.py (AppraisalSystem.evaluate_emotional_state, SensoryFilter.filter_saliency), docs/mechanics/04_strategic_cognition.md section 1. Ticket TCK-20261020-A-DEAD-BODY-IS-NOT-A-PERCEIVED-THREAT. Real-kernel tests: a corpse gives no PANIC_RETREAT; a live hostile still does; a hungry hp-2 raider with three townsfolk dead eats.'
+  proof_type: regression
+  test_path: tests/integration/observability/test_a_dead_body_is_not_a_perceived_threat_through_the_real_kernel.py
+  divergence_note: See docs/guidelines/intentional_divergences.md Section 2.136.
+  support_boundary: 'Paired against 7b1528861 (seeds 42-46): no drift in any world; extinction stop in crowded (guard, merchant), accepted by the owner (v1 disclosure N7). Flight rises on the frontier from live threats no longer crowded out of attention by corpses.'
+
+- id: STRAT-286
+  text: 'TCK-20261020-A-ESCALATED-NEED-IS-NEVER-REFUSED-FOR-CAPACITY (SURV-07, memo row 84 (2)): a hunger or sleep goal that wins scoring at or past its escalation onset (0.6 of its line) is admitted when project capacity is full (escalated_need_wins); one live hunger and one live sleep project (the current one, else the newest by created_tick) are outside both capacity trims (bandwidth trim and CapacityEnforcementPhase); every other live need project counts and is trimmed. Below the onset the cap applies as before.'
+  status: verified
+  priority: P1
+  legacy_evidence: null
+  v2_evidence: 'src/ai/goals/escalation.py (escalated_need_wins), src/core/strategic.py (NEED_PROJECT_KINDS, live_projects_in_the_trim), src/systems/strategic_systems/intelligence.py (capacity gate), src/systems/strategic_systems/detour.py (enforce_bandwidth), src/engine/pipeline_phases/capacity_enforcement.py, docs/mechanics/04_strategic_cognition.md sections 1 and 4. Ticket TCK-20261020-A-ESCALATED-NEED-IS-NEVER-REFUSED-FOR-CAPACITY. Real-kernel tests: a hungry entity past the onset at a full cap gets a hunger project and eats; below the onset the cap refuses; one project per need kind; an admitted non-current need project survives both trims; hunger and sleep switching for 600 ticks never exceeds the cap plus two.'
+  proof_type: regression
+  test_path: tests/integration/observability/test_an_escalated_need_is_never_refused_for_capacity_through_the_real_kernel.py
+  divergence_note: See docs/guidelines/intentional_divergences.md Section 2.137.
+  support_boundary: 'Paired against the dead-are-not-threats step, STRAT-285 (seeds 42-46): no drift; extinction stop (frontier scout; crowded hero, scout, worker), accepted by the owner (v1 disclosure N9). V3 on 15: 12 clean, 3 owned known reds (N14, N15). has_project_capacity still counts exempt need projects (slot-leak ticket); a suspended exempt need project frees a slot for an ordinary project that the old trim would have removed.'
+
+- id: STRAT-287
+  text: 'TCK-20261023-AN-ACTING-HOSTILE-IS-AN-ACT-NOT-A-STATE (SURV-07, AGENCY-07,
+    memo row 88): a perceived hostile holds back an escalated need and holds a panic
+    retreat past the need''s consequence line only when it ACTS on the subject: its
+    current task is an attack (ATTACK, SKILL) or a pursuit (PURSUE, INTERCEPT, BRACKETING)
+    with the subject as its typed target, or it is one of the bodies that took hp
+    from the subject in its last hit, within NEED_WAKE_CADENCE ticks (CombatComponent.last_hit_attackers,
+    last_hit_tick; a simultaneous group hit records every attacker, divergence 2.148,
+    COMB-354). Wounded, adjacent, closing without a task and outmatched are AGENCY-07
+    flight terms only. Rest and eat in place and the cautious safety retreat keep
+    the full terms.'
+  status: verified
+  priority: P1
+  legacy_evidence: null
+  v2_evidence: src/ai/goals/present_threat.py (acting_threat_to), src/engine/tactical_threat.py
+    (hostile_acts_on), src/ai/goals/scorers.py (_escalated_unless_threatened), src/engine/tactical.py
+    (_panic_holds), src/core/state.py (CombatComponent.last_hit_tick, last_hit_attackers),
+    src/engine/patches.py (CombatPatch), src/engine/combat.py (hit_tick_set). docs/mechanics/04_strategic_cognition.md
+    section 1. Real-kernel merchant-37 test stays green; unit pairs per reader (acting
+    versus resting) and a hit-window boundary test.
+  proof_type: regression
+  test_path: tests/unit/engine/test_acting_hostile_is_an_act_not_a_state.py
+  divergence_note: See docs/guidelines/intentional_divergences.md Section 2.138; the
+    group-hit record is Section 2.148.
+  support_boundary: 'Measured (base 341f700d0, tip 265162719, seeds 42-46, 3 worlds, 5000 ticks, self-check spread 0): people deaths no drift on all three worlds; crowded_frontier merchant extinction STOP (merchant 12, seeds 42 and 46), accepted as a downstream consequence of the row-88 change and recorded as is (owner ruling, #715 comment 6411018314); attribution to the scorers.py SURV-07 gate, first divergence t766 (seed 42) and t749 (seed 46). See divergence 2.138. An attack task stays current until the hostile next decides (no reach test); last_hit_tick is excluded from the v2 proof digest until perf F1 (the final hash cannot see it). Step A (retreat escalation) is measured on this tip.'
+
+- id: STRAT-288
+  text: 'TCK-20261020-HUNGER-AND-RETREAT-ON-ONE-ESCALATION-SCALE (SURV-07, memo row 88 (3)): the goal-level retreat score escalates with the wound on the same scale a need follows, and only while a hostile ACTS on the subject (acting_threat_to). Retreat = raw + ESCALATION_AMPLITUDE * smoothstep(ESCALATION_ONSET, ESCALATION_FULL, 1 - hp/max_hp), the need_pull constants being the single source (death is the consequence line). With no acting hostile the score is unchanged and stays at or under 150, below the starving pull of 155-160; with an acting hostile at hp 15% or less it is about 210, above it.'
+  status: verified
+  priority: P1
+  legacy_evidence: null
+  v2_evidence: 'src/engine/need_pull.py (retreat_pull), src/ai/goals/scorers.py (CombatRetreatScorer). docs/mechanics/04_strategic_cognition.md section 1. The retreat-ceiling pin is unchanged; the real-kernel merchant-37 test stays green.'
+  proof_type: regression
+  test_path: tests/unit/ai/test_retreat_escalates_on_the_need_scale.py
+  divergence_note: See docs/guidelines/intentional_divergences.md Section 2.139.
+  support_boundary: 'Measured against step B tip 3533fde71 (build 358f4cb7f; landed src equivalent, divergence 2.139 Measured): no death-count drift in the 3 worlds; frontier_living_world extinction STOP (scout, wild_creature) accepted as known, owner decision #715 6458811768 (memo row 91). A chosen retreat is a stored target that takes no step (no strategic flight; held for after M1). The panic flight is decided in the tactical pass before goal scores (N15), so this changes the goal-level weighing only. Inherits the act test properties of 2.138.'
+- id: STRAT-290
+  text: 'A way is open to a subject iff the inn would deliver the service now (SURV-06, SURV-07 row 27, AGENCY-03): one admission function (`admits`) is read by the building service and by ways_in_reach, EatScorer, the bed test and the starvation record; the payment law is one constant. The V3 record carries each opening step in reach and whether it was taken: an untried step is a FAIL, no open way and no step is poverty.'
+  status: verified
+  priority: P1
+  legacy_evidence: null
+  v2_evidence: 'src/engine/service_admission.py (admits, SERVICE_PAYMENT_LAW), src/engine/building_services.py (service_delta), src/ai/goals/ways.py, src/ai/goals/scorers.py, src/observability/starvation_record.py (StarvationVerdict, opening_steps_in_reach); docs/guidelines/intentional_divergences.md section 2.150'
+  proof_type: regression
+  test_path: tests/unit/engine/test_service_admission.py
+  divergence_note: See docs/guidelines/intentional_divergences.md Section 2.150.
+  support_boundary: 'Main runs the CLAMP law, so no answer changes; the ATOMIC law is exercised by tests only until the free-meal removal. keeps_coin is not in admission (pinned gap).'
+- id: STRAT-291
+  text: 'A broke hungry subject takes paid work (SURV-06, SURV-07 row 27): the arrival action is derived from the building (a meal the law admits, else a takeable shift, else the project ends); the earn step is offered only if no present threat to life holds (the test that interrupts a held shift) and the subject would reach the meal alive (health lost past the starvation line over the walk to the work, SHIFT_TICKS and the walk on, at starvation.hp_loss_period, stays below its health); the pull escalates over the same step; a held shift is interrupted only by a present threat to life (wage forfeited), never by hunger.'
+  status: verified
+  priority: P1
+  legacy_evidence: null
+  v2_evidence: 'src/engine/work_shift.py (shift_takeable, meal_position_after), src/engine/need_pull.py (step_travel_tiles), src/engine/building_arrival.py, src/ai/goals/opening_steps.py (work_in_reach), src/ai/goals/scorers.py, src/engine/scheduler.py (_is_need_woken); docs/guidelines/intentional_divergences.md section 2.151'
+  proof_type: regression
+  test_path: tests/integration/scenarios/test_a_broke_hungry_worker_earns_and_then_eats.py
+  divergence_note: See docs/guidelines/intentional_divergences.md Section 2.151.
+  support_boundary: 'Main runs CLAMP with the free meal on, so the broke-subject effect shows only once the free-meal removal (D73) lands; the scenario tests switch off the core EAT free relief through one named fixture. No partial wages; ask stays a stub.'
+
+- id: STRAT-289
+  text: 'TCK-20261027-CAPACITY-GATE-FIRST-RECORD-OF-KIND-IS-DEAD-SO-LIVE-SIBLING-NEVER-RESUMED: a winning goal continues, resumes or supersedes the entity''s LIVE project of its kind, chosen as the current project of the kind, else the newest live record (ACTIVE before SUSPENDED); a COMPLETED or ABANDONED record and storage order take no part. A matching target (target_entity_id when either side has one, else target_id) continues the current project, resumes a suspended one or makes an active non-current one current, creating nothing. A different target is superseded (ABANDONED, ended_by SUPERSEDED_BY_TARGET) only when evaluate_project_switch returns an update, cap-neutral; a losing candidate changes nothing. No live record goes through the capacity gate.'
+  status: verified
+  priority: P1
+  legacy_evidence: null
+  v2_evidence: 'src/core/strategic.py (ProjectEnd, ProjectState.ended_by, same_kind_record, project_target_matches, supersede_record), src/core/state.py (canonical dict, ended_by only when set), src/systems/strategic_systems/intelligence.py (the lookup and the supersede), src/systems/strategic_systems/cognition_export.py (project node attribute). docs/mechanics/04_strategic_cognition.md section 4. docs/guidelines/intentional_divergences.md 2.143.'
+  proof_type: regression
+  test_path: tests/unit/strategic/test_project_lookup_live_record_first.py
+  divergence_note: See docs/guidelines/intentional_divergences.md Section 2.143.
+  support_boundary: 'The four mapped kinds (ADVENTURE_ROUTE, SOCIAL_CONTRACT, REGION_STABILIZATION, OCCUPATION_CHANGE) never match a stored record and are unchanged here (separate ticket). Direct resume of a matching suspended record is existing behaviour, not endorsed. Measured counts: divergence 2.143.'
+- id: STRAT-295
+  text: 'TCK-20261031-A-RETREAT-PROJECT-OUTLIVES-ITS-THREAT: a COMBAT_RETREAT project begins and ends on one test, present_threat_to (AGENCY-07 terms over the perceived hostiles). The retreat goal scores 0.0 unless it holds (low hit points, panic or is_fleeing alone adopt nothing); the project COMPLETES (COMPLETED, ended_by THREAT_CLEARED) when the threat is gone AND the subject is clear of it (present_threat_to false and either the retreat destination reached or CLEAR_TICKS=200 continuous ticks without a present threat, ProjectState.cleared_since; a returning threat restarts the window, a suspended retreat restarts it on resume), by the one predicate objective_outcome that the evaluator and the strategic work queue share. A hurt subject with no present threat re-decides to RECOVER; a returning threat starts a new retreat through the scorer; no hysteresis. Before this a retreat project had no completion fact and the goal scored from low hp or is_fleeing alone.'
+  status: verified
+  priority: P1
+  legacy_evidence: null
+  v2_evidence: 'src/ai/goals/present_threat.py (present_threat_to), src/ai/goals/scorers.py (CombatRetreatScorer gate), src/systems/strategic_systems/entity_target_objective.py (ObjectiveOutcome, retreat_outcome, objective_outcome, close_entity_target_project), src/core/strategic.py (ProjectEnd.THREAT_CLEARED, end_record, ProjectState.cleared_since, note_threat_state, restart_clear_window), src/core/combat_constants.py (ENTITY_TARGET_PERCEPTION_RADIUS, CLEAR_TICKS, RETREAT_ARRIVAL_RADIUS). docs/mechanics/04_strategic_cognition.md; docs/engine/contracts/tactical_contract.md section 4; docs/guidelines/intentional_divergences.md 2.156.'
+  proof_type: regression
+  test_path: tests/unit/strategic/test_retreat_clear_window.py
+  divergence_note: See docs/guidelines/intentional_divergences.md Section 2.156.
+  support_boundary: 'A retreat that is clear of its threat ends after at most CLEAR_TICKS (200) clear ticks or on reaching its destination; whether the scorer re-proposes it is measured, not suppressed (no hysteresis). Dead entities keep their projects (TCK-20261031-DEATH-CLOSES-NO-PROJECT). Stale SUSPENDED records still fill capacity (TCK-20261020-SUSPENDED-PROJECTS-ARE-NEVER-RESUMED-SLOT-LEAK).'
+
+- id: STRAT-296
+  text: 'TCK-20261031-A-SLEEPER-HOLDS-A-DOOR-OR-SERVICE-TILE: a subject served a bed at a building with declared beds lodges inside it (navigation.lodged_in; position the building tile; no tile held); the bed goes to the lowest entity id and is delivered only to a granted claim; a full building does not admit a REST (admits_at) and an arrival with no bed ends the fatigue project with ProjectEnd.WAY_CLOSED and dispatches no REST; a REST whose first execution finds no bed in reach of a beds building (subject the building serves) ends WAY_CLOSED (fatigue project) or is refused NO_BED_FREE (bare REST); granting a bed resolves the reach objective of the fatigue project in the same apply; a lodger leaves only when its held rest ends or the building stops being functional (a walk target for a lodger who stays is dropped and counted, LAW-LODGER-INDOORS); beds 0 or absent keeps main.'
+  status: verified
+  priority: P1
+  legacy_evidence: null
+  v2_evidence: 'src/engine/lodging.py, src/engine/service_admission.py (admits_at), src/engine/building_services.py (lodge claim, bed_delta), src/engine/building_arrival.py, src/engine/pipeline_phases/occupancy.py (vets the step of a leaver; `place_leavers` runs before it in pipeline.py), src/engine/pipeline.py and phase_graph.py (grant_beds, gates), src/core/strategic.py (WAY_CLOSED), src/core/state.py (lodged_in, beds). docs/mechanics/04_strategic_cognition.md section 1. docs/guidelines/intentional_divergences.md 2.155. src/engine/lodging.py finds_no_bed/refuse_rest/resolve_arrival/drop_lodger_targets, src/engine/pipeline_phases/actions.py (NO_BED_FREE ends a held REST), src/observability/hard_law_monitor.py (LAW-LODGER-INDOORS), src/core/lodging_rules.py (keeps_lodging, is_lodged_stayer), src/systems/strategic_systems/intelligence.py and src/engine/domain/cognition.py (a lodged stayer writes no movement intent), src/engine/checkpoint_fields.py and src/engine/scenario_checkpoint.py (a checkpoint that predates lodged_in or beds).'
+  proof_type: regression
+  test_path: tests/unit/engine/test_lodging.py
+  divergence_note: See docs/guidelines/intentional_divergences.md Section 2.155.
+  support_boundary: 'Only the inn declares beds (no home kind in content). A lodger leaves the tick its rest ends. Main merges the bed delivery twice per hold; the lodging path reproduces it (separate ticket).'
+
+- id: STRAT-297
+  text: 'TCK-20261031-AN-ENGAGEMENT-OVERRIDES-A-PRESSING-NEED (SURV-07 LAW P, memo row 88, shape S1 with the hunt exemption): with a hostile in sight and none acting on the subject (need_yields), a subject past its need''s escalation onset (need_is_pressing) runs its need path before the presence test, role obligation, cohesion and target selection (a follower included): in-place survival, then the objective step of a hunger or fatigue project; the need project is not suspended. tactical_rest.py keeps the AGENCY-07 present_threat_terms (S1); a fatigue arrival under the need path dispatches REST only when lodging.rest_would_lodge or the terms are clear. A subject whose project is not a need project waits instead of engaging a non-acting hostile. Hunt exemption: with HUNGER pressing and prey in sight (Relation.PREDATION) and none acting, the subject skips the need-first branch and takes its target from the prey only; it does not apply to a subject with an active need project whose objective names no living target; a hunger or fatigue project naming a living prey is not suspended by it; COMBAT_ENGAGE keeps its suspension; sleep alone pressing is not exempt. The project''s served meal on arrival is taken with a non-acting hostile in sight below the consequence line too (owner reading 2); the emotional panic branch (`_panic_holds`) runs before need_first, and need_first runs ahead of the hp < 15% retreat; past the consequence line a badly hurt pressing subject takes its need path, below it the panic branch holds (owner reading 3 as corrected, #715 6697215821). Readings 1 and 2: #715 6697054601. Below the onset and when a hostile acts on the subject the behaviour is unchanged; flight keeps present_threat_terms.'
+  status: verified
+  priority: P1
+  legacy_evidence: null
+  v2_evidence: 'src/engine/tactical.py (need_first branch, hunt_prey, _need_way_is_not_a_hunt, _hunt_project_names_prey, _prey_in_sight, _serves_a_need), src/engine/tactical_objective.py (pursue_objective, _fatigue_arrival_waits), src/engine/lodging.py (rest_would_lodge), src/engine/tactical_threat.py (need_yields), src/engine/need_pull.py (entity_need_is_pressing, entity_hunger_is_pressing), src/ai/goals/present_threat.py (acting_threat_to), docs/mechanics/04_strategic_cognition.md section 1. Ticket TCK-20261031-AN-ENGAGEMENT-OVERRIDES-A-PRESSING-NEED.'
+  proof_type: regression
+  test_path: tests/unit/tactical/test_surv07_precedence_grid.py, tests/unit/tactical/test_low_hp_retreat_gate.py::test_a_panic_freeze_with_prey_in_sight_holds_and_does_not_attack_the_prey
+  divergence_note: See docs/guidelines/intentional_divergences.md Section 2.157.
+  support_boundary: 'Unit grids ({pressing y/n} x {no hostile, perceived only, present and not acting, acting} for the presence skip, rest in place and eat carried; the hunt rows: walk at 3 tiles, strike at 1 tile, combat-engage project, no project, sleep-only, prey plus non-prey, guard rows for inn/fatigue/carcass projects, project stays current and ends with its target) plus paired4 (15x2, 5000t, sequential reference). Unit coverage of the owner readings: reading 2 tests/unit/tactical/test_surv07_precedence_grid.py::test_reading_2_the_served_meal_on_arrival_is_taken_below_the_consequence_line_with_a_non_acting_hostile_in_sight; reading 3 tests/unit/tactical/test_surv07_precedence_grid.py::test_reading_3_past_the_consequence_line_a_badly_hurt_subject_with_nothing_acting_takes_the_need_path (hunger 96 eats) and tests/unit/tactical/test_surv07_precedence_grid.py::test_reading_3_below_the_consequence_line_a_panic_with_nowhere_to_go_does_not_freeze_against_a_pressing_need (hunger 80, no destination: eats; closed by divergence 2.200); control, not reading 3: tests/unit/tactical/test_surv07_precedence_grid.py::test_control_not_reading_3_above_the_panic_health_a_pressing_subject_eats (hp 20 and 30 eat). No trace isolates readings 2 or 3: paired4 shows them only in aggregate. Not taken by the owner: group defence, predator avoidance. Open: wild_creature collapses frontier, frontier s42 people held off the inn by avoided predators, urban s44 deaths to one scout (PR body).'
+- id: STRAT-299
+  text: 'TCK-20261028-LOW-HP-RETREAT-BRANCH-HOLDS-A-STARVING-SUBJECT-IN-PLACE-BESIDE-A-NON-ACTING-HOSTILE (SURV-07 LAW P, memo row 88 (2) and (5)): a retreat with nowhere to go is not taken. Below 15% health the pure retreat with no destination stamps no PANIC_RETREAT task and holds the subject''s own tile in RETREAT mode with no task; with a destination it flees as before. The emotional panic branch with no destination does not freeze against a pressing need while nothing acts on the subject and no prey is in sight: the tick takes the need path (one computation, tactical._need_path_first, shared with the main order). A panic with a destination still flees.'
+  status: verified
+  priority: P1
+  legacy_evidence: null
+  v2_evidence: 'src/engine/tactical.py (_need_path_first, _panic_yields_to_need, the panic gate, the pure retreat with a None destination), docs/mechanics/04_strategic_cognition.md section 1, docs/guidelines/intentional_divergences.md Section 2.200. Ticket TCK-20261028-LOW-HP-RETREAT-BRANCH-HOLDS-A-STARVING-SUBJECT-IN-PLACE-BESIDE-A-NON-ACTING-HOSTILE.'
+  proof_type: regression
+  test_path: tests/unit/tactical/test_low_hp_retreat_gate.py
+  divergence_note: See docs/guidelines/intentional_divergences.md Section 2.200.
+  support_boundary: 'Unit rows: the low-hp retreat grid ({pressing y/n} x {no hostile, perceived only, adjacent not acting, acting}) with and without a destination, the acceptance scene, the panic freeze with prey in sight, and the reading 3 below-line row. Paired measurement pending.'
+
+- id: STRAT-350
+  text: 'TCK-20261115-PAST-THE-STARVING-LINE-THE-TACTICAL-STEP-TURNS-AWAY-FROM-A-MEAL-WITHOUT-WEIGHING-HUNGER (SURV-07 LAW P, memo row 88, divergence 2.207): past the starving line (hunger at or above 95) a hit acts on the subject only while its hitter can still reach it (Manhattan distance at the decision tick <= max(1, the hitter''s range), no line of sight) or pursues or attacks it; a swing left behind no longer makes the need yield, keeps a panic standing or makes acting_threat_to true. Below the line the ten-tick hit window is unchanged.'
+  status: verified
+  priority: P1
+  legacy_evidence: null
+  v2_evidence: 'src/engine/tactical_threat.py (_hit_acts_on, hostile_acts_on, need_yields), src/engine/tactical.py (_panic_holds, _need_path_first), src/ai/goals/present_threat.py (acting_threat_to), docs/mechanics/04_strategic_cognition.md (LAW P paragraph), docs/guidelines/intentional_divergences.md Section 2.207.'
+  proof_type: regression
+  test_path: tests/unit/engine/test_acting_hostile_is_an_act_not_a_state.py, tests/unit/tactical/test_starving_hit_left_behind_does_not_hold_a_panic.py, tests/integration/observability/test_starving_subject_eats_past_a_hitter_left_behind_through_the_real_kernel.py
+  divergence_note: See docs/guidelines/intentional_divergences.md Section 2.207.
+  support_boundary: 'Unit rows, one tactical scene (the traced shape A; a raider, the old-predicate control holds the panic) and one real-kernel tick-loop test on compiled crowded_frontier (a starving wounded worker two tiles from the inn, a raider that hit it 3 ticks before every tick standing five tiles away and idle: it eats; with the old predicate restored it does not in the same 40 ticks). The paired 3-world x s42-46 x 5000-tick measurement and the V3 cell re-read are pending (after HOLD stage 2). Reach has no line-of-sight test; engagement ordering after a yielded need (group shared-target bias) is out of scope.'

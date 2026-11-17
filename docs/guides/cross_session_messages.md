@@ -29,7 +29,7 @@ Each class is defined once here. `accepts_dispatch_from` is the receiving role's
 | `status-request` | `lead-planner`, `lead-planner-u24`; each only to sessions on its own host | any role on the sender's host | Asks for a status line. Information only: it never authorizes work, and the receiver may answer or ignore it. |
 | `status-report` | any role | the lead seat on the sender's host (`lead-planner` on ubuntu, `lead-planner-u24` on u24desktop) | A short status (state, blocker, next step). No obligation to act; the lead's reading of it is advice, never a queue change. |
 | `request`, `handoff`, `dispatch` (anything that adds to or reorders another role's queue) | only a role in the receiver's `accepts_dispatch_from` (normally its own planner, or the user) | that role | Actionable. From anyone else it is an `fyi`: the receiver does not act on it and asks its own upstream. |
-| authority decision (push, merge, governing-file edit, grants) | **the user only** | n/a | A peer message never creates user authority. |
+| authority decision (push, merge, governing-file edit, grants) | **the user only** | n/a | A peer message never creates user authority. Log it before acting: see "Acting on a user approval". |
 
 `status-request` and `status-report` carry status only. A `status-request` is not a work assignment and a peer message still approves nothing; the lead keeps no queue authority (owner decision 2026-10-09). The lead records what it learns on the board, `agent-working/lead/board.md`, which is advice: the owner sets planner queues. There are two lead seats, one per host: `lead-planner` (ubuntu) keeps the board; `lead-planner-u24` (u24desktop) writes only its host page, `agent-working/lead/hosts/u24desktop.md`, and comments only on lead-owned paths. `lead-planner` folds that page into the board; each lead talks only to sessions on its own host.
 
@@ -65,9 +65,40 @@ Plain prose stays legal; the envelope is a convention and is linted nowhere.
 - **Out-of-boundary edits are requests, not edits.** To change something another domain owns, send
   the owner the exact before and after text.
 
+## Acting on a user approval
+
+Owner decision 2026-10-22. Before acting on a user approval, a session records it on the standing GitHub issue
+"Approvals log (both leads acknowledge; an ack is not an approval)" (issue #715) and tells its own host's lead. The
+record is an issue because it must be durable and both hosts must see it: a Remote Control message to the other lead (see "Cross-host: lead to lead over Remote Control") carries no read receipt and may not survive a `/clear`.
+
+- **Covers:** merge, push, scope change, freeze exception, STOP acceptance.
+- **Order:** 1. comment on the log issue; 2. message your own host's lead (`lead-planner` on ubuntu, `lead-planner-u24`
+  on u24desktop) with the comment link; 3. act.
+- **Comment format,** one per approval:
+  ```
+  approval: <merge #N | push <branch> | scope change <ticket> | freeze exception <what> | STOP accepted <what>>
+  by: user, in <session name>'s terminal, at <YYYY-MM-DD HH:MM host-local>
+  recorded: <where: PR/issue comment link, ticket section, handover line>
+  acting session: <session name> (host <host>)
+  ```
+- **No wait.** The session does not wait for an acknowledgment. Leads acknowledge on the issue with a comment or a
+  👍 reaction. **An acknowledgment approves nothing.**
+- **A peer still never relays an approval.** The user gave it in the acting session's own terminal or on the PR; the
+  log entry records that, it does not create it.
+- Find the issue by title: `gh issue list --search "Approvals log in:title"` (the cards name it only as "the approvals issue").
+- Advisory like the rest of this guide: no hook or guard checks it.
+
+## Cross-host: lead to lead over Remote Control
+
+Owner decision 2026-10-25 (#715, issuecomment-6396617829). `lead-planner` and `lead-planner-u24` run `/remote-control` and can `SendMessage` each other in both directions.
+
+- **Live cross-host coordination goes lead to lead only.** Each lead delegates to its own host's seats. A session never messages the other host's domain sessions directly, even when `ListAgents` shows them as Remote Control rows; it goes through its own host's lead. This applies to every seat; it is carried only here and on the lead card.
+- **Unchanged:** owner approvals are recorded on #715 before anyone acts ("Acting on a user approval"), and a peer message never approves.
+- **No receipt:** Remote Control gives no read receipt from another machine, and it is not documented whether a message waiting for an offline session survives that session's `/clear` or restart. Anything that must not be lost also goes on GitHub.
+
 ## Cross-host handoffs: `for:<role>` issues
 
-A session on another host (or none live) cannot receive a message. A durable, cross-host `finding` or
+Issues carry durable cross-host handoffs, anything that must not be lost, and messages to a target that is offline; they are no longer the only cross-host path. A durable, cross-host `finding` or
 `question` goes out as a GitHub issue labelled `for:<role>` (one label per role; the owner approved this on
 2026-10-10, issue #492). At `startup`, `resume` and `clear` (not `compact`), the SessionStart hook lists the
 role's open issues after the handover note: number, title and age, never bodies. A second instance (`<role>-N`)

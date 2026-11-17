@@ -16,6 +16,11 @@ the subject will have ON ARRIVAL, not the need it has now. Pure functions: no st
 """
 from __future__ import annotations
 
+from typing import TYPE_CHECKING, Optional, Tuple
+
+if TYPE_CHECKING:
+    from src.core.state import EntityState
+
 # The pull is the raw need below ESCALATION_ONSET (a fraction of the consequence line), then a smoothstep adds up to
 # ESCALATION_AMPLITUDE by ESCALATION_FULL.
 ESCALATION_ONSET = 0.6
@@ -48,6 +53,15 @@ def arrival_fraction(need: float, rate: float, travel_tiles: float, line: float)
     return (need + rate * TICKS_PER_TILE * max(0.0, travel_tiles)) / line
 
 
+def step_travel_tiles(position: Tuple[float, float], target_pos: Tuple[float, float], ticks_at_target: float = 0.0,
+                      onward_pos: Optional[Tuple[float, float]] = None) -> float:
+    """The travel term of the arrival adjustment over a whole step (Standing Needs Escalate): the walk to the step's target, what is spent at it (a shift of
+    work, in ticks) and the walk on to where the need is met (the meal). The one sum the pull and the earn step's takeable test both read."""
+    walk = abs(position[0] - target_pos[0]) + abs(position[1] - target_pos[1])
+    onward = 0.0 if onward_pos is None else abs(target_pos[0] - onward_pos[0]) + abs(target_pos[1] - onward_pos[1])
+    return walk + ticks_at_target / TICKS_PER_TILE + onward
+
+
 def need_pull(raw_utility: float, need: float, rate: float, travel_tiles: float, line: float) -> float:
     """`raw_utility` (the need's utility today) plus the SURV-07 escalation for the need level on arrival."""
     return raw_utility + ESCALATION_AMPLITUDE * smoothstep(
@@ -67,6 +81,16 @@ def need_is_pressing(hunger: float, sleep_debt: float) -> bool:
     return hunger >= ESCALATION_ONSET * HUNGER_LINE or sleep_debt >= ESCALATION_ONSET * SLEEP_LINE
 
 
+def entity_need_is_pressing(entity: "EntityState") -> bool:
+    """`need_is_pressing` read off a subject: the one way a site asks "is this subject's need pressing" (the pair with `need_yields`)."""
+    return need_is_pressing(entity.biological.hunger, entity.biological.sleep_debt)
+
+
+def entity_hunger_is_pressing(entity: "EntityState") -> bool:
+    """The hunger half of `need_is_pressing`, read off a subject: true when its hunger alone is at or past the escalation onset."""
+    return entity.biological.hunger >= ESCALATION_ONSET * HUNGER_LINE
+
+
 def hunger_pull(raw_utility: float, hunger: float, hunger_rate: float, travel_tiles: float) -> float:
     """The hunger goal's utility with the SURV-07 escalation for the hunger the subject will have on arrival."""
     return need_pull(raw_utility, hunger, hunger_rate, travel_tiles, HUNGER_LINE)
@@ -75,3 +99,10 @@ def hunger_pull(raw_utility: float, hunger: float, hunger_rate: float, travel_ti
 def sleep_pull(raw_utility: float, sleep_debt: float, sleep_rate: float, travel_tiles: float) -> float:
     """The fatigue goal's utility with the SURV-07 escalation for the sleep debt the subject will have on arrival."""
     return need_pull(raw_utility, sleep_debt, sleep_rate, travel_tiles, SLEEP_LINE)
+
+
+def retreat_pull(raw_utility: float, hp_ratio: float) -> float:
+    """The retreat goal's utility with the same escalation, for the wound the subject has now: the damage fraction `1 - hp_ratio` is its need and death (hp 0, a
+    fraction of 1.0) is its consequence line, so the pull is the raw utility plus the SURV-07 escalation. The caller applies it only while a hostile ACTS on
+    the subject (memo row 88): a wound alone does not outbid a need."""
+    return raw_utility + ESCALATION_AMPLITUDE * smoothstep(ESCALATION_ONSET, ESCALATION_FULL, 1.0 - hp_ratio)

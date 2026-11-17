@@ -141,6 +141,7 @@ class WorldEntitySpawner:
                     "population_id": spawn.population_id,
                 },
                 personality=personality,
+                occupation=profile.species_id or "human",  # step 2: the exact string written to kind; the true label (role_id) is step 4
             )
             .combat(
                 hp=profile.hp,

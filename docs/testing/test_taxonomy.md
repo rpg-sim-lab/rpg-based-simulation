@@ -259,6 +259,8 @@ level:
 ```
 <!-- marker-vocabulary:end -->
 
+The `unwired_subject("<reason>")` marker is separate from this vocabulary. A test that imports a `src/systems` symbol the authoritative pipeline never reaches carries it, with the reason (for example, a facade import check). `python3 -m tools.test_architecture.unwired_subject_check` lists such symbols and the unmarked tests that import them; it is advisory and never fails a build (TCK-20261109-AN-ADVISORY-GUARD-LISTS-TESTS-WHOSE-SUBJECT-SYSTEM-THE-PIPELINE-NEVER-RUNS).
+
 Domain values follow the ownership map (`architecture_design_notes.md` §3.1). Party/group has no oracle
 or owner (decision D-P, deferred), so it has no domain value; tests about it stay unclassified.
 

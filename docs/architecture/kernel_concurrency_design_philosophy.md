@@ -68,7 +68,7 @@ flowchart TB
 
     subgraph FANOUT["bounded fork-join (WorkerManager)"]
         direction TB
-        DISPATCH["kernel thread: build packets,\nderive per-packet RNG seeds,\nsubmit chunks"]
+        DISPATCH["kernel thread: build packets\n(each carries the world seed),\nsubmit chunks"]
         DISPATCH --> W1["worker chunk 1"]
         DISPATCH --> W2["worker chunk 2"]
         DISPATCH --> W3["worker chunk N"]
@@ -106,7 +106,7 @@ Three independent mechanisms:
    (`src/platform/rng.py`) build a fresh `random.Random(composite_seed)` per call, seeded by a
    pure hash of `(base_seed, domain, tick, entity_id, sub_id)` — no shared generator to race, and
    results are order-independent regardless of which worker finishes first. The deprecated
-   stateful twin (`next_float`/`next_int`) is unused anywhere in `src/`.
+   stateful twin (`next_float`/`next_int`) is unused anywhere in `src/`. Since #837 every `WorkerPacket` carries the world seed (`seed=state.seed`, `src/engine/executor.py`), so `context.seed` means the same under either executor. The canonical determinism contract is [`docs/engine/deterministic_execution.md`](../engine/deterministic_execution.md).
 
 3. Output collisions are prevented structurally and validated twice ("Option A"). A worker's
    result set is filtered to `eid == packet.subject.id or eid == 0`
@@ -127,7 +127,7 @@ sequenceDiagram
 
     K->>K: state.readonly_view()<br/>entities → ReadOnlyDict/tuples (to_readonly)
     K->>K: deep_freeze() regions, nodes,<br/>buildings, terrain, groups...
-    K->>K: per-packet seed = composite_hash(base_seed, domain, tick, entity_id)
+    K->>K: build WorkerPackets, seed = world seed (state.seed)<br/>per-call RNG derives from it (see note 2)
     K->>WM: execute_batch(packets)
     WM->>T1: chunk 1 (frozen packets)
     WM->>T2: chunk 2 (frozen packets)

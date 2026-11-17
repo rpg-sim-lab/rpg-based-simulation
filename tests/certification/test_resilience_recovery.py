@@ -12,7 +12,7 @@ def test_harness_catches_failed_recovery():
     """
     profile = RuntimeProfile(
         name="NO_RECOVERY", hardware_class=HardwareClass.CLASS_B,
-        max_ram_mb=512, max_cpu_percent=50.0, max_worker_count=1,
+        max_ram_mb=1_000_000, max_cpu_percent=50.0, max_worker_count=1,
         max_queue_depth=10, max_replay_buffer_kb=0, max_tick_budget_ms=100.0,
         max_observability_budget_percent=5.0
     )

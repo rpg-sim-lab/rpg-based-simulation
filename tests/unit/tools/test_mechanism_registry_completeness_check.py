@@ -39,12 +39,12 @@ def _real_registry_data() -> dict:
 
 def test_enumerate_targets_resolves_shims_not_top_level_filenames():
     """[Load-bearing] domains/systems targets must come from real subpackage files, never from a
-    top-level src/systems/*.py shim's own bare filename -- checking `chest_system` (the shim) would
+    top-level src/systems/*.py shim's own bare filename -- checking `market` (the shim) would
     be checking the wrong identity entirely."""
     targets = enumerate_targets()
     ids = {t.id for t in targets}
-    assert "systems/economy_systems/chests" in ids
-    assert "systems/chest_system" not in ids  # the shim itself is never a target
+    assert "systems/economy_systems/market" in ids
+    assert "systems/market" not in ids  # the shim itself is never a target
 
 
 def test_exclusions_all_point_to_real_paths():
@@ -157,13 +157,21 @@ def test_real_registry_enumeration_and_binding_counts_pinned():
     caller in `src/`, filed for deletion as
     TCK-20261007-DEAD-SYSTEMS-MODULES-WITH-NO-CALLER-BLOCK-THE-MECHANISM-COMPLETENESS-GATE. Taken by running the
     check.
+
+    2026-10-27 (TCK-20261027-FIVE-DEAD-SYSTEMS-CLASSES-STILL-CITED-AS-PROOF): `total_targets` 63 -> 58 and
+    `unbound` 5 -> 0. The five unbound modules were the dead classes `loot`, `town_service`, `crafting`, `guilds`
+    and `quest_engine`; all five are deleted. `bound` and `excluded` are unchanged. Taken by running the check.
+
+    2026-10-28 (TCK-20261020-HUNGER-AND-RETREAT-ON-ONE-ESCALATION-SCALE, #593 6420327798): counts unchanged.
+    `tactical_decision` now cites `hostile_acts_on` and `acting_threat_to` (step B's act test, 2.138, which step A's
+    retreat_pull gate reads), which add no target (their modules were already bound). Taken by running the check.
     """
     data = _real_registry_data()
     report = build_report(data)
-    assert report.total_targets == 65
-    assert len(report.bound) == 53
+    assert report.total_targets == 58  # 65 -> 63 on 2026-10-26: economy_systems/chests and world_systems/quest_generator deleted (dead)
+    assert len(report.bound) == 54  # 53 -> 54 on 2026-10-26: domains/motivation bound by `role_fit_preference`
     assert len(report.excluded) == 4
-    assert len(report.unbound) == 8
+    assert len(report.unbound) == 0  # 5 -> 0 on 2026-10-27: the five dead classes are deleted
 
 
 # --- state: gap is not a coverage hole (TCK-20260923-MECHANISM-IMPLEMENTED-BY-RESIDUE-RESOLUTION) ---
@@ -269,7 +277,36 @@ def test_wider_scope_numbers_pinned():
     # 342 -> 343 on 2026-10-16 (D75 route step, divergence 2.128): +src/engine/route_search.py (RoutePlanStore and the bounded terrain-cost search).
     # 343 -> 344 on 2026-10-17 (grief-as-state, decision 80, divergence 2.134): +src/core/grief_triggers.py (pending_grief_triggers, a pure read of
     # death records and trust), bound under `cross_episode_grief_nemesis`, so unbound_files is unchanged.
-    assert wider["scope_files"] == 344
+    # 344 -> 345 on 2026-10-21 (TCK-20261020-A-ESCALATED-NEED-IS-NEVER-REFUSED-FOR-CAPACITY): +src/ai/goals/escalation.py (escalated_need_wins, bound under
+    # `goal_hierarchy`; functions only, so it adds no unbound file or mechanism-shaped class).
+    # 345 -> 346 on 2026-10-28 (TCK-20261023-SALTED-HASH-IN-HASHED-STATE-FACTION-SQUAD-GROUP-ID, divergence 2.141): +src/core/stable_hash.py
+    # (stable_int31, the process-independent id digest; functions only, so it adds no mechanism-shaped class; unbound, see below).
+    # 346 -> 345 on 2026-10-28 (TCK-20260930-SAME-NAME-DIVERGENT-CLASS-PAIRS): src/progression/skills.py (the dead SkillScalingService twin) is deleted.
+    # 345 -> 343 on 2026-10-28 (TCK-20261027-LEGACY-RECIPE-REGISTRY-AND-BLACKSMITH-ACTION-UNREACHED): src/core/recipes.py and src/town/blacksmith.py are deleted; both were in scope.
+    # 343 -> 344 on 2026-10-28 (TCK-20261028-EVENT-RECORDER-NEVER-GIVEN-THE-RUN-ID-SO-EVENTS-SAY-UNKNOWN-RUN): +src/simulation_quality/wiring.py (build_quality_wiring, the SimQ feed and hub
+    # construction moved out of Kernel.__init__; one function, no mechanism-shaped class; unbound, see below).
+    # 344 -> 345 on 2026-10-29 (TCK-20261029-A-PRICED-WAY-IS-OPEN-ONLY-TO-A-SUBJECT-THAT-CAN-PAY): +src/engine/service_admission.py (bound under town_services).
+    # 345 -> 347 on 2026-10-29 (TCK-20261029-A-BROKE-HUNGRY-SUBJECT-NEVER-EARNS-SO-THE-FREE-MEAL-CANNOT-GO): +src/engine/work_wake.py (bound under `town_services`) and
+    # +src/engine/need_wake.py (the NEED_WAKE_CADENCE constant lifted out of scheduler.py; a helper with no mechanism of its own).
+    # 344 -> 345 on 2026-10-29 (TCK-20261027-CAPACITY-GATE-FIRST-RECORD-OF-KIND-IS-DEAD-SO-LIVE-SIBLING-NEVER-RESUMED): +src/ai/goals/live_record_route.py (pure functions and one small
+    # frozen dataclass that route a winning goal to its live record, moved out of `evaluate_strategic_intent`; bound under `goal_hierarchy`, see below).
+    # 345 -> 346 on 2026-10-30 (merge of #785 into #788, from the check's own output): both sides added one file above (service_admission.py, live_record_route.py); unbound_files stays 247 (both bound).
+    # 346 -> 348 on 2026-10-30 (merge of main ba7aa11bd into the EARN branch, from the check's own output): main is 346 after #785 and #788; EARN adds work_wake.py and need_wake.py (the 345 -> 347 line above is relative to the pre-#785 base). unbound_files stays 247.
+    # 348 -> 349 on 2026-10-31 (TCK-20261031-A-SLEEPER-HOLDS-A-DOOR-OR-SERVICE-TILE, divergence 2.155): +src/engine/lodging.py (bound under `town_services`: grant_beds, place_leavers, is_lodged).
+    # 349 -> 351 on 2026-11-01 (same ticket): +src/core/lodging_rules.py (the lodger stay rule, read by the decision and apply layers) and +src/engine/checkpoint_fields.py (the one restore step for fields a checkpoint predates).
+    # 351 -> 353 on 2026-11-02 (TCK-20261031-A-PAIR-RE-FORMS-AND-LEAVES-A-GROUP-EVERY-TWO-TICKS, divergence 2.146): +src/core/group_record.py (GroupRecord moved out of state.py, plus the one definition of a live group) and +src/core/group_update_merge.py (the merge of two updates' group adds and counter). Both are unbound (helper modules of the existing party_formation code, no mechanism of their own), so unbound_files goes 247 -> 249. Counts taken from the check's own output on the tree merged with main 0e7b1030c.
+    # 351 -> 352 on 2026-11-02 (TCK-20261031-AN-ENGAGEMENT-OVERRIDES-A-PRESSING-NEED, divergence 2.157, from the check's own output): +src/engine/tactical_objective.py (the objective-pursuit step moved out of tactical.py; functions only, so it adds no unbound mechanism-shaped class).
+    # 353 + 1 = 354 on 2026-11-07 (the merge of rpg-eng-overrides-need 4a1be4bd4 with the churn fix): both histories above hold; the figure is the check's own output on the merged tree.
+    # 354 -> 355 on 2026-11-10 (TCK-20261109-A-FLIGHT-WEIGHS-THE-FREE-SWING-IT-WOULD-TAKE, divergence 2.202): +src/engine/tactical_flight_guard.py (flight_weighs_free_swing, bound under `tactical_decision`), so unbound_files stays 249.
+    # 355 -> 361 on 2026-11-11 (TCK-20261109-NEXT-GENERATION-ENGINE-ACCESS-AUDIT): +src/engine/access_audit/{declarations,hook,observe,recorder,report,static_reads}.py (the access-audit recorder and its report; measurement infrastructure, no gameplay mechanism).
+    # 361 -> 362 on 2026-11-11 (TCK-20261110-A-NON-FLIGHT-MOVE-OFF-ENGAGEMENT-WALKS-INTO-A-KNOWN-LETHAL-FREE-SWING): +src/engine/felt_swing.py (felt_lethal_attacker, moved from tactical_flight_guard).
+    # 361 -> 362 on 2026-11-11 (TCK-20261109-ANY-SOCIAL-UPDATE-WIPES-THE-REJECTION-COUNTS-IT-DOES-NOT-NAME, SOC-280): +src/core/social_counts.py (add_rejection_counts, the one sum rule the social apply and SocialUpdate.merge share; a helper of the existing social code, unbound).
+    # 362 + 1 = 363 on 2026-11-12 (merge of origin/main 373625027 into rpg-non-flight-free-swing): both histories above hold; the figure is the check's own output on the merged tree.
+    # 363 -> 368 on 2026-11-12 (TCK-20261111-SPLIT-UPDATES-PY-INTO-UPDATE-MODELS, rpg-planner ok, from the check's own output): +src/core/update_models/{social,strategic,combat,body,world}.py (a pure move out of updates.py; no mechanism of its own).
+    # 368 -> 369 on 2026-11-16 (TCK-20261111-A-HOLD-MODE-MOVE-STILL-TAKES-A-STEP, divergence 2.206, rpg-planner ok, from the check's own output): +src/core/hold_mode.py (hold_reset_kwargs, bound under `tactical_decision`; first landed as src/engine/hold_mode.py and moved to src/core because systems may not import engine), so unbound_files stays.
+    # 369 -> 370 on 2026-11-16 (TCK-20261101-A-CHECKPOINT-HAS-NO-FORMAT-VERSION, INFRA-215): +src/engine/checkpoint_schema.py (the checkpoint schema fingerprint and its refusals; functions and error types, no mechanism of its own).
+    # 370 -> 371 on 2026-11-16 (TCK-20261109-M1-KIND-ALWAYS-MEANS-SPECIES-AND-OCCUPATION-IS-ITS-OWN-FIELD, rpg-planner ok): +src/core/species.py (species_of, the one species read; functions only, no class); it is unbound, see unbound_files below.
+    assert wider["scope_files"] == 371
     # 233 -> 227 on 2026-10-05: the world-building split names six more files (worldmodules/normalizer,
     # worldassembly/resolve_io, worldbuilding/repository and validator, worldgeneration/generator and scorer).
     # Then +1 for the unbound entity_target_objective.py module (TCK-20261002-COMBAT-OBJECTIVE-TARGETS-...).
@@ -310,15 +347,44 @@ def test_wider_scope_numbers_pinned():
     # 255 -> 251 on 2026-10-16 (rpg-planner binding at the fold): route_search.py::route_next_step and content/terrain_cost.py::terrain_cost
     # under `movement` (terrain cost is now paid in step time and route weighting, so it is movement's), death_cause.py::DeathRecord under
     # `aging_death` (the record resolve_lifecycle writes at death), diet_declaration.py::require_declared_diet under `attributes_biology`.
-    assert wider["unbound_files"] == 251
+    # 251 -> 250 on 2026-10-26: `src/world/perception/gate.py` is now named by `sense_gated_detection`.
+    # 250 -> 249 on 2026-10-26: `src/world/regional_sovereignty.py` is now named by `regional_levy_and_conquest_debuffs`.
+    # 249 -> 250 on 2026-10-28 (F4): +src/core/stable_hash.py is an unbound helper (a determinism utility used by military_conflict.py and
+    # perception/filter.py, no mechanism of its own); candidates and wired are unchanged.
+    # (unbound-files side, 2026-10-29, TCK-20261027-CAPACITY-GATE-FIRST-RECORD-OF-KIND-IS-DEAD-SO-LIVE-SIBLING-NEVER-RESUMED): +src/ai/goals/live_record_route.py (pure functions and one
+    # small frozen dataclass that route a winning goal to its live record, moved out of `evaluate_strategic_intent` so the code-health ceilings hold). It is bound by
+    # rpg-planner under `goal_hierarchy` (route_live_record, orphan_switch_candidate, supersede_on_win; entry semantics unchanged), so it adds no unbound file; `unbound_files` is 247 (wiring.py's +1 above, the other new file); candidates and
+    # wired are unchanged. Taken by running the check.
+    # 250 -> 249 on 2026-10-28 (TCK-20260930-SAME-NAME-DIVERGENT-CLASS-PAIRS): skills.py was unbound.
+    # 249 -> 248 on 2026-10-28 (TCK-20261020-HUNGER-AND-RETREAT-ON-ONE-ESCALATION-SCALE, #593 6420327798): src/ai/goals/present_threat.py
+    # is bound under `tactical_decision` (acting_threat_to, step B's act test, 2.138).
+    # 248 -> 246 on 2026-10-28 (TCK-20261027-LEGACY-RECIPE-REGISTRY-AND-BLACKSMITH-ACTION-UNREACHED): the same two deleted files were unbound.
+    # 246 -> 247 on 2026-10-28 (TCK-20261028-EVENT-RECORDER-NEVER-GIVEN-THE-RUN-ID-SO-EVENTS-SAY-UNKNOWN-RUN): +src/simulation_quality/wiring.py is an unbound helper (SimQ feed and hub
+    # construction lifted out of Kernel.__init__ unchanged, no mechanism of its own); candidates and wired are unchanged.
+    # 247 -> 247 on 2026-10-29 (TCK-20261029-A-PRICED-WAY-IS-OPEN-ONLY-TO-A-SUBJECT-THAT-CAN-PAY): +src/engine/service_admission.py is in scope and
+    # bound at once under `town_services` (admits), so the unbound count does not move.
+    # 247 -> 247 on 2026-10-29 (TCK-20261029-A-BROKE-HUNGRY-SUBJECT-NEVER-EARNS-SO-THE-FREE-MEAL-CANNOT-GO): work_wake.py is bound under `town_services` and need_wake.py is a
+    # helper (a cadence constant); the check's own output stays 247.
+    # unbound_files 247 -> 248 on 2026-11-01 (same ticket): +src/engine/checkpoint_fields.py (a restore helper, no mechanism of its own); src/core/lodging_rules.py is bound under `town_services`.
+    # 248 -> 247 on 2026-11-01 (TCK-20261031-A-RETREAT-PROJECT-OUTLIVES-ITS-THREAT, merged on top of F3): src/core/strategic.py is now cited by `goal_hierarchy` (note_threat_state, restart_clear_window), so one unbound file is bound. Taken by running the check.
+    # 2026-11-02 (TCK-20261031-AN-ENGAGEMENT-OVERRIDES-A-PRESSING-NEED): src/engine/tactical_objective.py is cited by `tactical_decision` (rpg-planner ruling: it was split out of tactical.py), so unbound_files stays 247 while scope_files rises by one (above).
+    # unbound_files stays 249 on the merge: tactical_objective.py is bound (ENG), the churn fix's two helper modules are unbound (above).
+    # 249 -> 255 on 2026-11-11 (same ticket, from the check's own output): the same 6 files, unbound (measurement infrastructure, as governor.py); candidates (67) and wired (19) are unchanged.
+    # 255 -> 256 on 2026-11-11 (TCK-20261110-A-NON-FLIGHT-MOVE-OFF-ENGAGEMENT-WALKS-INTO-A-KNOWN-LETHAL-FREE-SWING, from the check's own output): +src/engine/felt_swing.py, unbound (a moved helper of 2.202; no new mechanism entry); candidates and wired are unchanged.
+    # 255 -> 256 on 2026-11-11 (TCK-20261109-ANY-SOCIAL-UPDATE-WIPES-THE-REJECTION-COUNTS-IT-DOES-NOT-NAME): +src/core/social_counts.py is an unbound helper (the shared rejection-count sum rule, no mechanism of its own); candidates and wired are unchanged.
+    # 256 + 1 = 257 on 2026-11-12 (same merge, from the check's own output): both new files are unbound helpers; candidates and wired are unchanged.
+    # 257 -> 262 on 2026-11-12 (same ticket, from the check's own output): the same 5 files, unbound (moved update records, no mechanism of their own); candidates (67) and wired (19) are unchanged.
+    # 262 -> 263 on 2026-11-16 (TCK-20261101-A-CHECKPOINT-HAS-NO-FORMAT-VERSION, from the check's own output): src/engine/checkpoint_schema.py is unbound (no mechanism of its own); candidates and wired are unchanged.
+    # 263 -> 264 on 2026-11-16 (TCK-20261109-M1-KIND-ALWAYS-MEANS-SPECIES-AND-OCCUPATION-IS-ITS-OWN-FIELD, from the check's own output): src/core/species.py is unbound (a functions-only module; no binding added).
+    assert wider["unbound_files"] == 264
     # 73 -> 72 on 2026-10-07 (row 7 (b) pass): src/quests/generator.py::QuestGenerator is now bound under `guilds`.
     # 72 -> 71 on 2026-10-11 (#500, D57): src/engine/rpg_depth.py::LeashService is cited under `tactical_decision` (it became wired when
     # the hunger and fatigue goals started calling `way_in_range`), so it is no longer an unbound candidate.
     # 71 -> 70 on 2026-10-11 (treasury batch): GoldSinkSystem is gone.
     # 70 -> 71 on 2026-10-14 (D70, 2.125): RaidService is no longer cited (`faction_raid` is a gap), so it is an unbound candidate again.
-    assert wider["candidates"] == 71  # unbound mechanism-shaped classes, wired or not
-    assert len(wider["wired"]) == 21  # ... of which referenced from another top-level package
-    assert len(WIDER_EXCLUSIONS) == 18 and len(WIDER_PENDING) == 3
+    assert wider["candidates"] == 67  # 68 -> 67 on 2026-10-28 (TCK-20261027-LEGACY-RECIPE-REGISTRY-AND-BLACKSMITH-ACTION-UNREACHED): src/town/blacksmith.py::BlacksmithService is deleted (its name ends in "Service"; RecipeRegistry never counted, "Registry" is not a wider suffix); 69 -> 68 on 2026-10-28: the deleted SkillScalingService twin; unbound mechanism-shaped classes, wired or not (71 -> 70: PerceptionGate; 70 -> 69: RegionalSovereigntyService)
+    assert len(wider["wired"]) == 19  # ... of which referenced from another top-level package (21 -> 20, same; 20 -> 19 on 2026-10-28, same twin)
+    assert len(WIDER_EXCLUSIONS) == 18 and len(WIDER_PENDING) == 1  # PerceptionGate bound 2026-10-26; 2 -> 1 on 2026-10-28: the deleted SkillScalingService twin (src/progression/skills.py), only the CapacityService twin stays pending
 
 
 def test_wider_exclusions_and_pending_all_point_to_real_wired_candidates():

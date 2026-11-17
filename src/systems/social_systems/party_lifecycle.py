@@ -33,6 +33,8 @@ from __future__ import annotations
 from dataclasses import replace
 from typing import TYPE_CHECKING, List, Optional, Tuple
 
+from src.core.enums import GroupDissolutionReason
+
 if TYPE_CHECKING:
     from src.core.state import GroupRecord, EntityState
     from src.core.updates import EntityUpdate
@@ -204,10 +206,18 @@ class PartyLifecycleService:
         new_members = group.member_ids - {entity.id}
         dissolution = tick if len(new_members) <= 1 else group.dissolution_tick
 
+        # Bound groups carry a typed end reason. The holder defecting is the cause of "holder left", which outranks defection.
+        end_reason = None
+        if len(new_members) <= 1 and group.contract_holder_id is not None:
+            end_reason = (
+                GroupDissolutionReason.BINDING_HOLDER_LEFT if entity.id == group.contract_holder_id
+                else GroupDissolutionReason.DEFECTION
+            )
         updated_group = replace(
             group,
             member_ids=new_members,
             dissolution_tick=dissolution,
+            dissolution_reason=end_reason,
             last_updated_tick=tick,
         )
 

@@ -10,6 +10,14 @@ from src.observability.config import ObservabilityMode
 from src.observability.reporting.run_set_repository import RunSetArtifactRepository
 from src.observability.reporting.baseline_generator import BaselineGenerator
 from src.cli.entry import _run_gate
+from tests.named_run_dirs import remove_named_run_dirs  # noqa: F401
+
+# Run ids this module's tests name, removed by name after each test (see tests/named_run_dirs.py).
+RUN_ID_PREFIXES = {
+    "test_cli_gate_scenario_level_flow": ('test_gate_sweep',),
+    "test_cli_gate_warn_as_fail": ('test_gate_sweep_warn',),
+}
+pytestmark = pytest.mark.usefixtures("remove_named_run_dirs")
 
 
 def test_cli_gate_scenario_level_flow(tmp_path):

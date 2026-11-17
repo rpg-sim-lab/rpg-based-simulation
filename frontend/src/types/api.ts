@@ -118,6 +118,7 @@ export type WireEntitySlim = Omit<EntitySlim, 'state' | 'tier' | 'combat_target_
 export interface Entity {
   id: number;
   kind: string;
+  occupation?: string | null;
   x: number;
   y: number;
   hp: number;

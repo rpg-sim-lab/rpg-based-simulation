@@ -499,8 +499,11 @@ def test_objective_intent_resolver_is_reachable_from_production_pipeline():
     """
     STRICT LAW:
         ObjectiveIntentResolver.resolve must be called from a production call
-        site (TacticalDecisionSystem.evaluate_entity_intent), not just from its
-        own unit test file.
+        site reachable from TacticalDecisionSystem.evaluate_entity_intent, not just
+        from its own unit test file. The call site moved (TCK-20261031-AN-ENGAGEMENT-
+        OVERRIDES-A-PRESSING-NEED): evaluate_entity_intent -> pursue_objective ->
+        _other_objective_step -> ObjectiveIntentResolver.resolve, in
+        src/engine/tactical_objective.py; each link is asserted.
 
     Background (TCK-20260713-SIMQ-ECONOMY-INTENT-GENERATION-GAP):
         ObjectiveIntentResolver correctly maps every ObjectiveKind to an
@@ -515,13 +518,25 @@ def test_objective_intent_resolver_is_reachable_from_production_pipeline():
           ObjectiveIntentResolver.resolve, quietly reintroducing the routing
           gap this ticket closed.
     """
+    from src.engine import tactical_objective
     from src.engine.tactical import TacticalDecisionSystem
 
-    source = inspect.getsource(TacticalDecisionSystem.evaluate_entity_intent)
-    assert "ObjectiveIntentResolver.resolve" in source, (
-        "ObjectiveIntentResolver.resolve is no longer called from "
-        "TacticalDecisionSystem.evaluate_entity_intent — every non-REACH_LOCATION "
-        "ObjectiveKind will silently fall through to an idle EntityUpdate again."
+    # The call site moved with TCK-20261031-AN-ENGAGEMENT-OVERRIDES-A-PRESSING-NEED: evaluate_entity_intent -> pursue_objective ->
+    # _other_objective_step -> ObjectiveIntentResolver.resolve. Each link is asserted on its own source, so a break names the link.
+    entry = inspect.getsource(TacticalDecisionSystem.evaluate_entity_intent)
+    assert "pursue_objective(" in entry, (
+        "TacticalDecisionSystem.evaluate_entity_intent no longer calls tactical_objective.pursue_objective — "
+        "the objective-pursuit chain to ObjectiveIntentResolver.resolve is cut at its entry."
+    )
+    pursue = inspect.getsource(tactical_objective.pursue_objective)
+    assert "_other_objective_step(" in pursue, (
+        "tactical_objective.pursue_objective no longer calls _other_objective_step — "
+        "every non-REACH_LOCATION ObjectiveKind would silently fall through to an idle EntityUpdate again."
+    )
+    other = inspect.getsource(tactical_objective._other_objective_step)
+    assert "ObjectiveIntentResolver.resolve" in other, (
+        "tactical_objective._other_objective_step no longer calls ObjectiveIntentResolver.resolve — "
+        "every non-REACH_LOCATION ObjectiveKind will silently fall through to an idle EntityUpdate again."
     )
 
 

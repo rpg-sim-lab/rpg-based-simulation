@@ -1,0 +1,1135 @@
+#!/usr/bin/env python3
+"""Derive the GitHub Project items for ticket state, dry run only (TCK-20261112-PROJECT-SYNC-DRY-RUN, P0 of
+TCK-20261112-EPIC-GITHUB-PROJECT-TICKET-VIEW).
+
+The Project is a generated, read-only VIEW of ticket state: the ticket files stay authoritative. This tool reads ticket files on
+origin/main (no fetch), the worktrees and seats of this host (the builders in `tools/sessions/status.py`), each worktree's ticket
+changes against the merge base (read-only), and open PRs, then prints the create / update / archive plan. It writes nothing to
+GitHub and nothing to the repo; `--apply` and `--init` are P1 and are refused. Every subprocess goes through `_guard`, which only
+lets read verbs through.
+
+Status, first match wins (design section 3): Done -> In review -> Blocked -> In progress (or Stale) -> To do. Stale replaces In progress
+only: every branch working the ticket is older than `stale_branch_days` (newest commit or index change, status.py `_activity`; approximate). A `todos/` copy on a branch or in a
+PR is filing, not progress, and never moves a ticket past To do.
+"""
+
+from __future__ import annotations
+
+import argparse
+import hashlib
+import json
+import re
+import socket
+import subprocess
+import sys
+import time
+from collections.abc import Callable
+from dataclasses import dataclass, field
+from datetime import date, datetime, timezone
+from pathlib import Path
+
+import yaml
+
+if __package__ in (None, ""):  # run as `python3 tools/sessions/project_sync.py`: put the repo root on sys.path
+    sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+
+from tools.agent_working_paths import TICKETS
+from tools.sessions import state as st
+from tools.sessions.launch import _worktree_entries as worktree_entries
+from tools.sessions.launch import main_checkout
+from tools.sessions.roster import REPO_ROOT, load_roster
+from tools.sessions.route import route
+
+# Deliberate reuse of status.py's private `_worktree_for` (seat -> physical worktree): same package, and renaming it would only
+# churn status.py's unchanged tests (designer review of plan.md, 2026-11-12).
+from tools.sessions.status import _worktree_for, inspect_worktree, seat_infos  # noqa: F401
+
+CONFIG_REL = Path("registries") / "session_project.yaml"
+DEFAULTS = {
+    "project": {"owner": "PLACEHOLDER", "number": 0},
+    "pilot_lanes": ["rpg"],
+    "pilot_start": "2026-11-12",
+    "done_window_days": 14,
+    "stale_host_hours": 24,
+    "stale_branch_days": 14,
+    "host_names": {},
+    "write_pacing": {},  # ProjectClient's Pacing; empty means its defaults (TCK-20261114-PROJECT-CLIENT-WRITE-PACING)
+}
+HEARTBEAT_TITLE = "_sync heartbeat"
+HEARTBEAT_FIELD = "Last run"
+UNASSIGNED, UNKNOWN = "unassigned", "unknown"
+LAST_RUN_PATH = Path.home() / ".local" / "state" / "rpg-project-sync" / "last-run.json"
+FETCH_TIMEOUT_S = 60
+PR_LIMIT = 300  # the value of ticket_queue.PR_LIMIT: gh's own default is 30
+FOLDERS = ("todos", "inprogress", "done")
+PROGRESS_FOLDERS = ("inprogress", "done")  # only these count as progress; todos/ on a branch or PR is filing
+HASH_FIELDS_V1 = ("Title", "Ticket ID", "Status", "Domain", "Seat", "Host", "Branch", "PR", "Tier")
+HASH_FIELDS_V2 = HASH_FIELDS_V1 + ("Layer", "Priority", "Epic", "Tags")
+HASH_FIELDS_V3 = HASH_FIELDS_V2 + ("Host facts",)
+HASH_FIELDS = HASH_FIELDS_V3 + ("Filed",)  # the current version (v4)
+HASH_VERSIONS = {"v1": HASH_FIELDS_V1, "v2": HASH_FIELDS_V2, "v3": HASH_FIELDS_V3, "v4": HASH_FIELDS}  # a stored hash is "v4:<sha>"; an unprefixed value is v1
+CURRENT_HASH_VERSION = "v4"
+HOST_STATES = ("filing", "progress", "stale", "blocked")
+PRIORITIES = ("P0", "P1", "P2", "P3")
+TIERS = ("hotfix", "standard", "epic")
+STATUSES = ("To do", "In progress", "Stale", "In review", "Blocked", "Done")
+FILING_SUFFIX = "[filing]"
+BODY = "Generated from {path} by tools/sessions/project_sync.py — edits are overwritten."
+_TICKET_RE = re.compile(r"(TCK-[A-Z0-9][A-Z0-9-]*)\.md$")
+READ_GIT = {"ls-tree", "show", "merge-base", "diff", "status", "log", "rev-parse", "worktree"}
+
+Runner = Callable[[list[str], Path | None], "subprocess.CompletedProcess[str]"]
+
+
+class WriteRefused(Exception):
+    """A command that could write was about to run; the dry run never does."""
+
+
+GH_API_FLAGS = ("--paginate",)  # a flag with no value
+GH_API_VALUE_FLAGS = ("-q", "--jq", "-H", "--header")  # a flag followed by one value
+
+
+def _gh_api_is_read(rest: list[str]) -> bool:
+    """Allowlist: exactly one `repos/...` endpoint (never `graphql`: a POST that can carry a mutation), and every other
+    dash token is in a small set. Any joined spelling (`-XPOST`, `--method=POST`, `-fk=v`, ...) is not in it, so it is refused."""
+    endpoints, i = [], 0
+    while i < len(rest):
+        arg = rest[i]
+        if arg in GH_API_FLAGS:
+            i += 1
+        elif arg in GH_API_VALUE_FLAGS:
+            if i + 1 >= len(rest):
+                return False
+            i += 2
+        elif arg.startswith("-"):
+            return False
+        else:
+            endpoints.append(arg)
+            i += 1
+    return len(endpoints) == 1 and endpoints[0].startswith("repos/")
+
+
+def _guard(args: list[str]) -> None:
+    """Only read verbs: git ls-tree/show/merge-base/diff/status/log/rev-parse/worktree-list; gh `pr list` and an allowlisted `api` read."""
+    if not args:
+        raise WriteRefused("empty command")
+    tool, rest = args[0], [a for a in args[1:] if a != "--no-optional-locks"]
+    if tool == "git":
+        verb = rest[0] if rest else ""
+        if verb not in READ_GIT or (verb == "worktree" and rest[1:2] != ["list"]):
+            raise WriteRefused(f"git {verb}")
+        return
+    if tool == "gh":
+        if rest[:2] == ["pr", "list"]:
+            return
+        if rest[:1] == ["api"] and _gh_api_is_read(rest[1:]):
+            return
+        raise WriteRefused("gh " + " ".join(rest[:2]))
+    raise WriteRefused(tool)
+
+
+def run_command(args: list[str], cwd: Path | None = None) -> "subprocess.CompletedProcess[str]":
+    _guard(args)
+    try:
+        return subprocess.run(args, cwd=None if cwd is None else str(cwd), capture_output=True, text=True, timeout=60, check=False)
+    except (OSError, subprocess.SubprocessError) as exc:
+        return subprocess.CompletedProcess(args, 1, "", str(exc))
+
+
+# ---------------------------------------------------------------- data
+
+
+@dataclass(frozen=True)
+class TicketCopy:
+    id: str
+    folder: str
+    path: str
+    title: str = ""
+    tier: str = ""
+    blocked: bool = False
+    date: str = ""
+    layer: str = ""
+    priority: str = ""
+    tags: tuple[str, ...] = ()
+    code_areas: tuple[str, ...] = ()  # repo-relative path tokens of `## Related Code Areas` (read only to name the owning domain)
+
+
+@dataclass(frozen=True)
+class BranchFact:
+    host: str
+    branch: str
+    worktree: str
+    seat: str
+    domain: str
+    copies: tuple[TicketCopy, ...]
+    last_activity: float = 0.0  # epoch seconds, status.py `_activity`; 0.0 = unknown, never stale
+
+
+@dataclass(frozen=True)
+class PrFact:
+    number: int
+    url: str
+    paths: frozenset[str]  # ticket file paths the PR adds or changes
+
+
+@dataclass
+class Plan:
+    creates: list[dict] = field(default_factory=list)
+    updates: list[tuple[dict, list[str]]] = field(default_factory=list)
+    archives: list[tuple[str, str]] = field(default_factory=list)  # (ticket id or item title, reason)
+    archive_item_ids: list[str] = field(default_factory=list)  # parallel to `archives`: the live item's id ("" when read from --items)
+    hand_edits: list[str] = field(default_factory=list)
+    findings: list[str] = field(default_factory=list)
+    notes: list[str] = field(default_factory=list)
+    heartbeats: list[dict] = field(default_factory=list)  # the live `_sync heartbeat` items, oldest first; never archived, never a ticket
+    stale_hosts: list[str] = field(default_factory=list)  # other hosts whose heartbeat segment is older than stale_host_hours
+    unassigned_code_areas: int = 0  # tickets whose Domain is `unassigned` because their code areas have no or mixed owners
+
+
+# ---------------------------------------------------------------- ticket files
+
+
+def ticket_id_of(path: str) -> str | None:
+    m = _TICKET_RE.search(path)
+    return m.group(1) if m else None
+
+
+def folder_of(path: str) -> str | None:
+    prefix = TICKETS.as_posix() + "/"
+    if not path.startswith(prefix):
+        return None
+    head = path[len(prefix):].split("/", 1)[0]
+    return head if head in FOLDERS else None
+
+
+_AREA_TOKEN = re.compile(r"[\w.\-*{}]+(?:/[\w.\-*{}]+)+(?:::\w+|:\d+)?")
+
+
+def code_area_paths(section: str) -> tuple[str, ...]:
+    """Repo-relative path tokens of a `## Related Code Areas` section: backticks, a trailing `::name` / `:line` and trailing punctuation
+    stripped; a token holding a glob or a brace is skipped (it names no single file)."""
+    out: list[str] = []
+    for tok in _AREA_TOKEN.findall(section.replace("`", " ")):
+        tok = re.sub(r"(::\w+|:\d+)$", "", tok).rstrip(".,;:)")
+        if "/" in tok and not any(c in tok for c in "*{}") and tok not in out:
+            out.append(tok)
+    return tuple(out)
+
+
+def parse_copy(path: str, text: str) -> TicketCopy:
+    def section(name: str) -> str:
+        m = re.search(rf"^## {name}\s*\n+([^\n#][^\n]*)", text, re.M)
+        return m.group(1).strip() if m else ""
+
+    fm = re.search(r"^date:\s*(\S+)", text, re.M)
+    layer = re.search(r"^layer:\s*(\S+)", text, re.M)
+    tags = re.search(r"^tags:\s*\[([^\]]*)\]", text, re.M)
+    areas = re.search(r"^## Related Code Areas\s*\n(.*?)(?=^## |\Z)", text, re.M | re.S)
+    return TicketCopy(
+        id=ticket_id_of(path) or "", folder=folder_of(path) or "", path=path, title=section("Title"), tier=section("Tier").lower(),
+        blocked=section("Status").upper() == "BLOCKED", date=fm.group(1) if fm else "",
+        layer=layer.group(1) if layer else "", priority=section("Priority").upper(),
+        tags=tuple(x.strip().strip("'\"") for x in tags.group(1).split(",") if x.strip()) if tags else (),
+        code_areas=code_area_paths(areas.group(1)) if areas else (),
+    )
+
+
+def read_main_index(root: Path, run: Runner = run_command, ref: str = "origin/main") -> dict[str, list[tuple[str, str]]]:
+    """ticket id -> [(folder, path)] on `ref`. Names only: the 3,000+ done files are never opened."""
+    out = run(["git", "ls-tree", "-r", "--name-only", ref, "--", TICKETS.as_posix()], root)
+    index: dict[str, list[tuple[str, str]]] = {}
+    for path in out.stdout.splitlines() if out.returncode == 0 else []:
+        tid, folder = ticket_id_of(path), folder_of(path)
+        if tid and folder:
+            index.setdefault(tid, []).append((folder, path))
+    return index
+
+
+def read_main_copy(root: Path, path: str, run: Runner = run_command, ref: str = "origin/main") -> TicketCopy:
+    shown = run(["git", "show", f"{ref}:{path}"], root)
+    return parse_copy(path, shown.stdout if shown.returncode == 0 else "")
+
+
+def origin_info(root: Path, run: Runner = run_command, ref: str = "origin/main") -> tuple[str, float | None]:
+    sha = run(["git", "rev-parse", ref], root)
+    when = run(["git", "log", "-1", "--format=%ct", ref], root)
+    stamp = float(when.stdout.strip()) if when.returncode == 0 and when.stdout.strip().isdigit() else None
+    return (sha.stdout.strip() if sha.returncode == 0 else "unknown"), stamp
+
+
+def done_date(root: Path, path: str, run: Runner = run_command, ref: str = "origin/main") -> datetime | None:
+    """When the ticket file reached done/ on `ref` (git, not frontmatter: the `date` field is the filing date)."""
+    out = run(["git", "log", "-1", "--diff-filter=A", "--format=%cI", ref, "--", path], root)
+    text = out.stdout.strip() if out.returncode == 0 else ""
+    try:
+        return datetime.fromisoformat(text) if text else None
+    except ValueError:
+        return None
+
+
+# ---------------------------------------------------------------- worktrees
+
+
+def _default_domains() -> tuple[str, ...]:
+    try:
+        return tuple(d.name for d in load_roster(REPO_ROOT).domains)
+    except Exception:
+        return ()
+
+
+def attribute(branch: str, seats: list[tuple[str, str]], domains: tuple[str, ...] | None = None) -> tuple[str, str]:
+    """(Seat, Domain): the seat the launcher recorded (status.py mapping); else `<domain> (seat not recorded)` where the domain is the
+    longest registered domain that is a prefix of the branch name followed by `-` (a known gap: hand-made batch worktrees have no record);
+    else `unknown` for both. `domains` defaults to the roster's."""
+    if seats:
+        return "/".join(s for s, _ in seats), seats[0][1]
+    known = _default_domains() if domains is None else domains
+    hits = [d for d in known if branch.startswith(d + "-")]
+    if hits:
+        best = max(hits, key=len)
+        return f"{best} (seat not recorded)", best
+    return UNKNOWN, UNKNOWN
+
+
+def read_branch_facts(root: Path, host: str, lanes_note: list[str], run: Runner = run_command) -> tuple[list[BranchFact], int]:
+    """(branch facts for this host, count of detached worktrees skipped). Read-only: status.py's builders, then per worktree
+    `git diff --name-status <merge-base> HEAD` and `git status --porcelain`, both limited to the ticket folders."""
+    roster = load_roster(root)
+    domain_names = tuple(d.name for d in getattr(roster, "domains", ())) or None
+    main = main_checkout(root)
+    try:
+        state_root = st.state_root(root)
+    except st.StateError:
+        state_root = root / ".git" / "session-roles-unavailable"
+    infos = [inspect_worktree(e, main, lambda b, c: "none", lambda p: 0) for e in worktree_entries(root) if e.get("worktree")]
+    seat_of: dict[Path, list[tuple[str, str]]] = {}
+    for role in roster.roles:
+        wt = _worktree_for(role, infos, main, state_root)
+        if wt is not None:
+            seat_of.setdefault(wt.path.resolve(), []).append((role.role, role.domain))
+    facts, detached = [], 0
+    for info in infos:
+        if info.prunable or info.is_main and info.branch in (None, "main"):
+            continue
+        copies = _worktree_ticket_copies(info.path, run)
+        if info.branch is None:
+            detached += 1
+            if copies:
+                lanes_note.append(f"unattributed: detached worktree {info.path} changes {', '.join(sorted(c.id for c in copies))}")
+            continue
+        if not copies:
+            continue
+        seat, domain = attribute(info.branch, seat_of.get(info.path.resolve(), []), domain_names)
+        facts.append(BranchFact(host, info.branch, str(info.path), seat, domain, tuple(copies), info.last_activity))
+    return facts, detached
+
+
+def _worktree_ticket_copies(wt: Path, run: Runner) -> list[TicketCopy]:
+    folder = TICKETS.as_posix()
+    base = run(["git", "--no-optional-locks", "merge-base", "origin/main", "HEAD"], wt)
+    changed: set[str] = set()
+    if base.returncode == 0 and base.stdout.strip():
+        diff = run(["git", "--no-optional-locks", "diff", "--name-status", base.stdout.strip(), "HEAD", "--", folder], wt)
+        for line in diff.stdout.splitlines() if diff.returncode == 0 else []:
+            parts = line.split("\t")
+            if parts and parts[0][:1] in ("A", "M", "R", "C") and len(parts) >= 2:
+                changed.add(parts[-1])
+    # -z: NUL-separated entries, no quoting and no line splitting, so a leading-space ` M <path>` (unstaged-only) is read exactly
+    status = run(["git", "--no-optional-locks", "status", "--porcelain", "-z", "--untracked-files=all", "--", folder], wt)
+    on_disk: set[str] = set()
+    entries = status.stdout.split("\0") if status.returncode == 0 else []
+    i = 0
+    while i < len(entries):
+        entry = entries[i]
+        i += 1
+        if len(entry) < 4:
+            continue
+        code, path = entry[:2], entry[3:]
+        if code[0] in "RC":
+            i += 1  # the next entry is the rename or copy source
+        if "D" not in code:
+            changed.add(path)
+            on_disk.add(path)
+    out = []
+    for path in sorted(changed):
+        if not (ticket_id_of(path) and folder_of(path)):
+            continue
+        if path in on_disk and (wt / path).is_file():
+            text = (wt / path).read_text(encoding="utf-8", errors="replace")
+        else:
+            shown = run(["git", "show", f"HEAD:{path}"], wt)
+            text = shown.stdout if shown.returncode == 0 else ""
+        out.append(parse_copy(path, text))
+    return out
+
+
+# ---------------------------------------------------------------- pull requests
+
+
+class PrList(list):
+    """The open PRs; `complete` is False when a per-PR file list could not be read, so rule 2 (In review) may be wrong for some ticket."""
+
+    complete = True
+
+
+def read_open_prs(root: Path, notes: list[str], run: Runner = run_command) -> list[PrFact] | None:
+    """Open PRs and the ticket files each adds or changes; GETs only. None when gh cannot answer (rule 2 is then skipped)."""
+    listed = run(["gh", "pr", "list", "--state", "open", "--limit", str(PR_LIMIT), "--json", "number,url"], root)
+    if listed.returncode != 0:
+        notes.append("open PRs unknown (gh failed): rule 2 (In review) is skipped this run")
+        return None
+    try:
+        prs = json.loads(listed.stdout or "[]")
+    except ValueError:
+        notes.append("open PRs unknown (gh answered badly): rule 2 (In review) is skipped this run")
+        return None
+    if len(prs) >= PR_LIMIT:
+        notes.append(f"gh returned {PR_LIMIT} open PRs, the limit: some PRs may be missing")
+    facts = PrList()
+    for pr in prs:
+        files = run(["gh", "api", "--paginate", f"repos/{{owner}}/{{repo}}/pulls/{pr['number']}/files", "--jq", ".[].filename"], root)
+        if files.returncode != 0:
+            facts.complete = False
+            notes.append(f"files of PR #{pr['number']} unknown (gh failed): its tickets may show the wrong status this run")
+        names = files.stdout.split() if files.returncode == 0 else []
+        facts.append(PrFact(int(pr["number"]), pr["url"], frozenset(n for n in names if ticket_id_of(n) and folder_of(n))))
+    return facts
+
+
+# ---------------------------------------------------------------- derivation (pure)
+
+
+def sync_hash(fields: dict, version: str = CURRENT_HASH_VERSION) -> str:
+    """sha256 over the fields of that version. v1 is the bare digest (P1b stored it); later versions are `<version>:<digest>`."""
+    blob = json.dumps([[k, fields.get(k, "")] for k in HASH_VERSIONS[version]], ensure_ascii=False)
+    digest = hashlib.sha256(blob.encode("utf-8")).hexdigest()
+    return digest if version == "v1" else f"{version}:{digest}"
+
+
+def hash_version(stored: str) -> str:
+    prefix = stored.split(":", 1)[0] if ":" in stored else "v1"
+    return prefix if prefix in HASH_VERSIONS else CURRENT_HASH_VERSION
+
+
+def _split(value: str) -> list[str]:
+    return [p.strip() for p in (value or "").split(",") if p.strip()]
+
+
+def merge_host_entries(current: str, mine: list[str], tag: str) -> str:
+    """Replace only this host's entries (`tag` is `host:` for Branch, the bare host name for Host), keep the other hosts'."""
+    kept = [e for e in _split(current) if not (e.startswith(tag) if tag.endswith(":") else e == tag)]
+    return ", ".join(sorted(set(kept) | set(mine)))
+
+
+@dataclass(frozen=True)
+class Segment:
+    """One host's facts about a ticket (the `Host facts` field): its state, the seat names it recorded and its domains."""
+    state: str
+    seats: tuple[str, ...] = ()
+    domains: tuple[str, ...] = ()
+    legacy: bool = False  # derived on read from a Branch entry with no segment; never written
+
+
+def parse_host_facts(text: str, findings: list[str] | None = None) -> dict[str, Segment]:
+    """`host: state=progress seat=a,b domain=rpg; host2: ...`. A malformed segment is skipped with a finding, never raised."""
+    out: dict[str, Segment] = {}
+    for raw in (text or "").split(";"):
+        raw = raw.strip()
+        if not raw:
+            continue
+        host, sep, rest = raw.partition(":")
+        kv = dict(p.split("=", 1) for p in rest.split() if "=" in p)
+        if not sep or not host.strip() or kv.get("state") not in HOST_STATES:
+            if findings is not None:
+                findings.append(f"Host facts: ignored a malformed segment '{raw}'")
+            continue
+        out[host.strip()] = Segment(kv["state"], tuple(x for x in kv.get("seat", "").split(",") if x),
+                                    tuple(x for x in kv.get("domain", "").split(",") if x))
+    return out
+
+
+def format_host_facts(segments: dict[str, Segment]) -> str:
+    parts = []
+    for host in sorted(segments):
+        seg = segments[host]
+        if seg.legacy:
+            continue
+        parts.append(f"{host}: state={seg.state}" + (f" seat={','.join(sorted(seg.seats))}" if seg.seats else "")
+                     + (f" domain={','.join(sorted(seg.domains))}" if seg.domains else ""))
+    return "; ".join(parts)
+
+
+def legacy_segments(branch: str, facts: dict[str, Segment], host: str) -> dict[str, Segment]:
+    """A host that has Branch entries but no segment (written by P1c code): progress if any entry is not [filing]. Never for this host."""
+    working: dict[str, bool] = {}
+    for entry in _split(branch):
+        tag = entry.split(":", 1)[0]
+        if ":" not in entry or tag == host or tag in facts:
+            continue
+        working[tag] = working.get(tag, False) or not entry.endswith(FILING_SUFFIX)
+    return {tag: Segment("progress" if prog else "filing", legacy=True) for tag, prog in working.items()}
+
+
+def other_segments(current: dict | None, host: str, findings: list[str]) -> dict[str, Segment]:
+    facts = parse_host_facts((current or {}).get("Host facts", ""), findings)
+    others = {h: s for h, s in facts.items() if h != host}
+    return {**others, **legacy_segments((current or {}).get("Branch", ""), facts, host)}
+
+
+def _recorded(seat: str) -> list[str]:
+    """The seat names a launcher recorded; the render-time placeholders are never stored."""
+    return [] if not seat or seat == "unknown" or seat.endswith("(seat not recorded)") else [seat]
+
+
+def own_segment(tid: str, mine: list[BranchFact], stale_before: float | None) -> Segment | None:
+    """This host's facts from its own branch copies; None when it has no copy of the ticket."""
+    copies = [c for b in mine for c in b.copies if c.id == tid]
+    if not copies:
+        return None
+    working = [b for b in mine if any(c.id == tid and c.folder in PROGRESS_FOLDERS for c in b.copies)]
+    if any(c.blocked for c in copies):
+        state = "blocked"
+    elif not working:
+        state = "filing"
+    elif stale_before is not None and all(0 < b.last_activity < stale_before for b in working):
+        state = "stale"
+    else:
+        state = "progress"
+    seats = sorted({s for b in working for s in _recorded(b.seat)})
+    return Segment(state, tuple(seats), tuple(sorted({b.domain for b in mine if b.domain})))
+
+
+def derive_status(tid: str, main: list[TicketCopy], prs: list[PrFact] | None, segments: dict[str, Segment],
+                  keep_status: str | None = None) -> tuple[str, list[str], list[str]]:
+    """(status, PR urls, findings). First match wins; see the module docstring. Blocked, In progress and Stale come from the
+    union of every host's segment, so two hosts derive the same value."""
+    findings = []
+    folders = {c.folder for c in main}
+    if len(folders) > 1:
+        findings.append(f"{tid}: in two folders on origin/main ({', '.join(sorted(folders))}); the higher status is used")
+    if "done" in folders:
+        return "Done", [], findings
+    review = [pr for pr in prs or [] if any(ticket_id_of(p) == tid and folder_of(p) in PROGRESS_FOLDERS for p in pr.paths)]
+    if review:
+        return "In review", [pr.url for pr in review], findings
+    if keep_status:  # only legacy hosts hold it and this host has no copy: their state cannot be read, so the item's Status stays
+        return keep_status, [], findings
+    states = [s.state for s in segments.values()]
+    if "blocked" in states or (not segments and any(c.blocked for c in main)):
+        return "Blocked", [], findings
+    working = [st_ for st_ in states if st_ != "filing"]
+    if working:
+        # Stale replaces In progress only when every host that is working the ticket says stale. Filing keeps neither.
+        return ("Stale" if all(x == "stale" for x in working) else "In progress"), [], findings
+    if "inprogress" in folders and not segments:
+        findings.append(f"{tid}: in inprogress/ on origin/main with no branch seen (orphaned in-progress ticket)")
+    return "To do", [], findings
+
+
+@dataclass
+class Extras:
+    """Registries and the Epic resolver for Layer / Priority / Epic / Tags. None / empty means "do not validate"."""
+
+    layers: frozenset[str] | None = None
+    tag_order: tuple[str, ...] | None = None
+    epic_of: Callable[[str, str, str], tuple[str, list[str]]] | None = None  # (ticket id, best copy path, tier) -> (value, notes)
+    domains: frozenset[str] | None = None  # the Domain select's options; a value outside them is a finding
+    code_domain: Callable[[TicketCopy | None], str | None] | None = None  # the one domain that owns every path a ticket names, else None
+
+
+_ID_RE = re.compile(r"TCK-[A-Z0-9][A-Z0-9-]*[A-Z0-9]")
+
+
+def folder_key(path: str) -> str | None:
+    """`todos/<folder>` or `done/<folder>` for a ticket inside an epic folder, else None (a flat ticket)."""
+    parts = Path(path).as_posix().split("/")
+    base = TICKETS.as_posix().split("/")
+    if parts[: len(base)] != base or len(parts) != len(base) + 3 or parts[len(base)] not in ("todos", "done"):
+        return None
+    return f"{parts[len(base)]}/{parts[len(base) + 1]}"
+
+
+def sequence_ids(text: str) -> set[str]:
+    """Ticket ids of a SEQUENCE.md: those in `## Order` when that section exists, else those anywhere in the file."""
+    m = re.search(r"^## Order\b.*?(?=^## |\Z)", text, re.M | re.S)
+    return set(_ID_RE.findall(m.group(0) if m else text))
+
+
+def make_epic_resolver(main_index: dict[str, list[tuple[str, str]]], load_main: Callable[[str], TicketCopy],
+                       sequences: dict[str, set[str]]) -> Callable[[str, str, str], tuple[str, list[str]]]:
+    """Epic, first match wins: (a) the ticket sits in a todos/ or done/ epic folder; (b) exactly one folder's SEQUENCE.md names it; (c) standalone.
+    A folder's epic is its ticket whose `## Tier` is epic (none -> the folder name; several -> the folder name plus a note)."""
+    members: dict[str, list[str]] = {}
+    for entries in main_index.values():
+        for _, path in entries:
+            key = folder_key(path)
+            if key:
+                members.setdefault(key, []).append(path)
+    cache: dict[str, tuple[str, list[str]]] = {}
+
+    def folder_epic(key: str) -> tuple[str, list[str]]:
+        if key not in cache:
+            epics = sorted({ticket_id_of(p) or "" for p in members.get(key, []) if load_main(p).tier == "epic"} - {""})
+            name = key.split("/", 1)[1]
+            if len(epics) == 1:
+                cache[key] = (epics[0], [])
+            else:
+                cache[key] = (name, [f"folder {key} has {len(epics)} epic tickets: Epic is the folder name"] if len(epics) > 1 else [])
+        return cache[key]
+
+    def resolve(tid: str, path: str, tier: str) -> tuple[str, list[str]]:
+        key = folder_key(path) or next((k for _, p in main_index.get(tid, []) if (k := folder_key(p))), None)  # origin's path counts too
+        if key:
+            if tier == "epic" and key not in members:
+                return tid, []
+            return folder_epic(key)
+        hits = sorted(k for k, ids in sequences.items() if tid in ids)
+        if len(hits) == 1:
+            return folder_epic(hits[0])
+        if len(hits) > 1:
+            return "standalone", [f"{tid} is named in {len(hits)} SEQUENCE.md files ({', '.join(hits)}): Epic is standalone"]
+        return "standalone", []
+
+    return resolve
+
+
+def make_code_domain(roster) -> Callable[[TicketCopy | None], str | None]:
+    """The one domain that owns every path a ticket's `## Related Code Areas` names (route() on the loaded roster, in process; unowned paths
+    are skipped; a split path counts all its domains). None when no path routes or the owners differ."""
+    def code_domain(copy: TicketCopy | None) -> str | None:
+        owners: set[str] = set()
+        for path in (copy.code_areas if copy else ()):
+            owners.update(route(path, roster).domains)
+        return next(iter(owners)) if len(owners) == 1 else None
+
+    return code_domain
+
+
+def content_source(host: str, segments: dict[str, Segment], own_best: TicketCopy | None,
+                   origin_best: TicketCopy | None) -> tuple[TicketCopy | None, bool, str]:
+    """(copy to read the content fields from, keep the current value, rule name). Final rule M4 of TCK-20261114-PROJECT-SYNC-SECOND-HOST:
+    every host reads the same segments, so every host picks the same source."""
+    holders = sorted(segments)
+    if not holders:
+        return origin_best, False, "origin's copy"
+    if len(holders) == 1:
+        return (own_best, False, "the one holder's copy") if holders[0] == host else (None, True, "the current value")
+    if origin_best is not None:
+        return origin_best, False, "origin's copy"
+    if holders[0] == host:
+        return own_best, False, f"{host}'s copy (lowest host tag)"
+    return None, True, "the current value (another host has the lowest host tag)"
+
+
+def pick_domain(tid: str, segment_domains: set[str], source: TicketCopy | None, extras: Extras, findings: list[str]) -> tuple[str, bool]:
+    """(Domain value, whether it came from the code areas): a host segment's domain; else the owner of the code the ticket names; else
+    `unassigned`. Never from `layer`. Several segment domains: the sorted-first, with a finding (every host picks the same one). A value that
+    is not an option of the Domain select is a finding and the field stays empty."""
+    from_areas = False
+    if segment_domains:
+        ordered = sorted(segment_domains)
+        value = ordered[0]
+        if len(ordered) > 1:
+            findings.append(f"{tid}: held in domains {', '.join(ordered)}: Domain is {value}")
+    else:
+        from_areas = True
+        value = (extras.code_domain(source) if extras.code_domain else None) or UNASSIGNED
+    if extras.domains is not None and value not in extras.domains:
+        findings.append(f"{tid}: domain '{value}' is not an option of the Domain field: Domain left empty")
+        value = ""
+    return value, from_areas
+
+
+def filed_date(tid: str, raw: str, findings: list[str]) -> str:
+    """The ticket's frontmatter `date:` as YYYY-MM-DD, else "" (the field stays empty) plus a finding. It is the filing date, not the last activity."""
+    text = str(raw or "").strip()
+    try:
+        if re.fullmatch(r"\d{4}-\d{2}-\d{2}", text):
+            date.fromisoformat(text)
+            return text
+    except ValueError:
+        pass
+    findings.append(f"{tid}: frontmatter date '{text}' is " + ("not a valid YYYY-MM-DD date" if text else "missing") + ": Filed left empty")
+    return ""
+
+
+def derive_item(tid: str, main: list[TicketCopy], branches: list[BranchFact], prs: list[PrFact] | None, current: dict | None,
+                host: str, source: str, stale_before: float | None = None, extras: Extras | None = None,
+                notes: list[str] | None = None) -> tuple[dict, list[str]]:
+    mine = [b for b in branches if any(c.id == tid for c in b.copies)]
+    findings: list[str] = []
+    segments = other_segments(current, host, findings)
+    own = own_segment(tid, mine, stale_before)
+    if own is not None:
+        segments[host] = own
+    only_legacy = own is None and bool(segments) and all(s.legacy for s in segments.values())
+    status, pr_urls, status_findings = derive_status(tid, main, prs, segments, (current or {}).get("Status") if only_legacy else None)
+    findings += status_findings
+    branch_copies = [c for b in mine for c in b.copies if c.id == tid]
+    entries = [f"{host}:{b.branch}" + ("" if any(c.id == tid and c.folder in PROGRESS_FOLDERS for c in b.copies) else f" {FILING_SUFFIX}")
+               for b in mine]
+    origin_best = sorted(main, key=lambda c: FOLDERS.index(c.folder), reverse=True)[0] if main else None
+    own_best = branch_copies[0] if branch_copies else None
+    best, keep, rule = content_source(host, segments, own_best, origin_best)
+    if keep and current is None:
+        best, keep = origin_best, False
+    if notes is not None and len(segments) >= 2:
+        notes.append(f"{tid}: held by {', '.join(sorted(segments))}; content fields from {rule}")
+    extras = extras or Extras()
+    cur = current or {}
+    title = best.title if best else ""
+    layer, priority, tags, epic, tier, filed = "", "", "", "standalone", "", ""
+    if best and not keep:
+        filed = filed_date(tid, best.date, findings)
+        layer = best.layer
+        if layer and extras.layers is not None and layer not in extras.layers:
+            findings.append(f"{tid}: layer '{layer}' is not in registries/layer_registry.jsonl: Layer left empty")
+            layer = ""
+        lead = re.match(r"(P[0-3])(?![0-9A-Za-z])", best.priority)  # "P2 (raised from P3 ...)" is P2: the leading token is the value
+        priority = lead.group(1) if lead else best.priority
+        if priority and priority not in PRIORITIES:
+            findings.append(f"{tid}: priority '{priority}' is not one of {', '.join(PRIORITIES)}: Priority left empty")
+            priority = ""
+        order = extras.tag_order
+        known = [x for x in (order or ()) if x in best.tags]
+        unknown = [x for x in best.tags if order is not None and x not in order]
+        if unknown:
+            findings.append(f"{tid}: tags not in registries/tag_registry.jsonl, put last: {', '.join(unknown)}")
+        tags = " ".join(known + unknown) if order is not None else " ".join(best.tags)
+        lead_tier = re.match(r"(hotfix|standard|epic)(?![0-9A-Za-z])", best.tier)  # "standard (provisional)" is standard: the leading token is the value
+        tier = lead_tier.group(1) if lead_tier else best.tier
+        if tier and tier not in TIERS:
+            findings.append(f"{tid}: tier '{tier}' is not one of {', '.join(TIERS)}: Tier left empty")
+            tier = ""
+        if extras.epic_of:
+            epic, epic_notes = extras.epic_of(tid, best.path, best.tier)
+            findings += epic_notes
+    legacy = any(s.legacy for s in segments.values())
+    seats = {x for s in segments.values() if s.state != "filing" and not s.legacy
+             for x in (s.seats or (f"{s.domains[0]} (seat not recorded)" if s.domains and s.domains[0] != UNKNOWN else UNKNOWN,))}
+    domains = {d for s in segments.values() if not s.legacy for d in s.domains}
+    if legacy:  # a host that has not written a segment yet: its seats and domains are unknown, so the current entries stay
+        seats |= set(_split(cur.get("Seat", "")))
+        domains |= set(_split(cur.get("Domain", "")))
+    domain, from_code_areas = pick_domain(tid, domains, best or origin_best or own_best, extras, findings)
+    body_src = best or origin_best or own_best
+    fields = {
+        "Title": cur.get("Title", "") if keep else (f"{tid}: {title}".rstrip(": ") if title else tid),
+        "Ticket ID": tid,
+        "Status": status,
+        "Domain": domain,
+        "Seat": ", ".join(sorted(seats)) or ("" if status == "To do" else cur.get("Seat", "")),
+        "Host": merge_host_entries(cur.get("Host", ""), [host] if mine else [], host),
+        "Branch": merge_host_entries(cur.get("Branch", ""), entries, f"{host}:"),
+        "PR": ", ".join(pr_urls),
+        "Tier": cur.get("Tier", "") if keep else tier,
+        "Layer": cur.get("Layer", "") if keep else layer,
+        "Priority": cur.get("Priority", "") if keep else priority,
+        "Epic": cur.get("Epic", "") if keep else epic,
+        "Tags": cur.get("Tags", "") if keep else tags,
+        "Host facts": format_host_facts(segments),
+        "Filed": cur.get("Filed", "") if keep else filed,
+        "Body": BODY.format(path=body_src.path if body_src else "agent-working/tickets/"),
+        "Source": source,
+    }
+    fields["Sync hash"] = sync_hash(fields)
+    fields["_code_unassigned"] = from_code_areas and domain == UNASSIGNED
+    return fields, findings
+
+
+def hand_edits(item: dict, derived: dict) -> list[str]:
+    """The item's fields no longer hash to the Sync hash the sync stored: someone edited it. One line per differing field."""
+    stored = item.get("Sync hash")
+    if not stored:
+        return []
+    version = hash_version(stored)
+    if sync_hash(item, version) == stored:  # checked against that version's fields only
+        return []
+    return [f"hand edit: {derived['Ticket ID']} {f} '{item.get(f, '')}' -> '{derived[f]}'" for f in HASH_VERSIONS[version] if item.get(f, "") != derived[f]]
+
+
+def parse_last_run(text: str) -> dict[str, tuple[str, str]]:
+    """`host: 2026-11-15T10:00Z rc=0; host2: ...` -> {host: (timestamp, rc)}. A malformed segment is skipped."""
+    out: dict[str, tuple[str, str]] = {}
+    for raw in (text or "").split(";"):
+        host, sep, rest = raw.strip().partition(":")
+        parts = rest.split()
+        if sep and host.strip() and len(parts) == 2 and parts[1].startswith("rc="):
+            out[host.strip()] = (parts[0], parts[1][3:])
+    return out
+
+
+def format_last_run(segments: dict[str, tuple[str, str]]) -> str:
+    return "; ".join(f"{h}: {ts} rc={rc}" for h, (ts, rc) in sorted(segments.items()))
+
+
+def merged_last_run(heartbeats: list[dict], host: str, stamp: str, rc: int) -> str:
+    """The `Last run` text to write: every heartbeat's segments (the oldest wins a clash), this host's segment replaced."""
+    merged: dict[str, tuple[str, str]] = {}
+    for beat in reversed(heartbeats):
+        merged.update(parse_last_run(beat.get(HEARTBEAT_FIELD, "")))
+    merged[host] = (stamp, str(rc))
+    return format_last_run(merged)
+
+
+def stale_hosts_of(heartbeats: list[dict], host: str, now: datetime, hours: float) -> list[str]:
+    seen: dict[str, tuple[str, str]] = {}
+    for beat in reversed(heartbeats):
+        seen.update(parse_last_run(beat.get(HEARTBEAT_FIELD, "")))
+    out = []
+    for other, (stamp, rc) in sorted(seen.items()):
+        if other == host:
+            continue
+        try:
+            age = (now - datetime.strptime(stamp, "%Y-%m-%dT%H:%MZ").replace(tzinfo=timezone.utc)).total_seconds() / 3600
+        except ValueError:
+            out.append(f"{other} (last run unreadable)")
+            continue
+        if age > hours:
+            out.append(f"{other} (last run {stamp} rc={rc}, {age:.0f} h ago)")
+    return out
+
+
+def build_plan(main_index: dict[str, list[tuple[str, str]]], load_main: Callable[[str], TicketCopy], branches: list[BranchFact],
+               prs: list[PrFact] | None, items: list[dict], host: str, source: str, config: dict,
+               done_at: Callable[[str], datetime | None], now: datetime, extras: Extras | None = None) -> Plan:
+    plan = Plan()
+    by_id: dict[str, dict] = {}
+    heartbeats = [i for i in items if not i.get("Ticket ID") and i.get("Title") == HEARTBEAT_TITLE]
+    plan.heartbeats = heartbeats  # list order is the oldest first; never archived, never a ticket
+    if len(heartbeats) > 1:
+        plan.findings.append(f"{len(heartbeats)} '{HEARTBEAT_TITLE}' items: segments are read from all, this host writes the first; "
+                             "the owner removes the extra by hand (a delete, through the lead)")
+    plan.stale_hosts = stale_hosts_of(heartbeats, host, now, float(config.get("stale_host_hours", 24)))
+    items = [i for i in items if i not in heartbeats]
+    # After --init renames the text field, an item's old value sits under `Domain (old)` and the new select reads "": hash and compare with
+    # the old value (no false hand edits); the raw select value is kept to plan the Domain write.
+    for item in items:
+        if "Domain (old)" in item and not item.get("Domain"):
+            item["_raw_domain"] = item.get("Domain", "")
+            item["Domain"] = item["Domain (old)"]
+    for item in items:
+        tid = item.get("Ticket ID")
+        if not tid:
+            continue
+        first = by_id.get(tid)
+        if first is None:
+            by_id[tid] = item
+            continue
+        # duplicate Ticket ID (a half-made create, or two writers): keep the item whose stored Sync hash still matches, else the first
+        keep_new = bool(item.get("Sync hash")) and sync_hash(item) == item["Sync hash"] and not (
+            first.get("Sync hash") and sync_hash(first) == first["Sync hash"])
+        loser = first if keep_new else item
+        by_id[tid] = item if keep_new else first
+        plan.archives.append((tid, "duplicate Ticket ID"))
+        plan.archive_item_ids.append(loser.get("_item_id", ""))
+        plan.findings.append(f"duplicate Ticket ID {tid}: one item kept, the other archived")
+    pilot_start = date.fromisoformat(str(config["pilot_start"]))
+    window = int(config["done_window_days"])
+    stale_before = now.timestamp() - int(config.get("stale_branch_days", 14)) * 86400
+    on_origin = {tid for tid, entries in main_index.items() if any(folder in ("todos", "inprogress") for folder, _ in entries)}
+    candidates = {c.id for b in branches for c in b.copies} | on_origin | set(by_id)  # every lane: no pilot filter
+    known = set(main_index) | {c.id for b in branches for c in b.copies}
+    for tid in sorted(candidates):
+        if tid not in known:
+            continue
+        main = [load_main(path) for _, path in main_index.get(tid, [])]
+        derived, findings = derive_item(tid, main, branches, prs, by_id.get(tid), host, source, stale_before, extras, plan.notes)
+        plan.findings += findings
+        plan.unassigned_code_areas += 1 if derived.pop("_code_unassigned", False) else 0
+        done_path = next((c.path for c in main if c.folder == "done"), None)
+        finished = done_at(done_path) if done_path else None
+        current = by_id.get(tid)
+        if derived["Status"] == "Done":
+            if finished is None and current is not None:
+                plan.notes.append(f"done date unreadable: {tid}")
+            if finished is None or finished.date() < pilot_start and current is None:
+                continue
+            if finished is not None and (now - finished).days > window:
+                if current is not None:
+                    plan.archives.append((tid, f"Done more than {window} days ago ({finished.date()})"))
+                    plan.archive_item_ids.append(current.get("_item_id", ""))
+                continue
+        if current is None:
+            plan.creates.append(derived)
+            continue
+        plan.hand_edits += hand_edits(current, derived)
+        changed = [f for f in HASH_VERSIONS[CURRENT_HASH_VERSION]
+                   if current.get("_raw_domain" if f == "Domain" and "_raw_domain" in current else f, "") != derived[f]]
+        if not changed and current.get("Sync hash", "") != derived["Sync hash"]:
+            changed = ["Sync hash"]  # same values, older hash version: rewrite the hash only
+        if changed:
+            carried = {**derived, "_item_id": current.get("_item_id", ""), "_draft_id": current.get("_draft_id", "")}
+            plan.updates.append((carried, changed))
+    for item in items:
+        tid = item.get("Ticket ID", "")
+        if not tid:
+            plan.archives.append((item.get("Title", "(untitled item)"), "no Ticket ID"))
+            plan.archive_item_ids.append(item.get("_item_id", ""))
+        elif tid not in known and by_id.get(tid) is item:
+            facts = parse_host_facts(item.get("Host facts", ""))
+            others = sorted(h for h in {**facts, **legacy_segments(item.get("Branch", ""), facts, host)} if h != host)
+            if others:  # another host still holds the ticket: this host cannot see its branches, so it must not archive the item
+                plan.findings.append(f"{tid}: not archived, no ticket file seen here but it carries facts of {', '.join(others)}")
+                continue
+            plan.archives.append((tid, "no ticket file for this ID"))
+            plan.archive_item_ids.append(item.get("_item_id", ""))
+    if plan.unassigned_code_areas:
+        plan.notes.append(f"domain: {plan.unassigned_code_areas} tickets unassigned (no or mixed code-area owners)")
+    plan.notes += [f"stale-host: {h}" for h in plan.stale_hosts]
+    return plan
+
+
+# ---------------------------------------------------------------- output / CLI
+
+
+def read_registry(root: Path, rel: str, key: str, notes: list[str]) -> tuple[str, ...] | None:
+    """The `key` values of a JSONL registry, in file order; None (and a note) when it cannot be read, so nothing is validated against it."""
+    try:
+        rows = [json.loads(line) for line in (root / rel).read_text(encoding="utf-8").splitlines() if line.strip()]
+        return tuple(r[key] for r in rows if key in r)
+    except (OSError, ValueError):
+        notes.append(f"{rel} unreadable: not validated against it")
+        return None
+
+
+def read_sequences(root: Path, run: Runner = run_command, ref: str = "origin/main") -> dict[str, set[str]]:
+    """`todos/<folder>` or `done/<folder>` -> the ticket ids its SEQUENCE.md names (exact basename SEQUENCE.md; git ls-tree and git show only)."""
+    listed = run(["git", "ls-tree", "-r", "--name-only", ref, "--", f"{TICKETS.as_posix()}/todos", f"{TICKETS.as_posix()}/done"], root)
+    out: dict[str, set[str]] = {}
+    for path in listed.stdout.split("\n") if listed.returncode == 0 else []:
+        if Path(path).name != "SEQUENCE.md" or folder_key(path.removesuffix("SEQUENCE.md") + "x.md") is None:
+            continue
+        shown = run(["git", "show", f"{ref}:{path}"], root)
+        if shown.returncode == 0:
+            out[folder_key(path.removesuffix("SEQUENCE.md") + "x.md")] = sequence_ids(shown.stdout)
+    return out
+
+
+def load_config(root: Path, notes: list[str]) -> dict:
+    cfg = dict(DEFAULTS)
+    try:
+        loaded = yaml.safe_load((root / CONFIG_REL).read_text(encoding="utf-8")) or {}
+        cfg.update({k: v for k, v in loaded.items() if k in DEFAULTS})
+    except (OSError, yaml.YAMLError):
+        notes.append(f"{CONFIG_REL.as_posix()} unreadable: built-in defaults used")
+    return cfg
+
+
+def render(plan: Plan, host: str, sha: str, age_hours: float | None, detached: int, items_n: int, prs_n: int | None,
+           mode: str = "DRY RUN (no GitHub or repo write)", fetch: str = "no fetch") -> str:
+    age = "unknown age" if age_hours is None else f"{age_hours:.1f} h old"
+    lines = [f"project_sync {mode} host={host} origin/main={sha[:9]} ({age}, {fetch}) "
+             f"items-in={items_n} open-PRs={'unknown' if prs_n is None else prs_n} detached-skipped={detached}"]
+    for item in plan.creates:
+        lines.append(f"create  {item['Ticket ID']}  {item['Status']}  domain={item['Domain'] or '-'}  seat={item['Seat'] or '-'}  branch={item['Branch'] or '-'}  pr={item['PR'] or '-'}")
+    for item, changed in plan.updates:
+        lines.append(f"update  {item['Ticket ID']}  {item['Status']}  changed: {', '.join(changed)}")
+    for ident, reason in plan.archives:
+        lines.append(f"archive {ident}  ({reason})")
+    lines += plan.hand_edits + [f"finding: {f}" for f in plan.findings] + [f"note: {n}" for n in plan.notes]
+    if not (plan.creates or plan.updates or plan.archives):
+        lines.append("nothing to do")
+    return "\n".join(lines)
+
+
+def _client(config: dict, notes: list[str] | None = None):
+    """The one GraphQL client, built lazily so a plain dry run never imports it. Raises ClientRefused when the Project isn't configured."""
+    from tools.sessions.project_client import ClientRefused, Pacing, ProjectClient
+
+    number = int(config["project"].get("number") or 0)
+    if number <= 0:
+        raise ClientRefused("project.number is 0 in registries/session_project.yaml: set it to the Project's number first")
+    return ProjectClient(str(config["project"]["owner"]), number, pacing=Pacing.from_config(config.get("write_pacing")))
+
+
+def fetch_origin(root: Path, runner=subprocess.run) -> str | None:
+    """`git fetch origin main`, nothing else (argv fixed, so `_guard` stays read-only). None on success, else the short reason."""
+    try:
+        done = runner(["git", "fetch", "origin", "main"], cwd=str(root), capture_output=True, text=True, timeout=FETCH_TIMEOUT_S, check=False)
+    except subprocess.TimeoutExpired:
+        return f"timed out after {FETCH_TIMEOUT_S} s"
+    except (OSError, subprocess.SubprocessError) as exc:
+        return str(exc)[:200]
+    return None if done.returncode == 0 else ((done.stderr or "").strip().splitlines() or ["git fetch failed"])[-1][:200]
+
+
+def read_last_run(path: Path | None = None) -> dict:
+    try:
+        data = json.loads((path or LAST_RUN_PATH).read_text(encoding="utf-8"))
+        return data if isinstance(data, dict) else {}
+    except (OSError, ValueError):
+        return {}
+
+
+def write_last_run(record: dict, path: Path | None = None) -> None:
+    """`last-run.json` (mode 600). `failed_streak` counts consecutive runs with rc != 0. Never raises: a write failure never fails the run."""
+    target = path or LAST_RUN_PATH
+    try:
+        previous = read_last_run(target)
+        streak = int(previous.get("failed_streak", 0)) + 1 if record.get("rc") else 0
+        target.parent.mkdir(parents=True, exist_ok=True)
+        tmp = target.with_suffix(".tmp")
+        tmp.write_text(json.dumps({**record, "failed_streak": streak}, indent=1, sort_keys=True), encoding="utf-8")
+        tmp.chmod(0o600)
+        tmp.replace(target)
+    except (OSError, ValueError, TypeError):
+        pass
+
+
+def write_heartbeat(client, project, plan: Plan, host: str, stamp: str, rc: int) -> str | None:
+    """One paced attempt, no retry: create the heartbeat item or rewrite only this host's segment of the oldest one. None on success, else
+    the redacted reason (the caller prints it; it never changes the run's rc)."""
+    from contextlib import nullcontext
+
+    from tools.sessions.project_client import ClientRefused, ProjectError
+
+    field_ = project.fields.get(HEARTBEAT_FIELD)
+    if field_ is None:
+        return f"the Project has no '{HEARTBEAT_FIELD}' field: run --init"
+    text = merged_last_run(plan.heartbeats, host, stamp, rc)
+    try:
+        with getattr(client, "no_retry", nullcontext)():
+            if plan.heartbeats:
+                client.set_text(project.id, plan.heartbeats[0]["_item_id"], field_.id, text)
+            else:
+                item_id, _ = client.add_draft(project.id, HEARTBEAT_TITLE, "Generated by tools/sessions/project_sync.py: one line per host, last --apply.")
+                client.set_text(project.id, item_id, field_.id, text)
+    except (ProjectError, ClientRefused) as exc:
+        return str(exc)[:300]
+    return None
+
+
+def main(argv: list[str] | None = None) -> int:
+    """Runs the sync; an `--apply` run (any outcome) leaves `last-run.json`."""
+    info: dict = {"apply": False}
+    rc = _main(argv, info)
+    if info.get("apply"):
+        write_last_run({"time": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%MZ"), "host": info.get("host", ""), "rc": rc,
+                        "done": info.get("done", 0), "left": info.get("left", 0), "error": info.get("error", ""),
+                        "heartbeat": info.get("heartbeat", ""), "stale_hosts": info.get("stale_hosts", [])})
+    return rc
+
+
+def _main(argv: list[str] | None, info: dict) -> int:
+    parser = argparse.ArgumentParser(description="Derive the ticket-state Project plan. Default: dry run (writes nothing). --init creates the "
+                                                 "Project's fields; --apply carries out the plan. Items are never deleted, only archived.")
+    parser.add_argument("--root", type=Path, default=REPO_ROOT)
+    parser.add_argument("--host", default=None, help="this host's tag for Branch/Host entries (default: host_names[hostname] in session_project.yaml, else the hostname)")
+    parser.add_argument("--items", type=Path, help="JSON file of the current Project items, for offline runs (default: a live read when the Project is configured)")
+    parser.add_argument("--dry-run", action="store_true", help="accepted; the default mode")
+    parser.add_argument("--apply", action="store_true", help="write the plan to the Project (needs project.number and the token file)")
+    parser.add_argument("--init", action="store_true", help="create the Project's missing fields by name; writes nothing else")
+    parser.add_argument("--fetch", action="store_true", help="run `git fetch origin main` first (60 s timeout); on failure carry on and add a finding")
+    parser.add_argument("--replace-status-options", action="store_true", help="with --init: allow replacing the Status options on a Project that has items")
+    args = parser.parse_args(argv)
+    info["apply"] = args.apply
+    if (args.init and args.apply) or (args.apply and args.items) or (args.replace_status_options and not args.init):
+        print("project_sync: use --init and --apply as separate runs, --apply never with --items, --replace-status-options only with --init.", file=sys.stderr)
+        return 2
+    plan_notes: list[str] = []
+    config = load_config(args.root, plan_notes)
+    args.host = args.host or config["host_names"].get(socket.gethostname(), socket.gethostname())
+    info["host"] = args.host
+    try:
+        roster = load_roster(args.root)
+        domain_names = tuple(d.name for d in getattr(roster, "domains", ()))
+    except Exception as exc:  # an unreadable roster stops nothing: Domain is then not validated and no code area routes
+        roster, domain_names = None, ()
+        plan_notes.append(f"registries/session_roles.yaml unreadable ({str(exc)[:80]}): Domain not validated")
+    from tools.sessions.project_client import ClientRefused, ProjectError, init_fields
+
+    client = None
+    if args.init or args.apply or (not args.items and int(config["project"].get("number") or 0) > 0):
+        try:
+            client = _client(config)
+            if args.init:
+                layers = read_registry(args.root, "registries/layer_registry.jsonl", "layer", plan_notes) or ()
+                lines, code = init_fields(client, STATUSES, args.replace_status_options, layers, domain_names + (UNASSIGNED, UNKNOWN))
+                print("\n".join(lines))
+                return code
+        except ClientRefused as exc:
+            if args.init or args.apply:
+                print(f"project_sync: refused: {exc}", file=sys.stderr)
+                return 2
+            plan_notes.append(f"live read skipped: {exc}")
+        except ProjectError as exc:
+            print(f"project_sync: GitHub refused: {exc}", file=sys.stderr)
+            return 1
+    try:
+        if client is not None:
+            items = client.list_items()
+        else:
+            items = json.loads(args.items.read_text(encoding="utf-8")) if args.items else []
+    except ClientRefused as exc:
+        print(f"project_sync: refused: {exc}", file=sys.stderr)
+        return 2
+    except ProjectError as exc:
+        print(f"project_sync: GitHub refused: {exc}", file=sys.stderr)
+        return 1
+    fetch_failure = fetch_origin(args.root) if args.fetch else None
+    sha, stamp = origin_info(args.root)
+    now = datetime.now(timezone.utc)
+    branches, detached = read_branch_facts(args.root, args.host, plan_notes)
+    prs = read_open_prs(args.root, plan_notes)
+    if args.apply and (prs is None or not getattr(prs, "complete", True)):
+        print("project_sync: --apply refused, nothing written: the open PRs or one PR's files could not be read, so In review / PR would be "
+              "written wrong. Re-run when gh answers.", file=sys.stderr)
+        info["error"] = "open PRs unknown, nothing written"
+        return 1
+    index = read_main_index(args.root)
+    source = f"{sha[:9]} @ {now.strftime('%Y-%m-%dT%H:%MZ')}"
+    load_main = lambda path: read_main_copy(args.root, path)  # noqa: E731
+    layers = read_registry(args.root, "registries/layer_registry.jsonl", "layer", plan_notes)
+    extras = Extras(frozenset(layers) if layers is not None else None, read_registry(args.root, "registries/tag_registry.jsonl", "tag", plan_notes),
+                    make_epic_resolver(index, load_main, read_sequences(args.root)),
+                    frozenset(domain_names) | {UNASSIGNED, UNKNOWN} if domain_names else None,
+                    make_code_domain(roster) if roster is not None else None)
+    plan = build_plan(index, load_main, branches, prs, items, args.host, source, config,
+                      lambda path: done_date(args.root, path), now, extras)
+    plan.notes = plan_notes + plan.notes
+    if client is not None and not args.apply:  # a live dry run also says what --apply would refuse (the same check, before any write)
+        from tools.sessions.project_client import check_plan_options
+        try:
+            plan.findings += [f"apply would refuse: {p}" for p in check_plan_options(client.load_project(), plan)]
+        except (ClientRefused, ProjectError) as exc:
+            plan.notes.append(f"option check skipped: {str(exc)[:120]}")
+    if fetch_failure:
+        plan.findings.append(f"git fetch origin main failed ({fetch_failure}): origin/main may be out of date")
+    info["stale_hosts"] = plan.stale_hosts
+    mode = "APPLY (writes to the GitHub Project)" if args.apply else ("DRY RUN, live read (no write)" if client is not None else "DRY RUN (no GitHub or repo write)")
+    print(render(plan, args.host, sha, None if stamp is None else (time.time() - stamp) / 3600, detached, len(items),
+                 None if prs is None else len(prs), mode, "no fetch" if not args.fetch else ("fetch FAILED" if fetch_failure else "fetched")))
+    if args.apply:
+        from tools.sessions.project_client import Pacing, apply_plan, partial_item
+        try:
+            project = client.load_project()
+            pacing = Pacing.from_config(config.get("write_pacing"))
+            done, not_done, error = apply_plan(client, project, plan, progress=lambda m: print(m, file=sys.stderr, flush=True),
+                                               every=pacing.progress_every)
+        except ClientRefused as exc:
+            print(f"project_sync: refused: {exc}", file=sys.stderr)
+            info["error"] = str(exc)[:300]
+            return 2
+        except ProjectError as exc:
+            print(f"project_sync: GitHub refused: {exc}", file=sys.stderr)
+            info["error"] = str(exc)[:300]
+            return 1
+        rc = 1 if error else 0
+        beat = write_heartbeat(client, project, plan, args.host, datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%MZ"), rc)
+        info.update(done=len(done), left=len(not_done), error=error or "", heartbeat=beat or "")
+        print(f"applied {len(done)} step(s)" + (f"; STOPPED, {len(not_done)} not done" if error else "; nothing left"))
+        if beat:
+            print(f"heartbeat: not written ({beat})", file=sys.stderr)
+        if error:
+            print(f"error: {error}", file=sys.stderr)
+            print("not done: " + "; ".join(not_done), file=sys.stderr)
+            partial = partial_item(done, not_done)
+            if partial:
+                print(f"partial: {partial} (its next-run hand-edit lines come from this stop; the rerun overwrites them)", file=sys.stderr)
+            return 1
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

@@ -67,16 +67,16 @@ adds it to this allowlist.
 not fixed here — this is a code change outside that ticket's own Scope/Related Code Areas:** Phase 4
 wired a real, third live provider, `parity_ledger`
 (`docs/engine/contracts/knowledge_gateway_mcp/provider_capabilities_parity_ledger.json`,
-`tools/knowledge_gateway_router.py::_run_parity_provider()`), genuinely reachable end-to-end from
+`knowledge_gateway_router.py::_run_parity_provider()`), genuinely reachable end-to-end from
 `_run_knowledge_context()` and able to appear in a real response's `providers_consulted_this_call`.
 Neither `tools/write_path_guard.py::ALLOWED_SOURCE_TYPES` (still only
 `SOURCE_TYPE_CONTEXT_SEARCH`/`SOURCE_TYPE_GRAPHIFY`) nor the Level 1/Level 2 cache-write
-`source_type` derivation in `tools/knowledge_gateway_cache.py` (`"context_search" in
+`source_type` derivation in `knowledge_gateway_cache.py` (`"context_search" in
 providers_consulted else SOURCE_TYPE_GRAPHIFY` — a binary check, no `parity_ledger` branch, present
 at both the Level 1 and Level 2 write-path call sites) were updated to account for it. Because
 `parity_ledger` is only ever selected alongside `context_search` on the
 `requirement_completeness_verification` routing row (never alone,
-`tools/knowledge_gateway_router.py::ROUTING_TABLE`), this binary check always resolved such a
+`knowledge_gateway_router.py::ROUTING_TABLE`), this binary check always resolved such a
 payload's `source_type` to `SOURCE_TYPE_CONTEXT_SEARCH` — the write was allowed by
 `check_allowlist()`, but the resulting cache row was silently mislabeled as Context-Search-sourced
 rather than being explicitly allowlisted (or rejected) as parity-sourced. This was a real,
@@ -84,9 +84,9 @@ disclosed gap for a follow-up ticket to resolve (either add `parity_ledger` as a
 source type with its own `SOURCE_TYPE_PARITY_LEDGER` allowlist/labeling, or make an explicit,
 justified decision to keep it unlabeled) — not a silent omission.
 
-**Moot as of `TCK-20260907-KGMCP-REDACTION-EXTRACT-ARCHIVE` (2026-09-07):** `tools/knowledge_gateway_router.py`
-and `tools/knowledge_gateway_cache.py` (the two modules this gap was about) are now archived at
-`tools/archive/knowledge_gateway_router.py`/`tools/archive/knowledge_gateway_cache.py` — hard-deleted
+**Moot as of `TCK-20260907-KGMCP-REDACTION-EXTRACT-ARCHIVE` (2026-09-07):** `knowledge_gateway_router.py`
+and `knowledge_gateway_cache.py` (the two modules this gap was about) were archived and then
+hard-deleted
 by `TCK-20260908-KGMCP-DELETE-ARCHIVED-GATEWAY`, no longer present anywhere in the repo — and the
 Knowledge Gateway MCP's `.mcp.json` registration is removed — there is no longer any live call path
 that can reach this routing decision. The gap described above is preserved as historical record,
@@ -151,11 +151,11 @@ Enumeration), never silently redacted and stored.
 `TCK-20260815-KGMCP-P2-REDACTION-WRITE-PATH` implemented the original ruleset as pure functions with
 no live caller. `TCK-20260815-KGMCP-P2-CACHE-READ-WRITE-WIRING` is the ticket that wired real cache
 reads and writes into the live `knowledge_context` request path
-(`tools/knowledge_gateway_mcp.py::_run_knowledge_context()`), so cache writes governed by this
+(`knowledge_gateway_mcp.py::_run_knowledge_context()`), so cache writes governed by this
 ruleset became genuinely reachable from a real, running MCP tool call — the condition this
 precondition's own "before Phase 2 payload caching goes live" language names. (As of
-`TCK-20260907-KGMCP-REDACTION-EXTRACT-ARCHIVE`, `tools/knowledge_gateway_mcp.py` was archived at
-`tools/archive/knowledge_gateway_mcp.py` and deregistered from `.mcp.json` — hard-deleted by
+`TCK-20260907-KGMCP-REDACTION-EXTRACT-ARCHIVE`, `knowledge_gateway_mcp.py` was archived
+and deregistered from `.mcp.json` — hard-deleted by
 `TCK-20260908-KGMCP-DELETE-ARCHIVED-GATEWAY`, no longer present anywhere in the repo — this call
 path is no longer live; the ruleset itself lives on, relocated, in `tools/write_path_guard.py`.) That ticket's own
 Architecture Review ruling (DD5) made no claim that this precondition was satisfied at Implement
@@ -176,8 +176,8 @@ content, which is a worse failure mode than a visible cache miss.
 was set before any real gateway existed, with no real payload data to derive it from — it was
 justified only by the "bounded/redacted" *framing* of that proposal, not by a measurement. Once a
 real gateway and cache existed, `TCK-20260815-KGMCP-P2-BASELINE-RECOMPARISON`'s live measurement
-against the frozen 7-entry corpus (`tests/tools/fixtures/kgmcp_phase2_baseline_recomparison_results.json`,
-also reported at `docs/engine/contracts/knowledge_gateway_mcp/phase2_baseline_recomparison.md`)
+against the frozen 7-entry corpus (`kgmcp_phase2_baseline_recomparison_results.json`,
+also reported at `docs/archive/knowledge_gateway_mcp/phase2_baseline_recomparison.md`)
 found the 8192-byte cap rejected **every** real response (`oversized_payload`, 7/7): cold response
 payload sizes ranged **~10,612–30,548 bytes** (`kgmcp_char_heuristic_v1` cold `gateway_tokens`
 2653–7637, ×4 bytes/token), 1.3x–3.7x over the old cap. The cap was structurally inert for real
@@ -204,7 +204,7 @@ vocabulary, alongside three already-existing/already-scoped names, and must neve
 merged with, or confused with any of them:
 
 - `retrieval_cache_schema_version` — the DDL/table-shape version constant
-  (`docs/engine/contracts/knowledge_gateway_mcp/cache_migration_plan.md:26-58`).
+  (`docs/archive/knowledge_gateway_mcp/cache_migration_plan.md:26-58`).
 - `RETRIEVAL_VERSION` — the cache-key-derivation-logic version constant
   (`tools/retrieval_cache.py:45`).
 - `retrieval_event_schema_version` — the event-field-shape version constant
@@ -220,8 +220,7 @@ stamped value: the module-level constant `redaction_policy_version = 1`
 (`tools/write_path_guard.py:48`) and the `WriteDecision.redaction_policy_version` field
 (`tools/write_path_guard.py:255`), stamped on every `ALLOW` and `REJECT` decision
 returned by `evaluate_write_candidate()`, added by `TCK-20260815-KGMCP-P2-REDACTION-WRITE-PATH`
-(relocated from `tools/knowledge_gateway_redaction.py` — archived at
-`tools/archive/knowledge_gateway_redaction.py`, hard-deleted by
+(relocated from `knowledge_gateway_redaction.py` — archived, then hard-deleted by
 `TCK-20260908-KGMCP-DELETE-ARCHIVED-GATEWAY` and no longer present anywhere in the repo — to
 `tools/write_path_guard.py` by `TCK-20260907-KGMCP-REDACTION-EXTRACT-ARCHIVE`).
 Its distinctness from the other 3 version axes named above is verified by a dedicated test in
@@ -234,7 +233,7 @@ option b).** `redaction_policy_version` is now persisted onto an actual
 the column via an idempotent `ALTER TABLE ... ADD COLUMN`, guarded by an explicit `PRAGMA
 table_info` existence check (SQLite has no `ALTER TABLE ... ADD COLUMN IF NOT EXISTS`).
 `LEVEL1_CACHE_COLUMNS` grew from 21 to 22 entries as a result. See
-`docs/engine/contracts/knowledge_gateway_mcp/cache_migration_plan.md` §2 for the migration's
+`docs/archive/knowledge_gateway_mcp/cache_migration_plan.md` §2 for the migration's
 documented shape.
 
 **Extended to Level 2 by `TCK-20260816-KGMCP-P3-PACKET-CACHE-READ-WRITE-WIRING`.** The same
@@ -245,14 +244,14 @@ established. Level 2 writes were independently re-verified — not assumed — t
 same `evaluate_write_candidate()` gate this section describes, with no bypass path: an
 architecture-guard test
 (`test_no_raw_insert_statement_bypasses_redaction_anywhere_in_level2_cache_module`,
-originally `tests/tools/test_knowledge_gateway_cache.py`) asserted no raw `.execute(`/`sqlite3` call
+originally `test_knowledge_gateway_cache.py`) asserted no raw `.execute(`/`sqlite3` call
 reached `retrieval_context_packet_cache_rows` outside that gate, and
 `test_level2_write_stamps_redaction_policy_version_column` confirmed the column was genuinely
 populated on write, not left null. No new `source_type` literal was introduced for Level 2 writes —
 the same 2-entry allowlist (§2) is reused unmodified.
 
 **Citation no longer live as of `TCK-20260907-KGMCP-REDACTION-EXTRACT-ARCHIVE`:** this test file
-moved to `tests/archive/test_knowledge_gateway_cache.py` (excluded from default pytest collection) —
+moved to the archived tests (excluded from default pytest collection) —
 hard-deleted by `TCK-20260908-KGMCP-DELETE-ARCHIVED-GATEWAY`, no longer present anywhere in the
 repo — and, per that ticket's own Implementation Notes, is one of 5 archived test files that fail
 collection outright when run directly (a plain `from tools import knowledge_gateway_cache` import
@@ -292,7 +291,7 @@ token_count ≈ ceil(len(text.encode("utf-8")) / 4)
 This is the widely-used "~4 bytes per token" approximation. No tokenizer library (`tiktoken` or
 otherwise) is a repository dependency today — this method is chosen specifically to avoid adding
 one, consistent with the repo-wide precedent already set by
-`docs/engine/contracts/knowledge_gateway_mcp/cache_migration_plan.md` §2's explicit refusal to add
+`docs/archive/knowledge_gateway_mcp/cache_migration_plan.md` §2's explicit refusal to add
 a migration library for a comparable Phase-0 concern.
 
 `kgmcp_char_heuristic_v1` carries a **documented tolerance of ±20%** against any downstream true
@@ -308,7 +307,7 @@ included statement's own matched `context[]`/`evidence[]` content too (plus a se
 `conflicts[]` truncation pass), narrowing — but not closing — the real, honestly-measured gap
 between what this budgeting mechanism accounts for and what §21 #12's own full-payload measurement
 actually counts (JSON structural overhead and untouched response fields remain outside this
-method's scope). See `docs/engine/contracts/knowledge_gateway_mcp/phase3_pilot_acceptance_measurement.md`'s
+method's scope). See `docs/archive/knowledge_gateway_mcp/phase3_pilot_acceptance_measurement.md`'s
 "Post-fix re-measurement" section for the real numbers.
 
 The method produces a plain non-negative integer, compatible with the already-frozen integer-typed
@@ -321,7 +320,7 @@ budget fields it must feed:
   (both `"type": "integer"`).
 
 `budget_class` (the caller's budget tier/bucket,
-`docs/engine/contracts/knowledge_gateway_mcp/evidence_cache_identity_contract.md:43` — "The
+`docs/archive/knowledge_gateway_mcp/evidence_cache_identity_contract.md:43` — "The
 caller's budget tier (token/latency budget bucket), not the raw numeric budget") is a separate
 field from the raw integer count above. This policy names provisional, illustrative-only bucket
 boundaries for deriving `budget_class` from a `kgmcp_char_heuristic_v1` count — small (≤500 tokens),
@@ -331,13 +330,13 @@ schema currently freezes its value set as an enum.
 **No callable shipped in `tools/` as part of this ticket** (`TCK-20260814-KGMCP-REDACTION-RETENTION-POLICY`)
 — this section documented the method only, consistent with that ticket's Out of Scope excluding
 cache read/write implementation. `kgmcp_char_heuristic_v1` was implemented as a real callable at
-`tools/knowledge_gateway_packet_assembly.py:81`, added by `TCK-20260815-KGMCP-P1-PACKET-ASSEMBLY`
+`knowledge_gateway_packet_assembly.py:81`, added by `TCK-20260815-KGMCP-P1-PACKET-ASSEMBLY`
 as part of its token-budgeted assembly work (§15); see
 `test_kgmcp_char_heuristic_v1_matches_frozen_formula`
-(`tests/tools/test_knowledge_gateway_packet_assembly.py:111`) for the formula-parity test.
+(`test_knowledge_gateway_packet_assembly.py:111`) for the formula-parity test.
 As of `TCK-20260907-KGMCP-REDACTION-EXTRACT-ARCHIVE`, both citations above were archived, frozen
-snapshots — `tools/archive/knowledge_gateway_packet_assembly.py` and
-`tests/archive/test_knowledge_gateway_packet_assembly.py` (the latter excluded from default pytest
+snapshots — `knowledge_gateway_packet_assembly.py` and
+`test_knowledge_gateway_packet_assembly.py` (the latter excluded from default pytest
 collection via `pyproject.toml`'s `norecursedirs`) — no longer live/executed code; both were
 hard-deleted by `TCK-20260908-KGMCP-DELETE-ARCHIVED-GATEWAY` and no longer exist anywhere in the
 repo.
@@ -352,7 +351,7 @@ ratification.
 These were **documented defaults, not implemented in `tools/retrieval_cache.py` by this
 document's own architectural boundary** — `tools/retrieval_cache.py` is not, and is not intended to
 become, the home for these limits. They were originally implemented as real, tested logic in a
-separate new module, `tools/knowledge_gateway_redaction.py`, added by
+separate new module, `knowledge_gateway_redaction.py`, added by
 `TCK-20260815-KGMCP-P2-REDACTION-WRITE-PATH`. `TCK-20260907-KGMCP-REDACTION-EXTRACT-ARCHIVE` later
 split that module in two: `open_connection_with_limits(db_path)` — which applies
 `PRAGMA journal_mode=WAL` and `PRAGMA busy_timeout=5000` on every connection open and chmods the
@@ -363,8 +362,7 @@ call dependency on it. `check_db_size_within_limit(db_path)` (enforces the 256 M
 transaction), and `acquire_write_guard()` / `release_write_guard()` (the per-key stampede guard, an
 in-process lock keyed by cache key — not multi-process safe, see the functions' own docstrings) had
 no real consumer outside the Knowledge Gateway MCP package and stayed behind in
-`tools/knowledge_gateway_redaction.py`, archived (no longer live code) at
-`tools/archive/knowledge_gateway_redaction.py` alongside the rest of the deregistered Knowledge
+`knowledge_gateway_redaction.py`, archived (no longer live code) alongside the rest of the deregistered Knowledge
 Gateway MCP — hard-deleted by `TCK-20260908-KGMCP-DELETE-ARCHIVED-GATEWAY`, no longer present
 anywhere in the repo.
 `tools/retrieval_cache.py` itself remains byte-unchanged by this work — `db_path` is a required,
@@ -421,7 +419,7 @@ Safe-eviction candidates, once automatic GC is implemented, are limited to:
   never a row with a completed, valid `cache_status`).
 
 **This GC policy defers to, and never overrides,**
-`docs/engine/contracts/knowledge_gateway_mcp/evidence_cache_identity_contract.md` §4's hard rule:
+`docs/archive/knowledge_gateway_mcp/evidence_cache_identity_contract.md` §4's hard rule:
 *"a `SYMBOL`- or `FILE`-backed evidence record ... must never be invalidated by an unrelated
 corpus-wide `PROVIDER_GENERATION` bump alone."* None of the six safe-eviction candidates above
 authorizes evicting a `SYMBOL`- or `FILE`-backed evidence row on a bare `PROVIDER_GENERATION` bump —
@@ -458,9 +456,9 @@ production-complete secret scanner.**
 
 - `docs/observability/retrieval_retention_redaction_policy.md` — the prior, more general
   retrieval/event redaction and retention policy this document extends (§1).
-- `docs/engine/contracts/knowledge_gateway_mcp/evidence_cache_identity_contract.md` §4 — the
+- `docs/archive/knowledge_gateway_mcp/evidence_cache_identity_contract.md` §4 — the
   `PROVIDER_GENERATION` fallback rule this document's GC defaults (§10) defer to.
-- `docs/engine/contracts/knowledge_gateway_mcp/cache_migration_plan.md` — the migration design this
+- `docs/archive/knowledge_gateway_mcp/cache_migration_plan.md` — the migration design this
   document's SQLite limits (§9) and redaction-policy version (§6) stay compatible with.
 - `docs/engine/contracts/knowledge_gateway_mcp/knowledge_context_request.schema.json` /
   `knowledge_context_response.schema.json` — the frozen `budget_tokens`/`budget_requested`/

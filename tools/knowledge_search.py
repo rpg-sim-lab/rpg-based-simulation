@@ -670,15 +670,25 @@ def _corpus_source_paths(corpus_root: Path) -> list[str]:
     return paths
 
 
+def _index_owner_root(db_path: Path) -> Path | None:
+    """The checkout root that owns an index at the standard layout `<root>/agent-working/.index/knowledge-index/<db>`."""
+    tail = KNOWLEDGE_INDEX.parts
+    dir_parts = db_path.parent.parts
+    if len(dir_parts) > len(tail) and dir_parts[-len(tail):] == tail:
+        return Path(*dir_parts[:-len(tail)])
+    return None
+
+
 def index_staleness(db_path: Path, corpus_root: Path | None = None) -> dict | None:
     """How far the index at `db_path` is behind the corpus, by manifest mtimes (TCK-20261006-KNOWLEDGE-INDEX-STALE-WARNING).
 
-    `corpus_root` defaults to this checkout's root, the same anchor as the index. Returns None when current,
+    `corpus_root` defaults to the checkout that owns `db_path` (derived from the standard index layout), falling back to this
+    checkout's root when `db_path` has another shape. Returns None when current,
     {"changed": n, "new": n, "removed": n} when not, or {"unknown": True} when the manifest is missing or unreadable. Stat
     only: no embedding, no file read. Never raises. The CLI `query` and MCP `search_docs` both call this, so the two paths
     cannot disagree."""
     try:
-        root = corpus_root if corpus_root is not None else Path(_REPO_ROOT_STR)
+        root = corpus_root if corpus_root is not None else (_index_owner_root(db_path) or Path(_REPO_ROOT_STR))
         paths = json.loads((db_path.parent / "manifest.json").read_text()).get("paths")
         if not isinstance(paths, dict):
             return {"unknown": True}
@@ -735,8 +745,42 @@ def _save_embedding_cache(db_path: Path, cache: dict[str, list]) -> None:
 # Subcommand: build
 # ---------------------------------------------------------------------------
 
+_MIN_BUILD_MEM_MB = 2560  # 2.5 GB; RPG_KNOWLEDGE_BUILD_MIN_MEM_MB overrides
+
+
+def _mem_available_mb(meminfo: Path = Path("/proc/meminfo")) -> int | None:
+    """MemAvailable in MB, or None when it cannot be read (the build then carries on, as before the guard existed)."""
+    try:
+        for line in meminfo.read_text(encoding="utf-8").splitlines():
+            if line.startswith("MemAvailable:"):
+                return int(line.split()[1]) // 1024
+    except (OSError, ValueError, IndexError):
+        return None
+    return None
+
+
+def _memory_guard(args, read_mem=_mem_available_mb, environ=os.environ) -> int | None:
+    """None to proceed, or an exit code after printing one refusal line. Runs before the model loads, so a short host never
+    starts an embedding build that pushes it into swap (TCK-20261112-SEARCH-SERVER-PER-WORKTREE-INDEX-AND-BUILD-MEMORY-GUARD)."""
+    if getattr(args, "force", False):
+        return None
+    try:
+        threshold = int(environ.get("RPG_KNOWLEDGE_BUILD_MIN_MEM_MB") or _MIN_BUILD_MEM_MB)
+    except ValueError:
+        threshold = _MIN_BUILD_MEM_MB
+    available = read_mem()
+    if available is None or available >= threshold:
+        return None
+    print(f"knowledge build refused: MemAvailable {available} MB is below {threshold} MB; free memory, set "
+          f"RPG_KNOWLEDGE_BUILD_MIN_MEM_MB, or pass --force", file=sys.stderr)
+    return 3
+
+
 def cmd_build(args) -> int:
     """Build the vector index from the three corpus roots."""
+    refused = _memory_guard(args)
+    if refused is not None:
+        return refused
     # Lazy ImportError guard — module must import cleanly even without deps
     try:
         from sentence_transformers import SentenceTransformer
@@ -863,6 +907,9 @@ def cmd_build(args) -> int:
 
 def cmd_build_incremental(args) -> int:
     """Incremental rebuild: only re-embeds changed or new files; skips unchanged."""
+    refused = _memory_guard(args)
+    if refused is not None:
+        return refused
     corpus_root = Path(args.corpus_root) if args.corpus_root else Path(".")
     db_path = Path(args.db_path) if args.db_path else _DEFAULT_DB
 
@@ -1249,6 +1296,12 @@ def _build_parser() -> argparse.ArgumentParser:
         default=None,
         metavar="PATH",
         help=f"Output database path (default: {_DEFAULT_DB})",
+    )
+    build_p.add_argument(
+        "--force",
+        action="store_true",
+        default=False,
+        help="Build even when MemAvailable is below the guard threshold (RPG_KNOWLEDGE_BUILD_MIN_MEM_MB, default 2560)",
     )
     build_p.add_argument(
         "--incremental",

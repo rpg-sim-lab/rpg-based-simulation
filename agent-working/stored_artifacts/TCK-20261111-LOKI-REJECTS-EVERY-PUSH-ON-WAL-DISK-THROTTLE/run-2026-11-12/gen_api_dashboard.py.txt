@@ -1,0 +1,116 @@
+"""One-off generator for docker/grafana/dashboards/api.json (run from the worktree root). Only the JSON is committed."""
+import json
+import yaml
+
+M = "http_request_duration_seconds"
+P = {"type": "prometheus", "uid": "prometheus"}
+L = {"type": "loki", "uid": "loki"}
+T = {"type": "tempo", "uid": "tempo"}
+
+rules = yaml.safe_load(open("docker/grafana/provisioning/alerting/rules-slo.yaml"))["groups"][0]["rules"]
+by_uid = {r["uid"]: r for r in rules}
+LAT = next(d for d in by_uid["slo-api-latency-p95"]["data"] if d["refId"] == "A")["model"]["expr"]
+ERR = next(d for d in by_uid["slo-api-error-rate"]["data"] if d["refId"] == "A")["model"]["expr"]
+assert LAT.endswith(" > 0.3") and ERR.endswith(" > 0.01")
+LAT_VALUE = LAT.removesuffix(" > 0.3")
+ERR_VALUE = ERR.removesuffix(" > 0.01")
+
+SLI = 'status_class="2xx",route!~"/health|unmatched"'
+_id = [0]
+
+
+def nid():
+    _id[0] += 1
+    return _id[0]
+
+
+def row(title, y):
+    return {"id": nid(), "type": "row", "title": title, "collapsed": False, "gridPos": {"x": 0, "y": y, "w": 24, "h": 1}, "panels": []}
+
+
+def ts(title, y, x, w, targets, unit=None, desc=None, h=8):
+    p = {"id": nid(), "type": "timeseries", "title": title, "datasource": P, "gridPos": {"x": x, "y": y, "w": w, "h": h},
+         "fieldConfig": {"defaults": {"custom": {"drawStyle": "line", "lineWidth": 1, "fillOpacity": 8}}, "overrides": []},
+         "options": {"legend": {"displayMode": "list", "placement": "bottom"}, "tooltip": {"mode": "multi"}},
+         "targets": [{"refId": chr(65 + i), "datasource": P, "expr": e, "legendFormat": lf, "range": True} for i, (e, lf) in enumerate(targets)]}
+    if unit:
+        p["fieldConfig"]["defaults"]["unit"] = unit
+    if desc:
+        p["description"] = desc
+    return p
+
+
+def stat(title, y, x, w, expr, unit, no_value, desc):
+    return {"id": nid(), "type": "stat", "title": title, "description": desc, "datasource": P, "gridPos": {"x": x, "y": y, "w": w, "h": 5},
+            "fieldConfig": {"defaults": {"unit": unit, "noValue": no_value, "color": {"mode": "thresholds"},
+                                         "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": None}]}}, "overrides": []},
+            "options": {"reduceOptions": {"calcs": ["lastNotNull"], "fields": "", "values": False}, "colorMode": "value", "graphMode": "none"},
+            "targets": [{"refId": "A", "datasource": P, "expr": expr, "instant": True, "range": False}]}
+
+
+rt = f'route=~"$route",status_class=~"$status"'
+panels = [
+    row("Requests", 0),
+    ts("Request rate by route", 1, 0, 12, [(f'sum by (route) (rate({M}_count{{{rt}}}[$__rate_interval]))', "{{route}}")], "reqps"),
+    ts("Request rate by status class", 1, 12, 12, [(f'sum by (status_class) (rate({M}_count{{route=~"$route"}}[$__rate_interval]))', "{{status_class}}")], "reqps"),
+    row("Errors", 9),
+    ts("5xx ratio, overall", 10, 0, 8, [(f'(sum(rate({M}_count{{status_class="5xx"}}[$__rate_interval])) or vector(0)) / sum(rate({M}_count[$__rate_interval]))', "5xx / all")], "percentunit",
+       "Same shape as the ApiErrorRateHigh expression, over the dashboard's rate interval. The numerator falls back to 0 because the histogram has no 5xx series until a 5xx is observed (src/api/http_metrics.py), so this reads 0 with no errors."),
+    ts("5xx ratio by route", 10, 8, 16, [(f'sum by (route) (rate({M}_count{{status_class="5xx",route=~"$route"}}[$__rate_interval])) / sum by (route) (rate({M}_count{{route=~"$route"}}[$__rate_interval]))', "{{route}}")], "percentunit",
+       "Reads 'No data' until a route has returned a 5xx: the histogram creates a status_class series only when one is observed."),
+    row("Latency (2xx, excluding /health and unmatched, as the SLI)", 18),
+    ts("Latency p50 / p95 / p99, overall", 19, 0, 12,
+       [(f'histogram_quantile({q}, sum by (le) (rate({M}_bucket{{{SLI}}}[$__rate_interval])))', f"p{int(q * 100)}") for q in (0.5, 0.95, 0.99)], "s"),
+    ts("Latency p95 by route", 19, 12, 12,
+       [(f'histogram_quantile(0.95, sum by (le, route) (rate({M}_bucket{{{SLI},route=~"$route"}}[$__rate_interval])))', "{{route}}")], "s"),
+    row("Backend logs and traces", 27),
+    {"id": nid(), "type": "logs", "title": "Backend container logs", "datasource": L, "gridPos": {"x": 0, "y": 28, "w": 24, "h": 9},
+     "description": "Lines logged inside a span carry trace_id=...; the derived field on the Loki datasource links it to the trace in Tempo.",
+     "options": {"showTime": True, "wrapLogMessage": True, "enableLogDetails": True, "sortOrder": "Descending"},
+     "targets": [{"refId": "A", "datasource": L, "expr": '{container=~".*backend.*"} |~ "(?i)$level"', "queryType": "range"}]},
+    {"id": nid(), "type": "table", "title": "Recent traces (service.name = rpg-backend)", "datasource": T, "gridPos": {"x": 0, "y": 37, "w": 24, "h": 8},
+     "targets": [{"refId": "A", "datasource": T, "queryType": "traceqlSearch", "limit": 20, "tableType": "traces",
+                  "filters": [{"id": "service-name", "tag": "service.name", "operator": "=", "scope": "resource", "value": ["rpg-backend"], "valueType": "string"}]}]},
+    row("SLO (the alert's expressions; edit docker/grafana/provisioning/alerting/rules-slo.yaml first)", 45),
+    stat("ApiLatencyP95High expression", 46, 0, 6, LAT, "s", "not violated",
+         "Verbatim expr of rule slo-api-latency-p95. It returns a series only while p95 > 0.3 s; 'not violated' means no series."),
+    stat("p95 latency (value)", 46, 6, 6, LAT_VALUE, "s", "No data (no matching requests)",
+         "The same expression without the ' > 0.3' comparison, so the value is visible while the SLO holds."),
+    stat("ApiErrorRateHigh expression", 46, 12, 6, ERR, "percentunit", "not violated",
+         "Verbatim expr of rule slo-api-error-rate. It returns a series only while the 5xx ratio > 0.01."),
+    stat("5xx ratio (value)", 46, 18, 6, ERR_VALUE, "percentunit", "No data (no 5xx observed)",
+         "The same expression without the ' > 0.01' comparison. Kept identical to the alert's query, so it reads No data while no 5xx has been observed (the histogram has no 5xx series until one occurs)."),
+]
+
+dash = {
+    "uid": "api-v1",
+    "title": "API (requests, errors, latency, logs, traces)",
+    "description": "R2 request histogram (job rpg-backend), backend logs from Loki, traces from Tempo. The SLO row repeats the alert expressions.",
+    "tags": ["api", "slo"],
+    "schemaVersion": 39,
+    "version": 1,
+    "editable": True,
+    "refresh": "10s",
+    "time": {"from": "now-30m", "to": "now"},
+    "timezone": "browser",
+    "graphTooltip": 1,
+    "annotations": {"list": []},
+    "links": [],
+    "templating": {"list": [
+        {"name": "route", "label": "route", "type": "query", "datasource": P, "query": {"query": f"label_values({M}_count, route)", "refId": "route"},
+         "refresh": 2, "multi": True, "includeAll": True, "allValue": ".*", "current": {"text": "All", "value": "$__all"}, "sort": 1},
+        {"name": "status", "label": "status class", "type": "query", "datasource": P, "query": {"query": f"label_values({M}_count, status_class)", "refId": "status"},
+         "refresh": 2, "multi": True, "includeAll": True, "allValue": ".*", "current": {"text": "All", "value": "$__all"}, "sort": 1},
+        {"name": "level", "label": "log level", "type": "custom", "query": "ERROR,WARNING,INFO,DEBUG", "multi": False, "includeAll": True,
+         "allValue": ".*", "current": {"text": "All", "value": "$__all"}, "options": []},
+    ]},
+    "panels": panels,
+}
+for p in panels:
+    if p.get("title") in ("5xx ratio, overall", "5xx ratio by route"):
+        p["fieldConfig"]["defaults"]["min"] = 0
+        p["fieldConfig"]["defaults"]["max"] = 1  # a ratio: without a fixed range an all-zero series autoscales to 10000%
+assert "id" not in dash
+json.dump(dash, open("docker/grafana/dashboards/api.json", "w"), indent=2)
+open("docker/grafana/dashboards/api.json", "a").write("\n")
+print("panels", len(panels))

@@ -43,7 +43,7 @@ Items, gold, and node charges in the world obey strict conservation. An entity c
 2. **Destination capacity check (Gate 2):** `InventoryService.can_add_items_with_removals(inventory, items_add, items_remove)`. This accounts for simultaneous removals so that a swap or craft does not over-count slots. Runs before source validation for every `source_kind`.
 
 3. **Source existence / stock check (Gate 3):** The specific guard depends on `source_kind`:
-   - `NODE`: node must exist in `state.resource_nodes`; remaining charges > 0 (accounting for `node_overrides` from same-tick sliding updates and `reservations` dict for concurrent actors)
+   - `NODE`: node must exist in `state.resource_nodes`; remaining charges > 0 (accounting for `node_overrides` from same-tick sliding updates, which count every accepted harvest; NODE has no reservation)
    - `GROUND_ITEM`: item must exist in `state.ground_items`; not reserved by another actor
    - `CORPSE`: corpse must exist in `state.corpses`; not reserved
    - `CRAFTING`: entity must own all materials; gold >= `gold_cost`; capacity check already done
@@ -52,6 +52,10 @@ Items, gold, and node charges in the world obey strict conservation. An entity c
    - `HOME_STORAGE`: withdraw → storage has items; deposit → storage has capacity AND entity has items
 
 4. **Atomicity (Gate 4):** On success, a single `TransactionResult` is returned that bundles all updates (`inventory_update`, `node_update` / `ground_item_remove` / `corpse_remove` / `building_update` / `home_storage_update`). The apply path commits all fields together. On failure, `TransactionResult(accepted=False, reason=<ReasonCode>)` is returned and nothing is mutated.
+
+   **Grouped transfers.** Intents that share a `group_id` commit together or not at all. `ResourceTransactionSystem.resolve_all` trial-resolves a group's intents in order on group-local copies of the in-tick node charges, reservations, treasury, building purse and stock, and the world-effect lists, applying each accepted intent's effects to the copies before the next intent is resolved. A later intent in the group therefore sees what the group's earlier intents would take: two harvests of a one-charge node, or two wages from one purse, cannot both pass. The live records are written only by the commit loop, once the whole group is accepted; a rejected group leaves them unchanged.
+
+   **Recruitment.** A recruitment payout, when RECRUIT is wired, is one conserving transfer: the payer must hold the payout net of its own transfers earlier in the tick, and the recruit is credited only as the payer's source debit (TCK-20261109-A-RECRUIT-PAYOUT-IS-PAID-IN-FULL-WHATEVER-THE-PAYER-HOLDS retired the unconserving path); it is measured when it is wired.
 
 ---
 
@@ -104,7 +108,7 @@ Both share the NODE code path in `resolve()`. Distinction is `charges_delta`:
 | Regular (e.g. `iron_vein`) | `-1` | One charge consumed per harvest |
 | Loot (e.g. `treasure_chest`) | `-node.remaining_charges` | All charges consumed in one interaction |
 
-Determined at: `src/core/conservation.py` line 91 — `node.kind == "LOOT"`.
+Determined at: `src/core/conservation.py`, NODE branch of `resolve()` — `node.kind == "LOOT"`.
 
 ---
 
@@ -168,38 +172,24 @@ This is enforced structurally — the authoritative `apply` path only processes 
 
 ## Crafting Atomicity
 
-Two independent `RecipeRegistry`-backed crafting code paths exist in the repo (see
-`docs/parity_ledger/progression.yaml`'s `PROG-123` divergence note and
-`TCK-20260904-MATERIAL-POSSESSION-PREDICATE` for the full disambiguation). Only one is live in
-production; this section previously described the other one as if it were.
+One `RecipeRegistry`-backed crafting path exists in the repo: `src/core/registries.py::RecipeRegistry`, read by the live path below. A second, legacy 3-entry registry (`src/core/recipes.py`, reached only through the uncalled `src/town/blacksmith.py::BlacksmithAction`) was deleted by `TCK-20261027-LEGACY-RECIPE-REGISTRY-AND-BLACKSMITH-ACTION-UNREACHED` (see `docs/parity_ledger/progression.yaml`'s `PROG-123` note and `TCK-20260904-MATERIAL-POSSESSION-PREDICATE` for the history).
 
 **Live path — `src/engine/intent/action_intent.py`'s `REQUEST_CRAFT` handling**, reading
 `src/core/registries.py::RecipeRegistry`. Pre-flight, it builds `Requirement(kind="recipe_known" /
 "has_gold" / "has_item", ...)` checks evaluated by `RequirementEvaluator`. On execution it builds a
 `ResourceTransferIntent(source_id=recipe_id, source_kind="CRAFTING", items_add=[ItemStack(recipe.output_item_id,
 1)], items_remove=materials, gold_delta=-recipe.gold_cost, gold_cost=recipe.gold_cost,
-transfer_kind="CRAFT")` and delegates all atomicity to the conservation path below. It deliberately
-does **not** call `CraftingSystem.craft()` — an explicit code comment at `action_intent.py:193-198`
-states doing so "bypasses that authoritative path and would not surface an `item_crafted` event."
+transfer_kind="CRAFT")` and delegates all atomicity to the conservation path below.
 
-**Not live — `CraftingSystem` (`src/systems/economy_systems/crafting.py`)**, reading
-`src/core/recipes.py::RecipeRegistry`. Runs 7 sequential gate checks before emitting an
-`InventoryUpdate`:
-
-1. Recipe known in `RecipeRegistry`
-2. Entity has `recipe_id` in `identity.known_recipes`
-3. Entity role matches `recipe.required_role` (if set)
-4. All material quantities present in inventory
-5. Gold >= `recipe.gold_cost`
-6. Capacity for output (slot count, stacking exemption if item already present)
-7. If all pass: emit `InventoryUpdate(items_remove=materials, items_add=[result_item], gold_delta=-recipe.gold_cost)`
-
-This class and its `craft()` method have zero non-test callers anywhere in `src/` (repo-wide
-reference search confirms only `src/systems/crafting.py`'s re-export, itself also uncalled in
-production). It remains in the codebase and is exercised by unit tests, but this gate sequence does
-not execute during live simulation. Do not treat it as a TOCTOU double-check partner for the
-conservation path below — that characterization was inaccurate and is corrected here (cross-doc
-staleness sweep, TCK-20260904-MATERIAL-POSSESSION-PREDICATE, 2026-09-04).
+**Retired — `CraftingSystem`.** An uncalled class (`src/systems/economy_systems/crafting.py`, with a
+`src/systems/crafting.py` re-export) once ran a 7-gate pre-check (recipe known, recipe learned, role,
+materials, gold, output capacity, atomic emit). It had no caller in `src/` and was deleted by
+`TCK-20261027-FIVE-DEAD-SYSTEMS-CLASSES-STILL-CITED-AS-PROOF`. The gates that execute live are the
+ones above: the `REQUEST_CRAFT` handler builds the requirements and `ResourceTransactionResolver`'s
+`"CRAFTING"` branch applies them atomically, proved by
+`tests/integration/economy/test_crafting_live_path.py`. A recipe id that is missing or absent from
+`RecipeRegistry` is refused with a `FAILED_REQUIREMENTS: unknown_recipe` trace and a no-op update, as
+the retired class's `UNKNOWN_RECIPE` result was (parity PROG-097, `verified`).
 
 **`known_recipes` population — `src/engine/blacksmith.py::BlacksmithSystem.enforce()`'s
 wholesale-learn step.** Before `TCK-20260904-RECIPE-CATALOG-NAMESPACE-BRIDGE`, this populated
@@ -223,9 +213,9 @@ add/remove/gold-spend actually happens in production.
 
 ## Concurrent Actor Protection
 
-The resolver accepts an optional `reservations` dict (`Dict[tuple[str, str|int], int]`). Before committing a GROUND_ITEM, CORPSE, QUEST, CHEST, or RECRUIT source, the resolver checks `reservations.get((source_kind, source_id), 0)`. If > 0, the second actor receives `TARGET_LOCKED`. For NODE the reservation is subtracted from the remaining charges (`conservation.py:82-91`), so a fully reserved node rejects with `SOURCE_DEPLETED` rather than `TARGET_LOCKED`.
+The resolver accepts an optional `reservations` dict (`Dict[tuple[str, str|int], int]`). Before committing a GROUND_ITEM, CORPSE, QUEST, CHEST, or RECRUIT source, the resolver checks `reservations.get((source_kind, source_id), 0)`. If > 0, the second actor receives `TARGET_LOCKED`. For NODE there is no reservation: the in-tick charges_delta (node_overrides) already counts every accepted harvest and earlier node change, so a node rejects with SOURCE_DEPLETED only when that count reaches 0.
 
-The apply path (`src/engine/economy.py`, `_apply_world_effects`) populates reservations only for NODE, GROUND_ITEM, and CORPSE. The QUEST, CHEST, and RECRUIT guards therefore trigger only when a caller hands `resolve()` a reservations dict directly. There is no reservation guard for buildings (SHOP_BUY / SHOP_SELL).
+The apply path (`src/engine/economy.py`, `_apply_world_effects`) populates reservations only for GROUND_ITEM and CORPSE. The QUEST, CHEST, and RECRUIT guards therefore trigger only when a caller hands `resolve()` a reservations dict directly. There is no reservation guard for buildings (SHOP_BUY / SHOP_SELL).
 
 This mechanism prevents duplication when two actors complete the same loot target in the same tick.
 
@@ -236,8 +226,8 @@ This mechanism prevents duplication when two actors complete the same loot targe
 | Scenario | Behavior |
 |---|---|
 | Craft output would fill inventory, but craft also removes materials that free slots | `can_add_items_with_removals` accounts for removals — slot freed by material removal counts toward capacity for output |
-| Two actors harvest same node in same tick | First actor gets `TransactionResult(accepted=True)`; `reservations` marks it; second actor gets `TARGET_LOCKED` |
-| LOOT node picked up by one actor while another targets it | Same concurrent protection via reservations |
+| Two actors harvest same node in same tick | First actor gets `TransactionResult(accepted=True)` and the node's in-tick `charges_delta` records it; each later actor is accepted while charges remain and gets `SOURCE_DEPLETED` once the charges plus `charges_delta` reach 0 |
+| LOOT node picked up by one actor while another targets it | Same protection through the in-tick `charges_delta`: a LOOT harvest takes every charge, so the next actor gets `SOURCE_DEPLETED` |
 | Entity sells all items and then tries to deposit gold (zero-item transfer) | Gate 2 passes trivially; Gate 3 checks gold amount; succeeds if transfer is valid |
 | `source_kind` not in known set | Returns `UNKNOWN_SOURCE_KIND` immediately after Gate 2 |
 
@@ -251,7 +241,7 @@ This mechanism prevents duplication when two actors complete the same loot targe
 intent: source_kind=NODE, source_id="iron_vein_3", items_add=[iron_ore×1], gold_delta=0
 Gate 1: transaction_id not in processed → pass
 Gate 2: inventory has 1 free slot → pass
-Gate 3: node exists, remaining_charges=3, not reserved → pass
+Gate 3: node exists, remaining_charges=3, no earlier harvest this tick (charges_delta 0) → pass
 Result: accepted=True, node_update={remaining_charges: 2}
 ```
 
@@ -273,10 +263,8 @@ Result: accepted=False, reason=INSUFFICIENT_GOLD
 | Module | Role |
 |---|---|
 | `src/core/conservation.py` | `ResourceTransactionResolver.resolve()` — primary gate logic |
-| `src/systems/economy_systems/crafting.py` | `CraftingSystem` — 7-gate pre-check before conservation |
-| `src/systems/economy_systems/loot.py` | Loot resolution before conservation call |
+| `src/engine/interaction.py` | `InteractionSystem.enforce()` — builds the loot transfer before the conservation call |
 | `src/systems/economy_systems/market.py` | `MarketSystem`, `DynamicPriceService` — pricing |
-| `src/systems/economy_systems/chests.py` | Chest/loot node interaction |
 | `src/core/models/inventory.py` | `InventoryService.can_add_items_with_removals` |
 
 ---
@@ -288,9 +276,10 @@ Result: accepted=False, reason=INSUFFICIENT_GOLD
 | `tests/unit/resource/test_resource_conservation_regression.py` | Harvest conservation: inventory-full harvest leaves the node and inventory unchanged |
 | `tests/unit/resource/test_conservation_rejection_paths.py` | Every rejection path of `resolve()`: `accepted is False`, exact `ReasonCode`, no update fields; `TARGET_LOCKED` per reservation-guarded source kind |
 | `tests/unit/resource/test_rejected_transfer_apply_path.py` | A rejected transfer leaves its transaction id out of `processed_transaction_ids`, changes no durable state, and a grouped rejection rolls back without burning ids |
-| `tests/unit/resource/test_node_charge_accounting.py` | NODE charge accounting including in-tick reservations |
-| `tests/unit/resource/test_resource_conflicts.py`, `tests/integration/kernel/test_race_conditions_v2.py` | Concurrent actor reservation prevents loot duplication (end to end through the apply path) |
+| `tests/unit/resource/test_node_charge_accounting.py` | NODE charge accounting including the in-tick `charges_delta` |
+| `tests/unit/resource/test_resource_conflicts.py`, `tests/integration/kernel/test_race_conditions_v2.py` | Concurrent actors cannot duplicate yield (end to end through the apply path): a GROUND_ITEM or CORPSE reservation turns the second actor away with `TARGET_LOCKED`; a node's in-tick `charges_delta` turns a harvest past 0 away with `SOURCE_DEPLETED` |
 | `tests/unit/resource/test_transaction_grouping.py` | Grouped transfers commit together or roll back together |
+| `tests/unit/resource/test_grouped_trial_sees_its_own_earlier_intents.py` | A group's trial sees what its own earlier intents take: node charges, treasury and building purse; a rejected group leaves the live records unchanged |
 | `tests/unit/resource/test_resource_v2_boundary.py` | Shop sell, crafting, tax and recruitment transfers through the resolver |
 | `tests/unit/resource/test_domain_8_economy.py`, `tests/unit/resource/test_economy_hardening.py` | Shop stock and liquidity depletion; buy/sell price formulas and caps |
 | `tests/unit/resource/test_equipment_chests_storage.py` | Home storage atomicity and chest loot |

@@ -26,6 +26,7 @@ from __future__ import annotations
 
 import time
 from dataclasses import dataclass
+from enum import Enum
 from typing import Any, Callable, Dict, List, Optional, Set, Tuple
 
 from src.ai.goals.ways import WayKind, ways_in_reach
@@ -45,6 +46,30 @@ def _always(tick: int, entity_id: Optional[int], cadence: int) -> bool:
     return True
 
 
+# The food ways that are opening steps (SURV-07 row 27): the pull goes to the step, so a step in reach that was never taken is an untried step.
+_STEP_WAYS = frozenset({WayKind.FORAGE, WayKind.SCAVENGE, WayKind.HUNT_EAT_RAW, WayKind.BUY, WayKind.WORK_SHIFT})
+
+
+class StarvationVerdict(str, Enum):
+    """How the V3 judge reads one starvation death (TCK-20261029-A-PRICED-WAY-IS-OPEN-ONLY-TO-A-SUBJECT-THAT-CAN-PAY)."""
+    UNTRIED_STEP = "UNTRIED_STEP"  # FAIL: an opening step was in reach and never taken ("opening step untried", row 27)
+    UNTRIED_WAY = "UNTRIED_WAY"    # FAIL: a way (carried food, inn meal) judged open was never attempted
+    POVERTY = "POVERTY"            # not a fail: no open way and no step the subject could take (SURV-06's poverty outcome)
+    TRIED = "TRIED"                # not a fail: everything judged open was attempted
+
+    @property
+    def is_fail(self) -> bool:
+        """True for the two FAIL verdicts (an untried step or way)."""
+        return self in (StarvationVerdict.UNTRIED_STEP, StarvationVerdict.UNTRIED_WAY)
+
+
+@dataclass(frozen=True)
+class OpeningStepTried:
+    """An opening step that was in reach at some point in the record window, and whether the subject ever took it."""
+    way: WayKind
+    tried: bool
+
+
 @dataclass(frozen=True)
 class StarvationDeathRecord:
     """One starvation death: who, when, the ways judged open (a), the ways truly open at the end (b), and the ways tried."""
@@ -61,6 +86,18 @@ class StarvationDeathRecord:
         """H6: the ways the pull judged open and in reach that the subject never attempted."""
         return tuple(w for w in self.ways_open_in_reach_union if w not in self.ways_attempted)
 
+    def opening_steps_in_reach(self) -> Tuple[OpeningStepTried, ...]:
+        """Each opening step judged in reach in the window, with whether it was ever attempted (typed, judge-only; derived from columns a and tried)."""
+        return tuple(OpeningStepTried(w, w in self.ways_attempted) for w in self.ways_open_in_reach_union if w in _STEP_WAYS)
+
+    def verdict(self) -> StarvationVerdict:
+        """The V3 reading: an untried step or way is a FAIL; no open way and no step is poverty (non-fail); otherwise tried."""
+        if any(not s.tried for s in self.opening_steps_in_reach()):
+            return StarvationVerdict.UNTRIED_STEP
+        if self.untried_in_reach():
+            return StarvationVerdict.UNTRIED_WAY
+        return StarvationVerdict.TRIED if self.ways_open_in_reach_union else StarvationVerdict.POVERTY
+
     def to_payload(self) -> Dict[str, Any]:
         """The record as plain JSON-able fields (way kinds by value)."""
         return {
@@ -69,6 +106,8 @@ class StarvationDeathRecord:
             "ways_in_reach_at_death": [w.value for w in self.ways_in_reach_at_death],
             "ways_attempted": [w.value for w in self.ways_attempted],
             "last_meal_tick": self.last_meal_tick,
+            "opening_steps_in_reach": [{"way": st.way.value, "tried": st.tried} for st in self.opening_steps_in_reach()],
+            "verdict": self.verdict().value,
         }
 
 
@@ -87,6 +126,8 @@ def _attempted_way(source_kind: str, source_id: Any, state: AuthoritativeState) 
         return WayKind.CARRIED_FOOD
     if source_kind == "TOWN_SERVICE":
         return WayKind.INN_MEAL
+    if source_kind == "CORPSE_FOOD":
+        return WayKind.SCAVENGE
     if source_kind == "SHOP_SELL":
         return WayKind.BUY
     if source_kind == "WAGE":
@@ -189,18 +230,21 @@ class StarvationRecorder:
 
     @classmethod
     def _note_attempts(cls, prior: AuthoritativeState, prior_ent: EntityState, entity: EntityState, upd: Any, tick: int) -> None:
+        """A meal is a drop in hunger, whatever wrote it, with or without an accepted intent result and whether or not the subject was escalated:
+        it stamps the last meal and starts the trail again. Today four writers lower hunger, all meals: a carried item eaten (CARRIED_FOOD), the
+        free meal of an EAT with nothing carried (a direct update, no transfer), a corpse eaten where it lies (CORPSE_FOOD) and the inn's meal
+        (TOWN_SERVICE). Attempts are counted only from an escalated subject (the pressing-only rule, unchanged)."""
+        if entity.biological.hunger < prior_ent.biological.hunger:
+            cls._union.pop(entity.id, None)
+            cls._attempted.pop(entity.id, None)
+            cls._last_meal[entity.id] = tick
+            return
         if prior_ent.biological.hunger < cls._escalated_hunger:
             return
-        ate = entity.biological.hunger < prior_ent.biological.hunger
         for result in (getattr(upd, "intent_results", None) or []):
             way = _attempted_way(getattr(result, "source_kind", ""), getattr(result, "source_id", ""), prior)
-            if way is None:
-                continue
-            cls._attempted.setdefault(entity.id, set()).add(way)
-            if ate and getattr(result, "accepted", False) and way in (WayKind.CARRIED_FOOD, WayKind.INN_MEAL):
-                cls._union.pop(entity.id, None)
-                cls._attempted.pop(entity.id, None)
-                cls._last_meal[entity.id] = tick
+            if way is not None:
+                cls._attempted.setdefault(entity.id, set()).add(way)
 
     @classmethod
     def _death(cls, prior: AuthoritativeState, prior_ent: EntityState, entity: EntityState, tick: int) -> Optional[StarvationDeathRecord]:

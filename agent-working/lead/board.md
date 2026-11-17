@@ -8,33 +8,53 @@ tags: [ai, process-improvement, governance]
 
 # Lead board
 
-Cross-domain view kept by `lead-planner`. **Advice only**: the owner sets planner queues, and the lead never
-dispatches, reorders a queue or approves anything. Rows are added by the lead. Third status pass: 2026-10-14 at `main` 6adb134ea (second 2026-10-12 at 6ba9083ef, first 2026-10-11 at 9a9058808). Host ubuntu rows (asset, codebase, perf) come from those planners' replies. Since 2026-10-13 the rpg, testing and agent-working seats run on host u24desktop under `lead-planner-u24`; their rows are folded in from its host page (`hosts/u24desktop.md`, first pass carried in PR #537) and from repo/issue state.
+Cross-domain view kept by `lead-planner`. **Advice only**: the owner sets planner queues, and the lead never dispatches, reorders a queue
+or approves anything. Rows are added by the lead. Owner approvals are logged on issue #715, and each row cites the comment it rests on.
+
+Sixth status pass: 2026-11-16 at `main` e72270894 (fifth 2026-11-15 at 0a8f65c3f). Host ubuntu rows come from the ubuntu planners and
+repo state. Host u24desktop rows come from `lead-planner-u24`'s reports of 2026-11-16; its host page `hosts/u24desktop.md` was last
+written 2026-10-29. Status pages for the owner (not in git): the epic status page and the RPG status page linked from the lead's handover.
+
+**Standing directions and pauses (read these before acting on any row):**
+- **RPG first** (#715 6911759453): the RPG simulation is the product. When RPG work competes with agent-working, perf or process work for
+  the heavy slot, host memory, seat time or the owner's time, RPG goes first.
+- **Milestone 1 pace** (direction 6911746837, decision 6912138476): HARD checks block (determinism, instruments never change a run, hard
+  world laws including conservation and one entity per tile, the fix's own job by its pre-written counts, liveness, one pooled extinction
+  line over kinds alive in at least 3 parent seeds, kept by 6919222181). BALANCE checks are report-only, with a flagged line in the PR at
+  twice a bar or the third trip in a row. Balance is judged after the foundation and core features, against the owner's "varied but
+  reasonable" bands (6892558147).
+- **Re-design discussion** (languages, architecture): still PAUSED (6911604017).
+- **Perf** (6556861718): still paused (6911604017). Released from it: the world-generator hash-seed fix (done, #940) and the checkpoint
+  format version (done, #942). Lifting the pause needs the seats fence on CPUs 0-3 and steal-time recording first (6917238009,
+  `TCK-20261116-TIMING-RUNS-SHARE-THEIR-CPUS-WITH-IDLE-SEATS`).
+- **`src/engine` work under the next-generation engine and distributed-workers epics:** not before Milestone 1, as both ADRs say.
 
 | epic or batch | owner role | state | depends-on | blocked-by | lead's recommended next step | owner decision needed (y/n) |
 |---|---|---|---|---|---|---|
-| perf M2 (11 tickets; T05b #525 done; T08 canonical reruns in progress) | perf-planner | in delivery, 8/11 | #544 for the mixed_200 reruns; #529 merge before the T06 calibrations | #529: testing-planner re-review (#534 reopened); T06: 3 or more measured CI calibrations (1 so far) | merge #544 after its re-sync; T08 PR carries a before/after baseline table; 4 records stay PENDING-NOISY (spread looks intrinsic, not host load); run 2 A/A calibrations only after #529 merges | y: merges; T08 baselines; slowdown option (i) bigger profile, (ii) perf-debt investigation, (iii) both; lead recommends (ii) |
-| perf finding: tick cost grew a lot since May (idle_100 about 50 ms vs 1 ms, strategic_100 about 500 ms vs 13 ms; 4 of 13 baseline scenarios run non-NORMAL) | perf-planner with rpg-planner | found 2026-10-13, not scoped | owner's choice of option | owner decision | if (ii): a joint perf and rpg investigation of the top phases (cooperation, advancement); a bigger budget only if the cost proves legitimate | y: pick (i), (ii) or (iii) |
-| import-linter flip, python-code-craft-structure | codebase-planner | BLOCKED (soak) | soak ends 2026-10-19T13:40Z; 0 broken and 0 stale contracts on main (met by #546) | #547: rpg answer on 4 kernel lazy imports; testing OK for the phase19 scope split | on 10-19 flip every other contract; the phase19 test and its 4 ignores stay unchanged until rpg answers | y: make Import contracts blocking; required check after main produces the name; push and merge |
-| DevOps plan: ADR D1-D10 accepted 10-12; amendment #537 proposed 10-13 (6 steps, platform domain) | lead-planner reviews; platform-planner delivers (seat registered #539, not yet staffed) | proposal under review | #537 revisions; owner decisions 1-3 | lead review asks (budget alarm is not a cap; no kind on the 11 GB host; devops-s1 named as step 1 start); #537 CONFLICTING | lead-planner-u24 revises #537; owner decides; staff platform seats (u24desktop suggested for memory); on acceptance the lead adds the ADR back-link | y: decisions 1-3 and where to staff platform |
-| devops-s1 (compose observability profile, publish-images workflow, roles line) | codebase-implementer, moving to platform | PARKED, local 7e604d3fa, not pushed (owner accepted local-only) | #537 acceptance and platform seats | platform seat unstaffed | platform-planner adopts it as step 1; T1 and T2 carry over; T3 is redone as a platform owns line | y: via #537 |
-| visual assets: terrain variants (merged #545, rc-0010) then batch A map markers | asset-planner | A filed (local 16fe7012c): child 1 budget and key design in progress | child 3 (entity markers) gated on rpg #523 and #548 | rpg seats on u24desktop | children 1 and 2 now; if child 3 is still gated when child 2's set is adopted, the owner chooses objects-only | y: silhouettes and adopt-set; push and merge |
-| rpg: #536 merged (21 tickets); D69 world and places, live map colours (#523), held-gatherer fix | rpg-planner (u24desktop) | in delivery | none | none known | answer #547 (kernel imports), #548 (entity names for asset), #542 (perf --entities after D69); close #511 and #515 when convenient | n |
-| testing: #531 grade anchors under audit_mode; #529 re-review | testing-planner (u24desktop) | #531 CONFLICTING, can rebase now that #536 merged | #536 (merged) | none | rebase and re-anchor #531; re-review #529 via #534; answer #547's scope split before 10-19 | y: merges |
-| SimQ grade anchors red on main (#390) | testing-planner; rpg-planner (rebaselines) | open; T08's evaluate_simq run saw 130 of 630 pillars REGRESS | #531 | none | #531 re-anchors; #511 closes the duplicate ticket | n |
-| agent-working: Epic E (E2, E3, E5, E6); retro overdue (63 runs); W41 close-week (438 shards); 5 idle epics; #517 | agent-working-planner (u24desktop, idle) | seats staffed 10-13, idle | none | none | run the retro and `make agent-monitoring-close-week WEEK=2026-W41`; close or re-sequence the idle epics; pick up E6 | n |
-| machine resources, host ubuntu | lead-planner (owner grant 2026-10-13) | managed | none | none | heavy runs one at a time under MemoryMax; quiet windows for timing runs; each session restarts its knowledge-search MCP (`/mcp` reconnect) to use the shared server (about 1.2 GB) | y: `/mcp` reconnect in each session |
+| Milestone 1, kinds by properties (`TCK-20261109-MILESTONE-1-KINDS-BY-PROPERTIES-EPIC`, 12 items) | rpg-planner (u24desktop); ubuntu's rpg lane for its share (6916658273) | 1 of 12 items closed (the name-check probe). Repair chain 5 of 10 done; under the new pace nav and the N10 slot leak are HARD repairs beside the items, D80C is tooling before the record, A' folds into the activity-period item, the rest is backlog. M1-base recorded on u24 at 9c398a068 (18/18, self-check spread 0); its post-base merge check is identical at s42 on all 3 gate worlds. Ubuntu's own copy is recording (frontier s42 final hash matches u24's). The gate report at 9c398a068 is green: V2 passes with 0 violations on all 15 cells; the 15 V1 fails are all known (the free-meal entry, expiring 2026-12-31); 5 stale V3 known entries are being removed by rpg. | M1-base | none | u24: kind-always-means-species, dispatched (6920334481; rule work with rpg-designer), then the items in epic order. Ubuntu: N10 (dispatched 6916732562; designer's lifecycle rule v1.1, the harm join withdrawn), the wild-births rule work (6916777455), why-it-fights after kind=species | n |
+| D73, the free meal is removed (#781) | rpg-planner (u24desktop) | held; the owner ruled its "until earning works" condition met (6916777455). Now a separate step before 2026-12-31, off the items' path | none | its slot | rpg schedules it | n |
+| Nobody eats or sleeps (`TCK-20261007-NOBODY-EATS-OR-SLEEPS-AND-EVERY-ENTITY-STARVES-BY-TICK-1100`, epic tier) | rpg-planner (u24desktop) | closing run passed (no starvation; survival at tick 1,100 from 0 to 38 of 55 and 11 of 38). Still in `todos/` | none | none | close in u24's next RPG PR | n |
+| AI-first SDLC evolution (`ai-first-sdlc-evolution`) | agent-working (ubuntu) | every open decision made on 2026-11-16: OD-4 a three-layer close check; OD-6 Codex kept as legacy; OD-11/12/13 as recommended (6910853925); OD-5 retire the pipeline in Phase 4 after the close check runs 2 weeks with a mechanical test-scope floor and an architecture verdict on src PRs (6911091662). Docs truth (6911224913, 6911534263) and agent practice (6913007039) decided. Phases 2-4 filed (#943). Tag ruleset applied (6917273988) | none | RPG first | dispatch only on the owner's go | y, later: dispatch |
+| GitHub Project ticket view (`github-project-ticket-view`) | agent-working-planner-u24 | closed (#938; close approved 6892295458): the folder is in `done/`. Both hosts' timers run | none | none | none | n |
+| Next-generation engine (`next-generation-engine`) | architecture-planner-u24 | world farm done (#926); stage 0 re-measured on 2026-11-16 (urban 6.5 %, crowded 7.8 % spread; frontier inconclusive at 56 %, swap ruled out). Write-up on `perf-planner-next` c0c1a9332, not merged | stage 0 write-up | Milestone 1 | the contract spec after stage 0 lands | n |
+| Distributed-workers experiment (`distributed-workers-experiment`) | architecture-planner-u24 | reviewed: option B and a multi-mode core (6910997558). Child 2 conclusive: the pickle codec costs 44-146 times a chunk's compute. Children 3 and 4 shelved, no-go as designed; child 3 re-cut after M1 and the contract spec as a worker-resident replica with typed deltas ("R5 now, R3 later", 6917359910). Design merged (#944). The ADR's per-purpose amendment rides this pass | Milestone 1; contract spec | owner shelving | none until after M1 | n |
+| Architecture re-design discussion (languages, architecture) | architecture-planner | PAUSED (6911604017) | in-flight epics finishing | owner pause | resume when the owner says so | y, later |
+| Perf roadmap M0 to M6 | perf-planner (ubuntu) | paused (6556861718, 6911604017); lift conditions in `TCK-20261116-TIMING-RUNS-SHARE-THEIR-CPUS-WITH-IDLE-SEATS` | none | owner pause | carried: the SimQ anchor-reds bisect stays parked; the `nearest_town_tile` hotspot goes to rpg after M1-base | y, later |
+| ENV-06 calamity escalation producer (`TCK-20261114-ENV-06-CALAMITY-ESCALATION-PRODUCER-IS-NOT-BUILT`) | rpg (u24desktop) | todo, P2, after LAIR-REGION-TRAUMA | none | owner dispatch | after M1's early items | y: dispatch |
+| Dependabot #811, #813, #881 | rpg-planner | open; no conflict with main | none | none | rpg lands them on its track | y: merges |
+| Machine resources, host u24desktop | lead-planner-u24 | `/mnt/data` 11 GB free after the owner removed two architecture worktrees (6920321908); M1-base events 5.37 GB on `/mnt/data2` | none | none | none | n |
+| Machine resources, host ubuntu | lead-planner | `/data` 60 % before ubuntu's M1-base (~5-10 GB of kept events); swap about 3.9 of 8 GB; Claude seats are not fenced off CPUs 4-5. Heavy runs one at a time under MemoryMax=3G on CPUs 4-5, the lead's go per run | none | none | list M1-base's event dirs for the owner after it reports done | n |
 
-## Cleanup done 2026-10-13 (lead, owner grant)
-
-- Removed the merged worktrees and branches `knowledge-lock-transit-test` (#518), `mypy-dev-pin` (#524) and `search-mcp-shared-model` (#527).
-- Deleted 28 local and 65 remote branches whose head equals their merged PR head. Names and SHAs are in `~/.claude/cleanup-backup-20261013/` on host ubuntu.
-- Docker: removed the old `rpg-search-server` image (2.16 GB), orphan volumes and the build cache. The root disk went from 73 % to 56 %.
+**Merged on 2026-11-16:** #929, #930, #932, #933 (group combat), #934, #935, #937, #931 (HOLD), #936 (restore run id), #939 (gateway docs
+archived), #940 (generator hash seed), #942 (checkpoint format), #941 (D1), #938, #943 (agent-working batch), #944 (distributed design).
 
 ## Residue awaiting the owner
 
 **Never push any of these again.**
 
-- Repo root (main checkout, untracked since 10-03): `agent-monitoring/`, `stored_artifacts/` (27 files, 456 KB, old pre-`agent-working/` layout; NOT duplicates of `agent-working/` copies). Archive or keep.
-- Remote branches: 43 of merged PRs whose head moved after the merge, and about 65 with no merged PR. Lead lists them on request.
-- u24desktop: 4 merged testing worktrees (about 1.6 GB) and the graphify-out snapshot (about 900 MB), per `lead-planner-u24`.
+- Main checkout: `stored_artifacts/` at the repo root (ignored, old pre-`agent-working/` layout). Archive or keep.
+- `/data/vboxuser/aw-held-w46i`: agent-working-implementer's backup, kept until `ba1f5d013`'s rows are on main.
+- The agent-working-designer worktree on `agent-working-designer-sdlc-evolution` (last commit 2026-10-30) holds four untracked SDLC plan copies. Two match main; two look like the pre-review drafts (not compared line by line). Remove after the designer confirms.
+- Ubuntu worktrees made on 2026-11-16, each removed by the owner once its work lands: `.claude/worktrees/m1base-tool` (after ubuntu's M1-base and its post-base check), `.claude/worktrees/lead-adr-per-purpose` (after this pass merges).
+- Host u24desktop: agent-working-planner-u24's scratch worktree, and the stale `rpg-sleeper-lodges` branch (squash-merged as #823).
+- Remote branches of merged PRs whose head moved after the merge: not re-counted since 2026-10-14. The lead lists them on request.

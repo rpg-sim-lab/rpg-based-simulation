@@ -1,0 +1,11 @@
+2026-11-12T09:59:56Z watcher + sampler started (real mode, MAX_DISK_PCT=90, interval 20 s / 10 s)
+2026-11-12T10:00:04Z BUILD backend start
+2026-11-12T10:01:15Z BUILD done
+2026-11-12T10:01:28Z UP start (OTEL endpoint http://tempo:4318, sampler 1)
+2026-11-12T10:03:01Z BURST start: 40 rounds x 8 endpoints
+2026-11-12T10:03:25Z BURST end
+2026-11-12T10:05:16Z RECREATE backend only, with run-only override (RPG_API_KEY_HASHES dev pair) + OTEL env; planner yes
+2026-11-12T10:05:55Z BURST2 (authenticated) start: 60 rounds x 8 endpoints
+2026-11-12T10:06:31Z BURST2 end
+2026-11-12T10:08:41Z logging-route probe (search routes log INFO inside the handler)
+2026-11-12T10:13:00Z DOWN (no -v)

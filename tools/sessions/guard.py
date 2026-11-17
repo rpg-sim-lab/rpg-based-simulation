@@ -47,6 +47,7 @@ import re
 import subprocess
 import sys
 from dataclasses import dataclass
+from datetime import datetime, timezone
 from pathlib import Path
 
 _REPO_ROOT = Path(__file__).resolve().parents[2]
@@ -86,7 +87,9 @@ _WRITER_ACTIONS = frozenset({"commit", "push", "open_pr"})
 _EDIT_TOOL_NAMES = ("Edit", "Write", "MultiEdit", "NotebookEdit")  # kept local: `cl` may have failed to import
 _AUTHORITY_TEXT = re.compile(
     r"\bgit\b|\bgh\b|eval|xargs|\bsh\b|\bbash\b|\bzsh\b|\$|`|session_authority|settings|CLAUDE\.md|hooks/"
+    r"|guard\.py|classify\.py|\.github/workflows"
 )
+GOVERNING_EVENTS_FAMILY = "governing_edits.jsonl"
 
 
 @dataclass(frozen=True)
@@ -268,10 +271,46 @@ def _advise(payload: dict, stdout) -> None:
         return
 
 
+def _governing_rows(payload: dict, classification) -> list[tuple[str, str]]:
+    """(repo-relative path, basis) for each reported governing path this call touches.
+
+    `path`: an edit tool's file, exact, and only when it lies inside the repo (a user-level file can never be in a PR).
+    `mention`: a path named by a non-read-only Bash segment, which may not be an edit (over-counts)."""
+    tool_input = payload.get("tool_input") or {}
+    if str(payload.get("tool_name", "")) in _EDIT_TOOL_NAMES:
+        raw = tool_input.get("file_path") or tool_input.get("notebook_path") or ""
+        rel = bd.repo_relative(str(raw), str(payload.get("cwd") or ".")) if raw else None
+        return [(rel, "path")] if rel and cl.is_governing_path(rel) else []
+    return [(m, "mention") for m in classification.governing_mentions]
+
+
+def _record_governing(payload: dict, classification) -> None:
+    """Log a governing-path attempt (seat, path, time). Report-only: never changes the decision, never raises.
+
+    Written at PreToolUse, so a row is an attempt: the call may still be denied or fail, or the edit reverted."""
+    try:
+        rows = _governing_rows(payload, classification)
+        if not rows:
+            return
+        seat = "unresolved"
+        try:
+            caller = resolve_caller(payload, load_roster(), st.state_root(str(payload.get("cwd") or ".")))
+            seat = caller.instance if caller.resolved and caller.instance else seat
+        except Exception:  # noqa: BLE001 - the seat is a label; its absence must not lose the row
+            pass
+        ts = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
+        for path, basis in rows:
+            bd.write_event({"ts": ts, "event": "governing_edit_attempt", "seat": seat, "path": path, "basis": basis,
+                            "attempt": True}, family=GOVERNING_EVENTS_FAMILY)
+    except Exception:  # noqa: BLE001
+        return
+
+
 def _guard(payload: dict, stdout) -> int:
     if _IMPORT_ERROR is not None:
         raise _IMPORT_ERROR
     classification = cl.classify(str(payload.get("tool_name", "")), payload.get("tool_input") or {})
+    _record_governing(payload, classification)
     if not classification.is_authority:
         _advise(payload, stdout)
         return 0

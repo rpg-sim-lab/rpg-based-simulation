@@ -27,7 +27,7 @@ def _entity(
         V2EntityBuilder(eid)
         .kind(kind)
         .location(0, 0)
-        .identity(role=EntityRole.HERO, faction=Faction.HERO_GUILD)
+        .identity(role=EntityRole.HERO, faction=Faction.HERO_GUILD, occupation=kind)
         .combat(hp=100, max_hp=100, alive=True, readiness=100.0)
         .inventory(gold=0)
         .social(trust_history=trust_history or {}, bonds=bonds or {}, nemesis_ids=nemesis_ids or set())

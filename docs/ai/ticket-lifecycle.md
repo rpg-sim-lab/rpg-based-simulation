@@ -444,7 +444,7 @@ directory list if any gap is found, regardless of whether `test-scoper` itself r
 `passed: true` — a reported PASS with an uncovered directory is a false PASS. The user re-scopes
 the Test phase to include the missing directory and re-runs with `ticket_id`.
 
-**Gate:** Returns `TESTS_FAILED` with failing test names. The user fixes the tests and re-runs with `ticket_id`. The workflow resumes from the Test phase.
+**Gate:** Returns `TESTS_FAILED` with failing test names. The user fixes the tests and re-runs with `ticket_id`. The workflow resumes from the Test phase. A run that died of the environment (memory, a killed chunk) returns `TESTS_ENVIRONMENT_FAILED` instead, with no `Test:passed` row; on a host that sets a cap (`registries/session_test_caps.yaml`) the Test phase runs through `tools/delivery/capped_pytest.py` and the test-scope gate rejects a command that skips it.
 
 **Post-Test cleanup checkpoint:** Immediately after Test phase completes (before Parity), the
 orchestrator runs `tools/gate_checks/done_checker_static.py::clean_data_runs_early(start_ts)`
@@ -754,6 +754,7 @@ their own.
 | `NEEDS_CHANGES` | Architecture violations in plan | Fix `plan.md` per violation list | Re-run with `ticket_id` |
 | `BLOCKED` | Fundamental architectural conflict | Revisit scope, possibly split ticket | Re-run with `ticket_id` or new `request` |
 | `TESTS_FAILED` | Tests failing after implementation | Fix the code or tests | Re-run with `ticket_id` |
+| `TESTS_ENVIRONMENT_FAILED` | The Test run died of the environment (memory, a killed process), not because a test failed | Free the host or wait for its slot | Re-run with `ticket_id` |
 | `DATA_RUNS_CLEAN_FAILED` | Legacy status: the post-Test checkpoint no longer deletes (TCK-20261004-DATA-RUNS-CLEAN-NOT-SESSION-SCOPED), so it no longer produces this. Kept so older runs' records stay readable | None | — |
 | `SECURITY_BLOCKED` | Security review found a vulnerability | Fix the flagged code | Re-run with `ticket_id` |
 | `DOD_BLOCKED` | DoD condition(s) not met | Fix each failing item listed | Re-run with `ticket_id` |
@@ -792,3 +793,16 @@ Agent(subagent_type="done-checker", prompt="Check DoD for ticket TCK-20260606-..
 ```
 
 Each agent reads the artifacts written by the previous one from `agent-working/staging_artifacts/{ticket_id}/`, so the handoff is through the filesystem — no direct parameter passing required.
+
+---
+
+## Open-ticket queue view
+
+`python3 tools/delivery/ticket_queue.py [--ref origin/main | --worktree] [--json] [--no-gh]` prints every ticket under `agent-working/tickets/todos/` and `inprogress/` (`TCK-20261102-A-PRINTED-QUEUE-VIEW-OF-OPEN-TICKETS`). It is read-only: it writes no file, moves no ticket, and is not a gate (exit 0 unless the tool itself fails). By default it reads `origin/main` through git and prints the ref, sha and commit date in the header; the tool does not fetch, so that ref can be stale. `--worktree` reads the working tree instead.
+
+Each row shows its evidence or reads `unknown` / `mention`:
+- `order`: an optional `## Order Ref` body section holds a short name from the milestone-1 order line in `docs/plans/systemic_world/roadmap.md` section 12.5 (for example `F3`). The position is the name's place in that line's last `the order is A → B → ...` sentence; a name not in the line reads `stale-ref`, no section reads `unknown`, and an unparseable line makes every row `unknown` with a warning. Position is never stored on a ticket. The section is optional and is not checked at close. F4 lands "as soon as it is ready, independent of this order", so its position is nominal.
+- `blocked`: only from a BLOCKED status; `on:` lists ticket IDs on the Status line, else `on: unknown`.
+- `parked`: `yes` only on a narrow line match (a `## Parked`/`## Paused` heading, or a line starting `**Paused (owner,`, `**Parked by explicit user decision` or `**Parked**`), shown as `path:line`. A pause that was lifted but left in the text still reads `yes`, so check the line. The word elsewhere reads `mention` and is never counted as parked.
+- `flight`: `pr #N closes` when an open PR's files include `done/<ID>.md`, `pr #N touches` when a changed file or the PR title names the ID, and `#634 comment <id>` for the latest #634 comment naming the ID (a mention, not necessarily a claim). `gh` unavailable reads `unknown` with a warning.
+- Epic tracking rows are marked and left out of the work counts. The summary prints `unknown` counts and P1 counts by status, tier and layer.

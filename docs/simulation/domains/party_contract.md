@@ -26,7 +26,7 @@ Added in TCK-20260619-E41A-GROUP-LIFECYCLE (SOC-227):
 
 | Field | Type | Purpose |
 |---|---|---|
-| `formation_tick` | `int` | Tick at which the group was formed |
+| `formation_tick` | `int` | Intended: the tick at which the group was formed. **Currently never written: always 0** (TCK-20261107-GROUP-FORMATION-TICK-IS-NEVER-WRITTEN, parked) |
 | `escort_target_id` | `Optional[int]` | Entity ID of the member being escorted (if any) |
 | `grievance_log` | `Tuple[str, ...]` | Ordered log of unresolved grievance reason strings |
 | `reward_pool` | `int` | Accumulated gold awaiting FairShareProtocol distribution |

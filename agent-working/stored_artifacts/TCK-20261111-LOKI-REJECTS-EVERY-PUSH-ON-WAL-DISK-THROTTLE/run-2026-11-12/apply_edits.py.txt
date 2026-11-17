@@ -1,0 +1,73 @@
+"""Apply the Loki volume, tracing sampler arg, derivedFields and runbook edits (one-off, run from the worktree root)."""
+p = 'compose.yaml'
+t = open(p).read()
+a = """      # Tracing is off while the endpoint is empty (ADR D4). With the observability profile set it to http://tempo:4318 (or :4317, matching rpg's exporter, #622).
+      # The sampling variable is added once rpg's middleware defines its name.
+      - OTEL_EXPORTER_OTLP_ENDPOINT=${OTEL_EXPORTER_OTLP_ENDPOINT:-}
+"""
+assert t.count(a) == 1
+b = """      # Tracing is off while the endpoint is empty (ADR D4). With the observability profile set it to http://tempo:4318 (OTLP HTTP, the port rpg's exporter uses, #622).
+      # OTEL_TRACES_SAMPLER_ARG is the head-sampling ratio (0 to 1). Blank means the code default 0.1 (src/api/tracing.py reads a blank value as unset);
+      # a proof run that must see a trace sets it to 1 (docs/observability/api_request_tracing.md).
+      - OTEL_EXPORTER_OTLP_ENDPOINT=${OTEL_EXPORTER_OTLP_ENDPOINT:-}
+      - OTEL_TRACES_SAMPLER_ARG=${OTEL_TRACES_SAMPLER_ARG:-}
+"""
+t = t.replace(a, b)
+a = """    command: -config.file=/etc/loki/local-config.yaml
+    restart: unless-stopped
+    # No healthcheck: the loki 3.7 image has neither wget nor sh"""
+assert t.count(a) == 1
+b = """    # -ingester.wal-dir puts the WAL inside the named volume (the image config sets no ingester block, so its default would sit in the
+    # container layer). Without a volume Loki's data lived in the writable layer, which the containerd image store keeps under
+    # /var/lib/containerd, on the root filesystem. Loki throttles every push (HTTP 500 "Ingester is shutting down", which is ErrReadOnly)
+    # while its disk usage, (Blocks - Bfree) / Blocks of the WAL filesystem, is 0.9 or more; Bfree counts root-reserved blocks as free,
+    # so a full root filesystem reads about 94.8%. The 2026-11-11 run lost every push that way
+    # (docs/runbooks/records/2026-11-11-compose-image-bumps.md, section 5; docs/runbooks/log-shipping.md). The 0.9 threshold is kept.
+    command: -config.file=/etc/loki/local-config.yaml -ingester.wal-dir=/loki/wal
+    volumes:
+      - loki_data:/loki
+    restart: unless-stopped
+    # No healthcheck: the loki 3.7 image has neither wget nor sh"""
+t = t.replace(a, b)
+a = "  tempo_data:\n  ntfy_data:\n"
+assert t.count(a) == 1
+t = t.replace(a, "  tempo_data:\n  loki_data:\n  ntfy_data:\n")
+open(p, 'w').write(t)
+
+p = 'docker/grafana/provisioning/datasources/datasource.yml'
+t = open(p).read()
+a = """    access: proxy
+    editable: false
+    uid: loki
+"""
+assert t.count(a) == 1
+b = a + """    jsonData:
+      derivedFields:
+        # The backend prints ` trace_id=<32 hex>` on lines logged inside a span (src/logging/formatter.py, plain format). The link opens the trace in Tempo.
+        # Add the JSON regex "trace_id":\\s*"(\\w+)" only if the container switches to --json-logs.
+        - name: trace_id
+          matcherRegex: 'trace_id=(\\w+)'
+          datasourceUid: tempo
+          url: '$${__value.raw}'
+"""
+open(p, 'w').write(t.replace(a, b))
+
+p = 'docs/runbooks/log-shipping.md'
+t = open(p).read()
+a = "- Loki unavailable (restarting, out of memory) for longer than Alloy's push retries (`max_backoff_retries` 10).\n"
+assert t.count(a) == 1
+b = a + (
+    "- Loki throttling on disk usage. Loki 3.7 rejects every push while its WAL filesystem reads 90% or more, and it answers "
+    "`Ingester is shutting down` (HTTP 500). That text is `ErrReadOnly`: it does not mean Loki is stopping. The check is "
+    "`ingester.wal.disk_full_threshold` (default 0.9); Loki computes `(Blocks - Bfree) / Blocks` from `statfs`, and `Bfree` counts "
+    "the blocks reserved for root as free, so it reads about 5 points below `df`. A full root filesystem (`df` 100%) reads about "
+    "94.8%, and Loki's log says `disk usage exceeded threshold, throttling writes`. It recovers by itself within about 10 s once "
+    "usage is below the threshold. Loki's data is in the named volume `loki_data` (WAL at `/loki/wal`), so the filesystem that "
+    "counts is the one holding `DockerRootDir/volumes`: `docker volume inspect <project>_loki_data` shows the `Mountpoint`, and "
+    "`df` of that path is the figure to watch. Free space there; nothing in this repo changes the threshold. There is no alert on "
+    "the throttle itself: `LogShippingErrors` is the symptom (Alloy's retries and dropped entries). Before a stack run, require "
+    "`df` below 85% on `/` and on `/data`; this is stricter than Loki's own 90%.\n"
+)
+t = t.replace(a, b)
+open(p, 'w').write(t)
+print("edits applied")

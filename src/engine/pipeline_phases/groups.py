@@ -1,9 +1,11 @@
 from __future__ import annotations
 from dataclasses import replace
-from typing import TYPE_CHECKING, List
+from typing import TYPE_CHECKING, Dict, List
+
+from src.core.group_record import live_group_ids
 
 if TYPE_CHECKING:
-    from src.core.state import AuthoritativeState
+    from src.core.state import AuthoritativeState, GroupRecord
     from src.core.updates import StateUpdate
     from src.observability.events import LeadershipChangedEvent, BetrayalDesertionEvent
 
@@ -25,6 +27,43 @@ class GroupPhase:
     last_tick_defection_events: List["BetrayalDesertionEvent"] = []
 
     @staticmethod
+    def _merge_group_rows(rows: List["GroupRecord"], new_rows: List["GroupRecord"]) -> List["GroupRecord"]:
+        """Merge the in-place group rows of the update with those GroupSystem produced: a row for an id already present replaces it."""
+        merged = list(rows)
+        group_ids = {g.id for g in merged}
+        for g in new_rows:
+            if g.id in group_ids:
+                merged = [existing if existing.id != g.id else g for existing in merged]
+            else:
+                merged.append(g)
+        return merged
+
+    @staticmethod
+    def _merge_group_adds(state: AuthoritativeState, update: StateUpdate, group_update: StateUpdate) -> tuple:
+        """New records (concatenated, never merged by id: a duplicate id must reach apply and be rejected there), the larger id counter, and the
+        adds that can be viewed.
+
+        An add whose id is already taken (in the store, or by an earlier add) is rejected at apply; it must not shadow the holder in the
+        election and defection views, or a changed copy of it would be written as an update and replace the holder.
+        """
+        added = list(update.groups_add) + list(group_update.groups_add)
+        id_sets = [v for v in (update.next_group_id_set, group_update.next_group_id_set) if v is not None]
+        seen_ids = set(state.groups)
+        viewable = []
+        for g in added:
+            if g.id not in seen_ids:
+                seen_ids.add(g.id)
+                viewable.append(g)
+        return added, (max(id_sets) if id_sets else None), viewable
+
+    @staticmethod
+    def _group_view(viewable_adds: List["GroupRecord"], rows: List["GroupRecord"]) -> Dict[int, "GroupRecord"]:
+        """Groups being added or updated this tick by id; an in-place row wins over a viewable add of the same id."""
+        view = {g.id: g for g in viewable_adds}
+        view.update({g.id: g for g in rows})
+        return view
+
+    @staticmethod
     def resolve(state: AuthoritativeState, update: StateUpdate) -> StateUpdate:
         from src.systems.world_systems.groups import GroupSystem
         from src.systems.social_systems.party_lifecycle import PartyLifecycleService
@@ -41,18 +80,8 @@ class GroupPhase:
         # Optimization: Pass state and update directly, let GroupSystem handle sliding positions
         group_update = GroupSystem.update_groups(state, update)
 
-        # Merge group additions/updates
-        new_groups_add = list(update.groups_add_or_update)
-        group_ids = {g.id for g in new_groups_add}
-
-        for g in group_update.groups_add_or_update:
-            if g.id in group_ids:
-                new_groups_add = [
-                    existing if existing.id != g.id else g
-                    for existing in new_groups_add
-                ]
-            else:
-                new_groups_add.append(g)
+        new_groups_add = GroupPhase._merge_group_rows(update.groups_add_or_update, group_update.groups_add_or_update)
+        new_groups_added, new_next_group_id, viewable_adds = GroupPhase._merge_group_adds(state, update, group_update)
 
         # Merge group removals
         new_groups_remove = list(
@@ -65,9 +94,9 @@ class GroupPhase:
         tick = state.tick
 
         # Build a combined view: groups already in state PLUS groups being added/updated
-        groups_being_updated = {g.id: g for g in new_groups_add}
+        groups_being_updated = GroupPhase._group_view(viewable_adds, new_groups_add)
         all_relevant_group_ids = (
-            set(state.groups.keys()) | set(groups_being_updated.keys())
+            set(live_group_ids(state.groups)) | set(groups_being_updated.keys())
         ) - removed_ids
 
         for g_id in sorted(all_relevant_group_ids):
@@ -110,7 +139,7 @@ class GroupPhase:
         # --- E41D: Defection pass ---
         # Re-build the combined group view after the leadership pass has potentially
         # updated groups in new_groups_add.
-        groups_being_updated = {g.id: g for g in new_groups_add}
+        groups_being_updated = GroupPhase._group_view(viewable_adds, new_groups_add)
 
         # Merge side-effect entity updates from group logic (e.g. leadership changes)
         refined_entity_updates = dict(update.entity_updates)
@@ -201,6 +230,8 @@ class GroupPhase:
         return replace(
             update,
             groups_add_or_update=new_groups_add,
+            groups_add=new_groups_added,
+            next_group_id_set=new_next_group_id,
             groups_remove=new_groups_remove,
             entity_updates=refined_entity_updates,
             clan_updates=new_clan_updates,

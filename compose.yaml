@@ -2,8 +2,8 @@
 #
 # Profiles:
 #   default (`docker compose up`)                  backend, redis, ai_worker, frontend
-#   `--profile observability` (adds to the above)  prometheus, grafana, loki, promtail, docker-socket-proxy, tempo, watchdog, node-exporter, ntfy, redis-exporter
-# watchdog sits in the observability profile because it depends_on promtail (healthy only once loki is ready) and prometheus, and polls Loki.
+#   `--profile observability` (adds to the above)  prometheus, grafana, loki, alloy, docker-socket-proxy, tempo, watchdog, node-exporter, ntfy, redis-exporter
+# watchdog sits in the observability profile because it depends_on alloy (healthy only once loki is ready) and prometheus, and polls Loki.
 # Grafana's admin password is a compose secret file (gitignored). Create it once before `--profile observability up`:
 #   mkdir -p docker/secrets && openssl rand -base64 24 > docker/secrets/grafana_admin_password
 # A missing file fails only the observability profile (Grafana's start), never the default profile; an empty file or the value `admin` makes Grafana exit at start (guard in the grafana entrypoint).
@@ -11,13 +11,18 @@
 # deny-all, so Grafana needs a token. The topic and the token are two more gitignored secret files, never committed. Create them once, after the first ntfy start:
 #   mkdir -p docker/secrets && openssl rand -hex 16 > docker/secrets/ntfy_topic && : > docker/secrets/ntfy_token && chmod 644 docker/secrets/ntfy_topic docker/secrets/ntfy_token   # the files must be world-readable (644) because Grafana's container user (uid 472) reads them through the bind mount (accepted for this single-user host; on a multi-user host use a group-readable mode or a compose-managed secret instead); an empty token file only lets compose parse; Grafana's guard refuses to start until step 4 fills it
 #   docker compose --profile observability up -d ntfy
-#   docker compose exec -T -e NTFY_PASSWORD="$(openssl rand -hex 12)" ntfy ntfy user add grafana                       # a regular user for Grafana; its password is never used (the token is)
-#   docker compose exec -T ntfy ntfy access grafana "$(cat docker/secrets/ntfy_topic)" write-only
+#   NTFY_PASSWORD="$(openssl rand -hex 12)" docker exec -i -e NTFY_PASSWORD "$(docker compose --profile observability ps -q ntfy)" ntfy user add grafana   # a regular user for Grafana; its password is never used (the token is); it goes through the environment, not onto a command line
+#   NTFY_TOPIC="$(cat docker/secrets/ntfy_topic)" docker exec -i -e NTFY_TOPIC "$(docker compose --profile observability ps -q ntfy)" sh -c 'exec ntfy access grafana "$NTFY_TOPIC" write-only' > /dev/null
+#     `ntfy access` takes the topic only as a positional argument (cmd/access.go, ntfy v2.37.2; no stdin, file or env source), so it goes through the environment: off the host command line and out of shell
+#     history. Its output is discarded because it prints the topic on success. The topic is still in the container's process list for the milliseconds the command runs. Rotating it: docs/runbooks/ntfy-topic-rotation.md.
 #   docker compose exec -T ntfy ntfy token add --label=grafana grafana | grep -o 'tk_[A-Za-z0-9]*' > docker/secrets/ntfy_token
 #   docker compose exec ntfy ntfy user add --role=admin <your name>                                                  # your own login, to subscribe from this host (http://127.0.0.1:${NTFY_PORT:-2586}); it prompts for the password, so none lands in shell history
 # Grafana refuses to start on an empty ntfy_topic or ntfy_token (guard in the grafana entrypoint). Never put a real topic or token in a file that is committed.
 # Grafana applies the admin password only when it first creates its database: to change it later, run `grafana cli admin reset-admin-password` in the container or remove the grafana_data volume.
 # Host ports of redis, prometheus, grafana and loki bind to 127.0.0.1 (redis has no auth); services reach each other by service name.
+# API access (TCK-20261112-COMPOSE-STACK-HAS-NO-API-KEY): the backend fails closed (401 on every route except /health) until you create the gitignored
+# docker/secrets/backend.env (the hash) and docker/secrets/frontend.env (the raw key, for nginx); recipe in docs/runbooks/compose-api-key.md.
+# backend and frontend bind to 127.0.0.1 by default (BACKEND_BIND, FRONTEND_BIND); the frontend's nginx adds the key, so it is the authentication boundary.
 # backend, ai_worker and watchdog run as a non-root user (uid/gid 1000). On a host whose user is not 1000, build with APP_UID/APP_GID set
 # (for example `APP_UID=$(id -u) APP_GID=$(id -g) docker compose build`) so the bind-mounted ./data stays writable and files in it stay yours.
 # Every service has a memory limit (mem_limit); see TCK-20261014-COMPOSE-OBSERVABILITY-PROFILE-AND-LIMITS.
@@ -29,8 +34,10 @@ services:
       args:
         APP_UID: ${APP_UID:-1000}
         APP_GID: ${APP_GID:-1000}
+    # Bound to loopback by default, like redis, prometheus, grafana and loki (TCK-20261112-COMPOSE-STACK-HAS-NO-API-KEY): only this machine reaches it.
+    # Set BACKEND_BIND=0.0.0.0 in .env to publish it on every interface. The frontend (nginx) and ai_worker reach it over the compose network and are not affected.
     ports:
-      - "${BACKEND_PORT:-8000}:8000"
+      - "${BACKEND_BIND:-127.0.0.1}:${BACKEND_PORT:-8000}:8000"
     # The unauthenticated metrics port (rpg R1, #648) is reachable only on the compose network, by Prometheus: `expose`, never `ports`.
     # The public 8000/metrics stays behind admission (401).
     expose:
@@ -41,10 +48,19 @@ services:
       # in-process stream and `simulation:events` stays empty, so ai_worker (which consumes that stream) idles.
       - SIM_STREAM_BACKEND=redis
       - SIM_REDIS_URL=redis://redis:6379/0
-      # Tracing is off while the endpoint is empty (ADR D4). With the observability profile set it to http://tempo:4318 (or :4317, matching rpg's exporter, #622).
-      # The sampling variable is added once rpg's middleware defines its name.
+      # Tracing is off while the endpoint is empty (ADR D4). With the observability profile set it to http://tempo:4318 (OTLP HTTP, the port rpg's exporter uses, #622).
+      # OTEL_TRACES_SAMPLER_ARG is the head-sampling ratio (0 to 1). Blank means the code default 0.1 (src/api/tracing.py reads a blank value as unset);
+      # a proof run that must see a trace sets it to 1 (docs/observability/api_request_tracing.md).
       - OTEL_EXPORTER_OTLP_ENDPOINT=${OTEL_EXPORTER_OTLP_ENDPOINT:-}
+      - OTEL_TRACES_SAMPLER_ARG=${OTEL_TRACES_SAMPLER_ARG:-}
       - OTEL_SERVICE_NAME=rpg-backend
+    # API keys (TCK-20261112-COMPOSE-STACK-HAS-NO-API-KEY). The backend fails closed while no key is configured: every route except /health answers 401.
+    # The optional, gitignored file docker/secrets/backend.env holds `RPG_API_KEY_HASHES=local:<sha256 of the raw key>` and nothing else: the backend never holds
+    # the raw key (recipe: docs/runbooks/compose-api-key.md). It is NOT the repo-root .env, which .mcp.json passes wholesale to another container.
+    # A missing file keeps the default (fail-closed).
+    env_file:
+      - path: ./docker/secrets/backend.env
+        required: false
     volumes:
       # Optional: mount data directory for persistent game state / config changes
       - ./data:/app/data
@@ -61,10 +77,10 @@ services:
       start_period: 20s
 
   redis:
-    # Pinned to the exact 8.10.2 build, by digest (multi-arch index, verified by pull on 2026-10-18); moves together with redis-py 8
+    # Pinned to the exact 8.10.3 build, by digest (multi-arch index, verified with `docker buildx imagetools inspect` on 2026-11-11); moves together with redis-py 8
     # (TCK-20261018-DEPS-REDIS-8). A new 8.x patch cannot change the observability stream, anomaly worker or readiness behaviour
     # with no diff here. Bump deliberately.
-    image: redis:8.10.2-alpine@sha256:3811787313eba226a2ef38658c6ccb91cd5e110edc89c37767de373120a0e5a0
+    image: redis:8.10.3-alpine@sha256:71885d8cc6e42f2bc0aa2eb853bfc4be200b5108a46ac50e117ae1df0531fb80
     ports:
       - "127.0.0.1:${REDIS_PORT:-6379}:6379"
     restart: unless-stopped
@@ -99,7 +115,15 @@ services:
         condition: service_healthy
     restart: unless-stopped
     mem_limit: 512m
-    # No healthcheck: the worker exposes no HTTP port (a metrics port is tracked by rpg's TCK-20261014-AI-WORKER-EXPOSES-STREAM-CONSUMER-LAG-AND-PENDING-METRICS).
+    # Healthy while the worker's own metrics server answers and reports sim_stream_consumer_up 1 (Redis answered the consumer-group query on this
+    # scrape). Nothing waits on this healthcheck; it is the readiness signal for `docker compose ps` and the alert runbook (TCK-20261018-AI-WORKER-SCRAPE-AND-LAG-ALERT).
+    # The check matches the literal line `sim_stream_consumer_up 1.0`; it breaks if rpg ever adds labels to that gauge (proven as it is, 2026-10-26).
+    healthcheck:
+      test: ["CMD", "python", "-c", "import sys, urllib.request; sys.exit(0 if b'sim_stream_consumer_up 1.0' in urllib.request.urlopen('http://127.0.0.1:9108/metrics', timeout=3).read() else 1)"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
     # Use deploy block to easily scale workers: docker compose up --scale ai_worker=3
     deploy:
       replicas: 1
@@ -108,8 +132,17 @@ services:
     build:
       context: .
       dockerfile: docker/frontend.Dockerfile
+    # nginx here is the authentication boundary (TCK-20261112-COMPOSE-STACK-HAS-NO-API-KEY): it adds the API key to every /api/ request, so anyone who can
+    # reach this port is authenticated as that key. Hence loopback by default; set FRONTEND_BIND=0.0.0.0 in .env only if you accept that.
     ports:
-      - "${FRONTEND_PORT:-8080}:8080"
+      - "${FRONTEND_BIND:-127.0.0.1}:${FRONTEND_PORT:-8080}:8080"
+    # FRONTEND_API_KEY is the RAW key nginx sends as X-API-Key (docker/nginx-api-key.conf.template, rendered into /tmp at container start; never in the image).
+    # The tracked defaults file sets it empty (no header, the backend answers 401); the optional, gitignored docker/secrets/frontend.env, listed last so it wins,
+    # carries the real value and nothing else. `docker compose config` prints that value and `docker inspect` shows it. Recipe and warnings: docs/runbooks/compose-api-key.md.
+    env_file:
+      - ./docker/frontend.defaults.env
+      - path: ./docker/secrets/frontend.env
+        required: false
     depends_on:
       backend:
         condition: service_healthy
@@ -123,8 +156,8 @@ services:
 
   prometheus:
     profiles: ["observability"]
-    # Third-party images are pinned by digest (the multi-arch index current on 2026-10-14; no version change); Dependabot bumps them.
-    image: prom/prometheus:v3.15.0@sha256:efd719c99d83b060d9daefdcf00360461adf279f45ef5391f8d111892118753e
+    # Third-party images are pinned by digest (v3.16.0, 2026-11-05, multi-arch index verified on 2026-11-11); Dependabot proposes bumps, a hand-taken bump needs a proof run.
+    image: prom/prometheus:v3.16.0@sha256:e04987641b57704f408e31f6373ba4138ecf27cb4a165d24aabb6c38fddd0f06
     mem_limit: 512m
     ports:
       - "127.0.0.1:${PROMETHEUS_PORT:-9090}:9090"
@@ -146,11 +179,11 @@ services:
 
   ntfy:
     profiles: ["observability"]
-    # Local push target for Grafana alerts (ADR D5; no Alertmanager). binwiederhier/ntfy v2.28.0 (2026-08-27, latest stable at least two weeks old),
+    # Local push target for Grafana alerts (ADR D5; no Alertmanager). binwiederhier/ntfy v2.37.2 (2026-11-04, taken early by owner decision #715 6800739670),
     # pinned by tag and multi-arch index digest; Dependabot bumps it. auth-default-access deny-all: nobody reads or writes a topic without a login or
     # token; the user and token are created with ntfy's own CLI (see the top of this file). Bound to 127.0.0.1 only. Metrics are on a dedicated
     # in-network port (9091), outside the auth, scraped by Prometheus as job "ntfy". The auth and cache databases live in the ntfy_data volume.
-    image: binwiederhier/ntfy:v2.28.0@sha256:6ef4b819f722fccdc036af611c4774cfdc2de821ab74fdd48bbf4c9d6f8973da
+    image: binwiederhier/ntfy:v2.37.2@sha256:1875ddcf815c8a3c981d6d78c67a93452d0abba79b1ab9520b1f5f5238902bd7
     command: serve
     mem_limit: 96m # measured 2026-10-20 (58-minute proof run): anon 26 MiB, anon + active_file 58 MiB (message-cache file pages), docker stats 61 MiB; raised from 64m (platform-planner)
     init: true # needed by the healthcheck (no zombie processes)
@@ -176,10 +209,10 @@ services:
   redis-exporter:
     profiles: ["observability"]
     # Redis metrics for the Redis-down cause alert (TCK-20261018-REDIS-DOWN-CAUSE-ALERT, cause alert added 2026-10-18 by lead review): `redis_up`,
-    # memory, clients and stream lengths. oliver006/redis_exporter v1.93.0 (2026-10-01, over two weeks old), pinned by tag and index digest; Dependabot bumps it.
-    # The README names Valkey 7-9 "and Redis" but not Redis 8: compatibility with this file's redis:8.10.2 is proven by the live run. The image is a scratch
+    # memory, clients and stream lengths. oliver006/redis_exporter v1.97.0 (2026-11-04, taken early by owner decision #715 6800739670), pinned by tag and index digest; Dependabot bumps it.
+    # The README names Valkey 7-9 "and Redis" but not Redis 8: compatibility with this file's redis:8.10.3 is proven by the live run in docs/runbooks/records/2026-11-11-compose-image-bumps.md. The image is a scratch
     # image with no shell, so there is no healthcheck; Prometheus' `up{job="redis"}` is the probe. No host port.
-    image: oliver006/redis_exporter:v1.93.0@sha256:6ca518a72f30f7f576ef92963de1b91d3c3f5fd3aeac949f878bfda183587820
+    image: oliver006/redis_exporter:v1.97.0@sha256:f5f903fbe77571d455ede0453b084d6840bc62fc105efac001034421cab83b99
     mem_limit: 32m # measured 12 MiB peak (anon 10), 2026-10-19 re-measure
     command:
       - '--redis.addr=redis://redis:6379'
@@ -206,7 +239,7 @@ services:
 
   grafana:
     profiles: ["observability"]
-    image: grafana/grafana:13.2.4@sha256:dbbc38ea21103cefb50396340cd88afec779c7e070b0a7bf5a75b4ce46651d3f
+    image: grafana/grafana:13.3.0@sha256:488984b716c0862639f91a698adbe2862677a5a07bad42da5f03f3030883b205
     # Grafana 13 needs more than the 10.x limit of 256m: it hit 256m and restarted once, then peaked at 480 MiB during first start (317 MiB settled).
     mem_limit: 1024m # 654 MiB peak (85 % of the old 768m) in slot (b), 2026-10-19; raised to 1024m (lead, 2026-10-20). Re-measure: anon 23 % of 1024m (9 minutes); long-run 654 MiB = 64 %; fresh-volume first start 673 MiB docker stats (66 %), anon 250 MiB.
     ports:
@@ -240,30 +273,45 @@ services:
 
   loki:
     profiles: ["observability"]
-    image: grafana/loki:3.7.8@sha256:1107dd5274e0ada47e42472b7a7e71f3b2a2fe878878108f3e2f9e51528f0193
+    image: grafana/loki:3.7.9@sha256:0db216b630ae1f348a1584c67f3cead8b4c1fc839169a39501db664744158e28
     mem_limit: 512m
     ports:
       - "127.0.0.1:${LOKI_PORT:-3100}:3100"
-    command: -config.file=/etc/loki/local-config.yaml
+    # -ingester.wal-dir puts the WAL inside the named volume (the image config sets no ingester block, so its default would sit in the
+    # container layer). Without a volume Loki's data lived in the writable layer, which the containerd image store keeps under
+    # /var/lib/containerd, on the root filesystem. Loki throttles every push (HTTP 500 "Ingester is shutting down", which is ErrReadOnly)
+    # while its disk usage, (Blocks - Bfree) / Blocks of the WAL filesystem, is 0.9 or more; Bfree counts root-reserved blocks as free,
+    # so a full root filesystem reads about 94.8%. The 2026-11-11 run lost every push that way
+    # (docs/runbooks/records/2026-11-11-compose-image-bumps.md, section 5; docs/runbooks/log-shipping.md). The 0.9 threshold is kept.
+    command: -config.file=/etc/loki/local-config.yaml -ingester.wal-dir=/loki/wal
+    volumes:
+      - loki_data:/loki
     restart: unless-stopped
     # No healthcheck: the loki 3.7 image has neither wget nor sh, so nothing in the image can probe itself.
-    # Loki readiness is probed from promtail (below), which has bash.
+    # Loki readiness is probed from alloy (below), which has bash.
 
-  promtail:
+  alloy:
     profiles: ["observability"]
-    image: grafana/promtail:3.6.8@sha256:6cfa64ec432b24a912d640e2edb940eeae2666f61861a66c121d763dd7241381
-    mem_limit: 128m
+    # Grafana Alloy v1.20.1 (released 2026-09-28; newest release at least 14 days old on 2026-10-28), pinned by multi-arch index digest.
+    # Replaces Promtail, which reached end of life on 2026-03-02 (TCK-20261021-PROMTAIL-TO-ALLOY-LOG-SHIPPING).
+    image: grafana/alloy:v1.21.3@sha256:8ab871206bd2d8f89277f53abffee5f452a293980788d52f85fa183a87a505a4
+    # 384m (was 256m). The 2026-10-28 run (68 min) held anon 71 MiB and anon + active_file 187 MiB, which left no headroom under the first guess of 192m, so it went to 256m
+    # (docs/runbooks/records/2026-10-28-alloy-log-shipping.md section 5). The 2026-11-12 run, with Loki accepting every push, peaked at anon + active_file 246.7 of 256 MiB
+    # (96.4%; memory.current reached 256.0) in 11 minutes with no OOM kill (docs/runbooks/records/2026-11-12-loki-volume-and-api-dashboard.md, finding 3): about 9 MiB of headroom
+    # is too little for a longer run, so the limit is raised by half. The new figure is a margin, not a measurement; re-measure it on the next run that keeps Alloy up for an hour.
+    mem_limit: 384m
     healthcheck:
-      # The promtail image has bash but no wget/curl: read the first line of GET /ready over /dev/tcp and require HTTP 200.
-      # Healthy means promtail's own :9080/ready AND loki:3100/ready both answer 200 (loki has no healthcheck of its own).
-      test: ["CMD", "bash", "-c", "( exec 3<>/dev/tcp/localhost/9080 && printf 'GET /ready HTTP/1.0\\r\\n\\r\\n' >&3 && head -n1 <&3 | grep -q ' 200 ' ) && ( exec 3<>/dev/tcp/loki/3100 && printf 'GET /ready HTTP/1.0\\r\\n\\r\\n' >&3 && head -n1 <&3 | grep -q ' 200 ' )"]
+      # The alloy image has bash but no wget/curl: read the first line of GET /-/ready over /dev/tcp and require HTTP 200.
+      # Healthy means alloy's own :12345/-/ready AND loki:3100/ready both answer 200 (loki has no healthcheck of its own).
+      test: ["CMD", "bash", "-c", "( exec 3<>/dev/tcp/localhost/12345 && printf 'GET /-/ready HTTP/1.0\\r\\n\\r\\n' >&3 && head -n1 <&3 | grep -q ' 200 ' ) && ( exec 3<>/dev/tcp/loki/3100 && printf 'GET /ready HTTP/1.0\\r\\n\\r\\n' >&3 && head -n1 <&3 | grep -q ' 200 ' )"]
       interval: 10s
       timeout: 5s
       retries: 5
       start_period: 30s
     volumes:
-      - ./docker/promtail-config.yml:/etc/promtail/config.yml
-    command: -config.file=/etc/promtail/config.yml -config.expand-env=true
+      - ./docker/alloy/config.alloy:/etc/alloy/config.alloy:ro
+    # --storage.path stays inside the container (read offsets are lost on recreate, as Promtail's /tmp positions were). --disable-reporting turns off usage telemetry to Grafana.
+    command: run --server.http.listen-addr=0.0.0.0:12345 --storage.path=/var/lib/alloy/data --disable-reporting /etc/alloy/config.alloy
     environment:
       - COMPOSE_PROJECT_NAME=${COMPOSE_PROJECT_NAME}
     restart: unless-stopped
@@ -276,18 +324,18 @@ services:
   docker-socket-proxy:
     profiles: ["observability"]
     # The only service that mounts the Docker socket, read-only, behind an allow-list: container list/inspect/logs plus GET on /networks, no POST (no exec, stop or create).
-    # Remaining risk: GET on /containers/*/json still exposes every container's environment (including secrets passed as env) to promtail,
+    # Remaining risk: GET on /containers/*/json still exposes every container's environment (including secrets passed as env) to alloy,
     # and the socket itself is still reachable by this proxy process. Internal network only (no published port).
     # NETWORKS=1 (TCK-20261020-PROMTAIL-DISCOVERY-DENIED-BY-SOCKET-PROXY; decision: owner via lead-planner, 2026-10-20):
-    #   Why: promtail's docker_sd calls the Docker networks API on every refresh to build network labels; without NETWORKS the proxy answers 403, every refresh
+    #   Why: alloy's discovery.docker calls the Docker networks API on every refresh to build network labels; without NETWORKS the proxy answers 403, every refresh
     #   fails ("error while computing network labels") and Loki gets nothing (shown in three runs on 2026-10-19 and the A/B of 2026-10-20).
     #   What it opens: GET/HEAD on /networks and /networks/{id} only. POST=0 still denies every write (POST /networks/create, DELETE /networks/{id} and
     #   POST /containers/x/stop returned 403 in the 2026-10-20 probes), and GET /volumes, /images/json and /info stay 403.
     #   What it exposes: network names, IDs, drivers, subnets, gateways and each network's attached container IDs and IPs, a small addition next to the
-    #   container environment promtail can already read.
-    #   Rejected: mounting /var/lib/docker/containers read-only in promtail (it would read every container's logs on the host, other stacks included, and loses
-    #   the project filter); the Loki Docker logging driver (a host plugin install, a logging block on every service, and it bypasses promtail's pipeline).
-    image: tecnativa/docker-socket-proxy:v0.4.1@sha256:3400c429c5f9e1b21d62130fb93b16e2e772d4fb7695bd52fc2b743800b9fe9e
+    #   container environment alloy can already read.
+    #   Rejected: mounting /var/lib/docker/containers read-only in alloy (it would read every container's logs on the host, other stacks included, and loses
+    #   the project filter); the Loki Docker logging driver (a host plugin install, a logging block on every service, and it bypasses alloy's pipeline).
+    image: tecnativa/docker-socket-proxy:v0.5.0@sha256:1f5038b54f06c3e18422902cf00ba21803d1c97805aae032e5e6673d532d3459
     mem_limit: 64m
     environment:
       - CONTAINERS=1
@@ -300,7 +348,7 @@ services:
   tempo:
     profiles: ["observability"]
     # Latest stable at least two weeks old on 2026-10-18 (3.0.3, 2026-08-13; 3.0.4 is two days old); multi-arch index digest from a registry query.
-    image: grafana/tempo:3.0.3@sha256:0296560ac66f8a3600d7fb3014a52c189d4d9c3549ad6ff441bf2409855d68d5
+    image: grafana/tempo:3.1.1@sha256:64e2fbd56d9c2b3412a4b430a58ea59e91a670b1e75f920a0c702213ad145044
     # mem_limit is a start value; set it from the measured peak.
     mem_limit: 512m
     command: -config.file=/etc/tempo/tempo.yaml
@@ -337,7 +385,7 @@ services:
     depends_on:
       backend:
         condition: service_healthy
-      promtail:
+      alloy:
         condition: service_healthy
       prometheus:
         condition: service_healthy
@@ -356,4 +404,5 @@ volumes:
   grafana_data:
   redis_data:
   tempo_data:
+  loki_data:
   ntfy_data:

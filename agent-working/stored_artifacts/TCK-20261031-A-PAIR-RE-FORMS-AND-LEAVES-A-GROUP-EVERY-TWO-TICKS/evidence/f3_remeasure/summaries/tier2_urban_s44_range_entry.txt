@@ -1,0 +1,5 @@
+== victim 14 death t291 killer 10; hits (tick, attacker) in window: [(258, 24), (267, 13), (268, 10), (278, 13), (279, 10), (284, 2), (289, 13), (290, 10)]
+   attacker 2: first within Euclid 10 of victim at t244; first hit t284; victim pos t238->t244: [35.0, 34.0]->[32.0, 31.0] (victim moved); attacker traced positions near entry: [(248, [24.0, 25.0])]
+   attacker 10: first within Euclid 10 of victim at t243; first hit t268; victim pos t237->t243: [35.0, 35.0]->[32.0, 32.0] (victim moved); attacker traced positions near entry: []
+   attacker 13: first within Euclid 10 of victim at t241; first hit t267; victim pos t235->t241: [36.0, 36.0]->[33.0, 33.0] (victim moved); attacker traced positions near entry: [(247, [27.0, 27.0])]
+   attacker 24: first within Euclid 10 of victim at t243; first hit t258; victim pos t237->t243: [35.0, 35.0]->[32.0, 32.0] (victim moved); attacker traced positions near entry: [(246, [25.0, 25.0])]

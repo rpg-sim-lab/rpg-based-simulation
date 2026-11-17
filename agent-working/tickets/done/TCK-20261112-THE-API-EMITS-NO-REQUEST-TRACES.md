@@ -1,0 +1,131 @@
+---
+status: historical
+layer: observability
+authority: P1
+audience: agent
+ticket_id: TCK-20261112-THE-API-EMITS-NO-REQUEST-TRACES
+phase: done
+date: 2026-11-12
+tags: [observability, api-design]
+---
+
+# TCK-20261112-THE-API-EMITS-NO-REQUEST-TRACES
+
+## Title
+The API emits no request traces: add OpenTelemetry server spans and Redis client spans, off unless an OTLP endpoint is set (#622 R3)
+
+## Status
+DONE
+
+## Tier
+standard
+
+## Type
+feature
+
+## Priority
+P2
+
+## Request Summary
+This is issue #622's ask R3, from platform-planner and relayed by lead-planner: OTel ASGI middleware, plus Redis client spans, with 10% head sampling, and off when the OTLP endpoint is unset. The engine must import no tracing code. The owner's decision is #715 6789636164 (2026-11-11): file and run R3 after the current batch, keeping foundation-first order, "complete them without dropping any". rpg-planner filed this on 2026-11-12, after #884 closed that batch.
+
+R1 (metrics port) and R2 (`RequestDurationMiddleware`, src/api/server.py:191) are on main. Platform's `TCK-20261018-API-DASHBOARD-AND-TRACE-PROOF` (todos/devops-api-dashboard-trace/) is BLOCKED on this ticket. `TCK-20261018-TEMPO-TRACE-BACKEND` (done) deferred three items to R3:
+- the log field that carries the trace id (for Loki `derivedFields`);
+- the sampling variable;
+- the exporter protocol/port (4317 gRPC vs 4318 HTTP).
+
+Compose already passes `OTEL_EXPORTER_OTLP_ENDPOINT` (empty by default) and `OTEL_SERVICE_NAME=rpg-backend` to the backend.
+
+## Scope
+1. **One setup module in src/api** (for example `src/api/tracing.py`), called once from `create_v2_app()`, beside `RequestDurationMiddleware`.
+   - When `OTEL_EXPORTER_OTLP_ENDPOINT` is unset or empty, it is a strict no-op: no provider, no middleware and no instrumentor installed. The opentelemetry SDK packages are not imported, so startup cost and behaviour don't change.
+   - When it is set:
+     - a TracerProvider with resource `service.name` from `OTEL_SERVICE_NAME`, defaulting to `rpg-backend`;
+     - an OTLP exporter behind a BatchSpanProcessor;
+     - FastAPI/ASGI server instrumentation, where the span name and `http.route` use the **route template**, never the raw path;
+     - head sampling `ParentBased(TraceIdRatioBased(r))`, where r comes from the standard `OTEL_TRACES_SAMPLER_ARG` and defaults to 0.1.
+   - Name the exporter protocol and port chosen (OTLP gRPC 4317 or HTTP 4318), with the reason. That closes the Tempo ticket's deferral.
+2. **Redis client spans.** The API reaches Redis through `src/observability/stream/factory.py::get_event_stream_adapter` → `src/observability/stream/adapters.py:139` (`redis.from_url`), used for example by `src/api/routes/live_health.py:11`.
+   - Instrument the redis client (opentelemetry-instrumentation-redis) when tracing is on, so a request that touches Redis gets a child span.
+   - The investigation lists every Redis touchpoint reachable from the API process, with file:line, and confirms each is covered.
+   - Redis is NOT out of scope (owner: "without dropping any").
+3. **Log-trace correlation.** Backend log lines carry the active `trace_id` (and `span_id`) under one named field when tracing is on.
+   - State the exact field name, because platform's Loki `derivedFields` entry reads it.
+   - When tracing is off, the log format doesn't change.
+4. **Engine boundary.** Add a test that no module under `src/engine/**` imports `opentelemetry`, checked by static import scan. Decide in the plan whether to extend it to `src/core/**`, `src/systems/**` and `src/domains/**`, and say why.
+5. **Dependencies.**
+   - Add the opentelemetry-sdk, OTLP exporter, FastAPI instrumentation and redis instrumentation packages as runtime dependencies of the API, in pyproject and uv.lock.
+   - Pin versions compatible with the opentelemetry-api fastapi already pulls in (see TCK-20261018-STARLETTE-1X-ROUTES-STAY-AUTHENTICATED-AND-THE-ROUTE-WALK-SEES-THEM-580).
+   - lead-planner reviews the pyproject/uv.lock diff.
+6. **Docs.**
+   - The env vars (endpoint, service name, sampler arg), the protocol/port, the log field and the off-by-default rule go in the API/observability docs that the docs search names.
+   - Give platform a short handoff note for the API-DASHBOARD ticket: the log field name, the sampling variable and the port.
+
+## Out of Scope
+- Grafana dashboards, Loki `derivedFields`, Tempo config and compose changes (platform: TCK-20261018-API-DASHBOARD-AND-TRACE-PROOF).
+- Tracing inside the engine tick, in any simulation code, or in workers outside the API process.
+- Metrics (R1 and R2 are done) and alerts (step 3).
+- Any change to simulation behaviour. A 5000-tick hash must be unchanged; see the acceptance criteria.
+
+## Acceptance Criteria
+- Off: with no endpoint set, `create_v2_app()` installs no tracing middleware, provider or instrumentor (tested), and the existing API tests pass unchanged.
+- On: with an endpoint set and an in-memory exporter in tests:
+  - a request yields one server span named by its route template;
+  - a request that touches Redis yields a child redis span (tested with a fake or local redis, or the adapter's in-memory double, whichever the investigation shows is real);
+  - the sampling ratio is honoured from `OTEL_TRACES_SAMPLER_ARG`, with a 0.1 default.
+- Log lines carry the named trace-id field when tracing is on, and are unchanged when it is off (tested).
+- The engine-boundary test exists and passes.
+- One plain 5000-tick cell (crowded_frontier s42, pinned runner) hash-matches main, showing the engine is untouched. If the investigation shows the runner imports no API code, a static argument may stand in for this, with the plan saying so.
+- The dependency diff is reviewed by lead-planner. The docs and the platform handoff note are written.
+
+## Related Tickets
+- TCK-20261018-API-DASHBOARD-AND-TRACE-PROOF (platform, blocked on this)
+- TCK-20261018-TEMPO-TRACE-BACKEND (done; deferred items listed above)
+- TCK-20261018-SCRAPE-BACKEND-METRICS-PORT (R1)
+- TCK-20261018-STARLETTE-1X-ROUTES-STAY-AUTHENTICATED-AND-THE-ROUTE-WALK-SEES-THEM-580 (opentelemetry-api is already a transitive dependency)
+
+## Related Docs
+- docs/runbooks/api-latency-slo.md
+- docs/observability/ (the docs search names the exact files)
+- GitHub issue #622 (R1-R3), #715 6789636164 (owner decision)
+
+## Related Stored Artifacts
+- agent-working/stored_artifacts/TCK-20261018-TEMPO-TRACE-BACKEND/
+
+## Related Code Areas
+- src/api/server.py (`create_v2_app`, :111; `RequestDurationMiddleware` added at :191)
+- src/api/http_metrics.py (`RequestDurationMiddleware`, :82, the pattern to follow)
+- src/observability/stream/factory.py, src/observability/stream/adapters.py:139 (redis client)
+- src/api/routes/live_health.py:11
+- pyproject.toml, uv.lock
+
+## Assumptions / Open Questions
+- Whether the backend log format today is structured (JSON) or plain decides how the trace id is added. The investigation reads it.
+- Whether any other Redis client is created in the API process apart from the stream adapter. The investigation lists them all.
+- The line numbers are from main 5e58ae857.
+
+## Implementation Notes
+OpenTelemetry is a new runtime stack; lead-planner-u24 adds the tech-stack registry entry after R3 lands. Dependency diff approved by lead-planner-u24 at pyproject sha256 03fb919b…, uv.lock sha256 34ffcb76… (a change to either needs a fresh review). protobuf moves to a new major (7.x) and the image grows by the OpenTelemetry wheels (about 11 MB installed here); disclose both in the PR.
+Owner approval to run: #715 6813227854; scope decision #715 6789636164. rpg-planner scope rulings of 2026-11-12 are in staging plan.md (D2: Redis spans only with a parent; D4: OTLP HTTP 4318; D6: trace_id/span_id log fields).
+
+## Test Summary
+- New: tests/unit/api/test_tracing.py (12), test_tracing_off.py (12), test_tracing_engine_boundary.py (5 incl. a planted-import self-test): all pass with the OpenTelemetry packages installed. They cover the off no-op (subprocess check: no opentelemetry.sdk/instrumentation/exporter module imported by building the real app, no record-factory change), a server span named by route template, a Redis child span with a parent, no span for a Redis call with no parent (including on a bare thread), a client created after setup instrumented, sampling (0 drops, default 0.1, invalid falls back), default exporter is OTLP/HTTP, log fields on (plain and JSON, inside a request only) and byte-identical off, the record factory wrapping the existing one and installed once, and the engine-boundary scan of src/engine, src/core, src/systems, src/domains.
+- Existing API tests (tests/unit/api, tests/api/test_request_duration_histogram.py, the http surface characterization): 113 passed, 1 skipped.
+- Engine untouched: crowded_frontier s42 5000 ticks on head ad460cc67 gives final_hash e0e20c2044d7ca861ace880ef6495a411074680571a1d4bf90bee091b52c8e35 = main's (cd83111c5, identical src/data/config). Peak RSS 175 MB.
+- mypy (pipefail, raw output saved, head b010fac0b): 0 new errors against the 1,338-row baseline; 802 source files; the CI lane `typecheck` (codebase.gates.mypy_gate) passes.
+- `make code-health` (scratch-deps venv): OK, 0 worse; the 2 new rows are report-only jscpd rows in files this ticket does not touch.
+- `ci_lanes --run --all`, run in a dev-only venv at a loaded host: PASS unit-core-world, unit-gameplay, integration, agent-orchestration, simulation-quality, arch-docs, docker-build, perf-cert-arena, migration-lanes, simq-grade-drift. FAIL, with causes: tools-f-z one real failure (wall_clock_inventory out of date for setup_tracing's os.environ read; fixed by regenerating with the tool, perf-planner agreed); unit-infra 2 failures from my PYTEST_ADDOPTS "-n 1" (the file passes alone, 12 passed); typecheck, code-health, code-health-sarif from an unset $GITHUB_STEP_SUMMARY (typecheck passes with it set; code-health and sarif then need ruff, which the dev-only venv lacks); tools-a-e 26 tests/codebase failures identical on a detached worktree of origin/main (environmental: no ruff, ast-grep, prek); api-cli-engine 19 visual_assets setup errors, "exceeded the resource time limit" on a loaded host, not re-run.
+- Not run: `make knowledge-index-update` (not run: worktrees use main's index; lead-planner-u24, 2026-11-12).
+
+## Files Changed
+- src/api/tracing.py (new), src/api/server.py (one call and import), src/logging/formatter.py (TraceAwareFormatter, JSON trace keys).
+- tests/unit/api/test_tracing.py, test_tracing_off.py, test_tracing_engine_boundary.py (new).
+- pyproject.toml, uv.lock (four runtime dependencies, 16 packages added; lead-planner-u24 approved the diff at pyproject sha256 03fb919b…, uv.lock sha256 34ffcb76…).
+- docs/observability/api_request_tracing.md (new, with the platform handoff).
+- docs/performance/wall_clock_inventory.json and .md, regenerated by tools/perf/wall_clock_inventory.py (one added row, line/ordinal refresh; perf-planner informed and agreed).
+- docs/REGISTRY.yaml (regenerated), agent-working ticket, stored artifacts and monitoring shards.
+
+## Completion Summary
+The API now emits OpenTelemetry server spans named by route template and Redis client spans, off unless OTEL_EXPORTER_OTLP_ENDPOINT is set (strict no-op when unset). Exporter: OTLP HTTP/protobuf, port 4318 (Tempo enables both receivers; no grpcio). Sampling ParentBased(TraceIdRatioBased(r)), r from OTEL_TRACES_SAMPLER_ARG, default 0.1; a root CLIENT span is dropped, so Redis calls with no request parent (the event-recorder publish thread, the broker quality feed) record nothing (rpg-planner ruling, D2). Log lines carry trace_id (32 hex) and span_id (16 hex) while a span is active: plain lines get " trace_id=… span_id=…" appended, JSON gets the keys; with tracing off both formats are byte-identical. Deviation from the plan as first approved: the log hook is a logging record factory installed by the tracing setup (it wraps the existing factory and installs once), not a handler filter, because uvicorn builds its handlers after create_v2_app() returns and its access lines are emitted after the server span has ended. No simulation code imports opentelemetry (scan test over src/engine, src/core, src/systems, src/domains); the 5000-tick hash matches main.
+
+Disclosures: protobuf moves to a new major (7.36.2) and the image grows by the OpenTelemetry wheels (about 11 MB installed); opentelemetry-api moves 1.45.1 -> 1.45.2 (fastapi's transitive); OpenTelemetry is a new runtime stack, and lead-planner-u24 adds the tech-stack registry entry after R3 lands; the wall_clock_inventory regeneration (scanned.modules_reachable_from_kernel 469→501 is main's drift since the last regen, not R3). Known gap: the typecheck lane passes but the code-health lane itself was not run green locally (no ruff in the dev-only venv); `make code-health` with the scratch-deps venv was OK. Platform handoff is the last section of docs/observability/api_request_tracing.md (field trace_id, regexes, OTEL_TRACES_SAMPLER_ARG, port 4318). Owner approval: #715 6813227854 and 6789636164.

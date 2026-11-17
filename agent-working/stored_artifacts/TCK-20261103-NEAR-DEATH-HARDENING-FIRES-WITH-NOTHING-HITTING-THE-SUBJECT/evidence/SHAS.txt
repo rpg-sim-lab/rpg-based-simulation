@@ -1,0 +1,4 @@
+e71d7cab6a215796  defeat_rows2.py
+a6174f996958434c  defeat_trace2.py
+6e7bbba8241faeef  fix_tally.py
+3929aa5ac45e00c6  hard_count.py

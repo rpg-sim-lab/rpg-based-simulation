@@ -1,0 +1,390 @@
+{
+ "addition2": {
+  "n_candidates": 2,
+  "rows": [
+   {
+    "attackers": [
+     30
+    ],
+    "death_cause": "DEFEAT",
+    "hp": 11,
+    "id": "37",
+    "lethal_values": [
+     false
+    ],
+    "swing": [
+     12
+    ],
+    "task": {
+     "action": null,
+     "reason": null,
+     "work_kind": "ENTITY_ACT"
+    },
+    "tick": 1632
+   },
+   {
+    "attackers": [
+     30
+    ],
+    "death_cause": "DEFEAT",
+    "hp": 13,
+    "id": "12",
+    "lethal_values": [
+     false
+    ],
+    "swing": [
+     21
+    ],
+    "task": {
+     "action": null,
+     "reason": null,
+     "work_kind": "ENTITY_ACT"
+    },
+    "tick": 3053
+   }
+  ]
+ },
+ "alive_by_role": {
+  "base": {
+   "blacksmith|dead": 1,
+   "guard|dead": 5,
+   "hero|alive": 1,
+   "hero|dead": 2,
+   "leader|dead": 1,
+   "merchant|dead": 3,
+   "raider|alive": 2,
+   "raider|dead": 7,
+   "scout|alive": 1,
+   "scout|dead": 7,
+   "worker|dead": 8
+  },
+  "fix": {
+   "blacksmith|dead": 1,
+   "guard|dead": 5,
+   "hero|dead": 3,
+   "leader|alive": 1,
+   "merchant|alive": 1,
+   "merchant|dead": 2,
+   "raider|dead": 9,
+   "scout|dead": 8,
+   "worker|alive": 2,
+   "worker|dead": 6
+  }
+ },
+ "blacksmith": {
+  "base": {
+   "13": [
+    0,
+    "DEFEAT",
+    "blacksmith"
+   ]
+  },
+  "fix": {
+   "13": [
+    0,
+    "DEFEAT",
+    "blacksmith"
+   ]
+  }
+ },
+ "extra": [
+  {
+   "base": {
+    "calls": [],
+    "decision": null,
+    "row_start": [
+     3,
+     85,
+     true,
+     "ENTITY_MOVE",
+     null,
+     "PANIC_RETREAT",
+     null,
+     286,
+     38,
+     false,
+     [
+      40.0,
+      44.0
+     ]
+    ]
+   },
+   "base_fate": "alive",
+   "fix": {
+    "calls": [
+     {
+      "attackers": [
+       9
+      ],
+      "damage_taken": 10,
+      "fn": "resolve_attack",
+      "lethal": true,
+      "opp": false,
+      "outcome": "KILL"
+     }
+    ],
+    "decision": [
+     "ENTITY_MOVE",
+     null,
+     "PANIC_RETREAT",
+     null
+    ],
+    "row_start": [
+     3,
+     85,
+     true,
+     "ENTITY_ACT",
+     null,
+     null,
+     null,
+     286,
+     38,
+     false,
+     [
+      40.0,
+      45.0
+     ]
+    ]
+   },
+   "fix_fate": "COMBAT t365",
+   "id": "17",
+   "tick": 365,
+   "tick_is_fix_death_tick": true
+  }
+ ],
+ "seed": 43,
+ "subjects": [
+  {
+   "base_alive_start_t_f": true,
+   "base_alive_start_t_f_plus_1": true,
+   "base_decision_t_f": null,
+   "base_fate": "DEFEAT t817",
+   "base_hp_start_t_f": 3,
+   "base_last_attacker_t_f": 34,
+   "felt_blow_distinct_calls": [
+    17
+   ],
+   "fix_alive_start_t_f": true,
+   "fix_fate": "COMBAT t517",
+   "fix_hp_start_t_f": 1,
+   "fix_last_attacker": 38,
+   "fix_last_hit_tick": 506,
+   "guard_side_felt_blow": null,
+   "id": "3",
+   "kind": "worker",
+   "response": "ATTACK",
+   "site": "PANIC_RETREAT",
+   "t_d": 517,
+   "t_f": 517
+  },
+  {
+   "base_alive_start_t_f": false,
+   "base_alive_start_t_f_plus_1": false,
+   "base_decision_t_f": null,
+   "base_fate": "DEFEAT t1016",
+   "base_hp_start_t_f": 0,
+   "base_last_attacker_t_f": 30,
+   "felt_blow_distinct_calls": [
+    18
+   ],
+   "fix_alive_start_t_f": true,
+   "fix_fate": "COMBAT t2295",
+   "fix_hp_start_t_f": 4,
+   "fix_last_attacker": 30,
+   "fix_last_hit_tick": 2274,
+   "guard_side_felt_blow": null,
+   "id": "4",
+   "kind": "worker",
+   "response": "ATTACK",
+   "site": "PANIC_RETREAT",
+   "t_d": 2295,
+   "t_f": 2286
+  },
+  {
+   "base_alive_start_t_f": false,
+   "base_alive_start_t_f_plus_1": false,
+   "base_decision_t_f": null,
+   "base_fate": "DEFEAT t975",
+   "base_hp_start_t_f": 0,
+   "base_last_attacker_t_f": 30,
+   "felt_blow_distinct_calls": [
+    14
+   ],
+   "fix_alive_start_t_f": true,
+   "fix_fate": "COMBAT t2173",
+   "fix_hp_start_t_f": 11,
+   "fix_last_attacker": 30,
+   "fix_last_hit_tick": 2152,
+   "guard_side_felt_blow": null,
+   "id": "5",
+   "kind": "worker",
+   "response": "ATTACK",
+   "site": "PANIC_RETREAT",
+   "t_d": 2173,
+   "t_f": 2165
+  },
+  {
+   "base_alive_start_t_f": false,
+   "base_alive_start_t_f_plus_1": false,
+   "base_decision_t_f": null,
+   "base_fate": "DEFEAT t883",
+   "base_hp_start_t_f": 0,
+   "base_last_attacker_t_f": 15,
+   "felt_blow_distinct_calls": [
+    18
+   ],
+   "fix_alive_start_t_f": true,
+   "fix_fate": "COMBAT t2436",
+   "fix_hp_start_t_f": 16,
+   "fix_last_attacker": 30,
+   "fix_last_hit_tick": 2415,
+   "guard_side_felt_blow": null,
+   "id": "7",
+   "kind": "worker",
+   "response": "ATTACK",
+   "site": "PANIC_RETREAT",
+   "t_d": 2436,
+   "t_f": 2433
+  },
+  {
+   "base_alive_start_t_f": false,
+   "base_alive_start_t_f_plus_1": false,
+   "base_decision_t_f": null,
+   "base_fate": "DEFEAT t960",
+   "base_hp_start_t_f": 0,
+   "base_last_attacker_t_f": 30,
+   "felt_blow_distinct_calls": [
+    17
+   ],
+   "fix_alive_start_t_f": true,
+   "fix_fate": "COMBAT t3419",
+   "fix_hp_start_t_f": 8,
+   "fix_last_attacker": 30,
+   "fix_last_hit_tick": 3408,
+   "guard_side_felt_blow": null,
+   "id": "10",
+   "kind": "guard",
+   "response": "ATTACK",
+   "site": "PANIC_RETREAT",
+   "t_d": 3419,
+   "t_f": 3410
+  },
+  {
+   "base_fate": "DEFEAT t3237",
+   "fix_fate": "COMBAT t815",
+   "id": "15",
+   "kind": "scout",
+   "t_d": 815,
+   "t_f": "none"
+  },
+  {
+   "base_alive_start_t_f": true,
+   "base_alive_start_t_f_plus_1": false,
+   "base_decision_t_f": {
+    "action": null,
+    "reason": "PANIC_RETREAT",
+    "target": null,
+    "work_kind": "ENTITY_MOVE"
+   },
+   "base_fate": "DEFEAT t284",
+   "base_hp_start_t_f": 8,
+   "base_last_attacker_t_f": 34,
+   "felt_blow_distinct_calls": [
+    11
+   ],
+   "fix_alive_start_t_f": true,
+   "fix_fate": "COMBAT t291",
+   "fix_hp_start_t_f": 8,
+   "fix_last_attacker": 34,
+   "fix_last_hit_tick": 280,
+   "guard_side_felt_blow": [
+    11
+   ],
+   "id": "16",
+   "kind": "scout",
+   "response": "ATTACK",
+   "site": "PANIC_RETREAT",
+   "t_d": 291,
+   "t_f": 284
+  },
+  {
+   "base_fate": "alive",
+   "fix_fate": "COMBAT t365",
+   "id": "17",
+   "kind": "scout",
+   "t_d": 365,
+   "t_f": "none"
+  },
+  {
+   "base_alive_start_t_f": true,
+   "base_alive_start_t_f_plus_1": false,
+   "base_decision_t_f": {
+    "action": null,
+    "reason": "PANIC_RETREAT",
+    "target": null,
+    "work_kind": "ENTITY_MOVE"
+   },
+   "base_fate": "DEFEAT t122",
+   "base_hp_start_t_f": 1,
+   "base_last_attacker_t_f": 14,
+   "felt_blow_distinct_calls": [
+    15
+   ],
+   "fix_alive_start_t_f": true,
+   "fix_fate": "COMBAT t124",
+   "fix_hp_start_t_f": 1,
+   "fix_last_attacker": 14,
+   "fix_last_hit_tick": 113,
+   "guard_side_felt_blow": [
+    15
+   ],
+   "id": "18",
+   "kind": "merchant",
+   "response": "ATTACK",
+   "site": "PANIC_RETREAT",
+   "t_d": 124,
+   "t_f": 122
+  },
+  {
+   "base_fate": "DEFEAT t815",
+   "fix_fate": "COMBAT t793",
+   "id": "25",
+   "kind": "raider",
+   "t_d": 793,
+   "t_f": "none"
+  },
+  {
+   "base_fate": "DEFEAT t839",
+   "fix_fate": "COMBAT t750",
+   "id": "31",
+   "kind": "hero",
+   "t_d": 750,
+   "t_f": "none"
+  },
+  {
+   "base_fate": "HAZARD t632",
+   "fix_fate": "COMBAT t1167",
+   "id": "32",
+   "kind": "hero",
+   "t_d": 1167,
+   "t_f": "none"
+  },
+  {
+   "base_fate": "alive",
+   "fix_fate": "COMBAT t4265",
+   "id": "33",
+   "kind": "hero",
+   "t_d": 4265,
+   "t_f": "none"
+  },
+  {
+   "base_fate": "DEFEAT t686",
+   "fix_fate": "COMBAT t455",
+   "id": "34",
+   "kind": "raider",
+   "t_d": 455,
+   "t_f": "none"
+  }
+ ],
+ "world": "crowded_frontier"
+}

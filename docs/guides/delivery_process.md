@@ -163,6 +163,12 @@ accepts that id too, but an attested row that has a verdict row refuses and name
 `post_native_run_check.py` fails a gate that the native run attested as PASS, it records the `false_pass`
 itself. Recording an override is bookkeeping, not permission: never edit an artifact to make a gate pass.
 
+### Behaviour evidence comes from the pinned runner
+
+Behaviour evidence (a paired table, a probe count, a trace row used in a verdict or disclosure) comes from the pinned runner: `tools/rpg_measure` or `rpg_gate_run.build_kernel`. A run on another runner is labelled as such, backs no verdict, and is not re-labelled after the fact. A trace or probe used as evidence states its hash check against a plain pinned run at its own end tick, using `CanonicalStateHasher.get_hash` (the same value as the manifest `state_hash` when the end tick is the run's last). A hash check covers the state digest only; fields outside it are listed in TCK-20261103-STATE-DIGEST-MAY-OMIT-FIELDS-THAT-DECISIONS-READ until that closes. The concurrent and sequential executors give the same world since TCK-20261103-THE-CONCURRENT-AND-SEQUENTIAL-EXECUTORS-GIVE-DIFFERENT-WORLDS (#837), held by `tests/unit/kernel/test_executor_context_parity.py::test_every_packet_field_equals_the_states_value_at_each_stage` (every PR) and its gate-world twin `tests/unit/kernel/test_executor_context_parity.py::test_every_packet_field_equals_the_states_value_on_a_gate_world` (slow lane). Evidence still comes from the pinned runner. A result carries to the production path only while those tests pass. The long equivalence test (`tests/integration/kernel/test_executor_equivalence_long.py`) also fails if any worker error is turned into a no-op (Failure-to-No-Op, `worker_manager.failure_no_op`). Claims measured before #837 merged stay labelled as measured on the sequential reference. Applies from 2026-11-03, the date the standard was ruled. Older claims, including entries in `intentional_divergences.md`, stand as their era's and are re-checked only if a new ruling cites them.
+
+Ruled by rpg-designer; the owner approved adding it here (#715 6593491826 item 3) and the older-claims scope (#715 6593558681 item 2). The executor clause was updated on #837's merge (rpg-designer; owner #715 6700862118). The cause: `tools.calibrate_simq._run_engine` and the pinned `build_kernel` give different worlds on the same seed, and a #828 red belonged to the unpinned runner alone (TCK-20261103-A-MEASUREMENT-NOT-ON-THE-PINNED-RUNNER-CALLS-ITSELF-EVIDENCE, which also added the `run_conditions` manifest record and `tools/test_architecture/pinned_runner.py`, whose helper refuses a run that is not pinned).
+
 ---
 
 ## Branch Naming
@@ -291,7 +297,7 @@ subject-line traceability gap in the first place. A `Closes:` block goes in the 
 ## Verification
 - Tests: <scoped commands run, per ticket, with results>
 - Gates: <done_checker_static result per ticket, including any stated FAIL>
-- Known gaps: <anything closed with a known failure, stated not hidden>
+- Known gaps: <anything closed with a known failure or a stated gap, stated not hidden>
 
 ## Review notes
 <the only hand-written section: what the user should look at first, and any
@@ -313,13 +319,23 @@ The renderer leaves out of `Closes:` (with a warning) any ticket whose file is s
 move it to `agent-working/tickets/done/` if the PR really does close it.
 
 It likewise leaves out a ticket that a commit subject only *cites* (its file is not changed by the branch), such as a
-follow-up commit to an already-closed ticket. A branch that closes no ticket at all (docs-only or record-only) renders
-with `--theme`, `--scope` (a registered layer) and `--why`: the title ends `(no tickets)`, the body lists the changed
-directories, and the last line is `Closes: (none)`. Pass the same three flags to `--check`.
+follow-up commit to an already-closed ticket. A branch that closes no ticket renders with `--theme`, `--scope` (a registered
+layer) and `--why`: the title ends `(no tickets)`, the body lists the changed directories, and the last line is
+`Closes: (none)`. Pass the same three flags to `--check`. This path exists for the two named exceptions to the PR-size rule
+in "PR Lifecycle" below and nothing else; it prints a stderr warning saying so (report-only, no gate).
 
 `## Known gaps` is load-bearing and deliberate: the repo's Gate Integrity rule says a blocking gate
 result is information to report, never an obstacle to route around. Giving it a fixed slot in every
 PR body makes reporting it the default rather than an act of virtue.
+
+`pr_render.py` fills that line from each ticket's `## Test Summary` and `## Completion Summary`: a line
+containing `FAIL`, or a line beginning `Known gap:` (after an optional list marker; the prefix is
+case-sensitive). A closing agent states a gap that is not a failure with a `Known gap: <what and why>`
+line in one of those two sections; prose such as "no gaps remain" or "except as stated in the record" is
+not read. A line beginning `Revert evidence` is proof a test catches the bug, not a gap, and is skipped.
+When nothing matches, the line says `none stated (no FAIL or Known gap: line in any ticket's
+Test/Completion Summary)`, so it names what was checked rather than asserting nothing exists. A pointer
+to this marker in CLAUDE.md's closure guidance is left for the owner to decide (a governing file).
 
 ---
 
@@ -353,10 +369,26 @@ The "Semgrep OSS" and code-health code-scanning check runs are advisory: their f
 
 The steps above cover diagnosing a failure; this covers the surrounding push→PR→merge→sync cadence itself, since it isn't a `Workflow` and has no other home.
 
+**PR size (owner rule, 2026-11-07).** Every PR delivers complete work and closes at least one completed ticket. Ticket
+filings and seat-ticket notes ride in the next implementation PR on that track, never in a PR of their
+own. The reason is to cut CI and check effort. Exceptions, and only these: Dependabot PRs, and the handover-transit export (step 2a). Week-close and
+retro batches are not exceptions: they get a ticket of their own, or ride in the next agent-working implementation PR.
+`pr_render.py` keeps its ticketless path for the two exceptions and warns on stderr when it is used; nothing blocks.
+
+**Decisions named on role cards (TCK-20261114-ROLE-CARD-DECISION-CITATION-INDEX).** A PR that accepts or amends an ADR or other recorded decision lists the role cards it affects in its body and updates them in the same change. Take the list from `python3 -m tools.sessions.card_citation_check` (report-only, always exit 0): it names each card source that cites a decision this doc amends without citing this doc, with the seat ids to relaunch. The amending doc states what it amends in an optional frontmatter key `amends: [path#heading-slug, ...]` and gets an entry in `registries/session_decisions.yaml`; a card lists the names it uses under `## Cites`. `generate_agents --check` prints one advisory line when the check finds anything, and nothing otherwise. After the merge, lead relaunches or clears the named seats (`docs/guides/agent_session_reset_boundaries.md`, "After a card-changing merge").
+
+**Ride-along (owner rule, 2026-11-11, #715 6793205403).** Small no-code changes ride in the next PR on their track instead of a PR of their own: doc wording, monitoring week close-outs and re-closes, and glossary, registry or summary text. Each still closes its own ticket. A PR stands alone only when it changes `src/` behaviour, carries evidence (a measurement or proof run the PR is for), unblocks a seat that is waiting on it, or is the only open PR on its track. Why: every merge costs a full CI run, an owner merge, and a REGISTRY resync for every other open PR.
+
+**Weigh the fix (owner rule, 2026-11-07, widened the same day; issue #715 comments 6697776913 and 6698958617).** Before spending time on any fix, in any domain, weigh whether it is worth it, and prefer the
+simpler fix when it is enough. Some fixes cannot be avoided (determinism, conservation, a hard rule the owner set), and those
+are done properly. Others may be better as a smaller fix, a named known gap, or a follow-up. The planner states the choice and
+the reason when scoping: the cost, including measurement and evidence runs, and what the simpler option leaves out. It escalates to the owner only when the simpler
+option changes a rule the owner set.
+
 1. **Before staging/committing**: always run `git status`/`git log` first — this repo's working directory can be shared by more than one concurrent session (see `CLAUDE.md`'s Hard Rules), so check for in-flight files that belong to another ticket before touching them.
 2. **Commit** per ticket, referencing its ID (see `## Commit Contract` above). Stage `agent-working/agent-monitoring/` in every commit, including any small trailing update the monitoring tools auto-write after the main commit — commit that separately rather than leaving it unstaged.
-2a. **Handover-transit bundle: not part of a PR.** Export it only before a machine move, in its own commit or PR, never
-   inside a ticket batch. The repo is public, so an export publishes every handover note, open draft and memory file; see
+2a. **Handover-transit bundle: not part of a ticket batch.** Export it only before a machine move, in its own commit or PR
+   (one of the two exceptions to the PR-size rule above), never inside a ticket batch. The repo is public, so an export publishes every handover note, open draft and memory file; see
    `docs/guides/agent_session_reset_boundaries.md` ("Moving sessions between machines"), the only place that prescribes it.
 2b. **Run the CI lanes your diff touches, before the push** (`TCK-20261014-PRE-PUSH-CI-LANE-PARITY`): `python3 -m tools.delivery.ci_lanes`
    lists them (`--run` runs them and exits non-zero on a failing lane). It reads `.github/workflows/test.yml`, so there is no
@@ -368,6 +400,13 @@ The steps above cover diagnosing a failure; this covers the surrounding push→P
    not to skip. The pre-push hook's check D names the touched lanes and this command; it is advisory, never runs tests and never
    blocks. `tests/tools/test_delivery_ci_lanes.py` fails if `test.yml` gains a regex variable, output or pytest step the
    resolver cannot map. Scoping which tests to run inside a lane stays test-scoper's job.
+   Check E (`TCK-20261024-PRE-PUSH-WARNS-ON-A-STALE-DOCS-REGISTRY`) runs `python3 tools/generate_registry.py --check` only when the
+   branch diff touches a `.md` under `docs/`, the tickets or the stored artifacts, and adds one advisory line naming
+   `make docs-registry` when `docs/REGISTRY.yaml` is stale (exit 2); any other result or a timeout says nothing.
+   Check G (`TCK-20261113-PRE-PUSH-CHECKS-HAND-EDITED-PARITY-LEDGER-SHARDS`) runs only when the branch diff touches
+   `docs/parity_ledger/*.yaml`: each such shard as pushed must parse into a list of mappings with ids, and its new or changed entries
+   must pass `parity_ledger_writer.validate_entry` (legacy entries are exempt). It warns, naming `tools/parity_ledger_writer.py`;
+   `python3 tools/parity_ledger_writer.py --check <files> [--base <ref>]` runs the same check by hand and writes nothing.
 3. **Push** the branch, then **create the PR** (`gh pr create`). The title and the generated body
    sections (`## What landed` through `## Verification`/`## Known gaps`, plus the `Closes:` line)
    come from `python3 tools/delivery/pr_render.py` — run it plain for readable stdout
@@ -377,9 +416,10 @@ The steps above cover diagnosing a failure; this covers the surrounding push→P
    without it the title names the most recently closed ticket (the renderer prints a stderr
    `HINT:` when it renders more than one ticket with no theme). Hand-write only
    `## Review notes` (the renderer never generates it — see its own module docstring). The renderer also adds a
-   non-blocking discovery warning when the PR adds more than 200 KB of raw output under
-   `agent-working/stored_artifacts/**/probes/` (anything but `.py`/`.sh`/`.md`/`.txt`): commit probe scripts and summary
-   tables, keep a raw file only when a ticket cites it. PR body: no
+   non-blocking discovery warning when the PR adds more than 200 KB of raw output anywhere under
+   `agent-working/stored_artifacts/` (the whole folder, not only `probes/`; anything but `.py`/`.sh`/`.md`/`.txt`), read from
+   the three-dot diff so a branch behind main is not charged for main's files; the warning also prints the PR's total
+   stored_artifacts file count and size. Commit probe scripts and summary tables, keep a raw file only when a ticket cites it. PR body: no
    `Co-Authored-By`/session-link trailer, and no "🤖 Generated with [Claude Code](...)" (or
    equivalent tool-attribution) line either — commit message trailers still keep the
    `Co-Authored-By`/session-link trailer, this is a PR-body-only exclusion — this was an explicit
@@ -391,6 +431,16 @@ The steps above cover diagnosing a failure; this covers the surrounding push→P
    specific and wins for PR-body content specifically. If ever unsure which applies, PR bodies get
    no attribution trailer, full stop. Immediately after `gh pr create`, run the read-back check
    described in step 4 — the requirement there applies to this first write too, not just later ones.
+3a. **Governing paths touched** (`TCK-20261031-GOVERNING-FILE-EDITS-VISIBLE-TO-OWNER`; report-only). When the PR diff touches
+   a governing path, `pr_render.py` adds `## Governing paths touched` right after `## What landed`; it is absent when none is
+   touched. The one path definition is `tools/sessions/classify.py` (`GOVERNING_PATHS_EXACT`, `GOVERNING_PATH_PREFIXES`,
+   `is_governing_path`): `CLAUDE.md`, the settings files, `registries/session_authority.yaml`, the guard and the classifier,
+   `.github/workflows/`, and `.claude/hooks/`, `tools/hooks/`, `codebase/hooks/`. Hook scripts wired from other directories
+   are not on the list. The list comes from the PR's own code, so a PR that edits the classifier or the renderer controls it;
+   `.github/` changes are still checked on GitHub's files tab (plan section 28a). It is a `conditional` section of
+   `tools/delivery/pr_template_spec.json` (absent from `.github/pull_request_template.md` on purpose): `--check` compares it like
+   any generated section, so a live body that lacks it or lists other paths shows as a difference (printed, exit code unchanged,
+   as for every other generated section), and an absent section matches when nothing governing is touched.
 4. **Every PR title/body update — including `gh pr create` above and pushing more tickets to an
    already-open PR** (standing practice here — one open PR per batch, follow-ups pushed onto it
    rather than opened as a new PR) — **uses `gh api -X PATCH` and is followed by a read-back
@@ -430,3 +480,69 @@ The steps above cover diagnosing a failure; this covers the surrounding push→P
      `--admin` or route around it.
 7. **After the user reports a merge**: `git checkout main && git pull` to sync. If local `main` is already ahead of `origin/main` by a commit you didn't make, that's another concurrent session's unpushed local work — leave it alone, don't push it for them and don't rebase/reset over it. Once synced with nothing in flight, evaluate the reset boundary per `docs/guides/agent_session_reset_boundaries.md` — a merged batch is the most common HARD boundary.
 8. **This repo's PRs land as squash merges** — GitHub creates one new commit on `main` whose parent is `main`'s prior tip, not a merge of your branch's own commit history. Your branch's individual commits (and any local merge commit you made into it) are never ancestors of `main` after this, even though their *content* is fully present. **If you push further commits to the same branch after its PR has merged, those commits have no path to `main`** — a plain `git log origin/main..HEAD` or a naive re-open of the same PR will look like it's re-submitting the entire original diff, because ancestor-based diffing can't see the content is already there. The tell is a suspiciously large `git diff origin/main...HEAD` (three-dot, ancestor-based) right after a merge you know landed cleanly — confirm with `git diff origin/main HEAD` (plain two-ref, content-based) instead, which will show only the real new changes. Fix: merge `origin/main` into the branch again (resolving any "add/add" conflicts this ancestor-loss can spuriously create — check whether the `origin/main` side of such a conflict is genuinely new content or empty/stale before assuming a real concurrent edit), then open a **new** PR rather than trying to reuse or reopen the merged one. **A second symptom of the same root cause, visible even when you get the merge right**: a PR opened from that same already-squashed branch (even after a correct `origin/main` merge) shows GitHub's *own* commit count as the branch's full original history — dozens of commits against what might be a handful of real new files — because GitHub still can't recognize the squashed commit as an ancestor. The diff itself is correct (git compares trees, so already-landed content contributes nothing), but the commit list is genuinely misleading to a reviewer. The visible warning sign (an inflated commit count on an otherwise-small PR) and the invisible one (stranded commits with no path to `main`) are the same underlying cause — recognize either, and treat it the same way: **a squash-merged branch is finished.** Never push further work to it, not even after resyncing it with `origin/main`. Cut a fresh branch off `origin/main` for the next piece of work and copy or cherry-pick just the new commits onto it (`git checkout <old-branch> -- <changed paths>` on the new branch is usually simplest when the new work is a handful of files), so the resulting PR's commit count actually matches its diff.
+
+### Docs as the review source (owner-approved plan, 2026-11-08)
+
+Design source: `agent-working/lead/docs_as_review_source_plan.md` (rev 3.2), P1, P3 and P5. The verification fields, the drift report
+and the review rules that use them are at the end of this section.
+
+**Docs step on a hand-orchestrated close.** The pipeline has a Document-Update phase; a hand close has none, so it does this
+before closing: run `python3 tools/gate_checks/docs_search.py --changed-file <code path> ... --base-ref <start sha>` on the
+ticket's real diff (code paths only, not `docs/` or `agent-working/`), then
+- update each `required` doc that states the changed fact, and each `candidate` that restates it, or note the ones you skipped
+  and why in the ticket's Implementation Notes;
+- leave `excluded` docs alone (archive, audits, REGISTRY, historical or superseded plans, review and report records);
+- read `comment_hits`: a comment or docstring that states the changed invariant, lifecycle, concurrency or recovery behaviour
+  changes with the code;
+- or spawn doc-updater with the same command, which is what the pipeline does.
+The search and its classes are defined once in `tools/gate_checks/docs_search.py`; doc-updater's rules for candidates are in
+`.claude/agents/doc-updater.md` ("Satellite step").
+
+**Known defects and limits (P3).** When an audit or a ticket finds a behaviour defect, the same change adds a line to the
+subsystem's limits section, or to `docs/engine/known_limitations.md`, citing the defect ticket. When the fix lands, the fix PR moves
+the line into the ticket's completion summary; the limits section keeps a one-line "fixed in <ticket>" pointer only if the
+limit was published, for example in a release note.
+
+**Review rules (P5, the ones that do not depend on the verification fields).**
+- **Start from documents.** A feature, design or architecture review starts from the canonical docs. It reads code selectively
+  when the evidence is insufficient, dependencies have changed, or risk requires an independent check. Freshness of a doc is not
+  evidence that the code is correct.
+- **Scope.** A review report says whether it was a docs-and-governance audit or an implementation audit. A docs-only audit never
+  claims the code is correct.
+- **Pin.** Every audit names the commit it read and reads files at that commit (`git show <sha>:path`, or a worktree at the pin).
+  A branch behind `origin/main` is a valid subject when the review is about that branch. The rule bans only an unpinned read of a
+  stale working tree presented as if it described current main; the session-start behind-origin warning stays.
+- **Fix in the same PR.** A wrong explanatory doc found during review is fixed in the PR that found it. A wrong normative doc
+  (world rules, Mechanics Bible, engine and architecture contracts) goes to its rule owner as a defect ticket, or as an
+  `intentional_divergences.md` entry if the owner accepts the code's behaviour; nobody edits it to match the code.
+
+**Evidence fields and the drift report (P1).** A behaviour doc may carry `evidence_paths` (files), `verified_by` (ticket or PR),
+`verified_at` (the code SHA that was read) and `reviewed_by` (triaged, no staleness found); shapes are in
+`docs/guidelines/frontmatter_schema.md`. A doc gets `verified_by` only when someone checked every behaviour claim in it against its
+evidence at that revision, and a ticket records what was read and any exclusions; fixing one line, or reading the code for another
+purpose, does not verify it. When the evidence is insufficient the fields stay unset and the doc stays unverified. No state is stored
+besides these fields.
+- `python3 tools/gate_checks/doc_drift.py [--ref <ref>] [--doc <path>]` lists each doc as `needs-re-verify`, `verified_by`,
+  `reviewed_by` or `unverified`. It reads the pinned commit (printed first) and writes nothing. The baseline is the last commit that
+  changed the doc's `verified_by:` line, found from git, so it survives a squash merge; the rules for what counts as drift (evidence
+  changed, deleted or renamed, or the doc's own text changed since) are stated once in the module docstring.
+- It is advisory and never blocks. It runs at a pipeline Finalize (a `log` line in `implement-ticket.js`), in the weekly close
+  (`make agent-monitoring-close-week` prints the summary after the fold and its exit status is unchanged), and **at a hand close**:
+  run `python3 tools/gate_checks/doc_drift.py --start-sha <start sha> --format advisory` after the docs step and re-verify, or note in
+  the ticket why not, each doc it names.
+- To re-verify: read the changed evidence files and the changed doc text, correct the doc, then set new `verified_by` and
+  `verified_at`. A doc with no drift keeps its baseline, but that only means it has not changed, not that it is correct.
+- `python3 tools/gate_checks/doc_drift.py --mode detect --ref <pin>` is the pilot detection mode (stale-doc signals for docs with no
+  evidence fields). Every signal means "possibly stale", never "wrong"; the pilot's measured results are in
+  `agent-working/stored_artifacts/`.
+
+**Review rules that use the fields (P5).**
+- **When code is read.** A review reads code when the claim's evidence is missing (no `verified_by`), when it is invalidated (the
+  drift report says `needs-re-verify`), when it is insufficient (no test exercises the claim; a test covers only a narrow case, such
+  as a restore test at seed 0; or, for a critical invariant, the only test was written in the same change as the code), when no doc
+  answers the question, or when the claim is picked for an independent spot check.
+- **Critical invariants need evidence, not a re-read every time.** Determinism, conservation, persistence and restore, concurrency
+  and message acknowledgement need a verified doc plus an independent test of the claim. A weekly audit does not re-read their code
+  unless one of the triggers above applies.
+- **A doc shown as verified is verified.** Only `verified_by` is shown as verified; `reviewed_by` is shown as reviewed, and the topic
+  map does not count it.

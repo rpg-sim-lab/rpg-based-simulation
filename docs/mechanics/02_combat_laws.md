@@ -106,6 +106,9 @@ is_wound = damage > (defender.max_hp * 0.25) and defender.alive
     becomes an additional guard-priority qualifier, alongside the existing `hp_ratio < 0.8`/`< 0.7`
     checks.
 
+### 5.5 Skill Selection Tie-Break (COMB-264, COMB-265; divergence 2.144)
+Among the ready, in-range, affordable skills the entity picks the highest power. Deterministic tie-break: power, then skill id.
+
 ---
 
 ## 6. Area of Effect (AoE) Logic
@@ -127,6 +130,15 @@ attack is not yet legal only because its readiness is under 100 does not step: i
 (a held `ATTACK`, reason `HOLD_BETWEEN_BLOWS`) and strikes when readiness reaches 100, so it
 provokes no opportunity attack. It leaves only by a decision (flight, panic retreat, a declared
 ability, a goal that outranks the fight), and that decision pays the opportunity attack.
+A fighter does not flee into a blow it knows will finish it. When a flight would provoke the free swing of an engaged hostile (COMB-009) and the swing the subject has felt from that hostile is at least its remaining health, the flight is not taken: the subject stands and fights that hostile under the hold between blows. It knows only what it has felt. An engaged hostile that has not yet hit it is not assumed lethal, and a flight the free swing cannot reach (an evasive retreat) is unaffected (divergence 2.202).
+A fighter does not step off an engagement into a blow it knows will finish it, whatever moves it (a flight, an engage or bracketing step, or a stored target): when the step would provoke the free swing of an engaged hostile and the swing the subject has felt from that hostile is at least its remaining health, the step is not taken and the subject stays on its tile (divergence 2.204). An evasive retreat, which the free swing cannot reach, is unaffected. (The movement phase still walks a stored target while engaged when no blow is felt-lethal; see TCK-20261109-A-COMBAT-RETREAT-PROJECT-WALKS-THE-SUBJECT-AGAINST-THE-HELD-FLIGHT-RULE.)
+
+A hit is recorded with every body that struck in it. A simultaneous group hit (several engaged hostiles take their opportunity attacks on a disengaging subject in one tick) lowers the subject's health once; `CombatComponent.last_hit_attackers` lists every attacker in attacker-list order and `last_hit_damages` the share each took, summing to `last_hit_damage`; `last_attacker_id` stays the first (primary) attacker for the death cause. Every other hit records one attacker holding the whole blow. The next damaging hit replaces the set, so only the latest hit is remembered. The swing the subject has felt (the two rules above) is the sum of the shares of the last hit's attackers that are engaged with it and alive now, no longer the whole blow credited to the first attacker (divergence 2.148, amends 2.204).
+
+A fighter answers what hits it before it follows the group. Among hostiles in reach, a hostile that hit the fighter within `ATTACKED_RECENTLY_WINDOW_TICKS` (10, D-13 in `docs/plans/deferred_tuning_decisions_register.md`) ranks ahead of the group's shared target; adjacency still comes first, and between hostiles of the same standing the rest of the order is unchanged (group focus by trust, the current target, capability, lower health, nearer, lower id). A hostile that targets the fighter but has not hit it does not count (divergence 2.149).
+A strategic retreat (the brain choosing COMBAT_RETREAT) is not yet such a decision: it stays a stored target and takes no step,
+so a fighter leaves a fight to retreat only by a tactical decision (panic retreat, safety retreat) until the retreat-flight
+step after M1 (divergence 2.139).
 The same holds for every walk, not only the fighter's own: an entity with an engaged, perceived, hostile entity orthogonally
 adjacent takes no step from a stored navigation target (an idle walk toward an objective, a held move); it steps only on a target
 a decision sets that tick (`MovementCandidateSelector.movement_target`).
@@ -220,6 +232,14 @@ tactical pass has always chosen).
     adjacency and took an opportunity attack (COMB-009/272). The cost: an attacker whose target steps away no longer closes the gap
     through live tracking; it closes after OUT_OF_RANGE returns it to the brain, which for an idle entity runs once per
     `strategic_intelligence` cadence (10 in the live NORMAL policy, `policy.py:92`).
+    A target that this tick's OWN update clears and does not set (`navigation.target_clear`: a typed wait's HOLD, an ATTACK or
+    SKILL emission, a kill, a collapse) is not walked on that tick either: the movement phase reads the tick-start entity, which
+    still carries the target the update is removing, so `movement_target` returns no target for such an update
+    (`TCK-20261111-A-HOLD-MODE-MOVE-STILL-TAKES-A-STEP`). The movement mode HOLD means "takes no step of its own until a decision
+    moves it": the typed waits (WATCH_HOSTILE, AVOID_NO_ROUTE, HOLD_CHOKEPOINT) clear the stored target in the update that sets
+    HOLD; HOLD ends at the subject's next decision that sets a walk (reset to WANDER) and, for a collapse, when its sleep ends; a
+    reset never ends a HOLD while an action task is live (`hold_mode.hold_reset_kwargs`; the limit is stated in
+    `docs/engine/contracts/tactical_contract.md`, chokepoint hold).
 *   **Withheld-Action Task Reset**: The action router (`ActionRouter.execute_action`,
     `src/engine/domain/action_router.py`) reports `ReasonCode.ACTION_WITHHELD_BY_POSTURE` when its
     combat-posture gate withholds an `ATTACK`/`SKILL` (the attacker's recorded

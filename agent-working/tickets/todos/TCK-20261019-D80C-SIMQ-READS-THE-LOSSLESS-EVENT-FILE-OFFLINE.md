@@ -43,6 +43,10 @@ Decision 80 (C). The live stream (redis or in-process) is sampled under queue pr
 - The same run dir gives a byte-identical report on two hosts, or under artificial load.
 - The run_determinism sidecar is honoured (#649).
 - A run without the lossless file is refused.
+- (rpg-planner 2026-10-31, D80C ruling) On a fixed run, the offline report equals the in-process report (pillars and scores), with any difference itemised.
+- run_health records the recorder's _events_dropped_by_mode, the PEAK observability mode over the run (not only the final mode), and the drain worker's failure_count (an exception in quality_fn is otherwise silent: queue.py QueueDrainWorker._run).
+- Note (not gating): trace why simulation_events.jsonl holds exactly 3 more events than the metric_windows event_count sum in all 162 sweep runs (one window per run +3; candidate kernel.py:882, unverified).
+- Ordering (owner #715 6541804604): ahead of #781. Not ahead of the s42 SimQ re-anchor: the sweep's recorded counters are all 0 and the file conservation check holds; the re-anchor re-runs read failure_count and _events_dropped_by_mode, and a non-zero value puts D80C first.
 - The simulation hash is identical to v1.
 
 ## Related Tickets

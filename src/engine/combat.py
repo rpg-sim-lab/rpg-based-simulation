@@ -11,6 +11,7 @@ logger = logging.getLogger(__name__)
 from src.core.enums import EntityRole, ReasonCode
 from src.content_semantics.faction import are_entities_hostile
 from src.content_semantics.relation import RelationContext
+from src.core.lodging_rules import is_lodged
 from src.core.state import EquipSlot
 from src.engine.sleep_debt import is_weakened
 from src.engine.starvation import attack_scale
@@ -28,6 +29,13 @@ def _biological_attack_modifiers(bio: Any) -> Dict[str, float]:
     if weak < 1.0:
         out["STARVATION_WEAKENED"] = weak
     return out
+
+
+def _hit_outcome(hp_after: int, is_lethal: bool) -> Tuple[str, bool]:
+    """The outcome label and the defender's alive flag for a resolved hit, from the hp it leaves."""
+    if hp_after <= 0:
+        return ("KILL" if is_lethal else "DEFEAT"), False
+    return "SURVIVE", True
 
 
 class CombatResolutionSystem:
@@ -224,7 +232,7 @@ class CombatResolutionSystem:
         return CombatUpdate(
             damage_taken=damage,
             hp_delta=-damage,
-            attacker_id=attacker.id,
+            attacker_id=attacker.id, hit_tick_set=state.tick, hit_damage_set=damage,
             is_opportunity_attack=is_opportunity_attack,
             alive_set=alive,
             outcome_kind=outcome,
@@ -299,7 +307,7 @@ class CombatResolutionSystem:
         return CombatUpdate(
             damage_taken=damage,
             hp_delta=-damage,
-            attacker_id=attacker.id,
+            attacker_id=attacker.id, hit_tick_set=state.tick, hit_damage_set=damage,
             outcome_kind=outcome,
             alive_set=alive,
             equipment_upd=defender_equip_upd,
@@ -362,12 +370,7 @@ class CombatResolutionSystem:
                 failure_reason=ReasonCode.TARGET_INVALID
             )
 
-        new_hp = defender.combat.hp - total_damage
-        outcome = "SURVIVE"
-        alive = True
-        if new_hp <= 0:
-            outcome = "KILL" if is_lethal else "DEFEAT"
-            alive = False
+        outcome, alive = _hit_outcome(defender.combat.hp - total_damage, is_lethal)
 
         xp_gain = 0
         resource_transfers = []
@@ -400,7 +403,8 @@ class CombatResolutionSystem:
         return CombatUpdate(
             damage_taken=total_damage,
             hp_delta=-total_damage,
-            attacker_id=valid_attackers[0].id,
+            attacker_id=valid_attackers[0].id, hit_tick_set=state.tick, hit_damage_set=total_damage,
+            hit_attackers_set=tuple(i.attacker_id for i in intents), hit_damages_set=tuple(i.damage for i in intents),
             is_opportunity_attack=is_opportunity_attack,
             alive_set=alive,
             outcome_kind=outcome,
@@ -451,7 +455,7 @@ class CombatResolutionSystem:
                 )
 
                 updates[defender.id] = CombatUpdate(
-                    attacker_id=attacker.id,
+                    attacker_id=attacker.id, hit_tick_set=state.tick, hit_damage_set=primary_damage,
                     damage_taken=primary_damage,
                     hp_delta=-primary_damage,
                     alive_set=not is_kill,
@@ -491,7 +495,7 @@ class CombatResolutionSystem:
             dist = LegalityServiceV2.get_manhattan_dist(target_pos, other_ent.navigation.position)
             if dist <= radius:
                 # COMB-006: radius application legality — only living, active entities are valid splash targets
-                if not other_ent.combat.alive or not other_ent.lifecycle.active:
+                if not other_ent.combat.alive or not other_ent.lifecycle.active or is_lodged(other_ent):  # (F3: a lodger is indoors and is never splashed)
                     continue
                 if not are_entities_hostile(attacker, other_ent, RelationContext(distance=float(dist), combat_engaged=True)):
                     continue
@@ -509,7 +513,7 @@ class CombatResolutionSystem:
                     )
 
                     updates[other_id] = CombatUpdate(
-                        attacker_id=attacker.id,
+                        attacker_id=attacker.id, hit_tick_set=state.tick, hit_damage_set=v_damage,
                         damage_taken=v_damage,
                         hp_delta=-v_damage,
                         alive_set=not is_kill,

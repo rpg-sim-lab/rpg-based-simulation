@@ -301,3 +301,100 @@ def test_settings_json_hooks_wiring_count_bumped():
     text = Path("tests/tools/test_settings_json_hooks_wiring.py").read_text(encoding="utf-8")
     assert 'len(settings["hooks"]["PreToolUse"]) == 8' in text  # 8 since the M5B role guard was appended
     assert 'len(settings["hooks"]["PreToolUse"]) == 6' not in text
+
+
+# ---------------------------------------------------------------------------
+# Check E (TCK-20261024-PRE-PUSH-WARNS-ON-A-STALE-DOCS-REGISTRY) — advisory stale-registry line
+# ---------------------------------------------------------------------------
+
+def _registry_runner(changed, check_rc=2, check_raises=False):
+    calls = []
+
+    def run(cmd, timeout=30):
+        calls.append(cmd)
+        if "generate_registry.py" in " ".join(map(str, cmd)):
+            if check_raises:
+                raise OSError("boom")
+            return hook.CommandResult(check_rc, "", "")
+        return ok("\n".join(changed))
+
+    run.calls = calls
+    return run
+
+
+def test_check_e_fires_on_a_stale_registry_with_a_docs_change():
+    runner = _registry_runner(["docs/guides/new_guide.md", "tests/x.py"])
+    findings = hook.check_registry_fresh(runner)
+    assert len(findings) == 1 and "make docs-registry" in findings[0] and "git add docs/REGISTRY.yaml" in findings[0]
+
+
+def test_check_e_fires_for_a_ticket_change():
+    findings = hook.check_registry_fresh(_registry_runner([f"{TICKETS.as_posix()}/inprogress/TCK-20260101-X.md"]))
+    assert len(findings) == 1
+
+
+def test_check_e_is_silent_and_skips_the_check_when_no_registry_source_changed():
+    runner = _registry_runner(["tools/x.py", "docs/data.json", "README.md"])
+    assert hook.check_registry_fresh(runner) == []
+    assert not any("generate_registry.py" in " ".join(map(str, c)) for c in runner.calls)
+
+
+def test_check_e_is_silent_when_the_registry_is_current():
+    assert hook.check_registry_fresh(_registry_runner(["docs/guides/a.md"], check_rc=0)) == []
+
+
+@pytest.mark.parametrize("rc", [1, 3])
+def test_check_e_is_silent_when_the_check_command_errors_or_times_out(rc):
+    # default_run_command reports a timeout as returncode 1
+    assert hook.check_registry_fresh(_registry_runner(["docs/guides/a.md"], check_rc=rc)) == []
+
+
+def test_check_e_is_silent_when_the_command_raises_or_the_diff_fails():
+    assert hook.check_registry_fresh(_registry_runner(["docs/guides/a.md"], check_raises=True)) == []
+    failing = FakeRunner([(lambda c: True, hook.CommandResult(128, "", "no origin/main"))])
+    assert hook.check_registry_fresh(failing) == []
+
+
+# TCK-20261111-REGISTRY-REGEN-MISSES-A-MERGE-FINISHED-BY-COMMIT: a branch whose only registry-relevant change is
+# docs/REGISTRY.yaml itself (a bad merge of main's entries) must still reach the check.
+
+def test_check_e_fires_when_the_only_changed_path_is_the_registry_file():
+    runner = _registry_runner(["docs/REGISTRY.yaml"])
+    findings = hook.check_registry_fresh(runner)
+    assert len(findings) == 1 and "docs/REGISTRY.yaml" in findings[0] and "make docs-registry" in findings[0]
+    assert any("generate_registry.py" in " ".join(map(str, c)) for c in runner.calls)
+
+
+def test_check_e_is_silent_for_a_registry_only_diff_when_the_registry_is_current():
+    assert hook.check_registry_fresh(_registry_runner(["docs/REGISTRY.yaml"], check_rc=0)) == []
+
+
+# TCK-20261112-REGISTRY-REGEN-SKIPPED-BY-A-STALE-HOOK-OR-AN-UNTRACKED-DOC — check F: the installed post-commit hook is stale
+
+def _hook_runner(common_dir, script_text="#!/bin/bash\nnew\n"):
+    def run(cmd, timeout=30):
+        if cmd[:3] == ["git", "rev-parse", "--git-common-dir"]:
+            return ok(f"{common_dir}\n")
+        if cmd[:2] == ["git", "show"]:
+            return ok(script_text)
+        raise AssertionError(f"unexpected {cmd!r}")
+    return run
+
+
+def _install_hook(common_dir, text):
+    path = common_dir / "hooks" / "post-commit"
+    path.parent.mkdir(parents=True)
+    path.write_text(text, encoding="utf-8")
+
+
+def test_check_f_warns_when_the_installed_post_commit_differs_from_the_script(tmp_path):
+    _install_hook(tmp_path, "#!/bin/bash\nold copy\n")
+    findings = hook.check_installed_post_commit_current(_hook_runner(tmp_path))
+    assert len(findings) == 1 and "make install-hooks" in findings[0] and "post-commit" in findings[0]
+
+
+def test_check_f_is_silent_for_an_identical_hook_or_no_hook_or_an_error(tmp_path):
+    _install_hook(tmp_path, "#!/bin/bash\nnew\n")
+    assert hook.check_installed_post_commit_current(_hook_runner(tmp_path)) == []
+    assert hook.check_installed_post_commit_current(_hook_runner(tmp_path / "nowhere")) == []  # no hook installed
+    assert hook.check_installed_post_commit_current(lambda cmd, timeout=30: hook.CommandResult(128, "", "no git")) == []

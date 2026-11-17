@@ -7,6 +7,7 @@
     python3 -m codebase.health list [--tool T] [--file PREFIX]
     python3 -m codebase.health delete FILE TOOL RULE [--symbol S]
     python3 -m codebase.health tighten [--from DIR] [--yes]
+    python3 -m codebase.health move OLD_FILE NEW_FILE [--symbol S] [--from DIR]
 
 `check` exits 1 if a violation of a blocking tool is new or worse than its row, 2 if a tool or the registry is
 unusable, 0 otherwise. This is the entry point behind `make code-health` and the blocking `code-health` CI job.
@@ -17,6 +18,13 @@ skip. `check` also takes `--summary-for FILE` (paths the PR changed, one per lin
 Markdown summary, changed files first) and `--annotate` (print a GitHub `::error::` line on a failure and a
 `::warning::` line for a skipped tool). If the check cannot run (a tool or the registry is unusable) it still
 writes one "could not run" summary line and an error annotation, then exits 2.
+
+A definition moved to another file is still new in its new file (and `check` still fails it) and gone in the old one.
+`check` now also lists a "likely move" for each such pair (same symbol, tool and rule, at or under the row's ceiling;
+never a file-level row, `<module>` or jscpd) with the exact `move` command. `move` re-keys the rows of OLD_FILE that
+now have a finding in NEW_FILE, changing `file` only, so value, ceiling and review data are kept. It scans completely
+like `tighten`, and refuses with exit 2, writing nothing, if a moved finding is above its ceiling, NEW_FILE already
+has the row, `--symbol` names something that did not move, or nothing would move.
 """
 
 from __future__ import annotations
@@ -74,13 +82,14 @@ def _cmd_check(args: argparse.Namespace, root: Path, path: Path) -> int:
         raise
     # A skipped tool was not measured: its rows are neither "gone" nor "improved", so they stay out of the comparison.
     result = ratchet.compare(findings, [row for row in rows if row.tool not in skipped])
-    print(ratchet.format_report(result, args.limit))
+    moves = ratchet.likely_moves(result)
+    print(ratchet.format_report(result, args.limit, moves))
     if skipped:
         print(ratchet.skipped_note(skipped))
     if args.summary_out:
         changed = args.summary_for.read_text(encoding="utf-8").split() if args.summary_for else []
         with args.summary_out.open("a", encoding="utf-8") as handle:
-            handle.write(ratchet.format_summary(result, changed, args.limit, skipped) + "\n")
+            handle.write(ratchet.format_summary(result, changed, args.limit, skipped, moves) + "\n")
     if args.annotate:
         if result.blocking_failed:
             blocking = len(result.new) + len(result.worse) - len(result.report_only)
@@ -168,9 +177,22 @@ def _cmd_tighten(args: argparse.Namespace, root: Path, path: Path) -> int:
     return 0
 
 
+def _cmd_move(args: argparse.Namespace, root: Path, path: Path) -> int:
+    rows = registry.load_rows(path, root, check_files=False)
+    try:
+        moved, changes = registry.move_rows(rows, _findings(args, root), args.old_file, args.new_file, args.symbol)
+    except registry.MoveRefusedError as exc:
+        print(f"refusing: {exc.reason}. Nothing was written.", file=sys.stderr)
+        return 2
+    registry.write_rows(path, moved)
+    print("\n".join(changes))
+    print(f"moved {len(changes)} rows; {len(moved)} remain")
+    return 0
+
+
 COMMANDS: dict[str, Callable[[argparse.Namespace, Path, Path], int]] = {
     "check": _cmd_check, "scan": _cmd_scan, "seed": _cmd_seed, "validate": _cmd_validate,
-    "list": _cmd_list, "delete": _cmd_delete, "tighten": _cmd_tighten,
+    "list": _cmd_list, "delete": _cmd_delete, "tighten": _cmd_tighten, "move": _cmd_move,
 }
 
 
@@ -181,7 +203,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--registry", type=Path, default=None, help=argparse.SUPPRESS)
     parser.add_argument("--scan-root", default=scan.SCAN_ROOT, help=argparse.SUPPRESS)
     sub = parser.add_subparsers(dest="command", required=True)
-    for name in ("check", "seed", "tighten"):
+    for name in ("check", "seed", "tighten", "move"):
         sp = sub.add_parser(name)
         sp.add_argument("--from", dest="source", type=Path, help="reuse the raw output of an earlier scan")
         if name == "check":
@@ -192,6 +214,10 @@ def build_parser() -> argparse.ArgumentParser:
         if name == "seed":
             sp.add_argument("--force", action="store_true", help="reseed an existing registry (keeps review data)")
             sp.add_argument("--tool", choices=scan.ALL_TOOLS, help="seed only this tool's rows; other tools' rows are kept as they are")
+        if name == "move":
+            sp.add_argument("old_file")
+            sp.add_argument("new_file")
+            sp.add_argument("--symbol", help="move only this symbol's rows; every one of them must have moved")
         if name == "tighten":
             sp.add_argument("--yes", action="store_true", help="confirm deleting rows whose violation is gone")
     sub.add_parser("scan").add_argument("--out", type=Path)

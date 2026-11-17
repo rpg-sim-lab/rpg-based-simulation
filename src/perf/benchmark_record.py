@@ -55,8 +55,10 @@ from src.certification.hardware import HardwareClassifier
 from src.config.profiles import RuntimeProfile, SignalContract
 from src.core.governance import RuntimeMode
 from src.engine.work_units import WORK_MODEL_VERSION
+from src.perf.cpu_affinity import collect_cpu_affinity
+from src.perf.dependency_fingerprint import collect_dependency_fingerprint
 
-SCHEMA_VERSION = "1.3"  # 1.1 added the optional identity.runner section, 1.2 the optional after-collect keys of result.memory_mb, 1.3 the optional working_set_* keys of result.memory_mb (all additive: MINOR bumps, schema section 4)
+SCHEMA_VERSION = "1.5"  # 1.5 added the blocking identity.runtime.cpu_affinity, the blocking identity.runtime.dependency_fingerprint and the recorded-only identity.runtime.dependency_count, 1.4 added the optional outcome.check (the compare() check that produced a non-PASS outcome), 1.1 added the optional identity.runner section, 1.2 the optional after-collect keys of result.memory_mb, 1.3 the optional working_set_* keys of result.memory_mb (all additive: MINOR bumps, schema section 4)
 
 #: Source of ``result.cost_accounting_version`` (OD-8: a constant here, no engine edit). DEV-017 (#448) changed what a tick's and a phase's
 #: reported cost means, so a record without this value, or with another one, is not comparable on tick cost.
@@ -103,10 +105,13 @@ class Clock(str, Enum):
 
 
 class HashScheme(str, Enum):
-    """Digest schemes of ``validity.final_state_hash``. v2 since DEV-019 (#455); v1 survives in compile reports. Never compared across."""
+    """Digest schemes of ``validity.final_state_hash``. v5 since the proof digest hashes every attacker of the last hit and the share each took (CombatComponent.last_hit_attackers, last_hit_damages); v4 since the proof digest hashes the last felt blow (CombatComponent.last_hit_damage); v3 since the proof digest hashes the seven carried-state fields it omitted (TCK-20261024-PROOF-DIGEST-HASHES-THE-CARRIED-STATE-IT-OMITS); v2 since DEV-019 (#455); v1 survives in compile reports. Never compared across."""
 
     FLAT_SHA256_V1 = "flat-sha256-v1"
     FLAT_SHA256_V2 = "flat-sha256-v2"
+    FLAT_SHA256_V3 = "flat-sha256-v3"
+    FLAT_SHA256_V4 = "flat-sha256-v4"
+    FLAT_SHA256_V5 = "flat-sha256-v5"
 
 
 class OutcomeState(str, Enum):
@@ -116,6 +121,11 @@ class OutcomeState(str, Enum):
     REGRESSION = "REGRESSION"
     INCONCLUSIVE = "INCONCLUSIVE"
     NOT_APPLICABLE = "NOT_APPLICABLE"
+
+
+#: The ``compare()`` checks, in the order they run. ``Outcome.check`` is one of these for an outcome ``compare()`` decided, and ``None`` otherwise
+#: (a ``PASS``, a ``NOT_APPLICABLE``, or an outcome built outside ``compare()``). ``tools/perf/known_debt.py`` matches ledger signatures against it.
+CHECK_NAMES = ("schema", "each_side", "blocking_fields", "hash_scheme", "mode_sequences", "latency")
 
 
 def _coerce(obj: Any, name: str, enum_type: Type[Enum]) -> None:
@@ -202,6 +212,13 @@ class Runtime:
     #: The class the runner or profile claims. ``None`` means no claim. A claim that differs from ``hardware_class`` (detected) is INCONCLUSIVE.
     declared_hardware_class: Optional[str] = None
     det_port_tier: str = UNKNOWN
+    #: ``deps-v1:<sha256>`` of the installed runtime dependency closure (``src/perf/dependency_fingerprint.py``); ``UNKNOWN`` on a record from before schema 1.5. Blocking.
+    dependency_fingerprint: str = UNKNOWN
+    #: How many ``name==version`` lines were hashed. Recorded only, not blocking.
+    dependency_count: Optional[int] = None
+    #: The CPUs the process was allowed to run on, as a canonical range string (``"4-5"``, ``"0-5"``, ``"0,2-3"``; ``src/perf/cpu_affinity.py``); ``UNKNOWN`` on a
+    #: record from before schema 1.5. Blocking. ``logical_cores`` and ``hardware_class`` read the host and are NOT affected by pinning.
+    cpu_affinity: str = UNKNOWN
 
 
 @dataclass(frozen=True)
@@ -344,15 +361,23 @@ class Validity:
 
 @dataclass(frozen=True)
 class Outcome:
-    """A state and the reason for it. A reason is required: an outcome without one is a skip that reads as success."""
+    """A state and the reason for it. A reason is required: an outcome without one is a skip that reads as success.
+
+    ``check`` names the ``compare()`` check that produced a non-``PASS`` outcome (one of :data:`CHECK_NAMES`). Code that must recognise an outcome
+    (a known-debt entry) matches ``state`` and ``check``, never the free-text ``reason``. ``None`` for a ``PASS`` and for an outcome made outside
+    ``compare()``.
+    """
 
     state: OutcomeState
     reason: str
+    check: Optional[str] = None
 
     def __post_init__(self) -> None:
         _coerce(self, "state", OutcomeState)
         if not self.reason:
             raise BenchmarkRecordError("an outcome needs a reason")
+        if self.check is not None and self.check not in CHECK_NAMES:
+            raise BenchmarkRecordError(f"an outcome's check must be one of {CHECK_NAMES}, got {self.check!r}")
 
 
 @dataclass(frozen=True)
@@ -581,7 +606,8 @@ def git_state(root: Optional[Path] = None) -> Tuple[str, bool]:
         return UNKNOWN, True
 
 
-def _cpu_model() -> str:
+def cpu_model() -> str:
+    """The CPU model of this machine (``/proc/cpuinfo``, else ``platform.processor()``, else ``UNKNOWN``)."""
     try:
         lines = Path("/proc/cpuinfo").read_text(encoding="utf-8").splitlines()
     except OSError:
@@ -600,20 +626,32 @@ def observer_level(flags: Mapping[str, bool]) -> str:
     return "+".join(enabled) if enabled else "bare"
 
 
+def _dependency_fingerprint() -> Tuple[str, Optional[int]]:
+    """The installed-closure fingerprint, or ``(UNKNOWN, None)`` where it cannot be read (no ``packaging``, no ``pyproject.toml``, an unreadable metadata entry): a record is never refused for it."""
+    try:
+        return collect_dependency_fingerprint(unknown=UNKNOWN)
+    except Exception:  # noqa: BLE001 -- an unreadable environment is an unknown fingerprint, not a failed run
+        return UNKNOWN, None
+
+
 def collect_runtime(declared_hardware_class: Optional[str] = None) -> Runtime:
     """Read the interpreter and host. ``hardware_class`` is detected (OD-4); ``declared_hardware_class`` is only what the caller claims."""
     build_flavor = "free-threaded" if sysconfig.get_config_var("Py_GIL_DISABLED") else "gil"
+    dependency_fingerprint, dependency_count = _dependency_fingerprint()
     return Runtime(
         python_version=platform.python_version(),
         implementation=platform.python_implementation(),
         build_flavor=build_flavor,
         os=f"{platform.system()} {platform.release()}",
         arch=platform.machine(),
-        cpu_model=_cpu_model(),
+        cpu_model=cpu_model(),
         logical_cores=psutil.cpu_count(logical=True) or 1,
         ram_mb=int(psutil.virtual_memory().total // (1024 * 1024)),
         hardware_class=HardwareClassifier.detect_class().value,
         declared_hardware_class=declared_hardware_class,
+        dependency_fingerprint=dependency_fingerprint,
+        dependency_count=dependency_count,
+        cpu_affinity=collect_cpu_affinity(unknown=UNKNOWN),
     )
 
 
@@ -758,6 +796,8 @@ _BLOCKING: Tuple[Tuple[str, Any], ...] = tuple(
         "identity.runtime.ram_mb",
         "identity.runtime.hardware_class",
         "identity.runtime.det_port_tier",
+        "identity.runtime.dependency_fingerprint",
+        "identity.runtime.cpu_affinity",
         "identity.contract.signal_contract",
         "identity.contract.work_model_version",
         "identity.contract.verification_level",
@@ -786,8 +826,8 @@ def _get(record: BenchmarkRecord, path: str) -> Any:
     return value.value if isinstance(value, Enum) else value
 
 
-def _inconclusive(reason: str) -> Outcome:
-    return Outcome(OutcomeState.INCONCLUSIVE, reason)
+def _inconclusive(reason: str, check: Optional[str] = None) -> Outcome:
+    return Outcome(OutcomeState.INCONCLUSIVE, reason, check)
 
 
 def _major(version: str) -> str:
@@ -883,15 +923,17 @@ def _check_latency(base: BenchmarkRecord, head: BenchmarkRecord, thresholds: Thr
     return Outcome(OutcomeState.PASS, reason)
 
 
-#: In order. The first check that returns an outcome decides; ``_check_latency`` always does, so ``compare`` always returns one.
-_CHECKS: Tuple[Check, ...] = (
-    _check_schema,
-    _check_each_side,
-    _check_blocking_fields,
-    _check_hash_scheme,
-    _check_mode_sequences,
-    _check_latency,
+#: In order, each under its :data:`CHECK_NAMES` name. The first check that returns an outcome decides; ``_check_latency`` always does, so ``compare``
+#: always returns one. ``compare`` stamps the deciding check's name on a non-``PASS`` outcome as ``Outcome.check``.
+_CHECKS: Tuple[Tuple[str, Check], ...] = (
+    ("schema", _check_schema),
+    ("each_side", _check_each_side),
+    ("blocking_fields", _check_blocking_fields),
+    ("hash_scheme", _check_hash_scheme),
+    ("mode_sequences", _check_mode_sequences),
+    ("latency", _check_latency),
 )
+assert tuple(name for name, _ in _CHECKS) == CHECK_NAMES, "_CHECKS and CHECK_NAMES must list the same checks in the same order"
 
 
 def compare(base: Optional[BenchmarkRecord], head: Optional[BenchmarkRecord], thresholds: Thresholds = Thresholds()) -> Outcome:  # noqa: B008 - frozen
@@ -900,8 +942,8 @@ def compare(base: Optional[BenchmarkRecord], head: Optional[BenchmarkRecord], th
         return _inconclusive("no baseline record: nothing to compare against")
     if head is None:
         return _inconclusive("no head record")
-    for check in _CHECKS:
+    for name, check in _CHECKS:
         outcome = check(base, head, thresholds)
         if outcome is not None:
-            return outcome
+            return outcome if outcome.state is OutcomeState.PASS else replace(outcome, check=name)
     return _inconclusive("no check decided")  # unreachable: _check_latency always returns

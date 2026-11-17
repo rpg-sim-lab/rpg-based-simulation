@@ -103,7 +103,7 @@ class MovementCandidateSelector:
         """Whole tile -> ids of the active, living entities standing on it (the tick-start positions of ``entities``)."""
         index: dict[tuple[int, int], list[int]] = {}
         for other in entities.values():
-            if other.lifecycle.active and other.combat.alive:
+            if other.lifecycle.active and other.combat.alive and other.navigation.lodged_in is None:  # a lodger stands on no tile (F3)
                 pos = other.navigation.position
                 index.setdefault((int(pos[0]), int(pos[1])), []).append(other.id)
         return index
@@ -157,7 +157,9 @@ class MovementCandidateSelector:
     ) -> Optional[tuple[float, float]]:
         """Where ``entity`` is walking this tick: the target this tick's update sets, else the stored navigation target, live-refreshed
         for an entity-tracking move (see ``resolve_live_tracking_target``), or None for an entity holding an action task that sets no
-        target this tick (see ``holds_action_task``). Shared by the movement phase and ``select``.
+        target this tick (see ``holds_action_task``), or for an entity whose pending update clears the stored target and sets none
+        (``navigation.target_clear``: the tick-start entity still carries the target the update is removing). Shared by the movement
+        phase and ``select``.
 
         CONFLICT-04: leaving an engagement is a decision. An entity with an engaged, perceived, hostile entity orthogonally adjacent
         steps only on a target a decision sets this tick (a target set together with an ``ENTITY_MOVE`` task update: flight, panic
@@ -166,6 +168,8 @@ class MovementCandidateSelector:
         nav = ent_upd.navigation if ent_upd else None
         if nav and nav.target_set is not None and ent_upd and ent_upd.task is not None and ent_upd.task.work_kind_set == "ENTITY_MOVE":
             return nav.target_set  # a decision this tick
+        if nav and nav.target_set is None and nav.target_clear:
+            return None  # this tick's update clears the stored target (a typed wait, an attack, a kill, a collapse): nothing stored is left to walk
         target: Optional[tuple[float, float]]
         if nav and nav.target_set is not None:
             target = nav.target_set

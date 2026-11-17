@@ -10,7 +10,8 @@ Input: the harness output directory (``<world>__s<seed>.json``, ``<world>__poole
 same inputs (sorted keys, rows sorted by their key)::
 
     {"schema": "rpg-gate-baseline/v1", "milestone": "M0" (optional),
-     "provenance": {"commit_sha", "harness_hash", "worlds", "seeds", "ticks"},
+     "provenance": {"commit_sha", "harness_hash", "worlds", "seeds", "ticks",
+                    "known_file_sha256", "ci": {"run_id", "run_attempt", "event_name", "ref"} | null},
      "metrics": [run outcome   {id, class, scope: run, world, group, key?, tick?, per_seed, mean, se, k, floor},
                  pooled outcome {id, class, scope: pooled, world, group, key?, tick?, value, floor},
                  run validity   {id, class, scope: run, world, group, per_seed, violations: 0, oracle},
@@ -25,15 +26,22 @@ A candidate is never partial. :func:`build_candidate` raises :class:`CandidateRe
   runs (budget): a finding the rerun did not reproduce, or never got to confirm, is not a baseline. A first-pass fail/drift the rerun confirmed is accepted
   (it is what the baseline records as it stands). The report must also come from the documents' ``sha`` and ``harness_hash``;
 * a document is missing, unexpected for the config's worlds and seeds, unreadable, or ``no-data`` (any reason: a baseline can not be recorded from a run that did not run);
+* a document's ``runner.verdict`` is not ``PINNED``, or it has no ``runner`` field (``rpg_gate_run`` writes it from the run's manifest; a pooled document is PINNED only
+  when every document it pools is): behaviour evidence comes only from the pinned runner;
 * the documents disagree on ``sha`` or ``harness_hash`` (or ``sha`` differs from ``commit_sha`` when one is given);
 * a document's ``ticks`` or ``world`` / ``seed`` differs from the config or its file name;
 * a validity row has ``violations > 0`` with no current owner, or no integer ``violations`` / no ``oracle``. A baseline holds validity rows at 0 only, and
   validity is judged absolutely on every run, never against a baseline. So a row that fails but has a current, unexpired ``state: fail`` entry in
-  ``rpg_gate_known.yaml`` (``known_reds.owner_of``, matched by ``<metric_id>[:<group>]``) is OMITTED from the candidate (all its seeds and its pooled row)
+  ``rpg_gate_known.yaml`` (``known_reds.owner_of_finding``, matched by ``<metric_id>[:<group>]``; a scoped entry with ``cases`` owns only a fail it can verify) is OMITTED from the candidate (all its seeds and its pooled row)
   and listed in ``omitted_validity: [{row, known_match, ticket}]``; without that, one owned fail would block the whole baseline and every outcome drift
   behind it. An unowned or expired fail still refuses;
 * ``k``, ``floor`` or ``oracle`` disagree across the documents for one (id, group), or an outcome row lacks its numeric ``k`` / ``floor`` / value;
 * a run outcome row is not present in every seed of its world, or the config has fewer than 2 seeds (no standard error).
+
+``provenance.known_file_sha256`` is the sha256 of the exact bytes of the ``--known`` file the candidate was judged against (it decided which owned validity rows
+were omitted). ``provenance.ci`` is the CI run the documents came from, read from ``GITHUB_RUN_ID``, ``GITHUB_RUN_ATTEMPT``, ``GITHUB_EVENT_NAME`` and ``GITHUB_REF``;
+it is ``null`` unless all four are set and non-empty (a local build), never a guessed value. ``rebaseline()`` refuses a candidate whose ``ci`` is null or whose
+``ci.ref`` is not ``refs/heads/main``, so a baseline can only come from a main run's own candidate (TCK-20261023-RPG-GATE-CANDIDATE-RECORDS-ITS-CI-RUN-AND-KNOWN-FILE).
 
 ``evidence_only`` marks a candidate from a branch-ref dispatch: ``rebaseline()`` refuses it, because only a main run is a baseline source.
 
@@ -47,8 +55,10 @@ Exit 0 and the file written, or exit 2 and the refusal on stderr (nothing writte
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import math
+import os
 import re
 import statistics
 import sys
@@ -102,6 +112,10 @@ def _load(docs_dir: Path, config: GateConfig) -> Dict[Tuple[str, Optional[int]],
             raise CandidateRefused(f"{name}: not a JSON object")
         if doc.get("status") != "ok":
             raise CandidateRefused(f"{name}: no-data ({doc.get('reason', 'unknown reason')}): a baseline can not be recorded from a run without data")
+        runner = doc.get("runner")
+        if not isinstance(runner, dict) or runner.get("verdict") != "PINNED":
+            why = "no runner field" if not isinstance(runner, dict) else "; ".join(runner.get("differences") or []) or f"verdict {runner.get('verdict')!r}"
+            raise CandidateRefused(f"{name}: runner is not PINNED ({why}): a baseline can not be recorded from a run that was not on the pinned runner")
         if (doc.get("world"), doc.get("seed")) != (key[0], key[1]):
             raise CandidateRefused(f"{name}: records world {doc.get('world')!r} seed {doc.get('seed')!r}, not {key[0]!r} seed {key[1]!r}")
         if doc.get("ticks") != config.ticks:
@@ -172,9 +186,9 @@ def _validity(row: Mapping[str, Any], name: str) -> Tuple[int, str]:
     return violations, row["oracle"]
 
 
-def _omissions(docs: Mapping[Any, dict], config: GateConfig, known: Sequence[dict], today: dt.date) -> Dict[Tuple[str, str, str], dict]:
-    """``(world, id, group) -> known entry`` for every validity row that fails and is owned; an unowned or expired fail refuses the candidate."""
-    omitted: Dict[Tuple[str, str, str], dict] = {}
+def _omissions(docs: Mapping[Any, dict], config: GateConfig, known: Sequence[dict], today: dt.date) -> Dict[Tuple[str, str, str], List[dict]]:
+    """``(world, id, group) -> [known entries]`` for every validity row that fails and is owned; an unowned or expired fail refuses the candidate."""
+    omitted: Dict[Tuple[str, str, str], List[dict]] = {}
     for key, doc in docs.items():
         name = f"{key[0]}__s{key[1]}.json" if key[1] is not None else f"{key[0]}__pooled.json"
         for row in doc["metrics"]:
@@ -184,12 +198,15 @@ def _omissions(docs: Mapping[Any, dict], config: GateConfig, known: Sequence[dic
             if violations == 0:
                 continue
             group = row.get("group", "*")
-            entry = known_reds.owner_of(metric_test_id({"id": row["id"], "group": group}), known, state="fail")
+            finding = {"world": key[0], "scope": "run" if key[1] is not None else "pooled", "seed": key[1], "violations": violations, "examples": list(row.get("examples") or [])}
+            entry = known_reds.owner_of_finding(metric_test_id({"id": row["id"], "group": group}), finding, known, state="fail")
             if entry is None:
                 raise CandidateRefused(f"{name}: validity row {row['id']} has {violations} violation(s) and no owner in rpg_gate_known.yaml (state: fail); a baseline holds validity rows at 0, so the fail must be owned or fixed first")
             if known_reds.is_expired(entry, today):
                 raise CandidateRefused(f"{name}: validity row {row['id']} has {violations} violation(s) and its owner entry {entry['match']!r} expired on {entry['expires_on']}")
-            omitted[(key[0], row["id"], group)] = entry
+            owners = omitted.setdefault((key[0], row["id"], group), [])
+            if not any(o is entry for o in owners):
+                owners.append(entry)  # scoped entries can share a match: every owner is recorded, so each expiry is re-checked at rebaseline
     return omitted
 
 
@@ -218,18 +235,35 @@ def _sort_key(row: Mapping[str, Any]) -> Tuple[Any, ...]:
     return (row["world"], row["scope"], row["id"], row["group"], str(row.get("key", "")), -1 if row.get("tick") is None else row["tick"])
 
 
+CI_ENV = (("run_id", "GITHUB_RUN_ID"), ("run_attempt", "GITHUB_RUN_ATTEMPT"), ("event_name", "GITHUB_EVENT_NAME"), ("ref", "GITHUB_REF"))
+
+
+def ci_record(env: Mapping[str, str]) -> Optional[Dict[str, str]]:
+    """The CI run recorded in the candidate's provenance, read from the GitHub Actions variables in ``env``; ``None`` unless all four are set and non-empty (a local build), never a guess."""
+    record = {name: env.get(var) for name, var in CI_ENV}
+    return record if all(isinstance(value, str) and value for value in record.values()) else None
+
+
+def file_sha256(path: Path) -> str:
+    """The sha256 of the exact bytes of ``path``."""
+    return hashlib.sha256(Path(path).read_bytes()).hexdigest()
+
+
 def build_candidate(
     docs_dir: Path,
     config: GateConfig,
     known: Sequence[dict],
     report: Mapping[str, Any],
     *,
+    known_file_sha256: str,
+    env: Optional[Mapping[str, str]] = None,
     milestone: Optional[str] = None,
     commit_sha: Optional[str] = None,
     evidence_only: bool = False,
     today: Optional[dt.date] = None,
 ) -> dict:
-    """The candidate for ``docs_dir`` under ``config`` and the ``state: fail`` registry ``known``, or raise :class:`CandidateRefused`."""
+    """The candidate for ``docs_dir`` under ``config`` and the ``state: fail`` registry ``known``, or raise :class:`CandidateRefused`.
+    ``known_file_sha256`` is the hash of the known-reds file ``known`` was loaded from; ``env`` (default ``os.environ``) supplies the GitHub Actions run variables."""
     today = today or dt.datetime.now(dt.timezone.utc).date()
     if len(config.seeds) < MIN_SEEDS:
         raise CandidateRefused(f"the config has {len(config.seeds)} seed(s); a run outcome row needs at least {MIN_SEEDS} for a standard error")
@@ -251,12 +285,14 @@ def build_candidate(
     def omit(row: Mapping[str, Any], world: str, scope: str) -> bool:
         if row.get("class") == "validity" and (world, scope, row["id"]) in owned_missing:
             return True
-        entry = omitted.get((world, row["id"], row.get("group", "*")))
-        if entry is None:
+        owners = omitted.get((world, row["id"], row.get("group", "*")))
+        if not owners:
             return False
         label = row_label({"id": row["id"], "scope": scope, "world": world, "group": row.get("group", "*")})
-        if not any(o["row"] == label for o in omitted_rows):
-            omitted_rows.append({"row": label, "known_match": entry["match"], "ticket": entry["ticket"]})
+        for entry in owners:
+            item = {"row": label, "known_match": entry["match"], "ticket": entry["ticket"]}
+            if item not in omitted_rows:
+                omitted_rows.append(item)
         return True
 
     rows: List[dict] = []
@@ -321,7 +357,10 @@ def build_candidate(
     rows.sort(key=_sort_key)
     candidate: Dict[str, Any] = {
         "schema": SCHEMA,
-        "provenance": {"commit_sha": sha, "harness_hash": hhash, "worlds": list(config.worlds), "seeds": list(config.seeds), "ticks": config.ticks},
+        "provenance": {
+            "commit_sha": sha, "harness_hash": hhash, "worlds": list(config.worlds), "seeds": list(config.seeds), "ticks": config.ticks,
+            "known_file_sha256": known_file_sha256, "ci": ci_record(os.environ if env is None else env),
+        },
         "metrics": rows,
     }
     if undefined:
@@ -358,7 +397,7 @@ def main(argv: Optional[List[str]] = None) -> int:
     parser.add_argument("--evidence-only", action="store_true", help="mark the candidate as evidence from a branch-ref dispatch; rebaseline refuses it")
     args = parser.parse_args(argv)
     try:
-        candidate = build_candidate(args.docs, load_config(args.config), known_reds.load_known_reds(args.known, known_reds.RPG_GATE_SPEC), _read_report(args.report), milestone=args.milestone, commit_sha=args.commit_sha, evidence_only=args.evidence_only)
+        candidate = build_candidate(args.docs, load_config(args.config), known_reds.load_known_reds(args.known, known_reds.RPG_GATE_SPEC), _read_report(args.report), known_file_sha256=file_sha256(args.known), milestone=args.milestone, commit_sha=args.commit_sha, evidence_only=args.evidence_only)
     except BaselineError as exc:
         print(f"REFUSED: {exc}", file=sys.stderr)
         return 2

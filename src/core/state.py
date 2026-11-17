@@ -13,6 +13,7 @@ if TYPE_CHECKING:
     from src.domains.fame.legend import LegendFact
     from src.domains.belief_institution.model import BeliefInstitution
 from src.core.strategic import StrategicComponent
+from src.core.group_record import GroupBindingError, GroupRecord  # noqa: F401  (re-exported: pickles name src.core.state.GroupRecord)
 from src.core.death_cause import DeathRecord
 from src.core.enums import Faction, EntityRole, DiplomaticState, PassiveDeathCause
 from src.core.movement_modes import MovementMode
@@ -430,20 +431,23 @@ class CombatComponent:
     scars: List[ScarState] = field(default_factory=list)
     status_effects: List[StatusEffectState] = field(default_factory=list)
     latest_result: Optional["IntentResult"] = None
-    # Base terms of the combat-stat derivation (Bible 01 §2). Written once at spawn by
-    # V2EntityBuilder.build() as the RESIDUAL `spawned stat - attribute contribution` (see
-    # src.core.derived_stats.residual_base_terms) and never mutated afterwards. They are NOT declared
-    # stats and may be negative. Defaults equal the derivation's historical generic baseline, so an
-    # entity constructed without the builder behaves as before.
+    # Base terms of the combat-stat derivation (Bible 01 §2). Written once at spawn by V2EntityBuilder.build() as the RESIDUAL `spawned stat - attribute
+    # contribution` (see src.core.derived_stats.residual_base_terms), never mutated afterwards. NOT declared stats; may be negative. Defaults equal the
+    # derivation's historical generic baseline, so an entity constructed without the builder behaves as before.
     base_hp: int = 100
     base_atk: int = 10
     base_def: int = 5
     base_evasion: float = 0.05
-    # Accumulated permanent max-HP grants (near-death hardening). Kept apart from base_hp so the
-    # grant stays traceable (CAUSE-05 / HP-02); the derivation adds it as its own term.
+    # Accumulated permanent max-HP grants (near-death hardening), kept apart from base_hp so the grant stays traceable (CAUSE-05 / HP-02).
     permanent_max_hp_bonus: int = 0
     # The body that last took hp from this one by a hit, written by CombatPatch; a hazard or starvation death still names who last hit it.
     last_attacker_id: Optional[int] = None
+    last_hit_tick: Optional[int] = None  # the tick of that same hit (CombatPatch, with last_attacker_id): the act test's window; None until first hit
+    last_hit_damage: Optional[int] = None  # the damage of that same hit (CombatPatch, with last_attacker_id): what the subject has felt from that body; None until first hit
+    # Every body that took hp from this one by that same hit, in attacker-list order (a simultaneous group hit has several; every other hit has one), and the share each took: parallel to
+    # last_hit_attackers, summing to last_hit_damage. The next damaging hit replaces both; empty until first hit. last_attacker_id stays the primary (first) attacker.
+    last_hit_attackers: Tuple[int, ...] = ()
+    last_hit_damages: Tuple[int, ...] = ()
     _canonical_cache: Any = field(default=None, init=False, repr=False, compare=False)
 
     def to_canonical_dict(self) -> Dict[str, Any]:
@@ -456,6 +460,10 @@ class CombatComponent:
             "base_evasion": self.base_evasion,
             "permanent_max_hp_bonus": self.permanent_max_hp_bonus,
             "last_attacker_id": self.last_attacker_id,
+            "last_hit_tick": self.last_hit_tick,
+            "last_hit_damage": self.last_hit_damage,
+            "last_hit_attackers": list(self.last_hit_attackers),
+            "last_hit_damages": list(self.last_hit_damages),
             "hp": self.hp,
             "max_hp": self.max_hp,
             "atk": self.atk,
@@ -516,9 +524,11 @@ class NavigationComponent:
     # 0.0 = never stepped (free to step).
     step_ready_tick: float = 0.0
 
+    lodged_in: Optional[int] = None  # F3 (2.155): the building this subject LODGES in (position is its tile, on no tile held); set and cleared only by the apply path; LAST field (an insert is refused by the checkpoint schema check; an append needs a FIELD_RULES row)
+
     def to_canonical_dict(self) -> Dict[str, Any]:
         """The navigation block of the entity's canonical form. `step_ready_tick` (D75) is present only once non-zero, so the form of an
-        entity that never stepped is unchanged."""
+        entity that never stepped is unchanged; `lodged_in` (F3) likewise, only while lodged."""
         res = {
             "target": self.target,
             "path": self.path,
@@ -538,6 +548,8 @@ class NavigationComponent:
         }
         if self.step_ready_tick:
             res["step_ready_tick"] = self.step_ready_tick
+        if self.lodged_in is not None:
+            res["lodged_in"] = self.lodged_in  # present only while lodged, so the form of a subject that never lodged is unchanged (F3)
         return res
 
 
@@ -654,6 +666,11 @@ class IdentityComponent:
     properties: Dict[str, Any] = field(default_factory=dict)
     latest_intent_results: List["IntentResult"] = field(default_factory=list)
     _canonical_cache: Any = field(default=None, init=False, repr=False, compare=False)
+    # M1 (kind means species): the role label of the body (decision 50: a display label). In step 2 every writer sets it to the exact string it writes to `kind`, so step 3 can
+    # move the label readers onto it behaviour-neutrally; the true labels (role_id / profession_id, None for newborns) arrive in step 4, when `kind` becomes the species.
+    # Appended LAST so a checkpoint that predates it is refused or filled by the schema rule (checkpoint_fields.FIELD_RULES), never shifted. Omitted from the canonical dict
+    # while None. Nothing but tests, the carry sites and the presenter reads it yet.
+    occupation: Optional[str] = None
 
     def to_canonical_dict(self) -> Dict[str, Any]:
         if self._canonical_cache is not None:
@@ -673,6 +690,8 @@ class IdentityComponent:
             "personality": self.personality.to_canonical_dict(),
             "life_stage": str(self.life_stage)
         }
+        if self.occupation is not None:
+            res["occupation"] = self.occupation
         object.__setattr__(self, "_canonical_cache", res)
         return res
 
@@ -707,64 +726,6 @@ class AptitudeComponent:
             "wis_apt": self.wis_apt,
             "per_apt": self.per_apt,
             "cha_apt": self.cha_apt
-        }
-        object.__setattr__(self, "_canonical_cache", res)
-        return res
-
-
-@dataclass(frozen=True, slots=True)
-class GroupRecord:
-    """Authoritative state for a multi-entity coordination unit."""
-    id: int
-    leader_id: int
-    member_ids: Set[int]
-    anchor: tuple[float, float]
-    shared_target_id: Optional[int] = None
-    contract_id: Optional[str] = None
-    cohesion_radius: float = 5.0
-    last_updated_tick: int = 0
-    roles: Dict[int, str] = field(default_factory=dict) # entity_id -> role_name
-    str_apt: float = 1.0
-    int_apt: float = 1.0
-    agi_apt: float = 1.0
-    vit_apt: float = 1.0
-    end_apt: float = 1.0
-    formation_tick: int = 0
-    escort_target_id: Optional[int] = None
-    grievance_log: Tuple[str, ...] = ()
-    reward_pool: int = 0
-    last_leadership_check_tick: int = 0
-    dissolution_tick: Optional[int] = None
-    composition_score: float = 0.0  # PartyCompositionScorer result at formation (SOC-232)
-    _canonical_cache: Any = field(default=None, init=False, repr=False, compare=False)
-
-    def to_canonical_dict(self) -> Dict[str, Any]:
-        if self._canonical_cache is not None:
-            return self._canonical_cache
-        res = {
-            "id": self.id,
-            "leader_id": self.leader_id,
-            "member_ids": sorted(list(self.member_ids)),
-            "anchor": self.anchor,
-            "shared_target_id": self.shared_target_id,
-            "contract_id": self.contract_id,
-            "cohesion_radius": self.cohesion_radius,
-            "last_updated_tick": self.last_updated_tick,
-            "roles": {str(k): v for k, v in sorted(self.roles.items())},
-            "aptitudes": {
-                "str": self.str_apt,
-                "int": self.int_apt,
-                "agi": self.agi_apt,
-                "vit": self.vit_apt,
-                "end": self.end_apt
-            },
-            "formation_tick": self.formation_tick,
-            "escort_target_id": self.escort_target_id,
-            "grievance_log": list(self.grievance_log),
-            "reward_pool": self.reward_pool,
-            "last_leadership_check_tick": self.last_leadership_check_tick,
-            "dissolution_tick": self.dissolution_tick,
-            "composition_score": self.composition_score,
         }
         object.__setattr__(self, "_canonical_cache", res)
         return res
@@ -987,10 +948,8 @@ class EntityState:
                     "kind": v.kind,
                      "status": str(v.status),
                     "active_objective_id": v.active_objective_id,
-                    "objectives": [
-                        {f: val for f, val in asdict(o).items() if not (f == "target_entity_id" and val is None)}
-                        for o in v.objectives
-                    ]
+                    "objectives": v.canonical_objectives(),
+                    **v.canonical_extra(),
                 } for k, v in sorted(self.strategic.projects.items())},
                 "directives": {k: asdict(v) for k, v in sorted(self.strategic.directives.items())},
                 "blockers": {k: asdict(v) for k, v in sorted(self.strategic.blockers.items())},
@@ -1119,7 +1078,8 @@ class EntityState:
                 life_stage=id_comp.life_stage,
                 group_id=id_comp.group_id,
                 properties=ReadOnlyDict(id_comp.properties),
-                latest_intent_results=tuple(id_comp.latest_intent_results)
+                latest_intent_results=tuple(id_comp.latest_intent_results),
+                occupation=id_comp.occupation,
             )
 
         inv_comp = self.inventory
@@ -1263,6 +1223,7 @@ class BuildingState:
     # Commercial paid work (content ``hires_for_pay``, ruling 66): a shift is paid from the building's own purse only.
     hires_for_pay: bool = False
     _canonical_cache: Any = field(default=None, init=False, repr=False, compare=False)
+    beds: int = 0  # F3 (2.155), content: beds lodged at once (0 = none); occupancy is derived from entities' lodged_in; LAST field (an insert is refused by the checkpoint schema check; a pre-F3 pickle reads it missing, then refused)
 
     def to_canonical_dict(self) -> Dict[str, Any]:
         if self._canonical_cache is not None:
@@ -1281,6 +1242,8 @@ class BuildingState:
             "maintenance_shifts_done": self.maintenance_shifts_done,
             "hires_for_pay": self.hires_for_pay,
         }
+        if self.beds:
+            res["beds"] = self.beds  # present only once non-zero, so a building that lodges no one keeps its canonical form
         object.__setattr__(self, "_canonical_cache", res)
         return res
 
@@ -1321,6 +1284,19 @@ class CampState:
         }
         object.__setattr__(self, "_canonical_cache", res)
         return res
+
+
+GROUP_ID_BASE = 10000
+FACTION_SQUAD_ROLE = "FACTION_SQUAD"
+
+
+def seeded_next_group_id(groups: Any) -> int:
+    """max(10000, highest non-squad group id + 1); squad records (hash ids) are skipped by role."""
+    ids = [
+        g_id for g_id, g in groups.items()
+        if isinstance(g_id, int) and FACTION_SQUAD_ROLE not in getattr(g, "roles", {}).values()
+    ]
+    return max([GROUP_ID_BASE, *(i + 1 for i in ids)])
 
 
 @dataclass(frozen=True, slots=True)
@@ -1536,6 +1512,12 @@ class AuthoritativeState:
     next_node_id: int = 1000
     next_entity_id: int = 1
     next_item_instance_id: int = 1
+    # Group id counter (TCK-20261031-A-NEW-GROUP-ID-OVERWRITES-A-LIVE-GROUP): only rises; decision
+    # code reads it, ApplyPath advances it from StateUpdate.next_group_id_set. Squad records (hash
+    # ids, FACTION_SQUAD role) never advance it.
+    # Keep this the LAST field: an append keeps older checkpoints restorable (FIELD_RULES fills the absent slot); an insert is refused by the
+    # checkpoint schema check (a slotted dataclass unpickles positionally, so it would shift the saved values).
+    next_group_id: int = GROUP_ID_BASE  # never None; nothing seeds it at construction. A checkpoint that lacks the slot is filled by checkpoint_fields (FIELD_RULES) at restore, then checked there
 
     def to_readonly(self) -> AuthoritativeState:
         """Returns a read-only view of the entire world state."""

@@ -3883,7 +3883,7 @@
 - id: SUBSTRATE-NEW-002
   text: "WorldProceduralGenerator (WORLD-GEN-003/004) is fully deterministic: uses\
     \ a DeterministicRNG(seed) instance (src/platform/rng.py) \u2014 global random\
-    \ state is never read or written. Same (intent, catalog_repo) inputs produce bit-identical\
+    \ state is never read or written. Same (intent, catalog_repo) inputs produce, in any process and at any PYTHONHASHSEED, bit-identical\
     \ WorldSpec, CompileContext, and ProvenanceManifest (except created_at timestamp).\
     \ Validation failures (GENERATED_WORLD context) are reported but do NOT abort\
     \ generation.\n"
@@ -3903,7 +3903,7 @@
     \ dict iteration order over `factions` which is itself built by iterating `self.catalog_repo.factions`\
     \ in file-load order). `test_procedural_generator_determinism` (existing, unmodified)\
     \ re-confirms bit-identical output for same-seed reruns after this change -- not\
-    \ just assumed unaffected.\n"
+    \ just assumed unaffected.\nUPDATE 2026-11-16 (TCK-20261030-WORLD-GENERATOR-RESOURCE-TYPE-PICK-FOLLOWS-PYTHONHASHSEED): the resource-type candidate list was list(set(...)), so the same seed and intent gave a different set of resource types per process; it is now sorted(set(...)). Cross-process proof: tests/unit/worldgeneration/test_generator_hash_seed_independence.py (subprocess per PYTHONHASHSEED 0-3). Divergence 2.145.\n"
   proof_type: null
   test_path: tests/unit/worldgeneration/test_generator.py
   divergence_note: "created_at in ProvenanceManifest is wall-clock (datetime.now(timezone.utc))\
@@ -4319,7 +4319,7 @@
   status: verified
   priority: P2
   legacy_evidence: null
-  v2_evidence: 'src/observability/event_extractor.py -- `biological_state_changed`/`stamina_changed`
+  v2_evidence: 'src/observability/extraction/vitals.py -- `biological_state_changed`/`stamina_changed`
     diff blocks, guarded by a local `_is_real_number()` isinstance helper (defensive
     against MagicMock-based test fixtures elsewhere in the suite that don''t wire
     `.biological`/`.stamina`, never true for a real EntityState). Confirmed firing
@@ -4363,14 +4363,14 @@
   status: verified
   priority: P2
   legacy_evidence: null
-  v2_evidence: 'src/observability/event_extractor.py -- `attribute_changed` diff block,
-    guarded by the same `_is_real_number()` isinstance helper as SUB-375. Real producer
-    (`evolution.py` non-hero level-up) confirmed too rare to hit within a real, non-mocked
-    1500-tick `Kernel.tick_once()` loop on `sandbox_world` (zero HERO-role entities
-    among the 8 WORKER/3 GUARD/7 CITIZEN present, none leveled up in that window)
-    -- checked directly, not assumed. Verified instead via real hand-constructed `AttributeComponent`
-    objects passed through the real `EventExtractor.extract()` function directly,
-    same fallback pattern as COMB-296''s wound/scar verification.
+  v2_evidence: 'src/observability/extraction/vitals.py -- `attribute_changed` diff
+    block, guarded by the same `_is_real_number()` isinstance helper as SUB-375. Real
+    producer (`evolution.py` non-hero level-up) confirmed too rare to hit within a
+    real, non-mocked 1500-tick `Kernel.tick_once()` loop on `sandbox_world` (zero
+    HERO-role entities among the 8 WORKER/3 GUARD/7 CITIZEN present, none leveled
+    up in that window) -- checked directly, not assumed. Verified instead via real
+    hand-constructed `AttributeComponent` objects passed through the real `EventExtractor.extract()`
+    function directly, same fallback pattern as COMB-296''s wound/scar verification.
 
     '
   proof_type: regression
@@ -4412,7 +4412,7 @@
   status: verified
   priority: P2
   legacy_evidence: null
-  v2_evidence: 'src/observability/event_extractor.py -- `item_equipped`/`item_unequipped`/
+  v2_evidence: 'src/observability/extraction/vitals.py -- `item_equipped`/`item_unequipped`/
     `equipment_durability_changed` diff blocks, guarded by `isinstance(..., dict)`
     checks on `entity.equipment.slots`/`.durability` and the same `_is_real_number()`
     helper for durability floats (defensive against MagicMock-based test fixtures
@@ -4471,7 +4471,7 @@
   status: verified
   priority: P2
   legacy_evidence: null
-  v2_evidence: 'src/observability/event_extractor.py -- 4 new diff blocks, guarded
+  v2_evidence: 'src/observability/extraction/vitals.py -- 4 new diff blocks, guarded
     by the same `_is_real_number()` helper for the int-typed role/faction fields and
     `isinstance(..., (set,frozenset)/dict)` checks for known_recipes/cooldowns (defensive
     against MagicMock-based test fixtures elsewhere in the suite). `recipe_learned`''s
@@ -5211,3 +5211,56 @@
     an advisory. The resolved region-list order is the carrier (src/core/state.py
     is untouched). The old smallest-area rule was measured and failed for partial
     overlaps (the thin bandit_road strip won every contested point).
+- id: SUB-398
+  text: The FACTION_SQUAD group_id that MilitaryConflictPhase commits is independent
+    of PYTHONHASHSEED. It is stable_int31(contested_region_id, attacker_id, tick),
+    a blake2b digest of a type-tagged encoding modulo 2**31, so the squad's key in
+    state.groups and the canonical state hash are equal in every process.
+  status: verified
+  priority: P0
+  legacy_evidence: null
+  v2_evidence: src/engine/military_conflict.py squad commitment group_id; src/core/stable_hash.py
+    stable_int31 (TCK-20261023-SALTED-HASH-IN-HASHED-STATE-FACTION-SQUAD-GROUP-ID)
+  proof_type: null
+  test_path: tests/unit/domains/faction/test_squad_group_id_hashseed.py
+  divergence_note: intentional_divergences.md 2.141 (Bug Fix)
+  support_boundary: Proved on a hand-built WAR state (two hash seeds, two processes
+    each). No gate world forms a squad (probe A0 found none on crowded_frontier, frontier_living_world
+    or urban_political for seeds 42-46 at 5000 ticks), so no gate run exercises this
+    path; paired --neutral IDENTICAL on those worlds shows only that (divergence 2.141).
+- id: SUB-399
+  text: PerceptionFilterService gives the same entity_id and node_id for a non-int
+    signal id in every process (stable_int31 of the signal id, not the salted hash()).
+  status: verified
+  priority: P0
+  legacy_evidence: null
+  v2_evidence: src/domains/perception/filter.py; src/core/stable_hash.py stable_int31
+    (TCK-20261023-SALTED-HASH-IN-HASHED-STATE-FACTION-SQUAD-GROUP-ID)
+  proof_type: null
+  test_path: tests/unit/domains/perception/test_filter_ids_hashseed.py
+  divergence_note: intentional_divergences.md 2.141 (Bug Fix)
+  support_boundary: PerceptionPhase is not wired into production state, so this
+    closes a latent hazard; no run changes because of it.
+
+- id: SUB-402
+  text: An entity carries its occupation (a role label) as its own typed field,
+    IdentityComponent.occupation, appended last and left out of the canonical dict while None.
+    In step 2 every build path writes the exact string it writes to kind, the campaign survivor
+    rebuild and the entity copies carry it, the presenter shows it next to kind, and species_of
+    is the one way to read a species. Nothing branches on it yet; the true labels and kind
+    becoming the species are step 4.
+  status: verified
+  priority: P1
+  legacy_evidence: null
+  v2_evidence: src/core/state.py IdentityComponent.occupation; src/core/species.py species_of;
+    src/engine/checkpoint_fields.py FIELD_RULES (occupation); src/worldbuilding/compiler.py,
+    src/entities/archetype_factory.py, src/worldassembly/entity_spawner.py,
+    src/systems/world_systems/generator.py, src/domains/campaigns/runner.py (writers);
+    src/domains/campaigns/orchestrator.py and state.py (carry-forward); src/api/presenters/state_presenter.py
+    (TCK-20261109-M1-KIND-ALWAYS-MEANS-SPECIES-AND-OCCUPATION-IS-ITS-OWN-FIELD)
+  proof_type: null
+  test_path: tests/unit/core/test_occupation_field.py
+  divergence_note: null
+  support_boundary: Step 2 changes no behaviour; only the state hash moves, by the added field
+    (the designer's neutral-by-projection proof is a measured step, not part of this row).
+    The kind-is-species flip and its divergence entry are step 4.

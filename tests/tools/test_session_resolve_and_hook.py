@@ -21,6 +21,7 @@ for _p in (str(REAL_ROOT), str(REAL_ROOT / "tools" / "agent-monitoring")):
     if _p not in sys.path:
         sys.path.insert(0, _p)
 
+from tools import graphify_shim  # noqa: E402
 from tools.sessions import manifest_diff as md  # noqa: E402
 from tools.sessions import session_start_hook as hook  # noqa: E402
 from tools.sessions import state as st  # noqa: E402
@@ -88,8 +89,17 @@ def test_snapshot_round_trips_and_rejects_a_malformed_dict():
 
 # ---- the hook ----------------------------------------------------------------------------------
 
+_PLENTY_FREE = 500 * 1024**3
+
+
 @pytest.fixture
-def world(tmp_path):
+def world(tmp_path, monkeypatch):
+    """TCK-20261024-SESSION-HOOK-TEST-STUBS-DISK-HEADROOM: the real runner's free space must not reach the context
+    (below 10 GB it embeds "only 6.8 GB free", which differs between two calls), so the probe reports plenty."""
+    from tools.sessions import disk_headroom as dh
+    monkeypatch.setattr(dh, "free_bytes", lambda _root: _PLENTY_FREE)
+    # the host's own graphify must not reach the context
+    monkeypatch.setattr(graphify_shim, "advisory_line", lambda _root, **_kw: "")
     root = tmp_path / "root"
     shutil.copytree(REAL_ROOT / "registries", root / "registries",
                     ignore=shutil.ignore_patterns("*.jsonl"))
@@ -123,6 +133,23 @@ def _manifest_wt(world, role_id):
 def _ctx(world, payload, env=None):
     root, repo, state_root = world
     return hook.build_context(payload, env or {}, root, state_root)
+
+
+def test_the_disk_line_appears_when_the_probe_reports_low_space(world, monkeypatch):
+    from tools.sessions import disk_headroom as dh
+    assert "disk-headroom:" not in _ctx(world, _payload(world[1]))
+    monkeypatch.setattr(dh, "free_bytes", lambda _root: 3 * 1024**3)
+    assert "disk-headroom: only 3.0 GB free" in _ctx(world, _payload(world[1]))
+
+
+def test_the_graphify_line_appears_only_when_the_advisory_says_so_and_a_failure_is_silent(world, monkeypatch):
+    monkeypatch.setattr(graphify_shim, "advisory_line", lambda _root, **_kw: "graphify-version: stray")
+    assert "graphify-version: stray" in _ctx(world, _payload(world[1]))
+
+    def boom(_root, **_kw):
+        raise RuntimeError("x")
+    monkeypatch.setattr(graphify_shim, "advisory_line", boom)
+    assert "graphify-version" not in _ctx(world, _payload(world[1]))
 
 
 def test_resolved_role_gets_its_card_and_only_its_own_handover(world):
@@ -462,12 +489,19 @@ def test_a_missing_gh_leaves_the_output_unchanged(world, tmp_path, monkeypatch):
 
 def test_a_hanging_gh_is_cut_off_at_the_timeout(world, tmp_path, monkeypatch):
     monkeypatch.setenv("SESSION_START_ISSUES", "off")
+    start = time.monotonic()
     baseline = _ctx(world, _payload(world[1]))
+    baseline_s = time.monotonic() - start
     _gh(tmp_path, monkeypatch, "exec sleep 30")
     monkeypatch.setattr(hook, "ISSUE_TIMEOUT_S", 0.5)
     start = time.monotonic()
     out = _ctx(world, _payload(world[1]))
-    assert time.monotonic() - start < 5
+    hanging_s = time.monotonic() - start
+    # The hook's own work under machine load was ~4.5 s once (TCK-20261025-HANGING-GH-TEST-BOUND-RELATIVE-TO-BASELINE),
+    # so bound what the cut-off adds: the timeout plus 2 s of process-spawn slack over the same call without gh. The
+    # absolute ceiling stays well under the 30 s sleep, so a cut-off that never fires still fails.
+    assert hanging_s <= baseline_s + hook.ISSUE_TIMEOUT_S + 2
+    assert hanging_s < 20
     assert out == baseline
 
 

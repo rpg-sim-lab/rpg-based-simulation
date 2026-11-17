@@ -17,8 +17,13 @@ from __future__ import annotations
 from enum import Enum
 from typing import List, Sequence, Tuple
 
+from src.content_semantics.faction import are_entities_hostile
+from src.content_semantics.relation import RelationContext
+from src.core.movement_modes import MovementMode
 from src.core.state import EntityState
 from src.domains.combat_engagement.power import apparent_power
+from src.engine.need_wake import NEED_WAKE_CADENCE
+from src.engine.starvation import STARVING_LINE
 
 # A subject whose safety disposition is above this is "cautious" for the SAFETY_PRESSURE_RETREAT branch (the
 # value that gate has always used; content has levels 0.9 and 0.75 and below, so it separates high from the rest).
@@ -57,6 +62,19 @@ def _is_closing(entity: EntityState, hostile: EntityState, distance_now: float) 
     return distance_now <= THREAT_RANGE and previous is not None and distance_now < _distance(entity, previous)
 
 
+def perceived_threats(entity: EntityState, neighbors: List[EntityState]) -> List[EntityState]:
+    """Perceived LIVING neighbors the entity's appraisal counts as hostile (same predicate as
+    AppraisalSystem.evaluate_emotional_state), so a retreat flees what the panic gate saw. A dead body is in the neighbour view but is not a threat."""
+    sx, sy = entity.navigation.position
+    return [
+        n for n in neighbors
+        if n.combat.alive and are_entities_hostile(entity, n, RelationContext(
+            distance=abs(n.navigation.position[0] - sx) + abs(n.navigation.position[1] - sy),
+            combat_engaged=True,
+        ))
+    ]
+
+
 def present_threat_terms(entity: EntityState, hostiles: Sequence[EntityState]) -> List[ThreatTerm]:
     """
     The AGENCY-07 threat terms that hold for `entity` given the hostiles it perceives, in a fixed order; empty when
@@ -78,6 +96,75 @@ def present_threat_terms(entity: EntityState, hostiles: Sequence[EntityState]) -
     return terms
 
 
+def present_threats(entity: EntityState, hostiles: Sequence[EntityState]) -> List[EntityState]:
+    """The perceived ``hostiles`` when they make a present threat to ``entity`` (`present_threat_terms` is non-empty), else none: the ONE test that a panic flight
+    (`TacticalDecisionSystem`), a retreat project's adoption (`CombatRetreatScorer`) and its completion (`retreat_outcome`) share (TCK-20261031-A-RETREAT-PROJECT-OUTLIVES-ITS-THREAT)."""
+    return list(hostiles) if hostiles and present_threat_terms(entity, hostiles) else []
+
+
 def safety_retreat_warranted(entity: EntityState, hostiles: Sequence[EntityState], safety_pressure: float) -> bool:
     """A cautious subject retreats only from a present threat; it never retreats from a hostile merely seen."""
     return bool(hostiles) and safety_pressure > CAUTIOUS_SAFETY_PRESSURE and bool(present_threat_terms(entity, hostiles))
+
+
+# (a) The typed work that is an attack or a pursuit with the subject as its target (memo row 88 item 5). A task kept current until the hostile's
+# next decision still counts, with no reach test: a committed act, at most one decision stale.
+ATTACK_ACTIONS = frozenset({"ATTACK", "SKILL"})  # ENTITY_ACT: a basic attack, a skill, and the queued swing HOLD_BETWEEN_BLOWS (action ATTACK)
+PURSUIT_MODES = frozenset({MovementMode.PURSUE, MovementMode.INTERCEPT})  # ENTITY_MOVE: closing on, or cutting off, the target
+BRACKETING_REASON = "BRACKETING"  # ENTITY_MOVE in REPOSITION mode (tactical.py): the one move whose only typed mark is its reason, because REPOSITION also carries SEEK_COVER
+
+
+def _task_acts_on(hostile: EntityState, subject_id: int) -> bool:
+    """(a) The hostile's current task is an attack or a pursuit whose typed target is the subject. A bare `target_id` on any other task does not count
+    (watching, guarding, kiting, taking cover, a chokepoint hold)."""
+    task = hostile.task
+    if task is None or task.payload.get("target_id") != subject_id:
+        return False
+    if task.work_kind == "ENTITY_ACT":
+        return task.payload.get("action") in ATTACK_ACTIONS
+    if task.work_kind == "ENTITY_MOVE":
+        return hostile.navigation.movement_mode in PURSUIT_MODES or task.payload.get("reason") == BRACKETING_REASON
+    return False
+
+
+def _hit_acts_on(hostile: EntityState, subject: EntityState, tick: int) -> bool:
+    """(b) The hostile is one of the bodies that took hp from the subject in its last hit, and that hit is within one brain cadence (opportunity hits included: they are hits).
+
+    A simultaneous group hit has several attackers; each of them struck the subject (`last_hit_attackers`). Past the starving line (the subject's hunger at or above
+    `STARVING_LINE`) a hit acts only while ITS hitter can still reach the subject: Manhattan distance, at the decision tick, within max(1, that hitter's
+    `combat.range`), with no line-of-sight test. Each member of a group hit is judged on its own reach. A hitter that pursues or attacks the subject still acts
+    through term (a). Below the line the window is as before."""
+    hit_tick = subject.combat.last_hit_tick
+    if hit_tick is None or hostile.id not in subject.combat.last_hit_attackers or tick - hit_tick > NEED_WAKE_CADENCE:
+        return False
+    if subject.biological.hunger >= STARVING_LINE:
+        return _distance(subject, hostile.navigation.position) <= max(1, hostile.combat.range)
+    return True
+
+
+# D-13 (docs/plans/deferred_tuning_decisions_register.md): how recent a hit makes its attacker "attacking me" in target selection. 10 ticks today because that equals the row 88 act-test
+# window (NEED_WAKE_CADENCE); a separate constant on purpose, since the two mean different things and may be retuned apart. No test pins them equal.
+ATTACKED_RECENTLY_WINDOW_TICKS = 10
+
+
+def attacked_me_recently(hostile: EntityState, subject: EntityState, tick: int) -> bool:
+    """True when `hostile` is one of the bodies that took hp from `subject` in its last hit and that hit is within ATTACKED_RECENTLY_WINDOW_TICKS (target_score's self-defence term).
+
+    Reads the typed hit record (`last_hit_attackers`, `last_hit_tick`); a hostile that targets the subject but has not hit it does not count."""
+    hit_tick = subject.combat.last_hit_tick
+    return hit_tick is not None and hostile.id in subject.combat.last_hit_attackers and tick - hit_tick <= ATTACKED_RECENTLY_WINDOW_TICKS
+
+
+def hostile_acts_on(hostile: EntityState, subject: EntityState, tick: int) -> bool:
+    """True when `hostile` acts on `subject` by an act: its current task attacks or pursues the subject, or it hit the subject within the window."""
+    return _task_acts_on(hostile, subject.id) or _hit_acts_on(hostile, subject, tick)
+
+
+def need_yields(entity: EntityState, hostiles: Sequence[EntityState], tick: int) -> bool:
+    """True when a pressing need gives way: one of `hostiles` ACTS on `entity` (SURV-07 LAW P, memo row 88; `hostile_acts_on`).
+
+    The other half of the one predicate pair with `need_pull.need_is_pressing`: every site that weighs a pressing need against another goal or act calls both and
+    re-derives neither. `src.ai.goals.present_threat.acting_threat_to` is this predicate over the subject's perceived hostiles. Flight still reads
+    `present_threat_terms` (AGENCY-07)."""
+    return any(hostile_acts_on(h, entity, tick) for h in hostiles)
+

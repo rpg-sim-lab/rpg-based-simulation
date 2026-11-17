@@ -20,6 +20,8 @@ from src.worldassembly.schema import (
     WorldCompositionSpec,
     NormalizedWorldComposition,
     WorldCompositionNormalizer,
+    missing_module_issues,
+    require_one_ref_per_module,
     ResolvedModuleContribution,
     ProvenanceManifest,
     ProvenanceRecord,
@@ -131,15 +133,7 @@ class WorldAssemblyValidator:
             ]
 
         # 3. Composition Validation
-        composition_issues = []
-        for ref in composition.module_refs:
-            if ref.module_id not in graph_map:
-                composition_issues.append({
-                    "severity": "ERROR",
-                    "rule_id": "ASM-COMP-001",
-                    "message": f"Referenced module '{ref.module_id}' not found in repository.",
-                    "path": f"module_refs.{ref.module_id}"
-                })
+        composition_issues = missing_module_issues(composition, graph_map)
 
         # 4. Assembly & World Validation
         world_issues = world_validator.validate(world_spec, context=ValidationContext.WORLD)
@@ -248,7 +242,7 @@ class WorldAssemblyResolver:
         Executes structural topological assembly and merges partial layouts into a clean WorldSpec.
         """
         # Normalize composition to NormalizedWorldComposition
-        normalized_comp = WorldCompositionNormalizer.normalize(composition)
+        normalized_comp = require_one_ref_per_module(WorldCompositionNormalizer.normalize(composition))
 
         # Pack validation gate — runs before any module assembly
         # Extract pack_refs from the original composition (before normalization strips it)
@@ -813,8 +807,7 @@ class WorldAssemblyResolver:
                 tags=list(getattr(reg, "tags", [])),
                 terrain_variants=getattr(reg, "terrain_variants", None),
                 # Idea 66: namespace place ids the same way region ids are namespaced
-                # above (f"{prefix}{reg.id}"), so a module composed multiple times
-                # (e.g. multiple town instances) doesn't collide on place_id either.
+                # above (f"{prefix}{reg.id}"), so two modules authoring the same place id don't collide.
                 places=[
                     PlaceSpec(
                         id=f"{prefix}{p.id}",
@@ -1132,7 +1125,7 @@ class CompileProfileResolver:
                 starting_gold=bld_def.starting_gold if bld_def else 0,
                 starting_stock=dict(bld_def.starting_stock) if bld_def else {},
                 maintenance_shifts=bld_def.maintenance_shifts if bld_def else 1,
-                hires_for_pay=bld_def.hires_for_pay if bld_def else False,
+                hires_for_pay=bld_def.hires_for_pay if bld_def else False, beds=bld_def.beds if bld_def else 0,
             ))
 
         return ctx

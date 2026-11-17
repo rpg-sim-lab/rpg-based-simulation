@@ -1,9 +1,9 @@
-"""Service reach must work on the read-only state a concurrent worker sees (a ``WorkerPacket``), which carries ``buildings`` but no ``building_tiles``.
+"""Service reach must work on the read-only state a concurrent worker sees (a ``WorkerPacket``).
 
-``service_reach.building_kind_at`` fell through to ``state.building_tiles.get(tile)`` whenever no building stood on the tile (most of the five reach
-offsets), so under the concurrent executor it raised ``AttributeError: 'WorkerPacket' object has no attribute 'building_tiles'`` and the worker result
-was a crash (logged by ``worker_manager`` as "Internal worker crash"). ``legality.py`` already reads the map with ``getattr(state, 'building_tiles', None)``
-for the same reason: a missing map means no kind.
+``service_reach.building_kind_at`` falls through to ``state.building_tiles.get(tile)`` whenever no building stood on the tile (most of the five reach
+offsets). The packet once carried no ``building_tiles``: the lookup raised ``AttributeError`` (a worker crash, logged as "Internal worker crash"), and then
+read a missing map as "no kind" while the state answered from its own map, so the two executors disagreed in any world with building tiles
+(TCK-20261103-THE-CONCURRENT-AND-SEQUENTIAL-EXECUTORS-GIVE-DIFFERENT-WORLDS). The packet now carries the state's ``building_tiles`` (empty when the state has none).
 """
 from __future__ import annotations
 
@@ -31,8 +31,14 @@ def _inn(tile=(12, 10)):
     return BuildingState(id=7, kind="inn", position=tile)
 
 
-def test_the_packet_has_no_building_tiles_map():
-    assert not hasattr(_packet({}), "building_tiles")
+def test_the_packet_carries_a_building_tiles_map_empty_when_the_state_has_none():
+    assert dict(_packet({}).building_tiles) == {}
+
+
+def test_a_packet_that_carries_building_tiles_answers_from_them():
+    packet = _packet({})
+    carried = WorkerPacket(**{**{f: getattr(packet, f) for f in packet.__slots__}, "building_tiles": {(5, 5): "smithy"}})
+    assert building_kind_at(carried, (5, 5)) == "smithy"
 
 
 def test_a_lookup_on_a_worker_packet_returns_the_kind_on_a_building_tile_and_none_elsewhere_without_raising():

@@ -62,6 +62,11 @@ def validate_record(record: dict) -> list[str]:
     tests_read = record.get("tests_read")
     if tests_read is not None and not (isinstance(tests_read, list) and all(isinstance(x, str) for x in tests_read)):
         errors.append("tests_read must be a list of strings")
+    # TCK-20261101-RECORD-REVIEW-AFTER-THE-PR-REVIEW-EXISTS: the seq of an earlier event of the same run and phase that
+    # this `ok` event replaces (record_review.py); readers drop the replaced row (run_dedup.drop_superseded_events).
+    supersedes = record.get("supersedes")
+    if supersedes is not None and not (isinstance(supersedes, int) and not isinstance(supersedes, bool) and supersedes > 0):
+        errors.append("supersedes must be a positive integer (the seq of the event it replaces)")
     return errors
 
 

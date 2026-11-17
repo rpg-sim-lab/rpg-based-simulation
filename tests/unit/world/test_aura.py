@@ -8,6 +8,7 @@ def test_aura_of_despair():
     # 1. Setup stronghold
     stronghold = (V2EntityBuilder(1)
                .kind("stronghold")
+               .identity(occupation="stronghold")
                .location(10.0, 10.0)
                .identity(faction=Faction.MONSTER_HORDE)
                .combat(hp=1000, alive=True)
@@ -16,6 +17,7 @@ def test_aura_of_despair():
     # 2. Setup hero near stronghold (dist = 5)
     hero_near = (V2EntityBuilder(1)
                .kind("hero")
+               .identity(occupation="hero")
                .location(15.0, 10.0)
                .identity(faction=Faction.HERO_GUILD)
                .combat(hp=100, alive=True)
@@ -24,6 +26,7 @@ def test_aura_of_despair():
     # 3. Setup hero far from stronghold (dist = 20)
     hero_far = (V2EntityBuilder(3)
                .kind("hero")
+               .identity(occupation="hero")
                .location(30.0, 10.0)
                .identity(faction=Faction.HERO_GUILD)
                .combat(hp=100, alive=True)

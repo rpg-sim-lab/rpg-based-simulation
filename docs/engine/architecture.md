@@ -120,7 +120,7 @@ Compatibility is maintained via wrappers in `src/systems/*.py`, which re-export 
 To further harden the engine against "Graph Hub" fragility, core state and update models are being extracted from `state.py` and `updates.py` into specialized packages:
 
 - **State Models** (`src/core/models/`): Standalone components like `ItemStack`, `SocialBond`, and `QuestState`.
-- **Update Models** (`src/core/update_models/`): Standalone intents like `InventoryUpdate` and `ResourceTransferIntent`.
+- **Update Models** (`src/core/update_models/`): The per-domain update records (social, strategic, combat, body, world) and standalone intents like `InventoryUpdate` and `ResourceTransferIntent`; `updates.py` keeps `EntityUpdate`, `StateUpdate`, `NavigationUpdate` and `IdentityUpdate` and re-exports the rest.
 
 This separation allows systems to depend on specific model definitions without importing the entire world state, reducing the impact of architectural changes.
 

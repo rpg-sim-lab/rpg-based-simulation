@@ -1,0 +1,1 @@
+{"timestamp": "2026-11-12T10:38:44.212186Z", "ticket_id": "TCK-20261112-A-THROTTLED-CLIENT-THAT-WAITS-OUT-RETRY-AFTER-IS-STILL-REFUSED", "title": "A throttled client that waits out Retry-After is admitted", "status": "DONE", "summary": "Idle time counts toward admission recovery; Retry-After is a true bound", "artifacts_path": "none (hotfix \u2014 no staging artifacts)"}

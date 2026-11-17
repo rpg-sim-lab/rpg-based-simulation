@@ -309,3 +309,72 @@ def test_wired_hook_passes_outside_a_repo_and_when_the_script_is_missing(tmp_pat
 def test_wired_hook_in_this_repo_exits_zero_with_no_output_for_an_untagged_prompt():
     result = _run(_REPO_ROOT, json.dumps({"prompt": "merge it", "session_id": "s", "cwd": str(_REPO_ROOT)}))
     assert result.returncode == 0 and result.stdout == ""
+
+
+# ---- governing-file edit attempts (TCK-20261031-GOVERNING-FILE-EDITS-VISIBLE-TO-OWNER) -------------
+
+def test_governing_section_is_absent_unless_asked_for():
+    assert "Governing-file edit attempts" not in slr.render([], [], [])
+
+
+def test_governing_section_splits_edit_and_mention_rows_and_flags_unmatched_paths():
+    rows = [{"path": "CLAUDE.md", "basis": "path"}, {"path": "CLAUDE.md", "basis": "mention"},
+            {"path": ".github/workflows/test.yml", "basis": "path"}, {"path": "tools/sessions/guard.py", "basis": "mention"}]
+    text = slr.render([], [], [], None, governing=rows, governing_total=4, merged={"CLAUDE.md": 2})
+    assert "| CLAUDE.md | 1 | 1 | 2 |" in text and "| .github/workflows/test.yml | 1 | 0 | 0 |" in text
+    assert "no merged commit on that path in the period: .github/workflows/test.yml." in text
+    assert "tools/sessions/guard.py" in text.split("no merged commit")[0]  # listed, but only mentions: never "unmatched"
+    assert "over-count" in text and "can merge the next" in text and "only when a branch carries them" in text
+
+
+def test_governing_section_without_git_matches_nothing_and_says_so():
+    text = slr.render([], [], [], None, governing=[{"path": "CLAUDE.md", "basis": "path"}], governing_total=1, merged=None)
+    assert "| CLAUDE.md | 1 | 0 | unknown |" in text and "nothing is matched" in text
+
+
+def test_governing_section_dark_family_and_empty_period():
+    assert "no governing_edits records exist in any week" in slr.render([], [], [], None, governing=[], governing_total=0, merged={})
+    quiet = slr.render([], [], [], None, governing=[], governing_total=3, merged={})
+    assert "None in this period." in quiet.split("Governing-file edit attempts")[1] and "3 records outside this period" in quiet
+
+
+def test_merged_governing_commits_counts_by_path_and_period():
+    log = "@@2026-10-27T10:00:00+00:00\nCLAUDE.md\nsrc/a.py\n\n@@2026-10-28T10:00:00+00:00\nCLAUDE.md\ntools/hooks/x.py\n\n@@2026-09-01T10:00:00+00:00\nCLAUDE.md\n"
+
+    class R:
+        returncode, stdout = 0, log
+
+    got = slr.merged_governing_commits("2026-W44", None, run=lambda *a, **k: R())
+    assert got == {"CLAUDE.md": 2, "tools/hooks/x.py": 1}
+
+    class Bad:
+        returncode, stdout = 1, ""
+
+    assert slr.merged_governing_commits("2026-W44", None, run=lambda *a, **k: Bad()) is None
+
+
+def test_governing_section_lists_merged_paths_with_no_edit_attempt_row_and_the_totals():
+    rows = [{"path": "CLAUDE.md", "basis": "path"}, {"path": "tools/sessions/guard.py", "basis": "mention"}]
+    text = slr.render([], [], [], None, governing=rows, governing_total=2, merged={"CLAUDE.md": 1, "tools/sessions/guard.py": 2, ".github/workflows/test.yml": 3})
+    assert "Totals: 1 edit attempts, 1 Bash mentions; 6 merged commits" in text
+    # a mention is not an edit attempt, so guard.py counts as having no edit row
+    assert "no edit attempt row in the period: .github/workflows/test.yml, tools/sessions/guard.py." in text
+    assert "rows sit on an unmerged branch or the other host" in text and "does not mean no edits" in text
+
+
+def test_governing_section_shows_merged_commits_even_when_the_period_has_no_rows():
+    text = slr.render([], [], [], None, governing=[], governing_total=3, merged={"CLAUDE.md": 1})
+    assert "None in this period." in text and "no edit attempt row in the period: CLAUDE.md." in text
+
+
+def test_the_retro_asks_git_whenever_the_family_has_rows_in_any_week(tmp_path, monkeypatch):
+    week_dir = tmp_path / "2026-W40"
+    week_dir.mkdir()
+    (week_dir / "governing_edits.jsonl").write_text(json.dumps({"ts": "2026-09-30T00:00:00Z", "path": "CLAUDE.md", "basis": "path"}) + "\n")
+    monkeypatch.setattr(generate_retro, "DEFAULT_TOOLS_FILE", tmp_path)
+    monkeypatch.setattr(slr, "merged_governing_commits", lambda week, cutoff: {"CLAUDE.md": 1})
+    text = generate_retro._session_layer_section([], "2026-W44", None, [])
+    assert "None in this period." in text.split("Governing-file edit attempts")[1]
+    assert "no edit attempt row in the period: CLAUDE.md." in text
+    (week_dir / "governing_edits.jsonl").unlink()
+    assert "no governing_edits records exist in any week" in generate_retro._session_layer_section([], "2026-W44", None, [])

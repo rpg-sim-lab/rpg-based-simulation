@@ -6,7 +6,7 @@ variable "aws_region" {
 variable "github_repository" {
   description = "GitHub repository (owner/name) whose workflows may assume the deploy role. A public repository name, not an account."
   type        = string
-  default     = "ttnhan18062000/rpg-based-simulation"
+  default     = "rpg-sim-lab/rpg-based-simulation"
 
   validation {
     condition     = can(regex("^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$", var.github_repository))

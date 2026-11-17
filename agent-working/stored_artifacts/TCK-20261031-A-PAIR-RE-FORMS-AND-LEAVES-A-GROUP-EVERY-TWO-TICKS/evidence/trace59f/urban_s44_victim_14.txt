@@ -1,0 +1,29 @@
+FIRST STATE DIFF (any key): 6 [('18', ['group_id']), ('28', ['group_id'])]
+FIRST DIFF outside identity/group_id/strategic: (164, '27', ['position', 'navigation', 'task'])
+STATIC (spawn) rows for watch entities, branch: {'3': {'kind': 'worker', 'role': '4', 'faction': '2', 'class_id': 'NOVICE', 'name': 'None', 'pos0': [38.0, 39.0]}, '14': {'kind': 'scout', 'role': '5', 'faction': '1', 'class_id': 'NOVICE', 'name': 'None', 'pos0': [62.0, 60.0]}, '18': {'kind': 'merchant', 'role': '1', 'faction': '3', 'class_id': 'NOVICE', 'name': 'None', 'pos0': [76.0, 44.0]}, '19': {'kind': 'merchant', 'role': '1', 'faction': '3', 'class_id': 'NOVICE', 'name': 'None', 'pos0': [56.0, 55.0]}, '20': {'kind': 'guard', 'role': '5', 'faction': '2', 'class_id': 'WARRIOR', 'name': 'None', 'pos0': [92.0, 50.0]}, '21': {'kind': 'guard', 'role': '5', 'faction': '2', 'class_id': 'WARRIOR', 'name': 'None', 'pos0': [53.0, 53.0]}}
+
+== entity 14 on branch: death {'t': 291, 'cause': 'COMBAT', 'hazard': None, 'att': 10, 'pos': [29, 27], 'hp': 0}
+ t231(-60) pos=(38.0, 38.0) hp=56 gid=None grp[leader,holder,contract,shared]=None work=ENTITY_ACT reason=None tgt=None proj=GoalKind.RESOLVE_BLOCKER
+ t247(-44) pos=(30.0, 30.0) hp=57 gid=None grp[leader,holder,contract,shared]=None work=ENTITY_MOVE reason=INTERCEPTING tgt=28 proj=GoalKind.COMBAT_ENGAGE
+ t252(-39) pos=(28.0, 28.0) hp=58 gid=None grp[leader,holder,contract,shared]=None work=ENTITY_ACT reason=None tgt=None proj=GoalKind.COMBAT_ENGAGE
+ t257(-34) pos=(28.0, 28.0) hp=58 gid=None grp[leader,holder,contract,shared]=None work=ENTITY_ACT reason=None tgt=28 proj=None
+ t267(-24) pos=(29, 27) hp=53 gid=None grp[leader,holder,contract,shared]=None work=ENTITY_ACT reason=None tgt=28 proj=GoalKind.COMBAT_ENGAGE
+ t269(-22) pos=(29, 27) hp=41 hp 51->41 gid=None grp[leader,holder,contract,shared]=None work=ENTITY_ACT reason=None tgt=28 proj=GoalKind.COMBAT_ENGAGE
+ t279(-12) pos=(29, 27) hp=39 hp 41->39 gid=None grp[leader,holder,contract,shared]=None work=ENTITY_ACT reason=None tgt=None proj=GoalKind.COMBAT_ENGAGE
+ t280(-11) pos=(29, 27) hp=19 hp 39->19 gid=None grp[leader,holder,contract,shared]=None work=ENTITY_ACT reason=None tgt=None proj=GoalKind.COMBAT_ENGAGE
+ t285(-6) pos=(29, 27) hp=13 hp 20->13 gid=None grp[leader,holder,contract,shared]=None work=ENTITY_ACT reason=None tgt=13 proj=None
+ t287(-4) pos=(29, 27) hp=13 gid=None grp[leader,holder,contract,shared]=None work=ENTITY_ACT reason=None tgt=13 proj=GoalKind.COMBAT_ENGAGE
+ t290(-1) pos=(29, 27) hp=11 hp 13->11 gid=None grp[leader,holder,contract,shared]=None work=ENTITY_ACT reason=None tgt=13 proj=GoalKind.COMBAT_ENGAGE
+ t291(-0) pos=(29, 27) hp=0 hp 11->0 gid=None grp[leader,holder,contract,shared]=None work=ENTITY_ACT reason=None tgt=13 proj=GoalKind.COMBAT_ENGAGE
+
+== entity 14 on base: death {'t': 287, 'cause': 'DEFEAT', 'hazard': None, 'att': 4, 'pos': [29, 28], 'hp': 0}
+ t227(-60) pos=(40.0, 40.0) hp=55 gid=None grp[leader,holder,contract,shared]=None work=ENTITY_ACT reason=None tgt=None proj=GoalKind.RESOLVE_BLOCKER
+ t247(-40) pos=(31.0, 29.0) hp=57 gid=None grp[leader,holder,contract,shared]=None work=ENTITY_MOVE reason=None tgt=28 proj=GoalKind.COMBAT_ENGAGE
+ t251(-36) pos=(29, 27) hp=58 hp 57->58 gid=None grp[leader,holder,contract,shared]=None work=ENTITY_ACT reason=None tgt=None proj=GoalKind.COMBAT_ENGAGE
+ t253(-34) pos=(29, 27) hp=58 gid=None grp[leader,holder,contract,shared]=None work=ENTITY_ACT reason=None tgt=22 proj=None
+ t261(-26) pos=(29, 27) hp=48 hp 57->48 gid=None grp[leader,holder,contract,shared]=None work=ENTITY_ACT reason=None tgt=22 proj=None
+ t267(-20) pos=(29, 27) hp=46 hp 48->46 gid=None grp[leader,holder,contract,shared]=None work=ENTITY_ACT reason=None tgt=22 proj=GoalKind.COMBAT_ENGAGE
+ t272(-15) pos=(29, 27) hp=36 hp 46->36 gid=None grp[leader,holder,contract,shared]=None work=ENTITY_ACT reason=None tgt=22 proj=GoalKind.COMBAT_ENGAGE
+ t283(-4) pos=(29, 27) hp=18 hp 28->18 gid=None grp[leader,holder,contract,shared]=None work=ENTITY_ACT reason=None tgt=22 proj=GoalKind.COMBAT_ENGAGE
+ t286(-1) pos=(29, 27) hp=11 gid=None grp[leader,holder,contract,shared]=None work=ENTITY_ACT reason=None tgt=None proj=GoalKind.COMBAT_ENGAGE
+ t287(-0) pos=(29, 28) hp=0 hp 11->0 gid=None grp[leader,holder,contract,shared]=None work=ENTITY_MOVE reason=PANIC_RETREAT tgt=None proj=GoalKind.COMBAT_ENGAGE

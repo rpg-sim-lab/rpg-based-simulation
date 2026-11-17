@@ -80,7 +80,7 @@ class SimulationAnalysisRunner:
                     trait_keys = list(spec.actors.trait_distribution.keys())
                     traits.add(trait_keys[(i - 1) % len(trait_keys)])
 
-                builder.identity(class_id=class_id, traits=traits)
+                builder.identity(class_id=class_id, traits=traits, occupation=role)
                 entities[i] = builder.build()
 
             state = AuthoritativeState(tick=0, seed=spec.seed, entities=entities)

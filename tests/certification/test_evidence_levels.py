@@ -40,6 +40,7 @@ from src.certification.models import (
     MeasurementPoint,
 )
 from src.certification.recorder import CertificationRecorder
+from src.core.state import GROUP_ID_BASE
 
 
 # ---------------------------------------------------------------------------
@@ -76,6 +77,7 @@ class FakeState:
     maturity: int = 0
     last_calamity_tick: int = 0
     grief_drained_tick: int = -1  # D80: canonical only once a grief drain happened
+    next_group_id: int = GROUP_ID_BASE  # AuthoritativeState.next_group_id (non-optional): the hasher joins it only once it differs from the base
     town_center = (0, 0)
     local_scars: dict = {}
     chests: dict = {}
@@ -96,6 +98,15 @@ class FakeState:
     information_source_profiles: list = []
     entity_belief_institutions: dict = {}
     event_fidelity: dict = {}
+
+    # TCK-20261024-PROOF-DIGEST-HASHES-THE-CARRIED-STATE-IT-OMITS (flat-sha256-v3): carried state
+    # CanonicalStateHasher.to_canonical_data() now reads unconditionally.
+    item_instances: dict = {}
+    recent_world_events: list = []
+    quest_registry: dict = {}
+    factions: dict = {}
+    clans: dict = {}
+    information_providers: dict = {}
 
 
 class FakeResourceNode:

@@ -20,6 +20,20 @@ class DiplomaticState(str, Enum):
     ALLIED = "ALLIED"
     VASSAL = "VASSAL"
 
+class GroupDissolutionReason(str, Enum):
+    """Typed end reason of a contract-bound group, recorded on the dissolved GroupRecord by its single dissolving writer.
+
+    Precedence when several apply on one tick (one reason per dissolution; the cause outranks the consequence):
+    BINDING_HOLDER_LEFT > BINDING_CONTRACT_MISSING > BINDING_CONTRACT_NOT_ACTIVE > LEADER_LOST > DEFECTION > MEMBERS_BELOW_TWO.
+    Groups that were not formed by a contract (no holder) carry no reason.
+    """
+    BINDING_HOLDER_LEFT = "BINDING_HOLDER_LEFT"
+    BINDING_CONTRACT_MISSING = "BINDING_CONTRACT_MISSING"
+    BINDING_CONTRACT_NOT_ACTIVE = "BINDING_CONTRACT_NOT_ACTIVE"
+    LEADER_LOST = "LEADER_LOST"
+    DEFECTION = "DEFECTION"
+    MEMBERS_BELOW_TWO = "MEMBERS_BELOW_TWO"
+
 class PassiveDeathCause(str, Enum):
     """Typed cause for an HP-zeroing passive biological drain, recorded at the writer.
 
@@ -93,6 +107,7 @@ class ReasonCode(str, Enum):
     CONGESTION = "congestion"
     PATH_EXHAUSTED = "path_exhausted"
     TARGET_REACHED = "target_reached"
+    FELT_LETHAL_FREE_SWING = "FELT_LETHAL_FREE_SWING"  # 2.204: a step that would give the free swing to a hostile whose felt blow finishes the subject is not taken
     
     # Movement / position swap
     POSITION_SWAP = "position_swap"
@@ -114,6 +129,10 @@ class ReasonCode(str, Enum):
     LOS_OBSTRUCTED = "LOS_OBSTRUCTED"
     FRIENDLY_FIRE_ILLEGAL = "FRIENDLY_FIRE_ILLEGAL"
     INSUFFICIENT_READINESS = "INSUFFICIENT_READINESS"
+    NO_BED_FREE = "NO_BED_FREE"  # F3 (divergence 2.155): a REST in reach of a building that declares beds found none free; the rest does not run on the reach tile
+    LODGER_TARGET_DROPPED = "LODGER_TARGET_DROPPED"  # F3: a walk target proposed for a lodger who stays was dropped (a guard that must stay at zero)
+    LODGER_DROP_CLAIM_TICK = "LODGER_DROP_CLAIM_TICK"  # F3: of the LODGER_TARGET_DROPPED count, a target or step dropped on the tick a bed was granted (the claim wins the merge)
+    LODGER_DROP_LEAVE_REFUSED = "LODGER_DROP_LEAVE_REFUSED"  # F3: of the LODGER_TARGET_DROPPED count, a target dropped on a leaver's tick (the leave is one unit: step, target, path, mode)
     READINESS_NOT_READY = "READINESS_NOT_READY"
     SELF_ATTACK_ILLEGAL = "SELF_ATTACK_ILLEGAL"
     SKILL_ON_COOLDOWN = "SKILL_ON_COOLDOWN"
