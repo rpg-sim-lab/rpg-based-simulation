@@ -182,7 +182,7 @@ def test_ended_by_is_none_by_default_and_absent_from_the_canonical_dict_until_se
 
 def test_a_state_with_no_superseded_project_hashes_exactly_as_it_did_before_the_field_existed():
     """Hash neutrality: the canonical form of a project with ended_by None is the pre-field form (status, kind, objectives, no extra key)."""
-    entity = _entity([_project("r", ProjectStatus.SUSPENDED)])
+    entity = _entity([replace(_project("r", ProjectStatus.SUSPENDED), suspended_since=None)])  # N10: the pre-field form has no suspension clock (None is omitted from the canonical dict)
     assert set(entity.to_canonical_dict()["strategic"]["projects"]["r"]) == {"kind", "status", "active_objective_id", "objectives"}
     state = _state(entity)
     assert CanonicalStateHasher.get_hash(state) == CanonicalStateHasher.get_hash(_state(entity))
