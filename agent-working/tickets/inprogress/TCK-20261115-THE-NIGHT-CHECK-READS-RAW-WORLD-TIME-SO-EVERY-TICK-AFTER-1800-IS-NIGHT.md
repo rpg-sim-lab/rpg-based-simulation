@@ -15,7 +15,7 @@ tags: []
 The night check compares raw world_time with 1800 and 600, and world_time never wraps, so from tick 1800 every tick of the run counts as night
 
 ## Status
-OPEN
+INPROGRESS
 
 ## Tier
 standard

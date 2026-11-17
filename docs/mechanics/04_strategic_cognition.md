@@ -22,6 +22,8 @@ Entities evaluate multiple "Concerns" and select the one with the highest calcul
 | **Tier 3: Social** | `social`, `grudge`, `bond` | Protecting allies or seeking revenge. |
 | **Tier 4: Economic** | `harvest`, `trade`, `craft`, `occupation_change` | Accumulating wealth and equipment; `occupation_change` (`GoalKind.OCCUPATION_CHANGE`) is a `CITIZEN` entity taking an open, skill-matched civilian job (`SHOPKEEPER`/`WORKER`/`GUARD`) when idle. |
 
+Night is the night half of the time of day (`calendar.is_night`: ticks 1800-2399 and 0-599 of each 2400-tick day); the sleep bias in `SleepScorer` and the routine sleep urgency read it, not the never-wrapping `world_time` (SURV-08 clock amendment, memo row 98 Q1; divergence 2.209).
+
 ---
 
 ### Standing Needs Escalate (TCK-20261007-BIOLOGICAL-NEEDS-ESCALATE-ABOVE-ORDINARY-GOALS-BEFORE-THE-CONSEQUENCE-LINE-SURV-07)

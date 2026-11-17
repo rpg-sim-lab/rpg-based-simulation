@@ -903,7 +903,7 @@ others, not a reflex.
 the escalation and the present-threat gate shipped in #414 (`c2e18b182`).** Lane A's trace, `crowded_frontier`, seed 42, on #403's tree:
 - `ResolveBlockerScorer` returns a flat 80.0 whenever an unresolved, unsuppressed blocker exists
   (`src/ai/goals/scorers.py:205-248`), or 95.3 after personality modifiers.
-- `SleepScorer`'s utility is the sleep debt itself (+30 at night), about 50 at t≈450.
+- `SleepScorer`'s utility is the sleep debt itself (+30 at night), about 50 at t≈450. "Night" is the night half of the *time of day* (`src/core/calendar.py` `is_night`: tick 1800 to 2399 and 0 to 599 of every 2400-tick day), not the raw clock, which never wraps (divergence 2.209).
 - So a tired subject walking to the inn is pulled away whenever a blocker's suppression expires.
   A biological need can win only near 80–95, which is close to its consequence line.
 - A separate engineering defect is fixed by #406 (`7a39acc5d`): the project switch compared a

@@ -7,7 +7,6 @@ class RaidService:
     """
     
     RAID_INTERVAL_DAYS = 5
-    TICKS_PER_DAY = 100
     RAID_BASE_SIZE = 3
     SANCTUARY_RADIUS = 15
     
