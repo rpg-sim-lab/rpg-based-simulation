@@ -247,7 +247,7 @@ class WorldDynamicsSystem:
 
             # 3.6 Process Camps (Persistent Encampments)
             from src.world.camp import CampService
-            camp_state_update = CampService.process_camps(state, generator, faction_directives=faction_directives)
+            camp_state_update = CampService.process_camps(state, faction_directives=faction_directives)
 
             # 3.7 Demographic Birth/Death Cycle (E52A)
             from src.domains.demographics.cohort import DemographicCycleService
