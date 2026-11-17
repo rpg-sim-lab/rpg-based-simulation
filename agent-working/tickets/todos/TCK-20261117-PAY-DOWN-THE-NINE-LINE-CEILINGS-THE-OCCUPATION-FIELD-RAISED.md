@@ -37,6 +37,13 @@ The nine (ceiling before → raised to):
 - src/entities/archetype_factory.py `ArchetypeEntityFactory.build_entity` 94 → 95
 - src/testing/scenario_runner.py `ScenarioRunner.execute` 153 → 154
 
+UPDATE 2026-11-18 (rpg-planner, recount on main 9d13a3356 for lead-planner-u24): step 4 (#952, owner approval #715 6941609832) raised six more rows and set this ticket as their `retiring_ticket`. Four are repeats on rows above, so they change a ceiling but add no row. Two are new rows. So 11 rows on main cite this ticket, which is the expected count (9 + 2 new). The six step-4 raises (ceiling before → raised to):
+- repeat: orchestrator.py module 1126 → 1128, `CampaignOrchestrator` 1004 → 1005, `CampaignOrchestrator._build_initial_state` function-length 420 → 421
+- repeat: scenario_runner.py `ScenarioRunner.execute` function-length 154 → 156
+- new: orchestrator.py `CampaignOrchestrator._build_initial_state` cognitive-complexity 47 → 49
+- new: scenario_runner.py `ScenarioRunner.execute` cognitive-complexity 17 → 19
+This ticket pays down all 11 rows. For the 4 repeats, the target is still the pre-raise ceiling listed above.
+
 ## Scope
 1. Move the hand-written identity-field copies (the campaign carry-forward extract and rebuild, `EntityState.to_readonly`, and the builder's identity assembly) onto one shared helper, so a new identity field is added in one place. That also removes the class of bug the step-2 CI found at apply.py:704, where a hand copy dropped a new slot.
 2. Shrink the other rows by a real extraction (no line squeezing), then `python3 -m codebase.health tighten` to lower each row and clear its `retiring_ticket`.
@@ -47,7 +54,7 @@ The nine (ceiling before → raised to):
 - Other code-health rows.
 
 ## Acceptance Criteria
-- Each of the nine rows is back at or below its pre-raise ceiling, or lowered by tighten with the reason stated, and none cites this ticket any more.
+- Each of the 11 rows (the nine, plus the two step-4 cognitive-complexity rows: 47 for `_build_initial_state` and 17 for `execute`) is back at or below its pre-raise ceiling, or lowered by tighten with the reason stated, and none cites this ticket any more.
 - The identity copies go through one helper, with a test that a new identity field survives the carry, the read-only view and the apply-path copy.
 - IDENTICAL proof on the 3 gate worlds at s42.
 
