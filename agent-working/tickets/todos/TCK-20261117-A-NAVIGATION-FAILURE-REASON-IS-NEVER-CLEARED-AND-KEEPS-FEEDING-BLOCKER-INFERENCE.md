@@ -32,7 +32,8 @@ Found by lane A's read-only F2 code read (2026-11-17, F1 head 46ac46e40; the cit
 - The only assignments are patches.py:288 and the builder default (core/builder.py:388/407). Nothing ever sets it back to None, including a successful move, a new target or a give-up.
 - infer_blockers reads it on every strategic pass (intelligence.py:495), and files an ACCESS blocker for PATH_NOT_FOUND, STUCK or OSCILLATING keyed on the task payload's target_position (intelligence.py:190-191).
 - So one old failure can keep re-inferring an access blocker long after the failure, against whatever target the task holds now. That defeats a lifecycle which expects a blocker to stop being re-inferred once its cause is gone (the churn fix's merge and quiet-spell rules).
-- The way-round give-up itself sets failure_reason None (movement.py:362-365, :459), so it leaves the stale value in place and writes no code of its own.
+- CORRECTED 2026-11-17 (lane A's scoped run): the way-round give-up does NOT write None. It writes ReasonCode.LEGAL, the legality check's return at movement.py:288, through `None if success else reason_code` after success is set False (movement.py:363-365, :407). So a give-up overwrites a stale access code with a mislabel that infer_blockers ignores, and the real stale window runs from a failure to the subject's next give-up.
+- RULED (rpg-designer, option c): the give-up writes a typed ReasonCode.WAYROUND_GIVE_UP, which replaces any older code. infer_blockers does not map it; F2 files the give-up's blocker from giveup_records.
 
 ## Scope
 1. RULED by rpg-designer (F2 v2, 2026-11-17): last_failure_reason = the outcome of the LAST step. A successful step clears it with an explicit typed NavigationUpdate.failure_reason_clear, and a None never carries it forward. F2 does not use last_failure_reason.
