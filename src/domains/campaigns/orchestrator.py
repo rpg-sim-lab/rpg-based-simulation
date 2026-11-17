@@ -25,6 +25,7 @@ if TYPE_CHECKING:
     from src.scenarios.schema import SimulationScenarioDefinition
     from src.observability.event_recorder import EventRecorder
 
+from src.core.species import SpeciesNotDeclaredError
 from src.domains.campaigns.state import (
     CampaignState,
     EntityCarryForward,
@@ -804,7 +805,6 @@ class CampaignOrchestrator:
             # M1 step 4: an empty carried kind is a record serialized before the field existed. There is no species to rebuild it with,
             # so it is refused (it used to become the literal "entity").
             if not cf.kind:
-                from src.core.species import SpeciesNotDeclaredError
                 raise SpeciesNotDeclaredError(f"carry-forward record of entity {eid} has an empty kind (a pre-field record); it cannot be rebuilt")
             #
             # Identity fields (role/faction/properties/traits/personality/evolution_level/

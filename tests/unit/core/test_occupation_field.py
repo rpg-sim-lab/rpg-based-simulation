@@ -235,6 +235,20 @@ def test_k6d_a_scenario_spec_with_no_species_is_refused(tmp_path):
         ScenarioRunner(str(spec), output_dir=str(tmp_path)).execute(ticks=1)
 
 
+def test_k6d_a_hero_archetype_with_no_species_is_refused(monkeypatch):
+    import src.systems.world_systems.generator as gen_mod
+    from src.core.species import SpeciesNotDeclaredError
+
+    class _Cat:
+        @staticmethod
+        def get_entity_archetype(_id):
+            return type("A", (), {"species": ""})()
+
+    monkeypatch.setattr(gen_mod, "warmed_catalog", lambda: _Cat)
+    with pytest.raises(SpeciesNotDeclaredError):
+        gen_mod.hero_species_id()
+
+
 def test_k6d_an_archetype_that_does_not_resolve_is_refused():
     from src.core.species import SpeciesNotDeclaredError
     from src.worldassembly.entity_spawner import WorldEntitySpawner

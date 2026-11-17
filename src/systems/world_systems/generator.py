@@ -11,7 +11,9 @@ from src.core.state import (
     InteractionComponent, SocialComponent, TaskComponent,
     EquipmentComponent, AptitudeComponent, ItemStack, InventoryComponent
 )
+from src.content.common_knowledge_seed import warmed_catalog
 from src.core.enums import EntityRole, Faction, ActionType, Domain
+from src.core.species import SpeciesNotDeclaredError
 from src.platform.rng import DeterministicRNG
 
 if TYPE_CHECKING:
@@ -71,12 +73,11 @@ def _catalog_faction_properties(occupation: Optional[str]) -> Dict[str, Any]:
 
 def hero_species_id() -> str:
     """The species of a hero spawn, read from the named archetype `adventurer_hero` (key `species`); never chosen by code (M1 step 4)."""
-    from src.content.common_knowledge_seed import warmed_catalog
-    from src.core.species import SpeciesNotDeclaredError
     archetype = warmed_catalog().get_entity_archetype("adventurer_hero")
-    if archetype is None or not archetype.species:
+    species = archetype.species if archetype is not None else None
+    if not isinstance(species, str) or not species:
         raise SpeciesNotDeclaredError("the archetype 'adventurer_hero' declares no species, so a hero spawn has none to write")
-    return archetype.species
+    return species
 
 
 class EntityGenerator:

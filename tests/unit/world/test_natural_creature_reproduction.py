@@ -48,7 +48,8 @@ def test_camp_maturity_threshold_spawns_natural_creature_offspring():
 
     offspring = _natural_creature_offspring(update.entities_add)
     assert len(offspring) == 1
-    assert offspring[0].kind == "goblin_warrior"
+    assert offspring[0].kind == "goblin"  # kind=species step 4, camp spawn rule (Q2 amendment): the camp species ...
+    assert offspring[0].identity.occupation == "goblin_warrior"  # ... and the spawn label
     assert offspring[0].position == (50.0, 50.0)
 
 
