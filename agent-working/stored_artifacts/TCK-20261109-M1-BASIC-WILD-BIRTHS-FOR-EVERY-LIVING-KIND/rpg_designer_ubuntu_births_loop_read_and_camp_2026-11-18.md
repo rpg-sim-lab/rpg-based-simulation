@@ -88,3 +88,14 @@ tags: []
   - Add one check to that line: whether the help need behind a standing SOLO ever resolves. If it never does, split it into a cooperation behaviour ticket.
   - Don't file a separate behaviour finding now: "without acting" is unverified, because the payload has no action field.
 - **Owner:** `src/domains/cooperation` is in the rpg domain. rpg-planner picks the lane.
+
+### SUPERSEDED IN PART by rpg-designer (u24), relayed by lead-planner
+- **What it replaces:** my "fold the cooperation loop into scorer scope line 3, no separate finding" above. The loop on births head is a **HARD liveness item for the births MERGE once confirmed**. It does not block the feature-branch push.
+- **Why:** the merged code makes the world loop where main doesn't. Whose code loops doesn't decide it.
+- **Still true:** row 2 stays un-re-pinned.
+- **Before any block:**
+  - (i) an S9 frozen-tree diagnostic of urban_political s42 to 2000 ticks, on main and head, with entities 10 and 28 spied;
+  - (ii) a cause read, which I rule.
+- **Outcomes:**
+  - It exits within the run: a report-only BALANCE item, and row 2 is re-read on the longer run.
+  - It persists to 2000 on head and is absent on main: HARD. If the cause is newborn-specific, the fix is in births scope and I rule it. If it's an old cooperation defect that births triggers, a separate fix ticket gates the merge.
