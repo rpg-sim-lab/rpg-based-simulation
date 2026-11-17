@@ -908,21 +908,18 @@ mechanisms:
         test_natural_aging_death_is_recorded_as_old_age_and_dispatches_succession`.
   - id: genetics_aptitude
     layer: entity
-    summary: "Offspring would inherit a blend of their parents' natural aptitudes. This is switched off for now, so it has no effect on the world."
+    summary: "Offspring inherit a blend of their parents' natural aptitudes."
     systems: [progression]
     depends_on: []
-    state: gated
+    state: partial
     implemented_by: [src/systems/lifecycle_systems/genetics.py::GeneticsSystem]
     verified:
       instrument: code_trace
       verdict: observed
-      date: "2026-09-16"
+      date: "2026-11-18"
       note: >-
-        Was mis-registered `orphan`; GeneticsSystem.generate_profile_from_seed()/combine_profiles()
-        have a real caller (src/world/reproduction_humanoid.py, real genetic-profile combination
-        for offspring), so `orphan` (zero callers) was factually wrong. That caller is itself
-        gated behind ENABLE_REPRODUCTION_HUMANOID_PATH (default OFF, feature_flags.py), which is
-        what `gated` means. Found via TCK-20260916-MECHANISM-ORPHAN-STATE-BATCH-VERIFICATION.
+        TCK-20261109-M1-BASIC-WILD-BIRTHS-FOR-EVERY-LIVING-KIND: no longer gated. Births (src/world/births.py::BirthService, unflagged) give a parent with no genetic profile a fallback from GeneticsSystem.generate_profile_from_seed keyed by (world seed, parent id), and combine the two profiles through V2EntityBuilder.birth_record (src/core/builder.py, GeneticsSystem.combine_profiles). Code trace only; the births own-job is the runtime evidence, so the state is `partial`, not `done`. Effect size on aptitudes is not measured.
+        Superseded (2026-09-16, TCK-20260916-MECHANISM-ORPHAN-STATE-BATCH-VERIFICATION): `gated`, because the only caller then was src/world/reproduction_humanoid.py behind ENABLE_REPRODUCTION_HUMANOID_PATH (default OFF); before that it was mis-registered `orphan`.
   - id: evolution
     layer: entity
     summary: "Creatures earn experience from kills and level up. The rule works, but fights are too few for most creatures to reach a level-up in practice."
@@ -3124,7 +3121,6 @@ mechanisms:
       - src/core/state.py::CampState
       - src/world/camp.py::CampService
       - src/world/creature_territory.py::CreatureTerritoryService
-      - src/systems/world_systems/generator.py::EntityGenerator  # re-bound 2026-10-14: the retired regional_monster_spawn was its other binding (2.122); D70 (2.125) removed the camp spawn; the camp still calls it for the flag-OFF nest-spread offspring, which retires with the M1 births
     verified:
       instrument: corpus_run
       verdict: observed
@@ -3142,6 +3138,7 @@ mechanisms:
         ABSENCE-VERDICTS-NEED-RUNTIME-EVIDENCE/runtime_probe_output_1000ticks.jsonl (probe:
         runtime_probe.py, same folder). Bound to CampState itself 2026-09-20
         (TCK-20260920-MECHANISM-WORLD-FACTION- REGION-GROUP-UNBOUND-CLAIMS-RESOLUTION).
+        EntityGenerator binding removed by TCK-20261109-M1-BASIC-WILD-BIRTHS-FOR-EVERY-LIVING-KIND: the flag-OFF nest-spread offspring path it served was deleted with the M1 births, and CampService.process_camps calls nothing on its generator argument (D70, 2.125: a camp spawns nothing).
   - id: nest
     layer: region
     summary: "Creature nests are proposed but not yet built."
@@ -3665,19 +3662,19 @@ mechanisms:
 
   - id: humanoid_reproduction
     layer: entity
-    summary: "Adults would pair up and have children. This is switched off by default."
+    summary: "Adults pair up and have children, who are born into the world with tracked parents."
     systems: [world]
     depends_on: []
-    state: gated
+    state: partial
     implemented_by:
-      - src/world/reproduction_humanoid.py::HumanoidReproductionService
+      - src/world/births.py::BirthService
       - src/core/spawn_source.py::SpawnSource
     verified:
-      instrument: corpus_run
+      instrument: code_trace
       verdict: observed
-      date: "2026-09-30"
+      date: "2026-11-18"
       note: >-
-        TCK-20260920-MECHANISM-COMPLETENESS-CHECK-SCOPE-GAP: registered from the wider-scope completeness sweep (identity call: rpg-feature-planning 2026-09-30). Runtime probe: a positive-controlled per-method call counter wrapped around every method of the class, Kernel.tick_once() over crowded_frontier, quest_dense_frontier and frontier_living_world, seed 42, 1000 ticks each. 0 calls, consistent with the gate: ENABLE_REPRODUCTION_HUMANOID_PATH is FeatureMode.OFF in src/domains/optimization/feature_flags.py, and the probe ran the default PROD_SMALL profile. Probe output: agent-working/stored_artifacts/TCK-20260923-MECHANISM-IMPLEMENTED-BY-RESIDUE-RESOLUTION/. Reachability at runtime only; effect size was not measured.
+        Re-bound by TCK-20261109-M1-BASIC-WILD-BIRTHS-FOR-EVERY-LIVING-KIND (v2.2 Q5): src/world/births.py::BirthService replaces the retired src/world/reproduction_humanoid.py::HumanoidReproductionService, and the ENABLE_REPRODUCTION_HUMANOID_PATH flag is removed, so births run unflagged. Code trace: WorldDynamicsSystem.resolve_dynamics (src/engine/world_dynamics.py) calls BirthService.process_births every cadence.births ticks (30); the world_dynamics phase passes no feature flag and is must_run_every_tick (phase_graph.py). Runtime evidence is the births own-job; this entry stays `partial` until that is recorded. Earlier record (2026-09-30, corpus_run): 0 calls under the retired flag.
         Pairs existing adults into a tracked-parent birth (atlas idea 32). `aging_death`/`succession` are lifecycle exits; `demographic_cohort_cycle` is aggregate.
 
   - id: role_model_imitation

@@ -1,17 +1,24 @@
+"""The births system: one pass per check over every kind that declares a reproduction profile (M1)."""
 # Compliance IDs: WORLD-122
-# src/world/births.py
 from __future__ import annotations
 
 import math
-from typing import TYPE_CHECKING, Dict, List, Optional, Set
+from dataclasses import dataclass, field
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Set
 
+from src.content.resolver import EntityArchetypeResolver
 from src.core.builder import build_parent_bond_updates_for_birth
 from src.core.enums import Domain
-from src.core.species import species_of
 from src.core.spawn_source import SpawnKind, SpawnSource
+from src.core.species import species_of
 from src.core.state import EntityState, GeneticProfile, LifeStage
-from src.core.updates import BiologicalUpdate, EntityUpdate, LifecycleUpdate, StateUpdate, WorldUpdate
-from src.content.resolver import EntityArchetypeResolver
+from src.core.updates import (
+    BiologicalUpdate,
+    EntityUpdate,
+    LifecycleUpdate,
+    StateUpdate,
+    WorldUpdate,
+)
 from src.engine.behavior_consumers import get_catalog
 from src.engine.spatial_query import SpatialQueryService
 from src.entities.archetype_factory import ArchetypeEntityFactory, NewbornBirth
@@ -39,24 +46,14 @@ class BirthService:
     def process_births(state: AuthoritativeState, generator: EntityGenerator) -> StateUpdate:
         """The births of this check, one merged update per birth, mothers visited in id order."""
         catalog = get_catalog()
-        profiles: Dict[str, Optional[ReproductionProfileDefinition]] = {}
-
-        def profile_of(species_id: str) -> Optional[ReproductionProfileDefinition]:
-            if species_id not in profiles:
-                species = catalog.get_species(species_id)
-                profiles[species_id] = catalog.get_reproduction_profile(species.reproduction_profile) if species and species.reproduction_profile else None
-            return profiles[species_id]
-
-        candidates: Dict[int, EntityState] = {
-            e.id: e for e in sorted(state.entities.values(), key=lambda e: e.id)
-            if e.identity.life_stage == LifeStage.ADULT and e.combat.alive and e.lifecycle.active and profile_of(species_of(e)) is not None
-        }
-        contracts: Dict[str, ResolvedEntityRuntimeContract] = {}
+        profiles = _Profiles(catalog)
+        candidates = _candidates(state, profiles)
+        check = _Check(state, generator, catalog)
         used: Set[int] = set()
         result = StateUpdate()
 
         for mother in candidates.values():
-            profile = profile_of(species_of(mother))
+            profile = profiles.of(species_of(mother))
             if mother.id in used or profile is None or mother.biological.hunger > profile.fed_line or not _past_interval(mother, state.tick):
                 continue
             mate = _find_mate(state, mother, candidates, used, profile.mate_radius_tiles)
@@ -65,8 +62,32 @@ class BirthService:
             if generator.rng.get_float(Domain.SPAWN, state.tick, mother.id, sub_id=BIRTH_DRAW_SUB_ID) >= profile.birth_chance_per_check:
                 continue
             used.update((mother.id, mate.id))
-            result = result.merge(_birth(state, generator, catalog, contracts, mother, mate, profile))
+            result = result.merge(_birth(check, mother, mate, profile))
         return result
+
+
+class _Profiles:
+    """The reproduction profile of each species, read from the catalog once per check (None for a species that declares none)."""
+
+    def __init__(self, catalog: Any) -> None:
+        self._catalog = catalog
+        self._by_species: Dict[str, Optional[ReproductionProfileDefinition]] = {}
+
+    def of(self, species_id: str) -> Optional[ReproductionProfileDefinition]:
+        """The species' profile, or None."""
+        if species_id not in self._by_species:
+            species = self._catalog.get_species(species_id)
+            declared = species.reproduction_profile if species else None
+            self._by_species[species_id] = self._catalog.get_reproduction_profile(declared) if declared else None
+        return self._by_species[species_id]
+
+
+def _candidates(state: AuthoritativeState, profiles: _Profiles) -> Dict[int, EntityState]:
+    """Alive, active ADULT bodies of a species that declares a profile, in id order."""
+    return {
+        e.id: e for e in sorted(state.entities.values(), key=lambda e: e.id)
+        if e.identity.life_stage == LifeStage.ADULT and e.combat.alive and e.lifecycle.active and profiles.of(species_of(e)) is not None
+    }
 
 
 def _past_interval(entity: EntityState, tick: int) -> bool:
@@ -90,17 +111,29 @@ def _find_mate(
     return None
 
 
-def _birth(
-    state: AuthoritativeState, generator: EntityGenerator, catalog: object, contracts: Dict[str, ResolvedEntityRuntimeContract],
-    mother: EntityState, mate: EntityState, profile: ReproductionProfileDefinition,
-) -> StateUpdate:
-    species_id = species_of(mother)
-    species = catalog.get_species(species_id)  # type: ignore[attr-defined]
-    if species_id not in contracts:
-        contracts[species_id] = resolved_archetype_to_contract(EntityArchetypeResolver(catalog).resolve(species.newborn_archetype))  # type: ignore[arg-type]
-    region = SpatialQueryService.get_region_at(state, mother.navigation.position)
-    home_region_id = mother.strategic.home_region_id or (region.id if region is not None else None)
+@dataclass
+class _Check:
+    """What one births check shares across its births: the state, the tick's generator, the catalog and the newborn contracts resolved so far."""
 
+    state: AuthoritativeState
+    generator: EntityGenerator
+    catalog: Any
+    contracts: Dict[str, ResolvedEntityRuntimeContract] = field(default_factory=dict)
+
+    def contract(self, species_id: str) -> ResolvedEntityRuntimeContract:
+        """The contract of the species' newborn archetype, resolved once per check."""
+        if species_id not in self.contracts:
+            archetype_id = self.catalog.get_species(species_id).newborn_archetype
+            self.contracts[species_id] = resolved_archetype_to_contract(EntityArchetypeResolver(self.catalog).resolve(archetype_id))
+        return self.contracts[species_id]
+
+
+def _birth(check: _Check, mother: EntityState, mate: EntityState, profile: ReproductionProfileDefinition) -> StateUpdate:
+    state, generator = check.state, check.generator
+    species_id = species_of(mother)
+    region = SpatialQueryService.get_region_at(state, mother.navigation.position)
+
+    home_region_id = mother.strategic.home_region_id or (region.id if region is not None else None)
     newborns: List[EntityState] = []
     for _ in range(profile.litter_size):
         birth = NewbornBirth(
@@ -108,7 +141,7 @@ def _birth(
             mother.lifecycle.genetic_profile or _fallback_genetics(state, mother),
             mate.lifecycle.genetic_profile or _fallback_genetics(state, mate), home_region_id,
         )
-        newborns.append(ArchetypeEntityFactory().build_newborn(generator.get_next_id(), contracts[species_id], birth))
+        newborns.append(ArchetypeEntityFactory().build_newborn(generator.get_next_id(), check.contract(species_id), birth))
 
     expiry = state.tick + profile.min_birth_interval_ticks
     cost = min(profile.birth_hunger_cost, 100.0 - mother.biological.hunger)

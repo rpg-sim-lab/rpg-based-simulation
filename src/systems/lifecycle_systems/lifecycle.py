@@ -203,10 +203,9 @@ class LifecycleSystem:
                 # Coming of Age archetype-choice roll (TCK-20260902-COMING-OF-AGE-ARCHETYPE-
                 # CHOICE, idea 34). The entity.identity.role == EntityRole.CITIZEN gate is
                 # required, not optional: without it this branch would also fire for a
-                # MONSTER-role CHILD from the flag-gated Natural-Creature reproduction path
-                # (spawn_natural_creature_offspring(), src/systems/world_systems/generator.py),
-                # whose is_excluded_no_birth_record() check alone does NOT exclude it (it is
-                # parentless but carries a real nonzero birth_tick) -- overwriting role_set there
+                # MONSTER-role CHILD (a newborn of a MONSTER mother, build_newborn in
+                # src/entities/archetype_factory.py), which has a birth record and so is not
+                # excluded by is_excluded_no_birth_record() -- overwriting role_set there
                 # would produce an incoherent MONSTER_HORDE-faction entity with a citizen
                 # occupation.
                 if (

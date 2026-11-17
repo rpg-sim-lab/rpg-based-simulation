@@ -55,7 +55,7 @@ def test_newborn_birth_record_and_faction_follow_the_parents(catalog):
     assert child.identity.faction == mother.identity.faction
     assert child.identity.properties["faction_id"] == "town_council"
     assert child.strategic.home_region_id == "r1"
-    assert child.navigation.home_position == (1.0, 2.0) and child.navigation.leash_radius == 6.0
+    assert child.navigation.home_position is None  # the anchor copy is held (_COPY_MOTHER_ANCHORS)
 
 
 def test_newborn_role_is_monster_only_for_a_monster_mother(catalog):
@@ -75,3 +75,20 @@ def test_personality_is_keyed_by_world_seed_and_newborn_id(catalog):
     assert a == _newborn(catalog, entity_id=900, seed=42)[3].identity.personality
     assert a != _newborn(catalog, entity_id=901, seed=42)[3].identity.personality
     assert a != _newborn(catalog, entity_id=900, seed=43)[3].identity.personality
+
+
+def test_newborn_omits_the_home_anchor_and_home_region_when_there_is_none_and_copies_no_reputation(catalog):
+    contract = resolved_archetype_to_contract(EntityArchetypeResolver(catalog).resolve("village_worker"))
+    bare = V2EntityBuilder(1).kind("human").location(3.0, 4.0).build()
+    child = ArchetypeEntityFactory().build_newborn(
+        900, contract, NewbornBirth(bare, bare, (3.0, 4.0), 5, 42, GeneticsSystem.generate_profile_from_seed(1), GeneticsSystem.generate_profile_from_seed(2)))
+    assert child.navigation.home_position is None and child.strategic.home_region_id is None
+    assert child.social.public_reputation == V2EntityBuilder(900).build().social.public_reputation
+
+
+def test_the_held_anchor_copy_restores_with_one_value(catalog, monkeypatch):
+    from src.entities import archetype_factory
+
+    monkeypatch.setattr(archetype_factory, "_COPY_MOTHER_ANCHORS", True)
+    child = _newborn(catalog)[3]
+    assert child.navigation.home_position == (1.0, 2.0) and child.navigation.leash_radius == 6.0

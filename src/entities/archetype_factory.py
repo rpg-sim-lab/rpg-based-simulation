@@ -40,6 +40,10 @@ def require_archetype_senses(contract: ResolvedEntityRuntimeContract) -> None:
     require_species_sense_profile(contract.species_id, f"archetype {contract.archetype_id!r}")
 
 
+# Held: whether a newborn copies its mother's home anchor and leash is unresolved between the leads; flipping this one value restores the copy.
+_COPY_MOTHER_ANCHORS = False
+
+
 @dataclass(frozen=True)
 class NewbornBirth:
     """The birth event a newborn is built for: its two parents (and their genetic profiles, resolved by the caller because birth_record() combines genetics only when a profile is supplied and first-generation parents carry none), and where, when and under which world seed it is born."""
@@ -168,11 +172,14 @@ class ArchetypeEntityFactory:
         equipment, inventory and job traits are not taken from the archetype: the role follows the mother (MONSTER stays
         MONSTER, anything else CITIZEN), gold is 0 and traits are the species' own declared traits (M1 births, rulings v2.2 D3).
         population_id and spawn_region are the mother's (omitted when she has none): on a newborn, spawn_region names its
-        population's declared region, not where it was born; home_region_id = mother's, else the birth region. In campaign mode, a surviving newborn can receive its
+        population's declared region, not where it was born; home_region_id = mother's, else the birth region (omitted when neither exists), and the mother's home anchor and leash are copied (omitted when she has none). In campaign mode, a surviving newborn can receive its
         population's pending information responses and self-model events in a later episode (resolve_pending_information), but
         only when no member of that population that entered the carried-forward roster before it survives. The resolver takes
         the first match in roster insertion order, with no id rule. Every t0 body enters the roster before any newborn."""
         mother, mate = birth.mother, birth.mate
+        # A builder argument left None keeps the default, so each value is omitted when the mother has none (never written as None).
+        anchor = mother.navigation.home_position if _COPY_MOTHER_ANCHORS else None
+        leash = mother.navigation.leash_radius if anchor is not None else None
         properties = _newborn_properties(contract, mother)
         personality = build_personality_for_entity(entity_id, properties.get("faction_id"), birth.seed)
         role = EntityRole.MONSTER if mother.identity.role == EntityRole.MONSTER else EntityRole.CITIZEN
@@ -185,19 +192,17 @@ class ArchetypeEntityFactory:
                 role=role, faction=mother.identity.faction, traits=set(contract.species_trait_ids), properties=properties,
                 personality=personality, life_stage=LifeStage.CHILD, occupation=None,
             )
-            .navigation(home_position=mother.navigation.home_position, leash_radius=mother.navigation.leash_radius)
-            .strategic(home_region_id=birth.home_region_id)
             .combat(
                 hp=contract.hp, max_hp=contract.max_hp, atk=contract.atk, def_stat=contract.def_stat,
                 attack_range=contract.attack_range, readiness=contract.readiness,
                 action_style=get_action_style_for_bravery(personality.bravery),
             )
+            .navigation(home_position=anchor, leash_radius=leash)
+            .strategic(home_region_id=birth.home_region_id)
             .birth_record(
                 parent_a_entity_id=mother.id, parent_b_entity_id=mate.id, birth_tick=birth.tick,
                 parent_a_genetic_profile=birth.mother_genetics, parent_b_genetic_profile=birth.mate_genetics,
                 parent_a_role=mother.identity.role, parent_b_role=mate.identity.role,
-                parent_a_public_reputation=mother.social.public_reputation,
-                parent_b_public_reputation=mate.social.public_reputation,
             )
             .spawn_combat_stats_are_final()
             .replace_self_model(default_self_model())
