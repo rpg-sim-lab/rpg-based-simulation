@@ -8036,6 +8036,7 @@
   date: '2026-11-17'
   related_code_areas:
   - registries/session_roles.yaml
+  - tests/tools/test_session_launch.py
   artifact_files: []
   tags: []
 - type: ticket
