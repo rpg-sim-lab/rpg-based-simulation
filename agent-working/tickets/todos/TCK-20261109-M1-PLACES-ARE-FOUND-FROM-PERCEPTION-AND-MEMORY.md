@@ -67,6 +67,8 @@ src/strategy/, knowledge and memory
 ## Implementation Notes
 None yet.
 
+- 2026-11-17 (rpg-planner, from the designer's rule text 800027b5, deeper issue 6): GuildAction.visit writes VAGUE leads with true-map exact coordinates. This item fixes it (a lead keeps only what the teller knew); add a test that a guild-visit lead carries no exact true-map coordinates.
+
 ## Test Summary
 
 ## Files Changed
