@@ -4717,3 +4717,24 @@
   test_path: tests/unit/engine/test_acting_hostile_is_an_act_not_a_state.py, tests/unit/tactical/test_starving_hit_left_behind_does_not_hold_a_panic.py, tests/integration/observability/test_starving_subject_eats_past_a_hitter_left_behind_through_the_real_kernel.py
   divergence_note: See docs/guidelines/intentional_divergences.md Section 2.207.
   support_boundary: 'Unit rows, one tactical scene (the traced shape A; a raider, the old-predicate control holds the panic) and one real-kernel tick-loop test on compiled crowded_frontier (a starving wounded worker two tiles from the inn, a raider that hit it 3 ticks before every tick standing five tiles away and idle: it eats; with the old predicate restored it does not in the same 40 ticks). The paired 3-world x s42-46 x 5000-tick measurement and the V3 cell re-read are pending (after HOLD stage 2). Reach has no line-of-sight test; engagement ordering after a yielded need (group shared-target bias) is out of scope.'
+
+- id: STRAT-354
+  text: 'TCK-20261020-SUSPENDED-PROJECTS-ARE-NEVER-RESUMED-SLOT-LEAK (divergence 2.212): a SUSPENDED project that stays suspended for SUSPENSION_TTL_TICKS (200) ticks ends ABANDONED with ended_by SUSPENSION_EXPIRED through end_record, for every project kind, and its slot is free on the same strategic call. ProjectState.suspended_since is set by every SUSPENDED writer (project switch, tactical threat suspend, near-death) and cleared by resume_project; the near-death suspend also clears the current project and objective ids. Resume has no new trigger. The visible bound is TTL + cadence - 1 (209 at cadence 10, 219 under PROD_SMALL).'
+  status: verified
+  priority: P1
+  legacy_evidence: null
+  v2_evidence: 'src/core/strategic.py (ProjectEnd.SUSPENSION_EXPIRED, ProjectState.suspended_since, SUSPENSION_TTL_TICKS, suspend_record, expire_suspended), src/systems/strategic_systems/intelligence.py (evaluate_strategic_intent, suspension_expiry_update, resume_project), src/engine/tactical.py (_suspend_project_for_threat), src/systems/world_systems/events.py (interpret_near_death), src/engine/checkpoint_fields.py, docs/mechanics/04_strategic_cognition.md section 4, docs/guidelines/intentional_divergences.md Section 2.212.'
+  proof_type: regression
+  test_path: tests/unit/strategic/test_suspension_expiry.py, tests/unit/engine/test_checkpoint_fields.py
+  divergence_note: See docs/guidelines/intentional_divergences.md Section 2.212.
+  support_boundary: 'Unit rows plus the own-job counts at 67b507f8c: 3 gate worlds x s42 x 5000 ticks, spied and plain twin (hashes equal, PINNED, no exceptions, no logging errors): L1 = L2 = L3 = L4 = 0, SUSPENSION_EXPIRED 126 / 60 / 60 (frontier_living_world / urban_political / crowded_frontier), oldest SUSPENDED 218 < bar 219 (TTL 200 + cadence 20 - 1). 200 is a BALANCE value; the harm join is withdrawn. evaluate_all_strategic_intents has no production caller and skips the pass (TCK-20261117-EVALUATE-ALL-STRATEGIC-INTENTS-IS-DEAD-CODE-THAT-SKIPS-THE-SUSPENSION-EXPIRY).'
+- id: STRAT-351
+  text: 'TCK-20261115-THE-NIGHT-CHECK-READS-RAW-WORLD-TIME-SO-EVERY-TICK-AFTER-1800-IS-NIGHT (SURV-08 clock amendment, memo row 98 Q1, divergence 2.209): night is the night half of the time of day (world_time % 2400: ticks 1800-2399 and 0-599), so tick 2400+k is classified as tick k. The sleep bias (SleepScorer +30, routine sleep urgency +0.3, routine sleep boost x2) applies in the night half of every day; the old raw-clock rule agrees with this below t=3000, and from t=3000 it counted every tick as night.'
+  status: verified
+  priority: P1
+  legacy_evidence: null
+  v2_evidence: 'src/core/calendar.py (time_of_day, is_night), src/ai/goals/scorers.py (SleepScorer), src/systems/world_systems/routine.py (evaluate_biological_needs, get_routine_utility_boost), docs/mechanics/04_strategic_cognition.md Tier 2 Biological, docs/guidelines/intentional_divergences.md Section 2.209.'
+  proof_type: regression
+  test_path: tests/unit/core/test_time_of_day.py
+  divergence_note: See docs/guidelines/intentional_divergences.md Section 2.209.
+  support_boundary: 'Unit rows: the helper at ticks 0, 599, 600, 1799, 1800, 2399, 2400, 2999, 3000 and 4200; night is 1200 of every 2400 ticks; the three readers agree at t and t plus whole days; no raw night literal in src outside calendar.py.'

@@ -35,7 +35,7 @@ def test_a_calamity_world_boss_has_the_boss_kind_the_monster_role_and_a_tier_fou
 
 @pytest.mark.parametrize("kind", ["monster", "goblin", "world_boss"])
 def test_a_spawned_monster_has_a_home_at_the_spawn_point_and_a_positive_leash(kind):
-    mob = EntityGenerator(42).spawn_monster(pos=(12.0, 7.0), kind=kind)
+    mob = EntityGenerator(42).spawn_monster(pos=(12.0, 7.0), species=kind, occupation=kind)
 
     assert mob.navigation.home_position == (12.0, 7.0)
     assert mob.navigation.leash_radius > 0

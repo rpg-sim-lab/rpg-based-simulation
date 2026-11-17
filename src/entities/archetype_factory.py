@@ -103,7 +103,7 @@ class ArchetypeEntityFactory:
                 traits=set(contract.traits),
                 properties=properties,
                 personality=personality,
-                occupation=contract.kind,  # step 2: the exact string written to kind; the true label (role_id / profession_id) is step 4
+                occupation=contract.role_id or contract.profession_id,
             )
             .combat(
                 hp=contract.hp,

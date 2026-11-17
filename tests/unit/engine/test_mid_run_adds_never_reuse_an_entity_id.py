@@ -26,7 +26,7 @@ def _world():
 def _monster_add(state, update=None):
     """The production sequence of a mid-run spawn: the factory generator, then a spawn."""
     generator = EntityGenerator.for_state(state, update)
-    return StateUpdate(entities_add=[generator.spawn_monster((5.0, 5.0), state)])
+    return StateUpdate(entities_add=[generator.spawn_monster((5.0, 5.0), state, species="monster", occupation="monster")])
 
 
 def test_a_mid_run_spawn_gets_a_fresh_id_and_entity_one_survives():

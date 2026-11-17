@@ -246,7 +246,7 @@ def test_spawn_position_used_when_profile_has_one(catalog):
         "pop_with_position",
         ResolvedEntityProfile(
             legacy_role=0, legacy_faction=0, hp=10, max_hp=10, atk=1, def_stat=1,
-            attack_range=1, readiness=1.0, spawn_position=(42.0, 17.0),
+            attack_range=1, readiness=1.0, spawn_position=(42.0, 17.0), species_id="human",
         ),
     )
     spawner = WorldEntitySpawner()
@@ -267,7 +267,7 @@ def test_spawn_position_falls_back_to_default_when_unset(catalog):
         "pop_without_position",
         ResolvedEntityProfile(
             legacy_role=0, legacy_faction=0, hp=10, max_hp=10, atk=1, def_stat=1,
-            attack_range=1, readiness=1.0,
+            attack_range=1, readiness=1.0, species_id="human",
         ),
     )
     spawner = WorldEntitySpawner()
@@ -318,7 +318,7 @@ def test_spawn_region_none_when_profile_has_none(catalog):
         "pop_without_region",
         ResolvedEntityProfile(
             legacy_role=0, legacy_faction=0, hp=10, max_hp=10, atk=1, def_stat=1,
-            attack_range=1, readiness=1.0,
+            attack_range=1, readiness=1.0, species_id="human",
         ),
     )
     spawner = WorldEntitySpawner()

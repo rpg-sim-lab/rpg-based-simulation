@@ -80,3 +80,6 @@ None.
 ## Files Changed
 
 ## Completion Summary
+
+## Implementation Notes (added at M1 step 4)
+- 2026-11-17 (rpg-implementer-2): step 4 of kind=species raised some of these rows AGAIN (a repeat): src/domains/campaigns/orchestrator.py module 1126 → 1128, `CampaignOrchestrator` 1004 → 1005, `CampaignOrchestrator._build_initial_state` function-length 420 → 421 and complexipy 47 → 49; src/testing/scenario_runner.py `ScenarioRunner.execute` function-length 154 → 156 and complexipy 17 → 19. The other step-4 rows are owned by TCK-20261117-PAY-DOWN-THE-STEP-4-KIND-IS-SPECIES-CEILING-RAISES. Pay both down together on these two files.
