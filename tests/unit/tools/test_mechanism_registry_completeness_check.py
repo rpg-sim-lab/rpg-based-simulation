@@ -377,7 +377,8 @@ def test_wider_scope_numbers_pinned():
     # 257 -> 262 on 2026-11-12 (same ticket, from the check's own output): the same 5 files, unbound (moved update records, no mechanism of their own); candidates (67) and wired (19) are unchanged.
     # 262 -> 263 on 2026-11-16 (TCK-20261101-A-CHECKPOINT-HAS-NO-FORMAT-VERSION, from the check's own output): src/engine/checkpoint_schema.py is unbound (no mechanism of its own); candidates and wired are unchanged.
     # 263 -> 264 on 2026-11-16 (TCK-20261109-M1-KIND-ALWAYS-MEANS-SPECIES-AND-OCCUPATION-IS-ITS-OWN-FIELD, from the check's own output): src/core/species.py is unbound (a functions-only module; no binding added).
-    assert wider["unbound_files"] == 264
+    # 264 -> 265 on 2026-11-17 (TCK-20261117-KIND-IS-THE-SPECIES-AT-EVERY-WRITER, a pure move; S8 CI fix, from the check's own output): src/content/hero_species.py is unbound (one function, no mechanism of its own); candidates and wired are unchanged.
+    assert wider["unbound_files"] == 265
     # 73 -> 72 on 2026-10-07 (row 7 (b) pass): src/quests/generator.py::QuestGenerator is now bound under `guilds`.
     # 72 -> 71 on 2026-10-11 (#500, D57): src/engine/rpg_depth.py::LeashService is cited under `tactical_decision` (it became wired when
     # the hunger and fatigue goals started calling `way_in_range`), so it is no longer an unbound candidate.
