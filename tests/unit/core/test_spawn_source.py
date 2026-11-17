@@ -4,10 +4,7 @@ import pytest
 
 from src.core.builder import V2EntityBuilder
 from src.core.spawn_source import SpawnKind, SpawnSource
-from src.core.state import AuthoritativeState, LifeStage
 from src.core.updates import StateUpdate
-from src.systems.world_systems.generator import EntityGenerator
-from src.world.reproduction_humanoid import HumanoidReproductionService
 
 
 def _add(entity_id, source):
@@ -54,16 +51,6 @@ def test_merge_refuses_two_different_sources_for_one_id_rather_than_drop_one():
     b = _add(7, SpawnSource(SpawnKind.BIRTH, parent_ids=(3, 4)))
     with pytest.raises(ValueError):
         a.merge(b)
-
-
-def test_the_humanoid_birth_path_tags_the_child_with_its_two_parents():
-    parents = {i: V2EntityBuilder(i).kind("villager").location(5.0, 5.0).build() for i in (1, 2)}
-    state = AuthoritativeState(tick=200, seed=42, entities=parents)
-    generator = EntityGenerator(seed=42)
-    generator._last_id = state.next_entity_id - 1
-    update = HumanoidReproductionService.process_reproduction(state, generator)
-    (child,) = [e for e in update.entities_add if e.identity.life_stage == LifeStage.CHILD]
-    assert update.entity_spawn_sources[child.id] == SpawnSource(SpawnKind.BIRTH, parent_ids=(1, 2))
 
 
 def test_an_add_without_a_declared_source_is_unsourced():

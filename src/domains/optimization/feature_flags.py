@@ -166,12 +166,6 @@ class FeatureFlagManager:
             # imitation fidelity. DEV-002 default-OFF policy applies -- brand-new mechanic, no
             # corpus profile turns this on and no SHADOW-validation history exists.
             "ENABLE_ROLE_MODEL_IMITATION": FeatureMode.OFF,
-            # New gameplay behavior (TCK-20260902-REPRODUCTION-NATURAL-CREATURE-PATH): adds a new
-            # parentless same-kind offspring spawn branch inside CampService.process_camps()
-            # (src/world/camp.py), gated on camp maturity/spawn cadence plus a population-pressure
-            # scarcity check. DEV-002 default-OFF policy applies -- brand-new mechanic, no corpus
-            # profile turns this on and no SHADOW-validation history exists.
-            "ENABLE_REPRODUCTION_NATURAL_CREATURE_PATH": FeatureMode.OFF,
             # New gameplay behavior (TCK-20260902-REPRODUCTION-MAGICAL-DEMONIC-PATH): adds a new
             # parentless, full-ADULT magical/demonic entity spawn branch inside
             # CalamityService.process_world_dynamics() (src/world/calamity.py), additive to the
@@ -179,21 +173,6 @@ class FeatureFlagManager:
             # default-OFF policy applies -- brand-new mechanic, no corpus profile turns this on
             # and no SHADOW-validation history exists.
             "ENABLE_REPRODUCTION_MAGICAL_DEMONIC_PATH": FeatureMode.OFF,
-            # New gameplay behavior (TCK-20260902-REPRODUCTION-HUMANOID-CADENCE-PHASE): adds a
-            # new cadence-gated sub-phase ("3.10 Humanoid Reproduction") to
-            # WorldDynamicsSystem.resolve_dynamics() (src/engine/world_dynamics.py), driven by
-            # its own new SystemCadence.reproduction_humanoid field (200 ticks), that pairs
-            # existing ADULT/alive/same-kind entities within a 10-unit radius and produces a
-            # tracked-parent birth via HumanoidReproductionService (src/world/reproduction_humanoid.py).
-            # Unlike the two spawn-trigger siblings above, this path is NOT gated on a marriage
-            # contract (2026-08-29 build-order decoupling decision). DEV-002 default-OFF policy
-            # applies -- brand-new mechanic, no corpus profile turns this on and no
-            # SHADOW-validation history exists.
-            "ENABLE_REPRODUCTION_HUMANOID_PATH": FeatureMode.OFF,
-            # TCK-20260904-CAMP-NEST-CLASSIFICATION: gates the Nest spread-outcome branch in
-            # CampService.process_camps (default OFF per DEV-002; no corpus profile turns this on
-            # and no SHADOW-validation history exists).
-            "ENABLE_CAMP_NEST_SPREAD": FeatureMode.OFF,
             # New gameplay behavior (TCK-20260903-INFORMATION-HUB-ACCUMULATION): gates both the
             # InformationProviderState accumulation branch inside QuestResolutionSystem.enforce()
             # (checked via state.feature_flags directly, matching ENABLE_GUILD_QUEST_GENERATION's own

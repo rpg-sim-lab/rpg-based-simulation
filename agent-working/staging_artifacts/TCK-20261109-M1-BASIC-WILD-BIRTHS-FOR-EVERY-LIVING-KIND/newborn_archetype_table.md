@@ -30,3 +30,7 @@ Computed at the births branch head from `paired.WORLDS` compiled at seed 42 (see
 No species is more than 50% off t0 (disclosure threshold): none of the chosen with a t0 reference is. dwarf and troll cannot be measured (no t0 reference); troll swamp_troll is 260 hp/28 atk against humans at about 94/10.
 
 Rule 5 (b5554f6b): elf, dwarf, troll and lizardfolk have no t0 body in any gate world, so no parents there and no M1 figure or bar moves. Their species.yaml carries no reproduction_profile or newborn_archetype until the designer fills the pick (marked provisional: no t0 reference); the rule-2 revisit goes on the births name-branch/retirement backlog line and the PR lists them with the Q6 territory line and the interim newborn role row.
+
+## Q17 picks (rpg-designer-ubuntu, c32eb73f; Q16 count-weighted mean accepted)
+
+All four ship with a reproduction_profile and a newborn_archetype, each marked **provisional: no t0 reference** (reference = count-weighted mean of the species' members in populations.yaml, then rule 2): elf = forest_ranger (distance 0.0; druid 0.69); lizardfolk = lizardfolk_scout (0.029 against 70/17.5; shaman 0.20); dwarf = dwarven_hunter (only option); troll = swamp_troll (only option; disclose as a large body, 260/28, with no gate-world parents). The "Rule 5" paragraph and the PLACEHOLDER/NOT PICKED rows above are superseded by this section.
