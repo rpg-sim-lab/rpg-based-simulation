@@ -35,11 +35,15 @@ class ProjectEnd(str, Enum):
       `THREAT_CLEARED` (COMPLETED): a COMBAT_RETREAT project whose threat is gone.
       `WAY_CLOSED` (ABANDONED): a fatigue project whose subject reached the building and no bed was free (F3, divergence 2.155).
       `SUSPENSION_EXPIRED` (ABANDONED): a SUSPENDED project that stayed suspended for `SUSPENSION_TTL_TICKS` without resuming (N10, divergence 2.212); every project kind.
+      `BLOCKER_TIMEOUT` (ABANDONED): a resolve_blocker project that ran for the 50-tick window without its blocker resolving (divergence 2.214).
+      `BLOCKER_CLEARED` (COMPLETED): a resolve_blocker project whose blocker was removed after a quiet spell (divergence 2.214).
     A project ended for any other reason keeps `ended_by` None."""
     SUPERSEDED_BY_TARGET = "SUPERSEDED_BY_TARGET"
     THREAT_CLEARED = "THREAT_CLEARED"
     WAY_CLOSED = "WAY_CLOSED"
     SUSPENSION_EXPIRED = "SUSPENSION_EXPIRED"
+    BLOCKER_TIMEOUT = "BLOCKER_TIMEOUT"
+    BLOCKER_CLEARED = "BLOCKER_CLEARED"
 
 
 class ObjectiveStatus(str, Enum):
@@ -301,6 +305,53 @@ class BlockerState:
     # unresolved blocker every tick and other needs (e.g. biological pressure) get a real
     # chance to win the next scoring pass instead of an immediate re-abandon loop.
     suppression_until_tick: int = 0
+    # Lifecycle (divergence 2.214), appended LAST; both omitted from the canonical dict while at their default (a state that holds blockers but never timed one out keeps its hash).
+    # `failure_count`: resolve_blocker timeouts on this blocker; the suppression after a timeout is `blocker_timeout_suppression(failure_count)`. Kept by a re-inference.
+    failure_count: int = 0
+    # The tick this blocker was last inferred (observed); None until then. The quiet spell (`BLOCKER_QUIET_SPELL_TICKS`) counts from it. Refreshed by a re-inference.
+    last_seen_tick: Optional[int] = None
+
+    def canonical_dict(self) -> Dict[str, Any]:
+        """The canonical-dict entry of this blocker: every field, `failure_count` and `last_seen_tick` omitted while at their default."""
+        out = dataclasses.asdict(self)
+        if self.failure_count == 0:
+            del out["failure_count"]
+        if self.last_seen_tick is None:
+            del out["last_seen_tick"]
+        return out
+
+
+class BlockerRemoval(str, Enum):
+    """Why a blocker was removed from a subject's record; carried on the removal's observability event (`BLOCKER_REMOVED`), never stored in state."""
+    QUIET_SPELL = "QUIET_SPELL"
+
+
+#: Divergence 2.214 (BALANCE values, not law). A resolve_blocker timeout suppresses its blocker for 100 x 2^(failures - 1) ticks, capped at 800; a congestion blocker is removed once its
+#: suppression is over and it has not been re-inferred for 200 ticks.
+BLOCKER_BACKOFF_BASE_TICKS = 100
+BLOCKER_BACKOFF_CAP_TICKS = 800
+BLOCKER_QUIET_SPELL_TICKS = 200
+CONGESTION_BLOCKER_ID = "blocker_congestion"
+
+
+def blocker_timeout_suppression(failure_count: int) -> int:
+    """Ticks a blocker stays suppressed after its ``failure_count``-th resolve_blocker timeout: 100, 200, 400, 800, 800, ..."""
+    return min(BLOCKER_BACKOFF_BASE_TICKS * 2 ** max(failure_count - 1, 0), BLOCKER_BACKOFF_CAP_TICKS)
+
+
+def merge_inferred_blocker(stored: Optional[BlockerState], inferred: BlockerState, tick: int) -> BlockerState:
+    """The blocker to write for a fresh inference at ``tick``: a new one is stamped ``last_seen_tick``; a stored one keeps its lifecycle (suppression, failure count) and refreshes only what is observed
+    (last-seen tick, severity, resolved). Replacing it wholesale erased the suppression every pass (divergence 2.214)."""
+    if stored is None:
+        return dataclasses.replace(inferred, last_seen_tick=tick)
+    return dataclasses.replace(stored, severity=inferred.severity, resolved=inferred.resolved, last_seen_tick=tick)
+
+
+def quiet_blockers(blockers: Mapping[str, BlockerState], tick: int) -> List[str]:
+    """The ids of the congestion blockers to remove at ``tick``: suppression over (tick >= suppression_until_tick) and not re-inferred for `BLOCKER_QUIET_SPELL_TICKS`. A congestion blocker with no
+    last-seen tick (a checkpoint from before the field) is not removed here; the caller stamps it on first sight."""
+    return [b.id for b in blockers.values()
+            if b.id == CONGESTION_BLOCKER_ID and b.last_seen_tick is not None and tick >= b.suppression_until_tick and tick - b.last_seen_tick >= BLOCKER_QUIET_SPELL_TICKS]
 
 
 @dataclass(frozen=True, slots=True)

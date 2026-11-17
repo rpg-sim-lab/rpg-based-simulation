@@ -788,6 +788,15 @@ class StrategyShaper:
                     payload={"entity_id": eid, "reason": defer_reason, "tick": tick},
                 ))
 
+            # COGNITION: BLOCKER_REMOVED (divergence 2.214): a blocker removed with a typed reason (QUIET_SPELL); the reason lives on the event only, never in state.
+            for blocker_id, removal in sorted((getattr(getattr(e_upd, "strategic", None), "blockers_removed_for", None) or {}).items()):
+                events.append(SimulationEvent(
+                    event_type="BLOCKER_REMOVED", event_category="strategy",
+                    tick=tick, entity_id=eid, severity="INFO",
+                    source_system="event_shapers", message="",
+                    payload={"entity_id": eid, "blocker_id": blocker_id, "reason": getattr(removal, "value", str(removal)), "tick": tick},
+                ))
+
             # COGNITION: self_model_updated
             if getattr(e_upd, "self_model_bundle_set", None) is not None:
                 events.append(SimulationEvent(

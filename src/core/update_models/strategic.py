@@ -14,6 +14,7 @@ if TYPE_CHECKING:
         DirectiveState,
         HypothesisState,
         LeadState,
+        BlockerRemoval,
         MarriageState,
         ProjectState,
         SourceTrustEntry,
@@ -27,6 +28,8 @@ class StrategicUpdate:
     # Blockers
     blockers_add_or_update: list[BlockerState] = field(default_factory=list)
     blockers_remove: list[str] = field(default_factory=list)
+    # Why each removed blocker went (id -> reason): observability only (the `BLOCKER_REMOVED` event); nothing about a removed record is kept in state (divergence 2.214).
+    blockers_removed_for: dict[str, BlockerRemoval] = field(default_factory=dict)
     # Leads
     leads_add_or_update: list[LeadState] = field(default_factory=list)
     leads_remove: list[str] = field(default_factory=list)
@@ -77,7 +80,7 @@ class StrategicUpdate:
 
     def is_noop(self) -> bool:
         """True when no blocker, lead, directive, project, concern, zone, hypothesis or intention change is staged."""
-        return (not self.blockers_add_or_update and not self.blockers_remove and
+        return (not self.blockers_add_or_update and not self.blockers_remove and not self.blockers_removed_for and
                 not self.leads_add_or_update and not self.leads_remove and
                 not self.directives_add_or_update and not self.directives_remove and
                 not self.projects_add_or_update and not self.projects_remove and
@@ -107,6 +110,7 @@ class StrategicUpdate:
         return StrategicUpdate(
             blockers_add_or_update=self.blockers_add_or_update + other.blockers_add_or_update,
             blockers_remove=self.blockers_remove + other.blockers_remove,
+            blockers_removed_for={**self.blockers_removed_for, **other.blockers_removed_for},
             leads_add_or_update=self.leads_add_or_update + other.leads_add_or_update,
             leads_remove=self.leads_remove + other.leads_remove,
             directives_add_or_update=self.directives_add_or_update + other.directives_add_or_update,

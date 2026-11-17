@@ -72,7 +72,7 @@ from src.engine.policy import GovernorPolicy
 from src.core.strategic import (
     BlockerState, LeadState, LeadCertainty,
     ProjectState, ProjectStatus, ObjectiveState, ObjectiveStatus,
-    CognitionProfile, ProjectKind, GoalKind, ObjectiveKind, has_project_capacity, restart_clear_window, suspend_record, expire_suspended, with_live_current_score
+    CognitionProfile, ProjectKind, GoalKind, ObjectiveKind, has_project_capacity, restart_clear_window, suspend_record, expire_suspended, end_record, ProjectEnd, BlockerRemoval, blocker_timeout_suppression, merge_inferred_blocker, quiet_blockers, CONGESTION_BLOCKER_ID, with_live_current_score
 )
 from src.engine.spatial_query import SpatialQueryService
 from src.core.lodging_rules import is_lodged_stayer
@@ -202,7 +202,7 @@ class StrategicIntelligenceSystem:
         # Phase 4: Congestion Blocker
         if entity.navigation.wait_count >= 5 or entity.navigation.oscillation_count >= 3:
              blockers.append(BlockerState(
-                 id="blocker_congestion",
+                 id=CONGESTION_BLOCKER_ID,
                  kind="access",
                  subject="congestion",
                  severity=0.5
@@ -263,6 +263,33 @@ class StrategicIntelligenceSystem:
             unique_blockers[b.id] = b
             
         return StrategicUpdate(blockers_add_or_update=list(unique_blockers.values()))
+
+    @staticmethod
+    def quiet_spell_update(entity: EntityState, staged: StrategicUpdate, tick: int) -> Optional[StrategicUpdate]:
+        """Divergence 2.214: a congestion blocker whose suppression is over and that has not been re-inferred for `BLOCKER_QUIET_SPELL_TICKS` is removed (``blockers_remove``, reason
+        QUIET_SPELL on ``blockers_removed_for``); a live resolve_blocker project that names it ends COMPLETED / `BLOCKER_CLEARED` through `end_record` in the same update (the current
+        project and objective cleared when it is the one). A congestion blocker with no last-seen tick (an old checkpoint) is stamped ``tick`` on first sight. A blocker inferred this
+        pass (in ``staged.blockers_add_or_update``) is not removed. Reads only; None when nothing is to be written."""
+        staged_ids = {b.id for b in staged.blockers_add_or_update}
+        stored = entity.strategic.blockers
+        gone = [i for i in quiet_blockers(stored, tick) if i not in staged_ids and i not in staged.blockers_remove]
+        stamps = [replace(b, last_seen_tick=tick) for b in stored.values() if b.id == CONGESTION_BLOCKER_ID and b.last_seen_tick is None and b.id not in staged_ids]
+        if not gone and not stamps:
+            return None
+        ended = [
+            end_record(p, ProjectStatus.COMPLETED, ProjectEnd.BLOCKER_CLEARED)
+            for p in entity.strategic.projects.values()
+            if p.kind == "resolve_blocker" and p.status in (ProjectStatus.ACTIVE, ProjectStatus.SUSPENDED) and p.objectives and p.objectives[0].target in gone
+        ]
+        current_ends = any(p.id == entity.strategic.current_project_id for p in ended)
+        return StrategicUpdate(
+            blockers_add_or_update=stamps,
+            blockers_remove=gone,
+            blockers_removed_for={i: BlockerRemoval.QUIET_SPELL for i in gone},
+            projects_add_or_update=ended,
+            current_project_id_set="" if current_ends else None,
+            current_objective_id_set="" if current_ends else None,
+        )
 
     @staticmethod
     def generate_crafting_blockers(
@@ -500,9 +527,13 @@ class StrategicIntelligenceSystem:
             if inferred_up.blockers_add_or_update:
                 for b in inferred_up.blockers_add_or_update:
                     if b.id not in [x.id for x in new_additions]:
-                        new_additions.append(b)
+                        # Divergence 2.214: a re-inference MERGES into the stored blocker (keeps its suppression and failure count; refreshes what is observed), never replaces it.
+                        new_additions.append(merge_inferred_blocker(entity.strategic.blockers.get(b.id), b, state.tick))
             
             strat_up = replace(strat_up, blockers_add_or_update=new_additions)
+            quiet_up = StrategicIntelligenceSystem.quiet_spell_update(entity, strat_up, state.tick)
+            if quiet_up is not None:
+                strat_up = strat_up.merge(quiet_up)
             removals = set(strat_up.blockers_remove)
             resolved_ids = set()
             for b_id, b in entity.strategic.blockers.items():
@@ -1528,9 +1559,10 @@ class StrategicIntelligenceSystem:
                     if blocker_id is not None:
                         b = strat.blockers.get(blocker_id)
                         if b and not b.resolved:
-                            blocker_updates.append(replace(b, suppression_until_tick=current_tick + 100))
+                            failures = b.failure_count + 1  # divergence 2.214: the suppression doubles with each timeout of the same blocker (100, 200, 400, 800, capped)
+                            blocker_updates.append(replace(b, failure_count=failures, suppression_until_tick=current_tick + blocker_timeout_suppression(failures)))
                     return StrategicUpdate(
-                        projects_add_or_update=[replace(project, status=ProjectStatus.ABANDONED)],
+                        projects_add_or_update=[end_record(project, ProjectStatus.ABANDONED, ProjectEnd.BLOCKER_TIMEOUT)],
                         current_project_id_set="",
                         current_objective_id_set="",
                         blockers_add_or_update=blocker_updates,
