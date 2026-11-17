@@ -144,6 +144,11 @@ Source: `agent-working/stored_artifacts/TCK-20261109-M1-BASIC-WILD-BIRTHS-FOR-EV
     - The real-flow test must not hand-build the roster or the final state. It produces the newborn through the real births apply path in an episode, takes that episode's `final_state.entities`, and builds the next roster through `_extract_entity_carry_forwards` and `persistent_entities.update`.
     - It asserts three things: (1) every t0 id comes before the newborn id in `final_state.entities` iteration order; (2) the same holds in the rebuilt roster; (3) the response resolves to the surviving t0 member.
     - If (1) fails because the state rebuild reorders entities, STOP and report to rpg-designer-ubuntu before the PR.
+  - Restore-path ruling, by rpg-designer-ubuntu on 2026-11-18 by message, on lead-planner-u24's checkpoint-order check; recorded here. It supersedes my Q15:
+    - The resolver and the Q13 tests are unchanged.
+    - This sentence is appended to the disclosure: "A campaign restored from a serialized CampaignState (from_dict) would rebuild the roster in serialized key order (lexicographic if the JSON is key-sorted); no run path restores one today."
+    - The P3 backlog ticket is widened to a single declared resolver order that survives a CampaignState round trip.
+    - The implementer confirms that nothing calls `CampaignState.from_dict` (grep src/ tools/ frontend/). If a run path calls it, STOP and report before the PR.
   - Backlog: TCK-20261118-RESOLVE-PENDING-INFORMATION-PICKS-BY-DICT-INSERTION-ORDER (pre-bind for rpg-designer).
 - Q14 (a), fallback: the species schema doc is made of three parts:
   - the `SpeciesDefinition` `Field(description=...)` for `newborn_archetype` and `reproduction_profile`;

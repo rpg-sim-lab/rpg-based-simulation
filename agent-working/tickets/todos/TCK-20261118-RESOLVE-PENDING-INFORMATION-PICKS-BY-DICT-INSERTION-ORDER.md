@@ -36,6 +36,7 @@ In campaign mode the roster is rebuilt from `persistent_entities` (src/domains/c
 Births (TCK-20261109-M1-BASIC-WILD-BIRTHS-FOR-EVERY-LIVING-KIND) makes this visible: a surviving newborn can receive its population's information when it is the last member left. That behaviour is disclosed and pinned by tests in that ticket.
 
 ## Scope
+- Widened on 2026-11-18 by rpg-designer-ubuntu's restore-path ruling: the declared order must also survive a `CampaignState.to_dict`/`from_dict` round trip. `to_dict` writes `persistent_entities` as str keys in ascending int order (src/domains/campaigns/state.py:434-436), and `from_dict` rebuilds them in file key order (:491-493). A key-sorted JSON dump would make the order lexicographic. Nothing calls `from_dict` in a run path today.
 - Rule work first. rpg-designer decides whether the shared resolver declares an explicit order, such as ascending id or oldest member first. This is pre-bind: the resolver is shared with u24.
 - Then implement the declared order and pin it with tests.
 
