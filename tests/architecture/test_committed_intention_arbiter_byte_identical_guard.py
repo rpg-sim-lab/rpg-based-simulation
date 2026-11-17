@@ -14,7 +14,10 @@ import inspect
 
 from src.systems.strategic_systems.intelligence import StrategicIntelligenceSystem
 
-_GOLDEN_SHA256 = "635bc4f274f3110c8bd0c130a85bc548e517b4247df33cf426bcec81e6eb80f3"  # 96 lines, captured pre-TCK-20260812-COMMITTED-INTENTION-SEQUENCE
+# 96 lines, captured pre-TCK-20260812-COMMITTED-INTENTION-SEQUENCE as 635bc4f274f3110c8bd0c130a85bc548e517b4247df33cf426bcec81e6eb80f3.
+# Updated deliberately by TCK-20261020-SUSPENDED-PROJECTS-ARE-NEVER-RESUMED-SLOT-LEAK: evaluate_project_switch now calls suspend_record(current, tick): every SUSPENDED writer sets the clock (N10 ruling, 5b726a2f).
+# The only guarded-source change is `replace(current, status=ProjectStatus.SUSPENDED)` -> `suspend_record(current, current_tick)`. Lead (testing authority) yes relayed by rpg-planner; #715 testing-authority record: 6941681673.
+_GOLDEN_SHA256 = "affc77cf0a7fa2c2a3477f5b4a961c3356ed19f09de384887027d287d29a684a"
 
 
 def test_evaluate_project_switch_source_hash_unchanged():

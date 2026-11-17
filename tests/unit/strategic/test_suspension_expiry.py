@@ -52,7 +52,7 @@ def test_a_record_one_tick_short_of_the_ttl_is_left_alone_and_at_the_ttl_it_ends
     assert ended.status == ProjectStatus.ABANDONED and ended.ended_by == ProjectEnd.SUSPENSION_EXPIRED
 
 
-@pytest.mark.parametrize("kind", [GoalKind.HUNGER, GoalKind.FATIGUE, GoalKind.STABILIZE, GoalKind.RESOLVE_BLOCKER, GoalKind.COMBAT_ENGAGE])
+@pytest.mark.parametrize("kind", [GoalKind.HUNGER, GoalKind.FATIGUE, GoalKind.HARVESTING, GoalKind.RESOLVE_BLOCKER, GoalKind.COMBAT_ENGAGE])
 def test_every_kind_expires_the_exempt_need_projects_included(kind):
     (ended,) = expire_suspended({"p": _proj("p", kind=kind)}, T0 + SUSPENSION_TTL_TICKS)
     assert ended.ended_by == ProjectEnd.SUSPENSION_EXPIRED
@@ -136,7 +136,7 @@ def test_a_full_suspended_set_frees_its_slots_on_the_strategic_pass_before_the_c
     projs = [_proj(f"p{i}", since=T0) for i in range(3)]
     hero = _hero(*projs)
     assert not has_project_capacity(hero.strategic.projects, 3)
-    up = StrategicIntelligenceSystem.evaluate_strategic_intent(_state(hero, T0 + SUSPENSION_TTL_TICKS), hero, force=True)
+    up = StrategicIntelligenceSystem.evaluate_strategic_intent_with_expiry(_state(hero, T0 + SUSPENSION_TTL_TICKS), hero, force=True)
     ended = {p.id: p for p in up.projects_add_or_update if p.ended_by == ProjectEnd.SUSPENSION_EXPIRED}
     assert set(ended) == {"p0", "p1", "p2"}
     assert not any(is_live_project(p) for p in ended.values())
@@ -145,5 +145,5 @@ def test_a_full_suspended_set_frees_its_slots_on_the_strategic_pass_before_the_c
 def test_a_dead_or_inactive_subject_expires_nothing():
     hero = _hero(_proj())
     dead = replace(hero, combat=replace(hero.combat, alive=False))
-    up = StrategicIntelligenceSystem.evaluate_strategic_intent(_state(dead, T0 + 9999), dead, force=True)
+    up = StrategicIntelligenceSystem.evaluate_strategic_intent_with_expiry(_state(dead, T0 + 9999), dead, force=True)
     assert up.is_noop()

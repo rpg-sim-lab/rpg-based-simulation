@@ -93,15 +93,16 @@ def test_a_project_without_cleared_since_restores_to_no_window_and_keeps_every_o
     try:
         st = k._state
         proj = ProjectState(id="proj_combat_retreat_9", kind=GoalKind.COMBAT_RETREAT, created_tick=3, score=7.5)
-        old = _old_shape(proj, ["cleared_since"])
+        old = _old_shape(proj, ["cleared_since", "suspended_since"])  # N10 appended suspended_since after it: a pre-2.156 checkpoint lacks both
         with pytest.raises(AttributeError):
             old.cleared_since
         e = st.entities[1]
         object.__setattr__(e, "strategic", replace(e.strategic, projects={old.id: old}))
-        fill_missing_fields(st, [r for r in FIELD_RULES if r.field == "cleared_since"])
+        fill_missing_fields(st, [r for r in FIELD_RULES if r.field in ("cleared_since", "suspended_since")])
         restored = st.entities[1].strategic.projects[old.id]
         assert restored.cleared_since is None
-        assert _values(restored, skip=("cleared_since",)) == _values(proj, skip=("cleared_since",))      # nothing shifted
+        assert restored.suspended_since is None
+        assert _values(restored, skip=("cleared_since", "suspended_since")) == _values(proj, skip=("cleared_since", "suspended_since"))      # nothing shifted
     finally:
         k.shutdown()
 

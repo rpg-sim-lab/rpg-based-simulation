@@ -616,7 +616,7 @@ class StrategicIntelligenceSystem:
                 
                 # Call original intent evaluation but with force=True to bypass its own cadence check
                 # (since we already checked cadence here)
-                intent_up = StrategicIntelligenceSystem.evaluate_strategic_intent(state, temp_entity, force=True, cadence=cadence)
+                intent_up = StrategicIntelligenceSystem.evaluate_strategic_intent_with_expiry(state, temp_entity, force=True, cadence=cadence)
                 strat_up = strat_up.merge(intent_up)
 
             # --- 4. Capacity Enforcement (every slow-path evaluation; a fast-path hit skips this block) ---
@@ -1260,14 +1260,14 @@ class StrategicIntelligenceSystem:
         return None
 
     @staticmethod
-    def evaluate_strategic_intent(
+    def evaluate_strategic_intent_with_expiry(
         state: AuthoritativeState,
         entity: EntityState,
         force: bool = False,
         cadence: SystemCadence | None = None
     ) -> StrategicUpdate:
         """
-        Produce a collection of strategic intent updates for the next tick.
+        `evaluate_strategic_intent` after the suspension expiry pass: the one entry every production caller uses (a static test pins it).
 
         N10 (divergence 2.212): first the suspension expiry pass, so a freed slot counts on this same call (goal selection and the capacity gate see the ended records), and before the worker
         fast-path, the objective-resolve return and the detour block, any of which would otherwise starve it. The pass is staged as a StrategicUpdate (never written here); the body runs on a
@@ -1279,7 +1279,7 @@ class StrategicIntelligenceSystem:
             return StrategicUpdate()
         expiry = StrategicIntelligenceSystem.suspension_expiry_update(entity, state.tick)
         if expiry is None:
-            return StrategicIntelligenceSystem._evaluate_strategic_intent_body(state, entity, force=force, cadence=cadence)
+            return StrategicIntelligenceSystem.evaluate_strategic_intent(state, entity, force=force, cadence=cadence)
         ended = {p.id: p for p in expiry.projects_add_or_update}
         strat = entity.strategic
         view_strat = replace(
@@ -1288,7 +1288,7 @@ class StrategicIntelligenceSystem:
             current_project_id=None if expiry.current_project_id_set == "" else strat.current_project_id,
             current_objective_id=None if expiry.current_objective_id_set == "" else strat.current_objective_id,
         )
-        body = StrategicIntelligenceSystem._evaluate_strategic_intent_body(state, replace(entity, strategic=view_strat), force=force, cadence=cadence)
+        body = StrategicIntelligenceSystem.evaluate_strategic_intent(state, replace(entity, strategic=view_strat), force=force, cadence=cadence)
         return expiry.merge(body)
 
     @staticmethod
@@ -1307,13 +1307,15 @@ class StrategicIntelligenceSystem:
         )
 
     @staticmethod
-    def _evaluate_strategic_intent_body(
+    def evaluate_strategic_intent(
         state: AuthoritativeState,
         entity: EntityState,
         force: bool = False,
         cadence: SystemCadence | None = None
     ) -> StrategicUpdate:
-        """The strategic intent evaluation proper (see `evaluate_strategic_intent`)."""
+        """
+        Produce a collection of strategic intent updates for the next tick.
+        """
         # Phase 5: Bounded frequency and early exit (Hardening)
         if not entity.lifecycle.active or not entity.combat.alive:
             return StrategicUpdate()
