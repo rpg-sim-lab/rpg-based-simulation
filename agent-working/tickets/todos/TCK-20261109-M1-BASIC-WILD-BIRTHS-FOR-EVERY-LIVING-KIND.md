@@ -183,6 +183,11 @@ Source: `agent-working/stored_artifacts/TCK-20261109-M1-BASIC-WILD-BIRTHS-FOR-EV
   - typed updates go through the apply path in a fixed order, and a test pins that order on a tick where both fire;
   - if the counted refinement-phase list changes, regenerate the authoritative_pipeline.md list and phase_inventory.md in the same PR, with any new docs/engine text riding B5;
   - the full CI-equivalent run.
+- Hook placement is PRE-BIND. rpg-designer ruled this on 2026-11-18, relayed by lead-planner-u24, lead-planner (#715 6957583812 thread) and rpg-designer-ubuntu, and recorded here. rpg-designer also acked r5 and the picks.
+  - rpg-designer's yes is needed before code if the hook adds to or reorders the counted refinement sequence (pipeline.py refine(), authoritative_pipeline.md, phase_inventory.md), or adds a world_dynamics sub-phase outside its cadence gate.
+  - B5 is enough only if the hook runs inside an existing phase and changes no listed sequence or inventory.
+  - Any change to kernel.md's 7-phase loop is a STOP back to rpg-designer.
+  - The implementer writes a placement packet: position, reads and writes, cadence key, verbatim before/after docs/engine text, and the case with its reason. It goes to rpg-designer-ubuntu, then through the leads to rpg-designer. No push carries the hook until rpg-designer rules.
 
 ## Out of Scope
 - §12.4 (packs, herds, territory), milestones 2 and 3, and any rule work not listed in §12.3 (owner ruling only).
