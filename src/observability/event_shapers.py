@@ -790,7 +790,6 @@ class StrategyShaper:
                 ))
 
             events.extend(blocker_removed_events(eid, e_upd, tick))  # COGNITION: blocker_removed (divergence 2.214)
-
             # COGNITION: self_model_updated
             if getattr(e_upd, "self_model_bundle_set", None) is not None:
                 events.append(SimulationEvent(
