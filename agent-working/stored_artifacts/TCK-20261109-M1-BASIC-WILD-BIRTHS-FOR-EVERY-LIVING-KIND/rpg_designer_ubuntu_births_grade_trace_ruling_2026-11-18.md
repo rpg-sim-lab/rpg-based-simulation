@@ -41,3 +41,20 @@ tags: []
 ## Pre-bind check
 - No Rule ID, Bible text, contract or scorer behaviour changes here, so this is a cc.
 - rpg-planner-ubuntu files the ticket.
+
+## Update after rpg-planner-ubuntu's correction (the trace wrapper double-counted, because both the live hub and the replay hub call add)
+- **Q1 point 3 is withdrawn.** demographic_birth is 1 event per newborn: urban 2, hero 3, all from event_shapers. There is no double emit and no births defect. My lead was wrong.
+- **Q1 point 2:** halving gives 820 divergence events over about 975 ticks. The stuck-state reading is still the one to check.
+
+## Q3. A late first transition scores -20; no transition scores 0. SAME ticket as Q2
+- **Confirmed in faction.py:57-71.** `diplomacy_dormant` is emitted only on the first `diplomatic_transition` after `zero_diplomacy_by_tick` when FACTION has no earlier events. A world that never transitions is never penalised.
+- **The same shape is in other scorers:**
+  - `calamity_dormant` and `world_static`, which fire on the first `calamity_spawned` or `region_transformed` after a gate;
+  - `demographics_dormant`, which needs a payload flag on a birth event;
+  - `cooperation_dormant` and the other one-shot dormancy rules.
+- **One root:** each of these penalises absence only when an event arrives late, so silence scores better than late activity. The last_event_tick denominator in Q2 has the same root.
+- **So it is one backlog ticket with three scope lines:**
+  1. the denominator rewards a pillar that goes silent early;
+  2. the dormancy penalties fire on a late first event, never on true absence (all scorers, not only FACTION);
+  3. if the COGNITION trace confirms it, per-tick counting of a persisting state (decision_divergence_detected).
+- **For FACTION's cause:** the -20 is a scorer artefact of a transition that is new on head. Why diplomacy now transitions is still a cause question, held for the joint FACTION and COGNITION ruling.
