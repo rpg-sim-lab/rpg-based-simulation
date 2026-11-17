@@ -1064,8 +1064,8 @@ class ProgressionShaper:
             # entity_evolved (TCK-20260906-ENTITY-EVOLVED-EVENT-GAP): species evolution at level
             # thresholds (src/engine/evolution.py's EvolutionSystem). Unlike xp_granted/level_up
             # above, `kind_set` lives directly on EntityUpdate (e_upd), not IdentityUpdate
-            # (id_upd) -- EvolutionSystem always writes kind_set (unchanged when not evolved), so
-            # this must diff against prior_ent.kind, not just check for a non-None value.
+            # (id_upd). No entity writer of `kind_set` exists in src (M1: kind is the species and never changes in a run), so this branch stays quiet; it still
+            # diffs against prior_ent.kind, not just a non-None value.
             new_kind = getattr(e_upd, "kind_set", None)
             if new_kind is not None and new_kind != prior_ent.kind:
                 events.append(SimulationEvent(

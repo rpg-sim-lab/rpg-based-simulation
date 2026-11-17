@@ -4,7 +4,7 @@
 from __future__ import annotations
 from dataclasses import replace
 from typing import TYPE_CHECKING
-from src.core.state import EntityState, EquipSlot
+from src.core.state import EntityState
 from src.core.updates import EntityUpdate, IdentityUpdate, CombatUpdate, RewardUpdate
 
 if TYPE_CHECKING:
@@ -87,24 +87,9 @@ class EvolutionSystem:
             if levels_gained > 0:
                 old_level = entity.identity.evolution_level
                 
-                # Check for species evolution thresholds (EVO-001)
-                evolved = False
-                for threshold in [10, 25, 50]:
-                    if old_level < threshold <= new_level:
-                        evolved = True
-                        break
-                
-                # Stat & Gear Growth
-                if evolved:
-                    new_slots = dict(eq_upd.slot_updates)
-                    if "goblin" in entity.kind.lower():
-                        if "1" in entity.kind:
-                            new_slots[EquipSlot.MAIN_HAND] = "iron_sword"
-                            new_slots[EquipSlot.TORSO] = "leather_armor"
-                        elif "2" in entity.kind:
-                            new_slots[EquipSlot.MAIN_HAND] = "steel_sword"
-                            new_slots[EquipSlot.TORSO] = "chainmail"
-                
+                # M1 step 4: the goblin-gear block that stood here matched the substring "goblin" in `kind` and then a tier digit ("1"/"2") in it. No writer
+                # produces a digit (the step-4 inventory, Table 1), so it never assigned a slot; with `kind` now the species id it would have matched "goblin"
+                # and still assigned nothing. It is removed (a goblin evolution tier is not authored in content, so there is nothing to read).
                 from src.core.enums import EntityRole
                 if entity.identity.role == EntityRole.HERO:
                     total_ap_gain = levels_gained * 5

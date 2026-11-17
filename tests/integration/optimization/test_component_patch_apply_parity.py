@@ -113,7 +113,7 @@ def test_natural_creature_spawn_commits_through_authoritative_apply_path():
 
     generator = EntityGenerator(seed=42)
     offspring = generator.spawn_natural_creature_offspring(
-        (10.0, 20.0), state=state, kind="goblin_warrior", difficulty_tier=1, birth_tick=60,
+        (10.0, 20.0), state=state, species="goblin_warrior", occupation="goblin_warrior", difficulty_tier=1, birth_tick=60,
     )
 
     update = StateUpdate(entities_add=[offspring], force_full_scan=True)

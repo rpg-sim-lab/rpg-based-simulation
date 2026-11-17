@@ -71,6 +71,8 @@ The rest are rendering, visual and place-corpus tests.
 ## Implementation Notes
 After v1.
 
+- 2026-11-17 (M1 step 4, rpg-designer 3045e98a, stage 4b): this ticket also owns the kind=species stage 4b. A `WorldCompiler.compile` with no content context (149 test calls in 43 files and 3 tools: tools/calibrate_rendering.py:81, tools/review_pipeline_check.py:70, tools/visual_assets_sample_map.py:139; no src caller) keeps the legacy behaviour in step 4: `kind` = the role label with `occupation` equal to it, named as the legacy path in `src/worldbuilding/compiler.py` and pinned by a test. Giving those calls a context, then removing the legacy path, is stage 4b; the parent TCK-20261109-M1-KIND-ALWAYS-MEANS-SPECIES-AND-OCCUPATION-IS-ITS-OWN-FIELD does not close until it is done.
+
 ## Test Summary
 
 ## Files Changed

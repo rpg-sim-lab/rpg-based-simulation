@@ -297,6 +297,41 @@ seeding moved to the content layer by #420 (`753f98ea9`, no behaviour change). R
   revises the rating after beating one. The first half is covered by the same tests. The
   revision is **owed** with `TCK-20260913-NO-MECHANISM-RECORDS-PER-ENEMY-KIND-DANGER`.
 
+- **Amendment, how experience outweighs the prior (ruled by rpg-designer, 2026-11-17, Milestone 1's
+  appraisal item).** A decisive encounter with a member of a kind (a kill, or losing more than half
+  one's health to it) records a typed per-kind experience fact and moves the subject's belief about
+  that kind one level toward what happened, clamped to the declared levels; provenance
+  "experience" outweighs "common knowledge". One fact per kind, the latest. This is the mechanism
+  `TCK-20260913-NO-MECHANISM-RECORDS-PER-ENEMY-KIND-DANGER` found missing. M1 items 2-6 rule text, drafts/rpg-designer-m1-items-2-6-rule-text.md sha256 800027b5; kernel spec docs/plans/systemic_world/m1_kernel_spec_items_2_6.md.
+
+---
+
+## KNOW-05 — A subject finds a place only from what it perceives, remembers having perceived, was told, or its kind knows in common; vague leads stay vague
+
+> Food, a bed, a shop, work and a refuge are found from perception now, memory of having
+> perceived them, a report, or declared common knowledge — never from the true map. Memory keeps
+> where the place was and what was visible of it when last seen, revised by seeing it again or by
+> arriving. What a place holds inside (a shop's purse, a node's remaining yield, an employer's
+> pay) is known only on arrival or by report; what shows at the door is known on sight. A vague
+> report names an area, never exact coordinates.
+
+**Disposition: ACCEPT — ruled by rpg-designer, 2026-11-17 (RPG track), applying decision 56
+(memo row 56), KNOW-02 (no hidden ground truth injected) and the Uncertainty Rule; Milestone 1's
+places item (TCK-20261109-M1-PLACES-ARE-FOUND-FROM-PERCEPTION-AND-MEMORY).**
+
+- **Amendment, starting knowledge (decided by the owner, 2026-11-17, Q3(a), owner answers #715 6937049127 (recommended option on every question)).** A person
+  starts knowing every building of the settlement it lives in; a creature with a home range starts
+  knowing the food places inside it; nothing else.
+- **Amendment, service at the door (decided by the owner, 2026-11-17, Q4(a)).** Whether an inn
+  serves, a shop buys or work is offered is known on sight or from memory; purse and pay only on
+  arrival; a refusal is remembered.
+- **Repository evidence: CONFLICTING (2026-11-17).** Every place-finding decision reads the true map
+  (`SpatialQueryService.nearest_building` / `nearest_resource_node` over the whole world; forage over
+  all nodes; scavenge over all corpses; `nearest_sale` / `nearest_work` read true purses and pay);
+  `SpatialMemory.known_resource_sites` has no writer or reader; a VAGUE lead carries exact
+  coordinates (`GuildAction.visit` derives them from the true map); the starvation record's judged
+  column equals the true map by construction (memo row 56). Fixed in Milestone 1: M1 items 2-6 rule text, drafts/rpg-designer-m1-items-2-6-rule-text.md sha256 800027b5; kernel spec docs/plans/systemic_world/m1_kernel_spec_items_2_6.md.
+
 ---
 
 ## Inherited / Applied Foundational Rules

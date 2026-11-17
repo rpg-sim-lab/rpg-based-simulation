@@ -54,7 +54,7 @@ def test_the_kernel_final_digest_is_the_canonical_hash():
 
 def test_a_spawned_world_boss_changes_the_canonical_hash_and_so_does_wounding_it():
     base = _base()
-    boss = EntityGenerator(42).spawn_monster(pos=(5.0, 5.0), kind="world_boss", difficulty_tier=4)
+    boss = EntityGenerator(42).spawn_monster(pos=(5.0, 5.0), species="world_boss", occupation="world_boss", difficulty_tier=4)
     with_boss = replace(base, entities={boss.id: boss})
     assert CanonicalStateHasher.get_hash(with_boss) != CanonicalStateHasher.get_hash(base)
 
