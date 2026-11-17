@@ -180,7 +180,6 @@ class ArchetypeEntityFactory:
                 role=role, faction=mother.identity.faction, traits=set(contract.species_trait_ids), properties=properties,
                 personality=personality, life_stage=LifeStage.CHILD, occupation=None,
             )
-            .navigation(home_position=mother.navigation.home_position, leash_radius=mother.navigation.leash_radius)
             .strategic(home_region_id=birth.home_region_id)
             .combat(
                 hp=contract.hp, max_hp=contract.max_hp, atk=contract.atk, def_stat=contract.def_stat,

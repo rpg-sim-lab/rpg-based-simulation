@@ -157,3 +157,27 @@ def test_the_hook_runs_births_on_its_own_30_tick_cadence_and_the_apply_path_adds
     assert sorted(nxt.entities) == [1, 2, 3] and nxt.next_entity_id == 4
     off_beat = _state(_body(1), _body(2), tick=61)
     assert not WorldDynamicsSystem.resolve_dynamics(off_beat, StateUpdate(), _generator(off_beat), cadence).entities_add
+
+
+def test_a_parent_without_genes_gets_a_profile_keyed_by_world_seed_and_id(certain):
+    def child(seed):
+        state = AuthoritativeState(tick=30, seed=seed, entities={1: _body(1), 2: _body(2)}, next_entity_id=3)
+        return _run(state).entities_add[0].lifecycle.genetic_profile
+    assert child(42) == child(42) and child(42) != child(43)
+
+
+def test_the_region_nudge_counts_newborns_not_pairs(monkeypatch):
+    real = births.get_catalog()
+    litter = real.get_reproduction_profile("humanoid_births").model_copy(update={"birth_chance_per_check": 1.0, "litter_size": 2})
+
+    class _Litter:
+        def get_reproduction_profile(self, profile_id):
+            return litter
+
+        def __getattr__(self, name):
+            return getattr(real, name)
+
+    monkeypatch.setattr(births, "get_catalog", lambda: _Litter())
+    region = RegionState(id="town", name="Town", kind="town", bounds=(0, 0, 100, 100), population_cohorts={})
+    update = _run(_state(_body(1), _body(2), regions={"town": region}))
+    assert len(update.entities_add) == 2 and update.world_updates["town"].population_young_births_delta == 2
