@@ -7974,6 +7974,47 @@
   - content
   last_verified: '2026-10-09'
 - type: ticket
+  path: agent-working/tickets/done/TCK-20261117-AN-ENTITY-CARRIES-ITS-OCCUPATION-LABEL-AND-ONE-SPECIES-READ-SPECIES-OF.md
+  ticket_id: TCK-20261117-AN-ENTITY-CARRIES-ITS-OCCUPATION-LABEL-AND-ONE-SPECIES-READ-SPECIES-OF
+  title: An entity carries its occupation label as its own field, and `species_of`
+    is the one species read (M1 step 2 of 5)
+  tier: standard
+  ticket_type: feature
+  date: '2026-11-17'
+  related_code_areas:
+  - src/core/state.py, src/core/species.py, src/core/builder.py, src/engine/apply.py,
+    src/engine/checkpoint_fields.py, src/domains/campaigns/, src/api/presenters/state_presenter.py,
+    the world compiler and spawners.
+  artifact_files:
+  - agent-working/stored_artifacts/TCK-20261117-AN-ENTITY-CARRIES-ITS-OCCUPATION-LABEL-AND-ONE-SPECIES-READ-SPECIES-OF/investigation.md
+  - agent-working/stored_artifacts/TCK-20261117-AN-ENTITY-CARRIES-ITS-OCCUPATION-LABEL-AND-ONE-SPECIES-READ-SPECIES-OF/plan.md
+  - agent-working/stored_artifacts/TCK-20261117-AN-ENTITY-CARRIES-ITS-OCCUPATION-LABEL-AND-ONE-SPECIES-READ-SPECIES-OF/test_plan.md
+  tags: []
+- type: ticket
+  path: agent-working/tickets/done/TCK-20261117-LEAD-M1-BASE-GATE-EVIDENCE.md
+  ticket_id: TCK-20261117-LEAD-M1-BASE-GATE-EVIDENCE
+  title: The rpg gate reports behind the Milestone 1 re-baseline are kept on main,
+    byte for byte, together with the lead's own monitoring rows
+  tier: hotfix
+  ticket_type: chore
+  date: '2026-11-17'
+  related_code_areas: []
+  artifact_files: []
+  tags:
+  - governance
+- type: ticket
+  path: agent-working/tickets/todos/TCK-20261117-PAY-DOWN-THE-NINE-LINE-CEILINGS-THE-OCCUPATION-FIELD-RAISED.md
+  ticket_id: TCK-20261117-PAY-DOWN-THE-NINE-LINE-CEILINGS-THE-OCCUPATION-FIELD-RAISED
+  title: Pay down the nine code-health line ceilings that the occupation field raised
+    by 1-2 lines each
+  tier: standard
+  ticket_type: refactor
+  date: '2026-11-17'
+  related_code_areas:
+  - _fast_replace_identity
+  artifact_files: []
+  tags: []
+- type: ticket
   path: agent-working/tickets/done/TCK-20261116-A-CI-SET-ON-TWO-IMAGE-PATCHES-IS-ONE-ENVIRONMENT-WHEN-LIBC-AND-PYTHON-MATCH.md
   ticket_id: TCK-20261116-A-CI-SET-ON-TWO-IMAGE-PATCHES-IS-ONE-ENVIRONMENT-WHEN-LIBC-AND-PYTHON-MATCH
   title: A CI set on two image patch versions is one environment when libc and the
@@ -10339,6 +10380,17 @@
   artifact_files: []
   tags: []
 - type: ticket
+  path: agent-working/tickets/inprogress/TCK-20261109-M1-KIND-ALWAYS-MEANS-SPECIES-AND-OCCUPATION-IS-ITS-OWN-FIELD.md
+  ticket_id: TCK-20261109-M1-KIND-ALWAYS-MEANS-SPECIES-AND-OCCUPATION-IS-ITS-OWN-FIELD
+  title: '`kind` always means species, and occupation is a separate field'
+  tier: standard
+  ticket_type: feature
+  date: '2026-11-09'
+  related_code_areas:
+  - src/core/ (entity identity), content schemas
+  artifact_files: []
+  tags: []
+- type: ticket
   path: agent-working/tickets/todos/TCK-20261109-A-CROWDED-HERO-STARVES-WITH-NO-WAY-TRIED-AFTER-ITS-LAST-MEAL.md
   ticket_id: TCK-20261109-A-CROWDED-HERO-STARVES-WITH-NO-WAY-TRIED-AFTER-ITS-LAST-MEAL
   title: Crowded_frontier s45 hero 31 starves at t2439 with no way tried after its
@@ -10421,17 +10473,6 @@
   date: '2026-11-09'
   related_code_areas:
   - src/strategy/ and perception code, content schemas
-  artifact_files: []
-  tags: []
-- type: ticket
-  path: agent-working/tickets/todos/TCK-20261109-M1-KIND-ALWAYS-MEANS-SPECIES-AND-OCCUPATION-IS-ITS-OWN-FIELD.md
-  ticket_id: TCK-20261109-M1-KIND-ALWAYS-MEANS-SPECIES-AND-OCCUPATION-IS-ITS-OWN-FIELD
-  title: '`kind` always means species, and occupation is a separate field'
-  tier: standard
-  ticket_type: feature
-  date: '2026-11-09'
-  related_code_areas:
-  - src/core/ (entity identity), content schemas
   artifact_files: []
   tags: []
 - type: ticket
