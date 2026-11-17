@@ -384,6 +384,15 @@ class ResolvedEntityArchetype(BaseModel):
 # EntityArchetypeResolver — Phase 25
 # ---------------------------------------------------------------------------
 
+def _merge_trait_ids(archetype_trait_ids: Iterable[str], species_traits: Iterable[TraitDefinition]) -> List[str]:
+    """Archetype traits first, then the species' own traits not already present (stable, no duplicates)."""
+    merged: List[str] = []
+    for tid in [*archetype_trait_ids, *(td.id for td in species_traits)]:
+        if tid not in merged:
+            merged.append(tid)
+    return merged
+
+
 class EntityArchetypeResolver:
     """
     Resolves a single EntityArchetypeDefinition (by ID or object) into a
@@ -495,17 +504,7 @@ class EntityArchetypeResolver:
                     "skill_profile", arch.skill_profile, context=ctx
                 )
 
-        # --- Trait merge: archetype traits first, then species natural_traits not already present ---
-        seen: set = set()
-        merged_trait_ids: List[str] = []
-        for tid in arch.traits:
-            if tid not in seen:
-                seen.add(tid)
-                merged_trait_ids.append(tid)
-        for td in species_defaults.natural_traits:
-            if td.id not in seen:
-                seen.add(td.id)
-                merged_trait_ids.append(td.id)
+        merged_trait_ids = _merge_trait_ids(arch.traits, species_defaults.natural_traits)
         traits = self._foundation.resolve_traits(merged_trait_ids)
 
         # --- Theme resolution: exactly as declared in archetype ---
