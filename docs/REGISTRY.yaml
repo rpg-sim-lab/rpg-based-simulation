@@ -7974,6 +7974,35 @@
   - content
   last_verified: '2026-10-09'
 - type: ticket
+  path: agent-working/tickets/done/TCK-20261117-AN-ENTITY-CARRIES-ITS-OCCUPATION-LABEL-AND-ONE-SPECIES-READ-SPECIES-OF.md
+  ticket_id: TCK-20261117-AN-ENTITY-CARRIES-ITS-OCCUPATION-LABEL-AND-ONE-SPECIES-READ-SPECIES-OF
+  title: An entity carries its occupation label as its own field, and `species_of`
+    is the one species read (M1 step 2 of 5)
+  tier: standard
+  ticket_type: feature
+  date: '2026-11-17'
+  related_code_areas:
+  - src/core/state.py, src/core/species.py, src/core/builder.py, src/engine/apply.py,
+    src/engine/checkpoint_fields.py, src/domains/campaigns/, src/api/presenters/state_presenter.py,
+    the world compiler and spawners.
+  artifact_files:
+  - agent-working/stored_artifacts/TCK-20261117-AN-ENTITY-CARRIES-ITS-OCCUPATION-LABEL-AND-ONE-SPECIES-READ-SPECIES-OF/investigation.md
+  - agent-working/stored_artifacts/TCK-20261117-AN-ENTITY-CARRIES-ITS-OCCUPATION-LABEL-AND-ONE-SPECIES-READ-SPECIES-OF/plan.md
+  - agent-working/stored_artifacts/TCK-20261117-AN-ENTITY-CARRIES-ITS-OCCUPATION-LABEL-AND-ONE-SPECIES-READ-SPECIES-OF/test_plan.md
+  tags: []
+- type: ticket
+  path: agent-working/tickets/todos/TCK-20261117-PAY-DOWN-THE-NINE-LINE-CEILINGS-THE-OCCUPATION-FIELD-RAISED.md
+  ticket_id: TCK-20261117-PAY-DOWN-THE-NINE-LINE-CEILINGS-THE-OCCUPATION-FIELD-RAISED
+  title: Pay down the nine code-health line ceilings that the occupation field raised
+    by 1-2 lines each
+  tier: standard
+  ticket_type: refactor
+  date: '2026-11-17'
+  related_code_areas:
+  - _fast_replace_identity
+  artifact_files: []
+  tags: []
+- type: ticket
   path: agent-working/tickets/done/TCK-20261116-A-CI-SET-ON-TWO-IMAGE-PATCHES-IS-ONE-ENVIRONMENT-WHEN-LIBC-AND-PYTHON-MATCH.md
   ticket_id: TCK-20261116-A-CI-SET-ON-TWO-IMAGE-PATCHES-IS-ONE-ENVIRONMENT-WHEN-LIBC-AND-PYTHON-MATCH
   title: A CI set on two image patch versions is one environment when libc and the
