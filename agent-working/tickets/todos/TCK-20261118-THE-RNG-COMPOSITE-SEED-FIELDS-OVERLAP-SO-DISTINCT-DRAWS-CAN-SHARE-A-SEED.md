@@ -69,6 +69,7 @@ Not covered by TCK-20260817-STANDARD-SPAWN-OCCUPANCY-COLLISION-RNG-ROOT-CAUSE (D
 
 ## Assumptions / Open Questions
 - Whether any production caller passes string entity ids today is unchecked.
+- The string-id hash itself is deterministic: a fixed polynomial `(h*31 + ord(c)) & 0xFFFFFFFF` (rng.py:74-79), not Python `hash()`, so it does not depend on PYTHONHASHSEED (lead-planner-u24, 2026-11-18). Only the field overlap applies.
 - Fix timing: after Milestone 1, unless the step 1 measurement finds a real collision.
 
 ## Implementation Notes
