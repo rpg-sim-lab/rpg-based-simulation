@@ -55,7 +55,7 @@ def test_newborn_birth_record_and_faction_follow_the_parents(catalog):
     assert child.identity.faction == mother.identity.faction
     assert child.identity.properties["faction_id"] == "town_council"
     assert child.strategic.home_region_id == "r1"
-    assert child.navigation.home_position is None
+    assert child.navigation.home_position == (1.0, 2.0) and child.navigation.leash_radius == 6.0
 
 
 def test_newborn_role_is_monster_only_for_a_monster_mother(catalog):
