@@ -10,6 +10,7 @@ from typing import Any, Optional
 
 from src.content.common_knowledge_seed import warmed_catalog
 from src.content.resolver import ResolverError
+from src.content.species_senses import require_species_sense_profile
 from src.worldbuilding.schema import InvalidWorldSpecError
 
 
@@ -31,3 +32,9 @@ def require_known_recipe_species(catalog_repo: Any, recipe: Any) -> None:
     """A recipe that names a species names one the catalog declares (its diet and other properties come from it)."""
     if recipe.species_id and not catalog_repo.get_species(recipe.species_id):
         raise ResolverError("species", recipe.species_id)
+
+
+def require_declared_population_species(world_id: str, population_id: str, pop_spec: Any, species_id: Optional[str]) -> None:
+    """A compiled population's species declares a diet (SURV-05) and a usable sense profile (PERC-02a); either gap is a compile error."""
+    require_declared_diet(world_id, population_id, pop_spec, species_id)
+    require_species_sense_profile(species_id, f"world {world_id!r} population {population_id!r}")
