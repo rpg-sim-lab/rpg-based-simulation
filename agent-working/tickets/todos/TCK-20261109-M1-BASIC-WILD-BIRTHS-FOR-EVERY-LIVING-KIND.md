@@ -123,7 +123,16 @@ Source: `agent-working/stored_artifacts/TCK-20261109-M1-BASIC-WILD-BIRTHS-FOR-EV
 - G1b: no camp-membership field. Camp "refill" is reported spatially as BALANCE, not as a bar.
   - The measure is fixed in the runner before any data: bodies with `species_of()` exactly equal to `CampState.kind`, within a declared radius constant, sampled per day per seed and split into newborn and t0.
   - A camp whose kind is not a declared species is reported as unmapped. A world with no camps reports "0 camps".
-  - The ch05 wording ("one generation of presence") goes with the open Q11/D3 Bible question.
+  - The ch05 wording ("one generation of presence") goes with the open Q11/D3 Bible question. Superseded by A2 below.
+
+### Amendment 2026-11-18 (G1 addendum: A1, A2)
+Source: `agent-working/stored_artifacts/TCK-20261109-M1-BASIC-WILD-BIRTHS-FOR-EVERY-LIVING-KIND/rpg_designer_ubuntu_births_rulings_g1_addendum_2026-11-18.md` (body sha256 4560ab2a). Where it differs from G1, the addendum wins.
+- A1 covers the campaign reader of `population_id` (orchestrator.py ~1080-1093 → `WorldCompiler.resolve_pending_information`, first match in roster order). G1a stands.
+  - Delivering to a surviving newborn is correct. The resolver is unchanged, and no t0-only filter is added.
+  - Disclosed in the step report and in the field's doc line.
+  - One test file covers three cases: (1) provenance leaves a newborn unresolved; (2) a roster with only a newborn of P resolves to the newborn; (3) a roster with a t0 member and a newborn of P resolves as the code orders it, with the order asserted (ascending id expected).
+  - A different order is reported to rpg-designer-ubuntu before the PR, without changing the resolver.
+- A2: Q11/D3 is closed. The camp-refill ch05 text is a new Bible item and goes with the B5 texts to rpg-designer before the implementation PR.
 
 ## Out of Scope
 - §12.4 (packs, herds, territory), milestones 2 and 3, and any rule work not listed in §12.3 (owner ruling only).
