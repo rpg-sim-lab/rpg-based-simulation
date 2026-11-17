@@ -165,6 +165,11 @@ Source: `agent-working/stored_artifacts/TCK-20261109-M1-BASIC-WILD-BIRTHS-FOR-EV
 - The PR table gains columns for t0 hp/atk per gate world, the chosen archetype's distance, and each alternative's distance.
 - Human village_worker is confirmed, provided rule 2 holds. Elf and lizardfolk are decided by rule 2. Single-option species are accepted, with their distances in the table.
 - Any species more than 50% off t0 on hp or atk is named in the step report's disclosure with both bodies. The 50% is a disclosure threshold fixed before data, not a bar.
+- Rule 5 (`rpg_designer_ubuntu_births_rulings_d3_table_r5_2026-11-18.md`, body sha256 b5554f6b; it adds to 6df73509) covers a species that has a profile but no t0 body in any gate world.
+  - The implementer does not pick for it. The table lists it as "no t0 reference", with every rule-1-eligible archetype and its stat_profile, and it is sent back with any rule-4 species.
+  - rpg-designer-ubuntu then picks by hand, marked "provisional: no t0 reference".
+  - The step report names it once: it has no parents in any gate world, so it moves no M1 figure or bar.
+  - Revisit obligation: the first world that gives it a t0 population re-runs rule 2. That obligation goes on the existing births name-branch / retirement backlog line, alongside the Q6 territory line and the interim newborn role row.
 
 ## Out of Scope
 - §12.4 (packs, herds, territory), milestones 2 and 3, and any rule work not listed in §12.3 (owner ruling only).
