@@ -8113,6 +8113,18 @@
   artifact_files: []
   tags: []
 - type: ticket
+  path: agent-working/tickets/todos/TCK-20261117-EVERY-WORLD-STARTS-AT-MIDNIGHT-SO-EVERY-SHORT-RUN-IS-DARK.md
+  ticket_id: TCK-20261117-EVERY-WORLD-STARTS-AT-MIDNIGHT-SO-EVERY-SHORT-RUN-IS-DARK
+  title: Every world starts at t = 0, which the clock calls night, so every short
+    scenario and every run's first 600 ticks are dark
+  tier: standard
+  ticket_type: feature
+  date: '2026-11-17'
+  related_code_areas:
+  - src/core/calendar.py, world assembly (the start tick)
+  artifact_files: []
+  tags: []
+- type: ticket
   path: agent-working/tickets/todos/TCK-20261117-INTELLIGENCE-RAW-TIME-PATHS-ARE-UNCALLED.md
   ticket_id: TCK-20261117-INTELLIGENCE-RAW-TIME-PATHS-ARE-UNCALLED
   title: intelligence.py :912 and :1005-1016 are uncalled paths that read raw world
