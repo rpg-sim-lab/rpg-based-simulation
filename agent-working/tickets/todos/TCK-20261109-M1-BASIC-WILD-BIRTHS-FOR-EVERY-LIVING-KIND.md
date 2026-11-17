@@ -115,6 +115,16 @@ Source: the same stored v2 file, now v2.2 (body sha256 d12d3498; append-only fro
 - Overlap with u24 PERC-02a (lane D, likely to merge first): it adds the compile check `require_declared_population_species` (a usable sense profile plus a declared diet). Each `newborn_archetype`'s species must pass that check. After PERC-02a lands, births resyncs on main and runs the check. A text conflict is only possible near the troll block in species.yaml.
 - When the PR opens, its number and head go to lead-planner, which passes them to lead-planner-u24 to re-diff species.yaml against the u24 branches before the merge ask.
 
+### Amendment 2026-11-18 (G1a and G1b)
+Source: `agent-working/stored_artifacts/TCK-20261109-M1-BASIC-WILD-BIRTHS-FOR-EVERY-LIVING-KIND/rpg_designer_ubuntu_births_rulings_g1_2026-11-18.md` (body sha256 0c8ea97d). It adds to v2.2 and changes nothing in it.
+- G1a: the newborn copies the mother's `population_id` and `spawn_region`, both existing `properties` keys, written as archetype_factory.py:68-75 writes them. A key is omitted when the mother's value is None.
+  - Disclosure: on a newborn, `spawn_region` names its population's declared region. The birth event records where the birth happened.
+  - Test: provenance_lookup leaves a newborn id past the t0 count unresolved.
+- G1b: no camp-membership field. Camp "refill" is reported spatially as BALANCE, not as a bar.
+  - The measure is fixed in the runner before any data: bodies with `species_of()` exactly equal to `CampState.kind`, within a declared radius constant, sampled per day per seed and split into newborn and t0.
+  - A camp whose kind is not a declared species is reported as unmapped. A world with no camps reports "0 camps".
+  - The ch05 wording ("one generation of presence") goes with the open Q11/D3 Bible question.
+
 ## Out of Scope
 - §12.4 (packs, herds, territory), milestones 2 and 3, and any rule work not listed in §12.3 (owner ruling only).
 - Calamity (magical/demonic), boss, lair and creature-territory spawns. These are arrivals or flagged-off spawns, so no code there moves (Q5, Q6). Q6 adds a backlog line for the territory spawn, which creates creatures with no parents.
