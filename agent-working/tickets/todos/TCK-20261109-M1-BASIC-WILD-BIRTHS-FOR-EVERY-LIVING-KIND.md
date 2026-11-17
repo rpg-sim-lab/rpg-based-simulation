@@ -134,6 +134,19 @@ Source: `agent-working/stored_artifacts/TCK-20261109-M1-BASIC-WILD-BIRTHS-FOR-EV
   - A different order is reported to rpg-designer-ubuntu before the PR, without changing the resolver.
 - A2: Q11/D3 is closed. The camp-refill ch05 text is a new Bible item and goes with the B5 texts to rpg-designer before the implementation PR.
 
+### Amendment 2026-11-18 (G1 addendum 2: Q13, Q14)
+Source: `agent-working/stored_artifacts/TCK-20261109-M1-BASIC-WILD-BIRTHS-FOR-EVERY-LIVING-KIND/rpg_designer_ubuntu_births_rulings_g1_addendum2_2026-11-18.md` (body sha256 6456fcb0). Where it differs from G1 or addendum 1, addendum 2 wins.
+- Q13 (a): the resolver is unchanged. It takes the first match in roster insertion order; there is no id rule.
+  - Case 3 asserts insertion order, and both orders are tested.
+  - One real-flow test: a roster built through the carry-forward path, holding a surviving t0 member and a newborn of P, resolves to the t0 member.
+  - The disclosure uses addendum 2's exact sentence.
+  - Backlog: TCK-20261118-RESOLVE-PENDING-INFORMATION-PICKS-BY-DICT-INSERTION-ORDER (pre-bind for rpg-designer).
+- Q14 (a), fallback: the species schema doc is made of three parts:
+  - the `SpeciesDefinition` `Field(description=...)` for `newborn_archetype` and `reproduction_profile`;
+  - the regenerated `content_usage_matrix.md` living/species row;
+  - one line in the PR body saying so.
+  - No new doc. ch01 changes only through B5.
+
 ## Out of Scope
 - §12.4 (packs, herds, territory), milestones 2 and 3, and any rule work not listed in §12.3 (owner ruling only).
 - Calamity (magical/demonic), boss, lair and creature-territory spawns. These are arrivals or flagged-off spawns, so no code there moves (Q5, Q6). Q6 adds a backlog line for the territory spawn, which creates creatures with no parents.
