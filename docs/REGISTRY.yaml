@@ -8088,6 +8088,18 @@
   - delivery
   - ai
 - type: ticket
+  path: agent-working/tickets/done/TCK-20261116-RE-BASELINE-THE-RPG-GATE-REFERENCE-TO-A-MAIN-RUN-AFTER-M1-BASE.md
+  ticket_id: TCK-20261116-RE-BASELINE-THE-RPG-GATE-REFERENCE-TO-A-MAIN-RUN-AFTER-M1-BASE
+  title: Re-baseline the rpg regression gate's reference to a main run after M1-base,
+    so Milestone 1's outcome rows stop reading "stale"
+  tier: hotfix
+  ticket_type: chore
+  date: '2026-11-16'
+  related_code_areas:
+  - tools/test_architecture/rpg_gate_baseline.py (read only); tests/simulation_quality/rpg_gate/baselines/
+  artifact_files: []
+  tags: []
+- type: ticket
   path: agent-working/tickets/done/TCK-20261116-THE-SEMANTIC-DRIFT-CERTIFICATION-TEST-DOES-NOT-FAIL-ON-A-SLOW-RUNNER.md
   ticket_id: TCK-20261116-THE-SEMANTIC-DRIFT-CERTIFICATION-TEST-DOES-NOT-FAIL-ON-A-SLOW-RUNNER
   title: 'The semantic-drift certification test does not fail on a slow runner: its
@@ -8141,18 +8153,6 @@
   tags:
   - ai
   - testing
-- type: ticket
-  path: agent-working/tickets/inprogress/TCK-20261116-RE-BASELINE-THE-RPG-GATE-REFERENCE-TO-A-MAIN-RUN-AFTER-M1-BASE.md
-  ticket_id: TCK-20261116-RE-BASELINE-THE-RPG-GATE-REFERENCE-TO-A-MAIN-RUN-AFTER-M1-BASE
-  title: Re-baseline the rpg regression gate's reference to a main run after M1-base,
-    so Milestone 1's outcome rows stop reading "stale"
-  tier: hotfix
-  ticket_type: chore
-  date: '2026-11-16'
-  related_code_areas:
-  - tools/test_architecture/rpg_gate_baseline.py (read only); tests/simulation_quality/rpg_gate/baselines/
-  artifact_files: []
-  tags: []
 - type: ticket
   path: agent-working/tickets/todos/TCK-20261116-A-CORNERED-HOLD-ENDS-ON-A-LIVE-ACTION-TASK-AND-WALKS-BACK-INTO-THE-FIGHT.md
   ticket_id: TCK-20261116-A-CORNERED-HOLD-ENDS-ON-A-LIVE-ACTION-TASK-AND-WALKS-BACK-INTO-THE-FIGHT

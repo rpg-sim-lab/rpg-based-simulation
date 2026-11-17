@@ -1,10 +1,10 @@
 ---
-status: active
+status: historical
 layer: testing
 authority: P1
 audience: agent
 ticket_id: TCK-20261116-RE-BASELINE-THE-RPG-GATE-REFERENCE-TO-A-MAIN-RUN-AFTER-M1-BASE
-phase: open
+phase: done
 date: 2026-11-16
 tags: []
 ---
@@ -15,7 +15,7 @@ tags: []
 Re-baseline the rpg regression gate's reference to a main run after M1-base, so Milestone 1's outcome rows stop reading "stale"
 
 ## Status
-INPROGRESS
+DONE
 
 ## Tier
 hotfix
@@ -63,7 +63,16 @@ None.
 - The command (dry run used --dir <scratch copy> and --pr "#DRYRUN"): `python3 -m tools.test_architecture.rpg_gate_baseline rebaseline --candidate agent-working/lead/evidence/rpg-gate-candidate-e72270894.json --config tests/simulation_quality/rpg_gate/config.yaml --dir tests/simulation_quality/rpg_gate/baselines --known tools/test_architecture/rpg_gate_known.yaml --memo-row "owner_decision_memo row 97" --pr "#N" --milestone M1 --cite "rpg gate run 43895014837 on main e72270894; src identical to 6b59284ee, shown hash-neutral against M1-base 9c398a068 at s42 only (owner 6917174751)" --owner-ruling-ref "#715 6920465555" --owner-ruling-date 2026-11-16`.
 
 ## Test Summary
+- `python3 -m tools.test_architecture.rpg_gate_baseline rebaseline ... --pr "#948"` wrote `rpg_gate_v2.json` with no refusal. The candidate is `agent-working/lead/evidence/rpg-gate-candidate-e72270894.json` (sha256 3934db8e…, on main since #947).
+- v2 equals the two dry runs (first from the lead branch's copy, then from main's) apart from the PR cite and the recorded_at/stale_after times: version 2, milestone M1, commit e72270894, ci run 43895014837 refs/heads/main, 274 metric rows, 3 omitted validity rows (owned by the V1 free-meal entry), 0 undefined, 101 rows changed vs v1, 0 stop lines crossed; owner_ruling #715 6920465555 (2026-11-16).
+- `rpg_gate_baseline lint` rc 0 with v1 and v2 present; v1 is unchanged.
+- Earlier on this branch: `tests/unit/tools/test_known_reds.py` and `tests/unit/tools/test_rpg_gate_baseline.py`, 125 passed (-n 1).
 
 ## Files Changed
+- `tests/simulation_quality/rpg_gate/baselines/rpg_gate_v2.json` (new; written by the tool, never hand-edited)
+- `docs/plans/systemic_world/roadmap.md` (§12.5 Base line) and `docs/plans/systemic_world/owner_decision_memo.md` (row 97), earlier on this PR's branch
+- this ticket
 
 ## Completion Summary
+Done 2026-11-17 in PR #948, the second of its two owner-approved parts (#715 6935497929). The gate's reference is now v2, recorded from main run 43895014837 at e72270894. Its src is identical to 6b59284ee, shown hash-neutral against M1-base 9c398a068 at s42 only (disclosed in v2's cites). From the next gate run on, Milestone 1's outcome rows read against v2 instead of "stale"; v1 stays as the history record. Report-only under M1 pace.
+- Known gap: the reference's commit is main e72270894, not 9c398a068 itself; the two are proven equal only at s42, not at s43-46.
