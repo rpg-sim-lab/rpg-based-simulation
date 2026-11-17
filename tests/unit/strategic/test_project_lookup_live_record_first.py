@@ -28,7 +28,8 @@ ELSEWHERE = "99"
 
 def _project(pid, status, target=INN, entity=None, created=0, kind=FATIGUE, score=10.0, lock=0):
     objective = ObjectiveState(id=f"o_{pid}", kind=ObjectiveKind.REACH_LOCATION, target=target, target_entity_id=entity, status=ObjectiveStatus.ACTIVE)
-    return ProjectState(id=pid, kind=kind, status=status, objectives=[objective], active_objective_id=objective.id, score=score, created_tick=created, lock_until_tick=lock)
+    return ProjectState(id=pid, kind=kind, status=status, objectives=[objective], active_objective_id=objective.id, score=score, created_tick=created, lock_until_tick=lock,
+                        suspended_since=500 if status == ProjectStatus.SUSPENDED else None)  # N10: a SUSPENDED record carries its clock (the state tick is 500), so the first-sight stamp has nothing to write
 
 
 def _entity(projects, current=None, max_projects=3, sleep_debt=90.0):
@@ -181,7 +182,7 @@ def test_ended_by_is_none_by_default_and_absent_from_the_canonical_dict_until_se
 
 def test_a_state_with_no_superseded_project_hashes_exactly_as_it_did_before_the_field_existed():
     """Hash neutrality: the canonical form of a project with ended_by None is the pre-field form (status, kind, objectives, no extra key)."""
-    entity = _entity([_project("r", ProjectStatus.SUSPENDED)])
+    entity = _entity([replace(_project("r", ProjectStatus.SUSPENDED), suspended_since=None)])  # N10: the pre-field form has no suspension clock (None is omitted from the canonical dict)
     assert set(entity.to_canonical_dict()["strategic"]["projects"]["r"]) == {"kind", "status", "active_objective_id", "objectives"}
     state = _state(entity)
     assert CanonicalStateHasher.get_hash(state) == CanonicalStateHasher.get_hash(_state(entity))
