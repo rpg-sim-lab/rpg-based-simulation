@@ -140,6 +140,7 @@ Written by rpg-designer on 2026-11-17, before the items' code (roadmap §12.3, "
 
 ### Prerequisite: the night check
 - TCK-20261115-THE-NIGHT-CHECK-READS-RAW-WORLD-TIME… is fixed first, as one helper, `time_of_day(state)` = `world_time % TICKS_PER_DAY`. Every night reader uses it.
+  - Ruled 2026-11-17 (rpg-designer R1): the signature is `time_of_day(world_time: int)` (not `(state)`); `is_night(world_time: int)` is provided beside it in `src/core/calendar.py`.
 - It changes behaviour (today every tick after 1800 is "night"), so the owner approved it (Q1(a), #715 6937049127).
 - raid.py's own TICKS_PER_DAY (retired raids) is deleted with the dead code.
 
@@ -171,7 +172,7 @@ Written by rpg-designer on 2026-11-17, before the items' code (roadmap §12.3, "
 
 ### Own-job counts (HARD)
 - **T1:** night readers not using `time_of_day`: 0 (static).
-- **T2:** with the night fix, the share of ticks counted as night is 50% ± 0 over each whole day (the spy, per tick, on the 3 worlds).
+- **T2:** with the night fix, the share of ticks counted as night is 50% ± 0 over each whole day (the spy, per tick, on the 3 worlds). Ruled 2026-11-17 (rpg-designer R2): a unit test over a full 2400-tick day replaces the spy; it is arithmetic on world_time.
 - **T3:** the outside-period sleep bonus applied inside a kind's active period: 0.
 - **T4:** hazard damage that differs from the body's declared multiplier: 0.
 - **T5:** readers of faction hazard immunities: 0 (static).
