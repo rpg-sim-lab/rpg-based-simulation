@@ -171,6 +171,19 @@ Source: `agent-working/stored_artifacts/TCK-20261109-M1-BASIC-WILD-BIRTHS-FOR-EV
   - The step report names it once: it has no parents in any gate world, so it moves no M1 figure or bar.
   - Revisit obligation: the first world that gives it a t0 population re-runs rule 2. That obligation goes on the existing births name-branch / retirement backlog line, alongside the Q6 territory line and the interim newborn role row.
 
+### Amendment 2026-11-18 (D3 picks: Q16, Q17, kernel placement)
+Source: `agent-working/stored_artifacts/TCK-20261109-M1-BASIC-WILD-BIRTHS-FOR-EVERY-LIVING-KIND/rpg_designer_ubuntu_births_rulings_d3_picks_2026-11-18.md` (body sha256 c32eb73f). It adds to 6df73509 and b5554f6b and wins where they differ.
+- Q16 (a): rule 2's t0 reference is the count-weighted mean of a species' eligible t0 bodies per gate world.
+  - Accepted as computed: human village_worker, goblin goblin_raider (replacing scout), and wolf, spider, orc and small_plant_eater at 0.0.
+- Q17: the rule-5 reference is the count-weighted mean of the species' members in populations.yaml, then rule 2.
+  - Picks, all "provisional: no t0 reference": elf forest_ranger, lizardfolk lizardfolk_scout, dwarf dwarven_hunter, troll swamp_troll. Troll is disclosed as a large body with no gate-world parents.
+  - All four ship with a reproduction_profile and a newborn_archetype.
+- Kernel placement: accepted outside the world_dynamics gate, under four conditions:
+  - the cadence keys on the absolute tick (#953);
+  - typed updates go through the apply path in a fixed order, and a test pins that order on a tick where both fire;
+  - if the counted refinement-phase list changes, regenerate the authoritative_pipeline.md list and phase_inventory.md in the same PR, with any new docs/engine text riding B5;
+  - the full CI-equivalent run.
+
 ## Out of Scope
 - §12.4 (packs, herds, territory), milestones 2 and 3, and any rule work not listed in §12.3 (owner ruling only).
 - Calamity (magical/demonic), boss, lair and creature-territory spawns. These are arrivals or flagged-off spawns, so no code there moves (Q5, Q6). Q6 adds a backlog line for the territory spawn, which creates creatures with no parents.
