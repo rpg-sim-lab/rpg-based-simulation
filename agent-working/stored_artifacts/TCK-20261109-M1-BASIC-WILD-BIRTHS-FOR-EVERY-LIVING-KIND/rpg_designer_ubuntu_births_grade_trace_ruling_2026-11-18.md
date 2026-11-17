@@ -58,3 +58,22 @@ tags: []
   2. the dormancy penalties fire on a late first event, never on true absence (all scorers, not only FACTION);
   3. if the COGNITION trace confirms it, per-tick counting of a persisting state (decision_divergence_detected).
 - **For FACTION's cause:** the -20 is a scorer artefact of a transition that is new on head. Why diplomacy now transitions is still a cause question, held for the joint FACTION and COGNITION ruling.
+
+## COGNITION cause (hero_guild_routing raw 4100 -> 1000): EXPLAINED, pending the bisect for "births alone"
+- **The concentration test passes.** On main, entity 25 (ROGUE) produces 700 of 820 events (85%), one per tick from tick 276 to 975. That is one entity stuck in the danger-while-non-survival-project state, scoring +5 per tick.
+- **Head never enters that state.** Entity 25 has 0 events and is killed at tick 844. Entities 3 and 5 stay alive and simply stop meeting the condition.
+- **The runs split after the first birth check.** Events are identical up to tick 128, and the first birth check is at tick 120, with newborns at tick 121.
+  - The first difference is entity 14's death: killed at tick 145 by entity 25 on main, at tick 150 by entity 9 on head.
+  - No newborn kills or is killed in either arm.
+- **Cause:** trajectory divergence that begins at the first birth check. Head scores lower because it has one fewer stuck entity, not because its cognition is worse. No defect is shown.
+- **Scope line 3 (per-tick counting of a persisting state) is CONFIRMED** and is no longer conditional.
+
+## The bisect: wanted, as two variants
+1. **Required before "caused by births alone" stands:** the head tree with the births hook not run at all, in 2 worlds, s42, 1000 ticks. Expected: events identical to main.
+   - The tick-128 split points to births but doesn't exclude another branch change that acts from tick 120.
+   - Turning the hook off excludes everything on the branch except the step itself.
+2. **Optional, informative:** profile chance 0.
+   - **If it also diverges:** the births check's RNG draws perturb unrelated systems even when nobody is born, because the draws come from the shared run RNG.
+   - That is consistent with the Births Law ("drawn from the run's seeded RNG"), so it is not a defect. It is still worth one disclosure line: a no-birth check is not neutral.
+   - **If it matches main:** the divergence comes from the newborns being present.
+- Running either variant is lead-planner's call. Until the bisect, the cause ruling stands at "points to births".
