@@ -11,8 +11,8 @@ from src.domains.world_emergence.schema import WorldEventCategory
 from src.observability.config import ObservabilityMode
 from src.observability.divergence_episode import DivergenceEpisodes
 from src.observability.entity_kind_constants import (
-    BOSS_ENTITY_KINDS,
-    SPAWN_CADENCE_EXCLUDED_KINDS,
+    BOSS_ENTITY_OCCUPATIONS,
+    SPAWN_CADENCE_EXCLUDED_OCCUPATIONS,
 )
 from src.observability.events import SimulationEvent
 from src.observability.extraction.combat import (
@@ -51,7 +51,7 @@ from src.observability.extraction.world import (
 from src.systems.strategic_systems.intelligence import _MAX_CONSECUTIVE_REJECTIONS
 
 # These private names are imported by src/observability/event_shapers.py and tests; they now live in src/observability/extraction/.
-__all__ = ["BOSS_ENTITY_KINDS", "SPAWN_CADENCE_EXCLUDED_KINDS", "EventExtractor", "_BELIEF_STALE_TICKS", "_CERTAINTY_FLOAT", "_NEAR_DEATH_THRESHOLD", "_NON_SURVIVAL_PROJECT_KINDS", "_XP_PLATEAU_TICKS", "_real_combat_update"]
+__all__ = ["BOSS_ENTITY_OCCUPATIONS", "SPAWN_CADENCE_EXCLUDED_OCCUPATIONS", "EventExtractor", "_BELIEF_STALE_TICKS", "_CERTAINTY_FLOAT", "_NEAR_DEATH_THRESHOLD", "_NON_SURVIVAL_PROJECT_KINDS", "_XP_PLATEAU_TICKS", "_real_combat_update"]
 
 
 # Faction events from WorldEvent domain objects (PP-10/11)

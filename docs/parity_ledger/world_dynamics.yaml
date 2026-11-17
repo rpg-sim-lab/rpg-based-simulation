@@ -498,7 +498,7 @@
   proof_type: null
   test_path: null
   divergence_note: null
-  support_boundary: 'No code grants fame on a world-boss kill (BOSS_ENTITY_KINDS in
+  support_boundary: 'No code grants fame on a world-boss kill (BOSS_ENTITY_OCCUPATIONS in
     src/observability/entity_kind_constants.py is observability only). Retired by
     owner decision #715 issuecomment-6476511728 (2026-10-29).'
 - id: WORLD-036
@@ -1542,8 +1542,8 @@
     does not misfire as a cadence spawn or get missed as a boss-kind arrival. The
     live-default apply-layer WorldDynamicsShaper (src/observability/event_shapers.py,
     WORLD-115) previously kept its own copies of both lists without dragonkin; under
-    TCK-20260914-BOSS-KINDS-OBSERVABILITY-CONSTANT-DRIFT both modules now import BOSS_ENTITY_KINDS
-    and SPAWN_CADENCE_EXCLUDED_KINDS from src/observability/entity_kind_constants.py,
+    TCK-20260914-BOSS-KINDS-OBSERVABILITY-CONSTANT-DRIFT both modules now import BOSS_ENTITY_OCCUPATIONS
+    and SPAWN_CADENCE_EXCLUDED_OCCUPATIONS from src/observability/entity_kind_constants.py,
     so dragonkin spawns emit boss_spawned + narrative_milestone (first_boss_spawned)
     on the live default path and no longer count toward spawn_cadence_fired.spawned_count.
     goblin_raider stays out of the boss set.'
@@ -1566,9 +1566,9 @@
     \ (src/observability/event_shapers.py), not WorldDynamicsShaper. the extraction/\
     \ blocks above are now the flag-gated (_push_shapers_phase2_active) rollback path\
     \ for all three (plus boss_spawned/narrative_milestone/raid_party_spawned), not\
-    \ the sole terminus. src/observability/extraction/world.py (BOSS_ENTITY_KINDS),\
-    \ src/observability/extraction/resources.py (SPAWN_CADENCE_EXCLUDED_KINDS) and\
-    \ event_shapers.py's WorldDynamicsShaper import BOSS_ENTITY_KINDS and SPAWN_CADENCE_EXCLUDED_KINDS\
+    \ the sole terminus. src/observability/extraction/world.py (BOSS_ENTITY_OCCUPATIONS),\
+    \ src/observability/extraction/resources.py (SPAWN_CADENCE_EXCLUDED_OCCUPATIONS) and\
+    \ event_shapers.py's WorldDynamicsShaper import BOSS_ENTITY_OCCUPATIONS and SPAWN_CADENCE_EXCLUDED_OCCUPATIONS\
     \ from src/observability/entity_kind_constants.py (TCK-20260914-BOSS-KINDS-OBSERVABILITY-CONSTANT-DRIFT),\
     \ pinned by tests/unit/observability/test_entity_kind_constants.py and test_event_shapers_world_dynamics.py\
     \ dragonkin tests."
@@ -1762,7 +1762,7 @@
     5-world runs.'
   update_2026_10_02: 'TCK-20260914-BOSS-KINDS-OBSERVABILITY-CONSTANT-DRIFT: the shaper
     now recognizes dragonkin as a boss kind and excludes it from spawn_cadence_fired
-    via the shared BOSS_ENTITY_KINDS / SPAWN_CADENCE_EXCLUDED_KINDS in src/observability/entity_kind_constants.py
+    via the shared BOSS_ENTITY_OCCUPATIONS / SPAWN_CADENCE_EXCLUDED_OCCUPATIONS in src/observability/entity_kind_constants.py
     (see WORLD-109); tests/unit/observability/test_entity_kind_constants.py pins identity
     and membership.'
 - id: WORLD-116

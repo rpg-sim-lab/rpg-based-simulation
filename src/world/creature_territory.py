@@ -1,7 +1,7 @@
 # Compliance IDs: WORLD-118, WORLD-119
 # src/world/creature_territory.py
 from __future__ import annotations
-from typing import TYPE_CHECKING, Dict
+from typing import TYPE_CHECKING, Dict, Optional
 from src.core.updates import StateUpdate, EntityUpdate, IdentityUpdate
 from src.core.enums import EntityRole
 
@@ -27,6 +27,13 @@ class CreatureTerritoryService:
     TERRITORY_MATURITY_THRESHOLD: float = 100.0
 
     @staticmethod
+    def maturity_rate(occupation: Optional[str]) -> float:
+        """The maturity rate of a creature by its occupation label (M1 step 3: the table is keyed by label); the default for a label with no row or none."""
+        if occupation is None:
+            return CreatureTerritoryService.DEFAULT_TERRITORY_MATURITY_RATE
+        return CreatureTerritoryService.TERRITORY_MATURITY_RATES.get(occupation, CreatureTerritoryService.DEFAULT_TERRITORY_MATURITY_RATE)
+
+    @staticmethod
     def process_territories(state: AuthoritativeState, generator: EntityGenerator) -> StateUpdate:
         entity_updates: Dict[int, EntityUpdate] = {}
         entities_add = []
@@ -48,9 +55,7 @@ class CreatureTerritoryService:
             ]
 
             for entity in anchored_monsters:
-                base_rate = CreatureTerritoryService.TERRITORY_MATURITY_RATES.get(
-                    entity.kind, CreatureTerritoryService.DEFAULT_TERRITORY_MATURITY_RATE
-                )
+                base_rate = CreatureTerritoryService.maturity_rate(entity.identity.occupation)
                 delta = base_rate * trauma_multiplier
                 current_maturity = entity.identity.territory_maturity
                 new_maturity = current_maturity + delta

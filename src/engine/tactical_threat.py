@@ -23,6 +23,7 @@ from src.core.movement_modes import MovementMode
 from src.core.state import EntityState
 from src.domains.combat_engagement.power import apparent_power
 from src.engine.need_wake import NEED_WAKE_CADENCE
+from src.engine.starvation import STARVING_LINE
 
 # A subject whose safety disposition is above this is "cautious" for the SAFETY_PRESSURE_RETREAT branch (the
 # value that gate has always used; content has levels 0.9 and 0.75 and below, so it separates high from the rest).
@@ -129,9 +130,16 @@ def _task_acts_on(hostile: EntityState, subject_id: int) -> bool:
 def _hit_acts_on(hostile: EntityState, subject: EntityState, tick: int) -> bool:
     """(b) The hostile is one of the bodies that took hp from the subject in its last hit, and that hit is within one brain cadence (opportunity hits included: they are hits).
 
-    A simultaneous group hit has several attackers; each of them struck the subject (`last_hit_attackers`)."""
+    A simultaneous group hit has several attackers; each of them struck the subject (`last_hit_attackers`). Past the starving line (the subject's hunger at or above
+    `STARVING_LINE`) a hit acts only while ITS hitter can still reach the subject: Manhattan distance, at the decision tick, within max(1, that hitter's
+    `combat.range`), with no line-of-sight test. Each member of a group hit is judged on its own reach. A hitter that pursues or attacks the subject still acts
+    through term (a). Below the line the window is as before."""
     hit_tick = subject.combat.last_hit_tick
-    return hit_tick is not None and hostile.id in subject.combat.last_hit_attackers and tick - hit_tick <= NEED_WAKE_CADENCE
+    if hit_tick is None or hostile.id not in subject.combat.last_hit_attackers or tick - hit_tick > NEED_WAKE_CADENCE:
+        return False
+    if subject.biological.hunger >= STARVING_LINE:
+        return _distance(subject, hostile.navigation.position) <= max(1, hostile.combat.range)
+    return True
 
 
 # D-13 (docs/plans/deferred_tuning_decisions_register.md): how recent a hit makes its attacker "attacking me" in target selection. 10 ticks today because that equals the row 88 act-test

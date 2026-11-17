@@ -83,7 +83,7 @@ class EnvironmentService:
         if entity.identity.faction == Faction.HERO_GUILD:
             strongholds = getattr(state, "_strongholds_cache", None)
             if strongholds is None:
-                strongholds = [s for s in state.entities.values() if getattr(s, "kind", "") == "stronghold" and s.combat.alive]
+                strongholds = [s for s in state.entities.values() if s.identity.occupation == "stronghold" and s.combat.alive]
                 try: object.__setattr__(state, "_strongholds_cache", strongholds)
                 except: pass
 

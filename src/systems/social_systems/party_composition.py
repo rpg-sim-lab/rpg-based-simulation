@@ -21,6 +21,7 @@ from enum import Enum
 from typing import TYPE_CHECKING, List, Optional
 
 from src.core.models.social import RelationshipRole
+from src.core.species import occupation_of
 
 if TYPE_CHECKING:
     from src.core.state import EntityState
@@ -49,7 +50,7 @@ class PartyCompositionScorer:
     @staticmethod
     def infer_party_role(entity: "EntityState") -> PartyRole:
         """Map entity kind + OCEAN bravery/sociability to a party role."""
-        kind = (getattr(entity, "kind", "") or "").lower()
+        kind = (occupation_of(entity) or "").lower()
         personality = getattr(entity.identity, "personality", None)
         bravery = getattr(personality, "bravery", 0.5) if personality else 0.5
         sociability = getattr(personality, "sociability", 0.5) if personality else 0.5

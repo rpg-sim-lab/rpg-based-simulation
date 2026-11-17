@@ -328,13 +328,14 @@ in "PR Lifecycle" below and nothing else; it prints a stderr warning saying so (
 result is information to report, never an obstacle to route around. Giving it a fixed slot in every
 PR body makes reporting it the default rather than an act of virtue.
 
-`pr_render.py` fills that line from each ticket's `## Test Summary` and `## Completion Summary`: a
-line containing `FAIL`, or a line beginning `Known gap:` (after an optional list marker; the prefix is
+`pr_render.py` fills that line from each ticket's `## Test Summary` and `## Completion Summary`: a line
+containing `FAIL`, or a line beginning `Known gap:` (after an optional list marker; the prefix is
 case-sensitive). A closing agent states a gap that is not a failure with a `Known gap: <what and why>`
-line in one of those two sections; prose such as "no gaps remain" or "except as stated in the record"
-is not read. When nothing matches, the line says `none stated (no FAIL or Known gap: line in any
-ticket's Test/Completion Summary)`, so it names what was checked rather than asserting nothing exists.
-A pointer to this marker in CLAUDE.md's closure guidance is left for the owner to decide (a governing file).
+line in one of those two sections; prose such as "no gaps remain" or "except as stated in the record" is
+not read. A line beginning `Revert evidence` is proof a test catches the bug, not a gap, and is skipped.
+When nothing matches, the line says `none stated (no FAIL or Known gap: line in any ticket's
+Test/Completion Summary)`, so it names what was checked rather than asserting nothing exists. A pointer
+to this marker in CLAUDE.md's closure guidance is left for the owner to decide (a governing file).
 
 ---
 

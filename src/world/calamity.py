@@ -96,7 +96,7 @@ class CalamityService:
                 continue
                 
             # Calamity intensity increases on Hero death in high-hazard regions
-            if entity.kind == "hero" and region.hazard_level > 0.5:
+            if entity.identity.occupation == "hero" and region.hazard_level > 0.5:
                 intensity_delta = 0.05
                 current_intensity = region.calamity_intensity
                 world_updates[region.id] = WorldUpdate(

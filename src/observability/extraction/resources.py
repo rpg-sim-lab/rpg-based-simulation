@@ -2,7 +2,8 @@
 
 from __future__ import annotations
 
-from src.observability.entity_kind_constants import SPAWN_CADENCE_EXCLUDED_KINDS
+from src.core.species import occupation_of
+from src.observability.entity_kind_constants import SPAWN_CADENCE_EXCLUDED_OCCUPATIONS
 from src.observability.events import SimulationEvent
 from src.observability.extraction.context import ExtractContext
 
@@ -84,7 +85,7 @@ def spawn_cadence_events(ctx: ExtractContext) -> list[SimulationEvent]:
     if not _push_shapers_phase2_active and tick % _SPAWN_INTERVAL == 0:
         _spawned_monsters = [
             e for e in (getattr(update, "entities_add", None) or [])
-            if getattr(e, "kind", None) not in SPAWN_CADENCE_EXCLUDED_KINDS
+            if occupation_of(e) not in SPAWN_CADENCE_EXCLUDED_OCCUPATIONS
         ]
         if _spawned_monsters:
             events.append(SimulationEvent(

@@ -666,6 +666,11 @@ class IdentityComponent:
     properties: Dict[str, Any] = field(default_factory=dict)
     latest_intent_results: List["IntentResult"] = field(default_factory=list)
     _canonical_cache: Any = field(default=None, init=False, repr=False, compare=False)
+    # M1 (kind means species): the role label of the body (decision 50: a display label). In step 2 every writer sets it to the exact string it writes to `kind`, so step 3 can
+    # move the label readers onto it behaviour-neutrally; the true labels (role_id / profession_id, None for newborns) arrive in step 4, when `kind` becomes the species.
+    # Appended LAST so a checkpoint that predates it is refused or filled by the schema rule (checkpoint_fields.FIELD_RULES), never shifted. Omitted from the canonical dict
+    # while None. Nothing but tests, the carry sites and the presenter reads it yet.
+    occupation: Optional[str] = None
 
     def to_canonical_dict(self) -> Dict[str, Any]:
         if self._canonical_cache is not None:
@@ -685,6 +690,8 @@ class IdentityComponent:
             "personality": self.personality.to_canonical_dict(),
             "life_stage": str(self.life_stage)
         }
+        if self.occupation is not None:
+            res["occupation"] = self.occupation
         object.__setattr__(self, "_canonical_cache", res)
         return res
 
@@ -1071,7 +1078,8 @@ class EntityState:
                 life_stage=id_comp.life_stage,
                 group_id=id_comp.group_id,
                 properties=ReadOnlyDict(id_comp.properties),
-                latest_intent_results=tuple(id_comp.latest_intent_results)
+                latest_intent_results=tuple(id_comp.latest_intent_results),
+                occupation=id_comp.occupation,
             )
 
         inv_comp = self.inventory

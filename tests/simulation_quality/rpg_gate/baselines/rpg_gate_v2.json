@@ -1,0 +1,5573 @@
+{
+  "schema": "rpg-gate-baseline/v1",
+  "version": 2,
+  "milestone": "M1",
+  "provenance": {
+    "ci": {
+      "event_name": "workflow_dispatch",
+      "ref": "refs/heads/main",
+      "run_attempt": "1",
+      "run_id": "43895014837"
+    },
+    "commit_sha": "e722708947004c7f1eb427501b09f404c76c7cfe",
+    "harness_hash": "5a7f145920aab68597a09f72a7e97ea861ffa4cc927197a0d98b98ac5eb23920",
+    "known_file_sha256": "a00320582eb394f20d647b227e173655d969f82f64b6e3c3c4ccfbe92af6b80d",
+    "seeds": [
+      42,
+      43,
+      44,
+      45,
+      46
+    ],
+    "ticks": 5000,
+    "worlds": [
+      "urban_political",
+      "frontier_living_world",
+      "crowded_frontier"
+    ],
+    "cites": [
+      "rpg gate run 43895014837 on main e72270894; src identical to 6b59284ee, shown hash-neutral against M1-base 9c398a068 at s42 only (owner 6917174751)",
+      "#948",
+      "owner_decision_memo row 97"
+    ],
+    "recorded_at": "2026-11-17T01:57:07Z",
+    "stale_after": "2026-12-17T01:57:07Z"
+  },
+  "metrics": [
+    {
+      "class": "outcome",
+      "floor": 0.05,
+      "group": "meat+plant+prepared",
+      "id": "O1.starvation_share",
+      "scope": "pooled",
+      "value": 0.0,
+      "world": "crowded_frontier"
+    },
+    {
+      "class": "outcome",
+      "floor": 1.0,
+      "group": "meat+plant+prepared",
+      "id": "O2.seeds_with_survivors",
+      "scope": "pooled",
+      "value": 5.0,
+      "world": "crowded_frontier"
+    },
+    {
+      "class": "validity",
+      "group": "*",
+      "id": "V7",
+      "oracle": "SURV-06, D44/D48, gate H5: a declared way is used at least once in a world where it can be (the hunt instance: every feeding kill is eaten from somewhere)",
+      "scope": "pooled",
+      "violations": 0,
+      "world": "crowded_frontier"
+    },
+    {
+      "class": "outcome",
+      "floor": 3.8000000000000003,
+      "floor_base": 3.0,
+      "floor_rel": 0.1,
+      "group": "meat+plant+prepared",
+      "id": "O1.at_risk",
+      "k": 2.0,
+      "mean": 38.0,
+      "per_seed": {
+        "42": 38.0,
+        "43": 38.0,
+        "44": 38.0,
+        "45": 38.0,
+        "46": 38.0
+      },
+      "scope": "run",
+      "se": 0.0,
+      "world": "crowded_frontier"
+    },
+    {
+      "class": "outcome",
+      "floor": 3.0,
+      "floor_base": 3.0,
+      "floor_rel": 0.1,
+      "group": "meat+plant+prepared",
+      "id": "O1.starved",
+      "k": 2.0,
+      "mean": 0.0,
+      "per_seed": {
+        "42": 0.0,
+        "43": 0.0,
+        "44": 0.0,
+        "45": 0.0,
+        "46": 0.0
+      },
+      "scope": "run",
+      "se": 0.0,
+      "world": "crowded_frontier"
+    },
+    {
+      "class": "outcome",
+      "floor": 2.0,
+      "group": "meat+plant+prepared",
+      "id": "O2.deaths",
+      "k": 2.0,
+      "key": "COMBAT",
+      "mean": 27.2,
+      "per_seed": {
+        "42": 27.0,
+        "43": 27.0,
+        "44": 28.0,
+        "45": 28.0,
+        "46": 26.0
+      },
+      "scope": "run",
+      "se": 0.3741657386773941,
+      "world": "crowded_frontier"
+    },
+    {
+      "class": "outcome",
+      "floor": 2.0,
+      "group": "meat+plant+prepared",
+      "id": "O2.deaths",
+      "k": 2.0,
+      "key": "DEFEAT",
+      "mean": 3.2,
+      "per_seed": {
+        "42": 2.0,
+        "43": 4.0,
+        "44": 2.0,
+        "45": 3.0,
+        "46": 5.0
+      },
+      "scope": "run",
+      "se": 0.58309518948453,
+      "world": "crowded_frontier"
+    },
+    {
+      "class": "outcome",
+      "floor": 2.0,
+      "group": "meat+plant+prepared",
+      "id": "O2.deaths",
+      "k": 2.0,
+      "key": "HAZARD",
+      "mean": 3.0,
+      "per_seed": {
+        "42": 5.0,
+        "43": 2.0,
+        "44": 3.0,
+        "45": 3.0,
+        "46": 2.0
+      },
+      "scope": "run",
+      "se": 0.5477225575051661,
+      "world": "crowded_frontier"
+    },
+    {
+      "class": "outcome",
+      "floor": 2.0,
+      "group": "meat+plant+prepared",
+      "id": "O2.deaths",
+      "k": 2.0,
+      "key": "OLD_AGE",
+      "mean": 0.0,
+      "per_seed": {
+        "42": 0.0,
+        "43": 0.0,
+        "44": 0.0,
+        "45": 0.0,
+        "46": 0.0
+      },
+      "scope": "run",
+      "se": 0.0,
+      "world": "crowded_frontier"
+    },
+    {
+      "class": "outcome",
+      "floor": 2.0,
+      "group": "meat+plant+prepared",
+      "id": "O2.deaths",
+      "k": 2.0,
+      "key": "SLEEP_DEPRIVATION",
+      "mean": 0.0,
+      "per_seed": {
+        "42": 0.0,
+        "43": 0.0,
+        "44": 0.0,
+        "45": 0.0,
+        "46": 0.0
+      },
+      "scope": "run",
+      "se": 0.0,
+      "world": "crowded_frontier"
+    },
+    {
+      "class": "outcome",
+      "floor": 2.0,
+      "group": "meat+plant+prepared",
+      "id": "O2.deaths",
+      "k": 2.0,
+      "key": "STARVATION",
+      "mean": 0.0,
+      "per_seed": {
+        "42": 0.0,
+        "43": 0.0,
+        "44": 0.0,
+        "45": 0.0,
+        "46": 0.0
+      },
+      "scope": "run",
+      "se": 0.0,
+      "world": "crowded_frontier"
+    },
+    {
+      "class": "outcome",
+      "floor": 2.0,
+      "group": "meat+plant+prepared",
+      "id": "O2.deaths",
+      "k": 2.0,
+      "key": "UNKNOWN",
+      "mean": 0.0,
+      "per_seed": {
+        "42": 0.0,
+        "43": 0.0,
+        "44": 0.0,
+        "45": 0.0,
+        "46": 0.0
+      },
+      "scope": "run",
+      "se": 0.0,
+      "world": "crowded_frontier"
+    },
+    {
+      "class": "outcome",
+      "floor": 3.8000000000000003,
+      "group": "meat+plant+prepared",
+      "id": "O2.population",
+      "k": 2.0,
+      "mean": 38.0,
+      "per_seed": {
+        "42": 38.0,
+        "43": 38.0,
+        "44": 38.0,
+        "45": 38.0,
+        "46": 38.0
+      },
+      "scope": "run",
+      "se": 0.0,
+      "tick": 1,
+      "world": "crowded_frontier"
+    },
+    {
+      "class": "outcome",
+      "floor": 3.8000000000000003,
+      "group": "meat+plant+prepared",
+      "id": "O2.population",
+      "k": 2.0,
+      "mean": 24.2,
+      "per_seed": {
+        "42": 23.0,
+        "43": 22.0,
+        "44": 25.0,
+        "45": 25.0,
+        "46": 26.0
+      },
+      "scope": "run",
+      "se": 0.7348469228349535,
+      "tick": 500,
+      "world": "crowded_frontier"
+    },
+    {
+      "class": "outcome",
+      "floor": 3.8000000000000003,
+      "group": "meat+plant+prepared",
+      "id": "O2.population",
+      "k": 2.0,
+      "mean": 14.6,
+      "per_seed": {
+        "42": 19.0,
+        "43": 9.0,
+        "44": 16.0,
+        "45": 14.0,
+        "46": 15.0
+      },
+      "scope": "run",
+      "se": 1.6309506430300091,
+      "tick": 1000,
+      "world": "crowded_frontier"
+    },
+    {
+      "class": "outcome",
+      "floor": 3.8000000000000003,
+      "group": "meat+plant+prepared",
+      "id": "O2.population",
+      "k": 2.0,
+      "mean": 11.4,
+      "per_seed": {
+        "42": 13.0,
+        "43": 6.0,
+        "44": 16.0,
+        "45": 9.0,
+        "46": 13.0
+      },
+      "scope": "run",
+      "se": 1.74928556845359,
+      "tick": 1500,
+      "world": "crowded_frontier"
+    },
+    {
+      "class": "outcome",
+      "floor": 3.8000000000000003,
+      "group": "meat+plant+prepared",
+      "id": "O2.population",
+      "k": 2.0,
+      "mean": 10.4,
+      "per_seed": {
+        "42": 13.0,
+        "43": 6.0,
+        "44": 13.0,
+        "45": 8.0,
+        "46": 12.0
+      },
+      "scope": "run",
+      "se": 1.4352700094407322,
+      "tick": 2000,
+      "world": "crowded_frontier"
+    },
+    {
+      "class": "outcome",
+      "floor": 3.8000000000000003,
+      "group": "meat+plant+prepared",
+      "id": "O2.population",
+      "k": 2.0,
+      "mean": 7.2,
+      "per_seed": {
+        "42": 6.0,
+        "43": 5.0,
+        "44": 10.0,
+        "45": 6.0,
+        "46": 9.0
+      },
+      "scope": "run",
+      "se": 0.9695359714832658,
+      "tick": 2500,
+      "world": "crowded_frontier"
+    },
+    {
+      "class": "outcome",
+      "floor": 3.8000000000000003,
+      "group": "meat+plant+prepared",
+      "id": "O2.population",
+      "k": 2.0,
+      "mean": 6.0,
+      "per_seed": {
+        "42": 5.0,
+        "43": 5.0,
+        "44": 7.0,
+        "45": 6.0,
+        "46": 7.0
+      },
+      "scope": "run",
+      "se": 0.4472135954999579,
+      "tick": 3000,
+      "world": "crowded_frontier"
+    },
+    {
+      "class": "outcome",
+      "floor": 3.8000000000000003,
+      "group": "meat+plant+prepared",
+      "id": "O2.population",
+      "k": 2.0,
+      "mean": 5.6,
+      "per_seed": {
+        "42": 5.0,
+        "43": 5.0,
+        "44": 7.0,
+        "45": 5.0,
+        "46": 6.0
+      },
+      "scope": "run",
+      "se": 0.39999999999999997,
+      "tick": 3500,
+      "world": "crowded_frontier"
+    },
+    {
+      "class": "outcome",
+      "floor": 3.8000000000000003,
+      "group": "meat+plant+prepared",
+      "id": "O2.population",
+      "k": 2.0,
+      "mean": 4.8,
+      "per_seed": {
+        "42": 5.0,
+        "43": 5.0,
+        "44": 5.0,
+        "45": 4.0,
+        "46": 5.0
+      },
+      "scope": "run",
+      "se": 0.19999999999999998,
+      "tick": 4000,
+      "world": "crowded_frontier"
+    },
+    {
+      "class": "outcome",
+      "floor": 3.8000000000000003,
+      "group": "meat+plant+prepared",
+      "id": "O2.population",
+      "k": 2.0,
+      "mean": 4.8,
+      "per_seed": {
+        "42": 5.0,
+        "43": 5.0,
+        "44": 5.0,
+        "45": 4.0,
+        "46": 5.0
+      },
+      "scope": "run",
+      "se": 0.19999999999999998,
+      "tick": 4500,
+      "world": "crowded_frontier"
+    },
+    {
+      "class": "outcome",
+      "floor": 3.8000000000000003,
+      "group": "meat+plant+prepared",
+      "id": "O2.population",
+      "k": 2.0,
+      "mean": 4.6,
+      "per_seed": {
+        "42": 4.0,
+        "43": 5.0,
+        "44": 5.0,
+        "45": 4.0,
+        "46": 5.0
+      },
+      "scope": "run",
+      "se": 0.24494897427831777,
+      "tick": 5000,
+      "world": "crowded_frontier"
+    },
+    {
+      "class": "outcome",
+      "floor": 1.0,
+      "group": "meat+plant+prepared",
+      "id": "O2.survivors",
+      "k": 2.0,
+      "mean": 1.0,
+      "per_seed": {
+        "42": 1.0,
+        "43": 1.0,
+        "44": 1.0,
+        "45": 1.0,
+        "46": 1.0
+      },
+      "scope": "run",
+      "se": 0.0,
+      "world": "crowded_frontier"
+    },
+    {
+      "class": "outcome",
+      "floor": 5.0,
+      "group": "meat+plant+prepared",
+      "id": "O4.accepted",
+      "k": 2.0,
+      "key": "CARRIED_FOOD",
+      "mean": 21.6,
+      "per_seed": {
+        "42": 34.0,
+        "43": 12.0,
+        "44": 25.0,
+        "45": 12.0,
+        "46": 25.0
+      },
+      "scope": "run",
+      "se": 4.249705872175156,
+      "world": "crowded_frontier"
+    },
+    {
+      "class": "outcome",
+      "floor": 5.0,
+      "group": "meat+plant+prepared",
+      "id": "O4.accepted",
+      "k": 2.0,
+      "key": "CHEST",
+      "mean": 0.0,
+      "per_seed": {
+        "42": 0.0,
+        "43": 0.0,
+        "44": 0.0,
+        "45": 0.0,
+        "46": 0.0
+      },
+      "scope": "run",
+      "se": 0.0,
+      "world": "crowded_frontier"
+    },
+    {
+      "class": "outcome",
+      "floor": 5.0,
+      "group": "meat+plant+prepared",
+      "id": "O4.accepted",
+      "k": 2.0,
+      "key": "COMBAT",
+      "mean": 33.0,
+      "per_seed": {
+        "42": 33.0,
+        "43": 32.0,
+        "44": 32.0,
+        "45": 32.0,
+        "46": 36.0
+      },
+      "scope": "run",
+      "se": 0.7745966692414833,
+      "world": "crowded_frontier"
+    },
+    {
+      "class": "outcome",
+      "floor": 5.0,
+      "group": "meat+plant+prepared",
+      "id": "O4.accepted",
+      "k": 2.0,
+      "key": "CORPSE",
+      "mean": 3.0,
+      "per_seed": {
+        "42": 7.0,
+        "43": 1.0,
+        "44": 3.0,
+        "45": 1.0,
+        "46": 3.0
+      },
+      "scope": "run",
+      "se": 1.0954451150103321,
+      "world": "crowded_frontier"
+    },
+    {
+      "class": "outcome",
+      "floor": 5.0,
+      "group": "meat+plant+prepared",
+      "id": "O4.accepted",
+      "k": 2.0,
+      "key": "CORPSE_FOOD",
+      "mean": 7.4,
+      "per_seed": {
+        "42": 4.0,
+        "43": 1.0,
+        "44": 12.0,
+        "45": 13.0,
+        "46": 7.0
+      },
+      "scope": "run",
+      "se": 2.2934689882359427,
+      "world": "crowded_frontier"
+    },
+    {
+      "class": "outcome",
+      "floor": 5.0,
+      "group": "meat+plant+prepared",
+      "id": "O4.accepted",
+      "k": 2.0,
+      "key": "CRAFTING",
+      "mean": 0.0,
+      "per_seed": {
+        "42": 0.0,
+        "43": 0.0,
+        "44": 0.0,
+        "45": 0.0,
+        "46": 0.0
+      },
+      "scope": "run",
+      "se": 0.0,
+      "world": "crowded_frontier"
+    },
+    {
+      "class": "outcome",
+      "floor": 5.0,
+      "group": "meat+plant+prepared",
+      "id": "O4.accepted",
+      "k": 2.0,
+      "key": "GROUND_ITEM",
+      "mean": 0.0,
+      "per_seed": {
+        "42": 0.0,
+        "43": 0.0,
+        "44": 0.0,
+        "45": 0.0,
+        "46": 0.0
+      },
+      "scope": "run",
+      "se": 0.0,
+      "world": "crowded_frontier"
+    },
+    {
+      "class": "outcome",
+      "floor": 5.0,
+      "group": "meat+plant+prepared",
+      "id": "O4.accepted",
+      "k": 2.0,
+      "key": "HOME_STORAGE",
+      "mean": 0.0,
+      "per_seed": {
+        "42": 0.0,
+        "43": 0.0,
+        "44": 0.0,
+        "45": 0.0,
+        "46": 0.0
+      },
+      "scope": "run",
+      "se": 0.0,
+      "world": "crowded_frontier"
+    },
+    {
+      "class": "outcome",
+      "floor": 5.0,
+      "group": "meat+plant+prepared",
+      "id": "O4.accepted",
+      "k": 2.0,
+      "key": "INFORMATION_PURCHASE",
+      "mean": 0.0,
+      "per_seed": {
+        "42": 0.0,
+        "43": 0.0,
+        "44": 0.0,
+        "45": 0.0,
+        "46": 0.0
+      },
+      "scope": "run",
+      "se": 0.0,
+      "world": "crowded_frontier"
+    },
+    {
+      "class": "outcome",
+      "floor": 5.0,
+      "group": "meat+plant+prepared",
+      "id": "O4.accepted",
+      "k": 2.0,
+      "key": "INHERIT",
+      "mean": 26.4,
+      "per_seed": {
+        "42": 29.0,
+        "43": 26.0,
+        "44": 27.0,
+        "45": 25.0,
+        "46": 25.0
+      },
+      "scope": "run",
+      "se": 0.7483314773547882,
+      "world": "crowded_frontier"
+    },
+    {
+      "class": "outcome",
+      "floor": 5.0,
+      "group": "meat+plant+prepared",
+      "id": "O4.accepted",
+      "k": 2.0,
+      "key": "NODE",
+      "mean": 13.8,
+      "per_seed": {
+        "42": 14.0,
+        "43": 17.0,
+        "44": 15.0,
+        "45": 14.0,
+        "46": 9.0
+      },
+      "scope": "run",
+      "se": 1.3190905958272918,
+      "world": "crowded_frontier"
+    },
+    {
+      "class": "outcome",
+      "floor": 5.0,
+      "group": "meat+plant+prepared",
+      "id": "O4.accepted",
+      "k": 2.0,
+      "key": "QUEST",
+      "mean": 0.0,
+      "per_seed": {
+        "42": 0.0,
+        "43": 0.0,
+        "44": 0.0,
+        "45": 0.0,
+        "46": 0.0
+      },
+      "scope": "run",
+      "se": 0.0,
+      "world": "crowded_frontier"
+    },
+    {
+      "class": "outcome",
+      "floor": 5.0,
+      "group": "meat+plant+prepared",
+      "id": "O4.accepted",
+      "k": 2.0,
+      "key": "RECRUIT",
+      "mean": 0.0,
+      "per_seed": {
+        "42": 0.0,
+        "43": 0.0,
+        "44": 0.0,
+        "45": 0.0,
+        "46": 0.0
+      },
+      "scope": "run",
+      "se": 0.0,
+      "world": "crowded_frontier"
+    },
+    {
+      "class": "outcome",
+      "floor": 5.0,
+      "group": "meat+plant+prepared",
+      "id": "O4.accepted",
+      "k": 2.0,
+      "key": "SHOP_BUY",
+      "mean": 0.0,
+      "per_seed": {
+        "42": 0.0,
+        "43": 0.0,
+        "44": 0.0,
+        "45": 0.0,
+        "46": 0.0
+      },
+      "scope": "run",
+      "se": 0.0,
+      "world": "crowded_frontier"
+    },
+    {
+      "class": "outcome",
+      "floor": 5.0,
+      "group": "meat+plant+prepared",
+      "id": "O4.accepted",
+      "k": 2.0,
+      "key": "SHOP_SELL",
+      "mean": 0.0,
+      "per_seed": {
+        "42": 0.0,
+        "43": 0.0,
+        "44": 0.0,
+        "45": 0.0,
+        "46": 0.0
+      },
+      "scope": "run",
+      "se": 0.0,
+      "world": "crowded_frontier"
+    },
+    {
+      "class": "outcome",
+      "floor": 5.0,
+      "group": "meat+plant+prepared",
+      "id": "O4.accepted",
+      "k": 2.0,
+      "key": "TAX",
+      "mean": 0.0,
+      "per_seed": {
+        "42": 0.0,
+        "43": 0.0,
+        "44": 0.0,
+        "45": 0.0,
+        "46": 0.0
+      },
+      "scope": "run",
+      "se": 0.0,
+      "world": "crowded_frontier"
+    },
+    {
+      "class": "outcome",
+      "floor": 5.0,
+      "group": "meat+plant+prepared",
+      "id": "O4.accepted",
+      "k": 2.0,
+      "key": "TOWN_SERVICE",
+      "mean": 596.0,
+      "per_seed": {
+        "42": 567.0,
+        "43": 927.0,
+        "44": 592.0,
+        "45": 602.0,
+        "46": 292.0
+      },
+      "scope": "run",
+      "se": 100.71494427342945,
+      "world": "crowded_frontier"
+    },
+    {
+      "class": "outcome",
+      "floor": 5.0,
+      "group": "meat+plant+prepared",
+      "id": "O4.accepted",
+      "k": 2.0,
+      "key": "WAGE",
+      "mean": 0.0,
+      "per_seed": {
+        "42": 0.0,
+        "43": 0.0,
+        "44": 0.0,
+        "45": 0.0,
+        "46": 0.0
+      },
+      "scope": "run",
+      "se": 0.0,
+      "world": "crowded_frontier"
+    },
+    {
+      "class": "outcome",
+      "floor": 2.0,
+      "group": "*",
+      "id": "O6.feeding_kills",
+      "k": 2.0,
+      "mean": 1.4,
+      "per_seed": {
+        "42": 1.0,
+        "43": 0.0,
+        "44": 4.0,
+        "45": 1.0,
+        "46": 1.0
+      },
+      "scope": "run",
+      "se": 0.6782329983125267,
+      "world": "crowded_frontier"
+    },
+    {
+      "class": "outcome",
+      "floor": 2.0,
+      "group": "*",
+      "id": "O6.kills_not_eaten",
+      "k": 2.0,
+      "mean": 0.0,
+      "per_seed": {
+        "42": 0.0,
+        "43": 0.0,
+        "44": 0.0,
+        "45": 0.0,
+        "46": 0.0
+      },
+      "scope": "run",
+      "se": 0.0,
+      "world": "crowded_frontier"
+    },
+    {
+      "class": "validity",
+      "group": "*",
+      "id": "V2",
+      "oracle": "Bible 03 conservation, gate H7: meat leaves a body only by being taken, by the whole body being looted, or through the MEAT_DECAYED sink, and made = taken + looted + vanished + remaining",
+      "per_seed": {
+        "42": 0,
+        "43": 0,
+        "44": 0,
+        "45": 0,
+        "46": 0
+      },
+      "scope": "run",
+      "violations": 0,
+      "world": "crowded_frontier"
+    },
+    {
+      "class": "validity",
+      "group": "*",
+      "id": "V3",
+      "oracle": "SURV-06/07, gate H6, memo rows 54/56: no starvation death with a way the subject judged open and never attempted",
+      "per_seed": {
+        "42": 0,
+        "43": 0,
+        "44": 0,
+        "45": 0,
+        "46": 0
+      },
+      "scope": "run",
+      "violations": 0,
+      "world": "crowded_frontier"
+    },
+    {
+      "class": "validity",
+      "group": "*",
+      "id": "V4",
+      "oracle": "D43, D44, gate H4: a kind whose diet lacks a food class never eats it (the inn's meal needs prepared, checked by the transfer it was served through; every other meal is a consumption of an item, counted when its class is outside the eater's diet). Picking up or carrying a non-diet item is not a V4 breach",
+      "per_seed": {
+        "42": 0,
+        "43": 0,
+        "44": 0,
+        "45": 0,
+        "46": 0
+      },
+      "scope": "run",
+      "violations": 0,
+      "world": "crowded_frontier"
+    },
+    {
+      "class": "validity",
+      "group": "*",
+      "id": "V5",
+      "oracle": "LAW-POSITION-IN-WORLD, Bible 06 topology: a moved, alive entity stays inside the world extent",
+      "per_seed": {
+        "42": 0,
+        "43": 0,
+        "44": 0,
+        "45": 0,
+        "46": 0
+      },
+      "scope": "run",
+      "violations": 0,
+      "world": "crowded_frontier"
+    },
+    {
+      "class": "validity",
+      "group": "*",
+      "id": "V6",
+      "oracle": "EXCH-02, D38, gate H7: total coin changes only by declared world creation (an added entity's starting purse), so the net change beyond it is exactly 0",
+      "per_seed": {
+        "42": 0,
+        "43": 0,
+        "44": 0,
+        "45": 0,
+        "46": 0
+      },
+      "scope": "run",
+      "violations": 0,
+      "world": "crowded_frontier"
+    },
+    {
+      "class": "validity",
+      "group": "*",
+      "id": "V8",
+      "oracle": "D67/D70: every mid-run entity add carries a declared, well-formed spawn source",
+      "per_seed": {
+        "42": 0,
+        "43": 0,
+        "44": 0,
+        "45": 0,
+        "46": 0
+      },
+      "scope": "run",
+      "violations": 0,
+      "world": "crowded_frontier"
+    },
+    {
+      "class": "outcome",
+      "floor": 0.05,
+      "group": "graze+plant",
+      "id": "O1.starvation_share",
+      "scope": "pooled",
+      "value": 0.0,
+      "world": "frontier_living_world"
+    },
+    {
+      "class": "outcome",
+      "floor": 0.05,
+      "group": "meat",
+      "id": "O1.starvation_share",
+      "scope": "pooled",
+      "value": 0.0,
+      "world": "frontier_living_world"
+    },
+    {
+      "class": "outcome",
+      "floor": 0.05,
+      "group": "meat+plant+prepared",
+      "id": "O1.starvation_share",
+      "scope": "pooled",
+      "value": 0.0,
+      "world": "frontier_living_world"
+    },
+    {
+      "class": "outcome",
+      "floor": 0.05,
+      "group": "none",
+      "id": "O1.starvation_share",
+      "scope": "pooled",
+      "value": 0.0,
+      "world": "frontier_living_world"
+    },
+    {
+      "class": "outcome",
+      "floor": 1.0,
+      "group": "graze+plant",
+      "id": "O2.seeds_with_survivors",
+      "scope": "pooled",
+      "value": 5.0,
+      "world": "frontier_living_world"
+    },
+    {
+      "class": "outcome",
+      "floor": 1.0,
+      "group": "meat",
+      "id": "O2.seeds_with_survivors",
+      "scope": "pooled",
+      "value": 5.0,
+      "world": "frontier_living_world"
+    },
+    {
+      "class": "outcome",
+      "floor": 1.0,
+      "group": "meat+plant+prepared",
+      "id": "O2.seeds_with_survivors",
+      "scope": "pooled",
+      "value": 5.0,
+      "world": "frontier_living_world"
+    },
+    {
+      "class": "outcome",
+      "floor": 1.0,
+      "group": "none",
+      "id": "O2.seeds_with_survivors",
+      "scope": "pooled",
+      "value": 5.0,
+      "world": "frontier_living_world"
+    },
+    {
+      "class": "validity",
+      "group": "*",
+      "id": "V7",
+      "oracle": "SURV-06, D44/D48, gate H5: a declared way is used at least once in a world where it can be (the hunt instance: every feeding kill is eaten from somewhere)",
+      "scope": "pooled",
+      "violations": 0,
+      "world": "frontier_living_world"
+    },
+    {
+      "class": "outcome",
+      "floor": 3.0,
+      "floor_base": 3.0,
+      "floor_rel": 0.1,
+      "group": "graze+plant",
+      "id": "O1.at_risk",
+      "k": 2.0,
+      "mean": 6.0,
+      "per_seed": {
+        "42": 6.0,
+        "43": 6.0,
+        "44": 6.0,
+        "45": 6.0,
+        "46": 6.0
+      },
+      "scope": "run",
+      "se": 0.0,
+      "world": "frontier_living_world"
+    },
+    {
+      "class": "outcome",
+      "floor": 3.0,
+      "floor_base": 3.0,
+      "floor_rel": 0.1,
+      "group": "meat",
+      "id": "O1.at_risk",
+      "k": 2.0,
+      "mean": 10.0,
+      "per_seed": {
+        "42": 10.0,
+        "43": 10.0,
+        "44": 10.0,
+        "45": 10.0,
+        "46": 10.0
+      },
+      "scope": "run",
+      "se": 0.0,
+      "world": "frontier_living_world"
+    },
+    {
+      "class": "outcome",
+      "floor": 3.18,
+      "floor_base": 3.0,
+      "floor_rel": 0.1,
+      "group": "meat+plant+prepared",
+      "id": "O1.at_risk",
+      "k": 2.0,
+      "mean": 31.8,
+      "per_seed": {
+        "42": 33.0,
+        "43": 31.0,
+        "44": 32.0,
+        "45": 31.0,
+        "46": 32.0
+      },
+      "scope": "run",
+      "se": 0.3741657386773941,
+      "world": "frontier_living_world"
+    },
+    {
+      "class": "outcome",
+      "floor": 3.0,
+      "floor_base": 3.0,
+      "floor_rel": 0.1,
+      "group": "none",
+      "id": "O1.at_risk",
+      "k": 2.0,
+      "mean": 6.0,
+      "per_seed": {
+        "42": 6.0,
+        "43": 6.0,
+        "44": 6.0,
+        "45": 6.0,
+        "46": 6.0
+      },
+      "scope": "run",
+      "se": 0.0,
+      "world": "frontier_living_world"
+    },
+    {
+      "class": "outcome",
+      "floor": 3.0,
+      "floor_base": 3.0,
+      "floor_rel": 0.1,
+      "group": "graze+plant",
+      "id": "O1.starved",
+      "k": 2.0,
+      "mean": 0.0,
+      "per_seed": {
+        "42": 0.0,
+        "43": 0.0,
+        "44": 0.0,
+        "45": 0.0,
+        "46": 0.0
+      },
+      "scope": "run",
+      "se": 0.0,
+      "world": "frontier_living_world"
+    },
+    {
+      "class": "outcome",
+      "floor": 3.0,
+      "floor_base": 3.0,
+      "floor_rel": 0.1,
+      "group": "meat",
+      "id": "O1.starved",
+      "k": 2.0,
+      "mean": 0.0,
+      "per_seed": {
+        "42": 0.0,
+        "43": 0.0,
+        "44": 0.0,
+        "45": 0.0,
+        "46": 0.0
+      },
+      "scope": "run",
+      "se": 0.0,
+      "world": "frontier_living_world"
+    },
+    {
+      "class": "outcome",
+      "floor": 3.0,
+      "floor_base": 3.0,
+      "floor_rel": 0.1,
+      "group": "meat+plant+prepared",
+      "id": "O1.starved",
+      "k": 2.0,
+      "mean": 0.0,
+      "per_seed": {
+        "42": 0.0,
+        "43": 0.0,
+        "44": 0.0,
+        "45": 0.0,
+        "46": 0.0
+      },
+      "scope": "run",
+      "se": 0.0,
+      "world": "frontier_living_world"
+    },
+    {
+      "class": "outcome",
+      "floor": 3.0,
+      "floor_base": 3.0,
+      "floor_rel": 0.1,
+      "group": "none",
+      "id": "O1.starved",
+      "k": 2.0,
+      "mean": 0.0,
+      "per_seed": {
+        "42": 0.0,
+        "43": 0.0,
+        "44": 0.0,
+        "45": 0.0,
+        "46": 0.0
+      },
+      "scope": "run",
+      "se": 0.0,
+      "world": "frontier_living_world"
+    },
+    {
+      "class": "outcome",
+      "floor": 2.0,
+      "group": "graze+plant",
+      "id": "O2.deaths",
+      "k": 2.0,
+      "key": "COMBAT",
+      "mean": 2.4,
+      "per_seed": {
+        "42": 4.0,
+        "43": 4.0,
+        "44": 0.0,
+        "45": 3.0,
+        "46": 1.0
+      },
+      "scope": "run",
+      "se": 0.8124038404635959,
+      "world": "frontier_living_world"
+    },
+    {
+      "class": "outcome",
+      "floor": 2.0,
+      "group": "graze+plant",
+      "id": "O2.deaths",
+      "k": 2.0,
+      "key": "DEFEAT",
+      "mean": 0.0,
+      "per_seed": {
+        "42": 0.0,
+        "43": 0.0,
+        "44": 0.0,
+        "45": 0.0,
+        "46": 0.0
+      },
+      "scope": "run",
+      "se": 0.0,
+      "world": "frontier_living_world"
+    },
+    {
+      "class": "outcome",
+      "floor": 2.0,
+      "group": "graze+plant",
+      "id": "O2.deaths",
+      "k": 2.0,
+      "key": "HAZARD",
+      "mean": 0.0,
+      "per_seed": {
+        "42": 0.0,
+        "43": 0.0,
+        "44": 0.0,
+        "45": 0.0,
+        "46": 0.0
+      },
+      "scope": "run",
+      "se": 0.0,
+      "world": "frontier_living_world"
+    },
+    {
+      "class": "outcome",
+      "floor": 2.0,
+      "group": "graze+plant",
+      "id": "O2.deaths",
+      "k": 2.0,
+      "key": "OLD_AGE",
+      "mean": 0.0,
+      "per_seed": {
+        "42": 0.0,
+        "43": 0.0,
+        "44": 0.0,
+        "45": 0.0,
+        "46": 0.0
+      },
+      "scope": "run",
+      "se": 0.0,
+      "world": "frontier_living_world"
+    },
+    {
+      "class": "outcome",
+      "floor": 2.0,
+      "group": "graze+plant",
+      "id": "O2.deaths",
+      "k": 2.0,
+      "key": "SLEEP_DEPRIVATION",
+      "mean": 0.0,
+      "per_seed": {
+        "42": 0.0,
+        "43": 0.0,
+        "44": 0.0,
+        "45": 0.0,
+        "46": 0.0
+      },
+      "scope": "run",
+      "se": 0.0,
+      "world": "frontier_living_world"
+    },
+    {
+      "class": "outcome",
+      "floor": 2.0,
+      "group": "graze+plant",
+      "id": "O2.deaths",
+      "k": 2.0,
+      "key": "STARVATION",
+      "mean": 0.0,
+      "per_seed": {
+        "42": 0.0,
+        "43": 0.0,
+        "44": 0.0,
+        "45": 0.0,
+        "46": 0.0
+      },
+      "scope": "run",
+      "se": 0.0,
+      "world": "frontier_living_world"
+    },
+    {
+      "class": "outcome",
+      "floor": 2.0,
+      "group": "graze+plant",
+      "id": "O2.deaths",
+      "k": 2.0,
+      "key": "UNKNOWN",
+      "mean": 0.0,
+      "per_seed": {
+        "42": 0.0,
+        "43": 0.0,
+        "44": 0.0,
+        "45": 0.0,
+        "46": 0.0
+      },
+      "scope": "run",
+      "se": 0.0,
+      "world": "frontier_living_world"
+    },
+    {
+      "class": "outcome",
+      "floor": 2.0,
+      "group": "meat",
+      "id": "O2.deaths",
+      "k": 2.0,
+      "key": "COMBAT",
+      "mean": 0.0,
+      "per_seed": {
+        "42": 0.0,
+        "43": 0.0,
+        "44": 0.0,
+        "45": 0.0,
+        "46": 0.0
+      },
+      "scope": "run",
+      "se": 0.0,
+      "world": "frontier_living_world"
+    },
+    {
+      "class": "outcome",
+      "floor": 2.0,
+      "group": "meat",
+      "id": "O2.deaths",
+      "k": 2.0,
+      "key": "DEFEAT",
+      "mean": 0.0,
+      "per_seed": {
+        "42": 0.0,
+        "43": 0.0,
+        "44": 0.0,
+        "45": 0.0,
+        "46": 0.0
+      },
+      "scope": "run",
+      "se": 0.0,
+      "world": "frontier_living_world"
+    },
+    {
+      "class": "outcome",
+      "floor": 2.0,
+      "group": "meat",
+      "id": "O2.deaths",
+      "k": 2.0,
+      "key": "HAZARD",
+      "mean": 0.0,
+      "per_seed": {
+        "42": 0.0,
+        "43": 0.0,
+        "44": 0.0,
+        "45": 0.0,
+        "46": 0.0
+      },
+      "scope": "run",
+      "se": 0.0,
+      "world": "frontier_living_world"
+    },
+    {
+      "class": "outcome",
+      "floor": 2.0,
+      "group": "meat",
+      "id": "O2.deaths",
+      "k": 2.0,
+      "key": "OLD_AGE",
+      "mean": 0.0,
+      "per_seed": {
+        "42": 0.0,
+        "43": 0.0,
+        "44": 0.0,
+        "45": 0.0,
+        "46": 0.0
+      },
+      "scope": "run",
+      "se": 0.0,
+      "world": "frontier_living_world"
+    },
+    {
+      "class": "outcome",
+      "floor": 2.0,
+      "group": "meat",
+      "id": "O2.deaths",
+      "k": 2.0,
+      "key": "SLEEP_DEPRIVATION",
+      "mean": 0.0,
+      "per_seed": {
+        "42": 0.0,
+        "43": 0.0,
+        "44": 0.0,
+        "45": 0.0,
+        "46": 0.0
+      },
+      "scope": "run",
+      "se": 0.0,
+      "world": "frontier_living_world"
+    },
+    {
+      "class": "outcome",
+      "floor": 2.0,
+      "group": "meat",
+      "id": "O2.deaths",
+      "k": 2.0,
+      "key": "STARVATION",
+      "mean": 0.0,
+      "per_seed": {
+        "42": 0.0,
+        "43": 0.0,
+        "44": 0.0,
+        "45": 0.0,
+        "46": 0.0
+      },
+      "scope": "run",
+      "se": 0.0,
+      "world": "frontier_living_world"
+    },
+    {
+      "class": "outcome",
+      "floor": 2.0,
+      "group": "meat",
+      "id": "O2.deaths",
+      "k": 2.0,
+      "key": "UNKNOWN",
+      "mean": 0.0,
+      "per_seed": {
+        "42": 0.0,
+        "43": 0.0,
+        "44": 0.0,
+        "45": 0.0,
+        "46": 0.0
+      },
+      "scope": "run",
+      "se": 0.0,
+      "world": "frontier_living_world"
+    },
+    {
+      "class": "outcome",
+      "floor": 2.0,
+      "group": "meat+plant+prepared",
+      "id": "O2.deaths",
+      "k": 2.0,
+      "key": "COMBAT",
+      "mean": 15.8,
+      "per_seed": {
+        "42": 13.0,
+        "43": 11.0,
+        "44": 19.0,
+        "45": 12.0,
+        "46": 24.0
+      },
+      "scope": "run",
+      "se": 2.477902338672773,
+      "world": "frontier_living_world"
+    },
+    {
+      "class": "outcome",
+      "floor": 2.0,
+      "group": "meat+plant+prepared",
+      "id": "O2.deaths",
+      "k": 2.0,
+      "key": "DEFEAT",
+      "mean": 0.4,
+      "per_seed": {
+        "42": 0.0,
+        "43": 0.0,
+        "44": 1.0,
+        "45": 0.0,
+        "46": 1.0
+      },
+      "scope": "run",
+      "se": 0.24494897427831777,
+      "world": "frontier_living_world"
+    },
+    {
+      "class": "outcome",
+      "floor": 2.0,
+      "group": "meat+plant+prepared",
+      "id": "O2.deaths",
+      "k": 2.0,
+      "key": "HAZARD",
+      "mean": 4.4,
+      "per_seed": {
+        "42": 3.0,
+        "43": 6.0,
+        "44": 4.0,
+        "45": 5.0,
+        "46": 4.0
+      },
+      "scope": "run",
+      "se": 0.5099019513592785,
+      "world": "frontier_living_world"
+    },
+    {
+      "class": "outcome",
+      "floor": 2.0,
+      "group": "meat+plant+prepared",
+      "id": "O2.deaths",
+      "k": 2.0,
+      "key": "OLD_AGE",
+      "mean": 0.0,
+      "per_seed": {
+        "42": 0.0,
+        "43": 0.0,
+        "44": 0.0,
+        "45": 0.0,
+        "46": 0.0
+      },
+      "scope": "run",
+      "se": 0.0,
+      "world": "frontier_living_world"
+    },
+    {
+      "class": "outcome",
+      "floor": 2.0,
+      "group": "meat+plant+prepared",
+      "id": "O2.deaths",
+      "k": 2.0,
+      "key": "SLEEP_DEPRIVATION",
+      "mean": 0.0,
+      "per_seed": {
+        "42": 0.0,
+        "43": 0.0,
+        "44": 0.0,
+        "45": 0.0,
+        "46": 0.0
+      },
+      "scope": "run",
+      "se": 0.0,
+      "world": "frontier_living_world"
+    },
+    {
+      "class": "outcome",
+      "floor": 2.0,
+      "group": "meat+plant+prepared",
+      "id": "O2.deaths",
+      "k": 2.0,
+      "key": "STARVATION",
+      "mean": 0.0,
+      "per_seed": {
+        "42": 0.0,
+        "43": 0.0,
+        "44": 0.0,
+        "45": 0.0,
+        "46": 0.0
+      },
+      "scope": "run",
+      "se": 0.0,
+      "world": "frontier_living_world"
+    },
+    {
+      "class": "outcome",
+      "floor": 2.0,
+      "group": "meat+plant+prepared",
+      "id": "O2.deaths",
+      "k": 2.0,
+      "key": "UNKNOWN",
+      "mean": 0.0,
+      "per_seed": {
+        "42": 0.0,
+        "43": 0.0,
+        "44": 0.0,
+        "45": 0.0,
+        "46": 0.0
+      },
+      "scope": "run",
+      "se": 0.0,
+      "world": "frontier_living_world"
+    },
+    {
+      "class": "outcome",
+      "floor": 2.0,
+      "group": "none",
+      "id": "O2.deaths",
+      "k": 2.0,
+      "key": "COMBAT",
+      "mean": 0.2,
+      "per_seed": {
+        "42": 0.0,
+        "43": 1.0,
+        "44": 0.0,
+        "45": 0.0,
+        "46": 0.0
+      },
+      "scope": "run",
+      "se": 0.19999999999999998,
+      "world": "frontier_living_world"
+    },
+    {
+      "class": "outcome",
+      "floor": 2.0,
+      "group": "none",
+      "id": "O2.deaths",
+      "k": 2.0,
+      "key": "DEFEAT",
+      "mean": 0.0,
+      "per_seed": {
+        "42": 0.0,
+        "43": 0.0,
+        "44": 0.0,
+        "45": 0.0,
+        "46": 0.0
+      },
+      "scope": "run",
+      "se": 0.0,
+      "world": "frontier_living_world"
+    },
+    {
+      "class": "outcome",
+      "floor": 2.0,
+      "group": "none",
+      "id": "O2.deaths",
+      "k": 2.0,
+      "key": "HAZARD",
+      "mean": 1.2,
+      "per_seed": {
+        "42": 2.0,
+        "43": 1.0,
+        "44": 1.0,
+        "45": 2.0,
+        "46": 0.0
+      },
+      "scope": "run",
+      "se": 0.3741657386773941,
+      "world": "frontier_living_world"
+    },
+    {
+      "class": "outcome",
+      "floor": 2.0,
+      "group": "none",
+      "id": "O2.deaths",
+      "k": 2.0,
+      "key": "OLD_AGE",
+      "mean": 0.0,
+      "per_seed": {
+        "42": 0.0,
+        "43": 0.0,
+        "44": 0.0,
+        "45": 0.0,
+        "46": 0.0
+      },
+      "scope": "run",
+      "se": 0.0,
+      "world": "frontier_living_world"
+    },
+    {
+      "class": "outcome",
+      "floor": 2.0,
+      "group": "none",
+      "id": "O2.deaths",
+      "k": 2.0,
+      "key": "SLEEP_DEPRIVATION",
+      "mean": 0.0,
+      "per_seed": {
+        "42": 0.0,
+        "43": 0.0,
+        "44": 0.0,
+        "45": 0.0,
+        "46": 0.0
+      },
+      "scope": "run",
+      "se": 0.0,
+      "world": "frontier_living_world"
+    },
+    {
+      "class": "outcome",
+      "floor": 2.0,
+      "group": "none",
+      "id": "O2.deaths",
+      "k": 2.0,
+      "key": "STARVATION",
+      "mean": 0.0,
+      "per_seed": {
+        "42": 0.0,
+        "43": 0.0,
+        "44": 0.0,
+        "45": 0.0,
+        "46": 0.0
+      },
+      "scope": "run",
+      "se": 0.0,
+      "world": "frontier_living_world"
+    },
+    {
+      "class": "outcome",
+      "floor": 2.0,
+      "group": "none",
+      "id": "O2.deaths",
+      "k": 2.0,
+      "key": "UNKNOWN",
+      "mean": 0.0,
+      "per_seed": {
+        "42": 0.0,
+        "43": 0.0,
+        "44": 0.0,
+        "45": 0.0,
+        "46": 0.0
+      },
+      "scope": "run",
+      "se": 0.0,
+      "world": "frontier_living_world"
+    },
+    {
+      "class": "outcome",
+      "floor": 3.0,
+      "group": "graze+plant",
+      "id": "O2.population",
+      "k": 2.0,
+      "mean": 6.0,
+      "per_seed": {
+        "42": 6.0,
+        "43": 6.0,
+        "44": 6.0,
+        "45": 6.0,
+        "46": 6.0
+      },
+      "scope": "run",
+      "se": 0.0,
+      "tick": 1,
+      "world": "frontier_living_world"
+    },
+    {
+      "class": "outcome",
+      "floor": 3.0,
+      "group": "graze+plant",
+      "id": "O2.population",
+      "k": 2.0,
+      "mean": 6.0,
+      "per_seed": {
+        "42": 6.0,
+        "43": 6.0,
+        "44": 6.0,
+        "45": 6.0,
+        "46": 6.0
+      },
+      "scope": "run",
+      "se": 0.0,
+      "tick": 500,
+      "world": "frontier_living_world"
+    },
+    {
+      "class": "outcome",
+      "floor": 3.0,
+      "group": "graze+plant",
+      "id": "O2.population",
+      "k": 2.0,
+      "mean": 5.8,
+      "per_seed": {
+        "42": 5.0,
+        "43": 6.0,
+        "44": 6.0,
+        "45": 6.0,
+        "46": 6.0
+      },
+      "scope": "run",
+      "se": 0.19999999999999998,
+      "tick": 1000,
+      "world": "frontier_living_world"
+    },
+    {
+      "class": "outcome",
+      "floor": 3.0,
+      "group": "graze+plant",
+      "id": "O2.population",
+      "k": 2.0,
+      "mean": 5.6,
+      "per_seed": {
+        "42": 5.0,
+        "43": 6.0,
+        "44": 6.0,
+        "45": 6.0,
+        "46": 5.0
+      },
+      "scope": "run",
+      "se": 0.24494897427831777,
+      "tick": 1500,
+      "world": "frontier_living_world"
+    },
+    {
+      "class": "outcome",
+      "floor": 3.0,
+      "group": "graze+plant",
+      "id": "O2.population",
+      "k": 2.0,
+      "mean": 5.6,
+      "per_seed": {
+        "42": 5.0,
+        "43": 6.0,
+        "44": 6.0,
+        "45": 6.0,
+        "46": 5.0
+      },
+      "scope": "run",
+      "se": 0.24494897427831777,
+      "tick": 2000,
+      "world": "frontier_living_world"
+    },
+    {
+      "class": "outcome",
+      "floor": 3.0,
+      "group": "graze+plant",
+      "id": "O2.population",
+      "k": 2.0,
+      "mean": 5.4,
+      "per_seed": {
+        "42": 5.0,
+        "43": 5.0,
+        "44": 6.0,
+        "45": 6.0,
+        "46": 5.0
+      },
+      "scope": "run",
+      "se": 0.24494897427831777,
+      "tick": 2500,
+      "world": "frontier_living_world"
+    },
+    {
+      "class": "outcome",
+      "floor": 3.0,
+      "group": "graze+plant",
+      "id": "O2.population",
+      "k": 2.0,
+      "mean": 5.0,
+      "per_seed": {
+        "42": 4.0,
+        "43": 5.0,
+        "44": 6.0,
+        "45": 5.0,
+        "46": 5.0
+      },
+      "scope": "run",
+      "se": 0.31622776601683794,
+      "tick": 3000,
+      "world": "frontier_living_world"
+    },
+    {
+      "class": "outcome",
+      "floor": 3.0,
+      "group": "graze+plant",
+      "id": "O2.population",
+      "k": 2.0,
+      "mean": 4.6,
+      "per_seed": {
+        "42": 3.0,
+        "43": 4.0,
+        "44": 6.0,
+        "45": 5.0,
+        "46": 5.0
+      },
+      "scope": "run",
+      "se": 0.5099019513592785,
+      "tick": 3500,
+      "world": "frontier_living_world"
+    },
+    {
+      "class": "outcome",
+      "floor": 3.0,
+      "group": "graze+plant",
+      "id": "O2.population",
+      "k": 2.0,
+      "mean": 4.0,
+      "per_seed": {
+        "42": 2.0,
+        "43": 2.0,
+        "44": 6.0,
+        "45": 5.0,
+        "46": 5.0
+      },
+      "scope": "run",
+      "se": 0.8366600265340755,
+      "tick": 4000,
+      "world": "frontier_living_world"
+    },
+    {
+      "class": "outcome",
+      "floor": 3.0,
+      "group": "graze+plant",
+      "id": "O2.population",
+      "k": 2.0,
+      "mean": 3.8,
+      "per_seed": {
+        "42": 2.0,
+        "43": 2.0,
+        "44": 6.0,
+        "45": 4.0,
+        "46": 5.0
+      },
+      "scope": "run",
+      "se": 0.7999999999999999,
+      "tick": 4500,
+      "world": "frontier_living_world"
+    },
+    {
+      "class": "outcome",
+      "floor": 3.0,
+      "group": "graze+plant",
+      "id": "O2.population",
+      "k": 2.0,
+      "mean": 3.6,
+      "per_seed": {
+        "42": 2.0,
+        "43": 2.0,
+        "44": 6.0,
+        "45": 3.0,
+        "46": 5.0
+      },
+      "scope": "run",
+      "se": 0.8124038404635959,
+      "tick": 5000,
+      "world": "frontier_living_world"
+    },
+    {
+      "class": "outcome",
+      "floor": 3.0,
+      "group": "meat",
+      "id": "O2.population",
+      "k": 2.0,
+      "mean": 10.0,
+      "per_seed": {
+        "42": 10.0,
+        "43": 10.0,
+        "44": 10.0,
+        "45": 10.0,
+        "46": 10.0
+      },
+      "scope": "run",
+      "se": 0.0,
+      "tick": 1,
+      "world": "frontier_living_world"
+    },
+    {
+      "class": "outcome",
+      "floor": 3.0,
+      "group": "meat",
+      "id": "O2.population",
+      "k": 2.0,
+      "mean": 10.0,
+      "per_seed": {
+        "42": 10.0,
+        "43": 10.0,
+        "44": 10.0,
+        "45": 10.0,
+        "46": 10.0
+      },
+      "scope": "run",
+      "se": 0.0,
+      "tick": 500,
+      "world": "frontier_living_world"
+    },
+    {
+      "class": "outcome",
+      "floor": 3.0,
+      "group": "meat",
+      "id": "O2.population",
+      "k": 2.0,
+      "mean": 10.0,
+      "per_seed": {
+        "42": 10.0,
+        "43": 10.0,
+        "44": 10.0,
+        "45": 10.0,
+        "46": 10.0
+      },
+      "scope": "run",
+      "se": 0.0,
+      "tick": 1000,
+      "world": "frontier_living_world"
+    },
+    {
+      "class": "outcome",
+      "floor": 3.0,
+      "group": "meat",
+      "id": "O2.population",
+      "k": 2.0,
+      "mean": 10.0,
+      "per_seed": {
+        "42": 10.0,
+        "43": 10.0,
+        "44": 10.0,
+        "45": 10.0,
+        "46": 10.0
+      },
+      "scope": "run",
+      "se": 0.0,
+      "tick": 1500,
+      "world": "frontier_living_world"
+    },
+    {
+      "class": "outcome",
+      "floor": 3.0,
+      "group": "meat",
+      "id": "O2.population",
+      "k": 2.0,
+      "mean": 10.0,
+      "per_seed": {
+        "42": 10.0,
+        "43": 10.0,
+        "44": 10.0,
+        "45": 10.0,
+        "46": 10.0
+      },
+      "scope": "run",
+      "se": 0.0,
+      "tick": 2000,
+      "world": "frontier_living_world"
+    },
+    {
+      "class": "outcome",
+      "floor": 3.0,
+      "group": "meat",
+      "id": "O2.population",
+      "k": 2.0,
+      "mean": 10.0,
+      "per_seed": {
+        "42": 10.0,
+        "43": 10.0,
+        "44": 10.0,
+        "45": 10.0,
+        "46": 10.0
+      },
+      "scope": "run",
+      "se": 0.0,
+      "tick": 2500,
+      "world": "frontier_living_world"
+    },
+    {
+      "class": "outcome",
+      "floor": 3.0,
+      "group": "meat",
+      "id": "O2.population",
+      "k": 2.0,
+      "mean": 10.0,
+      "per_seed": {
+        "42": 10.0,
+        "43": 10.0,
+        "44": 10.0,
+        "45": 10.0,
+        "46": 10.0
+      },
+      "scope": "run",
+      "se": 0.0,
+      "tick": 3000,
+      "world": "frontier_living_world"
+    },
+    {
+      "class": "outcome",
+      "floor": 3.0,
+      "group": "meat",
+      "id": "O2.population",
+      "k": 2.0,
+      "mean": 10.0,
+      "per_seed": {
+        "42": 10.0,
+        "43": 10.0,
+        "44": 10.0,
+        "45": 10.0,
+        "46": 10.0
+      },
+      "scope": "run",
+      "se": 0.0,
+      "tick": 3500,
+      "world": "frontier_living_world"
+    },
+    {
+      "class": "outcome",
+      "floor": 3.0,
+      "group": "meat",
+      "id": "O2.population",
+      "k": 2.0,
+      "mean": 10.0,
+      "per_seed": {
+        "42": 10.0,
+        "43": 10.0,
+        "44": 10.0,
+        "45": 10.0,
+        "46": 10.0
+      },
+      "scope": "run",
+      "se": 0.0,
+      "tick": 4000,
+      "world": "frontier_living_world"
+    },
+    {
+      "class": "outcome",
+      "floor": 3.0,
+      "group": "meat",
+      "id": "O2.population",
+      "k": 2.0,
+      "mean": 10.0,
+      "per_seed": {
+        "42": 10.0,
+        "43": 10.0,
+        "44": 10.0,
+        "45": 10.0,
+        "46": 10.0
+      },
+      "scope": "run",
+      "se": 0.0,
+      "tick": 4500,
+      "world": "frontier_living_world"
+    },
+    {
+      "class": "outcome",
+      "floor": 3.0,
+      "group": "meat",
+      "id": "O2.population",
+      "k": 2.0,
+      "mean": 10.0,
+      "per_seed": {
+        "42": 10.0,
+        "43": 10.0,
+        "44": 10.0,
+        "45": 10.0,
+        "46": 10.0
+      },
+      "scope": "run",
+      "se": 0.0,
+      "tick": 5000,
+      "world": "frontier_living_world"
+    },
+    {
+      "class": "outcome",
+      "floor": 3.3000000000000003,
+      "group": "meat+plant+prepared",
+      "id": "O2.population",
+      "k": 2.0,
+      "mean": 31.8,
+      "per_seed": {
+        "42": 33.0,
+        "43": 31.0,
+        "44": 32.0,
+        "45": 31.0,
+        "46": 32.0
+      },
+      "scope": "run",
+      "se": 0.3741657386773941,
+      "tick": 1,
+      "world": "frontier_living_world"
+    },
+    {
+      "class": "outcome",
+      "floor": 3.3000000000000003,
+      "group": "meat+plant+prepared",
+      "id": "O2.population",
+      "k": 2.0,
+      "mean": 19.8,
+      "per_seed": {
+        "42": 21.0,
+        "43": 21.0,
+        "44": 17.0,
+        "45": 23.0,
+        "46": 17.0
+      },
+      "scope": "run",
+      "se": 1.2,
+      "tick": 500,
+      "world": "frontier_living_world"
+    },
+    {
+      "class": "outcome",
+      "floor": 3.3000000000000003,
+      "group": "meat+plant+prepared",
+      "id": "O2.population",
+      "k": 2.0,
+      "mean": 16.2,
+      "per_seed": {
+        "42": 17.0,
+        "43": 19.0,
+        "44": 17.0,
+        "45": 18.0,
+        "46": 10.0
+      },
+      "scope": "run",
+      "se": 1.5937377450509227,
+      "tick": 1000,
+      "world": "frontier_living_world"
+    },
+    {
+      "class": "outcome",
+      "floor": 3.3000000000000003,
+      "group": "meat+plant+prepared",
+      "id": "O2.population",
+      "k": 2.0,
+      "mean": 15.0,
+      "per_seed": {
+        "42": 17.0,
+        "43": 18.0,
+        "44": 16.0,
+        "45": 16.0,
+        "46": 8.0
+      },
+      "scope": "run",
+      "se": 1.7888543819998317,
+      "tick": 1500,
+      "world": "frontier_living_world"
+    },
+    {
+      "class": "outcome",
+      "floor": 3.3000000000000003,
+      "group": "meat+plant+prepared",
+      "id": "O2.population",
+      "k": 2.0,
+      "mean": 14.8,
+      "per_seed": {
+        "42": 17.0,
+        "43": 18.0,
+        "44": 15.0,
+        "45": 16.0,
+        "46": 8.0
+      },
+      "scope": "run",
+      "se": 1.772004514666935,
+      "tick": 2000,
+      "world": "frontier_living_world"
+    },
+    {
+      "class": "outcome",
+      "floor": 3.3000000000000003,
+      "group": "meat+plant+prepared",
+      "id": "O2.population",
+      "k": 2.0,
+      "mean": 14.6,
+      "per_seed": {
+        "42": 17.0,
+        "43": 18.0,
+        "44": 14.0,
+        "45": 16.0,
+        "46": 8.0
+      },
+      "scope": "run",
+      "se": 1.7776388834631178,
+      "tick": 2500,
+      "world": "frontier_living_world"
+    },
+    {
+      "class": "outcome",
+      "floor": 3.3000000000000003,
+      "group": "meat+plant+prepared",
+      "id": "O2.population",
+      "k": 2.0,
+      "mean": 13.8,
+      "per_seed": {
+        "42": 17.0,
+        "43": 17.0,
+        "44": 13.0,
+        "45": 16.0,
+        "46": 6.0
+      },
+      "scope": "run",
+      "se": 2.0832666655999654,
+      "tick": 3000,
+      "world": "frontier_living_world"
+    },
+    {
+      "class": "outcome",
+      "floor": 3.3000000000000003,
+      "group": "meat+plant+prepared",
+      "id": "O2.population",
+      "k": 2.0,
+      "mean": 13.0,
+      "per_seed": {
+        "42": 17.0,
+        "43": 17.0,
+        "44": 9.0,
+        "45": 16.0,
+        "46": 6.0
+      },
+      "scope": "run",
+      "se": 2.3021728866442674,
+      "tick": 3500,
+      "world": "frontier_living_world"
+    },
+    {
+      "class": "outcome",
+      "floor": 3.3000000000000003,
+      "group": "meat+plant+prepared",
+      "id": "O2.population",
+      "k": 2.0,
+      "mean": 13.0,
+      "per_seed": {
+        "42": 17.0,
+        "43": 17.0,
+        "44": 9.0,
+        "45": 16.0,
+        "46": 6.0
+      },
+      "scope": "run",
+      "se": 2.3021728866442674,
+      "tick": 4000,
+      "world": "frontier_living_world"
+    },
+    {
+      "class": "outcome",
+      "floor": 3.3000000000000003,
+      "group": "meat+plant+prepared",
+      "id": "O2.population",
+      "k": 2.0,
+      "mean": 13.0,
+      "per_seed": {
+        "42": 17.0,
+        "43": 17.0,
+        "44": 9.0,
+        "45": 16.0,
+        "46": 6.0
+      },
+      "scope": "run",
+      "se": 2.3021728866442674,
+      "tick": 4500,
+      "world": "frontier_living_world"
+    },
+    {
+      "class": "outcome",
+      "floor": 3.3000000000000003,
+      "group": "meat+plant+prepared",
+      "id": "O2.population",
+      "k": 2.0,
+      "mean": 13.0,
+      "per_seed": {
+        "42": 17.0,
+        "43": 17.0,
+        "44": 9.0,
+        "45": 16.0,
+        "46": 6.0
+      },
+      "scope": "run",
+      "se": 2.3021728866442674,
+      "tick": 5000,
+      "world": "frontier_living_world"
+    },
+    {
+      "class": "outcome",
+      "floor": 3.0,
+      "group": "none",
+      "id": "O2.population",
+      "k": 2.0,
+      "mean": 6.0,
+      "per_seed": {
+        "42": 6.0,
+        "43": 6.0,
+        "44": 6.0,
+        "45": 6.0,
+        "46": 6.0
+      },
+      "scope": "run",
+      "se": 0.0,
+      "tick": 1,
+      "world": "frontier_living_world"
+    },
+    {
+      "class": "outcome",
+      "floor": 3.0,
+      "group": "none",
+      "id": "O2.population",
+      "k": 2.0,
+      "mean": 4.6,
+      "per_seed": {
+        "42": 4.0,
+        "43": 4.0,
+        "44": 5.0,
+        "45": 4.0,
+        "46": 6.0
+      },
+      "scope": "run",
+      "se": 0.39999999999999997,
+      "tick": 500,
+      "world": "frontier_living_world"
+    },
+    {
+      "class": "outcome",
+      "floor": 3.0,
+      "group": "none",
+      "id": "O2.population",
+      "k": 2.0,
+      "mean": 4.6,
+      "per_seed": {
+        "42": 4.0,
+        "43": 4.0,
+        "44": 5.0,
+        "45": 4.0,
+        "46": 6.0
+      },
+      "scope": "run",
+      "se": 0.39999999999999997,
+      "tick": 1000,
+      "world": "frontier_living_world"
+    },
+    {
+      "class": "outcome",
+      "floor": 3.0,
+      "group": "none",
+      "id": "O2.population",
+      "k": 2.0,
+      "mean": 4.6,
+      "per_seed": {
+        "42": 4.0,
+        "43": 4.0,
+        "44": 5.0,
+        "45": 4.0,
+        "46": 6.0
+      },
+      "scope": "run",
+      "se": 0.39999999999999997,
+      "tick": 1500,
+      "world": "frontier_living_world"
+    },
+    {
+      "class": "outcome",
+      "floor": 3.0,
+      "group": "none",
+      "id": "O2.population",
+      "k": 2.0,
+      "mean": 4.6,
+      "per_seed": {
+        "42": 4.0,
+        "43": 4.0,
+        "44": 5.0,
+        "45": 4.0,
+        "46": 6.0
+      },
+      "scope": "run",
+      "se": 0.39999999999999997,
+      "tick": 2000,
+      "world": "frontier_living_world"
+    },
+    {
+      "class": "outcome",
+      "floor": 3.0,
+      "group": "none",
+      "id": "O2.population",
+      "k": 2.0,
+      "mean": 4.6,
+      "per_seed": {
+        "42": 4.0,
+        "43": 4.0,
+        "44": 5.0,
+        "45": 4.0,
+        "46": 6.0
+      },
+      "scope": "run",
+      "se": 0.39999999999999997,
+      "tick": 2500,
+      "world": "frontier_living_world"
+    },
+    {
+      "class": "outcome",
+      "floor": 3.0,
+      "group": "none",
+      "id": "O2.population",
+      "k": 2.0,
+      "mean": 4.6,
+      "per_seed": {
+        "42": 4.0,
+        "43": 4.0,
+        "44": 5.0,
+        "45": 4.0,
+        "46": 6.0
+      },
+      "scope": "run",
+      "se": 0.39999999999999997,
+      "tick": 3000,
+      "world": "frontier_living_world"
+    },
+    {
+      "class": "outcome",
+      "floor": 3.0,
+      "group": "none",
+      "id": "O2.population",
+      "k": 2.0,
+      "mean": 4.6,
+      "per_seed": {
+        "42": 4.0,
+        "43": 4.0,
+        "44": 5.0,
+        "45": 4.0,
+        "46": 6.0
+      },
+      "scope": "run",
+      "se": 0.39999999999999997,
+      "tick": 3500,
+      "world": "frontier_living_world"
+    },
+    {
+      "class": "outcome",
+      "floor": 3.0,
+      "group": "none",
+      "id": "O2.population",
+      "k": 2.0,
+      "mean": 4.6,
+      "per_seed": {
+        "42": 4.0,
+        "43": 4.0,
+        "44": 5.0,
+        "45": 4.0,
+        "46": 6.0
+      },
+      "scope": "run",
+      "se": 0.39999999999999997,
+      "tick": 4000,
+      "world": "frontier_living_world"
+    },
+    {
+      "class": "outcome",
+      "floor": 3.0,
+      "group": "none",
+      "id": "O2.population",
+      "k": 2.0,
+      "mean": 4.6,
+      "per_seed": {
+        "42": 4.0,
+        "43": 4.0,
+        "44": 5.0,
+        "45": 4.0,
+        "46": 6.0
+      },
+      "scope": "run",
+      "se": 0.39999999999999997,
+      "tick": 4500,
+      "world": "frontier_living_world"
+    },
+    {
+      "class": "outcome",
+      "floor": 3.0,
+      "group": "none",
+      "id": "O2.population",
+      "k": 2.0,
+      "mean": 4.6,
+      "per_seed": {
+        "42": 4.0,
+        "43": 4.0,
+        "44": 5.0,
+        "45": 4.0,
+        "46": 6.0
+      },
+      "scope": "run",
+      "se": 0.39999999999999997,
+      "tick": 5000,
+      "world": "frontier_living_world"
+    },
+    {
+      "class": "outcome",
+      "floor": 1.0,
+      "group": "graze+plant",
+      "id": "O2.survivors",
+      "k": 2.0,
+      "mean": 1.0,
+      "per_seed": {
+        "42": 1.0,
+        "43": 1.0,
+        "44": 1.0,
+        "45": 1.0,
+        "46": 1.0
+      },
+      "scope": "run",
+      "se": 0.0,
+      "world": "frontier_living_world"
+    },
+    {
+      "class": "outcome",
+      "floor": 1.0,
+      "group": "meat",
+      "id": "O2.survivors",
+      "k": 2.0,
+      "mean": 1.0,
+      "per_seed": {
+        "42": 1.0,
+        "43": 1.0,
+        "44": 1.0,
+        "45": 1.0,
+        "46": 1.0
+      },
+      "scope": "run",
+      "se": 0.0,
+      "world": "frontier_living_world"
+    },
+    {
+      "class": "outcome",
+      "floor": 1.0,
+      "group": "meat+plant+prepared",
+      "id": "O2.survivors",
+      "k": 2.0,
+      "mean": 1.0,
+      "per_seed": {
+        "42": 1.0,
+        "43": 1.0,
+        "44": 1.0,
+        "45": 1.0,
+        "46": 1.0
+      },
+      "scope": "run",
+      "se": 0.0,
+      "world": "frontier_living_world"
+    },
+    {
+      "class": "outcome",
+      "floor": 1.0,
+      "group": "none",
+      "id": "O2.survivors",
+      "k": 2.0,
+      "mean": 1.0,
+      "per_seed": {
+        "42": 1.0,
+        "43": 1.0,
+        "44": 1.0,
+        "45": 1.0,
+        "46": 1.0
+      },
+      "scope": "run",
+      "se": 0.0,
+      "world": "frontier_living_world"
+    },
+    {
+      "class": "outcome",
+      "floor": 3.0,
+      "group": "meat",
+      "id": "O3.attacks_on_people",
+      "k": 2.0,
+      "mean": 0.6,
+      "per_seed": {
+        "42": 0.0,
+        "43": 0.0,
+        "44": 0.0,
+        "45": 3.0,
+        "46": 0.0
+      },
+      "scope": "run",
+      "se": 0.6,
+      "world": "frontier_living_world"
+    },
+    {
+      "class": "outcome",
+      "floor": 5.0,
+      "group": "graze+plant",
+      "id": "O4.accepted",
+      "k": 2.0,
+      "key": "CARRIED_FOOD",
+      "mean": 73.8,
+      "per_seed": {
+        "42": 44.0,
+        "43": 79.0,
+        "44": 108.0,
+        "45": 69.0,
+        "46": 69.0
+      },
+      "scope": "run",
+      "se": 10.321821544669332,
+      "world": "frontier_living_world"
+    },
+    {
+      "class": "outcome",
+      "floor": 5.0,
+      "group": "graze+plant",
+      "id": "O4.accepted",
+      "k": 2.0,
+      "key": "CHEST",
+      "mean": 0.0,
+      "per_seed": {
+        "42": 0.0,
+        "43": 0.0,
+        "44": 0.0,
+        "45": 0.0,
+        "46": 0.0
+      },
+      "scope": "run",
+      "se": 0.0,
+      "world": "frontier_living_world"
+    },
+    {
+      "class": "outcome",
+      "floor": 5.0,
+      "group": "graze+plant",
+      "id": "O4.accepted",
+      "k": 2.0,
+      "key": "COMBAT",
+      "mean": 0.0,
+      "per_seed": {
+        "42": 0.0,
+        "43": 0.0,
+        "44": 0.0,
+        "45": 0.0,
+        "46": 0.0
+      },
+      "scope": "run",
+      "se": 0.0,
+      "world": "frontier_living_world"
+    },
+    {
+      "class": "outcome",
+      "floor": 5.0,
+      "group": "graze+plant",
+      "id": "O4.accepted",
+      "k": 2.0,
+      "key": "CORPSE",
+      "mean": 0.0,
+      "per_seed": {
+        "42": 0.0,
+        "43": 0.0,
+        "44": 0.0,
+        "45": 0.0,
+        "46": 0.0
+      },
+      "scope": "run",
+      "se": 0.0,
+      "world": "frontier_living_world"
+    },
+    {
+      "class": "outcome",
+      "floor": 5.0,
+      "group": "graze+plant",
+      "id": "O4.accepted",
+      "k": 2.0,
+      "key": "CORPSE_FOOD",
+      "mean": 0.0,
+      "per_seed": {
+        "42": 0.0,
+        "43": 0.0,
+        "44": 0.0,
+        "45": 0.0,
+        "46": 0.0
+      },
+      "scope": "run",
+      "se": 0.0,
+      "world": "frontier_living_world"
+    },
+    {
+      "class": "outcome",
+      "floor": 5.0,
+      "group": "graze+plant",
+      "id": "O4.accepted",
+      "k": 2.0,
+      "key": "CRAFTING",
+      "mean": 0.0,
+      "per_seed": {
+        "42": 0.0,
+        "43": 0.0,
+        "44": 0.0,
+        "45": 0.0,
+        "46": 0.0
+      },
+      "scope": "run",
+      "se": 0.0,
+      "world": "frontier_living_world"
+    },
+    {
+      "class": "outcome",
+      "floor": 5.0,
+      "group": "graze+plant",
+      "id": "O4.accepted",
+      "k": 2.0,
+      "key": "GROUND_ITEM",
+      "mean": 0.0,
+      "per_seed": {
+        "42": 0.0,
+        "43": 0.0,
+        "44": 0.0,
+        "45": 0.0,
+        "46": 0.0
+      },
+      "scope": "run",
+      "se": 0.0,
+      "world": "frontier_living_world"
+    },
+    {
+      "class": "outcome",
+      "floor": 5.0,
+      "group": "graze+plant",
+      "id": "O4.accepted",
+      "k": 2.0,
+      "key": "HOME_STORAGE",
+      "mean": 0.0,
+      "per_seed": {
+        "42": 0.0,
+        "43": 0.0,
+        "44": 0.0,
+        "45": 0.0,
+        "46": 0.0
+      },
+      "scope": "run",
+      "se": 0.0,
+      "world": "frontier_living_world"
+    },
+    {
+      "class": "outcome",
+      "floor": 5.0,
+      "group": "graze+plant",
+      "id": "O4.accepted",
+      "k": 2.0,
+      "key": "INFORMATION_PURCHASE",
+      "mean": 0.0,
+      "per_seed": {
+        "42": 0.0,
+        "43": 0.0,
+        "44": 0.0,
+        "45": 0.0,
+        "46": 0.0
+      },
+      "scope": "run",
+      "se": 0.0,
+      "world": "frontier_living_world"
+    },
+    {
+      "class": "outcome",
+      "floor": 5.0,
+      "group": "graze+plant",
+      "id": "O4.accepted",
+      "k": 2.0,
+      "key": "INHERIT",
+      "mean": 1.0,
+      "per_seed": {
+        "42": 3.0,
+        "43": 0.0,
+        "44": 0.0,
+        "45": 1.0,
+        "46": 1.0
+      },
+      "scope": "run",
+      "se": 0.5477225575051661,
+      "world": "frontier_living_world"
+    },
+    {
+      "class": "outcome",
+      "floor": 5.0,
+      "group": "graze+plant",
+      "id": "O4.accepted",
+      "k": 2.0,
+      "key": "NODE",
+      "mean": 83.4,
+      "per_seed": {
+        "42": 47.0,
+        "43": 79.0,
+        "44": 116.0,
+        "45": 88.0,
+        "46": 87.0
+      },
+      "scope": "run",
+      "se": 11.048076755707301,
+      "world": "frontier_living_world"
+    },
+    {
+      "class": "outcome",
+      "floor": 5.0,
+      "group": "graze+plant",
+      "id": "O4.accepted",
+      "k": 2.0,
+      "key": "QUEST",
+      "mean": 0.0,
+      "per_seed": {
+        "42": 0.0,
+        "43": 0.0,
+        "44": 0.0,
+        "45": 0.0,
+        "46": 0.0
+      },
+      "scope": "run",
+      "se": 0.0,
+      "world": "frontier_living_world"
+    },
+    {
+      "class": "outcome",
+      "floor": 5.0,
+      "group": "graze+plant",
+      "id": "O4.accepted",
+      "k": 2.0,
+      "key": "RECRUIT",
+      "mean": 0.0,
+      "per_seed": {
+        "42": 0.0,
+        "43": 0.0,
+        "44": 0.0,
+        "45": 0.0,
+        "46": 0.0
+      },
+      "scope": "run",
+      "se": 0.0,
+      "world": "frontier_living_world"
+    },
+    {
+      "class": "outcome",
+      "floor": 5.0,
+      "group": "graze+plant",
+      "id": "O4.accepted",
+      "k": 2.0,
+      "key": "SHOP_BUY",
+      "mean": 0.0,
+      "per_seed": {
+        "42": 0.0,
+        "43": 0.0,
+        "44": 0.0,
+        "45": 0.0,
+        "46": 0.0
+      },
+      "scope": "run",
+      "se": 0.0,
+      "world": "frontier_living_world"
+    },
+    {
+      "class": "outcome",
+      "floor": 5.0,
+      "group": "graze+plant",
+      "id": "O4.accepted",
+      "k": 2.0,
+      "key": "SHOP_SELL",
+      "mean": 0.0,
+      "per_seed": {
+        "42": 0.0,
+        "43": 0.0,
+        "44": 0.0,
+        "45": 0.0,
+        "46": 0.0
+      },
+      "scope": "run",
+      "se": 0.0,
+      "world": "frontier_living_world"
+    },
+    {
+      "class": "outcome",
+      "floor": 5.0,
+      "group": "graze+plant",
+      "id": "O4.accepted",
+      "k": 2.0,
+      "key": "TAX",
+      "mean": 0.0,
+      "per_seed": {
+        "42": 0.0,
+        "43": 0.0,
+        "44": 0.0,
+        "45": 0.0,
+        "46": 0.0
+      },
+      "scope": "run",
+      "se": 0.0,
+      "world": "frontier_living_world"
+    },
+    {
+      "class": "outcome",
+      "floor": 5.0,
+      "group": "graze+plant",
+      "id": "O4.accepted",
+      "k": 2.0,
+      "key": "TOWN_SERVICE",
+      "mean": 0.0,
+      "per_seed": {
+        "42": 0.0,
+        "43": 0.0,
+        "44": 0.0,
+        "45": 0.0,
+        "46": 0.0
+      },
+      "scope": "run",
+      "se": 0.0,
+      "world": "frontier_living_world"
+    },
+    {
+      "class": "outcome",
+      "floor": 5.0,
+      "group": "graze+plant",
+      "id": "O4.accepted",
+      "k": 2.0,
+      "key": "WAGE",
+      "mean": 0.0,
+      "per_seed": {
+        "42": 0.0,
+        "43": 0.0,
+        "44": 0.0,
+        "45": 0.0,
+        "46": 0.0
+      },
+      "scope": "run",
+      "se": 0.0,
+      "world": "frontier_living_world"
+    },
+    {
+      "class": "outcome",
+      "floor": 5.0,
+      "group": "meat",
+      "id": "O4.accepted",
+      "k": 2.0,
+      "key": "CARRIED_FOOD",
+      "mean": 0.8,
+      "per_seed": {
+        "42": 0.0,
+        "43": 0.0,
+        "44": 0.0,
+        "45": 4.0,
+        "46": 0.0
+      },
+      "scope": "run",
+      "se": 0.7999999999999999,
+      "world": "frontier_living_world"
+    },
+    {
+      "class": "outcome",
+      "floor": 5.0,
+      "group": "meat",
+      "id": "O4.accepted",
+      "k": 2.0,
+      "key": "CHEST",
+      "mean": 0.0,
+      "per_seed": {
+        "42": 0.0,
+        "43": 0.0,
+        "44": 0.0,
+        "45": 0.0,
+        "46": 0.0
+      },
+      "scope": "run",
+      "se": 0.0,
+      "world": "frontier_living_world"
+    },
+    {
+      "class": "outcome",
+      "floor": 5.0,
+      "group": "meat",
+      "id": "O4.accepted",
+      "k": 2.0,
+      "key": "COMBAT",
+      "mean": 8.4,
+      "per_seed": {
+        "42": 18.0,
+        "43": 14.0,
+        "44": 0.0,
+        "45": 10.0,
+        "46": 0.0
+      },
+      "scope": "run",
+      "se": 3.655133376499413,
+      "world": "frontier_living_world"
+    },
+    {
+      "class": "outcome",
+      "floor": 5.0,
+      "group": "meat",
+      "id": "O4.accepted",
+      "k": 2.0,
+      "key": "CORPSE",
+      "mean": 0.0,
+      "per_seed": {
+        "42": 0.0,
+        "43": 0.0,
+        "44": 0.0,
+        "45": 0.0,
+        "46": 0.0
+      },
+      "scope": "run",
+      "se": 0.0,
+      "world": "frontier_living_world"
+    },
+    {
+      "class": "outcome",
+      "floor": 5.0,
+      "group": "meat",
+      "id": "O4.accepted",
+      "k": 2.0,
+      "key": "CORPSE_FOOD",
+      "mean": 4.8,
+      "per_seed": {
+        "42": 6.0,
+        "43": 8.0,
+        "44": 3.0,
+        "45": 6.0,
+        "46": 1.0
+      },
+      "scope": "run",
+      "se": 1.2409673645990857,
+      "world": "frontier_living_world"
+    },
+    {
+      "class": "outcome",
+      "floor": 5.0,
+      "group": "meat",
+      "id": "O4.accepted",
+      "k": 2.0,
+      "key": "CRAFTING",
+      "mean": 0.0,
+      "per_seed": {
+        "42": 0.0,
+        "43": 0.0,
+        "44": 0.0,
+        "45": 0.0,
+        "46": 0.0
+      },
+      "scope": "run",
+      "se": 0.0,
+      "world": "frontier_living_world"
+    },
+    {
+      "class": "outcome",
+      "floor": 5.0,
+      "group": "meat",
+      "id": "O4.accepted",
+      "k": 2.0,
+      "key": "GROUND_ITEM",
+      "mean": 0.0,
+      "per_seed": {
+        "42": 0.0,
+        "43": 0.0,
+        "44": 0.0,
+        "45": 0.0,
+        "46": 0.0
+      },
+      "scope": "run",
+      "se": 0.0,
+      "world": "frontier_living_world"
+    },
+    {
+      "class": "outcome",
+      "floor": 5.0,
+      "group": "meat",
+      "id": "O4.accepted",
+      "k": 2.0,
+      "key": "HOME_STORAGE",
+      "mean": 0.0,
+      "per_seed": {
+        "42": 0.0,
+        "43": 0.0,
+        "44": 0.0,
+        "45": 0.0,
+        "46": 0.0
+      },
+      "scope": "run",
+      "se": 0.0,
+      "world": "frontier_living_world"
+    },
+    {
+      "class": "outcome",
+      "floor": 5.0,
+      "group": "meat",
+      "id": "O4.accepted",
+      "k": 2.0,
+      "key": "INFORMATION_PURCHASE",
+      "mean": 0.0,
+      "per_seed": {
+        "42": 0.0,
+        "43": 0.0,
+        "44": 0.0,
+        "45": 0.0,
+        "46": 0.0
+      },
+      "scope": "run",
+      "se": 0.0,
+      "world": "frontier_living_world"
+    },
+    {
+      "class": "outcome",
+      "floor": 5.0,
+      "group": "meat",
+      "id": "O4.accepted",
+      "k": 2.0,
+      "key": "INHERIT",
+      "mean": 0.8,
+      "per_seed": {
+        "42": 3.0,
+        "43": 0.0,
+        "44": 0.0,
+        "45": 1.0,
+        "46": 0.0
+      },
+      "scope": "run",
+      "se": 0.58309518948453,
+      "world": "frontier_living_world"
+    },
+    {
+      "class": "outcome",
+      "floor": 5.0,
+      "group": "meat",
+      "id": "O4.accepted",
+      "k": 2.0,
+      "key": "NODE",
+      "mean": 1.4,
+      "per_seed": {
+        "42": 0.0,
+        "43": 0.0,
+        "44": 7.0,
+        "45": 0.0,
+        "46": 0.0
+      },
+      "scope": "run",
+      "se": 1.4,
+      "world": "frontier_living_world"
+    },
+    {
+      "class": "outcome",
+      "floor": 5.0,
+      "group": "meat",
+      "id": "O4.accepted",
+      "k": 2.0,
+      "key": "QUEST",
+      "mean": 0.0,
+      "per_seed": {
+        "42": 0.0,
+        "43": 0.0,
+        "44": 0.0,
+        "45": 0.0,
+        "46": 0.0
+      },
+      "scope": "run",
+      "se": 0.0,
+      "world": "frontier_living_world"
+    },
+    {
+      "class": "outcome",
+      "floor": 5.0,
+      "group": "meat",
+      "id": "O4.accepted",
+      "k": 2.0,
+      "key": "RECRUIT",
+      "mean": 0.0,
+      "per_seed": {
+        "42": 0.0,
+        "43": 0.0,
+        "44": 0.0,
+        "45": 0.0,
+        "46": 0.0
+      },
+      "scope": "run",
+      "se": 0.0,
+      "world": "frontier_living_world"
+    },
+    {
+      "class": "outcome",
+      "floor": 5.0,
+      "group": "meat",
+      "id": "O4.accepted",
+      "k": 2.0,
+      "key": "SHOP_BUY",
+      "mean": 0.0,
+      "per_seed": {
+        "42": 0.0,
+        "43": 0.0,
+        "44": 0.0,
+        "45": 0.0,
+        "46": 0.0
+      },
+      "scope": "run",
+      "se": 0.0,
+      "world": "frontier_living_world"
+    },
+    {
+      "class": "outcome",
+      "floor": 5.0,
+      "group": "meat",
+      "id": "O4.accepted",
+      "k": 2.0,
+      "key": "SHOP_SELL",
+      "mean": 0.0,
+      "per_seed": {
+        "42": 0.0,
+        "43": 0.0,
+        "44": 0.0,
+        "45": 0.0,
+        "46": 0.0
+      },
+      "scope": "run",
+      "se": 0.0,
+      "world": "frontier_living_world"
+    },
+    {
+      "class": "outcome",
+      "floor": 5.0,
+      "group": "meat",
+      "id": "O4.accepted",
+      "k": 2.0,
+      "key": "TAX",
+      "mean": 0.0,
+      "per_seed": {
+        "42": 0.0,
+        "43": 0.0,
+        "44": 0.0,
+        "45": 0.0,
+        "46": 0.0
+      },
+      "scope": "run",
+      "se": 0.0,
+      "world": "frontier_living_world"
+    },
+    {
+      "class": "outcome",
+      "floor": 5.0,
+      "group": "meat",
+      "id": "O4.accepted",
+      "k": 2.0,
+      "key": "TOWN_SERVICE",
+      "mean": 0.0,
+      "per_seed": {
+        "42": 0.0,
+        "43": 0.0,
+        "44": 0.0,
+        "45": 0.0,
+        "46": 0.0
+      },
+      "scope": "run",
+      "se": 0.0,
+      "world": "frontier_living_world"
+    },
+    {
+      "class": "outcome",
+      "floor": 5.0,
+      "group": "meat",
+      "id": "O4.accepted",
+      "k": 2.0,
+      "key": "WAGE",
+      "mean": 0.0,
+      "per_seed": {
+        "42": 0.0,
+        "43": 0.0,
+        "44": 0.0,
+        "45": 0.0,
+        "46": 0.0
+      },
+      "scope": "run",
+      "se": 0.0,
+      "world": "frontier_living_world"
+    },
+    {
+      "class": "outcome",
+      "floor": 5.0,
+      "group": "meat+plant+prepared",
+      "id": "O4.accepted",
+      "k": 2.0,
+      "key": "CARRIED_FOOD",
+      "mean": 18.2,
+      "per_seed": {
+        "42": 19.0,
+        "43": 20.0,
+        "44": 27.0,
+        "45": 14.0,
+        "46": 11.0
+      },
+      "scope": "run",
+      "se": 2.745906043549196,
+      "world": "frontier_living_world"
+    },
+    {
+      "class": "outcome",
+      "floor": 5.0,
+      "group": "meat+plant+prepared",
+      "id": "O4.accepted",
+      "k": 2.0,
+      "key": "CHEST",
+      "mean": 0.0,
+      "per_seed": {
+        "42": 0.0,
+        "43": 0.0,
+        "44": 0.0,
+        "45": 0.0,
+        "46": 0.0
+      },
+      "scope": "run",
+      "se": 0.0,
+      "world": "frontier_living_world"
+    },
+    {
+      "class": "outcome",
+      "floor": 5.0,
+      "group": "meat+plant+prepared",
+      "id": "O4.accepted",
+      "k": 2.0,
+      "key": "COMBAT",
+      "mean": 18.0,
+      "per_seed": {
+        "42": 15.0,
+        "43": 13.0,
+        "44": 23.0,
+        "45": 12.0,
+        "46": 27.0
+      },
+      "scope": "run",
+      "se": 2.966479394838265,
+      "world": "frontier_living_world"
+    },
+    {
+      "class": "outcome",
+      "floor": 5.0,
+      "group": "meat+plant+prepared",
+      "id": "O4.accepted",
+      "k": 2.0,
+      "key": "CORPSE",
+      "mean": 1.8,
+      "per_seed": {
+        "42": 2.0,
+        "43": 1.0,
+        "44": 5.0,
+        "45": 1.0,
+        "46": 0.0
+      },
+      "scope": "run",
+      "se": 0.8602325267042626,
+      "world": "frontier_living_world"
+    },
+    {
+      "class": "outcome",
+      "floor": 5.0,
+      "group": "meat+plant+prepared",
+      "id": "O4.accepted",
+      "k": 2.0,
+      "key": "CORPSE_FOOD",
+      "mean": 4.2,
+      "per_seed": {
+        "42": 3.0,
+        "43": 3.0,
+        "44": 5.0,
+        "45": 5.0,
+        "46": 5.0
+      },
+      "scope": "run",
+      "se": 0.48989794855663554,
+      "world": "frontier_living_world"
+    },
+    {
+      "class": "outcome",
+      "floor": 5.0,
+      "group": "meat+plant+prepared",
+      "id": "O4.accepted",
+      "k": 2.0,
+      "key": "CRAFTING",
+      "mean": 0.0,
+      "per_seed": {
+        "42": 0.0,
+        "43": 0.0,
+        "44": 0.0,
+        "45": 0.0,
+        "46": 0.0
+      },
+      "scope": "run",
+      "se": 0.0,
+      "world": "frontier_living_world"
+    },
+    {
+      "class": "outcome",
+      "floor": 5.0,
+      "group": "meat+plant+prepared",
+      "id": "O4.accepted",
+      "k": 2.0,
+      "key": "GROUND_ITEM",
+      "mean": 0.0,
+      "per_seed": {
+        "42": 0.0,
+        "43": 0.0,
+        "44": 0.0,
+        "45": 0.0,
+        "46": 0.0
+      },
+      "scope": "run",
+      "se": 0.0,
+      "world": "frontier_living_world"
+    },
+    {
+      "class": "outcome",
+      "floor": 5.0,
+      "group": "meat+plant+prepared",
+      "id": "O4.accepted",
+      "k": 2.0,
+      "key": "HOME_STORAGE",
+      "mean": 0.0,
+      "per_seed": {
+        "42": 0.0,
+        "43": 0.0,
+        "44": 0.0,
+        "45": 0.0,
+        "46": 0.0
+      },
+      "scope": "run",
+      "se": 0.0,
+      "world": "frontier_living_world"
+    },
+    {
+      "class": "outcome",
+      "floor": 5.0,
+      "group": "meat+plant+prepared",
+      "id": "O4.accepted",
+      "k": 2.0,
+      "key": "INFORMATION_PURCHASE",
+      "mean": 0.0,
+      "per_seed": {
+        "42": 0.0,
+        "43": 0.0,
+        "44": 0.0,
+        "45": 0.0,
+        "46": 0.0
+      },
+      "scope": "run",
+      "se": 0.0,
+      "world": "frontier_living_world"
+    },
+    {
+      "class": "outcome",
+      "floor": 5.0,
+      "group": "meat+plant+prepared",
+      "id": "O4.accepted",
+      "k": 2.0,
+      "key": "INHERIT",
+      "mean": 14.2,
+      "per_seed": {
+        "42": 11.0,
+        "43": 11.0,
+        "44": 17.0,
+        "45": 12.0,
+        "46": 20.0
+      },
+      "scope": "run",
+      "se": 1.8275666882497066,
+      "world": "frontier_living_world"
+    },
+    {
+      "class": "outcome",
+      "floor": 5.0,
+      "group": "meat+plant+prepared",
+      "id": "O4.accepted",
+      "k": 2.0,
+      "key": "NODE",
+      "mean": 14.6,
+      "per_seed": {
+        "42": 14.0,
+        "43": 15.0,
+        "44": 14.0,
+        "45": 15.0,
+        "46": 15.0
+      },
+      "scope": "run",
+      "se": 0.24494897427831777,
+      "world": "frontier_living_world"
+    },
+    {
+      "class": "outcome",
+      "floor": 5.0,
+      "group": "meat+plant+prepared",
+      "id": "O4.accepted",
+      "k": 2.0,
+      "key": "QUEST",
+      "mean": 0.0,
+      "per_seed": {
+        "42": 0.0,
+        "43": 0.0,
+        "44": 0.0,
+        "45": 0.0,
+        "46": 0.0
+      },
+      "scope": "run",
+      "se": 0.0,
+      "world": "frontier_living_world"
+    },
+    {
+      "class": "outcome",
+      "floor": 5.0,
+      "group": "meat+plant+prepared",
+      "id": "O4.accepted",
+      "k": 2.0,
+      "key": "RECRUIT",
+      "mean": 0.0,
+      "per_seed": {
+        "42": 0.0,
+        "43": 0.0,
+        "44": 0.0,
+        "45": 0.0,
+        "46": 0.0
+      },
+      "scope": "run",
+      "se": 0.0,
+      "world": "frontier_living_world"
+    },
+    {
+      "class": "outcome",
+      "floor": 5.0,
+      "group": "meat+plant+prepared",
+      "id": "O4.accepted",
+      "k": 2.0,
+      "key": "SHOP_BUY",
+      "mean": 0.0,
+      "per_seed": {
+        "42": 0.0,
+        "43": 0.0,
+        "44": 0.0,
+        "45": 0.0,
+        "46": 0.0
+      },
+      "scope": "run",
+      "se": 0.0,
+      "world": "frontier_living_world"
+    },
+    {
+      "class": "outcome",
+      "floor": 5.0,
+      "group": "meat+plant+prepared",
+      "id": "O4.accepted",
+      "k": 2.0,
+      "key": "SHOP_SELL",
+      "mean": 0.0,
+      "per_seed": {
+        "42": 0.0,
+        "43": 0.0,
+        "44": 0.0,
+        "45": 0.0,
+        "46": 0.0
+      },
+      "scope": "run",
+      "se": 0.0,
+      "world": "frontier_living_world"
+    },
+    {
+      "class": "outcome",
+      "floor": 5.0,
+      "group": "meat+plant+prepared",
+      "id": "O4.accepted",
+      "k": 2.0,
+      "key": "TAX",
+      "mean": 0.0,
+      "per_seed": {
+        "42": 0.0,
+        "43": 0.0,
+        "44": 0.0,
+        "45": 0.0,
+        "46": 0.0
+      },
+      "scope": "run",
+      "se": 0.0,
+      "world": "frontier_living_world"
+    },
+    {
+      "class": "outcome",
+      "floor": 5.0,
+      "group": "meat+plant+prepared",
+      "id": "O4.accepted",
+      "k": 2.0,
+      "key": "TOWN_SERVICE",
+      "mean": 804.0,
+      "per_seed": {
+        "42": 674.0,
+        "43": 501.0,
+        "44": 1309.0,
+        "45": 712.0,
+        "46": 824.0
+      },
+      "scope": "run",
+      "se": 136.4913916699511,
+      "world": "frontier_living_world"
+    },
+    {
+      "class": "outcome",
+      "floor": 5.0,
+      "group": "meat+plant+prepared",
+      "id": "O4.accepted",
+      "k": 2.0,
+      "key": "WAGE",
+      "mean": 0.0,
+      "per_seed": {
+        "42": 0.0,
+        "43": 0.0,
+        "44": 0.0,
+        "45": 0.0,
+        "46": 0.0
+      },
+      "scope": "run",
+      "se": 0.0,
+      "world": "frontier_living_world"
+    },
+    {
+      "class": "outcome",
+      "floor": 5.0,
+      "group": "none",
+      "id": "O4.accepted",
+      "k": 2.0,
+      "key": "CARRIED_FOOD",
+      "mean": 0.0,
+      "per_seed": {
+        "42": 0.0,
+        "43": 0.0,
+        "44": 0.0,
+        "45": 0.0,
+        "46": 0.0
+      },
+      "scope": "run",
+      "se": 0.0,
+      "world": "frontier_living_world"
+    },
+    {
+      "class": "outcome",
+      "floor": 5.0,
+      "group": "none",
+      "id": "O4.accepted",
+      "k": 2.0,
+      "key": "CHEST",
+      "mean": 0.0,
+      "per_seed": {
+        "42": 0.0,
+        "43": 0.0,
+        "44": 0.0,
+        "45": 0.0,
+        "46": 0.0
+      },
+      "scope": "run",
+      "se": 0.0,
+      "world": "frontier_living_world"
+    },
+    {
+      "class": "outcome",
+      "floor": 5.0,
+      "group": "none",
+      "id": "O4.accepted",
+      "k": 2.0,
+      "key": "COMBAT",
+      "mean": 0.0,
+      "per_seed": {
+        "42": 0.0,
+        "43": 0.0,
+        "44": 0.0,
+        "45": 0.0,
+        "46": 0.0
+      },
+      "scope": "run",
+      "se": 0.0,
+      "world": "frontier_living_world"
+    },
+    {
+      "class": "outcome",
+      "floor": 5.0,
+      "group": "none",
+      "id": "O4.accepted",
+      "k": 2.0,
+      "key": "CORPSE",
+      "mean": 0.0,
+      "per_seed": {
+        "42": 0.0,
+        "43": 0.0,
+        "44": 0.0,
+        "45": 0.0,
+        "46": 0.0
+      },
+      "scope": "run",
+      "se": 0.0,
+      "world": "frontier_living_world"
+    },
+    {
+      "class": "outcome",
+      "floor": 5.0,
+      "group": "none",
+      "id": "O4.accepted",
+      "k": 2.0,
+      "key": "CORPSE_FOOD",
+      "mean": 0.0,
+      "per_seed": {
+        "42": 0.0,
+        "43": 0.0,
+        "44": 0.0,
+        "45": 0.0,
+        "46": 0.0
+      },
+      "scope": "run",
+      "se": 0.0,
+      "world": "frontier_living_world"
+    },
+    {
+      "class": "outcome",
+      "floor": 5.0,
+      "group": "none",
+      "id": "O4.accepted",
+      "k": 2.0,
+      "key": "CRAFTING",
+      "mean": 0.0,
+      "per_seed": {
+        "42": 0.0,
+        "43": 0.0,
+        "44": 0.0,
+        "45": 0.0,
+        "46": 0.0
+      },
+      "scope": "run",
+      "se": 0.0,
+      "world": "frontier_living_world"
+    },
+    {
+      "class": "outcome",
+      "floor": 5.0,
+      "group": "none",
+      "id": "O4.accepted",
+      "k": 2.0,
+      "key": "GROUND_ITEM",
+      "mean": 0.0,
+      "per_seed": {
+        "42": 0.0,
+        "43": 0.0,
+        "44": 0.0,
+        "45": 0.0,
+        "46": 0.0
+      },
+      "scope": "run",
+      "se": 0.0,
+      "world": "frontier_living_world"
+    },
+    {
+      "class": "outcome",
+      "floor": 5.0,
+      "group": "none",
+      "id": "O4.accepted",
+      "k": 2.0,
+      "key": "HOME_STORAGE",
+      "mean": 0.0,
+      "per_seed": {
+        "42": 0.0,
+        "43": 0.0,
+        "44": 0.0,
+        "45": 0.0,
+        "46": 0.0
+      },
+      "scope": "run",
+      "se": 0.0,
+      "world": "frontier_living_world"
+    },
+    {
+      "class": "outcome",
+      "floor": 5.0,
+      "group": "none",
+      "id": "O4.accepted",
+      "k": 2.0,
+      "key": "INFORMATION_PURCHASE",
+      "mean": 0.0,
+      "per_seed": {
+        "42": 0.0,
+        "43": 0.0,
+        "44": 0.0,
+        "45": 0.0,
+        "46": 0.0
+      },
+      "scope": "run",
+      "se": 0.0,
+      "world": "frontier_living_world"
+    },
+    {
+      "class": "outcome",
+      "floor": 5.0,
+      "group": "none",
+      "id": "O4.accepted",
+      "k": 2.0,
+      "key": "INHERIT",
+      "mean": 0.0,
+      "per_seed": {
+        "42": 0.0,
+        "43": 0.0,
+        "44": 0.0,
+        "45": 0.0,
+        "46": 0.0
+      },
+      "scope": "run",
+      "se": 0.0,
+      "world": "frontier_living_world"
+    },
+    {
+      "class": "outcome",
+      "floor": 5.0,
+      "group": "none",
+      "id": "O4.accepted",
+      "k": 2.0,
+      "key": "NODE",
+      "mean": 0.0,
+      "per_seed": {
+        "42": 0.0,
+        "43": 0.0,
+        "44": 0.0,
+        "45": 0.0,
+        "46": 0.0
+      },
+      "scope": "run",
+      "se": 0.0,
+      "world": "frontier_living_world"
+    },
+    {
+      "class": "outcome",
+      "floor": 5.0,
+      "group": "none",
+      "id": "O4.accepted",
+      "k": 2.0,
+      "key": "QUEST",
+      "mean": 0.0,
+      "per_seed": {
+        "42": 0.0,
+        "43": 0.0,
+        "44": 0.0,
+        "45": 0.0,
+        "46": 0.0
+      },
+      "scope": "run",
+      "se": 0.0,
+      "world": "frontier_living_world"
+    },
+    {
+      "class": "outcome",
+      "floor": 5.0,
+      "group": "none",
+      "id": "O4.accepted",
+      "k": 2.0,
+      "key": "RECRUIT",
+      "mean": 0.0,
+      "per_seed": {
+        "42": 0.0,
+        "43": 0.0,
+        "44": 0.0,
+        "45": 0.0,
+        "46": 0.0
+      },
+      "scope": "run",
+      "se": 0.0,
+      "world": "frontier_living_world"
+    },
+    {
+      "class": "outcome",
+      "floor": 5.0,
+      "group": "none",
+      "id": "O4.accepted",
+      "k": 2.0,
+      "key": "SHOP_BUY",
+      "mean": 0.0,
+      "per_seed": {
+        "42": 0.0,
+        "43": 0.0,
+        "44": 0.0,
+        "45": 0.0,
+        "46": 0.0
+      },
+      "scope": "run",
+      "se": 0.0,
+      "world": "frontier_living_world"
+    },
+    {
+      "class": "outcome",
+      "floor": 5.0,
+      "group": "none",
+      "id": "O4.accepted",
+      "k": 2.0,
+      "key": "SHOP_SELL",
+      "mean": 0.0,
+      "per_seed": {
+        "42": 0.0,
+        "43": 0.0,
+        "44": 0.0,
+        "45": 0.0,
+        "46": 0.0
+      },
+      "scope": "run",
+      "se": 0.0,
+      "world": "frontier_living_world"
+    },
+    {
+      "class": "outcome",
+      "floor": 5.0,
+      "group": "none",
+      "id": "O4.accepted",
+      "k": 2.0,
+      "key": "TAX",
+      "mean": 0.0,
+      "per_seed": {
+        "42": 0.0,
+        "43": 0.0,
+        "44": 0.0,
+        "45": 0.0,
+        "46": 0.0
+      },
+      "scope": "run",
+      "se": 0.0,
+      "world": "frontier_living_world"
+    },
+    {
+      "class": "outcome",
+      "floor": 5.0,
+      "group": "none",
+      "id": "O4.accepted",
+      "k": 2.0,
+      "key": "TOWN_SERVICE",
+      "mean": 0.0,
+      "per_seed": {
+        "42": 0.0,
+        "43": 0.0,
+        "44": 0.0,
+        "45": 0.0,
+        "46": 0.0
+      },
+      "scope": "run",
+      "se": 0.0,
+      "world": "frontier_living_world"
+    },
+    {
+      "class": "outcome",
+      "floor": 5.0,
+      "group": "none",
+      "id": "O4.accepted",
+      "k": 2.0,
+      "key": "WAGE",
+      "mean": 0.0,
+      "per_seed": {
+        "42": 0.0,
+        "43": 0.0,
+        "44": 0.0,
+        "45": 0.0,
+        "46": 0.0
+      },
+      "scope": "run",
+      "se": 0.0,
+      "world": "frontier_living_world"
+    },
+    {
+      "class": "outcome",
+      "floor": 2.0,
+      "group": "*",
+      "id": "O6.feeding_kills",
+      "k": 2.0,
+      "mean": 2.4,
+      "per_seed": {
+        "42": 4.0,
+        "43": 4.0,
+        "44": 0.0,
+        "45": 3.0,
+        "46": 1.0
+      },
+      "scope": "run",
+      "se": 0.8124038404635959,
+      "world": "frontier_living_world"
+    },
+    {
+      "class": "outcome",
+      "floor": 2.0,
+      "group": "*",
+      "id": "O6.kills_not_eaten",
+      "k": 2.0,
+      "mean": 0.0,
+      "per_seed": {
+        "42": 0.0,
+        "43": 0.0,
+        "44": 0.0,
+        "45": 0.0,
+        "46": 0.0
+      },
+      "scope": "run",
+      "se": 0.0,
+      "world": "frontier_living_world"
+    },
+    {
+      "class": "validity",
+      "group": "*",
+      "id": "V2",
+      "oracle": "Bible 03 conservation, gate H7: meat leaves a body only by being taken, by the whole body being looted, or through the MEAT_DECAYED sink, and made = taken + looted + vanished + remaining",
+      "per_seed": {
+        "42": 0,
+        "43": 0,
+        "44": 0,
+        "45": 0,
+        "46": 0
+      },
+      "scope": "run",
+      "violations": 0,
+      "world": "frontier_living_world"
+    },
+    {
+      "class": "validity",
+      "group": "*",
+      "id": "V3",
+      "oracle": "SURV-06/07, gate H6, memo rows 54/56: no starvation death with a way the subject judged open and never attempted",
+      "per_seed": {
+        "42": 0,
+        "43": 0,
+        "44": 0,
+        "45": 0,
+        "46": 0
+      },
+      "scope": "run",
+      "violations": 0,
+      "world": "frontier_living_world"
+    },
+    {
+      "class": "validity",
+      "group": "*",
+      "id": "V4",
+      "oracle": "D43, D44, gate H4: a kind whose diet lacks a food class never eats it (the inn's meal needs prepared, checked by the transfer it was served through; every other meal is a consumption of an item, counted when its class is outside the eater's diet). Picking up or carrying a non-diet item is not a V4 breach",
+      "per_seed": {
+        "42": 0,
+        "43": 0,
+        "44": 0,
+        "45": 0,
+        "46": 0
+      },
+      "scope": "run",
+      "violations": 0,
+      "world": "frontier_living_world"
+    },
+    {
+      "class": "validity",
+      "group": "*",
+      "id": "V5",
+      "oracle": "LAW-POSITION-IN-WORLD, Bible 06 topology: a moved, alive entity stays inside the world extent",
+      "per_seed": {
+        "42": 0,
+        "43": 0,
+        "44": 0,
+        "45": 0,
+        "46": 0
+      },
+      "scope": "run",
+      "violations": 0,
+      "world": "frontier_living_world"
+    },
+    {
+      "class": "validity",
+      "group": "*",
+      "id": "V6",
+      "oracle": "EXCH-02, D38, gate H7: total coin changes only by declared world creation (an added entity's starting purse), so the net change beyond it is exactly 0",
+      "per_seed": {
+        "42": 0,
+        "43": 0,
+        "44": 0,
+        "45": 0,
+        "46": 0
+      },
+      "scope": "run",
+      "violations": 0,
+      "world": "frontier_living_world"
+    },
+    {
+      "class": "validity",
+      "group": "*",
+      "id": "V8",
+      "oracle": "D67/D70: every mid-run entity add carries a declared, well-formed spawn source",
+      "per_seed": {
+        "42": 0,
+        "43": 0,
+        "44": 0,
+        "45": 0,
+        "46": 0
+      },
+      "scope": "run",
+      "violations": 0,
+      "world": "frontier_living_world"
+    },
+    {
+      "class": "outcome",
+      "floor": 0.05,
+      "group": "meat+plant+prepared",
+      "id": "O1.starvation_share",
+      "scope": "pooled",
+      "value": 0.0,
+      "world": "urban_political"
+    },
+    {
+      "class": "outcome",
+      "floor": 1.0,
+      "group": "meat+plant+prepared",
+      "id": "O2.seeds_with_survivors",
+      "scope": "pooled",
+      "value": 5.0,
+      "world": "urban_political"
+    },
+    {
+      "class": "validity",
+      "group": "*",
+      "id": "V7",
+      "oracle": "SURV-06, D44/D48, gate H5: a declared way is used at least once in a world where it can be (the hunt instance: every feeding kill is eaten from somewhere)",
+      "scope": "pooled",
+      "violations": 0,
+      "world": "urban_political"
+    },
+    {
+      "class": "outcome",
+      "floor": 3.0,
+      "floor_base": 3.0,
+      "floor_rel": 0.1,
+      "group": "meat+plant+prepared",
+      "id": "O1.at_risk",
+      "k": 2.0,
+      "mean": 30.0,
+      "per_seed": {
+        "42": 30.0,
+        "43": 30.0,
+        "44": 30.0,
+        "45": 30.0,
+        "46": 30.0
+      },
+      "scope": "run",
+      "se": 0.0,
+      "world": "urban_political"
+    },
+    {
+      "class": "outcome",
+      "floor": 3.0,
+      "floor_base": 3.0,
+      "floor_rel": 0.1,
+      "group": "meat+plant+prepared",
+      "id": "O1.starved",
+      "k": 2.0,
+      "mean": 0.0,
+      "per_seed": {
+        "42": 0.0,
+        "43": 0.0,
+        "44": 0.0,
+        "45": 0.0,
+        "46": 0.0
+      },
+      "scope": "run",
+      "se": 0.0,
+      "world": "urban_political"
+    },
+    {
+      "class": "outcome",
+      "floor": 2.0,
+      "group": "meat+plant+prepared",
+      "id": "O2.deaths",
+      "k": 2.0,
+      "key": "COMBAT",
+      "mean": 9.8,
+      "per_seed": {
+        "42": 9.0,
+        "43": 7.0,
+        "44": 6.0,
+        "45": 15.0,
+        "46": 12.0
+      },
+      "scope": "run",
+      "se": 1.6552945357246849,
+      "world": "urban_political"
+    },
+    {
+      "class": "outcome",
+      "floor": 2.0,
+      "group": "meat+plant+prepared",
+      "id": "O2.deaths",
+      "k": 2.0,
+      "key": "DEFEAT",
+      "mean": 0.8,
+      "per_seed": {
+        "42": 0.0,
+        "43": 2.0,
+        "44": 1.0,
+        "45": 1.0,
+        "46": 0.0
+      },
+      "scope": "run",
+      "se": 0.3741657386773941,
+      "world": "urban_political"
+    },
+    {
+      "class": "outcome",
+      "floor": 2.0,
+      "group": "meat+plant+prepared",
+      "id": "O2.deaths",
+      "k": 2.0,
+      "key": "HAZARD",
+      "mean": 3.4,
+      "per_seed": {
+        "42": 3.0,
+        "43": 6.0,
+        "44": 4.0,
+        "45": 2.0,
+        "46": 2.0
+      },
+      "scope": "run",
+      "se": 0.7483314773547882,
+      "world": "urban_political"
+    },
+    {
+      "class": "outcome",
+      "floor": 2.0,
+      "group": "meat+plant+prepared",
+      "id": "O2.deaths",
+      "k": 2.0,
+      "key": "OLD_AGE",
+      "mean": 0.0,
+      "per_seed": {
+        "42": 0.0,
+        "43": 0.0,
+        "44": 0.0,
+        "45": 0.0,
+        "46": 0.0
+      },
+      "scope": "run",
+      "se": 0.0,
+      "world": "urban_political"
+    },
+    {
+      "class": "outcome",
+      "floor": 2.0,
+      "group": "meat+plant+prepared",
+      "id": "O2.deaths",
+      "k": 2.0,
+      "key": "SLEEP_DEPRIVATION",
+      "mean": 0.0,
+      "per_seed": {
+        "42": 0.0,
+        "43": 0.0,
+        "44": 0.0,
+        "45": 0.0,
+        "46": 0.0
+      },
+      "scope": "run",
+      "se": 0.0,
+      "world": "urban_political"
+    },
+    {
+      "class": "outcome",
+      "floor": 2.0,
+      "group": "meat+plant+prepared",
+      "id": "O2.deaths",
+      "k": 2.0,
+      "key": "STARVATION",
+      "mean": 0.0,
+      "per_seed": {
+        "42": 0.0,
+        "43": 0.0,
+        "44": 0.0,
+        "45": 0.0,
+        "46": 0.0
+      },
+      "scope": "run",
+      "se": 0.0,
+      "world": "urban_political"
+    },
+    {
+      "class": "outcome",
+      "floor": 2.0,
+      "group": "meat+plant+prepared",
+      "id": "O2.deaths",
+      "k": 2.0,
+      "key": "UNKNOWN",
+      "mean": 0.0,
+      "per_seed": {
+        "42": 0.0,
+        "43": 0.0,
+        "44": 0.0,
+        "45": 0.0,
+        "46": 0.0
+      },
+      "scope": "run",
+      "se": 0.0,
+      "world": "urban_political"
+    },
+    {
+      "class": "outcome",
+      "floor": 3.0,
+      "group": "meat+plant+prepared",
+      "id": "O2.population",
+      "k": 2.0,
+      "mean": 30.0,
+      "per_seed": {
+        "42": 30.0,
+        "43": 30.0,
+        "44": 30.0,
+        "45": 30.0,
+        "46": 30.0
+      },
+      "scope": "run",
+      "se": 0.0,
+      "tick": 1,
+      "world": "urban_political"
+    },
+    {
+      "class": "outcome",
+      "floor": 3.0,
+      "group": "meat+plant+prepared",
+      "id": "O2.population",
+      "k": 2.0,
+      "mean": 18.8,
+      "per_seed": {
+        "42": 20.0,
+        "43": 18.0,
+        "44": 24.0,
+        "45": 16.0,
+        "46": 16.0
+      },
+      "scope": "run",
+      "se": 1.4966629547095764,
+      "tick": 500,
+      "world": "urban_political"
+    },
+    {
+      "class": "outcome",
+      "floor": 3.0,
+      "group": "meat+plant+prepared",
+      "id": "O2.population",
+      "k": 2.0,
+      "mean": 18.2,
+      "per_seed": {
+        "42": 20.0,
+        "43": 17.0,
+        "44": 24.0,
+        "45": 14.0,
+        "46": 16.0
+      },
+      "scope": "run",
+      "se": 1.7435595774162693,
+      "tick": 1000,
+      "world": "urban_political"
+    },
+    {
+      "class": "outcome",
+      "floor": 3.0,
+      "group": "meat+plant+prepared",
+      "id": "O2.population",
+      "k": 2.0,
+      "mean": 18.2,
+      "per_seed": {
+        "42": 20.0,
+        "43": 17.0,
+        "44": 24.0,
+        "45": 14.0,
+        "46": 16.0
+      },
+      "scope": "run",
+      "se": 1.7435595774162693,
+      "tick": 1500,
+      "world": "urban_political"
+    },
+    {
+      "class": "outcome",
+      "floor": 3.0,
+      "group": "meat+plant+prepared",
+      "id": "O2.population",
+      "k": 2.0,
+      "mean": 17.8,
+      "per_seed": {
+        "42": 18.0,
+        "43": 17.0,
+        "44": 24.0,
+        "45": 14.0,
+        "46": 16.0
+      },
+      "scope": "run",
+      "se": 1.6852299546352716,
+      "tick": 2000,
+      "world": "urban_political"
+    },
+    {
+      "class": "outcome",
+      "floor": 3.0,
+      "group": "meat+plant+prepared",
+      "id": "O2.population",
+      "k": 2.0,
+      "mean": 17.8,
+      "per_seed": {
+        "42": 18.0,
+        "43": 17.0,
+        "44": 24.0,
+        "45": 14.0,
+        "46": 16.0
+      },
+      "scope": "run",
+      "se": 1.6852299546352716,
+      "tick": 2500,
+      "world": "urban_political"
+    },
+    {
+      "class": "outcome",
+      "floor": 3.0,
+      "group": "meat+plant+prepared",
+      "id": "O2.population",
+      "k": 2.0,
+      "mean": 17.4,
+      "per_seed": {
+        "42": 18.0,
+        "43": 16.0,
+        "44": 24.0,
+        "45": 13.0,
+        "46": 16.0
+      },
+      "scope": "run",
+      "se": 1.833030277982336,
+      "tick": 3000,
+      "world": "urban_political"
+    },
+    {
+      "class": "outcome",
+      "floor": 3.0,
+      "group": "meat+plant+prepared",
+      "id": "O2.population",
+      "k": 2.0,
+      "mean": 17.0,
+      "per_seed": {
+        "42": 18.0,
+        "43": 16.0,
+        "44": 22.0,
+        "45": 13.0,
+        "46": 16.0
+      },
+      "scope": "run",
+      "se": 1.4832396974191324,
+      "tick": 3500,
+      "world": "urban_political"
+    },
+    {
+      "class": "outcome",
+      "floor": 3.0,
+      "group": "meat+plant+prepared",
+      "id": "O2.population",
+      "k": 2.0,
+      "mean": 16.4,
+      "per_seed": {
+        "42": 18.0,
+        "43": 16.0,
+        "44": 19.0,
+        "45": 13.0,
+        "46": 16.0
+      },
+      "scope": "run",
+      "se": 1.0295630140987,
+      "tick": 4000,
+      "world": "urban_political"
+    },
+    {
+      "class": "outcome",
+      "floor": 3.0,
+      "group": "meat+plant+prepared",
+      "id": "O2.population",
+      "k": 2.0,
+      "mean": 16.4,
+      "per_seed": {
+        "42": 18.0,
+        "43": 16.0,
+        "44": 19.0,
+        "45": 13.0,
+        "46": 16.0
+      },
+      "scope": "run",
+      "se": 1.0295630140987,
+      "tick": 4500,
+      "world": "urban_political"
+    },
+    {
+      "class": "outcome",
+      "floor": 3.0,
+      "group": "meat+plant+prepared",
+      "id": "O2.population",
+      "k": 2.0,
+      "mean": 16.4,
+      "per_seed": {
+        "42": 18.0,
+        "43": 16.0,
+        "44": 19.0,
+        "45": 13.0,
+        "46": 16.0
+      },
+      "scope": "run",
+      "se": 1.0295630140987,
+      "tick": 5000,
+      "world": "urban_political"
+    },
+    {
+      "class": "outcome",
+      "floor": 1.0,
+      "group": "meat+plant+prepared",
+      "id": "O2.survivors",
+      "k": 2.0,
+      "mean": 1.0,
+      "per_seed": {
+        "42": 1.0,
+        "43": 1.0,
+        "44": 1.0,
+        "45": 1.0,
+        "46": 1.0
+      },
+      "scope": "run",
+      "se": 0.0,
+      "world": "urban_political"
+    },
+    {
+      "class": "outcome",
+      "floor": 5.0,
+      "group": "meat+plant+prepared",
+      "id": "O4.accepted",
+      "k": 2.0,
+      "key": "CARRIED_FOOD",
+      "mean": 15.4,
+      "per_seed": {
+        "42": 12.0,
+        "43": 12.0,
+        "44": 18.0,
+        "45": 20.0,
+        "46": 15.0
+      },
+      "scope": "run",
+      "se": 1.5999999999999999,
+      "world": "urban_political"
+    },
+    {
+      "class": "outcome",
+      "floor": 5.0,
+      "group": "meat+plant+prepared",
+      "id": "O4.accepted",
+      "k": 2.0,
+      "key": "CHEST",
+      "mean": 0.0,
+      "per_seed": {
+        "42": 0.0,
+        "43": 0.0,
+        "44": 0.0,
+        "45": 0.0,
+        "46": 0.0
+      },
+      "scope": "run",
+      "se": 0.0,
+      "world": "urban_political"
+    },
+    {
+      "class": "outcome",
+      "floor": 5.0,
+      "group": "meat+plant+prepared",
+      "id": "O4.accepted",
+      "k": 2.0,
+      "key": "COMBAT",
+      "mean": 11.8,
+      "per_seed": {
+        "42": 10.0,
+        "43": 8.0,
+        "44": 8.0,
+        "45": 19.0,
+        "46": 14.0
+      },
+      "scope": "run",
+      "se": 2.1071307505705477,
+      "world": "urban_political"
+    },
+    {
+      "class": "outcome",
+      "floor": 5.0,
+      "group": "meat+plant+prepared",
+      "id": "O4.accepted",
+      "k": 2.0,
+      "key": "CORPSE",
+      "mean": 0.4,
+      "per_seed": {
+        "42": 0.0,
+        "43": 0.0,
+        "44": 1.0,
+        "45": 1.0,
+        "46": 0.0
+      },
+      "scope": "run",
+      "se": 0.24494897427831777,
+      "world": "urban_political"
+    },
+    {
+      "class": "outcome",
+      "floor": 5.0,
+      "group": "meat+plant+prepared",
+      "id": "O4.accepted",
+      "k": 2.0,
+      "key": "CORPSE_FOOD",
+      "mean": 0.0,
+      "per_seed": {
+        "42": 0.0,
+        "43": 0.0,
+        "44": 0.0,
+        "45": 0.0,
+        "46": 0.0
+      },
+      "scope": "run",
+      "se": 0.0,
+      "world": "urban_political"
+    },
+    {
+      "class": "outcome",
+      "floor": 5.0,
+      "group": "meat+plant+prepared",
+      "id": "O4.accepted",
+      "k": 2.0,
+      "key": "CRAFTING",
+      "mean": 0.0,
+      "per_seed": {
+        "42": 0.0,
+        "43": 0.0,
+        "44": 0.0,
+        "45": 0.0,
+        "46": 0.0
+      },
+      "scope": "run",
+      "se": 0.0,
+      "world": "urban_political"
+    },
+    {
+      "class": "outcome",
+      "floor": 5.0,
+      "group": "meat+plant+prepared",
+      "id": "O4.accepted",
+      "k": 2.0,
+      "key": "GROUND_ITEM",
+      "mean": 0.2,
+      "per_seed": {
+        "42": 0.0,
+        "43": 1.0,
+        "44": 0.0,
+        "45": 0.0,
+        "46": 0.0
+      },
+      "scope": "run",
+      "se": 0.19999999999999998,
+      "world": "urban_political"
+    },
+    {
+      "class": "outcome",
+      "floor": 5.0,
+      "group": "meat+plant+prepared",
+      "id": "O4.accepted",
+      "k": 2.0,
+      "key": "HOME_STORAGE",
+      "mean": 0.0,
+      "per_seed": {
+        "42": 0.0,
+        "43": 0.0,
+        "44": 0.0,
+        "45": 0.0,
+        "46": 0.0
+      },
+      "scope": "run",
+      "se": 0.0,
+      "world": "urban_political"
+    },
+    {
+      "class": "outcome",
+      "floor": 5.0,
+      "group": "meat+plant+prepared",
+      "id": "O4.accepted",
+      "k": 2.0,
+      "key": "INFORMATION_PURCHASE",
+      "mean": 0.0,
+      "per_seed": {
+        "42": 0.0,
+        "43": 0.0,
+        "44": 0.0,
+        "45": 0.0,
+        "46": 0.0
+      },
+      "scope": "run",
+      "se": 0.0,
+      "world": "urban_political"
+    },
+    {
+      "class": "outcome",
+      "floor": 5.0,
+      "group": "meat+plant+prepared",
+      "id": "O4.accepted",
+      "k": 2.0,
+      "key": "INHERIT",
+      "mean": 7.8,
+      "per_seed": {
+        "42": 7.0,
+        "43": 9.0,
+        "44": 4.0,
+        "45": 10.0,
+        "46": 9.0
+      },
+      "scope": "run",
+      "se": 1.0677078252031311,
+      "world": "urban_political"
+    },
+    {
+      "class": "outcome",
+      "floor": 5.0,
+      "group": "meat+plant+prepared",
+      "id": "O4.accepted",
+      "k": 2.0,
+      "key": "NODE",
+      "mean": 14.2,
+      "per_seed": {
+        "42": 14.0,
+        "43": 14.0,
+        "44": 14.0,
+        "45": 14.0,
+        "46": 15.0
+      },
+      "scope": "run",
+      "se": 0.19999999999999998,
+      "world": "urban_political"
+    },
+    {
+      "class": "outcome",
+      "floor": 5.0,
+      "group": "meat+plant+prepared",
+      "id": "O4.accepted",
+      "k": 2.0,
+      "key": "QUEST",
+      "mean": 0.0,
+      "per_seed": {
+        "42": 0.0,
+        "43": 0.0,
+        "44": 0.0,
+        "45": 0.0,
+        "46": 0.0
+      },
+      "scope": "run",
+      "se": 0.0,
+      "world": "urban_political"
+    },
+    {
+      "class": "outcome",
+      "floor": 5.0,
+      "group": "meat+plant+prepared",
+      "id": "O4.accepted",
+      "k": 2.0,
+      "key": "RECRUIT",
+      "mean": 0.0,
+      "per_seed": {
+        "42": 0.0,
+        "43": 0.0,
+        "44": 0.0,
+        "45": 0.0,
+        "46": 0.0
+      },
+      "scope": "run",
+      "se": 0.0,
+      "world": "urban_political"
+    },
+    {
+      "class": "outcome",
+      "floor": 5.0,
+      "group": "meat+plant+prepared",
+      "id": "O4.accepted",
+      "k": 2.0,
+      "key": "SHOP_BUY",
+      "mean": 0.0,
+      "per_seed": {
+        "42": 0.0,
+        "43": 0.0,
+        "44": 0.0,
+        "45": 0.0,
+        "46": 0.0
+      },
+      "scope": "run",
+      "se": 0.0,
+      "world": "urban_political"
+    },
+    {
+      "class": "outcome",
+      "floor": 5.0,
+      "group": "meat+plant+prepared",
+      "id": "O4.accepted",
+      "k": 2.0,
+      "key": "SHOP_SELL",
+      "mean": 0.0,
+      "per_seed": {
+        "42": 0.0,
+        "43": 0.0,
+        "44": 0.0,
+        "45": 0.0,
+        "46": 0.0
+      },
+      "scope": "run",
+      "se": 0.0,
+      "world": "urban_political"
+    },
+    {
+      "class": "outcome",
+      "floor": 5.0,
+      "group": "meat+plant+prepared",
+      "id": "O4.accepted",
+      "k": 2.0,
+      "key": "TAX",
+      "mean": 0.0,
+      "per_seed": {
+        "42": 0.0,
+        "43": 0.0,
+        "44": 0.0,
+        "45": 0.0,
+        "46": 0.0
+      },
+      "scope": "run",
+      "se": 0.0,
+      "world": "urban_political"
+    },
+    {
+      "class": "outcome",
+      "floor": 5.0,
+      "group": "meat+plant+prepared",
+      "id": "O4.accepted",
+      "k": 2.0,
+      "key": "TOWN_SERVICE",
+      "mean": 2217.2,
+      "per_seed": {
+        "42": 2275.0,
+        "43": 1514.0,
+        "44": 2796.0,
+        "45": 1697.0,
+        "46": 2804.0
+      },
+      "scope": "run",
+      "se": 269.0522997485805,
+      "world": "urban_political"
+    },
+    {
+      "class": "outcome",
+      "floor": 5.0,
+      "group": "meat+plant+prepared",
+      "id": "O4.accepted",
+      "k": 2.0,
+      "key": "WAGE",
+      "mean": 0.0,
+      "per_seed": {
+        "42": 0.0,
+        "43": 0.0,
+        "44": 0.0,
+        "45": 0.0,
+        "46": 0.0
+      },
+      "scope": "run",
+      "se": 0.0,
+      "world": "urban_political"
+    },
+    {
+      "class": "outcome",
+      "floor": 2.0,
+      "group": "*",
+      "id": "O6.feeding_kills",
+      "k": 2.0,
+      "mean": 0.0,
+      "per_seed": {
+        "42": 0.0,
+        "43": 0.0,
+        "44": 0.0,
+        "45": 0.0,
+        "46": 0.0
+      },
+      "scope": "run",
+      "se": 0.0,
+      "world": "urban_political"
+    },
+    {
+      "class": "outcome",
+      "floor": 2.0,
+      "group": "*",
+      "id": "O6.kills_not_eaten",
+      "k": 2.0,
+      "mean": 0.0,
+      "per_seed": {
+        "42": 0.0,
+        "43": 0.0,
+        "44": 0.0,
+        "45": 0.0,
+        "46": 0.0
+      },
+      "scope": "run",
+      "se": 0.0,
+      "world": "urban_political"
+    },
+    {
+      "class": "validity",
+      "group": "*",
+      "id": "V2",
+      "oracle": "Bible 03 conservation, gate H7: meat leaves a body only by being taken, by the whole body being looted, or through the MEAT_DECAYED sink, and made = taken + looted + vanished + remaining",
+      "per_seed": {
+        "42": 0,
+        "43": 0,
+        "44": 0,
+        "45": 0,
+        "46": 0
+      },
+      "scope": "run",
+      "violations": 0,
+      "world": "urban_political"
+    },
+    {
+      "class": "validity",
+      "group": "*",
+      "id": "V3",
+      "oracle": "SURV-06/07, gate H6, memo rows 54/56: no starvation death with a way the subject judged open and never attempted",
+      "per_seed": {
+        "42": 0,
+        "43": 0,
+        "44": 0,
+        "45": 0,
+        "46": 0
+      },
+      "scope": "run",
+      "violations": 0,
+      "world": "urban_political"
+    },
+    {
+      "class": "validity",
+      "group": "*",
+      "id": "V4",
+      "oracle": "D43, D44, gate H4: a kind whose diet lacks a food class never eats it (the inn's meal needs prepared, checked by the transfer it was served through; every other meal is a consumption of an item, counted when its class is outside the eater's diet). Picking up or carrying a non-diet item is not a V4 breach",
+      "per_seed": {
+        "42": 0,
+        "43": 0,
+        "44": 0,
+        "45": 0,
+        "46": 0
+      },
+      "scope": "run",
+      "violations": 0,
+      "world": "urban_political"
+    },
+    {
+      "class": "validity",
+      "group": "*",
+      "id": "V5",
+      "oracle": "LAW-POSITION-IN-WORLD, Bible 06 topology: a moved, alive entity stays inside the world extent",
+      "per_seed": {
+        "42": 0,
+        "43": 0,
+        "44": 0,
+        "45": 0,
+        "46": 0
+      },
+      "scope": "run",
+      "violations": 0,
+      "world": "urban_political"
+    },
+    {
+      "class": "validity",
+      "group": "*",
+      "id": "V6",
+      "oracle": "EXCH-02, D38, gate H7: total coin changes only by declared world creation (an added entity's starting purse), so the net change beyond it is exactly 0",
+      "per_seed": {
+        "42": 0,
+        "43": 0,
+        "44": 0,
+        "45": 0,
+        "46": 0
+      },
+      "scope": "run",
+      "violations": 0,
+      "world": "urban_political"
+    },
+    {
+      "class": "validity",
+      "group": "*",
+      "id": "V8",
+      "oracle": "D67/D70: every mid-run entity add carries a declared, well-formed spawn source",
+      "per_seed": {
+        "42": 0,
+        "43": 0,
+        "44": 0,
+        "45": 0,
+        "46": 0
+      },
+      "scope": "run",
+      "violations": 0,
+      "world": "urban_political"
+    }
+  ],
+  "rebaseline": {
+    "previous_version": 1,
+    "memo_row": "owner_decision_memo row 97",
+    "pr": "#948",
+    "changes": [
+      {
+        "row": "O1.starvation_share:pooled:crowded_frontier:meat+plant+prepared",
+        "before": 0.005263157894736842,
+        "after": 0.0
+      },
+      {
+        "row": "O1.starvation_share:pooled:frontier_living_world:meat+plant+prepared",
+        "before": 0.006289308176100629,
+        "after": 0.0
+      },
+      {
+        "row": "O1.starvation_share:pooled:urban_political:meat+plant+prepared",
+        "before": 0.006666666666666667,
+        "after": 0.0
+      },
+      {
+        "row": "O1.starved:run:crowded_frontier:meat+plant+prepared",
+        "before": 0.2,
+        "after": 0.0
+      },
+      {
+        "row": "O1.starved:run:frontier_living_world:meat+plant+prepared",
+        "before": 0.2,
+        "after": 0.0
+      },
+      {
+        "row": "O1.starved:run:urban_political:meat+plant+prepared",
+        "before": 0.2,
+        "after": 0.0
+      },
+      {
+        "row": "O2.deaths:run:crowded_frontier:meat+plant+prepared:COMBAT",
+        "before": 19.8,
+        "after": 27.2
+      },
+      {
+        "row": "O2.deaths:run:crowded_frontier:meat+plant+prepared:DEFEAT",
+        "before": 9.8,
+        "after": 3.2
+      },
+      {
+        "row": "O2.deaths:run:crowded_frontier:meat+plant+prepared:HAZARD",
+        "before": 5.6,
+        "after": 3.0
+      },
+      {
+        "row": "O2.deaths:run:crowded_frontier:meat+plant+prepared:STARVATION",
+        "before": 0.2,
+        "after": 0.0
+      },
+      {
+        "row": "O2.deaths:run:frontier_living_world:graze+plant:COMBAT",
+        "before": 4.4,
+        "after": 2.4
+      },
+      {
+        "row": "O2.deaths:run:frontier_living_world:graze+plant:HAZARD",
+        "before": 0.2,
+        "after": 0.0
+      },
+      {
+        "row": "O2.deaths:run:frontier_living_world:meat+plant+prepared:COMBAT",
+        "before": 11.8,
+        "after": 15.8
+      },
+      {
+        "row": "O2.deaths:run:frontier_living_world:meat+plant+prepared:DEFEAT",
+        "before": 7.4,
+        "after": 0.4
+      },
+      {
+        "row": "O2.deaths:run:frontier_living_world:meat+plant+prepared:HAZARD",
+        "before": 6.4,
+        "after": 4.4
+      },
+      {
+        "row": "O2.deaths:run:frontier_living_world:meat+plant+prepared:STARVATION",
+        "before": 0.2,
+        "after": 0.0
+      },
+      {
+        "row": "O2.deaths:run:frontier_living_world:none:COMBAT",
+        "before": 0.0,
+        "after": 0.2
+      },
+      {
+        "row": "O2.deaths:run:frontier_living_world:none:DEFEAT",
+        "before": 0.2,
+        "after": 0.0
+      },
+      {
+        "row": "O2.deaths:run:urban_political:meat+plant+prepared:COMBAT",
+        "before": 5.6,
+        "after": 9.8
+      },
+      {
+        "row": "O2.deaths:run:urban_political:meat+plant+prepared:DEFEAT",
+        "before": 5.2,
+        "after": 0.8
+      },
+      {
+        "row": "O2.deaths:run:urban_political:meat+plant+prepared:HAZARD",
+        "before": 2.4,
+        "after": 3.4
+      },
+      {
+        "row": "O2.deaths:run:urban_political:meat+plant+prepared:STARVATION",
+        "before": 0.2,
+        "after": 0.0
+      },
+      {
+        "row": "O2.population:run:crowded_frontier:meat+plant+prepared:1000",
+        "before": 12.0,
+        "after": 14.6
+      },
+      {
+        "row": "O2.population:run:crowded_frontier:meat+plant+prepared:1500",
+        "before": 8.8,
+        "after": 11.4
+      },
+      {
+        "row": "O2.population:run:crowded_frontier:meat+plant+prepared:2000",
+        "before": 4.6,
+        "after": 10.4
+      },
+      {
+        "row": "O2.population:run:crowded_frontier:meat+plant+prepared:2500",
+        "before": 3.8,
+        "after": 7.2
+      },
+      {
+        "row": "O2.population:run:crowded_frontier:meat+plant+prepared:3000",
+        "before": 3.0,
+        "after": 6.0
+      },
+      {
+        "row": "O2.population:run:crowded_frontier:meat+plant+prepared:3500",
+        "before": 3.0,
+        "after": 5.6
+      },
+      {
+        "row": "O2.population:run:crowded_frontier:meat+plant+prepared:4000",
+        "before": 2.8,
+        "after": 4.8
+      },
+      {
+        "row": "O2.population:run:crowded_frontier:meat+plant+prepared:4500",
+        "before": 2.8,
+        "after": 4.8
+      },
+      {
+        "row": "O2.population:run:crowded_frontier:meat+plant+prepared:500",
+        "before": 23.6,
+        "after": 24.2
+      },
+      {
+        "row": "O2.population:run:crowded_frontier:meat+plant+prepared:5000",
+        "before": 2.6,
+        "after": 4.6
+      },
+      {
+        "row": "O2.population:run:frontier_living_world:graze+plant:1000",
+        "before": 5.0,
+        "after": 5.8
+      },
+      {
+        "row": "O2.population:run:frontier_living_world:graze+plant:1500",
+        "before": 3.2,
+        "after": 5.6
+      },
+      {
+        "row": "O2.population:run:frontier_living_world:graze+plant:2000",
+        "before": 2.6,
+        "after": 5.6
+      },
+      {
+        "row": "O2.population:run:frontier_living_world:graze+plant:2500",
+        "before": 1.8,
+        "after": 5.4
+      },
+      {
+        "row": "O2.population:run:frontier_living_world:graze+plant:3000",
+        "before": 1.6,
+        "after": 5.0
+      },
+      {
+        "row": "O2.population:run:frontier_living_world:graze+plant:3500",
+        "before": 1.6,
+        "after": 4.6
+      },
+      {
+        "row": "O2.population:run:frontier_living_world:graze+plant:4000",
+        "before": 1.4,
+        "after": 4.0
+      },
+      {
+        "row": "O2.population:run:frontier_living_world:graze+plant:4500",
+        "before": 1.4,
+        "after": 3.8
+      },
+      {
+        "row": "O2.population:run:frontier_living_world:graze+plant:500",
+        "before": 5.8,
+        "after": 6.0
+      },
+      {
+        "row": "O2.population:run:frontier_living_world:graze+plant:5000",
+        "before": 1.4,
+        "after": 3.6
+      },
+      {
+        "row": "O2.population:run:frontier_living_world:meat+plant+prepared:1000",
+        "before": 11.4,
+        "after": 16.2
+      },
+      {
+        "row": "O2.population:run:frontier_living_world:meat+plant+prepared:1500",
+        "before": 10.2,
+        "after": 15.0
+      },
+      {
+        "row": "O2.population:run:frontier_living_world:meat+plant+prepared:2000",
+        "before": 9.4,
+        "after": 14.8
+      },
+      {
+        "row": "O2.population:run:frontier_living_world:meat+plant+prepared:2500",
+        "before": 8.4,
+        "after": 14.6
+      },
+      {
+        "row": "O2.population:run:frontier_living_world:meat+plant+prepared:3000",
+        "before": 8.0,
+        "after": 13.8
+      },
+      {
+        "row": "O2.population:run:frontier_living_world:meat+plant+prepared:3500",
+        "before": 8.0,
+        "after": 13.0
+      },
+      {
+        "row": "O2.population:run:frontier_living_world:meat+plant+prepared:4000",
+        "before": 7.8,
+        "after": 13.0
+      },
+      {
+        "row": "O2.population:run:frontier_living_world:meat+plant+prepared:4500",
+        "before": 7.6,
+        "after": 13.0
+      },
+      {
+        "row": "O2.population:run:frontier_living_world:meat+plant+prepared:500",
+        "before": 17.6,
+        "after": 19.8
+      },
+      {
+        "row": "O2.population:run:frontier_living_world:meat+plant+prepared:5000",
+        "before": 7.6,
+        "after": 13.0
+      },
+      {
+        "row": "O2.population:run:frontier_living_world:none:500",
+        "before": 4.8,
+        "after": 4.6
+      },
+      {
+        "row": "O2.population:run:urban_political:meat+plant+prepared:1000",
+        "before": 19.8,
+        "after": 18.2
+      },
+      {
+        "row": "O2.population:run:urban_political:meat+plant+prepared:1500",
+        "before": 19.0,
+        "after": 18.2
+      },
+      {
+        "row": "O2.population:run:urban_political:meat+plant+prepared:2000",
+        "before": 17.6,
+        "after": 17.8
+      },
+      {
+        "row": "O2.population:run:urban_political:meat+plant+prepared:2500",
+        "before": 16.8,
+        "after": 17.8
+      },
+      {
+        "row": "O2.population:run:urban_political:meat+plant+prepared:3000",
+        "before": 16.8,
+        "after": 17.4
+      },
+      {
+        "row": "O2.population:run:urban_political:meat+plant+prepared:3500",
+        "before": 16.6,
+        "after": 17.0
+      },
+      {
+        "row": "O2.population:run:urban_political:meat+plant+prepared:4000",
+        "before": 16.6,
+        "after": 16.4
+      },
+      {
+        "row": "O2.population:run:urban_political:meat+plant+prepared:4500",
+        "before": 16.6,
+        "after": 16.4
+      },
+      {
+        "row": "O2.population:run:urban_political:meat+plant+prepared:500",
+        "before": 19.8,
+        "after": 18.8
+      },
+      {
+        "row": "O2.population:run:urban_political:meat+plant+prepared:5000",
+        "before": 16.6,
+        "after": 16.4
+      },
+      {
+        "row": "O2.seeds_with_survivors:pooled:frontier_living_world:graze+plant",
+        "before": 2.0,
+        "after": 5.0
+      },
+      {
+        "row": "O2.survivors:run:frontier_living_world:graze+plant",
+        "before": 0.4,
+        "after": 1.0
+      },
+      {
+        "row": "O3.attacks_on_people:run:frontier_living_world:meat",
+        "before": 11.8,
+        "after": 0.6
+      },
+      {
+        "row": "O4.accepted:run:crowded_frontier:meat+plant+prepared:CARRIED_FOOD",
+        "before": 12.0,
+        "after": 21.6
+      },
+      {
+        "row": "O4.accepted:run:crowded_frontier:meat+plant+prepared:COMBAT",
+        "before": 33.6,
+        "after": 33.0
+      },
+      {
+        "row": "O4.accepted:run:crowded_frontier:meat+plant+prepared:CORPSE",
+        "before": 1.6,
+        "after": 3.0
+      },
+      {
+        "row": "O4.accepted:run:crowded_frontier:meat+plant+prepared:CORPSE_FOOD",
+        "before": 9.6,
+        "after": 7.4
+      },
+      {
+        "row": "O4.accepted:run:crowded_frontier:meat+plant+prepared:INHERIT",
+        "before": 27.6,
+        "after": 26.4
+      },
+      {
+        "row": "O4.accepted:run:crowded_frontier:meat+plant+prepared:NODE",
+        "before": 13.4,
+        "after": 13.8
+      },
+      {
+        "row": "O4.accepted:run:crowded_frontier:meat+plant+prepared:TOWN_SERVICE",
+        "before": 508.0,
+        "after": 596.0
+      },
+      {
+        "row": "O4.accepted:run:frontier_living_world:graze+plant:CARRIED_FOOD",
+        "before": 41.4,
+        "after": 73.8
+      },
+      {
+        "row": "O4.accepted:run:frontier_living_world:graze+plant:INHERIT",
+        "before": 2.2,
+        "after": 1.0
+      },
+      {
+        "row": "O4.accepted:run:frontier_living_world:graze+plant:NODE",
+        "before": 62.2,
+        "after": 83.4
+      },
+      {
+        "row": "O4.accepted:run:frontier_living_world:meat:CARRIED_FOOD",
+        "before": 1.2,
+        "after": 0.8
+      },
+      {
+        "row": "O4.accepted:run:frontier_living_world:meat:COMBAT",
+        "before": 7.8,
+        "after": 8.4
+      },
+      {
+        "row": "O4.accepted:run:frontier_living_world:meat:CORPSE",
+        "before": 0.2,
+        "after": 0.0
+      },
+      {
+        "row": "O4.accepted:run:frontier_living_world:meat:CORPSE_FOOD",
+        "before": 3.0,
+        "after": 4.8
+      },
+      {
+        "row": "O4.accepted:run:frontier_living_world:meat:INHERIT",
+        "before": 2.6,
+        "after": 0.8
+      },
+      {
+        "row": "O4.accepted:run:frontier_living_world:meat:NODE",
+        "before": 1.8,
+        "after": 1.4
+      },
+      {
+        "row": "O4.accepted:run:frontier_living_world:meat+plant+prepared:CARRIED_FOOD",
+        "before": 16.4,
+        "after": 18.2
+      },
+      {
+        "row": "O4.accepted:run:frontier_living_world:meat+plant+prepared:COMBAT",
+        "before": 24.2,
+        "after": 18.0
+      },
+      {
+        "row": "O4.accepted:run:frontier_living_world:meat+plant+prepared:CORPSE",
+        "before": 2.0,
+        "after": 1.8
+      },
+      {
+        "row": "O4.accepted:run:frontier_living_world:meat+plant+prepared:CORPSE_FOOD",
+        "before": 4.8,
+        "after": 4.2
+      },
+      {
+        "row": "O4.accepted:run:frontier_living_world:meat+plant+prepared:INHERIT",
+        "before": 16.2,
+        "after": 14.2
+      },
+      {
+        "row": "O4.accepted:run:frontier_living_world:meat+plant+prepared:NODE",
+        "before": 15.2,
+        "after": 14.6
+      },
+      {
+        "row": "O4.accepted:run:frontier_living_world:meat+plant+prepared:TOWN_SERVICE",
+        "before": 312.8,
+        "after": 804.0
+      },
+      {
+        "row": "O4.accepted:run:frontier_living_world:none:COMBAT",
+        "before": 0.2,
+        "after": 0.0
+      },
+      {
+        "row": "O4.accepted:run:urban_political:meat+plant+prepared:CARRIED_FOOD",
+        "before": 18.4,
+        "after": 15.4
+      },
+      {
+        "row": "O4.accepted:run:urban_political:meat+plant+prepared:CORPSE",
+        "before": 1.0,
+        "after": 0.4
+      },
+      {
+        "row": "O4.accepted:run:urban_political:meat+plant+prepared:GROUND_ITEM",
+        "before": 0.0,
+        "after": 0.2
+      },
+      {
+        "row": "O4.accepted:run:urban_political:meat+plant+prepared:INHERIT",
+        "before": 8.4,
+        "after": 7.8
+      },
+      {
+        "row": "O4.accepted:run:urban_political:meat+plant+prepared:NODE",
+        "before": 18.2,
+        "after": 14.2
+      },
+      {
+        "row": "O4.accepted:run:urban_political:meat+plant+prepared:TOWN_SERVICE",
+        "before": 1332.2,
+        "after": 2217.2
+      },
+      {
+        "row": "O6.feeding_kills:run:crowded_frontier:*",
+        "before": 1.6,
+        "after": 1.4
+      },
+      {
+        "row": "O6.feeding_kills:run:frontier_living_world:*",
+        "before": 4.8,
+        "after": 2.4
+      },
+      {
+        "row": "V3:run:crowded_frontier:*",
+        "before": null,
+        "after": 0
+      },
+      {
+        "row": "V3:run:frontier_living_world:*",
+        "before": null,
+        "after": 0
+      },
+      {
+        "row": "V3:run:urban_political:*",
+        "before": null,
+        "after": 0
+      }
+    ],
+    "stop_lines_crossed": [],
+    "owner_ruling": {
+      "ref": "#715 6920465555",
+      "date": "2026-11-16"
+    }
+  },
+  "omitted_validity": [
+    {
+      "known_match": "V1",
+      "row": "V1:run:crowded_frontier:*",
+      "ticket": "TCK-20261007-EAT-BESIDE-THE-INN-FEEDS-A-SUBJECT-THAT-CANNOT-PAY-FREE-MEAL"
+    },
+    {
+      "known_match": "V1",
+      "row": "V1:run:frontier_living_world:*",
+      "ticket": "TCK-20261007-EAT-BESIDE-THE-INN-FEEDS-A-SUBJECT-THAT-CANNOT-PAY-FREE-MEAL"
+    },
+    {
+      "known_match": "V1",
+      "row": "V1:run:urban_political:*",
+      "ticket": "TCK-20261007-EAT-BESIDE-THE-INN-FEEDS-A-SUBJECT-THAT-CANNOT-PAY-FREE-MEAL"
+    }
+  ]
+}

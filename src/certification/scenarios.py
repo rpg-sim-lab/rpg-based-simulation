@@ -20,6 +20,7 @@ class PressureInjector:
             from src.core.builder import V2EntityBuilder
             new_entities[eid] = (V2EntityBuilder(eid)
                 .kind("PRESSURE_TARGET")
+                .identity(occupation="PRESSURE_TARGET")  # M1 step 2: the exact string written to kind
                 .location(0.0, 0.0)
                 .combat(readiness=100.0)
                 .build())
@@ -104,6 +105,7 @@ class ArenaInjector:
         # 1. Hero (Attacker)
         hero = (V2EntityBuilder(1)
             .kind("HERO")
+            .identity(occupation="HERO")  # M1 step 2: the exact string written to kind
             .location(5.0, 5.0)
             .identity(evolution_level=1, evolution_points=0, faction=Faction.HERO_GUILD)
             .combat(hp=100, max_hp=100)
@@ -115,6 +117,7 @@ class ArenaInjector:
         # 2. Monster (Victim)
         monster = (V2EntityBuilder(2)
             .kind("MONSTER")
+            .identity(occupation="MONSTER")  # M1 step 2: the exact string written to kind
             .location(6.0, 5.0)
             .identity(evolution_level=1, evolution_points=0, faction=Faction.MONSTER_HORDE)
             .combat(hp=10, max_hp=10)
@@ -143,6 +146,7 @@ class ArenaInjector:
         # 1. Boss (Attacker)
         boss = (V2EntityBuilder(3)
             .kind("MONSTER")
+            .identity(occupation="MONSTER")  # M1 step 2: the exact string written to kind
             .location(10.0, 10.0)
             .identity(evolution_level=10, faction=Faction.MONSTER_HORDE)
             .combat(hp=1000, max_hp=1000)
@@ -153,6 +157,7 @@ class ArenaInjector:
         # 2. Hero (Victim)
         hero = (V2EntityBuilder(4)
             .kind("HERO")
+            .identity(occupation="HERO")  # M1 step 2: the exact string written to kind
             .location(11.0, 10.0)
             .identity(evolution_level=1, faction=Faction.HERO_GUILD)
             .combat(hp=5, max_hp=5)
@@ -180,6 +185,7 @@ class ArenaInjector:
         # 1. Attacker 1 (North)
         hero1 = (V2EntityBuilder(5)
             .kind("HERO")
+            .identity(occupation="HERO")  # M1 step 2: the exact string written to kind
             .location(10.0, 9.0)
             .identity(faction=Faction.HERO_GUILD)
             .combat(hp=100, max_hp=100)
@@ -190,6 +196,7 @@ class ArenaInjector:
         # 2. Attacker 2 (South)
         hero2 = (V2EntityBuilder(6)
             .kind("HERO")
+            .identity(occupation="HERO")  # M1 step 2: the exact string written to kind
             .location(10.0, 11.0)
             .identity(faction=Faction.HERO_GUILD)
             .combat(hp=100, max_hp=100)
@@ -200,6 +207,7 @@ class ArenaInjector:
         # 3. Monster (Target in the middle at 10,10)
         monster = (V2EntityBuilder(7)
             .kind("MONSTER")
+            .identity(occupation="MONSTER")  # M1 step 2: the exact string written to kind
             .location(10.0, 10.0)
             .identity(faction=Faction.MONSTER_HORDE)
             .combat(hp=50, max_hp=50)
@@ -230,6 +238,7 @@ class ArenaInjector:
         # 1. Attacker (Hero 1)
         hero1 = (V2EntityBuilder(8)
             .kind("HERO")
+            .identity(occupation="HERO")  # M1 step 2: the exact string written to kind
             .location(20.0, 20.0)
             .identity(faction=Faction.HERO_GUILD)
             .combat(hp=100, max_hp=100)
@@ -241,6 +250,7 @@ class ArenaInjector:
         # 2. Ally (Hero 2) - adjacent to Hero 1
         hero2 = (V2EntityBuilder(9)
             .kind("HERO")
+            .identity(occupation="HERO")  # M1 step 2: the exact string written to kind
             .location(21.0, 20.0)
             .identity(faction=Faction.HERO_GUILD)
             .combat(hp=100, max_hp=100)
@@ -251,6 +261,7 @@ class ArenaInjector:
         # 3. Monster (Target)
         monster = (V2EntityBuilder(10)
             .kind("MONSTER")
+            .identity(occupation="MONSTER")  # M1 step 2: the exact string written to kind
             .location(20.0, 21.0)
             .identity(faction=Faction.MONSTER_HORDE)
             .combat(hp=50, max_hp=50)
@@ -280,6 +291,7 @@ class ArenaInjector:
         # 1. Hero (Quester)
         hero = (V2EntityBuilder(11)
             .kind("HERO")
+            .identity(occupation="HERO")  # M1 step 2: the exact string written to kind
             .location(5.0, 5.0)
             .identity(evolution_level=1, faction=Faction.HERO_GUILD)
             .combat(hp=100, max_hp=100)
@@ -303,6 +315,7 @@ class ArenaInjector:
         # 2. Monster (Target)
         goblin = (V2EntityBuilder(12)
             .kind("GOBLIN")
+            .identity(occupation="GOBLIN")  # M1 step 2: the exact string written to kind
             .location(6.0, 5.0)
             .identity(evolution_level=1, faction=Faction.MONSTER_HORDE, role=EntityRole.MONSTER)
             .combat(hp=10, max_hp=10)
@@ -345,6 +358,7 @@ class ArenaInjector:
         # 2. Hero (Strong enough to kill)
         hero = (V2EntityBuilder(13)
             .kind("HERO")
+            .identity(occupation="HERO")  # M1 step 2: the exact string written to kind
             .location(50.0, 50.0)
             .identity(evolution_level=5, faction=Faction.HERO_GUILD, role=EntityRole.HERO)
             .combat(hp=100, max_hp=100)
@@ -356,6 +370,7 @@ class ArenaInjector:
         # 3. Monster (Weak)
         monster = (V2EntityBuilder(14)
             .kind("GOBLIN")
+            .identity(occupation="GOBLIN")  # M1 step 2: the exact string written to kind
             .location(51.0, 50.0)
             .identity(evolution_level=1, faction=Faction.MONSTER_HORDE, role=EntityRole.MONSTER)
             .combat(hp=1, max_hp=1)
@@ -400,6 +415,7 @@ class GameplayInjector:
         new_entities = dict(state.entities)
         new_entities[1] = (V2EntityBuilder(1)
             .kind("actor")
+            .identity(occupation="actor")  # M1 step 2: the exact string written to kind
             .location(0.0, 0.0)
             .properties({"work_kind": "ENTITY_MOVE", "payload": {"target_position": (0.0, float(distance))}})
             .combat(readiness=100.0)
@@ -420,6 +436,7 @@ class GameplayInjector:
         from src.core.builder import V2EntityBuilder
         actor = (V2EntityBuilder(1)
             .kind("actor")
+            .identity(occupation="actor")  # M1 step 2: the exact string written to kind
             .location(0.0, 1.0)
             .interaction(target_node_id=100, progress=0)
             .inventory(max_slots=10)
@@ -460,6 +477,7 @@ class GameplayInjector:
         # 2. Hero at Town (0.0, 0.0) with Craft Intent but no materials
         actor = (V2EntityBuilder(1)
             .kind("hero")
+            .identity(occupation="hero")  # M1 step 2: the exact string written to kind
             .location(0.0, 0.0)
             .identity(
                 craft_target="craft_steel_sword",

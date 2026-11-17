@@ -82,7 +82,7 @@ class BossService:
 
         def _is_active_living_boss(entity) -> bool:
             return (
-                entity.kind == "world_boss"
+                entity.identity.occupation == "world_boss"
                 and entity.lifecycle.active
                 and entity.combat.alive
             )
@@ -214,7 +214,7 @@ class BossService:
 
         def _is_active_living_lair_occupant(entity) -> bool:
             return (
-                entity.kind == "dragonkin"
+                entity.identity.occupation == "dragonkin"
                 and entity.lifecycle.active
                 and entity.combat.alive
             )
