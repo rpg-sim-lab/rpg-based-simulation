@@ -207,6 +207,12 @@ Source: `agent-working/stored_artifacts/TCK-20261109-M1-BASIC-WILD-BIRTHS-FOR-EV
   - The newborn's `home_region_id` and `home_position`/`leash_radius` are ALLOWED, as newborn values only, and must never gate eligibility.
   - `public_reputation` stays REMOVED (no read, no seeding by births) until rpg-designer answers Q18a, which is now a question.
   - rpg-designer acks the three code-level rulings and cover v2.
+  - lead-planner's CORRECTION (2026-11-18): lead-planner-u24's messages disagree on `home_position`/`leash_radius`, so those writes stay OUT of the hook push until u24 clarifies. `home_region_id` is IN as a newborn value. `public_reputation` is OUT.
+- Cover v4 (the same stored file, body sha256 9b00482c; it replaces v3) carries Q19 (a): `birth_record` gains `world_seed: Optional[int] = None`.
+  - With None, combo_seed keeps today's expression exactly; births passes `state.seed`.
+  - Two tests: the default is unchanged, and two seeds give different combined profiles for the same parents and tick.
+  - Options (b) and (c) are rejected.
+  - If rpg-designer rules Q18a (b), the reputation disclosure reads "builder default; births do not apply idea 53".
 - No Births Law text is committed until rpg-designer rules.
 
 ## Out of Scope

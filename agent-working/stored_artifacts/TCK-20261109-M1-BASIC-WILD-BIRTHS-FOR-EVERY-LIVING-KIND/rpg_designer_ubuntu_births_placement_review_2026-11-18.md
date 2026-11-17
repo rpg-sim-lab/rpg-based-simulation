@@ -11,9 +11,10 @@ tags: []
 ---
 
 # Births hook placement packet: rpg-designer-ubuntu's review cover (2026-11-18)
-- **Packet:** rpg-implementer-ubuntu's `placement_packet.md` at local commit b423a6541. I recomputed sha256 2aa4beb76a17f2455d478d109b58e6a4bd3bd9bd483ed4fefde346ad532778b4 from `git show` and it matches.
+- **Packet:** rpg-implementer-ubuntu's `placement_packet.md` at local commit a75d1103e. I recomputed sha256 088701b6c33464c667829f9f5dc7836ee969e7a4c60aa1e48545c6e30ea1b38f from `git show` and it matches.
+- **Supersedes** the b423a6541 packet (2aa4beb7...). Diffed: the only change is that the optional Births Law bullet is removed. The packet now says the replacement text is rpg-designer's to rule. That text is in correction 1 below.
 - **Supersedes** the 2371f2c46 packet (f3fe7cc9...). I diffed the two: only 2 lines changed. One is the header's line-number note. The other drops `next_entity_id_set` from the §2 writes, because ApplyPath's `_counter_past_adds` already advances `next_entity_id` past every added id and a test pins that. The position, the cadence key, the docs text and the case are unchanged.
-- **Cover version:** v3 of this cover. v1 was 4c9eeeea and v2 was 7df74bd7. v2 added the 2371f2c46 → b423a6541 update, the three code-level rulings and the resolved `_last_id` note. v3 settles correction 2 (the unruled reads).
+- **Cover version:** v4 of this cover. v1 was 4c9eeeea, v2 was 7df74bd7 and v3 was 91b0358b. v2 added the 2371f2c46 → b423a6541 update, the three code-level rulings and the resolved `_last_id` note. v3 settled correction 2 (the unruled reads). v4 adds the a75d1103e packet, the implementer's confirmation, the Q19 ruling, and the faction and genetics facts.
 - **Cited head:** 073f415e9.
 - **Planner check:** rpg-planner-ubuntu checked world_dynamics.py at 2371f2c46 (the gate at :203; the hook after the gated block, before "# 4. Regional Transformations").
 
@@ -44,6 +45,19 @@ tags: []
   1. The genetics fallback RNG is keyed by (world seed, parent id) at the call site, the same rule as D3's personality draw. The shared helper is unchanged.
   2. `population_young_births_delta` = the number of newborns, not 1 per pair. The packet's "=1" holds only at litter 1.
   3. A newborn's `home_region_id` = the mother's, else the birth region, omitted when None and disclosed with G1a.
+
+## v4 additions
+- **Settled with rpg-designer** (its update, relayed by lead-planner). Code-level ruling 3 and Q18b STAND. The mother's home_region_id, home_position and leash_radius are read only to set the newborn's values, never to gate eligibility. Gating would need a births ruling to be cited. **Q18a is SUSPENDED:** public_reputation stays removed from the hook unless rpg-designer accepts it. My reply is in drafts/rpg-designer-ubuntu-births-reply-item3.md. The approved placement (outside the gate at 30) and the verbatim Births Law text are as rpg-designer ruled.
+- **Implementer confirmation** (head 2a7a21fb0). It agrees with the planner's read: `_find_mate` uses only the mother's position, `mate_radius_tiles` (Chebyshev), species, the interval and the used-set. In all 3 gate worlds every t0 body has one shared reputation value, home_position None and leash 0, so no gate figure moves.
+- **Faction:** the newborn copies `identity.faction` and `properties["faction_id"]` from the mother. This is v2 Q5 as ruled.
+- **Genetics fallback:** keyed at the call site by `state.seed*1_000_003 + parent.id`, with a test (code-level ruling 1, now implemented). Measured at seed 42: `lifecycle.genetic_profile` is None on every t0 body (55/55, 30/30, 38/38), so the fallback fires for every first-generation parent. The step report says so.
+- **Q19: `birth_record`'s combination key has no world seed. Ruling (a).**
+  - `combo_seed = parent_a_id*1_000_003 + parent_b_id*97 + birth_tick` (src/core/builder.py:695).
+  - At a75d1103e, the only caller that passes parents is births (`archetype_factory.py:189`). `generator.py:204` calls it parentless (both ids None), so it never combines.
+  - Add an optional `world_seed: Optional[int] = None` to `birth_record`. When it is None, `combo_seed` is exactly today's expression, so every other caller is unchanged. Births pass `state.seed`, and the seed is mixed into `combo_seed`.
+  - Tests: one pins that the None default reproduces today's value; one pins that two seeds give different combined profiles for the same parents and tick.
+  - `builder.py` is not on the pre-bind list, and an optional parameter that keeps the default changes no shared behaviour. So this is a cc.
+  - (b) is rejected: it leaves a known id-only key in place. (c) is rejected: it changes every caller.
 
 ## Bible
 - **ch05:** the "Humanoid Reproduction" section (about line 524) and its paths list (about lines 338-345) still describe the removed step. They are B5 placeholders for rpg-designer and are not edited in this PR.
