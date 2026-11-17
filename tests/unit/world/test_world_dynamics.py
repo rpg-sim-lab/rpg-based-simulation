@@ -411,27 +411,62 @@ def test_lair_occupant_death_does_not_dissolve_or_transform_the_lair_place():
     assert unchanged_place.transformed_tick is None
 
 
-def test_world_dynamics_folds_camp_and_calamity_world_updates_into_final_update():
-    """TCK-20260902-REPRODUCTION-POPULATION-PRESSURE-CLOSURE: regression guard for the
-    world_dynamics.py:174-182 dropped-world_updates bug -- camp_state_update.world_updates/
-    calamity_update.world_updates were never folded into the function's final returned
-    StateUpdate.world_updates. A CampService-level-only test would still pass even if this
-    bug reappeared, since the drop happens one layer up, inside resolve_dynamics() itself;
-    this drives the full call and asserts the reproduction-path nudge survives the fold-in."""
-    region = RegionState(id="forest", name="Forest", bounds=(0, 0, 100, 100))
-    camp = CampState(id="camp_1", kind="goblin", position=(50.0, 50.0), maturity=90.0, last_raid_tick=0)
-    state = AuthoritativeState(
-        tick=60, seed=42,
-        regions={"forest": region},
-        camps={"camp_1": camp},
-        feature_flags={"ENABLE_REPRODUCTION_NATURAL_CREATURE_PATH": "ON"},
-    )
-    generator = EntityGenerator(42)
-    cadence = SystemCadence(world_dynamics=1)
+def test_world_dynamics_folds_the_births_world_update_into_final_update(monkeypatch):
+    """TCK-20260902-REPRODUCTION-POPULATION-PRESSURE-CLOSURE: regression guard that a sub-phase's
+    world_updates are folded into the function's final returned StateUpdate (the original drop was one
+    layer above CampService). A births-level-only test would still pass if that bug reappeared, so this
+    drives the full call and asserts the births nudge survives the fold-in (birth chance forced to 1)."""
+    from src.core.builder import V2EntityBuilder
+    from src.world import births
 
-    refined = WorldDynamicsSystem.resolve_dynamics(state, StateUpdate(), generator, cadence)
+    real = births.get_catalog()
+
+    class _CertainCatalog:
+        def get_reproduction_profile(self, profile_id):
+            return real.get_reproduction_profile(profile_id).model_copy(update={"birth_chance_per_check": 1.0})
+
+        def __getattr__(self, name):
+            return getattr(real, name)
+
+    monkeypatch.setattr(births, "get_catalog", lambda: _CertainCatalog())
+    region = RegionState(id="forest", name="Forest", bounds=(0, 0, 100, 100))
+    parents = {i: V2EntityBuilder(i).kind("human").location(50.0, 50.0).build() for i in (1, 2)}
+    state = AuthoritativeState(tick=60, seed=42, regions={"forest": region}, entities=parents, next_entity_id=3)
+    generator = EntityGenerator(42)
+    generator._last_id = 2
+
+    refined = WorldDynamicsSystem.resolve_dynamics(state, StateUpdate(), generator, SystemCadence(world_dynamics=1))
 
     assert refined.world_updates["forest"].population_young_births_delta == 1
+
+
+def test_births_and_world_dynamics_apply_in_one_fixed_order_on_a_tick_where_both_fire(monkeypatch):
+    """Rulings condition 2: the births sub-phase runs after the world_dynamics block and before regional transformation,
+    so on a tick where both fire the births ids come after every id the world_dynamics block allocated."""
+    from src.core.builder import V2EntityBuilder
+    from src.world import births
+
+    real = births.get_catalog()
+
+    class _CertainCatalog:
+        def get_reproduction_profile(self, profile_id):
+            return real.get_reproduction_profile(profile_id).model_copy(update={"birth_chance_per_check": 1.0})
+
+        def __getattr__(self, name):
+            return getattr(real, name)
+
+    monkeypatch.setattr(births, "get_catalog", lambda: _CertainCatalog())
+    region = RegionState(id="forest", name="Forest", bounds=(0, 0, 100, 100))
+    parents = {i: V2EntityBuilder(i).kind("human").location(50.0, 50.0).build() for i in (1, 2)}
+    state = AuthoritativeState(tick=150, seed=42, regions={"forest": region}, entities=parents, next_entity_id=3)  # 150 = lcm(30, 50)
+    generator = EntityGenerator(42)
+    generator._last_id = 2
+    refined = WorldDynamicsSystem.resolve_dynamics(state, StateUpdate(), generator, SystemCadence())
+
+    ids = [e.id for e in refined.entities_add]
+    born = [e.id for e in refined.entities_add if e.lifecycle.parent_a_entity_id == 1]
+    assert len(born) == 1 and ids == sorted(ids) and born[0] == max(ids)
+    assert refined.next_entity_id_set == max(ids) + 1
 
 
 def test_resolve_dynamics_threads_faction_directives_to_camp_service():

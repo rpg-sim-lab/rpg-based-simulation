@@ -114,10 +114,10 @@ def test_magical_demonic_birth_nudge_decision():
 
 def test_flag_registered_as_its_own_distinct_key():
     """Flag-name-uniqueness guard: ENABLE_REPRODUCTION_MAGICAL_DEMONIC_PATH is its own
-    key in feature_flags.py, not aliased to ENABLE_REPRODUCTION_NATURAL_CREATURE_PATH."""
+    key in feature_flags.py and stays, while the natural-creature path flag is retired with the births system."""
     from src.domains.optimization.feature_flags import FeatureFlagManager, FeatureMode
 
     manager = FeatureFlagManager()
     assert manager.get_flag_mode("ENABLE_REPRODUCTION_MAGICAL_DEMONIC_PATH") == FeatureMode.OFF
     assert "ENABLE_REPRODUCTION_MAGICAL_DEMONIC_PATH" in manager.get_all_flags()
-    assert "ENABLE_REPRODUCTION_NATURAL_CREATURE_PATH" in manager.get_all_flags()
+    assert "ENABLE_REPRODUCTION_NATURAL_CREATURE_PATH" not in manager.get_all_flags()
