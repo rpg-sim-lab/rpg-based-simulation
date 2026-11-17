@@ -14566,6 +14566,23 @@
   - regression
   - simulation-quality
 - type: ticket
+  path: agent-working/tickets/done/TCK-20261020-SUSPENDED-PROJECTS-ARE-NEVER-RESUMED-SLOT-LEAK.md
+  ticket_id: TCK-20261020-SUSPENDED-PROJECTS-ARE-NEVER-RESUMED-SLOT-LEAK
+  title: Suspended projects are never resumed and never expire, so they hold project
+    slots forever (slot leak)
+  tier: standard
+  ticket_type: bug
+  date: '2026-10-20'
+  related_code_areas:
+  - src/ai/intelligence.py (~L1771 capacity gate)
+  - src/core/strategic.py (is_live_project, has_project_capacity)
+  artifact_files:
+  - agent-working/stored_artifacts/TCK-20261020-SUSPENDED-PROJECTS-ARE-NEVER-RESUMED-SLOT-LEAK/investigation.md
+  - agent-working/stored_artifacts/TCK-20261020-SUSPENDED-PROJECTS-ARE-NEVER-RESUMED-SLOT-LEAK/plan.md
+  - agent-working/stored_artifacts/TCK-20261020-SUSPENDED-PROJECTS-ARE-NEVER-RESUMED-SLOT-LEAK/rpg_designer_ruling_2026-11-16.md
+  - agent-working/stored_artifacts/TCK-20261020-SUSPENDED-PROJECTS-ARE-NEVER-RESUMED-SLOT-LEAK/test_plan.md
+  tags: []
+- type: ticket
   path: agent-working/tickets/done/TCK-20261020-UNIT-TESTS-SHARE-DATA-RUNS-DIRS-UNDER-XDIST.md
   ticket_id: TCK-20261020-UNIT-TESTS-SHARE-DATA-RUNS-DIRS-UNDER-XDIST
   title: Unit tests that write fixed data/runs dirs fail under pytest-xdist because
@@ -14740,20 +14757,6 @@
   artifact_files: []
   tags:
   - observability
-- type: ticket
-  path: agent-working/tickets/todos/TCK-20261020-SUSPENDED-PROJECTS-ARE-NEVER-RESUMED-SLOT-LEAK.md
-  ticket_id: TCK-20261020-SUSPENDED-PROJECTS-ARE-NEVER-RESUMED-SLOT-LEAK
-  title: Suspended projects are never resumed and never expire, so they hold project
-    slots forever (slot leak)
-  tier: standard
-  ticket_type: bug
-  date: '2026-10-20'
-  related_code_areas:
-  - src/ai/intelligence.py (~L1771 capacity gate)
-  - src/core/strategic.py (is_live_project, has_project_capacity)
-  artifact_files:
-  - agent-working/stored_artifacts/TCK-20261020-SUSPENDED-PROJECTS-ARE-NEVER-RESUMED-SLOT-LEAK/rpg_designer_ruling_2026-11-16.md
-  tags: []
 - type: ticket
   path: agent-working/tickets/todos/TCK-20261020-TERMINAL-PROJECTS-ARE-RECORDS-WITH-NO-RETENTION-BOUND.md
   ticket_id: TCK-20261020-TERMINAL-PROJECTS-ARE-RECORDS-WITH-NO-RETENTION-BOUND
