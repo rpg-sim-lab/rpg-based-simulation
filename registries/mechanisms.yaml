@@ -1323,11 +1323,11 @@ mechanisms:
         decision 8). Its runtime reach is measured there; its effect is not.
   - id: sense_gated_detection
     layer: entity
-    summary: "A creature notices a neighbour only if it can sense it, using the senses its kind has and the signals the neighbour gives off."
+    summary: "A creature notices a neighbour only if it can sense it, using the senses its species has (derived at read from the shared resolver, not stored) and the signals the neighbour gives off; at night vision drops two levels unless the species has night vision."
     systems: [cognition]
     depends_on: []
     state: done
-    implemented_by: [src/world/perception/gate.py::PerceptionGate]
+    implemented_by: [src/world/perception/gate.py::PerceptionGate, src/content/species_senses.py::species_sense_profile, src/engine/perception_signals.py::emitted_signals]
     verified:
       instrument: corpus_run
       verdict: observed
