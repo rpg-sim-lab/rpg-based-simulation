@@ -12,6 +12,7 @@ from src.core.state import GroundItemState
 from src.domains.world_emergence.schema import WorldEvent as _WorldEvent, WorldEventCategory as _WorldEventCategory
 from src.engine.carcass import RAW_MEAT_ITEM
 from src.engine.hostility import is_feeding_kill
+from src.world.births import BirthService
 
 if TYPE_CHECKING:
     from src.core.state import AuthoritativeState, RegionState, EntityState
@@ -299,13 +300,11 @@ class WorldDynamicsSystem:
             if not displacement_update.is_noop():
                 update = update.merge(displacement_update)
 
-            # 3.10 Humanoid Reproduction
-            if (flags.get("ENABLE_REPRODUCTION_HUMANOID_PATH", "OFF") == "ON"
-                    and should_run(state.tick, None, cadence.reproduction_humanoid)):
-                from src.world.reproduction_humanoid import HumanoidReproductionService
-                repro_update = HumanoidReproductionService.process_reproduction(state, generator)
-                if not repro_update.is_noop():
-                    update = update.merge(repro_update)
+        # 3.10 Births: its own cadence, outside the world_dynamics gate (30 does not divide 50), unflagged.
+        if should_run(state.tick, None, cadence.births):
+            births_update = BirthService.process_births(state, generator)
+            if not births_update.is_noop():
+                update = update.merge(births_update).replace(next_entity_id_set=max(generator._last_id + 1, update.next_entity_id_set or 0))
 
         # 4. Regional Transformations (Type Shifting)
         from src.world.transformation import TransformationService
