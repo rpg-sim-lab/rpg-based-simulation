@@ -188,6 +188,15 @@ Source: `agent-working/stored_artifacts/TCK-20261109-M1-BASIC-WILD-BIRTHS-FOR-EV
   - B5 is enough only if the hook runs inside an existing phase and changes no listed sequence or inventory.
   - Any change to kernel.md's 7-phase loop is a STOP back to rpg-designer.
   - The implementer writes a placement packet: position, reads and writes, cadence key, verbatim before/after docs/engine text, and the case with its reason. It goes to rpg-designer-ubuntu, then through the leads to rpg-designer. No push carries the hook until rpg-designer rules.
+- Placement packet: impl commit b423a6541, `placement_packet.md`, sha256 2aa4beb7. It supersedes f3fe7cc9 at 2371f2c46; only the header and the §2 Writes line changed. rpg-designer-ubuntu's review cover v2 is stored as `rpg_designer_ubuntu_births_placement_review_2026-11-18.md` (body sha256 7df74bd7; it replaces 4c9eeeea). It recommends (a): outside the gate at 30.
+- Code-level rulings, as cc, carried in that cover:
+  - the genetics fallback is keyed by (state.seed, parent id) at the call site, and the shared helper is unchanged;
+  - `population_young_births_delta` = the number of newborns per pair;
+  - newborn `home_region_id` = the mother's, else the birth region, omitted when None and disclosed with G1a.
+- Open with rpg-designer-ubuntu as Q18 (its answers go into v3 of the cover):
+  - the newborn's `public_reputation` (the parents' average, via birth_record);
+  - `home_position`/`leash_radius` (copied from the mother).
+- No Births Law text is committed until rpg-designer rules.
 
 ## Out of Scope
 - §12.4 (packs, herds, territory), milestones 2 and 3, and any rule work not listed in §12.3 (owner ruling only).
