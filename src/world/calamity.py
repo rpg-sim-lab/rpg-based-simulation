@@ -80,7 +80,7 @@ class CalamityService:
         if not world_boss_spawn_enabled(state):
             return []
         return [generator.spawn_monster(
-            state=state, kind="world_boss", pos=target_region.center, difficulty_tier=4
+            state=state, species="world_boss", occupation="world_boss", pos=target_region.center, difficulty_tier=4
         )]
 
     @staticmethod
@@ -96,7 +96,7 @@ class CalamityService:
                 continue
                 
             # Calamity intensity increases on Hero death in high-hazard regions
-            if entity.kind == "hero" and region.hazard_level > 0.5:
+            if entity.identity.occupation == "hero" and region.hazard_level > 0.5:
                 intensity_delta = 0.05
                 current_intensity = region.calamity_intensity
                 world_updates[region.id] = WorldUpdate(

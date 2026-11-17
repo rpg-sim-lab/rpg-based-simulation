@@ -46,6 +46,7 @@ Filed by rpg-planner on 2026-11-09 as a filing only (no code), on lead-planner-u
 - No reader treats `kind` as an occupation (a test or probe shows this).
 - Occupation is a typed, durable field, visible in the read model, with tests (CLAUDE.md durable state rule).
 - Tests for the new behaviour, plus the parity ledger and Bible updates in the same change.
+- **Stage 4b (the context-less compile) is done before this item closes** (rpg-designer 3045e98a): every `WorldCompiler.compile` call with no content context (149 test calls in 43 files and 3 tools; no src caller) is given a context, owned by TCK-20261020-TESTS-THAT-COMPILE-A-WORLD-WITHOUT-THE-CONTENT-CONTEXT-TRIAGE, and the legacy path (kind = the role label, occupation equal to it) is then removed. Step 4 keeps that path, named as the legacy path in the compiler and pinned by a test, until 4b lands.
 
 ### Ruling, staged plan and own-job counts (rpg-designer, 2026-11-16, v1; owner dispatch #715 6920334481, M1 pace 6912138476)
 Copied verbatim from `.claude/handover/drafts/rpg-designer-kind-is-species-ruling.md` (sha256 67cc6f6dd151afcb34ed68252182048ba714881085b4427b9e77860589fbd4fb); only the heading levels are lowered by one so the ticket's section order holds.
@@ -350,10 +351,122 @@ src/core/ (entity identity), content schemas
 
 - 2026-11-16 (rpg-planner relay of rpg-designer's ruling (a), on lane C's finding that the step-1 scan skipped src/certification, src/perf and src/testing): the 25 scenario-fixture `V2EntityBuilder(...).kind(...)` chains (certification/scenarios.py 18, perf/scenarios.py 6, testing/scenario_runner.py 1) each also set `occupation` to the same expression as `kind`. K2 v1.1 is one per-file test iterating that file's chains (tests/unit/core/test_occupation_fixture_writers.py). STOP condition: a certification, arena or perf test that pins a state hash or canonical dict the field moves is reported before it is changed; a certification expectation change needs the owner's OK. None moved in the step-2 run (certification 86 passed, arena 4 passed under the not-slow filter, perf 501 passed, scenario API 20 passed). **Recorded for step 4 (not blocking steps 2-3):** before step 4, re-run the step-1 scan over src/certification, src/perf and src/testing (readers AND writers) and bring the rows to the designer, because their kind literals ("HERO", "MONSTER", "actor", "GOBLIN") are not species ids.
 
+- 2026-11-17 (rpg-planner relay of rpg-designer, step 3): (1) B4 `SPAWN_KIND_CATALOG_FACTION` needs NO change in step 3: it reads the spawner's label argument, never an entity's kind; at step 4 it is looked up with the occupation argument, same keys (this corrects 665b9718's listing). (2) The rescan of src/certification, src/perf and src/testing is accepted (no entity-kind reader there; the one non-builder hit, perf/scenarios.py:459, is a building kind); the moves list and the two renames (`BOSS_ENTITY_KINDS` to `BOSS_ENTITY_OCCUPATIONS`, `SPAWN_CADENCE_EXCLUDED_KINDS` to `SPAWN_CADENCE_EXCLUDED_OCCUPATIONS`, a name only) match the rulings. (3) Fixtures: adding `occupation=` equal to the fixture's kind literal wherever a hand-built test entity reaches a moved reader is OK with NO assertion changes; if a test still fails after its fixture has occupation, it is a reader that is not a plain label compare: stop and report.
+
+- 2026-11-17 (rpg-planner relay of rpg-designer, step 4): the designer's rulings on lane A's step-4 inventory, FINAL. Copied verbatim from `.claude/handover/drafts/rpg-designer-kind-is-species-step4-rulings.md` (sha256 3045e98a3480254940dc82409ad85c43f73baaf4a2adbdb7f7a3ad3cdfbfac2f); heading levels lowered. They override 67cc6f6d and 665b9718 where they differ.
+
+- Ticket: TCK-20261109-M1-KIND-ALWAYS-MEANS-SPECIES-AND-OCCUPATION-IS-ITS-OWN-FIELD.
+- Rulings this builds on: 67cc6f6d (the plan), 665b9718 (step 1), 39dcca3d (step 2 review).
+- Evidence: lane A, branch rpg-m1-kind-step4-inventory 12e3ef990, evidence/step4_inventory.md (sha256 prefix a3cca32382239d4c), read in full.
+- Where a ruling below differs from 665b9718, this note wins. Each such point is named.
+
+#### Corrections to my own earlier rulings
+1. **B7 was wrong.** The quest victim is built `.kind("GOBLIN")` (certification/scenarios.py:317), so `"GOBLIN" == "GOBLIN"` matches today, and tests/arena/test_arena_quests.py relies on it.
+   - New ruling: at step 4, move all three literals together in one edit:
+     - the victim's kind becomes "goblin" (a species id), and its occupation stays "GOBLIN";
+     - target_kind (:309) becomes "goblin";
+     - the same for :372/:373.
+   - The quest still completes, so NO test assertion changes, and it's not an owner question.
+2. **K6b stays as a count, but the apply-path refusal is DROPPED.**
+   - No entity `kind_set` writer exists in src (lane A; world_dynamics.py:317 is a region).
+   - A guard on a path with no writer is code with nothing to guard.
+   - K6b (kind never changes in a run, = 0) still measures the law.
+   - Fix the stale comment at event_shapers.py:1065.
+
+#### Writers at step 4: every one writes kind = a species id, occupation = its label
+- **Classic compile WITH a context:** kind = the population's species_id; occupation = `pop_spec.role.lower()`.
+  - The refusal for a species-less population is already live there (`require_declared_diet`, compiler.py:762).
+  - Every src caller passes a context (6 of 6).
+- **Classic compile WITHOUT a context:** this is 149 test calls in 43 files, plus 3 tools, and no src caller.
+  - **STAGE 4b, not in this step.** The context-less compile keeps today's behaviour (kind = the role label, with occupation equal to it), named as the legacy path in a docstring and pinned by a test.
+  - It is owned by the open TCK-20261020-TESTS-THAT-COMPILE-A-WORLD-WITHOUT-THE-CONTENT-CONTEXT-TRIAGE, which gives those calls a context. Add a line to that ticket saying so.
+  - **This M1 item does not close until 4b is done**, and the ticket says that as an AC.
+  - Simpler option: make step 4 refuse context-less compiles now. Cost: 149 test calls, 43 files and 3 tools in one step, mixed into the behaviour step's measurement.
+- **WorldEntitySpawner** (entity_spawner.py:129/:144):
+  - The `or "human"` default goes. A profile with no species_id is a typed refusal.
+  - The swallowed archetype-resolve errors (entity_spawner.py:106-108, resolver.py:1040-1047) RAISE a typed error, and are no longer swallowed.
+  - occupation = `profile.role_id`.
+  - Fixtures: the 4 test profiles without a species get `species_id="human"`, with no assertion change.
+  - test_occupation_field.py:121 (`no_species`) was written for the step-2 placeholder. It becomes the refusal test. That's our own step-2 test changing with the step's meaning, not a weakening.
+- **Archetype path:** occupation = role_id or profession_id. Note the archetype YAML key is `species` (resolver.py:515); rule (2) reads that key.
+- **spawn_hero** (generator.py:139): species from the named archetype `adventurer_hero` (key `species`: human); occupation "hero". No code-chosen species.
+- **spawn_monster / spawn_natural_creature_offspring:**
+  - The `kind="monster"` default goes. `species` and `occupation` become required, separate parameters.
+  - build_team_battle (certification:74) passes goblin / "monster".
+  - The 4 test callers pass both, with no assertion change.
+- **Camp spawns** (camp.py:72, :98):
+  - kind = the camp's creature species (camp.kind).
+  - occupation = the camp's spawn label (goblin_warrior / orc_warrior from `camp_spawn_kind`), or None where there is none.
+  - So no label→species mapping is needed: the camp already knows its species.
+  - Rule (3), "a content mapping", is not used anywhere in this step.
+- **Newborns** (generator.py:207, :241, :287): kind = the parents' species (humanoid) or the camp species; occupation = **None**. This replaces the step-2 placeholder.
+- **creature_territory respawn** (:60): passes the parent's species AND occupation.
+- **Boss spawns** (calamity.py:82, boss.py:146/:153):
+  - kind = "world_boss" on the **named non-living allowlist**.
+  - occupation = "world_boss", or "ancient_sentinel" for the sentinel. Write the final label at spawn; don't spawn as ancient_sentinel and then replace it.
+  - Owning ticket, to be filed (P3, under the calamity backlog): "a world boss body declares a species".
+  - The feature is OFF by default (ENABLE_WORLD_BOSS_SPAWN), so no gate run reaches it.
+- **boss.py:258, the dragonkin lair occupant:** kind = "dragonkin" (a species); occupation = "dragonkin".
+- **Orchestrator survivor rebuild** (:821): the `or "entity"` fallback becomes a typed refusal, since an empty carried kind means a pre-field record.
+  - The 17 EntityCarryForward test constructions that reach reconstruction get `kind=`. That's a fixture change.
+- **testing/scenario_runner.py:53:** the `"HERO"` default goes. The spec declares a species (typed refusal otherwise), and its test spec gets one.
+- **V2EntityBuilder's default kind "hero"** (builder.py:95):
+  - The 3 src builders that rely on it name kind explicitly:
+    - perf/scenarios.py:339: human;
+    - perf/scenarios.py:390 copies the SOURCE entity's kind and occupation, which fixes the latent mislabel lane A found;
+    - readiness/harness.py:100: human.
+  - A static test: no src builder chain without `.kind(`.
+  - The default itself stays for tests in this step. Test fixtures (1003 literals, 610 files: TEST, actor, npc…) need a fixture policy, not allowlist rows.
+  - File a P3 ticket: "test fixtures declare a species through a helper; the builder default goes".
+- **Labels with no writer:** bandit, bear, harpy, golem (B4 keys) and goblin_raider: nothing to do. B4 keeps its keys, read with the occupation argument.
+
+#### Certification / perf / testing fixtures (Table 2)
+- kind: **human** for HERO / hero / actor / ACTOR / PRESSURE_TARGET, **goblin** for MONSTER / monster / GOBLIN. occupation = the old literal.
+- No allowlist entries for fixtures.
+- Species brings species-keyed behaviour (diet, needs, body). If any certification, arena or perf assertion then fails, STOP and send it to me, before any assertion change.
+- tests/unit/core/test_occupation_fixture_writers.py is re-keyed to the step-4 rule: kind is a species id, and occupation is the label.
+
+#### stronghold
+- No writer since D71, so it is **not** allowlisted.
+- The step-3 reader (environment.py:86, now on occupation) and the test_aura fixture stay as they are, as a dead branch.
+- Add a line to TCK-20261109-M1-RETIRE-ROLE-KIND-AND-FACTION-NAME-BRANCHES-IN-STAGES to remove it there. Removing it here would be scope creep.
+
+#### Stale comments to fix in step 4
+- event_shapers.py:1065 (kind_set);
+- state.py:111 (EntityCarryForward, kind="entity");
+- the generator and spawner step-2 placeholder comments.
+
+#### The allowlist, final for step 4
+- **world_boss**: owning ticket to be filed as above. Spawned only with the flag ON.
+- Nothing else. K6 counts against this list only.
+
+#### Counts: unchanged from 67cc6f6d and 665b9718, except as noted
+- K6b: the count stays; the apply-path guard is dropped (correction 2).
+- **K6c (static, new):** src builder chains without `.kind(`: **0**.
+- **K6d (test):** each typed refusal fires:
+  - a species-less profile;
+  - an empty carried kind;
+  - a scenario spec with no species;
+  - an archetype-resolve failure.
+- **K10 (reported):** add the arena quest credit (COMBAT_ARENA_QUESTS still REWARDED).
+
+- 2026-11-17 (rpg-planner relay of rpg-designer, step 4, Q1-Q3 and the K9 scope; they amend 3045e98a and 665b9718 before any step-4 data). Copied verbatim:
+  - "Q1: (a). Add `magical_demonic_entity` to the non-living allowlist with an owning P3 ticket, the same class as world_boss, since it sits behind the OFF flag ENABLE_REPRODUCTION_MAGICAL_DEMONIC_PATH. The allowlist is now {world_boss, magical_demonic_entity}."
+  - "Q2: occupation = whatever spawn_kind() returns today: goblin_warrior or orc_warrior, else the species string for wolf, spider, troll and slime camps. kind = the camp species. That keeps K9 at 0 and leaves B4 untouched. A species-valued label on a wolf is name-branch retirement's cleanup; add a line to that ticket. This replaces my 'else None' for camps."
+  - "Q3: keep occupation 'goblin' for spawn_goblin, as written today. This replaces my step-1 'None'."
+  - "K9 scope: K9 = entities whose occupation differs from their step-3 value, EXCLUDING the two changes I ruled: (i) newborns: occupation None (generator :207, :241, :287); (ii) the archetype and WorldEntitySpawner paths: occupation = role_id / profession_id instead of the step-2 species placeholder. Both are counted and REPORTED as named deltas, with no bar. Every other path (classic compile at t0, camp spawns, respawns, spawn_hero, spawn_goblin, bosses) must give K9 = 0."
+
+- 2026-11-17 (rpg-implementer-2, step 4 build): the non-living allowlist is `src/core/species.py::NON_LIVING_KIND_ALLOWLIST` = {world_boss: TCK-20261117-A-WORLD-BOSS-BODY-DECLARES-A-SPECIES, magical_demonic_entity: TCK-20261117-A-MAGICAL-DEMONIC-ENTITY-BODY-DECLARES-A-SPECIES} (both drafted P3 in todos/ for the planner's review). Two ruling points read as written and reported to the planner: evolution.py has no default tier (the dead digit branches assigned nothing either way, so the whole gear block is removed, behaviour-neutral), and the ruling's perf/scenarios.py line numbers :339 and :390 are swapped (both clones copy their source entity's kind).
+
+- 2026-11-17 (rpg-planner relay of rpg-designer, step 4, ruling (c), option (i), and a new guard). Copied verbatim: "The test-side spawn_monster and spawn_natural_creature_offspring calls keep species=X and occupation=X (the same literal), with NO assertion changes. List them (file:line, literal) in the P3 fixture-policy ticket you're drafting. K6's scope is confirmed: the run counts cover the 3 gate worlds, plus src writers statically (K6c). Tests are out of K6. NEW guard, since the spawners don't validate the species argument in this step: K6c's static test must ALSO cover every src CALL of spawn_monster and spawn_natural_creature_offspring, checking each passes a species id (from content or a camp species), not a label. Any src call passing a non-species literal fails K6c." The guard is `tests/unit/core/test_occupation_field.py::test_k6c_every_src_spawn_call_passes_a_species_id_not_a_label`; the list is in TCK-20261117-TEST-FIXTURES-DECLARE-A-SPECIES-THROUGH-A-HELPER-AND-THE-BUILDER-DEFAULT-GOES.
+- 2026-11-17 (rpg-planner, on the step-4 build): (a) K10's goblin-gear row reads 0 in BOTH arms: `src/engine/evolution.py`'s gear block matched the substring "goblin" in `kind` and then a tier digit ("1" or "2") in it; no writer produces a digit, so it never assigned a slot, and it still would not once `kind` is "goblin" (there is no default tier). The designer's ruling removes the dead branches; the whole block is removed, behaviour-neutral. (b) The inventory's and ruling's line numbers for the perf builders are swapped: in `src/perf/scenarios.py`, the clone of a MONSTER entity into the mixed state (`V2EntityBuilder(new_id).replace_identity(monster.identity)`) and the clone of ANY entity in `build_metropolis_state` (`V2EntityBuilder(entity.id).replace_navigation(...)`) both now copy the source entity's kind (`.kind(monster.kind)`, `.kind(entity.kind)`), which also fixes the latent mislabel (both used to fall to the default "hero"); `src/observability/readiness/harness.py` writes `.kind("human")` for its heroes.
+
 ## Test Summary
-Step 2 of 5 is closed as its own child ticket, TCK-20261117-AN-ENTITY-CARRIES-ITS-OCCUPATION-LABEL-AND-ONE-SPECIES-READ-SPECIES-OF (Test Summary, Files Changed and Completion Summary live there). Steps 3-5 are open.
+Steps 2 and 3 are closed as their own child tickets (TCK-20261117-AN-ENTITY-CARRIES-ITS-OCCUPATION-LABEL-AND-ONE-SPECIES-READ-SPECIES-OF and TCK-20261117-THE-LABEL-READERS-READ-OCCUPATION-NOT-KIND). Steps 4 and 5 are open.
+- Step 4 (head 54aad99a3 plus the fixes below; targeted run, -n 1, one process at a time): K5 ruled dict −2 (evolution row 8, reproduction_humanoid row 24): compares retired by step 4 per the step-1 rulings 665b9718 (approved by rpg-planner, designer and lead). Fixture-only edits: 12 `EntityCarryForward` constructions gained `kind="human"` (test_campaign_orchestrator, test_fame_wiring, test_social_memory); test-side `spawn_monster` / `spawn_natural_creature_offspring` calls pass `species=X, occupation=X`; the 4 `WorldEntitySpawner` profiles got `species_id="human"`.
+- Step 4 approved edits to existing tests: (1) `tests/unit/world/test_natural_creature_reproduction.py:51` now asserts `kind == "goblin"` AND `identity.occupation == "goblin_warrior"` (kind=species step 4, camp spawn rule (Q2 amendment); designer YES relayed by rpg-planner). (2) The two integration fixtures `test_v1_counts_an_unbacked_hunger_drop_through_the_real_kernel.py` and `test_gate_validity_checks_fire_through_the_real_kernel.py` select the worker with `occupation_of(e) == "worker"` (label selector moved to occupation at step 4; selector only, no assertion change). `test_worldbuilding_strategy.py:148` left alone (stage 4b). The 7 `test_corpus_diversity` grade pins moved and are untouched (they equal main's numbers: stale on main).
 
 ## Files Changed
-Step 2: see TCK-20261117-AN-ENTITY-CARRIES-ITS-OCCUPATION-LABEL-AND-ONE-SPECIES-READ-SPECIES-OF. Steps 3-5 open.
+Steps 2 and 3: see the child tickets. Steps 4 and 5 open.
 
 ## Completion Summary

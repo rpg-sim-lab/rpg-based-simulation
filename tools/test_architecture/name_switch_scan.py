@@ -70,11 +70,13 @@ REASONED_EXCLUSIONS: Dict[Tuple[str, str], str] = {
 LEGACY_ENUMS = {"EntityRole", "Faction"}
 # Role and faction words count on any receiver. ``kind`` is also the word for a wound, a lead, an objective, an event: it counts only on an entity-like receiver
 # (``entity.kind``, ``monster.kind``) or as ``entity_kind`` / ``monster_kind`` / ``creature_kind``; ``work_kind``, ``event_kind`` and the like are other records' kinds.
-_ROLE_FACTION = re.compile(r"(?:^|_)(?:role|faction|species|archetype)(?:_id|_name)?$", re.IGNORECASE)
+_ROLE_FACTION = re.compile(r"(?:^|_)(?:role|faction|species|archetype|occupation)(?:_id|_name)?$", re.IGNORECASE)
 _ENTITY_KIND = re.compile(r"^(?:entity|monster|creature|npc)_kind(?:_id|_name)?$", re.IGNORECASE)
+# A call to one of these returns a role or species NAME, so comparing the result to a literal is a name switch (occupation: decision 50; species: decision 46).
+_NAME_HELPERS = {"occupation_of": "occupation", "species_of": "species"}
 _KIND_WORD = re.compile(r"^kind(?:_id|_name)?$", re.IGNORECASE)
 ENTITY_RECEIVERS = frozenset({"entity", "e", "ent", "monster", "creature", "npc", "mob", "target", "attacker", "defender", "victim", "actor", "other", "hero"})
-_TABLE_NAME = re.compile(r"(?:^|_)(?:role|faction|species|archetype)s?(?:_id|_name)?$|(?:^|_)(?:entity|monster|creature|npc)_kind(?:_id|_name)?$", re.IGNORECASE)  # tables: a dict bound to a name that says role or faction (``_FACTION_COMPAT``, ``SPAWN_KIND_CATALOG_FACTION``) or entity kind
+_TABLE_NAME = re.compile(r"(?:^|_)(?:role|faction|species|archetype|occupation)s?(?:_id|_name)?$|(?:^|_)(?:entity|monster|creature|npc)_kind(?:_id|_name)?$", re.IGNORECASE)  # tables: a dict bound to a name that says role or faction (``_FACTION_COMPAT``, ``SPAWN_KIND_CATALOG_FACTION``) or entity kind
 _COMPARE_OPS = (ast.Eq, ast.NotEq, ast.Is, ast.IsNot, ast.In, ast.NotIn)
 
 
@@ -188,6 +190,8 @@ def _subject_word(node: ast.AST, bound: Optional[Mapping[str, str]] = None) -> O
     if isinstance(node, ast.Call) and isinstance(node.func, ast.Name) and node.func.id == "getattr" and len(node.args) >= 2:
         name = _str_name(node.args[1])
         return _word_on(name, node.args[0]) if name else None
+    if isinstance(node, ast.Call) and isinstance(node.func, ast.Name) and node.func.id in _NAME_HELPERS:  # M1: the helpers that read an occupation label or a species id
+        return _NAME_HELPERS[node.func.id]
     if isinstance(node, ast.Attribute):
         return _word_on(node.attr, node.value)
     if isinstance(node, ast.Name):

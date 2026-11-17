@@ -33,8 +33,8 @@ def build_idle_state(
     entities = {
         entity_id: (
             V2EntityBuilder(entity_id)
-            .kind("hero")
-            .identity(occupation="hero")  # M1 step 2: the exact string written to kind
+            .kind("human")
+            .identity(occupation="hero")  # M1 step 4: kind is the species id; occupation is the label the fixture wrote as kind
             .location(float(entity_id % 100), float(entity_id // 100))
             .identity(
                 role=EntityRole.HERO,
@@ -75,8 +75,8 @@ def build_resource_state(
     entities = {
         entity_id: (
             V2EntityBuilder(entity_id)
-            .kind("hero")
-            .identity(occupation="hero")  # M1 step 2: the exact string written to kind
+            .kind("human")
+            .identity(occupation="hero")  # M1 step 4: kind is the species id; occupation is the label the fixture wrote as kind
             .location(float(entity_id % 100), float(entity_id // 100))
             .identity(
                 role=EntityRole.WORKER,
@@ -142,8 +142,8 @@ def build_movement_state(
         
         entities[entity_id] = (
             V2EntityBuilder(entity_id)
-            .kind("hero")
-            .identity(occupation="hero")  # M1 step 2: the exact string written to kind
+            .kind("human")
+            .identity(occupation="hero")  # M1 step 4: kind is the species id; occupation is the label the fixture wrote as kind
             .location(x, y)
             .navigation(
                 target=(tx, ty),
@@ -189,8 +189,8 @@ def build_combat_arena_state(
         entity_id = i + 1
         entities[entity_id] = (
             V2EntityBuilder(entity_id)
-            .kind("hero")
-            .identity(occupation="hero")  # M1 step 2: the exact string written to kind
+            .kind("human")
+            .identity(occupation="hero")  # M1 step 4: kind is the species id; occupation is the label the fixture wrote as kind
             .location(0.0, float(i))
             .identity(
                 role=EntityRole.HERO,
@@ -213,8 +213,8 @@ def build_combat_arena_state(
         entity_id = team_a_count + i + 1
         entities[entity_id] = (
             V2EntityBuilder(entity_id)
-            .kind("monster")
-            .identity(occupation="monster")  # M1 step 2: the exact string written to kind
+            .kind("goblin")
+            .identity(occupation="monster")  # M1 step 4: kind is the species id; occupation is the label the fixture wrote as kind
             .location(5.0, float(i)) # Close enough to trigger combat
             .identity(
                 role=EntityRole.MONSTER,
@@ -262,8 +262,8 @@ def build_strategic_state(
         
         entities[entity_id] = (
             V2EntityBuilder(entity_id)
-            .kind("hero")
-            .identity(occupation="hero")  # M1 step 2: the exact string written to kind
+            .kind("human")
+            .identity(occupation="hero")  # M1 step 4: kind is the species id; occupation is the label the fixture wrote as kind
             .location(float(i % 100), float(i // 100))
             .identity(
                 role=EntityRole.HERO,
@@ -337,6 +337,7 @@ def build_mixed_state(
         occupied.add((x, y))
         entities[new_id] = (
             V2EntityBuilder(new_id)
+            .kind(monster.kind)  # M1 step 4: the clone keeps its source's species (it used to fall to the builder default "hero", a mislabel)
             .replace_identity(monster.identity)
             .replace_combat(monster.combat)
             .location(x, y)
@@ -388,6 +389,7 @@ def _spread_entities_into_regions(
             )
         entities[entity.id] = (
             V2EntityBuilder(entity.id)
+            .kind(entity.kind)
             .replace_navigation(entity.navigation)
             .replace_identity(entity.identity)
             .replace_combat(entity.combat)

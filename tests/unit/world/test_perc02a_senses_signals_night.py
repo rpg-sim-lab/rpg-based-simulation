@@ -28,7 +28,7 @@ def _body(species_id, *, moved=False, asleep=False, lodged=False, alive=True):
     nav = SimpleNamespace(lodged_in=7 if lodged else None, moved_recently=moved)
     task = SimpleNamespace(work_kind="ENTITY_ACT" if asleep else "", payload={"action": "SLEEP"} if asleep else {})
     return SimpleNamespace(
-        kind="fixture", identity=SimpleNamespace(properties={"species_id": species_id}),
+        kind=species_id, identity=SimpleNamespace(properties={"species_id": species_id}),
         navigation=nav, task=task, combat=SimpleNamespace(alive=alive),
     )
 

@@ -51,6 +51,7 @@ Filed by rpg-planner on 2026-11-09 as a filing only (no code), on lead-planner-u
 - TCK-20261109-MILESTONE-1-KINDS-BY-PROPERTIES-EPIC
 
 ## Related Docs
+- docs/plans/systemic_world/m1_kernel_spec_items_2_6.md (the kernel spec + this item's own-job counts; owner answers Q1-Q10, #715 6937049127)
 - docs/plans/systemic_world/roadmap.md (§12.3 milestone 1, §12.5 done criteria)
 - docs/plans/systemic_world/owner_decision_memo.md
 
@@ -66,6 +67,8 @@ src/strategy/, knowledge and memory
 
 ## Implementation Notes
 None yet.
+
+- 2026-11-17 (rpg-planner, from the designer's rule text 800027b5, deeper issue 6): GuildAction.visit writes VAGUE leads with true-map exact coordinates. This item fixes it (a lead keeps only what the teller knew); add a test that a guild-visit lead carries no exact true-map coordinates.
 
 ## Test Summary
 

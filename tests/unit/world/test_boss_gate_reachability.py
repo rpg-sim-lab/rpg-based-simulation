@@ -34,8 +34,8 @@ def test_spawn_monster_at_tier_5_does_not_fall_back_to_tier_1():
     state = AuthoritativeState(tick=0, seed=42)
     gen = EntityGenerator(seed=42)
 
-    tier1_monster = gen.spawn_monster((0, 0), state, kind="world_boss", difficulty_tier=1)
-    tier5_monster = gen.spawn_monster((0, 0), state, kind="world_boss", difficulty_tier=5)
+    tier1_monster = gen.spawn_monster((0, 0), state, species="world_boss", occupation="world_boss", difficulty_tier=1)
+    tier5_monster = gen.spawn_monster((0, 0), state, species="world_boss", occupation="world_boss", difficulty_tier=5)
 
     assert tier5_monster.combat.max_hp > tier1_monster.combat.max_hp
     assert tier5_monster.combat.atk > tier1_monster.combat.atk

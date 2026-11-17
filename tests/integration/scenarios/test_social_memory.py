@@ -234,8 +234,7 @@ def test_consequence_events_fire_at_episode_entity_spawn():
         orchestrator = CampaignOrchestrator(manifest, scenario_event_recorder=recorder)
 
         orchestrator._state.persistent_entities[1] = EntityCarryForward(
-            entity_id=1, level=5, xp=100, equipment={}, reputation=0.95, alive=True,
-        )
+            entity_id=1, level=5, xp=100, equipment={}, reputation=0.95, alive=True, kind="human")
         orchestrator._state.social_memories[1] = SocialMemoryRecord(
             entity_id=1,
             faction_reputation={"default": 0.95},
@@ -263,8 +262,7 @@ def test_consequence_events_noop_without_event_recorder():
     orchestrator = CampaignOrchestrator(manifest)
 
     orchestrator._state.persistent_entities[1] = EntityCarryForward(
-        entity_id=1, level=5, xp=100, equipment={}, reputation=0.95, alive=True,
-    )
+        entity_id=1, level=5, xp=100, equipment={}, reputation=0.95, alive=True, kind="human")
     orchestrator._state.social_memories[1] = SocialMemoryRecord(
         entity_id=1,
         faction_reputation={"default": 0.95},

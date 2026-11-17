@@ -72,7 +72,8 @@ class CampService:
                     offspring = generator.spawn_natural_creature_offspring(
                         camp.position,
                         state=state,
-                        kind=camp.kind,
+                        species=camp.kind,
+                        occupation=CampService.spawn_kind(camp.kind),
                         difficulty_tier=int(camp.maturity / 20.0) + 1,
                         birth_tick=state.tick,
                     )
@@ -98,7 +99,8 @@ class CampService:
                         offspring = generator.spawn_natural_creature_offspring(
                             camp.position,
                             state=state,
-                            kind=CampService.spawn_kind(camp.kind),
+                            species=camp.kind,
+                            occupation=CampService.spawn_kind(camp.kind),
                             difficulty_tier=int(camp.maturity / 20.0) + 1,
                             birth_tick=state.tick,
                         )

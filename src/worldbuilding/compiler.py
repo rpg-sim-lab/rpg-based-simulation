@@ -763,9 +763,12 @@ class WorldCompiler:
                         require_declared_diet(spec.world_id, pop_key, pop_spec, ent_properties.get("species_id"))
                         require_species_sense_profile(ent_properties.get("species_id"), f"world {spec.world_id!r} population {pop_key!r}")
 
+                    # M1 step 4: `kind` is the population's declared species when a context supplies one. A compile with NO context is the legacy path (kind = the role
+                    # label, occupation equal to it), named here and pinned by a test; it is owned by TCK-20261020-TESTS-THAT-COMPILE-A-WORLD-WITHOUT-THE-CONTENT-CONTEXT-TRIAGE (stage 4b).
+                    species_kind = ent_properties.get("species_id") or pop_spec.role.lower()
                     builder = (
                         V2EntityBuilder(next_entity_id)
-                        .kind(pop_spec.role.lower())
+                        .kind(species_kind)
                         .location(float(x), float(y))
                         .navigation(region_id=region_id)
                         .identity(

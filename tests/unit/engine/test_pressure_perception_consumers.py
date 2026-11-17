@@ -56,7 +56,7 @@ def configure_consumers(catalog):
 def _hero(eid: int, pos=(0.0, 0.0), **props):
     e = (
         V2EntityBuilder(eid)
-        .kind("hero")
+        .kind(props.get("species_id", "hero"))  # M1 step 4: kind is the species; the senses come from it (PERC-02)
         .location(float(pos[0]), float(pos[1]))
         .identity(faction=Faction.HERO_GUILD)
         .combat(hp=100, max_hp=100, alive=True, tactical_role="VANGUARD", readiness=100.0)
@@ -72,7 +72,7 @@ def _hero(eid: int, pos=(0.0, 0.0), **props):
 def _monster(eid: int, pos=(1.0, 0.0), **props):
     e = (
         V2EntityBuilder(eid)
-        .kind("monster")
+        .kind(props.get("species_id", "monster"))
         .location(float(pos[0]), float(pos[1]))
         .identity(faction=Faction.MONSTER_HORDE)
         .combat(hp=100, max_hp=100, alive=True, tactical_role="VANGUARD", readiness=100.0)

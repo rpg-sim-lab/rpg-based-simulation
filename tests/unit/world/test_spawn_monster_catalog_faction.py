@@ -18,7 +18,7 @@ CAMP_KINDS = ["goblin_warrior", "orc_warrior", "goblin_raider", "wolf", "slime",
 
 @pytest.mark.parametrize("kind", CAMP_KINDS)
 def test_spawned_monster_carries_its_catalog_faction_and_endurance(kind):
-    mob = EntityGenerator(seed=1).spawn_monster((0.0, 0.0), kind=kind)
+    mob = EntityGenerator(seed=1).spawn_monster((0.0, 0.0), species=kind, occupation=kind)
     faction_id = get_faction_id_str(mob)
     assert faction_id == SPAWN_KIND_CATALOG_FACTION[kind]
     assert mob.identity.faction == Faction.MONSTER_HORDE
@@ -32,7 +32,7 @@ def test_every_mapped_faction_exists_in_the_catalog():
 
 @pytest.mark.parametrize("kind", ["world_boss"])
 def test_kinds_without_a_catalog_faction_are_unchanged(kind):
-    mob = EntityGenerator(seed=1).spawn_monster((0.0, 0.0), kind=kind)
+    mob = EntityGenerator(seed=1).spawn_monster((0.0, 0.0), species=kind, occupation=kind)
     assert "faction_id" not in mob.identity.properties
     assert get_faction_id_str(mob) == "monster_horde"
     assert not get_faction_semantics_service().get_hazard_immunities("monster_horde")
@@ -40,7 +40,7 @@ def test_kinds_without_a_catalog_faction_are_unchanged(kind):
 
 def test_disabling_control_without_the_table_goblin_loses_endurance(monkeypatch):
     monkeypatch.setattr("src.systems.world_systems.generator.SPAWN_KIND_CATALOG_FACTION", {})
-    mob = EntityGenerator(seed=1).spawn_monster((0.0, 0.0), kind="goblin_warrior")
+    mob = EntityGenerator(seed=1).spawn_monster((0.0, 0.0), species="goblin_warrior", occupation="goblin_warrior")
     assert not get_faction_semantics_service().get_hazard_immunities(get_faction_id_str(mob))
 
 
@@ -49,13 +49,13 @@ def test_disabling_control_without_the_table_goblin_loses_endurance(monkeypatch)
 def _state_with_monster_at(pos):
     from src.core.state import AuthoritativeState
     gen = EntityGenerator(seed=1)
-    holder = gen.spawn_monster(pos, kind="goblin_warrior")
+    holder = gen.spawn_monster(pos, species="goblin_warrior", occupation="goblin_warrior")
     return gen, AuthoritativeState(tick=5, seed=1, entities={holder.id: holder})
 
 
 def test_spawn_onto_an_occupied_tile_lands_on_a_free_neighbour():
     gen, state = _state_with_monster_at((10.0, 10.0))
-    mob = gen.spawn_monster((10.0, 10.0), state=state, kind="goblin_warrior")
+    mob = gen.spawn_monster((10.0, 10.0), state=state, species="goblin_warrior", occupation="goblin_warrior")
     x, y = mob.navigation.position
     assert (int(x), int(y)) != (10, 10) and max(abs(int(x) - 10), abs(int(y) - 10)) == 2
     assert mob.navigation.home_position == (10.0, 10.0)
@@ -63,7 +63,7 @@ def test_spawn_onto_an_occupied_tile_lands_on_a_free_neighbour():
 
 def test_same_tick_spawns_do_not_share_a_tile():
     gen, state = _state_with_monster_at((10.0, 10.0))
-    tiles = {tuple(map(int, gen.spawn_monster((10.0, 10.0), state=state, kind="orc_warrior").navigation.position)) for _ in range(8)}
+    tiles = {tuple(map(int, gen.spawn_monster((10.0, 10.0), state=state, species="orc_warrior", occupation="orc_warrior").navigation.position)) for _ in range(8)}
     assert len(tiles) == 8 and (10, 10) not in tiles
 
 
@@ -72,12 +72,12 @@ def test_no_clear_tile_fails_loudly():
     import src.systems.world_systems.generator as g
     with pytest.raises(RuntimeError, match="no clear spawn tile"):
         for _ in range((2 * g._SPAWN_FREE_TILE_RADIUS + 1) ** 2):
-            gen.spawn_monster((10.0, 10.0), state=state, kind="orc_warrior")
+            gen.spawn_monster((10.0, 10.0), state=state, species="orc_warrior", occupation="orc_warrior")
 
 
 def test_free_tile_is_kept_exactly():
     gen, state = _state_with_monster_at((10.0, 10.0))
-    assert gen.spawn_monster((40.0, 40.0), state=state, kind="orc_warrior").navigation.position == (40.0, 40.0)
+    assert gen.spawn_monster((40.0, 40.0), state=state, species="orc_warrior", occupation="orc_warrior").navigation.position == (40.0, 40.0)
 
 
 def _hero(entity_id, pos):
@@ -92,7 +92,7 @@ def test_hero_and_spawned_monster_stay_mutually_hostile(kind):
     """Hostility must keep coming from the legacy bucket: restoring a catalog faction must not make a spawned monster non-hostile."""
     from src.core.state import AuthoritativeState
     from src.engine.legality import LegalityServiceV2
-    mob = EntityGenerator(seed=1).spawn_monster((6.0, 5.0), kind=kind)
+    mob = EntityGenerator(seed=1).spawn_monster((6.0, 5.0), species=kind, occupation=kind)
     hero = _hero(1000, (5.0, 5.0))
     state = AuthoritativeState(tick=5, seed=1, entities={hero.id: hero, mob.id: mob})
     assert LegalityServiceV2.verify_attack_legality(hero, mob, state)[0]
@@ -103,7 +103,7 @@ def test_wild_creature_may_attack_a_hero_exactly_when_the_hero_may_attack_it():
     """CONFLICT-03: permission to attack is symmetric; wild_beast_pack's `wild` alignment changes only when it chooses to fight."""
     from src.core.state import AuthoritativeState
     from src.engine.legality import LegalityServiceV2
-    wolf = EntityGenerator(seed=1).spawn_monster((6.0, 5.0), kind="wolf")
+    wolf = EntityGenerator(seed=1).spawn_monster((6.0, 5.0), species="wolf", occupation="wolf")
     assert get_faction_id_str(wolf) == "wild_beast_pack"
     hero = _hero(1000, (5.0, 5.0))
     state = AuthoritativeState(tick=5, seed=1, entities={hero.id: hero, wolf.id: wolf})
