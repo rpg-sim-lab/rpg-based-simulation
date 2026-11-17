@@ -118,3 +118,35 @@ Every arm on the decision-76 tier. Fix arm spied, plus a plain twin.
   - removing an absent key is a no-op, not an error;
   - unit tests cover all three, plus a serialise round trip of the patch if patches are serialised anywhere (replay/log).
 - (b) was rejected: a whole-map replace races any other writer in the same tick.
+
+## D1-D4 (rpg-planner-ubuntu, on rpg-implementer-ubuntu's plan at 5241baac6, read in full) [v2.1]
+### D1 Profile values: APPROVED as fixed
+- The table in plan §1, with its stated sources, is fixed now, before any data, and never tuned on own-job data.
+- Disclosed in the step report:
+  - every interval is longer than the 5000-tick run, so each pair breeds at most once per run;
+  - a mother is fed (hunger ≤ 30) for only part of each meal cycle, so expect well under the plan's 0.4 births per eligible mother;
+  - births per run are bounded by about half the adults of each kind, so births can't offset heavy hunting inside one run. That is a BALANCE reading, not a bar.
+
+### D2 Regional scarcity suppression: (a), drop it
+- Q2 stands: the check reads only the mother's own state. Food limits births through her hunger.
+- Which deleted or rewritten tests need an owner ask is the planner's process call. Design-wise, tests that pin only the removed OFF paths go with those paths.
+
+### D3 Which archetype: neither (a) nor (b). Rule (c), declared in content
+- **Why not (a):** "the first non-leader archetype by id order" is an implicit order rule, and finding "leader" means reading a role or trait name, which M1 retires. It also picks job-flavoured bodies: for a human, the first by order is village_worker. And dwarf has only one archetype, so the rule has nothing to fall back on.
+- **Why not (b):** classic-compiled t0 bodies carry no archetype_id (compiler.py:715-725 takes stats from the population's resolved profile), and it needs a "no alpha newborns" name rule.
+- **Ruling:** species.yaml gets `newborn_archetype: <archetype id>`, required on every species that declares a `reproduction_profile`.
+  - The loader refuses (typed) a species with a profile and no newborn_archetype, an unknown id, and an archetype whose `species` differs from the species.
+  - Content chooses each value. The PR lists the chosen ids in a table, and I review that table.
+- **The newborn takes the BODY only from that archetype:** stats, attributes, body model, and the personality draw keyed by the newborn's id.
+  - Not taken: the archetype's role, occupation, equipment, inventory or job traits.
+  - Inventory and equipment are empty, and gold is 0 (nothing from nothing; inheritance moves goods, it never copies them).
+  - Traits = the species' `natural_traits`.
+- Your pre-code check stays: a newborn_archetype that resolves to nothing usable is a STOP.
+- **This changes the wording of rpg-designer's Q11 condition (a).** In the classic gate worlds, a newborn's stats come from its species' declared newborn archetype and can differ from its t0 parents' population-profile stats. So "its species' t0 body" becomes "its species' declared newborn body (newborn_archetype)". That is Bible text, so it goes to rpg-designer as a QUESTION. The code may proceed on D3; the Bible/divergence wording waits for rpg-designer.
+
+### D4 CHILD never matures in a run: disclose; yes, file the backlog ticket
+- Disclose it in the step report and in the ch05 placeholder text: a newborn stays CHILD for the whole run, there is no second generation inside any measurement, and "camps refill by births" means one generation.
+- File "a maturation clock for newborns" with the births batch as an owner-backlog item, not M1. No path treats CHILD as ADULT (Q11 condition b).
+
+### cc, agreed
+- Births are unflagged, so every default run's state hash moves. The plan lists each golden hash, baseline and regression reference row that moves, each one an owner ask.

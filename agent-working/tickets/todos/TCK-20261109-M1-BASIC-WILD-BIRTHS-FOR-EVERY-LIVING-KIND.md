@@ -84,6 +84,23 @@ Source: `agent-working/stored_artifacts/TCK-20261109-M1-BASIC-WILD-BIRTHS-FOR-EV
   - (b) Every system that gates on LifeStage keeps gating newborns. No path may treat CHILD as ADULT to make births work. A later growth or stat law is a ch01 change and goes to rpg-designer.
   - Q12: a field on a typed update record is not durable state, and the prune runs only through the apply path.
 
+### Amendment 2026-11-17 (v2.1: D1-D4 on plan 5241baac6)
+Source: the same stored v2 file, now v2.1 (body sha256 009bc090; an append-only change from f1b332ba).
+- D1: the profile values in plan §1 are APPROVED as fixed. The step report discloses three things:
+  - each pair breeds at most once per run;
+  - expect well under 0.4 births per eligible mother;
+  - births are bounded by about half the adults of each kind (BALANCE).
+- D2: the regional scarcity suppression is dropped.
+  - Process call (rpg-planner-ubuntu): every deleted or rewritten assertion goes to the owner in one batched ask, via lead-planner, before the first code push. That includes the tests that pin only the removed OFF paths. Each assertion is named in the PR body.
+- D3: a new `newborn_archetype: <id>` in species.yaml, required on every species with a `reproduction_profile`.
+  - The loader refuses, with a typed error, a missing value, an unknown id, and an archetype whose species differs.
+  - The newborn takes the BODY only: stats, attributes, body model, and the personality draw keyed by its own id. It takes no role, occupation, equipment, inventory or job traits. Inventory and equipment are empty, gold is 0, and traits = the species' `natural_traits`.
+  - The PR lists the chosen ids in a table for rpg-designer-ubuntu's review.
+  - The pre-code STOP stays.
+  - The Q11 (a) Bible wording becomes "the species' declared newborn body (newborn_archetype)". That wording is a question for rpg-designer. Code may proceed.
+- D4: disclosed in the step report and the ch05 placeholder. Backlog: TCK-20261117-A-NEWBORN-NEVER-GROWS-UP-INSIDE-A-RUN-NEEDS-A-MATURATION-CLOCK.
+- Births ship unflagged, so every moved golden hash, baseline and regression reference row is listed, each one an owner ask.
+
 ## Out of Scope
 - §12.4 (packs, herds, territory), milestones 2 and 3, and any rule work not listed in §12.3 (owner ruling only).
 - Calamity (magical/demonic), boss, lair and creature-territory spawns. These are arrivals or flagged-off spawns, so no code there moves (Q5, Q6). Q6 adds a backlog line for the territory spawn, which creates creatures with no parents.
