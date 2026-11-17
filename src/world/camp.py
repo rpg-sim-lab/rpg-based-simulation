@@ -7,7 +7,6 @@ from src.core.updates import StateUpdate, CampUpdate
 
 if TYPE_CHECKING:
     from src.core.state import AuthoritativeState
-    from src.systems.world_systems.generator import EntityGenerator
 
 class CampService:
     """
@@ -19,7 +18,7 @@ class CampService:
     EXPAND_TERRITORY_MATURITY_BOOST = 1.0
 
     @staticmethod
-    def process_camps(state: AuthoritativeState, generator: EntityGenerator, faction_directives: list | None = None) -> StateUpdate:
+    def process_camps(state: AuthoritativeState, faction_directives: list | None = None) -> StateUpdate:
         """
         Evolve camps: maturity only. A camp spawns nothing (D70); its kind's population grows through BirthService, which reads no camp.
         """
