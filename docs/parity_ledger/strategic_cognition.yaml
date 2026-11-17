@@ -4739,3 +4739,13 @@
   test_path: tests/unit/strategic/test_blocker_lifecycle.py, tests/unit/engine/test_checkpoint_fields.py
   divergence_note: See docs/guidelines/intentional_divergences.md Section 2.214.
   support_boundary: 'Unit rows only until the own-job counts (B1-B6, not vacuous) on the three gate worlds, s42, 5000 ticks are read. 100, 800 and 200 are BALANCE values. The material (resource) and social (suitable_partner) blockers are out of scope (own ticket).'
+- id: STRAT-351
+  text: 'TCK-20261115-THE-NIGHT-CHECK-READS-RAW-WORLD-TIME-SO-EVERY-TICK-AFTER-1800-IS-NIGHT (SURV-08 clock amendment, memo row 98 Q1, divergence 2.209): night is the night half of the time of day (world_time % 2400: ticks 1800-2399 and 0-599), so tick 2400+k is classified as tick k. The sleep bias (SleepScorer +30, routine sleep urgency +0.3, routine sleep boost x2) applies in the night half of every day; the old raw-clock rule agrees with this below t=3000, and from t=3000 it counted every tick as night.'
+  status: verified
+  priority: P1
+  legacy_evidence: null
+  v2_evidence: 'src/core/calendar.py (time_of_day, is_night), src/ai/goals/scorers.py (SleepScorer), src/systems/world_systems/routine.py (evaluate_biological_needs, get_routine_utility_boost), docs/mechanics/04_strategic_cognition.md Tier 2 Biological, docs/guidelines/intentional_divergences.md Section 2.209.'
+  proof_type: regression
+  test_path: tests/unit/core/test_time_of_day.py
+  divergence_note: See docs/guidelines/intentional_divergences.md Section 2.209.
+  support_boundary: 'Unit rows: the helper at ticks 0, 599, 600, 1799, 1800, 2399, 2400, 2999, 3000 and 4200; night is 1200 of every 2400 ticks; the three readers agree at t and t plus whole days; no raw night literal in src outside calendar.py.'

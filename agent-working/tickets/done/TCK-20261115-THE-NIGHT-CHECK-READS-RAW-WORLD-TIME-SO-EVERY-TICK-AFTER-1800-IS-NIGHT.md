@@ -1,10 +1,10 @@
 ---
-status: active
+status: historical
 layer: simulation
 authority: P1
 audience: agent
 ticket_id: TCK-20261115-THE-NIGHT-CHECK-READS-RAW-WORLD-TIME-SO-EVERY-TICK-AFTER-1800-IS-NIGHT
-phase: open
+phase: done
 date: 2026-11-15
 tags: []
 ---
@@ -15,7 +15,7 @@ tags: []
 The night check compares raw world_time with 1800 and 600, and world_time never wraps, so from tick 1800 every tick of the run counts as night
 
 ## Status
-OPEN
+DONE
 
 ## Tier
 standard
@@ -55,6 +55,8 @@ rpg-designer found this on 2026-11-15, while ruling on the starvation epic's clo
 ## Related Docs
 - docs/world_rules/life-body/survival-needs.md (:906; SURV-02, SURV-07)
 - docs/mechanics/04_strategic_cognition.md
+- docs/guidelines/intentional_divergences.md (2.209)
+- docs/parity_ledger/strategic_cognition.yaml (STRAT-351)
 
 ## Related Stored Artifacts
 None.
@@ -72,9 +74,13 @@ None.
 - Does any world start at a world_time other than 0? The default is 0 (state.py:1299). Check the compiled worlds at dispatch.
 
 ## Implementation Notes
+One helper pair in src/core/calendar.py (time_of_day, is_night; int in, designer R1). SleepScorer and both RoutineService readers call is_night. intelligence.py:588 passes state.world_time. raid.py unused TICKS_PER_DAY removed. intelligence.py:912 left (deeper issue 4, own Phase-3 ticket). Divergence 2.209 (Bug Fix); ledger STRAT-351.
 
 ## Test Summary
+S10 pre-push set (owner #715 6944269046), all with -n 1 on e62959b6b: targeted pytest 121 passed (test_time_of_day incl. the t<3000 agreement test, test_calendar, test_biological_needs, test_routine_biasing, test_strategic_lifecycle, test_calamity_raid, test_global_raid_retired, test_sleep_pull_nearest_open_way, test_service_admission); all 26 slow/extra_slow scenario tests in tests/mechanic_scenarios + tests/integration/scenarios: 24 passed, 1 skipped, 1 xfailed in 8m02s; make lint-imports 17 contracts kept, 0 broken; make code-health OK (only the 4 report-only jscpd rows under src/observability, from main); make typecheck-py 0 new errors. No sim run (designer R2). Proof of no behaviour change below t=3000: the old (t >= 1800 or t < 600) and new (time of day) rules agree for every tick below 3000, pinned by a unit test; the urban_political s42 1000-tick run on this branch and on origin/main bb26e4e5f has identical per-tick TICK_END hashes (1000 of 1000), and the 7 corpus_diversity grade-stability pins that fail do so identically on main (they are main's stale pins, not this change). Hard checks: CI plus the rpg-gate-report hard validity rows on the pushed head (started by rpg-planner); the extinction line is read at the run-2 domain boundary (owner 6937306315), not in CI.
 
 ## Files Changed
+src/core/calendar.py, src/ai/goals/scorers.py, src/systems/world_systems/routine.py, src/systems/strategic_systems/intelligence.py, src/world/raid.py, src/api/presenters/state_presenter.py, tests/unit/core/test_time_of_day.py, docs/world_rules/life-body/survival-needs.md, docs/mechanics/04_strategic_cognition.md, docs/guidelines/intentional_divergences.md, docs/parity_ledger/strategic_cognition.yaml
 
 ## Completion Summary
+Night is read from the time of day through one helper; from t=3000 on, ticks no longer all count as night (the old and new rules agree below t=3000). Unit-proven; hard checks ride the PR's CI-equivalent run.

@@ -1,10 +1,10 @@
 ---
-status: active
+status: historical
 layer: ai
 authority: P1
 audience: agent
 ticket_id: TCK-20261020-SUSPENDED-PROJECTS-ARE-NEVER-RESUMED-SLOT-LEAK
-phase: open
+phase: done
 date: 2026-10-20
 tags: []
 ---
@@ -15,7 +15,7 @@ tags: []
 Suspended projects are never resumed and never expire, so they hold project slots forever (slot leak)
 
 ## Status
-OPEN
+DONE
 
 ## Tier
 standard
@@ -108,12 +108,23 @@ The code lives in `src/systems/strategic_systems/intelligence.py` (the ticket's 
 - 2026-11-01 More evidence (retention afacf1577, crowded s46 e14 t366): at 3/3 the live set was SUSPENDED stabilize_t6 (354 ticks old), stabilize_t106 (254) and engage_266 (94), with no current project. In base, e14 stood with nothing adopted (cap-refused) and was killed at t485. When a cap-exempt retreat entered (since dropped), the trim removed only the stale engage_266; the two stabilize records stayed.
 - 2026-11-01 R3 FILED HERE (designer rule: a cap refusal belongs here). The retention batch (lane C, 15 runs, fix 23e0f9967) found hurt subjects (hp < 0.5, no present threat, no RECOVER/REST/FATIGUE current) for more than 200 ticks: 33 entities on base and 32 on fix. Of those, 31 of 32 (fix) and 33 of 33 (base) had their live projects at the cap of 3 at some point (sampled every 20 ticks, so "ever full", not "full during the R3 ticks"). Gate: src/systems/strategic_systems/intelligence.py:1768 drops a NEW candidate when `not has_project_capacity(...)` and `not escalated_need_wins(entity, kind)`; escalated_need_wins (src/ai/goals/escalation.py) holds only for HUNGER/FATIGUE past onset, so RECOVER and COMBAT_RETREAT get no exemption. RecoverScorer (src/ai/goals/scorers.py:255) scores >= 40 at hp < 0.5, so it clears the candidate filter. The slots are held by SUSPENDED STABILIZE projects that never resume. Trace e18 (urban s42, fix): its retreat was SUSPENDED at t53 under cap pressure; after THREAT_CLEARED at t83 it adopted a third STABILIZE at hp 0.06 (live = 3 = cap); at t122-182 retreat_u 124-137 beat recover_u 89-110 with a perceived threat, but nothing was adopted; it died at t196 to attacker 17. To measure per entity: whether the cap was full DURING the R3 ticks.
 - 2026-10-31 designer routed CAP_REFUSAL here (it is not a precedence case). F3 base on 6fdfdf555, 15 runs: CAP_REFUSAL 9406 ticks / 233 subjects / longest stretch 1. In 9104 of 13461 at-cap ticks (about 68%) the subject holds 2 or more SUSPENDED records (record count: ticks = 0:1726, 1:2631, 2:5367, 3:3091, 4:644, 5:2).
+- 2026-11-17 (rpg-implementer-3, N10): the designer's v1.1 rule (rpg_designer_ruling_2026-11-16.md) is implemented as written. A SUSPENDED project older than `SUSPENSION_TTL_TICKS` = 200 ends ABANDONED with `ended_by` `ProjectEnd.SUSPENSION_EXPIRED` through `end_record`, for every kind. The clock is `ProjectState.suspended_since` (set by `suspend_record` at all three SUSPENDED writers, cleared by `resume_project`, omitted from the canonical dict while None, appended last, FIELD_RULES fill None; a SUSPENDED record with None is stamped on first sight). The pass runs in the callers through `evaluate_strategic_intent_with_expiry` (designer ruling A) so `evaluate_strategic_intent` keeps its name and body; a static test pins that every production caller goes through it. `end_record` drops the clock (follows the L4 bar). The near-death writer now clears the current ids (R2).
+- Visible bound: TTL + cadence - 1 (209 at the default strategic cadence 10; 219 under PROD_SMALL, the gate-world profile).
+- Decisions along the way (each approved by rpg-planner / rpg-designer / the lead): the arbiter golden sha of `evaluate_project_switch` updated deliberately (#715 6941681673, lead testing authority); two `intelligence.py` line ceilings raised to N10's size (owner ruling #715 6946225884; module 1833 to 1880, class 1671 to 1717; retiring TCK-20261117-SPLIT-INTELLIGENCE-PY-BELOW-ITS-LINE-CEILINGS).
+- Findings filed as their own tickets: `evaluate_all_strategic_intents` is dead code that skips the pass (TCK-20261117-EVALUATE-ALL-STRATEGIC-INTENTS-IS-DEAD-CODE-THAT-SKIPS-THE-SUSPENSION-EXPIRY); the cooperation stall in urban s42 is a resolve_blocker re-created every 80 ticks (TCK-20261117-A-RESOLVE-BLOCKER-PROJECT-IS-RE-CREATED-EVERY-80-TICKS-AND-STALLS-COOPERATION).
+- Docs: Bible 04 section 4 ("A Suspended Project Is Bounded"), divergence 2.212 (Bounded), parity STRAT-354, the `ProjectEnd` docstring.
 
 ## Test Summary
+Unit and architecture (N10 head 67b507f8c; docs and baseline commits after it): tests/unit/strategic, test_checkpoint_fields.py, test_checkpoint_schema.py, the mechanism-registry completeness test and tests/architecture: 840 passed, then the one fixture-only fix and its file set (76 passed). The first-sight stamp is covered by its own test (`test_a_suspended_record_with_no_clock_is_stamped_on_first_sight_and_counts_from_there`). Existing tests edited (each approved): six SUSPENDED fixtures carry `suspended_since=500`; one hash-neutrality test builds its project with None; the ProjectEnd set gains SUSPENSION_EXPIRED; `test_near_death_suspends_current_project` asserts "" for the current ids (R2, rpg-designer N10); the checkpoint `_old_shape` helper drops both trailing fields; the arbiter golden sha.
+Own-job counts at 67b507f8c (3 gate worlds x s42 x 5000 ticks, spied + plain twin, spy 6376230d, runner f8e01145, S9-recorded): twin hashes equal, PINNED, exceptions {}, logging_errors 0, no crash. L1 = L2 = L3 = L4 = 0 in all three. SUSPENSION_EXPIRED 126 / 60 / 60 (frontier_living_world / urban_political / crowded_frontier). Oldest SUSPENDED 218 < bar 219. L5 resumes: route_live_record 285 / 217 / 268. The designer's recount passed.
+Reported (BALANCE): urban corpus cap-tail rows (main bb26e4e5f vs N10): at-cap subjects with a SUSPENDED record 7-10 per window after t700 on main (s42), 0 on N10; s123 15 to 5 by t900 (not monotone); the s42 cooperation stall persists (last cooperation tick 550 to 569), a separate pre-existing defect. s123 deaths 10 on main, 14 on N10: the four extra are HIT damage, none within 50 ticks of an expiry (reported BALANCE shift). The two urban corpus grade tests fail on stale SOCIAL pins (36.787 vs 51.887; 31.051 vs 53.8), not a bar.
+S10 pre-push set at 745dec3b5: the 26 slow/extra_slow scenario tests 24 passed, 1 skipped, 1 xfailed (407 s); import contracts 17 kept, 0 broken; mypy on the touched files clean; code health red only on the two intelligence.py ceilings, then raised (owner ruling above). Merged-head re-run on 5ffbff3c5 (origin/main 9d13a3356, M1 step 4 merged in): the scoped unit list incl. tests/architecture 841 passed (145 s); code health OK (rc=0; only report-only jscpd rows in files N10 does not touch; the two intelligence.py rows are inside their raised ceilings); the 26 slow scenario tests and mypy were not repeated (rpg-planner: the merge changes none of N10's hunks).
 
 ## Files Changed
+src/core/strategic.py, src/engine/checkpoint_fields.py, src/engine/tactical.py, src/systems/strategic_systems/cognition_export.py, src/systems/strategic_systems/intelligence.py, src/systems/world_systems/events.py; tests: tests/unit/strategic/test_suspension_expiry.py (new), tests/unit/strategic/test_every_strategic_intent_caller_runs_the_suspension_expiry.py (new), edits to test_checkpoint_fields.py, test_event_interpretation.py, test_project_capacity_counts_live_projects.py, test_project_end_record.py, test_project_lookup_live_record_first.py, tests/architecture/test_committed_intention_arbiter_byte_identical_guard.py; docs/mechanics/04_strategic_cognition.md, docs/guidelines/intentional_divergences.md (2.212), docs/parity_ledger/strategic_cognition.yaml (STRAT-354), codebase/baselines/code_health_exceptions.jsonl (two rows), agent-working/stored_artifacts/TCK-20261020-SUSPENDED-PROJECTS-ARE-NEVER-RESUMED-SLOT-LEAK/.
 
 ## Completion Summary
+A SUSPENDED project that stays suspended for 200 ticks now ends ABANDONED with the typed reason SUSPENSION_EXPIRED, so a subject can no longer hold its project cap with records that never leave SUSPENDED. HARD bars L1-L4 = 0 and SUSPENSION_EXPIRED >= 1 held in all three gate worlds. The cap tail clears in the urban corpus runs; the s42 cooperation stall is a separate defect (resolve_blocker re-created every 80 ticks), ticketed.
 
 ## 2026-10-31 counts from TCK-20261031-A-RETREAT-PROJECT-OUTLIVES-ITS-THREAT (lane C, rpg-retreat-completes 7811d749f; main 6fdfdf555; 3 worlds x s42-46, 2000t; samples every 20 ticks at cap)
 - 15364 entity-samples at cap over 359 entity-runs: 86% have >= 1 SUSPENDED in the live set, 80% one older than 200 ticks, 62% two or more; 709 distinct stale (> 200 ticks) SUSPENDED records.

@@ -435,8 +435,7 @@ class StatePresenter:
         """Live simulation counters: {tick, world_day, alive_count, total_spawned, total_deaths, running, paused}.
 
         world_day = tick // 2400 per docs/mechanics/05_world_evolution.md:15-22 ("1 Day = 2400 ticks",
-        Certified Level 1) -- NOT V1's legacy tick // 100, NOT src/world/raid.py's unrelated
-        RaidService.TICKS_PER_DAY=100 (see agent-working/staging_artifacts/TCK-20260821-REST-MAP-STATIC-STATS/plan.md
+        Certified Level 1) -- NOT V1's legacy tick // 100 (see agent-working/staging_artifacts/TCK-20260821-REST-MAP-STATIC-STATS/plan.md
         Design Decisions).
         alive_count filters state.entities by combat.alive, ported from V1's exact semantics and
         matching the in-repo precedent at src/api/presenters/economy.py's EconomyPresenter
