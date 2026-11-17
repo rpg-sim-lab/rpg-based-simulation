@@ -63,6 +63,7 @@ def _entity(
     e.inventory.gold = gold
     e.strategic = MagicMock()
     e.strategic.projects = {}
+    e.identity.occupation = kind
     return e
 
 
