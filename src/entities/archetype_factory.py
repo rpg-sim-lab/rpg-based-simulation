@@ -5,6 +5,7 @@ from typing import Optional
 
 from src.core.enums import EntityRole
 from src.core.state import (
+    GeneticProfile,
     LifeStage,
     EntityState,
     IdentityComponent,
@@ -18,7 +19,6 @@ from src.content_semantics.personality import build_personality_for_entity, get_
 from src.entities.runtime_contract import ResolvedEntityRuntimeContract
 from src.content.common_knowledge_seed import default_self_model
 from src.content.species_senses import require_species_sense_profile
-from src.systems.lifecycle_systems.genetics import GeneticsSystem
 
 
 @dataclass(frozen=True)
@@ -42,13 +42,15 @@ def require_archetype_senses(contract: ResolvedEntityRuntimeContract) -> None:
 
 @dataclass(frozen=True)
 class NewbornBirth:
-    """The birth event a newborn is built for: its two parents and where, when and under which world seed it is born."""
+    """The birth event a newborn is built for: its two parents (and their genetic profiles, resolved by the caller because birth_record() combines genetics only when a profile is supplied and first-generation parents carry none), and where, when and under which world seed it is born."""
 
     mother: EntityState
     mate: EntityState
     position: tuple[float, float]
     tick: int
     seed: int
+    mother_genetics: GeneticProfile
+    mate_genetics: GeneticProfile
     home_region_id: Optional[str] = None
 
 
@@ -159,7 +161,6 @@ class ArchetypeEntityFactory:
         self,
         entity_id: int,
         contract: ResolvedEntityRuntimeContract,
-        species_traits: tuple[str, ...],
         birth: NewbornBirth,
     ) -> EntityState:
         """A newborn of `birth.mother` and `birth.mate`: the BODY of the species' newborn archetype (stats, body model,
@@ -174,9 +175,6 @@ class ArchetypeEntityFactory:
         mother, mate = birth.mother, birth.mate
         properties = _newborn_properties(contract, mother)
         personality = build_personality_for_entity(entity_id, properties.get("faction_id"), birth.seed)
-        # birth_record() combines genetics only when a parent profile is supplied; first-generation parents carry none.
-        a_profile = mother.lifecycle.genetic_profile or GeneticsSystem.generate_profile_from_seed(mother.id)
-        b_profile = mate.lifecycle.genetic_profile or GeneticsSystem.generate_profile_from_seed(mate.id)
         role = EntityRole.MONSTER if mother.identity.role == EntityRole.MONSTER else EntityRole.CITIZEN
 
         return (
@@ -184,7 +182,7 @@ class ArchetypeEntityFactory:
             .kind(contract.kind)
             .location(*birth.position)
             .identity(
-                role=role, faction=mother.identity.faction, traits=set(species_traits), properties=properties,
+                role=role, faction=mother.identity.faction, traits=set(contract.species_trait_ids), properties=properties,
                 personality=personality, life_stage=LifeStage.CHILD, occupation=None,
             )
             .navigation(home_position=mother.navigation.home_position, leash_radius=mother.navigation.leash_radius)
@@ -196,7 +194,7 @@ class ArchetypeEntityFactory:
             )
             .birth_record(
                 parent_a_entity_id=mother.id, parent_b_entity_id=mate.id, birth_tick=birth.tick,
-                parent_a_genetic_profile=a_profile, parent_b_genetic_profile=b_profile,
+                parent_a_genetic_profile=birth.mother_genetics, parent_b_genetic_profile=birth.mate_genetics,
                 parent_a_role=mother.identity.role, parent_b_role=mate.identity.role,
                 parent_a_public_reputation=mother.social.public_reputation,
                 parent_b_public_reputation=mate.social.public_reputation,

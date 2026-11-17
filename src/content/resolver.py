@@ -373,6 +373,7 @@ class ResolvedEntityArchetype(BaseModel):
     # --- Merged traits / themes (deterministic, deduplicated) ---
     traits: List[TraitDefinition]
     themes: List[ThemeDefinition]
+    species_trait_ids: Tuple[str, ...] = ()  # the species' own declared traits alone, for a body that takes no archetype job traits (a newborn)
 
     # --- Projection (catalog string IDs for legacy adapters; no runtime enums) ---
     legacy_engine_role: str    # from RoleDefinition.legacy_engine_role
@@ -525,6 +526,7 @@ class EntityArchetypeResolver:
             skill_profile=skill_profile,
             traits=traits,
             themes=themes,
+            species_trait_ids=tuple(td.id for td in species_defaults.natural_traits),
             legacy_engine_role=role_def.legacy_engine_role,
             legacy_engine_bucket=faction_def.legacy_engine_bucket,
         )

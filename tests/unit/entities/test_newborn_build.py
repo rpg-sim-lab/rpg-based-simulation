@@ -7,6 +7,7 @@ from src.content.resolver import EntityArchetypeResolver
 from src.core.builder import V2EntityBuilder
 from src.core.enums import EntityRole, Faction
 from src.core.state import LifeStage
+from src.systems.lifecycle_systems.genetics import GeneticsSystem
 from src.entities.archetype_factory import ArchetypeEntityFactory, NewbornBirth
 from src.entities.contract_builder import resolved_archetype_to_contract
 
@@ -29,11 +30,10 @@ def _parent(entity_id: int, kind: str, role: int, **properties):
 
 def _newborn(catalog, archetype_id="village_worker", entity_id=900, seed=42, mother_role=EntityRole.CITIZEN, **mother_props):
     contract = resolved_archetype_to_contract(EntityArchetypeResolver(catalog).resolve(archetype_id))
-    species = catalog.get_species(contract.species_id)
     mother = _parent(1, contract.species_id, mother_role, **mother_props)
     mate = _parent(2, contract.species_id, mother_role)
     child = ArchetypeEntityFactory().build_newborn(
-        entity_id, contract, tuple(species.natural_traits), NewbornBirth(mother, mate, (3.0, 4.0), 120, seed, "r1"))
+        entity_id, contract, NewbornBirth(mother, mate, (3.0, 4.0), 120, seed, GeneticsSystem.generate_profile_from_seed(1), GeneticsSystem.generate_profile_from_seed(2), "r1"))
     return contract, mother, mate, child
 
 
@@ -44,7 +44,7 @@ def test_newborn_takes_the_archetype_body_and_none_of_its_job(catalog):
     assert child.identity.occupation is None
     assert child.identity.life_stage == LifeStage.CHILD
     assert child.inventory.gold == 0 and not child.inventory.items
-    assert child.identity.traits == set(catalog.get_species(contract.species_id).natural_traits)
+    assert child.identity.traits == set(contract.species_trait_ids) and contract.species_trait_ids
     for job_key in ("role_id", "profession_id", "skill_profile_id", "archetype_id"):
         assert job_key not in child.identity.properties
 

@@ -51,6 +51,7 @@ def resolved_archetype_to_contract(
         starting_gold=inventory.starting_gold,
         traits=trait_ids,
         themes=theme_ids,
+        species_trait_ids=arch.species_trait_ids,
         cognition_profile_id=arch.cognition_profile.id,
         drive_profile_id=arch.drive_profile.id,
         need_profile_id=arch.need_profile.id,
