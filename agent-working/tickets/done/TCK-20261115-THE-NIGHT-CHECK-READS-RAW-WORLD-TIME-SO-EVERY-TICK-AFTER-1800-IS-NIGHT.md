@@ -83,4 +83,4 @@ Targeted pytest -n 1, 2026-11-17: 120 passed (test_time_of_day, test_calendar, t
 src/core/calendar.py, src/ai/goals/scorers.py, src/systems/world_systems/routine.py, src/systems/strategic_systems/intelligence.py, src/world/raid.py, src/api/presenters/state_presenter.py, tests/unit/core/test_time_of_day.py, docs/world_rules/life-body/survival-needs.md, docs/mechanics/04_strategic_cognition.md, docs/guidelines/intentional_divergences.md, docs/parity_ledger/strategic_cognition.yaml
 
 ## Completion Summary
-Night is read from the time of day through one helper; every tick after 1800 no longer counts as night. Unit-proven; hard checks ride the PR's CI-equivalent run.
+Night is read from the time of day through one helper; from t=3000 on, ticks no longer all count as night (the old and new rules agree below t=3000). Unit-proven; hard checks ride the PR's CI-equivalent run.

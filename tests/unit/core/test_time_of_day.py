@@ -56,3 +56,11 @@ def test_no_raw_night_literal_outside_calendar():
                  if p.name != "calendar.py" and pat.search(p.read_text(encoding="utf-8"))]
     assert offenders == []
     assert not hasattr(__import__("src.world.raid", fromlist=["RaidService"]).RaidService, "TICKS_PER_DAY")
+
+
+def test_the_new_rule_agrees_with_the_old_raw_clock_rule_below_3000():
+    """The raw rule (t >= 1800 or t < 600) and the time-of-day rule agree for every tick below 3000: a run shorter than 3000 ticks is unchanged; the first difference is 3000."""
+    def raw(t):
+        return t >= 1800 or t < 600
+    assert all(is_night(t) is raw(t) for t in range(3000))
+    assert is_night(3000) is False and raw(3000) is True
