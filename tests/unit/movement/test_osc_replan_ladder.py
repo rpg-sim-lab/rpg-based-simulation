@@ -300,3 +300,44 @@ def test_an_open_count_round_trips_through_the_real_checkpoint_writer_and_contin
         assert _event(r_state.entities[1], (9, 6), 12).wayround_count_set == 2  # the restored count continues across a one-tile jitter
     finally:
         restored.abort()
+
+
+def test_the_give_up_writes_wayround_give_up_replaces_the_old_code_and_files_no_blocker():
+    """2.214: the give-up is not a legal step; it writes its own typed code, which replaces any older one, and infer_blockers files nothing from it."""
+    from src.core.enums import ReasonCode
+    from src.systems.strategic_systems.intelligence import StrategicIntelligenceSystem
+
+    hero = _hero(target=(9, 5), last_position=(6, 5), oscillation_count=3, last_failure_reason="STUCK")
+    hero = replace(hero, navigation=replace(hero.navigation, wayround_count=2, wayround_best_distance=4, wayround_anchor=(9, 5), wayround_last_tick=0))
+    walls = [_wall(10, 5, 4), _wall(11, 5, 6), _wall(12, 4, 5)]
+    upd = MovementSystem.resolve_move(_state(hero, *walls), hero, (9, 5))[1]
+    assert upd.navigation.wayround_clear is True and upd.navigation.failure_reason == ReasonCode.WAYROUND_GIVE_UP
+    after = _apply_nav(hero, upd.navigation)
+    assert after.last_failure_reason == ReasonCode.WAYROUND_GIVE_UP  # replaces the stale STUCK
+    filed = StrategicIntelligenceSystem.infer_blockers(replace(hero, navigation=after), "ENTITY_MOVE", {"target_position": (9.0, 5.0)}, navigation_failure=after.last_failure_reason)
+    assert not filed.blockers_add_or_update
+
+
+def test_no_failed_movement_step_writes_legal():
+    """F1 acceptance line: every failing branch of resolve_move reports a typed failure, never the legality verdict LEGAL. The scenarios cover: a step into a wall (legality failure),
+    a replan at wait_count 5, the oscillation give-up, and an oscillation way-round (a success, which carries no code)."""
+    from src.core.enums import ReasonCode
+
+    ring = [_wall(10 + i, 5 + dx, 5 + dy) for i, (dx, dy) in enumerate((a, b) for a in (-1, 0, 1) for b in (-1, 0, 1) if (a, b) != (0, 0))]
+    scenarios = [
+        (_hero(target=(9, 5)), ring),                                                        # boxed in: the step is illegal
+        (_hero(target=(9, 5), wait_count=5), ring),                                          # boxed in at wait_count 5: the replan branch
+        (_hero(target=(9, 5), last_position=(6, 5), oscillation_count=3), [_wall(10, 5, 4), _wall(11, 5, 6), _wall(12, 4, 5)]),  # the give-up
+        (_hero(target=(9, 5), last_position=(6, 5), oscillation_count=3), []),               # a way-round exists: a success
+        (_hero(target=(9, 5)), []),                                                          # a free step: a success
+    ]
+    failed = 0
+    for hero, walls in scenarios:
+        upd = MovementSystem.resolve_move(_state(hero, *walls), hero, (9, 5))[1]
+        reason = upd.navigation.failure_reason if upd.navigation is not None else None
+        if upd.new_position is None:
+            failed += 1
+            assert reason is not None and reason != ReasonCode.LEGAL, (hero.navigation, reason)
+        else:
+            assert reason is None
+    assert failed >= 3  # not vacuous: the wall, the wait_count replan and the give-up all failed

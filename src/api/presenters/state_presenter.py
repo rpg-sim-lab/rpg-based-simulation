@@ -17,6 +17,22 @@ MAX_ENTITY_PAGE = 500  # the most entities one list page returns, whatever `limi
 _OPEN_CONTRACT_STATUSES = frozenset({ContractStatus.OFFERED, ContractStatus.ACCEPTED, ContractStatus.COUNTERED, ContractStatus.ACTIVE})
 
 
+def _navigation_dto(nav: Any) -> Dict[str, Any]:
+    """The navigation block of the entity detail: the stored target, the movement counters, the way-round count (2.213 F1) and the last failure."""
+    return {
+        "target": nav.target,
+        "moved_recently": nav.moved_recently,
+        "wait_count": nav.wait_count,
+        "oscillation_count": nav.oscillation_count,
+        "wayround_count": nav.wayround_count,
+        "wayround_best_distance": nav.wayround_best_distance,
+        "wayround_anchor": nav.wayround_anchor,
+        "wayround_last_tick": nav.wayround_last_tick,
+        "last_failure": nav.last_failure_reason,
+        "mode": nav.movement_mode.name if hasattr(nav.movement_mode, 'name') else str(nav.movement_mode),
+    }
+
+
 def _quest_dto(q: Any) -> Dict[str, Any]:
     """One quest as the API shows it (the detail's `quests` entries and the paged sub-resource's rows)."""
     return {
@@ -179,18 +195,7 @@ class StatePresenter:
                 "notoriety": entity.social.notoriety_score,
                 "betrayals": entity.social.betrayal_count
             },
-            "navigation": {
-                "target": entity.navigation.target,
-                "moved_recently": entity.navigation.moved_recently,
-                "wait_count": entity.navigation.wait_count,
-                "oscillation_count": entity.navigation.oscillation_count,
-                "wayround_count": entity.navigation.wayround_count,
-                "wayround_best_distance": entity.navigation.wayround_best_distance,
-                "wayround_anchor": entity.navigation.wayround_anchor,
-                "wayround_last_tick": entity.navigation.wayround_last_tick,
-                "last_failure": entity.navigation.last_failure_reason,
-                "mode": entity.navigation.movement_mode.name if hasattr(entity.navigation.movement_mode, 'name') else str(entity.navigation.movement_mode)
-            },
+            "navigation": _navigation_dto(entity.navigation),
             "biological": {
                 "sleep_debt": entity.biological.sleep_debt,
                 "hunger": entity.biological.hunger

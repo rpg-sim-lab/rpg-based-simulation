@@ -1,9 +1,19 @@
 from __future__ import annotations
 
 import hashlib
-from typing import Any, Dict
+from typing import TYPE_CHECKING, Any, Dict
 
 from src.core.state import GROUP_ID_BASE, AuthoritativeState
+
+if TYPE_CHECKING:
+    from src.core.state import NavigationComponent
+
+
+def _navigation_tail(nav: "NavigationComponent") -> str:
+    """The optional navigation fragments of an entity's fingerprint: ``lodged_in`` only while lodged (F3), the way-round count, best distance, anchor and last tick only while a count is open (2.213)."""
+    lodged = "" if nav.lodged_in is None else "lodged_in=%s:" % nav.lodged_in
+    wayround = "wayround=%s@%s:%s:%s:" % (nav.wayround_count, nav.wayround_best_distance, nav.wayround_anchor, nav.wayround_last_tick) if nav.wayround_count else ""
+    return lodged + wayround
 
 
 class StateFingerprinter:
@@ -58,8 +68,7 @@ class StateFingerprinter:
                 f"{ent.kind}:"
                 f"role={ent.identity.role}:"
                 f"faction={ent.identity.faction}:"
-                f"pos={ent.navigation.position}:" f"{'' if ent.navigation.lodged_in is None else 'lodged_in=%s:' % ent.navigation.lodged_in}"  # lodged_in only while lodged (F3)
-                f"{'' if not ent.navigation.wayround_count else 'wayround=%s@%s:%s:%s:' % (ent.navigation.wayround_count, ent.navigation.wayround_best_distance, ent.navigation.wayround_anchor, ent.navigation.wayround_last_tick)}"  # only while a way-round count is open (2.213)
+                f"pos={ent.navigation.position}:" f"{_navigation_tail(ent.navigation)}"  # lodged_in only while lodged (F3); the way-round count only while one is open (2.213)
                 f"hp={ent.combat.hp}:"
                 f"gold={ent.inventory.gold}:"
                 f"current_project={ent.strategic.current_project_id}:"

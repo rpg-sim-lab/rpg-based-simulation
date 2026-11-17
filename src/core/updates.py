@@ -111,12 +111,14 @@ class NavigationUpdate:
         if other.region_id_set is not None: changes["region_id_set"] = other.region_id_set
         if other.step_ready_tick_set is not None: changes["step_ready_tick_set"] = other.step_ready_tick_set
         changes.update(other._lodging_changes())
-        if other.wayround_count_set is not None: changes["wayround_count_set"] = other.wayround_count_set
-        if other.wayround_best_distance_set is not None: changes["wayround_best_distance_set"] = other.wayround_best_distance_set
-        if other.wayround_anchor_set is not None: changes["wayround_anchor_set"] = other.wayround_anchor_set
-        if other.wayround_last_tick_set is not None: changes["wayround_last_tick_set"] = other.wayround_last_tick_set
-        if other.wayround_clear: changes["wayround_clear"] = True
+        changes.update(other._wayround_changes())
         return replace(self, **changes)
+
+    def _wayround_changes(self) -> Dict[str, Any]:
+        """What a merge takes from this update for the way-round fields (2.213 F1): each value that is set, and the clear flag."""
+        sets = {"wayround_count_set": self.wayround_count_set, "wayround_best_distance_set": self.wayround_best_distance_set,
+                "wayround_anchor_set": self.wayround_anchor_set, "wayround_last_tick_set": self.wayround_last_tick_set}
+        return {**{k: v for k, v in sets.items() if v is not None}, **({"wayround_clear": True} if self.wayround_clear else {})}
 
     def _lodging_changes(self) -> Dict[str, Any]:
         """What a merge takes from this update for the lodging fields (F3): the claim's building, and the leave flag."""

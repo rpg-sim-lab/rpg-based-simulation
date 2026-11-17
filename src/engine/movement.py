@@ -3,7 +3,7 @@
 # src/engine/movement.py
 from __future__ import annotations
 from typing import TYPE_CHECKING, Tuple, Optional, Any, Dict, List
-from dataclasses import replace
+from dataclasses import dataclass, replace
 
 from src.core.movement_modes import MovementMode
 from src.core.updates import EntityUpdate, NavigationUpdate, StaminaUpdate, LifecycleUpdate
@@ -20,7 +20,7 @@ from src.engine.movement_cache import MovementPlanKey, MovementPlan
 from src.engine.route_search import route_next_step
 
 if TYPE_CHECKING:
-    from src.core.state import AuthoritativeState, EntityState
+    from src.core.state import AuthoritativeState, EntityState, NavigationComponent
 
 # A step rejected for one of these reasons failed because the destination tile is static terrain or a building footprint,
 # not because another entity stands there (that is OCCUPANCY_VIOLATION).
@@ -54,6 +54,32 @@ def live_action_style(entity: "EntityState", state_or_context: Any) -> int:
 # 2.213 (COMB-356): way-round steps allowed on one target with no net progress before the oscillation replan is the real one (rpg-designer 2026-11-17, N = 2).
 WAYROUND_LIMIT = 2
 WAYROUND_QUIET_TICKS = 200  # F1 (2.213): the longest gap between two events of one pursuit; past it the next event opens a fresh count
+
+
+def wayround_after_event(nav: "NavigationComponent", target_tile: Tuple[int, int], dist_now: int, current_tick: int) -> Tuple[int, int, Tuple[int, int]]:
+    """The way-round count, best distance and anchor after one oscillation event (F1, amends 2.213).
+
+    The count continues while it is open, the target is within one tile (Chebyshev) of the tile it opened on, and the last event is at most WAYROUND_QUIET_TICKS ago; otherwise a fresh
+    count opens on this target (count 1, the distance now, this tile). A step closer than the best seen is progress: the count restarts at 1 and the anchor stays."""
+    best, anchor, last_ev = nav.wayround_best_distance, nav.wayround_anchor, nav.wayround_last_tick
+    if nav.wayround_count <= 0 or best is None or anchor is None or last_ev is None or current_tick - last_ev > WAYROUND_QUIET_TICKS:
+        return 1, dist_now, target_tile
+    kept = (int(anchor[0]), int(anchor[1]))
+    if max(abs(target_tile[0] - kept[0]), abs(target_tile[1] - kept[1])) > 1:
+        return 1, dist_now, target_tile
+    if dist_now < best:
+        return 1, dist_now, kept
+    return nav.wayround_count + 1, best, kept
+
+
+@dataclass(frozen=True)
+class OscReplanOutcome:
+    """What an oscillation replan decided (``MovementSystem._oscillation_replan``): the step to take instead (None when it gave up), the counter resets, and the way-round count to store."""
+    effective_target: Optional[Tuple[float, float]]
+    osc_delta: int
+    wait_delta: int
+    wayround_set: Optional[Tuple[int, int, Tuple[int, int], int]]
+    gave_up: bool
 
 
 class MovementSystem:
@@ -134,6 +160,30 @@ class MovementSystem:
             if LegalityServiceV2.verify_movement_legality(entity, tile, state_or_context, move_speed_mult=move_speed_mult)[0]:
                 return tile
         return None
+
+    @staticmethod
+    def _oscillation_replan(
+        entity: EntityState,
+        effective_target: Tuple[float, float],
+        target_pos: Tuple[float, float],
+        state_or_context: Any,
+        move_speed_mult: float,
+    ) -> OscReplanOutcome:
+        """The oscillation replan (``oscillation_count >= 3``, the step goes back onto the tile just left): a way-round step, or the give-up when the bounded count is spent.
+
+        The rung ladder runs before the replan gives up (TCK-20261030-STALEMATE-BREAK-OVERWRITES-A-PROJECT-MOVE-EVERY-TICK): a step back onto the tile just left is the A-B loop, so look for a
+        legal tile that is neither it nor the current tile before dropping the target. The bounded give-up (2.213): a way-round that makes no net progress on this target counts; the count past
+        WAYROUND_LIMIT is the real replan. Pure: it reads the entity and the state and returns the outcome."""
+        target_tile = (int(target_pos[0]), int(target_pos[1]))
+        current_tick = getattr(state_or_context, "tick", 0)
+        way_round = MovementSystem._find_way_round_loop(entity, effective_target, target_pos, state_or_context, move_speed_mult)
+        osc_delta = -entity.navigation.oscillation_count
+        wait_delta = -entity.navigation.wait_count
+        dist_now = int(abs(target_pos[0] - entity.navigation.position[0]) + abs(target_pos[1] - entity.navigation.position[1]))
+        wayround_count, wayround_best, wayround_anchor = wayround_after_event(entity.navigation, target_tile, dist_now, current_tick)
+        if way_round is not None and wayround_count <= WAYROUND_LIMIT:
+            return OscReplanOutcome(way_round, osc_delta, wait_delta, (wayround_count, wayround_best, wayround_anchor, current_tick), False)
+        return OscReplanOutcome(None, osc_delta, wait_delta, None, True)
 
     @staticmethod
     def _yield_update(entity: EntityState, effective_target: Tuple[float, float], state_or_context: Any, current_tick: int) -> Optional[EntityUpdate]:
@@ -334,32 +384,12 @@ class MovementSystem:
             # Oscillation Detection
             if effective_target == entity.navigation.last_position:
                 if entity.navigation.oscillation_count >= 3:
-                    # The rung ladder runs before the replan gives up (TCK-20261030-STALEMATE-BREAK-OVERWRITES-A-PROJECT-MOVE-EVERY-TICK): a step back onto the
-                    # tile just left is the A-B loop, so look for a legal tile that is neither it nor the current tile before dropping the target.
-                    way_round = MovementSystem._find_way_round_loop(entity, effective_target, target_pos, state_or_context, move_speed_mult)
-                    osc_delta = -entity.navigation.oscillation_count
-                    wait_delta = -entity.navigation.wait_count
-                    # The bounded give-up (2.213): a way-round that makes no net progress on this target counts; the count past WAYROUND_LIMIT is the real replan.
-                    dist_now = int(abs(target_pos[0] - entity.navigation.position[0]) + abs(target_pos[1] - entity.navigation.position[1]))
-                    best = entity.navigation.wayround_best_distance
-                    anchor = entity.navigation.wayround_anchor
-                    last_ev = entity.navigation.wayround_last_tick
-                    # F1 (amends 2.213): the count continues while it is open, the target is within one tile (Chebyshev) of the tile it opened on, and the last event is at most WAYROUND_QUIET_TICKS ago.
-                    continues = (entity.navigation.wayround_count > 0 and best is not None and anchor is not None and last_ev is not None
-                                 and max(abs(target_tile[0] - int(anchor[0])), abs(target_tile[1] - int(anchor[1]))) <= 1 and current_tick - last_ev <= WAYROUND_QUIET_TICKS)
-                    if not continues:
-                        wayround_count, wayround_best, wayround_anchor = 1, dist_now, target_tile  # a fresh count opens on this target
-                    elif dist_now < best:
-                        wayround_count, wayround_best, wayround_anchor = 1, dist_now, (int(anchor[0]), int(anchor[1]))  # progress: the baseline moves down, the anchor stays
-                    else:
-                        wayround_count, wayround_best, wayround_anchor = entity.navigation.wayround_count + 1, best, (int(anchor[0]), int(anchor[1]))
-                    if way_round is not None and wayround_count <= WAYROUND_LIMIT:
-                        effective_target = way_round
-                        wayround_set = (wayround_count, wayround_best, wayround_anchor, current_tick)
-                    else:
+                    osc = MovementSystem._oscillation_replan(entity, effective_target, target_pos, state_or_context, move_speed_mult)
+                    effective_target, osc_delta, wait_delta, wayround_set = osc.effective_target, osc.osc_delta, osc.wait_delta, osc.wayround_set
+                    if osc.gave_up:
                         replan = True
                         success = False
-                        effective_target = None
+                        reason_code = ReasonCode.WAYROUND_GIVE_UP  # 2.214: the give-up is not a legal step; it writes its own typed code, which replaces any older one
                         wayround_clear = True
                 else:
                     osc_delta = 1
