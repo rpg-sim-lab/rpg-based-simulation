@@ -103,6 +103,7 @@ src.engine.shop -> src.systems.economy_systems.reputation_discount
 src.engine.shop -> src.systems.market
 src.engine.tactical -> src.world.motivation.pressure_resolver
 src.engine.world_dynamics -> src.systems.world_systems.generator
+src.engine.world_dynamics -> src.world.births
 src.engine.world_dynamics -> src.world.boss
 src.engine.world_dynamics -> src.world.calamity
 src.engine.world_dynamics -> src.world.camp
@@ -111,7 +112,6 @@ src.engine.world_dynamics -> src.world.displacement
 src.engine.world_dynamics -> src.world.ecology
 src.engine.world_dynamics -> src.world.environment
 src.engine.world_dynamics -> src.world.influence
-src.engine.world_dynamics -> src.world.reproduction_humanoid
 src.engine.world_dynamics -> src.world.threat
 src.engine.world_dynamics -> src.world.transformation
 src.scenarios.catalog_state_builder -> src.certification.models
