@@ -193,9 +193,10 @@ Source: `agent-working/stored_artifacts/TCK-20261109-M1-BASIC-WILD-BIRTHS-FOR-EV
   - the genetics fallback is keyed by (state.seed, parent id) at the call site, and the shared helper is unchanged;
   - `population_young_births_delta` = the number of newborns per pair;
   - newborn `home_region_id` = the mother's, else the birth region, omitted when None and disclosed with G1a.
-- Open with rpg-designer-ubuntu as Q18 (its answers go into v3 of the cover):
-  - the newborn's `public_reputation` (the parents' average, via birth_record);
-  - `home_position`/`leash_radius` (copied from the mother).
+- Q18, recorded in cover v3 (the same stored file, now body sha256 91b0358b; it replaces 7df74bd7): both (a). Keep the newborn's `public_reputation` (the parents' combined value, under the existing birth_record law, idea 53) and its `home_position`/`leash_radius` (copied from the mother, each omitted when the mother's is None). Both are disclosed. The packet's read list is final.
+- The packet is now at impl commit a75d1103e, sha256 088701b6. It supersedes 2aa4beb7; only the optional Births Law bullet was removed.
+- Disclosure: every t0 body at s42 has no genetic_profile, so the seeded fallback fires for every first-generation parent.
+- Open with rpg-designer-ubuntu as Q19: `birth_record`'s combo_seed (builder.py:695) carries no world seed.
 - No Births Law text is committed until rpg-designer rules.
 
 ## Out of Scope
