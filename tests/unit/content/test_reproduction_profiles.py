@@ -29,7 +29,8 @@ def _repo_with(species_profile: dict, need_hunger: str, profiles: list | None) -
     yaml.safe_dump(species, open(os.path.join(root, "species.yaml"), "w"))
     yaml.safe_dump(needs, open(os.path.join(root, "need_profiles.yaml"), "w"))
     if profiles is not None:
-        yaml.safe_dump(profiles, open(os.path.join(root, "reproduction_profiles.yaml"), "w"))
+        shipped = yaml.safe_load(open(os.path.join(root, "reproduction_profiles.yaml")))
+        yaml.safe_dump([*shipped, *profiles], open(os.path.join(root, "reproduction_profiles.yaml"), "w"))
     return CatalogRepository(os.path.join(tmp, "c"))
 
 
@@ -77,7 +78,7 @@ def test_newborn_archetype_is_required_with_a_profile_and_refused_without_one():
     repo = _repo_with({"reproduction_profile": "test_births", "newborn_archetype": None}, "very_low", [_PROFILE])
     with pytest.raises(ReproductionProfileError, match="no newborn_archetype"):
         repo.load_all()
-    repo = _repo_with({"newborn_archetype": "hungry_wolf"}, "very_low", [_PROFILE])
+    repo = _repo_with({"reproduction_profile": None, "newborn_archetype": "hungry_wolf"}, "very_low", [_PROFILE])
     with pytest.raises(ReproductionProfileError, match="but no reproduction_profile"):
         repo.load_all()
 
@@ -94,4 +95,15 @@ def test_newborn_archetype_must_exist_and_belong_to_the_species():
 def test_species_without_a_profile_load_exactly_as_before():
     repo = CatalogRepository("data/content")
     repo.load_all()
-    assert repo.species["human"].newborn_archetype is None
+    no_births = [s for s in repo.species.values() if s.reproduction_profile is None]
+    assert {s.id for s in no_births} >= {"undead", "spirit", "slime", "dragonkin"}
+    assert all(s.newborn_archetype is None for s in no_births)
+
+
+def test_every_shipped_newborn_archetype_belongs_to_its_species_and_resolves():
+    from src.content.resolver import EntityArchetypeResolver
+    repo = CatalogRepository("data/content")
+    repo.load_all()
+    for species in repo.species.values():
+        if species.reproduction_profile is not None:
+            assert EntityArchetypeResolver(repo).resolve(species.newborn_archetype).species_id == species.id

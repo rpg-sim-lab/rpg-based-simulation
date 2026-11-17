@@ -162,8 +162,10 @@ class ArchetypeEntityFactory:
         equipment, inventory and job traits are not taken from the archetype: the role follows the mother (MONSTER stays
         MONSTER, anything else CITIZEN), gold is 0 and traits are the species' own declared traits (M1 births, rulings v2.2 D3).
         population_id and spawn_region are the mother's (omitted when she has none): on a newborn, spawn_region names its
-        population's declared region, not where it was born, and in campaign mode a surviving newborn can receive its
-        population's pending information in a later episode when no earlier roster member survives (G1 addendum A1)."""
+        population's declared region, not where it was born. In campaign mode, a surviving newborn can receive its
+        population's pending information responses and self-model events in a later episode (resolve_pending_information), but
+        only when no member of that population that entered the carried-forward roster before it survives. The resolver takes
+        the first match in roster insertion order, with no id rule. Every t0 body enters the roster before any newborn."""
         mother, mate = birth.mother, birth.mate
         properties = _newborn_properties(contract, mother)
         personality = build_personality_for_entity(entity_id, properties.get("faction_id"), birth.seed)

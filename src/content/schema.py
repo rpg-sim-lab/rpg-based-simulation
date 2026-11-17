@@ -195,8 +195,8 @@ class SpeciesDefinition(CatalogBaseDefinition):
     renamed from RaceDefinition, part of the race->species terminology migration)."""
     body_model: str = Field(..., description="Referenced BodyModelDefinition ID")
     need_profile: str = Field(..., description="Referenced NeedProfileDefinition ID")
-    reproduction_profile: Optional[str] = Field(None, min_length=1, description="Referenced ReproductionProfileDefinition ID; absent means the kind has no births")
-    newborn_archetype: Optional[str] = Field(None, min_length=1, description="Referenced EntityArchetypeDefinition ID whose body (stats, attributes, body model, personality draw) a newborn of this species takes; required exactly when reproduction_profile is set, and the archetype's species must be this one")
+    reproduction_profile: Optional[str] = Field(None, min_length=1, description="Optional. Referenced ReproductionProfileDefinition ID; absent means the kind has no births and the species loads exactly as before. A species that sets it must also set newborn_archetype, and its need profile must declare hunger")
+    newborn_archetype: Optional[str] = Field(None, min_length=1, description="Optional, and applies only to a species with a reproduction_profile. Referenced EntityArchetypeDefinition ID whose body (stats, attributes, body model) a newborn of this species takes, with no role, occupation, equipment, inventory or job traits. Required when reproduction_profile is set, refused when it is not; absent otherwise. The archetype must belong to this species")
     sense_profile: str = Field(..., description="Referenced SenseProfileDefinition ID")
     cognition_profile: str = Field(..., description="Referenced CognitionProfileDefinition ID")
     drive_profile: str = Field(..., description="Referenced DriveProfileDefinition ID")
