@@ -30,7 +30,7 @@ P1
 Both M0 references of the rpg gate ("last" and "milestone-first", rpg_gate_v1.json) were stale on the harness hash (525fe36f vs 5a7f1459), so all 253 outcome rows of every gate run read "stale" and said nothing per step. rpg-designer ruled the reference a separate owner ask. The owner chose (a), re-baseline through the standard path (#715 6920465555). Run 43840618903, pinned to 9c398a068 by a ref input, wrote an evidence-only candidate, which `rpg_gate_baseline rebaseline` refuses with no override, so the owner chose a re-dispatch on main with no ref input (#715 6920528237): run 43895014837 at e72270894.
 
 ## Scope
-- Write `tests/simulation_quality/rpg_gate/baselines/rpg_gate_v2.json` with the standard `python -m tools.test_architecture.rpg_gate_baseline rebaseline`, from run 43895014837's candidate (committed byte for byte by the ubuntu lead on origin/lead-m1base-gate-report 0db6b6954; sha256 3934db8e6d0c8b886b132cb562b890c5856a2c2defa402588adb440ce650fdc2), with --known, --memo-row (row 97), --pr, the owner ruling and a cite carrying the s42-only disclosure.
+- Write `tests/simulation_quality/rpg_gate/baselines/rpg_gate_v2.json` with the standard `python -m tools.test_architecture.rpg_gate_baseline rebaseline`, from run 43895014837's candidate (`agent-working/lead/evidence/rpg-gate-candidate-e72270894.json`, on main since #947 6034ea7c0, committed byte for byte by the ubuntu lead; sha256 3934db8e6d0c8b886b132cb562b890c5856a2c2defa402588adb440ce650fdc2), with --known, --memo-row (row 97), --pr, the owner ruling and a cite carrying the s42-only disclosure.
 - Roadmap §12.5 Base line and memo row 97.
 
 ## Out of Scope
@@ -60,7 +60,7 @@ None.
 ## Implementation Notes
 - Dry run 2026-11-16 into a scratch copy of baselines/: accepted; v2, milestone M1, 274 metric rows, 3 omitted validity rows (owned by the V1 free-meal entry), 0 undefined, 101 rows changed vs v1, 0 stop lines crossed; lint clean.
 
-- The command (dry run used --dir <scratch copy> and --pr "#DRYRUN"): `python3 -m tools.test_architecture.rpg_gate_baseline rebaseline --candidate <rpg-gate-candidate-e72270894.json> --config tests/simulation_quality/rpg_gate/config.yaml --dir tests/simulation_quality/rpg_gate/baselines --known tools/test_architecture/rpg_gate_known.yaml --memo-row "owner_decision_memo row 97" --pr "#N" --milestone M1 --cite "rpg gate run 43895014837 on main e72270894; src identical to 6b59284ee, shown hash-neutral against M1-base 9c398a068 at s42 only (owner 6917174751)" --owner-ruling-ref "#715 6920465555" --owner-ruling-date 2026-11-16`.
+- The command (dry run used --dir <scratch copy> and --pr "#DRYRUN"): `python3 -m tools.test_architecture.rpg_gate_baseline rebaseline --candidate agent-working/lead/evidence/rpg-gate-candidate-e72270894.json --config tests/simulation_quality/rpg_gate/config.yaml --dir tests/simulation_quality/rpg_gate/baselines --known tools/test_architecture/rpg_gate_known.yaml --memo-row "owner_decision_memo row 97" --pr "#N" --milestone M1 --cite "rpg gate run 43895014837 on main e72270894; src identical to 6b59284ee, shown hash-neutral against M1-base 9c398a068 at s42 only (owner 6917174751)" --owner-ruling-ref "#715 6920465555" --owner-ruling-date 2026-11-16`.
 
 ## Test Summary
 
