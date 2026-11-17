@@ -20,3 +20,7 @@ def species_of(entity: "EntityState") -> str:
     if isinstance(species_id, str) and species_id:
         return species_id
     return entity.kind
+
+
+class SenseProfileError(Exception):
+    """A body's species has no usable sense profile (PERC-02): a content error, never a silent baseline."""

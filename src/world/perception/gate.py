@@ -19,7 +19,8 @@ from typing import Any, Dict, List, Optional
 from pydantic import BaseModel, ConfigDict, Field
 
 from src.content.repository import CatalogRepository
-from src.core.species import species_of
+from src.content.species_senses import species_sense_profile
+from src.core.species import SenseProfileError, species_of  # noqa: F401  (SenseProfileError is re-exported for callers of the gate)
 
 logger = logging.getLogger(__name__)
 
@@ -43,10 +44,6 @@ _PERCEPTION_THRESHOLD = 0.2
 # PERC-02 (owner Q2a, #715 6937049127): at night vision counts NIGHT_VISION_STEPS levels lower on this ladder unless the profile declares night_vision.
 _LEVEL_LADDER = ("very_high", "high", "medium_high", "medium", "low_medium", "low", "very_low", "none")
 NIGHT_VISION_STEPS = 2
-
-
-class SenseProfileError(Exception):
-    """A species in content has no usable sense profile: a content error, never a silent baseline."""
 
 
 def _lower_level(val: Optional[str], steps: int) -> Optional[str]:
@@ -203,20 +200,17 @@ class PerceptionGate:
     ) -> tuple[Dict[str, str], str, bool]:
         """The sense field values, the profile id used and whether it declares night vision, derived from the body's species (the one read site)."""
         species_id = species_of(entity)
-        species = self._catalog.get_species(species_id)
-        if species is None:
+        defn = species_sense_profile(self._catalog, species_id)
+        if defn is None:
             self.unprofiled_counts[species_id] = self.unprofiled_counts.get(species_id, 0) + 1
             logger.debug("unprofiled body: species %r is not in content; baseline senses", species_id)
             return dict(_BASELINE_SENSE), "baseline_humanoid", False
-        defn = self._catalog.get_sense_profile(species.sense_profile) if species.sense_profile else None
-        if defn is None:
-            raise SenseProfileError(f"species {species_id!r} has no usable sense profile (declared {species.sense_profile!r})")
         strengths = {
             field: getattr(defn, field)
             for field in _SENSE_TO_SIGNAL
             if getattr(defn, field, None) is not None
         }
-        return strengths, species.sense_profile, bool(defn.night_vision)
+        return strengths, defn.id, bool(defn.night_vision)
 
 
 # ---------------------------------------------------------------------------

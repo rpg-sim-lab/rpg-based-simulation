@@ -10,8 +10,9 @@ from types import SimpleNamespace
 import pytest
 
 from src.content.repository import CatalogRepository
-from src.world.perception.gate import NIGHT_VISION_STEPS, PerceptionGate, SenseProfileError, _lower_level, _LEVEL_TO_FLOAT, _PERCEPTION_THRESHOLD
-from src.world.perception.signals import emitted_signals
+from src.core.species import SenseProfileError
+from src.world.perception.gate import NIGHT_VISION_STEPS, PerceptionGate, _lower_level, _LEVEL_TO_FLOAT, _PERCEPTION_THRESHOLD
+from src.engine.perception_signals import emitted_signals
 
 NIGHT_SIGHTED_PROFILES = {"goblin_alert_senses", "predator_smell_senses", "spider_vibration_senses", "undead_dread_senses", "troll_senses"}
 
@@ -158,11 +159,11 @@ def test_a_gate_error_is_not_perception_and_is_logged_at_error(monkeypatch, capl
 # --- binding rule: perception reads the species, never `kind` ----------------------------------------------------------------------------
 
 def test_perception_modules_read_no_kind():
-    root = Path(__file__).resolve().parents[3] / "src" / "world" / "perception"
-    for name in ("gate.py", "signals.py"):
-        text = (root / name).read_text(encoding="utf-8")
-        assert not re.search(r"\.kind\b", text), name
-    assert "species_of" in (root / "gate.py").read_text(encoding="utf-8")
+    src = Path(__file__).resolve().parents[3] / "src"
+    for rel in ("world/perception/gate.py", "engine/perception_signals.py", "content/species_senses.py"):
+        text = (src / rel).read_text(encoding="utf-8")
+        assert not re.search(r"\.kind\b", text), rel
+    assert "species_of" in (src / "world" / "perception" / "gate.py").read_text(encoding="utf-8")
 
 
 def test_a_body_model_may_declare_a_magic_signal_and_only_known_keys_and_levels():
@@ -173,3 +174,85 @@ def test_a_body_model_may_declare_a_magic_signal_and_only_known_keys_and_levels(
     for bad in ({"smell": "low"}, {"magic": "enormous"}):
         with pytest.raises(ValueError):
             BodyModelDefinition(id="b", display_name="B", signals=bad)
+
+
+# --- the build paths refuse what the gate would not profile: ONE resolver (src.content.species_senses) --------------------------------------
+
+@pytest.fixture()
+def broken_human(catalog):
+    """The module catalog installed as the warmed one the build paths read, with `human` declaring a sense profile that does not exist."""
+    from src.engine.behavior_consumers import configure_behavior_consumers, reset_behavior_consumers
+    human = catalog.species["human"]
+    catalog.species["human"] = human.model_copy(update={"sense_profile": "nope"})
+    configure_behavior_consumers(catalog)
+    try:
+        yield
+    finally:
+        catalog.species["human"] = human
+        reset_behavior_consumers()
+
+
+@pytest.fixture()
+def good_catalog(catalog):
+    from src.engine.behavior_consumers import configure_behavior_consumers, reset_behavior_consumers
+    configure_behavior_consumers(catalog)
+    try:
+        yield catalog
+    finally:
+        reset_behavior_consumers()
+
+
+def test_the_shared_resolver_returns_the_species_profile_and_refuses_the_rest(good_catalog):
+    from src.content.species_senses import require_species_sense_profile, species_sense_profile
+    assert require_species_sense_profile("troll", "test").id == "troll_senses"
+    assert species_sense_profile(good_catalog, "no_such_species") is None  # the gate counts this as unprofiled
+    for bad in ("no_such_species", None, ""):
+        with pytest.raises(SenseProfileError):
+            require_species_sense_profile(bad, "test")
+
+
+def test_the_gate_and_the_build_paths_read_the_same_profile(good_catalog):
+    from src.content.species_senses import require_species_sense_profile
+    gate = PerceptionGate(good_catalog)
+    for species_id in good_catalog.species:
+        assert gate._load_sense_strengths(_body(species_id))[1] == require_species_sense_profile(species_id, "test").id
+
+
+def test_archetype_path_refuses_a_content_species_without_a_usable_profile(broken_human):
+    from src.entities.archetype_factory import ArchetypeEntityFactory, EntitySpawnContext, require_archetype_senses
+    from src.entities.runtime_contract import ResolvedEntityRuntimeContract
+    contract = ResolvedEntityRuntimeContract(
+        archetype_id="human_worker", species_id="human", faction_id="town_council", role_id="worker", kind="humanoid", hp=80, max_hp=80, atk=8, def_stat=4,
+        attack_range=1, readiness=100.0, inventory_items={}, starting_gold=0.0, traits=(), themes=())
+    with pytest.raises(SenseProfileError):
+        require_archetype_senses(contract)
+    with pytest.raises(SenseProfileError):
+        ArchetypeEntityFactory().build_entity(1, contract, EntitySpawnContext())
+
+
+def test_archetype_helper_accepts_a_species_with_a_profile(good_catalog):
+    from src.entities.archetype_factory import require_archetype_senses
+    from src.entities.runtime_contract import ResolvedEntityRuntimeContract
+    contract = ResolvedEntityRuntimeContract(
+        archetype_id="human_worker", species_id="human", faction_id="town_council", role_id="worker", kind="humanoid", hp=80, max_hp=80, atk=8, def_stat=4,
+        attack_range=1, readiness=100.0, inventory_items={}, starting_gold=0.0, traits=(), themes=())
+    require_archetype_senses(contract)
+
+
+def test_legacy_spawn_path_refuses_a_species_without_a_usable_profile(broken_human):
+    from src.entities.archetype_factory import EntitySpawnContext
+    from src.worldassembly.entity_spawner import WorldEntitySpawner
+    from src.worldassembly.models import ResolvedEntityProfile
+    from src.core.enums import EntityRole, Faction
+    profile = ResolvedEntityProfile(legacy_role=int(EntityRole.HERO), legacy_faction=int(Faction.HERO_GUILD), hp=10, max_hp=10, atk=1, def_stat=1, attack_range=1, readiness=1.0,
+                                    inventory_seed="0", cognition_seed="0", spawn_position=(1.0, 1.0), species_id="human")
+    with pytest.raises(SenseProfileError):
+        WorldEntitySpawner()._spawn_legacy_guard(1, profile, EntitySpawnContext(position=(1.0, 1.0)), 42)
+
+
+def test_compile_path_refuses_a_content_species_without_a_usable_profile(broken_human):
+    from src.worldbuilding.compiler import WorldCompiler
+    from src.worldbuilding.repository import WorldRepository
+    spec, context = WorldRepository("data/worlds").load_world_with_context("urban_political")
+    with pytest.raises(SenseProfileError):
+        WorldCompiler.compile(spec, 42, context=context)

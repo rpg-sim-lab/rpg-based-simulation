@@ -14,6 +14,8 @@ from __future__ import annotations
 
 from typing import Any, Dict, Optional
 
+from src.engine.sleep_debt import is_asleep
+
 _SIZE_VISIBILITY = {"small": "low", "medium": "medium", "large": "high"}
 _UNDECLARED_VISIBILITY = "medium"  # a body with no declared size keeps the old default
 _GATE_KEY = {"life": "life_signal", "magic": "magic_signal"}  # body-model signal key -> the gate's signal key
@@ -21,14 +23,12 @@ _GATE_KEY = {"life": "life_signal", "magic": "magic_signal"}  # body-model signa
 
 def emitted_signals(entity: Any, body: Optional[Any]) -> Dict[str, str]:
     """The gate's signal levels for `entity`, whose body model is `body` (None when its species is not in content)."""
-    from src.engine.sleep_debt import is_asleep  # local: sleep_debt imports engine modules
-
     lodged = getattr(entity.navigation, "lodged_in", None) is not None
     still_hidden = lodged or is_asleep(entity)
     moving = bool(getattr(entity.navigation, "moved_recently", False))
     activity = "very_low" if still_hidden else ("medium" if moving else "low")
     alive = bool(getattr(getattr(entity, "combat", None), "alive", True))
-    size = getattr(body, "size", None)
+    size: str = getattr(body, "size", None) or ""
     signals = {
         "visibility": _SIZE_VISIBILITY.get(size, _UNDECLARED_VISIBILITY),
         "noise": activity,

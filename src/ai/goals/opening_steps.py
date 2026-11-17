@@ -19,6 +19,7 @@ from typing import Any, List, Optional, Tuple
 
 from src.ai.goals.base import OpeningStepKind
 from src.content_semantics.faction import get_species_id_str
+from src.core.calendar import is_night
 from src.core.items import food_hunger_recovery
 from src.core.state import (
     AuthoritativeState,
@@ -27,7 +28,6 @@ from src.core.state import (
     ResourceNodeState,
 )
 from src.engine.appraisal import Relation, can_eat_item
-from src.core.calendar import is_night
 from src.engine.hostility import relation
 from src.engine.rpg_depth import LeashService
 from src.engine.shop_sale import nearest_sale

@@ -26,7 +26,6 @@ def _contract(**overrides) -> ResolvedEntityRuntimeContract:
         starting_gold=0.0,
         traits=(),
         themes=(),
-        sense_profile_id="normal_humanoid_senses",  # PERC-02: an archetype body must carry its species' resolved profile
     )
     defaults.update(overrides)
     return ResolvedEntityRuntimeContract(**defaults)

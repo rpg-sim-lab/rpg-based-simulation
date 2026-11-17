@@ -10,6 +10,8 @@ from __future__ import annotations
 from typing import Any, Dict, Optional, Tuple
 
 from src.content.common_knowledge_seed import install_warm_catalog_provider
+from src.core.species import species_of
+from src.engine.perception_signals import emitted_signals
 
 _perception_gate = None
 _pressure_resolver = None
@@ -63,16 +65,6 @@ def get_kind_properties(species_id: Optional[str]) -> Tuple[Any, Any]:
     return species, (catalog.get_body_model(species.body_model) if species else None)
 
 
-def require_sense_profile(species_id: Optional[str], where: str) -> None:
-    """PERC-02: a body built on the compile, spawn or archetype path must have a species in content whose sense profile resolves; otherwise a typed
-    content error (``SenseProfileError``), never a silent baseline."""
-    from src.world.perception.gate import SenseProfileError
-    species, _ = get_kind_properties(species_id)
-    catalog = _seeding_catalog()
-    if species is None or catalog.get_sense_profile(species.sense_profile) is None:
-        raise SenseProfileError(f"{where}: species {species_id!r} has no usable sense profile")
-
-
 def get_role_definition(role_id: str):
     """Return the named RoleDefinition via the warmed catalog singleton."""
     global _catalog
@@ -95,8 +87,6 @@ def _auto_init() -> None:
 
 def get_entity_signals(entity: Any) -> Dict[str, str]:
     """The signals `entity` gives off for perception checks (PERC-02: they follow the body; see ``src.world.perception.signals.emitted_signals``)."""
-    from src.core.species import species_of
-    from src.world.perception.signals import emitted_signals
     _, body = get_kind_properties(species_of(entity))
     return emitted_signals(entity, body)
 
