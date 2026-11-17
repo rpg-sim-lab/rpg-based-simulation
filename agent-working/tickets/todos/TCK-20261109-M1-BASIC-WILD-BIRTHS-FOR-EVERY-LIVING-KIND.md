@@ -79,6 +79,10 @@ Source: `agent-working/stored_artifacts/TCK-20261109-M1-BASIC-WILD-BIRTHS-FOR-EV
   - merge() unions the remove lists.
   - Removing an absent key is a no-op.
   - Unit tests cover all three, plus a serialise round trip if patches are serialised anywhere.
+- rpg-designer acked v2 via lead-planner-u24 and lead-planner (relayed 2026-11-17, recorded with #715 6951051264). Q11 and Q12 bind. Q11 is an M1 interim, under two conditions:
+  - (a) The ECOL-06 Bible ch05 text and the Unified divergence entry both state: "a newborn's body is its species' t0 body at life stage CHILD; no child stat scaling in M1".
+  - (b) Every system that gates on LifeStage keeps gating newborns. No path may treat CHILD as ADULT to make births work. A later growth or stat law is a ch01 change and goes to rpg-designer.
+  - Q12: a field on a typed update record is not durable state, and the prune runs only through the apply path.
 
 ## Out of Scope
 - §12.4 (packs, herds, territory), milestones 2 and 3, and any rule work not listed in §12.3 (owner ruling only).
