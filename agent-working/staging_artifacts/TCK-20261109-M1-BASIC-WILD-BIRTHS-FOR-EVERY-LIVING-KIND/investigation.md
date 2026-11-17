@@ -20,3 +20,9 @@ tags: []
 - t0 body provenance: archetype path (`ArchetypeEntityFactory`, stats from stat_profile via contract) versus classic compile (`worldbuilding/compiler.py`, stats from the population's resolved profile, no `archetype_id` property). Which the gate worlds use is the first pre-code check.
 - The step-4 own-job runner (run_step4.sh, spy) is not on this host; `tools/rpg_measure/paired.py` and `arm_child.py` exist and are the base for the new runner.
 - Not read: creature_territory (gated OFF, untouched), calamity (untouched).
+
+## Step-1 results (2026-11-17, 3aafdb383; compile of paired.WORLDS at seed 42, no ticks run)
+- Bodies: frontier_living_world 55 (goblin GUARD 4 / MONSTER 5, human GUARD 9 / SHOPKEEPER 6 / WORKER 9, small_plant_eater 6, spider 5, undead 6, wolf 5; 2 camps), urban_political 30 (human only, 3 HERO), crowded_frontier 38 (goblin 9, human 24, orc 5; 1 camp). All ADULT, age 0, hunger 0.0, none with `archetype_id`.
+- Eligible kinds at t0 with >= 2 adults: human, goblin, wolf, spider, small_plant_eater (frontier); human, goblin, orc (crowded); human (urban). Undead present, no births by design.
+- Roles: goblins and humans mostly civil roles (GUARD, SHOPKEEPER, WORKER); only MONSTER mothers give MONSTER newborns, others give CITIZEN (the Coming-of-Age roll never runs inside a run, newborns stay CHILD).
+- Apply order and id behaviour as in plan G2; spatial query metric as in plan section 2.
