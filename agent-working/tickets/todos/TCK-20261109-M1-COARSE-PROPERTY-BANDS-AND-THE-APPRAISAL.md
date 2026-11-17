@@ -67,6 +67,8 @@ content schemas, src/strategy/ (appraisal)
 ## Implementation Notes
 None yet.
 
+- 2026-11-17 (rpg-planner; owner #715 6937049127 Q8 (a)): this item keys kill XP and gold to the defeated body's power band and level. AC: Bible 02's kill-reward table is rewritten ONCE to the new rule (it omits the hostile-first step today; TCK-20261117-BIBLE-02-KILL-REWARD-TABLE-OMITS-THE-HOSTILE-FIRST-STEP marks the ledger row divergent first), and the reward ledger row returns to verified with a pinning test. Q9 (a): movement priority is removed (equal priority, id tie-break). Q10 (a): a tie means cannot overcome.
+
 ## Test Summary
 
 ## Files Changed
