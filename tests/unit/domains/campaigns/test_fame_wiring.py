@@ -98,8 +98,7 @@ def test_build_initial_state_bridges_entity_fame_above_threshold_into_entity_leg
     # An alive carry-forward entity is required for _build_initial_state() to reach the bridge
     # logic at all -- with none, it early-returns a bare fresh AuthoritativeState (episode-0 path).
     orch.state.persistent_entities[1] = EntityCarryForward(
-        entity_id=1, level=1, xp=0, equipment={}, reputation=1.0, alive=True,
-    )
+        entity_id=1, level=1, xp=0, equipment={}, reputation=1.0, alive=True, kind="human")
 
     state = orch._build_initial_state(1, _episode_spec())
 
@@ -138,8 +137,7 @@ def test_build_initial_state_bridges_belief_institutions_and_fidelity_by_entity_
     # An alive carry-forward entity is required for _build_initial_state() to reach the bridge
     # logic at all -- same requirement as the entity_legend_facts test above.
     orch.state.persistent_entities[1] = EntityCarryForward(
-        entity_id=1, level=1, xp=0, equipment={}, reputation=1.0, alive=True,
-    )
+        entity_id=1, level=1, xp=0, equipment={}, reputation=1.0, alive=True, kind="human")
 
     state = orch._build_initial_state(1, _episode_spec())
 

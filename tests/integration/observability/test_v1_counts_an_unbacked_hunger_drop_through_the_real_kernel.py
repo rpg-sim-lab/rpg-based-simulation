@@ -27,7 +27,8 @@ def _forced_worker(gold: int):
 
         state = kernel.state
         inn = next(b for b in state.buildings.values() if b.kind == "inn")
-        worker = next(e for e in state.entities.values() if e.kind == "worker" and e.combat.alive)
+        from src.core.species import occupation_of  # label selector moved to occupation at step 4
+        worker = next(e for e in state.entities.values() if occupation_of(e) == "worker" and e.combat.alive)
         entities = dict(state.entities)
         entities[worker.id] = replace(
             worker, navigation=replace(worker.navigation, position=(inn.position[0] + 1.0, inn.position[1])),

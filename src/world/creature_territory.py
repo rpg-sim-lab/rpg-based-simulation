@@ -65,7 +65,8 @@ class CreatureTerritoryService:
                     mob = generator.spawn_monster(
                         entity.navigation.position,
                         state=state,
-                        kind=entity.kind,
+                        species=entity.kind,
+                        occupation=entity.identity.occupation,
                         difficulty_tier=1,
                     )
                     entities_add.append(mob)

@@ -8003,6 +8003,21 @@
   - agent-working/stored_artifacts/TCK-20261117-AN-ENTITY-CARRIES-ITS-OCCUPATION-LABEL-AND-ONE-SPECIES-READ-SPECIES-OF/test_plan.md
   tags: []
 - type: ticket
+  path: agent-working/tickets/done/TCK-20261117-KIND-IS-THE-SPECIES-AT-EVERY-WRITER.md
+  ticket_id: TCK-20261117-KIND-IS-THE-SPECIES-AT-EVERY-WRITER
+  title: '`kind` is the species id at every writer, and the label lives in `occupation`
+    (M1 step 4 of 5)'
+  tier: standard
+  ticket_type: feature
+  date: '2026-11-17'
+  related_code_areas:
+  - kind
+  artifact_files:
+  - agent-working/stored_artifacts/TCK-20261117-KIND-IS-THE-SPECIES-AT-EVERY-WRITER/investigation.md
+  - agent-working/stored_artifacts/TCK-20261117-KIND-IS-THE-SPECIES-AT-EVERY-WRITER/plan.md
+  - agent-working/stored_artifacts/TCK-20261117-KIND-IS-THE-SPECIES-AT-EVERY-WRITER/test_plan.md
+  tags: []
+- type: ticket
   path: agent-working/tickets/done/TCK-20261117-LEAD-BOARD-SEVENTH-PASS.md
   ticket_id: TCK-20261117-LEAD-BOARD-SEVENTH-PASS
   title: The lead board records Milestone 1's three-phase plan, its boundaries and
@@ -8076,6 +8091,30 @@
   artifact_files: []
   tags: []
 - type: ticket
+  path: agent-working/tickets/todos/TCK-20261117-A-MAGICAL-DEMONIC-ENTITY-BODY-DECLARES-A-SPECIES.md
+  ticket_id: TCK-20261117-A-MAGICAL-DEMONIC-ENTITY-BODY-DECLARES-A-SPECIES
+  title: A magical or demonic entity body declares a species, and `magical_demonic_entity`
+    leaves the non-living allowlist
+  tier: standard
+  ticket_type: refactor
+  date: '2026-11-17'
+  related_code_areas:
+  - src/core/species.py, src/world/
+  artifact_files: []
+  tags: []
+- type: ticket
+  path: agent-working/tickets/todos/TCK-20261117-A-WORLD-BOSS-BODY-DECLARES-A-SPECIES.md
+  ticket_id: TCK-20261117-A-WORLD-BOSS-BODY-DECLARES-A-SPECIES
+  title: A world boss body declares a species, and `world_boss` leaves the non-living
+    allowlist
+  tier: standard
+  ticket_type: refactor
+  date: '2026-11-17'
+  related_code_areas:
+  - src/core/species.py, src/world/
+  artifact_files: []
+  tags: []
+- type: ticket
   path: agent-working/tickets/todos/TCK-20261117-BIBLE-02-KILL-REWARD-TABLE-OMITS-THE-HOSTILE-FIRST-STEP.md
   ticket_id: TCK-20261117-BIBLE-02-KILL-REWARD-TABLE-OMITS-THE-HOSTILE-FIRST-STEP
   title: Bible 02's kill-reward table omits the hostile-first step
@@ -8143,6 +8182,18 @@
   artifact_files: []
   tags: []
 - type: ticket
+  path: agent-working/tickets/todos/TCK-20261117-PAY-DOWN-THE-STEP-4-KIND-IS-SPECIES-CEILING-RAISES.md
+  ticket_id: TCK-20261117-PAY-DOWN-THE-STEP-4-KIND-IS-SPECIES-CEILING-RAISES
+  title: Pay down the code-health ceilings that M1 step 4 (kind is the species) raised
+  tier: standard
+  ticket_type: refactor
+  date: '2026-11-17'
+  related_code_areas:
+  - src/world/, src/worldassembly/, src/worldbuilding/, src/systems/world_systems/generator.py,
+    src/domains/campaigns/, src/testing/
+  artifact_files: []
+  tags: []
+- type: ticket
   path: agent-working/tickets/todos/TCK-20261117-RECOVER-SCORER-FALLS-BACK-TO-THE-TOWN-CENTRE-AT-ANY-DISTANCE.md
   ticket_id: TCK-20261117-RECOVER-SCORER-FALLS-BACK-TO-THE-TOWN-CENTRE-AT-ANY-DISTANCE
   title: RecoverScorer falls back to the town centre at any distance
@@ -8173,6 +8224,18 @@
   date: '2026-11-17'
   related_code_areas:
   - src/observability/event_shapers.py; tests/unit/observability/
+  artifact_files: []
+  tags: []
+- type: ticket
+  path: agent-working/tickets/todos/TCK-20261117-TEST-FIXTURES-DECLARE-A-SPECIES-THROUGH-A-HELPER-AND-THE-BUILDER-DEFAULT-GOES.md
+  ticket_id: TCK-20261117-TEST-FIXTURES-DECLARE-A-SPECIES-THROUGH-A-HELPER-AND-THE-BUILDER-DEFAULT-GOES
+  title: Test fixtures declare a species through a helper, and the `V2EntityBuilder`
+    default kind goes
+  tier: standard
+  ticket_type: refactor
+  date: '2026-11-17'
+  related_code_areas:
+  - src/core/species.py, src/world/
   artifact_files: []
   tags: []
 - type: ticket

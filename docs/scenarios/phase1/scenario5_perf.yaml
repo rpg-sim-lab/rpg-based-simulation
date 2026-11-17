@@ -3,6 +3,7 @@ world_pack: phase1_adventure_seed
 actors:
   - count: 30
     role: HERO
+    species: human
     level: 1
     class_id: warrior
     start_region: hometown
