@@ -34,10 +34,12 @@ class ProjectEnd(str, Enum):
       `SUPERSEDED_BY_TARGET` (ABANDONED): a candidate of the same kind at a different target replaced this live record (`supersede_record`).
       `THREAT_CLEARED` (COMPLETED): a COMBAT_RETREAT project whose threat is gone.
       `WAY_CLOSED` (ABANDONED): a fatigue project whose subject reached the building and no bed was free (F3, divergence 2.155).
+      `SUSPENSION_EXPIRED` (ABANDONED): a SUSPENDED project that stayed suspended for `SUSPENSION_TTL_TICKS` without resuming (N10, divergence 2.212); every project kind.
     A project ended for any other reason keeps `ended_by` None."""
     SUPERSEDED_BY_TARGET = "SUPERSEDED_BY_TARGET"
     THREAT_CLEARED = "THREAT_CLEARED"
     WAY_CLOSED = "WAY_CLOSED"
+    SUSPENSION_EXPIRED = "SUSPENSION_EXPIRED"
 
 
 class ObjectiveStatus(str, Enum):
@@ -363,12 +365,17 @@ class ProjectState:
     # COMBAT_RETREAT only: the tick `present_threat_to` last turned false for the CURRENT, ACTIVE project and has stayed false since (the start of its clear window); None while a
     # threat is present, before the first check, and on every other kind. Written only by `note_threat_state`; omitted from the canonical dict while None.
     cleared_since: Optional[int] = None
+    # The tick this project became SUSPENDED (N10, divergence 2.212): the clock of `SUSPENSION_TTL_TICKS`. Set by every SUSPENDED writer, cleared by `resume_project`; None while the
+    # project is not SUSPENDED (and on an old checkpoint's SUSPENDED record, which `expire_suspended` stamps on first sight). Appended LAST; omitted from the canonical dict while None.
+    suspended_since: Optional[int] = None
 
     def canonical_extra(self) -> Dict[str, Any]:
-        """The canonical-dict entries of this project that are omitted while empty: `ended_by` and `cleared_since` (a project that never had a typed end or a clear window keeps the unrelated state hash where it was)."""
+        """The canonical-dict entries of this project that are omitted while empty: `ended_by`, `cleared_since` and `suspended_since` (a project that never had a typed end, a clear window or a suspension keeps the unrelated state hash where it was)."""
         extra: Dict[str, Any] = {"ended_by": self.ended_by.value} if self.ended_by is not None else {}
         if self.cleared_since is not None:
             extra["cleared_since"] = self.cleared_since
+        if self.suspended_since is not None:
+            extra["suspended_since"] = self.suspended_since
         return extra
 
     def canonical_objectives(self) -> List[Dict[str, Any]]:
@@ -430,7 +437,7 @@ def end_record(project: ProjectState, status: ProjectStatus, ended_by: ProjectEn
     """The one writer of ``ended_by``: ``project`` with the terminal ``status`` and its typed end. A record that already has an end is never rewritten (ValueError: a caller bug, not a state)."""
     if project.ended_by is not None:
         raise ValueError(f"project {project.id} already ended by {project.ended_by.value}")
-    return dataclasses.replace(project, status=status, ended_by=ended_by)
+    return dataclasses.replace(project, status=status, ended_by=ended_by, suspended_since=None)  # a terminal record has no suspension clock (N10)
 
 
 def note_threat_state(project: ProjectState, present: bool, tick: int) -> ProjectState:
@@ -445,6 +452,29 @@ def note_threat_state(project: ProjectState, present: bool, tick: int) -> Projec
 def restart_clear_window(project: ProjectState) -> ProjectState:
     """The project with its clear window dropped (a suspended retreat was not observed, so "continuously clear" cannot be claimed across the suspension); the project itself when it has none."""
     return project if project.cleared_since is None else dataclasses.replace(project, cleared_since=None)
+
+
+#: N10 (divergence 2.212, BALANCE value): a SUSPENDED project older than this many ticks ends. Liveness only needs it to be finite.
+SUSPENSION_TTL_TICKS = 200
+
+
+def suspend_record(project: ProjectState, tick: int) -> ProjectState:
+    """The one writer of a SUSPENDED status: ``project`` SUSPENDED, its suspension clock opened at ``tick``."""
+    return dataclasses.replace(project, status=ProjectStatus.SUSPENDED, suspended_since=tick)
+
+
+def expire_suspended(projects: Mapping[str, ProjectState], tick: int) -> List[ProjectState]:
+    """The records to write for the SUSPENDED projects in ``projects`` at ``tick`` (N10). A SUSPENDED record with no clock (an old checkpoint) is stamped ``tick``; one suspended for at least
+    `SUSPENSION_TTL_TICKS` ends ABANDONED / `SUSPENSION_EXPIRED` through `end_record`. Any other record, and a younger SUSPENDED one, yields nothing. Reads only; the caller writes."""
+    out: List[ProjectState] = []
+    for project in projects.values():
+        if project.status != ProjectStatus.SUSPENDED:
+            continue
+        if project.suspended_since is None:
+            out.append(dataclasses.replace(project, suspended_since=tick))
+        elif tick - project.suspended_since >= SUSPENSION_TTL_TICKS:
+            out.append(end_record(project, ProjectStatus.ABANDONED, ProjectEnd.SUSPENSION_EXPIRED))
+    return out
 
 
 def supersede_record(project: ProjectState) -> ProjectState:
