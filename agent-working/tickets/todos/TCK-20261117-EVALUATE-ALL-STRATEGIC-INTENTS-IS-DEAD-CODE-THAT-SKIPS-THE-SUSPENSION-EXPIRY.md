@@ -57,6 +57,7 @@ Found by rpg-implementer-3 during N10 (TCK-20261020-SUSPENDED-PROJECTS-ARE-NEVER
 
 ## Implementation Notes
 - Filed by rpg-planner.
+- Also dead in the same family (rpg-implementer-3, blocker-churn fix): StrategicIntelligenceSystem.resolve_blockers (intelligence.py ~:845) has no caller and still completes a resolve_blocker project untyped (ended_by None). Delete it, or type its end (ProjectEnd.BLOCKER_CLEARED), with this ticket (rpg-designer, 2026-11-17).
 
 ## Test Summary
 
