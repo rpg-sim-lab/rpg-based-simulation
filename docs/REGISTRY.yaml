@@ -8115,6 +8115,18 @@
   artifact_files: []
   tags: []
 - type: ticket
+  path: agent-working/tickets/todos/TCK-20261117-A-NEWBORN-NEVER-GROWS-UP-INSIDE-A-RUN-NEEDS-A-MATURATION-CLOCK.md
+  ticket_id: TCK-20261117-A-NEWBORN-NEVER-GROWS-UP-INSIDE-A-RUN-NEEDS-A-MATURATION-CLOCK
+  title: A newborn stays a child for 3,456,000 ticks, so no second generation exists
+    inside any measured run
+  tier: standard
+  ticket_type: feature
+  date: '2026-11-17'
+  related_code_areas:
+  - src/ai/life_stage.py, src/systems/lifecycle_systems/lifecycle.py
+  artifact_files: []
+  tags: []
+- type: ticket
   path: agent-working/tickets/todos/TCK-20261117-A-WORLD-BOSS-BODY-DECLARES-A-SPECIES.md
   ticket_id: TCK-20261117-A-WORLD-BOSS-BODY-DECLARES-A-SPECIES
   title: A world boss body declares a species, and `world_boss` leaves the non-living
