@@ -163,3 +163,13 @@ def test_perception_modules_read_no_kind():
         text = (root / name).read_text(encoding="utf-8")
         assert not re.search(r"\.kind\b", text), name
     assert "species_of" in (root / "gate.py").read_text(encoding="utf-8")
+
+
+def test_a_body_model_may_declare_a_magic_signal_and_only_known_keys_and_levels():
+    from src.content.schema import BodyModelDefinition
+    body = BodyModelDefinition(id="b", display_name="B", signals={"magic": "very_high", "visibility": "none"})
+    sig = emitted_signals(_body("fixture_species"), body)
+    assert sig["magic_signal"] == "very_high" and sig["visibility"] == "none"
+    for bad in ({"smell": "low"}, {"magic": "enormous"}):
+        with pytest.raises(ValueError):
+            BodyModelDefinition(id="b", display_name="B", signals=bad)

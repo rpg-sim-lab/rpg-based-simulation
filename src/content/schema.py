@@ -90,8 +90,8 @@ class SenseProfileDefinition(CatalogBaseDefinition):
     night_vision: bool = Field(False, description="PERC-02: True when the kind sees as well at night as by day; absent/False = vision counts two levels lower at night")
 
 
-# PERC-02: the signals a body can give off, as the body model declares them (the gate's levels). `life` is the gate's life_signal.
-BODY_SIGNAL_KEYS = ("visibility", "noise", "scent", "vibration", "life")
+# PERC-02: the signals a body can give off, as the body model declares them (the gate's levels). `life` is the gate's life_signal and `magic` its magic_signal.
+BODY_SIGNAL_KEYS = ("visibility", "noise", "scent", "vibration", "life", "magic")
 SIGNAL_LEVELS = ("very_high", "high", "medium_high", "medium", "low_medium", "low", "very_low", "none")
 
 
@@ -104,7 +104,7 @@ class BodyModelDefinition(CatalogBaseDefinition):
     diet: Optional[List[str]] = Field(None, description="Food classes this body can eat; [] declares none, absent is undeclared (decision 44)")
     edible_as: Optional[List[str]] = Field(None, description="Food classes this body feeds when eaten; [] declares none, absent is undeclared (decision 44)")
     meat_yield: int = Field(0, ge=0, description="Raw meat units a dead body of this kind leaves (0 for a body that does not feed meat)")
-    signals: Optional[Dict[str, str]] = Field(None, description="PERC-02: signal levels this body gives off that differ from the body-derived default (keys: visibility, noise, scent, vibration, life)")
+    signals: Optional[Dict[str, str]] = Field(None, description="PERC-02: signal levels this body gives off that differ from the body-derived default (keys: visibility, noise, scent, vibration, life, magic)")
 
     @field_validator("signals")
     @classmethod

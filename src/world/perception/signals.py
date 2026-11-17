@@ -6,7 +6,7 @@ Defaults are derived from the body, never from a kind name:
 - noise and vibration: medium while it moved last step, low while still, very_low while asleep or lodged;
 - scent: medium for a living body;
 - life: medium for a living body.
-A body model may declare any of visibility / noise / scent / vibration / life in its `signals` block; a declared level replaces the derived one
+A body model may declare any of visibility / noise / scent / vibration / life / magic in its `signals` block; a declared level replaces the derived one
 (an undead or spirit body declares life none). Magic and social signals are not derived from the body (none, as before).
 """
 
@@ -16,6 +16,7 @@ from typing import Any, Dict, Optional
 
 _SIZE_VISIBILITY = {"small": "low", "medium": "medium", "large": "high"}
 _UNDECLARED_VISIBILITY = "medium"  # a body with no declared size keeps the old default
+_GATE_KEY = {"life": "life_signal", "magic": "magic_signal"}  # body-model signal key -> the gate's signal key
 
 
 def emitted_signals(entity: Any, body: Optional[Any]) -> Dict[str, str]:
@@ -39,5 +40,5 @@ def emitted_signals(entity: Any, body: Optional[Any]) -> Dict[str, str]:
     }
     declared = getattr(body, "signals", None) or {}
     for key, level in declared.items():
-        signals["life_signal" if key == "life" else key] = level
+        signals[_GATE_KEY.get(key, key)] = level
     return signals
