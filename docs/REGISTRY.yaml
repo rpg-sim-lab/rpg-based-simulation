@@ -9013,6 +9013,25 @@
   - ai
   - testing
 - type: ticket
+  path: agent-working/tickets/done/TCK-20261115-THE-NIGHT-CHECK-READS-RAW-WORLD-TIME-SO-EVERY-TICK-AFTER-1800-IS-NIGHT.md
+  ticket_id: TCK-20261115-THE-NIGHT-CHECK-READS-RAW-WORLD-TIME-SO-EVERY-TICK-AFTER-1800-IS-NIGHT
+  title: The night check compares raw world_time with 1800 and 600, and world_time
+    never wraps, so from tick 1800 every tick of the run counts as night
+  tier: standard
+  ticket_type: bug
+  date: '2026-11-15'
+  related_code_areas:
+  - src/ai/goals/scorers.py:90
+  - src/systems/world_systems/routine.py:35, :113
+  - src/core/calendar.py:10
+  - src/engine/kernel.py:525
+  - src/world/raid.py:10
+  artifact_files:
+  - agent-working/stored_artifacts/TCK-20261115-THE-NIGHT-CHECK-READS-RAW-WORLD-TIME-SO-EVERY-TICK-AFTER-1800-IS-NIGHT/investigation.md
+  - agent-working/stored_artifacts/TCK-20261115-THE-NIGHT-CHECK-READS-RAW-WORLD-TIME-SO-EVERY-TICK-AFTER-1800-IS-NIGHT/plan.md
+  - agent-working/stored_artifacts/TCK-20261115-THE-NIGHT-CHECK-READS-RAW-WORLD-TIME-SO-EVERY-TICK-AFTER-1800-IS-NIGHT/test_plan.md
+  tags: []
+- type: ticket
   path: agent-working/tickets/done/TCK-20261115-THE-SLOW-LANE-LOG-SHOWS-EACH-TESTS-WALL-TIME.md
   ticket_id: TCK-20261115-THE-SLOW-LANE-LOG-SHOWS-EACH-TESTS-WALL-TIME
   title: The slow-regression log shows each slow test's wall time, so a "under 540
@@ -9194,22 +9213,6 @@
   - src/systems/strategic_systems/intelligence.py (:394-406, :675-681, :699)
   - src/systems/strategic_systems/town_targeting.py:5-20
   - src/engine/tactical_objective.py:42
-  artifact_files: []
-  tags: []
-- type: ticket
-  path: agent-working/tickets/todos/TCK-20261115-THE-NIGHT-CHECK-READS-RAW-WORLD-TIME-SO-EVERY-TICK-AFTER-1800-IS-NIGHT.md
-  ticket_id: TCK-20261115-THE-NIGHT-CHECK-READS-RAW-WORLD-TIME-SO-EVERY-TICK-AFTER-1800-IS-NIGHT
-  title: The night check compares raw world_time with 1800 and 600, and world_time
-    never wraps, so from tick 1800 every tick of the run counts as night
-  tier: standard
-  ticket_type: bug
-  date: '2026-11-15'
-  related_code_areas:
-  - src/ai/goals/scorers.py:90
-  - src/systems/world_systems/routine.py:35, :113
-  - src/core/calendar.py:10
-  - src/engine/kernel.py:525
-  - src/world/raid.py:10
   artifact_files: []
   tags: []
 - type: ticket

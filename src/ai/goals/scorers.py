@@ -1,5 +1,6 @@
 from __future__ import annotations
 from typing import Tuple
+from src.core.calendar import is_night
 from src.ai.goals.base import GoalScorer, GoalScore, NeedAccess
 from src.ai.goals.opening_steps import first_open_step
 from src.core.items import food_hunger_recovery
@@ -87,8 +88,7 @@ class SleepScorer(GoalScorer):
         utility = bio.sleep_debt
         
         # Night bias
-        is_night = (state.world_time >= 1800 or state.world_time < 600)
-        if is_night:
+        if is_night(state.world_time):
             utility += 30.0
             
         from src.engine.spatial_query import SpatialQueryService
