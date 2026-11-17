@@ -8076,6 +8076,20 @@
   artifact_files: []
   tags: []
 - type: ticket
+  path: agent-working/tickets/todos/TCK-20261117-A-RESOLVE-BLOCKER-PROJECT-IS-RE-CREATED-EVERY-80-TICKS-AND-STALLS-COOPERATION.md
+  ticket_id: TCK-20261117-A-RESOLVE-BLOCKER-PROJECT-IS-RE-CREATED-EVERY-80-TICKS-AND-STALLS-COOPERATION
+  title: In urban_political s42, half the survivors re-create a resolve_blocker project
+    about every 80 ticks after t≈550 (each one times out and is abandoned), and cooperation
+    stops
+  tier: standard
+  ticket_type: bug
+  date: '2026-11-17'
+  related_code_areas:
+  - src/systems/strategic_systems/intelligence.py (the resolve_blocker timeout), the
+    blocker creation paths
+  artifact_files: []
+  tags: []
+- type: ticket
   path: agent-working/tickets/todos/TCK-20261117-BIBLE-02-KILL-REWARD-TABLE-OMITS-THE-HOSTILE-FIRST-STEP.md
   ticket_id: TCK-20261117-BIBLE-02-KILL-REWARD-TABLE-OMITS-THE-HOSTILE-FIRST-STEP
   title: Bible 02's kill-reward table omits the hostile-first step
@@ -8117,6 +8131,18 @@
   ticket_type: chore
   date: '2026-11-17'
   related_code_areas: []
+  artifact_files: []
+  tags: []
+- type: ticket
+  path: agent-working/tickets/todos/TCK-20261117-MATERIAL-AND-PARTNER-BLOCKERS-NAME-A-SUBJECT-NOTHING-CAN-MATCH.md
+  ticket_id: TCK-20261117-MATERIAL-AND-PARTNER-BLOCKERS-NAME-A-SUBJECT-NOTHING-CAN-MATCH
+  title: Material blockers (subject "resource") and social blockers (subject "suitable_partner")
+    can never resolve, because no item or partner matches those subject strings
+  tier: standard
+  ticket_type: bug
+  date: '2026-11-17'
+  related_code_areas:
+  - src/systems/strategic_systems/intelligence.py (infer_blockers, resolve_blockers)
   artifact_files: []
   tags: []
 - type: ticket
