@@ -103,7 +103,7 @@ def test_magic_only_target_not_perceived_by_normal_humanoid():
 
     # Right reason: the gate itself finds nothing the humanoid can sense in a magic-only body (its senses have magic_sense none).
     from src.engine.behavior_consumers import get_entity_signals, get_perception_gate
-    result = get_perception_gate().can_perceive(attacker, get_entity_signals(target), {"distance": 2.0, "night": False})
+    result = get_perception_gate().can_perceive(attacker, get_entity_signals(target), {"distance": 2.0, "reach": 2.0, "night": False})
     assert not result.perceived and result.signals_used == []
 
     # No combat target should be selected
@@ -124,7 +124,7 @@ def test_arcane_entity_can_target_magic_only_signal():
 
     # Right reason: the only channel the gate scores is the magic one.
     from src.engine.behavior_consumers import get_entity_signals, get_perception_gate
-    result = get_perception_gate().can_perceive(attacker, get_entity_signals(target), {"distance": 2.0, "night": False})
+    result = get_perception_gate().can_perceive(attacker, get_entity_signals(target), {"distance": 2.0, "reach": 2.0, "night": False})
     assert result.perceived and result.signals_used == ["magic_signal"]
 
     assert update.task is not None and update.task.payload_set is not None

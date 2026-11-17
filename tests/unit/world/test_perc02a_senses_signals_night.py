@@ -304,7 +304,7 @@ def test_touch_reaches_the_diagonal_through_the_callers_chebyshev_reach(catalog)
     gate = PerceptionGate(catalog)
     diagonal = {"distance": 2.0, "reach": 1.0, "night": True}  # Manhattan 2, Chebyshev 1
     assert gate.can_perceive(_body("not_in_content_kind"), STILL_SMALL, diagonal).signals_used == ["touch"]
-    assert not gate.can_perceive(_body("not_in_content_kind"), STILL_SMALL, {"distance": 2.0, "night": True}).perceived  # no reach given: falls back to distance
+    assert not gate.can_perceive(_body("not_in_content_kind"), STILL_SMALL, {"distance": 2.0, "night": True}).perceived  # no reach given: no touch
 
 
 def test_a_still_medium_body_two_tiles_away_at_night_is_still_not_perceived(catalog):
@@ -362,3 +362,13 @@ def test_the_gate_error_path_is_unchanged_by_touch(catalog, caplog):
         with caplog.at_level(logging.ERROR):
             assert appraisal.perceives(at(1, 0, 0), at(2, 1, 0), night=False) is False  # adjacent, and still not perceived: a gate error is not perception
     assert any("perception gate error" in r.message for r in caplog.records)
+
+
+def test_a_context_without_reach_gets_no_touch_and_the_old_score(catalog):
+    """A forgotten `reach` never means "always perceived": at distance 1 with no reach the channel list and the score are exactly the pre-touch ones (bca3b3971)."""
+    gate = PerceptionGate(catalog)
+    still_small = gate.can_perceive(_body("not_in_content_kind"), STILL_SMALL, {"distance": 1.0, "night": True})
+    assert not still_small.perceived and still_small.signals_used == [] and still_small.confidence == 0.0
+    medium_day = gate.can_perceive(_body("not_in_content_kind"), STILL_MEDIUM, {"distance": 1.0})
+    assert medium_day.signals_used == ["visibility"] and medium_day.confidence == pytest.approx(0.6 * 0.6 * (1 - 0.02) * 0.75)
+    assert gate.can_perceive(_body("not_in_content_kind"), STILL_SMALL, {}).signals_used == []  # the default distance of 1.0 gives no touch either
