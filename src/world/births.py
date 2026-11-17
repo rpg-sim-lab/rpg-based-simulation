@@ -56,10 +56,11 @@ class BirthService:
             profile = profiles.of(species_of(mother))
             if mother.id in used or profile is None or mother.biological.hunger > profile.fed_line or not _past_interval(mother, state.tick):
                 continue
+            # Draw first: it is stateless and independent of any mate, so a failed draw skips the spatial query.
+            if generator.rng.get_float(Domain.SPAWN, state.tick, mother.id, sub_id=BIRTH_DRAW_SUB_ID) >= profile.birth_chance_per_check:
+                continue
             mate = _find_mate(state, mother, candidates, used, profile.mate_radius_tiles)
             if mate is None:
-                continue
-            if generator.rng.get_float(Domain.SPAWN, state.tick, mother.id, sub_id=BIRTH_DRAW_SUB_ID) >= profile.birth_chance_per_check:
                 continue
             used.update((mother.id, mate.id))
             result = result.merge(_birth(check, mother, mate, profile))
