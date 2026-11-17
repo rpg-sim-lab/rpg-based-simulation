@@ -77,3 +77,20 @@ tags: []
    - That is consistent with the Births Law ("drawn from the run's seeded RNG"), so it is not a defect. It is still worth one disclosure line: a no-birth check is not neutral.
    - **If it matches main:** the divergence comes from the newborns being present.
 - Running either variant is lead-planner's call. Until the bisect, the cause ruling stands at "points to births".
+
+## Bisect, corrected: the chance-0 control is sufficient (replaces the "required: hook-off" item above)
+- The birth draw is stateless:
+  - births.py:62 calls `get_float(Domain.SPAWN, tick, mother.id, sub_id)`;
+  - platform/rng.py:85-88 builds a fresh `random.Random(composite_seed)` per call and advances no shared stream.
+- So a chance-0 check consumes nothing that other systems read. If chance-0 matches main 3aafdb383 (start and final hash, plus normalised events, in 2 worlds), the branch minus births equals main, and **"caused by births alone" is settled with no hook-off run**.
+- If it doesn't match, hook-off is step 2, per lead-planner.
+
+## FACTION cause: trajectory divergence, conditional on the control matching
+- Each world has exactly one NEUTRAL -> TENSE transition on head and none on main:
+  - urban_political: bandit_company with merchant_league, at tick 395;
+  - hero_guild_routing: goblin_warband with town_council, at tick 860.
+- Both are hundreds of ticks after the tick-128 split.
+- No newborn appears in any FACTION event or kill. Birth bonds are positive, so they add no tension.
+- **Cause, if the control matches:** the same post-split trajectory divergence as COGNITION. A different set of kills gives different negative cross-faction bond swings, and that gives one transition.
+- The -36 comes from the scorer artefacts on scope line 2 (diplomacy_dormant on a late first transition) and from the events that follow it. No births defect is shown.
+- Tension and bond values aren't logged, so the exact swing is not traced. I don't require that trace for a cause ruling.
