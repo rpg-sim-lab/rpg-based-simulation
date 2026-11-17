@@ -1,0 +1,40 @@
+# M1 births: how a kind that eats reproduces. Values fixed by rulings v2.2 D1 before any data and never tuned on measurement data.
+# A check runs every 30 ticks (80 a day); hunger is 0-100, higher is hungrier, and fed_line is the highest hunger that still counts as fed.
+# birth_chance_per_check 0.005 is a mean wait of 200 checks (about 2.5 days) for an eligible mother; the fast breeders get 1.6x, the carnivores 0.8x.
+# min_birth_interval_ticks is a multi-day event (2400 ticks a day), so a pair breeds at most once inside a 5000-tick run.
+# fed_line 30 is about 6 hours after a full meal for a person; birth_hunger_cost 25 is a little under one inn meal (40).
+- id: "humanoid_births"
+  display_name: "Humanoid births"
+  birth_chance_per_check: 0.005
+  min_birth_interval_ticks: 12000
+  litter_size: 1
+  mate_radius_tiles: 10
+  fed_line: 30
+  birth_hunger_cost: 25
+
+- id: "carnivore_births"
+  display_name: "Carnivore births"
+  birth_chance_per_check: 0.004
+  min_birth_interval_ticks: 12000
+  litter_size: 1
+  mate_radius_tiles: 10
+  fed_line: 30
+  birth_hunger_cost: 25
+
+- id: "goblin_births"
+  display_name: "Goblin births"
+  birth_chance_per_check: 0.008
+  min_birth_interval_ticks: 7200
+  litter_size: 1
+  mate_radius_tiles: 10
+  fed_line: 30
+  birth_hunger_cost: 25
+
+- id: "plant_eater_births"
+  display_name: "Plant eater births"
+  birth_chance_per_check: 0.008
+  min_birth_interval_ticks: 7200
+  litter_size: 1
+  mate_radius_tiles: 10
+  fed_line: 30
+  birth_hunger_cost: 25
