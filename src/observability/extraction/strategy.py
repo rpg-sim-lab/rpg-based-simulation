@@ -112,18 +112,26 @@ def belief_events(ctx: ExtractContext, eid: int, e_upd_ext: Any) -> list[Simulat
     return events
 
 
-def blocker_removed_events(eid: int, e_upd: Any, tick: int) -> list[SimulationEvent]:
-    """blocker_removed (divergence 2.214), one per blocker the update removes with a typed reason (``blockers_removed_for``); the reason lives on the event only, never in state. Ordered by blocker id."""
-    removed = getattr(getattr(e_upd, "strategic", None), "blockers_removed_for", None) or {}
-    return [
+def cognition_update_events(eid: int, e_upd: Any, tick: int) -> list[SimulationEvent]:
+    """The COGNITION events one entity update carries, in this order: blocker_removed (divergence 2.214), one per blocker removed with a typed reason (``blockers_removed_for``, ordered by blocker id;
+    the reason lives on the event only, never in state), then self_model_updated when the update sets a self-model bundle."""
+    events = [
         SimulationEvent(
             event_type="blocker_removed", event_category="strategy",
             tick=tick, entity_id=eid, severity="INFO",
             source_system="event_shapers", message="",
             payload={"entity_id": eid, "blocker_id": blocker_id, "reason": getattr(removal, "value", str(removal)), "tick": tick},
         )
-        for blocker_id, removal in sorted(removed.items())
+        for blocker_id, removal in sorted((getattr(getattr(e_upd, "strategic", None), "blockers_removed_for", None) or {}).items())
     ]
+    if getattr(e_upd, "self_model_bundle_set", None) is not None:
+        events.append(SimulationEvent(
+            event_type="self_model_updated", event_category="strategy",
+            tick=tick, entity_id=eid, severity="INFO",
+            source_system="event_shapers", message="",
+            payload={},
+        ))
+    return events
 
 
 def _rejection_tally(ctx: ExtractContext) -> tuple[int, dict[str, int]]:

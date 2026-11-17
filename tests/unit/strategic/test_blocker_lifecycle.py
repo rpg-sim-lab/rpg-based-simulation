@@ -27,6 +27,7 @@ from src.core.strategic import (
     quiet_blockers,
 )
 from src.core.update_models.strategic import StrategicUpdate
+from src.systems.strategic_systems.blocker_lifecycle import quiet_spell_update
 from src.systems.strategic_systems.intelligence import StrategicIntelligenceSystem
 
 T0 = 1000
@@ -95,7 +96,7 @@ def test_the_quiet_spell_removes_the_blocker_with_its_reason_and_ends_the_projec
     b = _blocker(seen=T0)
     proj = _project(created=T0 + 20)
     hero = _hero([b], [proj], current=proj.id)
-    up = StrategicIntelligenceSystem.quiet_spell_update(hero, StrategicUpdate(), T0 + BLOCKER_QUIET_SPELL_TICKS)
+    up = quiet_spell_update(hero, StrategicUpdate(), T0 + BLOCKER_QUIET_SPELL_TICKS)
     assert up.blockers_remove == [b.id] and up.blockers_removed_for == {b.id: BlockerRemoval.QUIET_SPELL}
     (ended,) = up.projects_add_or_update
     assert ended.status == ProjectStatus.COMPLETED and ended.ended_by == ProjectEnd.BLOCKER_CLEARED
@@ -105,18 +106,18 @@ def test_the_quiet_spell_removes_the_blocker_with_its_reason_and_ends_the_projec
 def test_a_blocker_inferred_this_pass_is_not_removed():
     b = _blocker(seen=T0)
     staged = StrategicUpdate(blockers_add_or_update=[merge_inferred_blocker(b, b, T0 + BLOCKER_QUIET_SPELL_TICKS)])
-    assert StrategicIntelligenceSystem.quiet_spell_update(_hero([b]), staged, T0 + BLOCKER_QUIET_SPELL_TICKS) is None
+    assert quiet_spell_update(_hero([b]), staged, T0 + BLOCKER_QUIET_SPELL_TICKS) is None
 
 
 def test_a_congestion_blocker_with_no_last_seen_is_stamped_on_first_sight():
-    up = StrategicIntelligenceSystem.quiet_spell_update(_hero([_blocker(seen=None)]), StrategicUpdate(), T0)
+    up = quiet_spell_update(_hero([_blocker(seen=None)]), StrategicUpdate(), T0)
     assert [b.last_seen_tick for b in up.blockers_add_or_update] == [T0] and up.blockers_remove == []
 
 
 def test_an_unrelated_resolve_blocker_project_is_left_alone():
     b = _blocker(seen=T0)
     other = _project(created=T0, target="blocker_node_9", pid="proj_resolve_blocker_9")
-    up = StrategicIntelligenceSystem.quiet_spell_update(_hero([b], [other]), StrategicUpdate(), T0 + BLOCKER_QUIET_SPELL_TICKS)
+    up = quiet_spell_update(_hero([b], [other]), StrategicUpdate(), T0 + BLOCKER_QUIET_SPELL_TICKS)
     assert up.projects_add_or_update == [] and up.current_project_id_set is None
 
 

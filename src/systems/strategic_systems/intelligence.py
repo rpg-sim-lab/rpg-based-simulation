@@ -75,7 +75,7 @@ from src.core.strategic import (
     CognitionProfile, ProjectKind, GoalKind, ObjectiveKind, has_project_capacity, restart_clear_window, suspend_record, expire_suspended, end_record, typed_completion, ProjectEnd, blocker_timeout_suppression, CONGESTION_BLOCKER_ID, with_live_current_score
 )
 from src.engine.spatial_query import SpatialQueryService
-from src.systems.strategic_systems.blocker_lifecycle import quiet_spell_update, reinferred_blockers_update
+from src.systems.strategic_systems.blocker_lifecycle import reinferred_blockers_update
 from src.core.lodging_rules import is_lodged_stayer
 from src.content_semantics.faction import are_entities_hostile
 from src.content_semantics.relation import RelationContext
@@ -264,8 +264,6 @@ class StrategicIntelligenceSystem:
             unique_blockers[b.id] = b
             
         return StrategicUpdate(blockers_add_or_update=list(unique_blockers.values()))
-
-    quiet_spell_update = staticmethod(quiet_spell_update)  # the quiet-spell removals of divergence 2.214 (blocker_lifecycle.py), kept under this name for its callers
 
     @staticmethod
     def generate_crafting_blockers(
