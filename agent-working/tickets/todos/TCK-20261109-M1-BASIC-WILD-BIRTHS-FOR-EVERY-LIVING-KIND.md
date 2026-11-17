@@ -67,7 +67,8 @@ spawning and camp systems, content
 - Owner-level choices are asked when the milestone starts, not guessed here.
 
 ## Implementation Notes
-None yet.
+- Carry-forward from kind=species step 4 (rpg-designer): this item's own-job counts include K6 (kind is a species at birth) and K8 (newborn kind = the parents' species), on a world/seed where births actually happen.
+- Observation (BALANCE, Phase 3): 0 camp spawns and 0 respawns in 5000t in all 3 gate worlds at s42. Either the camps don't spawn in that horizon, or a spawn path is gated off (decision 70: camps refill only by births).
 
 ## Test Summary
 

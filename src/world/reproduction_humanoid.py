@@ -5,6 +5,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Set
 
+from src.core.species import species_of
 from src.core.state import LifeStage
 from src.core.updates import StateUpdate, EntityUpdate, LifecycleUpdate, WorldUpdate
 from src.core.spawn_source import SpawnKind, SpawnSource
@@ -17,7 +18,7 @@ if TYPE_CHECKING:
 class HumanoidReproductionService:
     """
     Behind ENABLE_REPRODUCTION_HUMANOID_PATH, pairs existing ADULT/alive/active
-    same-kind entities within HUMANOID_PAIRING_RADIUS and produces a tracked-parent
+    same-species entities within HUMANOID_PAIRING_RADIUS and produces a tracked-parent
     birth via EntityGenerator.spawn_humanoid_offspring() -- unlike the parentless
     Natural-Creature/Magical-Demonic siblings, this path operates on existing entity
     pairs, not a per-camp/per-calamity spawn anchor.
@@ -54,7 +55,7 @@ class HumanoidReproductionService:
                 if b_id == a.id or b_id in paired:
                     continue
                 candidate_b = by_id.get(b_id)
-                if candidate_b is None or candidate_b.kind != a.kind:
+                if candidate_b is None or species_of(candidate_b) != species_of(a):
                     continue
                 if a.lifecycle.reproduction_cooldowns.get(b_id, 0) > state.tick:
                     continue
@@ -86,7 +87,7 @@ class HumanoidReproductionService:
             b_profile = b.lifecycle.genetic_profile or GeneticsSystem.generate_profile_from_seed(b.id)
 
             child = generator.spawn_humanoid_offspring(
-                a.navigation.position, state, a.kind,
+                a.navigation.position, state, species_of(a),
                 a.id, b.id, state.tick, None,
                 a_profile, b_profile,
                 a.identity.role, b.identity.role,

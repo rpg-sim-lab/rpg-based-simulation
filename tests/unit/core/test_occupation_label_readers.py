@@ -17,8 +17,6 @@ _ENTITY_NAMES = {"entity", "ent", "prior_ent", "new_ent", "e", "target", "hostil
 
 # file -> why a compare on an entity-typed `.kind` remains there (step-1 inventory A, rulings 665b9718)
 _KEPT = {
-    "src/engine/evolution.py": "row 8: species (the goblin substring) and an unreachable tier digit; step 4",
-    "src/world/reproduction_humanoid.py": "row 24: pairs by kind = species at step 4",
     "src/engine/compactor.py": "rows 1-7 plumbing: KindPatch no-op test",
     "src/engine/patches.py": "rows 1-7 plumbing: KindPatch apply (and a status-effect `e.kind`)",
     "src/observability/event_shapers.py": "row 14 display: demographic_kind_change compares previous and new kind",
