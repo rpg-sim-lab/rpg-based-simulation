@@ -8,7 +8,7 @@ only, `kind` itself. So the helper reads `properties["species_id"]` and falls ba
 """
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, Optional
 
 if TYPE_CHECKING:
     from src.core.state import EntityState
@@ -20,3 +20,10 @@ def species_of(entity: "EntityState") -> str:
     if isinstance(species_id, str) and species_id:
         return species_id
     return entity.kind
+
+
+def occupation_of(entity: Any) -> Optional[str]:
+    """The role label of `entity` (`identity.occupation`), or None for a body with none or an object that carries no identity.
+
+    M1 step 3: the readers that compared `kind` with a role label read this instead, with the same literal; in step 2 the field equals `kind` on every writer."""
+    return getattr(getattr(entity, "identity", None), "occupation", None)

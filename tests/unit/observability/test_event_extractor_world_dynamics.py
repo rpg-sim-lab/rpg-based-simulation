@@ -22,7 +22,7 @@ def _entity(eid: int = 1, kind: str = "hero"):
     e.lifecycle = MagicMock(); e.lifecycle.active = True
     e.navigation = MagicMock(); e.navigation.position = (0.0, 0.0)
     e.inventory = MagicMock(); e.inventory.gold = 0.0
-    e.identity = MagicMock()
+    e.identity = MagicMock(occupation=kind)
     e.identity.evolution_points = 0; e.identity.evolution_level = 1
     e.identity.learned_skills = frozenset(); e.identity.traits = frozenset()
     e.identity.active_breakthroughs = frozenset(); e.identity.unspent_ap = 0
@@ -146,6 +146,7 @@ class TestSpawnCadrenceFired:
     def _spawn_entity(self, kind: str = "hero"):
         e = MagicMock()
         e.kind = kind
+        e.identity.occupation = kind
         return e
 
     def test_fires_at_tick_50_with_non_boss_spawn(self):
@@ -325,6 +326,7 @@ class TestBossSpawned:
         e = MagicMock()
         e.id = eid
         e.kind = kind
+        e.identity.occupation = kind
         return e
 
     def test_emitted_for_dragonkin_lair_occupant(self):

@@ -23,7 +23,8 @@ from src.core.state import AuthoritativeState
 from src.core.updates import StateUpdate, decode_owner_faction_id_set
 from src.observability.config import ObservabilityMode
 from src.observability.divergence_episode import DivergenceEpisodes
-from src.observability.entity_kind_constants import BOSS_ENTITY_KINDS, SPAWN_CADENCE_EXCLUDED_KINDS
+from src.core.species import occupation_of
+from src.observability.entity_kind_constants import BOSS_ENTITY_OCCUPATIONS, SPAWN_CADENCE_EXCLUDED_OCCUPATIONS
 from src.domains.world_emergence.schema import WorldEventCategory
 from src.observability.event_extractor import (
     _real_combat_update, _NEAR_DEATH_THRESHOLD,
@@ -334,7 +335,7 @@ class CombatShaper:
                     source_system="event_shapers", message="",
                     payload={"outcome": "KILL"},
                 ))
-                if getattr(prior_ent, "kind", None) == "hero":
+                if occupation_of(prior_ent) == "hero":
                     events.append(SimulationEvent(
                         event_type="hero_death_unrecorded", event_category="lifecycle",
                         tick=tick, entity_id=eid, severity="WARNING",
@@ -1136,7 +1137,7 @@ class WorldDynamicsShaper:
         WorldEventCategory.TERRITORY_TRANSFERRED,
         WorldEventCategory.WAR_ENDED_EXHAUSTION,
     })
-    _BOSS_KINDS = BOSS_ENTITY_KINDS
+    _BOSS_KINDS = BOSS_ENTITY_OCCUPATIONS
 
     def shape(
         self,
@@ -1166,6 +1167,7 @@ class WorldDynamicsShaper:
             ))
         for new_ent in (getattr(update, "entities_add", None) or []):
             kind = getattr(new_ent, "kind", None)
+            occupation = occupation_of(new_ent)
             new_eid = getattr(new_ent, "id", None)
             events.append(SimulationEvent(
                 event_type="demographic_birth", event_category="lifecycle",
@@ -1173,7 +1175,7 @@ class WorldDynamicsShaper:
                 source_system="event_shapers", message="",
                 payload={"kind": kind},
             ))
-            if kind in self._BOSS_KINDS:
+            if occupation in self._BOSS_KINDS:
                 events.append(SimulationEvent(
                     event_type="boss_spawned", event_category="lifecycle",
                     tick=tick, entity_id=new_eid, severity="WARNING",
@@ -1186,7 +1188,7 @@ class WorldDynamicsShaper:
                     source_system="event_shapers", message="",
                     payload={"milestone": "first_boss_spawned", "kind": kind},
                 ))
-            elif kind == "goblin_raider":
+            elif occupation == "goblin_raider":
                 events.append(SimulationEvent(
                     event_type="raid_party_spawned", event_category="lifecycle",
                     tick=tick, entity_id=new_eid, severity="WARNING",
@@ -1208,7 +1210,7 @@ class WorldDynamicsShaper:
         # spawn_cadence_fired — tick-modulo + non-boss entities_add
         if tick % 50 == 0:
             spawned = [e for e in (getattr(update, "entities_add", None) or [])
-                       if getattr(e, "kind", None) not in SPAWN_CADENCE_EXCLUDED_KINDS]
+                       if occupation_of(e) not in SPAWN_CADENCE_EXCLUDED_OCCUPATIONS]
             if spawned:
                 events.append(SimulationEvent(
                     event_type="spawn_cadence_fired", event_category="lifecycle",

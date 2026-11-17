@@ -173,6 +173,25 @@ reuses Batch 04's SPC-S04/S05/S13 evidence directly.
 
 ---
 
+## BODY-08 — Each body declares, per hazard kind, whether it endures it, resists it, or has no protection; the tolerance is the body's own, never its faction's or role's
+
+> A body endures a hazard kind (no harm), resists it (reduced harm) or has no protection. It is
+> declared with the body, so two people of one kind are protected alike whatever their faction.
+
+**Disposition: ACCEPT — ruled by rpg-designer, 2026-11-17 (RPG track), roadmap §12.2 "hazard
+tolerance", refining BODY-07's "subject-specific protection" and ENV-02's immunity check;
+Milestone 1's hazard-tolerance item.**
+
+- **Amendment, the tolerances (decided by the owner, 2026-11-17, Q6(a), owner answers #715 6937049127 (recommended option on every question)).** People bodies
+  resist natural terrain (half harm); creature bodies whose factions endure it today endure it;
+  undead endure undead corruption; arcane bodies endure arcane corruption.
+- **Repository evidence: CONFLICTING (2026-11-17).** Tolerance is a whole immunity per faction
+  (`FactionDefinition.hazard_immunities`, read at `src/world/environment.py:31`), so merchants and
+  bandits are immune to natural terrain while town folk and heroes are not. Fixed in Milestone 1:
+  M1 items 2-6 rule text, drafts/rpg-designer-m1-items-2-6-rule-text.md sha256 800027b5; kernel spec docs/plans/systemic_world/m1_kernel_spec_items_2_6.md.
+
+---
+
 ## Inherited / Applied Foundational Rules
 
 ### BODY-02 — HP reaching zero triggers a real classification process, not a single automatic outcome

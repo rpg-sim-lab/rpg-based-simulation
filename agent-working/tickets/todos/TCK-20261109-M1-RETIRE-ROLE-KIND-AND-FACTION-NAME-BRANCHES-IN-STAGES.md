@@ -60,6 +60,7 @@ Filed by rpg-planner on 2026-11-09 as a filing only (no code), on lead-planner-u
 - TCK-20261109-M1-NO-NAME-CHECKS-PROBE-AND-CONTENT-ALONE-KIND-PROBE
 
 ## Related Docs
+- docs/plans/systemic_world/m1_kernel_spec_items_2_6.md (the kernel spec + this item's own-job counts; owner answers Q1-Q10, #715 6937049127)
 - docs/plans/systemic_world/roadmap.md (§12.3 milestone 1, §12.5 done criteria)
 - docs/plans/systemic_world/owner_decision_memo.md
 

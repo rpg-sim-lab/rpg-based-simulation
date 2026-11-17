@@ -15,6 +15,7 @@ def _entity(eid, kind="hero"):
     e = MagicMock()
     e.id = eid
     e.kind = kind
+    e.identity.occupation = kind
     return e
 
 

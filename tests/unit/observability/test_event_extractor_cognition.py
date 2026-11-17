@@ -31,6 +31,7 @@ def _entity(eid: int = 1, leads: dict | None = None):
     e.strategic = MagicMock()
     e.strategic.projects = {}
     e.strategic.leads = leads or {}
+    e.identity.occupation = "hero"
     return e
 
 
