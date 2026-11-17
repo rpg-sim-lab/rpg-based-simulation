@@ -801,9 +801,11 @@ class CampaignOrchestrator:
             entities=entities,  # same dict object, mutated in place as each survivor is placed
         )
         for eid, cf in alive_carry_forwards.items():
-            # cf.kind is "" for pre-existing carry-forward records serialized before this field
-            # existed -- fall back to the prior (buggy) "entity" literal rather than guessing a
-            # real archetype for data this old.
+            # M1 step 4: an empty carried kind is a record serialized before the field existed. There is no species to rebuild it with,
+            # so it is refused (it used to become the literal "entity").
+            if not cf.kind:
+                from src.core.species import SpeciesNotDeclaredError
+                raise SpeciesNotDeclaredError(f"carry-forward record of entity {eid} has an empty kind (a pre-field record); it cannot be rebuilt")
             #
             # Identity fields (role/faction/properties/traits/personality/evolution_level/
             # evolution_points) are built via V2EntityBuilder's own identity-construction method
@@ -818,7 +820,7 @@ class CampaignOrchestrator:
             # real spawns already follow.
             base = (
                 V2EntityBuilder(eid)
-                .kind(cf.kind or "entity")
+                .kind(cf.kind)
                 .identity(
                     role=cf.role,
                     faction=cf.faction,

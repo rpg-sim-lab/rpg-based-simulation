@@ -1044,8 +1044,12 @@ class CompileProfileResolver:
                     from src.content.resolver import EntityArchetypeResolver
                     arch_resolver = EntityArchetypeResolver(self.repo)
                     resolved_arch = arch_resolver.resolve(archetype_id)
-                except Exception:
-                    pass
+                except Exception as exc:
+                    # M1 step 4: a population naming an archetype that does not resolve has no declared species; refused, no longer swallowed.
+                    from src.core.species import SpeciesNotDeclaredError
+                    raise SpeciesNotDeclaredError(
+                        f"population {key!r} names archetype {archetype_id!r}, which did not resolve: {exc}"
+                    ) from exc
 
             if resolved_arch:
                 resolved_entity = ResolvedEntityProfile(

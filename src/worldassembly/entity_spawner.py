@@ -3,6 +3,7 @@ from __future__ import annotations
 from typing import Dict, Optional, Tuple
 
 from src.content.common_knowledge_seed import default_self_model
+from src.core.species import SpeciesNotDeclaredError
 from src.core.state import EntityState
 from src.entities.archetype_factory import ArchetypeEntityFactory, EntitySpawnContext
 from src.entities.contract_builder import resolved_archetype_to_contract
@@ -102,15 +103,17 @@ class WorldEntitySpawner:
         seed: int,
     ) -> Optional[EntityState]:
         """Archetype-native path: catalog → resolved archetype → contract → EntityState."""
+        # M1 step 4: an archetype that fails to resolve is a typed refusal, no longer swallowed into the legacy guard (which used to default the species to human).
+        from src.content.resolver import EntityArchetypeResolver
         try:
-            from src.content.resolver import EntityArchetypeResolver
             resolver = EntityArchetypeResolver(catalog_repo)  # type: ignore[arg-type]
             resolved_arch = resolver.resolve(profile.archetype_id)
             contract = resolved_archetype_to_contract(resolved_arch)
-            return self._factory.build_entity(entity_id, contract, spawn, seed)
-        except Exception:
-            # Archetype resolution failed — fall through to legacy guard
-            return self._spawn_legacy_guard(entity_id, profile, spawn, seed)
+        except Exception as exc:
+            raise SpeciesNotDeclaredError(
+                f"archetype {profile.archetype_id!r} did not resolve, so entity {entity_id} has no declared species: {exc}"
+            ) from exc
+        return self._factory.build_entity(entity_id, contract, spawn, seed)
 
     def _spawn_legacy_guard(
         self,
@@ -119,15 +122,15 @@ class WorldEntitySpawner:
         spawn: EntitySpawnContext,
         seed: int,
     ) -> EntityState:
-        # LEGACY GUARD: no archetype_id available or archetype resolution failed.
-        # Uses V2EntityBuilder directly from profile stats. This path is explicit
-        # and intentional — not a silent fallback.
+        # No archetype_id: build from the profile's stats. M1 step 4: the profile must declare its species (`kind` = species_id); there is no default.
+        if not profile.species_id:
+            raise SpeciesNotDeclaredError(f"profile of entity {entity_id} (population {spawn.population_id!r}) declares no species_id")
         from src.core.builder import V2EntityBuilder
         from src.content_semantics.personality import build_personality_for_entity, get_action_style_for_bravery
         personality = build_personality_for_entity(entity_id, profile.faction_id, seed)
         return (
             V2EntityBuilder(entity_id)
-            .kind(profile.species_id or "human")
+            .kind(profile.species_id)
             .location(*spawn.position)
             .identity(
                 role=profile.legacy_role,
@@ -141,7 +144,7 @@ class WorldEntitySpawner:
                     "population_id": spawn.population_id,
                 },
                 personality=personality,
-                occupation=profile.species_id or "human",  # step 2: the exact string written to kind; the true label (role_id) is step 4
+                occupation=profile.role_id,
             )
             .combat(
                 hp=profile.hp,

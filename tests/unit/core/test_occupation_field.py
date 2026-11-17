@@ -78,13 +78,10 @@ def test_an_identity_from_a_checkpoint_that_predates_the_field_restores_to_none_
 
 # ---- species_of ----------------------------------------------------------------------------------------------------------------------------
 
-def test_species_of_reads_the_species_property_on_the_classic_path():
-    entity = V2EntityBuilder(1).kind("worker").properties({"species_id": "human"}).build()
+def test_species_of_reads_kind():
+    """M1 step 4: `kind` IS the species id on every build path, so the one species read is `kind` (the mirror `properties["species_id"]` is no longer consulted)."""
+    entity = V2EntityBuilder(1).kind("human").properties({"species_id": "elf"}).build()
     assert species_of(entity) == "human"
-
-
-def test_species_of_falls_back_to_kind_where_there_is_no_species_property():
-    assert species_of(V2EntityBuilder(1).kind("wolf").build()) == "wolf"
 
 
 def test_species_of_on_the_archetype_path_returns_the_species():
@@ -102,62 +99,62 @@ def _contract(**kw) -> ResolvedEntityRuntimeContract:
     return ResolvedEntityRuntimeContract(**defaults)
 
 
-# K2 v1.1 (rpg-designer step-2 review 39dcca3d): in step 2 EVERY writer of `kind` writes the exact same string into `occupation`, because step 3 moves the label readers to
-# `occupation` and is neutral only if occupation == today's kind on every built entity. One test per writer builds one entity through that path. The true labels (role_id,
-# profession_id; None for newborns and camp offspring and the goblin spawner) arrive in step 4.
+# M1 step 4: every writer of `kind` writes a species id and its occupation (the label, None for a newborn). One test per writer builds one entity through that path.
 
-def test_writer_archetype_factory_occupation_is_the_kind_string():
+def test_writer_archetype_factory_writes_the_species_and_the_role_label():
     entity = ArchetypeEntityFactory().build_entity(1, _contract(role_id="guard", kind="human"), EntitySpawnContext())
-    assert entity.kind == "human" and entity.identity.occupation == entity.kind
+    assert entity.kind == "human" and entity.identity.occupation == "guard"
 
 
-def test_writer_entity_spawner_legacy_guard_occupation_is_the_kind_string():
+def test_writer_archetype_factory_falls_back_to_the_profession_when_there_is_no_role():
+    entity = ArchetypeEntityFactory().build_entity(1, _contract(role_id=None, profession_id="smith", kind="human"), EntitySpawnContext())
+    assert entity.identity.occupation == "smith"
+
+
+def test_writer_entity_spawner_writes_the_species_and_the_role_id():
     from src.worldassembly.entity_spawner import WorldEntitySpawner
     from src.worldassembly.models import ResolvedEntityProfile
 
     profile = ResolvedEntityProfile(legacy_role=0, legacy_faction=0, hp=10, max_hp=10, atk=1, attack_range=1, readiness=100.0, species_id="wolf", role_id="hunter", faction_id="wild", **{"def": 1})
     entity = WorldEntitySpawner()._spawn_legacy_guard(1, profile, EntitySpawnContext(), 42)
-    assert entity.kind == "wolf" and entity.identity.occupation == entity.kind
-    no_species = ResolvedEntityProfile(legacy_role=0, legacy_faction=0, hp=10, max_hp=10, atk=1, attack_range=1, readiness=100.0, role_id="hunter", **{"def": 1})
-    fallback = WorldEntitySpawner()._spawn_legacy_guard(2, no_species, EntitySpawnContext(), 42)
-    assert fallback.identity.occupation == fallback.kind
+    assert entity.kind == "wolf" and entity.identity.occupation == "hunter"
 
 
-def test_writer_generator_hero_occupation_is_the_kind_string():
+def test_writer_generator_hero_writes_the_species_of_the_hero_archetype_and_the_hero_label():
     entity = EntityGenerator(7).spawn_hero((5.0, 5.0))
-    assert entity.identity.occupation == entity.kind == "hero"
+    assert entity.kind == "human" and entity.identity.occupation == "hero"
 
 
-def test_writer_generator_monster_occupation_is_the_kind_string():
+def test_writer_generator_monster_writes_the_species_and_the_label_it_is_given():
     gen = EntityGenerator(7)
-    for kind in ("world_boss", "ancient_sentinel", "dragonkin", "monster"):
-        entity = gen.spawn_monster((5.0, 5.0), kind=kind)
-        assert entity.identity.occupation == entity.kind == kind
+    for species, label in (("world_boss", "world_boss"), ("world_boss", "ancient_sentinel"), ("dragonkin", "dragonkin"), ("goblin", "monster")):
+        entity = gen.spawn_monster((5.0, 5.0), species=species, occupation=label)
+        assert entity.kind == species and entity.identity.occupation == label
 
 
-def test_writer_generator_natural_creature_offspring_occupation_is_the_kind_string():
-    entity = EntityGenerator(7).spawn_natural_creature_offspring((5.0, 5.0), kind="wolf")
-    assert entity.identity.occupation == entity.kind == "wolf"
+def test_writer_generator_natural_creature_offspring_writes_the_species_and_the_spawn_label():
+    entity = EntityGenerator(7).spawn_natural_creature_offspring((5.0, 5.0), species="goblin", occupation="goblin_warrior")
+    assert entity.kind == "goblin" and entity.identity.occupation == "goblin_warrior"
 
 
-def test_writer_generator_magical_entity_occupation_is_the_kind_string():
-    entity = EntityGenerator(7).spawn_magical_demonic_entity((5.0, 5.0), kind="dragonkin")
-    assert entity.identity.occupation == entity.kind == "dragonkin"
+def test_writer_generator_magical_entity_has_no_label():
+    entity = EntityGenerator(7).spawn_magical_demonic_entity((5.0, 5.0))
+    assert entity.kind == "magical_demonic_entity" and entity.identity.occupation is None
 
 
-def test_writer_generator_humanoid_offspring_occupation_is_the_kind_string():
+def test_writer_generator_humanoid_offspring_has_the_parents_species_and_no_label():
     from src.core.state import AuthoritativeState
 
-    entity = EntityGenerator(7).spawn_humanoid_offspring((5.0, 5.0), AuthoritativeState(tick=0, seed=1), "worker", 1, 2, 0, None, None, None, 3, 3)
-    assert entity.identity.occupation == entity.kind == "worker"
+    entity = EntityGenerator(7).spawn_humanoid_offspring((5.0, 5.0), AuthoritativeState(tick=0, seed=1), "human", 1, 2, 0, None, None, None, 3, 3)
+    assert entity.kind == "human" and entity.identity.occupation is None
 
 
-def test_writer_generator_goblin_occupation_is_the_kind_string():
+def test_writer_generator_goblin_keeps_the_label_it_wrote_before():
     entity = EntityGenerator(7).spawn_goblin((5.0, 5.0))
-    assert entity.identity.occupation == entity.kind == "goblin"
+    assert entity.kind == "goblin" and entity.identity.occupation == "goblin"
 
 
-def test_writer_world_compiler_occupation_is_the_kind_string_on_one_tiny_world():
+def test_writer_world_compiler_writes_the_declared_species_and_the_role_label_on_one_tiny_world():
     import os
 
     from src.worldbuilding.compiler import WorldCompiler
@@ -165,27 +162,108 @@ def test_writer_world_compiler_occupation_is_the_kind_string_on_one_tiny_world()
 
     spec, context = WorldRepository(os.path.join("data", "worlds")).load_world_with_context("unit_faction_tension")
     state, _ = WorldCompiler.compile(spec, 42, context=context)
-    assert state.entities and all(e.identity.occupation == e.kind for e in state.entities.values())
+    assert state.entities
+    for e in state.entities.values():
+        assert e.kind == e.identity.properties["species_id"]
+        assert e.identity.occupation == spec.populations[e.identity.properties["population_id"]].role.lower()
 
 
-def test_writer_campaign_runner_occupation_is_the_kind_string():
+def test_writer_world_compiler_without_a_context_is_the_legacy_path_kind_is_the_role_label():
+    """The context-less compile keeps the pre-step-4 behaviour (kind = the role label, occupation equal to it): the legacy path, owned by
+    TCK-20261020-TESTS-THAT-COMPILE-A-WORLD-WITHOUT-THE-CONTENT-CONTEXT-TRIAGE (stage 4b), pinned here so it cannot drift silently."""
+    import os
+
+    from src.worldbuilding.compiler import WorldCompiler
+    from src.worldbuilding.repository import WorldRepository
+
+    spec, _ = WorldRepository(os.path.join("data", "worlds")).load_world_with_context("unit_faction_tension")
+    state, _ = WorldCompiler.compile(spec, 42)
+    assert state.entities and all(e.kind == e.identity.occupation for e in state.entities.values())
+
+
+def test_writer_campaign_runner_writes_the_hero_species_and_label():
     from src.domains.campaigns.runner import SimulationAnalysisRunner
     from src.domains.campaigns.spec import CampaignSpecLoader
 
     spec = CampaignSpecLoader.load_from_yaml("campaign_id: k2\nseed: 42\nticks: 1\nworld_pack: phase1_adventure_seed\nactors:\n  count: 2\n  start_region: hometown\n  start_level: 1\nexpected_arc_families:\n  - cautious_growth\nforbidden_behavior:\n  - action_after_death\n")
     state = SimulationAnalysisRunner().run(spec).final_state
-    assert state.entities and all(e.identity.occupation == e.kind == "hero" for e in state.entities.values())
+    assert state.entities and all(e.kind == "human" and e.identity.occupation == "hero" for e in state.entities.values())
 
 
-def test_writer_campaign_survivor_rebuild_keeps_the_occupation_it_carried():
+def test_writer_campaign_survivor_rebuild_keeps_the_kind_and_occupation_it_carried():
     from src.domains.campaigns.orchestrator import CampaignOrchestrator
     from src.domains.campaigns.state import EntityCarryForward
     from tests.unit.domains.campaigns.test_campaign_orchestrator import _make_manifest, _real_episode_spec
 
     orch = CampaignOrchestrator(_make_manifest(n_episodes=2))
-    orch.state.persistent_entities[42] = EntityCarryForward(entity_id=42, level=4, xp=900, equipment={}, reputation=0.8, alive=True, kind="guard", occupation="guard")
+    orch.state.persistent_entities[42] = EntityCarryForward(entity_id=42, level=4, xp=900, equipment={}, reputation=0.8, alive=True, kind="human", occupation="guard")
     entity = orch._build_initial_state(11, _real_episode_spec()).entities[42]
-    assert entity.kind == "guard" and entity.identity.occupation == entity.kind
+    assert entity.kind == "human" and entity.identity.occupation == "guard"
+
+
+# ---- K6d: each typed refusal fires --------------------------------------------------------------------------------------------------------
+
+def test_k6d_a_profile_with_no_species_is_refused():
+    from src.core.species import SpeciesNotDeclaredError
+    from src.worldassembly.entity_spawner import WorldEntitySpawner
+    from src.worldassembly.models import ResolvedEntityProfile
+
+    no_species = ResolvedEntityProfile(legacy_role=0, legacy_faction=0, hp=10, max_hp=10, atk=1, attack_range=1, readiness=100.0, role_id="hunter", **{"def": 1})
+    with pytest.raises(SpeciesNotDeclaredError):
+        WorldEntitySpawner()._spawn_legacy_guard(2, no_species, EntitySpawnContext(), 42)
+
+
+def test_k6d_an_empty_carried_kind_is_refused():
+    from src.core.species import SpeciesNotDeclaredError
+    from src.domains.campaigns.orchestrator import CampaignOrchestrator
+    from src.domains.campaigns.state import EntityCarryForward
+    from tests.unit.domains.campaigns.test_campaign_orchestrator import _make_manifest, _real_episode_spec
+
+    orch = CampaignOrchestrator(_make_manifest(n_episodes=2))
+    orch.state.persistent_entities[42] = EntityCarryForward(entity_id=42, level=4, xp=900, equipment={}, reputation=0.8, alive=True, kind="", occupation="guard")
+    with pytest.raises(SpeciesNotDeclaredError):
+        orch._build_initial_state(11, _real_episode_spec())
+
+
+def test_k6d_a_scenario_spec_with_no_species_is_refused(tmp_path):
+    from src.core.species import SpeciesNotDeclaredError
+    from src.testing.scenario_runner import ScenarioRunner
+
+    spec = tmp_path / "no_species.yaml"
+    spec.write_text("scenario_id: no_species\nworld_pack: phase1_adventure_seed\nactors:\n  - id: 1\n    role: HERO\n", encoding="utf-8")
+    with pytest.raises(SpeciesNotDeclaredError):
+        ScenarioRunner(str(spec), output_dir=str(tmp_path)).execute(ticks=1)
+
+
+def test_k6d_an_archetype_that_does_not_resolve_is_refused():
+    from src.core.species import SpeciesNotDeclaredError
+    from src.worldassembly.entity_spawner import WorldEntitySpawner
+    from src.worldassembly.models import ResolvedEntityProfile
+
+    profile = ResolvedEntityProfile(legacy_role=0, legacy_faction=0, hp=10, max_hp=10, atk=1, attack_range=1, readiness=100.0, archetype_id="no_such_archetype", species_id="human", **{"def": 1})
+    with pytest.raises(SpeciesNotDeclaredError):
+        WorldEntitySpawner()._spawn_archetype_native(3, profile, EntitySpawnContext(), object(), 42)
+
+
+# ---- K6c: no src builder chain without .kind( --------------------------------------------------------------------------------------------------
+
+def test_k6c_every_src_builder_chain_names_its_kind():
+    """Static: a `V2EntityBuilder(...)` chain in src with no `.kind(` falls to the builder default ("hero"), which is a code-chosen species. The default stays for tests (a
+    fixture-policy ticket owns it); nothing in src may rely on it."""
+    root = Path(__file__).resolve().parents[3]
+    bare = []
+    for path in sorted((root / "src").rglob("*.py")):
+        tree = ast.parse(path.read_text(encoding="utf-8"))
+        inner = {id(n.func.value) for n in ast.walk(tree) if isinstance(n, ast.Call) and isinstance(n.func, ast.Attribute)}
+        for n in ast.walk(tree):
+            if isinstance(n, ast.Call) and id(n) not in inner:
+                cur, methods = n, []
+                while isinstance(cur, ast.Call) and isinstance(cur.func, ast.Attribute):
+                    methods.append(cur.func.attr)
+                    cur = cur.func.value
+                if isinstance(cur, ast.Call) and isinstance(cur.func, ast.Name) and cur.func.id == "V2EntityBuilder" and "kind" not in methods:
+                    bare.append(f"{path.relative_to(root)}:{n.lineno}")
+    assert bare == [], bare
 
 
 def test_every_production_kind_writer_is_one_of_the_tested_sites():
@@ -209,23 +287,28 @@ def test_every_production_kind_writer_is_one_of_the_tested_sites():
     }, sorted(sites)
 
 
-def test_every_gate_world_entity_has_an_occupation_equal_to_its_kind_at_t0():
-    """K2 (rpg-designer's own-job count): at build, entities whose occupation differs from the pre-step kind string: 0. The classic compiler wrote
-    `kind = pop_spec.role.lower()` and now also `occupation = pop_spec.role.lower()`; the three gate worlds of `paired.WORLDS` are read here (compile only, no run)."""
+def test_k6_k7_every_gate_world_entity_kind_is_a_species_id_and_the_mirror_agrees_at_t0():
+    """K6 (kind is a species id, minus the named allowlist: 0 outside) and K7 (kind equals properties["species_id"]: 0 differing), read at build over the three gate worlds
+    of `paired.WORLDS` (compile only, no run). K9 at t0: the occupation is the population's role label, the string `kind` held before step 4."""
     import os
 
+    from src.content.common_knowledge_seed import warmed_catalog
+    from src.core.species import NON_LIVING_KIND_ALLOWLIST
     from src.worldbuilding.compiler import WorldCompiler
     from src.worldbuilding.repository import WorldRepository
 
     from tools.rpg_measure.paired import WORLDS
 
+    species_ids = set(warmed_catalog().species) | set(NON_LIVING_KIND_ALLOWLIST)
     checked = 0
     for world in WORLDS:
         spec, context = WorldRepository(os.path.join("data", "worlds")).load_world_with_context(world)
         state, _ = WorldCompiler.compile(spec, 42, context=context)
         assert state.entities, world
         for entity in state.entities.values():
-            assert entity.identity.occupation == entity.kind, (world, entity.id, entity.kind, entity.identity.occupation)
+            assert entity.kind in species_ids, (world, entity.id, entity.kind)
+            assert entity.kind == entity.identity.properties["species_id"], (world, entity.id)
+            assert entity.identity.occupation == spec.populations[entity.identity.properties["population_id"]].role.lower(), (world, entity.id)
             checked += 1
     assert checked > 100
 
@@ -238,6 +321,33 @@ def test_the_entity_copies_in_the_archetype_factory_keep_occupation():
 
     assert _replace_inventory(entity, InventoryComponent(items=(), gold=3)).identity.occupation == "guard"
     assert _replace_lifecycle(entity, active=False).identity.occupation == "guard"
+
+
+def test_k6c_every_src_spawn_call_passes_a_species_id_not_a_label():
+    """Static, rpg-designer 2026-11-17: the spawners do not validate `species`, so every src CALL of spawn_monster / spawn_natural_creature_offspring must pass an id in
+    species.yaml (or the named non-living allowlist) as a literal, or a species read from content or from an entity that already carries one (`camp.kind`, `entity.kind`)."""
+    from src.content.common_knowledge_seed import warmed_catalog
+    from src.core.species import NON_LIVING_KIND_ALLOWLIST
+
+    allowed = set(warmed_catalog().species) | set(NON_LIVING_KIND_ALLOWLIST)
+    carried = {"camp.kind", "entity.kind"}
+    root = Path(__file__).resolve().parents[3]
+    bad, calls = [], 0
+    for path in sorted((root / "src").rglob("*.py")):
+        tree = ast.parse(path.read_text(encoding="utf-8"))
+        for n in ast.walk(tree):
+            if isinstance(n, ast.Call) and isinstance(n.func, ast.Attribute) and n.func.attr in {"spawn_monster", "spawn_natural_creature_offspring"}:
+                species = [kw.value for kw in n.keywords if kw.arg == "species"]
+                calls += 1
+                where = f"{path.relative_to(root)}:{n.lineno}"
+                if len(species) != 1:
+                    bad.append((where, "no species argument"))
+                elif isinstance(species[0], ast.Constant):
+                    if species[0].value not in allowed:
+                        bad.append((where, species[0].value))
+                elif ast.unparse(species[0]) not in carried:
+                    bad.append((where, ast.unparse(species[0])))
+    assert calls >= 7 and bad == [], bad
 
 
 # ---- the presenter shows both --------------------------------------------------------------------------------------------------------------

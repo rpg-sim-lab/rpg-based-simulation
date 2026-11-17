@@ -55,7 +55,7 @@ def test_camp_maturity_threshold_spawns_natural_creature_offspring():
 def test_natural_creature_offspring_has_no_tracked_parents():
     generator = EntityGenerator(seed=42)
     offspring = generator.spawn_natural_creature_offspring(
-        (10.0, 20.0), state=AuthoritativeState(tick=100, seed=1), kind="goblin_warrior",
+        (10.0, 20.0), state=AuthoritativeState(tick=100, seed=1), species="goblin_warrior", occupation="goblin_warrior",
         difficulty_tier=1, birth_tick=100,
     )
 
@@ -69,7 +69,7 @@ def test_natural_creature_offspring_has_no_tracked_parents():
 def test_natural_creature_offspring_short_maturation_clock():
     generator = EntityGenerator(seed=42)
     offspring = generator.spawn_natural_creature_offspring(
-        (0.0, 0.0), state=AuthoritativeState(tick=0, seed=1), birth_tick=0,
+        (0.0, 0.0), state=AuthoritativeState(tick=0, seed=1), species="monster", occupation="monster", birth_tick=0,
     )
 
     short_clock_age = 3456000 - CampService.CAMP_SPAWN_INTERVAL
@@ -270,7 +270,7 @@ def test_natural_creature_and_magical_demonic_paths_never_attach_genetic_profile
     generator = EntityGenerator(seed=42)
 
     natural_creature = generator.spawn_natural_creature_offspring(
-        (10.0, 20.0), state=state, kind="goblin_warrior", difficulty_tier=1, birth_tick=60,
+        (10.0, 20.0), state=state, species="goblin_warrior", occupation="goblin_warrior", difficulty_tier=1, birth_tick=60,
     )
     assert natural_creature.lifecycle.genetic_profile is None
 
@@ -290,7 +290,7 @@ def test_natural_creature_and_magical_demonic_paths_never_seed_public_reputation
     generator = EntityGenerator(seed=42)
 
     natural_creature = generator.spawn_natural_creature_offspring(
-        (10.0, 20.0), state=state, kind="goblin_warrior", difficulty_tier=1, birth_tick=60,
+        (10.0, 20.0), state=state, species="goblin_warrior", occupation="goblin_warrior", difficulty_tier=1, birth_tick=60,
     )
     assert natural_creature.social.public_reputation == 1.0
 
