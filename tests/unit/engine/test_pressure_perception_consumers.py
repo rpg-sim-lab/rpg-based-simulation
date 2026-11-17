@@ -96,14 +96,14 @@ def test_magic_only_target_not_perceived_by_normal_humanoid():
     """
     attacker = _hero(1, pos=(0.0, 0.0), species_id="human")
     # Target emits only magic_signal; normal humanoid cannot detect it
-    target = _monster(2, pos=(1.0, 0.0), species_id=MAGIC_ONLY_SPECIES)  # the body model declares only a magic signal (test-only content)
+    target = _monster(2, pos=(2.0, 0.0), species_id=MAGIC_ONLY_SPECIES)  # two tiles off, so touch does not apply; the body model declares only a magic signal (test-only content)
 
     state = AuthoritativeState(tick=1, seed=1, world_time=DAY, entities={1: attacker, 2: target})
     update = TacticalDecisionSystem.evaluate_entity_intent(state, attacker)
 
     # Right reason: the gate itself finds nothing the humanoid can sense in a magic-only body (its senses have magic_sense none).
     from src.engine.behavior_consumers import get_entity_signals, get_perception_gate
-    result = get_perception_gate().can_perceive(attacker, get_entity_signals(target), {"distance": 1.0, "night": False})
+    result = get_perception_gate().can_perceive(attacker, get_entity_signals(target), {"distance": 2.0, "night": False})
     assert not result.perceived and result.signals_used == []
 
     # No combat target should be selected
@@ -117,14 +117,14 @@ def test_arcane_entity_can_target_magic_only_signal():
     An entity with arcane_senses (high magic_sense) CAN perceive a magic-only target.
     """
     attacker = _hero(1, pos=(0.0, 0.0), species_id="elf")
-    target = _monster(2, pos=(1.0, 0.0), species_id=MAGIC_ONLY_SPECIES)  # the body model declares only a magic signal (test-only content)
+    target = _monster(2, pos=(2.0, 0.0), species_id=MAGIC_ONLY_SPECIES)  # two tiles off, so touch does not apply; the body model declares only a magic signal (test-only content)
 
     state = AuthoritativeState(tick=1, seed=1, world_time=DAY, entities={1: attacker, 2: target})
     update = TacticalDecisionSystem.evaluate_entity_intent(state, attacker)
 
     # Right reason: the only channel the gate scores is the magic one.
     from src.engine.behavior_consumers import get_entity_signals, get_perception_gate
-    result = get_perception_gate().can_perceive(attacker, get_entity_signals(target), {"distance": 1.0, "night": False})
+    result = get_perception_gate().can_perceive(attacker, get_entity_signals(target), {"distance": 2.0, "night": False})
     assert result.perceived and result.signals_used == ["magic_signal"]
 
     assert update.task is not None and update.task.payload_set is not None

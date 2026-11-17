@@ -116,10 +116,11 @@ def test_night_hides_a_target_from_a_day_eyed_kind_but_not_from_a_night_sighted_
 
 def test_night_changes_vision_only(catalog):
     gate = PerceptionGate(catalog)
-    day = gate.can_perceive(_body("wolf"), {"scent": "medium"}, {"distance": 5.0, "night": False})
-    night = gate.can_perceive(_body("human"), {"scent": "high"}, {"distance": 1.0, "night": True})
-    assert day.perceived
-    assert "scent" in night.signals_used or not night.perceived  # smell is unchanged by night; only vision steps down
+    ctx = {"distance": 5.0, "reach": 5.0}
+    day = gate.can_perceive(_body("wolf"), {"scent": "medium"}, {**ctx, "night": False})
+    night = gate.can_perceive(_body("wolf"), {"scent": "medium"}, {**ctx, "night": True})
+    assert day.perceived and day.signals_used == ["scent"]
+    assert night == day  # smell is unchanged by night; only vision steps down
 
 
 # --- P3: a granted perception always scored at or above the threshold --------------------------------------------------------------
@@ -285,3 +286,79 @@ def test_a_population_with_a_diet_but_no_usable_profile_raises_the_sense_error(b
     with pytest.raises(SenseProfileError) as err:
         require_declared_population_species("w1", "p", pop, "human")
     assert "'human'" in str(err.value) and "no usable sense profile" in str(err.value)  # a content species with a dangling profile; the unnamed-species case carries the world and population
+
+
+# --- touch (rpg-designer ruling 2026-11-18): a body at Chebyshev distance <= 1 is felt, needing no light, movement or profile entry ----------
+
+STILL_SMALL = {"visibility": "low", "noise": "low", "scent": "medium", "life_signal": "medium", "vibration": "low"}
+STILL_MEDIUM = {**STILL_SMALL, "visibility": "medium"}
+
+
+def test_touch_at_distance_one_at_night_of_a_still_small_body_by_an_unprofiled_observer(catalog):
+    result = PerceptionGate(catalog).can_perceive(_body("not_in_content_kind"), STILL_SMALL, {"distance": 1.0, "reach": 1.0, "night": True})
+    assert result.perceived and result.signals_used == ["touch"] and result.confidence == 1.0
+    assert result.profile_source == "baseline_humanoid"
+
+
+def test_touch_reaches_the_diagonal_through_the_callers_chebyshev_reach(catalog):
+    gate = PerceptionGate(catalog)
+    diagonal = {"distance": 2.0, "reach": 1.0, "night": True}  # Manhattan 2, Chebyshev 1
+    assert gate.can_perceive(_body("not_in_content_kind"), STILL_SMALL, diagonal).signals_used == ["touch"]
+    assert not gate.can_perceive(_body("not_in_content_kind"), STILL_SMALL, {"distance": 2.0, "night": True}).perceived  # no reach given: falls back to distance
+
+
+def test_a_still_medium_body_two_tiles_away_at_night_is_still_not_perceived(catalog):
+    result = PerceptionGate(catalog).can_perceive(_body("not_in_content_kind"), STILL_MEDIUM, {"distance": 2.0, "reach": 2.0, "night": True})
+    assert not result.perceived and result.signals_used == []
+
+
+def test_touch_adds_no_score_to_a_by_day_vision_pair(catalog):
+    gate = PerceptionGate(catalog)
+    far = gate.can_perceive(_body("not_in_content_kind"), STILL_MEDIUM, {"distance": 2.0, "reach": 2.0})
+    assert far.signals_used == ["visibility"] and far.confidence == pytest.approx(0.6 * 0.6 * (1 - 0.02 * 2) * 0.75)
+    near = gate.can_perceive(_body("not_in_content_kind"), STILL_MEDIUM, {"distance": 1.0, "reach": 1.0})
+    assert near.signals_used == ["visibility", "touch"] and near.confidence == pytest.approx(0.6 * 0.6 * (1 - 0.02) * 0.75)
+
+
+def test_touch_is_felt_by_every_content_species(catalog):
+    gate = PerceptionGate(catalog)
+    for species_id in catalog.species:
+        assert "touch" in gate.can_perceive(_body(species_id), {}, {"distance": 1.0, "reach": 1.0, "night": True}).signals_used, species_id
+
+
+def test_chebyshev_tile_distance_counts_a_diagonal_as_one():
+    from src.engine.tile_distance import chebyshev_tile_distance
+    assert chebyshev_tile_distance((0.0, 0.0), (1.0, 1.0)) == 1
+    assert chebyshev_tile_distance((0.0, 0.0), (2.0, 0.0)) == 2
+    assert chebyshev_tile_distance((3.9, 0.1), (3.0, 1.0)) == 1
+
+
+def test_the_callers_hand_the_gate_the_chebyshev_reach():
+    from src.core.builder import V2EntityBuilder
+    from src.engine.appraisal import perceives
+
+    def at(eid, x, y):
+        return V2EntityBuilder(eid).kind("not_in_content_kind").location(float(x), float(y)).combat(hp=10, max_hp=10, alive=True).lifecycle(active=True).build()
+
+    me = at(1, 0, 0)
+    assert perceives(me, at(2, 1, 1), night=True)  # the diagonal neighbour is touched
+    assert not perceives(me, at(3, 2, 0), night=True)
+
+
+def test_the_gate_error_path_is_unchanged_by_touch(catalog, caplog):
+    from src.core.builder import V2EntityBuilder
+    from src.engine import appraisal
+
+    def at(eid, x, y):
+        return V2EntityBuilder(eid).kind("not_in_content_kind").location(float(x), float(y)).combat(hp=10, max_hp=10, alive=True).lifecycle(active=True).build()
+
+    class Boom:
+        def can_perceive(self, *a, **k):
+            raise RuntimeError("boom")
+
+    import pytest as _p
+    with _p.MonkeyPatch.context() as mp:
+        mp.setattr(appraisal, "get_perception_gate", lambda: Boom())
+        with caplog.at_level(logging.ERROR):
+            assert appraisal.perceives(at(1, 0, 0), at(2, 1, 0), night=False) is False  # adjacent, and still not perceived: a gate error is not perception
+    assert any("perception gate error" in r.message for r in caplog.records)

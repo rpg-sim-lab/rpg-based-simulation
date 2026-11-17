@@ -18,6 +18,7 @@ from src.engine.rpg_depth import WoundService
 from src.cognition.common_knowledge import combat_capability_against
 from src.engine.tactical_destinations import retreat_destination, wander_destination
 from src.engine.tactical_threat import attacked_me_recently, hostile_acts_on, need_yields, perceived_threats, present_threats, safety_retreat_warranted
+from src.engine.tile_distance import chebyshev_tile_distance
 from src.engine.need_pull import HUNGER_LINE, SLEEP_LINE, entity_hunger_is_pressing, entity_need_is_pressing
 from src.engine.tactical_rest import in_place_survival_update
 from src.engine.behavior_consumers import get_entity_signals, get_perception_gate
@@ -86,8 +87,9 @@ def _target_still_perceived(entity: "EntityState", target: "EntityState", night:
 
     Applies to the held-task shortcut (goal hysteresis), which used to keep a target without asking the perception gate."""
     dist = LegalityServiceV2.get_manhattan_dist(entity.navigation.position, target.navigation.position)
+    reach = chebyshev_tile_distance(entity.navigation.position, target.navigation.position)
     try:
-        return bool(get_perception_gate().can_perceive(entity, get_entity_signals(target), {"distance": float(dist), "night": night}).perceived)
+        return bool(get_perception_gate().can_perceive(entity, get_entity_signals(target), {"distance": float(dist), "reach": float(reach), "night": night}).perceived)
     except Exception:  # noqa: BLE001 - a gate error is not perception (PERC-02): logged at ERROR, the held target is let go
         logger.error("perception gate error: entity %s toward held target %s", entity.id, target.id, exc_info=True)
         return False

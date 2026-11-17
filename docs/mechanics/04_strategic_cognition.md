@@ -26,6 +26,8 @@ Night is the night half of the time of day (`calendar.is_night`: ticks 1800-2399
 
 Perception is by the body's own senses (PERC-02): the perception gate reads the sense profile of the observer's species, scores it against what the observed body gives off (`emitted_signals`: visibility by size band; noise and vibration by whether it moved, is still, or is asleep or lodged; scent and life for a living body, none of life for undead and spirit bodies), and at night counts the observer's vision two levels lower unless its profile declares `night_vision`. A gate error is not perception. (divergence 2.210.)
 
+- Touch: every bodily kind feels a body that is next to it (distance 1 or less). This needs no light, no movement and no keen sense, and it is a sense and a signal like the others, not an exception to the gate.
+
 ---
 
 ### Standing Needs Escalate (TCK-20261007-BIOLOGICAL-NEEDS-ESCALATE-ABOVE-ORDINARY-GOALS-BEFORE-THE-CONSEQUENCE-LINE-SURV-07)

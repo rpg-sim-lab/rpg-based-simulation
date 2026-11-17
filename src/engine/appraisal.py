@@ -19,7 +19,7 @@ from src.engine.behavior_consumers import (
     get_kind_properties,
     get_perception_gate,
 )
-from src.engine.tile_distance import manhattan_tile_distance
+from src.engine.tile_distance import chebyshev_tile_distance, manhattan_tile_distance
 
 logger = logging.getLogger(__name__)
 
@@ -52,8 +52,9 @@ def perceives(entity: "EntityState", other: "EntityState", night: bool = False) 
     if entity.navigation.lodged_in is not None or other.navigation.lodged_in is not None:
         return False  # F3 (divergence 2.155): a lodger sees no one outside and is seen by no one outside
     dist = manhattan_tile_distance(entity.navigation.position, other.navigation.position)
+    reach = chebyshev_tile_distance(entity.navigation.position, other.navigation.position)
     try:
-        return bool(get_perception_gate().can_perceive(entity, get_entity_signals(other), {"distance": float(dist), "night": night}).perceived)
+        return bool(get_perception_gate().can_perceive(entity, get_entity_signals(other), {"distance": float(dist), "reach": float(reach), "night": night}).perceived)
     except Exception:  # noqa: BLE001 - a gate error is not perception (PERC-02); it must be seen in the log, never swallowed
         logger.error("perception gate error: entity %s toward %s", entity.id, other.id, exc_info=True)
         return False

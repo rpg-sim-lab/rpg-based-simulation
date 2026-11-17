@@ -41,6 +41,11 @@ _LEVEL_TO_FLOAT: Dict[str, float] = {
 
 _PERCEPTION_THRESHOLD = 0.2
 
+# PERC-02 touch (rpg-designer ruling 2026-11-18): every bodily kind feels a body that is next to it. It is a channel, not a score term: it needs no light, no movement and
+# no profile entry, and it changes no other channel's score. `reach` (context) is the Chebyshev tile distance the caller measured; absent, it falls back to `distance`.
+CHANNEL_TOUCH = "touch"
+TOUCH_REACH = 1
+
 # PERC-02 (owner Q2a, #715 6937049127): at night vision counts NIGHT_VISION_STEPS levels lower on this ladder unless the profile declares night_vision.
 _LEVEL_LADDER = ("very_high", "high", "medium_high", "medium", "low_medium", "low", "very_low", "none")
 NIGHT_VISION_STEPS = 2
@@ -60,6 +65,16 @@ def _level(val: Optional[str]) -> float:
     if val is None:
         return 0.0
     return _LEVEL_TO_FLOAT.get(val.lower().replace("-", "_"), 0.0)
+
+
+def _add_touch(signals_used: List[str], max_score: float, reach: float) -> float:
+    """Touch (PERC-02): a body within TOUCH_REACH tiles is felt. Appends the channel and returns the confidence score: contact alone is certain (1.0),
+    while a pair already perceived by a scored channel keeps that channel's score."""
+    if reach > TOUCH_REACH:
+        return max_score
+    certain = not signals_used
+    signals_used.append(CHANNEL_TOUCH)
+    return 1.0 if certain else max_score
 
 
 # ---------------------------------------------------------------------------
@@ -129,7 +144,7 @@ class PerceptionGate:
         Determine whether source_entity detects the target.
 
         Args:
-            source_entity: Entity with optional identity.properties["sense_profile_id"].
+            source_entity: The perceiving body; its senses come from its species (``species_of``, the catalog's ``sense_profile``), nothing is stored on the body.
             target_signals: Dict or object with signal fields (visibility, noise, scent,
                             magic_signal, life_signal, vibration, social_signal).
                             All fields are optional; absent signals default to "none".
@@ -137,6 +152,7 @@ class PerceptionGate:
                 - distance (float, default 1.0): proximity, 0 = adjacent
                 - terrain_modifier (float 0–1, default 1.0): environmental penalty
                 - alertness (float 0–1, default 0.5): source's current alertness
+                - reach (float, default = distance): the Chebyshev tile distance between the two bodies; a body at reach <= TOUCH_REACH is felt by touch
                 - night (bool, default False): it is the night half of the day; vision counts two levels lower unless the profile declares night_vision
 
         Returns:
@@ -184,6 +200,7 @@ class PerceptionGate:
                 if score > max_score:
                     max_score = score
 
+        max_score = _add_touch(signals_used, max_score, float(ctx.get("reach", distance)))
         perceived = len(signals_used) > 0
         confidence = min(1.0, max_score)
 
