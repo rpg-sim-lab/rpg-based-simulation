@@ -127,6 +127,7 @@ class StatePresenter:
         return {
             "id": entity.id,
             "kind": entity.kind,
+            "occupation": entity.identity.occupation,  # M1 step 2: equals kind on every writer; the true label comes in step 4
             **_species_and_size(entity),
             "position": entity.position, **lodged_in_field(entity),  # F3: the building a lodger is indoors in; absent otherwise
             "readiness": entity.readiness,
@@ -214,6 +215,7 @@ class StatePresenter:
         return {
             "id": entity.id,
             "kind": entity.kind,
+            "occupation": entity.identity.occupation,  # M1 step 2: equals kind on every writer; the true label comes in step 4
             **_species_and_size(entity),
             "position": entity.position, **lodged_in_field(entity),  # F3: the building a lodger is indoors in; absent otherwise
             "combat": {"hp": entity.combat.hp, "max_hp": entity.combat.max_hp, "alive": entity.combat.alive},
@@ -248,6 +250,7 @@ class StatePresenter:
         return {
             "id": entity.id,
             "kind": entity.kind,
+            "occupation": entity.identity.occupation,  # M1 step 2: equals kind on every writer; the true label comes in step 4
             **_species_and_size(entity),
             "x": x,
             "y": y,
