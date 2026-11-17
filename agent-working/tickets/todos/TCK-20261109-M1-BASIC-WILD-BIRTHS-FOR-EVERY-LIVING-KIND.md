@@ -222,6 +222,18 @@ Source: `agent-working/stored_artifacts/TCK-20261109-M1-BASIC-WILD-BIRTHS-FOR-EV
     - They follow whatever M1 run-2's home-range/tether rule (R1) does to the mother's fields.
   - Before that push, the implementer confirms the code read.
 - Hook push: home_region_id IN; public_reputation, home_position/leash and the Q19 `birth_record` world_seed change OUT. lead-planner asked rpg-designer whether Q19 fits the condition that the "shared builder law stays unchanged". The verbatim Births Law bullet must be in the hook push.
+- rpg-designer APPROVED Q19 (a), relayed on 2026-11-18 and recorded here. It replaces "keep it out". The change may ride the hook push once conditions 1-4 are in the branch.
+  1. `world_seed: Optional[int] = None` is keyword-only. With None, combo_seed is byte-identical to main's builder.py:695.
+  2. Deterministic integer mixing only: no hash(), nothing that depends on PYTHONHASHSEED.
+  3. Births passes both parent profiles non-None, so the builder's id-only fallback (:692-693) never fires on the births path, and a test asserts it.
+  4. Tests: None gives the old value, two seeds give different results, and generator.py:204's parentless call is unchanged.
+  5. It is disclosed, and at B5 the genetics parity entry names births.
+  - Option (b) was rejected: combine_profiles' combo_seed would stay the same across seeds.
+- rpg-planner's FINAL mechanisms.yaml text, to be copied verbatim into the births PR, is stored as `rpg_planner_births_mechanisms_yaml_text_2026-11-18.md`. It is lead-planner's transcription, body sha256 903cc21a; u24's own copy is 7e217961.
+  - It covers humanoid_reproduction (state partial, re-bound to BirthService), genetics_aptitude (partial) and camp (the EntityGenerator line removed, one note line added). Only <BIRTHS-TICKET> and <DATE> are replaced.
+  - Checks afterwards: the registry validator, state_caller and completeness, each -n 1.
+  - The genetics_aptitude pinned-row removal goes in the batched owner ask. Any other finding is a STOP to rpg-planner.
+  - Fix the stale comments at coming_of_age.py:131 and lifecycle.py:207.
 - No Births Law text is committed until rpg-designer rules.
 
 ## Out of Scope
