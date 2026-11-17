@@ -2,6 +2,10 @@
 through the apply path (``clear_target`` was never applied; TCK-20261114-NAVIGATION-CLEAR-TARGET-FLAG-IS-NEVER-APPLIED)."""
 from dataclasses import replace
 
+import pytest
+
+from tests.named_run_dirs import remove_restored_run_dirs  # noqa: F401
+
 from src.core.builder import V2EntityBuilder
 from src.core.state import AuthoritativeState
 from src.core.updates import EntityUpdate, NavigationUpdate
@@ -164,7 +168,7 @@ def _event(hero, target, tick):
 
 
 def test_a_one_tile_jitter_of_the_target_continues_the_count():
-    hero = _open_count(_hero(target=(9, 5)), count=1, best=4, anchor=(9, 5), last_tick=0)
+    hero = _open_count(_hero(target=(9, 5)), count=1, best=3, anchor=(9, 5), last_tick=0)  # best 3: none of the jittered distances (3 to 6 from (5,5)) is below it, so none is progress
     for jitter in ((9, 6), (8, 5), (10, 6), (8, 4)):  # Chebyshev <= 1 from the anchor (9,5)
         nav = _event(hero, jitter, 5)
         assert nav.wayround_count_set == 2 and nav.wayround_anchor_set == (9, 5) and nav.wayround_last_tick_set == 5
@@ -219,11 +223,16 @@ def test_the_anchor_fields_omit_when_none_and_show_in_the_canonical_form_and_fin
     closed = _hero(target=(9, 5))
     canon = closed.navigation.to_canonical_dict()
     assert "wayround_anchor" not in canon and "wayround_last_tick" not in canon and "wayround_count" not in canon
-    assert "wayround=" not in str(StateFingerprinter.get_fingerprint(_state(closed)))
+    def fp(h):
+        return StateFingerprinter.get_fingerprint(_state(h))["state_hash"]
+
     opened = _open_count(closed, count=1, best=4, anchor=(9, 5), last_tick=7)
     canon = opened.navigation.to_canonical_dict()
     assert canon["wayround_anchor"] == (9, 5) and canon["wayround_last_tick"] == 7
-    assert "wayround=1@4" in str(StateFingerprinter.get_fingerprint(_state(opened)))
+    assert fp(opened) != fp(closed)  # an open count is in the fingerprint ...
+    assert fp(opened) != fp(_open_count(closed, count=1, best=4, anchor=(9, 6), last_tick=7))  # ... with its anchor ...
+    assert fp(opened) != fp(_open_count(closed, count=1, best=4, anchor=(9, 5), last_tick=8))  # ... and its tick
+    assert fp(closed) == fp(replace(closed, navigation=replace(closed.navigation, wayround_anchor=None, wayround_last_tick=None)))  # a closed count adds nothing
 
 
 def test_best_distance_is_none_exactly_when_the_count_is_zero_on_every_patch_path():
@@ -262,3 +271,32 @@ def test_best_distance_is_none_exactly_when_the_count_is_zero_on_every_patch_pat
     boxed = _state(h, _wall(10, 5, 4), _wall(11, 5, 6), _wall(12, 4, 5))
     upd = MovementSystem.resolve_move(boxed, h, (9, 5))[1]
     assert upd.navigation.wayround_clear is True and upd.navigation.wayround_count_set is None and upd.navigation.wayround_best_distance_set is None
+
+
+@pytest.mark.usefixtures("remove_restored_run_dirs")
+def test_an_open_count_round_trips_through_the_real_checkpoint_writer_and_continues(tmp_path):
+    """F1 (rpg-designer review): save an open count (count 1, best 4, anchor (9,5), last tick 7) through the real checkpoint writer and load it back. The anchor stays a TUPLE (a list would
+    change the fingerprint and the Chebyshev read), the canonical hash and the fingerprint equal the originals, and the next oscillation event continues the count (count 2)."""
+    from types import SimpleNamespace
+    from src.engine.scenario_checkpoint import ScenarioCheckpointer
+    from src.replay.fingerprint import StateFingerprinter
+    from src.engine.checkpoint import CanonicalStateHasher
+    from src.scenarios.schema import SimulationScenarioDefinition
+
+    spec = SimulationScenarioDefinition(id="f1_roundtrip", world_composition="frontier_living_world", perspective="hero_guild_perspective")
+    hero = _open_count(_hero(target=(9, 5)), count=1, best=4, anchor=(9, 5), last_tick=7)
+    state = _state(hero)
+    svc = SimpleNamespace(_kernel=SimpleNamespace(state=state), tick=0, _spec=spec)  # exactly what save() reads: kernel.state, tick, spec id
+    path = tmp_path / "ckpt.bin"
+    ScenarioCheckpointer.save(svc, path)
+    restored = ScenarioCheckpointer.restore(path, spec)
+    try:
+        r_state = restored._kernel.state
+        nav = r_state.entities[1].navigation
+        assert nav.wayround_anchor == (9, 5) and isinstance(nav.wayround_anchor, tuple)
+        assert (nav.wayround_count, nav.wayround_best_distance, nav.wayround_last_tick) == (1, 4, 7)
+        assert CanonicalStateHasher.get_hash(r_state) == CanonicalStateHasher.get_hash(state)
+        assert StateFingerprinter.get_fingerprint(r_state)["state_hash"] == StateFingerprinter.get_fingerprint(state)["state_hash"]
+        assert _event(r_state.entities[1], (9, 6), 12).wayround_count_set == 2  # the restored count continues across a one-tile jitter
+    finally:
+        restored.abort()
