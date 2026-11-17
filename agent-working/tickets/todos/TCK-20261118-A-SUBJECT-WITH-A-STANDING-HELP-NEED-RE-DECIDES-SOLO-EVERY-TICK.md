@@ -35,11 +35,13 @@ Code read on main dca5a8dbb by rpg-planner (no run):
 - Nothing remembers the last decision or holds it for a period. A help need that persists (for example, one SOLO never acts on) gives one identical decision per tick for as long as it lasts. The posture also lives in free-form `identity.properties["last_cooperation_decision"]`, not in a typed field (CLAUDE.md, Durable State Rule).
 - `_record_decision_events` and the help-need events are capped only by `len(entity.timeline) < 150`, not by any decision lifecycle.
 
+SECOND TRIGGER (rpg-planner-ubuntu's cause read, relayed 2026-11-18; rpg-planner confirmed the code on main dca5a8dbb): a group member with NO help need also re-decides every tick. The skip test lets an entity through when `identity.group_id is not None`, and `select_for_own_needs` then returns SOLO with trace reason "No help needs detected." (services.py ~:180-189), and the phase writes last_cooperation_decision again. Births head: entities 10 and 28 are in group 10018 (formed t918, live at t1000), so this trigger, not a standing need, may be the whole cause there. Main: entity 18 emits 460 per-tick events while in groups.
+
 Whether SOLO leads to any action, and why the two subjects' need never clears, is NOT read. That is step 1.
 
 ## Scope
-1. Evidence, with no behaviour change: on the births head and on main, for urban_political s42 and the 3 standard cells, count per subject the longest run of consecutive same-posture cooperation_events. For entities 10 and 28, name the help need that persists, what SOLO maps to in CooperationIntentBridge.map_decision, and whether any project or task acts on it.
-2. rpg-designer rules the class (a decision with no lifecycle, an unmet need, or both) and the fix shape before any code: for example, a typed last decision with a re-decide rule (need changed, or a hold period ended), and whether the posture moves out of identity.properties.
+1. Evidence, with no behaviour change: on the births head and on main, for urban_political s42 and the 3 standard cells, count per subject the longest run of consecutive same-posture cooperation_events. Split the counts by trigger (a standing help need, or group membership with no need). For entities 10 and 28 (group 10018) and main's entity 18, name which trigger fires and, where there is one, the help need that persists, what SOLO maps to in CooperationIntentBridge.map_decision, and whether any project or task acts on it.
+2. rpg-designer rules the class (a decision with no lifecycle, an unmet need, or both) and the fix shape before any code: for example, a typed last decision with a re-decide rule (need changed, or a hold period ended), and what a group member with no need should do (skip the posture choice, or keep a group posture instead of SOLO), and whether the posture moves out of identity.properties.
 3. Fix, tests (a standing need gives one decision, not one per tick; a changed need re-decides), Bible text (ch. 07 cooperation), parity and divergence.
 
 ## Out of Scope
@@ -48,6 +50,7 @@ Whether SOLO leads to any action, and why the two subjects' need never clears, i
 - The DEFER_NO_PARTNER blocker re-creation (TCK-20261101-A-NO-PARTNER-BLOCKER-IS-RE-CREATED-EVERY-TICK).
 
 ## Acceptance Criteria
+- A group member with no help need doesn't re-emit SOLO every tick. A test pins it.
 - No subject emits the same cooperation posture on consecutive ticks unless its inputs changed, or the ruled hold rule allows it. A test pins it.
 - The step 1 table is delivered, and the cause is named before the fix.
 
