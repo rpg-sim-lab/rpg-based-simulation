@@ -8103,6 +8103,18 @@
   artifact_files: []
   tags: []
 - type: ticket
+  path: agent-working/tickets/todos/TCK-20261117-A-NEWBORN-HAS-AN-ADULT-BODY-UNTIL-A-CHILD-BODY-SCALE-EXISTS.md
+  ticket_id: TCK-20261117-A-NEWBORN-HAS-AN-ADULT-BODY-UNTIL-A-CHILD-BODY-SCALE-EXISTS
+  title: A newborn is built with its species' adult body stats because no CHILD body
+    scale exists
+  tier: standard
+  ticket_type: feature
+  date: '2026-11-17'
+  related_code_areas:
+  - src/ai/life_stage.py, src/core/state.py (LifeStage), the archetype/body builder
+  artifact_files: []
+  tags: []
+- type: ticket
   path: agent-working/tickets/todos/TCK-20261117-A-WORLD-BOSS-BODY-DECLARES-A-SPECIES.md
   ticket_id: TCK-20261117-A-WORLD-BOSS-BODY-DECLARES-A-SPECIES
   title: A world boss body declares a species, and `world_boss` leaves the non-living
@@ -10671,6 +10683,7 @@
   artifact_files:
   - agent-working/stored_artifacts/TCK-20261109-M1-BASIC-WILD-BIRTHS-FOR-EVERY-LIVING-KIND/rpg_designer_births_answers_2026-11-17.md
   - agent-working/stored_artifacts/TCK-20261109-M1-BASIC-WILD-BIRTHS-FOR-EVERY-LIVING-KIND/rpg_designer_ubuntu_births_rulings_2026-11-17.md
+  - agent-working/stored_artifacts/TCK-20261109-M1-BASIC-WILD-BIRTHS-FOR-EVERY-LIVING-KIND/rpg_designer_ubuntu_births_rulings_v2_2026-11-17.md
   tags: []
 - type: ticket
   path: agent-working/tickets/todos/TCK-20261109-M1-COARSE-PROPERTY-BANDS-AND-THE-APPRAISAL.md
