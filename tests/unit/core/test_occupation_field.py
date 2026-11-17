@@ -236,7 +236,7 @@ def test_k6d_a_scenario_spec_with_no_species_is_refused(tmp_path):
 
 
 def test_k6d_a_hero_archetype_with_no_species_is_refused(monkeypatch):
-    import src.systems.world_systems.generator as gen_mod
+    import src.content.hero_species as gen_mod
     from src.core.species import SpeciesNotDeclaredError
 
     class _Cat:

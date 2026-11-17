@@ -24,7 +24,7 @@ from src.config.profiles import RuntimeProfile, HardwareClass
 from src.platform.rng import DeterministicRNG
 from src.engine.kernel import Kernel
 from src.core.builder import V2EntityBuilder
-from src.systems.world_systems.generator import hero_species_id
+from src.content.hero_species import hero_species_id
 
 
 class SimulationAnalysisRunner:
