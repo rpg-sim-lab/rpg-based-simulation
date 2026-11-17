@@ -4,6 +4,8 @@ import json
 import time
 from typing import Any, Dict, List, Optional
 
+from src.core.species import SpeciesNotDeclaredError
+
 
 class ScenarioRunner:
     """
@@ -49,9 +51,11 @@ class ScenarioRunner:
             actor_spec = self.spec.get("actors", [{}])[0]
             actor_id = actor_spec.get("id", 1)
             
+            if not actor_spec.get("species"):
+                raise SpeciesNotDeclaredError("the scenario spec's first actor declares no `species`; there is no default (M1 step 4)")
             hero = (V2EntityBuilder(actor_id)
-                    .kind(actor_spec.get("role", "HERO"))
-                    .identity(occupation=actor_spec.get("role", "HERO"))  # M1 step 2: the exact string written to kind
+                    .kind(actor_spec["species"])
+                    .identity(occupation=actor_spec.get("role"))
                     .location(0.0, 0.0)
                     .identity(class_id=actor_spec.get("class_id", "warrior"))
                     .inventory(gold=actor_spec.get("gold", 60))

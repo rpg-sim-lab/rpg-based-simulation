@@ -244,7 +244,7 @@ roles:
     responsibility:
       accepts_dispatch_from: [user, rpg-planner]
     capability: {may_write: ["**"]}
-    placement: {worktree: rpg, max_sessions: 3}
+    placement: {worktree: rpg, max_sessions: 4}
     handover: .claude/handover/rpg-implementer.md
     card_note: "Host u24desktop; twin `-ubuntu`."
   - role: rpg-designer-ubuntu   # host ubuntu; rpg exception: plain = u24desktop (owner 2026-10-25, #715)
@@ -271,7 +271,7 @@ roles:
     responsibility:
       accepts_dispatch_from: [user, rpg-planner-ubuntu]
     capability: {may_write: ["**"]}
-    placement: {worktree: rpg-ubuntu, max_sessions: 3}
+    placement: {worktree: rpg-ubuntu, max_sessions: 4}
     handover: .claude/handover/rpg-implementer-ubuntu.md
     card_note: "Host ubuntu."
   - role: agent-working-designer

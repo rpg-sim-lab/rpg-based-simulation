@@ -60,6 +60,7 @@ Filed by rpg-planner on 2026-11-09 as a filing only (no code), on lead-planner-u
 - TCK-20261109-M1-NO-NAME-CHECKS-PROBE-AND-CONTENT-ALONE-KIND-PROBE
 
 ## Related Docs
+- docs/plans/systemic_world/m1_kernel_spec_items_2_6.md (the kernel spec + this item's own-job counts; owner answers Q1-Q10, #715 6937049127)
 - docs/plans/systemic_world/roadmap.md (§12.3 milestone 1, §12.5 done criteria)
 - docs/plans/systemic_world/owner_decision_memo.md
 
@@ -74,7 +75,7 @@ src/strategy/, src/systems/, decision code
 - Owner-level choices are asked when the milestone starts, not guessed here.
 
 ## Implementation Notes
-None yet.
+- 2026-11-17 (M1 step 4, rpg-designer 3045e98a and the Q2 ruling): (1) **stronghold**: no entity writer has existed since D71. The step-3 reader (`src/world/environment.py:86`, now on `occupation`) and the `tests/unit/world/test_aura.py` fixture stay as a dead branch in the kind=species item; remove them in one of these stages. (2) **A species-valued label on a camp spawn**: a wolf, spider, troll or slime camp spawn writes `occupation` = the species string (what `CampService.spawn_kind` returns where the species declares no `camp_spawn_kind`), so the label equals the species. Clean that label up in these stages (goblin_warrior and orc_warrior come from the species' own `camp_spawn_kind`).
 
 ## Test Summary
 

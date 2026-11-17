@@ -85,7 +85,8 @@ def test_v2_sink_example_is_absent_when_the_decay_sink_writes_its_record():
 def _seed_hungry_worker_beside_an_inn(kernel) -> int:
     state = kernel.state
     inn = next(b for b in state.buildings.values() if b.kind == "inn")
-    worker = next(e for e in state.entities.values() if e.kind == "worker" and e.combat.alive)
+    from src.core.species import occupation_of  # label selector moved to occupation at step 4
+    worker = next(e for e in state.entities.values() if occupation_of(e) == "worker" and e.combat.alive)
     entities = dict(state.entities)
     entities[worker.id] = replace(
         worker, navigation=replace(worker.navigation, position=(inn.position[0] + 1.0, inn.position[1])),

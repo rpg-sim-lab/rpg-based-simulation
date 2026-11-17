@@ -211,6 +211,22 @@ catalog hostility law makes only "invader" factions hostile and `wild_beast_pack
 tests above: a hero may attack a spawned wolf, the wolf may attack the hero, and hero↔neutral is
 refused both ways.
 
+**Amendment, the one appraisal (ruled by rpg-designer, 2026-11-17; Milestone 1's bands-and-appraisal
+item, TCK-20261109-M1-COARSE-PROPERTY-BANDS-AND-THE-APPRAISAL).** A subject judges another body by
+what it perceives (PERC-02): can I eat it, can it eat me, and can I overcome it — my power and
+condition against its apparent power and condition, counting those visibly with it. The estimate is
+only as good as the subject's wits: a low-wits subject goes by apparent size and its kind's common
+belief; a higher-wits subject that has watched or fought the other reads its true power band. Power
+and believed danger sit on one scale. Engagement (combat posture, the outmatched check) reads this
+appraisal, never the other's true attack, defence or health. Hostility between kinds comes from each
+kind's declared reason to fight and from the appraisal; between people, from declared faction
+relations by id; no decision guesses an allegiance from a name's spelling.
+- **Amendment, a tie (decided by the owner, 2026-11-17, Q10(a), owner answers #715 6937049127 (recommended option on every question)).** When my power equals its
+  perceived power, I cannot overcome it; wounds and company shift the comparison.
+- **Amendment, kill rewards (decided by the owner, 2026-11-17, Q8(a)).** Experience and gold are keyed
+  to the defeated body's power band and level, not its role; minted gold retires in Milestone 2.
+- M1 items 2-6 rule text, drafts/rpg-designer-m1-items-2-6-rule-text.md sha256 800027b5; kernel spec docs/plans/systemic_world/m1_kernel_spec_items_2_6.md.
+
 ---
 
 ## CONFLICT-04 — A fighter stands its ground between blows; leaving an engagement is a decision, and it has a cost
