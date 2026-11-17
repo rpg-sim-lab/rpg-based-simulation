@@ -48,6 +48,7 @@ FIELD_TO_TARGET = {
     "body_model": "body_model",
     "need_profile": "need_profile",
     "reproduction_profile": "reproduction_profile",
+    "newborn_archetype": "entity_archetype",
     "sense_profile": "sense_profile",
     "cognition_profile": "cognition_profile",
     "default_cognition_profile": "cognition_profile",

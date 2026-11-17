@@ -24,7 +24,7 @@ def _repo_with(species_profile: dict, need_hunger: str, profiles: list | None) -
     species = yaml.safe_load(open(os.path.join(root, "species.yaml")))
     needs = yaml.safe_load(open(os.path.join(root, "need_profiles.yaml")))
     target = next(s for s in species if s["id"] == "wolf")
-    target.update(species_profile)
+    target.update({"newborn_archetype": "hungry_wolf", **species_profile} if "reproduction_profile" in species_profile else species_profile)
     next(n for n in needs if n["id"] == target["need_profile"])["needs"]["hunger"] = need_hunger
     yaml.safe_dump(species, open(os.path.join(root, "species.yaml"), "w"))
     yaml.safe_dump(needs, open(os.path.join(root, "need_profiles.yaml"), "w"))
@@ -71,3 +71,27 @@ def test_every_field_is_required():
     for field in [k for k in _PROFILE if k != "id"]:
         with pytest.raises(ValidationError):
             ReproductionProfileDefinition(**{k: v for k, v in _PROFILE.items() if k != field})
+
+
+def test_newborn_archetype_is_required_with_a_profile_and_refused_without_one():
+    repo = _repo_with({"reproduction_profile": "test_births", "newborn_archetype": None}, "very_low", [_PROFILE])
+    with pytest.raises(ReproductionProfileError, match="no newborn_archetype"):
+        repo.load_all()
+    repo = _repo_with({"newborn_archetype": "hungry_wolf"}, "very_low", [_PROFILE])
+    with pytest.raises(ReproductionProfileError, match="but no reproduction_profile"):
+        repo.load_all()
+
+
+def test_newborn_archetype_must_exist_and_belong_to_the_species():
+    repo = _repo_with({"reproduction_profile": "test_births", "newborn_archetype": "no_such_archetype"}, "very_low", [_PROFILE])
+    with pytest.raises(ReproductionProfileError, match="not declared"):
+        repo.load_all()
+    repo = _repo_with({"reproduction_profile": "test_births", "newborn_archetype": "goblin_scout"}, "very_low", [_PROFILE])
+    with pytest.raises(ReproductionProfileError, match="belongs to species 'goblin'"):
+        repo.load_all()
+
+
+def test_species_without_a_profile_load_exactly_as_before():
+    repo = CatalogRepository("data/content")
+    repo.load_all()
+    assert repo.species["human"].newborn_archetype is None
