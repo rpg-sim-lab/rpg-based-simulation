@@ -51,6 +51,8 @@ The finding has one root: a pillar is penalised for absence only when a late eve
   - The rules gated on `pillar_event_counts == 0`, or on a zero window tag, are the first to check: combat.py:59, faction.py:63, information.py:96, social.py:68, and the window-tag gates at agency.py:109, cognition.py:59-60, economy.py:75/89/103, information.py:65, narrative.py:71/93, progression.py:74 and world_dynamics.py:76/103.
   - Fix the ones that fire only on a late event, so that absence is scored at end of run or at the gate tick.
 - (3) Per-tick state counting: score `decision_divergence_detected` on entering the state (or once per window), not on every tick it persists. That way one stuck entity can't dominate COGNITION.
+  - Second instance, `cooperation_event`, added per rpg-designer-ubuntu's loop read (fc2a5c96). `src/domains/cooperation/phase.py:150-209` re-decides every tick for an entity with a help need and writes `last_cooperation_decision`, and each write emits a `cooperation_event`. On the births head, urban_political s42 1000t has original entities 10 and 28 deciding SOLO on every tick from about 916-919 to tick 1000. That sets SOCIAL's last_event_tick to 1000. The same per-tick shape is normal on main (entity 18: 460 events over ticks 4-495).
+  - Check first: does the help need behind a standing SOLO ever resolve? If it never does, split it out as a cooperation behaviour ticket. "Without acting" is unverified, because the payload carries no action field.
 - Re-pin the corpus grades the fix moves, under rule (a) (#715 6941107808).
 
 ## Out of Scope

@@ -73,3 +73,18 @@ tags: []
 - **The check:** the gaps between successive events, plus the `decision` payload values, for entities 10 and 28 on head. This comes from the same logs; no new run.
   - **If the gaps are irregular, or the decisions vary:** no never-exit loop. State it for u24.
   - **If there is a fixed period with one repeated decision to tick 1000:** it is a never-exit cycle behind the denominator, and row 2 is not re-pinned.
+
+### Row 2, final read: a hold to the end of the run stands behind the denominator, so row 2 is NOT re-pinned
+- **The data:**
+  - entity 10's last run is ticks 919-1000, SOLO on all 82 ticks;
+  - entity 28's last run is ticks 916-1000, every tick (SOLO 83 times and REQUEST_HELP twice after tick 600);
+  - both are original adults;
+  - that late stretch alone sets SOCIAL's last_event_tick to 1000.
+- This meets the test I set: one repeated decision on every tick, through to the run's end. Neither hold is seen to exit, so row 2 is not re-pinned. It stays red on head (it is red on main too) and is named in the PR body with this cause.
+- **What it is:** `cooperation/phase.py:150-209` re-decides every tick for an entity with a help need, and writes `last_cooperation_decision`. Each write emits a `cooperation_event`.
+- **The same per-tick shape is normal on main:** entity 18 has 460 events over ticks 4-495. So the SOLO streak is the phase's ordinary cadence over a persisting help need. What's new on head is only that it is still running at tick 1000.
+- **Backlog, which answers Q2:**
+  - Fold `cooperation_event` into scorer scope line 3, per-tick counting of a persisting state, as its second instance.
+  - Add one check to that line: whether the help need behind a standing SOLO ever resolves. If it never does, split it into a cooperation behaviour ticket.
+  - Don't file a separate behaviour finding now: "without acting" is unverified, because the payload has no action field.
+- **Owner:** `src/domains/cooperation` is in the rpg domain. rpg-planner picks the lane.

@@ -13,7 +13,13 @@ tags: []
 # Births: exact before/after texts for the ENABLE_CAMP_NEST_SPREAD leftovers (rpg-designer-ubuntu, 2026-11-18)
 - **Basis:** the ruling in drafts/rpg-designer-ubuntu-births-loop-read-and-camp.md (6d1a48ed). These are the texts it describes.
 - **Before text:** taken from births head 1f2cd368b. Each anchor occurs once in its file.
-- **Name:** `name: "Camp/Nest Maturity Calibration Pilot"` (line 3) is unchanged. The NEST place is still seeded there.
+- **Revision 2:** this applies rpg-planner (u24)'s two wording fixes, relayed by lead-planner, and the display rename.
+- **The id is unchanged.** The id `camp_maturity_calibration_pilot` and its directory are read by 3 tests, so they stay. Only the display name changes.
+
+## 0. data/worlds/camp_maturity_calibration_pilot/world.yaml, line 3: display name (owner: rpg-planner on u24)
+**Before:** `name: "Camp/Nest Maturity Calibration Pilot"`
+**After:** `name: "Camp Maturity Calibration Pilot"`
+- Checked by rpg-planner-ubuntu (tests/), by lead-planner (the rest of main) and by me at 1f2cd368b. Nothing reads the name except the regenerated `resolved/world.resolved.yaml`.
 
 ## 1. data/worlds/camp_maturity_calibration_pilot/world.yaml, line 4 (owner: rpg-planner on u24, via lead-planner)
 **Before:**
@@ -22,7 +28,7 @@ description: "Unit-tier isolation world proving CampService.process_camps()'s ra
 ```
 **After:**
 ```
-description: "Unit-tier isolation world proving that a matured camp adds no entity in a real, practical-length run. Composes frontier_village_core + camp_maturity_calibration_pilot, the latter seeding a CAMP (goblin) and a NEST (wolf) both at maturity=79.5, so they cross the old 80.0 threshold within a few ticks without the ~160,000-tick production accrual. Built for TCK-20260904-CAMP-CONTENT-AUTHORING-BRIDGE to prove the raid and Nest-spread branches; the raid was removed by decision D70 (TCK-20261014-CAMPS-STOP-SPAWNING-MONSTERS-FROM-NOTHING-D70) and Nest-spread by TCK-20261109-M1-BASIC-WILD-BIRTHS-FOR-EVERY-LIVING-KIND, so both camps now mature and spawn nothing. Used by tests/integration/world/test_camp_raid_targeting.py."
+description: "Unit-tier isolation world proving that a matured camp adds no entity in a real, practical-length run. Composes frontier_village_core + camp_maturity_calibration_pilot, the latter seeding a CAMP (goblin) and a NEST (wolf) both at maturity=79.5, so they pass the old 80.0 threshold within a few ticks without the ~160,000-tick production accrual. Built for TCK-20260904-CAMP-CONTENT-AUTHORING-BRIDGE to prove the raid and Nest-spread branches; the raid spawn was removed by D70 (divergence 2.125, TCK-20261014-CAMPS-STOP-SPAWNING-MONSTERS-FROM-NOTHING-D70), and the maturity gate with its Nest-spread branch by TCK-20261109-M1-BASIC-WILD-BIRTHS-FOR-EVERY-LIVING-KIND, so both camps now only mature and spawn nothing. Read by tests/integration/world/test_camp_raid_targeting.py, tests/unit/world/test_world_rules_are_deterministic.py and tests/simulation_quality/fixtures/expected_world_flag_state.json."
 ```
 - After this edit, regenerate `resolved/world.resolved.yaml` and the other `resolved/` reports with the world's compile tool. Never hand-edit them.
 
@@ -44,9 +50,13 @@ description: "Unit-tier isolation world proving that a matured camp adds no enti
 **After:**
 ```
     # TCK-20260904-CAMP-CONTENT-AUTHORING-BRIDGE: NEST-kind Place, position is the
-    # centroid of grid_bounds. A camp adds no entity (raid removed by D70; Nest-spread
-    # removed by TCK-20261109-M1-BASIC-WILD-BIRTHS-FOR-EVERY-LIVING-KIND); wolves now
-    # come from births. maturity left unset, same caution as every other Stage B
+    # centroid of grid_bounds. A camp adds no entity (raid spawn removed by D70; maturity gate and
+    # Nest-spread removed by TCK-20261109-M1-BASIC-WILD-BIRTHS-FOR-EVERY-LIVING-KIND);
+    # wolves now come from births. maturity left unset, same caution as every other Stage B
     # Place in this corpus (no calibrated value yet).
 ```
 - A content-module comment doesn't change the compiled world. If any world's resolved hash moves anyway, stop and report it.
+
+## Code note for rpg-planner-ubuntu (not a text)
+- At 1f2cd368b `CampService.RAID_MATURITY_THRESHOLD = 80.0` (src/world/camp.py:17) has no reader in src; `process_camps` now only matures.
+- Remove it in the births PR or name it as kept for the M3 raid design. It's the same pattern as `RaidService`'s kept constants in 2.125.
