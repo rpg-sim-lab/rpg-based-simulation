@@ -60,11 +60,25 @@ Source: `agent-working/stored_artifacts/TCK-20261109-M1-BASIC-WILD-BIRTHS-FOR-EV
 - Item 4: a newborn's role is MONSTER when the mother is MONSTER, and CITIZEN otherwise. Faction is the mother's. This is an interim row of the name-branch item.
 - Item 6: expired `reproduction_cooldowns` entries are pruned at the check. The field's doc and comment state its new meaning. A FIELD_RULES row is needed only if the field's shape changes.
 - Item 7: the own-job is the fix arm (spied) plus its plain twin, with no base arm in Phase 1. Bars W1, W3, W4 and W5 are sharpened per Part C of the source file.
-- B1: the rule is ECOL-06, "A new body is born, not made". Its text is in the source file and goes into `docs/world_rules/life-body/ecology-population.md` in this item.
+- B1: the rule is ECOL-06, "A new body is born, not made". The text belongs to rpg-designer. It enters `docs/world_rules/life-body/ecology-population.md` only through rpg-designer, never from this lane (v2 Part B1).
 - B2 (owner): only kinds that eat get births. Undead, spirit, slime and dragonkin are excluded. The backlog ticket TCK-20261117-SLIME-AND-DRAGONKIN-NEED-A-NON-FOOD-BIRTH-CONDITION covers slime and dragonkin (not M1).
 - B3: no kind is exempt from the extinction line. The undead decline is disclosed as BALANCE text.
-- B4: ECOL-03 keeps statistical cohorts. The +1 real-birth nudge is generalised to every birth. The ECOL-03 status line reads "partly met".
+- B4: ECOL-03 keeps statistical cohorts. The +1 real-birth nudge is generalised to every birth. The ECOL-03 status line reads "partly met". rpg-designer reviews that evidence text in the PR.
 - B5: Bible ch05 gets the births law, and the reproduction parity rows move. One divergence entry, class Unified. The texts go to rpg-designer before the implementation PR.
+- Item 5: rpg-designer reviews the `docs/guides/feature_flags.md` change.
+
+### Amendment 2026-11-17 (v2 BINDING)
+Source: `agent-working/stored_artifacts/TCK-20261109-M1-BASIC-WILD-BIRTHS-FOR-EVERY-LIVING-KIND/rpg_designer_ubuntu_births_rulings_v2_2026-11-17.md` (body sha256 f1b332ba). v2 supersedes v1 (52ad1ea5). It folds in 8c2c9fab and B2. Where any section of this ticket differs from v2, v2 wins.
+- Q11, the newborn body: built through the SAME species/archetype path as a t0 body of its species, with any seeded draw keyed by the newborn's id.
+  - There is no CHILD scaling, so the newborn gets t0 values at full HP. The step report discloses "newborns have adult body stats". A CHILD body scale is backlog: TCK-20261117-A-NEWBORN-HAS-AN-ADULT-BODY-UNTIL-A-CHILD-BODY-SCALE-EXISTS.
+  - age_ticks is 0 at birth; the old `short_clock_age` is not carried.
+  - gold is 0 (decision 51).
+  - Both parent ids are the real parents and never None. birth_tick is the birth tick.
+- Q12, pruning: `LifecycleUpdate.reproduction_cooldowns_remove` (the partner ids) is a field on the typed update, not durable state. It needs no FIELD_RULES row or fingerprint entry.
+  - ApplyPath applies remove, then add, within one update.
+  - merge() unions the remove lists.
+  - Removing an absent key is a no-op.
+  - Unit tests cover all three, plus a serialise round trip if patches are serialised anywhere.
 
 ## Out of Scope
 - §12.4 (packs, herds, territory), milestones 2 and 3, and any rule work not listed in §12.3 (owner ruling only).
@@ -96,8 +110,7 @@ spawning and camp systems, content
 - Owner-level choices are asked when the milestone starts, not guessed here.
 - 2026-11-17: the read-only map's claim that creature territory is ungated was wrong. `world_dynamics.py:286-287` runs it only with `ENABLE_CREATURE_TERRITORY_LIFECYCLE` ON (default OFF, `feature_flags.py:149`). Each claim taken from the map is to be re-verified against the code before the plan cites it.
 - Part B1 to B5 were answered on 2026-11-17 (see the amendment above).
-- Open: newborn body stats. The old spawn paths give every newborn generic tier-1 stats (generator.py), not the stats of its species. The question is with rpg-designer-ubuntu.
-- Open: pruning cooldowns needs a typed removal on LifecycleUpdate, which has no remove field today. Whether that counts as a new durable shape is with rpg-designer-ubuntu.
+- Newborn body stats and cooldown pruning: answered as Q11 and Q12 in v2 (see the v2 amendment above).
 
 ## Implementation Notes
 - Carry-forward from kind=species step 4 (rpg-designer): this item's own-job counts include K6 (kind is a species at birth) and K8 (newborn kind = the parents' species), on a world/seed where births actually happen.
