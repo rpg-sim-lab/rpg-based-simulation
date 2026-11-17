@@ -66,6 +66,8 @@ None open; rulings by rpg-designer relayed by rpg-planner 2026-11-17 (split into
 ## Implementation Notes
 Designer rulings 2026-11-17 via rpg-planner: derive at read (no stored field, no FIELD_RULES row); fixture policy (unprofiled counted, linked to TCK-20261117-TEST-FIXTURES-DECLARE-A-SPECIES-THROUGH-A-HELPER-AND-THE-BUILDER-DEFAULT-GOES). Known: legality.attack_allowed, is_feeding_kill, scorers_support.perceived_hostiles and the other get_neighbor_view sites stay day-by-default until 02b.
 
+Body-model `signals` accepts an optional `magic` key (default none for every body; designer condition 2026-11-17). No production body in data/content declares it in this PR (grep-verified: none); only the test-only fixture in tests/unit/engine/test_pressure_perception_consumers.py does. To go in the PR body.
+
 ## Test Summary
 
 ## Files Changed
