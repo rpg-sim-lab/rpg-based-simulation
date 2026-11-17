@@ -3,7 +3,6 @@
 # Compliance IDs: COMB-014, COMB-015, COMB-016
 from __future__ import annotations
 from typing import TYPE_CHECKING, List, Optional, Tuple
-from dataclasses import replace
 import logging
 
 logger = logging.getLogger(__name__)
@@ -11,7 +10,7 @@ logger = logging.getLogger(__name__)
 from src.core.updates import EntityUpdate, StrategicUpdate, TaskUpdate, NavigationUpdate
 from src.engine.legality import LegalityServiceV2
 from src.engine.positioning import PositioningService
-from src.core.strategic import GoalKind, ProjectStatus
+from src.core.strategic import GoalKind, ProjectStatus, suspend_record
 from src.core.movement_modes import MovementMode
 from src.core.enums import ActionStyle, ReasonCode, EntityRole, Faction
 from src.core.skills import SKILL_REGISTRY, SkillDefinition
@@ -167,14 +166,14 @@ def _panic_yields_to_need(entity: "EntityState", neighbors: List["EntityState"],
     return _need_path_first(entity, classify_neighbours(entity, neighbors, source_identity(entity)).hostiles, tick)[0]
 
 
-def _suspend_project_for_threat(entity: "EntityState", hostiles: List["EntityState"]) -> Optional[StrategicUpdate]:
+def _suspend_project_for_threat(entity: "EntityState", hostiles: List["EntityState"], tick: int) -> Optional[StrategicUpdate]:
     """If hostiles are present, SUSPEND the entity's current project if it is active (Pillar 5.1 strategic persistence)."""
     if not (hostiles and entity.strategic.current_project_id):
         return None
     project = entity.strategic.projects.get(entity.strategic.current_project_id)
     if project and project.status == ProjectStatus.ACTIVE:
         return StrategicUpdate(
-            projects_add_or_update=[replace(project, status=ProjectStatus.SUSPENDED)],
+            projects_add_or_update=[suspend_record(project, tick)],
             current_project_id_set="",
             current_objective_id_set="",
         )
@@ -303,7 +302,7 @@ class TacticalDecisionSystem:
         need_first, hunt_prey = _need_path_first(entity, hostiles, state.tick)
 
         # 4. Strategic Persistence (Pillar 5.1): a need project the subject is walking to is not suspended for a hostile that is not acting on it
-        strat_up = None if (need_first and _serves_a_need(entity)) or (hunt_prey and _hunt_project_names_prey(entity, hunt_prey)) else _suspend_project_for_threat(entity, hostiles)
+        strat_up = None if (need_first and _serves_a_need(entity)) or (hunt_prey and _hunt_project_names_prey(entity, hunt_prey)) else _suspend_project_for_threat(entity, hostiles, state.tick)
 
         # Safety pressure (AGENCY-07): a cautious entity retreats from a present threat, never from a hostile merely seen
         if safety_retreat_warranted(entity, hostiles, entity_pressures.safety_pressure):

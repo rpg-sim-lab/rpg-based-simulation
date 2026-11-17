@@ -104,3 +104,24 @@ def test_a_project_without_cleared_since_restores_to_no_window_and_keeps_every_o
         assert _values(restored, skip=("cleared_since",)) == _values(proj, skip=("cleared_since",))      # nothing shifted
     finally:
         k.shutdown()
+
+
+def test_a_project_without_suspended_since_restores_to_no_clock_and_keeps_every_other_field():
+    """2.212 (N10): `suspended_since` was appended to ProjectState; a pickle from before it loads one value short and the slot is unset until the restore step fills None."""
+    from dataclasses import replace
+    from src.core.strategic import GoalKind, ProjectState, ProjectStatus
+    k = kernel([hero(1, REACH[0], action=None)], beds=1)
+    try:
+        st = k._state
+        proj = ProjectState(id="proj_combat_engage_9", kind=GoalKind.COMBAT_ENGAGE, status=ProjectStatus.SUSPENDED, created_tick=3, score=7.5)
+        old = _old_shape(proj, ["suspended_since"])
+        with pytest.raises(AttributeError):
+            old.suspended_since
+        e = st.entities[1]
+        object.__setattr__(e, "strategic", replace(e.strategic, projects={old.id: old}))
+        fill_missing_fields(st, [r for r in FIELD_RULES if r.field == "suspended_since"])
+        restored = st.entities[1].strategic.projects[old.id]
+        assert restored.suspended_since is None
+        assert _values(restored, skip=("suspended_since",)) == _values(proj, skip=("suspended_since",))
+    finally:
+        k.shutdown()

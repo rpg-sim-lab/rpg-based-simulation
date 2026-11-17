@@ -72,7 +72,7 @@ from src.engine.policy import GovernorPolicy
 from src.core.strategic import (
     BlockerState, LeadState, LeadCertainty,
     ProjectState, ProjectStatus, ObjectiveState, ObjectiveStatus,
-    CognitionProfile, ProjectKind, GoalKind, ObjectiveKind, has_project_capacity, restart_clear_window, with_live_current_score
+    CognitionProfile, ProjectKind, GoalKind, ObjectiveKind, has_project_capacity, restart_clear_window, suspend_record, expire_suspended, with_live_current_score
 )
 from src.engine.spatial_query import SpatialQueryService
 from src.core.lodging_rules import is_lodged_stayer
@@ -1129,7 +1129,7 @@ class StrategicIntelligenceSystem:
         if candidate_project.score > effective_current_score:
             return StrategicUpdate(
                 projects_add_or_update=[
-                    replace(current, status=ProjectStatus.SUSPENDED),
+                    suspend_record(current, current_tick),
                     candidate_project
                 ],
                 current_project_id_set=candidate_project.id,
@@ -1147,7 +1147,7 @@ class StrategicIntelligenceSystem:
         if not project or project.status != ProjectStatus.SUSPENDED:
             return None
 
-        resumed = restart_clear_window(replace(project, status=ProjectStatus.ACTIVE))  # a suspended retreat's clear window was not observed: it restarts on resume
+        resumed = restart_clear_window(replace(project, status=ProjectStatus.ACTIVE, suspended_since=None))  # a suspended retreat's clear window was not observed: it restarts on resume
         return StrategicUpdate(
             projects_add_or_update=[resumed],
             current_project_id_set=project_id,
@@ -1268,7 +1268,52 @@ class StrategicIntelligenceSystem:
     ) -> StrategicUpdate:
         """
         Produce a collection of strategic intent updates for the next tick.
+
+        N10 (divergence 2.212): first the suspension expiry pass, so a freed slot counts on this same call (goal selection and the capacity gate see the ended records), and before the worker
+        fast-path, the objective-resolve return and the detour block, any of which would otherwise starve it. The pass is staged as a StrategicUpdate (never written here); the body runs on a
+        view of the subject with the expired records ended.
         """
+        if not entity.lifecycle.active or not entity.combat.alive:
+            return StrategicUpdate()
+        if any(s.kind in ("frozen", "stunned") for s in entity.combat.status_effects):
+            return StrategicUpdate()
+        expiry = StrategicIntelligenceSystem.suspension_expiry_update(entity, state.tick)
+        if expiry is None:
+            return StrategicIntelligenceSystem._evaluate_strategic_intent_body(state, entity, force=force, cadence=cadence)
+        ended = {p.id: p for p in expiry.projects_add_or_update}
+        strat = entity.strategic
+        view_strat = replace(
+            strat,
+            projects={pid: ended.get(pid, p) for pid, p in strat.projects.items()},
+            current_project_id=None if expiry.current_project_id_set == "" else strat.current_project_id,
+            current_objective_id=None if expiry.current_objective_id_set == "" else strat.current_objective_id,
+        )
+        body = StrategicIntelligenceSystem._evaluate_strategic_intent_body(state, replace(entity, strategic=view_strat), force=force, cadence=cadence)
+        return expiry.merge(body)
+
+    @staticmethod
+    def suspension_expiry_update(entity: EntityState, tick: int) -> Optional[StrategicUpdate]:
+        """The staged writes of the suspension expiry pass for ``entity`` at ``tick`` (None when there is nothing to write): the stamps and the typed `SUSPENSION_EXPIRED` ends of
+        `expire_suspended`, and, when the current project is one that ends, its current project and objective cleared in the same update (R2)."""
+        written = expire_suspended(entity.strategic.projects, tick)
+        if not written:
+            return None
+        current = entity.strategic.current_project_id
+        current_ends = any(p.id == current and p.status == ProjectStatus.ABANDONED for p in written)
+        return StrategicUpdate(
+            projects_add_or_update=written,
+            current_project_id_set="" if current_ends else None,
+            current_objective_id_set="" if current_ends else None,
+        )
+
+    @staticmethod
+    def _evaluate_strategic_intent_body(
+        state: AuthoritativeState,
+        entity: EntityState,
+        force: bool = False,
+        cadence: SystemCadence | None = None
+    ) -> StrategicUpdate:
+        """The strategic intent evaluation proper (see `evaluate_strategic_intent`)."""
         # Phase 5: Bounded frequency and early exit (Hardening)
         if not entity.lifecycle.active or not entity.combat.alive:
             return StrategicUpdate()
