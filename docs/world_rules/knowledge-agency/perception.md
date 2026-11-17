@@ -123,6 +123,34 @@ its signature or return value — exactly what REACH-03 already found.
 
 ---
 
+## PERC-02 — A subject perceives a body or a place only through a sense its kind has, against a signal that body or place gives off; a decision acts only on what is perceived, remembered or reported
+
+> Senses are declared per kind (the species' sense profile). Signals follow the body: its size,
+> whether it moves, whether it lives. A thing no sense of the subject can reach is not perceived,
+> however close. A decision that reads another body's or a place's true state without passing
+> this gate, memory or a report breaks this rule. A subject reads what can be sensed (position,
+> size, visible wounds, what the other is visibly doing, whether it closes the distance), never
+> another's intentions (its task or target).
+
+**Disposition: ACCEPT — ruled by rpg-designer, 2026-11-17 (RPG track, #715 6734312437), as
+Milestone 1's honest-perception item (roadmap §12.3; TCK-20261109-M1-HONEST-PERCEPTION-DEFAULTS).**
+It is PERC-01's "bounded by declared constraints" made concrete for Milestone 1; the specific
+gate formula stays an implementation choice (the scope boundary below).
+
+- **Amendment, night lowers sight (decided by the owner, 2026-11-17, Q2(a), owner answers #715 6937049127 (recommended option on every question)).** At night
+  (one `time_of_day` helper, SURV-08), vision counts two levels lower unless the kind's senses
+  declare night sight; other senses are unchanged.
+- **Repository evidence: CONFLICTING (2026-11-17, main bb26e4e5f).** Senses are declared
+  (`data/content/living/sense_profiles.yaml`) but compiled worlds never wire them
+  (`sense_profile_id` is set only by `ArchetypeEntityFactory`), so every measured body perceives
+  as the baseline humanoid; no body emits other than default signals (`get_entity_signals` reads
+  property keys nothing sets); about 13 decision paths read other bodies without the gate (e.g.
+  `perceived_hostiles`, `perceived_threats`, the combat scorers); `appraisal._coming_for` reads the
+  other's `task.payload["target_id"]`; a gate failure counts as perceived. Fixed in Milestone 1:
+  M1 items 2-6 rule text, drafts/rpg-designer-m1-items-2-6-rule-text.md sha256 800027b5; kernel spec docs/plans/systemic_world/m1_kernel_spec_items_2_6.md.
+
+---
+
 ## Scope / Deferred Boundaries
 
 ### Formal stealth/ambush content
