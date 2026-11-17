@@ -4727,4 +4727,4 @@
   proof_type: regression
   test_path: tests/unit/strategic/test_suspension_expiry.py, tests/unit/engine/test_checkpoint_fields.py
   divergence_note: See docs/guidelines/intentional_divergences.md Section 2.212.
-  support_boundary: 'Unit rows only until the own-job counts (L1-L4, not vacuous) on the three gate worlds, s42, 5000 ticks are read. 200 is a BALANCE value; the harm join is withdrawn.'
+  support_boundary: 'Unit rows plus the own-job counts at 67b507f8c: 3 gate worlds x s42 x 5000 ticks, spied and plain twin (hashes equal, PINNED, no exceptions, no logging errors): L1 = L2 = L3 = L4 = 0, SUSPENSION_EXPIRED 126 / 60 / 60 (frontier_living_world / urban_political / crowded_frontier), oldest SUSPENDED 218 < bar 219 (TTL 200 + cadence 20 - 1). 200 is a BALANCE value; the harm join is withdrawn. evaluate_all_strategic_intents has no production caller and skips the pass (TCK-20261117-EVALUATE-ALL-STRATEGIC-INTENTS-IS-DEAD-CODE-THAT-SKIPS-THE-SUSPENSION-EXPIRY).'
