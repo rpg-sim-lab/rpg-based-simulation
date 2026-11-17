@@ -7991,6 +7991,18 @@
   - agent-working/stored_artifacts/TCK-20261117-AN-ENTITY-CARRIES-ITS-OCCUPATION-LABEL-AND-ONE-SPECIES-READ-SPECIES-OF/test_plan.md
   tags: []
 - type: ticket
+  path: agent-working/tickets/done/TCK-20261117-LEAD-BOARD-SEVENTH-PASS.md
+  ticket_id: TCK-20261117-LEAD-BOARD-SEVENTH-PASS
+  title: The lead board records Milestone 1's three-phase plan, its boundaries and
+    the 2026-11-17 standing approvals, and shows ubuntu with only its RPG seats running
+  tier: hotfix
+  ticket_type: chore
+  date: '2026-11-17'
+  related_code_areas: []
+  artifact_files: []
+  tags:
+  - governance
+- type: ticket
   path: agent-working/tickets/done/TCK-20261117-LEAD-M1-BASE-GATE-EVIDENCE.md
   ticket_id: TCK-20261117-LEAD-M1-BASE-GATE-EVIDENCE
   title: The rpg gate reports behind the Milestone 1 re-baseline are kept on main,
