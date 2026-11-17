@@ -140,6 +140,10 @@ Source: `agent-working/stored_artifacts/TCK-20261109-M1-BASIC-WILD-BIRTHS-FOR-EV
   - Case 3 asserts insertion order, and both orders are tested.
   - One real-flow test: a roster built through the carry-forward path, holding a surviving t0 member and a newborn of P, resolves to the t0 member.
   - The disclosure uses addendum 2's exact sentence.
+  - Added by rpg-designer-ubuntu on 2026-11-18 from lead-planner's check, sent by message and recorded here; no other change to addendum 2:
+    - The real-flow test must not hand-build the roster or the final state. It produces the newborn through the real births apply path in an episode, takes that episode's `final_state.entities`, and builds the next roster through `_extract_entity_carry_forwards` and `persistent_entities.update`.
+    - It asserts three things: (1) every t0 id comes before the newborn id in `final_state.entities` iteration order; (2) the same holds in the rebuilt roster; (3) the response resolves to the surviving t0 member.
+    - If (1) fails because the state rebuild reorders entities, STOP and report to rpg-designer-ubuntu before the PR.
   - Backlog: TCK-20261118-RESOLVE-PENDING-INFORMATION-PICKS-BY-DICT-INSERTION-ORDER (pre-bind for rpg-designer).
 - Q14 (a), fallback: the species schema doc is made of three parts:
   - the `SpeciesDefinition` `Field(description=...)` for `newborn_archetype` and `reproduction_profile`;
