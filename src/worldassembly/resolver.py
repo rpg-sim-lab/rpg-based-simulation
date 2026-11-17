@@ -8,6 +8,7 @@ import yaml
 from pathlib import Path
 from typing import List, Dict, Any, Optional, Set, Tuple
 from pydantic import BaseModel, Field, ConfigDict
+from src.core.species import SpeciesNotDeclaredError
 
 logger = logging.getLogger(__name__)
 
@@ -1044,8 +1045,11 @@ class CompileProfileResolver:
                     from src.content.resolver import EntityArchetypeResolver
                     arch_resolver = EntityArchetypeResolver(self.repo)
                     resolved_arch = arch_resolver.resolve(archetype_id)
-                except Exception:
-                    pass
+                except Exception as exc:
+                    # M1 step 4: a population naming an archetype that does not resolve has no declared species; refused, no longer swallowed.
+                    raise SpeciesNotDeclaredError(
+                        f"population {key!r} names archetype {archetype_id!r}, which did not resolve: {exc}"
+                    ) from exc
 
             if resolved_arch:
                 resolved_entity = ResolvedEntityProfile(

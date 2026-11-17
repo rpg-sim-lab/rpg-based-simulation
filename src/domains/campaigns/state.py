@@ -109,9 +109,9 @@ class EntityCarryForward:
                        it; a survivor missing last_position falls back to a deterministic
                        per-entity search origin at reconstruction, never a shared constant.
       kind          <- entity.kind (TCK-20260911-CAMPAIGN-SURVIVOR-IDENTITY-NOT-RESTORED-ON-
-                       RECONSTRUCTION). Empty string for pre-existing records serialized before
-                       this field existed; reconstruction falls back to "entity" in that case,
-                       matching the prior (buggy) behavior rather than guessing.
+                       RECONSTRUCTION). The species id (M1 step 4). Empty string for pre-existing records
+                       serialized before this field existed; reconstruction refuses such a record
+                       (SpeciesNotDeclaredError) rather than guessing a species.
       role          <- entity.identity.role (int, EntityRole)
       faction       <- entity.identity.faction (int, Faction)
       properties    <- entity.identity.properties (dict: archetype_id/species_id/faction_id/

@@ -344,11 +344,9 @@ def test_dead_entity_excluded_from_next_episode_spawn():
     orch = CampaignOrchestrator(manifest)
 
     orch.state.persistent_entities[5] = EntityCarryForward(
-        entity_id=5, level=3, xp=500, equipment={}, reputation=0.5, alive=False
-    )
+        entity_id=5, level=3, xp=500, equipment={}, reputation=0.5, alive=False, kind="human")
     orch.state.persistent_entities[6] = EntityCarryForward(
-        entity_id=6, level=2, xp=200, equipment={}, reputation=0.3, alive=True
-    )
+        entity_id=6, level=2, xp=200, equipment={}, reputation=0.3, alive=True, kind="human")
 
     spawn = orch._get_spawn_entities()
     assert 5 not in spawn
@@ -652,8 +650,7 @@ def test_build_initial_state_survivor_branch_also_carries_compiled_regions_and_p
     """Episode N>0 (survivor reconstruction) must get compiled regions/places too."""
     orch = CampaignOrchestrator(_make_manifest(n_episodes=2))
     orch.state.persistent_entities[42] = EntityCarryForward(
-        entity_id=42, level=4, xp=900, equipment={}, reputation=0.8, alive=True
-    )
+        entity_id=42, level=4, xp=900, equipment={}, reputation=0.8, alive=True, kind="human")
 
     state = orch._build_initial_state(11, _real_episode_spec())
 
@@ -809,8 +806,7 @@ def test_build_initial_state_survivor_branch_also_carries_information_source_pro
     """The survivor-reconstruction branch must get the same fix as episode 0."""
     orch = CampaignOrchestrator(_make_manifest(n_episodes=2))
     orch.state.persistent_entities[42] = EntityCarryForward(
-        entity_id=42, level=4, xp=900, equipment={}, reputation=0.8, alive=True
-    )
+        entity_id=42, level=4, xp=900, equipment={}, reputation=0.8, alive=True, kind="human")
 
     state = orch._build_initial_state(11, _real_episode_spec(world_id="frontier_living_world"))
 
@@ -895,8 +891,7 @@ def test_reconstructed_survivor_with_no_carried_progression_gets_default_attribu
     even when there's nothing real to recompute from."""
     orch = CampaignOrchestrator(_make_manifest(n_episodes=2))
     orch.state.persistent_entities[42] = EntityCarryForward(
-        entity_id=42, level=20, xp=5000, equipment={}, reputation=0.5, alive=True,
-    )
+        entity_id=42, level=20, xp=5000, equipment={}, reputation=0.5, alive=True, kind="human")
 
     state = orch._build_initial_state(11, _real_episode_spec(world_id="frontier_living_world"))
     survivor = state.entities[42]
@@ -934,8 +929,7 @@ def test_reconstructed_survivor_combat_stats_reflect_both_earned_attributes_and_
         },
         class_id="NOVICE",
         learned_skills=(),
-        active_breakthroughs=(),
-    )
+        active_breakthroughs=(), kind="human")
 
     state = orch._build_initial_state(11, _real_episode_spec(world_id="frontier_living_world"))
     survivor = state.entities[42]
@@ -972,8 +966,7 @@ def test_reconstructed_survivor_earned_identity_progression_is_carried():
         class_id="WARRIOR",
         veterancy_points=7,
         veterancy_rank=2,
-        known_recipes=("iron_sword_recipe",),
-    )
+        known_recipes=("iron_sword_recipe",), kind="human")
 
     state = orch._build_initial_state(11, _real_episode_spec(world_id="frontier_living_world"))
     survivor = state.entities[42]
@@ -995,8 +988,7 @@ def test_reconstructed_survivor_wounds_and_scars_are_deliberately_reset_not_carr
     field pair is excluded on purpose, not because carrying it was never implemented."""
     orch = CampaignOrchestrator(_make_manifest(n_episodes=2))
     orch.state.persistent_entities[42] = EntityCarryForward(
-        entity_id=42, level=20, xp=5000, equipment={}, reputation=0.5, alive=True,
-    )
+        entity_id=42, level=20, xp=5000, equipment={}, reputation=0.5, alive=True, kind="human")
 
     state = orch._build_initial_state(11, _real_episode_spec(world_id="frontier_living_world"))
     survivor = state.entities[42]

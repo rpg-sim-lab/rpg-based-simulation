@@ -80,7 +80,7 @@ class CalamityService:
         if not world_boss_spawn_enabled(state):
             return []
         return [generator.spawn_monster(
-            state=state, kind="world_boss", pos=target_region.center, difficulty_tier=4
+            state=state, species="world_boss", occupation="world_boss", pos=target_region.center, difficulty_tier=4
         )]
 
     @staticmethod

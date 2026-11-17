@@ -1238,6 +1238,12 @@ overcome it), estimated from senses and wits, serves hunting, fleeing and warine
 - a "no name checks in decision code" probe (milestone 1's gate);
 - survival reported by kind group (town folk, wildlife, raiders) in every lane measurement.
 
+**Milestone 1 items 2-6, rule work done (2026-11-17):** the catalog text is in PERC-02, KNOW-04/KNOW-05,
+SURV-06/SURV-08, BODY-08 and CONFLICT-03. The kernel spec and each item's own-job counts are in
+`docs/plans/systemic_world/m1_kernel_spec_items_2_6.md`. The owner answered the question batch Q1-Q10
+(memo row 98, #715 6937049127). Milestone 1 is built in three phases with recorded boundary commits
+(#715 6936893143).
+
 ### 12.4 Not planned at this stage
 
 Judged by the owner too abstract for now (2026-10-09). They are listed so the gaps stay visible,

@@ -143,16 +143,18 @@ class BossService:
                 int(cy),
             )
 
+            # M1 step 4: kind is the named non-living `world_boss` (NON_LIVING_KIND_ALLOWLIST); the final label is written at spawn
+            # ("ancient_sentinel" for the sentinel), not spawned under one label and replaced.
             boss = generator.spawn_monster(
                 spawn_pos,
                 state=state,
-                kind="ancient_sentinel",
+                species="world_boss",
+                occupation="ancient_sentinel",
                 difficulty_tier=5,
             )
 
             boss = replace(
                 boss,
-                kind="world_boss",
                 lifecycle=replace(
                     boss.lifecycle,
                     active=True,
@@ -258,7 +260,8 @@ class BossService:
             occupant = generator.spawn_monster(
                 place.position,
                 state=state,
-                kind="dragonkin",
+                species="dragonkin",
+                occupation="dragonkin",
                 difficulty_tier=5,
             )
 

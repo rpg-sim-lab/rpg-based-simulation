@@ -108,11 +108,14 @@ def test_instance_names_follow_max_sessions():
     assert ln.resolve_target(f"{ROLE}-2", ROSTER) is None and ln.resolve_target(f"{ROLE}-3", roster) is None
 
 
-def test_the_real_roster_gives_rpg_implementer_three_seats_and_no_fourth():
-    """TCK-20261009-RPG-IMPLEMENTER-THIRD-SEAT: Lane C launches as `rpg-implementer-3`."""
+def test_the_real_roster_gives_rpg_implementer_four_seats_and_no_fifth():
+    """TCK-20261009-RPG-IMPLEMENTER-THIRD-SEAT: Lane C launches as `rpg-implementer-3`.
+    TCK-20261117-RPG-IMPLEMENTER-SEATS-RISE-TO-FOUR (owner #715 6937049127): lane D launches as `rpg-implementer-4`."""
     third = ln.resolve_target("rpg-implementer-3", ROSTER)
     assert third is not None and third.role.role == "rpg-implementer" and third.instance == "rpg-implementer-3"
-    assert ln.resolve_target("rpg-implementer-4", ROSTER) is None
+    fourth = ln.resolve_target("rpg-implementer-4", ROSTER)
+    assert fourth is not None and fourth.role.role == "rpg-implementer" and fourth.instance == "rpg-implementer-4"
+    assert ln.resolve_target("rpg-implementer-5", ROSTER) is None
     # every instance shares the role's single handover note
     assert third.role.handover == ROSTER.role("rpg-implementer").handover
 
