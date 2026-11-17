@@ -271,7 +271,7 @@ roles:
     responsibility:
       accepts_dispatch_from: [user, rpg-planner-ubuntu]
     capability: {may_write: ["**"]}
-    placement: {worktree: rpg-ubuntu, max_sessions: 3}
+    placement: {worktree: rpg-ubuntu, max_sessions: 4}
     handover: .claude/handover/rpg-implementer-ubuntu.md
     card_note: "Host ubuntu."
   - role: agent-working-designer
