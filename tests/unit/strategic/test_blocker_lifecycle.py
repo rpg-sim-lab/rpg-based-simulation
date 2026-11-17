@@ -136,3 +136,23 @@ def test_the_timeout_ends_typed_counts_the_failure_and_doubles_the_suppression(f
     assert ended.status == ProjectStatus.ABANDONED and ended.ended_by == ProjectEnd.BLOCKER_TIMEOUT
     (blocker,) = up.blockers_add_or_update
     assert blocker.failure_count == failures + 1 and blocker.suppression_until_tick == tick + expected
+
+
+def test_applying_a_removal_with_its_reason_changes_only_the_removal_and_stores_nothing_about_the_reason():
+    """Divergence 2.214 (B): `blockers_removed_for` is observability only. Through the real apply path (StrategicPatch.apply) the stored blockers lose exactly the removed id and the canonical dict
+    of the others is unchanged; nothing of the reason is stored."""
+    from src.engine.patches import StrategicPatch
+
+    gone, kept = _blocker(seen=T0), _blocker(bid="blocker_node_9", failures=1, supp=T0 + 300, seen=T0 + 5)
+    hero = _hero([gone, kept])
+    plain = StrategicUpdate(blockers_remove=[gone.id])
+    with_reason = StrategicUpdate(blockers_remove=[gone.id], blockers_removed_for={gone.id: BlockerRemoval.QUIET_SPELL})
+    out = {}
+    for name, upd in (("plain", plain), ("reason", with_reason)):
+        changes: dict = {}
+        StrategicPatch(entity_id=hero.id, strategic=upd).apply(hero, changes)
+        out[name] = changes["strategic"]
+    assert out["reason"].blockers == out["plain"].blockers
+    assert set(out["reason"].blockers) == {kept.id}
+    assert out["reason"].blockers[kept.id].canonical_dict() == kept.canonical_dict()
+    assert not any(hasattr(out["reason"], f) for f in ("blockers_removed_for", "blocker_removal_reasons"))

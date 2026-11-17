@@ -578,6 +578,9 @@ class StrategicIntelligenceSystem:
                         if all_blockers_resolved:
                             new_obj = replace(active_obj, status=ObjectiveStatus.RESOLVED)
                             project_upd = replace(project, objectives=[new_obj if o.id == new_obj.id else o for o in project.objectives], status=ProjectStatus.COMPLETED)
+                            if project.kind == "resolve_blocker":
+                                # Divergence 2.214: one rule for every path (the blocker removed, absent or resolved): a resolve_blocker project never completes untyped.
+                                project_upd = end_record(project_upd, ProjectStatus.COMPLETED, ProjectEnd.BLOCKER_CLEARED)
 
             # (Update strat_up with results)
             new_additions = list(strat_up.blockers_add_or_update)
