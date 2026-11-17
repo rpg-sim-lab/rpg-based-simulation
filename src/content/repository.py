@@ -169,6 +169,33 @@ NON_CATALOG_FILES: frozenset = frozenset({
 })
 
 
+def check_reproduction_profiles(repo: "CatalogRepository") -> None:
+    """Births are only for kinds that eat (owner B2): refuse, typed, a profile that is missing or sits on a species whose need profile declares no hunger, and a newborn_archetype that is missing, unknown or another species'."""
+    for species_id, species in repo.species.items():
+        profile_id = species.reproduction_profile
+        if profile_id is None:
+            if species.newborn_archetype is not None:
+                raise ReproductionProfileError(f"species {species_id!r} declares newborn_archetype {species.newborn_archetype!r} but no reproduction_profile")
+            continue
+        if profile_id not in repo.reproduction_profiles:
+            raise ReproductionProfileError(f"species {species_id!r} names reproduction profile {profile_id!r}, which is not declared")
+        need_profile = repo.need_profiles.get(species.need_profile)
+        if need_profile is not None and need_profile.needs.get("hunger") == "none":
+            raise ReproductionProfileError(f"species {species_id!r} declares reproduction profile {profile_id!r} but its need profile {species.need_profile!r} has hunger 'none': a kind that does not eat has no births")
+        _check_newborn_archetype(repo, species_id, species)
+
+
+def _check_newborn_archetype(repo: "CatalogRepository", species_id: str, species: SpeciesDefinition) -> None:
+    archetype_id = species.newborn_archetype
+    if archetype_id is None:
+        raise ReproductionProfileError(f"species {species_id!r} declares a reproduction profile but no newborn_archetype")
+    archetype = repo.entity_archetypes.get(archetype_id)
+    if archetype is None:
+        raise ReproductionProfileError(f"species {species_id!r} names newborn_archetype {archetype_id!r}, which is not declared")
+    if archetype.species != species_id:
+        raise ReproductionProfileError(f"species {species_id!r} names newborn_archetype {archetype_id!r}, which belongs to species {archetype.species!r}")
+
+
 class CatalogRepository:
     """
     Thread-safe repository loader that coordinates static catalog schema configuration loading
@@ -356,7 +383,7 @@ class CatalogRepository:
                     setattr(self, spec.repository_index, results)
                 record_counts[spec.family] = len(results)
 
-        self._check_reproduction_profiles()
+        check_reproduction_profiles(self)
 
         ignored_files = self._ignored_catalog_files()
 
@@ -440,32 +467,6 @@ class CatalogRepository:
             path for path in relative_paths
             if path.split("/")[0] not in NON_CATALOG_DIRS and path not in NON_CATALOG_FILES and path not in registered_paths
         )
-
-    def _check_reproduction_profiles(self) -> None:
-        """Births are only for kinds that eat (owner B2): refuse, typed, a profile that is missing or sits on a species whose need profile declares no hunger."""
-        for species_id, species in self.species.items():
-            profile_id = species.reproduction_profile
-            if profile_id is None:
-                if species.newborn_archetype is not None:
-                    raise ReproductionProfileError(f"species {species_id!r} declares newborn_archetype {species.newborn_archetype!r} but no reproduction_profile")
-                continue
-            self._check_newborn_archetype(species_id, species)
-            if profile_id not in self.reproduction_profiles:
-                raise ReproductionProfileError(f"species {species_id!r} names reproduction profile {profile_id!r}, which is not declared")
-            need_profile = self.need_profiles.get(species.need_profile)
-            if need_profile is not None and need_profile.needs.get("hunger") == "none":
-                raise ReproductionProfileError(f"species {species_id!r} declares reproduction profile {profile_id!r} but its need profile {species.need_profile!r} has hunger 'none': a kind that does not eat has no births")
-
-    def _check_newborn_archetype(self, species_id: str, species: SpeciesDefinition) -> None:
-        """A kind with births names the archetype whose body its newborns take; the id must exist and belong to the same species."""
-        archetype_id = species.newborn_archetype
-        if archetype_id is None:
-            raise ReproductionProfileError(f"species {species_id!r} declares a reproduction profile but no newborn_archetype")
-        archetype = self.entity_archetypes.get(archetype_id)
-        if archetype is None:
-            raise ReproductionProfileError(f"species {species_id!r} names newborn_archetype {archetype_id!r}, which is not declared")
-        if archetype.species != species_id:
-            raise ReproductionProfileError(f"species {species_id!r} names newborn_archetype {archetype_id!r}, which belongs to species {archetype.species!r}")
 
     def get_need_profile(self, def_id: str) -> Optional[NeedProfileDefinition]:
         return self.need_profiles.get(def_id)

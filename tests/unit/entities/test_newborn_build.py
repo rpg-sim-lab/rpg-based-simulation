@@ -7,7 +7,7 @@ from src.content.resolver import EntityArchetypeResolver
 from src.core.builder import V2EntityBuilder
 from src.core.enums import EntityRole, Faction
 from src.core.state import LifeStage
-from src.entities.archetype_factory import ArchetypeEntityFactory
+from src.entities.archetype_factory import ArchetypeEntityFactory, NewbornBirth
 from src.entities.contract_builder import resolved_archetype_to_contract
 
 
@@ -33,7 +33,7 @@ def _newborn(catalog, archetype_id="village_worker", entity_id=900, seed=42, mot
     mother = _parent(1, contract.species_id, mother_role, **mother_props)
     mate = _parent(2, contract.species_id, mother_role)
     child = ArchetypeEntityFactory().build_newborn(
-        entity_id, contract, tuple(species.natural_traits), mother, mate, (3.0, 4.0), 120, seed, home_region_id="r1")
+        entity_id, contract, tuple(species.natural_traits), NewbornBirth(mother, mate, (3.0, 4.0), 120, seed, "r1"))
     return contract, mother, mate, child
 
 
