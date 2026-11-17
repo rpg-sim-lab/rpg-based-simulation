@@ -23,7 +23,7 @@ from src.core.state import AuthoritativeState
 from src.core.updates import StateUpdate, decode_owner_faction_id_set
 from src.observability.config import ObservabilityMode
 from src.observability.divergence_episode import DivergenceEpisodes
-from src.core.species import occupation_of
+from src.core.species import occupation_of, species_of
 from src.observability.entity_kind_constants import BOSS_ENTITY_OCCUPATIONS, SPAWN_CADENCE_EXCLUDED_OCCUPATIONS
 from src.domains.world_emergence.schema import WorldEventCategory
 from src.observability.event_extractor import (
@@ -102,7 +102,7 @@ def _combat_entity_snapshot(ent: Optional[Any]) -> Optional[Dict[str, Any]]:
         "def_stat": getattr(combat, "def_stat", None),
         "role": role_name,
         "faction_id": properties.get("faction_id"),
-        "species_id": properties.get("species_id"),
+        "species_id": species_of(ent),
         "bravery": getattr(personality, "bravery", None),
         "action_style": getattr(combat, "action_style", None),
     }

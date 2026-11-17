@@ -7,10 +7,10 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Optional, Tuple
 
+from src.core.species import species_of
 from src.content_semantics.faction import (
     get_faction_id_str,
     get_faction_semantics_service,
-    get_species_id_str,
 )
 from src.content_semantics.relation import RelationContext
 from src.engine.appraisal import Relation, appraise, perceives
@@ -47,7 +47,7 @@ def is_wild_creature(entity: "EntityState") -> bool:
     """True for a creature that eats and belongs to a faction of the wild alignment (an animal, not a people or a monster).
 
     Properties only: a body diet and the faction's alignment bucket, read from content; no kind list and no predator label."""
-    _, body = get_kind_properties(get_species_id_str(entity))
+    _, body = get_kind_properties(species_of(entity))
     if body is None or not body.diet:
         return False
     return get_faction_semantics_service().get_alignment_bucket(source_identity(entity)[0]) == WILD_ALIGNMENT
@@ -66,8 +66,8 @@ def faction_hostile(entity: "EntityState", other: "EntityState", source: Optiona
     context = RelationContext(
         distance=float(dist),
         combat_engaged=is_engaged(entity, other),
-        source_species=get_species_id_str(entity),
-        target_species=get_species_id_str(other),
+        source_species=species_of(entity),
+        target_species=species_of(other),
     )
     source_faction = (source or source_identity(entity))[0]
     try:
@@ -83,7 +83,7 @@ def relation(entity: "EntityState", other: "EntityState", source: Optional[Tuple
     "Appraisal for all, faction for people": a faction verdict wins; otherwise PREDATION, THREATENING, WARY or NONE."""
     if faction_hostile(entity, other, source):
         return Relation.FACTION_HOSTILE
-    if get_species_id_str(entity) == get_species_id_str(other):
+    if species_of(entity) == species_of(other):
         return Relation.NONE  # a kind regards its own as neither prey nor danger (no cannibalism in M0)
     appraised = appraise(entity, other)
     if appraised is Relation.PREDATION and get_faction_id_str(entity) == get_faction_id_str(other):

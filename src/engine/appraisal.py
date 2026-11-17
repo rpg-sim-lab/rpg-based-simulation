@@ -11,7 +11,7 @@ from typing import TYPE_CHECKING, Optional
 
 from src.cognition.common_knowledge import believed_danger_rank
 from src.content.schema import PROPERTY_BANDS
-from src.content_semantics.faction import get_species_id_str
+from src.core.species import species_of
 from src.core.items import food_class
 from src.engine.behavior_consumers import (
     get_entity_signals,
@@ -58,8 +58,8 @@ def can_eat(eater: "EntityState", other: "EntityState") -> bool:
     """True when the living ``other``'s body feeds a food class the eater's body can eat (both read from content)."""
     if not other.combat.alive:
         return False
-    _, eater_body = get_kind_properties(get_species_id_str(eater))
-    _, other_body = get_kind_properties(get_species_id_str(other))
+    _, eater_body = get_kind_properties(species_of(eater))
+    _, other_body = get_kind_properties(species_of(other))
     if eater_body is None or other_body is None:
         return False
     return bool(set(eater_body.diet or ()) & set(other_body.edible_as or ()))
@@ -71,7 +71,7 @@ def can_eat_item(eater: "EntityState", item_id: str) -> bool:
     A body whose diet is undeclared, or an entity with no known species, keeps the legacy "eats any food" behaviour: missing data gates
     nothing. This fallback is for hand-built (non-compiled) entities only: a compiled world resolves every living body to a declared diet or
     does not compile (``worldbuilding/diet_declaration.py``, TCK-20261014-EVERY-COMPILED-LIVING-BODY-RESOLVES-TO-A-DECLARED-DIET-OR-THE-WORLD-DOES-NOT-COMPILE)."""
-    return kind_can_eat_item(get_species_id_str(eater), item_id)
+    return kind_can_eat_item(species_of(eater), item_id)
 
 
 def kind_can_eat_item(species_id: Optional[str], item_id: str) -> bool:
@@ -88,7 +88,7 @@ def kind_can_eat_item(species_id: Optional[str], item_id: str) -> bool:
 def can_use_inn_meal(eater: "EntityState") -> bool:
     """True when the inn's free meal (a prepared meal) is in the eater's diet; an undeclared diet keeps the legacy behaviour (hand-built entities only:
     a compiled world declares every body's diet, see ``kind_can_eat_item``)."""
-    _, body = get_kind_properties(get_species_id_str(eater))
+    _, body = get_kind_properties(species_of(eater))
     return body is None or body.diet is None or "prepared" in body.diet
 
 
@@ -97,7 +97,7 @@ def can_overcome(entity: "EntityState", other: "EntityState") -> bool:
 
     M0 shortcut, closed by Milestone 1's one-appraisal child: the belief is about the kind, never this individual, so it cannot see the
     target's visible condition, the subject's own condition or a group. A coarse-band tie resolves to "cannot overcome"."""
-    species, _ = get_kind_properties(get_species_id_str(entity))
+    species, _ = get_kind_properties(species_of(entity))
     if species is None or species.power is None:
         return False
     return PROPERTY_BANDS.index(species.power) > believed_danger_rank(entity, other)

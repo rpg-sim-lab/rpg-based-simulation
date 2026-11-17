@@ -138,7 +138,6 @@ class WorldEntitySpawner:
                 traits=set(profile.traits),
                 properties={
                     "archetype_id": profile.archetype_id,
-                    "species_id": profile.species_id,
                     "faction_id": profile.faction_id,
                     "role_id": profile.role_id,
                     "population_id": spawn.population_id,

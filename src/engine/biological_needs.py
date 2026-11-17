@@ -10,7 +10,7 @@ a ``medium`` need reproduces the old behavior exactly.
 
 Source of the profile, most specific first:
 1. ``identity.properties["need_profile_id"]`` (an explicitly assigned profile).
-2. The subject's species' catalog ``need_profile`` (``identity.properties["species_id"]``).
+2. The subject's species' catalog ``need_profile`` (``kind``, via ``species_of``).
 3. The ordinary person's profile (``humanoid_survival``) when the subject is a person (a civil
    role).
 4. Otherwise the subject has no declared kind: a content defect to report (SURV-05), never a
@@ -25,6 +25,7 @@ from typing import Any, Dict, Optional, Tuple
 
 from src.content.schema import MODELLED_BIOLOGICAL_NEEDS
 from src.core.enums import EntityRole
+from src.core.species import species_of
 from src.engine import behavior_consumers
 
 BASE_HUNGER_RATE = 0.1
@@ -61,12 +62,13 @@ def _role_int(role: Any) -> int:
         return int(member) if member is not None else -1
 
 
-def profile_id_for(props: Dict[str, Any], role: int, catalog: Any) -> Optional[str]:
+def profile_id_for(entity: Any, catalog: Any) -> Optional[str]:
     """The need profile id that governs a subject, or None when it has no declared kind."""
-    explicit = props.get("need_profile_id")
+    explicit = (entity.identity.properties or {}).get("need_profile_id")
     if explicit:
         return str(explicit)
-    species_id = props.get("species_id")
+    role = entity.identity.role
+    species_id = species_of(entity)
     if species_id:
         species = catalog.get_species(species_id)
         if species is not None and species.need_profile:
@@ -96,10 +98,10 @@ def need_rates(entity: Any) -> Tuple[float, float]:
         _CACHE_CATALOG_ID = id(catalog)
     ident = entity.identity
     props = ident.properties or {}
-    key = (props.get("need_profile_id"), props.get("species_id"), _role_int(ident.role))
+    key = (props.get("need_profile_id"), species_of(entity), _role_int(ident.role))
     rates = _RATES_CACHE.get(key)
     if rates is None:
-        profile_id = profile_id_for(props, ident.role, catalog)
+        profile_id = profile_id_for(entity, catalog)
         profile = catalog.get_need_profile(profile_id) if profile_id else None
         if profile is None:
             rates = _BASE_RATES
@@ -115,9 +117,8 @@ def undeclared_need_kinds(state: Any, catalog: Any) -> Dict[Tuple[Optional[str],
     """Subjects with no declared kind (SURV-05 content defects), counted per (species_id, role)."""
     out: Dict[Tuple[Optional[str], int], int] = {}
     for entity in state.entities.values():
-        props = entity.identity.properties or {}
-        profile_id = profile_id_for(props, entity.identity.role, catalog)
+        profile_id = profile_id_for(entity, catalog)
         if profile_id is None or catalog.get_need_profile(profile_id) is None:
-            key = (props.get("species_id"), _role_int(entity.identity.role))
+            key = (species_of(entity), _role_int(entity.identity.role))
             out[key] = out.get(key, 0) + 1
     return out

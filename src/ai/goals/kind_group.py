@@ -7,7 +7,7 @@ from __future__ import annotations
 
 from typing import Optional
 
-from src.content_semantics.faction import get_species_id_str
+from src.core.species import species_of
 from src.core.items import food_class
 from src.core.state import EntityState
 from src.engine.appraisal import kind_can_eat_item
@@ -29,7 +29,7 @@ def species_kind_group(species_id: Optional[str]) -> str:
 
 def kind_group(entity: EntityState) -> str:
     """The group of an entity (see the module docstring)."""
-    return species_kind_group(get_species_id_str(entity))
+    return species_kind_group(species_of(entity))
 
 
 def is_person(entity: EntityState) -> bool:
@@ -39,4 +39,4 @@ def is_person(entity: EntityState) -> bool:
 
 def eats_outside_its_diet(entity: EntityState, item_id: str) -> bool:
     """True when ``item_id`` is food of a class the entity's body diet does not declare (D44). A non-food item is never outside a diet."""
-    return food_class(item_id) is not None and not kind_can_eat_item(get_species_id_str(entity), item_id)
+    return food_class(item_id) is not None and not kind_can_eat_item(species_of(entity), item_id)

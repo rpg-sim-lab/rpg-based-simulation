@@ -753,17 +753,18 @@ class WorldCompiler:
                         "population_id": pop_key,
                         "faction_id": pop_spec.faction,
                     }
+                    declared_species = None
                     if context is not None and pop_key in context.entities:
                         resolved = context.entities[pop_key]
                         if hasattr(resolved, "faction_id") and resolved.faction_id:
                             ent_properties["faction_id"] = resolved.faction_id
                         if hasattr(resolved, "species_id") and resolved.species_id:
-                            ent_properties["species_id"] = resolved.species_id
-                        require_declared_diet(spec.world_id, pop_key, pop_spec, ent_properties.get("species_id"))
+                            declared_species = resolved.species_id
+                        require_declared_diet(spec.world_id, pop_key, pop_spec, declared_species)
 
                     # M1 step 4: `kind` is the population's declared species when a context supplies one. A compile with NO context is the legacy path (kind = the role
                     # label, occupation equal to it), named here and pinned by a test; it is owned by TCK-20261020-TESTS-THAT-COMPILE-A-WORLD-WITHOUT-THE-CONTENT-CONTEXT-TRIAGE (stage 4b).
-                    species_kind = ent_properties.get("species_id") or pop_spec.role.lower()
+                    species_kind = declared_species or pop_spec.role.lower()
                     builder = (
                         V2EntityBuilder(next_entity_id)
                         .kind(species_kind)

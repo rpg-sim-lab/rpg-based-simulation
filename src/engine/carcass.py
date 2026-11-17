@@ -7,7 +7,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, List
 
-from src.content_semantics.faction import get_species_id_str
+from src.core.species import species_of
 from src.core.models.inventory import ItemStack
 from src.engine.behavior_consumers import get_kind_properties
 
@@ -22,7 +22,7 @@ MEAT_SINK_CORPSE_DECAY = "CORPSE_DECAY"
 
 def body_meat(entity: "EntityState") -> List[ItemStack]:
     """The raw meat stack a dead ``entity`` leaves, or none when its body feeds no meat (read once per death, from content)."""
-    _, body = get_kind_properties(get_species_id_str(entity))
+    _, body = get_kind_properties(species_of(entity))
     if body is None or body.meat_yield <= 0 or "meat" not in (body.edible_as or ()):
         return []
     return [ItemStack(item_id=RAW_MEAT_ITEM, quantity=int(body.meat_yield))]

@@ -8,11 +8,11 @@ from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple
 
 from src.content.terrain_cost import DEFAULT_TERRAIN_ID, terrain_gives_cover, terrain_is_high_ground
 from src.core.region_resolution import is_inside_world
+from src.core.species import species_of
 from src.content_semantics.faction import (
     are_entities_hostile,
     get_faction_id_str,
     get_faction_semantics_service,
-    get_species_id_str,
 )
 from src.content_semantics.relation import RelationContext
 from src.core.enums import EntityRole, ReasonCode
@@ -284,8 +284,8 @@ class LegalityServiceV2:
         context = RelationContext(
             distance=float(dist),
             combat_engaged=combat_engaged,
-            source_species=get_species_id_str(attacker),
-            target_species=get_species_id_str(target),
+            source_species=species_of(attacker),
+            target_species=species_of(target),
         )
 
         if not attack_allowed(attacker, target, LegalityServiceV2._attack_permitted(attacker, target, context)):
