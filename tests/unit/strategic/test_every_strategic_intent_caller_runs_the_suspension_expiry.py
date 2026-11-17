@@ -10,7 +10,7 @@ SRC = Path(__file__).resolve().parents[3] / "src"
 EVAL = "evaluate_strategic_intent"
 HELPER = "evaluate_strategic_intent_with_expiry"
 #: Functions that may call `evaluate_strategic_intent` directly. The helper itself is the delegation. `evaluate_all_strategic_intents` has no production caller (only tests call it; the pipeline
-#: runs `fused_strategic_pass`), so it is not wired; a deeper-issue candidate filed with the N10 PR.
+#: runs `fused_strategic_pass`), so it is not wired; filed as TCK-20261117-EVALUATE-ALL-STRATEGIC-INTENTS-IS-DEAD-CODE-THAT-SKIPS-THE-SUSPENSION-EXPIRY.
 ALLOWED_DIRECT = {HELPER, "evaluate_all_strategic_intents"}
 
 
