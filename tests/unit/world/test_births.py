@@ -198,3 +198,61 @@ def test_the_birth_draw_does_not_alias_across_seed_and_tick_pairs_that_share_a_s
     # DeterministicRNG: base = seed + tick, then base ^ (domain << 48) ^ (tick << 32) ^ (id << 16) ^ sub_id; the tick term separates equal bases.
     assert 42 + 60 == 72 + 30
     assert _draw(42, 60) != _draw(72, 30)
+
+
+def _mate_first(state, generator):
+    """The previous order of BirthService.process_births (mate search before the chance draw), kept here as the reference the reorder must equal."""
+    catalog = births.get_catalog()
+    profiles = births._Profiles(catalog)
+    candidates = births._candidates(state, profiles)
+    check = births._Check(state, generator, catalog)
+    used, result = set(), StateUpdate()
+    for mother in candidates.values():
+        profile = profiles.of(births.species_of(mother))
+        if mother.id in used or profile is None or mother.biological.hunger > profile.fed_line or not births._past_interval(mother, state.tick):
+            continue
+        mate = births._find_mate(state, mother, candidates, used, profile.mate_radius_tiles)
+        if mate is None:
+            continue
+        if generator.rng.get_float(Domain.SPAWN, state.tick, mother.id, sub_id=births.BIRTH_DRAW_SUB_ID) >= profile.birth_chance_per_check:
+            continue
+        used.update((mother.id, mate.id))
+        result = result.merge(births._birth(check, mother, mate, profile))
+    return result
+
+
+def _shape(update):
+    return (
+        [(c.id, c.kind, c.lifecycle.parent_a_entity_id, c.lifecycle.parent_b_entity_id, c.navigation.position) for c in update.entities_add],
+        {k: repr(v) for k, v in sorted(update.entity_updates.items())},
+        {k: repr(v) for k, v in sorted(update.world_updates.items())},
+        sorted(update.entity_spawn_sources),
+    )
+
+
+@pytest.mark.parametrize("seed", [1, 2, 3, 4, 5])
+def test_drawing_before_the_mate_search_gives_the_same_births_as_searching_first(monkeypatch, seed):
+    real = births.get_catalog()
+    monkeypatch.setattr(births, "get_catalog", lambda: _Catalog(real, 0.3))
+    bodies = [_body(i, pos=(float(i % 5) * 3.0, float(i // 5) * 3.0), hunger=float((i * 7) % 45)) for i in range(1, 16)]
+    bodies += [_body(20 + i, kind="wolf", pos=(30.0 + i, 30.0)) for i in range(4)] + [_body(30, kind="undead", pos=(5.0, 5.0))]
+    total = 0
+    state = AuthoritativeState(tick=0, seed=seed, entities={b.id: b for b in bodies}, next_entity_id=40)
+    for tick in range(30, 600, 30):
+        state = AuthoritativeState(tick=tick, seed=seed, entities=state.entities, next_entity_id=state.next_entity_id)
+        new = BirthService.process_births(state, _generator(state))
+        old = _mate_first(state, _generator(state))
+        assert _shape(new) == _shape(old)
+        total += len(new.entities_add)
+        state = ApplyPath.apply_generation(state, new, tick + 1, tick + 1)
+    assert total > 0, "the equivalence is vacuous without births"
+
+
+def test_a_check_where_every_draw_fails_makes_no_spatial_query(never, monkeypatch):
+    from src.engine.spatial_query import SpatialQueryService
+
+    calls = []
+    original = SpatialQueryService.nearby_entities
+    monkeypatch.setattr(SpatialQueryService, "nearby_entities", staticmethod(lambda *a, **k: calls.append(1) or original(*a, **k)))
+    assert not _run(_state(*[_body(i) for i in range(1, 9)])).entities_add
+    assert calls == []
