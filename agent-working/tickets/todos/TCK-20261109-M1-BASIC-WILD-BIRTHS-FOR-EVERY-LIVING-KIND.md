@@ -156,6 +156,16 @@ Source: `agent-working/stored_artifacts/TCK-20261109-M1-BASIC-WILD-BIRTHS-FOR-EV
   - one line in the PR body saying so.
   - No new doc. ch01 changes only through B5.
 
+### Amendment 2026-11-18 (D3 table review)
+Source: `agent-working/stored_artifacts/TCK-20261109-M1-BASIC-WILD-BIRTHS-FOR-EVERY-LIVING-KIND/rpg_designer_ubuntu_births_rulings_d3_table_2026-11-18.md` (body sha256 6df73509). It reviews the implementer's table at 8bfead3a6.
+- The choice basis is binding and replaces "higher stat": an eligible archetype is the same species and not a leader, boss or alpha. Pick the one closest to the species' t0 population-profile body in the gate worlds.
+  - Distance = max(|hp - hp_t0| / hp_t0, |atk - atk_t0| / atk_t0).
+  - On a tie, take the lower hp + atk.
+  - If the t0 profile differs across the three gate worlds, list each world's values and send that species to rpg-designer-ubuntu instead of picking.
+- The PR table gains columns for t0 hp/atk per gate world, the chosen archetype's distance, and each alternative's distance.
+- Human village_worker is confirmed, provided rule 2 holds. Elf and lizardfolk are decided by rule 2. Single-option species are accepted, with their distances in the table.
+- Any species more than 50% off t0 on hp or atk is named in the step report's disclosure with both bodies. The 50% is a disclosure threshold fixed before data, not a bar.
+
 ## Out of Scope
 - §12.4 (packs, herds, territory), milestones 2 and 3, and any rule work not listed in §12.3 (owner ruling only).
 - Calamity (magical/demonic), boss, lair and creature-territory spawns. These are arrivals or flagged-off spawns, so no code there moves (Q5, Q6). Q6 adds a backlog line for the territory spawn, which creates creatures with no parents.
