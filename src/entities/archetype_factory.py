@@ -61,8 +61,9 @@ class ArchetypeEntityFactory:
             properties["drive_profile_id"] = contract.drive_profile_id
         if contract.need_profile_id is not None:
             properties["need_profile_id"] = contract.need_profile_id
-        if contract.sense_profile_id is not None:
-            properties["sense_profile_id"] = contract.sense_profile_id
+        if contract.sense_profile_id is None:  # PERC-02: senses come from the species' profile, derived at read; an archetype body without one is a content error
+            from src.world.perception.gate import SenseProfileError
+            raise SenseProfileError(f"archetype {contract.archetype_id!r}: species {contract.species_id!r} resolved no sense profile")
         if contract.skill_profile_id is not None:
             properties["skill_profile_id"] = contract.skill_profile_id
         if spawn.spawn_region is not None:

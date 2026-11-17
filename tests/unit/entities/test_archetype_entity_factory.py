@@ -26,6 +26,7 @@ def _contract(**overrides) -> ResolvedEntityRuntimeContract:
         starting_gold=0.0,
         traits=(),
         themes=(),
+        sense_profile_id="normal_humanoid_senses",  # PERC-02: an archetype body must carry its species' resolved profile
     )
     defaults.update(overrides)
     return ResolvedEntityRuntimeContract(**defaults)
@@ -221,7 +222,7 @@ def test_profile_ids_stored_in_properties():
     assert props["cognition_profile_id"] == "cog_basic"
     assert props["drive_profile_id"] == "drive_survival"
     assert props["need_profile_id"] == "need_human"
-    assert props["sense_profile_id"] == "sense_human"
+    assert "sense_profile_id" not in props  # PERC-02: senses are derived from the species at read, never stored on the body
     assert props["skill_profile_id"] == "skill_worker"
 
 

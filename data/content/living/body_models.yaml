@@ -62,6 +62,8 @@
   size: "medium"
   diet: []
   edible_as: []
+  signals:
+    life: "none"   # PERC-02: an undead or spirit body gives off no life sign
 
 # STATE: ADDITIONAL
 - id: "amorphous_body"

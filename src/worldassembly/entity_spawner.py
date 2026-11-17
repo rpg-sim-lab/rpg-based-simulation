@@ -124,6 +124,8 @@ class WorldEntitySpawner:
         # and intentional — not a silent fallback.
         from src.core.builder import V2EntityBuilder
         from src.content_semantics.personality import build_personality_for_entity, get_action_style_for_bravery
+        from src.engine.behavior_consumers import require_sense_profile
+        require_sense_profile(profile.species_id or "human", f"spawn of entity {entity_id}")
         personality = build_personality_for_entity(entity_id, profile.faction_id, seed)
         return (
             V2EntityBuilder(entity_id)

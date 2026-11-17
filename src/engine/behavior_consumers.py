@@ -63,6 +63,16 @@ def get_kind_properties(species_id: Optional[str]) -> Tuple[Any, Any]:
     return species, (catalog.get_body_model(species.body_model) if species else None)
 
 
+def require_sense_profile(species_id: Optional[str], where: str) -> None:
+    """PERC-02: a body built on the compile, spawn or archetype path must have a species in content whose sense profile resolves; otherwise a typed
+    content error (``SenseProfileError``), never a silent baseline."""
+    from src.world.perception.gate import SenseProfileError
+    species, _ = get_kind_properties(species_id)
+    catalog = _seeding_catalog()
+    if species is None or catalog.get_sense_profile(species.sense_profile) is None:
+        raise SenseProfileError(f"{where}: species {species_id!r} has no usable sense profile")
+
+
 def get_role_definition(role_id: str):
     """Return the named RoleDefinition via the warmed catalog singleton."""
     global _catalog
@@ -84,24 +94,11 @@ def _auto_init() -> None:
 
 
 def get_entity_signals(entity: Any) -> Dict[str, str]:
-    """
-    Derive the natural signals emitted by an entity for perception checks.
-
-    Signal keys match PerceptionGate's _SENSE_TO_SIGNAL values.
-    Reads from entity.identity.properties with sensible defaults.
-    """
-    props: Dict[str, str] = {}
-    if hasattr(entity, "identity") and hasattr(entity.identity, "properties"):
-        props = entity.identity.properties or {}
-    return {
-        "visibility": props.get("visibility_signal", "medium"),
-        "noise": props.get("noise_signal", "low"),
-        "scent": props.get("scent_signal", "low"),
-        "magic_signal": props.get("magic_signal", "none"),
-        "life_signal": props.get("life_signal", "low"),
-        "vibration": props.get("vibration_signal", "low"),
-        "social_signal": props.get("social_signal", "none"),
-    }
+    """The signals `entity` gives off for perception checks (PERC-02: they follow the body; see ``src.world.perception.signals.emitted_signals``)."""
+    from src.core.species import species_of
+    from src.world.perception.signals import emitted_signals
+    _, body = get_kind_properties(species_of(entity))
+    return emitted_signals(entity, body)
 
 
 def _seeding_catalog() -> Any:

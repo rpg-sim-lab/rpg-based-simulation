@@ -27,6 +27,7 @@ from src.core.state import (
     ResourceNodeState,
 )
 from src.engine.appraisal import Relation, can_eat_item
+from src.core.calendar import is_night
 from src.engine.hostility import relation
 from src.engine.rpg_depth import LeashService
 from src.engine.shop_sale import nearest_sale
@@ -123,7 +124,7 @@ def _hunt_step(entity: EntityState, state: AuthoritativeState) -> OpeningStep:
         other = state.entities.get(other_id)
         if other is None or other.id == entity.id or not other.combat.alive:
             continue
-        if relation(entity, other) is not Relation.PREDATION:
+        if relation(entity, other, night=is_night(state.world_time)) is not Relation.PREDATION:
             continue
         distance = _within(entity, other.navigation.position, HUNT_RADIUS)
         if distance is not None and (best is None or distance < best_distance):

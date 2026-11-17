@@ -114,6 +114,7 @@ class MovementCandidateSelector:
         entities: Mapping[int, "EntityState"],
         index: Optional[dict[tuple[int, int], list[int]]],
         engaged: bool,
+        night: bool = False,
     ) -> bool:
         """True when an orthogonally adjacent entity is a perceived, hostile-compatible entity whose engagement with ``entity`` (either names
         the other as its target) equals ``engaged``. Uses ``hostility.perceived_hostile``, the test the tactical pass builds its hostiles with,
@@ -124,7 +125,7 @@ class MovementCandidateSelector:
         for tile in ((x + 1, y), (x - 1, y), (x, y + 1), (x, y - 1)):
             for other_id in index.get(tile, ()):
                 other = entities.get(other_id)
-                if other is not None and other.id != entity.id and is_engaged(entity, other) is engaged and perceived_hostile(entity, other):
+                if other is not None and other.id != entity.id and is_engaged(entity, other) is engaged and perceived_hostile(entity, other, night=night):
                     return True
         return False
 
@@ -143,10 +144,11 @@ class MovementCandidateSelector:
         entity: "EntityState",
         entities: Mapping[int, "EntityState"],
         index: Optional[dict[tuple[int, int], list[int]]] = None,
+        night: bool = False,
     ) -> bool:
         """Decision 32 ("notice and decide"): a perceived hostile entity orthogonally adjacent that is NOT engaged with ``entity``. The scheduler
         wakes the brain of such an entity ahead of its cadence."""
-        return MovementCandidateSelector._adjacent_hostile(entity, entities, index, False)
+        return MovementCandidateSelector._adjacent_hostile(entity, entities, index, False, night)
 
     @staticmethod
     def movement_target(

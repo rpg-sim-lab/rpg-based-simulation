@@ -7,6 +7,7 @@ import yaml
 from pathlib import Path
 from typing import Optional, Any, Dict, List, Set
 
+from src.engine.behavior_consumers import require_sense_profile
 from src.platform.rng import DeterministicRNG
 from src.core.enums import Domain
 from src.content.common_knowledge_seed import default_self_model
@@ -760,6 +761,7 @@ class WorldCompiler:
                         if hasattr(resolved, "species_id") and resolved.species_id:
                             ent_properties["species_id"] = resolved.species_id
                         require_declared_diet(spec.world_id, pop_key, pop_spec, ent_properties.get("species_id"))
+                        require_sense_profile(ent_properties.get("species_id"), f"world {spec.world_id!r} population {pop_key!r}")
 
                     builder = (
                         V2EntityBuilder(next_entity_id)

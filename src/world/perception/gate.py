@@ -6,16 +6,22 @@ Design constraints:
 - Deterministic: same inputs → same result
 - Data-driven: all sense strengths come from catalog sense profiles, no species scripts
 - Upstream of relation projection: gates raw detection capability only
-- Fallback: entities without sense_profile_id use baseline humanoid defaults
+- Senses come from the body's SPECIES only (PERC-02, derived at read: catalog.species[species_of(entity)].sense_profile); nothing is stored on the body
+- A species in content always has a profile (a missing one is a typed error); a body whose species is not in content at all (test fixtures only) is
+  `unprofiled`: it perceives with the baseline senses, is counted per species (`unprofiled_counts`, observability, not durable state) and logged at DEBUG
 """
 
 from __future__ import annotations
 
+import logging
 from typing import Any, Dict, List, Optional
 
 from pydantic import BaseModel, ConfigDict, Field
 
 from src.content.repository import CatalogRepository
+from src.core.species import species_of
+
+logger = logging.getLogger(__name__)
 
 # ---------------------------------------------------------------------------
 # Level → float mapping (shared with pressure_resolver)
@@ -33,6 +39,24 @@ _LEVEL_TO_FLOAT: Dict[str, float] = {
 }
 
 _PERCEPTION_THRESHOLD = 0.2
+
+# PERC-02 (owner Q2a, #715 6937049127): at night vision counts NIGHT_VISION_STEPS levels lower on this ladder unless the profile declares night_vision.
+_LEVEL_LADDER = ("very_high", "high", "medium_high", "medium", "low_medium", "low", "very_low", "none")
+NIGHT_VISION_STEPS = 2
+
+
+class SenseProfileError(Exception):
+    """A species in content has no usable sense profile: a content error, never a silent baseline."""
+
+
+def _lower_level(val: Optional[str], steps: int) -> Optional[str]:
+    """The level `steps` rungs down the ladder (floor `none`); an unknown level is returned unchanged."""
+    if val is None:
+        return None
+    key = val.lower().replace("-", "_")
+    if key not in _LEVEL_LADDER:
+        return val
+    return _LEVEL_LADDER[min(len(_LEVEL_LADDER) - 1, _LEVEL_LADDER.index(key) + steps)]
 
 
 def _level(val: Optional[str]) -> float:
@@ -96,6 +120,7 @@ class PerceptionGate:
 
     def __init__(self, catalog: CatalogRepository) -> None:
         self._catalog = catalog
+        self.unprofiled_counts: Dict[str, int] = {}  # species id (or kind) -> reads by a body whose species is not in content; observability, not durable state
 
     def can_perceive(
         self,
@@ -115,6 +140,7 @@ class PerceptionGate:
                 - distance (float, default 1.0): proximity, 0 = adjacent
                 - terrain_modifier (float 0–1, default 1.0): environmental penalty
                 - alertness (float 0–1, default 0.5): source's current alertness
+                - night (bool, default False): it is the night half of the day; vision counts two levels lower unless the profile declares night_vision
 
         Returns:
             PerceptionResult with perceived, confidence, signals_used, profile_source.
@@ -133,7 +159,10 @@ class PerceptionGate:
         distance_factor = max(0.05, 1.0 - distance * 0.02)
 
         # Load sense profile
-        sense_strengths, profile_source = self._load_sense_strengths(source_entity)
+        sense_strengths, profile_source, night_vision = self._load_sense_strengths(source_entity)
+        if bool(ctx.get("night", False)) and not night_vision:
+            sense_strengths = dict(sense_strengths)
+            sense_strengths["vision"] = _lower_level(sense_strengths.get("vision"), NIGHT_VISION_STEPS) or "none"
 
         # Extract target signals
         signals = _extract_signals(target_signals)
@@ -171,23 +200,23 @@ class PerceptionGate:
     def _load_sense_strengths(
         self,
         entity: Any,
-    ) -> tuple[Dict[str, str], str]:
-        """Load sense field values from entity's sense profile or return baseline."""
-        sense_profile_id: Optional[str] = None
-        if hasattr(entity, "identity") and hasattr(entity.identity, "properties"):
-            sense_profile_id = (entity.identity.properties or {}).get("sense_profile_id")
-
-        if sense_profile_id:
-            defn = self._catalog.get_sense_profile(sense_profile_id)
-            if defn is not None:
-                strengths = {
-                    field: getattr(defn, field)
-                    for field in _SENSE_TO_SIGNAL
-                    if getattr(defn, field, None) is not None
-                }
-                return strengths, sense_profile_id
-
-        return dict(_BASELINE_SENSE), "baseline_humanoid"
+    ) -> tuple[Dict[str, str], str, bool]:
+        """The sense field values, the profile id used and whether it declares night vision, derived from the body's species (the one read site)."""
+        species_id = species_of(entity)
+        species = self._catalog.get_species(species_id)
+        if species is None:
+            self.unprofiled_counts[species_id] = self.unprofiled_counts.get(species_id, 0) + 1
+            logger.debug("unprofiled body: species %r is not in content; baseline senses", species_id)
+            return dict(_BASELINE_SENSE), "baseline_humanoid", False
+        defn = self._catalog.get_sense_profile(species.sense_profile) if species.sense_profile else None
+        if defn is None:
+            raise SenseProfileError(f"species {species_id!r} has no usable sense profile (declared {species.sense_profile!r})")
+        strengths = {
+            field: getattr(defn, field)
+            for field in _SENSE_TO_SIGNAL
+            if getattr(defn, field, None) is not None
+        }
+        return strengths, species.sense_profile, bool(defn.night_vision)
 
 
 # ---------------------------------------------------------------------------
