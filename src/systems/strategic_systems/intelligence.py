@@ -265,10 +265,7 @@ class StrategicIntelligenceSystem:
             
         return StrategicUpdate(blockers_add_or_update=list(unique_blockers.values()))
 
-    @staticmethod
-    def quiet_spell_update(entity: EntityState, staged: StrategicUpdate, tick: int) -> Optional[StrategicUpdate]:
-        """The quiet-spell removals of divergence 2.214 (``blocker_lifecycle.quiet_spell_update``)."""
-        return quiet_spell_update(entity, staged, tick)
+    quiet_spell_update = staticmethod(quiet_spell_update)  # the quiet-spell removals of divergence 2.214 (blocker_lifecycle.py), kept under this name for its callers
 
     @staticmethod
     def generate_crafting_blockers(
