@@ -144,11 +144,11 @@ Source: `agent-working/stored_artifacts/TCK-20261109-M1-BASIC-WILD-BIRTHS-FOR-EV
     - The real-flow test must not hand-build the roster or the final state. It produces the newborn through the real births apply path in an episode, takes that episode's `final_state.entities`, and builds the next roster through `_extract_entity_carry_forwards` and `persistent_entities.update`.
     - It asserts three things: (1) every t0 id comes before the newborn id in `final_state.entities` iteration order; (2) the same holds in the rebuilt roster; (3) the response resolves to the surviving t0 member.
     - If (1) fails because the state rebuild reorders entities, STOP and report to rpg-designer-ubuntu before the PR.
-  - Restore-path ruling, by rpg-designer-ubuntu on 2026-11-18 by message, on lead-planner-u24's checkpoint-order check; recorded here. It supersedes my Q15:
-    - The resolver and the Q13 tests are unchanged.
-    - This sentence is appended to the disclosure: "A campaign restored from a serialized CampaignState (from_dict) would rebuild the roster in serialized key order (lexicographic if the JSON is key-sorted); no run path restores one today."
-    - The P3 backlog ticket is widened to a single declared resolver order that survives a CampaignState round trip.
-    - The implementer confirms that nothing calls `CampaignState.from_dict` (grep src/ tools/ frontend/). If a run path calls it, STOP and report before the PR.
+  - Q15 (a), the restore-path ruling: rpg-designer-ubuntu, 2026-11-18, by message on lead-planner-u24's checkpoint-order check, recorded here. It replaces rpg-designer-ubuntu's earlier pre-ruling where they differ. The resolver is unchanged.
+    - Add a round-trip case to the Q13 test file: a roster holding a t0 member and a newborn of P goes through `CampaignState.to_dict` → `json.dumps` → `json.loads` → `from_dict`. Use the dumps call an existing writer uses, or the plain default if none is found, and also a `sort_keys=True` variant. For each variant, assert the order that comes back and who the resolver picks. Pin what the code does; don't fix it.
+    - The disclosure's last two sentences become: "Every t0 body enters the roster before any newborn within a campaign run. A CampaignState round trip through to_dict/from_dict rebuilds the roster in serialized key order (ascending id from a plain dump; lexicographic if the JSON is key-sorted, which can put a newborn first); no run path restores one today."
+    - The P3 backlog ticket gets a scope line: "one declared order that survives a CampaignState round trip". No new ticket.
+    - Grep src/, tools/ and frontend/ for callers of `CampaignState.from_dict`. tests/ may call it. If a run path in src/ or tools/ calls it, STOP and report to rpg-designer-ubuntu before the PR.
   - Backlog: TCK-20261118-RESOLVE-PENDING-INFORMATION-PICKS-BY-DICT-INSERTION-ORDER (pre-bind for rpg-designer).
 - Q14 (a), fallback: the species schema doc is made of three parts:
   - the `SpeciesDefinition` `Field(description=...)` for `newborn_archetype` and `reproduction_profile`;
