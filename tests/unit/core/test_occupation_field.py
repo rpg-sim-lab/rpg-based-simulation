@@ -107,7 +107,7 @@ def test_writer_archetype_factory_writes_the_species_and_the_role_label():
 
 
 def test_writer_archetype_factory_falls_back_to_the_profession_when_there_is_no_role():
-    entity = ArchetypeEntityFactory().build_entity(1, _contract(role_id=None, profession_id="smith", kind="human"), EntitySpawnContext())
+    entity = ArchetypeEntityFactory().build_entity(1, _contract(role_id="", profession_id="smith", kind="human"), EntitySpawnContext())
     assert entity.identity.occupation == "smith"
 
 
@@ -165,7 +165,7 @@ def test_writer_world_compiler_writes_the_declared_species_and_the_role_label_on
     assert state.entities
     for e in state.entities.values():
         assert e.kind == e.identity.properties["species_id"]
-        assert e.identity.occupation == spec.populations[e.identity.properties["population_id"]].role.lower()
+        assert e.identity.occupation == {getattr(q, "id", f"pop_{i}"): q.role.lower() for i, q in enumerate(spec.entities)}[e.identity.properties["population_id"]]
 
 
 def test_writer_world_compiler_without_a_context_is_the_legacy_path_kind_is_the_role_label():
@@ -281,6 +281,7 @@ def test_every_production_kind_writer_is_one_of_the_tested_sites():
                     sites.add(str(path.relative_to(root)))
     assert sites == {
         "src/domains/campaigns/orchestrator.py", "src/domains/campaigns/runner.py", "src/entities/archetype_factory.py", "src/systems/world_systems/generator.py",
+        "src/observability/readiness/harness.py",
         "src/worldassembly/entity_spawner.py", "src/worldbuilding/compiler.py",
         # the scenario fixtures (designer ruling (a), 2026-11-16): tested in test_occupation_fixture_writers.py
         "src/certification/scenarios.py", "src/perf/scenarios.py", "src/testing/scenario_runner.py",
@@ -308,7 +309,8 @@ def test_k6_k7_every_gate_world_entity_kind_is_a_species_id_and_the_mirror_agree
         for entity in state.entities.values():
             assert entity.kind in species_ids, (world, entity.id, entity.kind)
             assert entity.kind == entity.identity.properties["species_id"], (world, entity.id)
-            assert entity.identity.occupation == spec.populations[entity.identity.properties["population_id"]].role.lower(), (world, entity.id)
+            role_of = {getattr(q, "id", f"pop_{i}"): q.role.lower() for i, q in enumerate(spec.entities)}
+            assert entity.identity.occupation == role_of[entity.identity.properties["population_id"]], (world, entity.id)
             checked += 1
     assert checked > 100
 

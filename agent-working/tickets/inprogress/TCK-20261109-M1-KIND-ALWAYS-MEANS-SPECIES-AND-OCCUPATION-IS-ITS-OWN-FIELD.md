@@ -463,6 +463,7 @@ src/core/ (entity identity), content schemas
 
 ## Test Summary
 Steps 2 and 3 are closed as their own child tickets (TCK-20261117-AN-ENTITY-CARRIES-ITS-OCCUPATION-LABEL-AND-ONE-SPECIES-READ-SPECIES-OF and TCK-20261117-THE-LABEL-READERS-READ-OCCUPATION-NOT-KIND). Steps 4 and 5 are open.
+- Step 4 (head 54aad99a3 plus the fixes below; targeted run, -n 1, one process at a time): K5 ruled dict −2 (evolution row 8, reproduction_humanoid row 24): compares retired by step 4 per the step-1 rulings 665b9718 (approved by rpg-planner, designer and lead). Fixture-only edits: 12 `EntityCarryForward` constructions gained `kind="human"` (test_campaign_orchestrator, test_fame_wiring, test_social_memory); test-side `spawn_monster` / `spawn_natural_creature_offspring` calls pass `species=X, occupation=X`; the 4 `WorldEntitySpawner` profiles got `species_id="human"`.
 
 ## Files Changed
 Steps 2 and 3: see the child tickets. Steps 4 and 5 open.

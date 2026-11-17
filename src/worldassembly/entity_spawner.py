@@ -122,7 +122,7 @@ class WorldEntitySpawner:
         spawn: EntitySpawnContext,
         seed: int,
     ) -> EntityState:
-        # No archetype_id: build from the profile's stats. M1 step 4: the profile must declare its species (`kind` = species_id); there is no default.
+        # LEGACY GUARD: no archetype_id available. Builds from the profile's stats. M1 step 4: the profile must declare its species (`kind` = species_id); there is no default.
         if not profile.species_id:
             raise SpeciesNotDeclaredError(f"profile of entity {entity_id} (population {spawn.population_id!r}) declares no species_id")
         from src.core.builder import V2EntityBuilder
