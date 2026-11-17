@@ -85,6 +85,7 @@ Designer framing (rpg-designer, 2026-10-30):
 - Sequence: after EARN merges; before the #781 re-measure.
 
 ## Implementation Notes
+- 2026-11-16 (rpg-designer ruling, rpg-planner): its V3 case crowded_frontier/46/9 no longer fails at 9c398a068 (M1-base; rpg gate run 43840618903, stale_known_entries); the known entry is removed from tools/test_architecture/rpg_gate_known.yaml. This ticket still owes its own-job counts. If the case fails again, under M1 pace it is a BALANCE red (an m1_disclosure row), not a stop.
 - 2026-11-03 non-person counterpart filed: TCK-20261103-A-CREATURE-WITH-BOTH-NEEDS-PRESSING-NEITHER-SLEEPS-NOR-FEEDS-ENOUGH. Related base finding: TCK-20261103-BROKE-HUNGRY-WORKERS-STILL-TAKE-NO-SHIFT-ON-MAIN (FATIGUE holds 63% of those workers' starving ticks).
 2026-11-03 evidence from the pinned runner (rpg-planner-ubuntu's rows, relayed by rpg-designer and lead-planner-u24; not checked by rpg-planner):
 - crowded s42 base (65d43dfa9), e30 leader: FATIGUE 97.85 over HUNGER 63.97 at hunger 59. Caution (rpg-designer): hunger 59 is just past the onset, not "starving hunger". It is evidence about where the two scales cross, which this ticket should state, not proof of its defect.

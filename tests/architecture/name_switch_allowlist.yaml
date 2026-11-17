@@ -663,6 +663,12 @@ rows:
   count: 1
   reason: environment aura multiplier chosen by the faction HERO_GUILD
   ticket: TCK-20261109-M1-RETIRE-ROLE-KIND-AND-FACTION-NAME-BRANCHES-IN-STAGES
+- file: src/world/environment.py
+  symbol: EnvironmentService.get_aura_multipliers
+  name: "'stronghold'"
+  count: 1
+  reason: the aura read of the stronghold occupation label (owner disclosure #715 6937829823; it existed before M1 step 3 as getattr(s, "kind") on a receiver the scan did not count, and became visible when the scan learned the occupation word)
+  ticket: TCK-20261109-M1-RETIRE-ROLE-KIND-AND-FACTION-NAME-BRANCHES-IN-STAGES
 - file: src/world/occupation_config.py
   symbol: <module>[BASE_OCCUPATION_DENSITY]
   name: EntityRole.SHOPKEEPER
