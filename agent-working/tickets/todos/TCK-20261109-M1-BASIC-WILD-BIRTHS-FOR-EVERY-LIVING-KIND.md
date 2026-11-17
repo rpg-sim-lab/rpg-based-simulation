@@ -213,6 +213,15 @@ Source: `agent-working/stored_artifacts/TCK-20261109-M1-BASIC-WILD-BIRTHS-FOR-EV
   - Two tests: the default is unchanged, and two seeds give different combined profiles for the same parents and tick.
   - Options (b) and (c) are rejected.
   - If rpg-designer rules Q18a (b), the reputation disclosure reads "builder default; births do not apply idea 53".
+- rpg-designer's Q18 RULING (relayed by lead-planner-u24 and lead-planner on 2026-11-18; recorded here). Both are YES as value writes to the newborn, never as eligibility reads, and they ride a LATER push:
+  - (i) `public_reputation` via the existing birth_record law (Bible ch01 §Reputation Seed, 01_entity_anatomy.md:235-242).
+    - The shared builder law and ReputationService stay unchanged.
+    - The parents' values are read only to compute the newborn's, and it is disclosed.
+    - At B5, the idea-53 parity entry names births as its live caller. ch01 is unchanged.
+  - (ii) `home_position`/`leash_radius` are G1a-style rows: the mother's value, omitted when None, disclosed, never used for eligibility.
+    - They follow whatever M1 run-2's home-range/tether rule (R1) does to the mother's fields.
+  - Before that push, the implementer confirms the code read.
+- Hook push: home_region_id IN; public_reputation, home_position/leash and the Q19 `birth_record` world_seed change OUT. lead-planner asked rpg-designer whether Q19 fits the condition that the "shared builder law stays unchanged". The verbatim Births Law bullet must be in the hook push.
 - No Births Law text is committed until rpg-designer rules.
 
 ## Out of Scope
