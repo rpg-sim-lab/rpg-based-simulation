@@ -32,12 +32,12 @@ def test_every_tool_user_species_is_high_intelligence_tier():
 
 
 def test_imitation_fidelity_is_high_for_high_tier_species():
-    entity = V2EntityBuilder(1).location(0.0, 0.0).identity(properties={"species_id": "human"}).build()
+    entity = V2EntityBuilder(1).kind("human").location(0.0, 0.0).build()
     fidelity = RoleModelImitationService.compute_imitation_fidelity(entity)
     assert fidelity == RoleModelImitationService.HIGH_TIER_FIDELITY
 
 
 def test_imitation_fidelity_is_low_for_low_tier_species():
-    entity = V2EntityBuilder(1).location(0.0, 0.0).identity(properties={"species_id": "wolf"}).build()
+    entity = V2EntityBuilder(1).kind("wolf").location(0.0, 0.0).build()
     fidelity = RoleModelImitationService.compute_imitation_fidelity(entity)
     assert fidelity == RoleModelImitationService.LOW_TIER_FIDELITY

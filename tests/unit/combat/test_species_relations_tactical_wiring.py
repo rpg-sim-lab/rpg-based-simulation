@@ -13,7 +13,7 @@ from src.engine.tactical import TacticalDecisionSystem
 def _make_entity(eid: int, faction_id: str, species_id: str, pos=(0.0, 0.0)):
     return (
         V2EntityBuilder(eid)
-        .kind("hero")
+        .kind(species_id)
         .location(*pos)
         .properties({"faction_id": faction_id, "species_id": species_id})
         .combat(hp=100, max_hp=100, atk=10, attack_range=1, alive=True, tactical_role="VANGUARD", readiness=100.0)

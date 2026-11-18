@@ -35,6 +35,7 @@ from src.lab.metamorphic import MetamorphicRuleEngine
 import src.engine.governor as governor_module
 from tests.helpers.kernel_pinning import PinnedNormalGovernor
 from tests.named_run_dirs import remove_named_run_dirs  # noqa: F401
+from src.core.species import species_of
 
 # Run ids this module's test names, removed by name before and after it (see tests/named_run_dirs.py).
 RUN_ID_PREFIXES = {
@@ -83,7 +84,7 @@ def _pair_hostility_input(seed: int) -> bool:
     by_faction = {}
     for ent in state.entities.values():
         props = ent.identity.properties or {}
-        if props.get("species_id") == "human":
+        if species_of(ent) == "human":
             by_faction.setdefault(props.get("faction_id"), ent)
     council, merchant = by_faction["town_council"], by_faction["merchant_league"]
     assert not is_wild_creature(council) and not is_wild_creature(merchant), "the chosen pair must not be wild creatures (appraisal would govern it)"

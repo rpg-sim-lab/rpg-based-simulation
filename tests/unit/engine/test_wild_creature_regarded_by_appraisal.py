@@ -30,7 +30,7 @@ def _content():
 
 
 def _entity(eid, species, pos=(10.0, 10.0)):
-    return (V2EntityBuilder(eid).kind("monster").location(*pos)
+    return (V2EntityBuilder(eid).kind(species).location(*pos)
             .identity(role=EntityRole.MONSTER, faction=Faction.MONSTER_HORDE,
                       properties={"species_id": species, "faction_id": FACTION_OF[species]})
             .combat(hp=100, max_hp=100, attack_range=1, readiness=100.0, alive=True).lifecycle(active=True).build())

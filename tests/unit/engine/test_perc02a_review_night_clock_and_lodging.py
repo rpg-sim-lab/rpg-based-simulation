@@ -21,6 +21,7 @@ from src.engine.legality import LegalityServiceV2
 from src.engine.tactical import _held_target_in_view
 from tests.helpers.clock import DAY_WORLD_TIME
 from tests.helpers.scenario import compile_world
+from src.core.species import species_of
 
 NIGHT_WORLD_TIME = 0
 assert is_night(NIGHT_WORLD_TIME) and not is_night(DAY_WORLD_TIME)
@@ -32,7 +33,7 @@ def world():
 
 
 def _first(state, species):
-    return next(e for e in state.entities.values() if (e.identity.properties or {}).get("species_id") == species)
+    return next(e for e in state.entities.values() if species_of(e) == species)
 
 
 def _pair(world, world_time, dx=2.0):

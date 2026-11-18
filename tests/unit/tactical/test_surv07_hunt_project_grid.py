@@ -14,6 +14,7 @@ from src.engine.appraisal import Relation
 from src.engine.hostility import relation
 from src.engine.tactical import TacticalDecisionSystem
 from tests.helpers.scenario import compile_world
+from src.core.species import species_of
 
 PRESSING_HUNGER, CALM_HUNGER, PRESSING_DEBT = 90.0, 20.0, 95.0
 
@@ -24,7 +25,7 @@ def world():
 
 
 def _species(world, species):
-    return next(e for e in world.entities.values() if (e.identity.properties or {}).get("species_id") == species)
+    return next(e for e in world.entities.values() if species_of(e) == species)
 
 
 def _at(entity, x, y):
@@ -50,7 +51,7 @@ def _decide(world, hunter_species, *, prey_dx, project=("hunger", ObjectiveKind.
         hunter = _with_project(hunter, project[0], project[1], prey)
     ents = {hunter.id: hunter, prey.id: prey}
     for sp, dx, dy in extra:
-        e = next(x for x in world.entities.values() if (x.identity.properties or {}).get("species_id") == sp and x.id not in ents)
+        e = next(x for x in world.entities.values() if species_of(x) == sp and x.id not in ents)
         ents[e.id] = _at(e, 30.0 + dx, 30.0 + dy)
     state = replace(world, entities=ents, tick=world.tick + 1)
     update = TacticalDecisionSystem.evaluate_entity_intent(state, hunter)
@@ -111,7 +112,7 @@ def test_pressing_sleep_only_with_prey_in_view_does_not_engage_it(world):
 
 def test_prey_and_a_non_prey_hostile_both_in_view_engages_the_prey_only(world):
     payload, update, hunter, prey, ents = _decide(world, "human", prey_dx=1.0, extra=[("goblin", 0.0, 1.0)])
-    goblin_ids = {i for i, e in ents.items() if (e.identity.properties or {}).get("species_id") == "goblin"}
+    goblin_ids = {i for i, e in ents.items() if species_of(e) == "goblin"}
     assert payload.get("action") == "ATTACK" and payload.get("target_id") == prey.id and payload.get("target_id") not in goblin_ids, f"got {payload}"
 
 
@@ -197,7 +198,7 @@ def test_a_combat_engage_project_on_prey_keeps_todays_suspension(world, sp):
 
 def test_a_hunt_project_naming_x_with_prey_y_also_in_view_stays_current_and_the_hunter_may_take_y(world):
     base = _species(world, "human")
-    herd = [e for e in world.entities.values() if (e.identity.properties or {}).get("species_id") == "small_plant_eater"][:2]
+    herd = [e for e in world.entities.values() if species_of(e) == "small_plant_eater"][:2]
     x, y = _at(herd[0], 33.0, 30.0), _at(herd[1], 31.0, 30.0)
     x = replace(x, navigation=replace(x.navigation, last_moved_tick=world.tick))  # PERC-02a: x (three tiles off) just stepped, so it is heard; y is still and touched at one tile
     hunter = replace(_at(base, 30.0, 30.0), biological=replace(base.biological, hunger=PRESSING_HUNGER, sleep_debt=0.0))
@@ -255,7 +256,7 @@ def test_one_decision_reads_every_body_with_the_same_inputs_the_hostile_list_and
     from src.engine.hostility import source_identity
     from src.engine.tactical import _prey_in_sight
     from src.engine.tactical_avoid import classify_neighbours
-    base, herd = _species(world, "human"), [e for e in world.entities.values() if (e.identity.properties or {}).get("species_id") == "small_plant_eater"][:2]
+    base, herd = _species(world, "human"), [e for e in world.entities.values() if species_of(e) == "small_plant_eater"][:2]
     hunter = replace(_at(base, 30.0, 30.0), biological=replace(base.biological, hunger=PRESSING_HUNGER, sleep_debt=0.0))
     tick = world.tick + 1
     mover = replace(_at(herd[0], 33.0, 30.0), navigation=replace(_at(herd[0], 33.0, 30.0).navigation, last_moved_tick=tick - 1))

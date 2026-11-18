@@ -13,6 +13,7 @@ from src.entities.archetype_factory import ArchetypeEntityFactory, EntitySpawnCo
 from src.entities.identity_resolver import EntityIdentityResolver
 from src.core.builder import V2EntityBuilder
 from src.core.enums import EntityRole, Faction
+from src.core.species import species_of
 
 
 @pytest.fixture(scope="module")
@@ -35,7 +36,7 @@ def test_archetype_native_path_produces_valid_entity_state(catalog):
     assert entity.lifecycle.active is True
     assert entity.navigation.position == (10.0, 10.0)
     assert entity.identity.properties["archetype_id"] == "hungry_wolf"
-    assert entity.identity.properties["species_id"] == "wolf"
+    assert species_of(entity) == "wolf"
 
 
 def test_archetype_native_path_combat_values_match_resolved(catalog):
