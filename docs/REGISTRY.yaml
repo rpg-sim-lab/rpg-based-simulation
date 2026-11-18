@@ -7986,6 +7986,18 @@
   - content
   last_verified: '2026-10-09'
 - type: ticket
+  path: agent-working/tickets/done/TCK-20261119-RERUN-OF-R1-R4-AND-MIXED-400-PYSPY-ON-CPUS-4-5.md
+  ticket_id: TCK-20261119-RERUN-OF-R1-R4-AND-MIXED-400-PYSPY-ON-CPUS-4-5
+  title: Rerun of R1 and R4 and the py-spy before-profiles, pinned to cpus 4-5, recorded
+    in tick_cost_growth.md
+  tier: hotfix
+  ticket_type: chore
+  date: '2026-11-19'
+  related_code_areas: []
+  artifact_files: []
+  tags:
+  - performance
+- type: ticket
   path: agent-working/tickets/done/TCK-20261119-TICKET-FIELD-VALUES-CLI-LIFECYCLE-EXIT-REPORT-ONLY.md
   ticket_id: TCK-20261119-TICKET-FIELD-VALUES-CLI-LIFECYCLE-EXIT-REPORT-ONLY
   title: '`tools/ticket_field_values.py` CLI must not exit 1 on a lifecycle-section

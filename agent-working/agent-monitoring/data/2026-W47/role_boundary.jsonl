@@ -1,0 +1,1 @@
+{"ts":"2026-11-18T19:26:23.115557Z","event":"role_boundary","kind":"message_class_mismatch","session_id":"33b93449-b100-4627-8aa5-7fc5e9df3b95","session_role":"perf-planner","function":"planner","domain":"perf","tool":"SendMessage","target":"lead-planner","message_class":"request","accepts_dispatch_from":["user"]}
