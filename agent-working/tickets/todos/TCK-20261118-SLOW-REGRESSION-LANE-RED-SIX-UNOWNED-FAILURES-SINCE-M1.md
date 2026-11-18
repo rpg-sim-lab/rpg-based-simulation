@@ -80,7 +80,8 @@ Already known-red in the same runs and out of scope: `test_behavioral_5k*` (TCK-
 
 ## Assumptions / Open Questions
 - Whether #3, #4 and #5 are stale pins or real behaviour shifts: rpg's call. The drops (SOCIAL about 40-45%, PROGRESSION about 30%) read like real drift.
-- Whether #6 comes from M1's `kind` / occupation change breaking the world-boss uniqueness read: rpg to check. ENABLE_WORLD_BOSS_SPAWN is a deliberately OFF site in the spawn-sites guard.
+- Row 6 (rpg-designer u24, relayed by lead-planner 2026-11-19): ph9 sets ENABLE_WORLD_BOSS_SPAWN ON itself, the only place that does. The duplicate world boss therefore explains ph9 ONLY, and ph9 must pass after u24's #964 (boss dedupe) merges. After #964 merges, testing checks that the next scheduled slow-regression run shows ph9 green and reports to lead-planner.
+- Rows 1-5 are NOT boss-caused (same source). u24 bisects them at #946, #949, #952 and bb26e4e5f, each as its own S9, after a static list of the readers #952 changed, with direction predictions made before the data. Still no re-pin and no known-reds entry until each row is attributed.
 - Whether the first red really sits in the M1 steps: unbisected.
 
 ## Durable state, lifecycle and clocks
