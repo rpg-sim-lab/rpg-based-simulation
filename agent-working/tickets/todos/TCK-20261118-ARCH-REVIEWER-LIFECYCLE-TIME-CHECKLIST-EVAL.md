@@ -60,6 +60,7 @@ Owner decision on #715 (logged via lead-planner, 2026-11-18): approve Option B p
 - TCK-20260804-SKILL-CATALOG-MODERNIZATION-EPIC (usage-tracking tooling to reuse)
 
 ## Related Docs
+- docs/engine/time_semantics.md: PLANNED (rpg-planner confirmed via lead-planner 2026-11-18; new file linked from kernel.md and deterministic_execution.md; core rule is one named clock per reader: cadences and keyed draws use the absolute kernel tick, world_time only through calendar helpers, no raw world_time arithmetic outside src/core/calendar.py, pinned by a source-scan test; rpg-designer rules the text, rpg-planner files the ticket after M1 Phase 1). Not yet landed: the checklist item 6 states the question only and must not restate that rule.
 - docs/testing/test_taxonomy.md (§6 technique criteria)
 - agent-working/stored_artifacts/TCK-20261118-SIM-ENGINEERING-SKILLS-RESEARCH-PROPOSAL/ (proposal, defect_set, research, coverage_audit)
 
@@ -82,7 +83,7 @@ Draft checklist for arm A1 (review prompts only; no world rules). For each new o
 3. Exit: does every non-terminal state have a way out (expiry, completion, abandon)? What bounds how many can exist?
 4. Clearing: is the value cleared or reset after a successful step, and is there a test of the value after success?
 5. Writers and meaning: how many code paths write it, and does it carry exactly one meaning?
-6. Clock: which clock does each reader use (raw tick, world_time, derived phase)? Do fixtures cover more than one phase?
+6. Clock: which clock does each reader use (raw tick, world_time, derived phase)? Do fixtures cover more than one phase? (Cite `docs/engine/time_semantics.md` once it lands: PLANNED, not yet landed.)
 7. Window: for a gate, bar or scenario with a time window, can the case under test occur inside it given current durations?
 8. Layers: does a lower layer's give-up or reset reach the layer that re-chooses?
 
