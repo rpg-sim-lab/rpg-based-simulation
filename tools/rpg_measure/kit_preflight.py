@@ -23,8 +23,7 @@ Manifest (hand-written JSON; kit files are resolved relative to the manifest's d
         "wraps": [{"target": "src.engine.gate:PerceptionGate.can_perceive", "wrapper": "probe.py:spy"}]}]}
 
 Checks: (a) every kit file exists at its sha256; (f) every ``*.py`` a runner or shell file names is a manifest file; (h) every heavy kit python file matches the shared gate's
-heavy-word pattern (``RPG_HEAVY_WORDS`` in ``busy_gate.sh``), else other lanes' gates cannot see the job. Per tree and process: (b) each import file loads under
-``python -I`` with cwd = the tree; (g) each declared wrapper's signature matches its target's; (c) the fixture run (at most ``--ticks`` ticks) exits 0; (d) every recorded
+heavy-word pattern (``RPG_HEAVY_WORDS`` in ``busy_gate.sh``), else other lanes' gates cannot see the job. Per tree and process: (b) each import file loads with the run's interpreter flags (the leading flags of its ``entry``, or an explicit ``import_flags`` list) and cwd = the tree; (g) each declared wrapper's signature matches its target's; (c) the fixture run (at most ``--ticks`` ticks) exits 0; (d) every recorded
 field is present and not a constant None/default across all entities and ticks unless declared ``may_be_constant``; (e) the ok guard hit, the bad guard not, ERROR+ log lines 0,
 every claimed hook hit at least once.
 """
@@ -206,12 +205,30 @@ _IMPORT_SNIPPET = ("import ast, sys\n"
                    "exec(compile(tree, sys.argv[1], 'exec'), {'__name__': '_kit_import_check', '__file__': sys.argv[1]})\n")
 
 
+def import_flags(proc: dict) -> List[str]:
+    """The interpreter flags check (b) imports with: ``import_flags`` if the process sets it, else the flags of its own ``entry`` (the leading ``-x`` tokens after ``{python}``), so (b) mirrors the run.
+    An entry that is not a ``{python}`` command keeps the strict default ``-I``."""
+    if "import_flags" in proc:
+        return [str(f) for f in proc["import_flags"]]
+    entry = proc.get("entry", [])
+    if not entry or entry[0] != "{python}":
+        return ["-I"]
+    flags: List[str] = []
+    for token in entry[1:]:
+        if not token.startswith("-"):
+            break
+        flags.append(token)
+    return flags
+
+
 def check_imports(proc: dict, tree: Path, python: str, base: Path, scope: str) -> List[Row]:
     rows: List[Row] = []
+    flags = import_flags(proc)
+    shown = " ".join(flags) or "no flags"
     for name in proc.get("import_files", []):
-        done = run([python, "-I", "-c", _IMPORT_SNIPPET, str((base / name).resolve())], tree, child_env(tree))
+        done = run([python, *flags, "-c", _IMPORT_SNIPPET, str((base / name).resolve())], tree, child_env(tree))
         tail = (done.stderr.strip().splitlines() or [""])[-1][:160]
-        rows.append(("b import", f"{scope} {name}", PASS if done.returncode == 0 else FAIL, "imports under -I, cwd = the tree" if done.returncode == 0 else f"rc={done.returncode}: {tail}"))
+        rows.append(("b import", f"{scope} {name}", PASS if done.returncode == 0 else FAIL, f"imports under {shown}, cwd = the tree" if done.returncode == 0 else f"rc={done.returncode} ({shown}): {tail}"))
     return rows
 
 
