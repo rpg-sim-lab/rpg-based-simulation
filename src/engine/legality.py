@@ -29,6 +29,17 @@ if TYPE_CHECKING:
     from src.core.state import AuthoritativeState, EntityState, RegionState
 
 
+def _resolve_night(state_or_context: Any, night: Optional[bool]) -> bool:
+    """Whether it is night for an attack's perception: the caller's explicit ``night`` when given, else ``is_night(state_or_context.world_time)``, the same clock the tactical decision uses.
+    A context that carries no ``world_time`` must be given ``night`` by its caller; a missing clock is a TypeError, never day."""
+    if night is not None:
+        return night
+    world_time = getattr(state_or_context, "world_time", None)
+    if world_time is None:
+        raise TypeError("verify_attack_legality: the state or context has no world_time; pass night= explicitly (a missing clock is never day)")
+    return is_night(world_time)
+
+
 def _state_invalid_reason(attacker: Any, target: Any) -> Optional[ReasonCode]:
     """Why an attack cannot start from the entities' own state, else None. F3 (divergence 2.155): a lodger is indoors, so it cannot be attacked from outside and, seeing no one outside,
     cannot attack out; a stale target id (captured before the target lodged) lands here and ends the held attack like any incapacitated target."""
@@ -238,8 +249,7 @@ class LegalityServiceV2:
         target: EntityState,
         state_or_context: Any,
         is_opportunity_attack: bool = False,
-        *,
-        night: Optional[bool] = None,
+        *, night: Optional[bool] = None,
     ) -> Tuple[bool, ReasonCode]:
         """
         Authoritative validation for a combat interaction.
@@ -252,9 +262,6 @@ class LegalityServiceV2:
         Logic ID: COMB-284 (Combat tests cover ranged legality)
         Logic ID: COMB-286 (Combat tests cover invalid target rejection)
         Logic ID: COMB-287 (Combat tests cover dead target rejection)
-
-        Perception is judged by the clock of the caller's state: ``night`` is ``is_night(state_or_context.world_time)``, the same clock the decision uses. A
-        context that carries no ``world_time`` must be given ``night`` by its caller; a missing clock is an error, never day.
         """
         # 1. State Validity (and, F3: a lodger cannot be attacked from outside)
         invalid = _state_invalid_reason(attacker, target)
@@ -294,12 +301,7 @@ class LegalityServiceV2:
             target_species=get_species_id_str(target),
         )
 
-        if night is None:
-            world_time = getattr(state_or_context, "world_time", None)
-            if world_time is None:
-                raise TypeError("verify_attack_legality: the state or context has no world_time; pass night= explicitly (a missing clock is never day)")
-            night = is_night(world_time)
-        if not attack_allowed(attacker, target, LegalityServiceV2._attack_permitted(attacker, target, context), night=night, tick=getattr(state_or_context, "tick", None)):
+        if not attack_allowed(attacker, target, LegalityServiceV2._attack_permitted(attacker, target, context), night=_resolve_night(state_or_context, night), tick=getattr(state_or_context, "tick", None)):
             return False, ReasonCode.FRIENDLY_FIRE_ILLEGAL
 
         # 4. Range Validity
