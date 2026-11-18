@@ -3,7 +3,6 @@ from __future__ import annotations
 from dataclasses import replace
 
 from src.core.builder import V2EntityBuilder
-from src.core.enums import ReasonCode
 from src.core.movement_modes import MovementMode
 from src.core.state import AuthoritativeState
 from src.core.strategic import ContractKind, ContractState, ContractStatus
@@ -70,8 +69,9 @@ def test_mutual_adjacent_position_swap_succeeds():
     assert refined.entity_updates[1].new_position == (1.0, 0.0)
     assert refined.entity_updates[2].new_position == (0.0, 0.0)
 
-    assert refined.entity_updates[1].navigation.failure_reason == ReasonCode.POSITION_SWAP
-    assert refined.entity_updates[2].navigation.failure_reason == ReasonCode.POSITION_SWAP
+    for swapped in (1, 2):  # a swap is a move: the clear, no code (2.214)
+        assert refined.entity_updates[swapped].navigation.failure_reason is None
+        assert refined.entity_updates[swapped].navigation.failure_reason_clear is True
 
     new_state = ApplyPath.apply_generation(state, refined)
 

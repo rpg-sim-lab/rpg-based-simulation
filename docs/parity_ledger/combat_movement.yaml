@@ -5020,12 +5020,15 @@
     (applied in NavigationPatch, the field becomes None), and an update with neither
     (a held step) leaves the stored value as it was. A code in
     the same update wins over the clear. A stale failure therefore never re-files an
-    ACCESS blocker in infer_blockers after the subject has moved on.'
+    ACCESS blocker in infer_blockers after the subject has moved on. Any position change by the movement apply path is a move and
+    carries the clear and no code: a yielded occupant and both swapped bodies end with last_failure_reason None (they used to
+    end holding YIELDING / POSITION_SWAP), and an own failed step followed by a displacement in the same phase ends as moved.'
   status: verified
   priority: P1
   legacy_evidence: null
   v2_evidence: src/engine/movement.py (MovementSystem.resolve_move, failure_reason_clear=bool(success)),
-    src/engine/patches.py (NavigationPatch), src/core/updates.py (NavigationUpdate.failure_reason_clear).
+    src/engine/patches.py (NavigationPatch), src/core/updates.py (NavigationUpdate.failure_reason_clear), src/engine/movement.py (MovementSystem._yield_update),
+    src/engine/pipeline_phases/movement.py (position-swap update, _merge_move_update).
   proof_type: regression
   test_path: tests/unit/movement/test_failure_reason_lifecycle.py
   divergence_note: See docs/guidelines/intentional_divergences.md Section 2.214.

@@ -67,6 +67,8 @@ Found by lane A's read-only F2 code read (2026-11-17, F1 head 46ac46e40; the cit
 
 ## Implementation Notes
 
+**Ruled move law (rpg-designer, owner #715 6967356642 and 6967398421, after the first own-job tripped R1/R3):** any position change by the movement apply path is a MOVE: the subject's own step, a swap, or a yield displacement (lodge entry and exit are not). A move carries `failure_reason_clear` and NO failure code. The yield (`movement.py` `_yield_update`) drops `YIELDING`; the position-swap update (`pipeline_phases/movement.py`) drops `POSITION_SWAP`; both carry the clear. A failure code the movement-routing phase itself wrote for a body earlier in the tick is dropped when the body is then displaced (`_merge_move_update`, provenance-tracked per phase); codes from earlier phases (action routing runs BEFORE position swaps and movement routing, so the body's existing update may hold an action code) survive, and a code written later still wins at the patch. `OCCUPANCY_CONFLICT` becomes a `ReasonCode` member (same value). The swap merge in the swap phase is unchanged: swaps run before movement routing, so a swapped body has no prior movement code, only possibly an action code, which survives.
+
 ## Test Summary
 
 ## Files Changed

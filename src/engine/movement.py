@@ -124,7 +124,7 @@ class MovementSystem:
             if y_ok:
                 return EntityUpdate(
                     entity_id=occupant.id, new_position=yield_tile, moved_this_tick=True,
-                    navigation=NavigationUpdate(moved_recently_set=True, failure_reason=ReasonCode.YIELDING,
+                    navigation=NavigationUpdate(moved_recently_set=True, failure_reason_clear=True,
                                                 step_ready_tick_set=MovementSystem._step_ready_tick(occupant, True, yield_tile, current_tick, state_or_context))
                 )
         return None
