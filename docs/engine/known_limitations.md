@@ -27,7 +27,7 @@ This document records the current technical limitations, unsupported features, a
 ### 1.3 Strategic AI
 - **Material-Only Blockers**: The `StrategicIntelligenceSystem` only recognizes and resolves crafting blockers for "Material" resources. Social, capability, or plot-based blockers are unsupported.
 - **Location-Only Leads**: Strategic leads are restricted to coordinate-based locations. Concept or person-based leads are not yet modeled in the supported slice.
-- **Unchecked Sense Profiles On Three Paths**: three paths don't yet check for a usable sense profile at build: campaign episode bodies (`domains/campaigns/orchestrator.py`), scenario-runner bodies (`domains/campaigns/runner.py`), and checkpoint-restored bodies (`ScenarioCheckpoint.restore`). A body of a species without one isn't refused (PERC-02a, ch. 04). Instead it perceives nothing, and the gate logs ERROR (`TCK-20261118-CAMPAIGN-RUNNER-AND-RESTORED-BODIES-SKIP-THE-BUILD-TIME-SENSES-CHECK`).
+- **Unchecked Sense Profiles On Four Paths**: four paths don't yet check for a usable sense profile at build: campaign episode bodies (`domains/campaigns/orchestrator.py`), scenario-runner bodies (`domains/campaigns/runner.py`), mid-run spawns (`EntityGenerator`, used by lairs, bosses and calamities), and checkpoint-restored bodies (`ScenarioCheckpoint.restore`). A body of a species without one isn't refused (PERC-02a, ch. 04). Instead it perceives nothing, and the gate logs ERROR (`TCK-20261118-CAMPAIGN-RUNNER-AND-RESTORED-BODIES-SKIP-THE-BUILD-TIME-SENSES-CHECK`).
 
 ### 1.4 Commerce Limitations
 
