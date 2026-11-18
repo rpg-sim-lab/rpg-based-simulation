@@ -137,3 +137,23 @@ def test_a_dead_held_target_is_dropped(world):
     state, a, b = _held(world)
     b = replace(b, combat=replace(b.combat, alive=False))
     assert _held_target_in_view(replace(state, entities={**state.entities, b.id: b}), a, b.id) is False
+
+
+# --- the action-routing phase hands legality a clocked state (designer confirmation C1) ----------------------------------------------------------------
+
+def _routed_reasons(world, world_time):
+    """Drive an ATTACK intent of the hunter on the prey through ActionRoutingPhase.route (-> SimulationDomainLogic.execute_action(context=sliding_state) -> CombatActions -> verify_attack_legality)."""
+    from src.core.updates import EntityUpdate, StateUpdate, TaskUpdate
+    from src.engine.pipeline_phases.actions import ActionRoutingPhase
+
+    state, hunter, prey = _pair(world, world_time)
+    update = StateUpdate(entity_updates={hunter.id: EntityUpdate(
+        entity_id=hunter.id, task=TaskUpdate(work_kind_set="ENTITY_ACT", payload_set={"action": "ATTACK", "target_id": prey.id}))})
+    refined = ActionRoutingPhase.route(state, update)
+    return {getattr(ev.reason, "value", str(ev.reason)) for ev in refined.rejection_events if ev.actor_id == hunter.id}
+
+
+def test_an_attack_intent_routed_through_the_action_phase_is_judged_by_the_states_clock(world):
+    """The routed context is a clocked AuthoritativeState (a clockless one would raise): the same attack is refused on the relation at night and passes that step by day."""
+    assert ReasonCode.FRIENDLY_FIRE_ILLEGAL.value in _routed_reasons(world, NIGHT_WORLD_TIME)
+    assert ReasonCode.FRIENDLY_FIRE_ILLEGAL.value not in _routed_reasons(world, DAY_WORLD_TIME)
