@@ -113,6 +113,11 @@ None yet.
   - B1 = efba7d95c: #949, kind=species step 3, a NEUTRAL segment B0→B1 (K4 IDENTICAL).
   - Open segment after B1: none yet. #950 (doc-only) rides it.
 
+- 2026-11-18, OWNER #715 6971915608:
+  - CLOCK REVIEW LINE for every M1 PR, starting now. Domain-time meaning (calendar conversion, day/night, biological durations) goes through the authoritative calendar helpers (src/core/calendar.py). Explicitly tick-based operations (cadences, keyed draws on the absolute kernel tick) stay valid when their unit and intent are clear. This is not a ban on tick arithmetic. Exact wording: rpg-designer. It becomes the contract docs/engine/time_semantics.md after Phase 1.
+  - BOUNDARY PERF: the run-1 / Phase 1 boundary read (15 plain runs) also reports wall time and peak RSS per cell against the previous boundary: same config, sequential, pinned, report-only. Flag a median move larger than that boundary's own run-to-run spread. No new runs.
+  - EVIDENCE LABELS in every S9 packet: inspected / executable / executed / validated. Kit preflight: TCK-20261118-A-DIAGNOSTIC-KIT-PREFLIGHT-CHECKS-EACH-KIT-ON-BOTH-FROZEN-TREES-BEFORE-ITS-RUN.
+
 ## Test Summary
 
 ## Files Changed
