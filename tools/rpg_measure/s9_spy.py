@@ -8,7 +8,9 @@ Operational definitions (stated here so the approval can check them; none is cha
 - goal = ``(strategic.current_objective_id, strategic.current_project_id)``; a goal change is a difference from the previous tick.
 - task = ``(interaction.kind, interaction.target_node_id)``; a task change is a difference from the previous tick.
 - successful step = the applied update gave the member a ``new_position``, or its position differs from the previous tick.
-- completed eat/harvest/craft/trade = an ACCEPTED ``IntentResult`` in the member's applied entity update (every resource-transfer kind: carried or corpse food, node harvest, craft, trade).
+- completed eat/harvest/craft/trade = an ACCEPTED ``IntentResult`` in the member's applied entity update (every resource-transfer kind: carried or corpse food, node harvest, craft, trade), OR
+  a typed consume: an applied ``BiologicalUpdate`` for the member with ``hunger_delta < 0`` or ``hunger_set is not None`` (the eat paths that write a typed hunger drop with no IntentResult: the inn meal,
+  core_actions eat). That expression is the same typed-consume rule births_spy.py's apply wrapper uses for W5; it is repeated literally here because births_spy needs the births head and this spy must also run on main.
 - attack = the member is the ``attacker_id`` of a damaging ``CombatUpdate`` (``damage_taken > 0``) in the applied update.
 - failing action = a REJECTED ``IntentResult``; its key is ``(source_kind, source_id, str(reason))``. A tick is a repeat-fail tick when its only actions are rejected results with one and the same key.
 - "while in the group" = the ticks at which the member is in ``member_ids`` of a group in the state after the tick that is not dissolved; a stretch is a run of consecutive ticks in ONE group.
@@ -94,11 +96,12 @@ class GroupSpy:
                 results = list(upd.intent_results) if upd is not None else []
                 accepted = [r for r in results if r.accepted]
                 failed = sorted({(str(r.source_kind), str(r.source_id), str(r.reason)) for r in results if not r.accepted})
+                consumed = upd is not None and upd.biological is not None and (upd.biological.hunger_delta < 0 or upd.biological.hunger_set is not None)
                 moved = (upd is not None and upd.new_position is not None) or tuple(body.navigation.position) != tuple(before.navigation.position)
                 record = body.lifecycle.death_record
                 self.rows[eid].append({
                     "tick": tick, "group": gid, "goal_changed": _goal(body) != _goal(before), "task_changed": _task(body) != _task(before), "moved": bool(moved),
-                    "completed": len(accepted), "attacked": eid in attackers, "failed": failed, "hunger": body.biological.hunger,
+                    "completed": len(accepted), "consumed": consumed, "attacked": eid in attackers, "failed": failed, "hunger": body.biological.hunger,
                     "starved": record is not None and record.tick == tick and getattr(record.cause, "value", str(record.cause)) == "STARVATION",
                     "life_stage": getattr(body.identity.life_stage, "name", str(body.identity.life_stage)),
                 })
@@ -117,7 +120,7 @@ def _stretches(rows: List[Dict[str, Any]]) -> List[List[Dict[str, Any]]]:
 
 
 def _progress(row: Dict[str, Any]) -> bool:
-    return bool(row["goal_changed"] or row["task_changed"] or row["moved"] or row["completed"] or row["attacked"])
+    return bool(row["goal_changed"] or row["task_changed"] or row["moved"] or row["completed"] or row.get("consumed") or row["attacked"])
 
 
 def _runs(stretch: List[Dict[str, Any]], qualifies, window: int) -> List[Dict[str, Any]]:
