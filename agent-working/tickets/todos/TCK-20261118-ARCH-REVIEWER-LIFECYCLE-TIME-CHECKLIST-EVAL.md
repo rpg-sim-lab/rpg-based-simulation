@@ -87,6 +87,27 @@ Draft checklist for arm A1 (review prompts only; no world rules). For each new o
 7. Window: for a gate, bar or scenario with a time window, can the case under test occur inside it given current durations?
 8. Layers: does a lower layer's give-up or reset reach the layer that re-chooses?
 
+## Label re-check, first pass (read-only, origin/main fetched 2026-11-18; planner)
+| # | Defect | What git shows | Eval consequence |
+|---|---|---|---|
+| 1 | Night check on raw world_time | Fixed: #953, commit 3aafdb383 ("night check compares raw world_time with 1800 and 600, and world_time never wraps"). Matches the label. | Usable. Pre-fix input = main at 3aafdb383^. Note the label says found by review of rule text; the fix PR is separate |
+| 2 | Resolve-blocker re-created every 80 ticks | Ticket exists but is still OPEN in `todos/` (TCK-20261117-A-RESOLVE-BLOCKER-PROJECT-IS-RE-CREATED-EVERY-80-TICKS-AND-STALLS-COOPERATION). No fixing commit. | The defect is live code. The reviewer input must be the commit that introduced the replace-not-merge logic (git blame/log -S on `infer_blockers`), not a fix diff. Needs extra digging |
+| 3 | STALEMATE give-ups | Closest ticket: TCK-20261030-STALEMATE-BREAK-OVERWRITES-A-PROJECT-MOVE-EVERY-TICK (OPEN, `todos/`). It describes a different shape (breaker overwrites a project move every tick, oscillation). It names "N14 F1" in a designer ruling. The relayed text (way-round count reset by a one-tile re-target at patches.py:297; up to 194 give-ups on one anchor) was NOT found in any ticket or artifact I searched | Label is unverified. Ask rpg-designer for the exact ticket id or PR for "F1/F2"; drop the case if no pre-fix input can be pinned |
+| 4 | Stale failure reason | Ticket exists, still OPEN in `todos/` (TCK-20261117-A-NAVIGATION-FAILURE-REASON-IS-NEVER-CLEARED-AND-KEEPS-FEEDING-BLOCKER-INFERENCE). No fix. | As defect 2. The relay's "4 (the first defect)" is still ambiguous (see questions) |
+| 5 | Suspended project held its slot | Fixed: #954, commit dca5a8dbb; ticket TCK-20261020-SUSPENDED-PROJECTS-ARE-NEVER-RESUMED-SLOT-LEAK (opened 2026-10-20, so the leak was known from 10-20; artifacts include `rpg_designer_ruling_2026-11-16.md`). | Usable. Pre-fix input = main at dca5a8dbb^. Note the "first sign: run" label fits the ticket history |
+| 6 | Births S9 vacuous newborn branch | Only the births epic ticket found (TCK-20261109-M1-BASIC-WILD-BIRTHS-FOR-EVERY-LIVING-KIND, `todos/`). No ticket or commit for S9 / the 2000t-vs-2400t window found. | Unverified. Ask rpg-designer or rpg-planner-ubuntu for the PR or text of the S9 bar. This is a bar-design case, so the input is design text |
+| extra | moved_recently latch | Ticket TCK-20261118-MOVED-RECENTLY-IS-SET-TRUE-ON-THE-FIRST-STEP-AND-NEVER-CLEARED, OPEN. | As defect 2 |
+| extra | Corpse non-meat items vanish with no sink | No ticket or commit found by name. | Unverified |
+| extra | SOLO cooperation_event spam; perception inputs mismatch | Not searched yet. | Unverified |
+
+Outcome so far: only defects 1 and 5 have a clean fix commit and pre-fix snapshot. Defects 2, 4 and the latch are still open (no fix), so their positive cases need the introducing change located; 3, 6 and three extras are unverified. Realistic positives may be 5-7, not 10. Re-check the keep rule's +2 margin against that smaller set before data: with about 6 positives it is a coarse test. Flag this to the leads.
+
+## Questions to ask rpg-designer (through the leads)
+- Defect 3: which ticket or PR is "TCK-20261030, F1/F2" (the 194 give-ups on one anchor; patches.py:297)? The only TCK-20261030 ticket I found is about a different shape.
+- Defect 4: what does "4 (the first defect)" mean in "Caught by review: 1, 4 (the first defect) and 6"? My reading: the stale reason was caught by review, while the yield/swap defect it exposed came from the run. Confirm or correct.
+- Defect 6: which PR or document holds the S9 bar and the 2000t window?
+- Extras: ticket or PR ids for the corpse sink, the SOLO event spam and the perception-input mismatch (or confirm there are none).
+
 ## Test Summary
 (filled at close)
 
