@@ -228,7 +228,9 @@ def main(argv=None) -> int:
     parser.add_argument("ticket_path", type=Path, help="Path to the ticket markdown file.")
     args = parser.parse_args(argv)
     lifecycle_status, lifecycle_evidence = check_lifecycle_section(args.ticket_path)
-    print(f"[{args.ticket_path}] {lifecycle_status} — {lifecycle_evidence}")
+    # Report-only (owner #715 6972698325): a lifecycle FAIL is printed, labelled advisory, and never sets the exit code.
+    label = " [advisory]" if lifecycle_status == "FAIL" else ""
+    print(f"[{args.ticket_path}] {lifecycle_status}{label} — {lifecycle_evidence}")
 
     results = check_ticket_field_values(args.ticket_path)
     any_fail = False
@@ -236,7 +238,7 @@ def main(argv=None) -> int:
         if r["status"] == "FAIL":
             any_fail = True
         print(f"[{args.ticket_path}] {r['status']} — {r['evidence']}")
-    return 1 if any_fail or lifecycle_status == "FAIL" else 0
+    return 1 if any_fail else 0
 
 
 if __name__ == "__main__":
