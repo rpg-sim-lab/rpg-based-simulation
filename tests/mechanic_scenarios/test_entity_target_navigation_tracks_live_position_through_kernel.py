@@ -15,6 +15,7 @@ at every sample, which is consistent with the documented single-axis diagonal pu
 (docs/engine/known_limitations.md section 1.1), not with a frozen target point. Not investigated further here.
 """
 import os
+from dataclasses import replace
 
 from src.config.profiles import PROD_SMALL
 from src.engine.executor import LocalSequentialExecutor
@@ -39,7 +40,7 @@ def _run():
     state = empty_inventories(state)  # the scenario is about the navigation target, not about what the two bodies carry
     # A compiled world starts at world_time 0, which is night. By night the orc (normal senses, no night vision) cannot perceive the small, still goblin at three tiles
     # (PERC-02a), so it would hold no target; the scenario is about target tracking, so it runs by day (owner #715 6971973729).
-    object.__setattr__(state, "world_time", DAY_WORLD_TIME)
+    state = replace(state, world_time=DAY_WORLD_TIME)
     kernel = Kernel(profile=PROD_SMALL, state=state, rng=DeterministicRNG(SEED),
                     flags={"no_frame_pacing": True, "no_replay": True}, executor=LocalSequentialExecutor())
     samples = []  # (tick, entity id, nav target, opponent position)

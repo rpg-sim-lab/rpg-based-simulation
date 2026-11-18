@@ -7,6 +7,7 @@ hit window restored (the control) the hit still acts and the worker does not eat
 """
 from __future__ import annotations
 
+import os
 import shutil
 from dataclasses import replace
 from pathlib import Path
@@ -20,16 +21,28 @@ TICKS = 40
 
 
 def _run(run_id):
+    from src.config.profiles import PROD_SMALL
     from src.core.state import TaskComponent
+    from src.engine.executor import LocalSequentialExecutor
+    from src.engine.kernel import Kernel
+    from src.platform.rng import DeterministicRNG
+    from src.worldbuilding.compiler import WorldCompiler
+    from src.worldbuilding.repository import WorldRepository
     from tests.helpers.clock import DAY_WORLD_TIME
-    from tools.test_architecture.rpg_gate_run import build_kernel
+    from tests.helpers.kernel_pinning import PinnedNormalGovernor
 
-    kernel = build_kernel("crowded_frontier", 42, run_id)
-    # The run starts by day, not at world_time 0 (night). The fixture holds the raider in place by rewriting its position, which is not a move, so the raider IS still
-    # under the perception law (PERC-02a: a body that has not moved for more than the moving window reads still), and last_moved_tick is deliberately not faked. By night
-    # a still body five tiles off is not perceived by the worker, so the raider would leave its hostile set and the hit window, the point of this test, would never be read.
-    # By day it is perceived, so the hit window stays what decides (owner #715 6971973729).
-    object.__setattr__(kernel.state, "world_time", DAY_WORLD_TIME)
+    # The pinned kernel of tools.test_architecture.rpg_gate_run.build_kernel, built from a state rebuilt with a day clock instead of a compiled world's world_time 0 (night).
+    # The fixture holds the raider in place by rewriting its position, which is not a move, so the raider IS still under the perception law (PERC-02a: a body that has not
+    # moved for more than the moving window reads still), and last_moved_tick is deliberately not faked. By night a still body five tiles off is not perceived by the worker,
+    # so the raider would leave its hostile set and the hit window, the point of this test, would never be read. By day it is perceived, so the hit window stays what decides
+    # (owner #715 6971973729).
+    spec, context = WorldRepository(os.path.join("data", "worlds")).load_world_with_context("crowded_frontier")
+    state, _report = WorldCompiler.compile(spec, 42, context=context)
+    kernel = Kernel(
+        PROD_SMALL.model_copy(update={"max_tick_budget_ms": 1e9}), replace(state, world_time=DAY_WORLD_TIME), DeterministicRNG(42),
+        governor=PinnedNormalGovernor(), executor=LocalSequentialExecutor(),
+        flags={"audit_mode": True, "no_frame_pacing": True}, run_id=run_id,
+    )
     try:
         for i in range(TICKS):
             state = kernel.state
