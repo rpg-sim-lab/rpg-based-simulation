@@ -205,8 +205,12 @@ here identically to `heir_entity_id`). `birth_record()` also seeds the new entit
 the parents' reciprocal `EntityUpdate`s at the same 0.8/0.8 values, for a caller to apply through
 the standard `SocialUpdate.bond_updates` path.
 
-Reproduction (idea 32) is explicitly decoupled from Marriage (idea 33): no marriage/contract
-precondition gates any part of this schema or its write path.
+This schema carries no marriage or contract field. Whether a pair may conceive is decided by the
+species' declared mate gate (05, Births Law): for a species whose reproduction profile declares
+`mate_gate: bond`, an ACCEPTED `MarriageState` between the two, or both directed
+`SocialBond.sentiment` values at or above the profile's `min_mutual_sentiment`, passes the gate.
+This reverses the 2026-08-29 decoupling of Reproduction (idea 32) from Marriage (idea 33);
+see `docs/guidelines/intentional_divergences.md` 2.215.
 
 ### Genetic Inheritance (Combination)
 

@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 from typing import Optional, Any, Dict, List, Literal, Tuple
+from enum import Enum
 from pydantic import BaseModel, Field, ConfigDict, field_validator
 
 
@@ -78,6 +79,12 @@ class NeedProfileDefinition(CatalogBaseDefinition):
     needs: Dict[str, str] = Field(default_factory=dict, description="Motivation/need values (e.g. high, medium)")
 
 
+class SentimentThreshold(str, Enum):
+    """The named sentiment lines a mate gate may reference (a value in content, never a copied number); each maps to its constant in code."""
+
+    FRIEND = "friend"  # RelationshipService.FRIEND_SENTIMENT_THRESHOLD
+
+
 # The births check interval in ticks (SystemCadence.births default); a gestation is a multiple of it so a birth falls on a check tick.
 BIRTH_CHECK_INTERVAL_TICKS = 30
 
@@ -91,6 +98,8 @@ class ReproductionProfileDefinition(CatalogBaseDefinition):
     mate_radius_tiles: float = Field(..., gt=0.0, description="Chebyshev radius in tiles within which a same-kind adult counts as a mate")
     fed_line: float = Field(..., ge=0.0, le=100.0, description="Highest mother hunger (0 fed to 100 starving) that still counts as well fed")
     birth_hunger_cost: float = Field(..., gt=0.0, le=100.0, description="Hunger the mother gains at a birth")
+    mate_gate: Literal["none", "bond"] = Field("none", description="none reads no social state; bond needs an accepted marriage or both directed sentiments at min_mutual_sentiment")
+    min_mutual_sentiment: Optional[SentimentThreshold] = Field(None, description="The named sentiment line a bond gate needs (required with bond, absent with none)")
 
 
 class SenseProfileDefinition(CatalogBaseDefinition):

@@ -69,6 +69,10 @@ def _catalog_faction_properties(occupation: Optional[str]) -> Dict[str, Any]:
     return {"faction_id": faction_id} if faction_id else {}
 
 
+class NoFreeSpawnTile(RuntimeError):
+    """`free_spawn_position` found no clear tile in its search radius (births record the newborn as unplaced; a bare RuntimeError from anywhere else is a bug)."""
+
+
 class EntityGenerator:
     """
     Authoritative factory for creating new entity generations.
@@ -113,7 +117,7 @@ class EntityGenerator:
             if (bx + dx, by + dy) not in blocked:
                 claimed.add((bx + dx, by + dy))
                 return pos if (dx, dy) == (0, 0) else (float(bx + dx), float(by + dy))
-        raise RuntimeError(f"no clear spawn tile within {_SPAWN_FREE_TILE_RADIUS} of {pos} at tick {state.tick}")
+        raise NoFreeSpawnTile(f"no clear spawn tile within {_SPAWN_FREE_TILE_RADIUS} of {pos} at tick {state.tick}")
 
     def get_next_id(self) -> int:
         self._last_id += 1
