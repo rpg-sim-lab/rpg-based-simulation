@@ -112,3 +112,35 @@ def test_the_mechanical_verdicts():
     a = [[[1, 0.0, 0.0], [2, 1.0, 1.0]], [[1, 0.0, 0.0], [2, 1.0, 1.0]], [[1, 0.0, 0.0], [2, 2.0, 1.0]]]
     b = [[[1, 0.0, 0.0], [2, 1.0, 1.0]], [[1, 0.0, 0.0], [2, 1.0, 1.0]], [[1, 0.0, 0.0], [2, 1.0, 1.0]]]
     assert births_run.first_position_divergence(a, b) == {"tick": 3, "ids": [2]} and births_run.first_position_divergence(a, a) is None
+
+
+def test_a_newborn_placed_across_a_border_gives_mismatch_zero_and_one_crossing():
+    from src.core.updates import StateUpdate, WorldUpdate
+
+    a = RegionState(id="A", name="A", kind="town", bounds=(0, 0, 10, 10), population_cohorts={})
+    b = RegionState(id="B", name="B", kind="town", bounds=(10, 0, 20, 10), population_cohorts={})
+    mother, mate = _human(1, (9.5, 5.0)), _human(2, (9.0, 5.0))
+    child = (
+        V2EntityBuilder(3).kind("human").location(10.5, 5.0).birth_record(parent_a_entity_id=1, parent_b_entity_id=2, birth_tick=30).build()
+    )
+    state = AuthoritativeState(tick=30, seed=1, regions={"A": a, "B": b}, entities={1: mother, 2: mate}, next_entity_id=3)
+    update = StateUpdate(entities_add=[child], world_updates={"A": WorldUpdate(region_id="A", population_young_births_delta=1)})
+    spy = BirthSpy()
+    spy._record_nudges(state, update)
+    assert [(r["region"], r["written"], r["added"], r["mismatch"]) for r in spy.nudges] == [("A", 1, 1, 0)]
+    assert births_run.mismatch_total(spy.nudges) == 0
+    assert [(c["mother_region"], c["newborn_region"]) for c in spy.border_crossings] == [("A", "B")] and spy.regionless == []
+
+
+def test_negative_control_a_births_write_to_a_region_other_than_the_mothers_gives_a_nonzero_mismatch():
+    from src.core.updates import StateUpdate, WorldUpdate
+
+    a = RegionState(id="A", name="A", kind="town", bounds=(0, 0, 10, 10), population_cohorts={})
+    b = RegionState(id="B", name="B", kind="town", bounds=(10, 0, 20, 10), population_cohorts={})
+    mother, mate = _human(1, (5.0, 5.0)), _human(2, (6.0, 5.0))
+    child = V2EntityBuilder(3).kind("human").location(5.0, 5.0).birth_record(parent_a_entity_id=1, parent_b_entity_id=2, birth_tick=30).build()
+    state = AuthoritativeState(tick=30, seed=1, regions={"A": a, "B": b}, entities={1: mother, 2: mate}, next_entity_id=3)
+    wrong = StateUpdate(entities_add=[child], world_updates={"B": WorldUpdate(region_id="B", population_young_births_delta=1)})
+    spy = BirthSpy()
+    spy._record_nudges(state, wrong)
+    assert {(r["region"], r["mismatch"]) for r in spy.nudges} == {("A", -1), ("B", 1)} and births_run.mismatch_total(spy.nudges) == 2

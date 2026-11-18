@@ -51,6 +51,7 @@ class BirthSpy:
         self.applied_hunger: Dict[int, Dict[int, bool]] = {}  # tick -> entity id -> a typed consume update was applied
         self.nudges: List[Dict[str, Any]] = []  # check 6a: per (tick, region) the births system's write against the newborns it added there
         self.regionless: List[Dict[str, Any]] = []  # check 6a BALANCE: births whose mother stood in no region (no nudge is written), with the newborn's tile
+        self.border_crossings: List[Dict[str, Any]] = []  # check 6a BALANCE: a newborn placed outside its mother's region (tick, child, both regions, tile)
         self.applied_cohorts: List[Dict[str, Any]] = []  # check 6: the apply-side young-count change of every applied births nudge
         self._patched: List[tuple] = []
 
@@ -121,17 +122,20 @@ class BirthSpy:
         self._record_nudges(state, update)
 
     def _record_nudges(self, state, update) -> None:
-        """Check 6a: the births system's own write per region against the newborns it added in that region at this tick, from the returned update only."""
+        """Check 6a: the births system's own write per region against the newborns it added, both read from the MOTHER's region (the state births reads); a newborn placed in another region is a border crossing (BALANCE)."""
         written = {rid: wu.population_young_births_delta for rid, wu in update.world_updates.items() if wu.population_young_births_delta}
         added: Counter = Counter()
         for child in update.entities_add:
-            rid = region_id_at(state, child.navigation.position)
-            if rid is not None:
-                added[rid] += 1
             mother = state.entities.get(child.lifecycle.parent_a_entity_id)
-            if mother is not None and region_id_at(state, mother.navigation.position) is None:
-                x, y = child.navigation.position
+            mother_region = region_id_at(state, mother.navigation.position) if mother is not None else None
+            newborn_region = region_id_at(state, child.navigation.position)
+            x, y = child.navigation.position
+            if mother_region is None:
                 self.regionless.append({"tick": state.tick, "child": child.id, "tile": [int(x), int(y)]})
+                continue
+            added[mother_region] += 1
+            if newborn_region != mother_region:
+                self.border_crossings.append({"tick": state.tick, "child": child.id, "mother_region": mother_region, "newborn_region": newborn_region, "tile": [int(x), int(y)]})
         for rid in sorted(set(written) | set(added)):
             self.nudges.append({"tick": state.tick, "region": rid, "written": written.get(rid, 0), "added": added.get(rid, 0), "mismatch": written.get(rid, 0) - added.get(rid, 0)})
 

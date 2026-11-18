@@ -8,7 +8,7 @@ HARD (any non-zero count fails; the report prints PASS/FAIL/STOP and never a jud
 STOP: zero births in total, or zero regioned births (6a cannot be assessed). BALANCE, report only: everything else (check 3 tables and ratios, 6b rows, regionless births).
 The report reads alive bodies from state through species_of(); it never reads population_young or any region cohort counter except in the 6b BALANCE rows.
 
-Usage: python -m tools.rpg_measure.births_run --tree <fix tree> --out <dir> --go <ref> [--ticks 5000] [--jobs 2] [--worlds ...] [--seeds ...]
+Usage: python -m tools.rpg_measure.births_run --tree <fix tree> --out <dir> --go <ref> [--ticks 5000] [--jobs 2] [--worlds ...] [--seeds ...] [--cost-probe]
 """
 from __future__ import annotations
 
@@ -18,6 +18,7 @@ import json
 import os
 import subprocess
 import sys
+import time
 from collections import Counter, defaultdict
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
@@ -30,6 +31,14 @@ BARS = ("K6", "K6b", "K8", "W1", "W2", "W3", "W4", "W5")
 ARMS = ("spied", "plain", "control")
 COMBAT_CAUSE = "COMBAT"  # check 3 verdict: the per-capita rate is combat deaths per 1000 live entity-ticks
 Key = Tuple[str, int, str]
+BASES = {"6a": "mother's region (births' write rule)", "check3_probe_c": "newborn tile (the region at the newborn's position)"}
+COHORT_FLAG_RULE = "a flag row when the cohort rises while live bodies == 0, or the cohort == 0 while live bodies rise (reported rows, not bars)"
+PROBE_WORLD = "frontier_living_world"  # the largest gate world (55 bodies), so its cost bounds the other two
+LIMITS = (
+    "the twin-hash check proves the spy read-only in the births arm only; the chance-0 control arm is spied with no plain twin, and runs the same spy code",
+    "every run is built under audit_mode and no_frame_pacing (births_child checks both flags and PINNED requires them); the counts are per-tick facts, not timing",
+    "W4 is checked on the typed hunger update the births system returns, not on the mother's hunger after the tick (other phases move hunger on the same tick)",
+)
 
 
 def run_child(tree: Path, out: Path, world: str, seed: int, ticks: int, mode: str) -> Path:
@@ -39,6 +48,21 @@ def run_child(tree: Path, out: Path, world: str, seed: int, ticks: int, mode: st
     if proc.returncode != 0 or not path.exists():
         raise RuntimeError(f"births child failed ({mode} {world} {seed}): {proc.stderr.strip()[-400:]}")
     return path
+
+
+def run_child_measured(tree: Path, out: Path, world: str, seed: int, ticks: int, mode: str) -> Dict[str, Any]:
+    """The cost probe's child run: wall time and the child's own peak RSS (wait4's rusage, in MB), and the on-disk size of its output files."""
+    path = out / f"{world}_{seed}_{mode}.json"
+    env = {**os.environ, "PYTHONHASHSEED": paired.HASHSEED, "PYTHONPATH": str(tree)}
+    started = time.perf_counter()
+    proc = subprocess.Popen([sys.executable, str(CHILD), world, str(seed), str(ticks), mode, str(path)], cwd=tree, env=env, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+    _, status, usage = os.wait4(proc.pid, 0)
+    wall = time.perf_counter() - started
+    positions = Path(str(path) + ".positions.json.gz")
+    return {
+        "mode": mode, "wall_s": round(wall, 1), "peak_rss_mb": round(usage.ru_maxrss / 1024.0, 1), "exit_status": os.waitstatus_to_exitcode(status),
+        "json_bytes": path.stat().st_size if path.exists() else None, "positions_gz_bytes": positions.stat().st_size if positions.exists() else None,
+    }
 
 
 # ---- pure aggregations (unit-tested) -------------------------------------------------------------------------------------------------------------------
@@ -181,15 +205,22 @@ def main(argv: List[str]) -> int:
     ap.add_argument("--go", required=True, help="reference of the lead-planner go for this run")
     ap.add_argument("--ticks", type=int, default=paired.TICKS)
     ap.add_argument("--jobs", type=int, default=2)
+    ap.add_argument("--cost-probe", action="store_true", help=f"one world ({PROBE_WORLD}) x one seed x the three arms, one at a time: print wall time, peak RSS and the .positions.json.gz sizes, nothing else")
     ap.add_argument("--worlds", nargs="*", default=list(paired.WORLDS))
     ap.add_argument("--seeds", nargs="*", type=int, default=list(paired.SEEDS))
     args = ap.parse_args(argv)
     args.out.mkdir(parents=True, exist_ok=True)
+    if args.cost_probe:
+        rows = [run_child_measured(args.tree, args.out, PROBE_WORLD, args.seeds[0], args.ticks, mode) for mode in ARMS]
+        report = {"cost_probe": rows, "world": PROBE_WORLD, "seed": args.seeds[0], "ticks": args.ticks, "go": args.go, "scope_cap_mb": 3072}
+        (args.out / "cost_probe.json").write_text(json.dumps(report, indent=2, sort_keys=True), encoding="utf-8")
+        print(json.dumps(report, indent=2, sort_keys=True))
+        return 0
     keys: List[Key] = [(w, s, m) for w in args.worlds for s in args.seeds for m in ARMS]
     with ThreadPoolExecutor(max_workers=args.jobs) as pool:
         paths = list(pool.map(lambda k: run_child(args.tree, args.out, k[0], k[1], args.ticks, k[2]), keys))
     docs = {k: json.loads(p.read_text(encoding="utf-8")) for k, p in zip(keys, paths)}
-    summary = {**summarise(docs), "first_position_divergence": divergence_report(args.out, docs), "go": args.go, "ticks": args.ticks}
+    summary = {**summarise(docs), "first_position_divergence": divergence_report(args.out, docs), "limits": list(LIMITS), "bases": BASES, "cohort_flag_rule": COHORT_FLAG_RULE, "go": args.go, "ticks": args.ticks}
     (args.out / "summary.json").write_text(json.dumps(summary, indent=2, sort_keys=True), encoding="utf-8")
     print(json.dumps(summary, indent=2, sort_keys=True))
     return 0
