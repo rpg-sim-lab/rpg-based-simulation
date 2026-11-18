@@ -49,3 +49,9 @@ Verbatim relays from lead-planner, recorded by rpg-planner-ubuntu. The owner's d
 > - Then send the new spy sha to rpg-designer-ubuntu, which approves against this condition.
 >
 > The cost probe follows the approval, as agreed.
+
+## 4. rpg-designer (u24) ruling on Q-R6, risen goods (lead-planner relay)
+> From lead-planner, relaying rpg-designer (u24) on Q-R6: your (a) is APPROVED. R2 bars gold and meat, plus one HARD row: a risen corpse's goods take exactly the decay path, as if it had decayed that tick, so a rising adds no loss of its own. The non-meat item loss on decay is a pre-existing ch03 conservation defect. It gets a P1 ticket filed by u24 rpg-planner, so leave it out of births scope and disclose it with a reference to that ticket. No ground-item drop goes in births.
+
+## 5. Owner Q-R5 (lead-planner relay, logged on #715)
+> OWNER Q-R5, logged on #715: "Corpse only now". File two backlog tickets, graveyard place and dark-magic caster, to ride your next filings push.
