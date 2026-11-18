@@ -1,16 +1,16 @@
 {
-  "manifest_id": "prov_da2673bdf17806cf",
+  "manifest_id": "prov_539010cf0dfdcab0",
   "world_id": "camp_maturity_calibration_pilot",
   "source_schema_version": "provenancemanifest.v1",
-  "catalog_fingerprint": "effdfb9a05687bbb85415b7019a42d51f1a7a9e61f0b7da6786b99b96fd4d8b7",
+  "catalog_fingerprint": "d9d426e999024c75adf38f69d3c60da293c29e151de5d106f710d798322596f4",
   "module_fingerprints": {
     "frontier_village_core": "3ef51465da6b68679ecacc3493851ce19353bd132303533efaaa7839a8544c7b",
-    "camp_maturity_calibration_pilot": "e5b91e10a54ecef4793eaf2af84858ae9842828e0c17096b20c587d0cc399e9f"
+    "camp_maturity_calibration_pilot": "2556b27739364a10aa6ae88974bb732ec5f42877bc20558217f07d15d6b40e49"
   },
-  "composition_fingerprint": "73c78480fe6521b529e836d714dbb87b2945d305f77e887504f810ad4566ad3b",
+  "composition_fingerprint": "44c4ed43e02969fa19309eb6be19b776d5622b15d63e66e61515a78dc5455a9d",
   "resolver_version": "1.0.0",
-  "content_fingerprint": "da2673bdf17806cfcdd36e4188e61272445af18a9bd9005321333404cd88ef86",
-  "created_at": "2026-10-31T12:21:04.109942Z",
+  "content_fingerprint": "539010cf0dfdcab087e690c9a8626c29faf85f2e9775a1d129d315ef677c1aff",
+  "created_at": "2026-11-18T02:33:33.748333Z",
   "records": {
     "hero_guild": {
       "element_id": "hero_guild",
