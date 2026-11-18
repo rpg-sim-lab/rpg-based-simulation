@@ -27,6 +27,7 @@ class ContentHotPathViolation(RuntimeError):
 _tick_context_active: threading.local = threading.local()
 
 from src.content.schema import (
+    BIRTH_CHECK_INTERVAL_TICKS,
     CatalogBaseDefinition,
     MaterialDefinition,
     TraitDefinition,
@@ -171,6 +172,8 @@ NON_CATALOG_FILES: frozenset = frozenset({
 
 def check_reproduction_profiles(repo: "CatalogRepository") -> None:
     """Births are only for kinds that eat (owner B2): refuse, typed, a profile that is missing or sits on a species whose need profile declares no hunger, and a newborn_archetype that is missing, unknown or another species'."""
+    for profile_id, profile in repo.reproduction_profiles.items():
+        _check_gestation_and_litter(profile_id, profile)
     for species_id, species in repo.species.items():
         profile_id = species.reproduction_profile
         if profile_id is None:
@@ -183,6 +186,18 @@ def check_reproduction_profiles(repo: "CatalogRepository") -> None:
         if need_profile is not None and need_profile.needs.get("hunger") == "none":
             raise ReproductionProfileError(f"species {species_id!r} declares reproduction profile {profile_id!r} but its need profile {species.need_profile!r} has hunger 'none': a kind that does not eat has no births")
         _check_newborn_archetype(repo, species_id, species)
+
+
+def _check_gestation_and_litter(profile_id: str, profile: "ReproductionProfileDefinition") -> None:
+    """A gestation that is not a positive multiple of the births check interval would give a birth tick no check visits; a litter table must be non-empty with sizes >= 1 and weights > 0."""
+    if profile.gestation_ticks <= 0 or profile.gestation_ticks % BIRTH_CHECK_INTERVAL_TICKS != 0:
+        raise ReproductionProfileError(
+            f"reproduction profile {profile_id!r} declares gestation_ticks {profile.gestation_ticks}, which is not a positive multiple of {BIRTH_CHECK_INTERVAL_TICKS}")
+    if not profile.litter_weights:
+        raise ReproductionProfileError(f"reproduction profile {profile_id!r} declares an empty litter_weights table")
+    for size, weight in profile.litter_weights.items():
+        if size < 1 or not weight > 0:
+            raise ReproductionProfileError(f"reproduction profile {profile_id!r} litter_weights entry {size}: {weight} needs a size >= 1 and a weight > 0")
 
 
 def _check_newborn_archetype(repo: "CatalogRepository", species_id: str, species: SpeciesDefinition) -> None:

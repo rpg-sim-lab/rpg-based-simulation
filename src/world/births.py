@@ -9,6 +9,7 @@ from typing import TYPE_CHECKING, Any, Dict, List, Optional, Set
 from src.content.resolver import EntityArchetypeResolver
 from src.core.builder import build_parent_bond_updates_for_birth
 from src.core.enums import Domain
+from src.core.pregnancy import PregnancyState
 from src.core.spawn_source import SpawnKind, SpawnSource
 from src.core.species import species_of
 from src.core.state import EntityState, GeneticProfile, LifeStage
@@ -19,6 +20,7 @@ from src.core.updates import (
     StateUpdate,
     WorldUpdate,
 )
+from src.domains.world_emergence.schema import WorldEvent, WorldEventCategory
 from src.engine.behavior_consumers import get_catalog
 from src.engine.spatial_query import SpatialQueryService
 from src.entities.archetype_factory import ArchetypeEntityFactory, NewbornBirth
@@ -33,25 +35,28 @@ if TYPE_CHECKING:
 
 # Below 65536 so it XORs only the low bits of the RNG key and cannot alias an `id << 16` term (see DeterministicRNG.get_float).
 BIRTH_DRAW_SUB_ID = 7
+LITTER_DRAW_SUB_ID = 11
 
 
 class BirthService:
     """
-    One births system for every kind that declares a reproduction profile (owner B2: only kinds that eat). A fed ADULT
-    mother with an eligible same-species ADULT mate in range bears a newborn with a seeded chance per check. It reads
-    only the two parents' own state and the profile: no region, no pair bond, no sex. Read-only on state; ApplyPath writes.
+    One births system for every kind that declares a reproduction profile (owner B2: only kinds that eat). At each check a
+    mother who is due bears her litter, and a fed ADULT mother with an eligible same-species ADULT mate in range conceives with a
+    seeded chance; the pregnancy is recorded on her (PregnancyState) and ends at its due tick. It reads only the parents' own
+    state and the profile: no region, no pair bond, no sex. Read-only on state; ApplyPath writes.
     """
 
     @staticmethod
     def process_births(state: AuthoritativeState, generator: EntityGenerator) -> StateUpdate:
-        """The births of this check, one merged update per birth, mothers visited in id order."""
+        """The births at term and the conceptions of this check, mothers visited in id order."""
         catalog = get_catalog()
         profiles = _Profiles(catalog)
-        candidates = _candidates(state, profiles)
         check = _Check(state, generator, catalog)
-        used: Set[int] = set()
         result = StateUpdate()
-
+        for mother in _mothers_at_term(state, profiles):
+            result = result.merge(_birth_at_term(check, mother, profiles.of(species_of(mother))))
+        candidates = _candidates(state, profiles)
+        used: Set[int] = set()
         for mother in candidates.values():
             profile = profiles.of(species_of(mother))
             if mother.id in used or profile is None or mother.biological.hunger > profile.fed_line or not _past_interval(mother, state.tick):
@@ -63,7 +68,7 @@ class BirthService:
             if mate is None:
                 continue
             used.update((mother.id, mate.id))
-            result = result.merge(_birth(check, mother, mate, profile))
+            result = result.merge(_conceive(check, mother, mate, profile))
         return result
 
 
@@ -84,11 +89,21 @@ class _Profiles:
 
 
 def _candidates(state: AuthoritativeState, profiles: _Profiles) -> Dict[int, EntityState]:
-    """Alive, active ADULT bodies of a species that declares a profile, in id order."""
+    """Alive, active, not-pregnant ADULT bodies of a species that declares a profile, in id order."""
     return {
         e.id: e for e in sorted(state.entities.values(), key=lambda e: e.id)
-        if e.identity.life_stage == LifeStage.ADULT and e.combat.alive and e.lifecycle.active and profiles.of(species_of(e)) is not None
+        if e.identity.life_stage == LifeStage.ADULT and e.combat.alive and e.lifecycle.active and e.lifecycle.pregnancy is None
+        and profiles.of(species_of(e)) is not None
     }
+
+
+def _mothers_at_term(state: AuthoritativeState, profiles: _Profiles) -> List[EntityState]:
+    """Alive, active mothers whose pregnancy has reached its due tick, in id order. Fed, mate and range are not asked again; the father may be dead."""
+    return [
+        e for e in sorted(state.entities.values(), key=lambda e: e.id)
+        if e.lifecycle.pregnancy is not None and e.lifecycle.pregnancy.due_tick <= state.tick and e.combat.alive and e.lifecycle.active
+        and profiles.of(species_of(e)) is not None
+    ]
 
 
 def _past_interval(entity: EntityState, tick: int) -> bool:
@@ -129,37 +144,73 @@ class _Check:
         return self.contracts[species_id]
 
 
-def _birth(check: _Check, mother: EntityState, mate: EntityState, profile: ReproductionProfileDefinition) -> StateUpdate:
+def _draw_litter(weights: Dict[int, float], draw: float) -> int:
+    """The litter size at `draw` in [0, 1), over the table in ascending size order."""
+    sizes = sorted(weights)
+    point, running = draw * sum(weights.values()), 0.0
+    for size in sizes:
+        running += weights[size]
+        if point < running:
+            return size
+    return sizes[-1]
+
+
+def _conceive(check: _Check, mother: EntityState, mate: EntityState, profile: ReproductionProfileDefinition) -> StateUpdate:
+    """The conception: the pregnancy is recorded on the mother (litter drawn now, father's genes snapshotted) and the father's interval starts."""
+    state = check.state
+    litter = _draw_litter(profile.litter_weights, check.generator.rng.get_float(Domain.SPAWN, state.tick, mother.id, sub_id=LITTER_DRAW_SUB_ID))
+    pregnancy = PregnancyState(
+        father_entity_id=mate.id, conceived_tick=state.tick, due_tick=state.tick + profile.gestation_ticks, litter_size=litter,
+        father_genetic_profile=mate.lifecycle.genetic_profile or _fallback_genetics(state, mate),
+    )
+    expiry = state.tick + profile.min_birth_interval_ticks
+    return StateUpdate(entity_updates={
+        mother.id: EntityUpdate(entity_id=mother.id, lifecycle=LifecycleUpdate(pregnancy_set=pregnancy)),
+        mate.id: EntityUpdate(entity_id=mate.id, lifecycle=_cooldown_update(mate, mother.id, expiry, state.tick)),
+    })
+
+
+def _birth_at_term(check: _Check, mother: EntityState, profile: ReproductionProfileDefinition) -> StateUpdate:
+    """The litter at term. A newborn with no free tile is not born (a NEWBORN_UNPLACED event); the pregnancy is cleared either way; the mother's cost, her interval,
+    the parents' bonds and the region's birth count are written only when at least one newborn is born."""
     state, generator = check.state, check.generator
+    pregnancy = mother.lifecycle.pregnancy
+    father = state.entities[pregnancy.father_entity_id]
     species_id = species_of(mother)
     region = SpatialQueryService.get_region_at(state, mother.navigation.position)
-
     home_region_id = mother.strategic.home_region_id or (region.id if region is not None else None)
     newborns: List[EntityState] = []
-    for _ in range(profile.litter_size):
+    unplaced: List[Any] = []
+    for slot in range(pregnancy.litter_size):
+        try:
+            position = generator.free_spawn_position(mother.navigation.position, state)
+        except RuntimeError:
+            unplaced.append(WorldEvent(category=WorldEventCategory.NEWBORN_UNPLACED, tick=state.tick, subject=str(mother.id), payload={"litter_slot": slot}))
+            continue
         birth = NewbornBirth(
-            mother, mate, generator.free_spawn_position(mother.navigation.position, state), state.tick, state.seed,
-            mother.lifecycle.genetic_profile or _fallback_genetics(state, mother),
-            mate.lifecycle.genetic_profile or _fallback_genetics(state, mate), home_region_id,
+            mother, father, position, state.tick, state.seed, mother.lifecycle.genetic_profile or _fallback_genetics(state, mother),
+            pregnancy.father_genetic_profile, home_region_id,
         )
         newborns.append(ArchetypeEntityFactory().build_newborn(generator.get_next_id(), check.contract(species_id), birth))
 
+    ended = LifecycleUpdate(pregnancy_clear=True)
+    if not newborns:
+        return StateUpdate(entity_updates={mother.id: EntityUpdate(entity_id=mother.id, lifecycle=ended)}, world_events_add=unplaced)
     expiry = state.tick + profile.min_birth_interval_ticks
     cost = min(profile.birth_hunger_cost, 100.0 - mother.biological.hunger)
     update = StateUpdate(
         entities_add=newborns,
-        entity_spawn_sources={n.id: SpawnSource(SpawnKind.BIRTH, parent_ids=(mother.id, mate.id)) for n in newborns},
-        entity_updates={
-            mother.id: EntityUpdate(
-                entity_id=mother.id, biological=BiologicalUpdate(hunger_delta=cost),
-                lifecycle=_cooldown_update(mother, mate.id, expiry, state.tick),
-            ),
-            mate.id: EntityUpdate(entity_id=mate.id, lifecycle=_cooldown_update(mate, mother.id, expiry, state.tick)),
-        },
+        entity_spawn_sources={n.id: SpawnSource(SpawnKind.BIRTH, parent_ids=(mother.id, father.id)) for n in newborns},
+        entity_updates={mother.id: EntityUpdate(
+            entity_id=mother.id, biological=BiologicalUpdate(hunger_delta=cost),
+            lifecycle=_cooldown_update(mother, father.id, expiry, state.tick).merge(ended),
+        )},
         world_updates={region.id: WorldUpdate(region_id=region.id, population_young_births_delta=len(newborns))} if region is not None else {},
+        world_events_add=unplaced,
     )
+    living = [p.id for p in (mother, father) if p.combat.alive]
     for newborn in newborns:
-        bonds = build_parent_bond_updates_for_birth([mother.id, mate.id], newborn.id, state.tick)
+        bonds = build_parent_bond_updates_for_birth(living, newborn.id, state.tick)
         update = update.merge(StateUpdate(entity_updates={u.entity_id: u for u in bonds}))
     return update
 

@@ -13,7 +13,7 @@ from src.content.schema import ReproductionProfileDefinition
 
 _PROFILE = {
     "id": "test_births", "birth_chance_per_check": 0.01, "min_birth_interval_ticks": 100,
-    "litter_size": 1, "mate_radius_tiles": 5, "fed_line": 30, "birth_hunger_cost": 20,
+    "gestation_ticks": 60, "litter_weights": {1: 1.0}, "mate_radius_tiles": 5, "fed_line": 30, "birth_hunger_cost": 20,
 }
 
 
@@ -37,7 +37,7 @@ def _repo_with(species_profile: dict, need_hunger: str, profiles: list | None) -
 def test_profile_loads_and_a_species_names_it():
     repo = _repo_with({"reproduction_profile": "test_births"}, "very_low", [_PROFILE])
     repo.load_all()
-    assert repo.get_reproduction_profile("test_births").litter_size == 1
+    assert repo.get_reproduction_profile("test_births").litter_weights == {1: 1.0}
     assert repo.species["wolf"].reproduction_profile == "test_births"
 
 
@@ -60,7 +60,7 @@ def test_unknown_profile_id_is_refused_with_a_typed_error():
 
 
 @pytest.mark.parametrize("field,value", [
-    ("birth_chance_per_check", 1.5), ("birth_chance_per_check", -0.1), ("min_birth_interval_ticks", 0), ("litter_size", 0),
+    ("birth_chance_per_check", 1.5), ("birth_chance_per_check", -0.1), ("min_birth_interval_ticks", 0), ("gestation_ticks", 0),
     ("mate_radius_tiles", 0), ("fed_line", 101), ("birth_hunger_cost", 0), ("birth_hunger_cost", 101),
 ])
 def test_out_of_range_field_is_rejected(field, value):
@@ -107,3 +107,32 @@ def test_every_shipped_newborn_archetype_belongs_to_its_species_and_resolves():
     for species in repo.species.values():
         if species.reproduction_profile is not None:
             assert EntityArchetypeResolver(repo).resolve(species.newborn_archetype).species_id == species.id
+
+
+@pytest.mark.parametrize("gestation", [45, 31, 1, 100])
+def test_a_gestation_that_is_not_a_positive_multiple_of_30_is_a_typed_content_error(gestation):
+    repo = _repo_with({"reproduction_profile": "test_births"}, "very_low", [{**_PROFILE, "gestation_ticks": gestation}])
+    with pytest.raises(ReproductionProfileError, match="multiple of 30"):
+        repo.load_all()
+
+
+@pytest.mark.parametrize("weights", [{}, {0: 1.0}, {1: 0.0}, {2: -1.0}])
+def test_a_litter_table_must_be_non_empty_with_sizes_at_least_1_and_positive_weights(weights):
+    repo = _repo_with({"reproduction_profile": "test_births"}, "very_low", [{**_PROFILE, "litter_weights": weights}])
+    with pytest.raises(ReproductionProfileError, match="litter_weights"):
+        repo.load_all()
+
+
+def test_the_check_interval_a_gestation_must_divide_is_the_cadence_default():
+    from src.content.schema import BIRTH_CHECK_INTERVAL_TICKS
+    from src.engine.cadence import SystemCadence
+    assert BIRTH_CHECK_INTERVAL_TICKS == SystemCadence().births
+
+
+def test_the_shipped_profiles_have_a_gestation_and_a_litter_table_in_the_declared_order():
+    from src.content.repository import CatalogRepository as Repo
+    repo = Repo()
+    repo.load_all()
+    gestation = {k: v.gestation_ticks for k, v in repo.reproduction_profiles.items()}
+    assert gestation == {"humanoid_births": 2400, "carnivore_births": 1200, "goblin_births": 900, "plant_eater_births": 600}
+    assert all(sum(v.litter_weights.values()) > 0 for v in repo.reproduction_profiles.values())

@@ -22,6 +22,8 @@ class WorldEventCategory(str, Enum):
     MEAT_DECAYED = "MEAT_DECAYED"
     # M1 reproduction: a pregnancy ended before term (subject = the mother id; payload reason, litter_size).
     PREGNANCY_ENDED = "PREGNANCY_ENDED"
+    # M1 reproduction: a newborn of a litter found no free tile and was not born (subject = the mother id; payload litter_slot).
+    NEWBORN_UNPLACED = "NEWBORN_UNPLACED"
     # Decision 48: a kill to eat (subject = victim id; payload killer, victim, corpse ids). Joins the eat of that carcass by corpse id.
     FEEDING_KILL = "FEEDING_KILL"
     QUEST_COMPLETED = "QUEST_COMPLETED"

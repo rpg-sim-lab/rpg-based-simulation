@@ -2,12 +2,17 @@
 # A check runs every 30 ticks (80 a day); hunger is 0-100, higher is hungrier, and fed_line is the highest hunger that still counts as fed.
 # birth_chance_per_check 0.005 is a mean wait of 200 checks (about 2.5 days) for an eligible mother; the fast breeders get 1.6x, the carnivores 0.8x.
 # min_birth_interval_ticks is a multi-day event (2400 ticks a day), so a pair breeds at most once inside a 5000-tick run.
-# fed_line 30 is about 6 hours after a full meal for a person; birth_hunger_cost 25 is a little under one inn meal (40).
+# fed_line 30 is about 6 hours after a full meal for a person; birth_hunger_cost 25 is a little under one inn meal (40).# gestation_ticks: conception to birth, COMPRESSED but the order kept (owner, 2026-11-18): people slowest, plant eaters fastest; a multiple of the 30-tick check.
+#   The real lengths (about 672000 ticks for a person) wait for TCK-20260829-TEMPORAL-CALENDAR-AUTHORITY. humanoid 2400 (1 day), carnivore 1200, goblin 900, plant eater 600.
+# litter_weights: litter size -> weight, drawn at conception. people: 1, sometimes 2; a wolf litter is more than 5 (a wolf pack's "more than 5" sizes 4-7 here);
+#   goblins and small plant eaters breed in small litters. Provisional, report-only, tuned later (TCK-20261118-BIRTHS-BALANCING-PASS).
+
 - id: "humanoid_births"
   display_name: "Humanoid births"
   birth_chance_per_check: 0.005
   min_birth_interval_ticks: 12000
-  litter_size: 1
+  gestation_ticks: 2400
+  litter_weights: {1: 0.97, 2: 0.03}
   mate_radius_tiles: 10
   fed_line: 30
   birth_hunger_cost: 25
@@ -16,7 +21,8 @@
   display_name: "Carnivore births"
   birth_chance_per_check: 0.004
   min_birth_interval_ticks: 12000
-  litter_size: 1
+  gestation_ticks: 1200
+  litter_weights: {4: 0.25, 5: 0.25, 6: 0.25, 7: 0.25}
   mate_radius_tiles: 10
   fed_line: 30
   birth_hunger_cost: 25
@@ -25,7 +31,8 @@
   display_name: "Goblin births"
   birth_chance_per_check: 0.008
   min_birth_interval_ticks: 7200
-  litter_size: 1
+  gestation_ticks: 900
+  litter_weights: {1: 0.5, 2: 0.35, 3: 0.15}
   mate_radius_tiles: 10
   fed_line: 30
   birth_hunger_cost: 25
@@ -34,7 +41,8 @@
   display_name: "Plant eater births"
   birth_chance_per_check: 0.008
   min_birth_interval_ticks: 7200
-  litter_size: 1
+  gestation_ticks: 600
+  litter_weights: {2: 0.4, 3: 0.4, 4: 0.2}
   mate_radius_tiles: 10
   fed_line: 30
   birth_hunger_cost: 25

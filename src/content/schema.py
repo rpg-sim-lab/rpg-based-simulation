@@ -78,11 +78,16 @@ class NeedProfileDefinition(CatalogBaseDefinition):
     needs: Dict[str, str] = Field(default_factory=dict, description="Motivation/need values (e.g. high, medium)")
 
 
+# The births check interval in ticks (SystemCadence.births default); a gestation is a multiple of it so a birth falls on a check tick.
+BIRTH_CHECK_INTERVAL_TICKS = 30
+
+
 class ReproductionProfileDefinition(CatalogBaseDefinition):
     """How a kind that eats has young (M1 births): a chance per 30-tick check for a fed adult with a mate of its kind nearby. A kind with no profile has no births."""
     birth_chance_per_check: float = Field(..., ge=0.0, le=1.0, description="Chance an eligible mother births at one check")
     min_birth_interval_ticks: int = Field(..., ge=1, description="Ticks both parents stay ineligible after a birth")
-    litter_size: int = Field(..., ge=1, description="Newborns made by one birth event")
+    gestation_ticks: int = Field(..., ge=1, description="Ticks from conception to the birth; a positive multiple of the births check interval (checked at load)")
+    litter_weights: Dict[int, float] = Field(..., description="Litter size -> weight; one size is drawn at conception (each size >= 1, each weight > 0, checked at load)")
     mate_radius_tiles: float = Field(..., gt=0.0, description="Chebyshev radius in tiles within which a same-kind adult counts as a mate")
     fed_line: float = Field(..., ge=0.0, le=100.0, description="Highest mother hunger (0 fed to 100 starving) that still counts as well fed")
     birth_hunger_cost: float = Field(..., gt=0.0, le=100.0, description="Hunger the mother gains at a birth")
