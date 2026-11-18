@@ -64,6 +64,7 @@ Found by rpg-planner-ubuntu. Inspected by lead-planner-u24 on 346c2dc78. Sites 1
 - A campaign episode whose content names an unprofiled kind fails at build with SenseProfileError, naming the site. A profiled kind builds exactly as before.
 - runner.py:70 fails the same way if hero_species_id() resolves to an unprofiled species, and builds exactly as before for human.
 - Restore test: a checkpoint saved under content A and restored under content B, with one body's species profile removed, is REFUSED with the typed error before any tick. A restore under unchanged content succeeds, and its state hash equals the saved state's.
+- Catalog load of a species with `sense_profile: null` raises the typed SenseProfileError naming the species, not a plain `KeyError: 'wolf'` (ubuntu lead, inspected; it already fails before tick 0, but untyped).
 - The source-scan test fails if a new non-test V2EntityBuilder site under src/ neither calls the check nor is allowlisted with a reason.
 - No existing test expectation changes. If one must change, that is an owner ask.
 - Statics (code-health, lint-imports, mypy filter) and the targeted tests run after every src commit.
