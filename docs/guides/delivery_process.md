@@ -167,7 +167,7 @@ itself. Recording an override is bookkeeping, not permission: never edit an arti
 
 Behaviour evidence (a paired table, a probe count, a trace row used in a verdict or disclosure) comes from the pinned runner: `tools/rpg_measure` or `rpg_gate_run.build_kernel`. A run on another runner is labelled as such, backs no verdict, and is not re-labelled after the fact. A trace or probe used as evidence states its hash check against a plain pinned run at its own end tick, using `CanonicalStateHasher.get_hash` (the same value as the manifest `state_hash` when the end tick is the run's last). A hash check covers the state digest only; fields outside it are listed in TCK-20261103-STATE-DIGEST-MAY-OMIT-FIELDS-THAT-DECISIONS-READ until that closes. The concurrent and sequential executors give the same world since TCK-20261103-THE-CONCURRENT-AND-SEQUENTIAL-EXECUTORS-GIVE-DIFFERENT-WORLDS (#837), held by `tests/unit/kernel/test_executor_context_parity.py::test_every_packet_field_equals_the_states_value_at_each_stage` (every PR) and its gate-world twin `tests/unit/kernel/test_executor_context_parity.py::test_every_packet_field_equals_the_states_value_on_a_gate_world` (slow lane). Evidence still comes from the pinned runner. A result carries to the production path only while those tests pass. The long equivalence test (`tests/integration/kernel/test_executor_equivalence_long.py`) also fails if any worker error is turned into a no-op (Failure-to-No-Op, `worker_manager.failure_no_op`). Claims measured before #837 merged stay labelled as measured on the sequential reference. Applies from 2026-11-03, the date the standard was ruled. Older claims, including entries in `intentional_divergences.md`, stand as their era's and are re-checked only if a new ruling cites them.
 
-Ruled by rpg-designer; the owner approved adding it here (#715 6593491826 item 3) and the older-claims scope (#715 6593558681 item 2). The executor clause was updated on #837's merge (rpg-designer; owner #715 6700862118). The cause: `tools.calibrate_simq._run_engine` and the pinned `build_kernel` give different worlds on the same seed, and a #828 red belonged to the unpinned runner alone (TCK-20261103-A-MEASUREMENT-NOT-ON-THE-PINNED-RUNNER-CALLS-ITSELF-EVIDENCE, which also owns the runner marker and refuse-or-label helper that will enforce this).
+Ruled by rpg-designer; the owner approved adding it here (#715 6593491826 item 3) and the older-claims scope (#715 6593558681 item 2). The executor clause was updated on #837's merge (rpg-designer; owner #715 6700862118). The cause: `tools.calibrate_simq._run_engine` and the pinned `build_kernel` give different worlds on the same seed, and a #828 red belonged to the unpinned runner alone (TCK-20261103-A-MEASUREMENT-NOT-ON-THE-PINNED-RUNNER-CALLS-ITSELF-EVIDENCE, which also added the `run_conditions` manifest record and `tools/test_architecture/pinned_runner.py`, whose helper refuses a run that is not pinned).
 
 ---
 
@@ -328,13 +328,14 @@ in "PR Lifecycle" below and nothing else; it prints a stderr warning saying so (
 result is information to report, never an obstacle to route around. Giving it a fixed slot in every
 PR body makes reporting it the default rather than an act of virtue.
 
-`pr_render.py` fills that line from each ticket's `## Test Summary` and `## Completion Summary`: a
-line containing `FAIL`, or a line beginning `Known gap:` (after an optional list marker; the prefix is
+`pr_render.py` fills that line from each ticket's `## Test Summary` and `## Completion Summary`: a line
+containing `FAIL`, or a line beginning `Known gap:` (after an optional list marker; the prefix is
 case-sensitive). A closing agent states a gap that is not a failure with a `Known gap: <what and why>`
-line in one of those two sections; prose such as "no gaps remain" or "except as stated in the record"
-is not read. When nothing matches, the line says `none stated (no FAIL or Known gap: line in any
-ticket's Test/Completion Summary)`, so it names what was checked rather than asserting nothing exists.
-A pointer to this marker in CLAUDE.md's closure guidance is left for the owner to decide (a governing file).
+line in one of those two sections; prose such as "no gaps remain" or "except as stated in the record" is
+not read. A line beginning `Revert evidence` is proof a test catches the bug, not a gap, and is skipped.
+When nothing matches, the line says `none stated (no FAIL or Known gap: line in any ticket's
+Test/Completion Summary)`, so it names what was checked rather than asserting nothing exists. A pointer
+to this marker in CLAUDE.md's closure guidance is left for the owner to decide (a governing file).
 
 ---
 
@@ -374,6 +375,8 @@ own. The reason is to cut CI and check effort. Exceptions, and only these: Depen
 retro batches are not exceptions: they get a ticket of their own, or ride in the next agent-working implementation PR.
 `pr_render.py` keeps its ticketless path for the two exceptions and warns on stderr when it is used; nothing blocks.
 
+**Decisions named on role cards (TCK-20261114-ROLE-CARD-DECISION-CITATION-INDEX).** A PR that accepts or amends an ADR or other recorded decision lists the role cards it affects in its body and updates them in the same change. Take the list from `python3 -m tools.sessions.card_citation_check` (report-only, always exit 0): it names each card source that cites a decision this doc amends without citing this doc, with the seat ids to relaunch. The amending doc states what it amends in an optional frontmatter key `amends: [path#heading-slug, ...]` and gets an entry in `registries/session_decisions.yaml`; a card lists the names it uses under `## Cites`. `generate_agents --check` prints one advisory line when the check finds anything, and nothing otherwise. After the merge, lead relaunches or clears the named seats (`docs/guides/agent_session_reset_boundaries.md`, "After a card-changing merge").
+
 **Ride-along (owner rule, 2026-11-11, #715 6793205403).** Small no-code changes ride in the next PR on their track instead of a PR of their own: doc wording, monitoring week close-outs and re-closes, and glossary, registry or summary text. Each still closes its own ticket. A PR stands alone only when it changes `src/` behaviour, carries evidence (a measurement or proof run the PR is for), unblocks a seat that is waiting on it, or is the only open PR on its track. Why: every merge costs a full CI run, an owner merge, and a REGISTRY resync for every other open PR.
 
 **Weigh the fix (owner rule, 2026-11-07, widened the same day; issue #715 comments 6697776913 and 6698958617).** Before spending time on any fix, in any domain, weigh whether it is worth it, and prefer the
@@ -400,6 +403,10 @@ option changes a rule the owner set.
    Check E (`TCK-20261024-PRE-PUSH-WARNS-ON-A-STALE-DOCS-REGISTRY`) runs `python3 tools/generate_registry.py --check` only when the
    branch diff touches a `.md` under `docs/`, the tickets or the stored artifacts, and adds one advisory line naming
    `make docs-registry` when `docs/REGISTRY.yaml` is stale (exit 2); any other result or a timeout says nothing.
+   Check G (`TCK-20261113-PRE-PUSH-CHECKS-HAND-EDITED-PARITY-LEDGER-SHARDS`) runs only when the branch diff touches
+   `docs/parity_ledger/*.yaml`: each such shard as pushed must parse into a list of mappings with ids, and its new or changed entries
+   must pass `parity_ledger_writer.validate_entry` (legacy entries are exempt). It warns, naming `tools/parity_ledger_writer.py`;
+   `python3 tools/parity_ledger_writer.py --check <files> [--base <ref>]` runs the same check by hand and writes nothing.
 3. **Push** the branch, then **create the PR** (`gh pr create`). The title and the generated body
    sections (`## What landed` through `## Verification`/`## Known gaps`, plus the `Closes:` line)
    come from `python3 tools/delivery/pr_render.py` — run it plain for readable stdout

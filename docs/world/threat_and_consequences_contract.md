@@ -52,7 +52,7 @@ Consequences are the durable world-state mutations applied when threat threshold
 |---|---|
 | `trauma_score >= 80` | Spawns hostile patrol entity in region |
 | Camp cleared (all monsters killed) | `trauma_score -= 10`; region broadcasts CAMP_CLEARED event |
-| World boss defeated | `trauma_score -= 30`; `retaliation_pressure = 0`; calamity_intensity reduced |
+| World boss defeated | `trauma_score -= 30`; `retaliation_pressure = 0`; calamity_intensity: Superseded by ENV-06 (owner decision 10, 2026-10-05): calamity intensity is the escalation of sustained instability; no single event (a hero's death, a boss defeat) changes it directly. The ENV-06 producer is not built yet; in current play calamity_intensity is 0.0 in every region (TCK-20260914-CALAMITY-INTENSITY-PRODUCER-NEVER-FIRES). CalamityService.apply_calamity_consequences (+0.05 per hero death) is unwired legacy, kept only behind its architecture pin. |
 | Hero escort completed | Broadcasts ESCORT_COMPLETE; route reputation update via commitment domain |
 
 All consequences are applied through the authoritative apply pipeline (StateUpdate + entity spawn where needed).

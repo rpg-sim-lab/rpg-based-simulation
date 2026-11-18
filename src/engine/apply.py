@@ -724,6 +724,7 @@ class ApplyPath:
         object.__setattr__(res, "properties", id_comp.properties)
         object.__setattr__(res, "latest_intent_results", latest_intent_results)
         object.__setattr__(res, "_canonical_cache", None)
+        object.__setattr__(res, "occupation", id_comp.occupation)  # M1 step 2: a hand-copied record must carry every slot
         return res
 
     @staticmethod

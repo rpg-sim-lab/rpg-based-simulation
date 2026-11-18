@@ -108,7 +108,7 @@ jobs:
         if: ${{ !cancelled() }}
         continue-on-error: true
         run: |
-          pytest tests/ -m "slow or extra_slow" --resource-budget large --tb=short -q --ignore=tests/unit/worldassembly/test_corpus_diversity.py --junitxml=reports/slow/slow_tests.xml
+          pytest tests/ -m "slow or extra_slow" --resource-budget large --tb=short -q --durations=30 --ignore=tests/unit/worldassembly/test_corpus_diversity.py --junitxml=reports/slow/slow_tests.xml
       - name: Legacy regression
         id: legacy_regression
         if: ${{ !cancelled() }}

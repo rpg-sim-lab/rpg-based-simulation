@@ -272,6 +272,7 @@ def test_every_combat_component_field_survives_to_readonly():
         "alive": False, "readiness": 19.0, "readiness_speed": 20.0,
         "base_hp": -21, "base_atk": 22, "base_def": -23, "base_evasion": 0.24,
         "permanent_max_hp_bonus": 25, "last_attacker_id": 26, "last_hit_tick": 27, "last_hit_damage": 28,
+        "last_hit_attackers": (29, 30), "last_hit_damages": (14, 14),
     }
     skip = {"wounds", "scars", "status_effects", "latest_result", "_canonical_cache"}
     assert {f.name for f in fields(CombatComponent)} - skip == set(sentinel), "update sentinel"
@@ -301,7 +302,7 @@ def test_builder_without_spawn_opt_in_keeps_generic_baseline():
 
 
 @pytest.mark.parametrize("spawn", [
-    lambda g, tier: g.spawn_monster((1.0, 1.0), difficulty_tier=tier),
+    lambda g, tier: g.spawn_monster((1.0, 1.0), species="monster", occupation="monster", difficulty_tier=tier),
     lambda g, tier: g.spawn_goblin((1.0, 1.0), difficulty_tier=tier),
     lambda g, tier: g.spawn_hero((1.0, 1.0), difficulty_tier=tier),
 ])

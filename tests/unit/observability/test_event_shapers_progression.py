@@ -27,6 +27,7 @@ def _entity(identity=None, kind="goblin"):
     e = MagicMock()
     e.identity = identity or _identity()
     e.kind = kind
+    e.identity.occupation = kind
     return e
 
 

@@ -109,9 +109,9 @@ class EntityCarryForward:
                        it; a survivor missing last_position falls back to a deterministic
                        per-entity search origin at reconstruction, never a shared constant.
       kind          <- entity.kind (TCK-20260911-CAMPAIGN-SURVIVOR-IDENTITY-NOT-RESTORED-ON-
-                       RECONSTRUCTION). Empty string for pre-existing records serialized before
-                       this field existed; reconstruction falls back to "entity" in that case,
-                       matching the prior (buggy) behavior rather than guessing.
+                       RECONSTRUCTION). The species id (M1 step 4). Empty string for pre-existing records
+                       serialized before this field existed; reconstruction refuses such a record
+                       (SpeciesNotDeclaredError) rather than guessing a species.
       role          <- entity.identity.role (int, EntityRole)
       faction       <- entity.identity.faction (int, Faction)
       properties    <- entity.identity.properties (dict: archetype_id/species_id/faction_id/
@@ -167,9 +167,10 @@ class EntityCarryForward:
     veterancy_points: int = 0
     veterancy_rank: int = 0
     known_recipes: Tuple[str, ...] = ()
+    occupation: Optional[str] = None  # M1: the role label (IdentityComponent.occupation); None = none
 
     def to_dict(self) -> dict:
-        return {
+        res = {
             "entity_id": self.entity_id,
             "level": self.level,
             "xp": self.xp,
@@ -192,6 +193,9 @@ class EntityCarryForward:
             "veterancy_rank": self.veterancy_rank,
             "known_recipes": sorted(self.known_recipes),
         }
+        if self.occupation is not None:  # omitted while None: the serialised form of a record without a label is unchanged
+            res["occupation"] = self.occupation
+        return res
 
     @classmethod
     def from_dict(cls, d: dict) -> "EntityCarryForward":
@@ -218,6 +222,7 @@ class EntityCarryForward:
             veterancy_points=d.get("veterancy_points", 0),
             veterancy_rank=d.get("veterancy_rank", 0),
             known_recipes=tuple(sorted(d.get("known_recipes", []))),
+            occupation=d.get("occupation"),
         )
 
 

@@ -226,7 +226,6 @@ _SYSTEMS_ENGINE_PINNED: dict[PinnedKey, int] = {
     ("src/systems/strategic_systems/intelligence.py", "src.engine.spatial_query", ("SpatialQueryService",)): 1,
     ("src/systems/strategic_systems/intelligence.py", "src.engine.cadence", ("SystemCadence", "should_run")): 1,
     ("src/systems/strategic_systems/intelligence.py", "src.engine.domain_logic", ("SimulationDomainLogic",)): 2,
-    ("src/systems/strategic_systems/intelligence.py", "src.engine.cadence", ("should_run",)): 1,
     ("src/systems/strategic_systems/intelligence.py", "src.engine.cadence", ("SystemCadence as DefaultCadence", "should_run")): 2,
     ("src/systems/strategic_systems/intelligence.py", "src.engine.cognition", ("AppraisalSystem",)): 1,
     ("src/systems/strategic_systems/detour.py", "src.engine.domain.lead_routing", ("LeadRoutingSystem",)): 1,

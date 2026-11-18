@@ -34,6 +34,13 @@ from src.lab.schema import ScenarioSpec, ExperimentSpec, ExpectedRelationshipSpe
 from src.lab.metamorphic import MetamorphicRuleEngine
 import src.engine.governor as governor_module
 from tests.helpers.kernel_pinning import PinnedNormalGovernor
+from tests.named_run_dirs import remove_named_run_dirs  # noqa: F401
+
+# Run ids this module's test names, removed by name before and after it (see tests/named_run_dirs.py).
+RUN_ID_PREFIXES = {
+    "test_species_hostility_increase_does_not_decrease_combat_engagement_rate": ("species_hostility_baseline", "species_hostility_high"),
+}
+pytestmark = pytest.mark.usefixtures("remove_named_run_dirs")
 
 SPECIES_RELATIONS_PATH = "data/content/social/species_relations.yaml"
 SCENARIO_ID = "species_hostility_metamorphic_check"

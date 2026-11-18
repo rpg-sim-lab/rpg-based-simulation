@@ -218,8 +218,17 @@
   v2_evidence: 'Implementation proven via exhaustive checklist audit Phase 1-11. src/engine/tactical.py (a VANGUARD at an identified chokepoint holds with movement mode HOLD and an ENTITY_ACT HOLD, reason HOLD_CHOKEPOINT); src/engine/domain/action_router.py (HOLD is a typed no-op success); src/engine/pipeline_phases/actions.py (a HOLD success ends its task so the brain re-decides on its cadence).'
   proof_type: regression
   test_path: tests/unit/combat/test_chokepoint_hold.py
-  divergence_note: See docs/guidelines/intentional_divergences.md Sections 2.90 and 2.130.
-  support_boundary: 'The hold was reported as UNSUPPORTED_ACTION on every emission before (the tile was still held by the movement mode); the reporting is the only change. Since divergence 2.130 a chokepoint is a one-tile gap between two blocked tiles (state.blocked_tiles, the tiles structures occupy), not between terrain tiles named WALL; before it the path was never reached (0 decisions in 30 runs), so the hold now runs wherever structures leave such a gap.'
+  divergence_note: See docs/guidelines/intentional_divergences.md Sections 2.90 and
+    2.130. See also Section 2.206 (a typed wait clears the stored target and HOLD
+    ends at the next walk decision).
+  support_boundary: The hold was reported as UNSUPPORTED_ACTION on every emission
+    before (the tile was still held by the movement mode); the reporting is the only
+    change. Since divergence 2.130 a chokepoint is a one-tile gap between two blocked
+    tiles (state.blocked_tiles, the tiles structures occupy), not between terrain
+    tiles named WALL; before it the path was never reached (0 decisions in 30 runs),
+    so the hold now runs wherever structures leave such a gap. HOLD_CHOKEPOINT now
+    also carries target_clear in its HOLD update, so the hold also covers the decision's
+    own tick and the gap before the next decision (divergence 2.206).
 - id: COMB-016
   text: "`test_cardinal_opposite_bracketing`: Cardinal opposite bracketing \u2014\
     \ Verify that two allies bracket a target from opposite sides.."
@@ -4822,7 +4831,7 @@
   proof_type: regression
   test_path: tests/mechanic_scenarios/test_conflict04_movement_layer.py
   divergence_note: See docs/guidelines/intentional_divergences.md Section 2.89.
-  support_boundary: 'Most remaining free hits have a non-engaged adjacent hostile as attacker (urban seed 45: 131 of 131 pairs); dropping the engagement condition froze entities up to 219 ticks and is not shipped (decision 32: notice and decide, a separate ticket). An idle task can stay blocked up to 19 ticks. The stale PURSUE movement-mode label on an idle task after a completed pursuit is unchanged.'
+  support_boundary: 'Most remaining free hits have a non-engaged adjacent hostile as attacker (urban seed 45: 131 of 131 pairs); dropping the engagement condition froze entities up to 219 ticks and is not shipped (decision 32: notice and decide, a separate ticket). Re-measured with decision 32''s wake in place (TCK-20261109-A-COMBAT-RETREAT-PROJECT-WALKS-THE-SUBJECT-AGAINST-THE-HELD-FLIGHT-RULE, frontier_marches s42, 5000 ticks): the freeze returns, up to 801 ticks beside a hostile that never hits, 23 holds of 50+ ticks with no hit and 3 still held at the last tick; not shipped (owner, 2026-11-13). An idle task can stay blocked up to 19 ticks. The stale PURSUE movement-mode label on an idle task after a completed pursuit is unchanged.'
 - id: COMB-343
   text: 'TCK-20261008-A-SUBJECT-NOTICES-AN-UNENGAGED-HOSTILE-COMING-ADJACENT-AND-DECIDES-DECISION-32: a subject beside a perceived hostile it is not engaged with is woken for the brain within two ticks (ADJACENCY_WAKE_COOLDOWN) and decides by its own combat-engagement verdict (ignore keeps walking, avoid steps away, watch stands and observes, else as before) (owner decision 32).'
   status: verified
@@ -4914,7 +4923,9 @@
   proof_type: regression
   test_path: tests/unit/tactical/testflight_weighs_free_swing.py
   divergence_note: See docs/guidelines/intentional_divergences.md Section 2.202.
-  support_boundary: 'Last felt blow only; non-flight moves off engagement, KITING and KEEP_DISTANCE are not covered; a multi-attacker swing credits its total to the first attacker.'
+  support_boundary: Last felt blow only; non-flight moves off engagement, KITING and
+    KEEP_DISTANCE are not covered; a multi-attacker swing is the sum of the shares
+    of the engaged, alive attackers of the last hit (COMB-354, divergence 2.148).
 
 - id: COMB-352
   text: 'TCK-20261110-A-NON-FLIGHT-MOVE-OFF-ENGAGEMENT-WALKS-INTO-A-KNOWN-LETHAL-FREE-SWING: MovementSystem.resolve_move does not take a step that would give the free swing (COMB-009) to an engaged hostile the subject has felt will finish it (felt_lethal_attacker: last_attacker_id is engaged and alive, last_hit_damage > 0 and >= hp), whatever chose the step (a flight, an engage or bracketing step, a stored strategic target), unless the step is an evasive retreat. The held step is the blocked-step shape: no position, no stamina, no free swing, no fled learning, no plan-cache entry, the stored target kept, wait_count_delta 0, failure_reason FELT_LETHAL_FREE_SWING.'
@@ -4926,3 +4937,79 @@
   test_path: tests/unit/movement/test_felt_lethal_free_swing_step.py
   divergence_note: See docs/guidelines/intentional_divergences.md Section 2.204.
   support_boundary: 'Last felt blow only (as 2.202); a stored-target step with no felt-lethal hostile still walks while engaged (TCK-20261109-A-COMBAT-RETREAT-PROJECT-WALKS-THE-SUBJECT-AGAINST-THE-HELD-FLIGHT-RULE); a subject can be pinned beside a felt-lethal hostile that stays adjacent and does not strike.'
+- id: COMB-353
+  text: 'TCK-20261111-A-HOLD-MODE-MOVE-STILL-TAKES-A-STEP: a hold holds. A typed wait
+    (WATCH_HOSTILE, AVOID_NO_ROUTE, HOLD_CHOKEPOINT) clears the stored navigation
+    target in the same update that sets the movement mode HOLD, and MovementCandidateSelector.movement_target
+    returns no target for a pending update that clears the stored target and sets
+    none (navigation.target_clear), so the subject takes no step on the tick it decides
+    to wait and none before its next decision. The mode HOLD ends at the subject''s
+    next decision that sets a walk: every writer of a mode-less navigation target
+    resets it to the navigation default (WANDER) through one helper (hold_mode.hold_reset_kwargs),
+    unless an action task is live; a collapse''s HOLD ends when its sleep ends. The
+    legality price of HOLD (the clamp at 0.1) is unchanged.'
+  status: verified
+  priority: P1
+  legacy_evidence: null
+  v2_evidence: 'src/core/hold_mode.py (action_task_is_live, hold_reset_kwargs);
+    src/engine/candidate_selector.py (movement_target: a pending target_clear with
+    no target_set returns None); src/engine/tactical_hold.py (WATCH_HOSTILE and AVOID_NO_ROUTE
+    carry target_clear; KEEP_WALKING no longer inherits HOLD); src/engine/tactical.py
+    (HOLD_CHOKEPOINT carries target_clear); src/engine/pipeline_phases/actions.py
+    (_hold_ends_with_task, on a sleep end); src/systems/strategic_systems/intelligence.py,
+    src/systems/strategic_systems/redirection.py and src/engine/intent/action_intent.py
+    (the walk-decision writers call hold_reset_kwargs)'
+  proof_type: regression
+  test_path: tests/unit/engine/test_hold_wait_takes_no_step.py; tests/unit/engine/test_hold_mode_reset.py
+  divergence_note: See docs/guidelines/intentional_divergences.md Section 2.206.
+  support_boundary: 'A walk decision resets HOLD only while no action task is live,
+    and the state does not record which task started the HOLD, so a typed wait''s
+    HOLD that persists while the subject has since started an unrelated live action
+    is not reset until that action ends. The effect against the base (stage 1 and stage 2) is recorded in
+    divergence 2.206 (Measured). One death traced to this limit: a cornered hold that
+    ends on a live attack task, followed up in TCK-20261116-A-CORNERED-HOLD-ENDS-ON-A-LIVE-ACTION-TASK-AND-WALKS-BACK-INTO-THE-FIGHT. Not changed here: the congestion ladder''s reroute rung, the collapsed
+    sleeper''s MOVE_TO walk, the unapplied clear_target flag.'
+- id: COMB-354
+  text: 'TCK-20261103-A-GROUP-HIT-RECORDS-ONLY-ITS-FIRST-ATTACKER: a simultaneous
+    group hit (resolve_multi_attack, called by the opportunity-attack step of MovementSystem.resolve_move)
+    records every attacker in CombatComponent.last_hit_attackers (attacker-list order)
+    and the share each took in last_hit_damages (parallel, int, summing to last_hit_damage),
+    written by CombatPatch with last_hit_tick; every other hit records a 1-tuple;
+    last_attacker_id stays the first attacker. Row 88 hit test (b) is membership in
+    the set within NEED_WAKE_CADENCE. felt_lethal_attacker sums the shares of the
+    set''s attackers that are engaged and alive now (lethal when the sum is above
+    0 and at least hp). The next damaging hit replaces the set. Proof digest flat-sha256-v5;
+    a pre-v5 checkpoint restores one attacker holding the whole blow.'
+  status: verified
+  priority: P1
+  legacy_evidence: null
+  v2_evidence: src/core/state.py (CombatComponent.last_hit_attackers, last_hit_damages),
+    src/core/update_models/combat.py (CombatUpdate.hit_attackers_set, hit_damages_set,
+    merge), src/engine/patches.py (CombatPatch), src/engine/combat.py (resolve_multi_attack),
+    src/engine/tactical_threat.py (_hit_acts_on), src/engine/felt_swing.py (felt_lethal_attacker),
+    src/engine/checkpoint.py (flat-sha256-v5), src/engine/checkpoint_fields.py (FIELD_RULES).
+  proof_type: regression
+  test_path: tests/unit/engine/test_group_hit_records_every_attacker.py
+  divergence_note: See docs/guidelines/intentional_divergences.md Section 2.148.
+  support_boundary: Only the latest damaging hit is remembered (the next hit replaces
+    the set); group hits come only from opportunity attacks and are rare (6 of 391
+    multi-attack calls at s42, 3 worlds, 2000 ticks).
+- id: COMB-355
+  text: 'TCK-20261101-A-HOSTILE-ATTACKING-YOU-OUTRANKS-THE-GROUP-SHARED-TARGET: target_score
+    ranks a hostile that hit the entity within ATTACKED_RECENTLY_WINDOW_TICKS (10,
+    D-13) ahead of the group''s shared target (group_bias) and behind adjacency; the
+    hit is read from the typed record (last_hit_attackers, last_hit_tick). A hostile
+    that targets the entity but has not hit it does not count. No role, kind or faction
+    name is read.'
+  status: verified
+  priority: P1
+  legacy_evidence: null
+  v2_evidence: src/engine/tactical.py (target_score, not_attacking_me), src/engine/tactical_threat.py
+    (ATTACKED_RECENTLY_WINDOW_TICKS, attacked_me_recently), docs/plans/deferred_tuning_decisions_register.md
+    (D-13).
+  proof_type: regression
+  test_path: tests/unit/tactical/test_attacker_outranks_group_target.py
+  divergence_note: See docs/guidelines/intentional_divergences.md Section 2.149.
+  support_boundary: 'Only the latest hit is remembered (COMB-354); the window is a
+    registered tuning constant, not derived from fight data; timing of the target_score
+    hot loop is NOT MEASURED (perf pause #715 6556861718).'

@@ -1,7 +1,7 @@
 # Compliance IDs: INFRA-215
 """The one post-unpickle step of a scenario restore: a field a checkpoint predates (F3, divergence 2.155; later rows join this table).
 
-A scenario checkpoint is a pickle of the whole ``AuthoritativeState`` with no format version (``ScenarioCheckpointer``). Unpickling a slotted, frozen record written before a field
+A scenario checkpoint is a pickle of the whole ``AuthoritativeState``; its header carries a schema fingerprint (``checkpoint_schema``) that is checked before the unpickle and accepts only an append named by a row here (``record`` + ``field``). Unpickling a slotted, frozen record written before a field
 existed skips ``__post_init__`` and leaves the slot UNSET, so the first read raises a raw ``AttributeError`` mid-tick. This step runs once, right after the unpickle, over a small table
 ``FIELD_RULES`` (the single restore step: later rows, from any lane, are added here; keep the names and the ``FieldRule`` shape): each row names the records that carry the field, the field, and a rule.
 
@@ -35,11 +35,17 @@ class FieldRule:
     field: str
     fill: Optional[Callable[[Any, Any], Any]] = None
     ruling: str = ""
+    record: str = ""  # qualname of the class that carries ``field``: the schema check accepts an appended field only where a row names its class
 
 
 def _navigations(state: Any) -> Iterable[Any]:
     for e in (getattr(state, "entities", None) or {}).values():
         yield (f"entity {e.id}", e.navigation)
+
+
+def _identities(state: Any) -> Iterable[Any]:
+    for e in (getattr(state, "entities", None) or {}).values():
+        yield (f"entity {e.id}", e.identity)
 
 
 def _projects(state: Any) -> Iterable[Any]:
@@ -81,15 +87,19 @@ _GROUP_RULING = "rpg-designer 2026-11-01, checkpoint restore (TCK-20261031-A-PAI
 
 # F3 (2.155): a pre-F3 state never lodged anyone, so the field is None. ``beds`` is content (per building spec) that a restore cannot reach: refuse.
 FIELD_RULES: List[FieldRule] = [
-    FieldRule("lodged_in", _navigations, "lodged_in", fill=lambda state, owner: None, ruling="2.155: a state that predates lodging lodged no one"),
-    FieldRule("beds", _buildings, "beds", fill=None, ruling="2.155: beds are copied from content at compile; the checkpoint carries no compiled content"),
+    FieldRule("lodged_in", _navigations, "lodged_in", fill=lambda state, owner: None, ruling="2.155: a state that predates lodging lodged no one", record="NavigationComponent"),
+    FieldRule("beds", _buildings, "beds", fill=None, ruling="2.155: beds are copied from content at compile; the checkpoint carries no compiled content", record="BuildingState"),
     # A pre-2.156 state kept no retreat clear window, so a project that predates it has none yet (it opens on the first clear observation); None is exactly that state.
-    FieldRule("cleared_since", _projects, "cleared_since", fill=lambda state, owner: None, ruling="2.156: a state that predates the retreat clear window had no window"),
-    # The group rows (2.146). next_group_id stays the LAST AuthoritativeState field and the three group fields stay after _canonical_cache (positional unpickle).
-    FieldRule("next_group_id", _state_itself, "next_group_id", fill=_seed_next_group_id, ruling="rpg-designer 2026-10-31, group id allocation (addition 4)"),
-    FieldRule("group.contract_holder_id", _groups, "contract_holder_id", fill=_none_on_unbound_group, ruling=_GROUP_RULING),
-    FieldRule("group.dissolution_reason", _groups, "dissolution_reason", fill=_none_on_unbound_group, ruling=_GROUP_RULING),
-    FieldRule("group.dissolution_contract_status", _groups, "dissolution_contract_status", fill=_none_on_unbound_group, ruling=_GROUP_RULING),
+    FieldRule("cleared_since", _projects, "cleared_since", fill=lambda state, owner: None, ruling="2.156: a state that predates the retreat clear window had no window", record="ProjectState"),
+    # N10 (2.212): a state that predates the suspension clock stamped none; `expire_suspended` stamps a SUSPENDED record on first sight.
+    FieldRule("suspended_since", _projects, "suspended_since", fill=lambda state, owner: None, ruling="rpg-designer 2026-11-16, N10: a state that predates the suspension clock had none", record="ProjectState"),
+    # The group rows (2.146). next_group_id stays the LAST AuthoritativeState field and the three group fields stay after _canonical_cache (an insert is refused by the schema check).
+    FieldRule("next_group_id", _state_itself, "next_group_id", fill=_seed_next_group_id, ruling="rpg-designer 2026-10-31, group id allocation (addition 4)", record="AuthoritativeState"),
+    FieldRule("group.contract_holder_id", _groups, "contract_holder_id", fill=_none_on_unbound_group, ruling=_GROUP_RULING, record="GroupRecord"),
+    FieldRule("group.dissolution_reason", _groups, "dissolution_reason", fill=_none_on_unbound_group, ruling=_GROUP_RULING, record="GroupRecord"),
+    FieldRule("group.dissolution_contract_status", _groups, "dissolution_contract_status", fill=_none_on_unbound_group, ruling=_GROUP_RULING, record="GroupRecord"),
+    # M1 (kind means species): a state that predates the occupation label gave no body one, so None is exactly that state.
+    FieldRule("occupation", _identities, "occupation", fill=lambda state, owner: None, ruling="rpg-designer 2026-11-16, kind-is-species ruling step 2: a state that predates the occupation label had none", record="IdentityComponent"),
 ]
 
 
@@ -115,5 +125,4 @@ def fill_missing_fields(state: Any, rules: Optional[List[FieldRule]] = None) -> 
     return state
 
 
-# A new field of a slotted record must be the LAST field of its class (``dataclasses._dataclass_setstate`` unpickles positionally: a field inserted before another silently takes
-# that field's old value from an older checkpoint, which no check here can see). `tests/unit/engine/test_checkpoint_fields.py` pins the position of every row's field.
+# A new field of a slotted record must be the LAST field of its class and have a row here with ``record`` set: ``checkpoint_schema.check_schema`` refuses an insert, and an append without a row, before the unpickle.

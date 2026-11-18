@@ -28,10 +28,11 @@ def _values(obj, skip=()):
     return {f.name: getattr(obj, f.name) for f in dataclasses.fields(obj) if f.name not in skip and f.name != "_canonical_cache"}
 
 
-def test_every_rule_field_is_the_last_field_of_its_record_or_the_pickle_shift_is_invisible():
-    """beds was inserted before `_canonical_cache`: an old pickle then put the old cache value in `beds` and nothing looked missing. Each F3 field is last."""
-    assert [f.name for f in dataclasses.fields(NavigationComponent)][-1] == "lodged_in"
-    assert [f.name for f in dataclasses.fields(BuildingState)][-1] == "beds"
+def test_lodged_in_and_beds_have_field_rules_naming_their_record():
+    """Replaces the append-last position assert (TCK-20261101-A-CHECKPOINT-HAS-NO-FORMAT-VERSION): an insert is now refused by the schema fingerprint whatever the position
+    (tests/unit/engine/test_checkpoint_schema.py); what stays pinned is that the appended fields have rows, and which record each row belongs to."""
+    by_field = {r.field: r.record for r in FIELD_RULES}
+    assert by_field["lodged_in"] == "NavigationComponent" and by_field["beds"] == "BuildingState"
     assert {r.field for r in FIELD_RULES} >= {"lodged_in", "beds"}
 
 
@@ -85,22 +86,43 @@ def test_a_current_shape_state_is_untouched():
 
 
 def test_a_project_without_cleared_since_restores_to_no_window_and_keeps_every_other_field():
-    """2.156: `cleared_since` is the last field of ProjectState; a pickle from before it loads one value short and the slot is unset until the restore step fills None."""
+    """2.156: `cleared_since` was appended to ProjectState; a pickle from before it loads one value short and the slot is unset until the restore step fills None."""
     from dataclasses import replace
     from src.core.strategic import GoalKind, ProjectState
     k = kernel([hero(1, REACH[0], action=None)], beds=1)
     try:
         st = k._state
-        assert [f.name for f in dataclasses.fields(ProjectState)][-1] == "cleared_since"
         proj = ProjectState(id="proj_combat_retreat_9", kind=GoalKind.COMBAT_RETREAT, created_tick=3, score=7.5)
-        old = _old_shape(proj, ["cleared_since"])
+        old = _old_shape(proj, ["cleared_since", "suspended_since"])  # N10 appended suspended_since after it: a pre-2.156 checkpoint lacks both
         with pytest.raises(AttributeError):
             old.cleared_since
         e = st.entities[1]
         object.__setattr__(e, "strategic", replace(e.strategic, projects={old.id: old}))
-        fill_missing_fields(st, [r for r in FIELD_RULES if r.field == "cleared_since"])
+        fill_missing_fields(st, [r for r in FIELD_RULES if r.field in ("cleared_since", "suspended_since")])
         restored = st.entities[1].strategic.projects[old.id]
         assert restored.cleared_since is None
-        assert _values(restored, skip=("cleared_since",)) == _values(proj, skip=("cleared_since",))      # nothing shifted
+        assert restored.suspended_since is None
+        assert _values(restored, skip=("cleared_since", "suspended_since")) == _values(proj, skip=("cleared_since", "suspended_since"))      # nothing shifted
+    finally:
+        k.shutdown()
+
+
+def test_a_project_without_suspended_since_restores_to_no_clock_and_keeps_every_other_field():
+    """2.212 (N10): `suspended_since` was appended to ProjectState; a pickle from before it loads one value short and the slot is unset until the restore step fills None."""
+    from dataclasses import replace
+    from src.core.strategic import GoalKind, ProjectState, ProjectStatus
+    k = kernel([hero(1, REACH[0], action=None)], beds=1)
+    try:
+        st = k._state
+        proj = ProjectState(id="proj_combat_engage_9", kind=GoalKind.COMBAT_ENGAGE, status=ProjectStatus.SUSPENDED, created_tick=3, score=7.5)
+        old = _old_shape(proj, ["suspended_since"])
+        with pytest.raises(AttributeError):
+            old.suspended_since
+        e = st.entities[1]
+        object.__setattr__(e, "strategic", replace(e.strategic, projects={old.id: old}))
+        fill_missing_fields(st, [r for r in FIELD_RULES if r.field == "suspended_since"])
+        restored = st.entities[1].strategic.projects[old.id]
+        assert restored.suspended_since is None
+        assert _values(restored, skip=("suspended_since",)) == _values(proj, skip=("suspended_since",))
     finally:
         k.shutdown()

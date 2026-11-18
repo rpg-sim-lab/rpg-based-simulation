@@ -97,7 +97,7 @@ class ProductionReadinessHarness:
 
         entities = {}
         for idx in range(1, self.entity_count + 1):
-            entities[idx] = V2EntityBuilder(idx).combat(hp=100, alive=True).location(10.0 + idx, 10.0 + idx).build()
+            entities[idx] = V2EntityBuilder(idx).kind("human").combat(hp=100, alive=True).location(10.0 + idx, 10.0 + idx).build()
 
         state = AuthoritativeState(tick=1, seed=self.seed, world_time=100, entities=entities)
         rng = DeterministicRNG(self.seed)

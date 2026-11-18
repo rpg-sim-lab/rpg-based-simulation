@@ -25,7 +25,7 @@ def _entity(eid: int = 1):
     e.navigation.position = (0.0, 0.0)
     e.inventory = MagicMock()
     e.inventory.gold = 0.0
-    e.identity = MagicMock()
+    e.identity = MagicMock(occupation="hero")
     e.identity.evolution_points = 0
     e.identity.evolution_level = 1
     e.strategic = MagicMock()
@@ -83,6 +83,7 @@ def _new_entity(kind: str, eid: int = 99):
     e = MagicMock()
     e.id = eid
     e.kind = kind
+    e.identity.occupation = kind
     return e
 
 

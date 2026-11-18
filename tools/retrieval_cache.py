@@ -799,9 +799,9 @@ def _get_level1_connection() -> sqlite3.Connection:
 
 def provider_result_cache_stats() -> dict:
     """Read-only aggregation over retrieval_provider_result_cache_rows for
-    tools/knowledge_gateway_mcp.py::_run_knowledge_status() (Step 10). Never mutates, never raises
-    on a fresh/never-migrated DB (returns zeros instead) — knowledge_status must never error out
-    because no cache activity has happened yet.
+    the knowledge-status report (its gateway was removed in #147; no caller remains in the tree). Never
+    mutates, never raises on a fresh/never-migrated DB (returns zeros instead) — a status report must
+    never error out because no cache activity has happened yet.
     """
     conn = _get_connection()
     try:
@@ -880,7 +880,7 @@ def _get_level2_connection() -> sqlite3.Connection:
 
 def context_packet_cache_stats() -> dict:
     """Read-only aggregation over retrieval_context_packet_cache_rows for
-    tools/knowledge_gateway_mcp.py::_run_knowledge_status(). Mirrors provider_result_cache_stats()
+    the knowledge-status report (gateway removed in #147). Mirrors provider_result_cache_stats()
     exactly — table-existence check via sqlite_master, returns {"total_rows": 0, "total_hits": 0}
     on a fresh/never-migrated DB (never raises)."""
     conn = _get_connection()

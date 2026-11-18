@@ -26,7 +26,7 @@ every component listed below.
 ### Core Properties
 - **`id: int`** (`state.py:726`) — a unique, monotonic integer assigned at creation. See
   "Entity Construction" below for where this actually comes from.
-- **`kind: str`** (`state.py:727`) — the archetype string (e.g. `"hero"`).
+- **`kind: str`** (`state.py:727`) — the archetype string (e.g. `"hero"`); it is the species id on every build path (M1 step 4; `species_of` reads it). The role label is `identity.occupation` (M1 step 2; Bible 01, "Identity Fields").
 
 All `EntityState` mutation flows through the same frozen-state apply path described in
 `docs/core/state.md`'s "Frozen Lifecycle" Law — see that doc for the snapshot → deliberation →
@@ -70,6 +70,7 @@ state:
 - **`role: int`** — an `EntityRole` value (`src/core/enums.py:6-12`): `HERO`, `SHOPKEEPER`,
   `MONSTER`, `CITIZEN`, `WORKER`, `GUARD`.
 - **`faction: int`** — a `Faction` value; see "Factions" below.
+- **`occupation: Optional[str]`** — the role label of the body (`worker`, `guard`, `world_boss`), a display label (decision 50). Since M1 step 4 it is the label the content gave the body (`role_id`, else `profession_id`, on the archetype paths; the population's role on the classic compile), and `None` for a newborn. Appended last and left out of the canonical dict while `None`.
 - **`known_recipes`**, **`craft_target`** — crafting knowledge and current craft target.
 - **`evolution_level`**, **`evolution_points`** — evolution progression state.
 - **`veterancy_points`**, **`veterancy_rank`** — veterancy progression state.

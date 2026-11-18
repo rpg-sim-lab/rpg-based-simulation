@@ -62,6 +62,7 @@ if TYPE_CHECKING:
     from src.engine.cadence import SystemCadence
 
 from src.core.state import EntityState, AuthoritativeState
+from src.core.hold_mode import hold_reset_kwargs
 from src.core.enums import EntityRole
 from src.core.updates import (
     StrategicUpdate, InventoryUpdate, EntityUpdate, StateUpdate,
@@ -71,7 +72,7 @@ from src.engine.policy import GovernorPolicy
 from src.core.strategic import (
     BlockerState, LeadState, LeadCertainty,
     ProjectState, ProjectStatus, ObjectiveState, ObjectiveStatus,
-    CognitionProfile, ProjectKind, GoalKind, ObjectiveKind, has_project_capacity, restart_clear_window, with_live_current_score
+    CognitionProfile, ProjectKind, GoalKind, ObjectiveKind, has_project_capacity, restart_clear_window, suspend_record, expire_suspended, with_live_current_score
 )
 from src.engine.spatial_query import SpatialQueryService
 from src.core.lodging_rules import is_lodged_stayer
@@ -584,7 +585,7 @@ class StrategicIntelligenceSystem:
             if should_run(state.tick, e_id, cadence.concern_evaluation):
                 # Combine all routine evaluation logic
                 routine_concerns = (
-                    RoutineService.evaluate_biological_needs(entity, state.tick % 2400) +
+                    RoutineService.evaluate_biological_needs(entity, state.world_time) +
                     RoutineService.evaluate_environmental_concerns(entity) +
                     RoutineService.evaluate_anchored_behavior(entity, state)
                 )
@@ -615,7 +616,7 @@ class StrategicIntelligenceSystem:
                 
                 # Call original intent evaluation but with force=True to bypass its own cadence check
                 # (since we already checked cadence here)
-                intent_up = StrategicIntelligenceSystem.evaluate_strategic_intent(state, temp_entity, force=True, cadence=cadence)
+                intent_up = StrategicIntelligenceSystem.evaluate_strategic_intent_with_expiry(state, temp_entity, force=True, cadence=cadence)
                 strat_up = strat_up.merge(intent_up)
 
             # --- 4. Capacity Enforcement (every slow-path evaluation; a fast-path hit skips this block) ---
@@ -646,7 +647,7 @@ class StrategicIntelligenceSystem:
                         if entity.navigation.target != coords:
                             has_nav_update = True
                             existing_nav = ent_upd.navigation or NavigationUpdate()
-                            ent_upd = replace(ent_upd, navigation=replace(existing_nav, target_set=coords), interaction=InteractionUpdate(reset=True))
+                            ent_upd = replace(ent_upd, navigation=replace(existing_nav, target_set=coords, **hold_reset_kwargs(entity, ent_upd)), interaction=InteractionUpdate(reset=True))
                     except (ValueError, AttributeError) as lead_ex: logger.debug(f"[Tick {state.tick}] material lead for {target_mat!r} has a non-coordinate detail {match_lead.detail!r}: {lead_ex}")
             
             if not has_nav_update and current_project_id:
@@ -667,7 +668,7 @@ class StrategicIntelligenceSystem:
                             if target_pos:
                                  has_nav_update = True
                                  if entity.navigation.target != target_pos:
-                                     ent_upd = replace(ent_upd, navigation=replace(ent_upd.navigation or NavigationUpdate(), target_set=target_pos))
+                                     ent_upd = replace(ent_upd, navigation=replace(ent_upd.navigation or NavigationUpdate(), target_set=target_pos, **hold_reset_kwargs(entity, ent_upd)))
             
             if not has_nav_update:
                 town_target = nearest_town_tile(state.town_tiles, entity.navigation.position) or state.town_center
@@ -716,7 +717,6 @@ class StrategicIntelligenceSystem:
         Resolve strategic blockers that are satisfied by the current or pending
         authoritative inventory state.
         """
-        from src.engine.cadence import should_run
         cadence = cadence or SystemCadence()
         
         from dataclasses import replace
@@ -1129,7 +1129,7 @@ class StrategicIntelligenceSystem:
         if candidate_project.score > effective_current_score:
             return StrategicUpdate(
                 projects_add_or_update=[
-                    replace(current, status=ProjectStatus.SUSPENDED),
+                    suspend_record(current, current_tick),
                     candidate_project
                 ],
                 current_project_id_set=candidate_project.id,
@@ -1147,7 +1147,7 @@ class StrategicIntelligenceSystem:
         if not project or project.status != ProjectStatus.SUSPENDED:
             return None
 
-        resumed = restart_clear_window(replace(project, status=ProjectStatus.ACTIVE))  # a suspended retreat's clear window was not observed: it restarts on resume
+        resumed = restart_clear_window(replace(project, status=ProjectStatus.ACTIVE, suspended_since=None))  # a suspended retreat's clear window was not observed: it restarts on resume
         return StrategicUpdate(
             projects_add_or_update=[resumed],
             current_project_id_set=project_id,
@@ -1258,6 +1258,53 @@ class StrategicIntelligenceSystem:
                         current_objective_id_set=""
                     )
         return None
+
+    @staticmethod
+    def evaluate_strategic_intent_with_expiry(
+        state: AuthoritativeState,
+        entity: EntityState,
+        force: bool = False,
+        cadence: SystemCadence | None = None
+    ) -> StrategicUpdate:
+        """
+        `evaluate_strategic_intent` after the suspension expiry pass: the one entry every production caller uses (a static test pins it).
+
+        N10 (divergence 2.212): first the suspension expiry pass, so a freed slot counts on this same call (goal selection and the capacity gate see the ended records), and before the worker
+        fast-path, the objective-resolve return and the detour block, any of which would otherwise starve it. The pass is staged as a StrategicUpdate (never written here); the body runs on a
+        view of the subject with the expired records ended.
+        """
+        if not entity.lifecycle.active or not entity.combat.alive:
+            return StrategicUpdate()
+        if any(s.kind in ("frozen", "stunned") for s in entity.combat.status_effects):
+            return StrategicUpdate()
+        expiry = StrategicIntelligenceSystem.suspension_expiry_update(entity, state.tick)
+        if expiry is None:
+            return StrategicIntelligenceSystem.evaluate_strategic_intent(state, entity, force=force, cadence=cadence)
+        ended = {p.id: p for p in expiry.projects_add_or_update}
+        strat = entity.strategic
+        view_strat = replace(
+            strat,
+            projects={pid: ended.get(pid, p) for pid, p in strat.projects.items()},
+            current_project_id=None if expiry.current_project_id_set == "" else strat.current_project_id,
+            current_objective_id=None if expiry.current_objective_id_set == "" else strat.current_objective_id,
+        )
+        body = StrategicIntelligenceSystem.evaluate_strategic_intent(state, replace(entity, strategic=view_strat), force=force, cadence=cadence)
+        return expiry.merge(body)
+
+    @staticmethod
+    def suspension_expiry_update(entity: EntityState, tick: int) -> Optional[StrategicUpdate]:
+        """The staged writes of the suspension expiry pass for ``entity`` at ``tick`` (None when there is nothing to write): the stamps and the typed `SUSPENSION_EXPIRED` ends of
+        `expire_suspended`, and, when the current project is one that ends, its current project and objective cleared in the same update (R2)."""
+        written = expire_suspended(entity.strategic.projects, tick)
+        if not written:
+            return None
+        current = entity.strategic.current_project_id
+        current_ends = any(p.id == current and p.status == ProjectStatus.ABANDONED for p in written)
+        return StrategicUpdate(
+            projects_add_or_update=written,
+            current_project_id_set="" if current_ends else None,
+            current_objective_id_set="" if current_ends else None,
+        )
 
     @staticmethod
     def evaluate_strategic_intent(

@@ -135,6 +135,7 @@ None yet.
 Whether `personality`'s own values actually change any real output, and whether `adventure_routing`'s
 own scored candidate ever wins its real arbitration, are both genuinely unverified, not assumed
 either way — that's exactly the gap this ticket exists to name, not to prejudge.
+- 2026-11-14 (rpg-planner): The parent epic TCK-20261002-EPIC-SEMANTIC-FOUNDATION-COMPLETION closed SUPERSEDED on 2026-11-14 (#715 6875278006). The rule-map slices it was sequenced before were dropped, and this ticket is **kept as a standalone todo** by the owner. It is no longer gated to a rule-map slice.
 
 ## Implementation Notes
 (none yet — not started)

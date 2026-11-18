@@ -1,0 +1,725 @@
+# Name-switch allowlist (TCK-20261109-M1-NO-NAME-CHECKS-PROBE-AND-CONTENT-ALONE-KIND-PROBE).
+# Every role, kind or faction name switch in a gating decision package, as of the first inventory. A row is one (file, symbol, name) with how many times it
+# appears. A new switch fails the test; a row whose switch is gone, or counts fewer, fails it too: delete or lower the row in the same change. The retirement ticket
+# named in each row removes them stage by stage; "done" means this list is empty.
+rows:
+- file: src/ai/coming_of_age.py
+  symbol: <module>[_CANDIDATE_ROLES]
+  name: EntityRole.GUARD
+  count: 1
+  reason: the roles a coming-of-age draw picks from, named in a tuple
+  ticket: TCK-20261109-M1-RETIRE-ROLE-KIND-AND-FACTION-NAME-BRANCHES-IN-STAGES
+- file: src/ai/coming_of_age.py
+  symbol: <module>[_CANDIDATE_ROLES]
+  name: EntityRole.SHOPKEEPER
+  count: 1
+  reason: the roles a coming-of-age draw picks from, named in a tuple
+  ticket: TCK-20261109-M1-RETIRE-ROLE-KIND-AND-FACTION-NAME-BRANCHES-IN-STAGES
+- file: src/ai/coming_of_age.py
+  symbol: <module>[_CANDIDATE_ROLES]
+  name: EntityRole.WORKER
+  count: 1
+  reason: the roles a coming-of-age draw picks from, named in a tuple
+  ticket: TCK-20261109-M1-RETIRE-ROLE-KIND-AND-FACTION-NAME-BRANCHES-IN-STAGES
+- file: src/ai/coming_of_age.py
+  symbol: <module>[_PERSONALITY_ATTR]
+  name: EntityRole.SHOPKEEPER
+  count: 1
+  reason: personality trait that weights the role draw, keyed on role
+  ticket: TCK-20261109-M1-RETIRE-ROLE-KIND-AND-FACTION-NAME-BRANCHES-IN-STAGES
+- file: src/ai/coming_of_age.py
+  symbol: <module>[_PERSONALITY_ATTR]
+  name: EntityRole.WORKER
+  count: 1
+  reason: personality trait that weights the role draw, keyed on role
+  ticket: TCK-20261109-M1-RETIRE-ROLE-KIND-AND-FACTION-NAME-BRANCHES-IN-STAGES
+- file: src/ai/coming_of_age.py
+  symbol: <module>[_PERSONALITY_ATTR]
+  name: EntityRole.GUARD
+  count: 1
+  reason: personality trait that weights the role draw, keyed on role
+  ticket: TCK-20261109-M1-RETIRE-ROLE-KIND-AND-FACTION-NAME-BRANCHES-IN-STAGES
+- file: src/ai/goals/adventure_scorer.py
+  symbol: _resolve_cognition_profile_id
+  name: EntityRole.HERO
+  count: 1
+  reason: hero role picks the hero cognition profile by name
+  ticket: TCK-20261109-M1-RETIRE-ROLE-KIND-AND-FACTION-NAME-BRANCHES-IN-STAGES
+- file: src/ai/goals/adventure_scorer.py
+  symbol: AdventureGoalScorer._resolve_placeholder_target_pos
+  name: EntityRole.MONSTER
+  count: 1
+  reason: role defaults to MONSTER when an entity has no identity, then is compared
+  ticket: TCK-20261109-M1-RETIRE-ROLE-KIND-AND-FACTION-NAME-BRANCHES-IN-STAGES
+- file: src/ai/goals/occupation_change_scorer.py
+  symbol: <module>[_CANDIDATE_ROLES]
+  name: EntityRole.GUARD
+  count: 1
+  reason: occupation-change destination roles, named in a tuple
+  ticket: TCK-20261109-M1-RETIRE-ROLE-KIND-AND-FACTION-NAME-BRANCHES-IN-STAGES
+- file: src/ai/goals/occupation_change_scorer.py
+  symbol: <module>[_CANDIDATE_ROLES]
+  name: EntityRole.SHOPKEEPER
+  count: 1
+  reason: occupation-change destination roles, named in a tuple
+  ticket: TCK-20261109-M1-RETIRE-ROLE-KIND-AND-FACTION-NAME-BRANCHES-IN-STAGES
+- file: src/ai/goals/occupation_change_scorer.py
+  symbol: <module>[_CANDIDATE_ROLES]
+  name: EntityRole.WORKER
+  count: 1
+  reason: occupation-change destination roles, named in a tuple
+  ticket: TCK-20261109-M1-RETIRE-ROLE-KIND-AND-FACTION-NAME-BRANCHES-IN-STAGES
+- file: src/ai/goals/occupation_change_scorer.py
+  symbol: <module>[_ROLE_APTITUDE_ATTR]
+  name: EntityRole.SHOPKEEPER
+  count: 1
+  reason: aptitude attribute that scores each destination role, keyed on role
+  ticket: TCK-20261109-M1-RETIRE-ROLE-KIND-AND-FACTION-NAME-BRANCHES-IN-STAGES
+- file: src/ai/goals/occupation_change_scorer.py
+  symbol: <module>[_ROLE_APTITUDE_ATTR]
+  name: EntityRole.WORKER
+  count: 1
+  reason: aptitude attribute that scores each destination role, keyed on role
+  ticket: TCK-20261109-M1-RETIRE-ROLE-KIND-AND-FACTION-NAME-BRANCHES-IN-STAGES
+- file: src/ai/goals/occupation_change_scorer.py
+  symbol: <module>[_ROLE_APTITUDE_ATTR]
+  name: EntityRole.GUARD
+  count: 1
+  reason: aptitude attribute that scores each destination role, keyed on role
+  ticket: TCK-20261109-M1-RETIRE-ROLE-KIND-AND-FACTION-NAME-BRANCHES-IN-STAGES
+- file: src/ai/goals/occupation_change_scorer.py
+  symbol: OccupationChangeGoalScorer.score
+  name: EntityRole.CITIZEN
+  count: 1
+  reason: only a CITIZEN may change occupation
+  ticket: TCK-20261109-M1-RETIRE-ROLE-KIND-AND-FACTION-NAME-BRANCHES-IN-STAGES
+- file: src/content_semantics/faction.py
+  symbol: FactionSemanticsService.get_legacy_faction_bucket
+  name: '''GUILD'''
+  count: 1
+  reason: legacy faction enum chosen by substring-matching a faction id against names (HERO, GUILD, HORDE, TOWN, ...)
+  ticket: TCK-20261109-M1-RETIRE-ROLE-KIND-AND-FACTION-NAME-BRANCHES-IN-STAGES
+- file: src/content_semantics/faction.py
+  symbol: FactionSemanticsService.get_legacy_faction_bucket
+  name: '''HERO'''
+  count: 1
+  reason: legacy faction enum chosen by substring-matching a faction id against names (HERO, GUILD, HORDE, TOWN, ...)
+  ticket: TCK-20261109-M1-RETIRE-ROLE-KIND-AND-FACTION-NAME-BRANCHES-IN-STAGES
+- file: src/content_semantics/faction.py
+  symbol: FactionSemanticsService.get_legacy_faction_bucket
+  name: '''VILLAGE'''
+  count: 1
+  reason: legacy faction enum chosen by substring-matching a faction id against names (HERO, GUILD, HORDE, TOWN, ...)
+  ticket: TCK-20261109-M1-RETIRE-ROLE-KIND-AND-FACTION-NAME-BRANCHES-IN-STAGES
+- file: src/content_semantics/faction.py
+  symbol: FactionSemanticsService.get_legacy_faction_bucket
+  name: '''HORDE'''
+  count: 1
+  reason: legacy faction enum chosen by substring-matching a faction id against names (HERO, GUILD, HORDE, TOWN, ...)
+  ticket: TCK-20261109-M1-RETIRE-ROLE-KIND-AND-FACTION-NAME-BRANCHES-IN-STAGES
+- file: src/content_semantics/faction.py
+  symbol: FactionSemanticsService.get_legacy_faction_bucket
+  name: '''HOSTILE'''
+  count: 1
+  reason: legacy faction enum chosen by substring-matching a faction id against names (HERO, GUILD, HORDE, TOWN, ...)
+  ticket: TCK-20261109-M1-RETIRE-ROLE-KIND-AND-FACTION-NAME-BRANCHES-IN-STAGES
+- file: src/content_semantics/faction.py
+  symbol: FactionSemanticsService.get_legacy_faction_bucket
+  name: '''MONSTER'''
+  count: 1
+  reason: legacy faction enum chosen by substring-matching a faction id against names (HERO, GUILD, HORDE, TOWN, ...)
+  ticket: TCK-20261109-M1-RETIRE-ROLE-KIND-AND-FACTION-NAME-BRANCHES-IN-STAGES
+- file: src/content_semantics/faction.py
+  symbol: FactionSemanticsService.get_legacy_faction_bucket
+  name: '''COUNCIL'''
+  count: 1
+  reason: legacy faction enum chosen by substring-matching a faction id against names (HERO, GUILD, HORDE, TOWN, ...)
+  ticket: TCK-20261109-M1-RETIRE-ROLE-KIND-AND-FACTION-NAME-BRANCHES-IN-STAGES
+- file: src/content_semantics/faction.py
+  symbol: FactionSemanticsService.get_legacy_faction_bucket
+  name: '''TOWN'''
+  count: 1
+  reason: legacy faction enum chosen by substring-matching a faction id against names (HERO, GUILD, HORDE, TOWN, ...)
+  ticket: TCK-20261109-M1-RETIRE-ROLE-KIND-AND-FACTION-NAME-BRANCHES-IN-STAGES
+- file: src/content_semantics/faction.py
+  symbol: FactionSemanticsService.get_alignment_bucket
+  name: Faction.HERO_GUILD
+  count: 1
+  reason: alignment bucket decided by comparing the legacy faction enum (HERO_GUILD, TOWN_COUNCIL, MONSTER_HORDE)
+  ticket: TCK-20261109-M1-RETIRE-ROLE-KIND-AND-FACTION-NAME-BRANCHES-IN-STAGES
+- file: src/content_semantics/faction.py
+  symbol: FactionSemanticsService.get_alignment_bucket
+  name: Faction.TOWN_COUNCIL
+  count: 1
+  reason: alignment bucket decided by comparing the legacy faction enum (HERO_GUILD, TOWN_COUNCIL, MONSTER_HORDE)
+  ticket: TCK-20261109-M1-RETIRE-ROLE-KIND-AND-FACTION-NAME-BRANCHES-IN-STAGES
+- file: src/content_semantics/faction.py
+  symbol: FactionSemanticsService.get_alignment_bucket
+  name: Faction.MONSTER_HORDE
+  count: 1
+  reason: alignment bucket decided by comparing the legacy faction enum (HERO_GUILD, TOWN_COUNCIL, MONSTER_HORDE)
+  ticket: TCK-20261109-M1-RETIRE-ROLE-KIND-AND-FACTION-NAME-BRANCHES-IN-STAGES
+- file: src/content_semantics/faction.py
+  symbol: FactionSemanticsService.is_hostile
+  name: Faction.MONSTER_HORDE
+  count: 2
+  reason: hostility fallback compares the legacy faction bucket to MONSTER_HORDE
+  ticket: TCK-20261109-M1-RETIRE-ROLE-KIND-AND-FACTION-NAME-BRANCHES-IN-STAGES
+- file: src/content_semantics/role.py
+  symbol: RoleSemanticsService.get_legacy_entity_role
+  name: '''HERO'''
+  count: 1
+  reason: legacy role enum chosen by substring-matching a role id against names (HERO, SHOP, GUARD, ...)
+  ticket: TCK-20261109-M1-RETIRE-ROLE-KIND-AND-FACTION-NAME-BRANCHES-IN-STAGES
+- file: src/content_semantics/role.py
+  symbol: RoleSemanticsService.get_legacy_entity_role
+  name: '''SHOP'''
+  count: 1
+  reason: legacy role enum chosen by substring-matching a role id against names (HERO, SHOP, GUARD, ...)
+  ticket: TCK-20261109-M1-RETIRE-ROLE-KIND-AND-FACTION-NAME-BRANCHES-IN-STAGES
+- file: src/content_semantics/role.py
+  symbol: RoleSemanticsService.get_legacy_entity_role
+  name: '''STORE'''
+  count: 1
+  reason: legacy role enum chosen by substring-matching a role id against names (HERO, SHOP, GUARD, ...)
+  ticket: TCK-20261109-M1-RETIRE-ROLE-KIND-AND-FACTION-NAME-BRANCHES-IN-STAGES
+- file: src/content_semantics/role.py
+  symbol: RoleSemanticsService.get_legacy_entity_role
+  name: '''MONSTER'''
+  count: 1
+  reason: legacy role enum chosen by substring-matching a role id against names (HERO, SHOP, GUARD, ...)
+  ticket: TCK-20261109-M1-RETIRE-ROLE-KIND-AND-FACTION-NAME-BRANCHES-IN-STAGES
+- file: src/content_semantics/role.py
+  symbol: RoleSemanticsService.get_legacy_entity_role
+  name: '''CITIZEN'''
+  count: 1
+  reason: legacy role enum chosen by substring-matching a role id against names (HERO, SHOP, GUARD, ...)
+  ticket: TCK-20261109-M1-RETIRE-ROLE-KIND-AND-FACTION-NAME-BRANCHES-IN-STAGES
+- file: src/content_semantics/role.py
+  symbol: RoleSemanticsService.get_legacy_entity_role
+  name: '''CIVILIAN'''
+  count: 1
+  reason: legacy role enum chosen by substring-matching a role id against names (HERO, SHOP, GUARD, ...)
+  ticket: TCK-20261109-M1-RETIRE-ROLE-KIND-AND-FACTION-NAME-BRANCHES-IN-STAGES
+- file: src/content_semantics/role.py
+  symbol: RoleSemanticsService.get_legacy_entity_role
+  name: '''PEASANT'''
+  count: 1
+  reason: legacy role enum chosen by substring-matching a role id against names (HERO, SHOP, GUARD, ...)
+  ticket: TCK-20261109-M1-RETIRE-ROLE-KIND-AND-FACTION-NAME-BRANCHES-IN-STAGES
+- file: src/content_semantics/role.py
+  symbol: RoleSemanticsService.get_legacy_entity_role
+  name: '''WORKER'''
+  count: 1
+  reason: legacy role enum chosen by substring-matching a role id against names (HERO, SHOP, GUARD, ...)
+  ticket: TCK-20261109-M1-RETIRE-ROLE-KIND-AND-FACTION-NAME-BRANCHES-IN-STAGES
+- file: src/content_semantics/role.py
+  symbol: RoleSemanticsService.get_legacy_entity_role
+  name: '''GUARD'''
+  count: 1
+  reason: legacy role enum chosen by substring-matching a role id against names (HERO, SHOP, GUARD, ...)
+  ticket: TCK-20261109-M1-RETIRE-ROLE-KIND-AND-FACTION-NAME-BRANCHES-IN-STAGES
+- file: src/content_semantics/role.py
+  symbol: RoleSemanticsService.is_combatant
+  name: EntityRole.GUARD
+  count: 1
+  reason: combatant test falls back to the legacy role enum (HERO, MONSTER, GUARD)
+  ticket: TCK-20261109-M1-RETIRE-ROLE-KIND-AND-FACTION-NAME-BRANCHES-IN-STAGES
+- file: src/content_semantics/role.py
+  symbol: RoleSemanticsService.is_combatant
+  name: EntityRole.HERO
+  count: 1
+  reason: combatant test falls back to the legacy role enum (HERO, MONSTER, GUARD)
+  ticket: TCK-20261109-M1-RETIRE-ROLE-KIND-AND-FACTION-NAME-BRANCHES-IN-STAGES
+- file: src/content_semantics/role.py
+  symbol: RoleSemanticsService.is_combatant
+  name: EntityRole.MONSTER
+  count: 1
+  reason: combatant test falls back to the legacy role enum (HERO, MONSTER, GUARD)
+  ticket: TCK-20261109-M1-RETIRE-ROLE-KIND-AND-FACTION-NAME-BRANCHES-IN-STAGES
+- file: src/content_semantics/role.py
+  symbol: RoleSemanticsService.is_civilian
+  name: EntityRole.CITIZEN
+  count: 1
+  reason: civilian test falls back to the legacy role enum (CITIZEN, SHOPKEEPER)
+  ticket: TCK-20261109-M1-RETIRE-ROLE-KIND-AND-FACTION-NAME-BRANCHES-IN-STAGES
+- file: src/content_semantics/role.py
+  symbol: RoleSemanticsService.is_civilian
+  name: EntityRole.SHOPKEEPER
+  count: 1
+  reason: civilian test falls back to the legacy role enum (CITIZEN, SHOPKEEPER)
+  ticket: TCK-20261109-M1-RETIRE-ROLE-KIND-AND-FACTION-NAME-BRANCHES-IN-STAGES
+- file: src/content_semantics/role.py
+  symbol: RoleSemanticsService.is_worker
+  name: EntityRole.WORKER
+  count: 1
+  reason: worker test falls back to the legacy role enum (WORKER)
+  ticket: TCK-20261109-M1-RETIRE-ROLE-KIND-AND-FACTION-NAME-BRANCHES-IN-STAGES
+- file: src/core/builder.py
+  symbol: V2EntityBuilder.birth_record
+  name: EntityRole.HERO
+  count: 2
+  reason: combat lean when both parents have role HERO (promoted to gating by rpg-planner, 2026-11-15)
+  ticket: TCK-20261109-M1-RETIRE-ROLE-KIND-AND-FACTION-NAME-BRANCHES-IN-STAGES
+- file: src/domains/adventure/generator.py
+  symbol: AdventureRouteGenerator.generate
+  name: EntityRole.MONSTER
+  count: 1
+  reason: role defaults to MONSTER when an entity has no identity, then is compared
+  ticket: TCK-20261109-M1-RETIRE-ROLE-KIND-AND-FACTION-NAME-BRANCHES-IN-STAGES
+- file: src/domains/adventure/scoring.py
+  symbol: AdventureRouteScorer.score
+  name: EntityRole.HERO
+  count: 2
+  reason: hero role gets the quest-opportunity weighting
+  ticket: TCK-20261109-M1-RETIRE-ROLE-KIND-AND-FACTION-NAME-BRANCHES-IN-STAGES
+- file: src/domains/cooperation/evaluators.py
+  symbol: PartnerFitEvaluator.evaluate
+  name: '''VANGUARD'''
+  count: 1
+  reason: partner fit scored by tactical role name (VANGUARD, SUPPORT, STRIKER)
+  ticket: TCK-20261109-M1-RETIRE-ROLE-KIND-AND-FACTION-NAME-BRANCHES-IN-STAGES
+- file: src/domains/cooperation/evaluators.py
+  symbol: PartnerFitEvaluator.evaluate
+  name: '''SUPPORT'''
+  count: 1
+  reason: partner fit scored by tactical role name (VANGUARD, SUPPORT, STRIKER)
+  ticket: TCK-20261109-M1-RETIRE-ROLE-KIND-AND-FACTION-NAME-BRANCHES-IN-STAGES
+- file: src/domains/cooperation/evaluators.py
+  symbol: PartnerFitEvaluator.evaluate
+  name: '''STRIKER'''
+  count: 1
+  reason: partner fit scored by tactical role name (VANGUARD, SUPPORT, STRIKER)
+  ticket: TCK-20261109-M1-RETIRE-ROLE-KIND-AND-FACTION-NAME-BRANCHES-IN-STAGES
+- file: src/domains/cooperation/providers.py
+  symbol: PartnerCandidateProvider.get_candidates
+  name: '''SUPPORT'''
+  count: 1
+  reason: candidates bucketed by tactical role name
+  ticket: TCK-20261109-M1-RETIRE-ROLE-KIND-AND-FACTION-NAME-BRANCHES-IN-STAGES
+- file: src/domains/cooperation/providers.py
+  symbol: PartnerCandidateProvider.get_candidates
+  name: '''VANGUARD'''
+  count: 1
+  reason: candidates bucketed by tactical role name
+  ticket: TCK-20261109-M1-RETIRE-ROLE-KIND-AND-FACTION-NAME-BRANCHES-IN-STAGES
+- file: src/domains/culture/deriver.py
+  symbol: CultureDeriver.derive
+  name: '''HERO'''
+  count: 1
+  reason: a HERO role adds hero veneration to the region
+  ticket: TCK-20261109-M1-RETIRE-ROLE-KIND-AND-FACTION-NAME-BRANCHES-IN-STAGES
+- file: src/economy/vacancy.py
+  symbol: <module>[_PRODUCTION_RELEVANT_ROLES]
+  name: EntityRole.SHOPKEEPER
+  count: 1
+  reason: roles whose vacancy counts as production-relevant, named in a tuple
+  ticket: TCK-20261109-M1-RETIRE-ROLE-KIND-AND-FACTION-NAME-BRANCHES-IN-STAGES
+- file: src/economy/vacancy.py
+  symbol: <module>[_PRODUCTION_RELEVANT_ROLES]
+  name: EntityRole.WORKER
+  count: 1
+  reason: roles whose vacancy counts as production-relevant, named in a tuple
+  ticket: TCK-20261109-M1-RETIRE-ROLE-KIND-AND-FACTION-NAME-BRANCHES-IN-STAGES
+- file: src/engine/biological_needs.py
+  symbol: <module>[_PERSON_ROLES]
+  name: EntityRole.CITIZEN
+  count: 1
+  reason: roles that have person-level biological needs, named in a tuple
+  ticket: TCK-20261109-M1-RETIRE-ROLE-KIND-AND-FACTION-NAME-BRANCHES-IN-STAGES
+- file: src/engine/biological_needs.py
+  symbol: <module>[_PERSON_ROLES]
+  name: EntityRole.HERO
+  count: 1
+  reason: roles that have person-level biological needs, named in a tuple
+  ticket: TCK-20261109-M1-RETIRE-ROLE-KIND-AND-FACTION-NAME-BRANCHES-IN-STAGES
+- file: src/engine/biological_needs.py
+  symbol: <module>[_PERSON_ROLES]
+  name: EntityRole.SHOPKEEPER
+  count: 1
+  reason: roles that have person-level biological needs, named in a tuple
+  ticket: TCK-20261109-M1-RETIRE-ROLE-KIND-AND-FACTION-NAME-BRANCHES-IN-STAGES
+- file: src/engine/biological_needs.py
+  symbol: <module>[_PERSON_ROLES]
+  name: EntityRole.GUARD
+  count: 1
+  reason: roles that have person-level biological needs, named in a tuple
+  ticket: TCK-20261109-M1-RETIRE-ROLE-KIND-AND-FACTION-NAME-BRANCHES-IN-STAGES
+- file: src/engine/biological_needs.py
+  symbol: <module>[_PERSON_ROLES]
+  name: EntityRole.WORKER
+  count: 1
+  reason: roles that have person-level biological needs, named in a tuple
+  ticket: TCK-20261109-M1-RETIRE-ROLE-KIND-AND-FACTION-NAME-BRANCHES-IN-STAGES
+- file: src/engine/combat_rewards.py
+  symbol: CombatRewardClassificationService[_CLASSIFICATIONS]
+  name: EntityRole.MONSTER
+  count: 1
+  reason: kill-reward classification keyed on the victim's role (HERO_KILL / MONSTER_KILL)
+  ticket: TCK-20261109-M1-RETIRE-ROLE-KIND-AND-FACTION-NAME-BRANCHES-IN-STAGES
+- file: src/engine/combat_rewards.py
+  symbol: CombatRewardClassificationService[_CLASSIFICATIONS]
+  name: EntityRole.HERO
+  count: 1
+  reason: kill-reward classification keyed on the victim's role (HERO_KILL / MONSTER_KILL)
+  ticket: TCK-20261109-M1-RETIRE-ROLE-KIND-AND-FACTION-NAME-BRANCHES-IN-STAGES
+- file: src/engine/evolution.py
+  symbol: EvolutionSystem.evaluate
+  name: EntityRole.HERO
+  count: 1
+  reason: evolution branches on the hero role
+  ticket: TCK-20261109-M1-RETIRE-ROLE-KIND-AND-FACTION-NAME-BRANCHES-IN-STAGES
+- file: src/engine/legality.py
+  symbol: LegalityServiceV2.get_entity_priority
+  name: EntityRole.HERO
+  count: 1
+  reason: action priority ordered by role (HERO before MONSTER)
+  ticket: TCK-20261109-M1-RETIRE-ROLE-KIND-AND-FACTION-NAME-BRANCHES-IN-STAGES
+- file: src/engine/legality.py
+  symbol: LegalityServiceV2.get_entity_priority
+  name: EntityRole.MONSTER
+  count: 1
+  reason: action priority ordered by role (HERO before MONSTER)
+  ticket: TCK-20261109-M1-RETIRE-ROLE-KIND-AND-FACTION-NAME-BRANCHES-IN-STAGES
+- file: src/engine/military_conflict.py
+  symbol: MilitaryConflictPhase._build_guard_index_by_region
+  name: EntityRole.GUARD
+  count: 1
+  reason: the guard index picks GUARD role entities
+  ticket: TCK-20261109-M1-RETIRE-ROLE-KIND-AND-FACTION-NAME-BRANCHES-IN-STAGES
+- file: src/engine/occupancy_snapshot.py
+  symbol: OccupancySnapshot.from_state
+  name: EntityRole.HERO
+  count: 1
+  reason: occupancy counted separately for HERO and MONSTER roles
+  ticket: TCK-20261109-M1-RETIRE-ROLE-KIND-AND-FACTION-NAME-BRANCHES-IN-STAGES
+- file: src/engine/occupancy_snapshot.py
+  symbol: OccupancySnapshot.from_state
+  name: EntityRole.MONSTER
+  count: 1
+  reason: occupancy counted separately for HERO and MONSTER roles
+  ticket: TCK-20261109-M1-RETIRE-ROLE-KIND-AND-FACTION-NAME-BRANCHES-IN-STAGES
+- file: src/engine/tactical.py
+  symbol: TacticalDecisionSystem.evaluate_entity_intent
+  name: '''PROTECTOR'''
+  count: 2
+  reason: tactical intent branches on the tactical role name (VANGUARD, PROTECTOR, SKIRMISHER)
+  ticket: TCK-20261109-M1-RETIRE-ROLE-KIND-AND-FACTION-NAME-BRANCHES-IN-STAGES
+- file: src/engine/tactical.py
+  symbol: TacticalDecisionSystem.evaluate_entity_intent
+  name: '''VANGUARD'''
+  count: 4
+  reason: tactical intent branches on the tactical role name (VANGUARD, PROTECTOR, SKIRMISHER)
+  ticket: TCK-20261109-M1-RETIRE-ROLE-KIND-AND-FACTION-NAME-BRANCHES-IN-STAGES
+- file: src/engine/tactical.py
+  symbol: TacticalDecisionSystem.evaluate_entity_intent.target_score
+  name: '''VANGUARD'''
+  count: 1
+  reason: target score branches on the tactical role name
+  ticket: TCK-20261109-M1-RETIRE-ROLE-KIND-AND-FACTION-NAME-BRANCHES-IN-STAGES
+- file: src/engine/tactical.py
+  symbol: TacticalDecisionSystem.evaluate_entity_intent
+  name: '''SKIRMISHER'''
+  count: 3
+  reason: tactical intent branches on the tactical role name (VANGUARD, PROTECTOR, SKIRMISHER)
+  ticket: TCK-20261109-M1-RETIRE-ROLE-KIND-AND-FACTION-NAME-BRANCHES-IN-STAGES
+- file: src/systems/lifecycle_systems/lifecycle.py
+  symbol: LifecycleSystem.resolve_lifecycle
+  name: EntityRole.CITIZEN
+  count: 1
+  reason: a child becomes an adult only when its role is CITIZEN
+  ticket: TCK-20261109-M1-RETIRE-ROLE-KIND-AND-FACTION-NAME-BRANCHES-IN-STAGES
+- file: src/systems/social_systems/party_composition.py
+  symbol: PartyCompositionScorer.infer_party_role
+  name: '''brute'''
+  count: 1
+  reason: party role inferred from the entity kind name (guard, healer, ranger, merchant and 12 more)
+  ticket: TCK-20261109-M1-RETIRE-ROLE-KIND-AND-FACTION-NAME-BRANCHES-IN-STAGES
+- file: src/systems/social_systems/party_composition.py
+  symbol: PartyCompositionScorer.infer_party_role
+  name: '''guard'''
+  count: 1
+  reason: party role inferred from the entity kind name (guard, healer, ranger, merchant and 12 more)
+  ticket: TCK-20261109-M1-RETIRE-ROLE-KIND-AND-FACTION-NAME-BRANCHES-IN-STAGES
+- file: src/systems/social_systems/party_composition.py
+  symbol: PartyCompositionScorer.infer_party_role
+  name: '''guardian'''
+  count: 1
+  reason: party role inferred from the entity kind name (guard, healer, ranger, merchant and 12 more)
+  ticket: TCK-20261109-M1-RETIRE-ROLE-KIND-AND-FACTION-NAME-BRANCHES-IN-STAGES
+- file: src/systems/social_systems/party_composition.py
+  symbol: PartyCompositionScorer.infer_party_role
+  name: '''sentinel'''
+  count: 1
+  reason: party role inferred from the entity kind name (guard, healer, ranger, merchant and 12 more)
+  ticket: TCK-20261109-M1-RETIRE-ROLE-KIND-AND-FACTION-NAME-BRANCHES-IN-STAGES
+- file: src/systems/social_systems/party_composition.py
+  symbol: PartyCompositionScorer.infer_party_role
+  name: '''druid'''
+  count: 1
+  reason: party role inferred from the entity kind name (guard, healer, ranger, merchant and 12 more)
+  ticket: TCK-20261109-M1-RETIRE-ROLE-KIND-AND-FACTION-NAME-BRANCHES-IN-STAGES
+- file: src/systems/social_systems/party_composition.py
+  symbol: PartyCompositionScorer.infer_party_role
+  name: '''healer'''
+  count: 1
+  reason: party role inferred from the entity kind name (guard, healer, ranger, merchant and 12 more)
+  ticket: TCK-20261109-M1-RETIRE-ROLE-KIND-AND-FACTION-NAME-BRANCHES-IN-STAGES
+- file: src/systems/social_systems/party_composition.py
+  symbol: PartyCompositionScorer.infer_party_role
+  name: '''mage'''
+  count: 1
+  reason: party role inferred from the entity kind name (guard, healer, ranger, merchant and 12 more)
+  ticket: TCK-20261109-M1-RETIRE-ROLE-KIND-AND-FACTION-NAME-BRANCHES-IN-STAGES
+- file: src/systems/social_systems/party_composition.py
+  symbol: PartyCompositionScorer.infer_party_role
+  name: '''shaman'''
+  count: 1
+  reason: party role inferred from the entity kind name (guard, healer, ranger, merchant and 12 more)
+  ticket: TCK-20261109-M1-RETIRE-ROLE-KIND-AND-FACTION-NAME-BRANCHES-IN-STAGES
+- file: src/systems/social_systems/party_composition.py
+  symbol: PartyCompositionScorer.infer_party_role
+  name: '''hero'''
+  count: 1
+  reason: party role inferred from the entity kind name (guard, healer, ranger, merchant and 12 more)
+  ticket: TCK-20261109-M1-RETIRE-ROLE-KIND-AND-FACTION-NAME-BRANCHES-IN-STAGES
+- file: src/systems/social_systems/party_composition.py
+  symbol: PartyCompositionScorer.infer_party_role
+  name: '''hunter'''
+  count: 1
+  reason: party role inferred from the entity kind name (guard, healer, ranger, merchant and 12 more)
+  ticket: TCK-20261109-M1-RETIRE-ROLE-KIND-AND-FACTION-NAME-BRANCHES-IN-STAGES
+- file: src/systems/social_systems/party_composition.py
+  symbol: PartyCompositionScorer.infer_party_role
+  name: '''ranger'''
+  count: 1
+  reason: party role inferred from the entity kind name (guard, healer, ranger, merchant and 12 more)
+  ticket: TCK-20261109-M1-RETIRE-ROLE-KIND-AND-FACTION-NAME-BRANCHES-IN-STAGES
+- file: src/systems/social_systems/party_composition.py
+  symbol: PartyCompositionScorer.infer_party_role
+  name: '''scout'''
+  count: 1
+  reason: party role inferred from the entity kind name (guard, healer, ranger, merchant and 12 more)
+  ticket: TCK-20261109-M1-RETIRE-ROLE-KIND-AND-FACTION-NAME-BRANCHES-IN-STAGES
+- file: src/systems/social_systems/party_composition.py
+  symbol: PartyCompositionScorer.infer_party_role
+  name: '''blacksmith'''
+  count: 1
+  reason: party role inferred from the entity kind name (guard, healer, ranger, merchant and 12 more)
+  ticket: TCK-20261109-M1-RETIRE-ROLE-KIND-AND-FACTION-NAME-BRANCHES-IN-STAGES
+- file: src/systems/social_systems/party_composition.py
+  symbol: PartyCompositionScorer.infer_party_role
+  name: '''citizen'''
+  count: 1
+  reason: party role inferred from the entity kind name (guard, healer, ranger, merchant and 12 more)
+  ticket: TCK-20261109-M1-RETIRE-ROLE-KIND-AND-FACTION-NAME-BRANCHES-IN-STAGES
+- file: src/systems/social_systems/party_composition.py
+  symbol: PartyCompositionScorer.infer_party_role
+  name: '''merchant'''
+  count: 1
+  reason: party role inferred from the entity kind name (guard, healer, ranger, merchant and 12 more)
+  ticket: TCK-20261109-M1-RETIRE-ROLE-KIND-AND-FACTION-NAME-BRANCHES-IN-STAGES
+- file: src/systems/social_systems/party_composition.py
+  symbol: PartyCompositionScorer.infer_party_role
+  name: '''worker'''
+  count: 1
+  reason: party role inferred from the entity kind name (guard, healer, ranger, merchant and 12 more)
+  ticket: TCK-20261109-M1-RETIRE-ROLE-KIND-AND-FACTION-NAME-BRANCHES-IN-STAGES
+- file: src/systems/strategic_systems/intelligence.py
+  symbol: StrategicIntelligenceSystem.evaluate_strategic_intent
+  name: EntityRole.CITIZEN
+  count: 1
+  reason: a career-change project is refused for any role but CITIZEN
+  ticket: TCK-20261109-M1-RETIRE-ROLE-KIND-AND-FACTION-NAME-BRANCHES-IN-STAGES
+- file: src/systems/world_systems/generator.py
+  symbol: <module>[SPAWN_KIND_CATALOG_FACTION]
+  name: '''goblin_warrior'''
+  count: 1
+  reason: spawn table from monster kind name to its catalog faction
+  ticket: TCK-20261109-M1-RETIRE-ROLE-KIND-AND-FACTION-NAME-BRANCHES-IN-STAGES
+- file: src/systems/world_systems/generator.py
+  symbol: <module>[SPAWN_KIND_CATALOG_FACTION]
+  name: '''goblin_raider'''
+  count: 1
+  reason: spawn table from monster kind name to its catalog faction
+  ticket: TCK-20261109-M1-RETIRE-ROLE-KIND-AND-FACTION-NAME-BRANCHES-IN-STAGES
+- file: src/systems/world_systems/generator.py
+  symbol: <module>[SPAWN_KIND_CATALOG_FACTION]
+  name: '''orc_warrior'''
+  count: 1
+  reason: spawn table from monster kind name to its catalog faction
+  ticket: TCK-20261109-M1-RETIRE-ROLE-KIND-AND-FACTION-NAME-BRANCHES-IN-STAGES
+- file: src/systems/world_systems/generator.py
+  symbol: <module>[SPAWN_KIND_CATALOG_FACTION]
+  name: '''bandit'''
+  count: 1
+  reason: spawn table from monster kind name to its catalog faction
+  ticket: TCK-20261109-M1-RETIRE-ROLE-KIND-AND-FACTION-NAME-BRANCHES-IN-STAGES
+- file: src/systems/world_systems/generator.py
+  symbol: <module>[SPAWN_KIND_CATALOG_FACTION]
+  name: '''goblin'''
+  count: 1
+  reason: spawn table from monster kind name to its catalog faction
+  ticket: TCK-20261109-M1-RETIRE-ROLE-KIND-AND-FACTION-NAME-BRANCHES-IN-STAGES
+- file: src/systems/world_systems/generator.py
+  symbol: <module>[SPAWN_KIND_CATALOG_FACTION]
+  name: '''dragonkin'''
+  count: 1
+  reason: spawn table from monster kind name to its catalog faction
+  ticket: TCK-20261109-M1-RETIRE-ROLE-KIND-AND-FACTION-NAME-BRANCHES-IN-STAGES
+- file: src/systems/world_systems/generator.py
+  symbol: <module>[SPAWN_KIND_CATALOG_FACTION]
+  name: '''wolf'''
+  count: 1
+  reason: spawn table from monster kind name to its catalog faction
+  ticket: TCK-20261109-M1-RETIRE-ROLE-KIND-AND-FACTION-NAME-BRANCHES-IN-STAGES
+- file: src/systems/world_systems/generator.py
+  symbol: <module>[SPAWN_KIND_CATALOG_FACTION]
+  name: '''slime'''
+  count: 1
+  reason: spawn table from monster kind name to its catalog faction
+  ticket: TCK-20261109-M1-RETIRE-ROLE-KIND-AND-FACTION-NAME-BRANCHES-IN-STAGES
+- file: src/systems/world_systems/generator.py
+  symbol: <module>[SPAWN_KIND_CATALOG_FACTION]
+  name: '''bear'''
+  count: 1
+  reason: spawn table from monster kind name to its catalog faction
+  ticket: TCK-20261109-M1-RETIRE-ROLE-KIND-AND-FACTION-NAME-BRANCHES-IN-STAGES
+- file: src/systems/world_systems/generator.py
+  symbol: <module>[SPAWN_KIND_CATALOG_FACTION]
+  name: '''harpy'''
+  count: 1
+  reason: spawn table from monster kind name to its catalog faction
+  ticket: TCK-20261109-M1-RETIRE-ROLE-KIND-AND-FACTION-NAME-BRANCHES-IN-STAGES
+- file: src/systems/world_systems/generator.py
+  symbol: <module>[SPAWN_KIND_CATALOG_FACTION]
+  name: '''golem'''
+  count: 1
+  reason: spawn table from monster kind name to its catalog faction
+  ticket: TCK-20261109-M1-RETIRE-ROLE-KIND-AND-FACTION-NAME-BRANCHES-IN-STAGES
+- file: src/systems/world_systems/navigation.py
+  symbol: FlowFieldService.get_flow_direction
+  name: '''world_boss'''
+  count: 1
+  reason: a WORLD_BOSS target finds entities whose kind is 'world_boss'
+  ticket: TCK-20261109-M1-RETIRE-ROLE-KIND-AND-FACTION-NAME-BRANCHES-IN-STAGES
+- file: src/systems/world_systems/routine.py
+  symbol: RoutineService.get_role_utility_boost
+  name: EntityRole.SHOPKEEPER
+  count: 1
+  reason: routine utility boost by role (SHOPKEEPER, HERO, WORKER, GUARD)
+  ticket: TCK-20261109-M1-RETIRE-ROLE-KIND-AND-FACTION-NAME-BRANCHES-IN-STAGES
+- file: src/systems/world_systems/routine.py
+  symbol: RoutineService.get_role_utility_boost
+  name: EntityRole.HERO
+  count: 1
+  reason: routine utility boost by role (SHOPKEEPER, HERO, WORKER, GUARD)
+  ticket: TCK-20261109-M1-RETIRE-ROLE-KIND-AND-FACTION-NAME-BRANCHES-IN-STAGES
+- file: src/systems/world_systems/routine.py
+  symbol: RoutineService.get_role_utility_boost
+  name: EntityRole.WORKER
+  count: 1
+  reason: routine utility boost by role (SHOPKEEPER, HERO, WORKER, GUARD)
+  ticket: TCK-20261109-M1-RETIRE-ROLE-KIND-AND-FACTION-NAME-BRANCHES-IN-STAGES
+- file: src/systems/world_systems/routine.py
+  symbol: RoutineService.get_role_utility_boost
+  name: EntityRole.GUARD
+  count: 1
+  reason: routine utility boost by role (SHOPKEEPER, HERO, WORKER, GUARD)
+  ticket: TCK-20261109-M1-RETIRE-ROLE-KIND-AND-FACTION-NAME-BRANCHES-IN-STAGES
+- file: src/world/boss.py
+  symbol: BossService.check_for_boss_spawn._is_active_living_boss
+  name: '''world_boss'''
+  count: 1
+  reason: boss spawn control, finds a living boss by the kind name world_boss
+  ticket: TCK-20261109-M1-RETIRE-ROLE-KIND-AND-FACTION-NAME-BRANCHES-IN-STAGES
+- file: src/world/boss.py
+  symbol: BossService.check_for_lair_spawn._is_active_living_lair_occupant
+  name: '''dragonkin'''
+  count: 1
+  reason: lair spawn control, finds a living lair occupant by the kind name dragonkin
+  ticket: TCK-20261109-M1-RETIRE-ROLE-KIND-AND-FACTION-NAME-BRANCHES-IN-STAGES
+- file: src/world/calamity.py
+  symbol: CalamityService.apply_calamity_consequences
+  name: '''hero'''
+  count: 1
+  reason: calamity consequences pick out entities by the kind name hero
+  ticket: TCK-20261109-M1-RETIRE-ROLE-KIND-AND-FACTION-NAME-BRANCHES-IN-STAGES
+- file: src/world/creature_territory.py
+  symbol: CreatureTerritoryService.process_territories
+  name: EntityRole.MONSTER
+  count: 1
+  reason: territory processing picks out entities by the role MONSTER
+  ticket: TCK-20261109-M1-RETIRE-ROLE-KIND-AND-FACTION-NAME-BRANCHES-IN-STAGES
+- file: src/world/environment.py
+  symbol: EnvironmentService.get_aura_multipliers
+  name: Faction.HERO_GUILD
+  count: 1
+  reason: environment aura multiplier chosen by the faction HERO_GUILD
+  ticket: TCK-20261109-M1-RETIRE-ROLE-KIND-AND-FACTION-NAME-BRANCHES-IN-STAGES
+- file: src/world/environment.py
+  symbol: EnvironmentService.get_aura_multipliers
+  name: "'stronghold'"
+  count: 1
+  reason: the aura read of the stronghold occupation label (owner disclosure #715 6937829823; it existed before M1 step 3 as getattr(s, "kind") on a receiver the scan did not count, and became visible when the scan learned the occupation word)
+  ticket: TCK-20261109-M1-RETIRE-ROLE-KIND-AND-FACTION-NAME-BRANCHES-IN-STAGES
+- file: src/world/occupation_config.py
+  symbol: <module>[BASE_OCCUPATION_DENSITY]
+  name: EntityRole.SHOPKEEPER
+  count: 1
+  reason: base occupation density table, keyed on role
+  ticket: TCK-20261109-M1-RETIRE-ROLE-KIND-AND-FACTION-NAME-BRANCHES-IN-STAGES
+- file: src/world/occupation_config.py
+  symbol: <module>[BASE_OCCUPATION_DENSITY]
+  name: EntityRole.WORKER
+  count: 1
+  reason: base occupation density table, keyed on role
+  ticket: TCK-20261109-M1-RETIRE-ROLE-KIND-AND-FACTION-NAME-BRANCHES-IN-STAGES
+- file: src/world/occupation_config.py
+  symbol: <module>[BASE_OCCUPATION_DENSITY]
+  name: EntityRole.GUARD
+  count: 1
+  reason: base occupation density table, keyed on role
+  ticket: TCK-20261109-M1-RETIRE-ROLE-KIND-AND-FACTION-NAME-BRANCHES-IN-STAGES
+- file: src/world/region_threat_classifier.py
+  symbol: RegionThreatClassifier._classify_legacy._is_hostile_bucket
+  name: Faction.MONSTER_HORDE
+  count: 1
+  reason: region threat bucket, hostile when the faction is MONSTER_HORDE
+  ticket: TCK-20261109-M1-RETIRE-ROLE-KIND-AND-FACTION-NAME-BRANCHES-IN-STAGES
+- file: src/world/region_threat_classifier.py
+  symbol: RegionThreatClassifier._classify_legacy._is_friendly_bucket
+  name: Faction.HERO_GUILD
+  count: 1
+  reason: region threat bucket, friendly when the faction is HERO_GUILD
+  ticket: TCK-20261109-M1-RETIRE-ROLE-KIND-AND-FACTION-NAME-BRANCHES-IN-STAGES
+- file: src/world/region_threat_classifier.py
+  symbol: RegionThreatClassifier._classify_legacy._is_friendly_bucket
+  name: Faction.TOWN_COUNCIL
+  count: 1
+  reason: region threat bucket, friendly when the faction is TOWN_COUNCIL
+  ticket: TCK-20261109-M1-RETIRE-ROLE-KIND-AND-FACTION-NAME-BRANCHES-IN-STAGES
+- file: src/world/regional_sovereignty.py
+  symbol: RegionalSovereigntyService.process_taxation
+  name: EntityRole.HERO
+  count: 1
+  reason: sovereignty tax applies to entities by the role HERO
+  ticket: TCK-20261109-M1-RETIRE-ROLE-KIND-AND-FACTION-NAME-BRANCHES-IN-STAGES
+- file: src/world/regional_sovereignty.py
+  symbol: RegionalSovereigntyService.apply_sovereignty_debuffs
+  name: EntityRole.HERO
+  count: 1
+  reason: sovereignty debuffs apply to entities by the role HERO
+  ticket: TCK-20261109-M1-RETIRE-ROLE-KIND-AND-FACTION-NAME-BRANCHES-IN-STAGES
+- file: src/world/regional_sovereignty.py
+  symbol: RegionalSovereigntyService.apply_sovereignty_debuffs
+  name: Faction.MONSTER_HORDE
+  count: 1
+  reason: sovereignty debuffs depend on the owning faction MONSTER_HORDE
+  ticket: TCK-20261109-M1-RETIRE-ROLE-KIND-AND-FACTION-NAME-BRANCHES-IN-STAGES
+- file: src/world/threat.py
+  symbol: ThreatService.process_threat_evolution
+  name: '''world_boss'''
+  count: 1
+  reason: threat evolution picks out entities by the kind name world_boss
+  ticket: TCK-20261109-M1-RETIRE-ROLE-KIND-AND-FACTION-NAME-BRANCHES-IN-STAGES

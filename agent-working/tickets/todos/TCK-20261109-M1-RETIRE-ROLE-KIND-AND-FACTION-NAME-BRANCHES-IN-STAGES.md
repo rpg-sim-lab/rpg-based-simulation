@@ -39,6 +39,12 @@ Filed by rpg-planner on 2026-11-09 as a filing only (no code), on lead-planner-u
 3. Replace the fixed camp tether with a home range.
 - Rule work before code (§12.3, "How the path runs"): the catalog text and kernel spec come first. Owner-level choices go to the owner as questions with options and a recommendation when the milestone starts. The forward design's proposed recommendations are not rulings.
 - Measured as its own step, once at fold against its parent (decision 76), on the cumulative watch that restarts at v1.1, with the §12.5 per-step stop rules. Those rules and the watch are not trimmed without an owner ruling (#715 6731822583). The measurement tier is stated at dispatch under the standing depth rule (#715 6731764470). It is never below the floor (#715 6731822583): the paired default tier plus every world where an affected known entry lives. A hash-equal check alone proves only an observability change. Decision 76 (§12.3) sets a behaviour step at 3 worlds x 5 seeds x 5000 ticks per arm, and going below it needs an owner ruling.
+- Carried from the closed de-hero epic (owner #715 6875278006). Step 1's inventory also covers every place `EntityRole.HERO` or the word "hero" grants or implies behaviour. Each row gets a code citation, a one-line reason and exactly one category:
+  1. a privilege to remove (no in-world basis);
+  2. a capability to re-ground on real state (skills, equipment, reputation, standing), naming that state and the rule that requires it (CAUSE-04, ID-02);
+  3. harmless naming, recorded and left alone.
+- Open question carried, not pre-answered: is `HERO_KILL` (`src/engine/combat_rewards.py:14`, `:43`; xp 20 / gold 50 against MONSTER's 10 / 5, Bible 02 reward table) a privilege (category 1) or a difficulty signal keyed on role (category 2)?
+- A row that is a rule violation rather than a preference goes to rpg-designer for a rule-level ruling. The inventory also answers whether `EntityRole.HERO` can go, or must stay as pure classification.
 
 ## Out of Scope
 - §12.4 (packs, herds, territory), milestones 2 and 3, and any rule work not listed in §12.3 (owner ruling only).
@@ -54,6 +60,7 @@ Filed by rpg-planner on 2026-11-09 as a filing only (no code), on lead-planner-u
 - TCK-20261109-M1-NO-NAME-CHECKS-PROBE-AND-CONTENT-ALONE-KIND-PROBE
 
 ## Related Docs
+- docs/plans/systemic_world/m1_kernel_spec_items_2_6.md (the kernel spec + this item's own-job counts; owner answers Q1-Q10, #715 6937049127)
 - docs/plans/systemic_world/roadmap.md (§12.3 milestone 1, §12.5 done criteria)
 - docs/plans/systemic_world/owner_decision_memo.md
 
@@ -68,7 +75,7 @@ src/strategy/, src/systems/, decision code
 - Owner-level choices are asked when the milestone starts, not guessed here.
 
 ## Implementation Notes
-None yet.
+- 2026-11-17 (M1 step 4, rpg-designer 3045e98a and the Q2 ruling): (1) **stronghold**: no entity writer has existed since D71. The step-3 reader (`src/world/environment.py:86`, now on `occupation`) and the `tests/unit/world/test_aura.py` fixture stay as a dead branch in the kind=species item; remove them in one of these stages. (2) **A species-valued label on a camp spawn**: a wolf, spider, troll or slime camp spawn writes `occupation` = the species string (what `CampService.spawn_kind` returns where the species declares no `camp_spawn_kind`), so the label equals the species. Clean that label up in these stages (goblin_warrior and orc_warrior come from the species' own `camp_spawn_kind`).
 
 ## Test Summary
 

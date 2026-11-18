@@ -52,7 +52,7 @@ domains:
       - docs/guides/cross_session_messages.md   # the guide behind the role cards
       - agent-working/agent-orchestration/**
       - agent-working/agent-monitoring/retro/**
-      - registries/session_*.yaml   # exactly session_roles.yaml and session_authority.yaml today; one glob keeps the card within its token budget
+      - registries/session_*.yaml   # every registries/session_*.yaml file; one glob keeps the card within its token budget
       - .claude/agents/**
       - .graphifyignore
       - tools/graphify_link.py
@@ -62,6 +62,7 @@ domains:
       - tools/start_*_mcp.sh       # start_search_mcp, start_headroom_mcp
       - tools/*_search.py          # exactly knowledge_search.py and eval_search.py today
       - tools/handover_transit.py   # session/handover tooling (session-lead epic scope)
+      - tools/project_stats.py   # the project facts tool and its generated page docs/architecture/project_facts.md (lead-planner OK 2026-11-14)
       - tools/world_glossary_registry.py   # the tool only; the rows in registries/world_glossary.jsonl are rpg content (routes below)
       - requirements-knowledge.txt
       - tests/tools/**
@@ -243,7 +244,7 @@ roles:
     responsibility:
       accepts_dispatch_from: [user, rpg-planner]
     capability: {may_write: ["**"]}
-    placement: {worktree: rpg, max_sessions: 3}
+    placement: {worktree: rpg, max_sessions: 4}
     handover: .claude/handover/rpg-implementer.md
     card_note: "Host u24desktop; twin `-ubuntu`."
   - role: rpg-designer-ubuntu   # host ubuntu; rpg exception: plain = u24desktop (owner 2026-10-25, #715)
@@ -270,7 +271,7 @@ roles:
     responsibility:
       accepts_dispatch_from: [user, rpg-planner-ubuntu]
     capability: {may_write: ["**"]}
-    placement: {worktree: rpg-ubuntu, max_sessions: 3}
+    placement: {worktree: rpg-ubuntu, max_sessions: 4}
     handover: .claude/handover/rpg-implementer-ubuntu.md
     card_note: "Host ubuntu."
   - role: agent-working-designer

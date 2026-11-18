@@ -281,3 +281,11 @@ def test_a_ledger_write_failure_leaves_the_matrix_and_the_cli_exit_code_unchange
     captured = capsys.readouterr()
     assert "run ledger not written" in captured.err and "2/2 runs ok" in captured.out
     assert json.loads((tmp_path / "o" / "matrix.json").read_text())["schema"] == "rpg-gate-matrix/v1"
+
+
+def test_every_document_carries_the_pinned_runner_verdict_read_from_its_runs_manifest(tmp_path):
+    """TCK-20261115-A-NON-SEQUENTIAL-RUN-IS-REFUSED-BY-THE-GATE-CANDIDATE-PAIRED-ARMS-AND-RPG-MEASURE: the real pinned ``build_kernel`` classifies PINNED, and the
+    pooled document is PINNED because the documents it pools are."""
+    _run(tmp_path, "a")
+    for name in (h.doc_name(WORLD, 1), h.doc_name(WORLD, 2), h.doc_name(WORLD, None)):
+        assert _doc(tmp_path, "a", name)["runner"] == {"verdict": "PINNED", "differences": []}, name

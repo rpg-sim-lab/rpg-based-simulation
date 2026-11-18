@@ -126,7 +126,7 @@ def test_a_hit_within_the_window_is_an_act_and_a_stale_or_foreign_hit_is_not():
 
     def scene(last_attacker, hit_tick):
         hero, state = _with_hostile(_hero(hunger=hunger), (1.0, 0.0))
-        hero = replace(hero, combat=replace(hero.combat, last_attacker_id=last_attacker, last_hit_tick=hit_tick))
+        hero = replace(hero, combat=replace(hero.combat, last_attacker_id=last_attacker, last_hit_tick=hit_tick, last_hit_attackers=(last_attacker,)))
         object.__setattr__(state, "entities", {**state.entities, 1: hero})
         return hero, state
 

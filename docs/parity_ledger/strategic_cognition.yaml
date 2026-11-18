@@ -4598,14 +4598,29 @@
   support_boundary: 'Paired against the dead-are-not-threats step, STRAT-285 (seeds 42-46): no drift; extinction stop (frontier scout; crowded hero, scout, worker), accepted by the owner (v1 disclosure N9). V3 on 15: 12 clean, 3 owned known reds (N14, N15). has_project_capacity still counts exempt need projects (slot-leak ticket); a suspended exempt need project frees a slot for an ordinary project that the old trim would have removed.'
 
 - id: STRAT-287
-  text: 'TCK-20261023-AN-ACTING-HOSTILE-IS-AN-ACT-NOT-A-STATE (SURV-07, AGENCY-07, memo row 88): a perceived hostile holds back an escalated need and holds a panic retreat past the need''s consequence line only when it ACTS on the subject: its current task is an attack (ATTACK, SKILL) or a pursuit (PURSUE, INTERCEPT, BRACKETING) with the subject as its typed target, or it is the body that last took hp from the subject within NEED_WAKE_CADENCE ticks (CombatComponent.last_hit_tick, written with last_attacker_id). Wounded, adjacent, closing without a task and outmatched are AGENCY-07 flight terms only. Rest and eat in place and the cautious safety retreat keep the full terms.'
+  text: 'TCK-20261023-AN-ACTING-HOSTILE-IS-AN-ACT-NOT-A-STATE (SURV-07, AGENCY-07,
+    memo row 88): a perceived hostile holds back an escalated need and holds a panic
+    retreat past the need''s consequence line only when it ACTS on the subject: its
+    current task is an attack (ATTACK, SKILL) or a pursuit (PURSUE, INTERCEPT, BRACKETING)
+    with the subject as its typed target, or it is one of the bodies that took hp
+    from the subject in its last hit, within NEED_WAKE_CADENCE ticks (CombatComponent.last_hit_attackers,
+    last_hit_tick; a simultaneous group hit records every attacker, divergence 2.148,
+    COMB-354). Wounded, adjacent, closing without a task and outmatched are AGENCY-07
+    flight terms only. Rest and eat in place and the cautious safety retreat keep
+    the full terms.'
   status: verified
   priority: P1
   legacy_evidence: null
-  v2_evidence: 'src/ai/goals/present_threat.py (acting_threat_to), src/engine/tactical_threat.py (hostile_acts_on), src/ai/goals/scorers.py (_escalated_unless_threatened), src/engine/tactical.py (_panic_holds), src/core/state.py (CombatComponent.last_hit_tick), src/engine/patches.py (CombatPatch), src/engine/combat.py (hit_tick_set). docs/mechanics/04_strategic_cognition.md section 1. Real-kernel merchant-37 test stays green; unit pairs per reader (acting versus resting) and a hit-window boundary test.'
+  v2_evidence: src/ai/goals/present_threat.py (acting_threat_to), src/engine/tactical_threat.py
+    (hostile_acts_on), src/ai/goals/scorers.py (_escalated_unless_threatened), src/engine/tactical.py
+    (_panic_holds), src/core/state.py (CombatComponent.last_hit_tick, last_hit_attackers),
+    src/engine/patches.py (CombatPatch), src/engine/combat.py (hit_tick_set). docs/mechanics/04_strategic_cognition.md
+    section 1. Real-kernel merchant-37 test stays green; unit pairs per reader (acting
+    versus resting) and a hit-window boundary test.
   proof_type: regression
   test_path: tests/unit/engine/test_acting_hostile_is_an_act_not_a_state.py
-  divergence_note: See docs/guidelines/intentional_divergences.md Section 2.138.
+  divergence_note: See docs/guidelines/intentional_divergences.md Section 2.138; the
+    group-hit record is Section 2.148.
   support_boundary: 'Measured (base 341f700d0, tip 265162719, seeds 42-46, 3 worlds, 5000 ticks, self-check spread 0): people deaths no drift on all three worlds; crowded_frontier merchant extinction STOP (merchant 12, seeds 42 and 46), accepted as a downstream consequence of the row-88 change and recorded as is (owner ruling, #715 comment 6411018314); attribution to the scorers.py SURV-07 gate, first divergence t766 (seed 42) and t749 (seed 46). See divergence 2.138. An attack task stays current until the hostile next decides (no reach test); last_hit_tick is excluded from the v2 proof digest until perf F1 (the final hash cannot see it). Step A (retreat escalation) is measured on this tip.'
 
 - id: STRAT-288
@@ -4691,3 +4706,35 @@
   test_path: tests/unit/tactical/test_low_hp_retreat_gate.py
   divergence_note: See docs/guidelines/intentional_divergences.md Section 2.200.
   support_boundary: 'Unit rows: the low-hp retreat grid ({pressing y/n} x {no hostile, perceived only, adjacent not acting, acting}) with and without a destination, the acceptance scene, the panic freeze with prey in sight, and the reading 3 below-line row. Paired measurement pending.'
+
+- id: STRAT-350
+  text: 'TCK-20261115-PAST-THE-STARVING-LINE-THE-TACTICAL-STEP-TURNS-AWAY-FROM-A-MEAL-WITHOUT-WEIGHING-HUNGER (SURV-07 LAW P, memo row 88, divergence 2.207): past the starving line (hunger at or above 95) a hit acts on the subject only while its hitter can still reach it (Manhattan distance at the decision tick <= max(1, the hitter''s range), no line of sight) or pursues or attacks it; a swing left behind no longer makes the need yield, keeps a panic standing or makes acting_threat_to true. Below the line the ten-tick hit window is unchanged.'
+  status: verified
+  priority: P1
+  legacy_evidence: null
+  v2_evidence: 'src/engine/tactical_threat.py (_hit_acts_on, hostile_acts_on, need_yields), src/engine/tactical.py (_panic_holds, _need_path_first), src/ai/goals/present_threat.py (acting_threat_to), docs/mechanics/04_strategic_cognition.md (LAW P paragraph), docs/guidelines/intentional_divergences.md Section 2.207.'
+  proof_type: regression
+  test_path: tests/unit/engine/test_acting_hostile_is_an_act_not_a_state.py, tests/unit/tactical/test_starving_hit_left_behind_does_not_hold_a_panic.py, tests/integration/observability/test_starving_subject_eats_past_a_hitter_left_behind_through_the_real_kernel.py
+  divergence_note: See docs/guidelines/intentional_divergences.md Section 2.207.
+  support_boundary: 'Unit rows, one tactical scene (the traced shape A; a raider, the old-predicate control holds the panic) and one real-kernel tick-loop test on compiled crowded_frontier (a starving wounded worker two tiles from the inn, a raider that hit it 3 ticks before every tick standing five tiles away and idle: it eats; with the old predicate restored it does not in the same 40 ticks). The paired 3-world x s42-46 x 5000-tick measurement and the V3 cell re-read are pending (after HOLD stage 2). Reach has no line-of-sight test; engagement ordering after a yielded need (group shared-target bias) is out of scope.'
+
+- id: STRAT-354
+  text: 'TCK-20261020-SUSPENDED-PROJECTS-ARE-NEVER-RESUMED-SLOT-LEAK (divergence 2.212): a SUSPENDED project that stays suspended for SUSPENSION_TTL_TICKS (200) ticks ends ABANDONED with ended_by SUSPENSION_EXPIRED through end_record, for every project kind, and its slot is free on the same strategic call. ProjectState.suspended_since is set by every SUSPENDED writer (project switch, tactical threat suspend, near-death) and cleared by resume_project; the near-death suspend also clears the current project and objective ids. Resume has no new trigger. The visible bound is TTL + cadence - 1 (209 at cadence 10, 219 under PROD_SMALL).'
+  status: verified
+  priority: P1
+  legacy_evidence: null
+  v2_evidence: 'src/core/strategic.py (ProjectEnd.SUSPENSION_EXPIRED, ProjectState.suspended_since, SUSPENSION_TTL_TICKS, suspend_record, expire_suspended), src/systems/strategic_systems/intelligence.py (evaluate_strategic_intent, suspension_expiry_update, resume_project), src/engine/tactical.py (_suspend_project_for_threat), src/systems/world_systems/events.py (interpret_near_death), src/engine/checkpoint_fields.py, docs/mechanics/04_strategic_cognition.md section 4, docs/guidelines/intentional_divergences.md Section 2.212.'
+  proof_type: regression
+  test_path: tests/unit/strategic/test_suspension_expiry.py, tests/unit/engine/test_checkpoint_fields.py
+  divergence_note: See docs/guidelines/intentional_divergences.md Section 2.212.
+  support_boundary: 'Unit rows plus the own-job counts at 67b507f8c: 3 gate worlds x s42 x 5000 ticks, spied and plain twin (hashes equal, PINNED, no exceptions, no logging errors): L1 = L2 = L3 = L4 = 0, SUSPENSION_EXPIRED 126 / 60 / 60 (frontier_living_world / urban_political / crowded_frontier), oldest SUSPENDED 218 < bar 219 (TTL 200 + cadence 20 - 1). 200 is a BALANCE value; the harm join is withdrawn. evaluate_all_strategic_intents has no production caller and skips the pass (TCK-20261117-EVALUATE-ALL-STRATEGIC-INTENTS-IS-DEAD-CODE-THAT-SKIPS-THE-SUSPENSION-EXPIRY).'
+- id: STRAT-351
+  text: 'TCK-20261115-THE-NIGHT-CHECK-READS-RAW-WORLD-TIME-SO-EVERY-TICK-AFTER-1800-IS-NIGHT (SURV-08 clock amendment, memo row 98 Q1, divergence 2.209): night is the night half of the time of day (world_time % 2400: ticks 1800-2399 and 0-599), so tick 2400+k is classified as tick k. The sleep bias (SleepScorer +30, routine sleep urgency +0.3, routine sleep boost x2) applies in the night half of every day; the old raw-clock rule agrees with this below t=3000, and from t=3000 it counted every tick as night.'
+  status: verified
+  priority: P1
+  legacy_evidence: null
+  v2_evidence: 'src/core/calendar.py (time_of_day, is_night), src/ai/goals/scorers.py (SleepScorer), src/systems/world_systems/routine.py (evaluate_biological_needs, get_routine_utility_boost), docs/mechanics/04_strategic_cognition.md Tier 2 Biological, docs/guidelines/intentional_divergences.md Section 2.209.'
+  proof_type: regression
+  test_path: tests/unit/core/test_time_of_day.py
+  divergence_note: See docs/guidelines/intentional_divergences.md Section 2.209.
+  support_boundary: 'Unit rows: the helper at ticks 0, 599, 600, 1799, 1800, 2399, 2400, 2999, 3000 and 4200; night is 1200 of every 2400 ticks; the three readers agree at t and t plus whole days; no raw night literal in src outside calendar.py.'

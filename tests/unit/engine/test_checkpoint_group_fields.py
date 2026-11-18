@@ -13,12 +13,17 @@ import struct
 
 import pytest
 
-from src.core.state import AuthoritativeState, GroupRecord, seeded_next_group_id
+from tests.named_run_dirs import remove_restored_run_dirs  # noqa: F401
+
+pytestmark = pytest.mark.usefixtures("remove_restored_run_dirs")
+
+from src.core.state import AuthoritativeState, BuildingState, GroupRecord, seeded_next_group_id
 from src.engine.apply import ApplyPath
 from src.engine.checkpoint import CanonicalStateHasher
 from src.engine.checkpoint_fields import FIELD_RULES, CheckpointFieldMissingError, check_group_counter, fill_missing_fields
 from src.engine.scenario_checkpoint import ScenarioCheckpointer
 from src.systems.world_systems.groups import GroupSystem
+from tests.unit.engine.checkpoint_helpers import old_shape_schema, write_checkpoint
 
 NEW_GROUP_FIELDS = {"contract_holder_id", "dissolution_reason", "dissolution_contract_status"}
 
@@ -39,6 +44,9 @@ def _old_shape_dumps(state, monkeypatch, *, group_fields=True, counter=True):
         return pickle.dumps(state)
     finally:
         monkeypatch.undo()
+
+
+_OLD_GROUP_SHAPE = {GroupRecord: NEW_GROUP_FIELDS, AuthoritativeState: {"next_group_id"}}  # what a build before the binding and the counter recorded
 
 
 def _state(groups):
@@ -103,8 +111,8 @@ def test_with_only_the_counter_slot_missing_it_is_seeded_and_the_readers_work(mo
 
 
 def test_every_rule_names_its_ruling_and_the_step_is_the_only_caller():
-    # the group rows, the F3 (2.155) rows and retention's 2.156 row (cleared_since) share the one table
-    assert {r.field for r in FIELD_RULES} == {"next_group_id", *NEW_GROUP_FIELDS, "lodged_in", "beds", "cleared_since"}
+    # the group rows, the F3 (2.155) rows, retention's 2.156 row (cleared_since) and the M1 occupation row and the N10 suspended_since row (2.212) share the one table
+    assert {r.field for r in FIELD_RULES} == {"next_group_id", *NEW_GROUP_FIELDS, "lodged_in", "beds", "cleared_since", "occupation", "suspended_since"}
     assert all(r.ruling for r in FIELD_RULES)
     import pathlib
     src = pathlib.Path("src")
@@ -114,10 +122,9 @@ def test_every_rule_names_its_ruling_and_the_step_is_the_only_caller():
 
 def test_restore_refuses_a_bound_group_checkpoint_before_building_a_kernel(tmp_path, monkeypatch):
     from src.scenarios.schema import SimulationScenarioDefinition
-    blob = _old_shape_dumps(_state({10004: _bound()}), monkeypatch)
-    header = json.dumps({"tick": 7, "spec_id": "s", "rng_checkpoint": None}).encode()
-    path = tmp_path / "old.bin"
-    path.write_bytes(struct.pack("<I", len(header)) + header + blob)
+    state = _state({10004: _bound()})
+    blob = _old_shape_dumps(state, monkeypatch)
+    path = write_checkpoint(tmp_path / "old.bin", blob, "s", old_shape_schema(state, _OLD_GROUP_SHAPE))
     spec = SimulationScenarioDefinition(id="s", world_composition="frontier_living_world", perspective="hero_guild_perspective")
     with pytest.raises(CheckpointFieldMissingError) as err:
         ScenarioCheckpointer.restore(path, spec)
@@ -152,12 +159,11 @@ def test_restore_fills_an_old_shape_checkpoint_before_the_kernel_is_built_and_re
             seen["holder"] = state.groups[10003].contract_holder_id
             seen["reason"] = state.groups[10003].dissolution_reason
 
-    blob = _old_shape_dumps(_state({10003: _unbound(), 10009: _unbound(10009)}), monkeypatch)  # first: the helper undoes the monkeypatch it made
+    state = _state({10003: _unbound(), 10009: _unbound(10009)})
+    blob = _old_shape_dumps(state, monkeypatch)  # first: the helper undoes the monkeypatch it made
     monkeypatch.setattr(kernel_module, "Kernel", RecordingKernel)
     assert not hasattr(pickle.loads(blob), "next_group_id")  # absent as unpickled: nothing reads it before the fill
-    header = json.dumps({"tick": 7, "spec_id": "s", "rng_checkpoint": None}).encode()
-    path = tmp_path / "old.bin"
-    path.write_bytes(struct.pack("<I", len(header)) + header + blob)
+    path = write_checkpoint(tmp_path / "old.bin", blob, "s", old_shape_schema(state, _OLD_GROUP_SHAPE))
     spec = SimulationScenarioDefinition(id="s", world_composition="frontier_living_world", perspective="hero_guild_perspective")
     ScenarioCheckpointer.restore(path, spec)
     assert seen == {"next_group_id": 10010, "holder": None, "reason": None}
@@ -184,15 +190,13 @@ def test_a_counter_not_above_every_stored_non_squad_id_raises_at_restore_and_one
     assert issubclass(GroupCounterBehindStoreError, ValueError)  # the restore route answers 400
 
 
-def _write_checkpoint(tmp_path, blob, spec_id):
-    header = json.dumps({"tick": 7, "spec_id": spec_id, "rng_checkpoint": None}).encode()
-    path = tmp_path / "pre_f3.bin"
-    path.write_bytes(struct.pack("<I", len(header)) + header + blob)
-    return path
+def _write_checkpoint(tmp_path, blob, spec_id, schema):
+    return write_checkpoint(tmp_path / "pre_f3.bin", blob, spec_id, schema)
 
 
 def _pre_f3_blob(monkeypatch):
-    """A checkpoint written before F3: the state pickles with a building whose trailing `beds` slot is not in the saved tuple (the current group fields are present)."""
+    """A pre-F3 checkpoint: (blob, schema). The state pickles with a building whose trailing `beds` slot is not in the saved tuple (the current group fields are present), and
+    the schema lists BuildingState without `beds`."""
     from tests.unit.engine.lodging_kernel import INN_ID, REACH, hero, kernel
     k = kernel([hero(1, REACH[0], action=None)], beds=1)
     try:
@@ -201,7 +205,7 @@ def _pre_f3_blob(monkeypatch):
         from src.core.state import BuildingState
         monkeypatch.setattr(BuildingState, "__getstate__", building_state, raising=False)
         try:
-            return pickle.dumps(k._state)
+            return pickle.dumps(k._state), old_shape_schema(k._state, {BuildingState: {"beds"}})
         finally:
             monkeypatch.undo()
     finally:
@@ -211,7 +215,8 @@ def _pre_f3_blob(monkeypatch):
 def test_a_pre_f3_checkpoint_of_the_same_scenario_is_still_refused_for_the_missing_beds(tmp_path, monkeypatch):
     """F3's refusal survives the restore reorder: same scenario id, spec check passes, the fill then refuses the building without `beds`."""
     from src.scenarios.schema import SimulationScenarioDefinition
-    path = _write_checkpoint(tmp_path, _pre_f3_blob(monkeypatch), "s")
+    blob, schema = _pre_f3_blob(monkeypatch)
+    path = _write_checkpoint(tmp_path, blob, "s", schema)
     spec = SimulationScenarioDefinition(id="s", world_composition="frontier_living_world", perspective="hero_guild_perspective")
     with pytest.raises(CheckpointFieldMissingError, match=r"'beds'"):
         ScenarioCheckpointer.restore(path, spec)
@@ -220,7 +225,8 @@ def test_a_pre_f3_checkpoint_of_the_same_scenario_is_still_refused_for_the_missi
 def test_a_pre_f3_checkpoint_of_a_different_scenario_raises_the_spec_id_mismatch_not_the_field_error(tmp_path, monkeypatch):
     """The spec check runs before the fill: a checkpoint of another scenario is refused for that reason even when it also lacks fields."""
     from src.scenarios.schema import SimulationScenarioDefinition
-    path = _write_checkpoint(tmp_path, _pre_f3_blob(monkeypatch), "other_scenario")
+    blob, schema = _pre_f3_blob(monkeypatch)
+    path = _write_checkpoint(tmp_path, blob, "other_scenario", schema)
     spec = SimulationScenarioDefinition(id="s", world_composition="frontier_living_world", perspective="hero_guild_perspective")
     with pytest.raises(ValueError, match="spec_id") as err:
         ScenarioCheckpointer.restore(path, spec)

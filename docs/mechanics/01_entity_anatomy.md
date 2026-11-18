@@ -77,6 +77,18 @@ Base stats for the standard entity classes.
 
 ---
 
+### Identity Fields: Kind, Occupation, Role (M1, TCK-20261109-M1-KIND-ALWAYS-MEANS-SPECIES-AND-OCCUPATION-IS-ITS-OWN-FIELD)
+An entity names what it is and what it does in three separate fields:
+- **`EntityState.kind`** is the species id (an id in `data/content/living/species.yaml`). It is set once at build and is never renamed in a run.
+- **`IdentityComponent.occupation`** (optional string) is the role label of the body (`worker`, `guard`, `merchant`, `world_boss`). It is a display label (owner decision 50: role names stay as display labels only). The end state is the label the content gave the body, with none for a newborn; step 2 holds the end state back (below).
+- **`IdentityComponent.role`** (`EntityRole`) is the coarse legacy enum. It is unchanged and is being retired.
+
+Step 2 (this change) adds `occupation`. Every writer sets it to the exact string it writes to `kind` (so, on the classic world compiler's path, the role string; on the archetype path, the species), which lets step 3 move the label readers onto it without changing behaviour. It is carried by the campaign survivor rebuild and the entity copies and shown next to `kind` by the presenter; `species_of(entity)` is the one way to read a species. The true labels (the archetype's role or profession id, none for a newborn or a camp offspring) arrive in step 4, together with `kind` becoming the species on every path. Step 3 moves every reader's label compare off `kind` onto `occupation`, with the same literal (the hero, boss, lair-occupant, stronghold, goblin_raider and party-role labels, the spawn-cadence and boss label sets, and the territory-rate table), so step 3 changes no behaviour. A body without a label leaves `occupation` out of its canonical form.
+
+Step 4 (the behaviour step; divergence 2.208) makes `kind` the species id on every build path and writes the label into `occupation`. The classic compile (with a content context) writes the population's declared species and its role label; the archetype and `WorldEntitySpawner` paths write the archetype's `role_id` (else `profession_id`); a newborn inherits the parents' species and has no occupation; a camp spawn writes the camp's species and its spawn label; a boss body is the named non-living kind `world_boss`. A writer that has no species to declare is refused (`SpeciesNotDeclaredError`), never defaulted, and `species_of(entity)` reads `kind`. Humanoids pair and inherit by species. The context-less classic compile keeps the legacy path (kind = the role label) until stage 4b.
+
+---
+
 ## 4. Biological Laws (Decay & Needs)
 The simulation tracks biological "Pressures" that degrade over time.
 

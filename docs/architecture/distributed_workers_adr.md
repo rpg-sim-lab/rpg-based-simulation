@@ -4,6 +4,7 @@ layer: architecture
 authority: P1
 audience: agent
 tags: [architecture, engine, determinism, platform]
+amends: [docs/architecture/system_overview.md#what-is-deliberately-not-distributed, docs/architecture/devops_plan_amendment_proposal.md#what-stays-from-the-adr]
 ---
 
 # ADR: an opt-in mode may run the Collection pool outside the engine process
@@ -17,8 +18,15 @@ the text applied there is in §5.
 - Nothing is implemented yet.
 
 **Companion:** the next-generation engine ADR (`docs/architecture/next_generation_engine_adr.md`, accepted #715 6742854335). It is a
-direction for the whole kernel; this ADR is one opt-in mode for Collection. A future default mode at scale must fit that ADR's phase
+direction for the whole kernel; this ADR is one opt-in mode for Collection. Any future distributed mode must fit that ADR's phase
 contract, not fork it (design §13).
+
+**Amended 2026-11-16 by the owner (#715 6910997558, 6917359910).** The engine is a multi-mode core. The single-process mode is
+unchanged and stays the default, and every evidence and gate run uses it. A distributed mode is chosen per purpose; it does not
+replace single mode. Where this ADR says "default mode at scale" or "promotion to a default", read it as this per-purpose choice.
+Children 3 and 4 are shelved: no-go as designed, since child 2 measured the pickle codec at 44 to 146 times a chunk's compute.
+After Milestone 1 and the next-generation contract spec, child 3 is re-cut as a worker-resident replica with typed per-tick deltas
+(design §14).
 
 ## Status
 
@@ -42,7 +50,8 @@ Accepted (owner, #715 6777076537). The design's §10 choices are the owner's ans
   existing `ConcurrentExecutionAdapter`, passed as an explicit executor; gRPC between engine and worker, pickle as the first codec
   behind a codec seam, two-way authentication, a MAC on every response (design §4).
 - **The owner's scale direction** (#715 6776564953): the mode may become the default when the engine scales up. It ships opt-in;
-  promotion is gated (design §13).
+  promotion is gated (design §13). *Superseded 2026-11-16 (#715 6910997558): modes coexist per purpose; single mode stays the
+  default and is used for all evidence and gates.*
 
 ## Decision
 
@@ -78,7 +87,7 @@ Accepted (owner, #715 6777076537). The design's §10 choices are the owner's ans
 - more than one writer, engine replicas, an API/engine split;
 - parallel Resolution (C-10 and the Gate B evaluation, PERF-M6-T05, are unchanged);
 - multi-host or k8s deploys;
-- promotion to a default mode (below, Consequences).
+- which purposes a distributed mode serves (below, Consequences; per-purpose since #715 6910997558).
 
 ## 5. Text applied to other documents
 
@@ -115,8 +124,10 @@ The next-generation engine ADR's direction paragraph in the same section is unch
 - **The default deployment and every existing evidence path are unchanged.** The gate, paired arms and `rpg_measure` refuse a
   non-sequential executor (child 6).
 - **A result slower than sequential is a valid outcome**, and is reported.
-- **Not decided here: promotion.** The owner expects the mode may become the default at scale (#715 6776564953). This amendment
-  does not make it so. Promotion, and any multi-host deploy, needs its own ADR, decided against the gates in the design's §13.
+- **Not decided here: which purposes a distributed mode serves.** The owner first expected the mode might become the default at
+  scale (#715 6776564953); since #715 6910997558 the modes coexist per purpose instead, and single mode stays the default for
+  evidence and gates. Using a distributed mode for any purpose beyond this opt-in experiment, and any multi-host deploy, needs its
+  own ADR, decided against the gates in the design's §13.
 - **Risks:**
   - an unsafe-deserialization surface, since the first build uses pickle (owner, #715 6776551375). Guards: compose-internal
     network only, a test that the worker port is never published, two-way authentication with a MAC on every response, and a

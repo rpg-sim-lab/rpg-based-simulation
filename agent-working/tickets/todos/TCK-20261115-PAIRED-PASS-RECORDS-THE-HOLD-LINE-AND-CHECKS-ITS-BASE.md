@@ -1,0 +1,163 @@
+---
+status: active
+layer: testing
+authority: P1
+audience: agent
+ticket_id: TCK-20261115-PAIRED-PASS-RECORDS-THE-HOLD-LINE-AND-CHECKS-ITS-BASE
+phase: open
+date: 2026-11-15
+tags: [determinism, benchmarking]
+---
+
+# TCK-20261115-PAIRED-PASS-RECORDS-THE-HOLD-LINE-AND-CHECKS-ITS-BASE
+
+## Title
+The paired measurement records a spy's data in the same pass, proves the spy changes nothing with plain-twin controls, and refuses a fix arm that is not built on the announced base
+
+## Status
+OPEN
+
+## Tier
+standard
+
+## Type
+feature
+
+## Priority
+P1
+
+## Request Summary
+rpg-designer ruled on two measurement time cuts (#634 6891590806, verbatim in `agent-working/staging_artifacts/TCK-20261115-PAIRED-PASS-RECORDS-THE-HOLD-LINE-AND-CHECKS-ITS-BASE/rpg_designer_ruling_2026-11-15.md`; owner approval #715 6891576449; lead-planner asked for one standard ticket).
+
+(a) **A shared daily base is accepted.** Its validity rests on `git merge-base <fix> <main>` equalling the announced base sha, not on the base's age. The 24 h limit is a scheduling cap only. The cache key includes the spy sha.
+
+(b) **The hold line (or any spy's data) is recorded during the paired pass.** The minimum control is at least 3 spied fix-arm cells, one per world, with seeds rotated per run. Each must hash-equal a plain, unspied twin re-run. The base arm gets one control cell when its cache is first built. A failed control voids the whole pass: the deaths result as well as the spy data.
+
+Why now: the group-combat check (TCK-20261101-A-HOSTILE-ATTACKING-YOU-OUTRANKS-THE-GROUP-SHARED-TARGET) held ubuntu's one heavy slot for about 9 h. About 2.5 h of that was a second pass that re-ran 15 cells only to collect hold-line data (`/data/vboxuser/Work/groups_base/measure_pair/run_pair.sh`, Phase 2).
+
+## Scope
+1. **Spy hook in paired's child path.** `tools/rpg_measure/paired.py` takes `--spy <path>`.
+   - `tools/rpg_measure/arm_child.py` loads it in both arms. The spy wraps functions read-only, as `group_hit_spy.py` does: it calls the real function and returns its result unchanged.
+   - The spy's output is written beside the arm result, e.g. `<world>_<seed>.spy.json`.
+   - The spy's contract (what it exposes, what it may not do) is written once, in the paired module docstring.
+   - The first spy is the hold-line spy, generalised from `agent-working/staging_artifacts/TCK-20261103-A-GROUP-HIT-RECORDS-ONLY-ITS-FIRST-ATTACKER/group_hit_spy.py` (on branch rpg-ubuntu-group-combat-attackers, 437160ac3).
+2. **Cache key.** A result's key is the base or fix sha, the child hash (runner version), world, seed, ticks, and the spy sha: the sha256 of the spy file, or `none` with no spy. A result cached under one spy is never read under another, or under no spy.
+3. **Plain-twin controls.**
+   - With `--spy`, paired re-runs at least 3 fix-arm cells without the spy, one per world. Seeds rotate per run, by a rule written down and recorded in the report.
+   - One base-arm cell is re-run the same way whenever the base arm is first built under that spy key.
+   - Each twin's final hash must equal its spied cell's. Any mismatch voids the pass: outcome `VOID` (or `REFUSED` with that detail, whichever the run-ledger schema allows), no verdict table, and the mismatched cells named. Exit non-zero, never 0.
+4. **Base announcement and merge-base check.**
+   - paired prints and records the base sha and the fix sha.
+   - Before any run, it refuses with exit 2 unless `git merge-base <new> <main ref>` equals the base sha.
+   - The main ref defaults to `origin/main`, and `--main-ref` overrides it. No other override and no path-scoped exemption.
+5. **Spy verdict in the report.** The spy may supply a comparison (e.g. the hold line: STOP when a cell's new arm has more qualifying holds than its base arm, rpg-designer ruling #634 6884784984). paired prints it beside the deaths table, and a spy STOP is part of the outcome.
+   - The hold-line rule must be quoted from its ruling, not re-derived. The rule as run today is in run_pair.sh: a no-hit hold of 50+ ticks, or a hold in force at the last tick, new against base.
+6. **Rule text for docs/guides/delivery_process.md**, measurement section, after "### Behaviour evidence comes from the pinned runner". Proposed wording below. That doc is unowned, so the wording routes through the leads before it lands; it is not edited by this ticket's implementer alone.
+7. Tests (tests/tools or the existing rpg_measure tests):
+   - the spy sha in the key;
+   - a mismatching twin voids the pass;
+   - merge-base refusal, and acceptance at equal;
+   - seed rotation recorded;
+   - a no-spy run is unchanged: same cache paths as today except the added `none` component, same report.
+   - Positive controls: a deliberately state-changing test spy must be caught by the twin check, and a fix not on the base must be refused.
+
+### Binding spec for the spy hook (rpg-designer, 2026-11-15; u24 rpg-planner and testing-planner agree; relayed by lead-planner)
+This supersedes items 1-3 above where they differ. testing's T2 (TCK-20261023-PAIRED-ARMS-RUN-OFF-THE-SHARED-HOST) dropped its AC9 (j) in favour of this hook, so this ticket carries the plain-twin control for both. Rule (j)'s definition is #634 6891643371.
+1. **Data.**
+   - The arm doc gets `"spy": {"sha256", "name", "errors"}`, or JSON null for a plain run.
+   - The spy's report goes in a side file `<world>_<seed>.spy.json` under the same cache key. It carries its doc's identity: world, seed, ticks, arm sha, final_hash, spy sha256.
+   - Every reader (cache load, `--collected`, the report) refuses an identity mismatch.
+   - A spy set with no side file counts as no-data, never as a pass.
+2. **Interface.**
+   - `--spy <path> --spy-sha <sha256>`. A file whose sha256 differs exits 2.
+   - The spy is loaded by FILE PATH from the tool checkout (`importlib.util.spec_from_file_location`, like `_pinned_runner`), never through the arm tree.
+   - The protocol: `install(world, seed, ticks) -> handle` before build_kernel; `handle.report(state)` after the last tick; `uninstall()` in a finally.
+   - Wraps are read-only, write and delete nothing, and count their errors.
+3. **Twin check.**
+   - Pass = `final_hash` equal AND `spy.errors == 0`.
+   - Compare only state-derived fields (final_hash, start_hash, fates, counters), never the spy block.
+   - A failure voids the whole set, deaths result included. No retry.
+4. **Key and controls.**
+   - The spy component of the key is `none` for a plain run, in both the key and the path.
+   - Controls as in #634 6891643371: at least 3 fix-arm cells (one per world, rotated seeds, recorded) and 1 base cell per base-cache build, on the same VM and in the same job as the cell each one checks.
+   - Spy shas go to rpg-designer before any run.
+5. **Key order.** Proposed by testing-planner, confirmed by rpg-planner-ubuntu 2026-11-15: `<sha12>-<child8>-<ticks>-<env8>-<spy>[-repeat]`, where `<spy>` = the spy sha256's first 12 hex characters, or `none`. Whichever of T2 (which adds env8) and this ticket lands second treats old-format keys as a cache miss and deletes nothing.
+
+## Out of Scope
+- The GitHub Actions runner proposal (owner's step 3; the designer wants the rule first). Separate.
+- Changing the death bar (D76 plus the 2026-11-11 Tier 1/2 ruling stay as is).
+- Timing measurements (docs/engine/performance_contract.md), unchanged.
+- Approving a spy. That is rpg-designer's per spy sha; the tool records the sha, and a human decides.
+- `--collected` mode: the ticket states whether spy results and controls are supported there, or refused with a reason. Plan decides; no silent half-support.
+- Re-running the group-combat check. Its run (ghpair, 2026-11-15) finishes as specced under run_pair.sh.
+
+## Acceptance Criteria
+1. `paired --spy <path>` writes each arm's spy data in the same pass as its deaths result. For one world x seed, the spied fix cell's final hash equals today's unspied result hash; shown on one real cell.
+2. The cache key includes the spy sha, shown by a test where the same base sha under two spies gives two cache entries.
+3. At least 3 fix-arm plain twins, one per world, with seeds rotated and recorded, plus 1 base twin on the base arm's first build. A forced mismatch gives a void outcome, a non-zero exit, and no verdict.
+4. A fix arm whose merge-base with the main ref differs from the base sha is refused before any run, with exit 2 and both shas printed.
+5. The hold-line spy reproduces the ghpair Phase 2 numbers on at least one cell from its saved outputs (`/data/vboxuser/Work/groups_base/measure_pair/out/spy_new_*.json`), when those exist.
+6. The delivery_process.md rule text is agreed by the leads and lands, citing #634 6891590806 and #715 6891576449.
+7. Scoped tests pass. The Bible and parity ledger are untouched (tooling only). The run data each test wrote is cleaned by run id.
+
+## Proposed rule text (docs/guides/delivery_process.md, new subsection; routes via the leads)
+
+> ### A paired result is valid for the base it was built on (rpg-designer, #634 6891590806; owner #715 6891576449)
+> A paired measurement proves a ticket's effect on the base its fix was built from. So `git merge-base <fix> <main>` must equal the announced base sha, and `paired` refuses otherwise. Several tickets may share one cached base arm. The 24 h limit on a shared base is a scheduling cap, not a validity test. If anything that can change a simulation hash (`src/**`, `data/**`, `config/**`) lands on main after the base, a ticket measured on that base must, before merge, do one of three things:
+> 1. land in the same batch as that change, both measured on the shared base;
+> 2. show the change is behaviour-neutral (new main's plain hash equals the base's on the standard cells);
+> 3. rebase and re-pair.
+>
+> No path is exempt. A spy that records extra data runs inside the paired pass, read-only. At least 3 spied fix-arm cells (one per world, seeds rotated and recorded), plus one base cell when the base arm is first built, are re-run without the spy and must hash-equal. One mismatch voids the whole pass, deaths result included, and the spy goes back to its author. A spy is approved by its sha, and a changed spy needs approval again.
+>
+> **Run data (owner, #715 6893767224).** Standard measurement tools on main, such as tools/rpg_measure's arm_child and paired and the gate runner, follow CLAUDE.md: each run deletes only its own `data/runs/<run_id>`, by run id. One-off diagnostic scripts written outside git, such as spies and traces, delete nothing. They print their `run_dir`, and it goes on the owner's delete list. A spy built into a standard tool, such as this ticket's `--spy` hook, runs inside that tool's child and is covered by the tool's own by-run-id cleanup. The spy file itself deletes nothing.
+
+## Related Tickets
+- TCK-20261015-STANDARD-PAIRED-MEASUREMENT-COMMAND-FOR-BEHAVIOUR-STEPS (done): the paired tool.
+- TCK-20261026-PAIRED-COMPARES-COLLECTED-OFF-HOST-RESULTS (done): `--collected`.
+- TCK-20261023-PAIRED-ARMS-RUN-WITHOUT-THE-PER-TICK-REPLAY-DIGEST (todo, OPEN): also edits the paired child path; check order and overlap before planning.
+- TCK-20261023-PAIRED-WRITES-ONE-RUN-LEDGER-ROW-PER-INVOCATION (todo, OPEN): run-ledger outcome values; a VOID outcome must fit its schema.
+- TCK-20261103-A-MEASUREMENT-NOT-ON-THE-PINNED-RUNNER-CALLS-ITSELF-EVIDENCE (#918): `require_pinned` in arm_child.py.
+- TCK-20261101-A-HOSTILE-ATTACKING-YOU-OUTRANKS-THE-GROUP-SHARED-TARGET / TCK-20261103-A-GROUP-HIT-RECORDS-ONLY-ITS-FIRST-ATTACKER: the source of the hold-line spy.
+- DEPENDS ON, start after both: (1) the arm_child pinned_runner fix in testing's digest-light item 3. Since #918 (b6ac7dabb), arm_child imports tools.test_architecture.pinned_runner while paired puts the ARM tree on PYTHONPATH, so a pre-#918 arm tree fails with ModuleNotFoundError. u24 rpg-planner ruled the fix: load pinned_runner from the tool checkout, and derive the record from the live kernel for pre-record arm trees. (2) The positive control of TCK-20261023-PAIRED-ARMS-RUN-OFF-THE-SHARED-HOST (paired-arms.yml) read against the 2026-11-15 ghpair table, so that control and this ticket compare one tool version. Until (1) is on main, run paired only from a tool checkout older than b6ac7dabb.
+
+## Related Docs
+- docs/guides/delivery_process.md ("Behaviour evidence comes from the pinned runner")
+- docs/plans/test_architecture/reference/run_ledger.md (paired hook rules; testing's)
+
+## Related Stored Artifacts
+- agent-working/staging_artifacts/TCK-20261115-PAIRED-PASS-RECORDS-THE-HOLD-LINE-AND-CHECKS-ITS-BASE/rpg_designer_ruling_2026-11-15.md (verbatim ruling)
+
+## Related Code Areas
+- tools/rpg_measure/paired.py, tools/rpg_measure/arm_child.py, tools/rpg_measure/stats (verdicts)
+- tools/test_architecture/run_ledger.py (testing's; an outcome value change routes to testing-planner)
+
+## Assumptions / Open Questions
+- Q1 (RESOLVED 2026-11-15, rpg-planner-ubuntu): no schema change. run-ledger/v1 OUTCOMES are PASS|STOP|REFUSED|KILLED|ERROR (tools/test_architecture/run_ledger.py:53), and paired's verdict-json uses the same values. A control mismatch is the same class as today's self-check mismatch (paired.py:396-399, refused), so the outcome is REFUSED with outcome_detail starting "control mismatch:" and naming the cells; exit 2. The report heads it VOID in words. testing-planner is not needed.
+- Q2 (RESOLVED as default, rpg-planner-ubuntu; rpg-designer may override at review): control seed for world index i (in paired.WORLDS order) = seeds[(D + i) mod len(seeds)], where D = the run's UTC start date as days since 1970-01-01. It rotates daily, differs per world, is reproducible from the recorded start time, and is printed and recorded in the report. The base-arm control cell, on first build, uses world index 0 and the same rule.
+- Q3: the hold-line rule is quoted from #634 6884784984 at planning (fetch the body; do not paraphrase).
+- Assumption: wrapping read-only functions does not change the state hash. The cell run on 2026-11-15 showed MATCH on both arms (crowded s42 2000t); the twin controls are what prove it each time.
+
+## Implementation Notes
+Size estimate: medium. About 150-250 lines in tools/rpg_measure plus tests, no src/ change, no heavy run beyond one real cell for AC1/AC5 (that cell needs lead's go and the heavy slot). Dispatch is the owner's, via lead-planner.
+
+Dispatch: owner yes #715 6891711816 (2026-11-15), to rpg-implementer-ubuntu, via lead-planner. Starts only after all three gates:
+1. the #918 arm_child fix (testing's digest-light item 3, u24 rpg-planner's rule) is on main;
+2. testing's off-host AC1 comparison (TCK-20261023-PAIRED-ARMS-RUN-OFF-THE-SHARED-HOST) has been read;
+3. the ubuntu group-combat batch has gone to the owner's push ask.
+Before then: planning only, no code. The one real cell needs lead-planner's heavy-slot go, with --jobs 2 (#715 6891576449).
+
+Order with the two OPEN paired-child todos (rpg-planner-ubuntu, 2026-11-15):
+1. this ticket (owner-dispatched);
+2. TCK-20261023-PAIRED-WRITES-ONE-RUN-LEDGER-ROW-PER-INVOCATION. Its T1 dependency (run_ledger.py) is on main, but it needs its own dispatch go. Its runs[] then lists spy-control twins as their own entries, so it lands after this ticket's control shape is fixed.
+3. TCK-20261023-PAIRED-ARMS-RUN-WITHOUT-THE-PER-TICK-REPLAY-DIGEST: still blocked on perf-planner's PERF-D1 A2 ruling.
+Each of the three moves the child hash and cache keys; each says so in its PR.
+
+## Test Summary
+(not started)
+
+## Files Changed
+(not started)
+
+## Completion Summary
+(not started)

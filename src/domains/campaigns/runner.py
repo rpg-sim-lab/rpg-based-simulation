@@ -24,6 +24,7 @@ from src.config.profiles import RuntimeProfile, HardwareClass
 from src.platform.rng import DeterministicRNG
 from src.engine.kernel import Kernel
 from src.core.builder import V2EntityBuilder
+from src.content.hero_species import hero_species_id
 
 
 class SimulationAnalysisRunner:
@@ -66,7 +67,7 @@ class SimulationAnalysisRunner:
             entities = {}
             for i in range(1, spec.actors.count + 1):
                 role = "hero"
-                builder = V2EntityBuilder(i).kind(role).location(0.0, 0.0)
+                builder = V2EntityBuilder(i).kind(hero_species_id()).location(0.0, 0.0)
                 
                 # Determine class based on actor spec
                 class_id = "warrior"
@@ -80,7 +81,7 @@ class SimulationAnalysisRunner:
                     trait_keys = list(spec.actors.trait_distribution.keys())
                     traits.add(trait_keys[(i - 1) % len(trait_keys)])
 
-                builder.identity(class_id=class_id, traits=traits)
+                builder.identity(class_id=class_id, traits=traits, occupation=role)
                 entities[i] = builder.build()
 
             state = AuthoritativeState(tick=0, seed=spec.seed, entities=entities)

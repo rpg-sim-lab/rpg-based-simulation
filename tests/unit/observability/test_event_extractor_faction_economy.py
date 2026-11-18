@@ -29,6 +29,7 @@ def _entity(eid: int = 1):
     e.strategic.projects = {}; e.strategic.leads = {}
     e.strategic.current_project_id = None; e.strategic.concerns = {}
     e.group_id = None
+    e.identity.occupation = "hero"
     return e
 
 
