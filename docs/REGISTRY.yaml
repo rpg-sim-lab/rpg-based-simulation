@@ -7986,6 +7986,20 @@
   - content
   last_verified: '2026-10-09'
 - type: ticket
+  path: agent-working/tickets/done/TCK-20261119-TICKET-FIELD-VALUES-CLI-LIFECYCLE-EXIT-REPORT-ONLY.md
+  ticket_id: TCK-20261119-TICKET-FIELD-VALUES-CLI-LIFECYCLE-EXIT-REPORT-ONLY
+  title: '`tools/ticket_field_values.py` CLI must not exit 1 on a lifecycle-section
+    FAIL (report-only per owner)'
+  tier: hotfix
+  ticket_type: bug
+  date: '2026-11-19'
+  related_code_areas:
+  - tools/ticket_field_values.py
+  - tests/tools/test_lifecycle_section.py
+  artifact_files: []
+  tags:
+  - process-improvement
+- type: ticket
   path: agent-working/tickets/done/TCK-20261118-A-DIAGNOSTIC-KIT-PREFLIGHT-CHECKS-EACH-KIT-ON-BOTH-FROZEN-TREES-BEFORE-ITS-RUN.md
   ticket_id: TCK-20261118-A-DIAGNOSTIC-KIT-PREFLIGHT-CHECKS-EACH-KIT-ON-BOTH-FROZEN-TREES-BEFORE-ITS-RUN
   title: 'An automatic preflight for every measurement kit (spy, probe, runner, summarizer):
@@ -8309,6 +8323,22 @@
   - agent-working/stored_artifacts/TCK-20261117-AN-ENTITY-CARRIES-ITS-OCCUPATION-LABEL-AND-ONE-SPECIES-READ-SPECIES-OF/test_plan.md
   tags: []
 - type: ticket
+  path: agent-working/tickets/done/TCK-20261117-EACH-BODY-PERCEIVES-BY-ITS-SPECIES-SENSES-AND-SIGNALS-FOLLOW-THE-BODY.md
+  ticket_id: TCK-20261117-EACH-BODY-PERCEIVES-BY-ITS-SPECIES-SENSES-AND-SIGNALS-FOLLOW-THE-BODY
+  title: Each body perceives by its species' senses, and what it gives off follows
+    the body (PERC-02a)
+  tier: standard
+  ticket_type: feature
+  date: '2026-11-17'
+  related_code_areas:
+  - src/world/perception/, src/engine/appraisal.py, src/engine/hostility.py, src/engine/tactical*.py,
+    data/content/living/
+  artifact_files:
+  - agent-working/stored_artifacts/TCK-20261117-EACH-BODY-PERCEIVES-BY-ITS-SPECIES-SENSES-AND-SIGNALS-FOLLOW-THE-BODY/investigation.md
+  - agent-working/stored_artifacts/TCK-20261117-EACH-BODY-PERCEIVES-BY-ITS-SPECIES-SENSES-AND-SIGNALS-FOLLOW-THE-BODY/plan.md
+  - agent-working/stored_artifacts/TCK-20261117-EACH-BODY-PERCEIVES-BY-ITS-SPECIES-SENSES-AND-SIGNALS-FOLLOW-THE-BODY/test_plan.md
+  tags: []
+- type: ticket
   path: agent-working/tickets/done/TCK-20261117-KIND-IS-THE-SPECIES-AT-EVERY-WRITER.md
   ticket_id: TCK-20261117-KIND-IS-THE-SPECIES-AT-EVERY-WRITER
   title: '`kind` is the species id at every writer, and the label lives in `occupation`
@@ -8455,6 +8485,19 @@
   ticket_type: repair
   date: '2026-11-17'
   related_code_areas: []
+  artifact_files: []
+  tags: []
+- type: ticket
+  path: agent-working/tickets/todos/TCK-20261117-DECISIONS-SEE-OTHER-BODIES-ONLY-THROUGH-PERCEPTION.md
+  ticket_id: TCK-20261117-DECISIONS-SEE-OTHER-BODIES-ONLY-THROUGH-PERCEPTION
+  title: Decisions see other bodies only through perception, and 'coming for me' reads
+    observable intent only (PERC-02b)
+  tier: standard
+  ticket_type: feature
+  date: '2026-11-17'
+  related_code_areas:
+  - src/world/perception/, src/engine/appraisal.py, src/engine/hostility.py, src/engine/tactical*.py,
+    data/content/living/
   artifact_files: []
   tags: []
 - type: ticket
@@ -11032,6 +11075,17 @@
   artifact_files: []
   tags: []
 - type: ticket
+  path: agent-working/tickets/inprogress/TCK-20261109-M1-HONEST-PERCEPTION-DEFAULTS.md
+  ticket_id: TCK-20261109-M1-HONEST-PERCEPTION-DEFAULTS
+  title: Each kind perceives by its own senses, and signals follow the body
+  tier: standard
+  ticket_type: feature
+  date: '2026-11-09'
+  related_code_areas:
+  - src/strategy/ and perception code, content schemas
+  artifact_files: []
+  tags: []
+- type: ticket
   path: agent-working/tickets/inprogress/TCK-20261109-M1-KIND-ALWAYS-MEANS-SPECIES-AND-OCCUPATION-IS-ITS-OWN-FIELD.md
   ticket_id: TCK-20261109-M1-KIND-ALWAYS-MEANS-SPECIES-AND-OCCUPATION-IS-ITS-OWN-FIELD
   title: '`kind` always means species, and occupation is a separate field'
@@ -11114,17 +11168,6 @@
   date: '2026-11-09'
   related_code_areas:
   - src/domains/combat_engagement/, hostility predicates, content
-  artifact_files: []
-  tags: []
-- type: ticket
-  path: agent-working/tickets/todos/TCK-20261109-M1-HONEST-PERCEPTION-DEFAULTS.md
-  ticket_id: TCK-20261109-M1-HONEST-PERCEPTION-DEFAULTS
-  title: Each kind perceives by its own senses, and signals follow the body
-  tier: standard
-  ticket_type: feature
-  date: '2026-11-09'
-  related_code_areas:
-  - src/strategy/ and perception code, content schemas
   artifact_files: []
   tags: []
 - type: ticket
