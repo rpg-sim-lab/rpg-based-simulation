@@ -98,6 +98,7 @@ FIELD_RULES: List[FieldRule] = [
     # A pre-2.156 state kept no retreat clear window, so a project that predates it has none yet (it opens on the first clear observation); None is exactly that state.
     FieldRule("cleared_since", _projects, "cleared_since", fill=lambda state, owner: None, ruling="2.156: a state that predates the retreat clear window had no window", record="ProjectState"),
     # N10 (2.212): a state that predates the suspension clock stamped none; `expire_suspended` stamps a SUSPENDED record on first sight.
+    FieldRule("ended_tick", _projects, "ended_tick", fill=lambda state, owner: None, ruling="rpg-designer 2026-11-18, churn: a project that ended before the field kept no end tick", record="ProjectState"),
     FieldRule("suspended_since", _projects, "suspended_since", fill=lambda state, owner: None, ruling="rpg-designer 2026-11-16, N10: a state that predates the suspension clock had none", record="ProjectState"),
     # 2.214: a state that predates the blocker lifecycle never timed a blocker out and never stamped when one was last inferred.
     FieldRule("failure_count", _blockers, "failure_count", fill=lambda state, owner: 0, ruling="rpg-designer 2026-11-17, blocker churn: a state that predates the blocker lifecycle had no timeouts", record="BlockerState"),

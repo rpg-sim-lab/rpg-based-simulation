@@ -347,11 +347,20 @@ def merge_inferred_blocker(stored: Optional[BlockerState], inferred: BlockerStat
     return dataclasses.replace(stored, severity=inferred.severity, resolved=inferred.resolved, last_seen_tick=tick)
 
 
-def quiet_blockers(blockers: Mapping[str, BlockerState], tick: int) -> List[str]:
-    """The ids of the congestion blockers to remove at ``tick``: suppression over (tick >= suppression_until_tick) and not re-inferred for `BLOCKER_QUIET_SPELL_TICKS`. A congestion blocker with no
-    last-seen tick (a checkpoint from before the field) is not removed here; the caller stamps it on first sight."""
+def quiet_blockers(blockers: Mapping[str, BlockerState], projects: Mapping[str, "ProjectState"], tick: int) -> List[str]:
+    """The ids of the congestion blockers to remove at ``tick``: `BLOCKER_QUIET_SPELL_TICKS` of observable quiet, i.e. tick >= max(last_seen_tick, suppression_until_tick, the latest ``ended_tick`` of a
+    resolve_blocker project naming it) + the spell, and never while a live (ACTIVE or SUSPENDED) resolve_blocker project names it. A congestion blocker with no last-seen tick (a checkpoint from before
+    the field) is not removed here; the caller stamps it on first sight."""
+    live, last_end = set(), {}
+    for p in projects.values():
+        if p.kind == "resolve_blocker" and p.objectives:
+            target = p.objectives[0].target
+            if p.status in (ProjectStatus.ACTIVE, ProjectStatus.SUSPENDED):
+                live.add(target)
+            last_end[target] = max(last_end.get(target, 0), p.ended_tick or 0)
     return [b.id for b in blockers.values()
-            if b.id == CONGESTION_BLOCKER_ID and b.last_seen_tick is not None and tick >= b.suppression_until_tick and tick - b.last_seen_tick >= BLOCKER_QUIET_SPELL_TICKS]
+            if b.id == CONGESTION_BLOCKER_ID and b.id not in live and b.last_seen_tick is not None
+            and tick >= max(b.last_seen_tick, b.suppression_until_tick, last_end.get(b.id, 0)) + BLOCKER_QUIET_SPELL_TICKS]
 
 
 @dataclass(frozen=True, slots=True)
@@ -419,14 +428,19 @@ class ProjectState:
     # The tick this project became SUSPENDED (N10, divergence 2.212): the clock of `SUSPENSION_TTL_TICKS`. Set by every SUSPENDED writer, cleared by `resume_project`; None while the
     # project is not SUSPENDED (and on an old checkpoint's SUSPENDED record, which `expire_suspended` stamps on first sight). Appended LAST; omitted from the canonical dict while None.
     suspended_since: Optional[int] = None
+    # The tick this project ended (divergence 2.214): set by `end_record` from the tick its caller passes; None while the project has not ended (and on a record that ended before the field). The blocker
+    # quiet spell counts from the latest end of a resolve_blocker naming the blocker. Appended LAST; omitted from the canonical dict while None.
+    ended_tick: Optional[int] = None
 
     def canonical_extra(self) -> Dict[str, Any]:
-        """The canonical-dict entries of this project that are omitted while empty: `ended_by`, `cleared_since` and `suspended_since` (a project that never had a typed end, a clear window or a suspension keeps the unrelated state hash where it was)."""
+        """The canonical-dict entries of this project that are omitted while empty: `ended_by`, `cleared_since`, `suspended_since` and `ended_tick` (a project that never had a typed end, a clear window, a suspension or an end tick keeps the unrelated state hash where it was)."""
         extra: Dict[str, Any] = {"ended_by": self.ended_by.value} if self.ended_by is not None else {}
         if self.cleared_since is not None:
             extra["cleared_since"] = self.cleared_since
         if self.suspended_since is not None:
             extra["suspended_since"] = self.suspended_since
+        if self.ended_tick is not None:
+            extra["ended_tick"] = self.ended_tick
         return extra
 
     def canonical_objectives(self) -> List[Dict[str, Any]]:
@@ -484,18 +498,18 @@ def project_target_matches(project: ProjectState, target_id: Any, target_entity_
     return (None if record_target is None else str(record_target)) == (None if target_id is None else str(target_id))
 
 
-def end_record(project: ProjectState, status: ProjectStatus, ended_by: ProjectEnd) -> ProjectState:
-    """The one writer of ``ended_by``: ``project`` with the terminal ``status`` and its typed end. A record that already has an end is never rewritten (ValueError: a caller bug, not a state)."""
+def end_record(project: ProjectState, status: ProjectStatus, ended_by: ProjectEnd, tick: Optional[int] = None) -> ProjectState:
+    """The one writer of ``ended_by``: ``project`` with the terminal ``status``, its typed end and the ``tick`` it ended at (every caller passes it). A record that already has an end is never rewritten (ValueError: a caller bug, not a state)."""
     if project.ended_by is not None:
         raise ValueError(f"project {project.id} already ended by {project.ended_by.value}")
-    return dataclasses.replace(project, status=status, ended_by=ended_by, suspended_since=None)  # a terminal record has no suspension clock (N10)
+    return dataclasses.replace(project, status=status, ended_by=ended_by, ended_tick=tick, suspended_since=None)  # a terminal record has no suspension clock (N10)
 
 
-def typed_completion(project: ProjectState) -> ProjectState:
+def typed_completion(project: ProjectState, tick: int) -> ProjectState:
     """``project`` (already COMPLETED by an objective resolving) with its typed end: a resolve_blocker project ends `BLOCKER_CLEARED` (divergence 2.214), so it never completes untyped; any other kind is returned as it is."""
     if project.kind != "resolve_blocker":
         return project
-    return end_record(project, ProjectStatus.COMPLETED, ProjectEnd.BLOCKER_CLEARED)
+    return end_record(project, ProjectStatus.COMPLETED, ProjectEnd.BLOCKER_CLEARED, tick)
 
 
 def note_threat_state(project: ProjectState, present: bool, tick: int) -> ProjectState:
@@ -531,13 +545,13 @@ def expire_suspended(projects: Mapping[str, ProjectState], tick: int) -> List[Pr
         if project.suspended_since is None:
             out.append(dataclasses.replace(project, suspended_since=tick))
         elif tick - project.suspended_since >= SUSPENSION_TTL_TICKS:
-            out.append(end_record(project, ProjectStatus.ABANDONED, ProjectEnd.SUSPENSION_EXPIRED))
+            out.append(end_record(project, ProjectStatus.ABANDONED, ProjectEnd.SUSPENSION_EXPIRED, tick))
     return out
 
 
-def supersede_record(project: ProjectState) -> ProjectState:
+def supersede_record(project: ProjectState, tick: Optional[int] = None) -> ProjectState:
     """The live ``project`` ended by a same-kind candidate at a different target (status ABANDONED, ``ended_by`` SUPERSEDED_BY_TARGET)."""
-    return end_record(project, ProjectStatus.ABANDONED, ProjectEnd.SUPERSEDED_BY_TARGET)
+    return end_record(project, ProjectStatus.ABANDONED, ProjectEnd.SUPERSEDED_BY_TARGET, tick)
 
 
 #: The project kinds of the standing needs (the values of GoalKind.HUNGER and GoalKind.FATIGUE).

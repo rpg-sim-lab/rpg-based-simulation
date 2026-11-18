@@ -542,7 +542,7 @@ class StrategicIntelligenceSystem:
                         if all_blockers_resolved:
                             new_obj = replace(active_obj, status=ObjectiveStatus.RESOLVED)
                             project_upd = replace(project, objectives=[new_obj if o.id == new_obj.id else o for o in project.objectives], status=ProjectStatus.COMPLETED)
-                            project_upd = typed_completion(project_upd)
+                            project_upd = typed_completion(project_upd, current_tick)
 
             # (Update strat_up with results)
             new_additions = list(strat_up.blockers_add_or_update)
@@ -1527,7 +1527,7 @@ class StrategicIntelligenceSystem:
                             failures = b.failure_count + 1  # divergence 2.214: the suppression doubles with each timeout of the same blocker (100, 200, 400, 800, capped)
                             blocker_updates.append(replace(b, failure_count=failures, suppression_until_tick=current_tick + blocker_timeout_suppression(failures)))
                     return StrategicUpdate(
-                        projects_add_or_update=[end_record(project, ProjectStatus.ABANDONED, ProjectEnd.BLOCKER_TIMEOUT)],
+                        projects_add_or_update=[end_record(project, ProjectStatus.ABANDONED, ProjectEnd.BLOCKER_TIMEOUT, current_tick)],
                         current_project_id_set="",
                         current_objective_id_set="",
                         blockers_add_or_update=blocker_updates,
@@ -1817,7 +1817,7 @@ class StrategicIntelligenceSystem:
                 return StrategicUpdate()
 
             switch_up = StrategicIntelligenceSystem.evaluate_project_switch(with_live_current_score(entity, modified_scores), candidate_proj, current_tick, state=state)
-            switch_up = supersede_on_win(switch_up, route, candidate_proj)
+            switch_up = supersede_on_win(switch_up, route, candidate_proj, current_tick)
             if switch_up:
                 # TCK-20260812-COMMITTED-INTENTION-SEQUENCE: win-transition bookkeeping. Only
                 # fires when the winning candidate is THIS tick's synthesized committed-intention

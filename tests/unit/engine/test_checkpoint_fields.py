@@ -147,3 +147,25 @@ def test_a_blocker_without_the_lifecycle_fields_restores_to_none_and_no_failures
         assert _values(restored, skip=("failure_count", "last_seen_tick")) == _values(blk, skip=("failure_count", "last_seen_tick"))
     finally:
         k.shutdown()
+
+
+def test_a_project_without_ended_tick_restores_to_no_end_tick_and_keeps_every_other_field():
+    """2.214 (churn): `ended_tick` was appended to ProjectState; a pickle from before it loads one value short and the slot is unset until the restore step fills None."""
+    from dataclasses import replace
+    from src.core.strategic import GoalKind, ProjectEnd, ProjectState, ProjectStatus, end_record
+    k = kernel([hero(1, REACH[0], action=None)], beds=1)
+    try:
+        st = k._state
+        proj = end_record(ProjectState(id="proj_combat_engage_9", kind=GoalKind.COMBAT_ENGAGE, created_tick=3, score=7.5), ProjectStatus.ABANDONED, ProjectEnd.SUPERSEDED_BY_TARGET, 41)
+        assert proj.ended_tick == 41 and proj.canonical_extra()["ended_tick"] == 41
+        old = _old_shape(proj, ["ended_tick"])
+        with pytest.raises(AttributeError):
+            old.ended_tick
+        e = st.entities[1]
+        object.__setattr__(e, "strategic", replace(e.strategic, projects={old.id: old}))
+        fill_missing_fields(st, [r for r in FIELD_RULES if r.field == "ended_tick"])
+        restored = st.entities[1].strategic.projects[old.id]
+        assert restored.ended_tick is None and "ended_tick" not in restored.canonical_extra()
+        assert _values(restored, skip=("ended_tick",)) == _values(proj, skip=("ended_tick",))
+    finally:
+        k.shutdown()

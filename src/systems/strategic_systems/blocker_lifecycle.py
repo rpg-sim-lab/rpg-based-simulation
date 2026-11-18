@@ -8,9 +8,6 @@ from src.core.state import EntityState
 from src.core.strategic import (
     CONGESTION_BLOCKER_ID,
     BlockerRemoval,
-    ProjectEnd,
-    ProjectStatus,
-    end_record,
     merge_inferred_blocker,
     quiet_blockers,
 )
@@ -30,27 +27,14 @@ def reinferred_blockers_update(entity: EntityState, staged: StrategicUpdate, inf
 
 
 def quiet_spell_update(entity: EntityState, staged: StrategicUpdate, tick: int) -> Optional[StrategicUpdate]:
-    """Divergence 2.214: a congestion blocker whose suppression is over and that has not been re-inferred for `BLOCKER_QUIET_SPELL_TICKS` is removed (``blockers_remove``, reason
-    QUIET_SPELL on ``blockers_removed_for``); a live resolve_blocker project that names it ends COMPLETED / `BLOCKER_CLEARED` through `end_record` in the same update (the current
-    project and objective cleared when it is the one). A congestion blocker with no last-seen tick (an old checkpoint) is stamped ``tick`` on first sight. A blocker inferred this
-    pass (in ``staged.blockers_add_or_update``) is not removed. Reads only; None when nothing is to be written."""
+    """Divergence 2.214: a congestion blocker with `BLOCKER_QUIET_SPELL_TICKS` of observable quiet (`quiet_blockers`: no live resolve_blocker project names it, and the spell counts from its
+    last sighting, the end of its suppression and the end of the last project that named it) is removed (``blockers_remove``, reason QUIET_SPELL on ``blockers_removed_for``). No project ends
+    with it: none naming it is live. A congestion blocker with no last-seen tick (an old checkpoint) is stamped ``tick`` on first sight. A blocker inferred this pass (in
+    ``staged.blockers_add_or_update``) is not removed. Reads only; None when nothing is to be written."""
     staged_ids = {b.id for b in staged.blockers_add_or_update}
     stored = entity.strategic.blockers
-    gone = [i for i in quiet_blockers(stored, tick) if i not in staged_ids and i not in staged.blockers_remove]
+    gone = [i for i in quiet_blockers(stored, entity.strategic.projects, tick) if i not in staged_ids and i not in staged.blockers_remove]
     stamps = [replace(b, last_seen_tick=tick) for b in stored.values() if b.id == CONGESTION_BLOCKER_ID and b.last_seen_tick is None and b.id not in staged_ids]
     if not gone and not stamps:
         return None
-    ended = [
-        end_record(p, ProjectStatus.COMPLETED, ProjectEnd.BLOCKER_CLEARED)
-        for p in entity.strategic.projects.values()
-        if p.kind == "resolve_blocker" and p.status in (ProjectStatus.ACTIVE, ProjectStatus.SUSPENDED) and p.objectives and p.objectives[0].target in gone
-    ]
-    current_ends = any(p.id == entity.strategic.current_project_id for p in ended)
-    return StrategicUpdate(
-        blockers_add_or_update=stamps,
-        blockers_remove=gone,
-        blockers_removed_for={i: BlockerRemoval.QUIET_SPELL for i in gone},
-        projects_add_or_update=ended,
-        current_project_id_set="" if current_ends else None,
-        current_objective_id_set="" if current_ends else None,
-    )
+    return StrategicUpdate(blockers_add_or_update=stamps, blockers_remove=gone, blockers_removed_for={i: BlockerRemoval.QUIET_SPELL for i in gone})

@@ -76,31 +76,50 @@ def test_the_canonical_dict_omits_the_lifecycle_fields_while_default_and_carries
 
 def test_a_congestion_blocker_is_quiet_at_exactly_the_quiet_spell_and_not_before():
     b = _blocker(seen=T0)
-    assert quiet_blockers({b.id: b}, T0 + BLOCKER_QUIET_SPELL_TICKS - 1) == []
-    assert quiet_blockers({b.id: b}, T0 + BLOCKER_QUIET_SPELL_TICKS) == [b.id]
+    assert quiet_blockers({b.id: b}, {}, T0 + BLOCKER_QUIET_SPELL_TICKS - 1) == []
+    assert quiet_blockers({b.id: b}, {}, T0 + BLOCKER_QUIET_SPELL_TICKS) == [b.id]
 
 
-def test_a_suppression_still_in_force_keeps_the_blocker():
+def test_the_quiet_spell_counts_from_the_end_of_a_suppression_not_from_its_start():
+    """Divergence 2.214 (rpg-designer ruling, urban s42 eid 11): 200 ticks of OBSERVABLE quiet = tick >= max(last_seen, suppression_until) + 200."""
     b = _blocker(seen=T0, supp=T0 + 500)
-    assert quiet_blockers({b.id: b}, T0 + BLOCKER_QUIET_SPELL_TICKS) == []
-    assert quiet_blockers({b.id: b}, T0 + 500) == [b.id]
+    assert quiet_blockers({b.id: b}, {}, T0 + 500 + BLOCKER_QUIET_SPELL_TICKS - 1) == []
+    assert quiet_blockers({b.id: b}, {}, T0 + 500) == []
+    assert quiet_blockers({b.id: b}, {}, T0 + 500 + BLOCKER_QUIET_SPELL_TICKS) == [b.id]
 
 
 def test_only_the_congestion_blocker_is_ever_quiet_and_one_with_no_last_seen_is_not():
     other = _blocker(bid="blocker_node_1", seen=T0)
     old = _blocker(seen=None)
-    assert quiet_blockers({other.id: other, old.id: old}, T0 + 10_000) == []
+    assert quiet_blockers({other.id: other, old.id: old}, {}, T0 + 10_000) == []
 
 
-def test_the_quiet_spell_removes_the_blocker_with_its_reason_and_ends_the_project_that_names_it():
-    b = _blocker(seen=T0)
-    proj = _project(created=T0 + 20)
-    hero = _hero([b], [proj], current=proj.id)
-    up = quiet_spell_update(hero, StrategicUpdate(), T0 + BLOCKER_QUIET_SPELL_TICKS)
+@pytest.mark.parametrize("status", [ProjectStatus.ACTIVE, ProjectStatus.SUSPENDED])
+def test_a_live_resolve_blocker_project_naming_it_keeps_the_blocker_however_long_it_is_quiet(status):
+    """eid 11's shape: a clear while a project is live must not remove the blocker (which would reset its backoff)."""
+    b = _blocker(seen=T0, failures=1)
+    live = _project(created=T0 + 20, status=status)
+    assert quiet_blockers({b.id: b}, {live.id: live}, T0 + 10 * BLOCKER_QUIET_SPELL_TICKS) == []
+    done = replace(live, status=ProjectStatus.ABANDONED, ended_by=ProjectEnd.BLOCKER_TIMEOUT, ended_tick=T0 + 30)
+    assert quiet_blockers({b.id: b}, {done.id: done}, T0 + 30 + BLOCKER_QUIET_SPELL_TICKS) == [b.id]
+
+
+def test_the_eid_11_shape_a_timeout_then_a_quiet_clear_during_suppression_keeps_the_blocker_and_its_backoff():
+    """Timeout at t=170 (failure 1, suppression to 270): last seen at 96 is far enough back for the old rule at t=297, but not for the new bound max(96, 270) + 200 = 470."""
+    b = _blocker(seen=96, supp=270, failures=1)
+    ended = replace(_project(created=109), status=ProjectStatus.ABANDONED, ended_by=ProjectEnd.BLOCKER_TIMEOUT, ended_tick=170)
+    hero = _hero([b], [ended])
+    assert quiet_spell_update(hero, StrategicUpdate(), 297) is None
+    assert quiet_spell_update(hero, StrategicUpdate(), 469) is None
+    up = quiet_spell_update(hero, StrategicUpdate(), 470)
     assert up.blockers_remove == [b.id] and up.blockers_removed_for == {b.id: BlockerRemoval.QUIET_SPELL}
-    (ended,) = up.projects_add_or_update
-    assert ended.status == ProjectStatus.COMPLETED and ended.ended_by == ProjectEnd.BLOCKER_CLEARED
-    assert up.current_project_id_set == "" and up.current_objective_id_set == ""
+
+
+def test_the_quiet_spell_removes_the_blocker_with_its_reason_after_a_real_observable_quiet():
+    b = _blocker(seen=T0)
+    up = quiet_spell_update(_hero([b]), StrategicUpdate(), T0 + BLOCKER_QUIET_SPELL_TICKS)
+    assert up.blockers_remove == [b.id] and up.blockers_removed_for == {b.id: BlockerRemoval.QUIET_SPELL}
+    assert up.projects_add_or_update == [] and up.current_project_id_set is None
 
 
 def test_a_blocker_inferred_this_pass_is_not_removed():
@@ -157,3 +176,31 @@ def test_applying_a_removal_with_its_reason_changes_only_the_removal_and_stores_
     assert set(out["reason"].blockers) == {kept.id}
     assert out["reason"].blockers[kept.id].canonical_dict() == kept.canonical_dict()
     assert not any(hasattr(out["reason"], f) for f in ("blockers_removed_for", "blocker_removal_reasons"))
+
+
+def test_a_live_project_names_the_blocker_in_eid_11s_shape_so_nothing_is_removed_and_the_backoff_stays():
+    """eid 11 (urban s42): the blocker was last seen at 96, a timeout set failure 1 and suppression to 270, the next project (built at 269) was live when the old rule removed it at 297."""
+    b = _blocker(seen=96, supp=270, failures=1)
+    live = _project(created=269, pid="proj_resolve_blocker_269")
+    hero = _hero([b], [live], current=live.id)
+    assert quiet_spell_update(hero, StrategicUpdate(), 297) is None
+    assert quiet_spell_update(hero, StrategicUpdate(), 10_000) is None
+
+
+@pytest.mark.parametrize("end", [ProjectEnd.SUSPENSION_EXPIRED, ProjectEnd.SUPERSEDED_BY_TARGET, ProjectEnd.BLOCKER_TIMEOUT])
+def test_any_typed_end_of_a_project_naming_it_holds_the_blocker_until_the_end_tick_plus_the_quiet_spell(end):
+    """A project that ended by SUSPENSION_EXPIRED (or any other typed end) at 600 holds the blocker, last seen at 100 with its suppression over, until 600 + 200."""
+    b = _blocker(seen=100, supp=0)
+    ended = replace(_project(created=300), status=ProjectStatus.ABANDONED, ended_by=end, ended_tick=600)
+    hero = _hero([b], [ended])
+    assert quiet_spell_update(hero, StrategicUpdate(), 600 + BLOCKER_QUIET_SPELL_TICKS - 1) is None
+    up = quiet_spell_update(hero, StrategicUpdate(), 600 + BLOCKER_QUIET_SPELL_TICKS)
+    assert up.blockers_remove == [b.id] and up.blockers_removed_for == {b.id: BlockerRemoval.QUIET_SPELL}
+
+
+def test_the_latest_end_of_several_projects_naming_it_counts():
+    b = _blocker(seen=100)
+    early = replace(_project(created=110, pid="proj_resolve_blocker_110"), status=ProjectStatus.ABANDONED, ended_by=ProjectEnd.BLOCKER_TIMEOUT, ended_tick=170)
+    late = replace(_project(created=500, pid="proj_resolve_blocker_500"), status=ProjectStatus.ABANDONED, ended_by=ProjectEnd.SUSPENSION_EXPIRED, ended_tick=700)
+    assert quiet_blockers({b.id: b}, {early.id: early, late.id: late}, 899) == []
+    assert quiet_blockers({b.id: b}, {early.id: early, late.id: late}, 900) == [b.id]
