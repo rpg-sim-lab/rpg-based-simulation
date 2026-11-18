@@ -136,3 +136,25 @@ def test_the_shipped_profiles_have_a_gestation_and_a_litter_table_in_the_declare
     gestation = {k: v.gestation_ticks for k, v in repo.reproduction_profiles.items()}
     assert gestation == {"humanoid_births": 2400, "carnivore_births": 1200, "goblin_births": 900, "plant_eater_births": 600}
     assert all(sum(v.litter_weights.values()) > 0 for v in repo.reproduction_profiles.values())
+
+
+def test_a_species_with_a_newborn_archetype_and_no_usable_sense_profile_is_refused_at_load():
+    """PERC-02 / senses (A'): the checked set is exactly the species that declare a newborn_archetype; each must resolve a usable sense profile at LOAD (SenseProfileError), before tick 0."""
+    from src.core.species import SenseProfileError
+    repo = CatalogRepository("data/content")
+    repo.load_all()
+    checked = {s.id for s in repo.species.values() if s.newborn_archetype is not None}
+    assert checked >= {"human", "wolf", "goblin", "spider", "orc", "elf", "dwarf", "troll"}
+    for species_id in checked:
+        assert repo.get_sense_profile(repo.species[species_id].sense_profile) is not None
+    planted = _repo_with({"reproduction_profile": "test_births", "newborn_archetype": "hungry_wolf", "sense_profile": "no_such_sense_profile"}, "very_low", [_PROFILE])
+    with pytest.raises(SenseProfileError, match="wolf"):
+        planted.load_all()
+
+
+def test_a_species_with_no_newborn_archetype_is_not_asked_for_senses_by_the_birth_check():
+    """The birth check only visits species that declare a reproduction profile: a species that never bears newborns loads with its own sense-profile rule unchanged (here the shipped, valid one)."""
+    repo = CatalogRepository("data/content")
+    repo.load_all()
+    never_born = [s for s in repo.species.values() if s.newborn_archetype is None]
+    assert {s.id for s in never_born} >= {"undead", "spirit", "slime", "dragonkin"}

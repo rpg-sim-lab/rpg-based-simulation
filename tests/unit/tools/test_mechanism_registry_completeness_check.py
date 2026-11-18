@@ -310,7 +310,8 @@ def test_wider_scope_numbers_pinned():
     # 372 -> 374 on 2026-11-17 (TCK-20261117-EACH-BODY-PERCEIVES-BY-ITS-SPECIES-SENSES-AND-SIGNALS-FOLLOW-THE-BODY, divergence 2.210, rpg-planner ok #715 6941107808, from the check's own output): +src/content/species_senses.py and +src/engine/perception_signals.py, both bound under `sense_gated_detection`, so unbound_files stays.
     # 372 -> 376 on 2026-11-18 (TCK-20261109-M1-BASIC-WILD-BIRTHS-FOR-EVERY-LIVING-KIND, reproduction scope): +src/core/pregnancy.py, +src/world/mate_gate.py, +src/world/corpse_goods.py, +src/world/risen.py, each bound (pregnancy_gestation, humanoid_reproduction, corpse_goods_conservation, corpse_rising).
     # Merged at origin/main 346c2dc78: both moves apply, 372 + 2 (PERC-02a) + 4 (births) = 378, pinned from the check's own output.
-    assert wider["scope_files"] == 378
+    # 378 -> 379 on 2026-11-18 (TCK-20261109-M1-BASIC-WILD-BIRTHS-FOR-EVERY-LIVING-KIND, senses (A')): +src/content/sense_resolution.py (the pure species_sense_profile resolver moved out of species_senses.py to break the load-time import cycle), cited under `sense_gated_detection`, from the check's own output.
+    assert wider["scope_files"] == 379
     # 233 -> 227 on 2026-10-05: the world-building split names six more files (worldmodules/normalizer,
     # worldassembly/resolve_io, worldbuilding/repository and validator, worldgeneration/generator and scorer).
     # Then +1 for the unbound entity_target_objective.py module (TCK-20261002-COMBAT-OBJECTIVE-TARGETS-...).
