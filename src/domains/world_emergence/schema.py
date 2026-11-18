@@ -20,6 +20,8 @@ class WorldEventCategory(str, Enum):
     RESOURCE_RECOVERED = "RESOURCE_RECOVERED"
     # Decision 44: meat left on a corpse that decayed (the typed sink MEAT_SINK_CORPSE_DECAY; payload["quantity"], subject = corpse id).
     MEAT_DECAYED = "MEAT_DECAYED"
+    # M1 reproduction: a pregnancy ended before term (subject = the mother id; payload reason, litter_size).
+    PREGNANCY_ENDED = "PREGNANCY_ENDED"
     # Decision 48: a kill to eat (subject = victim id; payload killer, victim, corpse ids). Joins the eat of that carcass by corpse id.
     FEEDING_KILL = "FEEDING_KILL"
     QUEST_COMPLETED = "QUEST_COMPLETED"

@@ -10,8 +10,15 @@ from src.ai.life_stage import LifeStageService
 from src.ai.coming_of_age import choose_archetype, is_excluded_no_birth_record
 from src.domains.demographics.cohort import compute_elder_attribute_update
 import logging
+from src.domains.world_emergence.schema import WorldEvent, WorldEventCategory
 
 logger = logging.getLogger(__name__)
+
+
+def _pregnancy_ended_event(tick: int, mother: "EntityState") -> WorldEvent:
+    """A mother who dies pregnant: the pregnancy is cleared in her death update and this typed event says so (reason MOTHER_DIED, the litter it carried)."""
+    return WorldEvent(category=WorldEventCategory.PREGNANCY_ENDED, tick=tick, subject=str(mother.id),
+                      payload={"reason": "MOTHER_DIED", "litter_size": mother.lifecycle.pregnancy.litter_size})
 
 if TYPE_CHECKING:
     from src.core.state import AuthoritativeState, EntityState
@@ -176,6 +183,7 @@ class LifecycleSystem:
         
         # Collect deaths for influence processing (Task 11.4)
         recent_deaths: List[EntityState] = []
+        pregnancy_ended: List[WorldEvent] = []
         
         for e_id, entity in state.entities.items():
             if not entity.lifecycle.active:
@@ -265,6 +273,8 @@ class LifecycleSystem:
             if is_dead:
                 ent_upd = ent_upd or EntityUpdate(entity_id=e_id)
                 recent_deaths.append(entity)
+                if entity.lifecycle.pregnancy is not None:
+                    pregnancy_ended.append(_pregnancy_ended_event(state.tick, entity))
                 # Mark as inactive and record death truth
                 life_upd = ent_upd.lifecycle or LifecycleUpdate()
                 refined_entity_updates[e_id] = replace(ent_upd,
@@ -274,6 +284,7 @@ class LifecycleSystem:
                         death_tick_set=state.tick,
                         death_reason_set=death_reason,
                         death_record_set=LifecycleSystem._death_record(state, entity, ent_upd, death_reason),
+                        pregnancy_clear=entity.lifecycle.pregnancy is not None or life_upd.pregnancy_clear,
                     )
                 )
                 
@@ -325,4 +336,6 @@ class LifecycleSystem:
                 world_events_add=list(update.world_events_add) + list(vac_update.world_events_add),
             )
                         
+        if pregnancy_ended:
+            update = replace(update, world_events_add=list(update.world_events_add) + pregnancy_ended)
         return replace(update, entity_updates=refined_entity_updates)
