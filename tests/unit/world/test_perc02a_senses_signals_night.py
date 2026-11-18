@@ -24,8 +24,11 @@ def catalog():
     return repo
 
 
-def _body(species_id, *, moved=False, asleep=False, lodged=False, alive=True):
-    nav = SimpleNamespace(lodged_in=7 if lodged else None, moved_recently=moved)
+TICK = 100  # the test tick: a step is dated relative to it (moving = TICK - 1; still = None or TICK - 10), never through the old latching moved_recently flag
+
+
+def _body(species_id, *, last_moved_tick=None, asleep=False, lodged=False, alive=True):
+    nav = SimpleNamespace(lodged_in=7 if lodged else None, last_moved_tick=last_moved_tick)
     task = SimpleNamespace(work_kind="ENTITY_ACT" if asleep else "", payload={"action": "SLEEP"} if asleep else {})
     return SimpleNamespace(
         kind=species_id, identity=SimpleNamespace(properties={"species_id": species_id}),
@@ -70,27 +73,27 @@ def test_species_with_no_resolvable_profile_is_a_typed_error(catalog):
 @pytest.mark.parametrize("species_id,visibility", [("goblin", "low"), ("human", "medium"), ("troll", "high")])
 def test_visibility_follows_size(catalog, species_id, visibility):
     body = catalog.get_body_model(catalog.get_species(species_id).body_model)
-    assert emitted_signals(_body(species_id), body)["visibility"] == visibility
+    assert emitted_signals(_body(species_id), body, TICK)["visibility"] == visibility
 
 
 def test_noise_and_vibration_follow_activity(catalog):
     body = catalog.get_body_model(catalog.get_species("human").body_model)
-    for kwargs, level in (({"moved": True}, "medium"), ({}, "low"), ({"asleep": True}, "very_low"), ({"lodged": True, "moved": True}, "very_low")):
-        sig = emitted_signals(_body("human", **kwargs), body)
+    for kwargs, level in (({"last_moved_tick": TICK - 1}, "medium"), ({}, "low"), ({"asleep": True}, "very_low"), ({"lodged": True, "last_moved_tick": TICK - 1}, "very_low")):
+        sig = emitted_signals(_body("human", **kwargs), body, TICK)
         assert sig["noise"] == sig["vibration"] == level, kwargs
 
 
 def test_scent_and_life_for_the_living_none_for_undead_and_spirit(catalog):
-    human = emitted_signals(_body("human"), catalog.get_body_model(catalog.get_species("human").body_model))
+    human = emitted_signals(_body("human"), catalog.get_body_model(catalog.get_species("human").body_model), TICK)
     assert human["scent"] == human["life_signal"] == "medium"
     for species_id in ("undead", "spirit"):
-        sig = emitted_signals(_body(species_id), catalog.get_body_model(catalog.get_species(species_id).body_model))
+        sig = emitted_signals(_body(species_id), catalog.get_body_model(catalog.get_species(species_id).body_model), TICK)
         assert sig["life_signal"] == "none", species_id
         assert sig["scent"] == "medium"
 
 
 def test_a_body_not_in_content_keeps_the_old_default_visibility():
-    assert emitted_signals(_body("fixture_species"), None)["visibility"] == "medium"
+    assert emitted_signals(_body("fixture_species"), None, TICK)["visibility"] == "medium"
 
 
 # --- night: vision counts two levels lower unless the profile declares night vision -----------------------------------------------------
@@ -170,7 +173,7 @@ def test_perception_modules_read_no_kind():
 def test_a_body_model_may_declare_a_magic_signal_and_only_known_keys_and_levels():
     from src.content.schema import BodyModelDefinition
     body = BodyModelDefinition(id="b", display_name="B", signals={"magic": "very_high", "visibility": "none"})
-    sig = emitted_signals(_body("fixture_species"), body)
+    sig = emitted_signals(_body("fixture_species"), body, TICK)
     assert sig["magic_signal"] == "very_high" and sig["visibility"] == "none"
     for bad in ({"smell": "low"}, {"magic": "enormous"}):
         with pytest.raises(ValueError):
@@ -372,3 +375,96 @@ def test_a_context_without_reach_gets_no_touch_and_the_old_score(catalog):
     medium_day = gate.can_perceive(_body("not_in_content_kind"), STILL_MEDIUM, {"distance": 1.0})
     assert medium_day.signals_used == ["visibility"] and medium_day.confidence == pytest.approx(0.6 * 0.6 * (1 - 0.02) * 0.75)
     assert gate.can_perceive(_body("not_in_content_kind"), STILL_SMALL, {}).signals_used == []  # the default distance of 1.0 gives no touch either
+
+
+# --- moving vs still is the step clock (rpg-designer 2026-11-18): navigation.last_moved_tick, relative to the caller's tick --------------------------
+
+def _noise(**kwargs):
+    from src.engine.perception_signals import MOVING_WINDOW  # noqa: F401  (named so a reader finds the constant)
+    return emitted_signals(_body("human", **kwargs), None, TICK)["noise"]
+
+
+def test_a_body_that_stepped_one_tick_ago_reads_moving():
+    assert _noise(last_moved_tick=TICK - 1) == "medium"
+    assert emitted_signals(_body("human", last_moved_tick=TICK - 1), None, TICK)["vibration"] == "medium"
+
+
+def test_a_body_that_stood_past_the_moving_window_reads_still():
+    from src.engine.perception_signals import MOVING_WINDOW
+    assert _noise(last_moved_tick=TICK - MOVING_WINDOW) == "medium"          # the last tick of the window still counts
+    assert _noise(last_moved_tick=TICK - MOVING_WINDOW - 1) == "low"         # stood MOVING_WINDOW + 1 ticks: still
+    assert _noise(last_moved_tick=TICK - 10) == "low"
+
+
+def test_a_body_that_never_stepped_reads_still_and_so_does_a_caller_with_no_tick():
+    assert _noise() == "low" and _noise(last_moved_tick=None) == "low"
+    assert emitted_signals(_body("human", last_moved_tick=TICK - 1), None)["noise"] == "low"       # no tick to date the step against: still, never moving by default
+
+
+def test_the_moving_window_is_a_named_provisional_constant():
+    from src.engine import perception_signals
+    assert perception_signals.MOVING_WINDOW == 3
+
+
+def _step_world(tick=7):
+    from src.core.builder import V2EntityBuilder
+    from src.core.enums import EntityRole, Faction
+    from src.core.state import AuthoritativeState
+
+    def make(eid, pos):
+        return (V2EntityBuilder(eid).kind("human").location(*pos).identity(role=EntityRole.HERO, faction=Faction.HERO_GUILD)
+                .combat(hp=10, max_hp=10, alive=True, readiness=100.0).lifecycle(active=True).build())
+
+    walker, other = make(1, (5.0, 5.0)), make(2, (6.0, 5.0))
+    return AuthoritativeState(tick=tick, seed=1, world_time=tick, entities={1: walker, 2: other}), walker, other
+
+
+def test_a_successful_step_writes_last_moved_tick_at_the_steps_tick():
+    from src.engine.movement import MovementSystem
+    state, walker, _ = _step_world(tick=7)
+    update = MovementSystem.resolve_move(state, walker, (5.0, 6.0))[walker.id]
+    assert update.moved_this_tick and update.new_position == (5.0, 6.0)
+    assert update.navigation.last_moved_tick_set == 7
+
+
+def test_a_move_that_changes_no_position_writes_no_last_moved_tick():
+    from src.engine.movement import MovementSystem
+    state, walker, _ = _step_world(tick=7)
+    update = MovementSystem.resolve_move(state, walker, walker.navigation.position)[walker.id]      # its own tile: nothing to step to
+    assert update.navigation.last_moved_tick_set is None
+
+
+def test_a_yield_displaces_the_occupant_without_writing_last_moved_tick():
+    from dataclasses import replace
+    from src.core.enums import EntityRole
+    from src.engine.movement import MovementSystem
+    state, walker, other = _step_world(tick=7)
+    occupant = replace(other, identity=replace(other.identity, role=EntityRole.MONSTER), navigation=replace(other.navigation, position=(5.0, 6.0)))
+    state = replace(state, entities={1: walker, 2: occupant})
+    update = MovementSystem._yield_update(walker, (5.0, 6.0), state, 7)      # the hero outranks the monster standing on its target tile
+    assert update is not None and update.entity_id == 2 and update.new_position != (5.0, 6.0)
+    assert update.navigation.last_moved_tick_set is None
+
+
+def test_only_a_step_and_a_position_swap_write_the_step_clock():
+    """The writers of last_moved_tick_set in src: the successful step in movement.py and the swap builder in the movement phase; a yield (a displacement) is not one."""
+    root = Path(__file__).resolve().parents[3] / "src"
+    writers = sorted(str(p.relative_to(root)) for p in root.rglob("*.py") if "last_moved_tick_set=" in p.read_text() and p.name != "updates.py")
+    assert writers == ["engine/movement.py", "engine/pipeline_phases/movement.py"]
+    movement = (root / "engine" / "movement.py").read_text()
+    yield_block = movement[movement.index("def _yield_update"):movement.index("def _step_ready_tick")]
+    assert "last_moved_tick_set" not in yield_block
+
+
+def test_the_step_clock_survives_apply_and_a_later_position_move():
+    from src.core.state import AuthoritativeState  # noqa: F401
+    from src.core.updates import EntityUpdate, NavigationUpdate, StateUpdate
+    from src.engine.apply import ApplyPath
+    state, walker, _ = _step_world(tick=7)
+    stepped = ApplyPath.apply_generation(state, StateUpdate(entity_updates={1: EntityUpdate(
+        entity_id=1, new_position=(5.0, 6.0), moved_this_tick=True, navigation=NavigationUpdate(last_moved_tick_set=7))}))
+    assert stepped.entities[1].navigation.last_moved_tick == 7 and stepped.entities[1].navigation.position == (5.0, 6.0)
+    carried = ApplyPath.apply_generation(stepped, StateUpdate(entity_updates={1: EntityUpdate(entity_id=1, new_position=(5.0, 7.0), moved_this_tick=True)}))
+    assert carried.entities[1].navigation.last_moved_tick == 7      # a move that names no step tick carries the last one
+    assert NavigationUpdate(last_moved_tick_set=7).merge(NavigationUpdate()).last_moved_tick_set == 7
+    assert not NavigationUpdate(last_moved_tick_set=0).is_noop()

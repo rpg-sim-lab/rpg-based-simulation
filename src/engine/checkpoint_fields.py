@@ -88,6 +88,8 @@ _GROUP_RULING = "rpg-designer 2026-11-01, checkpoint restore (TCK-20261031-A-PAI
 # F3 (2.155): a pre-F3 state never lodged anyone, so the field is None. ``beds`` is content (per building spec) that a restore cannot reach: refuse.
 FIELD_RULES: List[FieldRule] = [
     FieldRule("lodged_in", _navigations, "lodged_in", fill=lambda state, owner: None, ruling="2.155: a state that predates lodging lodged no one", record="NavigationComponent"),
+    # PERC-02 (2.210): a state that predates the step clock never recorded a step, so the body reads still until it steps; None is exactly that state.
+    FieldRule("last_moved_tick", _navigations, "last_moved_tick", fill=lambda state, owner: None, ruling="rpg-designer 2026-11-18, PERC-02: a state that predates the step clock recorded no step", record="NavigationComponent"),
     FieldRule("beds", _buildings, "beds", fill=None, ruling="2.155: beds are copied from content at compile; the checkpoint carries no compiled content", record="BuildingState"),
     # A pre-2.156 state kept no retreat clear window, so a project that predates it has none yet (it opens on the first clear observation); None is exactly that state.
     FieldRule("cleared_since", _projects, "cleared_since", fill=lambda state, owner: None, ruling="2.156: a state that predates the retreat clear window had no window", record="ProjectState"),

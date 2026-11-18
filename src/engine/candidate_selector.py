@@ -1,7 +1,7 @@
 # Compliance IDs: COMB-028, PERF-009, PERF-017
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Iterable, Mapping, Optional
+from typing import TYPE_CHECKING, Iterable, Mapping, Optional, Tuple
 
 from src.core.movement_modes import MovementMode
 from src.core.updates import EntityUpdate, NavigationUpdate, TaskUpdate
@@ -114,18 +114,18 @@ class MovementCandidateSelector:
         entities: Mapping[int, "EntityState"],
         index: Optional[dict[tuple[int, int], list[int]]],
         engaged: bool,
-        night: bool = False,
+        when: Tuple[bool, Optional[int]] = (False, None),
     ) -> bool:
         """True when an orthogonally adjacent entity is a perceived, hostile-compatible entity whose engagement with ``entity`` (either names
         the other as its target) equals ``engaged``. Uses ``hostility.perceived_hostile``, the test the tactical pass builds its hostiles with,
-        so the movement layer, the scheduler and the decision layer cannot disagree."""
+        so the movement layer, the scheduler and the decision layer cannot disagree. ``when`` is (is_night, the caller's tick) for the perception gate."""
         if index is None:
             index = MovementCandidateSelector.position_index(entities)
         x, y = int(entity.navigation.position[0]), int(entity.navigation.position[1])
         for tile in ((x + 1, y), (x - 1, y), (x, y + 1), (x, y - 1)):
             for other_id in index.get(tile, ()):
                 other = entities.get(other_id)
-                if other is not None and other.id != entity.id and is_engaged(entity, other) is engaged and perceived_hostile(entity, other, night=night):
+                if other is not None and other.id != entity.id and is_engaged(entity, other) is engaged and perceived_hostile(entity, other, night=when[0], tick=when[1]):
                     return True
         return False
 
@@ -145,10 +145,11 @@ class MovementCandidateSelector:
         entities: Mapping[int, "EntityState"],
         index: Optional[dict[tuple[int, int], list[int]]] = None,
         night: bool = False,
+        tick: Optional[int] = None,
     ) -> bool:
         """Decision 32 ("notice and decide"): a perceived hostile entity orthogonally adjacent that is NOT engaged with ``entity``. The scheduler
         wakes the brain of such an entity ahead of its cadence."""
-        return MovementCandidateSelector._adjacent_hostile(entity, entities, index, False, night)
+        return MovementCandidateSelector._adjacent_hostile(entity, entities, index, False, (night, tick))
 
     @staticmethod
     def movement_target(

@@ -104,7 +104,7 @@ class DeterministicScheduler:
         return (
             (state.tick + ent.id) % ADJACENCY_WAKE_COOLDOWN == 0
             and not (work_kind == "ENTITY_ACT" and ent.task.payload)
-            and MovementCandidateSelector.unengaged_adjacent_hostile(ent, state.entities, wake_index, is_night(state.world_time))
+            and MovementCandidateSelector.unengaged_adjacent_hostile(ent, state.entities, wake_index, is_night(state.world_time), state.tick)
         )
 
     @staticmethod

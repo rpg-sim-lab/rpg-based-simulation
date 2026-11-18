@@ -53,11 +53,11 @@ def is_wild_creature(entity: "EntityState") -> bool:
     return get_faction_semantics_service().get_alignment_bucket(source_identity(entity)[0]) == WILD_ALIGNMENT
 
 
-def faction_hostile(entity: "EntityState", other: "EntityState", source: Optional[Tuple[str, str]] = None, night: bool = False) -> bool:
+def faction_hostile(entity: "EntityState", other: "EntityState", source: Optional[Tuple[str, str]] = None, night: bool = False, tick: Optional[int] = None) -> bool:
     """True when ``entity`` perceives ``other`` (alive, passes the perception gate) and the faction semantics rate it hostile.
 
     ``source`` is ``source_identity(entity)`` when the caller tests many neighbours of one entity."""
-    if not perceives(entity, other, night):
+    if not perceives(entity, other, night, tick):
         return False
     if is_wild_creature(entity) or is_wild_creature(other):
         return False  # decision 47: a wild creature is regarded by appraisal, never by faction verdict
@@ -77,24 +77,24 @@ def faction_hostile(entity: "EntityState", other: "EntityState", source: Optiona
     return bool(get_faction_semantics_service().is_hostile_compat(source_faction, target_faction, context))
 
 
-def relation(entity: "EntityState", other: "EntityState", source: Optional[Tuple[str, str]] = None, night: bool = False) -> Relation:
+def relation(entity: "EntityState", other: "EntityState", source: Optional[Tuple[str, str]] = None, night: bool = False, tick: Optional[int] = None) -> Relation:
     """How ``entity`` regards ``other`` (decisions 47 and 49): faction hostility first, then the appraisal from properties.
 
     "Appraisal for all, faction for people": a faction verdict wins; otherwise PREDATION, THREATENING, WARY or NONE."""
-    if faction_hostile(entity, other, source, night):
+    if faction_hostile(entity, other, source, night, tick):
         return Relation.FACTION_HOSTILE
     if get_species_id_str(entity) == get_species_id_str(other):
         return Relation.NONE  # a kind regards its own as neither prey nor danger (no cannibalism in M0)
-    appraised = appraise(entity, other, night)
+    appraised = appraise(entity, other, night, tick)
     if appraised is Relation.PREDATION and get_faction_id_str(entity) == get_faction_id_str(other):
         return Relation.NONE  # a faction does not hunt its own members
     return appraised
 
 
-def perceived_hostile(entity: "EntityState", other: "EntityState", source: Optional[Tuple[str, str]] = None, night: bool = False) -> bool:
+def perceived_hostile(entity: "EntityState", other: "EntityState", source: Optional[Tuple[str, str]] = None, night: bool = False, tick: Optional[int] = None) -> bool:
     """True when ``other`` is an attack target of ``entity``: a faction hostile or prey it hunts. WARY and THREATENING are not (they are
     avoided, never engaged), so they never enter the hostile list."""
-    return relation(entity, other, source, night) in ATTACK_RELATIONS
+    return relation(entity, other, source, night, tick) in ATTACK_RELATIONS
 
 
 def is_feeding_kill(state: "AuthoritativeState", attacker_id: Optional[int], victim: "EntityState") -> bool:

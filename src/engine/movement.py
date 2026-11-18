@@ -404,6 +404,7 @@ class MovementSystem:
         nav_upd = NavigationUpdate(
             step_ready_tick_set=MovementSystem._step_ready_tick(entity, success, effective_target, current_tick, state_or_context),
             moved_recently_set=True,
+            last_moved_tick_set=current_tick if success and effective_target != entity.navigation.position else None,  # PERC-02: a successful step that changed the position; the only writer besides a position swap
             failure_reason=None if success else reason_code,
             # VERIFIED v2: movement_priority_tiebreak
             wait_count_delta=wait_delta,

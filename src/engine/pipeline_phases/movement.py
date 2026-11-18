@@ -305,11 +305,11 @@ class MovementPhase:
         """Each side moves onto the other's tile and pays the step time of that tile (D75), merged onto its update so far this tick."""
         a_old, b_old = a.navigation.position, b.navigation.position
         a_swap = MovementPhase._build_position_swap_entity_update(
-            entity=a, new_position=b_old, reason=ReasonCode.POSITION_SWAP,
+            entity=a, new_position=b_old, reason=ReasonCode.POSITION_SWAP, tick=state.tick,
             step_ready_tick=MovementSystem._step_ready_tick(a, True, b_old, state.tick, state),
         )
         b_swap = MovementPhase._build_position_swap_entity_update(
-            entity=b, new_position=a_old, reason=ReasonCode.POSITION_SWAP,
+            entity=b, new_position=a_old, reason=ReasonCode.POSITION_SWAP, tick=state.tick,
             step_ready_tick=MovementSystem._step_ready_tick(b, True, a_old, state.tick, state),
         )
         return a_existing.merge(a_swap), b_existing.merge(b_swap)
@@ -447,6 +447,7 @@ class MovementPhase:
         new_position: tuple[float, float],
         reason,
         step_ready_tick: float | None = None,
+        tick: int | None = None,
     ) -> EntityUpdate:
         # Movement no longer costs readiness -- see the matching note in
         # MovementSystem.resolve_move (src/engine/movement.py)
@@ -458,6 +459,7 @@ class MovementPhase:
             moved_this_tick=True,
             navigation=NavigationUpdate(
                 moved_recently_set=True,
+                last_moved_tick_set=tick,  # PERC-02: each side of a swap stepped onto the other's tile this tick
                 failure_reason=reason,
                 wait_count_delta=-entity.navigation.wait_count,
                 oscillation_count_delta=-entity.navigation.oscillation_count,
