@@ -127,7 +127,7 @@ def test_the_spy_marks_a_newborn_member_and_stops_recording_a_dissolved_group():
     prior = AuthoritativeState(tick=9, seed=1, entities={1: _body(1), 5: _body(5)}, groups={1: group}, next_entity_id=6)
     spy = GroupSpy(AuthoritativeState(tick=0, seed=1, entities={1: _body(1)}, next_entity_id=2))
     spy.observe(prior, StateUpdate(), dataclasses.replace(prior, tick=10))
-    assert spy.newborn_in_group == [{"group": 1, "tick": 10, "newborn": 5}]
+    assert spy.newborn_in_group == [{"group": 1, "tick": 10, "newborn": 5, "kind": "human"}]
     dissolved = dataclasses.replace(group, dissolution_tick=11)
     spy.observe(prior, StateUpdate(), dataclasses.replace(prior, tick=11, groups={1: dissolved}))
     assert len(spy.rows[1]) == 1 and spy.group_seen[1]["dissolution_tick"] == 11
@@ -198,3 +198,46 @@ def test_the_judge_carries_the_follow_up_in_both_the_valid_and_the_invalid_repor
     valid = s9_run.judge(head, main, s9_spy, _plain("h"), _plain("h"))
     assert valid["verdict"] == "CLEAR" and valid["follow_up"]["fired"] is True and valid["follow_up"]["head_alive_at_end"] == [3]
     assert s9_run.judge(head, main, s9_spy, _plain("x"), _plain("h"))["follow_up"]["fired"] is True
+
+
+def test_births_and_conceptions_counts_two_newborns_one_pregnancy_and_zero_on_a_main_shaped_state():
+    from src.core.pregnancy import PregnancyState
+    from src.systems.lifecycle_systems.genetics import GeneticProfile
+
+    group = GroupRecord(id=1, leader_id=1, member_ids={1, 2}, anchor=(5.0, 5.0), formation_tick=0)
+    pregnant = dataclasses.replace(_body(1), lifecycle=dataclasses.replace(_body(1).lifecycle, pregnancy=PregnancyState(
+        father_entity_id=2, conceived_tick=30, due_tick=2430, litter_size=1, father_genetic_profile=GeneticProfile())))
+    start = AuthoritativeState(tick=0, seed=1, entities={1: _body(1), 2: _body(2)}, next_entity_id=3)
+    state = AuthoritativeState(tick=10, seed=1, entities={1: pregnant, 2: _body(2), 3: _body(3), 4: _body(4)}, groups={1: group}, next_entity_id=5)
+    spy = GroupSpy(start)
+    spy.observe(state, StateUpdate(), state)
+    spy.observe(state, StateUpdate(), dataclasses.replace(state, tick=11))
+    assert s9_spy.count_births(state.entities, spy.start_ids) == 2, "bodies 3 and 4, alive or dead"
+    assert len(spy.conceptions) == 1, "the same (mother, conceived_tick) seen on two ticks counts once"
+    main_shaped = type("Lifecycle", (), {})()
+    body = type("Body", (), {"id": 1, "lifecycle": main_shaped})()
+    main_state = type("State", (), {"tick": 5, "entities": {1: body}, "groups": {}})()
+    empty = GroupSpy(start)
+    empty.observe(main_state, StateUpdate(), main_state)
+    assert len(empty.conceptions) == 0, "a lifecycle with no pregnancy field reads as no conception"
+
+
+def test_the_judge_report_carries_births_and_conceptions_for_both_arms():
+    head = {**_doc({10: rows(5, moved=True)}, [10]), "births": 2, "conceptions": 1}
+    main = {**_doc({10: rows(5, moved=True)}, [10]), "births": 0, "conceptions": 0}
+    report = s9_run.judge(head, main, s9_spy, _plain("h"), _plain("h"))
+    assert report["births"] == {"head": 2, "main": 0} and report["conceptions"] == {"head": 1, "main": 0}
+
+
+def test_the_runner_prints_the_newborns_in_any_group_as_a_count_and_rows_of_any_kind(capsys, monkeypatch, tmp_path):
+    report = {"verdict": "CLEAR", "eids": [], "twin_hash": {}, "births": {"head": 1, "main": 0}, "conceptions": {"head": 1, "main": 0}, "follow_up": s9_run.follow_up("CLEAR", {}, {}),
+              "newborn_in_group_head": [{"group": 4, "tick": 120, "newborn": 77, "kind": "wolf"}, {"group": 4, "tick": 130, "newborn": 78, "kind": "human"}]}
+    monkeypatch.setattr(s9_run, "judge", lambda *a, **k: report)
+    monkeypatch.setattr(s9_run.subprocess, "run", lambda cmd, **kw: type("P", (), {"returncode": 0, "stderr": ""})())
+    for arm in ("head", "head_plain", "main", "main_plain"):
+        (tmp_path / f"{arm}.json").write_text("{}")
+    monkeypatch.setattr(s9_run, "load_spy", lambda path: s9_spy)
+    s9_run.main(["--tree", str(tmp_path), "--main-tree", str(tmp_path), "--out", str(tmp_path), "--go", "x"])
+    out = capsys.readouterr().out
+    assert "newborns in any group at any tick (head, any kind): 2" in out
+    assert "newborn eid 77 kind wolf group 4 first tick in a group 120" in out and "newborn eid 78 kind human group 4 first tick in a group 130" in out

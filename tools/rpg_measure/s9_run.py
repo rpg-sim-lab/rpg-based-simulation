@@ -64,6 +64,7 @@ def child(world: str, seed: int, ticks: int, arm: str, out: str, spy_file: str) 
         "arm": arm, "world": world, "seed": seed, "ticks": ticks, "final_hash": final_hash, "start_ids": sorted(spy.start_ids), "rows": {str(k): v for k, v in spy.rows.items()},
         "groups": groups, "mother": {str(k): v for k, v in spy.mother.items()}, "newborn_in_group": spy.newborn_in_group, "not_captured": list(spy_module.NOTHING_CAPTURED),
         "starving_line": spy_module.STARVING_LINE, "window": spy_module.WINDOW,
+        "births": spy_module.count_births(state.entities, spy.start_ids), "conceptions": len(spy.conceptions),
     }
     Path(out).parent.mkdir(parents=True, exist_ok=True)
     Path(out).write_text(json.dumps(doc, sort_keys=True), encoding="utf-8")
@@ -104,6 +105,7 @@ def judge(head: Dict[str, Any], main: Dict[str, Any], spy_module: Any, head_plai
         "window": head["window"], "starving_line": head["starving_line"], "cap": "none: every hit row is listed", "not_captured": head["not_captured"],
         "final_hash": {"head": head["final_hash"], "main": main["final_hash"]},
         "twin_hash": {s: {"spied": a, "plain": b} for s, (a, b) in twins.items()}, "twin_hash_equal": twin_equal,
+        "births": {"head": head.get("births"), "main": main.get("births")}, "conceptions": {"head": head.get("conceptions"), "main": main.get("conceptions")},
         "follow_up": follow_up(spy_module.final_verdict(classified), head["groups"], main["groups"]),
     }
 
@@ -140,6 +142,11 @@ def main(argv: List[str]) -> int:
     (args.out / "s9_report.json").write_text(json.dumps(report, indent=2, sort_keys=True), encoding="utf-8")
     print(json.dumps(report, indent=2, sort_keys=True))
     print("twin hashes (spied vs plain):", json.dumps(report["twin_hash"], sort_keys=True))
+    print("births / conceptions:", json.dumps({"births": report.get("births"), "conceptions": report.get("conceptions")}, sort_keys=True))
+    rows_in_group = report.get("newborn_in_group_head", [])
+    print(f"newborns in any group at any tick (head, any kind): {len(rows_in_group)}")
+    for entry in rows_in_group:
+        print(f"  newborn eid {entry['newborn']} kind {entry.get('kind')} group {entry['group']} first tick in a group {entry['tick']}")
     if report["verdict"] == "INVALID":
         print("S9 VERDICT: INVALID (" + report["reason"] + ")")
         print(follow_up_line(report["follow_up"]))
