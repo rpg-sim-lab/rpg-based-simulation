@@ -47,7 +47,7 @@ def test_every_site_that_can_end_a_resolve_blocker_stamps_the_blocker_in_the_sam
     text = {rel: (SRC / rel).read_text(encoding="utf-8") for rel in ("systems/strategic_systems/intelligence.py", "ai/goals/live_record_route.py")}
     assert "last_project_end_tick=current_tick" in text["systems/strategic_systems/intelligence.py"]          # the 50-tick timeout
     assert "ended_blocker_stamps(entity.strategic.blockers, written)" in text["systems/strategic_systems/intelligence.py"]  # the suspension expiry pass
-    assert "ended_blocker_stamps(blockers or {}, [ended])" in text["ai/goals/live_record_route.py"]            # the supersede on a win
+    assert "ended_blocker_stamps({**(blockers or {}), **{b.id: b for b in switch_up.blockers_add_or_update}}, [ended])" in text["ai/goals/live_record_route.py"]            # the supersede on a win
     expire_callers = {rel for rel, name, _ in _calls() if name == "expire_suspended"}
     supersede_callers = {rel for rel, name, _ in _calls() if name == "supersede_record"}
     assert expire_callers == {"systems/strategic_systems/intelligence.py"} and supersede_callers == {"ai/goals/live_record_route.py", "core/strategic.py"}

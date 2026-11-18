@@ -270,3 +270,46 @@ def test_superseding_a_resolve_blocker_stamps_its_blocker_in_the_same_update():
     assert out is not None
     assert any(p.id == existing.id and p.ended_tick == T0 + 7 for p in out.projects_add_or_update)
     assert [x.last_project_end_tick for x in out.blockers_add_or_update] == [T0 + 7]
+
+
+def test_the_timeout_update_applied_through_the_real_patch_keeps_the_count_the_backoff_and_the_end_tick_together():
+    """One staged blocker carries failure_count + 1, the new suppression AND last_project_end_tick: the stamp never rebuilds the blocker from the stored record."""
+    from src.engine.patches import StrategicPatch
+
+    tick = T0 + 60
+    up = _timeout_update(2, tick)
+    hero = _hero([_blocker(failures=2, seen=tick - 5)], [_project(created=tick - 60)])
+    changes: dict = {}
+    StrategicPatch(entity_id=hero.id, strategic=up).apply(hero, changes)
+    stored = changes["strategic"].blockers[CONGESTION_BLOCKER_ID]
+    assert (stored.failure_count, stored.suppression_until_tick, stored.last_project_end_tick) == (3, tick + blocker_timeout_suppression(3), tick)
+
+
+def test_a_supersede_stamp_is_built_on_the_blocker_the_same_update_already_rewrote():
+    from src.ai.goals.live_record_route import LiveRecordRoute, supersede_on_win
+
+    stored = _blocker(seen=T0, failures=1)
+    rewritten = replace(stored, failure_count=2, suppression_until_tick=T0 + 400)
+    candidate = _project(created=T0 + 5, pid="proj_other")
+    route = LiveRecordRoute(existing=_project(created=T0), target_matches=False)
+    out = supersede_on_win(StrategicUpdate(projects_add_or_update=[candidate], blockers_add_or_update=[rewritten]), route, candidate, T0 + 7, {stored.id: stored})
+    last = [b for b in out.blockers_add_or_update if b.id == stored.id][-1]          # the later entry wins at apply
+    assert (last.failure_count, last.suppression_until_tick, last.last_project_end_tick) == (2, T0 + 400, T0 + 7)
+
+
+def test_the_expiry_stamp_survives_a_write_of_the_same_blocker_by_the_body_of_the_same_call():
+    """suspension expiry + the 50-tick timeout of another project naming the same blocker, in one evaluate_strategic_intent_with_expiry call: after the real apply the blocker has the
+    timeout's count and suppression and an end tick (the later of the two ends)."""
+    from src.engine.patches import StrategicPatch
+
+    tick = T0 + 300
+    b = _blocker(seen=tick - 5)
+    parked = replace(_project(created=T0, status=ProjectStatus.SUSPENDED, pid="proj_resolve_blocker_parked"), suspended_since=T0)
+    running = _project(created=tick - 60, pid="proj_resolve_blocker_running")
+    hero = _hero([b], [parked, running], current=running.id)
+    state = AuthoritativeState(tick=tick, seed=1, world_time=tick, entities={hero.id: hero})
+    up = StrategicIntelligenceSystem.evaluate_strategic_intent_with_expiry(state, hero, force=True)
+    changes: dict = {}
+    StrategicPatch(entity_id=hero.id, strategic=up).apply(hero, changes)
+    stored = changes["strategic"].blockers[CONGESTION_BLOCKER_ID]
+    assert stored.failure_count == 1 and stored.suppression_until_tick == tick + blocker_timeout_suppression(1) and stored.last_project_end_tick == tick

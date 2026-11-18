@@ -1281,6 +1281,7 @@ class StrategicIntelligenceSystem:
         view_strat = replace(
             strat,
             projects={pid: ended.get(pid, p) for pid, p in strat.projects.items()},
+            blockers={**strat.blockers, **{b.id: b for b in expiry.blockers_add_or_update}},  # the body builds on the stamped blocker, so a write of its own never drops the stamp
             current_project_id=None if expiry.current_project_id_set == "" else strat.current_project_id,
             current_objective_id=None if expiry.current_objective_id_set == "" else strat.current_objective_id,
         )

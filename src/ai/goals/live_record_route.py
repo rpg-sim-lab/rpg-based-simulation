@@ -75,4 +75,4 @@ def supersede_on_win(switch_up: Optional[StrategicUpdate], route: LiveRecordRout
     return replace(switch_up, projects_add_or_update=[
         ended,
         *[p for p in switch_up.projects_add_or_update if p.id != existing.id],
-    ], blockers_add_or_update=[*switch_up.blockers_add_or_update, *ended_blocker_stamps(blockers or {}, [ended])])  # 2.214: the same update stamps the blocker a resolve_blocker's end names
+    ], blockers_add_or_update=[*switch_up.blockers_add_or_update, *ended_blocker_stamps({**(blockers or {}), **{b.id: b for b in switch_up.blockers_add_or_update}}, [ended])])  # 2.214: the same update stamps the blocker a resolve_blocker's end names
