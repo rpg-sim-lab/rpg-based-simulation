@@ -297,3 +297,26 @@ def test_gate_v4_counts_only_python_processes_with_kit_words(tmp_path):
         for child in children:
             child.kill()
             child.wait()
+
+
+# ---- (b) mirrors the run's interpreter flags ---------------------------------------------------------------------------------------------
+
+def _entry(*flags):
+    return ["{python}", *flags, "{file:step_probe.py}", "{world}", "{seed}", "{ticks}", "{out}"]
+
+
+def test_an_entry_without_dash_i_and_pythonpath_set_passes_check_b(tmp_path):
+    rows = _run(tmp_path, _kit(tmp_path, NO_PATH_FIX_PROBE, proc_extra={"entry": _entry()})[0])
+    assert "b import" not in _checks_failed(rows) and "c fixture run" not in _checks_failed(rows)
+
+
+def test_an_entry_with_dash_i_and_no_sys_path_fix_still_fails_check_b(tmp_path):
+    rows = _run(tmp_path, _kit(tmp_path, NO_PATH_FIX_PROBE, proc_extra={"entry": _entry("-I")})[0])
+    assert "b import" in _checks_failed(rows)
+
+
+def test_an_explicit_import_flags_overrides_the_entry(tmp_path):
+    assert kp.import_flags({"entry": _entry("-I")}) == ["-I"] and kp.import_flags({"entry": _entry()}) == []
+    assert kp.import_flags({"entry": _entry("-I"), "import_flags": []}) == []
+    rows = _run(tmp_path, _kit(tmp_path, NO_PATH_FIX_PROBE, proc_extra={"entry": _entry("-I"), "import_flags": []})[0])
+    assert "b import" not in _checks_failed(rows)

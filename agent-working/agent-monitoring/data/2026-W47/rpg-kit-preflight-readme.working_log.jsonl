@@ -1,0 +1,1 @@
+{"timestamp": "2026-11-18T13:27:22.196071Z", "ticket_id": "TCK-20261118-PREFLIGHT-CHECK-B-MIRRORS-THE-RUNS-INTERPRETER-FLAGS", "title": "Preflight check (b) mirrors the run's interpreter flags", "status": "DONE", "summary": "import_flags default from entry, README rules, 3 tests; 23 passed", "artifacts_path": "none (hotfix \u2014 no staging artifacts)"}
