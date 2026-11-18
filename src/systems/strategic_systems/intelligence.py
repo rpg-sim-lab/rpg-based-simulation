@@ -542,7 +542,7 @@ class StrategicIntelligenceSystem:
                         if all_blockers_resolved:
                             new_obj = replace(active_obj, status=ObjectiveStatus.RESOLVED)
                             project_upd = replace(project, objectives=[new_obj if o.id == new_obj.id else o for o in project.objectives], status=ProjectStatus.COMPLETED)
-                            project_upd = typed_completion(project_upd, current_tick)
+                            project_upd = typed_completion(project_upd, state.tick)
 
             # (Update strat_up with results)
             new_additions = list(strat_up.blockers_add_or_update)

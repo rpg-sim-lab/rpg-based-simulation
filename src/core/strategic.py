@@ -368,8 +368,9 @@ def ended_blocker_stamps(blockers: Mapping[str, BlockerState], ended: Iterable["
     The update that ends the project carries these, so the bound survives the project record being trimmed. A blocker no longer stored, or an end that is not newer, yields nothing."""
     latest: Dict[str, int] = {}
     for p in ended:
-        if p.kind == "resolve_blocker" and p.objectives and p.ended_tick is not None and p.objectives[0].target in blockers:
-            latest[p.objectives[0].target] = max(latest.get(p.objectives[0].target, 0), p.ended_tick)
+        target = p.objectives[0].target if p.objectives else None
+        if p.kind == "resolve_blocker" and target is not None and target in blockers and p.ended_tick is not None:
+            latest[target] = max(latest.get(target, 0), p.ended_tick)
     return [dataclasses.replace(blockers[i], last_project_end_tick=t) for i, t in sorted(latest.items()) if (blockers[i].last_project_end_tick or -1) < t]
 
 
