@@ -183,6 +183,7 @@ class ArchetypeEntityFactory:
         population's pending information responses and self-model events in a later episode (resolve_pending_information), but
         only when no member of that population that entered the carried-forward roster before it survives. The resolver takes
         the first match in roster insertion order, with no id rule. Every t0 body enters the roster before any newborn."""
+        require_archetype_senses(contract)  # PERC-02: the second line of defence behind the load-time check of every newborn_archetype
         mother, mate = birth.mother, birth.mate
         # A builder argument left None keeps the default, so each value is omitted when the mother has none (never written as None).
         anchor = mother.navigation.home_position if _COPY_MOTHER_ANCHORS else None
