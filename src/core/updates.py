@@ -78,7 +78,7 @@ class NavigationUpdate:
     step_ready_tick_set: Optional[float] = None  # D75: the earliest tick of the entity's next step
     lodged_in_set: Optional[int] = None  # F3: the building the subject lodges in from this tick (a lodge claim until `grant_beds` grants it)
     lodged_in_clear: bool = False  # F3: the subject leaves the building it lodges in
-    last_moved_tick_set: Optional[int] = None  # PERC-02: the tick of a SUCCESSFUL step that changed the position (movement apply path only; a yield does not write it)
+    last_moved_tick_set: Optional[int] = None  # PERC-02: the tick of a move: any position change by the movement apply path (a step, a swap, a yield displacement)
 
     def is_noop(self) -> bool:
         return (self.target_set is None and not self.target_clear and self.path_set is None and self.step_ready_tick_set is None and 

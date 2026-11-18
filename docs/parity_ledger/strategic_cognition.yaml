@@ -4740,7 +4740,7 @@
   support_boundary: 'Unit rows: the helper at ticks 0, 599, 600, 1799, 1800, 2399, 2400, 2999, 3000 and 4200; night is 1200 of every 2400 ticks; the three readers agree at t and t plus whole days; no raw night literal in src outside calendar.py.'
 
 - id: STRAT-352
-  text: 'TCK-20261117-EACH-BODY-PERCEIVES-BY-ITS-SPECIES-SENSES-AND-SIGNALS-FOLLOW-THE-BODY (PERC-02, memo row 98 Q2, divergence 2.210): a body perceives through the sense profile of its species (derived at read, nothing stored), what it gives off follows the body (visibility by size, noise and vibration medium while moving (a successful step within MOVING_WINDOW ticks, navigation.last_moved_tick), low while still, very_low asleep or lodged, scent and life for the living, none for undead and spirit), vision counts two levels lower at night unless the profile declares night_vision, and a gate error is not perception.'
+  text: 'TCK-20261117-EACH-BODY-PERCEIVES-BY-ITS-SPECIES-SENSES-AND-SIGNALS-FOLLOW-THE-BODY (PERC-02, memo row 98 Q2, divergence 2.210): a body perceives through the sense profile of its species (derived at read, nothing stored), what it gives off follows the body (visibility by size, noise and vibration medium while moving (a move within MOVING_WINDOW ticks: a step, a swap or a yield displacement, navigation.last_moved_tick), low while still, very_low asleep or lodged, scent and life for the living, none for undead and spirit), vision counts two levels lower at night unless the profile declares night_vision, and a gate error is not perception.'
   status: verified
   priority: P1
   legacy_evidence: null

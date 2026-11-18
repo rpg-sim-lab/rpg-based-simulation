@@ -62,6 +62,7 @@ src/world/perception/, src/engine/appraisal.py, src/engine/hostility.py, src/eng
 
 ## Assumptions / Open Questions
 None open; rulings by rpg-designer relayed by rpg-planner 2026-11-17 (split into 02a/02b; derive at read; unprofiled fixtures counted).
+Ruled law (rpg-designer, 2026-11-18): a move = any position change by the movement apply path (step, swap, yield); it stamps last_moved_tick and, in the stale-reason fix, clears failure_reason. Lodge entry/exit and a failed attempt are not moves.
 
 ## Implementation Notes
 Designer rulings 2026-11-17 via rpg-planner: derive at read (no stored field, no FIELD_RULES row); fixture policy (unprofiled counted, linked to TCK-20261117-TEST-FIXTURES-DECLARE-A-SPECIES-THROUGH-A-HELPER-AND-THE-BUILDER-DEFAULT-GOES). Known: legality.attack_allowed, is_feeding_kill, scorers_support.perceived_hostiles and the other get_neighbor_view sites stay day-by-default until 02b.

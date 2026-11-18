@@ -459,7 +459,7 @@ class MovementPhase:
             moved_this_tick=True,
             navigation=NavigationUpdate(
                 moved_recently_set=True,
-                last_moved_tick_set=tick,  # PERC-02: each side of a swap stepped onto the other's tile this tick
+                last_moved_tick_set=tick,  # PERC-02: each side of a swap moved onto the other's tile this tick (a move stamps last_moved_tick)
                 failure_reason=reason,
                 wait_count_delta=-entity.navigation.wait_count,
                 oscillation_count_delta=-entity.navigation.oscillation_count,

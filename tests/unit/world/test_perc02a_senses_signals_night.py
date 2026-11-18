@@ -434,7 +434,7 @@ def test_a_move_that_changes_no_position_writes_no_last_moved_tick():
     assert update.navigation.last_moved_tick_set is None
 
 
-def test_a_yield_displaces_the_occupant_without_writing_last_moved_tick():
+def test_a_yield_displaces_the_occupant_and_stamps_last_moved_tick():
     from dataclasses import replace
     from src.core.enums import EntityRole
     from src.engine.movement import MovementSystem
@@ -443,17 +443,17 @@ def test_a_yield_displaces_the_occupant_without_writing_last_moved_tick():
     state = replace(state, entities={1: walker, 2: occupant})
     update = MovementSystem._yield_update(walker, (5.0, 6.0), state, 7)      # the hero outranks the monster standing on its target tile
     assert update is not None and update.entity_id == 2 and update.new_position != (5.0, 6.0)
-    assert update.navigation.last_moved_tick_set is None
+    assert update.navigation.last_moved_tick_set == 7      # a yield is a move by the movement apply path: the displaced body made noise (rpg-designer 2026-11-18)
 
 
-def test_only_a_step_and_a_position_swap_write_the_step_clock():
-    """The writers of last_moved_tick_set in src: the successful step in movement.py and the swap builder in the movement phase; a yield (a displacement) is not one."""
+def test_only_the_movement_apply_path_writes_the_step_clock():
+    """The writers of last_moved_tick_set in src: the step and the yield displacement in movement.py and the swap builder in the movement phase (any position change by the movement apply path)."""
     root = Path(__file__).resolve().parents[3] / "src"
     writers = sorted(str(p.relative_to(root)) for p in root.rglob("*.py") if "last_moved_tick_set=" in p.read_text() and p.name != "updates.py")
     assert writers == ["engine/movement.py", "engine/pipeline_phases/movement.py"]
     movement = (root / "engine" / "movement.py").read_text()
     yield_block = movement[movement.index("def _yield_update"):movement.index("def _step_ready_tick")]
-    assert "last_moved_tick_set" not in yield_block
+    assert "last_moved_tick_set=current_tick" in yield_block
 
 
 def test_the_step_clock_survives_apply_and_a_later_position_move():

@@ -3,7 +3,7 @@
 `emitted_signals(entity, body)` is the one function that turns a body into the signal levels the PerceptionGate scores against a sense.
 Defaults are derived from the body, never from a kind name:
 - visibility: by the body model's size band (small low, medium medium, large high; undeclared medium);
-- noise and vibration: medium while it is MOVING (it took a successful step within the last MOVING_WINDOW ticks: ``navigation.last_moved_tick``), low while still (never stepped, or
+- noise and vibration: medium while it is MOVING (it moved within the last MOVING_WINDOW ticks: a step, a swap or a yield displacement, ``navigation.last_moved_tick``), low while still (never stepped, or
   not within the window), very_low while asleep or lodged;
 - scent: medium for a living body;
 - life: medium for a living body.

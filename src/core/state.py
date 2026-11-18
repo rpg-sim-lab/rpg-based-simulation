@@ -525,7 +525,7 @@ class NavigationComponent:
     step_ready_tick: float = 0.0
 
     lodged_in: Optional[int] = None  # F3 (2.155): the building this subject LODGES in (position is its tile, on no tile held); set and cleared only by the apply path; (an insert is refused by the checkpoint schema check; an append needs a FIELD_RULES row)
-    last_moved_tick: Optional[int] = None  # PERC-02 (2.210): the tick of the last SUCCESSFUL step that changed this body's position, written only by the movement apply path (never by a yield or a failed attempt); None = never stepped; LAST field (an insert is refused by the checkpoint schema check; an append needs a FIELD_RULES row)
+    last_moved_tick: Optional[int] = None  # PERC-02 (2.210): the tick of the last MOVE of this body: any position change by the movement apply path (a step, a swap or a yield displacement; not lodge entry/exit, not a failed attempt); None = never stepped; LAST field (an insert is refused by the checkpoint schema check; an append needs a FIELD_RULES row)
 
     def to_canonical_dict(self) -> Dict[str, Any]:
         """The navigation block of the entity's canonical form. `step_ready_tick` (D75) is present only once non-zero, so the form of an
