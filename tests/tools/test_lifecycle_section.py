@@ -6,6 +6,7 @@ from pathlib import Path
 import pytest
 
 from tools import ticket_field_values as tfv
+from tools.agent_working_paths import TICKETS
 from tools.delivery import pr_body_lint, pr_render
 from tools.gate_checks import done_checker_static as dcs
 from tests.tools.test_delivery_pr_render import FakeRunner, _git_diff_rule, _git_log_rule, _write_ticket
@@ -69,7 +70,7 @@ def test_every_existing_closed_and_open_ticket_passes():
     """The corpus guard: nothing already on disk may fail the new check (grandfathering by date)."""
     failures = []
     for folder in ("done", "inprogress", "todos"):
-        for path in (_ROOT / "agent-working" / "tickets" / folder).rglob("TCK-*.md"):
+        for path in (TICKETS / folder).rglob("TCK-*.md"):
             status, evidence = tfv.check_lifecycle_section(path)
             if status == "FAIL" and "dated" not in evidence:
                 failures.append((str(path), evidence))
@@ -119,7 +120,7 @@ def test_ticket_cli_reports_a_missing_section(tmp_path, capsys):
 # --- renderer -------------------------------------------------------------------------------------------------------
 
 def _render(tmp_path, changed, section="- x: created by A; merges; exits on expiry; cleared by B; kernel tick"):
-    root = tmp_path / "tickets"
+    root = tmp_path / "fixture_tickets"
     root.mkdir()
     path = _write_ticket(root, "TCK-20260924-A", "ai", "Thing")
     if section is not None:
@@ -251,7 +252,7 @@ def test_lint_landing_date_matches_the_ticket_check():
 
 
 def test_a_new_ticket_with_no_src_change_renders_na_and_passes(tmp_path):
-    root = tmp_path / "tickets"
+    root = tmp_path / "fixture_tickets"
     root.mkdir()
     _write_ticket(root, "TCK-20261119-NEWDOCS", "ai", "Docs only")
     runner = FakeRunner([_git_log_rule(["TCK-20261119-NEWDOCS: x"]), _git_diff_rule(["docs/x.md", "agent-working/tickets/TCK-20261119-NEWDOCS.md"])])
