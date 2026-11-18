@@ -93,12 +93,12 @@ def test_a_project_without_cleared_since_restores_to_no_window_and_keeps_every_o
     try:
         st = k._state
         proj = ProjectState(id="proj_combat_retreat_9", kind=GoalKind.COMBAT_RETREAT, created_tick=3, score=7.5)
-        old = _old_shape(proj, ["cleared_since", "suspended_since"])  # N10 appended suspended_since after it: a pre-2.156 checkpoint lacks both
+        old = _old_shape(proj, ["cleared_since", "suspended_since", "ended_tick"])  # N10 appended suspended_since after it, 2.214 ended_tick after that: a pre-2.156 checkpoint lacks all three
         with pytest.raises(AttributeError):
             old.cleared_since
         e = st.entities[1]
         object.__setattr__(e, "strategic", replace(e.strategic, projects={old.id: old}))
-        fill_missing_fields(st, [r for r in FIELD_RULES if r.field in ("cleared_since", "suspended_since")])
+        fill_missing_fields(st, [r for r in FIELD_RULES if r.field in ("cleared_since", "suspended_since", "ended_tick")])
         restored = st.entities[1].strategic.projects[old.id]
         assert restored.cleared_since is None
         assert restored.suspended_since is None
@@ -115,12 +115,12 @@ def test_a_project_without_suspended_since_restores_to_no_clock_and_keeps_every_
     try:
         st = k._state
         proj = ProjectState(id="proj_combat_engage_9", kind=GoalKind.COMBAT_ENGAGE, status=ProjectStatus.SUSPENDED, created_tick=3, score=7.5)
-        old = _old_shape(proj, ["suspended_since"])
+        old = _old_shape(proj, ["suspended_since", "ended_tick"])  # 2.214 appended ended_tick after it: an older pickle lacks both
         with pytest.raises(AttributeError):
             old.suspended_since
         e = st.entities[1]
         object.__setattr__(e, "strategic", replace(e.strategic, projects={old.id: old}))
-        fill_missing_fields(st, [r for r in FIELD_RULES if r.field == "suspended_since"])
+        fill_missing_fields(st, [r for r in FIELD_RULES if r.field in ("suspended_since", "ended_tick")])
         restored = st.entities[1].strategic.projects[old.id]
         assert restored.suspended_since is None
         assert _values(restored, skip=("suspended_since",)) == _values(proj, skip=("suspended_since",))
@@ -159,5 +159,70 @@ def test_last_moved_tick_survives_a_checkpoint_round_trip_and_the_hash_includes_
         assert stepped.navigation.to_canonical_dict()["last_moved_tick"] == 41
         loaded = pickle.loads(pickle.dumps(stepped.navigation, protocol=pickle.HIGHEST_PROTOCOL))
         assert loaded.last_moved_tick == 41
+    finally:
+        k.shutdown()
+
+
+def test_a_blocker_without_the_lifecycle_fields_restores_to_none_and_no_failures_and_keeps_every_other_field():
+    """2.214: `failure_count`, `last_seen_tick` and `last_project_end_tick` were appended to BlockerState; a pickle from before them loads three values short until the restore step fills them."""
+    from dataclasses import replace
+    from src.core.strategic import BlockerState
+    k = kernel([hero(1, REACH[0], action=None)], beds=1)
+    try:
+        st = k._state
+        blk = BlockerState(id="blocker_congestion", kind="access", subject="congestion", severity=0.5, suppression_until_tick=40)
+        old = _old_shape(blk, ["failure_count", "last_seen_tick", "last_project_end_tick"])
+        with pytest.raises(AttributeError):
+            old.failure_count
+        e = st.entities[1]
+        object.__setattr__(e, "strategic", replace(e.strategic, blockers={old.id: old}))
+        fill_missing_fields(st, [r for r in FIELD_RULES if r.field in ("failure_count", "last_seen_tick", "last_project_end_tick")])
+        restored = st.entities[1].strategic.blockers[old.id]
+        assert restored.failure_count == 0 and restored.last_seen_tick is None and restored.last_project_end_tick is None
+        assert _values(restored, skip=("failure_count", "last_seen_tick", "last_project_end_tick")) == _values(blk, skip=("failure_count", "last_seen_tick", "last_project_end_tick"))
+    finally:
+        k.shutdown()
+
+
+def test_a_project_without_ended_tick_restores_to_no_end_tick_and_keeps_every_other_field():
+    """2.214 (churn): `ended_tick` was appended to ProjectState; a pickle from before it loads one value short and the slot is unset until the restore step fills None."""
+    from dataclasses import replace
+    from src.core.strategic import GoalKind, ProjectEnd, ProjectState, ProjectStatus, end_record
+    k = kernel([hero(1, REACH[0], action=None)], beds=1)
+    try:
+        st = k._state
+        proj = end_record(ProjectState(id="proj_combat_engage_9", kind=GoalKind.COMBAT_ENGAGE, created_tick=3, score=7.5), ProjectStatus.ABANDONED, ProjectEnd.SUPERSEDED_BY_TARGET, 41)
+        assert proj.ended_tick == 41 and proj.canonical_extra()["ended_tick"] == 41
+        old = _old_shape(proj, ["ended_tick"])
+        with pytest.raises(AttributeError):
+            old.ended_tick
+        e = st.entities[1]
+        object.__setattr__(e, "strategic", replace(e.strategic, projects={old.id: old}))
+        fill_missing_fields(st, [r for r in FIELD_RULES if r.field == "ended_tick"])
+        restored = st.entities[1].strategic.projects[old.id]
+        assert restored.ended_tick is None and "ended_tick" not in restored.canonical_extra()
+        assert _values(restored, skip=("ended_tick",)) == _values(proj, skip=("ended_tick",))
+    finally:
+        k.shutdown()
+
+
+def test_a_blocker_without_last_project_end_tick_restores_to_none_and_a_set_one_round_trips():
+    """2.214 (churn): `last_project_end_tick` was appended after `last_seen_tick`; a pickle from before it loads one value short and the slot is unset until the restore step fills None. A set value survives the canonical dict."""
+    from dataclasses import replace
+    from src.core.strategic import BlockerState
+    k = kernel([hero(1, REACH[0], action=None)], beds=1)
+    try:
+        st = k._state
+        blk = BlockerState(id="blocker_congestion", kind="access", subject="congestion", failure_count=2, last_seen_tick=30, last_project_end_tick=55)
+        assert blk.canonical_dict()["last_project_end_tick"] == 55 and "last_project_end_tick" not in replace(blk, last_project_end_tick=None).canonical_dict()
+        old = _old_shape(blk, ["last_project_end_tick"])
+        with pytest.raises(AttributeError):
+            old.last_project_end_tick
+        e = st.entities[1]
+        object.__setattr__(e, "strategic", replace(e.strategic, blockers={old.id: old}))
+        fill_missing_fields(st, [r for r in FIELD_RULES if r.field == "last_project_end_tick"])
+        restored = st.entities[1].strategic.blockers[old.id]
+        assert restored.last_project_end_tick is None
+        assert _values(restored, skip=("last_project_end_tick",)) == _values(blk, skip=("last_project_end_tick",))
     finally:
         k.shutdown()

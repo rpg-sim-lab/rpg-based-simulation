@@ -32,6 +32,7 @@ from src.observability.event_extractor import (
     _XP_PLATEAU_TICKS,
 )
 from src.observability.events import SimulationEvent, QuestEvent
+from src.observability.extraction.strategy import cognition_update_events
 from src.core.quests import QuestState
 from src.core.strategic import ProjectStatus
 from src.domains.commitment.abandonment import AbandonmentEvaluator, AbandonmentCategory
@@ -788,14 +789,7 @@ class StrategyShaper:
                     payload={"entity_id": eid, "reason": defer_reason, "tick": tick},
                 ))
 
-            # COGNITION: self_model_updated
-            if getattr(e_upd, "self_model_bundle_set", None) is not None:
-                events.append(SimulationEvent(
-                    event_type="self_model_updated", event_category="strategy",
-                    tick=tick, entity_id=eid, severity="INFO",
-                    source_system="event_shapers", message="",
-                    payload={},
-                ))
+            events.extend(cognition_update_events(eid, e_upd, tick))  # COGNITION: blocker_removed, self_model_updated
 
             # INFORMATION: belief_assimilated + belief_updated
             if prop.get("last_assimilated_tick") == prior_state.tick:

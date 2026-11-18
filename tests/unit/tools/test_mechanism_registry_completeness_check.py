@@ -168,8 +168,8 @@ def test_real_registry_enumeration_and_binding_counts_pinned():
     """
     data = _real_registry_data()
     report = build_report(data)
-    assert report.total_targets == 58  # 65 -> 63 on 2026-10-26: economy_systems/chests and world_systems/quest_generator deleted (dead)
-    assert len(report.bound) == 54  # 53 -> 54 on 2026-10-26: domains/motivation bound by `role_fit_preference`
+    assert report.total_targets == 59  # 65 -> 63 on 2026-10-26: economy_systems/chests and world_systems/quest_generator deleted (dead); 58 -> 59 on 2026-11-18: +systems/strategic_systems/blocker_lifecycle (TCK-20261117-A-RESOLVE-BLOCKER-PROJECT-IS-RE-CREATED-EVERY-80-TICKS-AND-STALLS-COOPERATION, bound under strategic_intelligence_core)
+    assert len(report.bound) == 55  # 53 -> 54 on 2026-10-26: domains/motivation bound by `role_fit_preference`; 54 -> 55 on 2026-11-18: strategic_systems/blocker_lifecycle bound by strategic_intelligence_core
     assert len(report.excluded) == 4
     assert len(report.unbound) == 0  # 5 -> 0 on 2026-10-27: the five dead classes are deleted
 

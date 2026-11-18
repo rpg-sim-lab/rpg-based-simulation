@@ -955,7 +955,7 @@ class EntityState:
                     **v.canonical_extra(),
                 } for k, v in sorted(self.strategic.projects.items())},
                 "directives": {k: asdict(v) for k, v in sorted(self.strategic.directives.items())},
-                "blockers": {k: asdict(v) for k, v in sorted(self.strategic.blockers.items())},
+                "blockers": {k: v.canonical_dict() for k, v in sorted(self.strategic.blockers.items())},
                 "leads": {k: asdict(v) for k, v in sorted(self.strategic.leads.items())},
                 "concerns": {k: asdict(v) for k, v in sorted(self.strategic.concerns.items())},
                 "candidate_zones": {k: asdict(v) for k, v in sorted(self.strategic.candidate_zones.items())},

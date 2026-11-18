@@ -1897,6 +1897,7 @@ mechanisms:
     state: done
     implemented_by:
       - src/systems/strategic_systems/intelligence.py::StrategicIntelligenceSystem::fused_strategic_pass
+      - src/systems/strategic_systems/blocker_lifecycle.py::reinferred_blockers_update
       - src/engine/domain/lead_routing.py::LeadRoutingSystem
       - src/ai/score_modifiers.py::ScoreModifierSystem
       - src/systems/strategic_systems/detour.py::DetourSuggestionSystem
@@ -1941,6 +1942,9 @@ mechanisms:
         this system sets a walk target (a material lead, a project target or a redirection), it also ends a
         HOLD in force through `hold_mode.hold_reset_kwargs` (reset to the navigation default; never while an
         action task is live). Goal and target choice are unchanged.
+
+        **Note, added 2026-11-18 (TCK-20261117-A-RESOLVE-BLOCKER-PROJECT-IS-RE-CREATED-EVERY-80-TICKS-AND-STALLS-COOPERATION, divergence 2.214):** a re-inferred blocker is merged into the
+        existing one (`merge_inferred_blocker`), never replaced; a blocker not re-observed for BLOCKER_QUIET_SPELL_TICKS is removed (`quiet_spell_update`), and the removal emits COGNITION blocker_removed.
   - id: committed_intentions
     layer: entity
     summary: "A creature sticking to a plan it has committed to. The structure is written, but nothing uses it yet."
