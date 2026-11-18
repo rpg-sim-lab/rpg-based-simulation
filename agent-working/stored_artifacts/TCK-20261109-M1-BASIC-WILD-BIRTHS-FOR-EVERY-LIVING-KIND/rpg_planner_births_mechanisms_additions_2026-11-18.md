@@ -58,3 +58,13 @@ Ubuntu fills in each `verified` block from the births own-job evidence, using a 
 ## NOTE
 - The rise now sits at the end of resource_transactions (economy.py), not in world_dynamics, so the world_dynamics rise-method binding may not apply.
 - Bind the economy.py rise sub-step method-level under corpse_rising instead.
+
+## FOLLOW-UP from rpg-planner (u24), 2026-11-18. This supersedes the world_dynamics rise binding above.
+- **Binding:** corpse_rising binds to the economy.py rise method, method-level (economy.py carries other mechanisms), NOT to WorldDynamicsSystem. Drop the "world_dynamics hook: corpse_rising" binding. Keep only humanoid_reproduction's world_dynamics method, if births still hooks there.
+- **Helper hazard** (now noted in rpg-planner's decay ticket):
+  - `_decay_corpses` runs in world_dynamics BEFORE the transfers. Later, economy.py `_without_decay_of_looted_bodies` (~:282) drops the MEAT_DECAYED record for a body that a same-tick CORPSE loot takes or that a meal re-adds.
+  - So corpse_remains() must NOT drop ground items at world_dynamics time. A body looted or re-added on its decay tick would DUPLICATE its goods.
+  - The rise at the end of resource_transactions is the right place for the same reason. The later decay switch moves there too.
+- **Tests for the births rise:**
+  - a body looted on the rise tick doesn't rise with goods it no longer has;
+  - a re-added body follows the applied outcome.
