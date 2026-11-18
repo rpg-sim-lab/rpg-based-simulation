@@ -61,6 +61,10 @@ Also in milestone 1's scope, and tracked by their own tickets: the repairs that 
 
 ## Acceptance Criteria
 - Every child is closed, or moved out by owner ruling, and the record ticket's done items hold (§12.5).
+- PERFORMANCE is a first-class non-functional requirement (owner #715 6968328816, 2026-11-18):
+  - REGRESSION RULE, for every M1 PR: a significant performance regression the PR introduces is investigated, then either explicitly accepted by the owner or fixed before merge. It is never auto-deferred to a backlog ticket. The PR review checks a before/after cost read of the changed phases whenever the PR changes a per-tick or per-entity path. A regression is significant against perf-planner's quiet-host baseline, once that exists.
+  - PERF BUDGETS: the two M1 items that replace measured hot reads each carry a perf budget plus a before/after profile in their own acceptance. TCK-20261109-M1-PLACES-ARE-FOUND-FROM-PERCEPTION-AND-MEMORY replaces nearest_town_tile. PERC-02b, the perceived_neighbours migration under TCK-20261109-M1-HONEST-PERCEPTION-DEFAULTS, replaces the nearby_entities reads. The budget numbers wait for perf-planner's quiet-host baseline; no quantitative target is set before it.
+  - Temporal scaling (TCK-20261118-TEMPORAL-SCALE-AUDIT-CAN-THE-CURRENT-CALENDAR-CARRY-MULTI-GENERATION-RUNS) is a separate question from execution cost per tick.
 
 ## Related Tickets
 - TCK-20261109-M1-KIND-ALWAYS-MEANS-SPECIES-AND-OCCUPATION-IS-ITS-OWN-FIELD

@@ -43,6 +43,7 @@ Filed by rpg-planner on 2026-11-09 as a filing only (no code), on lead-planner-u
 - §12.4 (packs, herds, territory), milestones 2 and 3, and any rule work not listed in §12.3 (owner ruling only).
 
 ## Acceptance Criteria
+- PERF BUDGET (owner #715 6968328816): a before/after profile of the replaced read vs nearest_town_tile, within a budget set from perf-planner's quiet-host baseline (no number until that baseline exists). A regression is fixed or explicitly accepted by the owner, never deferred (M1 epic regression rule).
 - No place-finding decision reads the true map.
 - A subject that knows no food place does not walk to one.
 - Tests for the new behaviour, plus the parity ledger and Bible updates in the same change.
