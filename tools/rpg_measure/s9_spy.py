@@ -112,9 +112,19 @@ class GroupSpy:
                 })
 
 
-def count_births(final_ids: Any, start_ids: Set[int]) -> int:
-    """The final-state entities that were not in the start state, alive or dead (births and any other add; on a run with no risen kind they are the births)."""
-    return sum(1 for eid in final_ids if eid not in start_ids)
+def count_births(entities: Any, start_ids: Set[int]) -> int:
+    """The births: final-state entities not in the start state, alive or dead, whose lifecycle carries BOTH parent ids (read with getattr, so a main-shaped body gives 0)."""
+    return sum(1 for eid, body in entities.items() if eid not in start_ids and _parents(body) == (True, True))
+
+
+def count_other_adds(entities: Any, start_ids: Set[int]) -> int:
+    """The other adds: final-state entities not in the start state that are not births (a risen body, a parentless spawn)."""
+    return sum(1 for eid, body in entities.items() if eid not in start_ids and _parents(body) != (True, True))
+
+
+def _parents(body: Any) -> tuple:
+    life = getattr(body, "lifecycle", None)
+    return (getattr(life, "parent_a_entity_id", None) is not None, getattr(life, "parent_b_entity_id", None) is not None)
 
 
 # ---- detectors (pure) -------------------------------------------------------------------------------------------------------------------------------
