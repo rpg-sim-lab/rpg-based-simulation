@@ -84,10 +84,9 @@ _WORLD_SEED_COMBO_STRIDE = 2_147_483_647
 
 
 def _combined_genetics(
-    parent_ids: tuple, profiles: tuple, roles: tuple, birth_tick: int, world_seed: Optional[int],
+    parent_ids: tuple, profiles: tuple, combat_lean: bool, birth_tick: int, world_seed: Optional[int],
 ) -> GeneticProfile:
     """The child's profile: both parents' (a missing one falls back to an id-derived profile), combined with a seed from the ids and the birth tick, plus the world seed when one is given."""
-    combat_lean = roles[0] == EntityRole.HERO and roles[1] == EntityRole.HERO
     a_profile = profiles[0] or GeneticsSystem.generate_profile_from_seed(parent_ids[0] or 0)
     b_profile = profiles[1] or GeneticsSystem.generate_profile_from_seed(parent_ids[1] or 0)
     combo_seed = (parent_ids[0] or 0) * 1_000_003 + (parent_ids[1] or 0) * 97 + birth_tick
@@ -707,9 +706,10 @@ class V2EntityBuilder:
             birth_city_id=birth_city_id,
         )
         if parent_a_genetic_profile is not None or parent_b_genetic_profile is not None:
+            combat_lean = (parent_a_role == EntityRole.HERO and parent_b_role == EntityRole.HERO)
             self.lifecycle(genetic_profile=_combined_genetics(
                 (parent_a_entity_id, parent_b_entity_id), (parent_a_genetic_profile, parent_b_genetic_profile),
-                (parent_a_role, parent_b_role), birth_tick, world_seed,
+                combat_lean, birth_tick, world_seed,
             ))
         if parent_a_public_reputation is not None and parent_b_public_reputation is not None:
             combined_reputation = ReputationService.combine_public_reputation(
