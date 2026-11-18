@@ -4749,3 +4749,14 @@
   test_path: tests/unit/core/test_time_of_day.py
   divergence_note: See docs/guidelines/intentional_divergences.md Section 2.209.
   support_boundary: 'Unit rows: the helper at ticks 0, 599, 600, 1799, 1800, 2399, 2400, 2999, 3000 and 4200; night is 1200 of every 2400 ticks; the three readers agree at t and t plus whole days; no raw night literal in src outside calendar.py.'
+
+- id: STRAT-352
+  text: 'TCK-20261117-EACH-BODY-PERCEIVES-BY-ITS-SPECIES-SENSES-AND-SIGNALS-FOLLOW-THE-BODY (PERC-02, memo row 98 Q2, divergence 2.210): a body perceives through the sense profile of its species (derived at read, nothing stored), what it gives off follows the body (visibility by size, noise and vibration medium while moving (a move within MOVING_WINDOW ticks: a step, a swap or a yield displacement, navigation.last_moved_tick), low while still, very_low asleep or lodged, scent and life for the living, none for undead and spirit), vision counts two levels lower at night unless the profile declares night_vision, and a gate error is not perception.'
+  status: verified
+  priority: P1
+  legacy_evidence: null
+  v2_evidence: 'src/world/perception/gate.py (species-derived profile, SenseProfileError, unprofiled counter, night step), src/engine/perception_signals.py (emitted_signals), src/engine/behavior_consumers.py (get_entity_signals, require_sense_profile), src/engine/appraisal.py (perceives), src/engine/tactical.py, data/content/living/ (night_vision, troll_senses, body signals), docs/mechanics/04_strategic_cognition.md, docs/guidelines/intentional_divergences.md Section 2.210.'
+  proof_type: regression
+  test_path: tests/unit/world/test_perc02a_senses_signals_night.py
+  divergence_note: See docs/guidelines/intentional_divergences.md Section 2.210.
+  support_boundary: 'Touch: a body at Chebyshev distance 1 or less is always perceived by the touch channel (no score term; d>=2 verdicts unchanged); unit rows test_touch_* in the same test file. Unit rows: every content species derives its own profile; the ruled night_vision set; typed error for a dangling profile; signals by size, activity and life; the night grid; no perception granted below the threshold; gate error logged at ERROR and not perceived; no kind read in the perception modules. Not yet night-aware (day by default until 02b): legality.attack_allowed, is_feeding_kill, scorers_support.perceived_hostiles and the other get_neighbor_view sites.'

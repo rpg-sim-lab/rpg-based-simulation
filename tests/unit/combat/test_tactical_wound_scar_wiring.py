@@ -15,6 +15,7 @@ from src.core.builder import V2EntityBuilder
 from src.core.enums import EntityRole, Faction
 from src.engine.tactical import TacticalDecisionSystem
 from src.engine.rpg_depth import WoundService
+from tests.helpers.clock import DAY_WORLD_TIME
 
 
 def _build_entity(
@@ -65,7 +66,7 @@ _THREAT_POS = (0.0, 3.0)
 def _cover_seeking_state(entity):
     threat = _build_entity(2, Faction.MONSTER_HORDE, pos=_THREAT_POS, attack_range=3)
     return AuthoritativeState(
-        tick=1, seed=42, world_time=1,
+        tick=1, seed=42, world_time=DAY_WORLD_TIME,
         entities={entity.id: entity, threat.id: threat},
         terrain=dict(_COVER_TERRAIN),
     )

@@ -33,12 +33,20 @@ def gate(catalog):
     return PerceptionGate(catalog)
 
 
-def _entity(sense_profile_id=None):
-    props = {}
-    if sense_profile_id:
-        props["sense_profile_id"] = sense_profile_id
+# PERC-02: senses come from the body's SPECIES (derived at read), so a test names a species, not a profile id.
+_SPECIES_OF_PROFILE = {
+    "predator_smell_senses": "wolf",
+    "normal_humanoid_senses": "human",
+    "spider_vibration_senses": "spider",
+    "arcane_senses": "elf",
+}
+
+
+def _entity(sense_profile_id=None, species_id=None):
+    species_id = species_id or _SPECIES_OF_PROFILE.get(sense_profile_id)
+    props = {"species_id": species_id} if species_id else {}
     identity = SimpleNamespace(properties=props)
-    return SimpleNamespace(identity=identity)
+    return SimpleNamespace(identity=identity, kind=species_id or "fixture_kind_not_in_content")
 
 
 # ---------------------------------------------------------------------------
@@ -93,19 +101,27 @@ def test_normal_humanoid_cannot_detect_magic_signal(gate):
 # Fallback
 # ---------------------------------------------------------------------------
 
-def test_no_sense_profile_uses_baseline_humanoid(gate):
-    """Entity without sense_profile_id falls back to baseline_humanoid defaults."""
+def test_no_sense_profile_uses_baseline_humanoid(catalog):
+    """A body whose species is not in content (no profile to derive) is unprofiled: baseline_humanoid defaults, and the read is counted per species."""
+    gate = PerceptionGate(catalog)
     entity = _entity()
     result = gate.can_perceive(entity, {"visibility": "medium"})
     assert result.profile_source == "baseline_humanoid"
     assert result.perceived
+    assert gate.unprofiled_counts == {"fixture_kind_not_in_content": 1}
 
 
-def test_unknown_sense_profile_falls_back_to_baseline(gate):
-    """Entity with unrecognised sense_profile_id falls back to baseline."""
-    entity = _entity("nonexistent_profile_xyz")
-    result = gate.can_perceive(entity, {"visibility": "medium"})
-    assert result.profile_source == "baseline_humanoid"
+def test_unknown_sense_profile_is_a_typed_error(catalog):
+    """A species in content whose declared sense profile does not resolve is a content error (SenseProfileError), no longer a silent baseline (PERC-02)."""
+    from src.world.perception.gate import SenseProfileError
+    gate = PerceptionGate(catalog)
+    human = catalog.species["human"]
+    catalog.species["human"] = human.model_copy(update={"sense_profile": "nonexistent_profile_xyz"})
+    try:
+        with pytest.raises(SenseProfileError):
+            gate.can_perceive(_entity(species_id="human"), {"visibility": "medium"})
+    finally:
+        catalog.species["human"] = human
 
 
 # ---------------------------------------------------------------------------

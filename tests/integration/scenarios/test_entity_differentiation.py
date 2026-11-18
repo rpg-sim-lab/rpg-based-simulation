@@ -137,6 +137,9 @@ def _run_quartile_ticks_for_seed(spec: WorldSpec, seed: int) -> dict:
     initial_state, _report = WorldCompiler.compile(spec, seed=seed)
     initial_state = replace(
         initial_state,
+        # DAY clock: the run covers world_time 600..999, all day. Ticks 0-599 are NIGHT (owner Q1, divergence 2.209) and a kind without night vision sees two levels
+        # lower at night (owner Q2a, divergence 2.210), so a run from t=0 measures how blind the fixtures are at night, not bravery. The threshold is unchanged.
+        world_time=600,
         feature_flags={
             "ENABLE_COMBAT_ENGAGEMENT": "ON",
             "ENABLE_ADVENTURE_ROUTING": "ON",

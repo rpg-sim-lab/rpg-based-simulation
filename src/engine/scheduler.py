@@ -11,6 +11,7 @@ from src.engine.cadence import should_run
 from src.engine.candidate_selector import MovementCandidateSelector
 from src.engine.need_pull import hunger_is_pressing, need_is_pressing
 from src.engine.need_wake import NEED_WAKE_CADENCE
+from src.core.calendar import is_night
 from src.engine.sleep_debt import is_asleep
 from src.engine.work_wake import held_work_is_threatened
 
@@ -103,7 +104,7 @@ class DeterministicScheduler:
         return (
             (state.tick + ent.id) % ADJACENCY_WAKE_COOLDOWN == 0
             and not (work_kind == "ENTITY_ACT" and ent.task.payload)
-            and MovementCandidateSelector.unengaged_adjacent_hostile(ent, state.entities, wake_index)
+            and MovementCandidateSelector.unengaged_adjacent_hostile(ent, state.entities, wake_index, is_night(state.world_time), state.tick)
         )
 
     @staticmethod

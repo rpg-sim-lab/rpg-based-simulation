@@ -41,14 +41,14 @@ def test_a_navigation_without_lodged_in_restores_to_none_keeps_every_other_field
     try:
         st = k._state
         nav = st.entities[1].navigation
-        old = _old_shape(nav, ["lodged_in"])
+        old = _old_shape(nav, ["lodged_in", "last_moved_tick"])      # PERC-02 appended last_moved_tick after it: a pre-F3 checkpoint lacks both
         with pytest.raises(AttributeError):
             old.lodged_in
         object.__setattr__(st.entities[1], "navigation", old)
-        fill_missing_fields(st, [r for r in FIELD_RULES if r.field == "lodged_in"])
+        fill_missing_fields(st, [r for r in FIELD_RULES if r.field in ("lodged_in", "last_moved_tick")])
         restored = st.entities[1].navigation
-        assert restored.lodged_in is None
-        assert _values(restored, skip=("lodged_in",)) == _values(nav, skip=("lodged_in",))      # nothing shifted
+        assert restored.lodged_in is None and restored.last_moved_tick is None
+        assert _values(restored, skip=("lodged_in", "last_moved_tick")) == _values(nav, skip=("lodged_in", "last_moved_tick"))      # nothing shifted
         r = Kernel(profile(), pickle.loads(pickle.dumps(st, protocol=pickle.HIGHEST_PROTOCOL)), DeterministicRNG(1))
         try:
             r.tick_once()
@@ -124,6 +124,41 @@ def test_a_project_without_suspended_since_restores_to_no_clock_and_keeps_every_
         restored = st.entities[1].strategic.projects[old.id]
         assert restored.suspended_since is None
         assert _values(restored, skip=("suspended_since",)) == _values(proj, skip=("suspended_since",))
+    finally:
+        k.shutdown()
+
+
+def test_a_navigation_without_last_moved_tick_restores_to_never_stepped_and_keeps_every_other_field():
+    """PERC-02 (2.210): `last_moved_tick` was appended to NavigationComponent; a pickle from before it loads one value short and the slot is unset until the restore step fills None."""
+    k = kernel([hero(1, REACH[0], action=None)], beds=1)
+    try:
+        st = k._state
+        nav = st.entities[1].navigation
+        old = _old_shape(nav, ["last_moved_tick"])
+        with pytest.raises(AttributeError):
+            old.last_moved_tick
+        object.__setattr__(st.entities[1], "navigation", old)
+        fill_missing_fields(st, [r for r in FIELD_RULES if r.field == "last_moved_tick"])
+        restored = st.entities[1].navigation
+        assert restored.last_moved_tick is None
+        assert _values(restored, skip=("last_moved_tick",)) == _values(nav, skip=("last_moved_tick",))      # nothing shifted
+        assert {r.field: r.record for r in FIELD_RULES}["last_moved_tick"] == "NavigationComponent"
+    finally:
+        k.shutdown()
+
+
+def test_last_moved_tick_survives_a_checkpoint_round_trip_and_the_hash_includes_it():
+    from dataclasses import replace
+    k = kernel([hero(1, REACH[0], action=None)], beds=1)
+    try:
+        st = k._state
+        e = st.entities[1]
+        stepped = replace(e, navigation=replace(e.navigation, last_moved_tick=41))
+        assert e.navigation.to_canonical_dict() != stepped.navigation.to_canonical_dict()      # the canonical form (hence the state hash) carries the step tick
+        assert "last_moved_tick" not in e.navigation.to_canonical_dict()                       # and a body that never stepped keeps its old form
+        assert stepped.navigation.to_canonical_dict()["last_moved_tick"] == 41
+        loaded = pickle.loads(pickle.dumps(stepped.navigation, protocol=pickle.HIGHEST_PROTOCOL))
+        assert loaded.last_moved_tick == 41
     finally:
         k.shutdown()
 

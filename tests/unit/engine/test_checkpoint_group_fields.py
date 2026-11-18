@@ -111,8 +111,8 @@ def test_with_only_the_counter_slot_missing_it_is_seeded_and_the_readers_work(mo
 
 
 def test_every_rule_names_its_ruling_and_the_step_is_the_only_caller():
-    # the group rows, the F3 (2.155) rows, retention's 2.156 row (cleared_since) and the M1 occupation row, the N10 suspended_since row (2.212) and the blocker lifecycle rows failure_count, last_seen_tick and ended_tick (2.214) share the one table
-    assert {r.field for r in FIELD_RULES} == {"next_group_id", *NEW_GROUP_FIELDS, "lodged_in", "beds", "cleared_since", "occupation", "suspended_since", "failure_count", "last_seen_tick", "ended_tick", "last_project_end_tick"}
+    # the group rows, the F3 (2.155) rows, retention's 2.156 row (cleared_since) and the M1 occupation row, the N10 suspended_since row (2.212), the blocker lifecycle rows failure_count, last_seen_tick and ended_tick (2.214, churn) and last_project_end_tick (2.214), and the PERC-02 last_moved_tick row (2.210, S8) share the one table
+    assert {r.field for r in FIELD_RULES} == {"next_group_id", *NEW_GROUP_FIELDS, "lodged_in", "beds", "cleared_since", "occupation", "suspended_since", "failure_count", "last_seen_tick", "ended_tick", "last_project_end_tick", "last_moved_tick"}
     assert all(r.ruling for r in FIELD_RULES)
     import pathlib
     src = pathlib.Path("src")
