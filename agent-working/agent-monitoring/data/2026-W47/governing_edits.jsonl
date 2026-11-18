@@ -1,2 +1,3 @@
 {"ts":"2026-11-16T02:19:14.228086Z","event":"governing_edit_attempt","seat":"testing-implementer","path":".github/workflows/paired-arms.yml","basis":"mention","attempt":true}
 {"ts":"2026-11-16T08:05:43.049389Z","event":"governing_edit_attempt","seat":"agent-working-planner","path":".github/workflows/test.yml","basis":"mention","attempt":true}
+{"ts":"2026-11-18T07:28:29.947157Z","event":"governing_edit_attempt","seat":"agent-working-planner","path":".github/workflows/pr-body-lint.yml","basis":"mention","attempt":true}
