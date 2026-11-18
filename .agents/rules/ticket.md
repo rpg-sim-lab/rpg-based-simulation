@@ -85,6 +85,10 @@ What was requested
 
 - only material assumptions/questions
 
+## Durable state, lifecycle and clocks
+
+- required for tickets dated 2026-11-19 or later: `N/A: <reason>` (non-empty reason), or short answers per durable field or record the ticket creates or changes: who creates it and is creation idempotent across two passes; does an update merge or replace and what survives a replace; how every non-terminal state exits and what bounds how many exist; who clears it and is the value tested after a successful step; how many code paths write it and does it carry one meaning; which clock each reader uses (rule: the planned docs/engine/time_semantics.md, PLANNED, not landed; ask the question only). Questions only, no world rules; presence is checked at close (`tools/ticket_field_values.py::check_lifecycle_section`).
+
 ## Implementation Notes
 
 - important design notes or changes during work

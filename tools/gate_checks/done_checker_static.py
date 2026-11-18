@@ -55,6 +55,7 @@ from generate_registry import generate_registry, indexable_paths, parse_body_sec
 from ticket_field_values import (  # noqa: E402
     check_disposition_fields,
     check_ticket_field_values,
+    check_lifecycle_section,
     TIER_VALUES,
     WORKFLOW_STATUS_VALUES,
 )
@@ -501,6 +502,26 @@ def check_ticket_field_values_valid(
         return ("FAIL", f"{ticket_path} does not exist — cannot validate Tier/Priority")
     result = check_ticket_field_values(ticket_path)[0]
     return (result["status"], result["evidence"])
+
+
+def check_ticket_lifecycle_section(ticket_id: str, ticket_path: Path = None) -> tuple[str, str]:
+    """Advisory adapter for `check_lifecycle_section` (tools/ticket_field_values.py), in the advisory vocabulary OK/WARN/NA
+    (TCK-20261118-REQUIRED-DURABLE-STATE-LIFECYCLE-CLOCKS-SECTION-IN-TICKETS-AND-PR-BODIES). Advisory first, by owner decision
+    (#715 6972698325): a ticket dated on or after the landing date that lacks `## Durable state, lifecycle and clocks`, or whose
+    `N/A:` has no reason, is REPORTED (WARN) and never changes the close verdict; promotion to blocking is a later owner decision
+    after the fill-rate baseline. The execution status is always shown: OK (ran, present), WARN (ran, missing or invalid), NA
+    (skipped: grandfathered, or the ticket file is missing), WARN with `errored:` when the check itself raised."""
+    if ticket_path is None:
+        ticket_path = TICKETS / "inprogress" / f"{ticket_id}.md"
+        if not ticket_path.exists():
+            ticket_path = TICKETS / "done" / f"{ticket_id}.md"
+    if not ticket_path.exists():
+        return ("NA", f"skipped: {ticket_path} does not exist")
+    try:
+        status, evidence = check_lifecycle_section(ticket_path)
+    except Exception as exc:  # noqa: BLE001 - advisory: report the error, never raise into the close
+        return ("WARN", f"errored: {type(exc).__name__}: {exc}")
+    return {"PASS": ("OK", f"ran: {evidence}"), "NA": ("NA", f"skipped: {evidence}")}.get(status, ("WARN", f"ran, REPORTED not failed (advisory first): {evidence}"))
 
 
 _DOCS_BULLET_RE = re.compile(r"^-\s+`(docs/[^`]+?)(?::\d+)?`", re.MULTILINE)
@@ -1480,6 +1501,7 @@ def run_advisory_checks(ticket_id: str, tier: str) -> list[dict]:
         ("test_plan_proof_fields", check_proof_plan_fields(ticket_id, tier)),
         ("cited_evidence_tracked", check_cited_evidence_paths(ticket_id, tier)),
         ("evidence_runner_pinned", check_evidence_runner(ticket_id, tier)),
+        ("ticket_lifecycle_section", check_ticket_lifecycle_section(ticket_id)),
     )
     return [
         {"condition": name, "status": status, "evidence": evidence}
