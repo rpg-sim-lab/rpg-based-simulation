@@ -8000,6 +8000,18 @@
   tags:
   - process-improvement
 - type: ticket
+  path: agent-working/tickets/todos/TCK-20261119-RECRUIT-CHEST-AND-CRAFTING-COSTS-DEBIT-THE-PAYER-WITH-NO-PAYEE.md
+  ticket_id: TCK-20261119-RECRUIT-CHEST-AND-CRAFTING-COSTS-DEBIT-THE-PAYER-WITH-NO-PAYEE
+  title: 'RECRUIT, CHEST and CRAFTING transactions with gold_cost > 0 debit the payer
+    and credit no one: a latent undeclared coin sink (EXCH-02)'
+  tier: standard
+  ticket_type: bug
+  date: '2026-11-19'
+  related_code_areas:
+  - src/core/conservation.py (the RECRUIT, CHEST and CRAFTING branches of ResourceTransactionResolver)
+  artifact_files: []
+  tags: []
+- type: ticket
   path: agent-working/tickets/done/TCK-20261118-A-DIAGNOSTIC-KIT-PREFLIGHT-CHECKS-EACH-KIT-ON-BOTH-FROZEN-TREES-BEFORE-ITS-RUN.md
   ticket_id: TCK-20261118-A-DIAGNOSTIC-KIT-PREFLIGHT-CHECKS-EACH-KIT-ON-BOTH-FROZEN-TREES-BEFORE-ITS-RUN
   title: 'An automatic preflight for every measurement kit (spy, probe, runner, summarizer):

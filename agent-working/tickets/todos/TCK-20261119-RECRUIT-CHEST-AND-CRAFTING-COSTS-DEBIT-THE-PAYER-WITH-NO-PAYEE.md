@@ -68,6 +68,7 @@ No new durable state is expected. A payee is an existing holder: a purse, a buil
 - Lands after the P0, since it uses the P0's price helper and balance test.
 
 ## Implementation Notes
+- 2026-11-19 (rpg-designer): ADD the regional TAX path, regional_sovereignty.py:57, to this ticket's list (NOT to the KNOWN_UNBALANCED set: under the P0 fix it balances at debit 0). It's dead-but-live code for a levy retired by 2.112. Either REMOVE it, as retired law, or the OWNER revives the levy with a named treasury. Wiring a payee here would revive a retired law, which is an owner decision.
 
 ## Test Summary
 
