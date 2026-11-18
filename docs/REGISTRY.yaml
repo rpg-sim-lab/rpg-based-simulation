@@ -7986,13 +7986,44 @@
   artifact_files:
   - agent-working/stored_artifacts/TCK-20261118-SIM-ENGINEERING-SKILLS-RESEARCH-PROPOSAL/coverage_audit.md
   - agent-working/stored_artifacts/TCK-20261118-SIM-ENGINEERING-SKILLS-RESEARCH-PROPOSAL/defect_set.md
+  - agent-working/stored_artifacts/TCK-20261118-SIM-ENGINEERING-SKILLS-RESEARCH-PROPOSAL/investigation.md
   - agent-working/stored_artifacts/TCK-20261118-SIM-ENGINEERING-SKILLS-RESEARCH-PROPOSAL/plan.md
   - agent-working/stored_artifacts/TCK-20261118-SIM-ENGINEERING-SKILLS-RESEARCH-PROPOSAL/proposal.md
   - agent-working/stored_artifacts/TCK-20261118-SIM-ENGINEERING-SKILLS-RESEARCH-PROPOSAL/research.md
+  - agent-working/stored_artifacts/TCK-20261118-SIM-ENGINEERING-SKILLS-RESEARCH-PROPOSAL/test_plan.md
   tags:
   - skills
   - simulation-quality
   - testing
+- type: ticket
+  path: agent-working/tickets/todos/TCK-20261118-ARCH-REVIEWER-LIFECYCLE-TIME-CHECKLIST-EVAL.md
+  ticket_id: TCK-20261118-ARCH-REVIEWER-LIFECYCLE-TIME-CHECKLIST-EVAL
+  title: Eval a concrete lifecycle and time checklist for architecture-reviewer, and
+    adopt it only if the keep rule passes
+  tier: standard
+  ticket_type: feature
+  date: '2026-11-18'
+  related_code_areas:
+  - .claude/agents/architecture-reviewer.md, tools/gate_checks/architecture_reviewer_static.py
+  artifact_files: []
+  tags:
+  - skills
+  - simulation-quality
+  - testing
+- type: ticket
+  path: agent-working/tickets/todos/TCK-20261118-STATEFUL-PROPERTY-PILOT-FOR-RECORD-LIFECYCLES.md
+  ticket_id: TCK-20261118-STATEFUL-PROPERTY-PILOT-FOR-RECORD-LIFECYCLES
+  title: Pilot a Hypothesis stateful-property test for one durable-record lifecycle
+    (testing-planner ask)
+  tier: standard
+  ticket_type: feature
+  date: '2026-11-18'
+  related_code_areas:
+  - tests/ (placement per taxonomy), the chosen lifecycle's source module
+  artifact_files: []
+  tags:
+  - testing
+  - simulation-quality
 - type: ticket
   path: agent-working/tickets/done/TCK-20261116-A-CI-SET-ON-TWO-IMAGE-PATCHES-IS-ONE-ENVIRONMENT-WHEN-LIBC-AND-PYTHON-MATCH.md
   ticket_id: TCK-20261116-A-CI-SET-ON-TWO-IMAGE-PATCHES-IS-ONE-ENVIRONMENT-WHEN-LIBC-AND-PYTHON-MATCH
