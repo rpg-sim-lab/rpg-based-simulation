@@ -56,6 +56,11 @@ src/systems (building_services, conservation, inventory); src/ai need_pull
 ## Assumptions / Open Questions
 
 ## Implementation Notes
+- 2026-11-19 (rpg-planner, lead-planner-u24): OVERLAP with the P0 coin fix, TCK-20261118-A-SERVICE-PAYMENT-WITH-NO-PAYEE-DESTROYS-COIN.
+  - The coin fix keeps SERVICE_PAYMENT_LAW = CLAMP. It adds one price helper and makes debit = credit = paid; no payee means debit 0, counted. It rewrites the same _service_result / pricing code as #781 (conservation.py, lodging.py, building_services.py).
+  - When #781 un-holds (the ATOMIC flip, owner decision 44 / D73), it needs a REAL resync onto the coin fix, and a re-check of its can't-pay semantics against the fixed CLAMP path.
+  - It keeps the coin fix's price helper and its resolver balance test (a refusal debits 0).
+  - The coin fix lands first, as the P0.
 
 ## Test Summary
 
