@@ -33,6 +33,12 @@
     {
       "severity": "WARNING",
       "rule_id": "CAT-DEAD-001",
+      "message": "Terrain 'grass' is active but never consumed by any downstream component",
+      "target": "grass"
+    },
+    {
+      "severity": "WARNING",
+      "rule_id": "CAT-DEAD-001",
       "message": "Terrain 'floor' is active but never consumed by any downstream component",
       "target": "floor"
     },
@@ -41,12 +47,6 @@
       "rule_id": "CAT-DEAD-001",
       "message": "Terrain 'hill' is active but never consumed by any downstream component",
       "target": "hill"
-    },
-    {
-      "severity": "WARNING",
-      "rule_id": "CAT-DEAD-001",
-      "message": "Terrain 'grass' is active but never consumed by any downstream component",
-      "target": "grass"
     },
     {
       "severity": "WARNING",
@@ -657,12 +657,6 @@
     {
       "severity": "WARNING",
       "rule_id": "CAT-DEAD-001",
-      "message": "Archetype 'swamp_troll' is active but never consumed by any downstream component",
-      "target": "swamp_troll"
-    },
-    {
-      "severity": "WARNING",
-      "rule_id": "CAT-DEAD-001",
       "message": "Archetype 'town_healer' is active but never consumed by any downstream component",
       "target": "town_healer"
     },
@@ -683,12 +677,6 @@
       "rule_id": "CAT-DEAD-001",
       "message": "Archetype 'moon_cult_sorcerer' is active but never consumed by any downstream component",
       "target": "moon_cult_sorcerer"
-    },
-    {
-      "severity": "WARNING",
-      "rule_id": "CAT-DEAD-001",
-      "message": "Archetype 'dwarven_hunter' is active but never consumed by any downstream component",
-      "target": "dwarven_hunter"
     },
     {
       "severity": "WARNING",
@@ -876,7 +864,7 @@
   "summary": {
     "status": "SUCCESS",
     "blocking_errors_count": 0,
-    "warnings_count": 140
+    "warnings_count": 138
   },
   "blocking_errors": [],
   "warnings": [
@@ -889,6 +877,12 @@
     {
       "severity": "WARNING",
       "rule_id": "CAT-DEAD-001",
+      "message": "Terrain 'grass' is active but never consumed by any downstream component",
+      "target": "grass"
+    },
+    {
+      "severity": "WARNING",
+      "rule_id": "CAT-DEAD-001",
       "message": "Terrain 'floor' is active but never consumed by any downstream component",
       "target": "floor"
     },
@@ -897,12 +891,6 @@
       "rule_id": "CAT-DEAD-001",
       "message": "Terrain 'hill' is active but never consumed by any downstream component",
       "target": "hill"
-    },
-    {
-      "severity": "WARNING",
-      "rule_id": "CAT-DEAD-001",
-      "message": "Terrain 'grass' is active but never consumed by any downstream component",
-      "target": "grass"
     },
     {
       "severity": "WARNING",
@@ -1513,12 +1501,6 @@
     {
       "severity": "WARNING",
       "rule_id": "CAT-DEAD-001",
-      "message": "Archetype 'swamp_troll' is active but never consumed by any downstream component",
-      "target": "swamp_troll"
-    },
-    {
-      "severity": "WARNING",
-      "rule_id": "CAT-DEAD-001",
       "message": "Archetype 'town_healer' is active but never consumed by any downstream component",
       "target": "town_healer"
     },
@@ -1539,12 +1521,6 @@
       "rule_id": "CAT-DEAD-001",
       "message": "Archetype 'moon_cult_sorcerer' is active but never consumed by any downstream component",
       "target": "moon_cult_sorcerer"
-    },
-    {
-      "severity": "WARNING",
-      "rule_id": "CAT-DEAD-001",
-      "message": "Archetype 'dwarven_hunter' is active but never consumed by any downstream component",
-      "target": "dwarven_hunter"
     },
     {
       "severity": "WARNING",
@@ -1724,7 +1700,7 @@
     }
   ],
   "fingerprints": {
-    "catalog": "effdfb9a05687bbb85415b7019a42d51f1a7a9e61f0b7da6786b99b96fd4d8b7",
+    "catalog": "d9d426e999024c75adf38f69d3c60da293c29e151de5d106f710d798322596f4",
     "modules": {
       "combat_judgement_arena": "0d4f5ef54b7930467913f05203c87f544fbb24067edbf4e54580bb8074c0d8d3"
     }
