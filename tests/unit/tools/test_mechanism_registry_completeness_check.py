@@ -314,7 +314,8 @@ def test_wider_scope_numbers_pinned():
     # 385 -> 386 on 2026-11-24 (S8, the lead's record on #715 after 7128579145): +src/core/arrival.py, the structural arrival rule (TCK-20261123-A-SUBJECT-REMEMBERS-WHY-A-PLACE-FAILED-AND-RECONSIDERS-IT-BY-THAT-REASON, "arrived never fails", owner #715 7128509663); a new file counted, none removed
     # 386 -> 387 on 2026-11-24 (S8, the lead's record on #715 after 7137525427, from the check's own output): +src/core/navigation_component.py (NavigationComponent moved out of state.py, TCK-20261124-NAVIGATION-STATE-MOVES-OUT-OF-STATE-PY, owner #715 after 7135893456); unbound, as it was inside state.py
     # 387 -> 391 on 2026-11-25 (TCK-20261109-M1-BASIC-WILD-BIRTHS-FOR-EVERY-LIVING-KIND rebased onto main; its reproduction scope: 2026-11-18 372 -> 376): +src/core/pregnancy.py, +src/world/mate_gate.py, +src/world/corpse_goods.py, +src/world/risen.py, each bound (pregnancy_gestation, humanoid_reproduction, corpse_goods_conservation, corpse_rising). Provisional: the sum of both sides, to be confirmed from the check's own output.
-    assert wider["scope_files"] == 391
+    # 391 -> 392 on 2026-11-25 (the same ticket, senses (A'), 2026-11-18 378 -> 379): +src/content/sense_resolution.py (the pure species_sense_profile resolver moved out of species_senses.py to break the load-time import cycle), cited under `sense_gated_detection`. Provisional on the rebase: the sum of both sides, to be confirmed from the check's own output.
+    assert wider["scope_files"] == 392
     # 233 -> 227 on 2026-10-05: the world-building split names six more files (worldmodules/normalizer,
     # worldassembly/resolve_io, worldbuilding/repository and validator, worldgeneration/generator and scorer).
     # Then +1 for the unbound entity_target_objective.py module (TCK-20261002-COMBAT-OBJECTIVE-TARGETS-...).

@@ -172,6 +172,8 @@ def _schema_error_text(family: str, item: dict, err: Exception) -> str:
     return str(err)
 
 
+from src.content.sense_resolution import species_sense_profile
+
 # Directories inside data/content/ that are managed by loaders other than CatalogRepository
 # (WorldModuleRepository, ScenarioLabOrchestrator). Files in these
 # directories must not be reported as "ignored" by strict mode.
@@ -263,6 +265,7 @@ def _check_newborn_archetype(repo: "CatalogRepository", species_id: str, species
         raise ReproductionProfileError(f"species {species_id!r} names newborn_archetype {archetype_id!r}, which is not declared")
     if archetype.species != species_id:
         raise ReproductionProfileError(f"species {species_id!r} names newborn_archetype {archetype_id!r}, which belongs to species {archetype.species!r}")
+    species_sense_profile(repo, species_id)  # PERC-02: a species that bears newborns resolves a usable sense profile at load (SenseProfileError), before tick 0 in every process
 
 
 class CatalogRepository:
