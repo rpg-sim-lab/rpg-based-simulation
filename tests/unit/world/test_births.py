@@ -244,7 +244,7 @@ def _mate_first(state, generator):
         profile = profiles.of(births.species_of(mother))
         if mother.id in used or profile is None or mother.biological.hunger > profile.fed_line or not births._past_interval(mother, state.tick):
             continue
-        mate = births._find_mate(state, mother, candidates, used, profile.mate_radius_tiles, lambda m: births.passes_mate_gate(mother, m, profile))
+        mate = births._find_mate(state, mother, candidates, used, profile)
         if mate is None:
             continue
         if generator.rng.get_float(Domain.SPAWN, state.tick, mother.id, sub_id=births.BIRTH_DRAW_SUB_ID) >= profile.birth_chance_per_check:
@@ -297,5 +297,5 @@ def test_a_pregnant_body_is_never_a_mother_or_a_mate(certain):
     pregnant = ApplyPath.apply_generation(state, _run(state), 31, 31)
     assert pregnant.entities[1].lifecycle.pregnancy.father_entity_id == 2 and pregnant.entities[3].lifecycle.pregnancy is None
     later = AuthoritativeState(tick=60, seed=42, entities=pregnant.entities, next_entity_id=pregnant.next_entity_id)
-    assert births._find_mate(later, later.entities[3], births._candidates(later, births._Profiles(births.get_catalog())), set(), 10.0, lambda m: True) is None
+    assert births._find_mate(later, later.entities[3], births._candidates(later, births._Profiles(births.get_catalog())), set(), births.get_catalog().get_reproduction_profile("humanoid_births")) is None
     assert not _conceptions(_run(later))

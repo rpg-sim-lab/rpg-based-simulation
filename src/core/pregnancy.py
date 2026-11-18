@@ -6,7 +6,8 @@ from dataclasses import asdict, dataclass
 from typing import TYPE_CHECKING, Any, Dict
 
 if TYPE_CHECKING:
-    from src.core.state import GeneticProfile  # re-exported there; importing it from systems here would add a core -> systems edge
+    # GeneticProfile is re-exported by src.core.state; importing it from systems here would add a core -> systems edge.
+    from src.core.state import GeneticProfile
 
 
 @dataclass(frozen=True, slots=True)

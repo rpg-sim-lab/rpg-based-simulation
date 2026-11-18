@@ -41,7 +41,7 @@ def _meat_decayed_events(state: "AuthoritativeState") -> list:
     """The MEAT_DECAYED events of this tick: a body the decay step removes (the same tick+1 rule as ``WorldDynamicsSystem._decay_corpses``) that
     still holds raw meat sends that meat out of the world through a typed sink (decision 44), so conservation balances from records."""
     return [
-        _WorldEvent(category=_WorldEventCategory.MEAT_DECAYED, tick=state.tick, subject=str(corpse_id), payload={"quantity": float(meat_left)})
+        _WorldEvent(category=_WorldEventCategory.MEAT_DECAYED, tick=state.tick, subject=str(corpse_id), payload={"quantity": float(meat_left), "cause": "decay"})
         for corpse_id, corpse in state.corpses.items()
         if state.tick + 1 >= corpse.decay_tick
         for meat_left in [sum(s.quantity for s in corpse.items if s.item_id == RAW_MEAT_ITEM)]

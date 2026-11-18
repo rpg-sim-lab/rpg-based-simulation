@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass, replace as dc_replace, field
 from typing import Optional
 
 from src.core.enums import EntityRole
@@ -155,6 +155,12 @@ class ArchetypeEntityFactory:
             entity = _replace_lifecycle(entity, active=False)
 
         return entity
+
+    def build_risen(self, entity_id: int, contract: ResolvedEntityRuntimeContract, position: tuple[float, float], tick: int, seed: int) -> EntityState:
+        """A risen subject (M1 risen origin, STR-02): the species' risen archetype built as an ADULT with no occupation and no parents. Nothing of the dead
+        body passes on; its faction is the archetype's. `birth_tick` holds the arrival tick (SpawnSource RISEN tells it apart from a birth)."""
+        body = self.build_entity(entity_id, contract, EntitySpawnContext(position=position, current_tick=tick), seed)
+        return dc_replace(body, identity=dc_replace(body.identity, occupation=None), lifecycle=dc_replace(body.lifecycle, birth_tick=tick))
 
     def build_newborn(
         self,

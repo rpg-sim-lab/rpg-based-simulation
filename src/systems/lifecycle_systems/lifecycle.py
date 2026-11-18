@@ -15,10 +15,14 @@ from src.domains.world_emergence.schema import WorldEvent, WorldEventCategory
 logger = logging.getLogger(__name__)
 
 
-def _pregnancy_ended_event(tick: int, mother: "EntityState") -> WorldEvent:
-    """A mother who dies pregnant: the pregnancy is cleared in her death update and this typed event says so (reason MOTHER_DIED, the litter it carried)."""
-    return WorldEvent(category=WorldEventCategory.PREGNANCY_ENDED, tick=tick, subject=str(mother.id),
-                      payload={"reason": "MOTHER_DIED", "litter_size": mother.lifecycle.pregnancy.litter_size})
+def _pregnancy_ended_events(tick: int, dead: "List[EntityState]", incoming: dict) -> List[WorldEvent]:
+    """A PREGNANCY_ENDED event (reason MOTHER_DIED, the litter carried) for each mother who dies pregnant. Decided from this tick's merged update: a pregnancy a birth
+    already cleared in it is not ended again (no second clear, no event)."""
+    return [
+        WorldEvent(category=WorldEventCategory.PREGNANCY_ENDED, tick=tick, subject=str(mother.id), payload={"reason": "MOTHER_DIED", "litter_size": mother.lifecycle.pregnancy.litter_size})
+        for mother in dead
+        if mother.lifecycle.pregnancy is not None and not (mother.id in incoming and incoming[mother.id].lifecycle and incoming[mother.id].lifecycle.pregnancy_clear)
+    ]
 
 if TYPE_CHECKING:
     from src.core.state import AuthoritativeState, EntityState
@@ -146,6 +150,13 @@ class LifecycleSystem:
         return replace(heir_upd, cognition_bundle_set=new_cognition)
 
     @staticmethod
+    def _death_lifecycle(state: AuthoritativeState, entity: EntityState, ent_upd: EntityUpdate, life_upd: LifecycleUpdate, death_reason: Optional[str]) -> LifecycleUpdate:
+        """The lifecycle half of a death update: the permadeath fact, the tick, the reason and the record; a pregnancy the mother carried ends with her (cleared here, in the death's own update)."""
+        return replace(life_upd, is_permadeath_set=True, death_tick_set=state.tick, death_reason_set=death_reason,
+                       death_record_set=LifecycleSystem._death_record(state, entity, ent_upd, death_reason),
+                       pregnancy_clear=life_upd.pregnancy_clear or entity.lifecycle.pregnancy is not None)
+
+    @staticmethod
     def _death_record(state: AuthoritativeState, entity: EntityState, ent_upd: EntityUpdate, death_reason: Optional[str]) -> DeathRecord:
         """The typed record of this death: the cause, the tick, who last hit the body (this tick's damaging attacker, else the one it remembers) and, for a hazard death, the hazard kind of the region it stood in."""
         cause = death_cause_of(death_reason)
@@ -183,7 +194,6 @@ class LifecycleSystem:
         
         # Collect deaths for influence processing (Task 11.4)
         recent_deaths: List[EntityState] = []
-        pregnancy_ended: List[WorldEvent] = []
         
         for e_id, entity in state.entities.items():
             if not entity.lifecycle.active:
@@ -273,21 +283,11 @@ class LifecycleSystem:
             if is_dead:
                 ent_upd = ent_upd or EntityUpdate(entity_id=e_id)
                 recent_deaths.append(entity)
-                # Decided from this tick's merged update: a pregnancy a birth already cleared is not ended again (no second clear, no event).
-                birth_cleared = bool(ent_upd.lifecycle and ent_upd.lifecycle.pregnancy_clear)
-                if entity.lifecycle.pregnancy is not None and not birth_cleared:
-                    pregnancy_ended.append(_pregnancy_ended_event(state.tick, entity))
                 # Mark as inactive and record death truth
                 life_upd = ent_upd.lifecycle or LifecycleUpdate()
                 refined_entity_updates[e_id] = replace(ent_upd,
                     active=False,
-                    lifecycle=replace(life_upd,
-                        is_permadeath_set=True,
-                        death_tick_set=state.tick,
-                        death_reason_set=death_reason,
-                        death_record_set=LifecycleSystem._death_record(state, entity, ent_upd, death_reason),
-                        pregnancy_clear=entity.lifecycle.pregnancy is not None or life_upd.pregnancy_clear,
-                    )
+                    lifecycle=LifecycleSystem._death_lifecycle(state, entity, ent_upd, life_upd, death_reason),
                 )
                 
                 # Process Succession / Heirlooms
@@ -338,6 +338,5 @@ class LifecycleSystem:
                 world_events_add=list(update.world_events_add) + list(vac_update.world_events_add),
             )
                         
-        if pregnancy_ended:
-            update = replace(update, world_events_add=list(update.world_events_add) + pregnancy_ended)
-        return replace(update, entity_updates=refined_entity_updates)
+        ended = _pregnancy_ended_events(state.tick, recent_deaths, update.entity_updates)
+        return replace(update, entity_updates=refined_entity_updates, world_events_add=[*update.world_events_add, *ended] if ended else update.world_events_add)

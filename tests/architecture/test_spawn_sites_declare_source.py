@@ -1,6 +1,6 @@
 """Static spawn-site guard (TCK-20261013-RPG-GATE-V8-SPAWN-SOURCE-CHECK, AC5).
 
-Every call to ``generator.spawn_*`` (or the factory's ``build_newborn``) in ``src/`` creates an entity that reaches the world as a mid-run add, so its enclosing function must hand a
+Every call to ``generator.spawn_*`` (or the factory's ``build_newborn`` / ``build_risen``) in ``src/`` creates an entity that reaches the world as a mid-run add, so its enclosing function must hand a
 ``SpawnSource`` to the update (``entity_spawn_sources``), or the site must sit in ``OFF_SITES`` below. A new spawn site then fails here, at unit-test
 time, instead of after a 5000-tick gate run, which is how the camp spawn went unseen.
 
@@ -29,7 +29,7 @@ PROFILES = REPO / "config" / "simulation_quality" / "profiles"
 WORLDS = REPO / "data" / "worlds"
 EXCLUDED_PREFIXES = ("src/certification/", "src/systems/world_systems/generator.py")
 TAG = "entity_spawn_sources"
-NEWBORN_BUILDER = "build_newborn"  # the births system builds its newborn through the factory, not a generator.spawn_* method
+NEWBORN_BUILDERS = ("build_newborn", "build_risen")  # births and the risen origin build their bodies through the factory, not a generator.spawn_* method
 ON_VALUES = {"ON", "STRICT", "SHADOW"}
 
 
@@ -94,7 +94,7 @@ def find_spawn_sites(root: Path, src: str = "src") -> List[Tuple[str, str, str, 
             tagged = _mentions_tag(func)
             for call in (n for n in ast.walk(func) if isinstance(n, ast.Call) and id(n) not in nested):
                 f = call.func
-                if isinstance(f, ast.Attribute) and ((f.attr.startswith("spawn_") and _receiver(f.value) == "generator") or f.attr == NEWBORN_BUILDER):
+                if isinstance(f, ast.Attribute) and ((f.attr.startswith("spawn_") and _receiver(f.value) == "generator") or f.attr in NEWBORN_BUILDERS):
                     found.append((rel, func.name, f.attr, tagged))
     return found
 
@@ -167,7 +167,11 @@ def test_every_spawn_site_in_src_hands_a_spawn_source_or_is_ruled_off():
 
 def test_the_tagged_birth_site_is_seen_and_needs_no_entry():
     sites = find_spawn_sites(REPO)
-    assert ("src/world/births.py", "_birth", "build_newborn", True) in sites
+    assert ("src/world/births.py", "_birth_at_term", "build_newborn", True) in sites
+
+
+def test_the_tagged_risen_site_is_seen_and_needs_no_entry():
+    assert ("src/world/risen.py", "process_rises", "build_risen", True) in find_spawn_sites(REPO)
 
 
 def test_every_off_site_is_held_shut_by_a_registered_off_by_default_flag_no_gate_world_turns_on():

@@ -193,6 +193,7 @@
   display_name: "Undead"
   body_model: "spirit_body"
   need_profile: "undead_purpose"
+  risen_profile: "undead_rising"
   sense_profile: "undead_dread_senses"
   cognition_profile: "undead_fixated"
   intelligence_tier: "low"

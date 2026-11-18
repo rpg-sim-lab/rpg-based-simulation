@@ -2,41 +2,43 @@
 
 Generated from `registries/mechanisms.yaml` — regenerate with `make mechanism-registry-view`. Do not hand-edit.
 
-All 110 mechanisms, one row each, sorted by priority (`layer weight × transitive dependent-count`) descending. Deliberately not truncated — see `docs/brainstorm/mechanism_priority_view.md` for the focused, unverified-only, top-25 "verify next" ranking, and `docs/brainstorm/mechanism_verification_view.md` for the full verification ledger with notes. This view exists to answer a third, different question: what matters most, and do we know it works, in a single read.
+All 113 mechanisms, one row each, sorted by priority (`layer weight × transitive dependent-count`) descending. Deliberately not truncated — see `docs/brainstorm/mechanism_priority_view.md` for the focused, unverified-only, top-25 "verify next" ranking, and `docs/brainstorm/mechanism_verification_view.md` for the full verification ledger with notes. This view exists to answer a third, different question: what matters most, and do we know it works, in a single read.
 
 **Node-set note**: this is the first view generated after `TCK-20260916-MECHANISM-REGISTRY-COMPLETENESS-PASS` confirmed the registry's own node set was incomplete (75 mechanisms, atlas-only seed) and registered 11 real mechanisms the original seed never carded (now 86, for `src/domains/`/`src/systems/` — `src/engine/`/`src/core/`/`src/ai/` remain out of that pass's scope). Any earlier figure computed against the 75-mechanism set — the prior unverified count, priority ranking, or dependency-hub count — was computed against a node set later found to be missing 11 real mechanisms and should be treated as superseded by this view.
 
-**49 runtime-verified, 53 static (`code_trace`)-verified, 8 unverified** — of 110 total.
+**49 runtime-verified, 56 static (`code_trace`)-verified, 8 unverified** — of 113 total.
 
 | Mechanism | Layer | State | Evidence | Verdict | Priority | Transitive Dependents |
 |---|---|---|---|---|---|---|
 | `belief_cycle` | entity | done | runtime | observed | 15 | 3 |
 | `entity_role` | entity | done | runtime | observed | 15 | 3 |
 | `movement` | entity | done | static | observed | 15 | 3 |
+| `affection_relationship_bonds` | entity | done | runtime | observed | 10 | 2 |
+| `aging_death` | entity | done | runtime | observed | 10 | 2 |
 | `personality` | entity | done | static | observed | 10 | 2 |
 | `status_effects` | entity | orphan | static | observed | 10 | 2 |
 | `regional_trauma` | region | done | runtime | contradicted | 6 | 3 |
 | `world_module_parameterization` | world | done | runtime | observed | 6 | 6 |
-| `aging_death` | entity | done | runtime | observed | 5 | 1 |
 | `attributes_biology` | entity | done | static | observed | 5 | 1 |
 | `combat_resolution` | entity | done | runtime | observed | 5 | 1 |
 | `evolution` | entity | partial | runtime | observed | 5 | 1 |
 | `goal_hierarchy` | entity | done | runtime | observed | 5 | 1 |
+| `humanoid_reproduction` | entity | partial | static | observed | 5 | 1 |
 | `quest_generation_sourcing` | entity | orphan | runtime | contradicted | 5 | 1 |
 | `race_archetype` | entity | done | static | observed | 5 | 1 |
 | `world_composition_assembly` | world | done | runtime | observed | 5 | 5 |
+| `inventory_trade_conservation` | world | done | static | observed | 4 | 4 |
 | `campaigns` | world | done | static | observed | 3 | 3 |
 | `diplomacy` | faction | done | static | observed | 3 | 1 |
 | `resolved_world_snapshot` | world | done | runtime | observed | 3 | 3 |
 | `buildings` | world | done | static | observed | 2 | 2 |
 | `camp` | region | done | runtime | observed | 2 | 1 |
-| `inventory_trade_conservation` | world | done | static | observed | 2 | 2 |
 | `regional_sovereignty` | region | done | runtime | observed | 2 | 1 |
 | `world_compilation` | world | done | runtime | observed | 2 | 2 |
 | `calamity_intensity` | world | orphan | runtime | observed | 1 | 1 |
+| `corpse_goods_conservation` | world | partial | static | observed | 1 | 1 |
 | `action_pacing_readiness` | entity | done | runtime | observed | 0 | 0 |
 | `adventure_routing` | entity | done | static | observed | 0 | 0 |
-| `affection_relationship_bonds` | entity | done | runtime | observed | 0 | 0 |
 | `belief_institution` | world | partial | static | observed | 0 | 0 |
 | `betrayal_siege_war` | faction | partial | runtime | observed | 0 | 0 |
 | `breakthrough_bonuses` | entity | partial | runtime | observed | 0 | 0 |
@@ -55,6 +57,7 @@ All 110 mechanisms, one row each, sorted by priority (`layer weight × transitiv
 | `concern_intake` | entity | done | static | observed | 0 | 0 |
 | `conversation` | entity | gap | unverified | unverified | 0 | 0 |
 | `cooperation` | entity | done | static | observed | 0 | 0 |
+| `corpse_rising` | entity | partial | static | observed | 0 | 0 |
 | `country_lifecycle` | faction | partial | static | observed | 0 | 0 |
 | `crafting` | world | partial | static | observed | 0 | 0 |
 | `cross_episode_grief_nemesis` | faction | done | static | observed | 0 | 0 |
@@ -74,7 +77,6 @@ All 110 mechanisms, one row each, sorted by priority (`layer weight × transitiv
 | `gods_pantheon_blessings` | world | gap | unverified | unverified | 0 | 0 |
 | `group_coordination` | group | partial | static | observed | 0 | 0 |
 | `guilds` | group | partial | static | observed | 0 | 0 |
-| `humanoid_reproduction` | entity | partial | static | observed | 0 | 0 |
 | `information_trust_deception` | entity | orphan | runtime | observed | 0 | 0 |
 | `intent_requirement_gating` | entity | done | runtime | inconclusive | 0 | 0 |
 | `interaction_channeling` | entity | done | static | observed | 0 | 0 |
@@ -86,6 +88,7 @@ All 110 mechanisms, one row each, sorted by priority (`layer weight × transitiv
 | `opportunity_rumor_seeds` | world | gated | static | observed | 0 | 0 |
 | `party_formation` | group | done | static | observed | 0 | 0 |
 | `perception` | entity | orphan | runtime | contradicted | 0 | 0 |
+| `pregnancy_gestation` | entity | partial | static | observed | 0 | 0 |
 | `procedural_world_generation` | world | done | static | observed | 0 | 0 |
 | `production_role_vacancy` | region | done | runtime | inconclusive | 0 | 0 |
 | `progression_conversion` | entity | gated | static | observed | 0 | 0 |
