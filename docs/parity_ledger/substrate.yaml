@@ -5271,7 +5271,8 @@
     identity.occupation (the role label, role_id or profession_id on the archetype paths, none for
     a newborn), species_of reads kind, a writer with no species to declare is refused with
     SpeciesNotDeclaredError (no code-chosen default species), and humanoids pair and inherit by
-    species. properties species_id stays as a mirror until step 5.
+    species. The properties species_id mirror was removed in step 5 (species_of is the only
+    reader; K12 static test).
   status: verified
   priority: P1
   legacy_evidence: null

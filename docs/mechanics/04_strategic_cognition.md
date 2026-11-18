@@ -413,7 +413,7 @@ future imitation-driven behavior.
   overtaken by a better candidate, is implicitly replaced (or cleared to `None`) on the next
   reconsideration.
 - **Imitation fidelity**: `RoleModelImitationService.compute_imitation_fidelity()`
-  (`src/strategy/role_model_imitation.py`) reads `entity.identity.properties["species_id"]` →
+  (`src/strategy/role_model_imitation.py`) reads the entity's species with `species_of(entity)` (= `kind`; the `properties["species_id"]` mirror was removed in M1 step 5) →
   `SpeciesDefinition.intelligence_tier` (landed by `TCK-20260831-SPECIES-INTELLIGENCE-TIER`) and maps
   `"high"` → `1.0`, `"low"` (or an unresolved species/tier) → `0.5`. Deliberately kept as a separate
   service rather than folded into `CapacityService.derive_profile` — see the Anti-Drift Notes in

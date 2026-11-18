@@ -1,10 +1,10 @@
 ---
-status: active
+status: historical
 layer: core
 authority: P1
 audience: agent
 ticket_id: TCK-20261119-THE-SPECIES-MIRROR-IS-GONE-KIND-IS-THE-ONLY-SPECIES-FIELD
-phase: open
+phase: done
 date: 2026-11-19
 tags: []
 ---
@@ -15,7 +15,7 @@ tags: []
 The `identity.properties["species_id"]` mirror is gone: `kind` is the only species field and `species_of()` the only reader (M1 step 5 of 5)
 
 ## Status
-INPROGRESS
+DONE
 
 ## Tier
 standard
@@ -65,13 +65,13 @@ src/core/species.py, src/engine/biological_needs.py, src/worldbuilding/compiler.
 Species and identity reads only. No new record is created or ended: `kind` is the species set once at spawn (step 4) and never changes in a run; `identity.occupation` is its own field; nothing survives an update that did not before. The removed mirror was a copy, not a source. No clock is read (the need-rate cache key is `(need_profile_id, species_of, role)`, tick-independent).
 
 ## Implementation Notes
-Head to measure: the commit that files this ticket (src and tests identical to 23d6bf642); the closure commit after the S9 run touches no src or tests.
+Measured head 79713fae (src and tests identical to 23d6bf642); the closure commit touches docs, monitoring and the registry only.
 
 ## Test Summary
-Statics on 23d6bf642: code-health OK rc=0 (2 new/2 worse report-only jscpd rows that pre-exist on main), lint-imports 17 kept 0 broken, mypy no new. Regression 93 of 93 test files pass (one gated pytest per file). Throwaway fixture proof: 45 of 45 failing files green with patch f55b8167. K11 and the unprofiled-needs bar: pending the S9 run.
+Statics on 23d6bf642: code-health OK rc=0 (2 new/2 worse report-only jscpd rows that pre-exist on main), lint-imports 17 kept 0 broken, mypy no new. Regression 93 of 93 test files pass (one gated pytest per file). Throwaway fixture proof: 45 of 45 failing files green with patch f55b8167. S9 run (executed, 9 processes rc=0): K11 0 differing fields in all 3 gate worlds; unprofiled needs 0 at t0 and final; boss/demonic counts 0; 3 of 3 same_run=yes. Both arms predate #964 (duplicate boss fix), a fair A/B.
 
 ## Files Changed
-21 src files, 46 test files (fixture patch f55b8167), K12 test, this ticket and its staging artifacts.
+21 src files, 46 test files (fixture patch f55b8167), K12 test, docs (04_strategic_cognition.md, intentional_divergences.md 2.208, parity ledger SUB-403), this ticket and its stored artifacts.
 
 ## Completion Summary
-Pending the S9 run.
+The species mirror is gone: no writer, no reader (K12), `species_of()` is the only species read; the owner-approved fixture patch f55b8167 moved 46 test files (8 assertion changes); Bible 04, divergence 2.208 and SUB-403 updated. Measured neutral by projection (K11 = 0) with unprofiled needs 0. Closure touched no src or tests.
