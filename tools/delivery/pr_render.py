@@ -52,7 +52,7 @@ try:
     from tools.validate_frontmatter import extract_frontmatter
     from tools.generate_registry import parse_body_section, _strip_frontmatter
     from tools.delivery.pr_status import CommandResult, default_run_command
-    from tools.delivery.pr_body_lint import find_attribution
+    from tools.delivery.pr_body_lint import LIFECYCLE_LINE, find_attribution
 except ImportError:
     # Fallback for direct script execution (`python3 tools/delivery/pr_render.py`), where `tools/`
     # has no __init__.py and isn't a namespace package relative to the invocation's own sys.path[0].
@@ -64,13 +64,14 @@ except ImportError:
     from validate_frontmatter import extract_frontmatter  # noqa: E402
     from generate_registry import parse_body_section, _strip_frontmatter  # noqa: E402
     from pr_status import CommandResult, default_run_command  # noqa: E402
-    from pr_body_lint import find_attribution  # noqa: E402
+    from pr_body_lint import LIFECYCLE_LINE, find_attribution  # noqa: E402
 _REPO_ROOT_STR = str(Path(__file__).resolve().parents[2])
 if _REPO_ROOT_STR not in sys.path:
     sys.path.append(_REPO_ROOT_STR)
 from tools.agent_working_paths import STORED_ARTIFACTS, TICKETS, posix  # noqa: E402
 from tools.sessions.classify import is_governing_path  # noqa: E402
 
+LIFECYCLE_SECTION = "Durable state, lifecycle and clocks"  # the ticket body heading; same string as tools/ticket_field_values.py
 _TICKET_ID_RE = re.compile(r"TCK-[0-9]{8}-[A-Z0-9-]+")
 _REVIEW_NOTES_PLACEHOLDER = "<!-- UNFILLED: write review notes by hand before opening the PR -->"
 # TCK-20260927-PR-RENDER-NO-RECORDED-TICKET-EXCLUSION: an intentional exclusion of a commit-
@@ -231,6 +232,7 @@ def load_ticket(path: Path) -> dict:
         "request_summary": parse_body_section(body, "Request Summary"),
         "test_summary": parse_body_section(body, "Test Summary"),
         "completion_summary": parse_body_section(body, "Completion Summary"),
+        "lifecycle_section": parse_body_section(body, LIFECYCLE_SECTION),
         "path": path,
     }
 
@@ -453,7 +455,32 @@ def _render_table_cell(text: str) -> str:
     return _collapse_whitespace(text).replace("|", "\\|")
 
 
-def _render_section(heading: str, tickets: list, warnings: list) -> str:
+NO_SRC_NA = "N/A: no src change"
+NO_TICKET_NA = "N/A: no ticket on this branch"
+NOT_RECORDED = "(none recorded: ticket has no ## Durable state, lifecycle and clocks section)"
+
+
+def touches_src(files: Optional[list]) -> Optional[bool]:
+    """True/False for whether the PR diff touches `src/`; None when the diff could not be read."""
+    if files is None:
+        return None
+    return any(f.startswith("src/") for f in files)
+
+
+def render_lifecycle_lines(tickets: list, src_changed: Optional[bool]) -> list:
+    """One `- Durable state, lifecycle and clocks: <ticket>: <text>` Verification line per ticket
+    (TCK-20261118-REQUIRED-DURABLE-STATE-LIFECYCLE-CLOCKS-SECTION-IN-TICKETS-AND-PR-BODIES). A branch whose diff touches no
+    `src/` renders `N/A: no src change` for every ticket itself, so the line never fails a docs-only or tooling-only PR;
+    otherwise each ticket's own section text is collapsed to one line (the full text stays in the ticket). One line per
+    ticket, not nested bullets, so it cannot be mistaken for a Known gaps entry."""
+    lines = []
+    for t in tickets:
+        text = NO_SRC_NA if src_changed is False else (_collapse_whitespace(t.get("lifecycle_section", "")) or NOT_RECORDED)
+        lines.append(f"{LIFECYCLE_LINE} {t['ticket_id']}: {text}")
+    return lines
+
+
+def _render_section(heading: str, tickets: list, warnings: list, src_changed: Optional[bool] = None) -> str:
     if heading == "## What landed":
         if len(tickets) == 1:
             return _first_paragraph(tickets[0]["request_summary"])
@@ -473,6 +500,7 @@ def _render_section(heading: str, tickets: list, warnings: list) -> str:
         lines = []
         for t in tickets:
             lines.append(f"- {t['ticket_id']} Tests: {t['test_summary'] or '(none recorded)'}")
+        lines.extend(render_lifecycle_lines(tickets, src_changed))
         gaps_by_ticket = [(t["ticket_id"], gap) for t in tickets for gap in extract_known_gaps(t)]
         if not gaps_by_ticket:
             lines.append(KNOWN_GAPS_NONE_STATED)
@@ -530,7 +558,7 @@ def render_body(tickets: list, spec: dict, warnings: list, exclusions: Optional[
                 parts.append(governing)
             continue
         parts.append(heading)
-        parts.append(_render_section(heading, tickets, warnings))
+        parts.append(_render_section(heading, tickets, warnings, touches_src(changed_files) if diff_ok else None))
         parts.append("")
     ids = ", ".join(t["ticket_id"] for t in tickets)
     parts.append(f"Closes: {ids}")
@@ -649,7 +677,7 @@ def render_ticketless_body(
         "## What landed": f"{theme}\n\nChanged files ({len(files)}):\n{summary}" if files else theme,
         "## Tickets": "(none: this PR closes no ticket)",
         "## Why": why,
-        "## Verification": f"- Tests: (none recorded: no ticket on this branch)\n{KNOWN_GAPS_NONE_STATED}"
+        "## Verification": f"- Tests: (none recorded: no ticket on this branch)\n{LIFECYCLE_LINE} {NO_TICKET_NA}\n{KNOWN_GAPS_NONE_STATED}"
         + (f"\n- Discovery warnings: {'; '.join(warnings)}" if warnings else ""),
         "## Review notes": _REVIEW_NOTES_PLACEHOLDER,
     }

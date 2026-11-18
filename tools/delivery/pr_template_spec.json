@@ -5,7 +5,7 @@
     {"heading": "## Governing paths touched", "rendered": true, "conditional": true, "source": "governing paths (tools/sessions/classify.py) touched by the PR diff against base; the whole section is absent when none is touched, so the template does not list it"},
     {"heading": "## Tickets", "rendered": true, "source": "table of ticket id/tier/title for every ticket on the branch"},
     {"heading": "## Why", "rendered": true, "source": "each ticket's Request Summary"},
-    {"heading": "## Verification", "rendered": true, "source": "scoped test commands + results, done_checker_static result, and known gaps per ticket"},
+    {"heading": "## Verification", "rendered": true, "source": "scoped test commands + results, the durable-state, lifecycle and clocks line per ticket (N/A: no src change when the diff touches no src/), done_checker_static result, and known gaps per ticket"},
     {"heading": "## Review notes", "rendered": false, "source": "hand-written: what to look at first, judgement calls made"},
     {"heading": "Closes:", "rendered": true, "source": "TCK- ids of every ticket on the branch, comma-separated, body only -- never the PR title (plan §3.5)"}
   ],
