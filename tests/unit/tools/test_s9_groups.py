@@ -7,7 +7,7 @@ import pytest
 from src.core.builder import V2EntityBuilder
 from src.core.group_record import GroupRecord
 from src.core.state import AuthoritativeState, IntentResult
-from src.core.updates import CombatUpdate, EntityUpdate, StateUpdate
+from src.core.updates import BiologicalUpdate, CombatUpdate, EntityUpdate, StateUpdate
 from src.engine.starvation import STARVING_LINE
 from tools.rpg_measure import s9_run, s9_spy
 from tools.rpg_measure.s9_spy import GroupSpy, c1_stuck, c2_repeat_fail, c3_needs, classify, final_verdict, hits_by_eid, split_counts
@@ -16,7 +16,7 @@ W = s9_spy.WINDOW
 
 
 def row(tick, group=1, **kw):
-    base = {"tick": tick, "group": group, "goal_changed": False, "task_changed": False, "moved": False, "completed": 0, "attacked": False, "failed": [], "hunger": 0.0, "starved": False, "life_stage": "ADULT"}
+    base = {"tick": tick, "group": group, "goal_changed": False, "task_changed": False, "moved": False, "completed": 0, "consumed": False, "attacked": False, "failed": [], "hunger": 0.0, "starved": False, "life_stage": "ADULT"}
     return {**base, **kw}
 
 
@@ -145,3 +145,56 @@ def test_the_judge_prints_block_when_head_alone_has_a_stuck_t0_member_and_clear_
     assert report["verdict"] == "BLOCK" and report["eids"][0]["eid"] == 10
     assert s9_run.judge(_doc({10: clean}, [10]), _doc({10: clean}, [10]), s9_spy)["verdict"] == "CLEAR"
     assert s9_run.judge(_doc({10: stuck}, [10]), _doc({10: stuck}, [10]), s9_spy)["verdict"] == "FINDINGS"
+
+
+def test_a_member_whose_only_activity_is_an_inn_meal_is_not_stuck_and_a_missing_meal_is():
+    """The eat paths that write a typed hunger drop with no IntentResult (inn meal, core_actions eat) are progress."""
+    meals = [row(t, consumed=(t % 150 == 0)) for t in range(1, 401)]
+    assert c1_stuck(meals) == [], "a typed consume every 150 ticks keeps every stretch below the window"
+    assert c1_stuck(rows(400)) != []
+
+
+def test_the_spy_records_a_typed_hunger_drop_and_a_hunger_set_as_a_consume_and_a_hunger_rise_as_none():
+    group = GroupRecord(id=1, leader_id=1, member_ids={1, 2, 3}, anchor=(5.0, 5.0), formation_tick=0)
+    prior = AuthoritativeState(tick=9, seed=1, entities={1: _body(1), 2: _body(2), 3: _body(3)}, groups={1: group}, next_entity_id=4)
+    after = dataclasses.replace(prior, tick=10)
+    spy = GroupSpy(prior)
+    update = StateUpdate(entity_updates={
+        1: EntityUpdate(entity_id=1, biological=BiologicalUpdate(hunger_delta=-20.0)),
+        2: EntityUpdate(entity_id=2, biological=BiologicalUpdate(hunger_set=0.0)),
+        3: EntityUpdate(entity_id=3, biological=BiologicalUpdate(hunger_delta=1.0)),
+    })
+    spy.observe(prior, update, after)
+    assert [spy.rows[e][0]["consumed"] for e in (1, 2, 3)] == [True, True, False]
+
+
+def _plain(h):
+    return {"final_hash": h}
+
+
+def test_a_spied_hash_that_differs_from_its_plain_twin_makes_the_verdict_invalid_and_prints_no_class():
+    stuck = rows(W)
+    head, main = _doc({10: stuck}, [10]), _doc({10: rows(5, moved=True)}, [10])
+    ok = s9_run.judge(head, main, s9_spy, _plain("h"), _plain("h"))
+    assert ok["verdict"] == "BLOCK" and ok["twin_hash_equal"] == {"head": True, "main": True}
+    bad = s9_run.judge(head, main, s9_spy, _plain("other"), _plain("h"))
+    assert bad["verdict"] == "INVALID" and bad["eids"] == [] and bad["twin_hash"]["head"] == {"spied": "h", "plain": "other"}
+    bad_main = s9_run.judge(head, main, s9_spy, _plain("h"), _plain("other"))
+    assert bad_main["verdict"] == "INVALID"
+
+
+def test_the_follow_up_fires_when_the_verdict_is_not_clear_or_any_group_is_alive_on_head_and_not_otherwise():
+    dead, alive = {"1": {"alive_at_end": False}}, {"7": {"alive_at_end": True}, "9": {"alive_at_end": False}}
+    assert s9_run.follow_up("CLEAR", dead, alive) == {"fired": False, "verdict": "CLEAR", "head_alive_at_end": [], "main_alive_at_end": [7]}, "a group alive on main alone does not fire it"
+    assert s9_run.follow_up("CLEAR", alive, dead)["fired"] is True and s9_run.follow_up("CLEAR", alive, dead)["head_alive_at_end"] == [7]
+    assert s9_run.follow_up("FINDINGS", dead, dead)["fired"] is True and s9_run.follow_up("BLOCK", dead, dead)["fired"] is True and s9_run.follow_up("INVALID", dead, dead)["fired"] is True
+    assert s9_run.follow_up_line(s9_run.follow_up("CLEAR", dead, dead)).startswith("FOLLOW-UP: cohesion-capture NOT FIRED")
+    assert "FIRED (verdict BLOCK" in s9_run.follow_up_line(s9_run.follow_up("BLOCK", dead, alive))
+
+
+def test_the_judge_carries_the_follow_up_in_both_the_valid_and_the_invalid_report():
+    head = {**_doc({10: rows(5, moved=True)}, [10]), "groups": {"3": {"alive_at_end": True}}}
+    main = {**_doc({10: rows(5, moved=True)}, [10]), "groups": {}}
+    valid = s9_run.judge(head, main, s9_spy, _plain("h"), _plain("h"))
+    assert valid["verdict"] == "CLEAR" and valid["follow_up"]["fired"] is True and valid["follow_up"]["head_alive_at_end"] == [3]
+    assert s9_run.judge(head, main, s9_spy, _plain("x"), _plain("h"))["follow_up"]["fired"] is True

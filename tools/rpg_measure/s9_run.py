@@ -1,6 +1,8 @@
 """S9 runner: urban_political seed 42 for 2000 ticks on the births head and on the frozen main tree, one arm after the other, then the mechanical per-eid verdict.
 
-Each arm runs the same pinned kernel (``build_kernel``: audit_mode, no frame pacing, sequential executor) with the S9 spy installed from the HEAD checkout's ``s9_spy.py`` (loaded by file
+Four arms, serial, in this order: head spied, head plain, main spied, main plain. The plain arm of a side is the same run with NO spy; its final state hash must equal the spied arm's (the spy is read-only).
+A mismatch on either side makes the verdict INVALID: no BLOCK, FINDINGS or CLEAR line is printed. Both hashes are printed in every case.
+Each spied arm runs the same pinned kernel (``build_kernel``: audit_mode, no frame pacing, sequential executor) with the S9 spy installed from the HEAD checkout's ``s9_spy.py`` (loaded by file
 path, so the main tree needs no copy of it); recording stays ON (the default run directory is written; the spy itself reads only state and the applied update). TMPDIR is set under ``--out``.
 Output: every group's formation, last-seen and dissolution tick and typed reason on both arms; every hit row uncapped, split between t0 and newborn members; one class per eid
 (BLOCK / MAIN-DEFECT / FINDING; an eid with no head hit has class none and is not listed); and one final line ``S9 VERDICT: BLOCK|FINDINGS|CLEAR``.
@@ -17,7 +19,7 @@ import os
 import subprocess
 import sys
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 SPY_FILE = Path(__file__).resolve().with_name("s9_spy.py")
 WORLD, SEED, TICKS = "urban_political", 42, 2000
@@ -31,22 +33,27 @@ def load_spy(path: Path) -> Any:
 
 
 def child(world: str, seed: int, ticks: int, arm: str, out: str, spy_file: str) -> int:
-    """One arm: run the kernel with the spy and write the timelines, the group facts and the final state hash."""
+    """One arm (``head``/``main`` spied, ``head_plain``/``main_plain`` with no spy): run the kernel and write the final state hash; a spied arm also writes the timelines and the group facts."""
     from src.engine.checkpoint import CanonicalStateHasher
     from tools.test_architecture.rpg_gate_run import build_kernel
 
     spy_module = load_spy(Path(spy_file))
     kernel = build_kernel(world, seed, f"s9_{arm}_{world}_{seed}_{os.getpid()}")
     start = kernel.state
-    spy = spy_module.GroupSpy(start).install()
+    spy = spy_module.GroupSpy(start).install() if not arm.endswith("_plain") else None
     try:
         for _ in range(ticks):
             kernel.tick_once()
         state = kernel.state
         final_hash = CanonicalStateHasher.get_hash(state)
     finally:
-        spy.restore()
+        if spy is not None:
+            spy.restore()
         kernel.shutdown()
+    if spy is None:
+        Path(out).parent.mkdir(parents=True, exist_ok=True)
+        Path(out).write_text(json.dumps({"arm": arm, "world": world, "seed": seed, "ticks": ticks, "final_hash": final_hash}, sort_keys=True), encoding="utf-8")
+        return 0
     groups = {}
     for gid, seen in sorted(spy.group_seen.items()):
         record = state.groups.get(gid)
@@ -63,8 +70,27 @@ def child(world: str, seed: int, ticks: int, arm: str, out: str, spy_file: str) 
     return 0
 
 
-def judge(head: Dict[str, Any], main: Dict[str, Any], spy_module: Any) -> Dict[str, Any]:
-    """The mechanical read of the two arms: hits per eid, one class per eid, the final verdict, the split counts and the group lifetimes of both arms."""
+def follow_up(verdict: str, head_groups: Dict[str, Any], main_groups: Dict[str, Any]) -> Dict[str, Any]:
+    """The cohesion-capture follow-up condition (rpg-designer): it FIRES when the verdict is not CLEAR (INVALID included) or when ANY group is still alive at the last tick on the head."""
+    alive = lambda groups: sorted(int(g) for g, v in groups.items() if v.get("alive_at_end"))
+    head_alive, main_alive = alive(head_groups), alive(main_groups)
+    return {"fired": verdict != "CLEAR" or bool(head_alive), "verdict": verdict, "head_alive_at_end": head_alive, "main_alive_at_end": main_alive}
+
+
+def follow_up_line(info: Dict[str, Any]) -> str:
+    return (f"FOLLOW-UP: cohesion-capture {'FIRED' if info['fired'] else 'NOT FIRED'} (verdict {info['verdict']}; groups alive at the last tick: "
+            f"head {info['head_alive_at_end']}, main {info['main_alive_at_end']})")
+
+
+def judge(head: Dict[str, Any], main: Dict[str, Any], spy_module: Any, head_plain: Optional[Dict[str, Any]] = None, main_plain: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+    """The mechanical read of the two arms: hits per eid, one class per eid, the final verdict, the split counts and the group lifetimes of both arms.
+
+    With the plain arms given, a spied hash that differs from its plain twin on either side makes the verdict INVALID (the spy is not read-only there) and no class is reported."""
+    twins = {"head": (head["final_hash"], (head_plain or {}).get("final_hash")), "main": (main["final_hash"], (main_plain or {}).get("final_hash"))}
+    twin_equal = {side: spied == plain for side, (spied, plain) in twins.items()} if head_plain is not None and main_plain is not None else None
+    if twin_equal is not None and not all(twin_equal.values()):
+        return {"verdict": "INVALID", "reason": "a spied arm's final hash differs from its plain twin: the spy changed the run", "twin_hash": {s: {"spied": a, "plain": b} for s, (a, b) in twins.items()}, "eids": [],
+                "follow_up": follow_up("INVALID", head["groups"], main["groups"])}
     rows = lambda doc: {int(k): v for k, v in doc["rows"].items()}
     head_rows, main_rows = rows(head), rows(main)
     head_hits, main_hits = spy_module.hits_by_eid(head_rows, head["window"]), spy_module.hits_by_eid(main_rows, main["window"])
@@ -77,6 +103,8 @@ def judge(head: Dict[str, Any], main: Dict[str, Any], spy_module: Any) -> Dict[s
         "groups": {"head": head["groups"], "main": main["groups"]}, "newborn_in_group_head": head["newborn_in_group"],
         "window": head["window"], "starving_line": head["starving_line"], "cap": "none: every hit row is listed", "not_captured": head["not_captured"],
         "final_hash": {"head": head["final_hash"], "main": main["final_hash"]},
+        "twin_hash": {s: {"spied": a, "plain": b} for s, (a, b) in twins.items()}, "twin_hash_equal": twin_equal,
+        "follow_up": follow_up(spy_module.final_verdict(classified), head["groups"], main["groups"]),
     }
 
 
@@ -99,7 +127,7 @@ def main(argv: List[str]) -> int:
     args.out.mkdir(parents=True, exist_ok=True)
     (args.out / "tmp").mkdir(exist_ok=True)
     docs: Dict[str, Dict[str, Any]] = {}
-    for arm, tree in (("head", args.tree), ("main", args.main_tree)):
+    for arm, tree in (("head", args.tree), ("head_plain", args.tree), ("main", args.main_tree), ("main_plain", args.main_tree)):
         path = args.out / f"{arm}.json"
         env = {**os.environ, "PYTHONHASHSEED": "0", "PYTHONPATH": str(tree), "TMPDIR": str(args.out / "tmp")}
         proc = subprocess.run([sys.executable, str(Path(__file__).resolve()), "--child", args.world, str(args.seed), str(args.ticks), arm, str(path), str(SPY_FILE)],
@@ -107,13 +135,19 @@ def main(argv: List[str]) -> int:
         if proc.returncode != 0 or not path.exists():
             raise RuntimeError(f"S9 arm {arm} failed: {proc.stderr.strip()[-400:]}")
         docs[arm] = json.loads(path.read_text(encoding="utf-8"))
-    report = judge(docs["head"], docs["main"], load_spy(SPY_FILE))
+    report = judge(docs["head"], docs["main"], load_spy(SPY_FILE), docs["head_plain"], docs["main_plain"])
     report.update({"go": args.go, "world": args.world, "seed": args.seed, "ticks": args.ticks})
     (args.out / "s9_report.json").write_text(json.dumps(report, indent=2, sort_keys=True), encoding="utf-8")
     print(json.dumps(report, indent=2, sort_keys=True))
+    print("twin hashes (spied vs plain):", json.dumps(report["twin_hash"], sort_keys=True))
+    if report["verdict"] == "INVALID":
+        print("S9 VERDICT: INVALID (" + report["reason"] + ")")
+        print(follow_up_line(report["follow_up"]))
+        return 1
     for row in report["eids"]:
         print(f"eid {row['eid']:>6} {row['population']:<7} {row['class']:<11} {row['kinds']}")
     print(f"S9 VERDICT: {report['verdict']}")
+    print(follow_up_line(report["follow_up"]))
     return 0
 
 
