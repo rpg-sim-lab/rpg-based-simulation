@@ -346,3 +346,42 @@ def test_obs_check_judge_passes_only_when_both_arms_equal_and_the_write_control_
     assert births_obs_check.judge({"recording_on": row("a"), "no_replay": row("a"), "obs_off": row("a"), "write_control": row("b")})["verdict"] == "PASS"
     assert births_obs_check.judge({"recording_on": row("a"), "no_replay": row("x"), "obs_off": row("a"), "write_control": row("b")})["verdict"] == "FAIL"
     assert births_obs_check.judge({"recording_on": row("a"), "no_replay": row("a"), "obs_off": row("a"), "write_control": row("a")})["verdict"] == "FAIL", "a control that does not differ cannot fail"
+
+
+@pytest.mark.parametrize("module_name", ["tools.rpg_measure.births_child", "tools.rpg_measure.births_cost_child"])
+def test_recording_off_injects_no_replay_into_the_kernel_flags_on_both_child_types_and_only_then(monkeypatch, module_name):
+    import importlib
+
+    from src.engine import kernel as kernel_module
+
+    module = importlib.import_module(module_name)
+    seen = []
+
+    def fake_init(self, *args, **kwargs):
+        seen.append(kwargs.get("flags"))
+
+    monkeypatch.setattr(kernel_module.Kernel, "__init__", fake_init)
+    monkeypatch.delenv("SIM_OBS_MODE", raising=False)
+    assert module.inject_no_replay_if_recording_off() is False
+    kernel_module.Kernel.__init__(object(), flags={"audit_mode": True})
+    assert seen[-1] == {"audit_mode": True}, "without --recording-off nothing changes"
+    monkeypatch.setenv("SIM_OBS_MODE", "OFF")
+    assert module.inject_no_replay_if_recording_off() is True
+    kernel_module.Kernel.__init__(object(), flags={"audit_mode": True})
+    assert seen[-1] == {"audit_mode": True, "no_replay": True}
+    kernel_module.Kernel.__init__(object())
+    assert seen[-1] == {"no_replay": True}
+
+
+def test_the_runner_recording_off_environment_sets_the_variable_both_children_key_on():
+    assert births_run.RECORDING_OFF_ENV["SIM_OBS_MODE"] == "OFF"
+    from pathlib import Path
+    env = births_run.child_env(Path("/tree"), True)
+    assert env["SIM_OBS_MODE"] == "OFF" and env["RPG_OBS_MODE"] == "OFF"
+    assert "SIM_OBS_MODE" not in births_run.child_env(Path("/tree"), False) or births_run.child_env(Path("/tree"), False).get("SIM_OBS_MODE") != "OFF"
+
+
+def test_the_probe_stops_when_the_recording_on_plain_hash_differs_from_the_recording_off_plain_hash():
+    assert births_run.probe_hash_check("h", "h") == {"equal": True, "recording_off_plain": "h", "recording_on_plain": "h", "verdict": "PASS"}
+    stop = births_run.probe_hash_check("h", "other")
+    assert stop["verdict"] == "STOP" and stop["equal"] is False

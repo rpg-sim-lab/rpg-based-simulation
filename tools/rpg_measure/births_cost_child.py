@@ -19,6 +19,25 @@ COST_STAGES = ("governance_ecology", "economy", "cooperation", "combat_engagemen
 HOST_EVERY_TICKS = 100
 
 
+def inject_no_replay_if_recording_off() -> bool:
+    """Under --recording-off the runner sets SIM_OBS_MODE=OFF in the child's environment; the child then also injects the kernel flag ``no_replay`` (the same wrapper over ``Kernel.__init__`` that
+    births_obs_check uses; no source file changes), because the OBS variables alone keep the replay chunks. Without the variable nothing changes. Returns whether the flag will be injected."""
+    if os.environ.get("SIM_OBS_MODE") != "OFF":
+        return False
+    from src.engine import kernel as kernel_module
+
+    original = kernel_module.Kernel.__init__
+
+    def init(self, *args, **kwargs):
+        flags = dict(kwargs.get("flags") or {})
+        flags["no_replay"] = True
+        kwargs["flags"] = flags
+        return original(self, *args, **kwargs)
+
+    kernel_module.Kernel.__init__ = init
+    return True
+
+
 def host_reading() -> dict:
     """Host load now: loadavg, aggregate steal jiffies, MemAvailable (kB)."""
     reading = {"loadavg": open("/proc/loadavg").read().split()[:3]}
@@ -33,8 +52,9 @@ def host_reading() -> dict:
 
 def main(argv: list[str]) -> int:
     world, seed, ticks, out = argv[0], int(argv[1]), int(argv[2]), argv[3]
+    inject_no_replay_if_recording_off()
     kernel = build_kernel(world, seed, f"births_cost_{world}_{seed}_{os.getpid()}")
-    forced = {"audit_mode": getattr(kernel, "_audit_mode", None), "no_frame_pacing": getattr(kernel, "_no_frame_pacing", None)}
+    forced = {"audit_mode": getattr(kernel, "_audit_mode", None), "no_frame_pacing": getattr(kernel, "_no_frame_pacing", None), "no_replay": getattr(kernel, "_no_replay", None)}
     if forced["audit_mode"] is not True or forced["no_frame_pacing"] is not True:
         raise RuntimeError(f"this tree's build_kernel did not force audit_mode and no_frame_pacing: {forced}")
     costs, host = [], [{"tick": 0, **host_reading()}]
