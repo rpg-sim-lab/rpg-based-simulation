@@ -26,7 +26,7 @@ beside the kit (shape in the module docstring): each kit file with its sha256, e
 | check | what it catches |
 |---|---|
 | a | a kit file missing or at another sha than the manifest names |
-| b | a script that does not import under `python -I`, cwd = the tree (a missing `sys.path` fix; `-I` ignores `PYTHONPATH`) |
+| b | a script that does not import with the run's interpreter flags, cwd = the tree (with `-I`, a missing `sys.path` fix; `-I` ignores `PYTHONPATH`) |
 | c | the 5-10 tick fixture run does not exit 0 |
 | d | a recorded field absent, or constant None/default over all entities and ticks (e.g. `navigation.failure_reason`, a field that does not exist), unless declared `may_be_constant` (listed in the table) |
 | e | the ok guard line missing, a bad guard line present, ERROR+ log lines, a claimed hook never hit |
@@ -38,7 +38,7 @@ beside the kit (shape in the module docstring): each kit file with its sha256, e
 ### Manifest rules worth knowing
 
 - A hook is `{"name", "count_path"}` or `{"name", "stdout_regex"}`. `count_path` is a dotted path into the output JSON (`a.b`, `[*]` over a list or a dict's values, `[0]` an index); the preflight SUMS the numeric values found (bools ignored) and the hook passes when the sum is at least 1. A path that is absent fails. A list of names (a `hook_coverage` block) is not countable: record a numeric counter in the output if a hook-hit check is wanted.
-- Check (b) always imports the kit file under `python -I`; the fixture run (c) uses the entry exactly as written, so an entry without `-I` mirrors a run that relies on `PYTHONPATH` = the tree.
+- Check (b) imports the kit file with the RUN's interpreter flags: the leading flags of the process's `entry` after `{python}`, or an explicit `import_flags` list. An entry with `-I` and no `sys.path` fix fails (b); an entry without `-I` (PYTHONPATH = the tree, as the runs set it) passes. A non-`{python}` entry keeps `-I`.
 - Fixture runs use cwd = the tree, so a kit that writes `data/runs` writes into the frozen tree: the S9 `diff -rq` of the trees must exclude `data/runs`, or the preflight must report tree writes.
 
 ### The S9 packet line and the evidence labels
