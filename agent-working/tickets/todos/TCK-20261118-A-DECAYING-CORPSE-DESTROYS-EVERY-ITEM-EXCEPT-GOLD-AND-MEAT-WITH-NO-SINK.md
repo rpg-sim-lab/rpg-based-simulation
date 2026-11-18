@@ -37,6 +37,7 @@ Found by rpg-planner-ubuntu while designing the M1 births undead-from-corpse ori
 ## Scope
 1. Evidence, with no behaviour change: on the 3 standard cells at 5000 ticks, count the non-meat item units on corpses at their decay tick, by item_id. Also check whether HardLawMonitor's conservation check covers corpse items at all, and why it doesn't fire.
 2. LAW SET by rpg-designer (2026-11-18, the final Q-R6 ruling (b), relayed by lead-planner-u24). A decaying corpse's non-meat, non-gold items become ground items at its tile, carrying the source entity and the tick, like the ruling-61 purse. They go through ONE shared ground-item helper, the same one the births undead-rising path uses, so decay and rising follow one law. The typed CORPSE_DECAY sink per item is NOT the fix. Gold stays the purse and raw meat stays MEAT_DECAYED. Sequencing: the M1 births PR introduces the helper. Whichever of births and this ticket lands second reuses the other's helper. Still open: whether this is HARD for M1 (rpg-designer).
+   SAME-TICK ORDER (rpg-planner, 2026-11-18, code read on main): `_decay_corpses` runs in world_dynamics BEFORE the transfers resolve. economy.py `_without_decay_of_looted_bodies` (~:282) later drops the MEAT_DECAYED record for a body that a same-tick CORPSE loot takes, or that a meal re-adds (TCK-20261022-NO-MEAT-DECAYED-RECORD-FOR-A-CARCASS-RE-ADDED-ON-ITS-DECAY-TICK). If ground items are dropped at world_dynamics time, a body looted or re-added on its decay tick would DUPLICATE its goods. The drop has to follow the same applied-outcome rule. The likely place is the post-transfer step in resource_transactions, where rpg-designer-ubuntu put the births rise (the end of resource_transactions, after that filter). Tests: a body looted on its decay tick leaves no ground items; a re-added body leaves none until it really decays.
 3. Fix, tests (a decayed corpse holding a non-meat item leaves a ground item at its tile with source entity and tick, and conservation balances), ch. 03 text, parity and divergence.
 
 ## Out of Scope
@@ -59,7 +60,7 @@ Found by rpg-planner-ubuntu while designing the M1 births undead-from-corpse ori
 - none
 
 ## Related Code Areas
-- src/engine/world_dynamics.py (_decay_corpses, _meat_decayed_events), the conservation checks in src/observability/
+- src/engine/world_dynamics.py (_decay_corpses, _meat_decayed_events), src/engine/economy.py (resource_transactions, _without_decay_of_looted_bodies), the conservation checks in src/observability/
 
 ## Assumptions / Open Questions
 - How many non-meat items corpses actually hold at decay is unmeasured. A body that is looted first loses nothing.
