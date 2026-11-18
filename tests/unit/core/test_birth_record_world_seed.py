@@ -45,7 +45,7 @@ def test_the_births_path_hands_both_parent_profiles_so_the_builders_id_only_fall
 
     class _Certain:
         def get_reproduction_profile(self, profile_id):
-            return real.get_reproduction_profile(profile_id).model_copy(update={"birth_chance_per_check": 1.0})
+            return real.get_reproduction_profile(profile_id).model_copy(update={"birth_chance_per_check": 1.0, "mate_gate": "none", "min_mutual_sentiment": None})
 
         def __getattr__(self, name):
             return getattr(real, name)

@@ -69,7 +69,7 @@ def _catalog_faction_properties(occupation: Optional[str]) -> Dict[str, Any]:
     return {"faction_id": faction_id} if faction_id else {}
 
 
-class NoFreeSpawnTile(RuntimeError):
+class NoFreeSpawnTileError(RuntimeError):
     """`free_spawn_position` found no clear tile in its search radius (births record the newborn as unplaced; a bare RuntimeError from anywhere else is a bug)."""
 
 
@@ -100,6 +100,12 @@ class EntityGenerator:
         generator._last_id = taken
         return generator
 
+    def claim_tiles_of(self, state: AuthoritativeState, spawned: "List[EntityState]") -> None:
+        """Mark the tiles of bodies another site already spawned this tick as taken, so a site on a fresh generator cannot stack on them (the claimed set lives on the instance)."""
+        if self._claimed_tiles[0] != state.tick:
+            self._claimed_tiles = (state.tick, set())
+        self._claimed_tiles[1].update((int(e.navigation.position[0]), int(e.navigation.position[1])) for e in spawned)
+
     def free_spawn_position(self, pos: tuple[float, float], state: AuthoritativeState | None) -> tuple[float, float]:
         """LAW-OCCUPANCY-COLLISION: `pos` itself when its tile is clear, else the nearest clear tile (ring order,
         then y, then x: deterministic, no RNG). A tile is clear when no live entity is within `_SPAWN_REACH` tiles and no spawn
@@ -117,7 +123,7 @@ class EntityGenerator:
             if (bx + dx, by + dy) not in blocked:
                 claimed.add((bx + dx, by + dy))
                 return pos if (dx, dy) == (0, 0) else (float(bx + dx), float(by + dy))
-        raise NoFreeSpawnTile(f"no clear spawn tile within {_SPAWN_FREE_TILE_RADIUS} of {pos} at tick {state.tick}")
+        raise NoFreeSpawnTileError(f"no clear spawn tile within {_SPAWN_FREE_TILE_RADIUS} of {pos} at tick {state.tick}")
 
     def get_next_id(self) -> int:
         self._last_id += 1

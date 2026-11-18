@@ -4,6 +4,7 @@ from dataclasses import dataclass
 from typing import Set, Optional, Dict, TYPE_CHECKING
 
 from src.engine.lodging import lodging_triggers_phase
+from src.world.risen import rise_triggers_phase
 
 if TYPE_CHECKING:
     from src.core.state import AuthoritativeState
@@ -123,7 +124,7 @@ class PhaseDependencyGraph:
         # resource_transactions would otherwise see a stale clean dirty_set).
         if (phase_name in ("quest_rewards", "resource_transactions") and getattr(
             update, "quest_opportunity_reward_intents", None
-        )) or lodging_triggers_phase(phase_name, state, update):  # (3d, F3: a lodger's leave marks no movement; a bed claim must be granted before its service)
+        )) or lodging_triggers_phase(phase_name, state, update) or rise_triggers_phase(phase_name, state, cadence):  # (3d, F3: a lodger's leave marks no movement; a bed claim must be granted before its service)
             return True
 
         # 4. Dirty set short-circuiting

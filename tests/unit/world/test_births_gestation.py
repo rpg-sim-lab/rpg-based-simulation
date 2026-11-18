@@ -12,7 +12,7 @@ from src.domains.world_emergence.schema import WorldEventCategory
 from src.engine.apply import ApplyPath
 from src.engine.spatial_query import SpatialQueryService  # noqa: F401  (the births step reads it)
 from src.systems.lifecycle_systems.lifecycle import LifecycleSystem
-from src.systems.world_systems.generator import EntityGenerator, NoFreeSpawnTile
+from src.systems.world_systems.generator import EntityGenerator, NoFreeSpawnTileError
 from src.world import births
 from src.world.births import BirthService
 from tests.unit.world.test_births import _Catalog, _body, _conceptions, _generator, _run, _state
@@ -84,7 +84,7 @@ def test_g2_born_plus_unplaced_is_the_litter_drawn_and_an_unplaceable_newborn_is
         try:
             return next(spots)
         except StopIteration:
-            raise NoFreeSpawnTile("no clear tile") from None
+            raise NoFreeSpawnTileError("no clear tile") from None
 
     monkeypatch.setattr(generator, "free_spawn_position", free)
     update = BirthService.process_births(state, generator)
@@ -96,7 +96,7 @@ def test_g2_born_plus_unplaced_is_the_litter_drawn_and_an_unplaceable_newborn_is
 def test_a_litter_with_no_free_tile_at_all_clears_the_pregnancy_and_charges_nothing(certain, monkeypatch):
     state = _pregnant_at_term()
     generator = _generator(state)
-    monkeypatch.setattr(generator, "free_spawn_position", lambda pos, st: (_ for _ in ()).throw(NoFreeSpawnTile("no clear tile")))
+    monkeypatch.setattr(generator, "free_spawn_position", lambda pos, st: (_ for _ in ()).throw(NoFreeSpawnTileError("no clear tile")))
     update = BirthService.process_births(state, generator)
     assert not update.entities_add and update.entity_updates[1].lifecycle.pregnancy_clear
     assert update.entity_updates[1].biological is None or update.entity_updates[1].biological.is_noop()

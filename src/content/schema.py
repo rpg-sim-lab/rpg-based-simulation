@@ -102,6 +102,13 @@ class ReproductionProfileDefinition(CatalogBaseDefinition):
     min_mutual_sentiment: Optional[SentimentThreshold] = Field(None, description="The named sentiment line a bond gate needs (required with bond, absent with none)")
 
 
+class RisenProfileDefinition(CatalogBaseDefinition):
+    """How a kind that does not eat arises from a corpse (M1 risen origin): a chance per births-cadence check for each corpse of a listed species. The rise is a new subject (STR-02)."""
+    source_species: List[str] = Field(..., min_length=1, description="Species whose corpses can rise as this kind")
+    rise_chance_per_check: float = Field(..., ge=0.0, le=1.0, description="Chance an eligible corpse rises at one check")
+    risen_archetype: str = Field(..., min_length=1, description="Referenced EntityArchetypeDefinition ID whose body the risen subject is built from")
+
+
 class SenseProfileDefinition(CatalogBaseDefinition):
     """Schema for sensory perception factors."""
     vision: Optional[str] = Field(None)
@@ -225,6 +232,7 @@ class SpeciesDefinition(CatalogBaseDefinition):
     body_model: str = Field(..., description="Referenced BodyModelDefinition ID")
     need_profile: str = Field(..., description="Referenced NeedProfileDefinition ID")
     reproduction_profile: Optional[str] = Field(None, min_length=1, description="Optional. Referenced ReproductionProfileDefinition ID; absent means the kind has no births and the species loads exactly as before. A species that sets it must also set newborn_archetype, and its need profile must declare hunger")
+    risen_profile: Optional[str] = Field(None, min_length=1, description="Optional. Referenced RisenProfileDefinition ID; absent means no corpse rises as this kind")
     newborn_archetype: Optional[str] = Field(None, min_length=1, description="Optional, and applies only to a species with a reproduction_profile. Referenced EntityArchetypeDefinition ID whose body (stats, attributes, body model) a newborn of this species takes, with no role, occupation, equipment, inventory or job traits. Required when reproduction_profile is set, refused when it is not; absent otherwise. The archetype must belong to this species")
     sense_profile: str = Field(..., description="Referenced SenseProfileDefinition ID")
     cognition_profile: str = Field(..., description="Referenced CognitionProfileDefinition ID")
