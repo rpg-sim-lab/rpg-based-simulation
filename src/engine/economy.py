@@ -4,11 +4,10 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any, Dict, List, Optional
 from dataclasses import dataclass, fields, replace
 
-from src.core.conservation import ResourceTransactionResolver
+from src.core.conservation import PayeeMissingCounts, ResourceTransactionResolver
 from src.core.enums import ReasonCode
 from src.core.resource_regrowth import REGROW_MODE
 from src.core.state import IntentResult, ItemStack
-from src.core.payee_counts import PayeeMissingCounts
 from src.core.updates import EntityUpdate, StateUpdate, InventoryUpdate, RejectionEvent, ResourceTransferIntent, ChestUpdate
 from src.core.inventory import InventoryService
 from src.core.treasury import apply_transfer
@@ -338,7 +337,7 @@ class ResourceTransactionSystem:
     def _note_effects(res: Any, resource_updates: Dict[str, float], source_debits: Dict[int, InventoryUpdate], owed: list, intent: Optional[ResourceTransferIntent] = None) -> None:
         """Fold what an accepted transfer does beyond its own entity's inventory into the tick: a treasury change (into the same dict later
         transfers read their running balance from), what it took from another entity's inventory (an inheritance), and a debt it took on. A priced service that named no payee
-        (``payee_missing``: nothing was debited) is counted in `PayeeMissingCounts`, keyed by the intent's source and transfer kinds (observability only, not durable state; src/core/payee_counts.py)."""
+        (``payee_missing``: nothing was debited) is counted in `PayeeMissingCounts`, keyed by the intent's source and transfer kinds (observability only, not durable state; src/core/conservation.py)."""
         if getattr(res, "payee_missing", False) and intent is not None:
             PayeeMissingCounts.note(intent.source_kind, intent.transfer_kind)
         if res.treasury_update:

@@ -20,10 +20,10 @@ from typing import Any, Dict, List, Optional
 
 from src.ai.goals.kind_group import eats_outside_its_diet, is_person, kind_group
 from src.ai.goals.scorers_support import perceived_hostiles
+from src.core.conservation import PayeeMissingCounts
 from src.core.movement_modes import MovementMode
 from src.core.region_resolution import is_inside_world
 from src.core.spawn_source import SpawnKind
-from src.core.payee_counts import PayeeMissingCounts
 from src.core.state import AuthoritativeState
 from src.core.treasury import total_coin
 from src.observability.events import SimulationEvent

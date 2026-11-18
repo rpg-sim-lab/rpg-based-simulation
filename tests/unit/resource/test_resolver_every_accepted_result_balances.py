@@ -296,7 +296,7 @@ def _fee(group_id=None):
 
 @pytest.fixture
 def counts():
-    from src.core.payee_counts import PayeeMissingCounts
+    from src.core.conservation import PayeeMissingCounts
 
     PayeeMissingCounts.reset()
     yield PayeeMissingCounts
@@ -343,7 +343,7 @@ def test_a_no_payee_fee_in_a_group_that_rolls_back_is_not_counted_but_a_committe
 
 def test_the_count_never_reaches_the_state_the_hash_reads(monkeypatch, counts):
     """Nothing in the simulation reads the counts: the refined update (what the apply path turns into the next state) is identical with the noter real or replaced by a no-op."""
-    from src.core.payee_counts import PayeeMissingCounts
+    from src.core.conservation import PayeeMissingCounts
 
     _, with_counter = _resolve_all([_fee()])
     monkeypatch.setattr(PayeeMissingCounts, "note", classmethod(lambda cls, source_kind, transfer_kind: None))
@@ -360,7 +360,7 @@ def test_only_the_economy_commit_path_writes_the_counts_and_only_the_run_ledger_
         text = path.read_text(encoding="utf-8")
         if "PayeeMissingCounts" in text:
             users[path.relative_to(root).as_posix()] = text
-    assert set(users) == {"core/payee_counts.py", "engine/economy.py", "observability/run_ledger.py"}, sorted(users)
+    assert set(users) == {"core/conservation.py", "engine/economy.py", "observability/run_ledger.py"}, sorted(users)
     economy, ledger = users["engine/economy.py"], users["observability/run_ledger.py"]
     assert "PayeeMissingCounts.note(" in economy and "PayeeMissingCounts.counts(" not in economy and "PayeeMissingCounts.reset(" not in economy
     assert "PayeeMissingCounts.counts(" in ledger and "PayeeMissingCounts.reset(" in ledger and "PayeeMissingCounts.note(" not in ledger

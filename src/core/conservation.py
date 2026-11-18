@@ -265,6 +265,33 @@ def is_no_payee(state: Any, intent: ResourceTransferIntent) -> bool:
     return not names_a_building and intent.treasury_faction is None
 
 
+class PayeeMissingCounts:
+    """A count of priced services that named no payee (`is_no_payee`; EXCH-02, TCK-20261118-A-SERVICE-PAYMENT-WITH-NO-PAYEE-DESTROYS-COIN). OBSERVABILITY ONLY, never durable state.
+
+    The resolver debits nothing for such a service, so it goes ahead without a charge; the applied update no longer carries the resolved intents, so the engine counts each one when it
+    commits it. Written ONLY by `src.engine.economy.ResourceTransactionSystem._note_effects` (`note`, on the commit path: a group trial passes no intent); read and reset ONLY by
+    `src.observability.run_ledger.RunLedger` (`counts`, `reset`), which carries it in the closing tally. Nothing in the simulation reads it, so the state hash cannot depend on it (tests pin
+    both). It lives in this core module because the layer contract allows engine -> core and observability -> core, not engine -> observability. Keys are "<source_kind>|<transfer_kind>"."""
+
+    _counts: Dict[str, int] = {}
+
+    @classmethod
+    def note(cls, source_kind: str, transfer_kind: str) -> None:
+        """Count one committed priced service that named no payee."""
+        key = f"{source_kind}|{transfer_kind}"
+        cls._counts[key] = cls._counts.get(key, 0) + 1
+
+    @classmethod
+    def counts(cls) -> Dict[str, int]:
+        """A copy of the counts, keys sorted."""
+        return dict(sorted(cls._counts.items()))
+
+    @classmethod
+    def reset(cls) -> None:
+        """Clear the counts (run start, and test teardown)."""
+        cls._counts = {}
+
+
 def _service_result(state: Any, intent: ResourceTransferIntent, target_inventory: InventoryComponent) -> TransactionResult:
     """A paid service or fee. The payee is the service building's purse, else the treasury the intent names, else (an unnamed payee) nobody. What the payer is debited is exactly what the
     payee receives (EXCH-02: every coin is some purse's coin): ``paid`` = the price, as far as the payer's purse (the running inventory at resolve time) reaches, and with no payee nothing is
