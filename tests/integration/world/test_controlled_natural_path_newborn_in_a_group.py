@@ -23,7 +23,16 @@ C3 is read from the kernel state every tick for each newborn and each watched id
 hunger >= STARVING_LINE or death by STARVATION is a BLOCK; each newborn must have >= 201 reads or a typed death (its cause is reported). The checker is a pure function (``violations``) positive-controlled below with planted rows.
 
 Natural-run in-group evidence is NOT this test: S9 cell 2 (s9-56dd071ea-002, urban_political s42 5000t) has the human CHILD 31 (mother 2) in 6 formation groups over 469 grouped ticks, no C1/C2/C3,
-validated by rpg-planner-ubuntu's row cross-check. This test is the controlled arm only; it is not full lifecycle evidence.
+validated by rpg-planner-ubuntu's row cross-check. This test is the controlled arm only; it is not full lifecycle evidence. It stays a CONTROLLED NATURAL-PATH row, separate from the natural-run
+evidence (owner rule, #715 6971915608).
+
+Litter leg (rpg-designer-ubuntu, ruling (c) of 2026-11-18): at least one newborn must be ALIVE at the end with the full W+1 = 201 reads and no C3 (``litter_blocks``); a litter that all dies early by a
+typed non-starvation death passes ``needs_blocks`` per newborn but FAILS this leg.
+
+Guard leg, NOT claimed as tested coverage: the mother's-group leg has almost no data on this set-up. The parents 24 and 26 died of COMBAT at t124 and t122 (2 and 4 reads), so the watched-member check is
+a guard, near-vacuous here. The deaths are disclosed, not called unrelated: a control without the pregnancy write (same kernel, world, seed, ticks) shows 24 and 26 still die of COMBAT to humans (t137, t126),
+but the runs diverge from about t111, after the pregnancy write at t90, so the pregnancy shifts who kills the parents and when (an expected consequence: a pregnant body behaves differently and leaves the
+pool). Evidence: /data/vboxuser/births-runs/control-combat-7a76f4a35/ with its SHA256SUMS. The watched members' read counts are printed in MEASURED.
 Determinism: the WHOLE facts dict (final state hash, outcome, groups, needs reads, counts) is equal under PYTHONHASHSEED 0 and 1 (two subprocesses of ``scenario()``).
 Budget: see the measured time in the report; marked slow if the determinism pair exceeds 60 s.
 """
@@ -112,6 +121,12 @@ def needs_blocks(log, newborn_ids, window=WINDOW + 1):
     return out
 
 
+def litter_blocks(log, newborn_ids, window=WINDOW + 1):
+    """Across the litter: at least one newborn is alive (no death record) with the full ``window`` reads and no C3; otherwise one ('LITTER', 'no newborn survived the window') entry."""
+    alive = [eid for eid in newborn_ids if log.get(eid, {}).get("death") is None and log.get(eid, {}).get("reads", 0) >= window and log[eid]["c3"] is None]
+    return [] if alive else [("LITTER", sorted(newborn_ids), "no newborn alive with the full reads")]
+
+
 def violations(hits, newborn_ids, watched, newborn_groups, typed_dissolved):
     """Pure checker. Returns the list of failures: a C3 on the newborn or any watched member (BLOCK); a C1/C2 hit in a newborn group without a typed dissolution (FINDING)."""
     out = []
@@ -180,7 +195,7 @@ def scenario():
         reasons = {str(gid): spy.group_seen.get(gid, {}).get("dissolution_reason") for gid in sorted(typed)}
         facts.update({
             "outcome": "formed_group" if newborn_groups else "ungrouped", "newborn_groups": sorted(newborn_groups), "grouped_ticks": grouped_ticks, "typed_dissolved_groups": sorted(typed), "dissolution_reasons": reasons, "untyped_vanished_groups": untyped_vanished,
-            "needs": {str(k): v for k, v in sorted(needs.items())},
+            "needs": {str(k): v for k, v in sorted(needs.items())}, "watched_reads": {str(k): needs[k]["reads"] for k in sorted(watched)},
             "watched": sorted(watched), "rows_members": sorted(spy.rows), "row_count": sum(len(r) for r in spy.rows.values()), "ticks_after_birth": final.tick - due,
             "hits": {str(k): sorted(v) for k, v in hits.items()}, "final_hash": CanonicalStateHasher.get_hash(final), "final_tick": final.tick,
             "_hits": hits, "_newborn_ids": set(newborn_ids), "_watched": watched, "_newborn_groups": newborn_groups, "_dissolved": typed, "_needs": needs,
@@ -202,6 +217,7 @@ def test_the_engine_bears_the_newborn_and_it_forms_a_group_or_stays_ungrouped_wi
     assert not facts["untyped_vanished_groups"], f"FINDING: a newborn group vanished without a typed dissolution: {facts['untyped_vanished_groups']}"
     blocks = needs_blocks(facts["_needs"], facts["_newborn_ids"])
     assert not blocks, f"{blocks}: {facts['needs']}"
+    assert not litter_blocks(facts["_needs"], facts["_newborn_ids"]), f"no newborn alive at the end with the full reads: {facts['needs']}"
     deaths = {e: n["death"] for e, n in facts["_needs"].items() if n["death"] is not None}
     assert all(e not in facts["_newborn_ids"] or deaths[e]["cause"] != "STARVATION" for e in deaths), deaths
     print("MEASURED", {k: v for k, v in facts.items() if not k.startswith("_")})
@@ -263,7 +279,12 @@ def test_needs_reader_positive_controls_an_ungrouped_starving_newborn_blocks():
     log = {}
     other = type("R", (), {"tick": 7, "cause": type("C", (), {"value": "OLD_AGE"})()})()
     read_needs(log, _State(7, {99: _Body(0.1, other)}), {99})
-    assert needs_blocks(log, {99}) == [] and log[99]["death"]["cause"] == "OLD_AGE" and log[99]["reads"] == 0  # a typed non-starvation death ends the reads without a gap
+    assert needs_blocks(log, {99}) == [] and log[99]["death"]["cause"] == "OLD_AGE" and log[99]["reads"] == 0
+    assert litter_blocks(log, {99}) != []  # the litter leg: every newborn dying early by a typed non-starvation death passes needs_blocks but FAILS here
+    log = {}
+    for t in range(WINDOW + 1):
+        read_needs(log, _State(t, {98: _Body(0.1), 99: _Body(0.1, other if t > 5 else None)}), {98, 99})
+    assert litter_blocks(log, {98, 99}) == [] and needs_blocks(log, {98, 99}) == []  # one survivor with the full reads, one early typed death: passes  # a typed non-starvation death ends the reads without a gap
 
 
 @pytest.mark.slow
