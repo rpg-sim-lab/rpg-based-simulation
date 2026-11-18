@@ -68,3 +68,9 @@ Ubuntu fills in each `verified` block from the births own-job evidence, using a 
 - **Tests for the births rise:**
   - a body looted on the rise tick doesn't rise with goods it no longer has;
   - a re-added body follows the applied outcome.
+
+## CORRECTION from rpg-planner (u24), 2026-11-18. This supersedes the "cadence.py" binding line above.
+- Do NOT bind src/engine/cadence.py under corpse_rising.
+  - On main, cadence.py has no binding at all, and completeness is green without one, so it is outside the unbound check.
+  - It is a shared config module that holds every phase's cadence. Binding it to one mechanism would claim that cadence.py implements the rise.
+- Instead, name `cadence.rises` (default 30) in corpse_rising's note.
