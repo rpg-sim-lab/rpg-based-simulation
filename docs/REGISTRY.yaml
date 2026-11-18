@@ -8001,6 +8001,20 @@
   artifact_files: []
   tags: []
 - type: ticket
+  path: agent-working/tickets/todos/TCK-20261118-A-REMOVED-BLOCKER-FORGETS-ITS-FAILURES-SO-A-RECURRING-ONE-RESTARTS-WITH-NO-BACKOFF.md
+  ticket_id: TCK-20261118-A-REMOVED-BLOCKER-FORGETS-ITS-FAILURES-SO-A-RECURRING-ONE-RESTARTS-WITH-NO-BACKOFF
+  title: When the quiet-spell rule removes a blocker, its failure_count and backoff
+    go with it, so a blocker that recurs is re-inferred fresh at failure_count 0 and
+    a resolve_blocker project is rebuilt within ticks
+  tier: standard
+  ticket_type: bug
+  date: '2026-11-18'
+  related_code_areas:
+  - src/systems/strategic_systems/blocker_lifecycle.py (quiet_spell_update, reinferred_blockers_update),
+    intelligence.py (infer_blockers)
+  artifact_files: []
+  tags: []
+- type: ticket
   path: agent-working/tickets/todos/TCK-20261118-A-SUBJECT-WITH-A-STANDING-HELP-NEED-RE-DECIDES-SOLO-EVERY-TICK.md
   ticket_id: TCK-20261118-A-SUBJECT-WITH-A-STANDING-HELP-NEED-RE-DECIDES-SOLO-EVERY-TICK
   title: CooperationPhase re-runs the posture choice on every tick for any subject
@@ -8027,6 +8041,18 @@
   related_code_areas:
   - src/engine/core_actions.py, action_router.py, combat_actions.py, skill_actions.py,
     aoe_actions.py, lodging.py; src/core/updates.py (NavigationUpdate); src/engine/patches.py:290
+  artifact_files: []
+  tags: []
+- type: ticket
+  path: agent-working/tickets/todos/TCK-20261118-COOPERATION-STOPS-EARLY-IN-URBAN-S123-WHILE-FATIGUE-PILES-UP-AS-THE-CURRENT-PROJECT.md
+  ticket_id: TCK-20261118-COOPERATION-STOPS-EARLY-IN-URBAN-S123-WHILE-FATIGUE-PILES-UP-AS-THE-CURRENT-PROJECT
+  title: In urban_political s123 the last cooperation_event is around t1460-1630 of
+    5000, and late in every urban run 9-15 subjects hold 'fatigue' as their current
+    project; pre-existing on main, cause unread
+  tier: standard
+  ticket_type: bug
+  date: '2026-11-18'
+  related_code_areas: []
   artifact_files: []
   tags: []
 - type: ticket
