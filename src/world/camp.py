@@ -14,7 +14,6 @@ class CampService:
     """
 
     MATURITY_PER_TICK = 0.05
-    RAID_MATURITY_THRESHOLD = 80.0
     EXPAND_TERRITORY_MATURITY_BOOST = 1.0
 
     @staticmethod

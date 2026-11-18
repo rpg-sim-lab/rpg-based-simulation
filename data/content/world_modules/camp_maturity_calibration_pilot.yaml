@@ -1,4 +1,8 @@
 # STATE: ADDITIONAL
+# Since TCK-20261109-M1-BASIC-WILD-BIRTHS-FOR-EVERY-LIVING-KIND: the raid spawn (removed by D70,
+# divergence 2.125), the maturity gate and Nest-spread are all gone, and CampService.process_camps()
+# only grows maturity. This module now seeds near-threshold maturity so a test can show that a
+# matured camp adds no entity. The header below is kept as history.
 # TCK-20260904-CAMP-CONTENT-AUTHORING-BRIDGE: unit-tier isolation module proving
 # CampService.process_camps()'s raid and Nest-spread branches (RAID_MATURITY_THRESHOLD=80.0)
 # fire in a real, practical-length run. At the real production rate
@@ -14,7 +18,7 @@
 # production content). PlaceRecipeSpec.maturity is already a real, content-authorable field
 # (src/worldbuilding/schema.py, "CAMP/NEST-kind: growth-over-time value"), passed straight
 # through at compile time (WorldCompiler.compile(), `maturity=p_spec.maturity`) with zero code
-# change needed -- this module seeds it at 79.5, just under the real threshold, so
+# change needed -- this module seeds it at 79.9, just under the real threshold, so
 # `state.tick - camp.last_raid_tick >= 500` (last_raid_tick defaults to 0) is the only real gate
 # left, reachable in ~600 practical ticks. A dedicated NEW module (not editing the existing
 # shared goblin_camp_conflict/wolf_den_near_forest catalog entries) keeps this seed isolated to
@@ -23,7 +27,7 @@
 module_id: "camp_maturity_calibration_pilot"
 module_type: "ecology"
 display_name: "Camp Maturity Calibration Pilot"
-description: "Unit-tier isolation module seeding near-threshold camp/nest maturity to prove CampService's raid and Nest-spread branches fire in a practical-length run."
+description: "Unit-tier isolation module seeding near-threshold camp/nest maturity (79.9) so a practical-length run shows a matured camp adds no entity (raid spawn removed by D70, divergence 2.125; gate and Nest-spread removed by TCK-20261109-M1-BASIC-WILD-BIRTHS-FOR-EVERY-LIVING-KIND)."
 requires: ["frontier_village_core"]
 biomes: ["monster_calibration_zone"]
 ecologies: ["monster_calibration_ecology"]

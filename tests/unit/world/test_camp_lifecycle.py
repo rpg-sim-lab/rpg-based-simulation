@@ -122,7 +122,6 @@ def test_camp_flag_on_camp_kind_does_not_spread_or_raid():
         regions={"forest": RegionState(id="forest", name="The Deep Woods", kind="forest", bounds=(0, 0, 100, 100), trauma_score=10.0)},
         camps={"camp_1": CampState(id="camp_1", kind="goblin", position=(50, 50), maturity=90.0, last_raid_tick=0)},
         places={"town_1": PlaceState(place_id="town_1", region_id="forest", kind=PlaceKind.CITY, position=(10, 10))},
-        feature_flags={"ENABLE_CAMP_NEST_SPREAD": "ON"},
     )
     generator = EntityGenerator(seed=42)
 
@@ -141,7 +140,6 @@ def test_nest_spread_reuses_same_500_tick_cooldown_as_raid():
         seed=42,
         regions={"forest": RegionState(id="forest", name="The Deep Woods", kind="forest", bounds=(0, 0, 100, 100), trauma_score=10.0)},
         camps={"camp_1": CampState(id="camp_1", kind="wolf", position=(50, 50), maturity=90.0, last_raid_tick=0)},
-        feature_flags={"ENABLE_CAMP_NEST_SPREAD": "ON"},
     )
     generator = EntityGenerator(seed=42)
 
