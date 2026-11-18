@@ -45,6 +45,7 @@ Rule work comes first, for every item. rpg-designer and rpg-designer-ubuntu deci
 - **Cohort drift (M1 own-job check 6b).** The regional cohort count and live bodies drift apart by design (Bible 05, "Individual-Birth Population-Pressure Nudge"). This pass decides whether any drift needs a bound.
 - **Per-kind population curves.** Growth, plateau or decline per kind over a run.
 - **Provisional newborn bodies.** A newborn has an adult body until a child body scale exists (TCK-20261117-A-NEWBORN-HAS-AN-ADULT-BODY-UNTIL-A-CHILD-BODY-SCALE-EXISTS). This pass decides how that interacts with balance.
+- **Border-crossing births.** births writes the cohort nudge to the mother's region, but a newborn can be placed on a tile in a neighbouring region. rpg-designer (u24) ruled on 2026-11-18 that M1's check 6a counts by the mother's region, and reports the crossings as a BALANCE count with tiles, deferred to this pass. This pass decides whether the nudge should follow the newborn's tile.
 - **Regionless births.** births.py writes no cohort nudge when the birth region is None. M1 counts these and discloses "N births in no region added no cohort". This pass decides whether a regionless birth should exist at all (rpg-designer-ubuntu's checks 3-6 ruling, 6a).
 - **Births-touching follow-ups, tracked here so they are judged together, each owned by its own ticket:**
   - the per-tick SOLO re-decision (TCK-20261118-A-SUBJECT-WITH-A-STANDING-HELP-NEED-RE-DECIDES-SOLO-EVERY-TICK, rpg-planner);

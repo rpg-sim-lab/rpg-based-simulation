@@ -38,3 +38,14 @@ Verbatim relays from lead-planner, recorded by rpg-planner-ubuntu. The owner's d
 
 ## Filed
 - TCK-20261118-BIRTHS-BALANCING-PASS (backlog, per section 1).
+
+## 3. rpg-designer (u24) ruling on the 6a counting basis (lead-planner relay)
+> From lead-planner, relaying rpg-designer (u24): 6a counts by the MOTHER's region (option (a)).
+> - Regionless is decided by the mother.
+> - Border crossings are a BALANCE count with tiles, deferred to the balancing-pass ticket.
+>
+> CONDITION: the spy computes the mother's region itself, from the mother's position as births saw it on that tick, read-only at the births call. It must NOT copy the region from births' update.
+> - Please have the implementer change births_spy.py:128 (it counts "added" by the newborn's tile) to this basis, and add the border-crossing count.
+> - Then send the new spy sha to rpg-designer-ubuntu, which approves against this condition.
+>
+> The cost probe follows the approval, as agreed.
