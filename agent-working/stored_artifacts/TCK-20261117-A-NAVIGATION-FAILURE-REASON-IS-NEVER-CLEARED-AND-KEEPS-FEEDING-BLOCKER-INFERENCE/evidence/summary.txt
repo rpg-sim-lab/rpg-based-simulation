@@ -1,0 +1,29 @@
+command: failreason_move_summarizer.py --spy-dir cells_move --twin-dir cells_move
+INPUT f8ddac2c55eaff4237ebb359e197db391b0ed2e7c5b0546ccefffcd6f261e82c /mnt/data2/rpg-measure/failreason/diag2/cells_move/frontier_living_world_s42_spy.json
+INPUT ba865ce9a1d8cff8f2e13d4954a0cb7141a771a1822c5cec155633d30b4ed21a /mnt/data2/rpg-measure/failreason/diag2/cells_move/urban_political_s42_spy.json
+INPUT a50ba5ae13de1db95bd20e55face04a9f1e9073fa153c811bfb206a32ff7f38c /mnt/data2/rpg-measure/failreason/diag2/cells_move/crowded_frontier_s42_spy.json
+INPUT d9d6e05fc38124a519e86d2cdc998f19814645f585a2162995552703a43d0d16 /mnt/data2/rpg-measure/failreason/diag2/cells_move/driver.log
+INPUT 70dbba39559a206e7284450f149ed92e9aa9395be3fc9f0e85b2ededf23b64ac /mnt/data2/rpg-measure/failreason/diag2/cells_move/frontier_living_world_s42_plain.json
+INPUT 309fc6cd2b9021b53abfa46fc0b23de17fbf6f9cca1b895262b4595adeeed6f6 /mnt/data2/rpg-measure/failreason/diag2/cells_move/urban_political_s42_plain.json
+INPUT 8ca9562950678d6a53b925025e1fbb536594a9ce232a63f52e65f9f8231bc9ca /mnt/data2/rpg-measure/failreason/diag2/cells_move/crowded_frontier_s42_plain.json
+== frontier_living_world: bars {'L1_0': True, 'M1_0': True, 'M2_0': True, 'R2_0': True, 'reasons_set_ge1': True, 'reasons_cleared_ge1': True, 'l1_calls_ge1': True, 'spy_rc0': True, 'driver_rc0': True, 'PINNED': True, 'logging_errors0': True, 'exceptions_empty': True, 'match_true': True, 'hash_equals_plain_in_twin_dir': True, 'no_missing_hook': True}
+   L1 0 (l1_calls 100352)  M1 0  M2 0  R2 0  reasons_set 2894  reasons_cleared 2882
+   moves {'all': 56052, 'step': 55746, 'swap': 300, 'yield': 13}  yields_proposed 13  swaps_proposed 300  occupancy_conflict_rejections 11  moves_without_kind 0  lodging_position_changes_excluded 419
+   action codes after a move, by primary writer: {'core_actions.interact_released': 1}  by code: {'SOURCE_DEPLETED': 1}
+   v1 (not bars): R1 1 of 55746 success steps, R3 0 of 3028 failed steps; blockers filed: {'congestion': 10229}
+    v1_r1_rows {'eid': 3, 'last_failure_reason': 'SOURCE_DEPLETED', 'tick': 337, 'writers_of_that_code': ['core_actions.interact_released', 'core_actions.execute_interact', 'action_router.execute_action']}
+== urban_political: bars {'L1_0': True, 'M1_0': True, 'M2_0': True, 'R2_0': True, 'reasons_set_ge1': True, 'reasons_cleared_ge1': True, 'l1_calls_ge1': True, 'spy_rc0': True, 'driver_rc0': True, 'PINNED': True, 'logging_errors0': True, 'exceptions_empty': True, 'match_true': True, 'hash_equals_plain_in_twin_dir': True, 'no_missing_hook': True}
+   L1 0 (l1_calls 39477)  M1 0  M2 0  R2 0  reasons_set 2623  reasons_cleared 2610
+   moves {'all': 22990, 'step': 22922, 'swap': 58, 'yield': 12}  yields_proposed 12  swaps_proposed 58  occupancy_conflict_rejections 404  moves_without_kind 0  lodging_position_changes_excluded 2807
+   action codes after a move, by primary writer: {'core_actions.interact_released': 1}  by code: {'SOURCE_DEPLETED': 1}
+   v1 (not bars): R1 1 of 22923 success steps, R3 1 of 3092 failed steps; blockers filed: {'congestion': 3862}
+    v1_r1_rows {'eid': 8, 'last_failure_reason': 'SOURCE_DEPLETED', 'tick': 242, 'writers_of_that_code': ['core_actions.interact_released', 'core_actions.execute_interact', 'action_router.execute_action']}
+    v1_r3_rows {'eid': 6, 'last_failure_reason': None, 'step_code': 'occupancy_violation', 'tick': 1130, 'writers_of_that_code': []}
+== crowded_frontier: bars {'L1_0': True, 'M1_0': True, 'M2_0': True, 'R2_0': True, 'reasons_set_ge1': True, 'reasons_cleared_ge1': True, 'l1_calls_ge1': True, 'spy_rc0': True, 'driver_rc0': True, 'PINNED': True, 'logging_errors0': True, 'exceptions_empty': True, 'match_true': True, 'hash_equals_plain_in_twin_dir': True, 'no_missing_hook': True}
+   L1 0 (l1_calls 23467)  M1 0  M2 0  R2 0  reasons_set 1012  reasons_cleared 991
+   moves {'all': 12501, 'step': 12425, 'swap': 70, 'yield': 8}  yields_proposed 8  swaps_proposed 70  occupancy_conflict_rejections 14  moves_without_kind 0  lodging_position_changes_excluded 958
+   action codes after a move, by primary writer: {}  by code: {}
+   v1 (not bars): R1 0 of 12425 success steps, R3 1 of 1077 failed steps; blockers filed: {'congestion': 3379}
+    v1_r3_rows {'eid': 2, 'last_failure_reason': None, 'step_code': 'occupancy_violation', 'tick': 763, 'writers_of_that_code': []}
+== across cells: moves by kind {'step': 91093, 'swap': 428, 'yield': 33}  each kind >= 1: True
+RESULT: ALL HARD BARS HOLD
