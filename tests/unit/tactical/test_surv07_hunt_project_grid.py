@@ -76,7 +76,7 @@ def test_a_human_hunter_does_not_perceive_a_still_small_prey_at_three_tiles(worl
     """PERC-02a law (rpg-designer, owner-approved #715 6966454372): a still small body is perceived only by touch (distance 1 or less) or by a strong enough sense, so a human
     hunter does not find still small prey three tiles away: not perceived, not chosen, no walk toward it."""
     from src.engine.behavior_consumers import get_entity_signals, get_perception_gate
-    payload, update, hunter, prey, ents = _decide(world, "human", prey_dx=3.0, check_prey=False)
+    payload, update, hunter, prey, ents = _decide(world, "human", prey_dx=3.0, project=None, check_prey=False)      # no hunt project: nothing names the prey (a held project walks to its named target lawfully, #715 6967398421)
     state_tick = world.tick + 1
     gate = get_perception_gate().can_perceive(hunter, get_entity_signals(prey, state_tick), {"distance": 3.0, "reach": 3.0, "night": False})
     assert gate.perceived is False and gate.signals_used == []
