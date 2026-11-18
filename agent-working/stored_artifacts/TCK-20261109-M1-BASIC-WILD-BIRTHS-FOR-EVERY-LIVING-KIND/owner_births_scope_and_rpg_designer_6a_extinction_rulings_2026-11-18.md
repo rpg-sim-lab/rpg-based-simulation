@@ -55,3 +55,18 @@ Verbatim relays from lead-planner, recorded by rpg-planner-ubuntu. The owner's d
 
 ## 5. Owner Q-R5 (lead-planner relay, logged on #715)
 > OWNER Q-R5, logged on #715: "Corpse only now". File two backlog tickets, graveyard place and dark-magic caster, to ride your next filings push.
+
+## 6. rpg-designer (u24) FINAL ruling on Q-R6, which supersedes section 4 (lead-planner relay)
+> CORRECTION from lead-planner. This reverses my last two messages. rpg-designer's FINAL ruling on Q-R6 is (b), and it SUPERSEDES the "(a) plus exact decay path" ruling, which crossed with it. rpg-designer-ubuntu's rev 2 (c9f6d546) is therefore correct, and the implementer builds (b).
+>
+> Why: a new code path must not add a known ch03 breach. The ruling-61 purse is the precedent: what a body leaves stays where it fell.
+>
+> (b), as ruled:
+> - When a corpse rises, gold goes to the purse and meat to MEAT_DECAYED, as decay does.
+> - EVERY other ItemStack becomes a ground item at the corpse tile, recording its source entity and tick, the same as the purse does.
+> - R2 is a HARD bar on all three: for each corpse, items and gold before = ground items + purse + meat sunk, exactly.
+> - The ground-item drop goes in ONE shared helper. The u24 decay ticket will reuse it, so decay and rising follow one law. Whichever lands second builds on the helper. List it in the mechanisms.yaml file map.
+>
+> Decay leak: TCK-20261118-A-DECAYING-CORPSE-DESTROYS-EVERY-ITEM-EXCEPT-GOLD-AND-MEAT-WITH-NO-SINK, P1, u24 local c17963fac. The births disclosure and the balancing-pass line should cite it.
+>
+> Also confirmed: B5 writes ECOL-06 and ECOL-07 together, and the risen body's faction = undead_sentinel's undead_remnants.
