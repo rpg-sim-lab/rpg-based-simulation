@@ -7,12 +7,14 @@ carries the returned `StrategicUpdate` through the authoritative apply path.
 from __future__ import annotations
 
 from dataclasses import dataclass, replace
-from typing import Any, Callable, Optional
+from typing import Any, Callable, Mapping, Optional
 
 from src.core.state import EntityState
 from src.core.strategic import (
+    BlockerState,
     ProjectState,
     ProjectStatus,
+    ended_blocker_stamps,
     live_projects,
     project_target_matches,
     same_kind_record,
@@ -63,13 +65,14 @@ def orphan_switch_candidate(route: LiveRecordRoute, candidate: ProjectState, uti
     return replace(route.orphan, score=utility, lock_until_tick=min(current_tick + 10, current_tick + 50))
 
 
-def supersede_on_win(switch_up: Optional[StrategicUpdate], route: LiveRecordRoute, candidate: ProjectState, tick: Optional[int] = None) -> Optional[StrategicUpdate]:
+def supersede_on_win(switch_up: Optional[StrategicUpdate], route: LiveRecordRoute, candidate: ProjectState, tick: Optional[int] = None, blockers: Optional[Mapping[str, BlockerState]] = None) -> Optional[StrategicUpdate]:
     """A winning candidate at a DIFFERENT target ends the live record of its kind, cap-neutral (the gate was not consulted). Only that one record ends; older same-kind duplicates
     are left to the existing trims. The update that makes the candidate current also ends the record, with the typed reason. A loss, or a matching target, changes nothing."""
     existing = route.existing
     if not switch_up or existing is None or route.target_matches or existing.id == candidate.id:
         return switch_up
+    ended = supersede_record(existing, tick)
     return replace(switch_up, projects_add_or_update=[
-        supersede_record(existing, tick),
+        ended,
         *[p for p in switch_up.projects_add_or_update if p.id != existing.id],
-    ])
+    ], blockers_add_or_update=[*switch_up.blockers_add_or_update, *ended_blocker_stamps(blockers or {}, [ended])])  # 2.214: the same update stamps the blocker a resolve_blocker's end names

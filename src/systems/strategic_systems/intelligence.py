@@ -72,7 +72,7 @@ from src.engine.policy import GovernorPolicy
 from src.core.strategic import (
     BlockerState, LeadState, LeadCertainty,
     ProjectState, ProjectStatus, ObjectiveState, ObjectiveStatus,
-    CognitionProfile, ProjectKind, GoalKind, ObjectiveKind, has_project_capacity, restart_clear_window, suspend_record, expire_suspended, end_record, typed_completion, ProjectEnd, blocker_timeout_suppression, CONGESTION_BLOCKER_ID, with_live_current_score
+    CognitionProfile, ProjectKind, GoalKind, ObjectiveKind, has_project_capacity, restart_clear_window, suspend_record, expire_suspended, end_record, typed_completion, ProjectEnd, blocker_timeout_suppression, CONGESTION_BLOCKER_ID, with_live_current_score, ended_blocker_stamps
 )
 from src.engine.spatial_query import SpatialQueryService
 from src.systems.strategic_systems.blocker_lifecycle import reinferred_blockers_update
@@ -1298,6 +1298,7 @@ class StrategicIntelligenceSystem:
         current_ends = any(p.id == current and p.status == ProjectStatus.ABANDONED for p in written)
         return StrategicUpdate(
             projects_add_or_update=written,
+            blockers_add_or_update=ended_blocker_stamps(entity.strategic.blockers, written),  # 2.214: the same update stamps the blocker a resolve_blocker's end names
             current_project_id_set="" if current_ends else None,
             current_objective_id_set="" if current_ends else None,
         )
@@ -1525,7 +1526,7 @@ class StrategicIntelligenceSystem:
                         b = strat.blockers.get(blocker_id)
                         if b and not b.resolved:
                             failures = b.failure_count + 1  # divergence 2.214: the suppression doubles with each timeout of the same blocker (100, 200, 400, 800, capped)
-                            blocker_updates.append(replace(b, failure_count=failures, suppression_until_tick=current_tick + blocker_timeout_suppression(failures)))
+                            blocker_updates.append(replace(b, failure_count=failures, suppression_until_tick=current_tick + blocker_timeout_suppression(failures), last_project_end_tick=current_tick))
                     return StrategicUpdate(
                         projects_add_or_update=[end_record(project, ProjectStatus.ABANDONED, ProjectEnd.BLOCKER_TIMEOUT, current_tick)],
                         current_project_id_set="",
@@ -1817,7 +1818,7 @@ class StrategicIntelligenceSystem:
                 return StrategicUpdate()
 
             switch_up = StrategicIntelligenceSystem.evaluate_project_switch(with_live_current_score(entity, modified_scores), candidate_proj, current_tick, state=state)
-            switch_up = supersede_on_win(switch_up, route, candidate_proj, current_tick)
+            switch_up = supersede_on_win(switch_up, route, candidate_proj, current_tick, entity.strategic.blockers)
             if switch_up:
                 # TCK-20260812-COMMITTED-INTENTION-SEQUENCE: win-transition bookkeeping. Only
                 # fires when the winning candidate is THIS tick's synthesized committed-intention

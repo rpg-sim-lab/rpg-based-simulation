@@ -310,14 +310,19 @@ class BlockerState:
     failure_count: int = 0
     # The tick this blocker was last inferred (observed); None until then. The quiet spell (`BLOCKER_QUIET_SPELL_TICKS`) counts from it. Refreshed by a re-inference.
     last_seen_tick: Optional[int] = None
+    # The tick the latest resolve_blocker project naming this blocker ended (any typed end), written by the SAME update that ends it (`ended_blocker_stamps`), so the quiet spell still holds
+    # when the capacity trim drops the ended record in its end tick. None until a project naming it ends. Appended LAST; omitted from the canonical dict while None.
+    last_project_end_tick: Optional[int] = None
 
     def canonical_dict(self) -> Dict[str, Any]:
-        """The canonical-dict entry of this blocker: every field, `failure_count` and `last_seen_tick` omitted while at their default."""
+        """The canonical-dict entry of this blocker: every field, `failure_count`, `last_seen_tick` and `last_project_end_tick` omitted while at their default."""
         out = dataclasses.asdict(self)
         if self.failure_count == 0:
             del out["failure_count"]
         if self.last_seen_tick is None:
             del out["last_seen_tick"]
+        if self.last_project_end_tick is None:
+            del out["last_project_end_tick"]
         return out
 
 
@@ -348,19 +353,24 @@ def merge_inferred_blocker(stored: Optional[BlockerState], inferred: BlockerStat
 
 
 def quiet_blockers(blockers: Mapping[str, BlockerState], projects: Mapping[str, "ProjectState"], tick: int) -> List[str]:
-    """The ids of the congestion blockers to remove at ``tick``: `BLOCKER_QUIET_SPELL_TICKS` of observable quiet, i.e. tick >= max(last_seen_tick, suppression_until_tick, the latest ``ended_tick`` of a
-    resolve_blocker project naming it) + the spell, and never while a live (ACTIVE or SUSPENDED) resolve_blocker project names it. A congestion blocker with no last-seen tick (a checkpoint from before
-    the field) is not removed here; the caller stamps it on first sight."""
-    live, last_end = set(), {}
-    for p in projects.values():
-        if p.kind == "resolve_blocker" and p.objectives:
-            target = p.objectives[0].target
-            if p.status in (ProjectStatus.ACTIVE, ProjectStatus.SUSPENDED):
-                live.add(target)
-            last_end[target] = max(last_end.get(target, 0), p.ended_tick or 0)
+    """The ids of the congestion blockers to remove at ``tick``: `BLOCKER_QUIET_SPELL_TICKS` of observable quiet, i.e. tick >= max(last_seen_tick, suppression_until_tick, last_project_end_tick) + the spell,
+    and never while a live (ACTIVE or SUSPENDED) resolve_blocker project names it. A congestion blocker with no last-seen tick (a checkpoint from before the field) is not removed here; the caller stamps
+    it on first sight."""
+    live = {p.objectives[0].target for p in projects.values()
+            if p.kind == "resolve_blocker" and p.status in (ProjectStatus.ACTIVE, ProjectStatus.SUSPENDED) and p.objectives}
     return [b.id for b in blockers.values()
             if b.id == CONGESTION_BLOCKER_ID and b.id not in live and b.last_seen_tick is not None
-            and tick >= max(b.last_seen_tick, b.suppression_until_tick, last_end.get(b.id, 0)) + BLOCKER_QUIET_SPELL_TICKS]
+            and tick >= max(b.last_seen_tick, b.suppression_until_tick, b.last_project_end_tick or 0) + BLOCKER_QUIET_SPELL_TICKS]
+
+
+def ended_blocker_stamps(blockers: Mapping[str, BlockerState], ended: Iterable["ProjectState"]) -> List[BlockerState]:
+    """The stored blockers re-written with ``last_project_end_tick`` for the resolve_blocker projects in ``ended`` (records just ended through `end_record`): the latest end of a project naming each blocker.
+    The update that ends the project carries these, so the bound survives the project record being trimmed. A blocker no longer stored, or an end that is not newer, yields nothing."""
+    latest: Dict[str, int] = {}
+    for p in ended:
+        if p.kind == "resolve_blocker" and p.objectives and p.ended_tick is not None and p.objectives[0].target in blockers:
+            latest[p.objectives[0].target] = max(latest.get(p.objectives[0].target, 0), p.ended_tick)
+    return [dataclasses.replace(blockers[i], last_project_end_tick=t) for i, t in sorted(latest.items()) if (blockers[i].last_project_end_tick or -1) < t]
 
 
 @dataclass(frozen=True, slots=True)
