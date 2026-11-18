@@ -8001,6 +8001,19 @@
   artifact_files: []
   tags: []
 - type: ticket
+  path: agent-working/tickets/todos/TCK-20261118-A-DIAGNOSTIC-KIT-PREFLIGHT-CHECKS-EACH-KIT-ON-BOTH-FROZEN-TREES-BEFORE-ITS-RUN.md
+  ticket_id: TCK-20261118-A-DIAGNOSTIC-KIT-PREFLIGHT-CHECKS-EACH-KIT-ON-BOTH-FROZEN-TREES-BEFORE-ITS-RUN
+  title: 'An automatic preflight for every measurement kit (spy, probe, runner, summarizer):
+    sha, import, a short fixture run and field liveness on both frozen trees, with
+    its output in the S9 packet'
+  tier: standard
+  ticket_type: feature
+  date: '2026-11-18'
+  related_code_areas:
+  - tools/rpg_measure/
+  artifact_files: []
+  tags: []
+- type: ticket
   path: agent-working/tickets/todos/TCK-20261118-A-SUBJECT-WITH-A-STANDING-HELP-NEED-RE-DECIDES-SOLO-EVERY-TICK.md
   ticket_id: TCK-20261118-A-SUBJECT-WITH-A-STANDING-HELP-NEED-RE-DECIDES-SOLO-EVERY-TICK
   title: CooperationPhase re-runs the posture choice on every tick for any subject
