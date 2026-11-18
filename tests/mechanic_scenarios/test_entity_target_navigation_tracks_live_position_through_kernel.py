@@ -42,7 +42,7 @@ WORLD_ID = "frontier_extended"
 SEED = 42
 TICKS = 60
 FIRST, SECOND = 12, 44                   # compiled bodies of frontier_extended s42: a human of the merchant_league (hp80, the WITHDRAWING side: posture AVOID toward the undead) and an undead of undead_remnants (hp130, ENGAGE)
-DISTANCE = 8                            # tiles apart in a row (Chebyshev = Manhattan); TRIAL value
+DISTANCE = 8  # tiles apart in a row (Chebyshev = Manhattan); the owner-approved scenario distance (#715 6974976880)
 FIRST_AT, SECOND_AT = (10.0, 10.0), (10.0 + DISTANCE, 10.0)  # a clear row of plain tiles (asserted in _arena: in bounds, passable, no building, nobody on it)
 N_FLOOR = 9  # pursuit ticks per side: owner chose 9 (#715 6974976880), the measured minimum, below the designer's pre-data floor 10; trips on any lawful change to the closing phase
 # Navigation steps one axis at a time, so a live target is allowed to lag the opponent by one step.
