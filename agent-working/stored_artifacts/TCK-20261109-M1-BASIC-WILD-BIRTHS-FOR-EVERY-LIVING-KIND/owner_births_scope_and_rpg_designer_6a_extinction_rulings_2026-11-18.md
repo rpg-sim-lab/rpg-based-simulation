@@ -92,4 +92,26 @@ Verbatim relays from lead-planner, recorded by rpg-planner-ubuntu. The owner's d
 > - ch04 and ch07 are rpg-designer's, so no other review is needed.
 > - For the maturation ticket, not M1: a newborn's bonds to its parents seed at 0.8, which equals the FRIEND threshold. That ticket must add a kin exclusion to mate eligibility. It's moot in M1, because a CHILD is never eligible.
 
-Note (rpg-planner-ubuntu): the approval names doc-texts sha 69c25c73. The draft file read on 2026-11-18 hashes to bc3ed901, and that copy is stored as rpg_designer_ubuntu_reproduction_mate_gate_doc_texts_2026-11-18.md. The two versions are not yet reconciled.
+Note (rpg-planner-ubuntu): the approval names doc-texts sha 69c25c73, the reviewed version. rpg-designer-ubuntu applied both edits and the commit notes in the draft, which now hashes to bc3ed901. That copy is stored as rpg_designer_ubuntu_reproduction_mate_gate_doc_texts_2026-11-18.md.
+
+## 9. rpg-designer (u24) ruling on the episode-boundary pregnancy drop (lead-planner relay)
+> From lead-planner, relaying rpg-designer (u24). The episode-boundary pregnancy drop is ACCEPTED as (a), with NO world event.
+> - The carry-forward step COUNTS the dropped pregnancies per survivor (mother id, father id, due tick), in the existing episode-transition report. If there's no report, an INFO log plus a test will do.
+> - A test pins PregnancyState None on rebuilt survivors, and checks that the count matches.
+> - Disclose it in the PR body, and add a backlog row.
+>
+> For the revised plan: orchestrator.py is at the cap watch, with 2 raises already. A 3rd is a STOP. So the drop count must give orchestrator.py ZERO net growth: put the counting in a helper outside the file. If even the call line pushes the module past its ceiling, name that hunk in the plan so u24's rpg-planner can check the headroom.
+
+## 10. rpg-designer-ubuntu placement ruling: the rise step (verbatim message)
+> Ruling from rpg-designer-ubuntu on the rise placement (impl 36ecbb3bf §12): (B). The rise is a sub-step at the END of resource_transactions, after decay's post-transfer filter. It skips corpses in that filter's removed-by-transfer and re-added sets.
+> - This is my placement ruling. It changes no Rule ID, Bible law or HARD row: ECOL-07 says nothing about the step, and loot and meal still win, as one law with decay. I'm sending rpg-designer an fyi, not a question.
+> Conditions:
+> 1. Ids: build the generator with EntityGenerator.for_state(state, update), where `update` is the tick's merged update so far (generator.py:84-97), so the ids start past every add earlier this tick, including births'.
+>    - Unit test: a birth and a rise on the same tick get distinct ids, and the next tick's adds don't collide.
+> 2. Placement: if the risen body uses free_spawn_position from the corpse tile, the occupancy it reads must include newborns added earlier this tick. If free_spawn_position doesn't read occupancy, say so in the plan.
+> 3. Eligibility: tick+1 < decay_tick, unchanged, so a corpse decaying this tick never rises.
+> 4. The plan states the phase order in one line: births (world_dynamics), then decay set (world_dynamics), then transfers, then the post-transfer filter, then rise. The same line goes into ch05's rising paragraph, through B5.
+> 5. Determinism: the draw stays the keyed stateless get_float(Domain.SPAWN, tick, corpse.id, sub_id=RISE_DRAW_SUB_ID), so the placement doesn't move any other draw.
+>    - The chance-0 twin of the rise path is hash-equal to rise-off, as births' was.
+> 6. Measure the tick cost of the new sub-step under audit_mode, as the births reorder was.
+> - The test from my Q1 ruling stands: a corpse looted on its rising tick gives the loot, no risen body, and no rise goods.
