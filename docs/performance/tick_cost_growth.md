@@ -196,7 +196,7 @@ Phase figures are medians of the three runs. All three worlds exceed the 10 % no
 | `groups` (:412) | 1.9 % | 1.6 % | 1.2 % |
 | `world_dynamics` (:344) | n/a | 5.7 % | 5.0 % |
 
-`resolution_overhead` itself was 26 % / 29 % / 22 % of the tick unprofiled, so the pass is 85 to 100 % of it, as H5 found. Not one of the others is above 6 %. The unnamed remainder is under 10 % of `resolution_overhead`. `combat_engagement` (:322, 15 to 17 %) and `cooperation` (:219, 6 to 8 %) are timed sub-phases and are not part of the overhead.
+`resolution_overhead` itself was 26 % / 29 % / 22 % of the tick unprofiled, so the pass is of the same size as the overhead (py-spy shares run a little above the unprofiled ones), as H5 found. Not one of the others is above 6 %. The unnamed remainder is under 10 % of `resolution_overhead`. `combat_engagement` (:322, 15 to 17 %) and `cooperation` (:219, 6 to 8 %) are timed sub-phases and are not part of the overhead.
 
 Inside `fused_strategic_pass`:
 
@@ -214,11 +214,11 @@ Inside `fused_strategic_pass`:
 
 | item | share now (urban / frontier_living / crowded) | before | verdict |
 |---|---|---|---|
-| H1 `is_hostile_compat` (all lines) | about 3 % / 3 % / 1.6 % | 10 to 28 % | **gone** (down to a few lines of residue) |
-| H2 `cooperation get_candidates` | about 2.5 % / 1.8 % / 2 % | 10 to 61 % | **gone** |
-| H3 `EventRecorder.record` | about 0.8 % / 0.3 % / 0.4 % | 42.5 % (Oct), 0.69 % (10-22) | **gone**, stays under 1 % |
+| H1 `is_hostile_compat` (stacks containing it) | 3.2 % / 3.0 % / 3.4 % | 10 to 28 % | **reduced to about 3 %** (not zero) |
+| H2 `cooperation get_candidates` | 3.0 % / 2.3 % / 2.3 % | 10 to 61 % | **reduced to 2 to 3 %** |
+| H3 `EventRecorder.record` (`event_recorder.py` frames) | 1.0 % / 0.7 % / 0.5 % | 42.5 % (Oct), 0.69 % (10-22) | **gone** (about 1 %) |
 
-Shares are summed over the call-site lines and are inclusive (one py-spy run per world), so treat them as upper bounds with a point of noise.
+Shares are the fraction of all samples whose stack contains the function (each sample counted once), one py-spy run per world, about 1 point of noise.
 
 ### 10.4 Synthetic scenarios (R3, 2 runs each, 30 ticks after 5 warmup, `PROD_LARGE`)
 
