@@ -8394,6 +8394,20 @@
   - agent-working/stored_artifacts/TCK-20261117-THE-LABEL-READERS-READ-OCCUPATION-NOT-KIND/test_plan.md
   tags: []
 - type: ticket
+  path: agent-working/tickets/inprogress/TCK-20261117-A-NAVIGATION-FAILURE-REASON-IS-NEVER-CLEARED-AND-KEEPS-FEEDING-BLOCKER-INFERENCE.md
+  ticket_id: TCK-20261117-A-NAVIGATION-FAILURE-REASON-IS-NEVER-CLEARED-AND-KEEPS-FEEDING-BLOCKER-INFERENCE
+  title: NavigationComponent.last_failure_reason is written only when a failure carries
+    a code and is never cleared, so a stale PATH_NOT_FOUND/STUCK/OSCILLATING keeps
+    being read by infer_blockers on every strategic pass
+  tier: standard
+  ticket_type: bug
+  date: '2026-11-17'
+  related_code_areas:
+  - src/engine/patches.py:288, src/systems/strategic_systems/intelligence.py:176-202
+    and :495, src/engine/movement.py:362-365 and :456-472
+  artifact_files: []
+  tags: []
+- type: ticket
   path: agent-working/tickets/todos/TCK-20261117-A-BLOCKED-WALKER-HAS-NO-MEMORY-OF-ITS-DETOUR-HEADING.md
   ticket_id: TCK-20261117-A-BLOCKED-WALKER-HAS-NO-MEMORY-OF-ITS-DETOUR-HEADING
   title: A subject blocked by an obstacle longer than one step has no memory of its
