@@ -98,7 +98,8 @@ Found by rpg-planner-ubuntu. Inspected by lead-planner-u24 on 346c2dc78. Sites 1
 No new durable state. The check reads the catalog's species sense_profile when a body is built or restored. No record, field or clock is added.
 
 ## Assumptions / Open Questions
-- Priority P2 (rpg-designer): no M1 gate-world body goes through these sites, and no M1 measurement restores. It becomes HARD before any M1 measurement that uses a campaign, the scenario runner or a restore.
+- The SPAWNER part (site 4) may be HARD for M1: lairs, bosses and calamities DO run in M1 cells, and empty logging_errors is an M1 HARD bar. rpg-designer rules its priority, together with births' (A') vs (D'). If HARD, split site 4 into its own P1 ticket on run 1.
+- Priority P2 for sites 1-3 (rpg-designer): no M1 gate-world body goes through these sites, and no M1 measurement restores. It becomes HARD before any M1 measurement that uses a campaign, the scenario runner or a restore.
 - Whether the restore refusal reuses SenseProfileError or wraps it in a restore-specific typed error: the implementer proposes, and rpg-designer rules.
 
 ## Implementation Notes
