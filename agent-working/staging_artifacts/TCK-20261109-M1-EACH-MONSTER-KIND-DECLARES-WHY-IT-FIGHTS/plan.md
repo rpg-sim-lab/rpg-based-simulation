@@ -59,3 +59,8 @@ Tier standard, P1. Phase 1 (this branch) is docs only. Code is dispatched separa
 
 ## Constraints that bind (from rpg-planner)
 Branch from main 51a6516cf+; no defaulted night or tick; species only through `species_of()` / `occupation_of()`; mirror `properties["species_id"]` untouched (step 5 deletes it); lane B overlap files noted in investigation.md; legality.py ceilings; merge only in domain-3 segment after run-1 boundary and step 5.
+
+**Q8. Do declared reasons replace the species_relations hostility step for non-people kinds?** (added after the read in `trace_species_relations.md`)
+- A. Replace for non-people kinds; people-vs-people entries stay. *Recommended.* One source; the 13 direct sites and legality stop disagreeing. Needs Q5's aggressor reading first, because human_to_undead is high today.
+- B. Coexist (reasons decide the monster side, the species step stays as an upgrade on the people side). Two sources for one fact.
+- C. Use species_relations as the declaration mechanism for monsters. A pairwise matrix with 18% coverage, no reason vocabulary, and no rows for spirit and slime.

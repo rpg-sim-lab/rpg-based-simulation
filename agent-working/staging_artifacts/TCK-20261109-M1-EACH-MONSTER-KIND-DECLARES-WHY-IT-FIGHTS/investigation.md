@@ -34,7 +34,7 @@ The M1 set is therefore troll, undead, spirit, dragonkin, slime: the five kinds 
 ## 2. Every read of a faction label in hostility decisions (file:line, origin/main 51a6516cf)
 
 Predicate home, `src/engine/hostility.py`:
-- :54 `is_wild_creature` reads the faction's alignment bucket (`== "wild"`). This is the one function M1 changes (2.107).
+- :47 `is_wild_creature` (def); :54 is its alignment-bucket read (`== "wild"`). This is the one function M1 changes (2.107).
 - :63-64 `faction_hostile` skips the verdict for a wild creature either side.
 - :73-78 resolves both faction ids and calls `is_hostile_compat`.
 - :90 `relation` drops PREDATION between same-faction members (`get_faction_id_str` equality).
