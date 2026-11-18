@@ -4,7 +4,7 @@ layer: combat
 authority: P1
 audience: agent
 ticket_id: TCK-20261109-M1-EACH-MONSTER-KIND-DECLARES-WHY-IT-FIGHTS
-phase: open
+phase: active
 date: 2026-11-09
 tags: []
 ---
@@ -15,7 +15,7 @@ tags: []
 Each monster kind declares why it fights, replacing faction hostility for monsters (decision 62)
 
 ## Status
-OPEN
+INPROGRESS
 
 ## Tier
 standard
