@@ -20,10 +20,10 @@ from src.engine.tactical_destinations import retreat_destination, wander_destina
 from src.engine.tactical_threat import attacked_me_recently, hostile_acts_on, need_yields, perceived_threats, present_threats, safety_retreat_warranted
 from src.engine.need_pull import HUNGER_LINE, SLEEP_LINE, entity_hunger_is_pressing, entity_need_is_pressing
 from src.engine.tactical_rest import in_place_survival_update
-from src.engine.behavior_consumers import get_entity_signals, get_perception_gate
 from src.engine.sleep_debt import collapse_update, must_collapse
 from src.engine.tactical_hold import held_swing_update, leash_return_update, notice_unengaged_hostile, stalemate_break_update
-from src.engine.appraisal import Relation
+from src.core.calendar import is_night
+from src.engine.appraisal import Relation, perceives
 from src.engine.hostility import relation, source_identity
 from src.engine.tactical_objective import pursue_objective
 from src.engine.tactical_avoid import avoid_what_can_eat_me, classify_neighbours
@@ -75,20 +75,10 @@ def _combined_wound_scar_distress(wounds, scars) -> float:
 
 
 def _held_target_in_view(state: "AuthoritativeState", entity: "EntityState", target_id: int) -> bool:
-    """True when the held-task target is alive and the entity still perceives it (the goal-hysteresis shortcut keeps it)."""
+    """True when the held-task target exists and the entity still perceives it (the goal-hysteresis shortcut keeps it). A chase ends at the edge of what the pursuer
+    knows, so a target it can no longer perceive is let go: ``perceives`` is the one eligibility rule (alive, neither body lodged, then the gate), the same as the decision's."""
     target = state.entities.get(target_id)
-    return bool(target and target.combat.alive and _target_still_perceived(entity, target))
-
-
-def _target_still_perceived(entity: "EntityState", target: "EntityState") -> bool:
-    """A held pursuit target the entity can no longer perceive is let go: a chase ends at the edge of what the pursuer knows.
-
-    Applies to the held-task shortcut (goal hysteresis), which used to keep a target without asking the perception gate."""
-    dist = LegalityServiceV2.get_manhattan_dist(entity.navigation.position, target.navigation.position)
-    try:
-        return bool(get_perception_gate().can_perceive(entity, get_entity_signals(target), {"distance": float(dist)}).perceived)
-    except (AttributeError, KeyError, TypeError, ValueError, RuntimeError):
-        return True  # gate failure: permissive, as the hostile list does
+    return bool(target and perceives(entity, target, night=is_night(state.world_time), tick=state.tick))
 
 
 def _panic_holds(entity: "EntityState", threats: List["EntityState"], tick: int) -> bool:
@@ -101,9 +91,9 @@ def _panic_holds(entity: "EntityState", threats: List["EntityState"], tick: int)
     return not past_line or any(hostile_acts_on(h, entity, tick) for h in threats)
 
 
-def _has_tactical_hostiles(entity: "EntityState", neighbors: List["EntityState"]) -> bool:
+def _has_tactical_hostiles(entity: "EntityState", neighbors: List["EntityState"], night: bool = False, tick: Optional[int] = None) -> bool:
     """True when the tactical pass would count a perceived neighbour as a hostile (the list the engagement branch acts on), not merely a threat the subject's appraisal fears."""
-    return bool(classify_neighbours(entity, neighbors, source_identity(entity)).hostiles)
+    return bool(classify_neighbours(entity, neighbors, source_identity(entity), night, tick).hostiles)
 
 
 def _destination_or_hold(entity: "EntityState", destination: Optional[Tuple[float, float]]) -> Tuple[float, float]:
@@ -144,26 +134,26 @@ def _hunt_project_names_prey(entity: "EntityState", prey: List["EntityState"]) -
     return objective is not None and objective.target_entity_id is not None and any(h.id == objective.target_entity_id for h in prey)
 
 
-def _prey_in_sight(entity: "EntityState", hostiles: List["EntityState"]) -> List["EntityState"]:
+def _prey_in_sight(entity: "EntityState", hostiles: List["EntityState"], night: bool = False, tick: Optional[int] = None) -> List["EntityState"]:
     """The hostiles the subject regards as prey (`Relation.PREDATION`, the test `opening_steps._hunt_step` uses): the fight a pressing HUNGER does not stop."""
-    return [h for h in hostiles if relation(entity, h) is Relation.PREDATION]
+    return [h for h in hostiles if relation(entity, h, night=night, tick=tick) is Relation.PREDATION]
 
 
-def _need_path_first(entity: "EntityState", hostiles: List["EntityState"], tick: int) -> Tuple[bool, List["EntityState"]]:
+def _need_path_first(entity: "EntityState", hostiles: List["EntityState"], tick: int, night: bool = False) -> Tuple[bool, List["EntityState"]]:
     """SURV-07 LAW P: whether the need path runs ahead of everything that reacts to a hostile in sight, and the prey that makes the hunt the need's way.
 
     A need past its escalation onset gives way only to a hostile ACTING on the subject (`need_yields`). The hunt exemption (designer's ruling on LAW P): with HUNGER pressing and
     prey in sight, the fight with the prey is the need's way, unless the subject has an active need project whose objective names no living target (that walk stays on the
     need path). Exempt: the need path does not run first and the target is taken from the prey only. The one place this is computed: the panic freeze and the main order read it."""
     need_first = bool(hostiles) and entity_need_is_pressing(entity) and not need_yields(entity, hostiles, tick)
-    hunt_prey = _prey_in_sight(entity, hostiles) if need_first and entity_hunger_is_pressing(entity) and not _need_way_is_not_a_hunt(entity) else []
+    hunt_prey = _prey_in_sight(entity, hostiles, night, tick) if need_first and entity_hunger_is_pressing(entity) and not _need_way_is_not_a_hunt(entity) else []
     return need_first and not hunt_prey, hunt_prey
 
 
-def _panic_yields_to_need(entity: "EntityState", neighbors: List["EntityState"], tick: int) -> bool:
+def _panic_yields_to_need(entity: "EntityState", neighbors: List["EntityState"], tick: int, night: bool = False) -> bool:
     """A panic with no destination does not freeze against a pressing need while nothing acts on the subject and no prey is in sight (rpg-designer, scope 2(c)): the same
     `need_first` the main order computes, over the same tactical hostiles, so the yielded tick takes the need path and never falls through to engagement."""
-    return _need_path_first(entity, classify_neighbours(entity, neighbors, source_identity(entity)).hostiles, tick)[0]
+    return _need_path_first(entity, classify_neighbours(entity, neighbors, source_identity(entity), night, tick).hostiles, tick, night)[0]
 
 
 def _suspend_project_for_threat(entity: "EntityState", hostiles: List["EntityState"], tick: int) -> Optional[StrategicUpdate]:
@@ -266,7 +256,7 @@ class TacticalDecisionSystem:
         # A flight with no destination is not flight (designer ruling, V3): a panic that resolves to the subject's own tile is not taken, and the tick
         # falls through the existing order (in-place survival, then the arrival at a building). A real tactical hostile keeps the old freeze, so the
         # fall-through never turns a held panic into a fight the subject would not otherwise start.
-        if emotion.is_fleeing and _panic_holds(entity, threats, state.tick) and (panic_destination is not None or (_has_tactical_hostiles(entity, neighbors) and not _panic_yields_to_need(entity, neighbors, state.tick))):  # no threat in sight, no flight: low HP, dread and grudge feed the panic but never flee alone (divergence 2.114)
+        if emotion.is_fleeing and _panic_holds(entity, threats, state.tick) and (panic_destination is not None or (_has_tactical_hostiles(entity, neighbors, is_night(state.world_time), state.tick) and not _panic_yields_to_need(entity, neighbors, state.tick, is_night(state.world_time)))):  # no threat in sight, no flight: low HP, dread and grudge feed the panic but never flee alone (divergence 2.114)
              # PANIC: Move away from the perceived threats, inside the current region
              # (MOV-01 / LOC-01); hold position when no valid destination exists (MOV-03).
              retreat_to = _destination_or_hold(entity, panic_destination)
@@ -293,13 +283,13 @@ class TacticalDecisionSystem:
             entity_pressures = MotivationPressureSet.empty()
 
         _src_faction_id, _src_identity_source = source_identity(entity)
-        hood = classify_neighbours(entity, neighbors, (_src_faction_id, _src_identity_source))
+        hood = classify_neighbours(entity, neighbors, (_src_faction_id, _src_identity_source), is_night(state.world_time), state.tick)
         hostiles, hostile_identity_sources = hood.hostiles, hood.hostile_identity_sources
 
         # SURV-07 LAW P (TCK-20261031-AN-ENGAGEMENT-OVERRIDES-A-PRESSING-NEED): a need past its escalation onset gives way only to a hostile ACTING on the subject
         # (`need_yields`). With hostiles in sight and none acting, the need path runs first: before the presence test below, role obligation, cohesion and target
         # selection (so a follower too takes no part in the group's target). Flight keeps AGENCY-07's `present_threat_to`. The hunt exemption is inside `_need_path_first`.
-        need_first, hunt_prey = _need_path_first(entity, hostiles, state.tick)
+        need_first, hunt_prey = _need_path_first(entity, hostiles, state.tick, is_night(state.world_time))
 
         # 4. Strategic Persistence (Pillar 5.1): a need project the subject is walking to is not suspended for a hostile that is not acting on it
         strat_up = None if (need_first and _serves_a_need(entity)) or (hunt_prey and _hunt_project_names_prey(entity, hunt_prey)) else _suspend_project_for_threat(entity, hostiles, state.tick)

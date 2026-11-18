@@ -48,10 +48,10 @@ def test_people_and_monsters_are_not_wild_creatures_so_they_keep_faction_hostili
 
 def test_a_raider_and_a_wolf_have_no_faction_verdict_either_way():
     raider, wolf = _entity(1, "goblin"), _entity(2, "wolf", (10.0, 11.0))
-    assert not faction_hostile(raider, wolf)
-    assert not faction_hostile(wolf, raider)
+    assert not faction_hostile(raider, wolf, night=False, tick=None)
+    assert not faction_hostile(wolf, raider, night=False, tick=None)
 
 
 def test_a_faction_verdict_cannot_make_an_attack_on_a_wild_creature_legal():
     raider, plant_eater = _entity(1, "goblin"), _entity(2, "small_plant_eater", (10.0, 11.0))
-    assert not attack_allowed(raider, plant_eater, True)  # not hungry: no PREDATION, and no faction verdict counts
+    assert not attack_allowed(raider, plant_eater, True, night=False, tick=None)  # not hungry: no PREDATION, and no faction verdict counts

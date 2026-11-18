@@ -3,6 +3,7 @@ from dataclasses import replace
 from src.core.state import AuthoritativeState, TaskComponent, RegionState
 from src.engine.tactical import TacticalDecisionSystem
 from src.core.builder import V2EntityBuilder
+from tests.helpers.clock import DAY_WORLD_TIME
 
 def create_mock_entity(eid, faction, hp=100, pos=(10.0, 10.0)):
     return V2EntityBuilder(eid).kind("hero").identity(faction=faction).combat(hp=hp).location(*pos).combat(readiness=100.0).build()
@@ -15,7 +16,7 @@ def test_stalemate_break():
     attacker = replace(attacker, task=TaskComponent(payload={"target_id": 2, "stale_ticks": 11}))
     
     region = RegionState(id="field", name="Field", bounds=(5, 5, 30, 30))
-    state = AuthoritativeState(tick=1, seed=42, world_time=1, entities={1: attacker, 2: target}, regions={"field": region})
+    state = AuthoritativeState(tick=1, seed=42, world_time=DAY_WORLD_TIME, entities={1: attacker, 2: target}, regions={"field": region})
 
     # Should break stalemate by wandering to a nearby point inside the entity's own region
     update = TacticalDecisionSystem.evaluate_entity_intent(state, attacker)
@@ -32,7 +33,7 @@ def test_stale_ticks_increment():
     # Pre-set stale_ticks = 5
     attacker = replace(attacker, task=TaskComponent(payload={"target_id": 2, "stale_ticks": 5}))
     
-    state = AuthoritativeState(tick=1, seed=42, world_time=1, entities={1: attacker, 2: target})
+    state = AuthoritativeState(tick=1, seed=42, world_time=DAY_WORLD_TIME, entities={1: attacker, 2: target})
     
     update = TacticalDecisionSystem.evaluate_entity_intent(state, attacker)
     assert update.task.payload_set["stale_ticks"] == 6
@@ -44,7 +45,7 @@ def _melee_pair(stale, readiness=100.0):
                        task=TaskComponent(payload={"target_id": 2, "stale_ticks": stale}))
     target = create_mock_entity(2, 2, pos=(10, 11))
     region = RegionState(id="field", name="Field", bounds=(5, 5, 30, 30))
-    state = AuthoritativeState(tick=1, seed=42, world_time=1, entities={1: attacker, 2: target}, regions={"field": region})
+    state = AuthoritativeState(tick=1, seed=42, world_time=DAY_WORLD_TIME, entities={1: attacker, 2: target}, regions={"field": region})
     return state, attacker
 
 

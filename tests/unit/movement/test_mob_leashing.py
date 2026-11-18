@@ -6,6 +6,7 @@ from src.core.enums import Faction
 from src.core.movement_modes import MovementMode
 
 from src.core.builder import V2EntityBuilder
+from tests.helpers.clock import DAY_WORLD_TIME
 
 def test_mob_beyond_leash_returns_home():
     state = AuthoritativeState(tick=100, seed=42)
@@ -40,7 +41,7 @@ def test_mob_beyond_leash_returns_home():
     print("\nSuccessfully verified mob beyond leash returns home.")
 
 def test_mob_within_chase_radius_continues():
-    state = AuthoritativeState(tick=100, seed=42)
+    state = AuthoritativeState(world_time=DAY_WORLD_TIME, tick=100, seed=42)
     
     # Monster at (6.0, 0), home (0,0), leash 5. 
     # Within 1.5x leash (7.5)

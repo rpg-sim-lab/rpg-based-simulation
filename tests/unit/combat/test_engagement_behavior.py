@@ -4,6 +4,7 @@ from src.core.state import EntityState, IdentityComponent, CombatComponent, Auth
 from src.engine.tactical import TacticalDecisionSystem
 from src.core.builder import V2EntityBuilder
 from src.core.enums import EntityRole, Faction
+from tests.helpers.clock import DAY_WORLD_TIME
 
 def create_mock_entity(eid, faction, hp=100, pos=(0.0, 0.0), attack_range=1):
     role = EntityRole.HERO if faction == Faction.HERO_GUILD else EntityRole.MONSTER
@@ -28,7 +29,7 @@ def test_attack_vs_pursuit_intent():
     attacker = create_mock_entity(1, Faction.HERO_GUILD, pos=(10.0, 10.0), attack_range=1)
     target = create_mock_entity(2, Faction.MONSTER_HORDE, pos=(10.0, 11.0)) # Adjacency 1
     
-    state = AuthoritativeState(tick=1, seed=42, world_time=1, entities={1: attacker, 2: target})
+    state = AuthoritativeState(tick=1, seed=42, world_time=DAY_WORLD_TIME, entities={1: attacker, 2: target})
     
     # 1. Melee Attack (Range 1, Dist 1)
     update = TacticalDecisionSystem.evaluate_entity_intent(state, attacker)
@@ -38,7 +39,7 @@ def test_attack_vs_pursuit_intent():
     
     # 2. Pursuit (Range 1, Dist 2)
     target = replace(target, navigation=replace(target.navigation, position=(10.0, 12.0)))
-    state = AuthoritativeState(tick=1, seed=42, world_time=1, entities={1: attacker, 2: target})
+    state = AuthoritativeState(tick=1, seed=42, world_time=DAY_WORLD_TIME, entities={1: attacker, 2: target})
     update = TacticalDecisionSystem.evaluate_entity_intent(state, attacker)
     assert update.task.work_kind_set == "ENTITY_MOVE"
     assert update.task.payload_set["target_position"] == (10.0, 12.0)
