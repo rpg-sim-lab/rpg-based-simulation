@@ -7986,6 +7986,21 @@
   - content
   last_verified: '2026-10-09'
 - type: ticket
+  path: agent-working/tickets/todos/TCK-20261118-A-SUBJECT-WITH-A-STANDING-HELP-NEED-RE-DECIDES-SOLO-EVERY-TICK.md
+  ticket_id: TCK-20261118-A-SUBJECT-WITH-A-STANDING-HELP-NEED-RE-DECIDES-SOLO-EVERY-TICK
+  title: CooperationPhase re-runs the posture choice on every tick for any subject
+    with a help need, so a subject whose need never clears picks SOLO and emits a
+    cooperation_event on every tick, with no memory of its last decision
+  tier: standard
+  ticket_type: bug
+  date: '2026-11-18'
+  related_code_areas:
+  - src/domains/cooperation/phase.py (CooperationPhase.execute, _record_decision_events),
+    src/domains/cooperation/services.py (select_for_own_needs), CooperationIntentBridge.map_decision,
+    src/observability/event_shapers.py (cooperation_event)
+  artifact_files: []
+  tags: []
+- type: ticket
   path: agent-working/tickets/done/TCK-20261117-AN-ENTITY-CARRIES-ITS-OCCUPATION-LABEL-AND-ONE-SPECIES-READ-SPECIES-OF.md
   ticket_id: TCK-20261117-AN-ENTITY-CARRIES-ITS-OCCUPATION-LABEL-AND-ONE-SPECIES-READ-SPECIES-OF
   title: An entity carries its occupation label as its own field, and `species_of`
