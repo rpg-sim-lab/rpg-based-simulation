@@ -917,12 +917,11 @@ def test_run_static_precheck_all_pass_eligible(tmp_path, monkeypatch):
     monkeypatch.chdir(tmp_path)
 
     results = run_static_precheck("TCK-FAKE", "standard", "2026-07-05T00:00:00Z")
-    # 9 conditions as of TCK-20261118-REQUIRED-DURABLE-STATE-LIFECYCLE-CLOCKS-SECTION-IN-TICKETS-AND-PR-BODIES (ticket_lifecycle_section);
-    # 8 as of TCK-20260904-MONITORING-TEMPORAL-WEEK-CONSISTENCY-CHECK
+    # 8 conditions as of TCK-20260904-MONITORING-TEMPORAL-WEEK-CONSISTENCY-CHECK
     # (was 7, added temporal_week_consistency; was 6, added docs_to_update_coverage
     # per TCK-20260802-DOC-COVERAGE-CHECK; was 5, added ticket_field_values_valid
     # per TCK-20260718-TIER-PRIORITY-CANONICAL-ENUM; was 5 originally: 5->6->7->8).
-    assert len(results) == 9
+    assert len(results) == 8
     statuses = {r["condition"]: r["status"] for r in results}
     assert all(s in ("PASS", "NA") for s in statuses.values()), statuses
 
@@ -987,7 +986,7 @@ def test_done_checker_new_check_wired_and_returns_pass_with_evidence(tmp_path, m
     monkeypatch.chdir(tmp_path)
 
     results = run_static_precheck("TCK-FAKE", "standard", "2026-07-05T00:00:00Z")
-    assert len(results) == 9
+    assert len(results) == 8
     by_condition = {r["condition"]: r for r in results}
     assert "temporal_week_consistency" in by_condition
     assert by_condition["temporal_week_consistency"]["status"] == "PASS"

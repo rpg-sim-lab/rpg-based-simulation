@@ -8021,6 +8021,25 @@
   tags:
   - performance
 - type: ticket
+  path: agent-working/tickets/done/TCK-20261118-REQUIRED-DURABLE-STATE-LIFECYCLE-CLOCKS-SECTION-IN-TICKETS-AND-PR-BODIES.md
+  ticket_id: TCK-20261118-REQUIRED-DURABLE-STATE-LIFECYCLE-CLOCKS-SECTION-IN-TICKETS-AND-PR-BODIES
+  title: Tickets carry a required "Durable state, lifecycle and clocks" section, presence-checked
+    at close and rendered into the PR body, with a planner-review advisory line
+  tier: standard
+  ticket_type: feature
+  date: '2026-11-18'
+  related_code_areas:
+  - tools/ticket_field_values.py, tools/gate_checks/done_checker_static.py, tools/delivery/{pr_render.py,pr_body_lint.py,pr_template_spec.json},
+    .github/pull_request_template.md, .github/workflows/pr-body-lint.yml, .claude/workflows/create-tickets.js,
+    .claude/agents/ticket-scoper.md, .claude/skills/create-tickets/, .agents/rules/ticket.md
+  artifact_files:
+  - agent-working/stored_artifacts/TCK-20261118-REQUIRED-DURABLE-STATE-LIFECYCLE-CLOCKS-SECTION-IN-TICKETS-AND-PR-BODIES/investigation.md
+  - agent-working/stored_artifacts/TCK-20261118-REQUIRED-DURABLE-STATE-LIFECYCLE-CLOCKS-SECTION-IN-TICKETS-AND-PR-BODIES/plan.md
+  - agent-working/stored_artifacts/TCK-20261118-REQUIRED-DURABLE-STATE-LIFECYCLE-CLOCKS-SECTION-IN-TICKETS-AND-PR-BODIES/test_plan.md
+  tags:
+  - skills
+  - process-improvement
+- type: ticket
   path: agent-working/tickets/done/TCK-20261118-SIM-ENGINEERING-SKILLS-RESEARCH-PROPOSAL.md
   ticket_id: TCK-20261118-SIM-ENGINEERING-SKILLS-RESEARCH-PROPOSAL
   title: Research and propose domain-specific simulation-engineering skills (research
@@ -8042,22 +8061,6 @@
   - skills
   - simulation-quality
   - testing
-- type: ticket
-  path: agent-working/tickets/inprogress/TCK-20261118-REQUIRED-DURABLE-STATE-LIFECYCLE-CLOCKS-SECTION-IN-TICKETS-AND-PR-BODIES.md
-  ticket_id: TCK-20261118-REQUIRED-DURABLE-STATE-LIFECYCLE-CLOCKS-SECTION-IN-TICKETS-AND-PR-BODIES
-  title: Tickets carry a required "Durable state, lifecycle and clocks" section, presence-checked
-    at close and rendered into the PR body, with a planner-review advisory line
-  tier: standard
-  ticket_type: feature
-  date: '2026-11-18'
-  related_code_areas:
-  - tools/ticket_field_values.py, tools/gate_checks/done_checker_static.py, tools/delivery/{pr_render.py,pr_body_lint.py,pr_template_spec.json},
-    .github/pull_request_template.md, .github/workflows/pr-body-lint.yml, .claude/workflows/create-tickets.js,
-    .claude/agents/ticket-scoper.md, .claude/skills/create-tickets/, .agents/rules/ticket.md
-  artifact_files: []
-  tags:
-  - skills
-  - process-improvement
 - type: ticket
   path: agent-working/tickets/todos/TCK-20261118-ARCH-REVIEWER-LIFECYCLE-TIME-CHECKLIST-EVAL.md
   ticket_id: TCK-20261118-ARCH-REVIEWER-LIFECYCLE-TIME-CHECKLIST-EVAL

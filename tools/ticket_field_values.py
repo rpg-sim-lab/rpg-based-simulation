@@ -146,7 +146,7 @@ def check_disposition_fields(body: str) -> Tuple[str, str]:
 
 def check_lifecycle_section(ticket_path: Path) -> Tuple[str, str]:
     """Presence check for `## Durable state, lifecycle and clocks` on a ticket dated on or after
-    `LIFECYCLE_SECTION_REQUIRED_FROM`. Returns ("PASS"|"FAIL", evidence). A ticket with no parseable
+    `LIFECYCLE_SECTION_REQUIRED_FROM`. Returns ("PASS"|"FAIL"|"NA", evidence); NA means skipped (grandfathered). A ticket with no parseable
     `date:` is grandfathered (the date is the only way to tell a new ticket from an old one).
 
     The section must exist and be non-empty after stripping. A body that starts `N/A:` must carry a
@@ -154,7 +154,7 @@ def check_lifecycle_section(ticket_path: Path) -> Tuple[str, str]:
     text = ticket_path.read_text(encoding="utf-8")
     date = str((extract_frontmatter(text) or {}).get("date") or "")[:10]
     if not _ISO_DATE_RE.fullmatch(date) or date < LIFECYCLE_SECTION_REQUIRED_FROM:
-        return ("PASS", f"ticket dated {date or 'unknown'} predates {LIFECYCLE_SECTION_REQUIRED_FROM}: "
+        return ("NA", f"ticket dated {date or 'unknown'} predates {LIFECYCLE_SECTION_REQUIRED_FROM}: "
                         f"## {LIFECYCLE_SECTION} not required (grandfathered)")
     body = _strip_frontmatter(text)
     if not has_body_section(body, LIFECYCLE_SECTION):

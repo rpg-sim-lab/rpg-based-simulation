@@ -294,12 +294,11 @@ exits, a stale failure reason, a latch never cleared, a blocker replaced instead
 as a lifecycle or clock question that no gate asked.
 
 `tools/ticket_field_values.py::check_lifecycle_section` checks presence only (never answer quality), through
-`done_checker_static.py`'s blocking condition `ticket_lifecycle_section`. Older tickets are grandfathered by the
+`done_checker_static.py`'s advisory check `ticket_lifecycle_section` (OK, WARN or NA; printed with the other `[advisory]` lines; it never changes the close verdict). Older tickets are grandfathered by the
 frontmatter `date:` (`LIFECYCLE_SECTION_REQUIRED_FROM`); a ticket with no parseable date is also passed. The
-section is rendered into the PR body's `## Verification` (below) and `tools/delivery/pr_body_lint.py` fails a
-template-shaped PR body without the line. `tools/gate_checks/lifecycle_section_fill_rate.py` reports the fill and `N/A`
-rate of tickets dated on or after the landing date. The `CLAUDE.md` "Ticket Format" required-sections list does
-not name the section yet; that edit needs the owner's direct yes.
+section is rendered into the PR body's `## Verification` (below) and `tools/delivery/pr_body_lint.py` reports (a `::warning::`, exit code unchanged) a
+template-shaped PR body without the line. **Advisory first; promotion to blocking is a later owner decision after the fill-rate baseline** (owner decision, #715 6972698325). `tools/gate_checks/lifecycle_section_fill_rate.py` reports the fill and `N/A`
+rate of tickets dated on or after the landing date. `CLAUDE.md`'s "Ticket Format" required-sections list names the section (owner yes, #715 6972548742).
 
 ## PR Body Template — rendered, not written
 
@@ -349,10 +348,9 @@ in "PR Lifecycle" below and nothing else; it prints a stderr warning saying so (
 The `- Durable state, lifecycle and clocks:` line is rendered once per ticket from the ticket's section, collapsed to
 one line. When the PR diff touches no `src/` the renderer writes `N/A: no src change` itself, and a ticketless body
 writes `N/A: no ticket on this branch`, so the line never fails a docs-only or tooling-only PR. A ticket on a src PR
-whose file has no such section renders `(none recorded: ...)`. `pr_body_lint.py` (the `PR body lint` CI job) fails a
-body that has a `## Tickets` heading but no non-empty line of that name in `## Verification`; bodies without a
-`## Tickets` heading (Dependabot, hand-written one-offs) are not checked. An open PR whose body predates this rule fails
-on its next edit or push until it is re-rendered.
+whose file has no such section renders `(none recorded: ...)`. `pr_body_lint.py` (the `PR body lint` CI job) reports, without failing, a
+body whose `## Tickets` table lists a ticket with an id date (TCK-YYYYMMDD-) of 20261119 or later and that has no non-empty line of that name in `## Verification`; so a body that lists only older tickets, and a PR that touches no `src/`, is never flagged. Bodies without a
+`## Tickets` heading (Dependabot, hand-written one-offs) are not checked: a known bypass.
 
 `## Known gaps` is load-bearing and deliberate: the repo's Gate Integrity rule says a blocking gate
 result is information to report, never an obstacle to route around. Giving it a fixed slot in every

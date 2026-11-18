@@ -19,11 +19,16 @@ import sys
 from typing import List, Optional
 
 # TCK-20261118-REQUIRED-DURABLE-STATE-LIFECYCLE-CLOCKS-SECTION-IN-TICKETS-AND-PR-BODIES: a template-shaped PR body
-# (one with a `## Tickets` heading) must carry this line in its `## Verification` section, with a non-empty answer on the
+# (one with a `## Tickets` heading) that lists at least one ticket whose id date (TCK-YYYYMMDD-...) is on or after
+# LIFECYCLE_REQUIRED_FROM should carry this line in its `## Verification` section (ADVISORY: reported, never failing, until the owner promotes it), with a non-empty answer on the
 # line itself (pr_render writes one such line per ticket). `pr_render.py` renders it (`N/A: no src change` when the diff touches no
 # `src/`), so a PR rendered from the template never fails. Bodies without `## Tickets` (Dependabot, hand-written
 # one-offs) are not template-shaped and are not checked.
 LIFECYCLE_LINE = "- Durable state, lifecycle and clocks:"
+# Same day as tools/ticket_field_values.py::LIFECYCLE_SECTION_REQUIRED_FROM (2026-11-19), without dashes; a test pins the two together.
+# A body that lists only older tickets (an open PR from before the rule) is never failed for the missing line.
+LIFECYCLE_REQUIRED_FROM = "20261119"
+_TICKET_DATE_RE = re.compile(r"\bTCK-(\d{8})-")
 _H2_RE = re.compile(r"^##\s", re.MULTILINE)
 _TICKETS_H2_RE = re.compile(r"^## Tickets\s*$", re.MULTILINE)
 _VERIFICATION_H2_RE = re.compile(r"^## Verification\s*$", re.MULTILINE)
@@ -38,10 +43,21 @@ def _verification_section(body: str) -> Optional[str]:
     return rest if nxt is None else rest[: nxt.start()]
 
 
+def _tickets_section(body: str) -> Optional[str]:
+    start = _TICKETS_H2_RE.search(body)
+    if start is None:
+        return None
+    rest = body[start.end():]
+    nxt = _H2_RE.search(rest)
+    return rest if nxt is None else rest[: nxt.start()]
+
+
 def find_missing_lifecycle(body: Optional[str]) -> Optional[str]:
-    """Return a reason when a template-shaped PR body lacks a non-empty lifecycle line in `## Verification`, else None."""
+    """Return a reason when a template-shaped PR body that lists a ticket dated on or after `LIFECYCLE_REQUIRED_FROM` lacks a
+    non-empty lifecycle line in `## Verification`, else None. Known bypass: a hand-written body with no `## Tickets` heading skips it."""
     text = body or ""
-    if _TICKETS_H2_RE.search(text) is None:
+    tickets = _tickets_section(text)
+    if tickets is None or not any(d >= LIFECYCLE_REQUIRED_FROM for d in _TICKET_DATE_RE.findall(tickets)):
         return None
     section = _verification_section(text)
     if section is None:
@@ -87,11 +103,14 @@ def main(argv=None, environ=None) -> int:
     if hits:
         print("Remove it and PATCH the body again (docs/guides/delivery_process.md, PR Lifecycle step 3).")
     if missing:
-        print(f"::error::PR body Verification section: {missing}. Re-render with tools/delivery/pr_render.py "
+        # Advisory first (owner decision #715 6972698325): REPORTED, never failed; promotion to blocking is a later owner decision
+        # after the fill-rate baseline. The exit code stays driven by the attribution check alone.
+        print(f"::warning::PR body Verification section (advisory, not failing): {missing}. Re-render with tools/delivery/pr_render.py "
               "(it writes `N/A: no src change` when the diff touches no src/).")
+        print("durable-state line check: ran, REPORTED (advisory).")
     else:
-        print("PR body Verification carries the durable-state line (or the body is not template-shaped).")
-    return 1 if hits or missing else 0
+        print("durable-state line check: ran, OK (line present, or no ticket dated 2026-11-19 or later in the body, or not template-shaped).")
+    return 1 if hits else 0
 
 
 if __name__ == "__main__":

@@ -56,13 +56,13 @@ def test_answers_pass(tmp_path):
 
 def test_ticket_dated_before_the_landing_date_is_grandfathered(tmp_path):
     status, evidence = tfv.check_lifecycle_section(_ticket(tmp_path, _OLD))
-    assert status == "PASS" and "grandfathered" in evidence
+    assert status == "NA" and "grandfathered" in evidence
 
 
 def test_ticket_with_no_date_is_grandfathered(tmp_path):
     path = tmp_path / "TCK-X.md"
     path.write_text("---\nstatus: active\n---\n\n## Title\nT\n", encoding="utf-8")
-    assert tfv.check_lifecycle_section(path)[0] == "PASS"
+    assert tfv.check_lifecycle_section(path)[0] == "NA"
 
 
 def test_every_existing_closed_and_open_ticket_passes():
@@ -81,16 +81,27 @@ def _date_of(path):
     return str((tfv.extract_frontmatter(Path(path).read_text(encoding="utf-8")) or {}).get("date") or "")[:10]
 
 
-def test_done_checker_condition_blocks_a_new_ticket_without_the_section(tmp_path):
-    path = _ticket(tmp_path, _NEW)
-    assert dcs.check_ticket_lifecycle_section("TCK-X", path)[0] == "FAIL"
-    assert dcs.check_ticket_lifecycle_section("TCK-X", _ticket(tmp_path, _NEW, section="N/A: tooling only", name="TCK-20261119-OK"))[0] == "PASS"
-    assert dcs.check_ticket_lifecycle_section("TCK-X", tmp_path / "missing.md")[0] == "FAIL"
+def test_done_checker_reports_a_missing_section_as_a_warning_not_a_failure(tmp_path):
+    """Advisory first (owner decision #715 6972698325): known-negative fixture WARNs, known-positive is OK, grandfathered and missing-file are NA."""
+    assert dcs.check_ticket_lifecycle_section("TCK-X", _ticket(tmp_path, _NEW))[0] == "WARN"
+    ok = dcs.check_ticket_lifecycle_section("TCK-X", _ticket(tmp_path, _NEW, section="N/A: tooling only", name="TCK-20261119-OK"))
+    assert ok[0] == "OK" and ok[1].startswith("ran:")
+    old = dcs.check_ticket_lifecycle_section("TCK-X", _ticket(tmp_path, _OLD, name="TCK-20261118-OLD"))
+    assert old[0] == "NA" and old[1].startswith("skipped:")
+    assert dcs.check_ticket_lifecycle_section("TCK-X", tmp_path / "missing.md")[0] == "NA"
 
 
-def test_done_checker_runs_the_condition(tmp_path, monkeypatch):
-    names = [r["condition"] for r in _precheck(tmp_path, monkeypatch)]
-    assert "ticket_lifecycle_section" in names
+def test_done_checker_shows_an_errored_check_instead_of_silencing_it(tmp_path, monkeypatch):
+    monkeypatch.setattr(dcs, "check_lifecycle_section", lambda p: (_ for _ in ()).throw(RuntimeError("boom")))
+    status, evidence = dcs.check_ticket_lifecycle_section("TCK-X", _ticket(tmp_path, _NEW))
+    assert status == "WARN" and evidence.startswith("errored:")
+
+
+def test_condition_is_advisory_and_leaves_the_blocking_precheck_alone(tmp_path, monkeypatch):
+    results = _precheck(tmp_path, monkeypatch)
+    assert len(results) == 8 and "ticket_lifecycle_section" not in [r["condition"] for r in results]  # not a Part A (PASS/FAIL) condition
+    advisory = {r["condition"]: r for r in dcs.run_advisory_checks("TCK-FAKE", "standard")}
+    assert advisory["ticket_lifecycle_section"]["status"] in ("OK", "WARN", "NA")  # ran, reported, or skipped: never silent
 
 
 def _precheck(tmp_path, monkeypatch):
@@ -101,7 +112,7 @@ def _precheck(tmp_path, monkeypatch):
 
 
 def test_ticket_cli_reports_a_missing_section(tmp_path, capsys):
-    assert tfv.main([str(_ticket(tmp_path, _NEW))]) == 1
+    assert tfv.main([str(_ticket(tmp_path, _NEW))]) == 1  # the standalone checker CLI still exits 1: it is the check itself
     assert "missing" in capsys.readouterr().out
 
 
@@ -151,7 +162,7 @@ def test_ticket_section_name_is_one_string_in_both_tools():
 
 # --- lint -----------------------------------------------------------------------------------------------------------
 
-_SHAPED = "## What landed\nx\n\n## Tickets\n| a |\n\n## Why\ny\n\n## Verification\n- Tests: ok\n{line}- Known gaps: none\n\n## Review notes\nz\n"
+_SHAPED = "## What landed\nx\n\n## Tickets\n| TCK-20261119-NEW | standard | t |\n\n## Why\ny\n\n## Verification\n- Tests: ok\n{line}- Known gaps: none\n\n## Review notes\nz\n"
 
 
 def test_lint_fails_a_template_shaped_body_without_the_line():
@@ -173,19 +184,25 @@ def test_lint_skips_bodies_that_are_not_template_shaped():
 
 
 def test_lint_fails_a_shaped_body_with_no_verification_section():
-    assert pr_body_lint.find_missing_lifecycle("## Tickets\n| a |\n") == "no ## Verification section"
+    assert pr_body_lint.find_missing_lifecycle("## Tickets\n| TCK-20261120-NEW | s | t |\n") == "no ## Verification section"
 
 
-def test_lint_cli_exit_codes():
+def test_lint_cli_exit_codes(capsys):
     ok = {"PR_BODY": _SHAPED.format(line=f"{pr_body_lint.LIFECYCLE_LINE} TCK-X: N/A: no src change\n")}
     bad = {"PR_BODY": _SHAPED.format(line="")}
-    assert pr_body_lint.main(environ=ok) == 0 and pr_body_lint.main(environ=bad) == 1
+    assert pr_body_lint.main(environ=ok) == 0
+    assert pr_body_lint.main(environ=bad) == 0  # advisory first: reported, exit code unaffected
+    out = capsys.readouterr().out
+    assert "::warning::" in out and "ran, REPORTED (advisory)" in out and "ran, OK" in out  # the status is always shown
+    attribution = {"PR_BODY": _SHAPED.format(line="") + "\nCo-Authored-By: x <y@z>\n"}
+    assert pr_body_lint.main(environ=attribution) == 1  # the attribution check still fails the job
 
 
 def test_the_unfilled_github_template_fails_the_lint():
     """The raw template (placeholders still in) must fail, so a hand-filled body cannot skip the line."""
     template = (_ROOT / ".github/pull_request_template.md").read_text(encoding="utf-8")
-    assert pr_body_lint.find_missing_lifecycle(template) is not None
+    with_new_ticket = template.replace("| TCK-… | standard | … |", "| TCK-20261119-NEW | standard | t |")
+    assert with_new_ticket != template and pr_body_lint.find_missing_lifecycle(with_new_ticket) is not None
     assert pr_body_lint.LIFECYCLE_LINE in template
 
 
@@ -213,3 +230,30 @@ def test_fill_rate_cli_prints_the_real_baseline(capsys):
     from tools.gate_checks import lifecycle_section_fill_rate as fr
     assert fr.main([]) == 0
     assert "tickets dated on or after 2026-11-19" in capsys.readouterr().out
+
+
+def test_a_body_listing_only_grandfathered_tickets_passes_without_the_line():
+    old = _SHAPED.replace("TCK-20261119-NEW", "TCK-20261118-OLD").format(line="")
+    assert pr_body_lint.find_missing_lifecycle(old) is None
+
+
+def test_a_body_with_one_new_ticket_among_old_ones_needs_the_line():
+    mixed = _SHAPED.replace("| TCK-20261119-NEW | standard | t |", "| TCK-20261118-OLD | standard | t |\n| TCK-20261119-NEW | standard | t |").format(line="")
+    assert pr_body_lint.find_missing_lifecycle(mixed) is not None
+
+
+def test_a_ticketless_body_never_needs_the_line():
+    assert pr_body_lint.find_missing_lifecycle("## Tickets\n(none: this PR closes no ticket)\n\n## Verification\n- Tests: x\n") is None
+
+
+def test_lint_landing_date_matches_the_ticket_check():
+    assert pr_body_lint.LIFECYCLE_REQUIRED_FROM == tfv.LIFECYCLE_SECTION_REQUIRED_FROM.replace("-", "")
+
+
+def test_a_new_ticket_with_no_src_change_renders_na_and_passes(tmp_path):
+    root = tmp_path / "tickets"
+    root.mkdir()
+    _write_ticket(root, "TCK-20261119-NEWDOCS", "ai", "Docs only")
+    runner = FakeRunner([_git_log_rule(["TCK-20261119-NEWDOCS: x"]), _git_diff_rule(["docs/x.md", "agent-working/tickets/TCK-20261119-NEWDOCS.md"])])
+    body = pr_render.render(tickets_root=root, run_command=runner)["body"]
+    assert "TCK-20261119-NEWDOCS: N/A: no src change" in body and pr_body_lint.find_missing_lifecycle(body) is None

@@ -1,10 +1,10 @@
 ---
-status: active
+status: historical
 layer: ai
 authority: P1
 audience: agent
 ticket_id: TCK-20261118-REQUIRED-DURABLE-STATE-LIFECYCLE-CLOCKS-SECTION-IN-TICKETS-AND-PR-BODIES
-phase: open
+phase: done
 date: 2026-11-18
 tags: [skills, process-improvement]
 ---
@@ -15,7 +15,7 @@ tags: [skills, process-improvement]
 Tickets carry a required "Durable state, lifecycle and clocks" section, presence-checked at close and rendered into the PR body, with a planner-review advisory line
 
 ## Status
-INPROGRESS
+DONE
 
 ## Tier
 standard
@@ -79,14 +79,34 @@ Keep each check fast (diff-scoped, AST only). `tools/mechanism_registry/mechanis
 - Landing date and the exact "src ticket" rule (Related Code Areas names `src/`, or the branch diff touches `src/`) are the implementer's call; state them in the ticket.
 - Whether `.agents/rules/ticket.md` and the other template files route to your seat is unchecked by me.
 
+## Durable state, lifecycle and clocks
+N/A: tooling and process text only; no simulation record, field or clock is created or changed.
+
 ## Implementation Notes
 Dispatch needs normal review (touches a ticket template, the done checker, the renderer and the lint).
 
 ## Test Summary
-(filled at close)
+Scoped, no heavy runs: `python3 -m pytest -q tests/tools/test_lifecycle_section.py tests/tools/test_done_checker_static.py tests/tools/test_delivery_pr_render.py tests/tools/test_pr_body_lint.py tests/tools/test_pr_body_lint_workflow_pinned.py tests/tools/test_ticket_field_values.py tests/tools/test_session_cards.py tests/tools/test_session_agent_generator.py tests/tools/test_session_card_citations.py tests/tools/test_ci_workflow_test_coverage.py tests/integrity/test_no_duplicate_content_blocks.py tests/tools/test_generate_registry.py` plus the five test_create_tickets_* files: 630 passed. `python3 -m tools.sessions.generate_agents --check` OK; `python3 -m tools.generate_registry --check` in sync.
+Known gap: a hand-written PR body with no `## Tickets` heading skips the lint (a known bypass).
+Known gap: advisory first (owner decision #715 6972698325): a missing section is reported, not failed, until the owner promotes the check after the fill-rate baseline.
+Known gap: O5 sits in `docs/guidelines/session_roles/functions/planner.md` outside the injected Card, because the planner cards are at the token budget.
 
 ## Files Changed
-(filled at close)
+- `CLAUDE.md` (one line), `.agents/rules/ticket.md`, `.claude/workflows/create-tickets.js`, `.claude/skills/create-tickets/SKILL.md`
+- `tools/ticket_field_values.py`, `tools/gate_checks/done_checker_static.py`, `tools/gate_checks/lifecycle_section_fill_rate.py` (new)
+- `tools/delivery/pr_render.py`, `tools/delivery/pr_body_lint.py`, `tools/delivery/pr_template_spec.json`, `.github/pull_request_template.md`
+- `.claude/agents/ticket-scoper.md`, `docs/guidelines/session_roles/functions/planner.md`, `docs/guides/delivery_process.md`
+- `tests/tools/test_lifecycle_section.py` (new), `tests/tools/test_done_checker_static.py` (count 8 to 9)
 
 ## Completion Summary
-(filled at close)
+Landing date 2026-11-19: tickets dated on or after it need `## Durable state, lifecycle and clocks` (`N/A: <reason>` or answers); older tickets, and tickets with no parseable date, pass as grandfathered. `done_checker_static` runs it as the ADVISORY check `ticket_lifecycle_section` (OK/WARN/NA, shown with the other `[advisory]` lines, never changes the verdict). **Advisory first; promotion to blocking is a later owner decision after the fill-rate baseline.** The PR body gets one `- Durable state, lifecycle and clocks: <ticket>: <text>` Verification line per ticket, `N/A: no src change` when the diff touches no `src/` (the src rule is the PR diff, not the ticket's Related Code Areas); `pr_body_lint.py` reports (warning, exit unchanged) a body whose `## Tickets` table lists an id dated 20261119 or later and has no non-empty line; bodies listing only older tickets are never flagged. Other bodies (Dependabot, hand-written, no `## Tickets` heading) are not checked: a known bypass. CLAUDE.md's Required sections list gained the section line (owner yes #715 6972548742). The three create-tickets template sources are in their own commit. Baseline fill-rate output recorded at close (`python3 tools/gate_checks/lifecycle_section_fill_rate.py`):
+
+```
+tickets dated on or after 2026-11-19: 0
+  answers: 0
+  na_with_reason: 0
+  missing_or_invalid: 0
+fill rate (section present and valid): n/a (no tickets yet); N/A rate: n/a (no tickets yet)
+```
+
+Efficacy is measured prospectively on defects first reported after 2026-11-18; the on-hold architecture-reviewer eval stays parked and untouched. Open items: see the Known gap lines in Test Summary.

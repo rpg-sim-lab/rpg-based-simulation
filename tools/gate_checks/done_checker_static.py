@@ -505,14 +505,23 @@ def check_ticket_field_values_valid(
 
 
 def check_ticket_lifecycle_section(ticket_id: str, ticket_path: Path = None) -> tuple[str, str]:
-    """Adapter for `check_lifecycle_section` (tools/ticket_field_values.py): blocking presence check of
-    `## Durable state, lifecycle and clocks` for tickets dated on or after its landing date; older tickets pass as
-    grandfathered (TCK-20261118-REQUIRED-DURABLE-STATE-LIFECYCLE-CLOCKS-SECTION-IN-TICKETS-AND-PR-BODIES)."""
+    """Advisory adapter for `check_lifecycle_section` (tools/ticket_field_values.py), in the advisory vocabulary OK/WARN/NA
+    (TCK-20261118-REQUIRED-DURABLE-STATE-LIFECYCLE-CLOCKS-SECTION-IN-TICKETS-AND-PR-BODIES). Advisory first, by owner decision
+    (#715 6972698325): a ticket dated on or after the landing date that lacks `## Durable state, lifecycle and clocks`, or whose
+    `N/A:` has no reason, is REPORTED (WARN) and never changes the close verdict; promotion to blocking is a later owner decision
+    after the fill-rate baseline. The execution status is always shown: OK (ran, present), WARN (ran, missing or invalid), NA
+    (skipped: grandfathered, or the ticket file is missing), WARN with `errored:` when the check itself raised."""
     if ticket_path is None:
         ticket_path = TICKETS / "inprogress" / f"{ticket_id}.md"
+        if not ticket_path.exists():
+            ticket_path = TICKETS / "done" / f"{ticket_id}.md"
     if not ticket_path.exists():
-        return ("FAIL", f"{ticket_path} does not exist — cannot check the lifecycle section")
-    return check_lifecycle_section(ticket_path)
+        return ("NA", f"skipped: {ticket_path} does not exist")
+    try:
+        status, evidence = check_lifecycle_section(ticket_path)
+    except Exception as exc:  # noqa: BLE001 - advisory: report the error, never raise into the close
+        return ("WARN", f"errored: {type(exc).__name__}: {exc}")
+    return {"PASS": ("OK", f"ran: {evidence}"), "NA": ("NA", f"skipped: {evidence}")}.get(status, ("WARN", f"ran, REPORTED not failed (advisory first): {evidence}"))
 
 
 _DOCS_BULLET_RE = re.compile(r"^-\s+`(docs/[^`]+?)(?::\d+)?`", re.MULTILINE)
@@ -1009,7 +1018,7 @@ def check_temporal_week_consistency(
 
 
 def run_static_precheck(ticket_id: str, tier: str, start_ts: str | None) -> list[dict]:
-    """Aggregate all 9 Part A checks. Returns one dict per check, in this fixed order, matching
+    """Aggregate all 8 Part A checks. Returns one dict per check, in this fixed order, matching
     `DONE_SCHEMA.checklist`'s own item shape so the agent can transcribe directly. Does not
     collapse to a single boolean — per-check detail must survive.
     """
@@ -1020,7 +1029,6 @@ def run_static_precheck(ticket_id: str, tier: str, start_ts: str | None) -> list
         ("working_log_no_row_yet", check_working_log_no_row_yet(ticket_id)),
         ("frontmatter_valid", check_frontmatter_valid(ticket_id, tier)),
         ("ticket_field_values_valid", check_ticket_field_values_valid(ticket_id)),
-        ("ticket_lifecycle_section", check_ticket_lifecycle_section(ticket_id)),
         ("docs_to_update_coverage", check_docs_to_update_coverage(ticket_id, tier)),
         ("temporal_week_consistency", check_temporal_week_consistency()),
     )
@@ -1493,6 +1501,7 @@ def run_advisory_checks(ticket_id: str, tier: str) -> list[dict]:
         ("test_plan_proof_fields", check_proof_plan_fields(ticket_id, tier)),
         ("cited_evidence_tracked", check_cited_evidence_paths(ticket_id, tier)),
         ("evidence_runner_pinned", check_evidence_runner(ticket_id, tier)),
+        ("ticket_lifecycle_section", check_ticket_lifecycle_section(ticket_id)),
     )
     return [
         {"condition": name, "status": status, "evidence": evidence}
