@@ -162,5 +162,5 @@ def close_entity_target_project(
     closed = replace(objective, status=outcome.objective)
     ended = replace(project, objectives=[closed if o.id == closed.id else o for o in project.objectives])
     if outcome.ended_by is not None:
-        return end_record(ended, outcome.project, outcome.ended_by)
+        return end_record(ended, outcome.project, outcome.ended_by, state.tick)
     return replace(ended, status=outcome.project)
