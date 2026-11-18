@@ -72,9 +72,10 @@ from src.engine.policy import GovernorPolicy
 from src.core.strategic import (
     BlockerState, LeadState, LeadCertainty,
     ProjectState, ProjectStatus, ObjectiveState, ObjectiveStatus,
-    CognitionProfile, ProjectKind, GoalKind, ObjectiveKind, has_project_capacity, restart_clear_window, suspend_record, expire_suspended, with_live_current_score
+    CognitionProfile, ProjectKind, GoalKind, ObjectiveKind, has_project_capacity, restart_clear_window, suspend_record, expire_suspended, end_record, typed_completion, ProjectEnd, blocker_timeout_suppression, CONGESTION_BLOCKER_ID, with_live_current_score, ended_blocker_stamps
 )
 from src.engine.spatial_query import SpatialQueryService
+from src.systems.strategic_systems.blocker_lifecycle import reinferred_blockers_update
 from src.core.lodging_rules import is_lodged_stayer
 from src.content_semantics.faction import are_entities_hostile
 from src.content_semantics.relation import RelationContext
@@ -202,7 +203,7 @@ class StrategicIntelligenceSystem:
         # Phase 4: Congestion Blocker
         if entity.navigation.wait_count >= 5 or entity.navigation.oscillation_count >= 3:
              blockers.append(BlockerState(
-                 id="blocker_congestion",
+                 id=CONGESTION_BLOCKER_ID,
                  kind="access",
                  subject="congestion",
                  severity=0.5
@@ -496,13 +497,7 @@ class StrategicIntelligenceSystem:
                 current_project=current_proj
             )
             
-            new_additions = list(strat_up.blockers_add_or_update)
-            if inferred_up.blockers_add_or_update:
-                for b in inferred_up.blockers_add_or_update:
-                    if b.id not in [x.id for x in new_additions]:
-                        new_additions.append(b)
-            
-            strat_up = replace(strat_up, blockers_add_or_update=new_additions)
+            strat_up = reinferred_blockers_update(entity, strat_up, inferred_up, state.tick)
             removals = set(strat_up.blockers_remove)
             resolved_ids = set()
             for b_id, b in entity.strategic.blockers.items():
@@ -547,6 +542,7 @@ class StrategicIntelligenceSystem:
                         if all_blockers_resolved:
                             new_obj = replace(active_obj, status=ObjectiveStatus.RESOLVED)
                             project_upd = replace(project, objectives=[new_obj if o.id == new_obj.id else o for o in project.objectives], status=ProjectStatus.COMPLETED)
+                            project_upd = typed_completion(project_upd, state.tick)
 
             # (Update strat_up with results)
             new_additions = list(strat_up.blockers_add_or_update)
@@ -1285,6 +1281,7 @@ class StrategicIntelligenceSystem:
         view_strat = replace(
             strat,
             projects={pid: ended.get(pid, p) for pid, p in strat.projects.items()},
+            blockers={**strat.blockers, **{b.id: b for b in expiry.blockers_add_or_update}},  # the body builds on the stamped blocker, so a write of its own never drops the stamp
             current_project_id=None if expiry.current_project_id_set == "" else strat.current_project_id,
             current_objective_id=None if expiry.current_objective_id_set == "" else strat.current_objective_id,
         )
@@ -1302,6 +1299,7 @@ class StrategicIntelligenceSystem:
         current_ends = any(p.id == current and p.status == ProjectStatus.ABANDONED for p in written)
         return StrategicUpdate(
             projects_add_or_update=written,
+            blockers_add_or_update=ended_blocker_stamps(entity.strategic.blockers, written),  # 2.214: the same update stamps the blocker a resolve_blocker's end names
             current_project_id_set="" if current_ends else None,
             current_objective_id_set="" if current_ends else None,
         )
@@ -1528,9 +1526,10 @@ class StrategicIntelligenceSystem:
                     if blocker_id is not None:
                         b = strat.blockers.get(blocker_id)
                         if b and not b.resolved:
-                            blocker_updates.append(replace(b, suppression_until_tick=current_tick + 100))
+                            failures = b.failure_count + 1  # divergence 2.214: the suppression doubles with each timeout of the same blocker (100, 200, 400, 800, capped)
+                            blocker_updates.append(replace(b, failure_count=failures, suppression_until_tick=current_tick + blocker_timeout_suppression(failures), last_project_end_tick=current_tick))
                     return StrategicUpdate(
-                        projects_add_or_update=[replace(project, status=ProjectStatus.ABANDONED)],
+                        projects_add_or_update=[end_record(project, ProjectStatus.ABANDONED, ProjectEnd.BLOCKER_TIMEOUT, current_tick)],
                         current_project_id_set="",
                         current_objective_id_set="",
                         blockers_add_or_update=blocker_updates,
@@ -1820,13 +1819,13 @@ class StrategicIntelligenceSystem:
                 return StrategicUpdate()
 
             switch_up = StrategicIntelligenceSystem.evaluate_project_switch(with_live_current_score(entity, modified_scores), candidate_proj, current_tick, state=state)
-            switch_up = supersede_on_win(switch_up, route, candidate_proj)
+            switch_up = supersede_on_win(switch_up, route, candidate_proj, current_tick, entity.strategic.blockers)
             if switch_up:
                 # TCK-20260812-COMMITTED-INTENTION-SEQUENCE: win-transition bookkeeping. Only
                 # fires when the winning candidate is THIS tick's synthesized committed-intention
                 # candidate (matched by the metadata tag set at injection, above) -- a live
                 # scorer's candidate for the same GoalKind must not advance the sequence.
-                extra_ci = {}
+                extra_ci: dict[str, Any] = {}
                 if strat.committed_intentions and best_candidate.metadata.get("committed_intention_id") == strat.committed_intentions[0].intention_id:
                     extra_ci["committed_intentions_add_or_update"] = [replace(strat.committed_intentions[0], status="active")]
                 # TCK-20260813-ADVENTURE-ROUTE-LAST-ROUTING-FAMILY-RESTORE: restore
@@ -1834,7 +1833,7 @@ class StrategicIntelligenceSystem:
                 # ADVENTURE_ROUTE candidate. .value is required -- RouteFamily(str, Enum) means
                 # str(route_family) yields "RouteFamily.X", not the deleted phase's original
                 # "x" contract that event_shapers.py/event_extractor.py read.
-                extra_routing = {}
+                extra_routing: dict[str, Any] = {}
                 if best_candidate.kind == GoalKind.ADVENTURE_ROUTE:
                     route_family = best_candidate.metadata.get("route_family")
                     if route_family is not None:
