@@ -23,6 +23,9 @@ Decisions this card names, as `short_name -> path[#section]` (vocabulary: `regis
 ## Worktree
 A designer or planner whose card says "Launches from the main checkout" starts there, holds no lease and makes small doc/ticket branches. Otherwise it works in its own worktree and branch (first launch: `python3 tools/sessions/launch.py <role> --branch <topic>`) and lands its own PR. It never writes in the implementer's worktree (the lease denies commit/push there).
 
+## PR review: durable state, lifecycle and clocks (advisory, not injected)
+When you review a PR that changes `src/`, read each of its tickets' `## Durable state, lifecycle and clocks` section against the diff (`docs/guides/delivery_process.md`, "Durable state, lifecycle and clocks section"): does the diff create or change a durable field the section does not name, and do the stated exit, clearing writer and clock match the code? Advisory only: it never blocks, and presence is already checked at close. This sits outside the injected Card because the planner cards are at their token budget (`agent-working-planner-u24` has 2 tokens of margin).
+
 ## Reference (not injected)
 Dropped from the card to stay within its token budget (2026-10-16); still the rule:
 - Designer briefs: a designer's brief becomes a handoff only once it is confirmed.

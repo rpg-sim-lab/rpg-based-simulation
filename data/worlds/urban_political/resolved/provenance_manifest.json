@@ -1,8 +1,8 @@
 {
-  "manifest_id": "prov_e904d7b6f4822da4",
+  "manifest_id": "prov_1d095ed4c029f1fb",
   "world_id": "urban_political",
   "source_schema_version": "provenancemanifest.v1",
-  "catalog_fingerprint": "f26e73885a28246da6ad53c2224b3ce3b15d7ed38db68d9ab52f9c8ad7b3eb25",
+  "catalog_fingerprint": "8191b04e4dcff6587bf687e56cf5568ac804276146248b9fcbee13aaab8ec786",
   "module_fingerprints": {
     "frontier_village_core": "3ef51465da6b68679ecacc3493851ce19353bd132303533efaaa7839a8544c7b",
     "bandit_road_trade_pressure": "aa350454ab34ccb615a928faceff3c8d77a6dd3358eeee43e8828e0eb6b8a76d",
@@ -11,8 +11,8 @@
   },
   "composition_fingerprint": "ced42d55377d4ee33e9cece157899dfd69c04756479299d419cd55b2c57a63b3",
   "resolver_version": "1.0.0",
-  "content_fingerprint": "e904d7b6f4822da4534835f3f408ff5745a86bcac36008cf31bef402aab87947",
-  "created_at": "2026-11-18T03:46:54.998559Z",
+  "content_fingerprint": "1d095ed4c029f1fb7308fcd2af4bfeb4569bd03ae35fb4c2c6f2031c0515c79e",
+  "created_at": "2026-11-18T14:42:35.781343Z",
   "records": {
     "hero_guild": {
       "element_id": "hero_guild",

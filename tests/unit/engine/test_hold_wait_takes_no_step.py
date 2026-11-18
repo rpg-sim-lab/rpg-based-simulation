@@ -85,10 +85,11 @@ def test_p1b_depends_on_p2_a_wait_without_target_clear_still_walks_and_with_it_d
 
 
 def test_the_chokepoint_hold_clears_the_stored_target_too():
-    from tests.unit.combat.test_chokepoint_hold import F, H, _staged
+    from tests.unit.combat.test_chokepoint_hold import F, H, _staged, assert_the_target_is_hostile_and_a_target
     from src.engine.tactical import TacticalDecisionSystem
 
     state = _staged()
+    assert_the_target_is_hostile_and_a_target(state)
     update = TacticalDecisionSystem.evaluate_entity_intent(state, state.entities[F], [state.entities[H]], 0.0)
     assert update.task.payload_set["reason"] == "HOLD_CHOKEPOINT"
     assert update.navigation.movement_mode_set == MovementMode.HOLD and update.navigation.target_clear is True
@@ -128,9 +129,10 @@ def test_a_hold_action_success_does_not_reset_the_mode_in_the_actions_phase():
     from src.core.updates import StateUpdate
     from src.engine.pipeline_phases.actions import ActionRoutingPhase
     from src.engine.tactical import TacticalDecisionSystem
-    from tests.unit.combat.test_chokepoint_hold import F, H, _staged
+    from tests.unit.combat.test_chokepoint_hold import F, H, _staged, assert_the_target_is_hostile_and_a_target
 
     state = _staged()
+    assert_the_target_is_hostile_and_a_target(state)
     decision = TacticalDecisionSystem.evaluate_entity_intent(state, state.entities[F], [state.entities[H]], 0.0)
     refined = ActionRoutingPhase.route(state, StateUpdate(entity_updates={F: decision}))
     held = refined.entity_updates[F]

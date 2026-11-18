@@ -1,8 +1,8 @@
 {
-  "manifest_id": "prov_a072128e75ec7bbf",
+  "manifest_id": "prov_6efef42fab77e569",
   "world_id": "frontier_marches",
   "source_schema_version": "provenancemanifest.v1",
-  "catalog_fingerprint": "f26e73885a28246da6ad53c2224b3ce3b15d7ed38db68d9ab52f9c8ad7b3eb25",
+  "catalog_fingerprint": "8191b04e4dcff6587bf687e56cf5568ac804276146248b9fcbee13aaab8ec786",
   "module_fingerprints": {
     "frontier_village_core": "3ef51465da6b68679ecacc3493851ce19353bd132303533efaaa7839a8544c7b",
     "bandit_road_trade_pressure": "aa350454ab34ccb615a928faceff3c8d77a6dd3358eeee43e8828e0eb6b8a76d",
@@ -17,8 +17,8 @@
   },
   "composition_fingerprint": "21303aed08d8c7e447812e725c080de5fa0f9c9d067e6c02d02d19183ce57a91",
   "resolver_version": "1.0.0",
-  "content_fingerprint": "a072128e75ec7bbf7ccb08f385d92fda58df28e8a78a67a6d5581dc0d567c529",
-  "created_at": "2026-11-18T03:46:23.810540Z",
+  "content_fingerprint": "6efef42fab77e569c53ff9133f91616afd7df00c2e7d9db20c05507a1be9e375",
+  "created_at": "2026-11-18T14:41:57.407152Z",
   "records": {
     "hero_guild": {
       "element_id": "hero_guild",

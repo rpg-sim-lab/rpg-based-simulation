@@ -4718,6 +4718,27 @@
   divergence_note: See docs/guidelines/intentional_divergences.md Section 2.207.
   support_boundary: 'Unit rows, one tactical scene (the traced shape A; a raider, the old-predicate control holds the panic) and one real-kernel tick-loop test on compiled crowded_frontier (a starving wounded worker two tiles from the inn, a raider that hit it 3 ticks before every tick standing five tiles away and idle: it eats; with the old predicate restored it does not in the same 40 ticks). The paired 3-world x s42-46 x 5000-tick measurement and the V3 cell re-read are pending (after HOLD stage 2). Reach has no line-of-sight test; engagement ordering after a yielded need (group shared-target bias) is out of scope.'
 
+- id: STRAT-354
+  text: 'TCK-20261020-SUSPENDED-PROJECTS-ARE-NEVER-RESUMED-SLOT-LEAK (divergence 2.212): a SUSPENDED project that stays suspended for SUSPENSION_TTL_TICKS (200) ticks ends ABANDONED with ended_by SUSPENSION_EXPIRED through end_record, for every project kind, and its slot is free on the same strategic call. ProjectState.suspended_since is set by every SUSPENDED writer (project switch, tactical threat suspend, near-death) and cleared by resume_project; the near-death suspend also clears the current project and objective ids. Resume has no new trigger. The visible bound is TTL + cadence - 1 (209 at cadence 10, 219 under PROD_SMALL).'
+  status: verified
+  priority: P1
+  legacy_evidence: null
+  v2_evidence: 'src/core/strategic.py (ProjectEnd.SUSPENSION_EXPIRED, ProjectState.suspended_since, SUSPENSION_TTL_TICKS, suspend_record, expire_suspended), src/systems/strategic_systems/intelligence.py (evaluate_strategic_intent, suspension_expiry_update, resume_project), src/engine/tactical.py (_suspend_project_for_threat), src/systems/world_systems/events.py (interpret_near_death), src/engine/checkpoint_fields.py, docs/mechanics/04_strategic_cognition.md section 4, docs/guidelines/intentional_divergences.md Section 2.212.'
+  proof_type: regression
+  test_path: tests/unit/strategic/test_suspension_expiry.py, tests/unit/engine/test_checkpoint_fields.py
+  divergence_note: See docs/guidelines/intentional_divergences.md Section 2.212.
+  support_boundary: 'Unit rows plus the own-job counts at 67b507f8c: 3 gate worlds x s42 x 5000 ticks, spied and plain twin (hashes equal, PINNED, no exceptions, no logging errors): L1 = L2 = L3 = L4 = 0, SUSPENSION_EXPIRED 126 / 60 / 60 (frontier_living_world / urban_political / crowded_frontier), oldest SUSPENDED 218 < bar 219 (TTL 200 + cadence 20 - 1). 200 is a BALANCE value; the harm join is withdrawn. evaluate_all_strategic_intents has no production caller and skips the pass (TCK-20261117-EVALUATE-ALL-STRATEGIC-INTENTS-IS-DEAD-CODE-THAT-SKIPS-THE-SUSPENSION-EXPIRY).'
+
+- id: STRAT-355
+  text: 'TCK-20261117-A-RESOLVE-BLOCKER-PROJECT-IS-RE-CREATED-EVERY-80-TICKS-AND-STALLS-COOPERATION (divergence 2.214): a re-inference of a stored blocker merges into it (keeps suppression_until_tick and failure_count; refreshes last_seen_tick, severity, resolved) instead of replacing it; the resolve_blocker 50-tick timeout ends the project ABANDONED with ended_by BLOCKER_TIMEOUT through end_record, increments the blocker failure_count and suppresses it for 100 x 2^(failures-1) ticks, capped at 800; a congestion blocker is removed (typed event blocker_removed, reason QUIET_SPELL) only after 200 ticks of observable quiet: no resolve_blocker naming it ACTIVE or SUSPENDED and tick >= max(last_seen_tick, suppression_until_tick, BlockerState.last_project_end_tick, written by the update that ends a resolve_blocker naming it) + 200; the removal ends no project.'
+  status: verified
+  priority: P1
+  legacy_evidence: null
+  v2_evidence: 'src/core/strategic.py (BlockerState.failure_count and last_seen_tick, ProjectEnd.BLOCKER_TIMEOUT and BLOCKER_CLEARED, BlockerRemoval, blocker_timeout_suppression, merge_inferred_blocker, quiet_blockers), src/systems/strategic_systems/intelligence.py (the inference merge, quiet_spell_update, the resolve_blocker timeout branch), src/core/update_models/strategic.py (blockers_removed_for), src/observability/event_shapers.py (blocker_removed), src/engine/checkpoint_fields.py, docs/mechanics/04_strategic_cognition.md section 4, docs/guidelines/intentional_divergences.md Section 2.214.'
+  proof_type: regression
+  test_path: tests/unit/strategic/test_blocker_lifecycle.py, tests/unit/engine/test_checkpoint_fields.py
+  divergence_note: See docs/guidelines/intentional_divergences.md Section 2.214.
+  support_boundary: 'Unit rows only until the own-job counts (B1-B6, not vacuous) on the three gate worlds, s42, 5000 ticks are read. 100, 800 and 200 are BALANCE values. The material (resource) and social (suitable_partner) blockers are out of scope (own ticket).'
 - id: STRAT-351
   text: 'TCK-20261115-THE-NIGHT-CHECK-READS-RAW-WORLD-TIME-SO-EVERY-TICK-AFTER-1800-IS-NIGHT (SURV-08 clock amendment, memo row 98 Q1, divergence 2.209): night is the night half of the time of day (world_time % 2400: ticks 1800-2399 and 0-599), so tick 2400+k is classified as tick k. The sleep bias (SleepScorer +30, routine sleep urgency +0.3, routine sleep boost x2) applies in the night half of every day; the old raw-clock rule agrees with this below t=3000, and from t=3000 it counted every tick as night.'
   status: verified
@@ -4728,3 +4749,14 @@
   test_path: tests/unit/core/test_time_of_day.py
   divergence_note: See docs/guidelines/intentional_divergences.md Section 2.209.
   support_boundary: 'Unit rows: the helper at ticks 0, 599, 600, 1799, 1800, 2399, 2400, 2999, 3000 and 4200; night is 1200 of every 2400 ticks; the three readers agree at t and t plus whole days; no raw night literal in src outside calendar.py.'
+
+- id: STRAT-352
+  text: 'TCK-20261117-EACH-BODY-PERCEIVES-BY-ITS-SPECIES-SENSES-AND-SIGNALS-FOLLOW-THE-BODY (PERC-02, memo row 98 Q2, divergence 2.210): a body perceives through the sense profile of its species (derived at read, nothing stored), what it gives off follows the body (visibility by size, noise and vibration medium while moving (a move within MOVING_WINDOW ticks: a step, a swap or a yield displacement, navigation.last_moved_tick), low while still, very_low asleep or lodged, scent and life for the living, none for undead and spirit), vision counts two levels lower at night unless the profile declares night_vision, and a gate error is not perception.'
+  status: verified
+  priority: P1
+  legacy_evidence: null
+  v2_evidence: 'src/world/perception/gate.py (species-derived profile, SenseProfileError, unprofiled counter, night step), src/engine/perception_signals.py (emitted_signals), src/engine/behavior_consumers.py (get_entity_signals, require_sense_profile), src/engine/appraisal.py (perceives), src/engine/tactical.py, data/content/living/ (night_vision, troll_senses, body signals), docs/mechanics/04_strategic_cognition.md, docs/guidelines/intentional_divergences.md Section 2.210.'
+  proof_type: regression
+  test_path: tests/unit/world/test_perc02a_senses_signals_night.py
+  divergence_note: See docs/guidelines/intentional_divergences.md Section 2.210.
+  support_boundary: 'Touch: a body at Chebyshev distance 1 or less is always perceived by the touch channel (no score term; d>=2 verdicts unchanged); unit rows test_touch_* in the same test file. Unit rows: every content species derives its own profile; the ruled night_vision set; typed error for a dangling profile; signals by size, activity and life; the night grid; no perception granted below the threshold; gate error logged at ERROR and not perceived; no kind read in the perception modules. Not yet night-aware (day by default until 02b): legality.attack_allowed, is_feeding_kill, scorers_support.perceived_hostiles and the other get_neighbor_view sites.'

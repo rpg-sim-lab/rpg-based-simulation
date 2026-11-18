@@ -5,10 +5,11 @@ from src.core.updates import StateUpdate, EntityUpdate, TaskUpdate
 from src.core.enums import ReasonCode, EntityRole
 from src.engine.tactical import TacticalDecisionSystem
 from src.core.builder import V2EntityBuilder
+from tests.helpers.clock import DAY_WORLD_TIME
 
 def test_tactical_legality_filtering():
     # Setup state with a wall between attacker and closest target
-    initial_state = AuthoritativeState(tick=100, seed=42)
+    initial_state = AuthoritativeState(world_time=DAY_WORLD_TIME, tick=100, seed=42)
     state = replace(initial_state, terrain={(1, 0): "WALL"})
     
     # Attacker at (0, 0), Faction 1

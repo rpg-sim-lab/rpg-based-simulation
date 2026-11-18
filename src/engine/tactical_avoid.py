@@ -26,12 +26,12 @@ class Neighbourhood(NamedTuple):
     hostile_identity_sources: Dict[int, str]
 
 
-def classify_neighbours(entity: "EntityState", neighbors: Sequence["EntityState"], source: Tuple[str, str]) -> Neighbourhood:
+def classify_neighbours(entity: "EntityState", neighbors: Sequence["EntityState"], source: Tuple[str, str], night: bool = False, tick: Optional[int] = None) -> Neighbourhood:
     """Sorts ``neighbors`` by ``hostility.relation``: FACTION_HOSTILE and PREDATION are attack targets; THREATENING and WARY are avoided and
     never enter the hostile list (a plant-eater must never treat a wolf as an engagement target)."""
     hood = Neighbourhood([], [], [], {})
     for n in neighbors:
-        rel = relation(entity, n, source)
+        rel = relation(entity, n, source, night=night, tick=tick)
         if rel in ATTACK_RELATIONS:
             hood.hostiles.append(n)
             hood.hostile_identity_sources[n.id] = source[1]

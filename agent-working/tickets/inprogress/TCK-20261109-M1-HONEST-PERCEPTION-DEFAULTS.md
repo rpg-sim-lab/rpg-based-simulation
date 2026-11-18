@@ -15,7 +15,7 @@ tags: []
 Each kind perceives by its own senses, and signals follow the body
 
 ## Status
-OPEN
+INPROGRESS
 
 ## Tier
 standard
@@ -66,7 +66,7 @@ src/strategy/ and perception code, content schemas
 - Owner-level choices are asked when the milestone starts, not guessed here.
 
 ## Implementation Notes
-None yet.
+Split by the designer (2026-11-17) into two children: TCK-20261117-EACH-BODY-PERCEIVES-BY-ITS-SPECIES-SENSES-AND-SIGNALS-FOLLOW-THE-BODY (02a: senses, signals, night, gate error) and TCK-20261117-DECISIONS-SEE-OTHER-BODIES-ONLY-THROUGH-PERCEPTION (02b: perceived_neighbours migration, observable intent). This parent closes with 02b's PR.
 
 ## Test Summary
 

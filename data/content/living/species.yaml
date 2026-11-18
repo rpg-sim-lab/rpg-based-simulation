@@ -219,7 +219,7 @@
   need_profile: "humanoid_survival"
   reproduction_profile: "humanoid_births"
   newborn_archetype: "swamp_troll"
-  sense_profile: "normal_humanoid_senses"
+  sense_profile: "troll_senses"
   cognition_profile: "instinctive_animal"
   intelligence_tier: "low"
   drive_profile: "territorial_predator"

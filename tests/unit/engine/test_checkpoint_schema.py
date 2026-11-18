@@ -122,9 +122,10 @@ def test_an_append_without_a_field_rule_is_refused_through_restore(tmp_path, sta
 
 
 def _record_classes(state):
-    from src.core.strategic import ProjectState
+    from src.core.strategic import BlockerState, ProjectState
     classes = {c.__qualname__: c for k in dump_with_schema(state)[1] if (c := checkpoint_schema._resolve(k))}
     classes["ProjectState"] = ProjectState  # appears in a payload only once an entity holds a project
+    classes["BlockerState"] = BlockerState  # likewise, only once an entity holds a blocker (divergence 2.214)
     return classes
 
 

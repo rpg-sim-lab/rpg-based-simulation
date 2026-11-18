@@ -531,7 +531,8 @@ class NavigationComponent:
     # 0.0 = never stepped (free to step).
     step_ready_tick: float = 0.0
 
-    lodged_in: Optional[int] = None  # F3 (2.155): the building this subject LODGES in (position is its tile, on no tile held); set and cleared only by the apply path; LAST field (an insert is refused by the checkpoint schema check; an append needs a FIELD_RULES row)
+    lodged_in: Optional[int] = None  # F3 (2.155): the building this subject LODGES in (position is its tile, on no tile held); set and cleared only by the apply path; (an insert is refused by the checkpoint schema check; an append needs a FIELD_RULES row)
+    last_moved_tick: Optional[int] = None  # PERC-02 (2.210): the tick of the last MOVE of this body: any position change by the movement apply path (a step, a swap or a yield displacement; not lodge entry/exit, not a failed attempt); None = never stepped; LAST field (an insert is refused by the checkpoint schema check; an append needs a FIELD_RULES row)
 
     def to_canonical_dict(self) -> Dict[str, Any]:
         """The navigation block of the entity's canonical form. `step_ready_tick` (D75) is present only once non-zero, so the form of an
@@ -557,6 +558,8 @@ class NavigationComponent:
             res["step_ready_tick"] = self.step_ready_tick
         if self.lodged_in is not None:
             res["lodged_in"] = self.lodged_in  # present only while lodged, so the form of a subject that never lodged is unchanged (F3)
+        if self.last_moved_tick is not None:
+            res["last_moved_tick"] = self.last_moved_tick  # present once the body has stepped, so the form of one that never stepped is unchanged (PERC-02)
         return res
 
 
@@ -959,7 +962,7 @@ class EntityState:
                     **v.canonical_extra(),
                 } for k, v in sorted(self.strategic.projects.items())},
                 "directives": {k: asdict(v) for k, v in sorted(self.strategic.directives.items())},
-                "blockers": {k: asdict(v) for k, v in sorted(self.strategic.blockers.items())},
+                "blockers": {k: v.canonical_dict() for k, v in sorted(self.strategic.blockers.items())},
                 "leads": {k: asdict(v) for k, v in sorted(self.strategic.leads.items())},
                 "concerns": {k: asdict(v) for k, v in sorted(self.strategic.concerns.items())},
                 "candidate_zones": {k: asdict(v) for k, v in sorted(self.strategic.candidate_zones.items())},

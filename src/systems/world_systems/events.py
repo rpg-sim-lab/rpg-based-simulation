@@ -21,7 +21,7 @@ from src.core.state import EntityState, RegionState
 from src.core.strategic import (
     DirectiveState, DirectivePriority, ConcernState,
     ProjectState, ProjectStatus, ObjectiveState, ObjectiveStatus,
-    CognitionProfile
+    CognitionProfile, suspend_record
 )
 from src.core.updates import StrategicUpdate
 
@@ -162,9 +162,9 @@ class EventInterpreter:
             if current and current.status == ProjectStatus.ACTIVE:
                 updates = replace(
                     updates,
-                    projects_add_or_update=[replace(current, status=ProjectStatus.SUSPENDED)],
-                    current_project_id_set=None,
-                    current_objective_id_set=None
+                    projects_add_or_update=[suspend_record(current, current_tick)],
+                    current_project_id_set="",
+                    current_objective_id_set=""
                 )
 
         return updates
