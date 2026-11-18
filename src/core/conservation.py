@@ -251,19 +251,29 @@ def _shop_sell_result(state: Any, intent: ResourceTransferIntent, target_invento
         treasury_update=tax)
 
 
+def service_price(intent: ResourceTransferIntent) -> int:
+    """What a priced service costs: its ``gold_cost`` plus the coin its ``gold_delta`` takes. A bed and an inn meal price through a negative ``gold_delta``, a repair or a fee through ``gold_cost``.
+    The ONE definition: the affordability check and the flows both read it, so the debit and the credit cannot disagree."""
+    return max(0, intent.gold_cost - intent.gold_delta)
+
+
 def _service_result(state: Any, intent: ResourceTransferIntent, target_inventory: InventoryComponent) -> TransactionResult:
-    """A paid service or fee. The payee is the service building's purse, else the treasury the intent names, else (an unnamed payee) nobody."""
+    """A paid service or fee. The payee is the service building's purse, else the treasury the intent names, else (an unnamed payee) nobody. What the payer is debited is exactly what the
+    payee receives (EXCH-02: every coin is some purse's coin): ``paid`` = the price, as far as the payer's purse (the running inventory at resolve time) reaches, and with no payee nothing is
+    debited at all, so the service goes ahead without a charge. The debit never leans on the apply-time clamp at 0 (a same-tick arrival would hide a debit the credit never matched)."""
     if target_inventory.gold < intent.gold_cost:
         return TransactionResult(accepted=False, reason=ReasonCode.ACTION_EXHAUSTION)
-    paid = min(target_inventory.gold, max(0, intent.gold_cost - intent.gold_delta))
+    paid = min(target_inventory.gold, service_price(intent))
     credit = _service_credit(state, intent, paid)
     holder = intent.treasury_faction
     to_treasury = credit is None and holder is not None and paid > 0
+    if credit is None and not to_treasury:
+        paid = 0  # no payee: nothing is debited
     return TransactionResult(
         accepted=True,
         building_update=credit,
         treasury_update=TreasuryTransfer(faction=holder, gold_delta=int(paid)) if holder is not None and to_treasury else None,
-        inventory_update=InventoryUpdate(items_add=intent.items_add, gold_delta=intent.gold_delta - intent.gold_cost),
+        inventory_update=InventoryUpdate(items_add=intent.items_add, gold_delta=-paid),
         identity_update=intent.identity_upd, biological_update=intent.biological_upd, attributes_update=intent.attributes_upd,
         combat_update=intent.combat_upd, strategic_update=intent.strategic_upd, equipment_update=intent.equipment_upd, reward_update=intent.reward_upd)
 
