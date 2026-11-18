@@ -1,9 +1,14 @@
 """TCK-20261115-PAST-THE-STARVING-LINE-THE-TACTICAL-STEP-TURNS-AWAY-FROM-A-MEAL-WITHOUT-WEIGHING-HUNGER, through the real kernel (crowded_frontier, compiled).
 
 Worker 1 forced into the traced shape of crowded s45 e5 / s46 e4: starving (hunger 100), wounded (hp 10/100), gold 0, two tiles from inn 20003, and last hit 3 ticks before every
-tick by raider 24, which stands five tiles away, idle (no attack or pursue task). The fixture holds the raider there and re-stamps the hit each tick, so at whichever tick the worker's
-brain runs the hit is three ticks old. Past the starving line a hit acts only while its hitter can reach the subject, so the worker walks to the inn and eats; with the old ten-tick
-hit window restored (the control) the hit still acts and the worker does not eat in the same ticks.
+tick by a raider five tiles away, idle (no attack or pursue task). The raider is orc 34 of crowded_frontier (seed 42): a large body (visibility high) that the worker PERCEIVES by day and
+regards as hostile on the same path the hit window reads (asserted at every tick before the worker's brain runs, see `_preconditions`), with combat.range 1 so five tiles is beyond its
+reach (`max(1, hostile.combat.range)`, tactical_threat._hit_acts_on). The fixture holds the raider on one tile, asserted unoccupied before each rewrite, and re-stamps the hit each tick, so
+at whichever tick the worker's brain runs the hit is three ticks old. Past the starving line a hit acts only while its hitter can reach the subject, so the worker walks to the inn and eats;
+with the old ten-tick hit window restored (the control) the hit still acts and the worker does not eat in the same ticks.
+
+(A goblin raider, the earlier body, is small: visibility low. A still low-visibility body is never perceived short of touch (PERC-02a, best score .132 < .2), so the worker never counted it a
+hostile and neither the hit window nor its control was exercised.)
 """
 from __future__ import annotations
 
@@ -16,8 +21,25 @@ import pytest
 
 pytestmark = pytest.mark.integration
 
-WORKER, RAIDER = 1, 24
+WORKER, RAIDER = 1, 34
+HELD_TILE = (42, 26)  # five tiles from the worker (42, 31); no unenterable tile exists in that band (plain and forest), so the fixture asserts it is unoccupied before every rewrite
 TICKS = 40
+
+
+def _preconditions(state, worker, raider):
+    """At the tick the worker's brain runs: the raider is perceived (a), is in the hostile set the hit window is read from, with a hit three ticks old (b), and stands beyond its reach (c)."""
+    from src.core.calendar import is_night
+    from src.engine.appraisal import perceives
+    from src.engine.hostility import perceived_hostile
+    from src.engine.tactical_threat import NEED_WAKE_CADENCE
+    from src.engine.tile_distance import manhattan_tile_distance
+
+    night = is_night(state.world_time)
+    assert perceives(worker, raider, night=night, tick=state.tick), f"tick {state.tick}: the worker does not perceive the raider"
+    assert perceived_hostile(worker, raider, night=night, tick=state.tick), f"tick {state.tick}: the raider is not in the worker's hostile set"
+    assert state.tick - worker.combat.last_hit_tick <= NEED_WAKE_CADENCE and raider.id in worker.combat.last_hit_attackers, f"tick {state.tick}: the hit is outside the window"
+    dist = manhattan_tile_distance(worker.navigation.position, raider.navigation.position)
+    assert dist > max(1, raider.combat.range), f"tick {state.tick}: the raider ({dist} tiles) is within its reach {max(1, raider.combat.range)}"
 
 
 def _run(run_id):
@@ -52,12 +74,15 @@ def _run(run_id):
             if i and hungry < 90.0:
                 return hungry
             entities = dict(state.entities)
+            crowd = [e.id for e in entities.values() if e.id != RAIDER and e.combat.alive and (int(e.navigation.position[0]), int(e.navigation.position[1])) == HELD_TILE]
+            assert not crowd, f"tick {state.tick}: bodies {crowd} stand on the raider's held tile {HELD_TILE}"
             if i == 0:
                 worker = replace(worker, navigation=replace(worker.navigation, position=(42.0, 31.0)), combat=replace(worker.combat, hp=10, max_hp=100),
                                  biological=replace(worker.biological, hunger=100.0, sleep_debt=0.0), inventory=replace(worker.inventory, gold=0))
             worker = replace(worker, combat=replace(worker.combat, last_attacker_id=RAIDER, last_hit_attackers=(RAIDER,), last_hit_tick=state.tick - 3))
             entities[WORKER] = worker
             entities[RAIDER] = replace(raider, navigation=replace(raider.navigation, position=(42.0, 26.0)), task=TaskComponent(work_kind="ENTITY_ACT", payload={}))
+            _preconditions(state, worker, entities[RAIDER])
             object.__setattr__(state, "entities", entities)
             kernel.tick_once()
         return kernel.state.entities[WORKER].biological.hunger
@@ -69,11 +94,16 @@ def _run(run_id):
         shutil.rmtree(Path("data") / "runs" / run_id, ignore_errors=True)
 
 
-def test_a_starving_wounded_worker_hit_by_a_raider_that_fell_behind_walks_to_the_inn_and_eats():
+def _no_hard_law_violation(caplog):
+    assert not [r.getMessage() for r in caplog.records if "Hard Law Violation" in r.getMessage()]
+
+
+def test_a_starving_wounded_worker_hit_by_a_raider_that_fell_behind_walks_to_the_inn_and_eats(caplog):
     assert _run("d1_hit_reach_cf") < 90.0
+    _no_hard_law_violation(caplog)
 
 
-def test_the_same_worker_with_the_old_ten_tick_hit_window_does_not_eat_in_the_same_ticks(monkeypatch):
+def test_the_same_worker_with_the_old_ten_tick_hit_window_does_not_eat_in_the_same_ticks(monkeypatch, caplog):
     import src.engine.tactical_threat as threat
 
     def old_hit_acts_on(hostile, subject, tick):  # the predicate before the reach test: the hit acts for one brain cadence wherever the hitter is
@@ -82,3 +112,4 @@ def test_the_same_worker_with_the_old_ten_tick_hit_window_does_not_eat_in_the_sa
 
     monkeypatch.setattr(threat, "_hit_acts_on", old_hit_acts_on)
     assert _run("d1_hit_reach_cf_control") >= 90.0
+    _no_hard_law_violation(caplog)
