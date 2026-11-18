@@ -2593,3 +2593,13 @@
   test_path: tests/unit/world/test_work_shift_pays_a_wage_from_the_inns_purse.py
   divergence_note: 'Intentional divergence 2.117 (Intentional Gameplay Change).'
   support_boundary: 'The need, the purse and the treasury are checked as the tick stands so far, in entity-id order, so simultaneous finishers are exact; intents inside one group_id do not see each other''s staged purse, and no wage uses a group today. People only (decisions 42 and 43).'
+- id: TOWN-211
+  text: 'A decaying corpse conserves its goods: when the decay step removes a body, its coin becomes a ground purse (TOWN-208, ruling 61), its raw meat leaves through the typed MEAT_DECAYED / CORPSE_DECAY sink (ch. 03), and every other item it holds becomes a ground item at its tile with source entity and tick.'
+  status: divergent
+  priority: P1
+  legacy_evidence: null
+  v2_evidence: '`src/engine/world_dynamics.py` (`WorldDynamicsSystem._decay_corpses` moves only gold to a purse; `_meat_decayed_events` sinks raw meat; other corpse items are removed with the body and no record)'
+  proof_type: parity
+  test_path: tests/unit/resource/test_rewards_repair_and_fees.py
+  divergence_note: 'Defect, not an intentional divergence: items other than gold and raw meat leave the world at corpse decay with no sink (TCK-20261118-A-DECAYING-CORPSE-DESTROYS-EVERY-ITEM-EXCEPT-GOLD-AND-MEAT-WITH-NO-SINK). The ruled fix makes them ground items through the shared ground-item helper. The entry returns to verified when that ticket lands.'
+  support_boundary: 'Gold and raw meat at decay are conserved today; only the other items are lost.'

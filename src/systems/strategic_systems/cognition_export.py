@@ -94,7 +94,7 @@ class CognitionGraphExporter:
             nodes.append(CognitionGraphNode(
                 id=b.id, kind="blocker",
                 label=f"{b.kind}: {b.subject}",
-                attributes={"severity": b.severity, "resolved": b.resolved}
+                attributes={"severity": b.severity, "resolved": b.resolved, **({"suppression_until_tick": b.suppression_until_tick} if b.suppression_until_tick else {}), **({"failure_count": b.failure_count} if b.failure_count else {}), **({"last_seen_tick": b.last_seen_tick} if b.last_seen_tick is not None else {})}
             ))
 
         # Leads

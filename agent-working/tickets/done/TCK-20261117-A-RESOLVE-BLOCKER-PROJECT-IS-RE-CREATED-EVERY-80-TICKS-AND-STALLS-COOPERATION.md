@@ -1,10 +1,10 @@
 ---
-status: active
+status: historical
 layer: strategy
 authority: P1
 audience: agent
 ticket_id: TCK-20261117-A-RESOLVE-BLOCKER-PROJECT-IS-RE-CREATED-EVERY-80-TICKS-AND-STALLS-COOPERATION
-phase: open
+phase: done
 date: 2026-11-17
 tags: []
 ---
@@ -15,7 +15,7 @@ tags: []
 In urban_political s42, half the survivors re-create a resolve_blocker project about every 80 ticks after t≈550 (each one times out and is abandoned), and cooperation stops
 
 ## Status
-OPEN
+DONE
 
 ## Tier
 standard
@@ -67,9 +67,26 @@ rpg-designer's pointer: the 50-tick resolve_blocker timeout (intelligence.py, in
 
 ## Implementation Notes
 - Filed by rpg-planner on rpg-designer's ruling (2026-11-17).
+- Cause: re-inference replaced the stored congestion blocker and a quiet blocker was removed on first sight, so each 50-tick timeout was followed by a fresh blocker with no suppression and a new resolve_blocker.
+- Fix (divergence 2.214, STRAT-355): re-inference merges into the stored blocker; a congestion blocker is removed only after 200 ticks of observable quiet; `ProjectState.ended_tick` and the blocker-owned `BlockerState.last_project_end_tick` (stamped by the same update that ends the project, one helper `ended_blocker_stamps`; needed because capacity_enforcement, phase 42, runs before apply and can trim a just-ended record).
+- Disclosed gap: a resolve_blocker that completes via typed_completion does not stamp the blocker (moot per designer).
+- Gate version: the busy gate was v3 (ef5020fc) for the whole rerun; it became v4 (b1b1bafc, python executables only) after the cells finished.
 
 ## Test Summary
+Own-job cells_fix2b (tree_fix2, 5000t, spy + plain twin, S9 #715 6972088075), designer-accepted after recounting all four cells from the raw chunks: every end typed, B3 = 0, no quiet removal inside the bound, rebuild gaps follow the 100/200/400/800 backoff. Claim: "churn reduced, no untyped ends".
+- B1-B6 = 0, twin hash match, PINNED, logging_errors 0, exceptions {} in frontier_living_world s42 (146 timeout ends), urban_political s42 (267), crowded_frontier s42 (101); urban_political s123 report cell 191.
+- Builds vs main: urban s42 429 -> 274 (-36%); s123 339 -> 207 (-39%).
+- Urban s42 rose vs the first fix (190 -> 274 builds, timeouts 183 -> 267): the first fix removed the blocker early; now there is no early removal, so the honest backoff re-attempts happen (gaps 100/200/400/800).
+- Crowded inventory removals (27) are the resolved path.
+- Perf: plain twin times are approximate (log and json mtimes, load unknown); urban s42 about +22% (planner figure), no flag.
+- B3 was corrected (owner-recorded omission, #715 6971764418).
+- S8 test-fixture edits: 10915fa79 (old-shape N10 project tests drop the whole appended tail) and 638e3a67b (assertion on the fused-pass end tick); no assertion weakened.
+- Scoped unit run, mypy and tests/architecture green on 8f38e313f; later commits changed tests only (36 passed after 16f4908b2).
+- Separate HARD ticket: urban_political s123 last cooperation tick stays at 1926 (t=4400-4900), mostly fatigue; not part of this fix.
+- Fixture re-record: #715 6948845825. Order-dependent observability failures: TCK-20261117-TWO-OBSERVABILITY-TESTS-FAIL-ONLY-AFTER-A-LONG-SAME-PROCESS-RUN.
 
 ## Files Changed
+src: core/strategic.py, core/state.py, core/update_models/strategic.py, ai/goals/live_record_route.py, engine/{building_arrival,building_services,lodging,checkpoint_fields}.py, observability/{event_shapers,extraction/strategy}.py, systems/strategic_systems/{blocker_lifecycle,cognition_export,entity_target_objective,intelligence}.py. Docs: Bible 04, intentional_divergences 2.214, parity STRAT-355, event_type_coverage, registries/mechanisms.yaml. Tests: unit/strategic (4 files), unit/engine (3), unit/observability, unit/tools mechanism completeness, event extractor fixture.
 
 ## Completion Summary
+The resolve_blocker churn is reduced with no untyped ends; the stall in urban s123 is a separate HARD ticket.
