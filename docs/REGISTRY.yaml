@@ -8000,6 +8000,20 @@
   tags:
   - process-improvement
 - type: ticket
+  path: agent-working/tickets/todos/TCK-20261119-COIN-IS-CONSERVED-EVERY-TICK-NOT-ONLY-AT-THE-RUN-END.md
+  ticket_id: TCK-20261119-COIN-IS-CONSERVED-EVERY-TICK-NOT-ONLY-AT-THE-RUN-END
+  title: 'A per-tick coin-conservation Hard Law check: total_coin(after) - total_coin(before)
+    - declared == 0 every tick, so any phase''s coin leak is caught when it happens
+    (V6 moved from the run''s end to every tick)'
+  tier: standard
+  ticket_type: feature
+  date: '2026-11-19'
+  related_code_areas:
+  - src/observability/ (HardLawMonitor), src/core/treasury.py (total_coin), src/core/models/inventory.py:230
+    (the apply clamp), src/engine/action_intent.py:217
+  artifact_files: []
+  tags: []
+- type: ticket
   path: agent-working/tickets/todos/TCK-20261119-RECRUIT-CHEST-AND-CRAFTING-COSTS-DEBIT-THE-PAYER-WITH-NO-PAYEE.md
   ticket_id: TCK-20261119-RECRUIT-CHEST-AND-CRAFTING-COSTS-DEBIT-THE-PAYER-WITH-NO-PAYEE
   title: 'RECRUIT, CHEST and CRAFTING transactions with gold_cost > 0 debit the payer
