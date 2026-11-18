@@ -256,6 +256,17 @@ What the table says:
 - **Long runs are heavier than short ones in `mixed`.** `mixed_200` is 207 ms over 1000 ticks against 104 to 137 ms over 30 ticks in section 10.4, and its p95 (463 ms) is 2.2 times its mean: the tick cost grows during the run and is bursty.
 - **`nearby_entities` at 400 to 500 entities is not yet attributed.** R4 ran unsampled; `combat_engagement` stays at 19 % of the `mixed` tick up to 400 entities, `cooperation` takes the largest and growing share (25, 31, 37 %). A py-spy run at `mixed` 400 is owed (births slot).
 
+**Wall clock per fantasy year (rpg-designer's horizon check, recomputed here).** The year is 120 days: `TICKS_PER_DAY` 2400 x `DAYS_PER_SEASON` 30 x `SEASONS_PER_YEAR` 4 = 288,000 ticks (`src/core/calendar.py:10-13`, the 2026-08-29 calendar decision); `max_age` is 70 fantasy years (`state.py:168`), adulthood 12 (`cohort.py:19`). With a 365-day year every figure below would be 3 times larger; it is not.
+
+| population | s per tick | wall clock per fantasy year | wall clock for 70 years |
+|---|---|---|---|
+| `frontier_living_world`, 55 bodies, fixed (38.4 s per 1000 ticks) | 0.0384 | 3.07 h | 8.97 days |
+| 200 bodies, cost x6.5 to x8.5 (exponent 1.45 to 1.65 from 55) | 0.25 to 0.33 | 20 to 26 h | 58 to 76 days |
+| 400 bodies, cost x18 to x27 (same exponents) | 0.69 to 1.02 | 55 to 82 h | 160 to 240 days (5.3 to 7.7 months) |
+| 400 bodies from the synthetic absolute figure (`mixed_400`, 563.7 ms, x14.7) | 0.56 | 45 h | 132 days (4.3 months) |
+
+Caveats: each figure comes from one noisy run on a loaded host; the exponents are measured on `mixed` (100 to 400 entities), not on a corpus world, and the synthetic world is not like for like with the corpus; the population is assumed fixed at each row, and births will move it. Treat the table as an order of magnitude, not a forecast.
+
 **Temporal scale is not execution cost.** The owner keeps temporal scaling (ticks per progression; audit #715 6967725212) separate from execution performance (cost per tick, semantics kept). A 13 to 29 % cut of the tick (10.6) does not change the generation horizon: it makes each tick cheaper, not each simulated span longer.
 
 ### 10.6 Ranked fix list (each goes back as its own ticket, `src/` via rpg-planner; savings are shares of the tick, from this section)

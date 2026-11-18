@@ -1,10 +1,10 @@
 ---
-status: active
+status: historical
 layer: performance
 authority: P1
 audience: agent
 ticket_id: TCK-20261115-WHAT-A-WORKER-CHUNK-COSTS-TO-ENCODE-AND-SHIP
-phase: open
+phase: done
 date: 2026-11-15
 tags: [performance]
 ---
@@ -15,7 +15,7 @@ tags: [performance]
 Measure what a Collection chunk costs to encode and decode, and Collection's internal split, on the 3 gate worlds (cheap form)
 
 ## Status
-OPEN
+DONE
 
 ## Tier
 standard
@@ -92,7 +92,11 @@ None.
 - Design §9's child 2 row is not a perf doc: the result goes to its owner through lead-planner to cite.
 
 ## Test Summary
+Measurement only: the probe ran 9 times, rc=0, control hash matched on all 3 worlds.
 
 ## Files Changed
+- chunk_cost_probe.py (kept with the stored artifacts)
+- staging evidence.md, moved to stored artifacts
 
 ## Completion Summary
+CONCLUSIVE: the pickle codec round trip is 44-146x the compute per chunk at the median (p90 248-422x); the full form is not needed. The result was handed to the design's owner through lead-planner (cited at 5c9496a33).

@@ -1,10 +1,10 @@
 ---
-status: active
+status: historical
 layer: performance
 authority: P1
 audience: agent
 ticket_id: TCK-20261115-PER-PHASE-TICK-COST-AFTER-THE-HOSTILITY-AND-COOPERATION-FIXES
-phase: open
+phase: done
 date: 2026-11-15
 tags: [performance]
 ---
@@ -15,7 +15,7 @@ tags: [performance]
 Re-measure per-phase tick cost on a quiet host after the hostility index (H1) and cooperation candidate (H2) fixes
 
 ## Status
-OPEN
+DONE
 
 ## Tier
 standard
@@ -90,7 +90,11 @@ None.
 - Run data cleaned by id (24 dirs, with child 2's).
 
 ## Test Summary
+Measurement only: no tests (docs, evidence).
 
 ## Files Changed
+- docs/performance/tick_cost_growth.md (section 9)
+- staging evidence.md, moved to stored artifacts
 
 ## Completion Summary
+Stage 0 per-phase re-measure on db6b4579d done: urban 24.36 ms, crowded 26.81 ms, frontier INCONCLUSIVE on this host; fused_strategic_pass 19-26 % of the tick. Results in `tick_cost_growth.md` section 9; the timing-host proposal is TCK-20261116-TIMING-RUNS-SHARE-THEIR-CPUS-WITH-IDLE-SEATS (stays open).

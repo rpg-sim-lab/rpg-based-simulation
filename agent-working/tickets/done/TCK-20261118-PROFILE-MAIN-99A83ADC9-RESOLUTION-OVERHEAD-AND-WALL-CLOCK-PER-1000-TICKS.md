@@ -1,10 +1,10 @@
 ---
-status: active
+status: historical
 layer: performance
 authority: P1
 audience: agent
 ticket_id: TCK-20261118-PROFILE-MAIN-99A83ADC9-RESOLUTION-OVERHEAD-AND-WALL-CLOCK-PER-1000-TICKS
-phase: open
+phase: done
 date: 2026-11-18
 tags: [performance]
 ---
@@ -15,7 +15,7 @@ tags: [performance]
 Profile main 99a83adc9: attribute resolution_overhead, re-check H1/H2/H3, measure seconds per 1000 ticks, rank fixes
 
 ## Status
-OPEN
+DONE
 
 ## Tier
 standard
