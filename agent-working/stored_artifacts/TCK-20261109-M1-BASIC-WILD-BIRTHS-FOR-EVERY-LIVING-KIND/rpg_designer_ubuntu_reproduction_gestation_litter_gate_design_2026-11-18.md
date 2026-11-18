@@ -121,3 +121,27 @@ tags: []
 - The bucket-2 A fixture condition (213 rows at ticks 120-199, newborns from tick 120) is VOID. Births now arrive at the conception tick plus gestation, so the fixture regeneration gets a fresh attribution and a fresh ruling.
 - test_world_dynamics' delta tests and the co-fire order test are re-checked against birth-at-term.
 - The own-job instrument (02d327ba6) needs G1-G5, the PregnancyState rows and the risen rows, then new shas and my re-approval.
+
+## 9. Revision 2 (2026-11-18): rpg-designer's rulings on Q-G1 to Q-G5. Where this section differs from §1-§8, it wins.
+- **Q-G1: APPROVED, with one change. This supersedes §1's "stays on the dead body".**
+  - If the mother dies first, the PregnancyState is CLEARED in the death's typed update, and a typed event is emitted: `PREGNANCY_ENDED`, reason `MOTHER_DIED`, with the litter size.
+  - **New HARD row G6:** no PregnancyState on a dead body (count = 0).
+  - Implementation note: the clear belongs to every path that sets a death or despawn, not to births. The plan names each of those paths.
+- **Q-G2, the Births Law bullet RE-RULED.** It replaces the placed bullet verbatim:
+  > - **Births Law**: Every 30 ticks (absolute kernel tick), a mother eligible under her species' reproduction profile and not already pregnant, with an eligible same-species mate in range who passes the species' declared mate gate, may conceive, by the profile's chance per check, drawn from the run's seeded RNG. The pregnancy is recorded on her, and at its due tick she bears its litter, drawn at conception from the profile's declared litter weights, at life stage CHILD. The step runs inside this phase, outside its 50-tick gate, and commits only typed updates (the pregnancy and its end, the newborns, their birth sources, the parents' cooldowns and the mother's hunger cost, the region's birth count).
+  - **Condition:** content validation refuses a `gestation_ticks` that isn't a positive multiple of 30, as a typed content error.
+- **Q-G3: APPROVED.**
+  - Humanoid `min_mutual_sentiment` REFERENCES the FRIEND threshold constant. It is not a copied number.
+  - The ch07, parity and intentional_divergences texts (Intentional Gameplay Change, reversing 2026-08-29) go to rpg-designer BEFORE code.
+  - The marriage arm being 0 today is disclosed.
+- **Q-G4: YES.** Q18 is lifted only for the marriage and bond reads.
+- **Q-G5: CONFIRMED.** The HARD set is G1-G6, K8 at conception and at birth, and 6a at the birth.
+- **Maturity:** not M1 scope (TCK-20261117-A-NEWBORN-NEVER-GROWS-UP-INSIDE-A-RUN-NEEDS-A-MATURATION-CLOCK). The step report carries the line: "gestation is compressed; maturity is not, so no newborn breeds in any run."
+- **Placement:** each newborn goes through free_spawn_position's existing search. A newborn with no free tile is NOT born, and is reported as unplaced.
+  - **G2 becomes: born + unplaced = the litter drawn, exactly.**
+  - Unplaced counts are BALANCE. It is a STOP only if every birth in a cell is unplaced.
+- **Region:** 6a credits the mother's region at the BIRTH tick, using her position at term, captured by the spy itself.
+- **Father dead before term:**
+  - the birth proceeds, using the genetics snapshot and the recorded father id;
+  - the newborn's parent bond is seeded only toward LIVING parents;
+  - its parentage fields record both parents.
