@@ -64,6 +64,12 @@ src/world/perception/, src/engine/appraisal.py, src/engine/hostility.py, src/eng
 None open; rulings by rpg-designer relayed by rpg-planner 2026-11-17 (split into 02a/02b; derive at read; unprofiled fixtures counted).
 Ruled law (rpg-designer, 2026-11-18): a move = any position change by the movement apply path (step, swap, yield); it stamps last_moved_tick and, in the stale-reason fix, clears failure_reason. Lodge entry/exit and a failed attempt are not moves.
 
+## Durable state, lifecycle and clocks
+
+- **Durable field:** `NavigationComponent.last_moved_tick` (`Optional[int]`, appended last, canonical only when set, FIELD_RULES fill None, a checkpoint round-trip test). Creation/idempotence: it is written ONLY by the movement apply path when a body moves (its own step, a swap, a yield displacement; NOT lodge entry or exit), through `NavigationUpdate.last_moved_tick_set`; two passes over the same move write the same tick. Update: the field is replaced by the newer move tick (`NavigationUpdate.merge` keeps `last_moved_tick_set`); a move that names no tick carries the previous one. It is never cleared: "moving" is a read-time window, not stored state, so there is no exit to bound and nothing to clear.
+- **Lifecycle:** set on each move; read as `tick - last_moved_tick <= MOVING_WINDOW` (3, provisional, the step-gap probe pending). The species sense profile is derived at read from the body's `kind`, never stored. `moved_recently` is no longer read (TCK-20261118-MOVED-RECENTLY-...). One write site (the movement apply path), one meaning.
+- **Clocks:** the step clock is `state.tick`, the absolute kernel tick. Night is read only through `is_night(state.world_time)` and passed as a REQUIRED keyword (`night`, with `tick`) to `relation`, `perceived_hostile`, `attack_allowed`, `perceives`, `appraise` and `faction_hostile`; `verify_attack_legality` derives it from the state's `world_time` and raises if there is none (never day). The one reader that still defaults is `candidate_selector.engaged_adjacent_hostile` (`when=(False, None)`, the 02b site).
+
 ## Implementation Notes
 Designer rulings 2026-11-17 via rpg-planner: derive at read (no stored field, no FIELD_RULES row); fixture policy (unprofiled counted, linked to TCK-20261117-TEST-FIXTURES-DECLARE-A-SPECIES-THROUGH-A-HELPER-AND-THE-BUILDER-DEFAULT-GOES). Known: legality.attack_allowed, is_feeding_kill, scorers_support.perceived_hostiles and the other get_neighbor_view sites stay day-by-default until 02b.
 
