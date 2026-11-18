@@ -65,6 +65,14 @@ Found by lane A's read-only F2 code read (2026-11-17, F1 head 46ac46e40; the cit
 - Whether a stale reason has ever filed a wrong blocker in a real run is unmeasured.
 - Any fix touching intelligence.py waits for the intelligence.py split (owner schedule).
 
+## Durable state, lifecycle and clocks
+
+- Record: `NavigationState.last_failure_reason` (entity navigation, authoritative state; read by `information/phase.py` `claim_failed_search` and by `infer_blockers`).
+- Creator: a failed step (movement routing) or a failed action (action routing) writes a code through `NavigationUpdate.failure_reason`. Ender: any MOVE (own step, swap, yield displacement) carries `failure_reason_clear` and no code; before this ticket a yield or swap wrote YIELDING / POSITION_SWAP and nothing cleared it.
+- Update semantics: `NavigationPatch.apply` is replace-by-precedence: a code beats a clear, a bare None leaves the old value. `NavigationUpdate.merge` keeps the later code. Within movement routing a code the phase itself wrote for a body is dropped when that body is then displaced, and the pre-phase (action) code is restored; a code from an earlier phase survives; a code written later still wins.
+- Clock: state.tick only (phase order action_routing, position_swaps, movement_routing within one tick; guarded by a test). No world_time / is_night read; no new stored field and no new clock.
+- Visibility: the observation stream changes (fewer `claim_failed_search` after a move); noted in information_contract.md and divergence 2.214.
+
 ## Implementation Notes
 
 **Ruled move law (rpg-designer, owner #715 6967356642 and 6967398421, after the first own-job tripped R1/R3):** any position change by the movement apply path is a MOVE: the subject's own step, a swap, or a yield displacement (lodge entry and exit are not). A move carries `failure_reason_clear` and NO failure code. The yield (`movement.py` `_yield_update`) drops `YIELDING`; the position-swap update (`pipeline_phases/movement.py`) drops `POSITION_SWAP`; both carry the clear. A failure code the movement-routing phase itself wrote for a body earlier in the tick is dropped when the body is then displaced (`_merge_move_update`, provenance-tracked per phase); codes from earlier phases (action routing runs BEFORE position swaps and movement routing, so the body's existing update may hold an action code) survive, and a code written later still wins at the patch. `OCCUPANCY_CONFLICT` becomes a `ReasonCode` member (same value). The swap merge in the swap phase is unchanged: swaps run before movement routing, so a swapped body has no prior movement code, only possibly an action code, which survives.
