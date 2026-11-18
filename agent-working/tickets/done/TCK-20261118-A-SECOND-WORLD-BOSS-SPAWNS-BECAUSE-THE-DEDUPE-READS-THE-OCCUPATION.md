@@ -1,10 +1,10 @@
 ---
-status: active
+status: historical
 layer: world
 authority: P1
 audience: agent
 ticket_id: TCK-20261118-A-SECOND-WORLD-BOSS-SPAWNS-BECAUSE-THE-DEDUPE-READS-THE-OCCUPATION
-phase: open
+phase: done
 date: 2026-11-18
 tags: []
 ---
@@ -15,7 +15,7 @@ tags: []
 A second world boss spawns because BossService's dedupe reads the occupation, which kind=species step 4 (#952) moved to the species
 
 ## Status
-OPEN
+DONE
 
 ## Tier
 hotfix
@@ -73,9 +73,15 @@ No new durable state. The fix corrects which identity field the dedupe reads.
 - Merge segment: it is a step-4 defect, so it belongs to step 4's identity segment. The merge order is set with lead-planner-u24.
 
 ## Implementation Notes
+src/world/boss.py: the two dedupe predicates (`_is_active_living_boss`, `_is_active_living_lair_occupant`) read `species_of(entity)` instead of `identity.occupation`. Every other identity read in the file is a properties lookup (boss_region_id, lair_place_id); the occupation strings at the two spawns are writes. The parity row world_dynamics.yaml (~:1052) says "world_boss/ancient_sentinel idempotency keyed via boss_region_id" and does not claim the occupation, so it needed no change.
 
 ## Test Summary
+- New tests/unit/world/test_boss_dedupe_reads_the_species.py (4 tests). On main (git archive tree): the world_boss case and a relabelled-dragonkin case FAIL (one extra entity added); the plain dragonkin case passes on main (latent: the spawn writes the same label), hence the relabelled test.
+- With the fix: that file, test_living_world_ph9 (boss assert unchanged), test_world_dynamics, test_boss_gate_reachability, test_world_boss_spawn_flag, test_mechanism_state_caller_check, test_parity_index_baseline: 58 passed. code-health OK (rc 0), mypy filter rc 0, no new ruff findings on boss.py.
 
 ## Files Changed
+- src/world/boss.py
+- tests/unit/world/test_boss_dedupe_reads_the_species.py
 
 ## Completion Summary
+A living world boss (species world_boss, occupation ancient_sentinel) is now found by the region dedupe, so a second boss no longer spawns; the lair dedupe reads species too.

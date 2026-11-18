@@ -8016,6 +8016,18 @@
   - agent-working/stored_artifacts/TCK-20261118-A-DIAGNOSTIC-KIT-PREFLIGHT-CHECKS-EACH-KIT-ON-BOTH-FROZEN-TREES-BEFORE-ITS-RUN/test_plan.md
   tags: []
 - type: ticket
+  path: agent-working/tickets/done/TCK-20261118-A-SECOND-WORLD-BOSS-SPAWNS-BECAUSE-THE-DEDUPE-READS-THE-OCCUPATION.md
+  ticket_id: TCK-20261118-A-SECOND-WORLD-BOSS-SPAWNS-BECAUSE-THE-DEDUPE-READS-THE-OCCUPATION
+  title: A second world boss spawns because BossService's dedupe reads the occupation,
+    which kind=species step 4 (#952) moved to the species
+  tier: hotfix
+  ticket_type: bug
+  date: '2026-11-18'
+  related_code_areas:
+  - src/world/boss.py (:85, :151-152, :219, :263-264)
+  artifact_files: []
+  tags: []
+- type: ticket
   path: agent-working/tickets/done/TCK-20261118-CHECKLIST-PLACEMENT-PROPOSAL.md
   ticket_id: TCK-20261118-CHECKLIST-PLACEMENT-PROPOSAL
   title: 'Proposal: where the lifecycle and clock checklist should sit so it fires
