@@ -118,3 +118,18 @@ tags: []
 - **Faction** = the risen archetype's (undead_sentinel: `undead_remnants`).
 - **The build site** carries `entity_spawn_sources` (test_spawn_sites_declare_source).
 - **ECOL-06 is not in the catalog on any branch.** Q-R1 becomes: write ECOL-06 and its risen sibling together.
+
+## 8. Revision 3 (2026-11-18): rpg-designer's rulings. Where this section differs from §1-§7, it wins.
+- **ECOL-07** (Q-R1) goes directly after ECOL-06 in life-body/ecology-population.md, with evidence R1-R4. Its text: "**ECOL-07: A risen body is made from a corpse, never from nothing: a declared kind may rise from a corpse the world holds, and each corpse raises at most one body, once.**" The catalog text rides B5 together with ECOL-06.
+- **Roadmap item 2** (Q-R2): "creatures come only from births, declared world creation or a declared non-birth origin, for every kind".
+- **Identity** (Q-R3): confirmed as §3, with two additions:
+  - position = the corpse's tile, or free_spawn_position from it, and any count uses the corpse's region, computed by the spy itself (as for 6a);
+  - birth_tick holds the arrival tick only if the field's doc line reads "birth or arrival tick", with SpawnSource RISEN telling them apart. There is no second field.
+- **K8 stays births-only** (Q-R4). R3/R4 cover risen bodies, and K6/K6b apply to both.
+- **Goods** (Q-R6): **(b) is FINAL** (rpg-designer, relayed by lead-planner as a correction). It supersedes the "(a) plus exact decay path" relay, which crossed with it. §7 stands.
+  - Gold goes to the purse, and raw meat to MEAT_DECAYED.
+  - Every other ItemStack becomes a ground item at the corpse tile, with its source entity and tick.
+  - **R2 bars all three exactly, per corpse.**
+  - The drop is ONE shared helper. The u24 decay ticket TCK-20261118-A-DECAYING-CORPSE-DESTROYS-EVERY-ITEM-EXCEPT-GOLD-AND-MEAT-WITH-NO-SINK (P1) reuses it, so decay and rising stay one law.
+  - Until that ticket lands, the decay loss is disclosed with a reference to it.
+- **Q-R5 (OWNER):** corpse only. The graveyard place and dark magic go on the balancing-pass backlog.
