@@ -31,11 +31,12 @@ every claimed hook hit at least once.
 from __future__ import annotations
 
 import argparse
+import ast
 import hashlib
-import inspect
 import json
 import os
 import re
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -114,7 +115,7 @@ def check_gate_visibility(manifest: dict, words: Optional[str]) -> List[Row]:
     for proc in manifest.get("processes", []):
         if not proc.get("heavy", True):
             continue
-        files = sorted({m for token in proc["entry"] for m in re.findall(r"\{file:([^}]+)\}", token) if m.endswith(".py")})
+        files = sorted({m for token in proc["entry"] for m in re.findall(r"\{file:([^}]+)\}", token) if ".py" in m})
         for name in files:
             seen = bool(pattern.search(Path(name).name))
             rows.append(("h gate visibility", f"{proc['name']}: {Path(name).name}", PASS if seen else FAIL,
@@ -190,14 +191,18 @@ def run(cmd: Sequence[str], tree: Path, env: Dict[str, str]) -> subprocess.Compl
 
 def substitute(token: str, ctx: Dict[str, Any], base: Path) -> str:
     token = re.sub(r"\{file:([^}]+)\}", lambda m: str((base / m.group(1)).resolve()), token)
+    token = re.sub(r"\{out_of:([^}]+)\}", lambda m: str(Path(ctx["outdir"]) / f"{m.group(1)}.out"), token)
     return re.sub(r"\{(python|tree|world|seed|ticks|out)\}", lambda m: str(ctx[m.group(1)]), token)
 
 
-_IMPORT_SNIPPET = ("import importlib.util, sys\n"
-                   "spec = importlib.util.spec_from_file_location('_kit_import_check', sys.argv[1])\n"
-                   "mod = importlib.util.module_from_spec(spec)\n"
-                   "sys.modules['_kit_import_check'] = mod\n"
-                   "spec.loader.exec_module(mod)\n")
+# A kit script is usually a script, not a module: its argv parsing and its run sit at the top level. So check (b) executes only its top-level statements up to and including
+# the last top-level import (the `sys.path` fix and every import), under the run's flags, and stops before the script would read argv or tick anything.
+_IMPORT_SNIPPET = ("import ast, sys\n"
+                   "src = open(sys.argv[1], encoding='utf-8').read()\n"
+                   "tree = ast.parse(src)\n"
+                   "last = max((i for i, n in enumerate(tree.body) if isinstance(n, (ast.Import, ast.ImportFrom))), default=-1)\n"
+                   "tree.body = tree.body[:last + 1]\n"
+                   "exec(compile(tree, sys.argv[1], 'exec'), {'__name__': '_kit_import_check', '__file__': sys.argv[1]})\n")
 
 
 def check_imports(proc: dict, tree: Path, python: str, base: Path, scope: str) -> List[Row]:
@@ -213,7 +218,7 @@ def check_imports(proc: dict, tree: Path, python: str, base: Path, scope: str) -
 
 _SIGNATURE_SNIPPET = r'''
 import importlib, importlib.util, inspect, json, sys
-tree, target, wrapper_file, wrapper_attr = sys.argv[1:5]
+tree, target = sys.argv[1:3]
 sys.path.insert(0, tree)
 def params(obj):
     return [[p.name, p.kind.name] for p in inspect.signature(obj).parameters.values()]
@@ -221,11 +226,7 @@ module_name, qual = target.split(":")
 obj = importlib.import_module(module_name)
 for part in qual.split("."):
     obj = getattr(obj, part)
-spec = importlib.util.spec_from_file_location("_kit_wrapper_check", wrapper_file)
-mod = importlib.util.module_from_spec(spec)
-sys.modules["_kit_wrapper_check"] = mod
-spec.loader.exec_module(mod)
-print(json.dumps({"target": params(obj), "wrapper": params(getattr(mod, wrapper_attr))}))
+print(json.dumps({"target": params(obj)}))
 '''
 
 
@@ -257,60 +258,83 @@ def signature_problems(target: List[List[str]], wrapper: List[List[str]]) -> Lis
     return problems
 
 
+def wrapper_params(path: Path, name: str) -> List[List[str]]:
+    """The parameters of the top-level ``def name`` in a kit script, read from its source (a script cannot be imported without running it)."""
+    for node in ast.parse(path.read_text(encoding="utf-8")).body:
+        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)) and node.name == name:
+            a = node.args
+            out = [[x.arg, "POSITIONAL_ONLY"] for x in a.posonlyargs] + [[x.arg, "POSITIONAL_OR_KEYWORD"] for x in a.args]
+            if a.vararg:
+                out.append([a.vararg.arg, "VAR_POSITIONAL"])
+            out += [[x.arg, "KEYWORD_ONLY"] for x in a.kwonlyargs]
+            if a.kwarg:
+                out.append([a.kwarg.arg, "VAR_KEYWORD"])
+            return out
+    raise LookupError(f"no top-level def {name!r} in {path.name}")
+
+
 def check_wraps(proc: dict, tree: Path, python: str, base: Path, scope: str) -> List[Row]:
     rows: List[Row] = []
     for wrap in proc.get("wraps", []):
         wfile, wattr = wrap["wrapper"].split(":")
-        done = run([python, "-I", "-c", _SIGNATURE_SNIPPET, str(tree), wrap["target"], str((base / wfile).resolve()), wattr], tree, child_env(tree))
         label = f"{scope} {wrap['target']} <- {wrap['wrapper']}"
+        done = run([python, "-I", "-c", _SIGNATURE_SNIPPET, str(tree), wrap["target"]], tree, child_env(tree))
         if done.returncode != 0:
-            rows.append(("g wrapper signature", label, FAIL, f"could not import both: {(done.stderr.strip().splitlines() or [''])[-1][:160]}"))
+            rows.append(("g wrapper signature", label, FAIL, f"could not import the target: {(done.stderr.strip().splitlines() or [''])[-1][:160]}"))
             continue
-        found = json.loads(done.stdout.strip().splitlines()[-1])
-        problems = signature_problems(found["target"], found["wrapper"])
+        try:
+            wrapper = wrapper_params(base / wfile, wattr)
+        except (LookupError, SyntaxError, OSError) as err:
+            rows.append(("g wrapper signature", label, FAIL, f"could not read the wrapper: {err}"))
+            continue
+        problems = signature_problems(json.loads(done.stdout.strip().splitlines()[-1])["target"], wrapper)
         rows.append(("g wrapper signature", label, FAIL if problems else PASS, "; ".join(problems) if problems else "every target parameter is matched"))
     return rows
 
 
 # ---- (c) (d) (e) the fixture run ------------------------------------------------------------------------------------------------------------
 
-def check_fixture_run(proc: dict, tree: Path, python: str, base: Path, ticks_cap: int, scope: str) -> List[Row]:
+def check_fixture_run(proc: dict, tree: Path, python: str, base: Path, ticks_cap: int, scope: str, outdir: Path) -> List[Row]:
     fixture = proc.get("fixture", {})
-    with tempfile.TemporaryDirectory(prefix="kit_preflight_") as tmp:
-        out = Path(tmp) / "out.json"
-        ctx = {"python": python, "tree": tree, "world": fixture.get("world", ""), "seed": fixture.get("seed", 42), "ticks": min(int(fixture.get("ticks", ticks_cap)), ticks_cap), "out": out}
-        cmd = [substitute(token, ctx, base) for token in proc["entry"]]
+    out = outdir / f"{proc['name']}.out"
+    ctx = {"python": python, "tree": tree, "world": fixture.get("world", ""), "seed": fixture.get("seed", 42), "ticks": min(int(fixture.get("ticks", ticks_cap)), ticks_cap), "out": out, "outdir": outdir}
+    cmd = [substitute(token, ctx, base) for token in proc["entry"]]
+    try:
+        done = run(cmd, tree, child_env(tree, proc.get("env")))
+    except subprocess.TimeoutExpired:
+        return [("c fixture run", scope, FAIL, f"timed out after {TIMEOUT_SECONDS}s")]
+    rows: List[Row] = [("c fixture run", scope, PASS if done.returncode == 0 else FAIL,
+                        f"rc=0, {ctx['ticks']} tick(s)" if done.returncode == 0 else f"rc={done.returncode}: {(done.stderr.strip().splitlines() or [''])[-1][:160]}")]
+    text = done.stdout + "\n" + done.stderr
+    doc: Any = None
+    if out.is_file():
         try:
-            done = run(cmd, tree, child_env(tree, proc.get("env")))
-        except subprocess.TimeoutExpired:
-            return [("c fixture run", scope, FAIL, f"timed out after {TIMEOUT_SECONDS}s")]
-        rows: List[Row] = [("c fixture run", scope, PASS if done.returncode == 0 else FAIL,
-                            f"rc=0, {ctx['ticks']} tick(s)" if done.returncode == 0 else f"rc={done.returncode}: {(done.stderr.strip().splitlines() or [''])[-1][:160]}")]
-        text = done.stdout + "\n" + done.stderr
-        doc: Any = None
-        if out.is_file():
-            try:
-                doc = json.loads(out.read_text(encoding="utf-8"))
-            except ValueError as err:
-                rows.append(("d field liveness", scope, FAIL, f"output is not JSON: {err}"))
-        elif proc.get("output", {}).get("fields") or proc.get("hooks"):
-            rows.append(("d field liveness", scope, FAIL, "the entry wrote no output file"))
-        if doc is not None:
-            rows.extend(check_fields(proc, doc, scope))
-        guards = proc.get("guards", {})
-        if guards.get("ok_regex"):
-            hit = re.search(guards["ok_regex"], text) is not None
-            rows.append(("e guards", f"{scope} ok line", PASS if hit else FAIL, "present" if hit else f"{guards['ok_regex']!r} not found"))
-        if guards.get("bad_regex"):
-            hit = re.search(guards["bad_regex"], text) is not None
-            rows.append(("e guards", f"{scope} bad line", FAIL if hit else PASS, f"{guards['bad_regex']!r} found" if hit else "absent"))
-        errors = len(re.findall(guards.get("error_log_regex", DEFAULT_ERROR_LOG_REGEX), text))
-        rows.append(("e guards", f"{scope} ERROR+ log lines", FAIL if errors else PASS, str(errors)))
-        for hook in proc.get("hooks", []):
-            values, resolved = collect(doc, hook["count_path"]) if doc is not None else ([], False)
-            count = sum(v for v in values if isinstance(v, (int, float)) and not isinstance(v, bool))
-            rows.append(("e guards", f"{scope} hook {hook['name']}", PASS if count >= 1 else FAIL, f"hit {count} time(s)" if values else "count not in the output"))
-        return rows
+            text_out = out.read_text(encoding="utf-8")
+            doc = [json.loads(line) for line in text_out.splitlines() if line.strip()] if proc.get("output", {}).get("format") == "jsonl" else json.loads(text_out)
+        except ValueError as err:
+            rows.append(("d field liveness", scope, FAIL, f"output is not JSON: {err}"))
+    elif proc.get("output", {}).get("fields") or any("count_path" in h for h in proc.get("hooks", [])):
+        rows.append(("d field liveness", scope, FAIL, "the entry wrote no output file"))
+    if doc is not None:
+        rows.extend(check_fields(proc, doc, scope))
+    guards = proc.get("guards", {})
+    if guards.get("ok_regex"):
+        hit = re.search(guards["ok_regex"], text) is not None
+        rows.append(("e guards", f"{scope} ok line", PASS if hit else FAIL, "present" if hit else f"{guards['ok_regex']!r} not found"))
+    if guards.get("bad_regex"):
+        hit = re.search(guards["bad_regex"], text) is not None
+        rows.append(("e guards", f"{scope} bad line", FAIL if hit else PASS, f"{guards['bad_regex']!r} found" if hit else "absent"))
+    errors = len(re.findall(guards.get("error_log_regex", DEFAULT_ERROR_LOG_REGEX), text))
+    rows.append(("e guards", f"{scope} ERROR+ log lines", FAIL if errors else PASS, str(errors)))
+    for hook in proc.get("hooks", []):
+        if "stdout_regex" in hook:
+            hits = len(re.findall(hook["stdout_regex"], text))
+            rows.append(("e guards", f"{scope} hook {hook['name']}", PASS if hits >= 1 else FAIL, f"hit {hits} time(s)"))
+            continue
+        values, resolved = collect(doc, hook["count_path"]) if doc is not None else ([], False)
+        count = sum(v for v in values if isinstance(v, (int, float)) and not isinstance(v, bool))
+        rows.append(("e guards", f"{scope} hook {hook['name']}", PASS if count >= 1 else FAIL, f"hit {count} time(s)" if values else "count not in the output"))
+    return rows
 
 
 # ---- driver --------------------------------------------------------------------------------------------------------------------------------
@@ -333,11 +357,13 @@ def preflight(manifest_path: Path, trees: Sequence[Path], python: str, ticks: in
     rows += check_runner_references(manifest, base)
     rows += check_gate_visibility(manifest, heavy_words(busy_gate, words))
     for tree in trees:
+        outdir = Path(tempfile.mkdtemp(prefix="kit_preflight_"))
         for proc in manifest.get("processes", []):
             scope = f"{proc['name']}@{tree.name}"
             rows += check_imports(proc, tree, python, base, scope)
             rows += check_wraps(proc, tree, python, base, scope)
-            rows += check_fixture_run(proc, tree, python, base, ticks, scope)
+            rows += check_fixture_run(proc, tree, python, base, ticks, scope, outdir)
+        shutil.rmtree(outdir, ignore_errors=True)
     inputs = {"kit": f"{manifest.get('kit')} v{manifest.get('version')}", "manifest sha256": sha256_of(manifest_path), "preflight sha256": sha256_of(Path(__file__).resolve()),
               "interpreter": python, "env digest": env_digest_of(python), "ticks cap": str(ticks)}
     for entry in manifest.get("files", []):

@@ -202,3 +202,41 @@ def test_the_cli_exits_nonzero_on_a_fault_and_prints_the_table(tmp_path, capsys)
     rc = kp.main([str(path), "--tree", trees[0], "--tree", trees[1], "--python", sys.executable, "--heavy-words", WORDS, "--ticks", "5"])
     out = capsys.readouterr().out
     assert rc == 1 and "KIT PREFLIGHT FAIL" in out and "evidence label: executed" in out and "manifest sha256" in out and "env digest" in out
+
+
+# ---- real kits are scripts: top-level run, JSONL output, a spy defined inside the script, kit files named <name>.py_<sha>_approved ----------------------------------------
+
+SCRIPT_PROBE = '''
+import json, os, sys
+sys.path.insert(0, os.getcwd())
+import fakesrc
+world, seed, ticks, out = sys.argv[1], int(sys.argv[2]), int(sys.argv[3]), sys.argv[4]
+def spy(self, source_entity, target_signals, context=None, *args, **kwargs):
+    return True
+with open(out, "w") as fh:
+    for t in range(ticks):
+        fh.write(json.dumps({"tick": t, "entities": {"1": ["human", t % 3], "2": ["wolf", "None"]}}) + "\\n")
+print("PROBE OK")
+'''
+
+
+def test_a_script_style_probe_with_jsonl_output_passes_and_its_nested_field_is_read(tmp_path):
+    path, manifest = _kit(tmp_path, SCRIPT_PROBE, probe_name="step_probe.py_deadbeef_approved",
+                          proc_extra={"output": {"format": "jsonl", "fields": [{"path": "[*].entities[*][0]"}, {"path": "[*].entities[*][1]"}]}, "hooks": []})
+    assert _failed(_run(tmp_path, path)) == set()
+
+
+def test_a_jsonl_field_that_is_the_string_none_on_every_row_fails_when_the_manifest_lists_it_as_a_default(tmp_path):
+    path, _ = _kit(tmp_path, SCRIPT_PROBE, probe_name="step_probe.py_deadbeef_approved",
+                   proc_extra={"output": {"format": "jsonl", "fields": [{"path": "[*].entities[2][1]", "defaults": [None, "None"]}]}, "hooks": []})
+    rows = _run(tmp_path, path)
+    assert any(c == "d field liveness" and st == kp.FAIL for c, _, st, _ in rows)
+
+
+def test_a_wrapper_defined_inside_a_script_is_read_from_its_source(tmp_path):
+    kit = tmp_path / "kit"
+    path, _ = _kit(tmp_path, SCRIPT_PROBE, probe_name="step_probe.py",
+                   proc_extra={"output": {"format": "jsonl", "fields": []}, "hooks": [], "wraps": [{"target": "fakesrc.gate:Gate.can_perceive", "wrapper": "step_probe.py:spy"}]})
+    rows = _run(tmp_path, path)
+    assert any(c == "g wrapper signature" and st == kp.FAIL and "context" in d for c, _, st, d in rows) is False
+    assert not any(c == "g wrapper signature" and st == kp.FAIL for c, _, st, _ in rows)

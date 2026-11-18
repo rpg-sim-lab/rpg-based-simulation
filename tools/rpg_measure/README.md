@@ -45,3 +45,9 @@ Evidence labels, strongest last; a packet states which one each claim has:
 - **executable**: the kit imports and starts on the tree (checks a, b).
 - **executed**: the preflight fixture run succeeded with live fields and clean guards on both trees (the whole table PASS). This is what the preflight prints.
 - **validated**: the real run's output was checked against an independent source (a known count, a second method, or the unit tests that cover the same writers). A kit is never "validated" by its preflight alone.
+
+### Host-gate hygiene for waiting shells
+
+The shared gate (`lib/busy_gate.sh`) finds a heavy job by `pgrep -af "python.*(<heavy words>)"` plus a project path over the WHOLE command line. A waiting or launcher shell whose command line carries the kit words
+(`_spy`, `_probe`, `pytest`, ...) and a project path therefore reads as a heavy job, blocks every other lane's gate and its own (a deadlock). Never self-queue behind the gate, and never put the kit
+words on a launcher's command line: put the command in a script file and run that file, as the runners do. Run a heavy job only on the planner's explicit HOST FREE.
