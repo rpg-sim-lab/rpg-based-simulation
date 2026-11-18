@@ -1,34 +1,52 @@
-"""Driver for the births own-job (rulings v2 Part C, checks 3 and 6 added by owner request): per world x seed three arms, then the mechanical report.
+"""Driver for the births own-job (rulings v2 Part C, checks 3 and 6 by owner request; the M1 reproduction rows G1-G6, R1-R4 and the trigger-neutrality arm added 2026-11-18).
 
-Arms: ``spied`` (births on + record-only spy), ``plain`` (births on, no spy: its final hash must equal the spied arm's), ``control`` (the chance-0 twin, spied).
-Refuses to start without ``--go <reference>``, the id of the lead-planner go for THIS run. Run under
-``systemd-run --user --scope -q -p MemoryMax=3G -p MemorySwapMax=0 taskset -c 4-5`` with PYTHONHASHSEED=0 and the main checkout's python. Deletes nothing.
+Three blocks, each with its own ``--go <reference>`` (the id of the lead-planner go for THAT run) and its own ``--out``; the driver refuses to start without one and deletes nothing:
+- ``--block evidence``: per world x seed the head arms ``spied`` (births on + record-only spy), ``control`` (the chance-0 twin, spied) and ``plain`` (births on, no spy; its final hash must equal
+  the spied arm's), interleaved with a MAIN-tree cost run (``--main-tree``) of the same cell, serial; seed 42 also gets a repeat ``plain`` + ``main`` pair (the run-to-run noise band).
+- ``--block trigger``: s42 (``--seeds``) x the three trigger arms, ``trigger_on`` / ``trigger_off`` / ``trigger_pos``, at 1000 ticks; a world whose ``trigger_on`` fired 0 times is rerun at 5000 ticks
+  (both runs printed); a world with no cell that fired is a STOP to rpg-designer-ubuntu.
+- ``--block probe`` (``--cost-probe``): one world x one seed, one arm at a time, wall time and peak RSS.
+Run under ``systemd-run --user --scope -q -p MemoryMax=3G -p MemorySwapMax=0 taskset -c 4-5`` with PYTHONHASHSEED=0 and the main checkout's python, detached under setsid.
 
-HARD (any non-zero count fails; the report prints PASS/FAIL/STOP and never a judgement): K6, K6b, K8, W1-W5, 6a (``mismatch_total``), twin hash equality.
-STOP: zero births in total, or zero regioned births (6a cannot be assessed). BALANCE, report only: everything else (check 3 tables and ratios, 6b rows, regionless births).
+HARD (any non-zero count fails; the report prints PASS/FAIL/STOP and never a judgement): K6, K6b, K8, W1-W5, G1-G6, R1-R4, 6a (``mismatch_total``), twin hash equality, and per trigger cell the
+neutrality equalities (state hash, event stream, integer metrics including spatial_index_hits and the phase counters) with ON firings > 0 and extra runs > 0, OFF 0 and 0, and a positive control that
+differs. STOP: zero births in total, zero regioned births (6a cannot be assessed), zero risings in the tier (R1-R4 vacuous). BALANCE, report only: everything else (check 3, 6b, unplaced, ended
+pregnancies, father-dead-at-term, regionless births, the per-phase cost read).
 The report reads alive bodies from state through species_of(); it never reads population_young or any region cohort counter except in the 6b BALANCE rows.
 
-Usage: python -m tools.rpg_measure.births_run --tree <fix tree> --out <dir> --go <ref> [--ticks 5000] [--jobs 2] [--worlds ...] [--seeds ...] [--cost-probe]
+Usage: python -m tools.rpg_measure.births_run --block evidence|trigger --tree <fix tree> [--main-tree <frozen main>] --out <dir> --go <ref> [--ticks N] [--worlds ...] [--seeds ...] [--recording-off]
+       python -m tools.rpg_measure.births_run --block probe --tree <fix tree> --out <dir> --go <ref> [--main-tree <frozen main>] [--ticks N]
 """
 from __future__ import annotations
 
 import argparse
 import gzip
+import statistics
 import json
 import os
 import subprocess
 import sys
 import time
-from collections import Counter, defaultdict
-from concurrent.futures import ThreadPoolExecutor
+from collections import Counter
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
 from tools.rpg_measure import paired
 
 CHILD = Path(__file__).resolve().with_name("births_child.py")
-BARS = ("K6", "K6b", "K8", "W1", "W2", "W3", "W4", "W5")
+COST_CHILD = Path(__file__).resolve().with_name("births_cost_child.py")
+BARS = ("K6", "K6b", "K8", "W1", "W2", "W3", "W4", "W5", "G1", "G2", "G3", "G4", "G5", "G6", "R1", "R2", "R3", "R4")
 ARMS = ("spied", "plain", "control")
+TRIGGER_ARMS = ("trigger_on", "trigger_off", "trigger_pos")
+TRIGGER_TICKS = 1000
+TRIGGER_RERUN_TICKS = 5000
+TRIGGER_SEEDS = (42,)
+STALL_FACTOR = 5.0  # a tick whose total time exceeds this multiple of the cell median is a stall tick (dropped from the phase medians, and counted)
+STALL_REDO_FRACTION = 0.02  # a cell with more than this fraction of stall ticks is rerun, not accepted
+JUMP_SINGLE = 0.5  # a single cell whose head/main median gap is at least this fraction is flagged
+JUMP_HELD_GAP = 0.10  # a gap above this AND above the head-vs-head noise band, in HELD_CELLS or more cells, is a jump held across cells
+HELD_CELLS = 3
+RECORDING_OFF_ENV = {"SIM_OBS_MODE": "OFF", "RPG_OBS_MODE": "OFF"}
 COMBAT_CAUSE = "COMBAT"  # check 3 verdict: the per-capita rate is combat deaths per 1000 live entity-ticks
 Key = Tuple[str, int, str]
 BASES = {"6a": "mother's region (births' write rule)", "check3_probe_c": "newborn tile (the region at the newborn's position)"}
@@ -36,26 +54,43 @@ COHORT_FLAG_RULE = "a flag row when the cohort rises while live bodies == 0, or 
 PROBE_WORLD = "frontier_living_world"  # the largest gate world (55 bodies), so its cost bounds the other two
 LIMITS = (
     "the twin-hash check proves the spy read-only in the births arm only; the chance-0 control arm is spied with no plain twin, and runs the same spy code",
+    "every row comes from the spy's own outputs (typed updates, the state after each tick) or from the final-state hash; no row reads simulation_events.jsonl, the replay chunks or a run dir, which is why --recording-off is allowed (the 100-tick no_replay/OFF check decides it)",
+    "the trigger arms patch the name the scheduler calls, src.engine.phase_graph.rise_triggers_phase (defined at src/world/risen.py), in the child process only and restore it at exit; no source file changes; trigger_off also makes RisenService.process_rises the identity",
+    "metrics equality uses the kernel's integer and boolean counters per tick (phase counters, spatial_index_hits); floats are left out because they may be timings; the event stream is the typed world events of each applied update",
+    "the cost read uses the kernel's stage timers (kernel._phase_costs): births sit inside governance_ecology, the rise and the trigger inside economy; a births-only or rise-only number is not readable, the delta of the bundle is",
     "every run is built under audit_mode and no_frame_pacing (births_child checks both flags and PINNED requires them); the counts are per-tick facts, not timing",
     "W4 is checked on the typed hunger update the births system returns, not on the mother's hunger after the tick (other phases move hunger on the same tick)",
 )
 
 
-def run_child(tree: Path, out: Path, world: str, seed: int, ticks: int, mode: str) -> Path:
-    path = out / f"{world}_{seed}_{mode}.json"
+def child_env(tree: Path, recording_off: bool) -> Dict[str, str]:
     env = {**os.environ, "PYTHONHASHSEED": paired.HASHSEED, "PYTHONPATH": str(tree)}
-    proc = subprocess.run([sys.executable, str(CHILD), world, str(seed), str(ticks), mode, str(path)], cwd=tree, env=env, capture_output=True, text=True)
+    return {**env, **RECORDING_OFF_ENV} if recording_off else env
+
+
+def run_child(tree: Path, out: Path, world: str, seed: int, ticks: int, mode: str, recording_off: bool = False, tag: str = "") -> Path:
+    path = out / f"{world}_{seed}_{mode}{tag}.json"
+    proc = subprocess.run([sys.executable, str(CHILD), world, str(seed), str(ticks), mode, str(path)], cwd=tree, env=child_env(tree, recording_off), capture_output=True, text=True)
     if proc.returncode != 0 or not path.exists():
         raise RuntimeError(f"births child failed ({mode} {world} {seed}): {proc.stderr.strip()[-400:]}")
     return path
 
 
-def run_child_measured(tree: Path, out: Path, world: str, seed: int, ticks: int, mode: str) -> Dict[str, Any]:
+def run_cost_child(tree: Path, out: Path, world: str, seed: int, ticks: int, label: str, recording_off: bool = False) -> Path:
+    """The cost-only child on any tree (the frozen main tree for the main arm); same pinned kernel, no births imports."""
+    path = out / f"{world}_{seed}_{label}.json"
+    proc = subprocess.run([sys.executable, str(COST_CHILD), world, str(seed), str(ticks), str(path)], cwd=tree, env=child_env(tree, recording_off), capture_output=True, text=True)
+    if proc.returncode != 0 or not path.exists():
+        raise RuntimeError(f"cost child failed ({label} {world} {seed}): {proc.stderr.strip()[-400:]}")
+    return path
+
+
+def run_child_measured(tree: Path, out: Path, world: str, seed: int, ticks: int, mode: str, recording_off: bool = False) -> Dict[str, Any]:
     """The cost probe's child run: wall time and the child's own peak RSS (wait4's rusage, in MB), and the on-disk size of its output files."""
     path = out / f"{world}_{seed}_{mode}.json"
-    env = {**os.environ, "PYTHONHASHSEED": paired.HASHSEED, "PYTHONPATH": str(tree)}
+    cmd = [sys.executable, str(COST_CHILD if mode in ("main", "head_cost") else CHILD), world, str(seed), str(ticks)] + ([mode, str(path)] if mode not in ("main", "head_cost") else [str(path)])
     started = time.perf_counter()
-    proc = subprocess.Popen([sys.executable, str(CHILD), world, str(seed), str(ticks), mode, str(path)], cwd=tree, env=env, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+    proc = subprocess.Popen(cmd, cwd=tree, env=child_env(tree, recording_off), stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
     _, status, usage = os.wait4(proc.pid, 0)
     wall = time.perf_counter() - started
     positions = Path(str(path) + ".positions.json.gz")
@@ -92,9 +127,9 @@ def rate_ratio(head: Optional[float], control: Optional[float]) -> Optional[floa
     return head / control
 
 
-def bar_status(total_births: int, regioned_births: int, bars: Dict[str, int], twin_equal: bool, mismatches: int) -> str:
-    """PASS / FAIL / STOP, mechanically: STOP when no births or no regioned births exist (nothing to assess), FAIL on any bar count or a differing twin hash, else PASS."""
-    if total_births == 0 or regioned_births == 0:
+def bar_status(total_births: int, regioned_births: int, bars: Dict[str, int], twin_equal: bool, mismatches: int, risings: Optional[int] = None) -> str:
+    """PASS / FAIL / STOP, mechanically: STOP when no births, no regioned births or (when given) no risings exist (nothing to assess), FAIL on any bar count or a differing twin hash, else PASS."""
+    if total_births == 0 or regioned_births == 0 or risings == 0:
         return "STOP"
     if any(bars.values()) or not twin_equal or mismatches:
         return "FAIL"
@@ -167,6 +202,34 @@ def cohort_summary(docs: Dict[Key, dict]) -> Dict[str, Any]:
     }
 
 
+def reproduction_balance(spied: Dict[Tuple[str, int], dict]) -> Dict[str, Any]:
+    """BALANCE rows, report only: conceptions and births per world x seed x kind, the litter distribution, unplaced newborns, pregnancies ended by the mother's death, births with a dead father,
+    risings per source species, and the G5 vacuity note (0 conceptions on a bond species)."""
+    out: Dict[str, Any] = {"conceptions_per_cell": {}, "births_per_cell": {}, "litter_sizes": {}, "unplaced": {}, "ended_by_mother_death": {}, "father_dead_at_term": {}, "risings_per_cell": {}}
+    litters: Counter = Counter()
+    for (world, seed), doc in sorted(spied.items()):
+        cell = f"{world}/{seed}"
+        out["conceptions_per_cell"][cell] = len(doc["conceptions"])
+        out["births_per_cell"][cell] = doc["births_by_kind"]
+        out["unplaced"][cell] = len(doc["unplaced"])
+        out["ended_by_mother_death"][cell] = len(doc["ended"])
+        out["father_dead_at_term"][cell] = doc["father_dead_at_term"]
+        out["risings_per_cell"][cell] = len(doc["risings"])
+        litters.update(c["litter"] for c in doc["conceptions"])
+    out["litter_sizes"] = {str(k): v for k, v in sorted(litters.items())}
+    out["conceptions_total"] = sum(out["conceptions_per_cell"].values())
+    out["g5_vacuous"] = out["conceptions_total"] == 0
+    out["step_report_lines"] = list(STEP_REPORT_LINES)
+    return out
+
+
+STEP_REPORT_LINES = (
+    "gestation is compressed; maturity is not, so no newborn breeds in any run.",
+    "the extinction line counts live bodies from state.entities and never reads population_young or any region cohort counter.",
+    "a newborn stays CHILD for the whole run (D4); a newborn's body is its species' declared newborn body (newborn_archetype) at life stage CHILD, with no child stat scaling in M1.",
+)
+
+
 def summarise(docs: Dict[Key, dict]) -> dict:
     spied = {(w, s): d for (w, s, m), d in docs.items() if m == "spied"}
     twins = {(w, s): docs.get((w, s, "plain")) for (w, s) in spied}
@@ -174,13 +237,16 @@ def summarise(docs: Dict[Key, dict]) -> dict:
     twin_equal = all((twins[k] or {}).get("final_hash") == d["final_hash"] for k, d in spied.items())
     cohort = cohort_summary(docs)
     total_births = sum(sum(d["births_by_kind"].values()) for d in spied.values())
+    risings = sum(len(d["risings"]) for d in spied.values())
     return {
+        "reproduction": reproduction_balance(spied),
         "bars": bars, "twin_hash_equal": {f"{w}/{s}": (twins[(w, s)] or {}).get("final_hash") == d["final_hash"] for (w, s), d in sorted(spied.items())},
-        "pinned": sorted({d["runner"] for d in docs.values()}), "total_births": total_births,
+        "pinned": sorted({d["runner"] for d in docs.values() if "runner" in d}), "total_births": total_births,
         "births_by_world_seed_kind": {f"{w}/{s}": d["births_by_kind"] for (w, s), d in sorted(spied.items())},
         "max_entity_id": max((d["max_entity_id_seen"] for d in spied.values()), default=0), "runs": len(docs),
         "check6": cohort, "check3": {"tables": death_tables(docs), "ratios": ratios_per_world(docs)},
-        "bar_status": bar_status(total_births, cohort["regioned_births"], bars, twin_equal, cohort["mismatch_total"]),
+        "bar_status": bar_status(total_births, cohort["regioned_births"], bars, twin_equal, cohort["mismatch_total"], risings),
+        "risings_total": risings,
     }
 
 
@@ -198,32 +264,189 @@ def divergence_report(out: Path, docs: Dict[Key, dict]) -> Dict[str, Any]:
     return rep
 
 
-def main(argv: List[str]) -> int:
-    ap = argparse.ArgumentParser()
-    ap.add_argument("--tree", required=True, type=Path)
-    ap.add_argument("--out", required=True, type=Path)
-    ap.add_argument("--go", required=True, help="reference of the lead-planner go for this run")
-    ap.add_argument("--ticks", type=int, default=paired.TICKS)
-    ap.add_argument("--jobs", type=int, default=2)
-    ap.add_argument("--cost-probe", action="store_true", help=f"one world ({PROBE_WORLD}) x one seed x the three arms, one at a time: print wall time, peak RSS and the .positions.json.gz sizes, nothing else")
-    ap.add_argument("--worlds", nargs="*", default=list(paired.WORLDS))
-    ap.add_argument("--seeds", nargs="*", type=int, default=list(paired.SEEDS))
-    args = ap.parse_args(argv)
-    args.out.mkdir(parents=True, exist_ok=True)
-    if args.cost_probe:
-        rows = [run_child_measured(args.tree, args.out, PROBE_WORLD, args.seeds[0], args.ticks, mode) for mode in ARMS]
-        report = {"cost_probe": rows, "world": PROBE_WORLD, "seed": args.seeds[0], "ticks": args.ticks, "go": args.go, "scope_cap_mb": 3072}
-        (args.out / "cost_probe.json").write_text(json.dumps(report, indent=2, sort_keys=True), encoding="utf-8")
-        print(json.dumps(report, indent=2, sort_keys=True))
-        return 0
-    keys: List[Key] = [(w, s, m) for w in args.worlds for s in args.seeds for m in ARMS]
-    with ThreadPoolExecutor(max_workers=args.jobs) as pool:
-        paths = list(pool.map(lambda k: run_child(args.tree, args.out, k[0], k[1], args.ticks, k[2]), keys))
-    docs = {k: json.loads(p.read_text(encoding="utf-8")) for k, p in zip(keys, paths)}
-    summary = {**summarise(docs), "first_position_divergence": divergence_report(args.out, docs), "limits": list(LIMITS), "bases": BASES, "cohort_flag_rule": COHORT_FLAG_RULE, "go": args.go, "ticks": args.ticks}
+# ---- the cost read (pure, unit-tested) ---------------------------------------------------------------------------------------------------------------
+COST_STAGE_NAMES = ("governance_ecology", "economy", "cooperation", "combat_engagement")
+
+
+def stage_stats(costs: List[List[float]], stage_index: int) -> Dict[str, Any]:
+    """One stage of one run: the median, p90 and interquartile range per tick and the cost per entity-tick, with stall ticks dropped (total tick time above STALL_FACTOR x the run median) and counted.
+
+    ``costs`` rows are [tick, governance_ecology, economy, cooperation, combat_engagement, total_ms, live_bodies]; ``stage_index`` is 1..4."""
+    if not costs:
+        return {"ticks": 0}
+    totals = [row[5] for row in costs]
+    median_total = statistics.median(totals)
+    kept = [row for row in costs if row[5] <= STALL_FACTOR * median_total]
+    dropped = len(costs) - len(kept)
+    values = [row[stage_index] for row in kept]
+    quantiles = statistics.quantiles(values, n=20) if len(values) >= 2 else [values[0] if values else 0.0] * 19
+    quartiles = statistics.quantiles(values, n=4) if len(values) >= 2 else [values[0] if values else 0.0] * 3
+    entity_ticks = sum(row[6] for row in kept)
+    return {
+        "ticks": len(costs), "stall_ticks_dropped": dropped, "stall_fraction": dropped / len(costs), "median_ms": statistics.median(values) if values else 0.0,
+        "p90_ms": quantiles[17], "iqr_ms": quartiles[2] - quartiles[0], "ms_per_entity_tick": (sum(values) / entity_ticks) if entity_ticks else None,
+    }
+
+
+def host_summary(host: List[Dict[str, Any]]) -> Dict[str, Any]:
+    """The host load of one run: the highest 1-minute loadavg, the steal jiffies gained and the lowest MemAvailable (kB)."""
+    loads = [float(h["loadavg"][0]) for h in host if h.get("loadavg")]
+    steals = [h["steal_jiffies"] for h in host if h.get("steal_jiffies") is not None]
+    mems = [h["mem_available_kb"] for h in host if h.get("mem_available_kb") is not None]
+    return {"loadavg1_max": max(loads, default=None), "steal_jiffies_gained": (steals[-1] - steals[0]) if steals else None, "mem_available_kb_min": min(mems, default=None)}
+
+
+def cost_report(docs: Dict[Key, dict]) -> Dict[str, Any]:
+    """Per world x seed and stage: the head plain run(s) against the main run(s), medians with spread, cost per entity-tick, the head-vs-head noise band from the repeat pair, and the flags.
+
+    Flags (fixed before any data): a cell whose head/main median gap is >= JUMP_SINGLE; a stage whose gap exceeds both JUMP_HELD_GAP and that cell's noise band in >= HELD_CELLS cells (held across
+    cells); a cell with more than STALL_REDO_FRACTION stall ticks is marked for a rerun. Raw times and the host load are in the rows."""
+    cells = sorted({(w, s) for (w, s, m) in docs if m in ("main", "main_r2")})
+    rows: Dict[str, Any] = {}
+    held: Dict[str, List[str]] = {stage: [] for stage in COST_STAGE_NAMES}
+    single: List[str] = []
+    redo: List[str] = []
+    for world, seed in cells:
+        head_runs = [docs[k] for k in ((world, seed, "plain"), (world, seed, "plain_r2")) if k in docs]
+        main_runs = [docs[k] for k in ((world, seed, "main"), (world, seed, "main_r2")) if k in docs]
+        cell = f"{world}/{seed}"
+        rows[cell] = {"host": {"head": [host_summary(d["host"]) for d in head_runs], "main": [host_summary(d["host"]) for d in main_runs]}, "stages": {}}
+        for index, stage in enumerate(COST_STAGE_NAMES, start=1):
+            head = [stage_stats(d["phase_costs"], index) for d in head_runs]
+            main = [stage_stats(d["phase_costs"], index) for d in main_runs]
+            head_med = statistics.mean(h["median_ms"] for h in head) if head else None
+            main_med = statistics.mean(m["median_ms"] for m in main) if main else None
+            gap = (head_med - main_med) / main_med if head_med is not None and main_med else None
+            noise = abs(head[0]["median_ms"] - head[1]["median_ms"]) / head[0]["median_ms"] if len(head) > 1 and head[0]["median_ms"] else None
+            rows[cell]["stages"][stage] = {"head": head, "main": main, "gap": gap, "head_vs_head_noise": noise}
+            if gap is not None and gap >= JUMP_SINGLE:
+                single.append(f"{cell}/{stage}")
+            if gap is not None and gap > JUMP_HELD_GAP and gap > (noise or 0.0):
+                held[stage].append(cell)
+            redo.extend(f"{cell}/{stage}/{label}" for label, run in (("head", head), ("main", main)) for r in run if r.get("stall_fraction", 0.0) > STALL_REDO_FRACTION)
+    return {
+        "cells": rows, "single_cell_jumps": single, "jumps_held_across_cells": {stage: cells_ for stage, cells_ in held.items() if len(cells_) >= HELD_CELLS},
+        "rerun_for_stalls": sorted(set(redo)),
+        "rule": {"stall": f"total tick time > {STALL_FACTOR} x run median", "single": JUMP_SINGLE, "held_gap": JUMP_HELD_GAP, "held_cells": HELD_CELLS, "redo_fraction": STALL_REDO_FRACTION},
+    }
+
+
+# ---- the trigger-neutrality read (pure, unit-tested) ---------------------------------------------------------------------------------------------------
+def trigger_cell(on: dict, off: dict, pos: dict) -> Dict[str, Any]:
+    """One world x seed: the HARD neutrality equalities between ON (real trigger, rise chance 0) and OFF (trigger off, rise off), the firing counts and the positive control.
+
+    PASS needs: state hash, event stream and metrics all equal; ON firings > 0 and extra runs > 0; OFF 0 and 0; the positive control (trigger on, chance 1.0) differing from OFF; no corpse at tick 0.
+    VACUOUS when ON fired 0 times (rerun at the longer tick count); FAIL on any mismatch, a nonzero OFF count or a control that cannot fail."""
+    equal = {"state_hash": on["final_hash"] == off["final_hash"], "events": on["event_digest"] == off["event_digest"], "metrics": on["metrics_digest"] == off["metrics_digest"]}
+    on_t, off_t = on["trigger"], off["trigger"]
+    control_differs = pos["final_hash"] != off["final_hash"] or pos["event_digest"] != off["event_digest"]
+    row = {
+        "equal": equal, "on": on_t, "off": off_t, "control_differs_from_off": control_differs, "corpses_at_t0": [on["corpses_at_t0"], off["corpses_at_t0"]],
+        "ticks": on["ticks"],
+    }
+    if on_t["firings"] == 0:
+        return {**row, "verdict": "VACUOUS"}
+    ok = all(equal.values()) and on_t["extra_phase_runs"] > 0 and off_t["firings"] == 0 and off_t["extra_phase_runs"] == 0 and control_differs and not any(row["corpses_at_t0"])
+    return {**row, "verdict": "PASS" if ok else "FAIL"}
+
+
+def trigger_report(docs: Dict[Key, dict]) -> Dict[str, Any]:
+    """Every trigger cell, and the world-level STOP: a world with no cell that fired is a STOP to rpg-designer-ubuntu."""
+    cells = sorted({(w, s) for (w, s, m) in docs if m == "trigger_on"})
+    rows = {f"{w}/{s}": trigger_cell(docs[(w, s, "trigger_on")], docs[(w, s, "trigger_off")], docs[(w, s, "trigger_pos")]) for (w, s) in cells}
+    stops = sorted({w for (w, _) in cells if not any(r["on"]["firings"] > 0 for k, r in rows.items() if k.startswith(f"{w}/"))})
+    verdict = "STOP" if stops else "FAIL" if any(r["verdict"] == "FAIL" for r in rows.values()) else "VACUOUS" if any(r["verdict"] == "VACUOUS" for r in rows.values()) else "PASS"
+    return {"cells": rows, "worlds_with_no_firing": stops, "verdict": verdict}
+
+
+def run_evidence(args: argparse.Namespace) -> int:
+    """Evidence block, serial: per cell the head arms, then the interleaved head plain / main cost pair, and for seed 42 a second pair (the noise band)."""
+    docs: Dict[Key, dict] = {}
+
+    def head(world: str, seed: int, mode: str, tag: str = "") -> None:
+        docs[(world, seed, mode + tag)] = json.loads(run_child(args.tree, args.out, world, seed, args.ticks, mode, args.recording_off, tag).read_text(encoding="utf-8"))
+
+    def main_arm(world: str, seed: int, label: str) -> None:
+        if args.main_tree is not None:
+            docs[(world, seed, label)] = json.loads(run_cost_child(args.main_tree, args.out, world, seed, args.ticks, label, args.recording_off).read_text(encoding="utf-8"))
+
+    for world in args.worlds:
+        for seed in args.seeds:
+            head(world, seed, "spied")
+            head(world, seed, "control")
+            head(world, seed, "plain")
+            main_arm(world, seed, "main")
+            if seed == paired.SEEDS[0]:
+                head(world, seed, "plain", "_r2")
+                main_arm(world, seed, "main_r2")
+    keys = sorted(k for k in docs if k[2] in ARMS)
+    summary = {**summarise({k: docs[k] for k in keys}), "first_position_divergence": divergence_report(args.out, {k: docs[k] for k in keys}), "limits": list(LIMITS), "bases": BASES,
+               "cohort_flag_rule": COHORT_FLAG_RULE, "go": args.go, "ticks": args.ticks, "block": "evidence", "recording_off": args.recording_off}
+    summary["twin_hash_equal_repeat"] = {f"{w}/{s}": docs[(w, s, "plain_r2")]["final_hash"] == docs[(w, s, "plain")]["final_hash"] for (w, s, m) in sorted(docs) if m == "plain_r2"}
+    if args.main_tree is not None:
+        summary["cost"] = cost_report(docs)
     (args.out / "summary.json").write_text(json.dumps(summary, indent=2, sort_keys=True), encoding="utf-8")
     print(json.dumps(summary, indent=2, sort_keys=True))
     return 0
+
+
+def run_trigger(args: argparse.Namespace) -> int:
+    """Trigger block: s42 x (on, off, pos) at 1000 ticks; a world whose ON arm fired 0 times is rerun at 5000 ticks and BOTH runs are printed."""
+    reports: Dict[str, Any] = {}
+    for ticks in (args.ticks, TRIGGER_RERUN_TICKS):
+        worlds = args.worlds if ticks == args.ticks else [w for w in args.worlds if reports[f"{args.ticks}t"]["cells"] and all(
+            r["verdict"] == "VACUOUS" for k, r in reports[f"{args.ticks}t"]["cells"].items() if k.startswith(f"{w}/"))]
+        if not worlds:
+            continue
+        docs: Dict[Key, dict] = {}
+        out = args.out / f"{ticks}t"
+        out.mkdir(parents=True, exist_ok=True)
+        for world in worlds:
+            for seed in args.seeds:
+                for mode in TRIGGER_ARMS:
+                    docs[(world, seed, mode)] = json.loads(run_child(args.tree, out, world, seed, ticks, mode, args.recording_off).read_text(encoding="utf-8"))
+        reports[f"{ticks}t"] = trigger_report(docs)
+        reports[f"{ticks}t"]["bars"] = {bar: sum(d["bars"][bar] for d in docs.values()) for bar in BARS}
+    latest: Dict[str, List[Dict[str, Any]]] = {}
+    for report in reports.values():
+        for cell, row in report["cells"].items():
+            latest[cell.split("/")[0]] = [r for c, r in report["cells"].items() if c.startswith(cell.split("/")[0] + "/")]
+    cell_verdicts = [r["verdict"] for rows in latest.values() for r in rows]
+    stop = any(not any(r["on"]["firings"] > 0 for r in rows) for rows in latest.values())
+    final = "STOP" if stop else "FAIL" if "FAIL" in cell_verdicts else "PASS"
+    summary = {"block": "trigger", "reports": reports, "verdict": final, "limits": list(LIMITS), "go": args.go, "recording_off": args.recording_off}
+    (args.out / "summary.json").write_text(json.dumps(summary, indent=2, sort_keys=True), encoding="utf-8")
+    print(json.dumps(summary, indent=2, sort_keys=True))
+    return 0
+
+
+def run_probe(args: argparse.Namespace) -> int:
+    """Cost probe: one world x one seed, one arm at a time, the head arms, a trigger arm and (with --main-tree) the main cost run."""
+    rows = [run_child_measured(args.tree, args.out, PROBE_WORLD, args.seeds[0], args.ticks, mode, args.recording_off) for mode in (*ARMS, "trigger_on")]
+    if args.main_tree is not None:
+        rows.append(run_child_measured(args.main_tree, args.out, PROBE_WORLD, args.seeds[0], args.ticks, "main", args.recording_off))
+    report = {"cost_probe": rows, "world": PROBE_WORLD, "seed": args.seeds[0], "ticks": args.ticks, "go": args.go, "scope_cap_mb": 3072, "recording_off": args.recording_off}
+    (args.out / "cost_probe.json").write_text(json.dumps(report, indent=2, sort_keys=True), encoding="utf-8")
+    print(json.dumps(report, indent=2, sort_keys=True))
+    return 0
+
+
+def main(argv: List[str]) -> int:
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--block", required=True, choices=("evidence", "trigger", "probe"))
+    ap.add_argument("--tree", required=True, type=Path, help="the head (fix) tree")
+    ap.add_argument("--main-tree", type=Path, default=None, help="a frozen main tree for the cost arm (evidence and probe blocks)")
+    ap.add_argument("--out", required=True, type=Path)
+    ap.add_argument("--go", required=True, help="reference of the lead-planner go for THIS block")
+    ap.add_argument("--ticks", type=int, default=None, help=f"ticks per run (default {paired.TICKS}; {TRIGGER_TICKS} for the trigger block)")
+    ap.add_argument("--recording-off", action="store_true", help="set the observability mode OFF in every child (allowed only after the 100-tick no_replay/OFF hash check passed)")
+    ap.add_argument("--worlds", nargs="*", default=list(paired.WORLDS))
+    ap.add_argument("--seeds", nargs="*", type=int, default=None, help=f"default: {list(paired.SEEDS)}; {list(TRIGGER_SEEDS)} for the trigger block")
+    args = ap.parse_args(argv)
+    args.ticks = args.ticks or (TRIGGER_TICKS if args.block == "trigger" else paired.TICKS)
+    args.seeds = args.seeds or (list(TRIGGER_SEEDS) if args.block == "trigger" else list(paired.SEEDS))
+    args.out.mkdir(parents=True, exist_ok=True)
+    return {"evidence": run_evidence, "trigger": run_trigger, "probe": run_probe}[args.block](args)
 
 
 if __name__ == "__main__":
