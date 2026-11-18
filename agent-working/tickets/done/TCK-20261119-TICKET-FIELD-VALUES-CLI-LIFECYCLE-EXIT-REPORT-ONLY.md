@@ -1,10 +1,10 @@
 ---
-status: active
+status: historical
 layer: ai
 authority: P1
 audience: agent
 ticket_id: TCK-20261119-TICKET-FIELD-VALUES-CLI-LIFECYCLE-EXIT-REPORT-ONLY
-phase: open
+phase: done
 date: 2026-11-19
 tags: [process-improvement]
 ---
@@ -15,7 +15,7 @@ tags: [process-improvement]
 `tools/ticket_field_values.py` CLI must not exit 1 on a lifecycle-section FAIL (report-only per owner)
 
 ## Status
-OPEN
+DONE
 
 ## Tier
 hotfix
@@ -65,7 +65,11 @@ N/A: no src change; a tools CLI exit code only.
 For agent-working-implementer's next batch on a fresh branch off main (lead-planner relay 2026-11-19).
 
 ## Test Summary
+`pytest tests/tools/test_lifecycle_section.py tests/tools/test_ticket_field_values.py`: 65 passed. Pinned: lifecycle FAIL alone exits 0 and prints `FAIL [advisory]`; a bad Tier value still exits 1.
 
 ## Files Changed
+- `tools/ticket_field_values.py` (`main`)
+- `tests/tools/test_lifecycle_section.py`
 
 ## Completion Summary
+`main()` prints the lifecycle line labelled `[advisory]` on FAIL and returns 1 only for real field-value FAILs. No caller outside tests used the CLI exit code (grep). Hand-orchestrated close.

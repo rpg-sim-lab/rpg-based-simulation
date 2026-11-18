@@ -112,9 +112,17 @@ def _precheck(tmp_path, monkeypatch):
     return dcs.run_static_precheck("TCK-FAKE", "standard", "2026-07-05T00:00:00Z")
 
 
-def test_ticket_cli_reports_a_missing_section(tmp_path, capsys):
-    assert tfv.main([str(_ticket(tmp_path, _NEW))]) == 1  # the standalone checker CLI still exits 1: it is the check itself
-    assert "missing" in capsys.readouterr().out
+def test_ticket_cli_reports_a_missing_section_without_failing(tmp_path, capsys):
+    assert tfv.main([str(_ticket(tmp_path, _NEW))]) == 0  # lifecycle FAIL is report-only
+    out = capsys.readouterr().out
+    assert "FAIL [advisory]" in out and "missing" in out
+
+
+def test_ticket_cli_still_exits_1_on_a_bad_field_value(tmp_path, capsys):
+    path = _ticket(tmp_path, _NEW)
+    path.write_text(path.read_text(encoding="utf-8").replace("## Tier\nstandard", "## Tier\nbogus"), encoding="utf-8")
+    assert tfv.main([str(path)]) == 1
+    assert "bogus" in capsys.readouterr().out
 
 
 # --- renderer -------------------------------------------------------------------------------------------------------
