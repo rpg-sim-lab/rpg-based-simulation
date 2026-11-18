@@ -78,6 +78,25 @@ No new durable state is expected. The fix names a payee or refuses. If a payee n
 - H1/H2/H3 come from the designer's spec. The fix shape depends on the confirmed class.
 
 ## Implementation Notes
+- 2026-11-19 CONFIRMED (the S9-recorded confirming run, summary /mnt/data2/rpg-measure/coinbreach/summary_sink.txt 13430e6e; rpg-designer recounted it from the raw cells): CLASS H3, a world-law breach (EXCH-02), live on main.
+  - At state tick 3181, e9 holds 0 gold; a TOWN_SERVICE/REST from building 20003 has gold_delta -10, gold_cost 0, and is ACCEPTED.
+  - _service_credit gets price 0 and returns None (no credit), but the entity is written -10.
+  - A same-tick INHERIT +140 hid it.
+  - H1 (a non-building source) is refuted. The real path is a building service whose debit isn't matched.
+- ROOT CAUSE (rpg-designer, inspected on main 51a6516cf): bed_delta (lodging.py:157) and inn EAT (building_services.py:78) price a service as gold_delta=-PRICE, gold_cost 0. _service_result (conservation.py:256) refuses only when gold < gold_cost (0 < 0 is false), so an unaffordable service is ACCEPTED, credited min(gold, price) = 0, and debited the full price.
+- FIX, RULED (the existing law, SURV-06 / TCK-20261029):
+  (1) a priced service is REFUSED unless the payer holds the full price at resolve time. Price = max(0, gold_cost - gold_delta), one helper used by both the check and the flows. The pre-tick balance pays; same-tick arrivals don't count.
+  (2) when accepted, debit = price = credit (the building, else a named treasury). Never partial.
+  (3) the unnamed-payee branch REFUSES.
+- TESTS:
+  - a resolver balance test: every accepted result over every source_kind sums to 0;
+  - REST and EAT with gold < price are refused; with gold == price and gold > price, the building is credited exactly the price;
+  - this exact case: a 0-gold payer plus a same-tick INHERIT; REST is refused, and e9 ends at +140;
+  - an unnamed-payee fee is refused.
+- DOCS: ch03, the parity entry, and a divergence entry if needed.
+- OWN-JOB, fixed BEFORE data:
+  - HARD: V6 delta 0, plus 0 unbalanced accepted results, on cf s46 at the fix tree and on the 3 gate worlds at s42;
+  - REPORTED: REST and EAT "can't pay" refusals, fix vs base. A behaviour change (unpaid beds and meals stop); read it alongside the starvation-with-open-ways class.
 
 ## Test Summary
 
