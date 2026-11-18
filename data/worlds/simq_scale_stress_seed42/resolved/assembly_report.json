@@ -39,8 +39,8 @@
     {
       "severity": "WARNING",
       "rule_id": "CAT-DEAD-001",
-      "message": "Terrain 'floor' is active but never consumed by any downstream component",
-      "target": "floor"
+      "message": "Terrain 'sand' is active but never consumed by any downstream component",
+      "target": "sand"
     },
     {
       "severity": "WARNING",
@@ -51,14 +51,14 @@
     {
       "severity": "WARNING",
       "rule_id": "CAT-DEAD-001",
-      "message": "Terrain 'hill' is active but never consumed by any downstream component",
-      "target": "hill"
+      "message": "Terrain 'floor' is active but never consumed by any downstream component",
+      "target": "floor"
     },
     {
       "severity": "WARNING",
       "rule_id": "CAT-DEAD-001",
-      "message": "Terrain 'sand' is active but never consumed by any downstream component",
-      "target": "sand"
+      "message": "Terrain 'hill' is active but never consumed by any downstream component",
+      "target": "hill"
     },
     {
       "severity": "WARNING",
@@ -669,12 +669,6 @@
     {
       "severity": "WARNING",
       "rule_id": "CAT-DEAD-001",
-      "message": "Archetype 'swamp_troll' is active but never consumed by any downstream component",
-      "target": "swamp_troll"
-    },
-    {
-      "severity": "WARNING",
-      "rule_id": "CAT-DEAD-001",
       "message": "Archetype 'town_healer' is active but never consumed by any downstream component",
       "target": "town_healer"
     },
@@ -695,12 +689,6 @@
       "rule_id": "CAT-DEAD-001",
       "message": "Archetype 'moon_cult_sorcerer' is active but never consumed by any downstream component",
       "target": "moon_cult_sorcerer"
-    },
-    {
-      "severity": "WARNING",
-      "rule_id": "CAT-DEAD-001",
-      "message": "Archetype 'dwarven_hunter' is active but never consumed by any downstream component",
-      "target": "dwarven_hunter"
     },
     {
       "severity": "WARNING",
@@ -948,15 +936,15 @@
   "summary": {
     "status": "SUCCESS",
     "blocking_errors_count": 0,
-    "warnings_count": 154
+    "warnings_count": 152
   },
   "blocking_errors": [],
   "warnings": [
     {
       "severity": "WARNING",
       "rule_id": "CAT-DEAD-001",
-      "message": "Terrain 'floor' is active but never consumed by any downstream component",
-      "target": "floor"
+      "message": "Terrain 'sand' is active but never consumed by any downstream component",
+      "target": "sand"
     },
     {
       "severity": "WARNING",
@@ -967,14 +955,14 @@
     {
       "severity": "WARNING",
       "rule_id": "CAT-DEAD-001",
-      "message": "Terrain 'hill' is active but never consumed by any downstream component",
-      "target": "hill"
+      "message": "Terrain 'floor' is active but never consumed by any downstream component",
+      "target": "floor"
     },
     {
       "severity": "WARNING",
       "rule_id": "CAT-DEAD-001",
-      "message": "Terrain 'sand' is active but never consumed by any downstream component",
-      "target": "sand"
+      "message": "Terrain 'hill' is active but never consumed by any downstream component",
+      "target": "hill"
     },
     {
       "severity": "WARNING",
@@ -1585,12 +1573,6 @@
     {
       "severity": "WARNING",
       "rule_id": "CAT-DEAD-001",
-      "message": "Archetype 'swamp_troll' is active but never consumed by any downstream component",
-      "target": "swamp_troll"
-    },
-    {
-      "severity": "WARNING",
-      "rule_id": "CAT-DEAD-001",
       "message": "Archetype 'town_healer' is active but never consumed by any downstream component",
       "target": "town_healer"
     },
@@ -1611,12 +1593,6 @@
       "rule_id": "CAT-DEAD-001",
       "message": "Archetype 'moon_cult_sorcerer' is active but never consumed by any downstream component",
       "target": "moon_cult_sorcerer"
-    },
-    {
-      "severity": "WARNING",
-      "rule_id": "CAT-DEAD-001",
-      "message": "Archetype 'dwarven_hunter' is active but never consumed by any downstream component",
-      "target": "dwarven_hunter"
     },
     {
       "severity": "WARNING",
@@ -1892,7 +1868,7 @@
     }
   ],
   "fingerprints": {
-    "catalog": "effdfb9a05687bbb85415b7019a42d51f1a7a9e61f0b7da6786b99b96fd4d8b7",
+    "catalog": "d9d426e999024c75adf38f69d3c60da293c29e151de5d106f710d798322596f4",
     "modules": {
       "forest_deep_ecology": "6baaf90058bc583806e9644af7e4fc5313fcf8964e8d8c6aa1f015834387ac65",
       "frontier_village_core": "3ef51465da6b68679ecacc3493851ce19353bd132303533efaaa7839a8544c7b",
