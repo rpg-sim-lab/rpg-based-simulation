@@ -29,7 +29,7 @@ tags: []
 
 ## 2. New "Rising" bullet, inserted directly after the Births Law bullet
 ```
-- **Rising Law** (ECOL-07; `src/engine/economy.py`, end of phase 28): Every `cadence.rises` ticks (30 by default, `src/engine/cadence.py`; absolute kernel tick), for each species declaring a risen profile, each corpse whose dead body's species is in the profile's `source_species`, and which neither decays this tick (`tick + 1 < decay_tick`) nor was taken or re-added by a transfer this tick (decay's post-transfer filter, so loot and meals win), may rise as one new body of the declaring species, by the profile's chance per check, drawn from the run's seeded RNG and keyed on the corpse. In one tick, births (phase 22) run before rising (phase 28), and risen ids come from the tick's merged update, so they never collide with that tick's newborns. The step commits only typed updates: the risen body with its RISEN source (source corpse and original entity), the corpse's removal, its gold as a purse, its raw meat to the decay sink, and its other items as ground items, through `corpse_remains`, the helper decay shares, called only after the post-transfer filter.
+- **Rising Law** (ECOL-07; `src/engine/economy.py`, end of phase 28): Every `cadence.rises` ticks (30 by default, `src/engine/cadence.py`; absolute kernel tick), for each species declaring a risen profile, each corpse whose dead body's species is in the profile's `source_species`, and which neither decays this tick (`tick + 1 < decay_tick`) nor was taken or re-added by a transfer this tick (decay's post-transfer filter, so loot and meals win), may rise as one new body of the declaring species, by the profile's chance per check, drawn from the run's seeded RNG and keyed on the corpse. In one tick, births (phase 22) run before rising (phase 28), and risen ids come from the tick's merged update, so they never collide with that tick's newborns. The step commits only typed updates: the risen body with its RISEN source (source corpse and original entity), the corpse's removal, its gold as a purse, its raw meat out of the world through the decay sink, recorded as consumed by the rising, and its other items as ground items, through `corpse_remains`, the helper decay shares, called only after the post-transfer filter.
 ```
 - Names aligned to the plan at impl 36ecbb3bf §11: the cadence is `cadence.rises`, mirroring `cadence.births`. The profile (`RisenProfileDefinition`, `SpeciesDefinition.risen_profile`, data/content/living/risen_profiles.yaml) has `source_species`, `rise_chance_per_check` and `risen_archetype`, and no cadence field. The rest of the names: SpawnKind RISEN, RISE_DRAW_SUB_ID, the helper `src/world/corpse_goods.py::corpse_remains` (called only after the post-transfer filter), and `src/world/risen.py` RisenService.
 - **The 5 conditions rpg-designer checks at B5:**
@@ -38,3 +38,12 @@ tags: []
   3. the phase-order line, which is this bullet plus ch05;
   4. the chance-0 twin is hash-equal to rise-off;
   5. the tick cost is measured under audit_mode.
+
+## Ruling (rpg-designer, relayed by lead-planner, 2026-11-18)
+- Row 28: APPROVED verbatim.
+- Rising Law: APPROVED, with the meat clause amended as above, so its cause is named. The cadence.rises and corpse_remains delta was already with rpg-designer.
+- **The meat record names its cause.** The implementer picks one form and says which:
+  - (a) MEAT_DECAYED with a typed payload field `cause: "risen"`, where decay writes `"decay"`;
+  - (b) a category of its own.
+  - The conservation reader treats both as the same sink. R2 counts the meat against that record.
+- rpg-designer checks the 5 B5 conditions against the code at B5.
