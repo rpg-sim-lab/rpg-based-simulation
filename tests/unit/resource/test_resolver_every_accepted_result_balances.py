@@ -364,3 +364,7 @@ def test_only_the_economy_commit_path_writes_the_counts_and_only_the_run_ledger_
     economy, ledger = users["engine/economy.py"], users["observability/run_ledger.py"]
     assert "PayeeMissingCounts.note(" in economy and "PayeeMissingCounts.counts(" not in economy and "PayeeMissingCounts.reset(" not in economy
     assert "PayeeMissingCounts.counts(" in ledger and "PayeeMissingCounts.reset(" in ledger and "PayeeMissingCounts.note(" not in ledger
+    # conservation.py holds only the class definition: no resolver branch may read or write the counter (a future branch reading it would make resolution depend on observability state)
+    conservation = users["core/conservation.py"]
+    assert "PayeeMissingCounts.counts(" not in conservation and "PayeeMissingCounts.note(" not in conservation and "PayeeMissingCounts.reset(" not in conservation
+    assert conservation.count("PayeeMissingCounts") == 1 and "class PayeeMissingCounts:" in conservation
