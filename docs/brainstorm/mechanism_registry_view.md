@@ -30,7 +30,7 @@ All 110 mechanisms, one row each, sorted by priority (`layer weight × transitiv
 | `resolved_world_snapshot` | world | done | runtime | observed | 3 | 3 |
 | `buildings` | world | done | static | observed | 2 | 2 |
 | `camp` | region | done | runtime | observed | 2 | 1 |
-| `inventory_trade_conservation` | world | done | static | observed | 2 | 2 |
+| `inventory_trade_conservation` | world | partial | static | observed | 2 | 2 |
 | `regional_sovereignty` | region | done | runtime | observed | 2 | 1 |
 | `world_compilation` | world | done | runtime | observed | 2 | 2 |
 | `calamity_intensity` | world | orphan | runtime | observed | 1 | 1 |
