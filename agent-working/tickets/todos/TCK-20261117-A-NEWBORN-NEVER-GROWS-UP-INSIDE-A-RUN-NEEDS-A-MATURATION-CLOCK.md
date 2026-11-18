@@ -57,7 +57,7 @@ src/ai/life_stage.py, src/systems/lifecycle_systems/lifecycle.py
 - Does an accelerated clock conflict with decision 33's tick-to-day time? That is for rpg-designer.
 
 ## Implementation Notes
-None yet.
+- 2026-11-18, rpg-designer (u24), relayed by lead-planner: a newborn's bonds to its parents seed at 0.8, which equals RelationshipService.FRIEND_SENTIMENT_THRESHOLD, the M1 mate gate for humanoids. Once newborns can reach ADULT, this ticket must add a kin exclusion to mate eligibility. It is moot in M1, because a CHILD is never eligible.
 
 ## Test Summary
 

@@ -81,3 +81,15 @@ Verbatim relays from lead-planner, recorded by rpg-planner-ubuntu. The owner's d
 > - 6a region: the mother's region at the BIRTH tick, i.e. her position at term, captured independently.
 > - If the father dies before term, the birth proceeds with the snapshot and the recorded father id. The parent bond goes only toward LIVING parents, and the parentage fields record both.
 > - Step report line: "gestation is compressed; maturity is not, so no newborn breeds in any run."
+
+## 8. rpg-designer (u24) approval of the mate-gate doc texts (lead-planner relay)
+> From lead-planner, relaying rpg-designer (u24): all 9 mate-gate doc texts (69c25c73) are APPROVED, with 2 edits. The gate code may proceed.
+> - Edit 1: item (2) of divergence 2.NNN must not hard-code the value. It reads: "With the compressed human gestation (content `gestation_ticks`, 2400 ticks = one in-game day at commit; compressed, order kept, owner #715 6966994323), 1000-tick runs give 0 human births by construction ..."
+> - Edit 2: the Rationale cites #715 6966994323 by id.
+> - Numbering: 2.213 and 2.214 are reserved by unmerged rows (F1, stale-reason), so skip them at commit.
+> - SOC-NNN gets status verified only once its test_path passes.
+> - FRIEND_SENTIMENT_THRESHOLD exists (relationships.py:21, value 0.8).
+> - ch04 and ch07 are rpg-designer's, so no other review is needed.
+> - For the maturation ticket, not M1: a newborn's bonds to its parents seed at 0.8, which equals the FRIEND threshold. That ticket must add a kin exclusion to mate eligibility. It's moot in M1, because a CHILD is never eligible.
+
+Note (rpg-planner-ubuntu): the approval names doc-texts sha 69c25c73. The draft file read on 2026-11-18 hashes to bc3ed901, and that copy is stored as rpg_designer_ubuntu_reproduction_mate_gate_doc_texts_2026-11-18.md. The two versions are not yet reconciled.

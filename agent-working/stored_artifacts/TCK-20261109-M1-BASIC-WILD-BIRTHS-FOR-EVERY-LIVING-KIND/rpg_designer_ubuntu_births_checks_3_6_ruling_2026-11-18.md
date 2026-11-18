@@ -52,3 +52,5 @@ tags: []
 - **Q1: YES.** 6a joins the births HARD list (W1-W5, K6, K6b, K8, 6a) as a conservation-class accounting law. Its STOP on zero regioned births and its BALANCE side items stand.
 - **Q2: live bodies.** The extinction line reads final alive bodies per species via `species_of()`: alive in >= 3 base seeds and in 0 head seeds. It never reads the regional cohort. So 6b stays BALANCE and isn't pre-bind.
 - **Condition:** the Phase 1 host-read script and the Phase 2 gate row count alive bodies from `state.entities` and never read `population_young` or any region cohort counter. The births step report carries one line saying so. rpg-designer checks the read script's source at the boundary read.
+- **6a counting basis (rpg-designer, relayed by lead-planner, 2026-11-18): (a).** "Added" is counted by the MOTHER's region. Regionless is decided by the mother. Border crossings are a BALANCE list, deferred to TCK-20261118-BIRTHS-BALANCING-PASS. (b) is rejected.
+  - **Condition, which I check:** the spy computes the mother's region from the mother's position in births' input state, never from births' update. The approval note names that spy line.
