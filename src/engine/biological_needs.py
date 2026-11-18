@@ -21,6 +21,7 @@ This module only reads. Rates are derived, not stored, so no durable state is ad
 """
 from __future__ import annotations
 
+import logging
 from typing import Any, Dict, Optional, Tuple
 
 from src.content.schema import MODELLED_BIOLOGICAL_NEEDS
@@ -33,6 +34,8 @@ BASE_SLEEP_DEBT_RATE = 0.05
 
 # Qualitative need level -> multiple of the base rate. ``medium`` is the pre-SURV-05 constant.
 NEED_LEVEL_RATE_SCALE: Dict[str, float] = {"none": 0.0, "very_low": 0.3, "low": 0.5, "medium": 1.0, "high": 1.5}
+
+_LOG = logging.getLogger(__name__)
 
 PERSON_FALLBACK_PROFILE_ID = "humanoid_survival"
 _PERSON_ROLES = frozenset({
@@ -73,6 +76,9 @@ def profile_id_for(entity: Any, catalog: Any) -> Optional[str]:
         species = catalog.get_species(species_id)
         if species is not None and species.need_profile:
             return str(species.need_profile)
+        # A species that is set but has no need profile in content (unknown to the catalog, or declared without one) gets base rates (rpg-designer ruling, M1 step 5):
+        # needs come from the species, never from the role. It is counted by `unprofiled_need_counts` and logged here.
+        _LOG.debug("entity %s: species %r has no need profile in content; base need rates apply", getattr(entity, "id", None), species_id)
         return None
     return PERSON_FALLBACK_PROFILE_ID if _role_int(role) in _PERSON_ROLES else None
 
@@ -122,3 +128,18 @@ def undeclared_need_kinds(state: Any, catalog: Any) -> Dict[Tuple[Optional[str],
             key = (species_of(entity), _role_int(entity.identity.role))
             out[key] = out.get(key, 0) + 1
     return out
+
+
+def unprofiled_need_counts(state: Any, catalog: Any) -> Dict[str, int]:
+    """Subjects whose species is set but has no need profile in content, counted per species (they run on base rates; observability only, never durable state).
+
+    M1 step 5 bar, read with K7: this is empty on the gate worlds. `world_boss` and `magical_demonic_entity` (the non-living kind allowlist) are counted here when they exist."""
+    out: Dict[str, int] = {}
+    for entity in state.entities.values():
+        species_id = species_of(entity)
+        if not species_id or (entity.identity.properties or {}).get("need_profile_id"):
+            continue
+        profile_id = profile_id_for(entity, catalog)
+        if profile_id is None or catalog.get_need_profile(profile_id) is None:
+            out[species_id] = out.get(species_id, 0) + 1
+    return dict(sorted(out.items()))

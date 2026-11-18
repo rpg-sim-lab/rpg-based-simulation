@@ -55,3 +55,42 @@ def test_the_archetype_factory_no_longer_writes_the_mirror():
     entity = ArchetypeEntityFactory().build_entity(1, contract, EntitySpawnContext())
     assert "species_id" not in entity.identity.properties
     assert species_of(entity) == "human"
+
+
+# ---- step 5 ruling: needs come from the species; a set-but-unprofiled species runs on base rates and is counted ---------------------------------
+
+class _Species:
+    def __init__(self, need_profile):
+        self.need_profile = need_profile
+
+
+class _Catalog:
+    def __init__(self):
+        self._species = {"human": _Species("humanoid_survival"), "blob": _Species(None)}
+
+    def get_species(self, species_id):
+        return self._species.get(species_id)
+
+    def get_need_profile(self, profile_id):
+        return object() if profile_id == "humanoid_survival" else None
+
+
+def _state(*kinds):
+    from types import SimpleNamespace
+    from src.core.builder import V2EntityBuilder
+    entities = {i + 1: V2EntityBuilder(i + 1).kind(k).location(0.0, 0.0).build() for i, k in enumerate(kinds)}
+    return SimpleNamespace(entities=entities)
+
+
+def test_a_species_not_in_content_gets_no_profile_and_is_counted_per_species():
+    from src.engine.biological_needs import profile_id_for, unprofiled_need_counts
+    state = _state("human", "TEST", "TEST", "blob", "world_boss")
+    catalog = _Catalog()
+    assert profile_id_for(state.entities[1], catalog) == "humanoid_survival"
+    assert profile_id_for(state.entities[2], catalog) is None  # no role fallback: needs come from the species
+    assert unprofiled_need_counts(state, catalog) == {"TEST": 2, "blob": 1, "world_boss": 1}
+
+
+def test_the_count_is_empty_when_every_species_has_a_profile():
+    from src.engine.biological_needs import unprofiled_need_counts
+    assert unprofiled_need_counts(_state("human", "human"), _Catalog()) == {}
