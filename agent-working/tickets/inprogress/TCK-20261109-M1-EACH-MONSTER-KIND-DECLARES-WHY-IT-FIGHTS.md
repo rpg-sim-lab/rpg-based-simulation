@@ -4,7 +4,7 @@ layer: combat
 authority: P1
 audience: agent
 ticket_id: TCK-20261109-M1-EACH-MONSTER-KIND-DECLARES-WHY-IT-FIGHTS
-phase: active
+phase: inprogress
 date: 2026-11-09
 tags: []
 ---
