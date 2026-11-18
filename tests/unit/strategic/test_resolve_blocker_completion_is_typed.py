@@ -40,3 +40,4 @@ def test_a_resolve_blocker_project_whose_blocker_is_absent_ends_completed_with_b
     completed = [p for p in writes if p.status == ProjectStatus.COMPLETED]
     assert completed, f"no COMPLETED write: {[(p.status, p.ended_by) for p in writes]}"
     assert all(p.ended_by == ProjectEnd.BLOCKER_CLEARED for p in completed)
+    assert all(p.ended_tick == 110 for p in completed)  # the fused pass passes state.tick; a NameError or a missing tick here fails the test (it ran on a state at tick 110)
