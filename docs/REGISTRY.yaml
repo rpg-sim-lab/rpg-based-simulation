@@ -7995,8 +7995,9 @@
   ticket_type: bug
   date: '2026-11-18'
   related_code_areas:
-  - src/engine/world_dynamics.py (_decay_corpses, _meat_decayed_events), the conservation
-    checks in src/observability/
+  - src/engine/world_dynamics.py (_decay_corpses, _meat_decayed_events), src/engine/economy.py
+    (resource_transactions, _without_decay_of_looted_bodies), the conservation checks
+    in src/observability/
   artifact_files: []
   tags: []
 - type: ticket
@@ -8012,6 +8013,20 @@
   - src/domains/cooperation/phase.py (CooperationPhase.execute, _record_decision_events),
     src/domains/cooperation/services.py (select_for_own_needs), CooperationIntentBridge.map_decision,
     src/observability/event_shapers.py (cooperation_event)
+  artifact_files: []
+  tags: []
+- type: ticket
+  path: agent-working/tickets/todos/TCK-20261118-ACTION-OUTCOMES-ARE-WRITTEN-INTO-THE-NAVIGATION-FAILURE-REASON.md
+  ticket_id: TCK-20261118-ACTION-OUTCOMES-ARE-WRITTEN-INTO-THE-NAVIGATION-FAILURE-REASON
+  title: About twenty action handlers write their failure outcome into NavigationUpdate.failure_reason,
+    so last_failure_reason mixes movement-step outcomes with action outcomes; give
+    action outcomes their own typed field and keep the navigation field step-only
+  tier: standard
+  ticket_type: refactor
+  date: '2026-11-18'
+  related_code_areas:
+  - src/engine/core_actions.py, action_router.py, combat_actions.py, skill_actions.py,
+    aoe_actions.py, lodging.py; src/core/updates.py (NavigationUpdate); src/engine/patches.py:290
   artifact_files: []
   tags: []
 - type: ticket
