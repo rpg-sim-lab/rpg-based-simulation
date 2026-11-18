@@ -55,6 +55,7 @@ from generate_registry import generate_registry, indexable_paths, parse_body_sec
 from ticket_field_values import (  # noqa: E402
     check_disposition_fields,
     check_ticket_field_values,
+    check_lifecycle_section,
     TIER_VALUES,
     WORKFLOW_STATUS_VALUES,
 )
@@ -501,6 +502,17 @@ def check_ticket_field_values_valid(
         return ("FAIL", f"{ticket_path} does not exist — cannot validate Tier/Priority")
     result = check_ticket_field_values(ticket_path)[0]
     return (result["status"], result["evidence"])
+
+
+def check_ticket_lifecycle_section(ticket_id: str, ticket_path: Path = None) -> tuple[str, str]:
+    """Adapter for `check_lifecycle_section` (tools/ticket_field_values.py): blocking presence check of
+    `## Durable state, lifecycle and clocks` for tickets dated on or after its landing date; older tickets pass as
+    grandfathered (TCK-20261118-REQUIRED-DURABLE-STATE-LIFECYCLE-CLOCKS-SECTION-IN-TICKETS-AND-PR-BODIES)."""
+    if ticket_path is None:
+        ticket_path = TICKETS / "inprogress" / f"{ticket_id}.md"
+    if not ticket_path.exists():
+        return ("FAIL", f"{ticket_path} does not exist — cannot check the lifecycle section")
+    return check_lifecycle_section(ticket_path)
 
 
 _DOCS_BULLET_RE = re.compile(r"^-\s+`(docs/[^`]+?)(?::\d+)?`", re.MULTILINE)
@@ -997,7 +1009,7 @@ def check_temporal_week_consistency(
 
 
 def run_static_precheck(ticket_id: str, tier: str, start_ts: str | None) -> list[dict]:
-    """Aggregate all 8 Part A checks. Returns one dict per check, in this fixed order, matching
+    """Aggregate all 9 Part A checks. Returns one dict per check, in this fixed order, matching
     `DONE_SCHEMA.checklist`'s own item shape so the agent can transcribe directly. Does not
     collapse to a single boolean — per-check detail must survive.
     """
@@ -1008,6 +1020,7 @@ def run_static_precheck(ticket_id: str, tier: str, start_ts: str | None) -> list
         ("working_log_no_row_yet", check_working_log_no_row_yet(ticket_id)),
         ("frontmatter_valid", check_frontmatter_valid(ticket_id, tier)),
         ("ticket_field_values_valid", check_ticket_field_values_valid(ticket_id)),
+        ("ticket_lifecycle_section", check_ticket_lifecycle_section(ticket_id)),
         ("docs_to_update_coverage", check_docs_to_update_coverage(ticket_id, tier)),
         ("temporal_week_consistency", check_temporal_week_consistency()),
     )

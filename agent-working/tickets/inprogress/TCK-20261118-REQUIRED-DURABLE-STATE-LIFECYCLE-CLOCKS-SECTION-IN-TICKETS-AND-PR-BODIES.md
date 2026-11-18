@@ -15,7 +15,7 @@ tags: [skills, process-improvement]
 Tickets carry a required "Durable state, lifecycle and clocks" section, presence-checked at close and rendered into the PR body, with a planner-review advisory line
 
 ## Status
-OPEN
+INPROGRESS
 
 ## Tier
 standard

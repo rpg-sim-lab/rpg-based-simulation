@@ -23,6 +23,7 @@ here -- see delivery_process.md's PR Lifecycle step 3.
 
 ## Verification
 - Tests: <!-- scoped commands run, per ticket, with results -->
+- Durable state, lifecycle and clocks: <!-- rendered from each ticket's `## Durable state, lifecycle and clocks` section; `N/A: no src change` when the diff touches no src/ -->
 - Gates: <!-- done_checker_static result per ticket, including any stated FAIL -->
 - Known gaps: <!-- anything closed with a known failure, stated not hidden -->
 

@@ -40,7 +40,7 @@ _TOOLS_DIR = Path(__file__).parent
 if str(_TOOLS_DIR) not in sys.path:
     sys.path.insert(0, str(_TOOLS_DIR))
 
-from validate_frontmatter import LAYER_VALUES  # noqa: E402,F401
+from validate_frontmatter import LAYER_VALUES, extract_frontmatter  # noqa: E402,F401
 from generate_registry import parse_body_section, _strip_frontmatter  # noqa: E402
 
 TIER_VALUES: FrozenSet[str] = frozenset({"hotfix", "standard", "epic"})
@@ -63,6 +63,16 @@ _FILE_LINE_RE = re.compile(r"[\w./-]+\.\w+:\d+")
 _ISO_DATE_RE = re.compile(r"\b\d{4}-\d{2}-\d{2}\b")
 _CODE_FILE_LINE_RE = re.compile(r"(?:^|[\s(`])(?:src|tests)/[\w./-]+\.\w+:\d+")
 _FENCED_OUTPUT_RE = re.compile(r"```[^\n]*\n\s*\S.*?```", re.DOTALL)
+
+
+# TCK-20261118-REQUIRED-DURABLE-STATE-LIFECYCLE-CLOCKS-SECTION-IN-TICKETS-AND-PR-BODIES: every ticket carries
+# `## Durable state, lifecycle and clocks`, either `N/A: <reason>` or short answers to the questions in the
+# ticket template. Only presence is checked here (never answer quality). Tickets whose frontmatter `date:` is
+# before LIFECYCLE_SECTION_REQUIRED_FROM are grandfathered, so closed and already-open tickets are unaffected.
+# The date is the day after the landing day; move it only in a reviewed change.
+LIFECYCLE_SECTION = "Durable state, lifecycle and clocks"
+LIFECYCLE_SECTION_REQUIRED_FROM = "2026-11-19"
+_NA_PREFIX_RE = re.compile(r"^N/A\s*:\s*(.*)$", re.IGNORECASE | re.DOTALL)
 
 
 def has_body_section(body: str, section: str) -> bool:
@@ -134,6 +144,34 @@ def check_disposition_fields(body: str) -> Tuple[str, str]:
     return (status, f"{enum_evidence}; {rationale_evidence}")
 
 
+def check_lifecycle_section(ticket_path: Path) -> Tuple[str, str]:
+    """Presence check for `## Durable state, lifecycle and clocks` on a ticket dated on or after
+    `LIFECYCLE_SECTION_REQUIRED_FROM`. Returns ("PASS"|"FAIL", evidence). A ticket with no parseable
+    `date:` is grandfathered (the date is the only way to tell a new ticket from an old one).
+
+    The section must exist and be non-empty after stripping. A body that starts `N/A:` must carry a
+    non-empty reason after the colon, so a bare `N/A` or `N/A:` fails. Answer quality is not judged."""
+    text = ticket_path.read_text(encoding="utf-8")
+    date = str((extract_frontmatter(text) or {}).get("date") or "")[:10]
+    if not _ISO_DATE_RE.fullmatch(date) or date < LIFECYCLE_SECTION_REQUIRED_FROM:
+        return ("PASS", f"ticket dated {date or 'unknown'} predates {LIFECYCLE_SECTION_REQUIRED_FROM}: "
+                        f"## {LIFECYCLE_SECTION} not required (grandfathered)")
+    body = _strip_frontmatter(text)
+    if not has_body_section(body, LIFECYCLE_SECTION):
+        return ("FAIL", f"## {LIFECYCLE_SECTION} is missing (required for tickets dated "
+                        f"{LIFECYCLE_SECTION_REQUIRED_FROM} or later; write N/A: <reason> if nothing durable changes)")
+    content = parse_body_section(body, LIFECYCLE_SECTION)
+    if not content:
+        return ("FAIL", f"## {LIFECYCLE_SECTION} is empty")
+    na = _NA_PREFIX_RE.match(content)
+    if na is not None and not na.group(1).strip():
+        return ("FAIL", f"## {LIFECYCLE_SECTION} says N/A with no reason (write N/A: <reason>)")
+    if re.fullmatch(r"N/A\.?", content, re.IGNORECASE):
+        return ("FAIL", f"## {LIFECYCLE_SECTION} says N/A with no reason (write N/A: <reason>)")
+    kind = "N/A with a reason" if na is not None else "answers present"
+    return ("PASS", f"## {LIFECYCLE_SECTION} present ({kind})")
+
+
 def check_body_field_enum(body: str, field: str, valid: FrozenSet[str]) -> Tuple[str, str]:
     """Extract `## <field>` from `body` via `parse_body_section` and check it against `valid`.
 
@@ -189,6 +227,8 @@ def main(argv=None) -> int:
     )
     parser.add_argument("ticket_path", type=Path, help="Path to the ticket markdown file.")
     args = parser.parse_args(argv)
+    lifecycle_status, lifecycle_evidence = check_lifecycle_section(args.ticket_path)
+    print(f"[{args.ticket_path}] {lifecycle_status} — {lifecycle_evidence}")
 
     results = check_ticket_field_values(args.ticket_path)
     any_fail = False
@@ -196,7 +236,7 @@ def main(argv=None) -> int:
         if r["status"] == "FAIL":
             any_fail = True
         print(f"[{args.ticket_path}] {r['status']} — {r['evidence']}")
-    return 1 if any_fail else 0
+    return 1 if any_fail or lifecycle_status == "FAIL" else 0
 
 
 if __name__ == "__main__":

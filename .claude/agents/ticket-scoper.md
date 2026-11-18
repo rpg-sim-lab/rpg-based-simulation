@@ -59,6 +59,7 @@ P1
 ## Related Stored Artifacts
 ## Related Code Areas
 ## Assumptions / Open Questions
+## Durable state, lifecycle and clocks
 ## Implementation Notes
 ## Test Summary
 ## Files Changed
@@ -77,6 +78,7 @@ P1
 - **Acceptance Criteria** must be testable — no vague "works correctly" items.
 - **Out of Scope** must explicitly exclude adjacent things that could scope-creep in.
 - **Assumptions / Open Questions** must list anything that, if wrong, would invalidate the scope.
+- **Durable state, lifecycle and clocks** is required (presence-checked at close by `tools/ticket_field_values.py::check_lifecycle_section` for tickets dated 2026-11-19 or later; `docs/guides/delivery_process.md`, "Durable state, lifecycle and clocks section"). Write either `N/A: <reason>` (the reason after the colon must be non-empty; e.g. `N/A: tooling only, no durable record`) or short answers to these questions, for every durable field or record the ticket creates or changes: who creates it, and is creation idempotent across two passes; does an update merge or replace, and what survives a replace; how does every non-terminal state exit, and what bounds how many exist; who clears it, and is there a test of the value after a successful step; how many code paths write it, and does it carry one meaning; which clock does each reader use (the clock rule is the planned `docs/engine/time_semantics.md`: PLANNED, not landed; ask the question only, do not state a rule). Questions only, no world rules. Only presence is checked, never the quality of the answers.
 - **Files Changed**, **Implementation Notes**, **Test Summary**, **Completion Summary** are left blank — they get filled in during and after implementation.
 
 ## Output
