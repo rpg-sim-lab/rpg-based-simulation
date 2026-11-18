@@ -82,7 +82,7 @@ Split from TCK-20261118-CAMPAIGN-RUNNER-AND-RESTORED-BODIES-SKIP-THE-BUILD-TIME-
 No new durable state. The check reads the catalog's species sense_profile at content load and at spawn. No record, field or clock is added.
 
 ## Assumptions / Open Questions
-- Whether every species committed spawner content can name is already profiled. If one isn't, the content-load check refuses committed content. Then a content fix comes first, ruled by rpg-designer, and this ticket can't land green until it does.
+- Whether every species committed spawner content can name is already profiled. If one isn't, the content-load check refuses committed content. Then a content fix comes first, and this ticket can't land green until it does. AGREED (rpg-designer): bring the designer the species and the file naming it; the designer rules the content fix (give it a profile, or remove or rename the reference) before the check lands. The check is NEVER loosened to let content through.
 
 ## Implementation Notes
 
