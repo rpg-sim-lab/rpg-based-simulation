@@ -133,3 +133,8 @@ tags: []
   - The drop is ONE shared helper. The u24 decay ticket TCK-20261118-A-DECAYING-CORPSE-DESTROYS-EVERY-ITEM-EXCEPT-GOLD-AND-MEAT-WITH-NO-SINK (P1) reuses it, so decay and rising stay one law.
   - Until that ticket lands, the decay loss is disclosed with a reference to it.
 - **Q-R5 (OWNER):** corpse only. The graveyard place and dark magic go on the balancing-pass backlog.
+- **The shared helper's call rule (2026-11-18, raised by rpg-planner u24):** `corpse_remains()` (the shared drop of purse, raw meat sink and ground items) is called ONLY after decay's post-transfer filter (economy.py `_without_decay_of_looted_bodies`), on corpses that leave this tick by the applied outcome. It is never called at world_dynamics time.
+  - **Reason:** decay is computed before the transfers, and a body looted or re-added by a meal must not also drop its goods. Otherwise goods are duplicated.
+  - **In M1 births:** rising already calls it from the end of phase 28 (placement B). No world_dynamics call to the helper exists. A guard test and a re-added-body test pin this.
+  - **For the u24 decay ticket:** reusing the helper means either a post-transfer drop (matching rising) or an undo path for the ground items like the MEAT_DECAYED undo. That is that ticket's design, bound by this call rule.
+- **The cadence (plan at impl 36ecbb3bf §11, accepted):** the rise cadence is `cadence.rises` (default 30) in src/engine/cadence.py, mirroring `cadence.births`. The profile has NO `check_interval_ticks`, which supersedes §1 and §2. The profile fields are `source_species`, `rise_chance_per_check` and `risen_archetype`.
