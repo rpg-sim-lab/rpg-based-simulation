@@ -288,7 +288,7 @@ class LegalityServiceV2:
             target_species=get_species_id_str(target),
         )
 
-        if not attack_allowed(attacker, target, LegalityServiceV2._attack_permitted(attacker, target, context)):
+        if not attack_allowed(attacker, target, LegalityServiceV2._attack_permitted(attacker, target, context), getattr(state_or_context, "tick", None)):
             return False, ReasonCode.FRIENDLY_FIRE_ILLEGAL
 
         # 4. Range Validity

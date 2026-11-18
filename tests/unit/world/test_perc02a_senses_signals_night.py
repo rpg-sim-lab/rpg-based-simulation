@@ -475,7 +475,7 @@ def test_the_step_clock_survives_apply_and_a_later_position_move():
 # function name -> the index of its `tick` among the positional arguments (a call may also name it `tick=`)
 _TICK_POSITION = {
     "emitted_signals": 2, "get_entity_signals": 1, "perceives": 3, "appraise": 3, "relation": 4, "faction_hostile": 4, "perceived_hostile": 4,
-    "classify_neighbours": 4, "_target_still_perceived": 3, "_has_tactical_hostiles": 3, "unengaged_adjacent_hostile": 4,
+    "classify_neighbours": 4, "_target_still_perceived": 3, "_has_tactical_hostiles": 3, "unengaged_adjacent_hostile": 4, "attack_allowed": 3,
 }
 # The only production callers that pass no tick, so every body they look at reads STILL. 02b migrates them onto perceived_neighbours and removes this list.
 _UNDATED_UNTIL_02B = {

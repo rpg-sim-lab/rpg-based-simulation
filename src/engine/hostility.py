@@ -102,15 +102,15 @@ def is_feeding_kill(state: "AuthoritativeState", attacker_id: Optional[int], vic
     fight between peoples. Killing a person a faction rates hostile, slaughter beyond need and group fights are not feeding kills and still count
     toward trauma (ENV-07)."""
     killer = state.entities.get(attacker_id) if attacker_id is not None else None
-    return killer is not None and relation(killer, victim) is Relation.PREDATION
+    return killer is not None and relation(killer, victim, tick=state.tick) is Relation.PREDATION
 
 
-def attack_allowed(attacker: "EntityState", target: "EntityState", faction_verdict: bool) -> bool:
+def attack_allowed(attacker: "EntityState", target: "EntityState", faction_verdict: bool, tick: Optional[int] = None) -> bool:
     """Decisions 44 and 47: an attack the factions refuse (``faction_verdict`` False) is still permitted when the attacker is hunting the target
     (PREDATION), or when the target is attacking the attacker and holds an attack relation to it (a creature may fight back against whatever
-    is hunting it)."""
+    is hunting it). ``tick`` is the caller's tick: it dates the signals the perception gate reads (a body that just moved reads moving)."""
     if is_wild_creature(attacker) or is_wild_creature(target):
         faction_verdict = False  # decision 47: appraisal decides alone when a wild creature is on either side
-    if faction_verdict or relation(attacker, target) is Relation.PREDATION:
+    if faction_verdict or relation(attacker, target, tick=tick) is Relation.PREDATION:
         return True
-    return target.task.payload.get("target_id") == attacker.id and relation(target, attacker) in ATTACK_RELATIONS
+    return target.task.payload.get("target_id") == attacker.id and relation(target, attacker, tick=tick) in ATTACK_RELATIONS
