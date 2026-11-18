@@ -104,3 +104,17 @@ tags: []
   - `birth_tick` holds the arrival tick.
 - **Q-R4:** K8 stays births-only, with R3/R4 for risen bodies. Or does rpg-designer want K8 widened?
 - **Q-R5:** the deferral of the graveyard place and dark magic to backlog rows. That needs the owner's OK on the wording, because the owner named them.
+
+## 7. Revision 2 (2026-11-18): the owner's answer and the scoping facts
+- **Q-R5 is answered by the OWNER**, directly in this session (AskUserQuestion): "Corpse only, defer rest". The graveyard place and dark magic become backlog rows on TCK-20261118-BIRTHS-BALANCING-PASS. lead-planner logs this on #715.
+- **The goods (scoping fact 1: decay drops non-meat items with no record today, a pre-existing leak).** My position is (b), not (a), and rpg-designer rules it (Q-R6).
+  - A rising sends gold to the purse (as decay does) and raw meat to MEAT_DECAYED (as decay does). Every other ItemStack becomes a ground item at the corpse position, carrying `source_entity_id`. The purse already is a `GroundItemState`, so this is the same record type.
+  - **Why (b):** guardrail 2 says the goods are "never vanishing", and rpg-designer ruled with 6a that a conservation law sits inside the simple foundation. Building a new origin on a known leak would make R2 a bar that knowingly passes a loss.
+  - **The decay leak itself** is pre-existing and stays unchanged here. It is disclosed, with a backlog row: "a decayed body loses its non-meat items".
+  - **R2 is measured by the spy directly:** corpse gold = purse gold, raw meat = MEAT_DECAYED, and each other item and quantity = the new ground items. It doesn't rely on the conservation audit's coverage of corpses.
+- **Eligibility uses decay's own rule:** a corpse can rise only if `tick + 1 < decay_tick`, and the rise check excludes this tick's decay set. So no corpse both decays and rises (no double purse).
+- **Same-tick eating:** a corpse whose meat is taken in the same tick must not be counted twice. The plan states the phase order. R2 counts at apply, so any double count fails it.
+- **The dead body's species** = `species_of(state.entities[corpse.original_entity_id])` (the dead entity stays in state).
+- **Faction** = the risen archetype's (undead_sentinel: `undead_remnants`).
+- **The build site** carries `entity_spawn_sources` (test_spawn_sites_declare_source).
+- **ECOL-06 is not in the catalog on any branch.** Q-R1 becomes: write ECOL-06 and its risen sibling together.
