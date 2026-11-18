@@ -233,9 +233,30 @@ Shares are the fraction of all samples whose stack contains the function (each s
 
 Every scenario is 2 to 3.5 times cheaper than in October (the Oct figures are on a different host and venv: indicative only). `combat_engagement` still grows with the population (36 % at 100 entities, 60 % at 500).
 
-### 10.5 Seconds per 1000 ticks (the temporal-scale input)
+### 10.5 Seconds per 1000 ticks and peak RSS by entity count (R4: 1000 ticks after 20 warmup, one run each, all 8 records complete)
 
-Only the 200-tick corpus figure exists so far, and section 7 item 6 says early ticks understate a long run. Provisional s per 1000 ticks (mean tick ms, NOISY, loaded host): `frontier_living_world` 44 to 50 (about 200 entities); `urban_political` 22 to 28; `crowded_frontier` 32 to 35 (200 entities each). The 1000-tick runs at two entity counts per world (R4) are not run yet; they wait on the lead's separate GO.
+**Correction.** The corpus worlds do not have 200 entities. `profile_tick.py --world` ignores `--entities`, and the `entities: 200` line in its `phases.md` header is the unused default. The compiled counts (`world_compile_report.json`) are 55 (`frontier_living_world`), 30 (`urban_political`), 38 (`crowded_frontier`), 65 (`frontier_extended`), 74 (`simq_scale_stress_seed42`). Population at tick 1000 is not recorded by the tool, so the table gives the compiled count. A corpus world cannot be scaled up by this tool (and new tooling is paused), so entity scaling comes from the synthetic `mixed` scenario at 100, 200 and 400 entities, plus the two larger corpus worlds.
+
+| run | entities at start | s per 1000 ticks (mean tick ms) | p95 ms | peak RSS MB | top phases | swap `so` max | status |
+|---|---|---|---|---|---|---|---|
+| `urban_political` | 30 | 23.0 | 33.0 | 98.0 | resolution_overhead 31 %, advancement 18 %, combat_engagement 14 % | 51 | |
+| `crowded_frontier` | 38 | 21.8 | 32.7 | 104.1 | resolution_overhead 24 %, advancement 22 %, combat 14 % | 51 | |
+| `frontier_living_world` | 55 | 38.4 | 54.1 | 112.4 | resolution_overhead 27 %, advancement 18 %, combat 14 % | 51 | |
+| `frontier_extended` | 65 | 44.1 | 60.3 | 131.7 | resolution_overhead 27 %, advancement 19 %, combat 14 % | 0 | |
+| `simq_scale_stress_seed42` | 74 | 36.2 | 55.5 | 128.1 | resolution_overhead 23 %, advancement 22 %, combat 13 % | 51 | |
+| `mixed` PROD_LARGE | 100 | 66.1 | 120.4 | 107.9 | cooperation 25 %, resolution_overhead 20 % | 0 | |
+| `mixed` PROD_LARGE | 200 | 206.9 | 463.1 | 141.1 | cooperation 31 %, combat 19 %, resolution_overhead 18 % | 0 | |
+| `mixed` PROD_LARGE | 400 | 563.7 | 1098.3 | 220.2 | cooperation 37 %, combat 19 %, resolution_overhead 16 % | 0 | |
+
+(`so` is the highest vmstat swap-out in pages/s during the run; none is above the 100 pages/s line, so no R4 run is marked N for swap.) All eight ran on a host with a births pytest up (load 1.7 to 2.3) and a births heavy process was seen at the `mixed_200` gate (the script waited until it ended); the mean ticks are still **NOISY** until a quiet-host rerun.
+
+What the table says:
+- **Corpus worlds: no growth with run length.** The 1000-tick means (22 to 44 ms) are at or below the 200-tick means of section 10.1 (22 to 50 ms) for the same worlds; the cost follows the entity count (55 to 74 entities: 36 to 44 ms), not the tick number.
+- **`mixed` scales faster than linear but not quadratic.** 100 to 200 entities: tick x3.1 (exponent 1.65); 200 to 400: x2.7 (exponent 1.45). Peak RSS grows slowly: 108, 141, 220 MB, about 0.3 to 0.4 MB per entity, so memory is not the constraint at these sizes.
+- **Long runs are heavier than short ones in `mixed`.** `mixed_200` is 207 ms over 1000 ticks against 104 to 137 ms over 30 ticks in section 10.4, and its p95 (463 ms) is 2.2 times its mean: the tick cost grows during the run and is bursty.
+- **`nearby_entities` at 400 to 500 entities is not yet attributed.** R4 ran unsampled; `combat_engagement` stays at 19 % of the `mixed` tick up to 400 entities, `cooperation` takes the largest and growing share (25, 31, 37 %). A py-spy run at `mixed` 400 is owed (births slot).
+
+**Temporal scale is not execution cost.** The owner keeps temporal scaling (ticks per progression; audit #715 6967725212) separate from execution performance (cost per tick, semantics kept). A 13 to 29 % cut of the tick (10.6) does not change the generation horizon: it makes each tick cheaper, not each simulated span longer.
 
 ### 10.6 Ranked fix list (each goes back as its own ticket, `src/` via rpg-planner; savings are shares of the tick, from this section)
 
@@ -249,6 +270,13 @@ Only the 200-tick corpus figure exists so far, and section 7 item 6 says early t
 
 None of them touches the per-tick commit sort (`kernel.py:593`) or exact replay. Items 1 to 3 together are 13 to 29 % of the tick, so the corpus worlds could drop from about 25 to 33 ms to about 20 to 26 ms. Item 1 was already handed to rpg via lead after section 9.
 
-### 10.7 Limits
+### 10.7 Apply path audit (read-only; `apply_generation` > `build_plan` > `_compute_entity_changes`)
 
-One py-spy run per world (779 to 1444 samples, ±1 point); PROD_SMALL corpus worlds at 200 entities; 200 ticks after 20 warmup (early ticks); two runs for synthetic; loaded host with swap activity in 4 of 21 runs; no quiet-host rerun yet; R4 (long runs, entity-count scaling) not run; `advancement` (20 % of the tick) is attributed only to `apply_generation` (about 10 to 13 %) and `_phase_observability` (about 7 %), no deeper.
+- `apply_generation` is 10 to 13 % of the tick (section 10.2 stacks), nearly all of it in `build_plan` (`apply_plan.py:386`) > `_compute_entity_changes` (`apply.py:103`).
+- The local `replace` (`apply.py:8-27`) is 5.8 % (`urban_political`) and 6.8 % (`crowded_frontier`) of the tick, inclusive. It is a Python loop over every dataclass field per call, and each pass tests `"CLASSVAR" in str(field_def._field_type).upper()` per field, a string build that does not depend on the call. Call sites inside `_compute_entity_changes`: `apply.py:158, 190, 195, 223, 239` (0.5 to 1.0 % each), plus `patches.py:254, 539`.
+- `dataclasses._replace` frames elsewhere (strategic pass, 1 to 3 %) add to the 16 to 17 % replace-ish leaf total.
+- Not yet measured: calls per tick and fields per call, so the saving is not yet sized below "4 to 8 % of the tick"; the ticket for it starts with a call-site count. Sequencing (rpg-planner via lead): after M1 Phase 1.
+
+### 10.8 Limits
+
+One py-spy run per world (779 to 1444 samples, ±1 point); corpus worlds at their compiled size of 30 to 74 entities (not 200); R1 and R2 at 200 ticks after 20 warmup, R4 at 1000 ticks, one run each; two runs for synthetic in R3; loaded host with swap activity in 4 of 21 R1 to R3 runs; no quiet-host rerun yet (waits for the births block); no py-spy run at 400 or 500 entities yet; `advancement` (20 % of the tick) is attributed only to `apply_generation` (about 10 to 13 %) and `_phase_observability` (about 7 %), no deeper.
