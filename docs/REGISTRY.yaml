@@ -7986,6 +7986,22 @@
   - content
   last_verified: '2026-10-09'
 - type: ticket
+  path: agent-working/tickets/done/TCK-20261118-PROFILE-MAIN-99A83ADC9-RESOLUTION-OVERHEAD-AND-WALL-CLOCK-PER-1000-TICKS.md
+  ticket_id: TCK-20261118-PROFILE-MAIN-99A83ADC9-RESOLUTION-OVERHEAD-AND-WALL-CLOCK-PER-1000-TICKS
+  title: 'Profile main 99a83adc9: attribute resolution_overhead, re-check H1/H2/H3,
+    measure seconds per 1000 ticks, rank fixes'
+  tier: standard
+  ticket_type: chore
+  date: '2026-11-18'
+  related_code_areas:
+  - tools/perf/profile_tick.py (existing, unchanged), src/engine/kernel.py, src/engine/pipeline.py.
+  artifact_files:
+  - agent-working/stored_artifacts/TCK-20261118-PROFILE-MAIN-99A83ADC9-RESOLUTION-OVERHEAD-AND-WALL-CLOCK-PER-1000-TICKS/investigation.md
+  - agent-working/stored_artifacts/TCK-20261118-PROFILE-MAIN-99A83ADC9-RESOLUTION-OVERHEAD-AND-WALL-CLOCK-PER-1000-TICKS/plan.md
+  - agent-working/stored_artifacts/TCK-20261118-PROFILE-MAIN-99A83ADC9-RESOLUTION-OVERHEAD-AND-WALL-CLOCK-PER-1000-TICKS/test_plan.md
+  tags:
+  - performance
+- type: ticket
   path: agent-working/tickets/todos/TCK-20261118-MOVED-RECENTLY-IS-SET-TRUE-ON-THE-FIRST-STEP-AND-NEVER-CLEARED.md
   ticket_id: TCK-20261118-MOVED-RECENTLY-IS-SET-TRUE-ON-THE-FIRST-STEP-AND-NEVER-CLEARED
   title: NavigationComponent.moved_recently becomes True on a body's first step and
@@ -8000,6 +8016,66 @@
     src/api/presenters/state_presenter.py
   artifact_files: []
   tags: []
+- type: ticket
+  path: agent-working/tickets/todos/TCK-20261118-MOVEMENT-ROUTING-AND-WORLD-DYNAMICS-COST-5-PERCENT-EACH-IN-TWO-WORLDS.md
+  ticket_id: TCK-20261118-MOVEMENT-ROUTING-AND-WORLD-DYNAMICS-COST-5-PERCENT-EACH-IN-TWO-WORLDS
+  title: movement_routing (2.7-5.6 %) and world_dynamics (5.0-5.7 %) are untimed Resolution
+    children not yet looked into
+  tier: standard
+  ticket_type: chore
+  date: '2026-11-18'
+  related_code_areas: []
+  artifact_files: []
+  tags:
+  - performance
+- type: ticket
+  path: agent-working/tickets/todos/TCK-20261118-NEARBY-ENTITIES-QUERY-HAS-NO-SPATIAL-INDEX.md
+  ticket_id: TCK-20261118-NEARBY-ENTITIES-QUERY-HAS-NO-SPATIAL-INDEX
+  title: nearby_entities is a linear neighbourhood scan with no spatial index (combat_engagement
+    is 60 % of the tick at 500 entities)
+  tier: standard
+  ticket_type: chore
+  date: '2026-11-18'
+  related_code_areas: []
+  artifact_files: []
+  tags:
+  - performance
+- type: ticket
+  path: agent-working/tickets/todos/TCK-20261118-NEAREST-TOWN-TILE-SCANS-EVERY-TOWN-TILE-PER-ENTITY.md
+  ticket_id: TCK-20261118-NEAREST-TOWN-TILE-SCANS-EVERY-TOWN-TILE-PER-ENTITY
+  title: nearest_town_tile scans every town tile per entity every tick (8-18 % of
+    the tick)
+  tier: standard
+  ticket_type: chore
+  date: '2026-11-18'
+  related_code_areas: []
+  artifact_files: []
+  tags:
+  - performance
+- type: ticket
+  path: agent-working/tickets/todos/TCK-20261118-STATE-REBUILD-REPLACE-IN-THE-APPLY-PATH-COPIES-WHOLE-RECORDS.md
+  ticket_id: TCK-20261118-STATE-REBUILD-REPLACE-IN-THE-APPLY-PATH-COPIES-WHOLE-RECORDS
+  title: The apply path rebuilds records through a field-by-field Python replace (apply_generation
+    10-13 % of the tick)
+  tier: standard
+  ticket_type: chore
+  date: '2026-11-18'
+  related_code_areas: []
+  artifact_files: []
+  tags:
+  - performance
+- type: ticket
+  path: agent-working/tickets/todos/TCK-20261118-STRATEGIC-INTENT-AND-BANDWIDTH-PASSES-COST-1-TO-3-PERCENT-EACH.md
+  ticket_id: TCK-20261118-STRATEGIC-INTENT-AND-BANDWIDTH-PASSES-COST-1-TO-3-PERCENT-EACH
+  title: evaluate_strategic_intent_with_expiry and enforce_bandwidth cost 1-3 % of
+    the tick each
+  tier: standard
+  ticket_type: chore
+  date: '2026-11-18'
+  related_code_areas: []
+  artifact_files: []
+  tags:
+  - performance
 - type: ticket
   path: agent-working/tickets/todos/TCK-20261118-THE-RNG-COMPOSITE-SEED-FIELDS-OVERLAP-SO-DISTINCT-DRAWS-CAN-SHARE-A-SEED.md
   ticket_id: TCK-20261118-THE-RNG-COMPOSITE-SEED-FIELDS-OVERLAP-SO-DISTINCT-DRAWS-CAN-SHARE-A-SEED
@@ -8681,6 +8757,20 @@
   tags:
   - documentation
 - type: ticket
+  path: agent-working/tickets/todos/TCK-20261116-TIMING-RUNS-SHARE-THEIR-CPUS-WITH-IDLE-SEATS.md
+  ticket_id: TCK-20261116-TIMING-RUNS-SHARE-THEIR-CPUS-WITH-IDLE-SEATS
+  title: 'Proposal: keep the Claude seat processes off CPUs 4-5 while timing runs
+    use them on the ubuntu host'
+  tier: standard
+  ticket_type: chore
+  date: '2026-11-16'
+  related_code_areas:
+  - tools/perf/quiet_gate.py
+  - _gate_reading
+  artifact_files: []
+  tags:
+  - performance
+- type: ticket
   path: agent-working/tickets/todos/TCK-20261116-WORLD-ASSEMBLY-REPORTS-LIST-WARNINGS-IN-HASH-SEED-ORDER.md
   ticket_id: TCK-20261116-WORLD-ASSEMBLY-REPORTS-LIST-WARNINGS-IN-HASH-SEED-ORDER
   title: The generated world's assembly_report.json and validation_report.json list
@@ -9058,6 +9148,25 @@
   - agent-working/stored_artifacts/TCK-20261115-PAST-THE-STARVING-LINE-THE-TACTICAL-STEP-TURNS-AWAY-FROM-A-MEAL-WITHOUT-WEIGHING-HUNGER/test_plan.md
   tags: []
 - type: ticket
+  path: agent-working/tickets/done/TCK-20261115-PER-PHASE-TICK-COST-AFTER-THE-HOSTILITY-AND-COOPERATION-FIXES.md
+  ticket_id: TCK-20261115-PER-PHASE-TICK-COST-AFTER-THE-HOSTILITY-AND-COOPERATION-FIXES
+  title: Re-measure per-phase tick cost on a quiet host after the hostility index
+    (H1) and cooperation candidate (H2) fixes
+  tier: standard
+  ticket_type: chore
+  date: '2026-11-15'
+  related_code_areas:
+  - tools/perf/profile_tick.py
+  - tools/perf/quiet_gate.py
+  - src/engine/pipeline.py (read only)
+  artifact_files:
+  - agent-working/stored_artifacts/TCK-20261115-PER-PHASE-TICK-COST-AFTER-THE-HOSTILITY-AND-COOPERATION-FIXES/evidence.md
+  - agent-working/stored_artifacts/TCK-20261115-PER-PHASE-TICK-COST-AFTER-THE-HOSTILITY-AND-COOPERATION-FIXES/investigation.md
+  - agent-working/stored_artifacts/TCK-20261115-PER-PHASE-TICK-COST-AFTER-THE-HOSTILITY-AND-COOPERATION-FIXES/plan.md
+  - agent-working/stored_artifacts/TCK-20261115-PER-PHASE-TICK-COST-AFTER-THE-HOSTILITY-AND-COOPERATION-FIXES/test_plan.md
+  tags:
+  - performance
+- type: ticket
   path: agent-working/tickets/done/TCK-20261115-PROJECT-SYNC-ALL-LANES.md
   ticket_id: TCK-20261115-PROJECT-SYNC-ALL-LANES
   title: '`project_sync.py` P3b: every lane goes on Project 1, Domain becomes a single-select,
@@ -9190,6 +9299,24 @@
   artifact_files: []
   tags:
   - testing
+- type: ticket
+  path: agent-working/tickets/done/TCK-20261115-WHAT-A-WORKER-CHUNK-COSTS-TO-ENCODE-AND-SHIP.md
+  ticket_id: TCK-20261115-WHAT-A-WORKER-CHUNK-COSTS-TO-ENCODE-AND-SHIP
+  title: Measure what a Collection chunk costs to encode and decode, and Collection's
+    internal split, on the 3 gate worlds (cheap form)
+  tier: standard
+  ticket_type: chore
+  date: '2026-11-15'
+  related_code_areas:
+  - ConcurrentExecutionAdapter
+  - tools/perf/quiet_gate.py
+  artifact_files:
+  - agent-working/stored_artifacts/TCK-20261115-WHAT-A-WORKER-CHUNK-COSTS-TO-ENCODE-AND-SHIP/evidence.md
+  - agent-working/stored_artifacts/TCK-20261115-WHAT-A-WORKER-CHUNK-COSTS-TO-ENCODE-AND-SHIP/investigation.md
+  - agent-working/stored_artifacts/TCK-20261115-WHAT-A-WORKER-CHUNK-COSTS-TO-ENCODE-AND-SHIP/plan.md
+  - agent-working/stored_artifacts/TCK-20261115-WHAT-A-WORKER-CHUNK-COSTS-TO-ENCODE-AND-SHIP/test_plan.md
+  tags:
+  - performance
 - type: ticket
   path: agent-working/tickets/done/TCK-20261115-WORLD-FARM-RUNS-WORLDS-SIDE-BY-SIDE-WITHOUT-CLASHING.md
   ticket_id: TCK-20261115-WORLD-FARM-RUNS-WORLDS-SIDE-BY-SIDE-WITHOUT-CLASHING
