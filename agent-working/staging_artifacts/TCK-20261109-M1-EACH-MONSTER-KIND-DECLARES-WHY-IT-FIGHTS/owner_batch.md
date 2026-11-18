@@ -3,7 +3,7 @@ status: active
 layer: combat
 authority: P2
 audience: agent
-artifact_type: owner_batch
+artifact_type: report
 ticket_id: TCK-20261109-M1-EACH-MONSTER-KIND-DECLARES-WHY-IT-FIGHTS
 date: 2026-11-18
 ---
