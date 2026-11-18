@@ -2,6 +2,9 @@
 """ArchetypeEntityFactory.build_newborn: the species' newborn body at CHILD, none of the archetype's job (M1 births, rulings v2.2 D3)."""
 import pytest
 
+from src.core.species import SenseProfileError
+from src.engine.behavior_consumers import configure_behavior_consumers, reset_behavior_consumers
+
 from src.content.repository import CatalogRepository
 from src.content.resolver import EntityArchetypeResolver
 from src.core.builder import V2EntityBuilder
@@ -92,3 +95,60 @@ def test_the_held_anchor_copy_restores_with_one_value(catalog, monkeypatch):
     monkeypatch.setattr(archetype_factory, "_COPY_MOTHER_ANCHORS", True)
     child = _newborn(catalog)[3]
     assert child.navigation.home_position == (1.0, 2.0) and child.navigation.leash_radius == 6.0
+
+
+def _troll_contract_and_birth(catalog, **mother_props):
+    """The troll newborn contract resolved while the catalog is GOOD (a bad sense profile already fails in the resolver), and the birth for it."""
+    contract = resolved_archetype_to_contract(EntityArchetypeResolver(catalog).resolve(catalog.species["troll"].newborn_archetype))
+    mother, mate = _parent(1, contract.species_id, EntityRole.CITIZEN, **mother_props), _parent(2, contract.species_id, EntityRole.CITIZEN)
+    birth = NewbornBirth(mother, mate, (3.0, 4.0), 120, 42, GeneticsSystem.generate_profile_from_seed(1), GeneticsSystem.generate_profile_from_seed(2), "r1")
+    return contract, birth
+
+
+@pytest.fixture()
+def break_troll_senses(catalog):
+    """Installs the module catalog as the warmed one the build paths read, then breaks the troll's sense profile; call the returned function AFTER the contract is resolved."""
+    troll = catalog.species["troll"]
+    configure_behavior_consumers(catalog)
+
+    def _break():
+        catalog.species["troll"] = troll.model_copy(update={"sense_profile": "nope"})
+        configure_behavior_consumers(catalog)
+
+    try:
+        yield _break
+    finally:
+        catalog.species["troll"] = troll
+        reset_behavior_consumers()
+
+
+def test_a_newborn_of_a_species_with_no_usable_sense_profile_is_refused_at_build_newborn(catalog, break_troll_senses):
+    contract, birth = _troll_contract_and_birth(catalog)
+    break_troll_senses()
+    with pytest.raises(SenseProfileError):
+        ArchetypeEntityFactory().build_newborn(900, contract, birth)
+
+
+def test_a_newborn_of_a_species_with_a_usable_sense_profile_is_built(catalog, break_troll_senses):
+    contract, birth = _troll_contract_and_birth(catalog)
+    child = ArchetypeEntityFactory().build_newborn(900, contract, birth)
+    assert child.kind == contract.species_id == "troll"
+
+
+def test_the_checked_contract_is_the_newborns_not_the_mothers(catalog, break_troll_senses, monkeypatch):
+    """The mother names a different archetype in her own properties; the contract that build_newborn checks (recorded at the call) AND builds from is the NEWBORN's, whose archetype_id is the species' newborn_archetype. The
+    SenseProfileError for a species with a declared-but-missing profile does not itself name the archetype, so the check is on the contract the guard received. Senses resolve by species, so the profile is the same either
+    way: this proves which contract is checked and used, not per-archetype senses (out of scope, rpg-designer-ubuntu section 28)."""
+    import src.entities.archetype_factory as factory
+    contract, birth = _troll_contract_and_birth(catalog, mother_archetype_id="a_different_archetype")
+    assert contract.archetype_id == catalog.species["troll"].newborn_archetype and birth.mother.identity.properties["mother_archetype_id"] == "a_different_archetype"
+    seen = []
+    real = factory.require_archetype_senses
+    monkeypatch.setattr(factory, "require_archetype_senses", lambda c: (seen.append(c.archetype_id), real(c))[1])
+    child = ArchetypeEntityFactory().build_newborn(900, contract, birth)
+    assert seen == [contract.archetype_id] and child.kind == contract.species_id
+    break_troll_senses()
+    seen.clear()
+    with pytest.raises(SenseProfileError):
+        ArchetypeEntityFactory().build_newborn(901, contract, birth)
+    assert seen == [contract.archetype_id]
