@@ -7986,6 +7986,18 @@
   - content
   last_verified: '2026-10-09'
 - type: ticket
+  path: agent-working/tickets/todos/TCK-20261118-BIRTHS-BALANCING-PASS.md
+  ticket_id: TCK-20261118-BIRTHS-BALANCING-PASS
+  title: 'Births need a balancing pass: birth rates, newborn survival, combat deaths,
+    cohort drift and population curves were reported in M1, not tuned'
+  tier: standard
+  ticket_type: feature
+  date: '2026-11-18'
+  related_code_areas:
+  - src/world/births.py, data/content/living/reproduction_profiles.yaml, src/engine/apply_plan.py
+  artifact_files: []
+  tags: []
+- type: ticket
   path: agent-working/tickets/todos/TCK-20261118-QUALITY-SCORES-REWARD-SILENCE-OVER-LATE-ACTIVITY.md
   ticket_id: TCK-20261118-QUALITY-SCORES-REWARD-SILENCE-OVER-LATE-ACTIVITY
   title: Quality pillar scores rate a world that goes silent, or never acts, above
@@ -8008,6 +8020,30 @@
   date: '2026-11-18'
   related_code_areas:
   - src/worldbuilding/compiler.py, src/domains/campaigns/orchestrator.py
+  artifact_files: []
+  tags: []
+- type: ticket
+  path: agent-working/tickets/todos/TCK-20261118-UNDEAD-RAISED-BY-A-DARK-MAGIC-CASTER.md
+  ticket_id: TCK-20261118-UNDEAD-RAISED-BY-A-DARK-MAGIC-CASTER
+  title: No caster can raise undead; necromancy over a corpse is permitted by STR-01
+    but has no mechanism
+  tier: standard
+  ticket_type: feature
+  date: '2026-11-18'
+  related_code_areas:
+  - src/world/, src/engine/, data/content/
+  artifact_files: []
+  tags: []
+- type: ticket
+  path: agent-working/tickets/todos/TCK-20261118-UNDEAD-RISE-AT-A-GRAVEYARD-PLACE.md
+  ticket_id: TCK-20261118-UNDEAD-RISE-AT-A-GRAVEYARD-PLACE
+  title: Undead can rise only from a fresh corpse; no graveyard-type place exists
+    for them to rise at
+  tier: standard
+  ticket_type: feature
+  date: '2026-11-18'
+  related_code_areas:
+  - src/core/state.py (PlaceKind), data/content/world_modules/, src/world/
   artifact_files: []
   tags: []
 - type: ticket
@@ -10718,14 +10754,18 @@
   date: '2026-11-09'
   related_code_areas: []
   artifact_files:
+  - agent-working/stored_artifacts/TCK-20261109-M1-BASIC-WILD-BIRTHS-FOR-EVERY-LIVING-KIND/owner_births_scope_and_rpg_designer_6a_extinction_rulings_2026-11-18.md
   - agent-working/stored_artifacts/TCK-20261109-M1-BASIC-WILD-BIRTHS-FOR-EVERY-LIVING-KIND/rpg_designer_births_answers_2026-11-17.md
+  - agent-working/stored_artifacts/TCK-20261109-M1-BASIC-WILD-BIRTHS-FOR-EVERY-LIVING-KIND/rpg_designer_s9_outcome_criteria_2026-11-18.md
   - agent-working/stored_artifacts/TCK-20261109-M1-BASIC-WILD-BIRTHS-FOR-EVERY-LIVING-KIND/rpg_designer_ubuntu_births_bucket2_ruling_2026-11-18.md
   - agent-working/stored_artifacts/TCK-20261109-M1-BASIC-WILD-BIRTHS-FOR-EVERY-LIVING-KIND/rpg_designer_ubuntu_births_camp_texts_2026-11-18.md
+  - agent-working/stored_artifacts/TCK-20261109-M1-BASIC-WILD-BIRTHS-FOR-EVERY-LIVING-KIND/rpg_designer_ubuntu_births_checks_3_6_ruling_2026-11-18.md
   - agent-working/stored_artifacts/TCK-20261109-M1-BASIC-WILD-BIRTHS-FOR-EVERY-LIVING-KIND/rpg_designer_ubuntu_births_grade_predictions_2026-11-18.md
   - agent-working/stored_artifacts/TCK-20261109-M1-BASIC-WILD-BIRTHS-FOR-EVERY-LIVING-KIND/rpg_designer_ubuntu_births_grade_predictions_correction_2026-11-18.md
   - agent-working/stored_artifacts/TCK-20261109-M1-BASIC-WILD-BIRTHS-FOR-EVERY-LIVING-KIND/rpg_designer_ubuntu_births_grade_trace_ruling_2026-11-18.md
   - agent-working/stored_artifacts/TCK-20261109-M1-BASIC-WILD-BIRTHS-FOR-EVERY-LIVING-KIND/rpg_designer_ubuntu_births_loop_read_and_camp_2026-11-18.md
   - agent-working/stored_artifacts/TCK-20261109-M1-BASIC-WILD-BIRTHS-FOR-EVERY-LIVING-KIND/rpg_designer_ubuntu_births_placement_review_2026-11-18.md
+  - agent-working/stored_artifacts/TCK-20261109-M1-BASIC-WILD-BIRTHS-FOR-EVERY-LIVING-KIND/rpg_designer_ubuntu_births_risen_origin_design_2026-11-18.md
   - agent-working/stored_artifacts/TCK-20261109-M1-BASIC-WILD-BIRTHS-FOR-EVERY-LIVING-KIND/rpg_designer_ubuntu_births_rulings_2026-11-17.md
   - agent-working/stored_artifacts/TCK-20261109-M1-BASIC-WILD-BIRTHS-FOR-EVERY-LIVING-KIND/rpg_designer_ubuntu_births_rulings_d3_picks_2026-11-18.md
   - agent-working/stored_artifacts/TCK-20261109-M1-BASIC-WILD-BIRTHS-FOR-EVERY-LIVING-KIND/rpg_designer_ubuntu_births_rulings_d3_table_2026-11-18.md
@@ -10736,6 +10776,12 @@
   - agent-working/stored_artifacts/TCK-20261109-M1-BASIC-WILD-BIRTHS-FOR-EVERY-LIVING-KIND/rpg_designer_ubuntu_births_rulings_g1_addendum_2026-11-18.md
   - agent-working/stored_artifacts/TCK-20261109-M1-BASIC-WILD-BIRTHS-FOR-EVERY-LIVING-KIND/rpg_designer_ubuntu_births_rulings_v2_2026-11-17.md
   - agent-working/stored_artifacts/TCK-20261109-M1-BASIC-WILD-BIRTHS-FOR-EVERY-LIVING-KIND/rpg_designer_ubuntu_births_test_inventory_ruling_2026-11-18.md
+  - agent-working/stored_artifacts/TCK-20261109-M1-BASIC-WILD-BIRTHS-FOR-EVERY-LIVING-KIND/rpg_designer_ubuntu_newborn_role_allowlist_row_ruling_2026-11-18.md
+  - agent-working/stored_artifacts/TCK-20261109-M1-BASIC-WILD-BIRTHS-FOR-EVERY-LIVING-KIND/rpg_designer_ubuntu_plan_review_rulings_2026-11-18.md
+  - agent-working/stored_artifacts/TCK-20261109-M1-BASIC-WILD-BIRTHS-FOR-EVERY-LIVING-KIND/rpg_designer_ubuntu_reproduction_gestation_litter_gate_design_2026-11-18.md
+  - agent-working/stored_artifacts/TCK-20261109-M1-BASIC-WILD-BIRTHS-FOR-EVERY-LIVING-KIND/rpg_designer_ubuntu_reproduction_mate_gate_doc_texts_2026-11-18.md
+  - agent-working/stored_artifacts/TCK-20261109-M1-BASIC-WILD-BIRTHS-FOR-EVERY-LIVING-KIND/rpg_designer_ubuntu_risen_pipeline_texts_2026-11-18.md
+  - agent-working/stored_artifacts/TCK-20261109-M1-BASIC-WILD-BIRTHS-FOR-EVERY-LIVING-KIND/rpg_planner_births_mechanisms_additions_2026-11-18.md
   - agent-working/stored_artifacts/TCK-20261109-M1-BASIC-WILD-BIRTHS-FOR-EVERY-LIVING-KIND/rpg_planner_births_mechanisms_yaml_text_2026-11-18.md
   tags: []
 - type: ticket
