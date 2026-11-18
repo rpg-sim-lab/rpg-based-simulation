@@ -112,6 +112,12 @@ No new durable state is expected. The fix names a payee or refuses. If a payee n
     - REPORTED: total REST/EAT coin charged, fix vs base. No service-refusal change is expected, so the starvation note is withdrawn.
   - DOCS: ch03, plus one sentence in service_admission.py and service_prices.py ("the debit equals what the payee receives"), plus the parity evidence.
 
+- 2026-11-19 RULE (a) PREDICTION (rpg-designer, set BEFORE the own-job data). It rests on lane C's INSPECTED claim that apply clamps an entity debit at 0; if the own-job finds otherwise, the prediction is void and the designer re-predicts.
+  - The old code destroys coin ONLY when an underpaying payer also gets a same-tick credit (like e9's INHERIT).
+  - Predicted: all 15 V1 rows UNCHANGED; V6 cf s46 -10 -> 0; economy-graded rows unchanged, or up by at most one price per same-tick-credit case; every other gate row identical.
+  - A move outside that is a finding and goes to the designer.
+- #781 split (c) agreed (rpg-designer, lead): this fix is conservation under CLAMP; #781 (ATOMIC, decision 44) stays held and rebases onto this fix later.
+
 ## Test Summary
 
 ## Files Changed
