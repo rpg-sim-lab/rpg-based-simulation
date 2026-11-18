@@ -1,10 +1,10 @@
 ---
-status: active
+status: historical
 layer: performance
 authority: P1
 audience: agent
 ticket_id: TCK-20261118-CPU-STEAL-AND-SWAP-COUNTERS-IN-EVERY-TIMING-RECORD
-phase: open
+phase: done
 date: 2026-11-18
 tags: [performance]
 ---
@@ -15,7 +15,7 @@ tags: [performance]
 Record CPU steal time and the swap counters in every timing record, so host stalls can be told apart from guest contention
 
 ## Status
-OPEN
+DONE
 
 ## Tier
 standard
@@ -42,11 +42,11 @@ The owner lifted the perf pause only for this (#715 6985064750, logged by lead-p
 - Any `src/` change, any timing or heavy run (births GO 1, #715 6983630824, holds the slot: unit tests only), the seats-slice fence, the frontier re-run, new gate thresholds, the five backlog fixes (not lifted).
 
 ## Acceptance Criteria
-- [ ] A timed run's record carries `cpu_steal` (jiffies, percent) and `swap_in_pages` / `swap_out_pages` deltas.
-- [ ] Unit tests pass: `pytest tests/unit/perf tests/perf -m "not slow"` scoped to quiet_gate and rerun_baselines tests.
-- [ ] No file outside `tools/perf`, `tests/{perf,unit/perf}`, `docs/performance` changed (`git diff --stat origin/main`).
-- [ ] mypy gate clean on touched modules.
-- [ ] TCK-20261116-TIMING-RUNS... AC3 can be ticked by citing this ticket.
+- [x] A timed run's record carries `cpu_steal` (jiffies, percent) and `swap_in_pages` / `swap_out_pages` deltas.
+- [x] Unit tests pass: `pytest tests/unit/perf tests/perf -m "not slow"` scoped to quiet_gate and rerun_baselines tests.
+- [x] No file outside `tools/perf`, `tests/{perf,unit/perf}`, `docs/performance` changed (`git diff --stat origin/main`).
+- [x] mypy gate clean on touched modules.
+- [x] TCK-20261116-TIMING-RUNS... AC3 can be ticked by citing this ticket.
 
 ## Related Tickets
 - TCK-20261116-TIMING-RUNS-SHARE-THEIR-CPUS-WITH-IDLE-SEATS (stays open for the fence and the frontier re-run)
@@ -64,13 +64,17 @@ None.
 - tests/unit/perf, tests/perf (test_quiet_gate.py, test_rerun_baselines.py)
 
 ## Assumptions / Open Questions
-- Where the timing record is written (rerun_baselines vs capacity_run vs profile_tick): the implementer lists every writer first and covers each, or states which is left out and why.
+- Writers: the only code that uses `RunWatch` and writes per-run gate data is `rerun_baselines.py record` (`summary.json` `gates`); `capacity_run` and `profile_tick` do not use the quiet gate and are left out, as the ticket scope names only the gated record. The `src/perf` `BenchmarkRecord` schema was not touched; a later schema change would add the fields to `identity.runtime` / `result` in `src/perf/benchmark_record.py`.
+- AC3 of TCK-20261116-TIMING-RUNS-SHARE-THEIR-CPUS-WITH-IDLE-SEATS can cite this ticket.
 
 ## Implementation Notes
 Approval: #715 6985064750.
 
 ## Test Summary
+`pytest tests/perf tests/unit/perf -m "not slow" -k "quiet or rerun"`: 81 passed (7 new in test_quiet_gate.py: steal reader, unreadable field, pinned steal + zero swap, warning without voiding, unpinned, swap-move fields, record gate entries). mypy on the two touched modules: no errors. No timing run.
 
 ## Files Changed
+tools/perf/quiet_gate.py, tools/perf/rerun_baselines.py, tests/unit/perf/test_quiet_gate.py, docs/performance/perf_baseline_policy.md (section 2.2).
 
 ## Completion Summary
+`RunWatch` now records `cpu_steal` and `swap_in_pages` / `swap_out_pages` for every timed run (pinned or not) into the `gates` entries of `summary.json`; steal above 5 % warns, never voids.
