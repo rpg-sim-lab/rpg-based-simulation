@@ -3,9 +3,10 @@
 from __future__ import annotations
 
 from dataclasses import asdict, dataclass
-from typing import Any, Dict
+from typing import TYPE_CHECKING, Any, Dict
 
-from src.systems.lifecycle_systems.genetics import GeneticProfile
+if TYPE_CHECKING:
+    from src.core.state import GeneticProfile  # re-exported there; importing it from systems here would add a core -> systems edge
 
 
 @dataclass(frozen=True, slots=True)
