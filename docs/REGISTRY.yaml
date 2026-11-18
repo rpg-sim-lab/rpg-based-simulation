@@ -8183,7 +8183,10 @@
   related_code_areas:
   - src/systems/strategic_systems/intelligence.py (the resolve_blocker timeout), the
     blocker creation paths
-  artifact_files: []
+  artifact_files:
+  - agent-working/stored_artifacts/TCK-20261117-A-RESOLVE-BLOCKER-PROJECT-IS-RE-CREATED-EVERY-80-TICKS-AND-STALLS-COOPERATION/investigation.md
+  - agent-working/stored_artifacts/TCK-20261117-A-RESOLVE-BLOCKER-PROJECT-IS-RE-CREATED-EVERY-80-TICKS-AND-STALLS-COOPERATION/plan.md
+  - agent-working/stored_artifacts/TCK-20261117-A-RESOLVE-BLOCKER-PROJECT-IS-RE-CREATED-EVERY-80-TICKS-AND-STALLS-COOPERATION/test_plan.md
   tags: []
 - type: ticket
   path: agent-working/tickets/done/TCK-20261117-AN-ENTITY-CARRIES-ITS-OCCUPATION-LABEL-AND-ONE-SPECIES-READ-SPECIES-OF.md
