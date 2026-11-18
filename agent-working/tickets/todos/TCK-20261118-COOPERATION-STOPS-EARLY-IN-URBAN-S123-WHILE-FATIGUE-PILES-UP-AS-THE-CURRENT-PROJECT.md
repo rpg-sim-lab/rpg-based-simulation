@@ -27,7 +27,7 @@ bug
 P1
 
 ## Request Summary
-Found by the churn fix's own-job (capread_n10.py 59b0813b over each cell's run dir; 2026-11-18). rpg-designer ruled it a SEPARATE, pre-existing liveness finding. It is a Phase-1 ticket, and it does not gate the churn merge.
+Found by the churn fix's own-job (capread_n10.py 59b0813b over each cell's run dir; 2026-11-18). rpg-designer ruled it ONE separate, pre-existing liveness finding (the s123 stop and the fatigue pile-up together). It does not gate the churn merge, but it IS a HARD liveness item at the run-1 boundary read: resolved, or accepted by the owner, before that read (rpg-designer packet drafts/rpg-designer-churn-ownjob-ruling.md, sha 729bc878).
 - Last cooperation_event tick, main dca5a8dbb -> churn fix 18c3250a4: urban s42 4900 -> 4900; urban s123 1460 -> 1630; frontier s42 4900 (fix); crowded s42 4862 (fix).
 - Current project kind at t4900: 'fatigue' for 9-15 subjects in urban, on BOTH arms. Main also keeps one resolve_blocker.
 - The 5000-tick metric does not separate main from fix in s42, so the churn ticket's "cooperation resumes" claim is restated (owner ask, rpg-designer), and the early stop in s123 is tracked here.

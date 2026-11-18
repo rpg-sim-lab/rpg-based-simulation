@@ -8001,20 +8001,6 @@
   artifact_files: []
   tags: []
 - type: ticket
-  path: agent-working/tickets/todos/TCK-20261118-A-REMOVED-BLOCKER-FORGETS-ITS-FAILURES-SO-A-RECURRING-ONE-RESTARTS-WITH-NO-BACKOFF.md
-  ticket_id: TCK-20261118-A-REMOVED-BLOCKER-FORGETS-ITS-FAILURES-SO-A-RECURRING-ONE-RESTARTS-WITH-NO-BACKOFF
-  title: When the quiet-spell rule removes a blocker, its failure_count and backoff
-    go with it, so a blocker that recurs is re-inferred fresh at failure_count 0 and
-    a resolve_blocker project is rebuilt within ticks
-  tier: standard
-  ticket_type: bug
-  date: '2026-11-18'
-  related_code_areas:
-  - src/systems/strategic_systems/blocker_lifecycle.py (quiet_spell_update, reinferred_blockers_update),
-    intelligence.py (infer_blockers)
-  artifact_files: []
-  tags: []
-- type: ticket
   path: agent-working/tickets/todos/TCK-20261118-A-SUBJECT-WITH-A-STANDING-HELP-NEED-RE-DECIDES-SOLO-EVERY-TICK.md
   ticket_id: TCK-20261118-A-SUBJECT-WITH-A-STANDING-HELP-NEED-RE-DECIDES-SOLO-EVERY-TICK
   title: CooperationPhase re-runs the posture choice on every tick for any subject
