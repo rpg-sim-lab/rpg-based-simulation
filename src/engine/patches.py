@@ -294,6 +294,7 @@ class NavigationPatch(ComponentPatch):
                 last_position=u_nav.last_position_set if u_nav.last_position_set is not None else new_nav.last_position,
                 step_ready_tick=u_nav.step_ready_tick_set if u_nav.step_ready_tick_set is not None else new_nav.step_ready_tick,
                 lodged_in=None if u_nav.lodged_in_clear else (u_nav.lodged_in_set if u_nav.lodged_in_set is not None else new_nav.lodged_in),
+                last_moved_tick=u_nav.last_moved_tick_set if u_nav.last_moved_tick_set is not None else new_nav.last_moved_tick,
             )
         if self.new_position:
             if self.new_position != entity.navigation.position:

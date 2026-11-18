@@ -69,7 +69,8 @@ def test_the_predicate_is_true_for_an_adjacent_unengaged_perceived_hostile_only(
 
 
 def _brain_items(walker, hostile, tick):
-    state = AuthoritativeState(tick=tick, seed=1, entities=_ents(walker, hostile))
+    # world_time 1200 is a day tick: ticks 0-599 are NIGHT under the night helper (divergence 2.209), and a day-eyed fixture body does not see a medium-visibility hostile at night (PERC-02).
+    state = AuthoritativeState(tick=tick, seed=1, entities=_ents(walker, hostile), world_time=1200)
     items, _dropped = DeterministicScheduler().select_work(state, GovernorPolicy(system_cadence=SystemCadence(strategic_intelligence=10)))
     return [i for i in items if i.owner_id == 1 and i.work_kind == "ENTITY_BRAIN"]
 

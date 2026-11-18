@@ -69,7 +69,7 @@ def test_mutual_adjacent_position_swap_succeeds():
     assert refined.entity_updates[1].new_position == (1.0, 0.0)
     assert refined.entity_updates[2].new_position == (0.0, 0.0)
 
-    for swapped in (1, 2):  # a swap is a move: the clear, no code (2.214)
+    for swapped in (1, 2):  # a swap is a move: the clear, no code (2.215)
         assert refined.entity_updates[swapped].navigation.failure_reason is None
         assert refined.entity_updates[swapped].navigation.failure_reason_clear is True
 

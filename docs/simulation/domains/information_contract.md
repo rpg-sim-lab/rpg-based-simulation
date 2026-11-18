@@ -106,7 +106,7 @@ leads are never scanned by this phase — their contradiction path is
 `ObservationBeliefBridge.process_observation()` (`bridge.py`) calling
 `BeliefContradictionService.detect()` for `claim_failed_search`/`region_danger_seen` observation
 kinds, plus the observation-synthesis branch in `InformationBeliefPhase.apply()` (`phase.py`)
-that derives those two observation kinds from existing typed navigation/objective fields. `claim_failed_search` is derived from a non-None `NavigationComponent.last_failure_reason`; a move (own step, swap, yield displacement) leaves that reason None (divergence 2.214), so a moved body emits none. See
+that derives those two observation kinds from existing typed navigation/objective fields. `claim_failed_search` is derived from a non-None `NavigationComponent.last_failure_reason`; a move (own step, swap, yield displacement) leaves that reason None (divergence 2.215), so a moved body emits none. See
 `docs/mechanics/04_strategic_cognition.md` §3 ("Lead Contradiction Testing") for the full
 per-kind mechanic and `docs/parity_ledger/strategic_cognition.yaml` (`STRAT-230`) for parity
 status.

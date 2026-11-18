@@ -25,6 +25,7 @@ from src.engine.tactical import TacticalDecisionSystem
 from src.systems.strategic import StrategicIntelligenceSystem
 
 from src.core.builder import V2EntityBuilder
+from tests.helpers.clock import DAY_WORLD_TIME
 
 def create_mock_entity(id, pos=(0.0, 0.0), hp=100, faction="HERO_FACTION"):
     from src.core.enums import Faction
@@ -101,7 +102,7 @@ def test_strategic_interruption_hp():
     # Skirmisher monster will trigger cover seeking/retreat
     m99 = replace(m99, combat=replace(m99.combat, tactical_role="SKIRMISHER", range=5))
     
-    state = AuthoritativeState(tick=1, seed=1, entities={1: h1, 99: m99})
+    state = AuthoritativeState(world_time=DAY_WORLD_TIME, tick=1, seed=1, entities={1: h1, 99: m99})
     
     # Evaluate Hero 1
     update = TacticalDecisionSystem.evaluate_entity_intent(state, h1)

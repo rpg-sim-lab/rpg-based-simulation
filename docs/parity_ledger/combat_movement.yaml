@@ -5031,7 +5031,7 @@
     src/engine/pipeline_phases/movement.py (position-swap update, _merge_move_update).
   proof_type: regression
   test_path: tests/unit/movement/test_failure_reason_lifecycle.py
-  divergence_note: See docs/guidelines/intentional_divergences.md Section 2.214.
+  divergence_note: See docs/guidelines/intentional_divergences.md Section 2.215.
   support_boundary: 'The clear is a field of the update, not of the state; checkpoint and fingerprint
     are unchanged. Whether a stale reason filed a wrong blocker in a real run is measured by the
     own-job (R1/R2/R3), not claimed here.'

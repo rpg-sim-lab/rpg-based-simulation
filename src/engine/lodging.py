@@ -108,7 +108,7 @@ def finds_no_bed(state: Any, entity: Any, building: Any) -> bool:
     return building is not None and building.functional and lodges(building) and keeps_coin(entity) and not has_free_bed(state, building, entity)
 
 
-def way_closed_end(entity: Any, update: Any = None) -> Any:
+def way_closed_end(entity: Any, update: Any = None, tick: Any = None) -> Any:
     """The typed end of a fatigue project that found no bed: ``ProjectEnd.WAY_CLOSED`` through `end_record`, the current project and objective cleared. None when the subject has no
     fatigue project, or when ``update`` already carries that project's end (the claim path and the first-execution path may both refuse the same REST)."""
     project = entity.strategic.projects.get(entity.strategic.current_project_id or "")
@@ -117,14 +117,14 @@ def way_closed_end(entity: Any, update: Any = None) -> Any:
     if update is not None and update.strategic is not None and any(p.id == project.id and p.ended_by is not None for p in update.strategic.projects_add_or_update):
         return None
     return EntityUpdate(entity_id=entity.id, strategic=StrategicUpdate(
-        projects_add_or_update=[end_record(project, ProjectStatus.ABANDONED, ProjectEnd.WAY_CLOSED)], current_project_id_set="", current_objective_id_set=""))
+        projects_add_or_update=[end_record(project, ProjectStatus.ABANDONED, ProjectEnd.WAY_CLOSED, tick)], current_project_id_set="", current_objective_id_set=""))
 
 
-def refuse_rest(entity: Any) -> Any:
+def refuse_rest(entity: Any, tick: Any = None) -> Any:
     """The update of a REST that found no bed at its first execution: no rest, no charge, no claim, no move. The typed failure reason ``NO_BED_FREE`` is what the actions phase counts and
     annotates (and what ends the held REST task, see ``_ENDS_HELD_REASONS_BY_ACTION``); a fatigue project ends WAY_CLOSED through `way_closed_end`. The subject re-decides."""
     refusal = EntityUpdate(entity_id=entity.id, navigation=NavigationUpdate(failure_reason=ReasonCode.NO_BED_FREE.value))
-    ended = way_closed_end(entity)
+    ended = way_closed_end(entity, tick=tick)
     return refusal.merge(ended) if ended is not None else refusal
 
 
@@ -225,9 +225,9 @@ def _granted(entity: Any, upd: Any, building: Any, markers: int, drops: _DropLog
     return upd
 
 
-def _refused(entity: Any, upd: Any) -> Any:
+def _refused(entity: Any, upd: Any, tick: Any = None) -> Any:
     """The update of a REFUSED claim: no lodging, no move, its REST task ended (an idle act), its fatigue project ended WAY_CLOSED."""
-    ended = way_closed_end(entity, upd)
+    ended = way_closed_end(entity, upd, tick)
     task = replace(upd.task, payload_set={}) if upd.task is not None else upd.task
     out = replace(upd, navigation=replace(upd.navigation, lodged_in_set=None), new_position=None, moved_this_tick=False, task=task)
     return out.merge(ended) if ended is not None else out
@@ -248,7 +248,7 @@ def _settle_building(state: Any, building_id: int, claimants: List[int], refined
             free -= 0 if eid in held else 1
             refined[eid] = _granted(entity, upd, building, markers, drops)
         else:
-            refined[eid] = _refused(entity, upd)
+            refined[eid] = _refused(entity, upd, state.tick)
 
 
 def grant_beds(state: Any, update: Any) -> Any:

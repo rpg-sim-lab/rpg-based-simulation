@@ -29,6 +29,8 @@ P2
 ## Request Summary
 Found by lane D's Read A (simq_routing_test s42): entity 3's concern danger_hostile_21 (urgency 0.8) was added at t=87 and never removed or refreshed, through a whole harvesting project (t=137-237). Durable state with no defined lifecycle end, against CLAUDE.md's Durable State rule.
 
+SECOND INSTANCE, probable, not yet checked (rpg-planner-ubuntu via the ubuntu lead, 2026-11-18): on main, hero_guild_routing s42 entity 25 stays in danger-while-harvesting for ticks 276-975. Step 2's count must confirm or rule out that this is the same never-removed concern.
+
 Filed by rpg-planner during M1 Phase 1 (owner #715 6936893143: deeper issues found now are filed and fixed in Phase 3 unless they are hard errors). rpg-designer ruled the class.
 
 ## Scope

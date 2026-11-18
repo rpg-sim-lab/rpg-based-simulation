@@ -37,3 +37,7 @@ def occupation_of(entity: Any) -> Optional[str]:
 
     M1 step 3: the readers that compared `kind` with a role label read this instead, with the same literal; in step 2 the field equals `kind` on every writer."""
     return getattr(getattr(entity, "identity", None), "occupation", None)
+
+
+class SenseProfileError(Exception):
+    """A body's species has no usable sense profile (PERC-02): a content error, never a silent baseline."""

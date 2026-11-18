@@ -19,6 +19,7 @@ from typing import Any, List, Optional, Tuple
 
 from src.ai.goals.base import OpeningStepKind
 from src.content_semantics.faction import get_species_id_str
+from src.core.calendar import is_night
 from src.core.items import food_hunger_recovery
 from src.core.state import (
     AuthoritativeState,
@@ -123,7 +124,7 @@ def _hunt_step(entity: EntityState, state: AuthoritativeState) -> OpeningStep:
         other = state.entities.get(other_id)
         if other is None or other.id == entity.id or not other.combat.alive:
             continue
-        if relation(entity, other) is not Relation.PREDATION:
+        if relation(entity, other, night=is_night(state.world_time), tick=state.tick) is not Relation.PREDATION:
             continue
         distance = _within(entity, other.navigation.position, HUNT_RADIUS)
         if distance is not None and (best is None or distance < best_distance):

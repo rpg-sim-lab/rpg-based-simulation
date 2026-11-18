@@ -71,7 +71,7 @@ Found by lane A's read-only F2 code read (2026-11-17, F1 head 46ac46e40; the cit
 - Creator: a failed step (movement routing) or a failed action (action routing) writes a code through `NavigationUpdate.failure_reason`. Ender: any MOVE (own step, swap, yield displacement) carries `failure_reason_clear` and no code; before this ticket a yield or swap wrote YIELDING / POSITION_SWAP and nothing cleared it.
 - Update semantics: `NavigationPatch.apply` is replace-by-precedence: a code beats a clear, a bare None leaves the old value. `NavigationUpdate.merge` keeps the later code. Within movement routing a code the phase itself wrote for a body is dropped when that body is then displaced, and the pre-phase (action) code is restored; a code from an earlier phase survives; a code written later still wins.
 - Clock: state.tick only (phase order action_routing, position_swaps, movement_routing within one tick; guarded by a test). No world_time / is_night read; no new stored field and no new clock.
-- Visibility: the observation stream changes (fewer `claim_failed_search` after a move); noted in information_contract.md and divergence 2.214.
+- Visibility: the observation stream changes (fewer `claim_failed_search` after a move); noted in information_contract.md and divergence 2.215.
 
 ## Implementation Notes
 

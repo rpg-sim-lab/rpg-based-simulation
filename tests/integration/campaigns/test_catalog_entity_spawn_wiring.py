@@ -152,7 +152,9 @@ def _hostiles_perceived(state, entity, neighbors):
     from src.content_semantics.faction import get_faction_id_str, get_faction_semantics_service, get_species_id_str
     from src.content_semantics.relation import RelationContext
     from src.engine.behavior_consumers import get_entity_signals, get_perception_gate
+    from src.core.calendar import is_night
     from src.engine.cognition import SensoryFilter
+    from src.engine.tile_distance import chebyshev_tile_distance
     from src.engine.domain_logic import SimulationDomainLogic
     from src.engine.legality import LegalityServiceV2
     from src.entities.identity_resolver import EntityIdentityResolver, IdentityResolutionError
@@ -171,7 +173,8 @@ def _hostiles_perceived(state, entity, neighbors):
         if not n.combat.alive:
             continue
         dist = LegalityServiceV2.get_manhattan_dist(entity.navigation.position, n.navigation.position)
-        if not gate.can_perceive(entity, get_entity_signals(n), {"distance": float(dist)}).perceived:
+        reach = chebyshev_tile_distance(entity.navigation.position, n.navigation.position)
+        if not gate.can_perceive(entity, get_entity_signals(n, state.tick), {"distance": float(dist), "reach": float(reach), "night": is_night(state.world_time)}).perceived:
             continue
         try:
             tgt_faction = resolver.resolve(n).faction_id

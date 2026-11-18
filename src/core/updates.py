@@ -79,31 +79,24 @@ class NavigationUpdate:
     step_ready_tick_set: Optional[float] = None  # D75: the earliest tick of the entity's next step
     lodged_in_set: Optional[int] = None  # F3: the building the subject lodges in from this tick (a lodge claim until `grant_beds` grants it)
     lodged_in_clear: bool = False  # F3: the subject leaves the building it lodges in
+    last_moved_tick_set: Optional[int] = None  # PERC-02: the tick of a move: any position change by the movement apply path (a step, a swap, a yield displacement)
 
     def is_noop(self) -> bool:
         return (self.target_set is None and not self.target_clear and self.path_set is None and self.step_ready_tick_set is None and 
                 self.moved_recently_set is None and self.movement_mode_set is None and 
                 self.failure_reason is None and not self.failure_reason_clear and not self.clear_target and not self.clear_path and 
                 self.wait_count_delta == 0 and self.oscillation_count_delta == 0 and 
-                self.last_position_set is None and self.region_id_set is None and self.lodged_in_set is None and not self.lodged_in_clear)
+                self.last_position_set is None and self.region_id_set is None and self.lodged_in_set is None and not self.lodged_in_clear and self.last_moved_tick_set is None)
 
     def merge(self, other: NavigationUpdate) -> NavigationUpdate:
         if not other or other.is_noop():
             return self
-        changes: Dict[str, Any] = {}
-        if other.target_set is not None: changes["target_set"] = other.target_set
-        if other.target_clear: changes["target_clear"] = True
-        if other.path_set is not None: changes["path_set"] = other.path_set
-        if other.moved_recently_set is not None: changes["moved_recently_set"] = other.moved_recently_set
-        if other.movement_mode_set is not None: changes["movement_mode_set"] = other.movement_mode_set
-        changes.update(other._failure_changes())
-        if other.clear_target: changes["clear_target"] = True
-        if other.clear_path: changes["clear_path"] = True
+        optional_sets = ("target_set", "path_set", "moved_recently_set", "movement_mode_set", "last_position_set", "region_id_set", "step_ready_tick_set", "last_moved_tick_set")      # taken from the later update whenever it names them
+        changes: Dict[str, Any] = {name: getattr(other, name) for name in optional_sets if getattr(other, name) is not None}
+        changes.update({name: True for name in ("target_clear", "clear_target", "clear_path") if getattr(other, name)})
+        changes.update(other._failure_changes())  # the code if set, and the clear flag (failure_reason_clear)
         if other.wait_count_delta != 0: changes["wait_count_delta"] = self.wait_count_delta + other.wait_count_delta
         if other.oscillation_count_delta != 0: changes["oscillation_count_delta"] = self.oscillation_count_delta + other.oscillation_count_delta
-        if other.last_position_set is not None: changes["last_position_set"] = other.last_position_set
-        if other.region_id_set is not None: changes["region_id_set"] = other.region_id_set
-        if other.step_ready_tick_set is not None: changes["step_ready_tick_set"] = other.step_ready_tick_set
         changes.update(other._lodging_changes())
         return replace(self, **changes)
 

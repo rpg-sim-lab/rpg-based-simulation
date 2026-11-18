@@ -140,10 +140,11 @@ def test_combat_values_match_contract():
 
 
 def test_archetype_id_preserved_in_identity_properties():
-    c = _contract(archetype_id="test_arch", species_id="test_species")
+    # PERC-02a (rpg-designer): the archetype path refuses a species that is not in content, so the fixture names a real one; the test still checks that the species is preserved.
+    c = _contract(archetype_id="test_arch", species_id="human")
     entity = FACTORY.build_entity(7, c, _spawn())
     assert entity.identity.properties["archetype_id"] == "test_arch"
-    assert entity.identity.properties["species_id"] == "test_species"
+    assert entity.identity.properties["species_id"] == "human"
 
 
 def test_inventory_items_and_gold_from_contract():
@@ -221,7 +222,7 @@ def test_profile_ids_stored_in_properties():
     assert props["cognition_profile_id"] == "cog_basic"
     assert props["drive_profile_id"] == "drive_survival"
     assert props["need_profile_id"] == "need_human"
-    assert props["sense_profile_id"] == "sense_human"
+    assert "sense_profile_id" not in props  # PERC-02: senses are derived from the species at read, never stored on the body
     assert props["skill_profile_id"] == "skill_worker"
 
 
