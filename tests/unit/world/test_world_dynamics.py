@@ -104,6 +104,7 @@ def test_boss_spawn_is_idempotent_even_if_existing_boss_left_region():
     existing_boss = (
         V2EntityBuilder(100)
         .kind("world_boss")
+        .identity(occupation="world_boss")
         .location(150.0, 150.0)  # Outside original region.
         .combat(
             hp=500,
@@ -230,6 +231,7 @@ def test_lair_spawn_is_idempotent_per_place_with_multiple_lairs_in_one_region():
         occupant = (
             V2EntityBuilder(entity_id)
             .kind("dragonkin")
+            .identity(occupation="dragonkin")
             .location(0.0, 0.0)
             .combat(hp=200, max_hp=200, alive=True)
             .lifecycle(active=True)
@@ -303,6 +305,7 @@ def test_lair_spawn_does_not_double_spawn_when_one_of_two_lairs_already_occupied
     existing_occupant = (
         V2EntityBuilder(200)
         .kind("dragonkin")
+        .identity(occupation="dragonkin")
         .location(0.0, 0.0)
         .combat(hp=200, max_hp=200, alive=True)
         .lifecycle(active=True)
@@ -370,6 +373,7 @@ def test_lair_occupant_death_does_not_dissolve_or_transform_the_lair_place():
     dead_occupant = (
         V2EntityBuilder(200)
         .kind("dragonkin")
+        .identity(occupation="dragonkin")
         .location(50.0, 50.0)
         .combat(hp=0, max_hp=200, alive=False)
         .lifecycle(active=True)

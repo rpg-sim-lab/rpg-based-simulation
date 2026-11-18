@@ -111,8 +111,8 @@ def test_with_only_the_counter_slot_missing_it_is_seeded_and_the_readers_work(mo
 
 
 def test_every_rule_names_its_ruling_and_the_step_is_the_only_caller():
-    # the group rows, the F3 (2.155) rows and retention's 2.156 row (cleared_since) share the one table
-    assert {r.field for r in FIELD_RULES} == {"next_group_id", *NEW_GROUP_FIELDS, "lodged_in", "beds", "cleared_since"}
+    # the group rows, the F3 (2.155) rows, retention's 2.156 row (cleared_since) and the M1 occupation row and the N10 suspended_since row (2.212) share the one table
+    assert {r.field for r in FIELD_RULES} == {"next_group_id", *NEW_GROUP_FIELDS, "lodged_in", "beds", "cleared_since", "occupation", "suspended_since"}
     assert all(r.ruling for r in FIELD_RULES)
     import pathlib
     src = pathlib.Path("src")

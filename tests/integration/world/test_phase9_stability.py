@@ -41,7 +41,7 @@ def test_1000_tick_stability():
     # Spawn initial monsters
     entities = {}
     for i in range(10):
-        mob = generator.spawn_monster((20 + i, 20 + i), kind="wolf", difficulty_tier=1)
+        mob = generator.spawn_monster((20 + i, 20 + i), species="wolf", occupation="wolf", difficulty_tier=1)
         entities[mob.id] = mob
         
     state = AuthoritativeState(tick=0, seed=42, regions=regions, entities=entities)

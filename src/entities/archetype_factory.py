@@ -103,6 +103,7 @@ class ArchetypeEntityFactory:
                 traits=set(contract.traits),
                 properties=properties,
                 personality=personality,
+                occupation=contract.role_id or contract.profession_id,
             )
             .combat(
                 hp=contract.hp,

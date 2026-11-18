@@ -302,7 +302,7 @@ def test_builder_without_spawn_opt_in_keeps_generic_baseline():
 
 
 @pytest.mark.parametrize("spawn", [
-    lambda g, tier: g.spawn_monster((1.0, 1.0), difficulty_tier=tier),
+    lambda g, tier: g.spawn_monster((1.0, 1.0), species="monster", occupation="monster", difficulty_tier=tier),
     lambda g, tier: g.spawn_goblin((1.0, 1.0), difficulty_tier=tier),
     lambda g, tier: g.spawn_hero((1.0, 1.0), difficulty_tier=tier),
 ])

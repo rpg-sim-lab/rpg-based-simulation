@@ -11,6 +11,7 @@ from src.core.state import (
     InteractionComponent, SocialComponent, TaskComponent,
     EquipmentComponent, AptitudeComponent, ItemStack, InventoryComponent
 )
+from src.content.hero_species import hero_species_id
 from src.core.enums import EntityRole, Faction, ActionType, Domain
 from src.platform.rng import DeterministicRNG
 
@@ -63,8 +64,9 @@ _SPAWN_OFFSETS = sorted(
 )
 
 
-def _catalog_faction_properties(kind: str) -> Dict[str, Any]:
-    faction_id = SPAWN_KIND_CATALOG_FACTION.get(kind)
+def _catalog_faction_properties(occupation: Optional[str]) -> Dict[str, Any]:
+    """The catalog faction of a spawn LABEL (M1 step 4: `SPAWN_KIND_CATALOG_FACTION` is keyed by the occupation a spawner writes, not by the species in `kind`)."""
+    faction_id = SPAWN_KIND_CATALOG_FACTION.get(occupation) if occupation else None
     return {"faction_id": faction_id} if faction_id else {}
 
 
@@ -136,16 +138,16 @@ class EntityGenerator:
         
         from src.core.builder import V2EntityBuilder
         return (V2EntityBuilder(entity_id)
-            .kind("hero")
+            .kind(hero_species_id())
             .location(*pos)
-            .identity(role=EntityRole.HERO, faction=Faction.HERO_GUILD, evolution_level=evolution_level)
+            .identity(role=EntityRole.HERO, faction=Faction.HERO_GUILD, evolution_level=evolution_level, occupation="hero")
             .combat(hp=int(base_hp), max_hp=int(base_hp), atk=int(base_atk), def_stat=int(base_def), readiness=100.0)
             .inventory(gold=int(base_gold))
             .spawn_combat_stats_are_final()
             .build())
 
-    def spawn_monster(self, pos: tuple[float, float], state: AuthoritativeState | None = None, kind: str = "monster", difficulty_tier: int = 1) -> EntityState:
-        """Spawn a regular monster with difficulty-scaled stats."""
+    def spawn_monster(self, pos: tuple[float, float], state: AuthoritativeState | None = None, *, species: str, occupation: Optional[str], difficulty_tier: int = 1) -> EntityState:
+        """Spawn a regular monster with difficulty-scaled stats. `species` is the id written to `kind`, `occupation` the label (None for none); neither has a default (M1 step 4)."""
         entity_id = self.get_next_id()
         
         from src.world.spawn_config import DIFFICULTY_TIERS
@@ -162,9 +164,9 @@ class EntityGenerator:
         
         from src.core.builder import V2EntityBuilder
         return (V2EntityBuilder(entity_id)
-            .kind(kind)
+            .kind(species)
             .location(*self.free_spawn_position(pos, state))
-            .identity(role=EntityRole.MONSTER, faction=Faction.MONSTER_HORDE, evolution_level=evolution_level, properties=_catalog_faction_properties(kind))
+            .identity(role=EntityRole.MONSTER, faction=Faction.MONSTER_HORDE, evolution_level=evolution_level, properties=_catalog_faction_properties(occupation), occupation=occupation)
             .navigation(home_position=pos, leash_radius=10.0)
             .combat(hp=int(base_hp), max_hp=int(base_hp), atk=int(base_atk), def_stat=int(base_def), readiness=100.0)
             .inventory(gold=int(base_gold))
@@ -173,9 +175,9 @@ class EntityGenerator:
 
     def spawn_natural_creature_offspring(
         self, pos: tuple[float, float], state: AuthoritativeState | None = None,
-        kind: str = "monster", difficulty_tier: int = 1, birth_tick: int = 0,
+        *, species: str, occupation: Optional[str], difficulty_tier: int = 1, birth_tick: int = 0,
     ) -> EntityState:
-        """Spawn a parentless same-kind offspring already aged near the CHILD->ADULT
+        """Spawn a parentless same-species offspring already aged near the CHILD->ADULT
         boundary with birth-record fields populated via the parentless
         V2EntityBuilder.birth_record() path (both parent ids None)."""
         entity_id = self.get_next_id()
@@ -201,10 +203,10 @@ class EntityGenerator:
         short_clock_age = YOUNG_ADULT_BOUNDARY_TICKS - CampService.CAMP_SPAWN_INTERVAL
 
         return (V2EntityBuilder(entity_id)
-            .kind(kind)
+            .kind(species)
             .location(*pos)
             .identity(role=EntityRole.MONSTER, faction=Faction.MONSTER_HORDE,
-                      evolution_level=evolution_level, life_stage=LifeStage.CHILD)
+                      evolution_level=evolution_level, life_stage=LifeStage.CHILD, occupation=occupation)
             .navigation(home_position=pos, leash_radius=10.0)
             .combat(hp=int(base_hp), max_hp=int(base_hp), atk=int(base_atk), def_stat=int(base_def), readiness=100.0)
             .inventory(gold=int(base_gold))
@@ -238,7 +240,7 @@ class EntityGenerator:
             .kind(kind)
             .location(*pos)
             .identity(role=EntityRole.MONSTER, faction=Faction.MONSTER_HORDE,
-                      evolution_level=evolution_level)
+                      evolution_level=evolution_level, occupation=None)
             .navigation(home_position=pos, leash_radius=10.0)
             .combat(hp=int(base_hp), max_hp=int(base_hp), atk=int(base_atk), def_stat=int(base_def), readiness=100.0)
             .inventory(gold=int(base_gold))
@@ -284,7 +286,7 @@ class EntityGenerator:
             .kind(kind)
             .location(*pos)
             .identity(role=EntityRole.CITIZEN, faction=Faction.TOWN_COUNCIL,
-                      evolution_level=evolution_level, life_stage=LifeStage.CHILD)
+                      evolution_level=evolution_level, life_stage=LifeStage.CHILD, occupation=None)
             .combat(hp=int(base_hp), max_hp=int(base_hp), atk=int(base_atk), def_stat=int(base_def), readiness=100.0)
             .inventory(gold=int(base_gold))
             .strategic(home_region_id=home_region_id)
@@ -320,7 +322,7 @@ class EntityGenerator:
         return (V2EntityBuilder(entity_id)
             .kind("goblin")
             .location(*self.free_spawn_position(pos, state))
-            .identity(role=EntityRole.MONSTER, faction=Faction.MONSTER_HORDE, evolution_level=evolution_level, properties=_catalog_faction_properties("goblin"))
+            .identity(role=EntityRole.MONSTER, faction=Faction.MONSTER_HORDE, evolution_level=evolution_level, properties=_catalog_faction_properties("goblin"), occupation="goblin")
             .navigation(home_position=pos, leash_radius=8.0)
             .combat(hp=int(base_hp), max_hp=int(base_hp), atk=int(base_atk), def_stat=int(base_def), readiness=100.0)
             .inventory(gold=int(base_gold))

@@ -43,6 +43,11 @@ def _navigations(state: Any) -> Iterable[Any]:
         yield (f"entity {e.id}", e.navigation)
 
 
+def _identities(state: Any) -> Iterable[Any]:
+    for e in (getattr(state, "entities", None) or {}).values():
+        yield (f"entity {e.id}", e.identity)
+
+
 def _projects(state: Any) -> Iterable[Any]:
     for e in (getattr(state, "entities", None) or {}).values():
         for project in ((getattr(getattr(e, "strategic", None), "projects", None)) or {}).values():
@@ -86,11 +91,15 @@ FIELD_RULES: List[FieldRule] = [
     FieldRule("beds", _buildings, "beds", fill=None, ruling="2.155: beds are copied from content at compile; the checkpoint carries no compiled content", record="BuildingState"),
     # A pre-2.156 state kept no retreat clear window, so a project that predates it has none yet (it opens on the first clear observation); None is exactly that state.
     FieldRule("cleared_since", _projects, "cleared_since", fill=lambda state, owner: None, ruling="2.156: a state that predates the retreat clear window had no window", record="ProjectState"),
+    # N10 (2.212): a state that predates the suspension clock stamped none; `expire_suspended` stamps a SUSPENDED record on first sight.
+    FieldRule("suspended_since", _projects, "suspended_since", fill=lambda state, owner: None, ruling="rpg-designer 2026-11-16, N10: a state that predates the suspension clock had none", record="ProjectState"),
     # The group rows (2.146). next_group_id stays the LAST AuthoritativeState field and the three group fields stay after _canonical_cache (an insert is refused by the schema check).
     FieldRule("next_group_id", _state_itself, "next_group_id", fill=_seed_next_group_id, ruling="rpg-designer 2026-10-31, group id allocation (addition 4)", record="AuthoritativeState"),
     FieldRule("group.contract_holder_id", _groups, "contract_holder_id", fill=_none_on_unbound_group, ruling=_GROUP_RULING, record="GroupRecord"),
     FieldRule("group.dissolution_reason", _groups, "dissolution_reason", fill=_none_on_unbound_group, ruling=_GROUP_RULING, record="GroupRecord"),
     FieldRule("group.dissolution_contract_status", _groups, "dissolution_contract_status", fill=_none_on_unbound_group, ruling=_GROUP_RULING, record="GroupRecord"),
+    # M1 (kind means species): a state that predates the occupation label gave no body one, so None is exactly that state.
+    FieldRule("occupation", _identities, "occupation", fill=lambda state, owner: None, ruling="rpg-designer 2026-11-16, kind-is-species ruling step 2: a state that predates the occupation label had none", record="IdentityComponent"),
 ]
 
 

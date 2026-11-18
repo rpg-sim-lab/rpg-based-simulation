@@ -44,6 +44,7 @@ def _entity(eid: int = 1, hp: int = 80, max_hp: int = 100):
     e.social = MagicMock()
     e.social.public_reputation = 0.0
     e.group_id = None
+    e.identity.occupation = "hero"
     return e
 
 

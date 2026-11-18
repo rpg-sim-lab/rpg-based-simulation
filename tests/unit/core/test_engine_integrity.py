@@ -108,7 +108,7 @@ def test_id_generation_integrity(base_state):
     # (the regional density top-up that used to produce these was removed, 2.122; any update that adds an entity exercises the id counter)
     state = replace(base_state, tick=50)
     generator._last_id = state.next_entity_id - 1
-    mob = generator.spawn_monster((5.0, 5.0), state, "goblin", 1)
+    mob = generator.spawn_monster((5.0, 5.0), state, species="goblin", occupation="goblin", difficulty_tier=1)
     spawn_upd = StateUpdate(entities_add=[mob], next_entity_id_set=generator._last_id + 1)
     
     assert len(spawn_upd.entities_add) > 0

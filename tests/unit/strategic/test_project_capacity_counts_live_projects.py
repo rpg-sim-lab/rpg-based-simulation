@@ -29,7 +29,8 @@ LIVE = (ProjectStatus.ACTIVE, ProjectStatus.SUSPENDED)
 
 def _project(pid, status=ProjectStatus.ACTIVE, kind=ProjectKind.TRAVEL, score=10.0):
     objective = ObjectiveState(id=f"o_{pid}", kind=ObjectiveKind.REACH_LOCATION, status=ObjectiveStatus.RESOLVED)
-    return ProjectState(id=pid, kind=kind, status=status, objectives=[objective], active_objective_id=objective.id, score=score)
+    return ProjectState(id=pid, kind=kind, status=status, objectives=[objective], active_objective_id=objective.id, score=score,
+                        suspended_since=500 if status == ProjectStatus.SUSPENDED else None)  # N10: a SUSPENDED record carries its clock (the state tick is 500), so the first-sight stamp has nothing to write
 
 
 def _entity(projects, max_projects=3, sleep_debt=0.0):

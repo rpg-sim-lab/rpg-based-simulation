@@ -2582,7 +2582,7 @@
     across process restarts. File format: 4-byte LE uint32 header length + JSON header
     (tick, spec_id, rng_checkpoint) + pickle blob of AuthoritativeState. save() raises
     RuntimeError when kernel not started. restore() raises ValueError on spec_id mismatch;
-    reconstructs RNG via DeterministicRNG.set_state(); passes run_id to Kernel to
+    reconstructs RNG via DeterministicRNG.set_state() on a DeterministicRNG built with the episode base seed state.seed (stateless draws and lazily seeded domains derive from it; #848, TCK-20261107-A-RESTORED-SCENARIO-CHECKPOINT-DRAWS-FROM-SEED-0); passes run_id to Kernel to
     suppress Domain.INIT RNG draw and preserve determinism. Restored service tick
     counter matches checkpoint tick. Re-exported from scenario_runtime.py for single-import
     convenience. The header also carries a schema fingerprint (ordered field names of every
@@ -2599,6 +2599,7 @@
   proof_type: feature
   test_path: tests/unit/engine/test_scenario_checkpointer.py::test_save_raises_when_kernel_none
     + tests/integration/scenarios/test_scenario_runtime_service.py::TestCheckpointRestore::test_checkpoint_restore_determinism
+    + tests/integration/scenarios/test_scenario_runtime_service.py::TestCheckpointRestore::test_restore_keeps_the_state_seed_and_the_per_tick_digest
     + tests/api/test_scenario_runtime_api.py::test_checkpoint_endpoint_returns_path_and_tick
     + tests/unit/engine/test_checkpoint_schema.py
   divergence_note: null

@@ -365,15 +365,9 @@ rows:
   ticket: TCK-20261109-M1-RETIRE-ROLE-KIND-AND-FACTION-NAME-BRANCHES-IN-STAGES
 - file: src/engine/evolution.py
   symbol: EvolutionSystem.evaluate
-  name: '''goblin'''
-  count: 1
-  reason: evolution branches on the hero role and on a 'goblin' kind substring
-  ticket: TCK-20261109-M1-RETIRE-ROLE-KIND-AND-FACTION-NAME-BRANCHES-IN-STAGES
-- file: src/engine/evolution.py
-  symbol: EvolutionSystem.evaluate
   name: EntityRole.HERO
   count: 1
-  reason: evolution branches on the hero role and on a 'goblin' kind substring
+  reason: evolution branches on the hero role
   ticket: TCK-20261109-M1-RETIRE-ROLE-KIND-AND-FACTION-NAME-BRANCHES-IN-STAGES
 - file: src/engine/legality.py
   symbol: LegalityServiceV2.get_entity_priority
@@ -662,6 +656,12 @@ rows:
   name: Faction.HERO_GUILD
   count: 1
   reason: environment aura multiplier chosen by the faction HERO_GUILD
+  ticket: TCK-20261109-M1-RETIRE-ROLE-KIND-AND-FACTION-NAME-BRANCHES-IN-STAGES
+- file: src/world/environment.py
+  symbol: EnvironmentService.get_aura_multipliers
+  name: "'stronghold'"
+  count: 1
+  reason: the aura read of the stronghold occupation label (owner disclosure #715 6937829823; it existed before M1 step 3 as getattr(s, "kind") on a receiver the scan did not count, and became visible when the scan learned the occupation word)
   ticket: TCK-20261109-M1-RETIRE-ROLE-KIND-AND-FACTION-NAME-BRANCHES-IN-STAGES
 - file: src/world/occupation_config.py
   symbol: <module>[BASE_OCCUPATION_DENSITY]

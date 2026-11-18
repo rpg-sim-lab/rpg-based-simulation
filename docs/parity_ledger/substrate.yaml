@@ -5241,3 +5241,53 @@
   divergence_note: intentional_divergences.md 2.141 (Bug Fix)
   support_boundary: PerceptionPhase is not wired into production state, so this
     closes a latent hazard; no run changes because of it.
+
+- id: SUB-402
+  text: An entity carries its occupation (a role label) as its own typed field,
+    IdentityComponent.occupation, appended last and left out of the canonical dict while None.
+    In step 2 every build path writes the exact string it writes to kind, the campaign survivor
+    rebuild and the entity copies carry it, the presenter shows it next to kind, and species_of
+    is the one way to read a species. The true labels and kind becoming the species are step 4
+    (SUB-403).
+  status: verified
+  priority: P1
+  legacy_evidence: null
+  v2_evidence: src/core/state.py IdentityComponent.occupation; src/core/species.py species_of;
+    src/engine/checkpoint_fields.py FIELD_RULES (occupation); src/worldbuilding/compiler.py,
+    src/entities/archetype_factory.py, src/worldassembly/entity_spawner.py,
+    src/systems/world_systems/generator.py, src/domains/campaigns/runner.py (writers);
+    src/domains/campaigns/orchestrator.py and state.py (carry-forward); src/api/presenters/state_presenter.py
+    (TCK-20261109-M1-KIND-ALWAYS-MEANS-SPECIES-AND-OCCUPATION-IS-ITS-OWN-FIELD)
+  proof_type: null
+  test_path: tests/unit/core/test_occupation_field.py
+  divergence_note: null
+  support_boundary: Step 2 changes no behaviour; only the state hash moves, by the added field
+    (the designer's neutral-by-projection proof is a measured step, not part of this row).
+    The kind-is-species flip and its divergence entry are step 4.
+
+- id: SUB-403
+  text: kind always means species. Every build path writes a species id into EntityState.kind
+    (an id in species.yaml, or a named non-living allowlist value) and the label into
+    identity.occupation (the role label, role_id or profession_id on the archetype paths, none for
+    a newborn), species_of reads kind, a writer with no species to declare is refused with
+    SpeciesNotDeclaredError (no code-chosen default species), and humanoids pair and inherit by
+    species. properties species_id stays as a mirror until step 5.
+  status: verified
+  priority: P1
+  legacy_evidence: null
+  v2_evidence: src/core/species.py (species_of, SpeciesNotDeclaredError, NON_LIVING_KIND_ALLOWLIST);
+    src/worldbuilding/compiler.py, src/entities/archetype_factory.py, src/worldassembly/entity_spawner.py,
+    src/worldassembly/resolver.py, src/systems/world_systems/generator.py, src/world/camp.py,
+    src/world/creature_territory.py, src/world/boss.py, src/world/calamity.py,
+    src/world/reproduction_humanoid.py, src/domains/campaigns/orchestrator.py,
+    src/domains/campaigns/runner.py, src/testing/scenario_runner.py (writers);
+    src/certification/scenarios.py, src/perf/scenarios.py (fixtures)
+    (TCK-20261109-M1-KIND-ALWAYS-MEANS-SPECIES-AND-OCCUPATION-IS-ITS-OWN-FIELD)
+  proof_type: null
+  test_path: tests/unit/core/test_occupation_field.py
+  divergence_note: intentional_divergences.md 2.208 (Unified)
+  support_boundary: The context-less classic compile keeps the legacy path (kind is the role label,
+    occupation equal to it) until stage 4b (TCK-20261020-TESTS-THAT-COMPILE-A-WORLD-WITHOUT-THE-CONTENT-CONTEXT-TRIAGE);
+    the builder default kind stays for test fixtures (TCK-20261117-TEST-FIXTURES-DECLARE-A-SPECIES-THROUGH-A-HELPER-AND-THE-BUILDER-DEFAULT-GOES);
+    world_boss and magical_demonic_entity are on the non-living allowlist with owning tickets. The
+    step-4 measurement is pending the designer's review of the spy and runner.

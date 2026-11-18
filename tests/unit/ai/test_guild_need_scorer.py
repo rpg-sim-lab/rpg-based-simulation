@@ -87,7 +87,7 @@ class TestRealRaidMobNeverScoresGuild:
         # D70: `RaidService.spawn_raid` is retired, so the raid mob is composed the way it was: a goblin_raider with no project capacity.
         generator = EntityGenerator(seed=42)
         state = AuthoritativeState(tick=500, seed=42, maturity=0)
-        mob = generator.spawn_monster(pos=(120, 120), state=state, kind="goblin_raider", difficulty_tier=4)
+        mob = generator.spawn_monster(pos=(120, 120), state=state, species="goblin_raider", occupation="goblin_raider", difficulty_tier=4)
         mob = replace(mob, navigation=replace(mob.navigation, target=(130.0, 130.0)),
                       strategic=replace(mob.strategic, profile=replace(mob.strategic.profile, max_active_projects=0)))
         update = type("U", (), {"entities_add": [mob]})()

@@ -38,7 +38,7 @@ class FlowFieldService:
                 # Fallback to dynamic entity if it's a world boss
                 if target_kind == "WORLD_BOSS":
                     for e in state.entities.values():
-                        if e.kind == "world_boss":
+                        if e.identity.occupation == "world_boss":
                             anchors = [e.navigation.position]
                             break
 
