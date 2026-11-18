@@ -65,6 +65,19 @@ src/domains/combat_engagement/, hostility predicates, content
 - Order (roadmap §12.5, memo rows 89/93/95): the v1-disclosure repairs, then D80C, then the decision-73 step (#781, the v1.1 record), then the §12.3 items. Starting this item needs the owner's dispatch yes, brought by rpg-planner via lead-planner-u24.
 - Owner-level choices are asked when the milestone starts, not guessed here.
 
+- Owner decisions on the rule (rpg-designer review applied, owner batch at 0bfed107e): #715 6985558474. All eight questions answered on the recommended option (below). The rule text is accepted; the code step is not dispatched and waits on SPLIT-INTELLIGENCE-PY and the legality ceiling, then merges in its domain-3 segment.
+
+### Owner answers
+Owner answers, #715 6985558474 (lead-planner, 2026-11-19), the recommended option on all eight:
+- Q1 (A): a new species field `fight_reasons`, closed set (hates_living, guards_place, hunts_by_diet), validated at content load.
+- Q2 (A): a REQUIRED body-model property `living`, no default (true for flesh; false for spirit and amorphous bodies).
+- Q3 (A): a spirit guards its home tile: it engages a perceived body not of its own species within a reach declared per species in content. The tile is set at spawn and never changes, no territory record; revisit when places land.
+- Q4 (C, declare nothing): slime declares nothing now (no slime archetype exists). With no declared reason a slime only fights back, and the content-load check requires a reason of any monster kind that gets one.
+- Q5 (B): a people-kind regards a body as an aggressor when THAT body's declared reason names it, so guards keep clearing undead with no faction label.
+- Q6 (A): attack permission is symmetric whenever either side's reason names the other (extends CONFLICT-03).
+- Q7 (A): the same species is never a target, as relation does today.
+- Q8 (A): REPLACE. For any pair where either side is a non-people kind, the declared reason is the only hostility source; species_relations keeps people-people pairs only; a load-time check refuses a non-people entry; the monster entries are removed in the same change, each listed in the ticket with its current effect.
+
 ## Durable state, lifecycle and clocks
 - Durable field: a guard's home tile (`guards_place` only), a coordinate on the body.
 - Creation: spawn sets it to the spawn tile; one writer (the spawn path); creation is idempotent across two passes (the same spawn tile).
@@ -80,7 +93,27 @@ src/domains/combat_engagement/, hostility predicates, content
   - a load-time validation;
   - a declared value for every existing kind, chosen from its properties. It's proposed as a per-kind TABLE that's owner-visible before it lands.
   Later slices: AGGRESSIVE (strikes first by nature) and GUARDS / TERRITORIAL, which need territory or motive data. Order: Step A → this slice 1 → Step B → TCK-20261122-EVERY-CAN-I-WIN-JUDGEMENT-GOES-THROUGH-ONE-POWER-SEAM.
-None yet.
+
+Phase 1 (rule text) is accepted; see the owner answers under Assumptions. The code step has not started.
+### Species relations entries removed by the code step (Q8)
+
+`data/content/social/species_relations.yaml`: the ten entries naming wolf, spider, troll, undead or dragonkin on either side are REMOVED in the code step's change (not ignored); the 14 people-people entries stay; a load-time check refuses any future entry naming a non-people kind. People-kind = a species with the trait `keeps_coin_and_trades` (2.103), so goblin, orc and lizardfolk entries stay. Current effect of each (relation.py:246-249, step 3.5, upgrade-only, and only through `faction_hostile` and attack legality, the two paths that pass species):
+
+| entry (source -> target) | hostility axis | upgrade it makes today |
+|---|---|---|
+| wolf -> human | medium_contextual | label below threat becomes threat |
+| human -> wolf | medium_contextual | label below threat becomes threat |
+| spider -> human | medium_contextual | label below threat becomes threat |
+| human -> spider | medium_contextual | label below threat becomes threat |
+| troll -> human | high | label below enemy becomes enemy |
+| human -> troll | medium_contextual | label below threat becomes threat |
+| undead -> human | high | label below enemy becomes enemy |
+| human -> undead | high | label below enemy becomes enemy (the second route, besides the invader verdict, by which people attack undead; Q5's aggressor reading replaces it) |
+| dragonkin -> human | medium_contextual | label below threat becomes threat |
+| human -> dragonkin | low_base_contextual | label below threat becomes threat |
+
+For a wolf or spider (and a wild troll) the entry is already moot on the `faction_hostile` path, which returns before the context is built (`hostility.py:63`); it still applies in `LegalityServiceV2._attack_permitted`. The code step re-lists each entry's effect measured, if the tier requires it.
+
 
 ## Test Summary
 
