@@ -2,17 +2,22 @@
 """CONTROLLED NATURAL-PATH coverage (rpg-designer-ubuntu's ruling of 2026-11-18, Q-N1..Q-N4): a mother already in a live group, a pregnancy built by births' own conception code, and the birth,
 and any group the newborn forms, and everything after, made by the ENGINE. It is not full lifecycle evidence and not the natural run (the S9 cells); the synthetic fallback is the CHILD-in-group test beside it.
 
-Set-up (crowded_frontier, seed 42, the pinned kernel): the engine's own cooperation phase forms the groups; at the first check tick (a multiple of 30, from 90) at which a live group holds a
-goblin ADULT mother with an eligible mate, ONE PregnancyState is written. It is built by ``births._conceive`` itself, called on a read-only earlier-tick VIEW of the state
+Set-up (crowded_frontier, seed 42, the pinned kernel): the engine's own cooperation phase forms the groups; at the first check tick (a multiple of 30, from 90 to 270) at which the selector rule
+(``select_pair``) yields a mother and mate in one live group, ONE PregnancyState is written. It is built by ``births._conceive`` itself, called on a read-only earlier-tick VIEW of the state
 (``replace(state, tick=due - gestation_ticks)``, used only as _conceive's input) and applied UNMODIFIED through ``ApplyPath.apply_generation`` at the real set-up tick; the applied record is
 asserted equal to the returned one field for field. The deliberate departure from a natural conception: ``conceived_tick`` is ``due - gestation_ticks`` and PREDATES the run, and the father's
 interval expiry runs from that tick. ``due = set-up + 30``. The litter is drawn at conceived_tick with the profile's keyed draw, as at a natural conception. The reachability guard runs on the
-REAL set-up state and asks births' own code (``_candidates``, the fed line, ``_past_interval``, ``_find_mate`` with ``passes_mate_gate``) exactly as a conception would. No bond, no group and no
+REAL set-up state and asks births' own code (``_candidates``, ``_may_conceive``, ``_find_mate`` with ``passes_mate_gate``) exactly as a conception would, with the keyed draw EXCLUDED (the test writes the pregnancy itself). No bond, no group and no
 body is edited by hand; the one hand step is assigning the apply path's result back as the kernel state.
 
-Species and group (rpg-designer-ubuntu Q-N5 (a)): the goblin pair 24/26 in crowded_frontier's live group 10004, mate_gate none. DISCLOSURE, word for word: "the controlled natural-path test does not
-cover human newborns in groups: no human pair's mutual SocialBond reaches the mate gate (FRIEND, 0.8) within the set-up window (best 0.2 at t120 in the read-only probes); the S9 5000t cell is the
-natural-run row for humans." (Q-N6: a human bond cannot reach 0.8 early, so the goblin pair is the arm.)
+Pair selection (rpg-designer-ubuntu selector ruling, sections 30-32): by RULE, not by pin - check ticks 90..270 in steps of 30; live groups by ascending id, then members by ascending eid; the mother is the first member of
+``births._candidates`` for whom ``births._may_conceive`` holds; the mate is exactly what ``births._find_mate`` returns for her, skipped to the next member when that is None or outside her group. The pick is
+reported in the facts as ``pick`` = [tick, group, mother, mate]. The test is the authority, not the probe: on this head the pick is t90, group 10001, goblin mother 25, mate 27 (the earlier pin was 24/26 in group
+10004 at t90, which the rule picks on 609cb3015). THIN WINDOW: only t90 yields a pair on this head; t120-270 yield none (/data/vboxuser/births-runs/controlled-pair-b687742cc/); if a later shift leaves no pair
+the assert-found fails and that is a FINDING for rpg-designer-ubuntu, not a reason to widen the window. Mate gate: goblin has mate_gate none.
+DISCLOSURE, word for word: "the controlled natural-path test does not cover human newborns in groups: no human pair's mutual SocialBond reaches the mate gate (FRIEND, 0.8) within the set-up window (best 0.2 at
+t120 in the read-only probes); the S9 5000t cell is the natural-run row for humans." (Q-N6: a human bond cannot reach 0.8 early; on the merged head no human mother passes the guard with an in-group mate at any
+check, probe dir above.)
 
 Passes when (rpg-designer-ubuntu Read 2 (b), 2026-11-18): BirthService bears the newborn at due (G1), born + unplaced = the litter (G2), at life stage CHILD; then, for W+1 = 201 ticks after the
 birth, the newborn EITHER forms a group through the engine path (GroupSystem formation) OR stays ungrouped - both outcomes pass, and the test does NOT assert a join into the mother's existing group
@@ -29,12 +34,13 @@ evidence (owner rule, #715 6971915608).
 Litter leg (rpg-designer-ubuntu, ruling (c) of 2026-11-18): at least one newborn must be ALIVE at the end with the full W+1 = 201 reads and no C3 (``litter_blocks``); a litter that all dies early by a
 typed non-starvation death passes ``needs_blocks`` per newborn but FAILS this leg.
 
-Guard leg, NOT claimed as tested coverage: the mother's-group leg has almost no data on this set-up. The parents 24 and 26 died of COMBAT at t124 and t122 (2 and 4 reads), so the watched-member check is
-a guard, near-vacuous here. The deaths are disclosed, not called unrelated: a control without the pregnancy write (same kernel, world, seed, ticks) shows 24 and 26 still die of COMBAT to humans (t137, t126),
-but the runs diverge from about t111, after the pregnancy write at t90, so the pregnancy shifts who kills the parents and when (an expected consequence: a pregnant body behaves differently and leaves the
-pool). Evidence: /data/vboxuser/births-runs/control-combat-7a76f4a35/ with its SHA256SUMS. The watched members' read counts are printed in MEASURED.
+Guard leg, NOT claimed as tested coverage: the mother's-group leg has little data on this set-up. The parents died of COMBAT to humans, the mother 25 at t131 and the father 27 at t178 (11 and 58 reads); the
+watched set also takes in the members of every group the newborn forms. A control without the pregnancy write (same kernel, world, seed, ticks; /data/vboxuser/births-runs/control-combat-47718413c-pair25-27/ with
+SHA256SUMS) shows the mother dying at t132 to the same killer (33), who was hitting her every 11 ticks from t78, before the pregnancy at t90, and the father at t195 instead of t178 with a different killer (17 against 14).
+So the mother's death is not a births effect, and the father's moves 17 ticks earlier because the runs diverge after the pregnancy write at t90 (an expected consequence: a pregnant body behaves differently and
+leaves the pool), not "unrelated". The watched members' read counts are printed in MEASURED.
 Determinism: the WHOLE facts dict (final state hash, outcome, groups, needs reads, counts) is equal under PYTHONHASHSEED 0 and 1 (two subprocesses of ``scenario()``).
-Budget: see the measured time in the report; marked slow if the determinism pair exceeds 60 s.
+Budget: the determinism pair is two subprocesses of the whole scenario (about 40-45 s each), so it is marked slow and resource_budget_large (the medium budget is 60 s).
 """
 import dataclasses
 import json
@@ -62,26 +68,24 @@ WINDOW = s9_spy.WINDOW
 FIRST_SETUP_TICK, LAST_SETUP_TICK = 90, 270
 
 
-TARGET_GROUP, TARGET_PAIR = 10004, (24, 26)  # crowded_frontier s42: the goblin pair in live group 10004 from tick 80 (rpg-designer-ubuntu, Q-N5 (a))
-
-
-def _find_pair(state, catalog):
-    """The required pair, asserted on the REAL state with births' own code: the target group is live and holds both goblins, the mother passes the fed line and the interval, and
-    ``_find_mate`` (which applies W1's range, eligibility and ``passes_mate_gate``) returns the other member. Returns None when the target group is not yet live."""
-    group = state.groups.get(TARGET_GROUP)
-    if group is None or getattr(group, "dissolution_tick", None) is not None:
-        return None
-    assert set(TARGET_PAIR) <= set(group.member_ids), f"group {TARGET_GROUP} does not hold {TARGET_PAIR}: {sorted(group.member_ids)}"
+def select_pair(state, catalog):
+    """The pair, chosen by RULE on the REAL state with births' own code (rpg-designer-ubuntu, selector ruling of 2026-11-18, sections 30-32): live groups in ascending group id, then members in ascending eid; the MOTHER
+    is the first member in ``births._candidates`` for whom ``births._may_conceive`` holds; the MATE is exactly what ``births._find_mate`` returns for her (``used`` empty), skipped to the next member if that is None or
+    outside her group. The keyed draw is EXCLUDED: the test writes the pregnancy itself. Returns (group, mother, father, profile), or None when no live group yields a pair at this tick."""
     profiles = births._Profiles(catalog)
     candidates = births._candidates(state, profiles)
-    for mother_id in TARGET_PAIR:
-        mother = candidates.get(mother_id)
-        profile = profiles.of(species_of(mother)) if mother is not None else None
-        if profile is None or species_of(mother) != "goblin" or mother.biological.hunger > profile.fed_line or not births._past_interval(mother, state.tick):
+    for gid in sorted(state.groups):
+        group = state.groups[gid]
+        if getattr(group, "dissolution_tick", None) is not None:
             continue
-        father = births._find_mate(state, mother, candidates, set(), profile)
-        if father is not None and father.id in TARGET_PAIR:
-            return group, mother, father, profile
+        for member_id in sorted(group.member_ids):
+            mother = candidates.get(member_id)
+            profile = profiles.of(species_of(mother)) if mother is not None else None
+            if mother is None or not births._may_conceive(mother, profile, state.tick):
+                continue
+            father = births._find_mate(state, mother, candidates, set(), profile)
+            if father is not None and father.id in group.member_ids:
+                return group, mother, father, profile
     return None
 
 
@@ -148,12 +152,12 @@ def scenario():
     try:
         while kernel.state.tick < FIRST_SETUP_TICK:
             kernel.tick_once()
-        found = _find_pair(kernel.state, catalog)
+        found = select_pair(kernel.state, catalog)
         while found is None and kernel.state.tick < LAST_SETUP_TICK:
             for _ in range(30):
                 kernel.tick_once()
-            found = _find_pair(kernel.state, catalog)
-        assert found is not None, f"goblin pair {TARGET_PAIR} was not a reachable mother/father in live group {TARGET_GROUP} at a check tick between 90 and 270"
+            found = select_pair(kernel.state, catalog)
+        assert found is not None, "no live group yielded a mother/mate pair by the selector rule at any check tick between 90 and 270 (a FINDING for rpg-designer-ubuntu, not a reason to widen the window)"
         state = kernel.state
         group, mother, father, profile = found
         assert state.tick % 30 == 0
@@ -164,7 +168,7 @@ def scenario():
         assert applied.entities[mother.id].lifecycle.pregnancy == pregnancy, "the applied PregnancyState equals the one births built, field for field"
         kernel._state = applied
         spy = GroupSpy(applied).install()
-        facts.update({"setup_tick": state.tick, "due": due, "mother": mother.id, "father": father.id, "group": group.id, "litter": pregnancy.litter_size, "species": species_of(mother)})
+        facts.update({"setup_tick": state.tick, "due": due, "mother": mother.id, "father": father.id, "group": group.id, "pick": [state.tick, group.id, mother.id, father.id], "litter": pregnancy.litter_size, "species": species_of(mother)})
         for _ in range(due - state.tick + 1):
             kernel.tick_once()
         now = kernel.state
@@ -288,6 +292,7 @@ def test_needs_reader_positive_controls_an_ungrouped_starving_newborn_blocks():
 
 
 @pytest.mark.slow
+@pytest.mark.resource_budget_large
 def test_the_scenario_is_deterministic_under_two_python_hash_seeds():
     code = "import json; from tests.integration.world.test_controlled_natural_path_newborn_in_a_group import scenario; f = scenario(); print(json.dumps({k: v for k, v in f.items() if not k.startswith('_')}, sort_keys=True))"
     outs = []
