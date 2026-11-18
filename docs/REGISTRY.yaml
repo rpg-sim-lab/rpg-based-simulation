@@ -7986,6 +7986,25 @@
   - content
   last_verified: '2026-10-09'
 - type: ticket
+  path: agent-working/tickets/done/TCK-20261118-CHECKLIST-PLACEMENT-PROPOSAL.md
+  ticket_id: TCK-20261118-CHECKLIST-PLACEMENT-PROPOSAL
+  title: 'Proposal: where the lifecycle and clock checklist should sit so it fires
+    on hand-closed tickets (proposal only)'
+  tier: standard
+  ticket_type: chore
+  date: '2026-11-18'
+  related_code_areas:
+  - .github/pull_request_template.md, tools/delivery/pr_render.py, tools/ticket_field_values.py,
+    tools/gate_checks/done_checker_static.py, tools/agent-monitoring/record_hand_orchestrated_closure.py
+  artifact_files:
+  - agent-working/stored_artifacts/TCK-20261118-CHECKLIST-PLACEMENT-PROPOSAL/investigation.md
+  - agent-working/stored_artifacts/TCK-20261118-CHECKLIST-PLACEMENT-PROPOSAL/plan.md
+  - agent-working/stored_artifacts/TCK-20261118-CHECKLIST-PLACEMENT-PROPOSAL/proposal.md
+  - agent-working/stored_artifacts/TCK-20261118-CHECKLIST-PLACEMENT-PROPOSAL/test_plan.md
+  tags:
+  - skills
+  - process-improvement
+- type: ticket
   path: agent-working/tickets/done/TCK-20261118-PROFILE-MAIN-99A83ADC9-RESOLUTION-OVERHEAD-AND-WALL-CLOCK-PER-1000-TICKS.md
   ticket_id: TCK-20261118-PROFILE-MAIN-99A83ADC9-RESOLUTION-OVERHEAD-AND-WALL-CLOCK-PER-1000-TICKS
   title: 'Profile main 99a83adc9: attribute resolution_overhead, re-check H1/H2/H3,
@@ -8001,6 +8020,62 @@
   - agent-working/stored_artifacts/TCK-20261118-PROFILE-MAIN-99A83ADC9-RESOLUTION-OVERHEAD-AND-WALL-CLOCK-PER-1000-TICKS/test_plan.md
   tags:
   - performance
+- type: ticket
+  path: agent-working/tickets/done/TCK-20261118-REQUIRED-DURABLE-STATE-LIFECYCLE-CLOCKS-SECTION-IN-TICKETS-AND-PR-BODIES.md
+  ticket_id: TCK-20261118-REQUIRED-DURABLE-STATE-LIFECYCLE-CLOCKS-SECTION-IN-TICKETS-AND-PR-BODIES
+  title: Tickets carry a required "Durable state, lifecycle and clocks" section, presence-checked
+    at close and rendered into the PR body, with a planner-review advisory line
+  tier: standard
+  ticket_type: feature
+  date: '2026-11-18'
+  related_code_areas:
+  - tools/ticket_field_values.py, tools/gate_checks/done_checker_static.py, tools/delivery/{pr_render.py,pr_body_lint.py,pr_template_spec.json},
+    .github/pull_request_template.md, .github/workflows/pr-body-lint.yml, .claude/workflows/create-tickets.js,
+    .claude/agents/ticket-scoper.md, .claude/skills/create-tickets/, .agents/rules/ticket.md
+  artifact_files:
+  - agent-working/stored_artifacts/TCK-20261118-REQUIRED-DURABLE-STATE-LIFECYCLE-CLOCKS-SECTION-IN-TICKETS-AND-PR-BODIES/investigation.md
+  - agent-working/stored_artifacts/TCK-20261118-REQUIRED-DURABLE-STATE-LIFECYCLE-CLOCKS-SECTION-IN-TICKETS-AND-PR-BODIES/plan.md
+  - agent-working/stored_artifacts/TCK-20261118-REQUIRED-DURABLE-STATE-LIFECYCLE-CLOCKS-SECTION-IN-TICKETS-AND-PR-BODIES/test_plan.md
+  tags:
+  - skills
+  - process-improvement
+- type: ticket
+  path: agent-working/tickets/done/TCK-20261118-SIM-ENGINEERING-SKILLS-RESEARCH-PROPOSAL.md
+  ticket_id: TCK-20261118-SIM-ENGINEERING-SKILLS-RESEARCH-PROPOSAL
+  title: Research and propose domain-specific simulation-engineering skills (research
+    + proposal only; nothing is built)
+  tier: standard
+  ticket_type: chore
+  date: '2026-11-18'
+  related_code_areas:
+  - .claude/skills/, .claude/agents/, tools/mechanism_registry/
+  artifact_files:
+  - agent-working/stored_artifacts/TCK-20261118-SIM-ENGINEERING-SKILLS-RESEARCH-PROPOSAL/coverage_audit.md
+  - agent-working/stored_artifacts/TCK-20261118-SIM-ENGINEERING-SKILLS-RESEARCH-PROPOSAL/defect_set.md
+  - agent-working/stored_artifacts/TCK-20261118-SIM-ENGINEERING-SKILLS-RESEARCH-PROPOSAL/investigation.md
+  - agent-working/stored_artifacts/TCK-20261118-SIM-ENGINEERING-SKILLS-RESEARCH-PROPOSAL/plan.md
+  - agent-working/stored_artifacts/TCK-20261118-SIM-ENGINEERING-SKILLS-RESEARCH-PROPOSAL/proposal.md
+  - agent-working/stored_artifacts/TCK-20261118-SIM-ENGINEERING-SKILLS-RESEARCH-PROPOSAL/research.md
+  - agent-working/stored_artifacts/TCK-20261118-SIM-ENGINEERING-SKILLS-RESEARCH-PROPOSAL/test_plan.md
+  tags:
+  - skills
+  - simulation-quality
+  - testing
+- type: ticket
+  path: agent-working/tickets/todos/TCK-20261118-ARCH-REVIEWER-LIFECYCLE-TIME-CHECKLIST-EVAL.md
+  ticket_id: TCK-20261118-ARCH-REVIEWER-LIFECYCLE-TIME-CHECKLIST-EVAL
+  title: Eval a concrete lifecycle and time checklist for architecture-reviewer, and
+    adopt it only if the keep rule passes
+  tier: standard
+  ticket_type: feature
+  date: '2026-11-18'
+  related_code_areas:
+  - .claude/agents/architecture-reviewer.md, tools/gate_checks/architecture_reviewer_static.py
+  artifact_files: []
+  tags:
+  - skills
+  - simulation-quality
+  - testing
 - type: ticket
   path: agent-working/tickets/todos/TCK-20261118-MOVED-RECENTLY-IS-SET-TRUE-ON-THE-FIRST-STEP-AND-NEVER-CLEARED.md
   ticket_id: TCK-20261118-MOVED-RECENTLY-IS-SET-TRUE-ON-THE-FIRST-STEP-AND-NEVER-CLEARED
@@ -8064,6 +8139,20 @@
   artifact_files: []
   tags:
   - performance
+- type: ticket
+  path: agent-working/tickets/todos/TCK-20261118-STATEFUL-PROPERTY-PILOT-FOR-RECORD-LIFECYCLES.md
+  ticket_id: TCK-20261118-STATEFUL-PROPERTY-PILOT-FOR-RECORD-LIFECYCLES
+  title: Pilot a Hypothesis stateful-property test for one durable-record lifecycle
+    (testing-planner ask)
+  tier: standard
+  ticket_type: feature
+  date: '2026-11-18'
+  related_code_areas:
+  - tests/ (placement per taxonomy), the chosen lifecycle's source module
+  artifact_files: []
+  tags:
+  - testing
+  - simulation-quality
 - type: ticket
   path: agent-working/tickets/todos/TCK-20261118-STRATEGIC-INTENT-AND-BANDWIDTH-PASSES-COST-1-TO-3-PERCENT-EACH.md
   ticket_id: TCK-20261118-STRATEGIC-INTENT-AND-BANDWIDTH-PASSES-COST-1-TO-3-PERCENT-EACH
