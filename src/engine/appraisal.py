@@ -12,8 +12,8 @@ from typing import TYPE_CHECKING, Optional
 
 from src.cognition.common_knowledge import believed_danger_rank
 from src.content.schema import PROPERTY_BANDS
-from src.core.species import species_of
 from src.core.items import food_class
+from src.core.species import species_of
 from src.engine.behavior_consumers import (
     get_entity_signals,
     get_kind_properties,

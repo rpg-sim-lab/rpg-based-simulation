@@ -19,8 +19,8 @@ from typing import Any, List, Optional, Tuple
 
 from src.ai.goals.base import OpeningStepKind
 from src.core.calendar import is_night
-from src.core.species import species_of
 from src.core.items import food_hunger_recovery
+from src.core.species import species_of
 from src.core.state import (
     AuthoritativeState,
     BuildingState,

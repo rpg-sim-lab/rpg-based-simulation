@@ -7,8 +7,8 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, List
 
-from src.core.species import species_of
 from src.core.models.inventory import ItemStack
+from src.core.species import species_of
 from src.engine.behavior_consumers import get_kind_properties
 
 if TYPE_CHECKING:

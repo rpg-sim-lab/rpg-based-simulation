@@ -7,8 +7,8 @@ from __future__ import annotations
 
 from typing import Optional
 
-from src.core.species import species_of
 from src.core.items import food_class
+from src.core.species import species_of
 from src.core.state import EntityState
 from src.engine.appraisal import kind_can_eat_item
 from src.engine.behavior_consumers import get_kind_properties

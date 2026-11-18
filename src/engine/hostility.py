@@ -7,13 +7,13 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Optional, Tuple
 
-from src.core.species import species_of
 from src.content_semantics.faction import (
     get_faction_id_str,
     get_faction_semantics_service,
 )
 from src.content_semantics.relation import RelationContext
 from src.core.calendar import is_night
+from src.core.species import species_of
 from src.engine.appraisal import Relation, appraise, perceives
 from src.engine.behavior_consumers import get_kind_properties
 from src.engine.tile_distance import manhattan_tile_distance
