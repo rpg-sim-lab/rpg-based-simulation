@@ -118,6 +118,13 @@ No new durable state is expected. The fix names a payee or refuses. If a payee n
   - A move outside that is a finding and goes to the designer.
 - #781 split (c) agreed (rpg-designer, lead): this fix is conservation under CLAMP; #781 (ATOMIC, decision 44) stays held and rebases onto this fix later.
 
+- 2026-11-19 SHARPENED PREDICTION (rpg-designer, BEFORE the own-job data; it REPLACES "up by at most one price"):
+  - P1: in every cell whose BASE arm has NO unbalanced accepted TOWN_SERVICE result, the FIX final hash == the BASE final hash EXACTLY. Expected for flw s42, up s42 and cf s42, unless their base rows show one.
+  - P2: in cf s46 the hashes DIFFER (the t3181 case diverges the trajectory). Its differing gate rows are trajectory divergence, reported and classed by the designer row by row. The only prediction there is V6 -10 -> 0.
+  - P3: the 15 known V1 rows are unchanged in every P1 cell.
+  - Bound: per cell, the sum of |net| over the base arm's unbalanced TOWN_SERVICE rows is an upper bound on the coin the fix keeps.
+  - P1 holds only if `git diff --stat 51a6516cf <fix head> -- src data config` lists only conservation.py, economy.py and run_ledger.py. If it lists anything else, P1 is void and the designer re-predicts. State that diff in the S9.
+
 ## Test Summary
 
 ## Files Changed
