@@ -47,3 +47,8 @@ tags: []
 - **6a and K6/K8:** it has no kind axis and counts births like K8, but it redefines neither.
 - **6a and the HARD list:** it adds a bar to the HARD evidence list, which rpg-designer stated as W1-W5, K6, K6b, K8. That goes to rpg-designer as a question, and it may veto.
 - **6b and the extinction line:** if the extinction line reads the cohort count rather than live bodies, drift could hide or fake an extinction. Then 6b would be pre-bind. That goes to rpg-designer as a question.
+
+## Resolved by rpg-designer (u24), relayed by lead-planner, 2026-11-18
+- **Q1: YES.** 6a joins the births HARD list (W1-W5, K6, K6b, K8, 6a) as a conservation-class accounting law. Its STOP on zero regioned births and its BALANCE side items stand.
+- **Q2: live bodies.** The extinction line reads final alive bodies per species via `species_of()`: alive in >= 3 base seeds and in 0 head seeds. It never reads the regional cohort. So 6b stays BALANCE and isn't pre-bind.
+- **Condition:** the Phase 1 host-read script and the Phase 2 gate row count alive bodies from `state.entities` and never read `population_young` or any region cohort counter. The births step report carries one line saying so. rpg-designer checks the read script's source at the boundary read.
