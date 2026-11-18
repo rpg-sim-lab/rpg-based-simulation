@@ -54,6 +54,7 @@ COHORT_FLAG_RULE = "a flag row when the cohort rises while live bodies == 0, or 
 PROBE_WORLD = "frontier_living_world"  # the largest gate world (55 bodies), so its cost bounds the other two
 LIMITS = (
     "the twin-hash check proves the spy read-only in the births arm only; the chance-0 control arm is spied with no plain twin, and runs the same spy code",
+    "recording-off = OBS OFF + no_replay; hash-neutral at 100t (run 1, #715 6968789570) and at 5000t on frontier_living_world s42 (the probe's recording-on plain arm = its no_replay plain arm); replay is off on BOTH sides of the cost read (head children and the main-tree cost child)",
     "every row comes from the spy's own outputs (typed updates, the state after each tick) or from the final-state hash; no row reads simulation_events.jsonl, the replay chunks or a run dir, which is why --recording-off is allowed (the 100-tick no_replay/OFF check decides it)",
     "the trigger arms patch the name the scheduler calls, src.engine.phase_graph.rise_triggers_phase (defined at src/world/risen.py), in the child process only and restore it at exit; no source file changes; trigger_off also makes RisenService.process_rises the identity",
     "metrics equality uses the kernel's integer and boolean counters per tick (phase counters, spatial_index_hits); floats are left out because they may be timings; the event stream is the typed world events of each applied update",
@@ -86,9 +87,9 @@ def run_cost_child(tree: Path, out: Path, world: str, seed: int, ticks: int, lab
     return path
 
 
-def run_child_measured(tree: Path, out: Path, world: str, seed: int, ticks: int, mode: str, recording_off: bool = False) -> Dict[str, Any]:
+def run_child_measured(tree: Path, out: Path, world: str, seed: int, ticks: int, mode: str, recording_off: bool = False, tag: str = "") -> Dict[str, Any]:
     """The cost probe's child run: wall time and the child's own peak RSS (wait4's rusage, in MB), and the on-disk size of its output files."""
-    path = out / f"{world}_{seed}_{mode}.json"
+    path = out / f"{world}_{seed}_{mode}{tag}.json"
     cmd = [sys.executable, str(COST_CHILD if mode in ("main", "head_cost") else CHILD), world, str(seed), str(ticks)] + ([mode, str(path)] if mode not in ("main", "head_cost") else [str(path)])
     started = time.perf_counter()
     proc = subprocess.Popen(cmd, cwd=tree, env=child_env(tree, recording_off), stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
@@ -422,14 +423,28 @@ def run_trigger(args: argparse.Namespace) -> int:
     return 0
 
 
+def probe_hash_check(recording_off_hash: str, recorded_hash: str) -> Dict[str, Any]:
+    """The 5000-tick proof that recording-off is hash-neutral: the probe's plain arm run recording-off (OBS OFF + no_replay) against the same plain run with recording ON. Unequal hashes are a STOP."""
+    equal = recording_off_hash == recorded_hash
+    return {"equal": equal, "recording_off_plain": recording_off_hash, "recording_on_plain": recorded_hash, "verdict": "PASS" if equal else "STOP"}
+
+
 def run_probe(args: argparse.Namespace) -> int:
-    """Cost probe: one world x one seed, one arm at a time, the head arms, a trigger arm and (with --main-tree) the main cost run."""
-    rows = [run_child_measured(args.tree, args.out, PROBE_WORLD, args.seeds[0], args.ticks, mode, args.recording_off) for mode in (*ARMS, "trigger_on")]
+    """Cost probe: one world x one seed, one arm at a time, the head arms, a trigger arm, (with --main-tree) the main cost run and, under --recording-off, one extra recording-ON plain arm."""
+    seed = args.seeds[0]
+    rows = [run_child_measured(args.tree, args.out, PROBE_WORLD, seed, args.ticks, mode, args.recording_off) for mode in (*ARMS, "trigger_on")]
     if args.main_tree is not None:
-        rows.append(run_child_measured(args.main_tree, args.out, PROBE_WORLD, args.seeds[0], args.ticks, "main", args.recording_off))
-    report = {"cost_probe": rows, "world": PROBE_WORLD, "seed": args.seeds[0], "ticks": args.ticks, "go": args.go, "scope_cap_mb": 3072, "recording_off": args.recording_off}
+        rows.append(run_child_measured(args.main_tree, args.out, PROBE_WORLD, seed, args.ticks, "main", args.recording_off))
+    report = {"cost_probe": rows, "world": PROBE_WORLD, "seed": seed, "ticks": args.ticks, "go": args.go, "scope_cap_mb": 3072, "recording_off": args.recording_off}
+    if args.recording_off:
+        rows.append({**run_child_measured(args.tree, args.out, PROBE_WORLD, seed, args.ticks, "plain", False, "_recorded"), "mode": "plain_recorded"})
+        hash_of = lambda name: json.loads((args.out / f"{PROBE_WORLD}_{seed}_{name}.json").read_text(encoding="utf-8"))["final_hash"]
+        report["recording_hash_check"] = probe_hash_check(hash_of("plain"), hash_of("plain_recorded"))
     (args.out / "cost_probe.json").write_text(json.dumps(report, indent=2, sort_keys=True), encoding="utf-8")
     print(json.dumps(report, indent=2, sort_keys=True))
+    if report.get("recording_hash_check", {}).get("verdict") == "STOP":
+        print("PROBE STOP: the recording-ON plain arm's final hash differs from the recording-off plain arm's; recording-off is not hash-neutral at 5000 ticks")
+        return 1
     return 0
 
 
@@ -441,7 +456,7 @@ def main(argv: List[str]) -> int:
     ap.add_argument("--out", required=True, type=Path)
     ap.add_argument("--go", required=True, help="reference of the lead-planner go for THIS block")
     ap.add_argument("--ticks", type=int, default=None, help=f"ticks per run (default {paired.TICKS}; {TRIGGER_TICKS} for the trigger block)")
-    ap.add_argument("--recording-off", action="store_true", help="set the observability mode OFF in every child (allowed only after the 100-tick no_replay/OFF hash check passed)")
+    ap.add_argument("--recording-off", action="store_true", help="recording-off = observability mode OFF + the kernel flag no_replay, in every child including the main-tree cost child (allowed only after the 100-tick check passed)")
     ap.add_argument("--worlds", nargs="*", default=list(paired.WORLDS))
     ap.add_argument("--seeds", nargs="*", type=int, default=None, help=f"default: {list(paired.SEEDS)}; {list(TRIGGER_SEEDS)} for the trigger block")
     args = ap.parse_args(argv)
