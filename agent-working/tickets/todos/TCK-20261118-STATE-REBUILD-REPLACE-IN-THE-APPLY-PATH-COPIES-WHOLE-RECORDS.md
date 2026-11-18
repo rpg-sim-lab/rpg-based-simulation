@@ -34,6 +34,8 @@ Found by `TCK-20261118-PROFILE-MAIN-99A83ADC9-RESOLUTION-OVERHEAD-AND-WALL-CLOCK
 ## Scope
 Sequencing: after M1 Phase 1 (rpg-planner via lead). First step is a read-only call-site count (calls and fields per tick) to size the saving; the committed state must be identical (exact replay).
 
+- Before any design (rpg-planner via lead): (1) the calls-per-tick and fields-per-call count; (2) proof that the per-field `str(field_def._field_type).upper()` test at `apply.py:8-27` is pure cost: what reads its result, and whether any field name or type relies on case.
+
 ## Out of Scope
 Any change to determinism, exact replay or the per-tick commit sort (`kernel.py:593`). Any perf target (waits for a quiet-host baseline).
 

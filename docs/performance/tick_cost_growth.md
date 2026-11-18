@@ -288,6 +288,11 @@ None of them touches the per-tick commit sort (`kernel.py:593`) or exact replay.
 - `dataclasses._replace` frames elsewhere (strategic pass, 1 to 3 %) add to the 16 to 17 % replace-ish leaf total.
 - Not yet measured: calls per tick and fields per call, so the saving is not yet sized below "4 to 8 % of the tick"; the ticket for it starts with a call-site count. Sequencing (rpg-planner via lead): after M1 Phase 1.
 
-### 10.8 Limits
+### 10.8 Owed runs (births slot; nothing runs until lead releases it)
+
+- Quiet-host rerun of R1 (3 gate worlds x 3 runs) and R4, before anyone sets a quantitative target.
+- One py-spy run at `mixed` 400 (PROD_LARGE, 1000 ticks) and on the 3 gate worlds, with `CooperationPhase.execute` attributed by callee. It serves as the before-profile for rpg-planner's SOLO ticket (before and after on the 3 cells plus a 400-entity synthetic world); the same command, seed 42 and host conditions must be used for the after run.
+
+### 10.9 Limits
 
 One py-spy run per world (779 to 1444 samples, ±1 point); corpus worlds at their compiled size of 30 to 74 entities (not 200); R1 and R2 at 200 ticks after 20 warmup, R4 at 1000 ticks, one run each; two runs for synthetic in R3; loaded host with swap activity in 4 of 21 R1 to R3 runs; no quiet-host rerun yet (waits for the births block); no py-spy run at 400 or 500 entities yet; `advancement` (20 % of the tick) is attributed only to `apply_generation` (about 10 to 13 %) and `_phase_observability` (about 7 %), no deeper.
