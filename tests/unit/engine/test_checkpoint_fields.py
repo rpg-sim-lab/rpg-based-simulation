@@ -93,12 +93,12 @@ def test_a_project_without_cleared_since_restores_to_no_window_and_keeps_every_o
     try:
         st = k._state
         proj = ProjectState(id="proj_combat_retreat_9", kind=GoalKind.COMBAT_RETREAT, created_tick=3, score=7.5)
-        old = _old_shape(proj, ["cleared_since", "suspended_since"])  # N10 appended suspended_since after it: a pre-2.156 checkpoint lacks both
+        old = _old_shape(proj, ["cleared_since", "suspended_since", "ended_tick"])  # N10 appended suspended_since after it, 2.214 ended_tick after that: a pre-2.156 checkpoint lacks all three
         with pytest.raises(AttributeError):
             old.cleared_since
         e = st.entities[1]
         object.__setattr__(e, "strategic", replace(e.strategic, projects={old.id: old}))
-        fill_missing_fields(st, [r for r in FIELD_RULES if r.field in ("cleared_since", "suspended_since")])
+        fill_missing_fields(st, [r for r in FIELD_RULES if r.field in ("cleared_since", "suspended_since", "ended_tick")])
         restored = st.entities[1].strategic.projects[old.id]
         assert restored.cleared_since is None
         assert restored.suspended_since is None
@@ -115,12 +115,12 @@ def test_a_project_without_suspended_since_restores_to_no_clock_and_keeps_every_
     try:
         st = k._state
         proj = ProjectState(id="proj_combat_engage_9", kind=GoalKind.COMBAT_ENGAGE, status=ProjectStatus.SUSPENDED, created_tick=3, score=7.5)
-        old = _old_shape(proj, ["suspended_since"])
+        old = _old_shape(proj, ["suspended_since", "ended_tick"])  # 2.214 appended ended_tick after it: an older pickle lacks both
         with pytest.raises(AttributeError):
             old.suspended_since
         e = st.entities[1]
         object.__setattr__(e, "strategic", replace(e.strategic, projects={old.id: old}))
-        fill_missing_fields(st, [r for r in FIELD_RULES if r.field == "suspended_since"])
+        fill_missing_fields(st, [r for r in FIELD_RULES if r.field in ("suspended_since", "ended_tick")])
         restored = st.entities[1].strategic.projects[old.id]
         assert restored.suspended_since is None
         assert _values(restored, skip=("suspended_since",)) == _values(proj, skip=("suspended_since",))
