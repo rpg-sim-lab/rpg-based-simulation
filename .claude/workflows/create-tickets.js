@@ -873,6 +873,7 @@ Steps:
    - Related Stored Artifacts → None.
    - Related Code Areas → task.related_code_areas (one "- item" per line)
    - Assumptions / Open Questions → task.assumptions (one "- item" per line, or "None.")
+   - Durable state, lifecycle and clocks → a REQUIRED section (heading exactly \`## Durable state, lifecycle and clocks\`, placed after Assumptions / Open Questions; presence-checked at close for tickets dated 2026-11-19 or later). If the task creates or changes a durable field or record, answer in short "- item" lines, per field: who creates it and is creation idempotent across two passes; does an update merge or replace and what survives a replace; how every non-terminal state exits and what bounds how many exist; who clears it and is the value tested after a successful step; how many code paths write it and does it carry one meaning; which clock each reader uses (rule: the planned docs/engine/time_semantics.md, PLANNED, not landed; ask the question only). Otherwise write exactly \`N/A: <reason>\` with a real reason. Never leave it empty or write a bare N/A.
    - Implementation Notes, Test Summary, Files Changed, Completion Summary → (leave blank)
    - If task.tier is epic: leave Implementation Notes otherwise blank but seed an empty \`### Shared test fixtures and patterns\` subsection under it (children record shared fixtures there; \`.claude/agents/investigator.md\` reads it).
 
