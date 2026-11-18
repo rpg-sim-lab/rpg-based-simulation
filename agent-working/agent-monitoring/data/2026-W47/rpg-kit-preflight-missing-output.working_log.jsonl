@@ -1,0 +1,1 @@
+{"timestamp": "2026-11-18T15:41:06.857173Z", "ticket_id": "TCK-20261118-PREFLIGHT-FAILS-A-PROCESS-THAT-WRITES-NO-OUTPUT-FILE", "title": "A unit test pins that the kit preflight fails a process that writes no output file", "status": "DONE", "summary": "missing-output test; 24 passed", "artifacts_path": "none (hotfix \u2014 no staging artifacts)"}

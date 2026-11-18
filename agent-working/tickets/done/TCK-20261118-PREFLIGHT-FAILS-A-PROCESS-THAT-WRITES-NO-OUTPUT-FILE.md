@@ -1,10 +1,10 @@
 ---
-status: active
+status: historical
 layer: testing
 authority: P1
 audience: agent
 ticket_id: TCK-20261118-PREFLIGHT-FAILS-A-PROCESS-THAT-WRITES-NO-OUTPUT-FILE
-phase: open
+phase: done
 date: 2026-11-18
 tags: []
 ---
@@ -15,7 +15,7 @@ tags: []
 A unit test pins that the kit preflight fails a process that writes no output file
 
 ## Status
-INPROGRESS
+DONE
 
 ## Tier
 hotfix
@@ -57,10 +57,10 @@ Tooling only, no src; dated before 2026-11-19, so no durable-state section is re
 The test reuses the clean probe with its json.dump line removed.
 
 ## Test Summary
-Pending the host run.
+tests/unit/tools/test_kit_preflight.py alone (-n 1, 3500M, gated): 24 passed in 8.80s, rc=0 (includes the new missing-output test).
 
 ## Files Changed
 tests/unit/tools/test_kit_preflight.py, this ticket.
 
 ## Completion Summary
-Pending.
+One unit test pins that a process declaring output fields but writing no output file fails check (d) with "wrote no output file". No push.
