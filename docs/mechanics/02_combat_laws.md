@@ -118,6 +118,10 @@ For skills with a `splash_radius`:
 3.  **Line of Sight**: Splash damage is blocked by solid walls/terrain.
 4.  **Friendly Fire**: A splash victim is hit only if the content catalog calls it hostile to the attacker (`content_semantics.faction.are_entities_hostile`, real distance, `combat_engaged=True`) -- the same test the primary-target Friendly-Fire Law below uses. It is not decided by the four-value legacy `Faction` enum, which collapses content factions (`goblin_warband` and `orc_clan` share `MONSTER_HORDE`): same-bucket enemies are splashed, different-bucket allies and neutrals are not (`TCK-20260919-RAW-LEGACY-FACTION-ENUM-HOSTILITY-SWEEP`).
 
+**Who is hostile to a non-people kind (CONFLICT-03, CONFLICT-05, decision 62; accepted 2026-11-19, #715 6985558474; implemented by the code step of TCK-20261109-M1-EACH-MONSTER-KIND-DECLARES-WHY-IT-FIGHTS, until then the code reads faction hostility for monsters, divergence 2.107).** A kind that is not a people-kind (a species without the trait `keeps_coin_and_trades`, 2.103) is hostile by its
+declared reason to fight (it hates the living, it guards a place, or it hunts by its diet), never by the faction it belongs to. The
+friendly-fire test above reads the same declared reason for such a kind and the catalog faction only between two people-kinds.
+
 ---
 
 ## 7. Action Legality & the Readiness Gate

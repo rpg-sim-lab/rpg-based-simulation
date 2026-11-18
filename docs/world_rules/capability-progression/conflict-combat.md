@@ -98,8 +98,7 @@ directly, 2026-10-09; rows 47 and 49 of the memo):**
   (`tests/unit/engine/test_hungry_wolf_hunts_prey_it_out_bands.py`). **Still open:**
   - A wolf and a person tie in kind bands, so in M0 a wolf never takes a person as prey (a strict
     xfail names milestone 1's single-appraisal child).
-  - Monster factions keep faction hostility as an interim (decision 62), until milestone 1's
-    declared drives.
+  - Monster factions keep faction hostility until the code step of TCK-20261109-M1-EACH-MONSTER-KIND-DECLARES-WHY-IT-FIGHTS lands. The accepted rule (CONFLICT-05, owner 2026-11-19, #715 6985558474) regards a monster kind by its declared reason to fight; faction hostility remains a reason to fight only between people-kinds.
   - **Still CONFLICTING for people after hunting (rpg-planner's read of `origin/main`,
     2026-10-09):** pursuit and intercept start from membership in the hostile list alone
     (`src/engine/tactical.py`: faction hostility, plus PREDATION once hunting lands). The KNOW-04
@@ -126,17 +125,12 @@ directly, 2026-10-09; rows 47 and 49 of the memo):**
     overcome; defend or flee when threatened; otherwise ignore it or stay wary. Wolves attack
     people the same way, not by a faction verdict. **Fixed in the hunting batch** (rpg-designer
     applying decision 47, no new ruling), which discloses its effect on attacks on people.
-  - **Scope of the change, by milestone (decided by the owner directly, 2026-10-11; row 62 of the
-    memo).** In the hunting batch, only a kind with a diet in a faction declared wild
-    (`wild_beast_pack`, `wild_fauna`) drops faction hostility and goes by the appraisal. Monster
-    factions (`undead_remnants`, `dragon_cult`, `spirit_court` and others) keep faction hostility
-    for now, which is disclosed as interim. In milestone 1, each monster kind declares why it
-    fights as a property read generically (decision 46): the undead hate the living, a spirit
-    guards a place, and a troll or dragonkin hunts by its diet and the appraisal. That drive
-    replaces faction hostility for monsters too, leaving faction as a reason to fight only
-    between people. **Alternatives not taken:** every non-people kind at once (the undead,
-    slimes and spirits have no diet and would ignore people until a drive exists); wild
-    animals only, for good (monsters would stay enemies by a label).
+  - **Scope of the change, by milestone (decided by the owner directly, 2026-10-11; row 62 of the memo; completed in milestone 1 by CONFLICT-05).** In the
+    hunting batch, only a kind with a diet in a faction declared wild dropped faction hostility and went by the appraisal. In milestone 1,
+    every non-people kind goes by its declared reason to fight (CONFLICT-05): the undead hate the living, a spirit guards a place, a troll
+    or dragonkin hunts by its diet and the appraisal. Faction is a reason to fight only between people-kinds (a species with the trait `keeps_coin_and_trades`, 2.103).
+    **Alternatives not taken:** every non-people kind at once in the hunting batch (the undead, slimes and spirits had no diet
+    and would have ignored people until a drive existed); wild animals only, for good (monsters would stay enemies by a label).
 
 **Disposition: ACCEPT — decided by world-rule-catalog-design under owner delegation, 2026-10-06**
 (row 18 of `docs/plans/systemic_world/owner_decision_memo.md`; the owner confirmed the
@@ -387,6 +381,34 @@ holds between blows; a cautious control flees and pays the cost) and
 [CP-S19](../scenarios/capability-progression-batch-07.md#cp-s19) (a long exchange of blows is not
 a stalemate; a two-tile control still trips the breaker). Both are kernel-level tests since
 #439, and both are covered.
+
+---
+
+## CONFLICT-05 — Each non-people kind declares why it fights; a faction label never decides a monster's fight
+
+> A kind that is not a people-kind (a people-kind is a species with the trait `keeps_coin_and_trades`, 2.103) fights for a reason its content declares. The reason is one of a closed set: it hates the
+> living, it guards a place, or it hunts by its diet. Hostility toward and from such a kind is derived from that reason and from the
+> appraisal (CONFLICT-03), never from the faction it belongs to. Faction enmity remains a reason to fight between people-kinds only.
+
+- **Where it is declared.** A species field `fight_reasons`, a closed set (`hates_living`, `guards_place`, `hunts_by_diet`), validated at content load.
+- **Reasons.**
+  - `hates_living`: the kind engages a perceived body whose body model declares `living`. `living` is a REQUIRED body-model property with no
+    default: true for flesh bodies, false for spirit and amorphous bodies.
+  - `guards_place`: the kind engages a perceived body, not of its own species, within a reach declared per species in content, of its home
+    tile. The home tile is set at spawn to the spawn tile and never changes. It keeps no territory record; revisit when places land (milestone 1, item 4).
+  - `hunts_by_diet`: the existing PREDATION appraisal (hungry, the diet can eat the body, the hunter believes it can overcome it); no other trigger.
+- **People regard a declared aggressor as hostile.** A people-kind regards a body as an aggressor when THAT body's declared reason names it, so a guard
+  still answers an undead sentinel with no faction label.
+- **Permission is symmetric (extends CONFLICT-03).** An attack is permitted in both directions whenever either side's declared reason names the other.
+- **The same species is never a target**, as `relation` does today (`src/engine/hostility.py:87-88`). This replaces "a faction does not hunt its own".
+- **No declared reason: the kind only fights back.** The content-load check requires a reason of any monster kind that gets an archetype, and refuses
+  a value outside the closed set. The slime declares nothing now: no slime archetype exists.
+- **One source of hostility for a monster pair (species relations).** For any pair where either side is a non-people kind, the declared reason is the
+  only hostility source. `species_relations` keeps people-people pairs only; a load-time check refuses an entry naming a non-people kind; the existing
+  monster entries are removed in the same change, each listed in the ticket with its current effect.
+- **Alternatives not taken:** the reason as a drive weight (a band, not a vocabulary); derive it from a trait name (a name check, decision 46);
+  keep the invader verdict for monsters (a label decides); defence and appraisal only for people (the largest unmeasured behaviour change); coexisting species relations (two sources for one fact).
+- **Disposition:** Accepted by the owner on 2026-11-19 (#715 6985558474), the recommended option on all eight questions. Not implemented yet: until the code step of TCK-20261109-M1-EACH-MONSTER-KIND-DECLARES-WHY-IT-FIGHTS lands, monsters keep faction hostility (divergence 2.107, INTERIM).
 
 ---
 
