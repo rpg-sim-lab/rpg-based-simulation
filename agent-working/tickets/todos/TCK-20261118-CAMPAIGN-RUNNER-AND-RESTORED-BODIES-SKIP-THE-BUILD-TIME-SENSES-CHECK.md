@@ -12,7 +12,7 @@ tags: []
 # TCK-20261118-CAMPAIGN-RUNNER-AND-RESTORED-BODIES-SKIP-THE-BUILD-TIME-SENSES-CHECK
 
 ## Title
-Campaign, scenario-runner, mid-run spawner and checkpoint-restored bodies skip PERC-02a's build-time senses check, so a body of an unprofiled species goes blind with gate ERRORs instead of being refused
+Campaign episode bodies, scenario-runner bodies and checkpoint-restored bodies skip PERC-02a's build-time senses check, so a body of an unprofiled species goes blind with gate ERRORs instead of being refused
 
 ## Status
 OPEN
@@ -38,17 +38,16 @@ Three other paths put bodies into a running world with no check:
 1. src/domains/campaigns/orchestrator.py:822: campaign episode bodies, built with V2EntityBuilder, kind = cf.kind from campaign content.
 2. src/domains/campaigns/runner.py:70: scenario runner bodies, built with V2EntityBuilder, kind = hero_species_id().
 3. src/engine/scenario_checkpoint.py ScenarioCheckpoint.restore (lines 56-120): it never compiles and never checks senses. Content can change between save and restore, so a restored body can belong to a species that has since lost its profile.
-4. MID-RUN SPAWNERS (lead-planner-u24, inspected on main): src/systems/world_systems/generator.py EntityGenerator, at :140, :166, :205 and :238 (spawn_monster for any species, spawn_goblin, spawn_magical_demonic_entity), builds bodies with V2EntityBuilder and no check. Its mid-run callers are creature_territory.py:65 (lairs), boss.py:148 and :260, calamity.py:63 and :82, and certification/scenarios.py:74. A species spawned mid-run need not be in the compiled population, so it is never checked anywhere.
+4. Mid-run spawners (EntityGenerator spawn_*) are split into the sibling P1 ticket TCK-20261118-MID-RUN-SPAWNED-BODIES-SKIP-THE-SENSES-CHECK (rpg-designer: HARD before the Phase-3 measurement).
 
 The effect, inspected on main: no build-time error. At runtime appraisal.perceives() catches the gate's error, logs ERROR and returns not-perceived, so the body is silently blind. This is latent today, because the hero is human and profiled, but campaign content can name any kind.
 
 Found by rpg-planner-ubuntu. Inspected by lead-planner-u24 on 346c2dc78. Sites 1 and 2 were ruled INSIDE the 02a law by rpg-designer: "At build, on every path, the body's sense profile is its species' sense_profile". The words "compile, spawn and archetype" listed the paths known at the time; they were not a limit on the law. rpg-designer added site 3.
 
 ## Scope
-1. Every production body-construction path in sites 1, 2 and 4 refuses a body of an unprofiled species at build, with the typed SenseProfileError.
+1. Every production body-construction path in sites 1 and 2 refuses a body of an unprofiled species at build, with the typed SenseProfileError.
    - Prefer ONE shared production helper that the sites call, e.g. a checked-build function in src/entities/ or src/content/, over a separate check at each site.
    - Do NOT put a hook inside V2EntityBuilder itself (rpg-designer). It is a generic builder, and test fixtures that deliberately build bodies of unprofiled kinds would fail for reasons unrelated to the law.
-   - A mid-run spawn refusal must not crash a run on valid content. So the spawner's species set (generator spawn tables, lair, boss and calamity content) is ALSO checked at content load, and the build-time call stays as the backstop.
 2. Add a restore-time check in ScenarioCheckpoint.restore, after fill_missing_fields(state) and before Kernel(...): every body in the restored state must resolve a usable sense profile for its species under the CURRENT catalog. Otherwise restore refuses with a typed error before any tick. Reuse SenseProfileError, or a typed restore error that wraps it.
 3. Add a source-scan test: every non-test V2EntityBuilder(...) construction site under src/ either calls the senses check on its path, or is in a named allowlist with a one-line reason per entry.
 4. Docs, in the same change:
@@ -63,7 +62,6 @@ Found by rpg-planner-ubuntu. Inspected by lead-planner-u24 on 346c2dc78. Sites 1
 
 ## Acceptance Criteria
 - A campaign episode whose content names an unprofiled kind fails at build with SenseProfileError, naming the site. A profiled kind builds exactly as before.
-- Each EntityGenerator spawn path refuses an unprofiled species at build. A content-load check refuses spawn tables, lair, boss or calamity content that names an unprofiled species, before any tick.
 - runner.py:70 fails the same way if hero_species_id() resolves to an unprofiled species, and builds exactly as before for human.
 - Restore test: a checkpoint saved under content A and restored under content B, with one body's species profile removed, is REFUSED with the typed error before any tick. A restore under unchanged content succeeds, and its state hash equals the saved state's.
 - The source-scan test fails if a new non-test V2EntityBuilder site under src/ neither calls the check nor is allowlisted with a reason.
@@ -74,6 +72,7 @@ Found by rpg-planner-ubuntu. Inspected by lead-planner-u24 on 346c2dc78. Sites 1
 ## Related Tickets
 - TCK-20261117-EACH-BODY-PERCEIVES-BY-ITS-SPECIES-SENSES-AND-SIGNALS-FOLLOW-THE-BODY (PERC-02a, done in #955)
 - TCK-20261109-M1-HONEST-PERCEPTION-DEFAULTS (the parent; PERC-02b follows)
+- TCK-20261118-MID-RUN-SPAWNED-BODIES-SKIP-THE-SENSES-CHECK (the sibling: spawners, P1)
 - TCK-20261109-M1-BASIC-WILD-BIRTHS-FOR-EVERY-LIVING-KIND (births; it cites this ticket for restore)
 - TCK-20261110-A-RESTORED-SCENARIO-DROPS-ITS-GOVERNOR-AND-EVENT-RECORDER, TCK-20261110-A-RUN-RESTORED-FROM-A-CHECKPOINT-EQUALS-THE-UNINTERRUPTED-RUN-TICK-BY-TICK (the other restore gaps)
 
@@ -91,16 +90,14 @@ Found by rpg-planner-ubuntu. Inspected by lead-planner-u24 on 346c2dc78. Sites 1
 - src/content/species_senses.py (require_species_sense_profile)
 - src/domains/campaigns/orchestrator.py:822, src/domains/campaigns/runner.py:70
 - src/engine/scenario_checkpoint.py (ScenarioCheckpoint.restore, fill_missing_fields, Kernel(...))
-- src/systems/world_systems/generator.py (EntityGenerator) and its callers: creature_territory.py, boss.py, calamity.py, certification/scenarios.py
 - src/core/builder.py (V2EntityBuilder, which is NOT edited)
 
 ## Durable state, lifecycle and clocks
 No new durable state. The check reads the catalog's species sense_profile when a body is built or restored. No record, field or clock is added.
 
 ## Assumptions / Open Questions
-- The SPAWNER part (site 4) may be HARD for M1: lairs, bosses and calamities DO run in M1 cells, and empty logging_errors is an M1 HARD bar. rpg-designer rules its priority, together with births' (A') vs (D'). If HARD, split site 4 into its own P1 ticket on run 1.
 - Priority P2 for sites 1-3 (rpg-designer): no M1 gate-world body goes through these sites, and no M1 measurement restores. It becomes HARD before any M1 measurement that uses a campaign, the scenario runner or a restore.
-- Whether the restore refusal reuses SenseProfileError or wraps it in a restore-specific typed error: the implementer proposes, and rpg-designer rules.
+- RULED (rpg-designer): restore raises its own typed RestoredBodySenseProfileError(ValueError), with the SenseProfileError as __cause__. The message names the checkpoint path, the entity id and the species, and the test asserts both the type and the cause. Reason: restore callers already handle the CheckpointSchemaError family of ValueErrors, and "the save doesn't match this content" is a checkpoint fact.
 
 ## Implementation Notes
 
