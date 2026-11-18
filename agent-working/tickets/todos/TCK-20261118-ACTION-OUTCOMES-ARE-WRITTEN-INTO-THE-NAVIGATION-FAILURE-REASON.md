@@ -69,6 +69,7 @@ Found by the stale failure-reason fix's own-job (S9 #715 6957082783 and continua
 - src/engine/core_actions.py, action_router.py, combat_actions.py, skill_actions.py, aoe_actions.py, lodging.py; src/core/updates.py (NavigationUpdate); src/engine/patches.py:290
 
 ## Assumptions / Open Questions
+- READER to rule (rpg-designer, 2026-11-18): domains/information/phase.py:130 treats ANY non-None navigation.last_failure_reason as a failed search (it builds claim_failed_search). Today an action code (such as SOURCE_DEPLETED) makes it emit one. Whether reading a navigation reason as "the search failed" is right at all is part of this ticket. Yield/swap moves already stopped emitting it under the stale-reason fix's move law.
 - Which readers, if any, rely on action codes in the navigation field today is unchecked beyond the four listed.
 
 ## Implementation Notes
