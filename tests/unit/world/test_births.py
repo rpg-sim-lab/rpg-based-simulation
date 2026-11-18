@@ -299,3 +299,13 @@ def test_a_pregnant_body_is_never_a_mother_or_a_mate(certain):
     later = AuthoritativeState(tick=60, seed=42, entities=pregnant.entities, next_entity_id=pregnant.next_entity_id)
     assert births._find_mate(later, later.entities[3], births._candidates(later, births._Profiles(births.get_catalog())), set(), births.get_catalog().get_reproduction_profile("humanoid_births")) is None
     assert not _conceptions(_run(later))
+
+
+def test_may_conceive_is_the_mother_guard_in_the_order_profile_fed_line_interval():
+    profile = births._Profiles(births.get_catalog()).of("human")
+    fed, hungry = _body(1, hunger=0.0), _body(2, hunger=profile.fed_line + 1.0)
+    assert births._may_conceive(fed, profile, 30) is True
+    assert births._may_conceive(fed, None, 30) is False  # no reproduction profile
+    assert births._may_conceive(hungry, profile, 30) is False  # over the fed line
+    waiting = dataclasses.replace(fed, lifecycle=dataclasses.replace(fed.lifecycle, reproduction_cooldowns={9: 31}))
+    assert births._may_conceive(waiting, profile, 30) is False and births._may_conceive(waiting, profile, 31) is True  # the interval ends at its latest expiry
