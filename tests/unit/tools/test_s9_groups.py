@@ -208,11 +208,13 @@ def test_births_and_conceptions_counts_two_newborns_one_pregnancy_and_zero_on_a_
     pregnant = dataclasses.replace(_body(1), lifecycle=dataclasses.replace(_body(1).lifecycle, pregnancy=PregnancyState(
         father_entity_id=2, conceived_tick=30, due_tick=2430, litter_size=1, father_genetic_profile=GeneticProfile())))
     start = AuthoritativeState(tick=0, seed=1, entities={1: _body(1), 2: _body(2)}, next_entity_id=3)
-    state = AuthoritativeState(tick=10, seed=1, entities={1: pregnant, 2: _body(2), 3: _body(3), 4: _body(4)}, groups={1: group}, next_entity_id=5)
+    born = lambda i: V2EntityBuilder(i).kind("human").location(5.0, 5.0).birth_record(parent_a_entity_id=1, parent_b_entity_id=2, birth_tick=10).build()
+    state = AuthoritativeState(tick=10, seed=1, entities={1: pregnant, 2: _body(2), 3: born(3), 4: born(4)}, groups={1: group}, next_entity_id=5)
     spy = GroupSpy(start)
     spy.observe(state, StateUpdate(), state)
     spy.observe(state, StateUpdate(), dataclasses.replace(state, tick=11))
-    assert s9_spy.count_births(state.entities, spy.start_ids) == 2, "bodies 3 and 4, alive or dead"
+    assert s9_spy.count_births(state.entities, spy.start_ids) == 2, "bodies 3 and 4 carry both parent ids, alive or dead"
+    assert s9_spy.count_other_adds(state.entities, spy.start_ids) == 0
     assert len(spy.conceptions) == 1, "the same (mother, conceived_tick) seen on two ticks counts once"
     main_shaped = type("Lifecycle", (), {})()
     body = type("Body", (), {"id": 1, "lifecycle": main_shaped})()
@@ -241,3 +243,21 @@ def test_the_runner_prints_the_newborns_in_any_group_as_a_count_and_rows_of_any_
     out = capsys.readouterr().out
     assert "newborns in any group at any tick (head, any kind): 2" in out
     assert "newborn eid 77 kind wolf group 4 first tick in a group 120" in out and "newborn eid 78 kind human group 4 first tick in a group 130" in out
+
+
+def test_one_newborn_with_both_parents_and_one_parentless_add_give_births_1_and_other_adds_1_and_main_shape_gives_0():
+    newborn = V2EntityBuilder(3).kind("human").location(5.0, 5.0).birth_record(parent_a_entity_id=1, parent_b_entity_id=2, birth_tick=10).build()
+    parentless = _body(4)
+    only_mother = V2EntityBuilder(5).kind("human").location(5.0, 5.0).birth_record(parent_a_entity_id=1, parent_b_entity_id=None, birth_tick=10).build()
+    entities = {1: _body(1), 2: _body(2), 3: newborn, 4: parentless, 5: only_mother}
+    assert s9_spy.count_births(entities, {1, 2}) == 1 and s9_spy.count_other_adds(entities, {1, 2}) == 2, "a body with one parent id is not a birth"
+    entities.pop(5)
+    assert s9_spy.count_births(entities, {1, 2}) == 1 and s9_spy.count_other_adds(entities, {1, 2}) == 1
+    bare = {7: type("B", (), {})()}
+    assert s9_spy.count_births(bare, set()) == 0 and s9_spy.count_other_adds(bare, set()) == 1
+
+
+def test_the_judge_report_carries_other_adds_for_both_arms():
+    head = {**_doc({10: rows(5, moved=True)}, [10]), "births": 1, "other_adds": 1, "conceptions": 1}
+    main = {**_doc({10: rows(5, moved=True)}, [10]), "births": 0, "other_adds": 0, "conceptions": 0}
+    assert s9_run.judge(head, main, s9_spy, _plain("h"), _plain("h"))["other_adds"] == {"head": 1, "main": 0}
