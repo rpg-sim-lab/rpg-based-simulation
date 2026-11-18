@@ -117,6 +117,12 @@ Outcome so far: only defects 1 and 5 have a clean fix commit and pre-fix snapsho
 - Owner rule stays as set. When the eval reports, state the actual number of positives and that the +2 margin is coarse; mining `escaped-defect` tickets is the route if the owner wants it widened.
 - Two of the above sit on unpushed u24 branches; the eval build must not rely on them until they reach origin.
 
+### Re-check closed (rpg-designer via the leads, 2026-11-18; relayed)
+- Defect 3: the same ticket found above (TCK-20261030-STALEMATE-BREAK-OVERWRITES-A-PROJECT-MOVE-EVERY-TICK). Its scope grew from the break-overwrite bug into F1 (branch `rpg-stalemate-nav`: 08b9dcae8, 6d2c6bc35, 46ac46e40), landing with F2 after the intelligence.py split. Read the description as "(scope grew: F1/F2)". Those three commits are not reachable from origin or this worktree (checked: `git cat-file` fails). Status: PENDING positive; drop it if still unlanded when the harness is built, and say so in the result.
+- "4 (the first defect)": confirmed. The stale failure reason was caught by review; the yield/swap defect it exposed was caught by the run (own-job R1/R3 trip). Count them as two separate defects if both pre-fix inputs can be pinned; the stale-reason one is the review-caught case.
+- Perception-input mismatch: PR #955, TCK-20261117-EACH-BODY-PERCEIVES-BY-ITS-SPECIES-SENSES-AND-SIGNALS-FOLLOW-THE-BODY, fixed in lane D commit 3d2713603 (`_prey_in_sight` dated, plus a same-inputs test). I confirmed the commit object exists locally and `refs/pull/955/head` exists on origin; #955 is still open. First sign: the failing test naming_x.
+- Final positives status: usable now: 1, 5, perception (once #955's pre-fix parent is pinned). Located-by-history needed: 2, 4 (stale reason), latch. Pending or in-flight: 3, 6 (design text), corpse sink, SOLO spam. Expect 5-7 usable positives; report the real count when it runs.
+
 ## Test Summary
 (filled at close)
 
