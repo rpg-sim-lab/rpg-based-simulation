@@ -148,26 +148,26 @@ def _hunt_project_names_prey(entity: "EntityState", prey: List["EntityState"]) -
     return objective is not None and objective.target_entity_id is not None and any(h.id == objective.target_entity_id for h in prey)
 
 
-def _prey_in_sight(entity: "EntityState", hostiles: List["EntityState"]) -> List["EntityState"]:
+def _prey_in_sight(entity: "EntityState", hostiles: List["EntityState"], night: bool = False, tick: Optional[int] = None) -> List["EntityState"]:
     """The hostiles the subject regards as prey (`Relation.PREDATION`, the test `opening_steps._hunt_step` uses): the fight a pressing HUNGER does not stop."""
-    return [h for h in hostiles if relation(entity, h) is Relation.PREDATION]
+    return [h for h in hostiles if relation(entity, h, night=night, tick=tick) is Relation.PREDATION]
 
 
-def _need_path_first(entity: "EntityState", hostiles: List["EntityState"], tick: int) -> Tuple[bool, List["EntityState"]]:
+def _need_path_first(entity: "EntityState", hostiles: List["EntityState"], tick: int, night: bool = False) -> Tuple[bool, List["EntityState"]]:
     """SURV-07 LAW P: whether the need path runs ahead of everything that reacts to a hostile in sight, and the prey that makes the hunt the need's way.
 
     A need past its escalation onset gives way only to a hostile ACTING on the subject (`need_yields`). The hunt exemption (designer's ruling on LAW P): with HUNGER pressing and
     prey in sight, the fight with the prey is the need's way, unless the subject has an active need project whose objective names no living target (that walk stays on the
     need path). Exempt: the need path does not run first and the target is taken from the prey only. The one place this is computed: the panic freeze and the main order read it."""
     need_first = bool(hostiles) and entity_need_is_pressing(entity) and not need_yields(entity, hostiles, tick)
-    hunt_prey = _prey_in_sight(entity, hostiles) if need_first and entity_hunger_is_pressing(entity) and not _need_way_is_not_a_hunt(entity) else []
+    hunt_prey = _prey_in_sight(entity, hostiles, night, tick) if need_first and entity_hunger_is_pressing(entity) and not _need_way_is_not_a_hunt(entity) else []
     return need_first and not hunt_prey, hunt_prey
 
 
 def _panic_yields_to_need(entity: "EntityState", neighbors: List["EntityState"], tick: int, night: bool = False) -> bool:
     """A panic with no destination does not freeze against a pressing need while nothing acts on the subject and no prey is in sight (rpg-designer, scope 2(c)): the same
     `need_first` the main order computes, over the same tactical hostiles, so the yielded tick takes the need path and never falls through to engagement."""
-    return _need_path_first(entity, classify_neighbours(entity, neighbors, source_identity(entity), night, tick).hostiles, tick)[0]
+    return _need_path_first(entity, classify_neighbours(entity, neighbors, source_identity(entity), night, tick).hostiles, tick, night)[0]
 
 
 def _suspend_project_for_threat(entity: "EntityState", hostiles: List["EntityState"], tick: int) -> Optional[StrategicUpdate]:
@@ -303,7 +303,7 @@ class TacticalDecisionSystem:
         # SURV-07 LAW P (TCK-20261031-AN-ENGAGEMENT-OVERRIDES-A-PRESSING-NEED): a need past its escalation onset gives way only to a hostile ACTING on the subject
         # (`need_yields`). With hostiles in sight and none acting, the need path runs first: before the presence test below, role obligation, cohesion and target
         # selection (so a follower too takes no part in the group's target). Flight keeps AGENCY-07's `present_threat_to`. The hunt exemption is inside `_need_path_first`.
-        need_first, hunt_prey = _need_path_first(entity, hostiles, state.tick)
+        need_first, hunt_prey = _need_path_first(entity, hostiles, state.tick, is_night(state.world_time))
 
         # 4. Strategic Persistence (Pillar 5.1): a need project the subject is walking to is not suspended for a hostile that is not acting on it
         strat_up = None if (need_first and _serves_a_need(entity)) or (hunt_prey and _hunt_project_names_prey(entity, hunt_prey)) else _suspend_project_for_threat(entity, hostiles, state.tick)

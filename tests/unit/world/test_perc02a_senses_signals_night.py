@@ -475,12 +475,11 @@ def test_the_step_clock_survives_apply_and_a_later_position_move():
 # function name -> the index of its `tick` among the positional arguments (a call may also name it `tick=`)
 _TICK_POSITION = {
     "emitted_signals": 2, "get_entity_signals": 1, "perceives": 3, "appraise": 3, "relation": 4, "faction_hostile": 4, "perceived_hostile": 4,
-    "classify_neighbours": 4, "_target_still_perceived": 3, "_has_tactical_hostiles": 3, "unengaged_adjacent_hostile": 4, "attack_allowed": 3,
+    "classify_neighbours": 4, "_target_still_perceived": 3, "_has_tactical_hostiles": 3, "unengaged_adjacent_hostile": 4, "attack_allowed": 3, "_adjacent_hostile": 4, "_prey_in_sight": 3, "_need_path_first": 2,
 }
-# The only production callers that pass no tick, so every body they look at reads STILL. 02b migrates them onto perceived_neighbours and removes this list.
+# The only production caller that passes no tick, so every body it looks at reads STILL. 02b migrates it onto perceived_neighbours and removes this list.
 _UNDATED_UNTIL_02B = {
-    ("engine/tactical.py", "relation"),                                   # tactical.py: the predation filter `relation(entity, h)`
-    ("engine/candidate_selector.py", "engaged_adjacent_hostile"),         # the movement layer's engaged-adjacent test (get_neighbor_view family)
+    ("engine/candidate_selector.py", "engaged_adjacent_hostile"),         # the movement layer's engaged-adjacent test: it passes reach (derived from positions in appraisal.perceives) but no tick or night
 }
 
 
@@ -497,5 +496,5 @@ def test_every_production_caller_of_the_signal_chain_passes_a_tick():
                     continue
                 if any(k.arg == "tick" for k in call.keywords) or len(call.args) > _TICK_POSITION[name]:
                     continue
-                undated.add((str(path.relative_to(root)), fn.name if name != "relation" or path.name != "tactical.py" else name))
+                undated.add((str(path.relative_to(root)), fn.name))
     assert undated <= _UNDATED_UNTIL_02B, f"production callers that read every body as still (give them state.tick): {sorted(undated - _UNDATED_UNTIL_02B)}"

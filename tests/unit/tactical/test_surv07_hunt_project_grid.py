@@ -246,3 +246,22 @@ def test_the_evaluator_clears_the_current_project_when_the_prey_dies(world):
     up = StrategicIntelligenceSystem.evaluate_strategic_intent(state, hunter, force=True)
     assert up.current_project_id_set == "" and up.current_objective_id_set == "", "no stuck current project"
     assert up.projects_add_or_update and up.projects_add_or_update[0].status == ProjectStatus.COMPLETED, "no orphan: the project is COMPLETED"
+
+
+def test_one_decision_reads_every_body_with_the_same_inputs_the_hostile_list_and_the_predation_filter_agree(world):
+    """PERC-02a rule (rpg-designer 2026-11-18): within ONE decision every perception read of another body uses the same inputs (tick, night, reach). A mover three tiles off (heard) and a still body one
+    tile off (touched) are both in the hostile list `classify_neighbours` builds AND both survive the predation filter `_prey_in_sight`; neither read may disagree about who is perceived."""
+    from src.core.calendar import is_night
+    from src.engine.hostility import source_identity
+    from src.engine.tactical import _prey_in_sight
+    from src.engine.tactical_avoid import classify_neighbours
+    base, herd = _species(world, "human"), [e for e in world.entities.values() if (e.identity.properties or {}).get("species_id") == "small_plant_eater"][:2]
+    hunter = replace(_at(base, 30.0, 30.0), biological=replace(base.biological, hunger=PRESSING_HUNGER, sleep_debt=0.0))
+    tick = world.tick + 1
+    mover = replace(_at(herd[0], 33.0, 30.0), navigation=replace(_at(herd[0], 33.0, 30.0).navigation, last_moved_tick=tick - 1))
+    still = _at(herd[1], 31.0, 30.0)
+    night = is_night(world.world_time)
+    hostiles = classify_neighbours(hunter, [mover, still], source_identity(hunter), night, tick).hostiles
+    prey = _prey_in_sight(hunter, hostiles, night, tick)
+    assert {h.id for h in hostiles} == {mover.id, still.id}
+    assert {h.id for h in prey} == {h.id for h in hostiles}, "the predation filter must perceive exactly who the hostile list perceived"
