@@ -38,6 +38,7 @@ def _run(run_id):
     # (owner #715 6971973729).
     spec, context = WorldRepository(os.path.join("data", "worlds")).load_world_with_context("crowded_frontier")
     state, _report = WorldCompiler.compile(spec, 42, context=context)
+    # Mirrors tools/test_architecture/rpg_gate_run.build_kernel (PROD_SMALL budget 1e9, PinnedNormalGovernor, LocalSequentialExecutor, audit_mode/no_frame_pacing); keep in sync, or replace with a state hook if build_kernel gains one.
     kernel = Kernel(
         PROD_SMALL.model_copy(update={"max_tick_budget_ms": 1e9}), replace(state, world_time=DAY_WORLD_TIME), DeterministicRNG(42),
         governor=PinnedNormalGovernor(), executor=LocalSequentialExecutor(),
