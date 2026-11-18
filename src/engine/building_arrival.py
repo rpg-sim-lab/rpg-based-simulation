@@ -75,6 +75,6 @@ def building_arrival_update(state: Any, entity: Any, project: Any, building_id: 
         building = state.buildings.get(building_id)
         if finds_no_bed(state, entity, building):
             # F3: the bed is taken (the way closed on the way): no REST on the reach tile, the project ends with the typed way-closed end and the subject re-decides.
-            return EntityUpdate(entity_id=entity.id, strategic=StrategicUpdate(projects_add_or_update=[end_record(project, ProjectStatus.ABANDONED, ProjectEnd.WAY_CLOSED)], current_project_id_set="", current_objective_id_set=""))
+            return EntityUpdate(entity_id=entity.id, strategic=StrategicUpdate(projects_add_or_update=[end_record(project, ProjectStatus.ABANDONED, ProjectEnd.WAY_CLOSED, state.tick)], current_project_id_set="", current_objective_id_set=""))
         return _act(entity, "REST", building_id)
     return EntityUpdate(entity_id=entity.id)

@@ -15,7 +15,7 @@ from src.core.enums import EntityRole, Faction
 from src.core.state import TaskComponent
 from src.engine import appraisal, behavior_consumers
 from src.engine.appraisal import THREAT_RANGE, WARY_DISTANCE, Relation
-from src.engine.hostility import perceived_hostile, relation
+from src.engine.hostility import perceived_hostile as _perceived_hostile, relation as _relation
 from src.engine.legality import LegalityServiceV2
 from src.content.common_knowledge_seed import seeded_knowledge
 from src.core.self_model import SelfModelBundle
@@ -130,10 +130,19 @@ def test_predation_permits_the_attack_when_factions_refuse_and_a_sated_one_does_
     assert _attack_allowed(sated, prey, context) is False
 
 
+def relation(entity, other):
+    """The appraisal tests judge by day (night False) and undated signals (tick None): both are now passed, never defaulted."""
+    return _relation(entity, other, night=False, tick=None)
+
+
+def perceived_hostile(entity, other):
+    return _perceived_hostile(entity, other, night=False, tick=None)
+
+
 def _attack_allowed(attacker, target, context):
     """The faction rule or, failing it, appetite or defence: the two checks `verify_attack_legality` applies in turn."""
     from src.engine.hostility import attack_allowed
-    return attack_allowed(attacker, target, LegalityServiceV2._attack_permitted(attacker, target, context))
+    return attack_allowed(attacker, target, LegalityServiceV2._attack_permitted(attacker, target, context), night=False, tick=None)
 
 
 def test_wary_distance_exceeds_the_threat_range():

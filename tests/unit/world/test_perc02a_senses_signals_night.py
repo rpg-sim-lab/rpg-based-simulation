@@ -1,0 +1,500 @@
+"""PERC-02a: senses derive from the species, signals follow the body, vision drops at night, a gate error is not perception
+(TCK-20261109-M1-HONEST-PERCEPTION-DEFAULTS; divergence 2.210; STRAT-352)."""
+from __future__ import annotations
+
+import logging
+import re
+from pathlib import Path
+from types import SimpleNamespace
+
+import pytest
+
+from src.content.repository import CatalogRepository
+from src.core.species import SenseProfileError
+from src.world.perception.gate import NIGHT_VISION_STEPS, PerceptionGate, _lower_level, _LEVEL_TO_FLOAT, _PERCEPTION_THRESHOLD
+from src.engine.perception_signals import emitted_signals
+
+NIGHT_SIGHTED_PROFILES = {"goblin_alert_senses", "predator_smell_senses", "spider_vibration_senses", "undead_dread_senses", "troll_senses"}
+
+
+@pytest.fixture(scope="module")
+def catalog():
+    repo = CatalogRepository("data/content")
+    repo.load_all()
+    return repo
+
+
+TICK = 100  # the test tick: a step is dated relative to it (moving = TICK - 1; still = None or TICK - 10), never through the old latching moved_recently flag
+
+
+def _body(species_id, *, last_moved_tick=None, asleep=False, lodged=False, alive=True):
+    nav = SimpleNamespace(lodged_in=7 if lodged else None, last_moved_tick=last_moved_tick)
+    task = SimpleNamespace(work_kind="ENTITY_ACT" if asleep else "", payload={"action": "SLEEP"} if asleep else {})
+    return SimpleNamespace(
+        kind=species_id, identity=SimpleNamespace(properties={"species_id": species_id}),
+        navigation=nav, task=task, combat=SimpleNamespace(alive=alive),
+    )
+
+
+# --- P2: senses come from the species --------------------------------------------------------------------------------------------
+
+def test_every_content_species_derives_its_own_profile(catalog):
+    gate = PerceptionGate(catalog)
+    for species_id, species in catalog.species.items():
+        _, source, _ = gate._load_sense_strengths(_body(species_id))
+        assert source == species.sense_profile, species_id
+    assert gate.unprofiled_counts == {}
+
+
+def test_night_sight_is_declared_on_exactly_the_ruled_profiles(catalog):
+    declared = {pid for pid, p in catalog.sense_profiles.items() if p.night_vision}
+    assert declared == NIGHT_SIGHTED_PROFILES
+    assert catalog.get_species("troll").sense_profile == "troll_senses"
+    for shared in ("normal_humanoid_senses", "arcane_senses"):
+        assert not catalog.get_sense_profile(shared).night_vision
+    for species_id in ("slime", "spirit"):
+        assert not catalog.get_sense_profile(catalog.get_species(species_id).sense_profile).night_vision
+
+
+def test_species_with_no_resolvable_profile_is_a_typed_error(catalog):
+    gate = PerceptionGate(catalog)
+    species = catalog.get_species("human")
+    broken = species.model_copy(update={"sense_profile": "nope"})
+    catalog.species["human"] = broken
+    try:
+        with pytest.raises(SenseProfileError):
+            gate._load_sense_strengths(_body("human"))
+    finally:
+        catalog.species["human"] = species
+
+
+# --- signals follow the body --------------------------------------------------------------------------------------------------------
+
+@pytest.mark.parametrize("species_id,visibility", [("goblin", "low"), ("human", "medium"), ("troll", "high")])
+def test_visibility_follows_size(catalog, species_id, visibility):
+    body = catalog.get_body_model(catalog.get_species(species_id).body_model)
+    assert emitted_signals(_body(species_id), body, TICK)["visibility"] == visibility
+
+
+def test_noise_and_vibration_follow_activity(catalog):
+    body = catalog.get_body_model(catalog.get_species("human").body_model)
+    for kwargs, level in (({"last_moved_tick": TICK - 1}, "medium"), ({}, "low"), ({"asleep": True}, "very_low"), ({"lodged": True, "last_moved_tick": TICK - 1}, "very_low")):
+        sig = emitted_signals(_body("human", **kwargs), body, TICK)
+        assert sig["noise"] == sig["vibration"] == level, kwargs
+
+
+def test_scent_and_life_for_the_living_none_for_undead_and_spirit(catalog):
+    human = emitted_signals(_body("human"), catalog.get_body_model(catalog.get_species("human").body_model), TICK)
+    assert human["scent"] == human["life_signal"] == "medium"
+    for species_id in ("undead", "spirit"):
+        sig = emitted_signals(_body(species_id), catalog.get_body_model(catalog.get_species(species_id).body_model), TICK)
+        assert sig["life_signal"] == "none", species_id
+        assert sig["scent"] == "medium"
+
+
+def test_a_body_not_in_content_keeps_the_old_default_visibility():
+    assert emitted_signals(_body("fixture_species"), None, TICK)["visibility"] == "medium"
+
+
+# --- night: vision counts two levels lower unless the profile declares night vision -----------------------------------------------------
+
+def test_lower_level_steps_down_the_ladder_and_floors_at_none():
+    assert _lower_level("medium", NIGHT_VISION_STEPS) == "low"
+    assert _lower_level("high", NIGHT_VISION_STEPS) == "medium"
+    assert _lower_level("very_low", NIGHT_VISION_STEPS) == "none"
+    assert _lower_level("none", NIGHT_VISION_STEPS) == "none"
+    assert _lower_level(None, NIGHT_VISION_STEPS) is None
+
+
+def test_night_hides_a_target_from_a_day_eyed_kind_but_not_from_a_night_sighted_one(catalog):
+    gate = PerceptionGate(catalog)
+    signals = {"visibility": "medium"}
+    ctx = {"distance": 5.0}
+    assert gate.can_perceive(_body("human"), signals, {**ctx, "night": False}).perceived
+    assert not gate.can_perceive(_body("human"), signals, {**ctx, "night": True}).perceived
+    assert gate.can_perceive(_body("goblin"), signals, {**ctx, "night": True}).perceived
+    assert gate.can_perceive(_body("troll"), signals, {**ctx, "night": True}).perceived
+    assert not gate.can_perceive(_body("elf"), signals, {**ctx, "night": True}).perceived
+
+
+def test_night_changes_vision_only(catalog):
+    gate = PerceptionGate(catalog)
+    ctx = {"distance": 5.0, "reach": 5.0}
+    day = gate.can_perceive(_body("wolf"), {"scent": "medium"}, {**ctx, "night": False})
+    night = gate.can_perceive(_body("wolf"), {"scent": "medium"}, {**ctx, "night": True})
+    assert day.perceived and day.signals_used == ["scent"]
+    assert night == day  # smell is unchanged by night; only vision steps down
+
+
+# --- P3: a granted perception always scored at or above the threshold --------------------------------------------------------------
+
+def test_no_perception_is_granted_below_the_threshold_on_a_grid(catalog):
+    gate = PerceptionGate(catalog)
+    levels = [k for k in _LEVEL_TO_FLOAT]
+    for species_id in catalog.species:
+        for level in levels:
+            for distance in (0.0, 3.0, 10.0, 25.0):
+                for night in (False, True):
+                    res = gate.can_perceive(_body(species_id), {"visibility": level, "noise": level, "scent": level, "vibration": level},
+                                            {"distance": distance, "night": night})
+                    if res.perceived:
+                        assert res.confidence >= _PERCEPTION_THRESHOLD, (species_id, level, distance, night)
+                    else:
+                        assert res.confidence == 0.0
+
+
+# --- a gate error is not perception ---------------------------------------------------------------------------------------------------
+
+def test_a_gate_error_is_not_perception_and_is_logged_at_error(monkeypatch, caplog):
+    from src.engine import appraisal
+    from src.core.builder import V2EntityBuilder
+
+    def boom(*a, **k):
+        raise RuntimeError("gate down")
+
+    monkeypatch.setattr(appraisal, "get_perception_gate", lambda: SimpleNamespace(can_perceive=boom))
+    a = V2EntityBuilder(1).kind("human").location(0.0, 0.0).build()
+    b = V2EntityBuilder(2).kind("human").location(1.0, 0.0).build()
+    with caplog.at_level(logging.ERROR, logger="src.engine.appraisal"):
+        assert appraisal.perceives(a, b, night=False, tick=None) is False
+    assert any(r.levelno == logging.ERROR and "perception gate error" in r.getMessage() for r in caplog.records)
+
+
+# --- binding rule: perception reads the species, never `kind` ----------------------------------------------------------------------------
+
+def test_perception_modules_read_no_kind():
+    src = Path(__file__).resolve().parents[3] / "src"
+    for rel in ("world/perception/gate.py", "engine/perception_signals.py", "content/species_senses.py"):
+        text = (src / rel).read_text(encoding="utf-8")
+        assert not re.search(r"\.kind\b", text), rel
+    assert "species_of" in (src / "world" / "perception" / "gate.py").read_text(encoding="utf-8")
+
+
+def test_a_body_model_may_declare_a_magic_signal_and_only_known_keys_and_levels():
+    from src.content.schema import BodyModelDefinition
+    body = BodyModelDefinition(id="b", display_name="B", signals={"magic": "very_high", "visibility": "none"})
+    sig = emitted_signals(_body("fixture_species"), body, TICK)
+    assert sig["magic_signal"] == "very_high" and sig["visibility"] == "none"
+    for bad in ({"smell": "low"}, {"magic": "enormous"}):
+        with pytest.raises(ValueError):
+            BodyModelDefinition(id="b", display_name="B", signals=bad)
+
+
+# --- the build paths refuse what the gate would not profile: ONE resolver (src.content.species_senses) --------------------------------------
+
+@pytest.fixture()
+def broken_human(catalog):
+    """The module catalog installed as the warmed one the build paths read, with `human` declaring a sense profile that does not exist."""
+    from src.engine.behavior_consumers import configure_behavior_consumers, reset_behavior_consumers
+    human = catalog.species["human"]
+    catalog.species["human"] = human.model_copy(update={"sense_profile": "nope"})
+    configure_behavior_consumers(catalog)
+    try:
+        yield
+    finally:
+        catalog.species["human"] = human
+        reset_behavior_consumers()
+
+
+@pytest.fixture()
+def good_catalog(catalog):
+    from src.engine.behavior_consumers import configure_behavior_consumers, reset_behavior_consumers
+    configure_behavior_consumers(catalog)
+    try:
+        yield catalog
+    finally:
+        reset_behavior_consumers()
+
+
+def test_the_shared_resolver_returns_the_species_profile_and_refuses_the_rest(good_catalog):
+    from src.content.species_senses import require_species_sense_profile, species_sense_profile
+    assert require_species_sense_profile("troll", "test").id == "troll_senses"
+    assert species_sense_profile(good_catalog, "no_such_species") is None  # the gate counts this as unprofiled
+    for bad in ("no_such_species", None, ""):
+        with pytest.raises(SenseProfileError):
+            require_species_sense_profile(bad, "test")
+
+
+def test_the_gate_and_the_build_paths_read_the_same_profile(good_catalog):
+    from src.content.species_senses import require_species_sense_profile
+    gate = PerceptionGate(good_catalog)
+    for species_id in good_catalog.species:
+        assert gate._load_sense_strengths(_body(species_id))[1] == require_species_sense_profile(species_id, "test").id
+
+
+def test_archetype_path_refuses_a_content_species_without_a_usable_profile(broken_human):
+    from src.entities.archetype_factory import ArchetypeEntityFactory, EntitySpawnContext, require_archetype_senses
+    from src.entities.runtime_contract import ResolvedEntityRuntimeContract
+    contract = ResolvedEntityRuntimeContract(
+        archetype_id="human_worker", species_id="human", faction_id="town_council", role_id="worker", kind="humanoid", hp=80, max_hp=80, atk=8, def_stat=4,
+        attack_range=1, readiness=100.0, inventory_items={}, starting_gold=0.0, traits=(), themes=())
+    with pytest.raises(SenseProfileError):
+        require_archetype_senses(contract)
+    with pytest.raises(SenseProfileError):
+        ArchetypeEntityFactory().build_entity(1, contract, EntitySpawnContext())
+
+
+def test_archetype_helper_accepts_a_species_with_a_profile(good_catalog):
+    from src.entities.archetype_factory import require_archetype_senses
+    from src.entities.runtime_contract import ResolvedEntityRuntimeContract
+    contract = ResolvedEntityRuntimeContract(
+        archetype_id="human_worker", species_id="human", faction_id="town_council", role_id="worker", kind="humanoid", hp=80, max_hp=80, atk=8, def_stat=4,
+        attack_range=1, readiness=100.0, inventory_items={}, starting_gold=0.0, traits=(), themes=())
+    require_archetype_senses(contract)
+
+
+def test_legacy_spawn_path_refuses_a_species_without_a_usable_profile(broken_human):
+    from src.entities.archetype_factory import EntitySpawnContext
+    from src.worldassembly.entity_spawner import WorldEntitySpawner
+    from src.worldassembly.models import ResolvedEntityProfile
+    from src.core.enums import EntityRole, Faction
+    profile = ResolvedEntityProfile(legacy_role=int(EntityRole.HERO), legacy_faction=int(Faction.HERO_GUILD), hp=10, max_hp=10, atk=1, def_stat=1, attack_range=1, readiness=1.0,
+                                    inventory_seed="0", cognition_seed="0", spawn_position=(1.0, 1.0), species_id="human")
+    with pytest.raises(SenseProfileError):
+        WorldEntitySpawner()._spawn_legacy_guard(1, profile, EntitySpawnContext(position=(1.0, 1.0)), 42)
+
+
+def test_compile_path_refuses_a_content_species_without_a_usable_profile(broken_human):
+    from src.worldbuilding.compiler import WorldCompiler
+    from src.worldbuilding.repository import WorldRepository
+    spec, context = WorldRepository("data/worlds").load_world_with_context("urban_political")
+    with pytest.raises(SenseProfileError):
+        WorldCompiler.compile(spec, 42, context=context)
+
+
+# --- the compile check is one helper: the diet declaration is checked first, then the sense profile ---------------------------------------------
+
+def test_a_population_failing_both_declarations_raises_the_diet_error_first():
+    """An unknown species fails the diet declaration AND the sense profile; the diet error (InvalidWorldSpecError) is the one raised."""
+    from types import SimpleNamespace
+    from src.worldbuilding.diet_declaration import require_declared_population_species
+    from src.worldbuilding.schema import InvalidWorldSpecError
+    from src.content.species_senses import require_species_sense_profile
+    pop = SimpleNamespace(role="merchant", faction="merchant_league")
+    with pytest.raises(SenseProfileError):
+        require_species_sense_profile("no_such_species_xyz", "w1")  # the sense check alone would refuse it too
+    with pytest.raises(InvalidWorldSpecError) as err:
+        require_declared_population_species("w1", "p", pop, "no_such_species_xyz")
+    assert not isinstance(err.value, SenseProfileError)
+    assert "w1" in str(err.value) and "'p'" in str(err.value) and "does not declare" in str(err.value)
+    with pytest.raises(InvalidWorldSpecError, match="no species"):
+        require_declared_population_species("w1", "p", pop, None)
+
+
+def test_a_population_with_a_diet_but_no_usable_profile_raises_the_sense_error(broken_human):
+    """With the diet declared, the second check runs: a typed SenseProfileError naming the species and the dangling profile."""
+    from types import SimpleNamespace
+    from src.worldbuilding.diet_declaration import require_declared_population_species
+    pop = SimpleNamespace(role="merchant", faction="merchant_league")
+    with pytest.raises(SenseProfileError) as err:
+        require_declared_population_species("w1", "p", pop, "human")
+    assert "'human'" in str(err.value) and "no usable sense profile" in str(err.value)  # a content species with a dangling profile; the unnamed-species case carries the world and population
+
+
+# --- touch (rpg-designer ruling 2026-11-18): a body at Chebyshev distance <= 1 is felt, needing no light, movement or profile entry ----------
+
+STILL_SMALL = {"visibility": "low", "noise": "low", "scent": "medium", "life_signal": "medium", "vibration": "low"}
+STILL_MEDIUM = {**STILL_SMALL, "visibility": "medium"}
+
+
+def test_touch_at_distance_one_at_night_of_a_still_small_body_by_an_unprofiled_observer(catalog):
+    result = PerceptionGate(catalog).can_perceive(_body("not_in_content_kind"), STILL_SMALL, {"distance": 1.0, "reach": 1.0, "night": True})
+    assert result.perceived and result.signals_used == ["touch"] and result.confidence == 1.0
+    assert result.profile_source == "baseline_humanoid"
+
+
+def test_touch_reaches_the_diagonal_through_the_callers_chebyshev_reach(catalog):
+    gate = PerceptionGate(catalog)
+    diagonal = {"distance": 2.0, "reach": 1.0, "night": True}  # Manhattan 2, Chebyshev 1
+    assert gate.can_perceive(_body("not_in_content_kind"), STILL_SMALL, diagonal).signals_used == ["touch"]
+    assert not gate.can_perceive(_body("not_in_content_kind"), STILL_SMALL, {"distance": 2.0, "night": True}).perceived  # no reach given: no touch
+
+
+def test_a_still_medium_body_two_tiles_away_at_night_is_still_not_perceived(catalog):
+    result = PerceptionGate(catalog).can_perceive(_body("not_in_content_kind"), STILL_MEDIUM, {"distance": 2.0, "reach": 2.0, "night": True})
+    assert not result.perceived and result.signals_used == []
+
+
+def test_touch_adds_no_score_to_a_by_day_vision_pair(catalog):
+    gate = PerceptionGate(catalog)
+    far = gate.can_perceive(_body("not_in_content_kind"), STILL_MEDIUM, {"distance": 2.0, "reach": 2.0})
+    assert far.signals_used == ["visibility"] and far.confidence == pytest.approx(0.6 * 0.6 * (1 - 0.02 * 2) * 0.75)
+    near = gate.can_perceive(_body("not_in_content_kind"), STILL_MEDIUM, {"distance": 1.0, "reach": 1.0})
+    assert near.signals_used == ["visibility", "touch"] and near.confidence == pytest.approx(0.6 * 0.6 * (1 - 0.02) * 0.75)
+
+
+def test_touch_is_felt_by_every_content_species(catalog):
+    gate = PerceptionGate(catalog)
+    for species_id in catalog.species:
+        assert "touch" in gate.can_perceive(_body(species_id), {}, {"distance": 1.0, "reach": 1.0, "night": True}).signals_used, species_id
+
+
+def test_chebyshev_tile_distance_counts_a_diagonal_as_one():
+    from src.engine.tile_distance import chebyshev_tile_distance
+    assert chebyshev_tile_distance((0.0, 0.0), (1.0, 1.0)) == 1
+    assert chebyshev_tile_distance((0.0, 0.0), (2.0, 0.0)) == 2
+    assert chebyshev_tile_distance((3.9, 0.1), (3.0, 1.0)) == 1
+
+
+def test_the_callers_hand_the_gate_the_chebyshev_reach():
+    from src.core.builder import V2EntityBuilder
+    from src.engine.appraisal import perceives
+
+    def at(eid, x, y):
+        return V2EntityBuilder(eid).kind("not_in_content_kind").location(float(x), float(y)).combat(hp=10, max_hp=10, alive=True).lifecycle(active=True).build()
+
+    me = at(1, 0, 0)
+    assert perceives(me, at(2, 1, 1), night=True, tick=None)  # the diagonal neighbour is touched
+    assert not perceives(me, at(3, 2, 0), night=True, tick=None)
+
+
+def test_the_gate_error_path_is_unchanged_by_touch(catalog, caplog):
+    from src.core.builder import V2EntityBuilder
+    from src.engine import appraisal
+
+    def at(eid, x, y):
+        return V2EntityBuilder(eid).kind("not_in_content_kind").location(float(x), float(y)).combat(hp=10, max_hp=10, alive=True).lifecycle(active=True).build()
+
+    class Boom:
+        def can_perceive(self, *a, **k):
+            raise RuntimeError("boom")
+
+    import pytest as _p
+    with _p.MonkeyPatch.context() as mp:
+        mp.setattr(appraisal, "get_perception_gate", lambda: Boom())
+        with caplog.at_level(logging.ERROR):
+            assert appraisal.perceives(at(1, 0, 0), at(2, 1, 0), night=False, tick=None) is False  # adjacent, and still not perceived: a gate error is not perception
+    assert any("perception gate error" in r.message for r in caplog.records)
+
+
+def test_a_context_without_reach_gets_no_touch_and_the_old_score(catalog):
+    """A forgotten `reach` never means "always perceived": at distance 1 with no reach the channel list and the score are exactly the pre-touch ones (bca3b3971)."""
+    gate = PerceptionGate(catalog)
+    still_small = gate.can_perceive(_body("not_in_content_kind"), STILL_SMALL, {"distance": 1.0, "night": True})
+    assert not still_small.perceived and still_small.signals_used == [] and still_small.confidence == 0.0
+    medium_day = gate.can_perceive(_body("not_in_content_kind"), STILL_MEDIUM, {"distance": 1.0})
+    assert medium_day.signals_used == ["visibility"] and medium_day.confidence == pytest.approx(0.6 * 0.6 * (1 - 0.02) * 0.75)
+    assert gate.can_perceive(_body("not_in_content_kind"), STILL_SMALL, {}).signals_used == []  # the default distance of 1.0 gives no touch either
+
+
+# --- moving vs still is the step clock (rpg-designer 2026-11-18): navigation.last_moved_tick, relative to the caller's tick --------------------------
+
+def _noise(**kwargs):
+    from src.engine.perception_signals import MOVING_WINDOW  # noqa: F401  (named so a reader finds the constant)
+    return emitted_signals(_body("human", **kwargs), None, TICK)["noise"]
+
+
+def test_a_body_that_stepped_one_tick_ago_reads_moving():
+    assert _noise(last_moved_tick=TICK - 1) == "medium"
+    assert emitted_signals(_body("human", last_moved_tick=TICK - 1), None, TICK)["vibration"] == "medium"
+
+
+def test_a_body_that_stood_past_the_moving_window_reads_still():
+    from src.engine.perception_signals import MOVING_WINDOW
+    assert _noise(last_moved_tick=TICK - MOVING_WINDOW) == "medium"          # the last tick of the window still counts
+    assert _noise(last_moved_tick=TICK - MOVING_WINDOW - 1) == "low"         # stood MOVING_WINDOW + 1 ticks: still
+    assert _noise(last_moved_tick=TICK - 10) == "low"
+
+
+def test_a_body_that_never_stepped_reads_still_and_so_does_a_caller_with_no_tick():
+    assert _noise() == "low" and _noise(last_moved_tick=None) == "low"
+    assert emitted_signals(_body("human", last_moved_tick=TICK - 1), None)["noise"] == "low"       # no tick to date the step against: still, never moving by default
+
+
+def test_the_moving_window_is_a_named_provisional_constant():
+    from src.engine import perception_signals
+    assert perception_signals.MOVING_WINDOW == 3
+
+
+def _step_world(tick=7):
+    from src.core.builder import V2EntityBuilder
+    from src.core.enums import EntityRole, Faction
+    from src.core.state import AuthoritativeState
+
+    def make(eid, pos):
+        return (V2EntityBuilder(eid).kind("human").location(*pos).identity(role=EntityRole.HERO, faction=Faction.HERO_GUILD)
+                .combat(hp=10, max_hp=10, alive=True, readiness=100.0).lifecycle(active=True).build())
+
+    walker, other = make(1, (5.0, 5.0)), make(2, (6.0, 5.0))
+    return AuthoritativeState(tick=tick, seed=1, world_time=tick, entities={1: walker, 2: other}), walker, other
+
+
+def test_a_successful_step_writes_last_moved_tick_at_the_steps_tick():
+    from src.engine.movement import MovementSystem
+    state, walker, _ = _step_world(tick=7)
+    update = MovementSystem.resolve_move(state, walker, (5.0, 6.0))[walker.id]
+    assert update.moved_this_tick and update.new_position == (5.0, 6.0)
+    assert update.navigation.last_moved_tick_set == 7
+
+
+def test_a_move_that_changes_no_position_writes_no_last_moved_tick():
+    from src.engine.movement import MovementSystem
+    state, walker, _ = _step_world(tick=7)
+    update = MovementSystem.resolve_move(state, walker, walker.navigation.position)[walker.id]      # its own tile: nothing to step to
+    assert update.navigation.last_moved_tick_set is None
+
+
+def test_a_yield_displaces_the_occupant_and_stamps_last_moved_tick():
+    from dataclasses import replace
+    from src.core.enums import EntityRole
+    from src.engine.movement import MovementSystem
+    state, walker, other = _step_world(tick=7)
+    occupant = replace(other, identity=replace(other.identity, role=EntityRole.MONSTER), navigation=replace(other.navigation, position=(5.0, 6.0)))
+    state = replace(state, entities={1: walker, 2: occupant})
+    update = MovementSystem._yield_update(walker, (5.0, 6.0), state, 7)      # the hero outranks the monster standing on its target tile
+    assert update is not None and update.entity_id == 2 and update.new_position != (5.0, 6.0)
+    assert update.navigation.last_moved_tick_set == 7      # a yield is a move by the movement apply path: the displaced body made noise (rpg-designer 2026-11-18)
+
+
+def test_only_the_movement_apply_path_writes_the_step_clock():
+    """The writers of last_moved_tick_set in src: the step and the yield displacement in movement.py and the swap builder in the movement phase (any position change by the movement apply path)."""
+    root = Path(__file__).resolve().parents[3] / "src"
+    writers = sorted(str(p.relative_to(root)) for p in root.rglob("*.py") if "last_moved_tick_set=" in p.read_text() and p.name != "updates.py")
+    assert writers == ["engine/movement.py", "engine/pipeline_phases/movement.py"]
+    movement = (root / "engine" / "movement.py").read_text()
+    yield_block = movement[movement.index("def _yield_update"):movement.index("def _step_ready_tick")]
+    assert "last_moved_tick_set=current_tick" in yield_block
+
+
+def test_the_step_clock_survives_apply_and_a_later_position_move():
+    from src.core.state import AuthoritativeState  # noqa: F401
+    from src.core.updates import EntityUpdate, NavigationUpdate, StateUpdate
+    from src.engine.apply import ApplyPath
+    state, walker, _ = _step_world(tick=7)
+    stepped = ApplyPath.apply_generation(state, StateUpdate(entity_updates={1: EntityUpdate(
+        entity_id=1, new_position=(5.0, 6.0), moved_this_tick=True, navigation=NavigationUpdate(last_moved_tick_set=7))}))
+    assert stepped.entities[1].navigation.last_moved_tick == 7 and stepped.entities[1].navigation.position == (5.0, 6.0)
+    carried = ApplyPath.apply_generation(stepped, StateUpdate(entity_updates={1: EntityUpdate(entity_id=1, new_position=(5.0, 7.0), moved_this_tick=True)}))
+    assert carried.entities[1].navigation.last_moved_tick == 7      # a move that names no step tick carries the last one
+    assert NavigationUpdate(last_moved_tick_set=7).merge(NavigationUpdate()).last_moved_tick_set == 7
+    assert not NavigationUpdate(last_moved_tick_set=0).is_noop()
+
+
+# --- every production caller dates its signals: the tick reaches emitted_signals (rpg-designer 2026-11-18, C2) ----------------------------------
+
+# function name -> the index of its `tick` among the positional arguments (a call may also name it `tick=`)
+_TICK_POSITION = {
+    "emitted_signals": 2, "get_entity_signals": 1, "perceives": 3, "appraise": 3, "relation": 4, "faction_hostile": 4, "perceived_hostile": 4,
+    "classify_neighbours": 4, "_has_tactical_hostiles": 3, "unengaged_adjacent_hostile": 4, "attack_allowed": 3, "_adjacent_hostile": 4, "_prey_in_sight": 3, "_need_path_first": 2,
+}
+# The only production caller that passes no tick, so every body it looks at reads STILL. 02b migrates it onto perceived_neighbours and removes this list.
+_UNDATED_UNTIL_02B = {
+    ("engine/candidate_selector.py", "engaged_adjacent_hostile"),         # the movement layer's engaged-adjacent test: it passes reach (derived from positions in appraisal.perceives) but no tick or night
+}
+
+
+def test_every_production_caller_of_the_signal_chain_passes_a_tick():
+    import ast
+    root = Path(__file__).resolve().parents[3] / "src"
+    undated = set()
+    for path in sorted(root.rglob("*.py")):
+        tree = ast.parse(path.read_text())
+        for fn in [n for n in ast.walk(tree) if isinstance(n, (ast.FunctionDef, ast.AsyncFunctionDef))]:
+            for call in [c for c in ast.walk(fn) if isinstance(c, ast.Call)]:
+                name = call.func.id if isinstance(call.func, ast.Name) else (call.func.attr if isinstance(call.func, ast.Attribute) else None)
+                if name not in _TICK_POSITION or fn.name == name:
+                    continue
+                if any(k.arg == "tick" for k in call.keywords) or len(call.args) > _TICK_POSITION[name]:
+                    continue
+                undated.add((str(path.relative_to(root)), fn.name))
+    assert undated <= _UNDATED_UNTIL_02B, f"production callers that read every body as still (give them state.tick): {sorted(undated - _UNDATED_UNTIL_02B)}"

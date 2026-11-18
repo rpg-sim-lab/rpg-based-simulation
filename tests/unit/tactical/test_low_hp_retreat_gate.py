@@ -100,7 +100,7 @@ def _prey_scene(monkeypatch, hunger=80.0, hp=8, prey_dx=1.0):
     person = replace(_at(base, 30.0, 30.0), biological=replace(base.biological, hunger=hunger, sleep_debt=0.0),
                      combat=replace(base.combat, hp=hp, max_hp=85))
     prey = _at(herd, 30.0 + prey_dx, 30.0)
-    assert relation(person, prey) is Relation.PREDATION, "the fixture must make the herd the person's prey"
+    assert relation(person, prey, night=False, tick=None) is Relation.PREDATION, "the fixture must make the herd the person's prey"
     person = _with_project(person, "hunger", ObjectiveKind.REACH_LOCATION, prey)
     state = replace(world, entities={person.id: person, prey.id: prey}, tick=world.tick + 1)
     return TacticalDecisionSystem.evaluate_entity_intent(state, person), person

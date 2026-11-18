@@ -9,7 +9,7 @@ from src.core.state import AuthoritativeState, RegionState
 from src.engine.legality import LegalityServiceV2
 from src.engine.positioning import PositioningService
 from src.core.region_resolution import is_inside_world, world_extent
-from src.engine.tactical import _target_still_perceived
+from src.engine.appraisal import perceives
 from src.observability.hard_law_monitor import HardLawMonitor
 
 
@@ -70,8 +70,8 @@ def test_a_held_pursuit_target_is_kept_in_view_and_let_go_beyond_it():
     chaser = V2EntityBuilder(1).location(40.0, 30.0).build()
     near = V2EntityBuilder(2).location(42.0, 30.0).build()
     far = V2EntityBuilder(3).location(40.0, 3000.0).build()
-    assert _target_still_perceived(chaser, near)
-    assert not _target_still_perceived(chaser, far)
+    assert perceives(chaser, near, night=False, tick=None)
+    assert not perceives(chaser, far, night=False, tick=None)
 
 
 def test_a_slotted_context_without_the_cache_slot_still_has_an_extent():

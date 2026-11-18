@@ -70,7 +70,7 @@ class CognitionGraphExporter:
             nodes.append(CognitionGraphNode(
                 id=p.id, kind="project",
                 label=f"{p.kind} ({p.status.value})",
-                attributes={"score": p.score, "status": p.status.value, **({"ended_by": p.ended_by.value} if p.ended_by is not None else {}), **({"cleared_since": p.cleared_since} if p.cleared_since is not None else {})}
+                attributes={"score": p.score, "status": p.status.value, **({"ended_by": p.ended_by.value} if p.ended_by is not None else {}), **({"cleared_since": p.cleared_since} if p.cleared_since is not None else {}), **({"suspended_since": p.suspended_since} if p.suspended_since is not None else {})}
             ))
             # Link objectives
             for obj in p.objectives:
@@ -94,7 +94,7 @@ class CognitionGraphExporter:
             nodes.append(CognitionGraphNode(
                 id=b.id, kind="blocker",
                 label=f"{b.kind}: {b.subject}",
-                attributes={"severity": b.severity, "resolved": b.resolved}
+                attributes={"severity": b.severity, "resolved": b.resolved, **({"suppression_until_tick": b.suppression_until_tick} if b.suppression_until_tick else {}), **({"failure_count": b.failure_count} if b.failure_count else {}), **({"last_seen_tick": b.last_seen_tick} if b.last_seen_tick is not None else {})}
             ))
 
         # Leads

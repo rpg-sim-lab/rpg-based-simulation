@@ -202,7 +202,7 @@
   display_name: "Troll"
   body_model: "large_humanoid"
   need_profile: "humanoid_survival"
-  sense_profile: "normal_humanoid_senses"
+  sense_profile: "troll_senses"
   cognition_profile: "instinctive_animal"
   intelligence_tier: "low"
   drive_profile: "territorial_predator"

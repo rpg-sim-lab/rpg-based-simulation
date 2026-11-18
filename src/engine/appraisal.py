@@ -6,6 +6,7 @@ role, a trait list or a predator/prey label, and none mutates state. Constants l
 """
 from __future__ import annotations
 
+import logging
 from enum import Enum
 from typing import TYPE_CHECKING, Optional
 
@@ -18,7 +19,9 @@ from src.engine.behavior_consumers import (
     get_kind_properties,
     get_perception_gate,
 )
-from src.engine.tile_distance import manhattan_tile_distance
+from src.engine.tile_distance import chebyshev_tile_distance, manhattan_tile_distance
+
+logger = logging.getLogger(__name__)
 
 if TYPE_CHECKING:
     from src.core.state import EntityState
@@ -41,17 +44,20 @@ class Relation(str, Enum):
     NONE = "NONE"
 
 
-def perceives(entity: "EntityState", other: "EntityState") -> bool:
-    """True when ``entity`` perceives the living ``other`` through the perception gate."""
+def perceives(entity: "EntityState", other: "EntityState", *, night: bool, tick: Optional[int]) -> bool:
+    """True when ``entity`` perceives the living ``other`` through the perception gate. ``night`` (the caller's ``is_night(state.world_time)``) lowers vision two levels
+    for a kind whose senses do not declare night vision (PERC-02). A gate error is NOT perception: it is logged at ERROR and the other is not perceived."""
     if not other.combat.alive:
         return False
     if entity.navigation.lodged_in is not None or other.navigation.lodged_in is not None:
         return False  # F3 (divergence 2.155): a lodger sees no one outside and is seen by no one outside
     dist = manhattan_tile_distance(entity.navigation.position, other.navigation.position)
+    reach = chebyshev_tile_distance(entity.navigation.position, other.navigation.position)
     try:
-        return bool(get_perception_gate().can_perceive(entity, get_entity_signals(other), {"distance": float(dist)}).perceived)
-    except (AttributeError, KeyError, TypeError, ValueError, RuntimeError):
-        return True  # gate failure: permissive fallback, as the tactical pass has always done
+        return bool(get_perception_gate().can_perceive(entity, get_entity_signals(other, tick), {"distance": float(dist), "reach": float(reach), "night": night}).perceived)
+    except Exception:  # noqa: BLE001 - a gate error is not perception (PERC-02); it must be seen in the log, never swallowed
+        logger.error("perception gate error: entity %s toward %s", entity.id, other.id, exc_info=True)
+        return False
 
 
 def can_eat(eater: "EntityState", other: "EntityState") -> bool:
@@ -118,9 +124,9 @@ def _coming_for(other: "EntityState", entity: "EntityState") -> bool:
     return _distance(entity, other) < before
 
 
-def appraise(entity: "EntityState", other: "EntityState") -> Relation:
+def appraise(entity: "EntityState", other: "EntityState", *, night: bool, tick: Optional[int]) -> Relation:
     """The non-faction relation of ``entity`` toward the perceived ``other``: PREDATION, THREATENING, WARY or NONE."""
-    if entity.id == other.id or not perceives(entity, other):
+    if entity.id == other.id or not perceives(entity, other, night=night, tick=tick):
         return Relation.NONE
     # Cheapest gate first; the KNOW-04 capability estimate runs only when every cheaper gate has passed.
     if can_eat(entity, other) and entity.biological.hunger >= HUNT_HUNGER and can_overcome(entity, other):

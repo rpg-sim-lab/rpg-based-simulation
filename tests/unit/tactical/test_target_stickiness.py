@@ -6,6 +6,7 @@ from src.core.state import AuthoritativeState, EntityState, TaskComponent
 from src.core.updates import EntityUpdate, TaskUpdate
 from src.engine.tactical import TacticalDecisionSystem
 from src.core.enums import EntityRole, Faction
+from tests.helpers.clock import DAY_WORLD_TIME
 
 def make_entity(eid: int, pos: tuple[float, float], faction: Faction = Faction.HERO_GUILD):
     return (
@@ -57,7 +58,7 @@ def test_target_stickiness_breaks_on_death():
     target1_dead = replace(target1, combat=replace(target1.combat, hp=0, alive=False))
     target2 = make_entity(3, pos=(5, 0), faction=Faction.MONSTER_HORDE)
     
-    state = AuthoritativeState(
+    state = AuthoritativeState(world_time=DAY_WORLD_TIME, 
         tick=10,
         seed=1,
         entities={1: attacker, 2: target1_dead, 3: target2}
