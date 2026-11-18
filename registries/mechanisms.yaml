@@ -3708,6 +3708,7 @@ mechanisms:
     state: partial
     implemented_by:
       - src/world/risen.py::RisenService
+      - src/world/risen.py::rise_triggers_phase
       - src/entities/archetype_factory.py::ArchetypeEntityFactory::build_risen
       - src/core/spawn_source.py::SpawnSource
     verified:
@@ -3716,7 +3717,7 @@ mechanisms:
       date: "2026-11-18"
       note: >-
         TCK-20261109-M1-BASIC-WILD-BIRTHS-FOR-EVERY-LIVING-KIND. A corpse a declared kind's risen profile names as a source may rise as a NEW subject (STR-02): RisenService.process_rises runs as the end sub-step of the resource_transactions
-        phase (after the post-transfer outcome, so a corpse looted or eaten that tick does not rise), on the `cadence.rises` check (default 30). Partial until the births own-job instrument gives runtime evidence (rows R1-R4);
+        phase (after the post-transfer outcome, so a corpse looted or eaten that tick does not rise), on the `cadence.rises` check (default 30). `rise_triggers_phase` (risen.py, a pure state read: absolute tick on `cadence.rises` and a non-empty `state.corpses`) is called from `phase_graph.py`, which stays unbound shared scheduling config like `lodging_triggers_phase`; it makes the phase run on a rise check when the dirty set would have skipped it. Partial until the births own-job instrument gives runtime evidence (rows R1-R4);
         code_trace alone does not support done.
 
   - id: corpse_goods_conservation
