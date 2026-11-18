@@ -2,7 +2,6 @@
 """The births own-job instrument: its mechanical aggregations and the two positive controls (one known birth applies +1 to its region; one known combat death appears once)."""
 import dataclasses
 
-import pytest
 
 from src.core.builder import V2EntityBuilder
 from src.core.death_cause import DeathCause, DeathRecord
@@ -28,6 +27,15 @@ class _Certain:
         return getattr(self._real, name)
 
 
+def _due(entity, father_id=2, due_tick=30, litter=1):
+    """`entity` as a mother due at `due_tick`: a births check at that tick bears her litter."""
+    from src.core.pregnancy import PregnancyState
+    from src.systems.lifecycle_systems.genetics import GeneticProfile
+
+    pregnancy = PregnancyState(father_entity_id=father_id, conceived_tick=due_tick - 2400, due_tick=due_tick, litter_size=litter, father_genetic_profile=GeneticProfile())
+    return dataclasses.replace(entity, lifecycle=dataclasses.replace(entity.lifecycle, pregnancy=pregnancy))
+
+
 def _generator(state):
     from src.systems.world_systems.generator import EntityGenerator
 
@@ -40,7 +48,7 @@ def test_positive_control_one_known_birth_applies_exactly_plus_one_to_its_region
     real = births.get_catalog()
     monkeypatch.setattr(births, "get_catalog", lambda: _Certain(real))
     region = RegionState(id="town", name="Town", kind="town", bounds=(0, 0, 100, 100), population_cohorts={})
-    state = AuthoritativeState(tick=30, seed=42, regions={"town": region}, entities={1: _human(1), 2: _human(2)}, next_entity_id=3)
+    state = AuthoritativeState(tick=30, seed=42, regions={"town": region}, entities={1: _due(_human(1)), 2: _human(2)}, next_entity_id=3)
     spy = BirthSpy().install()
     try:
         update = births.BirthService.process_births(state, _generator(state))
@@ -59,7 +67,7 @@ def test_a_birth_outside_every_region_is_counted_regionless_with_its_tile_and_wr
     real = births.get_catalog()
     monkeypatch.setattr(births, "get_catalog", lambda: _Certain(real))
     region = RegionState(id="town", name="Town", kind="town", bounds=(0, 0, 10, 10), population_cohorts={})
-    state = AuthoritativeState(tick=30, seed=42, regions={"town": region}, entities={1: _human(1, (50.0, 50.0)), 2: _human(2, (50.0, 50.0))}, next_entity_id=3)
+    state = AuthoritativeState(tick=30, seed=42, regions={"town": region}, entities={1: _due(_human(1, (50.0, 50.0))), 2: _human(2, (50.0, 50.0))}, next_entity_id=3)
     spy = BirthSpy().install()
     try:
         births.BirthService.process_births(state, _generator(state))
