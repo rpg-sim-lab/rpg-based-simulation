@@ -7974,6 +7974,22 @@
   - content
   last_verified: '2026-10-09'
 - type: ticket
+  path: agent-working/tickets/done/TCK-20261118-CHECKLIST-PLACEMENT-PROPOSAL.md
+  ticket_id: TCK-20261118-CHECKLIST-PLACEMENT-PROPOSAL
+  title: 'Proposal: where the lifecycle and clock checklist should sit so it fires
+    on hand-closed tickets (proposal only)'
+  tier: standard
+  ticket_type: chore
+  date: '2026-11-18'
+  related_code_areas:
+  - .github/pull_request_template.md, tools/delivery/pr_render.py, tools/ticket_field_values.py,
+    tools/gate_checks/done_checker_static.py, tools/agent-monitoring/record_hand_orchestrated_closure.py
+  artifact_files:
+  - agent-working/stored_artifacts/TCK-20261118-CHECKLIST-PLACEMENT-PROPOSAL/proposal.md
+  tags:
+  - skills
+  - process-improvement
+- type: ticket
   path: agent-working/tickets/done/TCK-20261118-SIM-ENGINEERING-SKILLS-RESEARCH-PROPOSAL.md
   ticket_id: TCK-20261118-SIM-ENGINEERING-SKILLS-RESEARCH-PROPOSAL
   title: Research and propose domain-specific simulation-engineering skills (research
