@@ -8180,6 +8180,21 @@
   artifact_files: []
   tags: []
 - type: ticket
+  path: agent-working/tickets/todos/TCK-20261118-MID-RUN-SPAWNED-BODIES-SKIP-THE-SENSES-CHECK.md
+  ticket_id: TCK-20261118-MID-RUN-SPAWNED-BODIES-SKIP-THE-SENSES-CHECK
+  title: Bodies spawned mid-run by EntityGenerator (heroes, monsters, offspring, demonic
+    entities) skip PERC-02a's senses check; lairs, bosses and calamities run in M1
+    cells
+  tier: standard
+  ticket_type: bug
+  date: '2026-11-18'
+  related_code_areas:
+  - src/systems/world_systems/generator.py (EntityGenerator)
+  - 'its callers: creature_territory.py, boss.py, calamity.py, certification/scenarios.py'
+  - src/content/species_senses.py
+  artifact_files: []
+  tags: []
+- type: ticket
   path: agent-working/tickets/todos/TCK-20261118-MOVED-RECENTLY-IS-SET-TRUE-ON-THE-FIRST-STEP-AND-NEVER-CLEARED.md
   ticket_id: TCK-20261118-MOVED-RECENTLY-IS-SET-TRUE-ON-THE-FIRST-STEP-AND-NEVER-CLEARED
   title: NavigationComponent.moved_recently becomes True on a body's first step and
