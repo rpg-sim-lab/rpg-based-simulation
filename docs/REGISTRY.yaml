@@ -8172,6 +8172,20 @@
   artifact_files: []
   tags: []
 - type: ticket
+  path: agent-working/tickets/done/TCK-20261117-A-RESOLVE-BLOCKER-PROJECT-IS-RE-CREATED-EVERY-80-TICKS-AND-STALLS-COOPERATION.md
+  ticket_id: TCK-20261117-A-RESOLVE-BLOCKER-PROJECT-IS-RE-CREATED-EVERY-80-TICKS-AND-STALLS-COOPERATION
+  title: In urban_political s42, half the survivors re-create a resolve_blocker project
+    about every 80 ticks after t≈550 (each one times out and is abandoned), and cooperation
+    stops
+  tier: standard
+  ticket_type: bug
+  date: '2026-11-17'
+  related_code_areas:
+  - src/systems/strategic_systems/intelligence.py (the resolve_blocker timeout), the
+    blocker creation paths
+  artifact_files: []
+  tags: []
+- type: ticket
   path: agent-working/tickets/done/TCK-20261117-AN-ENTITY-CARRIES-ITS-OCCUPATION-LABEL-AND-ONE-SPECIES-READ-SPECIES-OF.md
   ticket_id: TCK-20261117-AN-ENTITY-CARRIES-ITS-OCCUPATION-LABEL-AND-ONE-SPECIES-READ-SPECIES-OF
   title: An entity carries its occupation label as its own field, and `species_of`
@@ -8300,20 +8314,6 @@
   related_code_areas:
   - src/engine/patches.py:288, src/systems/strategic_systems/intelligence.py:176-202
     and :495, src/engine/movement.py:362-365 and :456-472
-  artifact_files: []
-  tags: []
-- type: ticket
-  path: agent-working/tickets/todos/TCK-20261117-A-RESOLVE-BLOCKER-PROJECT-IS-RE-CREATED-EVERY-80-TICKS-AND-STALLS-COOPERATION.md
-  ticket_id: TCK-20261117-A-RESOLVE-BLOCKER-PROJECT-IS-RE-CREATED-EVERY-80-TICKS-AND-STALLS-COOPERATION
-  title: In urban_political s42, half the survivors re-create a resolve_blocker project
-    about every 80 ticks after t≈550 (each one times out and is abandoned), and cooperation
-    stops
-  tier: standard
-  ticket_type: bug
-  date: '2026-11-17'
-  related_code_areas:
-  - src/systems/strategic_systems/intelligence.py (the resolve_blocker timeout), the
-    blocker creation paths
   artifact_files: []
   tags: []
 - type: ticket
