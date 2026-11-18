@@ -166,3 +166,89 @@ Spread of the run means: `urban_political` 6.5 %, `crowded_frontier` 7.8 %.
 Cross-check: the pass's share of the tick (19 to 26 %) is close to `resolution_overhead`'s unprofiled share (22 to 28 %), as H5 found (section 3). Method: sampled stacks, no wrapper; `final_integrity` has its own timer on this tree (0.1 ms). `nearest_town_tile` inside the pass is the largest single item named here; that is a finding for rpg through lead-planner, not a fix.
 
 **Limits.** 200 measured ticks after 20 warmup (early ticks; section 7 item 6 still applies to long runs), one seed, PROD_SMALL with the concurrent executor only, one py-spy run per world, `frontier_living_world` unresolved, the host limit above.
+
+## 10. Profile of main `99a83adc9` (`TCK-20261118-PROFILE-MAIN-99A83ADC9-RESOLUTION-OVERHEAD-AND-WALL-CLOCK-PER-1000-TICKS`, 2026-11-18)
+
+**PROVISIONAL, measurement only, no `src/` change.** Tree: `99a83adc9` merged into the perf-planner branch (the branch adds only docs and tickets). Runs: `profile_tick.py --seed 42 --contract pinned`, one at a time under `systemd-run --scope -p MemoryMax=1G -p MemorySwapMax=0 taskset -c 2-3` (CPUs 2-3 because the births lanes use 4-5). Corpus worlds: `--profile PROD_SMALL --warmup 20 --ticks 200`. Synthetic: `--profile PROD_LARGE --warmup 5 --ticks 30`. Python 3.13.7, ubuntu VM, 6 vCPU.
+
+**Host limit: every figure here is from a loaded host.** A births pytest ran throughout (load 1.0 to 1.9, MemAvailable 5.0 GB), against load 0.06 to 0.82 in section 9. Swap-out was logged per run; a run with `so` above 100 pages/s is marked N. Idle seats are not fenced off the CPUs (TCK-20261116-TIMING-RUNS-SHARE-THEIR-CPUS-WITH-IDLE-SEATS), the steal counter read 0 on every run (it cannot see host-side stalls). No figure below is a quiet-host number.
+
+### 10.1 Per-phase ms (R1: 3 runs per gate world, unprofiled)
+
+| world | mean tick, runs 1/2/3 (ms) | spread | noisy runs (swap) | resolution_overhead | advancement | combat_engagement |
+|---|---|---|---|---|---|---|
+| `frontier_living_world` | 48.2 / 44.2 / 49.9 | 13 % | 2 and 3 (so 1942, 306) | 14.5 ms | 8.8 ms | 7.7 ms |
+| `urban_political` | 28.1 / 22.1 / 24.5 | 24 % | none | 6.5 ms | 4.7 ms | 4.2 ms |
+| `crowded_frontier` | 31.7 / 35.1 / 32.4 | 10 % | 1 (so 1830) | 7.2 ms | 6.8 ms | 5.3 ms |
+
+Phase figures are medians of the three runs. All three worlds exceed the 10 % noisy line or sit on it, so **the tick figures are NOISY**, and `crowded_frontier` and `frontier_living_world` read 18 to 28 % above section 9 (26.8 ms; 39 to 58 ms) with the same code in the hot phases. Treat the shares, not the ms, as the result. A quiet-host rerun is owed.
+
+### 10.2 resolution_overhead, broken down (R2: one py-spy run per world, 250 Hz; shares of all samples, 779 / 1444 / 912 samples, so about ±1 point)
+
+`resolution_overhead` (`kernel.py:441`) is Resolution minus the sub-phases the pipeline timed itself. The untimed `run_phase` children of `_phase_resolution` are:
+
+| untimed child (`pipeline.py` line) | urban | frontier_living | crowded |
+|---|---|---|---|
+| `strategic_intelligence` = `fused_strategic_pass` (:394) | 28.4 % | 28.5 % | 21.1 % |
+| `movement_routing` (:301) | 2.7 % | 5.5 % | 5.6 % |
+| `action_routing` (:299) | 2.1 % | 2.6 % | 2.5 % |
+| `compute_common_enemy_pairs` (:268) | 2.4 % | 1.8 % | 2.5 % |
+| `groups` (:412) | 1.9 % | 1.6 % | 1.2 % |
+| `world_dynamics` (:344) | n/a | 5.7 % | 5.0 % |
+
+`resolution_overhead` itself was 26 % / 29 % / 22 % of the tick unprofiled, so the pass is 85 to 100 % of it, as H5 found. Not one of the others is above 6 %. The unnamed remainder is under 10 % of `resolution_overhead`. `combat_engagement` (:322, 15 to 17 %) and `cooperation` (:219, 6 to 8 %) are timed sub-phases and are not part of the overhead.
+
+Inside `fused_strategic_pass`:
+
+| callee | urban | frontier_living | crowded |
+|---|---|---|---|
+| `nearest_town_tile` (`town_targeting.py:16`; of which the key `lambda` at :18) | 15.9 % (10.1 %) | 17.6 % (11.9 %) | 8.2 % (4.8 %) |
+| `evaluate_strategic_intent_with_expiry` (`intelligence.py:1282`) | 3.9 % | 3.7 % | 3.3 % |
+| `enforce_bandwidth` (`detour.py:212, 247`) | 1.2 % | 1.3 % | 2.6 % |
+| `infer_blockers` (`intelligence.py:258`) | 1.2 % | 0.4 % | n/a |
+| pass self time | 2.4 % | 1.8 % | 1.9 % |
+
+`nearest_town_tile` is 39 to 62 % of the pass. It is a `min()` over every town tile, run once per entity (callers: `intelligence.py:397, :674`, `redirection.py:138`), with a Python key lambda; town tiles do not move within a tick.
+
+### 10.3 H1, H2, H3 on `99a83adc9`
+
+| item | share now (urban / frontier_living / crowded) | before | verdict |
+|---|---|---|---|
+| H1 `is_hostile_compat` (all lines) | about 3 % / 3 % / 1.6 % | 10 to 28 % | **gone** (down to a few lines of residue) |
+| H2 `cooperation get_candidates` | about 2.5 % / 1.8 % / 2 % | 10 to 61 % | **gone** |
+| H3 `EventRecorder.record` | about 0.8 % / 0.3 % / 0.4 % | 42.5 % (Oct), 0.69 % (10-22) | **gone**, stays under 1 % |
+
+Shares are summed over the call-site lines and are inclusive (one py-spy run per world), so treat them as upper bounds with a point of noise.
+
+### 10.4 Synthetic scenarios (R3, 2 runs each, 30 ticks after 5 warmup, `PROD_LARGE`)
+
+| scenario | mean tick ms (run 1 / 2) | section 2 (Oct) | top phases (run 1) | note |
+|---|---|---|---|---|
+| `idle_100` | 70 / 61 | 126 | combat_engagement 37 %, resolution_overhead 28 % | |
+| `combat_10` (`--entities 20`) | 44 / 39 | 51 | cooperation 24 %, combat_engagement 23 % | |
+| `mixed_200` | 104 / 137 | 233 | combat_engagement 28 %, resolution_overhead 20 % | spread 31 %, NOISY |
+| `strategic_100` | 201 / 171 | 615 | cooperation 41 %, resolution_overhead 20 % | spread 15 %, NOISY |
+| `movement_100` | 48 / 59 | 160 | combat_engagement 36 %, resolution_overhead 27 % | spread 20 %, NOISY |
+| `movement_500` | 654 / 731 | 1611 | combat_engagement 60 %, advancement 13 % | run 2 swapped (so 32034), NOISY |
+
+Every scenario is 2 to 3.5 times cheaper than in October (the Oct figures are on a different host and venv: indicative only). `combat_engagement` still grows with the population (36 % at 100 entities, 60 % at 500).
+
+### 10.5 Seconds per 1000 ticks (the temporal-scale input)
+
+Only the 200-tick corpus figure exists so far, and section 7 item 6 says early ticks understate a long run. Provisional s per 1000 ticks (mean tick ms, NOISY, loaded host): `frontier_living_world` 44 to 50 (about 200 entities); `urban_political` 22 to 28; `crowded_frontier` 32 to 35 (200 entities each). The 1000-tick runs at two entity counts per world (R4) are not run yet; they wait on the lead's separate GO.
+
+### 10.6 Ranked fix list (each goes back as its own ticket, `src/` via rpg-planner; savings are shares of the tick, from this section)
+
+| rank | fix | evidence | waste or legitimate | expected saving | determinism |
+|---|---|---|---|---|---|
+| 1 | **`nearest_town_tile`**: answer the nearest-town-tile query from a per-tick structure (grid or sorted tiles, built once per tick from `state.town_tiles`) instead of a `min()` with a Python lambda per entity | 8 to 18 % of the tick (10.2) | waste: same static tiles scanned per entity | **6 to 15 % of the tick**, say 8 to 15 % after the build cost | none if the tie-break `(distance, x, y)` is kept; add a parity test against the current function |
+| 2 | **`dataclasses.replace` and the apply path**: `apply_generation` > `build_plan` > `_compute_entity_changes` is 9 to 12 % of the tick, and replace/`_replace` leaf frames total 16 to 17 % (apply.py:14, 18 and the strategic pass) | 10.2 and the folded stacks | likely partly waste (copying whole records per change) | **4 to 8 % of the tick** if the copy is narrowed; needs a call-site count before a ticket | none if the committed value is unchanged |
+| 3 | **`nearby_entities`** (`spatial_query.py:59, 60`): the neighbourhood query is 4 to 6 % self time at corpus size and drives `combat_engagement` growth at 500+ | 10.2, 10.4 | legitimate neighbourhood, quadratic without a spatial index (H6) | 3 to 6 % of corpus ticks; the large share is at 500+ entities (combat 60 %) | none |
+| 4 | **`evaluate_strategic_intent_with_expiry`** (3 to 4 %) and **`enforce_bandwidth`** (1 to 3 %) | 10.2 | unknown; the pass must evaluate each entity | 1 to 3 % | none |
+| 5 | **`movement_routing` / `world_dynamics`** (5 to 6 % each in two worlds) | 10.2 | not looked into | not estimated | none |
+
+None of them touches the per-tick commit sort (`kernel.py:593`) or exact replay. Items 1 to 3 together are 13 to 29 % of the tick, so the corpus worlds could drop from about 25 to 33 ms to about 20 to 26 ms. Item 1 was already handed to rpg via lead after section 9.
+
+### 10.7 Limits
+
+One py-spy run per world (779 to 1444 samples, ±1 point); PROD_SMALL corpus worlds at 200 entities; 200 ticks after 20 warmup (early ticks); two runs for synthetic; loaded host with swap activity in 4 of 21 runs; no quiet-host rerun yet; R4 (long runs, entity-count scaling) not run; `advancement` (20 % of the tick) is attributed only to `apply_generation` (about 10 to 13 %) and `_phase_observability` (about 7 %), no deeper.
