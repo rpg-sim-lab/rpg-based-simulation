@@ -43,6 +43,7 @@ Filed by rpg-planner on 2026-11-09 as a filing only (no code), on lead-planner-u
 - §12.4 (packs, herds, territory), milestones 2 and 3, and any rule work not listed in §12.3 (owner ruling only).
 
 ## Acceptance Criteria
+- PERF BUDGET (owner #715 6968328816): a before/after profile of the replaced read vs nearest_town_tile, within a budget set from perf-planner's quiet-host baseline (no number until that baseline exists). A regression is fixed or explicitly accepted by the owner, never deferred (M1 epic regression rule).
 - No place-finding decision reads the true map.
 - A subject that knows no food place does not walk to one.
 - Tests for the new behaviour, plus the parity ledger and Bible updates in the same change.
@@ -64,6 +65,8 @@ src/strategy/, knowledge and memory
 ## Assumptions / Open Questions
 - Order (roadmap §12.5, memo rows 89/93/95): the v1-disclosure repairs, then D80C, then the decision-73 step (#781, the v1.1 record), then the §12.3 items. Starting this item needs the owner's dispatch yes, brought by rpg-planner via lead-planner-u24.
 - Owner-level choices are asked when the milestone starts, not guessed here.
+
+- COST BAR (rpg-planner, 2026-11-18, from perf-planner's engine profile on main 99a83adc9, docs/performance/tick_cost_growth.md §10 at perf-planner-next 09e2faa38). Today's true-map read `nearest_town_tile` (intelligence.py:397/:674, redirection.py:138; a min() with a lambda over every town tile, per entity) is 39-62% of fused_strategic_pass, which is 21-28% of the tick. This item retires that read, so it is NOT optimised separately. The replacement read (perception and memory) must not cost more than that share; measure it in this item's own-job. It touches intelligence.py, so it lands after or inside TCK-20261117-SPLIT-INTELLIGENCE-PY-BELOW-ITS-LINE-CEILINGS.
 
 ## Implementation Notes
 None yet.

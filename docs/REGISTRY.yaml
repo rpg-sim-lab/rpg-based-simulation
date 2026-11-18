@@ -7986,6 +7986,103 @@
   - content
   last_verified: '2026-10-09'
 - type: ticket
+  path: agent-working/tickets/todos/TCK-20261118-A-DECAYING-CORPSE-DESTROYS-EVERY-ITEM-EXCEPT-GOLD-AND-MEAT-WITH-NO-SINK.md
+  ticket_id: TCK-20261118-A-DECAYING-CORPSE-DESTROYS-EVERY-ITEM-EXCEPT-GOLD-AND-MEAT-WITH-NO-SINK
+  title: When a corpse decays, its gold becomes a ground purse and its raw meat leaves
+    through MEAT_DECAYED, but every other item it holds disappears with no typed sink,
+    so atomic conservation cannot balance from the records
+  tier: standard
+  ticket_type: bug
+  date: '2026-11-18'
+  related_code_areas:
+  - src/engine/world_dynamics.py (_decay_corpses, _meat_decayed_events), src/engine/economy.py
+    (resource_transactions, _without_decay_of_looted_bodies), the conservation checks
+    in src/observability/
+  artifact_files: []
+  tags: []
+- type: ticket
+  path: agent-working/tickets/todos/TCK-20261118-A-SUBJECT-WITH-A-STANDING-HELP-NEED-RE-DECIDES-SOLO-EVERY-TICK.md
+  ticket_id: TCK-20261118-A-SUBJECT-WITH-A-STANDING-HELP-NEED-RE-DECIDES-SOLO-EVERY-TICK
+  title: CooperationPhase re-runs the posture choice on every tick for any subject
+    with a help need, so a subject whose need never clears picks SOLO and emits a
+    cooperation_event on every tick, with no memory of its last decision
+  tier: standard
+  ticket_type: bug
+  date: '2026-11-18'
+  related_code_areas:
+  - src/domains/cooperation/phase.py (CooperationPhase.execute, _record_decision_events),
+    src/domains/cooperation/services.py (select_for_own_needs), CooperationIntentBridge.map_decision,
+    src/observability/event_shapers.py (cooperation_event)
+  artifact_files: []
+  tags: []
+- type: ticket
+  path: agent-working/tickets/todos/TCK-20261118-ACTION-OUTCOMES-ARE-WRITTEN-INTO-THE-NAVIGATION-FAILURE-REASON.md
+  ticket_id: TCK-20261118-ACTION-OUTCOMES-ARE-WRITTEN-INTO-THE-NAVIGATION-FAILURE-REASON
+  title: About twenty action handlers write their failure outcome into NavigationUpdate.failure_reason,
+    so last_failure_reason mixes movement-step outcomes with action outcomes; give
+    action outcomes their own typed field and keep the navigation field step-only
+  tier: standard
+  ticket_type: refactor
+  date: '2026-11-18'
+  related_code_areas:
+  - src/engine/core_actions.py, action_router.py, combat_actions.py, skill_actions.py,
+    aoe_actions.py, lodging.py; src/core/updates.py (NavigationUpdate); src/engine/patches.py:290
+  artifact_files: []
+  tags: []
+- type: ticket
+  path: agent-working/tickets/todos/TCK-20261118-COOPERATION-STOPS-EARLY-IN-URBAN-S123-WHILE-FATIGUE-PILES-UP-AS-THE-CURRENT-PROJECT.md
+  ticket_id: TCK-20261118-COOPERATION-STOPS-EARLY-IN-URBAN-S123-WHILE-FATIGUE-PILES-UP-AS-THE-CURRENT-PROJECT
+  title: In urban_political s123 the last cooperation_event is around t1460-1630 of
+    5000, and late in every urban run 9-15 subjects hold 'fatigue' as their current
+    project; pre-existing on main, cause unread
+  tier: standard
+  ticket_type: bug
+  date: '2026-11-18'
+  related_code_areas: []
+  artifact_files: []
+  tags: []
+- type: ticket
+  path: agent-working/tickets/todos/TCK-20261118-MOVED-RECENTLY-IS-SET-TRUE-ON-THE-FIRST-STEP-AND-NEVER-CLEARED.md
+  ticket_id: TCK-20261118-MOVED-RECENTLY-IS-SET-TRUE-ON-THE-FIRST-STEP-AND-NEVER-CLEARED
+  title: NavigationComponent.moved_recently becomes True on a body's first step and
+    nothing ever sets it back, so it means "has ever moved"; retire it or give it
+    a lifecycle
+  tier: standard
+  ticket_type: bug
+  date: '2026-11-18'
+  related_code_areas:
+  - src/core/state.py (NavigationComponent.moved_recently), src/core/updates.py (moved_recently_set),
+    src/engine/patches.py, src/engine/movement.py, src/engine/pipeline_phases/movement.py,
+    src/api/presenters/state_presenter.py
+  artifact_files: []
+  tags: []
+- type: ticket
+  path: agent-working/tickets/todos/TCK-20261118-TEMPORAL-SCALE-AUDIT-CAN-THE-CURRENT-CALENDAR-CARRY-MULTI-GENERATION-RUNS.md
+  ticket_id: TCK-20261118-TEMPORAL-SCALE-AUDIT-CAN-THE-CURRENT-CALENDAR-CARRY-MULTI-GENERATION-RUNS
+  title: 'Temporal-scale audit: can the approved 2,400-ticks/day calendar practically
+    carry multi-generation simulation? Compare a few ticks/day values with biological
+    compression under the current calendar, and recommend'
+  tier: standard
+  ticket_type: chore
+  date: '2026-11-18'
+  related_code_areas:
+  - src/core/calendar.py, src/core/state.py (LifecycleComponent.max_age_ticks), src/systems/lifecycle_systems/lifecycle.py,
+    src/ai/life_stage.py, src/engine/cadence.py
+  artifact_files: []
+  tags: []
+- type: ticket
+  path: agent-working/tickets/todos/TCK-20261118-THE-RNG-COMPOSITE-SEED-FIELDS-OVERLAP-SO-DISTINCT-DRAWS-CAN-SHARE-A-SEED.md
+  ticket_id: TCK-20261118-THE-RNG-COMPOSITE-SEED-FIELDS-OVERLAP-SO-DISTINCT-DRAWS-CAN-SHARE-A-SEED
+  title: DeterministicRNG._composite_seed XORs its fields into overlapping bit ranges,
+    so two different (base, domain, tick, entity, sub_id) draws can get the same seed
+  tier: standard
+  ticket_type: bug
+  date: '2026-11-18'
+  related_code_areas:
+  - src/platform/rng.py::DeterministicRNG._composite_seed
+  artifact_files: []
+  tags: []
+- type: ticket
   path: agent-working/tickets/done/TCK-20261117-AN-ENTITY-CARRIES-ITS-OCCUPATION-LABEL-AND-ONE-SPECIES-READ-SPECIES-OF.md
   ticket_id: TCK-20261117-AN-ENTITY-CARRIES-ITS-OCCUPATION-LABEL-AND-ONE-SPECIES-READ-SPECIES-OF
   title: An entity carries its occupation label as its own field, and `species_of`
@@ -8103,6 +8200,47 @@
   artifact_files: []
   tags: []
 - type: ticket
+  path: agent-working/tickets/todos/TCK-20261117-A-NAVIGATION-FAILURE-REASON-IS-NEVER-CLEARED-AND-KEEPS-FEEDING-BLOCKER-INFERENCE.md
+  ticket_id: TCK-20261117-A-NAVIGATION-FAILURE-REASON-IS-NEVER-CLEARED-AND-KEEPS-FEEDING-BLOCKER-INFERENCE
+  title: NavigationComponent.last_failure_reason is written only when a failure carries
+    a code and is never cleared, so a stale PATH_NOT_FOUND/STUCK/OSCILLATING keeps
+    being read by infer_blockers on every strategic pass
+  tier: standard
+  ticket_type: bug
+  date: '2026-11-17'
+  related_code_areas:
+  - src/engine/patches.py:288, src/systems/strategic_systems/intelligence.py:176-202
+    and :495, src/engine/movement.py:362-365 and :456-472
+  artifact_files: []
+  tags: []
+- type: ticket
+  path: agent-working/tickets/todos/TCK-20261117-A-RESOLVE-BLOCKER-PROJECT-IS-RE-CREATED-EVERY-80-TICKS-AND-STALLS-COOPERATION.md
+  ticket_id: TCK-20261117-A-RESOLVE-BLOCKER-PROJECT-IS-RE-CREATED-EVERY-80-TICKS-AND-STALLS-COOPERATION
+  title: In urban_political s42, half the survivors re-create a resolve_blocker project
+    about every 80 ticks after t≈550 (each one times out and is abandoned), and cooperation
+    stops
+  tier: standard
+  ticket_type: bug
+  date: '2026-11-17'
+  related_code_areas:
+  - src/systems/strategic_systems/intelligence.py (the resolve_blocker timeout), the
+    blocker creation paths
+  artifact_files: []
+  tags: []
+- type: ticket
+  path: agent-working/tickets/todos/TCK-20261117-A-SUBJECT-RE-CHOOSES-THE-TARGET-IT-JUST-GAVE-UP-ON.md
+  ticket_id: TCK-20261117-A-SUBJECT-RE-CHOOSES-THE-TARGET-IT-JUST-GAVE-UP-ON
+  title: After a way-round give-up, the target choice picks the same target again
+    within 200 ticks; add a typed give-up memory that target choice respects (F2)
+  tier: standard
+  ticket_type: bug
+  date: '2026-11-17'
+  related_code_areas:
+  - src/engine/patches.py (navigation apply), resolve_move, the target-choice path
+    (to be located in the design)
+  artifact_files: []
+  tags: []
+- type: ticket
   path: agent-working/tickets/todos/TCK-20261117-A-WORLD-BOSS-BODY-DECLARES-A-SPECIES.md
   ticket_id: TCK-20261117-A-WORLD-BOSS-BODY-DECLARES-A-SPECIES
   title: A world boss body declares a species, and `world_boss` leaves the non-living
@@ -8138,6 +8276,18 @@
   artifact_files: []
   tags: []
 - type: ticket
+  path: agent-working/tickets/todos/TCK-20261117-EVERY-WORLD-STARTS-AT-MIDNIGHT-SO-EVERY-SHORT-RUN-IS-DARK.md
+  ticket_id: TCK-20261117-EVERY-WORLD-STARTS-AT-MIDNIGHT-SO-EVERY-SHORT-RUN-IS-DARK
+  title: Every world starts at t = 0, which the clock calls night, so every short
+    scenario and every run's first 600 ticks are dark
+  tier: standard
+  ticket_type: feature
+  date: '2026-11-17'
+  related_code_areas:
+  - src/core/calendar.py, world assembly (the start tick)
+  artifact_files: []
+  tags: []
+- type: ticket
   path: agent-working/tickets/todos/TCK-20261117-INTELLIGENCE-RAW-TIME-PATHS-ARE-UNCALLED.md
   ticket_id: TCK-20261117-INTELLIGENCE-RAW-TIME-PATHS-ARE-UNCALLED
   title: intelligence.py :912 and :1005-1016 are uncalled paths that read raw world
@@ -8156,6 +8306,18 @@
   ticket_type: chore
   date: '2026-11-17'
   related_code_areas: []
+  artifact_files: []
+  tags: []
+- type: ticket
+  path: agent-working/tickets/todos/TCK-20261117-MATERIAL-AND-PARTNER-BLOCKERS-NAME-A-SUBJECT-NOTHING-CAN-MATCH.md
+  ticket_id: TCK-20261117-MATERIAL-AND-PARTNER-BLOCKERS-NAME-A-SUBJECT-NOTHING-CAN-MATCH
+  title: Material blockers (subject "resource") and social blockers (subject "suitable_partner")
+    can never resolve, because no item or partner matches those subject strings
+  tier: standard
+  ticket_type: bug
+  date: '2026-11-17'
+  related_code_areas:
+  - src/systems/strategic_systems/intelligence.py (infer_blockers, resolve_blockers)
   artifact_files: []
   tags: []
 - type: ticket
@@ -8227,6 +8389,18 @@
   artifact_files: []
   tags: []
 - type: ticket
+  path: agent-working/tickets/todos/TCK-20261117-SPLIT-INTELLIGENCE-PY-BELOW-ITS-LINE-CEILINGS.md
+  ticket_id: TCK-20261117-SPLIT-INTELLIGENCE-PY-BELOW-ITS-LINE-CEILINGS
+  title: Split src/systems/strategic_systems/intelligence.py so its module and StrategicIntelligenceSystem
+    class fall back below their line ceilings
+  tier: standard
+  ticket_type: refactor
+  date: '2026-11-17'
+  related_code_areas:
+  - src/systems/strategic_systems/intelligence.py
+  artifact_files: []
+  tags: []
+- type: ticket
   path: agent-working/tickets/todos/TCK-20261117-TEST-FIXTURES-DECLARE-A-SPECIES-THROUGH-A-HELPER-AND-THE-BUILDER-DEFAULT-GOES.md
   ticket_id: TCK-20261117-TEST-FIXTURES-DECLARE-A-SPECIES-THROUGH-A-HELPER-AND-THE-BUILDER-DEFAULT-GOES
   title: Test fixtures declare a species through a helper, and the `V2EntityBuilder`
@@ -8273,6 +8447,19 @@
   date: '2026-11-17'
   related_code_areas:
   - tests/unit/worldassembly/test_corpus_diversity.py
+  artifact_files: []
+  tags: []
+- type: ticket
+  path: agent-working/tickets/todos/TCK-20261117-TWO-OBSERVABILITY-TESTS-FAIL-ONLY-AFTER-A-LONG-SAME-PROCESS-RUN.md
+  ticket_id: TCK-20261117-TWO-OBSERVABILITY-TESTS-FAIL-ONLY-AFTER-A-LONG-SAME-PROCESS-RUN
+  title: Two tests in tests/unit/observability fail only late in one long `-n 1` process
+    and pass alone; find the cause before calling it a state leak
+  tier: hotfix
+  ticket_type: bug
+  date: '2026-11-17'
+  related_code_areas:
+  - tests/unit/observability/test_death_ledger.py, tests/unit/observability/test_live_anomaly_worker.py
+  - src/observability/ (the death ledger and the live anomaly worker)
   artifact_files: []
   tags: []
 - type: ticket

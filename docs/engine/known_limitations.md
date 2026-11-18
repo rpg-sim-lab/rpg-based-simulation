@@ -21,6 +21,7 @@ This document records the current technical limitations, unsupported features, a
 ### 1.2 Resource loops
 - **No Complex Regeneration**: Resource nodes do not currently support complex regeneration logic (e.g., seasonal growth, depletion cooldowns). Nodes are static or reset on scenario reload.
 - **Town Buildings**: `TownResolutionSystem` currently supports Blacksmith (crafting), Inn (REST), and Tavern (EAT) building types. Guilds, Class Halls, and other building types are not yet functionally integrated.
+- A decaying corpse's items other than gold and raw meat leave the world with no typed sink: gold becomes a ground purse and raw meat leaves through MEAT_DECAYED, but nothing records anything else (`TCK-20261118-A-DECAYING-CORPSE-DESTROYS-EVERY-ITEM-EXCEPT-GOLD-AND-MEAT-WITH-NO-SINK`). ch. 03 atomic conservation is still the target law; the ruled fix makes them ground items at the corpse tile.
 - Six social actions (TRADE, TEAM_UP, TRAIN, PROPOSE_MARRIAGE, JOIN_CLAN, LEAVE_CLAN) are built and unit-tested but have no issuer in play, and no clan exists in play (TCK-20261113-FIVE-SOCIAL-ACTION-KINDS-MAY-HAVE-NO-ISSUER-IN-PLAY). Making any of them reachable is an owner gameplay decision.
 
 ### 1.3 Strategic AI
