@@ -40,6 +40,30 @@ def _resolve_night(state_or_context: Any, night: Optional[bool]) -> bool:
     return is_night(world_time)
 
 
+def _attack_relation_context(attacker: Any, target: Any) -> RelationContext:
+    """The relation context the friendly-fire law reads for an attack of `attacker` on `target`: their Manhattan distance, whether they are already engaged (either names the other as its
+    target) and their two species. `intruding` is left unset (None): no real territorial-trespass detector exists in
+    src/ (confirmed via grep, TCK-20260809-COMBAT-ATTACK-LEGALITY-ALWAYS-FALSE-INVESTIGATION).
+    Hardcoding False here previously forced RelationProjectionService's own
+    contextual_intruder_groups handling to resolve to "neutral" unconditionally
+    (relation.py's `if context.intruding is False: label = "neutral"` treats an explicit
+    False as a confirmed non-intrusion, permanently overriding combat_engaged), making any
+    faction relationship defined via contextual_intruder_groups (e.g. wild_beast_pack's
+    real content-defined stance toward town_council/hero_guild) structurally unable to
+    ever attack through this path."""
+    dist = LegalityServiceV2.get_manhattan_dist(attacker.navigation.position, target.navigation.position)
+    # Check if they are already engaged in combat
+    combat_engaged = False
+    if attacker.task.payload.get("target_id") == target.id or target.task.payload.get("target_id") == attacker.id:
+        combat_engaged = True
+    return RelationContext(
+        distance=float(dist),
+        combat_engaged=combat_engaged,
+        source_species=get_species_id_str(attacker),
+        target_species=get_species_id_str(target),
+    )
+
+
 def _state_invalid_reason(attacker: Any, target: Any) -> Optional[ReasonCode]:
     """Why an attack cannot start from the entities' own state, else None. F3 (divergence 2.155): a lodger is indoors, so it cannot be attacked from outside and, seeing no one outside,
     cannot attack out; a stale target id (captured before the target lodged) lands here and ends the held attack like any incapacitated target."""
@@ -249,7 +273,8 @@ class LegalityServiceV2:
         target: EntityState,
         state_or_context: Any,
         is_opportunity_attack: bool = False,
-        *, night: Optional[bool] = None,
+        *,
+        night: Optional[bool] = None,
     ) -> Tuple[bool, ReasonCode]:
         """
         Authoritative validation for a combat interaction.
@@ -279,29 +304,9 @@ class LegalityServiceV2:
             return False, ReasonCode.ATTACKER_STATUS_BLOCKED
 
         # 3. Faction Validity (Friendly Fire Law / Dynamic Relationship Check)
-        dist = LegalityServiceV2.get_manhattan_dist(attacker.navigation.position, target.navigation.position)
-        # Check if they are already engaged in combat
-        combat_engaged = False
-        if attacker.task.payload.get("target_id") == target.id or target.task.payload.get("target_id") == attacker.id:
-            combat_engaged = True
-
-        # `intruding` is left unset (None): no real territorial-trespass detector exists in
-        # src/ (confirmed via grep, TCK-20260809-COMBAT-ATTACK-LEGALITY-ALWAYS-FALSE-INVESTIGATION).
-        # Hardcoding False here previously forced RelationProjectionService's own
-        # contextual_intruder_groups handling to resolve to "neutral" unconditionally
-        # (relation.py's `if context.intruding is False: label = "neutral"` treats an explicit
-        # False as a confirmed non-intrusion, permanently overriding combat_engaged), making any
-        # faction relationship defined via contextual_intruder_groups (e.g. wild_beast_pack's
-        # real content-defined stance toward town_council/hero_guild) structurally unable to
-        # ever attack through this path.
-        context = RelationContext(
-            distance=float(dist),
-            combat_engaged=combat_engaged,
-            source_species=get_species_id_str(attacker),
-            target_species=get_species_id_str(target),
-        )
-
-        if not attack_allowed(attacker, target, LegalityServiceV2._attack_permitted(attacker, target, context), night=_resolve_night(state_or_context, night), tick=getattr(state_or_context, "tick", None)):
+        context = _attack_relation_context(attacker, target)
+        night = _resolve_night(state_or_context, night)
+        if not attack_allowed(attacker, target, LegalityServiceV2._attack_permitted(attacker, target, context), night=night, tick=getattr(state_or_context, "tick", None)):
             return False, ReasonCode.FRIENDLY_FIRE_ILLEGAL
 
         # 4. Range Validity
