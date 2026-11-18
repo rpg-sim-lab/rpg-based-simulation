@@ -46,6 +46,8 @@ Whether SOLO leads to any action, and why the two subjects' need never clears, i
 2. rpg-designer rules the class (a decision with no lifecycle, an unmet need, or both) and the fix shape before any code: for example, a typed last decision with a re-decide rule (need changed, or a hold period ended), and what a group member with no need should do (skip the posture choice, or keep a group posture instead of SOLO), and whether the posture moves out of identity.properties.
 3. Fix, tests (a standing need gives one decision, not one per tick; a changed need re-decides), Bible text (ch. 07 cooperation), parity and divergence.
 
+4. COST (perf-planner R4, relayed 2026-11-18; owner perf NFR #715 6968328816). The cooperation phase is the growing share of tick cost as population rises: 25%, 31% and 37% of the tick at 100, 200 and 400 synthetic entities, with super-linear total time (66/207/564 s per 1000 ticks). The per-tick re-decision this ticket removes is on that path. The fix reports a before/after profile of CooperationPhase.execute on the 3 standard cells and on a 400-entity synthetic world, under the M1 regression rule.
+
 ## Out of Scope
 - The births PR's own SOCIAL row (not re-pinned there, as above).
 - The resolve_blocker churn (TCK-20261117-A-RESOLVE-BLOCKER-PROJECT-IS-RE-CREATED-EVERY-80-TICKS-AND-STALLS-COOPERATION), though step 1 must say whether the two subjects hold a churning resolve_blocker in the same ticks.
