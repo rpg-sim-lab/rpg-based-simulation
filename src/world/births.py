@@ -61,7 +61,7 @@ class BirthService:
         used: Set[int] = set()
         for mother in candidates.values():
             profile = profiles.of(species_of(mother))
-            if mother.id in used or profile is None or mother.biological.hunger > profile.fed_line or not _past_interval(mother, state.tick):
+            if mother.id in used or not _may_conceive(mother, profile, state.tick):
                 continue
             # Draw first: it is stateless and independent of any mate, so a failed draw skips the spatial query.
             if generator.rng.get_float(Domain.SPAWN, state.tick, mother.id, sub_id=BIRTH_DRAW_SUB_ID) >= profile.birth_chance_per_check:
@@ -106,6 +106,12 @@ def _mothers_at_term(state: AuthoritativeState, profiles: _Profiles) -> List[Ent
         if e.lifecycle.pregnancy is not None and e.lifecycle.pregnancy.due_tick <= state.tick and e.combat.alive and e.lifecycle.active
         and profiles.of(species_of(e)) is not None
     ]
+
+
+def _may_conceive(mother: EntityState, profile: Optional[ReproductionProfileDefinition], tick: int) -> bool:
+    """The mother guard of a conception check, pure and read-only: the species has a reproduction profile, the mother is fed (hunger at or under the fed line) and every partner entry of her birth interval has expired.
+    The per-check ``used`` set, the keyed draw and the mate search stay in process_births."""
+    return profile is not None and mother.biological.hunger <= profile.fed_line and _past_interval(mother, tick)
 
 
 def _past_interval(entity: EntityState, tick: int) -> bool:
