@@ -277,6 +277,12 @@ spawning and camp systems, content
   - The S9 2000-tick frozen-tree diagnostic on main 3aafdb383 and on the births head decides it. If the group dissolves, it is BALANCE and disclosed. If it persists to tick 2000 on head and is absent on main, the fix is a births one when newborn-specific, or a separate ticket on the old cohesion code that gates the merge.
   - The run waits for rpg-designer's answer on a group that persists but stays active.
   - Row 2 (urban_political SOCIAL) is held until then.
+- 2026-11-18, the owner's scope direction (#715, stored in owner_births_scope_and_rpg_designer_6a_extinction_rulings_2026-11-18.md): the HARD set holds, and the balance items are report-only, collected in TCK-20261118-BIRTHS-BALANCING-PASS. Check 6a is HARD and counts by the mother's region (rpg-designer, u24). The own-job instrument is at impl 02d327ba6.
+- PR body lines from the local CI-equivalent run (queues 1-3, 2026-11-18):
+  - tools_2a (tests/tools/test_[f-m]*) is CI-only, not run to completion locally. The watcher stopped it once at 2.97 GB, at about 93%, with 1004 passed / 23 skipped / 0 failed up to the stop.
+  - The -n 2 data/runs interaction did not reproduce on main 3aafdb383 with the access_audit + api selection (114 passed), so its origin is undetermined.
+  - tests/architecture/test_no_name_switches_in_decision_paths.py is red on head for the build_newborn EntityRole.MONSTER row until the owner answers the allowlist ask (rpg-designer-ubuntu's ruling, cd9c4fa9c). The switch is disclosed beside the Unified divergence entry.
+  - With births off, spatial_index_hits equals main in urban_political and hero_guild_routing at 1000t s42.
 - Observation (BALANCE, Phase 3): 0 camp spawns and 0 respawns in 5000t in all 3 gate worlds at s42. Either the camps don't spawn in that horizon, or a spawn path is gated off (decision 70: camps refill only by births).
 
 ## Test Summary
