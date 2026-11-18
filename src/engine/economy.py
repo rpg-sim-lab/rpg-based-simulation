@@ -140,7 +140,7 @@ class ResourceTransactionSystem:
                                 result, e_id, new_node_updates, new_building_updates,
                                 new_home_storage_updates, new_ground_items_remove, new_corpses_remove, reservations, new_corpses_update
                             )
-                            ResourceTransactionSystem._note_effects(result, new_resource_updates, source_debits, new_owed)
+                            ResourceTransactionSystem._note_effects(result, new_resource_updates, source_debits, new_owed, intent)
 
                             ResourceTransactionSystem._note_depletion(state, result, new_node_updates, depleted_nodes, world_events)
 
@@ -201,7 +201,7 @@ class ResourceTransactionSystem:
                                 res, e_id, new_node_updates, new_building_updates,
                                 new_home_storage_updates, new_ground_items_remove, new_corpses_remove, reservations, new_corpses_update
                             )
-                            ResourceTransactionSystem._note_effects(res, new_resource_updates, source_debits, new_owed)
+                            ResourceTransactionSystem._note_effects(res, new_resource_updates, source_debits, new_owed, intent)
 
                             ResourceTransactionSystem._note_depletion(state, res, new_node_updates, depleted_nodes, world_events)
 
@@ -334,9 +334,13 @@ class ResourceTransactionSystem:
         return trial_results, True
 
     @staticmethod
-    def _note_effects(res: Any, resource_updates: Dict[str, float], source_debits: Dict[int, InventoryUpdate], owed: list) -> None:
+    def _note_effects(res: Any, resource_updates: Dict[str, float], source_debits: Dict[int, InventoryUpdate], owed: list, intent: Optional[ResourceTransferIntent] = None) -> None:
         """Fold what an accepted transfer does beyond its own entity's inventory into the tick: a treasury change (into the same dict later
-        transfers read their running balance from), what it took from another entity's inventory (an inheritance), and a debt it took on."""
+        transfers read their running balance from), what it took from another entity's inventory (an inheritance), and a debt it took on. A priced service that named no payee
+        (``payee_missing``: nothing was debited) is counted by the run ledger, keyed by the intent's source and transfer kinds (observability, not durable state)."""
+        if getattr(res, "payee_missing", False) and intent is not None:
+            from src.observability.run_ledger import RunLedger
+            RunLedger.note_payee_missing(intent.source_kind, intent.transfer_kind)
         if res.treasury_update:
             resource_updates.update(apply_transfer(resource_updates, res.treasury_update))
         if res.source_debit:

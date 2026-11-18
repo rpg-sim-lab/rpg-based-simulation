@@ -69,6 +69,7 @@ class RunLedger:
     _attacks: Dict[str, int] = {}  # attacker_group|attacker_person|victim_person|hit or kill (person = 1 when the species keeps coin and trades, D43): genuine entity-vs-entity combat resolutions
     _behaviour: Dict[str, int] = {}  # measure|group|person: flee/pursuit entity-ticks and episodes (typed MovementMode), steps|terrain (tile entered), perceiving entity-ticks and perceived-hostile counts (sampled)
     _perception_samples: int = 0  # ticks on which perception was sampled
+    _payee_missing: Dict[str, int] = {}  # source_kind|transfer_kind: accepted priced services that named no payee (nothing debited; EXCH-02, TCK-20261118-A-SERVICE-PAYMENT-WITH-NO-PAYEE-DESTROYS-COIN); observability, not durable state
     _out_of_world: Dict[str, int] = {}  # group -> entity-ticks of a moved, alive entity outside the world extent
     _out_of_world_examples: List[Dict[str, Any]] = []
     _unsourced_examples: List[Dict[str, Any]] = []
@@ -90,6 +91,7 @@ class RunLedger:
         cls._world_events = {}
         cls._meat = {}
         cls._attacks = {}
+        cls._payee_missing = {}
         cls._behaviour = {}
         cls._perception_samples = 0
         cls._out_of_world = {}
@@ -349,6 +351,13 @@ class RunLedger:
                     cls._out_of_world_examples.append({"entity_id": eid, "tick": current.tick, "position": [pos[0], pos[1]]})
 
     @classmethod
+    def note_payee_missing(cls, source_kind: str, transfer_kind: str) -> None:
+        """Count one accepted priced service that named no payee (nothing was debited), keyed by its source and transfer kinds. Silent when the ledger is not live."""
+        if cls._live:
+            key = _key(source_kind, transfer_kind)
+            cls._payee_missing[key] = cls._payee_missing.get(key, 0) + 1
+
+    @classmethod
     def closing_event(cls, event_counts: Dict[str, int]) -> Optional[SimulationEvent]:
         """The tally for a recorder that recorded this run's live header, else nothing: a ledger that never opened must not look live."""
         return cls.tally_event() if event_counts.get(LEDGER_LIVE_EVENT, 0) > 0 else None
@@ -363,7 +372,7 @@ class RunLedger:
             "transfers": dict(sorted(cls._transfers.items())), "hunger_drops": dict(sorted(cls._hunger_drops.items())), "diet_breaches": dict(sorted(cls._diet_breaches.items())),
             "deaths": dict(sorted(cls._deaths.items())), "adds": dict(sorted(cls._adds.items())),
             "world_events": dict(sorted(cls._world_events.items())), "meat": dict(sorted(cls._meat.items())),
-            "attacks": dict(sorted(cls._attacks.items())), "behaviour": dict(sorted(cls._behaviour.items())), "perception_samples": cls._perception_samples, "out_of_world": dict(sorted(cls._out_of_world.items())), "out_of_world_examples": list(cls._out_of_world_examples), "unsourced_examples": list(cls._unsourced_examples),
+            "attacks": dict(sorted(cls._attacks.items())), "behaviour": dict(sorted(cls._behaviour.items())), "payee_missing": dict(sorted(cls._payee_missing.items())), "perception_samples": cls._perception_samples, "out_of_world": dict(sorted(cls._out_of_world.items())), "out_of_world_examples": list(cls._out_of_world_examples), "unsourced_examples": list(cls._unsourced_examples),
         }
         return cls._event(LEDGER_TALLY_EVENT, cls._last_tick, payload)
 

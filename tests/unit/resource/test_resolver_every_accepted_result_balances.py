@@ -261,3 +261,49 @@ def test_every_source_kind_the_resolver_handles_is_classified_here():
     assert handled, "source-kind scan found nothing; the guard itself is broken"
     assert handled - classified == set(), "a source kind the resolver handles has no balance classification (balanced, known-unbalanced, coin-free or reward)"
     assert classified - handled == set(), "a classified source kind the resolver no longer handles"
+
+
+# --- a service with no payee is counted (observability, not durable state) ---------------------------------------------------------------------------------------------------------------------
+
+@pytest.mark.parametrize("source_id,faction,expect_missing", [(999, None, True), (999, 3, False), (BUILDING_ID, None, False)])
+def test_only_a_priced_service_that_names_no_payee_sets_payee_missing(source_id, faction, expect_missing):
+    payer = _payer(50)
+    state = _state(payer)
+    intent = ResourceTransferIntent(source_id=source_id, source_kind="TAX", gold_delta=-PRICE, transfer_kind="TAX", treasury_faction=faction)
+    result = _resolve(state, payer, intent)
+    assert result.accepted and result.payee_missing is expect_missing
+    assert gold_net(result, state) == 0.0
+
+
+def test_a_broke_payer_at_a_building_is_not_a_missing_payee():
+    payer = _payer(0)
+    state = _state(payer)
+    result = _resolve(state, payer, _charge("TOWN_SERVICE", PRICE, "REST"))
+    assert result.accepted and result.payee_missing is False and _gold(result.inventory_update) == 0.0
+
+
+def test_a_free_unnamed_service_is_not_counted():
+    """Price 0: nothing was due, so no payee is missing."""
+    payer = _payer(50)
+    state = _state(payer)
+    result = _resolve(state, payer, ResourceTransferIntent(source_id=999, source_kind="SERVICE_FEE", gold_delta=0, gold_cost=0, transfer_kind="FEE"))
+    assert result.accepted and result.payee_missing is False
+
+
+def test_the_economy_phase_counts_each_no_payee_fee_once_in_the_run_ledger_and_the_tally_carries_it():
+    from src.observability.run_ledger import RunLedger
+
+    RunLedger.reset_run_state()
+    RunLedger.configure(True)
+    try:
+        payer = _payer(50)
+        state = _state(payer)
+        fee = ResourceTransferIntent(source_id=999, source_kind="TAX", gold_delta=-PRICE, transfer_kind="TAX")
+        update = StateUpdate(entity_updates={PAYER_ID: EntityUpdate(entity_id=PAYER_ID, resource_transfers=[fee])})
+        refined = ResourceTransactionSystem.resolve_all(state, update)
+        entity_coin, building_coin = _coin_written(refined)
+        assert entity_coin + building_coin == 0.0
+        assert RunLedger._payee_missing == {"TAX|TAX": 1}
+        assert RunLedger.tally_event().payload["payee_missing"] == {"TAX|TAX": 1}
+    finally:
+        RunLedger.reset_run_state()

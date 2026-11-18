@@ -64,6 +64,7 @@ class TransactionResult:
     treasury_update: Optional[TreasuryTransfer] = None
     owed: Optional[Any] = None  # an OwedRecord: the coin a short treasury could not pay now and owes instead
     reason: ReasonCode = ReasonCode.UNKNOWN
+    payee_missing: bool = False  # a priced service had no payee (no building source, no treasury named): nothing was debited; observability counts it (not durable)
 
 def _tax_credit(intent: ResourceTransferIntent) -> Optional[TreasuryTransfer]:
     """The share of a sale's or a wage's proceeds that goes to the treasury of the faction holding the place (the intent names it)."""
@@ -263,17 +264,19 @@ def _service_result(state: Any, intent: ResourceTransferIntent, target_inventory
     debited at all, so the service goes ahead without a charge. The debit never leans on the apply-time clamp at 0 (a same-tick arrival would hide a debit the credit never matched)."""
     if target_inventory.gold < intent.gold_cost:
         return TransactionResult(accepted=False, reason=ReasonCode.ACTION_EXHAUSTION)
-    paid = min(target_inventory.gold, service_price(intent))
-    credit = _service_credit(state, intent, paid)
+    price = service_price(intent)
     holder = intent.treasury_faction
+    names_a_building = isinstance(intent.source_id, int) and intent.source_id in state.buildings
+    has_payee = names_a_building or holder is not None
+    paid = min(target_inventory.gold, price) if has_payee else 0  # no payee: nothing is debited
+    credit = _service_credit(state, intent, paid)
     to_treasury = credit is None and holder is not None and paid > 0
-    if credit is None and not to_treasury:
-        paid = 0  # no payee: nothing is debited
     return TransactionResult(
         accepted=True,
         building_update=credit,
         treasury_update=TreasuryTransfer(faction=holder, gold_delta=int(paid)) if holder is not None and to_treasury else None,
         inventory_update=InventoryUpdate(items_add=intent.items_add, gold_delta=-paid),
+        payee_missing=not has_payee and price > 0,
         identity_update=intent.identity_upd, biological_update=intent.biological_upd, attributes_update=intent.attributes_upd,
         combat_update=intent.combat_upd, strategic_update=intent.strategic_upd, equipment_update=intent.equipment_upd, reward_update=intent.reward_upd)
 
