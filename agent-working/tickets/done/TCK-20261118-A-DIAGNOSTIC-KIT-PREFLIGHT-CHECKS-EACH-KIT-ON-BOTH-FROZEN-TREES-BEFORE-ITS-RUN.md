@@ -1,10 +1,10 @@
 ---
-status: active
+status: historical
 layer: testing
 authority: P1
 audience: agent
 ticket_id: TCK-20261118-A-DIAGNOSTIC-KIT-PREFLIGHT-CHECKS-EACH-KIT-ON-BOTH-FROZEN-TREES-BEFORE-ITS-RUN
-phase: open
+phase: done
 date: 2026-11-18
 tags: []
 ---
@@ -15,7 +15,7 @@ tags: []
 An automatic preflight for every measurement kit (spy, probe, runner, summarizer): sha, import, a short fixture run and field liveness on both frozen trees, with its output in the S9 packet
 
 ## Status
-INPROGRESS
+DONE
 
 ## Tier
 standard
@@ -79,3 +79,4 @@ tests/unit/tools/test_kit_preflight.py alone (-n 1, 3500M): 20 passed in 10.20s,
 tools/rpg_measure/kit_preflight.py (new), tools/rpg_measure/README.md, tests/unit/tools/test_kit_preflight.py (new), this ticket and its staging artifacts.
 
 ## Completion Summary
+Added tools/rpg_measure/kit_preflight.py (checks a-h plus the informational i perf row), its README, and 20 unit tests (including the v4 shared-gate regression test). Acceptance evidence (executed): approved #955 kit PASS 0/45, faulty rebuild FAIL 2/26 on check d, churn kit PASS 0/21. No push; S10 via rpg-planner.
