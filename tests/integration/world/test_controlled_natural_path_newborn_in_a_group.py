@@ -1,6 +1,6 @@
 # Compliance IDs: WORLD-122
 """CONTROLLED NATURAL-PATH coverage (rpg-designer-ubuntu's ruling of 2026-11-18, Q-N1..Q-N4): a mother already in a live group, a pregnancy built by births' own conception code, and the birth,
-the newborn's join of a group and everything after made by the ENGINE. It is not full lifecycle evidence and not the natural run (the S9 cells); the synthetic fallback is the CHILD-in-group test beside it.
+and any group the newborn forms, and everything after, made by the ENGINE. It is not full lifecycle evidence and not the natural run (the S9 cells); the synthetic fallback is the CHILD-in-group test beside it.
 
 Set-up (crowded_frontier, seed 42, the pinned kernel): the engine's own cooperation phase forms the groups; at the first check tick (a multiple of 30, from 90) at which a live group holds a
 goblin ADULT mother with an eligible mate, ONE PregnancyState is written. It is built by ``births._conceive`` itself, called on a read-only earlier-tick VIEW of the state
@@ -18,11 +18,13 @@ Passes when (rpg-designer-ubuntu Read 2 (b), 2026-11-18): BirthService bears the
 birth, the newborn EITHER forms a group through the engine path (GroupSystem formation) OR stays ungrouped - both outcomes pass, and the test does NOT assert a join into the mother's existing group
 (no join-existing path has been seen: TCK-20261118-A-RECRUIT-OR-A-NEWBORN-NEVER-JOINS-AN-EXISTING-GROUP). In either case: no member has C3 (the newborn, and every member of the mother's group
 or of any group the newborn is in), and every group the newborn is in either dissolves through its typed dissolution or has no member with C1/C2 (s9_spy's detectors, imported unchanged).
-A C3 is a BLOCK; a newborn C1/C2 in a non-dissolved group is a FINDING. The checker is a pure function (``violations``) positive-controlled below with planted rows.
+A C3 is a BLOCK; a newborn C1/C2 in a group without a TYPED dissolution (dissolution_tick set) is a FINDING, and a newborn group that vanishes untyped is a FINDING.
+C3 is read from the kernel state every tick for each newborn and each watched id, independent of group membership (the spy only has rows for members of a live group, so an ungrouped newborn has none):
+hunger >= STARVING_LINE or death by STARVATION is a BLOCK; each newborn must have >= 201 reads or a typed death (its cause is reported). The checker is a pure function (``violations``) positive-controlled below with planted rows.
 
 Natural-run in-group evidence is NOT this test: S9 cell 2 (s9-56dd071ea-002, urban_political s42 5000t) has the human CHILD 31 (mother 2) in 6 formation groups over 469 grouped ticks, no C1/C2/C3,
 validated by rpg-planner-ubuntu's row cross-check. This test is the controlled arm only; it is not full lifecycle evidence.
-Determinism: the final state hash is equal under PYTHONHASHSEED 0 and 1 (two subprocesses of ``scenario()``).
+Determinism: the WHOLE facts dict (final state hash, outcome, groups, needs reads, counts) is equal under PYTHONHASHSEED 0 and 1 (two subprocesses of ``scenario()``).
 Budget: see the measured time in the report; marked slow if the determinism pair exceeds 60 s.
 """
 import dataclasses
@@ -83,15 +85,42 @@ def _build_pregnancy(state, mother, father, profile, catalog):
     return update, update.entity_updates[mother.id].lifecycle.pregnancy_set, due
 
 
-def violations(hits, newborn_ids, watched, newborn_groups, dissolved_groups):
-    """Pure checker. Returns the list of failures: a C3 on the newborn or any watched member (BLOCK); a C1/C2 hit in a newborn group that did not dissolve (FINDING)."""
+def read_needs(log, state, ids):
+    """Pure per-tick C3 reader over the kernel state, independent of group membership. ``log`` maps eid -> {reads, max_hunger, c3, death}; a missing body is not a read."""
+    for eid in ids:
+        entry = log.setdefault(eid, {"reads": 0, "max_hunger": 0.0, "c3": None, "death": None})
+        body = state.entities.get(eid)
+        if body is None:
+            continue
+        record = body.lifecycle.death_record
+        cause = None if record is None else getattr(record.cause, "value", str(record.cause))
+        if record is not None:
+            if entry["death"] is None:
+                entry["death"] = {"tick": record.tick, "cause": cause}
+                entry["c3"] = entry["c3"] or ({"tick": state.tick, "hunger": body.biological.hunger, "cause": cause} if cause == "STARVATION" else None)
+            continue  # a dead body is not read again: its typed death replaces the reads
+        entry["reads"] += 1
+        entry["max_hunger"] = max(entry["max_hunger"], body.biological.hunger)
+        if entry["c3"] is None and (body.biological.hunger >= STARVING_LINE or cause == "STARVATION"):
+            entry["c3"] = {"tick": state.tick, "hunger": body.biological.hunger, "cause": cause}
+
+
+def needs_blocks(log, newborn_ids, window=WINDOW + 1):
+    """BLOCK for any C3 in the log; BLOCK-shaped gap for a newborn with fewer than ``window`` reads and no typed death."""
+    out = [("BLOCK", eid, "C3") for eid, entry in sorted(log.items()) if entry["c3"] is not None]
+    out += [("GAP", eid, "reads") for eid in sorted(newborn_ids) if log.get(eid, {}).get("reads", 0) < window and log.get(eid, {}).get("death") is None]
+    return out
+
+
+def violations(hits, newborn_ids, watched, newborn_groups, typed_dissolved):
+    """Pure checker. Returns the list of failures: a C3 on the newborn or any watched member (BLOCK); a C1/C2 hit in a newborn group without a typed dissolution (FINDING)."""
     out = []
     for eid, found in hits.items():
         if "C3" in found and (eid in watched or eid in newborn_ids):
             out.append(("BLOCK", eid, "C3"))
         for kind in ("C1", "C2"):
             for h in found.get(kind, []):
-                if h.get("group") in newborn_groups and h.get("group") not in dissolved_groups:
+                if h.get("group") in newborn_groups and h.get("group") not in typed_dissolved:
                     out.append(("FINDING", eid, kind))
     return out
 
@@ -131,10 +160,12 @@ def scenario():
         assert all(now.entities[i].lifecycle.parent_b_entity_id == father.id for i in newborn_ids)
         assert len(newborn_ids) <= pregnancy.litter_size
         watched = set(group.member_ids)  # the mother's group at set-up; newborn groups' members are added as they appear
-        newborn_groups, grouped_ticks = set(), 0
+        newborn_groups, grouped_ticks, needs = set(), 0, {}
+        read_needs(needs, now, set(newborn_ids) | watched)
         while kernel.state.tick < due + WINDOW + 1:
             kernel.tick_once()
             current = kernel.state
+            read_needs(needs, current, set(newborn_ids) | watched)
             in_group = False
             for gid, g in current.groups.items():
                 if getattr(g, "dissolution_tick", None) is None and any(i in g.member_ids for i in newborn_ids):
@@ -144,12 +175,15 @@ def scenario():
             grouped_ticks += in_group
         final = kernel.state
         hits = hits_by_eid(spy.rows)
-        dissolved = {gid for gid in newborn_groups if gid not in final.groups or getattr(final.groups[gid], "dissolution_tick", None) is not None}
+        typed = {gid for gid in newborn_groups if gid in final.groups and getattr(final.groups[gid], "dissolution_tick", None) is not None}
+        untyped_vanished = sorted(gid for gid in newborn_groups if gid not in final.groups)
+        reasons = {str(gid): spy.group_seen.get(gid, {}).get("dissolution_reason") for gid in sorted(typed)}
         facts.update({
-            "outcome": "formed_group" if newborn_groups else "ungrouped", "newborn_groups": sorted(newborn_groups), "grouped_ticks": grouped_ticks, "dissolved_groups": sorted(dissolved),
+            "outcome": "formed_group" if newborn_groups else "ungrouped", "newborn_groups": sorted(newborn_groups), "grouped_ticks": grouped_ticks, "typed_dissolved_groups": sorted(typed), "dissolution_reasons": reasons, "untyped_vanished_groups": untyped_vanished,
+            "needs": {str(k): v for k, v in sorted(needs.items())},
             "watched": sorted(watched), "rows_members": sorted(spy.rows), "row_count": sum(len(r) for r in spy.rows.values()), "ticks_after_birth": final.tick - due,
             "hits": {str(k): sorted(v) for k, v in hits.items()}, "final_hash": CanonicalStateHasher.get_hash(final), "final_tick": final.tick,
-            "_hits": hits, "_newborn_ids": set(newborn_ids), "_watched": watched, "_newborn_groups": newborn_groups, "_dissolved": dissolved,
+            "_hits": hits, "_newborn_ids": set(newborn_ids), "_watched": watched, "_newborn_groups": newborn_groups, "_dissolved": typed, "_needs": needs,
         })
     finally:
         if spy is not None:
@@ -165,6 +199,11 @@ def test_the_engine_bears_the_newborn_and_it_forms_a_group_or_stays_ungrouped_wi
     assert facts["row_count"] > 0, "the spy recorded no member rows: the checker would pass vacuously"
     bad = violations(facts["_hits"], facts["_newborn_ids"], facts["_watched"], facts["_newborn_groups"], facts["_dissolved"])
     assert not bad, f"{bad}: {facts['hits']}"
+    assert not facts["untyped_vanished_groups"], f"FINDING: a newborn group vanished without a typed dissolution: {facts['untyped_vanished_groups']}"
+    blocks = needs_blocks(facts["_needs"], facts["_newborn_ids"])
+    assert not blocks, f"{blocks}: {facts['needs']}"
+    deaths = {e: n["death"] for e, n in facts["_needs"].items() if n["death"] is not None}
+    assert all(e not in facts["_newborn_ids"] or deaths[e]["cause"] != "STARVATION" for e in deaths), deaths
     print("MEASURED", {k: v for k, v in facts.items() if not k.startswith("_")})
 
 
@@ -191,6 +230,40 @@ def test_checker_positive_controls_planted_failures_fail_and_clean_or_dissolved_
     assert _check({1: _rows(1, 8, 201, False)})[0] == []  # a stuck member in a group the newborn is not in is out of this check's scope
     assert _check({1: _rows(1, 7, 199, False)})[0] == []  # one short of the window: no hit
     print("POSITIVE-CONTROL c3_block=%d stuck_finding=%d" % (len(c3), len(stuck)))
+
+
+class _Body:
+    def __init__(self, hunger, record=None):
+        self.biological = type("B", (), {"hunger": hunger})()
+        self.lifecycle = type("L", (), {"death_record": record})()
+
+
+class _State:
+    def __init__(self, tick, entities):
+        self.tick, self.entities = tick, entities
+
+
+def test_needs_reader_positive_controls_an_ungrouped_starving_newborn_blocks():
+    log = {}
+    for t in range(WINDOW + 1):
+        read_needs(log, _State(t, {99: _Body(0.1), 1: _Body(0.1)}), {99, 1})
+    assert needs_blocks(log, {99}) == [] and log[99]["reads"] == WINDOW + 1
+    log = {}
+    for t in range(WINDOW + 1):
+        read_needs(log, _State(t, {99: _Body(STARVING_LINE if t == 50 else 0.1)}), {99})
+    assert needs_blocks(log, {99}) == [("BLOCK", 99, "C3")] and log[99]["c3"]["tick"] == 50  # starving, ungrouped, no spy rows at all
+    log = {}
+    record = type("R", (), {"tick": 7, "cause": type("C", (), {"value": "STARVATION"})()})()
+    read_needs(log, _State(7, {99: _Body(0.1, record)}), {99})
+    assert needs_blocks(log, {99}) == [("BLOCK", 99, "C3")]  # death by starvation blocks
+    log = {}
+    for t in range(10):
+        read_needs(log, _State(t, {99: _Body(0.1)}), {99})
+    assert needs_blocks(log, {99}) == [("GAP", 99, "reads")]  # too few reads and no typed death: the check is not vacuous
+    log = {}
+    other = type("R", (), {"tick": 7, "cause": type("C", (), {"value": "OLD_AGE"})()})()
+    read_needs(log, _State(7, {99: _Body(0.1, other)}), {99})
+    assert needs_blocks(log, {99}) == [] and log[99]["death"]["cause"] == "OLD_AGE" and log[99]["reads"] == 0  # a typed non-starvation death ends the reads without a gap
 
 
 @pytest.mark.slow
