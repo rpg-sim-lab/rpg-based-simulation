@@ -20,8 +20,6 @@ DONE
 ## Tier
 hotfix
 
-Hotfix tier; owner-directed origin (#715 6971915608, the follow-up to the kit preflight).
-
 ## Type
 chore
 
@@ -29,7 +27,7 @@ chore
 P2
 
 ## Request Summary
-Check (b) hard-coded `python -I`, so a kit whose real run uses PYTHONPATH = the tree (no `-I`) failed (b) falsely (lane A's failreason move spy). rpg-planner direction: (b) imports with the run's flags.
+Hotfix tier; owner-directed origin (#715 6971915608, the follow-up to the kit preflight). Check (b) hard-coded `python -I`, so a kit whose real run uses PYTHONPATH = the tree (no `-I`) failed (b) falsely (lane A's failreason move spy). rpg-planner direction: (b) imports with the run's flags.
 
 ## Scope
 - `import_flags` per process, defaulting to the leading flags of its own `entry`; explicit override allowed; a non-`{python}` entry keeps `-I`.

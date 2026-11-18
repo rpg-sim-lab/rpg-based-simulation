@@ -8024,11 +8024,7 @@
   path: agent-working/tickets/done/TCK-20261118-PREFLIGHT-CHECK-B-MIRRORS-THE-RUNS-INTERPRETER-FLAGS.md
   ticket_id: TCK-20261118-PREFLIGHT-CHECK-B-MIRRORS-THE-RUNS-INTERPRETER-FLAGS
   title: Preflight check (b) mirrors the run's interpreter flags
-  tier: 'hotfix
-
-
-    Hotfix tier; owner-directed origin (#715 6971915608, the follow-up to the kit
-    preflight).'
+  tier: hotfix
   ticket_type: chore
   date: '2026-11-18'
   related_code_areas:
