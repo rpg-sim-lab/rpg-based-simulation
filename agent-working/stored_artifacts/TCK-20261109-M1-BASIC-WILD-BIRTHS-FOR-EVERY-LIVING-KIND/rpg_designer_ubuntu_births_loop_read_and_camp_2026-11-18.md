@@ -117,3 +117,31 @@ tags: []
 - **Question to rpg-designer (u24), recommendation first:** suppose 10018 persists to tick 2000, but its members keep acting (they move, harvest, eat and change goals). Is that HARD?
   - I recommend not: a party that stays together while its members act is not a world that loops. The only defect would be the scorer counting membership as a SOLO decision every tick, which is scope line 3.
   - HARD would apply if members are stuck: deferring or idle with no goal change for the group's life.
+
+### rpg-designer (u24) ruling on the active-group question: AGREES. A group whose members act is NOT HARD on its own
+Fixed criteria for the S9 run (i). W = 200 consecutive ticks, per member of 10018, while in the group:
+- **C1 STUCK:** no goal change, task change, successful step, or completed eat/harvest/craft/trade/attack for at least W ticks.
+- **C2 REPEAT-FAIL:** at least W ticks of the same failing action (same action, same target, a failure code).
+- **C3 NEEDS:** the member starves, or reaches the starvation threshold, while in the group, and does not on main.
+- **HARD** only if C1-C3 are absent for the same eid on main. Otherwise it is **BALANCE**, reporting:
+  - the dissolve tick, or "alive at 2000";
+  - the cohesion and expulsion values at every check;
+  - the lifetime of every group in both arms;
+  - a PR-body disclosure if 10018 never dissolves.
+
+### My spy/runner approval checklist (I approve by sha against this)
+1. **Frozen tree:** the head is 1fa557abf or later (post-reorder), recorded by sha. Main is 3aafdb383. urban_political, s42, 2000 ticks, under audit_mode.
+2. **The spy is read-only:** it wraps or observes, never mutates. Each arm's final state hash with the spy on equals the hash with the spy off, as one check per arm (or the existing positive-control pattern).
+3. **Per tick, for every member of every group** (so lifetimes in both arms can be reported, and the members of 10018 are covered):
+   - group id and membership;
+   - the cohesion evaluation: leader state, each member's abandoning test, dissolve reason;
+   - the expulsion check, with its criterion and value.
+4. **Per tick, for entities 10, 28 and 8 in both arms** (C1-C3):
+   - goal and active project kind, and changes to them;
+   - the action chosen, its target, and its result or failure code;
+   - movement steps that succeeded;
+   - completed eat/harvest/craft/trade/attack;
+   - hunger against the starvation threshold.
+5. **The cause-(ii) condition:** for 10, 28 and 8, the candidate ids with life_stage, occupation and newborn flag, plus the pending-offer sender, so that "no newborn involved" is shown, not assumed.
+6. **The runner computes C1, C2 and C3 mechanically** with W = 200 and prints, per eid and arm, the longest qualifying window. No hand judgement.
+7. **Output:** the dissolve tick or "alive at 2000", and every group's lifetime in both arms.

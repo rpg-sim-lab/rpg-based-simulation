@@ -35,7 +35,7 @@ description: "Unit-tier isolation world proving that a matured camp adds no enti
 
 ## 2. config/simulation_quality/profiles/camp_maturity_calibration_pilot.yaml, line 2 (births PR)
 - Delete the line that sets `ENABLE_CAMP_NEST_SPREAD` to `"ON"`.
-- If that leaves the profile's flags map empty, keep the file only if a loader requires it. Otherwise follow the profile pattern of the other corpus worlds.
+- **Ruled 2026-11-18:** keep the file with `feature_flags: {}`, following the simq_scale_stress_seed42.yaml pattern (line 7). No loader requires the file (tools/calibrate_simq.py:40-64 falls back silently), but keeping it moves no fixture line. Deleting it would move one.
 - If `tests/simulation_quality/fixtures/expected_world_flag_state.json` moves, it comes to me.
 
 ## 3. data/content/world_modules/wolf_den_near_forest.yaml, lines 49-54 (births PR)
