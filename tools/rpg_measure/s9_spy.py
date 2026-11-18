@@ -50,8 +50,9 @@ class GroupSpy:
         self.start_ids: Set[int] = set(start_state.entities)
         self.rows: Dict[int, List[Dict[str, Any]]] = defaultdict(list)  # eid -> rows in tick order
         self.group_seen: Dict[int, Dict[str, Any]] = {}  # group id -> first/last tick seen undissolved, with the typed dissolution facts once recorded
-        self.newborn_in_group: List[Dict[str, Any]] = []  # BALANCE: groups holding a newborn member, first tick seen
+        self.newborn_in_group: List[Dict[str, Any]] = []  # BALANCE: one row per newborn of ANY kind seen in a group at any tick (eid, kind, group, first tick in a group)
         self.mother: Dict[int, Optional[int]] = {}
+        self.conceptions: Set[tuple] = set()  # distinct (mother id, conceived_tick) over every PregnancyState seen on any entity in any tick; getattr, so it is empty on main
         self._patched: List[tuple] = []
 
     def install(self) -> "GroupSpy":
@@ -74,6 +75,10 @@ class GroupSpy:
 
     def observe(self, prior: Any, update: Any, state: Any) -> None:
         tick = state.tick
+        for body in state.entities.values():
+            pregnancy = getattr(body.lifecycle, "pregnancy", None)
+            if pregnancy is not None:
+                self.conceptions.add((body.id, pregnancy.conceived_tick))
         attackers: Set[int] = {
             upd.combat.attacker_id for upd in update.entity_updates.values()
             if upd.combat is not None and upd.combat.attacker_id is not None and upd.combat.damage_taken > 0
@@ -91,7 +96,7 @@ class GroupSpy:
                     continue
                 if eid not in self.start_ids and eid not in self.mother:
                     self.mother[eid] = body.lifecycle.parent_a_entity_id
-                    self.newborn_in_group.append({"group": gid, "tick": tick, "newborn": eid})
+                    self.newborn_in_group.append({"group": gid, "tick": tick, "newborn": eid, "kind": body.kind})
                 upd = update.entity_updates.get(eid)
                 results = list(upd.intent_results) if upd is not None else []
                 accepted = [r for r in results if r.accepted]
@@ -105,6 +110,11 @@ class GroupSpy:
                     "starved": record is not None and record.tick == tick and getattr(record.cause, "value", str(record.cause)) == "STARVATION",
                     "life_stage": getattr(body.identity.life_stage, "name", str(body.identity.life_stage)),
                 })
+
+
+def count_births(final_ids: Any, start_ids: Set[int]) -> int:
+    """The final-state entities that were not in the start state, alive or dead (births and any other add; on a run with no risen kind they are the births)."""
+    return sum(1 for eid in final_ids if eid not in start_ids)
 
 
 # ---- detectors (pure) -------------------------------------------------------------------------------------------------------------------------------
