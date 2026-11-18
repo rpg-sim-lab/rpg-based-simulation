@@ -288,15 +288,18 @@ def test_trigger_cell_pass_fail_vacuous_and_the_control_that_cannot_fail():
     assert births_run.trigger_cell(_arm(final="x"), off, pos)["verdict"] == "FAIL"
     assert births_run.trigger_cell(on, _arm(firings=1, extra=0), pos)["verdict"] == "FAIL", "OFF must fire 0 times"
     assert births_run.trigger_cell(on, off, _arm())["verdict"] == "FAIL", "a positive control equal to OFF cannot fail"
-    assert births_run.trigger_cell(_arm(extra=0), off, pos)["verdict"] == "FAIL", "ON ran no extra phase run"
+    assert births_run.trigger_cell(_arm(extra=0), off, pos)["verdict"] == "VACUOUS", "ON ran no extra phase run: nothing for the trigger to change"
     assert births_run.trigger_cell(_arm(corpses=1), off, pos)["verdict"] == "FAIL"
     assert births_run.trigger_cell(_arm(firings=0, extra=0), off, pos)["verdict"] == "VACUOUS"
+    assert births_run.trigger_cell(_arm(firings=5, extra=0), off, pos)["verdict"] == "VACUOUS", "fired but changed no phase run: the trigger had nothing to change"
 
 
 def test_trigger_report_stops_a_world_with_no_firing_cell():
     docs = {("w", 42, "trigger_on"): _arm(firings=0, extra=0), ("w", 42, "trigger_off"): _arm(firings=0, extra=0), ("w", 42, "trigger_pos"): _arm(final="o")}
     report = births_run.trigger_report(docs)
     assert report["worlds_with_no_firing"] == ["w"] and report["verdict"] == "STOP"
+    fired_no_change = {("w", 42, "trigger_on"): _arm(firings=5, extra=0), ("w", 42, "trigger_off"): _arm(firings=0, extra=0), ("w", 42, "trigger_pos"): _arm(final="o")}
+    assert births_run.trigger_report(fired_no_change)["worlds_with_no_firing"] == ["w"], "the STOP counts only cells where the trigger changed a phase run"
 
 
 def _costs(per_tick, live=50, n=100, spike=None):

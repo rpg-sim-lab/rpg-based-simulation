@@ -57,6 +57,7 @@ LIMITS = (
     "every row comes from the spy's own outputs (typed updates, the state after each tick) or from the final-state hash; no row reads simulation_events.jsonl, the replay chunks or a run dir, which is why --recording-off is allowed (the 100-tick no_replay/OFF check decides it)",
     "the trigger arms patch the name the scheduler calls, src.engine.phase_graph.rise_triggers_phase (defined at src/world/risen.py), in the child process only and restore it at exit; no source file changes; trigger_off also makes RisenService.process_rises the identity",
     "metrics equality uses the kernel's integer and boolean counters per tick (phase counters, spatial_index_hits); floats are left out because they may be timings; the event stream is the typed world events of each applied update",
+    "R1 is keyed on RISEN adds; a corpse removed by the rise step without a RISEN add is caught only by the conservation audit and the event digest",
     "the cost read uses the kernel's stage timers (kernel._phase_costs): births sit inside governance_ecology, the rise and the trigger inside economy; a births-only or rise-only number is not readable, the delta of the bundle is",
     "every run is built under audit_mode and no_frame_pacing (births_child checks both flags and PINNED requires them); the counts are per-tick facts, not timing",
     "W4 is checked on the typed hunger update the births system returns, not on the mother's hunger after the tick (other phases move hunger on the same tick)",
@@ -336,7 +337,8 @@ def trigger_cell(on: dict, off: dict, pos: dict) -> Dict[str, Any]:
     """One world x seed: the HARD neutrality equalities between ON (real trigger, rise chance 0) and OFF (trigger off, rise off), the firing counts and the positive control.
 
     PASS needs: state hash, event stream and metrics all equal; ON firings > 0 and extra runs > 0; OFF 0 and 0; the positive control (trigger on, chance 1.0) differing from OFF; no corpse at tick 0.
-    VACUOUS when ON fired 0 times (rerun at the longer tick count); FAIL on any mismatch, a nonzero OFF count or a control that cannot fail."""
+    VACUOUS when ON fired 0 times OR fired but changed no phase run (extra_phase_runs == 0: resource_transactions ran anyway on every firing tick, so the trigger had nothing to change); it is rerun
+    at the longer tick count. FAIL on any mismatch, a nonzero OFF count or a control that cannot fail."""
     equal = {"state_hash": on["final_hash"] == off["final_hash"], "events": on["event_digest"] == off["event_digest"], "metrics": on["metrics_digest"] == off["metrics_digest"]}
     on_t, off_t = on["trigger"], off["trigger"]
     control_differs = pos["final_hash"] != off["final_hash"] or pos["event_digest"] != off["event_digest"]
@@ -344,17 +346,17 @@ def trigger_cell(on: dict, off: dict, pos: dict) -> Dict[str, Any]:
         "equal": equal, "on": on_t, "off": off_t, "control_differs_from_off": control_differs, "corpses_at_t0": [on["corpses_at_t0"], off["corpses_at_t0"]],
         "ticks": on["ticks"],
     }
-    if on_t["firings"] == 0:
+    if on_t["firings"] == 0 or on_t["extra_phase_runs"] == 0:
         return {**row, "verdict": "VACUOUS"}
     ok = all(equal.values()) and on_t["extra_phase_runs"] > 0 and off_t["firings"] == 0 and off_t["extra_phase_runs"] == 0 and control_differs and not any(row["corpses_at_t0"])
     return {**row, "verdict": "PASS" if ok else "FAIL"}
 
 
 def trigger_report(docs: Dict[Key, dict]) -> Dict[str, Any]:
-    """Every trigger cell, and the world-level STOP: a world with no cell that fired is a STOP to rpg-designer-ubuntu."""
+    """Every trigger cell, and the world-level STOP: a world with no cell where the trigger changed a phase run (extra_phase_runs > 0) is a STOP to rpg-designer-ubuntu."""
     cells = sorted({(w, s) for (w, s, m) in docs if m == "trigger_on"})
     rows = {f"{w}/{s}": trigger_cell(docs[(w, s, "trigger_on")], docs[(w, s, "trigger_off")], docs[(w, s, "trigger_pos")]) for (w, s) in cells}
-    stops = sorted({w for (w, _) in cells if not any(r["on"]["firings"] > 0 for k, r in rows.items() if k.startswith(f"{w}/"))})
+    stops = sorted({w for (w, _) in cells if not any(r["on"]["extra_phase_runs"] > 0 for k, r in rows.items() if k.startswith(f"{w}/"))})
     verdict = "STOP" if stops else "FAIL" if any(r["verdict"] == "FAIL" for r in rows.values()) else "VACUOUS" if any(r["verdict"] == "VACUOUS" for r in rows.values()) else "PASS"
     return {"cells": rows, "worlds_with_no_firing": stops, "verdict": verdict}
 
@@ -412,7 +414,7 @@ def run_trigger(args: argparse.Namespace) -> int:
         for cell, row in report["cells"].items():
             latest[cell.split("/")[0]] = [r for c, r in report["cells"].items() if c.startswith(cell.split("/")[0] + "/")]
     cell_verdicts = [r["verdict"] for rows in latest.values() for r in rows]
-    stop = any(not any(r["on"]["firings"] > 0 for r in rows) for rows in latest.values())
+    stop = any(not any(r["on"]["extra_phase_runs"] > 0 for r in rows) for rows in latest.values())
     final = "STOP" if stop else "FAIL" if "FAIL" in cell_verdicts else "PASS"
     summary = {"block": "trigger", "reports": reports, "verdict": final, "limits": list(LIMITS), "go": args.go, "recording_off": args.recording_off}
     (args.out / "summary.json").write_text(json.dumps(summary, indent=2, sort_keys=True), encoding="utf-8")
