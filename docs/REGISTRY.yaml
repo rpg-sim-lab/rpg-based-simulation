@@ -8107,6 +8107,21 @@
   artifact_files: []
   tags: []
 - type: ticket
+  path: agent-working/tickets/todos/TCK-20261118-A-SERVICE-PAYMENT-WITH-NO-PAYEE-DESTROYS-COIN.md
+  ticket_id: TCK-20261118-A-SERVICE-PAYMENT-WITH-NO-PAYEE-DESTROYS-COIN
+  title: A service, fee or tax paid to a non-building source with no named treasury
+    debits the payer and credits no one, so coin is destroyed (V6 breach, crowded_frontier
+    s46)
+  tier: standard
+  ticket_type: bug
+  date: '2026-11-18'
+  related_code_areas:
+  - src/core/conservation.py (_service_credit :133, _service_result :254, ResourceTransactionResolver
+    :271)
+  - src/engine/service_prices.py, src/engine/service_admission.py, src/engine/lodging.py
+  artifact_files: []
+  tags: []
+- type: ticket
   path: agent-working/tickets/todos/TCK-20261118-A-SUBJECT-WITH-A-STANDING-HELP-NEED-RE-DECIDES-SOLO-EVERY-TICK.md
   ticket_id: TCK-20261118-A-SUBJECT-WITH-A-STANDING-HELP-NEED-RE-DECIDES-SOLO-EVERY-TICK
   title: CooperationPhase re-runs the posture choice on every tick for any subject
