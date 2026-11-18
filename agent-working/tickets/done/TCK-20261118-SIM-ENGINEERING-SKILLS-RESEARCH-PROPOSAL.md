@@ -1,10 +1,10 @@
 ---
-status: active
+status: historical
 layer: ai
 authority: P1
 audience: agent
 ticket_id: TCK-20261118-SIM-ENGINEERING-SKILLS-RESEARCH-PROPOSAL
-phase: open
+phase: done
 date: 2026-11-18
 tags: [skills, simulation-quality, testing]
 ---
@@ -15,7 +15,7 @@ tags: [skills, simulation-quality, testing]
 Research and propose domain-specific simulation-engineering skills (research + proposal only; nothing is built)
 
 ## Status
-INPROGRESS
+DONE
 
 ## Tier
 standard
@@ -50,6 +50,7 @@ Deliverable: stored artifact under agent-working/stored_artifacts/<this ticket>/
 - Work stops after the proposal; approval is requested via the leads.
 
 ## Related Tickets
+- Follow-ups filed at close: TCK-20261118-ARCH-REVIEWER-LIFECYCLE-TIME-CHECKLIST-EVAL, TCK-20261118-STATEFUL-PROPERTY-PILOT-FOR-RECORD-LIFECYCLES
 - TCK-20260804-SKILL-CATALOG-MODERNIZATION-EPIC (catalog, triggering, usage tracking: reused, not redone)
 - TCK-20260810-SKILL-USAGE-RETRO-TRACKING, TCK-20260805-SKILL-USAGE-METRIC
 
@@ -59,6 +60,7 @@ Deliverable: stored artifact under agent-working/stored_artifacts/<this ticket>/
 
 ## Related Stored Artifacts
 - agent-working/stored_artifacts/TCK-20260804-SKILL-CATALOG-MODERNIZATION-EPIC/
+- agent-working/stored_artifacts/TCK-20261118-SIM-ENGINEERING-SKILLS-RESEARCH-PROPOSAL/ (plan, coverage_audit, research, defect_set, proposal)
 
 ## Related Code Areas
 - .claude/skills/, .claude/agents/, tools/mechanism_registry/
@@ -69,13 +71,15 @@ Deliverable: stored artifact under agent-working/stored_artifacts/<this ticket>/
 - The pending Phase 2 dispatch to agent-working-implementer in the handover is closed and stays paused.
 
 ## Implementation Notes
-Plan: agent-working/staging_artifacts/TCK-20261118-SIM-ENGINEERING-SKILLS-RESEARCH-PROPOSAL/plan.md
+Plan: agent-working/stored_artifacts/TCK-20261118-SIM-ENGINEERING-SKILLS-RESEARCH-PROPOSAL/plan.md
 
 ## Test Summary
-n/a (research and proposal; no code).
+n/a (research and proposal; no code). Frontmatter validated on ticket and artifacts.
 
 ## Files Changed
-(filled at close)
+- agent-working/stored_artifacts/TCK-20261118-SIM-ENGINEERING-SKILLS-RESEARCH-PROPOSAL/{plan,coverage_audit,research,defect_set,proposal}.md
+- agent-working/tickets/todos/TCK-20261118-ARCH-REVIEWER-LIFECYCLE-TIME-CHECKLIST-EVAL.md
+- agent-working/tickets/todos/TCK-20261118-STATEFUL-PROPERTY-PILOT-FOR-RECORD-LIFECYCLES.md
 
 ## Completion Summary
-(filled at close)
+Research and proposal delivered; nothing was built. Owner decision (#715, 2026-11-18): approve Option B (concrete lifecycle and time checklist for architecture-reviewer) with an eval first; eval is small (1 model, about 40 runs, arms A0 current vs A1 checklist, keep rule: at least +2 positives caught, at most +1 false positive per 5 negatives, under 10% extra tokens). A skill is built only if the eval shows a gain; the four-skill structure is rejected. The stateful-property pilot routes to testing-planner (filed as a ticket); the time-contract question routes to rpg-planner via lead-planner. Evidence limits: metamorphic-testing surveys and ODD were read from search snippets only, QuickCheck from memory; rpg-designer's defect labels were not checked against git (the eval ticket does this).
