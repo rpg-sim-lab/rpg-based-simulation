@@ -98,6 +98,20 @@ No new durable state is expected. The fix names a payee or refuses. If a payee n
   - HARD: V6 delta 0, plus 0 unbalanced accepted results, on cf s46 at the fix tree and on the 3 gate worlds at s42;
   - REPORTED: REST and EAT "can't pay" refusals, fix vs base. A behaviour change (unpaid beds and meals stop); read it alongside the starvation-with-open-ways class.
 
+- 2026-11-19 RE-RULED (rpg-designer; it SUPERSEDES the "FIX, RULED" and "TESTS"/"OWN-JOB" bullets above). Lane C found that refusing only the charge would deliver beds and meals FREE, and that today's SERVICE_PAYMENT_LAW = CLAMP ("payment never closes a service"; flipping to ATOMIC is owner decision 44 / D73). Option B, within CLAMP; no owner ask, no expectation changes:
+  1. One price helper: price = max(0, gold_cost - gold_delta); paid = min(the payer's running gold at resolve, price).
+  2. Debit = -paid = credit (the building, else a named treasury). Partial payment stays the law; at gold 0 the charge is 0.
+  3. No payee: debit 0 (no coin destroyed), and the service goes ahead per the law. Each such call is COUNTED by observability (not durable). A P2 follow-up ticket makes every priced intent name its payee, with the count as evidence.
+  4. Residual MINT risk is in scope:
+     - inspect and state (labelled inspected) whether the running inventory includes every earlier same-tick debit of that payer;
+     - a test: two same-tick charges summing to more than the purse; total applied debit == total credit, and the apply clamp never cuts a resolved debit;
+     - if it can cut one, make that impossible, and add a Hard Law check that applied debit == resolved debit.
+  - TESTS: a balance test over every source_kind; the exact t3181 case; the unnamed-payee case (debit 0, counted); the D test. The existing CLAMP tests (gold 3 and 0, partial credit) stay UNCHANGED and passing.
+  - OWN-JOB, fixed before data:
+    - HARD: V6 0, 0 unbalanced accepted results (cf s46 plus 3 worlds at s42), and 0 apply-clamp cuts of a resolved debit;
+    - REPORTED: total REST/EAT coin charged, fix vs base. No service-refusal change is expected, so the starvation note is withdrawn.
+  - DOCS: ch03, plus one sentence in service_admission.py and service_prices.py ("the debit equals what the payee receives"), plus the parity evidence.
+
 ## Test Summary
 
 ## Files Changed
