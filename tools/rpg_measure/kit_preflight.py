@@ -40,6 +40,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import time
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Sequence, Tuple
 
@@ -299,12 +300,16 @@ def check_fixture_run(proc: dict, tree: Path, python: str, base: Path, ticks_cap
     out = outdir / f"{proc['name']}.out"
     ctx = {"python": python, "tree": tree, "world": fixture.get("world", ""), "seed": fixture.get("seed", 42), "ticks": min(int(fixture.get("ticks", ticks_cap)), ticks_cap), "out": out, "outdir": outdir}
     cmd = [substitute(token, ctx, base) for token in proc["entry"]]
+    load_before, started = os.getloadavg()[0], time.monotonic()
     try:
         done = run(cmd, tree, child_env(tree, proc.get("env")))
     except subprocess.TimeoutExpired:
         return [("c fixture run", scope, FAIL, f"timed out after {TIMEOUT_SECONDS}s")]
+    wall = time.monotonic() - started
     rows: List[Row] = [("c fixture run", scope, PASS if done.returncode == 0 else FAIL,
                         f"rc=0, {ctx['ticks']} tick(s)" if done.returncode == 0 else f"rc={done.returncode}: {(done.stderr.strip().splitlines() or [''])[-1][:160]}")]
+    # Perf (informational, always PASS): wall time and the 1-minute loadavg before/after this process, so a later perf read does not come from file mtimes.
+    rows.append(("i perf", scope, PASS, f"wall {wall:.2f}s, loadavg1 {load_before:.2f} -> {os.getloadavg()[0]:.2f}"))
     text = done.stdout + "\n" + done.stderr
     doc: Any = None
     if out.is_file():

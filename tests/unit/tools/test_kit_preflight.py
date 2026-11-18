@@ -240,3 +240,60 @@ def test_a_wrapper_defined_inside_a_script_is_read_from_its_source(tmp_path):
     rows = _run(tmp_path, path)
     assert any(c == "g wrapper signature" and st == kp.FAIL and "context" in d for c, _, st, d in rows) is False
     assert not any(c == "g wrapper signature" and st == kp.FAIL for c, _, st, _ in rows)
+
+
+# ---- perf row and the v4 shared gate ------------------------------------------------------------------------------------------------------
+
+def test_every_fixture_run_logs_wall_time_and_loadavg(tmp_path):
+    rows = _run(tmp_path, _kit(tmp_path)[0])
+    perf = [r for r in rows if r[0] == "i perf"]
+    assert perf and all(st == kp.PASS and "wall " in d and "loadavg1 " in d for _, _, st, d in perf)
+
+
+REAL_GATE = Path("/mnt/data2/rpg-measure/lib/busy_gate.sh")
+
+
+def _gate_busy(*, extra_exclude=()):
+    """rpg_busy from the real gate file, ignoring this pytest process and its parent (their own command line names pytest and a project path)."""
+    import os
+    import subprocess
+    exclude = "|".join(str(p) for p in (os.getpid(), os.getppid(), *extra_exclude))
+    script = (f". {REAL_GATE}\npgrep() {{ command pgrep \"$@\" | grep -vxE '{exclude}'; }}\nrpg_busy; echo $?")
+    done = subprocess.run(["bash", "-c", script], capture_output=True, text=True, timeout=30)
+    return done.stdout.strip().splitlines()[-1] == "0"
+
+
+@pytest.mark.skipif(not REAL_GATE.is_file(), reason="the shared host gate is not on this host")
+def test_gate_v4_counts_only_python_processes_with_kit_words(tmp_path):
+    import shutil
+    import subprocess
+    import time
+    probe = tmp_path / "x_probe.py"
+    probe.write_text("import time\ntime.sleep(60)\n")
+    arg = "/mnt/data2/rpg-measure/x"
+    children = []
+    try:
+        # a bash whose command line carries the kit words and a project path is NOT busy
+        bash = subprocess.Popen(["bash", "-c", f"sleep 60 # python x_probe.py pytest {arg}"])
+        children.append(bash)
+        time.sleep(0.3)
+        assert _gate_busy() is False
+        # a python process on a *_probe path under the project is busy
+        py = subprocess.Popen([sys.executable, str(probe), arg])
+        children.append(py)
+        time.sleep(0.5)
+        assert _gate_busy() is True
+        py.kill()
+        py.wait()
+        time.sleep(0.2)
+        assert _gate_busy() is False
+        # python launched by `timeout` is busy
+        if shutil.which("timeout"):
+            under = subprocess.Popen(["timeout", "60", sys.executable, str(probe), arg])
+            children.append(under)
+            time.sleep(0.5)
+            assert _gate_busy() is True
+    finally:
+        for child in children:
+            child.kill()
+            child.wait()

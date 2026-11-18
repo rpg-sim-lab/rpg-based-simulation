@@ -33,6 +33,8 @@ Owner direction #715 6971915608, item 2. On 2026-11-18 two kit faults reached S9
 Others the same day: `python -I` with PYTHONPATH (no import), and a runner not writing a `driver_rc=` line that its summarizer reads. The check should be automatic, not more manual review.
 
 ## Scope
+
+- (added 2026-11-18, rpg-designer via rpg-planner) per-process wall time and 1-minute loadavg in the table (`i perf`, informational), and a regression test of the v4 shared gate (`busy_gate.sh` sha b1b1bafc…: only an interpreter-argv[0] process counts).
 `tools/rpg_measure/kit_preflight.py` (stdlib only, like env_digest.py), plus a kit manifest (JSON beside the kit: each file with its sha256, entry command, expected output fields, guard-line regex). Run as `kit_preflight.py <manifest> --tree <A> --tree <B> --ticks 10`. Checks:
 (a) every kit file named in the manifest exists at its sha;
 (b) each kit script imports on BOTH frozen trees under the exact interpreter flags the run uses (python -I, cwd = the tree);
@@ -70,6 +72,10 @@ Output: a PASS/FAIL table with the input shas, pasted into the S9 packet with th
 
 ## Test Summary
 
+tests/unit/tools/test_kit_preflight.py alone (-n 1, 3500M): 20 passed in 10.20s, rc=0 (includes the perf row and the v4 gate regression test; a first run had 19 passed, 1 failed from an indexing bug in the new perf test, fixed). Manual acceptance runs (evidence: executed), 2026-11-18, gated, one at a time: approved #955 kit on main_99a83adc9_b + head_b5f8bc01e_b, 131 ticks: PASS 0 of 45; faulty rebuild: FAIL 2 of 26 (check d, field 6 constant "None", both trees); churn kit manifest_v3 on tree_fix2: PASS 0 of 21.
+
 ## Files Changed
+
+tools/rpg_measure/kit_preflight.py (new), tools/rpg_measure/README.md, tests/unit/tools/test_kit_preflight.py (new), this ticket and its staging artifacts.
 
 ## Completion Summary

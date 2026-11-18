@@ -33,6 +33,7 @@ beside the kit (shape in the module docstring): each kit file with its sha256, e
 | f | a runner or shell file that invokes a `*.py` file that is not a manifest file with a sha (runner v2 calling `blocker_spy.py` while the S9 names v3b) |
 | g | a wrapper whose parameters do not match its target's (`ctx` vs `context`, which a swallowed TypeError would hide as "not perceived") |
 | h | a heavy kit python file whose name does not match the shared gate's `RPG_HEAVY_WORDS` (`lib/busy_gate.sh`), so other lanes' gates cannot see the job (a `_reader.py` near-miss) |
+| i | informational: wall time and the 1-minute loadavg (before -> after) of each fixture run, so later perf reads do not come from file mtimes; always PASS |
 
 ### The S9 packet line and the evidence labels
 
