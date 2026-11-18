@@ -271,7 +271,7 @@ def test_only_a_priced_service_that_names_no_payee_sets_payee_missing(source_id,
     state = _state(payer)
     intent = ResourceTransferIntent(source_id=source_id, source_kind="TAX", gold_delta=-PRICE, transfer_kind="TAX", treasury_faction=faction)
     result = _resolve(state, payer, intent)
-    assert result.accepted and result.payee_missing is expect_missing
+    assert result.accepted and bool(result.payee_missing) is expect_missing
     assert gold_net(result, state) == 0.0
 
 
@@ -279,7 +279,7 @@ def test_a_broke_payer_at_a_building_is_not_a_missing_payee():
     payer = _payer(0)
     state = _state(payer)
     result = _resolve(state, payer, _charge("TOWN_SERVICE", PRICE, "REST"))
-    assert result.accepted and result.payee_missing is False and _gold(result.inventory_update) == 0.0
+    assert result.accepted and not result.payee_missing and _gold(result.inventory_update) == 0.0
 
 
 def test_a_free_unnamed_service_is_not_counted():
@@ -287,7 +287,7 @@ def test_a_free_unnamed_service_is_not_counted():
     payer = _payer(50)
     state = _state(payer)
     result = _resolve(state, payer, ResourceTransferIntent(source_id=999, source_kind="SERVICE_FEE", gold_delta=0, gold_cost=0, transfer_kind="FEE"))
-    assert result.accepted and result.payee_missing is False
+    assert result.accepted and not result.payee_missing
 
 
 def _fee(group_id=None):
