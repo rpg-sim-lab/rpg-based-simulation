@@ -8002,6 +8002,25 @@
   - agent-working/stored_artifacts/TCK-20261118-A-DIAGNOSTIC-KIT-PREFLIGHT-CHECKS-EACH-KIT-ON-BOTH-FROZEN-TREES-BEFORE-ITS-RUN/test_plan.md
   tags: []
 - type: ticket
+  path: agent-working/tickets/done/TCK-20261118-CHECKLIST-PLACEMENT-PROPOSAL.md
+  ticket_id: TCK-20261118-CHECKLIST-PLACEMENT-PROPOSAL
+  title: 'Proposal: where the lifecycle and clock checklist should sit so it fires
+    on hand-closed tickets (proposal only)'
+  tier: standard
+  ticket_type: chore
+  date: '2026-11-18'
+  related_code_areas:
+  - .github/pull_request_template.md, tools/delivery/pr_render.py, tools/ticket_field_values.py,
+    tools/gate_checks/done_checker_static.py, tools/agent-monitoring/record_hand_orchestrated_closure.py
+  artifact_files:
+  - agent-working/stored_artifacts/TCK-20261118-CHECKLIST-PLACEMENT-PROPOSAL/investigation.md
+  - agent-working/stored_artifacts/TCK-20261118-CHECKLIST-PLACEMENT-PROPOSAL/plan.md
+  - agent-working/stored_artifacts/TCK-20261118-CHECKLIST-PLACEMENT-PROPOSAL/proposal.md
+  - agent-working/stored_artifacts/TCK-20261118-CHECKLIST-PLACEMENT-PROPOSAL/test_plan.md
+  tags:
+  - skills
+  - process-improvement
+- type: ticket
   path: agent-working/tickets/done/TCK-20261118-PROFILE-MAIN-99A83ADC9-RESOLUTION-OVERHEAD-AND-WALL-CLOCK-PER-1000-TICKS.md
   ticket_id: TCK-20261118-PROFILE-MAIN-99A83ADC9-RESOLUTION-OVERHEAD-AND-WALL-CLOCK-PER-1000-TICKS
   title: 'Profile main 99a83adc9: attribute resolution_overhead, re-check H1/H2/H3,
@@ -8017,6 +8036,134 @@
   - agent-working/stored_artifacts/TCK-20261118-PROFILE-MAIN-99A83ADC9-RESOLUTION-OVERHEAD-AND-WALL-CLOCK-PER-1000-TICKS/test_plan.md
   tags:
   - performance
+- type: ticket
+  path: agent-working/tickets/done/TCK-20261118-REQUIRED-DURABLE-STATE-LIFECYCLE-CLOCKS-SECTION-IN-TICKETS-AND-PR-BODIES.md
+  ticket_id: TCK-20261118-REQUIRED-DURABLE-STATE-LIFECYCLE-CLOCKS-SECTION-IN-TICKETS-AND-PR-BODIES
+  title: Tickets carry a required "Durable state, lifecycle and clocks" section, presence-checked
+    at close and rendered into the PR body, with a planner-review advisory line
+  tier: standard
+  ticket_type: feature
+  date: '2026-11-18'
+  related_code_areas:
+  - tools/ticket_field_values.py, tools/gate_checks/done_checker_static.py, tools/delivery/{pr_render.py,pr_body_lint.py,pr_template_spec.json},
+    .github/pull_request_template.md, .github/workflows/pr-body-lint.yml, .claude/workflows/create-tickets.js,
+    .claude/agents/ticket-scoper.md, .claude/skills/create-tickets/, .agents/rules/ticket.md
+  artifact_files:
+  - agent-working/stored_artifacts/TCK-20261118-REQUIRED-DURABLE-STATE-LIFECYCLE-CLOCKS-SECTION-IN-TICKETS-AND-PR-BODIES/investigation.md
+  - agent-working/stored_artifacts/TCK-20261118-REQUIRED-DURABLE-STATE-LIFECYCLE-CLOCKS-SECTION-IN-TICKETS-AND-PR-BODIES/plan.md
+  - agent-working/stored_artifacts/TCK-20261118-REQUIRED-DURABLE-STATE-LIFECYCLE-CLOCKS-SECTION-IN-TICKETS-AND-PR-BODIES/test_plan.md
+  tags:
+  - skills
+  - process-improvement
+- type: ticket
+  path: agent-working/tickets/done/TCK-20261118-SIM-ENGINEERING-SKILLS-RESEARCH-PROPOSAL.md
+  ticket_id: TCK-20261118-SIM-ENGINEERING-SKILLS-RESEARCH-PROPOSAL
+  title: Research and propose domain-specific simulation-engineering skills (research
+    + proposal only; nothing is built)
+  tier: standard
+  ticket_type: chore
+  date: '2026-11-18'
+  related_code_areas:
+  - .claude/skills/, .claude/agents/, tools/mechanism_registry/
+  artifact_files:
+  - agent-working/stored_artifacts/TCK-20261118-SIM-ENGINEERING-SKILLS-RESEARCH-PROPOSAL/coverage_audit.md
+  - agent-working/stored_artifacts/TCK-20261118-SIM-ENGINEERING-SKILLS-RESEARCH-PROPOSAL/defect_set.md
+  - agent-working/stored_artifacts/TCK-20261118-SIM-ENGINEERING-SKILLS-RESEARCH-PROPOSAL/investigation.md
+  - agent-working/stored_artifacts/TCK-20261118-SIM-ENGINEERING-SKILLS-RESEARCH-PROPOSAL/plan.md
+  - agent-working/stored_artifacts/TCK-20261118-SIM-ENGINEERING-SKILLS-RESEARCH-PROPOSAL/proposal.md
+  - agent-working/stored_artifacts/TCK-20261118-SIM-ENGINEERING-SKILLS-RESEARCH-PROPOSAL/research.md
+  - agent-working/stored_artifacts/TCK-20261118-SIM-ENGINEERING-SKILLS-RESEARCH-PROPOSAL/test_plan.md
+  tags:
+  - skills
+  - simulation-quality
+  - testing
+- type: ticket
+  path: agent-working/tickets/todos/TCK-20261118-A-DECAYING-CORPSE-DESTROYS-EVERY-ITEM-EXCEPT-GOLD-AND-MEAT-WITH-NO-SINK.md
+  ticket_id: TCK-20261118-A-DECAYING-CORPSE-DESTROYS-EVERY-ITEM-EXCEPT-GOLD-AND-MEAT-WITH-NO-SINK
+  title: When a corpse decays, its gold becomes a ground purse and its raw meat leaves
+    through MEAT_DECAYED, but every other item it holds disappears with no typed sink,
+    so atomic conservation cannot balance from the records
+  tier: standard
+  ticket_type: bug
+  date: '2026-11-18'
+  related_code_areas:
+  - src/engine/world_dynamics.py (_decay_corpses, _meat_decayed_events), src/engine/economy.py
+    (resource_transactions, _without_decay_of_looted_bodies), the conservation checks
+    in src/observability/
+  artifact_files: []
+  tags: []
+- type: ticket
+  path: agent-working/tickets/todos/TCK-20261118-A-DIAGNOSTIC-KIT-PREFLIGHT-CHECKS-EACH-KIT-ON-BOTH-FROZEN-TREES-BEFORE-ITS-RUN.md
+  ticket_id: TCK-20261118-A-DIAGNOSTIC-KIT-PREFLIGHT-CHECKS-EACH-KIT-ON-BOTH-FROZEN-TREES-BEFORE-ITS-RUN
+  title: 'An automatic preflight for every measurement kit (spy, probe, runner, summarizer):
+    sha, import, a short fixture run and field liveness on both frozen trees, with
+    its output in the S9 packet'
+  tier: standard
+  ticket_type: feature
+  date: '2026-11-18'
+  related_code_areas:
+  - tools/rpg_measure/
+  artifact_files:
+  - agent-working/stored_artifacts/TCK-20261118-A-DIAGNOSTIC-KIT-PREFLIGHT-CHECKS-EACH-KIT-ON-BOTH-FROZEN-TREES-BEFORE-ITS-RUN/investigation.md
+  - agent-working/stored_artifacts/TCK-20261118-A-DIAGNOSTIC-KIT-PREFLIGHT-CHECKS-EACH-KIT-ON-BOTH-FROZEN-TREES-BEFORE-ITS-RUN/plan.md
+  - agent-working/stored_artifacts/TCK-20261118-A-DIAGNOSTIC-KIT-PREFLIGHT-CHECKS-EACH-KIT-ON-BOTH-FROZEN-TREES-BEFORE-ITS-RUN/test_plan.md
+  tags: []
+- type: ticket
+  path: agent-working/tickets/todos/TCK-20261118-A-SUBJECT-WITH-A-STANDING-HELP-NEED-RE-DECIDES-SOLO-EVERY-TICK.md
+  ticket_id: TCK-20261118-A-SUBJECT-WITH-A-STANDING-HELP-NEED-RE-DECIDES-SOLO-EVERY-TICK
+  title: CooperationPhase re-runs the posture choice on every tick for any subject
+    with a help need, so a subject whose need never clears picks SOLO and emits a
+    cooperation_event on every tick, with no memory of its last decision
+  tier: standard
+  ticket_type: bug
+  date: '2026-11-18'
+  related_code_areas:
+  - src/domains/cooperation/phase.py (CooperationPhase.execute, _record_decision_events),
+    src/domains/cooperation/services.py (select_for_own_needs), CooperationIntentBridge.map_decision,
+    src/observability/event_shapers.py (cooperation_event)
+  artifact_files: []
+  tags: []
+- type: ticket
+  path: agent-working/tickets/todos/TCK-20261118-ACTION-OUTCOMES-ARE-WRITTEN-INTO-THE-NAVIGATION-FAILURE-REASON.md
+  ticket_id: TCK-20261118-ACTION-OUTCOMES-ARE-WRITTEN-INTO-THE-NAVIGATION-FAILURE-REASON
+  title: About twenty action handlers write their failure outcome into NavigationUpdate.failure_reason,
+    so last_failure_reason mixes movement-step outcomes with action outcomes; give
+    action outcomes their own typed field and keep the navigation field step-only
+  tier: standard
+  ticket_type: refactor
+  date: '2026-11-18'
+  related_code_areas:
+  - src/engine/core_actions.py, action_router.py, combat_actions.py, skill_actions.py,
+    aoe_actions.py, lodging.py; src/core/updates.py (NavigationUpdate); src/engine/patches.py:290
+  artifact_files: []
+  tags: []
+- type: ticket
+  path: agent-working/tickets/todos/TCK-20261118-ARCH-REVIEWER-LIFECYCLE-TIME-CHECKLIST-EVAL.md
+  ticket_id: TCK-20261118-ARCH-REVIEWER-LIFECYCLE-TIME-CHECKLIST-EVAL
+  title: Eval a concrete lifecycle and time checklist for architecture-reviewer, and
+    adopt it only if the keep rule passes
+  tier: standard
+  ticket_type: feature
+  date: '2026-11-18'
+  related_code_areas:
+  - .claude/agents/architecture-reviewer.md, tools/gate_checks/architecture_reviewer_static.py
+  artifact_files: []
+  tags:
+  - skills
+  - simulation-quality
+  - testing
+- type: ticket
+  path: agent-working/tickets/todos/TCK-20261118-COOPERATION-STOPS-EARLY-IN-URBAN-S123-WHILE-FATIGUE-PILES-UP-AS-THE-CURRENT-PROJECT.md
+  ticket_id: TCK-20261118-COOPERATION-STOPS-EARLY-IN-URBAN-S123-WHILE-FATIGUE-PILES-UP-AS-THE-CURRENT-PROJECT
+  title: In urban_political s123 the last cooperation_event is around t1460-1630 of
+    5000, and late in every urban run 9-15 subjects hold 'fatigue' as their current
+    project; pre-existing on main, cause unread
+  tier: standard
+  ticket_type: bug
+  date: '2026-11-18'
+  related_code_areas: []
+  artifact_files: []
+  tags: []
 - type: ticket
   path: agent-working/tickets/todos/TCK-20261118-MOVED-RECENTLY-IS-SET-TRUE-ON-THE-FIRST-STEP-AND-NEVER-CLEARED.md
   ticket_id: TCK-20261118-MOVED-RECENTLY-IS-SET-TRUE-ON-THE-FIRST-STEP-AND-NEVER-CLEARED
@@ -8081,6 +8228,20 @@
   tags:
   - performance
 - type: ticket
+  path: agent-working/tickets/todos/TCK-20261118-STATEFUL-PROPERTY-PILOT-FOR-RECORD-LIFECYCLES.md
+  ticket_id: TCK-20261118-STATEFUL-PROPERTY-PILOT-FOR-RECORD-LIFECYCLES
+  title: Pilot a Hypothesis stateful-property test for one durable-record lifecycle
+    (testing-planner ask)
+  tier: standard
+  ticket_type: feature
+  date: '2026-11-18'
+  related_code_areas:
+  - tests/ (placement per taxonomy), the chosen lifecycle's source module
+  artifact_files: []
+  tags:
+  - testing
+  - simulation-quality
+- type: ticket
   path: agent-working/tickets/todos/TCK-20261118-STRATEGIC-INTENT-AND-BANDWIDTH-PASSES-COST-1-TO-3-PERCENT-EACH.md
   ticket_id: TCK-20261118-STRATEGIC-INTENT-AND-BANDWIDTH-PASSES-COST-1-TO-3-PERCENT-EACH
   title: evaluate_strategic_intent_with_expiry and enforce_bandwidth cost 1-3 % of
@@ -8093,6 +8254,20 @@
   tags:
   - performance
 - type: ticket
+  path: agent-working/tickets/todos/TCK-20261118-TEMPORAL-SCALE-AUDIT-CAN-THE-CURRENT-CALENDAR-CARRY-MULTI-GENERATION-RUNS.md
+  ticket_id: TCK-20261118-TEMPORAL-SCALE-AUDIT-CAN-THE-CURRENT-CALENDAR-CARRY-MULTI-GENERATION-RUNS
+  title: 'Temporal-scale audit: can the approved 2,400-ticks/day calendar practically
+    carry multi-generation simulation? Compare a few ticks/day values with biological
+    compression under the current calendar, and recommend'
+  tier: standard
+  ticket_type: chore
+  date: '2026-11-18'
+  related_code_areas:
+  - src/core/calendar.py, src/core/state.py (LifecycleComponent.max_age_ticks), src/systems/lifecycle_systems/lifecycle.py,
+    src/ai/life_stage.py, src/engine/cadence.py
+  artifact_files: []
+  tags: []
+- type: ticket
   path: agent-working/tickets/todos/TCK-20261118-THE-RNG-COMPOSITE-SEED-FIELDS-OVERLAP-SO-DISTINCT-DRAWS-CAN-SHARE-A-SEED.md
   ticket_id: TCK-20261118-THE-RNG-COMPOSITE-SEED-FIELDS-OVERLAP-SO-DISTINCT-DRAWS-CAN-SHARE-A-SEED
   title: DeterministicRNG._composite_seed XORs its fields into overlapping bit ranges,
@@ -8103,6 +8278,23 @@
   related_code_areas:
   - src/platform/rng.py::DeterministicRNG._composite_seed
   artifact_files: []
+  tags: []
+- type: ticket
+  path: agent-working/tickets/done/TCK-20261117-A-RESOLVE-BLOCKER-PROJECT-IS-RE-CREATED-EVERY-80-TICKS-AND-STALLS-COOPERATION.md
+  ticket_id: TCK-20261117-A-RESOLVE-BLOCKER-PROJECT-IS-RE-CREATED-EVERY-80-TICKS-AND-STALLS-COOPERATION
+  title: In urban_political s42, half the survivors re-create a resolve_blocker project
+    about every 80 ticks after t≈550 (each one times out and is abandoned), and cooperation
+    stops
+  tier: standard
+  ticket_type: bug
+  date: '2026-11-17'
+  related_code_areas:
+  - src/systems/strategic_systems/intelligence.py (the resolve_blocker timeout), the
+    blocker creation paths
+  artifact_files:
+  - agent-working/stored_artifacts/TCK-20261117-A-RESOLVE-BLOCKER-PROJECT-IS-RE-CREATED-EVERY-80-TICKS-AND-STALLS-COOPERATION/investigation.md
+  - agent-working/stored_artifacts/TCK-20261117-A-RESOLVE-BLOCKER-PROJECT-IS-RE-CREATED-EVERY-80-TICKS-AND-STALLS-COOPERATION/plan.md
+  - agent-working/stored_artifacts/TCK-20261117-A-RESOLVE-BLOCKER-PROJECT-IS-RE-CREATED-EVERY-80-TICKS-AND-STALLS-COOPERATION/test_plan.md
   tags: []
 - type: ticket
   path: agent-working/tickets/done/TCK-20261117-AN-ENTITY-CARRIES-ITS-OCCUPATION-LABEL-AND-ONE-SPECIES-READ-SPECIES-OF.md
@@ -8233,20 +8425,6 @@
   related_code_areas:
   - src/engine/patches.py:288, src/systems/strategic_systems/intelligence.py:176-202
     and :495, src/engine/movement.py:362-365 and :456-472
-  artifact_files: []
-  tags: []
-- type: ticket
-  path: agent-working/tickets/todos/TCK-20261117-A-RESOLVE-BLOCKER-PROJECT-IS-RE-CREATED-EVERY-80-TICKS-AND-STALLS-COOPERATION.md
-  ticket_id: TCK-20261117-A-RESOLVE-BLOCKER-PROJECT-IS-RE-CREATED-EVERY-80-TICKS-AND-STALLS-COOPERATION
-  title: In urban_political s42, half the survivors re-create a resolve_blocker project
-    about every 80 ticks after t≈550 (each one times out and is abandoned), and cooperation
-    stops
-  tier: standard
-  ticket_type: bug
-  date: '2026-11-17'
-  related_code_areas:
-  - src/systems/strategic_systems/intelligence.py (the resolve_blocker timeout), the
-    blocker creation paths
   artifact_files: []
   tags: []
 - type: ticket
