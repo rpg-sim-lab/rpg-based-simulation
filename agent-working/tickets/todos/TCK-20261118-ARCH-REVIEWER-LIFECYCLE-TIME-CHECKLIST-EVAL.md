@@ -108,6 +108,15 @@ Outcome so far: only defects 1 and 5 have a clean fix commit and pre-fix snapsho
 - Defect 6: which PR or document holds the S9 bar and the 2000t window?
 - Extras: ticket or PR ids for the corpse sink, the SOLO event spam and the perception-input mismatch (or confirm there are none).
 
+### Updates from lead-planner (2026-11-18, relayed from its own record; not independently checked by me)
+- Defect 6 (births S9): the S9 outcome criteria, including the 2000t window, were ruled by rpg-designer and recorded on #715 (run record 6968864281, result comment follows it). Stored copy: `rpg_designer_s9_outcome_criteria_2026-11-18.md` under `agent-working/stored_artifacts/TCK-20261109-M1-BASIC-WILD-BIRTHS-FOR-EVERY-LIVING-KIND/` on origin branch `rpg-ubuntu-planner-filings` (02693e75c). The "window shorter than gestation" caveat came from rpg-planner-ubuntu's S9 report. This is an in-flight item, not a merged fix; its pre-fix input is the S9 bar design itself.
+- Corpse sink: `TCK-20261118-A-DECAYING-CORPSE-DESTROYS-EVERY-ITEM-EXCEPT-GOLD-AND-MEAT-WITH-NO-SINK` (P1), filed on u24 at local c17963fac on `rpg-planner-tickets-next`; not on origin yet.
+- SOLO event spam: `TCK-20261118-A-SUBJECT-WITH-A-STANDING-HELP-NEED-RE-DECIDES-SOLO-EVERY-TICK`, on u24 local (288b9d3b2, 7e7778f5a, 4b99805c0); not on origin yet.
+- Perception-input mismatch: no id; came up in #955 (PERC-02a); lead-planner is asking rpg-designer.
+- Defect 3 and the "4 (the first defect)" wording: still with rpg-designer via u24.
+- Owner rule stays as set. When the eval reports, state the actual number of positives and that the +2 margin is coarse; mining `escaped-defect` tickets is the route if the owner wants it widened.
+- Two of the above sit on unpushed u24 branches; the eval build must not rely on them until they reach origin.
+
 ## Test Summary
 (filled at close)
 
