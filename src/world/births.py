@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import math
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Set
+from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional, Set
 
 from src.content.resolver import EntityArchetypeResolver
 from src.core.builder import build_parent_bond_updates_for_birth
@@ -26,6 +26,8 @@ from src.engine.spatial_query import SpatialQueryService
 from src.entities.archetype_factory import ArchetypeEntityFactory, NewbornBirth
 from src.entities.contract_builder import resolved_archetype_to_contract
 from src.systems.lifecycle_systems.genetics import GeneticsSystem
+from src.systems.world_systems.generator import NoFreeSpawnTile
+from src.world.mate_gate import passes_mate_gate
 
 if TYPE_CHECKING:
     from src.content.schema import ReproductionProfileDefinition
@@ -64,7 +66,7 @@ class BirthService:
             # Draw first: it is stateless and independent of any mate, so a failed draw skips the spatial query.
             if generator.rng.get_float(Domain.SPAWN, state.tick, mother.id, sub_id=BIRTH_DRAW_SUB_ID) >= profile.birth_chance_per_check:
                 continue
-            mate = _find_mate(state, mother, candidates, used, profile.mate_radius_tiles)
+            mate = _find_mate(state, mother, candidates, used, profile.mate_radius_tiles, lambda m: passes_mate_gate(mother, m, profile))
             if mate is None:
                 continue
             used.update((mother.id, mate.id))
@@ -113,8 +115,9 @@ def _past_interval(entity: EntityState, tick: int) -> bool:
 
 def _find_mate(
     state: AuthoritativeState, mother: EntityState, candidates: Dict[int, EntityState], used: Set[int], radius: float,
+    gate: Callable[[EntityState], bool],
 ) -> Optional[EntityState]:
-    """The lowest-id other same-species candidate within `radius` tiles (Chebyshev) that is past its interval and not yet a parent this check."""
+    """The lowest-id other same-species candidate within `radius` tiles (Chebyshev) that is past its interval, not yet a parent this check and accepted by the mate gate."""
     px, py = mother.navigation.position
     # nearby_entities is Euclidean: the circle that contains the Chebyshev square, then filtered back to it.
     for mate_id in sorted(SpatialQueryService.nearby_entities(state, mother.navigation.position, math.ceil(radius * math.sqrt(2)))):
@@ -122,7 +125,7 @@ def _find_mate(
         if mate is None or mate_id == mother.id or mate_id in used or species_of(mate) != species_of(mother):
             continue
         mx, my = mate.navigation.position
-        if max(abs(mx - px), abs(my - py)) <= radius and _past_interval(mate, state.tick):
+        if max(abs(mx - px), abs(my - py)) <= radius and _past_interval(mate, state.tick) and gate(mate):
             return mate
     return None
 
@@ -184,7 +187,7 @@ def _birth_at_term(check: _Check, mother: EntityState, profile: ReproductionProf
     for slot in range(pregnancy.litter_size):
         try:
             position = generator.free_spawn_position(mother.navigation.position, state)
-        except RuntimeError:
+        except NoFreeSpawnTile:
             unplaced.append(WorldEvent(category=WorldEventCategory.NEWBORN_UNPLACED, tick=state.tick, subject=str(mother.id), payload={"litter_slot": slot}))
             continue
         birth = NewbornBirth(

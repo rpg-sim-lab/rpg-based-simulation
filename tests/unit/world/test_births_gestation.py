@@ -12,7 +12,7 @@ from src.domains.world_emergence.schema import WorldEventCategory
 from src.engine.apply import ApplyPath
 from src.engine.spatial_query import SpatialQueryService  # noqa: F401  (the births step reads it)
 from src.systems.lifecycle_systems.lifecycle import LifecycleSystem
-from src.systems.world_systems.generator import EntityGenerator
+from src.systems.world_systems.generator import EntityGenerator, NoFreeSpawnTile
 from src.world import births
 from src.world.births import BirthService
 from tests.unit.world.test_births import _Catalog, _body, _conceptions, _generator, _run, _state
@@ -84,7 +84,7 @@ def test_g2_born_plus_unplaced_is_the_litter_drawn_and_an_unplaceable_newborn_is
         try:
             return next(spots)
         except StopIteration:
-            raise RuntimeError("no clear tile") from None
+            raise NoFreeSpawnTile("no clear tile") from None
 
     monkeypatch.setattr(generator, "free_spawn_position", free)
     update = BirthService.process_births(state, generator)
@@ -96,7 +96,7 @@ def test_g2_born_plus_unplaced_is_the_litter_drawn_and_an_unplaceable_newborn_is
 def test_a_litter_with_no_free_tile_at_all_clears_the_pregnancy_and_charges_nothing(certain, monkeypatch):
     state = _pregnant_at_term()
     generator = _generator(state)
-    monkeypatch.setattr(generator, "free_spawn_position", lambda pos, st: (_ for _ in ()).throw(RuntimeError("no clear tile")))
+    monkeypatch.setattr(generator, "free_spawn_position", lambda pos, st: (_ for _ in ()).throw(NoFreeSpawnTile("no clear tile")))
     update = BirthService.process_births(state, generator)
     assert not update.entities_add and update.entity_updates[1].lifecycle.pregnancy_clear
     assert update.entity_updates[1].biological is None or update.entity_updates[1].biological.is_noop()
@@ -145,3 +145,11 @@ def test_g6_every_death_cause_clears_the_pregnancy_in_that_tick_s_update(certain
     ended = [e for e in update.world_events_add if e.category == WorldEventCategory.PREGNANCY_ENDED]
     assert update.entity_updates[1].lifecycle.pregnancy_clear and len(ended) == 1 and ended[0].tick == 100
     assert ApplyPath.apply_generation(state, update, 101, 101).entities[1].lifecycle.pregnancy is None
+
+
+def test_an_unrelated_runtime_error_from_the_placement_path_propagates_and_is_not_an_unplaced_newborn(certain, monkeypatch):
+    state = _pregnant_at_term()
+    generator = _generator(state)
+    monkeypatch.setattr(generator, "free_spawn_position", lambda pos, st: (_ for _ in ()).throw(RuntimeError("a bug")))
+    with pytest.raises(RuntimeError, match="a bug"):
+        BirthService.process_births(state, generator)

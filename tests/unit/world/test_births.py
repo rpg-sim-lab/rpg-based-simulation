@@ -18,13 +18,13 @@ from src.world.births import BirthService
 
 
 class _Catalog:
-    """The warmed catalog with the birth chance forced, so a test does not depend on a draw."""
+    """The warmed catalog with the birth chance forced and the mate gate off, so a test does not depend on a draw or on bonds (the gate has its own tests)."""
 
     def __init__(self, real, chance, litter=None):
         self._real, self._chance, self._litter = real, chance, litter or {1: 1.0}
 
     def get_reproduction_profile(self, profile_id):
-        return self._real.get_reproduction_profile(profile_id).model_copy(update={"birth_chance_per_check": self._chance, "litter_weights": self._litter})
+        return self._real.get_reproduction_profile(profile_id).model_copy(update={"birth_chance_per_check": self._chance, "litter_weights": self._litter, "mate_gate": "none", "min_mutual_sentiment": None})
 
     def __getattr__(self, name):
         return getattr(self._real, name)
@@ -244,7 +244,7 @@ def _mate_first(state, generator):
         profile = profiles.of(births.species_of(mother))
         if mother.id in used or profile is None or mother.biological.hunger > profile.fed_line or not births._past_interval(mother, state.tick):
             continue
-        mate = births._find_mate(state, mother, candidates, used, profile.mate_radius_tiles)
+        mate = births._find_mate(state, mother, candidates, used, profile.mate_radius_tiles, lambda m: births.passes_mate_gate(mother, m, profile))
         if mate is None:
             continue
         if generator.rng.get_float(Domain.SPAWN, state.tick, mother.id, sub_id=births.BIRTH_DRAW_SUB_ID) >= profile.birth_chance_per_check:
@@ -290,3 +290,12 @@ def test_a_check_where_every_draw_fails_makes_no_spatial_query(never, monkeypatc
     monkeypatch.setattr(SpatialQueryService, "nearby_entities", staticmethod(lambda *a, **k: calls.append(1) or original(*a, **k)))
     assert not _run(_state(*[_body(i) for i in range(1, 9)])).entity_updates
     assert calls == []
+
+
+def test_a_pregnant_body_is_never_a_mother_or_a_mate(certain):
+    state = _state(_body(1), _body(2), _body(3))
+    pregnant = ApplyPath.apply_generation(state, _run(state), 31, 31)
+    assert pregnant.entities[1].lifecycle.pregnancy.father_entity_id == 2 and pregnant.entities[3].lifecycle.pregnancy is None
+    later = AuthoritativeState(tick=60, seed=42, entities=pregnant.entities, next_entity_id=pregnant.next_entity_id)
+    assert births._find_mate(later, later.entities[3], births._candidates(later, births._Profiles(births.get_catalog())), set(), 10.0, lambda m: True) is None
+    assert not _conceptions(_run(later))

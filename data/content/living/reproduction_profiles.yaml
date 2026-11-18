@@ -4,6 +4,8 @@
 # min_birth_interval_ticks is a multi-day event (2400 ticks a day), so a pair breeds at most once inside a 5000-tick run.
 # fed_line 30 is about 6 hours after a full meal for a person; birth_hunger_cost 25 is a little under one inn meal (40).# gestation_ticks: conception to birth, COMPRESSED but the order kept (owner, 2026-11-18): people slowest, plant eaters fastest; a multiple of the 30-tick check.
 #   The real lengths (about 672000 ticks for a person) wait for TCK-20260829-TEMPORAL-CALENDAR-AUTHORITY. humanoid 2400 (1 day), carnivore 1200, goblin 900, plant eater 600.
+# mate_gate (owner #715 6966994323: "marriage OR mutual affection" for people, wild animals need neither): none reads no social state; bond passes on an accepted marriage
+#   or both directed bond sentiments at the named line. min_mutual_sentiment: friend is RelationshipService.FRIEND_SENTIMENT_THRESHOLD, a name and never a copied number.
 # litter_weights: litter size -> weight, drawn at conception. people: 1, sometimes 2; a wolf litter is more than 5 (a wolf pack's "more than 5" sizes 4-7 here);
 #   goblins and small plant eaters breed in small litters. Provisional, report-only, tuned later (TCK-20261118-BIRTHS-BALANCING-PASS).
 
@@ -16,6 +18,8 @@
   mate_radius_tiles: 10
   fed_line: 30
   birth_hunger_cost: 25
+  mate_gate: bond
+  min_mutual_sentiment: friend
 
 - id: "carnivore_births"
   display_name: "Carnivore births"
@@ -26,6 +30,7 @@
   mate_radius_tiles: 10
   fed_line: 30
   birth_hunger_cost: 25
+  mate_gate: none
 
 - id: "goblin_births"
   display_name: "Goblin births"
@@ -36,6 +41,7 @@
   mate_radius_tiles: 10
   fed_line: 30
   birth_hunger_cost: 25
+  mate_gate: none
 
 - id: "plant_eater_births"
   display_name: "Plant eater births"
@@ -46,3 +52,4 @@
   mate_radius_tiles: 10
   fed_line: 30
   birth_hunger_cost: 25
+  mate_gate: none

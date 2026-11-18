@@ -193,6 +193,8 @@ def _check_gestation_and_litter(profile_id: str, profile: "ReproductionProfileDe
     if profile.gestation_ticks <= 0 or profile.gestation_ticks % BIRTH_CHECK_INTERVAL_TICKS != 0:
         raise ReproductionProfileError(
             f"reproduction profile {profile_id!r} declares gestation_ticks {profile.gestation_ticks}, which is not a positive multiple of {BIRTH_CHECK_INTERVAL_TICKS}")
+    if (profile.mate_gate == "bond") != (profile.min_mutual_sentiment is not None):
+        raise ReproductionProfileError(f"reproduction profile {profile_id!r}: mate_gate {profile.mate_gate!r} and min_mutual_sentiment {profile.min_mutual_sentiment!r} disagree (bond needs it, none has none)")
     if not profile.litter_weights:
         raise ReproductionProfileError(f"reproduction profile {profile_id!r} declares an empty litter_weights table")
     for size, weight in profile.litter_weights.items():

@@ -1982,8 +1982,8 @@
     parent''s reciprocal SocialBond toward the child. Eligibility is suppressed when
     compute_regional_scarcity() for the birth region exceeds the young-bracket PopulationCohort.migration_threshold
     (default 0.7, reusing the Migration Law verbatim, skip-when-empty convention identical
-    to the Natural-Creature sibling). This path is explicitly NOT gated on any marriage-contract
-    state (2026-08-29 build-order decoupling of idea 32 from idea 33). On a successful
+    to the Natural-Creature sibling). This path was not gated on any marriage-contract state
+    (2026-08-29 decoupling, reversed by the M1 births mate gate, divergence 2.215). On a successful
     pairing, this path also nudges the birth region''s young-bracket count by +1 via
     WorldUpdate.population_young_births_delta, additive-only, applied through the
     authoritative apply path (see WORLD-123) -- corrected from this entry''s prior
