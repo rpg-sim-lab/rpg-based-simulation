@@ -22,6 +22,7 @@ from src.engine.kernel import Kernel
 from src.platform.rng import DeterministicRNG
 from src.worldbuilding.compiler import WorldCompiler
 from src.worldbuilding.repository import WorldRepository
+from tests.helpers.clock import DAY_WORLD_TIME
 from tests.helpers.scenario import empty_inventories
 
 WORLD_ID = "mechanic_scenario_combat_judgement_withdrawal"
@@ -36,6 +37,9 @@ def _run():
     spec, context = repo.load_world_with_context(WORLD_ID)
     state, _report = WorldCompiler.compile(spec, SEED, context=context)
     state = empty_inventories(state)  # the scenario is about the navigation target, not about what the two bodies carry
+    # A compiled world starts at world_time 0, which is night. By night the orc (normal senses, no night vision) cannot perceive the small, still goblin at three tiles
+    # (PERC-02a), so it would hold no target; the scenario is about target tracking, so it runs by day (owner #715 6971973729).
+    object.__setattr__(state, "world_time", DAY_WORLD_TIME)
     kernel = Kernel(profile=PROD_SMALL, state=state, rng=DeterministicRNG(SEED),
                     flags={"no_frame_pacing": True, "no_replay": True}, executor=LocalSequentialExecutor())
     samples = []  # (tick, entity id, nav target, opponent position)

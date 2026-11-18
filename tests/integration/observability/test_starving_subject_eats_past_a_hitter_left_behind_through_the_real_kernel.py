@@ -21,9 +21,15 @@ TICKS = 40
 
 def _run(run_id):
     from src.core.state import TaskComponent
+    from tests.helpers.clock import DAY_WORLD_TIME
     from tools.test_architecture.rpg_gate_run import build_kernel
 
     kernel = build_kernel("crowded_frontier", 42, run_id)
+    # The run starts by day, not at world_time 0 (night). The fixture holds the raider in place by rewriting its position, which is not a move, so the raider IS still
+    # under the perception law (PERC-02a: a body that has not moved for more than the moving window reads still), and last_moved_tick is deliberately not faked. By night
+    # a still body five tiles off is not perceived by the worker, so the raider would leave its hostile set and the hit window, the point of this test, would never be read.
+    # By day it is perceived, so the hit window stays what decides (owner #715 6971973729).
+    object.__setattr__(kernel.state, "world_time", DAY_WORLD_TIME)
     try:
         for i in range(TICKS):
             state = kernel.state
