@@ -32,19 +32,19 @@ Found by rpg-planner-ubuntu while designing the M1 births undead-from-corpse ori
 - `_meat_decayed_events` (~:40-49): raw meat left on the corpse leaves through the typed MEAT_DECAYED / `CORPSE_DECAY` sink (decision 44, ch. 03 "Sink").
 - Nothing else in `corpse.items` (equipment, potions, materials, any non-meat item) gets a ground item, an event or a sink. It leaves the world when the body is removed.
 - ch. 03 (Atomic Conservation) says every unit leaves through a typed, recorded sink. So this is a conservation-law gap, not a balance choice.
-- The undead-from-corpse origin (owner Q-R5 "Corpse only now", #715) inherits the same body lifecycle. Ubuntu proposes that the risen R2 row bars only gold and meat, discloses the rest, and points at this ticket.
+- The undead-from-corpse origin (owner Q-R5 "Corpse only now", #715) inherits the same body lifecycle. Under the final Q-R6 ruling (b), the births rising path drops every non-gold, non-meat item as a ground item through one shared helper, and its R2 row bars all three. This ticket brings decay onto the same helper.
 
 ## Scope
 1. Evidence, with no behaviour change: on the 3 standard cells at 5000 ticks, count the non-meat item units on corpses at their decay tick, by item_id. Also check whether HardLawMonitor's conservation check covers corpse items at all, and why it doesn't fire.
-2. rpg-designer rules the law. Options include: drop the items on the ground (like the purse, with source and tick), a typed CORPSE_DECAY sink event per item, or a mix by item class. Also whether the undead origin carries items over.
-3. Fix, tests (a decayed corpse holding a non-meat item leaves a ground item or a sink record, and conservation balances), ch. 03 text, parity and divergence.
+2. LAW SET by rpg-designer (2026-11-18, the final Q-R6 ruling (b), relayed by lead-planner-u24). A decaying corpse's non-meat, non-gold items become ground items at its tile, carrying the source entity and the tick, like the ruling-61 purse. They go through ONE shared ground-item helper, the same one the births undead-rising path uses, so decay and rising follow one law. The typed CORPSE_DECAY sink per item is NOT the fix. Gold stays the purse and raw meat stays MEAT_DECAYED. Sequencing: the M1 births PR introduces the helper. Whichever of births and this ticket lands second reuses the other's helper. Still open: whether this is HARD for M1 (rpg-designer).
+3. Fix, tests (a decayed corpse holding a non-meat item leaves a ground item at its tile with source entity and tick, and conservation balances), ch. 03 text, parity and divergence.
 
 ## Out of Scope
 - TCK-20261022-A-CARCASS-EATEN-ON-ITS-DECAY-TICK-STILL-DECAYS-ON-TIME (a different decay-tick defect).
-- The undead origin itself (M1 births PR, ubuntu lane), apart from the R2 disclosure.
+- The undead origin itself (M1 births PR, ubuntu lane), apart from sharing its ground-item helper.
 
 ## Acceptance Criteria
-- No item leaves the world at corpse decay without a typed record. A test pins it.
+- No item leaves the world at corpse decay: every non-meat, non-gold item becomes a ground item at the corpse tile (source entity, tick) through the shared helper. A test pins it.
 - The step 1 count is delivered before the fix.
 
 ## Related Tickets
@@ -52,6 +52,7 @@ Found by rpg-planner-ubuntu while designing the M1 births undead-from-corpse ori
 - TCK-20261109-M1-BASIC-WILD-BIRTHS-FOR-EVERY-LIVING-KIND (the undead-from-corpse origin rides it)
 
 ## Related Docs
+- docs/engine/known_limitations.md §1.2 (the limits line until this lands); docs/parity_ledger/town_resource.yaml TOWN-211 (divergent until this lands)
 - docs/mechanics/03_economic_laws.md (Atomic Conservation; raw meat Source/Sink, CORPSE_DECAY)
 
 ## Related Stored Artifacts
