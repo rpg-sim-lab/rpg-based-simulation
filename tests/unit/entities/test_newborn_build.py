@@ -152,3 +152,21 @@ def test_the_checked_contract_is_the_newborns_not_the_mothers(catalog, break_tro
     with pytest.raises(SenseProfileError):
         ArchetypeEntityFactory().build_newborn(901, contract, birth)
     assert seen == [contract.archetype_id]
+
+
+def test_a_compiled_population_species_with_a_newborn_archetype_and_no_usable_sense_profile_fails_at_compile(catalog):
+    """(D)(a): every mother in a compiled world is a body of a declared population species, and compile refuses a population species with no usable sense profile (PERC-02a), so a newborn species that
+    declares a newborn_archetype is checked before tick 0. Planted world: crowded_frontier with goblin (newborn_archetype set) declaring a sense profile that does not exist."""
+    from src.worldbuilding.compiler import WorldCompiler
+    from src.worldbuilding.repository import WorldRepository
+    spec, context = WorldRepository("data/worlds").load_world_with_context("crowded_frontier")
+    goblin = catalog.species["goblin"]
+    assert goblin.newborn_archetype is not None
+    catalog.species["goblin"] = goblin.model_copy(update={"sense_profile": "nope"})
+    configure_behavior_consumers(catalog)
+    try:
+        with pytest.raises(SenseProfileError, match="goblin"):
+            WorldCompiler.compile(spec, 42, context=context)
+    finally:
+        catalog.species["goblin"] = goblin
+        reset_behavior_consumers()
