@@ -1,0 +1,147 @@
+# Compliance IDs: WORLD-122
+"""S9 spy and runner: the C1/C2/C3 detectors with a synthetic stuck member, a repeat-fail and a starving member, and one positive control per verdict class."""
+import dataclasses
+
+import pytest
+
+from src.core.builder import V2EntityBuilder
+from src.core.group_record import GroupRecord
+from src.core.state import AuthoritativeState, IntentResult
+from src.core.updates import CombatUpdate, EntityUpdate, StateUpdate
+from src.engine.starvation import STARVING_LINE
+from tools.rpg_measure import s9_run, s9_spy
+from tools.rpg_measure.s9_spy import GroupSpy, c1_stuck, c2_repeat_fail, c3_needs, classify, final_verdict, hits_by_eid, split_counts
+
+W = s9_spy.WINDOW
+
+
+def row(tick, group=1, **kw):
+    base = {"tick": tick, "group": group, "goal_changed": False, "task_changed": False, "moved": False, "completed": 0, "attacked": False, "failed": [], "hunger": 0.0, "starved": False, "life_stage": "ADULT"}
+    return {**base, **kw}
+
+
+def rows(n, start=1, **kw):
+    return [row(start + i, **kw) for i in range(n)]
+
+
+# ---- the detector controls --------------------------------------------------------------------------------------------------------------------------
+def test_c1_a_stuck_member_is_flagged_at_the_window_and_progress_resets_it():
+    assert c1_stuck(rows(W))[0] == {"group": 1, "first_tick": 1, "last_tick": W, "ticks": W}
+    assert c1_stuck(rows(W - 1)) == []
+    broken = rows(150) + [row(151, moved=True)] + rows(150, start=152)
+    assert c1_stuck(broken) == [], "a successful step splits the run below the window"
+    for kind in ({"goal_changed": True}, {"task_changed": True}, {"completed": 1}, {"attacked": True}):
+        assert c1_stuck(rows(150) + [row(151, **kind)] + rows(150, start=152)) == []
+
+
+def test_c1_a_run_does_not_cross_a_group_boundary_or_a_gap():
+    assert c1_stuck(rows(150) + rows(150, start=151, group=2)) == []
+    assert c1_stuck(rows(150) + rows(150, start=400)) == []
+
+
+def test_c2_the_same_failing_action_for_the_window_is_flagged_and_a_different_or_mixed_action_is_not():
+    key = ["CARRIED_FOOD", "0", "no food"]
+    assert c2_repeat_fail(rows(W, failed=[key]))[0]["key"] == key
+    mixed = [row(t, failed=[key if t % 2 else ["NODE", "9", "empty"]]) for t in range(1, W + 1)]
+    assert c2_repeat_fail(mixed) == []
+    with_progress = rows(150, failed=[key]) + [row(151, failed=[key], moved=True)] + rows(150, start=152, failed=[key])
+    assert c2_repeat_fail(with_progress) == []
+    assert c2_repeat_fail(rows(W, failed=[key, ["NODE", "9", "empty"]])) == [], "two different failures in one tick are not the same single action"
+
+
+def test_c3_a_member_reaching_the_starving_line_or_starving_in_the_group_is_flagged_once_per_stretch():
+    below = rows(10, hunger=STARVING_LINE - 1)
+    assert c3_needs(below) == []
+    assert c3_needs(below + [row(11, hunger=STARVING_LINE)])[0]["first_tick"] == 11
+    assert c3_needs([row(1), row(2, starved=True)])[0]["starved"] is True
+
+
+# ---- the per-eid verdict classes ----------------------------------------------------------------------------------------------------------------------
+STUCK = {"C1": [{"group": 1, "first_tick": 1, "last_tick": W, "ticks": W}]}
+STARVE = {"C3": [{"group": 1, "first_tick": 5, "hunger": 99.0, "starved": False}]}
+
+
+def test_class_1_a_head_only_t0_hit_is_a_block():
+    rows_ = classify({10: STUCK}, {}, {10}, {}, {10: [row(1)]})
+    assert [(r["eid"], r["class"]) for r in rows_] == [(10, "BLOCK")] and final_verdict(rows_) == "BLOCK"
+
+
+def test_class_2_the_same_hit_on_both_arms_is_a_main_defect_not_a_block():
+    rows_ = classify({10: STUCK}, {10: STUCK}, {10}, {}, {10: [row(1)]})
+    assert [(r["eid"], r["class"]) for r in rows_] == [(10, "MAIN-DEFECT")] and final_verdict(rows_) == "FINDINGS"
+
+
+def test_a_t0_member_with_a_different_kind_on_main_is_still_a_block_for_the_kind_main_lacks():
+    rows_ = classify({10: {**STUCK, **STARVE}}, {10: STUCK}, {10}, {}, {10: [row(1)]})
+    assert rows_[0]["class"] == "BLOCK" and rows_[0]["kinds"] == {"C1": "MAIN-DEFECT", "C3": "BLOCK"}
+
+
+def test_class_3_a_newborn_c3_is_a_block():
+    rows_ = classify({77: STARVE}, {}, {10}, {77: 10}, {77: [row(1, life_stage="CHILD")]})
+    assert [(r["eid"], r["class"]) for r in rows_] == [(77, "BLOCK")] and final_verdict(rows_) == "BLOCK"
+
+
+def test_class_4_a_newborn_c1_is_a_finding_with_its_life_stage_group_and_the_mothers_c1_c2_status():
+    rows_ = classify({77: STUCK, 10: STUCK}, {10: STUCK}, {10}, {77: 10}, {77: [row(1, life_stage="CHILD", group=1)], 10: [row(1)]})
+    finding = next(r for r in rows_ if r["eid"] == 77)
+    assert finding["class"] == "FINDING" and finding["life_stage"] == "CHILD" and finding["group"] == 1
+    assert finding["mother"] == 10 and finding["mother_C1"] is True and finding["mother_C2"] is False
+    assert final_verdict([finding]) == "FINDINGS"
+    assert final_verdict([]) == "CLEAR"
+
+
+def test_hit_counts_split_between_t0_and_newborn_members():
+    rows_ = classify({10: STUCK, 77: STUCK}, {}, {10}, {77: 10}, {10: [row(1)], 77: [row(1)]})
+    assert split_counts(rows_) == {"t0": {"C1": 1}, "newborn": {"C1": 1}}
+
+
+def test_hits_by_eid_runs_all_three_detectors_and_leaves_clean_members_out():
+    out = hits_by_eid({1: rows(W), 2: rows(5, moved=True), 3: rows(3, hunger=STARVING_LINE)})
+    assert set(out) == {1, 3} and set(out[1]) == {"C1"} and set(out[3]) == {"C3"}
+
+
+# ---- the spy ----------------------------------------------------------------------------------------------------------------------------------------
+def _body(entity_id, pos=(5.0, 5.0)):
+    return V2EntityBuilder(entity_id).kind("human").location(*pos).build()
+
+
+def test_the_spy_records_a_step_a_completed_transaction_a_failure_and_an_attack_per_member_per_tick():
+    group = GroupRecord(id=1, leader_id=1, member_ids={1, 2}, anchor=(5.0, 5.0), formation_tick=0)
+    prior = AuthoritativeState(tick=9, seed=1, entities={1: _body(1), 2: _body(2)}, groups={1: group}, next_entity_id=3)
+    after = AuthoritativeState(tick=10, seed=1, entities={1: _body(1, (6.0, 5.0)), 2: _body(2)}, groups={1: group}, next_entity_id=3)
+    spy = GroupSpy(prior)
+    update = StateUpdate(entity_updates={
+        1: EntityUpdate(entity_id=1, intent_results=[IntentResult(transaction_id="t", accepted=True, reason=None, source_kind="CARRIED_FOOD", source_id=0)]),
+        2: EntityUpdate(entity_id=2, intent_results=[IntentResult(transaction_id="u", accepted=False, reason="no food", source_kind="NODE", source_id=7)],
+                        combat=CombatUpdate(damage_taken=3, attacker_id=1)),
+    })
+    spy.observe(prior, update, after)
+    one, two = spy.rows[1][0], spy.rows[2][0]
+    assert one["moved"] and one["completed"] == 1 and one["attacked"] is True and one["failed"] == []
+    assert two["failed"] == [("NODE", "7", "no food")] and not two["moved"] and two["completed"] == 0
+    assert spy.group_seen[1]["first_tick"] == 10
+
+
+def test_the_spy_marks_a_newborn_member_and_stops_recording_a_dissolved_group():
+    group = GroupRecord(id=1, leader_id=1, member_ids={1, 5}, anchor=(5.0, 5.0), formation_tick=0)
+    prior = AuthoritativeState(tick=9, seed=1, entities={1: _body(1), 5: _body(5)}, groups={1: group}, next_entity_id=6)
+    spy = GroupSpy(AuthoritativeState(tick=0, seed=1, entities={1: _body(1)}, next_entity_id=2))
+    spy.observe(prior, StateUpdate(), dataclasses.replace(prior, tick=10))
+    assert spy.newborn_in_group == [{"group": 1, "tick": 10, "newborn": 5}]
+    dissolved = dataclasses.replace(group, dissolution_tick=11)
+    spy.observe(prior, StateUpdate(), dataclasses.replace(prior, tick=11, groups={1: dissolved}))
+    assert len(spy.rows[1]) == 1 and spy.group_seen[1]["dissolution_tick"] == 11
+
+
+# ---- the runner's judge ------------------------------------------------------------------------------------------------------------------------------
+def _doc(rows_by_eid, start_ids, mother=None):
+    return {"rows": {str(k): v for k, v in rows_by_eid.items()}, "start_ids": start_ids, "mother": mother or {}, "window": W, "groups": {}, "starving_line": STARVING_LINE,
+            "newborn_in_group": [], "not_captured": [], "final_hash": "h"}
+
+
+def test_the_judge_prints_block_when_head_alone_has_a_stuck_t0_member_and_clear_when_both_are_clean():
+    stuck, clean = rows(W), rows(5, moved=True)
+    report = s9_run.judge(_doc({10: stuck}, [10]), _doc({10: clean}, [10]), s9_spy)
+    assert report["verdict"] == "BLOCK" and report["eids"][0]["eid"] == 10
+    assert s9_run.judge(_doc({10: clean}, [10]), _doc({10: clean}, [10]), s9_spy)["verdict"] == "CLEAR"
+    assert s9_run.judge(_doc({10: stuck}, [10]), _doc({10: stuck}, [10]), s9_spy)["verdict"] == "FINDINGS"
