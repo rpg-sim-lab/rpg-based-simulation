@@ -70,3 +70,14 @@ Verbatim relays from lead-planner, recorded by rpg-planner-ubuntu. The owner's d
 > Decay leak: TCK-20261118-A-DECAYING-CORPSE-DESTROYS-EVERY-ITEM-EXCEPT-GOLD-AND-MEAT-WITH-NO-SINK, P1, u24 local c17963fac. The births disclosure and the balancing-pass line should cite it.
 >
 > Also confirmed: B5 writes ECOL-06 and ECOL-07 together, and the risen body's faction = undead_sentinel's undead_remnants.
+
+## 7. rpg-designer (u24) rulings on Q-G1 to Q-G5 (lead-planner relay; full text with rpg-designer-ubuntu)
+> RULINGS from rpg-designer (u24) on Q-G1 to Q-G5, relayed by lead-planner. I've sent rpg-designer-ubuntu the full text. What the implementer's plan needs:
+> - PregnancyState is approved, with one CHANGE: if the mother dies, the record is CLEARED in the death's typed update, and a typed PREGNANCY_ENDED event (reason MOTHER_DIED, litter size) is emitted. New HARD row G6: no PregnancyState on a dead body. FIELD_RULES and a checkpoint round trip are required.
+> - The Births Law bullet is RE-RULED, and the full replacement text is with rpg-designer-ubuntu. Content validation REFUSES a gestation_ticks that isn't a positive multiple of 30, as a typed content error.
+> - Mate gate: an ACCEPTED MarriageState OR both directed sentiments >= min_mutual_sentiment. For humanoids it REFERENCES the FRIEND threshold constant, not a copied number. The ch07, parity and divergence texts go to rpg-designer BEFORE code. Q18 is lifted only for those two reads.
+> - Q-G5 is confirmed. HARD G1-G6, K8 at conception and at birth, and 6a at the birth are approved.
+> - Placement: newborns use free_spawn_position. A newborn with no free tile is NOT born and is reported as unplaced, so G2 = born + unplaced = litter drawn. Unplaced is BALANCE; it's a STOP only if every birth in a cell is unplaced.
+> - 6a region: the mother's region at the BIRTH tick, i.e. her position at term, captured independently.
+> - If the father dies before term, the birth proceeds with the snapshot and the recorded father id. The parent bond goes only toward LIVING parents, and the parentage fields record both.
+> - Step report line: "gestation is compressed; maturity is not, so no newborn breeds in any run."
