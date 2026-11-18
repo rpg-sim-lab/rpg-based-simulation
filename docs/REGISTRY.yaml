@@ -8021,6 +8021,21 @@
   - skills
   - process-improvement
 - type: ticket
+  path: agent-working/tickets/done/TCK-20261118-PREFLIGHT-CHECK-B-MIRRORS-THE-RUNS-INTERPRETER-FLAGS.md
+  ticket_id: TCK-20261118-PREFLIGHT-CHECK-B-MIRRORS-THE-RUNS-INTERPRETER-FLAGS
+  title: Preflight check (b) mirrors the run's interpreter flags
+  tier: 'hotfix
+
+
+    Hotfix tier; owner-directed origin (#715 6971915608, the follow-up to the kit
+    preflight).'
+  ticket_type: chore
+  date: '2026-11-18'
+  related_code_areas:
+  - tools/rpg_measure/kit_preflight.py, tests/unit/tools/test_kit_preflight.py
+  artifact_files: []
+  tags: []
+- type: ticket
   path: agent-working/tickets/done/TCK-20261118-PROFILE-MAIN-99A83ADC9-RESOLUTION-OVERHEAD-AND-WALL-CLOCK-PER-1000-TICKS.md
   ticket_id: TCK-20261118-PROFILE-MAIN-99A83ADC9-RESOLUTION-OVERHEAD-AND-WALL-CLOCK-PER-1000-TICKS
   title: 'Profile main 99a83adc9: attribute resolution_overhead, re-check H1/H2/H3,

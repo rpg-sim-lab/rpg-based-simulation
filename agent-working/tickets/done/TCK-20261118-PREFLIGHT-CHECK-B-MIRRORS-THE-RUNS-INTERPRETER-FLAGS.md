@@ -1,10 +1,10 @@
 ---
-status: active
+status: historical
 layer: testing
 authority: P1
 audience: agent
 ticket_id: TCK-20261118-PREFLIGHT-CHECK-B-MIRRORS-THE-RUNS-INTERPRETER-FLAGS
-phase: open
+phase: done
 date: 2026-11-18
 tags: []
 ---
@@ -15,10 +15,12 @@ tags: []
 Preflight check (b) mirrors the run's interpreter flags
 
 ## Status
-INPROGRESS
+DONE
 
 ## Tier
 hotfix
+
+Hotfix tier; owner-directed origin (#715 6971915608, the follow-up to the kit preflight).
 
 ## Type
 chore
@@ -59,10 +61,10 @@ Dated before 2026-11-19, so no durable-state section is required (tooling, no sr
 Flags are the leading `-x` tokens after `{python}`; options that take a value (`-X dev`) need an explicit `import_flags`.
 
 ## Test Summary
-Pending the host run.
+tests/unit/tools/test_kit_preflight.py alone (-n 1, 3500M, gated): 23 passed in 8.51s, rc=0 (3 new tests for import_flags).
 
 ## Files Changed
 tools/rpg_measure/kit_preflight.py, tools/rpg_measure/README.md, tests/unit/tools/test_kit_preflight.py, this ticket.
 
 ## Completion Summary
-Pending.
+Check (b) now imports with the run's flags (entry's leading flags or explicit import_flags); README documents count_path, the (b) rule and the tree-writes rule. No push.
