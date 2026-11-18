@@ -65,6 +65,15 @@ src/domains/combat_engagement/, hostility predicates, content
 - Order (roadmap §12.5, memo rows 89/93/95): the v1-disclosure repairs, then D80C, then the decision-73 step (#781, the v1.1 record), then the §12.3 items. Starting this item needs the owner's dispatch yes, brought by rpg-planner via lead-planner-u24.
 - Owner-level choices are asked when the milestone starts, not guessed here.
 
+## Durable state, lifecycle and clocks
+- Durable field: a guard's home tile (`guards_place` only), a coordinate on the body.
+- Creation: spawn sets it to the spawn tile; one writer (the spawn path); creation is idempotent across two passes (the same spawn tile).
+- Update: it never changes; there is no merge and no replace after spawn.
+- Exit and bound: none to exit; it dies with the body, so one per guarding body.
+- Clearing: removed with the entity; no other writer clears it.
+- Checkpoint/replay: it survives both, as part of the body.
+- Clock: none. The reach is a content number declared per species, not a code constant. Reasons themselves (the declared `fight_reasons`) are content, not state.
+
 ## Implementation Notes
 None yet.
 

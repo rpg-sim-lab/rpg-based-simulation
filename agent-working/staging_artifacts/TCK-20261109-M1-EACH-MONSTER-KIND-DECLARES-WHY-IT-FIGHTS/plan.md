@@ -35,7 +35,7 @@ Tier standard, P1. Phase 1 (this branch) is docs only. Code is dispatched separa
 - C. Every non-undead body. Includes spirits, so undead and spirits fight.
 
 **Q3. What is the place a spirit guards, given territory is out of scope (§12.4)?**
-- A. The spirit's home tile: it engages a perceived body within a fixed radius of it, nothing persistent. *Recommended:* no territory record; revisit when places land.
+- A. The spirit's home tile: it engages a perceived body, not of its own species, within a reach declared per species in content, of its home tile. The home tile is set at spawn and never changes; nothing else persists. *Recommended:* no territory record; revisit when places land.
 - B. The region it controls (`controlling_faction`). This reads a faction label again.
 - C. Defer: spirits fight only back, until M1 item 4 (places from perception and memory) lands.
 
@@ -64,3 +64,16 @@ Branch from main 51a6516cf+; no defaulted night or tick; species only through `s
 - A. Replace for non-people kinds; people-vs-people entries stay. *Recommended.* One source; the 13 direct sites and legality stop disagreeing. Needs Q5's aggressor reading first, because human_to_undead is high today.
 - B. Coexist (reasons decide the monster side, the species step stays as an upgrade on the people side). Two sources for one fact.
 - C. Use species_relations as the declaration mechanism for monsters. A pairwise matrix with 18% coverage, no reason vocabulary, and no rows for spirit and slime.
+
+## Code-step additions (from rpg-designer (u24)'s phase 1 review, recorded in rpg_designer_u24_phase1_review_2026-11-18.md on rpg-ubuntu-planner-filings)
+
+**F2. One caller of `are_entities_hostile`.** The code step extracts a hostility module that is the ONLY `src/` caller of `are_entities_hostile` (and `is_hostile_compat`), enforced by a static test (the 13 sites in `investigation.md` section 2 route through it). It is sequenced after TCK-20261117-SPLIT-INTELLIGENCE-PY-BELOW-ITS-LINE-CEILINGS and the `legality.py` ceiling (LegalityServiceV2 535/554, `verify_attack_legality` 68/87). Its order against TCK-20261107-A-COMBAT-ENGAGE-PROJECT-TARGETS-A-BODY-TACTICAL-NEVER-SEES-AS-HOSTILE goes to rpg-planner (u24).
+
+**Code-step own-job (fixed before data; rpg-designer (u24), word for word).**
+- HARD: monster fights whose permission came from a faction verdict = 0, and every engagement by a non-people kind carries one declared reason.
+- REPORTED per reason: guard/hero vs undead engagements vs base, with wolf/spider unchanged as a control.
+
+**Q8 rule form (rpg-designer (u24)).** For any pair where EITHER side is a non-people kind, the declared reason is the ONLY hostility source. `species_relations.yaml` keeps people-people pairs only; a load-time check refuses an entry naming a non-people kind; the existing monster entries are removed in the same change, each listed in the ticket with its current effect.
+
+**Lifecycle (T3).** The home tile is durable state: see the ticket's `## Durable state, lifecycle and clocks`.
+

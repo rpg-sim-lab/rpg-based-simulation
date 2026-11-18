@@ -52,8 +52,7 @@ AFTER:
   - **Scope of the change, by milestone (decided by the owner directly, 2026-10-11; row 62 of the memo; completed in milestone 1).** In the
     hunting batch, only a kind with a diet in a faction declared wild dropped faction hostility and went by the appraisal. In milestone 1,
     every non-people kind goes by its declared reason to fight (CONFLICT-05): the undead hate the living, a spirit guards a place, a troll
-    or dragonkin hunts by its diet and the appraisal. Faction is a reason to fight only between people-kinds (kinds that keep coin and
-    trade). **Alternatives not taken:** every non-people kind at once in the hunting batch (the undead, slimes and spirits had no diet
+    or dragonkin hunts by its diet and the appraisal. Faction is a reason to fight only between people-kinds (a species with the trait `keeps_coin_and_trades`, 2.103). **Alternatives not taken:** every non-people kind at once in the hunting batch (the undead, slimes and spirits had no diet
     and would have ignored people until a drive existed); wild animals only, for good (monsters would stay enemies by a label).
 ```
 
@@ -65,16 +64,19 @@ AFTER:
 ```
 ## CONFLICT-05 — Each non-people kind declares why it fights; a faction label never decides a monster's fight
 
-> A kind that does not keep coin and trade fights for a reason its content declares. The reason is one of a closed set: it hates the
+> A kind that is not a people-kind (a people-kind is a species with the trait `keeps_coin_and_trades`, 2.103) fights for a reason its content declares. The reason is one of a closed set: it hates the
 > living, it guards a place, or it hunts by its diet. Hostility toward and from such a kind is derived from that reason and from the
 > appraisal (CONFLICT-03), never from the faction it belongs to. Faction enmity remains a reason to fight between people-kinds only.
 
 - **Reasons.** `hates_living`: the kind engages a perceived body the content marks as living. `guards_place`: the kind engages a perceived
-  body within a fixed reach of its home tile; it keeps no territory record (territory is milestone 2). `hunts_by_diet`: the existing
+  body, not of its own species, within a reach declared per species in content, of its home tile. The home tile is set at spawn to the
+  spawn tile and never changes. It keeps no territory record (territory is milestone 2). `hunts_by_diet`: the existing
   PREDATION appraisal (hungry, the diet can eat the body, the hunter believes it can overcome it); no other trigger.
 - **Permission is symmetric (CONFLICT-03).** An attack is permitted in both directions when either side's declared reason names the
   other. A people-kind regards a body as an aggressor when that body's declared reason names it, so a guard still answers an undead
   sentinel without a faction label.
+- **People-kind, by its source.** A species with the trait `keeps_coin_and_trades` (2.103, owner decisions 42 and 43). The combat law is
+  coupled to that economy trait; the coupling is disclosed to the owner in `owner_batch.md`.
 - **A kind never regards its own species as a target** (no cannibalism in milestone 0); this replaces "a faction does not hunt its own".
 - **A kind with no declared reason fights only back.** The content-load check refuses a monster kind that declares a reason outside
   the closed set.
@@ -101,7 +103,7 @@ BEFORE: (no paragraph)
 
 AFTER:
 ```
-**Who is hostile to a non-people kind (CONFLICT-03, CONFLICT-05, decision 62).** A kind that does not keep coin and trade is hostile by its
+**Who is hostile to a non-people kind (CONFLICT-03, CONFLICT-05, decision 62).** A kind that is not a people-kind (a species without the trait `keeps_coin_and_trades`, 2.103) is hostile by its
 declared reason to fight (it hates the living, it guards a place, or it hunts by its diet), never by the faction it belongs to. The
 friendly-fire test above reads the same declared reason for such a kind and the catalog faction only between two people-kinds.
 ```
@@ -123,6 +125,24 @@ AFTER (prefix):
 
 Applied by the code step: COMB-334 gains the monster-reason evidence and test path; one new P1 entry per declared reason, `test_path` set when its test lands. No YAML is drafted now because the test paths do not exist yet.
 
-## 6. Kernel spec, `docs/engine/authoritative_pipeline.md`
+## 6. Kernel spec, `docs/plans/systemic_world/m1_kernel_spec_items_2_6.md` (per rpg-designer F5; `authoritative_pipeline.md` is not the kernel spec)
 
-Searched: it holds no hostility text (only the Sovereignty Law line at 101, kill-based influence). No change proposed. If rpg-planner means another file by "kernel spec", name it.
+Checked against CONFLICT-05 (read at 51a6516cf): the spec is NOT silent, and it agrees. No change drafted. The points:
+- Item 2, point 7 (:255-256): "Name branches this replaces (run 3, with why-it-fights): hostility.py's same-faction no-predation, and the faction-first ordering for monsters. Faction keeps deciding for PEOPLE (memo row 47)." Consistent with CONFLICT-05: the same-faction no-predation line (`hostility.py:90`) retires here, while the same-species rule (`hostility.py:87-88`) stays (Q7).
+- Item 6 R2 catalog text (:268): "Hostility between kinds comes from each kind's declared reason to fight (why-it-fights) and from the appraisal; between people, from declared faction relations keyed by id." Consistent. Both texts must be defined once: when R2 is written, it should cite CONFLICT-05 instead of restating it (rule: one fact, one document).
+- Item 6 R2 spec points 1-2 retire `get_legacy_faction_bucket` and the MONSTER family; the camp offspring's "monster_horde" id (trace_camp_troll.md) is among what they remove, and births retires the path anyway.
+Open item for rpg-planner: item 2's reading of "faction-first ordering for monsters" assumes the monster branch is retired by why-it-fights; CONFLICT-05 is that retirement.
+
+## 7. Doc-truth fix applied now (T1): divergence 2.107, independent of the owner's answers
+
+This one is a real edit on the branch (`docs/guidelines/intentional_divergences.md`, entry 2.107, the bullet at ~:3257), not a proposal.
+
+BEFORE (verbatim at 51a6516cf):
+```
+The five monster kinds that keep faction hostility under this rule, because they are not wild creatures (they belong to invader, rival or neutral factions, or have no diet): troll, undead, dragonkin, slime, spirit; people-kinds (human, goblin, orc, elf, dwarf, lizardfolk) keep it among themselves.
+```
+
+AFTER (as committed):
+```
+The monster kinds that keep faction hostility under this rule are those that are not wild creatures (a kind with no diet, or a kind in a faction that is not of the wild alignment): undead, dragonkin, slime and spirit, and a troll in a non-wild faction; people-kinds (human, goblin, orc, elf, dwarf, lizardfolk) keep it among themselves. **The data troll is wild:** `swamp_troll` (`data/content/entities/entity_archetypes.yaml:298-301`) is in `wild_beast_pack` (alignment `wild`) and has a diet, so it goes by appraisal. **A non-wild troll is reachable only as a camp offspring:** `spawn_natural_creature_offspring` (`src/systems/world_systems/generator.py:208`) gives it the legacy MONSTER_HORDE enum and no `faction_id`, which resolves to the invader bucket (`src/entities/identity_resolver.py:24,118-128`, `src/content_semantics/faction.py:122,144-145`); it is spawned only with `ENABLE_CAMP_NEST_SPREAD` (`src/world/camp.py:71`, default OFF, `src/domains/optimization/feature_flags.py:196`) or `ENABLE_REPRODUCTION_NATURAL_CREATURE_PATH` (`src/world/camp.py:85`, default OFF, `feature_flags.py:174`), and births (TCK-20261109-M1-BASIC-WILD-BIRTHS-FOR-EVERY-LIVING-KIND) retires both when it lands. No data world places a troll outside `wild_beast_pack`.
+```
