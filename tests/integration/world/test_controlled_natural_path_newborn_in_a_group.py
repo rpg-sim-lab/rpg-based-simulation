@@ -284,7 +284,7 @@ def test_needs_reader_positive_controls_an_ungrouped_starving_newborn_blocks():
     log = {}
     for t in range(WINDOW + 1):
         read_needs(log, _State(t, {98: _Body(0.1), 99: _Body(0.1, other if t > 5 else None)}), {98, 99})
-    assert litter_blocks(log, {98, 99}) == [] and needs_blocks(log, {98, 99}) == []  # one survivor with the full reads, one early typed death: passes  # a typed non-starvation death ends the reads without a gap
+    assert litter_blocks(log, {98, 99}) == [] and needs_blocks(log, {98, 99}) == []  # one survivor with the full reads, one early typed death: passes
 
 
 @pytest.mark.slow
