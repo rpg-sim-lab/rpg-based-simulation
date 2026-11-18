@@ -37,13 +37,15 @@ def _with_project(subject, project_kind, objective_kind, prey):
     return replace(subject, strategic=replace(subject.strategic, projects={proj.id: proj}, current_project_id=proj.id, current_objective_id=obj.id))
 
 
-def _decide(world, hunter_species, *, prey_dx, project=("hunger", ObjectiveKind.REACH_LOCATION), hunger=PRESSING_HUNGER, debt=0.0, extra=()):
+def _decide(world, hunter_species, *, prey_dx, project=("hunger", ObjectiveKind.REACH_LOCATION), hunger=PRESSING_HUNGER, debt=0.0, extra=(), prey_moving=False, check_prey=True):
     """The hunter at (30, 30), the prey `prey_dx` tiles east; `extra` is [(species, dx, dy)] of other entities."""
     base = _species(world, hunter_species)
     herd = _species(world, "small_plant_eater")
     hunter = replace(_at(base, 30.0, 30.0), biological=replace(base.biological, hunger=hunger, sleep_debt=debt))
     prey = _at(herd, 30.0 + prey_dx, 30.0)
-    assert relation(hunter, prey) is Relation.PREDATION or hunger < 50.0, "the fixture must make the herd the hunter's prey"
+    if prey_moving:  # PERC-02a: the prey took a step on the tick before the decision, so it is heard (a still small prey is perceived only by touch or a strong sense)
+        prey = replace(prey, navigation=replace(prey.navigation, last_moved_tick=world.tick))
+    assert not check_prey or relation(hunter, prey, tick=world.tick + 1) is Relation.PREDATION or hunger < 50.0, "the fixture must make the herd the hunter's prey"
     if project is not None:
         hunter = _with_project(hunter, project[0], project[1], prey)
     ents = {hunter.id: hunter, prey.id: prey}
@@ -59,9 +61,28 @@ HUNTERS = ["wolf", "human"]
 
 
 @pytest.mark.parametrize("sp", HUNTERS)
-def test_hunger_project_on_prey_walks_to_it_at_three_tiles(world, sp):
-    payload, update, hunter, prey, _ = _decide(world, sp, prey_dx=3.0)
+def test_hunger_project_on_prey_walks_to_a_moving_prey_at_three_tiles(world, sp):
+    """PERC-02a: a still small prey three tiles off is not perceived by a human (see the law row below); a prey that just stepped is heard, so the hunter walks to it."""
+    payload, update, hunter, prey, _ = _decide(world, sp, prey_dx=3.0, prey_moving=True)
     assert update.navigation is not None and update.navigation.target_set is not None, f"must walk toward the prey; got {payload}"
+
+
+def test_a_wolf_walks_to_a_still_small_prey_at_three_tiles_by_scent(world):
+    payload, update, hunter, prey, _ = _decide(world, "wolf", prey_dx=3.0)
+    assert update.navigation is not None and update.navigation.target_set is not None, f"must walk toward the prey; got {payload}"
+
+
+def test_a_human_hunter_does_not_perceive_a_still_small_prey_at_three_tiles(world):
+    """PERC-02a law (rpg-designer, owner-approved #715 6966454372): a still small body is perceived only by touch (distance 1 or less) or by a strong enough sense, so a human
+    hunter does not find still small prey three tiles away: not perceived, not chosen, no walk toward it."""
+    from src.engine.behavior_consumers import get_entity_signals, get_perception_gate
+    payload, update, hunter, prey, ents = _decide(world, "human", prey_dx=3.0, check_prey=False)
+    state_tick = world.tick + 1
+    gate = get_perception_gate().can_perceive(hunter, get_entity_signals(prey, state_tick), {"distance": 3.0, "reach": 3.0, "night": False})
+    assert gate.perceived is False and gate.signals_used == []
+    assert relation(hunter, prey, tick=state_tick) is Relation.NONE
+    assert payload.get("target_id") != prey.id, f"a still small prey at 3 tiles is not found; got {payload}"
+    assert update.navigation is None or update.navigation.target_set is None, f"a still small prey at 3 tiles is not walked to; got {payload}"
 
 
 @pytest.mark.parametrize("sp", HUNTERS)
@@ -178,6 +199,7 @@ def test_a_hunt_project_naming_x_with_prey_y_also_in_view_stays_current_and_the_
     base = _species(world, "human")
     herd = [e for e in world.entities.values() if (e.identity.properties or {}).get("species_id") == "small_plant_eater"][:2]
     x, y = _at(herd[0], 33.0, 30.0), _at(herd[1], 31.0, 30.0)
+    x = replace(x, navigation=replace(x.navigation, last_moved_tick=world.tick))  # PERC-02a: x (three tiles off) just stepped, so it is heard; y is still and touched at one tile
     hunter = replace(_at(base, 30.0, 30.0), biological=replace(base.biological, hunger=PRESSING_HUNGER, sleep_debt=0.0))
     hunter = _with_project(hunter, "hunger", ObjectiveKind.REACH_LOCATION, x)
     state = replace(world, entities={hunter.id: hunter, x.id: x, y.id: y}, tick=world.tick + 1)

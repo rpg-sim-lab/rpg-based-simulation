@@ -23,6 +23,8 @@ from src.engine.positioning import PositioningService
 from src.engine.tactical import TacticalDecisionSystem
 from src.platform.rng import DeterministicRNG
 from tests.helpers.scenario import DEFAULT_FLAGS, DEFAULT_SEED, compile_world, empty_inventories
+from tests.helpers.clock import DAY_WORLD_TIME
+from tests.unit.combat.test_chokepoint_hold import assert_the_target_is_hostile_and_a_target, medium_body
 
 WORLD_ID = "mechanic_scenario_combat_judgement_withdrawal"
 F, H = 2, 1  # F is the one that acts (attacker, or the vanguard); H is the other body
@@ -30,7 +32,7 @@ F, H = 2, 1  # F is the one that acts (attacker, or the vanguard); H is the othe
 
 def _stage(f_pos: Tuple[float, float], h_pos: Tuple[float, float], *, f_task: Dict[str, Any], rng_range: int = 3,
            terrain: Optional[Dict[Tuple[int, int], str]] = None, blocked: Optional[Set[Tuple[int, int]]] = None,
-           vanguard: bool = False) -> AuthoritativeState:
+           vanguard: bool = False, target_medium: bool = False) -> AuthoritativeState:
     state = empty_inventories(compile_world(WORLD_ID))
     entities = dict(state.entities)
     for eid, pos in ((F, f_pos), (H, h_pos)):
@@ -42,6 +44,11 @@ def _stage(f_pos: Tuple[float, float], h_pos: Tuple[float, float], *, f_task: Di
             combat=replace(e.combat, hp=5000, max_hp=5000, atk=100, def_stat=10, readiness=100.0, range=rng_range,
                            tactical_role="VANGUARD" if (vanguard and eid == F) else e.combat.tactical_role),
             task=TaskComponent(work_kind="ENTITY_ACT", payload=dict(f_task) if eid == F else {}))
+    if target_medium:
+        # PERC-02a: the scene's H is a small goblin_scout, a still small body that nobody perceives two tiles off. It is swapped for a MEDIUM body (lizardfolk; faction, position and hp
+        # kept) and the scene runs by day (owner-approved test-expectation change, #715 6966454372).
+        entities[H] = medium_body(entities[H])
+        object.__setattr__(state, "world_time", DAY_WORLD_TIME)
     object.__setattr__(state, "entities", entities)
     object.__setattr__(state, "terrain", {**state.terrain, **(terrain or {})})
     object.__setattr__(state, "blocked_tiles", set(blocked or set()))
@@ -122,7 +129,8 @@ V_POS, T_POS = (1.0, 1.0), (1.0, 3.0)  # the vanguard stands in a one-tile gap; 
 
 def _chokepoint_run(blocked: Set[Tuple[int, int]]):
     """Run the kernel on a vanguard whose target is out of reach; return (chokepoint sets the finder returned for F, F's decision reasons, F's positions)."""
-    state = _stage(V_POS, T_POS, f_task={}, rng_range=1, blocked=blocked, vanguard=True)
+    state = _stage(V_POS, T_POS, f_task={}, rng_range=1, blocked=blocked, vanguard=True, target_medium=True)
+    assert_the_target_is_hostile_and_a_target(state)
     found: List[Set[Tuple[float, float]]] = []
     reasons: List[Optional[str]] = []
     positions: Set[Tuple[float, float]] = set()

@@ -17,6 +17,7 @@ from src.engine.tactical_destinations import (
     retreat_destination,
     wander_destination,
 )
+from tests.helpers.clock import DAY_WORLD_TIME
 
 REGION = RegionState(id="field", name="Field", bounds=(5, 5, 30, 30))
 OTHER = RegionState(id="far", name="Far", bounds=(100, 100, 120, 120))
@@ -37,7 +38,7 @@ def _entity(eid, faction, hp=100, pos=(10.0, 10.0)):
 
 def _state(*entities, regions=(REGION,), tick=1):
     return AuthoritativeState(
-        tick=tick, seed=42, world_time=tick,
+        tick=tick, seed=42, world_time=DAY_WORLD_TIME,
         entities={e.id: e for e in entities},
         regions={r.id: r for r in regions},
     )
