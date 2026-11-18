@@ -1,6 +1,5 @@
 import pytest
 from dataclasses import replace
-from src.core.enums import ReasonCode
 from src.core.state import (
     AuthoritativeState, EntityState, InteractionComponent, InventoryComponent, 
     GroundItemState, CorpseState, ItemStack, IdentityComponent, EntityRole,
@@ -136,4 +135,4 @@ def test_movement_yielding_parity():
     # Monster should have a new position (yielded)
     assert 2 in updates
     assert updates[2].new_position != (1.0, 0.0)
-    assert updates[2].navigation.failure_reason == ReasonCode.YIELDING
+    assert updates[2].navigation.failure_reason is None and updates[2].navigation.failure_reason_clear is True  # a yield is a move: the clear, no code (2.214)
