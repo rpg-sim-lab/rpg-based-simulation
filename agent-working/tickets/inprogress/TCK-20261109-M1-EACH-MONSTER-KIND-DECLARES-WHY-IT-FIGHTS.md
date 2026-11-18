@@ -65,6 +65,15 @@ src/domains/combat_engagement/, hostility predicates, content
 - Order (roadmap §12.5, memo rows 89/93/95): the v1-disclosure repairs, then D80C, then the decision-73 step (#781, the v1.1 record), then the §12.3 items. Starting this item needs the owner's dispatch yes, brought by rpg-planner via lead-planner-u24.
 - Owner-level choices are asked when the milestone starts, not guessed here.
 
+## Durable state, lifecycle and clocks
+- Durable field: a guard's home tile (`guards_place` only), a coordinate on the body.
+- Creation: spawn sets it to the spawn tile; one writer (the spawn path); creation is idempotent across two passes (the same spawn tile).
+- Update: it never changes; there is no merge and no replace after spawn.
+- Exit and bound: none to exit; it dies with the body, so one per guarding body.
+- Clearing: removed with the entity; no other writer clears it.
+- Checkpoint/replay: it survives both, as part of the body.
+- Clock: none. The reach is a content number declared per species, not a code constant. Reasons themselves (the declared `fight_reasons`) are content, not state.
+
 ## Implementation Notes
 - 2026-11-22, the owner's direction (#715 7078469868, relayed by lead-planner-u24), scoped by rpg-designer: fight dispositions differ by kind, declared from properties and kind-neutral in code. This ticket owns the declaration. SLICE 1, which TCK-20261122-AN-ATTACKED-SUBJECT-CHOOSES-TO-FIGHT-BACK-WHEN-FLIGHT-FAILS-OR-IT-CAN-WIN (Step B) DEPENDS on:
   - a typed per-kind `fight_disposition` in content with the values ALWAYS_FLEES, FIGHTS_BACK (the visible default for an undeclared kind, AGENCY-08) and STRIKES_FIRST_IF_CAN_WIN;
