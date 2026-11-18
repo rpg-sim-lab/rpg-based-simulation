@@ -31,7 +31,7 @@ def classify_neighbours(entity: "EntityState", neighbors: Sequence["EntityState"
     never enter the hostile list (a plant-eater must never treat a wolf as an engagement target)."""
     hood = Neighbourhood([], [], [], {})
     for n in neighbors:
-        rel = relation(entity, n, source, night, tick)
+        rel = relation(entity, n, source, night=night, tick=tick)
         if rel in ATTACK_RELATIONS:
             hood.hostiles.append(n)
             hood.hostile_identity_sources[n.id] = source[1]

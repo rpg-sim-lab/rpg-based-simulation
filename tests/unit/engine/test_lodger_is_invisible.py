@@ -51,7 +51,7 @@ def test_perception_in_both_directions_is_empty_for_a_lodger():
     st = _state(lodger, raider)
     assert DomainView.get_neighbor_view(st, lodger, 10.0) == []                         # it sees nothing outside
     assert all(eid != 1 for eid, _ in DomainView.get_neighbor_view(st, raider, 10.0))  # nothing outside sees it
-    assert not perceives(raider, lodger) and not perceives(lodger, raider)
+    assert not perceives(raider, lodger, night=False, tick=None) and not perceives(lodger, raider, night=False, tick=None)
     assert perceived_hostiles(lodger, st) == [] and lodger.id not in {h.id for h in perceived_hostiles(raider, st)}
 
 

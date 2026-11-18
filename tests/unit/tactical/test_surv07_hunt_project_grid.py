@@ -45,7 +45,7 @@ def _decide(world, hunter_species, *, prey_dx, project=("hunger", ObjectiveKind.
     prey = _at(herd, 30.0 + prey_dx, 30.0)
     if prey_moving:  # PERC-02a: the prey took a step on the tick before the decision, so it is heard (a still small prey is perceived only by touch or a strong sense)
         prey = replace(prey, navigation=replace(prey.navigation, last_moved_tick=world.tick))
-    assert not check_prey or relation(hunter, prey, tick=world.tick + 1) is Relation.PREDATION or hunger < 50.0, "the fixture must make the herd the hunter's prey"
+    assert not check_prey or relation(hunter, prey, night=False, tick=world.tick + 1) is Relation.PREDATION or hunger < 50.0, "the fixture must make the herd the hunter's prey"
     if project is not None:
         hunter = _with_project(hunter, project[0], project[1], prey)
     ents = {hunter.id: hunter, prey.id: prey}
@@ -80,7 +80,7 @@ def test_a_human_hunter_does_not_perceive_a_still_small_prey_at_three_tiles(worl
     state_tick = world.tick + 1
     gate = get_perception_gate().can_perceive(hunter, get_entity_signals(prey, state_tick), {"distance": 3.0, "reach": 3.0, "night": False})
     assert gate.perceived is False and gate.signals_used == []
-    assert relation(hunter, prey, tick=state_tick) is Relation.NONE
+    assert relation(hunter, prey, night=False, tick=state_tick) is Relation.NONE
     assert payload.get("target_id") != prey.id, f"a still small prey at 3 tiles is not found; got {payload}"
     assert update.navigation is None or update.navigation.target_set is None, f"a still small prey at 3 tiles is not walked to; got {payload}"
 
@@ -119,7 +119,7 @@ def test_a_non_prey_non_acting_hostile_alone_is_not_engaged_by_a_pressing_hunter
     base = _species(world, "human")
     hunter = replace(_at(base, 30.0, 30.0), biological=replace(base.biological, hunger=PRESSING_HUNGER, sleep_debt=0.0))
     gob = _at(_species(world, "goblin"), 31.0, 30.0)
-    assert relation(hunter, gob) is not Relation.PREDATION
+    assert relation(hunter, gob, night=False, tick=None) is not Relation.PREDATION
     state = replace(world, entities={hunter.id: hunter, gob.id: gob}, tick=world.tick + 1)
     update = TacticalDecisionSystem.evaluate_entity_intent(state, hunter)
     payload = (update.task.payload_set if update.task is not None else None) or {}

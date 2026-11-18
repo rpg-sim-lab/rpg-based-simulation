@@ -156,7 +156,7 @@ def test_a_gate_error_is_not_perception_and_is_logged_at_error(monkeypatch, capl
     a = V2EntityBuilder(1).kind("human").location(0.0, 0.0).build()
     b = V2EntityBuilder(2).kind("human").location(1.0, 0.0).build()
     with caplog.at_level(logging.ERROR, logger="src.engine.appraisal"):
-        assert appraisal.perceives(a, b) is False
+        assert appraisal.perceives(a, b, night=False, tick=None) is False
     assert any(r.levelno == logging.ERROR and "perception gate error" in r.getMessage() for r in caplog.records)
 
 
@@ -344,8 +344,8 @@ def test_the_callers_hand_the_gate_the_chebyshev_reach():
         return V2EntityBuilder(eid).kind("not_in_content_kind").location(float(x), float(y)).combat(hp=10, max_hp=10, alive=True).lifecycle(active=True).build()
 
     me = at(1, 0, 0)
-    assert perceives(me, at(2, 1, 1), night=True)  # the diagonal neighbour is touched
-    assert not perceives(me, at(3, 2, 0), night=True)
+    assert perceives(me, at(2, 1, 1), night=True, tick=None)  # the diagonal neighbour is touched
+    assert not perceives(me, at(3, 2, 0), night=True, tick=None)
 
 
 def test_the_gate_error_path_is_unchanged_by_touch(catalog, caplog):
@@ -363,7 +363,7 @@ def test_the_gate_error_path_is_unchanged_by_touch(catalog, caplog):
     with _p.MonkeyPatch.context() as mp:
         mp.setattr(appraisal, "get_perception_gate", lambda: Boom())
         with caplog.at_level(logging.ERROR):
-            assert appraisal.perceives(at(1, 0, 0), at(2, 1, 0), night=False) is False  # adjacent, and still not perceived: a gate error is not perception
+            assert appraisal.perceives(at(1, 0, 0), at(2, 1, 0), night=False, tick=None) is False  # adjacent, and still not perceived: a gate error is not perception
     assert any("perception gate error" in r.message for r in caplog.records)
 
 
@@ -475,7 +475,7 @@ def test_the_step_clock_survives_apply_and_a_later_position_move():
 # function name -> the index of its `tick` among the positional arguments (a call may also name it `tick=`)
 _TICK_POSITION = {
     "emitted_signals": 2, "get_entity_signals": 1, "perceives": 3, "appraise": 3, "relation": 4, "faction_hostile": 4, "perceived_hostile": 4,
-    "classify_neighbours": 4, "_target_still_perceived": 3, "_has_tactical_hostiles": 3, "unengaged_adjacent_hostile": 4, "attack_allowed": 3, "_adjacent_hostile": 4, "_prey_in_sight": 3, "_need_path_first": 2,
+    "classify_neighbours": 4, "_has_tactical_hostiles": 3, "unengaged_adjacent_hostile": 4, "attack_allowed": 3, "_adjacent_hostile": 4, "_prey_in_sight": 3, "_need_path_first": 2,
 }
 # The only production caller that passes no tick, so every body it looks at reads STILL. 02b migrates it onto perceived_neighbours and removes this list.
 _UNDATED_UNTIL_02B = {

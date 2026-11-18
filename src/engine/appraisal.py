@@ -44,7 +44,7 @@ class Relation(str, Enum):
     NONE = "NONE"
 
 
-def perceives(entity: "EntityState", other: "EntityState", night: bool = False, tick: Optional[int] = None) -> bool:
+def perceives(entity: "EntityState", other: "EntityState", *, night: bool, tick: Optional[int]) -> bool:
     """True when ``entity`` perceives the living ``other`` through the perception gate. ``night`` (the caller's ``is_night(state.world_time)``) lowers vision two levels
     for a kind whose senses do not declare night vision (PERC-02). A gate error is NOT perception: it is logged at ERROR and the other is not perceived."""
     if not other.combat.alive:
@@ -124,9 +124,9 @@ def _coming_for(other: "EntityState", entity: "EntityState") -> bool:
     return _distance(entity, other) < before
 
 
-def appraise(entity: "EntityState", other: "EntityState", night: bool = False, tick: Optional[int] = None) -> Relation:
+def appraise(entity: "EntityState", other: "EntityState", *, night: bool, tick: Optional[int]) -> Relation:
     """The non-faction relation of ``entity`` toward the perceived ``other``: PREDATION, THREATENING, WARY or NONE."""
-    if entity.id == other.id or not perceives(entity, other, night, tick):
+    if entity.id == other.id or not perceives(entity, other, night=night, tick=tick):
         return Relation.NONE
     # Cheapest gate first; the KNOW-04 capability estimate runs only when every cheaper gate has passed.
     if can_eat(entity, other) and entity.biological.hunger >= HUNT_HUNGER and can_overcome(entity, other):

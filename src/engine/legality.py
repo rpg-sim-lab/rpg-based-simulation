@@ -15,6 +15,7 @@ from src.content_semantics.faction import (
     get_species_id_str,
 )
 from src.content_semantics.relation import RelationContext
+from src.core.calendar import is_night
 from src.core.enums import EntityRole, ReasonCode
 from src.core.lodging_rules import is_lodged
 from src.core.skills import SKILL_REGISTRY
@@ -236,7 +237,9 @@ class LegalityServiceV2:
         attacker: EntityState,
         target: EntityState,
         state_or_context: Any,
-        is_opportunity_attack: bool = False
+        is_opportunity_attack: bool = False,
+        *,
+        night: Optional[bool] = None,
     ) -> Tuple[bool, ReasonCode]:
         """
         Authoritative validation for a combat interaction.
@@ -249,6 +252,9 @@ class LegalityServiceV2:
         Logic ID: COMB-284 (Combat tests cover ranged legality)
         Logic ID: COMB-286 (Combat tests cover invalid target rejection)
         Logic ID: COMB-287 (Combat tests cover dead target rejection)
+
+        Perception is judged by the clock of the caller's state: ``night`` is ``is_night(state_or_context.world_time)``, the same clock the decision uses. A
+        context that carries no ``world_time`` must be given ``night`` by its caller; a missing clock is an error, never day.
         """
         # 1. State Validity (and, F3: a lodger cannot be attacked from outside)
         invalid = _state_invalid_reason(attacker, target)
@@ -288,7 +294,12 @@ class LegalityServiceV2:
             target_species=get_species_id_str(target),
         )
 
-        if not attack_allowed(attacker, target, LegalityServiceV2._attack_permitted(attacker, target, context), getattr(state_or_context, "tick", None)):
+        if night is None:
+            world_time = getattr(state_or_context, "world_time", None)
+            if world_time is None:
+                raise TypeError("verify_attack_legality: the state or context has no world_time; pass night= explicitly (a missing clock is never day)")
+            night = is_night(world_time)
+        if not attack_allowed(attacker, target, LegalityServiceV2._attack_permitted(attacker, target, context), night=night, tick=getattr(state_or_context, "tick", None)):
             return False, ReasonCode.FRIENDLY_FIRE_ILLEGAL
 
         # 4. Range Validity
