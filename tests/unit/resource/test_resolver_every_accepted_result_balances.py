@@ -290,20 +290,77 @@ def test_a_free_unnamed_service_is_not_counted():
     assert result.accepted and result.payee_missing is False
 
 
-def test_the_economy_phase_counts_each_no_payee_fee_once_in_the_run_ledger_and_the_tally_carries_it():
+def _fee(group_id=None):
+    return ResourceTransferIntent(source_id=999, source_kind="TAX", gold_delta=-PRICE, transfer_kind="TAX", group_id=group_id)
+
+
+@pytest.fixture
+def counts():
+    from src.core.payee_counts import PayeeMissingCounts
+
+    PayeeMissingCounts.reset()
+    yield PayeeMissingCounts
+    PayeeMissingCounts.reset()
+
+
+def _resolve_all(intents, payer_gold=50):
+    payer = _payer(payer_gold)
+    state = _state(payer)
+    return state, ResourceTransactionSystem.resolve_all(state, StateUpdate(entity_updates={PAYER_ID: EntityUpdate(entity_id=PAYER_ID, resource_transfers=list(intents))}))
+
+
+def test_the_economy_phase_counts_each_committed_no_payee_fee_once_and_the_ledger_tally_carries_it(counts):
     from src.observability.run_ledger import RunLedger
 
     RunLedger.reset_run_state()
     RunLedger.configure(True)
     try:
-        payer = _payer(50)
-        state = _state(payer)
-        fee = ResourceTransferIntent(source_id=999, source_kind="TAX", gold_delta=-PRICE, transfer_kind="TAX")
-        update = StateUpdate(entity_updates={PAYER_ID: EntityUpdate(entity_id=PAYER_ID, resource_transfers=[fee])})
-        refined = ResourceTransactionSystem.resolve_all(state, update)
+        state, refined = _resolve_all([_fee()])
         entity_coin, building_coin = _coin_written(refined)
         assert entity_coin + building_coin == 0.0
-        assert RunLedger._payee_missing == {"TAX|TAX": 1}
+        assert counts.counts() == {"TAX|TAX": 1}
         assert RunLedger.tally_event().payload["payee_missing"] == {"TAX|TAX": 1}
     finally:
         RunLedger.reset_run_state()
+    assert counts.counts() == {}  # the run ledger resets it at run start
+
+
+def test_the_same_fee_with_a_building_source_is_not_counted(counts):
+    _resolve_all([ResourceTransferIntent(source_id=BUILDING_ID, source_kind="TAX", gold_delta=-PRICE, transfer_kind="TAX")])
+    assert counts.counts() == {}
+
+
+def test_a_no_payee_fee_in_a_group_that_rolls_back_is_not_counted_but_a_committed_group_is(counts):
+    """The count is the COMMIT path only: the trial resolve of a group runs `_note_effects` with no intent, so a group that rolls back (here, a crafting cost the payer cannot meet) leaves
+    the counts at zero, and the same fee in a group that commits is counted once."""
+    failing = ResourceTransferIntent(source_id=BUILDING_ID, source_kind="CRAFTING", gold_cost=10_000, transfer_kind="CRAFT", group_id="G1")
+    _, rolled_back = _resolve_all([_fee("G1"), failing])
+    assert counts.counts() == {}
+    assert not any(r.accepted for r in rolled_back.entity_updates[PAYER_ID].intent_results)
+    _resolve_all([_fee("G2")])
+    assert counts.counts() == {"TAX|TAX": 1}
+
+
+def test_the_count_never_reaches_the_state_the_hash_reads(monkeypatch, counts):
+    """Nothing in the simulation reads the counts: the refined update (what the apply path turns into the next state) is identical with the noter real or replaced by a no-op."""
+    from src.core.payee_counts import PayeeMissingCounts
+
+    _, with_counter = _resolve_all([_fee()])
+    monkeypatch.setattr(PayeeMissingCounts, "note", classmethod(lambda cls, source_kind, transfer_kind: None))
+    _, without_counter = _resolve_all([_fee()])
+    assert with_counter == without_counter
+
+
+def test_only_the_economy_commit_path_writes_the_counts_and_only_the_run_ledger_reads_or_resets_them():
+    from pathlib import Path
+
+    root = Path(__file__).resolve().parents[3] / "src"
+    users = {}
+    for path in root.rglob("*.py"):
+        text = path.read_text(encoding="utf-8")
+        if "PayeeMissingCounts" in text:
+            users[path.relative_to(root).as_posix()] = text
+    assert set(users) == {"core/payee_counts.py", "engine/economy.py", "observability/run_ledger.py"}, sorted(users)
+    economy, ledger = users["engine/economy.py"], users["observability/run_ledger.py"]
+    assert "PayeeMissingCounts.note(" in economy and "PayeeMissingCounts.counts(" not in economy and "PayeeMissingCounts.reset(" not in economy
+    assert "PayeeMissingCounts.counts(" in ledger and "PayeeMissingCounts.reset(" in ledger and "PayeeMissingCounts.note(" not in ledger
