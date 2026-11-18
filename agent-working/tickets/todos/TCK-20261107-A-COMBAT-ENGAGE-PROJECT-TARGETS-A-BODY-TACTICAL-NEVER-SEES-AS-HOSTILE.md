@@ -72,7 +72,8 @@ Fix lean (rpg-designer, after counts): one hostility predicate, read by the scor
 ## Implementation Notes
 - 2026-11-19, NAMED EVIDENCE (rpg-designer, via lead-planner-u24; inspected on main): the hostility verdict is decided in many places that don't agree.
   - 13 direct `are_entities_hostile` sites: phase.py:303-312, combat_rewards.py:87-91, combat.py:500, cognition.py:47/:143, tactical_threat.py:71, scorers.py:186, scorers_support.py:23, cooperation/providers.py:111, intake.py:35, intelligence.py:156/:452, legality.py:493/:568.
-  - The species_relations step reaches LEGALITY only (hostility.py:67, legality.py:59/:265). So tactical and engage-project readers can disagree with the attack-legality verdict on the same pair, which is this ticket's symptom.
+  - The ubuntu lead's exact evidence line: "Today only hostility.py:67 and legality.py:59/:265 pass species into project_relation. So the species_relations step reaches faction_hostile and attack legality only, and the 13 direct faction sites never see it. Cure: why-it-fights' single extracted module (the only caller of are_entities_hostile, with a static test)."
+  - So tactical and engage-project readers can disagree with the attack-legality verdict on the same pair, which is this ticket's symptom.
   - The cure belongs to TCK-20261109-M1-EACH-MONSTER-KIND-DECLARES-WHY-IT-FIGHTS: one extracted hostility module that every site calls, plus a static test that no site calls are_entities_hostile directly. The owner answered all 8 why-it-fights questions with the recommended options (#715 6985558474).
 
 ## Test Summary
