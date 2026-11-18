@@ -468,3 +468,34 @@ def test_the_step_clock_survives_apply_and_a_later_position_move():
     assert carried.entities[1].navigation.last_moved_tick == 7      # a move that names no step tick carries the last one
     assert NavigationUpdate(last_moved_tick_set=7).merge(NavigationUpdate()).last_moved_tick_set == 7
     assert not NavigationUpdate(last_moved_tick_set=0).is_noop()
+
+
+# --- every production caller dates its signals: the tick reaches emitted_signals (rpg-designer 2026-11-18, C2) ----------------------------------
+
+# function name -> the index of its `tick` among the positional arguments (a call may also name it `tick=`)
+_TICK_POSITION = {
+    "emitted_signals": 2, "get_entity_signals": 1, "perceives": 3, "appraise": 3, "relation": 4, "faction_hostile": 4, "perceived_hostile": 4,
+    "classify_neighbours": 4, "_target_still_perceived": 3, "_has_tactical_hostiles": 3, "unengaged_adjacent_hostile": 4,
+}
+# The only production callers that pass no tick, so every body they look at reads STILL. 02b migrates them onto perceived_neighbours and removes this list.
+_UNDATED_UNTIL_02B = {
+    ("engine/tactical.py", "relation"),                                   # tactical.py: the predation filter `relation(entity, h)`
+    ("engine/candidate_selector.py", "engaged_adjacent_hostile"),         # the movement layer's engaged-adjacent test (get_neighbor_view family)
+}
+
+
+def test_every_production_caller_of_the_signal_chain_passes_a_tick():
+    import ast
+    root = Path(__file__).resolve().parents[3] / "src"
+    undated = set()
+    for path in sorted(root.rglob("*.py")):
+        tree = ast.parse(path.read_text())
+        for fn in [n for n in ast.walk(tree) if isinstance(n, (ast.FunctionDef, ast.AsyncFunctionDef))]:
+            for call in [c for c in ast.walk(fn) if isinstance(c, ast.Call)]:
+                name = call.func.id if isinstance(call.func, ast.Name) else (call.func.attr if isinstance(call.func, ast.Attribute) else None)
+                if name not in _TICK_POSITION or fn.name == name:
+                    continue
+                if any(k.arg == "tick" for k in call.keywords) or len(call.args) > _TICK_POSITION[name]:
+                    continue
+                undated.add((str(path.relative_to(root)), fn.name if name != "relation" or path.name != "tactical.py" else name))
+    assert undated <= _UNDATED_UNTIL_02B, f"production callers that read every body as still (give them state.tick): {sorted(undated - _UNDATED_UNTIL_02B)}"
