@@ -58,5 +58,11 @@ def test_the_births_path_hands_both_parent_profiles_so_the_builders_id_only_fall
     state = AuthoritativeState(tick=30, seed=42, entities=parents, next_entity_id=3)
     generator = EntityGenerator(state.seed + state.tick)
     generator._last_id = 2
-    update = births.BirthService.process_births(state, generator)
+    from src.engine.apply import ApplyPath
+    conceived = ApplyPath.apply_generation(state, births.BirthService.process_births(state, generator), 31, 31)
+    due = max(e.lifecycle.pregnancy.due_tick for e in conceived.entities.values() if e.lifecycle.pregnancy)
+    at_term = AuthoritativeState(tick=due, seed=42, entities=conceived.entities, next_entity_id=conceived.next_entity_id)
+    generator = EntityGenerator(at_term.seed + at_term.tick)
+    generator._last_id = conceived.next_entity_id - 1
+    update = births.BirthService.process_births(at_term, generator)
     assert len(update.entities_add) == 1 and calls == []

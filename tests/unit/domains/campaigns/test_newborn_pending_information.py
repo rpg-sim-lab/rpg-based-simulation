@@ -85,7 +85,7 @@ def _episode_with_a_real_birth(monkeypatch):
 
     class _CertainCatalog:
         def get_reproduction_profile(self, profile_id):
-            return real.get_reproduction_profile(profile_id).model_copy(update={"birth_chance_per_check": 1.0})
+            return real.get_reproduction_profile(profile_id).model_copy(update={"birth_chance_per_check": 1.0, "gestation_ticks": 30})
 
         def __getattr__(self, name):
             return getattr(real, name)

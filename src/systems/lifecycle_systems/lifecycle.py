@@ -273,7 +273,9 @@ class LifecycleSystem:
             if is_dead:
                 ent_upd = ent_upd or EntityUpdate(entity_id=e_id)
                 recent_deaths.append(entity)
-                if entity.lifecycle.pregnancy is not None:
+                # Decided from this tick's merged update: a pregnancy a birth already cleared is not ended again (no second clear, no event).
+                birth_cleared = bool(ent_upd.lifecycle and ent_upd.lifecycle.pregnancy_clear)
+                if entity.lifecycle.pregnancy is not None and not birth_cleared:
                     pregnancy_ended.append(_pregnancy_ended_event(state.tick, entity))
                 # Mark as inactive and record death truth
                 life_upd = ent_upd.lifecycle or LifecycleUpdate()

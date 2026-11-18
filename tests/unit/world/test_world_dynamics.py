@@ -411,6 +411,20 @@ def test_lair_occupant_death_does_not_dissolve_or_transform_the_lair_place():
     assert unchanged_place.transformed_tick is None
 
 
+def _parents_at_term(due_tick):
+    """Two humans, the mother (1) due this tick with a litter of one from father 2 (a conception at term is a birth in this step)."""
+    import dataclasses
+
+    from src.core.builder import V2EntityBuilder
+    from src.core.pregnancy import PregnancyState
+    from src.systems.lifecycle_systems.genetics import GeneticProfile
+
+    parents = {i: V2EntityBuilder(i).kind("human").location(50.0, 50.0).build() for i in (1, 2)}
+    pregnancy = PregnancyState(father_entity_id=2, conceived_tick=due_tick - 2400, due_tick=due_tick, litter_size=1, father_genetic_profile=GeneticProfile())
+    parents[1] = dataclasses.replace(parents[1], lifecycle=dataclasses.replace(parents[1].lifecycle, pregnancy=pregnancy))
+    return parents
+
+
 def test_world_dynamics_folds_the_births_world_update_into_final_update(monkeypatch):
     """TCK-20260902-REPRODUCTION-POPULATION-PRESSURE-CLOSURE: regression guard that a sub-phase's
     world_updates are folded into the function's final returned StateUpdate (the original drop was one
@@ -430,7 +444,7 @@ def test_world_dynamics_folds_the_births_world_update_into_final_update(monkeypa
 
     monkeypatch.setattr(births, "get_catalog", lambda: _CertainCatalog())
     region = RegionState(id="forest", name="Forest", bounds=(0, 0, 100, 100))
-    parents = {i: V2EntityBuilder(i).kind("human").location(50.0, 50.0).build() for i in (1, 2)}
+    parents = _parents_at_term(60)
     state = AuthoritativeState(tick=60, seed=42, regions={"forest": region}, entities=parents, next_entity_id=3)
     generator = EntityGenerator(42)
     generator._last_id = 2
@@ -457,7 +471,7 @@ def test_births_and_world_dynamics_apply_in_one_fixed_order_on_a_tick_where_both
 
     monkeypatch.setattr(births, "get_catalog", lambda: _CertainCatalog())
     region = RegionState(id="forest", name="Forest", bounds=(0, 0, 100, 100))
-    parents = {i: V2EntityBuilder(i).kind("human").location(50.0, 50.0).build() for i in (1, 2)}
+    parents = _parents_at_term(150)
     state = AuthoritativeState(tick=150, seed=42, regions={"forest": region}, entities=parents, next_entity_id=3)  # 150 = lcm(30, 50)
     generator = EntityGenerator(42)
     generator._last_id = 2
