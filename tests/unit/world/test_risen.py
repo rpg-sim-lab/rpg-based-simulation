@@ -253,3 +253,11 @@ def test_the_content_refuses_a_species_that_declares_both_origins():
     repo.species["undead"] = repo.species["undead"].model_copy(update={"reproduction_profile": "humanoid_births"})
     with pytest.raises(RisenProfileError, match="both"):
         check_risen_profiles(repo)
+
+
+def test_running_the_transaction_phase_with_nothing_pending_changes_nothing_so_the_rise_trigger_alone_moves_no_state(never):
+    from src.engine.economy import ResourceTransactionSystem
+    state, update = _state(), StateUpdate()
+    assert ResourceTransactionSystem.resolve_all(state, update) == update
+    assert ResourceTransactionPhase.resolve(state, update, SystemCadence()) is not None
+    assert ResourceTransactionPhase.resolve(state, update, SystemCadence()) == update, "chance 0: the whole phase is a no-op on an idle tick"

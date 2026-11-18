@@ -1,8 +1,8 @@
 {
-  "manifest_id": "prov_df805b89f7dce8f8",
+  "manifest_id": "prov_e22021053d267534",
   "world_id": "highland_traverse",
   "source_schema_version": "provenancemanifest.v1",
-  "catalog_fingerprint": "d9d426e999024c75adf38f69d3c60da293c29e151de5d106f710d798322596f4",
+  "catalog_fingerprint": "f26e73885a28246da6ad53c2224b3ce3b15d7ed38db68d9ab52f9c8ad7b3eb25",
   "module_fingerprints": {
     "mountain_pass": "25529e16619ae519dde6e77d9aade020940ab0b7e78e58b7755be29562d561e6",
     "nomadic_herd": "e0b53d7425fadb99628787a2dd1ff809a8053ad29243fc8c299c5c5de101ddec",
@@ -11,8 +11,8 @@
   },
   "composition_fingerprint": "089dca6802681b8f1e10e3d2a64831d5d49327d41d6549f8113c11e18e9aef41",
   "resolver_version": "1.0.0",
-  "content_fingerprint": "df805b89f7dce8f83315a917afaa41ee7f0c59d57b6b60d856b583a5a51424ff",
-  "created_at": "2026-11-18T02:36:47.267468Z",
+  "content_fingerprint": "e22021053d2675346b8e11049743dabb12b099c639960e6a434ee1c153f54672",
+  "created_at": "2026-11-18T03:46:29.829479Z",
   "records": {
     "hero_guild": {
       "element_id": "hero_guild",
