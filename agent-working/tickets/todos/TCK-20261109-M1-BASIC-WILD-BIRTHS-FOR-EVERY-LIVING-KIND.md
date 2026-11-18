@@ -283,6 +283,10 @@ spawning and camp systems, content
   - The -n 2 data/runs interaction did not reproduce on main 3aafdb383 with the access_audit + api selection (114 passed), so its origin is undetermined.
   - tests/architecture/test_no_name_switches_in_decision_paths.py is red on head for the build_newborn EntityRole.MONSTER row until the owner answers the allowlist ask (rpg-designer-ubuntu's ruling, cd9c4fa9c). The switch is disclosed beside the Unified divergence entry.
   - With births off, spatial_index_hits equals main in urban_political and hero_guild_routing at 1000t s42.
+  - resolved/ regenerated for all 24 worlds with the compile tool (impl 38c37e6ca; the pilot's world.resolved.yaml content also in 669aaa0e4).
+    - 70 files, fingerprint and CAT-DEAD lines only. world.resolved.yaml and compile_context.json are unchanged in the 23 other worlds.
+    - warnings_count falls by 2 per world: CAT-DEAD-001 for swamp_troll and dwarven_hunter, now consumed as newborn_archetype. Terrain warnings only reorder.
+    - camp_maturity_calibration_pilot is absent from data/worlds/world_index.json, on main already; not changed here.
 - Observation (BALANCE, Phase 3): 0 camp spawns and 0 respawns in 5000t in all 3 gate worlds at s42. Either the camps don't spawn in that horizon, or a spawn path is gated off (decision 70: camps refill only by births).
 
 ## Test Summary
