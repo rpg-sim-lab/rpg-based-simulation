@@ -24,6 +24,7 @@ from src.core.models.world_records import CorpseState, GroundItemState, OwedReco
 from src.core.immutability import shallow_freeze
 from src.core.self_model import SelfModelBundle
 from src.core.cognition import CognitionModel
+from src.core.pregnancy import PregnancyState
 from src.systems.lifecycle_systems.genetics import GeneticProfile
 from src.core.calendar import TICKS_PER_FANTASY_YEAR
 
@@ -190,6 +191,8 @@ class LifecycleComponent:
     active: bool = True
     genetic_profile: Optional[GeneticProfile] = None
     _canonical_cache: Any = field(default=None, init=False, repr=False, compare=False)
+    # Appended LAST (checkpoint_fields.FIELD_RULES fills an older checkpoint); omitted from the canonical dict while None.
+    pregnancy: Optional[PregnancyState] = None
 
     def to_canonical_dict(self) -> Dict[str, Any]:
         if self._canonical_cache is not None:
@@ -214,6 +217,8 @@ class LifecycleComponent:
             "active": self.active,
             "genetic_profile": asdict(self.genetic_profile) if self.genetic_profile else None
         }
+        if self.pregnancy is not None:
+            res["pregnancy"] = self.pregnancy.to_canonical_dict()
         object.__setattr__(self, "_canonical_cache", res)
         return res
 

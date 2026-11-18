@@ -49,6 +49,11 @@ def _memory_models(state: Any) -> Iterable[Any]:
         yield (f"entity {e.id}", e.cognition.memory)
 
 
+def _lifecycles(state: Any) -> Iterable[Any]:
+    for e in (getattr(state, "entities", None) or {}).values():
+        yield (f"entity {e.id}", e.lifecycle)
+
+
 def _identities(state: Any) -> Iterable[Any]:
     for e in (getattr(state, "entities", None) or {}).values():
         yield (f"entity {e.id}", e.identity)
@@ -129,6 +134,8 @@ FIELD_RULES: List[FieldRule] = [
     FieldRule("group.dissolution_contract_status", _groups, "dissolution_contract_status", fill=_none_on_unbound_group, ruling=_GROUP_RULING, record="GroupRecord"),
     # M1 (kind means species): a state that predates the occupation label gave no body one, so None is exactly that state.
     FieldRule("occupation", _identities, "occupation", fill=lambda state, owner: None, ruling="rpg-designer 2026-11-16, kind-is-species ruling step 2: a state that predates the occupation label had none", record="IdentityComponent"),
+    # M1 reproduction (rpg-designer-ubuntu Q-G1): a state that predates gestation carried no pregnancy, so None is exactly that state.
+    FieldRule("pregnancy", _lifecycles, "pregnancy", fill=lambda state, owner: None, ruling="rpg-designer 2026-11-18, Q-G1: a state that predates gestation had no pregnancy", record="LifecycleComponent"),
 ]
 
 
