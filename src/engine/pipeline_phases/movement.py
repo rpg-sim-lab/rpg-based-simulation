@@ -23,23 +23,27 @@ if TYPE_CHECKING:
     from src.core.updates import StateUpdate
 
 
-def _merge_move_update(existing: EntityUpdate | None, u_upd: EntityUpdate, movement_codes: dict[int, Any]) -> EntityUpdate:
+def _merge_move_update(existing: EntityUpdate | None, u_upd: EntityUpdate, movement_codes: dict[int, tuple[Any, Any]]) -> EntityUpdate:
     """``existing.merge(u_upd)``, except that a MOVE drops the failure code this same phase wrote for the body earlier in the tick.
 
     A move (a new position with the clear and no code: a yield displacement, or the body's own step) is the tick's movement outcome, so an own failed step
-    that was followed by a displacement ends as "moved" and not as the old failure. Only a code THIS phase wrote is dropped (``movement_codes``): a code from
-    an earlier phase (an action) is not a movement outcome and survives, as the precedence orders (a code beats a clear)."""
+    that was followed by a displacement ends as "moved" and not as the old failure. Only a code THIS phase wrote is dropped (``movement_codes`` holds, per body,
+    that code and the code the body carried BEFORE the phase's first write): a code from an earlier phase (an action) is not a movement outcome, so it is restored
+    when the phase's own code goes, and it survives a move that wrote none (a code beats the clear)."""
     uid = u_upd.entity_id
     nav = u_upd.navigation
+    before = None if existing is None or existing.navigation is None else existing.navigation.failure_reason
     merged = u_upd if existing is None else existing.merge(u_upd)
     if nav is None:
         return merged
     if nav.failure_reason is not None:
-        movement_codes[uid] = nav.failure_reason
-    elif u_upd.new_position is not None and nav.failure_reason_clear:
+        pre = movement_codes[uid][1] if uid in movement_codes else before
+        movement_codes[uid] = (nav.failure_reason, pre)
+    elif u_upd.new_position is not None and nav.failure_reason_clear and uid in movement_codes:
         mnav = merged.navigation
-        if mnav is not None and mnav.failure_reason is not None and movement_codes.pop(uid, None) == mnav.failure_reason:
-            merged = replace(merged, navigation=replace(mnav, failure_reason=None))
+        own, pre = movement_codes.pop(uid)
+        if mnav is not None and mnav.failure_reason is not None and mnav.failure_reason == own:
+            merged = replace(merged, navigation=replace(mnav, failure_reason=pre))
     return merged
 
 
@@ -235,7 +239,7 @@ class MovementPhase:
         metric_counters = dict(update.metric_counters) if getattr(update, "metric_counters", None) is not None else {}
         metric_counters["movement_candidates"] = len(selected_ids)
         
-        movement_codes: dict[int, Any] = {}  # the failure code THIS phase last wrote for a body (a code from an earlier phase is not here)
+        movement_codes: dict[int, tuple[Any, Any]] = {}  # per body: the code THIS phase last wrote, and the code it carried before the phase's first write
         # Unified Pass over selected candidate IDs
         for e_id in selected_ids:
             ent_upd = refined_entity_updates.get(e_id)

@@ -81,3 +81,26 @@ def test_an_action_code_written_after_the_move_still_wins_at_the_patch():
     changes = {}
     NavigationPatch(entity_id=2, navigation=later).apply(state.entities[2], changes)
     assert changes["navigation"].last_failure_reason == "TARGET_NOT_FOUND"
+
+
+def test_an_action_code_then_an_own_failed_step_then_a_yield_ends_with_the_action_code():
+    codes = {}
+    action = _step_failed(2, "SOURCE_DEPLETED")  # action routing, an earlier phase
+    failed = _merge_move_update(action, _step_failed(2, ReasonCode.OCCUPANCY_VIOLATION), codes)
+    assert failed.navigation.failure_reason == ReasonCode.OCCUPANCY_VIOLATION  # the later code wins the merge
+    moved = _merge_move_update(failed, _yielded(2), codes)
+    assert moved.new_position == (3.0, 1.0)
+    assert moved.navigation.failure_reason == "SOURCE_DEPLETED"
+
+
+def test_the_phase_order_is_action_then_swaps_then_movement_and_a_swapped_body_is_not_resolved_again():
+    import inspect
+
+    from src.engine.pipeline import AuthoritativeApplyPipeline
+    from src.engine.pipeline_phases.movement import _already_settled_this_tick
+
+    src = inspect.getsource(AuthoritativeApplyPipeline)
+    order = [src.index(f'run_phase("{name}"') for name in ("action_routing", "position_swaps", "movement_routing")]
+    assert order == sorted(order), "the pipeline order changed: a blocked step followed by a swap must now be handled in _swap_updates"
+    swapped = _yielded(1)  # a swap update has the same shape: a new position and moved_this_tick
+    assert _already_settled_this_tick(swapped) is True
