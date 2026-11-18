@@ -42,7 +42,10 @@ def main(argv: list[str]) -> int:
         births.get_catalog = lambda: _ChanceZeroCatalog(real)
     pinned_runner = arm_child._pinned_runner()
     run_id = f"births_{mode}_{world}_{seed}_{os.getpid()}"
-    kernel = build_kernel(world, seed, run_id)
+    kernel = build_kernel(world, seed, run_id)  # rpg_gate_run.build_kernel passes flags audit_mode and no_frame_pacing (line 65)
+    forced = {"audit_mode": getattr(kernel, "_audit_mode", None), "no_frame_pacing": getattr(kernel, "_no_frame_pacing", None)}
+    if forced["audit_mode"] is not True or forced["no_frame_pacing"] is not True:
+        raise RuntimeError(f"this tree's build_kernel did not force audit_mode and no_frame_pacing: {forced}")
     manifest_path = Path("data") / "runs" / run_id / "run_manifest.json"
     evidence = pinned_runner.read_manifest(manifest_path) if manifest_path.exists() else {"run_conditions": arm_child._derived_conditions(kernel)}
     pinned = pinned_runner.require_pinned(evidence, what="births_child build_kernel")
@@ -70,7 +73,7 @@ def main(argv: list[str]) -> int:
         for e in state.entities.values()
     }
     doc = {
-        "world": world, "seed": seed, "ticks": ticks, "mode": mode, "hashseed": os.environ.get("PYTHONHASHSEED"), "runner": pinned.verdict,
+        "world": world, "seed": seed, "ticks": ticks, "mode": mode, "hashseed": os.environ.get("PYTHONHASHSEED"), "runner": pinned.verdict, "forced_flags": forced,
         "final_hash": CanonicalStateHasher.get_hash(state), "final": final,
         "births_by_kind": dict(Counter(e.kind for e in state.entities.values() if e.id not in start_state.entities)),
         "max_entity_id": max(state.entities, default=0),
