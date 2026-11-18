@@ -54,3 +54,13 @@ def test_the_dedupe_does_not_follow_the_occupation_label():
     gen = EntityGenerator(42)
     boss = BossService.check_for_boss_spawn(_state(), gen).entities_add[0]
     assert species_of(boss) == "world_boss" and boss.identity.occupation != "world_boss"
+
+
+def test_a_dragonkin_occupant_is_found_by_species_whatever_its_occupation_label():
+    """The lair dedupe matched only because the spawn writes occupation "dragonkin" too; relabel the occupant and it must still be found."""
+    gen = EntityGenerator(42)
+    state = _with(_state(with_lair=True), BossService.check_for_lair_spawn(_state(with_lair=True), gen))
+    (occupant,) = state.entities.values()
+    relabelled = replace(occupant, identity=replace(occupant.identity, occupation="lair_warden"))
+    state = replace(state, entities={relabelled.id: relabelled})
+    assert BossService.check_for_lair_spawn(state, gen).entities_add == []
