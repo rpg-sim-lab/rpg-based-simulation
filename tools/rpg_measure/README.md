@@ -35,6 +35,12 @@ beside the kit (shape in the module docstring): each kit file with its sha256, e
 | h | a heavy kit python file whose name does not match the shared gate's `RPG_HEAVY_WORDS` (`lib/busy_gate.sh`), so other lanes' gates cannot see the job (a `_reader.py` near-miss) |
 | i | informational: wall time and the 1-minute loadavg (before -> after) of each fixture run, so later perf reads do not come from file mtimes; always PASS |
 
+### Manifest rules worth knowing
+
+- A hook is `{"name", "count_path"}` or `{"name", "stdout_regex"}`. `count_path` is a dotted path into the output JSON (`a.b`, `[*]` over a list or a dict's values, `[0]` an index); the preflight SUMS the numeric values found (bools ignored) and the hook passes when the sum is at least 1. A path that is absent fails. A list of names (a `hook_coverage` block) is not countable: record a numeric counter in the output if a hook-hit check is wanted.
+- Check (b) always imports the kit file under `python -I`; the fixture run (c) uses the entry exactly as written, so an entry without `-I` mirrors a run that relies on `PYTHONPATH` = the tree.
+- Fixture runs use cwd = the tree, so a kit that writes `data/runs` writes into the frozen tree: the S9 `diff -rq` of the trees must exclude `data/runs`, or the preflight must report tree writes.
+
 ### The S9 packet line and the evidence labels
 
 The S9 packet carries one line per kit: `Kit preflight: <PASS|FAIL>, manifest sha256 <..>, trees <A sha> <B sha>, interpreter env digest <..>, evidence: executed`, with the preflight table attached.
