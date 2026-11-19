@@ -387,8 +387,7 @@ _OCCUPATION_ATTRIBUTE_ALLOWLIST = {
     # the field itself, the carry and the copy sites, the presenter (step 2)
     "src/core/state.py", "src/engine/apply.py", "src/domains/campaigns/orchestrator.py", "src/domains/campaigns/state.py", "src/api/presenters/state_presenter.py",
     # the helper that reads it for the duck-typed readers, and the label readers step 3 moved off `kind` (rpg-designer 665b9718, rows 10-13, 15-23, B1-B3, B5, B9-B12)
-    "src/world/calamity.py", "src/world/threat.py", "src/world/environment.py", "src/world/creature_territory.py",
-    "src/systems/world_systems/navigation.py",
+    "src/world/calamity.py", "src/world/environment.py", "src/world/creature_territory.py",
 }
 
 

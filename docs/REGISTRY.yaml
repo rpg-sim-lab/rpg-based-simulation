@@ -7986,6 +7986,20 @@
   - content
   last_verified: '2026-10-09'
 - type: ticket
+  path: agent-working/tickets/done/TCK-20261119-OCCUPATION-READS-COMPARED-WITH-A-NON-LIVING-SPECIES-ID-MISS-THE-WORLD-BOSS.md
+  ticket_id: TCK-20261119-OCCUPATION-READS-COMPARED-WITH-A-NON-LIVING-SPECIES-ID-MISS-THE-WORLD-BOSS
+  title: 'navigation.py and threat.py compare the occupation with "world_boss", but
+    step 4 writes world_boss as the species (occupation "ancient_sentinel"): the duplicate-boss
+    bug''s twin, plus a static test closing the class'
+  tier: hotfix
+  ticket_type: bug
+  date: '2026-11-19'
+  related_code_areas:
+  - src/systems/world_systems/navigation.py:41, src/world/threat.py:30
+  artifact_files:
+  - agent-working/stored_artifacts/TCK-20261119-OCCUPATION-READS-COMPARED-WITH-A-NON-LIVING-SPECIES-ID-MISS-THE-WORLD-BOSS/investigation.md
+  tags: []
+- type: ticket
   path: agent-working/tickets/done/TCK-20261119-RPG-GATE-RERUN-ONLY-NEW-ROWS-AND-A-BASELINE-DIFF-AGAINST-MAIN.md
   ticket_id: TCK-20261119-RPG-GATE-RERUN-ONLY-NEW-ROWS-AND-A-BASELINE-DIFF-AGAINST-MAIN
   title: The rpg gate reruns only the (world, seed) runs behind a fail or drift row
