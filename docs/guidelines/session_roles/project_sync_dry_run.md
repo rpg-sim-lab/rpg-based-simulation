@@ -307,3 +307,21 @@ update line shows the new Involved / Blocked by / Hotspot value next to the chan
   named by the owner of the lane (for example `m1kind5` -> `rpg-implementer-2`, `coinsink` -> `rpg-implementer-3`; rpg-planner confirms the rest), first with `--dry-run`, then
   `python3 tools/sessions/project_sync.py --root . --state-root <scratch>` to read it back. A lane whose seat already holds a different live worktree is refused without `--replace`.
 - **No new field and no init step.** Seat and Involved already exist; merging this changes only the Seat and Involved text of rows whose worktree has an instance record.
+
+### The Parked marker (`TCK-20261119-PROJECT-VIEW-PARKED-STATE-FROM-A-TICKET-BODY-MARKER-LINE`)
+
+A ticket reads **Parked** when a planner wrote one marker line in its body and its target is still open. The sync never infers it from phrases, branch age or a handover.
+- **The line** (one, at the START of a line, in the ticket's body): `Parked: waits on <TCK-id> since <YYYY-MM-DD>`, `Parked: waits on PR#<n> since <YYYY-MM-DD>`, or `Parked: waits on decision <short reference> since <YYYY-MM-DD>`
+  (for example `decision owner_decision_memo.md row 7`; the reference is free text and must be non-empty). A malformed `Parked: ` line (an indented or mid-line one is not read at all, a bad date, an empty
+  reference, a target that is none of the three) is a finding and changes no Status.
+- **It clears** when its ticket target is Done, when its PR target is no longer in the open-PR list (merged or closed), or when the planner removes the line. A decision target cannot be checked, so it clears only when the line is removed.
+  A ticket target with no file on origin/main, and a `PR#n` marker while the open-PR list could not be read, are findings and give no Parked.
+- **Precedence**: Done, In review, a kept status, Blocked (a ticket whose `## Status` is BLOCKED, or a lane copy that is), then Parked, then In progress / Stale / To do. Parked replaces Stale and In progress, and a filed ticket with no lane that waits
+  also reads Parked (it is waiting, not idle). Done and In review still win over a marker.
+- **Read from origin's copy only.** A marker written on an unpushed branch shows after it reaches main.
+- **Stale marker finding (a PROPOSAL, not measured).** A `since` date more than 45 days old adds a finding, never a Status change, so an abandoned Parked is visible. The corpus held one dated waits-on line when this was written; revisit the number
+  when real markers exist (the one-week measure of the overlap check is a similar prospective step).
+- **ran / skipped / errored**: the dry run's `parked:` note counts the tickets with a marker line, how many read Parked, how many cleared, the malformed lines (errored, findings) and the unknown targets (skipped, findings).
+- **The F1 case.** STALEMATE F1 (`TCK-20261030-STALEMATE-BREAK-OVERWRITES-A-PROJECT-MOVE-EVERY-TICK`) reads Stale until its planner writes the marker; the test fixture is synthetic. The live check is the u24 planner writing the line after this lands.
+- **Status select.** `STATUSES` gains `Parked` (colour YELLOW), last. On a populated Project `--init` takes the append-only path (every existing option keeps its id, only Parked is new); the pure-function test proves the ids are sent, and the scratch-Project test is what shows how GitHub treats
+  the built-in Status field (see the migration order below once that result is recorded). `--apply` refuses a whole run before its first write if a planned Status has no option, so the old code never sees Parked and the new code plans Parked only once a marker exists.

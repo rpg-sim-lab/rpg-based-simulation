@@ -8000,6 +8000,19 @@
   tags:
   - mcp
 - type: ticket
+  path: agent-working/tickets/done/TCK-20261119-DEPENDABOT-IGNORES-COMPLEXIPY-MAJORS-AND-SENTENCE-TRANSFORMERS.md
+  ticket_id: TCK-20261119-DEPENDABOT-IGNORES-COMPLEXIPY-MAJORS-AND-SENTENCE-TRANSFORMERS
+  title: Dependabot ignores complexipy semver-major updates and all sentence-transformers
+    updates in the uv block
+  tier: hotfix
+  ticket_type: chore
+  date: '2026-11-19'
+  related_code_areas:
+  - .github/dependabot.yml
+  artifact_files: []
+  tags:
+  - delivery
+- type: ticket
   path: agent-working/tickets/done/TCK-20261119-FILED-TICKETS-ARE-SCANNED-FOR-OVERLAP-WITH-OPEN-TODOS.md
   ticket_id: TCK-20261119-FILED-TICKETS-ARE-SCANNED-FOR-OVERLAP-WITH-OPEN-TODOS
   title: A ticket filed by hand into todos/ or inprogress/ is scanned for overlap
@@ -8131,15 +8144,17 @@
   tags:
   - mcp
 - type: ticket
-  path: agent-working/tickets/todos/TCK-20261119-DEPENDABOT-IGNORES-COMPLEXIPY-MAJORS-AND-SENTENCE-TRANSFORMERS.md
-  ticket_id: TCK-20261119-DEPENDABOT-IGNORES-COMPLEXIPY-MAJORS-AND-SENTENCE-TRANSFORMERS
-  title: Dependabot ignores complexipy semver-major updates and all sentence-transformers
-    updates in the uv block
-  tier: hotfix
-  ticket_type: chore
+  path: agent-working/tickets/inprogress/TCK-20261119-PROJECT-VIEW-PARKED-STATE-FROM-A-TICKET-BODY-MARKER-LINE.md
+  ticket_id: TCK-20261119-PROJECT-VIEW-PARKED-STATE-FROM-A-TICKET-BODY-MARKER-LINE
+  title: GitHub Project 1 shows a Parked state, read from a one-line marker a planner
+    writes in the ticket body when work is parked
+  tier: standard
+  ticket_type: feature
   date: '2026-11-19'
   related_code_areas:
-  - .github/dependabot.yml
+  - tools/sessions/project_sync.py
+  - tools/sessions/project_client.py
+  - tests/tools/
   artifact_files: []
   tags:
   - delivery
@@ -8154,21 +8169,6 @@
   related_code_areas:
   - tools/sessions/project_sync.py
   - tests/tools/test_session_project_view.py
-  artifact_files: []
-  tags:
-  - delivery
-- type: ticket
-  path: agent-working/tickets/todos/TCK-20261119-PROJECT-VIEW-PARKED-STATE-FROM-A-TICKET-BODY-MARKER-LINE.md
-  ticket_id: TCK-20261119-PROJECT-VIEW-PARKED-STATE-FROM-A-TICKET-BODY-MARKER-LINE
-  title: GitHub Project 1 shows a Parked state, read from a one-line marker a planner
-    writes in the ticket body when work is parked
-  tier: standard
-  ticket_type: feature
-  date: '2026-11-19'
-  related_code_areas:
-  - tools/sessions/project_sync.py
-  - tools/sessions/project_client.py
-  - tests/tools/
   artifact_files: []
   tags:
   - delivery

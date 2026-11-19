@@ -1,10 +1,10 @@
 ---
-status: active
+status: historical
 layer: ai
 authority: P1
 audience: agent
 ticket_id: TCK-20261119-DEPENDABOT-IGNORES-COMPLEXIPY-MAJORS-AND-SENTENCE-TRANSFORMERS
-phase: open
+phase: done
 date: 2026-11-19
 tags: [delivery]
 ---
@@ -15,7 +15,7 @@ tags: [delivery]
 Dependabot ignores complexipy semver-major updates and all sentence-transformers updates in the uv block
 
 ## Status
-OPEN
+DONE
 
 ## Tier
 hotfix
@@ -68,7 +68,10 @@ N/A: no src change; a Dependabot configuration entry only.
 Filed by agent-working-planner on lead-planner's relay of an owner yes.
 
 ## Test Summary
+Verified on origin/main 0b196a142 (the entries landed with #977): `.github/dependabot.yml` parses with PyYAML; the uv block's `ignore:` list ends with the complexipy entry (`update-types: ["version-update:semver-major"]`) and the sentence-transformers entry (no `versions`); `grep -rln dependabot.yml tests .github/workflows tools` finds nothing, so no test or workflow reads the file.
 
 ## Files Changed
+`.github/dependabot.yml` (landed in #977; no further change here).
 
 ## Completion Summary
+The two ignore entries are on main with a comment each naming the reason or ticket (#974 complexipy 8 to 9: 60 new or worse code-health violations; #882 sentence-transformers bumped by hand with torch, graphifyy and headroom-ai). All three acceptance criteria hold; the ticket file was only left in todos/. Closed here with that evidence. Hand-orchestrated close.

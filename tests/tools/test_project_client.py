@@ -97,7 +97,7 @@ def test_init_appends_status_options_on_a_board_with_items_keeping_ids_and_repor
     assert code == 0 and "kept, not in STATUSES: Legacy" in lines
     (call,) = fake.calls
     assert call[2][:3] == [("To do", "O_To do"), ("Legacy", "O_Legacy"), ("Done", "O_Done")]  # existing ids, order kept
-    assert [n for n, i in call[2][3:]] == ["In progress", "Stale", "In review", "Blocked"] and all(i is None for _, i in call[2][3:])
+    assert [n for n, i in call[2][3:]] == ["In progress", "Stale", "In review", "Blocked", "Parked"] and all(i is None for _, i in call[2][3:])
 
 
 def test_the_replace_flag_drops_only_the_option_left_out_and_keeps_the_other_ids():

@@ -75,11 +75,16 @@ CURRENT_HASH_VERSION = "v5"
 HOST_STATES = ("filing", "progress", "stale", "blocked")
 PRIORITIES = ("P0", "P1", "P2", "P3")
 TIERS = ("hotfix", "standard", "epic")
-STATUSES = ("To do", "In progress", "Stale", "In review", "Blocked", "Done")
+STATUSES = ("To do", "In progress", "Stale", "In review", "Blocked", "Done", "Parked")  # Parked last: --init appends it, so the order on a populated Project is the same
 FILING_SUFFIX = "[filing]"
 BODY = "Generated from {path} by tools/sessions/project_sync.py — edits are overwritten."
 _TICKET_RE = re.compile(r"(TCK-[A-Z0-9][A-Z0-9-]*)\.md$")
 _SUBJECT_ID_RE = re.compile(r"TCK-[A-Z0-9][A-Z0-9-]*[A-Z0-9]")
+# The Parked marker (TCK-20261119-PROJECT-VIEW-PARKED-STATE-FROM-A-TICKET-BODY-MARKER-LINE): ONE planner-written line, matched at the start of a line only.
+_PARKED_LINE_RE = re.compile(r"^Parked: .*$", re.M)
+_PARKED_RE = re.compile(
+    r"^Parked: waits on (?:(?P<tck>TCK-[A-Z0-9][A-Z0-9-]*[A-Z0-9])|(?P<pr>PR#\d+)|decision (?P<ref>\S.*?)) since (?P<since>\d{4}-\d{2}-\d{2})[ \t]*$", re.M)
+PARKED_STALE_DAYS = 45  # PROPOSAL, not measured (one dated line exists in the corpus): a marker older than this adds a finding, never a status change
 _WAITS_ON_RE = re.compile(r"^\s*(?:[-*]\s*)?\**(?:waits? on|waiting on|blocked by|depends on)\**\s*[:\-]?\s*(.*)$", re.I | re.M)
 NOT_CODE_PREFIXES = ("agent-working/", "docs/")  # a commit touching only these cites a ticket, it does not work it
 READ_GIT = {"ls-tree", "show", "merge-base", "diff", "status", "log", "rev-parse", "worktree"}
@@ -159,6 +164,8 @@ class TicketCopy:
     tags: tuple[str, ...] = ()
     code_areas: tuple[str, ...] = ()  # repo-relative path tokens of `## Related Code Areas` (read only to name the owning domain)
     waits_on: tuple[str, ...] = ()  # ticket ids on a line-start "waits on / blocked by / depends on" line (the Blocked by field)
+    parked: tuple[str, str, str] | None = None  # (kind "ticket"|"pr"|"decision", target, since date) from the first valid `Parked: waits on ...` line
+    parked_bad: tuple[str, ...] = ()  # `Parked: ` lines that are not a valid marker (a finding each, no Status change)
 
 
 @dataclass(frozen=True)
@@ -234,6 +241,31 @@ def waits_on_ids(text: str) -> tuple[str, ...]:
     return tuple(out)
 
 
+def parse_parked(text: str) -> tuple[tuple[str, str, str] | None, tuple[str, ...]]:
+    """(first valid marker, malformed `Parked: ` lines). Only a line that STARTS with `Parked: ` is read; the target is a ticket id, `PR#<n>` or
+    `decision <free-text reference>` (non-empty) and `since` must be a real date. Never inferred from prose, branch age or a handover."""
+    valid = None
+    for m in _PARKED_RE.finditer(text):
+        try:
+            date.fromisoformat(m.group("since"))
+        except ValueError:
+            continue
+        if valid is None:
+            kind, target = (("ticket", m.group("tck")) if m.group("tck") else ("pr", m.group("pr")) if m.group("pr") else ("decision", m.group("ref")))
+            valid = (kind, target, m.group("since"))
+    good = {m.group(0) for m in _PARKED_RE.finditer(text) if _valid_date(m.group("since"))}
+    bad = tuple(line.strip()[:120] for line in _PARKED_LINE_RE.findall(text) if line not in good)
+    return valid, bad
+
+
+def _valid_date(value: str) -> bool:
+    try:
+        date.fromisoformat(value)
+    except ValueError:
+        return False
+    return True
+
+
 def parse_copy(path: str, text: str) -> TicketCopy:
     def section(name: str) -> str:
         m = re.search(rf"^## {name}\s*\n+([^\n#][^\n]*)", text, re.M)
@@ -250,6 +282,7 @@ def parse_copy(path: str, text: str) -> TicketCopy:
         tags=tuple(x.strip().strip("'\"") for x in tags.group(1).split(",") if x.strip()) if tags else (),
         code_areas=code_area_paths(areas.group(1)) if areas else (),
         waits_on=waits_on_ids(text),
+        **dict(zip(("parked", "parked_bad"), parse_parked(text))),
     )
 
 
@@ -637,7 +670,7 @@ def own_segment(tid: str, mine: list[BranchFact], stale_before: float | None, na
 
 
 def derive_status(tid: str, main: list[TicketCopy], prs: list[PrFact] | None, segments: dict[str, Segment],
-                  keep_status: str | None = None) -> tuple[str, list[str], list[str]]:
+                  keep_status: str | None = None, extras: "Extras | None" = None) -> tuple[str, list[str], list[str]]:
     """(status, PR urls, findings). First match wins; see the module docstring. Blocked, In progress and Stale come from the
     union of every host's segment, so two hosts derive the same value."""
     findings = []
@@ -654,6 +687,8 @@ def derive_status(tid: str, main: list[TicketCopy], prs: list[PrFact] | None, se
     states = [s.state for s in segments.values()]
     if "blocked" in states or (not segments and any(c.blocked for c in main)):
         return "Blocked", [], findings
+    if parked_status(tid, main, prs, extras or Extras(), findings):
+        return "Parked", [], findings
     working = [st_ for st_ in states if st_ != "filing"]
     if working:
         # Stale replaces In progress only when every host that is working the ticket says stale. Filing keeps neither.
@@ -661,6 +696,45 @@ def derive_status(tid: str, main: list[TicketCopy], prs: list[PrFact] | None, se
     if "inprogress" in folders and not segments:
         findings.append(f"{tid}: in inprogress/ on origin/main with no branch seen (orphaned in-progress ticket)")
     return "To do", [], findings
+
+
+def parked_status(tid: str, main: list[TicketCopy], prs: list[PrFact] | None, extras: "Extras", findings: list[str]) -> bool:
+    """True when origin's copy of the ticket carries a VALID `Parked: waits on ...` line whose target is still open: a ticket not Done, a PR in the
+    open-PR list, or a decision (which cannot be checked, so it clears only when the line is removed). Malformed lines, an unknown target, a PR
+    list that could not be read and a marker older than PARKED_STALE_DAYS are findings and never change the Status by themselves. Counts go to
+    `extras.parked_stats` (ran / set / cleared / malformed / unknown)."""
+    stats = extras.parked_stats
+    bad = [b for c in main for b in c.parked_bad]
+    marker = next((c.parked for c in main if c.parked), None)
+    if not marker and not bad:
+        return False
+    stats["ran"] += 1
+    for line in bad:
+        stats["malformed"] += 1
+        findings.append(f"{tid}: malformed Parked marker ignored ({line!r}); wanted `Parked: waits on <TCK-id | PR#n | decision <reference>> since <YYYY-MM-DD>`")
+    if not marker:
+        return False
+    kind, target, since = marker
+    if extras.today is not None and (extras.today - date.fromisoformat(since)).days > PARKED_STALE_DAYS:
+        findings.append(f"{tid}: Parked marker since {since} is over {PARKED_STALE_DAYS} days old (a proposal threshold): abandoned, or still waiting?")
+    if kind == "ticket":
+        if extras.known is None or target not in extras.known:
+            stats["unknown"] += 1
+            findings.append(f"{tid}: Parked marker names {target}, which has no ticket file on origin/main: not Parked")
+            return False
+        if extras.done is not None and target in extras.done:
+            stats["cleared"] += 1  # the target is Done: the marker clears itself
+            return False
+    elif kind == "pr":
+        if prs is None:
+            stats["unknown"] += 1
+            findings.append(f"{tid}: Parked marker names {target} but the open-PR list could not be read: not Parked")
+            return False
+        if not any(f"PR#{pr.number}" == target for pr in prs):
+            stats["cleared"] += 1  # merged or closed: no longer in the open-PR list
+            return False
+    stats["set"] += 1
+    return True
 
 
 @dataclass
@@ -675,6 +749,8 @@ class Extras:
     hotspots: dict[str, str] | None = None  # ticket id -> its Hotspot file, set by build_plan; None means the field is not derived
     known: frozenset[str] | None = None  # every ticket id with a file on origin/main
     done: frozenset[str] | None = None  # ticket ids with a done/ file on origin/main
+    today: date | None = None  # set by build_plan: the stale-marker finding's clock
+    parked_stats: dict = field(default_factory=lambda: {"ran": 0, "set": 0, "cleared": 0, "malformed": 0, "unknown": 0})
 
 
 _ID_RE = re.compile(r"TCK-[A-Z0-9][A-Z0-9-]*[A-Z0-9]")
@@ -808,7 +884,8 @@ def derive_item(tid: str, main: list[TicketCopy], branches: list[BranchFact], pr
     if own is not None:
         segments[host] = own
     only_legacy = own is None and bool(segments) and all(s.legacy for s in segments.values())
-    status, pr_urls, status_findings = derive_status(tid, main, prs, segments, (current or {}).get("Status") if only_legacy else None)
+    extras = extras or Extras()
+    status, pr_urls, status_findings = derive_status(tid, main, prs, segments, (current or {}).get("Status") if only_legacy else None, extras)
     findings += status_findings
     branch_copies = [c for b in mine for c in b.copies if c.id == tid]
     entries = [f"{host}:{b.branch}" + ("" if any(c.id == tid and c.folder in PROGRESS_FOLDERS for c in b.copies) else f" {FILING_SUFFIX}")
@@ -1031,6 +1108,8 @@ def build_plan(main_index: dict[str, list[tuple[str, str]]], load_main: Callable
     base_load = load_main
     load_main = lambda path: cache.setdefault(path, base_load(path))  # noqa: E731  each ticket file is read once for the whole plan
     extras.known = frozenset(main_index)
+    extras.today = now.date()
+    extras.parked_stats = {"ran": 0, "set": 0, "cleared": 0, "malformed": 0, "unknown": 0}
     extras.done = frozenset(tid for tid, entries in main_index.items() if any(folder == "done" for folder, _ in entries))
     extras.hotspots = derive_hotspots(main_index, load_main, on_origin, plan.notes)
     candidates = {c.id for b in branches for c in b.copies} | on_origin | set(by_id)  # every lane: no pilot filter
@@ -1079,6 +1158,9 @@ def build_plan(main_index: dict[str, list[tuple[str, str]]], load_main: Callable
                 continue
             plan.archives.append((tid, "no ticket file for this ID"))
             plan.archive_item_ids.append(item.get("_item_id", ""))
+    ps_ = extras.parked_stats
+    plan.notes.append(f"parked: ran on {ps_['ran']} tickets with a Parked marker line, {ps_['set']} read Parked, {ps_['cleared']} cleared (target Done, merged or closed), "
+                      f"{ps_['malformed']} malformed lines (findings, Status unchanged), {ps_['unknown']} with an unknown target or an unreadable PR list (skipped, finding)")
     if plan.unassigned_code_areas:
         plan.notes.append(f"domain: {plan.unassigned_code_areas} tickets unassigned (no or mixed code-area owners)")
     plan.notes += [f"stale-host: {h}" for h in plan.stale_hosts]

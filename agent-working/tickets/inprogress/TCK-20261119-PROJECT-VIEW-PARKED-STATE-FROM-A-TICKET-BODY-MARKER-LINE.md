@@ -15,7 +15,7 @@ tags: [delivery]
 GitHub Project 1 shows a Parked state, read from a one-line marker a planner writes in the ticket body when work is parked
 
 ## Status
-OPEN
+INPROGRESS
 
 ## Tier
 standard
@@ -76,6 +76,7 @@ The Project view ticket (TCK-20261119-PROJECT-VIEW-SEAT-COLLABORATORS-LINK-BY-CO
 Parked is derived on each sync from the ticket body and the target's state; it adds no stored state. The marker line is written by a planner and ends when the target is Done, merged or closed, or when the line is removed. The `since` date is informational and only drives the optional age finding.
 
 ## Implementation Notes
+Built on agent-working-parked-marker (base 0b196a142); decisions by agent-working-planner 2026-11-19: a decision form `Parked: waits on decision <reference> since <date>` (a decision target never clears itself), origin's copy only, 45-day stale-marker finding as a PROPOSAL, precedence Done, In review, kept status, Blocked, Parked, then the rest. Code, tests and docs are written; the migration order is drafted in staging; the scratch-Project result (and the owner's approval to create a Project) is the hard prerequisite before any live write or merge ask.
 Filed by agent-working-planner on lead-planner's relay of an owner decision. The Project view build ships without Parked and records this ticket id in its out-of-scope.
 
 ## Test Summary
