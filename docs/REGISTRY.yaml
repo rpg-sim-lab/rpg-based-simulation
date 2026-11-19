@@ -8146,6 +8146,19 @@
   artifact_files: []
   tags: []
 - type: ticket
+  path: agent-working/tickets/todos/TCK-20261119-A-WORKER-BRAIN-THAT-WEIGHS-PAID-WORK-READS-THE-WORLD-INDEX-A-PACKET-DOES-NOT-CARRY.md
+  ticket_id: TCK-20261119-A-WORKER-BRAIN-THAT-WEIGHS-PAID-WORK-READS-THE-WORLD-INDEX-A-PACKET-DOES-NOT-CARRY
+  title: A worker brain that weighs paid work for a meal reads state.world_indexes,
+    which the WorkerPacket does not carry, so the run stops with PacketFieldMissingError
+  tier: standard
+  ticket_type: bug
+  date: '2026-11-19'
+  related_code_areas:
+  - src/engine/work_shift.py (meal_position_after, shift_takeable); src/engine/world_index.py;
+    src/core/worker_protocol.py; src/engine/executor.py
+  artifact_files: []
+  tags: []
+- type: ticket
   path: agent-working/tickets/todos/TCK-20261119-AN-ENTITY-KIND-OR-SPECIES-THAT-THE-CATALOG-CANNOT-RESOLVE-FAILS-AT-LOAD.md
   ticket_id: TCK-20261119-AN-ENTITY-KIND-OR-SPECIES-THAT-THE-CATALOG-CANNOT-RESOLVE-FAILS-AT-LOAD
   title: A body whose kind is not a catalog species, or a species with no need_profile,
@@ -8299,6 +8312,20 @@
   artifact_files: []
   tags: []
 - type: ticket
+  path: agent-working/tickets/todos/next-generation-engine/TCK-20261119-AN-ENGINE-STEP-REGISTRY-RETIRES-THE-PIPELINE-IMPORT-OF-THE-RISEN-SYSTEM.md
+  ticket_id: TCK-20261119-AN-ENGINE-STEP-REGISTRY-RETIRES-THE-PIPELINE-IMPORT-OF-THE-RISEN-SYSTEM
+  title: An engine step registry lets world steps (such as rise) register with the
+    pipeline, retiring the import-baseline row `src.engine.pipeline_phases.resources
+    -> src.world.risen`
+  tier: standard
+  ticket_type: refactor
+  date: '2026-11-19'
+  related_code_areas:
+  - src/engine/pipeline_phases/resources.py; src/world/risen.py; the kernel construction
+    sites (scenario_checkpoint.py restore, among about 20)
+  artifact_files: []
+  tags: []
+- type: ticket
   path: agent-working/tickets/done/TCK-20261118-A-DIAGNOSTIC-KIT-PREFLIGHT-CHECKS-EACH-KIT-ON-BOTH-FROZEN-TREES-BEFORE-ITS-RUN.md
   ticket_id: TCK-20261118-A-DIAGNOSTIC-KIT-PREFLIGHT-CHECKS-EACH-KIT-ON-BOTH-FROZEN-TREES-BEFORE-ITS-RUN
   title: 'An automatic preflight for every measurement kit (spy, probe, runner, summarizer):
@@ -8392,6 +8419,18 @@
   date: '2026-11-18'
   related_code_areas:
   - tools/rpg_measure/kit_preflight.py, tests/unit/tools/test_kit_preflight.py
+  artifact_files: []
+  tags: []
+- type: ticket
+  path: agent-working/tickets/done/TCK-20261118-PREFLIGHT-FAILS-A-PROCESS-THAT-WRITES-NO-OUTPUT-FILE.md
+  ticket_id: TCK-20261118-PREFLIGHT-FAILS-A-PROCESS-THAT-WRITES-NO-OUTPUT-FILE
+  title: A unit test pins that the kit preflight fails a process that writes no output
+    file
+  tier: hotfix
+  ticket_type: chore
+  date: '2026-11-18'
+  related_code_areas:
+  - tools/rpg_measure/kit_preflight.py (check_fixture_run), tests/unit/tools/test_kit_preflight.py
   artifact_files: []
   tags: []
 - type: ticket
