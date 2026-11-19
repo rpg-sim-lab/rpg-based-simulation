@@ -56,7 +56,7 @@ The terms, all from the owner's text:
    - A long-run checkpoint read was NOT approved (same comment). This ticket schedules no new run for it.
    - WIDENED by the owner's settings-in-data rule (2026-11-19, M1 epic working rules). The same inventory also lists the other existing numeric TUNING values in src (rates, thresholds, prices, radii), not only tick ones. Each is marked a setting (to move to data/) or a code invariant, with a reason. They move in stages under TCK-20261119-THE-CALENDAR-IS-DECLARED-IN-CONFIGURATION-NOT-IN-CODE's conditions.
    - Known seeds (inspected, main c505357b3):
-     - SUSPENSION_TTL_TICKS = 200 (src/core/strategic.py:541, N10, divergence 2.212). rpg-designer reads it as a tuning value, so it goes to data.
+     - SUSPENSION_TTL_TICKS = 200 (src/core/strategic.py:541, N10, divergence 2.212). rpg-designer reads it as a tuning value, so it goes to data. 200 ticks is about 2 h of game time. Mark it "window-fitted?" for the audit to judge; the designer set it for the N10 window, not from realism. There's no pull-forward.
      - EAT_PRICE_GOLD = 5 and REST_PRICE_GOLD = 10 (src/engine/service_prices.py:7-8).
 
 ## Out of Scope
