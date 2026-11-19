@@ -36,13 +36,15 @@ Finding from rpg-planner-ubuntu, found while preparing the births re-check S9; l
 Lead's ruling for the births cell (#715 7016065680): run the preflight unchanged, accept only the (h)-row FAIL as a logged override, and require checks a-g to PASS. That stands until this ticket lands.
 
 ## Scope
-Choose one fix (or a combination) and say why. Candidates from the finding:
-- (A) (h) reports "not applicable" (not FAIL) when no busy gate exists on the host, and says so in the table. Smallest change; leaves cross-lane visibility unchecked on ubuntu.
-- (B) a per-host default for the gate path and the interpreter (env var or `--heavy-words` default per host), so the check runs against the host's own gate.
-- (C) an ubuntu `busy_gate.sh` that exists and that kits are checked against. Larger; creates a new shared gate.
-- (D) kit naming that matches the pattern, or a pattern that matches a stated naming rule (a suffix, not a list of past kit names), plus the docstring corrected to what the pattern really matches.
+RULING (rpg-planner, via lead-planner-u24 and lead-planner, 2026-11-20): the interim stands (a-g pass; (h) an honest FAIL plus a logged override). The fix must NOT be plain option A: "not applicable" must never be inferred from a missing gate file, or a host that lost its gate would pass silently. Required shape:
+1. The gate script path, the python and the heavy-word list are host-configured (an env var or a per-host config file the kit reads), with no `/mnt/data*` default in code.
+2. (h) reports N/A only when that config explicitly declares "no gate on this host". If the config names a gate and the file is missing or has no pattern, (h) still FAILs. No config at all FAILs (it is not read as "no gate").
+3. The births/coin_boss kit names are added to the heavy words, or the check matches by a stated kit-name pattern (a suffix or prefix rule, not a list of past kit names; the docstring says which).
+Timing: after #781's own-job on u24. It may be built sooner on ubuntu under these conditions. rpg-planner reviews the diff.
 
-Whatever is chosen: the defaults must not be hard-coded to one host's mounts (precedent: TCK-20261027-RPG-MEASURE-CACHE-DEFAULT-HOST-NEUTRAL); `--python` default must work or fail early with a clear message on both hosts; a test covers "gate file absent" and "kit name not matching" so neither silently passes or always fails.
+Options A to D considered before the ruling (kept for the record): (A) N/A when no gate exists, rejected as stated; (B) per-host defaults, adopted as item 1; (C) an ubuntu `busy_gate.sh`, not required; (D) kit naming or pattern, adopted as item 3.
+
+Tests: "config declares no gate" gives N/A; "config names a gate, file missing" FAILs; "no config" FAILs; a heavy kit name matching none of the words FAILs on a host with a gate.
 
 ## Out of Scope
 - Changing a-g, or letting a real FAIL in another check pass.
@@ -51,7 +53,7 @@ Whatever is chosen: the defaults must not be hard-coded to one host's mounts (pr
 - The births kit itself.
 
 ## Acceptance Criteria
-1. On the ubuntu host a kit that passes a-g exits 0 (or its (h) row states "not applicable: no gate on this host" and does not count as a FAIL), with no `--heavy-words` flag.
+1. On the ubuntu host, with a config that explicitly declares "no gate on this host", a kit that passes a-g exits 0 and its (h) row says so. A missing gate file or a missing config never yields N/A.
 2. On a host with a gate, a heavy kit file whose name matches none of the gate's words still FAILs (a test pins it).
 3. The `--python` and gate-path defaults are not tied to `/mnt/data*` mounts; an unusable default fails early with a message naming the flag.
 4. The docstring states what name pattern is accepted, matching the code.
@@ -73,7 +75,7 @@ Whatever is chosen: the defaults must not be hard-coded to one host's mounts (pr
 
 ## Assumptions / Open Questions
 - Routing: `python3 -m tools.sessions.route` returns `rpg-planner` for `tools/rpg_measure/**`; this is not a testing-owned path. Filed on the testing track at lead-planner's routing; the implementation seat is rpg-planner's call.
-- Whether ubuntu should get a shared gate (C) or only an honest "not applicable" (A) is an owner/lead decision; no recommendation beyond: A now (unblocks every ubuntu kit), D's docstring fix with it, and B/C only if cross-lane visibility on ubuntu is wanted.
+- Settled by the ruling above: no inferring N/A from absence. Whether ubuntu also gets a shared gate (C) stays open and is not required.
 - Items 2 and 3 of the request summary come from rpg-planner-ubuntu; item 1 was reproduced by reading the code and checking the paths on this host.
 
 ## Durable state, lifecycle and clocks
