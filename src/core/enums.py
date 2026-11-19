@@ -174,6 +174,7 @@ class ReasonCode(str, Enum):
     PRICE_STALE = "PRICE_STALE"
     INVENTORY_FULL = "INVENTORY_FULL"
     SOURCE_MISSING = "SOURCE_MISSING"
+    PAYEE_MISSING = "PAYEE_MISSING"  # a service that must name a payee (ATOMIC inn law) named none: refused, no debit, no relief
     UNKNOWN_SOURCE_KIND = "UNKNOWN_SOURCE_KIND"
     GROUP_ROLLBACK = "GROUP_ROLLBACK"
     

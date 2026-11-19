@@ -36,6 +36,11 @@ class ResourceTransferIntent:
     strategic_upd: Optional[StrategicUpdate] = None
     equipment_upd: Optional[EquipmentUpdate] = None
     reward_upd: Optional[RewardUpdate] = None
+    # An inn bed's readiness (decision 73: nothing is free): contingent like the updates above, so a rejected or rolled-back payment grants none of it.
+    readiness_delta: float = 0.0
+    # Decision 73, ATOMIC inn law: the service is the full price or nothing, so one with NO payee (`conservation.is_no_payee`) is refused (PAYEE_MISSING), not delivered free.
+    # Set only by the ATOMIC service builders (the inn meal, the bed); every other fee and service keeps the debit-0-and-count behaviour.
+    requires_payee: bool = False
     # EXCH-02: a faction treasury as a purse in this transfer. `treasury_gold` is the share of the receiver's proceeds (a sale or a wage) paid
     # to the treasury of `treasury_faction` (the tax). When `treasury_pays` is set, the treasury funds `gold_delta` instead of it being minted
     # (a reward): a short treasury pays nothing.

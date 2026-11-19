@@ -18,7 +18,7 @@ from src.core.updates import (
 )
 from src.engine.lodging import bed_delta, finds_no_bed, lodge_claim, lodges, refuse_rest
 from src.engine.serves import keeps_coin, serves
-from src.engine.service_admission import admits_at
+from src.engine.service_admission import admits_at, payee_required
 from src.engine.service_prices import EAT_PRICE_GOLD, INN_MEAL_HUNGER
 from src.engine.service_reach import service_building_where, service_tile
 from src.engine.shop_sale import plan_sale
@@ -64,20 +64,20 @@ def service_building(context: Any, entity: Any, action: str) -> Optional[Any]:
 def service_delta(context: Any, entity: Any, action: str, tick: int) -> Optional[EntityUpdate]:
     """What the building service for `action` adds to the subject's update, or None (no such building in reach, or nothing to deliver).
 
-    A bed and an inn meal are as they were on main (free meals stay on until M0 step 4, owner decision 44): the effects are on the update, the price is a
-    charge the resolver clamps at what the subject holds, and the building's purse is credited with what was actually paid. The building is found only
-    for a subject it serves (`service_building`)."""
+    An inn meal and a bed are each ONE paid transfer (owner decision 73, ATOMIC): the full price (`gold_cost`) and the service (hunger relief, or hp and readiness) are
+    applied together or not at all, so a refused payment delivers nothing, and the building's purse is credited with exactly what was debited. A service with no payee is
+    refused (`requires_payee`, PAYEE_MISSING). The building is found only for a subject it serves (`service_building`)."""
     building = service_building(context, entity, action)
     if building is None or (action in ("EAT", "REST") and not admits_at(entity, building, action, context)):
         return None  # the one admission rule (service_admission): no meal to a diet without prepared food (decision 44), none the payment law refuses, no bed where none is free (F3)
     if action == "REST":
         if lodges(building):
             return lodge_claim(entity, building)  # grant before delivery (F3): the bed service is merged only into a GRANTED claim (`lodging.grant_beds`), never delivered and taken back
-        return bed_delta(entity, building)
+        return bed_delta(entity, building, payee_required())
     if action == "EAT":
-        charge = ResourceTransferIntent(source_id=building.id, source_kind="TOWN_SERVICE", gold_delta=-EAT_PRICE_GOLD, transfer_kind="EAT",
-                                        is_group_required=True)
-        return EntityUpdate(entity_id=entity.id, biological=BiologicalUpdate(hunger_delta=-INN_MEAL_HUNGER), resource_transfers=[charge])
+        meal = ResourceTransferIntent(source_id=building.id, source_kind="TOWN_SERVICE", gold_cost=EAT_PRICE_GOLD, transfer_kind="EAT", is_group_required=True,
+                                      requires_payee=payee_required(), biological_upd=BiologicalUpdate(hunger_delta=-INN_MEAL_HUNGER))  # no last_meal_tick stamp: its own ticket, after #781
+        return EntityUpdate(entity_id=entity.id, resource_transfers=[meal])
     sale = plan_sale(context, entity, building)
     return None if sale is None else EntityUpdate(entity_id=entity.id, resource_transfers=[sale])
 

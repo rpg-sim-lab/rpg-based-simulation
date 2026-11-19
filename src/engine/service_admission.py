@@ -4,9 +4,9 @@ A way is open to a subject iff the service would actually deliver it to that sub
 and every "open" test (``ways_in_reach``, ``EatScorer``, ``FatigueScorer``, and through them the starvation record) ask :func:`admits`, so what the
 service delivers and what the pull judges open cannot diverge. The payment law has exactly one definition, :data:`SERVICE_PAYMENT_LAW`:
 
-* ``CLAMP`` (main today): the price is charged as far as the subject's purse reaches and the meal or bed is delivered anyway, so a broke subject is
+* ``CLAMP`` (before D73): the price is charged as far as the subject's purse reaches and the meal or bed is delivered anyway, so a broke subject is
   fed and bedded. Payment never closes a service.
-* ``ATOMIC`` (the free-meal removal, D73 / N1): the full price or nothing; a subject holding less than the price is not served.
+* ``ATOMIC`` (main since D73 / N1, the free-meal removal): the full price or nothing; a subject holding less than the price is not served, and a service with no payee is refused (`PAYEE_MISSING`).
 
 Under either law the debit equals what the payee receives (`conservation.service_price`, `_service_result`: the payer is debited exactly what the building or treasury is credited). Flipping the law is a change to the one constant; no consumer is edited. The prices are read from ``service_prices`` only.
 
@@ -19,6 +19,7 @@ from __future__ import annotations
 from enum import Enum
 from typing import Any, Optional
 
+from src.core.enums import ReasonCode
 from src.engine.appraisal import can_use_inn_meal
 from src.engine.lodging import has_free_bed
 from src.engine.service_prices import EAT_PRICE_GOLD, REST_PRICE_GOLD
@@ -31,7 +32,7 @@ class PaymentLaw(str, Enum):
     ATOMIC = "ATOMIC"
 
 
-SERVICE_PAYMENT_LAW = PaymentLaw.CLAMP  # the one definition of how the inn is paid
+SERVICE_PAYMENT_LAW = PaymentLaw.ATOMIC  # D73 (decision 44/73): the free meal is removed; was CLAMP. the one definition of how the inn is paid
 
 _PRICES = {"EAT": EAT_PRICE_GOLD, "REST": REST_PRICE_GOLD}
 
@@ -41,6 +42,18 @@ def payment_covers(entity: Any, action: str, law: Optional[PaymentLaw] = None) -
     if (law or SERVICE_PAYMENT_LAW) is PaymentLaw.CLAMP:
         return True
     return int(entity.inventory.gold) >= _PRICES[action]
+
+
+def payee_required(law: Optional[PaymentLaw] = None) -> bool:
+    """True when the payment law refuses a service that names no payee (ATOMIC: the full price to somebody, or nothing). The service builders put it on the paid transfer
+    (``ResourceTransferIntent.requires_payee``); under CLAMP it is False and a no-payee service keeps the debit-0-and-count behaviour."""
+    return (law or SERVICE_PAYMENT_LAW) is PaymentLaw.ATOMIC
+
+
+def refusal_reason(entity: Any, action: str, law: Optional[PaymentLaw] = None) -> Optional[ReasonCode]:
+    """The typed reason a serving inn's ``action`` is refused to ``entity`` for PAYMENT, or None (a diet refusal is not typed here: an inn whose meal the body cannot eat is
+    no food source at all). Built on the same :func:`payment_covers` predicate :func:`admits_at` reads, so the bool and the reason cannot diverge."""
+    return None if payment_covers(entity, action, law) else ReasonCode.INSUFFICIENT_GOLD
 
 
 def admits_at(entity: Any, building: Any, action: str, state: Any = None, law: Optional[PaymentLaw] = None) -> bool:

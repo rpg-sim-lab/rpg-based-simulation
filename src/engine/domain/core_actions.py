@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING, Any, Dict, List, Optional
 from src.core.enums import ReasonCode
 from src.core.items import food_hunger_recovery
 from src.core.models.inventory import ItemStack
-from src.engine.appraisal import can_eat_item, can_use_inn_meal
+from src.engine.appraisal import can_eat_item
 from src.engine.repair import repair_update
 from src.core.updates import (
     BiologicalUpdate, EntityUpdate, IdentityUpdate, 
@@ -56,15 +56,13 @@ def carried_meal(entity: EntityState, current_tick: int) -> List[ResourceTransfe
 
 
 def eat_update(entity: EntityState, current_tick: int) -> EntityUpdate:
-    """SURV-06: a subject holding food eats it, and the item is consumed with the meal. With none the action keeps its old relief of 40
-    (a free meal: still on, see branch d27-free-meal-removal for the removal)."""
+    """SURV-06: a subject holding food eats it, and the item is consumed with the meal. With none there is no meal here: the typed failure SOURCE_MISSING ends the action so
+    the brain re-decides (owner decision 73: no free meal, for any kind, under either payment law). This function is inn-blind: a paid inn meal is delivered by
+    `building_services.service_delta`, and `action_router._survival_action` applies this failure only when no service delivers one."""
     carried = carried_meal(entity, current_tick)
     if carried:
         return EntityUpdate(entity_id=entity.id, readiness_delta=-100.0, resource_transfers=carried)
-    if not can_use_inn_meal(entity):  # decision 44: the free meal is a prepared meal; a diet without prepared food gets none, wherever it stands
-        return EntityUpdate(entity_id=entity.id, readiness_delta=-100.0)
-    return EntityUpdate(entity_id=entity.id, readiness_delta=-100.0,
-                        biological=BiologicalUpdate(hunger_delta=-40.0, last_meal_tick_set=current_tick))
+    return EntityUpdate(entity_id=entity.id, navigation=NavigationUpdate(failure_reason=ReasonCode.SOURCE_MISSING))
 
 
 # How close (Manhattan tiles) an eater must be to a carcass to eat from it: within a stride of where its kill fell (a body is displaced a tile
