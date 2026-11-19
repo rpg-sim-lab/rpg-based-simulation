@@ -13,7 +13,7 @@ def _with(c, date):
 def test_filed_is_the_frontmatter_date_and_joins_the_v4_hash():
     plan = plan_for({"TCK-1": [copy("TCK-1", "todos")]})
     d = plan.creates[0]
-    assert d["Filed"] == "2026-11-15" and d["Sync hash"] == ps.sync_hash(d) and d["Sync hash"].startswith("v4:")
+    assert d["Filed"] == "2026-11-15" and d["Sync hash"] == ps.sync_hash(d) and d["Sync hash"].startswith("v5:")
     assert "Filed" in ps.HASH_VERSIONS["v4"] and "Filed" not in ps.HASH_VERSIONS["v3"]
 
 
@@ -31,7 +31,7 @@ def test_the_v3_to_v4_migration_rewrites_filed_and_hash_with_no_hand_edits_and_t
     v3["Source"] = "abc"
     plan = plan_for({"TCK-1": [copy("TCK-1", "todos")]}, items=[{**v3, "_item_id": "I1", "_draft_id": "D1"}])
     assert plan.hand_edits == [] and len(plan.updates) == 1
-    assert plan.updates[0][1] == ["Filed"] and plan.updates[0][0]["Sync hash"].startswith("v4:")
+    assert plan.updates[0][1] == ["Filed"] and plan.updates[0][0]["Sync hash"].startswith("v5:")
     settled = plan_for({"TCK-1": [copy("TCK-1", "todos")]}, items=[{**first, "_item_id": "I1", "_draft_id": "D1"}])
     assert settled.updates == [] and settled.hand_edits == []
 
