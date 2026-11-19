@@ -232,7 +232,7 @@ def _granted(entity: Any, upd: Any, building: Any, markers: int, drops: _DropLog
     return upd
 
 
-def _with_terms(upd: Any, terms: Dict[str, Any]) -> Any:
+def _with_terms(upd: EntityUpdate, terms: Dict[str, Any]) -> EntityUpdate:
     """``upd`` with the payment law's terms (price fields, payee requirement) on its bed transfer (a granted bed's REST charge); a refused claim carries none, so it is returned as it was."""
     return replace(upd, resource_transfers=[replace(t, **terms) if t.transfer_kind == "REST" else t for t in upd.resource_transfers])
 
