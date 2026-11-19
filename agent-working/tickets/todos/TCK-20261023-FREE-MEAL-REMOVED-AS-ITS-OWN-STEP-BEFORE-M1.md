@@ -88,6 +88,14 @@ src/systems (building_services, conservation, inventory); src/ai need_pull
     - frontier_living_world/42: e55 small_plant_eater starved at t4745, FORAGE judged open but never tried.
     - crowded_frontier/42: e7 human starved at t2045, at the PERC-alone head.
     These are individual deaths, not collapses. Their tickets are separate (the starvation fix ticket: SURV-06/07, the H6 recorder spy). #781's P0/P2 read must say whether either is a free-meal user.
+  - OWN-JOB CELL LIST, fixed pre-data by rpg-designer on 2026-11-19:
+    - CELLS="frontier_living_world:42 urban_political:42 crowded_frontier:42", TICKS=24000.
+    - Order: the base arm's 3 cells, then the P0 gate (--p0-only), then the fix arm's 3 cells.
+    - Plain twin plus spy per cell: 6 cells, 12 processes, about 3-6 h of host time.
+    - Kit: hunger kit v3, APPROVED (spy df4503b2, runner 63bbdc96, summarizer 86f02821, controls fd5160e4, config c2c26690, manifest a3f92945; copies in /mnt/data2/rpg-measure/hungerkit/designer_approved_v3/). The designer ran the controls, 27/27 PASS. The all-cells-zero P0 STOP diff is still pending.
+    - Preflight fixture: cf s46 at 300t only.
+    - ESCALATION, pre-registered: if any assessed species in a world is NEAR, or has a day FLAG, in EITHER arm, add s43 and s44 for that world in both arms (8 more processes) before P1 is called.
+    - No other seeds or worlds.
   - Other food-touching changes get only the 5000t early-warning check (P2-style) plus the P3 rows; the W read is for #781 and the M1 checkpoints only (owner scope). Births is not re-run.
   - Settings-in-data rule: any new tuning value goes to data/. The pre-push run covers tests/unit/** by directory plus statics.
 
