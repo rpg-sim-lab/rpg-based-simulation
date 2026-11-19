@@ -19,6 +19,7 @@ from typing import Any, List, Optional, Tuple
 
 from src.ai.goals.base import OpeningStepKind
 from src.core.calendar import is_night
+from src.core.combat_constants import RETREAT_ARRIVAL_RADIUS
 from src.core.items import food_hunger_recovery
 from src.core.species import species_of
 from src.core.state import (
@@ -27,9 +28,11 @@ from src.core.state import (
     EntityState,
     ResourceNodeState,
 )
+from src.core.strategic import SEEK_WORK_TARGET_ID
 from src.engine.appraisal import Relation, can_eat_item
 from src.engine.hostility import relation
 from src.engine.rpg_depth import LeashService
+from src.engine.serves import keeps_coin
 from src.engine.shop_sale import nearest_sale
 from src.engine.spatial_query import SpatialQueryService
 from src.engine.work_shift import (
@@ -171,10 +174,28 @@ def _ask_step(entity: EntityState, state: AuthoritativeState) -> OpeningStep:
     return OpeningStep(OpeningStepKind.ASK, False, "no social path to ask along exists in code")
 
 
+def _seek_work_step(entity: EntityState, state: AuthoritativeState, earlier: List[OpeningStep]) -> OpeningStep:
+    """SEEK_WORK (decision 73, SURV-06): the LAST step. A subject that keeps coin, with every earlier step closed (so it can neither find food, nor sell, nor take a shift where it is), goes to the
+    town centre, where paid work or a buyer may be (`earn_then_buy` opens on arrival if there is one). The target is the town centre (what `TownScorer` points at); a known-building target waits for a
+    building-knowledge fact type, none of which exists in code. Closed for a kind that does not keep coin, for a subject already at the centre (the same 'arrived' line a reach-location objective uses,
+    `RETREAT_ARRIVAL_RADIUS`) and for a range-bound subject whose range does not hold the centre."""
+    if any(step.available for step in earlier):
+        return OpeningStep(OpeningStepKind.SEEK_WORK, False, "an earlier step is open")
+    if not keeps_coin(entity):
+        return OpeningStep(OpeningStepKind.SEEK_WORK, False, "its kind does not keep coin, so it has no paid work to seek")
+    centre = (float(state.town_center[0]), float(state.town_center[1]))
+    if not LeashService.way_in_range(entity, centre):
+        return OpeningStep(OpeningStepKind.SEEK_WORK, False, "the town centre is outside its range")
+    px, py = entity.navigation.position
+    if abs(centre[0] - px) + abs(centre[1] - py) <= RETREAT_ARRIVAL_RADIUS:
+        return OpeningStep(OpeningStepKind.SEEK_WORK, False, "already at the town centre: earn_then_buy is the step that can open here")
+    return OpeningStep(OpeningStepKind.SEEK_WORK, True, target_id=SEEK_WORK_TARGET_ID, target_pos=centre)
+
+
 def opening_steps(entity: EntityState, state: AuthoritativeState) -> List[OpeningStep]:
-    """Every opening step, in the order they are tried (forage, scavenge, hunt, then earn-then-buy, then ask), each open or with its reason."""
-    return [_forage_step(entity, state), _scavenge_step(entity, state), _hunt_step(entity, state),
-            _earn_then_buy_step(entity, state), _ask_step(entity, state)]
+    """Every opening step, in the order they are tried (forage, scavenge, hunt, then earn-then-buy, then ask, then seek-work), each open or with its reason."""
+    steps = [_forage_step(entity, state), _scavenge_step(entity, state), _hunt_step(entity, state), _earn_then_buy_step(entity, state), _ask_step(entity, state)]
+    return steps + [_seek_work_step(entity, state, steps)]
 
 
 def first_open_step(entity: EntityState, state: AuthoritativeState) -> Optional[OpeningStep]:

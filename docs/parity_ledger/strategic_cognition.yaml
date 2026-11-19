@@ -4531,18 +4531,18 @@
 - id: STRAT-281
   text: 'A need with no open way pulls toward the step that opens one (SURV-07 amendment, owner decision 27):
     a hungry subject with no inn within reach carries a typed `NeedAccess` (`NO_AFFORDABLE_WAY` is defined and produced only by the parked free-meal removal), the pull goes to the first open
-    opening step (forage, with earn-then-buy and ask as closed stubs), and with no open step the goal keeps the raw
-    hunger and says `no_open_step`.'
+    opening step (forage, scavenge, hunt, earn-then-buy, ask, then seek-work), and with no open step the goal keeps the raw
+    hunger and says `no_open_step`. SEEK_WORK (decision 73, divergence 2.218) is the last step: a subject that keeps coin and has no other step goes to the town centre as a HUNGER goal, so the escalated need is admitted at a full cap through the need; on arrival the project ends WAY_CLOSED and the subject re-decides.'
   status: verified
   priority: P1
   legacy_evidence: null
   v2_evidence: '`src/ai/goals/opening_steps.py` (`opening_steps`, `first_open_step`), `src/ai/goals/scorers.py`
     (`_hunger_without_open_way`), `src/engine/need_paths.py` (`need_path_report` counts food nodes);
-    `docs/guidelines/intentional_divergences.md` section 2.91'
+    `docs/guidelines/intentional_divergences.md` section 2.91; SEEK_WORK: `src/ai/goals/opening_steps.py` (`_seek_work_step`), tests/unit/ai/test_seek_work_step.py, divergence 2.218'
   proof_type: parity
   test_path: tests/unit/ai/test_opening_steps.py
   divergence_note: 'Intentional divergence 2.91 (Intentional Gameplay Change).'
-  support_boundary: 'Held out: the earn-then-buy and ask steps are stubs that report why they are closed; broke workers have no earn path yet.'
+  support_boundary: 'Held out: the ask step is a stub that reports why it is closed. SEEK_WORK targets the town centre, not a known building: a known-building target waits for a building-knowledge fact type (none exists in code).'
 - id: STRAT-282
   text: 'TCK-20261009-HEROES-ON-A-LEASH-NEVER-SEEK-FOOD-AND-STARVE-WITHOUT-ONE-EAT-ATTEMPT: a pressing biological need (hunger or sleep debt at or past ESCALATION_ONSET of its consequence line) wakes the brain of an entity holding ENTITY_MOVE every strategic-cadence tick (staggered by id), so the need goal it already ranks first can displace the held move; a present threat to life re-issues the flight in the re-decision.'
   status: verified
