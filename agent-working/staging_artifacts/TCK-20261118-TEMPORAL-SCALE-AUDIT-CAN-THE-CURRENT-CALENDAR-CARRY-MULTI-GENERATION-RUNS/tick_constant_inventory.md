@@ -101,7 +101,28 @@ Read-only audit of `src/` and `data/content/` on main a30847030. No code change 
 | data/content/world/resources.yaml:165 | bare_wait_ticks | 2400 | 1 day | REALISM-TUNED | state.tick |  |
 | data/content/world/resources.yaml:178 | bare_wait_ticks | 1200 | 12 h | REALISM-TUNED | state.tick |  |
 
-No `data/content` file declares a species lifespan, a gestation, a maturity age or a life-stage length; those live only in code (Table A). The camp pilot module sets `maturity: 79.9`, a starting level, not a duration.
+On main, no `data/content` file declares a species lifespan, a gestation, a maturity age or a life-stage length; those live only in code (Table A). The births branch adds some (next section). The camp pilot module sets `maturity: 79.9`, a starting level, not a duration.
+
+## Pending on the births branch (not on main)
+
+Pending, not on main; values as of `3d1a14a00` (`origin/rpg-ubuntu-wild-births-impl`, TCK-20261109-M1-BASIC-WILD-BIRTHS-FOR-EVERY-LIVING-KIND), read with `git show 3d1a14a00:<path>` and not run. It adds `data/content/living/reproduction_profiles.yaml` (new) and `src/world/births.py`. All are read on `state.tick` (a check is dated by `state.tick`; a pregnancy ends at `due_tick = conceived tick + gestation_ticks`; a birth interval ends at `tick + min_birth_interval_ticks`). Real time is at 36 s per tick. The file's own comments say the values were fixed by rulings v2.2 D1 and the owner (2026-11-18) before any data, and that gestation is COMPRESSED with the order kept; they are not tuned on measurement data.
+
+| file:line | key | value | real time | class | clock | note |
+|---|---|---|---|---|---|---|
+| src/engine/cadence.py:36 (births branch) | SystemCadence.births | 30 | 18 min | NEITHER (engineering cadence) | state.tick | a births check runs every 30 ticks = 80 a day; the file calls it a check, not a rule |
+| reproduction_profiles.yaml (humanoid_births) | gestation_ticks | 2400 | 24 h | WINDOW-FITTED | state.tick (pregnancy due_tick) | compressed; the file says the real length for a person is about 672,000 ticks (280 days at 2,400 a day) and waits on the calendar decision |
+| reproduction_profiles.yaml (carnivore_births) | gestation_ticks | 1200 | 12 h | WINDOW-FITTED | state.tick | compressed, order kept |
+| reproduction_profiles.yaml (goblin_births) | gestation_ticks | 900 | 9 h | WINDOW-FITTED | state.tick | compressed, order kept |
+| reproduction_profiles.yaml (plant_eater_births) | gestation_ticks | 600 | 6 h | WINDOW-FITTED | state.tick | compressed, order kept |
+| reproduction_profiles.yaml (humanoid_births, carnivore_births) | min_birth_interval_ticks | 12000 | 5 days | WINDOW-FITTED | state.tick (per partner entry in lifecycle.reproduction_cooldowns) | the file says it is chosen so a pair breeds at most once inside a 5,000-tick run |
+| reproduction_profiles.yaml (goblin_births, plant_eater_births) | min_birth_interval_ticks | 7200 | 3 days | WINDOW-FITTED | state.tick | same reason |
+| reproduction_profiles.yaml (all four) | birth_chance_per_check | 0.005 (humanoid), 0.004 (carnivore), 0.008 (goblin, plant eater) | per check; mean wait 200 checks = 6,000 ticks = 2.5 days at 0.005 | WINDOW-FITTED | state.tick (a seeded draw per check) | a probability, not a duration; its mean wait is set against run length |
+| reproduction_profiles.yaml (all four) | fed_line | 30 | hunger 30 of 100; about 6 h after a full meal for a person (per the file) | REALISM-TUNED | state.tick (hunger rises per tick, Table A) | a hunger level, not a tick count |
+| reproduction_profiles.yaml (all four) | birth_hunger_cost | 25 | one birth costs 25 hunger, a little under one inn meal (INN_MEAL_HUNGER 20 on main; the file says 40) | UNDETERMINED (designer) | state.tick | the comment's "40" does not match INN_MEAL_HUNGER = 20 on main; flagged, not decided |
+| reproduction_profiles.yaml (all four) | mate_radius_tiles | 10 | n/a (a distance) | setting | n/a | in data already |
+| reproduction_profiles.yaml | litter_weights | per kind | n/a | setting (report-only, provisional per the file) | n/a | a distribution, not a duration |
+
+`src/world/births.py` on that branch declares only two named numbers, `BIRTH_DRAW_SUB_ID = 7` and `LITTER_DRAW_SUB_ID = 11`, which are RNG stream ids (code invariants, not tuning); every duration it uses comes from the profile file.
 
 ## Table C: other numeric tuning values in src (named constants)
 
