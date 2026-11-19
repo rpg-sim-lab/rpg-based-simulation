@@ -172,3 +172,20 @@ def test_apply_without_the_parked_option_refuses_the_whole_run_before_any_write_
     with pytest.raises(pc.ClientRefused) as err:
         pc.apply_plan(client, _board_without_parked(), plan)
     assert "not options of their field" in str(err.value) and "Parked" in str(err.value) and client.calls == []  # exit 2 in project_sync.main, nothing written
+
+
+def test_a_bulleted_or_indented_parked_line_is_neither_a_marker_nor_a_malformed_marker_finding():
+    # must-nots that pin the line-start discipline: a later loosening of the reader (a bullet or indent prefix) fails THIS test by name.
+    literals = (
+        "- Parked: TCK-20261004-VISUAL-ASSETS-DETAIL-M5-RERUN",
+        "- Parked: a strict line pattern (heading ...",
+        "  Parked: waits on TCK-X since 2026-11-19",
+    )
+    for line in literals:
+        marker, bad = ps.parse_parked(line)
+        assert marker is None and bad == (), line  # no marker, and no malformed-marker finding: it does not start with `Parked: `
+        status, findings = _status(_origin(*ps.parse_parked(line)))
+        assert status == "Stale" and not any("Parked" in f for f in findings), line  # the Status and the findings are untouched too
+    # positive control: the exact form at the line start DOES match, so the must-nots above are not a reader that reads nothing
+    assert ps.parse_parked(f"Parked: waits on {TARGET} since 2026-11-19")[0] == ("ticket", TARGET, "2026-11-19")  # the same line without the indent
+    assert ps.parse_parked("Parked: a strict line pattern (heading ...")[1] == ("Parked: a strict line pattern (heading ...",)  # at the line start it IS reported as malformed
