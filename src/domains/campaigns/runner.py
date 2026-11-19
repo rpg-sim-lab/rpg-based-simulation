@@ -35,31 +35,12 @@ class SimulationAnalysisRunner:
         self.scorecard_evaluator = CampaignScorecardEvaluator()
         self.forbidden_detector = ForbiddenBehaviorDetector()
 
-    def run(
+    def _initial_state(
         self,
         spec: CampaignSpec,
-        feature_flags: Optional[Dict[str, Any]] = None,
-        custom_initial_state: Optional[AuthoritativeState] = None,
-        injected_events: Optional[List[CampaignEvent]] = None
-    ) -> CampaignResult:
-        """Executes a campaign simulation scenario over the specified number of ticks."""
-        t_start = time.perf_counter_ns()
-
-        # 1. Initialize Profile
-        profile = RuntimeProfile(
-            name=spec.campaign_id,
-            hardware_class=HardwareClass.CLASS_B,
-            max_ram_mb=1024,
-            max_cpu_percent=100.0,
-            max_worker_count=1,
-            max_queue_depth=1000,
-            max_replay_buffer_kb=1024,
-            max_observability_budget_percent=5.0,
-            max_tick_budget_ms=100.0
-        )
-
-        # 2. Setup initial state
-        rng = DeterministicRNG(spec.seed)
+        custom_initial_state: Optional[AuthoritativeState],
+    ) -> AuthoritativeState:
+        """The state a campaign starts from: the supplied one, else one hero per actor of the spec."""
         if custom_initial_state is not None:
             state = custom_initial_state
         else:
@@ -85,6 +66,34 @@ class SimulationAnalysisRunner:
                 entities[i] = builder.build()
 
             state = AuthoritativeState(tick=0, seed=spec.seed, entities=entities)
+        return state
+
+    def run(
+        self,
+        spec: CampaignSpec,
+        feature_flags: Optional[Dict[str, Any]] = None,
+        custom_initial_state: Optional[AuthoritativeState] = None,
+        injected_events: Optional[List[CampaignEvent]] = None
+    ) -> CampaignResult:
+        """Executes a campaign simulation scenario over the specified number of ticks."""
+        t_start = time.perf_counter_ns()
+
+        # 1. Initialize Profile
+        profile = RuntimeProfile(
+            name=spec.campaign_id,
+            hardware_class=HardwareClass.CLASS_B,
+            max_ram_mb=1024,
+            max_cpu_percent=100.0,
+            max_worker_count=1,
+            max_queue_depth=1000,
+            max_replay_buffer_kb=1024,
+            max_observability_budget_percent=5.0,
+            max_tick_budget_ms=100.0
+        )
+
+        # 2. Setup initial state
+        rng = DeterministicRNG(spec.seed)
+        state = self._initial_state(spec, custom_initial_state)
 
         # 3. Create Kernel
         kernel_flags = {"audit_mode": True}
