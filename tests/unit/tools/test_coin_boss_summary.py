@@ -9,12 +9,13 @@ from tools.rpg_measure import coin_boss_summary as summ
 
 HASH = "a" * 64
 LAST = 6
+PLAIN = {"world": "w", "seed": 1, "ticks": 5, "final_hash": HASH}  # the births re-check's plain twin json (the fields the summarizer reads)
 
 
 def _doc(**overrides):
     doc = {
         "world": "w", "seed": 1, "ticks": 5, "final_hash": HASH, "logging_errors": [], "v6": 0, "wiring": "OK", "unexplained_total_count": 0, "unexplained_rows": [], "apply_calls": 5, "distinct_ticks": 5,
-        "boss_max": {c: 0 for c in summ.BOSS_COLUMNS}, "boss_disagreements": [], "coin_moving_ticks": 3, "control_applied_count": 0, "control": None,
+        "boss_max": {c: 0 for c in summ.BOSS_COLUMNS}, "boss_disagreements": [], "coin_moving_ticks": 3, "control_applied_count": 0, "control": None, "counts_for_recheck": True,
     }
     doc.update(overrides)
     return doc
@@ -33,10 +34,10 @@ def _load(directory, name):
 
 # ---- real cells ----------------------------------------------------------------------------------------------------------------------------------
 
-def _real(tmp_path, plain_hash=HASH, returncode=0, **overrides):
+def _real(tmp_path, plain=PLAIN, returncode=0, **overrides):
     _write(tmp_path, "real_w_1_5", _doc(**overrides), returncode)
     doc, reason, code = _load(tmp_path, "real_w_1_5")
-    return summ.real_verdict(doc, reason, code, plain_hash)
+    return summ.real_verdict(doc, reason, code, plain)
 
 
 def test_a_clean_real_cell_passes_every_hard_check_and_reports_the_facts(tmp_path):
@@ -46,7 +47,7 @@ def test_a_clean_real_cell_passes_every_hard_check_and_reports_the_facts(tmp_pat
 
 
 @pytest.mark.parametrize("kwargs,failed", [
-    ({"plain_hash": "b" * 64}, "hash_equals_plain"),
+    ({"plain": {**PLAIN, "final_hash": "b" * 64}}, "hash_equals_plain"),
     ({"logging_errors": [{"logger": "x", "level": "ERROR", "message": "boom"}]}, "logging_errors_empty"),
     ({"returncode": 5}, "exit_zero"),
     ({"returncode": 4}, "exit_zero"),
@@ -58,27 +59,61 @@ def test_each_hard_real_check_fails_on_its_own(tmp_path, kwargs, failed):
     assert verdict["verdict"] == "FAIL" and verdict["failed"] == [failed]
 
 
-def test_a_missing_plain_hash_fails_the_hash_check(tmp_path):
-    assert _real(tmp_path, plain_hash=None)["failed"] == ["hash_equals_plain"]
+def test_a_missing_plain_file_or_one_without_a_hash_fails_with_the_reason_stated(tmp_path):
+    missing = _real(tmp_path, plain=None)
+    assert "plain_twin_present" in missing["failed"] and missing["reasons"]["plain_twin_present"] == "the plain twin file is missing"
+    no_hash = _real(tmp_path, plain={"world": "w", "seed": 1, "ticks": 5})
+    assert "plain_twin_present" in no_hash["failed"] and no_hash["reasons"]["plain_twin_present"] == "the plain twin file has no final_hash"
+    assert missing["verdict"] == no_hash["verdict"] == "FAIL"
+
+
+@pytest.mark.parametrize("plain_change", [{"world": "other"}, {"seed": 2}, {"ticks": 6}])
+def test_a_plain_twin_of_another_cell_fails_same_cell_even_when_the_hashes_match(tmp_path, plain_change):
+    verdict = _real(tmp_path, plain={**PLAIN, **plain_change})
+    assert verdict["hard"]["hash_equals_plain"] is True  # the hashes happen to match: the meaningless pass this check exists to stop
+    assert verdict["verdict"] == "FAIL" and verdict["failed"] == ["same_cell"] and "!= plain cell" in verdict["reasons"]["same_cell"]
+
+
+def test_a_plain_twin_without_the_cell_fields_fails_same_cell(tmp_path):
+    verdict = _real(tmp_path, plain={"final_hash": HASH})
+    assert verdict["failed"] == ["same_cell"]
+
+
+@pytest.mark.parametrize("overrides", [
+    {"control": {"kind": "coin", "amount": 5.0, "applied_at_tick": 5}},  # a control output renamed or copied into real_*.json
+    {"counts_for_recheck": False},
+    {"control": {"kind": "boss", "amount": 2, "applied_at_tick": 5}, "counts_for_recheck": False},
+])
+def test_a_control_output_cannot_count_as_a_real_cell(tmp_path, overrides):
+    verdict = _real(tmp_path, **overrides)
+    assert verdict["verdict"] == "FAIL" and verdict["failed"] == ["not_a_control"] and "cannot count as a real cell" in verdict["reasons"]["not_a_control"]
+
+
+def test_an_out_json_without_counts_for_recheck_is_partial(tmp_path):
+    doc = _doc()
+    del doc["counts_for_recheck"]
+    _write(tmp_path, "nocount", doc, 0)
+    loaded, reason = summ.load_doc(tmp_path / "nocount.json")
+    assert loaded is None and "counts_for_recheck" in reason
 
 
 def test_a_missing_exit_record_fails_the_exit_check(tmp_path):
     _write(tmp_path, "real_w_1_5", _doc(), None)
     doc, reason, code = _load(tmp_path, "real_w_1_5")
-    assert code is None and summ.real_verdict(doc, reason, code, HASH)["failed"] == ["exit_zero"]
+    assert code is None and summ.real_verdict(doc, reason, code, PLAIN)["failed"] == ["exit_zero"]
 
 
 def test_a_missing_bad_or_partial_out_json_is_a_fail(tmp_path):
-    missing = summ.real_verdict(*summ.load_doc(tmp_path / "nope.json"), 0, HASH)
-    assert missing["verdict"] == "FAIL" and "missing" in missing["failed"][0]
+    missing = summ.real_verdict(*summ.load_doc(tmp_path / "nope.json"), 0, PLAIN)
+    assert missing["verdict"] == "FAIL" and "missing" in missing["reasons"]["out_json_complete"]
     _write(tmp_path, "bad", "{not json", 0)
-    bad = summ.real_verdict(*summ.load_doc(tmp_path / "bad.json"), 0, HASH)
-    assert bad["verdict"] == "FAIL" and "not valid JSON" in bad["failed"][0]
+    bad = summ.real_verdict(*summ.load_doc(tmp_path / "bad.json"), 0, PLAIN)
+    assert bad["verdict"] == "FAIL" and "not valid JSON" in bad["reasons"]["out_json_complete"]
     partial = _doc()
     del partial["boss_max"]
     _write(tmp_path, "partial", partial, 0)
-    result = summ.real_verdict(*summ.load_doc(tmp_path / "partial.json"), 0, HASH)
-    assert result["verdict"] == "FAIL" and "partial" in result["failed"][0] and "boss_max" in result["failed"][0]
+    result = summ.real_verdict(*summ.load_doc(tmp_path / "partial.json"), 0, PLAIN)
+    assert result["verdict"] == "FAIL" and result["failed"] == ["out_json_complete"] and "partial" in result["reasons"]["out_json_complete"] and "boss_max" in result["reasons"]["out_json_complete"]
 
 
 def test_unexplained_rows_and_boss_counts_are_findings_not_failures(tmp_path):
@@ -90,9 +125,9 @@ def test_unexplained_rows_and_boss_counts_are_findings_not_failures(tmp_path):
 def test_the_real_summary_reads_a_directory_and_seals_it(tmp_path):
     _write(tmp_path, "real_w_1_5", _doc(), 0)
     plain = tmp_path / "w_1_plain.json"
-    plain.write_text(json.dumps({"final_hash": HASH}), encoding="utf-8")
+    plain.write_text(json.dumps(PLAIN), encoding="utf-8")
     summary = summ.summarize_real(tmp_path, plain)
-    assert summary["verdict"] == "PASS" and (tmp_path / "summary_real.json").exists()
+    assert summary["verdict"] == "PASS" and summary["plain_final_hash"] == HASH and (tmp_path / "summary_real.json").exists()
     sums = (tmp_path / "SHA256SUMS").read_text(encoding="utf-8")
     assert "real_w_1_5.json" in sums and "summary_real.json" in sums
     empty = tmp_path / "nothing_here"
@@ -105,7 +140,7 @@ def test_the_real_summary_reads_a_directory_and_seals_it(tmp_path):
 def _coin(real_overrides=None, **overrides):
     real = _doc(**(real_overrides or {}))
     row = {"tick": LAST, "delta": 5.0, "declared": 0.0, "unexplained": 5.0}
-    control = _doc(v6=5.0, unexplained_total_count=1, unexplained_rows=[row], control_applied_count=1, control={"kind": "coin", "amount": 5.0, "applied_at_tick": LAST})
+    control = _doc(v6=5.0, unexplained_total_count=1, unexplained_rows=[row], control_applied_count=1, control={"kind": "coin", "amount": 5.0, "applied_at_tick": LAST}, counts_for_recheck=False)
     control.update(overrides)
     return real, control
 
@@ -140,7 +175,7 @@ def test_a_coin_control_with_a_non_zero_exit_or_two_unexplained_rows_fails():
 
 def _boss(**overrides):
     real = _doc()
-    control = _doc(boss_max={c: 2 for c in summ.BOSS_COLUMNS}, control_applied_count=1, control={"kind": "boss", "amount": 2, "applied_at_tick": LAST})
+    control = _doc(boss_max={c: 2 for c in summ.BOSS_COLUMNS}, control_applied_count=1, control={"kind": "boss", "amount": 2, "applied_at_tick": LAST}, counts_for_recheck=False)
     control.update(overrides)
     return real, control
 
@@ -224,3 +259,13 @@ def test_the_runner_aborts_when_the_tree_is_already_dirty_and_moves_new_runs_out
     (tree / "data" / "runs").mkdir()
     with pytest.raises(RuntimeError):
         run.move_tree_runs(tree, out)
+
+
+def test_the_real_summary_fails_every_cell_when_the_plain_file_is_missing_or_unreadable(tmp_path):
+    _write(tmp_path, "real_w_1_5", _doc(), 0)
+    missing = summ.summarize_real(tmp_path, tmp_path / "no_plain.json")
+    assert missing["verdict"] == "FAIL" and missing["cells"]["real_w_1_5.json"]["reasons"]["plain_twin_present"] == "the plain twin file is missing"
+    garbled = tmp_path / "garbled_plain.json"
+    garbled.write_text("{nope", encoding="utf-8")
+    bad = summ.summarize_real(tmp_path, garbled)
+    assert bad["verdict"] == "FAIL" and bad["cells"]["real_w_1_5.json"]["reasons"]["plain_twin_present"] == "the plain twin file has no final_hash"
