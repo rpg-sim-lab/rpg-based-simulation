@@ -56,6 +56,7 @@ src/systems (building_services, conservation, inventory); src/ai need_pull
 ## Assumptions / Open Questions
 
 ## Implementation Notes
+- 2026-11-19 SEQUENCING RULING (rpg-planner): the inn-meal last_meal_tick stamp is OUT of #781 (TCK-20261023-FREE-MEAL-REMOVED-AS-ITS-OWN-STEP-BEFORE-M1). The field is in the state digest, and #781's W read must attribute the world change to D73 alone. TCK-20261109-AN-INN-MEAL-DOES-NOT-STAMP-LAST-MEAL-TICK lands AFTER #781, on #781's rewritten inn writer, and both cite TCK-20261007-EAT-BESIDE-THE-INN-FEEDS-A-SUBJECT-THAT-CANNOT-PAY-FREE-MEAL. Note: #781 removes the eat_update free meal, one of the three writers that stamp today.
 - 2026-11-19 (rpg-planner, lead-planner-u24): OVERLAP with the P0 coin fix, TCK-20261118-A-SERVICE-PAYMENT-WITH-NO-PAYEE-DESTROYS-COIN.
   - The coin fix keeps SERVICE_PAYMENT_LAW = CLAMP. It adds one price helper and makes debit = credit = paid; no payee means debit 0, counted. It rewrites the same _service_result / pricing code as #781 (conservation.py, lodging.py, building_services.py).
   - When #781 un-holds (the ATOMIC flip, owner decision 44 / D73), it needs a REAL resync onto the coin fix, and a re-check of its can't-pay semantics against the fixed CLAMP path.
