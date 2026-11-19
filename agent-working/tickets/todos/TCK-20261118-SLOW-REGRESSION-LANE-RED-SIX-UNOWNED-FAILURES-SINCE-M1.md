@@ -58,6 +58,19 @@ Read-only classification against the six rows above. **No causes are attributed.
 - Known-red and out of scope: behavioral_5k (3 metrics: alive_avg 24.2 vs 18.34, gold_avg 693.9 vs 904.2, quest_active_count 9.96 vs 6.16), arena_stress_50v50, perf_movement[5000], perf_passive_scaling[5000], urban_political_selfmodel_probe_200t.
 - Pending: ph9 on a scheduled run at a30847030 (#964) or later.
 
+### Manual significance read (owner direction #715 6998413376: pillar drift is deferred during M1)
+
+Run 44408881791 (c505357b3), read by testing-planner from the junit. No causes attributed; no tuning, known-reds entry or re-baseline.
+
+All drifted pillars are class (a), deferred under 6998413376: none collapses to about 0, none flips sign, and the unowned set has no hard-law or conservation failure.
+- urban_political_seed123_1000t: SOCIAL 39.69 vs anchor 53.8 (was 30.46); ECONOMY 0.3083 vs 0.4966.
+- urban_political_selfmodel_probe_200t (known-red): WORLD 0.16 vs 0.32.
+- generated_frontier_3_42_seed123_200t: COMBAT 0.1869 vs 0.3402.
+- frontier_extended_seed42_200t: NARRATIVE 1.59 vs 2.2778.
+- frontier_extended_seed123_200t: COMBAT 0.2323 vs 0.2914; PROGRESSION 0.5879 vs 0.4241 (was 0.2984).
+
+Caveat for rpg: these are audit_mode, one deterministic trial, so a value that differs between 2df2a59a6 and c505357b3 was changed by a merge in that range, not by run noise (u24 asks for a same-head repeat to confirm this). The src-behaviour commits in range are #955 (senses, PERC-02a) and c505357b3 (navigation last_failure_reason). The SOCIAL and PROGRESSION moves between the two heads line up with those merges. The drift from the anchors predates both (rows 3-5 were already out at 2df2a59a6). Open question for rpg: is that size the expected effect of #955?
+
 ## Out of Scope
 - Adding known-reds entries or re-baselining any pin before rpg attributes the row.
 - Re-opening the parked slow-regression determinism root cause.
