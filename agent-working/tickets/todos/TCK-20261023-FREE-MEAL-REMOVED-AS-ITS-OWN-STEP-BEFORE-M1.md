@@ -104,6 +104,15 @@ src/systems (building_services, conservation, inventory); src/ai need_pull
       - The own-job REPORTS no-payee attempts per cell, expected 0 in shipped worlds. Any > 0 is a content-gap finding for rpg-designer; it overlaps the name-the-payee P2.
     - (c) INN_MEAL_HUNGER = 60 changes in src as part of D73. It's the existing 40 + 20 delivered as one transfer (memo row 73), cited at the line. It goes on the temporal audit's scope 7 list. It is NOT moved to data in this step, so the later same-value move proof stays clean.
     - OWNER ASK before the push: tests/unit/engine/test_service_admission.py:51 flips `SERVICE_PAYMENT_LAW is CLAMP` to ATOMIC. Wording: "the law constant this ticket exists to flip; the test pins the constant, not a behaviour; the both-laws parametrised tests at :62/:94 are unchanged."
+  - INSPECTION RULINGS (rpg-designer, on lane A's addendum 576eb9f9):
+    - The core EAT with nothing carried (core_actions.eat_update via action_router._survival_action, hunger -40 with no payment) IS the D73 free meal. It is REMOVED UNCONDITIONALLY, never gated on SERVICE_PAYMENT_LAW: it is not a service, and gating it would let CLAMP restore it. With no carried food and no serving inn, it is a typed SOURCE_MISSING failure under either law.
+    - The granted bed is refused by the resolver's gold < gold_cost test once the service rides the paid transfer. Test: claim admitted, purse emptied before the grant, nothing delivered.
+    - HARD own-job bar: fix-arm drops_unbacked == 0 in every cell. The base count is reported. drops_without_update stays a FINDING line.
+    - ReasonCode.PAYEE_MISSING is added to the Conservation group. The intent field is `requires_payee: bool = False`, set only by the ATOMIC service builders. Conditions:
+      - documented in update_intents.md;
+      - a serialize round-trip test if intents are recorded or replayed;
+      - a unit test that a REPAIR or shop fee with no payee is unchanged.
+    - Kit v3.2 (pending): a no-payee count line, plus the drops_unbacked HARD bar in --strict-outcomes, each with a planted control.
   - HUNGER KIT v3.1 APPROVED: summarizer 6ec9f378, manifest 4359c34a; spy, runner, controls and config as in v3. The all-cells-zero P0 STOP is exit 5.
   - Other food-touching changes get only the 5000t early-warning check (P2-style) plus the P3 rows; the W read is for #781 and the M1 checkpoints only (owner scope). Births is not re-run.
   - Settings-in-data rule: any new tuning value goes to data/. The pre-push run covers tests/unit/** by directory plus statics.
