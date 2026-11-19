@@ -11,6 +11,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING
 
 from src.engine.checkpoint_fields import check_group_counter, fill_missing_fields
+from src.engine.checkpoint_senses import check_restored_body_senses
 from src.engine.checkpoint_schema import check_schema, dump_with_schema, read_header
 
 if TYPE_CHECKING:
@@ -68,6 +69,7 @@ class ScenarioCheckpointer:
             ValueError: if the checkpoint spec_id does not match *spec.id*.
             CheckpointSchemaError: (a ValueError) if the header is unreadable, has no schema fingerprint, or names records that differ from the current ones; always before unpickling.
             CheckpointFieldMissingError: (a ValueError) if the checkpoint predates a field that cannot be derived (a group with a contract_id).
+            RestoredBodySenseProfileError: (a ValueError) if a restored body's species has no usable sense profile under the current content (PERC-02a).
         """
         from src.engine.scenario_runtime import ScenarioRuntimeService
         from src.config.profiles import RuntimeProfile, HardwareClass
@@ -88,6 +90,7 @@ class ScenarioCheckpointer:
 
         fill_missing_fields(state)  # the one post-unpickle step: fill a field the checkpoint predates (only where a ruling derives it) or refuse with a typed error
         check_group_counter(state)  # after the fill: the counter must be above every non-squad stored group id (GroupCounterBehindStoreError)
+        check_restored_body_senses(state, path)  # every body's species must resolve a sense profile under the CURRENT content (RestoredBodySenseProfileError), before any tick
 
         # Reconstruct RNG from the checkpoint embedded in state.
         # base_seed=state.seed matches _build_kernel() for a service built with an initial state.

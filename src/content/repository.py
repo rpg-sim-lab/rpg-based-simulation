@@ -143,6 +143,7 @@ CANONICAL_FAMILIES: List[ContentFamilySpec] = [
 
 
 from src.content.paths import ContentPathConfig
+from src.core.species import SenseProfileError
 
 # Directories inside data/content/ that are managed by loaders other than CatalogRepository
 # (WorldModuleRepository, ScenarioLabOrchestrator). Files in these
@@ -311,6 +312,8 @@ class CatalogRepository:
                         continue
 
                     def_id = item["id"]
+                    if spec.family == "living.species" and "sense_profile" in item and item["sense_profile"] is None:
+                        raise SenseProfileError(f"species {def_id!r} declares no sense profile (sense_profile: null)")  # typed, naming the species; else the schema error drops it and a later lookup dies with a bare KeyError
                     if def_id in results:
                         duplicate_ids.append(def_id)
                         continue
