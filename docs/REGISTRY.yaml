@@ -8012,7 +8012,10 @@
   - .claude/agents/ticket-scoper.md
   - tools/validate_frontmatter.py
   - tests/tools/test_open_ticket_overlap_real_corpus.py
-  artifact_files: []
+  artifact_files:
+  - agent-working/stored_artifacts/TCK-20261119-FILED-TICKETS-ARE-SCANNED-FOR-OVERLAP-WITH-OPEN-TODOS/investigation.md
+  - agent-working/stored_artifacts/TCK-20261119-FILED-TICKETS-ARE-SCANNED-FOR-OVERLAP-WITH-OPEN-TODOS/plan.md
+  - agent-working/stored_artifacts/TCK-20261119-FILED-TICKETS-ARE-SCANNED-FOR-OVERLAP-WITH-OPEN-TODOS/test_plan.md
   tags:
   - create-tickets
   - ticket-scoper
