@@ -81,6 +81,12 @@ Caveat for rpg: these are audit_mode, one deterministic trial, so a value that d
 - Event counts are not in CI output; untestable-in-window not assessed; per-row count run parked (lead-planner call 2026-11-19: rows are deferred as not significant, so counts would not change an M1 decision; revisit if a row is ever flagged significant). urban_political_seed123 has the longest window (0.42 day vs 0.083), so its SOCIAL/ECONOMY move is the one LEAST explained by window noise; plausibly #955's perception -> social-contact path (rpg-designer, inspected); still not significant under the owner's test (6998413376). Untestable-in-window marks (fewer than ~3 events): none can be made. The junit and log carry no event counts for the drift rows; only rows 1-2 carry event_count (200). Four of the five drifted worlds are 200t windows (about 0.083 day); urban_political_seed123 is 1000t (about 0.42 day).
 - Row 6 (ph9) is unaffected by the deferral: it is an invariant failure, and #964 must make it pass.
 
+### Third read: dispatch run 44449471538, head a30847030 (with #964), 2026-11-19
+
+- **Row 6 (ph9): PASS** (3.09 s); `len(bosses) <= 1` holds. It failed with "Duplicate bosses at tick 200: 2" before #964 (runs 44287724126, 44408881791). The invariant is restored by #964's boss dedupe. The junit carries no boss count for a pass.
+- UNOWNED set is 4 corpus grade_stability tests (urban_political_seed123_1000t, frontier_extended_seed123_200t, frontier_extended_seed42_200t, generated_frontier_3_42_seed123_200t). Their pillar values are IDENTICAL to run 44408881791 at c505357b3, so the commits between those heads moved no SimQ value (and no two values at one head were seen). Class (a), deferred under 6998413376; no causes attributed.
+- Rows 1-3 remain absent from the unowned set. `test_arena_stress_50v50` passed, so its known-red entry may be stale; known-reds are not touched here.
+
 ## Out of Scope
 - Adding known-reds entries or re-baselining any pin before rpg attributes the row.
 - Re-opening the parked slow-regression determinism root cause.
