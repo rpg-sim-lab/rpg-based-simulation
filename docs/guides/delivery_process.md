@@ -300,6 +300,22 @@ section is rendered into the PR body's `## Verification` (below) and `tools/deli
 template-shaped PR body without the line. **Advisory first; promotion to blocking is a later owner decision after the fill-rate baseline** (owner decision, #715 6972698325). `tools/gate_checks/lifecycle_section_fill_rate.py` reports the fill and `N/A`
 rate of tickets dated on or after the landing date. `CLAUDE.md`'s "Ticket Format" required-sections list names the section (owner yes, #715 6972548742).
 
+### Overlap scan on new tickets (advisory)
+
+`tools/gate_checks/ticket_overlap_check.py <ticket path>` scans a new or changed `todos/` or `inprogress/` ticket against the other open tickets and prints, when it finds any, ONE line:
+`overlap scan: <path>: N candidate(s): <id> (<title>, q=<value>), ...` for the top two uncited hits. Run it by hand before committing a new ticket; the pre-push advisory hook (check H) runs it on every
+ticket file a push adds or changes, and `ticket-scoper` runs it on its draft. A hit is an open ticket whose weighted term overlap is at least 0.25 of the draft's own total term weight (`q`), with ids
+typed in the title or summary removed before scoring. A ticket is silent when its `## Related Tickets` cites the hit, or carries the line `overlap scan: <n> hits, none duplicate (<why>)`
+(presence only; the reason is never judged). Only tickets dated on or after 2026-11-21 are checked. It always exits 0; every run prints `ran / skipped / errored` counts, and a file it cannot scan is a
+named warning, never a silent pass. `ticket_overlap_check.py --report --since <date>` lists the open tickets filed since a date with their state (uncited candidate, waived, clean, errored): the efficacy
+measure.
+
+**Read it as a locator, not a duplicate verdict.** Measured on origin/main 5bedb5ff0 (151 tickets filed in 21 days, a 20-pair stratified sample labelled by agent-working-planner and rpg-planner-ubuntu):
+precision is about 50% (10 of 20 pairs useful, Wilson 95% roughly 28 to 72%), half the hits are cited-and-fine or unrelated, and rank 1 is not a precision signal (3 of the 10 unrelated pairs were rank 1).
+About 47% of new tickets see a line; a per-ticket cap changes the number of lines (71 at cap 1, 120 at cap 2, 311 uncapped), not that share. That is the price of keeping the owner-named inn-meal pair
+(q 0.259): a higher threshold loses it. Known false positive kept as a test: the SimQ anchor-reds ticket against the slow-regression exit-2 ticket (rpg-planner-ubuntu: wall-clock degraded mode against
+deterministic drift).
+
 ## PR Body Template — rendered, not written
 
 ```markdown
