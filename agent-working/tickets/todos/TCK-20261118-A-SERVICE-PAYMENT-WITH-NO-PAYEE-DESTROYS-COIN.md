@@ -78,6 +78,12 @@ No new durable state is expected. The fix names a payee or refuses. If a payee n
 - H1/H2/H3 come from the designer's spec. The fix shape depends on the confirmed class.
 
 ## Implementation Notes
+- 2026-11-19, OWN-JOB RESULT AND CORRECTION (rpg-designer recount 297d8589 of summary 87266f83; S9 6997281236):
+  - Hash-equal BASE (51a6516cf) vs FIX (72493ed4c) in all 4 cells, with V6 0. Base had 2,751 unbalanced results, all clamp-absorbed; fix 0. P1 HOLDS (testable). P2 REFUTED, as a prediction miss, not a fix failure.
+  - CORRECTION of the "live on main" label above: the -10 loss was on 414fb74f7 (the #955 branch head), and main's cf s46 shows 0. The class is LATENT on main, manifested on a sibling tree.
+  - The designer recommends re-labelling it P1 conservation-law hardening; this is put to the owner via the lead.
+  - LAND as planned.
+  - The positive demonstration is an apply-level total-coin unit test of the 414fb74f7 t3182 shape (lane C checks or adds it).
 - 2026-11-19, PERIOD STATEMENT AND WINDOW RULING. This follows the owner's bar-period rule (#715 6997605774). It is recorded BEFORE any own-job output is read, and the run (S9 6997281236) started before the rule existed.
   - The window is 5000 ticks per cell, about 2.08 days at 2400 ticks/day. rpg-planner checked this from the live process args (`coinfix_spy.py crowded_frontier 46 5000 ...`). The 300 ticks in manifest ea3dd682 is the preflight fixture only.
   - Recorded base rate (lane C, from summary_sink.txt 13430e6e and summary_coin.txt e59a2481 only): cf s46 has 1 unbalanced TOWN_SERVICE row per 2.08 days (t3181, REST at building 20003, -10). The window covers it once. flw42, up42 and cf42 have no recorded base count.
