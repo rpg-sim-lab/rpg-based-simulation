@@ -21,6 +21,8 @@ import pytest
 
 from src.core.builder import V2EntityBuilder
 from src.core.conservation import ResourceTransactionResolver, TransactionResult
+from src.core.treasury import total_coin
+from src.engine.apply import ApplyPath
 from src.core.state import AuthoritativeState, BuildingState, CorpseState, GroundItemState, InventoryComponent
 from src.core.update_models.resources import ResourceTransferIntent
 from src.core.updates import EntityUpdate, StateUpdate
@@ -194,6 +196,27 @@ def test_a_same_tick_inheritance_cannot_hide_a_charge_the_building_never_receive
     entity_coin, building_coin = _coin_written(refined)
     assert entity_coin + building_coin == 0.0, (entity_coin, building_coin)
     assert payer.inventory.gold + _gold(refined.entity_updates[PAYER_ID].inventory) == 140 - building_coin
+
+
+def test_the_t3181_shape_applied_through_the_apply_path_conserves_the_world_total():
+    """The exact shape of the 414fb74f7 tick-3181 sink, taken to the place the loss happened (the apply path and its clamp at 0): payer 9 holds 0, a REST at building 20003 is priced gold_delta=-10
+    gold_cost=0, and an inheritance of 140 from body 12 (holding 140) lands in the SAME tick. Through ``resolve_all`` and then ``ApplyPath.apply_generation`` the world total before equals the total
+    after: the payer is charged at most what it holds (0), so the building receives what the payer paid, and the heir ends with the body's whole purse minus that."""
+    payer = _payer(0)
+    dead = (V2EntityBuilder(DEAD_ID).kind("hero").location(1.0, 1.0).combat(alive=False).inventory(gold=140, items=[]).build())
+    state = _state(payer, entities_extra={DEAD_ID: dead})
+    inherit = ResourceTransferIntent(source_id=DEAD_ID, source_kind="INHERIT", gold_delta=140, transfer_kind="INHERIT", transaction_id="inherit:12")
+    update = StateUpdate(entity_updates={PAYER_ID: EntityUpdate(entity_id=PAYER_ID, resource_transfers=[_charge("TOWN_SERVICE", PRICE, "REST"), inherit])})
+    before = total_coin(state)
+    refined = ResourceTransactionSystem.resolve_all(state, update)
+    after_state = ApplyPath.apply_generation(state, refined, next_tick=state.tick + 1, next_world_time=state.world_time)
+    assert before == 140.0
+    assert total_coin(after_state) == before
+    # the expected numbers, explicit: the REST resolves first against a purse of 0 (the same-tick inheritance is not in it), so paid = min(0, 10) = 0 (CLAMP, owner decision 44)
+    paid = 0
+    assert after_state.buildings[BUILDING_ID].inventory.gold == paid  # building 20003 is credited exactly what payer 9 is debited for the REST (debit == credit)
+    assert after_state.entities[PAYER_ID].inventory.gold == 140 - paid  # 9 ends at 140 - paid
+    assert after_state.entities[DEAD_ID].inventory.gold == 0  # the donor 12 gave its whole purse
 
 
 # --- a service that would PAY the payer is no payout: the entity delta of a service is never positive (the price-0 mint) -------------------------------------------------------------------
