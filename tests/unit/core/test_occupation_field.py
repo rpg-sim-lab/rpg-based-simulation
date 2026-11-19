@@ -294,7 +294,7 @@ def test_every_production_kind_writer_is_one_of_the_tested_sites():
                 if isinstance(base, ast.Call) and isinstance(base.func, ast.Name) and base.func.id == "V2EntityBuilder":
                     sites.add(str(path.relative_to(root)))
     assert sites == {
-        "src/domains/campaigns/orchestrator.py", "src/domains/campaigns/runner.py", "src/entities/archetype_factory.py", "src/systems/world_systems/generator.py",
+        "src/entities/checked_builder.py", "src/entities/archetype_factory.py", "src/systems/world_systems/generator.py",
         "src/observability/readiness/harness.py",
         "src/worldassembly/entity_spawner.py", "src/worldbuilding/compiler.py",
         # the scenario fixtures (designer ruling (a), 2026-11-16): tested in test_occupation_fixture_writers.py
@@ -386,6 +386,7 @@ def test_the_presenter_shows_null_for_a_body_with_no_label(shape):
 _OCCUPATION_ATTRIBUTE_ALLOWLIST = {
     # the field itself, the carry and the copy sites, the presenter (step 2)
     "src/core/state.py", "src/engine/apply.py", "src/domains/campaigns/orchestrator.py", "src/domains/campaigns/state.py", "src/api/presenters/state_presenter.py",
+    "src/domains/campaigns/survivor_rebuild.py",  # moved from orchestrator.py:851 by #968's code-health extraction; same carry-forward read
     # the helper that reads it for the duck-typed readers, and the label readers step 3 moved off `kind` (rpg-designer 665b9718, rows 10-13, 15-23, B1-B3, B5, B9-B12)
     "src/world/calamity.py", "src/world/threat.py", "src/world/environment.py", "src/world/creature_territory.py",
     "src/systems/world_systems/navigation.py",
