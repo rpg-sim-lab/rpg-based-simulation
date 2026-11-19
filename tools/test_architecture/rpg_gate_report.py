@@ -48,6 +48,14 @@ Rerun only what is new (TCK-20261119-RPG-GATE-RERUN-ONLY-NEW-ROWS-AND-A-BASELINE
 * Fallback = today's full rerun, with the reason named in the report: no main report, a report that does not parse or lacks the expected fields, a harness
   hash or baseline versions that differ from this run's (the rows are not comparable).
 * The diff lands in the report JSON (``vs_main``), the markdown (job summary) and a log line.
+* Changed vs main (report-only, ``vs_main.changed``): a row with the same key AND state whose VALUE moved is not new (the verdict reads state) and is not rerun,
+  but it is listed beside "new vs main" so a drift that got much worse while staying drift is visible. The value of a finding (:func:`finding_value`): for a
+  ``fail`` its ``violations`` count; for a ``drift`` the numeric ``diff`` / ``se`` / ``threshold`` of each reference (``<ref>.diff`` ...). A finding with no
+  such number (a ``drift`` whose references carry none) has no comparable value and is left out, never given an invented one. The comparison is EXACT: the runs
+  are deterministic (a fresh pinned process per seed), so a non-zero difference is a real movement, not noise; no epsilon is used. Each entry holds the row,
+  main's value, this run's value and the delta of the fields both carry; the list is ordered by the largest ``|delta|`` of the ``violations`` / ``.diff`` fields
+  (largest first), ties broken by the row key, so the order is deterministic. It has no effect on the verdict, the rerun or any state. The markdown shows the
+  first ``CHANGED_SHOWN`` entries and the log line the first ``CHANGED_LOGGED``, each with the total; the JSON holds all of them.
 
 Ownership (child 1's registry, ``rpg_gate_known.yaml``, ids ``<metric_id>`` or ``<metric_id>:<group>``): a ``fail`` is ``known`` (an owner, not expired),
 ``unowned`` or ``expired``; a ``drift`` is ``traced`` (a ``state: drift`` entry, whose ticket is a trace ticket) or ``needs-trace-ticket`` (advisory) or ``expired``.
@@ -463,6 +471,37 @@ def verdict(findings: Sequence[Mapping[str, Any]]) -> Tuple[str, List[str]]:
     return ("red" if reasons else "green"), reasons
 
 
+CHANGED_SHOWN = 10  # entries of "changed vs main" shown in the markdown (the JSON holds all)
+CHANGED_LOGGED = 5  # entries of it in the one-line log output
+
+
+def finding_value(f: Mapping[str, Any]) -> Optional[Dict[str, float]]:
+    """The comparable numbers of a ``fail`` / ``drift`` finding (see the module docstring), or ``None`` when it carries none."""
+    if f.get("state") == FAIL:
+        return {"violations": f["violations"]} if _is_number(f.get("violations")) else None
+    out = {f"{r.get('ref')}.{name}": r[name] for r in f.get("refs", []) for name in ("diff", "se", "threshold") if _is_number(r.get(name))}
+    return out or None
+
+
+def _magnitude(delta: Mapping[str, float]) -> float:
+    return max((abs(v) for k, v in delta.items() if k == "violations" or k.endswith(".diff")), default=0.0)
+
+
+def _changed_vs_main(carried: Sequence[Mapping[str, Any]], main: Mapping[str, Any]) -> List[dict]:
+    """The carried rows (same key and state as a main row) whose value moved, largest ``|delta|`` first; read-only."""
+    out = []
+    for f in carried:
+        was, now = main.get("values", {}).get((finding_key(f), f["state"])), finding_value(f)
+        if was is None or now is None or was == now:
+            continue
+        delta = {k: now[k] - was[k] for k in now if k in was}
+        out.append({
+            "id": f["id"], "world": f["world"], "scope": f["scope"], "group": f.get("group"), "key": f.get("key"), "tick": f.get("tick"), "seed": f.get("seed"),
+            "state": f["state"], "main": was, "pr": now, "delta": delta, "magnitude": _magnitude(delta),
+        })
+    return sorted(out, key=lambda e: (-e["magnitude"], str(finding_key({**e, "class": ""}))))
+
+
 def _main_keys(report: Mapping[str, Any]) -> set:
     return {(finding_key(f), f["state"]) for f in report["findings"] if f.get("state") in (FAIL, DRIFT)}
 
@@ -492,11 +531,12 @@ def load_main_baseline(path: Optional[Path], harness_hash: str, refs: Optional[R
         if mine != theirs:
             return None, "main report was judged against other baseline versions"
         keys = _main_keys(report)
+        values = {(finding_key(f), f["state"]): finding_value(f) for f in report["findings"] if f.get("state") in (FAIL, DRIFT)}
     except (KeyError, TypeError):
         return None, "main report lacks the expected fields"
     return {
         "run_id": raw.get("run_id"), "head_sha": raw.get("head_sha") or report.get("sha", ""), "event": raw.get("event", ""), "age_days": raw.get("age_days"),
-        "max_age_days": raw.get("max_age_days"), "keys": keys,
+        "max_age_days": raw.get("max_age_days"), "keys": keys, "values": values,
     }, ""
 
 
@@ -559,6 +599,7 @@ def build_report(
         vs_main["carried"] = len(carried)
         now = {(finding_key(f), f["state"]) for f in suspects}
         vs_main["gone"] = len(main["keys"] - now)
+        vs_main["changed"] = _changed_vs_main(carried, main)
     findings = _ownership(findings, known, today)
     stale_known = {
         state: [e["match"] for e in known_reds.stale_mappings({metric_test_id(f): "" for f in findings if f["state"] == state}, known, state=state)]
@@ -608,6 +649,7 @@ def render_markdown(report: Mapping[str, Any]) -> str:
         if report["rerun"].get("not_performed_budget"):
             lines.append(f"- rerun not performed (budget) for {len(report['rerun']['not_performed_budget'])} run(s): their fail/drift findings are unconfirmed.")
     lines.append(_vs_main_line(report.get("vs_main") or {}))
+    lines += _changed_lines(report.get("vs_main") or {}, CHANGED_SHOWN)
     for reason in report["reasons"]:
         lines.append(f"- **RED**: {reason}")
     if report["run_errors"]:
@@ -627,6 +669,19 @@ def render_markdown(report: Mapping[str, Any]) -> str:
     else:
         lines.append("\nEvery metric passes.")
     return "\n".join(lines) + "\n"
+
+
+def _changed_text(entry: Mapping[str, Any]) -> str:
+    d = ", ".join(f"{k} {entry['main'].get(k)} -> {entry['pr'].get(k)} ({v:+.4g})" for k, v in sorted(entry["delta"].items()) if v)
+    return f"{entry['state']} `{entry['id']}`{' ' + str(entry['key']) if entry.get('key') else ''} {entry['world']}{'/' + str(entry['seed']) if entry.get('seed') is not None else ''}: {d or 'se/threshold only'}"
+
+
+def _changed_lines(vs: Mapping[str, Any], shown: int) -> List[str]:
+    changed = vs.get("changed") or []
+    if not changed:
+        return []
+    more = f" (+{len(changed) - shown} more in the report JSON, vs_main.changed)" if len(changed) > shown else ""
+    return [f"Changed vs main (same key and state, value moved; report-only, largest first): {len(changed)} row(s){more}"] + [f"- {_changed_text(e)}" for e in changed[:shown]]
 
 
 def _vs_main_line(vs: Mapping[str, Any]) -> str:
@@ -736,6 +791,8 @@ def main(argv: Optional[List[str]] = None) -> int:
     args.out_json.write_text(json.dumps(report, sort_keys=True, indent=2) + "\n", encoding="utf-8")
     args.out_md.write_text(render_markdown(report), encoding="utf-8")
     print(_vs_main_line(report["vs_main"]))
+    for line in _changed_lines(report["vs_main"], CHANGED_LOGGED):
+        print(line)
     print(f"verdict={report['verdict']} " + " ".join(f"{s}={n}" for s, n in report["counts"].items()))
     return 1 if (args.fail_on_red and report["verdict"] == "red") else 0
 

@@ -226,6 +226,72 @@ def test_the_comparison_is_refused_for_another_harness_or_other_baseline_version
     assert base is None and "baseline versions" in why
 
 
+# ------------------------------------------------------------------ changed vs main (report-only)
+
+
+def _without_changed(report):
+    return {**report, "vs_main": {k: v for k, v in report["vs_main"].items() if k != "changed"}}
+
+
+@pytest.mark.parametrize("run_id", PR_RUNS)
+def test_the_changed_list_is_read_only_over_the_recorded_reports(run_id, tmp_path, monkeypatch, _stub_evaluate_and_ownership):
+    """Verdict, reasons, rows, counts, rerun pairs and states are byte-identical with and without the list code path; only vs_main.changed is added."""
+    fixture = _fix(run_id)
+    with_list, rr_with = _run(_stub_evaluate_and_ownership, fixture, main=_main(tmp_path))
+    monkeypatch.setattr(rep, "_changed_vs_main", lambda carried, main: [])
+    without, rr_without = _run(_stub_evaluate_and_ownership, fixture, main=_main(tmp_path))
+    assert json.dumps(_without_changed(with_list), sort_keys=True) == json.dumps(_without_changed(without), sort_keys=True)
+    assert rr_with.calls == rr_without.calls and without["vs_main"]["changed"] == []
+    assert with_list["vs_main"]["changed"]  # recorded run: main 44323101062 vs this PR run: values moved (real data)
+
+
+def test_a_moved_drift_and_fail_value_appear_in_changed_are_not_rerun_and_keep_not_rerun(tmp_path, _stub_evaluate_and_ownership):
+    fixture = _fix("main-44323101062")
+    findings = copy.deepcopy(fixture["findings"])
+    drift = next(f for f in findings if f["state"] == "drift" and f["id"] == "O6.feeding_kills")
+    for r in drift["refs"]:
+        r["diff"] += 1.5
+    fail = next(f for f in findings if f["state"] == "fail" and f["id"] == "V1" and f["world"] == "crowded_frontier" and f["seed"] == 42)
+    fail["violations"] += 40
+    report, rr = _run(_stub_evaluate_and_ownership, fixture, findings=findings, main=_main(tmp_path))
+    assert rr.calls == [] and report["vs_main"]["new"] == []  # moved values are not new and not rerun
+    changed = report["vs_main"]["changed"]
+    assert [(e["id"], e["state"]) for e in changed] == [("V1", "fail"), ("O6.feeding_kills", "drift")]  # ordered by |delta|: 40 then 1.5
+    assert changed[0]["main"] == {"violations": fail["violations"] - 40} and changed[0]["pr"] == {"violations": fail["violations"]} and changed[0]["delta"] == {"violations": 40}
+    assert changed[1]["delta"]["last.diff"] == pytest.approx(1.5) and changed[1]["magnitude"] == pytest.approx(1.5)
+    assert all(not (e["id"] == "V1" and e["seed"] != 42) for e in changed)  # unchanged rows are absent
+    moved_row = next(f for f in report["findings"] if f["id"] == "O6.feeding_kills")
+    assert moved_row["not_rerun"] == "in main's report, run 44323101062"
+    md = rep.render_markdown(report)
+    assert "Changed vs main" in md and "not rerun: in main's report, run 44323101062" in md and "violations" in md
+
+
+def test_equal_values_and_rows_without_a_comparable_value_are_left_out(tmp_path, _stub_evaluate_and_ownership):
+    fixture = _fix("main-44323101062")
+    report, _ = _run(_stub_evaluate_and_ownership, fixture, main=_main(tmp_path))
+    assert report["vs_main"]["changed"] == []
+    assert rep.finding_value({"state": "drift", "refs": [{"ref": "last", "state": "no-data"}]}) is None
+    assert rep.finding_value({"state": "fail", "violations": None}) is None
+    assert "Changed vs main" not in rep.render_markdown(report)
+
+
+def test_changed_ties_break_on_the_key_and_the_markdown_and_log_are_bounded(tmp_path, monkeypatch, capsys, _stub_evaluate_and_ownership):
+    fixture = _fix("main-44323101062")
+    findings = copy.deepcopy(fixture["findings"])
+    fails = [f for f in findings if f["state"] == "fail"]
+    for f in fails:
+        f["violations"] += 3  # the same |delta| for every fail row: order falls to the key
+    report, _ = _run(_stub_evaluate_and_ownership, fixture, findings=findings, main=_main(tmp_path))
+    changed = report["vs_main"]["changed"]
+    assert len(changed) == len(fails) > rep.CHANGED_SHOWN
+    assert [e["magnitude"] for e in changed] == [3.0] * len(fails)
+    keys = [(e["world"], e["id"], e["seed"]) for e in changed]
+    assert keys == sorted(keys)
+    md = rep.render_markdown(report)
+    assert md.count("\n- fail `V1`") == rep.CHANGED_SHOWN and f"+{len(fails) - rep.CHANGED_SHOWN} more in the report JSON" in md
+    assert len(rep._changed_lines(report["vs_main"], rep.CHANGED_LOGGED)) == rep.CHANGED_LOGGED + 1
+
+
 # ------------------------------------------------------------------ the CLI keeps the diff in JSON, markdown and the log
 
 

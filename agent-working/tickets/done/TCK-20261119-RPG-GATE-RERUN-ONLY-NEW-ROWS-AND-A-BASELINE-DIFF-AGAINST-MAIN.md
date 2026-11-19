@@ -53,6 +53,10 @@ Proof (owner condition): replay recorded gate reports with the same inputs and g
 4. Branch runs never count (`--branch main`). A gate-skipped or artifact-less run is passed over; the newest run that has an artifact decides, and if its report is unreadable the answer is the fallback, never an older report.
 5. Staleness: a main report whose run `createdAt` is older than `main_report_max_age_days` is not used; the answer is the fallback ("main's newest gate report is N days old, bound B"), never an older report. The bound lives in `tools/test_architecture/rpg_gate_main_report.yaml` (testing-owned, not hashed by the harness; deliberately not rpg's hashed `tests/simulation_quality/rpg_gate/config.yaml`, whose edit would stale the baseline). A missing file, missing key or a value that is not a positive integer is also the full-rerun fallback. The scheduled run is daily, so 3 days tolerates a missed weekend day's schedule drop plus a gate-skipped day without going stale; staleness only ever gives a fuller rerun. The summary line prints "run <id> (<event>, <head8>, <N>d old, bound <B>d)".
 
+### Follow-on in the same PR: changed vs main (report-only)
+
+Added after the first review, at lead-planner-u24's request and within the owner's "a readable comparison against main" (#715 6998726529). A row with the same key AND state whose value moved is correctly not new and not rerun, but a drift that got much worse while staying drift was invisible. `vs_main.changed` lists those rows (main's value, this run's value, the delta), ordered by largest |delta| with a key tie-break. Value: a fail's `violations`; a drift's numeric `diff` / `se` / `threshold` per reference; a finding with no number is left out. The comparison is exact (deterministic runs, no epsilon). It has no effect on the verdict, the rerun or any state, and it shows in the markdown (first 10), the report JSON (all) and the log line (first 5), each with the total. A skipped row keeps "not rerun: in main's report, run <id>" even when it is also listed.
+
 ## Out of Scope
 - Any metric, oracle or baseline change; any edit to `tests/simulation_quality/rpg_gate/baselines` or `rpg_gate_known.yaml`.
 - Changing what the verdict means (red only for an unowned or expired fail, or an unstable metric).
@@ -69,6 +73,7 @@ Proof (owner condition): replay recorded gate reports with the same inputs and g
 6. Replaying the recorded reports listed above reproduces the verdict, the rows and pass/fail of those runs; the replay is a committed test.
 7. `rpg_gate_known.yaml`, the baselines and every metric definition are unchanged (diff shown).
 8. The workflow change is validated against the CI-shape tests; `permissions` gains only `actions: read` on the report job.
+10. (Follow-on) The report lists, report-only, the rows whose value moved with the same key and state (`vs_main.changed`: markdown, JSON, bounded log line), with no effect on the verdict, the rerun pairs or any state; a test pins that byte-for-byte over the five recorded reports.
 9. The first real run on main after merge is read and its result recorded: the main report found, the run id used, the time saved. SPLIT OUT (testing-planner review, B2): AC9 can only be read after merge, so this ticket closes on AC1-8 with the PR and AC9 is a post-merge check recorded on #631, as the #588 post-merge items were. It is not dropped.
 
 ## Related Tickets
@@ -112,5 +117,5 @@ Selection (a): newest completed run with a readable artifact whose report sha eq
 tools/test_architecture/rpg_gate_report.py, rpg_gate_main_report.py (new), .github/workflows/rpg-gate-report.yml, tests (unit, static, fixtures/rpg_gate_replay), the baseline-format reference doc. rpg_gate_known.yaml, baselines and metrics unchanged.
 
 ## Completion Summary
-AC1-8 met in the PR. AC9 is split out to a post-merge check on #631 (it needs the first real run on main). The first real run also settles whether the workflow GITHUB_TOKEN with `actions: read` can download main's artifact; any failure there is the full rerun, never a skipped one.
+AC1-8 and the follow-on AC10 (changed vs main) met in the PR. AC9 is split out to a post-merge check on #631 (it needs the first real run on main). The first real run also settles whether the workflow GITHUB_TOKEN with `actions: read` can download main's artifact; any failure there is the full rerun, never a skipped one.
 Review changes folded in: a carried row whose pair the rerun covers anyway is read from the second pass (unstable on a mismatch); the main report's age is bounded by `main_report_max_age_days` in a testing-owned YAML (see the Selection rule); the selection rule is stated in the module docstring, here and in tests. Open risk (report docstring): main fixed a row after its last report and the PR re-breaks it within the bound reads as "in main" until main's next report; the verdict still reads first-pass state.
