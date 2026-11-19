@@ -3,7 +3,7 @@ same environment births_run gives its children (``births_run.child_env``: PYTHON
 
 Modes: ``real`` runs the spy for the cell (the spied arm of the re-check; the summarizer compares its final hash with the plain twin's). ``controls`` runs, on ONE world/seed (short ticks allowed): the matching real run
 (``real.json``), a coin control (``control_coin_<N>.json``), a boss control (``control_boss_<K>.json``) and one never-fire control (``control_never_fire.json``: a coin control whose tick no state reaches, which must exit 6).
-Every child writes ``<name>.json`` and the runner writes ``<name>.exit.json`` ({"returncode", "stderr_tail"}); a non-zero code is recorded, never raised, because exits 4, 5 and 6 are results.
+In controls mode EVERY child, the real run included, gets ``--uncapped-rows``; real mode keeps the cap. Every child writes ``<name>.json`` and the runner writes ``<name>.exit.json`` ({"returncode", "stderr_tail"}); a non-zero code is recorded, never raised, because exits 4, 5 and 6 are results.
 The kernel writes ``data/runs/<id>`` under the tree (cwd-relative, even with recording off); after the cell the runner MOVES that dir out to ``<out>/tree-data-runs`` (never deletes) so the frozen tree stays byte-clean.
 Heavy-job hygiene: the children are ``coin_boss_spy.py`` (the file name carries ``_spy`` for the shared busy gate); launch THIS runner from a script file, with the kit words only inside that file, on the planner's HOST FREE.
 Usage: python -m tools.rpg_measure.coin_boss_run --tree <head tree> --out <dir> --go <ref> --mode real|controls --world W --seed S --ticks N [--coin N] [--boss K]
@@ -24,12 +24,14 @@ CHILD = Path(__file__).resolve().with_name("coin_boss_spy.py")
 NEVER_FIRE_TICK_OFFSET = 1_000_000  # a control tick no state reaches
 
 
-def child_command(world: str, seed: int, ticks: int, out: Path, control: Optional[str] = None, control_tick: Optional[int] = None) -> List[str]:
+def child_command(world: str, seed: int, ticks: int, out: Path, control: Optional[str] = None, control_tick: Optional[int] = None, uncapped_rows: bool = False) -> List[str]:
     cmd = [sys.executable, str(CHILD), world, str(seed), str(ticks), str(out)]
     if control is not None:
         cmd += ["--control", control]
     if control_tick is not None:
         cmd += ["--control-tick", str(control_tick)]
+    if uncapped_rows:
+        cmd.append("--uncapped-rows")
     return cmd
 
 
@@ -41,12 +43,12 @@ def plan(mode: str, world: str, seed: int, ticks: int, coin: int, boss: int) -> 
             ("control_never_fire", f"coin:{coin}", ticks + NEVER_FIRE_TICK_OFFSET)]
 
 
-def run_cell(tree: Path, out: Path, name: str, world: str, seed: int, ticks: int, control: Optional[str] = None, control_tick: Optional[int] = None) -> int:
+def run_cell(tree: Path, out: Path, name: str, world: str, seed: int, ticks: int, control: Optional[str] = None, control_tick: Optional[int] = None, uncapped_rows: bool = False) -> int:
     """Run one child, record its exit code and the tail of its stderr next to its output, and return the code (never raises on a non-zero exit)."""
     path = out / f"{name}.json"
     env: Dict[str, str] = {**child_env(tree, True), "TMPDIR": str(out / "tmp")}
     (out / "tmp").mkdir(parents=True, exist_ok=True)
-    proc = subprocess.run(child_command(world, seed, ticks, path, control, control_tick), cwd=tree, env=env, capture_output=True, text=True)
+    proc = subprocess.run(child_command(world, seed, ticks, path, control, control_tick, uncapped_rows), cwd=tree, env=env, capture_output=True, text=True)
     (out / f"{name}.exit.json").write_text(json.dumps({"returncode": proc.returncode, "stderr_tail": proc.stderr.strip()[-400:]}, sort_keys=True), encoding="utf-8")
     return proc.returncode
 
@@ -81,7 +83,7 @@ def main(argv: List[str]) -> int:
     args.out.mkdir(parents=True, exist_ok=True)
     results = {}
     for name, control, control_tick in plan(args.mode, args.world, args.seed, args.ticks, args.coin, args.boss):
-        results[name] = run_cell(args.tree, args.out, name, args.world, args.seed, args.ticks, control, control_tick)
+        results[name] = run_cell(args.tree, args.out, name, args.world, args.seed, args.ticks, control, control_tick, uncapped_rows=args.mode == "controls")  # controls mode: every child, the real run included, writes uncapped rows
     moved = move_tree_runs(args.tree, args.out)
     (args.out / "runner.json").write_text(json.dumps({"go": args.go, "mode": args.mode, "world": args.world, "seed": args.seed, "ticks": args.ticks, "returncodes": results,
                                                       "tree_data_runs_moved_to": None if moved is None else str(moved)}, indent=2, sort_keys=True), encoding="utf-8")

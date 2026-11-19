@@ -31,7 +31,10 @@ the real ledger, so the LEDGER's V6 reads N more than the same run without it; `
 GUARDS: a root-handler ``logging_errors`` (every ERROR+ record becomes a row), the PINNED manifest check (as births_child), audit_mode and no_frame_pacing forced.
 
 Heavy-job hygiene: the file name carries ``_spy`` so the shared busy gate (``lib/busy_gate.sh`` RPG_HEAVY_WORDS) sees it; put the command in a script file and never put kit words on a launcher's command line.
-Usage: python coin_boss_spy.py <world> <seed> <ticks> <out.json> [--control coin:N | boss:K] [--control-tick T]
+``--uncapped-rows`` writes ``unexplained_rows`` in full (``unexplained_rows_capped`` False; the runner passes it to every child of a controls set, its real run included); without it the list is capped at ROW_CAP.
+Every report also carries ``last_tick_unexplained`` (the sum of ``unexplained`` over the rows at the last OBSERVED tick) and ``last_tick_has_unexplained_row``, both formed from the full in-memory list so the cap cannot hide them,
+and ``control_tick`` (the --control-tick value or None).
+Usage: python coin_boss_spy.py <world> <seed> <ticks> <out.json> [--control coin:N | boss:K] [--control-tick T] [--uncapped-rows]
 """
 from __future__ import annotations
 
@@ -56,6 +59,7 @@ EXIT_VACUOUS = 4
 EXIT_WIRING_MISMATCH = 5
 EXIT_CONTROL_NOT_APPLIED = 6
 EPSILON = 1e-9
+ROW_CAP = 200
 COLUMNS = ("predicate_post_964", "raw_kind_alive", "occupation_alive")
 
 
@@ -142,8 +146,11 @@ class LoggingErrors(logging.Handler):
 class CoinBossSpy:
     """Record-only wrapper over the apply path; ``install()`` patches, ``restore()`` undoes. ``ledger`` is the RunLedger class (injectable for unit tests)."""
 
-    def __init__(self, start_state: Any, ledger: Any = RunLedger, control: Optional[tuple] = None, last_tick: Optional[int] = None) -> None:
+    def __init__(self, start_state: Any, ledger: Any = RunLedger, control: Optional[tuple] = None, last_tick: Optional[int] = None,
+                 control_tick: Optional[int] = None, uncapped_rows: bool = False) -> None:
         self.ledger = ledger
+        self.control_tick = control_tick  # the --control-tick value, or None; reported as its own field so a real file can be told from a control file
+        self.uncapped_rows = uncapped_rows  # True: unexplained_rows is written in full; False: capped at ROW_CAP
         self.control = control  # ("coin", N) | ("boss", K): applied to a COPY of the state at ``last_tick`` for every observer; the kernel never sees it
         self.last_tick = last_tick
         self.coin_first: float = total_coin(start_state)
@@ -254,7 +261,11 @@ class CoinBossSpy:
             "untracked_ledger_moves": self.untracked_ledger_moves[:50], "untracked_ledger_moves_count": len(self.untracked_ledger_moves),
             "v6": ledger["coin_last"] - ledger["coin_first"] - ledger["declared"], "declared_source": "RunLedger.observe (real, events discarded)",
             "wiring": "OK" if wiring_ok else "WIRING_MISMATCH", "cell_valid": wiring_ok and self.control is None,
-            "unexplained_rows": self.unexplained_rows[:200], "unexplained_total_count": len(self.unexplained_rows),
+            "unexplained_rows": self.unexplained_rows if self.uncapped_rows else self.unexplained_rows[:ROW_CAP], "unexplained_total_count": len(self.unexplained_rows),
+            "unexplained_rows_capped": not self.uncapped_rows,
+            # computed from the FULL in-memory list, never from the capped one: the sum of ``unexplained`` over the rows at the last OBSERVED tick, and whether there is such a row
+            "last_tick_unexplained": sum(row["unexplained"] for row in self.unexplained_rows if row["tick"] == self.last_tick_seen),
+            "last_tick_has_unexplained_row": any(row["tick"] == self.last_tick_seen for row in self.unexplained_rows), "control_tick": self.control_tick,
             "total_change_rows": self.total_change_rows[:200], "total_change_rows_count": len(self.total_change_rows),
             "coin_moving_ticks": self.coin_moving_ticks, "apply_calls": self.apply_calls, "distinct_ticks": len(self.distinct_ticks), "non_vacuous": self.coin_moving_ticks > 0,
             "boss_max": self.boss_max, "boss_rows": self.boss_rows[:200], "boss_disagreements": self.disagreements[:200], "boss_record_line": RECORD_LINE,
@@ -296,7 +307,8 @@ def main(argv: List[str]) -> int:
     manifest_path = Path("data") / "runs" / run_id / "run_manifest.json"
     evidence = pinned_runner.read_manifest(manifest_path) if manifest_path.exists() else {"run_conditions": arm_child._derived_conditions(kernel)}
     pinned = pinned_runner.require_pinned(evidence, what="coin_boss_spy build_kernel")
-    spy = CoinBossSpy(kernel.state, control=control, last_tick=control_tick if control_tick is not None else kernel.state.tick + ticks).start_ledger().install()
+    spy = CoinBossSpy(kernel.state, control=control, last_tick=control_tick if control_tick is not None else kernel.state.tick + ticks, control_tick=control_tick,
+                      uncapped_rows="--uncapped-rows" in argv).start_ledger().install()
     try:
         for _ in range(ticks):
             kernel.tick_once()

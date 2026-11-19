@@ -1,10 +1,11 @@
 """Summarizer for the coin and world-boss counter (tools/rpg_measure/coin_boss_spy.py): reads the runner's output files and applies the fixed criteria (rpg-designer u24, relayed by rpg-planner-ubuntu).
 
 Per REAL cell, all HARD: (1) the plain twin file exists and carries a ``final_hash`` (else FAIL, reason stated); (2) it is the SAME cell: ``world``, ``seed`` and ``ticks`` of the spy's out json equal the plain json's;
-(3) the spy's ``final_hash`` equals the plain twin's ``final_hash`` (the births re-check's ``<world>_<seed>_plain.json``); (4) the out json is not a control: ``control`` is None and ``counts_for_recheck`` is True;
+(3) the spy's ``final_hash`` equals the plain twin's ``final_hash`` (the births re-check's ``<world>_<seed>_plain.json``); (4) the out json is not a control: ``control`` is None, ``control_tick`` is None and ``counts_for_recheck`` is True;
 (5) ``logging_errors`` is empty; (6) the child exited 0 (4, 5 and 6 FAIL); (7) ``v6`` is 0; (8) the out json is present, valid JSON and has every key the checks read (missing or partial = FAIL).
 REPORTED, not bars: ``unexplained_total_count`` with its rows (non-zero is a FINDING), ``apply_calls`` against ``distinct_ticks``, and ``boss_max`` for the three columns plus any disagreement row (non-zero or a row is a FINDING).
-CONTROLS (criteria fixed now): coin:N: control v6 - real v6 == N exactly, exactly one unexplained row, at the last tick, equal to N, control_applied_count >= 1, control final_hash == real final_hash, exit 0.
+CONTROLS (criteria fixed now): coin:N (a-f, section 43): exit 0 and control_applied_count >= 1; same final hash, world, seed and ticks as the real run; control v6 - real v6 == N; last_tick_unexplained difference == N; unexplained-count difference == (0 if the real run
+has a row at the last tick, else 1); the rows before the last tick are equal (in full with uncapped lists on both sides, else only when both counts <= 200, otherwise skipped and noted "per-tick compare capped").
 boss:K: boss_max == K in all three columns, no disagreement row at the last tick, control_applied_count >= 1, final_hash == real, exit 0. never-fire: exit 6 and control_applied_count == 0.
 The runner (coin_boss_run.py) writes ``<name>.json`` and ``<name>.exit.json`` ({"returncode", "stderr_tail"}); this module only reads files, runs nothing and writes one summary json and a SHA256SUMS.
 Usage: python -m tools.rpg_measure.coin_boss_summary --dir <out> --mode real --plain <plain.json> | --mode controls
@@ -19,8 +20,10 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
 REAL_KEYS = ("final_hash", "logging_errors", "v6", "wiring", "unexplained_total_count", "unexplained_rows", "apply_calls", "distinct_ticks", "boss_max", "boss_disagreements", "coin_moving_ticks",
-             "control_applied_count", "control", "counts_for_recheck", "ticks", "world", "seed")
+             "control_applied_count", "control", "control_tick", "counts_for_recheck", "last_tick_unexplained", "last_tick_has_unexplained_row", "unexplained_rows_capped",
+             "ticks", "world", "seed")
 BOSS_COLUMNS = ("predicate_post_964", "raw_kind_alive", "occupation_alive")
+ROW_CAP = 200  # the spy's cap on a capped unexplained_rows list (coin_boss_spy.ROW_CAP)
 
 
 def load_doc(path: Path) -> Tuple[Optional[Dict[str, Any]], str]:
@@ -58,9 +61,9 @@ def real_verdict(doc: Optional[Dict[str, Any]], reason: str, returncode: Optiona
     same_cell = plain_present and all(plain.get(key) is not None and doc[key] == plain[key] for key in ("world", "seed", "ticks"))
     if plain_present and not same_cell:
         reasons["same_cell"] = f"spy cell {(doc['world'], doc['seed'], doc['ticks'])} != plain cell {(plain.get('world'), plain.get('seed'), plain.get('ticks'))}"
-    not_a_control = doc["control"] is None and doc.get("counts_for_recheck") is True
+    not_a_control = doc["control"] is None and doc.get("counts_for_recheck") is True and doc.get("control_tick") is None
     if not not_a_control:
-        reasons["not_a_control"] = f"control {doc['control']!r}, counts_for_recheck {doc.get('counts_for_recheck')!r}: a control output cannot count as a real cell"
+        reasons["not_a_control"] = f"control {doc['control']!r}, counts_for_recheck {doc.get('counts_for_recheck')!r}, control_tick {doc.get('control_tick')!r}: a control output cannot count as a real cell"
     hard = {
         "out_json_complete": True,
         "plain_twin_present": plain_present,
@@ -85,19 +88,33 @@ def real_verdict(doc: Optional[Dict[str, Any]], reason: str, returncode: Optiona
 
 
 def coin_control_verdict(real: Optional[Dict[str, Any]], control: Optional[Dict[str, Any]], returncode: Optional[int], amount: float) -> Dict[str, Any]:
+    """The coin:N verdict, rpg-designer u24 section 43, all HARD: (a) exit 0 and control_applied_count >= 1; (b) same final hash and the same world, seed and ticks as the real run; (c) control v6 - real v6 == N;
+    (d) control last_tick_unexplained - real last_tick_unexplained == N; (e) the unexplained-count difference == (0 if the real run has a row at the last tick, else 1); (f) the rows BEFORE the last tick are equal:
+    in full when both lists are uncapped, else only when both counts are <= 200 (otherwise skipped and noted as "per-tick compare capped"; c-e carry the proof)."""
     if real is None or control is None:
-        return {"verdict": "FAIL", "failed": ["real or control out json unreadable"], "criteria": {}}
+        return {"verdict": "FAIL", "failed": ["real or control out json unreadable"], "criteria": {}, "notes": []}
     last = (control.get("control") or {}).get("applied_at_tick")
-    rows = control["unexplained_rows"]
+    notes: List[str] = []
+    both_uncapped = not control["unexplained_rows_capped"] and not real["unexplained_rows_capped"]
+    comparable = both_uncapped or (control["unexplained_total_count"] <= ROW_CAP and real["unexplained_total_count"] <= ROW_CAP)
+    if comparable:
+        rows_before_equal = [r for r in real["unexplained_rows"] if r["tick"] < last] == [r for r in control["unexplained_rows"] if r["tick"] < last]
+    else:
+        rows_before_equal = True  # skipped, not passed by evidence: c-e carry the proof
+        notes.append("per-tick compare capped")
+    expected_count_difference = 0 if real["last_tick_has_unexplained_row"] else 1
     criteria = {
-        "v6_delta_equals_n": control["v6"] - real["v6"] == amount,
-        "exactly_one_unexplained_row_at_last_tick_equal_n": len(rows) == 1 and rows[0]["tick"] == last and rows[0]["unexplained"] == amount,
-        "control_applied_count_at_least_1": control["control_applied_count"] >= 1,
-        "final_hash_equals_real": control["final_hash"] == real["final_hash"],
-        "exit_zero": returncode == 0,
+        "a_exit_zero": returncode == 0,
+        "a_control_applied_count_at_least_1": control["control_applied_count"] >= 1,
+        "b_final_hash_equals_real": control["final_hash"] == real["final_hash"],
+        "b_same_cell": all(control[key] == real[key] for key in ("world", "seed", "ticks")),
+        "c_v6_delta_equals_n": control["v6"] - real["v6"] == amount,
+        "d_last_tick_unexplained_delta_equals_n": control["last_tick_unexplained"] - real["last_tick_unexplained"] == amount,
+        "e_unexplained_count_delta": control["unexplained_total_count"] - real["unexplained_total_count"] == expected_count_difference,
+        "f_rows_before_last_tick_equal": rows_before_equal,
     }
     failed = [name for name, ok in criteria.items() if not ok]
-    return {"verdict": "FAIL" if failed else "PASS", "failed": failed, "criteria": criteria, "v6_delta": control["v6"] - real["v6"]}
+    return {"verdict": "FAIL" if failed else "PASS", "failed": failed, "criteria": criteria, "notes": notes, "v6_delta": control["v6"] - real["v6"], "f_compared": comparable}
 
 
 def boss_control_verdict(real: Optional[Dict[str, Any]], control: Optional[Dict[str, Any]], returncode: Optional[int], count: int) -> Dict[str, Any]:

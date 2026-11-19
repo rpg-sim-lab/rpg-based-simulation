@@ -16,6 +16,7 @@ def _doc(**overrides):
     doc = {
         "world": "w", "seed": 1, "ticks": 5, "final_hash": HASH, "logging_errors": [], "v6": 0, "wiring": "OK", "unexplained_total_count": 0, "unexplained_rows": [], "apply_calls": 5, "distinct_ticks": 5,
         "boss_max": {c: 0 for c in summ.BOSS_COLUMNS}, "boss_disagreements": [], "coin_moving_ticks": 3, "control_applied_count": 0, "control": None, "counts_for_recheck": True,
+        "control_tick": None, "last_tick_unexplained": 0.0, "last_tick_has_unexplained_row": False, "unexplained_rows_capped": False,
     }
     doc.update(overrides)
     return doc
@@ -82,6 +83,7 @@ def test_a_plain_twin_without_the_cell_fields_fails_same_cell(tmp_path):
 @pytest.mark.parametrize("overrides", [
     {"control": {"kind": "coin", "amount": 5.0, "applied_at_tick": 5}},  # a control output renamed or copied into real_*.json
     {"counts_for_recheck": False},
+    {"control_tick": 99},  # a real file that has control_tick set (the never-fire control's file in real clothing)
     {"control": {"kind": "boss", "amount": 2, "applied_at_tick": 5}, "counts_for_recheck": False},
 ])
 def test_a_control_output_cannot_count_as_a_real_cell(tmp_path, overrides):
@@ -137,40 +139,95 @@ def test_the_real_summary_reads_a_directory_and_seals_it(tmp_path):
 
 # ---- controls ------------------------------------------------------------------------------------------------------------------------------------
 
-def _coin(real_overrides=None, **overrides):
-    real = _doc(**(real_overrides or {}))
-    row = {"tick": LAST, "delta": 5.0, "declared": 0.0, "unexplained": 5.0}
-    control = _doc(v6=5.0, unexplained_total_count=1, unexplained_rows=[row], control_applied_count=1, control={"kind": "coin", "amount": 5.0, "applied_at_tick": LAST}, counts_for_recheck=False)
-    control.update(overrides)
+ROW2 = {"tick": 2, "delta": 1.0, "declared": 0.0, "unexplained": 1.0}
+ROW_LAST_REAL = {"tick": LAST, "delta": 2.0, "declared": 0.0, "unexplained": 2.0}
+
+
+def _coin(real_overrides=None, control_overrides=None, real_has_last_row=True):
+    """A planted real run with its OWN unexplained rows (one before the last tick and, by default, one AT the last tick) and a correct +5 coin control over it."""
+    if real_has_last_row:
+        real_rows, real_last = [ROW2, ROW_LAST_REAL], 2.0
+        control_rows, control_last, count_delta = [ROW2, {**ROW_LAST_REAL, "delta": 7.0, "unexplained": 7.0}], 7.0, 0
+    else:
+        real_rows, real_last = [ROW2], 0.0
+        control_rows, control_last, count_delta = [ROW2, {"tick": LAST, "delta": 5.0, "declared": 0.0, "unexplained": 5.0}], 5.0, 1
+    real = _doc(v6=3.0 if real_has_last_row else 1.0, unexplained_total_count=len(real_rows), unexplained_rows=real_rows, last_tick_unexplained=real_last,
+                last_tick_has_unexplained_row=real_has_last_row, unexplained_rows_capped=False)
+    control = _doc(v6=real["v6"] + 5.0, unexplained_total_count=real["unexplained_total_count"] + count_delta, unexplained_rows=control_rows, last_tick_unexplained=control_last,
+                   last_tick_has_unexplained_row=True, unexplained_rows_capped=False, control_applied_count=1, control={"kind": "coin", "amount": 5.0, "applied_at_tick": LAST}, counts_for_recheck=False)
+    real.update(real_overrides or {})
+    control.update(control_overrides or {})
     return real, control
 
 
-def test_a_good_coin_control_passes():
-    real, control = _coin()
-    assert summ.coin_control_verdict(real, control, 0, 5.0)["verdict"] == "PASS"
-
-
-@pytest.mark.parametrize("overrides,failed", [
-    ({"v6": 4.0}, "v6_delta_equals_n"),
-    ({"unexplained_rows": []}, "exactly_one_unexplained_row_at_last_tick_equal_n"),
-    ({"unexplained_rows": [{"tick": 3, "delta": 5.0, "declared": 0.0, "unexplained": 5.0}]}, "exactly_one_unexplained_row_at_last_tick_equal_n"),
-    ({"unexplained_rows": [{"tick": LAST, "delta": 5.0, "declared": 0.0, "unexplained": 4.0}]}, "exactly_one_unexplained_row_at_last_tick_equal_n"),
-    ({"control_applied_count": 0}, "control_applied_count_at_least_1"),
-    ({"final_hash": "c" * 64}, "final_hash_equals_real"),
-])
-def test_each_coin_control_criterion_fails_on_its_own(overrides, failed):
-    real, control = _coin(**overrides)
+@pytest.mark.parametrize("has_last_row", [True, False])
+def test_a_correct_coin_control_over_a_real_run_with_its_own_unexplained_rows_passes(has_last_row):
+    real, control = _coin(real_has_last_row=has_last_row)
     verdict = summ.coin_control_verdict(real, control, 0, 5.0)
-    assert verdict["verdict"] == "FAIL" and failed in verdict["failed"]
+    assert verdict["verdict"] == "PASS" and verdict["failed"] == [] and verdict["notes"] == [] and verdict["f_compared"] is True
 
 
-def test_a_coin_control_with_a_non_zero_exit_or_two_unexplained_rows_fails():
+@pytest.mark.parametrize("control_overrides,failed", [
+    ({"control_applied_count": 0}, "a_control_applied_count_at_least_1"),
+    ({"final_hash": "c" * 64}, "b_final_hash_equals_real"),
+    ({"seed": 2}, "b_same_cell"),
+    ({"ticks": 9}, "b_same_cell"),
+    ({"world": "x"}, "b_same_cell"),
+    ({"v6": 7.0}, "c_v6_delta_equals_n"),
+    ({"last_tick_unexplained": 8.0}, "d_last_tick_unexplained_delta_equals_n"),
+    ({"unexplained_total_count": 3}, "e_unexplained_count_delta"),
+    ({"unexplained_rows": [{**ROW2, "unexplained": 1.5}, {"tick": LAST, "delta": 7.0, "declared": 0.0, "unexplained": 7.0}]}, "f_rows_before_last_tick_equal"),
+])
+def test_each_coin_control_criterion_a_to_f_fails_on_its_own(control_overrides, failed):
+    real, control = _coin(control_overrides=control_overrides)
+    verdict = summ.coin_control_verdict(real, control, 0, 5.0)
+    assert verdict["verdict"] == "FAIL" and failed in verdict["failed"], verdict
+
+
+def test_a_non_zero_exit_fails_a_and_a_missing_input_fails():
     real, control = _coin()
-    assert summ.coin_control_verdict(real, control, 5, 5.0)["failed"] == ["exit_zero"]
-    row = control["unexplained_rows"][0]
-    real, control = _coin(unexplained_rows=[row, {**row, "tick": 2}])
-    assert "exactly_one_unexplained_row_at_last_tick_equal_n" in summ.coin_control_verdict(real, control, 0, 5.0)["failed"]
-    assert summ.coin_control_verdict(None, control, 0, 5.0)["verdict"] == "FAIL"
+    assert summ.coin_control_verdict(real, control, 5, 5.0)["failed"] == ["a_exit_zero"]
+    assert summ.coin_control_verdict(real, control, None, 5.0)["failed"] == ["a_exit_zero"]
+    assert summ.coin_control_verdict(None, control, 0, 5.0)["verdict"] == "FAIL" and summ.coin_control_verdict(real, None, 0, 5.0)["verdict"] == "FAIL"
+
+
+def test_the_count_delta_rule_depends_on_whether_the_real_run_has_a_row_at_the_last_tick():
+    real, control = _coin(real_has_last_row=False)
+    assert summ.coin_control_verdict(real, control, 0, 5.0)["verdict"] == "PASS"
+    wrong = {**control, "unexplained_total_count": real["unexplained_total_count"]}  # no new row although the real run had none at the last tick
+    assert "e_unexplained_count_delta" in summ.coin_control_verdict(real, wrong, 0, 5.0)["failed"]
+
+
+def _capped_pair(total, changed_early_row=False):
+    rows = [{"tick": i, "delta": 1.0, "declared": 0.0, "unexplained": 1.0} for i in range(1, 201)]
+    real, control = _coin(real_overrides={"unexplained_rows": rows, "unexplained_total_count": total, "unexplained_rows_capped": True, "last_tick_unexplained": 2.0, "last_tick_has_unexplained_row": True},
+                          control_overrides={"unexplained_rows": [dict(r) for r in rows], "unexplained_total_count": total, "unexplained_rows_capped": True, "last_tick_unexplained": 7.0})
+    if changed_early_row:
+        control["unexplained_rows"][0]["unexplained"] = 9.0
+    return real, control
+
+
+def test_capped_lists_with_more_than_200_rows_skip_the_per_tick_compare_and_c_to_e_still_decide():
+    real, control = _capped_pair(250, changed_early_row=True)  # the early rows differ, but a capped list over the cap cannot be compared
+    verdict = summ.coin_control_verdict(real, control, 0, 5.0)
+    assert verdict["verdict"] == "PASS" and verdict["notes"] == ["per-tick compare capped"] and verdict["f_compared"] is False
+    real, control = _capped_pair(250)
+    control["last_tick_unexplained"] = 6.0  # d is broken: the skipped f does not rescue it
+    broken = summ.coin_control_verdict(real, control, 0, 5.0)
+    assert broken["verdict"] == "FAIL" and broken["failed"] == ["d_last_tick_unexplained_delta_equals_n"] and broken["notes"] == ["per-tick compare capped"]
+
+
+def test_capped_lists_with_at_most_200_rows_on_both_sides_are_compared_in_full():
+    real, control = _capped_pair(200, changed_early_row=True)
+    verdict = summ.coin_control_verdict(real, control, 0, 5.0)
+    assert verdict["f_compared"] is True and verdict["failed"] == ["f_rows_before_last_tick_equal"] and verdict["notes"] == []
+
+
+def test_one_capped_side_is_enough_to_need_the_count_condition():
+    real, control = _coin()
+    control["unexplained_rows_capped"] = True
+    control["unexplained_total_count"] = real["unexplained_total_count"]  # still <= 200 on both sides: compared, e is the broken criterion
+    assert summ.coin_control_verdict(real, control, 0, 5.0)["f_compared"] is True
 
 
 def _boss(**overrides):
@@ -269,3 +326,26 @@ def test_the_real_summary_fails_every_cell_when_the_plain_file_is_missing_or_unr
     garbled.write_text("{nope", encoding="utf-8")
     bad = summ.summarize_real(tmp_path, garbled)
     assert bad["verdict"] == "FAIL" and bad["cells"]["real_w_1_5.json"]["reasons"]["plain_twin_present"] == "the plain twin file has no final_hash"
+
+
+def test_controls_mode_passes_uncapped_rows_to_every_child_and_real_mode_keeps_the_cap(tmp_path):
+    assert run.child_command("w", 3, 100, tmp_path / "o.json", uncapped_rows=True)[-1] == "--uncapped-rows"
+    assert "--uncapped-rows" not in run.child_command("w", 3, 100, tmp_path / "o.json")
+    calls = []
+
+    def fake_run_cell(tree, out, name, world, seed, ticks, control=None, control_tick=None, uncapped_rows=False):
+        calls.append((name, uncapped_rows))
+        return 0
+
+    original = run.run_cell
+    run.run_cell = fake_run_cell
+    try:
+        tree, out = tmp_path / "tree", tmp_path / "out"
+        tree.mkdir()
+        assert run.main(["--tree", str(tree), "--out", str(out), "--go", "x", "--mode", "controls", "--world", "w", "--seed", "1", "--ticks", "5"]) == 0
+        assert calls == [("real", True), ("control_coin_5", True), ("control_boss_2", True), ("control_never_fire", True)]  # the real run of the set included
+        calls.clear()
+        assert run.main(["--tree", str(tree), "--out", str(tmp_path / "out2"), "--go", "x", "--mode", "real", "--world", "w", "--seed", "1", "--ticks", "5"]) == 0
+        assert calls == [("real_w_1_5", False)]
+    finally:
+        run.run_cell = original
