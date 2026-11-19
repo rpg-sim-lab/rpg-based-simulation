@@ -82,7 +82,7 @@ dev = [
 # `default-groups` below keeps a plain `uv sync` unchanged.
 lint = [
     "ruff==0.17.5",
-    "complexipy==8.0.1",
+    "complexipy==8.3.0",
     # TCK-20261004-AST-GREP-RULE-PACK-ADVISORY: project rules in codebase/rules/ (binary: `ast-grep`, never `sg`).
     "ast-grep-cli==0.51.3",
     # TCK-20261004-IMPORT-LINTER-ADOPTION: contracts in codebase/structure/importlinter.toml (blocking in the required Code health job since #671; binary: `lint-imports --config <file>`).
