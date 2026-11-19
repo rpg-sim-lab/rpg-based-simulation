@@ -87,9 +87,9 @@ def _hero(entity_id, pos):
             .combat(hp=100, max_hp=100, atk=10, def_stat=5, readiness=100.0, attack_range=1.5).build())
 
 
-@pytest.mark.parametrize("kind", ["wolf", "bear", "golem", "goblin_warrior", "orc_warrior", "dragonkin", "bandit"])
+@pytest.mark.parametrize("kind", ["bear", "golem", "goblin_warrior", "orc_warrior", "dragonkin", "bandit"])
 def test_hero_and_spawned_monster_stay_mutually_hostile(kind):
-    """Hostility must keep coming from the legacy bucket: restoring a catalog faction must not make a spawned monster non-hostile."""
+    """Hostility must keep coming from the legacy bucket: restoring a catalog faction must not make a spawned monster non-hostile. A wild creature (a diet and a wild faction, e.g. the wolf) is not decided by any faction verdict (decision 47); the next test covers it."""
     from src.core.state import AuthoritativeState
     from src.engine.legality import LegalityServiceV2
     mob = EntityGenerator(seed=1).spawn_monster((6.0, 5.0), species=kind, occupation=kind)
@@ -100,15 +100,19 @@ def test_hero_and_spawned_monster_stay_mutually_hostile(kind):
 
 
 def test_wild_creature_may_attack_a_hero_exactly_when_the_hero_may_attack_it():
-    """CONFLICT-03: permission to attack is symmetric; wild_beast_pack's `wild` alignment changes only when it chooses to fight."""
+    """CONFLICT-03 + decision 47: permission is symmetric, and for a wild creature appraisal decides it, never the faction verdict. A runtime-spawned wolf is wild exactly as a compiled one is; sated and with neither targeting the other, neither may attack."""
     from src.core.state import AuthoritativeState
+    from src.engine.hostility import is_wild_creature
     from src.engine.legality import LegalityServiceV2
     wolf = EntityGenerator(seed=1).spawn_monster((6.0, 5.0), species="wolf", occupation="wolf")
     assert get_faction_id_str(wolf) == "wild_beast_pack"
     hero = _hero(1000, (5.0, 5.0))
     state = AuthoritativeState(tick=5, seed=1, entities={hero.id: hero, wolf.id: wolf})
-    assert LegalityServiceV2.verify_attack_legality(hero, wolf, state)[0]
-    assert LegalityServiceV2.verify_attack_legality(wolf, hero, state)[0]
+    assert is_wild_creature(wolf)
+    there = LegalityServiceV2.verify_attack_legality(hero, wolf, state)[0]
+    back = LegalityServiceV2.verify_attack_legality(wolf, hero, state)[0]
+    assert there == back
+    assert there is False
 
 
 def _entity_with(entity_id, faction, pos, faction_id=None):

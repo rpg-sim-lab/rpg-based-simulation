@@ -164,7 +164,7 @@ def test_writer_world_compiler_writes_the_declared_species_and_the_role_label_on
     state, _ = WorldCompiler.compile(spec, 42, context=context)
     assert state.entities
     for e in state.entities.values():
-        assert e.kind == e.identity.properties["species_id"]
+        assert e.kind == context.entities[e.identity.properties["population_id"]].species_id
         assert e.identity.occupation == {getattr(q, "id", f"pop_{i}"): q.role.lower() for i, q in enumerate(spec.entities)}[e.identity.properties["population_id"]]
 
 
@@ -302,9 +302,10 @@ def test_every_production_kind_writer_is_one_of_the_tested_sites():
     }, sorted(sites)
 
 
-def test_k6_k7_every_gate_world_entity_kind_is_a_species_id_and_the_mirror_agrees_at_t0():
-    """K6 (kind is a species id, minus the named allowlist: 0 outside) and K7 (kind equals properties["species_id"]: 0 differing), read at build over the three gate worlds
-    of `paired.WORLDS` (compile only, no run). K9 at t0: the occupation is the population's role label, the string `kind` held before step 4."""
+def test_k6_every_gate_world_body_has_a_declared_species_at_t0():
+    """K6 (species_of() is a declared species id, minus the named allowlist: 0 outside), read at build over the three gate worlds of `paired.WORLDS` (compile only, no run).
+    K7 ("kind equals the species mirror") is retired with the mirror (step 5). The ruled None classes (a newborn may carry species None) have no member at t0 in a gate world, so
+    a None species fails the assert. K9 at t0: the occupation is the population's role label, the string `kind` held before step 4."""
     import os
 
     from src.content.common_knowledge_seed import warmed_catalog
@@ -321,8 +322,7 @@ def test_k6_k7_every_gate_world_entity_kind_is_a_species_id_and_the_mirror_agree
         state, _ = WorldCompiler.compile(spec, 42, context=context)
         assert state.entities, world
         for entity in state.entities.values():
-            assert entity.kind in species_ids, (world, entity.id, entity.kind)
-            assert entity.kind == entity.identity.properties["species_id"], (world, entity.id)
+            assert species_of(entity) in species_ids, (world, entity.id, species_of(entity))
             role_of = {getattr(q, "id", f"pop_{i}"): q.role.lower() for i, q in enumerate(spec.entities)}
             assert entity.identity.occupation == role_of[entity.identity.properties["population_id"]], (world, entity.id)
             checked += 1

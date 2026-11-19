@@ -19,6 +19,7 @@ from src.engine.kernel import Kernel
 from src.platform.rng import DeterministicRNG
 from tests.helpers.kernel_pinning import PinnedNormalGovernor
 from tests.helpers.scenario import compile_world
+from src.core.species import species_of
 
 pytestmark = [pytest.mark.domain("combat"), pytest.mark.level("scenario")]
 
@@ -27,7 +28,7 @@ WINDOW = 60
 
 
 def _species(e):
-    return (e.identity.properties or {}).get("species_id")
+    return species_of(e)
 
 
 def _stage(*, wolf_gap=None, wolf_hunger=85.0, eater_hunger=0.0, berries=False, keep_wolf=True):

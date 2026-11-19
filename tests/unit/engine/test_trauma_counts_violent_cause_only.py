@@ -9,6 +9,7 @@ from src.core.updates import CombatUpdate, EntityUpdate, StateUpdate
 from src.engine.world_dynamics import WorldDynamicsSystem
 from src.systems.world_systems.generator import EntityGenerator
 from tests.helpers.scenario import compile_world, DEFAULT_SEED
+from src.core.species import species_of
 
 
 def _trauma_delta_for_death(outcome_kind: str, attacker_id=None, hazard_damage=0) -> float:
@@ -74,8 +75,8 @@ def _kill_trauma(killer_species: str, victim_species: str, killer_hunger: float,
     """Trauma from one lethal KILL by a staged killer of ``killer_species`` beside a victim of ``victim_species``; ``events`` (if given) receives
     the refined update's world events."""
     state = compile_world("frontier_living_world", DEFAULT_SEED)
-    killer = next(e for e in state.entities.values() if (e.identity.properties or {}).get("species_id") == killer_species)
-    victim = next(e for e in state.entities.values() if (e.identity.properties or {}).get("species_id") == victim_species and e.id != killer.id)
+    killer = next(e for e in state.entities.values() if species_of(e) == killer_species)
+    victim = next(e for e in state.entities.values() if species_of(e) == victim_species and e.id != killer.id)
     region = next(iter(state.regions.values()))
     x0, y0, x1, y1 = region.bounds
     spot = ((x0 + x1) // 2, (y0 + y1) // 2)

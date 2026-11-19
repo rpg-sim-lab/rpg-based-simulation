@@ -53,7 +53,7 @@ def test_a_recipe_may_name_its_species_and_an_unknown_one_is_refused_at_resolve(
 @pytest.mark.slow
 def test_no_compiled_data_world_has_a_body_the_appraisal_fallbacks_could_reach():
     """Every data world compiles (the check runs inside compile), and every living body resolves to a declared diet."""
-    from src.content_semantics.faction import get_species_id_str
+    from src.core.species import species_of
     from src.engine.behavior_consumers import get_kind_properties
     from src.worldbuilding.compiler import WorldCompiler
     from src.worldbuilding.repository import WorldRepository
@@ -66,7 +66,7 @@ def test_no_compiled_data_world_has_a_body_the_appraisal_fallbacks_could_reach()
         spec, context = WorldRepository(root).load_world_with_context(world)
         state, _ = WorldCompiler.compile(spec, 42, context=context)
         for entity in state.entities.values():
-            _, body = get_kind_properties(get_species_id_str(entity))
+            _, body = get_kind_properties(species_of(entity))
             if body is None or body.diet is None:
                 gaps.append((world, entity.id, entity.kind))
     assert gaps == []

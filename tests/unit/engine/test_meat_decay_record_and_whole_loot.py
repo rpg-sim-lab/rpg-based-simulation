@@ -45,7 +45,7 @@ def _ledger():
 
 
 def _creature(eid, species, pos):
-    return (V2EntityBuilder(eid).kind("monster").location(*pos)
+    return (V2EntityBuilder(eid).kind(species).location(*pos)
             .identity(role=EntityRole.MONSTER, faction=Faction.MONSTER_HORDE, properties={"species_id": species})
             .combat(hp=100, max_hp=100, attack_range=1, readiness=100.0, alive=True).lifecycle(active=True)
             .biological(hunger=90.0).build())

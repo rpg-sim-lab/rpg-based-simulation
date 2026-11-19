@@ -36,7 +36,7 @@ def _consumers():
 
 
 def _world(species_id="human", gold=20, kind="inn", at=(5.0, 5.0), **bio):
-    ent = V2EntityBuilder(1).kind("worker").properties({"species_id": species_id}).location(*at).inventory(gold=gold).build()
+    ent = V2EntityBuilder(1).kind(species_id).properties({"species_id": species_id}).location(*at).inventory(gold=gold).build()
     ent = replace(ent, biological=replace(ent.biological, **bio))
     buildings = {10: BuildingState(id=10, kind=kind, position=(5.0, 5.0), functional=True)}
     state = AuthoritativeState(tick=1, seed=1, world_time=1000, entities={1: ent}, town_tiles={(5, 5)}, building_tiles={(5, 5): kind}, buildings=buildings)

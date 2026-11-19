@@ -39,7 +39,7 @@ def _consumers():
 
 
 def _worker(hunger=40.0, gold=0, pos=(10.0, 10.0)):
-    e = V2EntityBuilder(1).kind("worker").properties({"species_id": "human", "faction_id": "town_council"}).location(*pos).inventory(gold=gold).build()
+    e = V2EntityBuilder(1).kind("human").properties({"species_id": "human", "faction_id": "town_council"}).location(*pos).inventory(gold=gold).build()
     return replace(e, biological=replace(e.biological, hunger=hunger))
 
 
@@ -198,7 +198,7 @@ def _holder(action, hunger=96.0):
 
 def _wolf_beside(ent, eid=2):
     pos = (ent.navigation.position[0] + 1.0, ent.navigation.position[1])
-    return (V2EntityBuilder(eid).kind("monster").location(*pos)
+    return (V2EntityBuilder(eid).kind("goblin").location(*pos)
             .identity(role=EntityRole.MONSTER, faction=Faction.MONSTER_HORDE, properties={"species_id": "goblin"})
             .combat(hp=100, max_hp=100, attack_range=1, readiness=100.0, alive=True).lifecycle(active=True).build())
 

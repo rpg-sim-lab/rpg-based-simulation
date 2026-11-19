@@ -19,7 +19,7 @@ from src.engine.building_services import SERVICE_KINDS, service_building, servic
 
 def _world(species_id, faction_id=None, region_owner=None, gold=20, kind="inn"):
     props = {"species_id": species_id, **({"faction_id": faction_id} if faction_id else {})}
-    ent = V2EntityBuilder(1).kind("worker").properties(props).location(5.0, 5.0).inventory(gold=gold).build()
+    ent = V2EntityBuilder(1).kind(species_id).properties(props).location(5.0, 5.0).inventory(gold=gold).build()
     buildings = {10: BuildingState(id=10, kind=kind, position=(5.0, 5.0), functional=True)}
     regions = {} if region_owner is None else {"r": RegionState(id="r", name="r", bounds=(0, 0, 20, 20), owner_faction_id=int(region_owner))}
     state = AuthoritativeState(tick=1, seed=1, entities={1: ent}, town_tiles={(5, 5)}, building_tiles={(5, 5): kind}, buildings=buildings, regions=regions)

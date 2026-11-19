@@ -14,8 +14,8 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Optional, Sequence, Tuple
 
-from src.content_semantics.faction import get_species_id_str
 from src.core.items import food_hunger_recovery
+from src.core.species import species_of
 from src.core.strategic import GoalKind, ProjectStatus
 from src.core.updates import EntityUpdate, NavigationUpdate, TaskUpdate
 from src.engine.appraisal import can_eat_item
@@ -117,7 +117,7 @@ def eat_at_corpse_in_place_update(
         return None
     if in_danger(entity, hostiles):
         return None
-    own = get_species_id_str(entity)
+    own = species_of(entity)
     px, py = entity.navigation.position
     best, best_distance = None, 0.0
     for corpse_id in sorted(state.corpses):
@@ -126,7 +126,7 @@ def eat_at_corpse_in_place_update(
         if distance > CARCASS_NEAR or not any(i.quantity > 0 and can_eat_item(entity, i.item_id) for i in corpse.items):
             continue
         dead = state.entities.get(corpse.original_entity_id)
-        if dead is not None and get_species_id_str(dead) == own:
+        if dead is not None and species_of(dead) == own:
             continue
         if best is None or distance < best_distance:
             best, best_distance = corpse, distance

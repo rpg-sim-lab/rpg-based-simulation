@@ -50,7 +50,7 @@ def test_a_non_coin_subject_a_held_rest_and_a_rest_far_from_the_inn_run_as_on_ma
     k = _full_inn_state()
     try:
         st = k._state
-        non_coin = replace(hero(9, REACH[3]), identity=replace(hero(9, REACH[3]).identity, properties={}))
+        non_coin = replace(hero(9, REACH[3]), kind="wolf")                                     # a species authored without keeps_coin_and_trades (species.yaml:38)
         assert not finds_no_bed(st, non_coin, st.buildings[INN_ID])
         base = _rest_update(9)
         assert with_service(base, non_coin, "REST", st.tick, st) == base                       # the service does not serve it: unchanged
