@@ -74,4 +74,4 @@ Verified on origin/main 0b196a142 (the entries landed with #977): `.github/depen
 `.github/dependabot.yml` (landed in #977; no further change here).
 
 ## Completion Summary
-The two ignore entries are on main with a comment each naming the reason or ticket (#974 complexipy 8 to 9: 60 new or worse code-health violations; #882 sentence-transformers bumped by hand with torch, graphifyy and headroom-ai). All three acceptance criteria hold; the ticket file was only left in todos/. Closed here with that evidence. Hand-orchestrated close.
+The two ignore entries are on main with a comment each naming the reason or ticket (#974 complexipy 8 to 9: 60 new or worse code-health violations; #882 sentence-transformers bumped by hand with torch, graphifyy and headroom-ai). All three acceptance criteria hold; the ticket file was only left in todos/. Closed here with that evidence. Hand-orchestrated close. Closed on the Parked-marker PR (its commit subject names this ticket so the PR body counts it).
