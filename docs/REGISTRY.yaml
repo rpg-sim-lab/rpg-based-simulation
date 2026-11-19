@@ -7986,6 +7986,20 @@
   - content
   last_verified: '2026-10-09'
 - type: ticket
+  path: agent-working/tickets/done/TCK-20261119-DEPENDABOT-813-CI-FAST-LANES-EXIT-2-CAUSE.md
+  ticket_id: TCK-20261119-DEPENDABOT-813-CI-FAST-LANES-EXIT-2-CAUSE
+  title: 'Find the cause of the Migration lanes job "Fast lanes" exit 2 on the closed
+    Dependabot #813 (duckdb, pyarrow, websockets)'
+  tier: hotfix
+  ticket_type: chore
+  date: '2026-11-19'
+  related_code_areas:
+  - .github/workflows/
+  - pyproject.toml
+  artifact_files: []
+  tags:
+  - mcp
+- type: ticket
   path: agent-working/tickets/done/TCK-20261119-OCCUPATION-READS-COMPARED-WITH-A-NON-LIVING-SPECIES-ID-MISS-THE-WORLD-BOSS.md
   ticket_id: TCK-20261119-OCCUPATION-READS-COMPARED-WITH-A-NON-LIVING-SPECIES-ID-MISS-THE-WORLD-BOSS
   title: 'navigation.py and threat.py compare the occupation with "world_boss", but
@@ -8032,6 +8046,21 @@
   artifact_files: []
   tags:
   - process-improvement
+- type: ticket
+  path: agent-working/tickets/inprogress/TCK-20261119-MCP-2X-MIGRATION-VISUAL-ASSETS-SEARCH-MCP-HEADROOM-AI.md
+  ticket_id: TCK-20261119-MCP-2X-MIGRATION-VISUAL-ASSETS-SEARCH-MCP-HEADROOM-AI
+  title: 'Migrate to mcp 2.x: visual_assets drawing server, tools/search_mcp and headroom-ai'
+  tier: standard
+  ticket_type: chore
+  date: '2026-11-19'
+  related_code_areas:
+  - visual_assets/drawing/server/app.py
+  - tools/search_mcp.py
+  - pyproject.toml
+  - tests/visual_assets/drawing/
+  artifact_files: []
+  tags:
+  - mcp
 - type: ticket
   path: agent-working/tickets/done/TCK-20261118-A-DIAGNOSTIC-KIT-PREFLIGHT-CHECKS-EACH-KIT-ON-BOTH-FROZEN-TREES-BEFORE-ITS-RUN.md
   ticket_id: TCK-20261118-A-DIAGNOSTIC-KIT-PREFLIGHT-CHECKS-EACH-KIT-ON-BOTH-FROZEN-TREES-BEFORE-ITS-RUN

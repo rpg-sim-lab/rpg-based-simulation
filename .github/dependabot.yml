@@ -87,6 +87,11 @@ updates:
       - dependency-name: torch
       - dependency-name: graphifyy
       - dependency-name: headroom-ai
+      # mcp majors wait for the 2.x migration (TCK-20261119-MCP-2X-MIGRATION-VISUAL-ASSETS-SEARCH-MCP-HEADROOM-AI):
+      # 2.x renames FastMCP, which breaks visual_assets/drawing and tools/search_mcp (closed #813). Minor and patch
+      # updates still come through. The migration PR removes this entry.
+      - dependency-name: mcp
+        update-types: ["version-update:semver-major"]
     groups:
       uv-major:
         update-types: [major]
