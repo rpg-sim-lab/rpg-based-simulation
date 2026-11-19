@@ -600,6 +600,7 @@ class StrategicIntelligenceSystem:
         cadence: SystemCadence = None
     ) -> StateUpdate:
         """Resolve strategic blockers satisfied by the current or pending inventory state (body in `blocker_lifecycle.resolve_blockers`)."""
+        cadence = cadence or SystemCadence()
         return resolve_blockers(state, update, cadence)
 
 

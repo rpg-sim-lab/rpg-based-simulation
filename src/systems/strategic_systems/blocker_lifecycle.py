@@ -18,7 +18,6 @@ from src.core.strategic import (
     quiet_blockers,
 )
 from src.core.updates import EntityUpdate, IdentityUpdate, StateUpdate, StrategicUpdate
-from src.engine.cadence import SystemCadence
 
 
 def reinferred_blockers_update(entity: EntityState, staged: StrategicUpdate, inferred: StrategicUpdate, tick: int) -> StrategicUpdate:
@@ -180,15 +179,12 @@ def generate_crafting_blockers(
 def resolve_blockers(
     state: AuthoritativeState,
     update: StateUpdate,
-    cadence: SystemCadence = None
+    cadence: Any = None
 ) -> StateUpdate:
     """
     Resolve strategic blockers that are satisfied by the current or pending
     authoritative inventory state.
     """
-    cadence = cadence or SystemCadence()
-
-
     refined_entity_updates = dict(update.entity_updates)
 
     def has_item(inventory, item_id: str, quantity: int = 1) -> bool:
