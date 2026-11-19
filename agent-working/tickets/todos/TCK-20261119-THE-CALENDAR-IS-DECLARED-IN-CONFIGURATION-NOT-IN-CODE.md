@@ -85,6 +85,13 @@ Stage 2, after the temporal audit (TCK-20261118-TEMPORAL-SCALE-AUDIT-CAN-THE-CUR
   - (b) the calendar carried on the world or state config, with the helpers taking it as an argument. That's honest but touches every caller.
   - (c) core reads calendar.yaml itself, a plain file read with no content package, validated in core.
   No option is assumed here.
+  - Input from lead-planner-u24 (2026-11-19; input only, not a ruling): it prefers (b).
+    - Determinism and replay: the calendar lives in the state that the hash, checkpoint and replay already cover, so acceptance (2) comes almost free, and a restore gets the SAVED calendar.
+    - The helpers already take world_time from state, so passing state or a small frozen CalendarSpec read off it is natural.
+    - There's no process-global to leak between tests or between the cells of a multi-world process.
+    - (a) is worth weighing only if (b)'s call-site churn is large (today: 9 importers plus 2 raw copies).
+    - (c) breaks the layering rule.
+    - Shape under (b): content loads calendar.yaml, the compiler puts a CalendarSpec on the world/state, and core helpers take it. A checkpoint saved before the change needs a fill rule in checkpoint_fields (default spec = today's values), plus an old-shape test like the other appended fields.
 - SEQUENCING (rpg-planner): if stage 1 is small and proves hash-equal, it may ride as its own NEUTRAL M1 segment. Otherwise it goes after the current segment. This is decided at dispatch, after the boundary reconcile.
 
 ## Durable state, lifecycle and clocks
