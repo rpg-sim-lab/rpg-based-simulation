@@ -127,6 +127,16 @@ None yet.
   - 2026-11-19, OWNER (relayed by lead-planner-u24), a SETTINGS-IN-DATA RULE (standing, every M1 plan and review). The owner's words: "you should have the instinct that the other similar settings or configurations should stay under data files".
     - NEW: any new numeric tuning value in src (timers, rates, thresholds, prices, radii) goes to data/, validated at load, unless the plan states why it is a code invariant and not a setting. Reviewers (planner review comment; the lead's S10 diff review) flag every new tuning literal in src.
     - EXISTING: these are listed by the temporal audit (scope 7) and moved in stages under TCK-20261119-THE-CALENDAR-IS-DECLARED-IN-CONFIGURATION-NOT-IN-CODE's conditions: the same values first, a hash-equal proof, the loaded values in the run identity, and a source-scan guard. A value change is always a separate behaviour step.
+  - 2026-11-19, OWNER HUNGER RULE (rpg-designer's rescoped bars, #715 6999218200 and the following lead comment): individual starvation is OK; a population must not collapse from hunger. Fed-to-dead takes about 2.9-3.3 days, so collapse is UNTESTABLE in a 5000t window.
+    - #781 (D73): P0-P3 in full at W = 24,000t (on its ticket).
+    - EVERY OTHER FOOD-TOUCHING PR (N10-like, births, hunting, needs, diet, services): the per-in-world-day rows plus the early-warning crossing rows at 5000t.
+      - The per-day rows are: starvation deaths / hunger-bearing living; starving-line (95) crossings; weakened (>= 85) body-days; the 10% one-day flag.
+      - An UNRESOLVED crossing (reaches 95 and never eats) that the base doesn't match is a FINDING before merge.
+    - PER-CHECKPOINT W READ, part of the Phase 1 boundary-read spec:
+      - Cells: 3 worlds, s42, W = 24,000t, plain twin. Base = the previous checkpoint head, built fresh the first time. 7 cells the first time, 4 after.
+      - Escalation to seeds 43/44 on a flag or a near-line.
+      - It needs a NEW starvation/population spy kit, approved at a sha and with positive controls, before the first checkpoint.
+      - The first W read is at the next recorded boundary, with the previous boundary's head as base (named after the boundary reconcile).
   - EVIDENCE LABELS in every S9 packet: inspected / executable / executed / validated. Kit preflight: TCK-20261118-A-DIAGNOSTIC-KIT-PREFLIGHT-CHECKS-EACH-KIT-ON-BOTH-FROZEN-TREES-BEFORE-ITS-RUN.
 
 ## Test Summary
