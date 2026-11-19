@@ -293,6 +293,8 @@ still MISSING.**
 - **Biology follows the kind's profile** (divergence 2.80, `src/engine/biological_needs.py`).
   - The profile comes from an explicit `need_profile_id`, else the species' catalog profile,
     else `humanoid_survival` for a civil role.
+  - A kind that is not a catalog species reads its role instead (FLAGGED INTERIM, rpg-designer
+    2026-11-19, divergence 2.216; retires with stage-4b item AC).
   - Levels `none`, `low`, `medium` and `high` scale the old constants by 0, 0.5, 1 and 1.5, so
     `medium` keeps the old rate.
   - Undead and spirits no longer hunger.

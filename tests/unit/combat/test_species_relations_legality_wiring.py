@@ -30,7 +30,7 @@ def reset_semantics_cache():
 def _build_entity(entity_id: int, faction_id: str, species_id: str, pos=(1.0, 1.0)):
     return (
         V2EntityBuilder(entity_id)
-        .kind("actor")
+        .kind(species_id)
         .location(*pos)
         .identity(faction=Faction.NEUTRAL, role=EntityRole.MONSTER, properties={"faction_id": faction_id, "species_id": species_id})
         .combat(hp=100, atk=10, def_stat=5, attack_range=1, readiness=100.0)

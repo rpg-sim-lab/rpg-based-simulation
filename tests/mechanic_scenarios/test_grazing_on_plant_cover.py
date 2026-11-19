@@ -18,6 +18,7 @@ from src.platform.rng import DeterministicRNG
 from src.worldassembly.cover import patch_count
 from tests.helpers.kernel_pinning import PinnedNormalGovernor
 from tests.helpers.scenario import compile_world
+from src.core.species import species_of
 
 pytestmark = [pytest.mark.domain("world"), pytest.mark.level("scenario")]
 
@@ -26,7 +27,7 @@ GRASS = "grass_cover"
 
 
 def _species(e):
-    return (e.identity.properties or {}).get("species_id")
+    return species_of(e)
 
 
 def _patches(state):

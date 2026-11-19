@@ -114,7 +114,7 @@ class EntityCarryForward:
                        (SpeciesNotDeclaredError) rather than guessing a species.
       role          <- entity.identity.role (int, EntityRole)
       faction       <- entity.identity.faction (int, Faction)
-      properties    <- entity.identity.properties (dict: archetype_id/species_id/faction_id/
+      properties    <- entity.identity.properties (dict: archetype_id/faction_id/
                        role_id/etc. -- get_faction_id_str() reads properties["faction_id"]
                        BEFORE falling back to the bare faction int above, so this field matters
                        independently of `faction`, not just redundantly with it)

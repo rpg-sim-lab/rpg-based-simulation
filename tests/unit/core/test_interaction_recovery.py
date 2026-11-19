@@ -120,7 +120,7 @@ def test_shop_sell_refactor():
 
     entity = (
         V2EntityBuilder(1)
-        .kind("hero")
+        .kind("human")
         .location(0.0, 0.0)
         .identity(
             role=EntityRole.HERO,

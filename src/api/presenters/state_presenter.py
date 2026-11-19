@@ -5,6 +5,7 @@ from src.core.state import AuthoritativeState, EntityState, PlaceState, RegionSt
 from src.api.schemas import PlaceReadModel, PlaceTiles
 from src.content_semantics.faction import get_faction_semantics_service
 from src.core.enums import Faction
+from src.core.species import species_of
 from src.core.lodging_rules import lodged_in_field
 from src.core.strategic import ContractStatus, is_live_project
 
@@ -56,7 +57,7 @@ def present_entity_quests(entity: EntityState, status: str = "all", offset: int 
 
 def _species_and_size(entity: EntityState) -> Dict[str, Optional[str]]:
     """The entity's species id and the species' declared power band (small, medium, large), or null for both. Never derived here."""
-    species_id = (entity.identity.properties or {}).get("species_id")
+    species_id = species_of(entity)
     species = get_faction_semantics_service().repo.get_species(species_id) if species_id else None
     return {"species": species_id, "size": None if species is None else species.power}
 

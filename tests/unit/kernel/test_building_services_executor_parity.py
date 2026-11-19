@@ -16,7 +16,7 @@ def _staged():
     inn = BuildingState(id=10, kind="inn", position=(5.0, 5.0), functional=True, inventory=InventoryComponent(gold=100))
     shop = BuildingState(id=11, kind="shop", position=(20.0, 5.0), functional=True, inventory=InventoryComponent(gold=250))
     def worker(eid, pos, gold, items=()):
-        e = V2EntityBuilder(eid).kind("worker").properties({"species_id": "human"}).location(*pos).inventory(gold=gold).social(public_reputation=0.0).build()
+        e = V2EntityBuilder(eid).kind("human").properties({"species_id": "human"}).location(*pos).inventory(gold=gold).social(public_reputation=0.0).build()
         return replace(e, inventory=replace(e.inventory, items=list(items)))
     entities = {1: worker(1, (5.0, 6.0), 50), 2: worker(2, (5.0, 4.0), 50), 3: worker(3, (20.0, 6.0), 0, [ItemStack("wood", 4)])}
     return AuthoritativeState(tick=11, seed=42, entities=entities, buildings={10: inn, 11: shop})  # tick 11: off every town cadence

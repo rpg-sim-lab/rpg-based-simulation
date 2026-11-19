@@ -8,6 +8,8 @@ from __future__ import annotations
 
 import dataclasses
 
+from dataclasses import replace
+
 import pytest
 
 from src.cognition.capability_estimate import COMMON_KNOWLEDGE_CERTAINTY
@@ -88,7 +90,7 @@ def test_facts_round_trip_through_the_canonical_dict_and_change_the_state_hash()
 
 
 def _hostile(species_id):
-    return V2EntityBuilder(2).kind("raider").identity(properties={"species_id": species_id}).build()
+    return V2EntityBuilder(2).kind(species_id).build()
 
 
 def test_a_hostile_of_an_undeclared_species_is_estimated_neutrally_and_a_declared_one_by_folk_belief():
@@ -98,14 +100,22 @@ def test_a_hostile_of_an_undeclared_species_is_estimated_neutrally_and_a_declare
     assert low > neutral > high   # goblins believed weak, orcs believed dangerous, dragonkin uninformed
 
 
-def test_a_hostile_with_no_species_is_unrecognised_not_read_by_its_kind():
+@pytest.mark.parametrize("case", ["no_species", "undeclared_species"])
+def test_a_hostile_with_no_or_an_undeclared_species_is_unrecognised(case):
+    """Step 5: kind IS the species, so a hostile is unrecognised when its species_of() is None, or names a species id that is not declared in content."""
     entity = V2EntityBuilder(1).combat(hp=100, max_hp=100, atk=10, def_stat=5).replace_self_model(default_self_model()).build()
-    no_species = V2EntityBuilder(2).kind("orc").build()   # kind matches a declared species but is the hidden population role
-    assert combat_capability_against(entity, no_species) == combat_capability_against(entity, _hostile("dragonkin"))
+    hostile = replace(_hostile("goblin"), kind=None) if case == "no_species" else _hostile("not_a_declared_species")
+    assert combat_capability_against(entity, hostile) == combat_capability_against(entity, _hostile("dragonkin"))   # the neutral (uninformed) estimate
+
+
+def test_a_declared_hostile_species_is_recognised_by_its_folk_belief():
+    """Positive control: a declared species with a folk belief is NOT estimated neutrally."""
+    entity = V2EntityBuilder(1).combat(hp=100, max_hp=100, atk=10, def_stat=5).replace_self_model(default_self_model()).build()
+    assert combat_capability_against(entity, _hostile("goblin")) != combat_capability_against(entity, _hostile("dragonkin"))
 
 
 def test_every_human_gets_one_shared_prior_so_a_raider_and_a_guard_are_not_told_apart():
     entity = V2EntityBuilder(1).combat(hp=100, max_hp=100, atk=10, def_stat=5).replace_self_model(default_self_model()).build()
-    raider = V2EntityBuilder(2).kind("raider").identity(properties={"species_id": "human"}).build()
-    guard = V2EntityBuilder(3).kind("guard").identity(properties={"species_id": "human"}).build()
+    raider = V2EntityBuilder(2).kind("human").identity(occupation="raider").build()
+    guard = V2EntityBuilder(3).kind("human").identity(occupation="guard").build()
     assert combat_capability_against(entity, raider) == combat_capability_against(entity, guard)

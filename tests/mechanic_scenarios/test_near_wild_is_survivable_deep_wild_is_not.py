@@ -25,6 +25,7 @@ from src.engine.kernel import Kernel
 from src.engine.legality import LegalityServiceV2
 from src.platform.rng import DeterministicRNG
 from tests.helpers.scenario import compile_world
+from src.core.species import species_of
 
 pytestmark = [pytest.mark.domain("environment"), pytest.mark.level("scenario")]
 
@@ -66,7 +67,7 @@ def _walk(destination_kind: str) -> Walk:
                 if n.kind == FOOD_KIND and _region_id(state, n.position) == "near_forest")
     destination = node.position if destination_kind == "near_forest" else DEEP_FOREST_TILE
     worker = next(e for e in state.entities.values()
-                  if e.identity.role == EntityRole.WORKER and (e.identity.properties or {}).get("species_id") == "human")
+                  if e.identity.role == EntityRole.WORKER and species_of(e) == "human")
     assert (worker.identity.properties or {}).get("faction_id") == "town_council"
     worker = replace(worker, biological=replace(worker.biological, hunger=STAGED_HUNGER),
                      inventory=replace(worker.inventory, gold=0, items=[]),

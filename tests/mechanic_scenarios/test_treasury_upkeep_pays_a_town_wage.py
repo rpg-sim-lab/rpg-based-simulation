@@ -31,7 +31,7 @@ TICKS = 260  # one shift (200 ticks) plus the upkeep ticks before it
 def _run(treasury: float, inn_gold: int = 0):
     region = RegionState(id="town", name="Town", bounds=(0, 0, 20, 20), kind="TOWN", owner_faction_id=HERO, tax_share=0.1)
     inn = BuildingState(id=10, kind="inn", position=(5.0, 5.0), functional=True, inventory=InventoryComponent(gold=inn_gold), hires_for_pay=True, maintenance_shifts_needed=1)
-    worker = (V2EntityBuilder(1).kind("worker").properties({"species_id": "human"}).location(5.0, 6.0).inventory(gold=0)
+    worker = (V2EntityBuilder(1).kind("human").properties({"species_id": "human"}).location(5.0, 6.0).inventory(gold=0)
               .social(public_reputation=0.0).lifecycle(active=True).combat(alive=True, readiness=100.0).build())
     worker = replace(worker, task=TaskComponent(work_kind="ENTITY_ACT", payload={"action": "WORK", "target_id": 10, SHIFT_START: 1}))
     state = AuthoritativeState(tick=0, seed=1, entities={1: worker}, buildings={10: inn}, regions={"town": region},

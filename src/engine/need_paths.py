@@ -20,6 +20,7 @@ from __future__ import annotations
 from typing import Any, Dict, List, Optional, Tuple
 
 from src.core.items import food_hunger_recovery
+from src.core.species import species_of
 from src.engine.appraisal import kind_can_eat_item
 from src.engine.biological_needs import PERSON_FALLBACK_PROFILE_ID, profile_id_for
 
@@ -41,8 +42,8 @@ def _nearest_food_node_distance(food_nodes: List[Any], position: Tuple[float, fl
     return min(distances) if distances else None
 
 
-def _kind_of(props: Dict[str, Any], profile_id: Optional[str]) -> str:
-    return props.get("species_id") or ("person" if profile_id == PERSON_FALLBACK_PROFILE_ID else "undeclared")
+def _kind_of(entity: Any, profile_id: Optional[str]) -> str:
+    return species_of(entity) or ("person" if profile_id == PERSON_FALLBACK_PROFILE_ID else "undeclared")
 
 
 def _new_row(kind: str, profile_id: Optional[str], profile: Any) -> Dict[str, Any]:
@@ -77,14 +78,13 @@ def need_path_report(state: Any, catalog: Any) -> List[Dict[str, Any]]:
     groups: Dict[str, Dict[str, Any]] = {}
     food_nodes = [n for n in state.resource_nodes.values() if _is_food_node(n)]
     for entity in state.entities.values():
-        props = entity.identity.properties or {}
-        profile_id = profile_id_for(props, entity.identity.role, catalog)
-        kind = _kind_of(props, profile_id)
+        profile_id = profile_id_for(entity, catalog)
+        kind = _kind_of(entity, profile_id)
         profile = catalog.get_need_profile(profile_id) if profile_id else None
         row = groups.setdefault(kind, _new_row(kind, profile_id, profile))
         row["subjects"] += 1
         if row["hunger"] not in _HUNGERLESS:
-            eatable = [n for n in food_nodes if kind_can_eat_item(props.get("species_id"), n.yields_item)]
+            eatable = [n for n in food_nodes if kind_can_eat_item(species_of(entity), n.yields_item)]
             row["food_nodes"] = len(eatable)
             _widen(row, "max_inn_distance", _nearest_inn_distance(state, entity.navigation.position))
             _widen(row, "max_food_node_distance", _nearest_food_node_distance(eatable, entity.navigation.position))

@@ -26,6 +26,7 @@ from src.engine.kernel import Kernel
 from src.platform.rng import DeterministicRNG
 from tests.helpers.kernel_pinning import PinnedNormalGovernor
 from tests.helpers.scenario import compile_world
+from src.core.species import species_of
 
 pytestmark = [pytest.mark.domain("combat"), pytest.mark.level("scenario")]
 
@@ -36,7 +37,7 @@ PLAIN_RADIUS = 20  # tiles of plain around the pair
 
 
 def _species(entity):
-    return (entity.identity.properties or {}).get("species_id")
+    return species_of(entity)
 
 
 def _stage(*, hunger, prey_species="goblin", with_prey=True, berries=False):

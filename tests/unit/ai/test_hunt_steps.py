@@ -33,7 +33,7 @@ def _consumers():
 
 
 def _kind(eid, species, pos, faction, hunger=0.0):
-    return (V2EntityBuilder(eid).kind("monster").location(*pos)
+    return (V2EntityBuilder(eid).kind(species).location(*pos)
             .identity(role=EntityRole.MONSTER, faction=faction, properties={"species_id": species})
             .combat(hp=100, max_hp=100, attack_range=1, readiness=100.0, alive=True).lifecycle(active=True)
             .biological(hunger=hunger).replace_self_model(default_self_model()).build())

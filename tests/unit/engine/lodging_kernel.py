@@ -21,7 +21,7 @@ def profile():
 
 
 def hero(eid, pos, debt=90.0, gold=50, action="REST", project=True):
-    h = (V2EntityBuilder(eid).kind("hero").location(*pos).identity(faction=Faction.HERO_GUILD, properties={"species_id": "human"}).combat(hp=100, max_hp=100, alive=True, readiness=100.0)
+    h = (V2EntityBuilder(eid).kind("human").location(*pos).identity(faction=Faction.HERO_GUILD, properties={"species_id": "human"}).combat(hp=100, max_hp=100, alive=True, readiness=100.0)
          .lifecycle(active=True).build())
     payload = {"action": action, "target_id": INN_ID} if action else {}
     h = replace(h, biological=replace(h.biological, sleep_debt=debt), task=TaskComponent(work_kind="ENTITY_ACT", payload=payload),

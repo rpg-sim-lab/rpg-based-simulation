@@ -15,7 +15,7 @@ from src.systems.economy_systems.market import MarketSystem
 
 def _world(items, shop_gold=1000, pos=(5.0, 6.0), gold=0):
     shop = BuildingState(id=10, kind="shop", position=(5.0, 5.0), functional=True, inventory=InventoryComponent(gold=shop_gold))
-    ent = V2EntityBuilder(1).kind("worker").properties({"species_id": "human"}).location(*pos).inventory(gold=gold).social(public_reputation=0.0).build()
+    ent = V2EntityBuilder(1).kind("human").properties({"species_id": "human"}).location(*pos).inventory(gold=gold).social(public_reputation=0.0).build()
     ent = replace(ent, inventory=replace(ent.inventory, items=list(items)))
     state = AuthoritativeState(tick=1, seed=1, entities={1: ent}, buildings={10: shop}, town_tiles={(5, 5), (5, 6), (5, 4), (4, 5), (6, 5)})
     return state, ent, shop
