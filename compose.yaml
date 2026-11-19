@@ -80,7 +80,7 @@ services:
     # Pinned to the exact 8.10.3 build, by digest (multi-arch index, verified with `docker buildx imagetools inspect` on 2026-11-11); moves together with redis-py 8
     # (TCK-20261018-DEPS-REDIS-8). A new 8.x patch cannot change the observability stream, anomaly worker or readiness behaviour
     # with no diff here. Bump deliberately.
-    image: redis:8.10.3-alpine@sha256:71885d8cc6e42f2bc0aa2eb853bfc4be200b5108a46ac50e117ae1df0531fb80
+    image: redis:8.10.3-alpine@sha256:7958cfbb9d152f87dadfbc89f1b0b15938f0b81ff8982feb327476f4911935c3
     ports:
       - "127.0.0.1:${REDIS_PORT:-6379}:6379"
     restart: unless-stopped
@@ -183,7 +183,7 @@ services:
     # pinned by tag and multi-arch index digest; Dependabot bumps it. auth-default-access deny-all: nobody reads or writes a topic without a login or
     # token; the user and token are created with ntfy's own CLI (see the top of this file). Bound to 127.0.0.1 only. Metrics are on a dedicated
     # in-network port (9091), outside the auth, scraped by Prometheus as job "ntfy". The auth and cache databases live in the ntfy_data volume.
-    image: binwiederhier/ntfy:v2.37.2@sha256:1875ddcf815c8a3c981d6d78c67a93452d0abba79b1ab9520b1f5f5238902bd7
+    image: binwiederhier/ntfy:v2.38.0@sha256:771309aecfce18d8fe2bfb8069994ddd6be6ca6ccdd7badace3d791a0045ff0d
     command: serve
     mem_limit: 96m # measured 2026-10-20 (58-minute proof run): anon 26 MiB, anon + active_file 58 MiB (message-cache file pages), docker stats 61 MiB; raised from 64m (platform-planner)
     init: true # needed by the healthcheck (no zombie processes)
@@ -239,7 +239,7 @@ services:
 
   grafana:
     profiles: ["observability"]
-    image: grafana/grafana:13.3.0@sha256:488984b716c0862639f91a698adbe2862677a5a07bad42da5f03f3030883b205
+    image: grafana/grafana:13.3.1@sha256:0615ec4fbd4072004b7d86b46ded63013a74b7d6eb1119273dd89e8fa25c13cf
     # Grafana 13 needs more than the 10.x limit of 256m: it hit 256m and restarted once, then peaked at 480 MiB during first start (317 MiB settled).
     mem_limit: 1024m # 654 MiB peak (85 % of the old 768m) in slot (b), 2026-10-19; raised to 1024m (lead, 2026-10-20). Re-measure: anon 23 % of 1024m (9 minutes); long-run 654 MiB = 64 %; fresh-volume first start 673 MiB docker stats (66 %), anon 250 MiB.
     ports:
@@ -273,7 +273,7 @@ services:
 
   loki:
     profiles: ["observability"]
-    image: grafana/loki:3.7.9@sha256:0db216b630ae1f348a1584c67f3cead8b4c1fc839169a39501db664744158e28
+    image: grafana/loki:3.7.10@sha256:b43c257ccfc925d4a50b8717cac61a3b51df8c48d01847936057e5c4075a24a7
     mem_limit: 512m
     ports:
       - "127.0.0.1:${LOKI_PORT:-3100}:3100"
@@ -294,7 +294,7 @@ services:
     profiles: ["observability"]
     # Grafana Alloy v1.20.1 (released 2026-09-28; newest release at least 14 days old on 2026-10-28), pinned by multi-arch index digest.
     # Replaces Promtail, which reached end of life on 2026-03-02 (TCK-20261021-PROMTAIL-TO-ALLOY-LOG-SHIPPING).
-    image: grafana/alloy:v1.21.3@sha256:8ab871206bd2d8f89277f53abffee5f452a293980788d52f85fa183a87a505a4
+    image: grafana/alloy:v1.22.0@sha256:9acc2529bc1edb7f5b2bd801dd8334ebc80c158e3a9e5526ecd7c9a273d43189
     # 384m (was 256m). The 2026-10-28 run (68 min) held anon 71 MiB and anon + active_file 187 MiB, which left no headroom under the first guess of 192m, so it went to 256m
     # (docs/runbooks/records/2026-10-28-alloy-log-shipping.md section 5). The 2026-11-12 run, with Loki accepting every push, peaked at anon + active_file 246.7 of 256 MiB
     # (96.4%; memory.current reached 256.0) in 11 minutes with no OOM kill (docs/runbooks/records/2026-11-12-loki-volume-and-api-dashboard.md, finding 3): about 9 MiB of headroom

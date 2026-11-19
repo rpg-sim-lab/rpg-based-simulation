@@ -194,3 +194,94 @@ at :30. **No seat installs, enables or starts either unit; the owner does, on ea
   reconcile and the next run carries on. But `project_sync.py` handles no signal, so a run stopped by the timeout (SIGTERM) writes no
   `last-run.json` (the previous file stays) and no heartbeat (both are written only when the run ends). (d) Not measured yet: how
   the two hosts interact over many hourly runs; AC3 of the ticket reads the first runs back after the owner installs.
+
+## Seat, linking by commit subject, Involved, Blocked by, Hotspot (`TCK-20261119-PROJECT-VIEW-SEAT-COLLABORATORS-LINK-BY-COMMIT-SUBJECT-AND-PARKED`)
+
+Hash `v5` adds three text fields to v4: **Involved**, **Blocked by**, **Hotspot**. `--init` creates them; a v4 item is rewritten once and is not a hand edit.
+Measured basis, taken on origin/main 77e4aeb72 and its filing-commit descendant 84b44272c (the only difference is two ticket files, and the Hotspot counts were
+re-checked on both and are identical): the live Project had 328 items; 47 showed "seat not recorded", 19 of them not Done.
+
+- **(a) Seat of a hand-added worktree.** `python3 tools/sessions/record_seat.py <worktree> <seat> [--replace] [--dry-run]` writes the record `launch.py --worktree`
+  writes (it calls `state.write_bound_worktree(..., explicit=True)`; `status.py` shows it as `writing in`). It refuses an unknown seat, the main checkout or a path that
+  is not a linked worktree, a worktree already recorded for another seat, and a seat whose record points at a different live worktree. It never guesses a seat from a
+  branch name. **The record holds ONE worktree per seat**: a seat that runs two lane worktrees can record one of them (`--replace` moves it). Each host records its own
+  worktrees; a u24 seat runs the one-time backfill for the u24 lane worktrees (the CLI is not run for another host's worktrees).
+- **(b) A branch works a ticket by its commit subjects.** In a worktree's own commits (`git log --no-merges HEAD --not origin/main`, so a commit already on origin/main
+  never counts), a ticket is *worked* when its id LEADS a subject and that commit touches a file outside `agent-working/` and `docs/`. Anything else is *cited*: an id in
+  the middle of a subject, a filing/notes commit, a docs-only commit. A worked ticket reads In progress through the same path a changed `inprogress/` ticket file does
+  (Stale and the seat follow); a ticket already Done on origin/main, or with no file there, is skipped. A cited ticket changes no Status. The edge is pinned in both
+  directions: a commit touching only a `tests/` config is worked, the same commit touching only `docs/` is cited. A wrong guess shows the wrong Status until the next
+  sync. Only checked-out worktrees are read, as for every other branch fact; `origin/*` branches nobody has checked out here are not.
+- **(c) Involved** is the set of seats recorded for the worktrees whose own commit subjects name the ticket (worked or cited) plus the seats of a branch that changes its
+  file, unioned across hosts through `Host facts` (`involved=`). Basis: on ubuntu 9 of 11 worktree branches with ticket facts have a recorded seat; of 32 tickets named by
+  such a branch, 3 have two or more seats. A worktree with no recorded seat adds nothing, so **Involved is empty for lane branches with no recorded seat until the
+  `record_seat.py` backfill runs on u24**. Comment parsing is not shipped: in the last 100 #715 comments (2026-10-22..2026-10-26) 38 name a ticket id and none starts
+  `<seat>, <date>:` (0%); the openers are `approval: ...`.
+- **(d) Blocked by** lists the ticket ids on a line-start `waits on`, `waiting on`, `blocked by` or `depends on` line of the ticket that are not Done on origin/main; an id
+  with no ticket file there is left out with a finding. Only 1 of 223 open tickets has such a line today. **Parked is not derived.** `Blocked` itself comes from the
+  ticket's `## Status` body line reading `BLOCKED` (`parse_copy`: `blocked = section("Status").upper() == "BLOCKED"`), so a Parked-like ticket shows today as a ticket
+  Status of BLOCKED plus a waits-on line naming the ticket it waits for. A branch that is old because it waits on something (the STALEMATE F1 shape) **still reads Stale**
+  after this ships. Parked is deferred to `TCK-20261119-PROJECT-VIEW-PARKED-STATE-FROM-A-TICKET-BODY-MARKER-LINE`.
+- **(e) Hotspot** is, of the `src/*.py` files in the ticket's own `## Related Code Areas`, the one cited by the most open tickets (todos and inprogress) on origin/main, empty when
+  none is cited by 2 or more tickets; ties break by path order; directories and non-`src/` paths never count. On 77e4aeb72: 123 open tickets cite a src `.py` file, 152
+  distinct files, 57 cited by 2 or more; top `intelligence.py` 19, `tactical.py` 13, `kernel.py` 12, `core/state.py` 12.
+
+Every new derivation prints ran / skipped / errored in the dry-run notes (`subject-link: ...`, `hotspot: ...`); a lookup that fails leaves the field empty and adds a finding. An
+update line shows the new Involved / Blocked by / Hotspot value next to the changed-field name. Exit code and `--apply` behaviour are unchanged for the existing fields.
+
+### Limits, the u24 dry run, and the live write after this lands (same ticket)
+
+- **A squash-merged branch kept as a worktree.** `--not origin/main` cannot tell a squash-merged branch's commits from live ones, so before a worktree's subject links are
+  used, `gh pr list --state merged --head <branch>` (the read-only `pr list` the guard already allows) is asked once per branch that has a worked-by-subject ticket not already
+  in its changed files; a merged PR means its subject links are skipped (counted in the `subject-link:` note), and a failed lookup links nothing and adds a finding. Measured on
+  the 16 branch-only citations: they sit on 26 branches (local and origin); 6 of those branches have a merged PR (including `rpg-ubuntu-group-id-alloc-impl`, which carried
+  one of the five tickets the rule would otherwise have moved), 20 do not, 0 lookup errors. Cost: a branch name reused after its PR merged, with new commits, is skipped too.
+- **Reading only checked-out worktrees.** On ubuntu `subject-link` links 0 tickets (it reads 16 worktrees; the candidate branches are `origin/*` refs nobody has checked out
+  here). Reading remote branches is `TCK-20261119-PROJECT-SYNC-READS-REMOTE-BRANCHES-NOT-ONLY-CHECKED-OUT-WORKTREES` (not started here). The coin fix, STALEMATE F1 and #965
+  cannot be read from ubuntu.
+- **The u24 dry run (a u24 seat runs it; its moved list goes to lead-planner and agent-working-planner before any live write).** On the u24 host, from its repo checkout:
+  `python3 tools/sessions/project_sync.py --root . --fetch` (read only: git verb allowlist, `gh pr list` and `gh api repos/...` reads, a live Project read). To rehearse the
+  seat backfill without touching live records, use a scratch seat-state root: `mkdir /tmp/seat-scratch`, then for each lane worktree
+  `python3 tools/sessions/record_seat.py --state-root /tmp/seat-scratch <worktree> <seat>`, then
+  `python3 tools/sessions/project_sync.py --root . --state-root /tmp/seat-scratch`. The dry run prints `seat state root: <path> (--state-root)`; both flags require an
+  existing directory (a missing one exits 2, never a fallback to the real root), `project_sync` only reads it, and `record_seat` writes only under it. Compare the coin
+  fix, STALEMATE F1 and #965 rows against the before run (`git archive origin/main` of the old tree) on the same origin/main SHA.
+- **Seat names.** `record_seat.py` accepts only roster seats (`registries/session_roles.yaml`). The ticket names `rpg-implementer-2` / `rpg-implementer-3` as the owners of
+  `m1kind5` / `coinsink`; the roster here holds `rpg-implementer` and `rpg-implementer-ubuntu` and no `-2` / `-3`, so those two names would be refused as unknown seats. The u24
+  backfill must use a roster seat name, or the roster gains the seats first (a decision for rpg-planner / lead-planner).
+- **Lanes left "seat not recorded".** With one recorded worktree per seat, a u24 seat with N lane worktrees leaves N-1 unrecorded. The count is unmeasured: it needs the list of
+  the ~15 u24 lane worktrees and the seat each belongs to, which only the u24 host has; a u24 seat can print it with `git worktree list` against the `record_seat.py` results.
+- **The hash bump rewrite.** The ubuntu dry run plans 314 updates and 1 create: about 900 field writes (changed fields plus `Source` and `Sync hash` per row), so at the 1 s
+  write pacing at least about 15 minutes (the FILED-DATE load of 328 items took 15m22s). Run it by hand first, not on the timer. A secondary rate limit is waited out; a primary
+  one stops the run, and the next run reconciles (the partial item shows "hand edit" lines that the rerun overwrites).
+- **The live write is a step after this lands, not a code deliverable.** Once the code is on main: (1) a u24 seat runs the dry run above and shows the three owner cases correct;
+  (2) its moved list goes to lead-planner and agent-working-planner; (3) the owner logs a yes; (4) `python3 tools/sessions/project_sync.py --init` (creates Involved,
+  Blocked by, Hotspot), then `--apply` by hand.
+
+### Filing copies, the order of the first live run, and what stays incomplete (`TCK-20261119-SUBJECT-LINK-FOLLOWS-A-TICKET-FILED-ONLY-ON-AN-UNPUSHED-BRANCH`)
+
+- **A ticket filed on an unpushed branch and worked on a lane branch.** When origin/main has no file for a ticket a worktree works by subject, the link reads this host's own
+  filing copy (a changed `todos/` or `inprogress/` file found on any worktree of the host), so the ticket reads In progress with the lane branch's seat. An id with no file on
+  origin/main and none on this host stays unlinked and is named in the `subject-link:` notes; a ticket Done on origin/main stays Done; a cited-only or docs-only branch changes
+  nothing; a host without the filing copy writes no fact for it from the subject link alone (it reads the other host's segment and agrees).
+- **A host that only cites a ticket reads origin's copy.** A branch whose commit subjects merely name a ticket gets an Involved entry and no domain, and never blanks the ticket's
+  Title / Tier / Layer / Priority (an earlier cut did, on Done rows; the dry run's `grep -c "Title, "` is the check, 0 after the fix).
+- **The order of the first live run (one order for the owner).** `--apply` refuses before its first write when the Project lacks Involved, Blocked by or Hotspot ("run --init first",
+  exit 2): the hourly timer then fails every tick and the board freezes. The OLD code run against a Project that already has the three fields prints the same plan, no hand edits
+  and exits 0 (tested on origin/main 77e4aeb72 with synthetic items), so `--init` before the code lands is safe. Each host's sync is lock-free across hosts (they write separate
+  `Host facts` segments) but one `--apply` per host at a time is now enforced by a non-blocking lock (`~/.local/state/rpg-project-sync/apply.lock`; a second apply exits 0 with
+  "another --apply is running", so a hand-run apply and a timer tick on one host cannot write together). The order, on each host with a timer (`project-sync.timer`; ubuntu's commands
+  below, u24's are lead-planner-u24's to run, relayed by lead-planner):
+  1. stop the timer: `systemctl --user stop project-sync.timer`;
+  2. whoever holds the sync token on that host (`~/.config/rpg-project-sync/token`, mode 600, never printed or copied) runs, once for the whole Project, from the main checkout:
+     `python3 tools/sessions/project_sync.py --init` (creates exactly Involved, Blocked by, Hotspot; changes no Status option; a second `--init` reports nothing created);
+  3. the owner lands the PR, and each host fast-forwards its main checkout (`git pull --ff-only`);
+  4. the token holder runs the first apply by hand, one host after the other: `python3 tools/sessions/project_sync.py --apply --fetch` (the first run rewrites about
+     314 rows, see the count below; a secondary rate limit is waited out and a primary one stops the run, then the next run reconciles);
+  5. start the timer again: `systemctl --user start project-sync.timer`.
+  A stop in the middle (including the unit's 15-minute `TimeoutStartSec` SIGTERM) leaves the item it stopped in with new values and the old Sync hash; the next run prints `hand edit:` lines for
+  that item. Those lines are findings printed next to the plan, not extra rewrites: the item is rewritten by the normal update the same run plans anyway.
+- **First-run size.** The dry run on origin/main 77e4aeb72 plans 314 updates and 4 creates: about 813 field writes (changed fields plus `Source` and `Sync hash` per row, one more for a
+  changed Title), at least about 14 minutes at the 1 s pacing.
+- **What stays incomplete after it lands.** STALEMATE F1 is parked and will read In progress, not Parked, until `TCK-20261119-PROJECT-VIEW-PARKED-STATE-FROM-A-TICKET-BODY-MARKER-LINE`
+  ships; #965's seat (an instance of a multi-session role) shows "not recorded" until `TCK-20261119-RECORD-SEAT-ACCEPTS-A-SESSION-INSTANCE-OF-A-MULTI-SESSION-ROLE` ships.
