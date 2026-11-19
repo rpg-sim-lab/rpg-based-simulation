@@ -85,7 +85,7 @@ Caveat for rpg: these are audit_mode, one deterministic trial, so a value that d
 
 - **Row 6 (ph9): PASS** (3.09 s); `len(bosses) <= 1` holds. It failed with "Duplicate bosses at tick 200: 2" before #964 (runs 44287724126, 44408881791). The invariant is restored by #964's boss dedupe. The junit carries no boss count for a pass.
 - UNOWNED set is 4 corpus grade_stability tests (urban_political_seed123_1000t, frontier_extended_seed123_200t, frontier_extended_seed42_200t, generated_frontier_3_42_seed123_200t). Their pillar values are IDENTICAL to run 44408881791 at c505357b3, so the commits between those heads moved no SimQ value (and no two values at one head were seen). Class (a), deferred under 6998413376; no causes attributed.
-- Rows 1-3 remain absent from the unowned set. `test_arena_stress_50v50` passed, so its known-red entry may be stale; known-reds are not touched here.
+- Rows 1-3 remain absent from the unowned set. `test_arena_stress_50v50` passed, so its known-red entry may be a stale mapping (observed only, no known-reds edit).
 
 ## Out of Scope
 - Adding known-reds entries or re-baselining any pin before rpg attributes the row.
@@ -99,6 +99,7 @@ Caveat for rpg: these are audit_mode, one deterministic trial, so a value that d
 3. A scheduled `slow-regression.yml` run on main passes "Report failing-set changes", or every remaining failure is known-red with an owner.
 4. Pins are re-pinned only by the PR that caused them (M1 rule (a)); no testing-side re-baseline precedes attribution.
 5. **Row 6 (ph9:93, duplicate world boss) is its own item and an invariant failure, not a pin.** It closes only when the test passes again with the `len(bosses) <= 1` assertion unchanged (a code fix by rpg), or when rpg rules in writing that the invariant no longer holds, with the assertion changed through that ruling. A re-anchor, a re-baseline or a known-reds entry alone does not close it.
+   **AC5 met (row 6 closed):** run 44449471538 at a30847030 (with #964), ph9 passed with `len(bosses) <= 1` unchanged. The remaining open rows are the SimQ drift rows, deferred.
 
 ## Related Tickets
 - TCK-20261007-BEHAVIORAL-5K-REBASELINE-AFTER-THE-STARVATION-CHAIN-LANDS (known-red, same lane)
