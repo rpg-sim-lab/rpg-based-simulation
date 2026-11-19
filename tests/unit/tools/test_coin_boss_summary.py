@@ -261,7 +261,7 @@ def test_the_never_fire_control_passes_only_on_exit_6_with_nothing_applied():
     assert summ.never_fire_verdict(fired_nothing, 6)["verdict"] == "PASS"
     assert summ.never_fire_verdict(fired_nothing, 0)["failed"] == ["exit_6"]
     assert summ.never_fire_verdict({**fired_nothing, "control_applied_count": 1}, 6)["failed"] == ["control_applied_count_zero"]
-    assert summ.never_fire_verdict(None, 6)["failed"] == ["control_applied_count_zero"]
+    assert summ.never_fire_verdict(None, 6)["failed"] == ["control_applied_count_zero", "logging_errors_empty"]  # an unreadable control fails both of its readings
 
 
 def test_the_controls_summary_reads_the_runner_layout_and_a_failing_control_fails_the_set(tmp_path):
@@ -349,3 +349,80 @@ def test_controls_mode_passes_uncapped_rows_to_every_child_and_real_mode_keeps_t
         assert calls == [("real_w_1_5", False)]
     finally:
         run.run_cell = original
+
+
+# ---- section 44 review: the set's real run anchors the controls (M1) and every control has clean logs and wiring (M2) ----------------------
+
+def _controls_dir(tmp_path, real_overrides=None, real_code=0):
+    real, coin = _coin()
+    real = {**real, **(real_overrides or {})}
+    _, boss = _boss()
+    never = _doc(control_applied_count=0, control={"kind": "coin", "amount": 5.0, "applied_at_tick": 99})
+    _write(tmp_path, "real", real, real_code)
+    _write(tmp_path, "control_coin_5", coin, 0)
+    _write(tmp_path, "control_boss_2", boss, 0)
+    _write(tmp_path, "control_never_fire", never, 6)
+    return tmp_path
+
+
+def test_a_good_set_is_pass_and_reports_the_real_runs_findings(tmp_path):
+    summary = summ.summarize_controls(_controls_dir(tmp_path))
+    assert summary["verdict"] == "PASS" and summary["void_reasons"] == []
+    assert summary["real_findings"] == {"unexplained_total_count": 2, "boss_max": {c: 0 for c in summ.BOSS_COLUMNS}}
+
+
+@pytest.mark.parametrize("real_overrides,real_code,reason_part", [
+    ({}, 5, "returncode 5"),
+    ({"wiring": "WIRING_MISMATCH"}, 0, "wiring 'WIRING_MISMATCH'"),
+    ({"logging_errors": [{"logger": "x", "level": "ERROR", "message": "boom"}]}, 0, "logging_errors"),
+])
+def test_a_bad_real_run_makes_the_whole_set_void_not_pass_and_not_fail(tmp_path, real_overrides, real_code, reason_part):
+    summary = summ.summarize_controls(_controls_dir(tmp_path, real_overrides, real_code))
+    assert summary["verdict"] == "VOID" and any(reason_part in reason for reason in summary["void_reasons"])
+    assert summary["real_findings"]["unexplained_total_count"] == 2  # still reported
+    assert summary["verdict"] not in ("PASS", "FAIL")
+
+
+def test_a_missing_or_partial_real_json_makes_the_set_void_and_the_exit_code_is_2(tmp_path):
+    directory = _controls_dir(tmp_path)
+    (directory / "real.json").unlink()
+    missing = summ.summarize_controls(directory)
+    assert missing["verdict"] == "VOID" and "real.json: missing" in missing["void_reasons"][0] and missing["real_findings"] is None
+    (directory / "real.json").write_text("{not json", encoding="utf-8")
+    assert summ.summarize_controls(directory)["verdict"] == "VOID"
+    assert summ.main(["--dir", str(directory), "--mode", "controls"]) == 2
+
+
+def test_a_missing_real_exit_record_makes_the_set_void(tmp_path):
+    directory = _controls_dir(tmp_path)
+    (directory / "real.exit.json").unlink()
+    assert summ.summarize_controls(directory)["verdict"] == "VOID"
+
+
+def test_every_control_with_an_error_row_fails_and_coin_and_boss_with_a_wiring_mismatch_fail():
+    error = [{"logger": "x", "level": "ERROR", "message": "boom"}]
+    real, coin = _coin(control_overrides={"logging_errors": error})
+    verdict = summ.coin_control_verdict(real, coin, 0, 5.0)
+    assert verdict["verdict"] == "FAIL" and verdict["failed"] == ["logging_errors_empty"]
+    real, coin = _coin(control_overrides={"wiring": "WIRING_MISMATCH"})
+    assert summ.coin_control_verdict(real, coin, 0, 5.0)["failed"] == ["wiring_ok"]
+    real, boss = _boss(logging_errors=error)
+    assert summ.boss_control_verdict(real, boss, 0, 2)["failed"] == ["logging_errors_empty"]
+    real, boss = _boss(wiring="WIRING_MISMATCH")
+    assert summ.boss_control_verdict(real, boss, 0, 2)["failed"] == ["wiring_ok"]
+    never = _doc(control_applied_count=0, control={"kind": "coin", "amount": 5.0, "applied_at_tick": 99}, logging_errors=error)
+    assert summ.never_fire_verdict(never, 6)["failed"] == ["logging_errors_empty"]
+
+
+def test_control_applied_count_is_reported_for_coin_and_boss_with_a_note_above_one():
+    real, coin = _coin()
+    one = summ.coin_control_verdict(real, coin, 0, 5.0)
+    assert one["control_applied_count"] == 1 and one["notes"] == []
+    real, coin = _coin(control_overrides={"control_applied_count": 2})
+    two = summ.coin_control_verdict(real, coin, 0, 5.0)
+    assert two["verdict"] == "PASS" and two["control_applied_count"] == 2 and any("control_applied_count 2 > 1" in note for note in two["notes"])
+    real, boss = _boss(control_applied_count=3)
+    three = summ.boss_control_verdict(real, boss, 0, 2)
+    assert three["verdict"] == "PASS" and three["control_applied_count"] == 3 and any("> 1" in note for note in three["notes"])
+    real, boss = _boss()
+    assert summ.boss_control_verdict(real, boss, 0, 2)["notes"] == []

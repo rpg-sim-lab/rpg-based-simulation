@@ -7,6 +7,9 @@ REPORTED, not bars: ``unexplained_total_count`` with its rows (non-zero is a FIN
 CONTROLS (criteria fixed now): coin:N (a-f, section 43): exit 0 and control_applied_count >= 1; same final hash, world, seed and ticks as the real run; control v6 - real v6 == N; last_tick_unexplained difference == N; unexplained-count difference == (0 if the real run
 has a row at the last tick, else 1); the rows before the last tick are equal (in full with uncapped lists on both sides, else only when both counts <= 200, otherwise skipped and noted "per-tick compare capped").
 boss:K: boss_max == K in all three columns, no disagreement row at the last tick, control_applied_count >= 1, final_hash == real, exit 0. never-fire: exit 6 and control_applied_count == 0.
+Every control (coin, boss, never-fire) also needs ``logging_errors == []`` and coin and boss ``wiring == "OK"``, all HARD; ``control_applied_count`` is reported for coin and boss, with a note when it is > 1.
+The controls SET is validated first: its ``real.json`` needs exit 0 (``real.exit.json``), ``wiring == "OK"`` and ``logging_errors == []``; otherwise the set's verdict is VOID (a value apart from PASS and FAIL, exit 2) with the reasons,
+and the real run's ``unexplained_total_count`` and ``boss_max`` are reported as findings.
 The runner (coin_boss_run.py) writes ``<name>.json`` and ``<name>.exit.json`` ({"returncode", "stderr_tail"}); this module only reads files, runs nothing and writes one summary json and a SHA256SUMS.
 Usage: python -m tools.rpg_measure.coin_boss_summary --dir <out> --mode real --plain <plain.json> | --mode controls
 """
@@ -87,6 +90,12 @@ def real_verdict(doc: Optional[Dict[str, Any]], reason: str, returncode: Optiona
     return {"verdict": "FAIL" if failed else "PASS", "hard": hard, "failed": failed, "reasons": reasons, "reported": reported, "findings": findings}
 
 
+def _applied_note(control: Dict[str, Any]) -> List[str]:
+    """A note (not a bar) when the control was applied more than once: the injection happened on several applies of the last tick."""
+    count = control["control_applied_count"]
+    return [f"control_applied_count {count} > 1: the control was applied on more than one apply of the last tick"] if count > 1 else []
+
+
 def coin_control_verdict(real: Optional[Dict[str, Any]], control: Optional[Dict[str, Any]], returncode: Optional[int], amount: float) -> Dict[str, Any]:
     """The coin:N verdict, rpg-designer u24 section 43, all HARD: (a) exit 0 and control_applied_count >= 1; (b) same final hash and the same world, seed and ticks as the real run; (c) control v6 - real v6 == N;
     (d) control last_tick_unexplained - real last_tick_unexplained == N; (e) the unexplained-count difference == (0 if the real run has a row at the last tick, else 1); (f) the rows BEFORE the last tick are equal:
@@ -112,9 +121,13 @@ def coin_control_verdict(real: Optional[Dict[str, Any]], control: Optional[Dict[
         "d_last_tick_unexplained_delta_equals_n": control["last_tick_unexplained"] - real["last_tick_unexplained"] == amount,
         "e_unexplained_count_delta": control["unexplained_total_count"] - real["unexplained_total_count"] == expected_count_difference,
         "f_rows_before_last_tick_equal": rows_before_equal,
+        "logging_errors_empty": control["logging_errors"] == [],
+        "wiring_ok": control["wiring"] == "OK",
     }
     failed = [name for name, ok in criteria.items() if not ok]
-    return {"verdict": "FAIL" if failed else "PASS", "failed": failed, "criteria": criteria, "notes": notes, "v6_delta": control["v6"] - real["v6"], "f_compared": comparable}
+    notes += _applied_note(control)
+    return {"verdict": "FAIL" if failed else "PASS", "failed": failed, "criteria": criteria, "notes": notes, "v6_delta": control["v6"] - real["v6"], "f_compared": comparable,
+            "control_applied_count": control["control_applied_count"]}
 
 
 def boss_control_verdict(real: Optional[Dict[str, Any]], control: Optional[Dict[str, Any]], returncode: Optional[int], count: int) -> Dict[str, Any]:
@@ -127,13 +140,16 @@ def boss_control_verdict(real: Optional[Dict[str, Any]], control: Optional[Dict[
         "control_applied_count_at_least_1": control["control_applied_count"] >= 1,
         "final_hash_equals_real": control["final_hash"] == real["final_hash"],
         "exit_zero": returncode == 0,
+        "logging_errors_empty": control["logging_errors"] == [],
+        "wiring_ok": control["wiring"] == "OK",
     }
     failed = [name for name, ok in criteria.items() if not ok]
-    return {"verdict": "FAIL" if failed else "PASS", "failed": failed, "criteria": criteria}
+    return {"verdict": "FAIL" if failed else "PASS", "failed": failed, "criteria": criteria, "notes": _applied_note(control), "control_applied_count": control["control_applied_count"]}
 
 
 def never_fire_verdict(control: Optional[Dict[str, Any]], returncode: Optional[int]) -> Dict[str, Any]:
-    criteria = {"exit_6": returncode == 6, "control_applied_count_zero": control is not None and control["control_applied_count"] == 0}
+    criteria = {"exit_6": returncode == 6, "control_applied_count_zero": control is not None and control["control_applied_count"] == 0,
+                "logging_errors_empty": control is not None and control["logging_errors"] == []}
     failed = [name for name, ok in criteria.items() if not ok]
     return {"verdict": "FAIL" if failed else "PASS", "failed": failed, "criteria": criteria}
 
@@ -165,10 +181,26 @@ def summarize_real(directory: Path, plain: Path) -> Dict[str, Any]:
     return summary
 
 
+def real_void_reasons(real: Optional[Dict[str, Any]], reason: str, returncode: Optional[int]) -> List[str]:
+    """Why the set's real.json cannot anchor the controls (the set is then VOID, not FAIL): unreadable, a non-zero exit, a wiring mismatch or a logging error."""
+    if real is None:
+        return [reason or "real.json unreadable"]
+    out = []
+    if returncode != 0:
+        out.append(f"real.exit.json returncode {returncode!r}, not 0")
+    if real["wiring"] != "OK":
+        out.append(f"real wiring {real['wiring']!r}, not OK")
+    if real["logging_errors"] != []:
+        out.append(f"real logging_errors {real['logging_errors']!r}")
+    return out
+
+
 def summarize_controls(directory: Path) -> Dict[str, Any]:
     """``real.json`` and the control files written by the runner's controls mode (``control_coin_<N>.json``, ``control_boss_<K>.json``, ``control_never_fire.json``) with their ``.exit.json``."""
     real, real_reason = load_doc(directory / "real.json")
-    out: Dict[str, Any] = {"mode": "controls", "real_reason": real_reason, "controls": {}}
+    void_reasons = real_void_reasons(real, real_reason, load_exit(directory / "real.exit.json"))
+    out: Dict[str, Any] = {"mode": "controls", "real_reason": real_reason, "void_reasons": void_reasons, "controls": {},
+                           "real_findings": None if real is None else {"unexplained_total_count": real["unexplained_total_count"], "boss_max": real["boss_max"]}}
     for path in sorted(directory.glob("control_coin_*.json")):
         if path.name.endswith(".exit.json"):
             continue
@@ -182,7 +214,10 @@ def summarize_controls(directory: Path) -> Dict[str, Any]:
     never = directory / "control_never_fire.json"
     never_doc, _ = load_doc(never)
     out["controls"][never.name] = never_fire_verdict(never_doc, load_exit(never.with_suffix(".exit.json")))
-    out["verdict"] = "PASS" if real is not None and out["controls"] and all(c["verdict"] == "PASS" for c in out["controls"].values()) else "FAIL"
+    if void_reasons:
+        out["verdict"] = "VOID"  # distinct from PASS and FAIL: the set's real run cannot anchor the controls
+    else:
+        out["verdict"] = "PASS" if out["controls"] and all(c["verdict"] == "PASS" for c in out["controls"].values()) else "FAIL"
     (directory / "summary_controls.json").write_text(json.dumps(out, indent=2, sort_keys=True), encoding="utf-8")
     _seal(directory, [p.name for p in directory.iterdir() if p.is_file() and p.name != "SHA256SUMS"])
     return out
@@ -201,7 +236,7 @@ def main(argv: List[str]) -> int:
     else:
         summary = summarize_controls(args.dir)
     print(json.dumps({"verdict": summary["verdict"]}, sort_keys=True))
-    return 0 if summary["verdict"] == "PASS" else 1
+    return {"PASS": 0, "FAIL": 1, "VOID": 2}[summary["verdict"]]
 
 
 if __name__ == "__main__":
