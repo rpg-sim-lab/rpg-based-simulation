@@ -8000,6 +8000,22 @@
   tags:
   - process-improvement
 - type: ticket
+  path: agent-working/tickets/todos/TCK-20261119-RPG-GATE-RERUN-ONLY-NEW-ROWS-AND-A-BASELINE-DIFF-AGAINST-MAIN.md
+  ticket_id: TCK-20261119-RPG-GATE-RERUN-ONLY-NEW-ROWS-AND-A-BASELINE-DIFF-AGAINST-MAIN
+  title: The rpg gate reruns only the (world, seed) runs behind a fail or drift row
+    that main's latest gate report does not already carry, and writes its own "new
+    vs main" diff
+  tier: standard
+  ticket_type: chore
+  date: '2026-11-19'
+  related_code_areas:
+  - tools/test_architecture/rpg_gate_report.py
+  - .github/workflows/rpg-gate-report.yml
+  - tests/
+  artifact_files: []
+  tags:
+  - process-improvement
+- type: ticket
   path: agent-working/tickets/done/TCK-20261118-A-DIAGNOSTIC-KIT-PREFLIGHT-CHECKS-EACH-KIT-ON-BOTH-FROZEN-TREES-BEFORE-ITS-RUN.md
   ticket_id: TCK-20261118-A-DIAGNOSTIC-KIT-PREFLIGHT-CHECKS-EACH-KIT-ON-BOTH-FROZEN-TREES-BEFORE-ITS-RUN
   title: 'An automatic preflight for every measurement kit (spy, probe, runner, summarizer):
@@ -8224,6 +8240,21 @@
   artifact_files: []
   tags:
   - performance
+- type: ticket
+  path: agent-working/tickets/todos/TCK-20261118-SLOW-REGRESSION-LANE-RED-SIX-UNOWNED-FAILURES-SINCE-M1.md
+  ticket_id: TCK-20261118-SLOW-REGRESSION-LANE-RED-SIX-UNOWNED-FAILURES-SINCE-M1
+  title: The slow-regression lane is red on six failures with no known-reds entry,
+    first seen after the M1 steps; attribution is pending, by rpg
+  tier: hotfix
+  ticket_type: bug
+  date: '2026-11-18'
+  related_code_areas:
+  - .github/workflows/slow-regression.yml
+  - tools/test_architecture/slow_regression_report.py
+  - tests/integration/world/test_living_world_ph9.py
+  artifact_files: []
+  tags:
+  - regression
 - type: ticket
   path: agent-working/tickets/todos/TCK-20261118-STATE-REBUILD-REPLACE-IN-THE-APPLY-PATH-COPIES-WHOLE-RECORDS.md
   ticket_id: TCK-20261118-STATE-REBUILD-REPLACE-IN-THE-APPLY-PATH-COPIES-WHOLE-RECORDS

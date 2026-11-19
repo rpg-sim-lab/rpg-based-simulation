@@ -85,7 +85,7 @@ Proof (owner condition): replay recorded gate reports with the same inputs and g
 ## Assumptions / Open Questions
 - GITHUB_TOKEN with `actions: read` can download another run's artifact via `actions/download-artifact` (`run-id` + `github-token`) or `gh api`; the investigation confirms which, and whether the same-repo token has the access u24's workaround lacked (a 403 outside the workflow).
 - Row identity (c) and the treatment of a row whose value moved but whose state did not.
-- Whether the known list (`rpg_gate_known.yaml`) also exempts a row from the rerun: the owner text says "main's latest gate report (or the known list)". Default here: only main's report counts for skipping the rerun; the known list continues to decide ownership and the verdict, unchanged. The investigation checks this and the owner's intent before widening it.
+- RESOLVED (owner, #715 6998774083, "Main's report only (Recommended)"): only main's latest COMPLETED gate report decides the rerun skip, matching key AND state. The known list keeps its current ownership/verdict role and does NOT exempt rows from the rerun.
 
 ## Durable state, lifecycle and clocks
 None: a CI report and workflow change. The new report field is a read model in the gate's JSON artifact (30-day retention).
