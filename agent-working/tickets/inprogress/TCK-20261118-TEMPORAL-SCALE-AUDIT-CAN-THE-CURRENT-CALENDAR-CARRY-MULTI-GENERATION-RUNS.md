@@ -92,6 +92,7 @@ The terms, all from the owner's text:
 - Whether any measurement run is needed, beyond the engine profile and code reading, is decided per question. Each run needs its own S9.
 
 ## Implementation Notes
+- 2026-11-19, scope 7 (the tick-constant and tuning-value inventory) drafted read-only by rpg-implementer-ubuntu-2 on main a30847030: agent-working/staging_artifacts/TCK-20261118-TEMPORAL-SCALE-AUDIT-CAN-THE-CURRENT-CALENDAR-CARRY-MULTI-GENERATION-RUNS/tick_constant_inventory.md. Table A: about 60 tick-valued constants and literals with file:line, ticks, real time at 2,400 ticks/day, class and clock. Table B: tick numbers in data/content. Table C: 346 other named tuning constants, each a setting or a code invariant with a reason (the classification is by rule on the name and is for a designer to review). Stated gaps: inline numbers inside function bodies are not covered; no run, no code change. The other scopes (1-6) are not started.
 
 ## Test Summary
 

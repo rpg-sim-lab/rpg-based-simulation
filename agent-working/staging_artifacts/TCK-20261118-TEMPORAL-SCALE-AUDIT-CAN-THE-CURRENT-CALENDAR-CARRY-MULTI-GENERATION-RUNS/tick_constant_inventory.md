@@ -41,9 +41,9 @@ Read-only audit of `src/` and `data/content/` on main a30847030. No code change 
 | src/engine/natural_healing.py:25 | HEALING.awake_ticks | 9600 | 4 days | REALISM-TUNED | state.tick (per-tick regen rate = max_hp / ticks) | 4 days to full health awake |
 | src/engine/natural_healing.py:26 | HEALING.resting_ticks | 4800 | 2 days | REALISM-TUNED | state.tick | 2 days asleep or resting |
 | src/engine/starvation.py:24 | STARVATION.death_ticks | 6000 | 2.5 days | REALISM-TUNED | state.tick | 2.5 days from the starving line to death at full health |
-| src/engine/biological_needs.py:30 | BASE_HUNGER_RATE (per tick) | 0.1 | per tick (see note) | REALISM-TUNED | state.tick | hunger +0.1 per tick at medium: line 95 in 950 ticks = 9.5 h from 0; NEED_LEVEL_RATE_SCALE multiplies it (0 to 1.5) |
-| src/engine/biological_needs.py:31 | BASE_SLEEP_DEBT_RATE (per tick) | 0.05 | per tick (see note) | REALISM-TUNED | state.tick | sleep debt +0.05 per tick: line 98 in 1,960 ticks = 19.6 h awake |
-| src/engine/need_pull.py:37 | TICKS_PER_TILE | 1.0 | per tick | UNDETERMINED (designer) | state.tick | one tile per tick = 36 s per tile; the tile size in metres is not declared, so the walking speed has no stated meaning |
+| src/engine/biological_needs.py:30 | BASE_HUNGER_RATE (per tick) | 0.1 | a rate per tick (see note) | REALISM-TUNED | state.tick | hunger +0.1 per tick at medium: line 95 in 950 ticks = 9.5 h from 0; NEED_LEVEL_RATE_SCALE multiplies it (0 to 1.5) |
+| src/engine/biological_needs.py:31 | BASE_SLEEP_DEBT_RATE (per tick) | 0.05 | a rate per tick (see note) | REALISM-TUNED | state.tick | sleep debt +0.05 per tick: line 98 in 1,960 ticks = 19.6 h awake |
+| src/engine/need_pull.py:37 | TICKS_PER_TILE | 1.0 | 36 s per tile | UNDETERMINED (designer) | state.tick | one tile per tick = 36 s per tile; the tile size in metres is not declared, so the walking speed has no stated meaning |
 | src/engine/work_shift.py:27 | SHIFT_TICKS | 200 | 2 h | WINDOW-FITTED | consecutive-tick counter on the task (reset when the task changes) | a 2 h work shift; a real shift would be about 800 |
 | src/core/strategic.py:336 | BLOCKER_BACKOFF_BASE_TICKS | 100 | 1 h | WINDOW-FITTED | state.tick | 1 h first backoff, doubling per failure up to the cap (divergence 2.213 tuning) |
 | src/core/strategic.py:337 | BLOCKER_BACKOFF_CAP_TICKS | 800 | 8 h | WINDOW-FITTED | state.tick | 8 h cap |
@@ -80,13 +80,13 @@ Read-only audit of `src/` and `data/content/` on main a30847030. No code change 
 | src/world/calamity.py:21 | CalamityService.CALAMITY_FORCE_INTERVAL | 5000 | 2.08 days | WINDOW-FITTED | state.tick | about 2.1 days |
 | src/world/calamity.py:120 | CalamityPressurePropagator.SEASONAL_PROPAGATION_INTERVAL | 500 | 5 h | WINDOW-FITTED | state.tick | named SEASONAL but 5 h; a season is 72,000 ticks, so the name and the value disagree |
 | src/world/camp.py:20 | CampService.CAMP_SPAWN_INTERVAL | 30 | 18 min | WINDOW-FITTED | state.tick | 18 min |
-| src/world/camp.py:18 | CampService.MATURITY_PER_TICK (rate) | 0.05 | per tick (see note) | WINDOW-FITTED | state.tick | with RAID_MATURITY_THRESHOLD 80 a camp matures in 1,600 ticks = 16 h |
-| src/world/creature_territory.py:22 | TERRITORY_MATURITY_RATES (rate) | 0.04 / 0.03 | per tick (see note) | WINDOW-FITTED | state.tick | with threshold 100: 2,500 to 3,333 ticks = 25 to 33 h |
+| src/world/camp.py:18 | CampService.MATURITY_PER_TICK (rate) | 0.05 | a rate per tick (see note) | WINDOW-FITTED | state.tick | with RAID_MATURITY_THRESHOLD 80 a camp matures in 1,600 ticks = 16 h |
+| src/world/creature_territory.py:22 | TERRITORY_MATURITY_RATES (rate) | 0.04 / 0.03 | a rate per tick (see note) | WINDOW-FITTED | state.tick | with threshold 100: 2,500 to 3,333 ticks = 25 to 33 h |
 | src/world/ecology.py:17 | ResourceEcologyService.ECOLOGY_INTERVAL | 200 | 2 h | WINDOW-FITTED | state.tick | regrowth step every 2 h |
 | src/world/regional_sovereignty.py:16 | RegionalSovereigntyService.TAX_INTERVAL | 100 | 1 h | WINDOW-FITTED | state.tick | tax every 1 h |
-| src/world/raid.py:9 | RaidService.RAID_INTERVAL_DAYS | 5 | 3 min | UNDETERMINED (designer) | none: no reader in src | 5 days = 12,000 ticks; the constant has no reader in src (the global raid cadence it described was removed; the test note says it was a tick % 500 cadence at 100 ticks/day) |
-| src/world/threat.py:17 | ThreatService.THREAT_DECAY_RATE (per tick) | 0.01 | per tick (see note) | WINDOW-FITTED | state.tick | trauma decays 1 per 100 ticks |
-| src/world/threat.py:18 | ThreatService.PRESSURE_COOLING_RATE (per tick) | 0.1 | per tick (see note) | WINDOW-FITTED | state.tick | retaliation pressure cools 1 per 10 ticks |
+| src/world/raid.py:9 | RaidService.RAID_INTERVAL_DAYS | 5 | 5 days | UNDETERMINED (designer) | none: no reader in src | 5 days = 12,000 ticks; the constant has no reader in src (the global raid cadence it described was removed; the test note says it was a tick % 500 cadence at 100 ticks/day) |
+| src/world/threat.py:17 | ThreatService.THREAT_DECAY_RATE (per tick) | 0.01 | a rate per tick (see note) | WINDOW-FITTED | state.tick | trauma decays 1 per 100 ticks |
+| src/world/threat.py:18 | ThreatService.PRESSURE_COOLING_RATE (per tick) | 0.1 | a rate per tick (see note) | WINDOW-FITTED | state.tick | retaliation pressure cools 1 per 10 ticks |
 | src/economy/health_monitor.py:21 | EconomyHealthMonitor.WINDOW_SIZE | 100 | 1 h | NEITHER (engineering cadence) | state.tick | an observation window (1 h) |
 | src/simulation_quality/persistence.py:17 | QualityPersistence._FLUSH_INTERVAL | 50 | 30 min | NEITHER (engineering cadence) | state.tick | a write batching interval |
 | src/domains/campaigns/runner.py:115 | runner progress modulo (literal) | 50 | 30 min | NEITHER (engineering cadence) | runner tick | 30 min; a reporting cadence |
@@ -134,7 +134,7 @@ Classified by the constant's name and use, one reason each. A **setting** is a v
 | src/api/tracing.py:30 | DEFAULT_SAMPLE_RATIO | 0.1 | code invariant | engineering limit of an output, a budget or a sampler; no game-time meaning |
 | src/cognition/capability_estimate.py:70 | COMMON_KNOWLEDGE_DANGER | {'low': 0.2, 'medium': 0.5, 'high': 0.75, 'extreme': 0.95} | setting (move to data/) | a balance number (a rate, threshold, weight, band or size) that shapes behaviour; a designer would tune it |
 | src/cognition/capability_estimate.py:71 | NEUTRAL_DANGER | 0.5 | setting (move to data/) | a balance number (a rate, threshold, weight, band or size) that shapes behaviour; a designer would tune it |
-| src/cognition/capability_estimate.py:72 | UNINFORMED_CONFIDENCE | 0.1 | UNDETERMINED (designer) | the name does not say whether it is a rule or an implementation constant |
+| src/cognition/capability_estimate.py:72 | UNINFORMED_CONFIDENCE | 0.1 | setting (move to data/) | a need or knowledge level that changes who eats, rests or trusts; a balance number |
 | src/cognition/capability_estimate.py:81 | _REGION_DANGER | {'hometown': 0.0, 'near_forest': 0.3, 'old_mine': 0.35, 'nor | setting (move to data/) | a balance number (a rate, threshold, weight, band or size) that shapes behaviour; a designer would tune it |
 | src/cognition/need_interpretation.py:31 | _URGENCY_CRITICAL | 0.95 | setting (move to data/) | a balance number (a rate, threshold, weight, band or size) that shapes behaviour; a designer would tune it |
 | src/cognition/need_interpretation.py:32 | _URGENCY_HIGH | 0.75 | setting (move to data/) | a balance number (a rate, threshold, weight, band or size) that shapes behaviour; a designer would tune it |
@@ -151,8 +151,8 @@ Classified by the constant's name and use, one reason each. A **setting** is a v
 | src/cognition/self_assessment.py:33 | _GEAR_DAMAGE_LOW | 0.5 | setting (move to data/) | a balance number (a rate, threshold, weight, band or size) that shapes behaviour; a designer would tune it |
 | src/cognition/self_assessment.py:34 | _LEVEL_WEAPON_GAP | 5 | setting (move to data/) | a distance or reach in tiles: a world-scale number |
 | src/content/common_knowledge_seed.py:29 | COMMON_KNOWLEDGE_CERTAINTY | 0.3 | setting (move to data/) | a balance number (a rate, threshold, weight, band or size) that shapes behaviour; a designer would tune it |
-| src/core/calendar.py:11 | DAYS_PER_SEASON | 30 | UNDETERMINED (designer) | the name does not say whether it is a rule or an implementation constant |
-| src/core/calendar.py:12 | SEASONS_PER_YEAR | 4 | UNDETERMINED (designer) | the name does not say whether it is a rule or an implementation constant |
+| src/core/calendar.py:11 | DAYS_PER_SEASON | 30 | setting (move to data/) | a calendar definition; the calendar is the approved baseline (2,400 ticks/day, 120-day year) and moves to configuration under TCK-20261119-THE-CALENDAR-IS-DECLARED-IN-CONFIGURATION-NOT-IN-CODE |
+| src/core/calendar.py:12 | SEASONS_PER_YEAR | 4 | setting (move to data/) | a calendar definition; the calendar is the approved baseline (2,400 ticks/day, 120-day year) and moves to configuration under TCK-20261119-THE-CALENDAR-IS-DECLARED-IN-CONFIGURATION-NOT-IN-CODE |
 | src/core/combat_constants.py:18 | NEAR_DEATH_HP_RATIO | 0.2 | setting (move to data/) | a balance number (a rate, threshold, weight, band or size) that shapes behaviour; a designer would tune it |
 | src/core/combat_constants.py:28 | ENTITY_TARGET_PERCEPTION_RADIUS | 10.0 | setting (move to data/) | a distance or reach in tiles: a world-scale number |
 | src/core/combat_constants.py:34 | RETREAT_ARRIVAL_RADIUS | 1.0 | setting (move to data/) | a distance or reach in tiles: a world-scale number |
@@ -268,7 +268,7 @@ Classified by the constant's name and use, one reason each. A **setting** is a v
 | src/engine/access_audit/observe.py:97 | FIELD_REPR_CHARS | 80 | code invariant | a bound, id range or budget for the code itself; changing it changes no rule of the game |
 | src/engine/appraisal.py:30 | THREAT_RANGE | 4 | setting (move to data/) | a distance or reach in tiles: a world-scale number |
 | src/engine/appraisal.py:31 | WARY_DISTANCE | 5 | setting (move to data/) | a distance or reach in tiles: a world-scale number |
-| src/engine/appraisal.py:34 | HUNT_HUNGER | 40.0 | UNDETERMINED (designer) | the name does not say whether it is a rule or an implementation constant |
+| src/engine/appraisal.py:34 | HUNT_HUNGER | 40.0 | setting (move to data/) | a need or knowledge level that changes who eats, rests or trusts; a balance number |
 | src/engine/biological_needs.py:34 | NEED_LEVEL_RATE_SCALE | {'none': 0.0, 'very_low': 0.3, 'low': 0.5, 'medium': 1.0, 'h | setting (move to data/) | a balance number (a rate, threshold, weight, band or size) that shapes behaviour; a designer would tune it |
 | src/engine/building_arrival.py:35 | HUNGER_NEED_FLOOR | 20.0 | setting (move to data/) | a balance number (a rate, threshold, weight, band or size) that shapes behaviour; a designer would tune it |
 | src/engine/cognition.py:72 | FLEE_PANIC_THRESHOLD | 0.4 | setting (move to data/) | a balance number (a rate, threshold, weight, band or size) that shapes behaviour; a designer would tune it |
@@ -299,7 +299,7 @@ Classified by the constant's name and use, one reason each. A **setting** is a v
 | src/engine/pipeline_phases/lead_contradiction.py:39 | _RELIABILITY_FLOOR | 0.1 | setting (move to data/) | a balance number (a rate, threshold, weight, band or size) that shapes behaviour; a designer would tune it |
 | src/engine/pipeline_phases/lead_contradiction.py:40 | _REPLANNING_PRIORITY | 0.7 | setting (move to data/) | a balance number (a rate, threshold, weight, band or size) that shapes behaviour; a designer would tune it |
 | src/engine/pipeline_phases/paid_information.py:44 | _INFO_BASE_COST | 10 | setting (move to data/) | a price, cost, wage or reputation/trust step: a game-economy number the owner would want to tune |
-| src/engine/pipeline_phases/paid_information.py:45 | _MIN_RELIABILITY | 0.1 | UNDETERMINED (designer) | the name does not say whether it is a rule or an implementation constant |
+| src/engine/pipeline_phases/paid_information.py:45 | _MIN_RELIABILITY | 0.1 | setting (move to data/) | a need or knowledge level that changes who eats, rests or trusts; a balance number |
 | src/engine/route_search.py:28 | ROUTE_NODE_CAP | 3000 | code invariant | a bound, id range or budget for the code itself; changing it changes no rule of the game |
 | src/engine/route_search.py:32 | ROUTE_PLAN_LIMIT | 5000 | code invariant | a bound, id range or budget for the code itself; changing it changes no rule of the game |
 | src/engine/rpg_depth.py:26 | ATTRIBUTE_CAP | 99 | code invariant | a bound, id range or budget for the code itself; changing it changes no rule of the game |
@@ -310,8 +310,8 @@ Classified by the constant's name and use, one reason each. A **setting** is a v
 | src/engine/semantic_entity_index.py:19 | REST_PRESSURE_NEED_THRESHOLD | 70.0 | setting (move to data/) | a balance number (a rate, threshold, weight, band or size) that shapes behaviour; a designer would tune it |
 | src/engine/service_prices.py:7 | EAT_PRICE_GOLD | 5 | setting (move to data/) | a price, cost, wage or reputation/trust step: a game-economy number the owner would want to tune |
 | src/engine/service_prices.py:8 | REST_PRICE_GOLD | 10 | setting (move to data/) | a price, cost, wage or reputation/trust step: a game-economy number the owner would want to tune |
-| src/engine/service_prices.py:9 | INN_MEAL_HUNGER | 20.0 | UNDETERMINED (designer) | the name does not say whether it is a rule or an implementation constant |
-| src/engine/shop_sale.py:25 | FOOD_KEPT_HUNGER_RECOVERY | 60.0 | UNDETERMINED (designer) | the name does not say whether it is a rule or an implementation constant |
+| src/engine/service_prices.py:9 | INN_MEAL_HUNGER | 20.0 | setting (move to data/) | a need or knowledge level that changes who eats, rests or trusts; a balance number |
+| src/engine/shop_sale.py:25 | FOOD_KEPT_HUNGER_RECOVERY | 60.0 | setting (move to data/) | a need or knowledge level that changes who eats, rests or trusts; a balance number |
 | src/engine/tactical.py:42 | WOUND_DISTRESS_COVER_THRESHOLD | 9.0 | setting (move to data/) | a distance or reach in tiles: a world-scale number |
 | src/engine/tactical.py:47 | PROTECTOR_GUARD_DISTRESS_THRESHOLD | 5.0 | setting (move to data/) | a distance or reach in tiles: a world-scale number |
 | src/engine/tactical.py:51 | SCAR_DISTRESS_HP_THRESHOLD_BUMP_PER_POINT | 0.01 | setting (move to data/) | a distance or reach in tiles: a world-scale number |
@@ -319,8 +319,8 @@ Classified by the constant's name and use, one reason each. A **setting** is a v
 | src/engine/tactical_destinations.py:28 | RETREAT_STEP | 10.0 | setting (move to data/) | a distance or reach in tiles: a world-scale number |
 | src/engine/tactical_destinations.py:30 | WANDER_RADIUS | 5.0 | setting (move to data/) | a distance or reach in tiles: a world-scale number |
 | src/engine/tactical_destinations.py:31 | _EPSILON | 1e-09 | code invariant | a bound, id range or budget for the code itself; changing it changes no rule of the game |
-| src/engine/tactical_rest.py:35 | REST_MIN_SLEEP_DEBT | 20.0 | UNDETERMINED (designer) | the name does not say whether it is a rule or an implementation constant |
-| src/engine/tactical_rest.py:91 | EAT_CARRIED_MIN_HUNGER | 40.0 | UNDETERMINED (designer) | the name does not say whether it is a rule or an implementation constant |
+| src/engine/tactical_rest.py:35 | REST_MIN_SLEEP_DEBT | 20.0 | setting (move to data/) | a need or knowledge level that changes who eats, rests or trusts; a balance number |
+| src/engine/tactical_rest.py:91 | EAT_CARRIED_MIN_HUNGER | 40.0 | setting (move to data/) | a need or knowledge level that changes who eats, rests or trusts; a balance number |
 | src/engine/tactical_threat.py:30 | CAUTIOUS_SAFETY_PRESSURE | 0.75 | setting (move to data/) | a balance number (a rate, threshold, weight, band or size) that shapes behaviour; a designer would tune it |
 | src/engine/tactical_threat.py:35 | WOUNDED_HP_RATIO | 0.7 | setting (move to data/) | a balance number (a rate, threshold, weight, band or size) that shapes behaviour; a designer would tune it |
 | src/engine/tactical_threat.py:37 | ADJACENT_DISTANCE | 1.0 | setting (move to data/) | a distance or reach in tiles: a world-scale number |
@@ -386,8 +386,8 @@ Classified by the constant's name and use, one reason each. A **setting** is a v
 | src/rendering/render.py:55 | ENTITY_COLOR_ALIVE | (74, 158, 255) | code invariant | engineering limit of an output, a budget or a sampler; no game-time meaning |
 | src/rendering/render.py:56 | ENTITY_COLOR_DEAD | (96, 48, 48) | code invariant | engineering limit of an output, a budget or a sampler; no game-time meaning |
 | src/rendering/render.py:57 | BLOCKED_OUTLINE | (255, 80, 80) | code invariant | engineering limit of an output, a budget or a sampler; no game-time meaning |
-| src/simulation_quality/api/routes.py:24 | _DISABLED_RESPONSE | {'enabled': False} | UNDETERMINED (designer) | the name does not say whether it is a rule or an implementation constant |
-| src/simulation_quality/pillars.py:22 | DEFAULT_MIN_EVENTS | 3 | UNDETERMINED (designer) | the name does not say whether it is a rule or an implementation constant |
+| src/simulation_quality/api/routes.py:24 | _DISABLED_RESPONSE | {'enabled': False} | code invariant | a minimum sample, a fixed response or a loop guard of the code itself; no game rule |
+| src/simulation_quality/pillars.py:22 | DEFAULT_MIN_EVENTS | 3 | code invariant | a minimum sample, a fixed response or a loop guard of the code itself; no game rule |
 | src/simulation_quality/pillars.py:92 | GRADE_THRESHOLDS | {'S': 2.0, 'A': 0.5, 'B': 0.0, 'C': -0.5, 'D': -1.0} | setting (move to data/) | a balance number (a rate, threshold, weight, band or size) that shapes behaviour; a designer would tune it |
 | src/strategy/role_model_imitation.py:28 | RoleModelImitationService.HIGH_TIER_FIDELITY | 1.0 | setting (move to data/) | a balance number (a rate, threshold, weight, band or size) that shapes behaviour; a designer would tune it |
 | src/strategy/role_model_imitation.py:29 | RoleModelImitationService.LOW_TIER_FIDELITY | 0.5 | setting (move to data/) | a balance number (a rate, threshold, weight, band or size) that shapes behaviour; a designer would tune it |
@@ -408,7 +408,7 @@ Classified by the constant's name and use, one reason each. A **setting** is a v
 | src/systems/social_systems/relationships.py:21 | RelationshipService.FRIEND_SENTIMENT_THRESHOLD | 0.8 | setting (move to data/) | a balance number (a rate, threshold, weight, band or size) that shapes behaviour; a designer would tune it |
 | src/systems/social_systems/relationships.py:22 | RelationshipService.RIVAL_SENTIMENT_THRESHOLD | -0.8 | setting (move to data/) | a balance number (a rate, threshold, weight, band or size) that shapes behaviour; a designer would tune it |
 | src/systems/social_systems/reputation.py:9 | ReputationService.IMPACTS | {'THEFT': -0.2, 'MURDER': -1.0, 'BETRAYAL': -0.5, 'HEROISM': | setting (move to data/) | a price, cost, wage or reputation/trust step: a game-economy number the owner would want to tune |
-| src/systems/strategic_systems/intelligence.py:27 | _MAX_CONSECUTIVE_REJECTIONS | 20 | UNDETERMINED (designer) | the name does not say whether it is a rule or an implementation constant |
+| src/systems/strategic_systems/intelligence.py:27 | _MAX_CONSECUTIVE_REJECTIONS | 20 | code invariant | a minimum sample, a fixed response or a loop guard of the code itself; no game rule |
 | src/systems/strategic_systems/intelligence.py:32 | _ADVENTURE_ROUTE_SCORE_MAX | 2.9 | setting (move to data/) | a balance number (a rate, threshold, weight, band or size) that shapes behaviour; a designer would tune it |
 | src/systems/strategic_systems/intelligence.py:47 | _GOAL_UTILITY_SCORE_MAX | 100.0 | setting (move to data/) | a balance number (a rate, threshold, weight, band or size) that shapes behaviour; a designer would tune it |
 | src/systems/strategic_systems/intelligence.py:53 | _INTERRUPTION_URGENCY_FLOOR_PCT | 0.8 | setting (move to data/) | a balance number (a rate, threshold, weight, band or size) that shapes behaviour; a designer would tune it |
@@ -421,7 +421,7 @@ Classified by the constant's name and use, one reason each. A **setting** is a v
 | src/world/calamity.py:121 | CalamityPressurePropagator.PROPAGATION_FACTOR | 0.15 | setting (move to data/) | a balance number (a rate, threshold, weight, band or size) that shapes behaviour; a designer would tune it |
 | src/world/calamity.py:122 | CalamityPressurePropagator.PROPAGATION_THRESHOLD | 0.1 | setting (move to data/) | a balance number (a rate, threshold, weight, band or size) that shapes behaviour; a designer would tune it |
 | src/world/camp.py:19 | CampService.RAID_MATURITY_THRESHOLD | 80.0 | setting (move to data/) | a balance number (a rate, threshold, weight, band or size) that shapes behaviour; a designer would tune it |
-| src/world/camp.py:29 | CampService.EXPAND_TERRITORY_MATURITY_BOOST | 1.0 | UNDETERMINED (designer) | the name does not say whether it is a rule or an implementation constant |
+| src/world/camp.py:29 | CampService.EXPAND_TERRITORY_MATURITY_BOOST | 1.0 | setting (move to data/) | a need or knowledge level that changes who eats, rests or trusts; a balance number |
 | src/world/creature_territory.py:26 | CreatureTerritoryService.DEFAULT_TERRITORY_MATURITY_RATE | 0.03 | setting (move to data/) | a balance number (a rate, threshold, weight, band or size) that shapes behaviour; a designer would tune it |
 | src/world/creature_territory.py:27 | CreatureTerritoryService.TERRITORY_MATURITY_THRESHOLD | 100.0 | setting (move to data/) | a balance number (a rate, threshold, weight, band or size) that shapes behaviour; a designer would tune it |
 | src/world/displacement.py:30 | DisplacementService.DISPLACEMENT_THRESHOLD | 0.6 | setting (move to data/) | a balance number (a rate, threshold, weight, band or size) that shapes behaviour; a designer would tune it |
@@ -456,7 +456,7 @@ Classified by the constant's name and use, one reason each. A **setting** is a v
 | src/worldgeneration/generator.py:401 | ProceduralCompositionGenerator.BUDGET | 6 | code invariant | a bound, id range or budget for the code itself; changing it changes no rule of the game |
 | src/worldgeneration/scorer.py:29 | ModuleScorer._DANGER_MAX | 5.0 | setting (move to data/) | a balance number (a rate, threshold, weight, band or size) that shapes behaviour; a designer would tune it |
 
-Counts: UNDETERMINED (designer) 13, code invariant 147, setting (move to data/) 186.
+Counts: code invariant 150, setting (move to data/) 196.
 
 ## Observations for the audit
 
