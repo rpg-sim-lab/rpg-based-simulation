@@ -8000,6 +8000,25 @@
   - agent-working/stored_artifacts/TCK-20261119-OCCUPATION-READS-COMPARED-WITH-A-NON-LIVING-SPECIES-ID-MISS-THE-WORLD-BOSS/investigation.md
   tags: []
 - type: ticket
+  path: agent-working/tickets/done/TCK-20261119-RPG-GATE-RERUN-ONLY-NEW-ROWS-AND-A-BASELINE-DIFF-AGAINST-MAIN.md
+  ticket_id: TCK-20261119-RPG-GATE-RERUN-ONLY-NEW-ROWS-AND-A-BASELINE-DIFF-AGAINST-MAIN
+  title: The rpg gate reruns only the (world, seed) runs behind a fail or drift row
+    that main's latest gate report does not already carry, and writes its own "new
+    vs main" diff
+  tier: standard
+  ticket_type: chore
+  date: '2026-11-19'
+  related_code_areas:
+  - tools/test_architecture/rpg_gate_report.py
+  - .github/workflows/rpg-gate-report.yml
+  - tests/
+  artifact_files:
+  - agent-working/stored_artifacts/TCK-20261119-RPG-GATE-RERUN-ONLY-NEW-ROWS-AND-A-BASELINE-DIFF-AGAINST-MAIN/investigation.md
+  - agent-working/stored_artifacts/TCK-20261119-RPG-GATE-RERUN-ONLY-NEW-ROWS-AND-A-BASELINE-DIFF-AGAINST-MAIN/plan.md
+  - agent-working/stored_artifacts/TCK-20261119-RPG-GATE-RERUN-ONLY-NEW-ROWS-AND-A-BASELINE-DIFF-AGAINST-MAIN/test_plan.md
+  tags:
+  - process-improvement
+- type: ticket
   path: agent-working/tickets/done/TCK-20261119-TICKET-FIELD-VALUES-CLI-LIFECYCLE-EXIT-REPORT-ONLY.md
   ticket_id: TCK-20261119-TICKET-FIELD-VALUES-CLI-LIFECYCLE-EXIT-REPORT-ONLY
   title: '`tools/ticket_field_values.py` CLI must not exit 1 on a lifecycle-section
