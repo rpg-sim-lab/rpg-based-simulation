@@ -5,6 +5,7 @@ import functools
 import math
 from typing import TYPE_CHECKING, Callable, List, Optional
 from src.core.enums import Domain, EntityRole
+from src.core.species import species_of
 from src.core.state import PlaceKind
 from src.core.updates import StateUpdate
 
@@ -82,7 +83,7 @@ class BossService:
 
         def _is_active_living_boss(entity) -> bool:
             return (
-                entity.identity.occupation == "world_boss"
+                species_of(entity) == "world_boss"
                 and entity.lifecycle.active
                 and entity.combat.alive
             )
@@ -216,7 +217,7 @@ class BossService:
 
         def _is_active_living_lair_occupant(entity) -> bool:
             return (
-                entity.identity.occupation == "dragonkin"
+                species_of(entity) == "dragonkin"
                 and entity.lifecycle.active
                 and entity.combat.alive
             )
