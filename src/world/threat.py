@@ -3,6 +3,7 @@ from __future__ import annotations
 from dataclasses import replace
 from typing import TYPE_CHECKING
 from src.core.enums import Domain
+from src.core.species import species_of
 
 from src.core.updates import WorldUpdate
 
@@ -27,7 +28,7 @@ class ThreatService:
         # 2. No active raid (tracked by high retaliation pressure)
         
         # Check if any boss exists in this region
-        has_boss = any(e.identity.occupation == "world_boss" and e.lifecycle.active and e.combat.alive 
+        has_boss = any(species_of(e) == "world_boss" and e.lifecycle.active and e.combat.alive 
                        for e in state.entities.values())
         
         w_upd = WorldUpdate(region_id=region.id)

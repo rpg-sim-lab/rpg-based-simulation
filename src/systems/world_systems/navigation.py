@@ -4,6 +4,8 @@ from __future__ import annotations
 import math
 from typing import Tuple, Dict, List, Optional, TYPE_CHECKING
 
+from src.core.species import species_of
+
 if TYPE_CHECKING:
     from src.core.state import AuthoritativeState, EntityState
 
@@ -38,7 +40,7 @@ class FlowFieldService:
                 # Fallback to dynamic entity if it's a world boss
                 if target_kind == "WORLD_BOSS":
                     for e in state.entities.values():
-                        if e.identity.occupation == "world_boss":
+                        if species_of(e) == "world_boss":
                             anchors = [e.navigation.position]
                             break
 

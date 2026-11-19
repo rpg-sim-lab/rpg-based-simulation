@@ -7986,6 +7986,20 @@
   - content
   last_verified: '2026-10-09'
 - type: ticket
+  path: agent-working/tickets/done/TCK-20261119-OCCUPATION-READS-COMPARED-WITH-A-NON-LIVING-SPECIES-ID-MISS-THE-WORLD-BOSS.md
+  ticket_id: TCK-20261119-OCCUPATION-READS-COMPARED-WITH-A-NON-LIVING-SPECIES-ID-MISS-THE-WORLD-BOSS
+  title: 'navigation.py and threat.py compare the occupation with "world_boss", but
+    step 4 writes world_boss as the species (occupation "ancient_sentinel"): the duplicate-boss
+    bug''s twin, plus a static test closing the class'
+  tier: hotfix
+  ticket_type: bug
+  date: '2026-11-19'
+  related_code_areas:
+  - src/systems/world_systems/navigation.py:41, src/world/threat.py:30
+  artifact_files:
+  - agent-working/stored_artifacts/TCK-20261119-OCCUPATION-READS-COMPARED-WITH-A-NON-LIVING-SPECIES-ID-MISS-THE-WORLD-BOSS/investigation.md
+  tags: []
+- type: ticket
   path: agent-working/tickets/done/TCK-20261119-RPG-GATE-RERUN-ONLY-NEW-ROWS-AND-A-BASELINE-DIFF-AGAINST-MAIN.md
   ticket_id: TCK-20261119-RPG-GATE-RERUN-ONLY-NEW-ROWS-AND-A-BASELINE-DIFF-AGAINST-MAIN
   title: The rpg gate reruns only the (world, seed) runs behind a fail or drift row
@@ -8061,6 +8075,26 @@
   related_code_areas:
   - src/world/boss.py (:85, :151-152, :219, :263-264)
   artifact_files: []
+  tags: []
+- type: ticket
+  path: agent-working/tickets/done/TCK-20261118-CAMPAIGN-RUNNER-AND-RESTORED-BODIES-SKIP-THE-BUILD-TIME-SENSES-CHECK.md
+  ticket_id: TCK-20261118-CAMPAIGN-RUNNER-AND-RESTORED-BODIES-SKIP-THE-BUILD-TIME-SENSES-CHECK
+  title: Campaign episode bodies, scenario-runner bodies and checkpoint-restored bodies
+    skip PERC-02a's build-time senses check, so a body of an unprofiled species goes
+    blind with gate ERRORs instead of being refused
+  tier: standard
+  ticket_type: bug
+  date: '2026-11-18'
+  related_code_areas:
+  - src/content/species_senses.py (require_species_sense_profile)
+  - src/domains/campaigns/orchestrator.py:822, src/domains/campaigns/runner.py:70
+  - src/engine/scenario_checkpoint.py (ScenarioCheckpoint.restore, fill_missing_fields,
+    Kernel(...))
+  - src/core/builder.py (V2EntityBuilder, which is NOT edited)
+  artifact_files:
+  - agent-working/stored_artifacts/TCK-20261118-CAMPAIGN-RUNNER-AND-RESTORED-BODIES-SKIP-THE-BUILD-TIME-SENSES-CHECK/investigation.md
+  - agent-working/stored_artifacts/TCK-20261118-CAMPAIGN-RUNNER-AND-RESTORED-BODIES-SKIP-THE-BUILD-TIME-SENSES-CHECK/plan.md
+  - agent-working/stored_artifacts/TCK-20261118-CAMPAIGN-RUNNER-AND-RESTORED-BODIES-SKIP-THE-BUILD-TIME-SENSES-CHECK/test_plan.md
   tags: []
 - type: ticket
   path: agent-working/tickets/done/TCK-20261118-CHECKLIST-PLACEMENT-PROPOSAL.md
