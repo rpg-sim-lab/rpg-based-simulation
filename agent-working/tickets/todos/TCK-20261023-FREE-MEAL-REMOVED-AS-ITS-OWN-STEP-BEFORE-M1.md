@@ -138,6 +138,10 @@ src/systems (building_services, conservation, inventory); src/ai need_pull
   - REFUSED-AT-INN CODE (rpg-designer (i)): a subject at a serving inn that is refused under ATOMIC gets the admission refusal's own TYPED reason, not SOURCE_MISSING. If no typed "can't pay" code exists, one named value is added to the same failure enum. PAYEE_MISSING stays separate. Precedence: only when with_service evaluated a serving inn and refused. Test, with a control: no inn in reach gives SOURCE_MISSING.
   - REPORT-ONLY COLUMN (rpg-designer): repeated refused EATs per subject at the same inn, in the W-cell summary. It is not a criterion, and a loop becomes a follow-up ticket. This is a kit change (v3.3) that needs a planted control and the designer's approval at the new shas.
 
+- 2026-11-19 KIT v3.3 APPROVED without conditions (rpg-designer: 35/35 controls executed; /mnt/data2/rpg-measure/hungerkit/designer_approved_v3.3/, APPROVAL.txt 13983923). Shas: spy 989d7900, summarizer 9d1ccfbd, controls 89956d83, manifest 1e229118; runner 63bbdc96 and config c2c26690 unchanged. Its one condition is met: exactly one writer of nav failure_reason INSUFFICIENT_GOLD (action_router._survival_action, through refusal_reason "EAT"), verified by the designer at 6b1e03ba6. THIS is the kit for the W cells.
+  - Forced-broke preflight control allowed (its own cell; t0 fixture only; pre-registered refused_eat_total >= 1).
+  - Follow-up note (designer): an affordable EAT at an inn with no payee under ATOMIC shows SOURCE_MISSING on the task, not PAYEE_MISSING. The kit's no_payee_refusals FINDING (> 0, expected 0) catches it. If it ever fires, typing it PAYEE_MISSING goes into the follow-up.
+
 ## Test Summary
 
 ## Files Changed
