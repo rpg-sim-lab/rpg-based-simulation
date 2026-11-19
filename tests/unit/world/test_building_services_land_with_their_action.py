@@ -87,7 +87,7 @@ def test_every_building_service_payment_is_credited_to_the_building_that_served_
         return
     assert charge.source_id == 10 and result.building_update.building_id == 10
     assert result.building_update.inventory.gold_delta == paid  # the building's credit is what the payer actually paid
-    assert result.inventory_update.gold_delta == charge.gold_delta  # the payer's debit (apply clamps it at what it holds)
+    assert result.inventory_update.gold_delta == -paid  # the payer's debit is exactly what the building is credited (TCK-20261118: the resolver never leans on the apply clamp)
 
 
 @pytest.mark.parametrize("gold", [50, 4, 0])

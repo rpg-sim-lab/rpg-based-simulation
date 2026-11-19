@@ -2499,11 +2499,11 @@
 - id: TOWN-203
   text: 'A building service (a bed, a meal at the inn, a sale at the shop) lands when its action executes (SURV-06, EXCH-02), on whatever tick the
     decision was made: the action asks the building in service reach and merges the service into its own update; the cadence-gated town phase
-    attaches none. A bed or an inn meal pays the building''s purse what was actually paid (free meals stay on, owner decision 44), so the inn''s coin is the subject''s coin.'
+    attaches none. A bed or an inn meal pays the building''s purse what was actually paid (free meals stay on, owner decision 44), and the subject is debited exactly that (`service_price`; no apply-time clamp is relied on), so the inn''s coin is the subject''s coin and no coin is destroyed.'
   status: verified
   priority: P1
   legacy_evidence: null
-  v2_evidence: '`src/engine/building_services.py`, `src/engine/domain/action_router.py`, `src/core/conservation.py` (`_service_credit`),
+  v2_evidence: '`src/engine/building_services.py`, `src/engine/domain/action_router.py`, `src/core/conservation.py` (`service_price`, `_service_result`, `_service_credit`),
     `src/engine/town_resolution.py`; `docs/guidelines/intentional_divergences.md` section 2.101'
   proof_type: parity
   test_path: tests/unit/world/test_building_services_land_with_their_action.py
