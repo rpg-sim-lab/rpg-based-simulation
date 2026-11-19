@@ -23,7 +23,7 @@ from src.core.state import AuthoritativeState
 from src.config.profiles import RuntimeProfile, HardwareClass
 from src.platform.rng import DeterministicRNG
 from src.engine.kernel import Kernel
-from src.core.builder import V2EntityBuilder
+from src.entities.checked_builder import species_builder
 from src.content.hero_species import hero_species_id
 
 
@@ -34,6 +34,39 @@ class SimulationAnalysisRunner:
         self.diversity_analyzer = RouteDiversityAnalyzer()
         self.scorecard_evaluator = CampaignScorecardEvaluator()
         self.forbidden_detector = ForbiddenBehaviorDetector()
+
+    def _initial_state(
+        self,
+        spec: CampaignSpec,
+        custom_initial_state: Optional[AuthoritativeState],
+    ) -> AuthoritativeState:
+        """The state a campaign starts from: the supplied one, else one hero per actor of the spec."""
+        if custom_initial_state is not None:
+            state = custom_initial_state
+        else:
+            # Build initial entities
+            entities = {}
+            for i in range(1, spec.actors.count + 1):
+                role = "hero"
+                builder = species_builder(i, hero_species_id(), f"scenario runner hero {i}").location(0.0, 0.0)
+                
+                # Determine class based on actor spec
+                class_id = "warrior"
+                if spec.actors.class_distribution:
+                    # Deterministic class distribution assignment
+                    class_keys = list(spec.actors.class_distribution.keys())
+                    class_id = class_keys[(i - 1) % len(class_keys)]
+
+                traits = set()
+                if spec.actors.trait_distribution:
+                    trait_keys = list(spec.actors.trait_distribution.keys())
+                    traits.add(trait_keys[(i - 1) % len(trait_keys)])
+
+                builder.identity(class_id=class_id, traits=traits, occupation=role)
+                entities[i] = builder.build()
+
+            state = AuthoritativeState(tick=0, seed=spec.seed, entities=entities)
+        return state
 
     def run(
         self,
@@ -60,31 +93,7 @@ class SimulationAnalysisRunner:
 
         # 2. Setup initial state
         rng = DeterministicRNG(spec.seed)
-        if custom_initial_state is not None:
-            state = custom_initial_state
-        else:
-            # Build initial entities
-            entities = {}
-            for i in range(1, spec.actors.count + 1):
-                role = "hero"
-                builder = V2EntityBuilder(i).kind(hero_species_id()).location(0.0, 0.0)
-                
-                # Determine class based on actor spec
-                class_id = "warrior"
-                if spec.actors.class_distribution:
-                    # Deterministic class distribution assignment
-                    class_keys = list(spec.actors.class_distribution.keys())
-                    class_id = class_keys[(i - 1) % len(class_keys)]
-
-                traits = set()
-                if spec.actors.trait_distribution:
-                    trait_keys = list(spec.actors.trait_distribution.keys())
-                    traits.add(trait_keys[(i - 1) % len(trait_keys)])
-
-                builder.identity(class_id=class_id, traits=traits, occupation=role)
-                entities[i] = builder.build()
-
-            state = AuthoritativeState(tick=0, seed=spec.seed, entities=entities)
+        state = self._initial_state(spec, custom_initial_state)
 
         # 3. Create Kernel
         kernel_flags = {"audit_mode": True}

@@ -349,7 +349,7 @@ mechanisms:
         TCK-20261008-A-SUBJECT-NOTICES-AN-UNENGAGED-HOSTILE-COMING-ADJACENT-AND-DECIDES-DECISION-32.
   - id: movement
     layer: entity
-    summary: "Moves creatures across the map tile by tile. A creature standing next to an enemy cannot simply wander off: walking away gives that enemy a free swing."
+    summary: "Moves creatures across the map tile by tile. A creature standing next to an enemy cannot simply wander off: walking away gives that enemy a free swing. A step that fails records why; the next successful step clears that record, so strategy never acts on an old failure."
     systems: [combat, world]
     depends_on: []
     state: done
@@ -1327,7 +1327,7 @@ mechanisms:
     systems: [cognition]
     depends_on: []
     state: done
-    implemented_by: [src/world/perception/gate.py::PerceptionGate, src/content/species_senses.py::species_sense_profile, src/engine/perception_signals.py::emitted_signals, src/engine/tile_distance.py::chebyshev_tile_distance]
+    implemented_by: [src/world/perception/gate.py::PerceptionGate, src/content/species_senses.py::species_sense_profile, src/engine/perception_signals.py::emitted_signals, src/engine/tile_distance.py::chebyshev_tile_distance, src/engine/checkpoint_senses.py::check_restored_body_senses, src/entities/checked_builder.py::species_builder]
     verified:
       instrument: corpus_run
       verdict: observed
@@ -1364,6 +1364,7 @@ mechanisms:
         target's emitted signals, not another mechanism's output. `tactical_decision` is its caller
         (execution order, header axis 2), not a functional dependent: with the permissive fallback,
         targeting still produces a result without it.
+        Restored bodies are checked too (TCK-20261118-CAMPAIGN-RUNNER-AND-RESTORED-BODIES-SKIP-THE-BUILD-TIME-SENSES-CHECK; RestoredBodySenseProfileError).
   - id: emotion
     layer: entity
     summary: "Creatures have emotions that shift after events, such as a close brush with death."
