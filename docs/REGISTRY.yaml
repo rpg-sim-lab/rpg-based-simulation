@@ -8014,6 +8014,24 @@
   - agent-working/stored_artifacts/TCK-20261119-OCCUPATION-READS-COMPARED-WITH-A-NON-LIVING-SPECIES-ID-MISS-THE-WORLD-BOSS/investigation.md
   tags: []
 - type: ticket
+  path: agent-working/tickets/done/TCK-20261119-PROJECT-VIEW-SEAT-COLLABORATORS-LINK-BY-COMMIT-SUBJECT-AND-PARKED.md
+  ticket_id: TCK-20261119-PROJECT-VIEW-SEAT-COLLABORATORS-LINK-BY-COMMIT-SUBJECT-AND-PARKED
+  title: GitHub Project 1 shows the holding seat, the collaborating seats and a Parked
+    state, so the owner can track a ticket there instead of asking the leads
+  tier: standard
+  ticket_type: feature
+  date: '2026-11-19'
+  related_code_areas:
+  - tools/sessions/project_sync.py
+  - tools/sessions/launch.py
+  - tools/sessions/project_client.py
+  artifact_files:
+  - agent-working/stored_artifacts/TCK-20261119-PROJECT-VIEW-SEAT-COLLABORATORS-LINK-BY-COMMIT-SUBJECT-AND-PARKED/investigation.md
+  - agent-working/stored_artifacts/TCK-20261119-PROJECT-VIEW-SEAT-COLLABORATORS-LINK-BY-COMMIT-SUBJECT-AND-PARKED/plan.md
+  - agent-working/stored_artifacts/TCK-20261119-PROJECT-VIEW-SEAT-COLLABORATORS-LINK-BY-COMMIT-SUBJECT-AND-PARKED/test_plan.md
+  tags:
+  - delivery
+- type: ticket
   path: agent-working/tickets/done/TCK-20261119-RPG-GATE-RERUN-ONLY-NEW-ROWS-AND-A-BASELINE-DIFF-AGAINST-MAIN.md
   ticket_id: TCK-20261119-RPG-GATE-RERUN-ONLY-NEW-ROWS-AND-A-BASELINE-DIFF-AGAINST-MAIN
   title: The rpg gate reruns only the (world, seed) runs behind a fail or drift row
@@ -8032,6 +8050,20 @@
   - agent-working/stored_artifacts/TCK-20261119-RPG-GATE-RERUN-ONLY-NEW-ROWS-AND-A-BASELINE-DIFF-AGAINST-MAIN/test_plan.md
   tags:
   - process-improvement
+- type: ticket
+  path: agent-working/tickets/done/TCK-20261119-SUBJECT-LINK-FOLLOWS-A-TICKET-FILED-ONLY-ON-AN-UNPUSHED-BRANCH.md
+  ticket_id: TCK-20261119-SUBJECT-LINK-FOLLOWS-A-TICKET-FILED-ONLY-ON-AN-UNPUSHED-BRANCH
+  title: A ticket filed on an unpushed tickets branch and worked on a lane branch
+    reads To do, because the commit-subject link skips tickets with no file on origin/main
+  tier: standard
+  ticket_type: bug
+  date: '2026-11-19'
+  related_code_areas:
+  - tools/sessions/project_sync.py
+  - tests/tools/test_session_project_view.py
+  artifact_files: []
+  tags:
+  - delivery
 - type: ticket
   path: agent-working/tickets/done/TCK-20261119-TICKET-FIELD-VALUES-CLI-LIFECYCLE-EXIT-REPORT-ONLY.md
   ticket_id: TCK-20261119-TICKET-FIELD-VALUES-CLI-LIFECYCLE-EXIT-REPORT-ONLY
@@ -8061,6 +8093,23 @@
   artifact_files: []
   tags:
   - mcp
+- type: ticket
+  path: agent-working/tickets/todos/TCK-20261119-FILED-TICKETS-ARE-SCANNED-FOR-OVERLAP-WITH-OPEN-TODOS.md
+  ticket_id: TCK-20261119-FILED-TICKETS-ARE-SCANNED-FOR-OVERLAP-WITH-OPEN-TODOS
+  title: A ticket filed by hand into todos/ or inprogress/ is scanned for overlap
+    with open tickets, and each hit is cited or explained (report-only)
+  tier: standard
+  ticket_type: feature
+  date: '2026-11-19'
+  related_code_areas:
+  - tools/open_ticket_overlap.py
+  - .claude/agents/ticket-scoper.md
+  - tools/validate_frontmatter.py
+  - tests/tools/test_open_ticket_overlap_real_corpus.py
+  artifact_files: []
+  tags:
+  - create-tickets
+  - ticket-scoper
 - type: ticket
   path: agent-working/tickets/done/TCK-20261118-A-DIAGNOSTIC-KIT-PREFLIGHT-CHECKS-EACH-KIT-ON-BOTH-FROZEN-TREES-BEFORE-ITS-RUN.md
   ticket_id: TCK-20261118-A-DIAGNOSTIC-KIT-PREFLIGHT-CHECKS-EACH-KIT-ON-BOTH-FROZEN-TREES-BEFORE-ITS-RUN

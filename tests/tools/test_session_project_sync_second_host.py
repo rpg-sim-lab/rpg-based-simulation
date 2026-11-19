@@ -37,8 +37,9 @@ def derive(host, branches, current=None, main=()):
     return ps.derive_item(TID, list(main), list(branches), None, current, host, "s", STALE_BEFORE)
 
 
-def seg(state, seats="", domains="rpg"):
-    return f"state={state}" + (f" seat={seats}" if seats else "") + (f" domain={domains}" if domains else "")
+def seg(state, seats="", domains="rpg", involved=""):
+    return (f"state={state}" + (f" seat={seats}" if seats else "") + (f" domain={domains}" if domains else "")
+            + (f" involved={involved}" if involved else ""))
 
 
 def facts_text(a=None, b=None):
@@ -60,7 +61,7 @@ def test_a_segment_stores_recorded_seats_only_and_the_placeholder_is_made_at_ren
     item_, _ = derive(B, [unrecorded])
     assert "seat=" not in item_["Host facts"] and item_["Seat"] == "rpg (seat not recorded)"
     filing, _ = derive(B, [fact(B, folder="todos")])
-    assert filing["Host facts"] == f"{B}: state=filing domain=rpg" and filing["Seat"] == ""  # a filing segment gives no seat
+    assert filing["Host facts"] == f"{B}: state=filing domain=rpg involved=rpg-implementer" and filing["Seat"] == ""  # a filing segment gives no seat
 
 
 # ---- status from the union
@@ -96,7 +97,7 @@ def test_seat_and_domain_are_the_union_of_the_segments_and_shrink_when_a_host_le
 def test_own_segment_is_replaced_and_the_other_hosts_kept_byte_for_byte():
     other = seg("blocked", "rpg-implementer", "perf")
     derived, _ = derive(A, [fact(A)], item(facts_text(a=seg("filing"), b=other)))
-    assert derived["Host facts"] == facts_text(seg("progress", "rpg-implementer-u24"), other)
+    assert derived["Host facts"] == facts_text(seg("progress", "rpg-implementer-u24", involved="rpg-implementer-u24"), other)
 
 
 # ---- content rule M4
@@ -160,7 +161,7 @@ def test_a_legacy_other_host_branch_entry_counts_as_a_segment_and_keeps_seat_and
     legacy = item("", branch=f"{B}:rpg-old", Seat="rpg-implementer", Domain="rpg", Host=B)
     derived, _ = derive(A, [fact(A)], legacy)
     assert derived["Status"] == "In progress" and "rpg-implementer" in derived["Seat"] and "rpg-implementer-u24" in derived["Seat"]
-    assert derived["Host facts"] == facts_text(seg("progress", "rpg-implementer-u24"))  # a legacy segment is never written
+    assert derived["Host facts"] == facts_text(seg("progress", "rpg-implementer-u24", involved="rpg-implementer-u24"))  # a legacy segment is never written
     assert plan_for(A, [], [legacy]).archives == []
     filing_only = item("", branch=f"{B}:rpg-old [filing]")
     assert derive(A, [], filing_only, main=[copy()])[0]["Status"] == "To do"
@@ -173,7 +174,7 @@ def test_hash_v3_a_v2_item_with_no_host_facts_is_a_hash_only_update_and_a_segmen
     live = {**v2_fields, "Sync hash": ps.sync_hash(v2_fields, "v2"), "_item_id": "I", "_draft_id": "D"}
     plan = plan_for(A, [], [live], main=c)
     assert plan.hand_edits == [] and [ch for _, ch in plan.updates] == [["Filed"]]  # the v4 field; the hash follows
-    assert plan.updates[0][0]["Sync hash"].startswith("v4:")
+    assert plan.updates[0][0]["Sync hash"].startswith("v5:")
     with_branch = plan_for(A, [fact(A)], [live], main=c)
     assert with_branch.hand_edits == [] and "Host facts" in with_branch.updates[0][1]
 
