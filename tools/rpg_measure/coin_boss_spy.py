@@ -1,21 +1,28 @@
-"""Coin and world-boss counter for the births re-check (rpg-designer u24, approved in principle; relayed by lead-planner, rpg-planner-ubuntu relay record section 40).
+"""Coin and world-boss counter for the births re-check (rpg-designer u24 rulings Q1 and Q2, rpg-planner-ubuntu relay record section 41).
 
-One additive kit file. It wraps ``ApplyPath.apply_generation`` like ``s9_spy.GroupSpy`` does: it READS the (prior, update, new state) of every applied tick and returns the new state untouched, so the run's
-final hash must equal the plain twin's (the re-check proves it). Nothing here writes simulation state; the positive-control mode observes COPIES of the last state and never hands one back to the kernel.
+One additive kit file, for the SPIED arm only (plain, control and the main-tree cost arm never import it). It wraps ``ApplyPath.apply_generation`` like ``s9_spy.GroupSpy`` does: it READS the
+(prior, update, new state) of every applied tick and returns the new state untouched, so the run's final hash must equal the plain twin's (the re-check proves it). Nothing here writes simulation
+state; the positive-control mode hands COPIES of the last state to the observers and never gives one back to the kernel.
 
-Per tick it records:
-- COIN: ``src.core.treasury.total_coin`` of the new state (entity purses alive or dead + building purses + corpse gold + ground gold + treasuries: the partition RunLedger uses, not re-derived here),
-  the delta against the previous tick, and a COIN-MOVING tick flag: some entity purse changed that tick (the non-vacuous guard counts these; total coin itself is conserved, so it cannot be the guard).
-- V6 = coin_last - coin_first - declared. The "declared" amount comes from RunLedger. STUB: the source is not ruled yet (RunLedger.observe is silent under recording OFF, event_recorder.py:426-427; the
-  options are with rpg-designer). Until it is ruled ``DECLARED_SOURCE`` is None, V6 reads None, and ``net_delta_before_declared`` (coin_last - coin_first) is reported instead. Every tick whose delta is not
-  zero is kept as a row (tick, delta, declared that tick = None while stubbed) so the unexplained-delta count can be formed once the source exists.
-- WORLD BOSSES: two columns side by side, per tick, BOTH STUBS until rpg-designer rules what each is (rpg-planner-ubuntu, relayed finding: at 6e7d76ef2 spawn writes species "world_boss" and occupation
-  "ancient_sentinel", boss.py:151-152, so the old predicate at boss.py:83-87 never sees a boss; after #964 (1c5b0f074) the predicate reads ``species_of == "world_boss"``, the same field as a state count, so the two
-  would not be independent). ``BOSS_STATE_COUNT`` and ``BOSS_PY_PREDICATE`` are None; ``state_boss_count`` below is a CANDIDATE helper (living entities whose species is ``world_boss``), not wired in.
-  A disagreement between the two columns is a FINDING row; while either is a stub none can be formed. Expected 0 / 0; any non-zero count is reported as a finding once wired.
-- POSITIVE CONTROL (built, NOT run until a GO): ``--control coin:N`` adds N to one entity purse in a COPY of the last observed state; ``--control boss:K`` re-kinds K living entities to ``world_boss`` in a COPY.
-  The control output is kept apart from the real output; a coin control must read ``net_delta_before_declared == real net delta + N`` and a boss control must read K in the state column (None while the columns are stubs; the candidate helper's count is printed beside it).
-- GUARDS: root-handler ``logging_errors`` (every ERROR+ record becomes a row), the PINNED manifest check (same as births_child), and the non-vacuous guard: the cell FAILS (exit 4) when it saw 0 coin-moving ticks.
+COIN (Q1 = A). The kernel does not call ``RunLedger.observe`` under recording OFF (event_recorder.py:426-427), so this spy, in its OWN process only, calls ``RunLedger.reset_run_state()`` and
+``RunLedger.configure(True)`` ONCE at run start (``start_ledger``, called after the kernel is built because the kernel's own ``reset_run_state`` runs at construction, kernel.py:301) and then calls the REAL
+``RunLedger.observe(prior, current, update)`` for every applied update, with exactly the objects the apply path used, after the application. The returned events are DISCARDED: they never reach a recorder
+or the run's output. V6 = ledger coin_last - coin_first - declared, read from the ledger at the end (``finish`` snapshots the counters and resets the ledger so a control run cannot pollute a real one).
+It refuses to start unless the observability mode is OFF (with recording on, the kernel would feed the same class-level counters a second time).
+CROSS-CHECK, cell-invalidating: the spy's own ``src.core.treasury.total_coin`` at the first and last tick must equal the ledger's coin_first and coin_last; a mismatch marks the cell
+``WIRING_MISMATCH`` (exit 5) and the cell does not count. The non-vacuous guard counts COIN-MOVING ticks (some entity purse changed that tick); the cell FAILS (exit 4) at 0.
+
+WORLD BOSSES (Q2, report only, expected 0 / 0 / 0). Three columns per tick:
+1. ``predicate_post_964``: a VERBATIM copy of the post-#964 predicate, 1c5b0f074 boss.py:84-89 (``BossService.check_for_boss_spawn._is_active_living_boss``, still a nested function there, so it cannot be
+   imported): ``species_of(entity) == "world_boss" and entity.lifecycle.active and entity.combat.alive``. ``species_of`` is imported from its real module. Re-check at the resync: if the final head exposes a
+   named check, import it and cite it instead.
+2. ``raw_kind_alive``: a raw scan of ``state.entities``: ``kind == "world_boss" and combat.alive``, ignoring lifecycle.
+3. ``occupation_alive``: ``identity.occupation == "ancient_sentinel" and combat.alive``; the only column that does not read ``kind``.
+Disagreement rows (tick, the three counts, the ids) and the max of each column. Record line, word for word: ``RECORD_LINE`` below.
+
+POSITIVE CONTROL (built, NOT run until a GO; its own run only, never counted): ``--control coin:N`` has the spy observe a COPY of the LAST state with N more coin in one purse, for both the spy's own total and
+the real ledger, so the LEDGER's V6 reads N more than the same run without it; ``--control boss:K`` observes a COPY with K living, active ``world_boss`` bodies (occupation ``ancient_sentinel``), which every column must read as K.
+GUARDS: a root-handler ``logging_errors`` (every ERROR+ record becomes a row), the PINNED manifest check (as births_child), audit_mode and no_frame_pacing forced.
 
 Heavy-job hygiene: the file name carries ``_spy`` so the shared busy gate (``lib/busy_gate.sh`` RPG_HEAVY_WORDS) sees it; put the command in a script file and never put kit words on a launcher's command line.
 Usage: python coin_boss_spy.py <world> <seed> <ticks> <out.json> [--control coin:N | boss:K]
@@ -28,38 +35,52 @@ import logging
 import os
 import sys
 from pathlib import Path
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any, Dict, List, Optional
 
 from src.core.species import species_of
 from src.core.treasury import total_coin
 from src.engine.apply import ApplyPath
+from src.observability.run_ledger import RunLedger
 
 WORLD_BOSS_SPECIES = "world_boss"
-# STUB (not ruled): the source of the gold the world declares into existence. A callable (prior, update, new_state) -> float, or None. RunLedger.observe is not called under recording OFF.
-DECLARED_SOURCE: Optional[Callable[[Any, Any, Any], float]] = None
-# STUB (not ruled): boss.py's own predicate as a callable (entity) -> bool, or None. boss.py:83-87 defines it as a nested function; #964 (1c5b0f074) changed it to read species_of == "world_boss".
-BOSS_PY_PREDICATE: Optional[Callable[[Any], bool]] = None
-# STUB (not ruled): the "independent count from state" as a callable (state) -> int, or None. ``state_boss_count`` is the candidate; whether it is independent of the predicate after #964 is rpg-designer's call.
-BOSS_STATE_COUNT: Optional[Callable[[Any], int]] = None
+BOSS_OCCUPATION = "ancient_sentinel"
+RECORD_LINE = "the columns differ only on lifecycle.active; both read entity.kind, so not independent of the species field"
 EXIT_VACUOUS = 4
+EXIT_WIRING_MISMATCH = 5
+COLUMNS = ("predicate_post_964", "raw_kind_alive", "occupation_alive")
+
+
+def predicate_post_964(entity: Any) -> bool:
+    """VERBATIM copy of 1c5b0f074 src/world/boss.py:84-89 (``_is_active_living_boss``, nested in ``BossService.check_for_boss_spawn``)."""
+    return (
+        species_of(entity) == "world_boss"
+        and entity.lifecycle.active
+        and entity.combat.alive
+    )
+
+
+def raw_kind_alive(entity: Any) -> bool:
+    """Column 2: ``kind == "world_boss"`` and alive, ignoring lifecycle."""
+    return entity.kind == WORLD_BOSS_SPECIES and entity.combat.alive
+
+
+def occupation_alive(entity: Any) -> bool:
+    """Column 3: ``identity.occupation == "ancient_sentinel"`` and alive; the only column that does not read kind."""
+    return entity.identity.occupation == BOSS_OCCUPATION and entity.combat.alive
+
+
+_COLUMN_FUNCTIONS = {"predicate_post_964": predicate_post_964, "raw_kind_alive": raw_kind_alive, "occupation_alive": occupation_alive}
+
+
+def boss_ids(state: Any) -> Dict[str, List[int]]:
+    """The ids each column counts in ``state``."""
+    return {name: sorted(eid for eid, body in state.entities.items() if fn(body)) for name, fn in _COLUMN_FUNCTIONS.items()}
 
 
 def entity_purse_moved(prior: Any, state: Any) -> bool:
     """True when some entity purse (a body in both states) changed between the two states: coin MOVED this tick (it may net out to nothing in the world total)."""
     before = prior.entities
     return any(before[eid].inventory.gold != body.inventory.gold for eid, body in state.entities.items() if eid in before)
-
-
-def state_boss_count(state: Any) -> int:
-    """CANDIDATE (not wired in while ``BOSS_STATE_COUNT`` is a stub): living entities whose species is ``world_boss``."""
-    return sum(1 for body in state.entities.values() if species_of(body) == WORLD_BOSS_SPECIES and body.combat.alive)
-
-
-def predicate_boss_count(state: Any, predicate: Optional[Callable[[Any], bool]]) -> Optional[int]:
-    """boss.py's own predicate applied to every entity; None while the predicate is a stub."""
-    if predicate is None:
-        return None
-    return sum(1 for body in state.entities.values() if predicate(body))
 
 
 def with_coin(state: Any, amount: float) -> Any:
@@ -71,12 +92,26 @@ def with_coin(state: Any, amount: float) -> Any:
 
 
 def with_bosses(state: Any, count: int) -> Any:
-    """A COPY of ``state`` in which ``count`` living entities are re-kinded ``world_boss`` (positive control only)."""
+    """A COPY of ``state`` in which ``count`` living entities are world bosses in every column: kind ``world_boss``, occupation ``ancient_sentinel``, lifecycle active (positive control only)."""
     living = [eid for eid in sorted(state.entities) if state.entities[eid].combat.alive][:count]
     entities = dict(state.entities)
     for eid in living:
-        entities[eid] = dataclasses.replace(entities[eid], kind=WORLD_BOSS_SPECIES)
+        body = entities[eid]
+        entities[eid] = dataclasses.replace(
+            body, kind=WORLD_BOSS_SPECIES, identity=dataclasses.replace(body.identity, occupation=BOSS_OCCUPATION), lifecycle=dataclasses.replace(body.lifecycle, active=True))
     return dataclasses.replace(state, entities=entities)
+
+
+def parse_control(spec: Optional[str]) -> Optional[tuple]:
+    """``coin:N`` -> ("coin", float N); ``boss:K`` -> ("boss", int K); None -> None."""
+    if spec is None:
+        return None
+    kind, _, amount = spec.partition(":")
+    if kind == "coin":
+        return ("coin", float(amount))
+    if kind == "boss":
+        return ("boss", int(amount))
+    raise ValueError(f"unknown control {spec!r}: use coin:N or boss:K")
 
 
 class LoggingErrors(logging.Handler):
@@ -91,23 +126,29 @@ class LoggingErrors(logging.Handler):
 
 
 class CoinBossSpy:
-    """Record-only wrapper over the apply path; ``install()`` patches, ``restore()`` undoes."""
+    """Record-only wrapper over the apply path; ``install()`` patches, ``restore()`` undoes. ``ledger`` is the RunLedger class (injectable for unit tests)."""
 
-    def __init__(self, start_state: Any) -> None:
+    def __init__(self, start_state: Any, ledger: Any = RunLedger, control: Optional[tuple] = None, last_tick: Optional[int] = None) -> None:
+        self.ledger = ledger
+        self.control = control  # ("coin", N) | ("boss", K): applied to a COPY of the state at ``last_tick`` for every observer; the kernel never sees it
+        self.last_tick = last_tick
         self.coin_first: float = total_coin(start_state)
         self.coin_last: float = self.coin_first
-        self.declared_total: Optional[float] = 0.0 if DECLARED_SOURCE is not None else None
         self.coin_moving_ticks = 0
         self.ticks = 0
-        self.delta_rows: List[Dict[str, Any]] = []  # every tick whose world total changed: tick, delta, declared that tick (None while stubbed)
-        self.boss_rows: List[Dict[str, Any]] = []  # every tick on which either boss column is non-zero
-        self.boss_state_max: Optional[int] = None
-        self.boss_predicate_max: Optional[int] = None
-        self.boss_ticks_over_one = 0
+        self.delta_rows: List[Dict[str, Any]] = []  # every tick whose world total changed: tick, delta
+        self.boss_rows: List[Dict[str, Any]] = []  # every tick on which any column is non-zero: counts and ids
+        self.boss_max: Dict[str, int] = {name: 0 for name in COLUMNS}
         self.disagreements: List[Dict[str, Any]] = []
-        self.last_state: Any = start_state
+        self.ledger_snapshot: Optional[Dict[str, float]] = None
         self._previous_coin = self.coin_first
         self._patched: List[tuple] = []
+
+    def start_ledger(self) -> "CoinBossSpy":
+        """Reset and switch on the ledger ONCE, in this process only (call after the kernel is built: the kernel's own reset runs at construction)."""
+        self.ledger.reset_run_state()
+        self.ledger.configure(True)
+        return self
 
     def install(self) -> "CoinBossSpy":
         original = ApplyPath.__dict__["apply_generation"].__func__
@@ -127,68 +168,61 @@ class CoinBossSpy:
             setattr(owner, name, staticmethod(original))
         self._patched.clear()
 
+    def finish(self) -> None:
+        """Snapshot the ledger's counters, then reset it so nothing stays behind in the class-level counters."""
+        self.ledger_snapshot = {"coin_first": self.ledger._coin_first, "coin_last": self.ledger._coin_last, "declared": self.ledger._declared_coin}
+        self.ledger.reset_run_state()
+
     def observe(self, prior: Any, update: Any, state: Any) -> None:
         self.ticks += 1
-        self.last_state = state
-        now = total_coin(state)
+        observed = state
+        if self.control is not None and self.last_tick is not None and state.tick == self.last_tick:
+            observed = with_coin(state, self.control[1]) if self.control[0] == "coin" else with_bosses(state, self.control[1])
+        self.ledger.observe(prior, observed, update)  # the REAL ledger on the kernel's own objects; the returned events are discarded
+        now = total_coin(observed)
         delta = now - self._previous_coin
-        declared_tick = DECLARED_SOURCE(prior, update, state) if DECLARED_SOURCE is not None else None
-        if declared_tick is not None and self.declared_total is not None:
-            self.declared_total += declared_tick
-        if entity_purse_moved(prior, state):
+        if entity_purse_moved(prior, observed):
             self.coin_moving_ticks += 1
         if delta != 0:
-            self.delta_rows.append({"tick": state.tick, "delta": delta, "declared": declared_tick})
+            self.delta_rows.append({"tick": state.tick, "delta": delta})
         self._previous_coin, self.coin_last = now, now
-        by_state = BOSS_STATE_COUNT(state) if BOSS_STATE_COUNT is not None else None
-        by_predicate = predicate_boss_count(state, BOSS_PY_PREDICATE)
-        if by_state is not None:
-            self.boss_state_max = max(self.boss_state_max or 0, by_state)
-            self.boss_ticks_over_one += int(by_state > 1)
-        if by_predicate is not None:
-            self.boss_predicate_max = max(self.boss_predicate_max or 0, by_predicate)
-        if by_state or by_predicate:
-            self.boss_rows.append({"tick": state.tick, "state": by_state, "predicate": by_predicate})
-        if by_state is not None and by_predicate is not None and by_predicate != by_state:
-            self.disagreements.append({"tick": state.tick, "state": by_state, "predicate": by_predicate})
+        ids = boss_ids(observed)
+        counts = {name: len(found) for name, found in ids.items()}
+        for name in COLUMNS:
+            self.boss_max[name] = max(self.boss_max[name], counts[name])
+        if any(counts.values()):
+            self.boss_rows.append({"tick": state.tick, "counts": counts, "ids": ids})
+        if len(set(counts.values())) > 1 or len({tuple(v) for v in ids.values()}) > 1:
+            self.disagreements.append({"tick": state.tick, "counts": counts, "ids": ids})
 
     def report(self) -> Dict[str, Any]:
+        ledger = self.ledger_snapshot
+        if ledger is None:
+            raise RuntimeError("finish() was not called: the ledger counters were not snapshotted")
         net = self.coin_last - self.coin_first
-        declared = self.declared_total
+        wiring_ok = ledger["coin_first"] == self.coin_first and ledger["coin_last"] == self.coin_last
         return {
-            "coin_first": self.coin_first, "coin_last": self.coin_last, "net_delta_before_declared": net, "declared": declared,
-            "declared_source": "STUB" if DECLARED_SOURCE is None else getattr(DECLARED_SOURCE, "__name__", "set"),
-            "v6": (net - declared) if declared is not None else None, "unexplained_delta_rows": self.delta_rows[:200], "delta_rows_total": len(self.delta_rows),
+            "coin_first": self.coin_first, "coin_last": self.coin_last, "net_delta": net,
+            "ledger_coin_first": ledger["coin_first"], "ledger_coin_last": ledger["coin_last"], "ledger_declared": ledger["declared"],
+            "v6": ledger["coin_last"] - ledger["coin_first"] - ledger["declared"], "declared_source": "RunLedger.observe (real, events discarded)",
+            "wiring": "OK" if wiring_ok else "WIRING_MISMATCH", "cell_valid": wiring_ok and self.control is None,
+            "unexplained_delta_rows": self.delta_rows[:200], "delta_rows_total": len(self.delta_rows),
             "coin_moving_ticks": self.coin_moving_ticks, "ticks": self.ticks, "non_vacuous": self.coin_moving_ticks > 0,
-            "boss_state_max": self.boss_state_max, "boss_state_source": "STUB" if BOSS_STATE_COUNT is None else getattr(BOSS_STATE_COUNT, "__name__", "set"),
-            "boss_predicate_max": self.boss_predicate_max,
-            "boss_predicate_source": "STUB" if BOSS_PY_PREDICATE is None else getattr(BOSS_PY_PREDICATE, "__name__", "set"),
-            "boss_ticks_over_one": self.boss_ticks_over_one, "boss_rows": self.boss_rows[:200], "boss_disagreements": self.disagreements[:200],
+            "boss_max": self.boss_max, "boss_rows": self.boss_rows[:200], "boss_disagreements": self.disagreements[:200], "boss_record_line": RECORD_LINE,
+            "control": None if self.control is None else {"kind": self.control[0], "amount": self.control[1], "applied_at_tick": self.last_tick},
         }
-
-    def control_report(self, spec: str) -> Dict[str, Any]:
-        """The positive control on a COPY of the last observed state: ``coin:N`` reads the net delta plus N, ``boss:K`` reads K in the state column."""
-        kind, _, amount = spec.partition(":")
-        if kind == "coin":
-            n = float(amount)
-            injected = total_coin(with_coin(self.last_state, n))
-            return {"control": spec, "net_delta_before_declared": injected - self.coin_first, "expected": (self.coin_last - self.coin_first) + n}
-        if kind == "boss":
-            k = int(amount)
-            copy = with_bosses(self.last_state, k)
-            by_state = BOSS_STATE_COUNT(copy) if BOSS_STATE_COUNT is not None else None
-            return {"control": spec, "state": by_state, "predicate": predicate_boss_count(copy, BOSS_PY_PREDICATE),
-                    "expected": (BOSS_STATE_COUNT(self.last_state) + k) if BOSS_STATE_COUNT is not None else None, "candidate_state_count": state_boss_count(copy)}
-        raise ValueError(f"unknown control {spec!r}: use coin:N or boss:K")
 
 
 def main(argv: List[str]) -> int:
+    from src.observability.config import ObservabilityConfig, ObservabilityMode
     from tools.rpg_measure import arm_child
     from tools.rpg_measure.births_child import inject_no_replay_if_recording_off
     from tools.test_architecture.rpg_gate_run import build_kernel
 
-    control = argv[argv.index("--control") + 1] if "--control" in argv else None
+    control = parse_control(argv[argv.index("--control") + 1] if "--control" in argv else None)
     world, seed, ticks, out = argv[0], int(argv[1]), int(argv[2]), argv[3]
+    if ObservabilityConfig.get_mode() != ObservabilityMode.OFF:
+        raise RuntimeError("coin_boss_spy runs only with observability mode OFF (SIM_OBS_MODE=OFF): with recording on the kernel feeds the same RunLedger counters a second time")
     errors = LoggingErrors()
     logging.getLogger().addHandler(errors)
     inject_no_replay_if_recording_off()
@@ -201,24 +235,26 @@ def main(argv: List[str]) -> int:
     manifest_path = Path("data") / "runs" / run_id / "run_manifest.json"
     evidence = pinned_runner.read_manifest(manifest_path) if manifest_path.exists() else {"run_conditions": arm_child._derived_conditions(kernel)}
     pinned = pinned_runner.require_pinned(evidence, what="coin_boss_spy build_kernel")
-    spy = CoinBossSpy(kernel.state).install()
+    spy = CoinBossSpy(kernel.state, control=control, last_tick=kernel.state.tick + ticks).start_ledger().install()
     try:
         for _ in range(ticks):
             kernel.tick_once()
     finally:
         spy.restore()
+        spy.finish()
         final_state = kernel.state
         kernel.shutdown()
     from src.engine.checkpoint import CanonicalStateHasher
 
     doc = {
         "world": world, "seed": seed, "ticks": ticks, "hashseed": os.environ.get("PYTHONHASHSEED"), "runner": pinned.verdict, "forced_flags": forced,
-        "final_hash": CanonicalStateHasher.get_hash(final_state), **spy.report(), "logging_errors": errors.rows,
+        "final_hash": CanonicalStateHasher.get_hash(final_state), **spy.report(), "logging_errors": errors.rows, "counts_for_recheck": control is None,
     }
-    if control is not None:
-        doc["control"] = spy.control_report(control)
     Path(out).parent.mkdir(parents=True, exist_ok=True)
     Path(out).write_text(json.dumps(doc, sort_keys=True), encoding="utf-8")
+    if doc["wiring"] != "OK":
+        print("WIRING_MISMATCH: the spy's total_coin and the ledger's coin_first/coin_last differ; this cell does not count", file=sys.stderr)
+        return EXIT_WIRING_MISMATCH
     if not doc["non_vacuous"]:
         print("VACUOUS: 0 coin-moving ticks in this cell", file=sys.stderr)
         return EXIT_VACUOUS
