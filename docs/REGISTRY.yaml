@@ -7986,6 +7986,19 @@
   - content
   last_verified: '2026-10-09'
 - type: ticket
+  path: agent-working/tickets/todos/TCK-20261120-KIT-PREFLIGHT-GATE-VISIBILITY-CHECK-FAILS-ON-EVERY-UBUNTU-KIT.md
+  ticket_id: TCK-20261120-KIT-PREFLIGHT-GATE-VISIBILITY-CHECK-FAILS-ON-EVERY-UBUNTU-KIT
+  title: '`kit_preflight.py` check (h) "gate visibility" always FAILs on the ubuntu
+    host, and the births kit names do not match the gate''s heavy words even where
+    the gate exists'
+  tier: hotfix
+  ticket_type: bug
+  date: '2026-11-20'
+  related_code_areas:
+  - tools/rpg_measure/kit_preflight.py
+  artifact_files: []
+  tags: []
+- type: ticket
   path: agent-working/tickets/done/TCK-20261119-DEPENDABOT-813-CI-FAST-LANES-EXIT-2-CAUSE.md
   ticket_id: TCK-20261119-DEPENDABOT-813-CI-FAST-LANES-EXIT-2-CAUSE
   title: 'Find the cause of the Migration lanes job "Fast lanes" exit 2 on the closed
@@ -8074,25 +8087,6 @@
   - tests/integration/observability/test_export_flow.py
   artifact_files: []
   tags: []
-- type: ticket
-  path: agent-working/tickets/todos/TCK-20261119-RPG-GATE-RERUN-ONLY-NEW-ROWS-AND-A-BASELINE-DIFF-AGAINST-MAIN.md
-  ticket_id: TCK-20261119-RPG-GATE-RERUN-ONLY-NEW-ROWS-AND-A-BASELINE-DIFF-AGAINST-MAIN
-  title: The rpg gate reruns only the (world, seed) runs behind a fail or drift row
-    that main's latest gate report does not already carry, and writes its own "new
-    vs main" diff
-  tier: standard
-  ticket_type: chore
-  date: '2026-11-19'
-  related_code_areas:
-  - tools/test_architecture/rpg_gate_report.py
-  - .github/workflows/rpg-gate-report.yml
-  - tests/
-  artifact_files:
-  - agent-working/stored_artifacts/TCK-20261119-RPG-GATE-RERUN-ONLY-NEW-ROWS-AND-A-BASELINE-DIFF-AGAINST-MAIN/investigation.md
-  - agent-working/stored_artifacts/TCK-20261119-RPG-GATE-RERUN-ONLY-NEW-ROWS-AND-A-BASELINE-DIFF-AGAINST-MAIN/plan.md
-  - agent-working/stored_artifacts/TCK-20261119-RPG-GATE-RERUN-ONLY-NEW-ROWS-AND-A-BASELINE-DIFF-AGAINST-MAIN/test_plan.md
-  tags:
-  - process-improvement
 - type: ticket
   path: agent-working/tickets/todos/TCK-20261119-STATE-DIGEST-PROBE-SAMPLES-DIFFER-ONCE-IN-CI.md
   ticket_id: TCK-20261119-STATE-DIGEST-PROBE-SAMPLES-DIFFER-ONCE-IN-CI
