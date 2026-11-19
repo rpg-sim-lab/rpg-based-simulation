@@ -68,7 +68,7 @@ No new durable state. Only which identity field a read compares changes.
 - navigation.py:41 and threat.py:30 now read `species_of(e) == "world_boss"` (`species_of` imported from `src.core.species`); the threat clause keeps its active and alive conditions.
 - The scan found exactly these two direct comparisons. Four membership reads of the mixed label sets in `entity_kind_constants.py` (event_shapers.py:1172 and :1207, extraction/resources.py:88, extraction/world.py:114) are REPORTED, not fixed (rpg-designer u24, H2 (a)/(b)); they are pinned as known in the scan test and belong to the follow-up P3 rpg-planner (u24) files. The reverse direction (an entity kind compared with an occupation-only literal) has no hit.
 - The navigation site is dead code for the WORLD_BOSS target while `FlowFieldService.ANCHORS` carries a fixed WORLD_BOSS waypoint pair; its test removes the pair to reach the reader.
-- Docs: divergence 2.216, the ch05 §6 Boss Spawns bullet, parity WORLD-006 support boundary.
+- Docs: divergence 2.219, the ch05 §6 Boss Spawns bullet, parity WORLD-006 support boundary.
 
 ## Test Summary
 - tests/unit/world/test_world_boss_species_reads.py (new): each reader finds a boss.py boss (occupation ancient_sentinel) and a calamity-style boss (occupation world_boss), rejects another species whose occupation says world_boss, and the threat clause keeps active/alive. On main's text 3 of 8 fail (navigation ancient_sentinel, navigation negative case, threat ancient_sentinel); with the fix 8 pass.
@@ -78,7 +78,7 @@ No new durable state. Only which identity field a read compares changes.
 ## Files Changed
 - src/systems/world_systems/navigation.py, src/world/threat.py
 - tests/unit/world/test_world_boss_species_reads.py (new), tests/unit/core/test_occupation_label_readers.py
-- docs/guidelines/intentional_divergences.md (2.216), docs/mechanics/05_world_evolution.md, docs/parity_ledger/world_dynamics.yaml (WORLD-006)
+- docs/guidelines/intentional_divergences.md (2.219), docs/mechanics/05_world_evolution.md, docs/parity_ledger/world_dynamics.yaml (WORLD-006)
 - agent-working/stored_artifacts/TCK-20261119-OCCUPATION-READS-COMPARED-WITH-A-NON-LIVING-SPECIES-ID-MISS-THE-WORLD-BOSS/investigation.md
 
 ## Completion Summary
