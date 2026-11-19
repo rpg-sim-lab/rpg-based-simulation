@@ -61,6 +61,7 @@ HEARTBEAT_TITLE = "_sync heartbeat"
 HEARTBEAT_FIELD = "Last run"
 UNASSIGNED, UNKNOWN = "unassigned", "unknown"
 LAST_RUN_PATH = Path.home() / ".local" / "state" / "rpg-project-sync" / "last-run.json"
+EXIT_SKIPPED = 3  # --apply wrote everything it could but left at least one item as it was (a planned select value has no option): distinct from a refusal (2) and a stop (1)
 FETCH_TIMEOUT_S = 60
 PR_LIMIT = 300  # the value of ticket_queue.PR_LIMIT: gh's own default is 30
 FOLDERS = ("todos", "inprogress", "done")
@@ -199,6 +200,7 @@ class Plan:
     heartbeats: list[dict] = field(default_factory=list)  # the live `_sync heartbeat` items, oldest first; never archived, never a ticket
     stale_hosts: list[str] = field(default_factory=list)  # other hosts whose heartbeat segment is older than stale_host_hours
     unassigned_code_areas: int = 0  # tickets whose Domain is `unassigned` because their code areas have no or mixed owners
+    skipped: dict = field(default_factory=dict)  # --apply: ticket id -> planned select values with no option on the Project; the item was left as it was
 
 
 # ---------------------------------------------------------------- ticket files
@@ -694,7 +696,7 @@ def derive_status(tid: str, main: list[TicketCopy], prs: list[PrFact] | None, se
     states = [s.state for s in segments.values()]
     if "blocked" in states or (not segments and any(c.blocked for c in main)):
         return "Blocked", [], findings
-    if parked_status(tid, main, prs, extras or Extras(), findings):
+    if parked_status(tid, main, prs, extras or Extras(), findings, segments):
         return "Parked", [], findings
     working = [st_ for st_ in states if st_ != "filing"]
     if working:
@@ -705,7 +707,8 @@ def derive_status(tid: str, main: list[TicketCopy], prs: list[PrFact] | None, se
     return "To do", [], findings
 
 
-def parked_status(tid: str, main: list[TicketCopy], prs: list[PrFact] | None, extras: "Extras", findings: list[str]) -> bool:
+def parked_status(tid: str, main: list[TicketCopy], prs: list[PrFact] | None, extras: "Extras", findings: list[str],
+                  segments: dict | None = None) -> bool:
     """True when origin's copy of the ticket carries a VALID `Parked: waits on ...` line whose target is still open: a ticket not Done, a PR in the
     open-PR list, or a decision (which cannot be checked, so it clears only when the line is removed). Malformed lines, an unknown target, a PR
     list that could not be read and a marker older than PARKED_STALE_DAYS are findings and never change the Status by themselves. Counts go to
@@ -722,6 +725,10 @@ def parked_status(tid: str, main: list[TicketCopy], prs: list[PrFact] | None, ex
     if not marker:
         return False
     kind, target, since = marker
+    if kind == "ticket" and target == tid:  # a ticket that waits on itself can never clear: malformed, never Parked
+        stats["malformed"] += 1
+        findings.append(f"{tid}: Parked marker names the ticket's own id ({target}): treated as malformed, not Parked")
+        return False
     if extras.today is not None and (extras.today - date.fromisoformat(since)).days > PARKED_STALE_DAYS:
         findings.append(f"{tid}: Parked marker since {since} is over {PARKED_STALE_DAYS} days old (a proposal threshold): abandoned, or still waiting?")
     if kind == "ticket":
@@ -740,6 +747,8 @@ def parked_status(tid: str, main: list[TicketCopy], prs: list[PrFact] | None, ex
         if not any(f"PR#{pr.number}" == target for pr in prs):
             stats["cleared"] += 1  # merged or closed: no longer in the open-PR list
             return False
+    if any(seg.state == "progress" for seg in (segments or {}).values()):  # a live, non-stale branch is working it: the Status stays Parked, the finding asks
+        findings.append(f"{tid}: Parked marker present but a live branch is working it: still waiting?")
     stats["set"] += 1
     return True
 
@@ -1319,7 +1328,7 @@ def main(argv: list[str] | None = None) -> int:
     rc = _main(argv, info)
     if info.get("apply"):
         write_last_run({"time": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%MZ"), "host": info.get("host", ""), "rc": rc,
-                        "done": info.get("done", 0), "left": info.get("left", 0), "error": info.get("error", ""),
+                        "done": info.get("done", 0), "left": info.get("left", 0), "skipped": info.get("skipped", 0), "error": info.get("error", ""),
                         "heartbeat": info.get("heartbeat", ""), "stale_hosts": info.get("stale_hosts", [])})
     return rc
 
@@ -1413,7 +1422,7 @@ def _main(argv: list[str] | None, info: dict) -> int:
     if client is not None and not args.apply:  # a live dry run also says what --apply would refuse (the same check, before any write)
         from tools.sessions.project_client import check_plan_options
         try:
-            plan.findings += [f"apply would refuse: {p}" for p in check_plan_options(client.load_project(), plan)]
+            plan.findings += [f"apply would skip the item (no option on the Project; run --init): {p}" for p in check_plan_options(client.load_project(), plan)]
         except (ClientRefused, ProjectError) as exc:
             plan.notes.append(f"option check skipped: {str(exc)[:120]}")
     if fetch_failure:
@@ -1437,10 +1446,19 @@ def _main(argv: list[str] | None, info: dict) -> int:
             print(f"project_sync: GitHub refused: {exc}", file=sys.stderr)
             info["error"] = str(exc)[:300]
             return 1
-        rc = 1 if error else 0
+        skipped = plan.skipped
+        rc = 1 if error else (EXIT_SKIPPED if skipped else 0)
+        if skipped and not error:  # the SessionStart line reads `error`: say what happened and what to do, without editing the hook
+            first = ", ".join(sorted(skipped)[:3])
+            info["error"] = f"skipped {len(skipped)} item(s): {first}{' ...' if len(skipped) > 3 else ''}; run --init"
+        info["skipped"] = len(skipped)
+        for tid in sorted(skipped):
+            print(f"finding: skipped {tid}: {'; '.join(skipped[tid])} has no option on the Project; the item was left as it was (run --init)", file=sys.stderr)
         beat = write_heartbeat(client, project, plan, args.host, datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%MZ"), rc)
-        info.update(done=len(done), left=len(not_done), error=error or "", heartbeat=beat or "")
-        print(f"applied {len(done)} step(s)" + (f"; STOPPED, {len(not_done)} not done" if error else "; nothing left"))
+        info.update(done=len(done), left=len(not_done), heartbeat=beat or "")
+        if error or not skipped:
+            info["error"] = error or ""
+        print(f"applied {len(done)} step(s)" + (f"; STOPPED, {len(not_done)} not done" if error else "; nothing left") + (f"; skipped {len(skipped)} item(s)" if skipped else ""))
         if beat:
             print(f"heartbeat: not written ({beat})", file=sys.stderr)
         if error:
@@ -1450,6 +1468,7 @@ def _main(argv: list[str] | None, info: dict) -> int:
             if partial:
                 print(f"partial: {partial} (its next-run hand-edit lines come from this stop; the rerun overwrites them)", file=sys.stderr)
             return 1
+        return rc
     return 0
 
 

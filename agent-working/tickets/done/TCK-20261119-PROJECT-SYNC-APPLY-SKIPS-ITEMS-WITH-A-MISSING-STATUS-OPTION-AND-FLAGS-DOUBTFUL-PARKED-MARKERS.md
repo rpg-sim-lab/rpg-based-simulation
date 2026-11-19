@@ -1,10 +1,10 @@
 ---
-status: active
+status: historical
 layer: ai
 authority: P1
 audience: agent
 ticket_id: TCK-20261119-PROJECT-SYNC-APPLY-SKIPS-ITEMS-WITH-A-MISSING-STATUS-OPTION-AND-FLAGS-DOUBTFUL-PARKED-MARKERS
-phase: open
+phase: done
 date: 2026-11-19
 tags: [delivery]
 ---
@@ -15,7 +15,7 @@ tags: [delivery]
 One bad Parked marker must not freeze every host's board: `--apply` skips only the items whose Status option is missing, and the sync flags a Parked marker on a ticket that is being worked or that names itself
 
 ## Status
-OPEN
+DONE
 
 ## Tier
 standard
@@ -33,7 +33,7 @@ Planner review of PR #984 (comment 7011805637), notes 1 and 2, filed on lead-pla
 
 ## Scope
 1. Step 1, read-only, to the planner first: the exact code path where `apply_plan` decides to refuse (which checks run before the first mutation, which of them are about Status options and which about fields), and what the heartbeat or last-run record shows after a refusal.
-2. A planned Status value with no option on the Project: leave THAT item at its current Status, print one finding naming the item and the missing option, count it in the run's notes, and carry on with every other item. Exit code: a DISTINCT non-zero code whenever any item was skipped (not the code of a whole-run refusal), recommended by lead-planner and agreed by the planner, because a timer that exits 0 with skipped items hides them; the rest of the run is still written, so a failed unit marks the skip without stopping the next tick. Confirm from the step 1 reading that a non-zero unit exit does not stop the timer from firing again, and say plainly what a timer sees. The skipped count must also reach the last-run record. A missing FIELD (Involved, Blocked by, Hotspot) is a different case and stays a refusal of the whole run, as tested today.
+2. A planned select value (ALL select fields: Status, Tier, Layer, Priority, Domain, decided by agent-working-planner 2026-11-20) with no option on the Project: skip THAT item whole (an update writes none of its fields and keeps its Sync hash, a create is not made), print one finding naming item, field and missing option, count it in the run's output and the last-run record, and carry on with every other item. Exit code 3 (distinct from 0 pass, 1 stop, 2 refusal) when any item was skipped; the last-run `error` reads `skipped N item(s): <first ids>; run --init`; no hook edit. A missing FIELD still refuses the whole run (exit 2).
 3. Parked marker findings, status unchanged: (a) a valid marker on a ticket that has a non-stale working branch segment: "marker present but a live branch is working it: still waiting?"; (b) a marker whose target ticket id is the ticket's own id: treated as malformed (a finding), so it never reads Parked.
 4. Docs: `docs/guidelines/session_roles/project_sync_dry_run.md` (the new apply behaviour and the two findings). Quote the marker form only inline in prose or backticks, never at the start of a line (the hold on `Parked: ` lines until the merge window's `--init`).
 
@@ -78,7 +78,10 @@ N/A: no src change; the Project is a generated view rebuilt on each sync. The sk
 Filed by agent-working-planner on lead-planner's word; not dispatched.
 
 ## Test Summary
+`tests/tools/test_session_project_apply_skips.py` (10 tests): an update and a create planned for a missing option are skipped whole and the others written (the same input is refused by the old check: positive control), every select field is covered, a missing FIELD still refuses the whole run, exit 3 with `skipped` and the honest `error` text in last-run.json, 0 when nothing is skipped and 1 for a stop, the SessionStart line reads truthfully on the second tick without a hook edit, and the two Parked findings. Three tests that pinned the old whole-run refusal were rewritten to the skip. The whole tools f-z lane and the a-e side: see the push facts.
 
 ## Files Changed
+`tools/sessions/project_client.py` (`apply_plan`, `skipped_items`), `tools/sessions/project_sync.py` (`EXIT_SKIPPED`, `Plan.skipped`, the apply outcome, last-run `skipped`, `parked_status` findings), `tests/tools/test_session_project_apply_skips.py` (new), three updated tests, `docs/guidelines/session_roles/project_sync_dry_run.md`.
 
 ## Completion Summary
+Built to the planner's decisions (option A for the exit code; all select fields; skip the whole item): see Scope. The SessionStart hook was not edited. A timer on a non-zero exit fires again on schedule (a throwaway transient timer on this host exited 3 and ran again 7 s later; it was removed; creating it was more than read-only and the planner noted that systemd changes are the owner's to approve). While writing the tests one of them briefly wrote this host's real `last-run.json` (rc 3, failed_streak 3) because the new test module had no isolation fixture; I restored the previous content exactly (rc 0, 17:19Z) and added the fixture. Post-merge: the first live apply with the Parked option missing now skips only a Parked item instead of refusing the run; the marker hold is no longer the only protection, but `--init` still has to add the option for Parked items to show. Hand-orchestrated close.

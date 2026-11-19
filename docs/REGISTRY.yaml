@@ -8062,6 +8062,25 @@
   - agent-working/stored_artifacts/TCK-20261119-OCCUPATION-READS-COMPARED-WITH-A-NON-LIVING-SPECIES-ID-MISS-THE-WORLD-BOSS/investigation.md
   tags: []
 - type: ticket
+  path: agent-working/tickets/done/TCK-20261119-PROJECT-SYNC-APPLY-SKIPS-ITEMS-WITH-A-MISSING-STATUS-OPTION-AND-FLAGS-DOUBTFUL-PARKED-MARKERS.md
+  ticket_id: TCK-20261119-PROJECT-SYNC-APPLY-SKIPS-ITEMS-WITH-A-MISSING-STATUS-OPTION-AND-FLAGS-DOUBTFUL-PARKED-MARKERS
+  title: 'One bad Parked marker must not freeze every host''s board: `--apply` skips
+    only the items whose Status option is missing, and the sync flags a Parked marker
+    on a ticket that is being worked or that names itself'
+  tier: standard
+  ticket_type: bug
+  date: '2026-11-19'
+  related_code_areas:
+  - tools/sessions/project_sync.py
+  - tools/sessions/project_client.py
+  - tests/tools/test_session_project_parked.py
+  artifact_files:
+  - agent-working/stored_artifacts/TCK-20261119-PROJECT-SYNC-APPLY-SKIPS-ITEMS-WITH-A-MISSING-STATUS-OPTION-AND-FLAGS-DOUBTFUL-PARKED-MARKERS/investigation.md
+  - agent-working/stored_artifacts/TCK-20261119-PROJECT-SYNC-APPLY-SKIPS-ITEMS-WITH-A-MISSING-STATUS-OPTION-AND-FLAGS-DOUBTFUL-PARKED-MARKERS/plan.md
+  - agent-working/stored_artifacts/TCK-20261119-PROJECT-SYNC-APPLY-SKIPS-ITEMS-WITH-A-MISSING-STATUS-OPTION-AND-FLAGS-DOUBTFUL-PARKED-MARKERS/test_plan.md
+  tags:
+  - delivery
+- type: ticket
   path: agent-working/tickets/done/TCK-20261119-PROJECT-VIEW-PARKED-STATE-FROM-A-TICKET-BODY-MARKER-LINE.md
   ticket_id: TCK-20261119-PROJECT-VIEW-PARKED-STATE-FROM-A-TICKET-BODY-MARKER-LINE
   title: GitHub Project 1 shows a Parked state, read from a one-line marker a planner
@@ -8192,22 +8211,6 @@
   artifact_files: []
   tags:
   - mcp
-- type: ticket
-  path: agent-working/tickets/todos/TCK-20261119-PROJECT-SYNC-APPLY-SKIPS-ITEMS-WITH-A-MISSING-STATUS-OPTION-AND-FLAGS-DOUBTFUL-PARKED-MARKERS.md
-  ticket_id: TCK-20261119-PROJECT-SYNC-APPLY-SKIPS-ITEMS-WITH-A-MISSING-STATUS-OPTION-AND-FLAGS-DOUBTFUL-PARKED-MARKERS
-  title: 'One bad Parked marker must not freeze every host''s board: `--apply` skips
-    only the items whose Status option is missing, and the sync flags a Parked marker
-    on a ticket that is being worked or that names itself'
-  tier: standard
-  ticket_type: bug
-  date: '2026-11-19'
-  related_code_areas:
-  - tools/sessions/project_sync.py
-  - tools/sessions/project_client.py
-  - tests/tools/test_session_project_parked.py
-  artifact_files: []
-  tags:
-  - delivery
 - type: ticket
   path: agent-working/tickets/todos/TCK-20261119-PROJECT-SYNC-READS-REMOTE-BRANCHES-NOT-ONLY-CHECKED-OUT-WORKTREES.md
   ticket_id: TCK-20261119-PROJECT-SYNC-READS-REMOTE-BRANCHES-NOT-ONLY-CHECKED-OUT-WORKTREES
