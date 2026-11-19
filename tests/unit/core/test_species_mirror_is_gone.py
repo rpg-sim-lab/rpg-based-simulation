@@ -57,7 +57,10 @@ def test_the_archetype_factory_no_longer_writes_the_mirror():
     assert species_of(entity) == "human"
 
 
-# ---- step 5 ruling: needs come from the species; a set-but-unprofiled species runs on base rates and is counted ---------------------------------
+# ---- step 5 ruling (a2), rpg-designer 2026-11-19: needs come from the species; a catalog species without a profile runs on base rates and is counted; a kind that is no catalog species reads its role ----
+
+_TEST_DOUBLE_SPECIES_WITHOUT_PROFILE = "test_double_species_without_profile"
+
 
 class _Species:
     def __init__(self, need_profile):
@@ -65,8 +68,9 @@ class _Species:
 
 
 class _Catalog:
+    # no real species lacks a need_profile today (species.yaml, 2026-11-19); this pins the defensive branch
     def __init__(self):
-        self._species = {"human": _Species("humanoid_survival"), "blob": _Species(None)}
+        self._species = {"human": _Species("humanoid_survival"), _TEST_DOUBLE_SPECIES_WITHOUT_PROFILE: _Species(None)}
 
     def get_species(self, species_id):
         return self._species.get(species_id)
@@ -75,22 +79,33 @@ class _Catalog:
         return object() if profile_id == "humanoid_survival" else None
 
 
-def _state(*kinds):
+def _state(*kind_roles):
     from types import SimpleNamespace
     from src.core.builder import V2EntityBuilder
-    entities = {i + 1: V2EntityBuilder(i + 1).kind(k).location(0.0, 0.0).build() for i, k in enumerate(kinds)}
+    entities = {i + 1: V2EntityBuilder(i + 1).kind(k).location(0.0, 0.0).identity(role=r).build() for i, (k, r) in enumerate(kind_roles)}
     return SimpleNamespace(entities=entities)
 
 
-def test_a_species_not_in_content_gets_no_profile_and_is_counted_per_species():
-    from src.engine.biological_needs import profile_id_for, unprofiled_need_counts
-    state = _state("human", "TEST", "TEST", "blob", "world_boss")
+def test_needs_follow_the_species_and_an_unknown_kind_reads_its_role_a2_rpg_designer_2026_11_19():
+    """(a2), rpg-designer 2026-11-19. A catalog species with no need profile gets base rates and is counted unprofiled (not an interim hit); a kind that is no catalog species and has a
+    MONSTER role gets base rates, and is both unprofiled and an interim hit; one with a person role gets the person profile and is an interim hit, not unprofiled; a catalog species with a profile keeps it whatever its role."""
+    from src.core.enums import EntityRole
+    from src.engine.biological_needs import interim_role_need_counts, profile_id_for, unprofiled_need_counts
+    state = _state(("human", EntityRole.CITIZEN), (_TEST_DOUBLE_SPECIES_WITHOUT_PROFILE, EntityRole.CITIZEN), ("TEST", EntityRole.MONSTER), ("TEST", EntityRole.MONSTER), ("worker", EntityRole.WORKER),
+                   ("world_boss", EntityRole.MONSTER), ("human", EntityRole.MONSTER), ("", EntityRole.CITIZEN), ("", EntityRole.MONSTER))
     catalog = _Catalog()
-    assert profile_id_for(state.entities[1], catalog) == "humanoid_survival"
-    assert profile_id_for(state.entities[2], catalog) is None  # no role fallback: needs come from the species
-    assert unprofiled_need_counts(state, catalog) == {"TEST": 2, "blob": 1, "world_boss": 1}
+    assert [profile_id_for(state.entities[i], catalog) for i in range(1, 10)] == [
+        "humanoid_survival", None, None, None, "humanoid_survival", None, "humanoid_survival", "humanoid_survival", None]
+    assert unprofiled_need_counts(state, catalog) == {_TEST_DOUBLE_SPECIES_WITHOUT_PROFILE: 1}
+    assert interim_role_need_counts(state, catalog) == {"<none>|CITIZEN": 1, "<none>|MONSTER": 1, "TEST|MONSTER": 2, "worker|WORKER": 1, "world_boss|MONSTER": 1}
+    # disjoint, and the base-rate bodies are exactly the unprofiled ones plus the interim ones with a non-person role
+    assert not {k.split("|")[0] for k in interim_role_need_counts(state, catalog)} & set(unprofiled_need_counts(state, catalog))
+    base_rate_ids = {i for i in state.entities if profile_id_for(state.entities[i], catalog) is None}
+    assert sorted(base_rate_ids) == [2, 3, 4, 6, 9]
+    assert len(base_rate_ids) == sum(unprofiled_need_counts(state, catalog).values()) + sum(v for k, v in interim_role_need_counts(state, catalog).items() if k.endswith("|MONSTER"))
 
 
 def test_the_count_is_empty_when_every_species_has_a_profile():
+    from src.core.enums import EntityRole
     from src.engine.biological_needs import unprofiled_need_counts
-    assert unprofiled_need_counts(_state("human", "human"), _Catalog()) == {}
+    assert unprofiled_need_counts(_state(("human", EntityRole.CITIZEN), ("human", EntityRole.CITIZEN)), _Catalog()) == {}

@@ -72,14 +72,15 @@ def profile_id_for(entity: Any, catalog: Any) -> Optional[str]:
         return str(explicit)
     role = entity.identity.role
     species_id = species_of(entity)
-    if species_id:
-        species = catalog.get_species(species_id)
-        if species is not None and species.need_profile:
+    species = catalog.get_species(species_id) if species_id else None
+    if species is not None:
+        if species.need_profile:
             return str(species.need_profile)
-        # A species that is set but has no need profile in content (unknown to the catalog, or declared without one) gets base rates (rpg-designer ruling, M1 step 5):
-        # needs come from the species, never from the role. It is counted by `unprofiled_need_counts` and logged here.
+        # A catalog species declared without a need profile gets base rates (rpg-designer ruling, M1 step 5): needs come from the species, never from the role. It is counted by
+        # `unprofiled_need_counts` and logged here.
         _LOG.debug("entity %s: species %r has no need profile in content; base need rates apply", getattr(entity, "id", None), species_id)
         return None
+    # FLAGGED INTERIM (rpg-designer 2026-11-19): unknown-species kinds read the role for needs; retires with stage-4b item AC / the P3 typed load error
     return PERSON_FALLBACK_PROFILE_ID if _role_int(role) in _PERSON_ROLES else None
 
 
@@ -131,15 +132,30 @@ def undeclared_need_kinds(state: Any, catalog: Any) -> Dict[Tuple[Optional[str],
 
 
 def unprofiled_need_counts(state: Any, catalog: Any) -> Dict[str, int]:
-    """Subjects whose species is set but has no need profile in content, counted per species (they run on base rates; observability only, never durable state).
-
-    M1 step 5 bar, read with K7: this is empty on the gate worlds. `world_boss` and `magical_demonic_entity` (the non-living kind allowlist) are counted here when they exist."""
+    """Subjects whose species IS in the catalog but declares no need profile, counted per species (they run on base rates; observability only, never durable state). Disjoint from
+    `interim_role_need_counts` (a kind that is no catalog species is counted there, never here). No real species lacks a profile today, so this is empty on the gate worlds."""
     out: Dict[str, int] = {}
     for entity in state.entities.values():
         species_id = species_of(entity)
         if not species_id or (entity.identity.properties or {}).get("need_profile_id"):
             continue
-        profile_id = profile_id_for(entity, catalog)
-        if profile_id is None or catalog.get_need_profile(profile_id) is None:
+        species = catalog.get_species(species_id)
+        if species is not None and (not species.need_profile or catalog.get_need_profile(species.need_profile) is None):
             out[species_id] = out.get(species_id, 0) + 1
+    return dict(sorted(out.items()))
+
+
+def interim_role_need_counts(state: Any, catalog: Any) -> Dict[str, int]:
+    """Subjects whose kind is NOT a catalog species and that therefore take their needs from their role (the FLAGGED INTERIM branch of `profile_id_for`), counted per ``kind|ROLE`` so a read
+    can split the person roles (`humanoid_survival`) from the others (base rates). A body with no kind is counted as ``<none>|ROLE``. `world_boss` and `magical_demonic_entity` (the non-living kind allowlist) are counted here when they
+    exist. Observability only, derived on demand and never durable state, like `unprofiled_need_counts`; disjoint from it. Empty with a content context: every body then has a declared species."""
+    out: Dict[str, int] = {}
+    for entity in state.entities.values():
+        species_id = species_of(entity)
+        if (entity.identity.properties or {}).get("need_profile_id") or (species_id and catalog.get_species(species_id) is not None):
+            continue
+        role_int = _role_int(entity.identity.role)
+        role = EntityRole(role_int).name if role_int in {int(r) for r in EntityRole} else str(entity.identity.role)
+        key = f"{species_id or '<none>'}|{role}"
+        out[key] = out.get(key, 0) + 1
     return dict(sorted(out.items()))
