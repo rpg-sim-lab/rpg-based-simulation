@@ -8000,6 +8000,23 @@
   tags:
   - mcp
 - type: ticket
+  path: agent-working/tickets/done/TCK-20261119-FILED-TICKETS-ARE-SCANNED-FOR-OVERLAP-WITH-OPEN-TODOS.md
+  ticket_id: TCK-20261119-FILED-TICKETS-ARE-SCANNED-FOR-OVERLAP-WITH-OPEN-TODOS
+  title: A ticket filed by hand into todos/ or inprogress/ is scanned for overlap
+    with open tickets, and each hit is cited or explained (report-only)
+  tier: standard
+  ticket_type: feature
+  date: '2026-11-19'
+  related_code_areas:
+  - tools/open_ticket_overlap.py
+  - .claude/agents/ticket-scoper.md
+  - tools/validate_frontmatter.py
+  - tests/tools/test_open_ticket_overlap_real_corpus.py
+  artifact_files: []
+  tags:
+  - create-tickets
+  - ticket-scoper
+- type: ticket
   path: agent-working/tickets/done/TCK-20261119-OCCUPATION-READS-COMPARED-WITH-A-NON-LIVING-SPECIES-ID-MISS-THE-WORLD-BOSS.md
   ticket_id: TCK-20261119-OCCUPATION-READS-COMPARED-WITH-A-NON-LIVING-SPECIES-ID-MISS-THE-WORLD-BOSS
   title: 'navigation.py and threat.py compare the occupation with "world_boss", but
@@ -8123,23 +8140,6 @@
   artifact_files: []
   tags:
   - delivery
-- type: ticket
-  path: agent-working/tickets/todos/TCK-20261119-FILED-TICKETS-ARE-SCANNED-FOR-OVERLAP-WITH-OPEN-TODOS.md
-  ticket_id: TCK-20261119-FILED-TICKETS-ARE-SCANNED-FOR-OVERLAP-WITH-OPEN-TODOS
-  title: A ticket filed by hand into todos/ or inprogress/ is scanned for overlap
-    with open tickets, and each hit is cited or explained (report-only)
-  tier: standard
-  ticket_type: feature
-  date: '2026-11-19'
-  related_code_areas:
-  - tools/open_ticket_overlap.py
-  - .claude/agents/ticket-scoper.md
-  - tools/validate_frontmatter.py
-  - tests/tools/test_open_ticket_overlap_real_corpus.py
-  artifact_files: []
-  tags:
-  - create-tickets
-  - ticket-scoper
 - type: ticket
   path: agent-working/tickets/todos/TCK-20261119-PROJECT-SYNC-READS-REMOTE-BRANCHES-NOT-ONLY-CHECKED-OUT-WORKTREES.md
   ticket_id: TCK-20261119-PROJECT-SYNC-READS-REMOTE-BRANCHES-NOT-ONLY-CHECKED-OUT-WORKTREES

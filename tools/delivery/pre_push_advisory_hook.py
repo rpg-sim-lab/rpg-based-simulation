@@ -54,6 +54,11 @@ defends against):
   the branch diff touches `docs/parity_ledger/*.yaml`: each such shard as pushed must parse into a list of mappings with ids, and
   its new or changed entries must pass `parity_ledger_writer.validate_entry` (legacy entries are exempt). The line names the writer.
 
+- **H — an uncited overlap with an open ticket (advisory, TCK-20261119-FILED-TICKETS-ARE-SCANNED-FOR-OVERLAP-WITH-OPEN-TODOS).** For each
+  `todos/` or `inprogress/` ticket file the branch diff adds or changes, `tools/gate_checks/ticket_overlap_check.py` prints at most one line naming the
+  top two open tickets the draft overlaps and does not cite (a locator, not a verdict; about half its hits are cited-and-fine). A push that adds no such
+  file pays nothing. Unlike the others, a scanner that FAILS is a named warning here, not silence.
+
 Every check degrades to "no finding" on any git-command failure (detached HEAD, no local
 `origin/main` ref, non-tracking branch) rather than raising — this hook must never traceback, and
 an uncertain check says nothing, not something wrong.
@@ -265,6 +270,30 @@ def check_parity_ledger_shards(run_command=default_run_command, base_ref: str = 
     ]
 
 
+_OPEN_TICKET = re.compile(rf"^{re.escape(posix(TICKETS))}/(?:todos|inprogress)/(?:.*/)?TCK-[^/]+\.md$")
+
+
+def check_ticket_overlap(run_command=default_run_command, base_ref: str = "origin/main") -> List[str]:
+    """Check H: new or changed open-ticket files that overlap an open ticket they do not cite. Warn-only. A git failure or no ticket
+    file says nothing; a scanner failure is named."""
+    try:  # the git side says nothing when uncertain, like every other check
+        diff = run_command(["git", "diff", "--name-only", f"{base_ref}...HEAD"])
+        if diff.returncode != 0:
+            return []
+        files = [p for p in diff.stdout.splitlines() if _OPEN_TICKET.match(p) and Path(p).is_file()]  # a file the branch deleted or moved has nothing to scan
+        if not files:
+            return []
+    except Exception:
+        return []
+    try:  # the scanner side does not go quiet: a failed scan is a named warning, never a silent pass
+        from tools.gate_checks import ticket_overlap_check
+
+        lines, _counts = ticket_overlap_check.check_files(files)
+    except Exception as exc:
+        return [f"pre-push: overlap scan: ERROR the scanner failed: {type(exc).__name__}: {exc}"]
+    return [f"pre-push: {line}" for line in lines]
+
+
 _POST_COMMIT_SCRIPT = "tools/hooks/post-commit-reindex.sh"
 
 
@@ -305,6 +334,7 @@ def run_all_checks(
     findings.extend(check_registry_fresh(run_command, base_ref))
     findings.extend(check_installed_post_commit_current(run_command))
     findings.extend(check_parity_ledger_shards(run_command, base_ref))
+    findings.extend(check_ticket_overlap(run_command, base_ref))
     return findings
 
 
