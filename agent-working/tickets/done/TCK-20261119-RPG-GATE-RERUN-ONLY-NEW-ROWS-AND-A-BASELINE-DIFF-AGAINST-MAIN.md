@@ -1,10 +1,10 @@
 ---
-status: active
+status: historical
 layer: testing
 authority: P1
 audience: agent
 ticket_id: TCK-20261119-RPG-GATE-RERUN-ONLY-NEW-ROWS-AND-A-BASELINE-DIFF-AGAINST-MAIN
-phase: open
+phase: done
 date: 2026-11-19
 tags: [process-improvement]
 ---
@@ -15,7 +15,7 @@ tags: [process-improvement]
 The rpg gate reruns only the (world, seed) runs behind a fail or drift row that main's latest gate report does not already carry, and writes its own "new vs main" diff
 
 ## Status
-INPROGRESS
+DONE
 
 ## Tier
 standard
@@ -45,6 +45,14 @@ Design decisions fixed here (lead-planner's two, plus those the investigation mu
 
 Proof (owner condition): replay recorded gate reports with the same inputs and get an identical verdict, rows and pass/fail. Recorded copies are kept by lead-planner at `/data/vboxuser/gate-reports/<run id>/` (44281112176, 44316977936, 44339505504, 44353267564, 44366629746). The replay includes cases for: no new row (no rerun, "new vs main: none"), one new row (rerun of its pairs only), main report missing (full rerun), main report unreadable (full rerun), and a row in main that changed state (rerun).
 
+### Selection rule (testing-planner decisions, as folded into the PR)
+
+1. Events: both `schedule` and `workflow_dispatch` runs count. The conclusion does not matter; only "completed" does.
+2. "Main" is matched by the branch name `main` (`gh run list --branch main`) AND by sha equality: the report's `sha` must equal the run's head sha, so the report was made from the commit the run is on. A dispatch whose `ref` input points elsewhere is passed over. Ancestry in main's history is deliberately NOT used, because the report job has a depth-1 checkout: a known limit.
+3. A dispatch on main whose `ref` input equals main's head at dispatch time DOES count (for example run 44452967207: head a30847030, ref input a30847030). The workflow's "evidence only, not a baseline source" label belongs to `rebaseline` (the baseline candidate) and is unrelated to this rule; it is not an exclusion.
+4. Branch runs never count (`--branch main`). A gate-skipped or artifact-less run is passed over; the newest run that has an artifact decides, and if its report is unreadable the answer is the fallback, never an older report.
+5. Staleness: a main report whose run `createdAt` is older than `main_report_max_age_days` is not used; the answer is the fallback ("main's newest gate report is N days old, bound B"), never an older report. The bound lives in `tools/test_architecture/rpg_gate_main_report.yaml` (testing-owned, not hashed by the harness; deliberately not rpg's hashed `tests/simulation_quality/rpg_gate/config.yaml`, whose edit would stale the baseline). A missing file, missing key or a value that is not a positive integer is also the full-rerun fallback. The scheduled run is daily, so 3 days tolerates a missed weekend day's schedule drop plus a gate-skipped day without going stale; staleness only ever gives a fuller rerun. The summary line prints "run <id> (<event>, <head8>, <N>d old, bound <B>d)".
+
 ## Out of Scope
 - Any metric, oracle or baseline change; any edit to `tests/simulation_quality/rpg_gate/baselines` or `rpg_gate_known.yaml`.
 - Changing what the verdict means (red only for an unowned or expired fail, or an unstable metric).
@@ -61,7 +69,7 @@ Proof (owner condition): replay recorded gate reports with the same inputs and g
 6. Replaying the recorded reports listed above reproduces the verdict, the rows and pass/fail of those runs; the replay is a committed test.
 7. `rpg_gate_known.yaml`, the baselines and every metric definition are unchanged (diff shown).
 8. The workflow change is validated against the CI-shape tests; `permissions` gains only `actions: read` on the report job.
-9. The first real run on main after merge is read and its result recorded on this ticket: the main report found, the run id used, the time saved.
+9. The first real run on main after merge is read and its result recorded: the main report found, the run id used, the time saved. SPLIT OUT (testing-planner review, B2): AC9 can only be read after merge, so this ticket closes on AC1-8 with the PR and AC9 is a post-merge check recorded on #631, as the #588 post-merge items were. It is not dropped.
 
 ## Related Tickets
 - TCK-20261009-RPG-GATE-REPORT-STATES-AND-SAME-SHA-RERUN (the rerun this narrows)
@@ -104,4 +112,5 @@ Selection (a): newest completed run with a readable artifact whose report sha eq
 tools/test_architecture/rpg_gate_report.py, rpg_gate_main_report.py (new), .github/workflows/rpg-gate-report.yml, tests (unit, static, fixtures/rpg_gate_replay), the baseline-format reference doc. rpg_gate_known.yaml, baselines and metrics unchanged.
 
 ## Completion Summary
-Open.
+AC1-8 met in the PR. AC9 is split out to a post-merge check on #631 (it needs the first real run on main). The first real run also settles whether the workflow GITHUB_TOKEN with `actions: read` can download main's artifact; any failure there is the full rerun, never a skipped one.
+Review changes folded in: a carried row whose pair the rerun covers anyway is read from the second pass (unstable on a mismatch); the main report's age is bounded by `main_report_max_age_days` in a testing-owned YAML (see the Selection rule); the selection rule is stated in the module docstring, here and in tests. Open risk (report docstring): main fixed a row after its last report and the PR re-breaks it within the bound reads as "in main" until main's next report; the verdict still reads first-pass state.

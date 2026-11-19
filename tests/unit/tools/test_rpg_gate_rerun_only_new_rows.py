@@ -112,7 +112,7 @@ def test_replay_of_the_latest_pr_run_reruns_only_the_pairs_behind_its_new_rows_a
     assert rr.calls == [[("frontier_living_world", 42)] + [("urban_political", s) for s in SEEDS]]
     new = report["vs_main"]["new"]
     assert sorted((f["id"], f["world"], f.get("seed"), f["state"]) for f in new) == [("O2.population", "urban_political", None, "drift"), ("V3", "frontier_living_world", 42, "fail")]
-    assert report["vs_main"]["source"] == {"run_id": "44323101062", "head_sha": _fix("main-44323101062")["sha"]}
+    assert {k: report["vs_main"]["source"][k] for k in ("run_id", "head_sha")} == {"run_id": "44323101062", "head_sha": _fix("main-44323101062")["sha"]}
     assert report["verdict"] == "red"  # the verdict is unchanged: an unowned fail is still red
     skipped = [f for f in report["findings"] if f.get("not_rerun")]
     assert skipped and all(f["not_rerun"] == "in main's report, run 44323101062" for f in skipped)
@@ -309,12 +309,69 @@ def test_fetch_excludes_the_current_run_and_asks_only_for_completed_runs_on_main
     assert "--status" in listing and listing[listing.index("--status") + 1] == "completed" and listing[listing.index("--branch") + 1] == "main"
 
 
-def test_fetch_falls_back_when_the_newest_main_report_is_older_than_the_bound():
-    runs = [_run_row(2, "b")]
-    assert mainrep.fetch(_gh(runs, {"2": {"sha": "b"}}), now=datetime(2026, 11, 22, 1, tzinfo=timezone.utc))["fallback"].endswith("older than 3 days")
-    assert mainrep.fetch(_gh(runs, {"2": {"sha": "b"}}), now=datetime(2026, 11, 21, tzinfo=timezone.utc))["run_id"] == 2
-    bad = [{**_run_row(2, "b"), "createdAt": "garbage"}]
-    assert "fallback" in mainrep.fetch(_gh(bad, {"2": {"sha": "b"}}), now=NOW)
+def _event_row(rid, sha, event, created="2026-11-18T00:00:00Z"):
+    return {"databaseId": rid, "headSha": sha, "event": event, "createdAt": created}
+
+
+def test_a_scheduled_main_run_counts_and_the_source_names_event_head_and_age():
+    out = mainrep.fetch(_gh([_event_row(2, "abcdef0123456789", "schedule")], {"2": {"sha": "abcdef0123456789"}}), now=NOW)
+    assert (out["run_id"], out["event"], out["age_days"], out["max_age_days"]) == (2, "schedule", 1, 3)
+
+
+def test_a_dispatch_on_main_whose_report_sha_equals_its_head_counts_even_with_a_ref_input_equal_to_main_head():
+    """Model of run 44452967207: a workflow_dispatch on main, head a30847030, ref input a30847030: the report is made from the run's own head."""
+    head = "a30847030" + "0" * 31
+    out = mainrep.fetch(_gh([_event_row(44452967207, head, "workflow_dispatch")], {"44452967207": {"sha": head}}), now=NOW)
+    assert out["run_id"] == 44452967207 and out["event"] == "workflow_dispatch"
+
+
+def test_a_dispatch_on_main_with_a_ref_input_elsewhere_is_passed_over_and_the_next_older_run_is_used():
+    runs = [_event_row(3, "main-head", "workflow_dispatch"), _event_row(2, "older-head", "schedule")]
+    out = mainrep.fetch(_gh(runs, {"3": {"sha": "some-other-commit"}, "2": {"sha": "older-head"}}), now=NOW)
+    assert out["run_id"] == 2
+
+
+def test_a_branch_run_is_never_asked_for_and_never_selected():
+    gh = _gh([_event_row(1, "a", "workflow_dispatch")], {"1": {"sha": "a"}})
+    mainrep.fetch(gh, now=NOW)
+    listing = gh.calls[0]
+    assert listing[listing.index("--branch") + 1] == "main"  # the branch filter is what keeps PR-branch dispatches out
+    cli = mainrep.fetch(_gh([], {}), branch="pr-branch", now=NOW)
+    assert "fallback" in cli  # nothing is invented for a listing with no runs
+
+
+def test_the_age_bound_is_inclusive_of_the_bound_and_falls_back_beyond_it_without_using_an_older_report():
+    runs = [_event_row(2, "b", "schedule", "2026-11-16T00:00:00Z"), _event_row(1, "a", "schedule", "2026-11-18T00:00:00Z")]
+    arts = {"2": {"sha": "b"}, "1": {"sha": "a"}}
+    inside = mainrep.fetch(_gh(runs, arts), now=datetime(2026, 11, 19, 23, tzinfo=timezone.utc))
+    assert inside["run_id"] == 2 and inside["age_days"] == 3  # exactly at the bound counts
+    beyond = mainrep.fetch(_gh(runs, arts), now=datetime(2026, 11, 20, 1, tzinfo=timezone.utc))
+    assert beyond["fallback"] == "main's newest gate report is 4 days old, bound 3"
+    assert "fallback" in mainrep.fetch(_gh([_event_row(2, "b", "schedule", "garbage")], {"2": {"sha": "b"}}), now=NOW)
+
+
+@pytest.mark.parametrize("content", [None, "", "other_key: 3\n", "main_report_max_age_days: 0\n", "main_report_max_age_days: -2\n", "main_report_max_age_days: three\n",
+                                     "main_report_max_age_days: 2.5\n", "main_report_max_age_days: true\n", "- a list\n"])
+def test_a_missing_or_invalid_bound_falls_back_to_the_full_rerun_never_to_no_bound(content, tmp_path):
+    settings = tmp_path / "s.yaml"
+    if content is not None:
+        settings.write_text(content, encoding="utf-8")
+    gh = _gh([_event_row(1, "a", "schedule")], {"1": {"sha": "a"}})
+    out = mainrep.fetch(gh, now=NOW, settings=settings)
+    assert "report" not in out and "settings are invalid" in out["fallback"] and gh.calls == []  # nothing is even fetched
+
+
+def test_the_shipped_settings_hold_a_positive_integer_and_the_harness_hash_does_not_cover_them():
+    assert mainrep.load_max_age_days() == 3
+    assert not any("rpg_gate_main_report" in rel for rel in harness._HARNESS_SOURCES)  # not an input of harness_hash, so the baselines stay current
+    assert "rpg_gate_main_report" not in Path(harness.__file__).read_text(encoding="utf-8")
+
+
+def test_the_summary_line_names_run_event_head_age_and_bound(tmp_path, _stub_evaluate_and_ownership):
+    fixture = _fix("main-44323101062")
+    main = _main(tmp_path, event="schedule", age_days=1, max_age_days=3, run_id=44323101062, head_sha="a9dc29cdf2347dfaacdb0ba48acd6ebc6e34b68a")
+    report, _ = _run(_stub_evaluate_and_ownership, fixture, main=main)
+    assert "run 44323101062 (schedule, a9dc29cd, 1d old, bound 3d)" in rep.render_markdown(report)
 
 
 def test_fetch_cli_writes_a_fallback_record_and_exits_zero_on_any_failure(tmp_path, monkeypatch):

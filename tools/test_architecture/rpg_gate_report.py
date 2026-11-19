@@ -494,7 +494,10 @@ def load_main_baseline(path: Optional[Path], harness_hash: str, refs: Optional[R
         keys = _main_keys(report)
     except (KeyError, TypeError):
         return None, "main report lacks the expected fields"
-    return {"run_id": raw.get("run_id"), "head_sha": raw.get("head_sha") or report.get("sha", ""), "keys": keys}, ""
+    return {
+        "run_id": raw.get("run_id"), "head_sha": raw.get("head_sha") or report.get("sha", ""), "event": raw.get("event", ""), "age_days": raw.get("age_days"),
+        "max_age_days": raw.get("max_age_days"), "keys": keys,
+    }, ""
 
 
 def refs_summary(refs: Optional[References]) -> List[dict]:
@@ -548,7 +551,9 @@ def build_report(
         # A carried row whose pair(s) the rerun happened to cover was checked for free (and is unstable on a mismatch); the others keep the first pass's state.
         stay = {finding_key(f) for f in carried if not _pairs_of(f, config) <= rerun_pairs}
         findings = [{**f, "not_rerun": f"in main's report, {source}"} if finding_key(f) in stay and f["state"] in (FAIL, DRIFT) else f for f in findings]
-    vs_main: Dict[str, Any] = {"source": {"run_id": main["run_id"], "head_sha": main["head_sha"]} if main else None, "fallback": "" if main else (main_fallback or "no main report was supplied")}
+    vs_main: Dict[str, Any] = {
+        "source": {k: main[k] for k in ("run_id", "head_sha", "event", "age_days", "max_age_days")} if main else None, "fallback": "" if main else (main_fallback or "no main report was supplied"),
+    }
     if main:
         vs_main["new"] = [f for f in findings if finding_key(f) in {finding_key(x) for x in fresh}]
         vs_main["carried"] = len(carried)
@@ -628,7 +633,7 @@ def _vs_main_line(vs: Mapping[str, Any]) -> str:
     src = vs.get("source")
     if not src:
         return f"New vs main: unknown; the full rerun applies (fallback: {vs.get('fallback') or 'no main report'})."
-    head = f"Compared with main's report: run {src['run_id']}, head `{str(src['head_sha'])[:9]}`."
+    head = f"Compared with main's report: run {src['run_id']} ({src.get('event', '')}, {str(src['head_sha'])[:8]}, {src.get('age_days')}d old, bound {src.get('max_age_days')}d)."
     new = vs.get("new", [])
     if not new:
         return f"{head} New vs main: none ({vs.get('carried', 0)} fail/drift row(s) already in main, {vs.get('gone', 0)} of main's gone)."
