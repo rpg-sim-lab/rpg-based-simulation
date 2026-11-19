@@ -190,17 +190,29 @@ def test_the_real_ledger_class_exposes_the_public_payload_the_spy_reads_and_the_
     assert not any(token in source for token in private)
 
 
-def test_a_per_apply_declared_sum_that_disagrees_with_the_end_value_is_a_wiring_mismatch_exit_5():
+def test_a_ledger_move_between_applies_is_an_untracked_move_a_sum_mismatch_and_exit_5():
     start = _state(_body(1, gold=10), tick=0)
     spy, ledger = _spy(start)
     spy.observe(start, type("U", (), {"entities_add": [_body(2, gold=4)]})(), _state(_body(1, gold=10), _body(2, gold=4), tick=1))
-    ledger.declared_offset = 2.5  # the end value no longer equals the sum of the deltas the spy read apply by apply
+    ledger.declared_offset = 2.5  # a second feeder moves the ledger between two of the spy's applies
+    spy.observe(_state(_body(1, gold=10), _body(2, gold=4), tick=1), None, _state(_body(1, gold=10), _body(2, gold=4), tick=2))
     spy.finish()
     report = spy.report()
+    assert report["untracked_ledger_moves_count"] == 1 and report["untracked_ledger_moves"] == [{"tick": 2, "previous_after": 4.0, "before": 6.5}]
     assert report["declared_per_apply_sum"] == 4.0 and report["ledger_declared"] == 6.5 and report["declared_sum_matches_end"] is False
     assert report["wiring"] == "WIRING_MISMATCH" and report["cell_valid"] is False
     code, message = kit.exit_status({**report, "control": None}, None)
     assert code == kit.EXIT_WIRING_MISMATCH == 5 and "WIRING_MISMATCH" in message
+
+
+def test_a_clean_run_has_no_untracked_move_and_the_sum_equals_the_end_value_because_the_reads_bracket_each_observe():
+    start = _state(_body(1, gold=10), tick=0)
+    spy, _ = _spy(start)
+    spy.observe(start, type("U", (), {"entities_add": [_body(2, gold=4)]})(), _state(_body(1, gold=10), _body(2, gold=4), tick=1))
+    spy.observe(_state(_body(1, gold=10), _body(2, gold=4), tick=1), None, _state(_body(1, gold=10), _body(2, gold=4), tick=2))
+    spy.finish()
+    report = spy.report()
+    assert report["untracked_ledger_moves_count"] == 0 and report["declared_per_apply_sum"] == report["ledger_declared"] == 4.0 and report["wiring"] == "OK"
 
 
 def test_install_wraps_the_apply_path_and_restore_puts_the_original_back():
