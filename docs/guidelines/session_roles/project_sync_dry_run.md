@@ -229,7 +229,7 @@ re-checked on both and are identical): the live Project had 328 items; 47 showed
 Every new derivation prints ran / skipped / errored in the dry-run notes (`subject-link: ...`, `hotspot: ...`); a lookup that fails leaves the field empty and adds a finding. An
 update line shows the new Involved / Blocked by / Hotspot value next to the changed-field name. Exit code and `--apply` behaviour are unchanged for the existing fields.
 
-### Limits, the u24 dry run, and the post-merge live write (same ticket)
+### Limits, the u24 dry run, and the live write after this lands (same ticket)
 
 - **A squash-merged branch kept as a worktree.** `--not origin/main` cannot tell a squash-merged branch's commits from live ones, so before a worktree's subject links are
   used, `gh pr list --state merged --head <branch>` (the read-only `pr list` the guard already allows) is asked once per branch that has a worked-by-subject ticket not already
@@ -254,6 +254,6 @@ update line shows the new Involved / Blocked by / Hotspot value next to the chan
 - **The hash bump rewrite.** The ubuntu dry run plans 314 updates and 1 create: about 900 field writes (changed fields plus `Source` and `Sync hash` per row), so at the 1 s
   write pacing at least about 15 minutes (the FILED-DATE load of 328 items took 15m22s). Run it by hand first, not on the timer. A secondary rate limit is waited out; a primary
   one stops the run, and the next run reconciles (the partial item shows "hand edit" lines that the rerun overwrites).
-- **The live write is a post-merge step, not a code deliverable.** After the code merges: (1) a u24 seat runs the dry run above and shows the three owner cases correct;
+- **The live write is a step after this lands, not a code deliverable.** Once the code is on main: (1) a u24 seat runs the dry run above and shows the three owner cases correct;
   (2) its moved list goes to lead-planner and agent-working-planner; (3) the owner logs a yes; (4) `python3 tools/sessions/project_sync.py --init` (creates Involved,
   Blocked by, Hotspot), then `--apply` by hand.

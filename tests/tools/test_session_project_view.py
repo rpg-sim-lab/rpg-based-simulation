@@ -166,17 +166,26 @@ def test_the_merged_pr_lookup_is_a_read_the_guard_allows_and_asks_only_for_merge
 
 
 # ---- --state-root for project_sync: read only, printed, never a silent fallback
-def test_project_sync_state_root_flag_reads_the_given_directory_and_prints_it(tmp_path):
+def test_project_sync_state_root_flag_reads_the_given_directory_and_prints_it(tmp_path, monkeypatch):
     from pathlib import Path as P
-
-    from tools.sessions import state as st
-    root = P(__file__).resolve().parents[2]
-    st.write_bound_worktree(tmp_path, "rpg-planner", root, True)  # positive control: a record only the scratch root holds
+    seen = []
+    monkeypatch.setattr(ps, "worktree_entries", lambda root: [])  # no dependence on how the checkout running this test is laid out
+    monkeypatch.setattr(ps, "_worktree_for", lambda role, infos, main, state_root: seen.append(state_root))
     notes: list[str] = []
-    facts, _ = ps.read_branch_facts(root, "ubuntu", notes, state_root_override=tmp_path)
+    ps.read_branch_facts(P(__file__).resolve().parents[2], "ubuntu", notes, state_root_override=tmp_path)
     assert f"seat state root: {tmp_path} (--state-root)" in notes
-    assert any("rpg-planner" in f.seat.split("/") for f in facts if P(f.worktree).resolve() == root.resolve())  # the scratch record was read
-    assert sorted(p.name for p in tmp_path.iterdir()) == ["rpg-planner"]  # read only: nothing new was written under it
+    assert seen and all(s == tmp_path for s in seen)  # every seat lookup used the given root, never the repo's own
+    assert list(tmp_path.iterdir()) == []  # read only: nothing was written under it
+
+
+def test_project_sync_without_the_flag_uses_the_repos_own_state_root(monkeypatch):
+    from pathlib import Path as P
+    seen = []
+    monkeypatch.setattr(ps, "worktree_entries", lambda root: [])
+    monkeypatch.setattr(ps, "_worktree_for", lambda role, infos, main, state_root: seen.append(state_root))
+    notes: list[str] = []
+    ps.read_branch_facts(P(__file__).resolve().parents[2], "ubuntu", notes)
+    assert any(n.startswith("seat state root: ") and "(--state-root)" not in n for n in notes) and seen
 
 
 def test_project_sync_state_root_flag_that_is_not_a_directory_is_a_usage_error(tmp_path, capsys):
