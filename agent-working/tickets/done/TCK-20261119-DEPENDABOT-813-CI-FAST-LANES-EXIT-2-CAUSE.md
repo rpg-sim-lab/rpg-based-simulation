@@ -1,10 +1,10 @@
 ---
-status: active
+status: historical
 layer: ai
 authority: P1
 audience: agent
 ticket_id: TCK-20261119-DEPENDABOT-813-CI-FAST-LANES-EXIT-2-CAUSE
-phase: open
+phase: done
 date: 2026-11-19
 tags: [mcp]
 ---
@@ -15,7 +15,7 @@ tags: [mcp]
 Find the cause of the Migration lanes job "Fast lanes" exit 2 on the closed Dependabot #813 (duckdb, pyarrow, websockets)
 
 ## Status
-OPEN
+DONE
 
 ## Tier
 hotfix
@@ -63,7 +63,22 @@ N/A: no src change; dependency, tooling and CI work only.
 Filed by agent-working-planner on lead-planner's relay (owner-directed via lead-planner-u24, #715 7002590099). `pyproject.toml` and `uv.lock` are lead-owned (tech-stack registry): bring the exact diff to lead-planner before it is committed.
 
 ## Test Summary
+The #813 Migration lanes job log was still readable (`gh api repos/:owner/:repo/actions/jobs/131134122463/logs`). Fast lanes ran `make lane-all-fast`; pytest reported `collected 22105 items / 1 error`, the one error being `tests/visual_assets/drawing/integration/test_compose.py`: `ModuleNotFoundError: No module named 'mcp.server.fastmcp'. This is mcp 2.x` (mcp==2.3.0 was installed in that job); make then exited 2.
+
+Local reproduction of the lane command (`make lane-all-fast` marker expression, main `.venv`, each bump overlaid alone via `uv pip install --target` on PYTHONPATH, versions printed from inside each run):
+
+| run | versions (duckdb / pyarrow / websockets / mcp) | result |
+|---|---|---|
+| baseline | 1.5.6 / 24.0.0 / 16.0 / 1.30.0 | ran, 501 passed, 1 skipped, exit 0 |
+| duckdb 2.0.0 alone | 2.0.0 / 24.0.0 / 16.0 / 1.30.0 | ran, 501 passed, 1 skipped, exit 0 |
+| pyarrow 26.0.1 alone | 1.5.6 / 26.0.1 / 16.0 / 1.30.0 | ran, 501 passed, 1 skipped, exit 0 |
+| websockets 17.4 alone | 1.5.6 / 24.0.0 / 17.4 / 1.30.0 | ran, 501 passed, 1 skipped, exit 0 |
+| mcp 2.3.0 (positive control) | 1.5.6 / 24.0.0 / 16.0 / 2.3.0 | ran, collection error, exit 2 (same error as the job log) |
+
+Limit: the local selection is 501 tests against 435 in the #813 job (different local environment and marker state), and sentence-transformers 6.2 was not run (it is a knowledge-stack dependency outside this lane). The cause is established from the job log plus the positive control, not from the three listed bumps.
 
 ## Files Changed
+No repo file besides this ticket. No pyproject.toml or uv.lock change.
 
 ## Completion Summary
+The Fast lanes exit 2 on #813 was the mcp 2.3 bump (FastMCP renamed to MCPServer; `visual_assets/drawing` test collection fails), not duckdb 2.0, pyarrow 26 or websockets 17: each of those three alone ran and passed the lane. The mcp case reproduces the exit 2 and serves as the positive control. Fix is TCK-20261119-MCP-2X-MIGRATION-VISUAL-ASSETS-SEARCH-MCP-HEADROOM-AI. Hand-orchestrated close.
