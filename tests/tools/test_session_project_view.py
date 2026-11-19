@@ -304,8 +304,8 @@ def test_apply_lock_refuses_a_second_holder_and_frees_after_release(tmp_path):
 
 
 def test_apply_exits_zero_without_writing_when_the_lock_is_held(tmp_path, monkeypatch, capsys):
-    held = ps.acquire_apply_lock(tmp_path / "apply.lock")
-    monkeypatch.setattr(ps, "APPLY_LOCK_PATH", tmp_path / "apply.lock")
+    monkeypatch.setattr(ps, "LAST_RUN_PATH", tmp_path / "last-run.json")  # the lock sits beside the last-run file
+    held = ps.acquire_apply_lock()
     called = []
     monkeypatch.setattr(ps, "load_config", lambda *a, **k: called.append("config") or {})
     assert ps.main(["--root", ".", "--apply"]) == 0 and called == []  # returned before reading the config or touching the Project
@@ -366,3 +366,14 @@ def test_a_base_role_record_keeps_showing_the_base_role_and_an_instance_wins_ove
 def test_a_non_explicit_instance_record_is_not_read_as_a_seat(tmp_path, monkeypatch):
     facts = _facts_for(tmp_path, monkeypatch, "rpg-lane", [("rpg-implementer-3", False)])
     assert [f.seat for f in facts] == ["rpg (seat not recorded)"]  # only an explicit record (a batch worktree) names a seat
+
+
+def test_the_default_lock_follows_last_run_path_so_tests_that_move_it_never_share_one_lock(tmp_path, monkeypatch):
+    # the CI flake: two xdist workers ran main --apply against the runner's real lock and the second one returned 0
+    monkeypatch.setattr(ps, "LAST_RUN_PATH", tmp_path / "a" / "last-run.json")
+    one = ps.acquire_apply_lock()
+    monkeypatch.setattr(ps, "LAST_RUN_PATH", tmp_path / "b" / "last-run.json")
+    two = ps.acquire_apply_lock()
+    assert one is not None and two is not None and (tmp_path / "a" / "apply.lock").exists() and (tmp_path / "b" / "apply.lock").exists()
+    one.close()
+    two.close()
