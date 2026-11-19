@@ -257,3 +257,31 @@ update line shows the new Involved / Blocked by / Hotspot value next to the chan
 - **The live write is a step after this lands, not a code deliverable.** Once the code is on main: (1) a u24 seat runs the dry run above and shows the three owner cases correct;
   (2) its moved list goes to lead-planner and agent-working-planner; (3) the owner logs a yes; (4) `python3 tools/sessions/project_sync.py --init` (creates Involved,
   Blocked by, Hotspot), then `--apply` by hand.
+
+### Filing copies, the order of the first live run, and what stays incomplete (`TCK-20261119-SUBJECT-LINK-FOLLOWS-A-TICKET-FILED-ONLY-ON-AN-UNPUSHED-BRANCH`)
+
+- **A ticket filed on an unpushed branch and worked on a lane branch.** When origin/main has no file for a ticket a worktree works by subject, the link reads this host's own
+  filing copy (a changed `todos/` or `inprogress/` file found on any worktree of the host), so the ticket reads In progress with the lane branch's seat. An id with no file on
+  origin/main and none on this host stays unlinked and is named in the `subject-link:` notes; a ticket Done on origin/main stays Done; a cited-only or docs-only branch changes
+  nothing; a host without the filing copy writes no fact for it from the subject link alone (it reads the other host's segment and agrees).
+- **A host that only cites a ticket reads origin's copy.** A branch whose commit subjects merely name a ticket gets an Involved entry and no domain, and never blanks the ticket's
+  Title / Tier / Layer / Priority (an earlier cut did, on Done rows; the dry run's `grep -c "Title, "` is the check, 0 after the fix).
+- **The order of the first live run (one order for the owner).** `--apply` refuses before its first write when the Project lacks Involved, Blocked by or Hotspot ("run --init first",
+  exit 2): the hourly timer then fails every tick and the board freezes. The OLD code run against a Project that already has the three fields prints the same plan, no hand edits
+  and exits 0 (tested on origin/main 77e4aeb72 with synthetic items), so `--init` before the code lands is safe. Each host's sync is lock-free across hosts (they write separate
+  `Host facts` segments) but one `--apply` per host at a time is now enforced by a non-blocking lock (`~/.local/state/rpg-project-sync/apply.lock`; a second apply exits 0 with
+  "another --apply is running", so a hand-run apply and a timer tick on one host cannot write together). The order, on each host with a timer (`project-sync.timer`; ubuntu's commands
+  below, u24's are lead-planner-u24's to run, relayed by lead-planner):
+  1. stop the timer: `systemctl --user stop project-sync.timer`;
+  2. whoever holds the sync token on that host (`~/.config/rpg-project-sync/token`, mode 600, never printed or copied) runs, once for the whole Project, from the main checkout:
+     `python3 tools/sessions/project_sync.py --init` (creates exactly Involved, Blocked by, Hotspot; changes no Status option; a second `--init` reports nothing created);
+  3. the owner lands the PR, and each host fast-forwards its main checkout (`git pull --ff-only`);
+  4. the token holder runs the first apply by hand, one host after the other: `python3 tools/sessions/project_sync.py --apply --fetch` (the first run rewrites about
+     314 rows, see the count below; a secondary rate limit is waited out and a primary one stops the run, then the next run reconciles);
+  5. start the timer again: `systemctl --user start project-sync.timer`.
+  A stop in the middle (including the unit's 15-minute `TimeoutStartSec` SIGTERM) leaves the item it stopped in with new values and the old Sync hash; the next run prints `hand edit:` lines for
+  that item. Those lines are findings printed next to the plan, not extra rewrites: the item is rewritten by the normal update the same run plans anyway.
+- **First-run size.** The dry run on origin/main 77e4aeb72 plans 314 updates and 4 creates: about 813 field writes (changed fields plus `Source` and `Sync hash` per row, one more for a
+  changed Title), at least about 14 minutes at the 1 s pacing.
+- **What stays incomplete after it lands.** STALEMATE F1 is parked and will read In progress, not Parked, until `TCK-20261119-PROJECT-VIEW-PARKED-STATE-FROM-A-TICKET-BODY-MARKER-LINE`
+  ships; #965's seat (an instance of a multi-session role) shows "not recorded" until `TCK-20261119-RECORD-SEAT-ACCEPTS-A-SESSION-INSTANCE-OF-A-MULTI-SESSION-ROLE` ships.

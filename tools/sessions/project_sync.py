@@ -16,8 +16,10 @@ PR is filing, not progress, and never moves a ticket past To do.
 from __future__ import annotations
 
 import argparse
+import fcntl
 import hashlib
 import json
+import os
 import re
 import socket
 import subprocess
@@ -59,6 +61,7 @@ HEARTBEAT_TITLE = "_sync heartbeat"
 HEARTBEAT_FIELD = "Last run"
 UNASSIGNED, UNKNOWN = "unassigned", "unknown"
 LAST_RUN_PATH = Path.home() / ".local" / "state" / "rpg-project-sync" / "last-run.json"
+APPLY_LOCK_PATH = LAST_RUN_PATH.with_name("apply.lock")
 FETCH_TIMEOUT_S = 60
 PR_LIMIT = 300  # the value of ticket_queue.PR_LIMIT: gh's own default is 30
 FOLDERS = ("todos", "inprogress", "done")
@@ -1140,6 +1143,24 @@ def _client(config: dict, notes: list[str] | None = None):
     return ProjectClient(str(config["project"]["owner"]), number, pacing=Pacing.from_config(config.get("write_pacing")))
 
 
+def acquire_apply_lock(path: Path | None = None):
+    """An exclusive, non-blocking lock for one `--apply` per host at a time (a hand-run first apply and the hourly timer tick must not write the
+    same items at once). Returns the open file (keep it referenced; the lock goes with the process) or None when another apply holds it. The
+    lock covers this host only; the two hosts already write separate `Host facts` segments."""
+    path = path if path is not None else APPLY_LOCK_PATH
+    try:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        handle = open(path, "a", encoding="utf-8")  # noqa: SIM115 - held for the life of the process
+    except OSError:
+        return open(os.devnull, "a", encoding="utf-8")  # an unwritable lock directory must not stop the sync: carry on unlocked
+    try:
+        fcntl.flock(handle, fcntl.LOCK_EX | fcntl.LOCK_NB)
+    except OSError:
+        handle.close()
+        return None
+    return handle
+
+
 def fetch_origin(root: Path, runner=subprocess.run) -> str | None:
     """`git fetch origin main`, nothing else (argv fixed, so `_guard` stays read-only). None on success, else the short reason."""
     try:
@@ -1229,6 +1250,10 @@ def _main(argv: list[str] | None, info: dict) -> int:
     if args.state_root is not None and not args.state_root.is_dir():
         print(f"project_sync: --state-root {args.state_root} is not an existing directory: nothing read, no fallback to the real state root.", file=sys.stderr)
         return 2
+    apply_lock = acquire_apply_lock() if args.apply else None
+    if args.apply and apply_lock is None:
+        print("project_sync: another --apply is running on this host (lock held): nothing done, try again after it ends.", file=sys.stderr)
+        return 0  # not a failure: the timer must not report an error because a hand-run apply is mid-way
     plan_notes: list[str] = []
     config = load_config(args.root, plan_notes)
     args.host = args.host or config["host_names"].get(socket.gethostname(), socket.gethostname())

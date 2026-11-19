@@ -290,3 +290,24 @@ def test_two_hosts_over_the_same_data_do_not_disagree_and_the_host_without_the_f
     b_row, _ = ps.derive_item(COIN, [], [], None, {**a_row, "Ticket ID": COIN}, B, "s", None)
     assert a_row["Status"] == b_row["Status"] == "In progress"
     assert b_row["Host facts"] == a_row["Host facts"] and B not in b_row["Host facts"]  # B wrote none of its own facts
+
+
+# ---- one --apply per host at a time (a hand-run first apply and the hourly tick must not write the same items together)
+def test_apply_lock_refuses_a_second_holder_and_frees_after_release(tmp_path):
+    first = ps.acquire_apply_lock(tmp_path / "apply.lock")
+    assert first is not None
+    assert ps.acquire_apply_lock(tmp_path / "apply.lock") is None  # a second apply on the same host would skip
+    first.close()
+    again = ps.acquire_apply_lock(tmp_path / "apply.lock")
+    assert again is not None  # positive control: it frees when the holder ends
+    again.close()
+
+
+def test_apply_exits_zero_without_writing_when_the_lock_is_held(tmp_path, monkeypatch, capsys):
+    held = ps.acquire_apply_lock(tmp_path / "apply.lock")
+    monkeypatch.setattr(ps, "APPLY_LOCK_PATH", tmp_path / "apply.lock")
+    called = []
+    monkeypatch.setattr(ps, "load_config", lambda *a, **k: called.append("config") or {})
+    assert ps.main(["--root", ".", "--apply"]) == 0 and called == []  # returned before reading the config or touching the Project
+    assert "another --apply is running" in capsys.readouterr().err
+    held.close()
