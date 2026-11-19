@@ -7,10 +7,12 @@ state; the positive-control mode hands COPIES of the last state to the observers
 COIN (Q1 = A). The kernel does not call ``RunLedger.observe`` under recording OFF (event_recorder.py:426-427), so this spy, in its OWN process only, calls ``RunLedger.reset_run_state()`` and
 ``RunLedger.configure(True)`` ONCE at run start (``start_ledger``, called after the kernel is built because the kernel's own ``reset_run_state`` runs at construction, kernel.py:301) and then calls the REAL
 ``RunLedger.observe(prior, current, update)`` for every applied update, with exactly the objects the apply path used, after the application. The returned events are DISCARDED: they never reach a recorder
-or the run's output. V6 = ledger coin_last - coin_first - declared, read from the ledger at the end (``finish`` snapshots the counters and resets the ledger so a control run cannot pollute a real one).
+or the run's output. V6 = ledger coin_last - coin_first - declared, read from ``tally_event().payload`` at the end (``finish`` snapshots it and resets the ledger so a control run cannot pollute a real one). Every read of the
+ledger's counters goes through that public payload; the kit reads no private field of the ledger class. The cost (tally_event copies the population dict on each call) is accepted on the spied arm.
 It refuses to start unless the observability mode is OFF (with recording on, the kernel would feed the same class-level counters a second time).
 CROSS-CHECK, cell-invalidating: the spy's own ``src.core.treasury.total_coin`` at the first and last tick must equal the ledger's coin_first and coin_last; a mismatch marks the cell
-``WIRING_MISMATCH`` (exit 5) and the cell does not count. The non-vacuous guard counts COIN-MOVING ticks (some entity purse changed that tick); the cell FAILS (exit 4) at 0.
+``WIRING_MISMATCH`` (exit 5) and the cell does not count. A second HARD cross-check of the same class: the SUM of the per-apply declared deltas (payload ``declared_coin`` after observe minus before) must equal the end
+``declared_coin``; both numbers are reported (``declared_per_apply_sum``, ``ledger_declared``). The non-vacuous guard counts COIN-MOVING ticks (some entity purse changed that tick); the cell FAILS (exit 4) at 0.
 Delta rows: ``total_change_rows`` holds every apply on which the world total changed (tick, delta, declared = the ledger's ``_declared_coin`` after the observe minus before, unexplained = delta - declared);
 ``unexplained_rows`` / ``unexplained_total_count`` hold only those with unexplained != 0 (a declared add that explains its change never counts). ``apply_calls`` and ``distinct_ticks`` are reported apart (apply can run
 more than once per tick), and a control run proves it fired with ``control_applied_count`` (exit 6 when it is 0).
@@ -82,6 +84,11 @@ def boss_ids(state: Any) -> Dict[str, List[int]]:
     return {name: sorted(eid for eid, body in state.entities.items() if fn(body)) for name, fn in _COLUMN_FUNCTIONS.items()}
 
 
+def ledger_payload(ledger: Any) -> Dict[str, Any]:
+    """The ledger's public tally: ``tally_event().payload`` (builds a payload, mutates nothing; run_ledger.py:357). The only way this kit reads the ledger's counters; it never touches a private field."""
+    return ledger.tally_event().payload
+
+
 def entity_purse_moved(prior: Any, state: Any) -> bool:
     """True when some entity purse (a body in both states) changed between the two states: coin MOVED this tick (it may net out to nothing in the world total)."""
     before = prior.entities
@@ -149,6 +156,8 @@ class CoinBossSpy:
         self.boss_max: Dict[str, int] = {name: 0 for name in COLUMNS}
         self.disagreements: List[Dict[str, Any]] = []
         self.ledger_snapshot: Optional[Dict[str, float]] = None
+        self.declared_per_apply_sum = 0.0  # the sum of the per-apply declared deltas, each read from tally_event().payload["declared_coin"]
+        self.declared_seen = 0.0
         self._previous_coin = self.coin_first
         self._patched: List[tuple] = []
 
@@ -156,6 +165,7 @@ class CoinBossSpy:
         """Reset and switch on the ledger ONCE, in this process only (call after the kernel is built: the kernel's own reset runs at construction)."""
         self.ledger.reset_run_state()
         self.ledger.configure(True)
+        self.declared_seen = float(ledger_payload(self.ledger)["declared_coin"])
         return self
 
     def install(self) -> "CoinBossSpy":
@@ -178,7 +188,8 @@ class CoinBossSpy:
 
     def finish(self) -> None:
         """Snapshot the ledger's counters, then reset it so nothing stays behind in the class-level counters."""
-        self.ledger_snapshot = {"coin_first": self.ledger._coin_first, "coin_last": self.ledger._coin_last, "declared": self.ledger._declared_coin}
+        payload = ledger_payload(self.ledger)
+        self.ledger_snapshot = {"coin_first": payload["coin_first"], "coin_last": payload["coin_last"], "declared": payload["declared_coin"]}
         self.ledger.reset_run_state()
 
     def observe(self, prior: Any, update: Any, state: Any) -> None:
@@ -188,9 +199,11 @@ class CoinBossSpy:
         if self.control is not None and self.last_tick is not None and state.tick == self.last_tick:
             observed = with_coin(state, self.control[1]) if self.control[0] == "coin" else with_bosses(state, self.control[1])
             self.control_applied_count += 1
-        declared_before = self.ledger._declared_coin
         self.ledger.observe(prior, observed, update)  # the REAL ledger on the kernel's own objects; the returned events are discarded
-        declared_tick = self.ledger._declared_coin - declared_before
+        declared_now = float(ledger_payload(self.ledger)["declared_coin"])
+        declared_tick = declared_now - self.declared_seen  # after minus before, each from tally_event().payload
+        self.declared_seen = declared_now
+        self.declared_per_apply_sum += declared_tick
         now = total_coin(observed)
         delta = now - self._previous_coin
         if entity_purse_moved(prior, observed):
@@ -215,10 +228,11 @@ class CoinBossSpy:
         if ledger is None:
             raise RuntimeError("finish() was not called: the ledger counters were not snapshotted")
         net = self.coin_last - self.coin_first
-        wiring_ok = ledger["coin_first"] == self.coin_first and ledger["coin_last"] == self.coin_last
+        declared_sum_ok = abs(self.declared_per_apply_sum - ledger["declared"]) <= EPSILON
+        wiring_ok = ledger["coin_first"] == self.coin_first and ledger["coin_last"] == self.coin_last and declared_sum_ok
         return {
             "coin_first": self.coin_first, "coin_last": self.coin_last, "net_delta": net,
-            "ledger_coin_first": ledger["coin_first"], "ledger_coin_last": ledger["coin_last"], "ledger_declared": ledger["declared"],
+            "ledger_coin_first": ledger["coin_first"], "ledger_coin_last": ledger["coin_last"], "ledger_declared": ledger["declared"], "declared_per_apply_sum": self.declared_per_apply_sum, "declared_sum_matches_end": declared_sum_ok,
             "v6": ledger["coin_last"] - ledger["coin_first"] - ledger["declared"], "declared_source": "RunLedger.observe (real, events discarded)",
             "wiring": "OK" if wiring_ok else "WIRING_MISMATCH", "cell_valid": wiring_ok and self.control is None,
             "unexplained_rows": self.unexplained_rows[:200], "unexplained_total_count": len(self.unexplained_rows),

@@ -1,6 +1,7 @@
 # Compliance IDs: WORLD-122
 """The coin and world-boss counter kit (tools/rpg_measure/coin_boss_spy.py): unit tests on hand-built states with a fake ledger, no world build, no kernel."""
 import dataclasses
+import types
 
 import pytest
 
@@ -13,25 +14,29 @@ from tools.rpg_measure import coin_boss_spy as kit
 
 
 class _Ledger:
-    """A stand-in with the real ledger's V6 inputs: the first prior's coin, the last current's coin, the declared amount of added entities."""
+    """A stand-in with the real ledger's public surface: reset_run_state, configure, observe and tally_event().payload (coin_first, coin_last, declared_coin)."""
 
     def __init__(self):
         self.reset_run_state()
 
     def reset_run_state(self):
-        self._live, self._header, self._coin_first, self._coin_last, self._declared_coin, self.calls = False, False, 0.0, 0.0, 0.0, 0
+        self.live, self.header, self.coin_first, self.coin_last, self.declared, self.calls = False, False, 0.0, 0.0, 0.0, 0
+        self.declared_offset = 0.0  # a test plants a disagreement between the per-apply deltas and the end value through this
 
     def configure(self, live):
-        self._live = live
+        self.live = live
 
     def observe(self, prior, current, update):
-        assert self._live, "start_ledger() must switch the ledger on before the first observation"
+        assert self.live, "start_ledger() must switch the ledger on before the first observation"
         self.calls += 1
-        if not self._header:
-            self._header, self._coin_first = True, total_coin(prior)
-        self._coin_last = total_coin(current)
-        self._declared_coin += sum(b.inventory.gold for b in (getattr(update, "entities_add", None) or []))
+        if not self.header:
+            self.header, self.coin_first = True, total_coin(prior)
+        self.coin_last = total_coin(current)
+        self.declared += sum(b.inventory.gold for b in (getattr(update, "entities_add", None) or []))
         return ["event the spy must discard"]
+
+    def tally_event(self):
+        return types.SimpleNamespace(payload={"coin_first": self.coin_first, "coin_last": self.coin_last, "declared_coin": self.declared + self.declared_offset})
 
 
 def _body(entity_id, gold=0, alive=True, kind="human", occupation=None, active=None):
@@ -109,7 +114,7 @@ def test_a_ledger_that_disagrees_with_the_spys_own_total_marks_the_cell_wiring_m
     start = _state(_body(1, gold=10), tick=0)
     spy, ledger = _spy(start)
     spy.observe(start, None, _state(_body(1, gold=10), tick=1))
-    ledger._coin_last += 1.0  # the ledger saw a different state than the spy
+    ledger.coin_last += 1.0  # the ledger saw a different state than the spy
     spy.finish()
     report = spy.report()
     assert report["wiring"] == "WIRING_MISMATCH" and report["cell_valid"] is False
@@ -122,7 +127,7 @@ def test_the_report_refuses_to_run_before_finish_and_finish_resets_the_ledger():
     with pytest.raises(RuntimeError):
         spy.report()
     spy.finish()
-    assert ledger._live is False and ledger._coin_first == 0.0 and spy.ledger_snapshot["coin_last"] == 1.0  # snapshot kept, ledger cleared
+    assert ledger.live is False and ledger.coin_first == 0.0 and spy.ledger_snapshot["coin_last"] == 1.0  # snapshot kept, ledger cleared
 
 
 def test_the_three_boss_columns_count_differently_and_a_disagreement_row_names_the_ids():
@@ -171,9 +176,31 @@ def test_the_boss_control_makes_every_column_read_k_on_a_copy():
         kit.parse_control("nope:1")
 
 
-def test_the_real_ledger_class_has_the_counters_the_spy_reads():
-    for name in ("_coin_first", "_coin_last", "_declared_coin", "reset_run_state", "configure", "observe"):
-        assert hasattr(RunLedger, name)
+def test_the_real_ledger_class_exposes_the_public_payload_the_spy_reads_and_the_spy_never_reads_a_private_field():
+    RunLedger.reset_run_state()
+    try:
+        payload = kit.ledger_payload(RunLedger)
+        assert {"coin_first", "coin_last", "declared_coin"} <= set(payload)
+    finally:
+        RunLedger.reset_run_state()
+    for name in ("reset_run_state", "configure", "observe", "tally_event"):
+        assert callable(getattr(RunLedger, name))
+    source = open(kit.__file__, encoding="utf-8").read()
+    private = ("RunLedger" + "._", "ledger" + "._")  # built from parts so this test does not match its own search
+    assert not any(token in source for token in private)
+
+
+def test_a_per_apply_declared_sum_that_disagrees_with_the_end_value_is_a_wiring_mismatch_exit_5():
+    start = _state(_body(1, gold=10), tick=0)
+    spy, ledger = _spy(start)
+    spy.observe(start, type("U", (), {"entities_add": [_body(2, gold=4)]})(), _state(_body(1, gold=10), _body(2, gold=4), tick=1))
+    ledger.declared_offset = 2.5  # the end value no longer equals the sum of the deltas the spy read apply by apply
+    spy.finish()
+    report = spy.report()
+    assert report["declared_per_apply_sum"] == 4.0 and report["ledger_declared"] == 6.5 and report["declared_sum_matches_end"] is False
+    assert report["wiring"] == "WIRING_MISMATCH" and report["cell_valid"] is False
+    code, message = kit.exit_status({**report, "control": None}, None)
+    assert code == kit.EXIT_WIRING_MISMATCH == 5 and "WIRING_MISMATCH" in message
 
 
 def test_install_wraps_the_apply_path_and_restore_puts_the_original_back():
