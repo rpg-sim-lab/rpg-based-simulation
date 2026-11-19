@@ -64,6 +64,7 @@ class TransactionResult:
     treasury_update: Optional[TreasuryTransfer] = None
     owed: Optional[Any] = None  # an OwedRecord: the coin a short treasury could not pay now and owes instead
     reason: ReasonCode = ReasonCode.UNKNOWN
+    payee_missing: Optional[bool] = None  # True only when a priced service had no payee (no building source, no treasury named): nothing was debited; observability counts it (not durable)
 
 def _tax_credit(intent: ResourceTransferIntent) -> Optional[TreasuryTransfer]:
     """The share of a sale's or a wage's proceeds that goes to the treasury of the faction holding the place (the intent names it)."""
@@ -251,19 +252,64 @@ def _shop_sell_result(state: Any, intent: ResourceTransferIntent, target_invento
         treasury_update=tax)
 
 
+def service_price(intent: ResourceTransferIntent) -> int:
+    """What a priced service costs: its ``gold_cost`` plus the coin its ``gold_delta`` takes. A bed and an inn meal price through a negative ``gold_delta``, a repair or a fee through ``gold_cost``.
+    The ONE definition: the affordability check and the flows both read it, so the debit and the credit cannot disagree."""
+    return max(0, intent.gold_cost - intent.gold_delta)
+
+
+def is_no_payee(state: Any, intent: ResourceTransferIntent) -> bool:
+    """True when a priced service or fee has nobody to pay: its source is not a building of the world and it names no treasury. The one predicate `_service_result` and the engine's
+    count of such services both read."""
+    names_a_building = isinstance(intent.source_id, int) and intent.source_id in state.buildings
+    return not names_a_building and intent.treasury_faction is None
+
+
+class PayeeMissingCounts:
+    """A count of priced services that named no payee (`is_no_payee`; EXCH-02, TCK-20261118-A-SERVICE-PAYMENT-WITH-NO-PAYEE-DESTROYS-COIN). OBSERVABILITY ONLY, never durable state.
+
+    The resolver debits nothing for such a service, so it goes ahead without a charge; the applied update no longer carries the resolved intents, so the engine counts each one when it
+    commits it. Written ONLY by `src.engine.economy.ResourceTransactionSystem._note_effects` (`note`, on the commit path: a group trial passes no intent); read and reset ONLY by
+    `src.observability.run_ledger.RunLedger` (`counts`, `reset`), which carries it in the closing tally. Nothing in the simulation reads it, so the state hash cannot depend on it (tests pin
+    both). It lives in this core module because the layer contract allows engine -> core and observability -> core, not engine -> observability. Keys are "<source_kind>|<transfer_kind>"."""
+
+    _counts: Dict[str, int] = {}
+
+    @classmethod
+    def note(cls, source_kind: str, transfer_kind: str) -> None:
+        """Count one committed priced service that named no payee."""
+        key = f"{source_kind}|{transfer_kind}"
+        cls._counts[key] = cls._counts.get(key, 0) + 1
+
+    @classmethod
+    def counts(cls) -> Dict[str, int]:
+        """A copy of the counts, keys sorted."""
+        return dict(sorted(cls._counts.items()))
+
+    @classmethod
+    def reset(cls) -> None:
+        """Clear the counts (run start, and test teardown)."""
+        cls._counts = {}
+
+
 def _service_result(state: Any, intent: ResourceTransferIntent, target_inventory: InventoryComponent) -> TransactionResult:
-    """A paid service or fee. The payee is the service building's purse, else the treasury the intent names, else (an unnamed payee) nobody."""
+    """A paid service or fee. The payee is the service building's purse, else the treasury the intent names, else (an unnamed payee) nobody. What the payer is debited is exactly what the
+    payee receives (EXCH-02: every coin is some purse's coin): ``paid`` = the price, as far as the payer's purse (the running inventory at resolve time) reaches, and with no payee nothing is
+    debited at all, so the service goes ahead without a charge. The debit never leans on the apply-time clamp at 0 (a same-tick arrival would hide a debit the credit never matched)."""
     if target_inventory.gold < intent.gold_cost:
         return TransactionResult(accepted=False, reason=ReasonCode.ACTION_EXHAUSTION)
-    paid = min(target_inventory.gold, max(0, intent.gold_cost - intent.gold_delta))
-    credit = _service_credit(state, intent, paid)
+    price = service_price(intent)
     holder = intent.treasury_faction
+    no_payee = is_no_payee(state, intent)
+    paid = 0 if no_payee else min(target_inventory.gold, price)  # no payee: nothing is debited
+    credit = _service_credit(state, intent, paid)
     to_treasury = credit is None and holder is not None and paid > 0
     return TransactionResult(
         accepted=True,
         building_update=credit,
         treasury_update=TreasuryTransfer(faction=holder, gold_delta=int(paid)) if holder is not None and to_treasury else None,
-        inventory_update=InventoryUpdate(items_add=intent.items_add, gold_delta=intent.gold_delta - intent.gold_cost),
+        inventory_update=InventoryUpdate(items_add=intent.items_add, gold_delta=-paid),
+        payee_missing=True if (no_payee and price > 0) else None,
         identity_update=intent.identity_upd, biological_update=intent.biological_upd, attributes_update=intent.attributes_upd,
         combat_update=intent.combat_upd, strategic_update=intent.strategic_upd, equipment_update=intent.equipment_upd, reward_update=intent.reward_upd)
 

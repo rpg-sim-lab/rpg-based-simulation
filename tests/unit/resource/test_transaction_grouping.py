@@ -20,7 +20,8 @@ def test_interleaved_transaction_grouping():
     state = AuthoritativeState(
         tick=100,
         seed=42,
-        entities={1: actor}
+        entities={1: actor},
+        buildings={20: BuildingState(id=20, kind="blacksmith", position=(5.0, 5.0), functional=True)}
     )
     
     # Intent A1 (Group 1)
@@ -35,7 +36,7 @@ def test_interleaved_transaction_grouping():
     # Intent B (Independent)
     intent_b = ResourceTransferIntent(
         transaction_id="IND-1",
-        source_id="BLACKSMITH",
+        source_id=20,
         source_kind="TOWN_SERVICE",
         gold_delta=-5,
         transfer_kind="PICKUP"
@@ -70,6 +71,7 @@ def test_interleaved_transaction_grouping():
     # XP 100 should give some evolution points
     assert final_e1.identity.evolution_points_delta > 0 or final_e1.identity.evolution_level_set is not None
     assert final_e1.inventory.gold_delta == 5 # 10 - 5
+    assert refined.building_updates[20].inventory.gold_delta == 5  # building 20 is credited exactly the 5 the payer paid
     
 def test_group_failure_rollback():
     """
