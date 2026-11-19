@@ -71,6 +71,12 @@
   support_boundary: Inert by owner decision 501933066 (world-boss branches are default-OFF
     behind ENABLE_WORLD_BOSS_SPAWN); no navigation path routes a world boss through
     the flow field.
+    The flow-field fallback that looks for a spawned boss (FlowFieldService.get_flow_direction)
+    and the threat has_boss reading (ThreatService.process_threat_evolution) read the species
+    (species_of(entity) equals world_boss) since TCK-20261119-OCCUPATION-READS-COMPARED-WITH-A-NON-LIVING-SPECIES-ID-MISS-THE-WORLD-BOSS,
+    so a boss.py-spawned boss (occupation ancient_sentinel) is found as well as a calamity-spawned
+    one (occupation world_boss). The fallback stays unreachable for the WORLD_BOSS target while
+    FlowFieldService.ANCHORS carries a fixed WORLD_BOSS waypoint pair.
 - id: WORLD-007
   text: '`test_road_cost_is_low`: road traversal cost law is preserved'
   status: verified
