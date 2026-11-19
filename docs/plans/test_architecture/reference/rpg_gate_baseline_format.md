@@ -163,3 +163,7 @@ Recording v1 (rpg, after the metric module and config are on main; the milestone
 3. Commit `tests/simulation_quality/rpg_gate/baselines/rpg_gate_v1.json` in a PR that cites the same ticket.
 
 To inspect a candidate from a downloaded `gate-docs` directory (a local build has `ci: null`, so `rebaseline` refuses it; record from the run's own `rpg-gate-candidate.json`): `python -m tools.test_architecture.rpg_gate_candidate --config ... --docs gate-docs --known tools/test_architecture/rpg_gate_known.yaml --report rpg-gate-report.json --out candidate.json --milestone M0`.
+
+## Rerun only the rows main does not carry
+
+`TCK-20261119-RPG-GATE-RERUN-ONLY-NEW-ROWS-AND-A-BASELINE-DIFF-AGAINST-MAIN`. The authoritative description is the docstring of `tools/test_architecture/rpg_gate_report.py` (row identity, fallback, instability) and of `rpg_gate_main_report.py` (which main run). In short: the report job fetches the newest completed `rpg-gate-report.yml` run on main that has a readable `rpg-gate-report-<sha>` artifact; a first-pass `fail` / `drift` row whose key and state are both in that report is not rerun, and the report states `vs_main` (source run id and head sha, or the fallback reason; the new rows verbatim) in the job summary, the JSON and the log. A missing or unreadable main report, another harness hash or other baseline versions give the full rerun. The known list does not exempt a row; baselines and metrics are untouched.

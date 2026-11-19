@@ -35,6 +35,20 @@ Same-SHA rerun: when the first pass has any ``fail`` or ``drift``, the affected 
 evaluated again; a finding whose state differs the second time becomes ``unstable``. A run-scope validity ``fail`` reruns its seed; everything else reruns every
 seed of its world.
 
+Rerun only what is new (TCK-20261119-RPG-GATE-RERUN-ONLY-NEW-ROWS-AND-A-BASELINE-DIFF-AGAINST-MAIN): main's latest COMPLETED gate report (fetched by
+``rpg_gate_main_report``) decides which first-pass ``fail`` / ``drift`` rows still need their confirming rerun.
+
+* Row identity (decision c): a row is "in main" only when its :func:`finding_key` (world, scope, id, group, key, tick, seed) AND its state (``fail`` /
+  ``drift``) both match a ``fail`` / ``drift`` row of main's report. A changed state (drift to fail, pass to fail) is new; a changed value or example list
+  with the same key and state is NOT new (the state is what the verdict reads). Main rows that are ``unstable`` never match.
+* Only rows not in main contribute (world, seed) pairs to the rerun; if none is new, no rerun is performed. The known list (``rpg_gate_known.yaml``) does
+  NOT exempt a row; it keeps its ownership / verdict role only.
+* A row skipped from the rerun keeps its first-pass state, is never marked ``unstable``, and carries ``not_rerun`` ("in main's report, run <id>") so the
+  loss of instability detection is visible, not silent. The verdict logic is unchanged.
+* Fallback = today's full rerun, with the reason named in the report: no main report, a report that does not parse or lacks the expected fields, a harness
+  hash or baseline versions that differ from this run's (the rows are not comparable).
+* The diff lands in the report JSON (``vs_main``), the markdown (job summary) and a log line.
+
 Ownership (child 1's registry, ``rpg_gate_known.yaml``, ids ``<metric_id>`` or ``<metric_id>:<group>``): a ``fail`` is ``known`` (an owner, not expired),
 ``unowned`` or ``expired``; a ``drift`` is ``traced`` (a ``state: drift`` entry, whose ticket is a trace ticket) or ``needs-trace-ticket`` (advisory) or ``expired``.
 Entries matching no current fail/drift are listed as stale mappings.
@@ -48,7 +62,7 @@ cited oracle per validity metric (from the config).
 CLI::
 
     python -m tools.test_architecture.rpg_gate_report --config FILE --docs DIR --baselines DIR --known FILE --out-json FILE --out-md FILE
-        [--metrics-module MOD] [--sha SHA] [--no-rerun] [--fail-on-red]
+        [--metrics-module MOD] [--sha SHA] [--no-rerun] [--main-baseline FILE] [--fail-on-red]
 """
 
 from __future__ import annotations
@@ -445,6 +459,48 @@ def verdict(findings: Sequence[Mapping[str, Any]]) -> Tuple[str, List[str]]:
     return ("red" if reasons else "green"), reasons
 
 
+def _main_keys(report: Mapping[str, Any]) -> set:
+    return {(finding_key(f), f["state"]) for f in report["findings"] if f.get("state") in (FAIL, DRIFT)}
+
+
+def load_main_baseline(path: Optional[Path], harness_hash: str, refs: Optional[References]) -> Tuple[Optional[dict], str]:
+    """Read the file ``rpg_gate_main_report fetch`` wrote and return ``(baseline, "")`` or ``(None, reason)``; any doubt is a fallback (the full rerun)."""
+    if path is None:
+        return None, "no main report was supplied"
+    try:
+        raw = json.loads(Path(path).read_text(encoding="utf-8"))
+    except FileNotFoundError:
+        return None, "main report file missing"
+    except (OSError, ValueError) as exc:
+        return None, f"main report unreadable ({type(exc).__name__})"
+    if not isinstance(raw, dict):
+        return None, "main report unreadable (not an object)"
+    if raw.get("fallback"):
+        return None, str(raw["fallback"])
+    report = raw.get("report")
+    try:
+        if not isinstance(report, dict) or report.get("schema") != SCHEMA or report.get("verdict") not in ("green", "red") or not isinstance(report.get("findings"), list):
+            return None, "main report lacks the expected fields"
+        if harness_hash and report.get("harness_hash") != harness_hash:
+            return None, "main report is from another harness version"
+        mine = [(r["ref"], r["version"]) for r in refs_summary(refs)]
+        theirs = [(r["ref"], r["version"]) for r in report.get("references", [])]
+        if mine != theirs:
+            return None, "main report was judged against other baseline versions"
+        keys = _main_keys(report)
+    except (KeyError, TypeError):
+        return None, "main report lacks the expected fields"
+    return {"run_id": raw.get("run_id"), "head_sha": raw.get("head_sha") or report.get("sha", ""), "keys": keys}, ""
+
+
+def refs_summary(refs: Optional[References]) -> List[dict]:
+    return [{"ref": "last", "version": refs.last["version"]}, {"ref": "milestone-first", "version": refs.milestone_first["version"]}] if refs else []
+
+
+def _in_main(f: Mapping[str, Any], main: Optional[Mapping[str, Any]]) -> bool:
+    return main is not None and (finding_key(f), f["state"]) in main["keys"]
+
+
 def build_report(
     config: GateConfig,
     docs: Docs,
@@ -456,19 +512,38 @@ def build_report(
     sha: str = "",
     harness_hash: str = "",
     rerun: Optional[Rerun] = None,
+    main: Optional[Mapping[str, Any]] = None,
+    main_fallback: str = "",
 ) -> dict:
     """Evaluate, rerun once on a fail/drift, apply ownership and the verdict, and return the JSON-able report."""
     findings = evaluate(docs, config, refs, reasons_by_version, harness_hash)
     suspects = [f for f in findings if f["state"] in (FAIL, DRIFT)]
+    carried = [f for f in suspects if _in_main(f, main)]
+    fresh = [f for f in suspects if not _in_main(f, main)]
+    source = f"run {main['run_id']}" if main else ""
     rerun_info: Dict[str, Any] = {"performed": False}
-    if suspects and rerun is not None:
-        pairs = _affected_pairs(suspects, config)
+    if main and rerun is not None and carried:
+        rerun_info["not_rerun_in_main"] = len(carried)
+    if fresh and rerun is not None:
+        pairs = _affected_pairs(fresh, config)
         second = evaluate({**docs, **rerun(pairs)}, config, refs, reasons_by_version, harness_hash)
-        findings = _apply_rerun(findings, second)
+        stay = {finding_key(f) for f in carried}
+        findings = [f if finding_key(f) in stay and f["state"] in (FAIL, DRIFT) else g for f, g in zip(findings, _apply_rerun(findings, second))]
         skipped = [list(p) for p in getattr(rerun, "skipped", [])]
-        rerun_info = {"performed": True, "pairs": [list(p) for p in pairs], "unstable": sum(1 for f in findings if f["state"] == UNSTABLE)}
+        rerun_info.update({"performed": True, "pairs": [list(p) for p in pairs], "unstable": sum(1 for f in findings if f["state"] == UNSTABLE)})
         if skipped:
             rerun_info["not_performed_budget"] = skipped  # these pairs were not rerun; their findings keep the first pass's state, so they are not marked unstable
+    elif suspects and rerun is not None:
+        rerun_info["reason"] = f"every fail/drift row is in main's report ({source})"
+    if rerun is not None and carried:
+        stay = {finding_key(f) for f in carried}
+        findings = [{**f, "not_rerun": f"in main's report, {source}"} if finding_key(f) in stay and f["state"] in (FAIL, DRIFT) else f for f in findings]
+    vs_main: Dict[str, Any] = {"source": {"run_id": main["run_id"], "head_sha": main["head_sha"]} if main else None, "fallback": "" if main else (main_fallback or "no main report was supplied")}
+    if main:
+        vs_main["new"] = [f for f in findings if finding_key(f) in {finding_key(x) for x in fresh}]
+        vs_main["carried"] = len(carried)
+        now = {(finding_key(f), f["state"]) for f in suspects}
+        vs_main["gone"] = len(main["keys"] - now)
     findings = _ownership(findings, known, today)
     stale_known = {
         state: [e["match"] for e in known_reds.stale_mappings({metric_test_id(f): "" for f in findings if f["state"] == state}, known, state=state)]
@@ -495,6 +570,7 @@ def build_report(
             if refs else []
         ),
         "rerun": rerun_info,
+        "vs_main": vs_main,
         "stale_known_entries": stale_known,
         "findings": findings,
     }
@@ -516,6 +592,7 @@ def render_markdown(report: Mapping[str, Any]) -> str:
         lines.append(f"Same-SHA rerun: {len(report['rerun']['pairs'])} (world, seed) run(s), {report['rerun']['unstable']} metric(s) unstable.")
         if report["rerun"].get("not_performed_budget"):
             lines.append(f"- rerun not performed (budget) for {len(report['rerun']['not_performed_budget'])} run(s): their fail/drift findings are unconfirmed.")
+    lines.append(_vs_main_line(report.get("vs_main") or {}))
     for reason in report["reasons"]:
         lines.append(f"- **RED**: {reason}")
     if report["run_errors"]:
@@ -537,6 +614,18 @@ def render_markdown(report: Mapping[str, Any]) -> str:
     return "\n".join(lines) + "\n"
 
 
+def _vs_main_line(vs: Mapping[str, Any]) -> str:
+    src = vs.get("source")
+    if not src:
+        return f"New vs main: unknown; the full rerun applies (fallback: {vs.get('fallback') or 'no main report'})."
+    head = f"Compared with main's report: run {src['run_id']}, head `{str(src['head_sha'])[:9]}`."
+    new = vs.get("new", [])
+    if not new:
+        return f"{head} New vs main: none ({vs.get('carried', 0)} fail/drift row(s) already in main, {vs.get('gone', 0)} of main's gone)."
+    rows = "; ".join(f"{f['state']} `{metric_test_id(f)}`{' ' + str(f['key']) if f.get('key') else ''} {f['world']}{'/' + str(f['seed']) if f.get('seed') is not None else ''}" for f in new)
+    return f"{head} New vs main: {len(new)} row(s): {rows} ({vs.get('carried', 0)} already in main, {vs.get('gone', 0)} of main's gone)."
+
+
 def _detail(f: Mapping[str, Any]) -> str:
     parts: List[str] = []
     if f["state"] == FAIL:
@@ -555,6 +644,8 @@ def _detail(f: Mapping[str, Any]) -> str:
         parts.append(f"vs {r['ref']} v{r['version']}: {r['state']}{numbers}{judged}{moved}{cause}")
     if f.get("detail") and f["detail"] not in shown:
         parts.append((f"[{f['reason']}] " if f.get("reason") else "") + f["detail"])
+    if f.get("not_rerun"):
+        parts.append(f"not rerun: {f['not_rerun']}")
     if f.get("ownership"):
         parts.append(f"{f['ownership']}{' ' + f['ticket'] if f.get('ticket') else ''}")
     return "; ".join(parts).replace("|", "\\|")
@@ -609,6 +700,7 @@ def main(argv: Optional[List[str]] = None) -> int:
     parser.add_argument("--no-rerun", action="store_true")
     parser.add_argument("--rerun-workers", type=int, default=2)
     parser.add_argument("--rerun-budget", type=float, default=5400.0, help="seconds after which no further rerun is started")
+    parser.add_argument("--main-baseline", type=Path, default=None, help="file written by rpg_gate_main_report fetch; absent or unusable means the full rerun")
     parser.add_argument("--fail-on-red", action="store_true")
     args = parser.parse_args(argv)
     from tools.test_architecture import rpg_gate_harness as harness
@@ -621,12 +713,14 @@ def main(argv: Optional[List[str]] = None) -> int:
     refs = resolve_references(baselines)
     reasons = {b["version"]: staleness(b, now, hhash, config).reasons for b in ((refs.last, refs.milestone_first) if refs else ())}
     rerun = None if args.no_rerun else _harness_rerun(config, args.config, args.docs, metrics_module, args.sha, args.rerun_workers, args.rerun_budget)
+    main_baseline, main_fallback = load_main_baseline(args.main_baseline, hhash, refs)
     report = build_report(
         config, load_documents(args.docs, config), refs, reasons, known_reds.load_known_reds(args.known, known_reds.RPG_GATE_SPEC), now.date(),
-        sha=args.sha, harness_hash=hhash, rerun=rerun,
+        sha=args.sha, harness_hash=hhash, rerun=rerun, main=main_baseline, main_fallback=main_fallback,
     )
     args.out_json.write_text(json.dumps(report, sort_keys=True, indent=2) + "\n", encoding="utf-8")
     args.out_md.write_text(render_markdown(report), encoding="utf-8")
+    print(_vs_main_line(report["vs_main"]))
     print(f"verdict={report['verdict']} " + " ".join(f"{s}={n}" for s, n in report["counts"].items()))
     return 1 if (args.fail_on_red and report["verdict"] == "red") else 0
 
