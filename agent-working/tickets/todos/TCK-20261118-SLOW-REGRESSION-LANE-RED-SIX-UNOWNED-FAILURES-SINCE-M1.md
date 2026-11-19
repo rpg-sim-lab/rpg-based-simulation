@@ -71,6 +71,16 @@ All drifted pillars are class (a), deferred under 6998413376: none collapses to 
 
 Caveat for rpg: these are audit_mode, one deterministic trial, so a value that differs between 2df2a59a6 and c505357b3 was changed by a merge in that range, not by run noise (u24 asks for a same-head repeat to confirm this). The src-behaviour commits in range are #955 (senses, PERC-02a) and c505357b3 (navigation last_failure_reason). The SOCIAL and PROGRESSION moves between the two heads line up with those merges. The drift from the anchors predates both (rows 3-5 were already out at 2df2a59a6). Open for rpg to rule on: is that size the expected effect of #955, and did rows 1-3 leave the unowned set because of #955 or c505357b3 (the only src candidates in range)?
 
+### Disposition (rpg-designer u24 via lead-planner-u24, 2026-11-19)
+
+**Deferred, not significant (owner test 6998413376), merge-attribution parked.** The pillar drift rows (4, 5, the two new worlds, and rows 1-3 leaving the set) stay deferred during M1.
+- No expected size exists: neither #955 nor #963 (c505357b3) pre-registered a SimQ pillar effect.
+- By mechanism (inspected, not measured): #955 changes who perceives whom, so a SOCIAL shift in dense urban is the expected direction, and it moved toward its anchor (30.46 to 39.69, anchor 53.8). COMBAT and PROGRESSION shifts on small 200t frontier worlds are plausible. #963 is gate-neutral for the 3 gate worlds only; on corpus worlds it is unproven.
+- "Lines up with one merge" means a merge that looks wrong, not one that changed something. The earlier wording above ("line up with those merges") is read as window sensitivity, not a defect signal, unless rpg ties a mechanism.
+- Parked option, not scheduled: an attribution run on 3 heads (2df2a59a6, post-#955, c505357b3) over 2 cells, with pillar event counts. If it ever lands on #963 for PROGRESSION, the follow-up is #963's own hard bars (diag2 kit R1/R2/R3 = 0) on frontier_extended seed123, not pillar size.
+- Untestable-in-window marks (fewer than ~3 events): none can be made. The junit and log carry no event counts for the drift rows; only rows 1-2 carry event_count (200). Four of the five drifted worlds are 200t windows (about 0.083 day); urban_political_seed123 is 1000t (about 0.4 day).
+- Row 6 (ph9) is unaffected by the deferral: it is an invariant failure, and #964 must make it pass.
+
 ## Out of Scope
 - Adding known-reds entries or re-baselining any pin before rpg attributes the row.
 - Re-opening the parked slow-regression determinism root cause.
