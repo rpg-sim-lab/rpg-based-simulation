@@ -69,7 +69,7 @@ All drifted pillars are class (a), deferred under 6998413376: none collapses to 
 - frontier_extended_seed42_200t: NARRATIVE 1.59 vs 2.2778.
 - frontier_extended_seed123_200t: COMBAT 0.2323 vs 0.2914; PROGRESSION 0.5879 vs 0.4241 (was 0.2984).
 
-Caveat for rpg: these are audit_mode, one deterministic trial, so a value that differs between 2df2a59a6 and c505357b3 was changed by a merge in that range, not by run noise (u24 asks for a same-head repeat to confirm this). The src-behaviour commits in range are #955 (senses, PERC-02a) and c505357b3 (navigation last_failure_reason). The SOCIAL and PROGRESSION moves between the two heads line up with those merges. The drift from the anchors predates both (rows 3-5 were already out at 2df2a59a6). Open question for rpg: is that size the expected effect of #955?
+Caveat for rpg: these are audit_mode, one deterministic trial, so a value that differs between 2df2a59a6 and c505357b3 was changed by a merge in that range, not by run noise (u24 asks for a same-head repeat to confirm this). The src-behaviour commits in range are #955 (senses, PERC-02a) and c505357b3 (navigation last_failure_reason). The SOCIAL and PROGRESSION moves between the two heads line up with those merges. The drift from the anchors predates both (rows 3-5 were already out at 2df2a59a6). Open for rpg to rule on: is that size the expected effect of #955, and did rows 1-3 leave the unowned set because of #955 or c505357b3 (the only src candidates in range)?
 
 ## Out of Scope
 - Adding known-reds entries or re-baselining any pin before rpg attributes the row.
