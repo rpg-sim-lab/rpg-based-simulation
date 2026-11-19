@@ -47,6 +47,13 @@ The terms, all from the owner's text:
    - cross-system consistency: which systems assume a day length, such as routines, sleep, meals, hunger rates, travel, cadences and seasons, and what breaks under each scenario.
 5. Keep REDUCING TICKS/DAY and ACCELERATING BIOLOGICAL AGING distinct. They change simulation semantics differently and are not interchangeable.
 6. Output: a recommendation document. Either the current calendar is sufficient (with which biological compression), or there is strong evidence to revisit the 08-29 decision. The options are written for the owner.
+7. TICK-CONSTANT INVENTORY (owner, #715 6997605774, 2026-11-19, "Send both (Recommended)"). This is the first deliverable, and it costs nothing: no runs.
+   - List every tick-valued constant in src/ and data/content: durations, cadences, cooldowns, windows, timeouts, rates per tick, life stages, gestation and maturity.
+   - For each, give its file:line, its value in ticks, and its real-time meaning at 2400 ticks/day: hours, days or years of calendar time.
+   - Mark each one REALISM-TUNED (it matches a believable real-world duration) or WINDOW-FITTED (chosen so that the event happens inside a test or gate run window).
+   - Name the clock each one is read on, per the M1 clock review line.
+   - It pairs with docs/engine/time_semantics.md once P1 lands, and is filed as a table in the recommendation doc.
+   - A long-run checkpoint read was NOT approved (same comment). This ticket schedules no new run for it.
 
 ## Out of Scope
 - Any constant or calendar change, any architecture redesign, any speculative implementation.

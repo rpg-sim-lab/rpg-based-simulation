@@ -117,6 +117,13 @@ None yet.
   - CLOCK REVIEW LINE for every M1 PR, starting now (wording by rpg-designer):
     > **Clock rule (M1 review line, until docs/engine/time_semantics.md lands).** Every read of time names its clock. Domain-time meaning (calendar dates and conversions, day vs night, time of day, ages, and biological or social durations such as gestation, maturity, hunger or sleep) is read ONLY through the authoritative calendar helpers (`src/core/calendar`: is_night, the day bands, the tick-per-day constants). No raw `world_time` arithmetic or copied constants outside them. Explicitly tick-based operations stay valid when their unit and intent are stated where they're used: cadences (`tick % cadence`), keyed draws, cooldowns, windows and timeouts counted in kernel ticks, all on the absolute kernel tick (`state.tick`), never on `world_time` or a wrapped or derived time. A reviewer flags: a domain-time meaning computed from raw ticks or `world_time`; a tick-based rule whose unit isn't named; and two readers of the same meaning using different clocks. This isn't a ban on tick arithmetic, only on competing readings of time.
   - BOUNDARY PERF: the run-1 / Phase 1 boundary read (15 plain runs) also reports wall time and peak RSS per cell against the previous boundary: same config, sequential, pinned, report-only. Flag a median move larger than that boundary's own run-to-run spread. No new runs.
+  - 2026-11-19, OWNER #715 6997605774, a BAR-DESIGN RULE (standing, every M1 measurement):
+    - Every pre-set check (rule (a) predictions, HARD bars, non-vacuous floors) states its event's EXPECTED PERIOD, in ticks and in calendar time at 2400 ticks/day.
+    - It confirms that the run window covers several periods.
+    - If the window doesn't cover them, the check is declared UNTESTABLE IN THAT WINDOW. It is never read as a pass.
+    - This is rpg-designer's lesson from the births 2000t S9.
+    - Companion: the tick-constant inventory (TCK-20261118-TEMPORAL-SCALE-AUDIT-CAN-THE-CURRENT-CALENDAR-CARRY-MULTI-GENERATION-RUNS scope 7).
+    - A long-run checkpoint read was NOT approved.
   - EVIDENCE LABELS in every S9 packet: inspected / executable / executed / validated. Kit preflight: TCK-20261118-A-DIAGNOSTIC-KIT-PREFLIGHT-CHECKS-EACH-KIT-ON-BOTH-FROZEN-TREES-BEFORE-ITS-RUN.
 
 ## Test Summary
