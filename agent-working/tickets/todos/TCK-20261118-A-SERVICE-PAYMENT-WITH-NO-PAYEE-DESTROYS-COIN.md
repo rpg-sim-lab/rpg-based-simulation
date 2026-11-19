@@ -78,6 +78,16 @@ No new durable state is expected. The fix names a payee or refuses. If a payee n
 - H1/H2/H3 come from the designer's spec. The fix shape depends on the confirmed class.
 
 ## Implementation Notes
+- 2026-11-19, PERIOD STATEMENT AND WINDOW RULING. This follows the owner's bar-period rule (#715 6997605774). It is recorded BEFORE any own-job output is read, and the run (S9 6997281236) started before the rule existed.
+  - The window is 5000 ticks per cell, about 2.08 days at 2400 ticks/day. rpg-planner checked this from the live process args (`coinfix_spy.py crowded_frontier 46 5000 ...`). The 300 ticks in manifest ea3dd682 is the preflight fixture only.
+  - Recorded base rate (lane C, from summary_sink.txt 13430e6e and summary_coin.txt e59a2481 only): cf s46 has 1 unbalanced TOWN_SERVICE row per 2.08 days (t3181, REST at building 20003, -10). The window covers it once. flw42, up42 and cf42 have no recorded base count.
+  - P2 (rpg-designer) is a SINGLE-EVENT test. It tests the mechanism at that event, not a rate. Checks:
+    - (i) the base and fix final hashes differ;
+    - (ii) the fix cell's t3181 REST service row has debit == credit, or is the CLAMP no-pay case (debit 0 and payee_missing per Fix B), and no coin is lost at t3181;
+    - (iii) the base row at t3181 shows the -10 loss.
+    - (iv) is NOT added: the kit records only final_hash (coinfix_spy.py:211), not per-tick hashes, and no instrumentation is added.
+    - Disclosed: P2 covers the REST path once. EAT and the other service paths are not exercised in cf s46.
+  - P1/P3 in flw42, up42 and cf42 are COUNT FIRST, THEN JUDGE, with no hold. Each base cell reports its TOTAL priced services (balanced plus unbalanced). Fewer than 3 priced services in a cell makes P1 there "untestable (too few services in window)", not a PASS. P3 (V1 unchanged) and the bound apply as pre-registered.
 - 2026-11-19 CONFIRMED (the S9-recorded confirming run, summary /mnt/data2/rpg-measure/coinbreach/summary_sink.txt 13430e6e; rpg-designer recounted it from the raw cells): CLASS H3, a world-law breach (EXCH-02), live on main.
   - At state tick 3181, e9 holds 0 gold; a TOWN_SERVICE/REST from building 20003 has gold_delta -10, gold_cost 0, and is ACCEPTED.
   - _service_credit gets price 0 and returns None (no credit), but the entity is written -10.
