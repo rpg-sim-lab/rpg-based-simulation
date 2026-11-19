@@ -1694,10 +1694,12 @@
   priority: P1
   legacy_evidence: null
   v2_evidence: 'src/engine/biological_needs.py::need_rates resolves (need_profile_id,
-    species_id, role) to (hunger_rate, sleep_debt_rate) against the content catalog
+    the kind via species_of, role) to (hunger_rate, sleep_debt_rate) against the content catalog
     (medium = the old 0.1 / 0.05 constants); ApplyPath._compute_entity_changes
     (src/engine/apply.py) reads it for the passive accumulation. A subject with no
-    declared kind keeps the old constants and is listed by undeclared_need_kinds.'
+    declared kind keeps the old constants and is listed by undeclared_need_kinds. A kind that is
+    not a catalog species reads its role instead (FLAGGED INTERIM, rpg-designer 2026-11-19, divergence
+    2.216; counted by interim_role_need_counts; tests/unit/engine/test_need_profile_of_a_non_catalog_kind.py).'
   proof_type: regression
   test_path: tests/unit/engine/test_biological_needs.py::test_apply_path_accumulates_per_kind
   divergence_note: See docs/guidelines/intentional_divergences.md Section 2.80, and Section 2.93 (owner decision 33, light balance pass,
