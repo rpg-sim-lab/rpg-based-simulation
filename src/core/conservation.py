@@ -254,8 +254,9 @@ def _shop_sell_result(state: Any, intent: ResourceTransferIntent, target_invento
 
 
 def service_price(intent: ResourceTransferIntent) -> int:
-    """What a priced service costs: its ``gold_cost`` plus the coin its ``gold_delta`` takes. A bed and an inn meal price through a negative ``gold_delta``, a repair or a fee through ``gold_cost``.
-    The ONE definition: the affordability check and the flows both read it, so the debit and the credit cannot disagree."""
+    """What a priced service costs: its ``gold_cost`` plus the coin its ``gold_delta`` takes. A repair or a fee prices through ``gold_cost``; a bed and an inn meal price through ``gold_cost`` under
+    the ATOMIC payment law (refused when the purse is short) and through a negative ``gold_delta`` under CLAMP (charged as far as the purse reaches): `service_admission.price_fields` puts the price where the
+    law says. The ONE definition: the affordability check and the flows both read it, so the debit and the credit cannot disagree."""
     return max(0, intent.gold_cost - intent.gold_delta)
 
 

@@ -18,8 +18,8 @@ from src.core.updates import (
 )
 from src.engine.lodging import bed_delta, finds_no_bed, lodge_claim, lodges, refuse_rest
 from src.engine.serves import keeps_coin, serves
-from src.engine.service_admission import admits_at, payee_required
-from src.engine.service_prices import EAT_PRICE_GOLD, INN_MEAL_HUNGER
+from src.engine.service_admission import admits_at, service_terms
+from src.engine.service_prices import INN_MEAL_HUNGER
 from src.engine.service_reach import service_building_where, service_tile
 from src.engine.shop_sale import plan_sale
 from src.engine.spatial_query import SpatialQueryService
@@ -73,10 +73,10 @@ def service_delta(context: Any, entity: Any, action: str, tick: int) -> Optional
     if action == "REST":
         if lodges(building):
             return lodge_claim(entity, building)  # grant before delivery (F3): the bed service is merged only into a GRANTED claim (`lodging.grant_beds`), never delivered and taken back
-        return bed_delta(entity, building, payee_required())
+        return bed_delta(entity, building, terms=service_terms("REST"))
     if action == "EAT":
-        meal = ResourceTransferIntent(source_id=building.id, source_kind="TOWN_SERVICE", gold_cost=EAT_PRICE_GOLD, transfer_kind="EAT", is_group_required=True,
-                                      requires_payee=payee_required(), biological_upd=BiologicalUpdate(hunger_delta=-INN_MEAL_HUNGER))  # no last_meal_tick stamp: its own ticket, after #781
+        meal = ResourceTransferIntent(source_id=building.id, source_kind="TOWN_SERVICE", transfer_kind="EAT", is_group_required=True, **service_terms("EAT"),
+                                      biological_upd=BiologicalUpdate(hunger_delta=-INN_MEAL_HUNGER))  # no last_meal_tick stamp: its own ticket, after #781
         return EntityUpdate(entity_id=entity.id, resource_transfers=[meal])
     sale = plan_sale(context, entity, building)
     return None if sale is None else EntityUpdate(entity_id=entity.id, resource_transfers=[sale])

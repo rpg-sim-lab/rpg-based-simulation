@@ -17,7 +17,7 @@ TCK-20261029-SHARED-ADMISSION-IGNORES-KEEPS-COIN-SO-A-NON-COIN-SUBJECT-IS-SENT-T
 from __future__ import annotations
 
 from enum import Enum
-from typing import Any, Optional
+from typing import Any, Dict, Optional
 
 from src.core.enums import ReasonCode
 from src.engine.appraisal import can_use_inn_meal
@@ -42,6 +42,19 @@ def payment_covers(entity: Any, action: str, law: Optional[PaymentLaw] = None) -
     if (law or SERVICE_PAYMENT_LAW) is PaymentLaw.CLAMP:
         return True
     return int(entity.inventory.gold) >= _PRICES[action]
+
+
+def price_fields(action: str, law: Optional[PaymentLaw] = None) -> Dict[str, int]:
+    """Where the law puts the price on the paid transfer. ATOMIC: ``gold_cost`` = the price and ``gold_delta`` 0, so the resolver's own affordability test (`gold < gold_cost`) refuses a subject that cannot
+    pay in full. CLAMP: ``gold_delta`` = -price and ``gold_cost`` 0, charged as far as the purse reaches (`conservation.service_price`, `_service_result`). Both service builders (the inn meal, the bed)
+    read it, so the price field follows the law constant and the constant cannot disagree with what the resolver does."""
+    price = _PRICES[action]
+    return {"gold_cost": price, "gold_delta": 0} if (law or SERVICE_PAYMENT_LAW) is PaymentLaw.ATOMIC else {"gold_cost": 0, "gold_delta": -price}
+
+
+def service_terms(action: str, law: Optional[PaymentLaw] = None) -> Dict[str, Any]:
+    """The law's whole answer for a service transfer's payment terms: the price fields (:func:`price_fields`) and :func:`payee_required`. One dict a builder spreads into the intent (`**service_terms("EAT")`)."""
+    return {**price_fields(action, law), "requires_payee": payee_required(law)}
 
 
 def payee_required(law: Optional[PaymentLaw] = None) -> bool:

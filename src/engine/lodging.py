@@ -151,12 +151,18 @@ def lodge_claim(entity: Any, building: Any) -> EntityUpdate:
                         new_position=(float(building.position[0]), float(building.position[1])), moved_this_tick=True)
 
 
-def bed_delta(entity: Any, building: Any, requires_payee: bool = False) -> EntityUpdate:
-    """What a bed delivers: ONE paid transfer carrying the charge, the readiness and a little health, applied together or not at all (the bed is paid for, and heals, once per hold). ``requires_payee`` is the payment law's answer (`service_admission.payee_required()`), passed by the rough-rest caller; `grant_beds` stamps a granted bed the same way, because service_admission imports this module. The one definition, read by the rough-rest service
-    (a building with no beds, on the reach tile) and by `grant_beds` (a granted lodging)."""
+def _bed(entity: Any, building: Any) -> EntityUpdate:
+    """The bed as ONE paid transfer: the charge, the readiness and a little health, applied together or not at all (the bed is paid for, and heals, once per hold). The price fields and the
+    no-payee refusal are NOT decided here: `_with_terms` puts the payment law's terms on it (`bed_delta`, `grant_beds`), so no caller can deliver a bed in a shape the law did not choose."""
     bed = ResourceTransferIntent(source_id=building.id, source_kind="TOWN_SERVICE", gold_cost=REST_PRICE_GOLD, transfer_kind="REST", is_group_required=True,
-                                 requires_payee=requires_payee, combat_upd=CombatUpdate(hp_delta=5), readiness_delta=10.0)
+                                 combat_upd=CombatUpdate(hp_delta=5), readiness_delta=10.0)
     return EntityUpdate(entity_id=entity.id, resource_transfers=[bed])  # the bed's hp and readiness ride on the paid transfer: none without the payment (D73)
+
+
+def bed_delta(entity: Any, building: Any, *, terms: Dict[str, Any]) -> EntityUpdate:
+    """What a bed delivers in a building with no beds, on the reach tile (the rough-rest service): `_bed` with the payment law's ``terms`` (`service_admission.service_terms("REST")`: the price
+    fields and `requires_payee`). ``terms`` is required, with no default, so the price never silently takes a shape the law did not choose; it is passed in because service_admission imports this module."""
+    return _with_terms(_bed(entity, building), terms)
 
 
 def _current_project(entity: Any) -> Any:
@@ -208,7 +214,7 @@ def _take_markers(upd: Any) -> Tuple[Any, int]:
 def _granted(entity: Any, upd: Any, building: Any, markers: int, drops: _DropLog) -> Any:
     """The update of a GRANTED claim: the bed delivered once per marker, the arrival objective resolved, the subject standing on the building's tile with no walk target."""
     for _ in range(max(1, markers)):
-        upd = upd.merge(bed_delta(entity, building))
+        upd = upd.merge(_bed(entity, building))
     arrived = resolve_arrival(entity)
     upd = upd.merge(arrived) if arrived is not None else upd
     # A granted claim stands on the building's tile: another writer's step merged into the same update (a walk onto the reach tile) must not decide where the lodger stands.
@@ -226,9 +232,9 @@ def _granted(entity: Any, upd: Any, building: Any, markers: int, drops: _DropLog
     return upd
 
 
-def _requiring_payee(upd: Any) -> Any:
-    """``upd`` with the payment law's no-payee refusal on its bed transfer (a granted bed's REST charge); a refused claim carries none, so it is returned as it was."""
-    return replace(upd, resource_transfers=[replace(t, requires_payee=True) if t.transfer_kind == "REST" else t for t in upd.resource_transfers])
+def _with_terms(upd: Any, terms: Dict[str, Any]) -> Any:
+    """``upd`` with the payment law's terms (price fields, payee requirement) on its bed transfer (a granted bed's REST charge); a refused claim carries none, so it is returned as it was."""
+    return replace(upd, resource_transfers=[replace(t, **terms) if t.transfer_kind == "REST" else t for t in upd.resource_transfers])
 
 
 def _refused(entity: Any, upd: Any, tick: Any = None) -> Any:
@@ -257,7 +263,7 @@ def _settle_building(state: Any, building_id: int, claimants: List[int], refined
             refined[eid] = _refused(entity, upd, state.tick)
 
 
-def grant_beds(state: Any, update: Any, requires_payee: bool = False) -> Any:  # requires_payee: the payment law's no-payee answer, given by the pipeline (service_admission imports this module)
+def grant_beds(state: Any, update: Any, *, terms: Dict[str, Any]) -> Any:  # terms (required): the payment law's terms for the bed (`service_admission.service_terms("REST")`), given by the pipeline because service_admission imports this module
     """Grant or refuse every lodge claim of this tick's ``update``, BEFORE any service is delivered (F3, divergence 2.155).
 
     Per building the claimants are taken in ascending entity id (TOWN-006 order): a subject that already lodges there keeps its bed, others take a free bed while one is left, and a
@@ -271,9 +277,8 @@ def grant_beds(state: Any, update: Any, requires_payee: bool = False) -> Any:  #
     drops = _DropLog(state, update)
     for building_id in sorted(claims):
         _settle_building(state, building_id, claims[building_id], refined, drops)
-        if requires_payee:
-            for eid in claims[building_id]:
-                refined[eid] = _requiring_payee(refined[eid])
+        for eid in claims[building_id]:
+            refined[eid] = _with_terms(refined[eid], terms)
     return drops.into(update, refined)
 
 

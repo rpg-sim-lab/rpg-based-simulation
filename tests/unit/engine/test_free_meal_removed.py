@@ -219,13 +219,14 @@ def test_a_claim_admitted_then_the_purse_emptied_before_the_grant_delivers_nothi
     """The grant does not ask admission again (the claim did). With the bed riding the paid transfer, the resolver's own `gold < gold_cost` test refuses it atomically."""
     from src.core.updates import StateUpdate
     from src.engine.lodging import grant_beds, lodge_claim
+    from src.engine.service_admission import service_terms
     from tests.unit.engine.lodging_kernel import INN_ID, REACH, hero, kernel
     k = kernel([hero(1, REACH[0], action=None)], beds=1)
     try:
         st = k._state
         ent = st.entities[1]
         assert ent.inventory.gold >= REST_PRICE_GOLD  # admitted at claim time
-        granted = grant_beds(st, StateUpdate(entity_updates={1: lodge_claim(ent, st.buildings[INN_ID])}))
+        granted = grant_beds(st, StateUpdate(entity_updates={1: lodge_claim(ent, st.buildings[INN_ID])}), terms=service_terms("REST"))
         broke = replace(st, entities={**st.entities, 1: replace(ent, inventory=replace(ent.inventory, gold=0))})
         out = ResourceTransactionSystem.resolve_all(broke, granted).entity_updates[1]
         assert [r.accepted for r in out.intent_results] == [False]
@@ -234,15 +235,46 @@ def test_a_claim_admitted_then_the_purse_emptied_before_the_grant_delivers_nothi
         k.shutdown()
 
 
-def test_grant_beds_stamps_the_payee_requirement_on_a_granted_bed_only_when_the_law_asks():
+def test_grant_beds_puts_the_laws_terms_on_a_granted_bed_under_each_law(monkeypatch):
+    """The price field follows the law: ATOMIC -> gold_cost = the price, gold_delta 0, requires a payee; CLAMP -> gold_delta = -price, gold_cost 0, no payee requirement."""
     from src.core.updates import StateUpdate
+    from src.engine import service_admission
     from src.engine.lodging import grant_beds, lodge_claim
+    from src.engine.service_admission import service_terms
     from tests.unit.engine.lodging_kernel import INN_ID, REACH, hero, kernel
     k = kernel([hero(1, REACH[0], action=None)], beds=1)
     try:
         st = k._state
         claim = StateUpdate(entity_updates={1: lodge_claim(st.entities[1], st.buildings[INN_ID])})
-        assert [t.requires_payee for t in grant_beds(st, claim, True).entity_updates[1].resource_transfers] == [True]
-        assert [t.requires_payee for t in grant_beds(st, claim).entity_updates[1].resource_transfers] == [False]
+        (atomic,) = grant_beds(st, claim, terms=service_terms("REST")).entity_updates[1].resource_transfers
+        assert (atomic.gold_cost, atomic.gold_delta, atomic.requires_payee) == (REST_PRICE_GOLD, 0, True)
+        monkeypatch.setattr(service_admission, "SERVICE_PAYMENT_LAW", service_admission.PaymentLaw.CLAMP)
+        (clamp,) = grant_beds(st, claim, terms=service_terms("REST")).entity_updates[1].resource_transfers
+        assert (clamp.gold_cost, clamp.gold_delta, clamp.requires_payee) == (0, -REST_PRICE_GOLD, False)
     finally:
         k.shutdown()
+
+
+def test_the_inn_meal_and_the_rough_rest_bed_put_the_price_where_the_law_says(monkeypatch):
+    from src.engine import service_admission
+    _, _, meal = _act("EAT", 50)
+    assert (meal.resource_transfers[0].gold_cost, meal.resource_transfers[0].gold_delta) == (EAT_PRICE_GOLD, 0)
+    _, _, bed = _act("REST", 50)
+    assert (bed.resource_transfers[0].gold_cost, bed.resource_transfers[0].gold_delta) == (REST_PRICE_GOLD, 0)
+    monkeypatch.setattr(service_admission, "SERVICE_PAYMENT_LAW", service_admission.PaymentLaw.CLAMP)
+    _, _, meal = _act("EAT", 50)
+    assert (meal.resource_transfers[0].gold_cost, meal.resource_transfers[0].gold_delta) == (0, -EAT_PRICE_GOLD)
+    _, _, bed = _act("REST", 50)
+    assert (bed.resource_transfers[0].gold_cost, bed.resource_transfers[0].gold_delta) == (0, -REST_PRICE_GOLD)
+
+
+def test_a_broke_subject_under_clamp_is_served_with_debit_equal_to_credit(monkeypatch):
+    """CLAMP: the service is delivered and the debit is what the purse holds, equal to the building's credit (the coin fix); ATOMIC refuses the same subject (tests above)."""
+    from src.engine import service_admission
+    monkeypatch.setattr(service_admission, "SERVICE_PAYMENT_LAW", service_admission.PaymentLaw.CLAMP)
+    ent, state = _world(2)
+    upd = ActionRouter.execute_action(ent, {"action": "EAT", "target_id": 1}, state.tick, None, state)[1]
+    out = _resolve(state, upd)
+    assert [r.accepted for r in out.intent_results] == [True]
+    assert out.biological.hunger_delta == -INN_MEAL_HUNGER and out.inventory.gold_delta == -2
+    assert _purse_change(state, upd) == (2, -2)
