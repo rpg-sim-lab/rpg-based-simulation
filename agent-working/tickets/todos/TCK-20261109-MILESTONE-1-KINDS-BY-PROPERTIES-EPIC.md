@@ -124,6 +124,9 @@ None yet.
     - This is rpg-designer's lesson from the births 2000t S9.
     - Companion: the tick-constant inventory (TCK-20261118-TEMPORAL-SCALE-AUDIT-CAN-THE-CURRENT-CALENDAR-CARRY-MULTI-GENERATION-RUNS scope 7).
     - A long-run checkpoint read was NOT approved.
+  - 2026-11-19, OWNER (relayed by lead-planner-u24), a SETTINGS-IN-DATA RULE (standing, every M1 plan and review). The owner's words: "you should have the instinct that the other similar settings or configurations should stay under data files".
+    - NEW: any new numeric tuning value in src (timers, rates, thresholds, prices, radii) goes to data/, validated at load, unless the plan states why it is a code invariant and not a setting. Reviewers (planner review comment; the lead's S10 diff review) flag every new tuning literal in src.
+    - EXISTING: these are listed by the temporal audit (scope 7) and moved in stages under TCK-20261119-THE-CALENDAR-IS-DECLARED-IN-CONFIGURATION-NOT-IN-CODE's conditions: the same values first, a hash-equal proof, the loaded values in the run identity, and a source-scan guard. A value change is always a separate behaviour step.
   - EVIDENCE LABELS in every S9 packet: inspected / executable / executed / validated. Kit preflight: TCK-20261118-A-DIAGNOSTIC-KIT-PREFLIGHT-CHECKS-EACH-KIT-ON-BOTH-FROZEN-TREES-BEFORE-ITS-RUN.
 
 ## Test Summary
