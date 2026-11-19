@@ -285,3 +285,25 @@ update line shows the new Involved / Blocked by / Hotspot value next to the chan
   changed Title), at least about 14 minutes at the 1 s pacing.
 - **What stays incomplete after it lands.** STALEMATE F1 is parked and will read In progress, not Parked, until `TCK-20261119-PROJECT-VIEW-PARKED-STATE-FROM-A-TICKET-BODY-MARKER-LINE`
   ships; #965's seat (an instance of a multi-session role) shows "not recorded" until `TCK-20261119-RECORD-SEAT-ACCEPTS-A-SESSION-INSTANCE-OF-A-MULTI-SESSION-ROLE` ships.
+
+### Instance seats (`TCK-20261119-RECORD-SEAT-ACCEPTS-A-SESSION-INSTANCE-OF-A-MULTI-SESSION-ROLE`)
+
+- **Accepted names.** `record_seat.py <worktree> <seat>` takes a roster role or an instance `<role>-<n>` with 2 <= n <= that role's `placement.max_sessions`. On this base
+  that is `rpg-implementer-2..-4` and `rpg-implementer-ubuntu-2..-4` (both roles have `max_sessions: 4`; every other role has 1, so `rpg-planner-2` is refused). Refused as unknown
+  seats: `-0`, `-1`, `-5`, a non-numeric or zero-padded suffix, a suffix on a one-session role. The bound is read from the roster, not copied.
+- **Stored and shown exactly as given.** The record's key is the instance name (`<state root>/rpg-implementer-3/worktree.json`, the file `launch.py rpg-implementer-3 --worktree` already
+  writes: no format change, no `state.py` change); nothing is written under the base role. `status.py` shows an instance row only when it has an explicit record, and
+  `project_sync` names the instance as the Seat and in Involved.
+- **One record per instance; one seat per worktree.** Two instances of one role can each hold a worktree. A worktree already recorded for any other role or instance is refused,
+  in both directions (a base role onto an instance's worktree and the reverse); a seat with a live record for a different worktree needs `--replace`.
+- **Precedence when both exist.** The launcher can write a base-role record and an instance record over time. The readers show the instance only: it is more specific than its own
+  base role, so one worktree reads `rpg-implementer-3`, not both. A different role's instance does not displace the base role. Only an explicit record counts (a non-explicit one is
+  the launcher's default path, not a batch worktree).
+- **Count what exists today.** `python3 tools/sessions/record_seat.py --list` (read only; add `--state-root DIR` for a scratch root) prints every explicit record, role or instance, by its
+  own name with `live` or `missing`, and the number of records. Run it on each host. ubuntu, measured on this base: 1 instance-keyed record, `rpg-implementer-ubuntu-2`, explicit and live
+  (worktree `rpg-ubuntu-2`); it becomes visible with this change, so the first tick changes exactly one row on ubuntu (a Done ticket's Seat, Host facts and Involved; before/after dry run on
+  origin/main ea3d374d0: 1 changed row). u24's count is not measured here; have a u24 seat run the same command.
+- **The u24 backfill (a u24 step, run by lead-planner-u24 after this lands).** For each known lane worktree: `python3 tools/sessions/record_seat.py <worktree> <instance>` with the instance
+  named by the owner of the lane (for example `m1kind5` -> `rpg-implementer-2`, `coinsink` -> `rpg-implementer-3`; rpg-planner confirms the rest), first with `--dry-run`, then
+  `python3 tools/sessions/project_sync.py --root . --state-root <scratch>` to read it back. A lane whose seat already holds a different live worktree is refused without `--replace`.
+- **No new field and no init step.** Seat and Involved already exist; merging this changes only the Seat and Involved text of rows whose worktree has an instance record.

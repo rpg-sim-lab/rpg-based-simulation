@@ -26,6 +26,7 @@ from pathlib import Path
 from tools.sessions import state as st
 from tools.sessions.launch import _worktree_entries as worktree_entries
 from tools.sessions.launch import default_worktree_path, git_operation_in_progress, main_checkout
+from tools.sessions.resolve import instance_ids
 from tools.sessions.roster import REPO_ROOT, Role, Roster, RosterError, load_roster
 
 DISK_WARN_FRACTION = 0.85
@@ -160,7 +161,30 @@ def seat_infos(roster: Roster, state_root: Path) -> list[SeatInfo]:
                 instance = INSTANCE_NONE if recorded is None else st.liveness(recorded)
                 session = recorded.holder.session_id if recorded else None
         seats.append(SeatInfo(role.role, role.worktree or "(main checkout)", role.seat_status, instance, session, writing_in))
+    for name, role, path in instance_seats(roster, state_root):  # an instance appears only when it has an explicit record; shown by its own name
+        try:
+            recorded = st.read_instance(state_root, name)
+        except st.StateError:
+            recorded, state = None, INSTANCE_UNKNOWN
+        else:
+            state = INSTANCE_NONE if recorded is None else st.liveness(recorded)
+        seats.append(SeatInfo(name, role.worktree or "(main checkout)", role.seat_status, state, recorded.holder.session_id if recorded else None, path))
     return seats
+
+
+def instance_seats(roster: Roster, state_root: Path) -> list[tuple[str, Role, str]]:
+    """(instance name, its role, recorded worktree path) for every `<role>-<n>` instance (2 <= n <= max_sessions) that has an EXPLICIT bound-worktree
+    record, i.e. what `launch.py <instance> --worktree` or `record_seat.py <worktree> <instance>` wrote. The name is the record's key, exactly as
+    written (`rpg-implementer-3`), never the base role. Base-role records are read by `_worktree_for`, as before."""
+    out: list[tuple[str, Role, str]] = []
+    if not state_root.is_dir():
+        return out
+    for role in roster.roles:
+        for name in instance_ids(role.role, role.max_sessions)[1:]:
+            bound = st.read_bound_worktree(state_root, name)
+            if bound and bound[1]:
+                out.append((name, role, bound[0]))
+    return out
 
 
 def _worktree_for(role: Role, infos: list[WorktreeInfo], main: Path, state_root: Path) -> WorktreeInfo | None:

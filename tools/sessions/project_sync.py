@@ -44,7 +44,7 @@ from tools.sessions.route import route
 
 # Deliberate reuse of status.py's private `_worktree_for` (seat -> physical worktree): same package, and renaming it would only
 # churn status.py's unchanged tests (designer review of plan.md, 2026-11-12).
-from tools.sessions.status import _worktree_for, inspect_worktree, seat_infos  # noqa: F401
+from tools.sessions.status import _worktree_for, inspect_worktree, instance_seats, seat_infos  # noqa: F401
 
 CONFIG_REL = Path("registries") / "session_project.yaml"
 DEFAULTS = {
@@ -61,7 +61,6 @@ HEARTBEAT_TITLE = "_sync heartbeat"
 HEARTBEAT_FIELD = "Last run"
 UNASSIGNED, UNKNOWN = "unassigned", "unknown"
 LAST_RUN_PATH = Path.home() / ".local" / "state" / "rpg-project-sync" / "last-run.json"
-APPLY_LOCK_PATH = LAST_RUN_PATH.with_name("apply.lock")
 FETCH_TIMEOUT_S = 60
 PR_LIMIT = 300  # the value of ticket_queue.PR_LIMIT: gh's own default is 30
 FOLDERS = ("todos", "inprogress", "done")
@@ -329,6 +328,13 @@ def read_branch_facts(root: Path, host: str, lanes_note: list[str], run: Runner 
         wt = _worktree_for(role, infos, main, state_root)
         if wt is not None:
             seat_of.setdefault(wt.path.resolve(), []).append((role.role, role.domain))
+    live = {i.path.resolve() for i in infos}
+    for name, role, path in instance_seats(roster, state_root):
+        target = Path(path).resolve()
+        if target in live:  # the instance is more specific than its own base role: one worktree shows `rpg-implementer-3`, not both
+            entries = seat_of.setdefault(target, [])
+            entries[:] = [e for e in entries if e[0] != role.role]
+            entries.append((name, role.domain))
     facts, detached = [], 0
     link = {"branches": 0, "linked": 0, "via_filing": 0, "skipped": 0, "errored": 0, "merged": 0}
     no_file: set[str] = set()  # the subject-link derivation's ran / skipped / errored
@@ -1147,7 +1153,7 @@ def acquire_apply_lock(path: Path | None = None):
     """An exclusive, non-blocking lock for one `--apply` per host at a time (a hand-run first apply and the hourly timer tick must not write the
     same items at once). Returns the open file (keep it referenced; the lock goes with the process) or None when another apply holds it. The
     lock covers this host only; the two hosts already write separate `Host facts` segments."""
-    path = path if path is not None else APPLY_LOCK_PATH
+    path = path if path is not None else LAST_RUN_PATH.with_name("apply.lock")  # read at call time: a test that moves LAST_RUN_PATH moves the lock too
     try:
         path.parent.mkdir(parents=True, exist_ok=True)
         handle = open(path, "a", encoding="utf-8")  # noqa: SIM115 - held for the life of the process
