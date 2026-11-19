@@ -12,8 +12,7 @@ CHECKED = {  # the file calls require_species_sense_profile on the path that bui
     "worldassembly/entity_spawner.py",
     "entities/archetype_factory.py",
     "worldbuilding/compiler.py",
-    "domains/campaigns/orchestrator.py",
-    "domains/campaigns/runner.py",
+    "entities/checked_builder.py",
 }
 
 ALLOWLIST = {
@@ -42,7 +41,7 @@ def test_every_builder_site_calls_the_check_or_is_allowlisted():
     unlisted = sorted(rel for rel in sites if rel not in CHECKED and rel not in ALLOWLIST)
     assert not unlisted, f"V2EntityBuilder site(s) neither checking senses nor allowlisted with a reason: {unlisted}"
     for rel in CHECKED:
-        assert "require_species_sense_profile(" in sites[rel] or "refuse_unprofiled_known_species(" in sites[rel] or "require_declared_population_species(" in sites[rel], f"{rel} is listed as checked but does not call the check"
+        assert "require_species_sense_profile(" in sites[rel] or "refuse_unprofiled_known_species(" in sites[rel] or "species_builder(" in sites[rel] or "require_declared_population_species(" in sites[rel], f"{rel} is listed as checked but does not call the check"
 
 
 def test_the_lists_hold_no_stale_entry():

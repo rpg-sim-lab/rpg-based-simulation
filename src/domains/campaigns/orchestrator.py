@@ -25,7 +25,6 @@ if TYPE_CHECKING:
     from src.scenarios.schema import SimulationScenarioDefinition
     from src.observability.event_recorder import EventRecorder
 
-from src.content.species_senses import refuse_unprofiled_known_species
 from src.core.species import SpeciesNotDeclaredError
 from src.domains.campaigns.state import (
     CampaignState,
@@ -719,7 +718,7 @@ class CampaignOrchestrator:
         from dataclasses import replace as dc_replace
 
         from src.core.models.inventory import EquipSlot
-        from src.core.builder import V2EntityBuilder
+        from src.entities.checked_builder import species_builder
         from src.core.state import AuthoritativeState, EntityState, PersonalityComponent
         from src.core.updates import SocialUpdate
         from src.engine.rpg_depth import SkillScalingService
@@ -807,7 +806,6 @@ class CampaignOrchestrator:
             # so it is refused (it used to become the literal "entity").
             if not cf.kind:
                 raise SpeciesNotDeclaredError(f"carry-forward record of entity {eid} has an empty kind (a pre-field record); it cannot be rebuilt")
-            refuse_unprofiled_known_species(cf.kind, f"campaign episode body {eid}")  # PERC-02a: a body of an unprofiled species is refused at build, not left blind
             #
             # Identity fields (role/faction/properties/traits/personality/evolution_level/
             # evolution_points) are built via V2EntityBuilder's own identity-construction method
@@ -821,8 +819,7 @@ class CampaignOrchestrator:
             # construction, so the builder path is the correct one, not a bypass of the same rule
             # real spawns already follow.
             base = (
-                V2EntityBuilder(eid)
-                .kind(cf.kind)
+                species_builder(eid, cf.kind, f"campaign episode body {eid}")
                 .identity(
                     role=cf.role,
                     faction=cf.faction,

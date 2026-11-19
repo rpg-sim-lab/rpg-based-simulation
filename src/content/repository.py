@@ -145,6 +145,14 @@ CANONICAL_FAMILIES: List[ContentFamilySpec] = [
 from src.content.paths import ContentPathConfig
 from src.core.species import SenseProfileError
 
+
+def _schema_error_text(family: str, item: dict, err: Exception) -> str:
+    """The schema error to record for a rejected record; a species declaring ``sense_profile: null`` raises the typed ``SenseProfileError`` naming it (PERC-02a), else the schema error would drop it and a later lookup would die with a bare ``KeyError``."""
+    if family == "living.species" and "sense_profile" in item and item["sense_profile"] is None:
+        raise SenseProfileError(f"species {item.get('id')!r} declares no sense profile (sense_profile: null)") from err
+    return str(err)
+
+
 # Directories inside data/content/ that are managed by loaders other than CatalogRepository
 # (WorldModuleRepository, ScenarioLabOrchestrator). Files in these
 # directories must not be reported as "ignored" by strict mode.
@@ -312,8 +320,6 @@ class CatalogRepository:
                         continue
 
                     def_id = item["id"]
-                    if spec.family == "living.species" and "sense_profile" in item and item["sense_profile"] is None:
-                        raise SenseProfileError(f"species {def_id!r} declares no sense profile (sense_profile: null)")  # typed, naming the species; else the schema error drops it and a later lookup dies with a bare KeyError
                     if def_id in results:
                         duplicate_ids.append(def_id)
                         continue
@@ -326,7 +332,7 @@ class CatalogRepository:
                         validated = item_schema(**item)
                         results[def_id] = validated
                     except Exception as e:
-                        schema_errors[spec.path] = str(e)
+                        schema_errors[spec.path] = _schema_error_text(spec.family, item, e)
                         continue
 
                 # When schema_version_map is active, route records to secondary indices by type
