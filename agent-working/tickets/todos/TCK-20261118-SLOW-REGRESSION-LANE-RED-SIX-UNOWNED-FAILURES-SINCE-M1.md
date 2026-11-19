@@ -47,6 +47,17 @@ Onset window: last green scheduled run 43979729008 at f4ac858f9; first red run 4
 
 Already known-red in the same runs and out of scope: `test_behavioral_5k*` (TCK-20261007-BEHAVIORAL-5K-REBASELINE-AFTER-THE-STARVATION-CHAIN-LANDS), hero_guild_routing_1000t cognition, urban_political_selfmodel_probe_200t, arena_stress_50v50, perf_movement[5000], perf_passive_scaling[5000].
 
+### Second read: dispatch run 44408881791, head c505357b3 (before #964), 2026-11-18 22:09 UTC
+
+Read-only classification against the six rows above. **No causes are attributed.** Same-head reads are the comparable ones; do not compare values across runs on different heads.
+
+- Still red, same tests: row 4 (`urban_political_seed123_1000t`, now 2 pillars: SOCIAL live 39.69 vs anchor 53.8, was 30.46; ECONOMY live 0.3083 vs anchor 0.4966), row 5 (`frontier_extended_seed123_200t`, now 2 pillars; PROGRESSION live 0.5879 vs anchor 0.4241, was 0.2984) and row 6 (ph9, "Duplicate bosses at tick 200: 2", run predates #964).
+- New in this run: `frontier_extended_seed42_200t` narrative (1 pillar) and `generated_frontier_3_42_seed123_200t` combat_narrative (1 pillar). Pooled pillar values, mapping to these tests unverified: COMBAT 0.1869 vs 0.3402, COMBAT 0.2323 vs 0.2914, NARRATIVE 1.59 vs 2.2778, WORLD 0.16 vs 0.32.
+- No longer UNOWNED in this run: rows 1, 2 (`simq_routing_test_seed42` 500t and 1000t COGNITION) and row 3 (`urban_political_seed42_1000t` SOCIAL). Not checked in the junit whether they passed or were reclassified.
+- The UNOWNED set in this run is 5 tests, so the red set is not stable across runs.
+- Known-red and out of scope: behavioral_5k (3 metrics: alive_avg 24.2 vs 18.34, gold_avg 693.9 vs 904.2, quest_active_count 9.96 vs 6.16), arena_stress_50v50, perf_movement[5000], perf_passive_scaling[5000], urban_political_selfmodel_probe_200t.
+- Pending: ph9 on a scheduled run at a30847030 (#964) or later.
+
 ## Out of Scope
 - Adding known-reds entries or re-baselining any pin before rpg attributes the row.
 - Re-opening the parked slow-regression determinism root cause.
