@@ -4684,15 +4684,15 @@
     pairs). Corpus (seed 42, 10,000 ticks, audit_mode, budget off, 24 worlds, before
     vs after one tree): deaths 131 -> 130, attacks 1,278 -> 1,237, wild-attacker hits
     81 -> 184, live neutral -> hero attacks lost 0. combat_engagement at 1,000 entities
-    1,793/1,875 ms before vs 1,803/1,861 ms after (no added cost). Since M1 step 5 (2.216) a runtime-spawned wolf reads its species from `kind`, so it is a wild creature (decision 47)
-    like a compiled one: its attack permission with a hero is decided by appraisal in both directions (`src/engine/hostility.py` `is_wild_creature`, `attack_allowed`).'
+    1,793/1,875 ms before vs 1,803/1,861 ms after (no added cost).'
   proof_type: regression
   test_path: tests/unit/world/test_spawn_monster_catalog_faction.py
   divergence_note: See docs/guidelines/intentional_divergences.md DEV-016.
   support_boundary: Per-pair corpus attack counts are indications (freeing a pair diverges
     trajectories). The hazard-death rise in frontier_marches (10 -> 15) and swamp_border_world
     (0 -> 2) is not attributed. The movement[5000] bench was not run (it exceeds the
-    10-minute pytest timeout locally); the cost was measured at 1,000 entities.
+    10-minute pytest timeout locally); the cost was measured at 1,000 entities. Wild creatures
+    (a diet and a wild faction) are outside this faction rule since decision 47; see COMB-358.
 - id: COMB-335
   text: 'TCK-20261007-SAFETY-DISPOSITION-TRIGGERS-RETREAT-ON-SIGHT-AGENCY-07: the
     tactical SAFETY_PRESSURE_RETREAT branch fires only for a cautious entity (safety_pressure
@@ -5036,3 +5036,12 @@
   support_boundary: 'The clear is a field of the update, not of the state; checkpoint and fingerprint
     are unchanged. Whether a stale reason filed a wrong blocker in a real run is measured by the
     own-job (R1/R2/R3), not claimed here.'
+- id: COMB-358
+  text: 'decision 47 (CONFLICT-03 amendment, owner row 62): a kind with a diet in a wild-aligned faction is regarded by appraisal in both directions; no faction verdict decides a fight with it, for compiled and runtime-spawned bodies alike.'
+  status: verified
+  priority: P1
+  legacy_evidence: null
+  v2_evidence: 'src/engine/hostility.py (is_wild_creature, faction_hostile, attack_allowed); the runtime-spawned wolf case is tests/unit/world/test_spawn_monster_catalog_faction.py::test_wild_creature_may_attack_a_hero_exactly_when_the_hero_may_attack_it (a sated runtime-spawned wolf is wild, the permission is symmetric and appraisal decides it; M1 step 5, where species_of reads kind for spawn_monster bodies).'
+  proof_type: regression
+  test_path: tests/unit/engine/test_wild_creature_regarded_by_appraisal.py
+  divergence_note: See docs/guidelines/intentional_divergences.md Sections 2.216 (this change) and 2.107 (#536, the original).
