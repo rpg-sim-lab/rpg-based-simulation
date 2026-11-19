@@ -7986,6 +7986,20 @@
   - content
   last_verified: '2026-10-09'
 - type: ticket
+  path: agent-working/tickets/done/TCK-20261119-DEPENDABOT-813-CI-FAST-LANES-EXIT-2-CAUSE.md
+  ticket_id: TCK-20261119-DEPENDABOT-813-CI-FAST-LANES-EXIT-2-CAUSE
+  title: 'Find the cause of the Migration lanes job "Fast lanes" exit 2 on the closed
+    Dependabot #813 (duckdb, pyarrow, websockets)'
+  tier: hotfix
+  ticket_type: chore
+  date: '2026-11-19'
+  related_code_areas:
+  - .github/workflows/
+  - pyproject.toml
+  artifact_files: []
+  tags:
+  - mcp
+- type: ticket
   path: agent-working/tickets/done/TCK-20261119-OCCUPATION-READS-COMPARED-WITH-A-NON-LIVING-SPECIES-ID-MISS-THE-WORLD-BOSS.md
   ticket_id: TCK-20261119-OCCUPATION-READS-COMPARED-WITH-A-NON-LIVING-SPECIES-ID-MISS-THE-WORLD-BOSS
   title: 'navigation.py and threat.py compare the occupation with "world_boss", but
@@ -7999,6 +8013,24 @@
   artifact_files:
   - agent-working/stored_artifacts/TCK-20261119-OCCUPATION-READS-COMPARED-WITH-A-NON-LIVING-SPECIES-ID-MISS-THE-WORLD-BOSS/investigation.md
   tags: []
+- type: ticket
+  path: agent-working/tickets/done/TCK-20261119-PROJECT-VIEW-SEAT-COLLABORATORS-LINK-BY-COMMIT-SUBJECT-AND-PARKED.md
+  ticket_id: TCK-20261119-PROJECT-VIEW-SEAT-COLLABORATORS-LINK-BY-COMMIT-SUBJECT-AND-PARKED
+  title: GitHub Project 1 shows the holding seat, the collaborating seats and a Parked
+    state, so the owner can track a ticket there instead of asking the leads
+  tier: standard
+  ticket_type: feature
+  date: '2026-11-19'
+  related_code_areas:
+  - tools/sessions/project_sync.py
+  - tools/sessions/launch.py
+  - tools/sessions/project_client.py
+  artifact_files:
+  - agent-working/stored_artifacts/TCK-20261119-PROJECT-VIEW-SEAT-COLLABORATORS-LINK-BY-COMMIT-SUBJECT-AND-PARKED/investigation.md
+  - agent-working/stored_artifacts/TCK-20261119-PROJECT-VIEW-SEAT-COLLABORATORS-LINK-BY-COMMIT-SUBJECT-AND-PARKED/plan.md
+  - agent-working/stored_artifacts/TCK-20261119-PROJECT-VIEW-SEAT-COLLABORATORS-LINK-BY-COMMIT-SUBJECT-AND-PARKED/test_plan.md
+  tags:
+  - delivery
 - type: ticket
   path: agent-working/tickets/done/TCK-20261119-RPG-GATE-RERUN-ONLY-NEW-ROWS-AND-A-BASELINE-DIFF-AGAINST-MAIN.md
   ticket_id: TCK-20261119-RPG-GATE-RERUN-ONLY-NEW-ROWS-AND-A-BASELINE-DIFF-AGAINST-MAIN
@@ -8019,6 +8051,20 @@
   tags:
   - process-improvement
 - type: ticket
+  path: agent-working/tickets/done/TCK-20261119-SUBJECT-LINK-FOLLOWS-A-TICKET-FILED-ONLY-ON-AN-UNPUSHED-BRANCH.md
+  ticket_id: TCK-20261119-SUBJECT-LINK-FOLLOWS-A-TICKET-FILED-ONLY-ON-AN-UNPUSHED-BRANCH
+  title: A ticket filed on an unpushed tickets branch and worked on a lane branch
+    reads To do, because the commit-subject link skips tickets with no file on origin/main
+  tier: standard
+  ticket_type: bug
+  date: '2026-11-19'
+  related_code_areas:
+  - tools/sessions/project_sync.py
+  - tests/tools/test_session_project_view.py
+  artifact_files: []
+  tags:
+  - delivery
+- type: ticket
   path: agent-working/tickets/done/TCK-20261119-TICKET-FIELD-VALUES-CLI-LIFECYCLE-EXIT-REPORT-ONLY.md
   ticket_id: TCK-20261119-TICKET-FIELD-VALUES-CLI-LIFECYCLE-EXIT-REPORT-ONLY
   title: '`tools/ticket_field_values.py` CLI must not exit 1 on a lifecycle-section
@@ -8032,6 +8078,38 @@
   artifact_files: []
   tags:
   - process-improvement
+- type: ticket
+  path: agent-working/tickets/inprogress/TCK-20261119-MCP-2X-MIGRATION-VISUAL-ASSETS-SEARCH-MCP-HEADROOM-AI.md
+  ticket_id: TCK-20261119-MCP-2X-MIGRATION-VISUAL-ASSETS-SEARCH-MCP-HEADROOM-AI
+  title: 'Migrate to mcp 2.x: visual_assets drawing server, tools/search_mcp and headroom-ai'
+  tier: standard
+  ticket_type: chore
+  date: '2026-11-19'
+  related_code_areas:
+  - visual_assets/drawing/server/app.py
+  - tools/search_mcp.py
+  - pyproject.toml
+  - tests/visual_assets/drawing/
+  artifact_files: []
+  tags:
+  - mcp
+- type: ticket
+  path: agent-working/tickets/todos/TCK-20261119-FILED-TICKETS-ARE-SCANNED-FOR-OVERLAP-WITH-OPEN-TODOS.md
+  ticket_id: TCK-20261119-FILED-TICKETS-ARE-SCANNED-FOR-OVERLAP-WITH-OPEN-TODOS
+  title: A ticket filed by hand into todos/ or inprogress/ is scanned for overlap
+    with open tickets, and each hit is cited or explained (report-only)
+  tier: standard
+  ticket_type: feature
+  date: '2026-11-19'
+  related_code_areas:
+  - tools/open_ticket_overlap.py
+  - .claude/agents/ticket-scoper.md
+  - tools/validate_frontmatter.py
+  - tests/tools/test_open_ticket_overlap_real_corpus.py
+  artifact_files: []
+  tags:
+  - create-tickets
+  - ticket-scoper
 - type: ticket
   path: agent-working/tickets/done/TCK-20261118-A-DIAGNOSTIC-KIT-PREFLIGHT-CHECKS-EACH-KIT-ON-BOTH-FROZEN-TREES-BEFORE-ITS-RUN.md
   ticket_id: TCK-20261118-A-DIAGNOSTIC-KIT-PREFLIGHT-CHECKS-EACH-KIT-ON-BOTH-FROZEN-TREES-BEFORE-ITS-RUN
