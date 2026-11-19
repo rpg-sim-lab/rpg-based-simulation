@@ -1,10 +1,10 @@
 ---
-status: active
+status: historical
 layer: ai
 authority: P1
 audience: agent
 ticket_id: TCK-20261119-SUBJECT-LINK-FOLLOWS-A-TICKET-FILED-ONLY-ON-AN-UNPUSHED-BRANCH
-phase: open
+phase: done
 date: 2026-11-19
 tags: [delivery]
 ---
@@ -15,7 +15,7 @@ tags: [delivery]
 A ticket filed on an unpushed tickets branch and worked on a lane branch reads To do, because the commit-subject link skips tickets with no file on origin/main
 
 ## Status
-OPEN
+DONE
 
 ## Tier
 standard
@@ -48,7 +48,7 @@ lead-planner-u24's u24 dry run of Project view PR #976 at 517ada2ac (git-archive
 3. Every derivation reports ran / skipped / errored, including how many tickets were linked through a filing copy.
 4. The two-host test passes (no double write, no disagreement).
 5. The four Done items are explained from data, with the command that shows the cause.
-6. A re-run of the u24 dry run on a named SHA (by a u24 seat, scratch state root, no write) shows the coin ticket In progress; that evidence goes to lead-planner and the planner before any live write.
+6. A re-run of the u24 dry run on a named SHA (by a u24 seat, scratch state root, no write) shows the coin ticket In progress; that evidence goes to lead-planner and the planner before any live write. This runs AFTER the push and BEFORE the merge ask; it is evidence for the owner's gate, not a code deliverable of this ticket.
 7. Report-only; the exit code and existing fields are unchanged otherwise. Scoped tests only.
 
 ## Related Tickets
@@ -79,7 +79,10 @@ N/A: no src change; the Project items are a generated view rebuilt on each sync,
 Filed by agent-working-planner on lead-planner's relay of the u24 dry run of #976. Same file as the instance-seat ticket, so sequenced after it.
 
 ## Test Summary
+New tests in `tests/tools/test_session_project_view.py`: `link_worked` (filing copy, no file anywhere, Done, main file), the coin shape reads In progress with the lane seat and To do without the fix (positive control), the two-host agreement test, a cited-only host never blanks content, `--apply` before `--init` refuses with zero writes, `--init` creates exactly the three fields and a second run changes nothing. Scoped suites pass (see the PR).
 
 ## Files Changed
+`tools/sessions/project_sync.py` (`read_branch_facts` two passes, `link_worked`, `content_source`, `own_segment`), `tests/tools/test_session_project_view.py`, `docs/guidelines/session_roles/project_sync_dry_run.md`.
 
 ## Completion Summary
+Step 1 (ubuntu, origin/main 77e4aeb72): 2 tickets worked by a leading id plus a code commit with no file on origin/main; 1 of them (TCK-20261118-CPU-STEAL-AND-SWAP-COUNTERS-IN-EVERY-TIMING-RECORD) has its file only on another worktree of the host: the class. Cause verified at `read_branch_facts` (`if not entries or any(done)` skipped it). Fixed with a two-pass read and `link_worked`. The u24 'skipped 3' is u24 data and is named by the new notes line at the u24 re-run (AC6, after the push, before the merge ask). The four Done rows: a defect of this PR's own cited-only segment (one holder with no copy blanked Title/Tier/Layer and the citing branch overrode Domain); fixed, 0 rows with Title in the changed list. Hand-orchestrated close.
