@@ -8061,6 +8061,24 @@
   artifact_files: []
   tags: []
 - type: ticket
+  path: agent-working/tickets/done/TCK-20261118-A-SERVICE-PAYMENT-WITH-NO-PAYEE-DESTROYS-COIN.md
+  ticket_id: TCK-20261118-A-SERVICE-PAYMENT-WITH-NO-PAYEE-DESTROYS-COIN
+  title: A service, fee or tax paid to a non-building source with no named treasury
+    debits the payer and credits no one; the class is latent on main and destroyed
+    coin on a sibling tree (conservation-law hardening, crowded_frontier s46)
+  tier: standard
+  ticket_type: bug
+  date: '2026-11-18'
+  related_code_areas:
+  - src/core/conservation.py (_service_credit :133, _service_result :254, ResourceTransactionResolver
+    :271)
+  - src/engine/service_prices.py, src/engine/service_admission.py, src/engine/lodging.py
+  artifact_files:
+  - agent-working/stored_artifacts/TCK-20261118-A-SERVICE-PAYMENT-WITH-NO-PAYEE-DESTROYS-COIN/investigation.md
+  - agent-working/stored_artifacts/TCK-20261118-A-SERVICE-PAYMENT-WITH-NO-PAYEE-DESTROYS-COIN/plan.md
+  - agent-working/stored_artifacts/TCK-20261118-A-SERVICE-PAYMENT-WITH-NO-PAYEE-DESTROYS-COIN/test_plan.md
+  tags: []
+- type: ticket
   path: agent-working/tickets/done/TCK-20261118-CAMPAIGN-RUNNER-AND-RESTORED-BODIES-SKIP-THE-BUILD-TIME-SENSES-CHECK.md
   ticket_id: TCK-20261118-CAMPAIGN-RUNNER-AND-RESTORED-BODIES-SKIP-THE-BUILD-TIME-SENSES-CHECK
   title: Campaign episode bodies, scenario-runner bodies and checkpoint-restored bodies
