@@ -1327,7 +1327,7 @@ mechanisms:
     systems: [cognition]
     depends_on: []
     state: done
-    implemented_by: [src/world/perception/gate.py::PerceptionGate, src/content/species_senses.py::species_sense_profile, src/engine/perception_signals.py::emitted_signals, src/engine/tile_distance.py::chebyshev_tile_distance, src/engine/checkpoint_senses.py::check_restored_body_senses, src/content/species_senses.py::refuse_unprofiled_known_species]
+    implemented_by: [src/world/perception/gate.py::PerceptionGate, src/content/species_senses.py::species_sense_profile, src/engine/perception_signals.py::emitted_signals, src/engine/tile_distance.py::chebyshev_tile_distance, src/engine/checkpoint_senses.py::check_restored_body_senses, src/entities/checked_builder.py::species_builder]
     verified:
       instrument: corpus_run
       verdict: observed
