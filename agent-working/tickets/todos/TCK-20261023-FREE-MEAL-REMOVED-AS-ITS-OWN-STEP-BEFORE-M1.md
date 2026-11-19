@@ -132,6 +132,12 @@ src/systems (building_services, conservation, inventory); src/ai need_pull
     - Send both rulings (duplicate, superseded or related-only) to agent-working-planner via the ubuntu lead. They fill the blank inn-meal fixtures in TCK-20261119-FILED-TICKETS-ARE-SCANNED-FOR-OVERLAP-WITH-OPEN-TODOS.
   - Settings-in-data rule: any new tuning value goes to data/. The pre-push run covers tests/unit/** by directory plus statics.
 
+- 2026-11-19 REBUILD RULINGS (on the merged coin code, main 025be2faf; branch rpg-free-meal-atomic, worktree /mnt/data2/rpg-wt/freemeal):
+  - Inspection refreshed by lane A (inspected): only the core EAT with nothing carried leaks; this matches 72493ed4c. The rough-rest REST and the granted bed reshape so the service rides the paid transfer. last_meal_tick is not set.
+  - ROUTER SHAPE (rpg-planner): eat_update stays inn-blind and returns SOURCE_MISSING when nothing is carried. action_router._survival_action applies that failure only if with_service delivers no service.
+  - REFUSED-AT-INN CODE (rpg-designer (i)): a subject at a serving inn that is refused under ATOMIC gets the admission refusal's own TYPED reason, not SOURCE_MISSING. If no typed "can't pay" code exists, one named value is added to the same failure enum. PAYEE_MISSING stays separate. Precedence: only when with_service evaluated a serving inn and refused. Test, with a control: no inn in reach gives SOURCE_MISSING.
+  - REPORT-ONLY COLUMN (rpg-designer): repeated refused EATs per subject at the same inn, in the W-cell summary. It is not a criterion, and a loop becomes a follow-up ticket. This is a kit change (v3.3) that needs a planted control and the designer's approval at the new shas.
+
 ## Test Summary
 
 ## Files Changed
