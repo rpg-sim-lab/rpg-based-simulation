@@ -1,10 +1,10 @@
 ---
-status: active
+status: historical
 layer: ai
 authority: P1
 audience: agent
 ticket_id: TCK-20261119-PROJECT-VIEW-PARKED-STATE-FROM-A-TICKET-BODY-MARKER-LINE
-phase: open
+phase: done
 date: 2026-11-19
 tags: [delivery]
 ---
@@ -15,7 +15,7 @@ tags: [delivery]
 GitHub Project 1 shows a Parked state, read from a one-line marker a planner writes in the ticket body when work is parked
 
 ## Status
-INPROGRESS
+DONE
 
 ## Tier
 standard
@@ -81,7 +81,11 @@ Built on agent-working-parked-marker (base 0b196a142); decisions by agent-workin
 Filed by agent-working-planner on lead-planner's relay of an owner decision. The Project view build ships without Parked and records this ticket id in its out-of-scope.
 
 ## Test Summary
+`tests/tools/test_session_project_parked.py` (14 tests: the F1 shape with a positive control, every must-not, precedence, PR and decision targets, the stale-marker finding, the note, STATUSES and colour, append-only init keeping every id, and `--apply` with the Parked option missing: it carries on while no ticket reads Parked and refuses the whole run before any write, exit 2, once one does). The whole tools f-z lane (4387 passed) and the a-e side (1818 passed) ran at bd10a61ea; the key suites reran after the later commits. The scratch-Project test is in the staged investigation.
 
 ## Files Changed
+`tools/sessions/project_sync.py`, `tools/sessions/project_client.py`, `tests/tools/test_session_project_parked.py` (new), `tests/tools/test_project_client.py` (one pinned list), `docs/guidelines/session_roles/project_sync_dry_run.md`, `docs/guides/delivery_process.md`, `docs/guidelines/session_roles/functions/planner.md`.
 
 ## Completion Summary
+Built: the marker (ticket, PR or decision target, line-start only, origin's copy only), precedence Done, In review, kept status, Blocked, Parked, then the rest, the 45-day stale-marker finding (proposed, not measured), `Parked` last in STATUSES (YELLOW), the `parked:` ran/skipped/errored note. Scratch-Project test (owner-approved, #715 7011473532; Project 2 in rpg-sim-lab): adding Parked through the append-only `--init` path cleared no Status and changed no option id; the control sent without ids cleared 8 of 8.
+POST-MERGE STEPS (not code deliverables; each needs its prerequisite): (1) the first live run, with the owner's yes and the order in `docs/guidelines/session_roles/project_sync_dry_run.md`: stop `project-sync.timer` on each host, the token holder snapshots every item's Status and runs `python3 tools/sessions/project_sync.py --init` once (appends Parked; never `--replace-status-options`), the owner lands the PR and each host fast-forwards, the token holder runs the first `--apply --fetch` by hand one host after the other, start the timers. A host that fast-forwards BEFORE `--init`: `--apply` carries on while no ticket reads Parked, and refuses the whole run before any write (exit 2) once one does (tested), so the timers need not be stopped for that reason alone while no marker exists, but the order above is the safe one. (2) The live F1 check: the u24 planner writes `Parked: waits on ... since <date>` into `TCK-20261030-STALEMATE-BREAK-OVERWRITES-A-PROJECT-MOVE-EVERY-TICK` after the code is on main and the Parked option exists; the sync then shows Parked instead of Stale. (3) The owner deletes the scratch Project 2 (`gh api graphql` `deleteProjectV2` with projectId PVT_kwDOFTLAWc4BsWS4, or `gh project delete 2 --owner rpg-sim-lab` after `gh auth refresh -s project`, which the docs advise against). (4) Revisit the 45-day number when real markers exist. Hand-orchestrated close.

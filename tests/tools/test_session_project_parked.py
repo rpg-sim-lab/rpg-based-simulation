@@ -131,3 +131,44 @@ def test_parked_is_the_last_status_has_a_colour_and_init_appends_it_keeping_ever
     (call,) = [c for c in fake.calls if c[0] == "options"]
     assert code == 0 and [n for n, i in call[2]] == list(ps.STATUSES)
     assert all(i == f"O_{n}" for n, i in call[2] if n != "Parked") and dict(call[2])["Parked"] is None  # every existing option keeps its id; only Parked is new
+
+
+# ---- the timers run --apply, not --init: what happens when a host fast-forwards before `--init` has appended the Parked option
+def _board_without_parked():
+    from tests.tools.test_session_project_sync_all_lanes import WANTED, _project
+    p = _project()
+    p.fields["Domain"] = pc.ProjectField("F_Domain", "Domain", "SINGLE_SELECT", tuple((n, f"O_{n}") for n in WANTED))  # the live Domain is already a select
+    st = p.fields["Status"]
+    p.fields["Status"] = pc.ProjectField(st.id, st.name, st.type, tuple(o for o in st.options if o[0] != "Parked"))
+    return p
+
+
+class _Client:
+    def __init__(self):
+        self.calls = []
+
+    def __getattr__(self, name):
+        return lambda *a, **k: self.calls.append(name) or ("I", "D")
+
+
+def _plan_with(status_of):
+    main = {"TCK-A": [replace(copy("TCK-A", "todos"), parked=("decision", "memo row 7", "2026-11-10"))] if status_of == "Parked" else [copy("TCK-A", "todos")]}
+    return plan_for(main)
+
+
+def test_apply_without_the_parked_option_carries_on_when_no_ticket_is_parked():
+    plan = _plan_with("To do")
+    assert plan.creates[0]["Status"] == "To do"
+    client = _Client()
+    done, not_done, error = pc.apply_plan(client, _board_without_parked(), plan)
+    assert error is None and not not_done and client.calls  # the run is not refused: no planned Status needs the missing option
+
+
+def test_apply_without_the_parked_option_refuses_the_whole_run_before_any_write_once_a_ticket_reads_parked():
+    import pytest
+    plan = _plan_with("Parked")
+    assert plan.creates[0]["Status"] == "Parked"
+    client = _Client()
+    with pytest.raises(pc.ClientRefused) as err:
+        pc.apply_plan(client, _board_without_parked(), plan)
+    assert "not options of their field" in str(err.value) and "Parked" in str(err.value) and client.calls == []  # exit 2 in project_sync.main, nothing written
