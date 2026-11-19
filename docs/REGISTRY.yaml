@@ -7998,7 +7998,10 @@
   - tools/test_architecture/rpg_gate_report.py
   - .github/workflows/rpg-gate-report.yml
   - tests/
-  artifact_files: []
+  artifact_files:
+  - agent-working/stored_artifacts/TCK-20261119-RPG-GATE-RERUN-ONLY-NEW-ROWS-AND-A-BASELINE-DIFF-AGAINST-MAIN/investigation.md
+  - agent-working/stored_artifacts/TCK-20261119-RPG-GATE-RERUN-ONLY-NEW-ROWS-AND-A-BASELINE-DIFF-AGAINST-MAIN/plan.md
+  - agent-working/stored_artifacts/TCK-20261119-RPG-GATE-RERUN-ONLY-NEW-ROWS-AND-A-BASELINE-DIFF-AGAINST-MAIN/test_plan.md
   tags:
   - process-improvement
 - type: ticket
