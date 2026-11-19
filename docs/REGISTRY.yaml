@@ -8042,7 +8042,10 @@
   related_code_areas:
   - tools/sessions/record_seat.py
   - tests/tools/test_session_record_seat.py
-  artifact_files: []
+  artifact_files:
+  - agent-working/stored_artifacts/TCK-20261119-RECORD-SEAT-ACCEPTS-A-SESSION-INSTANCE-OF-A-MULTI-SESSION-ROLE/investigation.md
+  - agent-working/stored_artifacts/TCK-20261119-RECORD-SEAT-ACCEPTS-A-SESSION-INSTANCE-OF-A-MULTI-SESSION-ROLE/plan.md
+  - agent-working/stored_artifacts/TCK-20261119-RECORD-SEAT-ACCEPTS-A-SESSION-INSTANCE-OF-A-MULTI-SESSION-ROLE/test_plan.md
   tags:
   - delivery
 - type: ticket
