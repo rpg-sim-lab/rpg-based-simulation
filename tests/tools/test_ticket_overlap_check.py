@@ -27,7 +27,7 @@ def _ticket(root: Path, folder: str, tid: str, title: str, summary: str, date: s
 
 def _corpus(tmp_path):
     """Four filler tickets (their own words) so the corpus has several documents; returns the tickets root."""
-    root = tmp_path / "tickets"
+    root = tmp_path / "corpus"
     for i in range(4):
         _ticket(root, "todos", f"TCK-20261101-FILLER-{i}", f"filler{i} subject", " ".join(f"fill{i}word{j}x" for j in range(6)), date="2026-11-01")
     return root
@@ -123,7 +123,7 @@ def test_a_ticket_dated_before_the_landing_date_is_grandfathered_and_a_done_tick
     old.write_text(old.read_text(encoding="utf-8").replace("date: 2026-11-22", "date: 2026-11-20"), encoding="utf-8")
     r = _run(old, root)
     assert r.status == "skipped" and "grandfathered" in r.reason and oc.render_line(r) is None
-    done = _ticket(tmp_path / "tickets", "done", "TCK-20261122-DONE", "x", "y")
+    done = _ticket(tmp_path / "corpus", "done", "TCK-20261122-DONE", "x", "y")
     assert oc.check_file(done, FROM, root / "todos", root / "inprogress").status == "skipped"
 
 
