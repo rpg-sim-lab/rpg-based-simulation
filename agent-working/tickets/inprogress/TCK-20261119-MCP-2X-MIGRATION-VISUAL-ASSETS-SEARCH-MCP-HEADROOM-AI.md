@@ -15,7 +15,7 @@ tags: [mcp]
 Migrate to mcp 2.x: visual_assets drawing server, tools/search_mcp and headroom-ai
 
 ## Status
-OPEN
+BLOCKED
 
 ## Tier
 standard
@@ -69,6 +69,7 @@ Dependabot #813 (uv-major) was closed unmerged on 2026-11-19 by the owner. Its m
 N/A: no src change; dependency, tooling and CI work only.
 
 ## Implementation Notes
+BLOCKED and parked (planner decision 2026-11-19): the ticket is not split. It waits for the coin fix and #965 to merge, and for a licence-holder `make visual-assets-aseprite-local` run that rewrites `docs/assets/aseprite_local_proof.json` (ADR D10, never a hand edit). The measurement is in `agent-working/staging_artifacts/TCK-20261119-MCP-2X-MIGRATION-VISUAL-ASSETS-SEARCH-MCP-HEADROOM-AI/investigation.md` (each row marked measured or unmeasured). Summary: a rename-sized port (app.py 2 lines, lowlevel_tools.py 1 import, search_mcp.py 2 lines) plus one behaviour change (`ToolError` replaces `ValueError`, flipping two tests) and about 32 snake_case test-client uses in 4 files; 408 passed on mcp 2.3 in the scoped set. Trial edits are in a local WIP commit on branch agent-working-mcp2-migration, not pushed. The migration PR must also remove the Dependabot mcp-major ignore entry the planner added to `.github/dependabot.yml`.
 Filed by agent-working-planner on lead-planner's relay (owner-directed via lead-planner-u24, #715 7002590099). `pyproject.toml` and `uv.lock` are lead-owned (tech-stack registry): bring the exact diff to lead-planner before it is committed.
 
 ## Test Summary
