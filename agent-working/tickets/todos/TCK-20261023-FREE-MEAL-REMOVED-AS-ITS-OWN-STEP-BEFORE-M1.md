@@ -68,6 +68,27 @@ src/systems (building_services, conservation, inventory); src/ai need_pull
     - HARD: no population collapses by hunger in any cell.
     - REPORTED: starvation deaths per in-world day, per cell, base vs fix.
     - Both are pre-registered against the base with numbers, and with their event periods in ticks and in days at 2400 ticks/day (the bar-period rule). The window must cover several periods, or the bar is declared untestable in that window.
+  - HUNGER BARS, rpg-designer's text (#715 6999218200), plus the owner's scope (latest lead comment). They are PRE-REGISTERED here, before data:
+    - PERIOD (from main's code): the starving line is 95, death comes 6000t after it, and base hunger is 0.1/tick (humans at half rate). So fed-to-dead is about 7900t (3.3 days) for a human and about 6950t (2.9 days) for base-rate kinds.
+      - A 5000t window (2.08 days) cannot hold one full cycle, so collapse is UNTESTABLE at 5000t.
+      - W = 24,000t (10 days, at least 3 cycles), fixed from arithmetic, not from data. 12 cells, about 3-4 h of u24 host time.
+    - P0, FIRST: for each base free-meal user, name the alternative food path in reach. If any user has none, #781 does NOT run until that gap is closed.
+    - P1, HARD at W, 0 collapses. Per world/seed, and per hunger-bearing species group with >= 5 members at t0, a collapse is ALL of:
+      - (a) end living <= 50% of t0 (births counted);
+      - (b) starvation >= 50% of that group's deaths;
+      - (c) the base does not show the same.
+      A group going extinct with starvation >= 50% of its deaths also counts. A collapse already present in base is a pre-existing finding for the owner.
+    - P2, HARD leading indicator, readable at 5000t: every base free-meal user gets a non-free food before reaching hunger 95, or is named.
+    - P3, REPORTED per in-world day:
+      - starvation deaths / hunger-bearing living count;
+      - starving-line (95) crossings;
+      - weakened (>= 85) body-days;
+      - a FLAG when one day's starvation deaths exceed 10% of a group's start-of-day count.
+  - The CURRENT GATE V3 STARVATION ROWS, to cite as base context (main's report, inherited; values from the ubuntu lead's artifact read):
+    - frontier_living_world/42: e55 small_plant_eater starved at t4745, FORAGE judged open but never tried.
+    - crowded_frontier/42: e7 human starved at t2045, at the PERC-alone head.
+    These are individual deaths, not collapses. Their tickets are separate (the starvation fix ticket: SURV-06/07, the H6 recorder spy). #781's P0/P2 read must say whether either is a free-meal user.
+  - Other food-touching changes get only the 5000t early-warning check (P2-style) plus the P3 rows; the W read is for #781 and the M1 checkpoints only (owner scope). Births is not re-run.
   - Settings-in-data rule: any new tuning value goes to data/. The pre-push run covers tests/unit/** by directory plus statics.
 
 ## Test Summary
