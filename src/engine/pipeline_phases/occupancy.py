@@ -4,6 +4,7 @@ from __future__ import annotations
 from dataclasses import replace
 from typing import TYPE_CHECKING
 
+from src.core.enums import ReasonCode
 from src.core.lodging_rules import is_lodged
 from src.core.updates import (
     EntityUpdate,
@@ -137,7 +138,7 @@ class OccupancyPhase:
             )
 
             current_navigation_update = stays_lodged_on_refusal(entity_update.navigation or NavigationUpdate())  # (F3: a refused leaver stays lodged)
-            reason = "OCCUPANCY_CONFLICT"
+            reason = ReasonCode.OCCUPANCY_CONFLICT.value
             
             new_rejections_delta[reason] = new_rejections_delta.get(reason, 0) + 1
             if len(new_rejection_events) < 50:

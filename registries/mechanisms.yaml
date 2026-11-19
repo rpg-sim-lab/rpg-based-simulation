@@ -349,7 +349,7 @@ mechanisms:
         TCK-20261008-A-SUBJECT-NOTICES-AN-UNENGAGED-HOSTILE-COMING-ADJACENT-AND-DECIDES-DECISION-32.
   - id: movement
     layer: entity
-    summary: "Moves creatures across the map tile by tile. A creature standing next to an enemy cannot simply wander off: walking away gives that enemy a free swing."
+    summary: "Moves creatures across the map tile by tile. A creature standing next to an enemy cannot simply wander off: walking away gives that enemy a free swing. A step that fails records why; the next successful step clears that record, so strategy never acts on an old failure."
     systems: [combat, world]
     depends_on: []
     state: done
