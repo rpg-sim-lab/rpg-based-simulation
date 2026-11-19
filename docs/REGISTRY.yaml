@@ -8102,6 +8102,22 @@
   tags:
   - delivery
 - type: ticket
+  path: agent-working/tickets/done/TCK-20261119-THE-SPECIES-MIRROR-IS-GONE-KIND-IS-THE-ONLY-SPECIES-FIELD.md
+  ticket_id: TCK-20261119-THE-SPECIES-MIRROR-IS-GONE-KIND-IS-THE-ONLY-SPECIES-FIELD
+  title: 'The `identity.properties["species_id"]` mirror is gone: `kind` is the only
+    species field and `species_of()` the only reader (M1 step 5 of 5)'
+  tier: standard
+  ticket_type: refactor
+  date: '2026-11-19'
+  related_code_areas:
+  - src/core/species.py, src/engine/biological_needs.py, src/worldbuilding/compiler.py,
+    src/worldassembly/entity_spawner.py, src/entities/archetype_factory.py, src/content_semantics/faction.py
+  artifact_files:
+  - agent-working/stored_artifacts/TCK-20261119-THE-SPECIES-MIRROR-IS-GONE-KIND-IS-THE-ONLY-SPECIES-FIELD/investigation.md
+  - agent-working/stored_artifacts/TCK-20261119-THE-SPECIES-MIRROR-IS-GONE-KIND-IS-THE-ONLY-SPECIES-FIELD/plan.md
+  - agent-working/stored_artifacts/TCK-20261119-THE-SPECIES-MIRROR-IS-GONE-KIND-IS-THE-ONLY-SPECIES-FIELD/test_plan.md
+  tags: []
+- type: ticket
   path: agent-working/tickets/done/TCK-20261119-TICKET-FIELD-VALUES-CLI-LIFECYCLE-EXIT-REPORT-ONLY.md
   ticket_id: TCK-20261119-TICKET-FIELD-VALUES-CLI-LIFECYCLE-EXIT-REPORT-ONLY
   title: '`tools/ticket_field_values.py` CLI must not exit 1 on a lifecycle-section
