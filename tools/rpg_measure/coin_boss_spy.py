@@ -11,6 +11,9 @@ or the run's output. V6 = ledger coin_last - coin_first - declared, read from th
 It refuses to start unless the observability mode is OFF (with recording on, the kernel would feed the same class-level counters a second time).
 CROSS-CHECK, cell-invalidating: the spy's own ``src.core.treasury.total_coin`` at the first and last tick must equal the ledger's coin_first and coin_last; a mismatch marks the cell
 ``WIRING_MISMATCH`` (exit 5) and the cell does not count. The non-vacuous guard counts COIN-MOVING ticks (some entity purse changed that tick); the cell FAILS (exit 4) at 0.
+Delta rows: ``total_change_rows`` holds every apply on which the world total changed (tick, delta, declared = the ledger's ``_declared_coin`` after the observe minus before, unexplained = delta - declared);
+``unexplained_rows`` / ``unexplained_total_count`` hold only those with unexplained != 0 (a declared add that explains its change never counts). ``apply_calls`` and ``distinct_ticks`` are reported apart (apply can run
+more than once per tick), and a control run proves it fired with ``control_applied_count`` (exit 6 when it is 0).
 
 WORLD BOSSES (Q2, report only, expected 0 / 0 / 0). Three columns per tick:
 1. ``predicate_post_964``: a VERBATIM copy of the post-#964 predicate, 1c5b0f074 boss.py:84-89 (``BossService.check_for_boss_spawn._is_active_living_boss``, still a nested function there, so it cannot be
@@ -47,6 +50,8 @@ BOSS_OCCUPATION = "ancient_sentinel"
 RECORD_LINE = "the columns differ only on lifecycle.active; both read entity.kind, so not independent of the species field"
 EXIT_VACUOUS = 4
 EXIT_WIRING_MISMATCH = 5
+EXIT_CONTROL_NOT_APPLIED = 6
+EPSILON = 1e-9
 COLUMNS = ("predicate_post_964", "raw_kind_alive", "occupation_alive")
 
 
@@ -135,8 +140,11 @@ class CoinBossSpy:
         self.coin_first: float = total_coin(start_state)
         self.coin_last: float = self.coin_first
         self.coin_moving_ticks = 0
-        self.ticks = 0
-        self.delta_rows: List[Dict[str, Any]] = []  # every tick whose world total changed: tick, delta
+        self.apply_calls = 0  # apply_generation can run more than once per tick
+        self.distinct_ticks: set = set()
+        self.control_applied_count = 0  # observes on which the control injection really happened
+        self.total_change_rows: List[Dict[str, Any]] = []  # every apply on which the world total changed: tick, delta, declared (ledger _declared_coin after - before), unexplained = delta - declared
+        self.unexplained_rows: List[Dict[str, Any]] = []  # the rows of total_change_rows (and declared-without-change applies) whose unexplained is not 0
         self.boss_rows: List[Dict[str, Any]] = []  # every tick on which any column is non-zero: counts and ids
         self.boss_max: Dict[str, int] = {name: 0 for name in COLUMNS}
         self.disagreements: List[Dict[str, Any]] = []
@@ -174,17 +182,24 @@ class CoinBossSpy:
         self.ledger.reset_run_state()
 
     def observe(self, prior: Any, update: Any, state: Any) -> None:
-        self.ticks += 1
+        self.apply_calls += 1
+        self.distinct_ticks.add(state.tick)
         observed = state
         if self.control is not None and self.last_tick is not None and state.tick == self.last_tick:
             observed = with_coin(state, self.control[1]) if self.control[0] == "coin" else with_bosses(state, self.control[1])
+            self.control_applied_count += 1
+        declared_before = self.ledger._declared_coin
         self.ledger.observe(prior, observed, update)  # the REAL ledger on the kernel's own objects; the returned events are discarded
+        declared_tick = self.ledger._declared_coin - declared_before
         now = total_coin(observed)
         delta = now - self._previous_coin
         if entity_purse_moved(prior, observed):
             self.coin_moving_ticks += 1
-        if delta != 0:
-            self.delta_rows.append({"tick": state.tick, "delta": delta})
+        unexplained = delta - declared_tick
+        if abs(delta) > EPSILON:
+            self.total_change_rows.append({"tick": state.tick, "delta": delta, "declared": declared_tick, "unexplained": unexplained})
+        if abs(unexplained) > EPSILON:
+            self.unexplained_rows.append({"tick": state.tick, "delta": delta, "declared": declared_tick, "unexplained": unexplained})
         self._previous_coin, self.coin_last = now, now
         ids = boss_ids(observed)
         counts = {name: len(found) for name, found in ids.items()}
@@ -206,11 +221,24 @@ class CoinBossSpy:
             "ledger_coin_first": ledger["coin_first"], "ledger_coin_last": ledger["coin_last"], "ledger_declared": ledger["declared"],
             "v6": ledger["coin_last"] - ledger["coin_first"] - ledger["declared"], "declared_source": "RunLedger.observe (real, events discarded)",
             "wiring": "OK" if wiring_ok else "WIRING_MISMATCH", "cell_valid": wiring_ok and self.control is None,
-            "unexplained_delta_rows": self.delta_rows[:200], "delta_rows_total": len(self.delta_rows),
-            "coin_moving_ticks": self.coin_moving_ticks, "ticks": self.ticks, "non_vacuous": self.coin_moving_ticks > 0,
+            "unexplained_rows": self.unexplained_rows[:200], "unexplained_total_count": len(self.unexplained_rows),
+            "total_change_rows": self.total_change_rows[:200], "total_change_rows_count": len(self.total_change_rows),
+            "coin_moving_ticks": self.coin_moving_ticks, "apply_calls": self.apply_calls, "distinct_ticks": len(self.distinct_ticks), "non_vacuous": self.coin_moving_ticks > 0,
             "boss_max": self.boss_max, "boss_rows": self.boss_rows[:200], "boss_disagreements": self.disagreements[:200], "boss_record_line": RECORD_LINE,
             "control": None if self.control is None else {"kind": self.control[0], "amount": self.control[1], "applied_at_tick": self.last_tick},
+            "control_applied_count": self.control_applied_count,
         }
+
+
+def exit_status(doc: Dict[str, Any], control: Optional[tuple]) -> tuple:
+    """(exit code, message) for a finished cell: 6 when a control run never fired, 5 on a WIRING_MISMATCH, 4 when the cell saw no coin-moving tick, else 0."""
+    if control is not None and doc["control_applied_count"] == 0:
+        return EXIT_CONTROL_NOT_APPLIED, f"CONTROL NOT APPLIED: no observed state had tick {doc['control']['applied_at_tick']}; the positive control never fired, so this run proves nothing"
+    if doc["wiring"] != "OK":
+        return EXIT_WIRING_MISMATCH, "WIRING_MISMATCH: the spy's total_coin and the ledger's coin_first/coin_last differ; this cell does not count"
+    if not doc["non_vacuous"]:
+        return EXIT_VACUOUS, "VACUOUS: 0 coin-moving ticks in this cell"
+    return 0, ""
 
 
 def main(argv: List[str]) -> int:
@@ -252,13 +280,10 @@ def main(argv: List[str]) -> int:
     }
     Path(out).parent.mkdir(parents=True, exist_ok=True)
     Path(out).write_text(json.dumps(doc, sort_keys=True), encoding="utf-8")
-    if doc["wiring"] != "OK":
-        print("WIRING_MISMATCH: the spy's total_coin and the ledger's coin_first/coin_last differ; this cell does not count", file=sys.stderr)
-        return EXIT_WIRING_MISMATCH
-    if not doc["non_vacuous"]:
-        print("VACUOUS: 0 coin-moving ticks in this cell", file=sys.stderr)
-        return EXIT_VACUOUS
-    return 0
+    code, message = exit_status(doc, control)
+    if message:
+        print(message, file=sys.stderr)
+    return code
 
 
 if __name__ == "__main__":

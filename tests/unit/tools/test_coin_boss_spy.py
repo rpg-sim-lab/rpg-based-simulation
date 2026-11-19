@@ -61,7 +61,7 @@ def test_a_purse_move_is_a_coin_moving_tick_with_no_world_delta_and_the_ledger_a
     calls = ledger.calls  # finish() resets the ledger, so read the call count first
     spy.finish()
     report = spy.report()
-    assert total_coin(start) == total_coin(moved) == 15.0 and report["coin_moving_ticks"] == 1 and report["delta_rows_total"] == 0
+    assert total_coin(start) == total_coin(moved) == 15.0 and report["coin_moving_ticks"] == 1 and report["total_change_rows_count"] == 0 and report["unexplained_total_count"] == 0
     assert report["non_vacuous"] and report["wiring"] == "OK" and report["cell_valid"] and report["v6"] == 0.0 and calls == 1
 
 
@@ -74,7 +74,8 @@ def test_a_world_with_no_purse_movement_is_vacuous_and_created_coin_not_declared
     spy.observe(_state(_body(1, gold=10), tick=1), None, created)  # +4 coin with no declared add
     spy.finish()
     report = spy.report()
-    assert not report["non_vacuous"] and report["delta_rows_total"] == 1 and report["unexplained_delta_rows"] == [{"tick": 2, "delta": 4.0}]
+    assert not report["non_vacuous"] and report["total_change_rows_count"] == 1 and report["unexplained_total_count"] == 1
+    assert report["unexplained_rows"] == [{"tick": 2, "delta": 4.0, "declared": 0.0, "unexplained": 4.0}]
     assert report["v6"] == 4.0 and report["ledger_declared"] == 0.0
 
 
@@ -85,6 +86,23 @@ def test_a_declared_add_is_taken_from_the_ledger_and_v6_stays_zero():
     spy.finish()
     report = spy.report()
     assert report["ledger_declared"] == 4.0 and report["net_delta"] == 4.0 and report["v6"] == 0.0
+    # the change is in total_change_rows with its declared amount, and it is NOT unexplained
+    assert report["total_change_rows"] == [{"tick": 1, "delta": 4.0, "declared": 4.0, "unexplained": 0.0}]
+    assert report["unexplained_rows"] == [] and report["unexplained_total_count"] == 0
+
+
+def test_a_declared_add_that_does_not_show_up_in_the_total_and_a_partial_explanation_are_unexplained():
+    start = _state(_body(1, gold=10), tick=0)
+    spy, _ = _spy(start)
+    # declared 4 but the world total did not move: unexplained = 0 - 4 = -4
+    spy.observe(start, type("U", (), {"entities_add": [_body(9, gold=4)]})(), _state(_body(1, gold=10), tick=1))
+    # +5 in the total, 2 declared: unexplained = 3
+    prior = _state(_body(1, gold=10), tick=1)
+    spy.observe(prior, type("U", (), {"entities_add": [_body(2, gold=2)]})(), _state(_body(1, gold=13), _body(2, gold=2), tick=2))
+    spy.finish()
+    report = spy.report()
+    assert [(r["tick"], r["unexplained"]) for r in report["unexplained_rows"]] == [(1, -4.0), (2, 3.0)] and report["unexplained_total_count"] == 2
+    assert [r["tick"] for r in report["total_change_rows"]] == [2]
 
 
 def test_a_ledger_that_disagrees_with_the_spys_own_total_marks_the_cell_wiring_mismatch():
@@ -135,6 +153,7 @@ def test_the_coin_control_has_the_ledger_observe_the_copy_at_the_last_tick_and_v
     spy.observe(start, None, real_last)
     spy.finish()
     report = spy.report()
+    assert report["control_applied_count"] == 1 and report["apply_calls"] == 1 and report["distinct_ticks"] == 1
     assert report["v6"] == 7.0 and report["ledger_coin_last"] == 22.0 and report["wiring"] == "OK" and report["cell_valid"] is False  # a control cell never counts
     assert total_coin(real_last) == 15.0 and real_last.entities[1].inventory.gold == 7  # the state the kernel keeps is untouched
 
@@ -179,3 +198,33 @@ def test_the_logging_handler_turns_error_records_into_rows():
     finally:
         log.removeHandler(handler)
     assert [r["message"] for r in handler.rows] == ["boom 1"]
+
+
+def test_apply_calls_and_distinct_ticks_are_reported_apart():
+    start = _state(_body(1, gold=1), tick=0)
+    spy, _ = _spy(start)
+    spy.observe(start, None, _state(_body(1, gold=1), tick=1))
+    spy.observe(_state(_body(1, gold=1), tick=1), None, _state(_body(1, gold=1), tick=1))  # a second apply on the same tick
+    spy.finish()
+    report = spy.report()
+    assert report["apply_calls"] == 2 and report["distinct_ticks"] == 1
+
+
+def test_a_control_whose_tick_never_matches_never_applies_and_the_child_exit_is_non_zero():
+    start = _state(_body(1, gold=10), _body(2, gold=5), tick=0)
+    spy, _ = _spy(start, control=("coin", 7.0), last_tick=99)  # no observed state has tick 99
+    spy.observe(start, None, _state(_body(1, gold=7), _body(2, gold=8), tick=1))
+    spy.finish()
+    report = spy.report()
+    assert report["control_applied_count"] == 0 and report["v6"] == 0.0  # it reads like a clean real run, which is why the exit code matters
+    doc = {**report}
+    code, message = kit.exit_status(doc, ("coin", 7.0))
+    assert code == kit.EXIT_CONTROL_NOT_APPLIED == 6 and "CONTROL NOT APPLIED" in message and "99" in message
+
+
+def test_the_exit_status_orders_control_then_wiring_then_vacuous_and_a_good_cell_is_zero():
+    good = {"control_applied_count": 0, "control": None, "wiring": "OK", "non_vacuous": True}
+    assert kit.exit_status(good, None) == (0, "")
+    assert kit.exit_status({**good, "wiring": "WIRING_MISMATCH"}, None)[0] == kit.EXIT_WIRING_MISMATCH
+    assert kit.exit_status({**good, "non_vacuous": False}, None)[0] == kit.EXIT_VACUOUS
+    assert kit.exit_status({**good, "control_applied_count": 1}, ("coin", 1.0)) == (0, "")
