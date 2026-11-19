@@ -8650,6 +8650,21 @@
   artifact_files: []
   tags: []
 - type: ticket
+  path: agent-working/tickets/done/TCK-20261117-SPLIT-INTELLIGENCE-PY-BELOW-ITS-LINE-CEILINGS.md
+  ticket_id: TCK-20261117-SPLIT-INTELLIGENCE-PY-BELOW-ITS-LINE-CEILINGS
+  title: Split src/systems/strategic_systems/intelligence.py so its module and StrategicIntelligenceSystem
+    class fall back below their line ceilings
+  tier: standard
+  ticket_type: refactor
+  date: '2026-11-17'
+  related_code_areas:
+  - src/systems/strategic_systems/intelligence.py
+  artifact_files:
+  - agent-working/stored_artifacts/TCK-20261117-SPLIT-INTELLIGENCE-PY-BELOW-ITS-LINE-CEILINGS/investigation.md
+  - agent-working/stored_artifacts/TCK-20261117-SPLIT-INTELLIGENCE-PY-BELOW-ITS-LINE-CEILINGS/plan.md
+  - agent-working/stored_artifacts/TCK-20261117-SPLIT-INTELLIGENCE-PY-BELOW-ITS-LINE-CEILINGS/test_plan.md
+  tags: []
+- type: ticket
   path: agent-working/tickets/done/TCK-20261117-THE-LABEL-READERS-READ-OCCUPATION-NOT-KIND.md
   ticket_id: TCK-20261117-THE-LABEL-READERS-READ-OCCUPATION-NOT-KIND
   title: The label readers read `occupation`, not `kind` (M1 step 3 of 5)
@@ -8869,18 +8884,6 @@
   date: '2026-11-17'
   related_code_areas:
   - src/observability/event_shapers.py; tests/unit/observability/
-  artifact_files: []
-  tags: []
-- type: ticket
-  path: agent-working/tickets/todos/TCK-20261117-SPLIT-INTELLIGENCE-PY-BELOW-ITS-LINE-CEILINGS.md
-  ticket_id: TCK-20261117-SPLIT-INTELLIGENCE-PY-BELOW-ITS-LINE-CEILINGS
-  title: Split src/systems/strategic_systems/intelligence.py so its module and StrategicIntelligenceSystem
-    class fall back below their line ceilings
-  tier: standard
-  ticket_type: refactor
-  date: '2026-11-17'
-  related_code_areas:
-  - src/systems/strategic_systems/intelligence.py
   artifact_files: []
   tags: []
 - type: ticket
