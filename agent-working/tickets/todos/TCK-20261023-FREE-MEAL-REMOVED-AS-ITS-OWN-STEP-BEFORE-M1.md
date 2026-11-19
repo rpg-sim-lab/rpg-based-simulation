@@ -128,6 +128,7 @@ src/systems (building_services, conservation, inventory); src/ai need_pull
   - CLOSE CHECK (owner via lead-planner-u24, 2026-11-19, overlap scan): #781 does not close until rpg-planner rules on these two open tickets:
     - TCK-20261007-EAT-BESIDE-THE-INN-FEEDS-A-SUBJECT-THAT-CANNOT-PAY-FREE-MEAL: the V1 known entry this ticket retires. It is expected to close as superseded by #781, citing the gate read.
     - TCK-20261109-AN-INN-MEAL-DOES-NOT-STAMP-LAST-MEAL-TICK: the same inn-meal path. Link it, and say whether the one-transfer meal fixes the stamp or leaves it.
+    - Send both rulings (duplicate, superseded or related-only) to agent-working-planner via the ubuntu lead. They fill the blank inn-meal fixtures in TCK-20261119-FILED-TICKETS-ARE-SCANNED-FOR-OVERLAP-WITH-OPEN-TODOS.
   - Settings-in-data rule: any new tuning value goes to data/. The pre-push run covers tests/unit/** by directory plus statics.
 
 ## Test Summary
