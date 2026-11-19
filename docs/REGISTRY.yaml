@@ -7986,6 +7986,39 @@
   - content
   last_verified: '2026-10-09'
 - type: ticket
+  path: agent-working/tickets/done/TCK-20261119-OCCUPATION-READS-COMPARED-WITH-A-NON-LIVING-SPECIES-ID-MISS-THE-WORLD-BOSS.md
+  ticket_id: TCK-20261119-OCCUPATION-READS-COMPARED-WITH-A-NON-LIVING-SPECIES-ID-MISS-THE-WORLD-BOSS
+  title: 'navigation.py and threat.py compare the occupation with "world_boss", but
+    step 4 writes world_boss as the species (occupation "ancient_sentinel"): the duplicate-boss
+    bug''s twin, plus a static test closing the class'
+  tier: hotfix
+  ticket_type: bug
+  date: '2026-11-19'
+  related_code_areas:
+  - src/systems/world_systems/navigation.py:41, src/world/threat.py:30
+  artifact_files:
+  - agent-working/stored_artifacts/TCK-20261119-OCCUPATION-READS-COMPARED-WITH-A-NON-LIVING-SPECIES-ID-MISS-THE-WORLD-BOSS/investigation.md
+  tags: []
+- type: ticket
+  path: agent-working/tickets/done/TCK-20261119-RPG-GATE-RERUN-ONLY-NEW-ROWS-AND-A-BASELINE-DIFF-AGAINST-MAIN.md
+  ticket_id: TCK-20261119-RPG-GATE-RERUN-ONLY-NEW-ROWS-AND-A-BASELINE-DIFF-AGAINST-MAIN
+  title: The rpg gate reruns only the (world, seed) runs behind a fail or drift row
+    that main's latest gate report does not already carry, and writes its own "new
+    vs main" diff
+  tier: standard
+  ticket_type: chore
+  date: '2026-11-19'
+  related_code_areas:
+  - tools/test_architecture/rpg_gate_report.py
+  - .github/workflows/rpg-gate-report.yml
+  - tests/
+  artifact_files:
+  - agent-working/stored_artifacts/TCK-20261119-RPG-GATE-RERUN-ONLY-NEW-ROWS-AND-A-BASELINE-DIFF-AGAINST-MAIN/investigation.md
+  - agent-working/stored_artifacts/TCK-20261119-RPG-GATE-RERUN-ONLY-NEW-ROWS-AND-A-BASELINE-DIFF-AGAINST-MAIN/plan.md
+  - agent-working/stored_artifacts/TCK-20261119-RPG-GATE-RERUN-ONLY-NEW-ROWS-AND-A-BASELINE-DIFF-AGAINST-MAIN/test_plan.md
+  tags:
+  - process-improvement
+- type: ticket
   path: agent-working/tickets/done/TCK-20261119-TICKET-FIELD-VALUES-CLI-LIFECYCLE-EXIT-REPORT-ONLY.md
   ticket_id: TCK-20261119-TICKET-FIELD-VALUES-CLI-LIFECYCLE-EXIT-REPORT-ONLY
   title: '`tools/ticket_field_values.py` CLI must not exit 1 on a lifecycle-section
@@ -8014,6 +8047,38 @@
   - agent-working/stored_artifacts/TCK-20261118-A-DIAGNOSTIC-KIT-PREFLIGHT-CHECKS-EACH-KIT-ON-BOTH-FROZEN-TREES-BEFORE-ITS-RUN/investigation.md
   - agent-working/stored_artifacts/TCK-20261118-A-DIAGNOSTIC-KIT-PREFLIGHT-CHECKS-EACH-KIT-ON-BOTH-FROZEN-TREES-BEFORE-ITS-RUN/plan.md
   - agent-working/stored_artifacts/TCK-20261118-A-DIAGNOSTIC-KIT-PREFLIGHT-CHECKS-EACH-KIT-ON-BOTH-FROZEN-TREES-BEFORE-ITS-RUN/test_plan.md
+  tags: []
+- type: ticket
+  path: agent-working/tickets/done/TCK-20261118-A-SECOND-WORLD-BOSS-SPAWNS-BECAUSE-THE-DEDUPE-READS-THE-OCCUPATION.md
+  ticket_id: TCK-20261118-A-SECOND-WORLD-BOSS-SPAWNS-BECAUSE-THE-DEDUPE-READS-THE-OCCUPATION
+  title: A second world boss spawns because BossService's dedupe reads the occupation,
+    which kind=species step 4 (#952) moved to the species
+  tier: hotfix
+  ticket_type: bug
+  date: '2026-11-18'
+  related_code_areas:
+  - src/world/boss.py (:85, :151-152, :219, :263-264)
+  artifact_files: []
+  tags: []
+- type: ticket
+  path: agent-working/tickets/done/TCK-20261118-CAMPAIGN-RUNNER-AND-RESTORED-BODIES-SKIP-THE-BUILD-TIME-SENSES-CHECK.md
+  ticket_id: TCK-20261118-CAMPAIGN-RUNNER-AND-RESTORED-BODIES-SKIP-THE-BUILD-TIME-SENSES-CHECK
+  title: Campaign episode bodies, scenario-runner bodies and checkpoint-restored bodies
+    skip PERC-02a's build-time senses check, so a body of an unprofiled species goes
+    blind with gate ERRORs instead of being refused
+  tier: standard
+  ticket_type: bug
+  date: '2026-11-18'
+  related_code_areas:
+  - src/content/species_senses.py (require_species_sense_profile)
+  - src/domains/campaigns/orchestrator.py:822, src/domains/campaigns/runner.py:70
+  - src/engine/scenario_checkpoint.py (ScenarioCheckpoint.restore, fill_missing_fields,
+    Kernel(...))
+  - src/core/builder.py (V2EntityBuilder, which is NOT edited)
+  artifact_files:
+  - agent-working/stored_artifacts/TCK-20261118-CAMPAIGN-RUNNER-AND-RESTORED-BODIES-SKIP-THE-BUILD-TIME-SENSES-CHECK/investigation.md
+  - agent-working/stored_artifacts/TCK-20261118-CAMPAIGN-RUNNER-AND-RESTORED-BODIES-SKIP-THE-BUILD-TIME-SENSES-CHECK/plan.md
+  - agent-working/stored_artifacts/TCK-20261118-CAMPAIGN-RUNNER-AND-RESTORED-BODIES-SKIP-THE-BUILD-TIME-SENSES-CHECK/test_plan.md
   tags: []
 - type: ticket
   path: agent-working/tickets/done/TCK-20261118-CHECKLIST-PLACEMENT-PROPOSAL.md
@@ -8289,6 +8354,23 @@
   artifact_files: []
   tags: []
 - type: ticket
+  path: agent-working/tickets/done/TCK-20261117-A-NAVIGATION-FAILURE-REASON-IS-NEVER-CLEARED-AND-KEEPS-FEEDING-BLOCKER-INFERENCE.md
+  ticket_id: TCK-20261117-A-NAVIGATION-FAILURE-REASON-IS-NEVER-CLEARED-AND-KEEPS-FEEDING-BLOCKER-INFERENCE
+  title: NavigationComponent.last_failure_reason is written only when a failure carries
+    a code and is never cleared, so a stale PATH_NOT_FOUND/STUCK/OSCILLATING keeps
+    being read by infer_blockers on every strategic pass
+  tier: standard
+  ticket_type: bug
+  date: '2026-11-17'
+  related_code_areas:
+  - src/engine/patches.py:288, src/systems/strategic_systems/intelligence.py:176-202
+    and :495, src/engine/movement.py:362-365 and :456-472
+  artifact_files:
+  - agent-working/stored_artifacts/TCK-20261117-A-NAVIGATION-FAILURE-REASON-IS-NEVER-CLEARED-AND-KEEPS-FEEDING-BLOCKER-INFERENCE/investigation.md
+  - agent-working/stored_artifacts/TCK-20261117-A-NAVIGATION-FAILURE-REASON-IS-NEVER-CLEARED-AND-KEEPS-FEEDING-BLOCKER-INFERENCE/plan.md
+  - agent-working/stored_artifacts/TCK-20261117-A-NAVIGATION-FAILURE-REASON-IS-NEVER-CLEARED-AND-KEEPS-FEEDING-BLOCKER-INFERENCE/test_plan.md
+  tags: []
+- type: ticket
   path: agent-working/tickets/done/TCK-20261117-A-RESOLVE-BLOCKER-PROJECT-IS-RE-CREATED-EVERY-80-TICKS-AND-STALLS-COOPERATION.md
   ticket_id: TCK-20261117-A-RESOLVE-BLOCKER-PROJECT-IS-RE-CREATED-EVERY-80-TICKS-AND-STALLS-COOPERATION
   title: In urban_political s42, half the survivors re-create a resolve_blocker project
@@ -8436,20 +8518,6 @@
   date: '2026-11-17'
   related_code_areas:
   - src/core/species.py, src/world/
-  artifact_files: []
-  tags: []
-- type: ticket
-  path: agent-working/tickets/todos/TCK-20261117-A-NAVIGATION-FAILURE-REASON-IS-NEVER-CLEARED-AND-KEEPS-FEEDING-BLOCKER-INFERENCE.md
-  ticket_id: TCK-20261117-A-NAVIGATION-FAILURE-REASON-IS-NEVER-CLEARED-AND-KEEPS-FEEDING-BLOCKER-INFERENCE
-  title: NavigationComponent.last_failure_reason is written only when a failure carries
-    a code and is never cleared, so a stale PATH_NOT_FOUND/STUCK/OSCILLATING keeps
-    being read by infer_blockers on every strategic pass
-  tier: standard
-  ticket_type: bug
-  date: '2026-11-17'
-  related_code_areas:
-  - src/engine/patches.py:288, src/systems/strategic_systems/intelligence.py:176-202
-    and :495, src/engine/movement.py:362-365 and :456-472
   artifact_files: []
   tags: []
 - type: ticket

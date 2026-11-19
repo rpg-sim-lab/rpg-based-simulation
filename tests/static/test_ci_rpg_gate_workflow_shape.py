@@ -122,3 +122,18 @@ def test_the_report_job_writes_a_baseline_candidate_best_effort_and_labels_a_non
     assert "report/rpg-gate-candidate.json" in run and "--evidence-only" in run and "Baseline candidate refused" in run
     names = [s.get("name", "") for s in _steps("report")]
     assert names.index(step["name"]) < names.index("Upload report")  # inside the uploaded `report/` directory
+
+
+def test_report_job_gains_only_actions_read_and_fetches_main_report_before_evaluating():
+    """TCK-20261119-RPG-GATE-RERUN-ONLY-NEW-ROWS-AND-A-BASELINE-DIFF-AGAINST-MAIN: the rerun skip reads main's latest gate report artifact."""
+    assert _jobs()["report"]["permissions"] == {"actions": "read", "contents": "read", "issues": "write"}
+    for job in ("plan", "shard"):
+        assert "actions" not in _jobs()[job]["permissions"]
+    steps = _steps("report")
+    names = [s.get("name", "") for s in steps]
+    fetch = next(i for i, n in enumerate(names) if n.startswith("Fetch main's latest gate report"))
+    evaluate = next(i for i, n in enumerate(names) if n.startswith("Evaluate"))
+    assert fetch < evaluate
+    assert "tools.test_architecture.rpg_gate_main_report fetch" in steps[fetch]["run"] and "||" in steps[fetch]["run"]  # a crash still leaves a fallback record
+    assert steps[fetch]["env"]["GH_TOKEN"] == "${{ github.token }}"
+    assert "--main-baseline main-baseline.json" in steps[evaluate]["run"]

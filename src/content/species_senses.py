@@ -30,3 +30,16 @@ def require_species_sense_profile(species_id: Optional[str], where: str, catalog
     if defn is None:
         raise SenseProfileError(f"{where}: species {species_id!r} is not in content or has no usable sense profile")
     return defn
+
+
+def refuse_unprofiled_known_species(species_id: Optional[str], where: str, catalog: Optional[Any] = None) -> None:
+    """Refuse a body whose species IS in content but has no usable sense profile (``SenseProfileError`` naming `where`); a species not in content passes (a test fixture kind, which perceives with the baseline, divergence 2.210 item 3).
+
+    The campaign rebuild and the scenario runner use this; checkpoint restore is strict and uses ``require_species_sense_profile``."""
+    cat = warmed_catalog() if catalog is None else catalog
+    if not species_id:
+        return
+    try:
+        species_sense_profile(cat, species_id)
+    except SenseProfileError as err:
+        raise SenseProfileError(f"{where}: {err}") from err
