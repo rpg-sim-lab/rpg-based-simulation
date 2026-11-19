@@ -8,6 +8,7 @@ from pathlib import Path
 
 import pytest
 
+from tools.agent_working_paths import TICKETS
 from tools.delivery import pre_push_advisory_hook as hook
 from tools.gate_checks import ticket_overlap_check as oc
 
@@ -199,3 +200,16 @@ def test_check_h_is_part_of_run_all_checks_and_never_changes_the_exit_code(monke
     monkeypatch.setattr(hook, "check_ticket_overlap", lambda *a, **k: seen.append("h") or [])
     hook.run_all_checks(run_command=_Run(""), tickets_root=Path("/nonexistent"))
     assert seen == ["h"]
+
+
+# ---- the path gate check H relies on: a real pushed file is recognised by its agent-working root, not by explicit roots
+def test_a_todos_or_inprogress_file_under_the_real_root_is_recognised_with_default_roots_and_done_is_skipped(tmp_path):
+    for folder in ("todos", "inprogress"):
+        path = _ticket(tmp_path / TICKETS, folder, "TCK-20261110-OLD", "x", "y", date="2026-11-10")  # built from the real root constant, no literal
+        assert oc._open_folder(path) == folder
+        r = oc.check_file(path, FROM)  # default roots: the explicit-roots branch is not used
+        assert r.status == "skipped" and "grandfathered" in r.reason  # it passed the open-folder gate; the date skips it before any scan of the live corpus
+    done = _ticket(tmp_path / TICKETS, "done", "TCK-20261110-DONE", "x", "y", date="2026-11-10")
+    assert oc._open_folder(done) is None
+    r = oc.check_file(done, FROM)
+    assert r.status == "skipped" and r.reason == "not under todos/ or inprogress/"
