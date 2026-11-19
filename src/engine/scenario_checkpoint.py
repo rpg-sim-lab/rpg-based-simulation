@@ -11,8 +11,8 @@ from pathlib import Path
 from typing import TYPE_CHECKING
 
 from src.engine.checkpoint_fields import check_group_counter, fill_missing_fields
-from src.engine.checkpoint_senses import check_restored_body_senses
 from src.engine.checkpoint_schema import check_schema, dump_with_schema, read_header
+from src.engine.checkpoint_senses import check_restored_body_senses
 
 if TYPE_CHECKING:
     from src.engine.scenario_runtime import ScenarioRuntimeService

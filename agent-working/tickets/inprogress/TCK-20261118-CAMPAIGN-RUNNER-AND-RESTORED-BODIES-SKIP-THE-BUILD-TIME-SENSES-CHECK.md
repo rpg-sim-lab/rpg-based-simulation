@@ -101,16 +101,17 @@ No new durable state. The check reads the catalog's species sense_profile when a
 - RULED (rpg-designer): restore raises its own typed RestoredBodySenseProfileError(ValueError), with the SenseProfileError as __cause__. The message names the checkpoint path, the entity id and the species, and the test asserts both the type and the cause. Reason: restore callers already handle the CheckpointSchemaError family of ValueErrors, and "the save doesn't match this content" is a checkpoint fact.
 
 ## Implementation Notes
-- The shared helper is the existing `require_species_sense_profile`; the orchestrator (survivor rebuild) and the runner call it before building. `V2EntityBuilder` is not edited.
+- RULED (rpg-designer via rpg-planner-ubuntu, 2026-11-19): restore is STRICT (unknown species and unprofiled species both refused); the campaign rebuild and the runner refuse only a species in content with no usable profile, via `refuse_unprofiled_known_species`. Disclosure: "campaign and runner sites refuse a species in content with no usable profile; an unknown kind perceives with the baseline (2.210 item 3, fixtures). Restore refuses both." Fixtures with non-content kinds belong to a P3 fixture-policy follow-up that u24 tracks.
+- The restore uses the existing `require_species_sense_profile`. `V2EntityBuilder` is not edited.
 - src/engine/checkpoint_senses.py: `RestoredBodySenseProfileError(ValueError)` and `check_restored_body_senses`, called in `ScenarioCheckpointer.restore` after `check_group_counter`, before `Kernel(...)`.
 - Null profile: `CatalogRepository.load_all` raises `SenseProfileError` naming the species when a species record carries `sense_profile: null` (an absent key keeps the old path).
 - The known_limitations line from the Acceptance Criteria was never added on main; this change closes the gap, so none is needed.
 - Staging: agent-working/staging_artifacts/TCK-20261118-CAMPAIGN-RUNNER-AND-RESTORED-BODIES-SKIP-THE-BUILD-TIME-SENSES-CHECK/.
 
 ## Test Summary
-New: tests/unit/domains/campaigns/test_campaign_bodies_senses.py (4), tests/unit/engine/test_restored_body_senses.py (4, one slow), tests/unit/content/test_species_null_sense_profile.py (1), tests/unit/world/test_v2entitybuilder_sites_check_senses.py (2). Scoped regression sweep (campaigns unit, checkpoint, content, perc02a, scenario runtime and API) passes with --basetemp on /data.
+New: tests/unit/domains/campaigns/test_campaign_bodies_senses.py (5), tests/unit/engine/test_restored_body_senses.py (5, one slow, including content B with the species removed), tests/unit/content/test_species_null_sense_profile.py (1), tests/unit/world/test_v2entitybuilder_sites_check_senses.py (2). Scoped regression sweep (campaigns unit, checkpoint, content, perc02a, scenario runtime and API) passes with --basetemp on /data.
 
 ## Files Changed
-src/engine/checkpoint_senses.py (new), src/engine/scenario_checkpoint.py, src/domains/campaigns/orchestrator.py, src/domains/campaigns/runner.py, src/content/repository.py; the four test files above; docs/mechanics/04_strategic_cognition.md, docs/guidelines/intentional_divergences.md (2.210), docs/parity_ledger/strategic_cognition.yaml (STRAT-352).
+src/engine/checkpoint_senses.py (new), src/content/species_senses.py, src/engine/scenario_checkpoint.py, src/domains/campaigns/orchestrator.py, src/domains/campaigns/runner.py, src/content/repository.py; the four test files above; docs/mechanics/04_strategic_cognition.md, docs/guidelines/intentional_divergences.md (2.210), docs/parity_ledger/strategic_cognition.yaml (STRAT-352).
 
 ## Completion Summary

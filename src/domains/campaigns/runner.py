@@ -25,7 +25,7 @@ from src.platform.rng import DeterministicRNG
 from src.engine.kernel import Kernel
 from src.core.builder import V2EntityBuilder
 from src.content.hero_species import hero_species_id
-from src.content.species_senses import require_species_sense_profile
+from src.content.species_senses import refuse_unprofiled_known_species
 
 
 class SimulationAnalysisRunner:
@@ -68,7 +68,7 @@ class SimulationAnalysisRunner:
             entities = {}
             for i in range(1, spec.actors.count + 1):
                 role = "hero"
-                require_species_sense_profile(hero_species_id(), f"scenario runner hero {i}")
+                refuse_unprofiled_known_species(hero_species_id(), f"scenario runner hero {i}")
                 builder = V2EntityBuilder(i).kind(hero_species_id()).location(0.0, 0.0)
                 
                 # Determine class based on actor spec

@@ -53,6 +53,21 @@ def test_an_unprofiled_species_is_refused_naming_the_checkpoint_entity_and_speci
     assert "saved/ckpt.bin" in str(err.value) and "entity 2" in str(err.value) and "'human'" in str(err.value)
 
 
+def test_content_b_with_the_species_removed_is_refused(catalog):
+    """Content B drops the species itself (not only its profile): at restore an unknown species is content drift, so it is refused with the content error as the cause."""
+    from src.engine.behavior_consumers import configure_behavior_consumers, reset_behavior_consumers
+    wolf = catalog.species.pop("wolf")
+    configure_behavior_consumers(catalog)
+    try:
+        with pytest.raises(RestoredBodySenseProfileError) as err:
+            check_restored_body_senses(_state("human", "wolf"), "saved/ckpt.bin")
+        assert isinstance(err.value.__cause__, SenseProfileError)
+        assert "entity 2" in str(err.value) and "'wolf'" in str(err.value)
+    finally:
+        catalog.species["wolf"] = wolf
+        reset_behavior_consumers()
+
+
 def test_a_species_missing_from_content_is_refused_too(catalog):
     with pytest.raises(RestoredBodySenseProfileError):
         check_restored_body_senses(_state("human", "no_such_species_xyz"), "ckpt.bin", catalog)
