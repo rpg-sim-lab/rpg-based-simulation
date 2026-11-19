@@ -33,7 +33,7 @@ Planner review of PR #984 (comment 7011805637), notes 1 and 2, filed on lead-pla
 
 ## Scope
 1. Step 1, read-only, to the planner first: the exact code path where `apply_plan` decides to refuse (which checks run before the first mutation, which of them are about Status options and which about fields), and what the heartbeat or last-run record shows after a refusal.
-2. A planned Status value with no option on the Project: leave THAT item at its current Status, print one finding naming the item and the missing option, count it in the run's notes, and carry on with every other item. Exit code and heartbeat: decide with the planner from the step 1 reading, and say plainly what a timer sees (a skipped count must reach the last-run record so it is visible, not silent). A missing FIELD (Involved, Blocked by, Hotspot) is a different case and stays a refusal of the whole run, as tested today.
+2. A planned Status value with no option on the Project: leave THAT item at its current Status, print one finding naming the item and the missing option, count it in the run's notes, and carry on with every other item. Exit code: a DISTINCT non-zero code whenever any item was skipped (not the code of a whole-run refusal), recommended by lead-planner and agreed by the planner, because a timer that exits 0 with skipped items hides them; the rest of the run is still written, so a failed unit marks the skip without stopping the next tick. Confirm from the step 1 reading that a non-zero unit exit does not stop the timer from firing again, and say plainly what a timer sees. The skipped count must also reach the last-run record. A missing FIELD (Involved, Blocked by, Hotspot) is a different case and stays a refusal of the whole run, as tested today.
 3. Parked marker findings, status unchanged: (a) a valid marker on a ticket that has a non-stale working branch segment: "marker present but a live branch is working it: still waiting?"; (b) a marker whose target ticket id is the ticket's own id: treated as malformed (a finding), so it never reads Parked.
 4. Docs: `docs/guidelines/session_roles/project_sync_dry_run.md` (the new apply behaviour and the two findings). Quote the marker form only inline in prose or backticks, never at the start of a line (the hold on `Parked: ` lines until the merge window's `--init`).
 
@@ -69,7 +69,7 @@ Planner review of PR #984 (comment 7011805637), notes 1 and 2, filed on lead-pla
 
 ## Assumptions / Open Questions
 - Whether the heartbeat or last-run record can carry a skipped count without a format change: unmeasured, step 1.
-- Whether the owner wants this right after #984 or later: lead-planner asks with the #984 merge ask.
+- Whether the owner wants this right after #984 or later, and the exit-code rule: lead-planner asks with the #984 merge ask.
 
 ## Durable state, lifecycle and clocks
 N/A: no src change; the Project is a generated view rebuilt on each sync. The skipped count is written to the existing last-run record and overwritten by the next run.
