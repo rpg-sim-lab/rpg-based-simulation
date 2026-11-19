@@ -7996,7 +7996,8 @@
   date: '2026-11-19'
   related_code_areas:
   - src/systems/world_systems/navigation.py:41, src/world/threat.py:30
-  artifact_files: []
+  artifact_files:
+  - agent-working/stored_artifacts/TCK-20261119-OCCUPATION-READS-COMPARED-WITH-A-NON-LIVING-SPECIES-ID-MISS-THE-WORLD-BOSS/investigation.md
   tags: []
 - type: ticket
   path: agent-working/tickets/done/TCK-20261119-TICKET-FIELD-VALUES-CLI-LIFECYCLE-EXIT-REPORT-ONLY.md
