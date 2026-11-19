@@ -13,7 +13,7 @@ It refuses to start unless the observability mode is OFF (with recording on, the
 CROSS-CHECK, cell-invalidating: the spy's own ``src.core.treasury.total_coin`` at the first and last tick must equal the ledger's coin_first and coin_last; a mismatch marks the cell
 ``WIRING_MISMATCH`` (exit 5) and the cell does not count. Two more HARD cross-checks of the same class: the SUM of the per-apply declared deltas (payload ``declared_coin`` read immediately AFTER observe minus immediately BEFORE it, two
 ``tally_event`` calls per apply) must equal the end ``declared_coin`` (both numbers reported: ``declared_per_apply_sum``, ``ledger_declared``), and no apply may find its BEFORE read different from the previous
-AFTER read (``untracked_ledger_moves`` with rows tick, previous_after, before: something other than this spy fed the ledger between applies). Any of them is a WIRING_MISMATCH. The non-vacuous guard counts COIN-MOVING ticks (some entity purse changed that tick); the cell FAILS (exit 4) at 0.
+AFTER read (``untracked_ledger_moves`` with rows tick, previous_after, before: something other than this spy fed the ledger between applies). A third: the global observability mode is re-asserted OFF on EVERY apply and at ``finish`` (``mode_breaches`` rows: tick, mode). Any of them is a WIRING_MISMATCH. The non-vacuous guard counts COIN-MOVING ticks (some entity purse changed that tick); the cell FAILS (exit 4) at 0.
 Delta rows: ``total_change_rows`` holds every apply on which the world total changed (tick, delta, declared = the ledger's ``_declared_coin`` after the observe minus before, unexplained = delta - declared);
 ``unexplained_rows`` / ``unexplained_total_count`` hold only those with unexplained != 0 (a declared add that explains its change never counts). ``apply_calls`` and ``distinct_ticks`` are reported apart (apply can run
 more than once per tick), and a control run proves it fired with ``control_applied_count`` (exit 6 when it is 0).
@@ -31,7 +31,7 @@ the real ledger, so the LEDGER's V6 reads N more than the same run without it; `
 GUARDS: a root-handler ``logging_errors`` (every ERROR+ record becomes a row), the PINNED manifest check (as births_child), audit_mode and no_frame_pacing forced.
 
 Heavy-job hygiene: the file name carries ``_spy`` so the shared busy gate (``lib/busy_gate.sh`` RPG_HEAVY_WORDS) sees it; put the command in a script file and never put kit words on a launcher's command line.
-Usage: python coin_boss_spy.py <world> <seed> <ticks> <out.json> [--control coin:N | boss:K]
+Usage: python coin_boss_spy.py <world> <seed> <ticks> <out.json> [--control coin:N | boss:K] [--control-tick T]
 """
 from __future__ import annotations
 
@@ -46,6 +46,7 @@ from typing import Any, Dict, List, Optional
 from src.core.species import species_of
 from src.core.treasury import total_coin
 from src.engine.apply import ApplyPath
+from src.observability.config import ObservabilityConfig, ObservabilityMode
 from src.observability.run_ledger import RunLedger
 
 WORLD_BOSS_SPECIES = "world_boss"
@@ -158,6 +159,8 @@ class CoinBossSpy:
         self.disagreements: List[Dict[str, Any]] = []
         self.ledger_snapshot: Optional[Dict[str, float]] = None
         self.declared_per_apply_sum = 0.0  # the sum of the per-apply declared deltas, each = payload["declared_coin"] read right AFTER observe minus right BEFORE it
+        self.mode_breaches: List[Dict[str, Any]] = []  # applies (and the finish) at which the global observability mode was not OFF: tick, mode
+        self.last_tick_seen = 0
         self.untracked_ledger_moves: List[Dict[str, Any]] = []  # applies on which the BEFORE read differs from the previous AFTER read: something else fed the ledger between applies
         self.declared_seen = 0.0
         self._previous_coin = self.coin_first
@@ -188,8 +191,15 @@ class CoinBossSpy:
             setattr(owner, name, staticmethod(original))
         self._patched.clear()
 
+    def check_mode(self, tick: int) -> None:
+        """Re-assert the global observability mode is OFF (the kernel reads ``ObservabilityConfig.get_mode()`` fresh every tick, kernel.py:944-956): any other mode would let the kernel feed the same ledger a second time."""
+        mode = ObservabilityConfig.get_mode()
+        if mode != ObservabilityMode.OFF:
+            self.mode_breaches.append({"tick": tick, "mode": getattr(mode, "value", str(mode))})
+
     def finish(self) -> None:
         """Snapshot the ledger's counters, then reset it so nothing stays behind in the class-level counters."""
+        self.check_mode(self.last_tick_seen)
         payload = ledger_payload(self.ledger)
         self.ledger_snapshot = {"coin_first": payload["coin_first"], "coin_last": payload["coin_last"], "declared": payload["declared_coin"]}
         self.ledger.reset_run_state()
@@ -197,6 +207,8 @@ class CoinBossSpy:
     def observe(self, prior: Any, update: Any, state: Any) -> None:
         self.apply_calls += 1
         self.distinct_ticks.add(state.tick)
+        self.last_tick_seen = state.tick
+        self.check_mode(state.tick)
         observed = state
         if self.control is not None and self.last_tick is not None and state.tick == self.last_tick:
             observed = with_coin(state, self.control[1]) if self.control[0] == "coin" else with_bosses(state, self.control[1])
@@ -234,10 +246,11 @@ class CoinBossSpy:
             raise RuntimeError("finish() was not called: the ledger counters were not snapshotted")
         net = self.coin_last - self.coin_first
         declared_sum_ok = abs(self.declared_per_apply_sum - ledger["declared"]) <= EPSILON
-        wiring_ok = ledger["coin_first"] == self.coin_first and ledger["coin_last"] == self.coin_last and declared_sum_ok and not self.untracked_ledger_moves
+        wiring_ok = ledger["coin_first"] == self.coin_first and ledger["coin_last"] == self.coin_last and declared_sum_ok and not self.untracked_ledger_moves and not self.mode_breaches
         return {
             "coin_first": self.coin_first, "coin_last": self.coin_last, "net_delta": net,
             "ledger_coin_first": ledger["coin_first"], "ledger_coin_last": ledger["coin_last"], "ledger_declared": ledger["declared"], "declared_per_apply_sum": self.declared_per_apply_sum, "declared_sum_matches_end": declared_sum_ok,
+            "mode_breaches": self.mode_breaches[:50], "mode_breach_count": len(self.mode_breaches),
             "untracked_ledger_moves": self.untracked_ledger_moves[:50], "untracked_ledger_moves_count": len(self.untracked_ledger_moves),
             "v6": ledger["coin_last"] - ledger["coin_first"] - ledger["declared"], "declared_source": "RunLedger.observe (real, events discarded)",
             "wiring": "OK" if wiring_ok else "WIRING_MISMATCH", "cell_valid": wiring_ok and self.control is None,
@@ -262,12 +275,12 @@ def exit_status(doc: Dict[str, Any], control: Optional[tuple]) -> tuple:
 
 
 def main(argv: List[str]) -> int:
-    from src.observability.config import ObservabilityConfig, ObservabilityMode
     from tools.rpg_measure import arm_child
     from tools.rpg_measure.births_child import inject_no_replay_if_recording_off
     from tools.test_architecture.rpg_gate_run import build_kernel
 
     control = parse_control(argv[argv.index("--control") + 1] if "--control" in argv else None)
+    control_tick = int(argv[argv.index("--control-tick") + 1]) if "--control-tick" in argv else None  # a tick no state reaches makes the never-fire control (exit 6)
     world, seed, ticks, out = argv[0], int(argv[1]), int(argv[2]), argv[3]
     if ObservabilityConfig.get_mode() != ObservabilityMode.OFF:
         raise RuntimeError("coin_boss_spy runs only with observability mode OFF (SIM_OBS_MODE=OFF): with recording on the kernel feeds the same RunLedger counters a second time")
@@ -283,7 +296,7 @@ def main(argv: List[str]) -> int:
     manifest_path = Path("data") / "runs" / run_id / "run_manifest.json"
     evidence = pinned_runner.read_manifest(manifest_path) if manifest_path.exists() else {"run_conditions": arm_child._derived_conditions(kernel)}
     pinned = pinned_runner.require_pinned(evidence, what="coin_boss_spy build_kernel")
-    spy = CoinBossSpy(kernel.state, control=control, last_tick=kernel.state.tick + ticks).start_ledger().install()
+    spy = CoinBossSpy(kernel.state, control=control, last_tick=control_tick if control_tick is not None else kernel.state.tick + ticks).start_ledger().install()
     try:
         for _ in range(ticks):
             kernel.tick_once()

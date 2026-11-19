@@ -9,8 +9,17 @@ from src.core.builder import V2EntityBuilder
 from src.core.state import AuthoritativeState
 from src.core.treasury import total_coin
 from src.engine.apply import ApplyPath
+from src.observability.config import ObservabilityConfig, ObservabilityMode
 from src.observability.run_ledger import RunLedger
 from tools.rpg_measure import coin_boss_spy as kit
+
+
+@pytest.fixture(autouse=True)
+def _mode_off():
+    """The kit asserts the global observability mode is OFF on every apply: every test runs with an OFF override and clears all overrides afterwards, so no override leaks to another test."""
+    ObservabilityConfig.set_override_mode(ObservabilityMode.OFF)
+    yield
+    ObservabilityConfig.clear_all_overrides()
 
 
 class _Ledger:
@@ -267,3 +276,26 @@ def test_the_exit_status_orders_control_then_wiring_then_vacuous_and_a_good_cell
     assert kit.exit_status({**good, "wiring": "WIRING_MISMATCH"}, None)[0] == kit.EXIT_WIRING_MISMATCH
     assert kit.exit_status({**good, "non_vacuous": False}, None)[0] == kit.EXIT_VACUOUS
     assert kit.exit_status({**good, "control_applied_count": 1}, ("coin", 1.0)) == (0, "")
+
+
+def test_an_override_planted_mid_run_is_a_mode_breach_a_wiring_mismatch_and_exit_5_and_the_teardown_clears_it():
+    start = _state(_body(1, gold=10), tick=0)
+    spy, _ = _spy(start)
+    spy.observe(start, None, _state(_body(1, gold=7), tick=1))
+    ObservabilityConfig.set_override_mode(ObservabilityMode.LIGHT)  # something switches the run to a recording mode between applies
+    spy.observe(_state(_body(1, gold=7), tick=1), None, _state(_body(1, gold=5), tick=2))
+    spy.finish()
+    report = spy.report()
+    assert report["mode_breach_count"] == 2 and report["mode_breaches"] == [{"tick": 2, "mode": "LIGHT"}, {"tick": 2, "mode": "LIGHT"}]  # the apply at tick 2 and the finish
+    assert report["wiring"] == "WIRING_MISMATCH" and report["cell_valid"] is False
+    code, message = kit.exit_status({**report, "control": None}, None)
+    assert code == kit.EXIT_WIRING_MISMATCH == 5 and "WIRING_MISMATCH" in message
+    # the autouse fixture clears every override at teardown, so the LIGHT override planted above cannot reach another test
+
+
+def test_a_run_that_stays_off_has_no_mode_breach():
+    start = _state(_body(1, gold=10), tick=0)
+    spy, _ = _spy(start)
+    spy.observe(start, None, _state(_body(1, gold=7), tick=1))
+    spy.finish()
+    assert spy.report()["mode_breach_count"] == 0 and spy.report()["wiring"] == "OK"
