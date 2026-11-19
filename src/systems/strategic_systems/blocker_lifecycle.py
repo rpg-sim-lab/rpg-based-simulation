@@ -179,7 +179,7 @@ def generate_crafting_blockers(
 def resolve_blockers(
     state: AuthoritativeState,
     update: StateUpdate,
-    cadence: Any = None
+    cadence: Any = None  # kept for the delegate's signature; the default is resolved in StrategicIntelligenceSystem.resolve_blockers (import contract)
 ) -> StateUpdate:
     """
     Resolve strategic blockers that are satisfied by the current or pending
