@@ -299,3 +299,49 @@ def test_a_run_that_stays_off_has_no_mode_breach():
     spy.observe(start, None, _state(_body(1, gold=7), tick=1))
     spy.finish()
     assert spy.report()["mode_breach_count"] == 0 and spy.report()["wiring"] == "OK"
+
+
+def _unexplained_run(rows, **spy_kwargs):
+    """A spy that saw ``rows`` applies, each creating 1 coin at ticks 1..rows with nothing declared (unexplained = 1.0 each)."""
+    start = _state(_body(1, gold=0), tick=0)
+    spy, _ = _spy(start, **spy_kwargs)
+    prior = start
+    for tick in range(1, rows + 1):
+        now = _state(_body(1, gold=tick), tick=tick)
+        spy.observe(prior, None, now)
+        prior = now
+    spy.finish()
+    return spy.report()
+
+
+def test_last_tick_unexplained_and_its_flag_come_from_the_full_list_at_the_last_observed_tick():
+    report = _unexplained_run(3)
+    assert report["last_tick_unexplained"] == 1.0 and report["last_tick_has_unexplained_row"] is True and report["unexplained_total_count"] == 3
+    start = _state(_body(1, gold=0), tick=0)
+    spy, _ = _spy(start)
+    spy.observe(start, None, _state(_body(1, gold=1), tick=1))  # +1 unexplained at tick 1
+    spy.observe(_state(_body(1, gold=1), tick=1), None, _state(_body(1, gold=1), tick=2))  # nothing at the last tick
+    spy.finish()
+    report = spy.report()
+    assert report["last_tick_unexplained"] == 0 and report["last_tick_has_unexplained_row"] is False and report["unexplained_total_count"] == 1
+
+
+def test_the_cap_never_hides_the_last_tick_row_and_the_uncapped_flag_writes_the_full_list():
+    capped = _unexplained_run(250)
+    assert capped["unexplained_total_count"] == 250 and len(capped["unexplained_rows"]) == kit.ROW_CAP == 200 and capped["unexplained_rows_capped"] is True
+    assert capped["last_tick_unexplained"] == 1.0 and capped["last_tick_has_unexplained_row"] is True  # the row at tick 250 is past the cap but still counted
+    assert all(row["tick"] <= 200 for row in capped["unexplained_rows"])
+    full = _unexplained_run(250, uncapped_rows=True)
+    assert len(full["unexplained_rows"]) == 250 and full["unexplained_rows_capped"] is False and full["unexplained_rows"][-1]["tick"] == 250
+
+
+def test_control_tick_is_reported_as_its_own_field_and_defaults_to_none():
+    start = _state(_body(1), tick=0)
+    spy, _ = _spy(start, control=("coin", 1.0), last_tick=99, control_tick=99)
+    spy.observe(start, None, _state(_body(1), tick=1))
+    spy.finish()
+    assert spy.report()["control_tick"] == 99
+    plain, _ = _spy(start)
+    plain.observe(start, None, _state(_body(1), tick=1))
+    plain.finish()
+    assert plain.report()["control_tick"] is None
