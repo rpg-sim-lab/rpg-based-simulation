@@ -18,9 +18,9 @@ from dataclasses import dataclass
 from typing import Any, List, Optional, Tuple
 
 from src.ai.goals.base import OpeningStepKind
-from src.content_semantics.faction import get_species_id_str
 from src.core.calendar import is_night
 from src.core.items import food_hunger_recovery
+from src.core.species import species_of
 from src.core.state import (
     AuthoritativeState,
     BuildingState,
@@ -100,14 +100,14 @@ def _within(entity: EntityState, position: Tuple[float, float], radius: float) -
 
 def _scavenge_step(entity: EntityState, state: AuthoritativeState) -> OpeningStep:
     """Decision 44: a carcass within reach holding food the subject's diet can eat, never of its own species."""
-    own_species = get_species_id_str(entity)
+    own_species = species_of(entity)
     best, best_distance = None, 0.0
     for corpse in state.corpses.values():
         distance = _within(entity, corpse.position, SCAVENGE_RADIUS)
         if distance is None or not any(s.quantity > 0 and can_eat_item(entity, s.item_id) for s in corpse.items):
             continue
         dead = state.entities.get(corpse.original_entity_id)
-        if dead is not None and get_species_id_str(dead) == own_species:
+        if dead is not None and species_of(dead) == own_species:
             continue
         if best is None or distance < best_distance:
             best, best_distance = corpse, distance

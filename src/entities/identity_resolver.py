@@ -5,6 +5,7 @@ from typing import Literal, Optional
 from pydantic import BaseModel, ConfigDict
 
 from src.core.enums import EntityRole, Faction
+from src.core.species import species_of
 from src.core.state import EntityState
 
 
@@ -89,7 +90,7 @@ class EntityIdentityResolver:
             return ResolvedEntityIdentity(
                 entity_id=entity.id,
                 archetype_id=props.get("archetype_id"),
-                species_id=props.get("species_id"),
+                species_id=species_of(entity),
                 faction_id=faction_id,
                 role_id=role_id or "unresolved",
                 profession_id=props.get("profession_id"),
@@ -105,7 +106,7 @@ class EntityIdentityResolver:
             return ResolvedEntityIdentity(
                 entity_id=entity.id,
                 archetype_id=props.get("archetype_id"),
-                species_id=props.get("species_id"),
+                species_id=species_of(entity),
                 faction_id=rt_faction,
                 role_id=rt_role,
                 profession_id=props.get("profession_id"),

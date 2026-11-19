@@ -17,6 +17,7 @@ from src.engine.sleep_debt import SLEEP_DEBT
 from src.platform.rng import DeterministicRNG
 from tests.helpers.kernel_pinning import PinnedNormalGovernor
 from tests.helpers.scenario import compile_world
+from src.core.species import species_of
 
 pytestmark = [pytest.mark.domain("combat"), pytest.mark.level("scenario")]
 
@@ -27,7 +28,7 @@ TIRED = 75.0  # above the point where the SURV-07 pull outranks ordinary goals, 
 def _stage(gap):
     state = compile_world(WORLD, SEED)
     inn = next(b for b in state.buildings.values() if b.kind == "inn")
-    subject = next(e for e in state.entities.values() if (e.identity.properties or {}).get("species_id") == "human" and e.combat.alive)
+    subject = next(e for e in state.entities.values() if species_of(e) == "human" and e.combat.alive)
     x, y = inn.position
     subject = replace(subject, biological=replace(subject.biological, hunger=0.0, sleep_debt=TIRED),
                       navigation=replace(subject.navigation, position=(x - float(gap), y), target=None, home_position=None, leash_radius=0.0))

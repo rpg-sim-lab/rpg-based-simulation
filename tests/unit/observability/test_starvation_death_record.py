@@ -45,9 +45,7 @@ def _world(carry=(), species=None, hunger=HUNGRY):
     state = compile_world(WORLD_ID)
     e = state.entities[WHO]
     props = dict(e.identity.properties)
-    if species:
-        props["species_id"] = species
-    e = replace(e, biological=replace(e.biological, hunger=hunger, sleep_debt=0.0), identity=replace(e.identity, properties=props),
+    e = replace(e, kind=species or e.kind, biological=replace(e.biological, hunger=hunger, sleep_debt=0.0), identity=replace(e.identity, properties=props),
                 inventory=replace(e.inventory, items=[ItemStack(item_id=i, quantity=1) for i in carry]))
     object.__setattr__(state, "entities", {WHO: e})
     object.__setattr__(state, "buildings", {})

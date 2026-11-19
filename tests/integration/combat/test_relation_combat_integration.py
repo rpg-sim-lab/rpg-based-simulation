@@ -5,7 +5,8 @@ from src.core.enums import ReasonCode, Faction
 from src.core.builder import V2EntityBuilder
 from src.engine.legality import LegalityServiceV2
 from src.engine.tactical import TacticalDecisionSystem
-from src.content_semantics.faction import get_faction_semantics_service, get_faction_id_str, get_species_id_str, reset_faction_semantics_service
+from src.content_semantics.faction import get_faction_semantics_service, get_faction_id_str, reset_faction_semantics_service
+from src.core.species import species_of
 from src.content_semantics.relation import RelationContext
 
 

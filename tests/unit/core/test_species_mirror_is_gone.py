@@ -1,0 +1,111 @@
+"""TCK-20261109-M1-KIND-ALWAYS-MEANS-SPECIES-AND-OCCUPATION-IS-ITS-OWN-FIELD, step 5: the `identity.properties["species_id"]` mirror is gone.
+
+`EntityState.kind` is the species id (step 4); `species_of` is the one way to read it. K12 (static, rpg-designer ruling 67cc6f6d): production code that reads or writes the key
+`"species_id"` of an entity's properties = 0. The only `"species_id"` string keys allowed in src are named below, each with the reason it is not the mirror.
+"""
+from __future__ import annotations
+
+import ast
+from pathlib import Path
+
+from src.core.species import species_of
+from src.entities.archetype_factory import ArchetypeEntityFactory, EntitySpawnContext
+from src.entities.runtime_contract import ResolvedEntityRuntimeContract
+
+SRC = Path(__file__).resolve().parents[3] / "src"
+
+# (file relative to src, why it is not the mirror). The event payload key carries the VALUE `species_of(entity)`; it is an output field, not an entity property.
+ALLOWED_KEY_SITES = {
+    "observability/event_shapers.py": "combat participant snapshot payload field; its value is species_of(entity)",
+}
+
+
+def _sites_of_species_id_key():
+    """Every place src names the string key "species_id" as a subscript, a dict-literal key, a keyword-free `.get/.pop/.setdefault` argument or a dict() key."""
+    found = []
+    for path in sorted(SRC.rglob("*.py")):
+        tree = ast.parse(path.read_text(encoding="utf-8"))
+        for node in ast.walk(tree):
+            hit = False
+            if isinstance(node, ast.Subscript) and isinstance(node.slice, ast.Constant) and node.slice.value == "species_id":
+                hit = True
+            elif isinstance(node, ast.Dict) and any(isinstance(k, ast.Constant) and k.value == "species_id" for k in node.keys):
+                hit = True
+            elif (isinstance(node, ast.Call) and isinstance(node.func, ast.Attribute) and node.func.attr in {"get", "pop", "setdefault", "__getitem__"}
+                  and node.args and isinstance(node.args[0], ast.Constant) and node.args[0].value == "species_id"):
+                hit = True
+            if hit:
+                found.append((path.relative_to(SRC).as_posix(), node.lineno))
+    return found
+
+
+def test_k12_no_production_reader_or_writer_of_the_species_id_mirror():
+    offenders = [(f, line) for f, line in _sites_of_species_id_key() if f not in ALLOWED_KEY_SITES]
+    assert offenders == [], f"src names the mirror key 'species_id' at {offenders}; read species_of(entity) instead"
+
+
+def test_the_allowed_key_sites_are_still_real_sites():
+    files = {f for f, _ in _sites_of_species_id_key()}
+    assert set(ALLOWED_KEY_SITES) <= files, "an allowed site no longer exists: delete its row"
+
+
+def test_the_archetype_factory_no_longer_writes_the_mirror():
+    contract = ResolvedEntityRuntimeContract(archetype_id="human_worker", species_id="human", faction_id="town_council", role_id="worker", kind="human",
+                                             hp=80, max_hp=80, atk=8, def_stat=4, attack_range=1, readiness=100.0, inventory_items={}, starting_gold=0.0, traits=(), themes=())
+    entity = ArchetypeEntityFactory().build_entity(1, contract, EntitySpawnContext())
+    assert "species_id" not in entity.identity.properties
+    assert species_of(entity) == "human"
+
+
+# ---- step 5 ruling (a2), rpg-designer 2026-11-19: needs come from the species; a catalog species without a profile runs on base rates and is counted; a kind that is no catalog species reads its role ----
+
+_TEST_DOUBLE_SPECIES_WITHOUT_PROFILE = "test_double_species_without_profile"
+
+
+class _Species:
+    def __init__(self, need_profile):
+        self.need_profile = need_profile
+
+
+class _Catalog:
+    # no real species lacks a need_profile today (species.yaml, 2026-11-19); this pins the defensive branch
+    def __init__(self):
+        self._species = {"human": _Species("humanoid_survival"), _TEST_DOUBLE_SPECIES_WITHOUT_PROFILE: _Species(None)}
+
+    def get_species(self, species_id):
+        return self._species.get(species_id)
+
+    def get_need_profile(self, profile_id):
+        return object() if profile_id == "humanoid_survival" else None
+
+
+def _state(*kind_roles):
+    from types import SimpleNamespace
+    from src.core.builder import V2EntityBuilder
+    entities = {i + 1: V2EntityBuilder(i + 1).kind(k).location(0.0, 0.0).identity(role=r).build() for i, (k, r) in enumerate(kind_roles)}
+    return SimpleNamespace(entities=entities)
+
+
+def test_needs_follow_the_species_and_an_unknown_kind_reads_its_role_a2_rpg_designer_2026_11_19():
+    """(a2), rpg-designer 2026-11-19. A catalog species with no need profile gets base rates and is counted unprofiled (not an interim hit); a kind that is no catalog species and has a
+    MONSTER role gets base rates, and is both unprofiled and an interim hit; one with a person role gets the person profile and is an interim hit, not unprofiled; a catalog species with a profile keeps it whatever its role."""
+    from src.core.enums import EntityRole
+    from src.engine.biological_needs import interim_role_need_counts, profile_id_for, unprofiled_need_counts
+    state = _state(("human", EntityRole.CITIZEN), (_TEST_DOUBLE_SPECIES_WITHOUT_PROFILE, EntityRole.CITIZEN), ("TEST", EntityRole.MONSTER), ("TEST", EntityRole.MONSTER), ("worker", EntityRole.WORKER),
+                   ("world_boss", EntityRole.MONSTER), ("human", EntityRole.MONSTER), ("", EntityRole.CITIZEN), ("", EntityRole.MONSTER))
+    catalog = _Catalog()
+    assert [profile_id_for(state.entities[i], catalog) for i in range(1, 10)] == [
+        "humanoid_survival", None, None, None, "humanoid_survival", None, "humanoid_survival", "humanoid_survival", None]
+    assert unprofiled_need_counts(state, catalog) == {_TEST_DOUBLE_SPECIES_WITHOUT_PROFILE: 1}
+    assert interim_role_need_counts(state, catalog) == {"<none>|CITIZEN": 1, "<none>|MONSTER": 1, "TEST|MONSTER": 2, "worker|WORKER": 1, "world_boss|MONSTER": 1}
+    # disjoint, and the base-rate bodies are exactly the unprofiled ones plus the interim ones with a non-person role
+    assert not {k.split("|")[0] for k in interim_role_need_counts(state, catalog)} & set(unprofiled_need_counts(state, catalog))
+    base_rate_ids = {i for i in state.entities if profile_id_for(state.entities[i], catalog) is None}
+    assert sorted(base_rate_ids) == [2, 3, 4, 6, 9]
+    assert len(base_rate_ids) == sum(unprofiled_need_counts(state, catalog).values()) + sum(v for k, v in interim_role_need_counts(state, catalog).items() if k.endswith("|MONSTER"))
+
+
+def test_the_count_is_empty_when_every_species_has_a_profile():
+    from src.core.enums import EntityRole
+    from src.engine.biological_needs import unprofiled_need_counts
+    assert unprofiled_need_counts(_state(("human", EntityRole.CITIZEN), ("human", EntityRole.CITIZEN)), _Catalog()) == {}

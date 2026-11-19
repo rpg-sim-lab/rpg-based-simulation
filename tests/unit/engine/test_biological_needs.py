@@ -28,7 +28,7 @@ def catalog():
 
 
 def _entity(eid=1, role=EntityRole.WORKER, **props):
-    return (V2EntityBuilder(eid).kind("worker").properties({"species_id": "human"}).location(10.0, 10.0)
+    return (V2EntityBuilder(eid).kind(props.get("species_id", "human")).properties({"species_id": "human"}).location(10.0, 10.0)
             .identity(role=role, properties=props).build())
 
 
@@ -64,7 +64,7 @@ def test_explicit_need_profile_overrides_species(catalog):
 
 
 def test_undeclared_monster_is_a_reported_defect_with_unchanged_rates(catalog):
-    monster = _entity(role=EntityRole.MONSTER)
+    monster = replace(_entity(role=EntityRole.MONSTER), kind=None)   # step 5: a body with NO species (species_of() None) is the defect this test reports
     assert need_rates(monster) == pytest.approx((0.1, 0.05))
     state = AuthoritativeState(tick=0, seed=1, entities={1: monster})
     assert undeclared_need_kinds(state, catalog) == {(None, int(EntityRole.MONSTER)): 1}
@@ -100,7 +100,7 @@ def test_service_tile_filters_by_kind_when_two_buildings_are_in_reach():
 
 
 def test_eat_is_served_by_the_inn_when_a_home_is_nearer_in_reach():
-    ent = (V2EntityBuilder(1).kind("worker").properties({"species_id": "human"}).location(10.0, 10.0).biological(hunger=80.0)
+    ent = (V2EntityBuilder(1).kind("human").properties({"species_id": "human"}).location(10.0, 10.0).biological(hunger=80.0)
            .inventory(gold=50).build())
     home = BuildingState(id=2, kind="home", position=(10, 9))
     inn = BuildingState(id=1, kind="inn", position=(11, 10))
@@ -122,7 +122,7 @@ def test_rough_rest_needs_no_building_and_relieves_rest_pressure_while_the_debt_
 
 
 def test_inn_meal_is_served_to_a_subject_beside_the_inn():
-    ent = (V2EntityBuilder(1).kind("worker").properties({"species_id": "human"}).location(11.0, 10.0).biological(hunger=80.0)
+    ent = (V2EntityBuilder(1).kind("human").properties({"species_id": "human"}).location(11.0, 10.0).biological(hunger=80.0)
            .inventory(gold=50).build())
     inn = BuildingState(id=1, kind="inn", position=(10, 10))
     state = AuthoritativeState(
@@ -139,7 +139,7 @@ def test_eat_scorer_targets_the_inn():
     from src.ai.goals.scorers import EatScorer
     from dataclasses import replace
     from src.engine.service_prices import EAT_PRICE_GOLD
-    ent = (V2EntityBuilder(1).kind("worker").properties({"species_id": "human"}).location(11.0, 10.0).biological(hunger=80.0).build())
+    ent = (V2EntityBuilder(1).kind("human").properties({"species_id": "human"}).location(11.0, 10.0).biological(hunger=80.0).build())
     ent = replace(ent, inventory=replace(ent.inventory, gold=EAT_PRICE_GOLD))  # the inn is a way to eat only for a subject that can pay (SURV-06)
     inn = BuildingState(id=7, kind="inn", position=(10, 10))
     state = AuthoritativeState(tick=1, seed=1, entities={1: ent}, buildings={7: inn})
@@ -199,7 +199,7 @@ def test_absent_need_key_is_recorded_when_it_fires_and_never_on_the_corpus(catal
 
 def _forager(hunger, berries=0):
     from src.core.state import ItemStack
-    ent = V2EntityBuilder(1).kind("worker").properties({"species_id": "human"}).location(10.0, 10.0).biological(hunger=hunger).inventory(gold=0).build()
+    ent = V2EntityBuilder(1).kind("human").properties({"species_id": "human"}).location(10.0, 10.0).biological(hunger=hunger).inventory(gold=0).build()
     return replace(ent, inventory=replace(ent.inventory, items=[ItemStack("wild_berries", berries)] if berries else []))
 
 

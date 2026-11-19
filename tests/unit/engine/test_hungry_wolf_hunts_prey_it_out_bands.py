@@ -13,13 +13,14 @@ import pytest
 
 from src.engine.appraisal import HUNT_HUNGER, Relation, appraise
 from tests.helpers.scenario import compile_world
+from src.core.species import species_of
 
 HUNGRY = HUNT_HUNGER + 40.0
 SATED = 0.0
 
 
 def _species(state, species):
-    return next(e for e in state.entities.values() if (e.identity.properties or {}).get("species_id") == species)
+    return next(e for e in state.entities.values() if species_of(e) == species)
 
 
 def _beside(target, wolf, dx):

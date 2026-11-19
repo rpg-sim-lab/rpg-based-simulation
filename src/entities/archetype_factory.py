@@ -56,7 +56,6 @@ class ArchetypeEntityFactory:
         # Metadata carried into properties for traceability
         properties: dict = {
             "archetype_id": contract.archetype_id,
-            "species_id": contract.species_id,
             "faction_id": contract.faction_id,
             "role_id": contract.role_id,
         }

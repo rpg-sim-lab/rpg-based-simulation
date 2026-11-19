@@ -14,6 +14,7 @@ from src.content_semantics.faction import (
     get_faction_semantics_service,
 )
 from src.core.enums import Faction
+from src.core.species import species_of
 from src.engine.spatial_query import SpatialQueryService
 
 TRADES_TRAIT = "keeps_coin_and_trades"
@@ -21,7 +22,7 @@ TRADES_TRAIT = "keeps_coin_and_trades"
 
 def keeps_coin(entity: Any) -> bool:
     """True when the entity's species is authored with the coin-and-trade trait."""
-    species_id = (entity.identity.properties or {}).get("species_id")
+    species_id = species_of(entity)
     species = get_faction_semantics_service().repo.get_species(species_id) if species_id else None
     return species is not None and TRADES_TRAIT in species.natural_traits
 

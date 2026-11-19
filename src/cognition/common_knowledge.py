@@ -28,6 +28,7 @@ from src.content.common_knowledge_seed import (
     seeded_knowledge,
 )
 from src.content.schema import COMMON_KNOWLEDGE_DANGER_LEVELS
+from src.core.species import species_of
 
 __all__ = [
     "COMMON_KNOWLEDGE_CERTAINTY", "COMMON_KNOWLEDGE_SOURCE_ID", "DANGER_FACT_TYPE", "FACT_KEY_PREFIX", "UNRECOGNISED",
@@ -40,7 +41,7 @@ UNRECOGNISED = "unrecognised"
 def _recognised_kind(hostile: Any) -> str:
     """What an observer recognises the hostile as: its species. With none the hostile is unrecognised and so uninformed;
     ``kind`` is the hidden population role and KNOW-04 forbids attaching a prior to it."""
-    return str((hostile.identity.properties or {}).get("species_id") or UNRECOGNISED)
+    return str(species_of(hostile) or UNRECOGNISED)
 
 
 def believed_danger_rank(entity: Any, other: Any) -> int:

@@ -24,6 +24,7 @@ from src.engine.sleep_debt import SLEEP_DEBT, is_weakened
 from src.platform.rng import DeterministicRNG
 from tests.helpers.kernel_pinning import PinnedNormalGovernor
 from tests.helpers.scenario import compile_world
+from src.core.species import species_of
 
 pytestmark = [pytest.mark.domain("combat"), pytest.mark.level("scenario")]
 
@@ -34,7 +35,7 @@ WALK_TO = (58.0, 30.0)
 
 def _stage(species, debt):
     state = compile_world(WORLD, SEED)
-    subject = next(e for e in state.entities.values() if (e.identity.properties or {}).get("species_id") == species and e.combat.alive)
+    subject = next(e for e in state.entities.values() if species_of(e) == species and e.combat.alive)
     subject = replace(
         subject, biological=replace(subject.biological, hunger=0.0, sleep_debt=debt),
         navigation=replace(subject.navigation, position=(38.0, 30.0), target=WALK_TO, movement_mode=MovementMode.WANDER, home_position=None, leash_radius=0.0),

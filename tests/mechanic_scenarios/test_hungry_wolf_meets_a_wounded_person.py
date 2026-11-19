@@ -17,6 +17,7 @@ from src.engine.kernel import Kernel
 from src.platform.rng import DeterministicRNG
 from tests.helpers.kernel_pinning import PinnedNormalGovernor
 from tests.helpers.scenario import compile_world
+from src.core.species import species_of
 
 pytestmark = [pytest.mark.domain("combat"), pytest.mark.level("scenario")]
 
@@ -25,7 +26,7 @@ HUNGRY, FED = 85.0, 0.0
 
 
 def _species(entity):
-    return (entity.identity.properties or {}).get("species_id")
+    return species_of(entity)
 
 
 def _wolf_attacks_person(*, hunger, person_hp):
