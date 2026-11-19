@@ -1,0 +1,7 @@
+# Settings for tools/test_architecture/rpg_gate_main_report.py (fetching main's latest completed rpg gate report). Testing-owned and NOT hashed by the rpg gate
+# harness (it is not rpg's tests/simulation_quality/rpg_gate/config.yaml, whose edit would stale the baseline).
+#
+# main_report_max_age_days: a main report whose run is older than this many days is not used, and the report job does the full rerun (staleness only ever
+# gives a fuller rerun). The scheduled run is daily. A missing file, a missing key, or a value that is not a positive integer also gives the full rerun,
+# never "no bound" and never a skipped rerun.
+main_report_max_age_days: 3
