@@ -194,3 +194,37 @@ at :30. **No seat installs, enables or starts either unit; the owner does, on ea
   reconcile and the next run carries on. But `project_sync.py` handles no signal, so a run stopped by the timeout (SIGTERM) writes no
   `last-run.json` (the previous file stays) and no heartbeat (both are written only when the run ends). (d) Not measured yet: how
   the two hosts interact over many hourly runs; AC3 of the ticket reads the first runs back after the owner installs.
+
+## Seat, linking by commit subject, Involved, Blocked by, Hotspot (`TCK-20261119-PROJECT-VIEW-SEAT-COLLABORATORS-LINK-BY-COMMIT-SUBJECT-AND-PARKED`)
+
+Hash `v5` adds three text fields to v4: **Involved**, **Blocked by**, **Hotspot**. `--init` creates them; a v4 item is rewritten once and is not a hand edit.
+Measured basis, taken on origin/main 77e4aeb72 and its filing-commit descendant 84b44272c (the only difference is two ticket files, and the Hotspot counts were
+re-checked on both and are identical): the live Project had 328 items; 47 showed "seat not recorded", 19 of them not Done.
+
+- **(a) Seat of a hand-added worktree.** `python3 tools/sessions/record_seat.py <worktree> <seat> [--replace] [--dry-run]` writes the record `launch.py --worktree`
+  writes (it calls `state.write_bound_worktree(..., explicit=True)`; `status.py` shows it as `writing in`). It refuses an unknown seat, the main checkout or a path that
+  is not a linked worktree, a worktree already recorded for another seat, and a seat whose record points at a different live worktree. It never guesses a seat from a
+  branch name. **The record holds ONE worktree per seat**: a seat that runs two lane worktrees can record one of them (`--replace` moves it). Each host records its own
+  worktrees; a u24 seat runs the one-time backfill for the u24 lane worktrees (the CLI is not run for another host's worktrees).
+- **(b) A branch works a ticket by its commit subjects.** In a worktree's own commits (`git log --no-merges HEAD --not origin/main`, so a commit already on origin/main
+  never counts), a ticket is *worked* when its id LEADS a subject and that commit touches a file outside `agent-working/` and `docs/`. Anything else is *cited*: an id in
+  the middle of a subject, a filing/notes commit, a docs-only commit. A worked ticket reads In progress through the same path a changed `inprogress/` ticket file does
+  (Stale and the seat follow); a ticket already Done on origin/main, or with no file there, is skipped. A cited ticket changes no Status. The edge is pinned in both
+  directions: a commit touching only a `tests/` config is worked, the same commit touching only `docs/` is cited. A wrong guess shows the wrong Status until the next
+  sync. Only checked-out worktrees are read, as for every other branch fact; `origin/*` branches nobody has checked out here are not.
+- **(c) Involved** is the set of seats recorded for the worktrees whose own commit subjects name the ticket (worked or cited) plus the seats of a branch that changes its
+  file, unioned across hosts through `Host facts` (`involved=`). Basis: on ubuntu 9 of 11 worktree branches with ticket facts have a recorded seat; of 32 tickets named by
+  such a branch, 3 have two or more seats. A worktree with no recorded seat adds nothing, so **Involved is empty for lane branches with no recorded seat until the
+  `record_seat.py` backfill runs on u24**. Comment parsing is not shipped: in the last 100 #715 comments (2026-10-22..2026-10-26) 38 name a ticket id and none starts
+  `<seat>, <date>:` (0%); the openers are `approval: ...`.
+- **(d) Blocked by** lists the ticket ids on a line-start `waits on`, `waiting on`, `blocked by` or `depends on` line of the ticket that are not Done on origin/main; an id
+  with no ticket file there is left out with a finding. Only 1 of 223 open tickets has such a line today. **Parked is not derived.** `Blocked` itself comes from the
+  ticket's `## Status` body line reading `BLOCKED` (`parse_copy`: `blocked = section("Status").upper() == "BLOCKED"`), so a Parked-like ticket shows today as a ticket
+  Status of BLOCKED plus a waits-on line naming the ticket it waits for. A branch that is old because it waits on something (the STALEMATE F1 shape) **still reads Stale**
+  after this ships. Parked is deferred to `TCK-20261119-PROJECT-VIEW-PARKED-STATE-FROM-A-TICKET-BODY-MARKER-LINE`.
+- **(e) Hotspot** is, of the `src/*.py` files in the ticket's own `## Related Code Areas`, the one cited by the most open tickets (todos and inprogress) on origin/main, empty when
+  none is cited by 2 or more tickets; ties break by path order; directories and non-`src/` paths never count. On 77e4aeb72: 123 open tickets cite a src `.py` file, 152
+  distinct files, 57 cited by 2 or more; top `intelligence.py` 19, `tactical.py` 13, `kernel.py` 12, `core/state.py` 12.
+
+Every new derivation prints ran / skipped / errored in the dry-run notes (`subject-link: ...`, `hotspot: ...`); a lookup that fails leaves the field empty and adds a finding. An
+update line shows the new Involved / Blocked by / Hotspot value next to the changed-field name. Exit code and `--apply` behaviour are unchanged for the existing fields.

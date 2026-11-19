@@ -47,6 +47,7 @@ Report-only: `tools/sessions/project_sync.py` derivation plus the Project fields
 6. A sync-hash version bump for the new fields, the new fields created by `--init`, and `docs/guidelines/session_roles/project_sync_dry_run.md` updated.
 
 ## Out of Scope
+- Parked is deferred to TCK-20261119-PROJECT-VIEW-PARKED-STATE-FROM-A-TICKET-BODY-MARKER-LINE (ticket-body marker line; dispatched after the overlap-scan ticket).
 - Changing how tickets are written or adding ticket fields.
 - Guessing a seat from a branch name or a static map.
 - Back-filling records by any route other than the one-time CLI backfill above (no guessing from branch names).

@@ -24,7 +24,7 @@ import subprocess
 import sys
 import time
 from collections.abc import Callable
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from datetime import date, datetime, timezone
 from pathlib import Path
 
@@ -66,9 +66,10 @@ PROGRESS_FOLDERS = ("inprogress", "done")  # only these count as progress; todos
 HASH_FIELDS_V1 = ("Title", "Ticket ID", "Status", "Domain", "Seat", "Host", "Branch", "PR", "Tier")
 HASH_FIELDS_V2 = HASH_FIELDS_V1 + ("Layer", "Priority", "Epic", "Tags")
 HASH_FIELDS_V3 = HASH_FIELDS_V2 + ("Host facts",)
-HASH_FIELDS = HASH_FIELDS_V3 + ("Filed",)  # the current version (v4)
-HASH_VERSIONS = {"v1": HASH_FIELDS_V1, "v2": HASH_FIELDS_V2, "v3": HASH_FIELDS_V3, "v4": HASH_FIELDS}  # a stored hash is "v4:<sha>"; an unprefixed value is v1
-CURRENT_HASH_VERSION = "v4"
+HASH_FIELDS_V4 = HASH_FIELDS_V3 + ("Filed",)
+HASH_FIELDS = HASH_FIELDS_V4 + ("Involved", "Blocked by", "Hotspot")  # the current version (v5)
+HASH_VERSIONS = {"v1": HASH_FIELDS_V1, "v2": HASH_FIELDS_V2, "v3": HASH_FIELDS_V3, "v4": HASH_FIELDS_V4, "v5": HASH_FIELDS}  # a stored hash is "v4:<sha>"; an unprefixed value is v1
+CURRENT_HASH_VERSION = "v5"
 HOST_STATES = ("filing", "progress", "stale", "blocked")
 PRIORITIES = ("P0", "P1", "P2", "P3")
 TIERS = ("hotfix", "standard", "epic")
@@ -76,6 +77,9 @@ STATUSES = ("To do", "In progress", "Stale", "In review", "Blocked", "Done")
 FILING_SUFFIX = "[filing]"
 BODY = "Generated from {path} by tools/sessions/project_sync.py — edits are overwritten."
 _TICKET_RE = re.compile(r"(TCK-[A-Z0-9][A-Z0-9-]*)\.md$")
+_SUBJECT_ID_RE = re.compile(r"TCK-[A-Z0-9][A-Z0-9-]*[A-Z0-9]")
+_WAITS_ON_RE = re.compile(r"^\s*(?:[-*]\s*)?\**(?:waits? on|waiting on|blocked by|depends on)\**\s*[:\-]?\s*(.*)$", re.I | re.M)
+NOT_CODE_PREFIXES = ("agent-working/", "docs/")  # a commit touching only these cites a ticket, it does not work it
 READ_GIT = {"ls-tree", "show", "merge-base", "diff", "status", "log", "rev-parse", "worktree"}
 
 Runner = Callable[[list[str], Path | None], "subprocess.CompletedProcess[str]"]
@@ -152,6 +156,7 @@ class TicketCopy:
     priority: str = ""
     tags: tuple[str, ...] = ()
     code_areas: tuple[str, ...] = ()  # repo-relative path tokens of `## Related Code Areas` (read only to name the owning domain)
+    waits_on: tuple[str, ...] = ()  # ticket ids on a line-start "waits on / blocked by / depends on" line (the Blocked by field)
 
 
 @dataclass(frozen=True)
@@ -163,6 +168,7 @@ class BranchFact:
     domain: str
     copies: tuple[TicketCopy, ...]
     last_activity: float = 0.0  # epoch seconds, status.py `_activity`; 0.0 = unknown, never stale
+    named: frozenset[str] = frozenset()  # ticket ids in the subject of any commit unique to this branch (the Involved field)
 
 
 @dataclass(frozen=True)
@@ -216,6 +222,16 @@ def code_area_paths(section: str) -> tuple[str, ...]:
     return tuple(out)
 
 
+def waits_on_ids(text: str) -> tuple[str, ...]:
+    """Ticket ids named on a line-start waits-on / blocked-by / depends-on line; no other prose is read (a phrase grep parks a fifth of the backlog)."""
+    out: list[str] = []
+    for m in _WAITS_ON_RE.finditer(text):
+        for tid in _SUBJECT_ID_RE.findall(m.group(1)):
+            if tid not in out:
+                out.append(tid)
+    return tuple(out)
+
+
 def parse_copy(path: str, text: str) -> TicketCopy:
     def section(name: str) -> str:
         m = re.search(rf"^## {name}\s*\n+([^\n#][^\n]*)", text, re.M)
@@ -231,6 +247,7 @@ def parse_copy(path: str, text: str) -> TicketCopy:
         layer=layer.group(1) if layer else "", priority=section("Priority").upper(),
         tags=tuple(x.strip().strip("'\"") for x in tags.group(1).split(",") if x.strip()) if tags else (),
         code_areas=code_area_paths(areas.group(1)) if areas else (),
+        waits_on=waits_on_ids(text),
     )
 
 
@@ -308,6 +325,8 @@ def read_branch_facts(root: Path, host: str, lanes_note: list[str], run: Runner 
         if wt is not None:
             seat_of.setdefault(wt.path.resolve(), []).append((role.role, role.domain))
     facts, detached = [], 0
+    link = {"branches": 0, "linked": 0, "skipped": 0, "errored": 0}  # the subject-link derivation's ran / skipped / errored
+    index: dict[str, list[tuple[str, str]]] | None = None
     for info in infos:
         if info.prunable or info.is_main and info.branch in (None, "main"):
             continue
@@ -317,11 +336,57 @@ def read_branch_facts(root: Path, host: str, lanes_note: list[str], run: Runner 
             if copies:
                 lanes_note.append(f"unattributed: detached worktree {info.path} changes {', '.join(sorted(c.id for c in copies))}")
             continue
-        if not copies:
+        named: set[str] = set()
+        if info.path.is_dir():
+            log = run(["git", "--no-optional-locks", "log", "--no-merges", "--format=@@%s", "--name-only", "HEAD", "--not", "origin/main"], info.path)
+            link["branches"] += 1
+            if log.returncode != 0:
+                link["errored"] += 1
+                lanes_note.append(f"subject-link: git log failed in {info.path}; its commit subjects were not read")
+            else:
+                named, worked = subject_links(log.stdout)
+                have = {c.id for c in copies}
+                for tid in sorted(worked - have):
+                    index = read_main_index(root, run) if index is None else index
+                    entries = index.get(tid, [])
+                    if not entries or any(folder == "done" for folder, _ in entries):
+                        link["skipped"] += 1  # no ticket file on origin/main, or already Done there (Done wins)
+                        continue
+                    best = max(entries, key=lambda e: FOLDERS.index(e[0]))
+                    copies.append(replace(read_main_copy(root, best[1], run), folder="inprogress"))
+                    link["linked"] += 1
+        if not copies and not named:
             continue
         seat, domain = attribute(info.branch, seat_of.get(info.path.resolve(), []), domain_names)
-        facts.append(BranchFact(host, info.branch, str(info.path), seat, domain, tuple(copies), info.last_activity))
+        facts.append(BranchFact(host, info.branch, str(info.path), seat, domain, tuple(copies), info.last_activity, frozenset(named)))
+    lanes_note.append(f"subject-link: ran on {link['branches']} branches, linked {link['linked']} tickets by a leading id plus a code file, "
+                      f"skipped {link['skipped']} (no ticket file on origin/main or already Done), errored {link['errored']}")
     return facts, detached
+
+
+def subject_links(log_text: str) -> tuple[set[str], set[str]]:
+    """(named, worked) ticket ids from `git log --no-merges --format=@@%s --name-only` text of the commits unique to a branch.
+    named = an id anywhere in a subject. worked = the id LEADS the subject and that commit touches a file outside agent-working/ and docs/;
+    a mid-subject citation, a filing/notes commit and a docs-only commit cite the ticket, they do not work it."""
+    named: set[str] = set()
+    worked: set[str] = set()
+    subject, files = "", []
+
+    def close() -> None:
+        ids = _SUBJECT_ID_RE.findall(subject)
+        named.update(ids)
+        lead = re.match(_SUBJECT_ID_RE, subject)
+        if lead and any(not f.startswith(NOT_CODE_PREFIXES) for f in files):
+            worked.add(lead.group(0))
+
+    for line in log_text.splitlines():
+        if line.startswith("@@"):
+            close()
+            subject, files = line[2:], []
+        elif line.strip():
+            files.append(line.strip())
+    close()
+    return named, worked
 
 
 def _worktree_ticket_copies(wt: Path, run: Runner) -> list[TicketCopy]:
@@ -427,6 +492,7 @@ class Segment:
     state: str
     seats: tuple[str, ...] = ()
     domains: tuple[str, ...] = ()
+    involved: tuple[str, ...] = ()  # recorded seats of the branches whose commit subjects name the ticket (the Involved field)
     legacy: bool = False  # derived on read from a Branch entry with no segment; never written
 
 
@@ -444,7 +510,8 @@ def parse_host_facts(text: str, findings: list[str] | None = None) -> dict[str, 
                 findings.append(f"Host facts: ignored a malformed segment '{raw}'")
             continue
         out[host.strip()] = Segment(kv["state"], tuple(x for x in kv.get("seat", "").split(",") if x),
-                                    tuple(x for x in kv.get("domain", "").split(",") if x))
+                                    tuple(x for x in kv.get("domain", "").split(",") if x),
+                                    tuple(x for x in kv.get("involved", "").split(",") if x))
     return out
 
 
@@ -455,7 +522,8 @@ def format_host_facts(segments: dict[str, Segment]) -> str:
         if seg.legacy:
             continue
         parts.append(f"{host}: state={seg.state}" + (f" seat={','.join(sorted(seg.seats))}" if seg.seats else "")
-                     + (f" domain={','.join(sorted(seg.domains))}" if seg.domains else ""))
+                     + (f" domain={','.join(sorted(seg.domains))}" if seg.domains else "")
+                     + (f" involved={','.join(sorted(seg.involved))}" if seg.involved else ""))
     return "; ".join(parts)
 
 
@@ -481,11 +549,12 @@ def _recorded(seat: str) -> list[str]:
     return [] if not seat or seat == "unknown" or seat.endswith("(seat not recorded)") else [seat]
 
 
-def own_segment(tid: str, mine: list[BranchFact], stale_before: float | None) -> Segment | None:
+def own_segment(tid: str, mine: list[BranchFact], stale_before: float | None, naming: list[BranchFact] | None = None) -> Segment | None:
     """This host's facts from its own branch copies; None when it has no copy of the ticket."""
     copies = [c for b in mine for c in b.copies if c.id == tid]
-    if not copies:
-        return None
+    involved = tuple(sorted({s for b in (*mine, *(naming or ())) for s in _recorded(b.seat)}))
+    if not copies:  # only cited by a branch's commit subjects: it changes no state, it only says who was involved
+        return Segment("filing", (), tuple(sorted({b.domain for b in (naming or ()) if b.domain})), involved) if involved else None
     working = [b for b in mine if any(c.id == tid and c.folder in PROGRESS_FOLDERS for c in b.copies)]
     if any(c.blocked for c in copies):
         state = "blocked"
@@ -496,7 +565,7 @@ def own_segment(tid: str, mine: list[BranchFact], stale_before: float | None) ->
     else:
         state = "progress"
     seats = sorted({s for b in working for s in _recorded(b.seat)})
-    return Segment(state, tuple(seats), tuple(sorted({b.domain for b in mine if b.domain})))
+    return Segment(state, tuple(seats), tuple(sorted({b.domain for b in mine if b.domain})), involved)
 
 
 def derive_status(tid: str, main: list[TicketCopy], prs: list[PrFact] | None, segments: dict[str, Segment],
@@ -535,6 +604,9 @@ class Extras:
     epic_of: Callable[[str, str, str], tuple[str, list[str]]] | None = None  # (ticket id, best copy path, tier) -> (value, notes)
     domains: frozenset[str] | None = None  # the Domain select's options; a value outside them is a finding
     code_domain: Callable[[TicketCopy | None], str | None] | None = None  # the one domain that owns every path a ticket names, else None
+    hotspots: dict[str, str] | None = None  # ticket id -> its Hotspot file, set by build_plan; None means the field is not derived
+    known: frozenset[str] | None = None  # every ticket id with a file on origin/main
+    done: frozenset[str] | None = None  # ticket ids with a done/ file on origin/main
 
 
 _ID_RE = re.compile(r"TCK-[A-Z0-9][A-Z0-9-]*[A-Z0-9]")
@@ -659,7 +731,8 @@ def derive_item(tid: str, main: list[TicketCopy], branches: list[BranchFact], pr
     mine = [b for b in branches if any(c.id == tid for c in b.copies)]
     findings: list[str] = []
     segments = other_segments(current, host, findings)
-    own = own_segment(tid, mine, stale_before)
+    naming = [b for b in branches if tid in b.named and b not in mine]
+    own = own_segment(tid, mine, stale_before, naming)
     if own is not None:
         segments[host] = own
     only_legacy = own is None and bool(segments) and all(s.legacy for s in segments.values())
@@ -711,6 +784,23 @@ def derive_item(tid: str, main: list[TicketCopy], branches: list[BranchFact], pr
     if legacy:  # a host that has not written a segment yet: its seats and domains are unknown, so the current entries stay
         seats |= set(_split(cur.get("Seat", "")))
         domains |= set(_split(cur.get("Domain", "")))
+    involved = {x for s in segments.values() if not s.legacy for x in s.involved}
+    if legacy:
+        involved |= set(_split(cur.get("Involved", "")))
+    blocked_by, hotspot = "", ""
+    if keep:
+        blocked_by, hotspot = cur.get("Blocked by", ""), cur.get("Hotspot", "")
+    elif best:
+        waits = []
+        for w in best.waits_on:
+            if w == tid:
+                continue
+            if extras.known is None or w not in extras.known:
+                findings.append(f"{tid}: Blocked by names {w}, which has no ticket file on origin/main: left out")
+            elif extras.done is None or w not in extras.done:
+                waits.append(w)
+        blocked_by = ", ".join(sorted(waits))
+        hotspot = (extras.hotspots or {}).get(tid, "")
     domain, from_code_areas = pick_domain(tid, domains, best or origin_best or own_best, extras, findings)
     body_src = best or origin_best or own_best
     fields = {
@@ -729,12 +819,48 @@ def derive_item(tid: str, main: list[TicketCopy], branches: list[BranchFact], pr
         "Tags": cur.get("Tags", "") if keep else tags,
         "Host facts": format_host_facts(segments),
         "Filed": cur.get("Filed", "") if keep else filed,
+        "Involved": ", ".join(sorted(involved)),
+        "Blocked by": blocked_by,
+        "Hotspot": hotspot,
         "Body": BODY.format(path=body_src.path if body_src else "agent-working/tickets/"),
         "Source": source,
     }
     fields["Sync hash"] = sync_hash(fields)
     fields["_code_unassigned"] = from_code_areas and domain == UNASSIGNED
     return fields, findings
+
+
+def derive_hotspots(main_index: dict[str, list[tuple[str, str]]], load_main: Callable[[str], TicketCopy], open_ids: set[str],
+                    notes: list[str]) -> dict[str, str]:
+    """Hotspot: of the `src/*.py` files in a ticket's own Related Code Areas, the one cited by the most OPEN tickets on origin/main; empty when
+    the ticket cites none or no file of it is cited by 2 or more tickets. Ties break by path order. Directories never count (a directory
+    token is not a file and its grep count disagrees with its derived count)."""
+    cites: dict[str, set[str]] = {}
+    errored = 0
+    for tid in sorted(open_ids):
+        entries = [e for e in main_index.get(tid, []) if e[0] in ("todos", "inprogress")]
+        if not entries:
+            continue
+        try:
+            copy = load_main(max(entries, key=lambda e: FOLDERS.index(e[0]))[1])
+        except Exception:  # a lookup that fails leaves the field empty; the count says so
+            errored += 1
+            continue
+        files = {p for p in copy.code_areas if p.startswith("src/") and p.endswith(".py")}
+        if files:
+            cites[tid] = files
+    counts: dict[str, int] = {}
+    for files in cites.values():
+        for f in files:
+            counts[f] = counts.get(f, 0) + 1
+    out: dict[str, str] = {}
+    for tid, files in cites.items():
+        best = min(sorted(files), key=lambda f: -counts[f])
+        if counts[best] >= 2:
+            out[tid] = best
+    notes.append(f"hotspot: ran on {len(open_ids)} open tickets, set {len(out)}, skipped {len(open_ids) - len(cites) - errored} "
+                 f"(cite no src .py file), {len(cites) - len(out)} cite only files no other ticket cites, errored {errored}")
+    return out
 
 
 def hand_edits(item: dict, derived: dict) -> list[str]:
@@ -828,6 +954,13 @@ def build_plan(main_index: dict[str, list[tuple[str, str]]], load_main: Callable
     window = int(config["done_window_days"])
     stale_before = now.timestamp() - int(config.get("stale_branch_days", 14)) * 86400
     on_origin = {tid for tid, entries in main_index.items() if any(folder in ("todos", "inprogress") for folder, _ in entries)}
+    extras = extras or Extras()
+    cache: dict[str, TicketCopy] = {}
+    base_load = load_main
+    load_main = lambda path: cache.setdefault(path, base_load(path))  # noqa: E731  each ticket file is read once for the whole plan
+    extras.known = frozenset(main_index)
+    extras.done = frozenset(tid for tid, entries in main_index.items() if any(folder == "done" for folder, _ in entries))
+    extras.hotspots = derive_hotspots(main_index, load_main, on_origin, plan.notes)
     candidates = {c.id for b in branches for c in b.copies} | on_origin | set(by_id)  # every lane: no pilot filter
     known = set(main_index) | {c.id for b in branches for c in b.copies}
     for tid in sorted(candidates):
@@ -924,7 +1057,8 @@ def render(plan: Plan, host: str, sha: str, age_hours: float | None, detached: i
     for item in plan.creates:
         lines.append(f"create  {item['Ticket ID']}  {item['Status']}  domain={item['Domain'] or '-'}  seat={item['Seat'] or '-'}  branch={item['Branch'] or '-'}  pr={item['PR'] or '-'}")
     for item, changed in plan.updates:
-        lines.append(f"update  {item['Ticket ID']}  {item['Status']}  changed: {', '.join(changed)}")
+        shown = "".join(f"  {f}={item[f]!r}" for f in ("Involved", "Blocked by", "Hotspot") if f in changed)  # the new fields' values, for the owner to eyeball
+        lines.append(f"update  {item['Ticket ID']}  {item['Status']}  changed: {', '.join(changed)}{shown}")
     for ident, reason in plan.archives:
         lines.append(f"archive {ident}  ({reason})")
     lines += plan.hand_edits + [f"finding: {f}" for f in plan.findings] + [f"note: {n}" for n in plan.notes]
