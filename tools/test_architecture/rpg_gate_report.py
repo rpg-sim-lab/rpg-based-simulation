@@ -422,6 +422,10 @@ def _affected_pairs(suspects: Sequence[Mapping[str, Any]], config: GateConfig) -
     return sorted(pairs)
 
 
+def _pairs_of(f: Mapping[str, Any], config: GateConfig) -> set:
+    return {(f["world"], f["seed"])} if f["scope"] == "run" and f["class"] == "validity" else {(f["world"], seed) for seed in config.seeds}
+
+
 def _apply_rerun(first: List[dict], second: List[dict]) -> List[dict]:
     """Mark a first-pass fail/drift ``unstable`` when the rerun's finding for the same key has a different state."""
     again = {finding_key(f): f for f in second}
@@ -494,6 +498,7 @@ def load_main_baseline(path: Optional[Path], harness_hash: str, refs: Optional[R
 
 
 def refs_summary(refs: Optional[References]) -> List[dict]:
+    """The (ref, version) pairs a report is judged against, in the order a report lists them."""
     return [{"ref": "last", "version": refs.last["version"]}, {"ref": "milestone-first", "version": refs.milestone_first["version"]}] if refs else []
 
 
@@ -527,16 +532,21 @@ def build_report(
     if fresh and rerun is not None:
         pairs = _affected_pairs(fresh, config)
         second = evaluate({**docs, **rerun(pairs)}, config, refs, reasons_by_version, harness_hash)
-        stay = {finding_key(f) for f in carried}
-        findings = [f if finding_key(f) in stay and f["state"] in (FAIL, DRIFT) else g for f, g in zip(findings, _apply_rerun(findings, second))]
+        before = len(findings)
+        findings = _apply_rerun(findings, second)
+        assert len(findings) == before  # _apply_rerun returns one finding per input, in order (the not_rerun marking below relies on it)
         skipped = [list(p) for p in getattr(rerun, "skipped", [])]
         rerun_info.update({"performed": True, "pairs": [list(p) for p in pairs], "unstable": sum(1 for f in findings if f["state"] == UNSTABLE)})
         if skipped:
             rerun_info["not_performed_budget"] = skipped  # these pairs were not rerun; their findings keep the first pass's state, so they are not marked unstable
-    elif suspects and rerun is not None:
-        rerun_info["reason"] = f"every fail/drift row is in main's report ({source})"
+        rerun_pairs = set(pairs) - {tuple(p) for p in skipped}
+    else:
+        rerun_pairs = set()
+        if suspects and rerun is not None:
+            rerun_info["reason"] = f"every fail/drift row is in main's report ({source})"
     if rerun is not None and carried:
-        stay = {finding_key(f) for f in carried}
+        # A carried row whose pair(s) the rerun happened to cover was checked for free (and is unstable on a mismatch); the others keep the first pass's state.
+        stay = {finding_key(f) for f in carried if not _pairs_of(f, config) <= rerun_pairs}
         findings = [{**f, "not_rerun": f"in main's report, {source}"} if finding_key(f) in stay and f["state"] in (FAIL, DRIFT) else f for f in findings]
     vs_main: Dict[str, Any] = {"source": {"run_id": main["run_id"], "head_sha": main["head_sha"]} if main else None, "fallback": "" if main else (main_fallback or "no main report was supplied")}
     if main:

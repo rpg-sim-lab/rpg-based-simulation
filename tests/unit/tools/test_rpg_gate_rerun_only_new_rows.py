@@ -10,6 +10,7 @@ import copy
 import datetime as dt
 import json
 import subprocess
+from datetime import datetime, timezone
 from pathlib import Path
 
 import pytest
@@ -53,7 +54,13 @@ class _Rerun:
 def _stub_evaluate_and_ownership(monkeypatch):
     """The recorded findings are the first pass; their ownership was recorded with them, so it is carried over instead of re-derived from today's known list."""
     state = {}
-    monkeypatch.setattr(rep, "evaluate", lambda *a, **k: copy.deepcopy(state["findings"]))
+    calls = []
+
+    def evaluate(*a, **k):
+        calls.append(1)
+        return copy.deepcopy(state["second"] if len(calls) > 1 and "second" in state else state["findings"])
+
+    monkeypatch.setattr(rep, "evaluate", evaluate)
     monkeypatch.setattr(rep, "_ownership", lambda findings, known, today: findings)
     return state
 
@@ -110,6 +117,7 @@ def test_replay_of_the_latest_pr_run_reruns_only_the_pairs_behind_its_new_rows_a
     skipped = [f for f in report["findings"] if f.get("not_rerun")]
     assert skipped and all(f["not_rerun"] == "in main's report, run 44323101062" for f in skipped)
     assert all(f["state"] != "unstable" for f in skipped)
+    assert not any(f.get("not_rerun") and (f["world"], f.get("seed")) == ("frontier_living_world", 42) for f in report["findings"] if f["scope"] == "run")  # that pair WAS rerun
 
 
 # ------------------------------------------------------------------ the five cases
@@ -132,6 +140,20 @@ def test_one_new_row_gets_its_confirming_rerun_for_its_pairs_only_and_appears_ve
     assert rr.calls == [[("frontier_living_world", 42)]]
     assert report["vs_main"]["new"] == [extra]
     assert "New vs main: 1 row(s)" in rep.render_markdown(report) and "V3" in rep.render_markdown(report)
+
+
+def test_a_carried_row_inside_a_pair_the_rerun_covers_is_read_from_the_second_pass(tmp_path, _stub_evaluate_and_ownership):
+    fixture = _fix("main-44323101062")
+    extra = copy.deepcopy(next(f for f in _fix("44366629746")["findings"] if f["id"] == "V3"))  # new: reruns (frontier_living_world, 42)
+    first = fixture["findings"] + [extra]
+    carried = next(f for f in first if f["id"] == "V1" and f["world"] == "frontier_living_world" and f["seed"] == 42)
+    second = [{**f, "state": "pass"} if rep.finding_key(f) == rep.finding_key(carried) else f for f in copy.deepcopy(first)]
+    _stub_evaluate_and_ownership["second"] = second
+    report, rr = _run(_stub_evaluate_and_ownership, fixture, findings=first, main=_main(tmp_path))
+    row = next(f for f in report["findings"] if f["id"] == "V1" and f["world"] == "frontier_living_world" and f["seed"] == 42)
+    assert row["state"] == "unstable" and "not_rerun" not in row
+    other = next(f for f in report["findings"] if f["id"] == "V1" and f["world"] == "urban_political" and f["seed"] == 42)
+    assert other["state"] == "fail" and other["not_rerun"].startswith("in main's report")  # a pair that was not rerun keeps its first-pass state
 
 
 def test_a_missing_main_report_falls_back_to_the_full_rerun(tmp_path, _stub_evaluate_and_ownership):
@@ -254,34 +276,45 @@ def _run_row(rid, sha):
     return {"databaseId": rid, "headSha": sha, "event": "schedule", "createdAt": "2026-11-18T00:00:00Z"}
 
 
+NOW = datetime(2026, 11, 19, tzinfo=timezone.utc)
+
+
 def test_fetch_takes_the_newest_run_with_a_report_and_passes_over_runs_without_one():
     runs = [_run_row(3, "c"), _run_row(2, "b"), _run_row(1, "a")]
-    out = mainrep.fetch(_gh(runs, {"2": {"sha": "b", "findings": []}, "1": {"sha": "a", "findings": []}}))
+    out = mainrep.fetch(_gh(runs, {"2": {"sha": "b", "findings": []}, "1": {"sha": "a", "findings": []}}), now=NOW)
     assert out["run_id"] == 2 and out["head_sha"] == "b"  # run 3 (gate-skipped: no artifact) is passed over; its conclusion is irrelevant
 
 
 def test_fetch_passes_over_a_report_made_from_another_checkout():
     runs = [_run_row(2, "b"), _run_row(1, "a")]
-    out = mainrep.fetch(_gh(runs, {"2": {"sha": "dispatched-ref-sha"}, "1": {"sha": "a"}}))
+    out = mainrep.fetch(_gh(runs, {"2": {"sha": "dispatched-ref-sha"}, "1": {"sha": "a"}}), now=NOW)
     assert out["run_id"] == 1
 
 
 def test_fetch_gives_a_fallback_when_the_newest_report_is_unreadable_never_an_older_one():
-    out = mainrep.fetch(_gh([_run_row(2, "b"), _run_row(1, "a")], {"2": "{broken", "1": {"sha": "a"}}))
+    out = mainrep.fetch(_gh([_run_row(2, "b"), _run_row(1, "a")], {"2": "{broken", "1": {"sha": "a"}}), now=NOW)
     assert "fallback" in out and "unreadable" in out["fallback"]
 
 
 @pytest.mark.parametrize("runs, artifacts, listing_error", [([], {}, False), ([_run_row(1, "a")], {}, False), ([_run_row(1, "a")], {"1": {"sha": "a"}}, True)])
 def test_fetch_falls_back_when_there_is_no_run_no_artifact_or_the_listing_fails(runs, artifacts, listing_error):
-    out = mainrep.fetch(_gh(runs, artifacts, listing_error))
+    out = mainrep.fetch(_gh(runs, artifacts, listing_error), now=NOW)
     assert "fallback" in out and "report" not in out
 
 
 def test_fetch_excludes_the_current_run_and_asks_only_for_completed_runs_on_main():
     gh = _gh([_run_row(2, "b"), _run_row(1, "a")], {"1": {"sha": "a"}})
-    assert mainrep.fetch(gh, exclude_run_id="2")["run_id"] == 1
+    assert mainrep.fetch(gh, exclude_run_id="2", now=NOW)["run_id"] == 1
     listing = gh.calls[0]
     assert "--status" in listing and listing[listing.index("--status") + 1] == "completed" and listing[listing.index("--branch") + 1] == "main"
+
+
+def test_fetch_falls_back_when_the_newest_main_report_is_older_than_the_bound():
+    runs = [_run_row(2, "b")]
+    assert mainrep.fetch(_gh(runs, {"2": {"sha": "b"}}), now=datetime(2026, 11, 22, 1, tzinfo=timezone.utc))["fallback"].endswith("older than 3 days")
+    assert mainrep.fetch(_gh(runs, {"2": {"sha": "b"}}), now=datetime(2026, 11, 21, tzinfo=timezone.utc))["run_id"] == 2
+    bad = [{**_run_row(2, "b"), "createdAt": "garbage"}]
+    assert "fallback" in mainrep.fetch(_gh(bad, {"2": {"sha": "b"}}), now=NOW)
 
 
 def test_fetch_cli_writes_a_fallback_record_and_exits_zero_on_any_failure(tmp_path, monkeypatch):

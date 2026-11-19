@@ -7,7 +7,7 @@ report was made from another checkout (a dispatch with a ``ref`` input: the repo
 ``MAX_RUNS`` deep. The NEWEST run that has an artifact decides: if that one is unreadable the answer is a fallback, never an older report.
 
 Output: one JSON file, either ``{"run_id", "head_sha", "report"}`` or ``{"fallback": "<why>"}``. Every failure (no ``gh``, an API error, a download error,
-bad JSON) is a fallback record and exit 0, so the caller runs the full rerun. ``rpg_gate_report.load_main_baseline`` judges comparability.
+bad JSON, a run older than ``MAX_AGE_DAYS``) is a fallback record and exit 0, so the caller runs the full rerun. ``rpg_gate_report.load_main_baseline`` judges comparability.
 
 Access: the lookups use ``gh run list`` and ``gh run download``, which need ``GH_TOKEN`` and, for the same-repo workflow token, ``actions: read`` on the job.
 
@@ -23,10 +23,12 @@ import json
 import subprocess
 import sys
 import tempfile
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any, Callable, List, Mapping, Optional
 
 MAX_RUNS = 10
+MAX_AGE_DAYS = 3  # an older main report is not a baseline: the full rerun (staleness bound; the schedule is daily)
 REPORT_NAME = "rpg-gate-report.json"
 
 Gh = Callable[[List[str]], str]
@@ -36,7 +38,16 @@ def _gh(args: List[str]) -> str:
     return subprocess.run(["gh", *args], check=True, capture_output=True, text=True, timeout=300).stdout
 
 
-def fetch(gh: Gh = _gh, *, workflow: str = "rpg-gate-report.yml", branch: str = "main", exclude_run_id: Optional[str] = None, max_runs: int = MAX_RUNS) -> dict:
+def _too_old(created: Any, now: Optional[datetime], max_age_days: int) -> bool:
+    try:
+        made = datetime.fromisoformat(str(created).replace("Z", "+00:00"))
+    except ValueError:
+        return True  # an unreadable timestamp cannot show the report is fresh
+    return (now or datetime.now(timezone.utc)) - made > timedelta(days=max_age_days)
+
+
+def fetch(gh: Gh = _gh, *, workflow: str = "rpg-gate-report.yml", branch: str = "main", exclude_run_id: Optional[str] = None, max_runs: int = MAX_RUNS,
+          now: Optional[datetime] = None, max_age_days: int = MAX_AGE_DAYS) -> dict:
     """Return ``{"run_id", "head_sha", "report"}`` for main's newest usable completed run, or ``{"fallback": reason}``."""
     try:
         runs = json.loads(gh(["run", "list", "--workflow", workflow, "--branch", branch, "--status", "completed", "--limit", str(max_runs),
@@ -48,6 +59,8 @@ def fetch(gh: Gh = _gh, *, workflow: str = "rpg-gate-report.yml", branch: str = 
         return {"fallback": f"no completed {workflow} run on {branch}"}
     for run in runs:
         run_id, sha = run["databaseId"], run["headSha"]
+        if _too_old(run.get("createdAt"), now, max_age_days):
+            return {"fallback": f"the newest main report (run {run_id}) is older than {max_age_days} days"}
         with tempfile.TemporaryDirectory() as tmp:
             try:
                 gh(["run", "download", str(run_id), "-n", f"rpg-gate-report-{sha}", "-D", tmp])
