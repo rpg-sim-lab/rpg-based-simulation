@@ -4755,7 +4755,7 @@
   status: verified
   priority: P1
   legacy_evidence: null
-  v2_evidence: 'src/world/perception/gate.py (species-derived profile, SenseProfileError, unprofiled counter, night step), src/engine/perception_signals.py (emitted_signals), src/engine/behavior_consumers.py (get_entity_signals, require_sense_profile), src/engine/appraisal.py (perceives), src/engine/tactical.py, data/content/living/ (night_vision, troll_senses, body signals), docs/mechanics/04_strategic_cognition.md, docs/guidelines/intentional_divergences.md Section 2.210.'
+  v2_evidence: 'src/world/perception/gate.py (species-derived profile, SenseProfileError, unprofiled counter, night step), src/engine/perception_signals.py (emitted_signals), src/engine/behavior_consumers.py (get_entity_signals, require_sense_profile), src/engine/appraisal.py (perceives), src/engine/tactical.py, data/content/living/ (night_vision, troll_senses, body signals), src/engine/checkpoint_senses.py (restore-time check), src/domains/campaigns/orchestrator.py and runner.py (build-time check), docs/mechanics/04_strategic_cognition.md, docs/guidelines/intentional_divergences.md Section 2.210. Tests: tests/unit/domains/campaigns/test_campaign_bodies_senses.py, tests/unit/engine/test_restored_body_senses.py, tests/unit/content/test_species_null_sense_profile.py, tests/unit/world/test_v2entitybuilder_sites_check_senses.py.'
   proof_type: regression
   test_path: tests/unit/world/test_perc02a_senses_signals_night.py
   divergence_note: See docs/guidelines/intentional_divergences.md Section 2.210.

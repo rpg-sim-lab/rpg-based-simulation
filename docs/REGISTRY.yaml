@@ -8061,6 +8061,26 @@
   artifact_files: []
   tags: []
 - type: ticket
+  path: agent-working/tickets/done/TCK-20261118-CAMPAIGN-RUNNER-AND-RESTORED-BODIES-SKIP-THE-BUILD-TIME-SENSES-CHECK.md
+  ticket_id: TCK-20261118-CAMPAIGN-RUNNER-AND-RESTORED-BODIES-SKIP-THE-BUILD-TIME-SENSES-CHECK
+  title: Campaign episode bodies, scenario-runner bodies and checkpoint-restored bodies
+    skip PERC-02a's build-time senses check, so a body of an unprofiled species goes
+    blind with gate ERRORs instead of being refused
+  tier: standard
+  ticket_type: bug
+  date: '2026-11-18'
+  related_code_areas:
+  - src/content/species_senses.py (require_species_sense_profile)
+  - src/domains/campaigns/orchestrator.py:822, src/domains/campaigns/runner.py:70
+  - src/engine/scenario_checkpoint.py (ScenarioCheckpoint.restore, fill_missing_fields,
+    Kernel(...))
+  - src/core/builder.py (V2EntityBuilder, which is NOT edited)
+  artifact_files:
+  - agent-working/stored_artifacts/TCK-20261118-CAMPAIGN-RUNNER-AND-RESTORED-BODIES-SKIP-THE-BUILD-TIME-SENSES-CHECK/investigation.md
+  - agent-working/stored_artifacts/TCK-20261118-CAMPAIGN-RUNNER-AND-RESTORED-BODIES-SKIP-THE-BUILD-TIME-SENSES-CHECK/plan.md
+  - agent-working/stored_artifacts/TCK-20261118-CAMPAIGN-RUNNER-AND-RESTORED-BODIES-SKIP-THE-BUILD-TIME-SENSES-CHECK/test_plan.md
+  tags: []
+- type: ticket
   path: agent-working/tickets/done/TCK-20261118-CHECKLIST-PLACEMENT-PROPOSAL.md
   ticket_id: TCK-20261118-CHECKLIST-PLACEMENT-PROPOSAL
   title: 'Proposal: where the lifecycle and clock checklist should sit so it fires
