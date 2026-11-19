@@ -113,6 +113,16 @@ src/systems (building_services, conservation, inventory); src/ai need_pull
       - a serialize round-trip test if intents are recorded or replayed;
       - a unit test that a REPAIR or shop fee with no payee is unchanged.
     - Kit v3.2 (pending): a no-payee count line, plus the drops_unbacked HARD bar in --strict-outcomes, each with a planted control.
+  - HUNGER KIT v3.2 APPROVED (rpg-designer): spy 0ea0d815, summarizer b871b4e8, controls da8c927a, manifest a5d36f99, runner 63bbdc96, config c2c26690 (hungerkit/designer_approved_v3.2/). The designer ran the controls, 32/32 PASS. THIS is the kit for #781's own-job.
+  - ORDER from here:
+    1. the coin fix merges;
+    2. rebase onto a fresh branch;
+    3. statics plus tests/unit/** by directory;
+    4. the OWNER ASK (test_service_admission:51);
+    5. S10;
+    6. preflight (cf s46, 300t);
+    7. the W cells: base, then the P0 gate, then fix;
+    8. the designer's recount.
   - HUNGER KIT v3.1 APPROVED: summarizer 6ec9f378, manifest 4359c34a; spy, runner, controls and config as in v3. The all-cells-zero P0 STOP is exit 5.
   - Other food-touching changes get only the 5000t early-warning check (P2-style) plus the P3 rows; the W read is for #781 and the M1 checkpoints only (owner scope). Births is not re-run.
   - Settings-in-data rule: any new tuning value goes to data/. The pre-push run covers tests/unit/** by directory plus statics.
