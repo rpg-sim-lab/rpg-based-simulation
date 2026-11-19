@@ -12,7 +12,7 @@ tags: []
 # TCK-20261118-A-SERVICE-PAYMENT-WITH-NO-PAYEE-DESTROYS-COIN
 
 ## Title
-A service, fee or tax paid to a non-building source with no named treasury debits the payer and credits no one, so coin is destroyed (V6 breach, crowded_frontier s46)
+A service, fee or tax paid to a non-building source with no named treasury debits the payer and credits no one; the class is latent on main and destroyed coin on a sibling tree (conservation-law hardening, crowded_frontier s46)
 
 ## Status
 OPEN
@@ -24,9 +24,11 @@ standard
 bug
 
 ## Priority
-P0
+P1
 
 ## Request Summary
+RELABELLED P0 -> P1 conservation-law hardening (OWNER, #715 6999726543, "Relabel P1, land as planned (Recommended)"), after rpg-designer's correction: the class is LATENT on main (2,751 over-debits absorbed by the apply clamp; main's cf s46 lost nothing) and MANIFESTED on a sibling tree (414fb74f7, the #955 branch head, -10 at t3182). It still lands before #781 (D73). The text below is kept as filed; where it says "live on main", read it per this correction.
+
 The V6 coin-conservation breach on crowded_frontier s46 was REPRODUCED by an S9-recorded trace (lane C; summary /mnt/data2/rpg-measure/coinbreach/summary_coin.txt, sha e59a2481; #715 6985210267):
 - On 414fb74f7 at tick 3182, -10 coin: e12 140 -> 0, e9 +130, and a corpse appears with 0 gold.
 - No chest, storage or currency-item movement, so rpg-designer classes it (a): a world-law breach, coin destroyed.
