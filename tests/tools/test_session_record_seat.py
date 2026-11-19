@@ -67,3 +67,29 @@ def test_dry_run_writes_nothing(tmp_path):
     main, wt1, _, sroot = setup(tmp_path)
     code, lines = go(tmp_path, wt1, SEAT, dry_run=True)
     assert code == 0 and lines[0].startswith("would record") and st.read_bound_worktree(sroot, SEAT) is None
+
+
+# ---- --state-root: a scratch root for a dry run that must not touch live records
+def _snapshot(root):
+    return sorted((str(p.relative_to(root)), p.stat().st_mtime_ns) for p in root.rglob("*")) if root.is_dir() else None
+
+
+def test_state_root_flag_writes_only_under_the_given_root_and_leaves_the_real_root_untouched(tmp_path, monkeypatch):
+    main, wt1, _, _ = setup(tmp_path)
+    scratch = tmp_path / "scratch"
+    scratch.mkdir()
+    real = st.state_root(rs.REPO_ROOT)
+    before = _snapshot(real)
+    monkeypatch.setattr(rs, "_worktree_entries", lambda root: [{"worktree": str(wt1)}])
+    monkeypatch.setattr(rs, "main_checkout", lambda root: main)
+    assert rs.main(["--state-root", str(scratch), str(wt1), SEAT]) == 0
+    assert st.read_bound_worktree(scratch, SEAT) == (str(wt1.resolve()), True)
+    assert _snapshot(real) == before  # the real seat-state directory is byte-for-byte as it was
+
+
+def test_state_root_flag_pointing_at_nothing_is_a_usage_error_not_a_fallback(tmp_path, capsys):
+    main, wt1, _, _ = setup(tmp_path)
+    real = st.state_root(rs.REPO_ROOT)
+    before = _snapshot(real)
+    assert rs.main(["--state-root", str(tmp_path / "missing"), str(wt1), SEAT]) == EXIT_USAGE
+    assert "no fallback" in capsys.readouterr().err and _snapshot(real) == before

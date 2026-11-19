@@ -228,3 +228,32 @@ re-checked on both and are identical): the live Project had 328 items; 47 showed
 
 Every new derivation prints ran / skipped / errored in the dry-run notes (`subject-link: ...`, `hotspot: ...`); a lookup that fails leaves the field empty and adds a finding. An
 update line shows the new Involved / Blocked by / Hotspot value next to the changed-field name. Exit code and `--apply` behaviour are unchanged for the existing fields.
+
+### Limits, the u24 dry run, and the post-merge live write (same ticket)
+
+- **A squash-merged branch kept as a worktree.** `--not origin/main` cannot tell a squash-merged branch's commits from live ones, so before a worktree's subject links are
+  used, `gh pr list --state merged --head <branch>` (the read-only `pr list` the guard already allows) is asked once per branch that has a worked-by-subject ticket not already
+  in its changed files; a merged PR means its subject links are skipped (counted in the `subject-link:` note), and a failed lookup links nothing and adds a finding. Measured on
+  the 16 branch-only citations: they sit on 26 branches (local and origin); 6 of those branches have a merged PR (including `rpg-ubuntu-group-id-alloc-impl`, which carried
+  one of the five tickets the rule would otherwise have moved), 20 do not, 0 lookup errors. Cost: a branch name reused after its PR merged, with new commits, is skipped too.
+- **Reading only checked-out worktrees.** On ubuntu `subject-link` links 0 tickets (it reads 16 worktrees; the candidate branches are `origin/*` refs nobody has checked out
+  here). Reading remote branches is `TCK-20261119-PROJECT-SYNC-READS-REMOTE-BRANCHES-NOT-ONLY-CHECKED-OUT-WORKTREES` (not started here). The coin fix, STALEMATE F1 and #965
+  cannot be read from ubuntu.
+- **The u24 dry run (a u24 seat runs it; its moved list goes to lead-planner and agent-working-planner before any live write).** On the u24 host, from its repo checkout:
+  `python3 tools/sessions/project_sync.py --root . --fetch` (read only: git verb allowlist, `gh pr list` and `gh api repos/...` reads, a live Project read). To rehearse the
+  seat backfill without touching live records, use a scratch seat-state root: `mkdir /tmp/seat-scratch`, then for each lane worktree
+  `python3 tools/sessions/record_seat.py --state-root /tmp/seat-scratch <worktree> <seat>`, then
+  `python3 tools/sessions/project_sync.py --root . --state-root /tmp/seat-scratch`. The dry run prints `seat state root: <path> (--state-root)`; both flags require an
+  existing directory (a missing one exits 2, never a fallback to the real root), `project_sync` only reads it, and `record_seat` writes only under it. Compare the coin
+  fix, STALEMATE F1 and #965 rows against the before run (`git archive origin/main` of the old tree) on the same origin/main SHA.
+- **Seat names.** `record_seat.py` accepts only roster seats (`registries/session_roles.yaml`). The ticket names `rpg-implementer-2` / `rpg-implementer-3` as the owners of
+  `m1kind5` / `coinsink`; the roster here holds `rpg-implementer` and `rpg-implementer-ubuntu` and no `-2` / `-3`, so those two names would be refused as unknown seats. The u24
+  backfill must use a roster seat name, or the roster gains the seats first (a decision for rpg-planner / lead-planner).
+- **Lanes left "seat not recorded".** With one recorded worktree per seat, a u24 seat with N lane worktrees leaves N-1 unrecorded. The count is unmeasured: it needs the list of
+  the ~15 u24 lane worktrees and the seat each belongs to, which only the u24 host has; a u24 seat can print it with `git worktree list` against the `record_seat.py` results.
+- **The hash bump rewrite.** The ubuntu dry run plans 314 updates and 1 create: about 900 field writes (changed fields plus `Source` and `Sync hash` per row), so at the 1 s
+  write pacing at least about 15 minutes (the FILED-DATE load of 328 items took 15m22s). Run it by hand first, not on the timer. A secondary rate limit is waited out; a primary
+  one stops the run, and the next run reconciles (the partial item shows "hand edit" lines that the rerun overwrites).
+- **The live write is a post-merge step, not a code deliverable.** After the code merges: (1) a u24 seat runs the dry run above and shows the three owner cases correct;
+  (2) its moved list goes to lead-planner and agent-working-planner; (3) the owner logs a yes; (4) `python3 tools/sessions/project_sync.py --init` (creates Involved,
+  Blocked by, Hotspot), then `--apply` by hand.

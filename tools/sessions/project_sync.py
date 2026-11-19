@@ -308,16 +308,18 @@ def attribute(branch: str, seats: list[tuple[str, str]], domains: tuple[str, ...
     return UNKNOWN, UNKNOWN
 
 
-def read_branch_facts(root: Path, host: str, lanes_note: list[str], run: Runner = run_command) -> tuple[list[BranchFact], int]:
+def read_branch_facts(root: Path, host: str, lanes_note: list[str], run: Runner = run_command,
+                      state_root_override: Path | None = None) -> tuple[list[BranchFact], int]:
     """(branch facts for this host, count of detached worktrees skipped). Read-only: status.py's builders, then per worktree
     `git diff --name-status <merge-base> HEAD` and `git status --porcelain`, both limited to the ticket folders."""
     roster = load_roster(root)
     domain_names = tuple(d.name for d in getattr(roster, "domains", ())) or None
     main = main_checkout(root)
     try:
-        state_root = st.state_root(root)
+        state_root = state_root_override if state_root_override is not None else st.state_root(root)
     except st.StateError:
         state_root = root / ".git" / "session-roles-unavailable"
+    lanes_note.append(f"seat state root: {state_root}{' (--state-root)' if state_root_override is not None else ''}")
     infos = [inspect_worktree(e, main, lambda b, c: "none", lambda p: 0) for e in worktree_entries(root) if e.get("worktree")]
     seat_of: dict[Path, list[tuple[str, str]]] = {}
     for role in roster.roles:
@@ -325,7 +327,7 @@ def read_branch_facts(root: Path, host: str, lanes_note: list[str], run: Runner 
         if wt is not None:
             seat_of.setdefault(wt.path.resolve(), []).append((role.role, role.domain))
     facts, detached = [], 0
-    link = {"branches": 0, "linked": 0, "skipped": 0, "errored": 0}  # the subject-link derivation's ran / skipped / errored
+    link = {"branches": 0, "linked": 0, "skipped": 0, "errored": 0, "merged": 0}  # the subject-link derivation's ran / skipped / errored
     index: dict[str, list[tuple[str, str]]] | None = None
     for info in infos:
         if info.prunable or info.is_main and info.branch in (None, "main"):
@@ -346,7 +348,14 @@ def read_branch_facts(root: Path, host: str, lanes_note: list[str], run: Runner 
             else:
                 named, worked = subject_links(log.stdout)
                 have = {c.id for c in copies}
-                for tid in sorted(worked - have):
+                merged = branch_pr_merged(info.branch, root, run) if worked - have else False
+                if merged is None:  # fail safe: an unreadable lookup links nothing
+                    link["errored"] += 1
+                    lanes_note.append(f"subject-link: could not read the merged-PR state of {info.branch}; its subject links were skipped")
+                elif merged:
+                    link["skipped"] += len(worked - have)
+                    link["merged"] += 1
+                for tid in sorted(worked - have if merged is False else ()):
                     index = read_main_index(root, run) if index is None else index
                     entries = index.get(tid, [])
                     if not entries or any(folder == "done" for folder, _ in entries):
@@ -360,7 +369,7 @@ def read_branch_facts(root: Path, host: str, lanes_note: list[str], run: Runner 
         seat, domain = attribute(info.branch, seat_of.get(info.path.resolve(), []), domain_names)
         facts.append(BranchFact(host, info.branch, str(info.path), seat, domain, tuple(copies), info.last_activity, frozenset(named)))
     lanes_note.append(f"subject-link: ran on {link['branches']} branches, linked {link['linked']} tickets by a leading id plus a code file, "
-                      f"skipped {link['skipped']} (no ticket file on origin/main or already Done), errored {link['errored']}")
+                      f"skipped {link['skipped']} (no ticket file on origin/main, already Done, or the branch's PR is merged: {link['merged']} such branches), errored {link['errored']}")
     return facts, detached
 
 
@@ -387,6 +396,18 @@ def subject_links(log_text: str) -> tuple[set[str], set[str]]:
             files.append(line.strip())
     close()
     return named, worked
+
+
+def branch_pr_merged(branch: str, root: Path, run: Runner = run_command) -> bool | None:
+    """True when a merged PR has this branch as its head (read-only `gh pr list`); None when the lookup failed. A squash-merged branch kept
+    as a worktree keeps its commits "unique" to `--not origin/main` forever, so its leading-id code commits must not read as live work."""
+    out = run(["gh", "pr", "list", "--state", "merged", "--head", branch, "--json", "number", "--limit", "1"], root)
+    if out.returncode != 0:
+        return None
+    try:
+        return bool(json.loads(out.stdout or "[]"))
+    except ValueError:
+        return None
 
 
 def _worktree_ticket_copies(wt: Path, run: Runner) -> list[TicketCopy]:
@@ -1155,11 +1176,16 @@ def _main(argv: list[str] | None, info: dict) -> int:
     parser.add_argument("--apply", action="store_true", help="write the plan to the Project (needs project.number and the token file)")
     parser.add_argument("--init", action="store_true", help="create the Project's missing fields by name; writes nothing else")
     parser.add_argument("--fetch", action="store_true", help="run `git fetch origin main` first (60 s timeout); on failure carry on and add a finding")
+    parser.add_argument("--state-root", type=Path, help="read the seats' recorded worktrees from this directory instead of the repo's own session-state "
+                        "(a scratch copy for a dry run that must not touch live records); read only, must be an existing directory")
     parser.add_argument("--replace-status-options", action="store_true", help="with --init: allow replacing the Status options on a Project that has items")
     args = parser.parse_args(argv)
     info["apply"] = args.apply
     if (args.init and args.apply) or (args.apply and args.items) or (args.replace_status_options and not args.init):
         print("project_sync: use --init and --apply as separate runs, --apply never with --items, --replace-status-options only with --init.", file=sys.stderr)
+        return 2
+    if args.state_root is not None and not args.state_root.is_dir():
+        print(f"project_sync: --state-root {args.state_root} is not an existing directory: nothing read, no fallback to the real state root.", file=sys.stderr)
         return 2
     plan_notes: list[str] = []
     config = load_config(args.root, plan_notes)
@@ -1204,7 +1230,7 @@ def _main(argv: list[str] | None, info: dict) -> int:
     fetch_failure = fetch_origin(args.root) if args.fetch else None
     sha, stamp = origin_info(args.root)
     now = datetime.now(timezone.utc)
-    branches, detached = read_branch_facts(args.root, args.host, plan_notes)
+    branches, detached = read_branch_facts(args.root, args.host, plan_notes, **({"state_root_override": args.state_root} if args.state_root is not None else {}))
     prs = read_open_prs(args.root, plan_notes)
     if args.apply and (prs is None or not getattr(prs, "complete", True)):
         print("project_sync: --apply refused, nothing written: the open PRs or one PR's files could not be read, so In review / PR would be "

@@ -58,10 +58,14 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("seat", help="the seat (role name) that holds it")
     ap.add_argument("--replace", action="store_true", help="overwrite the seat's existing record for a different live worktree")
     ap.add_argument("--dry-run", action="store_true")
+    ap.add_argument("--state-root", type=Path, help="write the record under this existing directory instead of the repo's own session-state (a scratch root for a dry run)")
     a = ap.parse_args(argv)
     root = REPO_ROOT
     try:
-        sroot = st.state_root(root)
+        if a.state_root is not None and not a.state_root.is_dir():
+            print(f"record_seat: --state-root {a.state_root} is not an existing directory: nothing recorded, no fallback to the real state root.", file=sys.stderr)
+            return EXIT_USAGE
+        sroot = a.state_root if a.state_root is not None else st.state_root(root)
         paths = [Path(e["worktree"]) for e in _worktree_entries(root) if e.get("worktree")]
         code, lines = record_seat(load_roster(root), paths, main_checkout(root), sroot, Path(a.worktree), a.seat, a.replace, a.dry_run)
     except (st.StateError, OSError) as exc:

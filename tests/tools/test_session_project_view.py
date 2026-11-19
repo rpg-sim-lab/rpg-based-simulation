@@ -139,3 +139,46 @@ def test_hash_v5_adds_the_three_fields_and_keeps_v4_intact():
 def test_init_and_apply_know_the_three_text_fields():
     for name in ("Involved", "Blocked by", "Hotspot"):
         assert name in pc.TEXT_FIELDS and name in pc.VALUE_ORDER
+
+
+# ---- (b) a squash-merged branch kept as a worktree must not read as live work
+def _gh(stdout="", code=0):
+    return lambda args, cwd=None: subprocess.CompletedProcess(args, code, stdout, "")
+
+
+def test_branch_pr_merged_reads_the_merged_pr_list_and_fails_safe(tmp_path):
+    assert ps.branch_pr_merged("lane", tmp_path, _gh('[{"number": 7}]')) is True
+    assert ps.branch_pr_merged("lane", tmp_path, _gh("[]")) is False  # positive control: a branch with no merged PR still links
+    assert ps.branch_pr_merged("lane", tmp_path, _gh("", 1)) is None  # a failed lookup is None, never "not merged"
+    assert ps.branch_pr_merged("lane", tmp_path, _gh("not json")) is None
+
+
+def test_the_merged_pr_lookup_is_a_read_the_guard_allows_and_asks_only_for_merged_prs(tmp_path):
+    seen = []
+
+    def run(args, cwd=None):
+        ps._guard(args)  # the real read-only guard: `gh pr list` passes, a write would raise
+        seen.append(args)
+        return subprocess.CompletedProcess(args, 0, "[]", "")
+
+    ps.branch_pr_merged("rpg-lane", tmp_path, run)
+    assert seen[0][:6] == ["gh", "pr", "list", "--state", "merged", "--head"] and seen[0][6] == "rpg-lane"
+
+
+# ---- --state-root for project_sync: read only, printed, never a silent fallback
+def test_project_sync_state_root_flag_reads_the_given_directory_and_prints_it(tmp_path):
+    from pathlib import Path as P
+
+    from tools.sessions import state as st
+    root = P(__file__).resolve().parents[2]
+    st.write_bound_worktree(tmp_path, "rpg-planner", root, True)  # positive control: a record only the scratch root holds
+    notes: list[str] = []
+    facts, _ = ps.read_branch_facts(root, "ubuntu", notes, state_root_override=tmp_path)
+    assert f"seat state root: {tmp_path} (--state-root)" in notes
+    assert any("rpg-planner" in f.seat.split("/") for f in facts if P(f.worktree).resolve() == root.resolve())  # the scratch record was read
+    assert sorted(p.name for p in tmp_path.iterdir()) == ["rpg-planner"]  # read only: nothing new was written under it
+
+
+def test_project_sync_state_root_flag_that_is_not_a_directory_is_a_usage_error(tmp_path, capsys):
+    assert ps.main(["--root", ".", "--items", str(tmp_path / "x.json"), "--state-root", str(tmp_path / "missing")]) == 2
+    assert "no fallback" in capsys.readouterr().err

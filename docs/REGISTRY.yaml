@@ -8014,6 +8014,24 @@
   - agent-working/stored_artifacts/TCK-20261119-OCCUPATION-READS-COMPARED-WITH-A-NON-LIVING-SPECIES-ID-MISS-THE-WORLD-BOSS/investigation.md
   tags: []
 - type: ticket
+  path: agent-working/tickets/done/TCK-20261119-PROJECT-VIEW-SEAT-COLLABORATORS-LINK-BY-COMMIT-SUBJECT-AND-PARKED.md
+  ticket_id: TCK-20261119-PROJECT-VIEW-SEAT-COLLABORATORS-LINK-BY-COMMIT-SUBJECT-AND-PARKED
+  title: GitHub Project 1 shows the holding seat, the collaborating seats and a Parked
+    state, so the owner can track a ticket there instead of asking the leads
+  tier: standard
+  ticket_type: feature
+  date: '2026-11-19'
+  related_code_areas:
+  - tools/sessions/project_sync.py
+  - tools/sessions/launch.py
+  - tools/sessions/project_client.py
+  artifact_files:
+  - agent-working/stored_artifacts/TCK-20261119-PROJECT-VIEW-SEAT-COLLABORATORS-LINK-BY-COMMIT-SUBJECT-AND-PARKED/investigation.md
+  - agent-working/stored_artifacts/TCK-20261119-PROJECT-VIEW-SEAT-COLLABORATORS-LINK-BY-COMMIT-SUBJECT-AND-PARKED/plan.md
+  - agent-working/stored_artifacts/TCK-20261119-PROJECT-VIEW-SEAT-COLLABORATORS-LINK-BY-COMMIT-SUBJECT-AND-PARKED/test_plan.md
+  tags:
+  - delivery
+- type: ticket
   path: agent-working/tickets/done/TCK-20261119-RPG-GATE-RERUN-ONLY-NEW-ROWS-AND-A-BASELINE-DIFF-AGAINST-MAIN.md
   ticket_id: TCK-20261119-RPG-GATE-RERUN-ONLY-NEW-ROWS-AND-A-BASELINE-DIFF-AGAINST-MAIN
   title: The rpg gate reruns only the (world, seed) runs behind a fail or drift row
@@ -8061,21 +8079,6 @@
   artifact_files: []
   tags:
   - mcp
-- type: ticket
-  path: agent-working/tickets/inprogress/TCK-20261119-PROJECT-VIEW-SEAT-COLLABORATORS-LINK-BY-COMMIT-SUBJECT-AND-PARKED.md
-  ticket_id: TCK-20261119-PROJECT-VIEW-SEAT-COLLABORATORS-LINK-BY-COMMIT-SUBJECT-AND-PARKED
-  title: GitHub Project 1 shows the holding seat, the collaborating seats and a Parked
-    state, so the owner can track a ticket there instead of asking the leads
-  tier: standard
-  ticket_type: feature
-  date: '2026-11-19'
-  related_code_areas:
-  - tools/sessions/project_sync.py
-  - tools/sessions/launch.py
-  - tools/sessions/project_client.py
-  artifact_files: []
-  tags:
-  - delivery
 - type: ticket
   path: agent-working/tickets/todos/TCK-20261119-FILED-TICKETS-ARE-SCANNED-FOR-OVERLAP-WITH-OPEN-TODOS.md
   ticket_id: TCK-20261119-FILED-TICKETS-ARE-SCANNED-FOR-OVERLAP-WITH-OPEN-TODOS

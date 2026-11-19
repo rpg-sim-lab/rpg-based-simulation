@@ -1,10 +1,10 @@
 ---
-status: active
+status: historical
 layer: ai
 authority: P1
 audience: agent
 ticket_id: TCK-20261119-PROJECT-VIEW-SEAT-COLLABORATORS-LINK-BY-COMMIT-SUBJECT-AND-PARKED
-phase: open
+phase: done
 date: 2026-11-19
 tags: [delivery]
 ---
@@ -15,7 +15,7 @@ tags: [delivery]
 GitHub Project 1 shows the holding seat, the collaborating seats and a Parked state, so the owner can track a ticket there instead of asking the leads
 
 ## Status
-OPEN
+DONE
 
 ## Tier
 standard
@@ -58,7 +58,7 @@ Report-only: `tools/sessions/project_sync.py` derivation plus the Project fields
 2. Every new derivation reports ran / skipped / errored per item and has a positive control: an input that must produce the new value, and one that must not (a cited-only subject, a stale non-parked branch).
 3. A dry run before and after is shown on one named ref and SHA, with counts of rows whose Status, Seat, Involved or Blocked-by changed, and a list of the changed rows for the owner to eyeball.
 4. Report-only: the sync's exit code and `--apply` behaviour are unchanged for existing fields; a lookup that fails leaves the field empty and prints a finding.
-5. Scoped tests only. The live Project write (`--init`, `--apply`) is owner-approved (#715 7003719833) to run after the before/after dry run on a named SHA, with the changed rows shown to lead-planner before the write.
+5. Scoped tests only. The live Project write (`--init`, `--apply`) is a POST-MERGE step, not a code deliverable of this ticket (planner and owner, #715 7004743536): it runs only after a u24 seat's dry run shows the coin fix, STALEMATE F1 and #965 correctly, its moved list is shown to lead-planner and agent-working-planner, and the owner logs a yes. The prerequisites are in `docs/guidelines/session_roles/project_sync_dry_run.md`.
 6. Hotspot: on a named ref, the field matches an independent count of `src/` citations across open tickets for at least 10 sampled tickets (list them), is empty for a ticket citing no `src/` file, and the top clusters match the re-measured table. Positive control: a fixture ticket citing a file cited by 3 others gets that file; must-not: a file cited only by itself.
 7. The seat CLI has tests: records, refuses an unknown seat, refuses a conflicting existing record, and status.py reads it as `writing_in`.
 
@@ -90,7 +90,12 @@ Fields added to Project 1 are a generated view of ticket files and git, rebuilt 
 Filed by agent-working-planner on lead-planner's relay of an owner request (#715 7003649308). Standard tier: needs plan, investigation and test_plan before build.
 
 ## Test Summary
+301 passed before the last additions; the final scoped set is below. New: `tests/tools/test_session_project_view.py` (subject links with a positive control and must-not cases, the tests/-config-only boundary in both directions, a merged commit never counting, the merged-PR filter, Involved, Blocked by, Hotspot, hash v5, `--state-root`), `tests/tools/test_session_record_seat.py` (records the launcher's record, refuses an unknown seat, a conflicting record, a non-worktree, `--state-root` leaves the real root untouched). Existing project_sync / project_client tests were updated only for the v5 hash and the `involved=` host-facts token.
 
 ## Files Changed
+`tools/sessions/project_sync.py`, `tools/sessions/project_client.py`, `tools/sessions/record_seat.py` (new), `docs/guidelines/session_roles/project_sync_dry_run.md`, `tests/tools/test_session_project_view.py` (new), `tests/tools/test_session_record_seat.py` (new), and the pinned expectations in `tests/tools/test_session_project_sync*.py` and `test_project_client.py`.
 
 ## Completion Summary
+Built: (a) `record_seat.py` (reuses `state.write_bound_worktree(..., explicit=True)`; one record per seat), (b) a worktree's own commits (`--no-merges HEAD --not origin/main`) work a ticket when its id leads a subject and the commit touches a file outside `agent-working/` and `docs/`, skipped when the branch's PR is already merged, (c) Involved (recorded worktree seats; no comment parsing, 0 of 38 sampled #715 comments use the prefix), (d) Blocked by from line-start waits-on lines (Parked deferred to TCK-20261119-PROJECT-VIEW-PARKED-STATE-FROM-A-TICKET-BODY-MARKER-LINE), (e) Hotspot, hash v5, `--init` fields, `--state-root` on both CLIs.
+Dry-run limits (origin/main 77e4aeb72, ubuntu, 330 items): derived Status and Seat changed on 0 rows (also on the 9 rows refreshed from origin's copy, which changed Host facts, Involved and Title/Tier/Layer/Priority/Filed only); Involved on 37 rows, Blocked by on 1, Hotspot on 95; about 314 updates and 1 create from the v4 to v5 hash bump (about 900 field writes, at least about 15 minutes at 1 s pacing). `subject-link` links 0 tickets on ubuntu because the sync reads only checked-out worktrees (the remote-branch read is TCK-20261119-PROJECT-SYNC-READS-REMOTE-BRANCHES-NOT-ONLY-CHECKED-OUT-WORKTREES); the coin fix, STALEMATE F1 and #965 are not visible from ubuntu. A seat record holds one worktree per seat, so the u24 backfill covers at most one lane per seat (remaining count unmeasured; needs the u24 worktree list). `record_seat.py` refuses non-roster seats, and the roster here has no `rpg-implementer-2` / `-3`.
+Post-merge, with the owner's yes: a u24 seat's dry run shows the three owner cases and the moved list; then `--init` and `--apply` by hand (AC5). Hand-orchestrated close.
