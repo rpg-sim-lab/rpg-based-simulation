@@ -124,7 +124,7 @@ class MovementSystem:
             if y_ok:
                 return EntityUpdate(
                     entity_id=occupant.id, new_position=yield_tile, moved_this_tick=True,
-                    navigation=NavigationUpdate(moved_recently_set=True, last_moved_tick_set=current_tick, failure_reason=ReasonCode.YIELDING,
+                    navigation=NavigationUpdate(moved_recently_set=True, last_moved_tick_set=current_tick, failure_reason_clear=True,
                                                 step_ready_tick_set=MovementSystem._step_ready_tick(occupant, True, yield_tile, current_tick, state_or_context))
                 )
         return None
@@ -406,6 +406,7 @@ class MovementSystem:
             moved_recently_set=True,
             last_moved_tick_set=current_tick if success and effective_target != entity.navigation.position else None,  # PERC-02: a move = any position change by the movement apply path: this step, a position swap, a yield displacement (not lodge entry/exit)
             failure_reason=None if success else reason_code,
+            failure_reason_clear=bool(success),  # a successful step ends the last failure
             # VERIFIED v2: movement_priority_tiebreak
             wait_count_delta=wait_delta,
             # VERIFIED v2: stalemate_breaker

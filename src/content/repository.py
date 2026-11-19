@@ -6,7 +6,7 @@ import threading
 import yaml
 import hashlib
 from dataclasses import dataclass
-from typing import Dict, List, Optional, Any, Type, TypeVar, Union
+from typing import Dict, Iterator, List, Optional, Any, Type, TypeVar, Union
 from pydantic import BaseModel
 
 
@@ -143,6 +143,15 @@ CANONICAL_FAMILIES: List[ContentFamilySpec] = [
 
 
 from src.content.paths import ContentPathConfig
+from src.core.species import SenseProfileError
+
+
+def _schema_error_text(family: str, item: dict, err: Exception) -> str:
+    """The schema error to record for a rejected record; a species declaring ``sense_profile: null`` raises the typed ``SenseProfileError`` naming it (PERC-02a), else the schema error would drop it and a later lookup would die with a bare ``KeyError``."""
+    if family == "living.species" and "sense_profile" in item and item["sense_profile"] is None:
+        raise SenseProfileError(f"species {item.get('id')!r} declares no sense profile (sense_profile: null)") from err
+    return str(err)
+
 
 # Directories inside data/content/ that are managed by loaders other than CatalogRepository
 # (WorldModuleRepository, ScenarioLabOrchestrator). Files in these
@@ -228,6 +237,30 @@ class CatalogRepository:
         self._fingerprint: str = ""
         self._version: str = "2.0.0"
         self.last_report: Optional[CatalogLoadReport] = None
+
+    def _yaml_rel_paths(self) -> Iterator[str]:
+        """The yaml files under the content directory, as paths relative to it with forward slashes."""
+        if os.path.exists(self.content_dir):
+            for root, _, files in os.walk(self.content_dir):
+                for file in files:
+                    if file.endswith((".yaml", ".yml")):
+                        full_path = os.path.join(root, file)
+                        rel_path = os.path.relpath(full_path, self.content_dir)
+                        rel_path = rel_path.replace(os.sep, "/")
+                        yield rel_path
+
+    def _find_ignored_files(self) -> List[str]:
+        """The yaml files under the content directory that no family registers and no non-catalog list excuses."""
+        ignored_files: List[str] = []
+        registered_paths = {spec.path for spec in CANONICAL_FAMILIES}
+        for rel_path in self._yaml_rel_paths():
+            if rel_path.split("/")[0] in NON_CATALOG_DIRS:
+                continue
+            if rel_path in NON_CATALOG_FILES:
+                continue
+            if rel_path not in registered_paths:
+                ignored_files.append(rel_path)
+        return ignored_files
 
     def load_all(self, strict: bool = False) -> CatalogLoadReport:
         """Loads and parses all files under the content directory into structured indices based on CANONICAL_FAMILIES."""
@@ -323,7 +356,7 @@ class CatalogRepository:
                         validated = item_schema(**item)
                         results[def_id] = validated
                     except Exception as e:
-                        schema_errors[spec.path] = str(e)
+                        schema_errors[spec.path] = _schema_error_text(spec.family, item, e)
                         continue
 
                 # When schema_version_map is active, route records to secondary indices by type
@@ -350,21 +383,7 @@ class CatalogRepository:
                 record_counts[spec.family] = len(results)
 
         # Detect ignored files
-        ignored_files: List[str] = []
-        registered_paths = {spec.path for spec in CANONICAL_FAMILIES}
-        if os.path.exists(self.content_dir):
-            for root, _, files in os.walk(self.content_dir):
-                for file in files:
-                    if file.endswith((".yaml", ".yml")):
-                        full_path = os.path.join(root, file)
-                        rel_path = os.path.relpath(full_path, self.content_dir)
-                        rel_path = rel_path.replace(os.sep, "/")
-                        if rel_path.split("/")[0] in NON_CATALOG_DIRS:
-                            continue
-                        if rel_path in NON_CATALOG_FILES:
-                            continue
-                        if rel_path not in registered_paths:
-                            ignored_files.append(rel_path)
+        ignored_files = self._find_ignored_files()
 
         # Generate unique content fingerprint
         self._compute_fingerprint()

@@ -2,9 +2,8 @@
 from __future__ import annotations
 
 from dataclasses import replace
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
-from src.core.enums import ReasonCode
 from src.core.lodging_rules import is_lodged, outside_entity
 from src.core.movement_modes import MovementMode
 from src.core.strategic import ContractKind, ContractStatus
@@ -22,6 +21,30 @@ from src.engine.policy import GovernorPolicy
 if TYPE_CHECKING:
     from src.core.state import AuthoritativeState, EntityState
     from src.core.updates import StateUpdate
+
+
+def _merge_move_update(existing: EntityUpdate | None, u_upd: EntityUpdate, movement_codes: dict[int, tuple[Any, Any]]) -> EntityUpdate:
+    """``existing.merge(u_upd)``, except that a MOVE drops the failure code this same phase wrote for the body earlier in the tick.
+
+    A move (a new position with the clear and no code: a yield displacement, or the body's own step) is the tick's movement outcome, so an own failed step
+    that was followed by a displacement ends as "moved" and not as the old failure. Only a code THIS phase wrote is dropped (``movement_codes`` holds, per body,
+    that code and the code the body carried BEFORE the phase's first write): a code from an earlier phase (an action) is not a movement outcome, so it is restored
+    when the phase's own code goes, and it survives a move that wrote none (a code beats the clear)."""
+    uid = u_upd.entity_id
+    nav = u_upd.navigation
+    before = None if existing is None or existing.navigation is None else existing.navigation.failure_reason
+    merged = u_upd if existing is None else existing.merge(u_upd)
+    if nav is None:
+        return merged
+    if nav.failure_reason is not None:
+        pre = movement_codes[uid][1] if uid in movement_codes else before
+        movement_codes[uid] = (nav.failure_reason, pre)
+    elif u_upd.new_position is not None and nav.failure_reason_clear and uid in movement_codes:
+        mnav = merged.navigation
+        own, pre = movement_codes.pop(uid)
+        if mnav is not None and mnav.failure_reason is not None and mnav.failure_reason == own:
+            merged = replace(merged, navigation=replace(mnav, failure_reason=pre))
+    return merged
 
 
 def _already_settled_this_tick(ent_upd: EntityUpdate | None) -> bool:
@@ -216,6 +239,7 @@ class MovementPhase:
         metric_counters = dict(update.metric_counters) if getattr(update, "metric_counters", None) is not None else {}
         metric_counters["movement_candidates"] = len(selected_ids)
         
+        movement_codes: dict[int, tuple[Any, Any]] = {}  # per body: the code THIS phase last wrote, and the code it carried before the phase's first write
         # Unified Pass over selected candidate IDs
         for e_id in selected_ids:
             ent_upd = refined_entity_updates.get(e_id)
@@ -270,11 +294,8 @@ class MovementPhase:
                         if prev_new_pos in live_claims:
                             live_claims.discard(prev_new_pos)
 
-                if existing is not None:
-                    refined_entity_updates[u_id] = existing.merge(u_upd)
-                else:
-                    refined_entity_updates[u_id] = u_upd
-                    
+                refined_entity_updates[u_id] = _merge_move_update(existing, u_upd, movement_codes)
+
                 if u_upd.new_position is not None:
                     u_ent = state.entities.get(u_id)
                     if u_ent:
@@ -305,11 +326,11 @@ class MovementPhase:
         """Each side moves onto the other's tile and pays the step time of that tile (D75), merged onto its update so far this tick."""
         a_old, b_old = a.navigation.position, b.navigation.position
         a_swap = MovementPhase._build_position_swap_entity_update(
-            entity=a, new_position=b_old, reason=ReasonCode.POSITION_SWAP, tick=state.tick,
+            entity=a, new_position=b_old, tick=state.tick,
             step_ready_tick=MovementSystem._step_ready_tick(a, True, b_old, state.tick, state),
         )
         b_swap = MovementPhase._build_position_swap_entity_update(
-            entity=b, new_position=a_old, reason=ReasonCode.POSITION_SWAP, tick=state.tick,
+            entity=b, new_position=a_old, tick=state.tick,
             step_ready_tick=MovementSystem._step_ready_tick(b, True, a_old, state.tick, state),
         )
         return a_existing.merge(a_swap), b_existing.merge(b_swap)
@@ -445,7 +466,6 @@ class MovementPhase:
     def _build_position_swap_entity_update(
         entity: EntityState,
         new_position: tuple[float, float],
-        reason,
         step_ready_tick: float | None = None,
         tick: int | None = None,
     ) -> EntityUpdate:
@@ -460,7 +480,7 @@ class MovementPhase:
             navigation=NavigationUpdate(
                 moved_recently_set=True,
                 last_moved_tick_set=tick,  # PERC-02: each side of a swap moved onto the other's tile this tick (a move stamps last_moved_tick)
-                failure_reason=reason,
+                failure_reason_clear=True,  # a swap is a move: it carries the clear and no failure code
                 wait_count_delta=-entity.navigation.wait_count,
                 oscillation_count_delta=-entity.navigation.oscillation_count,
                 last_position_set=entity.navigation.position,

@@ -62,7 +62,7 @@ def test_yielding_recovery():
     # Monster should have yielded
     assert 2 in updates
     assert updates[2].new_position != (2.0, 1.0)
-    assert updates[2].navigation.failure_reason == ReasonCode.YIELDING
+    assert updates[2].navigation.failure_reason is None and updates[2].navigation.failure_reason_clear is True  # a yield is a move: the clear, no code (2.214)
 
 def test_hold_mode_refusal():
     """Verify that HOLD mode prevents yielding."""

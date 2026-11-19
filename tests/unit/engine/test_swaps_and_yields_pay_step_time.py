@@ -5,7 +5,7 @@ from __future__ import annotations
 from dataclasses import replace
 
 from src.core.builder import V2EntityBuilder
-from src.core.enums import EntityRole, Faction, ReasonCode
+from src.core.enums import EntityRole, Faction
 from src.core.movement_modes import MovementMode
 from src.core.state import AuthoritativeState
 from src.core.updates import StateUpdate
@@ -67,7 +67,7 @@ def test_a_yielding_occupant_pays_the_step_time_of_the_tile_it_is_moved_onto():
     terrain = {(x, y): "swamp" for x in range(-1, 5) for y in range(-1, 4)}
     state, hero = _yield_state(terrain)
     updates = MovementSystem.resolve_move(state, hero, (2.0, 1.0))
-    assert updates[2].navigation.failure_reason == ReasonCode.YIELDING
+    assert updates[2].navigation.failure_reason is None and updates[2].navigation.failure_reason_clear is True  # a yield is a move: the clear, no code (2.214)
     assert updates[2].navigation.step_ready_tick_set == TICK + 3.0
 
 

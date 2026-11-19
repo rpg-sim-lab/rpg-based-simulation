@@ -67,6 +67,7 @@ class NavigationUpdate:
     moved_recently_set: Optional[bool] = None
     movement_mode_set: Optional[MovementMode] = None
     failure_reason: Optional[str] = None
+    failure_reason_clear: bool = False  # the last step succeeded: last_failure_reason is the outcome of the LAST step, so it is set to None here; codes come from any action writer, ONLY a successful movement step clears it, and a None `failure_reason` alone never clears it
     clear_target: bool = False
     clear_path: bool = False
     
@@ -83,20 +84,25 @@ class NavigationUpdate:
     def is_noop(self) -> bool:
         return (self.target_set is None and not self.target_clear and self.path_set is None and self.step_ready_tick_set is None and 
                 self.moved_recently_set is None and self.movement_mode_set is None and 
-                self.failure_reason is None and not self.clear_target and not self.clear_path and 
+                self.failure_reason is None and not self.failure_reason_clear and not self.clear_target and not self.clear_path and 
                 self.wait_count_delta == 0 and self.oscillation_count_delta == 0 and 
                 self.last_position_set is None and self.region_id_set is None and self.lodged_in_set is None and not self.lodged_in_clear and self.last_moved_tick_set is None)
 
     def merge(self, other: NavigationUpdate) -> NavigationUpdate:
         if not other or other.is_noop():
             return self
-        optional_sets = ("target_set", "path_set", "moved_recently_set", "movement_mode_set", "failure_reason", "last_position_set", "region_id_set", "step_ready_tick_set", "last_moved_tick_set")      # taken from the later update whenever it names them
+        optional_sets = ("target_set", "path_set", "moved_recently_set", "movement_mode_set", "last_position_set", "region_id_set", "step_ready_tick_set", "last_moved_tick_set")      # taken from the later update whenever it names them
         changes: Dict[str, Any] = {name: getattr(other, name) for name in optional_sets if getattr(other, name) is not None}
         changes.update({name: True for name in ("target_clear", "clear_target", "clear_path") if getattr(other, name)})
+        changes.update(other._failure_changes())  # the code if set, and the clear flag (failure_reason_clear)
         if other.wait_count_delta != 0: changes["wait_count_delta"] = self.wait_count_delta + other.wait_count_delta
         if other.oscillation_count_delta != 0: changes["oscillation_count_delta"] = self.oscillation_count_delta + other.oscillation_count_delta
         changes.update(other._lodging_changes())
         return replace(self, **changes)
+
+    def _failure_changes(self) -> Dict[str, Any]:
+        """What a merge takes from this update for the failure fields: the code if one is set, and the clear flag (a successful step; ``NavigationPatch`` lets a code win over the clear)."""
+        return {**({"failure_reason": self.failure_reason} if self.failure_reason is not None else {}), **({"failure_reason_clear": True} if self.failure_reason_clear else {})}
 
     def _lodging_changes(self) -> Dict[str, Any]:
         """What a merge takes from this update for the lodging fields (F3): the claim's building, and the leave flag."""

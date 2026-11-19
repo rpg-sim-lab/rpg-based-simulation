@@ -349,7 +349,7 @@ mechanisms:
         TCK-20261008-A-SUBJECT-NOTICES-AN-UNENGAGED-HOSTILE-COMING-ADJACENT-AND-DECIDES-DECISION-32.
   - id: movement
     layer: entity
-    summary: "Moves creatures across the map tile by tile. A creature standing next to an enemy cannot simply wander off: walking away gives that enemy a free swing."
+    summary: "Moves creatures across the map tile by tile. A creature standing next to an enemy cannot simply wander off: walking away gives that enemy a free swing. A step that fails records why; the next successful step clears that record, so strategy never acts on an old failure."
     systems: [combat, world]
     depends_on: []
     state: done
@@ -1327,7 +1327,7 @@ mechanisms:
     systems: [cognition]
     depends_on: []
     state: done
-    implemented_by: [src/world/perception/gate.py::PerceptionGate, src/content/species_senses.py::species_sense_profile, src/engine/perception_signals.py::emitted_signals, src/engine/tile_distance.py::chebyshev_tile_distance]
+    implemented_by: [src/world/perception/gate.py::PerceptionGate, src/content/species_senses.py::species_sense_profile, src/engine/perception_signals.py::emitted_signals, src/engine/tile_distance.py::chebyshev_tile_distance, src/engine/checkpoint_senses.py::check_restored_body_senses, src/entities/checked_builder.py::species_builder]
     verified:
       instrument: corpus_run
       verdict: observed
@@ -1364,6 +1364,7 @@ mechanisms:
         target's emitted signals, not another mechanism's output. `tactical_decision` is its caller
         (execution order, header axis 2), not a functional dependent: with the permissive fallback,
         targeting still produces a result without it.
+        Restored bodies are checked too (TCK-20261118-CAMPAIGN-RUNNER-AND-RESTORED-BODIES-SKIP-THE-BUILD-TIME-SENSES-CHECK; RestoredBodySenseProfileError).
   - id: emotion
     layer: entity
     summary: "Creatures have emotions that shift after events, such as a close brush with death."
@@ -2874,7 +2875,7 @@ mechanisms:
     summary: "Items and gold are never created or lost in a trade or transfer: whatever one side gives up, the other side receives."
     systems: [economy]
     depends_on: []
-    state: done
+    state: partial
     implemented_by:
       - src/core/conservation.py::ResourceTransactionResolver
       - src/core/inventory.py::InventoryService
@@ -2888,9 +2889,15 @@ mechanisms:
         `src/engine/economy.py:96,179` -- the same class `evolution`'s own verified note
         (entity-layer batch) already cites as "conservation.py COMBAT branch." This mechanism's own
         claim is the resolver's general atomic-conservation law, not any one branch.
+        2026-11-19: a coin sink found by the V6 trace (a priced service debited the full price
+        while crediting only what the payer held) and fixed in
+        TCK-20261118-A-SERVICE-PAYMENT-WITH-NO-PAYEE-DESTROYS-COIN. RECRUIT/CHEST/CRAFTING gold
+        costs still have no payee
+        (TCK-20261119-RECRUIT-CHEST-AND-CRAFTING-COSTS-DEBIT-THE-PAYER-WITH-NO-PAYEE); partial
+        until that closes.
   - id: crafting
     layer: world
-    summary: "Creatures craft items from materials under the same no-loss rules as trade. Crafting works only in part compared with the full design."
+    summary: "Creatures craft items from materials under the same no-loss rules as trade (its gold cost still has no payee: TCK-20261119-RECRUIT-CHEST-AND-CRAFTING-COSTS-DEBIT-THE-PAYER-WITH-NO-PAYEE). Crafting works only in part compared with the full design."
     systems: [economy]
     depends_on: [inventory_trade_conservation]
     state: partial
@@ -2915,6 +2922,10 @@ mechanisms:
         live code is directly confirmed and cited precisely; flagged here as a judgement call
         because the binding cannot distinguish this mechanism's own branch from its siblings'.
         **Resolved 2026-10-27 (TCK-20261027-FIVE-DEAD-SYSTEMS-CLASSES-STILL-CITED-AS-PROOF):** the uncalled `CraftingSystem` is deleted; the craft gates are proved live in `tests/integration/economy/test_crafting_live_path.py` (parity PROG-097 is `divergent`).
+        2026-11-19: its `gold_cost` debits the crafter with no payee
+        (TCK-20261119-RECRUIT-CHEST-AND-CRAFTING-COSTS-DEBIT-THE-PAYER-WITH-NO-PAYEE); the same
+        sink class as the V6 service sink fixed in
+        TCK-20261118-A-SERVICE-PAYMENT-WITH-NO-PAYEE-DESTROYS-COIN, still open here.
   # SPLIT 2026-09-17 (TCK-20260917-MECHANISM-IDENTITY-RULES-AND-CHANGE-TAXONOMY): `buildings`
   # (physical structures -- placement, HP, occupancy) and `town_services` (shop/inn/blacksmith/
   # guild transactions the buildings host) are two structurally separate concerns --
@@ -3031,6 +3042,9 @@ mechanisms:
         backstop, split as `LODGER_DROP_CLAIM_TICK` (the claim wins the merge in either order; a merged
         step is refused) and `LODGER_DROP_LEAVE_REFUSED` (a refused leave refuses that tick's target,
         path and mode as one unit). Total minus both is the stayer count, which must be 0.
+        2026-11-19: a service charge now debits exactly what the building or treasury receives
+        (CLAMP kept); no-payee charges debit 0 and are counted
+        (TCK-20261118-A-SERVICE-PAYMENT-WITH-NO-PAYEE-DESTROYS-COIN).
   - id: building_sabotage
     layer: world
     summary: "Buildings can be damaged by sabotage."

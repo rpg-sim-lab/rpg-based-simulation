@@ -293,7 +293,7 @@ def test_project_sync_never_runs_graphql_itself_and_the_client_has_no_delete_mut
 
 
 def test_host_facts_is_a_text_field_init_creates_by_name_and_apply_writes_before_source():
-    assert "Host facts" in pc.TEXT_FIELDS and pc.VALUE_ORDER[-2:] == ("Host facts", "Filed")
+    assert "Host facts" in pc.TEXT_FIELDS and pc.VALUE_ORDER[-5:-3] == ("Host facts", "Filed")
     fake = Fake(project(status_options=STATUSES, skip=("Host facts",)))
     lines, code = pc.init_fields(fake, STATUSES, layers=LAYERS)
     assert code == 0 and ("create_text", "Host facts") in fake.calls and "created: Host facts" in lines
