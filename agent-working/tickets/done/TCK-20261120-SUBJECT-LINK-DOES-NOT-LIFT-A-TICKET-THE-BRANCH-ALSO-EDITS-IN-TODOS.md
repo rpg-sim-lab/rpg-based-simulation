@@ -1,10 +1,10 @@
 ---
-status: active
+status: historical
 layer: ai
 authority: P1
 audience: agent
 ticket_id: TCK-20261120-SUBJECT-LINK-DOES-NOT-LIFT-A-TICKET-THE-BRANCH-ALSO-EDITS-IN-TODOS
-phase: open
+phase: done
 date: 2026-11-20
 tags: [delivery]
 ---
@@ -15,7 +15,7 @@ tags: [delivery]
 A ticket worked on a branch that also edits its todos/ file reads To do, because the commit-subject link only lifts tickets the branch does not already carry a copy of
 
 ## Status
-OPEN
+DONE
 
 ## Tier
 hotfix
@@ -72,7 +72,11 @@ N/A: no src change; the Project is a generated view rebuilt on each sync.
 Filed by agent-working-planner on lead-planner's finding; dispatched with the apply-skips ticket.
 
 ## Test Summary
+`tests/tools/test_session_project_sync_lift.py` (6 tests, a throwaway git repo): the births shape end to end (leading-id code commit first, a later todos edit): In progress before and after the edit; the same fixture on the old code fails (control); a todos edit alone stays To do with Branch [filing]; docs-only and mid-subject citations stay To do; a todos copy of ticket A does not stop a worked commit for ticket B from linking B and leaves A as filing; a copy already in inprogress/ keeps today's behaviour with no double link; a Done ticket stays Done and a merged-PR branch is not counted. Dry run before/after at origin/main 0c18f6151 (live read, no write): exactly one row changes, the births row.
 
 ## Files Changed
+`tools/sessions/project_sync.py` (`read_branch_facts` to_link, `link_worked` own-copy lift, the subject-link note), `tests/tools/test_session_project_sync_lift.py` (new), `docs/guidelines/session_roles/project_sync_dry_run.md`.
 
 ## Completion Summary
+Cause (confirmed by reproduction on origin/main 0c18f6151 from the real rpg-ubuntu worktree, read only): `to_link = worked - {c.id for c in copies}` dropped every ticket the branch carried ANY copy of, and a `todos/` copy is filing, so a branch that edits its ticket's todos/ file while working it by subject never lifted it. The other two suspected causes are ruled out by output (the merged-PR lookup for the branch is False; the Involved field already names rpg-implementer-ubuntu, and Seat was blank only because the state was filing). Fix: `to_link` is `worked` minus the ids whose copy on the branch is in a PROGRESS folder (inprogress/ or done/); a todos copy never excludes a worked id and the branch's own copy, lifted to in progress, replaces its filing copy; a Done ticket on origin/main stays Done.
+Why Seat and Branch also changed in the births row: inferred from the branch's git history, NOT confirmed from the Project's own history (which I cannot read): the branch did not edit the ticket file until commit 1dfb7ca22 (2026-11-19 22:16 +07); before it the code would have linked the ticket (In progress, with the branch's seat); after it the branch carried a todos copy, the link was dropped and the row derived To do, Seat empty, Branch flagged [filing]. So the row before was right and the derived one after was wrong; lead-planner's `changed: Status, Seat, Branch, Host facts` is that move. After the fix the births row derives In progress with the seat rpg-implementer-ubuntu again, and it is the only row in the live dry run (341 items) whose Status changes. Hand-orchestrated close.

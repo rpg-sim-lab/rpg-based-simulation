@@ -7986,6 +7986,21 @@
   - content
   last_verified: '2026-10-09'
 - type: ticket
+  path: agent-working/tickets/done/TCK-20261120-SUBJECT-LINK-DOES-NOT-LIFT-A-TICKET-THE-BRANCH-ALSO-EDITS-IN-TODOS.md
+  ticket_id: TCK-20261120-SUBJECT-LINK-DOES-NOT-LIFT-A-TICKET-THE-BRANCH-ALSO-EDITS-IN-TODOS
+  title: A ticket worked on a branch that also edits its todos/ file reads To do,
+    because the commit-subject link only lifts tickets the branch does not already
+    carry a copy of
+  tier: hotfix
+  ticket_type: bug
+  date: '2026-11-20'
+  related_code_areas:
+  - tools/sessions/project_sync.py
+  - tests/tools/test_session_project_view.py
+  artifact_files: []
+  tags:
+  - delivery
+- type: ticket
   path: agent-working/tickets/done/TCK-20261119-DEPENDABOT-813-CI-FAST-LANES-EXIT-2-CAUSE.md
   ticket_id: TCK-20261119-DEPENDABOT-813-CI-FAST-LANES-EXIT-2-CAUSE
   title: 'Find the cause of the Migration lanes job "Fast lanes" exit 2 on the closed
@@ -8177,6 +8192,22 @@
   artifact_files: []
   tags:
   - mcp
+- type: ticket
+  path: agent-working/tickets/todos/TCK-20261119-PROJECT-SYNC-APPLY-SKIPS-ITEMS-WITH-A-MISSING-STATUS-OPTION-AND-FLAGS-DOUBTFUL-PARKED-MARKERS.md
+  ticket_id: TCK-20261119-PROJECT-SYNC-APPLY-SKIPS-ITEMS-WITH-A-MISSING-STATUS-OPTION-AND-FLAGS-DOUBTFUL-PARKED-MARKERS
+  title: 'One bad Parked marker must not freeze every host''s board: `--apply` skips
+    only the items whose Status option is missing, and the sync flags a Parked marker
+    on a ticket that is being worked or that names itself'
+  tier: standard
+  ticket_type: bug
+  date: '2026-11-19'
+  related_code_areas:
+  - tools/sessions/project_sync.py
+  - tools/sessions/project_client.py
+  - tests/tools/test_session_project_parked.py
+  artifact_files: []
+  tags:
+  - delivery
 - type: ticket
   path: agent-working/tickets/todos/TCK-20261119-PROJECT-SYNC-READS-REMOTE-BRANCHES-NOT-ONLY-CHECKED-OUT-WORKTREES.md
   ticket_id: TCK-20261119-PROJECT-SYNC-READS-REMOTE-BRANCHES-NOT-ONLY-CHECKED-OUT-WORKTREES
