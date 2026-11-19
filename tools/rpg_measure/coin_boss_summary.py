@@ -1,7 +1,8 @@
 """Summarizer for the coin and world-boss counter (tools/rpg_measure/coin_boss_spy.py): reads the runner's output files and applies the fixed criteria (rpg-designer u24, relayed by rpg-planner-ubuntu).
 
-Per REAL cell, all HARD: (1) the spy's ``final_hash`` equals the plain twin's ``final_hash`` (the births re-check's ``<world>_<seed>_plain.json``, field ``final_hash``); (2) ``logging_errors`` is empty;
-(3) the child exited 0 (4, 5 and 6 FAIL); (4) ``v6`` is 0; (5) the out json is present, valid JSON and has every key the checks read (missing or partial = FAIL).
+Per REAL cell, all HARD: (1) the plain twin file exists and carries a ``final_hash`` (else FAIL, reason stated); (2) it is the SAME cell: ``world``, ``seed`` and ``ticks`` of the spy's out json equal the plain json's;
+(3) the spy's ``final_hash`` equals the plain twin's ``final_hash`` (the births re-check's ``<world>_<seed>_plain.json``); (4) the out json is not a control: ``control`` is None and ``counts_for_recheck`` is True;
+(5) ``logging_errors`` is empty; (6) the child exited 0 (4, 5 and 6 FAIL); (7) ``v6`` is 0; (8) the out json is present, valid JSON and has every key the checks read (missing or partial = FAIL).
 REPORTED, not bars: ``unexplained_total_count`` with its rows (non-zero is a FINDING), ``apply_calls`` against ``distinct_ticks``, and ``boss_max`` for the three columns plus any disagreement row (non-zero or a row is a FINDING).
 CONTROLS (criteria fixed now): coin:N: control v6 - real v6 == N exactly, exactly one unexplained row, at the last tick, equal to N, control_applied_count >= 1, control final_hash == real final_hash, exit 0.
 boss:K: boss_max == K in all three columns, no disagreement row at the last tick, control_applied_count >= 1, final_hash == real, exit 0. never-fire: exit 6 and control_applied_count == 0.
@@ -18,7 +19,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
 REAL_KEYS = ("final_hash", "logging_errors", "v6", "wiring", "unexplained_total_count", "unexplained_rows", "apply_calls", "distinct_ticks", "boss_max", "boss_disagreements", "coin_moving_ticks",
-             "control_applied_count", "control", "ticks", "world", "seed")
+             "control_applied_count", "control", "counts_for_recheck", "ticks", "world", "seed")
 BOSS_COLUMNS = ("predicate_post_964", "raw_kind_alive", "occupation_alive")
 
 
@@ -45,13 +46,27 @@ def load_exit(path: Path) -> Optional[int]:
         return None
 
 
-def real_verdict(doc: Optional[Dict[str, Any]], reason: str, returncode: Optional[int], plain_hash: Optional[str]) -> Dict[str, Any]:
-    """HARD checks and REPORTED facts for one real cell."""
+def real_verdict(doc: Optional[Dict[str, Any]], reason: str, returncode: Optional[int], plain: Optional[Dict[str, Any]]) -> Dict[str, Any]:
+    """HARD checks and REPORTED facts for one real cell. ``plain`` is the plain twin's json (None when the file is missing)."""
     if doc is None:
-        return {"verdict": "FAIL", "hard": {"out_json_complete": False}, "failed": [reason or "out json unreadable"], "reported": {}, "findings": []}
+        return {"verdict": "FAIL", "hard": {"out_json_complete": False}, "failed": ["out_json_complete"], "reasons": {"out_json_complete": reason or "out json unreadable"}, "reported": {}, "findings": []}
+    plain_hash = plain.get("final_hash") if plain is not None else None
+    plain_present = plain_hash is not None
+    reasons: Dict[str, str] = {}
+    if not plain_present:
+        reasons["plain_twin_present"] = "the plain twin file is missing" if plain is None else "the plain twin file has no final_hash"
+    same_cell = plain_present and all(plain.get(key) is not None and doc[key] == plain[key] for key in ("world", "seed", "ticks"))
+    if plain_present and not same_cell:
+        reasons["same_cell"] = f"spy cell {(doc['world'], doc['seed'], doc['ticks'])} != plain cell {(plain.get('world'), plain.get('seed'), plain.get('ticks'))}"
+    not_a_control = doc["control"] is None and doc.get("counts_for_recheck") is True
+    if not not_a_control:
+        reasons["not_a_control"] = f"control {doc['control']!r}, counts_for_recheck {doc.get('counts_for_recheck')!r}: a control output cannot count as a real cell"
     hard = {
         "out_json_complete": True,
-        "hash_equals_plain": plain_hash is not None and doc["final_hash"] == plain_hash,
+        "plain_twin_present": plain_present,
+        "same_cell": same_cell,
+        "hash_equals_plain": plain_present and doc["final_hash"] == plain_hash,
+        "not_a_control": not_a_control,
         "logging_errors_empty": doc["logging_errors"] == [],
         "exit_zero": returncode == 0,
         "v6_zero": doc["v6"] == 0,
@@ -66,7 +81,7 @@ def real_verdict(doc: Optional[Dict[str, Any]], reason: str, returncode: Optiona
         "unexplained_total_count": doc["unexplained_total_count"], "unexplained_rows": doc["unexplained_rows"], "apply_calls": doc["apply_calls"], "distinct_ticks": doc["distinct_ticks"],
         "boss_max": doc["boss_max"], "boss_disagreements": doc["boss_disagreements"], "coin_moving_ticks": doc["coin_moving_ticks"], "returncode": returncode, "plain_hash": plain_hash, "final_hash": doc["final_hash"],
     }
-    return {"verdict": "FAIL" if failed else "PASS", "hard": hard, "failed": failed, "reported": reported, "findings": findings}
+    return {"verdict": "FAIL" if failed else "PASS", "hard": hard, "failed": failed, "reasons": reasons, "reported": reported, "findings": findings}
 
 
 def coin_control_verdict(real: Optional[Dict[str, Any]], control: Optional[Dict[str, Any]], returncode: Optional[int], amount: float) -> Dict[str, Any]:
@@ -113,16 +128,20 @@ def _seal(directory: Path, names: List[str]) -> None:
 
 def summarize_real(directory: Path, plain: Path) -> Dict[str, Any]:
     """Every ``real_*.json`` in the directory against the plain twin json (one world/seed/ticks per call)."""
-    plain_doc = json.loads(plain.read_text(encoding="utf-8")) if plain.exists() else {}
-    plain_hash = plain_doc.get("final_hash")
+    try:
+        plain_doc: Optional[Dict[str, Any]] = json.loads(plain.read_text(encoding="utf-8")) if plain.exists() else None
+    except (ValueError, OSError):
+        plain_doc = {}  # present but unreadable: no final_hash, so every cell FAILs with that reason
+    if plain_doc is not None and not isinstance(plain_doc, dict):
+        plain_doc = {}
     cells = {}
     for path in sorted(directory.glob("real_*.json")):
         if path.name.endswith(".exit.json"):
             continue
         doc, reason = load_doc(path)
-        cells[path.name] = real_verdict(doc, reason, load_exit(path.with_suffix(".exit.json")), plain_hash)
+        cells[path.name] = real_verdict(doc, reason, load_exit(path.with_suffix(".exit.json")), plain_doc)
     verdicts = {c["verdict"] for c in cells.values()}
-    summary = {"mode": "real", "plain": str(plain), "plain_final_hash": plain_hash, "cells": cells, "verdict": "FAIL" if (not cells or "FAIL" in verdicts) else "PASS",
+    summary = {"mode": "real", "plain": str(plain), "plain_final_hash": (plain_doc or {}).get("final_hash"), "cells": cells, "verdict": "FAIL" if (not cells or "FAIL" in verdicts) else "PASS",
                "findings": {name: c["findings"] for name, c in cells.items() if c["findings"]}}
     (directory / "summary_real.json").write_text(json.dumps(summary, indent=2, sort_keys=True), encoding="utf-8")
     _seal(directory, [p.name for p in directory.iterdir() if p.is_file() and p.name != "SHA256SUMS"])
