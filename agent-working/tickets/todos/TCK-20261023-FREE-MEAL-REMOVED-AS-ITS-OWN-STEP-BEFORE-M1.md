@@ -61,6 +61,14 @@ src/systems (building_services, conservation, inventory); src/ai need_pull
   - When #781 un-holds (the ATOMIC flip, owner decision 44 / D73), it needs a REAL resync onto the coin fix, and a re-check of its can't-pay semantics against the fixed CLAMP path.
   - It keeps the coin fix's price helper and its resolver balance test (a refusal debits 0).
   - The coin fix lands first, as the P0.
+- 2026-11-19, DISPATCH PRECONDITIONS (rpg-planner; owner directions via lead-planner-u24 on #715). All are set on this ticket BEFORE any data:
+  - SEQUENCE: Wave 0.3 of the M1 Phase 1 plan. It starts after the coin fix merges, and is its own behaviour segment with a boundary recorded before and after.
+  - GATE READ, compared against the TRUE MAIN BASELINE (run 44452967207): the read must show EXACTLY the 15 known V1 free-meal rows leaving, and no other row changing class (rule (a)).
+  - HUNGER BARS (owner: individual starvation is OK, a population must not collapse from hunger; rpg-designer writes the exact bars). FIRST USE is here, because removing the free meal raises starvation risk.
+    - HARD: no population collapses by hunger in any cell.
+    - REPORTED: starvation deaths per in-world day, per cell, base vs fix.
+    - Both are pre-registered against the base with numbers, and with their event periods in ticks and in days at 2400 ticks/day (the bar-period rule). The window must cover several periods, or the bar is declared untestable in that window.
+  - Settings-in-data rule: any new tuning value goes to data/. The pre-push run covers tests/unit/** by directory plus statics.
 
 ## Test Summary
 
