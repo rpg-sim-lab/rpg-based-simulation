@@ -83,6 +83,7 @@ No new durable state. The check reads the catalog's species sense_profile at con
 
 ## Assumptions / Open Questions
 - Whether every species committed spawner content can name is already profiled. If one isn't, the content-load check refuses committed content. Then a content fix comes first, and this ticket can't land green until it does. AGREED (rpg-designer): bring the designer the species and the file naming it; the designer rules the content fix (give it a profile, or remove or rename the reference) before the check lands. The check is NEVER loosened to let content through.
+- KNOWN CONTENT ROWS (lane B, inspected, 2026-11-19, from the step-5 #965 trace): spawn_monster occupations bear, harpy and golem have NO entry in data/content/living/species.yaml. Only wolf (:30), spider (:81) and slime (:267) exist. Yet generator.py SPAWN_KIND_CATALOG_FACTION (:37-39) gives them wild_beast_pack. get_kind_properties returns (None, None) for them, so they are neither profiled nor wild. The content-load check will refuse them, so the designer rules the content fix first. slime has a species but amorphous_body `diet: []` (body_models.yaml:75); whether that is intended is with the designer.
 
 ## Implementation Notes
 
