@@ -96,6 +96,15 @@ src/systems (building_services, conservation, inventory); src/ai need_pull
     - Preflight fixture: cf s46 at 300t only.
     - ESCALATION, pre-registered: if any assessed species in a world is NEAR, or has a day FLAG, in EITHER arm, add s43 and s44 for that world in both arms (8 more processes) before P1 is called.
     - No other seeds or worlds.
+  - REBASE RULINGS (rpg-designer, 2026-11-19, on lane A's 781_rebase_plan.md):
+    - (a) D73 is the ONE-CONSTANT flip, SERVICE_PAYMENT_LAW = ATOMIC (service_admission.py, from the coin fix). The old per-site gold checks are SUPERSEDED, not re-applied.
+      - Check BEFORE code (inspection, listed here): name EVERY service-delivery path (inn EAT, rough-rest REST, lodging.bed_delta, grant_beds, any other gold_cost transfer) and show that each consults admits or admits_at. A path that delivers without asking is a free-meal leak and gets fixed here.
+      - The delivery-shape changes are in scope: the service rides the paid transfer, as one intent. The F3 lodging "what a bed costs is unchanged" check stays.
+    - (b) Under ATOMIC, a NO-PAYEE service is REFUSED: full price or nothing. It's a typed failure (PAYEE_MISSING, or the nearest existing code, named in the plan), with no hunger drop. CLAMP keeps the coin fix's debit-0-and-count behaviour. It's disclosed in 2.218.
+      - The own-job REPORTS no-payee attempts per cell, expected 0 in shipped worlds. Any > 0 is a content-gap finding for rpg-designer; it overlaps the name-the-payee P2.
+    - (c) INN_MEAL_HUNGER = 60 changes in src as part of D73. It's the existing 40 + 20 delivered as one transfer (memo row 73), cited at the line. It goes on the temporal audit's scope 7 list. It is NOT moved to data in this step, so the later same-value move proof stays clean.
+    - OWNER ASK before the push: tests/unit/engine/test_service_admission.py:51 flips `SERVICE_PAYMENT_LAW is CLAMP` to ATOMIC. Wording: "the law constant this ticket exists to flip; the test pins the constant, not a behaviour; the both-laws parametrised tests at :62/:94 are unchanged."
+  - HUNGER KIT v3.1 APPROVED: summarizer 6ec9f378, manifest 4359c34a; spy, runner, controls and config as in v3. The all-cells-zero P0 STOP is exit 5.
   - Other food-touching changes get only the 5000t early-warning check (P2-style) plus the P3 rows; the W read is for #781 and the M1 checkpoints only (owner scope). Births is not re-run.
   - Settings-in-data rule: any new tuning value goes to data/. The pre-push run covers tests/unit/** by directory plus statics.
 

@@ -58,6 +58,7 @@ The terms, all from the owner's text:
    - Known seeds (inspected, main c505357b3):
      - SUSPENSION_TTL_TICKS = 200 (src/core/strategic.py:541, N10, divergence 2.212). rpg-designer reads it as a tuning value, so it goes to data. 200 ticks is about 2 h of game time. Mark it "window-fitted?" for the audit to judge; the designer set it for the N10 window, not from realism. There's no pull-forward.
      - EAT_PRICE_GOLD = 5 and REST_PRICE_GOLD = 10 (src/engine/service_prices.py:7-8).
+     - INN_MEAL_HUNGER: it becomes 60 in #781 (D73; 40 + 20 as one transfer, memo row 73). Moved in a later staged step, NOT in #781.
 
 ## Out of Scope
 - Any constant or calendar change, any architecture redesign, any speculative implementation.
