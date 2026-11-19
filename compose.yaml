@@ -80,7 +80,7 @@ services:
     # Pinned to the exact 8.10.3 build, by digest (multi-arch index, verified with `docker buildx imagetools inspect` on 2026-11-11); moves together with redis-py 8
     # (TCK-20261018-DEPS-REDIS-8). A new 8.x patch cannot change the observability stream, anomaly worker or readiness behaviour
     # with no diff here. Bump deliberately.
-    image: redis:8.10.3-alpine@sha256:71885d8cc6e42f2bc0aa2eb853bfc4be200b5108a46ac50e117ae1df0531fb80
+    image: redis:8.10.3-alpine@sha256:7958cfbb9d152f87dadfbc89f1b0b15938f0b81ff8982feb327476f4911935c3
     ports:
       - "127.0.0.1:${REDIS_PORT:-6379}:6379"
     restart: unless-stopped
