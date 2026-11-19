@@ -311,3 +311,58 @@ def test_apply_exits_zero_without_writing_when_the_lock_is_held(tmp_path, monkey
     assert ps.main(["--root", ".", "--apply"]) == 0 and called == []  # returned before reading the config or touching the Project
     assert "another --apply is running" in capsys.readouterr().err
     held.close()
+
+
+# ---- project_sync names an instance seat (the instance, exactly as recorded, never the role)
+class _Info:
+    def __init__(self, path, branch):
+        self.path, self.branch, self.prunable, self.is_main, self.last_activity = path, branch, False, False, 0.0
+
+
+def _facts_for(tmp_path, monkeypatch, branch, records, base_role_here=False):
+    """read_branch_facts over one fake worktree (no git needed): `records` = [(key, explicit)] written into a scratch state root."""
+    from pathlib import Path as P
+
+    from tools.sessions import state as st
+    wt = tmp_path / "lane"
+    wt.mkdir()
+    sroot = tmp_path / "state"
+    sroot.mkdir()
+    for key, explicit in records:
+        st.write_bound_worktree(sroot, key, wt, explicit)
+    info = _Info(wt, branch)
+    monkeypatch.setattr(ps, "worktree_entries", lambda root: [{"worktree": str(wt)}])
+    monkeypatch.setattr(ps, "inspect_worktree", lambda e, main, a, b: info)
+    monkeypatch.setattr(ps, "_worktree_for", lambda role, infos, main, state_root: info if base_role_here and role.role == "rpg-implementer" else None)
+    monkeypatch.setattr(ps, "_worktree_ticket_copies", lambda path, run: [copy(TID, "inprogress")])
+    run = lambda args, cwd=None: subprocess.CompletedProcess(args, 0, "", "")  # noqa: E731
+    facts, _ = ps.read_branch_facts(P(__file__).resolve().parents[2], "ubuntu", [], run, state_root_override=sroot)
+    return facts
+
+
+def test_a_coin_fix_shaped_lane_shows_its_instance_seat_and_the_project_row_names_it(tmp_path, monkeypatch):  # rpg-implementer-3 on rpg-coin-sink
+    facts = _facts_for(tmp_path, monkeypatch, "rpg-coin-sink", [("rpg-implementer-3", True)])
+    assert [f.seat for f in facts] == ["rpg-implementer-3"]
+    row, _ = ps.derive_item(TID, [copy(TID, "todos")], facts, None, None, "ubuntu", "s", None)
+    assert row["Status"] == "In progress" and row["Seat"] == "rpg-implementer-3" and row["Involved"] == "rpg-implementer-3"
+
+
+def test_a_965_shaped_lane_shows_rpg_implementer_2_not_seat_not_recorded(tmp_path, monkeypatch):
+    facts = _facts_for(tmp_path, monkeypatch, "rpg-pr-965", [("rpg-implementer-2", True)])
+    assert [f.seat for f in facts] == ["rpg-implementer-2"]
+    unrecorded = _facts_for(tmp_path / "x", monkeypatch, "rpg-pr-965", []) if (tmp_path / "x").mkdir() is None else []
+    assert [f.seat for f in unrecorded] == ["rpg (seat not recorded)"]  # positive control: no record, the old label
+
+
+def test_a_base_role_record_keeps_showing_the_base_role_and_an_instance_wins_over_it_on_one_worktree(tmp_path, monkeypatch):
+    base = _facts_for(tmp_path / "a", monkeypatch, "rpg-lane", [], base_role_here=True) if (tmp_path / "a").mkdir() is None else []
+    assert [f.seat for f in base] == ["rpg-implementer"]  # a worktree with only a base-role record shows the base role
+    both = _facts_for(tmp_path / "b", monkeypatch, "rpg-lane", [("rpg-implementer-3", True)], base_role_here=True) if (tmp_path / "b").mkdir() is None else []
+    assert [f.seat for f in both] == ["rpg-implementer-3"]  # both pre-exist (the launcher can write both over time): the instance wins, deterministically
+    other = _facts_for(tmp_path / "c", monkeypatch, "rpg-lane", [("rpg-implementer-ubuntu-2", True)], base_role_here=True) if (tmp_path / "c").mkdir() is None else []
+    assert [f.seat for f in other] == ["rpg-implementer", "rpg-implementer-ubuntu-2"] or [f.seat for f in other] == ["rpg-implementer/rpg-implementer-ubuntu-2"]  # a different role's instance does not displace it
+
+
+def test_a_non_explicit_instance_record_is_not_read_as_a_seat(tmp_path, monkeypatch):
+    facts = _facts_for(tmp_path, monkeypatch, "rpg-lane", [("rpg-implementer-3", False)])
+    assert [f.seat for f in facts] == ["rpg (seat not recorded)"]  # only an explicit record (a batch worktree) names a seat

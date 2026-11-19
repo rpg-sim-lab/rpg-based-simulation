@@ -1,10 +1,10 @@
 ---
-status: active
+status: historical
 layer: ai
 authority: P1
 audience: agent
 ticket_id: TCK-20261119-RECORD-SEAT-ACCEPTS-A-SESSION-INSTANCE-OF-A-MULTI-SESSION-ROLE
-phase: open
+phase: done
 date: 2026-11-19
 tags: [delivery]
 ---
@@ -15,7 +15,7 @@ tags: [delivery]
 record_seat records a session instance (`rpg-implementer-3`) of a multi-session role, so each lane worktree shows its own seat in the Project
 
 ## Status
-OPEN
+DONE
 
 ## Tier
 standard
@@ -79,7 +79,10 @@ The seat record is written once per instance at worktree creation by record_seat
 Filed by agent-working-planner on lead-planner's relay (finding by lead-planner, option (c) from lead-planner-u24, rpg-planner's instance-name requirement).
 
 ## Test Summary
+`tests/tools/test_session_record_seat.py` (names -2/-3/-4 and rpg-implementer-ubuntu-3 stored exactly as given; -0/-1/-5/-x/03/one-session-role refused; one record per instance; no worktree holds two seats in either direction; `--list`), `tests/tools/test_session_project_view.py` (coin-fix and #965 shaped fixtures name `rpg-implementer-3` / `-2`; base role kept; instance wins when both exist; a non-explicit record is not a seat), status and launch suites unchanged and passing.
 
 ## Files Changed
+`tools/sessions/record_seat.py`, `tools/sessions/status.py` (`instance_seats`, rows for explicit instance records), `tools/sessions/project_sync.py` (instance records into `seat_of`), the two test files, `docs/guidelines/session_roles/project_sync_dry_run.md`. No `state.py` or `launch.py` change.
 
 ## Completion Summary
+No format change: the launcher already writes `<instance>/worktree.json`; nothing read it. record_seat accepts roster roles and `<role>-<n>` (2 <= n <= max_sessions, read from the roster), stores the name as given, one record per instance; status and project_sync read explicit instance records; when a base-role and an instance record share a worktree the instance wins. Measured on ubuntu: 1 instance-keyed record exists today (`rpg-implementer-ubuntu-2`, explicit, live), so the first tick changes 1 row (before/after dry run on origin/main ea3d374d0). u24's count is to be run with `record_seat.py --list`. The backfill is a u24 step, not run here. No new field or init step. Hand-orchestrated close.

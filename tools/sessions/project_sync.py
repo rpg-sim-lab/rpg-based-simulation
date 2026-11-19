@@ -44,7 +44,7 @@ from tools.sessions.route import route
 
 # Deliberate reuse of status.py's private `_worktree_for` (seat -> physical worktree): same package, and renaming it would only
 # churn status.py's unchanged tests (designer review of plan.md, 2026-11-12).
-from tools.sessions.status import _worktree_for, inspect_worktree, seat_infos  # noqa: F401
+from tools.sessions.status import _worktree_for, inspect_worktree, instance_seats, seat_infos  # noqa: F401
 
 CONFIG_REL = Path("registries") / "session_project.yaml"
 DEFAULTS = {
@@ -329,6 +329,13 @@ def read_branch_facts(root: Path, host: str, lanes_note: list[str], run: Runner 
         wt = _worktree_for(role, infos, main, state_root)
         if wt is not None:
             seat_of.setdefault(wt.path.resolve(), []).append((role.role, role.domain))
+    live = {i.path.resolve() for i in infos}
+    for name, role, path in instance_seats(roster, state_root):
+        target = Path(path).resolve()
+        if target in live:  # the instance is more specific than its own base role: one worktree shows `rpg-implementer-3`, not both
+            entries = seat_of.setdefault(target, [])
+            entries[:] = [e for e in entries if e[0] != role.role]
+            entries.append((name, role.domain))
     facts, detached = [], 0
     link = {"branches": 0, "linked": 0, "via_filing": 0, "skipped": 0, "errored": 0, "merged": 0}
     no_file: set[str] = set()  # the subject-link derivation's ran / skipped / errored

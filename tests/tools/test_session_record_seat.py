@@ -93,3 +93,55 @@ def test_state_root_flag_pointing_at_nothing_is_a_usage_error_not_a_fallback(tmp
     before = _snapshot(real)
     assert rs.main(["--state-root", str(tmp_path / "missing"), str(wt1), SEAT]) == EXIT_USAGE
     assert "no fallback" in capsys.readouterr().err and _snapshot(real) == before
+
+
+# ---- instances of a multi-session role (TCK-20261119-RECORD-SEAT-ACCEPTS-A-SESSION-INSTANCE-OF-A-MULTI-SESSION-ROLE)
+import pytest  # noqa: E402
+
+INSTANCES = ("rpg-implementer-2", "rpg-implementer-3", "rpg-implementer-4", "rpg-implementer-ubuntu-3")
+
+
+@pytest.mark.parametrize("name", INSTANCES)
+def test_an_instance_is_stored_and_shown_exactly_as_given_never_collapsed_to_the_role(tmp_path, name):
+    main, wt1, _, sroot = setup(tmp_path)
+    assert go(tmp_path, wt1, name)[0] == 0
+    assert st.read_bound_worktree(sroot, name) == (str(wt1.resolve()), True)
+    role = name.rsplit("-", 1)[0]
+    assert st.read_bound_worktree(sroot, role) is None  # nothing was written under the base role
+    shown = {s.role: s for s in seat_infos(ROSTER, sroot)}
+    assert shown[name].writing_in == str(wt1.resolve()) and name in shown
+
+
+@pytest.mark.parametrize("name", ["rpg-implementer-1", "rpg-implementer-0", "rpg-implementer-5", "rpg-implementer-x", "rpg-implementer-ubuntu-5",
+                                  "rpg-planner-2", "rpg-implementer-03", "rpg-implementer--3", "rpg-implementer-3-4"])
+def test_names_outside_the_instances_the_roster_allows_are_refused_and_write_nothing(tmp_path, name):  # max_sessions is read from the roster: 4 for the two implementers, 1 for the rest
+    main, wt1, _, sroot = setup(tmp_path)
+    code, lines = go(tmp_path, wt1, name)
+    assert code == EXIT_USAGE and "unknown seat" in lines[0] and "rpg-implementer-2.." in lines[0] and not any(sroot.glob("*"))
+
+
+def test_two_instances_of_one_role_each_hold_their_own_worktree_but_no_worktree_holds_two_seats(tmp_path):
+    main, wt1, wt2, sroot = setup(tmp_path)
+    assert go(tmp_path, wt1, "rpg-implementer-2")[0] == 0 and go(tmp_path, wt2, "rpg-implementer-3")[0] == 0  # one record per instance
+    code, lines = go(tmp_path, wt1, "rpg-implementer-3")
+    assert code == EXIT_REFUSED and "rpg-implementer-2" in lines[0]  # a worktree already recorded for another instance
+    code, lines = go(tmp_path, wt1, "rpg-implementer")
+    assert code == EXIT_REFUSED and "rpg-implementer-2" in lines[0]  # base role onto an instance's worktree
+    code, lines = go(tmp_path, wt2, "rpg-implementer-2")
+    assert code == EXIT_REFUSED and "rpg-implementer-3" in lines[0]  # the other instance's worktree is not taken either
+
+
+def test_an_instance_onto_a_base_role_worktree_is_refused(tmp_path):
+    main, wt1, _, sroot = setup(tmp_path)
+    assert go(tmp_path, wt1, "rpg-implementer")[0] == 0
+    code, lines = go(tmp_path, wt1, "rpg-implementer-4")
+    assert code == EXIT_REFUSED and "rpg-implementer" in lines[0] and st.read_bound_worktree(sroot, "rpg-implementer-4") is None
+
+
+def test_list_prints_every_explicit_record_by_its_own_name_with_liveness(tmp_path):
+    main, wt1, wt2, sroot = setup(tmp_path)
+    go(tmp_path, wt1, "rpg-implementer-3")
+    st.write_bound_worktree(sroot, "rpg-implementer-4", tmp_path / "gone", True)
+    st.write_bound_worktree(sroot, "rpg-implementer-2", wt2, False)  # a default (non-explicit) record is not listed
+    lines = rs.list_records(ROSTER, sroot)
+    assert lines == [f"rpg-implementer-3  {wt1.resolve()}  live", f"rpg-implementer-4  {tmp_path / 'gone'}  missing"]
