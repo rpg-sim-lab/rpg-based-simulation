@@ -327,8 +327,11 @@ def read_branch_facts(root: Path, host: str, lanes_note: list[str], run: Runner 
         if wt is not None:
             seat_of.setdefault(wt.path.resolve(), []).append((role.role, role.domain))
     facts, detached = [], 0
-    link = {"branches": 0, "linked": 0, "skipped": 0, "errored": 0, "merged": 0}  # the subject-link derivation's ran / skipped / errored
+    link = {"branches": 0, "linked": 0, "via_filing": 0, "skipped": 0, "errored": 0, "merged": 0}
+    no_file: set[str] = set()  # the subject-link derivation's ran / skipped / errored
     index: dict[str, list[tuple[str, str]]] | None = None
+    pending: list[tuple] = []  # (info, copies, named, worked ids still to link) - linking needs every worktree's filing copies, so it is a second pass
+    filing_pool: dict[str, TicketCopy] = {}  # ticket id -> a copy of its file found on some worktree of this host (the filing branch)
     for info in infos:
         if info.prunable or info.is_main and info.branch in (None, "main"):
             continue
@@ -338,7 +341,11 @@ def read_branch_facts(root: Path, host: str, lanes_note: list[str], run: Runner 
             if copies:
                 lanes_note.append(f"unattributed: detached worktree {info.path} changes {', '.join(sorted(c.id for c in copies))}")
             continue
+        for c in copies:
+            if c.folder in ("todos", "inprogress"):
+                filing_pool.setdefault(c.id, c)
         named: set[str] = set()
+        to_link: set[str] = set()
         if info.path.is_dir():
             log = run(["git", "--no-optional-locks", "log", "--no-merges", "--format=@@%s", "--name-only", "HEAD", "--not", "origin/main"], info.path)
             link["branches"] += 1
@@ -347,30 +354,61 @@ def read_branch_facts(root: Path, host: str, lanes_note: list[str], run: Runner 
                 lanes_note.append(f"subject-link: git log failed in {info.path}; its commit subjects were not read")
             else:
                 named, worked = subject_links(log.stdout)
-                have = {c.id for c in copies}
-                merged = branch_pr_merged(info.branch, root, run) if worked - have else False
+                to_link = worked - {c.id for c in copies}
+                merged = branch_pr_merged(info.branch, root, run) if to_link else False
                 if merged is None:  # fail safe: an unreadable lookup links nothing
                     link["errored"] += 1
                     lanes_note.append(f"subject-link: could not read the merged-PR state of {info.branch}; its subject links were skipped")
+                    to_link = set()
                 elif merged:
-                    link["skipped"] += len(worked - have)
+                    link["skipped"] += len(to_link)
                     link["merged"] += 1
-                for tid in sorted(worked - have if merged is False else ()):
-                    index = read_main_index(root, run) if index is None else index
-                    entries = index.get(tid, [])
-                    if not entries or any(folder == "done" for folder, _ in entries):
-                        link["skipped"] += 1  # no ticket file on origin/main, or already Done there (Done wins)
-                        continue
-                    best = max(entries, key=lambda e: FOLDERS.index(e[0]))
-                    copies.append(replace(read_main_copy(root, best[1], run), folder="inprogress"))
-                    link["linked"] += 1
+                    to_link = set()
+        pending.append((info, copies, named, to_link))
+    for info, copies, named, to_link in pending:
+        if to_link and index is None:
+            index = read_main_index(root, run)
+        linked, counts = link_worked(to_link, index or {}, filing_pool, lambda path: read_main_copy(root, path, run))
+        copies.extend(linked)
+        for k in ("linked", "via_filing", "skipped"):
+            link[k] += counts[k]
+        no_file.update(counts["no_file"])
         if not copies and not named:
             continue
         seat, domain = attribute(info.branch, seat_of.get(info.path.resolve(), []), domain_names)
         facts.append(BranchFact(host, info.branch, str(info.path), seat, domain, tuple(copies), info.last_activity, frozenset(named)))
-    lanes_note.append(f"subject-link: ran on {link['branches']} branches, linked {link['linked']} tickets by a leading id plus a code file, "
-                      f"skipped {link['skipped']} (no ticket file on origin/main, already Done, or the branch's PR is merged: {link['merged']} such branches), errored {link['errored']}")
+    lanes_note.append(f"subject-link: ran on {link['branches']} branches, linked {link['linked']} tickets by a leading id plus a code file "
+                      f"({link['via_filing']} through a filing copy on this host, no file on origin/main), skipped {link['skipped']} (already Done, no ticket file "
+                      f"on origin/main or on this host, or the branch's PR is merged: {link['merged']} such branches), errored {link['errored']}")
+    if no_file:
+        lanes_note.append(f"subject-link: no ticket file on origin/main or on this host, left unlinked: {', '.join(sorted(no_file))}")
     return facts, detached
+
+
+def link_worked(to_link: set[str], index: dict[str, list[tuple[str, str]]], filing_pool: dict[str, TicketCopy],
+                load_main: Callable[[str], TicketCopy]) -> tuple[list[TicketCopy], dict]:
+    """The in-progress copies for the tickets a branch works by its commit subjects, and what was skipped. A ticket Done on origin/main is
+    skipped (Done wins). A ticket with a file on origin/main reads that copy. A ticket with NO file on origin/main (filed on a branch not pushed
+    yet) reads this host's own filing copy when one exists; with none it stays unlinked and is named, so a host without the filing copy writes
+    nothing for it from the subject link alone."""
+    out: list[TicketCopy] = []
+    counts: dict = {"linked": 0, "via_filing": 0, "skipped": 0, "no_file": set()}
+    for tid in sorted(to_link):
+        entries = index.get(tid, [])
+        if any(folder == "done" for folder, _ in entries):
+            counts["skipped"] += 1
+        elif entries:
+            best = max(entries, key=lambda e: FOLDERS.index(e[0]))
+            out.append(replace(load_main(best[1]), folder="inprogress"))
+            counts["linked"] += 1
+        elif tid in filing_pool:
+            out.append(replace(filing_pool[tid], folder="inprogress"))
+            counts["linked"] += 1
+            counts["via_filing"] += 1
+        else:
+            counts["skipped"] += 1
+            counts["no_file"].add(tid)
+    return out, counts
 
 
 def subject_links(log_text: str) -> tuple[set[str], set[str]]:
@@ -575,7 +613,7 @@ def own_segment(tid: str, mine: list[BranchFact], stale_before: float | None, na
     copies = [c for b in mine for c in b.copies if c.id == tid]
     involved = tuple(sorted({s for b in (*mine, *(naming or ())) for s in _recorded(b.seat)}))
     if not copies:  # only cited by a branch's commit subjects: it changes no state, it only says who was involved
-        return Segment("filing", (), tuple(sorted({b.domain for b in (naming or ()) if b.domain})), involved) if involved else None
+        return Segment("filing", (), (), involved) if involved else None  # no domain: a citing branch does not decide the ticket's Domain
     working = [b for b in mine if any(c.id == tid and c.folder in PROGRESS_FOLDERS for c in b.copies)]
     if any(c.blocked for c in copies):
         state = "blocked"
@@ -706,7 +744,11 @@ def content_source(host: str, segments: dict[str, Segment], own_best: TicketCopy
     if not holders:
         return origin_best, False, "origin's copy"
     if len(holders) == 1:
-        return (own_best, False, "the one holder's copy") if holders[0] == host else (None, True, "the current value")
+        if holders[0] != host:
+            return None, True, "the current value"
+        # A host that only CITES the ticket (a commit subject names it, no branch of its own carries a copy) holds no copy: read origin's,
+        # never blank the content (a one-holder segment with no own copy once wrote an empty Title / Tier / Layer over a Done item).
+        return (own_best, False, "the one holder's copy") if own_best is not None else (origin_best, False, "origin's copy (this host only cites the ticket)")
     if origin_best is not None:
         return origin_best, False, "origin's copy"
     if holders[0] == host:

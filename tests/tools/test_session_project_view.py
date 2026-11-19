@@ -191,3 +191,102 @@ def test_project_sync_without_the_flag_uses_the_repos_own_state_root(monkeypatch
 def test_project_sync_state_root_flag_that_is_not_a_directory_is_a_usage_error(tmp_path, capsys):
     assert ps.main(["--root", ".", "--items", str(tmp_path / "x.json"), "--state-root", str(tmp_path / "missing")]) == 2
     assert "no fallback" in capsys.readouterr().err
+
+
+# ---- the hourly timer runs --apply, not --init: what happens when the three new fields do not exist yet
+def _project_without_the_new_fields():
+    from tests.tools.test_session_project_sync_all_lanes import _project
+    from tests.tools.test_session_project_sync_all_lanes import WANTED
+    p = _project()
+    p.fields["Domain"] = pc.ProjectField("F_Domain", "Domain", "SINGLE_SELECT", tuple((n, f"O_{n}") for n in WANTED))  # the live Project's Domain is already a select
+    p.fields["Layer"] = pc.ProjectField("F_Layer", "Layer", "SINGLE_SELECT", (("combat", "O_combat"),))
+    for name in ("Involved", "Blocked by", "Hotspot"):
+        del p.fields[name]
+    return p
+
+
+class _Client:
+    def __init__(self):
+        self.calls = []
+
+    def __getattr__(self, name):
+        return lambda *a, **k: self.calls.append((name, a)) or ("I", "D")
+
+
+def test_apply_before_init_refuses_before_the_first_write_naming_the_fields():
+    import pytest
+
+    plan = plan_for({T1: [copy(T1, "todos")]})
+    client = _Client()
+    with pytest.raises(pc.ClientRefused) as err:
+        pc.apply_plan(client, _project_without_the_new_fields(), plan)
+    assert "Involved, Blocked by, Hotspot" in str(err.value) and "run --init first" in str(err.value)
+    assert client.calls == []  # nothing written, so a timer tick that hits this leaves the board exactly as it was
+
+
+def test_init_then_creates_exactly_the_three_fields_leaves_status_alone_and_a_second_init_changes_nothing():
+    from tests.tools.test_session_project_sync_all_lanes import WANTED, FakeInit
+    fake = FakeInit(_project_without_the_new_fields())
+    lines, code = pc.init_fields(fake, ps.STATUSES, layers=("combat",), domains=WANTED)
+    assert code == 0
+    created = [c for c in fake.calls if c[0] == "create_text"]
+    assert sorted(c[1] for c in created) == ["Blocked by", "Hotspot", "Involved"]
+    assert not any(c[0] in ("options", "rename", "create_select", "create_date") for c in fake.calls)  # no Status, Domain, select or date change
+    again = FakeInit(_project_without_the_new_fields())
+    for name in ("Involved", "Blocked by", "Hotspot"):
+        again.proj.fields[name] = pc.ProjectField(f"F_{name}", name, "TEXT")
+    lines, code = pc.init_fields(again, ps.STATUSES, layers=("combat",), domains=WANTED)
+    assert code == 0 and again.calls == []  # a second --init reports nothing created or updated
+
+
+def test_a_host_that_only_cites_a_ticket_reads_origins_copy_and_never_blanks_the_content():
+    # the bug the four Done rows showed in the u24 dry run: a cited-only segment made this host the ONE holder with no copy of its own
+    cited = ps.BranchFact(B, "rpg-lane", "/wt", "rpg-planner", "rpg", (), 0.0, frozenset({TID}))
+    origin = ps.TicketCopy(TID, "done", f"{ps.TICKETS.as_posix()}/done/{TID}.md", "Origin title", "standard", False, "2026-11-15", layer="ai", priority="P2")
+    current = {"Ticket ID": TID, "Title": f"{TID}: Origin title", "Tier": "standard", "Layer": "ai", "Priority": "P2", "Filed": "2026-11-15"}
+    d, _ = ps.derive_item(TID, [origin], [cited], None, current, B, "s", None)
+    assert d["Title"] == f"{TID}: Origin title" and d["Tier"] == "standard" and d["Layer"] == "ai" and d["Priority"] == "P2" and d["Filed"] == "2026-11-15"
+    assert d["Status"] == "Done" and d["Involved"] == "rpg-planner"  # Status untouched; the only new fact is Involved
+    assert "domain=" not in d["Host facts"]  # a citing branch does not decide the ticket's Domain
+
+
+# ---- a ticket filed only on an unpushed branch and worked on a lane branch (the coin-fix shape)
+COIN = "TCK-20261118-COIN-SHAPE"
+
+
+def _filing_copy():
+    return ps.TicketCopy(COIN, "todos", f"{ps.TICKETS.as_posix()}/todos/{COIN}.md", "Coin shape", "standard", False, "2026-11-18")
+
+
+def test_link_worked_reads_the_hosts_filing_copy_when_origin_has_no_file_and_names_what_has_none():
+    copies, counts = ps.link_worked({COIN, "TCK-20261118-NOWHERE"}, {}, {COIN: _filing_copy()}, lambda p: None)
+    assert [c.id for c in copies] == [COIN] and copies[0].folder == "inprogress"
+    assert counts["linked"] == 1 and counts["via_filing"] == 1 and counts["skipped"] == 1 and counts["no_file"] == {"TCK-20261118-NOWHERE"}  # must-not: no file anywhere stays skipped and named
+
+
+def test_link_worked_a_done_ticket_stays_skipped_and_a_ticket_with_a_main_file_still_reads_main():
+    done = {"TCK-D": [("done", "p/d.md")], "TCK-M": [("todos", "p/m.md")]}
+    loaded = {"p/m.md": ps.TicketCopy("TCK-M", "todos", "p/m.md", "Main copy", "hotfix", False, "2026-11-18")}
+    copies, counts = ps.link_worked({"TCK-D", "TCK-M"}, done, {"TCK-D": _filing_copy()}, lambda p: loaded[p])
+    assert [c.id for c in copies] == ["TCK-M"] and counts["skipped"] == 1 and counts["via_filing"] == 0
+
+
+def test_the_coin_shape_reads_in_progress_with_the_lane_seat_and_without_the_fix_it_reads_to_do():
+    lane_copy = ps.link_worked({COIN}, {}, {COIN: _filing_copy()}, lambda p: None)[0]
+    lane = ps.BranchFact(B, "rpg-coin-sink", "/wt", "rpg-implementer", "rpg", tuple(lane_copy), 0.0, frozenset({COIN}))
+    filing = ps.BranchFact(B, "rpg-planner-tickets", "/wt2", "rpg-planner", "rpg", (_filing_copy(),), 0.0, frozenset({COIN}))
+    after, _ = ps.derive_item(COIN, [], [filing, lane], None, None, B, "s", None)
+    assert after["Status"] == "In progress" and "rpg-implementer" in after["Seat"] and after["Involved"] == "rpg-implementer, rpg-planner"
+    unlinked = ps.BranchFact(B, "rpg-coin-sink", "/wt", "rpg-implementer", "rpg", (), 0.0, frozenset({COIN}))  # positive control: the old behaviour
+    before, _ = ps.derive_item(COIN, [], [filing, unlinked], None, None, B, "s", None)
+    assert before["Status"] == "To do"
+
+
+def test_two_hosts_over_the_same_data_do_not_disagree_and_the_host_without_the_filing_copy_writes_nothing_for_it():
+    lane_copy = ps.link_worked({COIN}, {}, {COIN: _filing_copy()}, lambda p: None)[0]
+    host_a = ps.BranchFact(A, "rpg-coin-sink", "/wt", "rpg-implementer", "rpg", tuple(lane_copy), 0.0, frozenset({COIN}))
+    a_row, _ = ps.derive_item(COIN, [], [host_a], None, None, A, "s", None)
+    # host B has no filing copy: its subject link skipped the ticket, so it has no fact; it reads A's segment from the item and agrees
+    b_row, _ = ps.derive_item(COIN, [], [], None, {**a_row, "Ticket ID": COIN}, B, "s", None)
+    assert a_row["Status"] == b_row["Status"] == "In progress"
+    assert b_row["Host facts"] == a_row["Host facts"] and B not in b_row["Host facts"]  # B wrote none of its own facts
