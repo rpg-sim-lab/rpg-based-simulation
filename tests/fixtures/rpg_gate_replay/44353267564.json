@@ -1,0 +1,599 @@
+{
+ "findings": [
+  {
+   "class": "outcome",
+   "group": "*",
+   "id": "O6.feeding_kills",
+   "ownership": "needs-trace-ticket",
+   "refs": [
+    {
+     "diff": 2.2,
+     "floor": 2.0,
+     "k": 2.0,
+     "n": 5,
+     "of": 5,
+     "ref": "last",
+     "se": 0.7348469228349535,
+     "state": "drift",
+     "threshold": 1.469693845669907,
+     "version": 2
+    },
+    {
+     "diff": 2.2,
+     "floor": 2.0,
+     "k": 2.0,
+     "n": 5,
+     "of": 5,
+     "ref": "milestone-first",
+     "se": 0.7348469228349535,
+     "state": "drift",
+     "threshold": 1.469693845669907,
+     "version": 2
+    }
+   ],
+   "scope": "run",
+   "state": "drift",
+   "world": "frontier_living_world"
+  },
+  {
+   "class": "outcome",
+   "group": "meat+plant+prepared",
+   "id": "O2.population",
+   "ownership": "needs-trace-ticket",
+   "refs": [
+    {
+     "diff": 4.6,
+     "floor": 3.0,
+     "k": 2.0,
+     "n": 5,
+     "of": 5,
+     "ref": "last",
+     "se": 2.2494443758403984,
+     "state": "drift",
+     "threshold": 4.498888751680797,
+     "version": 2
+    },
+    {
+     "diff": 4.6,
+     "floor": 3.0,
+     "k": 2.0,
+     "n": 5,
+     "of": 5,
+     "ref": "milestone-first",
+     "se": 2.2494443758403984,
+     "state": "drift",
+     "threshold": 4.498888751680797,
+     "version": 2
+    }
+   ],
+   "scope": "run",
+   "state": "drift",
+   "tick": 500,
+   "world": "urban_political"
+  },
+  {
+   "class": "outcome",
+   "group": "meat+plant+prepared",
+   "id": "O4.accepted",
+   "key": "TOWN_SERVICE",
+   "ownership": "needs-trace-ticket",
+   "refs": [
+    {
+     "diff": -322.8,
+     "floor": 5.0,
+     "k": 2.0,
+     "n": 5,
+     "of": 5,
+     "ref": "last",
+     "se": 123.50198378973512,
+     "state": "drift",
+     "threshold": 247.00396757947024,
+     "version": 2
+    },
+    {
+     "diff": -322.8,
+     "floor": 5.0,
+     "k": 2.0,
+     "n": 5,
+     "of": 5,
+     "ref": "milestone-first",
+     "se": 123.50198378973512,
+     "state": "drift",
+     "threshold": 247.00396757947024,
+     "version": 2
+    }
+   ],
+   "scope": "run",
+   "state": "drift",
+   "world": "frontier_living_world"
+  },
+  {
+   "class": "validity",
+   "examples": [
+    {
+     "entity_id": 55,
+     "kind": "small_plant_eater",
+     "tick": 4745,
+     "untried": [
+      "FORAGE"
+     ]
+    }
+   ],
+   "group": "*",
+   "id": "V3",
+   "oracle": "SURV-06/07, gate H6, memo rows 54/56: no starvation death with a way the subject judged open and never attempted",
+   "ownership": "unowned",
+   "scope": "run",
+   "seed": 42,
+   "state": "fail",
+   "violations": 1,
+   "world": "frontier_living_world"
+  },
+  {
+   "class": "validity",
+   "examples": [
+    {
+     "group_key": "meat+plant+prepared|without_transfer",
+     "ticks": 12
+    }
+   ],
+   "group": "*",
+   "id": "V1",
+   "oracle": "Bible 03 atomic conservation, gate H3: a hunger drop has an accepted transfer from a source behind it",
+   "owner": "rpg-planner",
+   "ownership": "known",
+   "scope": "run",
+   "seed": 44,
+   "state": "fail",
+   "ticket": "TCK-20261007-EAT-BESIDE-THE-INN-FEEDS-A-SUBJECT-THAT-CANNOT-PAY-FREE-MEAL",
+   "violations": 12,
+   "world": "crowded_frontier"
+  },
+  {
+   "class": "validity",
+   "examples": [
+    {
+     "group_key": "meat+plant+prepared|without_transfer",
+     "ticks": 13
+    }
+   ],
+   "group": "*",
+   "id": "V1",
+   "oracle": "Bible 03 atomic conservation, gate H3: a hunger drop has an accepted transfer from a source behind it",
+   "owner": "rpg-planner",
+   "ownership": "known",
+   "scope": "run",
+   "seed": 42,
+   "state": "fail",
+   "ticket": "TCK-20261007-EAT-BESIDE-THE-INN-FEEDS-A-SUBJECT-THAT-CANNOT-PAY-FREE-MEAL",
+   "violations": 13,
+   "world": "crowded_frontier"
+  },
+  {
+   "class": "validity",
+   "examples": [
+    {
+     "group_key": "meat+plant+prepared|without_transfer",
+     "ticks": 13
+    }
+   ],
+   "group": "*",
+   "id": "V1",
+   "oracle": "Bible 03 atomic conservation, gate H3: a hunger drop has an accepted transfer from a source behind it",
+   "owner": "rpg-planner",
+   "ownership": "known",
+   "scope": "run",
+   "seed": 42,
+   "state": "fail",
+   "ticket": "TCK-20261007-EAT-BESIDE-THE-INN-FEEDS-A-SUBJECT-THAT-CANNOT-PAY-FREE-MEAL",
+   "violations": 13,
+   "world": "frontier_living_world"
+  },
+  {
+   "class": "validity",
+   "examples": [
+    {
+     "group_key": "meat+plant+prepared|without_transfer",
+     "ticks": 15
+    }
+   ],
+   "group": "*",
+   "id": "V1",
+   "oracle": "Bible 03 atomic conservation, gate H3: a hunger drop has an accepted transfer from a source behind it",
+   "owner": "rpg-planner",
+   "ownership": "known",
+   "scope": "run",
+   "seed": 45,
+   "state": "fail",
+   "ticket": "TCK-20261007-EAT-BESIDE-THE-INN-FEEDS-A-SUBJECT-THAT-CANNOT-PAY-FREE-MEAL",
+   "violations": 15,
+   "world": "crowded_frontier"
+  },
+  {
+   "class": "validity",
+   "examples": [
+    {
+     "group_key": "meat+plant+prepared|without_transfer",
+     "ticks": 16
+    }
+   ],
+   "group": "*",
+   "id": "V1",
+   "oracle": "Bible 03 atomic conservation, gate H3: a hunger drop has an accepted transfer from a source behind it",
+   "owner": "rpg-planner",
+   "ownership": "known",
+   "scope": "run",
+   "seed": 46,
+   "state": "fail",
+   "ticket": "TCK-20261007-EAT-BESIDE-THE-INN-FEEDS-A-SUBJECT-THAT-CANNOT-PAY-FREE-MEAL",
+   "violations": 16,
+   "world": "frontier_living_world"
+  },
+  {
+   "class": "validity",
+   "examples": [
+    {
+     "group_key": "meat+plant+prepared|without_transfer",
+     "ticks": 18
+    }
+   ],
+   "group": "*",
+   "id": "V1",
+   "oracle": "Bible 03 atomic conservation, gate H3: a hunger drop has an accepted transfer from a source behind it",
+   "owner": "rpg-planner",
+   "ownership": "known",
+   "scope": "run",
+   "seed": 43,
+   "state": "fail",
+   "ticket": "TCK-20261007-EAT-BESIDE-THE-INN-FEEDS-A-SUBJECT-THAT-CANNOT-PAY-FREE-MEAL",
+   "violations": 18,
+   "world": "crowded_frontier"
+  },
+  {
+   "class": "validity",
+   "examples": [
+    {
+     "group_key": "meat+plant+prepared|without_transfer",
+     "ticks": 27
+    }
+   ],
+   "group": "*",
+   "id": "V1",
+   "oracle": "Bible 03 atomic conservation, gate H3: a hunger drop has an accepted transfer from a source behind it",
+   "owner": "rpg-planner",
+   "ownership": "known",
+   "scope": "run",
+   "seed": 46,
+   "state": "fail",
+   "ticket": "TCK-20261007-EAT-BESIDE-THE-INN-FEEDS-A-SUBJECT-THAT-CANNOT-PAY-FREE-MEAL",
+   "violations": 27,
+   "world": "crowded_frontier"
+  },
+  {
+   "class": "validity",
+   "examples": [
+    {
+     "group_key": "meat+plant+prepared|without_transfer",
+     "ticks": 35
+    }
+   ],
+   "group": "*",
+   "id": "V1",
+   "oracle": "Bible 03 atomic conservation, gate H3: a hunger drop has an accepted transfer from a source behind it",
+   "owner": "rpg-planner",
+   "ownership": "known",
+   "scope": "run",
+   "seed": 42,
+   "state": "fail",
+   "ticket": "TCK-20261007-EAT-BESIDE-THE-INN-FEEDS-A-SUBJECT-THAT-CANNOT-PAY-FREE-MEAL",
+   "violations": 35,
+   "world": "urban_political"
+  },
+  {
+   "class": "validity",
+   "examples": [
+    {
+     "group_key": "meat+plant+prepared|without_transfer",
+     "ticks": 37
+    }
+   ],
+   "group": "*",
+   "id": "V1",
+   "oracle": "Bible 03 atomic conservation, gate H3: a hunger drop has an accepted transfer from a source behind it",
+   "owner": "rpg-planner",
+   "ownership": "known",
+   "scope": "run",
+   "seed": 44,
+   "state": "fail",
+   "ticket": "TCK-20261007-EAT-BESIDE-THE-INN-FEEDS-A-SUBJECT-THAT-CANNOT-PAY-FREE-MEAL",
+   "violations": 37,
+   "world": "frontier_living_world"
+  },
+  {
+   "class": "validity",
+   "examples": [
+    {
+     "group_key": "meat+plant+prepared|without_transfer",
+     "ticks": 43
+    }
+   ],
+   "group": "*",
+   "id": "V1",
+   "oracle": "Bible 03 atomic conservation, gate H3: a hunger drop has an accepted transfer from a source behind it",
+   "owner": "rpg-planner",
+   "ownership": "known",
+   "scope": "run",
+   "seed": 43,
+   "state": "fail",
+   "ticket": "TCK-20261007-EAT-BESIDE-THE-INN-FEEDS-A-SUBJECT-THAT-CANNOT-PAY-FREE-MEAL",
+   "violations": 43,
+   "world": "frontier_living_world"
+  },
+  {
+   "class": "validity",
+   "examples": [
+    {
+     "group_key": "meat+plant+prepared|without_transfer",
+     "ticks": 46
+    }
+   ],
+   "group": "*",
+   "id": "V1",
+   "oracle": "Bible 03 atomic conservation, gate H3: a hunger drop has an accepted transfer from a source behind it",
+   "owner": "rpg-planner",
+   "ownership": "known",
+   "scope": "run",
+   "seed": 45,
+   "state": "fail",
+   "ticket": "TCK-20261007-EAT-BESIDE-THE-INN-FEEDS-A-SUBJECT-THAT-CANNOT-PAY-FREE-MEAL",
+   "violations": 46,
+   "world": "frontier_living_world"
+  },
+  {
+   "class": "validity",
+   "examples": [
+    {
+     "group_key": "meat+plant+prepared|without_transfer",
+     "ticks": 48
+    }
+   ],
+   "group": "*",
+   "id": "V1",
+   "oracle": "Bible 03 atomic conservation, gate H3: a hunger drop has an accepted transfer from a source behind it",
+   "owner": "rpg-planner",
+   "ownership": "known",
+   "scope": "run",
+   "seed": 44,
+   "state": "fail",
+   "ticket": "TCK-20261007-EAT-BESIDE-THE-INN-FEEDS-A-SUBJECT-THAT-CANNOT-PAY-FREE-MEAL",
+   "violations": 48,
+   "world": "urban_political"
+  },
+  {
+   "class": "validity",
+   "examples": [
+    {
+     "group_key": "meat+plant+prepared|without_transfer",
+     "ticks": 49
+    }
+   ],
+   "group": "*",
+   "id": "V1",
+   "oracle": "Bible 03 atomic conservation, gate H3: a hunger drop has an accepted transfer from a source behind it",
+   "owner": "rpg-planner",
+   "ownership": "known",
+   "scope": "run",
+   "seed": 46,
+   "state": "fail",
+   "ticket": "TCK-20261007-EAT-BESIDE-THE-INN-FEEDS-A-SUBJECT-THAT-CANNOT-PAY-FREE-MEAL",
+   "violations": 49,
+   "world": "urban_political"
+  },
+  {
+   "class": "validity",
+   "examples": [
+    {
+     "group_key": "meat+plant+prepared|without_transfer",
+     "ticks": 59
+    }
+   ],
+   "group": "*",
+   "id": "V1",
+   "oracle": "Bible 03 atomic conservation, gate H3: a hunger drop has an accepted transfer from a source behind it",
+   "owner": "rpg-planner",
+   "ownership": "known",
+   "scope": "run",
+   "seed": 43,
+   "state": "fail",
+   "ticket": "TCK-20261007-EAT-BESIDE-THE-INN-FEEDS-A-SUBJECT-THAT-CANNOT-PAY-FREE-MEAL",
+   "violations": 59,
+   "world": "urban_political"
+  },
+  {
+   "class": "validity",
+   "examples": [
+    {
+     "group_key": "meat+plant+prepared|without_transfer",
+     "ticks": 60
+    }
+   ],
+   "group": "*",
+   "id": "V1",
+   "oracle": "Bible 03 atomic conservation, gate H3: a hunger drop has an accepted transfer from a source behind it",
+   "owner": "rpg-planner",
+   "ownership": "known",
+   "scope": "run",
+   "seed": 45,
+   "state": "fail",
+   "ticket": "TCK-20261007-EAT-BESIDE-THE-INN-FEEDS-A-SUBJECT-THAT-CANNOT-PAY-FREE-MEAL",
+   "violations": 60,
+   "world": "urban_political"
+  },
+  {
+   "class": "validity",
+   "group": "*",
+   "id": "V2",
+   "oracle": "Bible 03 conservation, gate H7: meat leaves a body only by being taken, by the whole body being looted, or through the MEAT_DECAYED sink, and made = taken + looted + vanished + remaining",
+   "scope": "run",
+   "seed": 42,
+   "state": "pass",
+   "violations": 0,
+   "world": "urban_political"
+  },
+  {
+   "class": "validity",
+   "group": "*",
+   "id": "V2",
+   "oracle": "Bible 03 conservation, gate H7: meat leaves a body only by being taken, by the whole body being looted, or through the MEAT_DECAYED sink, and made = taken + looted + vanished + remaining",
+   "scope": "run",
+   "seed": 43,
+   "state": "pass",
+   "violations": 0,
+   "world": "urban_political"
+  },
+  {
+   "class": "validity",
+   "group": "*",
+   "id": "V3",
+   "oracle": "SURV-06/07, gate H6, memo rows 54/56: no starvation death with a way the subject judged open and never attempted",
+   "scope": "run",
+   "seed": 42,
+   "state": "pass",
+   "violations": 0,
+   "world": "urban_political"
+  },
+  {
+   "class": "validity",
+   "group": "*",
+   "id": "V3",
+   "oracle": "SURV-06/07, gate H6, memo rows 54/56: no starvation death with a way the subject judged open and never attempted",
+   "scope": "run",
+   "seed": 43,
+   "state": "pass",
+   "violations": 0,
+   "world": "urban_political"
+  },
+  {
+   "class": "validity",
+   "group": "*",
+   "id": "V4",
+   "oracle": "D43, D44, gate H4: a kind whose diet lacks a food class never eats it (the inn's meal needs prepared, checked by the transfer it was served through; every other meal is a consumption of an item, counted when its class is outside the eater's diet). Picking up or carrying a non-diet item is not a V4 breach",
+   "scope": "run",
+   "seed": 42,
+   "state": "pass",
+   "violations": 0,
+   "world": "urban_political"
+  },
+  {
+   "class": "validity",
+   "group": "*",
+   "id": "V4",
+   "oracle": "D43, D44, gate H4: a kind whose diet lacks a food class never eats it (the inn's meal needs prepared, checked by the transfer it was served through; every other meal is a consumption of an item, counted when its class is outside the eater's diet). Picking up or carrying a non-diet item is not a V4 breach",
+   "scope": "run",
+   "seed": 43,
+   "state": "pass",
+   "violations": 0,
+   "world": "urban_political"
+  },
+  {
+   "class": "validity",
+   "group": "*",
+   "id": "V5",
+   "oracle": "LAW-POSITION-IN-WORLD, Bible 06 topology: a moved, alive entity stays inside the world extent",
+   "scope": "run",
+   "seed": 42,
+   "state": "pass",
+   "violations": 0,
+   "world": "urban_political"
+  },
+  {
+   "class": "validity",
+   "group": "*",
+   "id": "V5",
+   "oracle": "LAW-POSITION-IN-WORLD, Bible 06 topology: a moved, alive entity stays inside the world extent",
+   "scope": "run",
+   "seed": 43,
+   "state": "pass",
+   "violations": 0,
+   "world": "urban_political"
+  },
+  {
+   "class": "validity",
+   "group": "*",
+   "id": "V6",
+   "oracle": "EXCH-02, D38, gate H7: total coin changes only by declared world creation (an added entity's starting purse), so the net change beyond it is exactly 0",
+   "scope": "run",
+   "seed": 42,
+   "state": "pass",
+   "violations": 0,
+   "world": "urban_political"
+  },
+  {
+   "class": "validity",
+   "group": "*",
+   "id": "V6",
+   "oracle": "EXCH-02, D38, gate H7: total coin changes only by declared world creation (an added entity's starting purse), so the net change beyond it is exactly 0",
+   "scope": "run",
+   "seed": 43,
+   "state": "pass",
+   "violations": 0,
+   "world": "urban_political"
+  },
+  {
+   "class": "validity",
+   "group": "*",
+   "id": "V8",
+   "oracle": "D67/D70: every mid-run entity add carries a declared, well-formed spawn source",
+   "scope": "run",
+   "seed": 42,
+   "state": "pass",
+   "violations": 0,
+   "world": "urban_political"
+  },
+  {
+   "class": "validity",
+   "group": "*",
+   "id": "V8",
+   "oracle": "D67/D70: every mid-run entity add carries a declared, well-formed spawn source",
+   "scope": "run",
+   "seed": 43,
+   "state": "pass",
+   "violations": 0,
+   "world": "urban_political"
+  }
+ ],
+ "harness_hash": "5a7f145920aab68597a09f72a7e97ea861ffa4cc927197a0d98b98ac5eb23920",
+ "recorded": {
+  "counts": {
+   "drift": 3,
+   "fail": 16,
+   "no-data": 0,
+   "pass": 342,
+   "stale": 0,
+   "unstable": 0
+  },
+  "reasons": [
+   "fail V3 (frontier_living_world/42): unowned"
+  ],
+  "rerun_pairs": 15,
+  "verdict": "red"
+ },
+ "references": [
+  {
+   "milestone": "M1",
+   "ref": "last",
+   "stale": [],
+   "version": 2
+  },
+  {
+   "milestone": "M1",
+   "ref": "milestone-first",
+   "stale": [],
+   "version": 2
+  }
+ ],
+ "schema": "rpg-gate-report/v1",
+ "sha": "a89970800221e3aab05eb12dd8a3701f00acd196",
+ "source": "PR-run gate report",
+ "source_run_id": "44353267564"
+}
