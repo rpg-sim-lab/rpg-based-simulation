@@ -1,10 +1,10 @@
 ---
-status: active
+status: historical
 layer: engine
 authority: P1
 audience: agent
 ticket_id: TCK-20261118-CAMPAIGN-RUNNER-AND-RESTORED-BODIES-SKIP-THE-BUILD-TIME-SENSES-CHECK
-phase: inprogress
+phase: done
 date: 2026-11-18
 tags: []
 ---
@@ -15,7 +15,7 @@ tags: []
 Campaign episode bodies, scenario-runner bodies and checkpoint-restored bodies skip PERC-02a's build-time senses check, so a body of an unprofiled species goes blind with gate ERRORs instead of being refused
 
 ## Status
-INPROGRESS
+DONE
 
 ## Tier
 standard
@@ -115,3 +115,6 @@ New: tests/unit/domains/campaigns/test_campaign_bodies_senses.py (5), tests/unit
 src/engine/checkpoint_senses.py (new), src/content/species_senses.py, src/engine/scenario_checkpoint.py, src/domains/campaigns/orchestrator.py, src/domains/campaigns/runner.py, src/content/repository.py; the four test files above; docs/mechanics/04_strategic_cognition.md, docs/guidelines/intentional_divergences.md (2.210), docs/parity_ledger/strategic_cognition.yaml (STRAT-352).
 
 ## Completion Summary
+Done 2026-11-19. Campaign episode bodies, scenario-runner bodies and checkpoint-restored bodies now check the species sense profile (PERC-02a). Per the rpg-designer ruling: restore is strict (`RestoredBodySenseProfileError(ValueError)`, `SenseProfileError` as `__cause__`; refuses an unknown species and an unprofiled one); the campaign rebuild and the runner use `refuse_unprofiled_known_species`. A catalog species declaring `sense_profile: null` raises a typed `SenseProfileError` naming the species at load, not a bare `KeyError`. Source scan over every non-test `V2EntityBuilder` site under `src/` with a named allowlist.
+Disclosure (word for word): "campaign and runner sites refuse a species in content with no usable profile; an unknown kind perceives with the baseline (2.210 item 3, fixtures). Restore refuses both."
+Follow-up: fixtures with non-content kinds (for example kind "entity" in tests/integration/scenarios/test_campaign_runtime.py) belong to a P3 fixture-policy follow-up tracked by u24; no change here. Mid-run spawners stay with TCK-20261118-MID-RUN-SPAWNED-BODIES-SKIP-THE-SENSES-CHECK. Evidence: 322 scoped tests passed (checkpoint paths, campaigns, content); ruff has no new finding; `make lint-imports` 17 kept, 0 broken. Review is recorded after the planner's PR comment.
