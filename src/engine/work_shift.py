@@ -20,7 +20,6 @@ from src.engine.building_services import maintenance_open, offers_work, service_
 from src.engine.need_pull import TICKS_PER_TILE, step_travel_tiles
 from src.engine.place_tax import building_holder, tax_on
 from src.engine.serves import serves
-from src.engine.spatial_query import SpatialQueryService
 from src.engine.starvation import STARVING_LINE, hp_loss_period
 from src.engine.work_wake import held_work_is_threatened
 
@@ -40,7 +39,16 @@ def _can_pay_shift(state: Any, building: Any) -> bool:
 
 def meal_position_after(state: Any, work_pos: Any) -> Optional[tuple]:
     """Where the wage is spent: the inn nearest to the place of work, or None when there is none."""
-    inn = SpatialQueryService.nearest_building(state, work_pos, "inn")
+    # A direct scan of ``state.buildings``, not `SpatialQueryService.nearest_building`: this is read from a tactical ENTITY_BRAIN worker (`building_arrival` -> `shift_takeable`) on a WorkerPacket,
+    # which carries ``buildings`` but not the `world_indexes` the spatial query reads (an undeclared state read stops the run: docs/engine/contracts/bounded_concurrency_contract.md section 4).
+    # The same answer as the index: Manhattan distance, the first strictly smaller wins, in ``state.buildings`` order (the order the index is built in).
+    inn, best = None, float("inf")
+    for building in state.buildings.values():
+        if building.kind != "inn":
+            continue
+        dist = abs(building.position[0] - work_pos[0]) + abs(building.position[1] - work_pos[1])
+        if dist < best:
+            inn, best = building, dist
     return None if inn is None else (inn.position[0], inn.position[1])
 
 
