@@ -1,10 +1,10 @@
 ---
-status: active
+status: historical
 layer: ai
 authority: P1
 audience: agent
 ticket_id: TCK-20261119-PROJECT-SYNC-READS-REMOTE-BRANCHES-NOT-ONLY-CHECKED-OUT-WORKTREES
-phase: open
+phase: done
 date: 2026-11-19
 tags: [delivery]
 ---
@@ -15,7 +15,7 @@ tags: [delivery]
 project_sync reads `origin/*` branches as well as checked-out worktrees, so a ticket worked on a branch nobody has checked out shows on either host
 
 ## Status
-OPEN
+DONE
 
 ## Tier
 standard
@@ -38,6 +38,28 @@ The Project view build (TCK-20261119-PROJECT-VIEW-SEAT-COLLABORATORS-LINK-BY-COM
 3. A remote-only branch has no worktree and so no recorded seat: it contributes the branch and a Status, never a Seat or an Involved seat. Say so in the docs.
 4. Reuse the cited-vs-worked rule and the merged-PR filter from the Project view build rather than a second rule.
 5. Docs: `docs/guidelines/session_roles/project_sync_dry_run.md`.
+
+## Disposition
+STALE-PREMISE
+
+## Disposition Rationale
+Owner decision (#715, 2026-11-20, relayed by lead-planner): close this ticket with a Disposition and build nothing. The premise was that tickets worked on pushed branches nobody has checked out show wrong on the board, and that the implementer's earlier 5 "moves to In progress" showed it. Step 1, measured by agent-working-implementer on origin/main c540a0b17 (taskset -c 0-3, ubuntu's view only; u24's worktrees were not visible), shows that premise was an artefact of treating every old ref as live work:
+```
+origin/* refs excluding main and HEAD: 222; ahead of origin/main: 220 (squash-merge residue)
+checked out in a worktree on ubuntu: 7; remote-only: 213
+remote-only refs naming a ticket by a leading id plus a code file: 152
+  with an already-merged PR: 57; open PR: 1; no PR: 94
+the 95 unmerged refs name 118 tickets: 103 have no live item (Done on main), 5 are To do
+the rule would move exactly 5 To-do tickets, and all 5 would read Stale, not In progress:
+  branch tips are 67, 31-38, 31-38, 31 and 19-20 days old (stale_branch_days is 14)
+  TCK-20261009-RPG-REGRESSION-METRICS-COMPUTED-FROM-TYPED-RECORDS has 44 old refs; its work landed through other PRs
+only unmerged ref within 14 days: TCK-20261031-A-PAIR-RE-FORMS-AND-LEAVES-A-GROUP-EVERY-TWO-TICKS (rpg-combined-run-u24-urban)
+cost of option (A): about +6 s per tick (merged-PR list of 846 PRs, limit 1000), plus an elected host-neutral `origin` segment;
+  a whole dry run is 32.7 s today
+```
+So: 0 To-do tickets would move to In progress today; each host already sees its own lane worktrees (the births case was fixed by #986's own-copy lift, c540a0b17); and the cost is +6 s a tick plus the one-writer election across hosts. The implementer's read-only measurements were stopped and nothing was built. One fact it read before stopping (the planner did not re-run it): the shared repo already holds all 222 remote heads (`remote.origin.fetch` is the full default refspec, `ls-remote --heads` shows 222 against 223 local origin/* entries including HEAD, none missing), so the widened fetch would not have added objects; the repo is 170 MiB in packs plus 111 MiB loose.
+
+Reopen trigger: pushed-but-unchecked-out branches start hiding real work, meaning a ticket that is actively worked on a branch no worktree has checked out reads To do or Stale on the board while that branch's tip is within the 14-day stale window. If it is reopened, the smallest form is option (A): a remote-only ref counts as working evidence only when its tip is within 14 days, reusing #986's `link_worked` and the merged-PR filter, with the `--fetch` widening to `+refs/heads/*:refs/remotes/origin/*` and `for-each-ref` added to READ_GIT; a simpler two-host derivation than the election was proposed but not measured.
 
 ## Out of Scope
 - Writing seats for remote-only branches (no guessing from branch names).
@@ -81,7 +103,10 @@ N/A: no src change; the Project items are a generated view rebuilt on each sync,
 Filed by agent-working-planner on lead-planner's relay of an owner request (#715, 2026-11-19).
 
 ## Test Summary
+none: no code, a Disposition closure.
 
 ## Files Changed
+none: no code, a Disposition closure (only this ticket's move to done/).
 
 ## Completion Summary
+Closed 2026-11-20 with Disposition STALE-PREMISE by owner decision (#715, via lead-planner). The step-1 numbers are in `## Disposition Rationale`; nothing was built. Reopen trigger recorded there.

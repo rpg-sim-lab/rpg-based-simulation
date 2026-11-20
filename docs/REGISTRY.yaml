@@ -8094,6 +8094,20 @@
   tags:
   - delivery
 - type: ticket
+  path: agent-working/tickets/done/TCK-20261119-PROJECT-SYNC-READS-REMOTE-BRANCHES-NOT-ONLY-CHECKED-OUT-WORKTREES.md
+  ticket_id: TCK-20261119-PROJECT-SYNC-READS-REMOTE-BRANCHES-NOT-ONLY-CHECKED-OUT-WORKTREES
+  title: project_sync reads `origin/*` branches as well as checked-out worktrees,
+    so a ticket worked on a branch nobody has checked out shows on either host
+  tier: standard
+  ticket_type: feature
+  date: '2026-11-19'
+  related_code_areas:
+  - tools/sessions/project_sync.py
+  - tests/tools/test_session_project_view.py
+  artifact_files: []
+  tags:
+  - delivery
+- type: ticket
   path: agent-working/tickets/done/TCK-20261119-PROJECT-VIEW-PARKED-STATE-FROM-A-TICKET-BODY-MARKER-LINE.md
   ticket_id: TCK-20261119-PROJECT-VIEW-PARKED-STATE-FROM-A-TICKET-BODY-MARKER-LINE
   title: GitHub Project 1 shows a Parked state, read from a one-line marker a planner
@@ -8307,20 +8321,6 @@
     (is_wild_creature)
   artifact_files: []
   tags: []
-- type: ticket
-  path: agent-working/tickets/todos/TCK-20261119-PROJECT-SYNC-READS-REMOTE-BRANCHES-NOT-ONLY-CHECKED-OUT-WORKTREES.md
-  ticket_id: TCK-20261119-PROJECT-SYNC-READS-REMOTE-BRANCHES-NOT-ONLY-CHECKED-OUT-WORKTREES
-  title: project_sync reads `origin/*` branches as well as checked-out worktrees,
-    so a ticket worked on a branch nobody has checked out shows on either host
-  tier: standard
-  ticket_type: feature
-  date: '2026-11-19'
-  related_code_areas:
-  - tools/sessions/project_sync.py
-  - tests/tools/test_session_project_view.py
-  artifact_files: []
-  tags:
-  - delivery
 - type: ticket
   path: agent-working/tickets/todos/TCK-20261119-RECRUIT-CHEST-AND-CRAFTING-COSTS-DEBIT-THE-PAYER-WITH-NO-PAYEE.md
   ticket_id: TCK-20261119-RECRUIT-CHEST-AND-CRAFTING-COSTS-DEBIT-THE-PAYER-WITH-NO-PAYEE
