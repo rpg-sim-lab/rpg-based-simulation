@@ -357,13 +357,15 @@ def test_check_plan_options_names_every_bad_select_value_in_creates_and_changed_
     assert pc.check_plan_options(project, _plan_with([ok])) == []
 
 
-def test_apply_refuses_before_the_first_mutation_and_names_all_the_problems():
+def test_apply_skips_the_item_with_a_value_that_has_no_option_and_names_every_problem():
+    # was: the whole run was refused before the first mutation (TCK-20261119-PROJECT-SYNC-APPLY-SKIPS-ITEMS-WITH-A-MISSING-STATUS-OPTION-...): now only that item is left alone
     fake = FakeClient()
     project = _project(domain_type="SINGLE_SELECT")
     bad = {"Ticket ID": "TCK-A", "Title": "t", "Body": "b", "Tier": "weird", "Priority": "P9", "Status": "To do"}
-    with pytest.raises(pc.ClientRefused, match=r"2 value\(s\) are not options.*TCK-A Tier 'weird'; TCK-A Priority 'P9'"):
-        pc.apply_plan(fake, project, _plan_with([bad]))
-    assert fake.calls == []  # no mutation
+    plan = _plan_with([bad])
+    done, not_done, error = pc.apply_plan(fake, project, plan)
+    assert error is None and done == [] and fake.calls == []  # the only item was skipped: nothing written
+    assert plan.skipped == {"TCK-A": ["Tier 'weird'", "Priority 'P9'"]}
 
 
 def test_a_live_dry_run_prints_apply_would_refuse_findings_and_nothing_else_changes(monkeypatch, tmp_path, capsys):
@@ -381,7 +383,7 @@ def test_a_live_dry_run_prints_apply_would_refuse_findings_and_nothing_else_chan
     monkeypatch.setattr(ps, "done_date", lambda root, path: None)
     assert ps.main(["--root", str(tmp_path)]) == 0
     out = capsys.readouterr().out
-    assert "create  TCK-W" in out and "finding: apply would refuse:" not in out  # Tier 'standard' and Domain 'unassigned' are options
+    assert "create  TCK-W" in out and "finding: apply would skip" not in out  # Tier 'standard' and Domain 'unassigned' are options
     project.fields["Domain"] = pc.ProjectField("F_Domain", "Domain", "SINGLE_SELECT", (("rpg", "O_rpg"),))  # Domain options lack the derived value
     assert ps.main(["--root", str(tmp_path)]) == 0
-    assert "finding: apply would refuse: TCK-W Domain 'unassigned'" in capsys.readouterr().out
+    assert "finding: apply would skip the item (no option on the Project; run --init): TCK-W Domain 'unassigned'" in capsys.readouterr().out
