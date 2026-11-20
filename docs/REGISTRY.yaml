@@ -7986,6 +7986,19 @@
   - content
   last_verified: '2026-10-09'
 - type: ticket
+  path: agent-working/tickets/todos/TCK-20261120-COMBAT-ENGAGEMENT-COST-GAP-AT-THE-BIRTHS-FINAL-HEAD.md
+  ticket_id: TCK-20261120-COMBAT-ENGAGEMENT-COST-GAP-AT-THE-BIRTHS-FINAL-HEAD
+  title: 'combat_engagement costs more per entity-tick at the births final head than
+    on main, in frontier_living_world: confirm the cause and decide the fix'
+  tier: standard
+  ticket_type: repair
+  date: '2026-11-20'
+  related_code_areas:
+  - src/domains/combat_engagement/
+  artifact_files: []
+  tags:
+  - performance
+- type: ticket
   path: agent-working/tickets/done/TCK-20261119-RERUN-OF-R1-R4-AND-MIXED-400-PYSPY-ON-CPUS-4-5.md
   ticket_id: TCK-20261119-RERUN-OF-R1-R4-AND-MIXED-400-PYSPY-ON-CPUS-4-5
   title: Rerun of R1 and R4 and the py-spy before-profiles, pinned to cpus 4-5, recorded
