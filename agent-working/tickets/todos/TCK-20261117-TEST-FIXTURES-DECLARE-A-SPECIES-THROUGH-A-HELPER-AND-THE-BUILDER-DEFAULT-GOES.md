@@ -62,6 +62,11 @@ src/core/species.py, src/world/
 - Which species (or a declared content mapping) the body takes is the designer's ruling; none is chosen here.
 
 ## Implementation Notes
+- 2026-11-19 (rpg-designer's H1 ruling on TCK-20261118-CAMPAIGN-RUNNER-AND-RESTORED-BODIES-SKIP-THE-BUILD-TIME-SENSES-CHECK, relayed by lead-planner-u24):
+  - Some fixtures use NON-CONTENT kinds as kind ("entity", "monster", "hero"); for example tests/.../test_campaign_runtime.py::test_entity_state_persists_across_episodes.
+  - Because of them, H1's CAMPAIGN and SCENARIO-RUNNER senses checks stay LOOSER than compile, spawn and archetype: an unknown kind gets the baseline.
+  - Once this ticket moves those fixtures to real species, the two sites TIGHTEN to refuse unknown kinds too. That's a follow-up step on H1's sites, named in this ticket's closure.
+  - Restore is already strict in H1.
 - 2026-11-17 (M1 step 4, rpg-designer ruling (c), option (i)): the test-side `spawn_monster` and `spawn_natural_creature_offspring` calls pass `species=X, occupation=X` with the SAME literal and no assertion change; K6's run counts cover the 3 gate worlds and the src writers (K6c), and tests are out of K6. These calls write a label as the species and are this ticket's to migrate (file, literal):
   - tests/unit/world/test_spawn_monster_catalog_faction.py: parametrized `kind` over goblin_warrior, orc_warrior, goblin_raider, wolf, slime, bear, harpy, golem (spawn_monster, 2 tests) and over wolf, bear, golem, goblin_warrior, orc_warrior, dragonkin, bandit; literals goblin_warrior (4 calls), orc_warrior (3), wolf (1)
   - tests/unit/world/test_natural_creature_reproduction.py: goblin_warrior (3 calls), monster (1)

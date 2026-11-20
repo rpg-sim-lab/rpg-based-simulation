@@ -60,6 +60,7 @@ Found by rpg-implementer on 2026-11-09 while naming the meal writers for TCK-202
 - Dispatch needs an owner yes.
 
 ## Implementation Notes
+- 2026-11-19 SEQUENCING RULING (rpg-planner): the inn-meal last_meal_tick stamp is OUT of #781 (TCK-20261023-FREE-MEAL-REMOVED-AS-ITS-OWN-STEP-BEFORE-M1). The field is in the state digest, and #781's W read must attribute the world change to D73 alone. TCK-20261109-AN-INN-MEAL-DOES-NOT-STAMP-LAST-MEAL-TICK lands AFTER #781, on #781's rewritten inn writer, and both cite TCK-20261007-EAT-BESIDE-THE-INN-FEEDS-A-SUBJECT-THAT-CANNOT-PAY-FREE-MEAL. Note: #781 removes the eat_update free meal, one of the three writers that stamp today.
 Not started.
 
 ## Test Summary

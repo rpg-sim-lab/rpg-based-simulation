@@ -70,6 +70,13 @@ Owner ruling #715 6941107808 (rule a): a Phase 1 PR re-pins only what its OWN ch
 - Whether the anchors went stale over several earlier merges; a bisect is optional.
 
 ## Implementation Notes
+- 2026-11-19 CURRENT VALUES on main (rpg-planner; executed by lane C's fresh 5713e2025 main control and lane B's sweep at 79a93da88, which is main 025be2faf plus #965; confirmed identical by births on 025be2faf). The 5 failing grade-stability pins are:
+  - urban_political s123 1000t: SOCIAL 39.691 and ECONOMY 0.3083 (anchors 53.8 and 0.4966). This replaces the 31.63 recorded on 11-17; main has moved since.
+  - urban_political selfmodel_probe s42 200t: WORLD 0.16 (anchor 0.32).
+  - generated_frontier_3_42 s123 200t: COMBAT 0.1869 (anchor 0.3402). NEW to this list.
+  - frontier_extended s42 200t: NARRATIVE 1.59 (anchor 2.2778). NEW to this list.
+  - frontier_extended s123 200t: COMBAT 0.2323 and PROGRESSION 0.5879 (anchors 0.2914 and 0.4241).
+  The hero_guild_routing and simq_routing rows listed above are not red at these heads. Phase 3 re-anchors against values read fresh at that time, not against this list.
 - Filed by rpg-planner. The test-tree owner (testing-planner) is told on its restart, through the lead.
 
 ## Test Summary
