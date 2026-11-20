@@ -69,6 +69,7 @@ The give-up clears the target, but nothing remembers that it was given up, so ta
 - Where the memory lives (NavigationComponent or cognition memory), its expiry and its scope (per tile, per anchor or per target kind): the designer decides.
 
 ## Implementation Notes
+Parked: waits on TCK-20261030-STALEMATE-BREAK-OVERWRITES-A-PROJECT-MOVE-EVERY-TICK since 2026-11-19
 - 2026-11-19 RELABELLED P0 -> P1 (owner, #715 7003889137, "Relabel P1, keep W1"). It is a liveness bug: every subject in the 3 gate worlds re-picks a given-up target, but nobody dies of it. It keeps its M1 place at W1, intelligence.py package step K1: after split Group 1, stacked on F1 (TCK-20261030-STALEMATE-BREAK-OVERWRITES-A-PROJECT-MOVE-EVERY-TICK).
 
 ## Test Summary
