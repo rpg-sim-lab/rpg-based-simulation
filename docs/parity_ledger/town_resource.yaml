@@ -2603,3 +2603,13 @@
   test_path: tests/unit/resource/test_rewards_repair_and_fees.py
   divergence_note: 'Defect, not an intentional divergence: items other than gold and raw meat leave the world at corpse decay with no sink (TCK-20261118-A-DECAYING-CORPSE-DESTROYS-EVERY-ITEM-EXCEPT-GOLD-AND-MEAT-WITH-NO-SINK). The ruled fix makes them ground items through the shared ground-item helper. The entry returns to verified when that ticket lands.'
   support_boundary: 'Gold and raw meat at decay are conserved today; only the other items are lost.'
+- id: TOWN-212
+  text: 'A held EAT that fails ends its task (decision 73, divergence 2.218): an EAT whose action update carries SOURCE_MISSING (nothing carried and no payable inn meal, or the carcass is gone), SOURCE_DEPLETED (the carcass yields no meal) or INSUFFICIENT_GOLD (a serving inn refused the payment) empties the task payload, so the scheduler runs the brain, as a failed ATTACK, INTERACT or REST already does. PAYEE_MISSING, INVENTORY_FULL and TARGET_LOCKED do not end it (resolver or transient reasons).'
+  status: verified
+  priority: P1
+  legacy_evidence: null
+  v2_evidence: '`src/engine/pipeline_phases/actions.py` (`_ENDS_HELD_EAT_REASONS`, the `EAT` entry of `_ENDS_HELD_REASONS_BY_ACTION`, `_is_unrecoverable_action_failure`); `src/engine/domain/action_router.py` (`_survival_action` writes INSUFFICIENT_GOLD / SOURCE_MISSING); `src/engine/domain/core_actions.py` (`eat_update`, `eat_at_corpse_update`); `docs/guidelines/intentional_divergences.md` section 2.218'
+  proof_type: parity
+  test_path: tests/unit/actions/test_held_eat_failure_ends_task.py
+  divergence_note: 'Intentional divergence 2.218 (Bug Fix): a held EAT that fails now ends; pre-existing for carcass eaters, unmasked by D73.'
+  support_boundary: 'NO_ACTION_UPDATE (the actor produced no update) is not ended for any action and is not added here.'
