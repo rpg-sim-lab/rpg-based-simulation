@@ -73,6 +73,16 @@ After v1.
 
 - 2026-11-17 (M1 step 4, rpg-designer 3045e98a, stage 4b): this ticket also owns the kind=species stage 4b. A `WorldCompiler.compile` with no content context (149 test calls in 43 files and 3 tools: tools/calibrate_rendering.py:81, tools/review_pipeline_check.py:70, tools/visual_assets_sample_map.py:139; no src caller) keeps the legacy behaviour in step 4: `kind` = the role label with `occupation` equal to it, named as the legacy path in `src/worldbuilding/compiler.py` and pinned by a test. Giving those calls a context, then removing the legacy path, is stage 4b; the parent TCK-20261109-M1-KIND-ALWAYS-MEANS-SPECIES-AND-OCCUPATION-IS-ITS-OWN-FIELD does not close until it is done.
 
+- 2026-11-19 (#965 step 5, rpg-designer ruling, relayed by rpg-planner): THE ITEM-AC INTERIM.
+  - #965 adds a FLAGGED INTERIM in biological_needs.profile_id_for ONLY (rpg-designer's ruling (a2); it replaces the earlier compiler-path rule (a), which the designer withdrew because it would have made wolves and spiders human).
+    - When species_of(e) is not a catalog species, needs use main's person-role fallback: `_role_int(role) in _PERSON_ROLES` gives humanoid_survival, otherwise base rates.
+    - A catalog species with no need profile keeps base rates.
+    - Interim-branch hits are counted under their own key.
+    - No kind, occupation or compiler change.
+  - Why: with the species mirror gone, a role-label kind (worker, guard, raider) is not a catalog species, so those bodies got base need rates (2x hunger). test_corpus_diversity::test_generated_frontier_3_42_extended_population_stability then failed 3/3 (22-25/44 at t800, floor 26.4); main passed 2/2. Lane B's popdiag3, executed: deaths are HAZARD/COMBAT from earlier food-seeking, not starvation.
+  - This ticket RETIRES the interim: the code comment reads "FLAGGED INTERIM (rpg-designer 2026-11-19): unknown-species kinds read the role for needs; retires with stage-4b item AC / the P3 typed load error".
+  - Also in scope here: the population test compiles WITH a content context (the right long-term shape, since it does not test the production path). It is a test edit, so an owner ask. With a context the world is already below the floor on main: see TCK-20261119-A-GENERATED-FRONTIER-WORLD-FALLS-BELOW-ITS-POPULATION-FLOOR-BY-TICK-800.
+
 ## Test Summary
 
 ## Files Changed

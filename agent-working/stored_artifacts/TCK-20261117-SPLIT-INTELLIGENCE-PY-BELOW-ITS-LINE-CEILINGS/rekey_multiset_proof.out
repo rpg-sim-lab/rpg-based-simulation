@@ -1,0 +1,3 @@
+mypy: before 1332 rows, after 1332 rows, multisets equal: True
+pyrefly: before 699 rows, after 699 rows, multisets equal: True
+cmd: python3 agent-working/stored_artifacts/TCK-20261117-SPLIT-INTELLIGENCE-PY-BELOW-ITS-LINE-CEILINGS/rekey_multiset_proof.py 0c18f6151 HEAD

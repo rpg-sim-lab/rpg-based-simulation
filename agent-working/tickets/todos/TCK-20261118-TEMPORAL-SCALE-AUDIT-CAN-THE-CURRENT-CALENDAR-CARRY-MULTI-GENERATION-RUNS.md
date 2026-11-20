@@ -47,6 +47,18 @@ The terms, all from the owner's text:
    - cross-system consistency: which systems assume a day length, such as routines, sleep, meals, hunger rates, travel, cadences and seasons, and what breaks under each scenario.
 5. Keep REDUCING TICKS/DAY and ACCELERATING BIOLOGICAL AGING distinct. They change simulation semantics differently and are not interchangeable.
 6. Output: a recommendation document. Either the current calendar is sufficient (with which biological compression), or there is strong evidence to revisit the 08-29 decision. The options are written for the owner.
+7. TICK-CONSTANT INVENTORY (owner, #715 6997605774, 2026-11-19, "Send both (Recommended)"). This is the first deliverable, and it costs nothing: no runs.
+   - List every tick-valued constant in src/ and data/content: durations, cadences, cooldowns, windows, timeouts, rates per tick, life stages, gestation and maturity.
+   - For each, give its file:line, its value in ticks, and its real-time meaning at 2400 ticks/day: hours, days or years of calendar time.
+   - Mark each one REALISM-TUNED (it matches a believable real-world duration) or WINDOW-FITTED (chosen so that the event happens inside a test or gate run window).
+   - Name the clock each one is read on, per the M1 clock review line.
+   - It pairs with docs/engine/time_semantics.md once P1 lands, and is filed as a table in the recommendation doc.
+   - A long-run checkpoint read was NOT approved (same comment). This ticket schedules no new run for it.
+   - WIDENED by the owner's settings-in-data rule (2026-11-19, M1 epic working rules). The same inventory also lists the other existing numeric TUNING values in src (rates, thresholds, prices, radii), not only tick ones. Each is marked a setting (to move to data/) or a code invariant, with a reason. They move in stages under TCK-20261119-THE-CALENDAR-IS-DECLARED-IN-CONFIGURATION-NOT-IN-CODE's conditions.
+   - Known seeds (inspected, main c505357b3):
+     - SUSPENSION_TTL_TICKS = 200 (src/core/strategic.py:541, N10, divergence 2.212). rpg-designer reads it as a tuning value, so it goes to data. 200 ticks is about 2 h of game time. Mark it "window-fitted?" for the audit to judge; the designer set it for the N10 window, not from realism. There's no pull-forward.
+     - EAT_PRICE_GOLD = 5 and REST_PRICE_GOLD = 10 (src/engine/service_prices.py:7-8).
+     - INN_MEAL_HUNGER: it becomes 60 in #781 (D73; 40 + 20 as one transfer, memo row 73). Moved in a later staged step, NOT in #781.
 
 ## Out of Scope
 - Any constant or calendar change, any architecture redesign, any speculative implementation.
