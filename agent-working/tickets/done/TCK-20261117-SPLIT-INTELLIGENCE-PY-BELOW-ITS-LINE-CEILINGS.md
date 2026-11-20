@@ -74,6 +74,8 @@ Evidence labels: executed unless marked.
 - Statics at the final src (70dbcc5d3, and the amended baseline head 637307d82 has the same src): lint-imports 17 kept / 0 broken; mypy filter 0 rows; code-health rc 0 (only the 4 known report-only jscpd rows in src/observability); pyrefly report: the 10 moved rows re-keyed, 20 other errors are main drift outside this diff.
 - tests/unit/** by directory at 1b6f1b852 (same src): 42 directories rc=0, `motivation` rc=5 (no tests), `worldassembly` 5 failed / 211 passed: the 5 pre-existing grade-stability rows, byte-identical to the main control log.
 - Hash-equal S9 (executed): STRICT comparison, 0 differing fields, start and final hash equal in all 3 gate worlds (s42, 5000 ticks): BASE 0c18f6151 vs NEW 637307d82; finals 45063d92 / 03020cc2 / 8c7158d1, equal to the #965 and worker-fix strict finals. strict.txt sha e2a3490b; runner 15236340, comparator 8eb8d171.
+- Re-key proof (executed, host-free): `rekey_multiset_proof.py 0c18f6151 HEAD` (stored artifacts, output beside it): with path, line and column stripped the before/after multisets are EQUAL for mypy (1332 = 1332) and pyrefly (699 = 699). The one-off `rekey.py`, `astproof.py` and `baseline_row_diff.txt` sit beside it and are NOT committed under codebase/ or tools/. The pyrefly intelligence.py:390 col 59 row is main drift and was not folded in.
+- Mechanism advisory (changed-code check): reviewed, no change (rpg-planner).
 - Baselines: the moved rows were re-keyed through the code-health registry's own load_rows/write_rows (the `codebase.health move` command refuses renamed-symbol and partial-count rows); rekey.py sha 84f0e125. Ceilings lowered by the moved amounts only; pre-existing slack (F401, I001) left alone.
 
 ## Files Changed
