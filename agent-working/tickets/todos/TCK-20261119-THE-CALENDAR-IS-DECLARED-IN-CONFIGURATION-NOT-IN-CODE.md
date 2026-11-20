@@ -100,6 +100,7 @@ Stage 2, after the temporal audit (TCK-20261118-TEMPORAL-SCALE-AUDIT-CAN-THE-CUR
 - Clocks: this ticket defines how every domain-time reading is derived. It adds no clock.
 
 ## Implementation Notes
+- 2026-11-20 (rpg-designer, via rpg-planner): F2 (TCK-20261117-A-SUBJECT-RE-CHOOSES-THE-TARGET-IT-JUST-GAVE-UP-ON) adds the first per-domain settings file, data/content/strategy/blocker_settings.yaml (access_giveup_limit: 4), with a load-once loader in src/content/. This ticket's layering decision must cover it.
 - FOLLOW-UP (owner lever, NOT in scope): once the audit says which constants must scale with the day, a "temporary shorter day/month/year" becomes a CONFIG PROFILE for test worlds: an alternate calendar.yaml selected per world or run, carried in the run identity. That's a behaviour change, with its own ticket, measurement and owner ask.
 
 ## Test Summary
