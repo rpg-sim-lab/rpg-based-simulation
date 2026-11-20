@@ -3,8 +3,9 @@
 Step 2 of TCK-20261109-M1-KIND-ALWAYS-MEANS-SPECIES-AND-OCCUPATION-IS-ITS-OWN-FIELD. Every new reader of an entity's species (births included) calls `species_of`, so that
 step 4, which makes `EntityState.kind` the species id on every build path, changes what this helper reads without touching any reader.
 
-Step 4 (kind=species): `EntityState.kind` IS the species id on every build path, so the helper reads `kind`. `properties["species_id"]` stays as a mirror, written from the
-same value at build, until step 5 moves its readers and removes it. A writer with no species to declare is refused with `SpeciesNotDeclaredError`, never defaulted.
+Step 4 (kind=species): `EntityState.kind` IS the species id on every build path, so the helper reads `kind`. A writer with no species to declare is refused with `SpeciesNotDeclaredError`,
+never defaulted.
+Step 5: the `identity.properties["species_id"]` mirror is gone (no writer, no reader); `species_of` is the only way to read a species.
 """
 from __future__ import annotations
 
@@ -37,3 +38,7 @@ def occupation_of(entity: Any) -> Optional[str]:
 
     M1 step 3: the readers that compared `kind` with a role label read this instead, with the same literal; in step 2 the field equals `kind` on every writer."""
     return getattr(getattr(entity, "identity", None), "occupation", None)
+
+
+class SenseProfileError(Exception):
+    """A body's species has no usable sense profile (PERC-02): a content error, never a silent baseline."""

@@ -21,6 +21,7 @@ from src.engine import tactical as tactical_module
 from src.engine.need_pull import ESCALATION_ONSET, HUNGER_LINE, SLEEP_LINE
 from src.engine.tactical import TacticalDecisionSystem
 from src.engine.tactical_rest import eat_carried_update, rest_in_place_update
+from tests.helpers.clock import DAY_WORLD_TIME
 
 INN = (40.0, 31.0)
 INN_ID = 20003
@@ -52,7 +53,7 @@ def _hungry_hero(hunger, hostile_at=None, hostile_task=None, hero_at=(39.0, 31.0
             monster = replace(monster, task=hostile_task)
         entities[2] = monster
     inn = BuildingState(id=INN_ID, kind="inn", position=INN, functional=True)
-    return AuthoritativeState(tick=1, seed=1, entities=entities, buildings={INN_ID: inn}, blocked_tiles={(40, 31)}, building_tiles={}, terrain={}), hero
+    return AuthoritativeState(world_time=DAY_WORLD_TIME, tick=1, seed=1, entities=entities, buildings={INN_ID: inn}, blocked_tiles={(40, 31)}, building_tiles={}, terrain={}), hero
 
 
 ATTACKS_THE_HERO = TaskComponent(work_kind="ENTITY_ACT", payload={"action": "ATTACK", "target_id": 1})
@@ -117,7 +118,7 @@ def test_a_pressing_follower_takes_no_part_in_the_groups_target_unless_it_is_act
         leader = (V2EntityBuilder(3).kind("HERO").location(38.0, 26.0).identity(faction=Faction.HERO_GUILD)
                   .combat(hp=85, max_hp=85, atk=10, def_stat=5, alive=True, readiness=100.0).lifecycle(active=True).build())
         group = GroupRecord(id=7, leader_id=3, member_ids={1, 3}, anchor=(38.0, 26.0), shared_target_id=2)
-        state = AuthoritativeState(tick=1, seed=1, entities={**state.entities, 1: hero, 3: leader}, buildings=state.buildings, blocked_tiles=state.blocked_tiles,
+        state = AuthoritativeState(world_time=DAY_WORLD_TIME, tick=1, seed=1, entities={**state.entities, 1: hero, 3: leader}, buildings=state.buildings, blocked_tiles=state.blocked_tiles,
                                    building_tiles={}, terrain={}, groups={7: group})
         update = TacticalDecisionSystem.evaluate_entity_intent(state, hero)
         payload = update.task.payload_set or {}
@@ -144,7 +145,7 @@ def test_unit_case_13_16_a_subject_at_hunger_80_pursuing_a_fleeing_scout_that_ne
 
 def _sleepy_arrival(beds, hostile_at, hostile_task=None):
     """A hero at sleep_debt 90 (past the onset) one tile from an inn with a fatigue project on it, a hostile at `hostile_at`; `beds` is the inn's declared beds."""
-    hero = (V2EntityBuilder(1).kind("HERO").properties({"species_id": "human"}).location(39.0, 31.0).identity(faction=Faction.HERO_GUILD)   # a person: it keeps coin, so a bed can be delivered
+    hero = (V2EntityBuilder(1).kind("human").properties({"species_id": "human"}).location(39.0, 31.0).identity(faction=Faction.HERO_GUILD)   # a person: it keeps coin, so a bed can be delivered
             .combat(hp=85, max_hp=85, atk=10, def_stat=5, alive=True, readiness=100.0)
             .navigation(movement_mode=MovementMode.WANDER, target=INN).lifecycle(active=True).build())
     hero = replace(hero, biological=replace(hero.biological, hunger=0.0, sleep_debt=PRESSING_DEBT))
@@ -157,7 +158,7 @@ def _sleepy_arrival(beds, hostile_at, hostile_task=None):
     if hostile_task is not None:
         monster = replace(monster, task=hostile_task)
     inn = BuildingState(id=INN_ID, kind="inn", position=INN, functional=True, beds=beds)
-    state = AuthoritativeState(tick=1, seed=1, entities={1: hero, 2: monster}, buildings={INN_ID: inn}, blocked_tiles={(40, 31)}, building_tiles={}, terrain={})
+    state = AuthoritativeState(world_time=DAY_WORLD_TIME, tick=1, seed=1, entities={1: hero, 2: monster}, buildings={INN_ID: inn}, blocked_tiles={(40, 31)}, building_tiles={}, terrain={})
     return state, hero
 
 
@@ -257,7 +258,7 @@ def test_rest_in_place_a_hostile_targeting_by_payload_alone_is_not_acting_but_st
 # ---- site 3: tactical_rest eat carried food -----------------------------------------------------------------------------------------------------------------
 
 def _forager(hunger):
-    ent = V2EntityBuilder(1).kind("worker").properties({"species_id": "human"}).location(10.0, 10.0).biological(hunger=hunger).inventory(gold=0).build()
+    ent = V2EntityBuilder(1).kind("human").properties({"species_id": "human"}).location(10.0, 10.0).biological(hunger=hunger).inventory(gold=0).build()
     return replace(ent, inventory=replace(ent.inventory, items=[ItemStack("wild_berries", 1)]))
 
 

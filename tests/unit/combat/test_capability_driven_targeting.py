@@ -27,6 +27,7 @@ from src.core.state import AuthoritativeState
 from src.cognition.common_knowledge import danger_fact_key
 from src.core.self_model import KnowledgeFact
 from src.engine.tactical import TacticalDecisionSystem
+from tests.helpers.clock import DAY_WORLD_TIME
 
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
@@ -87,8 +88,10 @@ def _attacker(atk=10, def_stat=5, attack_range=10, pos=(0.0, 0.0), believes=True
 # capability signal, HP/distance alone would prefer the dragon -- proving any
 # goblin-preferring outcome below is driven by the capability term, which sorts
 # ahead of h.combat.hp and distance in the tuple.
-def _goblin(attack_range=1, pos=(5.0, 0.0), hp=100):
-    return _entity(10, Faction.MONSTER_HORDE, kind="goblin", pos=pos, hp=hp, attack_range=attack_range)
+def _goblin(attack_range=1, pos=(5.0, 0.0), hp=100, moving=False):
+    """`moving`: the goblin took a step on the tick before the states below (tick 1), so it is heard (PERC-02a: a still small body five tiles off is not perceived)."""
+    goblin = _entity(10, Faction.MONSTER_HORDE, kind="goblin", pos=pos, hp=hp, attack_range=attack_range)
+    return replace(goblin, navigation=replace(goblin.navigation, last_moved_tick=0)) if moving else goblin
 
 
 def _dragon(attack_range=1, pos=(2.0, 0.0), hp=10):  # not adjacent: CONFLICT-04 makes an adjacent hostile outrank the capability term
@@ -102,21 +105,20 @@ def test_target_score_reflects_capability_estimate_for_differentiated_enemy_kind
     goblin = _goblin()
     dragon = _dragon()
 
-    state = AuthoritativeState(tick=1, seed=42, world_time=1, entities={1: attacker, 10: goblin, 20: dragon})
+    state = AuthoritativeState(tick=1, seed=42, world_time=DAY_WORLD_TIME, entities={1: attacker, 10: goblin, 20: dragon})
     update = TacticalDecisionSystem.evaluate_entity_intent(state, attacker)
 
-    # Goblin has worse HP and is farther away than dragon -- HP/distance alone
-    # would prefer the dragon. The capability-driven term (attacker is more
-    # confident it can beat a goblin than a dragon) overrides that and wins.
-    assert update.task.payload_set["target_id"] == goblin.id
+    # PERC-02a law: the goblin is a still small body five tiles away, which a baseline humanoid does not perceive on any channel, so it is not in the ranked set and the
+    # capability term never sees it. (The capability-term purpose of this test is kept by the two tests below, where the goblin is moving and heard.)
+    assert update.task.payload_set["target_id"] == dragon.id, "a still small candidate five tiles away is not perceived, so it is not in the ranked set"
 
 
 def test_a_hostile_with_no_species_is_unrecognised_even_if_its_kind_matches_a_belief():
     attacker = _attacker(atk=10, def_stat=5)
-    goblin = _goblin()
+    goblin = _goblin(moving=True)
     unrecognised = replace(goblin, identity=replace(goblin.identity, properties={}))
     dragon = _dragon()
-    state = AuthoritativeState(tick=1, seed=42, world_time=1, entities={1: attacker, 10: unrecognised, 20: dragon})
+    state = AuthoritativeState(tick=1, seed=42, world_time=DAY_WORLD_TIME, entities={1: attacker, 10: unrecognised, 20: dragon})
     update = TacticalDecisionSystem.evaluate_entity_intent(state, attacker)
     # The goblin's kind still reads "goblin" but it has no species, so no prior attaches and the estimate is neutral for it.
     # The believed-terrifying dragon is estimated lower than neutral, so the unrecognised goblin is now preferred only by that.
@@ -126,7 +128,7 @@ def test_a_hostile_with_no_species_is_unrecognised_even_if_its_kind_matches_a_be
 def test_target_choice_falls_back_to_hp_and_distance_when_the_attacker_holds_no_belief():
     attacker = _attacker(atk=10, def_stat=5, believes=False)
     goblin, dragon = _goblin(), _dragon()
-    state = AuthoritativeState(tick=1, seed=42, world_time=1, entities={1: attacker, 10: goblin, 20: dragon})
+    state = AuthoritativeState(tick=1, seed=42, world_time=DAY_WORLD_TIME, entities={1: attacker, 10: goblin, 20: dragon})
     update = TacticalDecisionSystem.evaluate_entity_intent(state, attacker)
     # Uninformed = a neutral, identical estimate for every kind: the dragon (lower HP, closer) is chosen as before the beliefs.
     assert update.task.payload_set["target_id"] == dragon.id
@@ -150,12 +152,12 @@ def test_target_score_unaffected_when_all_hostiles_share_the_same_kind():
 # ── Test 3: capability estimate is derived from the acting entity's own stats ──
 
 def test_target_score_capability_estimate_derived_from_acting_entitys_own_stats():
-    goblin = _goblin()
+    goblin = _goblin(moving=True)
     dragon = _dragon()
 
     zero_stat_attacker = _attacker(atk=0, def_stat=0)
     state_zero = AuthoritativeState(
-        tick=1, seed=42, world_time=1, entities={1: zero_stat_attacker, 10: goblin, 20: dragon}
+        tick=1, seed=42, world_time=DAY_WORLD_TIME, entities={1: zero_stat_attacker, 10: goblin, 20: dragon}
     )
     update_zero = TacticalDecisionSystem.evaluate_entity_intent(state_zero, zero_stat_attacker)
 
@@ -167,7 +169,7 @@ def test_target_score_capability_estimate_derived_from_acting_entitys_own_stats(
 
     capable_attacker = _attacker(atk=10, def_stat=5)
     state_capable = AuthoritativeState(
-        tick=1, seed=42, world_time=1, entities={1: capable_attacker, 10: goblin, 20: dragon}
+        tick=1, seed=42, world_time=DAY_WORLD_TIME, entities={1: capable_attacker, 10: goblin, 20: dragon}
     )
     update_capable = TacticalDecisionSystem.evaluate_entity_intent(state_capable, capable_attacker)
 
@@ -216,7 +218,7 @@ def test_target_score_reads_only_entity_owned_and_hostile_kind_data():
     attacker = _attacker(atk=10, def_stat=5)
     goblin = _goblin()
     dragon = _dragon()
-    state = AuthoritativeState(tick=1, seed=42, world_time=1, entities={1: attacker, 10: goblin, 20: dragon})
+    state = AuthoritativeState(tick=1, seed=42, world_time=DAY_WORLD_TIME, entities={1: attacker, 10: goblin, 20: dragon})
     baseline = TacticalDecisionSystem.evaluate_entity_intent(state, attacker)
 
     # The hostile's own combat stats (other than kind/hp/position, which feed
@@ -227,7 +229,7 @@ def test_target_score_reads_only_entity_owned_and_hostile_kind_data():
         dragon, combat=replace(dragon.combat, atk=999, def_stat=999)
     )
     state_diff = AuthoritativeState(
-        tick=1, seed=42, world_time=1, entities={1: attacker, 10: goblin, 20: dragon_diff_stats}
+        tick=1, seed=42, world_time=DAY_WORLD_TIME, entities={1: attacker, 10: goblin, 20: dragon_diff_stats}
     )
     update_diff = TacticalDecisionSystem.evaluate_entity_intent(state_diff, attacker)
 
@@ -240,7 +242,7 @@ def test_target_score_capability_signal_is_deterministic():
     attacker = _attacker(atk=10, def_stat=5)
     goblin = _goblin()
     dragon = _dragon()
-    state = AuthoritativeState(tick=1, seed=42, world_time=1, entities={1: attacker, 10: goblin, 20: dragon})
+    state = AuthoritativeState(tick=1, seed=42, world_time=DAY_WORLD_TIME, entities={1: attacker, 10: goblin, 20: dragon})
 
     update_1 = TacticalDecisionSystem.evaluate_entity_intent(state, attacker)
     update_2 = TacticalDecisionSystem.evaluate_entity_intent(state, attacker)

@@ -140,6 +140,7 @@ jobs:
     timeout-minutes: 120
     # Job-level permissions drop everything not listed: checkout needs contents, the rolling issue needs issues.
     permissions:
+      actions: read   # fetch main's latest gate report artifact (rpg_gate_main_report); the only addition
       contents: read
       issues: write
     steps:
@@ -154,7 +155,16 @@ jobs:
           pattern: rpg-gate-docs-*
           path: gate-docs
           merge-multiple: true
-      - name: Evaluate (rerun once on a fail or drift, 2 workers, bounded)
+      # Best-effort: main's latest COMPLETED gate report decides which fail/drift rows still need their confirming rerun. Any failure writes a fallback record and
+      # the Evaluate step then does the full rerun, as before.
+      - name: Fetch main's latest gate report (best-effort)
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          RUN_ID: ${{ github.run_id }}
+        run: |
+          python -m tools.test_architecture.rpg_gate_main_report fetch --out main-baseline.json --exclude-run-id "${RUN_ID}" || echo '{"fallback": "the fetch step crashed"}' > main-baseline.json
+      - name: Evaluate (rerun once on a new fail or drift, 2 workers, bounded)
         run: |
           mkdir -p report
           python -m tools.test_architecture.rpg_gate_report \
@@ -163,6 +173,7 @@ jobs:
             --baselines tests/simulation_quality/rpg_gate/baselines \
             --known tools/test_architecture/rpg_gate_known.yaml \
             --out-json report/rpg-gate-report.json --out-md report/rpg-gate-report.md \
+            --main-baseline main-baseline.json \
             --sha "$(git rev-parse HEAD)"
           cat report/rpg-gate-report.md >> "$GITHUB_STEP_SUMMARY"
       # Best-effort: a refusal is a line in the summary, never a failure. Only a run of main is a baseline source; a branch-ref dispatch writes an

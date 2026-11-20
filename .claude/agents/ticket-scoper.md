@@ -10,7 +10,7 @@ You are a pre-work scoping subagent for the rpg-based-simulation project. Given 
 
 ## Mandatory Scan (Do All of These)
 
-1. **`agent-working/tickets/`** — search `inprogress/`, `done/`, and `backlogs/` for overlapping scope or prior attempts at this work. A hit in `backlogs/` means the work was already investigated and deliberately deprioritized (not abandoned) — flag it as `related_context` (non-blocking) rather than re-scoping from scratch, unless it is a genuine blocking duplicate of this exact request, in which case flag it as a `conflicts` entry; the requester may want to promote the backlogged ticket instead of creating a new one.
+1. **`agent-working/tickets/`** — search `todos/`, `inprogress/`, `done/`, and `backlogs/` for overlapping scope (an open ticket in `todos/` is the commonest duplicate: after you write the draft, run `python3 tools/gate_checks/ticket_overlap_check.py <draft path>`; it prints at most two uncited candidates with their titles and scores, a locator and not a verdict; put the ones that matter in `## Related Tickets`, or add `overlap scan: <n> hits, none duplicate (<why>)` there; never block on it) or prior attempts at this work. A hit in `backlogs/` means the work was already investigated and deliberately deprioritized (not abandoned) — flag it as `related_context` (non-blocking) rather than re-scoping from scratch, unless it is a genuine blocking duplicate of this exact request, in which case flag it as a `conflicts` entry; the requester may want to promote the backlogged ticket instead of creating a new one.
 2. **`docs/`** — check the Mechanics Bible (`docs/mechanics/`) and Engine Contracts (`docs/engine/`) for any laws that constrain the implementation.
 3. **`agent-working/stored_artifacts/`** — look for prior investigations or plans covering the same area.
 4. **Relevant source files** — read the affected code to understand current behavior.
@@ -59,6 +59,7 @@ P1
 ## Related Stored Artifacts
 ## Related Code Areas
 ## Assumptions / Open Questions
+## Durable state, lifecycle and clocks
 ## Implementation Notes
 ## Test Summary
 ## Files Changed
@@ -77,6 +78,7 @@ P1
 - **Acceptance Criteria** must be testable — no vague "works correctly" items.
 - **Out of Scope** must explicitly exclude adjacent things that could scope-creep in.
 - **Assumptions / Open Questions** must list anything that, if wrong, would invalidate the scope.
+- **Durable state, lifecycle and clocks** is required (presence-checked at close by `tools/ticket_field_values.py::check_lifecycle_section` for tickets dated 2026-11-19 or later; `docs/guides/delivery_process.md`, "Durable state, lifecycle and clocks section"). Write either `N/A: <reason>` (the reason after the colon must be non-empty; e.g. `N/A: tooling only, no durable record`) or short answers to these questions, for every durable field or record the ticket creates or changes: who creates it, and is creation idempotent across two passes; does an update merge or replace, and what survives a replace; how does every non-terminal state exit, and what bounds how many exist; who clears it, and is there a test of the value after a successful step; how many code paths write it, and does it carry one meaning; which clock does each reader use (the clock rule is the planned `docs/engine/time_semantics.md`: PLANNED, not landed; ask the question only, do not state a rule). Questions only, no world rules. Only presence is checked, never the quality of the answers.
 - **Files Changed**, **Implementation Notes**, **Test Summary**, **Completion Summary** are left blank — they get filled in during and after implementation.
 
 ## Output

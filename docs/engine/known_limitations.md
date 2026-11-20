@@ -21,11 +21,13 @@ This document records the current technical limitations, unsupported features, a
 ### 1.2 Resource loops
 - **No Complex Regeneration**: Resource nodes do not currently support complex regeneration logic (e.g., seasonal growth, depletion cooldowns). Nodes are static or reset on scenario reload.
 - **Town Buildings**: `TownResolutionSystem` currently supports Blacksmith (crafting), Inn (REST), and Tavern (EAT) building types. Guilds, Class Halls, and other building types are not yet functionally integrated.
+- A decaying corpse's items other than gold and raw meat leave the world with no typed sink: gold becomes a ground purse and raw meat leaves through MEAT_DECAYED, but nothing records anything else (`TCK-20261118-A-DECAYING-CORPSE-DESTROYS-EVERY-ITEM-EXCEPT-GOLD-AND-MEAT-WITH-NO-SINK`). ch. 03 atomic conservation is still the target law; the ruled fix makes them ground items at the corpse tile.
 - Six social actions (TRADE, TEAM_UP, TRAIN, PROPOSE_MARRIAGE, JOIN_CLAN, LEAVE_CLAN) are built and unit-tested but have no issuer in play, and no clan exists in play (TCK-20261113-FIVE-SOCIAL-ACTION-KINDS-MAY-HAVE-NO-ISSUER-IN-PLAY). Making any of them reachable is an owner gameplay decision.
 
 ### 1.3 Strategic AI
 - **Material-Only Blockers**: The `StrategicIntelligenceSystem` only recognizes and resolves crafting blockers for "Material" resources. Social, capability, or plot-based blockers are unsupported.
 - **Location-Only Leads**: Strategic leads are restricted to coordinate-based locations. Concept or person-based leads are not yet modeled in the supported slice.
+- **Unchecked Sense Profiles On Mid-Run Spawns**: bodies spawned mid-run by `EntityGenerator` (used by lairs, bosses and calamities) aren't yet checked for a usable sense profile at build. A body of a species without one isn't refused (PERC-02a, ch. 04); instead it perceives nothing, and the gate logs ERROR (`TCK-20261118-MID-RUN-SPAWNED-BODIES-SKIP-THE-SENSES-CHECK`). Campaign episode, scenario-runner and checkpoint-restored bodies are checked since #968.
 
 ### 1.4 Commerce Limitations
 

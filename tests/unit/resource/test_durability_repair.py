@@ -18,7 +18,7 @@ from src.engine.apply import ApplyPath
 def make_entity(eid=1, hp=100, gold=100, slots=None, durability=None, faction=Faction.HERO_GUILD, role=EntityRole.HERO):
     from src.core.builder import V2EntityBuilder
     builder = (V2EntityBuilder(eid)
-               .kind("hero")
+               .kind("human")
                .location(0, 0)
                .identity(role=role, faction=faction)
                .properties({"species_id": "human"})  # a person: building services serve the coin-and-trade trait (decision 43)

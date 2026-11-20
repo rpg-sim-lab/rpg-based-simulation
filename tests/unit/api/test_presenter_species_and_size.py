@@ -1,6 +1,8 @@
 """The entity presenter emits the species id and the species' declared power band as `size` (map markers key on them); never derived in code."""
 from __future__ import annotations
 
+from dataclasses import replace
+
 import pytest
 
 from src.api.presenters.state_presenter import StatePresenter
@@ -9,8 +11,9 @@ from src.core.builder import V2EntityBuilder
 
 
 def _entity(species_id):
-    props = {"species_id": species_id} if species_id else {}
-    return V2EntityBuilder(1).kind("worker").properties(props).location(5.0, 5.0).build()
+    """Step-5 terms: the species is the body's `kind`, the role label is its own `identity.occupation`. A body with NO species has species_of() None (a newborn may carry None)."""
+    entity = V2EntityBuilder(1).kind(species_id or "worker").identity(occupation="worker").location(5.0, 5.0).build()
+    return replace(entity, kind=None) if species_id is None else entity
 
 
 @pytest.mark.parametrize("shape", [StatePresenter.present_entity, StatePresenter.present_entity_slim])
@@ -33,3 +36,4 @@ def test_a_body_with_no_species_presents_null_for_both(shape):
 def test_an_unknown_species_keeps_its_id_and_has_no_size(shape):
     out = shape(_entity("no_such_species"))
     assert out["species"] == "no_such_species" and out["size"] is None
+

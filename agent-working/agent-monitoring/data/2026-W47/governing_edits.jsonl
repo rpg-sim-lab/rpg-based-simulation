@@ -1,4 +1,11 @@
 {"ts":"2026-11-16T02:19:14.228086Z","event":"governing_edit_attempt","seat":"testing-implementer","path":".github/workflows/paired-arms.yml","basis":"mention","attempt":true}
 {"ts":"2026-11-16T07:47:01.139722Z","event":"governing_edit_attempt","seat":"rpg-planner","path":".github/workflows/paired-arms.yml","basis":"mention","attempt":true}
 {"ts":"2026-11-16T08:05:43.049389Z","event":"governing_edit_attempt","seat":"agent-working-planner","path":".github/workflows/test.yml","basis":"mention","attempt":true}
+{"ts":"2026-11-18T07:28:29.947157Z","event":"governing_edit_attempt","seat":"agent-working-planner","path":".github/workflows/pr-body-lint.yml","basis":"mention","attempt":true}
 {"ts":"2026-11-16T15:17:44.911577Z","event":"governing_edit_attempt","seat":"rpg-planner","path":".github/workflows/rpg-gate-report.yml","basis":"mention","attempt":true}
+{"ts":"2026-11-18T09:09:18.305663Z","event":"governing_edit_attempt","seat":"agent-working-implementer","path":"CLAUDE.md","basis":"mention","attempt":true}
+{"ts":"2026-11-19T13:19:42.036455Z","event":"governing_edit_attempt","seat":"rpg-planner","path":".github/workflows/rpg-gate-report.yml","basis":"mention","attempt":true}
+{"ts":"2026-11-19T03:38:11.687531Z","event":"governing_edit_attempt","seat":"testing-implementer","path":".github/workflows/test.yml","basis":"mention","attempt":true}
+{"ts":"2026-11-19T07:54:58.811943Z","event":"governing_edit_attempt","seat":"agent-working-implementer","path":".github/workflows/test.yml","basis":"mention","attempt":true}
+{"ts":"2026-11-19T11:55:13.315566Z","event":"governing_edit_attempt","seat":"agent-working-implementer","path":".claude/settings.json","basis":"mention","attempt":true}
+{"ts":"2026-11-19T11:55:13.315566Z","event":"governing_edit_attempt","seat":"agent-working-implementer","path":"tools/sessions/classify.py","basis":"mention","attempt":true}

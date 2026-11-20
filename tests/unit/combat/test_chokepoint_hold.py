@@ -21,11 +21,29 @@ from src.engine.kernel import Kernel
 from src.engine.pipeline_phases.actions import ActionRoutingPhase
 from src.engine.tactical import TacticalDecisionSystem
 from src.platform.rng import DeterministicRNG
+from tests.helpers.clock import DAY_WORLD_TIME
 from tests.helpers.scenario import DEFAULT_FLAGS, DEFAULT_SEED, compile_world, empty_inventories
 
 WORLD_ID = "mechanic_scenario_combat_judgement_withdrawal"
 F, H = 2, 1
 F_POS, H_POS = (1.0, 1.0), (1.0, 3.0)  # blocked tiles at (0, 1) and (2, 1) make (1, 1) a one-tile gap; the target is 2 tiles away, range 1
+
+
+def medium_body(entity):
+    """The same body as a medium-size species (lizardfolk): its faction, position and hp are kept; only its species (hence its size band) changes."""
+    props = dict(entity.identity.properties)
+    props["species_id"] = "lizardfolk"
+    return replace(entity, kind="lizardfolk", identity=replace(entity.identity, properties=props))
+
+
+def assert_the_target_is_hostile_and_a_target(state):
+    """The swap keeps the scene meaningful: the faction hostility holds and F treats H as a target at the state's tick and clock."""
+    from src.core.calendar import is_night
+    from src.engine.hostility import ATTACK_RELATIONS, faction_hostile, relation
+    night = is_night(state.world_time)
+    f, h = state.entities[F], state.entities[H]
+    assert faction_hostile(f, h, night=night, tick=state.tick), "the swapped body must stay faction-hostile to F"
+    assert relation(f, h, night=night, tick=state.tick) in ATTACK_RELATIONS, "F must treat the swapped body as a target"
 
 
 def _staged() -> AuthoritativeState:
@@ -41,6 +59,11 @@ def _staged() -> AuthoritativeState:
                            tactical_role="VANGUARD" if eid == F else e.combat.tactical_role),
             task=TaskComponent(work_kind="ENTITY_ACT", payload={}))
     object.__setattr__(state, "entities", entities)
+    # PERC-02a: the scene's target is a small goblin_scout, a still small body two tiles off that nobody perceives. It is swapped for a MEDIUM body (lizardfolk, standard_humanoid;
+    # faction, position and hp kept) and the scene runs by day, so the target is seen at the same distance and geometry (owner-approved test-expectation change, #715 6966454372).
+    entities[H] = medium_body(entities[H])
+    object.__setattr__(state, "entities", entities)
+    object.__setattr__(state, "world_time", DAY_WORLD_TIME)
     object.__setattr__(state, "blocked_tiles", {(0, 1), (2, 1)})
     object.__setattr__(state, "feature_flags", {**(state.feature_flags or {}), "ENABLE_COMBAT_ENGAGEMENT": "OFF"})
     return state
@@ -48,6 +71,7 @@ def _staged() -> AuthoritativeState:
 
 def test_a_vanguard_at_a_chokepoint_with_its_target_out_of_reach_decides_to_hold():
     state = _staged()
+    assert_the_target_is_hostile_and_a_target(state)
     update = TacticalDecisionSystem.evaluate_entity_intent(state, state.entities[F], [state.entities[H]], 0.0)
     assert update.task.payload_set["action"] == "HOLD" and update.task.payload_set["reason"] == "HOLD_CHOKEPOINT"
     assert update.navigation.movement_mode_set == MovementMode.HOLD
@@ -66,6 +90,7 @@ def test_the_hold_is_a_typed_success_that_ends_its_task_not_an_unsupported_actio
 
 def test_in_the_kernel_the_holder_stays_on_its_tile_and_its_brain_keeps_deciding():
     state = _staged()
+    assert_the_target_is_hostile_and_a_target(state)
     reasons, decisions = [], []
     orig_route, orig_decide = ActionRouter.execute_action, TacticalDecisionSystem.evaluate_entity_intent
 

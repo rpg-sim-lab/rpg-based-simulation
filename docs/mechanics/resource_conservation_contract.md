@@ -155,7 +155,14 @@ This is enforced structurally — the authoritative `apply` path only processes 
 | `LIQUIDITY_EXHAUSTED` | Building lacks gold to pay sell price |
 | `INSUFFICIENT_CAPACITY` | Home storage full on deposit |
 | `UNKNOWN_SOURCE_KIND` | Unrecognised `source_kind` string |
-| `ACTION_EXHAUSTION` | Gold short for TOWN_SERVICE/TAX or home storage item missing |
+| `ACTION_EXHAUSTION` | Gold below `gold_cost` for a priced service or fee (`TOWN_SERVICE`, `TAX`, `REPAIR_FEE`, `SERVICE_FEE`, `INFORMATION_PURCHASE`; `conservation.py:299-300`), or home storage gold or item missing |
+
+**A priced service or fee under the CLAMP payment law** (`_service_result`, `conservation.py:295-317`; EXCH-02, TCK-20261118-A-SERVICE-PAYMENT-WITH-NO-PAYEE-DESTROYS-COIN, divergence 2.217):
+
+- Only `gold_cost` can refuse: gold below `gold_cost` returns `ACTION_EXHAUSTION` (`:299-300`). A service priced through a negative `gold_delta` with `gold_cost` 0 (a bed, an inn meal) is never refused for gold.
+- The price is `max(0, gold_cost - gold_delta)` (`service_price`); the payer is debited `paid = min(payer's running gold, price)`, so a short purse pays what it holds, and at 0 gold the charge is 0 (`:304`).
+- The payee is credited exactly `paid`: the service building's purse, else the treasury the intent names (`:305-310`). The debit never leans on the apply-time clamp at 0.
+- With no payee (the source is not a building of the world and no treasury is named, `is_no_payee`), nothing is debited, the service goes ahead without a charge, and, when the price is above 0, the result carries `payee_missing`, counted for observability only (`:312`).
 
 ---
 

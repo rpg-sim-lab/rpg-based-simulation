@@ -28,10 +28,21 @@ from src.engine.tactical import TacticalDecisionSystem
 # Fixtures
 # ---------------------------------------------------------------------------
 
+# PERC-02: signals follow the body and senses come from the species, so a "magic-only" target is a body whose model declares only a magic signal.
+# TEST-ONLY content: added to this module's loaded catalog, never to data/content.
+MAGIC_ONLY_SPECIES = "magic_only_test_species"
+DAY = 1200  # ticks 0-599 are NIGHT under the night helper (divergence 2.209), and a day-eyed fixture body does not see a medium-visibility target at night (PERC-02)
+
+
 @pytest.fixture(scope="module")
 def catalog():
     repo = CatalogRepository("data/content")
     repo.load_all()
+    body = repo.body_models["standard_humanoid"].model_copy(update={
+        "id": "magic_only_test_body",
+        "signals": {"visibility": "none", "noise": "none", "scent": "none", "vibration": "none", "life": "none", "magic": "very_high"}})
+    repo.body_models["magic_only_test_body"] = body
+    repo.species[MAGIC_ONLY_SPECIES] = repo.species["human"].model_copy(update={"id": MAGIC_ONLY_SPECIES, "body_model": "magic_only_test_body"})
     return repo
 
 
@@ -45,7 +56,7 @@ def configure_consumers(catalog):
 def _hero(eid: int, pos=(0.0, 0.0), **props):
     e = (
         V2EntityBuilder(eid)
-        .kind("hero")
+        .kind(props.get("species_id", "hero"))  # M1 step 4: kind is the species; the senses come from it (PERC-02)
         .location(float(pos[0]), float(pos[1]))
         .identity(faction=Faction.HERO_GUILD)
         .combat(hp=100, max_hp=100, alive=True, tactical_role="VANGUARD", readiness=100.0)
@@ -61,7 +72,7 @@ def _hero(eid: int, pos=(0.0, 0.0), **props):
 def _monster(eid: int, pos=(1.0, 0.0), **props):
     e = (
         V2EntityBuilder(eid)
-        .kind("monster")
+        .kind(props.get("species_id", "monster"))
         .location(float(pos[0]), float(pos[1]))
         .identity(faction=Faction.MONSTER_HORDE)
         .combat(hp=100, max_hp=100, alive=True, tactical_role="VANGUARD", readiness=100.0)
@@ -83,14 +94,17 @@ def test_magic_only_target_not_perceived_by_normal_humanoid():
     A target emitting only magic_signal with no visibility/noise/scent is invisible
     to a normal humanoid (magic_sense=none). It must not appear as a combat target.
     """
-    attacker = _hero(1, pos=(0.0, 0.0), sense_profile_id="normal_humanoid_senses")
+    attacker = _hero(1, pos=(0.0, 0.0), species_id="human")
     # Target emits only magic_signal; normal humanoid cannot detect it
-    target = _monster(2, pos=(1.0, 0.0),
-                      visibility_signal="none", noise_signal="none", scent_signal="none",
-                      magic_signal="very_high", life_signal="none", vibration_signal="none")
+    target = _monster(2, pos=(2.0, 0.0), species_id=MAGIC_ONLY_SPECIES)  # two tiles off, so touch does not apply; the body model declares only a magic signal (test-only content)
 
-    state = AuthoritativeState(tick=1, seed=1, entities={1: attacker, 2: target})
+    state = AuthoritativeState(tick=1, seed=1, world_time=DAY, entities={1: attacker, 2: target})
     update = TacticalDecisionSystem.evaluate_entity_intent(state, attacker)
+
+    # Right reason: the gate itself finds nothing the humanoid can sense in a magic-only body (its senses have magic_sense none).
+    from src.engine.behavior_consumers import get_entity_signals, get_perception_gate
+    result = get_perception_gate().can_perceive(attacker, get_entity_signals(target), {"distance": 2.0, "reach": 2.0, "night": False})
+    assert not result.perceived and result.signals_used == []
 
     # No combat target should be selected
     assert update.task is None or update.task.payload_set is None or \
@@ -102,13 +116,16 @@ def test_arcane_entity_can_target_magic_only_signal():
     """
     An entity with arcane_senses (high magic_sense) CAN perceive a magic-only target.
     """
-    attacker = _hero(1, pos=(0.0, 0.0), sense_profile_id="arcane_senses")
-    target = _monster(2, pos=(1.0, 0.0),
-                      visibility_signal="none", noise_signal="none", scent_signal="none",
-                      magic_signal="high", life_signal="none", vibration_signal="none")
+    attacker = _hero(1, pos=(0.0, 0.0), species_id="elf")
+    target = _monster(2, pos=(2.0, 0.0), species_id=MAGIC_ONLY_SPECIES)  # two tiles off, so touch does not apply; the body model declares only a magic signal (test-only content)
 
-    state = AuthoritativeState(tick=1, seed=1, entities={1: attacker, 2: target})
+    state = AuthoritativeState(tick=1, seed=1, world_time=DAY, entities={1: attacker, 2: target})
     update = TacticalDecisionSystem.evaluate_entity_intent(state, attacker)
+
+    # Right reason: the only channel the gate scores is the magic one.
+    from src.engine.behavior_consumers import get_entity_signals, get_perception_gate
+    result = get_perception_gate().can_perceive(attacker, get_entity_signals(target), {"distance": 2.0, "reach": 2.0, "night": False})
+    assert result.perceived and result.signals_used == ["magic_signal"]
 
     assert update.task is not None and update.task.payload_set is not None
     assert update.task.payload_set.get("target_id") == 2, \
@@ -127,12 +144,12 @@ def test_territorial_entity_selects_target_with_elevated_priority(catalog):
     deterministic and data-driven.
     """
     attacker = _hero(1, pos=(0.0, 0.0),
-                     sense_profile_id="predator_smell_senses",
+                     species_id="wolf",
                      drive_profile_id="territorial_predator")
     near = _monster(2, pos=(2.0, 0.0))
     far = _monster(3, pos=(5.0, 0.0))
 
-    state = AuthoritativeState(tick=1, seed=1, entities={1: attacker, 2: near, 3: far})
+    state = AuthoritativeState(tick=1, seed=1, world_time=DAY, entities={1: attacker, 2: near, 3: far})
     update = TacticalDecisionSystem.evaluate_entity_intent(state, attacker)
 
     assert update.task is not None and update.task.payload_set is not None
@@ -154,7 +171,7 @@ def test_safety_pressure_above_threshold_triggers_retreat():
                      drive_profile_id="cautious_commoner")
     attacker = _monster(2, pos=(1.0, 0.0))
 
-    state = AuthoritativeState(tick=1, seed=1, entities={1: merchant, 2: attacker})
+    state = AuthoritativeState(tick=1, seed=1, world_time=DAY, entities={1: merchant, 2: attacker})
     update = TacticalDecisionSystem.evaluate_entity_intent(state, merchant)
 
     # Should retreat rather than engage
@@ -172,7 +189,7 @@ def test_safety_pressure_retreat_target_is_inside_a_region_and_away_from_the_thr
     region = RegionState(id="field", name="Field", bounds=(5, 5, 40, 40))
 
     state = AuthoritativeState(
-        tick=1, seed=1, entities={1: merchant, 2: attacker}, regions={"field": region}
+        tick=1, seed=1, world_time=DAY, entities={1: merchant, 2: attacker}, regions={"field": region}
     )
     update = TacticalDecisionSystem.evaluate_entity_intent(state, merchant)
 
@@ -191,7 +208,7 @@ def test_low_safety_pressure_does_not_trigger_retreat():
     warrior = _hero(1, pos=(0.0, 0.0))
     attacker = _monster(2, pos=(1.0, 0.0))
 
-    state = AuthoritativeState(tick=1, seed=1, entities={1: warrior, 2: attacker})
+    state = AuthoritativeState(tick=1, seed=1, world_time=DAY, entities={1: warrior, 2: attacker})
     update = TacticalDecisionSystem.evaluate_entity_intent(state, warrior)
 
     reason = (update.task.payload_set or {}).get("reason", "")
@@ -212,7 +229,7 @@ def test_duty_pressure_entity_selects_target():
     guard = _hero(1, pos=(0.0, 0.0), drive_profile_id="disciplined_protector")
     attacker = _monster(2, pos=(3.0, 0.0))
 
-    state = AuthoritativeState(tick=1, seed=1, entities={1: guard, 2: attacker})
+    state = AuthoritativeState(tick=1, seed=1, world_time=DAY, entities={1: guard, 2: attacker})
     update = TacticalDecisionSystem.evaluate_entity_intent(state, guard)
 
     assert update.task is not None and update.task.payload_set is not None
@@ -225,10 +242,10 @@ def test_duty_pressure_entity_selects_target():
 
 def test_tactical_decision_with_consumers_is_deterministic():
     """Same state + pressures → identical EntityUpdate."""
-    entity = _hero(1, pos=(0.0, 0.0), sense_profile_id="normal_humanoid_senses")
+    entity = _hero(1, pos=(0.0, 0.0), species_id="human")
     enemy = _monster(2, pos=(1.0, 0.0))
 
-    state = AuthoritativeState(tick=1, seed=1, entities={1: entity, 2: enemy})
+    state = AuthoritativeState(tick=1, seed=1, world_time=DAY, entities={1: entity, 2: enemy})
     upd_a = TacticalDecisionSystem.evaluate_entity_intent(state, entity)
     upd_b = TacticalDecisionSystem.evaluate_entity_intent(state, entity)
 

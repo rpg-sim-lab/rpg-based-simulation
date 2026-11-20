@@ -277,12 +277,12 @@ class ProjectClient:
 
 # ---------------------------------------------------------------- --init
 
-TEXT_FIELDS = ("Ticket ID", "Seat", "Host", "Branch", "PR", "Source", "Sync hash", "Epic", "Tags", "Host facts", "Last run")
+TEXT_FIELDS = ("Ticket ID", "Seat", "Host", "Branch", "PR", "Source", "Sync hash", "Epic", "Tags", "Host facts", "Involved", "Blocked by", "Hotspot", "Last run")
 DATE_FIELDS = ("Filed",)
 OLD_DOMAIN = "Domain (old)"  # the P1b text field `Domain`, renamed by --init (P3b); it is never deleted
 TIER_OPTIONS = [("hotfix", "ORANGE"), ("standard", "BLUE"), ("epic", "PURPLE")]
 PRIORITY_OPTIONS = [("P0", "RED"), ("P1", "ORANGE"), ("P2", "YELLOW"), ("P3", "GRAY")]
-STATUS_COLORS = {"To do": "GRAY", "In progress": "BLUE", "Stale": "ORANGE", "In review": "PURPLE", "Blocked": "RED", "Done": "GREEN"}
+STATUS_COLORS = {"To do": "GRAY", "In progress": "BLUE", "Stale": "ORANGE", "In review": "PURPLE", "Blocked": "RED", "Done": "GREEN", "Parked": "YELLOW"}
 
 
 def merge_options(field: ProjectField, wanted: list[tuple[str, str]]) -> list[tuple[str, str, str | None]]:
@@ -389,7 +389,7 @@ def init_fields(client, statuses: tuple[str, ...], replace_status_options: bool 
 
 # ---------------------------------------------------------------- --apply
 
-VALUE_ORDER = ("Ticket ID", "Status", "Domain", "Seat", "Host", "Branch", "PR", "Tier", "Layer", "Priority", "Epic", "Tags", "Host facts", "Filed")  # Source, then Sync hash, are always last
+VALUE_ORDER = ("Ticket ID", "Status", "Domain", "Seat", "Host", "Branch", "PR", "Tier", "Layer", "Priority", "Epic", "Tags", "Host facts", "Filed", "Involved", "Blocked by", "Hotspot")  # Source, then Sync hash, are always last
 SELECT_FIELDS = ("Status", "Tier", "Layer", "Priority", "Domain")
 
 

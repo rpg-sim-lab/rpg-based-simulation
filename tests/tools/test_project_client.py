@@ -97,7 +97,7 @@ def test_init_appends_status_options_on_a_board_with_items_keeping_ids_and_repor
     assert code == 0 and "kept, not in STATUSES: Legacy" in lines
     (call,) = fake.calls
     assert call[2][:3] == [("To do", "O_To do"), ("Legacy", "O_Legacy"), ("Done", "O_Done")]  # existing ids, order kept
-    assert [n for n, i in call[2][3:]] == ["In progress", "Stale", "In review", "Blocked"] and all(i is None for _, i in call[2][3:])
+    assert [n for n, i in call[2][3:]] == ["In progress", "Stale", "In review", "Blocked", "Parked"] and all(i is None for _, i in call[2][3:])
 
 
 def test_the_replace_flag_drops_only_the_option_left_out_and_keeps_the_other_ids():
@@ -293,7 +293,7 @@ def test_project_sync_never_runs_graphql_itself_and_the_client_has_no_delete_mut
 
 
 def test_host_facts_is_a_text_field_init_creates_by_name_and_apply_writes_before_source():
-    assert "Host facts" in pc.TEXT_FIELDS and pc.VALUE_ORDER[-2:] == ("Host facts", "Filed")
+    assert "Host facts" in pc.TEXT_FIELDS and pc.VALUE_ORDER[-5:-3] == ("Host facts", "Filed")
     fake = Fake(project(status_options=STATUSES, skip=("Host facts",)))
     lines, code = pc.init_fields(fake, STATUSES, layers=LAYERS)
     assert code == 0 and ("create_text", "Host facts") in fake.calls and "created: Host facts" in lines

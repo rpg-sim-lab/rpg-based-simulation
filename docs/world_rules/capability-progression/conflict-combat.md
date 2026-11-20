@@ -95,7 +95,8 @@ directly, 2026-10-09; rows 47 and 49 of the memo):**
   faction verdict either way, and a faction verdict cannot make an attack on a wild creature
   legal (`tests/unit/engine/test_wild_creature_regarded_by_appraisal.py`). A hungry wolf regards
   the herd as prey and a sated one does not
-  (`tests/unit/engine/test_hungry_wolf_hunts_prey_it_out_bands.py`). **Still open:**
+  (`tests/unit/engine/test_hungry_wolf_hunts_prey_it_out_bands.py`). A wolf spawned at runtime (a lair, a camp) is a wild creature exactly as a compiled one is, so
+  its fights with a hero are decided by appraisal in both directions, never by the faction verdict (2.216). **Still open:**
   - A wolf and a person tie in kind bands, so in M0 a wolf never takes a person as prey (a strict
     xfail names milestone 1's single-appraisal child).
   - Monster factions keep faction hostility as an interim (decision 62), until milestone 1's

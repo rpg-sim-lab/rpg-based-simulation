@@ -13,13 +13,14 @@ import pytest
 
 from src.engine.appraisal import HUNT_HUNGER, Relation, appraise
 from tests.helpers.scenario import compile_world
+from src.core.species import species_of
 
 HUNGRY = HUNT_HUNGER + 40.0
 SATED = 0.0
 
 
 def _species(state, species):
-    return next(e for e in state.entities.values() if (e.identity.properties or {}).get("species_id") == species)
+    return next(e for e in state.entities.values() if species_of(e) == species)
 
 
 def _beside(target, wolf, dx):
@@ -39,11 +40,11 @@ def _with_hunger(entity, hunger):
 def test_a_hungry_wolf_regards_the_herd_as_prey_and_a_sated_one_does_not(world):
     wolf = _species(world, "wolf")
     herd = _beside(_species(world, "small_plant_eater"), wolf, 2.0)
-    assert appraise(_with_hunger(wolf, HUNGRY), herd) is Relation.PREDATION
-    assert appraise(_with_hunger(wolf, SATED), herd) is not Relation.PREDATION
+    assert appraise(_with_hunger(wolf, HUNGRY), herd, night=False, tick=None) is Relation.PREDATION
+    assert appraise(_with_hunger(wolf, SATED), herd, night=False, tick=None) is not Relation.PREDATION
 
 
 def test_a_hungry_wolf_does_not_regard_a_person_as_prey_because_a_tie_in_kind_bands_cannot_be_overcome(world):
     wolf = _with_hunger(_species(world, "wolf"), HUNGRY)
     person = _beside(_species(world, "human"), wolf, 2.0)
-    assert appraise(wolf, person) is not Relation.PREDATION
+    assert appraise(wolf, person, night=False, tick=None) is not Relation.PREDATION

@@ -285,13 +285,16 @@ class NavigationPatch(ComponentPatch):
                 movement_mode=u_nav.movement_mode_set if u_nav.movement_mode_set is not None else new_nav.movement_mode,
                 path=u_nav.path_set if u_nav.path_set is not None else (None if u_nav.clear_path else new_nav.path),
                 moved_recently=u_nav.moved_recently_set if u_nav.moved_recently_set is not None else new_nav.moved_recently,
-                last_failure_reason=u_nav.failure_reason if u_nav.failure_reason is not None else new_nav.last_failure_reason,
+                # last_failure_reason is the outcome of the LAST step: codes come from any action writer, ONLY a successful movement step clears it with the typed `failure_reason_clear`, and a bare None
+                # (a held step) leaves it as it was. A code set in the same update wins over the clear.
+                last_failure_reason=u_nav.failure_reason if u_nav.failure_reason is not None else (None if u_nav.failure_reason_clear else new_nav.last_failure_reason),
                 region_id=u_nav.region_id_set if u_nav.region_id_set is not None else new_nav.region_id,
                 wait_count=new_nav.wait_count + u_nav.wait_count_delta,
                 oscillation_count=new_nav.oscillation_count + u_nav.oscillation_count_delta,
                 last_position=u_nav.last_position_set if u_nav.last_position_set is not None else new_nav.last_position,
                 step_ready_tick=u_nav.step_ready_tick_set if u_nav.step_ready_tick_set is not None else new_nav.step_ready_tick,
                 lodged_in=None if u_nav.lodged_in_clear else (u_nav.lodged_in_set if u_nav.lodged_in_set is not None else new_nav.lodged_in),
+                last_moved_tick=u_nav.last_moved_tick_set if u_nav.last_moved_tick_set is not None else new_nav.last_moved_tick,
             )
             # 2.213 (COMB-356, F1): the way-round count belongs to the pursuit, not to one stored tile. Only the give-up (wayround_clear) ends it here; a target re-write or a clear does not,
             # and resolve_move's anchor and quiet tests at the next event decide whether the count continues. The movement update's count, best distance, anchor and tick land.

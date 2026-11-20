@@ -7,6 +7,7 @@ from src.engine.kernel import Kernel
 from src.entities.runtime_contract import ResolvedEntityRuntimeContract
 from src.entities.archetype_factory import ArchetypeEntityFactory, EntitySpawnContext
 from src.platform.rng import DeterministicRNG
+from src.core.species import species_of
 
 
 def _contract(**overrides) -> ResolvedEntityRuntimeContract:
@@ -15,7 +16,7 @@ def _contract(**overrides) -> ResolvedEntityRuntimeContract:
         species_id="human",
         faction_id="town_council",
         role_id="worker",
-        kind="humanoid",
+        kind="human",
         hp=80,
         max_hp=80,
         atk=8,
@@ -68,7 +69,7 @@ def test_build_wolf_entity_from_contract():
         species_id="wolf",
         faction_id="wilderness",
         role_id="predator",
-        kind="beast",
+        kind="wolf",
         hp=60,
         max_hp=60,
         atk=15,
@@ -77,7 +78,7 @@ def test_build_wolf_entity_from_contract():
         readiness=100.0,
     )
     entity = FACTORY.build_entity(2, c, _spawn())
-    assert entity.kind == "beast"
+    assert entity.kind == "wolf"
     assert entity.combat.hp == 60
     assert entity.combat.atk == 15
 
@@ -88,7 +89,7 @@ def test_build_goblin_raider_entity_from_contract():
         species_id="goblin",
         faction_id="goblin_clan",
         role_id="raider",
-        kind="goblinoid",
+        kind="goblin",
         hp=40,
         max_hp=40,
         atk=12,
@@ -96,7 +97,7 @@ def test_build_goblin_raider_entity_from_contract():
         traits=("aggressive", "nimble"),
     )
     entity = FACTORY.build_entity(3, c, _spawn())
-    assert entity.kind == "goblinoid"
+    assert entity.kind == "goblin"
     assert "aggressive" in entity.identity.traits
     assert "nimble" in entity.identity.traits
 
@@ -140,10 +141,11 @@ def test_combat_values_match_contract():
 
 
 def test_archetype_id_preserved_in_identity_properties():
-    c = _contract(archetype_id="test_arch", species_id="test_species")
+    # PERC-02a (rpg-designer): the archetype path refuses a species that is not in content, so the fixture names a real one; the test still checks that the species is preserved.
+    c = _contract(archetype_id="test_arch", species_id="human")
     entity = FACTORY.build_entity(7, c, _spawn())
     assert entity.identity.properties["archetype_id"] == "test_arch"
-    assert entity.identity.properties["species_id"] == "test_species"
+    assert species_of(entity) == "human"
 
 
 def test_inventory_items_and_gold_from_contract():
@@ -221,7 +223,7 @@ def test_profile_ids_stored_in_properties():
     assert props["cognition_profile_id"] == "cog_basic"
     assert props["drive_profile_id"] == "drive_survival"
     assert props["need_profile_id"] == "need_human"
-    assert props["sense_profile_id"] == "sense_human"
+    assert "sense_profile_id" not in props  # PERC-02: senses are derived from the species at read, never stored on the body
     assert props["skill_profile_id"] == "skill_worker"
 
 

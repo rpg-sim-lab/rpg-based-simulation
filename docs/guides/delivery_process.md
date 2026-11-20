@@ -280,6 +280,48 @@ would crowd out the human-readable part in the `git log --oneline` view that mot
 subject-line traceability gap in the first place. A `Closes:` block goes in the PR **body** instead
 (see below), which squash preserves.
 
+### Durable state, lifecycle and clocks section (required on new tickets)
+
+Every ticket dated 2026-11-19 or later carries `## Durable state, lifecycle and clocks`, after
+`## Assumptions / Open Questions`. Its body is either `N/A: <reason>` (the reason after the colon must be
+non-empty) or short answers, for each durable field or record the ticket creates or changes, to: who creates
+it and is creation idempotent across two passes; does an update merge or replace, and what survives a replace;
+how every non-terminal state exits and what bounds how many exist; who clears it and is the value tested after
+a successful step; how many code paths write it and does it carry one meaning; which clock each reader uses
+(the clock rule itself is the planned `docs/engine/time_semantics.md`: PLANNED, not landed). Questions only,
+no world rules. Why: the defects behind it (raw `world_time` night check, a suspended project that never
+exits, a stale failure reason, a latch never cleared, a blocker replaced instead of merged) were all visible
+as a lifecycle or clock question that no gate asked.
+
+`tools/ticket_field_values.py::check_lifecycle_section` checks presence only (never answer quality), through
+`done_checker_static.py`'s advisory check `ticket_lifecycle_section` (OK, WARN or NA; printed with the other `[advisory]` lines; it never changes the close verdict). Older tickets are grandfathered by the
+frontmatter `date:` (`LIFECYCLE_SECTION_REQUIRED_FROM`); a ticket with no parseable date is also passed. The
+section is rendered into the PR body's `## Verification` (below) and `tools/delivery/pr_body_lint.py` reports (a `::warning::`, exit code unchanged) a
+template-shaped PR body without the line. **Advisory first; promotion to blocking is a later owner decision after the fill-rate baseline** (owner decision, #715 6972698325). `tools/gate_checks/lifecycle_section_fill_rate.py` reports the fill and `N/A`
+rate of tickets dated on or after the landing date. `CLAUDE.md`'s "Ticket Format" required-sections list names the section (owner yes, #715 6972548742).
+
+### Overlap scan on new tickets (advisory)
+
+`tools/gate_checks/ticket_overlap_check.py <ticket path>` scans a new or changed `todos/` or `inprogress/` ticket against the other open tickets and prints, when it finds any, ONE line:
+`overlap scan: <path>: N candidate(s): <id> (<title>, q=<value>), ...` for the top two uncited hits. Run it by hand before committing a new ticket; the pre-push advisory hook (check H) runs it on every
+ticket file a push adds or changes, and `ticket-scoper` runs it on its draft. A hit is an open ticket whose weighted term overlap is at least 0.25 of the draft's own total term weight (`q`), with ids
+typed in the title or summary removed before scoring. A ticket is silent when its `## Related Tickets` cites the hit, or carries the line `overlap scan: <n> hits, none duplicate (<why>)`
+(presence only; the reason is never judged). Only tickets dated on or after 2026-11-21 are checked. It always exits 0; every run prints `ran / skipped / errored` counts, and a file it cannot scan is a
+named warning, never a silent pass. `ticket_overlap_check.py --report --since <date>` lists the open tickets filed since a date with their state (uncited candidate, waived, clean, errored): the efficacy
+measure.
+
+**Read it as a locator, not a duplicate verdict.** Measured on origin/main 5bedb5ff0 (151 tickets filed in 21 days, a 20-pair stratified sample labelled by agent-working-planner and rpg-planner-ubuntu):
+precision is about 50% (10 of 20 pairs useful, Wilson 95% roughly 28 to 72%), half the hits are cited-and-fine or unrelated, and rank 1 is not a precision signal (3 of the 10 unrelated pairs were rank 1).
+About 47% of new tickets see a line; a per-ticket cap changes the number of lines (71 at cap 1, 120 at cap 2, 311 uncapped), not that share. That is the price of keeping the owner-named inn-meal pair
+(q 0.259): a higher threshold loses it. Known false positive kept as a test: the SimQ anchor-reds ticket against the slow-regression exit-2 ticket (rpg-planner-ubuntu: wall-clock degraded mode against
+deterministic drift).
+
+### Parking a ticket: the `Parked:` line
+
+When a planner parks work (it waits on another ticket, an open PR, or a recorded decision) they add ONE line at the start of a line in the ticket's body: `Parked: waits on <TCK-id | PR#n | decision <reference>> since <YYYY-MM-DD>`. The GitHub Project then shows
+the ticket as Parked instead of Stale. They remove the line when the wait ends (a Done ticket or a merged or closed PR clears it by itself; a decision never does). It is not a new required section and not part of the ticket template. A malformed or
+over-45-days-old line is a finding in the project sync's dry run, never a block. Rules and precedence: `docs/guidelines/session_roles/project_sync_dry_run.md`, "The Parked marker".
+
 ## PR Body Template — rendered, not written
 
 ```markdown
@@ -296,6 +338,7 @@ subject-line traceability gap in the first place. A `Closes:` block goes in the 
 
 ## Verification
 - Tests: <scoped commands run, per ticket, with results>
+- Durable state, lifecycle and clocks: <per ticket, rendered from its `## Durable state, lifecycle and clocks` section; `N/A: no src change` when the diff touches no src/>
 - Gates: <done_checker_static result per ticket, including any stated FAIL>
 - Known gaps: <anything closed with a known failure or a stated gap, stated not hidden>
 
@@ -323,6 +366,13 @@ follow-up commit to an already-closed ticket. A branch that closes no ticket ren
 layer) and `--why`: the title ends `(no tickets)`, the body lists the changed directories, and the last line is
 `Closes: (none)`. Pass the same three flags to `--check`. This path exists for the two named exceptions to the PR-size rule
 in "PR Lifecycle" below and nothing else; it prints a stderr warning saying so (report-only, no gate).
+
+The `- Durable state, lifecycle and clocks:` line is rendered once per ticket from the ticket's section, collapsed to
+one line. When the PR diff touches no `src/` the renderer writes `N/A: no src change` itself, and a ticketless body
+writes `N/A: no ticket on this branch`, so the line never fails a docs-only or tooling-only PR. A ticket on a src PR
+whose file has no such section renders `(none recorded: ...)`. `pr_body_lint.py` (the `PR body lint` CI job) reports, without failing, a
+body whose `## Tickets` table lists a ticket with an id date (TCK-YYYYMMDD-) of 20261119 or later and that has no non-empty line of that name in `## Verification`; so a body that lists only older tickets, and a PR that touches no `src/`, is never flagged. Bodies without a
+`## Tickets` heading (Dependabot, hand-written one-offs) are not checked: a known bypass.
 
 `## Known gaps` is load-bearing and deliberate: the repo's Gate Integrity rule says a blocking gate
 result is information to report, never an obstacle to route around. Giving it a fixed slot in every

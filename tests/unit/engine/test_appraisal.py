@@ -15,10 +15,11 @@ from src.core.enums import EntityRole, Faction
 from src.core.state import TaskComponent
 from src.engine import appraisal, behavior_consumers
 from src.engine.appraisal import THREAT_RANGE, WARY_DISTANCE, Relation
-from src.engine.hostility import perceived_hostile, relation
+from src.engine.hostility import perceived_hostile as _perceived_hostile, relation as _relation
 from src.engine.legality import LegalityServiceV2
 from src.content.common_knowledge_seed import seeded_knowledge
 from src.core.self_model import SelfModelBundle
+from src.core.species import species_of
 
 HUNGRY, SATED = 99.0, 0.0
 
@@ -54,7 +55,7 @@ def _entity(eid, species, pos, *, hunger=SATED, faction=None, payload=None, last
     # Two distinct, mutually non-hostile factions by default, so only the appraisal speaks (a faction never hunts its own).
     faction = faction or (Faction.NEUTRAL if eid == 1 else Faction.TOWN_COUNCIL)
     catalog = behavior_consumers._catalog
-    builder = (V2EntityBuilder(eid).kind("monster").location(*pos)
+    builder = (V2EntityBuilder(eid).kind(species).location(*pos)
                .identity(role=EntityRole.MONSTER, faction=faction, properties={"species_id": species})
                .combat(hp=100, max_hp=100, attack_range=1, readiness=100.0, alive=True)
                .lifecycle(active=True).biological(hunger=hunger)
@@ -130,10 +131,19 @@ def test_predation_permits_the_attack_when_factions_refuse_and_a_sated_one_does_
     assert _attack_allowed(sated, prey, context) is False
 
 
+def relation(entity, other):
+    """The appraisal tests judge by day (night False) and undated signals (tick None): both are now passed, never defaulted."""
+    return _relation(entity, other, night=False, tick=None)
+
+
+def perceived_hostile(entity, other):
+    return _perceived_hostile(entity, other, night=False, tick=None)
+
+
 def _attack_allowed(attacker, target, context):
     """The faction rule or, failing it, appetite or defence: the two checks `verify_attack_legality` applies in turn."""
     from src.engine.hostility import attack_allowed
-    return attack_allowed(attacker, target, LegalityServiceV2._attack_permitted(attacker, target, context))
+    return attack_allowed(attacker, target, LegalityServiceV2._attack_permitted(attacker, target, context), night=False, tick=None)
 
 
 def test_wary_distance_exceeds_the_threat_range():
@@ -171,8 +181,8 @@ def test_a_hungry_wolf_gets_predation_on_the_plant_eater_as_compiled_from_conten
     from tests.helpers.scenario import compile_world
 
     state = compile_world("frontier_living_world", 42)
-    wolf = next(e for e in state.entities.values() if (e.identity.properties or {}).get("species_id") == "wolf")
-    eater = next(e for e in state.entities.values() if (e.identity.properties or {}).get("species_id") == "small_plant_eater")
+    wolf = next(e for e in state.entities.values() if species_of(e) == "wolf")
+    eater = next(e for e in state.entities.values() if species_of(e) == "small_plant_eater")
     x, y = wolf.navigation.position
     wolf = replace(wolf, biological=replace(wolf.biological, hunger=HUNGRY))
     eater = replace(eater, navigation=replace(eater.navigation, position=(x + 2.0, y)))

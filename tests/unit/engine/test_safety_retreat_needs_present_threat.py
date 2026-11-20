@@ -23,6 +23,7 @@ from src.engine.tactical_threat import (
     present_threat_terms,
     safety_retreat_warranted,
 )
+from tests.helpers.clock import DAY_WORLD_TIME
 
 
 @pytest.fixture(scope="module", autouse=True)
@@ -63,7 +64,7 @@ def _hostile(pos, *, targeting=None, last_position=None, **kw):
 
 
 def _reason(subject, hostile):
-    state = AuthoritativeState(tick=1, seed=1, entities={subject.id: subject, hostile.id: hostile})
+    state = AuthoritativeState(world_time=DAY_WORLD_TIME, tick=1, seed=1, entities={subject.id: subject, hostile.id: hostile})
     update = TacticalDecisionSystem.evaluate_entity_intent(state, subject)
     payload = (update.task.payload_set or {}) if update is not None and update.task is not None else {}
     return payload.get("reason")

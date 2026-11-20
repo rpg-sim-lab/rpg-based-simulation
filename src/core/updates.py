@@ -67,6 +67,7 @@ class NavigationUpdate:
     moved_recently_set: Optional[bool] = None
     movement_mode_set: Optional[MovementMode] = None
     failure_reason: Optional[str] = None
+    failure_reason_clear: bool = False  # the last step succeeded: last_failure_reason is the outcome of the LAST step, so it is set to None here; codes come from any action writer, ONLY a successful movement step clears it, and a None `failure_reason` alone never clears it
     clear_target: bool = False
     clear_path: bool = False
     
@@ -78,6 +79,7 @@ class NavigationUpdate:
     step_ready_tick_set: Optional[float] = None  # D75: the earliest tick of the entity's next step
     lodged_in_set: Optional[int] = None  # F3: the building the subject lodges in from this tick (a lodge claim until `grant_beds` grants it)
     lodged_in_clear: bool = False  # F3: the subject leaves the building it lodges in
+    last_moved_tick_set: Optional[int] = None  # PERC-02: the tick of a move: any position change by the movement apply path (a step, a swap, a yield displacement)
     wayround_count_set: Optional[int] = None  # 2.213: the way-round steps taken on this target with no net progress, and the best distance seen (written by resolve_move only)
     wayround_best_distance_set: Optional[int] = None
     wayround_anchor_set: Optional[Tuple[int, int]] = None  # F1 (2.213): the tile the count opened on, and the tick of this event (written by resolve_move only)
@@ -87,32 +89,28 @@ class NavigationUpdate:
     def is_noop(self) -> bool:
         return (self.target_set is None and not self.target_clear and self.path_set is None and self.step_ready_tick_set is None and 
                 self.moved_recently_set is None and self.movement_mode_set is None and 
-                self.failure_reason is None and not self.clear_target and not self.clear_path and 
+                self.failure_reason is None and not self.failure_reason_clear and not self.clear_target and not self.clear_path and 
                 self.wait_count_delta == 0 and self.oscillation_count_delta == 0 and 
-                self.last_position_set is None and self.region_id_set is None and self.lodged_in_set is None and not self.lodged_in_clear and
+                self.last_position_set is None and self.region_id_set is None and self.lodged_in_set is None and not self.lodged_in_clear and self.last_moved_tick_set is None and
                 self.wayround_count_set is None and self.wayround_best_distance_set is None and self.wayround_anchor_set is None and
                 self.wayround_last_tick_set is None and not self.wayround_clear)
 
     def merge(self, other: NavigationUpdate) -> NavigationUpdate:
         if not other or other.is_noop():
             return self
-        changes: Dict[str, Any] = {}
-        if other.target_set is not None: changes["target_set"] = other.target_set
-        if other.target_clear: changes["target_clear"] = True
-        if other.path_set is not None: changes["path_set"] = other.path_set
-        if other.moved_recently_set is not None: changes["moved_recently_set"] = other.moved_recently_set
-        if other.movement_mode_set is not None: changes["movement_mode_set"] = other.movement_mode_set
-        if other.failure_reason is not None: changes["failure_reason"] = other.failure_reason
-        if other.clear_target: changes["clear_target"] = True
-        if other.clear_path: changes["clear_path"] = True
+        optional_sets = ("target_set", "path_set", "moved_recently_set", "movement_mode_set", "last_position_set", "region_id_set", "step_ready_tick_set", "last_moved_tick_set")      # taken from the later update whenever it names them
+        changes: Dict[str, Any] = {name: getattr(other, name) for name in optional_sets if getattr(other, name) is not None}
+        changes.update({name: True for name in ("target_clear", "clear_target", "clear_path") if getattr(other, name)})
+        changes.update(other._failure_changes())  # the code if set, and the clear flag (failure_reason_clear)
         if other.wait_count_delta != 0: changes["wait_count_delta"] = self.wait_count_delta + other.wait_count_delta
         if other.oscillation_count_delta != 0: changes["oscillation_count_delta"] = self.oscillation_count_delta + other.oscillation_count_delta
-        if other.last_position_set is not None: changes["last_position_set"] = other.last_position_set
-        if other.region_id_set is not None: changes["region_id_set"] = other.region_id_set
-        if other.step_ready_tick_set is not None: changes["step_ready_tick_set"] = other.step_ready_tick_set
         changes.update(other._lodging_changes())
         changes.update(other._wayround_changes())
         return replace(self, **changes)
+
+    def _failure_changes(self) -> Dict[str, Any]:
+        """What a merge takes from this update for the failure fields: the code if one is set, and the clear flag (a successful step; ``NavigationPatch`` lets a code win over the clear)."""
+        return {**({"failure_reason": self.failure_reason} if self.failure_reason is not None else {}), **({"failure_reason_clear": True} if self.failure_reason_clear else {})}
 
     def _wayround_changes(self) -> Dict[str, Any]:
         """What a merge takes from this update for the way-round fields (2.213 F1): each value that is set, and the clear flag."""

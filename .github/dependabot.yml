@@ -87,6 +87,19 @@ updates:
       - dependency-name: torch
       - dependency-name: graphifyy
       - dependency-name: headroom-ai
+      # mcp majors wait for the 2.x migration (TCK-20261119-MCP-2X-MIGRATION-VISUAL-ASSETS-SEARCH-MCP-HEADROOM-AI):
+      # 2.x renames FastMCP, which breaks visual_assets/drawing and tools/search_mcp (closed #813). Minor and patch
+      # updates still come through. The migration PR removes this entry.
+      - dependency-name: mcp
+        update-types: ["version-update:semver-major"]
+      # complexipy majors wait for a code-health re-baseline under its own ruling (TCK-20261119-DEPENDABOT-IGNORES-COMPLEXIPY-MAJORS-AND-SENTENCE-TRANSFORMERS):
+      # Dependabot #974's 8 -> 9 bump produced 60 new/worse violations on the code-health ratchet. Minor and patch updates still come through.
+      - dependency-name: complexipy
+        update-types: ["version-update:semver-major"]
+      # sentence-transformers is knowledge stack, bumped by hand with torch, graphifyy and headroom-ai (owner decision on #882, option A):
+      # a version change can change the embeddings and so the search index. No `versions`, so every version update is skipped.
+      # uv.lock moves with the hand bump.
+      - dependency-name: sentence-transformers
     groups:
       uv-major:
         update-types: [major]

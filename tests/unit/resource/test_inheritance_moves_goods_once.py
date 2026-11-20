@@ -6,13 +6,14 @@ from dataclasses import replace
 
 from src.core.state import InventoryComponent, ItemStack
 from tests.helpers.scenario import compile_world, empty_inventories, run_scenario
+from src.core.species import species_of
 
 ITEMS = (ItemStack("wood", 3), ItemStack("iron_ore", 2))
 GOLD = 9
 
 
 def _pair(state):
-    humans = [i for i, e in sorted(state.entities.items()) if e.combat.alive and (e.identity.properties or {}).get("species_id") == "human"]
+    humans = [i for i, e in sorted(state.entities.items()) if e.combat.alive and species_of(e) == "human"]
     return humans[0], humans[1]
 
 

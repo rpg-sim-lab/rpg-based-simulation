@@ -10,6 +10,8 @@ from __future__ import annotations
 from typing import Any, Dict, Optional, Tuple
 
 from src.content.common_knowledge_seed import install_warm_catalog_provider
+from src.core.species import species_of
+from src.engine.perception_signals import emitted_signals
 
 _perception_gate = None
 _pressure_resolver = None
@@ -83,25 +85,10 @@ def _auto_init() -> None:
     _pressure_resolver = MotivationPressureResolver(_catalog)
 
 
-def get_entity_signals(entity: Any) -> Dict[str, str]:
-    """
-    Derive the natural signals emitted by an entity for perception checks.
-
-    Signal keys match PerceptionGate's _SENSE_TO_SIGNAL values.
-    Reads from entity.identity.properties with sensible defaults.
-    """
-    props: Dict[str, str] = {}
-    if hasattr(entity, "identity") and hasattr(entity.identity, "properties"):
-        props = entity.identity.properties or {}
-    return {
-        "visibility": props.get("visibility_signal", "medium"),
-        "noise": props.get("noise_signal", "low"),
-        "scent": props.get("scent_signal", "low"),
-        "magic_signal": props.get("magic_signal", "none"),
-        "life_signal": props.get("life_signal", "low"),
-        "vibration": props.get("vibration_signal", "low"),
-        "social_signal": props.get("social_signal", "none"),
-    }
+def get_entity_signals(entity: Any, tick: Optional[int] = None) -> Dict[str, str]:
+    """The signals `entity` gives off for perception checks (PERC-02: they follow the body; see ``src.world.perception.signals.emitted_signals``)."""
+    _, body = get_kind_properties(species_of(entity))
+    return emitted_signals(entity, body, tick)
 
 
 def _seeding_catalog() -> Any:

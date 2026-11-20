@@ -304,7 +304,7 @@ def test_run_shadow_shapers_does_not_touch_a_queue():
 
 def test_combat_entity_snapshot_returns_real_fields():
     ent = _entity(hp=42, max_hp=100, atk=15, def_stat=8, action_style=1, evolution_level=4,
-                  role=2, faction_id="wolf_pack", species_id="wolf", bravery=0.35)
+                  role=2, faction_id="wolf_pack", species_id="wolf", kind="wolf", bravery=0.35)
     snap = _combat_entity_snapshot(ent)
     assert snap["level"] == 4
     assert snap["hp"] == 42

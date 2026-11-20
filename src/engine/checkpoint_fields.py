@@ -54,6 +54,12 @@ def _projects(state: Any) -> Iterable[Any]:
             yield (f"project {project.id} of entity {e.id}", project)
 
 
+def _blockers(state: Any) -> Iterable[Any]:
+    for e in (getattr(state, "entities", None) or {}).values():
+        for blocker in ((getattr(getattr(e, "strategic", None), "blockers", None)) or {}).values():
+            yield (f"blocker {blocker.id} of entity {e.id}", blocker)
+
+
 def _buildings(state: Any) -> Iterable[Any]:
     for b in (getattr(state, "buildings", None) or {}).values():
         yield (f"building {b.id}", b)
@@ -93,9 +99,18 @@ FIELD_RULES: List[FieldRule] = [
     FieldRule("wayround_anchor", _navigations, "wayround_anchor", fill=lambda state, owner: None, ruling="2.213 F1: a state that predates the pursuit-anchored count had no anchor", record="NavigationComponent"),
     FieldRule("wayround_last_tick", _navigations, "wayround_last_tick", fill=lambda state, owner: None, ruling="2.213 F1: a state that predates the pursuit-anchored count had no last-event tick", record="NavigationComponent"),
     FieldRule("lodged_in", _navigations, "lodged_in", fill=lambda state, owner: None, ruling="2.155: a state that predates lodging lodged no one", record="NavigationComponent"),
+    # PERC-02 (2.210): a state that predates the step clock never recorded a step, so the body reads still until it steps; None is exactly that state.
+    FieldRule("last_moved_tick", _navigations, "last_moved_tick", fill=lambda state, owner: None, ruling="rpg-designer 2026-11-18, PERC-02: a state that predates the step clock recorded no step", record="NavigationComponent"),
     FieldRule("beds", _buildings, "beds", fill=None, ruling="2.155: beds are copied from content at compile; the checkpoint carries no compiled content", record="BuildingState"),
     # A pre-2.156 state kept no retreat clear window, so a project that predates it has none yet (it opens on the first clear observation); None is exactly that state.
     FieldRule("cleared_since", _projects, "cleared_since", fill=lambda state, owner: None, ruling="2.156: a state that predates the retreat clear window had no window", record="ProjectState"),
+    # N10 (2.212): a state that predates the suspension clock stamped none; `expire_suspended` stamps a SUSPENDED record on first sight.
+    FieldRule("ended_tick", _projects, "ended_tick", fill=lambda state, owner: None, ruling="rpg-designer 2026-11-18, churn: a project that ended before the field kept no end tick", record="ProjectState"),
+    FieldRule("suspended_since", _projects, "suspended_since", fill=lambda state, owner: None, ruling="rpg-designer 2026-11-16, N10: a state that predates the suspension clock had none", record="ProjectState"),
+    # 2.214: a state that predates the blocker lifecycle never timed a blocker out and never stamped when one was last inferred.
+    FieldRule("failure_count", _blockers, "failure_count", fill=lambda state, owner: 0, ruling="rpg-designer 2026-11-17, blocker churn: a state that predates the blocker lifecycle had no timeouts", record="BlockerState"),
+    FieldRule("last_project_end_tick", _blockers, "last_project_end_tick", fill=lambda state, owner: None, ruling="rpg-designer 2026-11-18, churn: a blocker that predates the field had no project end recorded", record="BlockerState"),
+    FieldRule("last_seen_tick", _blockers, "last_seen_tick", fill=lambda state, owner: None, ruling="rpg-designer 2026-11-17, blocker churn: a state that predates the last-seen tick had none", record="BlockerState"),
     # The group rows (2.146). next_group_id stays the LAST AuthoritativeState field and the three group fields stay after _canonical_cache (an insert is refused by the schema check).
     FieldRule("next_group_id", _state_itself, "next_group_id", fill=_seed_next_group_id, ruling="rpg-designer 2026-10-31, group id allocation (addition 4)", record="AuthoritativeState"),
     FieldRule("group.contract_holder_id", _groups, "contract_holder_id", fill=_none_on_unbound_group, ruling=_GROUP_RULING, record="GroupRecord"),

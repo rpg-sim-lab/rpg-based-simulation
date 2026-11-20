@@ -5,6 +5,7 @@ from src.core.state import AuthoritativeState, EntityState, PlaceState, RegionSt
 from src.api.schemas import PlaceReadModel, PlaceTiles
 from src.content_semantics.faction import get_faction_semantics_service
 from src.core.enums import Faction
+from src.core.species import species_of
 from src.core.lodging_rules import lodged_in_field
 from src.core.strategic import ContractStatus, is_live_project
 
@@ -72,7 +73,7 @@ def present_entity_quests(entity: EntityState, status: str = "all", offset: int 
 
 def _species_and_size(entity: EntityState) -> Dict[str, Optional[str]]:
     """The entity's species id and the species' declared power band (small, medium, large), or null for both. Never derived here."""
-    species_id = (entity.identity.properties or {}).get("species_id")
+    species_id = species_of(entity)
     species = get_faction_semantics_service().repo.get_species(species_id) if species_id else None
     return {"species": species_id, "size": None if species is None else species.power}
 
@@ -444,8 +445,7 @@ class StatePresenter:
         """Live simulation counters: {tick, world_day, alive_count, total_spawned, total_deaths, running, paused}.
 
         world_day = tick // 2400 per docs/mechanics/05_world_evolution.md:15-22 ("1 Day = 2400 ticks",
-        Certified Level 1) -- NOT V1's legacy tick // 100, NOT src/world/raid.py's unrelated
-        RaidService.TICKS_PER_DAY=100 (see agent-working/staging_artifacts/TCK-20260821-REST-MAP-STATIC-STATS/plan.md
+        Certified Level 1) -- NOT V1's legacy tick // 100 (see agent-working/staging_artifacts/TCK-20260821-REST-MAP-STATIC-STATS/plan.md
         Design Decisions).
         alive_count filters state.entities by combat.alive, ported from V1's exact semantics and
         matching the in-repo precedent at src/api/presenters/economy.py's EconomyPresenter

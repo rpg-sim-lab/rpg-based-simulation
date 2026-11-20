@@ -251,4 +251,6 @@ class TestNearDeath:
         suspended = [p for p in result.projects_add_or_update if p.id == "proj_quest"]
         assert len(suspended) == 1
         assert suspended[0].status == ProjectStatus.SUSPENDED
-        assert result.current_project_id_set is None
+        # R2 (rpg-designer, N10 / divergence 2.212): the near-death suspend clears the current ids, as the tactical suspend does (None meant "unchanged" and left the id on a SUSPENDED record)
+        assert result.current_project_id_set == ""
+        assert result.current_objective_id_set == ""

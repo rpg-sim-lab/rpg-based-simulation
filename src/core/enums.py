@@ -98,6 +98,7 @@ class ReasonCode(str, Enum):
     # Movement
     ADVANCING = "advancing"
     OCCUPANCY_VIOLATION = "occupancy_violation"
+    OCCUPANCY_CONFLICT = "OCCUPANCY_CONFLICT"
     PATH_NOT_FOUND = "path_not_found"
     OUT_OF_BOUNDS = "out_of_bounds"
     BUILDING_OBSTRUCTION = "BUILDING_OBSTRUCTION"
@@ -107,7 +108,7 @@ class ReasonCode(str, Enum):
     CONGESTION = "congestion"
     PATH_EXHAUSTED = "path_exhausted"
     TARGET_REACHED = "target_reached"
-    WAYROUND_GIVE_UP = "WAYROUND_GIVE_UP"  # 2.214: the oscillation give-up (the replan that drops the target) writes this as its own code; it replaces any older code, and infer_blockers files nothing from it
+    WAYROUND_GIVE_UP = "WAYROUND_GIVE_UP"  # 2.213 item 6: the oscillation give-up (the replan that drops the target) writes this as its own code; it replaces any older code, and infer_blockers files nothing from it
     FELT_LETHAL_FREE_SWING = "FELT_LETHAL_FREE_SWING"  # 2.204: a step that would give the free swing to a hostile whose felt blow finishes the subject is not taken
     
     # Movement / position swap

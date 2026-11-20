@@ -168,8 +168,8 @@ def test_real_registry_enumeration_and_binding_counts_pinned():
     """
     data = _real_registry_data()
     report = build_report(data)
-    assert report.total_targets == 58  # 65 -> 63 on 2026-10-26: economy_systems/chests and world_systems/quest_generator deleted (dead)
-    assert len(report.bound) == 54  # 53 -> 54 on 2026-10-26: domains/motivation bound by `role_fit_preference`
+    assert report.total_targets == 59  # 65 -> 63 on 2026-10-26: economy_systems/chests and world_systems/quest_generator deleted (dead); 58 -> 59 on 2026-11-18: +systems/strategic_systems/blocker_lifecycle (TCK-20261117-A-RESOLVE-BLOCKER-PROJECT-IS-RE-CREATED-EVERY-80-TICKS-AND-STALLS-COOPERATION, bound under strategic_intelligence_core)
+    assert len(report.bound) == 55  # 53 -> 54 on 2026-10-26: domains/motivation bound by `role_fit_preference`; 54 -> 55 on 2026-11-18: strategic_systems/blocker_lifecycle bound by strategic_intelligence_core
     assert len(report.excluded) == 4
     assert len(report.unbound) == 0  # 5 -> 0 on 2026-10-27: the five dead classes are deleted
 
@@ -307,7 +307,9 @@ def test_wider_scope_numbers_pinned():
     # 369 -> 370 on 2026-11-16 (TCK-20261101-A-CHECKPOINT-HAS-NO-FORMAT-VERSION, INFRA-215): +src/engine/checkpoint_schema.py (the checkpoint schema fingerprint and its refusals; functions and error types, no mechanism of its own).
     # 370 -> 371 on 2026-11-16 (TCK-20261109-M1-KIND-ALWAYS-MEANS-SPECIES-AND-OCCUPATION-IS-ITS-OWN-FIELD, rpg-planner ok): +src/core/species.py (species_of, the one species read; functions only, no class); it is unbound, see unbound_files below.
     # 371 -> 372 on 2026-11-17 (TCK-20261117-KIND-IS-THE-SPECIES-AT-EVERY-WRITER, a pure move; S8 CI fix): +src/content/hero_species.py (hero_species_id, moved unchanged out of src/systems/world_systems/generator.py so the campaign runner may import it under the registry layer order; one function, no class).
-    assert wider["scope_files"] == 372
+    # 372 -> 374 on 2026-11-17 (TCK-20261117-EACH-BODY-PERCEIVES-BY-ITS-SPECIES-SENSES-AND-SIGNALS-FOLLOW-THE-BODY, divergence 2.210, rpg-planner ok #715 6941107808, from the check's own output): +src/content/species_senses.py and +src/engine/perception_signals.py, both bound under `sense_gated_detection`, so unbound_files stays.
+    # 374 -> 376: rpg-planner ok, 2026-11-19: +2 src files (checkpoint_senses.py, checked_builder.py), both bound to sense_gated_detection; #968
+    assert wider["scope_files"] == 376
     # 233 -> 227 on 2026-10-05: the world-building split names six more files (worldmodules/normalizer,
     # worldassembly/resolve_io, worldbuilding/repository and validator, worldgeneration/generator and scorer).
     # Then +1 for the unbound entity_target_objective.py module (TCK-20261002-COMBAT-OBJECTIVE-TARGETS-...).
@@ -378,7 +380,8 @@ def test_wider_scope_numbers_pinned():
     # 262 -> 263 on 2026-11-16 (TCK-20261101-A-CHECKPOINT-HAS-NO-FORMAT-VERSION, from the check's own output): src/engine/checkpoint_schema.py is unbound (no mechanism of its own); candidates and wired are unchanged.
     # 263 -> 264 on 2026-11-16 (TCK-20261109-M1-KIND-ALWAYS-MEANS-SPECIES-AND-OCCUPATION-IS-ITS-OWN-FIELD, from the check's own output): src/core/species.py is unbound (a functions-only module; no binding added).
     # 264 -> 265 on 2026-11-17 (TCK-20261117-KIND-IS-THE-SPECIES-AT-EVERY-WRITER, a pure move; S8 CI fix, from the check's own output): src/content/hero_species.py is unbound (one function, no mechanism of its own); candidates and wired are unchanged.
-    assert wider["unbound_files"] == 265
+    # 265 -> 264 on 2026-11-18 (TCK-20261117-EACH-BODY-PERCEIVES-BY-ITS-SPECIES-SENSES-AND-SIGNALS-FOLLOW-THE-BODY, rpg-planner ok, S8, from the check's own output): src/engine/tile_distance.py is now bound (chebyshev_tile_distance, under `sense_gated_detection`).
+    assert wider["unbound_files"] == 264
     # 73 -> 72 on 2026-10-07 (row 7 (b) pass): src/quests/generator.py::QuestGenerator is now bound under `guilds`.
     # 72 -> 71 on 2026-10-11 (#500, D57): src/engine/rpg_depth.py::LeashService is cited under `tactical_decision` (it became wired when
     # the hunger and fatigue goals started calling `way_in_range`), so it is no longer an unbound candidate.

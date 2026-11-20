@@ -23,7 +23,7 @@ from src.core.state import AuthoritativeState
 from src.core.updates import StateUpdate, decode_owner_faction_id_set
 from src.observability.config import ObservabilityMode
 from src.observability.divergence_episode import DivergenceEpisodes
-from src.core.species import occupation_of
+from src.core.species import occupation_of, species_of
 from src.observability.entity_kind_constants import BOSS_ENTITY_OCCUPATIONS, SPAWN_CADENCE_EXCLUDED_OCCUPATIONS
 from src.domains.world_emergence.schema import WorldEventCategory
 from src.observability.event_extractor import (
@@ -32,6 +32,7 @@ from src.observability.event_extractor import (
     _XP_PLATEAU_TICKS,
 )
 from src.observability.events import SimulationEvent, QuestEvent
+from src.observability.extraction.strategy import cognition_update_events
 from src.core.quests import QuestState
 from src.core.strategic import ProjectStatus
 from src.domains.commitment.abandonment import AbandonmentEvaluator, AbandonmentCategory
@@ -102,7 +103,7 @@ def _combat_entity_snapshot(ent: Optional[Any]) -> Optional[Dict[str, Any]]:
         "def_stat": getattr(combat, "def_stat", None),
         "role": role_name,
         "faction_id": properties.get("faction_id"),
-        "species_id": properties.get("species_id"),
+        "species_id": species_of(ent),
         "bravery": getattr(personality, "bravery", None),
         "action_style": getattr(combat, "action_style", None),
     }
@@ -788,14 +789,7 @@ class StrategyShaper:
                     payload={"entity_id": eid, "reason": defer_reason, "tick": tick},
                 ))
 
-            # COGNITION: self_model_updated
-            if getattr(e_upd, "self_model_bundle_set", None) is not None:
-                events.append(SimulationEvent(
-                    event_type="self_model_updated", event_category="strategy",
-                    tick=tick, entity_id=eid, severity="INFO",
-                    source_system="event_shapers", message="",
-                    payload={},
-                ))
+            events.extend(cognition_update_events(eid, e_upd, tick))  # COGNITION: blocker_removed, self_model_updated
 
             # INFORMATION: belief_assimilated + belief_updated
             if prop.get("last_assimilated_tick") == prior_state.tick:

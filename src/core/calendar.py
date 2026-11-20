@@ -12,6 +12,22 @@ DAYS_PER_SEASON = 30
 SEASONS_PER_YEAR = 4
 TICKS_PER_FANTASY_YEAR = TICKS_PER_DAY * DAYS_PER_SEASON * SEASONS_PER_YEAR  # 288,000
 
+# Night is the last quarter of the day plus the first quarter: [NIGHT_START_TICK, TICKS_PER_DAY) and
+# [0, NIGHT_END_TICK) of the time of day, so night is half of every day.
+NIGHT_START_TICK = 1800
+NIGHT_END_TICK = 600
+
+
+def time_of_day(world_time: int) -> int:
+    """Tick within the current day. `world_time` never wraps, so every day-cycle reader goes through here."""
+    return world_time % TICKS_PER_DAY
+
+
+def is_night(world_time: int) -> bool:
+    """True in the night half of the day, on any day (tick 2400+k is classified as tick k)."""
+    tod = time_of_day(world_time)
+    return tod >= NIGHT_START_TICK or tod < NIGHT_END_TICK
+
 
 def fantasy_years_to_ticks(years: float) -> int:
     """Converts a fantasy-year duration into whole ticks, rounding up (a fractional tick

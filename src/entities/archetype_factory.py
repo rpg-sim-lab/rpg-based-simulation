@@ -15,6 +15,7 @@ from src.core.builder import V2EntityBuilder
 from src.content_semantics.personality import build_personality_for_entity, get_action_style_for_bravery
 from src.entities.runtime_contract import ResolvedEntityRuntimeContract
 from src.content.common_knowledge_seed import default_self_model
+from src.content.species_senses import require_species_sense_profile
 
 
 @dataclass(frozen=True)
@@ -28,6 +29,12 @@ class EntitySpawnContext:
     current_tick: Optional[int] = None
     name_override: Optional[str] = None
     population_id: Optional[str] = None
+
+
+def require_archetype_senses(contract: ResolvedEntityRuntimeContract) -> None:
+    """PERC-02: an archetype body's senses are derived from its species at every perception check, so a species that is not in content or has no usable sense profile is a
+    content error here (``SenseProfileError``), at build, instead of a silent baseline in the gate. The same resolver the gate calls."""
+    require_species_sense_profile(contract.species_id, f"archetype {contract.archetype_id!r}")
 
 
 class ArchetypeEntityFactory:
@@ -49,7 +56,6 @@ class ArchetypeEntityFactory:
         # Metadata carried into properties for traceability
         properties: dict = {
             "archetype_id": contract.archetype_id,
-            "species_id": contract.species_id,
             "faction_id": contract.faction_id,
             "role_id": contract.role_id,
         }
@@ -61,8 +67,7 @@ class ArchetypeEntityFactory:
             properties["drive_profile_id"] = contract.drive_profile_id
         if contract.need_profile_id is not None:
             properties["need_profile_id"] = contract.need_profile_id
-        if contract.sense_profile_id is not None:
-            properties["sense_profile_id"] = contract.sense_profile_id
+        require_archetype_senses(contract)
         if contract.skill_profile_id is not None:
             properties["skill_profile_id"] = contract.skill_profile_id
         if spawn.spawn_region is not None:

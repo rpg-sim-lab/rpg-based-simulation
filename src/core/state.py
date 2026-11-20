@@ -524,7 +524,8 @@ class NavigationComponent:
     # 0.0 = never stepped (free to step).
     step_ready_tick: float = 0.0
 
-    lodged_in: Optional[int] = None  # F3 (2.155): the building this subject LODGES in (position is its tile, on no tile held); set and cleared only by the apply path; LAST field (an insert is refused by the checkpoint schema check; an append needs a FIELD_RULES row)
+    lodged_in: Optional[int] = None  # F3 (2.155): the building this subject LODGES in (position is its tile, on no tile held); set and cleared only by the apply path; (an insert is refused by the checkpoint schema check; an append needs a FIELD_RULES row)
+    last_moved_tick: Optional[int] = None  # PERC-02 (2.210): the tick of the last MOVE of this body: any position change by the movement apply path (a step, a swap or a yield displacement; not lodge entry/exit, not a failed attempt); None = never stepped; LAST field (an insert is refused by the checkpoint schema check; an append needs a FIELD_RULES row)
 
     # 2.213 (COMB-356): the bounded give-up for the oscillation way-round. The way-round steps taken on the stored target with no net progress, and the best (lowest) Manhattan
     # distance to the target seen at those steps. Set and reset only by the navigation patch (movement's apply path). F1 (amends 2.213): the count belongs to the PURSUIT, not to one
@@ -559,6 +560,8 @@ class NavigationComponent:
             res["step_ready_tick"] = self.step_ready_tick
         if self.lodged_in is not None:
             res["lodged_in"] = self.lodged_in  # present only while lodged, so the form of a subject that never lodged is unchanged (F3)
+        if self.last_moved_tick is not None:
+            res["last_moved_tick"] = self.last_moved_tick  # present once the body has stepped, so the form of one that never stepped is unchanged (PERC-02)
         if self.wayround_count:
             res["wayround_count"] = self.wayround_count  # present only while a way-round count is open (2.213), so the form of a subject that never needed one is unchanged
         if self.wayround_best_distance is not None:
@@ -969,7 +972,7 @@ class EntityState:
                     **v.canonical_extra(),
                 } for k, v in sorted(self.strategic.projects.items())},
                 "directives": {k: asdict(v) for k, v in sorted(self.strategic.directives.items())},
-                "blockers": {k: asdict(v) for k, v in sorted(self.strategic.blockers.items())},
+                "blockers": {k: v.canonical_dict() for k, v in sorted(self.strategic.blockers.items())},
                 "leads": {k: asdict(v) for k, v in sorted(self.strategic.leads.items())},
                 "concerns": {k: asdict(v) for k, v in sorted(self.strategic.concerns.items())},
                 "candidate_zones": {k: asdict(v) for k, v in sorted(self.strategic.candidate_zones.items())},

@@ -33,6 +33,7 @@ from src.domains.world_emergence.schema import WorldEventCategory
 from src.engine.kernel import Kernel
 from src.platform.rng import DeterministicRNG
 from tests.helpers.scenario import compile_world
+from src.core.species import species_of
 
 pytestmark = [pytest.mark.domain("economy"), pytest.mark.level("scenario")]
 
@@ -58,7 +59,7 @@ def _carried(entity) -> int:
 
 def _stage(state: AuthoritativeState, *, wild_food: bool) -> Tuple[AuthoritativeState, int]:
     worker = next(e for e in state.entities.values()
-                  if e.identity.role == EntityRole.WORKER and (e.identity.properties or {}).get("species_id") == "human")
+                  if e.identity.role == EntityRole.WORKER and species_of(e) == "human")
     worker = replace(worker, biological=replace(worker.biological, hunger=STARTING_HUNGER),
                      inventory=replace(worker.inventory, gold=0, items=[]),
                      navigation=replace(worker.navigation, position=(38.0, 30.0)))  # inside the settlement, beside the inn

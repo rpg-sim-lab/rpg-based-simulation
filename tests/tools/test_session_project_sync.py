@@ -518,7 +518,7 @@ def test_a_p1_hash_is_not_a_hand_edit_it_is_updated_once_and_carries_v4():
     live = {**v1_fields, "Sync hash": ps.sync_hash(v1_fields, "v1"), "_item_id": "I", "_draft_id": "D"}
     assert ps.hand_edits(live, derived) == [] and not ps.sync_hash(v1_fields, "v1").startswith("v2:")
     plan = _plan({"TCK-20261112-M": [c]}, [branch([c])], [live])
-    assert plan.hand_edits == [] and plan.updates and plan.updates[0][0]["Sync hash"].startswith("v4:")
+    assert plan.hand_edits == [] and plan.updates and plan.updates[0][0]["Sync hash"].startswith("v5:")
     # a v4 value is checked against the v3 fields only
     v2 = {**derived, "Sync hash": derived["Sync hash"], "_item_id": "I"}
     assert ps.hand_edits(v2, derived) == []

@@ -18,6 +18,7 @@ from src.core.enums import EntityRole, Faction
 from src.core.state import AuthoritativeState, CorpseState, ItemStack, ResourceNodeState
 from src.cognition.common_knowledge import default_self_model
 from src.engine import behavior_consumers
+from tests.helpers.clock import DAY_WORLD_TIME
 
 
 @pytest.fixture(scope="module", autouse=True)
@@ -32,14 +33,14 @@ def _consumers():
 
 
 def _kind(eid, species, pos, faction, hunger=0.0):
-    return (V2EntityBuilder(eid).kind("monster").location(*pos)
+    return (V2EntityBuilder(eid).kind(species).location(*pos)
             .identity(role=EntityRole.MONSTER, faction=faction, properties={"species_id": species})
             .combat(hp=100, max_hp=100, attack_range=1, readiness=100.0, alive=True).lifecycle(active=True)
             .biological(hunger=hunger).replace_self_model(default_self_model()).build())
 
 
 def _state(*entities, corpses=(), nodes=()):
-    return AuthoritativeState(tick=5, seed=1, entities={e.id: e for e in entities}, corpses={c.id: c for c in corpses},
+    return AuthoritativeState(world_time=DAY_WORLD_TIME, tick=5, seed=1, entities={e.id: e for e in entities}, corpses={c.id: c for c in corpses},
                               resource_nodes={n.id: n for n in nodes})
 
 

@@ -10,7 +10,7 @@ a ``medium`` need reproduces the old behavior exactly.
 
 Source of the profile, most specific first:
 1. ``identity.properties["need_profile_id"]`` (an explicitly assigned profile).
-2. The subject's species' catalog ``need_profile`` (``identity.properties["species_id"]``).
+2. The subject's species' catalog ``need_profile`` (``kind``, via ``species_of``).
 3. The ordinary person's profile (``humanoid_survival``) when the subject is a person (a civil
    role).
 4. Otherwise the subject has no declared kind: a content defect to report (SURV-05), never a
@@ -21,10 +21,12 @@ This module only reads. Rates are derived, not stored, so no durable state is ad
 """
 from __future__ import annotations
 
+import logging
 from typing import Any, Dict, Optional, Tuple
 
 from src.content.schema import MODELLED_BIOLOGICAL_NEEDS
 from src.core.enums import EntityRole
+from src.core.species import species_of
 from src.engine import behavior_consumers
 
 BASE_HUNGER_RATE = 0.1
@@ -32,6 +34,8 @@ BASE_SLEEP_DEBT_RATE = 0.05
 
 # Qualitative need level -> multiple of the base rate. ``medium`` is the pre-SURV-05 constant.
 NEED_LEVEL_RATE_SCALE: Dict[str, float] = {"none": 0.0, "very_low": 0.3, "low": 0.5, "medium": 1.0, "high": 1.5}
+
+_LOG = logging.getLogger(__name__)
 
 PERSON_FALLBACK_PROFILE_ID = "humanoid_survival"
 _PERSON_ROLES = frozenset({
@@ -61,17 +65,22 @@ def _role_int(role: Any) -> int:
         return int(member) if member is not None else -1
 
 
-def profile_id_for(props: Dict[str, Any], role: int, catalog: Any) -> Optional[str]:
+def profile_id_for(entity: Any, catalog: Any) -> Optional[str]:
     """The need profile id that governs a subject, or None when it has no declared kind."""
-    explicit = props.get("need_profile_id")
+    explicit = (entity.identity.properties or {}).get("need_profile_id")
     if explicit:
         return str(explicit)
-    species_id = props.get("species_id")
-    if species_id:
-        species = catalog.get_species(species_id)
-        if species is not None and species.need_profile:
+    role = entity.identity.role
+    species_id = species_of(entity)
+    species = catalog.get_species(species_id) if species_id else None
+    if species is not None:
+        if species.need_profile:
             return str(species.need_profile)
+        # A catalog species declared without a need profile gets base rates (rpg-designer ruling, M1 step 5): needs come from the species, never from the role. It is counted by
+        # `unprofiled_need_counts` and logged here.
+        _LOG.debug("entity %s: species %r has no need profile in content; base need rates apply", getattr(entity, "id", None), species_id)
         return None
+    # FLAGGED INTERIM (rpg-designer 2026-11-19): unknown-species kinds read the role for needs; retires with stage-4b item AC / the P3 typed load error
     return PERSON_FALLBACK_PROFILE_ID if _role_int(role) in _PERSON_ROLES else None
 
 
@@ -96,10 +105,10 @@ def need_rates(entity: Any) -> Tuple[float, float]:
         _CACHE_CATALOG_ID = id(catalog)
     ident = entity.identity
     props = ident.properties or {}
-    key = (props.get("need_profile_id"), props.get("species_id"), _role_int(ident.role))
+    key = (props.get("need_profile_id"), species_of(entity), _role_int(ident.role))
     rates = _RATES_CACHE.get(key)
     if rates is None:
-        profile_id = profile_id_for(props, ident.role, catalog)
+        profile_id = profile_id_for(entity, catalog)
         profile = catalog.get_need_profile(profile_id) if profile_id else None
         if profile is None:
             rates = _BASE_RATES
@@ -115,9 +124,38 @@ def undeclared_need_kinds(state: Any, catalog: Any) -> Dict[Tuple[Optional[str],
     """Subjects with no declared kind (SURV-05 content defects), counted per (species_id, role)."""
     out: Dict[Tuple[Optional[str], int], int] = {}
     for entity in state.entities.values():
-        props = entity.identity.properties or {}
-        profile_id = profile_id_for(props, entity.identity.role, catalog)
+        profile_id = profile_id_for(entity, catalog)
         if profile_id is None or catalog.get_need_profile(profile_id) is None:
-            key = (props.get("species_id"), _role_int(entity.identity.role))
+            key = (species_of(entity), _role_int(entity.identity.role))
             out[key] = out.get(key, 0) + 1
     return out
+
+
+def unprofiled_need_counts(state: Any, catalog: Any) -> Dict[str, int]:
+    """Subjects whose species IS in the catalog but declares no need profile, counted per species (they run on base rates; observability only, never durable state). Disjoint from
+    `interim_role_need_counts` (a kind that is no catalog species is counted there, never here). No real species lacks a profile today, so this is empty on the gate worlds."""
+    out: Dict[str, int] = {}
+    for entity in state.entities.values():
+        species_id = species_of(entity)
+        if not species_id or (entity.identity.properties or {}).get("need_profile_id"):
+            continue
+        species = catalog.get_species(species_id)
+        if species is not None and (not species.need_profile or catalog.get_need_profile(species.need_profile) is None):
+            out[species_id] = out.get(species_id, 0) + 1
+    return dict(sorted(out.items()))
+
+
+def interim_role_need_counts(state: Any, catalog: Any) -> Dict[str, int]:
+    """Subjects whose kind is NOT a catalog species and that therefore take their needs from their role (the FLAGGED INTERIM branch of `profile_id_for`), counted per ``kind|ROLE`` so a read
+    can split the person roles (`humanoid_survival`) from the others (base rates). A body with no kind is counted as ``<none>|ROLE``. `world_boss` and `magical_demonic_entity` (the non-living kind allowlist) are counted here when they
+    exist. Observability only, derived on demand and never durable state, like `unprofiled_need_counts`; disjoint from it. Empty with a content context: every body then has a declared species."""
+    out: Dict[str, int] = {}
+    for entity in state.entities.values():
+        species_id = species_of(entity)
+        if (entity.identity.properties or {}).get("need_profile_id") or (species_id and catalog.get_species(species_id) is not None):
+            continue
+        role_int = _role_int(entity.identity.role)
+        role = EntityRole(role_int).name if role_int in {int(r) for r in EntityRole} else str(entity.identity.role)
+        key = f"{species_id or '<none>'}|{role}"
+        out[key] = out.get(key, 0) + 1
+    return dict(sorted(out.items()))

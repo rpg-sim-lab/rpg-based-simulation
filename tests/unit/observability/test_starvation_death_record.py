@@ -45,9 +45,7 @@ def _world(carry=(), species=None, hunger=HUNGRY):
     state = compile_world(WORLD_ID)
     e = state.entities[WHO]
     props = dict(e.identity.properties)
-    if species:
-        props["species_id"] = species
-    e = replace(e, biological=replace(e.biological, hunger=hunger, sleep_debt=0.0), identity=replace(e.identity, properties=props),
+    e = replace(e, kind=species or e.kind, biological=replace(e.biological, hunger=hunger, sleep_debt=0.0), identity=replace(e.identity, properties=props),
                 inventory=replace(e.inventory, items=[ItemStack(item_id=i, quantity=1) for i in carry]))
     object.__setattr__(state, "entities", {WHO: e})
     object.__setattr__(state, "buildings", {})
@@ -278,10 +276,12 @@ def test_a_real_kernel_run_writes_the_header_one_record_and_a_matching_tally(mon
 def test_a_meat_eater_with_prey_and_a_carcass_in_reach_lists_hunt_and_scavenge_and_no_plant_or_inn_way():
     """Diet decides the ways (D42/D44): the hunting batch's real kinds stand in (wolf: meat-only; goblin: believed low danger)."""
     from src.core.state import AuthoritativeState, CorpseState, ItemStack
+    from tests.helpers.clock import DAY_WORLD_TIME
     from tests.unit.ai.test_hunt_steps import _carcass, _goblin, _wolf, _consumers  # noqa: F401 (the module-scoped consumer fixture)
 
     wolf, goblin, carcass = _wolf(), _goblin(), _carcass()
-    state = AuthoritativeState(tick=5, seed=1, entities={wolf.id: wolf, goblin.id: goblin}, corpses={carcass.id: carcass})
+    # the fixture hunter is an unprofiled 'monster' body until step 5 gives it a real species (see the step-5 fixture ask); DAY keeps it perceiving (owner #715 6967527078)
+    state = AuthoritativeState(world_time=DAY_WORLD_TIME, tick=5, seed=1, entities={wolf.id: wolf, goblin.id: goblin}, corpses={carcass.id: carcass})
     ways = ways_in_reach(wolf, state)
     assert WayKind.HUNT_EAT_RAW in ways and WayKind.SCAVENGE in ways
     assert WayKind.INN_MEAL not in ways and WayKind.FORAGE not in ways

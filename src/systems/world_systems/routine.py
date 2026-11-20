@@ -6,6 +6,7 @@ from typing import List, Optional
 from src.core.state import EntityState, AuthoritativeState
 from src.core.strategic import ConcernState
 from src.core.enums import ReasonCode
+from src.core.calendar import is_night
 
 class RoutineService:
     """
@@ -32,9 +33,9 @@ class RoutineService:
             ))
 
         # 2. Sleep
-        is_night = (world_time >= 1800 or world_time < 600)
+        night = is_night(world_time)
         sleep_urgency = bio.sleep_debt / 100.0
-        if is_night:
+        if night:
             sleep_urgency += 0.3 
         
         if sleep_urgency > 0.4:
@@ -110,9 +111,8 @@ class RoutineService:
         is_young = age < max_age * 0.2
 
         if project_kind == "sleep":
-            is_night = (world_time >= 1800 or world_time < 600)
             boost = (entity.biological.sleep_debt / 10.0) # 0 to 10
-            if is_night:
+            if is_night(world_time):
                 boost *= 2.0
             if is_elder:
                 boost *= 1.5 # Elders need more rest
