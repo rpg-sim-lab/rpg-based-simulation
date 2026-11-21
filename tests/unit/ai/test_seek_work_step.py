@@ -46,6 +46,14 @@ def _created(ent, state):
     return list(update.projects_add_or_update or [])
 
 
+def _assert_no_hunger_project_and_only_town_return_fallback(projects):
+    """Designer ruling B1 (a): 'no project' means NO HUNGER-typed project (so no SEEK_WORK project) and every OTHER created project is the unchanged generic TOWN_RETURN fallback.
+    TOWN_RETURN is never required: the town-return hold is tracked in TCK-20261120-A-TOWN-RETURN-PROJECT-NEVER-COMPLETES-WHEN-ITS-TARGET-IS-REACHED (P2) and #781 does not fix it."""
+    kinds = {getattr(p.kind, "value", p.kind) for p in projects}
+    assert "hunger" not in kinds
+    assert kinds <= {"town_return"}
+
+
 def _kinds(projects):
     return [(getattr(p.kind, "value", p.kind), p.status) for p in projects]
 
@@ -150,7 +158,7 @@ def test_the_same_subject_AT_the_town_centre_has_no_seek_work_and_no_project():
         ent = _at(_subject(hunger=80.0, projects=projects), CENTRE)
         state = _state(ent)
         assert first_open_step(ent, state) is None
-        assert _created(ent, state) == []
+        _assert_no_hunger_project_and_only_town_return_fallback(_created(ent, state))
 
 
 def test_a_leashed_coin_keeper_whose_leash_excludes_the_centre_has_no_seek_work():
@@ -159,7 +167,7 @@ def test_a_leashed_coin_keeper_whose_leash_excludes_the_centre_has_no_seek_work(
     ent = replace(ent, navigation=replace(ent.navigation, home_position=(0.0, 0.0), leash_radius=5.0))
     steps = {s.kind: s for s in opening_steps(ent, _state(ent))}
     assert not steps[OpeningStepKind.SEEK_WORK].available and "outside its range" in steps[OpeningStepKind.SEEK_WORK].reason
-    assert _created(ent, _state(ent)) == []
+    _assert_no_hunger_project_and_only_town_return_fallback(_created(ent, _state(ent)))
 
 
 def _arrival(ent_far, state):
@@ -204,4 +212,5 @@ def test_B2_the_tick_after_arrival_with_nothing_there_is_no_project():
     ended = upd.strategic.projects_add_or_update[0]
     again = replace(here, strategic=replace(here.strategic, projects={ended.id: ended}, current_project_id=None, current_objective_id=None))
     state3 = replace(state2, entities={1: again})
-    assert first_open_step(again, state3) is None and _created(again, state3) == []
+    assert first_open_step(again, state3) is None
+    _assert_no_hunger_project_and_only_town_return_fallback(_created(again, state3))
