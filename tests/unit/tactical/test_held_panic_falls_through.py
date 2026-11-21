@@ -8,6 +8,7 @@ from __future__ import annotations
 
 from dataclasses import replace
 
+from src.engine.service_prices import EAT_PRICE_GOLD
 from src.core.movement_modes import MovementMode
 from src.core.strategic import ObjectiveKind, ObjectiveState, ObjectiveStatus, ProjectState, ProjectStatus
 from src.engine.tactical import TacticalDecisionSystem
@@ -17,12 +18,12 @@ MERCHANT, HUNTER = 37, 45
 INN = (40.0, 31.0)
 
 
-def _scene(merchant_at, hunter_at, hp=10):
-    """Real frontier_living_world seed-42 merchant 37 (wounded, gold 0, hunger 100) with predator_hunter 45 beside it and a hunger project on the inn."""
+def _scene(merchant_at, hunter_at, hp=10, gold=EAT_PRICE_GOLD):
+    """Real frontier_living_world seed-42 merchant 37 (wounded, holding the meal's price, hunger 100: [TAG A FUND] it was broke on main, where the inn fed it anyway; decision 73 refuses a broke subject) with predator_hunter 45 beside it and a hunger project on the inn."""
     state = compile_world("frontier_living_world", 42)
     m, h = state.entities[MERCHANT], state.entities[HUNTER]
     m = replace(m, navigation=replace(m.navigation, position=merchant_at, movement_mode=MovementMode.REGROUP, target=INN),
-                combat=replace(m.combat, hp=hp, max_hp=85), biological=replace(m.biological, hunger=100.0), inventory=replace(m.inventory, gold=0))
+                combat=replace(m.combat, hp=hp, max_hp=85), biological=replace(m.biological, hunger=100.0), inventory=replace(m.inventory, gold=gold))  # [TAG A FUND] the default holds the price; the gold-0 case below passes gold=0
     h = replace(h, navigation=replace(h.navigation, position=hunter_at))
     obj = ObjectiveState(id="hunger_20003", kind=ObjectiveKind.REACH_LOCATION, target="20003", status=ObjectiveStatus.ACTIVE)
     proj = ProjectState(id="proj_hunger_1", kind="hunger", status=ProjectStatus.ACTIVE, objectives=[obj], active_objective_id=obj.id)
@@ -47,6 +48,16 @@ def test_a_wounded_subject_in_unclaimed_space_beside_an_inn_eats_instead_of_hold
     state, merchant = _scene((41.0, 31.0), (41.0, 30.0), hp=10)  # (41,31) is in no region, merchant 37 has no home region
     update = _decide(state, merchant)
     assert _action(update) == "EAT" and update.task.payload_set["target_id"] == 20003
+
+
+def test_a_broke_wounded_subject_in_unclaimed_space_beside_an_inn_does_not_eat_under_atomic():
+    """[TAG A, new ATOMIC gold-0 case for class 4] decision 73: the same scene as the funded test above, but the purse is empty: the inn is no way to eat, so the tick does NOT dispatch an EAT at the inn."""
+    state, merchant = _scene((41.0, 31.0), (41.0, 30.0), hp=10, gold=0)
+    update = _decide(state, merchant)
+    assert _action(update) != "EAT" and _reason(update) != "PANIC_RETREAT"  # not the old PANIC_RETREAT freeze either
+    assert not [t for t in update.resource_transfers if t.source_kind == "TOWN_SERVICE"]  # no service transfer
+    assert update.biological is None or update.biological.hunger_delta >= 0  # the D73 property stated directly: no hunger relief without the payment
+    # what the subject does instead is NOT pinned here: that belongs to the strategic pass on a later tick (designer)
 
 
 def _hunter_attacks(state, merchant):

@@ -12,6 +12,7 @@ from dataclasses import replace
 
 import pytest
 
+from src.engine.service_prices import REST_PRICE_GOLD
 from src.core.builder import V2EntityBuilder
 from src.core.state import AuthoritativeState, BuildingState
 from src.core.strategic import (
@@ -34,7 +35,7 @@ def _project(pid, status, target=INN, entity=None, created=0, kind=FATIGUE, scor
 
 def _entity(projects, current=None, max_projects=3, sleep_debt=90.0):
     entity = V2EntityBuilder(1).kind("hero").location(0.0, 0.0).cognition(max_active_projects=max_projects).build()
-    entity = replace(entity, biological=replace(entity.biological, sleep_debt=sleep_debt))
+    entity = replace(entity, biological=replace(entity.biological, sleep_debt=sleep_debt), inventory=replace(entity.inventory, gold=REST_PRICE_GOLD))  # [TAG A FUND] holds the bed's price: the tests are about project lookup, not payment (decision 73)
     strategic = replace(entity.strategic, projects={p.id: p for p in projects}, current_project_id=current,
                         current_objective_id=(projects[0].active_objective_id if current and projects else None))
     return replace(entity, strategic=strategic)

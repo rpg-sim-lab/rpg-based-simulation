@@ -66,8 +66,16 @@ def test_a_range_bound_subject_does_not_target_an_inn_outside_its_range():
 
 
 def test_a_person_targets_the_same_inn():
-    score = EatScorer().score(_subject(leash=0.0), _state(inn=(90.0, 50.0)))
+    person = _subject(leash=0.0)
+    score = EatScorer().score(replace(person, inventory=replace(person.inventory, gold=5)), _state(inn=(90.0, 50.0)))  # [TAG A FUND] holds the price: the test is about range, not payment
     assert score.target_pos == (90.0, 50.0) and not score.no_open_step
+
+
+def test_a_person_holding_nothing_has_no_inn_to_target_under_atomic():
+    """[TAG A, new ATOMIC gold-0 case for class 2] the range is free, the purse is empty: no way."""
+    person = _subject(leash=0.0)
+    score = EatScorer().score(replace(person, inventory=replace(person.inventory, gold=0)), _state(inn=(90.0, 50.0)))
+    assert score.target_pos is None and score.need_access is NeedAccess.NO_WAY_WITHIN_REACH
 
 
 def test_a_range_bound_subject_forages_a_node_inside_its_range_and_not_a_nearer_one_outside():

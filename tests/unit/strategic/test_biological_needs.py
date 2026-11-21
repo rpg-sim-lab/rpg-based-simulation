@@ -119,6 +119,7 @@ def test_routine_action_execution():
     
     # 2. Test EAT
     upd_eat = SimulationDomainLogic.execute_action(ent, {"action": "EAT"}, current_tick=600)
-    assert upd_eat[1].biological is not None
-    assert upd_eat[1].biological.hunger_delta == -40.0
-    assert upd_eat[1].biological.last_meal_tick_set == 600
+    # [TAG C REMOVED LAW] decision 73: EAT with nothing carried and no inn serving the subject is the typed SOURCE_MISSING failure, no relief (was: the free meal, hunger -40)
+    from src.core.enums import ReasonCode
+    assert upd_eat[1].biological is None
+    assert upd_eat[1].navigation.failure_reason == ReasonCode.SOURCE_MISSING

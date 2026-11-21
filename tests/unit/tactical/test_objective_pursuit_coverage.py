@@ -16,6 +16,7 @@ and DEFEAT_ENEMY, handled by the separate hostile-engagement branch).
 from __future__ import annotations
 from dataclasses import replace
 
+from src.engine.service_prices import EAT_PRICE_GOLD
 from src.core.builder import V2EntityBuilder
 from src.core.state import AuthoritativeState, ResourceNodeState, BuildingState, ItemStack
 from src.core.strategic import (
@@ -283,7 +284,7 @@ def test_reach_location_arrival_behavior_unchanged():
         lock_until_tick=0,
     )
     hero_meal = _with_project(_hero(4, inn_meal.position), project_meal)
-    hero_meal = replace(hero_meal, biological=replace(hero_meal.biological, hunger=60.0))
+    hero_meal = replace(hero_meal, biological=replace(hero_meal.biological, hunger=60.0), inventory=replace(hero_meal.inventory, gold=EAT_PRICE_GOLD))  # [TAG A FUND] holds the meal's price (decision 73)
     state_meal = AuthoritativeState(tick=10, seed=1, entities={4: hero_meal}, buildings={703: inn_meal})
 
     update_meal = TacticalDecisionSystem.evaluate_entity_intent(state_meal, hero_meal, neighbors=[])

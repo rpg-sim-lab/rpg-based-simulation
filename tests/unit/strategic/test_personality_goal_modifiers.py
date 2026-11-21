@@ -85,12 +85,14 @@ def test_life_stage_multipliers():
         .location(0.0, 0.0)
         .identity(life_stage=LifeStage.CHILD)
         .biological(sleep_debt=50.0)
+        .inventory(gold=10)  # [TAG A FUND] holds the bed's price (REST_PRICE_GOLD): the test is about life-stage multipliers, not payment (decision 73)
         .build())
         
     entity_elder = (V2EntityBuilder(2)
         .location(0.0, 0.0)
         .identity(life_stage=LifeStage.ELDER)
         .biological(sleep_debt=50.0)
+        .inventory(gold=10)  # [TAG A FUND] holds the bed's price
         .build())
 
     # Add an inn
