@@ -37,7 +37,7 @@ from __future__ import annotations
 import json
 import os
 from collections import defaultdict
-from typing import Any, Dict, List, Mapping, Optional, Sequence, Set, Tuple
+from typing import Any, Dict, List, Mapping, NamedTuple, Optional, Sequence, Set, Tuple
 
 from src.ai.goals.kind_group import (
     NO_DIET,
@@ -346,13 +346,18 @@ def _validity_rows(world: str, ledger: Mapping[str, Any], records: Sequence[Mapp
     return [_validity(vid, world, count, examples) for vid, (count, examples) in checks.items()]
 
 
-def _population_rows(world: str, ticks: int, ledger: Mapping[str, Any], state: Any, seeds: Sequence[int], non_eating: Optional[Mapping[str, Any]] = None) -> List[Dict[str, Any]]:
+class _Domain(NamedTuple):
+    """What the population rows are declared from: the world's kind groups, the ones with no food rows, and the pooled tick-0 mean population per group (the O2.population floor)."""
+    groups: List[str]
+    exempt: Set[str]
+    means: Mapping[str, float]
+
+
+def _population_rows(world: str, ticks: int, ledger: Mapping[str, Any], state: Any, domain: _Domain) -> List[Dict[str, Any]]:
     rows: List[Dict[str, Any]] = []
     population = ledger["population"]
     first = population[str(ledger["first_tick"])] if population else {}
-    groups = declared_groups(world, seeds, non_eating)
-    exempt = food_exempt_groups(non_eating)
-    means = tick0_means(world, seeds)
+    groups, exempt, means = domain
     final = _final_alive_by_group(state)
     _require_declared("kind group", set(first) | set(final) | {g for t in population.values() for g in t}, groups, ledger)
     starved: Dict[str, int] = defaultdict(int)
@@ -416,8 +421,10 @@ def _way_rows(world: str, ledger: Mapping[str, Any], seeds: Sequence[int], non_e
     return [_outcome("O4.accepted", world, group, ways[(group, source)], key=source) for group in groups if group not in exempt for source in TRANSFER_SOURCES]
 
 
-def _outcome_rows(world: str, ticks: int, ledger: Mapping[str, Any], state: Any, seeds: Sequence[int], non_eating: Optional[Mapping[str, Any]] = None) -> List[Dict[str, Any]]:
-    return (_population_rows(world, ticks, ledger, state, seeds, non_eating) + _death_rows(world, ledger, seeds, non_eating) + _combat_rows(world, ledger, seeds)
+def _outcome_rows(run: Any, ledger: Mapping[str, Any], non_eating: Optional[Mapping[str, Any]] = None) -> List[Dict[str, Any]]:
+    world, ticks, state, seeds = run.world, run.ticks, run.state, tuple(getattr(run, "seeds", ()))
+    domain = _Domain(declared_groups(world, seeds, non_eating), food_exempt_groups(non_eating), tick0_means(world, seeds))
+    return (_population_rows(world, ticks, ledger, state, domain) + _death_rows(world, ledger, seeds, non_eating) + _combat_rows(world, ledger, seeds)
             + _way_rows(world, ledger, seeds, non_eating))
 
 
@@ -448,7 +455,7 @@ def compute(run: Any, non_eating: Optional[Mapping[str, Any]] = None) -> Dict[st
     if int(starvation["starvation_deaths_seen"]) != o2_starved:
         raise GateDataMissingError(f"starvation tally {starvation['starvation_deaths_seen']} != O2 starvation deaths {o2_starved} (V3 cannot be read)")
     rows = _validity_rows(run.world, ledger, records, run.state, float(ledger["world_events"].get("meat_decayed_quantity", 0.0)))
-    rows += _outcome_rows(run.world, run.ticks, ledger, run.state, tuple(getattr(run, "seeds", ())), non_eating)
+    rows += _outcome_rows(run, ledger, non_eating)
     rows.sort(key=lambda r: (r["id"], r["group"], str(r.get("key", "")), r.get("tick") or 0))
     _require_food_rows(rows, non_eating)
     result: Dict[str, Any] = {"metrics": rows}
@@ -470,6 +477,24 @@ def _liveness_row(world: str, groups: Set[str], used: Mapping[Tuple[str, str], f
     return _validity("V7", world, len(dead), dead, scope="pooled")
 
 
+def _first_sample(doc: Mapping[str, Any]) -> Dict[str, float]:
+    """One seed document's population per group at its first sampled tick."""
+    sampled = [r for r in doc.get("metrics", []) if r["id"] == "O2.population" and r.get("tick") is not None]
+    start = min((int(r["tick"]) for r in sampled), default=None)
+    return {r["group"]: float(r["value"]) for r in sampled if int(r["tick"]) == start}
+
+
+def _t0_population_rows(world: str, docs: Sequence[Mapping[str, Any]]) -> List[Dict[str, Any]]:
+    """O2.t0_population per group: the MAX over the seeds of each seed's first sampled count (never the mean: one member in two of five seeds must still scope R2 in).
+    R2 applies to a group only when it is 1 or more; the row is judged on its drift floor like any pooled outcome, never as a minimum."""
+    first_seen: Dict[str, List[float]] = defaultdict(list)
+    for doc in docs:
+        for group, value in _first_sample(doc).items():
+            first_seen[group].append(value)
+    return [{"id": "O2.t0_population", "class": "outcome", "scope": "pooled", "world": world, "group": group, "value": max(v),
+             "floor": POOLED_THRESHOLDS["O2.seeds_with_survivors"]} for group, v in sorted(first_seen.items())]
+
+
 def pool(docs: Sequence[Mapping[str, Any]], non_eating: Optional[Mapping[str, Any]] = None) -> List[Dict[str, Any]]:
     """One world's pooled rows from its per-seed documents: ``O2.seeds_with_survivors`` per group, ``O1.starvation_share`` per group (sum of starved / sum at risk) and V7 (liveness of declared ways)."""
     if not docs:
@@ -489,20 +514,10 @@ def pool(docs: Sequence[Mapping[str, Any]], non_eating: Optional[Mapping[str, An
             used[(row["group"], row["key"])] += row["value"]
         elif row["id"] == "O6.feeding_kills":
             feeding += row["value"]
-    first_seen: Dict[str, List[float]] = defaultdict(list)  # per group: each seed's first sampled count (the tick-0 population R2's scope reads; pooled as the max over the seeds)
-    for doc in docs:
-        sampled = [r for r in doc.get("metrics", []) if r["id"] == "O2.population" and r.get("tick") is not None]
-        if sampled:
-            start = min(int(r["tick"]) for r in sampled)
-            for r in sampled:
-                if int(r["tick"]) == start:
-                    first_seen[r["group"]].append(float(r["value"]))
-    exempt = food_exempt_groups(non_eating)
     rows: List[Dict[str, Any]] = [
         {"id": "O2.seeds_with_survivors", "class": "outcome", "scope": "pooled", "world": world, "group": group,
          "value": float(n), "floor": POOLED_THRESHOLDS["O2.seeds_with_survivors"]} for group, n in sorted(survivors.items())]
-    rows += [{"id": "O2.t0_population", "class": "outcome", "scope": "pooled", "world": world, "group": group, "value": max(v),
-              "floor": POOLED_THRESHOLDS["O2.seeds_with_survivors"]} for group, v in sorted(first_seen.items())]  # the MAX first-sampled count over the seeds (never the mean: one member in two of five seeds must still scope R2 in); R2 applies to a group only when it is 1 or more
+    rows += _t0_population_rows(world, docs)
     for group in sorted(set(starved) | set(at_risk)):
         share: Dict[str, Any] = {"id": "O1.starvation_share", "class": "outcome", "scope": "pooled", "world": world, "group": group,
                                  "numerator": "O1.starved", "denominator": "O1.at_risk",
