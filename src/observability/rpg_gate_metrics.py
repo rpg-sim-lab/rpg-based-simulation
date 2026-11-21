@@ -102,7 +102,10 @@ OUTCOME_THRESHOLDS: Dict[str, Tuple[float, float, str]] = {
     "O6.kills_not_eaten": (2.0, 2.0, "two more kills left uneaten in a run is waste a kind would notice"),
     "O6.feeding_kills": (2.0, 2.0, "two more kills made to eat in a run is a change in how it hunts"),
 }
-POOLED_THRESHOLDS: Dict[str, float] = {"O2.seeds_with_survivors": 1.0}  # a seed more or fewer where a kind survives
+POOLED_THRESHOLDS: Dict[str, float] = {
+    "O2.seeds_with_survivors": 1.0,  # a seed more or fewer where a kind survives
+    "O2.t0_population": 1.0,  # a group more or fewer present at t0 (a world's starting population moved)
+}
 
 ORACLES: Dict[str, str] = {
     "V1": "Bible 03 atomic conservation, gate H3: a hunger drop has an accepted transfer from a source behind it",
@@ -492,7 +495,7 @@ def _t0_population_rows(world: str, docs: Sequence[Mapping[str, Any]]) -> List[D
         for group, value in _first_sample(doc).items():
             first_seen[group].append(value)
     return [{"id": "O2.t0_population", "class": "outcome", "scope": "pooled", "world": world, "group": group, "value": max(v),
-             "floor": POOLED_THRESHOLDS["O2.seeds_with_survivors"]} for group, v in sorted(first_seen.items())]
+             "floor": POOLED_THRESHOLDS["O2.t0_population"]} for group, v in sorted(first_seen.items())]
 
 
 def pool(docs: Sequence[Mapping[str, Any]], non_eating: Optional[Mapping[str, Any]] = None) -> List[Dict[str, Any]]:
