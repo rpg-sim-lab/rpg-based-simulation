@@ -7,6 +7,7 @@ import json
 from pathlib import Path
 
 import pytest
+import yaml
 
 from tools.test_architecture import rpg_gate_baseline as rgb
 
@@ -287,7 +288,6 @@ def test_lint_refuses_a_non_boolean_marker_and_a_marker_without_its_ruling(tmp_p
 
 
 def test_cli_flag_records_the_marker(tmp_path, capsys):
-    import yaml
     _write_v1(tmp_path / "b", milestone="M1")
     cand, cfg = tmp_path / "cand.json", tmp_path / "cfg.yaml"
     cand.write_text(json.dumps(_candidate(deaths=4.0)))
