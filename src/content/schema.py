@@ -417,7 +417,13 @@ class DefaultCompileProfile(CatalogBaseDefinition):
 
 class BlockerSettingsDefinition(CatalogBaseDefinition):
     """Schema for the blocker settings that are balance values, not law (F2, divergence 2.220): a one-record family like `defaults`, so the value is part of the catalog fingerprint (the run's identity)."""
-    access_giveup_limit: int = Field(..., ge=1, strict=True, description="Give-ups of one destination (a give-up-filed ACCESS blocker's failure_count) that end the project that wanted it; an integer >= 1")
+    access_giveup_limit: int = Field(..., ge=1, strict=True, description="Give-ups of one destination (a give-up-filed ACCESS blocker's giveup_count) that end the project that wanted it; an integer >= 1")
+
+
+class WayroundSettingsDefinition(CatalogBaseDefinition):
+    """Schema for the way-round law's two numbers (F1, divergence 2.213): a one-record family like `defaults`, so the values are part of the catalog fingerprint (the run's identity). Both are integers >= 1; there is no cross-check between them (one counts steps, the other ticks)."""
+    wayround_limit: int = Field(..., ge=1, strict=True, description="Way-round steps allowed on one target with no net progress before the oscillation replan is the real one; an integer >= 1")
+    wayround_quiet_ticks: int = Field(..., ge=1, strict=True, description="The longest gap, in ticks, between two events of one pursuit; past it the next event opens a fresh count; an integer >= 1")
 
 
 class ItemDefinition(CatalogBaseDefinition):

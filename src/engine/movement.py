@@ -5,6 +5,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Tuple, Optional, Any, Dict, List
 from dataclasses import dataclass, replace
 
+from src.content.wayround_settings import WayroundSettings, wayround_settings
 from src.core.giveup_records import GiveUpRecord
 from src.core.movement_modes import MovementMode
 from src.core.updates import EntityUpdate, NavigationUpdate, StaminaUpdate, LifecycleUpdate
@@ -52,18 +53,37 @@ def live_action_style(entity: "EntityState", state_or_context: Any) -> int:
     return style
 
 
-# 2.213 (COMB-356): way-round steps allowed on one target with no net progress before the oscillation replan is the real one (rpg-designer 2026-11-17, N = 2).
-WAYROUND_LIMIT = 2
-WAYROUND_QUIET_TICKS = 200  # F1 (2.213): the longest gap between two events of one pursuit; past it the next event opens a fresh count
+# 2.213 (COMB-356): the way-round law's two numbers live in data (data/content/movement/wayround_settings.yaml, a catalog family, so they are part of the run's identity): the step limit before the
+# oscillation replan is the real one (rpg-designer 2026-11-17, N = 2) and the quiet window, the longest gap between two events of one pursuit, past which the next event opens a fresh count (200 ticks).
+# They are read from the warmed catalog and BOUND ONCE, on the first way-round event of the process, never from the file at tick time and never per entity per tick; `WAYROUND_LIMIT` and
+# `WAYROUND_QUIET_TICKS` remain importable names that resolve to the bound values.
+_WAYROUND: Optional[WayroundSettings] = None
+
+
+def _wayround() -> WayroundSettings:
+    """The bound way-round settings: read from the warmed catalog on first use, then the same object."""
+    global _WAYROUND
+    if _WAYROUND is None:
+        _WAYROUND = wayround_settings()
+    return _WAYROUND
+
+
+def __getattr__(name: str) -> int:
+    """Module attributes WAYROUND_LIMIT and WAYROUND_QUIET_TICKS (PEP 562): the bound values."""
+    if name == "WAYROUND_LIMIT":
+        return _wayround().limit
+    if name == "WAYROUND_QUIET_TICKS":
+        return _wayround().quiet_ticks
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
 
 
 def wayround_after_event(nav: "NavigationComponent", target_tile: Tuple[int, int], dist_now: int, current_tick: int) -> Tuple[int, int, Tuple[int, int]]:
     """The way-round count, best distance and anchor after one oscillation event (F1, amends 2.213).
 
-    The count continues while it is open, the target is within one tile (Chebyshev) of the tile it opened on, and the last event is at most WAYROUND_QUIET_TICKS ago; otherwise a fresh
+    The count continues while it is open, the target is within one tile (Chebyshev) of the tile it opened on, and the last event is at most the quiet window (`wayround_quiet_ticks`) ago; otherwise a fresh
     count opens on this target (count 1, the distance now, this tile). A step closer than the best seen is progress: the count restarts at 1 and the anchor stays."""
     best, anchor, last_ev = nav.wayround_best_distance, nav.wayround_anchor, nav.wayround_last_tick
-    if nav.wayround_count <= 0 or best is None or anchor is None or last_ev is None or current_tick - last_ev > WAYROUND_QUIET_TICKS:
+    if nav.wayround_count <= 0 or best is None or anchor is None or last_ev is None or current_tick - last_ev > _wayround().quiet_ticks:
         return 1, dist_now, target_tile
     kept = (int(anchor[0]), int(anchor[1]))
     if max(abs(target_tile[0] - kept[0]), abs(target_tile[1] - kept[1])) > 1:
@@ -175,7 +195,7 @@ class MovementSystem:
 
         The rung ladder runs before the replan gives up (TCK-20261030-STALEMATE-BREAK-OVERWRITES-A-PROJECT-MOVE-EVERY-TICK): a step back onto the tile just left is the A-B loop, so look for a
         legal tile that is neither it nor the current tile before dropping the target. The bounded give-up (2.213): a way-round that makes no net progress on this target counts; the count past
-        WAYROUND_LIMIT is the real replan. Pure: it reads the entity and the state and returns the outcome."""
+        the step limit (`wayround_limit`) is the real replan. Pure: it reads the entity and the state and returns the outcome."""
         target_tile = (int(target_pos[0]), int(target_pos[1]))
         current_tick = getattr(state_or_context, "tick", 0)
         way_round = MovementSystem._find_way_round_loop(entity, effective_target, target_pos, state_or_context, move_speed_mult)
@@ -183,7 +203,7 @@ class MovementSystem:
         wait_delta = -entity.navigation.wait_count
         dist_now = int(abs(target_pos[0] - entity.navigation.position[0]) + abs(target_pos[1] - entity.navigation.position[1]))
         wayround_count, wayround_best, wayround_anchor = wayround_after_event(entity.navigation, target_tile, dist_now, current_tick)
-        if way_round is not None and wayround_count <= WAYROUND_LIMIT:
+        if way_round is not None and wayround_count <= _wayround().limit:
             return OscReplanOutcome(way_round, osc_delta, wait_delta, (wayround_count, wayround_best, wayround_anchor, current_tick), False)
         anchor = entity.navigation.wayround_anchor
         kept = (int(anchor[0]), int(anchor[1])) if anchor is not None else target_tile

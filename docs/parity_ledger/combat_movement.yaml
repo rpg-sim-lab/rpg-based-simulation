@@ -5034,7 +5034,7 @@
   priority: P1
   legacy_evidence: null
   v2_evidence: src/engine/patches.py (NavigationPatch.apply), src/engine/movement.py
-    (MovementSystem._find_way_round_loop, WAYROUND_LIMIT, the oscillation branch of resolve_move),
+    (MovementSystem._find_way_round_loop, the way-round step limit and quiet window now read from data/content/movement/wayround_settings.yaml via src/content/wayround_settings.py, the oscillation branch of resolve_move),
     src/core/state.py (NavigationComponent.wayround_count, wayround_best_distance, wayround_anchor,
     wayround_last_tick), src/engine/checkpoint_fields.py (four FIELD_RULES rows), src/replay/fingerprint.py,
     src/engine/apply.py (the move carries the four fields), src/engine/movement.py (wayround_after_event; the give-up writes ReasonCode.WAYROUND_GIVE_UP, src/core/enums.py).
