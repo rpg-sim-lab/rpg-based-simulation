@@ -187,6 +187,117 @@ def test_references_are_the_last_and_the_first_of_the_current_milestone(tmp_path
     assert (refs.last["version"], refs.milestone_first["version"]) == (4, 3)
 
 
+# ---- a baseline named its milestone's reference (baseline_change_policy.md rule 10)
+
+M715 = {"ref": "#715 6920465555", "date": "2026-11-21"}
+
+
+def _mref(directory: Path, milestone="M1", ruling=M715, **kw):
+    return _rebase(directory, milestone=milestone, cite={"owner_ruling": ruling, "milestone_reference": True}, **kw)
+
+
+def test_a_marked_baseline_is_the_milestone_reference_and_can_read_current(tmp_path):
+    _write_v1(tmp_path, milestone="M0")
+    stale = _candidate(deaths=4.0, milestone="M1")
+    stale["provenance"]["harness_hash"] = "h0"
+    rgb.rebaseline(stale, _config(), tmp_path, pr="#8", divergence_id="DIV-0", now=NOW)
+    _mref(tmp_path, deaths=5.0)
+    refs = rgb.resolve_references(rgb.load_baselines(tmp_path))
+    assert (refs.last["version"], refs.milestone_first["version"]) == (3, 3)
+    assert refs.milestone_reason == "named by owner ruling #715 6920465555"
+    assert not rgb.staleness(refs.milestone_first, NOW, "h1", _config()).stale
+    unmarked = rgb.load_baselines(tmp_path)[1]  # v2 alone would have been the milestone-first reference, stale against the current harness
+    assert rgb.staleness(unmarked, NOW, "h1", _config()).stale
+
+
+def test_without_the_marker_the_reference_is_the_first_of_the_milestone(tmp_path):
+    _write_v1(tmp_path, milestone="M1")
+    _rebase(tmp_path, deaths=4.0, milestone="M1")
+    refs = rgb.resolve_references(rgb.load_baselines(tmp_path))
+    assert (refs.milestone_first["version"], refs.milestone_reason) == (1, "first of milestone")
+
+
+def test_a_marker_on_another_milestone_does_not_move_the_reference(tmp_path):
+    _write_v1(tmp_path, milestone="M0")
+    _mref(tmp_path, milestone="M0", deaths=4.0)
+    _rebase(tmp_path, deaths=5.0, milestone="M1")
+    _rebase(tmp_path, deaths=6.0, milestone="M1")
+    refs = rgb.resolve_references(rgb.load_baselines(tmp_path))
+    assert (refs.last["version"], refs.milestone_first["version"], refs.milestone_reason) == (4, 3, "first of milestone")
+
+
+def test_the_highest_marked_version_of_the_milestone_wins(tmp_path):
+    _write_v1(tmp_path, milestone="M1")
+    _mref(tmp_path, deaths=4.0)
+    _mref(tmp_path, deaths=5.0, ruling={"ref": "#715 7000000001", "date": "2026-11-22"})
+    _rebase(tmp_path, deaths=6.0, milestone="M1")
+    refs = rgb.resolve_references(rgb.load_baselines(tmp_path))
+    assert (refs.last["version"], refs.milestone_first["version"]) == (4, 3)
+    assert refs.milestone_reason == "named by owner ruling #715 7000000001"
+
+
+def test_a_marker_on_version_one_reads_its_top_level_ruling(tmp_path):
+    rgb.rebaseline(_candidate(), _config(), tmp_path, pr=None, cites=["T"], owner_ruling=M715, milestone_reference=True, now=NOW)
+    doc = json.loads((tmp_path / "rpg_gate_v1.json").read_text())
+    assert doc["milestone_reference"] is True and rgb.lint_dir(tmp_path) == []
+
+
+def test_marker_without_an_owner_ruling_is_refused_naming_rule_10(tmp_path):
+    _write_v1(tmp_path, milestone="M1")
+    with pytest.raises(rgb.RebaselineRefused, match="rule 10.*owner ruling"):
+        _rebase(tmp_path, milestone="M1", cite={"milestone_reference": True})
+    assert [p.name for p in tmp_path.glob("*.json")] == ["rpg_gate_v1.json"]
+
+
+@pytest.mark.parametrize("ruling", [
+    {"ref": "memo-61", "date": "2026-11-21"},
+    {"ref": "#716 6920465555", "date": "2026-11-21"},
+    {"ref": "#715", "date": "2026-11-21"},
+    {"ref": "#715 abc", "date": "2026-11-21"},
+    {"ref": "#715 6920465555 extra", "date": "2026-11-21"},
+    {"ref": "#715 6920465555", "date": "yesterday"},
+    {"ref": "#715 6920465555"},
+])
+def test_marker_refuses_a_ruling_that_is_not_a_715_comment(tmp_path, ruling):
+    _write_v1(tmp_path, milestone="M1")
+    with pytest.raises(rgb.RebaselineRefused, match="rule 10"):
+        _mref(tmp_path, ruling=ruling)
+    assert [p.name for p in tmp_path.glob("*.json")] == ["rpg_gate_v1.json"]
+
+
+def test_the_ordinary_ruling_shape_is_still_accepted_without_the_marker(tmp_path):
+    _write_v1(tmp_path, deaths=3.0)
+    path = _rebase(tmp_path, deaths=11.0, cite={"owner_ruling": RULING})
+    assert "milestone_reference" not in json.loads(path.read_text())
+
+
+def test_lint_refuses_a_non_boolean_marker_and_a_marker_without_its_ruling(tmp_path):
+    _write_v1(tmp_path, milestone="M1")
+    doc = json.loads(_mref(tmp_path).read_text())
+    assert rgb.lint_baseline(doc, "rpg_gate_v2.json") == []
+    for bad in ("true", 1, None):
+        assert any("must be a boolean" in p for p in rgb.lint_baseline({**doc, "milestone_reference": bad}, "rpg_gate_v2.json"))
+    no_ruling = json.loads(json.dumps(doc))
+    del no_ruling["rebaseline"]["owner_ruling"]
+    assert any("milestone_reference: needs an owner ruling" in p for p in rgb.lint_baseline(no_ruling, "rpg_gate_v2.json"))
+    wrong = json.loads(json.dumps(doc))
+    wrong["rebaseline"]["owner_ruling"] = RULING
+    assert any("#715" in p for p in rgb.lint_baseline(wrong, "rpg_gate_v2.json"))
+    assert rgb.lint_baseline({**doc, "milestone_reference": False}, "rpg_gate_v2.json") == []
+
+
+def test_cli_flag_records_the_marker(tmp_path, capsys):
+    import yaml
+    _write_v1(tmp_path / "b", milestone="M1")
+    cand, cfg = tmp_path / "cand.json", tmp_path / "cfg.yaml"
+    cand.write_text(json.dumps(_candidate(deaths=4.0)))
+    cfg.write_text(yaml.safe_dump({"worlds": ["w"], "seeds": [1, 2], "ticks": 5000, "stale_after_days": 30}))
+    base = ["rebaseline", "--candidate", str(cand), "--config", str(cfg), "--dir", str(tmp_path / "b"), "--milestone", "M1", "--pr", "#9", "--divergence-id", "DIV-1", "--milestone-reference"]
+    assert rgb.main(base) == 2 and "rule 10" in capsys.readouterr().err
+    assert rgb.main([*base, "--owner-ruling-ref", "#715 6920465555", "--owner-ruling-date", "2026-11-21"]) == 0
+    assert json.loads((tmp_path / "b" / "rpg_gate_v2.json").read_text())["milestone_reference"] is True
+
+
 def test_a_single_baseline_is_both_references_and_none_means_no_data(tmp_path):
     assert rgb.resolve_references(rgb.load_baselines(tmp_path)) is None
     _write_v1(tmp_path)

@@ -122,6 +122,15 @@ def test_both_references_are_reported_and_drift_against_either_is_drift():
     by_ref = {r["ref"]: r for r in finding["refs"]}
     assert by_ref["last"]["state"] == "pass" and by_ref["milestone-first"]["state"] == "drift" and finding["state"] == "drift"
     assert [r["ref"] for r in report["references"]] == ["last", "milestone-first"]
+    assert report["references"][1]["reason"] == "first of milestone"
+    assert "[first of milestone]" in rep.render_markdown(report)
+
+
+def test_the_report_names_a_milestone_reference_an_owner_ruling_named():
+    last = _baseline(3, (12,) * 5, milestone="M2")
+    report = _build(_docs((12.0,) * 5), refs=References(last=last, milestone_first=last, milestone_reason="named by owner ruling #715 6920465555"))
+    assert report["references"][1]["reason"] == "named by owner ruling #715 6920465555"
+    assert "milestone-first = v3 (M2) [named by owner ruling #715 6920465555]" in rep.render_markdown(report)
 
 
 def test_floor_keyed_by_id_applies_to_every_key_and_tick():
