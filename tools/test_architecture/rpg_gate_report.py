@@ -624,7 +624,7 @@ def build_report(
         "counts": counts,
         "references": (
             [{"ref": "last", "version": refs.last["version"], "milestone": refs.last["milestone"], "stale": list(reasons_by_version.get(refs.last["version"], ()))},
-             {"ref": "milestone-first", "version": refs.milestone_first["version"], "milestone": refs.milestone_first["milestone"], "stale": list(reasons_by_version.get(refs.milestone_first["version"], ()))}]
+             {"ref": "milestone-first", "version": refs.milestone_first["version"], "milestone": refs.milestone_first["milestone"], "reason": refs.milestone_reason, "stale": list(reasons_by_version.get(refs.milestone_first["version"], ()))}]
             if refs else []
         ),
         "rerun": rerun_info,
@@ -671,7 +671,7 @@ def render_markdown(report: Mapping[str, Any]) -> str:
     if report.get("module_absent"):
         lines += ["", "> **rpg's metric module is absent** (`ModuleNotFoundError`): every run is `metric_error` / `no-data`, so this report judges nothing yet. The job stays green."]
     if report["references"]:
-        lines.append("References: " + "; ".join(f"{r['ref']} = v{r['version']} ({r['milestone']}){' STALE: ' + '; '.join(r['stale']) if r['stale'] else ''}" for r in report["references"]))
+        lines.append("References: " + "; ".join(f"{r['ref']} = v{r['version']} ({r['milestone']}){' [' + r['reason'] + ']' if r.get('reason') else ''}{' STALE: ' + '; '.join(r['stale']) if r['stale'] else ''}" for r in report["references"]))
     else:
         lines.append("References: none (no baseline exists)")
     if report["rerun"].get("performed"):
