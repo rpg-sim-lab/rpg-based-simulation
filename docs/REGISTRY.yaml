@@ -8030,6 +8030,20 @@
   artifact_files: []
   tags: []
 - type: ticket
+  path: agent-working/tickets/todos/TCK-20261121-RPG-GATE-A-BASELINE-CAN-BE-NAMED-ITS-MILESTONES-REFERENCE.md
+  ticket_id: TCK-20261121-RPG-GATE-A-BASELINE-CAN-BE-NAMED-ITS-MILESTONES-REFERENCE
+  title: 'A baseline can be named its milestone''s reference (`milestone_reference`),
+    set only by `rebaseline` citing an owner-ruling comment on #715, so a re-record
+    inside M1 does not leave the stale first baseline as the fixed reference'
+  tier: standard
+  ticket_type: feature
+  date: '2026-11-21'
+  related_code_areas:
+  - tools/test_architecture/rpg_gate_baseline.py
+  - tools/test_architecture/rpg_gate_report.py
+  artifact_files: []
+  tags: []
+- type: ticket
   path: agent-working/tickets/todos/TCK-20261121-RPG-GATE-REBASELINE-AFTER-THE-NONE-KIND-GROUP-HASH-MOVE.md
   ticket_id: TCK-20261121-RPG-GATE-REBASELINE-AFTER-THE-NONE-KIND-GROUP-HASH-MOVE
   title: Re-record the rpg gate baseline from a main run after the `none` kind-group
@@ -8040,6 +8054,21 @@
   related_code_areas:
   - tools/test_architecture/rpg_gate_baseline.py
   - tests/simulation_quality/rpg_gate/baselines/
+  artifact_files: []
+  tags: []
+- type: ticket
+  path: agent-working/tickets/todos/TCK-20261121-RPG-GATE-REBASELINE-CARRY-FORWARD-A-NAMED-ROW-SET.md
+  ticket_id: TCK-20261121-RPG-GATE-REBASELINE-CARRY-FORWARD-A-NAMED-ROW-SET
+  title: '`rebaseline --carry-forward`: record a main run''s candidate for every row
+    except a named set that keeps its previous value, with per-row provenance, and
+    let the report still judge the carried rows'
+  tier: standard
+  ticket_type: feature
+  date: '2026-11-21'
+  related_code_areas:
+  - tools/test_architecture/rpg_gate_baseline.py
+  - tools/test_architecture/rpg_gate_report.py
+  - tools/test_architecture/known_reds.py
   artifact_files: []
   tags: []
 - type: ticket
