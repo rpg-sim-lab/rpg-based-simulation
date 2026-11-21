@@ -9,3 +9,4 @@
 {"ts":"2026-11-19T07:54:58.811943Z","event":"governing_edit_attempt","seat":"agent-working-implementer","path":".github/workflows/test.yml","basis":"mention","attempt":true}
 {"ts":"2026-11-19T11:55:13.315566Z","event":"governing_edit_attempt","seat":"agent-working-implementer","path":".claude/settings.json","basis":"mention","attempt":true}
 {"ts":"2026-11-19T11:55:13.315566Z","event":"governing_edit_attempt","seat":"agent-working-implementer","path":"tools/sessions/classify.py","basis":"mention","attempt":true}
+{"ts":"2026-11-21T05:29:44.461440Z","event":"governing_edit_attempt","seat":"rpg-planner","path":".github/workflows/pr-body-lint.yml","basis":"mention","attempt":true}
