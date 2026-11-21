@@ -17,8 +17,8 @@ TCK-20261121-MEAT-EATERS-IN-FRONTIER-LIVING-WORLD-ATTACK-PEOPLE-FORTY-TIMES-MORE
 |---|---|
 | `person_attack_spy.py` | the child process: `--mode plain` (the twin) or `--mode spy` (record-only wrapper over `ApplyPath.apply_generation`); the name carries `_spy` for the shared busy gate |
 | `person_attack_summary.py` | offline summarizer: views (a)-(e), rules R1-R7, the cell validity checks, the verdict switch |
-| `person_attack_run.py` | runner: per cell the plain twin, then the spy; two arms side by side (at most 2 processes); interpreter freeze re-checked after every process; twin check |
-| `person_attack_launch.sh` | launcher: preflight, the runner under the slot with the watcher, the summarizer, the tree-clean proof, the seal LAST |
+| `person_attack_run.py` | runner module: `run_child` runs ONE process (the launcher calls it once per scope), `plan`, `twin_check`, `freeze_sha`; its own `main` (two arms side by side) is NOT used by the launcher |
+| `person_attack_launch.sh` | launcher: preflight, then the 12 processes SEQUENTIALLY (seed, arm, plain then spy), each in its OWN `systemd-run` 3G scope on cores 4-5 with its own watcher, freeze check and memory check; the summarizer, the tree-clean proof, the seal LAST; `LAUNCH_DRY_RUN=1` prints the 12 scope commands |
 | `person_attack_watch.sh`, `person_attack_tree_check.py` | the RSS watcher; the proof that a frozen tree is exactly `git ls-tree -r <sha>` (paths and blob hashes, no `data/runs`) |
 | `tests/tools/test_person_attack_kit.py` | the planted controls (55 tests, unit level, no world run) |
 
@@ -77,5 +77,6 @@ The engagement split at gaps 50 and 51; every rule R1-R7 with one firing and one
 - Nothing in `src/`, no test expectation, no gate file is touched; the kit only reads.
 
 ## Known limits
-- Two processes share ONE 3 GiB slot (`MemoryMax=3G`, watcher at 2.85 GiB summed RSS); no FLW 5000t RSS reading exists in the record. If the first cell is killed by the watcher the run stops and is reported, never retried by the kit.
+- **Memory (settled by the sequential launcher):** one process at a time, each in its own 3 GiB scope; the watcher stops a child at 2.85 GiB summed RSS and the run stops (never retried by the kit). The preflight on 113683af7 measured about 89-90 MB peak RSS per process at 300 ticks; 5000 ticks is unmeasured.
+- **Preflight result (113683af7, GO #715 7064141018, wiring proof only, not evidence):** 300t frontier_living_world s42, both trees, plain/spy/inject_hit: RunLedger == spy for EVERY full key in both arms (no one-sided key), plain/spy/inject_hit final hashes equal per arm, inject_hit added exactly one `meat|0|1|hit` to both counters, ledger live, exit 0 everywhere. Spy/plain wall ratio 0.99 (NEW) and 1.00 (BASE) at 300 ticks.
 - `person_attack_spy.py` imports the tree's `src` lazily inside functions (the module must load without a tree); `tools/` and `tests/` are not under the CI ruff scope (`ruff check src`).

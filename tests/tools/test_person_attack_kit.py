@@ -4,6 +4,7 @@ void, the frozen-tree proof, and the launcher's self-match-proof heavy check. Un
 from __future__ import annotations
 
 import json
+import os
 import subprocess
 import sys
 from pathlib import Path
@@ -757,3 +758,41 @@ heavy_running "$W"; echo "ancestor_text_only=$?"
     out = subprocess.run(["bash", str(script)], capture_output=True, text=True, timeout=60).stdout
     got = dict(line.split("=") for line in out.split())
     assert got == {"nothing_running": "1", "shell_that_contains_the_words": "1", "real_interpreter": "0", "ancestor_text_only": "1"}
+
+
+def dry_run_lines(tmp_path: Path, seeds: str = "42 45 43") -> List[str]:
+    env = tmp_path / "dry.env"
+    env.write_text(f'KIT=/k\nOUT=/o\nTREE_NEW=/t/new\nTREE_BASE=/t/base\nPY=/p/python\nWORLDS="frontier_living_world"\nSEEDS="{seeds}"\nTICKS=5000\n', encoding="utf-8")
+    proc = subprocess.run(["bash", str(LAUNCHER), str(env), "1"], capture_output=True, text=True, env={**os.environ, "LAUNCH_DRY_RUN": "1"}, timeout=30)
+    assert proc.returncode == 0, proc.stderr
+    return [line for line in proc.stdout.splitlines() if line.startswith("SCOPE ")]
+
+
+def test_the_launcher_runs_twelve_processes_one_per_scope_in_strict_order_plain_before_spy(tmp_path: Path) -> None:
+    lines = dry_run_lines(tmp_path)
+    assert len(lines) == 12
+    scope = "SCOPE systemd-run --user --scope -q -p MemoryMax=3G -p MemorySwapMax=0 taskset -c 4-5 setsid -w <python -c one-process>"
+    assert all(line.startswith(scope) for line in lines)                                      # every process has its own scope, on cores 4-5, 3G, no swap
+    tail = [line.split("<python -c one-process> ")[1].split() for line in lines]                  # arm world seed ticks mode tree out python
+    assert [(t[0], t[2], t[4]) for t in tail] == [(arm, seed, mode) for seed in ("42", "45", "43") for arm in ("new", "base") for mode in ("plain", "spy")]
+    assert [t[5] for t in tail[:4]] == ["/t/new", "/t/new", "/t/base", "/t/base"] and all(t[3] == "5000" and t[6] == "/o/cells" for t in tail)
+    for i in range(0, 12, 2):                                                                     # in each cell the plain twin comes first, then the spy of the SAME cell
+        assert tail[i][4] == "plain" and tail[i + 1][4] == "spy" and tail[i][:3] == tail[i + 1][:3]
+
+
+def test_the_launcher_has_one_scope_site_and_no_parallel_process_start() -> None:
+    text = LAUNCHER.read_text(encoding="utf-8")
+    code = [line for line in text.splitlines() if not line.lstrip().startswith("#")]
+    assert sum("systemd-run --user" in line for line in code) == 1                                # one site builds every scope command
+    assert sum("SCOPE_CMD[@]" in line for line in code) == 1 and any('"${SCOPE_CMD[@]}" >> ' in line and line.rstrip().endswith("2>&1)") for line in code)   # run in the foreground, never with a trailing &
+    assert "PYTHONDONTWRITEBYTECODE=1" in text and "setsid -w" in text and 'person_attack_run.py"' not in text      # no whole-run runner call any more
+
+
+def test_the_one_process_code_runs_one_child_records_its_exit_and_propagates_the_return_code(tmp_path: Path) -> None:
+    text = LAUNCHER.read_text(encoding="utf-8")
+    code = text[text.index("ONE_PROCESS='") + len("ONE_PROCESS='"):text.index("sys.exit(result[\"returncode\"])'") + len("sys.exit(result[\"returncode\"])")]
+    tree, out = tmp_path / "tree", tmp_path / "cells"          # an empty tree: the child fails at its imports at once (no world is built), which proves the plumbing only
+    tree.mkdir()
+    proc = subprocess.run([sys.executable, "-c", code, "new", "w", "42", "10", "plain", str(tree), str(out), sys.executable], cwd=ROOT, env={**os.environ, "PYTHONPATH": str(ROOT)}, capture_output=True, text=True, timeout=60)
+    exit_doc = json.loads((out / "new__w__s42__plain.exit.json").read_text(encoding="utf-8"))
+    assert proc.returncode == exit_doc["returncode"] != 0 and "seconds" in exit_doc and not (tree / "data" / "runs").exists()
