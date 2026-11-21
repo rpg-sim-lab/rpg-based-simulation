@@ -14,7 +14,7 @@ Covers:
 """
 from __future__ import annotations
 from dataclasses import dataclass, field, replace
-from typing import Dict, List, Optional, Any, TYPE_CHECKING
+from typing import Dict, List, Optional, Any, TYPE_CHECKING, cast
 import ast
 import logging
 
@@ -531,8 +531,8 @@ class StrategicIntelligenceSystem:
                 match_lead = next((l for l in entity.strategic.leads.values() if l.subject == target_mat and l.kind == 'location'), None)
                 if match_lead and not lodged_stayer:
                     try:
-                        coords = tuple(map(float, match_lead.detail.split(',')))
-                        if entity.navigation.target != coords and destination_open(entity, (coords[0], coords[1]), state.tick):  # F2: a tile near a suppressed give-up anchor is not a destination
+                        coords = cast('tuple[float, float]', tuple(map(float, match_lead.detail.split(','))))  # type only: a lead's coordinate detail is "x,y"
+                        if entity.navigation.target != coords and destination_open(entity, coords, state.tick):  # F2: a tile near a suppressed give-up anchor is not a destination
                             has_nav_update = True
                             existing_nav = ent_upd.navigation or NavigationUpdate()
                             ent_upd = replace(ent_upd, navigation=replace(existing_nav, target_set=coords, **hold_reset_kwargs(entity, ent_upd)), interaction=InteractionUpdate(reset=True))
