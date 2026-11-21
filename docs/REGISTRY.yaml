@@ -8030,6 +8030,21 @@
   artifact_files: []
   tags: []
 - type: ticket
+  path: agent-working/tickets/todos/TCK-20261121-MEAT-EATERS-IN-FRONTIER-LIVING-WORLD-ATTACK-PEOPLE-FORTY-TIMES-MORE-AFTER-THE-NIGHT-AND-SLOT-FIXES.md
+  ticket_id: TCK-20261121-MEAT-EATERS-IN-FRONTIER-LIVING-WORLD-ATTACK-PEOPLE-FORTY-TIMES-MORE-AFTER-THE-NIGHT-AND-SLOT-FIXES
+  title: 'Meat-eaters in frontier_living_world attack people about forty times more
+    often (gate O3 0.6 -> 24.0 per seed) since the night fix (#953) and the suspended-project
+    expiry (#954): trace who attacks, and decide intended vs a loop'
+  tier: standard
+  ticket_type: bug
+  date: '2026-11-21'
+  related_code_areas:
+  - src/observability/rpg_gate_metrics.py (O3 counting, meat grouping)
+  - src/core/calendar.py, src/systems/strategic_systems/intelligence.py (suspension
+    expiry), src/engine/tactical.py (attack decisions)
+  artifact_files: []
+  tags: []
+- type: ticket
   path: agent-working/tickets/todos/TCK-20261121-RPG-GATE-REBASELINE-AFTER-THE-NONE-KIND-GROUP-HASH-MOVE.md
   ticket_id: TCK-20261121-RPG-GATE-REBASELINE-AFTER-THE-NONE-KIND-GROUP-HASH-MOVE
   title: Re-record the rpg gate baseline from a main run after the `none` kind-group
@@ -8040,6 +8055,19 @@
   related_code_areas:
   - tools/test_architecture/rpg_gate_baseline.py
   - tests/simulation_quality/rpg_gate/baselines/
+  artifact_files: []
+  tags: []
+- type: ticket
+  path: agent-working/tickets/todos/TCK-20261121-THE-BLOCKER-BACKOFF-WINDOW-IS-HARD-CODED-IN-CORE-NOT-DECLARED-IN-DATA.md
+  ticket_id: TCK-20261121-THE-BLOCKER-BACKOFF-WINDOW-IS-HARD-CODED-IN-CORE-NOT-DECLARED-IN-DATA
+  title: The blocker backoff window (100 ticks, doubling, capped at 800) is hard-coded
+    in src/core/strategic.py, not declared in data
+  tier: standard
+  ticket_type: refactor
+  date: '2026-11-21'
+  related_code_areas:
+  - src/core/strategic.py (BLOCKER_BACKOFF_BASE_TICKS, BLOCKER_BACKOFF_CAP_TICKS)
+  - src/content/ (the loader), data/content/strategy/
   artifact_files: []
   tags: []
 - type: ticket
