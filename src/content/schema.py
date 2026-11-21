@@ -415,6 +415,11 @@ class DefaultCompileProfile(CatalogBaseDefinition):
     default_tax_share: float = Field(0.0, ge=0.0, le=1.0, description="Share of a sale or a wage paid to the treasury of the faction holding the place, rounded down per transaction (decision 51)")
 
 
+class BlockerSettingsDefinition(CatalogBaseDefinition):
+    """Schema for the blocker settings that are balance values, not law (F2, divergence 2.220): a one-record family like `defaults`, so the value is part of the catalog fingerprint (the run's identity)."""
+    access_giveup_limit: int = Field(..., ge=1, strict=True, description="Give-ups of one destination (a give-up-filed ACCESS blocker's failure_count) that end the project that wanted it; an integer >= 1")
+
+
 class ItemDefinition(CatalogBaseDefinition):
     """Schema for item definitions under the dynamic content catalog."""
     categories: List[str] = Field(..., description="Category tags (e.g. weapon, melee, material)")
