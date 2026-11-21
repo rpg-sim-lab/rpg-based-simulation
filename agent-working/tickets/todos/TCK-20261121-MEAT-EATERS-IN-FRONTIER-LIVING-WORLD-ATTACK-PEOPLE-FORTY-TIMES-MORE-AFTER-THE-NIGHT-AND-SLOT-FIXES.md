@@ -33,9 +33,9 @@ rpg-designer ruled it a BUG CANDIDATE until a trace clears it. The rule was pre-
 This ticket is the TRACE ticket: it owns any gate drift entries or carried rows for the #953/#954-tied rows while the trace runs (rpg-designer: every row tied to #953/#954, alone or combined, and every unplaced row, is held).
 
 ## Scope
-1. A traced kernel run (own S9; brief at main-checkout .claude/handover/drafts/rpg-planner-o3-trace-brief.md): FLW s42 + s45 (s43 as a control), 5000t, NEW = 87792e3e8 vs BASE = e72270894, each on a fresh git archive tree, with plain twin hash equality.
-2. Report (a) O3's unit (hits vs engagements; an engagement = one attacker on one victim with gaps <= 50t), (b) per attacker: kind/species/diet/engagements/hits/victims/day-night, (c) per pair: engagements and outcome, (d) inside the SURV-08 active period or not. Also the gate's meat-group membership rule (file:line).
-3. Apply rpg-designer's pre-set rule R1-R5 (in the brief). INTENDED only if all hold in every seed with >= 10 engagements; otherwise a BUG CANDIDATE with the attacker ids, then a fix ticket. A meat group holding a non-meat diet is a metric-grouping finding for testing-planner.
+1. A traced kernel run (own S9; brief at main-checkout .claude/handover/drafts/rpg-planner-o3-trace-brief.md, sha256 cd27e75a, accepted by rpg-designer as the pre-set rule of record): FLW s42 + s45, plus s43 as the REQUIRED quiet control, 5000t, NEW = 87792e3e8 vs BASE = e72270894, each on a fresh git archive tree, with plain twin hash equality.
+2. Report (a) O3's unit (hits vs engagements; an engagement = one attacker on one victim with gaps <= 50t), (b) per attacker: kind/species/diet/engagements/hits/victims/day-night, (c) per pair: engagements and outcome, (d) inside the SURV-08 active period or not, (e) per hit: the victim's state (asleep / lodged / awake), its movement mode, and whether its next tactical decision is flight or fight. Also the gate's meat-group membership rule (file:line; inspected 2026-11-21: by diet, so group 'none' cannot be in it). O3 counts HITS (run_ledger._count_attacks), so the trace derives engagements itself.
+3. Apply rpg-designer's pre-set rules R1-R7 (in the brief; R6 fight length vs BASE, R7 victim state). R1-R5 and R7 are judged on NEW, with BASE as context. A miss on NEW and BASE is "pre-existing" (still a bug candidate, not attributed to #953/#954); a miss on NEW only is attributed. R6 is NEW vs BASE. NEW's night definition is applied offline to both arms (a measurement label; BASE's agents never used it). Active periods come from a kit-side copy of SURV-08 Q5(a), pinned in the kit. "Not assessable" is NOT a pass: a seed where R5 can't be assessed for attackers carrying >= 10% of engagements reads NOT CLEARED and counts as held. An R5 miss is also tagged "SURV-08 law MISSING in code" (see TCK-20261109-M1-ACTIVITY-PERIOD-AND-HAZARD-TOLERANCE). INTENDED only if all rules hold in every seed where they apply; otherwise a BUG CANDIDATE with the attacker ids, then a fix ticket. A meat group holding a non-meat diet is a metric-grouping finding for testing-planner.
 4. If intended: consequence lines in 2.209 and 2.212 plus parity notes (rpg-designer's docs), and the held rows re-record report-only.
 
 ## Out of Scope
@@ -44,7 +44,7 @@ This ticket is the TRACE ticket: it owns any gate drift entries or carried rows 
 
 ## Acceptance Criteria
 1. The traced run's raw JSONs exist with hashes, the twins match, and rpg-designer recounted them.
-2. Each seed has R1-R5 verdicts recorded, labelled executed.
+2. Each seed (s42, s43, s45) has R1-R7 verdicts recorded, labelled executed, with the pre-existing / attributed / not-assessable labels per the rules in Scope 3, and s43 shows the rules don't fire on a normal seed.
 3. The outcome is either a fix ticket filed (bug) or the 2.209/2.212 consequence lines landed (intended), and the held gate rows are released accordingly.
 
 ## Related Tickets
