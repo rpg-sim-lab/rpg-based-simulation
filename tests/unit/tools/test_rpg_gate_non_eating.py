@@ -134,3 +134,16 @@ def test_the_report_lists_the_groups_first_seen_after_t0_with_peak_and_end_and_n
     report = rep.build_report(GateConfig(("w",), (42,), 300, 30), {("w", 42): doc}, None, {}, [], dt.date(2026, 11, 21))
     assert report["first_seen_after_t0"] == {"w": {"42": {"none": {"peak": 5.0, "end": 2.0}}}}
     assert "First seen after t0 in w (report-only): s42 `none` peak 5, end 2" in rep.render_markdown(report)
+
+
+def test_a_none_group_at_zero_t0_population_against_a_reference_of_zero_is_a_pass_and_never_a_stop_line_or_a_failure():
+    """C3: O2.t0_population's `floor` is a drift floor (|d| > floor), not a minimum: none at 0 in a world that never starts one passes against a reference of 0."""
+    row = {"id": "O2.t0_population", "class": "outcome", "scope": "pooled", "world": "w", "group": "none", "value": 0.0, "floor": 1.0}
+    pooled = {"schema": "rpg-gate-metrics/v1", "status": "ok", "harness_hash": "h", "world": "w", "metrics": [row]}
+    seed = {"schema": "rpg-gate-metrics/v1", "status": "ok", "harness_hash": "h", "world": "w", "seed": 1, "metrics": []}
+    from tools.test_architecture.rpg_gate_baseline import References
+
+    baseline = {"version": 2, "milestone": "M1", "metrics": [dict(row)]}
+    report = rep.build_report(GateConfig(("w",), (1,), 10, 30), {("w", 1): seed, ("w", None): pooled}, References(last=baseline, milestone_first=baseline), {}, [], dt.date(2026, 11, 21))
+    states = {f["id"]: f["state"] for f in report["findings"]}
+    assert states["O2.t0_population"] == "pass" and report["verdict"] != "red"
