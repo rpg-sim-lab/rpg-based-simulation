@@ -353,9 +353,7 @@ def giveup_filing_update(entity: EntityState, staged: StrategicUpdate, tick: int
     if not records:
         return None
     project_id = staged.current_project_id_set if staged.current_project_id_set is not None else entity.strategic.current_project_id
-    if not project_id:
-        return None
-    project = next((p for p in reversed(staged.projects_add_or_update) if p.id == project_id), None) or entity.strategic.projects.get(project_id)
+    project = (next((p for p in reversed(staged.projects_add_or_update) if p.id == project_id), None) or entity.strategic.projects.get(project_id)) if project_id else None  # D3: no project still files
     blockers = {**entity.strategic.blockers, **{b.id: b for b in staged.blockers_add_or_update}}
     filed: Dict[str, BlockerState] = {}
     reached = False
@@ -363,8 +361,9 @@ def giveup_filing_update(entity: EntityState, staged: StrategicUpdate, tick: int
         bid = access_blocker_id(record.anchor)
         stored = filed.get(bid) or blockers.get(bid)
         base = stored if stored is not None else BlockerState(id=bid, kind=BlockerKind.ACCESS, subject=access_subject(record.anchor), severity=0.8)
-        count = (stored.failure_count if stored is not None else 0) + 1
-        filed[bid] = replace(base, resolved=False, failure_count=count, suppression_until_tick=tick + blocker_timeout_suppression(count), last_seen_tick=tick)
+        count = (stored.giveup_count if stored is not None else 0) + 1  # D4: its own counter, failure_count keeps its timeout meaning
+        until = max(stored.suppression_until_tick if stored is not None else 0, tick + blocker_timeout_suppression(count))
+        filed[bid] = replace(base, resolved=False, giveup_count=count, suppression_until_tick=until, last_seen_tick=tick)
         reached = reached or count >= limit
     update = StrategicUpdate(blockers_add_or_update=list(filed.values()))
     if reached and project is not None and project.ended_by is None:

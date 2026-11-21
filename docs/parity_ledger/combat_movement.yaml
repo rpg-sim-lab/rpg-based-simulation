@@ -5090,7 +5090,11 @@
     destination_suppressed forbids every tile within Chebyshev 1 of the anchor to both tactical
     target writers (the typed outcome OBJECTIVE_DESTINATION_SUPPRESSED, no navigation update) and
     the strategic bridge. A blocker reaching access_giveup_limit (4, data/content/strategy/blocker_settings.yaml)
-    ends the project current at that give-up, ProjectEnd.DESTINATION_GIVEN_UP.'
+    ends the project current at that give-up, ProjectEnd.DESTINATION_GIVEN_UP. v2.2a: every place-target writer
+    goes through propose_target, with a per-class fallback when it refuses (flight: retreat point, half the
+    distance, home, then the own-tile hold; combat positioning: the branch does not fire; stalemate-break:
+    hold; objective: the typed idle; bridge: the next alternative and a typed target_clear of a suppressed
+    stored target; executor re-emission: the typed DestinationSuppressedEnd).'
   status: verified
   priority: P1
   legacy_evidence: null
@@ -5099,10 +5103,14 @@
     (the give-up writes the record), src/systems/strategic_systems/blocker_lifecycle.py (giveup_filing_update,
     consume_giveup_records), src/strategy/destination_suppression.py (destination_suppressed, SuppressionHit),
     src/engine/tactical_objective.py (ObjectiveDestinationSuppressed), src/systems/strategic_systems/intelligence.py
-    (the consume hook and the bridge guards), src/content/blocker_settings.py, src/core/strategic.py (ProjectEnd.DESTINATION_GIVEN_UP).
+    (the consume hook and the bridge guards), src/content/blocker_settings.py, src/core/strategic.py (ProjectEnd.DESTINATION_GIVEN_UP),
+    src/strategy/destination_suppression.py (propose_target, DestinationSuppressedEnd, reaffirm_move_update), src/engine/tactical*.py,
+    src/engine/tactical_destinations.py (retreat_destination candidates), src/engine/executor.py and worker_logic.py (the typed end).
   proof_type: regression
   test_path: tests/unit/strategic/test_giveup_filing.py
   divergence_note: See docs/guidelines/intentional_divergences.md Section 2.220.
   support_boundary: 'Paired effect NOT MEASURED yet (the F1+F2 own-job, bars G1-G5 and G1-held, is pending).
-    redirection.py is unwired and untouched; a target writer that skips destination_suppressed is
-    reported by G1, not prevented.'
+    redirection.py is unwired and untouched; a target writer that skips the proposal point is
+    caught by tests/unit/engine/test_propose_target_single_path.py (the guard is tied to the written
+    value) and reported by G1/G6. Unit rows for the fallbacks: tests/unit/strategic/test_propose_target.py,
+    tests/unit/engine/test_notice_suppressed_goal_stands.py.'

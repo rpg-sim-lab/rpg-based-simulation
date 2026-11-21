@@ -9,6 +9,7 @@ from src.engine.domain.action_router import ActionRouter
 from src.core.hold_mode import hold_reset_kwargs
 from src.core.registries import RecipeRegistry, ItemRegistry, ResourceRegistry
 from src.town.shop import ShopService
+from src.strategy.destination_suppression import suppressed_move_to  # F2 v2.2 D2
 
 
 @dataclass(frozen=True, slots=True)
@@ -69,6 +70,8 @@ class ActionIntentAdapter:
         neighbor_view: Any = None,
         context: Any = None
     ) -> Dict[int, EntityUpdate]:
+        if (refused := suppressed_move_to(entity, intent.kind, intent.payload.get("position"), current_tick)) is not None:  # F2 v2.2a class O: a MOVE_TO at a suppressed position is the typed idle
+            return refused
         # 1. Validate requirements first (honest requirement gating)
         reqs = []
         if intent.kind == "BUY_ITEM":

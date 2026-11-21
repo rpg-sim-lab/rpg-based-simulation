@@ -7,6 +7,7 @@ from src.core.state import GROUP_ID_BASE, AuthoritativeState
 
 if TYPE_CHECKING:
     from src.core.state import NavigationComponent
+    from src.core.strategic import BlockerState
 
 
 def _navigation_tail(nav: "NavigationComponent") -> str:
@@ -15,6 +16,19 @@ def _navigation_tail(nav: "NavigationComponent") -> str:
     wayround = "wayround=%s@%s:%s:%s:" % (nav.wayround_count, nav.wayround_best_distance, nav.wayround_anchor, nav.wayround_last_tick) if nav.wayround_count else ""
     giveups = "giveups=%s:" % (tuple((r.anchor, r.tick) for r in nav.giveup_records),) if nav.giveup_records else ""  # F2: only while a give-up record is held
     return lodged + wayround + giveups
+
+
+def _blocker_ident(blockers: "Dict[str, BlockerState]") -> str:
+    """The blockers' fragment of an entity's strategic identity, in id order. ``giveup_count`` (F2 v2.2a D4) adds ``:g<n>`` only while it is above 0, so a state that predates it hashes unchanged."""
+    return "|".join(
+        f"{blocker_id}:"
+        f"{blocker.kind}:"
+        f"{blocker.subject}:"
+        f"{blocker.severity:.3f}:"
+        f"{blocker.resolved}"
+        f"{':g%d' % blocker.giveup_count if blocker.giveup_count > 0 else ''}"
+        for blocker_id, blocker in sorted(blockers.items())
+    )
 
 
 class StateFingerprinter:
@@ -183,14 +197,7 @@ class StateFingerprinter:
             for project_id, project in sorted(strategic.projects.items())
         )
 
-        blocker_ident = "|".join(
-            f"{blocker_id}:"
-            f"{blocker.kind}:"
-            f"{blocker.subject}:"
-            f"{blocker.severity:.3f}:"
-            f"{blocker.resolved}"
-            for blocker_id, blocker in sorted(strategic.blockers.items())
-        )
+        blocker_ident = _blocker_ident(strategic.blockers)
 
         lead_ident = "|".join(
             f"{lead_id}:"

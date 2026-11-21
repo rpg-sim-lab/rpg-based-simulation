@@ -16,6 +16,7 @@ from typing import TYPE_CHECKING, Iterable, Optional, Tuple
 
 from src.core.enums import Domain
 from src.platform.rng import DeterministicRNG
+from src.strategy.destination_suppression import propose_target
 
 if TYPE_CHECKING:
     from src.core.state import AuthoritativeState, EntityState, RegionState
@@ -57,9 +58,9 @@ def _clamp_into(region: "RegionState", pos: Position) -> Position:
 
 
 def _away_destination(
-    region: "RegionState", here: Position, threat_positions: list[Position]
+    region: "RegionState", here: Position, threat_positions: list[Position], step: float = RETREAT_STEP
 ) -> Optional[Position]:
-    """The point one RETREAT_STEP directly away from the threats, clamped into ``region``.
+    """The point one ``step`` (RETREAT_STEP unless the suppression fallback halves it) directly away from the threats, clamped into ``region``.
 
     None when the threats give no direction (they cancel out) or the clamped point is no farther from the
     nearest threat than the entity already is (cornered).
@@ -70,38 +71,11 @@ def _away_destination(
     if norm <= _EPSILON:
         return None
     candidate = _clamp_into(
-        region, (here[0] + away_x / norm * RETREAT_STEP, here[1] + away_y / norm * RETREAT_STEP)
+        region, (here[0] + away_x / norm * step, here[1] + away_y / norm * step)
     )
     nearest_now = min(_manhattan(here, p) for p in threat_positions)
     nearest_then = min(_manhattan(candidate, p) for p in threat_positions)
     return candidate if nearest_then > nearest_now + _EPSILON else None
-
-
-def retreat_destination(
-    state: "AuthoritativeState",
-    entity: "EntityState",
-    threats: Iterable["EntityState"],
-) -> Optional[Position]:
-    """Where a retreating entity should head, or None when no valid destination exists.
-
-    1. Away from the perceived threats, clamped to stay inside the entity's current region.
-       Uses only the threats the caller already perceives and the entity's own position.
-    2. Otherwise (no threat vector, or cornered so the clamped point is no farther from the
-       nearest threat) the entity's own ``strategic.home_region_id`` region, when set and present.
-    3. Otherwise None: the caller holds position (MOV-03). Never a sentinel coordinate.
-    """
-    here: Position = entity.navigation.position
-    region = containing_region(state, here)
-    threat_positions = sorted(t.navigation.position for t in threats)
-
-    if region is not None and threat_positions:
-        away = _away_destination(region, here, threat_positions)
-        if away is not None:
-            return away
-
-    home_id = entity.strategic.home_region_id
-    home = state.regions.get(home_id) if home_id else None
-    return home.center if home is not None else None
 
 
 def wander_destination(state: "AuthoritativeState", entity: "EntityState") -> Optional[Position]:
@@ -118,3 +92,29 @@ def wander_destination(state: "AuthoritativeState", entity: "EntityState") -> Op
     dx = (rng.get_float(Domain.TACTICAL, state.tick, entity.id, 0) * 2.0 - 1.0) * WANDER_RADIUS
     dy = (rng.get_float(Domain.TACTICAL, state.tick, entity.id, 1) * 2.0 - 1.0) * WANDER_RADIUS
     return _clamp_into(region, (here[0] + dx, here[1] + dy))
+
+
+def retreat_destination(
+    state: "AuthoritativeState",
+    entity: "EntityState",
+    threats: Iterable["EntityState"],
+) -> Optional[Position]:
+    """Where a retreating entity should head, or None when no valid destination exists. The candidates in a fixed order, each through `propose_target` (F2 v2.2a D2, class F: a destination near a suppressed
+    give-up anchor is refused): (1) away from the perceived threats, clamped to stay inside the entity's current region (uses only the threats the caller already perceives and the entity's own position);
+    (2) the same direction at half the distance, clamped into the region as today; (3) the entity's own ``strategic.home_region_id`` region centre, when set and present. None when no candidate exists (no
+    threat vector, cornered, no home) or every one is refused: the caller holds position (MOV-03), never a sentinel coordinate. With no suppression this is exactly the old derivation (the half-distance point is tried only
+    when the full-distance point exists and is refused)."""
+    here: Position = entity.navigation.position
+    region = containing_region(state, here)
+    threat_positions = sorted(t.navigation.position for t in threats)
+    if region is not None and threat_positions:
+        away = _away_destination(region, here, threat_positions)
+        if away is not None:
+            if propose_target(entity, away, state.tick) is not None:
+                return away
+            half = _away_destination(region, here, threat_positions, RETREAT_STEP / 2.0)  # (2) only when (1) exists and is refused: an unrefused derivation is the old one
+            if half is not None and propose_target(entity, half, state.tick) is not None:
+                return half
+    home_id = entity.strategic.home_region_id
+    home = state.regions.get(home_id) if home_id else None
+    return propose_target(entity, home.center, state.tick) if home is not None else None

@@ -4,6 +4,7 @@ from __future__ import annotations
 from dataclasses import replace
 from src.core.worker_protocol import WorkerPacket, WorkerResult, ResultStatus
 from src.engine.candidate_selector import MovementCandidateSelector
+from src.strategy.destination_suppression import reaffirm_move_update  # F2 v2.2 D2 (class X)
 from src.engine.domain_logic import SimulationDomainLogic
 
 
@@ -28,11 +29,7 @@ def default_simulation_worker(packet: WorkerPacket) -> List[WorkerResult]:
         target = MovementCandidateSelector.resolve_live_tracking_target(
             packet.subject, packet.all_entities, target
         )
-        from src.core.updates import EntityUpdate, NavigationUpdate
-        updates = {packet.subject.id: EntityUpdate(
-            entity_id=packet.subject.id,
-            navigation=NavigationUpdate(target_set=target)
-        )}
+        updates = {packet.subject.id: reaffirm_move_update(packet.subject, target, packet.tick)}  # F2 v2.2a class X (see executor.py): a suppressed target ends the move typed, it is not re-emitted
     elif packet.work_kind == "ENTITY_ACT":
         neighbor_view = packet.neighbor_view
         if not neighbor_view and packet.all_entities:

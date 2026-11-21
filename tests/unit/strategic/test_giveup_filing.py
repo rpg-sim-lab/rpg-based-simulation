@@ -37,7 +37,7 @@ def test_the_first_second_and_fourth_give_up_on_one_anchor_suppress_100_200_800_
         e = replace(e, navigation=replace(e.navigation, giveup_records=(GiveUpRecord(anchor, tick),)))
         up = _file(e, tick)
         b = next(x for x in up.blockers_add_or_update if x.id == access_blocker_id(anchor))
-        assert b.failure_count == n and b.suppression_until_tick == tick + expected and b.kind == "access" and b.subject == "(9.0, 5.0)"
+        assert b.giveup_count == n and b.suppression_until_tick == tick + expected and b.kind == "access" and b.subject == "(9.0, 5.0)"
         if n < 4:
             assert not up.projects_add_or_update and up.current_project_id_set is None
         else:
@@ -52,25 +52,37 @@ def test_a_different_anchor_has_its_own_count():
     e = _apply(e, _file(e, 10))
     e = replace(e, navigation=replace(e.navigation, giveup_records=(GiveUpRecord((2, 2), 20),)))
     up = _file(e, 20)
-    assert [b.failure_count for b in up.blockers_add_or_update] == [1] and up.projects_add_or_update == []
+    assert [b.giveup_count for b in up.blockers_add_or_update] == [1] and up.projects_add_or_update == []
 
 
 def test_a_stored_blocker_is_merged_not_replaced():
-    stored = BlockerState(id=access_blocker_id((9, 5)), kind="access", subject="(9.0, 5.0)", severity=0.3, failure_count=2, suppression_until_tick=5)
+    stored = BlockerState(id=access_blocker_id((9, 5)), kind="access", subject="(9.0, 5.0)", severity=0.3, giveup_count=2, suppression_until_tick=5)
     e = _subject(records=(GiveUpRecord((9, 5), 50),), blockers=(stored,))
     b = _file(e, 50).blockers_add_or_update[0]
-    assert b.failure_count == 3 and b.suppression_until_tick == 50 + 400 and b.severity == 0.3  # an existing one gets n + 1; its other fields are kept
+    assert b.giveup_count == 3 and b.suppression_until_tick == 50 + 400 and b.severity == 0.3  # an existing one gets n + 1; its other fields are kept
 
 
 def test_two_records_on_one_anchor_in_one_pass_count_twice():
     e = _subject(records=(GiveUpRecord((9, 5), 40), GiveUpRecord((9, 5), 41)))
     up = _file(e, 45)
-    assert len(up.blockers_add_or_update) == 1 and up.blockers_add_or_update[0].failure_count == 2
+    assert len(up.blockers_add_or_update) == 1 and up.blockers_add_or_update[0].giveup_count == 2
 
 
-def test_nothing_is_filed_when_the_subject_has_no_current_project():
+def test_a_give_up_with_no_current_project_still_files_the_subject_blocker_and_ends_nothing():
+    """v2.2 D3: the ACCESS blocker is the subject's, so it is filed even with no project; the DESTINATION_GIVEN_UP end applies only when a project exists, even at the limit."""
     e = _subject(records=(GiveUpRecord((9, 5), 10),), current=None)
-    assert _file(e, 10) is None  # the caller still clears the records, so none outlives a pass
+    up = _file(e, 10)
+    assert [b.giveup_count for b in up.blockers_add_or_update] == [1] and up.projects_add_or_update == [] and up.current_project_id_set is None
+    over = BlockerState(id=access_blocker_id((9, 5)), kind="access", subject="(9.0, 5.0)", giveup_count=LIMIT - 1)
+    at_limit = _file(_subject(records=(GiveUpRecord((9, 5), 20),), blockers=(over,), current=None), 20)
+    assert at_limit.blockers_add_or_update[0].giveup_count == LIMIT and at_limit.projects_add_or_update == []
+
+
+def test_the_give_up_counter_is_its_own_and_the_timeout_counter_keeps_its_meaning():
+    """v2.2 D4: filing reads and writes giveup_count only, leaves failure_count alone, and never shortens a stored suppression."""
+    stored = BlockerState(id=access_blocker_id((9, 5)), kind="access", subject="(9.0, 5.0)", failure_count=3, giveup_count=1, suppression_until_tick=5000)
+    b = _file(_subject(records=(GiveUpRecord((9, 5), 50),), blockers=(stored,)), 50).blockers_add_or_update[0]
+    assert b.giveup_count == 2 and b.failure_count == 3 and b.suppression_until_tick == 5000  # max(stored 5000, 50 + 200)
 
 
 def test_a_blocker_filed_under_project_a_forbids_the_tile_after_the_switch_to_project_b_and_the_fourth_give_up_across_both_ends_the_current_one():
@@ -91,10 +103,10 @@ def test_a_blocker_filed_under_project_a_forbids_the_tile_after_the_switch_to_pr
 
 
 def test_a_later_project_that_gives_up_the_same_anchor_ends_at_once_since_the_count_is_over_the_limit():
-    over = BlockerState(id=access_blocker_id((9, 5)), kind="access", subject="(9.0, 5.0)", failure_count=4, suppression_until_tick=0)
+    over = BlockerState(id=access_blocker_id((9, 5)), kind="access", subject="(9.0, 5.0)", giveup_count=4, suppression_until_tick=0)
     e = _subject(records=(GiveUpRecord((9, 5), 5000),), blockers=(over,))
     up = _file(e, 5000)
-    assert up.blockers_add_or_update[0].failure_count == 5 and up.projects_add_or_update[0].ended_by == ProjectEnd.DESTINATION_GIVEN_UP
+    assert up.blockers_add_or_update[0].giveup_count == 5 and up.projects_add_or_update[0].ended_by == ProjectEnd.DESTINATION_GIVEN_UP
 
 
 def test_a_held_target_at_a_consumed_anchor_is_counted_not_cleared():

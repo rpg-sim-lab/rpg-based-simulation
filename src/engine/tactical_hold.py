@@ -14,6 +14,9 @@ from src.engine.hostility import is_engaged
 from src.engine.legality import LegalityServiceV2
 from src.engine.rpg_depth import LeashService
 from src.engine.tactical_destinations import retreat_destination
+from src.strategy.destination_suppression import (
+    propose_target,  # F2 v2.2 D2: the one proposal point of a place target
+)
 
 if TYPE_CHECKING:
     from src.core.state import AuthoritativeState, EntityState
@@ -62,13 +65,13 @@ def stalemate_break_update(entity: "EntityState", strat_up: Any, wander_to: Tupl
     )
 
 
-def leash_return_update(entity: "EntityState") -> Optional[EntityUpdate]:
+def leash_return_update(entity: "EntityState", tick: int) -> Optional[EntityUpdate]:
     """A mob beyond its leash that is not chasing, or past the chase limit, heads home (``LEASH_RETURN``); None otherwise (GAP-T08)."""
     is_engaged = entity.task.payload.get("target_id") is not None
     if not ((not is_engaged and LeashService.is_beyond_leash(entity)) or LeashService.should_give_up_chase(entity)):
         return None
     home_pos = LeashService.get_return_home_target(entity)
-    if not home_pos:
+    if not home_pos or propose_target(entity, home_pos, tick) is None:  # F2 class C: a suppressed home tile means the return does not fire
         return None
     return EntityUpdate(
         entity_id=entity.id,
@@ -93,7 +96,7 @@ def notice_unengaged_hostile(
     posture = props.get("last_combat_posture")
     if posture == "ignore":
         goal = entity.navigation.target
-        if goal is None:
+        if goal is None or propose_target(entity, goal, state.tick) is None:  # F2 v2.2a: a suppressed goal is the same stand as no goal (None would mean 'go on to fight')
             return EntityUpdate(entity_id=entity.id, strategic=strat_up)
         return EntityUpdate(
             entity_id=entity.id, strategic=strat_up,

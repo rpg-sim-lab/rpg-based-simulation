@@ -6,11 +6,19 @@ by the subject text."""
 from __future__ import annotations
 
 import re
-from dataclasses import dataclass
-from typing import Optional, Tuple
+from dataclasses import dataclass, replace
+from typing import Dict, Iterable, Mapping, Optional, Tuple
 
+from src.core.giveup_records import GiveUpRecord
+from src.core.movement_modes import MovementMode
 from src.core.state import EntityState
 from src.core.strategic import BlockerState
+from src.core.updates import (
+    EntityUpdate,
+    InteractionUpdate,
+    NavigationUpdate,
+    TaskUpdate,
+)
 
 ACCESS_BLOCKER_ID_PREFIX = "blocker_access_"
 _ACCESS_ID = re.compile(r"^blocker_access_(-?\d+)_(-?\d+)$")
@@ -38,37 +46,106 @@ def access_blocker_tile(blocker: BlockerState) -> Optional[Tuple[int, int]]:
 @dataclass(frozen=True, slots=True)
 class SuppressionHit:
     """Why a tile is forbidden as a destination: the ACCESS blocker id of the anchor, the anchor tile, how long (``suppressed_until``, None while only PENDING), whether the forbidding record is a
-    still-unconsumed give-up record (``pending``, v2.1c) or a filed blocker, and the blocker's ``failure_count`` (0 while pending)."""
+    still-unconsumed give-up record (``pending``, v2.1c) or a filed blocker, and the blocker's ``giveup_count`` (0 while pending)."""
     blocker_id: str
     anchor: Tuple[int, int]
     suppressed_until: Optional[int]
     pending: bool
-    failure_count: int
+    giveup_count: int
 
 
-def destination_suppressed(entity: EntityState, pos: Tuple[float, float], tick: int) -> Optional[SuppressionHit]:
-    """The reason ``pos`` is forbidden as a destination for this subject at ``tick``, or None. Two sources, both within Chebyshev 1 of an anchor (integer tiles; the +-1 covers the task layer's one-tile
-    jitter of the objective's target): (1) an unresolved ``blocker_access_<x>_<y>`` ACCESS blocker of the subject with ``tick`` before its ``suppression_until_tick``; (2) v2.1c, the subject's own PENDING
-    give-up records (``navigation.giveup_records``, held until the strategic pass consumes them), so a target cannot be re-set to the anchor between the give-up and the filing. A filed blocker wins over
-    a pending record, and the lowest blocker id wins among blockers, so the answer does not depend on dict order."""
-    tx, ty = int(pos[0]), int(pos[1])
+def _blocker_hit(blockers: Mapping[str, BlockerState], tx: int, ty: int, tick: int) -> Optional[SuppressionHit]:
+    """The lowest-id unresolved ACCESS blocker still suppressed at ``tick`` whose anchor is within Chebyshev 1 of (tx, ty), or None."""
     hit: Optional[SuppressionHit] = None
-    for blocker in entity.strategic.blockers.values():
+    for blocker in blockers.values():
         tile = access_blocker_tile(blocker)
         if tile is None or blocker.resolved or tick >= blocker.suppression_until_tick:
             continue
         if max(abs(tx - tile[0]), abs(ty - tile[1])) <= 1 and (hit is None or blocker.id < hit.blocker_id):
-            hit = SuppressionHit(blocker.id, tile, blocker.suppression_until_tick, False, blocker.failure_count)
-    if hit is not None:
-        return hit
-    for record in entity.navigation.giveup_records:
+            hit = SuppressionHit(blocker.id, tile, blocker.suppression_until_tick, False, blocker.giveup_count)
+    return hit
+
+
+def _record_hit(records: Iterable[GiveUpRecord], tx: int, ty: int) -> Optional[SuppressionHit]:
+    """The first pending give-up record whose anchor is within Chebyshev 1 of (tx, ty), as a pending hit, or None."""
+    for record in records:
         anchor = (int(record.anchor[0]), int(record.anchor[1]))
         if max(abs(tx - anchor[0]), abs(ty - anchor[1])) <= 1:
             return SuppressionHit(access_blocker_id(anchor), anchor, None, True, 0)
     return None
 
 
-def destination_open(entity: EntityState, pos: Tuple[float, float], tick: int) -> bool:
-    """True when no suppressed give-up ACCESS blocker forbids ``pos`` as a destination (the guard of every target writer)."""
-    return destination_suppressed(entity, pos, tick) is None
+def destination_suppressed(entity: EntityState, pos: Tuple[float, float], tick: int, staged: Optional[EntityUpdate] = None) -> Optional[SuppressionHit]:
+    """The reason ``pos`` is forbidden as a destination for this subject at ``tick``, or None. Sources, all within Chebyshev 1 of an anchor (integer tiles; the +-1 covers the task layer's one-tile
+    jitter of the objective's target): (1) an unresolved ``blocker_access_<x>_<y>`` ACCESS blocker of the subject with ``tick`` before its ``suppression_until_tick``; (2) v2.1c, the subject's own PENDING
+    give-up records (``navigation.giveup_records``, held until the strategic pass consumes them). v2.2 D1, the FUSED STRATEGIC PASS only: ``staged`` is the subject's update staged so far this tick, and
+    its ``navigation.giveup_record_add`` (movement_routing stages it before the pass) and its ``strategic.blockers_add_or_update`` / ``blockers_remove`` (the pass's own consume step files them) count as (2)
+    and (1) too, so a target cannot be re-set to the anchor in the pass that learns of the give-up. A filed blocker wins over a pending record, and the lowest blocker id wins among blockers, so the answer
+    does not depend on dict order."""
+    tx, ty = int(pos[0]), int(pos[1])
+    blockers = entity.strategic.blockers
+    records = entity.navigation.giveup_records
+    if staged is not None:
+        if staged.strategic is not None:
+            blockers = {**blockers, **{b.id: b for b in staged.strategic.blockers_add_or_update}}
+            for removed in staged.strategic.blockers_remove:
+                blockers.pop(removed, None)
+        if staged.navigation is not None and staged.navigation.giveup_record_add is not None:
+            records = (*records, staged.navigation.giveup_record_add)
+    return _blocker_hit(blockers, tx, ty, tick) or _record_hit(records, tx, ty)
 
+
+@dataclass(frozen=True, slots=True)
+class ObjectiveDestinationSuppressed(EntityUpdate):
+    """The typed outcome OBJECTIVE_DESTINATION_SUPPRESSED (F2, divergence 2.220): the objective's destination lies within Chebyshev 1 of a give-up-filed ACCESS blocker that is still suppressed, so the
+    step writes NO target and NO navigation update. It is an empty `EntityUpdate` (the tactical pass returns it as handled: the subject stays idle for the brain, as a held step does, and does
+    not fall through to the role and cohesion branches), a subclass only so the own-job spy and the tests can tell it from any other empty update by type."""
+
+
+@dataclass(frozen=True, slots=True)
+class DestinationSuppressedEnd(EntityUpdate):
+    """The typed end of an ENTITY_MOVE whose held target the executor refuses to re-emit (F2 v2.2a class X, divergence 2.220): the same update as `tracked_move_completion_update` (idle task, target
+    cleared, so tactics re-decides), a subclass only so the own-job spy (G7) and the tests can tell it by type. No ReasonCode carries it: every carrier in `navigation` (a failure reason) is read by the
+    information phase as a failed search, and the idle task's payload must stay empty (scheduler `is_idle_act`)."""
+
+
+def suppressed_move_end(entity_id: int) -> DestinationSuppressedEnd:
+    """The `DestinationSuppressedEnd` for ``entity_id``: target cleared, idle ENTITY_ACT task."""
+    return DestinationSuppressedEnd(entity_id=entity_id, navigation=NavigationUpdate(target_clear=True), task=TaskUpdate(work_kind_set="ENTITY_ACT", payload_set={}))
+
+
+def destination_open(entity: EntityState, pos: Tuple[float, float], tick: int, staged: Optional[EntityUpdate] = None) -> bool:
+    """True when no suppressed give-up ACCESS blocker forbids ``pos`` as a destination."""
+    return destination_suppressed(entity, pos, tick, staged) is None
+
+
+def propose_target(entity: EntityState, pos: Tuple[float, float], tick: int, staged: Optional[EntityUpdate] = None) -> Optional[Tuple[float, float]]:
+    """THE proposal point of a place target (F2 v2.2 D2, owner scope #715 7062303482: every writer, combat and flight included, no exemption): ``pos`` when it may be a destination for this subject, None
+    when `destination_suppressed` forbids it. A decision site writes ``NavigationUpdate(target_set=...)`` for a place only from a non-None return; what None means is per site class (rpg-designer v2.2a
+    D2: flight tries its next candidate, a combat positioning branch does not fire, stalemate-break holds, an objective idles typed, the strategic bridge tries its next alternative, the executor ends
+    the task). ``staged`` is passed by the fused strategic pass only. Pure: reads, never writes."""
+    return pos if destination_suppressed(entity, pos, tick, staged) is None else None
+
+
+def regroup_to_town_update(entity_id: int, staged: Optional[EntityUpdate], town_target: Tuple[float, float]) -> EntityUpdate:
+    """The update that walks a subject carrying items to the town tile (movement mode REGROUP, interaction reset), built on its staged update when it has one (the fused strategic pass's two town
+    fallbacks, the fast path and the bridge, share it; the caller keeps the guards: `destination_open` and target != town_target). Plain builder: reads nothing, writes nothing."""
+    if staged is None:
+        return EntityUpdate(entity_id=entity_id, navigation=NavigationUpdate(target_set=town_target, movement_mode_set=MovementMode.REGROUP), interaction=InteractionUpdate(reset=True))
+    return replace(staged, navigation=replace(staged.navigation or NavigationUpdate(), target_set=town_target, movement_mode_set=MovementMode.REGROUP), interaction=InteractionUpdate(reset=True))
+
+
+def reaffirm_move_update(subject: EntityState, target: Tuple[float, float], tick: int) -> EntityUpdate:
+    """The re-emission of a held ENTITY_MOVE's target (the executor and the worker dispatch share it; F2 v2.2a class X): the typed `suppressed_move_end` when ``target`` is suppressed, else the update that
+    re-affirms it. Never writes a refused target."""
+    if propose_target(subject, target, tick) is None:
+        return suppressed_move_end(subject.id)
+    return EntityUpdate(entity_id=subject.id, navigation=NavigationUpdate(target_set=target))
+
+
+def suppressed_move_to(entity: EntityState, intent_kind: str, position: Optional[Tuple[float, float]], tick: int) -> Optional[Dict[int, EntityUpdate]]:
+    """The class-O outcome of a ``MOVE_TO`` intent (the investigate path, F2 v2.2a): ``{entity.id: ObjectiveDestinationSuppressed}`` when the intent is a MOVE_TO whose ``position`` is suppressed, else
+    None (the intent runs as before). No target is written."""
+    if intent_kind != "MOVE_TO" or position is None or propose_target(entity, position, tick) is not None:
+        return None
+    return {entity.id: ObjectiveDestinationSuppressed(entity_id=entity.id)}

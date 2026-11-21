@@ -17,6 +17,7 @@ from src.core.skills import SKILL_REGISTRY, SkillDefinition
 from src.engine.rpg_depth import WoundService
 from src.cognition.common_knowledge import combat_capability_against
 from src.engine.tactical_destinations import retreat_destination, wander_destination
+from src.strategy.destination_suppression import propose_target  # F2 v2.2 D2: the one proposal point of a place target
 from src.engine.tactical_threat import attacked_me_recently, hostile_acts_on, need_yields, perceived_threats, present_threats, safety_retreat_warranted
 from src.engine.need_pull import HUNGER_LINE, SLEEP_LINE, entity_hunger_is_pressing, entity_need_is_pressing
 from src.engine.tactical_rest import in_place_survival_update
@@ -94,6 +95,11 @@ def _panic_holds(entity: "EntityState", threats: List["EntityState"], tick: int)
 def _has_tactical_hostiles(entity: "EntityState", neighbors: List["EntityState"], night: bool = False, tick: Optional[int] = None) -> bool:
     """True when the tactical pass would count a perceived neighbour as a hostile (the list the engagement branch acts on), not merely a threat the subject's appraisal fears."""
     return bool(classify_neighbours(entity, neighbors, source_identity(entity), night, tick).hostiles)
+
+
+def _open_or_none(entity: "EntityState", destination: Optional[Tuple[float, float]], tick: int) -> Optional[Tuple[float, float]]:
+    """A destination through `propose_target` (F2 v2.2a, class W): None when absent or suppressed, so the existing hold applies."""
+    return propose_target(entity, destination, tick) if destination is not None else None
 
 
 def _destination_or_hold(entity: "EntityState", destination: Optional[Tuple[float, float]]) -> Tuple[float, float]:
@@ -270,7 +276,7 @@ class TacticalDecisionSystem:
              ), FlightSite.PANIC_RETREAT)
 
         # Section 8: Mob Leashing (GAP-T08)
-        if (leash_return := leash_return_update(entity)) is not None:
+        if (leash_return := leash_return_update(entity, state.tick)) is not None:
             return flight_weighs_free_swing(state, entity, leash_return, FlightSite.LEASH_RETURN)
 
         from src.engine.behavior_consumers import get_pressure_resolver
@@ -337,7 +343,7 @@ class TacticalDecisionSystem:
                         if role in ("VANGUARD", "PROTECTOR"):
                             # Guard position near leader
                             guard_pos = PositioningService.find_guard_position(entity, leader, None, state)
-                            if guard_pos != entity.navigation.position:
+                            if guard_pos != entity.navigation.position and propose_target(entity, guard_pos, state.tick) is not None:
                                 return EntityUpdate(
                                     entity_id=entity.id,
                                     navigation=NavigationUpdate(target_set=guard_pos, movement_mode_set=MovementMode.GUARD),
@@ -352,7 +358,7 @@ class TacticalDecisionSystem:
                 dx = entity.navigation.position[0] - group.anchor[0]
                 dy = entity.navigation.position[1] - group.anchor[1]
                 dist_sq = dx*dx + dy*dy
-                if dist_sq > group.cohesion_radius**2:
+                if dist_sq > group.cohesion_radius**2 and propose_target(entity, group.anchor, state.tick) is not None:
                     return EntityUpdate(
                         entity_id=entity.id,
                         navigation=NavigationUpdate(target_set=group.anchor, movement_mode_set=MovementMode.REGROUP),
@@ -452,7 +458,7 @@ class TacticalDecisionSystem:
 
         if stale_ticks > 10 and not fighting_adjacent:
              # Logic ID: COMB-277 (Anti-stalemate does not force illegal movement)
-             return stalemate_break_update(entity, strat_up, _destination_or_hold(entity, wander_destination(state, entity)))
+             return stalemate_break_update(entity, strat_up, _destination_or_hold(entity, _open_or_none(entity, wander_destination(state, entity), state.tick)))
 
         # Decision 32: beside a hostile it is not engaged with, the subject decides now (keep walking, step away, or fight below).
         noticed = notice_unengaged_hostile(state, entity, target, hostiles, strat_up)
@@ -498,7 +504,7 @@ class TacticalDecisionSystem:
              ranged_threats = [h for h in hostiles if h.combat.range > 2]
              if ranged_threats:
                  cover_pos = PositioningService.find_nearest_cover(entity, ranged_threats[0], state)
-                 if cover_pos and cover_pos != entity.navigation.position:
+                 if cover_pos and cover_pos != entity.navigation.position and propose_target(entity, cover_pos, state.tick) is not None:
                      return EntityUpdate(
                          entity_id=entity.id,
                          navigation=NavigationUpdate(target_set=cover_pos, movement_mode_set=MovementMode.REPOSITION),
@@ -537,7 +543,7 @@ class TacticalDecisionSystem:
              if targeting_ally:
                  bracket_pos = PositioningService.get_bracketing_position(entity, targeting_ally, target)
                  is_walkable, _ = LegalityServiceV2.verify_occupancy(bracket_pos, state, ignore_entity_id=entity.id)
-                 if is_walkable and bracket_pos != entity.navigation.position:
+                 if is_walkable and bracket_pos != entity.navigation.position and propose_target(entity, bracket_pos, state.tick) is not None:
                      return EntityUpdate(
                          entity_id=entity.id,
                          navigation=NavigationUpdate(target_set=bracket_pos, movement_mode_set=MovementMode.REPOSITION),
@@ -579,7 +585,7 @@ class TacticalDecisionSystem:
              
              if wounded_ally:
                   guard_pos = PositioningService.find_guard_position(entity, wounded_ally, target, state)
-                  if guard_pos != entity.navigation.position:
+                  if guard_pos != entity.navigation.position and propose_target(entity, guard_pos, state.tick) is not None:
                       return EntityUpdate(
                           entity_id=entity.id,
                           navigation=NavigationUpdate(target_set=guard_pos, movement_mode_set=MovementMode.GUARD),
@@ -592,7 +598,7 @@ class TacticalDecisionSystem:
         # 5.4 Intercept Logic (Task 4.1)
         if dist_to_target > 3 and target.navigation.target:
              intercept_pos = PositioningService.find_intercept_position(entity, target, state)
-             if intercept_pos != target.navigation.position:
+             if intercept_pos != target.navigation.position and propose_target(entity, intercept_pos, state.tick) is not None:
                  return EntityUpdate(
                      entity_id=entity.id,
                      navigation=NavigationUpdate(target_set=intercept_pos, movement_mode_set=MovementMode.INTERCEPT),
@@ -645,24 +651,25 @@ class TacticalDecisionSystem:
             # Verify kite position is walkable (Phase E5.2)
             kite_legal, _ = LegalityServiceV2.verify_occupancy(kite_pos, state, ignore_entity_id=entity.id)
             if not kite_legal:
-                 # If kiting destination is blocked, fallback to pursuit
-                 return EntityUpdate(
-                     entity_id=entity.id,
-                     navigation=NavigationUpdate(target_set=target.navigation.position, movement_mode_set=MovementMode.PURSUE),
-                     task=TaskUpdate(
-                         work_kind_set="ENTITY_MOVE",
-                         payload_set={"target_position": target.navigation.position, "reason": "PURSUIT_BLOCKED_KITE", "target_id": target.id}
+                 # If kiting destination is blocked, fallback to pursuit (F2 v2.2a class C: a suppressed pursuit tile means the branch does not fire)
+                 if propose_target(entity, target.navigation.position, state.tick) is not None:
+                     return EntityUpdate(
+                         entity_id=entity.id,
+                         navigation=NavigationUpdate(target_set=target.navigation.position, movement_mode_set=MovementMode.PURSUE),
+                         task=TaskUpdate(
+                             work_kind_set="ENTITY_MOVE",
+                             payload_set={"target_position": target.navigation.position, "reason": "PURSUIT_BLOCKED_KITE", "target_id": target.id}
+                         )
                      )
-                 )
-
-            return EntityUpdate(
-                entity_id=entity.id,
-                navigation=NavigationUpdate(target_set=kite_pos, movement_mode_set=MovementMode.RETREAT),
-                task=TaskUpdate(
-                    work_kind_set="ENTITY_MOVE",
-                    payload_set={"target_position": kite_pos, "reason": "KITING", "target_id": target.id}
+            elif propose_target(entity, kite_pos, state.tick) is not None:  # class C: a suppressed kite tile means the branch does not fire
+                return EntityUpdate(
+                    entity_id=entity.id,
+                    navigation=NavigationUpdate(target_set=kite_pos, movement_mode_set=MovementMode.RETREAT),
+                    task=TaskUpdate(
+                        work_kind_set="ENTITY_MOVE",
+                        payload_set={"target_position": kite_pos, "reason": "KITING", "target_id": target.id}
+                    )
                 )
-            )
 
         # (Removed, TCK-20260809-TACTICAL-DEAD-ACTIONSTYLE-SUBBRANCHES: this block previously
         # computed an ActionStyle-biased `attack_range` local variable -- AGGRESSIVE +1,
@@ -760,7 +767,9 @@ class TacticalDecisionSystem:
                     # Too far from group: only move to the edge of the cohesion zone
                     scale = (group.cohesion_radius * 1.5) / dist_from_anchor
                     target_pos = (group.anchor[0] + dx * scale, group.anchor[1] + dy * scale)
-                    
+
+            if propose_target(entity, target_pos, state.tick) is None:  # F2 v2.2a class C: the pursuit tile is suppressed and no branch follows, so the subject stands (idle, as a held swing does)
+                return EntityUpdate(entity_id=entity.id, strategic=strat_up)
             return EntityUpdate(
                 entity_id=entity.id,
                 strategic=strat_up,
