@@ -40,6 +40,7 @@ from collections import defaultdict
 from typing import Any, Dict, List, Mapping, Optional, Sequence, Set, Tuple
 
 from src.ai.goals.kind_group import (
+    NO_DIET,
     UNDECLARED,
     is_person,
     kind_group,
@@ -73,6 +74,10 @@ TRANSFER_SOURCES: Tuple[str, ...] = (
     "CARRIED_FOOD", "CHEST", "COMBAT", "CORPSE", "CORPSE_FOOD", "CRAFTING", "GROUND_ITEM", "HOME_STORAGE", "INFORMATION_PURCHASE", "INHERIT", "NODE",
     "QUEST", "RECRUIT", "SHOP_BUY", "SHOP_SELL", "TAX", "TOWN_SERVICE", "WAGE",
 )
+
+
+FOOD_METRICS_KEY, NOT_APPLICABLE = "food_metrics", "not_applicable"
+FOOD_ROW_IDS: Tuple[str, ...] = ("O1.starved", "O1.at_risk", "O4.accepted")  # the rows that need a diet: hunger and the ways of eating (O1.starvation_share is derived from the first two)
 
 
 class GateDataMissingError(RuntimeError):
@@ -114,6 +119,20 @@ ORACLES: Dict[str, str] = {
 # --------------------------------------------------------------------------------------------- reading a run
 def _group_has(group: str, food_class: str) -> bool:
     return food_class in group.split("+")
+
+
+def food_exempt_groups(non_eating: Optional[Mapping[str, Any]]) -> Set[str]:
+    """The kind groups the run's config declares as having no food metrics, from ``{group: {food_metrics: not_applicable}}`` (the gate config's ``non_eating_kind_groups``,
+    handed in by the harness). The declaration is data, never a constant here, and it is validated: only a group with no diet (``none``) can be exempt, and the one allowed
+    entry is ``food_metrics: not_applicable``, so a typo or an eater listed by mistake is a loud ``ValueError`` (a config mistake, not a run with no data) and no food row quietly goes missing."""
+    exempt: Set[str] = set()
+    for group, entry in dict(non_eating or {}).items():
+        if group != NO_DIET:
+            raise ValueError(f"non-eating declaration for {group!r}: only a kind group with no diet ({NO_DIET!r}) can have its food metrics not applicable")
+        if dict(entry or {}) != {FOOD_METRICS_KEY: NOT_APPLICABLE}:
+            raise ValueError(f"non-eating declaration for {group!r} must be {{{FOOD_METRICS_KEY}: {NOT_APPLICABLE}}}, got {entry!r}")
+        exempt.add(group)
+    return exempt
 
 
 def _is_wild_meat_eater(group: str, person: str) -> bool:
@@ -230,9 +249,10 @@ def _spawn_kinds(world: str, seed: int) -> List[str]:
     return kinds
 
 
-def declared_groups(world: str, seeds: Sequence[int]) -> List[str]:
-    """The world's declared kind groups: the union, over the gate config's seed set, of the groups of the world compiled before any tick and of its declared spawn-source kinds."""
-    groups: Set[str] = set()
+def declared_groups(world: str, seeds: Sequence[int], non_eating: Optional[Mapping[str, Any]] = None) -> List[str]:
+    """The world's declared kind groups: the union, over the gate config's seed set, of the groups of the world compiled before any tick, of its declared spawn-source kinds
+    and of the config's declared non-eating groups (a kind that only births add, such as a risen undead, is in neither of the first two)."""
+    groups: Set[str] = set(food_exempt_groups(non_eating))
     for seed in _seed_set(world, seeds):
         groups |= set(_tick0_alive(world, seed))
         groups |= {g for g in (species_kind_group(kind) for kind in _spawn_kinds(world, seed)) if g != UNDECLARED}
@@ -326,11 +346,12 @@ def _validity_rows(world: str, ledger: Mapping[str, Any], records: Sequence[Mapp
     return [_validity(vid, world, count, examples) for vid, (count, examples) in checks.items()]
 
 
-def _population_rows(world: str, ticks: int, ledger: Mapping[str, Any], state: Any, seeds: Sequence[int]) -> List[Dict[str, Any]]:
+def _population_rows(world: str, ticks: int, ledger: Mapping[str, Any], state: Any, seeds: Sequence[int], non_eating: Optional[Mapping[str, Any]] = None) -> List[Dict[str, Any]]:
     rows: List[Dict[str, Any]] = []
     population = ledger["population"]
     first = population[str(ledger["first_tick"])] if population else {}
-    groups = declared_groups(world, seeds)
+    groups = declared_groups(world, seeds, non_eating)
+    exempt = food_exempt_groups(non_eating)
     means = tick0_means(world, seeds)
     final = _final_alive_by_group(state)
     _require_declared("kind group", set(first) | set(final) | {g for t in population.values() for g in t}, groups, ledger)
@@ -343,8 +364,9 @@ def _population_rows(world: str, ticks: int, ledger: Mapping[str, Any], state: A
     for key, n in ledger["adds"].items():
         entered[_split(key, 2)[0]] += n
     for group in groups:
-        rows.append(_outcome("O1.starved", world, group, starved[group], floor_rel=COUNT_FLOOR_REL))
-        rows.append(_outcome("O1.at_risk", world, group, first.get(group, 0) + entered[group], floor_rel=COUNT_FLOOR_REL))
+        if group not in exempt:  # a kind with no diet cannot starve: its food rows are not applicable, declared in the config and listed in the document
+            rows.append(_outcome("O1.starved", world, group, starved[group], floor_rel=COUNT_FLOOR_REL))
+            rows.append(_outcome("O1.at_risk", world, group, first.get(group, 0) + entered[group], floor_rel=COUNT_FLOOR_REL))
         rows.append(_outcome("O2.survivors", world, group, 1.0 if final.get(group, 0) > 0 else 0.0))
         floor = population_floor(means.get(group, 0.0))
         rows += [_outcome("O2.population", world, group, at.get(group, 0), tick=int(t), floor=floor) for t, at in sorted(population.items(), key=lambda kv: int(kv[0]))]
@@ -352,8 +374,8 @@ def _population_rows(world: str, ticks: int, ledger: Mapping[str, Any], state: A
     return rows
 
 
-def _death_rows(world: str, ledger: Mapping[str, Any], seeds: Sequence[int]) -> List[Dict[str, Any]]:
-    groups = declared_groups(world, seeds)
+def _death_rows(world: str, ledger: Mapping[str, Any], seeds: Sequence[int], non_eating: Optional[Mapping[str, Any]] = None) -> List[Dict[str, Any]]:
+    groups = declared_groups(world, seeds, non_eating)
     deaths: Dict[Tuple[str, str], int] = defaultdict(int)
     for key, n in ledger["deaths"].items():
         group, cause = _split(key, 2)
@@ -381,8 +403,9 @@ def _combat_rows(world: str, ledger: Mapping[str, Any], seeds: Sequence[int]) ->
     return rows + [_outcome("O6.feeding_kills", world, "*", feeding), _outcome("O6.kills_not_eaten", world, "*", max(0.0, kills - feeding))]
 
 
-def _way_rows(world: str, ledger: Mapping[str, Any], seeds: Sequence[int]) -> List[Dict[str, Any]]:
-    groups = declared_groups(world, seeds)
+def _way_rows(world: str, ledger: Mapping[str, Any], seeds: Sequence[int], non_eating: Optional[Mapping[str, Any]] = None) -> List[Dict[str, Any]]:
+    groups = declared_groups(world, seeds, non_eating)
+    exempt = food_exempt_groups(non_eating)
     ways: Dict[Tuple[str, str], int] = defaultdict(int)
     for key, n in ledger["transfers"].items():
         group, source, outcome = _split(key, 3)
@@ -390,15 +413,22 @@ def _way_rows(world: str, ledger: Mapping[str, Any], seeds: Sequence[int]) -> Li
             ways[(group, source)] += n
     _require_declared("kind group", {g for g, _ in ways}, groups, ledger)
     _require_declared("transfer source", {src for _, src in ways}, TRANSFER_SOURCES)
-    return [_outcome("O4.accepted", world, group, ways[(group, source)], key=source) for group in groups for source in TRANSFER_SOURCES]
+    return [_outcome("O4.accepted", world, group, ways[(group, source)], key=source) for group in groups if group not in exempt for source in TRANSFER_SOURCES]
 
 
-def _outcome_rows(world: str, ticks: int, ledger: Mapping[str, Any], state: Any, seeds: Sequence[int]) -> List[Dict[str, Any]]:
-    return _population_rows(world, ticks, ledger, state, seeds) + _death_rows(world, ledger, seeds) + _combat_rows(world, ledger, seeds) + _way_rows(world, ledger, seeds)
+def _outcome_rows(world: str, ticks: int, ledger: Mapping[str, Any], state: Any, seeds: Sequence[int], non_eating: Optional[Mapping[str, Any]] = None) -> List[Dict[str, Any]]:
+    return (_population_rows(world, ticks, ledger, state, seeds, non_eating) + _death_rows(world, ledger, seeds, non_eating) + _combat_rows(world, ledger, seeds)
+            + _way_rows(world, ledger, seeds, non_eating))
 
 
-def compute(run: Any) -> Dict[str, Any]:
-    """One finished run's rows. ``run`` carries ``world``, ``seed``, ``ticks``, ``state`` (the final state) and ``events_path``."""
+def _not_applicable(non_eating: Optional[Mapping[str, Any]]) -> Dict[str, List[str]]:
+    """The document's typed record of what was left out: per exempt group, the food row ids that group does not carry (the gate doc prints it per cell)."""
+    return {group: list(FOOD_ROW_IDS) for group in sorted(food_exempt_groups(non_eating))}
+
+
+def compute(run: Any, non_eating: Optional[Mapping[str, Any]] = None) -> Dict[str, Any]:
+    """One finished run's rows. ``run`` carries ``world``, ``seed``, ``ticks``, ``state`` (the final state) and ``events_path``. ``non_eating`` is the gate config's
+    ``non_eating_kind_groups`` (``{group: {food_metrics: not_applicable}}``), passed by the harness: those groups count for population, deaths and combat and carry no food row."""
     events = _read_events(run)
     ledger, _ = _channel(events, LEDGER_LIVE_EVENT, LEDGER_TALLY_EVENT, "run ledger")
     starvation, _ = _channel(events, CHANNEL_LIVE_EVENT, CHANNEL_TALLY_EVENT, "starvation-death record")
@@ -409,9 +439,12 @@ def compute(run: Any) -> Dict[str, Any]:
     if int(starvation["starvation_deaths_seen"]) != o2_starved:
         raise GateDataMissingError(f"starvation tally {starvation['starvation_deaths_seen']} != O2 starvation deaths {o2_starved} (V3 cannot be read)")
     rows = _validity_rows(run.world, ledger, records, run.state, float(ledger["world_events"].get("meat_decayed_quantity", 0.0)))
-    rows += _outcome_rows(run.world, run.ticks, ledger, run.state, tuple(getattr(run, "seeds", ())))
+    rows += _outcome_rows(run.world, run.ticks, ledger, run.state, tuple(getattr(run, "seeds", ())), non_eating)
     rows.sort(key=lambda r: (r["id"], r["group"], str(r.get("key", "")), r.get("tick") or 0))
-    return {"metrics": rows}
+    result: Dict[str, Any] = {"metrics": rows}
+    if non_eating:
+        result["not_applicable"] = _not_applicable(non_eating)
+    return result
 
 
 # --------------------------------------------------------------------------------------------- pooling
@@ -427,7 +460,7 @@ def _liveness_row(world: str, groups: Set[str], used: Mapping[Tuple[str, str], f
     return _validity("V7", world, len(dead), dead, scope="pooled")
 
 
-def pool(docs: Sequence[Mapping[str, Any]]) -> List[Dict[str, Any]]:
+def pool(docs: Sequence[Mapping[str, Any]], non_eating: Optional[Mapping[str, Any]] = None) -> List[Dict[str, Any]]:
     """One world's pooled rows from its per-seed documents: ``O2.seeds_with_survivors`` per group, ``O1.starvation_share`` per group (sum of starved / sum at risk) and V7 (liveness of declared ways)."""
     if not docs:
         return []
@@ -446,9 +479,23 @@ def pool(docs: Sequence[Mapping[str, Any]]) -> List[Dict[str, Any]]:
             used[(row["group"], row["key"])] += row["value"]
         elif row["id"] == "O6.feeding_kills":
             feeding += row["value"]
+    first_seen: Dict[str, List[float]] = defaultdict(list)  # per group: each seed's first sampled count (the tick-0 population R2's scope reads; pooled as the max over the seeds)
+    for doc in docs:
+        sampled = [r for r in doc.get("metrics", []) if r["id"] == "O2.population" and r.get("tick") is not None]
+        if sampled:
+            start = min(int(r["tick"]) for r in sampled)
+            for r in sampled:
+                if int(r["tick"]) == start:
+                    first_seen[r["group"]].append(float(r["value"]))
+    exempt = food_exempt_groups(non_eating)
+    missing = sorted(g for g in survivors if g not in exempt and g not in at_risk)
+    if missing:
+        raise GateDataMissingError(f"kind group {missing} has no O1.at_risk row in the seed documents and is not declared non-eating: its food rows went missing")
     rows: List[Dict[str, Any]] = [
         {"id": "O2.seeds_with_survivors", "class": "outcome", "scope": "pooled", "world": world, "group": group,
          "value": float(n), "floor": POOLED_THRESHOLDS["O2.seeds_with_survivors"]} for group, n in sorted(survivors.items())]
+    rows += [{"id": "O2.t0_population", "class": "outcome", "scope": "pooled", "world": world, "group": group, "value": max(v),
+              "floor": POOLED_THRESHOLDS["O2.seeds_with_survivors"]} for group, v in sorted(first_seen.items())]  # the MAX first-sampled count over the seeds (never the mean: one member in two of five seeds must still scope R2 in); R2 applies to a group only when it is 1 or more
     for group in sorted(set(starved) | set(at_risk)):
         share: Dict[str, Any] = {"id": "O1.starvation_share", "class": "outcome", "scope": "pooled", "world": world, "group": group,
                                  "numerator": "O1.starved", "denominator": "O1.at_risk",

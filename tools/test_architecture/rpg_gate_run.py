@@ -120,12 +120,15 @@ def run(args: argparse.Namespace) -> int:
             kernel.shutdown()  # flushes the recorded event stream before the metrics read it
     run_dir = Path("data") / "runs" / args.run_id
     try:
-        result = compute(RunArtifacts(args.world, args.seed, args.ticks, args.sha, kernel.state, run_dir, tuple(args.seeds)))
+        artifacts = RunArtifacts(args.world, args.seed, args.ticks, args.sha, kernel.state, run_dir, tuple(args.seeds))
+        result = compute(artifacts, non_eating=args.non_eating) if args.non_eating else compute(artifacts)
     except Exception as exc:  # noqa: BLE001
         _write(out, _no_data(args, "metric_error", exc, args.seed))
         return 0
     metrics = result["metrics"] if isinstance(result, dict) else result  # rpg returns a whole document; the harness writes the header itself
     doc = {"schema": SCHEMA, "status": "ok", "world": args.world, "seed": args.seed, "ticks": args.ticks, "sha": args.sha, "harness_hash": args.harness_hash, "floor_seeds": list(args.seeds), "runner": runner_header(run_dir), "metrics": list(metrics)}
+    if isinstance(result, dict) and result.get("not_applicable"):
+        doc["not_applicable"] = result["not_applicable"]  # data from the config declaration, printed per cell by the report
     _write(out, doc)
     _write(out.with_name(out.name + ".cost.json"), {"peak_rss_mb": _peak_rss_mb()})
     return 0
@@ -135,7 +138,7 @@ def pool(args: argparse.Namespace) -> int:
     try:
         pool_fn = _resolve(args.metrics_module, "pool")
         docs = [json.loads(Path(p).read_text(encoding="utf-8")) for p in args.docs]
-        metrics = pool_fn(docs)
+        metrics = pool_fn(docs, non_eating=args.non_eating) if args.non_eating else pool_fn(docs)
     except Exception as exc:  # noqa: BLE001
         _write(Path(args.out), _no_data(args, "metric_error", exc, None))
         return 0
@@ -150,6 +153,7 @@ def main(argv: Optional[List[str]] = None) -> int:
     for name in ("--world", "--metrics-module", "--sha", "--harness-hash", "--out"):
         common.add_argument(name, required=True)
     common.add_argument("--ticks", type=int, required=True)
+    common.add_argument("--non-eating", type=json.loads, default={})  # the config's non_eating_kind_groups as JSON; empty when none is declared
     r = sub.add_parser("run", parents=[common])
     r.add_argument("--seed", type=int, required=True)
     r.add_argument("--run-id", required=True)

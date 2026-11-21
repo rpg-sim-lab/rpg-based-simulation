@@ -609,6 +609,8 @@ def build_report(
     outcome, reasons = verdict(findings)
     counts = {state: sum(1 for f in findings if f["state"] == state) for state in STATES}
     return {
+        "not_applicable": _not_applicable_cells(docs),
+        "first_seen_after_t0": _first_seen_after_t0(docs),
         "schema": SCHEMA,
         "sha": sha,
         "harness_hash": harness_hash,
@@ -635,6 +637,34 @@ def build_report(
 # ---------------------------------------------------------------- markdown
 
 
+def _not_applicable_cells(docs: Mapping[Any, Mapping[str, Any]]) -> Dict[str, Dict[str, List[str]]]:
+    """Per world, the kind groups its seed documents mark not-applicable (the config's non-eating declaration, as the metric module echoed it), with the row ids they omit."""
+    cells: Dict[str, Dict[str, List[str]]] = {}
+    for (world, seed), doc in sorted(docs.items(), key=lambda kv: (str(kv[0][0]), str(kv[0][1]))):
+        if seed is not None and doc.get("status") == "ok" and doc.get("not_applicable"):
+            for group, ids in doc["not_applicable"].items():
+                cells.setdefault(world, {})[group] = sorted(ids)
+    return cells
+
+
+def _first_seen_after_t0(docs: Mapping[Any, Mapping[str, Any]]) -> Dict[str, Dict[str, Dict[str, Dict[str, float]]]]:
+    """Per world and seed, the kind groups that had no member at the first sample and were alive later: ``{peak, end}`` of their sampled population (report-only: read from the
+    seed documents' ``O2.population`` rows, no row of its own). A group that never had a member is left out."""
+    cells: Dict[str, Dict[str, Dict[str, Dict[str, float]]]] = {}
+    for (world, seed), doc in sorted(docs.items(), key=lambda kv: (str(kv[0][0]), str(kv[0][1]))):
+        if seed is None or doc.get("status") != "ok":
+            continue
+        by_group: Dict[str, Dict[int, float]] = {}
+        for r in doc.get("metrics", []):
+            if r.get("id") == "O2.population" and r.get("tick") is not None and r.get("value") is not None:
+                by_group.setdefault(r["group"], {})[int(r["tick"])] = float(r["value"])
+        for group, series in sorted(by_group.items()):
+            first, last = min(series), max(series)
+            if series[first] == 0 and max(series.values()) > 0:
+                cells.setdefault(world, {}).setdefault(str(seed), {})[group] = {"peak": max(series.values()), "end": series[last]}
+    return cells
+
+
 def render_markdown(report: Mapping[str, Any]) -> str:
     lines = [f"## rpg gate report: {report['verdict'].upper()}", ""]
     lines.append(f"SHA `{report['sha'][:9]}`, harness `{report['harness_hash'][:12]}`. " + ", ".join(f"{s}: {report['counts'][s]}" for s in STATES))
@@ -648,6 +678,11 @@ def render_markdown(report: Mapping[str, Any]) -> str:
         lines.append(f"Same-SHA rerun: {len(report['rerun']['pairs'])} (world, seed) run(s), {report['rerun']['unstable']} metric(s) unstable.")
         if report["rerun"].get("not_performed_budget"):
             lines.append(f"- rerun not performed (budget) for {len(report['rerun']['not_performed_budget'])} run(s): their fail/drift findings are unconfirmed.")
+    for world, groups in sorted((report.get("not_applicable") or {}).items()):
+        lines.append(f"Not applicable in {world}: " + "; ".join(f"kind group `{g}` has no {', '.join(ids)} rows (declared non-eating)" for g, ids in sorted(groups.items())))
+    for world, seeds in sorted((report.get("first_seen_after_t0") or {}).items()):
+        lines.append(f"First seen after t0 in {world} (report-only): " + "; ".join(
+            f"s{seed} `{g}` peak {v['peak']:g}, end {v['end']:g}" for seed, groups in sorted(seeds.items()) for g, v in sorted(groups.items())))
     lines.append(_vs_main_line(report.get("vs_main") or {}))
     lines += _changed_lines(report.get("vs_main") or {}, CHANGED_SHOWN)
     for reason in report["reasons"]:

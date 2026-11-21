@@ -384,3 +384,71 @@ def test_only_the_two_o1_count_rows_carry_floor_rel_next_to_their_base_floor(tmp
     assert with_rel and {r["id"] for r in with_rel} == {"O1.starved", "O1.at_risk"}
     assert all(r["floor_rel"] == 0.10 and r["floor"] == 3.0 for r in with_rel)
     assert not [r for r in rows if r["id"] not in ("O1.starved", "O1.at_risk") and "floor_rel" in r]
+
+
+# ------------------------------------------------------------------------------------------------ a declared non-eating kind group (TCK-20261121-RPG-GATE-METRICS-REJECT-A-NON-EATING-KIND-GROUP-AS-UNDECLARED)
+NONE_DECL = {"none": {"food_metrics": "not_applicable"}}
+FOOD_IDS = ("O1.starved", "O1.at_risk", "O4.accepted")
+
+
+def _with_risen_undead(**over: Any) -> Dict[str, Any]:
+    return _ledger(population={"1": {PEOPLE: 10, WOLF: 4, DEER: 6, "none": 3}}, **over)
+
+
+def test_a_declared_non_eating_group_is_counted_for_population_deaths_and_attacks_and_has_no_food_row(tmp_path):
+    ledger = _with_risen_undead(deaths={"none|COMBAT": 2}, attacks={"none|0|1|hit": 4})
+    result = m.compute(_run(tmp_path, ledger), NONE_DECL)
+    assert _row(result, "O2.survivors", "none")["value"] == 1.0  # counted: three were alive at the first tick
+    assert [r for r in result["metrics"] if r["id"] == "O2.population" and r["group"] == "none"]
+    assert {r["key"]: r["value"] for r in result["metrics"] if r["id"] == "O2.deaths" and r["group"] == "none"}["COMBAT"] == 2
+    assert not [r for r in result["metrics"] if r["group"] == "none" and r["id"] in FOOD_IDS]
+    assert not [r for r in result["metrics"] if r["id"] == "O3.attacks_on_people" and r["group"] == "none"]  # no meat in its diet: never a wild meat-eater
+    assert result["not_applicable"] == {"none": list(FOOD_IDS)}
+
+
+def test_an_eater_still_carries_every_food_row_beside_a_non_eating_group(tmp_path):
+    result = m.compute(_run(tmp_path, _with_risen_undead()), NONE_DECL)
+    for group in (PEOPLE, WOLF, DEER):
+        assert {r["id"] for r in result["metrics"] if r["group"] == group} >= set(FOOD_IDS)
+
+
+def test_the_same_run_without_the_declaration_is_no_data_for_the_group_none(tmp_path):
+    with pytest.raises(m.GateDataMissingError, match="kind group"):
+        m.compute(_run(tmp_path, _with_risen_undead()))
+
+
+def test_another_undeclared_group_still_raises_with_the_declaration_present(tmp_path):
+    with pytest.raises(m.GateDataMissingError, match="kind group"):
+        m.compute(_run(tmp_path, _ledger(population={"1": {PEOPLE: 10, WOLF: 4, DEER: 6, "plant": 2}})), NONE_DECL)
+
+
+@pytest.mark.parametrize("bad", [{"meat": {"food_metrics": "not_applicable"}}, {"none": {"food_metrics": "applicable"}}, {"none": {}}])
+def test_a_malformed_or_misplaced_non_eating_declaration_is_a_config_error_not_a_silent_exemption_or_no_data(tmp_path, bad):
+    with pytest.raises(ValueError, match="non-eating"):
+        m.compute(_run(tmp_path, _ledger()), bad)
+
+
+def test_pool_raises_when_an_eater_lost_its_food_rows_and_passes_an_exempt_group(tmp_path):
+    doc = m.compute(_run(tmp_path, _with_risen_undead()), NONE_DECL)
+    assert m.pool([doc], NONE_DECL)
+    with pytest.raises(m.GateDataMissingError, match="food rows went missing"):
+        m.pool([{"world": "w", "metrics": [r for r in doc["metrics"] if not (r["group"] == WOLF and r["id"] == "O1.at_risk")]}], NONE_DECL)
+    with pytest.raises(m.GateDataMissingError, match="food rows went missing"):
+        m.pool([doc])  # no declaration: the group none has no food row and is not exempt
+
+
+def test_a_run_without_a_non_eating_group_is_byte_identical_with_and_without_the_empty_declaration(tmp_path):
+    assert m.compute(_run(tmp_path, _ledger())) == m.compute(_run(tmp_path, _ledger()), {})
+
+
+def test_pool_emits_the_max_first_sampled_population_per_group_for_the_stop_line_scope(tmp_path):
+    docs = [m.compute(_run(tmp_path, _with_risen_undead()), NONE_DECL), m.compute(_run(tmp_path, _ledger()), NONE_DECL)]
+    t0 = {r["group"]: r["value"] for r in m.pool(docs, NONE_DECL) if r["id"] == "O2.t0_population"}
+    assert t0[WOLF] == 4.0 and t0["none"] == 3.0 and t0[PEOPLE] == 10.0  # the max over the seeds, not the mean (1.5)
+
+
+def test_a_group_with_one_member_in_two_of_five_seeds_is_scoped_into_r2(tmp_path):
+    one = _ledger(population={"1": {PEOPLE: 10, WOLF: 4, DEER: 6, "none": 1}})
+    docs = [m.compute(_run(tmp_path, one if i < 2 else _ledger()), NONE_DECL) for i in range(5)]
+    t0 = {r["group"]: r["value"] for r in m.pool(docs, NONE_DECL) if r["id"] == "O2.t0_population"}
+    assert t0["none"] == 1.0  # the mean would be 0.4 and R2's `when: min 1` would skip it silently
