@@ -8071,6 +8071,18 @@
   artifact_files: []
   tags: []
 - type: ticket
+  path: agent-working/tickets/todos/TCK-20261121-THE-GATE-PERSON-FLAG-CHECK-SILENTLY-TREATS-A-NON-STRING-FLAG-AS-A-NON-PERSON.md
+  ticket_id: TCK-20261121-THE-GATE-PERSON-FLAG-CHECK-SILENTLY-TREATS-A-NON-STRING-FLAG-AS-A-NON-PERSON
+  title: The rpg gate's person-flag check (`_is_wild_meat_eater`) silently treats
+    a non-string flag as a non-person; it should refuse one
+  tier: hotfix
+  ticket_type: bug
+  date: '2026-11-21'
+  related_code_areas:
+  - src/observability/rpg_gate_metrics.py (_is_wild_meat_eater, _combat_rows, _split)
+  artifact_files: []
+  tags: []
+- type: ticket
   path: agent-working/tickets/todos/TCK-20261121-TWO-ANCHOR-TILES-ARE-GIVEN-UP-ON-BY-MANY-SUBJECTS-FOR-THOUSANDS-OF-TICKS.md
   ticket_id: TCK-20261121-TWO-ANCHOR-TILES-ARE-GIVEN-UP-ON-BY-MANY-SUBJECTS-FOR-THOUSANDS-OF-TICKS
   title: 'Two tiles, [40, 82] in frontier_living_world and [40, 31] in urban_political,
