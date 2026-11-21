@@ -37,3 +37,14 @@ Q2. REST readiness: approve (a) refuse-up-front plus atomic gold/hp (no state-mo
 Q3. EAT with nothing carried and no payable inn: typed failure that ends the task (R2 of the old plan). Confirm, and name the ReasonCode (existing SOURCE_MISSING, or a new NO_FOOD).
 Q4. V1 known entry removal edits `tools/test_architecture/rpg_gate_known.yaml`: does that move `harness_hash`/need testing-planner (owner of `tools/test_architecture` paths is outside my row)? Alternative: retire it in the v1.1 record ticket.
 Q5. Merchant/undeclared-diet kinds: decision 74 declared species, so `can_use_inn_meal` should no longer be the legacy-any path; confirm no remaining undeclared kind (the 2026-10-14 compile check says all compiled bodies resolve to a diet).
+
+## written at close (2026-11-21): the plan as landed (the text above is the 2026-10-28 v1 plan, kept as history)
+Landed as the following commits on rpg-free-meal-atomic (main ae2f837cb as base; nothing about the 2026-10-28 plan's parent d914bace7 or its paired run applies):
+1. 1c8fe7cd1 worker-brain fix: the meal inn is found by a scan of `state.buildings` (hash-equal on the 3 gate worlds at 5000t).
+2. 37d2f86f5 the D73 flip: `SERVICE_PAYMENT_LAW = ATOMIC` (service_admission.py, from the coin fix): one paid transfer per meal and bed, no core free meal, `PAYEE_MISSING` for a service with no payee (`requires_payee`), `INN_MEAL_HUNGER = 60.0` in `service_prices.py` (the 40 + 20 delivered as one transfer, memo row 73; not moved to data in this step).
+3. 55f566179 and 69350e5e1 and d87b00a83: `price_fields` / `service_terms`; required `terms` keyword on `bed_delta` / `grant_beds`; call-site migration; typing.
+4. 2556ecac5 SEEK_WORK: the LAST opening step, typed HUNGER, target the town centre; the hunger project ends `WAY_CLOSED` on arrival (`engine/tactical_objective.py`); docs divergence 2.218, survival-needs, ledger STRAT-281.
+5. fb116ef3d the held EAT fix: `actions._ENDS_HELD_REASONS_BY_ACTION` gets an EAT entry {SOURCE_MISSING, SOURCE_DEPLETED, INSUFFICIENT_GOLD}; ledger TOWN-212.
+6. abcf86774 the three seek-work tests assert no HUNGER project and only a TOWN_RETURN fallback (designer ruling B1 a).
+7. 7f91ff865 merge of main 85770a225 (S7); 261b5600a carries this ticket and these artifacts.
+Not done by this PR and named as such: the W cells (24000t, 3 gate worlds), the grade-row re-pin at the final head, the main-test rewrites (single owner ask, nothing in main tests is edited before it is cleared), the TOWN_RETURN never-exit hold (P2 ticket), TCK-20261120-A-HELD-ACTION-THAT-PRODUCES-NO-UPDATE-IS-RE-DISPATCHED-EVERY-TICK, TCK-20261109-AN-INN-MEAL-DOES-NOT-STAMP-LAST-MEAL-TICK (lands after this).
