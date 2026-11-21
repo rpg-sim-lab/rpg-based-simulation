@@ -44,7 +44,7 @@ def species_catalog():
 
 
 def build_entity(entity_id: int, species_id):
-    builder = V2EntityBuilder(entity_id).kind("hero").location(0, 0)
+    builder = V2EntityBuilder(entity_id).kind(species_id).location(0, 0)
     if species_id is not None:
         builder = builder.identity(properties={"species_id": species_id})
     return builder.build()

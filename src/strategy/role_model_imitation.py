@@ -15,6 +15,8 @@ CognitionProfile's 11 existing fields. See plan.md's "Fork justification"
 from __future__ import annotations
 from typing import TYPE_CHECKING
 
+from src.core.species import species_of
+
 if TYPE_CHECKING:
     from src.core.state import EntityState
 
@@ -31,7 +33,7 @@ class RoleModelImitationService:
 
     @staticmethod
     def compute_imitation_fidelity(entity: "EntityState") -> float:
-        species_id = entity.identity.properties.get("species_id")
+        species_id = species_of(entity)
         if not species_id:
             return RoleModelImitationService.DEFAULT_FIDELITY
 

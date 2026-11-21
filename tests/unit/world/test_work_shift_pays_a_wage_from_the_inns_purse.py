@@ -14,7 +14,7 @@ from src.engine.work_shift import SHIFT_START, SHIFT_TICKS, WAGE_GOLD, nearest_w
 
 def _world(inn_gold=100, pos=(5.0, 6.0), tick=1):
     inn = BuildingState(id=10, kind="inn", position=(5.0, 5.0), functional=True, inventory=InventoryComponent(gold=inn_gold), hires_for_pay=True, maintenance_shifts_needed=1)
-    ent = V2EntityBuilder(1).kind("worker").properties({"species_id": "human"}).location(*pos).inventory(gold=0).social(public_reputation=0.0).build()
+    ent = V2EntityBuilder(1).kind("human").properties({"species_id": "human"}).location(*pos).inventory(gold=0).social(public_reputation=0.0).build()
     return AuthoritativeState(tick=tick, seed=1, entities={1: ent}, buildings={10: inn}, town_tiles={(5, 5), (5, 6)}), ent, inn
 
 
@@ -65,7 +65,7 @@ def test_only_a_kind_that_keeps_coin_and_trades_is_served_or_hired():
     from src.engine.serves import keeps_coin, serves
     state, ent, inn = _world()
     assert keeps_coin(ent) and serves(state, ent, inn)
-    wolf = replace(ent, identity=replace(ent.identity, properties={"species_id": "wolf"}))
+    wolf = replace(ent, kind="wolf", identity=replace(ent.identity, properties={"species_id": "wolf"}))
     assert not keeps_coin(wolf) and not serves(state, wolf, inn)
     assert nearest_work(state, wolf) is None
 

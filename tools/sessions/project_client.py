@@ -277,12 +277,12 @@ class ProjectClient:
 
 # ---------------------------------------------------------------- --init
 
-TEXT_FIELDS = ("Ticket ID", "Seat", "Host", "Branch", "PR", "Source", "Sync hash", "Epic", "Tags", "Host facts", "Last run")
+TEXT_FIELDS = ("Ticket ID", "Seat", "Host", "Branch", "PR", "Source", "Sync hash", "Epic", "Tags", "Host facts", "Involved", "Blocked by", "Hotspot", "Last run")
 DATE_FIELDS = ("Filed",)
 OLD_DOMAIN = "Domain (old)"  # the P1b text field `Domain`, renamed by --init (P3b); it is never deleted
 TIER_OPTIONS = [("hotfix", "ORANGE"), ("standard", "BLUE"), ("epic", "PURPLE")]
 PRIORITY_OPTIONS = [("P0", "RED"), ("P1", "ORANGE"), ("P2", "YELLOW"), ("P3", "GRAY")]
-STATUS_COLORS = {"To do": "GRAY", "In progress": "BLUE", "Stale": "ORANGE", "In review": "PURPLE", "Blocked": "RED", "Done": "GREEN"}
+STATUS_COLORS = {"To do": "GRAY", "In progress": "BLUE", "Stale": "ORANGE", "In review": "PURPLE", "Blocked": "RED", "Done": "GREEN", "Parked": "YELLOW"}
 
 
 def merge_options(field: ProjectField, wanted: list[tuple[str, str]]) -> list[tuple[str, str, str | None]]:
@@ -389,7 +389,7 @@ def init_fields(client, statuses: tuple[str, ...], replace_status_options: bool 
 
 # ---------------------------------------------------------------- --apply
 
-VALUE_ORDER = ("Ticket ID", "Status", "Domain", "Seat", "Host", "Branch", "PR", "Tier", "Layer", "Priority", "Epic", "Tags", "Host facts", "Filed")  # Source, then Sync hash, are always last
+VALUE_ORDER = ("Ticket ID", "Status", "Domain", "Seat", "Host", "Branch", "PR", "Tier", "Layer", "Priority", "Epic", "Tags", "Host facts", "Filed", "Involved", "Blocked by", "Hotspot")  # Source, then Sync hash, are always last
 SELECT_FIELDS = ("Status", "Tier", "Layer", "Priority", "Domain")
 
 
@@ -417,6 +417,15 @@ def check_plan_options(project: Project, plan) -> list[str]:
     return problems
 
 
+def skipped_items(project: Project, plan) -> dict[str, list[str]]:
+    """ticket id -> the planned select values with no option on the Project (`<field> '<value>'`), for the items `apply_plan` leaves as they are."""
+    out: dict[str, list[str]] = {}
+    for problem in check_plan_options(project, plan):
+        tid, _, rest = problem.partition(" ")
+        out.setdefault(tid, []).append(rest)
+    return out
+
+
 def apply_plan(client, project: Project, plan, body_of: Callable[[dict], str] | None = None,
                progress: Callable[[str], None] | None = None, every: int = 25) -> tuple[list[str], list[str], str | None]:
     """Carry out plan.creates / plan.updates / plan.archives. Returns (done, not_done, error). A failing mutation stops the run."""
@@ -424,9 +433,11 @@ def apply_plan(client, project: Project, plan, body_of: Callable[[dict], str] | 
     missing = [n for n in needed if n not in project.fields]
     if missing:
         raise ClientRefused(f"the Project has no field(s) {', '.join(missing)}: run --init first")
-    bad = check_plan_options(project, plan)
-    if bad:
-        raise ClientRefused(f"{len(bad)} value(s) are not options of their field (nothing written): " + "; ".join(bad))
+    # A planned select value with no option on the Project (Status, Tier, Layer, Priority or Domain) costs only THAT item: it is skipped whole (an update
+    # writes none of its fields and keeps its old Sync hash, so the next run retries it; a create is not made) and recorded on `plan.skipped`. A missing FIELD
+    # above still refuses the whole run.
+    skip = skipped_items(project, plan)
+    plan.skipped = skip
 
     def put(get_id: Callable[[], str], name: str, value: str, clear_if_empty: bool) -> Callable[[], None] | None:
         f = project.fields[name]
@@ -442,7 +453,7 @@ def apply_plan(client, project: Project, plan, body_of: Callable[[dict], str] | 
         return lambda: client.set_text(project.id, get_id(), f.id, value)
 
     steps: list[tuple[str, Callable[[], None]]] = []
-    for derived in plan.creates:
+    for derived in [d for d in plan.creates if d.get("Ticket ID") not in skip]:
         holder: dict = {}
 
         def add(d=derived, h=holder):
@@ -452,7 +463,7 @@ def apply_plan(client, project: Project, plan, body_of: Callable[[dict], str] | 
             call = put(lambda h=holder: h["item"], name, derived.get(name, ""), False)
             if call is not None:
                 steps.append((f"create {derived['Ticket ID']}: set {name}", call))
-    for derived, changed in plan.updates:
+    for derived, changed in [(d, ch) for d, ch in plan.updates if d.get("Ticket ID") not in skip]:
         item_id = derived["_item_id"]
         if "Title" in changed:
             steps.append((f"update {derived['Ticket ID']}: title",

@@ -60,14 +60,6 @@ def get_faction_id_str(entity: Any) -> str:
             pass
     return "neutral"
 
-def get_species_id_str(entity: Any) -> str:
-    """Retrieves the species ID string of an entity if present in properties."""
-    if hasattr(entity, "identity") and hasattr(entity.identity, "properties"):
-        return entity.identity.properties.get("species_id")
-    return None
-
-
-
 def are_entities_hostile(source: Any, target: Any, context: Any) -> bool:
     """Catalog-driven hostility between two entities for the given ``RelationContext``.
 

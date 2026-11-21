@@ -8,7 +8,7 @@ service delivers and what the pull judges open cannot diverge. The payment law h
   fed and bedded. Payment never closes a service.
 * ``ATOMIC`` (the free-meal removal, D73 / N1): the full price or nothing; a subject holding less than the price is not served.
 
-Flipping the law is a change to the one constant; no consumer is edited. The prices are read from ``service_prices`` only.
+Under either law the debit equals what the payee receives (`conservation.service_price`, `_service_result`: the payer is debited exactly what the building or treasury is credited). Flipping the law is a change to the one constant; no consumer is edited. The prices are read from ``service_prices`` only.
 
 ``keeps_coin`` is NOT yet part of admission (designer ruling 2026-10-29, option A): ``service_building`` also requires the subject to keep coin
 (``serves.keeps_coin``), and ``admits`` does not, as adding it would change what the scorers answer on main. The gap is pinned by a test and tracked in

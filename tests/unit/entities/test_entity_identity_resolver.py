@@ -17,7 +17,7 @@ def _make_contract(**kw) -> ResolvedEntityRuntimeContract:
         species_id="human",
         faction_id="town_council",
         role_id="worker",
-        kind="humanoid",
+        kind="human",
         hp=80, max_hp=80, atk=8, def_stat=4,
         attack_range=1, readiness=100.0,
         inventory_items={}, starting_gold=0.0,

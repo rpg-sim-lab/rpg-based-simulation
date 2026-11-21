@@ -14,7 +14,7 @@ def test_biological_decay_per_tick():
     """Verify that biological needs increase over time (decay)."""
     from src.core.builder import V2EntityBuilder
     ent = (V2EntityBuilder(1)
-        .kind("HERO")
+        .kind("human")
         .location(0.0, 0.0)
         .biological(hunger=10.0, sleep_debt=5.0)
         .build())
@@ -33,7 +33,7 @@ def test_hunger_concern_generation():
     """Verify that high hunger generates a strategic concern."""
     from src.core.builder import V2EntityBuilder
     ent = (V2EntityBuilder(1)
-        .kind("HERO")
+        .kind("human")
         .location(0.0, 0.0)
         .biological(hunger=60.0)
         .build())
@@ -47,7 +47,7 @@ def test_sleep_bias_at_night():
     """Verify that sleep urgency is higher at night."""
     from src.core.builder import V2EntityBuilder
     ent = (V2EntityBuilder(1)
-        .kind("HERO")
+        .kind("human")
         .location(0.0, 0.0)
         .biological(sleep_debt=30.0)
         .build())
@@ -67,7 +67,7 @@ def test_routine_utility_boost():
     """Verify that routine-related projects get utility boosts."""
     from src.core.builder import V2EntityBuilder
     ent = (V2EntityBuilder(1)
-        .kind("HERO")
+        .kind("human")
         .location(0.0, 0.0)
         .biological(hunger=50.0, sleep_debt=40.0)
         .build())
@@ -86,7 +86,7 @@ def test_pipeline_integrates_biological_concerns():
     from src.core.builder import V2EntityBuilder
     
     ent = (V2EntityBuilder(1)
-        .kind("HERO")
+        .kind("human")
         .location(0.0, 0.0)
         .biological(hunger=85.0)
         .build())
@@ -106,7 +106,7 @@ def test_routine_action_execution():
     from src.core.builder import V2EntityBuilder
     
     ent = (V2EntityBuilder(1)
-        .kind("HERO")
+        .kind("human")
         .location(0.0, 0.0)
         .biological(hunger=50.0, sleep_debt=40.0)
         .combat(readiness=100.0)

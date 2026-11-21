@@ -5,7 +5,7 @@ import json
 import time
 import yaml
 from pathlib import Path
-from typing import Optional, Any, Dict, List, Set
+from typing import Optional, Any, Dict, List, Set, Tuple
 
 from src.platform.rng import DeterministicRNG
 from src.core.enums import Domain
@@ -146,6 +146,26 @@ def _draw_free_tile(rng: Any, node_id: int, ordered_regions: Any, owner_region: 
         if owner is not None and owner.id == region_id and (x, y) not in taken:
             return x, y
     return None
+
+
+def _population_properties_and_species(spec: Any, pop_key: str, pop_spec: Any, context: Any) -> Tuple[Dict[str, Any], Optional[str]]:
+    """The identity properties of a spawned member of population `pop_key` and the species its content context declares for it (None when no context names one).
+    A context-declared species must carry a diet and a usable sense profile (SURV-05, PERC-02a); a gap is a compile error. Moved unchanged out of `WorldCompiler.compile`."""
+    # Populate properties
+    ent_properties = {
+        "spawn_region": pop_spec.spawn_region,
+        "population_id": pop_key,
+        "faction_id": pop_spec.faction,
+    }
+    declared_species = None
+    if context is not None and pop_key in context.entities:
+        resolved = context.entities[pop_key]
+        if hasattr(resolved, "faction_id") and resolved.faction_id:
+            ent_properties["faction_id"] = resolved.faction_id
+        if hasattr(resolved, "species_id") and resolved.species_id:
+            declared_species = resolved.species_id
+        require_declared_population_species(spec.world_id, pop_key, pop_spec, declared_species)
+    return ent_properties, declared_species
 
 
 def _with_declared_inventory(builder: Any, context: Any, population_id: str) -> Any:
@@ -747,23 +767,11 @@ class WorldCompiler:
                     class_pool = class_table.get(role_key) or ["NOVICE"]
                     ent_class_id = rng.choice(Domain.WORLD, 0, next_entity_id, class_pool, sub_id=14)
 
-                    # Populate properties
-                    ent_properties = {
-                        "spawn_region": pop_spec.spawn_region,
-                        "population_id": pop_key,
-                        "faction_id": pop_spec.faction,
-                    }
-                    if context is not None and pop_key in context.entities:
-                        resolved = context.entities[pop_key]
-                        if hasattr(resolved, "faction_id") and resolved.faction_id:
-                            ent_properties["faction_id"] = resolved.faction_id
-                        if hasattr(resolved, "species_id") and resolved.species_id:
-                            ent_properties["species_id"] = resolved.species_id
-                        require_declared_population_species(spec.world_id, pop_key, pop_spec, ent_properties.get("species_id"))
+                    ent_properties, declared_species = _population_properties_and_species(spec, pop_key, pop_spec, context)
 
                     # M1 step 4: `kind` is the population's declared species when a context supplies one. A compile with NO context is the legacy path (kind = the role
                     # label, occupation equal to it), named here and pinned by a test; it is owned by TCK-20261020-TESTS-THAT-COMPILE-A-WORLD-WITHOUT-THE-CONTENT-CONTEXT-TRIAGE (stage 4b).
-                    species_kind = ent_properties.get("species_id") or pop_spec.role.lower()
+                    species_kind = declared_species or pop_spec.role.lower()
                     builder = (
                         V2EntityBuilder(next_entity_id)
                         .kind(species_kind)
