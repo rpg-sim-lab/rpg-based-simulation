@@ -23,9 +23,14 @@ MEASUREMENT CHOICES (each is approved with the kit shas, none is a rule change; 
  9. NOT ASSESSABLE IS NOT A PASS. In a seed with >= 10 engagements, if the engagements of attackers whose species is not in the table are >= 10% of the seed's engagements, R5 reads ``NOT_CLEARED`` (counts as HELD)
     and lists the species. Below 10%, R5 decides on the engagements it can assess and reports the unassessable share. The 10% threshold and "decides on the assessed engagements only (>= 90% of them inside
     the active period)" were CONFIRMED by rpg-designer (follow-up to the answers at rpg-planner-ubuntu's seat, a3eedf7e7 lineage). Every R5 miss carries the tag ``SURV-08 law MISSING in code``.
-10. OVERALL (``verdict``): any miss on NEW -> BUG CANDIDATE (attributed if any miss is attributed, else pre-existing); else any NOT_CLEARED or unassessable cell -> HELD (HELD outranks INTENDED); else INTENDED, only when
-    every seed with >= 10 engagements on NEW passes every rule. A run with no seed of >= 10 engagements on NEW reads NOT EVALUATED (the kit's own reading: nothing to clear). Rules R1-R5 and R7 apply to a seed with
-    >= 10 engagements, R6 to a seed with >= 10 NEW hits; below that a rule is ``NOT_APPLICABLE`` with the value it would have had (``if_applied``).
+10. OVERALL (``verdict``, rpg-designer's pre-data ruling, relayed at rpg-planner-ubuntu's seat): NO seed is exempt below 10 engagements. R1 (holds by construction, still checked and reported), R3, R4 and R7 are judged in
+    EVERY seed at any count, R6 in every seed with >= 10 NEW hits; R2 and R5 are share rules and read ``NOT_EVALUATED (n<10)`` below 10 engagements. ``run_line`` says "R2/R5 NOT EVALUATED (n<10)" when no NEW seed reaches 10.
+    CLEARED only if R3, R4, R6 and R7 hold in every seed AND R2 and R5 hold wherever evaluated. Any miss on NEW = BUG CANDIDATE (attributed if any miss is attributed, else pre-existing); otherwise any NOT_CLEARED / unassessable /
+    invalid NEW cell = HELD (a miss outranks HELD, HELD outranks CLEARED); otherwise CLEARED.
+11. GROUP SCOPE (ruled by rpg-designer): R1-R7 and the verdict apply to the attackers whose kind group is exactly a member of ``TIED_GROUPS`` (today only "meat", the brief's "FLW meat O3.attacks_on_people" row), each tied group
+    judged separately; its R1 reads "every counted attacker is in that exact group (and its declared diet is that group's classes)". Every other O3 group (the gate's own O3 predicate, e.g. ``meat+plant+prepared``) is reported in
+    full under ``groups`` (engagements, attackers, pairs, hit states, the rules computed as "context, no verdict") and has NO effect on any verdict. Which rows are O3 is decided by the spy with the ledger's own key and the gate's
+    predicate (``o3_label``), never here.
 MEASUREMENT LABEL (in the output as ``measurement_labels``): the night split is a MEASUREMENT made with NEW's ``is_night`` applied offline to both arms; BASE's agents never used it.
 Usage: python person_attack_summary.py --dir <cells dir> --calendar-tree <NEW tree> --out <summary.json>
 """
@@ -45,6 +50,7 @@ ENGAGEMENT_GAP = 50
 TICKS_PER_DAY = 2400  # src/core/calendar.py:9 at 87792e3e8
 MIN_ENGAGEMENTS = 10
 MIN_HITS = 10
+NOT_EVALUATED = "NOT_EVALUATED (n<10)"
 NOT_ASSESSABLE_SHARE = 0.10  # a seed whose engagements by unknown-species attackers reach this share is NOT CLEARED (R5 not assessable): ruled by rpg-designer
 R5_TAG = "SURV-08 law MISSING in code"
 MEASUREMENT_LABELS = [
@@ -58,6 +64,8 @@ PERIODS_QUOTE = (
     "Any hour: slime, spirit."
 )
 MISSING_LAW_QUOTE = "**Repository evidence: MISSING (2026-11-17).** No kind declares a period; one night window applies to every kind (roadmap §12.1), and the night checks read the raw clock, so every tick after 1800 counts as night."
+TIED_GROUPS = ("meat",)  # the O3 groups tied to #953/#954 (ruled by rpg-designer): the brief's "FLW meat O3.attacks_on_people" row (0.6 -> 24.0 per seed); O3 rows are keyed by the EXACT kind group (rpg_gate_metrics.py:396-411);
+# FLW `meat` is the only O3 row in all 20 saved gate reports and v2 (lead's attribution check), so it has no other member today. Each tied group gets R1-R7 and its own verdict; every other O3 group is context, no verdict.
 DIURNAL, NOCTURNAL, ANY_HOUR = "diurnal", "nocturnal", "any_hour"
 PERIODS: Dict[str, str] = {
     **{species: DIURNAL for species in ("human", "elf", "dwarf", "orc", "lizardfolk", "small_plant_eater", "dragonkin")},
@@ -209,24 +217,25 @@ def max_in_window(starts: List[int], window: int) -> int:
     return best
 
 
-def _result(applies: bool, value_result: str, **detail: Any) -> Dict[str, Any]:
-    out = {"applies": applies, "result": value_result if applies else "NOT_APPLICABLE", **detail}
+def _result(applies: bool, value_result: str, not_evaluated: str = "NOT_APPLICABLE", **detail: Any) -> Dict[str, Any]:
+    """A rule's result: ``value_result`` when the rule applies, else ``not_evaluated`` with the value it would have had in ``if_applied``."""
+    out = {"applies": applies, "result": value_result if applies else not_evaluated, **detail}
     if not applies:
         out["if_applied"] = value_result
     return out
 
 
-def rules_for_cell(rows: List[Dict[str, Any]], mode_rows: List[Dict[str, Any]], engagements: List[Dict[str, Any]]) -> Dict[str, Dict[str, Any]]:
-    """R1-R5 and R7 for one (arm, seed) cell."""
-    applies = len(engagements) >= MIN_ENGAGEMENTS
+def rules_for_cell(rows: List[Dict[str, Any]], mode_rows: List[Dict[str, Any]], engagements: List[Dict[str, Any]], all_rows: Optional[List[Dict[str, Any]]] = None, group: Optional[str] = None) -> Dict[str, Dict[str, Any]]:
+    """R1-R5 and R7 for one (arm, seed) cell over ``rows`` (the group in scope); ``all_rows`` (default ``rows``) feeds R7's all-attackers information."""
+    share_rules_apply = len(engagements) >= MIN_ENGAGEMENTS  # R2 and R5 are share rules: NOT EVALUATED below 10 engagements; R1, R3, R4 and R7 are judged in every seed at any count
     attackers = per_attacker(engagements, rows)
     total = len(engagements)
     out: Dict[str, Dict[str, Any]] = {}
-    bad = [a["attacker_id"] for a in attackers if not a["diet"] or "meat" not in a["diet"] or a["group"] != "+".join(a["diet"])]
-    out["R1"] = _result(applies, "FAIL" if bad else "PASS", attacker_ids=bad, note="a miss is a metric-grouping finding for testing and this seed is no evidence" if bad else "")
+    bad = [a["attacker_id"] for a in attackers if not a["diet"] or "meat" not in a["diet"] or a["group"] != "+".join(a["diet"]) or (group is not None and a["group"] != group)]
+    out["R1"] = _result(True, "FAIL" if bad else "PASS", attacker_ids=bad, note="a miss is a metric-grouping finding for testing and this seed is no evidence" if bad else "")
     top = max(attackers, key=lambda a: a["engagements"], default=None)
     share = (top["engagements"] / total) if top and total else 0.0
-    out["R2"] = _result(applies, "FAIL" if share > 0.5 else "PASS", max_share=share, attacker_ids=[top["attacker_id"]] if top and share > 0.5 else [], top_attacker=top["attacker_id"] if top else None)
+    out["R2"] = _result(share_rules_apply, "FAIL" if share > 0.5 else "PASS", NOT_EVALUATED, max_share=share, attacker_ids=[top["attacker_id"]] if top and share > 0.5 else [], top_attacker=top["attacker_id"] if top else None)
     starts: Dict[int, List[int]] = defaultdict(list)
     day_bins: Dict[Tuple[int, int], int] = defaultdict(int)
     for eng in engagements:
@@ -234,26 +243,26 @@ def rules_for_cell(rows: List[Dict[str, Any]], mode_rows: List[Dict[str, Any]], 
         day_bins[(eng["attacker_id"], eng["start_world_time"] // TICKS_PER_DAY)] += 1
     rolling = {aid: max_in_window(ticks, TICKS_PER_DAY) for aid, ticks in starts.items()}
     over = sorted(aid for aid, n in rolling.items() if n > 3)
-    out["R3"] = _result(applies, "FAIL" if over else "PASS", attacker_ids=over, max_rolling_2400=max(rolling.values(), default=0), max_day_bin=max(day_bins.values(), default=0))
+    out["R3"] = _result(True, "FAIL" if over else "PASS", attacker_ids=over, max_rolling_2400=max(rolling.values(), default=0), max_day_bin=max(day_bins.values(), default=0))
     pair_counts = per_pair(engagements)
     over_pairs = [(p["attacker_id"], p["victim_id"], p["engagements"]) for p in pair_counts if p["engagements"] >= 5]
-    out["R4"] = _result(applies, "FAIL" if over_pairs else "PASS", attacker_ids=sorted({p[0] for p in over_pairs}), pairs=over_pairs)
+    out["R4"] = _result(True, "FAIL" if over_pairs else "PASS", attacker_ids=sorted({p[0] for p in over_pairs}), pairs=over_pairs)
     unknown = [e for e in engagements if e["inside_period"] is None]
     unknown_share = len(unknown) / total if total else 0.0
     unknown_info = {"unassessable_share": unknown_share, "period_unknown": len(unknown), "species": sorted({e["attacker_species"] for e in unknown})}
     if unknown_share >= NOT_ASSESSABLE_SHARE:
-        out["R5"] = _result(applies, "NOT_CLEARED", attacker_ids=sorted({e["attacker_id"] for e in unknown}), note="R5 not assessable: counts as HELD", **unknown_info)
+        out["R5"] = _result(share_rules_apply, "NOT_CLEARED", NOT_EVALUATED, attacker_ids=sorted({e["attacker_id"] for e in unknown}), note="R5 not assessable: counts as HELD", **unknown_info)
     else:
         known = [e for e in engagements if e["inside_period"] is not None]
         inside = sum(1 for e in known if e["inside_period"])
         frac = inside / len(known) if known else 1.0
         miss = frac < 0.9
-        out["R5"] = _result(applies, "FAIL" if miss else "PASS", inside_fraction=frac, tag=R5_TAG if miss else "", attacker_ids=sorted({e["attacker_id"] for e in known if not e["inside_period"]}) if miss else [], **unknown_info)
+        out["R5"] = _result(share_rules_apply, "FAIL" if miss else "PASS", NOT_EVALUATED, inside_fraction=frac, tag=R5_TAG if miss else "", attacker_ids=sorted({e["attacker_id"] for e in known if not e["inside_period"]}) if miss else [], **unknown_info)
     chains = hit_chains(rows, mode_rows)
     a, n = chains["asleep_or_lodged_run"], chains["no_decision_run"]
     fail = a["run"] >= 3 or n["run"] >= 5
-    out["R7"] = _result(applies, "FAIL" if fail else "PASS", attacker_ids=sorted(set(a.get("attackers", []) if a["run"] >= 3 else []) | set(n.get("attackers", []) if n["run"] >= 5 else [])),
-                        asleep_or_lodged_run=a, no_decision_run=n, all_attackers_info=hit_chains(rows, mode_rows, only_o3=False))
+    out["R7"] = _result(True, "FAIL" if fail else "PASS", attacker_ids=sorted(set(a.get("attackers", []) if a["run"] >= 3 else []) | set(n.get("attackers", []) if n["run"] >= 5 else [])),
+                        asleep_or_lodged_run=a, no_decision_run=n, all_attackers_info=hit_chains(all_rows if all_rows is not None else rows, mode_rows, only_o3=False))
     return out
 
 
@@ -268,14 +277,14 @@ def rule_r6(new_eng: List[Dict[str, Any]], base_eng: List[Dict[str, Any]]) -> Di
     new, base = hits_per_engagement(new_eng), hits_per_engagement(base_eng)
     applies = new_hits >= MIN_HITS
     if not new_eng:
-        return _result(applies, "PASS", new=new, base=base, new_hits=new_hits, attacker_ids=[])
+        return _result(applies, "PASS", "NOT_APPLICABLE", new=new, base=base, new_hits=new_hits, attacker_ids=[])
     if not base_eng:
         ok = new["max"] <= 10
         names = [] if ok else [e for e in new_eng if e["hits"] > 10]
     else:
         ok = new["median"] <= 2 * base["median"] and new["max"] <= 2 * base["max"]
         names = [] if ok else [e for e in new_eng if e["hits"] > 2 * base["max"] or e["hits"] > 2 * base["median"]]
-    return _result(applies, "PASS" if ok else "FAIL", new=new, base=base, new_hits=new_hits, attacker_ids=sorted({e["attacker_id"] for e in names}),
+    return _result(applies, "PASS" if ok else "FAIL", "NOT_APPLICABLE", new=new, base=base, new_hits=new_hits, attacker_ids=sorted({e["attacker_id"] for e in names}),
                    engagements=[{"attacker_id": e["attacker_id"], "victim_id": e["victim_id"], "start_tick": e["start_tick"], "hits": e["hits"]} for e in names])
 
 
@@ -312,57 +321,72 @@ def load_cells(directory: Path) -> Dict[Tuple[str, str, int], Dict[str, Optional
     return cells
 
 
+def group_cell_view(group_rows: List[Dict[str, Any]], mode_rows: List[Dict[str, Any]], final_tick: int, is_night: Callable[[int], bool]) -> Tuple[List[Dict[str, Any]], Dict[str, Any]]:
+    """Engagements and the views (a)-(e) of one group's O3 rows in one cell."""
+    eng = build_engagements(group_rows, mode_rows, final_tick, is_night)
+    view = {"engagements_count": len(eng), "hits": sum(e["hits"] for e in eng), "engagements": eng, "per_attacker": per_attacker(eng, group_rows), "per_pair": per_pair(eng),
+            "hit_states": [{k: v for k, v in h.items() if not k.startswith("_")} for h in hit_states(group_rows, mode_rows)], "period_unknown": sum(1 for e in eng if e["inside_period"] is None)}
+    return eng, view
+
+
 def summarize(cells: Dict[Tuple[str, str, int], Dict[str, Optional[Dict[str, Any]]]], is_night: Callable[[int], bool]) -> Dict[str, Any]:
-    out: Dict[str, Any] = {"measurement_labels": MEASUREMENT_LABELS, "cells": {}, "rules": {name: {} for name in RULE_NAMES}, "engagement_gap": ENGAGEMENT_GAP}
-    engagements: Dict[Tuple[str, str, int], List[Dict[str, Any]]] = {}
+    """Per tied group: R1-R7 and its verdict; per untied O3 group: the same views and rules as context with no verdict (module docstring, choices 10 and 11)."""
+    out: Dict[str, Any] = {"measurement_labels": MEASUREMENT_LABELS, "tied_groups": list(TIED_GROUPS), "cells": {}, "groups": {}, "engagement_gap": ENGAGEMENT_GAP}
+    engagements: Dict[Tuple[str, str, str, int], List[Dict[str, Any]]] = {}   # (group, arm, world, seed)
+    group_names = set(TIED_GROUPS)
     for key, pair in sorted(cells.items()):
         arm, world, seed = key
         validity = cell_validity(pair["plain"], pair["spy"])
         label = f"{arm}/{world}/s{seed}"
         entry: Dict[str, Any] = {"validity": validity}
-        if validity["valid"]:
-            spy = pair["spy"]
-            eng = build_engagements(spy["rows"], spy["mode_rows"], spy["final_tick"], is_night)
-            engagements[key] = eng
-            entry.update({
-                "ticks": spy["ticks"], "final_hash": spy["final_hash"], "o3_count": spy["o3_total_spy"], "o3_count_ledger": spy["o3_total_ledger"], "o3_by_group": spy["o3_by_group_spy"],
-                "engagements_count": len(eng), "engagements": eng, "per_attacker": per_attacker(eng, spy["rows"]), "per_pair": per_pair(eng),
-                "hit_states": [{k: v for k, v in h.items() if not k.startswith("_")} for h in hit_states(spy["rows"], spy["mode_rows"])],
-                "period_unknown": sum(1 for e in eng if e["inside_period"] is None), "meat_group_attacker_groups": sorted({e["attacker_group"] for e in eng}),
-            })
-            for name, value in rules_for_cell(spy["rows"], spy["mode_rows"], eng).items():
-                out["rules"][name].setdefault(world, {}).setdefault(arm, {})[f"s{seed}"] = value
-        else:
-            for name in ("R1", "R2", "R3", "R4", "R5", "R7"):
-                out["rules"][name].setdefault(world, {}).setdefault(arm, {})[f"s{seed}"] = {"applies": False, "result": "NOT_ASSESSABLE", "problems": validity["problems"]}
         out["cells"][label] = entry
-    for (arm, world, seed), eng in sorted(engagements.items()):
-        if arm != "new":
+        if not validity["valid"]:
+            for group in TIED_GROUPS:
+                g = out["groups"].setdefault(group, {"tied": True, "cells": {}, "rules": {name: {} for name in RULE_NAMES}})
+                for name in ("R1", "R2", "R3", "R4", "R5", "R7"):
+                    g["rules"][name].setdefault(world, {}).setdefault(arm, {})[f"s{seed}"] = {"applies": False, "result": "NOT_ASSESSABLE", "problems": validity["problems"]}
             continue
-        base_key = ("base", world, seed)
-        if base_key in engagements:
-            out["rules"]["R6"].setdefault(world, {}).setdefault("new_vs_base", {})[f"s{seed}"] = rule_r6(eng, engagements[base_key])
-        else:
-            out["rules"]["R6"].setdefault(world, {}).setdefault("new_vs_base", {})[f"s{seed}"] = {"applies": False, "result": "NOT_ASSESSABLE", "problems": ["no valid BASE cell"]}
-    out["verdict_detail"] = verdict_detail(out["rules"], out["cells"])
+        spy = pair["spy"]
+        entry.update({"ticks": spy["ticks"], "final_hash": spy["final_hash"], "o3_count": spy["o3_total_spy"], "o3_count_ledger": spy["o3_total_ledger"], "o3_by_group": spy["o3_by_group_spy"],
+                      "declared_o3_groups": spy.get("declared_o3_groups"), "undeclared_o3_groups": spy.get("undeclared_o3_groups")})
+        present = {r["attacker_group"] for r in spy["rows"] if r["in_o3_group"]}
+        group_names |= present
+        for group in sorted(set(TIED_GROUPS) | present):
+            tied = group in TIED_GROUPS
+            group_rows = [r for r in spy["rows"] if r["attacker_group"] == group and r["in_o3_group"]]
+            eng, view = group_cell_view(group_rows, spy["mode_rows"], spy["final_tick"], is_night)
+            engagements[(group, arm, world, seed)] = eng
+            g = out["groups"].setdefault(group, {"tied": tied, "cells": {}, "rules": {name: {} for name in RULE_NAMES}} if tied else {"tied": False, "cells": {}})
+            rules = rules_for_cell(group_rows, spy["mode_rows"], eng, spy["rows"], group)
+            if tied:
+                g["cells"][label] = view
+                for name, value in rules.items():
+                    g["rules"][name].setdefault(world, {}).setdefault(arm, {})[f"s{seed}"] = value
+            else:
+                g["cells"][label] = {**view, "verdict": None, "label": "context, no verdict", "rules_as_context": rules}
+    for group in TIED_GROUPS:
+        g = out["groups"].setdefault(group, {"tied": True, "cells": {}, "rules": {name: {} for name in RULE_NAMES}})
+        for (grp, arm, world, seed), eng in sorted(engagements.items()):
+            if grp != group or arm != "new":
+                continue
+            base = engagements.get((group, "base", world, seed))
+            g["rules"]["R6"].setdefault(world, {}).setdefault("new_vs_base", {})[f"s{seed}"] = rule_r6(eng, base) if base is not None else {"applies": False, "result": "NOT_ASSESSABLE", "problems": ["no valid BASE cell"]}
+        g["verdict_detail"] = verdict_detail(g["rules"], g["cells"], group)
+    out["verdict_detail"] = combine_verdicts([out["groups"][grp]["verdict_detail"] for grp in TIED_GROUPS])
     out["verdict"] = out["verdict_detail"]["headline"]
     return out
 
 
-def verdict_detail(rules: Dict[str, Any], cells: Dict[str, Any]) -> Dict[str, Any]:
-    """The overall verdict on NEW (module docstring, choices 8-10): misses (attributed when NEW only, pre-existing when BASE misses the same rule in the same seed), HELD items, and the headline."""
+def verdict_detail(rules: Dict[str, Any], group_cells: Dict[str, Any], group: str) -> Dict[str, Any]:
+    """The verdict of ONE tied group on NEW (module docstring, choices 8-10): misses (attributed when NEW only, pre-existing when BASE misses the same rule in the same seed), HELD items, the run line and the headline."""
     misses: List[Dict[str, Any]] = []
     held: List[Dict[str, Any]] = []
-    evaluated: List[str] = []
-    for label, entry in sorted(cells.items()):
-        arm, world, seed = label.split("/")
-        if arm == "new" and entry.get("engagements_count", 0) >= MIN_ENGAGEMENTS:
-            evaluated.append(f"{world}/{seed}")
+    evaluated = [f"{label.split('/')[1]}/{label.split('/')[2]}" for label, view in sorted(group_cells.items()) if label.startswith("new/") and view.get("engagements_count", 0) >= MIN_ENGAGEMENTS]
     for name in RULE_NAMES:
         for world, per_arm in sorted(rules[name].items()):
             side = per_arm.get("new_vs_base" if name == "R6" else "new", {})
             for seed, res in sorted(side.items()):
-                where = {"rule": name, "world": world, "seed": seed}
+                where = {"group": group, "rule": name, "world": world, "seed": seed}
                 if res["result"] == "FAIL" and res.get("applies"):
                     base = per_arm.get("base", {}).get(seed)
                     pre_existing = name != "R6" and bool(base and base.get("applies") and base["result"] == "FAIL")
@@ -376,11 +400,26 @@ def verdict_detail(rules: Dict[str, Any], cells: Dict[str, Any]) -> Dict[str, An
         headline = "BUG CANDIDATE, pre-existing (not attributed to #953/#954)"
     elif held:
         headline = "HELD"
-    elif evaluated:
-        headline = "INTENDED"
     else:
-        headline = "NOT EVALUATED (no seed with >= 10 engagements on NEW)"
-    return {"headline": headline, "misses": misses, "held": held, "evaluated_seeds": evaluated}
+        headline = "CLEARED"
+    run_line = "R2/R5 evaluated in: " + ", ".join(evaluated) if evaluated else "R2/R5 NOT EVALUATED (n<10): no NEW seed reaches 10 engagements; R1, R3, R4, R6 and R7 decide"
+    return {"group": group, "headline": headline, "run_line": run_line, "misses": misses, "held": held, "evaluated_seeds": evaluated}
+
+
+def combine_verdicts(details: List[Dict[str, Any]]) -> Dict[str, Any]:
+    """The overall verdict over the tied groups: attributed miss > pre-existing miss > HELD > CLEARED; every group's own line is kept."""
+    misses = [m for d in details for m in d["misses"]]
+    held = [h for d in details for h in d["held"]]
+    if any(m["attribution"] == "attributed" for m in misses):
+        headline = "BUG CANDIDATE, attributed"
+    elif misses:
+        headline = "BUG CANDIDATE, pre-existing (not attributed to #953/#954)"
+    elif held:
+        headline = "HELD"
+    else:
+        headline = "CLEARED"
+    return {"headline": headline, "run_line": "; ".join(f"{d['group']}: {d['run_line']}" for d in details), "misses": misses, "held": held,
+            "evaluated_seeds": [f"{d['group']}:{seed}" for d in details for seed in d["evaluated_seeds"]], "by_group": {d["group"]: d["headline"] for d in details}}
 
 
 def main(argv: Optional[List[str]] = None) -> int:

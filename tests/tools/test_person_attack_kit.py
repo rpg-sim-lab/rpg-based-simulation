@@ -88,11 +88,11 @@ def spaced(n: int, attacker: int = 1, species: str = "wolf", world_time_of: Any 
             for i in range(n)]
 
 
-def test_R1_fires_on_a_non_meat_diet_in_the_meat_group_and_passes_on_meat() -> None:
-    assert rules(spaced(10, diet=["plant"], group="plant"))["R1"]["result"] == "FAIL"
-    assert rules(spaced(10, diet=["plant"], group="plant"))["R1"]["attacker_ids"] == [1]
+def test_R1_fires_when_a_meat_group_attacker_declares_no_meat_diet_and_passes_on_meat() -> None:
+    bad = rules(spaced(10, diet=["plant"], group="meat"))["R1"]   # the group says meat, the declared diet does not
+    assert (bad["result"], bad["attacker_ids"]) == ("FAIL", [1])
     assert rules(spaced(10))["R1"]["result"] == "PASS"
-    assert rules(spaced(10, diet=["meat", "plant"], group="meat+plant"))["R1"]["result"] == "PASS"
+    assert rules(spaced(10, diet=["meat", "plant"], group="meat"))["R1"]["result"] == "FAIL"   # group and diet disagree: a metric-grouping finding
 
 
 def test_R2_fires_above_half_of_the_engagements_and_passes_at_exactly_half() -> None:
@@ -130,9 +130,15 @@ def test_R5_fires_below_90_percent_inside_the_period_passes_above_and_reports_pe
     assert miss["tag"] == "SURV-08 law MISSING in code" and rules(spaced(10))["R5"]["tag"] == ""
 
 
-def test_rules_below_ten_engagements_report_not_applicable_with_the_value_they_would_have_had() -> None:
-    out = rules(spaced(5, diet=["plant"], group="plant"))
-    assert (out["R1"]["applies"], out["R1"]["result"], out["R1"]["if_applied"]) == (False, "NOT_APPLICABLE", "FAIL")
+def test_below_ten_engagements_the_share_rules_are_not_evaluated_and_the_other_rules_still_decide() -> None:
+    out = rules(spaced(5, diet=["plant"], group="meat"))
+    assert (out["R2"]["applies"], out["R2"]["result"], out["R2"]["if_applied"]) == (False, "NOT_EVALUATED (n<10)", "FAIL")      # one attacker, 100% of 5 engagements
+    assert (out["R5"]["applies"], out["R5"]["result"]) == (False, "NOT_EVALUATED (n<10)")
+    assert (out["R1"]["applies"], out["R1"]["result"]) == (True, "FAIL")        # held by construction, still checked and reported at any count
+    pair = [row(i * 3000, victim=100, world_time=2000 + (i * 3000) // 2400 * 2400) for i in range(5)]   # 5 engagements: R4 must fail even though n < 10
+    assert (rules(pair)["R4"]["applies"], rules(pair)["R4"]["result"]) == (True, "FAIL")
+    close = [row(i * 200, victim=100 + i, world_time=2000 + i * 200) for i in range(4)]                     # 4 engagements inside 2400 ticks: R3 must fail at n < 10
+    assert (rules(close)["R3"]["applies"], rules(close)["R3"]["result"]) == (True, "FAIL")
 
 
 # --------------------------------------------------------------------------------------------- R6 (NEW vs BASE)
@@ -248,10 +254,10 @@ def test_verdict_a_miss_on_new_only_is_attributed_and_a_miss_on_both_arms_is_pre
     assert both["verdict_detail"]["misses"][0]["base_attacker_ids"] == [1]
 
 
-def test_verdict_a_base_only_miss_does_not_fail_new_and_a_clean_new_with_enough_engagements_is_intended() -> None:
+def test_verdict_a_base_only_miss_does_not_fail_new_and_a_clean_new_with_enough_engagements_is_cleared() -> None:
     r4_miss = [row(i * 3000, victim=100, world_time=2000 + (i * 3000) // 2400 * 2400) for i in range(5)] + spaced(5, attacker=2)
     out = verdict_of(clean(), r4_miss)
-    assert out["verdict"] == "INTENDED" and out["verdict_detail"]["misses"] == [] and out["verdict_detail"]["evaluated_seeds"] == ["w/s42"]
+    assert out["verdict"] == "CLEARED" and out["verdict_detail"]["misses"] == [] and out["verdict_detail"]["evaluated_seeds"] == ["meat:w/s42"]
 
 
 def test_verdict_held_outranks_intended_and_not_assessable_is_not_a_pass() -> None:
@@ -262,10 +268,52 @@ def test_verdict_held_outranks_intended_and_not_assessable_is_not_a_pass() -> No
     assert summary.summarize(twin_bad, NIGHT)["verdict"] == "HELD"
 
 
-def test_verdict_with_no_seed_of_ten_engagements_is_not_evaluated_and_a_miss_outranks_held() -> None:
-    assert verdict_of(spaced(3), spaced(3))["verdict"].startswith("NOT EVALUATED")
+def test_a_seed_under_ten_engagements_that_fails_r4_is_a_bug_candidate_and_one_that_passes_the_rest_is_cleared_with_the_run_line() -> None:
+    pair = [row(i * 3000, victim=100, world_time=2000 + (i * 3000) // 2400 * 2400) for i in range(5)]       # n = 5 < 10, one pair five times: R4
+    failing = verdict_of(pair, clean())
+    assert failing["verdict"] == "BUG CANDIDATE, attributed" and "R4" in [m["rule"] for m in failing["verdict_detail"]["misses"]]
+    assert failing["verdict_detail"]["run_line"].startswith("meat: R2/R5 NOT EVALUATED (n<10)")
+    quiet = verdict_of(spaced(3), spaced(3))                                                                  # n = 3: R2/R5 not evaluated; R1, R3, R4, R7 pass; R6 not applicable
+    assert quiet["verdict"] == "CLEARED" and quiet["verdict_detail"]["evaluated_seeds"] == []
+    assert quiet["groups"]["meat"]["rules"]["R2"]["w"]["new"]["s42"]["result"] == "NOT_EVALUATED (n<10)" and quiet["verdict_detail"]["run_line"].startswith("meat: R2/R5 NOT EVALUATED (n<10)")
+    enough = verdict_of(clean(), clean())
+    assert enough["verdict"] == "CLEARED" and enough["verdict_detail"]["run_line"] == "meat: R2/R5 evaluated in: w/s42"
+
+
+def test_a_miss_outranks_held_and_held_is_still_listed() -> None:
     both = verdict_of(clean(species="basilisk") + [row(900_000 + i * 200, attacker=9, victim=7000 + i, species="wolf", world_time=2000) for i in range(5)], clean())
     assert both["verdict"] == "BUG CANDIDATE, attributed" and both["verdict_detail"]["held"]       # a miss outranks HELD, and HELD is still listed
+
+
+def other_group_rows() -> List[Dict[str, Any]]:
+    """10 engagements by ONE attacker of the group meat+plant+prepared: against every rule if it were in scope (R2 100%, R3 many per window, R4 one pair five times)."""
+    return [row(60_000 + i * 200, attacker=88, victim=89, diet=["meat", "plant", "prepared"], world_time=62_000 + i * 200) for i in range(10)]
+
+
+def test_an_untied_o3_group_cannot_change_the_meat_verdict_and_is_reported_in_full_as_context_only() -> None:
+    alone = verdict_of(clean(), clean())
+    mixed = verdict_of(clean() + other_group_rows(), clean())
+    assert alone["verdict"] == mixed["verdict"] == "CLEARED" and alone["verdict_detail"]["misses"] == mixed["verdict_detail"]["misses"] == []
+    assert mixed["groups"]["meat"]["rules"]["R2"]["w"]["new"]["s42"] == alone["groups"]["meat"]["rules"]["R2"]["w"]["new"]["s42"]
+    context = mixed["groups"]["meat+plant+prepared"]["cells"]["new/w/s42"]
+    assert mixed["groups"]["meat+plant+prepared"]["tied"] is False and context["verdict"] is None and context["label"] == "context, no verdict" and context["engagements_count"] > 0
+    assert context["rules_as_context"]["R4"]["result"] in ("FAIL", "PASS") and context["per_attacker"] and context["per_pair"] and "verdict_detail" not in mixed["groups"]["meat+plant+prepared"]
+    assert mixed["tied_groups"] == ["meat"] and "meat+plant+prepared" not in alone["groups"]
+
+
+def test_a_group_added_to_tied_groups_gets_its_own_verdict_and_its_r1_reads_the_exact_group(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(summary, "TIED_GROUPS", ("meat", "meat+plant+prepared"))
+    out = verdict_of(clean() + other_group_rows(), clean())
+    other = out["groups"]["meat+plant+prepared"]
+    assert other["tied"] is True and other["verdict_detail"]["headline"].startswith("BUG CANDIDATE") and out["verdict"].startswith("BUG CANDIDATE") and out["verdict_detail"]["by_group"]["meat"] == "CLEARED"
+    assert {m["group"] for m in out["verdict_detail"]["misses"]} == {"meat+plant+prepared"} and other["rules"]["R1"]["w"]["new"]["s42"]["result"] == "PASS"
+    stray = [row(i * 3000, attacker=5, victim=100 + i, diet=["meat", "plant"], group="meat+plant", world_time=2000) for i in range(10)]
+    r1 = rules_in_group(stray, "meat")
+    assert r1["R1"]["result"] == "FAIL" and r1["R1"]["attacker_ids"] == [5]      # a counted attacker that is not in that exact group fails R1
+
+
+def rules_in_group(rows: List[Dict[str, Any]], group: str) -> Dict[str, Dict[str, Any]]:
+    return summary.rules_for_cell(rows, [], engagements_of(rows), rows, group)
 
 
 def test_the_summary_carries_the_measurement_labels_and_the_pinned_period_quote_matches_the_rule_text() -> None:
@@ -291,27 +339,36 @@ def body(kind: str, group: str, person: int, diet: List[str], action: Optional[s
 
 def reads() -> spy_module.TreeReads:
     return spy_module.TreeReads(
-        kind_group=lambda e: e.group, is_person=lambda e: bool(e.person), species_of=lambda e: e.kind, is_wild_meat_eater=lambda g, p: "meat" in g.split("+") and int(p) != 1,
-        declared_diet=lambda e: e.diet, is_asleep=lambda e: e.task.payload.get("action") in ("SLEEP", "REST"), is_lodged=lambda e: e.navigation.lodged_in is not None, split_key=lambda k, n: k.split("|"))
+        kind_group=lambda e: e.group, is_person=lambda e: bool(e.person), species_of=lambda e: e.kind, is_wild_meat_eater=lambda g, p: "meat" in g.split("+") and p != "1",
+        declared_diet=lambda e: e.diet, is_asleep=lambda e: e.task.payload.get("action") in ("SLEEP", "REST"), is_lodged=lambda e: e.navigation.lodged_in is not None, split_key=lambda k, n: k.split("|"), make_key=lambda *parts: "|".join(str(x) for x in parts))
 
 
 class StandInLedger:
-    """The ledger's attack counting in its own key shape (run_ledger._count_attacks: attacker group | attacker person | victim person | hit or kill)."""
+    """The ledger's attack counting in its own key shape (run_ledger._count_attacks: attacker group | attacker person | victim person | hit or kill), with its liveness fields (_live, _header_sent,
+    first_tick/last_tick in the tally payload) and the kernel-style reset the real one suffers (reset_run_state, then configure)."""
     attacks: Dict[str, int] = {}
     skip = False
+    _live = False
+    _header_sent = False
+    _first_tick: Optional[int] = None
+    _last_tick: Optional[int] = None
+    stuck_off = False   # a ledger whose configure() never turns it on
 
     @classmethod
     def reset_run_state(cls) -> None:
-        cls.attacks = {}
+        cls.attacks, cls._header_sent, cls._first_tick, cls._last_tick = {}, False, None, None
 
     @classmethod
     def configure(cls, live: bool) -> None:
-        pass
+        cls._live = False if cls.stuck_off else live
 
     @classmethod
     def observe(cls, prior: Any, current: Any, update: Any) -> list:
-        if cls.skip:
+        if cls.skip or not cls._live:
             return []
+        if not cls._header_sent:
+            cls._header_sent, cls._first_tick = True, current.tick
+        cls._last_tick = current.tick
         for eid, upd in (getattr(update, "entity_updates", None) or {}).items():
             combat = getattr(upd, "combat", None)
             attacker_id = getattr(combat, "attacker_id", None)
@@ -326,7 +383,7 @@ class StandInLedger:
 
     @classmethod
     def tally_event(cls) -> Any:
-        return SimpleNamespace(payload={"attacks": dict(cls.attacks)})
+        return SimpleNamespace(payload={"attacks": dict(cls.attacks), "first_tick": cls._first_tick, "last_tick": cls._last_tick})
 
 
 def world_state(tick: int, entities: Dict[int, Any]) -> Any:
@@ -339,6 +396,7 @@ def attack_update(attacker: int, victim: int, hp_delta: int = -3) -> Any:
 
 def fresh_spy(**kw: Any) -> spy_module.PersonAttackSpy:
     StandInLedger.skip = False
+    StandInLedger.stuck_off = False
     return spy_module.PersonAttackSpy(reads(), StandInLedger, **kw).start_ledger()
 
 
@@ -373,11 +431,13 @@ def test_the_spy_records_nothing_for_an_attack_on_a_non_person_and_marks_a_mode_
 def test_a_ledger_that_counts_differently_marks_the_cell_wiring_mismatch_and_exit_5() -> None:
     spy = fresh_spy()
     state = world_state(5, two_bodies())
-    StandInLedger.skip = True
+    spy.observe(state, StateUpdate(), state)         # a quiet first tick opens the ledger (header sent), so it is live
+    StandInLedger.skip = True                        # from here the ledger counts differently (nothing)
     spy.observe(state, attack_update(1, 2), state)
     spy.finish(state)
     doc = spy.report()
-    assert (doc["o3_total_spy"], doc["o3_total_ledger"], doc["wiring"], doc["cell_valid"]) == (1, 0, "WIRING_MISMATCH", False)
+    assert (doc["o3_total_spy"], doc["o3_total_ledger"], doc["cell_valid"]) == (1, 0, False)
+    assert doc["wiring"] == "WIRING_MISMATCH"
     assert spy_module.exit_status(doc)[0] == spy_module.EXIT_WIRING_MISMATCH
     StandInLedger.skip = False
 
@@ -422,6 +482,163 @@ def test_the_plain_mode_installs_nothing_the_spy_restores_the_apply_path() -> No
     assert FakeApply.apply_generation(prior, StateUpdate()) is prior   # the wrapper returns the original's result, the same object, untouched
     spy.restore()
     assert FakeApply.__dict__["apply_generation"].__func__ is original.__func__
+
+
+def observe_ticks(spy: spy_module.PersonAttackSpy, ticks: List[int], attack_at: Optional[int] = None, between: Optional[Any] = None) -> None:
+    state = world_state(ticks[0], two_bodies())
+    for tick in ticks:
+        current = world_state(tick, state.entities)
+        if between is not None:
+            between(tick)
+        spy.observe(current, attack_update(1, 2) if tick == attack_at else StateUpdate(), current)
+
+
+def test_finish_runs_before_the_kernel_shutdown_even_when_a_tick_raises() -> None:
+    calls: List[str] = []
+
+    class FakeKernel:
+        state = world_state(3, two_bodies())
+
+        def tick_once(self) -> None:
+            calls.append("tick")
+            if len(calls) == 3:
+                raise RuntimeError("boom")
+
+        def shutdown(self) -> None:
+            calls.append("shutdown")
+
+    class FakeSpy:
+        def restore(self) -> None:
+            calls.append("restore")
+
+        def finish(self, final_state: Any) -> None:
+            calls.append("finish")
+
+    assert spy_module.run_ticks(FakeKernel(), 2, FakeSpy()) is FakeKernel.state
+    assert calls == ["tick", "tick", "restore", "finish", "shutdown"]
+    calls.clear()
+    with pytest.raises(RuntimeError):
+        spy_module.run_ticks(FakeKernel(), 5, FakeSpy())
+    assert calls == ["tick", "tick", "tick", "restore", "finish", "shutdown"]
+    calls.clear()
+    spy_module.run_ticks(FakeKernel(), 1, None)       # the plain twin: no spy, same shutdown
+    assert calls == ["tick", "shutdown"]
+
+
+def test_a_kernel_style_switch_off_after_start_is_reasserted_the_spy_still_counts_and_records_it() -> None:
+    spy = fresh_spy()
+    spy.ledger.configure(False)                      # the kernel's own reset ran AFTER start_ledger(): the ledger is off
+    observe_ticks(spy, [10, 11, 12], attack_at=11)
+    spy.finish(world_state(12, two_bodies()))
+    doc = spy.report()
+    assert doc["ledger_evidence"]["reasserts"] == [10] and doc["ledger_evidence"]["first_observe"] == {"live": False, "header_sent": False}
+    assert (doc["o3_total_spy"], doc["o3_total_ledger"], doc["wiring"]) == (1, 1, "OK") and doc["ledger_evidence"]["observe_calls"] == doc["ledger_evidence"]["apply_calls"] == 3
+
+
+def test_a_reset_after_the_spy_started_fails_loudly_with_its_own_exit() -> None:
+    spy = fresh_spy()
+    observe_ticks(spy, [10, 11, 12, 13], attack_at=11, between=lambda tick: (spy.ledger.reset_run_state(), spy.ledger.configure(True)) if tick == 12 else None)   # the counters of ticks 10-11 are gone
+    spy.finish(world_state(13, two_bodies()))
+    doc = spy.report()
+    assert doc["wiring"] == "LEDGER_NOT_LIVE" and doc["ledger_evidence"]["payload_ticks"]["first_tick"] == 12 and doc["ledger_evidence"]["spy_first_tick"] == 10
+    assert spy_module.exit_status(doc)[0] == spy_module.EXIT_LEDGER_NOT_LIVE != spy_module.EXIT_WIRING_MISMATCH
+
+
+def test_a_ledger_that_never_opens_fails_loudly_with_the_not_live_exit_and_the_evidence() -> None:
+    StandInLedger.stuck_off = True
+    spy = spy_module.PersonAttackSpy(reads(), StandInLedger).start_ledger()
+    observe_ticks(spy, [10, 11], attack_at=11)
+    spy.finish(world_state(11, two_bodies()))
+    doc = spy.report()
+    StandInLedger.stuck_off = False
+    assert doc["wiring"] == "LEDGER_NOT_LIVE" and doc["ledger_evidence"]["finish"] == {"live": False, "header_sent": False} and doc["ledger_evidence"]["reasserts"] == [10, 11]
+    assert doc["o3_total_spy"] == 1 and doc["o3_total_ledger"] == 0 and spy_module.exit_status(doc)[0] == 7
+
+
+def test_inject_hit_raises_both_counters_by_exactly_one() -> None:
+    base = fresh_spy()
+    observe_ticks(base, [10, 11, 12], attack_at=11)
+    base.finish(world_state(12, two_bodies()))
+    injected = fresh_spy(control="inject_hit", control_tick=12)
+    observe_ticks(injected, [10, 11, 12], attack_at=11)
+    injected.finish(world_state(12, two_bodies()))
+    a, b = base.report(), injected.report()
+    assert (a["o3_total_spy"], a["o3_total_ledger"]) == (1, 1) and (b["o3_total_spy"], b["o3_total_ledger"]) == (2, 2) and b["wiring"] == "OK" and b["control_applied_count"] == 1
+
+
+def real_gate_reads() -> spy_module.TreeReads:
+    """The kit's reads with the REAL gate predicate, key maker and splitter of this tree (87792e3e8's, byte-equal in the head), and stand-in entity accessors."""
+    from src.observability.rpg_gate_metrics import _is_wild_meat_eater, _split
+    from src.observability.run_ledger import _key
+
+    base = reads()
+    return spy_module.TreeReads(base.kind_group, base.is_person, base.species_of, _is_wild_meat_eater, base.declared_diet, base.is_asleep, base.is_lodged, _split, _key)
+
+
+@pytest.mark.parametrize("person_field", [1, "1"])
+def test_a_person_attacker_arriving_as_int_one_or_str_one_is_rejected_as_o3_through_the_kits_own_call_path(person_field: Any) -> None:
+    real = real_gate_reads()
+    assert real.o3_label("meat", person_field) is False                       # the kit's labelling function normalises to the ledger key's string field
+    assert real.o3_label("meat+plant+prepared", person_field) is False
+    assert real.o3_label("meat", 0) is True and real.o3_label("meat", "0") is True and real.o3_label("plant", 0) is False
+
+
+def test_the_raw_gate_predicate_accepts_an_int_one_which_is_why_the_kit_normalises_first() -> None:
+    from src.observability.rpg_gate_metrics import _is_wild_meat_eater
+
+    assert _is_wild_meat_eater("meat", 1) is True and _is_wild_meat_eater("meat", "1") is False   # the defect of the first preflight: 1 != "1"
+
+
+def test_person_on_person_is_not_o3_and_a_non_person_meat_attacker_on_a_person_is_o3_with_the_real_gate_functions() -> None:
+    spy = spy_module.PersonAttackSpy(real_gate_reads(), StandInLedger).start_ledger()
+    bodies = {**two_bodies(), 4: body("goblin", "meat+plant+prepared", 1, ["meat", "plant", "prepared"])}     # a person goblin (coin-and-trade trait)
+    state = world_state(5, bodies)
+    spy.observe(state, attack_update(2, 4), state)     # person human hits person goblin: NOT O3
+    spy.observe(state, attack_update(4, 2), state)     # person goblin hits person human: NOT O3
+    spy.observe(state, attack_update(1, 2), state)     # non-person wolf (group meat) hits a person: O3
+    spy.finish(state)
+    doc = spy.report()
+    assert [(r["attacker_id"], r["attacker_person"], r["in_o3_group"], r["ledger_key"]) for r in doc["rows"]] == [
+        (2, 1, False, "meat+plant+prepared|1|1|hit"), (4, 1, False, "meat+plant+prepared|1|1|hit"), (1, 0, True, "meat|0|1|hit")]
+    assert doc["o3_by_group_spy"] == doc["o3_by_group_ledger"] == doc["o3_by_group_rows"] == {"meat": 1} and doc["wiring"] == "OK" and doc["per_key_counts_equal"] is True
+    assert doc["key_counts_spy"] == doc["key_counts_ledger"] == {"meat+plant+prepared|1|1|hit": 2, "meat|0|1|hit": 1}
+
+
+def test_the_spy_counts_every_hit_per_ledger_key_not_only_hits_on_people() -> None:
+    spy = fresh_spy()
+    state = world_state(5, two_bodies())
+    spy.observe(state, attack_update(1, 3), state)     # wolf hits a goat: not a person victim, still a ledger key
+    spy.finish(state)
+    doc = spy.report()
+    assert doc["key_counts_spy"] == doc["key_counts_ledger"] == {"meat|0|0|hit": 1} and doc["rows"] == [] and doc["wiring"] == "OK"
+
+
+def test_a_key_present_on_one_side_only_is_a_wiring_fail_even_when_the_o3_totals_agree() -> None:
+    spy = fresh_spy()
+    state = world_state(5, two_bodies())
+    spy.observe(state, attack_update(1, 3), state)     # a non-O3 key (victim not a person): O3 is untouched
+    spy.observe(state, attack_update(1, 2), state)     # the O3 key
+    StandInLedger.attacks.pop("meat|0|0|hit")          # the ledger lacks the non-O3 key the spy has
+    spy.finish(state)
+    doc = spy.report()
+    assert doc["per_group_counts_equal"] is True and doc["per_key_counts_equal"] is False and doc["wiring"] == "WIRING_MISMATCH" and doc["cell_valid"] is False
+    assert doc["keys_only_in_spy"] == ["meat|0|0|hit"] and doc["keys_only_in_ledger"] == [] and doc["key_diffs"] == {"meat|0|0|hit": {"spy": 1, "ledger": None}}
+    ledger_extra = fresh_spy()
+    ledger_extra.observe(state, attack_update(1, 2), state)
+    StandInLedger.attacks["plant|0|0|hit"] = 3         # the ledger has a key the spy never saw
+    ledger_extra.finish(state)
+    other = ledger_extra.report()
+    assert other["keys_only_in_ledger"] == ["plant|0|0|hit"] and other["wiring"] == "WIRING_MISMATCH" and spy_module.exit_status(other)[0] == spy_module.EXIT_WIRING_MISMATCH
+
+
+def test_the_declared_o3_groups_are_recorded_and_an_undeclared_group_is_listed() -> None:
+    spy = fresh_spy(declared_o3_groups=["meat"])
+    state = world_state(5, {**two_bodies(), 5: body("ogre", "meat+plant", 0, ["meat", "plant"])})
+    spy.observe(state, attack_update(1, 2), state)
+    spy.observe(state, attack_update(5, 2), state)
+    spy.finish(state)
+    doc = spy.report()
+    assert doc["declared_o3_groups"] == ["meat"] and doc["undeclared_o3_groups"] == ["meat+plant"]
 
 
 # --------------------------------------------------------------------------------------------- the runner

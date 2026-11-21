@@ -10,11 +10,22 @@ id / kind / species, ``hit`` (``hp_delta < 0``, the ledger's definition; a row w
 hit (asleep = its task action is in ``lodging_rules.SLEEP_ACTIONS``; lodged = ``navigation.lodged_in`` set), the victim's movement mode before and after, whether the victim itself attacked on the same tick,
 and the attacker's movement mode after. A watched id (every victim and every attacker of an O3-group row) also gets a row each time its movement mode changes, until the end of the run (``mode_rows``).
 
+LABELLING (second preflight defect, fixed): the gate's ``_is_wild_meat_eater(group, person)`` takes STRINGS (the ledger key's own fields: ``group|attacker_person|victim_person|outcome``) and tests ``person != "1"``; an int 1 passed
+to it reads as a wild meat-eater (``1 != "1"``), so the first draft counted every person attacker (humans, goblins) as O3. Every row now carries the LEDGER'S OWN key, built by the tree's ``run_ledger._key`` with the tree's
+``kind_group`` and ``is_person`` exactly as ``_count_attacks`` builds it, split with the gate's ``_split``; ``o3_label`` normalises the person field to the key's string before it calls the gate's predicate. The first
+preflight's 88 / 109 "O3" counts were person-on-person hits mislabelled by this bug and are NOT O3 evidence.
+
 COUNTING CROSS-CHECK (cell-invalidating). In its own process only the spy calls ``RunLedger.reset_run_state()`` and ``RunLedger.configure(True)`` once after the kernel is built and then the REAL
 ``RunLedger.observe(prior, current, update)`` on every applied update (recording is OFF, so the kernel does not feed it: event_recorder.py), discarding the returned events. At the end the ledger's own
-``attacks`` counter, summed the way ``rpg_gate_metrics._combat_rows`` sums it (victim_person == "1", attacker kept by ``_is_wild_meat_eater``), must equal the spy's count of O3-group hit rows, per attacker group
-and in total; a difference marks the cell ``WIRING_MISMATCH`` (exit 5). The kit reads the ledger only through the public ``tally_event().payload``.
+``attacks`` counter must equal the spy's own count PER FULL KEY (every ``attacker group|attacker_person|victim_person|outcome``, for ALL hits, not only hits on people): a key present on one side only, or a different count,
+is ``WIRING_MISMATCH`` (exit 5; ``keys_only_in_spy``, ``keys_only_in_ledger`` and ``key_diffs`` name them). The O3 total, summed the way ``_combat_rows`` sums it, is a DERIVED line from each side and must also agree, per group.
+The gate's declared set (``rpg_gate_metrics.declared_wild_meat_eaters(world, [seed])``, same signature at 87792e3e8 and e72270894) is recorded as ``declared_o3_groups`` and every O3 group seen outside it is listed. The kit reads the ledger only through the public ``tally_event().payload``.
 
+LEDGER LIVENESS (added after the first preflight, where the ledger counted nothing): ``finish()`` runs BEFORE ``kernel.shutdown()`` (``run_ticks``). The document records the evidence: ``RunLedger._live`` and
+``_header_sent`` (private reads, evidence only, never used to decide anything but the re-assert below) at the FIRST observe and at finish, the number of ``ledger.observe`` calls against ``apply_calls``, the ledger's public
+``first_tick`` / ``last_tick`` against the spy's own first and last observed tick, and ``ledger_reasserts`` (the ledger found NOT live before an observe: ``configure(True)`` is asserted again and the tick recorded, because the
+kernel's own reset runs ``RunLedger.reset_run_state()`` then ``configure(budget > 0)``, kernel.py:301 -> event_recorder.py:413-414). A ledger that is not live at finish, or whose counters were reset after the spy started
+(first_tick differs from the spy's first tick), fails LOUDLY with ``LEDGER_NOT_LIVE`` (exit 7), distinct from a counting mismatch (exit 5).
 GUARDS: a root handler turns every ERROR+ record into a row; the pinned-runner check as ``arm_child`` does it; audit_mode and no_frame_pacing must be forced; the global observability mode is re-asserted
 OFF on every apply. A control run (``--control``) hands COPIES of the state to the recorder and is never counted.
 
@@ -36,6 +47,7 @@ from typing import Any, Callable, Dict, List, Optional
 
 EXIT_WIRING_MISMATCH = 5
 EXIT_CONTROL_NOT_APPLIED = 6
+EXIT_LEDGER_NOT_LIVE = 7
 ROW_LIMIT = 500_000  # a safety bound on the event rows, never reached by a normal run; reaching it marks the cell invalid (rows_truncated)
 
 
@@ -63,9 +75,19 @@ class LoggingErrors(logging.Handler):
 class TreeReads:
     """The tree's own definitions the recorder reads (imported from the tree on PYTHONPATH; injectable for unit tests with plain functions)."""
 
-    def __init__(self, kind_group: Callable, is_person: Callable, species_of: Callable, is_wild_meat_eater: Callable, declared_diet: Callable, is_asleep: Callable, is_lodged: Callable, split_key: Callable) -> None:
+    def __init__(self, kind_group: Callable, is_person: Callable, species_of: Callable, is_wild_meat_eater: Callable, declared_diet: Callable, is_asleep: Callable, is_lodged: Callable, split_key: Callable,
+                 make_key: Callable) -> None:
         self.kind_group, self.is_person, self.species_of = kind_group, is_person, species_of
         self.is_wild_meat_eater, self.declared_diet, self.is_asleep, self.is_lodged, self.split_key = is_wild_meat_eater, declared_diet, is_asleep, is_lodged, split_key
+        self.make_key = make_key  # the tree's run_ledger._key
+
+    def ledger_key(self, attacker: Any, victim: Any, outcome: str) -> str:
+        """The ledger's own attack key, built the way ``RunLedger._count_attacks`` builds it: ``_key(kind_group(attacker), int(is_person(attacker)), int(is_person(victim)), outcome)``."""
+        return self.make_key(self.kind_group(attacker), int(self.is_person(attacker)), int(self.is_person(victim)), outcome)
+
+    def o3_label(self, group: str, person: Any) -> bool:
+        """The gate's O3 predicate through the KIT's call path: the person field is normalised to the ledger key's STRING (``"1"``/``"0"``) first, so an int 1 and a str "1" both read as a person (rejected)."""
+        return bool(self.is_wild_meat_eater(group, str(int(person))))
 
     @classmethod
     def from_tree(cls) -> "TreeReads":
@@ -73,6 +95,7 @@ class TreeReads:
         from src.core.lodging_rules import SLEEP_ACTIONS, is_lodged
         from src.engine.behavior_consumers import get_kind_properties
         from src.observability.rpg_gate_metrics import _is_wild_meat_eater, _split
+        from src.observability.run_ledger import _key
 
         species_of = species_reader()
 
@@ -85,7 +108,7 @@ class TreeReads:
             payload = entity.task.payload
             return (payload.get("action") if isinstance(payload, dict) else None) in SLEEP_ACTIONS
 
-        return cls(kind_group, is_person, species_of, _is_wild_meat_eater, declared_diet, is_asleep, is_lodged, _split)
+        return cls(kind_group, is_person, species_of, _is_wild_meat_eater, declared_diet, is_asleep, is_lodged, _split, _key)
 
 
 def species_reader() -> Callable[[Any], str]:
@@ -108,8 +131,10 @@ class PersonAttackSpy:
     """Record-only wrapper over the apply path; ``install()`` patches, ``restore()`` undoes. ``ledger`` is the RunLedger class (injectable); ``apply_path`` the ApplyPath class (injectable)."""
 
     def __init__(self, reads: TreeReads, ledger: Any, first_tick: int = 0, control: Optional[str] = None, control_tick: Optional[int] = None, last_tick: Optional[int] = None,
-                 mode_getter: Optional[Callable[[], str]] = None) -> None:
+                 mode_getter: Optional[Callable[[], str]] = None, declared_o3_groups: Optional[List[str]] = None) -> None:
         self.reads, self.ledger = reads, ledger
+        self.declared_o3_groups = declared_o3_groups  # the gate's own declared wild meat-eater groups for this world and seed (None in unit tests that do not give it)
+        self.key_counts: Dict[str, int] = {}  # the spy's own count per full ledger key, for ALL hits
         self.control, self.control_tick, self.last_tick = control, control_tick, last_tick
         self.control_applied_count = 0
         self.rows: List[Dict[str, Any]] = []
@@ -122,6 +147,11 @@ class PersonAttackSpy:
         self.mode_getter = mode_getter
         self.final_alive: Dict[str, bool] = {}
         self.ledger_attacks: Optional[Dict[str, int]] = None
+        self.ledger_observe_calls = 0
+        self.ledger_reasserts: List[int] = []
+        self.first_tick_seen: Optional[int] = None
+        self.ledger_evidence: Dict[str, Any] = {}
+        self.ledger_payload_ticks: Dict[str, Any] = {}
         self._patched: List[tuple] = []
 
     # ---- ledger, in this process only
@@ -129,6 +159,10 @@ class PersonAttackSpy:
         self.ledger.reset_run_state()
         self.ledger.configure(True)
         return self
+
+    def ledger_flags(self) -> Dict[str, Any]:
+        """``_live`` and ``_header_sent`` of the ledger (private fields: evidence only)."""
+        return {"live": getattr(self.ledger, "_live", None), "header_sent": getattr(self.ledger, "_header_sent", None)}
 
     def install(self, apply_path: Any) -> "PersonAttackSpy":
         original = apply_path.__dict__["apply_generation"].__func__
@@ -160,7 +194,14 @@ class PersonAttackSpy:
         if self.control == "inject_hit" and self.control_tick is not None and state.tick == self.control_tick:
             observed, observed_update = self.injected(prior, state, update)
             self.control_applied_count += 1
+        if self.first_tick_seen is None:
+            self.first_tick_seen = state.tick
+            self.ledger_evidence["first_observe"] = self.ledger_flags()
+        if getattr(self.ledger, "_live", True) is False:
+            self.ledger_reasserts.append(state.tick)  # something (the kernel's own reset) switched the ledger off after start_ledger(): switch it on again and say so
+            self.ledger.configure(True)
         self.ledger.observe(prior, observed, observed_update)  # the REAL ledger on the kernel's own objects; the returned events are discarded
+        self.ledger_observe_calls += 1
         self.record(prior, observed_update, observed)
 
     def injected(self, prior: Any, state: Any, update: Any) -> tuple:
@@ -170,7 +211,7 @@ class PersonAttackSpy:
         from src.core.update_models.combat import CombatUpdate
         from src.core.updates import EntityUpdate
 
-        wild = next((eid for eid, body in sorted(state.entities.items()) if body.combat.alive and eid in prior.entities and self.reads.is_wild_meat_eater(self.reads.kind_group(body), int(self.reads.is_person(body)))), None)
+        wild = next((eid for eid, body in sorted(state.entities.items()) if body.combat.alive and eid in prior.entities and self.reads.o3_label(self.reads.kind_group(body), int(self.reads.is_person(body)))), None)
         person = next((eid for eid, body in sorted(state.entities.items()) if body.combat.alive and self.reads.is_person(body) and eid != wild), None)
         if wild is None or person is None:
             return state, update
@@ -189,20 +230,25 @@ class PersonAttackSpy:
             if attacker_id is None:
                 continue
             victim_after, attacker_before = state.entities.get(victim_id), prior.entities.get(attacker_id)
-            if victim_after is None or attacker_before is None or not self.reads.is_person(victim_after):
+            if victim_after is None or attacker_before is None:
+                continue
+            hp_delta = getattr(combat, "hp_delta", 0)
+            key = self.reads.ledger_key(attacker_before, victim_after, "kill" if getattr(combat, "outcome_kind", None) == "KILL" else "hit")
+            if hp_delta < 0:
+                self.key_counts[key] = self.key_counts.get(key, 0) + 1  # the ledger's own conditions (attacker_id set, hp_delta < 0, both bodies present): EVERY hit, on a person or not
+            if not self.reads.is_person(victim_after):
                 continue
             victim_before = prior.entities.get(victim_id, victim_after)
             attacker_after = state.entities.get(attacker_id, attacker_before)
-            group, person = self.reads.kind_group(attacker_before), int(self.reads.is_person(attacker_before))
-            o3 = bool(self.reads.is_wild_meat_eater(group, person))
-            hp_delta = getattr(combat, "hp_delta", 0)
+            group, person_field, _victim_field, _outcome = self.reads.split_key(key, 4)
+            o3 = self.reads.o3_label(group, person_field)
             if len(self.rows) >= ROW_LIMIT:
                 self.rows_truncated = True
                 continue
             self.rows.append({
                 "tick": state.tick, "world_time": state.world_time, "attacker_id": attacker_id, "attacker_kind": attacker_before.kind, "attacker_species": self.reads.species_of(attacker_before),
-                "attacker_group": group, "attacker_diet": self.reads.declared_diet(attacker_before), "attacker_person": person, "in_o3_group": o3, "victim_id": victim_id, "victim_kind": victim_after.kind,
-                "victim_species": self.reads.species_of(victim_after), "hit": hp_delta < 0, "hp_delta": hp_delta, "outcome_kind": getattr(combat, "outcome_kind", None),
+                "attacker_group": group, "attacker_diet": self.reads.declared_diet(attacker_before), "attacker_person": int(person_field), "ledger_key": key, "in_o3_group": o3, "victim_id": victim_id,
+                "victim_kind": victim_after.kind, "victim_species": self.reads.species_of(victim_after), "hit": hp_delta < 0, "hp_delta": hp_delta, "outcome_kind": getattr(combat, "outcome_kind", None),
                 "victim_alive_after": bool(victim_after.combat.alive), "victim_asleep_before": bool(self.reads.is_asleep(victim_before)), "victim_lodged_before": bool(self.reads.is_lodged(victim_before)),
                 "victim_mode_before": mode_name(victim_before), "victim_mode_after": mode_name(victim_after), "victim_attacked_same_tick": victim_id in attackers_this_tick,
                 "attacker_mode_after": mode_name(attacker_after), "hit_attackers": list(getattr(getattr(victim_after, "combat", None), "last_hit_attackers", None) or []),
@@ -222,23 +268,25 @@ class PersonAttackSpy:
 
     # ---- end of run
     def finish(self, final_state: Any) -> None:
+        self.ledger_evidence["finish"] = self.ledger_flags()
         payload = self.ledger.tally_event().payload
         self.ledger_attacks = dict(payload["attacks"])
+        self.ledger_payload_ticks = {"first_tick": payload.get("first_tick"), "last_tick": payload.get("last_tick")}
         self.ledger.reset_run_state()
         self.final_alive = {str(eid): bool(final_state.entities[eid].combat.alive) if eid in final_state.entities else False for eid in sorted(self.watched)}
 
     def o3_from_rows(self) -> Dict[str, int]:
-        """The spy's own O3: hit rows of the O3 group, per attacker group."""
+        """The O3 hit rows per attacker group (rows are hits on people only)."""
         counts: Dict[str, int] = {}
         for row in self.rows:
             if row["in_o3_group"] and row["hit"]:
                 counts[row["attacker_group"]] = counts.get(row["attacker_group"], 0) + 1
         return counts
 
-    def o3_from_ledger(self) -> Dict[str, int]:
-        """The ledger's attacks counter summed the way ``_combat_rows`` sums it (victim_person == "1", attacker kept by the gate's predicate)."""
+    def o3_from_keys(self, key_counts: Dict[str, int]) -> Dict[str, int]:
+        """O3 summed from a key counter the way ``_combat_rows`` sums it: victim_person == "1", the attacker kept by the gate's predicate (given the key's STRING fields), per attacker group."""
         counts: Dict[str, int] = {}
-        for key, n in (self.ledger_attacks or {}).items():
+        for key, n in key_counts.items():
             attacker, attacker_person, victim_person, _outcome = self.reads.split_key(key, 4)
             if victim_person == "1" and self.reads.is_wild_meat_eater(attacker, attacker_person):
                 counts[attacker] = counts.get(attacker, 0) + n
@@ -247,22 +295,38 @@ class PersonAttackSpy:
     def report(self) -> Dict[str, Any]:
         if self.ledger_attacks is None:
             raise RuntimeError("finish() was not called")
-        spy_counts, ledger_counts = self.o3_from_rows(), self.o3_from_ledger()
-        wiring_ok = spy_counts == ledger_counts and not self.mode_breaches and not self.rows_truncated
+        ledger_keys = dict(self.ledger_attacks)
+        only_spy, only_ledger = sorted(set(self.key_counts) - set(ledger_keys)), sorted(set(ledger_keys) - set(self.key_counts))
+        key_diffs = {k: {"spy": self.key_counts.get(k), "ledger": ledger_keys.get(k)} for k in sorted(set(self.key_counts) | set(ledger_keys)) if self.key_counts.get(k) != ledger_keys.get(k)}
+        per_key_equal = not key_diffs  # a key on one side only is a diff (None vs n): never a 0-vs-n that could pass
+        spy_by_key, ledger_by_key, by_rows = self.o3_from_keys(self.key_counts), self.o3_from_keys(ledger_keys), self.o3_from_rows()
+        per_group_equal = spy_by_key == ledger_by_key == by_rows
+        counting_ok = per_key_equal and per_group_equal and not self.mode_breaches and not self.rows_truncated
+        ledger_live = self.ledger_payload_ticks.get("first_tick") is not None and self.ledger_payload_ticks.get("first_tick") == self.first_tick_seen and self.ledger_observe_calls == self.apply_calls
+        wiring_ok = counting_ok and ledger_live
+        declared = sorted(self.declared_o3_groups or [])
         return {
-            "o3_by_group_spy": spy_counts, "o3_by_group_ledger": ledger_counts, "o3_total_spy": sum(spy_counts.values()), "o3_total_ledger": sum(ledger_counts.values()),
-            "wiring": "OK" if wiring_ok else "WIRING_MISMATCH", "mode_breaches": self.mode_breaches[:50], "mode_breach_count": len(self.mode_breaches), "rows_truncated": self.rows_truncated,
+            "per_key_counts_equal": per_key_equal, "per_group_counts_equal": per_group_equal, "keys_only_in_spy": only_spy, "keys_only_in_ledger": only_ledger, "key_diffs": key_diffs,
+            "key_counts_spy": dict(sorted(self.key_counts.items())), "key_counts_ledger": dict(sorted(ledger_keys.items())),
+            "o3_by_group_spy": spy_by_key, "o3_by_group_ledger": ledger_by_key, "o3_by_group_rows": by_rows, "o3_total_spy": sum(spy_by_key.values()), "o3_total_ledger": sum(ledger_by_key.values()),
+            "declared_o3_groups": declared, "undeclared_o3_groups": sorted(set(by_rows) - set(declared)) if self.declared_o3_groups is not None else None,
+            "wiring": "OK" if wiring_ok else ("WIRING_MISMATCH" if ledger_live else "LEDGER_NOT_LIVE"),
+            "ledger_evidence": {**self.ledger_evidence, "observe_calls": self.ledger_observe_calls, "apply_calls": self.apply_calls, "reasserts": self.ledger_reasserts, "payload_ticks": self.ledger_payload_ticks,
+                                "spy_first_tick": self.first_tick_seen, "spy_last_tick": self.last_tick_seen, "ledger_live_at_finish": ledger_live},
+            "mode_breaches": self.mode_breaches[:50], "mode_breach_count": len(self.mode_breaches), "rows_truncated": self.rows_truncated,
             "apply_calls": self.apply_calls, "rows": self.rows, "row_count": len(self.rows), "mode_rows": self.mode_rows, "final_alive": self.final_alive,
             "control": self.control, "control_tick": self.control_tick, "control_applied_count": self.control_applied_count, "cell_valid": wiring_ok and self.control is None,
         }
 
 
 def exit_status(doc: Dict[str, Any]) -> tuple:
-    """(exit code, message): 6 when a control never fired, 5 on a WIRING_MISMATCH, else 0."""
+    """(exit code, message): 6 when a control never fired, 7 when the ledger was not live (or was reset after start), 5 on a WIRING_MISMATCH, else 0."""
     if doc.get("control") is not None and doc["control_applied_count"] == 0:
         return EXIT_CONTROL_NOT_APPLIED, f"CONTROL NOT APPLIED: no observed state had tick {doc['control_tick']}; the control never fired, so this run proves nothing"
+    if doc["wiring"] == "LEDGER_NOT_LIVE":
+        return EXIT_LEDGER_NOT_LIVE, "LEDGER_NOT_LIVE: the ledger never opened, or its counters were reset after the spy started (see ledger_evidence); this cell does not count"
     if doc["wiring"] != "OK":
-        return EXIT_WIRING_MISMATCH, "WIRING_MISMATCH: the spy's O3 and the ledger's O3 differ (or the mode left OFF, or the row limit was hit); this cell does not count"
+        return EXIT_WIRING_MISMATCH, "WIRING_MISMATCH: the spy's per-key attack counts and the ledger's differ (a key on one side only counts), or the per-group O3 differs, or the mode left OFF, or the row limit was hit; this cell does not count"
     return 0, ""
 
 
@@ -283,6 +347,21 @@ def inject_no_replay_if_recording_off() -> bool:
 
     kernel_module.Kernel.__init__ = init
     return True
+
+
+def run_ticks(kernel: Any, ticks: int, spy: Optional[PersonAttackSpy]) -> Any:
+    """Run ``ticks`` ticks; whatever happens, restore the apply path, let the spy read the ledger (``finish``) and ONLY THEN shut the kernel down (the ledger is read before the shutdown path can touch it,
+    as the coin counter does). Returns the final state."""
+    try:
+        for _ in range(ticks):
+            kernel.tick_once()
+    finally:
+        final_state = kernel.state
+        if spy is not None:
+            spy.restore()
+            spy.finish(final_state)
+        kernel.shutdown()
+    return final_state
 
 
 def main(argv: List[str]) -> int:
@@ -315,25 +394,19 @@ def main(argv: List[str]) -> int:
     spy: Optional[PersonAttackSpy] = None
     if mode == "spy":
         from src.engine.apply import ApplyPath
+        from src.observability.rpg_gate_metrics import declared_wild_meat_eaters
         from src.observability.run_ledger import RunLedger
 
         spy = PersonAttackSpy(TreeReads.from_tree(), RunLedger, first_tick=start_tick, control=control, control_tick=control_tick if control_tick is not None else (start_tick + ticks if control else None),
-                              mode_getter=lambda: getattr(ObservabilityConfig.get_mode(), "value", str(ObservabilityConfig.get_mode()))).start_ledger().install(ApplyPath)
-    try:
-        for _ in range(ticks):
-            kernel.tick_once()
-    finally:
-        if spy is not None:
-            spy.restore()
-        final_state = kernel.state
-        kernel.shutdown()
+                              mode_getter=lambda: getattr(ObservabilityConfig.get_mode(), "value", str(ObservabilityConfig.get_mode())),
+                              declared_o3_groups=list(declared_wild_meat_eaters(world, [seed]))).start_ledger().install(ApplyPath)
+    final_state = run_ticks(kernel, ticks, spy)
     doc: Dict[str, Any] = {
         "world": world, "seed": seed, "ticks": ticks, "start_tick": start_tick, "mode": mode, "hashseed": os.environ.get("PYTHONHASHSEED"), "runner": pinned.verdict, "forced_flags": forced,
         "final_hash": CanonicalStateHasher.get_hash(final_state), "final_tick": final_state.tick, "final_world_time": final_state.world_time, "logging_errors": errors.rows,
     }
     code, message = 0, ""
     if spy is not None:
-        spy.finish(final_state)
         doc.update(spy.report())
         code, message = exit_status(doc)
     Path(out).parent.mkdir(parents=True, exist_ok=True)
