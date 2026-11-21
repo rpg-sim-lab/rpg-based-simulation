@@ -118,6 +118,8 @@ class StopLine:
     group: str = "*"
     min: Optional[float] = None
     max: Optional[float] = None
+    when_row: Optional[str] = None  # scope: the line applies to a (world, group) only when this pooled row's value there is at least ``when_min``; a missing row APPLIES the line (fails closed)
+    when_min: Optional[float] = None
 
 
 @dataclass(frozen=True)
@@ -128,6 +130,7 @@ class GateConfig:
     stale_after_days: int
     stop_lines: Tuple[StopLine, ...] = ()
     required_validity: Mapping[str, Tuple[str, ...]] = field(default_factory=dict)  # level ("run" | "pooled") -> ids required in documents of that level
+    non_eating: Mapping[str, Mapping[str, str]] = field(default_factory=dict)  # kind group with no diet -> {exclusion: value}; handed to the metric module's compute and pool
 
     def required_at(self, level: str) -> Tuple[str, ...]:
         return tuple(self.required_validity.get(level, ()))
@@ -159,6 +162,41 @@ def _load_required_validity(path: Path, raw: Any) -> dict:
     return out
 
 
+NON_EATING_GROUPS = ("none",)  # the kind groups a config may declare as non-eating: a group with no diet
+NON_EATING_EXCLUSIONS = {"food_metrics": ("not_applicable",)}  # exclusion name -> its allowed values
+
+
+def _load_non_eating(path: Path, raw: Any) -> dict:
+    """``{group: {exclusion: value}}``, strict: a malformed declaration, an unknown group or an unknown exclusion or value raises (TCK-20261121-RPG-GATE-METRICS-REJECT-A-NON-EATING-KIND-GROUP-AS-UNDECLARED)."""
+    if raw is None:
+        return {}
+    if not isinstance(raw, dict):
+        raise BaselineError(f"{path}: non_eating_kind_groups must map a kind group to its exclusions, for example {{none: {{food_metrics: not_applicable}}}}, got {raw!r}")
+    out = {}
+    for group, entry in raw.items():
+        if group not in NON_EATING_GROUPS:
+            raise BaselineError(f"{path}: non_eating_kind_groups has an unknown group {group!r}; the declarable groups are {list(NON_EATING_GROUPS)}")
+        if not isinstance(entry, dict) or not entry:
+            raise BaselineError(f"{path}: non_eating_kind_groups[{group}] must map an exclusion to its value, got {entry!r}")
+        for name, value in entry.items():
+            if name not in NON_EATING_EXCLUSIONS:
+                raise BaselineError(f"{path}: non_eating_kind_groups[{group}] has an unknown exclusion {name!r}; the exclusions are {sorted(NON_EATING_EXCLUSIONS)}")
+            if value not in NON_EATING_EXCLUSIONS[name]:
+                raise BaselineError(f"{path}: non_eating_kind_groups[{group}][{name}] has an unknown value {value!r}; allowed: {list(NON_EATING_EXCLUSIONS[name])}")
+        out[group] = dict(entry)
+    return out
+
+
+def _load_when(path: Path, raw: Mapping[str, Any]) -> Tuple[Optional[str], Optional[float]]:
+    """A stop line's optional ``when: {row: <id>, min: <number>}`` scope, strict: any other shape, key or type raises."""
+    if "when" not in raw:
+        return None, None
+    when = raw["when"]
+    if not isinstance(when, dict) or set(when) != {"row", "min"} or not isinstance(when["row"], str) or isinstance(when["min"], bool) or not isinstance(when["min"], (int, float)):
+        raise BaselineError(f"{path}: stop line {raw.get('name')!r} has a malformed when; it must be {{row: <row id>, min: <number>}}, got {when!r}")
+    return when["row"], float(when["min"])
+
+
 def load_config(path: Path) -> GateConfig:
     data = yaml.safe_load(Path(path).read_text(encoding="utf-8")) or {}
     for name in ("worlds", "seeds", "ticks", "stale_after_days"):
@@ -172,9 +210,11 @@ def load_config(path: Path) -> GateConfig:
     for raw in data.get("stop_lines") or []:
         if not raw.get("name") or not raw.get("metric"):
             raise BaselineError(f"{path}: a stop line needs a name and a metric: {raw!r}")
-        lines.append(StopLine(raw["name"], raw["metric"], raw.get("group", "*"), raw.get("min"), raw.get("max")))
+        when = _load_when(path, raw)
+        lines.append(StopLine(raw["name"], raw["metric"], raw.get("group", "*"), raw.get("min"), raw.get("max"), *when))
     return GateConfig(
         tuple(data["worlds"]), tuple(data["seeds"]), int(data["ticks"]), int(data["stale_after_days"]), tuple(lines), required,
+        _load_non_eating(path, data.get("non_eating_kind_groups")),
     )
 
 
@@ -512,6 +552,15 @@ def staleness(baseline: Mapping[str, Any], now: dt.datetime, current_harness_has
 # ---------------------------------------------------------------- re-baseline
 
 
+def _out_of_scope(rows: Sequence[Mapping[str, Any]], row: Mapping[str, Any], line: StopLine) -> bool:
+    """True when the line's scope row exists for this row's (world, group) and is under ``when_min``; a missing or valueless scope row is NOT out of scope (fail closed: the line applies)."""
+    for scope in rows:
+        if scope.get("id") == line.when_row and scope.get("world") == row.get("world") and scope.get("group") == row.get("group"):
+            value = row_value(scope)
+            return value is not None and value < (line.when_min or 0.0)
+    return False
+
+
 def stop_lines_crossed(rows: Sequence[Mapping[str, Any]], stop_lines: Sequence[StopLine]) -> List[str]:
     """Names of the stop lines some row's value is outside of (each name once, in config order)."""
     crossed: List[str] = []
@@ -521,6 +570,8 @@ def stop_lines_crossed(rows: Sequence[Mapping[str, Any]], stop_lines: Sequence[S
             if row.get("class") != "outcome" or value is None or not fnmatch.fnmatchcase(str(row.get("id")), line.metric) or not fnmatch.fnmatchcase(str(row.get("group")), line.group):
                 continue
             if (line.min is not None and value < line.min) or (line.max is not None and value > line.max):
+                if line.when_row is not None and _out_of_scope(rows, row, line):
+                    continue
                 crossed.append(line.name)
                 break
     return crossed
