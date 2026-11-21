@@ -24,7 +24,7 @@ standard
 bug
 
 ## Priority
-P3
+P2
 
 ## Request Summary
 Filed by rpg-planner-ubuntu on 2026-11-19, routed by lead-planner as a determinism question. Cc: rpg-planner (u24), via lead-planner, because the probe's sample determinism may touch their lanes.
@@ -52,6 +52,9 @@ No cause is claimed. The open question: are build_samples' states (compiled worl
 ## Out of Scope
 - Editing the allowlist row to make the test pass. The check's "delete it" advice is not a ruling.
 - TCK-20261103-STATE-DIGEST-MAY-OMIT-FIELDS-THAT-DECISIONS-READ (digest coverage of decision-read fields). That's related, but a separate question.
+
+## Sightings (added 2026-11-21)
+Priority raised P3 to P2 on lead-planner-u24's suggestion (relayed by lead-planner): the failure `state.chests[].items[].properties: stale row` is reported on three PRs, #967, #974 and #978, and now costs reruns on unrelated PRs. Checked here by PR metadata only: #967 is merged (branch rpg-ubuntu-occupation-reads-vs-species-id), #974 is closed and #978 is open, and both of those are dependabot dependency PRs, so a code change on their side is an unlikely cause. I have not read the three CI logs; the failure text is the reporter's. A pattern across unrelated heads supports a nondeterministic sample, not a regression, but that is a reading, not a finding.
 
 ## Acceptance Criteria
 - A stated answer to whether build_samples' field-path set is identical across local and CI runs, with evidence.
