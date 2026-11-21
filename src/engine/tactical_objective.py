@@ -9,6 +9,7 @@ Moved out of `TacticalDecisionSystem.evaluate_entity_intent` (it sat inside the 
 """
 from __future__ import annotations
 
+from dataclasses import dataclass
 from typing import TYPE_CHECKING, Callable, List, Optional, Sequence, Tuple
 
 from src.core.movement_modes import MovementMode
@@ -25,6 +26,7 @@ from src.engine.intent.action_intent import ActionIntent, ActionIntentAdapter
 from src.engine.lodging import rest_would_lodge
 from src.engine.tactical_avoid import eat_at_hunger_corpse
 from src.engine.tactical_rest import in_danger
+from src.strategy.destination_suppression import destination_suppressed
 
 if TYPE_CHECKING:
     from src.core.state import AuthoritativeState, EntityState
@@ -35,6 +37,13 @@ Resolver = Callable[["AuthoritativeState", "ObjectiveState"], Tuple[Optional[Tup
 
 def _distance(entity: "EntityState", target_pos: Tuple[float, float]) -> float:
     return abs(target_pos[0] - entity.navigation.position[0]) + abs(target_pos[1] - entity.navigation.position[1])
+
+
+@dataclass(frozen=True, slots=True)
+class ObjectiveDestinationSuppressed(EntityUpdate):
+    """The typed outcome OBJECTIVE_DESTINATION_SUPPRESSED (F2, divergence 2.220): the objective's destination lies within Chebyshev 1 of a give-up-filed ACCESS blocker that is still suppressed, so the
+    step writes NO target and NO navigation update. It is an empty `EntityUpdate` (the tactical pass returns it as handled: the subject stays idle for the brain, as a held step does, and does
+    not fall through to the role and cohesion branches), a subclass only so the own-job spy and the tests can tell it from any other empty update by type."""
 
 
 def _walk_to(entity: "EntityState", target_pos: Tuple[float, float]) -> EntityUpdate:
@@ -60,6 +69,8 @@ def _reach_location_step(state: "AuthoritativeState", entity: "EntityState", pro
     if not target_pos:
         return None
     if _distance(entity, target_pos) > 1.0:
+        if destination_suppressed(entity, target_pos, state.tick) is not None:
+            return ObjectiveDestinationSuppressed(entity_id=entity.id)
         return _walk_to(entity, target_pos)
     if node_id is not None:
         return EntityUpdate(
@@ -94,6 +105,8 @@ def _other_objective_step(state: "AuthoritativeState", entity: "EntityState", ob
         target_pos, node_id, _ = resolve(state, obj)
     if target_pos:
         if _distance(entity, target_pos) > 1.0:
+            if destination_suppressed(entity, target_pos, state.tick) is not None:
+                return ObjectiveDestinationSuppressed(entity_id=entity.id)
             return _walk_to(entity, target_pos)
         if obj.kind == ObjectiveKind.REACH_RESOURCE and node_id is not None:
             return _harvest_at_node(state, entity, obj, node_id, neighbors)

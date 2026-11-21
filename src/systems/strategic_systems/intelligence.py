@@ -62,6 +62,7 @@ if TYPE_CHECKING:
     from src.engine.cadence import SystemCadence
 
 from src.core.state import EntityState, AuthoritativeState
+from src.strategy.destination_suppression import destination_open
 from src.core.hold_mode import hold_reset_kwargs
 from src.core.enums import EntityRole
 from src.core.updates import (
@@ -75,7 +76,7 @@ from src.core.strategic import (
     CognitionProfile, ProjectKind, GoalKind, ObjectiveKind, has_project_capacity, restart_clear_window, suspend_record, expire_suspended, end_record, typed_completion, ProjectEnd, blocker_timeout_suppression, with_live_current_score, ended_blocker_stamps
 )
 from src.engine.spatial_query import SpatialQueryService
-from src.systems.strategic_systems.blocker_lifecycle import generate_crafting_blockers, infer_blockers, reinferred_blockers_update, resolve_blockers
+from src.systems.strategic_systems.blocker_lifecycle import consume_giveup_records, generate_crafting_blockers, infer_blockers, reinferred_blockers_update, resolve_blockers
 from src.core.lodging_rules import is_lodged_stayer
 from src.content_semantics.faction import are_entities_hostile
 from src.content_semantics.relation import RelationContext
@@ -286,7 +287,7 @@ class StrategicIntelligenceSystem:
                 if not nav_changed and not proj_resolved:
                     if not lodged_stayer and not (active_obj and (getattr(active_obj, 'target_position', None) is not None or getattr(active_obj, 'target_entity_id', None) is not None)):  # an ACTIVE project's active objective with a point OR an entity target owns the direction, as on the slow path (~:663); the objective's own status is not checked here (pre-existing, see TCK-20261101-FUSED-STRATEGIC-PASS-RESTRUCTURE)
                         town_target = nearest_town_tile(state.town_tiles, entity.navigation.position) or state.town_center
-                        if len(pending_inventory.items) > 0 and entity.navigation.position != (0.0, 0.0) and town_target and entity.navigation.target != town_target:
+                        if len(pending_inventory.items) > 0 and entity.navigation.position != (0.0, 0.0) and town_target and entity.navigation.target != town_target and destination_open(entity, town_target, state.tick):
                             if ent_upd:
                                 refined_entity_updates[e_id] = replace(ent_upd,
                                     navigation=replace(ent_upd.navigation or NavigationUpdate(), target_set=town_target, movement_mode_set=MovementMode.REGROUP),
@@ -388,6 +389,7 @@ class StrategicIntelligenceSystem:
             )
             
             strat_up = reinferred_blockers_update(entity, strat_up, inferred_up, state.tick)
+            strat_up, ent_upd = consume_giveup_records(entity, strat_up, ent_upd, state.tick)  # F2 (divergence 2.220): file the give-up records' ACCESS blockers and clear them
             removals = set(strat_up.blockers_remove)
             resolved_ids = set()
             for b_id, b in entity.strategic.blockers.items():
@@ -530,7 +532,7 @@ class StrategicIntelligenceSystem:
                 if match_lead and not lodged_stayer:
                     try:
                         coords = tuple(map(float, match_lead.detail.split(',')))
-                        if entity.navigation.target != coords:
+                        if entity.navigation.target != coords and destination_open(entity, (coords[0], coords[1]), state.tick):  # F2: a tile near a suppressed give-up anchor is not a destination
                             has_nav_update = True
                             existing_nav = ent_upd.navigation or NavigationUpdate()
                             ent_upd = replace(ent_upd, navigation=replace(existing_nav, target_set=coords, **hold_reset_kwargs(entity, ent_upd)), interaction=InteractionUpdate(reset=True))
@@ -551,14 +553,14 @@ class StrategicIntelligenceSystem:
                             has_nav_update = True
                         else:
                             target_pos = getattr(active_obj, 'target_position', None)
-                            if target_pos:
+                            if target_pos and destination_open(entity, target_pos, state.tick):  # F2: a suppressed destination sets no target and leaves the next alternative (the town fallback) to be tried
                                  has_nav_update = True
                                  if entity.navigation.target != target_pos:
                                      ent_upd = replace(ent_upd, navigation=replace(ent_upd.navigation or NavigationUpdate(), target_set=target_pos, **hold_reset_kwargs(entity, ent_upd)))
             
             if not has_nav_update:
                 town_target = nearest_town_tile(state.town_tiles, entity.navigation.position) or state.town_center
-                if len(pending_inventory.items) > 0 and entity.navigation.position != (0.0, 0.0) and town_target:
+                if len(pending_inventory.items) > 0 and entity.navigation.position != (0.0, 0.0) and town_target and destination_open(entity, town_target, state.tick):
                     if entity.navigation.target != town_target:
                         has_nav_update = True
                         ent_upd = replace(ent_upd, 
