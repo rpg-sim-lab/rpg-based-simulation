@@ -61,6 +61,7 @@ HEARTBEAT_TITLE = "_sync heartbeat"
 HEARTBEAT_FIELD = "Last run"
 UNASSIGNED, UNKNOWN = "unassigned", "unknown"
 LAST_RUN_PATH = Path.home() / ".local" / "state" / "rpg-project-sync" / "last-run.json"
+EXIT_SKIPPED = 3  # --apply wrote everything it could but left at least one item as it was (a planned select value has no option): distinct from a refusal (2) and a stop (1)
 FETCH_TIMEOUT_S = 60
 PR_LIMIT = 300  # the value of ticket_queue.PR_LIMIT: gh's own default is 30
 FOLDERS = ("todos", "inprogress", "done")
@@ -75,11 +76,16 @@ CURRENT_HASH_VERSION = "v5"
 HOST_STATES = ("filing", "progress", "stale", "blocked")
 PRIORITIES = ("P0", "P1", "P2", "P3")
 TIERS = ("hotfix", "standard", "epic")
-STATUSES = ("To do", "In progress", "Stale", "In review", "Blocked", "Done")
+STATUSES = ("To do", "In progress", "Stale", "In review", "Blocked", "Done", "Parked")  # Parked last: --init appends it, so the order on a populated Project is the same
 FILING_SUFFIX = "[filing]"
 BODY = "Generated from {path} by tools/sessions/project_sync.py — edits are overwritten."
 _TICKET_RE = re.compile(r"(TCK-[A-Z0-9][A-Z0-9-]*)\.md$")
 _SUBJECT_ID_RE = re.compile(r"TCK-[A-Z0-9][A-Z0-9-]*[A-Z0-9]")
+# The Parked marker (TCK-20261119-PROJECT-VIEW-PARKED-STATE-FROM-A-TICKET-BODY-MARKER-LINE): ONE planner-written line, matched at the start of a line only.
+_PARKED_LINE_RE = re.compile(r"^Parked: .*$", re.M)
+_PARKED_RE = re.compile(
+    r"^Parked: waits on (?:(?P<tck>TCK-[A-Z0-9][A-Z0-9-]*[A-Z0-9])|(?P<pr>PR#\d+)|decision (?P<ref>\S.*?)) since (?P<since>\d{4}-\d{2}-\d{2})[ \t]*$", re.M)
+PARKED_STALE_DAYS = 45  # PROPOSAL, not measured (one dated line exists in the corpus): a marker older than this adds a finding, never a status change
 _WAITS_ON_RE = re.compile(r"^\s*(?:[-*]\s*)?\**(?:waits? on|waiting on|blocked by|depends on)\**\s*[:\-]?\s*(.*)$", re.I | re.M)
 NOT_CODE_PREFIXES = ("agent-working/", "docs/")  # a commit touching only these cites a ticket, it does not work it
 READ_GIT = {"ls-tree", "show", "merge-base", "diff", "status", "log", "rev-parse", "worktree"}
@@ -159,6 +165,8 @@ class TicketCopy:
     tags: tuple[str, ...] = ()
     code_areas: tuple[str, ...] = ()  # repo-relative path tokens of `## Related Code Areas` (read only to name the owning domain)
     waits_on: tuple[str, ...] = ()  # ticket ids on a line-start "waits on / blocked by / depends on" line (the Blocked by field)
+    parked: tuple[str, str, str] | None = None  # (kind "ticket"|"pr"|"decision", target, since date) from the first valid `Parked: waits on ...` line
+    parked_bad: tuple[str, ...] = ()  # `Parked: ` lines that are not a valid marker (a finding each, no Status change)
 
 
 @dataclass(frozen=True)
@@ -192,6 +200,7 @@ class Plan:
     heartbeats: list[dict] = field(default_factory=list)  # the live `_sync heartbeat` items, oldest first; never archived, never a ticket
     stale_hosts: list[str] = field(default_factory=list)  # other hosts whose heartbeat segment is older than stale_host_hours
     unassigned_code_areas: int = 0  # tickets whose Domain is `unassigned` because their code areas have no or mixed owners
+    skipped: dict = field(default_factory=dict)  # --apply: ticket id -> planned select values with no option on the Project; the item was left as it was
 
 
 # ---------------------------------------------------------------- ticket files
@@ -234,6 +243,31 @@ def waits_on_ids(text: str) -> tuple[str, ...]:
     return tuple(out)
 
 
+def parse_parked(text: str) -> tuple[tuple[str, str, str] | None, tuple[str, ...]]:
+    """(first valid marker, malformed `Parked: ` lines). Only a line that STARTS with `Parked: ` is read; the target is a ticket id, `PR#<n>` or
+    `decision <free-text reference>` (non-empty) and `since` must be a real date. Never inferred from prose, branch age or a handover."""
+    valid = None
+    for m in _PARKED_RE.finditer(text):
+        try:
+            date.fromisoformat(m.group("since"))
+        except ValueError:
+            continue
+        if valid is None:
+            kind, target = (("ticket", m.group("tck")) if m.group("tck") else ("pr", m.group("pr")) if m.group("pr") else ("decision", m.group("ref")))
+            valid = (kind, target, m.group("since"))
+    good = {m.group(0) for m in _PARKED_RE.finditer(text) if _valid_date(m.group("since"))}
+    bad = tuple(line.strip()[:120] for line in _PARKED_LINE_RE.findall(text) if line not in good)
+    return valid, bad
+
+
+def _valid_date(value: str) -> bool:
+    try:
+        date.fromisoformat(value)
+    except ValueError:
+        return False
+    return True
+
+
 def parse_copy(path: str, text: str) -> TicketCopy:
     def section(name: str) -> str:
         m = re.search(rf"^## {name}\s*\n+([^\n#][^\n]*)", text, re.M)
@@ -250,6 +284,7 @@ def parse_copy(path: str, text: str) -> TicketCopy:
         tags=tuple(x.strip().strip("'\"") for x in tags.group(1).split(",") if x.strip()) if tags else (),
         code_areas=code_area_paths(areas.group(1)) if areas else (),
         waits_on=waits_on_ids(text),
+        **dict(zip(("parked", "parked_bad"), parse_parked(text))),
     )
 
 
@@ -336,7 +371,7 @@ def read_branch_facts(root: Path, host: str, lanes_note: list[str], run: Runner 
             entries[:] = [e for e in entries if e[0] != role.role]
             entries.append((name, role.domain))
     facts, detached = [], 0
-    link = {"branches": 0, "linked": 0, "via_filing": 0, "skipped": 0, "errored": 0, "merged": 0}
+    link = {"branches": 0, "linked": 0, "via_filing": 0, "lifted": 0, "skipped": 0, "errored": 0, "merged": 0}
     no_file: set[str] = set()  # the subject-link derivation's ran / skipped / errored
     index: dict[str, list[tuple[str, str]]] | None = None
     pending: list[tuple] = []  # (info, copies, named, worked ids still to link) - linking needs every worktree's filing copies, so it is a second pass
@@ -363,7 +398,7 @@ def read_branch_facts(root: Path, host: str, lanes_note: list[str], run: Runner 
                 lanes_note.append(f"subject-link: git log failed in {info.path}; its commit subjects were not read")
             else:
                 named, worked = subject_links(log.stdout)
-                to_link = worked - {c.id for c in copies}
+                to_link = worked - {c.id for c in copies if c.folder in PROGRESS_FOLDERS}  # a `todos/` copy is filing: it never excludes a worked ticket
                 merged = branch_pr_merged(info.branch, root, run) if to_link else False
                 if merged is None:  # fail safe: an unreadable lookup links nothing
                     link["errored"] += 1
@@ -377,9 +412,11 @@ def read_branch_facts(root: Path, host: str, lanes_note: list[str], run: Runner 
     for info, copies, named, to_link in pending:
         if to_link and index is None:
             index = read_main_index(root, run)
-        linked, counts = link_worked(to_link, index or {}, filing_pool, lambda path: read_main_copy(root, path, run))
-        copies.extend(linked)
-        for k in ("linked", "via_filing", "skipped"):
+        own = {c.id: c for c in copies if c.id in to_link}  # the branch's own `todos/` copy of a ticket it also works by subject
+        linked, counts = link_worked(to_link, index or {}, filing_pool, lambda path: read_main_copy(root, path, run), own)
+        lifted_ids = {c.id for c in linked}
+        copies[:] = [c for c in copies if c.id not in lifted_ids] + linked  # the progress copy replaces the filing copy of that ticket on this branch
+        for k in ("linked", "via_filing", "lifted", "skipped"):
             link[k] += counts[k]
         no_file.update(counts["no_file"])
         if not copies and not named:
@@ -387,7 +424,7 @@ def read_branch_facts(root: Path, host: str, lanes_note: list[str], run: Runner 
         seat, domain = attribute(info.branch, seat_of.get(info.path.resolve(), []), domain_names)
         facts.append(BranchFact(host, info.branch, str(info.path), seat, domain, tuple(copies), info.last_activity, frozenset(named)))
     lanes_note.append(f"subject-link: ran on {link['branches']} branches, linked {link['linked']} tickets by a leading id plus a code file "
-                      f"({link['via_filing']} through a filing copy on this host, no file on origin/main), skipped {link['skipped']} (already Done, no ticket file "
+                      f"({link['via_filing']} through a filing copy on this host with no file on origin/main, {link['lifted']} lifted from a todos copy the branch also edits), skipped {link['skipped']} (already Done, no ticket file "
                       f"on origin/main or on this host, or the branch's PR is merged: {link['merged']} such branches), errored {link['errored']}")
     if no_file:
         lanes_note.append(f"subject-link: no ticket file on origin/main or on this host, left unlinked: {', '.join(sorted(no_file))}")
@@ -395,17 +432,22 @@ def read_branch_facts(root: Path, host: str, lanes_note: list[str], run: Runner 
 
 
 def link_worked(to_link: set[str], index: dict[str, list[tuple[str, str]]], filing_pool: dict[str, TicketCopy],
-                load_main: Callable[[str], TicketCopy]) -> tuple[list[TicketCopy], dict]:
+                load_main: Callable[[str], TicketCopy], own: dict[str, TicketCopy] | None = None) -> tuple[list[TicketCopy], dict]:
     """The in-progress copies for the tickets a branch works by its commit subjects, and what was skipped. A ticket Done on origin/main is
-    skipped (Done wins). A ticket with a file on origin/main reads that copy. A ticket with NO file on origin/main (filed on a branch not pushed
+    skipped (Done wins). A ticket whose `todos/` copy the branch ITSELF carries (`own`: it edited the ticket file, which is filing, not progress) is lifted
+    to in progress with that copy. A ticket with a file on origin/main reads that copy. A ticket with NO file on origin/main (filed on a branch not pushed
     yet) reads this host's own filing copy when one exists; with none it stays unlinked and is named, so a host without the filing copy writes
     nothing for it from the subject link alone."""
     out: list[TicketCopy] = []
-    counts: dict = {"linked": 0, "via_filing": 0, "skipped": 0, "no_file": set()}
+    counts: dict = {"linked": 0, "via_filing": 0, "lifted": 0, "skipped": 0, "no_file": set()}
     for tid in sorted(to_link):
         entries = index.get(tid, [])
         if any(folder == "done" for folder, _ in entries):
             counts["skipped"] += 1
+        elif own and tid in own:
+            out.append(replace(own[tid], folder="inprogress"))
+            counts["linked"] += 1
+            counts["lifted"] += 1
         elif entries:
             best = max(entries, key=lambda e: FOLDERS.index(e[0]))
             out.append(replace(load_main(best[1]), folder="inprogress"))
@@ -637,7 +679,7 @@ def own_segment(tid: str, mine: list[BranchFact], stale_before: float | None, na
 
 
 def derive_status(tid: str, main: list[TicketCopy], prs: list[PrFact] | None, segments: dict[str, Segment],
-                  keep_status: str | None = None) -> tuple[str, list[str], list[str]]:
+                  keep_status: str | None = None, extras: "Extras | None" = None) -> tuple[str, list[str], list[str]]:
     """(status, PR urls, findings). First match wins; see the module docstring. Blocked, In progress and Stale come from the
     union of every host's segment, so two hosts derive the same value."""
     findings = []
@@ -654,6 +696,8 @@ def derive_status(tid: str, main: list[TicketCopy], prs: list[PrFact] | None, se
     states = [s.state for s in segments.values()]
     if "blocked" in states or (not segments and any(c.blocked for c in main)):
         return "Blocked", [], findings
+    if parked_status(tid, main, prs, extras or Extras(), findings, segments):
+        return "Parked", [], findings
     working = [st_ for st_ in states if st_ != "filing"]
     if working:
         # Stale replaces In progress only when every host that is working the ticket says stale. Filing keeps neither.
@@ -661,6 +705,52 @@ def derive_status(tid: str, main: list[TicketCopy], prs: list[PrFact] | None, se
     if "inprogress" in folders and not segments:
         findings.append(f"{tid}: in inprogress/ on origin/main with no branch seen (orphaned in-progress ticket)")
     return "To do", [], findings
+
+
+def parked_status(tid: str, main: list[TicketCopy], prs: list[PrFact] | None, extras: "Extras", findings: list[str],
+                  segments: dict | None = None) -> bool:
+    """True when origin's copy of the ticket carries a VALID `Parked: waits on ...` line whose target is still open: a ticket not Done, a PR in the
+    open-PR list, or a decision (which cannot be checked, so it clears only when the line is removed). Malformed lines, an unknown target, a PR
+    list that could not be read and a marker older than PARKED_STALE_DAYS are findings and never change the Status by themselves. Counts go to
+    `extras.parked_stats` (ran / set / cleared / malformed / unknown)."""
+    stats = extras.parked_stats
+    bad = [b for c in main for b in c.parked_bad]
+    marker = next((c.parked for c in main if c.parked), None)
+    if not marker and not bad:
+        return False
+    stats["ran"] += 1
+    for line in bad:
+        stats["malformed"] += 1
+        findings.append(f"{tid}: malformed Parked marker ignored ({line!r}); wanted `Parked: waits on <TCK-id | PR#n | decision <reference>> since <YYYY-MM-DD>`")
+    if not marker:
+        return False
+    kind, target, since = marker
+    if kind == "ticket" and target == tid:  # a ticket that waits on itself can never clear: malformed, never Parked
+        stats["malformed"] += 1
+        findings.append(f"{tid}: Parked marker names the ticket's own id ({target}): treated as malformed, not Parked")
+        return False
+    if extras.today is not None and (extras.today - date.fromisoformat(since)).days > PARKED_STALE_DAYS:
+        findings.append(f"{tid}: Parked marker since {since} is over {PARKED_STALE_DAYS} days old (a proposal threshold): abandoned, or still waiting?")
+    if kind == "ticket":
+        if extras.known is None or target not in extras.known:
+            stats["unknown"] += 1
+            findings.append(f"{tid}: Parked marker names {target}, which has no ticket file on origin/main: not Parked")
+            return False
+        if extras.done is not None and target in extras.done:
+            stats["cleared"] += 1  # the target is Done: the marker clears itself
+            return False
+    elif kind == "pr":
+        if prs is None:
+            stats["unknown"] += 1
+            findings.append(f"{tid}: Parked marker names {target} but the open-PR list could not be read: not Parked")
+            return False
+        if not any(f"PR#{pr.number}" == target for pr in prs):
+            stats["cleared"] += 1  # merged or closed: no longer in the open-PR list
+            return False
+    if any(seg.state == "progress" for seg in (segments or {}).values()):  # a live, non-stale branch is working it: the Status stays Parked, the finding asks
+        findings.append(f"{tid}: Parked marker present but a live branch is working it: still waiting?")
+    stats["set"] += 1
+    return True
 
 
 @dataclass
@@ -675,6 +765,8 @@ class Extras:
     hotspots: dict[str, str] | None = None  # ticket id -> its Hotspot file, set by build_plan; None means the field is not derived
     known: frozenset[str] | None = None  # every ticket id with a file on origin/main
     done: frozenset[str] | None = None  # ticket ids with a done/ file on origin/main
+    today: date | None = None  # set by build_plan: the stale-marker finding's clock
+    parked_stats: dict = field(default_factory=lambda: {"ran": 0, "set": 0, "cleared": 0, "malformed": 0, "unknown": 0})
 
 
 _ID_RE = re.compile(r"TCK-[A-Z0-9][A-Z0-9-]*[A-Z0-9]")
@@ -808,7 +900,8 @@ def derive_item(tid: str, main: list[TicketCopy], branches: list[BranchFact], pr
     if own is not None:
         segments[host] = own
     only_legacy = own is None and bool(segments) and all(s.legacy for s in segments.values())
-    status, pr_urls, status_findings = derive_status(tid, main, prs, segments, (current or {}).get("Status") if only_legacy else None)
+    extras = extras or Extras()
+    status, pr_urls, status_findings = derive_status(tid, main, prs, segments, (current or {}).get("Status") if only_legacy else None, extras)
     findings += status_findings
     branch_copies = [c for b in mine for c in b.copies if c.id == tid]
     entries = [f"{host}:{b.branch}" + ("" if any(c.id == tid and c.folder in PROGRESS_FOLDERS for c in b.copies) else f" {FILING_SUFFIX}")
@@ -1031,6 +1124,8 @@ def build_plan(main_index: dict[str, list[tuple[str, str]]], load_main: Callable
     base_load = load_main
     load_main = lambda path: cache.setdefault(path, base_load(path))  # noqa: E731  each ticket file is read once for the whole plan
     extras.known = frozenset(main_index)
+    extras.today = now.date()
+    extras.parked_stats = {"ran": 0, "set": 0, "cleared": 0, "malformed": 0, "unknown": 0}
     extras.done = frozenset(tid for tid, entries in main_index.items() if any(folder == "done" for folder, _ in entries))
     extras.hotspots = derive_hotspots(main_index, load_main, on_origin, plan.notes)
     candidates = {c.id for b in branches for c in b.copies} | on_origin | set(by_id)  # every lane: no pilot filter
@@ -1079,6 +1174,9 @@ def build_plan(main_index: dict[str, list[tuple[str, str]]], load_main: Callable
                 continue
             plan.archives.append((tid, "no ticket file for this ID"))
             plan.archive_item_ids.append(item.get("_item_id", ""))
+    ps_ = extras.parked_stats
+    plan.notes.append(f"parked: ran on {ps_['ran']} tickets with a Parked marker line, {ps_['set']} read Parked, {ps_['cleared']} cleared (target Done, merged or closed), "
+                      f"{ps_['malformed']} malformed lines (findings, Status unchanged), {ps_['unknown']} with an unknown target or an unreadable PR list (skipped, finding)")
     if plan.unassigned_code_areas:
         plan.notes.append(f"domain: {plan.unassigned_code_areas} tickets unassigned (no or mixed code-area owners)")
     plan.notes += [f"stale-host: {h}" for h in plan.stale_hosts]
@@ -1230,7 +1328,7 @@ def main(argv: list[str] | None = None) -> int:
     rc = _main(argv, info)
     if info.get("apply"):
         write_last_run({"time": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%MZ"), "host": info.get("host", ""), "rc": rc,
-                        "done": info.get("done", 0), "left": info.get("left", 0), "error": info.get("error", ""),
+                        "done": info.get("done", 0), "left": info.get("left", 0), "skipped": info.get("skipped", 0), "error": info.get("error", ""),
                         "heartbeat": info.get("heartbeat", ""), "stale_hosts": info.get("stale_hosts", [])})
     return rc
 
@@ -1324,7 +1422,7 @@ def _main(argv: list[str] | None, info: dict) -> int:
     if client is not None and not args.apply:  # a live dry run also says what --apply would refuse (the same check, before any write)
         from tools.sessions.project_client import check_plan_options
         try:
-            plan.findings += [f"apply would refuse: {p}" for p in check_plan_options(client.load_project(), plan)]
+            plan.findings += [f"apply would skip the item (no option on the Project; run --init): {p}" for p in check_plan_options(client.load_project(), plan)]
         except (ClientRefused, ProjectError) as exc:
             plan.notes.append(f"option check skipped: {str(exc)[:120]}")
     if fetch_failure:
@@ -1348,10 +1446,19 @@ def _main(argv: list[str] | None, info: dict) -> int:
             print(f"project_sync: GitHub refused: {exc}", file=sys.stderr)
             info["error"] = str(exc)[:300]
             return 1
-        rc = 1 if error else 0
+        skipped = plan.skipped
+        rc = 1 if error else (EXIT_SKIPPED if skipped else 0)
+        if skipped and not error:  # the SessionStart line reads `error`: say what happened and what to do, without editing the hook
+            first = ", ".join(sorted(skipped)[:3])
+            info["error"] = f"skipped {len(skipped)} item(s): {first}{' ...' if len(skipped) > 3 else ''}; run --init"
+        info["skipped"] = len(skipped)
+        for tid in sorted(skipped):
+            print(f"finding: skipped {tid}: {'; '.join(skipped[tid])} has no option on the Project; the item was left as it was (run --init)", file=sys.stderr)
         beat = write_heartbeat(client, project, plan, args.host, datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%MZ"), rc)
-        info.update(done=len(done), left=len(not_done), error=error or "", heartbeat=beat or "")
-        print(f"applied {len(done)} step(s)" + (f"; STOPPED, {len(not_done)} not done" if error else "; nothing left"))
+        info.update(done=len(done), left=len(not_done), heartbeat=beat or "")
+        if error or not skipped:
+            info["error"] = error or ""
+        print(f"applied {len(done)} step(s)" + (f"; STOPPED, {len(not_done)} not done" if error else "; nothing left") + (f"; skipped {len(skipped)} item(s)" if skipped else ""))
         if beat:
             print(f"heartbeat: not written ({beat})", file=sys.stderr)
         if error:
@@ -1361,6 +1468,7 @@ def _main(argv: list[str] | None, info: dict) -> int:
             if partial:
                 print(f"partial: {partial} (its next-run hand-edit lines come from this stop; the rerun overwrites them)", file=sys.stderr)
             return 1
+        return rc
     return 0
 
 

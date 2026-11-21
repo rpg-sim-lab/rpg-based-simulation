@@ -29,3 +29,5 @@ model: #715 6735575831. Scoping only; no implementation authorised.
 - `src/engine` stages are sequenced by rpg-planner around M1. E's refactor never rides an M1 PR.
 - Perf work comes in only on a measured hard issue (depth rule, #715 6731764470).
 - The filing rides a later implementation PR on this track (#715 6697748243).
+
+- 2026-11-19: `TCK-20261119-AN-ENGINE-STEP-REGISTRY-RETIRES-THE-PIPELINE-IMPORT-OF-THE-RISEN-SYSTEM` filed by rpg-planner. It is the retiring ticket for births' owner-approved import-baseline row `src.engine.pipeline_phases.resources -> src.world.risen`, and must be on main before births merges. It is not ordered within the stages yet; architecture-planner-u24 places it when it runs again.

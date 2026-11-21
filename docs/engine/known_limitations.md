@@ -27,6 +27,7 @@ This document records the current technical limitations, unsupported features, a
 ### 1.3 Strategic AI
 - **Material-Only Blockers**: The `StrategicIntelligenceSystem` only recognizes and resolves crafting blockers for "Material" resources. Social, capability, or plot-based blockers are unsupported.
 - **Location-Only Leads**: Strategic leads are restricted to coordinate-based locations. Concept or person-based leads are not yet modeled in the supported slice.
+- **Unchecked Sense Profiles On Mid-Run Spawns**: bodies spawned mid-run by `EntityGenerator` (used by lairs, bosses and calamities) aren't yet checked for a usable sense profile at build. A body of a species without one isn't refused (PERC-02a, ch. 04); instead it perceives nothing, and the gate logs ERROR (`TCK-20261118-MID-RUN-SPAWNED-BODIES-SKIP-THE-SENSES-CHECK`). Campaign episode, scenario-runner and checkpoint-restored bodies are checked since #968.
 
 ### 1.4 Commerce Limitations
 

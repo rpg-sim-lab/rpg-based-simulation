@@ -320,3 +320,15 @@ def test_an_explicit_import_flags_overrides_the_entry(tmp_path):
     assert kp.import_flags({"entry": _entry("-I"), "import_flags": []}) == []
     rows = _run(tmp_path, _kit(tmp_path, NO_PATH_FIX_PROBE, proc_extra={"entry": _entry("-I"), "import_flags": []})[0])
     assert "b import" not in _checks_failed(rows)
+
+
+# ---- a process that writes no output file --------------------------------------------------------------------------------------------------
+
+NO_OUTPUT_PROBE = CLEAN_PROBE.replace('    json.dump({"rows": [{"failure_reason": "blocked", "n": 1}, {"failure_reason": None, "n": 2}], "hooks": {"wrap": 3}}, open(out, "w"))\n', "")
+
+
+def test_a_process_that_writes_no_output_file_fails_check_d(tmp_path):
+    assert NO_OUTPUT_PROBE != CLEAN_PROBE
+    rows = _run(tmp_path, _kit(tmp_path, NO_OUTPUT_PROBE)[0])
+    missing = [r for r in rows if r[0] == "d field liveness" and r[2] == kp.FAIL and "wrote no output file" in r[3]]
+    assert missing and "c fixture run" not in _checks_failed(rows)

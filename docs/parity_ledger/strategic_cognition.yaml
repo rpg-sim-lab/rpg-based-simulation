@@ -74,7 +74,7 @@
   status: missing
   priority: P0
   legacy_evidence: null
-  v2_evidence: '`src/systems/strategic.py` (`generate_crafting_blockers` and `resolve_blockers`) '
+  v2_evidence: '`src/systems/strategic.py` (`generate_crafting_blockers` and `resolve_blockers`); the three blocker entry points (`infer_blockers`, `generate_crafting_blockers`, `resolve_blockers`) now live in `src/systems/strategic_systems/blocker_lifecycle.py`, reached through `StrategicIntelligenceSystem`''s delegates (TCK-20261117-SPLIT-INTELLIGENCE-PY-BELOW-ITS-LINE-CEILINGS). '
   proof_type: parity
   test_path: null
   divergence_note: null

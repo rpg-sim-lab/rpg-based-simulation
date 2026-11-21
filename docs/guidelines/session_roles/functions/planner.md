@@ -29,6 +29,9 @@ When you review a PR that changes `src/`, read each of its tickets' `## Durable 
 ## Filing a ticket: overlap scan (advisory, not injected)
 Before committing a new `todos/` or `inprogress/` ticket, run `python3 tools/gate_checks/ticket_overlap_check.py <ticket path>` by hand (`docs/guides/delivery_process.md`, "Overlap scan on new tickets"): it lists at most two open tickets your draft overlaps and does not cite. Cite the ones that matter in `## Related Tickets`, or add `overlap scan: <n> hits, none duplicate (<why>)`. Advisory; about half its hits are cited-and-fine. This sits outside the injected Card because the planner cards are at their token budget.
 
+## Parking a ticket (advisory, not injected)
+When you park a ticket, add one line at the start of a line in its body: `Parked: waits on <TCK-id | PR#n | decision <reference>> since <YYYY-MM-DD>`; remove it when the wait ends (`docs/guides/delivery_process.md`, "Parking a ticket"). The Project then shows Parked, not Stale. Outside the injected Card because the planner cards are at their token budget.
+
 ## Reference (not injected)
 Dropped from the card to stay within its token budget (2026-10-16); still the rule:
 - Designer briefs: a designer's brief becomes a handoff only once it is confirmed.

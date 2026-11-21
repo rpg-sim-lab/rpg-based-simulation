@@ -7986,6 +7986,65 @@
   - content
   last_verified: '2026-10-09'
 - type: ticket
+  path: agent-working/tickets/done/TCK-20261121-RPG-GATE-METRICS-REJECT-A-NON-EATING-KIND-GROUP-AS-UNDECLARED.md
+  ticket_id: TCK-20261121-RPG-GATE-METRICS-REJECT-A-NON-EATING-KIND-GROUP-AS-UNDECLARED
+  title: 'The rpg gate marks crowded_frontier s42 and s44 `no-data` with `GateDataMissingError:
+    kind group [''none''] seen in the run but not declared` once births add the first
+    non-eating living kind'
+  tier: standard
+  ticket_type: bug
+  date: '2026-11-21'
+  related_code_areas:
+  - src/observability/rpg_gate_metrics.py
+  - tests/simulation_quality/rpg_gate/config.yaml
+  - tools/test_architecture/rpg_gate_harness.py
+  artifact_files:
+  - agent-working/stored_artifacts/TCK-20261121-RPG-GATE-METRICS-REJECT-A-NON-EATING-KIND-GROUP-AS-UNDECLARED/investigation.md
+  - agent-working/stored_artifacts/TCK-20261121-RPG-GATE-METRICS-REJECT-A-NON-EATING-KIND-GROUP-AS-UNDECLARED/plan.md
+  - agent-working/stored_artifacts/TCK-20261121-RPG-GATE-METRICS-REJECT-A-NON-EATING-KIND-GROUP-AS-UNDECLARED/test_plan.md
+  tags: []
+- type: ticket
+  path: agent-working/tickets/todos/TCK-20261121-RPG-GATE-REBASELINE-AFTER-THE-NONE-KIND-GROUP-HASH-MOVE.md
+  ticket_id: TCK-20261121-RPG-GATE-REBASELINE-AFTER-THE-NONE-KIND-GROUP-HASH-MOVE
+  title: Re-record the rpg gate baseline from a main run after the `none` kind-group
+    change moves the harness hash
+  tier: hotfix
+  ticket_type: chore
+  date: '2026-11-21'
+  related_code_areas:
+  - tools/test_architecture/rpg_gate_baseline.py
+  - tests/simulation_quality/rpg_gate/baselines/
+  artifact_files: []
+  tags: []
+- type: ticket
+  path: agent-working/tickets/done/TCK-20261120-SUBJECT-LINK-DOES-NOT-LIFT-A-TICKET-THE-BRANCH-ALSO-EDITS-IN-TODOS.md
+  ticket_id: TCK-20261120-SUBJECT-LINK-DOES-NOT-LIFT-A-TICKET-THE-BRANCH-ALSO-EDITS-IN-TODOS
+  title: A ticket worked on a branch that also edits its todos/ file reads To do,
+    because the commit-subject link only lifts tickets the branch does not already
+    carry a copy of
+  tier: hotfix
+  ticket_type: bug
+  date: '2026-11-20'
+  related_code_areas:
+  - tools/sessions/project_sync.py
+  - tests/tools/test_session_project_view.py
+  artifact_files: []
+  tags:
+  - delivery
+- type: ticket
+  path: agent-working/tickets/todos/TCK-20261120-A-TOWN-RETURN-PROJECT-NEVER-COMPLETES-WHEN-ITS-TARGET-IS-REACHED.md
+  ticket_id: TCK-20261120-A-TOWN-RETURN-PROJECT-NEVER-COMPLETES-WHEN-ITS-TARGET-IS-REACHED
+  title: 'A town_return project stays ACTIVE after its subject reaches the town centre:
+    no path ends it on arrival, so it holds a project slot that points at nothing'
+  tier: standard
+  ticket_type: bug
+  date: '2026-11-20'
+  related_code_areas:
+  - src/ai/goals/scorers.py (TownScorer); src/engine/tactical_objective.py (_reach_location_step);
+    src/systems/strategic_systems/intelligence.py (project completion)
+  artifact_files: []
+  tags: []
+- type: ticket
   path: agent-working/tickets/done/TCK-20261119-DEPENDABOT-813-CI-FAST-LANES-EXIT-2-CAUSE.md
   ticket_id: TCK-20261119-DEPENDABOT-813-CI-FAST-LANES-EXIT-2-CAUSE
   title: 'Find the cause of the Migration lanes job "Fast lanes" exit 2 on the closed
@@ -7999,6 +8058,19 @@
   artifact_files: []
   tags:
   - mcp
+- type: ticket
+  path: agent-working/tickets/done/TCK-20261119-DEPENDABOT-IGNORES-COMPLEXIPY-MAJORS-AND-SENTENCE-TRANSFORMERS.md
+  ticket_id: TCK-20261119-DEPENDABOT-IGNORES-COMPLEXIPY-MAJORS-AND-SENTENCE-TRANSFORMERS
+  title: Dependabot ignores complexipy semver-major updates and all sentence-transformers
+    updates in the uv block
+  tier: hotfix
+  ticket_type: chore
+  date: '2026-11-19'
+  related_code_areas:
+  - .github/dependabot.yml
+  artifact_files: []
+  tags:
+  - delivery
 - type: ticket
   path: agent-working/tickets/done/TCK-20261119-FILED-TICKETS-ARE-SCANNED-FOR-OVERLAP-WITH-OPEN-TODOS.md
   ticket_id: TCK-20261119-FILED-TICKETS-ARE-SCANNED-FOR-OVERLAP-WITH-OPEN-TODOS
@@ -8033,6 +8105,43 @@
   artifact_files:
   - agent-working/stored_artifacts/TCK-20261119-OCCUPATION-READS-COMPARED-WITH-A-NON-LIVING-SPECIES-ID-MISS-THE-WORLD-BOSS/investigation.md
   tags: []
+- type: ticket
+  path: agent-working/tickets/done/TCK-20261119-PROJECT-SYNC-APPLY-SKIPS-ITEMS-WITH-A-MISSING-STATUS-OPTION-AND-FLAGS-DOUBTFUL-PARKED-MARKERS.md
+  ticket_id: TCK-20261119-PROJECT-SYNC-APPLY-SKIPS-ITEMS-WITH-A-MISSING-STATUS-OPTION-AND-FLAGS-DOUBTFUL-PARKED-MARKERS
+  title: 'One bad Parked marker must not freeze every host''s board: `--apply` skips
+    only the items whose Status option is missing, and the sync flags a Parked marker
+    on a ticket that is being worked or that names itself'
+  tier: standard
+  ticket_type: bug
+  date: '2026-11-19'
+  related_code_areas:
+  - tools/sessions/project_sync.py
+  - tools/sessions/project_client.py
+  - tests/tools/test_session_project_parked.py
+  artifact_files:
+  - agent-working/stored_artifacts/TCK-20261119-PROJECT-SYNC-APPLY-SKIPS-ITEMS-WITH-A-MISSING-STATUS-OPTION-AND-FLAGS-DOUBTFUL-PARKED-MARKERS/investigation.md
+  - agent-working/stored_artifacts/TCK-20261119-PROJECT-SYNC-APPLY-SKIPS-ITEMS-WITH-A-MISSING-STATUS-OPTION-AND-FLAGS-DOUBTFUL-PARKED-MARKERS/plan.md
+  - agent-working/stored_artifacts/TCK-20261119-PROJECT-SYNC-APPLY-SKIPS-ITEMS-WITH-A-MISSING-STATUS-OPTION-AND-FLAGS-DOUBTFUL-PARKED-MARKERS/test_plan.md
+  tags:
+  - delivery
+- type: ticket
+  path: agent-working/tickets/done/TCK-20261119-PROJECT-VIEW-PARKED-STATE-FROM-A-TICKET-BODY-MARKER-LINE.md
+  ticket_id: TCK-20261119-PROJECT-VIEW-PARKED-STATE-FROM-A-TICKET-BODY-MARKER-LINE
+  title: GitHub Project 1 shows a Parked state, read from a one-line marker a planner
+    writes in the ticket body when work is parked
+  tier: standard
+  ticket_type: feature
+  date: '2026-11-19'
+  related_code_areas:
+  - tools/sessions/project_sync.py
+  - tools/sessions/project_client.py
+  - tests/tools/
+  artifact_files:
+  - agent-working/stored_artifacts/TCK-20261119-PROJECT-VIEW-PARKED-STATE-FROM-A-TICKET-BODY-MARKER-LINE/investigation.md
+  - agent-working/stored_artifacts/TCK-20261119-PROJECT-VIEW-PARKED-STATE-FROM-A-TICKET-BODY-MARKER-LINE/plan.md
+  - agent-working/stored_artifacts/TCK-20261119-PROJECT-VIEW-PARKED-STATE-FROM-A-TICKET-BODY-MARKER-LINE/test_plan.md
+  tags:
+  - delivery
 - type: ticket
   path: agent-working/tickets/done/TCK-20261119-PROJECT-VIEW-SEAT-COLLABORATORS-LINK-BY-COMMIT-SUBJECT-AND-PARKED.md
   ticket_id: TCK-20261119-PROJECT-VIEW-SEAT-COLLABORATORS-LINK-BY-COMMIT-SUBJECT-AND-PARKED
@@ -8147,18 +8256,88 @@
   tags:
   - mcp
 - type: ticket
-  path: agent-working/tickets/todos/TCK-20261119-DEPENDABOT-IGNORES-COMPLEXIPY-MAJORS-AND-SENTENCE-TRANSFORMERS.md
-  ticket_id: TCK-20261119-DEPENDABOT-IGNORES-COMPLEXIPY-MAJORS-AND-SENTENCE-TRANSFORMERS
-  title: Dependabot ignores complexipy semver-major updates and all sentence-transformers
-    updates in the uv block
+  path: agent-working/tickets/todos/TCK-20261119-A-GENERATED-FRONTIER-WORLD-FALLS-BELOW-ITS-POPULATION-FLOOR-BY-TICK-800.md
+  ticket_id: TCK-20261119-A-GENERATED-FRONTIER-WORLD-FALLS-BELOW-ITS-POPULATION-FLOOR-BY-TICK-800
+  title: generated_frontier_3_42, compiled with its content context, has about 23
+    of 44 bodies alive at tick 800 on main, below the population-stability floor of
+    60% (26.4). This is a finding only, to be read across several seeds before anything
+    is claimed
+  tier: standard
+  ticket_type: bug
+  date: '2026-11-19'
+  related_code_areas:
+  - tests/unit/worldassembly/test_corpus_diversity.py:515-529; the generated_frontier_3_42
+    world content
+  artifact_files: []
+  tags: []
+- type: ticket
+  path: agent-working/tickets/todos/TCK-20261119-A-WORKER-BRAIN-THAT-WEIGHS-PAID-WORK-READS-THE-WORLD-INDEX-A-PACKET-DOES-NOT-CARRY.md
+  ticket_id: TCK-20261119-A-WORKER-BRAIN-THAT-WEIGHS-PAID-WORK-READS-THE-WORLD-INDEX-A-PACKET-DOES-NOT-CARRY
+  title: A worker brain that weighs paid work for a meal reads state.world_indexes,
+    which the WorkerPacket does not carry, so the run stops with PacketFieldMissingError
+  tier: standard
+  ticket_type: bug
+  date: '2026-11-19'
+  related_code_areas:
+  - src/engine/work_shift.py (meal_position_after, shift_takeable); src/engine/world_index.py;
+    src/core/worker_protocol.py; src/engine/executor.py
+  artifact_files: []
+  tags: []
+- type: ticket
+  path: agent-working/tickets/todos/TCK-20261119-AN-ENTITY-KIND-OR-SPECIES-THAT-THE-CATALOG-CANNOT-RESOLVE-FAILS-AT-LOAD.md
+  ticket_id: TCK-20261119-AN-ENTITY-KIND-OR-SPECIES-THAT-THE-CATALOG-CANNOT-RESOLVE-FAILS-AT-LOAD
+  title: A body whose kind is not a catalog species, or a species with no need_profile,
+    fails at world load or compile with a typed error, instead of running silently
+    on fallback needs
+  tier: standard
+  ticket_type: feature
+  date: '2026-11-19'
+  related_code_areas:
+  - src/engine/biological_needs.py (profile_id_for, unprofiled_need_counts, the interim
+    counter); the species catalog loader; data/content/living/species.yaml, need_profiles.yaml
+  artifact_files: []
+  tags: []
+- type: ticket
+  path: agent-working/tickets/todos/TCK-20261119-COIN-IS-CONSERVED-EVERY-TICK-NOT-ONLY-AT-THE-RUN-END.md
+  ticket_id: TCK-20261119-COIN-IS-CONSERVED-EVERY-TICK-NOT-ONLY-AT-THE-RUN-END
+  title: 'A per-tick coin-conservation Hard Law check: total_coin(after) - total_coin(before)
+    - declared == 0 every tick, so any phase''s coin leak is caught when it happens
+    (V6 moved from the run''s end to every tick)'
+  tier: standard
+  ticket_type: feature
+  date: '2026-11-19'
+  related_code_areas:
+  - src/observability/ (HardLawMonitor), src/core/treasury.py (total_coin), src/core/models/inventory.py:230
+    (the apply clamp), src/engine/action_intent.py:217
+  artifact_files: []
+  tags: []
+- type: ticket
+  path: agent-working/tickets/todos/TCK-20261119-FRONTEND-MAJORS-FROM-THE-CLOSED-DEPENDABOT-811-MOVE-ONE-AT-A-TIME.md
+  ticket_id: TCK-20261119-FRONTEND-MAJORS-FROM-THE-CLOSED-DEPENDABOT-811-MOVE-ONE-AT-A-TIME
+  title: 'Move the frontend majors from the closed Dependabot #811 one at a time,
+    holding TypeScript at 5.9 until typescript-eslint supports 7'
   tier: hotfix
   ticket_type: chore
   date: '2026-11-19'
   related_code_areas:
-  - .github/dependabot.yml
+  - frontend/package.json, frontend/package-lock.json
   artifact_files: []
   tags:
-  - delivery
+  - security
+- type: ticket
+  path: agent-working/tickets/todos/TCK-20261119-LAIR-SPAWNED-COPIES-LOSE-THE-PARENTS-CATALOG-FACTION.md
+  ticket_id: TCK-20261119-LAIR-SPAWNED-COPIES-LOSE-THE-PARENTS-CATALOG-FACTION
+  title: Lair-spawned copies lose the parent's catalog faction because SPAWN_KIND_CATALOG_FACTION
+    is keyed by an occupation literal
+  tier: hotfix
+  ticket_type: bug
+  date: '2026-11-19'
+  related_code_areas:
+  - src/systems/world_systems/creature_territory.py, src/systems/world_systems/generator.py
+    (SPAWN_KIND_CATALOG_FACTION, _catalog_faction_properties, spawn_monster), src/engine/hostility.py
+    (is_wild_creature)
+  artifact_files: []
+  tags: []
 - type: ticket
   path: agent-working/tickets/todos/TCK-20261119-PROJECT-SYNC-READS-REMOTE-BRANCHES-NOT-ONLY-CHECKED-OUT-WORKTREES.md
   ticket_id: TCK-20261119-PROJECT-SYNC-READS-REMOTE-BRANCHES-NOT-ONLY-CHECKED-OUT-WORKTREES
@@ -8174,20 +8353,61 @@
   tags:
   - delivery
 - type: ticket
-  path: agent-working/tickets/todos/TCK-20261119-PROJECT-VIEW-PARKED-STATE-FROM-A-TICKET-BODY-MARKER-LINE.md
-  ticket_id: TCK-20261119-PROJECT-VIEW-PARKED-STATE-FROM-A-TICKET-BODY-MARKER-LINE
-  title: GitHub Project 1 shows a Parked state, read from a one-line marker a planner
-    writes in the ticket body when work is parked
+  path: agent-working/tickets/todos/TCK-20261119-RECRUIT-CHEST-AND-CRAFTING-COSTS-DEBIT-THE-PAYER-WITH-NO-PAYEE.md
+  ticket_id: TCK-20261119-RECRUIT-CHEST-AND-CRAFTING-COSTS-DEBIT-THE-PAYER-WITH-NO-PAYEE
+  title: 'RECRUIT, CHEST and CRAFTING transactions with gold_cost > 0 debit the payer
+    and credit no one: a latent undeclared coin sink (EXCH-02)'
   tier: standard
-  ticket_type: feature
+  ticket_type: bug
   date: '2026-11-19'
   related_code_areas:
-  - tools/sessions/project_sync.py
-  - tools/sessions/project_client.py
-  - tests/tools/
+  - src/core/conservation.py (the RECRUIT, CHEST and CRAFTING branches of ResourceTransactionResolver)
   artifact_files: []
-  tags:
-  - delivery
+  tags: []
+- type: ticket
+  path: agent-working/tickets/todos/TCK-20261119-SPAWN-WRITERS-PUT-A-SPECIES-ID-IN-OCCUPATION-AND-THE-BOSS-SETS-KEY-ON-IT.md
+  ticket_id: TCK-20261119-SPAWN-WRITERS-PUT-A-SPECIES-ID-IN-OCCUPATION-AND-THE-BOSS-SETS-KEY-ON-IT
+  title: Spawn writers put a species id in `occupation`, and the observability boss
+    and spawn-cadence sets key on that occupation literal
+  tier: standard
+  ticket_type: refactor
+  date: '2026-11-19'
+  related_code_areas:
+  - src/core/entity_kind_constants.py, src/observability/event_shapers.py, src/world/calamity.py,
+    src/world/boss.py, src/certification/scenarios.py, resources.py (extraction),
+    world.py
+  artifact_files: []
+  tags: []
+- type: ticket
+  path: agent-working/tickets/todos/TCK-20261119-THE-CALENDAR-IS-DECLARED-IN-CONFIGURATION-NOT-IN-CODE.md
+  ticket_id: TCK-20261119-THE-CALENDAR-IS-DECLARED-IN-CONFIGURATION-NOT-IN-CODE
+  title: The calendar (ticks per day, days per season, seasons per year, the night
+    bounds) is declared in a validated configuration file and read only through the
+    calendar helpers, not hard-coded in src/core/calendar.py
+  tier: standard
+  ticket_type: refactor
+  date: '2026-11-19'
+  related_code_areas:
+  - src/core/calendar.py; its importers in src/
+  - src/content/schema.py, src/content/matrix.py, src/content/validator.py (how defaults.yaml
+    is registered)
+  - src/api/presenters/state_presenter.py:437/:451
+  artifact_files: []
+  tags: []
+- type: ticket
+  path: agent-working/tickets/todos/next-generation-engine/TCK-20261119-AN-ENGINE-STEP-REGISTRY-RETIRES-THE-PIPELINE-IMPORT-OF-THE-RISEN-SYSTEM.md
+  ticket_id: TCK-20261119-AN-ENGINE-STEP-REGISTRY-RETIRES-THE-PIPELINE-IMPORT-OF-THE-RISEN-SYSTEM
+  title: An engine step registry lets world steps (such as rise) register with the
+    pipeline, retiring the import-baseline row `src.engine.pipeline_phases.resources
+    -> src.world.risen`
+  tier: standard
+  ticket_type: refactor
+  date: '2026-11-19'
+  related_code_areas:
+  - src/engine/pipeline_phases/resources.py; src/world/risen.py; the kernel construction
+    sites (scenario_checkpoint.py restore, among about 20)
+  artifact_files: []
+  tags: []
 - type: ticket
   path: agent-working/tickets/done/TCK-20261118-A-DIAGNOSTIC-KIT-PREFLIGHT-CHECKS-EACH-KIT-ON-BOTH-FROZEN-TREES-BEFORE-ITS-RUN.md
   ticket_id: TCK-20261118-A-DIAGNOSTIC-KIT-PREFLIGHT-CHECKS-EACH-KIT-ON-BOTH-FROZEN-TREES-BEFORE-ITS-RUN
@@ -8282,6 +8502,18 @@
   date: '2026-11-18'
   related_code_areas:
   - tools/rpg_measure/kit_preflight.py, tests/unit/tools/test_kit_preflight.py
+  artifact_files: []
+  tags: []
+- type: ticket
+  path: agent-working/tickets/done/TCK-20261118-PREFLIGHT-FAILS-A-PROCESS-THAT-WRITES-NO-OUTPUT-FILE.md
+  ticket_id: TCK-20261118-PREFLIGHT-FAILS-A-PROCESS-THAT-WRITES-NO-OUTPUT-FILE
+  title: A unit test pins that the kit preflight fails a process that writes no output
+    file
+  tier: hotfix
+  ticket_type: chore
+  date: '2026-11-18'
+  related_code_areas:
+  - tools/rpg_measure/kit_preflight.py (check_fixture_run), tests/unit/tools/test_kit_preflight.py
   artifact_files: []
   tags: []
 - type: ticket
@@ -8410,6 +8642,21 @@
   ticket_type: bug
   date: '2026-11-18'
   related_code_areas: []
+  artifact_files: []
+  tags: []
+- type: ticket
+  path: agent-working/tickets/todos/TCK-20261118-MID-RUN-SPAWNED-BODIES-SKIP-THE-SENSES-CHECK.md
+  ticket_id: TCK-20261118-MID-RUN-SPAWNED-BODIES-SKIP-THE-SENSES-CHECK
+  title: Bodies spawned mid-run by EntityGenerator (heroes, monsters, offspring, demonic
+    entities) skip PERC-02a's senses check; lairs, bosses and calamities run in M1
+    cells
+  tier: standard
+  ticket_type: bug
+  date: '2026-11-18'
+  related_code_areas:
+  - src/systems/world_systems/generator.py (EntityGenerator)
+  - 'its callers: creature_territory.py, boss.py, calamity.py, certification/scenarios.py'
+  - src/content/species_senses.py
   artifact_files: []
   tags: []
 - type: ticket
@@ -8647,6 +8894,21 @@
   artifact_files: []
   tags: []
 - type: ticket
+  path: agent-working/tickets/done/TCK-20261117-SPLIT-INTELLIGENCE-PY-BELOW-ITS-LINE-CEILINGS.md
+  ticket_id: TCK-20261117-SPLIT-INTELLIGENCE-PY-BELOW-ITS-LINE-CEILINGS
+  title: Split src/systems/strategic_systems/intelligence.py so its module and StrategicIntelligenceSystem
+    class fall back below their line ceilings
+  tier: standard
+  ticket_type: refactor
+  date: '2026-11-17'
+  related_code_areas:
+  - src/systems/strategic_systems/intelligence.py
+  artifact_files:
+  - agent-working/stored_artifacts/TCK-20261117-SPLIT-INTELLIGENCE-PY-BELOW-ITS-LINE-CEILINGS/investigation.md
+  - agent-working/stored_artifacts/TCK-20261117-SPLIT-INTELLIGENCE-PY-BELOW-ITS-LINE-CEILINGS/plan.md
+  - agent-working/stored_artifacts/TCK-20261117-SPLIT-INTELLIGENCE-PY-BELOW-ITS-LINE-CEILINGS/test_plan.md
+  tags: []
+- type: ticket
   path: agent-working/tickets/done/TCK-20261117-THE-LABEL-READERS-READ-OCCUPATION-NOT-KIND.md
   ticket_id: TCK-20261117-THE-LABEL-READERS-READ-OCCUPATION-NOT-KIND
   title: The label readers read `occupation`, not `kind` (M1 step 3 of 5)
@@ -8866,18 +9128,6 @@
   date: '2026-11-17'
   related_code_areas:
   - src/observability/event_shapers.py; tests/unit/observability/
-  artifact_files: []
-  tags: []
-- type: ticket
-  path: agent-working/tickets/todos/TCK-20261117-SPLIT-INTELLIGENCE-PY-BELOW-ITS-LINE-CEILINGS.md
-  ticket_id: TCK-20261117-SPLIT-INTELLIGENCE-PY-BELOW-ITS-LINE-CEILINGS
-  title: Split src/systems/strategic_systems/intelligence.py so its module and StrategicIntelligenceSystem
-    class fall back below their line ceilings
-  tier: standard
-  ticket_type: refactor
-  date: '2026-11-17'
-  related_code_areas:
-  - src/systems/strategic_systems/intelligence.py
   artifact_files: []
   tags: []
 - type: ticket

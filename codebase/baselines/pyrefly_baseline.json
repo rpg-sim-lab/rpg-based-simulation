@@ -3592,66 +3592,73 @@
       "severity": "error"
     },
     {
+      "column": 22,
+      "path": "src/systems/strategic_systems/blocker_lifecycle.py",
+      "name": "bad-argument-type",
+      "concise_description": "Argument `Literal['access']` is not assignable to parameter `kind` with type `BlockerKind` in function `src.core.strategic.BlockerState.__init__`",
+      "severity": "error"
+    },
+    {
+      "column": 19,
+      "path": "src/systems/strategic_systems/blocker_lifecycle.py",
+      "name": "bad-argument-type",
+      "concise_description": "Argument `Literal['access']` is not assignable to parameter `kind` with type `BlockerKind` in function `src.core.strategic.BlockerState.__init__`",
+      "severity": "error"
+    },
+    {
       "column": 26,
-      "path": "src/systems/strategic_systems/intelligence.py",
-      "name": "bad-argument-type",
-      "concise_description": "Argument `Literal['access']` is not assignable to parameter `kind` with type `BlockerKind` in function `src.core.strategic.BlockerState.__init__`",
-      "severity": "error"
-    },
-    {
-      "column": 23,
-      "path": "src/systems/strategic_systems/intelligence.py",
-      "name": "bad-argument-type",
-      "concise_description": "Argument `Literal['access']` is not assignable to parameter `kind` with type `BlockerKind` in function `src.core.strategic.BlockerState.__init__`",
-      "severity": "error"
-    },
-    {
-      "column": 30,
-      "path": "src/systems/strategic_systems/intelligence.py",
+      "path": "src/systems/strategic_systems/blocker_lifecycle.py",
       "name": "bad-argument-type",
       "concise_description": "Argument `Literal['inventory']` is not assignable to parameter `kind` with type `BlockerKind` in function `src.core.strategic.BlockerState.__init__`",
       "severity": "error"
     },
     {
-      "column": 30,
-      "path": "src/systems/strategic_systems/intelligence.py",
-      "name": "bad-argument-type",
-      "concise_description": "Argument `Literal['material']` is not assignable to parameter `kind` with type `BlockerKind` in function `src.core.strategic.BlockerState.__init__`",
-      "severity": "error"
-    },
-    {
-      "column": 30,
-      "path": "src/systems/strategic_systems/intelligence.py",
-      "name": "bad-argument-type",
-      "concise_description": "Argument `Literal['inventory']` is not assignable to parameter `kind` with type `BlockerKind` in function `src.core.strategic.BlockerState.__init__`",
-      "severity": "error"
-    },
-    {
-      "column": 30,
-      "path": "src/systems/strategic_systems/intelligence.py",
-      "name": "bad-argument-type",
-      "concise_description": "Argument `Literal['material']` is not assignable to parameter `kind` with type `BlockerKind` in function `src.core.strategic.BlockerState.__init__`",
-      "severity": "error"
-    },
-    {
-      "column": 30,
-      "path": "src/systems/strategic_systems/intelligence.py",
+      "column": 26,
+      "path": "src/systems/strategic_systems/blocker_lifecycle.py",
       "name": "bad-argument-type",
       "concise_description": "Argument `Literal['material']` is not assignable to parameter `kind` with type `BlockerKind` in function `src.core.strategic.BlockerState.__init__`",
       "severity": "error"
     },
     {
       "column": 26,
-      "path": "src/systems/strategic_systems/intelligence.py",
+      "path": "src/systems/strategic_systems/blocker_lifecycle.py",
+      "name": "bad-argument-type",
+      "concise_description": "Argument `Literal['inventory']` is not assignable to parameter `kind` with type `BlockerKind` in function `src.core.strategic.BlockerState.__init__`",
+      "severity": "error"
+    },
+    {
+      "column": 26,
+      "path": "src/systems/strategic_systems/blocker_lifecycle.py",
+      "name": "bad-argument-type",
+      "concise_description": "Argument `Literal['material']` is not assignable to parameter `kind` with type `BlockerKind` in function `src.core.strategic.BlockerState.__init__`",
+      "severity": "error"
+    },
+    {
+      "column": 26,
+      "path": "src/systems/strategic_systems/blocker_lifecycle.py",
       "name": "bad-argument-type",
       "concise_description": "Argument `Literal['material']` is not assignable to parameter `kind` with type `BlockerKind` in function `src.core.strategic.BlockerState.__init__`",
       "severity": "error"
     },
     {
       "column": 22,
-      "path": "src/systems/strategic_systems/intelligence.py",
+      "path": "src/systems/strategic_systems/blocker_lifecycle.py",
       "name": "bad-argument-type",
       "concise_description": "Argument `Literal['material']` is not assignable to parameter `kind` with type `BlockerKind` in function `src.core.strategic.BlockerState.__init__`",
+      "severity": "error"
+    },
+    {
+      "column": 18,
+      "path": "src/systems/strategic_systems/blocker_lifecycle.py",
+      "name": "bad-argument-type",
+      "concise_description": "Argument `Literal['material']` is not assignable to parameter `kind` with type `BlockerKind` in function `src.core.strategic.BlockerState.__init__`",
+      "severity": "error"
+    },
+    {
+      "column": 57,
+      "path": "src/systems/strategic_systems/blocker_lifecycle.py",
+      "name": "bad-argument-type",
+      "concise_description": "Argument `str | None` is not assignable to parameter `item_id` with type `str` in function `has_item`",
       "severity": "error"
     },
     {
@@ -3911,13 +3918,6 @@
       "path": "src/systems/strategic_systems/intelligence.py",
       "name": "bad-function-definition",
       "concise_description": "Default `None` is not assignable to parameter `cadence` with type `SystemCadence`",
-      "severity": "error"
-    },
-    {
-      "column": 61,
-      "path": "src/systems/strategic_systems/intelligence.py",
-      "name": "bad-argument-type",
-      "concise_description": "Argument `str | None` is not assignable to parameter `item_id` with type `str` in function `has_item`",
       "severity": "error"
     },
     {

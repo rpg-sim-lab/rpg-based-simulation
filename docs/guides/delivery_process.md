@@ -316,6 +316,12 @@ About 47% of new tickets see a line; a per-ticket cap changes the number of line
 (q 0.259): a higher threshold loses it. Known false positive kept as a test: the SimQ anchor-reds ticket against the slow-regression exit-2 ticket (rpg-planner-ubuntu: wall-clock degraded mode against
 deterministic drift).
 
+### Parking a ticket: the `Parked:` line
+
+When a planner parks work (it waits on another ticket, an open PR, or a recorded decision) they add ONE line at the start of a line in the ticket's body: `Parked: waits on <TCK-id | PR#n | decision <reference>> since <YYYY-MM-DD>`. The GitHub Project then shows
+the ticket as Parked instead of Stale. They remove the line when the wait ends (a Done ticket or a merged or closed PR clears it by itself; a decision never does). It is not a new required section and not part of the ticket template. A malformed or
+over-45-days-old line is a finding in the project sync's dry run, never a block. Rules and precedence: `docs/guidelines/session_roles/project_sync_dry_run.md`, "The Parked marker".
+
 ## PR Body Template — rendered, not written
 
 ```markdown

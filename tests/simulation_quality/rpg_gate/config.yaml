@@ -27,7 +27,14 @@ stop_lines:
     metric: "O2.seeds_with_survivors"
     group: "*"
     min: 1
+    when: {row: "O2.t0_population", min: 1}   # only a group that had members at the start can go extinct (a group first seen after t0, such as a risen undead, has none to lose); O2.t0_population is the MAX over the seeds. Its drift in the gate report means a world's starting population changed; a missing row applies the line
 
 # R1 (meal OFF vs ON starvation differs by more than 2 SE in any world) compares two ARMS of the free-meal switch. One run matrix
 # cannot express it as a min/max on a row value, so it is NOT a stop line here yet: it needs the two-arm run (the free-meal removal
 # stack) and is read from the paired report until then. Tracked in the metrics ticket.
+
+# Kind groups with no diet (a risen undead: undead_purpose, hunger "none"). The metric module counts them for population, deaths, combat and attacks and emits no food or
+# hunger row (O1.starved, O1.at_risk, O4.accepted) for them: the exclusion is this declaration, read by the metric module (the harness hands it in), never a constant there.
+# Any other undeclared kind group still makes a run no-data. Only the group `none` can be declared here.
+non_eating_kind_groups:
+  none: {food_metrics: not_applicable}

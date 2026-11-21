@@ -48,6 +48,12 @@ Whether SOLO leads to any action, and why the two subjects' need never clears, i
 
 4. COST (perf-planner R4, relayed 2026-11-18; owner perf NFR #715 6968328816). The cooperation phase is the growing share of tick cost as population rises: 25%, 31% and 37% of the tick at 100, 200 and 400 synthetic entities, with super-linear total time (66/207/564 s per 1000 ticks). The per-tick re-decision this ticket removes is on that path. The fix reports a before/after profile of CooperationPhase.execute on the 3 standard cells and on a 400-entity synthetic world, under the M1 regression rule.
 
+5. HOTSPOT AND SEAM GUARD. perf-planner's before-profile (mixed 400, c505357b3, relayed 2026-11-19): cooperation is 35% of the tick, about 23% of ALL samples are in get_candidates at src/domains/cooperation/providers.py:111, and +3.4% are at :148. This ticket OWNS :111. Agreed with rpg-planner-ubuntu, 2026-11-19; why-it-fights' hostility extraction rebases onto this ticket.
+   - The condition: :111 stays ONE `are_entities_hostile(entity, cand, RelationContext(distance=manhattan, combat_engaged=True))` call through that seam, with the same arguments and results.
+   - Any speedup sits behind or around the seam: a per-pair per-tick memo, a pre-filter with the same predicate, or a faster path inside the hostility module.
+   - No faction or species logic is inlined at the call site.
+   - Changing WHO counts as hostile there (for example, dropping combat_engaged=True or the role-1 bypass) is an RPG semantics change. It needs an rpg-designer ruling first and is out of scope as perf work.
+
 ## Out of Scope
 - The births PR's own SOCIAL row (not re-pinned there, as above).
 - The resolve_blocker churn (TCK-20261117-A-RESOLVE-BLOCKER-PROJECT-IS-RE-CREATED-EVERY-80-TICKS-AND-STALLS-COOPERATION), though step 1 must say whether the two subjects hold a churning resolve_blocker in the same ticks.
@@ -58,6 +64,7 @@ Whether SOLO leads to any action, and why the two subjects' need never clears, i
 - cooperation_event is emitted only when a subject's decision changes (rpg-designer). A test pins that an unchanged decision emits nothing.
 - No subject emits the same cooperation posture on consecutive ticks unless its inputs changed, or the ruled hold rule allows it. A test pins it.
 - The step 1 table is delivered, and the cause is named before the fix.
+- providers.py:111 is still a single are_entities_hostile seam call. A test pins that get_candidates' hostile verdicts are identical before and after the fix on the 3 standard cells and the 400-entity world (scope 5).
 
 ## Related Tickets
 - TCK-20261117-A-RESOLVE-BLOCKER-PROJECT-IS-RE-CREATED-EVERY-80-TICKS-AND-STALLS-COOPERATION (same world and seed, cooperation stall)
