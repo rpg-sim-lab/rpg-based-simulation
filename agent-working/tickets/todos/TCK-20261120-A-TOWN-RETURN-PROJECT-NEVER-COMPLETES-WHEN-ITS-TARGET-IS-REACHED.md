@@ -68,6 +68,7 @@ Found during #781 (D73 + SEEK_WORK) by rpg-implementer's seek_work control (exec
 The project record is durable. The fix adds a lifecycle end (ended_by) through the existing typed project end, with no new field.
 
 ## Implementation Notes
+- Report-only evidence, 2026-11-21 (executed by rpg-implementer, inspected by rpg-planner; read-only probe probe_town_return_base.py sha256 fa4223988add4846…, on a fresh git archive of ae2f837cb, with src loaded from that tree). The leashed coin-keeper setup of tests/unit/ai/test_seek_work_step.py (home (0,0), leash_radius 5, town centre (20,20), hunger 80, gold 0) gets proj_town_return_500, reach_location town_center (20,20), on the base. That target is OUTSIDE the leash (manhattan 40 > 5, the opening_steps.py:97-98 rule). So the generic TownScorer fallback can give a range-bound subject a TOWN_RETURN project it may not be able to complete. This ticket's fix should say whether a leash-excluded target is ended, skipped or left to the leash readers (M1 item 6). It is evidence, not a ruling.
 
 ## Test Summary
 
