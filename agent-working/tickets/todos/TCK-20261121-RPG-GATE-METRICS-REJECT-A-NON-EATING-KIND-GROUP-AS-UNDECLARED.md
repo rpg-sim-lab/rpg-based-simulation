@@ -71,13 +71,15 @@ Evidence to collect before choosing: the failing documents (`/data/vboxuser/gate
 - Running the gate or any heavy run (heavy slot is held; any run needs lead-planner's GO).
 
 ## Acceptance Criteria
+This ticket closes at the PR merge (split agreed with lead-planner 2026-11-21; steps 2-4 of the plan move to TCK-20261121-RPG-GATE-REBASELINE-AFTER-THE-NONE-KIND-GROUP-HASH-MOVE).
 1. The cause is stated with evidence: which entity and kind produce group `none`, on which (world, seed), at what tick.
-2. A chosen fix, agreed with rpg-planner (u24), with the non-eating group handled by a stated rule in every row it touches (no row left undefined or imputed).
+2. `none` is declared in the gate config and handled by the ruled rule: counts for population, deaths, combat and attacks; excluded from the food and hunger rows as a typed not-applicable; no row left undefined or imputed; the cell is assessed, not `seed_no_data`.
 3. A test pins: a run containing a non-eating kind group is not no-data and emits the same row set on every seed of its world; an undeclared group of any other kind still raises.
-4. The PR states the new harness hash effect and how baseline comparability is kept (re-baseline ticket and owner approval, or the stale baseline treatment), and the rerun-skip fallback is checked on the first run after.
-5. `rpg_gate_known.yaml`, the baselines and the config are not edited to turn a run green.
+4. The PR body states the harness-hash effect (every baseline stale until the re-record ticket lands) and names the re-record ticket.
+5. `rpg_gate_known.yaml`, the baselines and the config's other bytes are not edited to turn a run green.
 
 ## Related Tickets
+- TCK-20261121-RPG-GATE-REBASELINE-AFTER-THE-NONE-KIND-GROUP-HASH-MOVE (steps 2-4: main run, candidate, re-record)
 - TCK-20261020-RPG-GATE-RUN-ROW-SET-IS-DECLARED-NOT-OBSERVED (the "declared, not observed" rule this error enforces)
 - TCK-20261109-M1-BASIC-WILD-BIRTHS-FOR-EVERY-LIVING-KIND (the births that add the kind)
 - TCK-20261119-RPG-GATE-RERUN-ONLY-NEW-ROWS-AND-A-BASELINE-DIFF-AGAINST-MAIN (the rerun-skip a hash move interacts with)
