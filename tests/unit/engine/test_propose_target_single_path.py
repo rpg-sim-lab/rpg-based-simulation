@@ -6,10 +6,11 @@ A source test, not a behaviour test: it parses ``src/`` and finds every call tha
  (a) the value is itself a vetted destination: a call of `propose_target`, `retreat_destination` or `_open_or_none` (a refused candidate is None), `_destination_or_hold` around such a call, or a
      conditional whose branches are all vetted, None, or the subject's own position (a hold);
  (b) the value is a Name whose latest assignment before the write is such a vetted value;
- (c) the write sits in an ``if``/conditional expression whose test calls a guard (`propose_target`, `destination_open`, `destination_suppressed`, `suppressed_move_to`) on the same expression as the value
-     (``ast.dump`` equality), in its body or its else; or it is dominated by an earlier ``if <guard on the same expression>: return`` in the same block.
+ (c) the write sits in the OPEN branch of an ``if``/conditional expression whose test calls a guard (`propose_target`, `destination_open`, `destination_suppressed`, `suppressed_move_to`) on the same expression
+     as the value (``ast.dump`` equality): the body of `propose_target(..) is not None` / `destination_open(..)` / `destination_suppressed(..) is None`, the else of the negated forms; or it is dominated by an
+     earlier REFUSING early return (`if propose_target(..) is None: return`, `if not destination_open(..): return`). In both forms no name in the written value is reassigned between the test and the write.
 
-A target equal to the subject's own position is a hold, allowed by value. Builders that take the target as an argument (`regroup_to_town_update`, `stalemate_break_update`, `_retreat`, `_walk_to`) are allowed
+A target equal to the subject's own position (the base is the function's first parameter, or `entity` / `subject`) is a hold, allowed by value; another entity's position is a place. Builders that take the target as an argument (`regroup_to_town_update`, `stalemate_break_update`, `_retreat`, `_walk_to`) are allowed
 per function, and every call site of each is held to the same rule. ``StrategicRedirectionSystem.enforce`` is not wired into the pipeline (the fused pass owns the bridge): allowed per function, with a test
 that says so. A planted unguarded write must be caught: `test_the_mutants_are_caught` runs synthetic sources through the same checker.
 """
@@ -39,8 +40,18 @@ def _name(call: ast.Call) -> Optional[str]:
     return f.id if isinstance(f, ast.Name) else f.attr if isinstance(f, ast.Attribute) else None
 
 
-def _is_own_position(e: ast.AST) -> bool:
-    return isinstance(e, ast.Attribute) and e.attr == "position" and isinstance(e.value, ast.Attribute) and e.value.attr == "navigation"
+def _first_param(func: Optional[ast.AST]) -> Optional[str]:
+    if func is None:
+        return None
+    names = [a.arg for a in func.args.args if a.arg not in ("self", "cls")]
+    return names[0] if names else None
+
+
+def _is_own_position(e: ast.AST, func: Optional[ast.AST]) -> bool:
+    """``<subject>.navigation.position`` where the base is the enclosing function's first parameter or a name in {entity, subject}: anything else (another entity's position) is a place."""
+    if not (isinstance(e, ast.Attribute) and e.attr == "position" and isinstance(e.value, ast.Attribute) and e.value.attr == "navigation" and isinstance(e.value.value, ast.Name)):
+        return False
+    return e.value.value.id in ("entity", "subject") or e.value.value.id == _first_param(func)
 
 
 def _enclosing_function(node: ast.AST, parents: Dict[ast.AST, ast.AST]) -> Optional[ast.AST]:
@@ -65,7 +76,7 @@ def _latest_assignment(name: str, func: ast.AST, before: int) -> Optional[Tuple[
 def _value_ok(e: ast.AST, func: Optional[ast.AST], before: int, depth: int = 0) -> bool:
     if depth > 4:
         return False
-    if (isinstance(e, ast.Constant) and e.value is None) or _is_own_position(e):
+    if (isinstance(e, ast.Constant) and e.value is None) or _is_own_position(e, func):
         return True
     if isinstance(e, ast.Call):
         n = _name(e)
@@ -80,29 +91,87 @@ def _value_ok(e: ast.AST, func: Optional[ast.AST], before: int, depth: int = 0) 
     return False
 
 
-def _guard_dumps(test: ast.AST) -> List[str]:
-    out = []
-    for n in ast.walk(test):
-        if isinstance(n, ast.Call) and _name(n) in TEST_GUARDS and len(n.args) > TEST_GUARDS[_name(n)]:
-            out.append(ast.dump(n.args[TEST_GUARDS[_name(n)]]))
+def _is_none(n: ast.AST) -> bool:
+    return isinstance(n, ast.Constant) and n.value is None
+
+
+def _polarity(test: ast.AST) -> Tuple[set, set]:
+    """(expressions that are OPEN when ``test`` is true, expressions that are OPEN when ``test`` is false), as ast.dump strings. Only a test that settles the answer counts: a bare guard call,
+    ``propose_target(..) is [not] None``, ``destination_open(..)``, ``destination_suppressed(..) is [not] None``, ``suppressed_move_to(..) is [not] None`` (None = open), ``not``, ``and`` (true side) and ``or`` (false side)."""
+    empty: Tuple[set, set] = (set(), set())
+    if isinstance(test, ast.NamedExpr):
+        return _polarity(test.value)
+    if isinstance(test, ast.UnaryOp) and isinstance(test.op, ast.Not):
+        t, f = _polarity(test.operand)
+        return f, t
+    if isinstance(test, ast.BoolOp):
+        parts = [_polarity(v) for v in test.values]
+        if isinstance(test.op, ast.And):
+            return set().union(*(p[0] for p in parts)), set()
+        return set(), set().union(*(p[1] for p in parts))
+    call: Optional[ast.Call] = None
+    is_none_means_open = True
+    if isinstance(test, ast.Call):
+        call, op = test, None
+    elif isinstance(test, ast.Compare) and len(test.ops) == 1 and _is_none(test.comparators[0]) and isinstance(test.ops[0], (ast.Is, ast.IsNot)):
+        inner = test.left.value if isinstance(test.left, ast.NamedExpr) else test.left
+        if isinstance(inner, ast.Call):
+            call, op = inner, test.ops[0]
+    if call is None or _name(call) not in TEST_GUARDS or len(call.args) <= TEST_GUARDS[_name(call)]:
+        return empty
+    expr = ast.dump(call.args[TEST_GUARDS[_name(call)]])
+    n = _name(call)
+    if n == "destination_open":
+        return ({expr}, set()) if op is None else empty                  # a bool: only the bare call settles it
+    if n == "propose_target":                                            # returns the position (open) or None (refused)
+        if op is None or isinstance(op, ast.IsNot):
+            return {expr}, set()
+        return set(), {expr}                                             # `is None` true = refused, so false = open
+    if n in ("destination_suppressed", "suppressed_move_to"):            # returns a hit/refusal (suppressed) or None (open)
+        if isinstance(op, ast.Is):
+            return {expr}, set()
+        if isinstance(op, ast.IsNot):
+            return set(), {expr}
+    return empty
+
+
+def _assigned_names(stmts: List[ast.AST]) -> set:
+    out = set()
+    for st in stmts:
+        for n in ast.walk(st):
+            if isinstance(n, ast.Assign):
+                out |= {t.id for t in n.targets if isinstance(t, ast.Name)}
+            elif isinstance(n, (ast.AugAssign, ast.AnnAssign)) and isinstance(n.target, ast.Name):
+                out.add(n.target.id)
+            elif isinstance(n, ast.NamedExpr) and isinstance(n.target, ast.Name):
+                out.add(n.target.id)
     return out
+
+
+def _value_names(value: ast.AST) -> set:
+    return {n.id for n in ast.walk(value) if isinstance(n, ast.Name)}
 
 
 def _guarded(node: ast.AST, value: ast.AST, parents: Dict[ast.AST, ast.AST]) -> bool:
     func = _enclosing_function(node, parents)
     if _value_ok(value, func, node.lineno):
         return True
-    want = ast.dump(value)
+    want, names = ast.dump(value), _value_names(value)
     cur = node
     while cur in parents and cur is not func:
         parent = parents[cur]
-        if isinstance(parent, (ast.If, ast.IfExp)) and want in _guard_dumps(parent.test):
+        if isinstance(parent, ast.IfExp) and ((cur is parent.body and want in _polarity(parent.test)[0]) or (cur is parent.orelse and want in _polarity(parent.test)[1])):
             return True
-        for block in (getattr(parent, "body", None), getattr(parent, "orelse", None)):
-            if isinstance(block, list) and cur in block:  # an earlier `if <guard on the same expression>: return` in the same block dominates the write
-                for stmt in block[: block.index(cur)]:
-                    if isinstance(stmt, ast.If) and want in _guard_dumps(stmt.test) and stmt.body and isinstance(stmt.body[-1], (ast.Return, ast.Raise)):
-                        return True
+        for field in ("body", "orelse"):
+            block = getattr(parent, field, None)
+            if not (isinstance(block, list) and cur in block):
+                continue
+            before = block[: block.index(cur)]
+            if isinstance(parent, ast.If) and want in _polarity(parent.test)[0 if field == "body" else 1] and not (names & _assigned_names(before)):
+                return True  # the OPEN branch of a guard on this very value, with the value not reassigned since the test
+            for k, stmt in enumerate(before):  # an earlier `if <refusing test>: return` dominates the write: after it the test is false, so the OPEN side is the false side
+                if isinstance(stmt, ast.If) and want in _polarity(stmt.test)[1] and stmt.body and isinstance(stmt.body[-1], (ast.Return, ast.Raise)) and not (names & _assigned_names(before[k + 1:])):
+                    return True
         cur = parent
     return False
 
@@ -182,6 +251,27 @@ def late(entity, tick):
         return None
     return NavigationUpdate(target_set=(5.0, 5.0))
 """
+_M5 = """
+def reassigned(entity, pos, t):
+    if propose_target(entity, pos, t) is None:
+        return None
+    pos = (9.0, 9.0)
+    return NavigationUpdate(target_set=pos)
+"""
+_M7 = """
+def other_entity(entity, target):
+    return NavigationUpdate(target_set=target.navigation.position)
+"""
+_M8 = """
+def wrong_branch(entity, pos, t):
+    if propose_target(entity, pos, t) is None:
+        return NavigationUpdate(target_set=pos)
+"""
+_M9 = """
+def negated(entity, pos, t):
+    if not destination_open(entity, pos, t):
+        return NavigationUpdate(target_set=pos)
+"""
 _GUARDED = {
     "value": "def f(entity, t):\n    return NavigationUpdate(target_set=propose_target(entity, (5.0, 5.0), t))\n",
     "name": "def f(entity, t):\n    where = retreat_destination(s, entity, th)\n    return NavigationUpdate(target_set=where)\n",
@@ -189,11 +279,16 @@ _GUARDED = {
     "else": "def f(entity, pos, t):\n    if propose_target(entity, pos, t) is None:\n        return None\n    else:\n        return NavigationUpdate(target_set=pos)\n",
     "early return": "def f(entity, pos, t):\n    if propose_target(entity, pos, t) is None:\n        return None\n    return NavigationUpdate(target_set=pos)\n",
     "own position hold": "def f(entity):\n    return NavigationUpdate(target_set=entity.navigation.position)\n",
+    "open branch of destination_open": "def f(entity, pos, t):\n    if destination_open(entity, pos, t):\n        return NavigationUpdate(target_set=pos)\n",
+    "negated else": "def f(entity, pos, t):\n    if not destination_open(entity, pos, t):\n        return None\n    else:\n        return NavigationUpdate(target_set=pos)\n",
+    "suppressed is None": "def f(entity, pos, t):\n    if destination_suppressed(entity, pos, t) is None:\n        return NavigationUpdate(target_set=pos)\n",
+    "early return not open": "def f(entity, pos, t):\n    if not destination_open(entity, pos, t):\n        return None\n    return NavigationUpdate(target_set=pos)\n",
 }
 
 
 def test_the_mutants_are_caught():
-    for label, src in (("M1 late write in a big function", _M1), ("M2 other value after a guard on another", _M2), ("M3 new function", _M3), ("M4 guard on (1,1), write (5,5)", _M4)):
+    for label, src in (("M1 late write in a big function", _M1), ("M2 other value after a guard on another", _M2), ("M3 new function", _M3), ("M4 guard on (1,1), write (5,5)", _M4),
+                       ("M5 value reassigned after an early-return guard", _M5), ("M7 another entity's navigation.position", _M7), ("M8 write in the refusing branch", _M8), ("M9 write in the refusing branch of a negated guard", _M9)):
         assert unguarded_writes("src/x.py", src), f"{label} was not caught"
 
 
