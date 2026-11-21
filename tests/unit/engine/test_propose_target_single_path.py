@@ -95,17 +95,22 @@ def _is_none(n: ast.AST) -> bool:
     return isinstance(n, ast.Constant) and n.value is None
 
 
-def _polarity(test: ast.AST) -> Tuple[set, set]:
+def _is_subject(e: ast.AST, func: Optional[ast.AST]) -> bool:
+    """The subject of the guard: a Name that is the enclosing function's first parameter or `entity` / `subject` (a guard on ANOTHER entity vets nothing for this one)."""
+    return isinstance(e, ast.Name) and (e.id in ("entity", "subject") or e.id == _first_param(func))
+
+
+def _polarity(test: ast.AST, func: Optional[ast.AST] = None) -> Tuple[set, set]:
     """(expressions that are OPEN when ``test`` is true, expressions that are OPEN when ``test`` is false), as ast.dump strings. Only a test that settles the answer counts: a bare guard call,
     ``propose_target(..) is [not] None``, ``destination_open(..)``, ``destination_suppressed(..) is [not] None``, ``suppressed_move_to(..) is [not] None`` (None = open), ``not``, ``and`` (true side) and ``or`` (false side)."""
     empty: Tuple[set, set] = (set(), set())
     if isinstance(test, ast.NamedExpr):
-        return _polarity(test.value)
+        return _polarity(test.value, func)
     if isinstance(test, ast.UnaryOp) and isinstance(test.op, ast.Not):
-        t, f = _polarity(test.operand)
+        t, f = _polarity(test.operand, func)
         return f, t
     if isinstance(test, ast.BoolOp):
-        parts = [_polarity(v) for v in test.values]
+        parts = [_polarity(v, func) for v in test.values]
         if isinstance(test.op, ast.And):
             return set().union(*(p[0] for p in parts)), set()
         return set(), set().union(*(p[1] for p in parts))
@@ -117,7 +122,7 @@ def _polarity(test: ast.AST) -> Tuple[set, set]:
         inner = test.left.value if isinstance(test.left, ast.NamedExpr) else test.left
         if isinstance(inner, ast.Call):
             call, op = inner, test.ops[0]
-    if call is None or _name(call) not in TEST_GUARDS or len(call.args) <= TEST_GUARDS[_name(call)]:
+    if call is None or _name(call) not in TEST_GUARDS or len(call.args) <= TEST_GUARDS[_name(call)] or not _is_subject(call.args[0], func):
         return empty
     expr = ast.dump(call.args[TEST_GUARDS[_name(call)]])
     n = _name(call)
@@ -136,16 +141,8 @@ def _polarity(test: ast.AST) -> Tuple[set, set]:
 
 
 def _assigned_names(stmts: List[ast.AST]) -> set:
-    out = set()
-    for st in stmts:
-        for n in ast.walk(st):
-            if isinstance(n, ast.Assign):
-                out |= {t.id for t in n.targets if isinstance(t, ast.Name)}
-            elif isinstance(n, (ast.AugAssign, ast.AnnAssign)) and isinstance(n.target, ast.Name):
-                out.add(n.target.id)
-            elif isinstance(n, ast.NamedExpr) and isinstance(n.target, ast.Name):
-                out.add(n.target.id)
-    return out
+    """Every name stored anywhere in ``stmts``: tuple targets, for/with targets, augmented assignment, walrus (any ``ast.Name`` with a Store context)."""
+    return {n.id for st in stmts for n in ast.walk(st) if isinstance(n, ast.Name) and isinstance(n.ctx, ast.Store)}
 
 
 def _value_names(value: ast.AST) -> set:
@@ -160,17 +157,17 @@ def _guarded(node: ast.AST, value: ast.AST, parents: Dict[ast.AST, ast.AST]) -> 
     cur = node
     while cur in parents and cur is not func:
         parent = parents[cur]
-        if isinstance(parent, ast.IfExp) and ((cur is parent.body and want in _polarity(parent.test)[0]) or (cur is parent.orelse and want in _polarity(parent.test)[1])):
+        if isinstance(parent, ast.IfExp) and ((cur is parent.body and want in _polarity(parent.test, func)[0]) or (cur is parent.orelse and want in _polarity(parent.test, func)[1])):
             return True
         for field in ("body", "orelse"):
             block = getattr(parent, field, None)
             if not (isinstance(block, list) and cur in block):
                 continue
             before = block[: block.index(cur)]
-            if isinstance(parent, ast.If) and want in _polarity(parent.test)[0 if field == "body" else 1] and not (names & _assigned_names(before)):
+            if isinstance(parent, ast.If) and want in _polarity(parent.test, func)[0 if field == "body" else 1] and not (names & _assigned_names([*before, cur])):
                 return True  # the OPEN branch of a guard on this very value, with the value not reassigned since the test
             for k, stmt in enumerate(before):  # an earlier `if <refusing test>: return` dominates the write: after it the test is false, so the OPEN side is the false side
-                if isinstance(stmt, ast.If) and want in _polarity(stmt.test)[1] and stmt.body and isinstance(stmt.body[-1], (ast.Return, ast.Raise)) and not (names & _assigned_names(before[k + 1:])):
+                if isinstance(stmt, ast.If) and want in _polarity(stmt.test, func)[1] and stmt.body and isinstance(stmt.body[-1], (ast.Return, ast.Raise)) and not (names & _assigned_names([*before[k + 1:], cur])):
                     return True
         cur = parent
     return False
@@ -272,6 +269,25 @@ def negated(entity, pos, t):
     if not destination_open(entity, pos, t):
         return NavigationUpdate(target_set=pos)
 """
+_M11 = """
+def tuple_reassign(entity, pos, t):
+    if propose_target(entity, pos, t) is None:
+        return None
+    pos, _ = (9.0, 9.0), 1
+    return NavigationUpdate(target_set=pos)
+"""
+_M12 = """
+def loop_reassign(entity, pos, xs, t):
+    if propose_target(entity, pos, t) is None:
+        return None
+    for pos in xs:
+        return NavigationUpdate(target_set=pos)
+"""
+_M13 = """
+def other_subject(entity, other, pos, t):
+    if propose_target(other, pos, t) is not None:
+        return NavigationUpdate(target_set=pos)
+"""
 _GUARDED = {
     "value": "def f(entity, t):\n    return NavigationUpdate(target_set=propose_target(entity, (5.0, 5.0), t))\n",
     "name": "def f(entity, t):\n    where = retreat_destination(s, entity, th)\n    return NavigationUpdate(target_set=where)\n",
@@ -288,7 +304,8 @@ _GUARDED = {
 
 def test_the_mutants_are_caught():
     for label, src in (("M1 late write in a big function", _M1), ("M2 other value after a guard on another", _M2), ("M3 new function", _M3), ("M4 guard on (1,1), write (5,5)", _M4),
-                       ("M5 value reassigned after an early-return guard", _M5), ("M7 another entity's navigation.position", _M7), ("M8 write in the refusing branch", _M8), ("M9 write in the refusing branch of a negated guard", _M9)):
+                       ("M5 value reassigned after an early-return guard", _M5), ("M7 another entity's navigation.position", _M7), ("M8 write in the refusing branch", _M8), ("M9 write in the refusing branch of a negated guard", _M9),
+                       ("M11 tuple reassignment after the guard", _M11), ("M12 for-loop target reassigns the value", _M12), ("M13 the guard checks another entity", _M13)):
         assert unguarded_writes("src/x.py", src), f"{label} was not caught"
 
 
