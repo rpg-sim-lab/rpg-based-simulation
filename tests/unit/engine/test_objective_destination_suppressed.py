@@ -48,3 +48,15 @@ def test_a_blocker_two_tiles_from_the_destination_does_not_suppress_it():
     e = _subject(suppressed_until=200, anchor=(14, 5))
     out = pursue_objective(_state(e, 100), e, None, _resolve)
     assert not isinstance(out, ObjectiveDestinationSuppressed) and out.navigation is not None
+
+
+def test_a_pending_give_up_record_makes_the_tactical_step_idle_before_the_blocker_exists():
+    """v2.1c: the give-up cleared the stored target and the record is not consumed until the next strategic pass; the objective step must not re-set the target to the anchor meanwhile."""
+    from src.core.giveup_records import GiveUpRecord
+    e = _subject()  # no blocker
+    e = replace(e, navigation=replace(e.navigation, target=None, giveup_records=(GiveUpRecord((12, 6), 90),)))
+    out = pursue_objective(_state(e, 91), e, None, _resolve)
+    assert isinstance(out, ObjectiveDestinationSuppressed) and out.navigation is None
+    after = replace(e, navigation=replace(e.navigation, giveup_records=()))  # the pass consumed the record without filing (no project): nothing forbids it any more
+    assert not isinstance(pursue_objective(_state(after, 92), after, None, _resolve), ObjectiveDestinationSuppressed)
+

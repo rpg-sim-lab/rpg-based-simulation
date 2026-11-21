@@ -6,6 +6,7 @@ by the subject text."""
 from __future__ import annotations
 
 import re
+from dataclasses import dataclass
 from typing import Optional, Tuple
 
 from src.core.state import EntityState
@@ -34,19 +35,37 @@ def access_blocker_tile(blocker: BlockerState) -> Optional[Tuple[int, int]]:
     return (int(m.group(1)), int(m.group(2))) if m else None
 
 
-def destination_suppressed(entity: EntityState, pos: Tuple[float, float], tick: int) -> Optional[BlockerState]:
-    """The active, suppressed ACCESS blocker that forbids ``pos`` as a destination, or None. A blocker forbids a tile when it is an unresolved ``blocker_access_<x>_<y>`` blocker of the subject, the
-    tile is within Chebyshev 1 of its anchor (``int`` tiles; the +-1 covers the task layer's one-tile jitter of the objective's target), and ``tick`` is before its ``suppression_until_tick``. The
-    blocker with the lowest id wins when several apply, so the answer does not depend on dict order."""
+@dataclass(frozen=True, slots=True)
+class SuppressionHit:
+    """Why a tile is forbidden as a destination: the ACCESS blocker id of the anchor, the anchor tile, how long (``suppressed_until``, None while only PENDING), whether the forbidding record is a
+    still-unconsumed give-up record (``pending``, v2.1c) or a filed blocker, and the blocker's ``failure_count`` (0 while pending)."""
+    blocker_id: str
+    anchor: Tuple[int, int]
+    suppressed_until: Optional[int]
+    pending: bool
+    failure_count: int
+
+
+def destination_suppressed(entity: EntityState, pos: Tuple[float, float], tick: int) -> Optional[SuppressionHit]:
+    """The reason ``pos`` is forbidden as a destination for this subject at ``tick``, or None. Two sources, both within Chebyshev 1 of an anchor (integer tiles; the +-1 covers the task layer's one-tile
+    jitter of the objective's target): (1) an unresolved ``blocker_access_<x>_<y>`` ACCESS blocker of the subject with ``tick`` before its ``suppression_until_tick``; (2) v2.1c, the subject's own PENDING
+    give-up records (``navigation.giveup_records``, held until the strategic pass consumes them), so a target cannot be re-set to the anchor between the give-up and the filing. A filed blocker wins over
+    a pending record, and the lowest blocker id wins among blockers, so the answer does not depend on dict order."""
     tx, ty = int(pos[0]), int(pos[1])
-    hit: Optional[BlockerState] = None
+    hit: Optional[SuppressionHit] = None
     for blocker in entity.strategic.blockers.values():
         tile = access_blocker_tile(blocker)
         if tile is None or blocker.resolved or tick >= blocker.suppression_until_tick:
             continue
-        if max(abs(tx - tile[0]), abs(ty - tile[1])) <= 1 and (hit is None or blocker.id < hit.id):
-            hit = blocker
-    return hit
+        if max(abs(tx - tile[0]), abs(ty - tile[1])) <= 1 and (hit is None or blocker.id < hit.blocker_id):
+            hit = SuppressionHit(blocker.id, tile, blocker.suppression_until_tick, False, blocker.failure_count)
+    if hit is not None:
+        return hit
+    for record in entity.navigation.giveup_records:
+        anchor = (int(record.anchor[0]), int(record.anchor[1]))
+        if max(abs(tx - anchor[0]), abs(ty - anchor[1])) <= 1:
+            return SuppressionHit(access_blocker_id(anchor), anchor, None, True, 0)
+    return None
 
 
 def destination_open(entity: EntityState, pos: Tuple[float, float], tick: int) -> bool:

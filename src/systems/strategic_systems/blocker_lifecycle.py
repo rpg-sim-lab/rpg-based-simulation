@@ -6,6 +6,7 @@ from dataclasses import replace
 from typing import Any, Dict, Optional, Tuple
 
 from src.content.blocker_settings import access_giveup_limit
+from src.core.giveup_records import HeldTargetAtAnchorCounts
 from src.core.inventory import InventoryService
 from src.core.state import AuthoritativeState, EntityState
 from src.core.strategic import (
@@ -382,6 +383,9 @@ def consume_giveup_records(entity: EntityState, staged: StrategicUpdate, ent_upd
     cur = ent_upd if ent_upd is not None else EntityUpdate(entity_id=entity.id)
     if not entity.navigation.giveup_records:
         return staged, cur
+    held = entity.navigation.target
+    if held is not None and any(max(abs(int(held[0]) - int(r.anchor[0])), abs(int(held[1]) - int(r.anchor[1]))) <= 1 for r in entity.navigation.giveup_records):
+        HeldTargetAtAnchorCounts.note()  # v2.1c: report only, never cleared here: only a writer that skips `destination_suppressed` can hold a target at the anchor
     filed = giveup_filing_update(entity, staged, tick, access_giveup_limit())
     clear = NavigationUpdate(giveup_records_clear=True)
     return (staged if filed is None else staged.merge(filed)), replace(cur, navigation=(cur.navigation or NavigationUpdate()).merge(clear))

@@ -95,3 +95,22 @@ def test_a_later_project_that_gives_up_the_same_anchor_ends_at_once_since_the_co
     e = _subject(records=(GiveUpRecord((9, 5), 5000),), blockers=(over,))
     up = _file(e, 5000)
     assert up.blockers_add_or_update[0].failure_count == 5 and up.projects_add_or_update[0].ended_by == ProjectEnd.DESTINATION_GIVEN_UP
+
+
+def test_a_held_target_at_a_consumed_anchor_is_counted_not_cleared():
+    """v2.1c (report only): consume counts a stored target within Chebyshev 1 of a consumed anchor in HeldTargetAtAnchorCounts and changes no target."""
+    from src.core.giveup_records import HeldTargetAtAnchorCounts
+    from src.systems.strategic_systems.blocker_lifecycle import consume_giveup_records
+    HeldTargetAtAnchorCounts.reset()
+    try:
+        e = _subject(records=(GiveUpRecord((9, 5), 10),))
+        e = replace(e, navigation=replace(e.navigation, target=(10.0, 5.0)))
+        strat, upd = consume_giveup_records(e, StrategicUpdate(), None, 10)
+        assert HeldTargetAtAnchorCounts.held() == 1
+        assert upd.navigation.giveup_records_clear is True and upd.navigation.target_clear is False and upd.navigation.clear_target is False and upd.navigation.target_set is None
+        far = replace(e, navigation=replace(e.navigation, target=(20.0, 5.0)))
+        consume_giveup_records(far, StrategicUpdate(), None, 11)
+        assert HeldTargetAtAnchorCounts.held() == 1  # two tiles or more away is not counted
+    finally:
+        HeldTargetAtAnchorCounts.reset()
+

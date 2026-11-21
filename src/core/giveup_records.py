@@ -49,3 +49,26 @@ class GiveUpDropCounts:
     def reset(cls) -> None:
         """Clear the count (run start, and test teardown)."""
         cls._dropped = 0
+
+
+class HeldTargetAtAnchorCounts:
+    """A count of the times the consume step found the subject's STORED target within Chebyshev 1 of a consumed give-up anchor (rpg-designer v2.1c: report only; consume does NOT clear it). OBSERVABILITY ONLY, never durable
+    state, read and reset only by the run ledger. With every target writer routed through `destination_suppressed` it should read 0; a nonzero count names a writer that skips the helper."""
+
+    _held: int = 0
+
+    @classmethod
+    def note(cls) -> None:
+        """Count one held target at a consumed anchor."""
+        cls._held += 1
+
+    @classmethod
+    def held(cls) -> int:
+        """How many were seen since the last reset."""
+        return cls._held
+
+    @classmethod
+    def reset(cls) -> None:
+        """Clear the count (run start, and test teardown)."""
+        cls._held = 0
+
