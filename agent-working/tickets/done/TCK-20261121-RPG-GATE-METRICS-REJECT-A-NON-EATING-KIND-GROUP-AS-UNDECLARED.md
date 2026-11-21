@@ -1,10 +1,10 @@
 ---
-status: active
+status: historical
 layer: testing
 authority: P1
 audience: agent
 ticket_id: TCK-20261121-RPG-GATE-METRICS-REJECT-A-NON-EATING-KIND-GROUP-AS-UNDECLARED
-phase: open
+phase: done
 date: 2026-11-21
 tags: []
 ---
@@ -15,7 +15,7 @@ tags: []
 The rpg gate marks crowded_frontier s42 and s44 `no-data` with `GateDataMissingError: kind group ['none'] seen in the run but not declared` once births add the first non-eating living kind
 
 ## Status
-OPEN
+DONE
 
 ## Tier
 standard
@@ -88,6 +88,7 @@ This ticket closes at the PR merge (split agreed with lead-planner 2026-11-21; s
 - `docs/plans/test_architecture/reference/rpg_gate_baseline_format.md` (staleness, "The run row set is declared, not observed")
 
 ## Related Stored Artifacts
+- `agent-working/stored_artifacts/TCK-20261121-RPG-GATE-METRICS-REJECT-A-NON-EATING-KIND-GROUP-AS-UNDECLARED/` (investigation, plan, test plan).
 - rpg-planner-ubuntu's sealed births gate read at d3401ba43 (host-local; not read here).
 
 ## Related Code Areas
@@ -105,13 +106,13 @@ This ticket closes at the PR merge (split agreed with lead-planner 2026-11-21; s
 None: a gate-harness read model. The baseline files are the durable artefact; this ticket changes none.
 
 ## Implementation Notes
-Filing only.
+Built by rpg-implementer-2 (lane B) on branch rpg-gate-none-kind-group; PR #988. The declaration is data in `tests/simulation_quality/rpg_gate/config.yaml` (`non_eating_kind_groups`), loaded strictly by `tools/test_architecture/rpg_gate_baseline.py`, passed by the harness (`rpg_gate_harness.py`, `rpg_gate_run.py`) to `compute` and `pool` in `src/observability/rpg_gate_metrics.py` as `non_eating`. A declared group counts for population, deaths and combat and carries no `O1.starved`, `O1.at_risk` or `O4.accepted` row (so no `O1.starvation_share`); any other undeclared group still raises; a missing food row for a non-declared group raises; a malformed declaration is a `ValueError`. R2 (owner-approved scope, #715 7057159233) applies only to groups with start-of-run population above 0: a pooled `O2.t0_population` (the MAX over seeds, own `POOLED_THRESHOLDS` entry, 1.0) with a strict, fail-closed `when` scope. The report prints the not-applicable groups and the groups first seen after t0. AC1 evidence (births GO 1, head c1183bb24, head caveat vs d3401ba43): crowded_frontier s42 corpse 1000009 (entity 9) rose as entity 39 at tick 630; s44 corpse 1000025 (entity 25) rose as entity 39 at tick 390; kind undead = group `none`. The FLW `none` food rows are removed as wrong in kind (probe S9, output sha 08784b9f: six undead sentinels, hunger rate 0.0 at t0 and t500). Harness hash: moved through config.yaml, rpg_gate_metrics.py, rpg_gate_harness.py and rpg_gate_run.py (not rpg_gate_baseline.py or rpg_gate_report.py); every baseline is stale until `TCK-20261121-RPG-GATE-REBASELINE-AFTER-THE-NONE-KIND-GROUP-HASH-MOVE` (testing's, stays in todos). No gate run was made by this ticket.
 
 ## Test Summary
-Not applicable.
+At d6483a7f0 (by-directory, `-n 1`, gated): `tests/unit/**` all green except `tests/unit/worldassembly/test_corpus_diversity.py`, 5 failures = the known grade-stability rows with main's recorded values (`TCK-20261117-THE-SLOW-CORPUS-GRADE-PINS-ARE-STALE-ON-MAIN`); `tests/architecture` 245 passed; `tests/simulation_quality/rpg_gate` 8 passed. At e4854e43e: `tests/unit/tools` 1423 passed, `tests/simulation_quality/rpg_gate` 8, `tests/architecture` 245; statics on the pinned venv: ruff on `rpg_gate_metrics.py` clean, lint-imports 17 kept / 0 broken, code-health passes, mypy filter no new error. Not run: a main gate run (the re-baseline ticket's step 2).
 
 ## Files Changed
-This ticket only.
+`src/observability/rpg_gate_metrics.py`; `tests/simulation_quality/rpg_gate/config.yaml`; `tools/test_architecture/rpg_gate_baseline.py`, `rpg_gate_harness.py`, `rpg_gate_run.py`, `rpg_gate_report.py`; `tests/unit/observability/test_rpg_gate_metrics.py`; `tests/unit/tools/test_rpg_gate_non_eating.py`; `tests/unit/tools/test_rpg_gate_non_eating_pins.py` (testing's pin, cherry-picked); this ticket and its re-baseline sibling (filed from testing-planner-spawn-sites 4495400e5); `agent-working/stored_artifacts/TCK-20261121-RPG-GATE-METRICS-REJECT-A-NON-EATING-KIND-GROUP-AS-UNDECLARED/`; `docs/REGISTRY.yaml`.
 
 ## Completion Summary
-Open.
+AC1 cause stated with evidence (births GO 1 rows). AC2 `none` declared in the gate config and handled by the ruled rule; the cell is assessed, not `seed_no_data`. AC3 pinned (the metric unit tests and testing's pin). AC4 the PR body states the harness-hash effect and names the re-record ticket. AC5 `rpg_gate_known.yaml`, the baselines and the config's other bytes are not edited. Closed at the PR merge; the re-record is the sibling ticket, testing's.
