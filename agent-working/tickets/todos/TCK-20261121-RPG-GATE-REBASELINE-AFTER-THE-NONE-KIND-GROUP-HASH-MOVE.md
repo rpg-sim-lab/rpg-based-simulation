@@ -31,9 +31,15 @@ Steps 2-4 of the plan in TCK-20261121-RPG-GATE-METRICS-REJECT-A-NON-EATING-KIND-
 
 ## Scope
 1. After the fix PR merges, dispatch `rpg-gate-report.yml` on main (a CI run, not the local heavy slot). The gate is schedule and dispatch only, so no PR check is blocked while baselines read stale.
-2. Build the candidate from that run's documents (`rpg_gate_candidate`); it refuses on a `no-data` document or a `sha` / `harness_hash` / ticks disagreement. Expect no existing row to change value. Declaring `none` in every world (row-set choice (A), 2026-11-21) ADDS zero-valued `none` count rows in all three worlds; they appear in the before/after as appear-only rows and are named in the fix PR body, so they are expected, not a finding. A changed VALUE on an existing row is a finding that goes back to the owner, not an automatic re-baseline (owner, #715).
+2. Build the candidate from that run's documents (`rpg_gate_candidate`); it refuses on a `no-data` document or a `sha` / `harness_hash` / ticks disagreement. Expect no remaining row to change value; the removals and appearances named under the disclosure (21 FLW `none` food rows removed, wrong in kind; zero-valued `none` count rows and O2.t0_population rows added) are expected. Declaring `none` in every world (row-set choice (A), 2026-11-21) ADDS zero-valued `none` count rows in all three worlds; they appear in the before/after as appear-only rows and are named in the fix PR body, so they are expected, not a finding. A changed VALUE on an existing row is a finding that goes back to the owner, not an automatic re-baseline (owner, #715).
 3. Re-record with `python -m tools.test_architecture.rpg_gate_baseline rebaseline ...`, citing the fix ticket, a memo row and the PR, from a main run (model: #948, bb26e4e5f, run 43840618903 at 9c398a068). No `owner_ruling` is expected if no row changes.
 4. A fresh main gate run after the re-record restores the rerun-skip's baseline; its report is read and recorded here.
+
+DISCLOSURE (2026-11-21; probe by lead-planner-u24 on #715, owner-approved R2 (i)): the re-record carries three kinds of change, named in the fix PR body and in this record's before/after:
+1. REMOVED, WRONG IN KIND: frontier_living_world's `none` food rows, i.e. O1.at_risk (mean 6.0), O1.starved (0.0), the pooled O1.starvation_share and the 18 O4.accepted rows. The probe found 6 undead (ids 39-44, undead_purpose, max hunger_rate 0.0 across all 12 t0 and t500 rows, no first-seen ids): non-eaters counted as at risk of starvation. They are not "appear-only" and not a drift; the old rows were wrong, and the removal is the designer's ruling (omit, not null).
+2. APPEARING (appear-only): zero-valued `none` count rows in crowded_frontier and urban_political (declared in every world), plus the new pooled O2.t0_population row for every world and group (judged as drift, never a stop line; the guard value is the MAX over seeds).
+3. UNCHANGED: every other row's value. A changed VALUE on a row that remains goes to the owner before any re-record.
+R2 (owner-approved, i): the stop line applies only where the group's t0 population is above 0 (a strict `when` on O2.t0_population, fail closed when the row is absent); the gate doc prints a first-seen line per cell. Lane B commits this into the fix PR; the stop-line evaluator is in rpg_gate_baseline.py, which is not hashed.
 
 ## Out of Scope
 - Editing `rpg_gate_known.yaml`, the config, or any metric.
@@ -42,7 +48,7 @@ Steps 2-4 of the plan in TCK-20261121-RPG-GATE-METRICS-REJECT-A-NON-EATING-KIND-
 
 ## Acceptance Criteria
 1. The main run id and head sha used for the candidate are recorded, with the `harness_hash` it carries.
-2. The before/after record from `rebaseline` shows only the expected appear-only `none` rows and no changed value on an existing row, or each changed value is reported to the owner before any re-record.
+2. The before/after record from `rebaseline` shows only the named removals (21 FLW `none` food rows: O1.at_risk, O1.starved, pooled O1.starvation_share, O4.accepted x18) and the named appear-only rows (`none` counts, O2.t0_population) and no changed value on a kept row, or each changed value is reported to the owner before any re-record.
 3. The re-record PR cites this ticket, the fix ticket and a memo row; the new baseline is not stale against the current harness.
 4. The first gate run on main after the re-record is read: baseline fresh, rerun-skip source run named, `vs_main` fallback empty.
 
