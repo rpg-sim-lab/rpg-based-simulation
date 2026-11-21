@@ -3,6 +3,8 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Dict, Any, List, Optional, Self, TYPE_CHECKING
 
+from src.core.giveup_records import GIVEUP_RECORDS_CAP, GiveUpDropCounts
+
 if TYPE_CHECKING:
     from src.core.state import EntityState, IntentResult
     from src.core.updates import (
@@ -303,6 +305,15 @@ class NavigationPatch(ComponentPatch):
             elif u_nav.wayround_count_set is not None:
                 new_nav = replace(new_nav, wayround_count=u_nav.wayround_count_set, wayround_best_distance=u_nav.wayround_best_distance_set,
                                   wayround_anchor=u_nav.wayround_anchor_set, wayround_last_tick=u_nav.wayround_last_tick_set)
+            # F2: the typed give-up records. The clear (the strategic pass consumed them) is applied first, then an append of the same update (a new give-up this tick survives a clear); a record
+            # past GIVEUP_RECORDS_CAP drops the oldest and is counted (observability only).
+            if u_nav.giveup_records_clear:
+                new_nav = replace(new_nav, giveup_records=())
+            if u_nav.giveup_record_add is not None:
+                held = (*new_nav.giveup_records, u_nav.giveup_record_add)
+                for _ in range(max(0, len(held) - GIVEUP_RECORDS_CAP)):
+                    GiveUpDropCounts.note()
+                new_nav = replace(new_nav, giveup_records=held[-GIVEUP_RECORDS_CAP:])
         if self.new_position:
             if self.new_position != entity.navigation.position:
                 new_nav = ApplyPath._fast_replace_navigation(new_nav, self.new_position, None)

@@ -13,6 +13,7 @@ if TYPE_CHECKING:
     from src.domains.fame.legend import LegendFact
     from src.domains.belief_institution.model import BeliefInstitution
 from src.core.strategic import StrategicComponent
+from src.core.giveup_records import GiveUpRecord, giveup_canonical
 from src.core.group_record import GroupBindingError, GroupRecord  # noqa: F401  (re-exported: pickles name src.core.state.GroupRecord)
 from src.core.death_cause import DeathRecord
 from src.core.enums import Faction, EntityRole, DiplomaticState, PassiveDeathCause
@@ -527,19 +528,17 @@ class NavigationComponent:
     lodged_in: Optional[int] = None  # F3 (2.155): the building this subject LODGES in (position is its tile, on no tile held); set and cleared only by the apply path; (an insert is refused by the checkpoint schema check; an append needs a FIELD_RULES row)
     last_moved_tick: Optional[int] = None  # PERC-02 (2.210): the tick of the last MOVE of this body: any position change by the movement apply path (a step, a swap or a yield displacement; not lodge entry/exit, not a failed attempt); None = never stepped; LAST field (an insert is refused by the checkpoint schema check; an append needs a FIELD_RULES row)
 
-    # 2.213 (COMB-356): the bounded give-up for the oscillation way-round. The way-round steps taken on the stored target with no net progress, and the best (lowest) Manhattan
-    # distance to the target seen at those steps. Set and reset only by the navigation patch (movement's apply path). F1 (amends 2.213): the count belongs to the PURSUIT, not to one
-    # exact stored tile: `wayround_anchor` is the tile the count opened on and `wayround_last_tick` the tick of its last event. The count ends at the give-up or when the next event
-    # is more than one tile from the anchor or more than WAYROUND_QUIET_TICKS after the last event; a target re-write or a clear does not end it.
+    # 2.213 (COMB-356) + F1: the way-round count belongs to the PURSUIT (count, best distance, the tile it opened on, the tick of its last event); set and reset only by the navigation patch, see MovementSystem.wayround_after_event
     wayround_count: int = 0
     wayround_best_distance: Optional[int] = None
     wayround_anchor: Optional[Tuple[int, int]] = None
     wayround_last_tick: Optional[int] = None
+    giveup_records: Tuple[GiveUpRecord, ...] = ()  # F2 (2.220): the typed way-round give-up records, appended by movement and cleared by the strategic pass (src/core/giveup_records.py); omitted from the canonical form while empty
 
     def to_canonical_dict(self) -> Dict[str, Any]:
         """The navigation block of the entity's canonical form. `step_ready_tick` (D75) is present only once non-zero, so the form of an
         entity that never stepped is unchanged; `lodged_in` (F3) likewise, only while lodged."""
-        res = {
+        res: Dict[str, Any] = {
             "target": self.target,
             "path": self.path,
             "moved_recently": self.moved_recently,
@@ -570,6 +569,7 @@ class NavigationComponent:
             res["wayround_anchor"] = self.wayround_anchor  # F1 (2.213): present only while a count is open
         if self.wayround_last_tick is not None:
             res["wayround_last_tick"] = self.wayround_last_tick
+        res.update(giveup_canonical(self.giveup_records))  # F2: present only while a give-up record is held
         return res
 
 

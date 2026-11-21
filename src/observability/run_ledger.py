@@ -21,6 +21,7 @@ from typing import Any, Dict, List, Optional
 from src.ai.goals.kind_group import eats_outside_its_diet, is_person, kind_group
 from src.ai.goals.scorers_support import perceived_hostiles
 from src.core.conservation import PayeeMissingCounts
+from src.core.giveup_records import GiveUpDropCounts
 from src.core.movement_modes import MovementMode
 from src.core.region_resolution import is_inside_world
 from src.core.spawn_source import SpawnKind
@@ -92,6 +93,7 @@ class RunLedger:
         cls._meat = {}
         cls._attacks = {}
         PayeeMissingCounts.reset()
+        GiveUpDropCounts.reset()
         cls._behaviour = {}
         cls._perception_samples = 0
         cls._out_of_world = {}
@@ -365,7 +367,7 @@ class RunLedger:
             "transfers": dict(sorted(cls._transfers.items())), "hunger_drops": dict(sorted(cls._hunger_drops.items())), "diet_breaches": dict(sorted(cls._diet_breaches.items())),
             "deaths": dict(sorted(cls._deaths.items())), "adds": dict(sorted(cls._adds.items())),
             "world_events": dict(sorted(cls._world_events.items())), "meat": dict(sorted(cls._meat.items())),
-            "attacks": dict(sorted(cls._attacks.items())), "behaviour": dict(sorted(cls._behaviour.items())), "payee_missing": PayeeMissingCounts.counts(), "perception_samples": cls._perception_samples, "out_of_world": dict(sorted(cls._out_of_world.items())), "out_of_world_examples": list(cls._out_of_world_examples), "unsourced_examples": list(cls._unsourced_examples),
+            "attacks": dict(sorted(cls._attacks.items())), "behaviour": dict(sorted(cls._behaviour.items())), "payee_missing": PayeeMissingCounts.counts(), "giveup_records_dropped": GiveUpDropCounts.dropped(), "perception_samples": cls._perception_samples, "out_of_world": dict(sorted(cls._out_of_world.items())), "out_of_world_examples": list(cls._out_of_world_examples), "unsourced_examples": list(cls._unsourced_examples),
         }
         return cls._event(LEDGER_TALLY_EVENT, cls._last_tick, payload)
 

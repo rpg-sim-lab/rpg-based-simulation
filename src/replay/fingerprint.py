@@ -13,7 +13,8 @@ def _navigation_tail(nav: "NavigationComponent") -> str:
     """The optional navigation fragments of an entity's fingerprint: ``lodged_in`` only while lodged (F3), the way-round count, best distance, anchor and last tick only while a count is open (2.213)."""
     lodged = "" if nav.lodged_in is None else "lodged_in=%s:" % nav.lodged_in
     wayround = "wayround=%s@%s:%s:%s:" % (nav.wayround_count, nav.wayround_best_distance, nav.wayround_anchor, nav.wayround_last_tick) if nav.wayround_count else ""
-    return lodged + wayround
+    giveups = "giveups=%s:" % (tuple((r.anchor, r.tick) for r in nav.giveup_records),) if nav.giveup_records else ""  # F2: only while a give-up record is held
+    return lodged + wayround + giveups
 
 
 class StateFingerprinter:

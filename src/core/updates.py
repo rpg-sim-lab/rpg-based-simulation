@@ -20,6 +20,7 @@ if TYPE_CHECKING:
     from src.engine.intent.action_intent import ActionIntent
     from src.engine.policy import GovernorPolicy
 from src.core.dirty import DirtySet
+from src.core.giveup_records import GiveUpRecord
 from src.core.group_update_merge import merge_group_fields
 from src.core.movement_modes import MovementMode
 from src.core.spawn_source import SpawnSource
@@ -85,6 +86,8 @@ class NavigationUpdate:
     wayround_anchor_set: Optional[Tuple[int, int]] = None  # F1 (2.213): the tile the count opened on, and the tick of this event (written by resolve_move only)
     wayround_last_tick_set: Optional[int] = None
     wayround_clear: bool = False  # 2.213: the way-round count ends (the give-up replan)
+    giveup_record_add: Optional[GiveUpRecord] = None  # F2: the give-up's typed record, appended by the navigation patch (written by resolve_move only)
+    giveup_records_clear: bool = False  # F2: the subject's strategic pass has consumed the held records (written by the strategic pass only; applied before an add of the same update)
 
     def is_noop(self) -> bool:
         return (self.target_set is None and not self.target_clear and self.path_set is None and self.step_ready_tick_set is None and 
@@ -93,7 +96,7 @@ class NavigationUpdate:
                 self.wait_count_delta == 0 and self.oscillation_count_delta == 0 and 
                 self.last_position_set is None and self.region_id_set is None and self.lodged_in_set is None and not self.lodged_in_clear and self.last_moved_tick_set is None and
                 self.wayround_count_set is None and self.wayround_best_distance_set is None and self.wayround_anchor_set is None and
-                self.wayround_last_tick_set is None and not self.wayround_clear)
+                self.wayround_last_tick_set is None and not self.wayround_clear and self.giveup_record_add is None and not self.giveup_records_clear)
 
     def merge(self, other: NavigationUpdate) -> NavigationUpdate:
         if not other or other.is_noop():
@@ -106,6 +109,7 @@ class NavigationUpdate:
         if other.oscillation_count_delta != 0: changes["oscillation_count_delta"] = self.oscillation_count_delta + other.oscillation_count_delta
         changes.update(other._lodging_changes())
         changes.update(other._wayround_changes())
+        changes.update(other._giveup_changes())
         return replace(self, **changes)
 
     def _failure_changes(self) -> Dict[str, Any]:
@@ -117,6 +121,10 @@ class NavigationUpdate:
         sets = {"wayround_count_set": self.wayround_count_set, "wayround_best_distance_set": self.wayround_best_distance_set,
                 "wayround_anchor_set": self.wayround_anchor_set, "wayround_last_tick_set": self.wayround_last_tick_set}
         return {**{k: v for k, v in sets.items() if v is not None}, **({"wayround_clear": True} if self.wayround_clear else {})}
+
+    def _giveup_changes(self) -> Dict[str, Any]:
+        """What a merge takes from this update for the give-up records (F2): the record to append if one is set, and the clear flag."""
+        return {**({"giveup_record_add": self.giveup_record_add} if self.giveup_record_add is not None else {}), **({"giveup_records_clear": True} if self.giveup_records_clear else {})}
 
     def _lodging_changes(self) -> Dict[str, Any]:
         """What a merge takes from this update for the lodging fields (F3): the claim's building, and the leave flag."""

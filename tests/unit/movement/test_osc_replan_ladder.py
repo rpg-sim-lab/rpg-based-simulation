@@ -285,6 +285,7 @@ def test_an_open_count_round_trips_through_the_real_checkpoint_writer_and_contin
 
     spec = SimulationScenarioDefinition(id="f1_roundtrip", world_composition="frontier_living_world", perspective="hero_guild_perspective")
     hero = _open_count(_hero(target=(9, 5)), count=1, best=4, anchor=(9, 5), last_tick=7)
+    hero = replace(hero, kind="human")  # main's restore check (PERC-02a) refuses a body whose species has no sense profile; setup only
     state = _state(hero)
     svc = SimpleNamespace(_kernel=SimpleNamespace(state=state), tick=0, _spec=spec)  # exactly what save() reads: kernel.state, tick, spec id
     path = tmp_path / "ckpt.bin"

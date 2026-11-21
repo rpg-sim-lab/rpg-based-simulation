@@ -5,6 +5,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Tuple, Optional, Any, Dict, List
 from dataclasses import dataclass, replace
 
+from src.core.giveup_records import GiveUpRecord
 from src.core.movement_modes import MovementMode
 from src.core.updates import EntityUpdate, NavigationUpdate, StaminaUpdate, LifecycleUpdate
 from src.core.enums import ReasonCode
@@ -80,6 +81,7 @@ class OscReplanOutcome:
     wait_delta: int
     wayround_set: Optional[Tuple[int, int, Tuple[int, int], int]]
     gave_up: bool
+    giveup_record: Optional[GiveUpRecord] = None  # F2: the typed record of the give-up (anchor = the tile the pursuit's count opened on, else this target's tile; the tick), None unless it gave up
 
 
 class MovementSystem:
@@ -183,7 +185,9 @@ class MovementSystem:
         wayround_count, wayround_best, wayround_anchor = wayround_after_event(entity.navigation, target_tile, dist_now, current_tick)
         if way_round is not None and wayround_count <= WAYROUND_LIMIT:
             return OscReplanOutcome(way_round, osc_delta, wait_delta, (wayround_count, wayround_best, wayround_anchor, current_tick), False)
-        return OscReplanOutcome(None, osc_delta, wait_delta, None, True)
+        anchor = entity.navigation.wayround_anchor
+        kept = (int(anchor[0]), int(anchor[1])) if anchor is not None else target_tile
+        return OscReplanOutcome(None, osc_delta, wait_delta, None, True, GiveUpRecord(kept, int(current_tick)))
 
     @staticmethod
     def _yield_update(entity: EntityState, effective_target: Tuple[float, float], state_or_context: Any, current_tick: int) -> Optional[EntityUpdate]:
@@ -345,6 +349,7 @@ class MovementSystem:
         replan = False
         wayround_set: Optional[Tuple[int, int, Tuple[int, int], int]] = None
         wayround_clear = False
+        giveup_record: Optional[GiveUpRecord] = None
         pending_plan = None
 
         if not success and MovementSystem._has_arrived_beside_unenterable_target(entity, effective_target, target_pos, reason_code):
@@ -391,6 +396,7 @@ class MovementSystem:
                         success = False
                         reason_code = ReasonCode.WAYROUND_GIVE_UP  # 2.213 item 6: the give-up is not a legal step; it writes its own typed code, which replaces any older one
                         wayround_clear = True
+                        giveup_record = osc.giveup_record
                 else:
                     osc_delta = 1
             else:
@@ -498,6 +504,7 @@ class MovementSystem:
             wayround_anchor_set=wayround_set[2] if wayround_set else None,
             wayround_last_tick_set=wayround_set[3] if wayround_set else None,
             wayround_clear=wayround_clear,
+            giveup_record_add=giveup_record,
             last_position_set=entity.navigation.position if success else None,
             clear_target=replan,
             clear_path=replan,

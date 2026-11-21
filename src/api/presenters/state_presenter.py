@@ -29,6 +29,7 @@ def _navigation_dto(nav: Any) -> Dict[str, Any]:
         "wayround_best_distance": nav.wayround_best_distance,
         "wayround_anchor": nav.wayround_anchor,
         "wayround_last_tick": nav.wayround_last_tick,
+        "giveup_records": [r.to_canonical() for r in nav.giveup_records],
         "last_failure": nav.last_failure_reason,
         "mode": nav.movement_mode.name if hasattr(nav.movement_mode, 'name') else str(nav.movement_mode),
     }
