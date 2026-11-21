@@ -31,18 +31,18 @@ Steps 2-4 of the plan in TCK-20261121-RPG-GATE-METRICS-REJECT-A-NON-EATING-KIND-
 
 ## Scope
 1. After the fix PR merges, dispatch `rpg-gate-report.yml` on main (a CI run, not the local heavy slot). The gate is schedule and dispatch only, so no PR check is blocked while baselines read stale.
-2. Build the candidate from that run's documents (`rpg_gate_candidate`); it refuses on a `no-data` document or a `sha` / `harness_hash` / ticks disagreement. Expect zero changed rows (the group is inert on main). A changed row is a finding that goes back to the owner, not an automatic re-baseline (owner, #715).
+2. Build the candidate from that run's documents (`rpg_gate_candidate`); it refuses on a `no-data` document or a `sha` / `harness_hash` / ticks disagreement. Expect no existing row to change value. Declaring `none` in every world (row-set choice (A), 2026-11-21) ADDS zero-valued `none` count rows in all three worlds; they appear in the before/after as appear-only rows and are named in the fix PR body, so they are expected, not a finding. A changed VALUE on an existing row is a finding that goes back to the owner, not an automatic re-baseline (owner, #715).
 3. Re-record with `python -m tools.test_architecture.rpg_gate_baseline rebaseline ...`, citing the fix ticket, a memo row and the PR, from a main run (model: #948, bb26e4e5f, run 43840618903 at 9c398a068). No `owner_ruling` is expected if no row changes.
 4. A fresh main gate run after the re-record restores the rerun-skip's baseline; its report is read and recorded here.
 
 ## Out of Scope
 - Editing `rpg_gate_known.yaml`, the config, or any metric.
 - Normalising a validity fail by re-baselining (never allowed).
-- Re-recording anything but the hash and provenance if no row changed.
+- Re-recording anything but the hash, provenance and the expected appear-only `none` rows if no existing value changed.
 
 ## Acceptance Criteria
 1. The main run id and head sha used for the candidate are recorded, with the `harness_hash` it carries.
-2. The before/after record from `rebaseline` shows no changed row, or each changed row is reported to the owner before any re-record.
+2. The before/after record from `rebaseline` shows only the expected appear-only `none` rows and no changed value on an existing row, or each changed value is reported to the owner before any re-record.
 3. The re-record PR cites this ticket, the fix ticket and a memo row; the new baseline is not stale against the current harness.
 4. The first gate run on main after the re-record is read: baseline fresh, rerun-skip source run named, `vs_main` fallback empty.
 
