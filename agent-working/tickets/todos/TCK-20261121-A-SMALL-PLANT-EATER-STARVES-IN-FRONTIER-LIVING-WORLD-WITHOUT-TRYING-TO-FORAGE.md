@@ -76,6 +76,7 @@ None yet. Gate runs 44887314422, 44750897157 and 44544845745 (report docs kept b
 None expected until the cause is known.
 
 ## Implementation Notes
+- 2026-11-21: owner accepted the scoped known entry (#715 7062341398, ask 7062335859): V3, cases frontier_living_world s42 entity 55, owner rpg-planner, expires 2026-12-15, in tools/test_architecture/rpg_gate_known.yaml. known_reds lint: no problems (executed). It lets testing build the REBASELINE from run 44887314422.
 
 ## Test Summary
 
