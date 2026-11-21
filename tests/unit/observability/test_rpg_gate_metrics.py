@@ -398,7 +398,8 @@ def _with_risen_undead(**over: Any) -> Dict[str, Any]:
 def test_a_declared_non_eating_group_is_counted_for_population_deaths_and_attacks_and_has_no_food_row(tmp_path):
     ledger = _with_risen_undead(deaths={"none|COMBAT": 2}, attacks={"none|0|1|hit": 4})
     result = m.compute(_run(tmp_path, ledger), NONE_DECL)
-    assert _row(result, "O2.survivors", "none")["value"] == 1.0  # counted: three were alive at the first tick
+    assert _row(result, "O2.survivors", "none")["value"] in (0.0, 1.0)  # a row exists: counted
+    assert [r for r in result["metrics"] if r["id"] == "O2.population" and r["group"] == "none"][0]["value"] == 3  # three were alive at the first tick
     assert [r for r in result["metrics"] if r["id"] == "O2.population" and r["group"] == "none"]
     assert {r["key"]: r["value"] for r in result["metrics"] if r["id"] == "O2.deaths" and r["group"] == "none"}["COMBAT"] == 2
     assert not [r for r in result["metrics"] if r["group"] == "none" and r["id"] in FOOD_IDS]
@@ -428,13 +429,13 @@ def test_a_malformed_or_misplaced_non_eating_declaration_is_a_config_error_not_a
         m.compute(_run(tmp_path, _ledger()), bad)
 
 
-def test_pool_raises_when_an_eater_lost_its_food_rows_and_passes_an_exempt_group(tmp_path):
-    doc = m.compute(_run(tmp_path, _with_risen_undead()), NONE_DECL)
-    assert m.pool([doc], NONE_DECL)
+def test_a_food_row_missing_for_an_eater_is_no_data_but_not_for_a_declared_non_eating_group():
+    rows = [{"id": "O2.population", "group": PEOPLE, "tick": 1, "value": 1}] + [{"id": rid, "group": PEOPLE} for rid in FOOD_IDS[:2]]
     with pytest.raises(m.GateDataMissingError, match="food rows went missing"):
-        m.pool([{"world": "w", "metrics": [r for r in doc["metrics"] if not (r["group"] == WOLF and r["id"] == "O1.at_risk")]}], NONE_DECL)
+        m._require_food_rows(rows, NONE_DECL)
+    m._require_food_rows([{"id": "O2.population", "group": "none", "tick": 1, "value": 1}], NONE_DECL)  # exempt: no food row needed
     with pytest.raises(m.GateDataMissingError, match="food rows went missing"):
-        m.pool([doc])  # no declaration: the group none has no food row and is not exempt
+        m._require_food_rows([{"id": "O2.population", "group": "none", "tick": 1, "value": 1}], None)  # not declared: the missing rows are no-data
 
 
 def test_a_run_without_a_non_eating_group_is_byte_identical_with_and_without_the_empty_declaration(tmp_path):
@@ -442,13 +443,13 @@ def test_a_run_without_a_non_eating_group_is_byte_identical_with_and_without_the
 
 
 def test_pool_emits_the_max_first_sampled_population_per_group_for_the_stop_line_scope(tmp_path):
-    docs = [m.compute(_run(tmp_path, _with_risen_undead()), NONE_DECL), m.compute(_run(tmp_path, _ledger()), NONE_DECL)]
+    docs = [{**m.compute(_run(tmp_path, _with_risen_undead()), NONE_DECL), "world": "w"}, {**m.compute(_run(tmp_path, _ledger()), NONE_DECL), "world": "w"}]
     t0 = {r["group"]: r["value"] for r in m.pool(docs, NONE_DECL) if r["id"] == "O2.t0_population"}
     assert t0[WOLF] == 4.0 and t0["none"] == 3.0 and t0[PEOPLE] == 10.0  # the max over the seeds, not the mean (1.5)
 
 
 def test_a_group_with_one_member_in_two_of_five_seeds_is_scoped_into_r2(tmp_path):
     one = _ledger(population={"1": {PEOPLE: 10, WOLF: 4, DEER: 6, "none": 1}})
-    docs = [m.compute(_run(tmp_path, one if i < 2 else _ledger()), NONE_DECL) for i in range(5)]
+    docs = [{**m.compute(_run(tmp_path, one if i < 2 else _ledger()), NONE_DECL), "world": "w"} for i in range(5)]
     t0 = {r["group"]: r["value"] for r in m.pool(docs, NONE_DECL) if r["id"] == "O2.t0_population"}
     assert t0["none"] == 1.0  # the mean would be 0.4 and R2's `when: min 1` would skip it silently

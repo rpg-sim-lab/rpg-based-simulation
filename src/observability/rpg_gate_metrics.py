@@ -421,6 +421,15 @@ def _outcome_rows(world: str, ticks: int, ledger: Mapping[str, Any], state: Any,
             + _way_rows(world, ledger, seeds, non_eating))
 
 
+def _require_food_rows(rows: Sequence[Mapping[str, Any]], non_eating: Optional[Mapping[str, Any]]) -> None:
+    """Every group with a population row carries its food rows unless the config declares it non-eating: a food row missing for any other group is no-data, never a quiet gap."""
+    exempt = food_exempt_groups(non_eating)
+    have = {(r["id"], r["group"]) for r in rows}
+    missing = sorted({g for i, g in have if i == "O2.population" and g not in exempt and any((rid, g) not in have for rid in FOOD_ROW_IDS)})
+    if missing:
+        raise GateDataMissingError(f"kind group {missing} has no food rows (O1.starved, O1.at_risk, O4.accepted) and is not declared non-eating: its food rows went missing")
+
+
 def _not_applicable(non_eating: Optional[Mapping[str, Any]]) -> Dict[str, List[str]]:
     """The document's typed record of what was left out: per exempt group, the food row ids that group does not carry (the gate doc prints it per cell)."""
     return {group: list(FOOD_ROW_IDS) for group in sorted(food_exempt_groups(non_eating))}
@@ -441,6 +450,7 @@ def compute(run: Any, non_eating: Optional[Mapping[str, Any]] = None) -> Dict[st
     rows = _validity_rows(run.world, ledger, records, run.state, float(ledger["world_events"].get("meat_decayed_quantity", 0.0)))
     rows += _outcome_rows(run.world, run.ticks, ledger, run.state, tuple(getattr(run, "seeds", ())), non_eating)
     rows.sort(key=lambda r: (r["id"], r["group"], str(r.get("key", "")), r.get("tick") or 0))
+    _require_food_rows(rows, non_eating)
     result: Dict[str, Any] = {"metrics": rows}
     if non_eating:
         result["not_applicable"] = _not_applicable(non_eating)
@@ -488,9 +498,6 @@ def pool(docs: Sequence[Mapping[str, Any]], non_eating: Optional[Mapping[str, An
                 if int(r["tick"]) == start:
                     first_seen[r["group"]].append(float(r["value"]))
     exempt = food_exempt_groups(non_eating)
-    missing = sorted(g for g in survivors if g not in exempt and g not in at_risk)
-    if missing:
-        raise GateDataMissingError(f"kind group {missing} has no O1.at_risk row in the seed documents and is not declared non-eating: its food rows went missing")
     rows: List[Dict[str, Any]] = [
         {"id": "O2.seeds_with_survivors", "class": "outcome", "scope": "pooled", "world": world, "group": group,
          "value": float(n), "floor": POOLED_THRESHOLDS["O2.seeds_with_survivors"]} for group, n in sorted(survivors.items())]
