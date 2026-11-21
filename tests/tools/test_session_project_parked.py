@@ -164,14 +164,15 @@ def test_apply_without_the_parked_option_carries_on_when_no_ticket_is_parked():
     assert error is None and not not_done and client.calls  # the run is not refused: no planned Status needs the missing option
 
 
-def test_apply_without_the_parked_option_refuses_the_whole_run_before_any_write_once_a_ticket_reads_parked():
-    import pytest
-    plan = _plan_with("Parked")
-    assert plan.creates[0]["Status"] == "Parked"
+def test_apply_without_the_parked_option_skips_only_the_parked_item_and_writes_the_rest():
+    # was: refused the whole run (exit 2, board frozen) once a ticket read Parked; now only that item is left alone (the skip ticket, TCK-20261119-PROJECT-SYNC-APPLY-SKIPS-...)
+    main = {"TCK-A": [replace(copy("TCK-A", "todos"), parked=("decision", "memo row 7", "2026-11-10"))], "TCK-B": [copy("TCK-B", "todos")]}
+    plan = plan_for(main)
+    assert {c["Ticket ID"]: c["Status"] for c in plan.creates} == {"TCK-A": "Parked", "TCK-B": "To do"}
     client = _Client()
-    with pytest.raises(pc.ClientRefused) as err:
-        pc.apply_plan(client, _board_without_parked(), plan)
-    assert "not options of their field" in str(err.value) and "Parked" in str(err.value) and client.calls == []  # exit 2 in project_sync.main, nothing written
+    done, not_done, error = pc.apply_plan(client, _board_without_parked(), plan)
+    assert error is None and plan.skipped == {"TCK-A": ["Status 'Parked'"]}
+    assert any("TCK-B" in d for d in done) and not any("TCK-A" in d for d in done)  # TCK-B is written, TCK-A is not created
 
 
 def test_a_bulleted_or_indented_parked_line_is_neither_a_marker_nor_a_malformed_marker_finding():
