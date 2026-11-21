@@ -36,6 +36,25 @@ Where it is raised (read on origin/main c540a0b17): `_require_declared` in `src/
 ## Scope
 ORDER (lead-planner, relaying lead-planner-u24): (1) rpg-designer rules first on whether non-eaters form their own kind group or are excluded from the food pools; (2) then testing-planner with rpg-planner decide the metric-module half and how harness-hash comparability is kept; (3) nothing is built before the designer's ruling; (4) never by loosening `GateDataMissingError`. The diff's review stays with lead-planner-u24 (#715 6519647030), so the testing PR diff goes to it. Correction to the relays: the metric-module half is `src/observability/rpg_gate_metrics.py`, not `rpg_gate_baseline.py`.
 
+## Plan (testing-planner, 2026-11-21; designer's ruling (a) logged on #715 via lead-planner-u24)
+Ruling: undead are not eaters (undead_purpose, hunger "none"). Declare `none` in `tests/simulation_quality/rpg_gate/config.yaml`; the error stays strict for any other undeclared group. `none` counts for population, deaths, combat and attacks. `none` is excluded from the food and hunger metrics (at_risk, starvation, the food-source pools) as a typed not-applicable, so the cell is assessed, not `seed_no_data`. It is a harness-hash change with its own record, landing before births, then a re-read of crowded s42 and s44.
+
+Who: the config line and the metric-module change (`src/observability/rpg_gate_metrics.py`, rpg's by route) are written by rpg's seat (rpg-planner to say which implementer). Testing writes the test pin (AC3) and the hash and re-baseline record. Review: the diff goes to lead-planner-u24 (#715 6519647030); testing-planner reviews the hash and comparability statement.
+
+Precedent read (origin/main c540a0b17). The relay named #955 as a V3 metric edit paired with a re-baseline; that is not what the history shows:
+- #955 (346c2dc78, PERC-02a) changed `src/` and tests only: no file under `rpg_gate`, no metrics module, no config. `src/` is deliberately not hashed, so it did not move the harness hash. Its V3 row is a fail that main inherits, owned by `rpg_gate_known.yaml`, never normalised by a re-baseline.
+- The metrics module last changed on 2026-10-20 (#682, pre-v1 gate fixes; dd7ca2871 floors); baseline v1 was recorded after it on 2026-10-23 (#725, 341f700d0), not in the same PR.
+- The only re-baseline of the current line is #948 (bb26e4e5f, 2026-11-17): "re-baseline the reference to a main run after M1-base", from gate run 43840618903 at 9c398a068, with a hash-neutral hygiene commit ahead of the fix. So the working precedent for a re-record is: a gate run on main, a candidate from its documents, `rebaseline` with a divergence id or memo row plus a PR.
+- Not checked: the contents of `rpg_gate_v2.json` provenance beyond the commit log.
+
+Steps:
+1. Merge the config and metric change (small PR, before births). Pin: a run with a non-eating kind group is not no-data, emits the same row set on every seed, and an undeclared group of any other kind still raises (AC3).
+2. Right after the merge, dispatch `rpg-gate-report.yml` on main (a CI run, not the local heavy slot). Baselines read stale and the rerun-skip falls back to a full rerun until step 4; the gate is schedule and dispatch only, so no PR check is blocked in the window.
+3. Build the candidate from that run's documents (`rpg_gate_candidate`); it refuses on any `no-data` document or hash disagreement. Expect no value changes: the new group is inert on main, so the before/after record should show zero changed rows, only the hash and provenance moving. A changed row is a finding, not a re-baseline.
+4. Re-record with `rebaseline`, citing this ticket and a memo row; the owner decides (one question: the re-record, and whether it lands inside M1; stop lines are not crossed if no row changes, so no `owner_ruling` is expected). Then a fresh main gate run restores the rerun-skip's baseline.
+Alternative (not recommended): the candidate from a PR-head run, recorded in the same PR. It avoids the stale window, but its provenance sha would be a PR head that squash-merge removes from main, and #948 chose a main run on purpose.
+After the re-record: re-read crowded s42 and s44 on the births head (rpg-planner-ubuntu's cell).
+
 Decide the fix with rpg-planner (u24); the error is never suppressed or downgraded, and "none" is not silently dropped from the rows. Candidates:
 - (A) Declare it: `_spawn_kinds` (or the config) names the kinds a birth or rising can add, so `declared_groups` includes `none` and every seed emits the same rows.
 - (B) Make the metrics handle a non-eating group explicitly: a group with no diet is a declared, named case in the food-source and meat-eater rows, with its own stated rule, not a missing declaration.
