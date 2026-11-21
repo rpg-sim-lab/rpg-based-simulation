@@ -8004,6 +8004,32 @@
   - agent-working/stored_artifacts/TCK-20261121-RPG-GATE-METRICS-REJECT-A-NON-EATING-KIND-GROUP-AS-UNDECLARED/test_plan.md
   tags: []
 - type: ticket
+  path: agent-working/tickets/done/TCK-20261121-V3-FLW-S42-E55-GETS-AN-OWNER-ACCEPTED-SCOPED-KNOWN-ENTRY.md
+  ticket_id: TCK-20261121-V3-FLW-S42-E55-GETS-AN-OWNER-ACCEPTED-SCOPED-KNOWN-ENTRY
+  title: Gate V3 on frontier_living_world s42 entity 55 gets an owner-accepted scoped
+    known entry that expires on 2026-12-15
+  tier: hotfix
+  ticket_type: chore
+  date: '2026-11-21'
+  related_code_areas:
+  - tools/test_architecture/rpg_gate_known.yaml
+  artifact_files: []
+  tags:
+  - testing
+- type: ticket
+  path: agent-working/tickets/todos/TCK-20261121-A-SMALL-PLANT-EATER-STARVES-IN-FRONTIER-LIVING-WORLD-WITHOUT-TRYING-TO-FORAGE.md
+  ticket_id: TCK-20261121-A-SMALL-PLANT-EATER-STARVES-IN-FRONTIER-LIVING-WORLD-WITHOUT-TRYING-TO-FORAGE
+  title: A small_plant_eater (entity 55) in frontier_living_world seed 42 starves
+    at t4745 without ever trying FORAGE (gate V3, SURV-06/07, H6)
+  tier: standard
+  ticket_type: bug
+  date: '2026-11-21'
+  related_code_areas:
+  - src/ai/goals/scorers.py (graze/forage scoring), src/systems/strategic_systems/intelligence.py
+  - tools/test_architecture/rpg_gate_known.yaml (the scoped known entry)
+  artifact_files: []
+  tags: []
+- type: ticket
   path: agent-working/tickets/todos/TCK-20261121-RPG-GATE-REBASELINE-AFTER-THE-NONE-KIND-GROUP-HASH-MOVE.md
   ticket_id: TCK-20261121-RPG-GATE-REBASELINE-AFTER-THE-NONE-KIND-GROUP-HASH-MOVE
   title: Re-record the rpg gate baseline from a main run after the `none` kind-group
@@ -8014,6 +8040,20 @@
   related_code_areas:
   - tools/test_architecture/rpg_gate_baseline.py
   - tests/simulation_quality/rpg_gate/baselines/
+  artifact_files: []
+  tags: []
+- type: ticket
+  path: agent-working/tickets/todos/TCK-20261121-TWO-ANCHOR-TILES-ARE-GIVEN-UP-ON-BY-MANY-SUBJECTS-FOR-THOUSANDS-OF-TICKS.md
+  ticket_id: TCK-20261121-TWO-ANCHOR-TILES-ARE-GIVEN-UP-ON-BY-MANY-SUBJECTS-FOR-THOUSANDS-OF-TICKS
+  title: 'Two tiles, [40, 82] in frontier_living_world and [40, 31] in urban_political,
+    are given up on again and again by many subjects for 4000+ ticks: check whether
+    world content makes them unreachable'
+  tier: standard
+  ticket_type: bug
+  date: '2026-11-21'
+  related_code_areas:
+  - src/worldassembly/
+  - src/engine/tactical_destinations.py
   artifact_files: []
   tags: []
 - type: ticket
@@ -8031,6 +8071,18 @@
   artifact_files: []
   tags:
   - delivery
+- type: ticket
+  path: agent-working/tickets/todos/TCK-20261120-A-HELD-ACTION-THAT-PRODUCES-NO-UPDATE-IS-RE-DISPATCHED-EVERY-TICK.md
+  ticket_id: TCK-20261120-A-HELD-ACTION-THAT-PRODUCES-NO-UPDATE-IS-RE-DISPATCHED-EVERY-TICK
+  title: A held ENTITY_ACT whose actor produces no update (NO_ACTION_UPDATE) is never
+    ended, so the scheduler may re-dispatch the same do-nothing action every tick
+  tier: standard
+  ticket_type: bug
+  date: '2026-11-20'
+  related_code_areas:
+  - src/engine/pipeline_phases/actions.py; src/engine/scheduler.py; src/engine/action_router.py
+  artifact_files: []
+  tags: []
 - type: ticket
   path: agent-working/tickets/todos/TCK-20261120-A-TOWN-RETURN-PROJECT-NEVER-COMPLETES-WHEN-ITS-TARGET-IS-REACHED.md
   ticket_id: TCK-20261120-A-TOWN-RETURN-PROJECT-NEVER-COMPLETES-WHEN-ITS-TARGET-IS-REACHED

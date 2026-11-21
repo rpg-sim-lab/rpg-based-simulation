@@ -75,7 +75,7 @@ Designer framing: this is a third "repeated failure, never learned" shape, after
 - Main-law frequency unknown; the counts decide the priority.
 
 ## Implementation Notes
-Parked: waits on TCK-20261117-SPLIT-INTELLIGENCE-PY-BELOW-ITS-LINE-CEILINGS since 2026-11-18
+- 2026-11-20 (rpg-planner): the split it waited on merged as #987 (b73c2c7f9), so its Parked marker is removed. Dispatched to lane C (rpg-implementer-3) as K1: rebase onto main, then its own S9 and S10.
 - 2026-10-30 designer (N14 ruling): this ticket is the STALEMATE/WANDER nav FAMILY. Add as evidence the 100 of 155 urban s46 stalls aimed at an entity or position (mostly resolve_blocker), with counts split by target type. Named sub-finding: the movement rungs consider only the subject's own neighbours, so they never route to a door tile 2+ steps away (p4, fatigue, t1267: a free tile for 65 ticks, failure LEGAL). Sequenced after N14 F1 and the A' re-measure, before #781. Lane B counts (main): trigger A STALEMATE_BREAK 12 runs; trigger B (door) belongs to TCK-20261021.
 ## Test Summary
 ## Files Changed
