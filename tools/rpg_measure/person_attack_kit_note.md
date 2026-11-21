@@ -1,0 +1,69 @@
+---
+status: active
+layer: testing
+authority: P2
+audience: agent
+tags: []
+---
+
+# Person-attack trace kit: note for the designer's sha approval
+
+Author: rpg-implementer-ubuntu, 2026-11-21, on rpg-planner-ubuntu's dispatch. Source of truth: the brief word for word at rpg-planner-ubuntu's seat commit `ab7f07e68`
+(`agent-working/stored_artifacts/TCK-20261121-MEAT-EATERS-IN-FRONTIER-LIVING-WORLD-ATTACK-PEOPLE-FORTY-TIMES-MORE-AFTER-THE-NIGHT-AND-SLOT-FIXES/o3_trace_brief_relayed_2026-11-21.md`). The ticket
+TCK-20261121-MEAT-EATERS-IN-FRONTIER-LIVING-WORLD-ATTACK-PEOPLE-FORTY-TIMES-MORE-AFTER-THE-NIGHT-AND-SLOT-FIXES is on `origin/rpg-planner-tickets-5` at **1148d41e7** (aligned to the brief: R1-R7, view (e), s43 required, the designer's arm, period and not-assessable rules); the brief governs. rpg-designer's answers: rpg-planner-ubuntu's seat commit `a3eedf7e7`. Owner ruling #715 7063603750. **Nothing here has been run on a world: this is a build and a set of unit controls.**
+
+## Files (sha256 in the record set)
+| file | role |
+|---|---|
+| `person_attack_spy.py` | the child process: `--mode plain` (the twin) or `--mode spy` (record-only wrapper over `ApplyPath.apply_generation`); the name carries `_spy` for the shared busy gate |
+| `person_attack_summary.py` | offline summarizer: views (a)-(e), rules R1-R7, the cell validity checks, the verdict switch |
+| `person_attack_run.py` | runner: per cell the plain twin, then the spy; two arms side by side (at most 2 processes); interpreter freeze re-checked after every process; twin check |
+| `person_attack_launch.sh` | launcher: preflight, the runner under the slot with the watcher, the summarizer, the tree-clean proof, the seal LAST |
+| `person_attack_watch.sh`, `person_attack_tree_check.py` | the RSS watcher; the proof that a frozen tree is exactly `git ls-tree -r <sha>` (paths and blob hashes, no `data/runs`) |
+| `tests/tools/test_person_attack_kit.py` | the planted controls (40 tests, unit level, no world run) |
+
+## Hooks: the code the kit wraps or reads, with file:line at EACH sha
+Measured by importing and inspecting the real objects from each frozen tree (`hooks_probe.py`, outputs `hooks_87792e3e8.json` and `hooks_e72270894.json` in the record set's `probe-notes/`).
+| hook | NEW 87792e3e8 | BASE e72270894 |
+|---|---|---|
+| O3 counting, the ledger: `RunLedger._count_attacks` (+1 per entity update with `combat.attacker_id` set and `hp_delta < 0`) | `src/observability/run_ledger.py:281-293` | `run_ledger.py:279-291` (same body) |
+| O3 counting, the gate: `rpg_gate_metrics._combat_rows` (sums keys with `victim_person == "1"` for attackers kept by `_is_wild_meat_eater`) | `src/observability/rpg_gate_metrics.py:396-411` | `rpg_gate_metrics.py:366-381` (same body) |
+| meat-group choice: `_is_wild_meat_eater` (`_group_has(group, "meat")` and `person != "1"`), `_group_has` | `rpg_gate_metrics.py:141-143`, `:123-124` | `:119-121`, `:115-116` |
+| `kind_group`, `species_kind_group`, `is_person` | `src/ai/goals/kind_group.py:30-32`, `:21-27`, `:35-37` | the same lines |
+| the species the group is read from | `kind_group` calls `src.core.species.species_of` (`src/core/species.py:31-33`, kind = species) | `kind_group` calls `src.content_semantics.faction.get_species_id_str` (`faction.py:63-67`); **`src/core/species.py` does not exist at BASE** |
+| `calendar.is_night` | `src/core/calendar.py:26-29` (`time_of_day` :21; `NIGHT_START_TICK` 1800 :16, `NIGHT_END_TICK` 600 :17) | **ABSENT**: `calendar.py` has only `fantasy_years_to_ticks` (:16); BASE's night checks read the raw clock (SURV-08 amendment "the clock") |
+| SURV-08 active-period source | **none in `src/`** at either sha; the periods exist only as the owner amendment in `docs/world_rules/life-body/survival-needs.md:1042-1044` (Q5(a)); line :1045 says "Repository evidence: MISSING (2026-11-17). No kind declares a period" | none |
+| `ApplyPath.apply_generation` (the wrapped function) | `src/engine/apply.py:241-610` | the same lines |
+| `lodging_rules.is_lodged`, `SLEEP_ACTIONS` = {REST, SLEEP} | `src/core/lodging_rules.py:28-30` | the same lines |
+| `build_kernel` | `tools/test_architecture/rpg_gate_run.py:50-66` | the same lines |
+The three differences (the night helper, the species reader, the period source) are the ones to read. The kit uses each tree's OWN `kind_group` and species reader, so the O3 count is the gate's own at each sha; only the day/night split and the active-period reading use a shared instrument (choices 1-3).
+Import proof at BASE: with the shared `.venv` interpreter, cwd and PYTHONPATH = the BASE tree (which predates #978/#981/#980), the kit's spy module loads, `TreeReads.from_tree()` resolves every function above, `RunLedger` has `reset_run_state/configure/observe/tally_event`, and `CanonicalStateHasher`, `ObservabilityConfig`, the pinned runner and `arm_child._derived_conditions` import (`main_imports_ok` in the probe output). A world is NOT built by that proof.
+
+## Measurement choices (approved together with the kit shas; none changes a rule)
+1. **Night is one instrument for both arms:** `is_night` from the NEW tree's `src/core/calendar.py`, loaded by file path (its sha256 is written into the summary), applied to the row's `world_time` (the world clock the state carries, not the tick) of an engagement's first attack. Night is TWO bounds (`tod >= 1800 or tod < 600`); the kit re-derives nothing. BASE's own simulation had no `is_night`; BASE's day/night split is the shared instrument's view, not what BASE's agents used.
+2. **Periods table**, keyed by species id, the same for both arms, **pinned inside `person_attack_summary.py`** (`PERIODS`, `PERIODS_QUOTE`, `PERIODS_SOURCE`, `MISSING_LAW_QUOTE`, so the kit sha256 covers it; a test compares the quote with the rule text) from the owner amendment Q5(a) (`survival-needs.md:1042-1044` at 87792e3e8): diurnal = human, elf, dwarf, orc, lizardfolk, small_plant_eater, dragonkin; nocturnal = goblin, wolf, spider, undead, troll; any hour = slime, spirit. A species not in the table is never defaulted: its engagements are `period_unknown` and counted (choice 9).
+3. **Inside the active period:** diurnal = not night, nocturnal = night, any hour = always; evaluated at the engagement's first attack. This is the kit's reading of SURV-08.
+4. **Engagement:** attack events (hit or miss) by one attacker on one victim; gap <= 50 ticks stays, gap > 50 opens a new one (controls at 50 and 51). A **miss** is an update with `combat.attacker_id` set and `hp_delta >= 0`; **a hit** is `hp_delta < 0`, the ledger's own definition.
+5. **Outcome of an engagement**, first match: `victim_killed`, `victim_fled` (movement mode RETREAT after an event, or a RETREAT mode row within the engagement plus the gap), `attacker_fled`, `unresolved_at_end` (the run ended within the gap), else `disengaged`.
+6. **R3** is evaluated on the tighter reading: most engagements one attacker STARTS inside any rolling 2400-tick window (the calendar-day bin maximum is reported too).
+7. **R7** reads the O3-group hits (the attackers the trace is about); the same counts over every attacker are reported as `all_attackers_info`. A flight or fight DECISION between two hits of one victim: its mode after the first hit is RETREAT (flight) or PURSUE (fight), or it attacked on that tick (fight), or a mode row RETREAT/PURSUE lies between the two ticks, or its mode before the second hit is RETREAT/PURSUE. Asleep = the task action is in `SLEEP_ACTIONS`; lodged = `navigation.lodged_in` set; both read from the state BEFORE the hit.
+8. **R1** checks the attacker's group against its declared diet read a second time straight from the kind's content (`get_kind_properties(species).body.diet`): a miss is a metric-grouping finding for testing.
+9. **Rules apply** to a seed with >= 10 engagements (R1-R5, R7) or >= 10 NEW hits (R6); below that the rule is `NOT_APPLICABLE` with the value it would have had (`if_applied`), so the quiet control seed s43 is still read.
+10. **Arms and attribution (rpg-designer's answer, fixed logic, no switch):** R1-R5 and R7 are judged on NEW; BASE is context, computed and shown side by side. A miss on NEW AND on BASE in the same seed reads "BUG CANDIDATE, pre-existing (not attributed to #953/#954)"; a miss on NEW only reads "BUG CANDIDATE, attributed". R6 is NEW vs BASE (a miss is attributed). Every miss names the attacker ids.
+11. **Not assessable is not a pass:** in a seed with >= 10 engagements, if the engagements of unknown-species attackers are >= 10% of the seed's engagements, R5 reads `NOT_CLEARED (R5 not assessable)`, which counts as HELD, with the species listed. **Ruled by rpg-designer (confirmed in the follow-up to the answers):** below 10%, the share is reported with the species named and R5 decides on the assessed engagements only (>= 90% of them inside the active period); at >= 10% the seed is NOT CLEARED (HELD). Every R5 miss carries the tag "SURV-08 law MISSING in code". An invalid cell (twin hashes differ, wiring mismatch, ...) on NEW cannot be cleared either: HELD.
+12. **Overall verdict:** any miss on NEW -> BUG CANDIDATE (attributed if any miss is attributed, else pre-existing; HELD items are still listed); else any NOT_CLEARED or unassessable -> HELD (HELD outranks INTENDED); else INTENDED, only when every seed with >= 10 engagements on NEW passes every rule. **A kit reading:** a run in which no seed has >= 10 engagements on NEW reads NOT EVALUATED (there is nothing to clear). The night/day split is labelled a MEASUREMENT in the output (`measurement_labels`): NEW's `is_night` applied offline to both arms; BASE's agents never used it.
+13. **Recording OFF:** like the births re-check, both the twin and the spy run with `SIM_OBS_MODE=OFF`, `RPG_OBS_MODE=OFF` and the `no_replay` kernel flag; the spy drives the REAL `RunLedger.observe` itself (events discarded). The gate's own runs record ON; the sim is deterministic, so the O3 counts should equal the gate's (a second-source check: NEW FLW s42..s46 = 51, 5, 0, 59, 5 and BASE 0, 0, 0, 3, 0 in the brief), but that equality is a check, not an assumption.
+
+## What the spy cross-checks inside every cell (cell-invalidating)
+The spy's count of O3-group hit rows must equal the ledger's own `attacks` counter summed the way `_combat_rows` sums it, per group and in total (`WIRING_MISMATCH`, exit 5, else); the global observability mode is re-asserted OFF on every apply; the twin's and the spy's final hashes must be equal; the pinned-runner verdict of both must be PINNED; no ERROR+ log line.
+
+## Controls (unit level; raw output is in the report to rpg-planner-ubuntu)
+The engagement split at gaps 50 and 51; every rule R1-R7 with one firing and one non-firing case (R6 and R7 included, R7 for asleep, lodged, awake-no-decision, and a decision that breaks the run); the below-threshold `NOT_APPLICABLE` case; `period_unknown` and the not-assessable threshold at 9.9% (R5 decides on the rest) and 10% (NOT_CLEARED); NEW-only (attributed) vs both-arm (pre-existing) misses, a BASE-only miss that does not fail NEW, INTENDED, HELD outranking INTENDED, an invalid NEW cell, a miss outranking HELD, NOT EVALUATED; the pinned quote against the rule text; the real `calendar.py` night bounds; a spy that SEES a hit, a miss and a non-O3 attacker and agrees with a stand-in ledger in the ledger's key shape; a ledger that disagrees (`WIRING_MISMATCH`, exit 5); a mode breach; the `inject_hit` positive control (a quiet tick reads non-zero in both counters, and the file is never valid); the never-fire control (exit 6); twin hashes that differ invalidate a cell; the runner's plan order and dry run (no process), the freeze-change void, `data/runs` moved out and never overwritten; the frozen-tree proof on a real git repo (changed, extra, missing file, `data/runs`); the launcher's self-match-proof heavy check (words in a shell's command line or script text never match; a real interpreter running such a script does; `ps -ww`, because a COLUMNS-truncated `ps` hid the process in the first draft).
+
+## Not done, on purpose
+- No world run of any size (the kit preflight's fixture run and a `--control inject_hit` run on a real world each need a small-run GO).
+- Nothing in `src/`, no test expectation, no gate file is touched; the kit only reads.
+
+## Known limits
+- Two processes share ONE 3 GiB slot (`MemoryMax=3G`, watcher at 2.85 GiB summed RSS); no FLW 5000t RSS reading exists in the record. If the first cell is killed by the watcher the run stops and is reported, never retried by the kit.
+- `person_attack_spy.py` imports the tree's `src` lazily inside functions (the module must load without a tree); `tools/` and `tests/` are not under the CI ruff scope (`ruff check src`).
