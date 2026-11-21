@@ -5079,3 +5079,30 @@
   proof_type: regression
   test_path: tests/unit/engine/test_wild_creature_regarded_by_appraisal.py
   divergence_note: See docs/guidelines/intentional_divergences.md Sections 2.216 (this change) and 2.107 (#536, the original).
+
+- id: COMB-359
+  text: 'TCK-20261117-A-SUBJECT-RE-CHOOSES-THE-TARGET-IT-JUST-GAVE-UP-ON: a way-round give-up appends a typed GiveUpRecord(anchor, tick)
+    to NavigationComponent.giveup_records (at most 4; movement appends, the strategic
+    pass clears). The subject''s next strategic pass files the ACCESS blocker blocker_access_<x>_<y>
+    of each record, merged into the stored one (failure_count 1 for a new blocker, n + 1
+    for an existing one; suppression_until_tick = tick + 100 x 2^(failure_count - 1), capped
+    at 800), and clears the records. While a blocker is suppressed or a record is pending,
+    destination_suppressed forbids every tile within Chebyshev 1 of the anchor to both tactical
+    target writers (the typed outcome OBJECTIVE_DESTINATION_SUPPRESSED, no navigation update) and
+    the strategic bridge. A blocker reaching access_giveup_limit (4, data/content/strategy/blocker_settings.yaml)
+    ends the project current at that give-up, ProjectEnd.DESTINATION_GIVEN_UP.'
+  status: verified
+  priority: P1
+  legacy_evidence: null
+  v2_evidence: src/core/giveup_records.py (GiveUpRecord, GiveUpDropCounts, HeldTargetAtAnchorCounts), src/core/state.py
+    (NavigationComponent.giveup_records), src/engine/patches.py (NavigationPatch.apply), src/engine/movement.py
+    (the give-up writes the record), src/systems/strategic_systems/blocker_lifecycle.py (giveup_filing_update,
+    consume_giveup_records), src/strategy/destination_suppression.py (destination_suppressed, SuppressionHit),
+    src/engine/tactical_objective.py (ObjectiveDestinationSuppressed), src/systems/strategic_systems/intelligence.py
+    (the consume hook and the bridge guards), src/content/blocker_settings.py, src/core/strategic.py (ProjectEnd.DESTINATION_GIVEN_UP).
+  proof_type: regression
+  test_path: tests/unit/strategic/test_giveup_filing.py
+  divergence_note: See docs/guidelines/intentional_divergences.md Section 2.220.
+  support_boundary: 'Paired effect NOT MEASURED yet (the F1+F2 own-job, bars G1-G5 and G1-held, is pending).
+    redirection.py is unwired and untouched; a target writer that skips destination_suppressed is
+    reported by G1, not prevented.'
