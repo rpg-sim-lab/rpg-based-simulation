@@ -183,7 +183,7 @@ services:
     # pinned by tag and multi-arch index digest; Dependabot bumps it. auth-default-access deny-all: nobody reads or writes a topic without a login or
     # token; the user and token are created with ntfy's own CLI (see the top of this file). Bound to 127.0.0.1 only. Metrics are on a dedicated
     # in-network port (9091), outside the auth, scraped by Prometheus as job "ntfy". The auth and cache databases live in the ntfy_data volume.
-    image: binwiederhier/ntfy:v2.38.0@sha256:771309aecfce18d8fe2bfb8069994ddd6be6ca6ccdd7badace3d791a0045ff0d
+    image: binwiederhier/ntfy:v2.38.1@sha256:038da2be5e668fee6d36a62884eea48975e1b71c29a56964e5298c1b9165a573
     command: serve
     mem_limit: 96m # measured 2026-10-20 (58-minute proof run): anon 26 MiB, anon + active_file 58 MiB (message-cache file pages), docker stats 61 MiB; raised from 64m (platform-planner)
     init: true # needed by the healthcheck (no zombie processes)
