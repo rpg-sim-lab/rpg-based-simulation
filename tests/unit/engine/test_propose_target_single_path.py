@@ -10,6 +10,8 @@ A source test, not a behaviour test: it parses ``src/`` and finds every call tha
      as the value (``ast.dump`` equality): the body of `propose_target(..) is not None` / `destination_open(..)` / `destination_suppressed(..) is None`, the else of the negated forms; or it is dominated by an
      earlier REFUSING early return (`if propose_target(..) is None: return`, `if not destination_open(..): return`). In both forms no name in the written value is reassigned between the test and the write.
 
+Limit (accepted by the designer): attribute and subscript mutation (``obj.pos = ...``, ``xs[0] = ...``) between the guard and the write is not tracked, because decision code reads frozen state.
+
 A target equal to the subject's own position (the base is the function's first parameter, or `entity` / `subject`) is a hold, allowed by value; another entity's position is a place. Builders that take the target as an argument (`regroup_to_town_update`, `stalemate_break_update`, `_retreat`, `_walk_to`) are allowed
 per function, and every call site of each is held to the same rule. ``StrategicRedirectionSystem.enforce`` is not wired into the pipeline (the fused pass owns the bridge): allowed per function, with a test
 that says so. A planted unguarded write must be caught: `test_the_mutants_are_caught` runs synthetic sources through the same checker.

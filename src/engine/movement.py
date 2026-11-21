@@ -5,6 +5,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Tuple, Optional, Any, Dict, List
 from dataclasses import dataclass, replace
 
+from src.content.common_knowledge_seed import warmed_catalog
 from src.content.wayround_settings import WayroundSettings, wayround_settings
 from src.core.giveup_records import GiveUpRecord
 from src.core.movement_modes import MovementMode
@@ -55,17 +56,19 @@ def live_action_style(entity: "EntityState", state_or_context: Any) -> int:
 
 # 2.213 (COMB-356): the way-round law's two numbers live in data (data/content/movement/wayround_settings.yaml, a catalog family, so they are part of the run's identity): the step limit before the
 # oscillation replan is the real one (rpg-designer 2026-11-17, N = 2) and the quiet window, the longest gap between two events of one pursuit, past which the next event opens a fresh count (200 ticks).
-# They are read from the warmed catalog and BOUND ONCE, on the first way-round event of the process, never from the file at tick time and never per entity per tick; `WAYROUND_LIMIT` and
-# `WAYROUND_QUIET_TICKS` remain importable names that resolve to the bound values.
-_WAYROUND: Optional[WayroundSettings] = None
+# They are read from the warmed catalog, never from the file at tick time, and bound per catalog: one provider call per way-round EVENT (never per entity per tick), the result cached against the catalog
+# object it came from and re-read when the warmed catalog is a different one (so the cache is never hidden durable state); `WAYROUND_LIMIT` and `WAYROUND_QUIET_TICKS` remain importable names that
+# resolve to the bound values.
+_WAYROUND: Optional[Tuple[object, WayroundSettings]] = None
 
 
 def _wayround() -> WayroundSettings:
-    """The bound way-round settings: read from the warmed catalog on first use, then the same object."""
+    """The way-round settings of the CURRENT warmed catalog: the cached value while the catalog is the same object, a fresh read when it is not."""
     global _WAYROUND
-    if _WAYROUND is None:
-        _WAYROUND = wayround_settings()
-    return _WAYROUND
+    cat = warmed_catalog()
+    if _WAYROUND is None or _WAYROUND[0] is not cat:
+        _WAYROUND = (cat, wayround_settings(cat))
+    return _WAYROUND[1]
 
 
 def __getattr__(name: str) -> int:

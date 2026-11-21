@@ -43,7 +43,26 @@ def test_movement_binds_the_values_the_constants_had_so_nothing_changes():
 
     assert (wayround_settings().limit, wayround_settings().quiet_ticks) == (2, 200)
     assert (movement.WAYROUND_LIMIT, movement.WAYROUND_QUIET_TICKS) == (2, 200)
-    assert movement._wayround() is movement._wayround()  # bound once: the same object on every call
+    assert movement._wayround() is movement._wayround()  # the same catalog: the same cached object on every call
+
+
+def test_the_movement_binding_follows_the_warmed_catalog_and_returns_when_it_returns(monkeypatch):
+    """The cache is keyed on the catalog object, so it is never hidden durable state: provider A (limit 2) reads 2, provider B (limit 3) reads 3, back to A reads 2."""
+    import src.engine.movement as movement
+
+    class _Cat:
+        def __init__(self, limit):
+            self.wayround_settings = {"wayround_settings": WayroundSettingsDefinition(id="wayround_settings", wayround_limit=limit, wayround_quiet_ticks=200)}
+
+    a, b = _Cat(2), _Cat(3)
+    monkeypatch.setattr(movement, "_WAYROUND", None)
+    current = {"cat": a}
+    monkeypatch.setattr(movement, "warmed_catalog", lambda: current["cat"])
+    assert movement._wayround().limit == 2 and movement.WAYROUND_LIMIT == 2
+    current["cat"] = b
+    assert movement._wayround().limit == 3 and movement.WAYROUND_LIMIT == 3
+    current["cat"] = a
+    assert movement._wayround().limit == 2
 
 
 @pytest.mark.parametrize("key", ["wayround_limit", "wayround_quiet_ticks"])
