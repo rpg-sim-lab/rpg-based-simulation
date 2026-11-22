@@ -40,8 +40,8 @@ Read-only list from testing-planner, spot-checked by the ubuntu lead at 613a8365
    - drop the attacker-side wild filter `_is_wild_meat_eater` (:141-143) and the victim flag test (:404);
    - replace the row set `declared_wild_meat_eaters` (:265-271) and `_tick0_persons` (:223-229) with "declared diet groups with t0 population > 0";
    - keep the `_require_declared` guard (:407) so an undeclared group is an error, not a silent row;
-   - rename the row id so it drops "people" (rpg-designer suggests `O3.attacks_by_diet_group`; the name is testing-planner's call).
-2. O6.kills_not_eaten: drop the attacker flag (:402), and emit one row per exact diet group containing meat.
+   - rename the row id to `O3.attacks_by_group` (testing-planner's name, 2026-11-22).
+2. O6.kills_not_eaten: drop the attacker flag (:402), and emit one row per exact diet group containing meat, under the new id `O6.kills_not_eaten_by_group` (testing-planner's name; today's row has group "*", so its keys change either way).
 3. O1/O2 already drop the person field through `_split`, so they need no change. Confirm that by test.
 4. A before/after table of the O3 and O6 rows, under the old and the new definition, for the 20 saved reports (or v2). It goes to the owner through lead-planner-u24 BEFORE this lands.
 5. Docs: the gate's metric description and any parity-ledger or observability doc that names "attacks on people".
@@ -82,7 +82,7 @@ Read-only list from testing-planner, spot-checked by the ubuntu lead at 613a8365
 - src/observability/rpg_gate_metrics.py; src/ai/goals/kind_group.py (`is_person`, read only); src/observability/run_ledger.py (key layout, unchanged)
 
 ## Assumptions / Open Questions
-- The new row id name is testing-planner's call.
+- Row ids are settled by testing-planner: O3.attacks_on_people -> O3.attacks_by_group and O6.kills_not_eaten -> O6.kills_not_eaten_by_group, both recorded as renames in the v3 diff (scope 6) and both covered by the AC4a test.
 - The O3' re-trace (FINAL combined scope, stage 1) may refine the before/after numbers. It does not change the definition.
 
 ## Durable state, lifecycle and clocks
