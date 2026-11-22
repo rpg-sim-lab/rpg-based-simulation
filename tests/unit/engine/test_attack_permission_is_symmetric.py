@@ -151,3 +151,74 @@ def test_b5_no_forced_reflex_the_prey_does_not_choose_its_predator_as_a_target(p
 
     predator, prey = _pair(predator_kind, prey_kind, 42)
     assert not perceived_hostile(prey, predator, night=False, tick=None)
+
+
+# ---- a recent hit keeps the pair engaged while the attacker repositions between blows (tactical_threat.attacked_me_recently, both directions)
+NOW = 100
+
+
+def _hit(victim, attacker, ago):
+    from dataclasses import replace
+
+    return replace(victim, combat=replace(victim.combat, last_hit_tick=NOW - ago, last_hit_attackers=(attacker.id,)))
+
+
+def _legal_at(attacker, target, seed):
+    from src.core.enums import ReasonCode
+    from src.core.state import AuthoritativeState
+
+    state = AuthoritativeState(tick=NOW, seed=seed, entities={attacker.id: attacker, target.id: target})
+    return LegalityServiceV2.verify_attack_legality(attacker, target, state, night=False)[1] is not ReasonCode.FRIENDLY_FIRE_ILLEGAL
+
+
+def _repositioning_fed_pair(predator_kind, prey_kind, seed):
+    from dataclasses import replace
+
+    predator, prey = _pair(predator_kind, prey_kind, seed, predator_hunger=0.0)
+    predator = replace(predator, task=replace(predator.task, payload={"target_position": (0.0, 0.0), "reason": "REPOSITION"}))  # no target_id
+    return predator, prey
+
+
+@pytest.mark.parametrize("seed", SEEDS)
+@pytest.mark.parametrize("predator_kind,prey_kind", PAIRS)
+def test_a_fed_attacker_that_hit_5_ticks_ago_and_is_repositioning_is_still_engaged_both_ways(predator_kind, prey_kind, seed):
+    predator, prey = _repositioning_fed_pair(predator_kind, prey_kind, seed)
+    prey = _hit(prey, predator, ago=5)
+    assert _legal_at(predator, prey, seed) and _legal_at(prey, predator, seed)
+
+
+@pytest.mark.parametrize("seed", SEEDS)
+@pytest.mark.parametrize("predator_kind,prey_kind", PAIRS)
+def test_the_same_pair_11_ticks_after_the_last_hit_with_no_target_named_is_refused_both_ways(predator_kind, prey_kind, seed):
+    predator, prey = _repositioning_fed_pair(predator_kind, prey_kind, seed)
+    prey = _hit(prey, predator, ago=11)
+    assert not _legal_at(predator, prey, seed) and not _legal_at(prey, predator, seed)
+
+
+@pytest.mark.parametrize("seed", SEEDS)
+@pytest.mark.parametrize("predator_kind,prey_kind", PAIRS)
+def test_the_reverse_the_prey_hit_its_attacker_5_ticks_ago_keeps_the_pair_engaged_both_ways(predator_kind, prey_kind, seed):
+    predator, prey = _repositioning_fed_pair(predator_kind, prey_kind, seed)
+    predator = _hit(predator, prey, ago=5)
+    assert _legal_at(predator, prey, seed) and _legal_at(prey, predator, seed)
+
+
+@pytest.mark.parametrize("predator_kind,prey_kind", PAIRS)
+def test_control_without_a_recorded_hit_the_repositioning_fed_pair_is_refused(predator_kind, prey_kind):
+    """Failing control for the three above: the engagement comes from the hit record, not from the setup."""
+    predator, prey = _repositioning_fed_pair(predator_kind, prey_kind, 42)
+    assert not _legal_at(predator, prey, 42) and not _legal_at(prey, predator, 42)
+
+
+def test_the_recent_hit_window_is_imported_not_copied():
+    import ast
+    from pathlib import Path
+
+    from src.engine import hostility, tactical_threat
+
+    tree = ast.parse(Path(hostility.__file__).read_text(encoding="utf-8"))
+    assigned = {t.id for n in ast.walk(tree) if isinstance(n, ast.Assign) for t in n.targets if isinstance(t, ast.Name)}
+    assert "ATTACKED_RECENTLY_WINDOW_TICKS" not in assigned, "hostility must not define its own copy of the window"
+    assert not [n for n in ast.walk(tree) if isinstance(n, ast.Constant) and n.value == tactical_threat.ATTACKED_RECENTLY_WINDOW_TICKS and isinstance(n.value, int)
+                and not isinstance(n.value, bool)], "no literal copy of the window value in hostility.py"
+    assert hostility.attacked_me_recently is tactical_threat.attacked_me_recently

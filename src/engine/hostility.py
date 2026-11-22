@@ -16,6 +16,7 @@ from src.core.calendar import is_night
 from src.core.species import species_of
 from src.engine.appraisal import Relation, appraise, perceives
 from src.engine.behavior_consumers import get_kind_properties
+from src.engine.tactical_threat import attacked_me_recently
 from src.engine.tile_distance import manhattan_tile_distance
 from src.entities.identity_resolver import (
     EntityIdentityResolver,
@@ -42,6 +43,14 @@ def source_identity(entity: "EntityState") -> Tuple[str, str]:
 def is_engaged(entity: "EntityState", other: "EntityState") -> bool:
     """True when either names the other as its target (the combat-engaged state the relation context reads)."""
     return entity.task.payload.get("target_id") == other.id or other.task.payload.get("target_id") == entity.id
+
+
+def is_engaged_or_recently_fought(entity: "EntityState", other: "EntityState", tick: Optional[int]) -> bool:
+    """True when the pair is engaged for permission: either's current task names the other (``is_engaged``), or either hit the other within ``ATTACKED_RECENTLY_WINDOW_TICKS``
+    (``attacked_me_recently``, in both directions, so a fed attacker repositioning between blows still counts). A caller with no tick reads the task alone."""
+    if is_engaged(entity, other):
+        return True
+    return tick is not None and (attacked_me_recently(entity, other, tick) or attacked_me_recently(other, entity, tick))
 
 
 def is_wild_creature(entity: "EntityState") -> bool:
@@ -108,12 +117,12 @@ def is_feeding_kill(state: "AuthoritativeState", attacker_id: Optional[int], vic
 
 def attack_allowed(attacker: "EntityState", target: "EntityState", faction_verdict: bool, *, night: bool, tick: Optional[int]) -> bool:
     """Decisions 44 and 47, CONFLICT-03: permission to attack is a fact about the PAIR and holds both ways. An attack the factions refuse (``faction_verdict`` False) is still
-    permitted when the pair is engaged (either names the other as its target) or EITHER party appraises the other as PREDATION: the hunter may strike what it hunts, and what is hunted may strike its hunter. The target's current task
+    permitted when the pair is engaged (either names the other as its target, or either hit the other within the recent-hit window) or EITHER party appraises the other as PREDATION: the hunter may strike what it hunts, and what is hunted may strike its hunter. The target's current task
     never decides permission (a predator between blows carries no target, and its prey must still be allowed to hit back); whether the prey CHOOSES to strike is the decision
     layer's. ``night`` (the caller's ``is_night(state.world_time)``) and ``tick`` (the caller's tick, which dates the signals the perception gate reads: a body that just moved reads
     moving) are required, so the legality of an attack judges perception by the same clock as the decision."""
     if is_wild_creature(attacker) or is_wild_creature(target):
         faction_verdict = False  # decision 47: appraisal decides alone when a wild creature is on either side
-    if faction_verdict or is_engaged(attacker, target):
-        return True  # engaged: either names the other as its target, a fact about the pair and the same from both sides
+    if faction_verdict or is_engaged_or_recently_fought(attacker, target, tick):
+        return True  # engaged: a fact about the pair, the same from both sides
     return Relation.PREDATION in (relation(attacker, target, night=night, tick=tick), relation(target, attacker, night=night, tick=tick))
