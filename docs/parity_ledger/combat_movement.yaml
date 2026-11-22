@@ -5118,3 +5118,14 @@
     caught by tests/unit/engine/test_propose_target_single_path.py (the guard is tied to the written
     value) and reported by G1/G6. Unit rows for the fallbacks: tests/unit/strategic/test_propose_target.py,
     tests/unit/engine/test_notice_suppressed_goal_stands.py.'
+- id: COMB-360
+  text: "TCK-20261122-A-PREY-MAY-NOT-STRIKE-ITS-PREDATOR-BETWEEN-THE-PREDATORS-BLOWS: attack permission is a property of the pair. For a wild pair (decision 47) an attack is legal when either party hit the other within ATTACKED_RECENTLY_WINDOW_TICKS or either party appraises the other as PREDATION (no task is read); the target's current task no longer decides it, so a prey may strike its predator between the predator's blows (CONFLICT-03, DEV-016 extended)."
+  status: verified
+  priority: P1
+  legacy_evidence: null
+  v2_evidence: "src/engine/hostility.py (attack_allowed, recently_fought), src/engine/tactical_threat.py (attacked_me_recently, ATTACKED_RECENTLY_WINDOW_TICKS), src/engine/legality.py:309 (the one call)."
+  proof_type: regression
+  test_path: tests/unit/engine/test_attack_permission_is_symmetric.py
+  divergence_note: See docs/guidelines/intentional_divergences.md Section 2.222 (this change) and DEV-016 (the faction-verdict symmetry).
+  support_boundary: "Permission reads the victim's last hit record (10-tick window) and appraisal, never a task; limits are disclosed in 2.222. Choosing to strike back is the decision layer's (Step B)."
+
