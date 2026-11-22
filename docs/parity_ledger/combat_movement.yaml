@@ -5095,7 +5095,7 @@
     distance, home, then the own-tile hold; combat positioning: the branch does not fire; stalemate-break:
     hold; objective: the typed idle; bridge: the next alternative and a typed target_clear of a suppressed
     stored target; executor re-emission: the typed DestinationSuppressedEnd). v2.2a A'': in the navigation
-    patch a clear that carries an anchor (the give-up record's, or the strategic pass's suppression clear
+    patch a clear that carries an anchor (the give-up record''s, or the strategic pass''s suppression clear
     NavigationUpdate.target_clear_anchor) beats a same-update target_set within Chebyshev 1 of that anchor;
     a set elsewhere stands.'
   status: verified
