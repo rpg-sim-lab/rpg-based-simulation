@@ -123,7 +123,7 @@ def need_rates(entity: Any) -> Tuple[float, float]:
 def hunger_after_accrual(entity: Any, biological_cadence: int) -> float:
     """The hunger this subject has once one biological accrual step has run (the step ``ApplyPath`` takes on a biological-due tick): the one expression
     the apply path and the town healing gate both read, so neither can disagree with the starvation drain about which side of the starving line a body is on."""
-    return min(100.0, entity.biological.hunger + need_rates(entity)[0] * biological_cadence)
+    return float(min(100.0, entity.biological.hunger + need_rates(entity)[0] * biological_cadence))
 
 
 def undeclared_need_kinds(state: Any, catalog: Any) -> Dict[Tuple[Optional[str], int], int]:

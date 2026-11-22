@@ -22,6 +22,18 @@ if TYPE_CHECKING:
     from src.core.updates import StateUpdate
     from src.engine.cadence import SystemCadence
 
+PASSIVE_HEAL_AMT = 1  # HP a hurt body on a town tile regains on each town-resolution pass
+
+
+def _town_heal_update(entity: "EntityState", ent_upd: EntityUpdate, tick: int, cadence: "SystemCadence") -> "EntityUpdate | None":
+    """The entity's update with the town-tile heal merged in, or None when it is not healed. Nothing heals at or past the starving line (D36, D42), the one line
+    natural healing and the starvation drain use, read as the hunger the apply step will test (``_hunger_when_applied``)."""
+    if entity.combat.hp >= entity.combat.max_hp or _hunger_when_applied(entity, tick, cadence) >= STARVING_LINE:
+        return None
+    cb_upd = ent_upd.combat or CombatUpdate()
+    return replace(ent_upd, combat=cb_upd.merge(CombatUpdate(hp_delta=PASSIVE_HEAL_AMT)))
+
+
 class TownResolutionSystem:
     """
     Authoritative handler for town territory resolution.
@@ -64,7 +76,6 @@ class TownResolutionSystem:
             new_metric_counters[key] = new_metric_counters.get(key, 0) + 1
 
         # 2. Constants & Caches
-        PASSIVE_HEAL_AMT = 1
         is_tax_tick = (state.tick % (cadence.town_resolution * 2) == 0)
         
         # Pre-cache faction keys for faster resource lookup
@@ -96,10 +107,9 @@ class TownResolutionSystem:
             # --- Part A: Town Logic (Healing). Building services (bed, meal, sale) land with their action: building_services.py ---
             tile_pos = (int(pos[0]), int(pos[1]))
             if tile_pos in state.town_tiles:
-                # Healing: nothing heals at or past the starving line (D36, D42), the one line natural healing and the starvation drain use
-                if entity.combat.hp < entity.combat.max_hp and _hunger_when_applied(entity, state.tick, cadence) < STARVING_LINE:
-                    cb_upd = ent_upd.combat or CombatUpdate()
-                    ent_upd = replace(ent_upd, combat=cb_upd.merge(CombatUpdate(hp_delta=PASSIVE_HEAL_AMT)))
+                healed = _town_heal_update(entity, ent_upd, state.tick, cadence)
+                if healed is not None:
+                    ent_upd = healed
                     refined_entity_updates[e_id] = ent_upd
 
             # --- Part B: Regional Effects (Tax, Suppression) ---
