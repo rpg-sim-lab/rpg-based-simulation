@@ -120,36 +120,36 @@ def destination_open(entity: EntityState, pos: Tuple[float, float], tick: int, s
     return destination_suppressed(entity, pos, tick, staged) is None
 
 
-def suppression_anchor(entity: EntityState, pos: Tuple[float, float], tick: int, staged: Optional[EntityUpdate] = None) -> Optional[Tuple[int, int]]:
-    """The anchor tile of the suppression that forbids ``pos`` for this subject at ``tick`` (what `destination_suppressed` found), or None when ``pos`` is open. The strategic pass's typed target clear carries it
-    (`NavigationUpdate.target_clear_anchor`), so the navigation patch can let that clear beat a same-update set near the same anchor."""
+def suppression_anchors(entity: EntityState, pos: Tuple[float, float], tick: int, staged: Optional[EntityUpdate] = None) -> Tuple[Tuple[int, int], ...]:
+    """The anchor tile of the suppression that forbids ``pos`` for this subject at ``tick`` (what `destination_suppressed` found) as a one-tuple, or () when ``pos`` is open. The strategic pass's typed target clear carries it
+    (`NavigationUpdate.target_clear_anchors`), so the navigation patch can let that clear beat a same-update set near the same anchor."""
     hit = destination_suppressed(entity, pos, tick, staged)
-    return None if hit is None else hit.anchor
+    return () if hit is None else (hit.anchor,)
 
 
-def filed_suppression_anchor(entity: EntityState, staged: Optional[StrategicUpdate], tick: int) -> Optional[Tuple[int, int]]:
-    """The anchor of an ACCESS suppression the pass FILES or EXTENDS for this subject at ``tick`` (a staged ``blockers_add_or_update`` blocker, unresolved, suppressed past ``tick``, past its stored suppression): the filer's own fact. With
-    several, the lowest blocker id's anchor (one per update is carried). None when the pass filed none."""
+def filed_suppression_anchors(entity: EntityState, staged: Optional[StrategicUpdate], tick: int) -> Tuple[Tuple[int, int], ...]:
+    """The anchors of every ACCESS suppression the pass FILES or EXTENDS for this subject at ``tick`` (a staged ``blockers_add_or_update`` blocker, unresolved, not removed by the same update, suppressed past ``tick`` and past its
+    stored suppression), sorted and de-duplicated: the filer's own fact. Written only by the strategic pass, which is the only writer of blocker extensions. () when the pass filed none."""
     if staged is None:
-        return None
-    best: Optional[Tuple[str, Tuple[int, int]]] = None
+        return ()
+    found = set()
     for blocker in staged.blockers_add_or_update:
         tile = access_blocker_tile(blocker)
         stored = entity.strategic.blockers.get(blocker.id)
-        if tile is None or blocker.resolved or blocker.suppression_until_tick <= tick or (stored is not None and blocker.suppression_until_tick <= stored.suppression_until_tick):
+        if tile is None or blocker.id in staged.blockers_remove or blocker.resolved or blocker.suppression_until_tick <= tick or (stored is not None and blocker.suppression_until_tick <= stored.suppression_until_tick):
             continue
-        if best is None or blocker.id < best[0]:
-            best = (blocker.id, tile)
-    return None if best is None else best[1]
+        found.add(tile)
+    return tuple(sorted(found))
 
 
 def navigation_with_filing_anchor(entity: EntityState, nav: Optional[NavigationUpdate], staged: Optional[StrategicUpdate], tick: int) -> Optional[NavigationUpdate]:
-    """``nav`` carrying the anchor of a suppression the pass filed this tick as `target_clear_anchor` WITHOUT `target_clear` (the navigation patch then drops a same-update set near it and clears a stored target near it, and nothing
-    else). ``nav`` is returned as it is when the pass filed nothing or the update already carries an anchor (the refusal clear's)."""
-    anchor = filed_suppression_anchor(entity, staged, tick)
-    if anchor is None or (nav is not None and nav.target_clear_anchor is not None):
+    """``nav`` carrying the anchors of the suppressions the pass filed this tick in `target_clear_anchors` WITHOUT `target_clear` (the navigation patch then drops a same-update set near any of them and clears a stored target near
+    any of them, and nothing else), united with the anchors it already carries (the refusal clear's). ``nav`` is returned as it is when the pass filed nothing."""
+    filed = filed_suppression_anchors(entity, staged, tick)
+    if not filed:
         return nav
-    return replace(nav or NavigationUpdate(), target_clear_anchor=anchor)
+    held = nav.target_clear_anchors if nav is not None else ()
+    return replace(nav or NavigationUpdate(), target_clear_anchors=tuple(sorted(set(held) | set(filed))))
 
 
 def propose_target(entity: EntityState, pos: Tuple[float, float], tick: int, staged: Optional[EntityUpdate] = None) -> Optional[Tuple[float, float]]:

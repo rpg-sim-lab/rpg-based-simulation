@@ -62,7 +62,7 @@ if TYPE_CHECKING:
     from src.engine.cadence import SystemCadence
 
 from src.core.state import EntityState, AuthoritativeState
-from src.strategy.destination_suppression import destination_open, navigation_with_filing_anchor, regroup_to_town_update, suppression_anchor
+from src.strategy.destination_suppression import destination_open, navigation_with_filing_anchor, regroup_to_town_update, suppression_anchors
 from src.core.hold_mode import hold_reset_kwargs
 from src.core.enums import EntityRole
 from src.core.updates import (
@@ -511,7 +511,7 @@ class StrategicIntelligenceSystem:
             
             has_nav_update = lodged_stayer or (ent_upd.navigation and ent_upd.navigation.target_set is not None)
             _staged = lambda: replace(ent_upd, strategic=strat_up)  # D1: the update staged so far this tick (the give-up record movement_routing staged, the blockers consume filed)
-            if entity.navigation.target is not None and not destination_open(entity, entity.navigation.target, state.tick, _staged()): ent_upd = replace(ent_upd, navigation=replace(ent_upd.navigation or NavigationUpdate(), target_clear=True, target_clear_anchor=suppression_anchor(entity, entity.navigation.target, state.tick, _staged())))  # D2(B) + A'': a stored target at a suppressed anchor is cleared, typed, and the clear carries that anchor
+            if entity.navigation.target is not None and not destination_open(entity, entity.navigation.target, state.tick, _staged()): ent_upd = replace(ent_upd, navigation=replace(ent_upd.navigation or NavigationUpdate(), target_clear=True, target_clear_anchors=suppression_anchors(entity, entity.navigation.target, state.tick, _staged())))  # D2(B) + A'': a stored target at a suppressed anchor is cleared, typed, and the clear carries that anchor
             current_project_id = strat_up.current_project_id_set if strat_up.current_project_id_set is not None else entity.strategic.current_project_id
             
             active_blockers = [b for b_id, b in entity.strategic.blockers.items() if b_id not in new_removals and not b.resolved]

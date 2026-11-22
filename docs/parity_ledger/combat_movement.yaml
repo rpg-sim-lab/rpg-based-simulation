@@ -5096,7 +5096,7 @@
     hold; objective: the typed idle; bridge: the next alternative and a typed target_clear of a suppressed
     stored target; executor re-emission: the typed DestinationSuppressedEnd). v2.2a A'': in the navigation
     patch a clear that carries an anchor (the give-up record''s, or the strategic pass''s suppression clear
-    NavigationUpdate.target_clear_anchor) beats a same-update target_set within Chebyshev 1 of that anchor;
+    NavigationUpdate.target_clear_anchors) beats a same-update target_set within Chebyshev 1 of that anchor;
     a set elsewhere stands. The pass that files or extends a suppression carries its anchor with no clear: a same-update set near it is dropped and a stored target near it is cleared.'
   status: verified
   priority: P1
@@ -5109,7 +5109,7 @@
     (the consume hook and the bridge guards), src/content/blocker_settings.py, src/core/strategic.py (ProjectEnd.DESTINATION_GIVEN_UP),
     src/strategy/destination_suppression.py (propose_target, DestinationSuppressedEnd, reaffirm_move_update), src/engine/tactical*.py,
     src/engine/tactical_destinations.py (retreat_destination candidates), src/engine/executor.py and worker_logic.py (the typed end),
-    src/core/updates.py (NavigationUpdate.target_clear_anchor), src/core/giveup_records.py (giveup_clear_beats_target, near_anchor).
+    src/core/updates.py (NavigationUpdate.target_clear_anchors), src/core/giveup_records.py (anchored_target, near_anchor), src/strategy/destination_suppression.py (suppression_anchors, filed_suppression_anchors, navigation_with_filing_anchor), src/systems/strategic_systems/intelligence.py:577 (the filing anchor). The A'' tests are in tests/unit/strategic/test_giveup_clear_and_service.py.
   proof_type: regression
   test_path: tests/unit/strategic/test_giveup_filing.py
   divergence_note: See docs/guidelines/intentional_divergences.md Section 2.220.

@@ -281,7 +281,7 @@ class NavigationPatch(ComponentPatch):
         new_nav = changes.get("navigation", entity.navigation)
         if self.navigation:
             u_nav = self.navigation
-            final_target, drop_path = anchored_target(u_nav.target_set, bool(u_nav.target_clear or u_nav.clear_target), new_nav.target, u_nav.giveup_record_add, u_nav.target_clear_anchor)  # F2 v2.2a A'': an anchor (the give-up's, or the strategic pass's) drops a same-update set near it and clears a stored target near it (the path with it); anywhere else today's precedence
+            final_target, drop_path = anchored_target(u_nav.target_set, bool(u_nav.target_clear or u_nav.clear_target), new_nav.target, u_nav.giveup_record_add, u_nav.target_clear_anchors)  # F2 v2.2a A'': an anchor (the give-up's, or the strategic pass's) drops a same-update set near it and clears a stored target near it (the path with it); anywhere else today's precedence
             new_nav = replace(
                 new_nav,
                 target=final_target,

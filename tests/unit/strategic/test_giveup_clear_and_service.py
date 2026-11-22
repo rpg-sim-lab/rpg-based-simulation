@@ -2,18 +2,16 @@
 the slow pass (no fast path) and by a work-queue tier (inside the G4 window). Each rule has a failing control: the same scene with the rule removed gives the other answer."""
 from dataclasses import replace
 
-import pytest
 
 from src.core.builder import V2EntityBuilder
 from src.core.dirty import DirtySet
-from src.core.giveup_records import GIVEUP_NEAR_RADIUS, GiveUpRecord, giveup_clear_beats_target, near_anchor
+from src.core.giveup_records import GIVEUP_NEAR_RADIUS, GiveUpRecord, anchored_target, near_anchor
 from src.core.inventory import ItemStack
 from src.core.state import AuthoritativeState
 from src.core.updates import NavigationUpdate, StateUpdate
 from src.engine import patches
 from src.engine.cadence import SystemCadence
 from src.engine.patches import NavigationPatch
-from src.strategy import destination_suppression
 from src.systems.strategic import StrategicIntelligenceSystem
 from src.systems.strategic_systems.work_queue import StrategicWorkQueue
 
@@ -56,7 +54,7 @@ def test_the_rule_reads_the_records_own_anchor_not_another():
     """A record for P with a set near a DIFFERENT anchor Q: the set stands (decided by P only; no world read, no stored blocker)."""
     upd = NavigationUpdate(giveup_record_add=GiveUpRecord(P, 10), clear_target=True, target_set=(60.0, 61.0))
     assert _applied_target(upd)[0] == (60.0, 61.0)
-    assert not giveup_clear_beats_target((60.0, 61.0), GiveUpRecord(P, 10)) and giveup_clear_beats_target((60.0, 61.0), GiveUpRecord(Q, 10))
+    assert anchored_target((60.0, 61.0), False, None, GiveUpRecord(P, 10), ())[0] == (60.0, 61.0) and anchored_target((60.0, 61.0), False, None, GiveUpRecord(Q, 10), ())[0] is None
 
 
 def _chebyshev_literals(path):
@@ -149,7 +147,7 @@ def test_a_blocker_holder_keeps_its_own_tier_and_the_record_tier_is_the_last_urg
 
 # --- A'' generalised: the strategic pass's suppression clear carries its anchor (rpg-designer, F2 pairing re-run) ---------------------------------------------
 def _suppression_clear(**kw):
-    return NavigationUpdate(target_clear=True, target_clear_anchor=P, **kw)
+    return NavigationUpdate(target_clear=True, target_clear_anchors=(P,), **kw)
 
 
 def test_the_pass_clear_for_anchor_p_beats_a_same_tick_walk_set_near_p():
@@ -164,7 +162,7 @@ def test_a_set_far_from_the_clear_anchor_stands():
 
 
 def test_a_give_up_record_and_a_suppression_clear_in_one_update_are_both_honoured_each_for_its_own_anchor():
-    both = dict(giveup_record_add=GiveUpRecord(P, 10), clear_target=True, target_clear=True, target_clear_anchor=Q)
+    both = dict(giveup_record_add=GiveUpRecord(P, 10), clear_target=True, target_clear=True, target_clear_anchors=(Q,))
     assert _applied_target(NavigationUpdate(target_set=(20.0, 21.0), **both))[0] is None  # near the record's anchor P
     assert _applied_target(NavigationUpdate(target_set=(60.0, 59.0), **both))[0] is None  # near the clear's anchor Q
     assert _applied_target(NavigationUpdate(target_set=(40.0, 40.0), **both))[0] == (40.0, 40.0)  # near neither
@@ -172,13 +170,13 @@ def test_a_give_up_record_and_a_suppression_clear_in_one_update_are_both_honoure
 
 def test_no_anchor_means_todays_precedence_the_set_beats_a_plain_clear():
     assert _applied_target(NavigationUpdate(target_clear=True, target_set=(20.0, 20.0)))[0] == (20.0, 20.0)
-    assert not giveup_clear_beats_target((20.0, 20.0), None, None) and giveup_clear_beats_target((20.0, 20.0), None, P)
+    assert anchored_target((20.0, 20.0), True, None, None, ()) == ((20.0, 20.0), False) and anchored_target((20.0, 20.0), True, None, None, (P,)) == (None, True)
 
 
 def test_the_clear_anchor_is_a_typed_update_field_that_merges_and_counts_as_a_change():
-    assert NavigationUpdate().is_noop() and not NavigationUpdate(target_clear_anchor=P).is_noop()
+    assert NavigationUpdate().is_noop() and not NavigationUpdate(target_clear_anchors=(P,)).is_noop()
     merged = NavigationUpdate(target_set=(20.0, 20.0)).merge(_suppression_clear())
-    assert merged.target_clear_anchor == P and merged.target_set == (20.0, 20.0) and merged.target_clear is True
+    assert merged.target_clear_anchors == (P,) and merged.target_set == (20.0, 20.0) and merged.target_clear is True
     assert _applied_target(merged)[0] is None  # the merged update (walk first, the pass's clear after) loses its set
 
 
@@ -189,19 +187,19 @@ def test_control_the_same_scene_without_the_rule_keeps_the_walk_set(monkeypatch)
 
 def test_the_fused_pass_clears_a_suppressed_stored_target_and_names_the_anchor_that_refused_it():
     from src.core.strategic import BlockerState
-    from src.strategy.destination_suppression import access_blocker_id, suppression_anchor
+    from src.strategy.destination_suppression import access_blocker_id, suppression_anchors
     anchor = (20, 20)
     e = V2EntityBuilder(1).kind("worker").location(10.0, 10.0).navigation(target=(20.0, 20.0)).build()
     blocker = BlockerState(id=access_blocker_id(anchor), kind="access", subject=f"{anchor}", suppression_until_tick=500, giveup_count=1)
     e = replace(e, strategic=replace(e.strategic, blockers={blocker.id: blocker}))
-    assert suppression_anchor(e, (21.0, 20.0), 5) == anchor and suppression_anchor(e, (40.0, 40.0), 5) is None
+    assert suppression_anchors(e, (21.0, 20.0), 5) == (anchor,) and suppression_anchors(e, (40.0, 40.0), 5) == ()
     upd = _pass(e).entity_updates.get(1)
-    assert upd is not None and upd.navigation is not None and upd.navigation.target_clear is True and upd.navigation.target_clear_anchor == anchor
+    assert upd is not None and upd.navigation is not None and upd.navigation.target_clear is True and upd.navigation.target_clear_anchors == (anchor,)
 
 
-# --- the filing anchor: the pass that files a suppression for P says so (target_clear_anchor WITHOUT target_clear) --------------------------------------------
+# --- the filing anchor: the pass that files a suppression for P says so (target_clear_anchors WITHOUT target_clear) --------------------------------------------
 def _filing(**kw):
-    return NavigationUpdate(target_clear_anchor=P, **kw)
+    return NavigationUpdate(target_clear_anchors=(P,), **kw)
 
 
 def _applied_with_stored(nav_update, stored):
@@ -232,14 +230,19 @@ def test_filing_4_a_stored_target_near_p_and_a_filing_for_p_with_no_set_is_clear
 
 
 def test_filing_5_the_record_the_refusal_clear_and_the_filing_anchor_in_one_update_give_one_consistent_result():
-    upd = dict(giveup_record_add=GiveUpRecord(P, 10), clear_target=True, target_clear=True, target_clear_anchor=P)
+    upd = dict(giveup_record_add=GiveUpRecord(P, 10), clear_target=True, target_clear=True, target_clear_anchors=(P,))
     assert _applied_with_stored(NavigationUpdate(target_set=(20.0, 21.0), **upd), (40.0, 40.0))[0] is None  # a set near P loses to all three at once
     assert _applied_with_stored(NavigationUpdate(target_set=(40.0, 41.0), **upd), (21.0, 20.0))[0] == (40.0, 41.0)  # a far set stands even over a near stored target
     assert _applied_with_stored(NavigationUpdate(**upd), (21.0, 20.0))[0] is None
 
 
-def test_filing_a_set_dropped_by_a_filing_leaves_a_far_stored_target_alone():
-    assert _applied_with_stored(_filing(target_set=(20.0, 20.0)), (40.0, 40.0))[0] == (40.0, 40.0)
+def test_filing_a_set_dropped_by_a_filing_leaves_a_far_stored_target_alone_and_clears_the_stored_path():
+    e = V2EntityBuilder(1).kind("HERO").location(5.0, 5.0).navigation(target=(40.0, 40.0), path=[(6.0, 6.0), (7.0, 7.0)]).build()
+    assert e.navigation.path
+    changes = {}
+    NavigationPatch(entity_id=1, navigation=_filing(target_set=(20.0, 20.0))).apply(e, changes)
+    nav = changes["navigation"]
+    assert nav.target == (40.0, 40.0) and nav.path is None  # the target stays, the stored path is cleared so movement re-plans
 
 
 def test_filing_control_without_the_rule_the_near_set_stands_and_the_near_stored_target_stays(monkeypatch):
@@ -248,21 +251,86 @@ def test_filing_control_without_the_rule_the_near_set_stands_and_the_near_stored
     assert _applied_with_stored(_filing(), (21.0, 20.0))[0] == (21.0, 20.0)
 
 
-def test_the_pass_that_files_a_suppression_carries_its_anchor_and_nothing_else_clears():
+def test_the_pass_that_files_a_suppression_carries_its_anchors_and_nothing_else_clears():
     from src.core.strategic import BlockerState
     from src.core.updates import StrategicUpdate
-    from src.strategy.destination_suppression import access_blocker_id, filed_suppression_anchor, navigation_with_filing_anchor
+    from src.strategy.destination_suppression import access_blocker_id, filed_suppression_anchors, navigation_with_filing_anchor
     e = V2EntityBuilder(1).kind("worker").location(10.0, 10.0).build()
     filed = BlockerState(id=access_blocker_id(P), kind="access", subject=f"{P}", suppression_until_tick=500, giveup_count=1)
     staged = StrategicUpdate(blockers_add_or_update=[filed])
-    assert filed_suppression_anchor(e, staged, 5) == P
+    assert filed_suppression_anchors(e, staged, 5) == (P,)
     nav = navigation_with_filing_anchor(e, None, staged, 5)
-    assert nav.target_clear_anchor == P and nav.target_clear is False and nav.clear_target is False  # a bare clear would clear a far stored target: it is not emitted
-    assert filed_suppression_anchor(e, StrategicUpdate(), 5) is None and navigation_with_filing_anchor(e, None, StrategicUpdate(), 5) is None
+    assert nav.target_clear_anchors == (P,) and nav.target_clear is False and nav.clear_target is False  # a bare clear would clear a far stored target: it is not emitted
+    assert filed_suppression_anchors(e, StrategicUpdate(), 5) == () and navigation_with_filing_anchor(e, None, StrategicUpdate(), 5) is None
     expired = replace(filed, suppression_until_tick=5)
-    assert filed_suppression_anchor(e, StrategicUpdate(blockers_add_or_update=[expired]), 5) is None  # not suppressed past the tick
+    assert filed_suppression_anchors(e, StrategicUpdate(blockers_add_or_update=[expired]), 5) == ()  # not suppressed past the tick
     held = replace(e, strategic=replace(e.strategic, blockers={filed.id: filed}))
-    assert filed_suppression_anchor(held, staged, 5) is None  # unchanged stored suppression is not a filing
-    assert filed_suppression_anchor(held, StrategicUpdate(blockers_add_or_update=[replace(filed, suppression_until_tick=900)]), 5) == P  # extended
-    own = NavigationUpdate(target_clear=True, target_clear_anchor=Q)
-    assert navigation_with_filing_anchor(e, own, staged, 5) is own  # the refusal clear's anchor wins
+    assert filed_suppression_anchors(held, staged, 5) == ()  # unchanged stored suppression is not a filing
+    assert filed_suppression_anchors(held, StrategicUpdate(blockers_add_or_update=[replace(filed, suppression_until_tick=900)]), 5) == (P,)  # extended
+    own = NavigationUpdate(target_clear=True, target_clear_anchors=(Q,))
+    assert navigation_with_filing_anchor(e, own, staged, 5).target_clear_anchors == tuple(sorted({P, Q})) and navigation_with_filing_anchor(e, own, staged, 5).target_clear is True  # united with the refusal clear's, the clear kept
+
+
+# --- the filing source end to end through the fused pass, and the several-anchors cases (architecture review) ------------------------------------------------
+def _with_records(e, records):
+    return replace(e, navigation=replace(e.navigation, giveup_records=tuple(records)))
+
+
+def test_the_fused_pass_that_files_a_suppression_returns_its_anchor_without_a_clear():
+    """End to end: a pending record for P is consumed by the pass, which files the blocker; the update the pass returns carries P and NO clear. Removing the final-update wiring in intelligence.py fails this."""
+    e = _with_records(V2EntityBuilder(1).kind("worker").location(10.0, 10.0).build(), [GiveUpRecord(P, 3)])
+    upd = _pass(e).entity_updates.get(1)
+    assert upd is not None and upd.navigation is not None
+    assert upd.navigation.target_clear_anchors == (P,) and upd.navigation.target_clear is False and upd.navigation.clear_target is False
+
+
+def test_control_a_pass_that_files_nothing_carries_no_anchor():
+    upd = _pass(V2EntityBuilder(1).kind("worker").location(10.0, 10.0).build()).entity_updates.get(1)
+    assert upd is None or upd.navigation is None or not upd.navigation.target_clear_anchors
+
+
+def test_a_refusal_anchor_a_and_a_filing_anchor_b_in_one_tick_a_same_tick_set_near_b_is_dropped():
+    both = NavigationUpdate(target_clear=True, target_clear_anchors=(P, Q))  # the refusal anchor P and the filing anchor Q, carried together
+    assert _applied_target(NavigationUpdate(target_set=(60.0, 61.0), target_clear=True, target_clear_anchors=(P, Q)))[0] is None  # near Q
+    assert _applied_target(NavigationUpdate(target_set=(20.0, 21.0), target_clear=True, target_clear_anchors=(P, Q)))[0] is None  # near P
+    assert both.target_clear_anchors == (P, Q)
+
+
+def test_two_filings_b_and_c_a_set_near_c_is_dropped_and_a_set_far_from_all_stands():
+    three = (P, Q, (100, 100))
+    assert _applied_with_stored(NavigationUpdate(target_set=(100.0, 99.0), target_clear_anchors=three), None)[0] is None  # near the third anchor C
+    assert _applied_with_stored(NavigationUpdate(target_set=(60.0, 60.0), target_clear_anchors=three), None)[0] is None
+    assert _applied_with_stored(NavigationUpdate(target_set=(40.0, 40.0), target_clear_anchors=three), None)[0] == (40.0, 40.0)  # far from all of them
+
+
+def test_merging_two_updates_with_different_anchors_gives_the_sorted_deduplicated_union_whatever_the_order():
+    a = NavigationUpdate(target_clear_anchors=(Q, P))
+    b = NavigationUpdate(target_clear_anchors=(P, (100, 100)))
+    expected = tuple(sorted({P, Q, (100, 100)}))
+    assert a.merge(b).target_clear_anchors == expected and b.merge(a).target_clear_anchors == expected
+    assert a.merge(NavigationUpdate(target_set=(1.0, 1.0))).target_clear_anchors == tuple(sorted({P, Q}))  # an update with none leaves them
+
+
+def test_control_a_rule_that_looks_at_only_the_first_anchor_leaves_the_set_near_the_second(monkeypatch):
+    first_only = lambda target_set, explicit, stored, record, anchors: ((target_set, False) if target_set is not None and not (anchors and anchors[0] and abs(int(target_set[0]) - anchors[0][0]) <= 1 and abs(int(target_set[1]) - anchors[0][1]) <= 1) else (None, True))
+    monkeypatch.setattr(patches, "anchored_target", first_only)
+    assert _applied_with_stored(NavigationUpdate(target_set=(60.0, 61.0), target_clear_anchors=(P, Q)), None)[0] == (60.0, 61.0)  # the old single-anchor behaviour: the set near Q stands
+
+
+def test_the_lowest_anchor_selection_is_gone_every_filing_is_carried():
+    from src.core.strategic import BlockerState
+    from src.core.updates import StrategicUpdate
+    from src.strategy.destination_suppression import access_blocker_id, filed_suppression_anchors
+    e = V2EntityBuilder(1).kind("worker").location(10.0, 10.0).build()
+    a, b = (20, 20), (30, 30)
+    filed = [BlockerState(id=access_blocker_id(t), kind="access", subject=f"{t}", suppression_until_tick=500, giveup_count=1) for t in (b, a)]
+    assert filed_suppression_anchors(e, StrategicUpdate(blockers_add_or_update=filed), 5) == (a, b) == filed_suppression_anchors(e, StrategicUpdate(blockers_add_or_update=filed[::-1]), 5)
+
+
+def test_a_blocker_the_same_update_removes_is_not_a_filing():
+    from src.core.strategic import BlockerState
+    from src.core.updates import StrategicUpdate
+    from src.strategy.destination_suppression import access_blocker_id, filed_suppression_anchors
+    e = V2EntityBuilder(1).kind("worker").location(10.0, 10.0).build()
+    blocker = BlockerState(id=access_blocker_id(P), kind="access", subject=f"{P}", suppression_until_tick=500, giveup_count=1)
+    assert filed_suppression_anchors(e, StrategicUpdate(blockers_add_or_update=[blocker], blockers_remove=[blocker.id]), 5) == ()
