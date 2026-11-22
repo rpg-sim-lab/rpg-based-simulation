@@ -105,3 +105,22 @@ def test_admission_and_the_service_agree_for_every_kind_both_actions_and_enough_
             inn = state.buildings[10]
             delivered = service_delta(state, ent, action, 1) is not None
             assert admits_at(ent, inn, action, state) is delivered, (kind, action)
+
+
+@pytest.mark.parametrize("gold", [EAT_PRICE_GOLD, REST_PRICE_GOLD + 90])
+def test_the_hunger_scorer_reports_no_way_within_reach_for_a_non_coin_body_with_gold_and_an_inn_in_reach(gold):
+    """The scorer level of 2.224 (asked by the gap-C ruling): the inn is in reach and the body holds the price, but a non-coin body (by properties) is admitted to no meal, so `EatScorer` names no
+    target and says NO_WAY_WITHIN_REACH, while the same scene for a coin-keeping body names the inn."""
+    from src.ai.goals.base import NeedAccess
+    from src.engine.need_pull import HUNGER_LINE
+    hunger = 0.75 * HUNGER_LINE
+    for kind in _non_coin_kinds_that_would_eat_at_an_inn():
+        state, ent = _world(kind, gold, hunger=hunger)
+        score = EatScorer().score(ent, state)
+        assert score.target_pos is None and score.need_access is NeedAccess.NO_WAY_WITHIN_REACH, (kind, score)
+    for kind in _coin_kinds():
+        if "prepared" not in (get_kind_properties(kind)[1].diet or []):
+            continue
+        state, ent = _world(kind, gold, hunger=hunger)
+        score = EatScorer().score(ent, state)
+        assert score.target_id == "10" and score.need_access is not NeedAccess.NO_WAY_WITHIN_REACH, (kind, score)

@@ -35,7 +35,8 @@ def _consumers():
 
 
 def _subject(leash=RADIUS):
-    e = V2EntityBuilder(1).kind("goblin_warrior").location(*HOME).navigation(home_position=HOME, leash_radius=leash).build()
+    # "goblin" is the species (it keeps coin, D43); "goblin_warrior" is an archetype name, not a species, so it never did (2.224: a funded body must be a coin-keeper to be admitted to the inn)
+    e = V2EntityBuilder(1).kind("goblin").location(*HOME).navigation(home_position=HOME, leash_radius=leash).build()
     return replace(e, biological=replace(e.biological, hunger=0.75 * HUNGER_LINE))
 
 

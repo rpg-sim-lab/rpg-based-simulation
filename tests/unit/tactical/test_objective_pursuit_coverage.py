@@ -34,7 +34,7 @@ from src.engine.tactical import TacticalDecisionSystem
 
 def _hero(eid: int, pos: tuple[float, float], **kwargs) -> "EntityState":
     b = V2EntityBuilder(eid)
-    b.kind("hero")
+    b.kind("human")  # a coin-keeping kind: D43, 2.224 (the funded hero must be admitted to the inn meal)
     b.location(float(pos[0]), float(pos[1]))
     b.identity(faction=Faction.HERO_GUILD, **kwargs)
     b.combat(hp=100, max_hp=100, alive=True, readiness=100.0)
@@ -284,7 +284,7 @@ def test_reach_location_arrival_behavior_unchanged():
         lock_until_tick=0,
     )
     hero_meal = _with_project(_hero(4, inn_meal.position), project_meal)
-    hero_meal = replace(hero_meal, biological=replace(hero_meal.biological, hunger=60.0), inventory=replace(hero_meal.inventory, gold=EAT_PRICE_GOLD))  # [TAG A FUND] holds the meal's price (decision 73)
+    hero_meal = replace(hero_meal, biological=replace(hero_meal.biological, hunger=60.0), inventory=replace(hero_meal.inventory, gold=EAT_PRICE_GOLD))  # [TAG A FUND] holds the meal's price (decision 73) (a coin-keeping kind: D43, 2.224)
     state_meal = AuthoritativeState(tick=10, seed=1, entities={4: hero_meal}, buildings={703: inn_meal})
 
     update_meal = TacticalDecisionSystem.evaluate_entity_intent(state_meal, hero_meal, neighbors=[])

@@ -29,7 +29,7 @@ def _consumers():
 
 
 def _hero(gold=50, **bio):
-    hero = V2EntityBuilder(1).kind("hero").location(0.0, 0.0).build()
+    hero = V2EntityBuilder(1).kind("human").location(0.0, 0.0).build()  # a coin-keeping kind: D43, 2.224 (a funded hero must be admitted to the inn meal)
     hero = replace(hero, biological=replace(hero.biological, **bio))
     return replace(hero, inventory=replace(hero.inventory, gold=gold))
 
