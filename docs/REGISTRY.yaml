@@ -7986,6 +7986,71 @@
   - content
   last_verified: '2026-10-09'
 - type: ticket
+  path: agent-working/tickets/todos/TCK-20261122-A-FLEEING-SUBJECT-KEEPS-FLEEING-AND-AN-ATTACKED-ONE-WEIGHS-FIGHTING-BACK.md
+  ticket_id: TCK-20261122-A-FLEEING-SUBJECT-KEEPS-FLEEING-AND-AN-ATTACKED-ONE-WEIGHS-FIGHTING-BACK
+  title: 'World rules: a subject that decides to flee keeps fleeing while its threat
+    holds, and a subject under attack weighs fighting back (AGENCY-07 amendment and
+    companion)'
+  tier: standard
+  ticket_type: feature
+  date: '2026-11-22'
+  related_code_areas: []
+  artifact_files: []
+  tags: []
+- type: ticket
+  path: agent-working/tickets/todos/TCK-20261122-A-PREY-MAY-NOT-STRIKE-ITS-PREDATOR-BETWEEN-THE-PREDATORS-BLOWS.md
+  ticket_id: TCK-20261122-A-PREY-MAY-NOT-STRIKE-ITS-PREDATOR-BETWEEN-THE-PREDATORS-BLOWS
+  title: 'Attack permission is asymmetric and transient for wild pairs: a prey may
+    strike its predator only on the tick the predator''s task names it, breaking CONFLICT-03'
+  tier: standard
+  ticket_type: bug
+  date: '2026-11-22'
+  related_code_areas:
+  - src/engine/hostility.py (attack_allowed); src/engine/legality.py (LegalityServiceV2);
+    src/engine/domain/combat_actions.py:56
+  artifact_files: []
+  tags: []
+- type: ticket
+  path: agent-working/tickets/todos/TCK-20261122-A-RESOLVED-OBJECTIVE-PULLS-A-FLEEING-SUBJECT-BACK-TOWARD-IT.md
+  ticket_id: TCK-20261122-A-RESOLVED-OBJECTIVE-PULLS-A-FLEEING-SUBJECT-BACK-TOWARD-IT
+  title: 'Step A of the goblin-30 fix: a RESOLVED objective keeps pulling a subject,
+    so a decided flight is pulled back toward the finished goal again and again; flight
+    must hold while its threat holds'
+  tier: standard
+  ticket_type: bug
+  date: '2026-11-22'
+  related_code_areas:
+  - the strategic project/objective lifecycle (src/systems/strategic_systems/intelligence.py,
+    src/core/strategic.py)
+  - tactical flight (src/engine/tactical.py, src/engine/tactical_threat.py)
+  artifact_files: []
+  tags: []
+- type: ticket
+  path: agent-working/tickets/todos/TCK-20261122-AN-ARENA-OF-PREDATORS-AND-PREY-SHOWS-HOW-ATTACKED-BODIES-REACT.md
+  ticket_id: TCK-20261122-AN-ARENA-OF-PREDATORS-AND-PREY-SHOWS-HOW-ATTACKED-BODIES-REACT
+  title: 'Report-only arena observation: many meat-eaters against many prey, over
+    several seeds, to see how attacked bodies react (flee, fight, die) as a distribution'
+  tier: standard
+  ticket_type: feature
+  date: '2026-11-22'
+  related_code_areas:
+  - tools/rpg_measure/ (the person_attack kit as a base)
+  artifact_files: []
+  tags: []
+- type: ticket
+  path: agent-working/tickets/todos/TCK-20261122-AN-ATTACKED-SUBJECT-CHOOSES-TO-FIGHT-BACK-WHEN-FLIGHT-FAILS-OR-IT-CAN-WIN.md
+  ticket_id: TCK-20261122-AN-ATTACKED-SUBJECT-CHOOSES-TO-FIGHT-BACK-WHEN-FLIGHT-FAILS-OR-IT-CAN-WIN
+  title: 'Step B of the goblin-30 fix: an attacked subject chooses to fight back when
+    its flight fails or it judges it can win (AGENCY-07 amendment "when to fight back")'
+  tier: standard
+  ticket_type: feature
+  date: '2026-11-22'
+  related_code_areas:
+  - src/engine/tactical.py, src/engine/tactical_flight_guard.py, src/engine/tactical_threat.py,
+    the appraisal
+  artifact_files: []
+  tags: []
+- type: ticket
   path: agent-working/tickets/todos/TCK-20261122-THE-GATE-ATTACK-AND-UNEATEN-KILL-ROWS-SPLIT-VICTIMS-INTO-PEOPLE-AND-NON-PEOPLE.md
   ticket_id: TCK-20261122-THE-GATE-ATTACK-AND-UNEATEN-KILL-ROWS-SPLIT-VICTIMS-INTO-PEOPLE-AND-NON-PEOPLE
   title: 'The gate''s O3 attack row and O6 uneaten-kill row split attackers and victims
@@ -7996,6 +8061,18 @@
   date: '2026-11-22'
   related_code_areas:
   - is_person
+  artifact_files: []
+  tags: []
+- type: ticket
+  path: agent-working/tickets/todos/TCK-20261122-THREE-STARVING-BODIES-DIE-WITH-WAYS-UNTRIED-ONCE-THE-TOWN-HEAL-STOPS-HIDING-THEM.md
+  ticket_id: TCK-20261122-THREE-STARVING-BODIES-DIE-WITH-WAYS-UNTRIED-ONCE-THE-TOWN-HEAL-STOPS-HIDING-THEM
+  title: 'Three bodies starve to death with ways untried (V3) once #991 stops the
+    illegal town heal: the cause is unread'
+  tier: standard
+  ticket_type: bug
+  date: '2026-11-22'
+  related_code_areas:
+  - src/ai/goals/opening_steps.py (earn_then_buy); the strategic objective lifecycle
   artifact_files: []
   tags: []
 - type: ticket
