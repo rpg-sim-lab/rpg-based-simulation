@@ -106,7 +106,7 @@ def test_the_legality_entry_point_agrees_both_ways(seed):
     assert LegalityServiceV2.verify_attack_legality(prey, predator, state, night=False)[1] is not ReasonCode.FRIENDLY_FIRE_ILLEGAL
 
 
-# ---- the engaged pair (either names the other as its target) and the real legality path, both ways
+# ---- the real legality path, both ways: a recent hit permits, a task never does
 def _legal(attacker, target, seed):
     from src.core.enums import ReasonCode
     from src.core.state import AuthoritativeState
@@ -123,10 +123,41 @@ def _targeting(entity, other):
 
 @pytest.mark.parametrize("seed", SEEDS)
 @pytest.mark.parametrize("predator_kind,prey_kind", PAIRS)
-def test_a_fed_predator_that_still_targets_its_prey_is_engaged_and_both_may_strike(predator_kind, prey_kind, seed):
+def test_a_fed_predator_that_targets_its_prey_with_no_hit_ever_is_refused_both_ways(predator_kind, prey_kind, seed):
+    """A task naming a target is not permission: an attempted attack always names its own target, so reading it would let every attempt permit itself."""
     predator, prey = _pair(predator_kind, prey_kind, seed, predator_hunger=0.0)
     predator = _targeting(predator, prey)
-    assert _legal(predator, prey, seed) and _legal(prey, predator, seed)
+    assert not _legal(predator, prey, seed) and not _legal(prey, predator, seed)
+
+
+@pytest.mark.parametrize("seed", SEEDS)
+@pytest.mark.parametrize("predator_kind,prey_kind", PAIRS)
+def test_a_fed_predator_that_targets_its_prey_with_a_hit_inside_the_window_lets_both_strike(predator_kind, prey_kind, seed):
+    predator, prey = _pair(predator_kind, prey_kind, seed, predator_hunger=0.0)
+    predator = _targeting(predator, prey)
+    prey = _hit_at(prey, predator, 100, ago=5)
+    assert _legal_at(predator, prey, seed) and _legal_at(prey, predator, seed)
+
+
+def _hit_at(victim, attacker, now, ago):
+    from dataclasses import replace
+
+    return replace(victim, combat=replace(victim.combat, last_hit_tick=now - ago, last_hit_attackers=(attacker.id,)))
+
+
+@pytest.mark.parametrize("seed", SEEDS)
+@pytest.mark.parametrize("payload_kind", ["ATTACK", "SKILL", "TRADE", "RECRUIT", "WATCH_HOSTILE"])
+@pytest.mark.parametrize("predator_kind,prey_kind", PAIRS)
+def test_an_attackers_own_task_naming_the_target_never_permits_the_attack(predator_kind, prey_kind, payload_kind, seed):
+    """The decisive case: a non-hunting, non-hostile pair where the ATTACKER carries its own task naming the target (an attack, or any non-combat payload with a target_id)
+    is still refused on the real verify_attack_legality path, both ways."""
+    from dataclasses import replace
+
+    fed, prey = _pair(predator_kind, prey_kind, seed, predator_hunger=0.0)
+    fed = replace(fed, task=replace(fed.task, payload={"action": payload_kind, "target_id": prey.id}))
+    assert not _legal_at(fed, prey, seed)  # the attacker's own task names the target: refused
+    prey = replace(prey, task=replace(prey.task, payload={"action": payload_kind, "target_id": fed.id}))
+    assert not _legal_at(prey, fed, seed)  # and the same from the other side
 
 
 @pytest.mark.parametrize("seed", SEEDS)
