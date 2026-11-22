@@ -32,6 +32,19 @@ Step 1 of deferred item D4 (`agent-working/lead/deferred_backlog.md` in the main
 ## What the arms are (found while planning)
 `SIM_OBS_MODE=OFF` is not "event recording off". At `kernel.py:145-298` it also removes the SimQ hub, the run artifact repository and manifest, the metric, cognition, decision-trace and personality recorders, and `_phase_observability` (`kernel.py:946`: extract_events, the hard-law check, the shadow shapers). So OFF against the default mode (LIGHT) prices the **whole observability stack**. Isolating `record()` plus the drain thread needs the callee split of step 1b.
 
+## Finding 2026-11-22: replay was ON in the first kit, so the first OFF arm and the gate-harness ON figure both include replay work
+- Run 1 (kit v1, tree 613a8365b, `obs_out_613a8365bcd1_s42`): preflight passed; the series was started, then stopped at HOLD after arm 1_OFF (rc 0, 1058 s) so O3 stage 2 could have the slot. Arm 1_OFF read 210 ms per tick against 45-75 ms for the O3 kit's recording-OFF runs. It is one arm and is not used as a result.
+- Cause (read-only comparison of the two kits): both use `tools.test_architecture.rpg_gate_run.build_kernel` (PROD_SMALL, PinnedNormalGovernor, LocalSequentialExecutor, audit_mode, no frame pacing) and time `tick_once`. The difference: `person_attack_spy.py` (`inject_no_replay_if_recording_off`, line 438) wraps `Kernel.__init__` to force `flags["no_replay"]=True` under `SIM_OBS_MODE=OFF`, because the observability variables alone leave replay on. Kit v1 did not. Proof: the 1_OFF run dir holds 50 replay `chunk_N.json` files (333 MB) and a manifest.
+- Consequence: `build_kernel` in the births gate harness also leaves replay on, so the 144-193 ms "recording ON" figure in D4 mixes replay work with observability work. The gap in D4 is not a recording cost until replay is held fixed.
+- Kit change (v2): `obs_cost_arm.py` injects `no_replay=True` in every mode by the same wrapper (`OBS_COST_NO_REPLAY=1` default), refuses to run if `kernel._no_replay` or `_audit_mode` differs from the spec, and records `no_replay`. `launch.sh` passes `NO_REPLAY` (default 1; 0 keeps replay on). v2 sha256: `obs_cost_arm.py` 138ff16ab05e75c9ba64bc0044e049525eb7b3a9c72d7e9adce43b8aa82dc4a7, `launch.sh` 2ab8e68eaa65be0a3df451004b72fb87068b9b36858814de6836d686e80fcd22 (v1 files kept as `*.v1`). Not yet run.
+
+## Corrected plan
+1. Preflight v2 (10 ticks, OFF and LIGHT) on the same frozen tree, after O3 stage 2 seals.
+2. ABBA series with `no_replay` on in both arms (isolates observability; same as the O3 kit), fresh OUT directory, own GO.
+3. Separate later GO: a 2x2 pass with replay ON (`NO_REPLAY=0`) to price replay on its own; each arm is about 1000+ s.
+4. Step 1b (py-spy callee split of the ON cost), seed 43 and NORMAL arms stay held until step 1 shows a gap.
+The D4 entry should say the 144-193 ms figure includes replay.
+
 ## Scope
 - Step 1: ABBA series (OFF, LIGHT, LIGHT, OFF), `frontier_living_world`, seed 42, 5000 ticks after 20 warmup, audit_mode, `PinnedNormalGovernor`, `LocalSequentialExecutor`, one process at a time, `PYTHONHASHSEED=0`, `PYTHONDONTWRITEBYTECODE=1`, cpus 4-5, `MemoryMax=3G`, `MemorySwapMax=0`. The only difference between arms is `SIM_OBS_MODE` (`RPG_OBS_MODE` cleared). Tree: `git archive` of the main sha named in the run record, verified against `git ls-tree -r`.
 - Per arm: mean, median, p95, p99 tick ms, first and second half means, loop wall, shutdown wall, peak RSS, run-dir bytes, steal and swap, the start and final `CanonicalStateHasher` hashes, and the recorder's counters (events recorded, dropped by backpressure mode, final mode).
@@ -70,7 +83,7 @@ Kit: `/data/vboxuser/perf_runs/obs_kit/` (`obs_cost_arm.py`, `launch.sh`), outsi
 N/A: measurement only; no durable engine state.
 
 ## Implementation Notes
-Run records and GO are on #715 (lead-planner). Nothing has run yet.
+Run records and GO are on #715 (lead-planner). Run 1 (kit v1) was stopped at HOLD after arm 1_OFF and is not a result; see the finding above. HOLD file stays in place until lead says O3 stage 2 has sealed.
 
 ## Test Summary
 
