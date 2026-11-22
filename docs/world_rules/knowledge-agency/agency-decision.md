@@ -381,6 +381,28 @@ wording "Approve as worded" #715 7076096298 on the text in #715 7076083309):**
   implementation is a separate step from the goblin-30 fix, owner order 2026-11-22: points 1-3
   first, and fighting back as its own measured step.
 
+**Amendment, a first strike when it judges it can win (decided by the owner, 2026-11-22: intent
+#715 7078469868, choice "Only if it judges it can win"; wording "Approve revised" #715 7078502579
+on the text in #715 7078497229, which replaces the earlier text approved in #715 7078442937):**
+
+> **A first strike when it judges it can win.** A creature facing one that could eat it normally keeps its distance or flees (CONFLICT-03's amendment). If its kind's declared way of fighting allows a first strike, a creature that judges, from what it perceives of itself and the other (strength, health, arms), that it can overcome the other may strike first, before it is attacked; within that, the choice follows its own appraisal, disposition and condition. It is never made to. A kind whose way of fighting does not allow a first strike, or a creature that judges it cannot overcome the other, does not start the fight: it keeps away, flees, or fights back only once attacked, as its way of fighting declares.
+
+- **Why:** the amendment above says when an ATTACKED subject fights back. Nothing said whether a
+  subject that has NOT been attacked may strike first. The owner's answer: only if it judges it
+  can win, and only if its kind's declared way of fighting allows it.
+- **Engineering, not this Rule:** "judges it can overcome" is read from ONE power-judgement
+  component: the creature's estimate of the other's power from what it observes, inspects or
+  remembers (TCK-20261122-AN-ATTACKED-SUBJECT-CHOOSES-TO-FIGHT-BACK-WHEN-FLIGHT-FAILS-OR-IT-CAN-WIN,
+  then TCK-20261122-EVERY-CAN-I-WIN-JUDGEMENT-GOES-THROUGH-ONE-POWER-SEAM). Each kind's way of
+  fighting is declared from properties in content (decision 62,
+  TCK-20261109-M1-EACH-MONSTER-KIND-DECLARES-WHY-IT-FIGHTS), never by kind name in code.
+  "Disposition" here keeps its AGENCY-02 meaning (an ordinary motivation that only weights a
+  choice). A declared way of fighting is behaviour declared by its own Rule (AGENCY-02's
+  carve-out).
+- Kind-neutral: decided from properties and the kind's declaration, never from a kind name.
+- **Repository evidence: NOT YET SUPPORTED.** It lands as a rule first. Its implementation is Step B,
+  after decision 62's slice 1.
+
 ## AGENCY-08 — A subject's standing drive comes from who it is: the most specific declared source wins, and a default is visible
 
 > A subject's standing drive (its ordinary motivations, AGENCY-02) belongs to the person, not the

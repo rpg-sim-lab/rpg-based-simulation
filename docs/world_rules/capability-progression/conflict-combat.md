@@ -545,7 +545,7 @@ evidence for this same inherited entry.
 
 - CONFLICT-01 → Resource (RES-*, Batch 03), Ecology/Population (ECOL-04, Batch 05)
 - CONFLICT-03 → Agency/Decision (AGENCY-01/02, Batch 06: intent lives in the decision layer;
-  AGENCY-07's 2026-11-22 amendment "when to fight back" states when the symmetric permission is used),
+  AGENCY-07's 2026-11-22 amendments "when to fight back" and "a first strike when it judges it can win" state when the symmetric permission is used),
   Organizations / factions (`organizations.md`; the faction catalog's hostility law)
 - CONFLICT-04 → Agency/Decision (AGENCY-01/02/07, Batch 06: a step is a chosen action; flight
   is the decided way out), Movement/Navigation (MOV-07: orthogonal adjacency), Survival
