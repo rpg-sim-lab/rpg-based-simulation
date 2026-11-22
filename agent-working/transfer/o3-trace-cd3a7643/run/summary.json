@@ -1,0 +1,2631 @@
+{
+ "calendar_sha256": "721e61ace5a0b4708aff37c3886c08852d2465d6308a84a7ba65101177c0f146",
+ "cells": {
+  "base/frontier_living_world/s42": {
+   "declared_o3_groups": [
+    "meat"
+   ],
+   "final_hash": "07b42d120e76003581351fde267e4e40c32e800ac41eef79fb8f0364d4cd7eb3",
+   "o3_by_group": {},
+   "o3_count": 0,
+   "o3_count_ledger": 0,
+   "ticks": 5000,
+   "undeclared_o3_groups": [],
+   "validity": {
+    "problems": [],
+    "twin_hashes_equal": true,
+    "valid": true
+   }
+  },
+  "base/frontier_living_world/s43": {
+   "declared_o3_groups": [
+    "meat"
+   ],
+   "final_hash": "65bf51f72f6a0082ce87eb4eb95bbabf651a72b4ffcd82de9bf59f9c97c73f4d",
+   "o3_by_group": {},
+   "o3_count": 0,
+   "o3_count_ledger": 0,
+   "ticks": 5000,
+   "undeclared_o3_groups": [],
+   "validity": {
+    "problems": [],
+    "twin_hashes_equal": true,
+    "valid": true
+   }
+  },
+  "base/frontier_living_world/s45": {
+   "declared_o3_groups": [
+    "meat"
+   ],
+   "final_hash": "593c7e0e19f66b34911594d95f33888eeea69e54ae788bfa2d4a8048591fb303",
+   "o3_by_group": {
+    "meat": 3
+   },
+   "o3_count": 3,
+   "o3_count_ledger": 3,
+   "ticks": 5000,
+   "undeclared_o3_groups": [],
+   "validity": {
+    "problems": [],
+    "twin_hashes_equal": true,
+    "valid": true
+   }
+  },
+  "new/frontier_living_world/s42": {
+   "declared_o3_groups": [
+    "meat"
+   ],
+   "final_hash": "45063d92bf95ec5ad52fc91f2eeebac434f0061229b44bbbc825564f054832b2",
+   "o3_by_group": {
+    "meat": 51
+   },
+   "o3_count": 51,
+   "o3_count_ledger": 51,
+   "ticks": 5000,
+   "undeclared_o3_groups": [],
+   "validity": {
+    "problems": [],
+    "twin_hashes_equal": true,
+    "valid": true
+   }
+  },
+  "new/frontier_living_world/s43": {
+   "declared_o3_groups": [
+    "meat"
+   ],
+   "final_hash": "3322f90ee42fc1fa96a978fa8b46d501f8b2bc9aed8435dca06551337eb1ef47",
+   "o3_by_group": {
+    "meat": 5
+   },
+   "o3_count": 5,
+   "o3_count_ledger": 5,
+   "ticks": 5000,
+   "undeclared_o3_groups": [],
+   "validity": {
+    "problems": [],
+    "twin_hashes_equal": true,
+    "valid": true
+   }
+  },
+  "new/frontier_living_world/s45": {
+   "declared_o3_groups": [
+    "meat"
+   ],
+   "final_hash": "b91ce90afdfb0bacddb80d95fd7390a76b24e1a6d92c88adf1ef2a06ecfaf36b",
+   "o3_by_group": {
+    "meat": 59
+   },
+   "o3_count": 59,
+   "o3_count_ledger": 59,
+   "ticks": 5000,
+   "undeclared_o3_groups": [],
+   "validity": {
+    "problems": [],
+    "twin_hashes_equal": true,
+    "valid": true
+   }
+  }
+ },
+ "engagement_gap": 50,
+ "groups": {
+  "meat": {
+   "cells": {
+    "base/frontier_living_world/s42": {
+     "engagements": [],
+     "engagements_count": 0,
+     "hit_states": [],
+     "hits": 0,
+     "per_attacker": [],
+     "per_pair": [],
+     "period_unknown": 0
+    },
+    "base/frontier_living_world/s43": {
+     "engagements": [],
+     "engagements_count": 0,
+     "hit_states": [],
+     "hits": 0,
+     "per_attacker": [],
+     "per_pair": [],
+     "period_unknown": 0
+    },
+    "base/frontier_living_world/s45": {
+     "engagements": [
+      {
+       "attacker_diet": [
+        "meat"
+       ],
+       "attacker_group": "meat",
+       "attacker_id": 49,
+       "attacker_kind": "alpha",
+       "attacker_species": "wolf",
+       "end_tick": 2758,
+       "events": 1,
+       "hits": 1,
+       "inside_period": true,
+       "misses": 0,
+       "night": true,
+       "outcome": "victim_fled",
+       "start_tick": 2758,
+       "start_world_time": 2758,
+       "victim_id": 30,
+       "victim_species": "goblin"
+      },
+      {
+       "attacker_diet": [
+        "meat"
+       ],
+       "attacker_group": "meat",
+       "attacker_id": 49,
+       "attacker_kind": "alpha",
+       "attacker_species": "wolf",
+       "end_tick": 4434,
+       "events": 1,
+       "hits": 1,
+       "inside_period": true,
+       "misses": 0,
+       "night": true,
+       "outcome": "victim_fled",
+       "start_tick": 4434,
+       "start_world_time": 4434,
+       "victim_id": 30,
+       "victim_species": "goblin"
+      },
+      {
+       "attacker_diet": [
+        "meat"
+       ],
+       "attacker_group": "meat",
+       "attacker_id": 49,
+       "attacker_kind": "alpha",
+       "attacker_species": "wolf",
+       "end_tick": 4982,
+       "events": 1,
+       "hits": 1,
+       "inside_period": true,
+       "misses": 0,
+       "night": true,
+       "outcome": "unresolved_at_end",
+       "start_tick": 4982,
+       "start_world_time": 4982,
+       "victim_id": 30,
+       "victim_species": "goblin"
+      }
+     ],
+     "engagements_count": 3,
+     "hit_states": [
+      {
+       "attacker_id": 49,
+       "decision": "none",
+       "tick": 2758,
+       "victim_id": 30,
+       "victim_mode_after": "WANDER",
+       "victim_mode_before": "WANDER",
+       "victim_state": "asleep"
+      },
+      {
+       "attacker_id": 49,
+       "decision": "flight",
+       "tick": 4434,
+       "victim_id": 30,
+       "victim_mode_after": "RETREAT",
+       "victim_mode_before": "RETREAT",
+       "victim_state": "awake"
+      },
+      {
+       "attacker_id": 49,
+       "decision": "none",
+       "tick": 4982,
+       "victim_id": 30,
+       "victim_mode_after": "WANDER",
+       "victim_mode_before": "WANDER",
+       "victim_state": "asleep"
+      }
+     ],
+     "hits": 3,
+     "per_attacker": [
+      {
+       "attacker_id": 49,
+       "day_engagements": 0,
+       "diet": [
+        "meat"
+       ],
+       "distinct_victims": 1,
+       "engagements": 3,
+       "group": "meat",
+       "hits": 3,
+       "kind": "alpha",
+       "night_engagements": 3,
+       "species": "wolf"
+      }
+     ],
+     "per_pair": [
+      {
+       "attacker_id": 49,
+       "engagements": 3,
+       "outcomes": [
+        "victim_fled",
+        "victim_fled",
+        "unresolved_at_end"
+       ],
+       "victim_id": 30
+      }
+     ],
+     "period_unknown": 0
+    },
+    "new/frontier_living_world/s42": {
+     "engagements": [
+      {
+       "attacker_diet": [
+        "meat"
+       ],
+       "attacker_group": "meat",
+       "attacker_id": 46,
+       "attacker_kind": "wolf",
+       "attacker_species": "wolf",
+       "end_tick": 2610,
+       "events": 44,
+       "hits": 44,
+       "inside_period": true,
+       "misses": 0,
+       "night": true,
+       "outcome": "victim_killed",
+       "start_tick": 1901,
+       "start_world_time": 1901,
+       "victim_id": 30,
+       "victim_species": "goblin"
+      },
+      {
+       "attacker_diet": [
+        "meat"
+       ],
+       "attacker_group": "meat",
+       "attacker_id": 49,
+       "attacker_kind": "wolf",
+       "attacker_species": "wolf",
+       "end_tick": 1973,
+       "events": 4,
+       "hits": 4,
+       "inside_period": true,
+       "misses": 0,
+       "night": true,
+       "outcome": "victim_fled",
+       "start_tick": 1912,
+       "start_world_time": 1912,
+       "victim_id": 30,
+       "victim_species": "goblin"
+      },
+      {
+       "attacker_diet": [
+        "meat"
+       ],
+       "attacker_group": "meat",
+       "attacker_id": 47,
+       "attacker_kind": "wolf",
+       "attacker_species": "wolf",
+       "end_tick": 1946,
+       "events": 3,
+       "hits": 3,
+       "inside_period": true,
+       "misses": 0,
+       "night": true,
+       "outcome": "victim_fled",
+       "start_tick": 1924,
+       "start_world_time": 1924,
+       "victim_id": 30,
+       "victim_species": "goblin"
+      }
+     ],
+     "engagements_count": 3,
+     "hit_states": [
+      {
+       "attacker_id": 46,
+       "decision": "none",
+       "tick": 1901,
+       "victim_id": 30,
+       "victim_mode_after": "WANDER",
+       "victim_mode_before": "REGROUP",
+       "victim_state": "awake"
+      },
+      {
+       "attacker_id": 49,
+       "decision": "none",
+       "tick": 1912,
+       "victim_id": 30,
+       "victim_mode_after": "REGROUP",
+       "victim_mode_before": "WANDER",
+       "victim_state": "awake"
+      },
+      {
+       "attacker_id": 47,
+       "decision": "none",
+       "tick": 1924,
+       "victim_id": 30,
+       "victim_mode_after": "REGROUP",
+       "victim_mode_before": "REGROUP",
+       "victim_state": "awake"
+      },
+      {
+       "attacker_id": 46,
+       "decision": "none",
+       "tick": 1931,
+       "victim_id": 30,
+       "victim_mode_after": "WANDER",
+       "victim_mode_before": "REGROUP",
+       "victim_state": "awake"
+      },
+      {
+       "attacker_id": 47,
+       "decision": "none",
+       "tick": 1935,
+       "victim_id": 30,
+       "victim_mode_after": "REGROUP",
+       "victim_mode_before": "REGROUP",
+       "victim_state": "awake"
+      },
+      {
+       "attacker_id": 49,
+       "decision": "none",
+       "tick": 1936,
+       "victim_id": 30,
+       "victim_mode_after": "REGROUP",
+       "victim_mode_before": "REGROUP",
+       "victim_state": "awake"
+      },
+      {
+       "attacker_id": 47,
+       "decision": "none",
+       "tick": 1946,
+       "victim_id": 30,
+       "victim_mode_after": "REGROUP",
+       "victim_mode_before": "REGROUP",
+       "victim_state": "awake"
+      },
+      {
+       "attacker_id": 46,
+       "decision": "none",
+       "tick": 1961,
+       "victim_id": 30,
+       "victim_mode_after": "WANDER",
+       "victim_mode_before": "REGROUP",
+       "victim_state": "awake"
+      },
+      {
+       "attacker_id": 49,
+       "decision": "none",
+       "tick": 1962,
+       "victim_id": 30,
+       "victim_mode_after": "REGROUP",
+       "victim_mode_before": "WANDER",
+       "victim_state": "awake"
+      },
+      {
+       "attacker_id": 49,
+       "decision": "flight",
+       "tick": 1973,
+       "victim_id": 30,
+       "victim_mode_after": "RETREAT",
+       "victim_mode_before": "RETREAT",
+       "victim_state": "awake"
+      },
+      {
+       "attacker_id": 46,
+       "decision": "flight",
+       "tick": 2011,
+       "victim_id": 30,
+       "victim_mode_after": "RETREAT",
+       "victim_mode_before": "REGROUP",
+       "victim_state": "awake"
+      },
+      {
+       "attacker_id": 46,
+       "decision": "none",
+       "tick": 2029,
+       "victim_id": 30,
+       "victim_mode_after": "REGROUP",
+       "victim_mode_before": "REGROUP",
+       "victim_state": "awake"
+      },
+      {
+       "attacker_id": 46,
+       "decision": "none",
+       "tick": 2040,
+       "victim_id": 30,
+       "victim_mode_after": "REGROUP",
+       "victim_mode_before": "REGROUP",
+       "victim_state": "awake"
+      },
+      {
+       "attacker_id": 46,
+       "decision": "flight",
+       "tick": 2051,
+       "victim_id": 30,
+       "victim_mode_after": "RETREAT",
+       "victim_mode_before": "REGROUP",
+       "victim_state": "awake"
+      },
+      {
+       "attacker_id": 46,
+       "decision": "flight",
+       "tick": 2062,
+       "victim_id": 30,
+       "victim_mode_after": "RETREAT",
+       "victim_mode_before": "RETREAT",
+       "victim_state": "awake"
+      },
+      {
+       "attacker_id": 46,
+       "decision": "none",
+       "tick": 2073,
+       "victim_id": 30,
+       "victim_mode_after": "REGROUP",
+       "victim_mode_before": "RETREAT",
+       "victim_state": "awake"
+      },
+      {
+       "attacker_id": 46,
+       "decision": "none",
+       "tick": 2084,
+       "victim_id": 30,
+       "victim_mode_after": "REGROUP",
+       "victim_mode_before": "REGROUP",
+       "victim_state": "awake"
+      },
+      {
+       "attacker_id": 46,
+       "decision": "none",
+       "tick": 2095,
+       "victim_id": 30,
+       "victim_mode_after": "REGROUP",
+       "victim_mode_before": "REGROUP",
+       "victim_state": "awake"
+      },
+      {
+       "attacker_id": 46,
+       "decision": "none",
+       "tick": 2106,
+       "victim_id": 30,
+       "victim_mode_after": "REGROUP",
+       "victim_mode_before": "REGROUP",
+       "victim_state": "awake"
+      },
+      {
+       "attacker_id": 46,
+       "decision": "none",
+       "tick": 2117,
+       "victim_id": 30,
+       "victim_mode_after": "REGROUP",
+       "victim_mode_before": "REGROUP",
+       "victim_state": "awake"
+      },
+      {
+       "attacker_id": 46,
+       "decision": "none",
+       "tick": 2128,
+       "victim_id": 30,
+       "victim_mode_after": "REGROUP",
+       "victim_mode_before": "REGROUP",
+       "victim_state": "awake"
+      },
+      {
+       "attacker_id": 46,
+       "decision": "none",
+       "tick": 2139,
+       "victim_id": 30,
+       "victim_mode_after": "REGROUP",
+       "victim_mode_before": "REGROUP",
+       "victim_state": "awake"
+      },
+      {
+       "attacker_id": 46,
+       "decision": "none",
+       "tick": 2150,
+       "victim_id": 30,
+       "victim_mode_after": "REGROUP",
+       "victim_mode_before": "REGROUP",
+       "victim_state": "awake"
+      },
+      {
+       "attacker_id": 46,
+       "decision": "flight",
+       "tick": 2161,
+       "victim_id": 30,
+       "victim_mode_after": "RETREAT",
+       "victim_mode_before": "REGROUP",
+       "victim_state": "awake"
+      },
+      {
+       "attacker_id": 46,
+       "decision": "flight",
+       "tick": 2172,
+       "victim_id": 30,
+       "victim_mode_after": "RETREAT",
+       "victim_mode_before": "RETREAT",
+       "victim_state": "awake"
+      },
+      {
+       "attacker_id": 46,
+       "decision": "none",
+       "tick": 2183,
+       "victim_id": 30,
+       "victim_mode_after": "REGROUP",
+       "victim_mode_before": "RETREAT",
+       "victim_state": "awake"
+      },
+      {
+       "attacker_id": 46,
+       "decision": "none",
+       "tick": 2194,
+       "victim_id": 30,
+       "victim_mode_after": "REGROUP",
+       "victim_mode_before": "REGROUP",
+       "victim_state": "awake"
+      },
+      {
+       "attacker_id": 46,
+       "decision": "none",
+       "tick": 2205,
+       "victim_id": 30,
+       "victim_mode_after": "REGROUP",
+       "victim_mode_before": "REGROUP",
+       "victim_state": "awake"
+      },
+      {
+       "attacker_id": 46,
+       "decision": "none",
+       "tick": 2216,
+       "victim_id": 30,
+       "victim_mode_after": "REGROUP",
+       "victim_mode_before": "REGROUP",
+       "victim_state": "awake"
+      },
+      {
+       "attacker_id": 46,
+       "decision": "none",
+       "tick": 2227,
+       "victim_id": 30,
+       "victim_mode_after": "REGROUP",
+       "victim_mode_before": "REGROUP",
+       "victim_state": "awake"
+      },
+      {
+       "attacker_id": 46,
+       "decision": "none",
+       "tick": 2238,
+       "victim_id": 30,
+       "victim_mode_after": "REGROUP",
+       "victim_mode_before": "REGROUP",
+       "victim_state": "awake"
+      },
+      {
+       "attacker_id": 46,
+       "decision": "none",
+       "tick": 2249,
+       "victim_id": 30,
+       "victim_mode_after": "REGROUP",
+       "victim_mode_before": "REGROUP",
+       "victim_state": "awake"
+      },
+      {
+       "attacker_id": 46,
+       "decision": "none",
+       "tick": 2260,
+       "victim_id": 30,
+       "victim_mode_after": "REGROUP",
+       "victim_mode_before": "REGROUP",
+       "victim_state": "awake"
+      },
+      {
+       "attacker_id": 46,
+       "decision": "flight",
+       "tick": 2271,
+       "victim_id": 30,
+       "victim_mode_after": "RETREAT",
+       "victim_mode_before": "REGROUP",
+       "victim_state": "awake"
+      },
+      {
+       "attacker_id": 46,
+       "decision": "flight",
+       "tick": 2282,
+       "victim_id": 30,
+       "victim_mode_after": "RETREAT",
+       "victim_mode_before": "RETREAT",
+       "victim_state": "awake"
+      },
+      {
+       "attacker_id": 46,
+       "decision": "none",
+       "tick": 2295,
+       "victim_id": 30,
+       "victim_mode_after": "REGROUP",
+       "victim_mode_before": "REGROUP",
+       "victim_state": "awake"
+      },
+      {
+       "attacker_id": 46,
+       "decision": "none",
+       "tick": 2316,
+       "victim_id": 30,
+       "victim_mode_after": "REGROUP",
+       "victim_mode_before": "REGROUP",
+       "victim_state": "awake"
+      },
+      {
+       "attacker_id": 46,
+       "decision": "none",
+       "tick": 2337,
+       "victim_id": 30,
+       "victim_mode_after": "REGROUP",
+       "victim_mode_before": "REGROUP",
+       "victim_state": "awake"
+      },
+      {
+       "attacker_id": 46,
+       "decision": "none",
+       "tick": 2358,
+       "victim_id": 30,
+       "victim_mode_after": "REGROUP",
+       "victim_mode_before": "REGROUP",
+       "victim_state": "awake"
+      },
+      {
+       "attacker_id": 46,
+       "decision": "flight",
+       "tick": 2379,
+       "victim_id": 30,
+       "victim_mode_after": "RETREAT",
+       "victim_mode_before": "RETREAT",
+       "victim_state": "awake"
+      },
+      {
+       "attacker_id": 46,
+       "decision": "none",
+       "tick": 2400,
+       "victim_id": 30,
+       "victim_mode_after": "REGROUP",
+       "victim_mode_before": "REGROUP",
+       "victim_state": "asleep"
+      },
+      {
+       "attacker_id": 46,
+       "decision": "none",
+       "tick": 2421,
+       "victim_id": 30,
+       "victim_mode_after": "HOLD",
+       "victim_mode_before": "REGROUP",
+       "victim_state": "awake"
+      },
+      {
+       "attacker_id": 46,
+       "decision": "flight",
+       "tick": 2442,
+       "victim_id": 30,
+       "victim_mode_after": "RETREAT",
+       "victim_mode_before": "RETREAT",
+       "victim_state": "awake"
+      },
+      {
+       "attacker_id": 46,
+       "decision": "flight",
+       "tick": 2463,
+       "victim_id": 30,
+       "victim_mode_after": "RETREAT",
+       "victim_mode_before": "RETREAT",
+       "victim_state": "awake"
+      },
+      {
+       "attacker_id": 46,
+       "decision": "none",
+       "tick": 2484,
+       "victim_id": 30,
+       "victim_mode_after": "REGROUP",
+       "victim_mode_before": "REGROUP",
+       "victim_state": "asleep"
+      },
+      {
+       "attacker_id": 46,
+       "decision": "none",
+       "tick": 2505,
+       "victim_id": 30,
+       "victim_mode_after": "REGROUP",
+       "victim_mode_before": "REGROUP",
+       "victim_state": "awake"
+      },
+      {
+       "attacker_id": 46,
+       "decision": "flight",
+       "tick": 2526,
+       "victim_id": 30,
+       "victim_mode_after": "RETREAT",
+       "victim_mode_before": "RETREAT",
+       "victim_state": "awake"
+      },
+      {
+       "attacker_id": 46,
+       "decision": "none",
+       "tick": 2547,
+       "victim_id": 30,
+       "victim_mode_after": "REGROUP",
+       "victim_mode_before": "REGROUP",
+       "victim_state": "asleep"
+      },
+      {
+       "attacker_id": 46,
+       "decision": "none",
+       "tick": 2568,
+       "victim_id": 30,
+       "victim_mode_after": "REGROUP",
+       "victim_mode_before": "REGROUP",
+       "victim_state": "awake"
+      },
+      {
+       "attacker_id": 46,
+       "decision": "flight",
+       "tick": 2589,
+       "victim_id": 30,
+       "victim_mode_after": "RETREAT",
+       "victim_mode_before": "RETREAT",
+       "victim_state": "awake"
+      },
+      {
+       "attacker_id": 46,
+       "decision": "none",
+       "tick": 2610,
+       "victim_id": 30,
+       "victim_mode_after": "REGROUP",
+       "victim_mode_before": "REGROUP",
+       "victim_state": "asleep"
+      }
+     ],
+     "hits": 51,
+     "per_attacker": [
+      {
+       "attacker_id": 46,
+       "day_engagements": 0,
+       "diet": [
+        "meat"
+       ],
+       "distinct_victims": 1,
+       "engagements": 1,
+       "group": "meat",
+       "hits": 44,
+       "kind": "wolf",
+       "night_engagements": 1,
+       "species": "wolf"
+      },
+      {
+       "attacker_id": 47,
+       "day_engagements": 0,
+       "diet": [
+        "meat"
+       ],
+       "distinct_victims": 1,
+       "engagements": 1,
+       "group": "meat",
+       "hits": 3,
+       "kind": "wolf",
+       "night_engagements": 1,
+       "species": "wolf"
+      },
+      {
+       "attacker_id": 49,
+       "day_engagements": 0,
+       "diet": [
+        "meat"
+       ],
+       "distinct_victims": 1,
+       "engagements": 1,
+       "group": "meat",
+       "hits": 4,
+       "kind": "wolf",
+       "night_engagements": 1,
+       "species": "wolf"
+      }
+     ],
+     "per_pair": [
+      {
+       "attacker_id": 46,
+       "engagements": 1,
+       "outcomes": [
+        "victim_killed"
+       ],
+       "victim_id": 30
+      },
+      {
+       "attacker_id": 47,
+       "engagements": 1,
+       "outcomes": [
+        "victim_fled"
+       ],
+       "victim_id": 30
+      },
+      {
+       "attacker_id": 49,
+       "engagements": 1,
+       "outcomes": [
+        "victim_fled"
+       ],
+       "victim_id": 30
+      }
+     ],
+     "period_unknown": 0
+    },
+    "new/frontier_living_world/s43": {
+     "engagements": [
+      {
+       "attacker_diet": [
+        "meat"
+       ],
+       "attacker_group": "meat",
+       "attacker_id": 45,
+       "attacker_kind": "wolf",
+       "attacker_species": "wolf",
+       "end_tick": 2362,
+       "events": 1,
+       "hits": 1,
+       "inside_period": true,
+       "misses": 0,
+       "night": true,
+       "outcome": "victim_fled",
+       "start_tick": 2362,
+       "start_world_time": 2362,
+       "victim_id": 23,
+       "victim_species": "goblin"
+      },
+      {
+       "attacker_diet": [
+        "meat"
+       ],
+       "attacker_group": "meat",
+       "attacker_id": 45,
+       "attacker_kind": "wolf",
+       "attacker_species": "wolf",
+       "end_tick": 2639,
+       "events": 4,
+       "hits": 4,
+       "inside_period": true,
+       "misses": 0,
+       "night": true,
+       "outcome": "victim_killed",
+       "start_tick": 2606,
+       "start_world_time": 2606,
+       "victim_id": 23,
+       "victim_species": "goblin"
+      }
+     ],
+     "engagements_count": 2,
+     "hit_states": [
+      {
+       "attacker_id": 45,
+       "decision": "none",
+       "tick": 2362,
+       "victim_id": 23,
+       "victim_mode_after": "WANDER",
+       "victim_mode_before": "WANDER",
+       "victim_state": "asleep"
+      },
+      {
+       "attacker_id": 45,
+       "decision": "none",
+       "tick": 2606,
+       "victim_id": 23,
+       "victim_mode_after": "REGROUP",
+       "victim_mode_before": "REGROUP",
+       "victim_state": "awake"
+      },
+      {
+       "attacker_id": 45,
+       "decision": "none",
+       "tick": 2617,
+       "victim_id": 23,
+       "victim_mode_after": "REGROUP",
+       "victim_mode_before": "REGROUP",
+       "victim_state": "awake"
+      },
+      {
+       "attacker_id": 45,
+       "decision": "flight",
+       "tick": 2628,
+       "victim_id": 23,
+       "victim_mode_after": "RETREAT",
+       "victim_mode_before": "RETREAT",
+       "victim_state": "awake"
+      },
+      {
+       "attacker_id": 45,
+       "decision": "flight",
+       "tick": 2639,
+       "victim_id": 23,
+       "victim_mode_after": "RETREAT",
+       "victim_mode_before": "RETREAT",
+       "victim_state": "awake"
+      }
+     ],
+     "hits": 5,
+     "per_attacker": [
+      {
+       "attacker_id": 45,
+       "day_engagements": 0,
+       "diet": [
+        "meat"
+       ],
+       "distinct_victims": 1,
+       "engagements": 2,
+       "group": "meat",
+       "hits": 5,
+       "kind": "wolf",
+       "night_engagements": 2,
+       "species": "wolf"
+      }
+     ],
+     "per_pair": [
+      {
+       "attacker_id": 45,
+       "engagements": 2,
+       "outcomes": [
+        "victim_fled",
+        "victim_killed"
+       ],
+       "victim_id": 23
+      }
+     ],
+     "period_unknown": 0
+    },
+    "new/frontier_living_world/s45": {
+     "engagements": [
+      {
+       "attacker_diet": [
+        "meat"
+       ],
+       "attacker_group": "meat",
+       "attacker_id": 48,
+       "attacker_kind": "wolf",
+       "attacker_species": "wolf",
+       "end_tick": 1918,
+       "events": 2,
+       "hits": 2,
+       "inside_period": true,
+       "misses": 0,
+       "night": true,
+       "outcome": "victim_fled",
+       "start_tick": 1907,
+       "start_world_time": 1907,
+       "victim_id": 30,
+       "victim_species": "goblin"
+      },
+      {
+       "attacker_diet": [
+        "meat"
+       ],
+       "attacker_group": "meat",
+       "attacker_id": 49,
+       "attacker_kind": "wolf",
+       "attacker_species": "wolf",
+       "end_tick": 2000,
+       "events": 1,
+       "hits": 1,
+       "inside_period": true,
+       "misses": 0,
+       "night": true,
+       "outcome": "victim_fled",
+       "start_tick": 2000,
+       "start_world_time": 2000,
+       "victim_id": 30,
+       "victim_species": "goblin"
+      },
+      {
+       "attacker_diet": [
+        "meat"
+       ],
+       "attacker_group": "meat",
+       "attacker_id": 46,
+       "attacker_kind": "wolf",
+       "attacker_species": "wolf",
+       "end_tick": 2035,
+       "events": 1,
+       "hits": 1,
+       "inside_period": true,
+       "misses": 0,
+       "night": true,
+       "outcome": "victim_fled",
+       "start_tick": 2035,
+       "start_world_time": 2035,
+       "victim_id": 30,
+       "victim_species": "goblin"
+      },
+      {
+       "attacker_diet": [
+        "meat"
+       ],
+       "attacker_group": "meat",
+       "attacker_id": 49,
+       "attacker_kind": "wolf",
+       "attacker_species": "wolf",
+       "end_tick": 3472,
+       "events": 21,
+       "hits": 21,
+       "inside_period": true,
+       "misses": 0,
+       "night": true,
+       "outcome": "disengaged",
+       "start_tick": 2996,
+       "start_world_time": 2996,
+       "victim_id": 30,
+       "victim_species": "goblin"
+      },
+      {
+       "attacker_diet": [
+        "meat"
+       ],
+       "attacker_group": "meat",
+       "attacker_id": 47,
+       "attacker_kind": "wolf",
+       "attacker_species": "wolf",
+       "end_tick": 3338,
+       "events": 3,
+       "hits": 3,
+       "inside_period": false,
+       "misses": 0,
+       "night": false,
+       "outcome": "disengaged",
+       "start_tick": 3296,
+       "start_world_time": 3296,
+       "victim_id": 30,
+       "victim_species": "goblin"
+      },
+      {
+       "attacker_diet": [
+        "meat"
+       ],
+       "attacker_group": "meat",
+       "attacker_id": 45,
+       "attacker_kind": "wolf",
+       "attacker_species": "wolf",
+       "end_tick": 3362,
+       "events": 1,
+       "hits": 1,
+       "inside_period": false,
+       "misses": 0,
+       "night": false,
+       "outcome": "attacker_fled",
+       "start_tick": 3362,
+       "start_world_time": 3362,
+       "victim_id": 30,
+       "victim_species": "goblin"
+      },
+      {
+       "attacker_diet": [
+        "meat"
+       ],
+       "attacker_group": "meat",
+       "attacker_id": 47,
+       "attacker_kind": "wolf",
+       "attacker_species": "wolf",
+       "end_tick": 3430,
+       "events": 1,
+       "hits": 1,
+       "inside_period": false,
+       "misses": 0,
+       "night": false,
+       "outcome": "disengaged",
+       "start_tick": 3430,
+       "start_world_time": 3430,
+       "victim_id": 30,
+       "victim_species": "goblin"
+      },
+      {
+       "attacker_diet": [
+        "meat"
+       ],
+       "attacker_group": "meat",
+       "attacker_id": 46,
+       "attacker_kind": "wolf",
+       "attacker_species": "wolf",
+       "end_tick": 3955,
+       "events": 21,
+       "hits": 21,
+       "inside_period": false,
+       "misses": 0,
+       "night": false,
+       "outcome": "attacker_fled",
+       "start_tick": 3735,
+       "start_world_time": 3735,
+       "victim_id": 30,
+       "victim_species": "goblin"
+      },
+      {
+       "attacker_diet": [
+        "meat"
+       ],
+       "attacker_group": "meat",
+       "attacker_id": 45,
+       "attacker_kind": "wolf",
+       "attacker_species": "wolf",
+       "end_tick": 3804,
+       "events": 1,
+       "hits": 1,
+       "inside_period": false,
+       "misses": 0,
+       "night": false,
+       "outcome": "attacker_fled",
+       "start_tick": 3804,
+       "start_world_time": 3804,
+       "victim_id": 30,
+       "victim_species": "goblin"
+      },
+      {
+       "attacker_diet": [
+        "meat"
+       ],
+       "attacker_group": "meat",
+       "attacker_id": 49,
+       "attacker_kind": "wolf",
+       "attacker_species": "wolf",
+       "end_tick": 4467,
+       "events": 2,
+       "hits": 2,
+       "inside_period": true,
+       "misses": 0,
+       "night": true,
+       "outcome": "attacker_fled",
+       "start_tick": 4446,
+       "start_world_time": 4446,
+       "victim_id": 30,
+       "victim_species": "goblin"
+      },
+      {
+       "attacker_diet": [
+        "meat"
+       ],
+       "attacker_group": "meat",
+       "attacker_id": 49,
+       "attacker_kind": "wolf",
+       "attacker_species": "wolf",
+       "end_tick": 4854,
+       "events": 5,
+       "hits": 5,
+       "inside_period": true,
+       "misses": 0,
+       "night": true,
+       "outcome": "disengaged",
+       "start_tick": 4770,
+       "start_world_time": 4770,
+       "victim_id": 30,
+       "victim_species": "goblin"
+      }
+     ],
+     "engagements_count": 11,
+     "hit_states": [
+      {
+       "attacker_id": 48,
+       "decision": "none",
+       "tick": 1907,
+       "victim_id": 30,
+       "victim_mode_after": "REGROUP",
+       "victim_mode_before": "REGROUP",
+       "victim_state": "awake"
+      },
+      {
+       "attacker_id": 48,
+       "decision": "none",
+       "tick": 1918,
+       "victim_id": 30,
+       "victim_mode_after": "REGROUP",
+       "victim_mode_before": "REGROUP",
+       "victim_state": "awake"
+      },
+      {
+       "attacker_id": 49,
+       "decision": "none",
+       "tick": 2000,
+       "victim_id": 30,
+       "victim_mode_after": "REGROUP",
+       "victim_mode_before": "REGROUP",
+       "victim_state": "awake"
+      },
+      {
+       "attacker_id": 46,
+       "decision": "flight",
+       "tick": 2035,
+       "victim_id": 30,
+       "victim_mode_after": "RETREAT",
+       "victim_mode_before": "RETREAT",
+       "victim_state": "awake"
+      },
+      {
+       "attacker_id": 49,
+       "decision": "none",
+       "tick": 2996,
+       "victim_id": 30,
+       "victim_mode_after": "REGROUP",
+       "victim_mode_before": "REGROUP",
+       "victim_state": "awake"
+      },
+      {
+       "attacker_id": 49,
+       "decision": "none",
+       "tick": 3017,
+       "victim_id": 30,
+       "victim_mode_after": "REGROUP",
+       "victim_mode_before": "REGROUP",
+       "victim_state": "awake"
+      },
+      {
+       "attacker_id": 49,
+       "decision": "none",
+       "tick": 3038,
+       "victim_id": 30,
+       "victim_mode_after": "REGROUP",
+       "victim_mode_before": "REGROUP",
+       "victim_state": "awake"
+      },
+      {
+       "attacker_id": 49,
+       "decision": "none",
+       "tick": 3059,
+       "victim_id": 30,
+       "victim_mode_after": "REGROUP",
+       "victim_mode_before": "REGROUP",
+       "victim_state": "awake"
+      },
+      {
+       "attacker_id": 49,
+       "decision": "none",
+       "tick": 3080,
+       "victim_id": 30,
+       "victim_mode_after": "REGROUP",
+       "victim_mode_before": "REGROUP",
+       "victim_state": "awake"
+      },
+      {
+       "attacker_id": 49,
+       "decision": "none",
+       "tick": 3101,
+       "victim_id": 30,
+       "victim_mode_after": "REGROUP",
+       "victim_mode_before": "REGROUP",
+       "victim_state": "awake"
+      },
+      {
+       "attacker_id": 49,
+       "decision": "none",
+       "tick": 3122,
+       "victim_id": 30,
+       "victim_mode_after": "REGROUP",
+       "victim_mode_before": "REGROUP",
+       "victim_state": "awake"
+      },
+      {
+       "attacker_id": 49,
+       "decision": "none",
+       "tick": 3143,
+       "victim_id": 30,
+       "victim_mode_after": "REGROUP",
+       "victim_mode_before": "REGROUP",
+       "victim_state": "awake"
+      },
+      {
+       "attacker_id": 49,
+       "decision": "none",
+       "tick": 3182,
+       "victim_id": 30,
+       "victim_mode_after": "REGROUP",
+       "victim_mode_before": "REGROUP",
+       "victim_state": "awake"
+      },
+      {
+       "attacker_id": 49,
+       "decision": "none",
+       "tick": 3203,
+       "victim_id": 30,
+       "victim_mode_after": "REGROUP",
+       "victim_mode_before": "REGROUP",
+       "victim_state": "awake"
+      },
+      {
+       "attacker_id": 49,
+       "decision": "none",
+       "tick": 3224,
+       "victim_id": 30,
+       "victim_mode_after": "REGROUP",
+       "victim_mode_before": "REGROUP",
+       "victim_state": "awake"
+      },
+      {
+       "attacker_id": 49,
+       "decision": "none",
+       "tick": 3245,
+       "victim_id": 30,
+       "victim_mode_after": "REGROUP",
+       "victim_mode_before": "REGROUP",
+       "victim_state": "awake"
+      },
+      {
+       "attacker_id": 49,
+       "decision": "fight",
+       "tick": 3266,
+       "victim_id": 30,
+       "victim_mode_after": "REGROUP",
+       "victim_mode_before": "REGROUP",
+       "victim_state": "awake"
+      },
+      {
+       "attacker_id": 49,
+       "decision": "none",
+       "tick": 3287,
+       "victim_id": 30,
+       "victim_mode_after": "REGROUP",
+       "victim_mode_before": "REGROUP",
+       "victim_state": "awake"
+      },
+      {
+       "attacker_id": 47,
+       "decision": "none",
+       "tick": 3296,
+       "victim_id": 30,
+       "victim_mode_after": "REGROUP",
+       "victim_mode_before": "REGROUP",
+       "victim_state": "awake"
+      },
+      {
+       "attacker_id": 49,
+       "decision": "none",
+       "tick": 3308,
+       "victim_id": 30,
+       "victim_mode_after": "REGROUP",
+       "victim_mode_before": "REGROUP",
+       "victim_state": "awake"
+      },
+      {
+       "attacker_id": 47,
+       "decision": "none",
+       "tick": 3317,
+       "victim_id": 30,
+       "victim_mode_after": "REGROUP",
+       "victim_mode_before": "REGROUP",
+       "victim_state": "awake"
+      },
+      {
+       "attacker_id": 49,
+       "decision": "none",
+       "tick": 3329,
+       "victim_id": 30,
+       "victim_mode_after": "REGROUP",
+       "victim_mode_before": "REGROUP",
+       "victim_state": "awake"
+      },
+      {
+       "attacker_id": 47,
+       "decision": "none",
+       "tick": 3338,
+       "victim_id": 30,
+       "victim_mode_after": "REGROUP",
+       "victim_mode_before": "REGROUP",
+       "victim_state": "awake"
+      },
+      {
+       "attacker_id": 49,
+       "decision": "none",
+       "tick": 3350,
+       "victim_id": 30,
+       "victim_mode_after": "REGROUP",
+       "victim_mode_before": "REGROUP",
+       "victim_state": "awake"
+      },
+      {
+       "attacker_id": 45,
+       "decision": "fight",
+       "tick": 3362,
+       "victim_id": 30,
+       "victim_mode_after": "PURSUE",
+       "victim_mode_before": "PURSUE",
+       "victim_state": "awake"
+      },
+      {
+       "attacker_id": 49,
+       "decision": "none",
+       "tick": 3371,
+       "victim_id": 30,
+       "victim_mode_after": "REGROUP",
+       "victim_mode_before": "REGROUP",
+       "victim_state": "awake"
+      },
+      {
+       "attacker_id": 49,
+       "decision": "none",
+       "tick": 3406,
+       "victim_id": 30,
+       "victim_mode_after": "REGROUP",
+       "victim_mode_before": "REGROUP",
+       "victim_state": "awake"
+      },
+      {
+       "attacker_id": 49,
+       "decision": "none",
+       "tick": 3427,
+       "victim_id": 30,
+       "victim_mode_after": "REGROUP",
+       "victim_mode_before": "REGROUP",
+       "victim_state": "awake"
+      },
+      {
+       "attacker_id": 47,
+       "decision": "none",
+       "tick": 3430,
+       "victim_id": 30,
+       "victim_mode_after": "REGROUP",
+       "victim_mode_before": "REGROUP",
+       "victim_state": "awake"
+      },
+      {
+       "attacker_id": 49,
+       "decision": "none",
+       "tick": 3472,
+       "victim_id": 30,
+       "victim_mode_after": "REGROUP",
+       "victim_mode_before": "REGROUP",
+       "victim_state": "awake"
+      },
+      {
+       "attacker_id": 46,
+       "decision": "none",
+       "tick": 3735,
+       "victim_id": 30,
+       "victim_mode_after": "REGROUP",
+       "victim_mode_before": "REGROUP",
+       "victim_state": "awake"
+      },
+      {
+       "attacker_id": 46,
+       "decision": "none",
+       "tick": 3746,
+       "victim_id": 30,
+       "victim_mode_after": "REGROUP",
+       "victim_mode_before": "REGROUP",
+       "victim_state": "awake"
+      },
+      {
+       "attacker_id": 46,
+       "decision": "none",
+       "tick": 3757,
+       "victim_id": 30,
+       "victim_mode_after": "REGROUP",
+       "victim_mode_before": "REGROUP",
+       "victim_state": "awake"
+      },
+      {
+       "attacker_id": 46,
+       "decision": "none",
+       "tick": 3768,
+       "victim_id": 30,
+       "victim_mode_after": "REGROUP",
+       "victim_mode_before": "REGROUP",
+       "victim_state": "awake"
+      },
+      {
+       "attacker_id": 46,
+       "decision": "none",
+       "tick": 3779,
+       "victim_id": 30,
+       "victim_mode_after": "REGROUP",
+       "victim_mode_before": "REGROUP",
+       "victim_state": "awake"
+      },
+      {
+       "attacker_id": 46,
+       "decision": "none",
+       "tick": 3790,
+       "victim_id": 30,
+       "victim_mode_after": "REGROUP",
+       "victim_mode_before": "REGROUP",
+       "victim_state": "awake"
+      },
+      {
+       "attacker_id": 46,
+       "decision": "none",
+       "tick": 3801,
+       "victim_id": 30,
+       "victim_mode_after": "REGROUP",
+       "victim_mode_before": "REGROUP",
+       "victim_state": "awake"
+      },
+      {
+       "attacker_id": 45,
+       "decision": "none",
+       "tick": 3804,
+       "victim_id": 30,
+       "victim_mode_after": "REGROUP",
+       "victim_mode_before": "REGROUP",
+       "victim_state": "awake"
+      },
+      {
+       "attacker_id": 46,
+       "decision": "none",
+       "tick": 3812,
+       "victim_id": 30,
+       "victim_mode_after": "REGROUP",
+       "victim_mode_before": "REGROUP",
+       "victim_state": "awake"
+      },
+      {
+       "attacker_id": 46,
+       "decision": "none",
+       "tick": 3823,
+       "victim_id": 30,
+       "victim_mode_after": "REGROUP",
+       "victim_mode_before": "REGROUP",
+       "victim_state": "awake"
+      },
+      {
+       "attacker_id": 46,
+       "decision": "none",
+       "tick": 3834,
+       "victim_id": 30,
+       "victim_mode_after": "REGROUP",
+       "victim_mode_before": "REGROUP",
+       "victim_state": "awake"
+      },
+      {
+       "attacker_id": 46,
+       "decision": "none",
+       "tick": 3845,
+       "victim_id": 30,
+       "victim_mode_after": "REGROUP",
+       "victim_mode_before": "REGROUP",
+       "victim_state": "awake"
+      },
+      {
+       "attacker_id": 46,
+       "decision": "none",
+       "tick": 3856,
+       "victim_id": 30,
+       "victim_mode_after": "REGROUP",
+       "victim_mode_before": "REGROUP",
+       "victim_state": "awake"
+      },
+      {
+       "attacker_id": 46,
+       "decision": "none",
+       "tick": 3867,
+       "victim_id": 30,
+       "victim_mode_after": "REGROUP",
+       "victim_mode_before": "REGROUP",
+       "victim_state": "awake"
+      },
+      {
+       "attacker_id": 46,
+       "decision": "none",
+       "tick": 3878,
+       "victim_id": 30,
+       "victim_mode_after": "REGROUP",
+       "victim_mode_before": "REGROUP",
+       "victim_state": "awake"
+      },
+      {
+       "attacker_id": 46,
+       "decision": "none",
+       "tick": 3889,
+       "victim_id": 30,
+       "victim_mode_after": "REGROUP",
+       "victim_mode_before": "REGROUP",
+       "victim_state": "awake"
+      },
+      {
+       "attacker_id": 46,
+       "decision": "none",
+       "tick": 3900,
+       "victim_id": 30,
+       "victim_mode_after": "REGROUP",
+       "victim_mode_before": "REGROUP",
+       "victim_state": "awake"
+      },
+      {
+       "attacker_id": 46,
+       "decision": "none",
+       "tick": 3911,
+       "victim_id": 30,
+       "victim_mode_after": "REGROUP",
+       "victim_mode_before": "REGROUP",
+       "victim_state": "awake"
+      },
+      {
+       "attacker_id": 46,
+       "decision": "none",
+       "tick": 3922,
+       "victim_id": 30,
+       "victim_mode_after": "REGROUP",
+       "victim_mode_before": "REGROUP",
+       "victim_state": "awake"
+      },
+      {
+       "attacker_id": 46,
+       "decision": "none",
+       "tick": 3933,
+       "victim_id": 30,
+       "victim_mode_after": "REGROUP",
+       "victim_mode_before": "REGROUP",
+       "victim_state": "awake"
+      },
+      {
+       "attacker_id": 46,
+       "decision": "none",
+       "tick": 3944,
+       "victim_id": 30,
+       "victim_mode_after": "REGROUP",
+       "victim_mode_before": "REGROUP",
+       "victim_state": "awake"
+      },
+      {
+       "attacker_id": 46,
+       "decision": "none",
+       "tick": 3955,
+       "victim_id": 30,
+       "victim_mode_after": "REGROUP",
+       "victim_mode_before": "REGROUP",
+       "victim_state": "awake"
+      },
+      {
+       "attacker_id": 49,
+       "decision": "none",
+       "tick": 4446,
+       "victim_id": 30,
+       "victim_mode_after": "REGROUP",
+       "victim_mode_before": "REGROUP",
+       "victim_state": "awake"
+      },
+      {
+       "attacker_id": 49,
+       "decision": "none",
+       "tick": 4467,
+       "victim_id": 30,
+       "victim_mode_after": "REGROUP",
+       "victim_mode_before": "REGROUP",
+       "victim_state": "awake"
+      },
+      {
+       "attacker_id": 49,
+       "decision": "none",
+       "tick": 4770,
+       "victim_id": 30,
+       "victim_mode_after": "REGROUP",
+       "victim_mode_before": "REGROUP",
+       "victim_state": "awake"
+      },
+      {
+       "attacker_id": 49,
+       "decision": "none",
+       "tick": 4791,
+       "victim_id": 30,
+       "victim_mode_after": "REGROUP",
+       "victim_mode_before": "REGROUP",
+       "victim_state": "awake"
+      },
+      {
+       "attacker_id": 49,
+       "decision": "none",
+       "tick": 4812,
+       "victim_id": 30,
+       "victim_mode_after": "REGROUP",
+       "victim_mode_before": "REGROUP",
+       "victim_state": "awake"
+      },
+      {
+       "attacker_id": 49,
+       "decision": "none",
+       "tick": 4833,
+       "victim_id": 30,
+       "victim_mode_after": "REGROUP",
+       "victim_mode_before": "REGROUP",
+       "victim_state": "awake"
+      },
+      {
+       "attacker_id": 49,
+       "decision": "none",
+       "tick": 4854,
+       "victim_id": 30,
+       "victim_mode_after": "REGROUP",
+       "victim_mode_before": "REGROUP",
+       "victim_state": "awake"
+      }
+     ],
+     "hits": 59,
+     "per_attacker": [
+      {
+       "attacker_id": 45,
+       "day_engagements": 2,
+       "diet": [
+        "meat"
+       ],
+       "distinct_victims": 1,
+       "engagements": 2,
+       "group": "meat",
+       "hits": 2,
+       "kind": "wolf",
+       "night_engagements": 0,
+       "species": "wolf"
+      },
+      {
+       "attacker_id": 46,
+       "day_engagements": 1,
+       "diet": [
+        "meat"
+       ],
+       "distinct_victims": 1,
+       "engagements": 2,
+       "group": "meat",
+       "hits": 22,
+       "kind": "wolf",
+       "night_engagements": 1,
+       "species": "wolf"
+      },
+      {
+       "attacker_id": 47,
+       "day_engagements": 2,
+       "diet": [
+        "meat"
+       ],
+       "distinct_victims": 1,
+       "engagements": 2,
+       "group": "meat",
+       "hits": 4,
+       "kind": "wolf",
+       "night_engagements": 0,
+       "species": "wolf"
+      },
+      {
+       "attacker_id": 48,
+       "day_engagements": 0,
+       "diet": [
+        "meat"
+       ],
+       "distinct_victims": 1,
+       "engagements": 1,
+       "group": "meat",
+       "hits": 2,
+       "kind": "wolf",
+       "night_engagements": 1,
+       "species": "wolf"
+      },
+      {
+       "attacker_id": 49,
+       "day_engagements": 0,
+       "diet": [
+        "meat"
+       ],
+       "distinct_victims": 1,
+       "engagements": 4,
+       "group": "meat",
+       "hits": 29,
+       "kind": "wolf",
+       "night_engagements": 4,
+       "species": "wolf"
+      }
+     ],
+     "per_pair": [
+      {
+       "attacker_id": 45,
+       "engagements": 2,
+       "outcomes": [
+        "attacker_fled",
+        "attacker_fled"
+       ],
+       "victim_id": 30
+      },
+      {
+       "attacker_id": 46,
+       "engagements": 2,
+       "outcomes": [
+        "victim_fled",
+        "attacker_fled"
+       ],
+       "victim_id": 30
+      },
+      {
+       "attacker_id": 47,
+       "engagements": 2,
+       "outcomes": [
+        "disengaged",
+        "disengaged"
+       ],
+       "victim_id": 30
+      },
+      {
+       "attacker_id": 48,
+       "engagements": 1,
+       "outcomes": [
+        "victim_fled"
+       ],
+       "victim_id": 30
+      },
+      {
+       "attacker_id": 49,
+       "engagements": 4,
+       "outcomes": [
+        "victim_fled",
+        "disengaged",
+        "attacker_fled",
+        "disengaged"
+       ],
+       "victim_id": 30
+      }
+     ],
+     "period_unknown": 0
+    }
+   },
+   "rules": {
+    "R1": {
+     "frontier_living_world": {
+      "base": {
+       "s42": {
+        "applies": true,
+        "attacker_ids": [],
+        "note": "",
+        "result": "PASS"
+       },
+       "s43": {
+        "applies": true,
+        "attacker_ids": [],
+        "note": "",
+        "result": "PASS"
+       },
+       "s45": {
+        "applies": true,
+        "attacker_ids": [],
+        "note": "",
+        "result": "PASS"
+       }
+      },
+      "new": {
+       "s42": {
+        "applies": true,
+        "attacker_ids": [],
+        "note": "",
+        "result": "PASS"
+       },
+       "s43": {
+        "applies": true,
+        "attacker_ids": [],
+        "note": "",
+        "result": "PASS"
+       },
+       "s45": {
+        "applies": true,
+        "attacker_ids": [],
+        "note": "",
+        "result": "PASS"
+       }
+      }
+     }
+    },
+    "R2": {
+     "frontier_living_world": {
+      "base": {
+       "s42": {
+        "applies": false,
+        "attacker_ids": [],
+        "if_applied": "PASS",
+        "max_share": 0.0,
+        "result": "NOT_EVALUATED (n<10)",
+        "top_attacker": null
+       },
+       "s43": {
+        "applies": false,
+        "attacker_ids": [],
+        "if_applied": "PASS",
+        "max_share": 0.0,
+        "result": "NOT_EVALUATED (n<10)",
+        "top_attacker": null
+       },
+       "s45": {
+        "applies": false,
+        "attacker_ids": [
+         49
+        ],
+        "if_applied": "FAIL",
+        "max_share": 1.0,
+        "result": "NOT_EVALUATED (n<10)",
+        "top_attacker": 49
+       }
+      },
+      "new": {
+       "s42": {
+        "applies": false,
+        "attacker_ids": [],
+        "if_applied": "PASS",
+        "max_share": 0.3333333333333333,
+        "result": "NOT_EVALUATED (n<10)",
+        "top_attacker": 46
+       },
+       "s43": {
+        "applies": false,
+        "attacker_ids": [
+         45
+        ],
+        "if_applied": "FAIL",
+        "max_share": 1.0,
+        "result": "NOT_EVALUATED (n<10)",
+        "top_attacker": 45
+       },
+       "s45": {
+        "applies": true,
+        "attacker_ids": [],
+        "max_share": 0.36363636363636365,
+        "result": "PASS",
+        "top_attacker": 49
+       }
+      }
+     }
+    },
+    "R3": {
+     "frontier_living_world": {
+      "base": {
+       "s42": {
+        "applies": true,
+        "attacker_ids": [],
+        "max_day_bin": 0,
+        "max_rolling_2400": 0,
+        "result": "PASS"
+       },
+       "s43": {
+        "applies": true,
+        "attacker_ids": [],
+        "max_day_bin": 0,
+        "max_rolling_2400": 0,
+        "result": "PASS"
+       },
+       "s45": {
+        "applies": true,
+        "attacker_ids": [],
+        "max_day_bin": 2,
+        "max_rolling_2400": 3,
+        "result": "PASS"
+       }
+      },
+      "new": {
+       "s42": {
+        "applies": true,
+        "attacker_ids": [],
+        "max_day_bin": 1,
+        "max_rolling_2400": 1,
+        "result": "PASS"
+       },
+       "s43": {
+        "applies": true,
+        "attacker_ids": [],
+        "max_day_bin": 1,
+        "max_rolling_2400": 2,
+        "result": "PASS"
+       },
+       "s45": {
+        "applies": true,
+        "attacker_ids": [],
+        "max_day_bin": 3,
+        "max_rolling_2400": 3,
+        "result": "PASS"
+       }
+      }
+     }
+    },
+    "R4": {
+     "frontier_living_world": {
+      "base": {
+       "s42": {
+        "applies": true,
+        "attacker_ids": [],
+        "pairs": [],
+        "result": "PASS"
+       },
+       "s43": {
+        "applies": true,
+        "attacker_ids": [],
+        "pairs": [],
+        "result": "PASS"
+       },
+       "s45": {
+        "applies": true,
+        "attacker_ids": [],
+        "pairs": [],
+        "result": "PASS"
+       }
+      },
+      "new": {
+       "s42": {
+        "applies": true,
+        "attacker_ids": [],
+        "pairs": [],
+        "result": "PASS"
+       },
+       "s43": {
+        "applies": true,
+        "attacker_ids": [],
+        "pairs": [],
+        "result": "PASS"
+       },
+       "s45": {
+        "applies": true,
+        "attacker_ids": [],
+        "pairs": [],
+        "result": "PASS"
+       }
+      }
+     }
+    },
+    "R5": {
+     "frontier_living_world": {
+      "base": {
+       "s42": {
+        "applies": false,
+        "attacker_ids": [],
+        "if_applied": "PASS",
+        "inside_fraction": 1.0,
+        "period_unknown": 0,
+        "result": "NOT_EVALUATED (n<10)",
+        "species": [],
+        "tag": "",
+        "unassessable_share": 0.0
+       },
+       "s43": {
+        "applies": false,
+        "attacker_ids": [],
+        "if_applied": "PASS",
+        "inside_fraction": 1.0,
+        "period_unknown": 0,
+        "result": "NOT_EVALUATED (n<10)",
+        "species": [],
+        "tag": "",
+        "unassessable_share": 0.0
+       },
+       "s45": {
+        "applies": false,
+        "attacker_ids": [],
+        "if_applied": "PASS",
+        "inside_fraction": 1.0,
+        "period_unknown": 0,
+        "result": "NOT_EVALUATED (n<10)",
+        "species": [],
+        "tag": "",
+        "unassessable_share": 0.0
+       }
+      },
+      "new": {
+       "s42": {
+        "applies": false,
+        "attacker_ids": [],
+        "if_applied": "PASS",
+        "inside_fraction": 1.0,
+        "period_unknown": 0,
+        "result": "NOT_EVALUATED (n<10)",
+        "species": [],
+        "tag": "",
+        "unassessable_share": 0.0
+       },
+       "s43": {
+        "applies": false,
+        "attacker_ids": [],
+        "if_applied": "PASS",
+        "inside_fraction": 1.0,
+        "period_unknown": 0,
+        "result": "NOT_EVALUATED (n<10)",
+        "species": [],
+        "tag": "",
+        "unassessable_share": 0.0
+       },
+       "s45": {
+        "applies": true,
+        "attacker_ids": [
+         45,
+         46,
+         47
+        ],
+        "inside_fraction": 0.5454545454545454,
+        "period_unknown": 0,
+        "result": "FAIL",
+        "species": [],
+        "tag": "SURV-08 law MISSING in code",
+        "unassessable_share": 0.0
+       }
+      }
+     }
+    },
+    "R6": {
+     "frontier_living_world": {
+      "new_vs_base": {
+       "s42": {
+        "applies": true,
+        "attacker_ids": [
+         46
+        ],
+        "base": {
+         "engagements": 0,
+         "max": null,
+         "median": null
+        },
+        "engagements": [
+         {
+          "attacker_id": 46,
+          "hits": 44,
+          "start_tick": 1901,
+          "victim_id": 30
+         }
+        ],
+        "new": {
+         "engagements": 3,
+         "max": 44,
+         "median": 4
+        },
+        "new_hits": 51,
+        "result": "FAIL"
+       },
+       "s43": {
+        "applies": false,
+        "attacker_ids": [],
+        "base": {
+         "engagements": 0,
+         "max": null,
+         "median": null
+        },
+        "engagements": [],
+        "if_applied": "PASS",
+        "new": {
+         "engagements": 2,
+         "max": 4,
+         "median": 2.5
+        },
+        "new_hits": 5,
+        "result": "NOT_APPLICABLE"
+       },
+       "s45": {
+        "applies": true,
+        "attacker_ids": [
+         46,
+         47,
+         49
+        ],
+        "base": {
+         "engagements": 3,
+         "max": 1,
+         "median": 1
+        },
+        "engagements": [
+         {
+          "attacker_id": 49,
+          "hits": 21,
+          "start_tick": 2996,
+          "victim_id": 30
+         },
+         {
+          "attacker_id": 47,
+          "hits": 3,
+          "start_tick": 3296,
+          "victim_id": 30
+         },
+         {
+          "attacker_id": 46,
+          "hits": 21,
+          "start_tick": 3735,
+          "victim_id": 30
+         },
+         {
+          "attacker_id": 49,
+          "hits": 5,
+          "start_tick": 4770,
+          "victim_id": 30
+         }
+        ],
+        "new": {
+         "engagements": 11,
+         "max": 21,
+         "median": 2
+        },
+        "new_hits": 59,
+        "result": "FAIL"
+       }
+      }
+     }
+    },
+    "R7": {
+     "frontier_living_world": {
+      "base": {
+       "s42": {
+        "all_attackers_info": {
+         "asleep_or_lodged_run": {
+          "run": 0
+         },
+         "no_decision_run": {
+          "attackers": [
+           14
+          ],
+          "end_tick": 121,
+          "run": 10,
+          "victim_id": 20
+         }
+        },
+        "applies": true,
+        "asleep_or_lodged_run": {
+         "run": 0
+        },
+        "attacker_ids": [],
+        "no_decision_run": {
+         "run": 0
+        },
+        "result": "PASS"
+       },
+       "s43": {
+        "all_attackers_info": {
+         "asleep_or_lodged_run": {
+          "run": 0
+         },
+         "no_decision_run": {
+          "attackers": [
+           14,
+           18
+          ],
+          "end_tick": 289,
+          "run": 22,
+          "victim_id": 22
+         }
+        },
+        "applies": true,
+        "asleep_or_lodged_run": {
+         "run": 0
+        },
+        "attacker_ids": [],
+        "no_decision_run": {
+         "run": 0
+        },
+        "result": "PASS"
+       },
+       "s45": {
+        "all_attackers_info": {
+         "asleep_or_lodged_run": {
+          "attackers": [
+           49
+          ],
+          "end_tick": 2758,
+          "run": 1,
+          "victim_id": 30
+         },
+         "no_decision_run": {
+          "attackers": [
+           22,
+           23,
+           24,
+           26,
+           28
+          ],
+          "end_tick": 857,
+          "run": 17,
+          "victim_id": 15
+         }
+        },
+        "applies": true,
+        "asleep_or_lodged_run": {
+         "attackers": [
+          49
+         ],
+         "end_tick": 2758,
+         "run": 1,
+         "victim_id": 30
+        },
+        "attacker_ids": [],
+        "no_decision_run": {
+         "attackers": [
+          49
+         ],
+         "end_tick": 2758,
+         "run": 1,
+         "victim_id": 30
+        },
+        "result": "PASS"
+       }
+      },
+      "new": {
+       "s42": {
+        "all_attackers_info": {
+         "asleep_or_lodged_run": {
+          "attackers": [
+           46
+          ],
+          "end_tick": 2400,
+          "run": 1,
+          "victim_id": 30
+         },
+         "no_decision_run": {
+          "attackers": [
+           28,
+           30
+          ],
+          "end_tick": 941,
+          "run": 15,
+          "victim_id": 9
+         }
+        },
+        "applies": true,
+        "asleep_or_lodged_run": {
+         "attackers": [
+          46
+         ],
+         "end_tick": 2400,
+         "run": 1,
+         "victim_id": 30
+        },
+        "attacker_ids": [
+         46,
+         47,
+         49
+        ],
+        "no_decision_run": {
+         "attackers": [
+          46,
+          47,
+          49
+         ],
+         "end_tick": 1962,
+         "run": 9,
+         "victim_id": 30
+        },
+        "result": "FAIL"
+       },
+       "s43": {
+        "all_attackers_info": {
+         "asleep_or_lodged_run": {
+          "attackers": [
+           17
+          ],
+          "end_tick": 4241,
+          "run": 13,
+          "victim_id": 10
+         },
+         "no_decision_run": {
+          "attackers": [
+           17
+          ],
+          "end_tick": 4241,
+          "run": 13,
+          "victim_id": 10
+         }
+        },
+        "applies": true,
+        "asleep_or_lodged_run": {
+         "attackers": [
+          45
+         ],
+         "end_tick": 2362,
+         "run": 1,
+         "victim_id": 23
+        },
+        "attacker_ids": [],
+        "no_decision_run": {
+         "attackers": [
+          45
+         ],
+         "end_tick": 2362,
+         "run": 1,
+         "victim_id": 23
+        },
+        "result": "PASS"
+       },
+       "s45": {
+        "all_attackers_info": {
+         "asleep_or_lodged_run": {
+          "run": 0
+         },
+         "no_decision_run": {
+          "attackers": [
+           22,
+           24,
+           26
+          ],
+          "end_tick": 880,
+          "run": 13,
+          "victim_id": 17
+         }
+        },
+        "applies": true,
+        "asleep_or_lodged_run": {
+         "run": 0
+        },
+        "attacker_ids": [
+         46
+        ],
+        "no_decision_run": {
+         "attackers": [
+          46
+         ],
+         "end_tick": 3955,
+         "run": 10,
+         "victim_id": 30
+        },
+        "result": "FAIL"
+       }
+      }
+     }
+    }
+   },
+   "tied": true,
+   "verdict_detail": {
+    "evaluated_seeds": [
+     "frontier_living_world/s45"
+    ],
+    "group": "meat",
+    "headline": "BUG CANDIDATE, attributed",
+    "held": [],
+    "misses": [
+     {
+      "attacker_ids": [
+       45,
+       46,
+       47
+      ],
+      "attribution": "attributed",
+      "base_attacker_ids": [],
+      "group": "meat",
+      "rule": "R5",
+      "seed": "s45",
+      "tag": "SURV-08 law MISSING in code",
+      "world": "frontier_living_world"
+     },
+     {
+      "attacker_ids": [
+       46
+      ],
+      "attribution": "attributed",
+      "base_attacker_ids": [],
+      "group": "meat",
+      "rule": "R6",
+      "seed": "s42",
+      "tag": "",
+      "world": "frontier_living_world"
+     },
+     {
+      "attacker_ids": [
+       46,
+       47,
+       49
+      ],
+      "attribution": "attributed",
+      "base_attacker_ids": [],
+      "group": "meat",
+      "rule": "R6",
+      "seed": "s45",
+      "tag": "",
+      "world": "frontier_living_world"
+     },
+     {
+      "attacker_ids": [
+       46,
+       47,
+       49
+      ],
+      "attribution": "attributed",
+      "base_attacker_ids": [],
+      "group": "meat",
+      "rule": "R7",
+      "seed": "s42",
+      "tag": "",
+      "world": "frontier_living_world"
+     },
+     {
+      "attacker_ids": [
+       46
+      ],
+      "attribution": "attributed",
+      "base_attacker_ids": [],
+      "group": "meat",
+      "rule": "R7",
+      "seed": "s45",
+      "tag": "",
+      "world": "frontier_living_world"
+     }
+    ],
+    "run_line": "R2/R5 evaluated in: frontier_living_world/s45"
+   }
+  }
+ },
+ "measurement_labels": [
+  "night/day and 'inside the active period' are a MEASUREMENT: NEW's calendar.is_night applied offline to the world_time of both arms' events; BASE's agents never used it (BASE has no is_night, its night checks read the raw clock)",
+  "periods are the SURV-08 owner amendment Q5(a) table pinned in this file; no kit declares a period in code at either sha (SURV-08: 'Repository evidence: MISSING')"
+ ],
+ "missing_law_quote": "**Repository evidence: MISSING (2026-11-17).** No kind declares a period; one night window applies to every kind (roadmap \u00a712.1), and the night checks read the raw clock, so every tick after 1800 counts as night.",
+ "periods_quote": "**Amendment, the periods (decided by the owner, 2026-11-17, Q5(a)).** Diurnal: human, elf, dwarf, orc, lizardfolk, small_plant_eater, dragonkin. Nocturnal: goblin, wolf, spider, undead, troll. Any hour: slime, spirit.",
+ "periods_source": "docs/world_rules/life-body/survival-needs.md:1042-1044 at 87792e3e8 (owner amendment Q5(a), 2026-11-17); the line at :1045 is MISSING_LAW_QUOTE",
+ "periods_table": {
+  "dragonkin": "diurnal",
+  "dwarf": "diurnal",
+  "elf": "diurnal",
+  "goblin": "nocturnal",
+  "human": "diurnal",
+  "lizardfolk": "diurnal",
+  "orc": "diurnal",
+  "slime": "any_hour",
+  "small_plant_eater": "diurnal",
+  "spider": "nocturnal",
+  "spirit": "any_hour",
+  "troll": "nocturnal",
+  "undead": "nocturnal",
+  "wolf": "nocturnal"
+ },
+ "tied_groups": [
+  "meat"
+ ],
+ "verdict": "BUG CANDIDATE, attributed",
+ "verdict_detail": {
+  "by_group": {
+   "meat": "BUG CANDIDATE, attributed"
+  },
+  "evaluated_seeds": [
+   "meat:frontier_living_world/s45"
+  ],
+  "headline": "BUG CANDIDATE, attributed",
+  "held": [],
+  "misses": [
+   {
+    "attacker_ids": [
+     45,
+     46,
+     47
+    ],
+    "attribution": "attributed",
+    "base_attacker_ids": [],
+    "group": "meat",
+    "rule": "R5",
+    "seed": "s45",
+    "tag": "SURV-08 law MISSING in code",
+    "world": "frontier_living_world"
+   },
+   {
+    "attacker_ids": [
+     46
+    ],
+    "attribution": "attributed",
+    "base_attacker_ids": [],
+    "group": "meat",
+    "rule": "R6",
+    "seed": "s42",
+    "tag": "",
+    "world": "frontier_living_world"
+   },
+   {
+    "attacker_ids": [
+     46,
+     47,
+     49
+    ],
+    "attribution": "attributed",
+    "base_attacker_ids": [],
+    "group": "meat",
+    "rule": "R6",
+    "seed": "s45",
+    "tag": "",
+    "world": "frontier_living_world"
+   },
+   {
+    "attacker_ids": [
+     46,
+     47,
+     49
+    ],
+    "attribution": "attributed",
+    "base_attacker_ids": [],
+    "group": "meat",
+    "rule": "R7",
+    "seed": "s42",
+    "tag": "",
+    "world": "frontier_living_world"
+   },
+   {
+    "attacker_ids": [
+     46
+    ],
+    "attribution": "attributed",
+    "base_attacker_ids": [],
+    "group": "meat",
+    "rule": "R7",
+    "seed": "s45",
+    "tag": "",
+    "world": "frontier_living_world"
+   }
+  ],
+  "run_line": "meat: R2/R5 evaluated in: frontier_living_world/s45"
+ }
+}

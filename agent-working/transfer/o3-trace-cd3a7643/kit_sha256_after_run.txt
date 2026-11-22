@@ -1,0 +1,12 @@
+# sha256 of the 9 kit files after the run (kit head cd3a76430; worktree HEAD dfd62dc3c6d1f1d3a69496eeadad41e24a852b0a), taken 11:25:25
+a0e51b577b7579bd6b914c2745fbf844f57be20a3074f08153fe33565f45460c  tools/rpg_measure/person_attack_spy.py
+4bcd4c55ed34fe8ceea5e3a11c39df00b17bf529f2294b32a2a034af65157fc9  tools/rpg_measure/person_attack_summary.py
+45a5ca1949ddcfff492790c2bc9d0afae015d0b62224cd805083f3baeb087fb4  tools/rpg_measure/person_attack_run.py
+7073f4bbed2ff20d4a4f91d4ffcaf506cb21f2fdca14e906d0042169b067ee98  tools/rpg_measure/person_attack_launch.sh
+3c58a539f9232af74b45b3598b501106a8719f50062b814e330182d4c2a75f11  tools/rpg_measure/person_attack_watch.sh
+52911f76d77d4d5f6ac4d6ce613aafdd9fd9478935a1c59bfce45a5c01ca3049  tools/rpg_measure/person_attack_tree_check.py
+86adfd69bd783e7bc8968e88dcc87c2bf27c632c7d2f49fafa048ff0dbcb4917  tools/rpg_measure/person_attack_kit_note.md
+9d13c131c1ad73de15ce1b0fd90a5326fcffbff5ed5eee9f197d2bf599a5c1df  tools/rpg_measure/arm_child.py
+a4e291ac22ff8539c59d026a4149e813cf24a8de2cd70fda29ca44afa1b3933e  tests/tools/test_person_attack_kit.py
+# git -C /data/vboxuser/Work/rpg-based-simulation/.claude/worktrees/rpg-ubuntu-o3-trace status --porcelain (empty = clean):
+# end

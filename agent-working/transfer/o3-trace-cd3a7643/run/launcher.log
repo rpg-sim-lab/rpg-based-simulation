@@ -1,0 +1,38 @@
+87792e3e8ec42dfd0015f745bbcc5077262bb17d: EQUAL
+TREE NEW 87792e3e8ec42dfd0015f745bbcc5077262bb17d (/data/vboxuser/o3-trace-trees/87792e3e8ec42dfd0015f745bbcc5077262bb17d): equal to git ls-tree (paths and blob hashes), no data/runs
+e722708947004c7f1eb427501b09f404c76c7cfe: EQUAL
+TREE BASE e722708947004c7f1eb427501b09f404c76c7cfe (/data/vboxuser/o3-trace-trees/e722708947004c7f1eb427501b09f404c76c7cfe): equal to git ls-tree (paths and blob hashes), no data/runs
+RUN START 10:27:46 go=7073542579 (sequential: one process per scope)
+START new__frontier_living_world__s42__plain 10:27:47
+END new__frontier_living_world__s42__plain rc=0 wall=225s 10:31:32
+START new__frontier_living_world__s42__spy 10:31:34
+END new__frontier_living_world__s42__spy rc=0 wall=236s 10:35:30
+START base__frontier_living_world__s42__plain 10:35:31
+END base__frontier_living_world__s42__plain rc=0 wall=255s 10:39:46
+START base__frontier_living_world__s42__spy 10:39:48
+END base__frontier_living_world__s42__spy rc=0 wall=253s 10:44:01
+START new__frontier_living_world__s45__plain 10:44:03
+END new__frontier_living_world__s45__plain rc=0 wall=375s 10:50:18
+START new__frontier_living_world__s45__spy 10:50:20
+END new__frontier_living_world__s45__spy rc=0 wall=366s 10:56:26
+START base__frontier_living_world__s45__plain 10:56:27
+END base__frontier_living_world__s45__plain rc=0 wall=278s 11:01:05
+START base__frontier_living_world__s45__spy 11:01:06
+END base__frontier_living_world__s45__spy rc=0 wall=283s 11:05:49
+START new__frontier_living_world__s43__plain 11:05:50
+END new__frontier_living_world__s43__plain rc=0 wall=278s 11:10:28
+START new__frontier_living_world__s43__spy 11:10:30
+END new__frontier_living_world__s43__spy rc=0 wall=293s 11:15:23
+START base__frontier_living_world__s43__plain 11:15:25
+END base__frontier_living_world__s43__plain rc=0 wall=264s 11:19:49
+START base__frontier_living_world__s43__spy 11:19:51
+END base__frontier_living_world__s43__spy rc=0 wall=282s 11:24:33
+Traceback (most recent call last):
+  File "<string>", line 3, in <module>
+    from tools.rpg_measure import person_attack_run as r
+ImportError: cannot import name 'person_attack_run' from 'tools.rpg_measure' (/data/vboxuser/Work/rpg-based-simulation/.claude/worktrees/rpg-ubuntu/tools/rpg_measure/__init__.py)
+RUN EXIT 0 status=COMPLETE 11:24:34 (wall 3408s)
+{"cells": {"base/frontier_living_world/s42": true, "base/frontier_living_world/s43": true, "base/frontier_living_world/s45": true, "new/frontier_living_world/s42": true, "new/frontier_living_world/s43": true, "new/frontier_living_world/s45": true}, "verdict": "BUG CANDIDATE, attributed"}
+SUMMARY EXIT 0 11:24:34
+TREE CLEAN: /data/vboxuser/o3-trace-trees/87792e3e8ec42dfd0015f745bbcc5077262bb17d has no data/runs
+TREE CLEAN: /data/vboxuser/o3-trace-trees/e722708947004c7f1eb427501b09f404c76c7cfe has no data/runs
