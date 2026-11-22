@@ -45,6 +45,19 @@ Step 1 of deferred item D4 (`agent-working/lead/deferred_backlog.md` in the main
 4. Step 1b (py-spy callee split of the ON cost), seed 43 and NORMAL arms stay held until step 1 shows a gap.
 The D4 entry should say the 144-193 ms figure includes replay.
 
+## Findings 2026-11-22 (loaded host, pinned cpus 4-5, steal/swap recorded; main 613a8365b; `frontier_living_world`, seed 42, 5000 ticks, ABBA; one world, one seed)
+Run files under `/data/vboxuser/perf_runs/` (kept for the owner's delete list, 1.5 GB in all). Result files and sha256: `obs_series_v2_result.md` 8f266332ed29cfd299568f9973a8df75da66080a3e80e200fdbf1d188abe3814; `obs_replay_pair_result.md` d65f409c8c9a749d071da2a50fba37b3d95b6c31ffd90e09d771416545d3c482. Logged on #715 by lead-planner (replay result 7077235935).
+
+| question | OFF arm | ON arm | cost |
+|---|---|---|---|
+| observability stack (SIM_OBS_MODE OFF vs LIGHT, replay off in both) | 44.0 ms/tick (arm spread 1.2 %) | 50.5 ms/tick (spread 15 %) | about 6.5 ms, about 15 % (6 to 22 % by statistic); 9.5 events per tick, 0 dropped; +25 MB RSS, 29 MB files |
+| replay (no_replay vs replay on, observability OFF in both) | 39.5 ms/tick (spread 3.9 %) | 111.0 ms/tick (spread 0.4 %) | about 71.5 ms, 2.8x; 349 MB of chunk files per 5000 ticks; +85-97 MB RSS; second half 31 % above the first half |
+
+- All eight final state hashes of the two series are equal (the two series use the same 5000 ticks, tree and seed): neither the observability mode nor replay changes the simulation.
+- Replay costs about 11 times what the observability stack costs. D4's 144-193 ms "recording ON" figure (births gate harness) is mostly replay, which `build_kernel` leaves on; it was never an event-recording cost alone. Whether the replay write path is worth moving out of the tick (the direction D4 describes for recording) is for the owner to decide; no ADR is warranted for observability alone at about 6.5 ms.
+- Not done and still held: the py-spy callee split of the observability stack (step 1b), seed 43, NORMAL mode. The LIGHT arms disagree by 15 %, so the observability figure is the less certain of the two.
+- OPEN: the first (v1) kit's 1_OFF arm had replay on and observability OFF, the same configuration as the replay-on arms, yet read 210 ms per tick (1058 s) against 111 ms here. It was one arm on a host with light desktop load; the cause is not known and the arm is not used. It is a reminder that a single arm on this host can read 1.9x high. Not investigated further.
+
 ## Scope
 - Step 1: ABBA series (OFF, LIGHT, LIGHT, OFF), `frontier_living_world`, seed 42, 5000 ticks after 20 warmup, audit_mode, `PinnedNormalGovernor`, `LocalSequentialExecutor`, one process at a time, `PYTHONHASHSEED=0`, `PYTHONDONTWRITEBYTECODE=1`, cpus 4-5, `MemoryMax=3G`, `MemorySwapMax=0`. The only difference between arms is `SIM_OBS_MODE` (`RPG_OBS_MODE` cleared). Tree: `git archive` of the main sha named in the run record, verified against `git ls-tree -r`.
 - Per arm: mean, median, p95, p99 tick ms, first and second half means, loop wall, shutdown wall, peak RSS, run-dir bytes, steal and swap, the start and final `CanonicalStateHasher` hashes, and the recorder's counters (events recorded, dropped by backpressure mode, final mode).
