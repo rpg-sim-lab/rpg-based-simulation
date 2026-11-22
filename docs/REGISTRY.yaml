@@ -7986,6 +7986,20 @@
   - content
   last_verified: '2026-10-09'
 - type: ticket
+  path: agent-working/tickets/todos/TCK-20261122-WHAT-OBSERVABILITY-COSTS-THE-TICK-RECORDING-ON-VS-OFF-ON-MAIN.md
+  ticket_id: TCK-20261122-WHAT-OBSERVABILITY-COSTS-THE-TICK-RECORDING-ON-VS-OFF-ON-MAIN
+  title: 'Measure what the observability stack costs the tick: same code, `SIM_OBS_MODE`
+    OFF against the default, `frontier_living_world`, 5000 ticks, on main'
+  tier: standard
+  ticket_type: chore
+  date: '2026-11-22'
+  related_code_areas:
+  - src/observability/event_recorder.py, src/observability/queue.py, src/engine/kernel.py
+    (read-only)
+  artifact_files: []
+  tags:
+  - performance
+- type: ticket
   path: agent-working/tickets/todos/TCK-20261120-COMBAT-ENGAGEMENT-COST-GAP-AT-THE-BIRTHS-FINAL-HEAD.md
   ticket_id: TCK-20261120-COMBAT-ENGAGEMENT-COST-GAP-AT-THE-BIRTHS-FINAL-HEAD
   title: 'combat_engagement costs more per entity-tick at the births final head than
