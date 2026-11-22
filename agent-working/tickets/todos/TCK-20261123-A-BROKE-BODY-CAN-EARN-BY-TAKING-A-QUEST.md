@@ -140,6 +140,22 @@ Designer rulings, 2026-11-23 (rpg-designer, relayed to rpg-planner):
 - Q2 ranking: expected ticks to coin, with the tie order and hunger budget above; danger through the
   HUNT belief, later `judge_power`.
 - Q3 payer: today's law (2.110): the giver's treasury, open only when it can pay now.
+Open for the designer (owner IDEAS, 2026-11-23, #715 7083481188, relayed by the leads; the owner
+calls them ideas for the designer to shape, not rulings):
+- Q4 admission layers at the SOURCE: whether this quest source (e.g. a human guild) admits this
+  body is decided in two layers.
+  - GROUP: how the source's people regard the taker's kind or faction. This maps to faction stance.
+  - INDIVIDUAL: how they regard this body. Ch07's trust appraisal, relationship dimensions and
+    reputation systems (§4) give a basis.
+  So a goblin that can take quests may still be refused at a human guild, unless its own standing
+  outweighs its group's. This is a SEPARATE gate from `can_take_quest` (capability, = keeps_coin);
+  the two must not merge. It is kind-neutral: no kind name in the rule, only stance and standing.
+- Q5 rank gating: a quest has a rank, and a taker qualifies by reputation and/or power, so a novice
+  can't take a high-rank quest. Simple logic now, behind ONE extensible function. Power goes
+  through Step B's `judge_power` seam, not a new comparison.
+- How Q4 and Q5 combine with the payer, danger and hunger gates (the order of the checks, and
+  whether a refusal is remembered) is also for the designer.
+
 Future owner questions, not in this scope:
 - whether a later intelligence property should widen or narrow takers (only the predicate changes);
 - a power gate for a dangerous explore target.
