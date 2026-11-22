@@ -1,0 +1,23 @@
+{
+  "freeze_sha_expected": "97df9797e49dadf28ceec722dbf60ced263203a0de8e34f1923e3c3428443bb1",
+  "freeze_sha_final": "97df9797e49dadf28ceec722dbf60ced263203a0de8e34f1923e3c3428443bb1",
+  "go": "7074829409",
+  "kind": "smoke",
+  "mode": "sequential, one process per scope",
+  "python": "/data/vboxuser/Work/rpg-based-simulation/.venv/bin/python",
+  "returncodes": {
+    "new__frontier_living_world__s42__plain": 0,
+    "new__frontier_living_world__s42__spy": 0
+  },
+  "seeds": [
+    42
+  ],
+  "status": "COMPLETE",
+  "ticks": 300,
+  "twin_equal": {
+    "new/frontier_living_world/s42": true
+  },
+  "worlds": [
+    "frontier_living_world"
+  ]
+}

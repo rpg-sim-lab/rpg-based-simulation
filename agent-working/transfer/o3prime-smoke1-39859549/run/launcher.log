@@ -1,0 +1,12 @@
+87792e3e8ec42dfd0015f745bbcc5077262bb17d: EQUAL
+TREE NEW 87792e3e8ec42dfd0015f745bbcc5077262bb17d (/data/vboxuser/o3-trace-trees/87792e3e8ec42dfd0015f745bbcc5077262bb17d): equal to git ls-tree (paths and blob hashes), no data/runs
+e722708947004c7f1eb427501b09f404c76c7cfe: EQUAL
+TREE BASE e722708947004c7f1eb427501b09f404c76c7cfe (/data/vboxuser/o3-trace-trees/e722708947004c7f1eb427501b09f404c76c7cfe): equal to git ls-tree (paths and blob hashes), no data/runs
+RUN START 12:35:16 go=7074829409 (sequential: one process per scope)
+START new__frontier_living_world__s42__plain 12:35:17
+END new__frontier_living_world__s42__plain rc=0 wall=14s 12:35:31
+START new__frontier_living_world__s42__spy 12:35:32
+END new__frontier_living_world__s42__spy rc=0 wall=14s 12:35:46
+RUN EXIT 0 status=COMPLETE 12:35:46 (wall 30s)
+TREE CLEAN: /data/vboxuser/o3-trace-trees/87792e3e8ec42dfd0015f745bbcc5077262bb17d has no data/runs
+TREE CLEAN: /data/vboxuser/o3-trace-trees/e722708947004c7f1eb427501b09f404c76c7cfe has no data/runs

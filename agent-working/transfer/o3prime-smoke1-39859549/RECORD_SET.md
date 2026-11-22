@@ -1,0 +1,25 @@
+# Stage-1 SMOKE record set (nothing run; needs lead's GO for THIS set)
+
+Drafted by rpg-implementer-ubuntu, 2026-11-22, for rpg-planner-ubuntu. Kit branch `rpg-ubuntu-o3prime-q2-kit`, **head 39859549b250b9d9ddc6d555968f993a19ed23b4** (the launcher checks file sha256s, not HEAD; the kit worktree is clean at this head). Supersedes the bb32b19b2 smoke sets (that head's stage-1 approval was withdrawn; its aborted smoke dir was MOVED, not deleted, to `../bb32b19b2b93964d64dfedb5fcf81c6510107456/smoke1/run-aborted-7074481677`). Purpose (B6): a real-kernel 300-tick smoke of the O3' + motive stage-1 spy cell on NEW s42, to prove the wiring (rows for every living victim, the O3' label, the per-key and per-group spy == ledger checks, `attack_rows`, the motive inputs on every attack row, the runner.json record) before the 12-process stage 1.
+
+## THE FIRST CHECK IS THE TWIN HASH
+Read `new__frontier_living_world__s42__plain.json` and `...__spy.json` `final_hash` FIRST. The spy now calls `hostility.relation()`, `attacked_me_recently` and `can_eat` on every attack row, and `relation()` reaches the perception gate: the twin hash equality is the real-kernel non-perturbation check. **If the two hashes differ, STOP and read nothing else** (no counts, no motive rows, no wiring). Only if they are equal read the rest.
+
+## What runs: 2 processes, ONE AT A TIME, each in its own scope
+NEW 87792e3e8, world frontier_living_world, seed 42, **300 ticks**: the PLAIN twin, then the SPY. `systemd-run --user --scope -q -p MemoryMax=3G -p MemorySwapMax=0 taskset -c 4-5 setsid -w <python> -c <one-process> ...`; TMPDIR on /data (`<OUT>/cells/tmp`), PYTHONHASHSEED=0, SIM_OBS_MODE=OFF, RPG_OBS_MODE=OFF, PYTHONDONTWRITEBYTECODE=1 (the launcher exports it for every process); a watcher per process (2.85 GiB summed RSS kills it). Trees (EQUAL to git ls-tree, no data/runs; the stray __pycache__ of the NEW tree was moved to `quarantine-87792e3e8-pyc-20261122`), interpreter (shared main .venv; freeze 97df9797e49dadf28ceec722dbf60ced263203a0de8e34f1923e3c3428443bb1, checked after EVERY process) are as in the O3 run. BASE does not run, so the smoke exercises NEW's "night_tick" relation form only; BASE's "plain" form is first exercised in stage 1 (its read is covered by unit controls only).
+Files here: `record.env`, `dry_run.txt` (the 2 scope lines), this file. OUT = `/data/vboxuser/o3-trace-runs/39859549b250b9d9ddc6d555968f993a19ed23b4/smoke1/run` (does not exist; the launcher creates it, writes `runner.json`, and seals LAST; nothing is deleted).
+
+## Launch (the heavy GO id is the second argument; `smoke` the third)
+`setsid /data/vboxuser/Work/rpg-based-simulation/.claude/worktrees/rpg-ubuntu-o3-trace/tools/rpg_measure/person_attack_launch.sh /data/vboxuser/o3-trace-runs/39859549b250b9d9ddc6d555968f993a19ed23b4/smoke1/record.env <GO id> smoke >/dev/null 2>&1 &`
+Before launch: MemAvailable >= 3 GiB, no other heavy job (the launcher re-checks), the kit worktree clean at 39859549b250b9d9ddc6d555968f993a19ed23b4, and nothing committed in it while it runs. Nothing may import from a frozen tree without PYTHONDONTWRITEBYTECODE=1 and python -B.
+
+## Expected wall time and RSS
+Wall about 1 minute in all (2 x about 14 s of simulation as in the 300t preflights, a little more for the spy's per-attack reads, plus about 5 s of scope, watcher, freeze and disk checks per process). Peak RSS about 90 MB per process (the 300t preflights read 89-90 MB); far under the 3 GiB scope.
+
+## Stop rules (nothing is retried or deleted)
+Preflight abort (a tree differs from ls-tree, a kit file sha256 differs, freeze differs, another heavy job, MemAvailable under 3 GiB, disk under 2 GiB free on OUT or /); disk floor before each process (clean stop, disk_floor_stop.json); freeze change after a process (void); a return code outside {0, 5, 6, 7} (a kill or crash; 5 includes a motive read error, which also raises); the first process over 25 min and the run over 4 h, both **checked only after a process ends**. A `runner.json` that cannot be written makes the run non-COMPLETE (RECORD_NOT_WRITTEN, RC 6). Suggested manual hard stop: 10 minutes after RUN START.
+
+## What the smoke reads, in this order (raw values go to rpg-planner-ubuntu)
+1. the twin hashes (plain final_hash vs spy final_hash); stop here if they differ.
+2. `<OUT>/cells/new__frontier_living_world__s42__spy.json`: wiring, cell_valid, per_key_counts_equal, per_group_counts_equal, keys_only_in_spy / keys_only_in_ledger, o3_by_group_spy / _ledger / _rows, row_count, attack_row_count, attack_rows_truncated, motive_read_error_count (must be 0), motive_call_form and motive_relation_form ("night_tick"), rows on at least one non-person victim (the designer's gate), and on a few rows the motive_inputs (relation both ways, attacked_me_recently both ways, objective, reason, relation_source, relation_source_default).
+3. `runner.json` (status, returncodes, twin_equal; written and read back) and `launcher.log` (the RUN EXIT and SEAL lines). The summarizer does not run in smoke mode.
