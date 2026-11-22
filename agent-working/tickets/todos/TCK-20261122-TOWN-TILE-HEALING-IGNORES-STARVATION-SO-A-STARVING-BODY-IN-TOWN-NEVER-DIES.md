@@ -38,7 +38,7 @@ What it found (executed):
 - So hp oscillates at its maximum, and 7 humans live 18,500-22,100 ticks past the starving line.
 
 The writer (inspected, 89a37bb2):
-- The only +1 CombatUpdate writer in src is src/systems/town_resolution.py:93-99, "Part A: Town Logic (Healing)". A living body on a town tile with hp < max_hp gets CombatUpdate(hp_delta=PASSIVE_HEAL_AMT=1) (:64), with NO hunger check.
+- The only +1 CombatUpdate writer in src is src/engine/town_resolution.py:93-99, "Part A: Town Logic (Healing)". A living body on a town tile with hp < max_hp gets CombatUpdate(hp_delta=PASSIVE_HEAL_AMT=1) (:64), with NO hunger check.
 - The other positive writers are the bed (+5, on a paid transfer) and the vitality AP (+10).
 - Town-tile membership per row is inferred from this, not read directly.
 
@@ -78,7 +78,7 @@ It is PRE-EXISTING: the same lines are at base 85770a225 (:64, :99). #781 only e
 - /mnt/data2/rpg-measure/freemeal_pre/trace_full_v3/ and trace_full_v3_designer_recount/
 
 ## Related Code Areas
-- src/systems/town_resolution.py (Part A healing, PASSIVE_HEAL_AMT)
+- src/engine/town_resolution.py (Part A healing, PASSIVE_HEAL_AMT)
 - natural_healing (hp_gain) and starvation (hp_loss)
 
 ## Assumptions / Open Questions
