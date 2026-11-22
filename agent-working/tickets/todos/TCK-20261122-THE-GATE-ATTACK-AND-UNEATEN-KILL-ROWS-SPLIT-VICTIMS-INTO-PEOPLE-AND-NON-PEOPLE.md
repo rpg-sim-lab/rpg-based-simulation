@@ -45,6 +45,12 @@ Read-only list from testing-planner, spot-checked by the ubuntu lead at 613a8365
 3. O1/O2 already drop the person field through `_split`, so they need no change. Confirm that by test.
 4. A before/after table of the O3 and O6 rows, under the old and the new definition, for the 20 saved reports (or v2). It goes to the owner through lead-planner-u24 BEFORE this lands.
 5. Docs: the gate's metric description and any parity-ledger or observability doc that names "attacks on people".
+6. Row identity (testing-planner, 2026-11-22):
+   - Renaming the O3 id (and any O6 id) changes row identity. The baseline diff shows every old row removed and every new row added, and the v3 re-record must carry that as a rename, not as rows lost and found.
+   - The per-row thresholds keyed by id (the table at `rpg_gate_metrics.py` :99 "O3.attacks_on_people" and :102 "O6.kills_not_eaten") move with the rename.
+   - The O3 rationale text ("three more bites on villagers…") names people and is reworded.
+   - Whether the (2.0, 3.0) floor still fits a total over every victim and every group (the BASE trace cells hold meat about 15 and meat+plant+prepared about 155 hits a seed) is a rpg-designer question. Any change to the value is an owner ask, and a rename alone keeps it.
+7. Row count: A1/A2 add a row for every group, so the number of baseline rows grows. The owner's before/after table shows a per-world row count (old vs new) as well as the values.
 
 ## Out of Scope
 - Removing `attacker_person`/`victim_person` from the run_ledger or death_ledger keys (A3, a later owner ask).
@@ -56,7 +62,8 @@ Read-only list from testing-planner, spot-checked by the ubuntu lead at 613a8365
 1. No gate row reads a person flag. A unit test shows that the same ledger with person flags int 1, str "1" or absent gives identical O3/O6 rows.
 2. O3 has one row per declared diet group with t0 population > 0, and an undeclared group raises an error.
 3. O6 has one row per meat-containing diet group and none for other groups.
-4. The before/after table is shown to the owner and the yes is recorded on #715 before merge.
+4. The before/after table is shown to the owner and the yes is recorded on #715 before merge. It lists the values and a per-world row count, old vs new, and marks each renamed row as a rename.
+4a. The threshold table carries the new ids. No orphaned old-id entry remains, and a test fails on a row id that has no threshold.
 5. Docs and the parity ledger name the new definitions; a divergence entry is added if the gate's documented meaning changes.
 
 ## Related Tickets
