@@ -10,9 +10,9 @@ service delivers and what the pull judges open cannot diverge. The payment law h
 
 Under either law the debit equals what the payee receives (`conservation.service_price`, `_service_result`: the payer is debited exactly what the building or treasury is credited). Flipping the law is a change to the one constant; no consumer is edited. The prices are read from ``service_prices`` only.
 
-``keeps_coin`` is NOT yet part of admission (designer ruling 2026-10-29, option A): ``service_building`` also requires the subject to keep coin
-(``serves.keeps_coin``), and ``admits`` does not, as adding it would change what the scorers answer on main. The gap is pinned by a test and tracked in
-TCK-20261029-SHARED-ADMISSION-IGNORES-KEEPS-COIN-SO-A-NON-COIN-SUBJECT-IS-SENT-TO-A-SERVICE-THAT-REFUSES-IT.
+Who is admitted at all is the same rule the building service reads: ``serves.keeps_coin`` (owner decision 43, money and trade are people-only; divergence 2.224). A body without the
+``keeps_coin_and_trades`` trait is admitted to no inn meal or bed, whatever it holds, so the pull never sends it to a service that would refuse it
+(TCK-20261029-SHARED-ADMISSION-IGNORES-KEEPS-COIN-SO-A-NON-COIN-SUBJECT-IS-SENT-TO-A-SERVICE-THAT-REFUSES-IT).
 """
 from __future__ import annotations
 
@@ -22,6 +22,7 @@ from typing import Any, Dict, Optional
 from src.core.enums import ReasonCode
 from src.engine.appraisal import can_use_inn_meal
 from src.engine.lodging import has_free_bed
+from src.engine.serves import keeps_coin
 from src.engine.service_prices import EAT_PRICE_GOLD, REST_PRICE_GOLD
 
 
@@ -70,9 +71,11 @@ def refusal_reason(entity: Any, action: str, law: Optional[PaymentLaw] = None) -
 
 
 def admits_at(entity: Any, building: Any, action: str, state: Any = None, law: Optional[PaymentLaw] = None) -> bool:
-    """True when ``action`` ("EAT" or "REST") at ``building`` would be delivered to ``entity`` now: by diet, by the payment law and, for a REST at a building that
+    """True when ``action`` ("EAT" or "REST") at ``building`` would be delivered to ``entity`` now: by the coin trait (2.224), by diet, by the payment law and, for a REST at a building that
     lodges (content ``beds`` > 0), by a free bed (F3, divergence 2.155). ONE source of truth: :func:`admits` is this with no building. Without a ``building`` or a
     ``state`` there is no bed to count and the answer is the diet and payment answer, so a building with no beds (0 or absent) gives main's answer."""
+    if not keeps_coin(entity):  # decision 43 (2.224): money and trade are people-only; the one test the building service reads (`serves.keeps_coin`)
+        return False
     if action == "EAT" and not can_use_inn_meal(entity):  # decision 44: a diet without prepared food has no inn meal
         return False
     if not payment_covers(entity, action, law):
