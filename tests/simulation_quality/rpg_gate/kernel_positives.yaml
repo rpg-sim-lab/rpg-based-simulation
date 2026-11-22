@@ -4,7 +4,7 @@
 #   tests/architecture/test_rpg_gate_validity_rows_have_kernel_positives.py
 # A new V-id PR adds its entry here together with its test. Controls (the same setup with the check satisfied) are not entries.
 V1:
-  - tests/integration/observability/test_v1_counts_an_unbacked_hunger_drop_through_the_real_kernel.py::test_v1_fires_for_a_broke_eater_whose_hunger_falls_with_nothing_moved
+  - tests/integration/observability/test_v1_counts_an_unbacked_hunger_drop_through_the_real_kernel.py::test_v1_fires_for_an_unbacked_hunger_drop_planted_through_the_real_kernel
 V2:
   - tests/integration/observability/test_gate_validity_checks_fire_through_the_real_kernel.py::test_v2_fires_when_a_body_with_meat_decays_and_the_decay_sink_is_silent
 V3:

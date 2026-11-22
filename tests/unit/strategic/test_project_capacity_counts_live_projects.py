@@ -35,8 +35,8 @@ def _project(pid, status=ProjectStatus.ACTIVE, kind=ProjectKind.TRAVEL, score=10
 
 
 def _entity(projects, max_projects=3, sleep_debt=0.0, gold=REST_PRICE_GOLD):
-    """[TAG A FUND] the subject holds the bed's price by default: these tests are about project capacity, not payment (decision 73: a broke subject's way is town_return)."""
-    entity = V2EntityBuilder(1).kind("hero").location(0.0, 0.0).cognition(max_active_projects=max_projects).build()
+    """[TAG A FUND] the subject holds the bed's price by default: these tests are about project capacity, not payment (decision 73: a broke subject's way is town_return) (a coin-keeping kind: D43, 2.224)."""
+    entity = V2EntityBuilder(1).kind("human").location(0.0, 0.0).cognition(max_active_projects=max_projects).build()
     entity = replace(entity, biological=replace(entity.biological, sleep_debt=sleep_debt), inventory=replace(entity.inventory, gold=gold))
     return replace(entity, strategic=replace(entity.strategic, projects={p.id: p for p in projects}))
 
