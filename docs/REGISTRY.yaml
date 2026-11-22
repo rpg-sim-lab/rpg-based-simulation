@@ -8015,6 +8015,21 @@
   artifact_files: []
   tags: []
 - type: ticket
+  path: agent-working/tickets/done/TCK-20261122-STATE-DIGEST-PROBE-PERTURBS-FIXED-ARITY-TUPLES-IN-PLACE.md
+  ticket_id: TCK-20261122-STATE-DIGEST-PROBE-PERTURBS-FIXED-ARITY-TUPLES-IN-PLACE
+  title: The state-digest probe changes an element of a fixed-arity tuple field instead
+    of appending one, so an in-type field that is hashed is no longer reported unhashed
+  tier: hotfix
+  ticket_type: bug
+  date: '2026-11-22'
+  related_code_areas:
+  - tests/architecture/state_digest_probe.py
+  - tests/architecture/test_state_digest_covers_every_field.py
+  - tests/architecture/state_digest_allowlist.yaml (read only)
+  artifact_files: []
+  tags:
+  - testing
+- type: ticket
   path: agent-working/tickets/done/TCK-20261122-TOWN-TILE-HEALING-IGNORES-STARVATION-SO-A-STARVING-BODY-IN-TOWN-NEVER-DIES.md
   ticket_id: TCK-20261122-TOWN-TILE-HEALING-IGNORES-STARVATION-SO-A-STARVING-BODY-IN-TOWN-NEVER-DIES
   title: Town-tile healing has no hunger check, so a starving body standing in town
