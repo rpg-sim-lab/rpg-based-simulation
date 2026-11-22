@@ -1,0 +1,45 @@
+{
+ "all_valid": true,
+ "cells": {
+  "base/s42": {
+   "arm": "base",
+   "final_hash_sealed_plain": "07b42d120e76003581351fde267e4e40c32e800ac41eef79fb8f0364d4cd7eb3",
+   "final_hash_spy": "07b42d120e76003581351fde267e4e40c32e800ac41eef79fb8f0364d4cd7eb3",
+   "legality_calls_in_window": 9,
+   "reasons": [],
+   "row_count": 2344,
+   "seed": 42,
+   "valid": true
+  },
+  "base/s45": {
+   "arm": "base",
+   "final_hash_sealed_plain": "593c7e0e19f66b34911594d95f33888eeea69e54ae788bfa2d4a8048591fb303",
+   "final_hash_spy": "593c7e0e19f66b34911594d95f33888eeea69e54ae788bfa2d4a8048591fb303",
+   "legality_calls_in_window": 127,
+   "reasons": [],
+   "row_count": 3280,
+   "seed": 45,
+   "valid": true
+  },
+  "new/s42": {
+   "arm": "new",
+   "final_hash_sealed_plain": "45063d92bf95ec5ad52fc91f2eeebac434f0061229b44bbbc825564f054832b2",
+   "final_hash_spy": "45063d92bf95ec5ad52fc91f2eeebac434f0061229b44bbbc825564f054832b2",
+   "legality_calls_in_window": 253,
+   "reasons": [],
+   "row_count": 2344,
+   "seed": 42,
+   "valid": true
+  },
+  "new/s45": {
+   "arm": "new",
+   "final_hash_sealed_plain": "b91ce90afdfb0bacddb80d95fd7390a76b24e1a6d92c88adf1ef2a06ecfaf36b",
+   "final_hash_spy": "b91ce90afdfb0bacddb80d95fd7390a76b24e1a6d92c88adf1ef2a06ecfaf36b",
+   "legality_calls_in_window": 484,
+   "reasons": [],
+   "row_count": 3280,
+   "seed": 45,
+   "valid": true
+  }
+ }
+}

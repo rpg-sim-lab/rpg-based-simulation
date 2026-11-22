@@ -1,0 +1,21 @@
+{"computed": "60c1cb69b692e5e28fc08428a4a435f71ca32ae9c45076fbe8c8eb06b5c88404", "ok": true, "recorded": "60c1cb69b692e5e28fc08428a4a435f71ca32ae9c45076fbe8c8eb06b5c88404"}
+87792e3e8ec42dfd0015f745bbcc5077262bb17d: EQUAL
+TREE NEW 87792e3e8ec42dfd0015f745bbcc5077262bb17d (/data/vboxuser/o3-trace-trees/87792e3e8ec42dfd0015f745bbcc5077262bb17d): equal to git ls-tree, no data/runs
+e722708947004c7f1eb427501b09f404c76c7cfe: EQUAL
+TREE BASE e722708947004c7f1eb427501b09f404c76c7cfe (/data/vboxuser/o3-trace-trees/e722708947004c7f1eb427501b09f404c76c7cfe): equal to git ls-tree, no data/runs
+{"plan_sha256": "8c16e1435e0a122fae863ef937ffbe023d173cbfceaa044f045a77865ebf864c", "subjects": {"42": [30, 46, 47, 49], "43": [], "45": [30, 45, 46, 47, 49]}}
+SUBJECTS sha256 65500827d464a1c5a45679ecd06d58abdf5d6f94d995309c6975d231421192f7 (written and hashed before the first stage-2 process)
+CELLS for seeds with a subject: 42 45 (NEW and the same-seed BASE)
+RUN START 14:22:30 go=7075868168 kind=cells (sequential: one process per scope)
+START new__frontier_living_world__s42__spy 14:22:32
+END new__frontier_living_world__s42__spy rc=0 wall=380s 14:28:50
+START new__frontier_living_world__s45__spy 14:28:53
+END new__frontier_living_world__s45__spy rc=0 wall=902s 14:37:32
+START base__frontier_living_world__s42__spy 14:37:33
+END base__frontier_living_world__s42__spy rc=0 wall=1132s 14:41:22
+START base__frontier_living_world__s45__spy 14:41:23
+END base__frontier_living_world__s45__spy rc=0 wall=1386s 14:45:36
+{"all_valid": true}
+RUN EXIT 0 status=COMPLETE 14:45:37 (wall 1387s)
+TREE CLEAN: /data/vboxuser/o3-trace-trees/87792e3e8ec42dfd0015f745bbcc5077262bb17d has no data/runs
+TREE CLEAN: /data/vboxuser/o3-trace-trees/e722708947004c7f1eb427501b09f404c76c7cfe has no data/runs

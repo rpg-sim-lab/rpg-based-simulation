@@ -1,0 +1,21 @@
+{
+  "freeze": {
+    "expected": "97df9797e49dadf28ceec722dbf60ced263203a0de8e34f1923e3c3428443bb1",
+    "final": "97df9797e49dadf28ceec722dbf60ced263203a0de8e34f1923e3c3428443bb1"
+  },
+  "go": "7075868168",
+  "items": [
+    "new__frontier_living_world__s42__spy",
+    "new__frontier_living_world__s45__spy",
+    "base__frontier_living_world__s42__spy",
+    "base__frontier_living_world__s45__spy"
+  ],
+  "python": "/data/vboxuser/Work/rpg-based-simulation/.venv/bin/python",
+  "returncodes": {
+    "base__frontier_living_world__s42__spy": 0,
+    "base__frontier_living_world__s45__spy": 0,
+    "new__frontier_living_world__s42__spy": 0,
+    "new__frontier_living_world__s45__spy": 0
+  },
+  "status": "COMPLETE"
+}

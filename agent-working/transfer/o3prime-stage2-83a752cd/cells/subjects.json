@@ -1,0 +1,182 @@
+{
+ "derived_from": {
+  "base__frontier_living_world__s42__plain.json": "8c84f4f40753ddc6add87a0b9a2053d4e416865a75fdba14f3142d5a1026ebe3",
+  "base__frontier_living_world__s43__plain.json": "1bfae3c0e397f2de905cff9ec8de2f6c7b789e7fc3660a01118e846010ec9379",
+  "base__frontier_living_world__s45__plain.json": "48f3185f38a6620dd93b7fd0eb14921f42f58671245cdad6b898ff5e95bd64b7",
+  "new__frontier_living_world__s42__plain.json": "a8d8f9a028af41c0e51aff51c9997a9d6dbb1256730b3b424ab5d3d5c4b06b67",
+  "new__frontier_living_world__s42__spy.json": "76f3b934ab299d0a3877d0bd28ffa08e7712bd0efc841d467a11cafe6f765469",
+  "new__frontier_living_world__s43__plain.json": "fc3552ea205b1c7ea218bb572591772a0604c38c3005e608a0f746420af0c995",
+  "new__frontier_living_world__s43__spy.json": "00062ca11792da1de91b584144863a05a8cfe96c797b92b014d2d7208288b74f",
+  "new__frontier_living_world__s45__plain.json": "ca4f1aadac30bbba17e3b59fa269adc12a18fb8e4067579ec2ec25c1aac30e55",
+  "new__frontier_living_world__s45__spy.json": "729d9c003e3bb3fdce1634cd693f0f059d833fdcfc647e2338095a8ce0169c1a"
+ },
+ "min_hits": 10,
+ "pad": 100,
+ "plan_sha256": "8c16e1435e0a122fae863ef937ffbe023d173cbfceaa044f045a77865ebf864c",
+ "seeds_with_subjects": [
+  42,
+  45
+ ],
+ "subjects_by_seed": {
+  "42": [
+   {
+    "counterparts": [
+     46,
+     47,
+     49
+    ],
+    "id": 30,
+    "roles": [
+     "chain_victim",
+     "victim"
+    ],
+    "windows": [
+     [
+      1801,
+      2710
+     ]
+    ]
+   },
+   {
+    "counterparts": [
+     30
+    ],
+    "id": 46,
+    "roles": [
+     "attacker"
+    ],
+    "windows": [
+     [
+      1801,
+      2710
+     ]
+    ]
+   },
+   {
+    "counterparts": [
+     30
+    ],
+    "id": 47,
+    "roles": [
+     "attacker"
+    ],
+    "windows": [
+     [
+      1801,
+      2062
+     ]
+    ]
+   },
+   {
+    "counterparts": [
+     30
+    ],
+    "id": 49,
+    "roles": [
+     "attacker"
+    ],
+    "windows": [
+     [
+      1801,
+      2062
+     ]
+    ]
+   }
+  ],
+  "43": [],
+  "45": [
+   {
+    "counterparts": [
+     45,
+     46,
+     47,
+     49
+    ],
+    "id": 30,
+    "roles": [
+     "chain_victim",
+     "victim"
+    ],
+    "windows": [
+     [
+      2896,
+      3572
+     ],
+     [
+      3635,
+      4055
+     ],
+     [
+      4670,
+      4954
+     ]
+    ]
+   },
+   {
+    "counterparts": [
+     30
+    ],
+    "id": 45,
+    "roles": [
+     "attacker"
+    ],
+    "windows": [
+     [
+      3646,
+      3904
+     ]
+    ]
+   },
+   {
+    "counterparts": [
+     30
+    ],
+    "id": 46,
+    "roles": [
+     "attacker"
+    ],
+    "windows": [
+     [
+      3635,
+      4055
+     ]
+    ]
+   },
+   {
+    "counterparts": [
+     30
+    ],
+    "id": 47,
+    "roles": [
+     "attacker"
+    ],
+    "windows": [
+     [
+      3196,
+      3450
+     ]
+    ]
+   },
+   {
+    "counterparts": [
+     30
+    ],
+    "id": 49,
+    "roles": [
+     "attacker"
+    ],
+    "windows": [
+     [
+      2896,
+      3572
+     ],
+     [
+      4670,
+      4954
+     ]
+    ]
+   }
+  ]
+ },
+ "world": "frontier_living_world"
+}
