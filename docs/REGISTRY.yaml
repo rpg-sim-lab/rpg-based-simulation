@@ -8964,6 +8964,19 @@
   - agent-working/stored_artifacts/TCK-20261117-A-RESOLVE-BLOCKER-PROJECT-IS-RE-CREATED-EVERY-80-TICKS-AND-STALLS-COOPERATION/test_plan.md
   tags: []
 - type: ticket
+  path: agent-working/tickets/done/TCK-20261117-A-SUBJECT-RE-CHOOSES-THE-TARGET-IT-JUST-GAVE-UP-ON.md
+  ticket_id: TCK-20261117-A-SUBJECT-RE-CHOOSES-THE-TARGET-IT-JUST-GAVE-UP-ON
+  title: After a way-round give-up, the target choice picks the same target again
+    within 200 ticks; add a typed give-up memory that target choice respects (F2)
+  tier: standard
+  ticket_type: bug
+  date: '2026-11-17'
+  related_code_areas:
+  - src/engine/patches.py (navigation apply), resolve_move, the target-choice path
+    (to be located in the design)
+  artifact_files: []
+  tags: []
+- type: ticket
   path: agent-working/tickets/done/TCK-20261117-AN-ENTITY-CARRIES-ITS-OCCUPATION-LABEL-AND-ONE-SPECIES-READ-SPECIES-OF.md
   ticket_id: TCK-20261117-AN-ENTITY-CARRIES-ITS-OCCUPATION-LABEL-AND-ONE-SPECIES-READ-SPECIES-OF
   title: An entity carries its occupation label as its own field, and `species_of`
@@ -9109,19 +9122,6 @@
   date: '2026-11-17'
   related_code_areas:
   - src/core/species.py, src/world/
-  artifact_files: []
-  tags: []
-- type: ticket
-  path: agent-working/tickets/todos/TCK-20261117-A-SUBJECT-RE-CHOOSES-THE-TARGET-IT-JUST-GAVE-UP-ON.md
-  ticket_id: TCK-20261117-A-SUBJECT-RE-CHOOSES-THE-TARGET-IT-JUST-GAVE-UP-ON
-  title: After a way-round give-up, the target choice picks the same target again
-    within 200 ticks; add a typed give-up memory that target choice respects (F2)
-  tier: standard
-  ticket_type: bug
-  date: '2026-11-17'
-  related_code_areas:
-  - src/engine/patches.py (navigation apply), resolve_move, the target-choice path
-    (to be located in the design)
   artifact_files: []
   tags: []
 - type: ticket

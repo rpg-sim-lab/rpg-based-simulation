@@ -1,10 +1,10 @@
 ---
-status: active
+status: historical
 layer: ai
 authority: P1
 audience: agent
 ticket_id: TCK-20261117-A-SUBJECT-RE-CHOOSES-THE-TARGET-IT-JUST-GAVE-UP-ON
-phase: open
+phase: done
 date: 2026-11-17
 tags: []
 ---
@@ -15,7 +15,7 @@ tags: []
 After a way-round give-up, the target choice picks the same target again within 200 ticks; add a typed give-up memory that target choice respects (F2)
 
 ## Status
-OPEN
+DONE
 
 ## Tier
 standard
@@ -60,7 +60,7 @@ The give-up clears the target, but nothing remembers that it was given up, so ta
 - the 2.213 amendment in the designer's draft
 
 ## Related Stored Artifacts
-- /mnt/data2/rpg-measure/stalemate/cells_fix/ and cells_fix_v7/ (on the owner's delete list)
+agent-working/stored_artifacts/TCK-20261117-A-SUBJECT-RE-CHOOSES-THE-TARGET-IT-JUST-GAVE-UP-ON/ (plan.md, investigation.md, test_plan.md; written at close from the executed evidence)
 
 ## Related Code Areas
 - src/engine/patches.py (navigation apply), resolve_move, the target-choice path (to be located in the design)
@@ -93,5 +93,7 @@ Parked: waits on TCK-20261030-STALEMATE-BREAK-OVERWRITES-A-PROJECT-MOVE-EVERY-TI
 - Test gap results (the lead-confirmed gaps, single process, no -n): new tests/unit/strategic/test_giveup_clear_and_service.py 37 passed; G6 test_propose_target_single_path.py 5 passed; scoped suites strategic / engine / domains/optimization / content / replay / core at bbcbda0bd: exactly the 10 owner-ask tests red (as in f2_owner_ask_table_v2.tsv sha 034b11e1), nothing else; after the owner-approved test edits (commit 59d564c6f, #715 7077665927) the 8 files are green (10 tests named in the report); health check rc 0 (only the 4 report-only jscpd rows). Not run: tests/integration and the mutation baselines.
 
 ## Files Changed
+Code (28 src files): state_presenter, blocker_settings, matrix, repository, schema, wayround_settings, enums, giveup_records, state, strategic, updates, apply, checkpoint_fields, executor, action_intent, movement, patches, tactical, tactical_destinations, tactical_hold, tactical_objective, worker_logic, run_ledger, fingerprint, destination_suppression, blocker_lifecycle, intelligence, work_queue. Data: data/content/movement/wayround_settings.yaml. Tests: 21 files (new: test_propose_target, test_giveup_clear_and_service, test_destination_suppression, test_propose_target_single_path, test_notice_suppressed_goal_stands, test_objective_destination_suppressed, test_wayround_settings, test_giveup_records, test_osc_replan_ladder; changed with the owner's approval, #715 7077665927: 8 files / 10 tests). Docs: divergence 2.220, Bible ch04, parity COMB-359 and STRAT-356, content_usage_matrix. `git diff --stat origin/main..551f5d09a -- src tests`: 49 files, +2661/-159.
 
 ## Completion Summary
+After a way-round give-up a subject no longer re-chooses the destination it gave up (divergence 2.220, Bug Fix): the give-up files a subject-scoped ACCESS blocker (also with no current project), every place-target writer goes through one proposal point (`propose_target`) with a per-class fallback, a clear that carries an anchor beats a same-update target set near it (the give-up record, the pass's refusal and the pass's filing), and a subject holding a pending record takes the slow pass and its own work-queue tier. Result (post-fix full run, 3 cells x 5000t, executed): G1-held 0/2/0, G1 0/2/0 (only 2 flw own-tile holds), all other bars 0 except G3 1/6/12; against the attempt-2 FAIL, G1-held 2584/6938/676 and G1 247/1993/361; perf -3.2%. Owner rulings #715 7078451773 / 7078467940: own-tile holds are reported, not counted, from the next run on; G3 is carried to TCK-20261121-TWO-ANCHOR-TILES-ARE-GIVEN-UP-ON-BY-MANY-SUBJECTS-FOR-THOUSANDS-OF-TICKS (scoped, expiring). Known limits stated: the flw identical final hash is an inference; tactical_hold shows 0 calls (covered by the G6 source test); queue tier counts and "A'' fired" are not measured; tests/integration and the mutation baselines were not run. PR #996 (S10 #715 7078592293).
