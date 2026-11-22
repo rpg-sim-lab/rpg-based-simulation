@@ -139,6 +139,7 @@ class PersonAttackSpy:
         self.control_applied_count = 0
         self.rows: List[Dict[str, Any]] = []
         self.mode_rows: List[Dict[str, Any]] = []
+        self.attack_rows_truncated = False
         self.attack_rows: List[Dict[str, Any]] = []  # every attack (any target, hit or miss) BY a watched id: a fight decision of that id
         self.watched: Dict[int, str] = {}
         self.apply_calls = 0
@@ -262,7 +263,10 @@ class PersonAttackSpy:
                         self.mode_rows.append({"tick": state.tick, "id": watch, "mode": self.watched[watch], "first": True})
         for victim_id, upd in updates.items():
             attacker_id = getattr(getattr(upd, "combat", None), "attacker_id", None)
-            if attacker_id in self.watched and len(self.attack_rows) < ROW_LIMIT:
+            if attacker_id in self.watched:
+                if len(self.attack_rows) >= ROW_LIMIT:
+                    self.attack_rows_truncated = True  # dropped fight decisions could make R7 fire falsely: the cell is invalid, like rows_truncated
+                    continue
                 self.attack_rows.append({"tick": state.tick, "attacker_id": attacker_id, "victim_id": victim_id})
         for watch, last in list(self.watched.items()):
             entity = state.entities.get(watch)
@@ -306,7 +310,7 @@ class PersonAttackSpy:
         per_key_equal = not key_diffs  # a key on one side only is a diff (None vs n): never a 0-vs-n that could pass
         spy_by_key, ledger_by_key, by_rows = self.o3_from_keys(self.key_counts), self.o3_from_keys(ledger_keys), self.o3_from_rows()
         per_group_equal = spy_by_key == ledger_by_key == by_rows
-        counting_ok = per_key_equal and per_group_equal and not self.mode_breaches and not self.rows_truncated
+        counting_ok = per_key_equal and per_group_equal and not self.mode_breaches and not self.rows_truncated and not self.attack_rows_truncated
         ledger_live = self.ledger_payload_ticks.get("first_tick") is not None and self.ledger_payload_ticks.get("first_tick") == self.first_tick_seen and self.ledger_observe_calls == self.apply_calls
         wiring_ok = counting_ok and ledger_live
         declared = sorted(self.declared_o3_groups or [])
@@ -318,7 +322,7 @@ class PersonAttackSpy:
             "wiring": "OK" if wiring_ok else ("WIRING_MISMATCH" if ledger_live else "LEDGER_NOT_LIVE"),
             "ledger_evidence": {**self.ledger_evidence, "observe_calls": self.ledger_observe_calls, "apply_calls": self.apply_calls, "reasserts": self.ledger_reasserts, "payload_ticks": self.ledger_payload_ticks,
                                 "spy_first_tick": self.first_tick_seen, "spy_last_tick": self.last_tick_seen, "ledger_live_at_finish": ledger_live},
-            "mode_breaches": self.mode_breaches[:50], "mode_breach_count": len(self.mode_breaches), "rows_truncated": self.rows_truncated,
+            "mode_breaches": self.mode_breaches[:50], "mode_breach_count": len(self.mode_breaches), "rows_truncated": self.rows_truncated, "attack_rows_truncated": self.attack_rows_truncated,
             "apply_calls": self.apply_calls, "rows": self.rows, "row_count": len(self.rows), "mode_rows": self.mode_rows, "attack_rows": self.attack_rows, "attack_row_count": len(self.attack_rows), "final_alive": self.final_alive,
             "control": self.control, "control_tick": self.control_tick, "control_applied_count": self.control_applied_count, "cell_valid": wiring_ok and self.control is None,
         }

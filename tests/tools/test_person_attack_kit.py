@@ -227,6 +227,22 @@ def test_the_spy_records_an_attack_by_a_watched_id_on_anyone_and_none_by_an_unwa
     assert [(a["attacker_id"], a["victim_id"]) for a in spy.attack_rows] == [(1, 2), (2, 3)]
 
 
+def test_a_capped_attack_rows_list_marks_the_cell_invalid_and_an_uncapped_one_stays_valid(monkeypatch: pytest.MonkeyPatch) -> None:
+    def run_cell(limit: int) -> Dict[str, Any]:
+        monkeypatch.setattr(spy_module, "ROW_LIMIT", limit)
+        spy = fresh_spy()
+        state = world_state(5, two_bodies())
+        spy.observe(state, attack_update(1, 2), state)
+        spy.observe(state, attack_update(2, 1, hp_delta=0), state)
+        spy.observe(state, attack_update(2, 1, hp_delta=0), state)
+        spy.finish(state)
+        return spy.report()
+
+    capped, roomy = run_cell(2), run_cell(1000)
+    assert (capped["attack_rows_truncated"], capped["cell_valid"], capped["wiring"]) == (True, False, "WIRING_MISMATCH")
+    assert (roomy["attack_rows_truncated"], roomy["cell_valid"], roomy["wiring"]) == (False, True, "OK")
+
+
 def test_disk_floor_returns_none_with_room_and_a_stop_record_when_either_filesystem_is_short(tmp_path: Path) -> None:   # C3
     gib = 1024 ** 3
     usage = lambda by_path: (lambda path: SimpleNamespace(free=by_path.get(path, 100 * gib)))  # noqa: E731
