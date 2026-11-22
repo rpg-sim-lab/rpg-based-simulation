@@ -4,21 +4,21 @@ One child process per cell, started by ``person_attack_run`` with cwd = the froz
 ``--mode spy`` runs the SAME build (same pinned check, same flags, same no-replay injection) with a record-only wrapper over ``ApplyPath.apply_generation``. The wrapper READS (prior, update, new state)
 and returns the new state untouched, so the spy's final hash must equal the plain twin's (the runner and the summarizer both check it).
 
-WHAT IT RECORDS. For every entity update with ``combat.attacker_id`` set whose victim (in the new state) is a person (``is_person``, the ledger's own definition), one row: tick, world_time, attacker id / kind / species /
-group (``kind_group``) / declared diet (read straight from the kind's content, a second read of the same fact) / person flag / ``in_o3_group`` (``rpg_gate_metrics._is_wild_meat_eater``, the gate's own predicate), victim
-id / kind / species, ``hit`` (``hp_delta < 0``, the ledger's definition; a row with ``attacker_id`` set and no hp loss is a miss), hp_delta, outcome_kind, the victim's alive flag after, the victim's state BEFORE the
-hit (asleep = its task action is in ``lodging_rules.SLEEP_ACTIONS``; lodged = ``navigation.lodged_in`` set), the victim's movement mode before and after, whether the victim itself attacked on the same tick,
-and the attacker's movement mode after. A watched id (every victim and every attacker of an O3-group row) also gets a row each time its movement mode changes, until the end of the run (``mode_rows``).
+WHAT IT RECORDS (O3', owner ruling #715 7074277591: there is no "person" class; a wolf attacking any living thing counts). For EVERY entity update with ``combat.attacker_id`` set (a hit or a miss) whose victim and attacker
+bodies exist, one row, whoever the victim is: tick, world_time, attacker id / kind / species / group (``kind_group``) / declared diet (read straight from the kind's content, a second read of the same fact) /
+``in_o3_group`` (the O3' label, below) / ledger key, victim id / kind / species, ``hit`` (``hp_delta < 0``, the ledger's definition; a row with ``attacker_id`` set and no hp loss is a miss), hp_delta, outcome_kind, the
+victim's alive flag after, the victim's state BEFORE the hit (asleep = its task action is in ``lodging_rules.SLEEP_ACTIONS``; lodged = ``navigation.lodged_in`` set), the victim's movement mode before and after,
+whether the victim itself attacked on the same tick, and the attacker's movement mode after. A watched id (every victim and every attacker of an O3' row) also gets a row each time its movement mode changes, until the end of
+the run (``mode_rows``), and every attack BY a watched id (any target, hit or miss) is an ``attack_rows`` entry (a fight decision of that id; a capped list marks the cell invalid, ``attack_rows_truncated``).
 
-LABELLING (second preflight defect, fixed): the gate's ``_is_wild_meat_eater(group, person)`` takes STRINGS (the ledger key's own fields: ``group|attacker_person|victim_person|outcome``) and tests ``person != "1"``; an int 1 passed
-to it reads as a wild meat-eater (``1 != "1"``), so the first draft counted every person attacker (humans, goblins) as O3. Every row now carries the LEDGER'S OWN key, built by the tree's ``run_ledger._key`` with the tree's
-``kind_group`` and ``is_person`` exactly as ``_count_attacks`` builds it, split with the gate's ``_split``; ``o3_label`` normalises the person field to the key's string before it calls the gate's predicate. The first
-preflight's 88 / 109 "O3" counts were person-on-person hits mislabelled by this bug and are NOT O3 evidence.
+THE O3' LABEL: ``in_o3_group`` = the attacker's kind group is one of the tied groups (``person_attack_summary.TIED_GROUPS``, ("meat",)). NO person flag is read on either side: the label function accepts the ledger key's
+person field and ignores it, so an int 1, a str "1" and an absent flag give the same answer (control). The ledger keys still carry both flags (``group|attacker_person|victim_person|outcome``; they are the ledger's own key
+and the cross-check below compares them as they are). History: the first preflights' int-vs-str defect (``1 != "1"`` in the gate's person-filtered predicate) is why the label no longer calls that predicate at all.
 
 COUNTING CROSS-CHECK (cell-invalidating). In its own process only the spy calls ``RunLedger.reset_run_state()`` and ``RunLedger.configure(True)`` once after the kernel is built and then the REAL
 ``RunLedger.observe(prior, current, update)`` on every applied update (recording is OFF, so the kernel does not feed it: event_recorder.py), discarding the returned events. At the end the ledger's own
 ``attacks`` counter must equal the spy's own count PER FULL KEY (every ``attacker group|attacker_person|victim_person|outcome``, for ALL hits, not only hits on people): a key present on one side only, or a different count,
-is ``WIRING_MISMATCH`` (exit 5; ``keys_only_in_spy``, ``keys_only_in_ledger`` and ``key_diffs`` name them). The O3 total, summed the way ``_combat_rows`` sums it, is a DERIVED line from each side and must also agree, per group.
+is ``WIRING_MISMATCH`` (exit 5; ``keys_only_in_spy``, ``keys_only_in_ledger`` and ``key_diffs`` name them). The O3' hits PER ATTACKER GROUP (every key of a tied group, summed over BOTH person flags and both outcomes) are a second, derived check: the ledger's sum, the spy's key sum and the rows must agree per group.
 The gate's declared set (``rpg_gate_metrics.declared_wild_meat_eaters(world, [seed])``, same signature at 87792e3e8 and e72270894) is recorded as ``declared_o3_groups`` and every O3 group seen outside it is listed. The kit reads the ledger only through the public ``tally_event().payload``.
 
 LEDGER LIVENESS (added after the first preflight, where the ledger counted nothing): ``finish()`` runs BEFORE ``kernel.shutdown()`` (``run_ticks``). The document records the evidence: ``RunLedger._live`` and
@@ -76,8 +76,9 @@ class TreeReads:
     """The tree's own definitions the recorder reads (imported from the tree on PYTHONPATH; injectable for unit tests with plain functions)."""
 
     def __init__(self, kind_group: Callable, is_person: Callable, species_of: Callable, is_wild_meat_eater: Callable, declared_diet: Callable, is_asleep: Callable, is_lodged: Callable, split_key: Callable,
-                 make_key: Callable) -> None:
+                 make_key: Callable, tied_groups: Optional[Any] = None) -> None:
         self.kind_group, self.is_person, self.species_of = kind_group, is_person, species_of
+        self.tied_groups = tuple(tied_groups) if tied_groups is not None else tuple(load_sibling("person_attack_summary").TIED_GROUPS)  # the O3' groups: the summarizer's own constant
         self.is_wild_meat_eater, self.declared_diet, self.is_asleep, self.is_lodged, self.split_key = is_wild_meat_eater, declared_diet, is_asleep, is_lodged, split_key
         self.make_key = make_key  # the tree's run_ledger._key
 
@@ -85,9 +86,10 @@ class TreeReads:
         """The ledger's own attack key, built the way ``RunLedger._count_attacks`` builds it: ``_key(kind_group(attacker), int(is_person(attacker)), int(is_person(victim)), outcome)``."""
         return self.make_key(self.kind_group(attacker), int(self.is_person(attacker)), int(self.is_person(victim)), outcome)
 
-    def o3_label(self, group: str, person: Any) -> bool:
-        """The gate's O3 predicate through the KIT's call path: the person field is normalised to the ledger key's STRING (``"1"``/``"0"``) first, so an int 1 and a str "1" both read as a person (rejected)."""
-        return bool(self.is_wild_meat_eater(group, str(int(person))))
+    def o3_label(self, group: str, person: Any = None) -> bool:
+        """The O3' label (owner ruling #715 7074277591: there is no "person" class): the attacker's kind group is one of the tied groups, whoever the victim is. NO person flag is read: ``person`` is accepted
+        and ignored, so an int 1, a str "1" and an absent flag give the same answer."""
+        return group in self.tied_groups
 
     @classmethod
     def from_tree(cls) -> "TreeReads":
@@ -213,8 +215,8 @@ class PersonAttackSpy:
         from src.core.update_models.combat import CombatUpdate
         from src.core.updates import EntityUpdate
 
-        wild = next((eid for eid, body in sorted(state.entities.items()) if body.combat.alive and eid in prior.entities and self.reads.o3_label(self.reads.kind_group(body), int(self.reads.is_person(body)))), None)
-        person = next((eid for eid, body in sorted(state.entities.items()) if body.combat.alive and self.reads.is_person(body) and eid != wild), None)
+        wild = next((eid for eid, body in sorted(state.entities.items()) if body.combat.alive and eid in prior.entities and self.reads.o3_label(self.reads.kind_group(body))), None)
+        person = next((eid for eid, body in sorted(state.entities.items()) if body.combat.alive and eid != wild), None)   # the first other living body, whatever it is
         if wild is None or person is None:
             return state, update
         updates = dict(getattr(update, "entity_updates", None) or {})
@@ -238,18 +240,16 @@ class PersonAttackSpy:
             key = self.reads.ledger_key(attacker_before, victim_after, "kill" if getattr(combat, "outcome_kind", None) == "KILL" else "hit")
             if hp_delta < 0:
                 self.key_counts[key] = self.key_counts.get(key, 0) + 1  # the ledger's own conditions (attacker_id set, hp_delta < 0, both bodies present): EVERY hit, on a person or not
-            if not self.reads.is_person(victim_after):
-                continue
             victim_before = prior.entities.get(victim_id, victim_after)
             attacker_after = state.entities.get(attacker_id, attacker_before)
-            group, person_field, _victim_field, _outcome = self.reads.split_key(key, 4)
-            o3 = self.reads.o3_label(group, person_field)
+            group = self.reads.split_key(key, 4)[0]
+            o3 = self.reads.o3_label(group)
             if len(self.rows) >= ROW_LIMIT:
                 self.rows_truncated = True
                 continue
             self.rows.append({
                 "tick": state.tick, "world_time": state.world_time, "attacker_id": attacker_id, "attacker_kind": attacker_before.kind, "attacker_species": self.reads.species_of(attacker_before),
-                "attacker_group": group, "attacker_diet": self.reads.declared_diet(attacker_before), "attacker_person": int(person_field), "ledger_key": key, "in_o3_group": o3, "victim_id": victim_id,
+                "attacker_group": group, "attacker_diet": self.reads.declared_diet(attacker_before), "ledger_key": key, "in_o3_group": o3, "victim_id": victim_id,
                 "victim_kind": victim_after.kind, "victim_species": self.reads.species_of(victim_after), "hit": hp_delta < 0, "hp_delta": hp_delta, "outcome_kind": getattr(combat, "outcome_kind", None),
                 "victim_alive_after": bool(victim_after.combat.alive), "victim_asleep_before": bool(self.reads.is_asleep(victim_before)), "victim_lodged_before": bool(self.reads.is_lodged(victim_before)),
                 "victim_mode_before": mode_name(victim_before), "victim_mode_after": mode_name(victim_after), "victim_attacked_same_tick": victim_id in attackers_this_tick,
@@ -293,11 +293,11 @@ class PersonAttackSpy:
         return counts
 
     def o3_from_keys(self, key_counts: Dict[str, int]) -> Dict[str, int]:
-        """O3 summed from a key counter the way ``_combat_rows`` sums it: victim_person == "1", the attacker kept by the gate's predicate (given the key's STRING fields), per attacker group."""
+        """O3' hits per attacker group from a key counter: every key of a tied group, SUMMED over both person flags (attacker and victim) and both outcomes (hit, kill)."""
         counts: Dict[str, int] = {}
         for key, n in key_counts.items():
-            attacker, attacker_person, victim_person, _outcome = self.reads.split_key(key, 4)
-            if victim_person == "1" and self.reads.is_wild_meat_eater(attacker, attacker_person):
+            attacker = self.reads.split_key(key, 4)[0]
+            if self.reads.o3_label(attacker):
                 counts[attacker] = counts.get(attacker, 0) + n
         return counts
 

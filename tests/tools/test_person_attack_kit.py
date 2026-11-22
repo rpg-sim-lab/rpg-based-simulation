@@ -493,11 +493,11 @@ def test_the_spy_sees_a_hit_a_miss_and_agrees_with_the_ledgers_own_counting() ->
     assert doc["wiring"] == "OK" and doc["cell_valid"] is True and doc["row_count"] == 3
 
 
-def test_the_spy_records_nothing_for_an_attack_on_a_non_person_and_marks_a_mode_change_of_a_watched_id() -> None:
+def test_the_spy_records_a_row_for_an_attack_on_a_non_person_and_marks_a_mode_change_of_a_watched_id() -> None:     # CHANGED (O3'): was "records nothing for an attack on a non-person"
     spy = fresh_spy()
     state = world_state(5, two_bodies())
-    spy.observe(state, attack_update(1, 3), state)                 # victim 3 is not a person
-    assert spy.rows == []
+    spy.observe(state, attack_update(1, 3), state)                 # victim 3 is a goat, not a person: the row IS recorded (owner ruling #715 7074277591: a wolf attacking any living thing counts)
+    assert [(r["attacker_id"], r["victim_id"], r["victim_kind"], r["in_o3_group"], r["hit"]) for r in spy.rows] == [(1, 3, "goat", True, True)] and "attacker_person" not in spy.rows[0]
     spy.observe(state, attack_update(1, 2), state)
     later = {**two_bodies(), 2: body("human", "meat+plant+prepared", 1, ["meat"], mode="RETREAT")}
     spy.observe(world_state(6, later), SimpleNamespace(entity_updates={}), world_state(6, later))
@@ -651,54 +651,48 @@ def real_gate_reads() -> spy_module.TreeReads:
     return spy_module.TreeReads(base.kind_group, base.is_person, base.species_of, _is_wild_meat_eater, base.declared_diet, base.is_asleep, base.is_lodged, _split, _key)
 
 
-@pytest.mark.parametrize("person_field", [1, "1"])
-def test_a_person_attacker_arriving_as_int_one_or_str_one_is_rejected_as_o3_through_the_kits_own_call_path(person_field: Any) -> None:
+@pytest.mark.parametrize("person_field", [1, "1", 0, "0", None])
+def test_the_o3_prime_label_is_identical_for_int_one_str_one_and_an_absent_person_flag(person_field: Any) -> None:     # REPLACES the int-1 / str-"1" rejection controls and the raw-gate-predicate documentation test (RETIRED: there is no person class now)
     real = real_gate_reads()
-    assert real.o3_label("meat", person_field) is False                       # the kit's labelling function normalises to the ledger key's string field
-    assert real.o3_label("meat+plant+prepared", person_field) is False
-    assert real.o3_label("meat", 0) is True and real.o3_label("meat", "0") is True and real.o3_label("plant", 0) is False
+    assert real.o3_label("meat", person_field) is True and real.o3_label("meat") is True                   # a tied group is O3' whatever the person field is (or whether it exists)
+    assert real.o3_label("meat+plant+prepared", person_field) is False and real.o3_label("plant", person_field) is False
 
 
-def test_the_raw_gate_predicate_accepts_an_int_one_which_is_why_the_kit_normalises_first() -> None:
-    from src.observability.rpg_gate_metrics import _is_wild_meat_eater
-
-    assert _is_wild_meat_eater("meat", 1) is True and _is_wild_meat_eater("meat", "1") is False   # the defect of the first preflight: 1 != "1"
-
-
-def test_person_on_person_is_not_o3_and_a_non_person_meat_attacker_on_a_person_is_o3_with_the_real_gate_functions() -> None:
+def test_an_untied_group_attacker_is_not_o3_whoever_it_hits_and_a_tied_group_attacker_is_whoever_it_hits_with_the_real_key_functions() -> None:     # CHANGED (O3')
     spy = spy_module.PersonAttackSpy(real_gate_reads(), StandInLedger).start_ledger()
     bodies = {**two_bodies(), 4: body("goblin", "meat+plant+prepared", 1, ["meat", "plant", "prepared"])}     # a person goblin (coin-and-trade trait)
     state = world_state(5, bodies)
-    spy.observe(state, attack_update(2, 4), state)     # person human hits person goblin: NOT O3
-    spy.observe(state, attack_update(4, 2), state)     # person goblin hits person human: NOT O3
-    spy.observe(state, attack_update(1, 2), state)     # non-person wolf (group meat) hits a person: O3
+    spy.observe(state, attack_update(2, 4), state)     # human (group meat+plant+prepared) hits a goblin: not a tied group, NOT O3
+    spy.observe(state, attack_update(4, 2), state)     # goblin hits the human: NOT O3
+    spy.observe(state, attack_update(1, 2), state)     # wolf (group meat) hits a person: O3
+    spy.observe(state, attack_update(1, 3), state)     # wolf hits a goat: O3 as well (any living thing)
     spy.finish(state)
     doc = spy.report()
-    assert [(r["attacker_id"], r["attacker_person"], r["in_o3_group"], r["ledger_key"]) for r in doc["rows"]] == [
-        (2, 1, False, "meat+plant+prepared|1|1|hit"), (4, 1, False, "meat+plant+prepared|1|1|hit"), (1, 0, True, "meat|0|1|hit")]
-    assert doc["o3_by_group_spy"] == doc["o3_by_group_ledger"] == doc["o3_by_group_rows"] == {"meat": 1} and doc["wiring"] == "OK" and doc["per_key_counts_equal"] is True
-    assert doc["key_counts_spy"] == doc["key_counts_ledger"] == {"meat+plant+prepared|1|1|hit": 2, "meat|0|1|hit": 1}
+    assert [(r["attacker_id"], r["in_o3_group"], r["ledger_key"]) for r in doc["rows"]] == [
+        (2, False, "meat+plant+prepared|1|1|hit"), (4, False, "meat+plant+prepared|1|1|hit"), (1, True, "meat|0|1|hit"), (1, True, "meat|0|0|hit")]
+    assert doc["o3_by_group_spy"] == doc["o3_by_group_ledger"] == doc["o3_by_group_rows"] == {"meat": 2} and doc["wiring"] == "OK" and doc["per_key_counts_equal"] is True
+    assert doc["key_counts_spy"] == doc["key_counts_ledger"] == {"meat+plant+prepared|1|1|hit": 2, "meat|0|1|hit": 1, "meat|0|0|hit": 1}
 
 
-def test_the_spy_counts_every_hit_per_ledger_key_not_only_hits_on_people() -> None:
+def test_the_spy_counts_every_hit_per_ledger_key_and_now_also_records_it_as_a_row() -> None:     # CHANGED (O3'): the row list is no longer empty
     spy = fresh_spy()
     state = world_state(5, two_bodies())
     spy.observe(state, attack_update(1, 3), state)     # wolf hits a goat: not a person victim, still a ledger key
     spy.finish(state)
     doc = spy.report()
-    assert doc["key_counts_spy"] == doc["key_counts_ledger"] == {"meat|0|0|hit": 1} and doc["rows"] == [] and doc["wiring"] == "OK"
+    assert doc["key_counts_spy"] == doc["key_counts_ledger"] == {"meat|0|0|hit": 1} and [r["ledger_key"] for r in doc["rows"]] == ["meat|0|0|hit"] and doc["wiring"] == "OK"
 
 
-def test_a_key_present_on_one_side_only_is_a_wiring_fail_even_when_the_o3_totals_agree() -> None:
+def test_a_key_present_on_one_side_only_is_a_wiring_fail_even_when_the_o3_totals_agree() -> None:     # CHANGED (O3'): the non-O3' key is a plant-eater's, not a non-person victim's
     spy = fresh_spy()
     state = world_state(5, two_bodies())
-    spy.observe(state, attack_update(1, 3), state)     # a non-O3 key (victim not a person): O3 is untouched
-    spy.observe(state, attack_update(1, 2), state)     # the O3 key
-    StandInLedger.attacks.pop("meat|0|0|hit")          # the ledger lacks the non-O3 key the spy has
+    spy.observe(state, attack_update(3, 2), state)     # a non-O3' key (a goat, group plant, hits a person): O3' is untouched
+    spy.observe(state, attack_update(1, 2), state)     # the O3' key
+    StandInLedger.attacks.pop("plant|0|1|hit")         # the ledger lacks the non-O3' key the spy has
     spy.finish(state)
     doc = spy.report()
     assert doc["per_group_counts_equal"] is True and doc["per_key_counts_equal"] is False and doc["wiring"] == "WIRING_MISMATCH" and doc["cell_valid"] is False
-    assert doc["keys_only_in_spy"] == ["meat|0|0|hit"] and doc["keys_only_in_ledger"] == [] and doc["key_diffs"] == {"meat|0|0|hit": {"spy": 1, "ledger": None}}
+    assert doc["keys_only_in_spy"] == ["plant|0|1|hit"] and doc["keys_only_in_ledger"] == [] and doc["key_diffs"] == {"plant|0|1|hit": {"spy": 1, "ledger": None}}
     ledger_extra = fresh_spy()
     ledger_extra.observe(state, attack_update(1, 2), state)
     StandInLedger.attacks["plant|0|0|hit"] = 3         # the ledger has a key the spy never saw
@@ -707,8 +701,34 @@ def test_a_key_present_on_one_side_only_is_a_wiring_fail_even_when_the_o3_totals
     assert other["keys_only_in_ledger"] == ["plant|0|0|hit"] and other["wiring"] == "WIRING_MISMATCH" and spy_module.exit_status(other)[0] == spy_module.EXIT_WIRING_MISMATCH
 
 
+@pytest.mark.parametrize("species_reader", [lambda e: e.kind, lambda e: str(e.kind)], ids=["new", "base"])
+def test_the_per_group_o3_prime_sum_is_over_both_person_flags_and_a_missing_flag_combination_is_a_wiring_fail(species_reader: Any) -> None:     # NEW (O3')
+    """Both arms read the species through the tree's own accessor (NEW's species_of, BASE's get_species_id_str); the group sum must not depend on it."""
+    def make() -> spy_module.PersonAttackSpy:
+        base = reads()
+        spy = fresh_spy()
+        spy.reads = spy_module.TreeReads(base.kind_group, base.is_person, species_reader, base.is_wild_meat_eater, base.declared_diet, base.is_asleep, base.is_lodged, base.split_key, base.make_key)
+        return spy
+
+    state = world_state(5, {**two_bodies(), 6: body("goblin", "meat", 1, ["meat"])})              # a PERSON whose kind group is meat: the person flag is not read by the label
+    spy = make()
+    for pair in ((1, 2), (1, 3), (6, 2), (6, 3)):      # meat|0|1, meat|0|0, meat|1|1, meat|1|0
+        spy.observe(state, attack_update(*pair), state)
+    spy.finish(state)
+    ok = spy.report()
+    assert ok["o3_by_group_spy"] == ok["o3_by_group_ledger"] == ok["o3_by_group_rows"] == {"meat": 4} and ok["wiring"] == "OK"
+    broken = make()
+    for pair in ((1, 2), (1, 3), (6, 2), (6, 3)):
+        broken.observe(state, attack_update(*pair), state)
+    StandInLedger.attacks["meat|1|0|hit"] -= 1          # the ledger lacks the one flag combination the person-filtered gate predicate used to drop
+    broken.finish(state)
+    bad = broken.report()
+    assert bad["per_group_counts_equal"] is False and bad["o3_by_group_spy"] == {"meat": 4} and bad["o3_by_group_ledger"] == {"meat": 3} and bad["wiring"] == "WIRING_MISMATCH"
+
+
 def test_the_declared_o3_groups_are_recorded_and_an_undeclared_group_is_listed() -> None:
     spy = fresh_spy(declared_o3_groups=["meat"])
+    spy.reads.tied_groups = ("meat", "meat+plant")     # CHANGED (O3'): a group the gate does not declare is O3' only if the tied groups say so
     state = world_state(5, {**two_bodies(), 5: body("ogre", "meat+plant", 0, ["meat", "plant"])})
     spy.observe(state, attack_update(1, 2), state)
     spy.observe(state, attack_update(5, 2), state)
@@ -859,7 +879,7 @@ def test_the_launcher_has_one_scope_site_and_no_parallel_process_start() -> None
     text = LAUNCHER.read_text(encoding="utf-8")
     code = [line for line in text.splitlines() if not line.lstrip().startswith("#")]
     assert sum("systemd-run --user" in line for line in code) == 1                                # one site builds every scope command
-    assert sum("SCOPE_CMD[@]" in line for line in code) == 1 and any('"${SCOPE_CMD[@]}" >> ' in line and line.rstrip().endswith("2>&1)") for line in code)   # run in the foreground, never with a trailing &
+    assert sum("SCOPE_CMD[@]" in line for line in code) == 1 and any('"${SCOPE_CMD[@]}" >> ' in line and line.rstrip().endswith("2>&1 < /dev/null)") for line in code)   # run in the foreground, never with a trailing &
     assert "PYTHONDONTWRITEBYTECODE=1" in text and "setsid -w" in text and 'person_attack_run.py"' not in text      # no whole-run runner call any more
 
 
@@ -871,3 +891,53 @@ def test_the_one_process_code_runs_one_child_records_its_exit_and_propagates_the
     proc = subprocess.run([sys.executable, "-c", code, "new", "w", "42", "10", "plain", str(tree), str(out), sys.executable], cwd=ROOT, env={**os.environ, "PYTHONPATH": str(ROOT)}, capture_output=True, text=True, timeout=60)
     exit_doc = json.loads((out / "new__w__s42__plain.exit.json").read_text(encoding="utf-8"))
     assert proc.returncode == exit_doc["returncode"] != 0 and "seconds" in exit_doc and not (tree / "data" / "runs").exists()
+
+
+# --------------------------------------------------------------------------------------------- O3' stage 1 launcher: the record step, kitpy everywhere, the smoke
+def stage1_env(tmp_path: Path, **extra: str) -> Path:
+    env = tmp_path / "stage1.env"
+    values = {"KIT": str(ROOT), "OUT": str(tmp_path / "out"), "TREE_NEW": "/t/new", "TREE_BASE": "/t/base", "PY": sys.executable, "FREEZE_SHA": "f" * 64, "WORLDS": '"w"', "SEEDS": '"42 45 43"', "TICKS": "5000",
+              "SMOKE_TICKS": "300", **extra}
+    env.write_text("".join(f"{k}={v}\n" for k, v in values.items()), encoding="utf-8")
+    return env
+
+
+def test_the_stage_1_runner_record_is_written_from_a_cwd_outside_the_kit_and_a_failed_write_is_never_complete(tmp_path: Path) -> None:     # NEW: the runner.json defect of the O3 run
+    env = stage1_env(tmp_path)
+    elsewhere = tmp_path / "elsewhere"
+    elsewhere.mkdir()
+    cells = tmp_path / "out" / "cells"
+    cells.mkdir(parents=True)
+    (cells / "new__w__s42__spy.exit.json").write_text(json.dumps({"returncode": 0}), encoding="utf-8")
+    done = subprocess.run(["bash", str(LAUNCHER), str(env), "GO-1"], capture_output=True, text=True, env={**os.environ, "LAUNCH_RECORD_ONLY": "1"}, cwd=elsewhere)
+    log = (tmp_path / "out" / "launcher.log").read_text(encoding="utf-8")
+    assert done.returncode == 0 and (tmp_path / "out" / "runner.json").exists() and "DISK_CHECK rc=" in log and "ImportError" not in log and "ModuleNotFoundError" not in log, log
+    record = json.loads((tmp_path / "out" / "runner.json").read_text(encoding="utf-8"))
+    assert record["status"] == "COMPLETE" and record["returncodes"]["new__w__s42__spy"] == 0 and record["returncodes"]["new__w__s42__plain"] is None and len(record["returncodes"]) == 12
+    (tmp_path / "out" / "runner.json").unlink()
+    (tmp_path / "out" / "runner.json").mkdir()                                                      # now the write fails
+    failed = subprocess.run(["bash", str(LAUNCHER), str(env), "GO-1"], capture_output=True, text=True, env={**os.environ, "LAUNCH_RECORD_ONLY": "1"}, cwd=elsewhere)
+    assert failed.returncode == 6 and "STATUS=RECORD_NOT_WRITTEN RC=6" in (tmp_path / "out" / "launcher.log").read_text(encoding="utf-8")
+
+
+def test_every_stage_1_kit_python_call_goes_through_kitpy() -> None:
+    text = LAUNCHER.read_text(encoding="utf-8")
+    stray = [line for line in text.splitlines() if '"$PY"' in line and not line.lstrip().startswith("#") and "kitpy()" not in line and "SCOPE_CMD=" not in line and '--python "$PY"' not in line and '"$OUT" "$STATUS"' not in line]     # the last one: an ARGUMENT line of a kitpy -c call
+    assert stray == [], stray            # only kitpy's own definition, the scope command (run under cd $KIT and PYTHONPATH) and the uv freeze reads
+
+
+def test_the_stage_1_smoke_is_one_new_spy_cell_with_its_plain_twin_at_300_ticks(tmp_path: Path) -> None:
+    env = stage1_env(tmp_path)
+    lines = [ln for ln in subprocess.run(["bash", str(LAUNCHER), str(env), "1", "smoke"], capture_output=True, text=True, env={**os.environ, "LAUNCH_DRY_RUN": "1"}, check=True).stdout.splitlines() if ln.startswith("SCOPE ")]
+    tail = [line.split("<python -c one-process> ")[1].split() for line in lines]
+    assert [(t[0], t[2], t[3], t[4]) for t in tail] == [("new", "42", "300", "plain"), ("new", "42", "300", "spy")]
+
+
+def test_write_record_names_the_twin_equality_and_every_return_code_of_the_plan(tmp_path: Path) -> None:
+    cells = tmp_path / "cells"
+    cells.mkdir()
+    for name, code, hash_ in (("new__w__s42__plain", 0, "H"), ("new__w__s42__spy", 0, "H")):
+        (cells / f"{name}.exit.json").write_text(json.dumps({"returncode": code}), encoding="utf-8")
+        (cells / f"{name}.json").write_text(json.dumps({"final_hash": hash_}), encoding="utf-8")
+    record = run.write_record(tmp_path, "COMPLETE", "G", 300, ["w"], [42], "py", "F", "F", kind="smoke")
+    assert record["twin_equal"] == {"new/w/s42": True} and list(record["returncodes"]) == ["new__w__s42__plain", "new__w__s42__spy"] and (tmp_path / "runner.json").exists()

@@ -89,6 +89,31 @@ def plan(arms: List[str], worlds: List[str], seeds: List[int], ticks: int) -> Li
     return [{"arm": arm, "world": world, "seed": seed, "ticks": ticks, "mode": mode, "name": cell_name(arm, world, seed, mode)} for arm in arms for world in worlds for seed in seeds for mode in MODES]
 
 
+def plan_for(kind: str, worlds: List[str], seeds: List[int], ticks: int) -> List[Dict[str, Any]]:
+    """The processes of a launch: ``full`` = the whole plan (both arms, every world and seed); ``smoke`` = NEW, the first world and seed, plain then spy."""
+    if kind == "smoke":
+        return plan(["new"], worlds[:1], seeds[:1], ticks)
+    return plan(["new", "base"], worlds, seeds, ticks)
+
+
+def write_record(out: Path, status: str, go: str, ticks: int, worlds: List[str], seeds: List[int], python: str, freeze_expected: str, freeze_final: str, kind: str = "full") -> Dict[str, Any]:
+    """``<out>/runner.json`` for a sequential launch: the launcher's status, the return code of every process (its ``.exit.json``), the sealed-twin equality and the freeze values. The write is read back;
+    the launcher exits non-zero (the run is not COMPLETE) when this raises."""
+    items = plan_for(kind, worlds, seeds, ticks)
+    cells = out / "cells"
+    codes = {}
+    for item in items:
+        exit_file = cells / f"{item['name']}.exit.json"
+        codes[item["name"]] = json.loads(exit_file.read_text(encoding="utf-8"))["returncode"] if exit_file.exists() else None
+    record = {"go": go, "mode": "sequential, one process per scope", "kind": kind, "ticks": ticks, "worlds": worlds, "seeds": seeds, "python": python, "freeze_sha_expected": freeze_expected,
+              "freeze_sha_final": freeze_final, "status": status, "returncodes": codes, "twin_equal": twin_check(cells, items)}
+    target = out / "runner.json"
+    target.write_text(json.dumps(record, indent=2, sort_keys=True), encoding="utf-8")
+    if json.loads(target.read_text(encoding="utf-8")) != record:
+        raise RuntimeError("runner.json read back differently")
+    return record
+
+
 def run_child(python: str, tree: Path, out: Path, item: Dict[str, Any]) -> Dict[str, Any]:
     (out / "tmp").mkdir(parents=True, exist_ok=True)
     path = out / f"{item['name']}.json"

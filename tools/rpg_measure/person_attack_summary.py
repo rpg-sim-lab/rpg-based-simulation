@@ -200,7 +200,7 @@ def hit_chains(rows: List[Dict[str, Any]], mode_rows: List[Dict[str, Any]], only
             else:
                 asleep_run = 0
             if asleep_run > worst_asleep["run"]:
-                worst_asleep = {"run": asleep_run, "victim_id": victim_id, "attackers": sorted({h["attacker_id"] for h in hits[i - asleep_run + 1:i + 1]}), "end_tick": hit["tick"]}
+                worst_asleep = {"run": asleep_run, "start_tick": hits[i - asleep_run + 1]["tick"], "victim_id": victim_id, "attackers": sorted({h["attacker_id"] for h in hits[i - asleep_run + 1:i + 1]}), "end_tick": hit["tick"]}
             if i == 0 or none_run == 0:
                 none_run = 1
             else:
@@ -208,7 +208,7 @@ def hit_chains(rows: List[Dict[str, Any]], mode_rows: List[Dict[str, Any]], only
                 between = (prev["decision"] != "none" or hit["victim_mode_before"] in DECISION_MODES or any(prev["tick"] <= t <= hit["tick"] for t in hit["_decisions"]))
                 none_run = 1 if between else none_run + 1
             if none_run > worst_none["run"]:
-                worst_none = {"run": none_run, "victim_id": victim_id, "attackers": sorted({h["attacker_id"] for h in hits[i - none_run + 1:i + 1]}), "end_tick": hit["tick"]}
+                worst_none = {"run": none_run, "start_tick": hits[i - none_run + 1]["tick"], "victim_id": victim_id, "attackers": sorted({h["attacker_id"] for h in hits[i - none_run + 1:i + 1]}), "end_tick": hit["tick"]}
     return {"asleep_or_lodged_run": worst_asleep, "no_decision_run": worst_none}
 
 

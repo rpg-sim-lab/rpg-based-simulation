@@ -6,11 +6,42 @@ audience: agent
 tags: []
 ---
 
-# Person-attack trace kit: note for the designer's sha approval
+# Person-attack trace kit (O3' + Q2): note for the designer's sha approval
 
 Author: rpg-implementer-ubuntu, 2026-11-21, on rpg-planner-ubuntu's dispatch. Source of truth: the brief word for word at rpg-planner-ubuntu's seat commit `ab7f07e68`
 (`agent-working/stored_artifacts/TCK-20261121-MEAT-EATERS-IN-FRONTIER-LIVING-WORLD-ATTACK-PEOPLE-FORTY-TIMES-MORE-AFTER-THE-NIGHT-AND-SLOT-FIXES/o3_trace_brief_relayed_2026-11-21.md`). The ticket
 TCK-20261121-MEAT-EATERS-IN-FRONTIER-LIVING-WORLD-ATTACK-PEOPLE-FORTY-TIMES-MORE-AFTER-THE-NIGHT-AND-SLOT-FIXES is on `origin/rpg-planner-tickets-5` at **1148d41e7** (aligned to the brief: R1-R7, view (e), s43 required, the designer's arm, period and not-assessable rules); the brief governs. rpg-designer's answers: rpg-planner-ubuntu's seat commit `a3eedf7e7`. Owner ruling #715 7063603750. **Nothing here has been run on a world: this is a build and a set of unit controls.**
+
+## COMBINED O3' + Q2 KIT (this head; supersedes the person-flag parts below)
+Scope: rpg-designer's final combined scope, word for word at rpg-planner-ubuntu's seat commits `045680df5` (B1-B6) and `d132d32d8` (the window amendment), file `rpg_designer_o3_kit_answers_2026-11-21.md`; owner ruling #715 7074277591 (there is no "person" class; a wolf attacking any living thing counts). `cd3a76430` and `d4afc04ad` / `14d74f9fa` are earlier heads and stay as they are; the designer approves only THIS head at its own shas.
+
+**Stage 1 (O3', 12 processes: NEW/BASE x s42/s43/s45 x plain/spy, 5000t, same trees, freeze 97df9797, recording OFF)**, `person_attack_launch.sh`:
+- the spy records a row for EVERY hit or miss on any living victim (the `is_person` filter is gone); the O3' label is `attacker_group in TIED_GROUPS` (("meat",)), no person flag is read (control: int 1, str "1", 0, "0" and an absent flag give the same label); `attacker_person` is no longer a row field; `ledger_key` still carries both flags because it IS the ledger's key;
+- the per-full-key spy == ledger check stays; a NEW per-group check: O3' hits per attacker group (spy keys, ledger keys summed over BOTH flags and both outcomes, and the rows) must agree, else WIRING_MISMATCH;
+- `attack_rows` and its truncation (`attack_rows_truncated`) as before; R1-R7 text and thresholds are unchanged and the population is every meat-attacker engagement on any living victim; R5 uses the Q5(a) table. The R7 no-decision tag ("BUG CANDIDATE (R7 no-decision; may include illegal strike-back attempts the kit cannot see)") is applied at read time, never in `summary.json`. `hit_chains` now also reports each chain's `start_tick`;
+- the runner.json defect (TCK-20261122-PERSON-ATTACK-LAUNCHER-WRITES-NO-RUNNER-RECORD) is fixed: EVERY kit python call goes through `kitpy` (`cd $KIT` and `PYTHONPATH=$KIT`); `runner.json` is written by `person_attack_run.write_record`, read back, and a failed write makes the run non-COMPLETE (`RECORD_NOT_WRITTEN`, RC 6); `LAUNCH_RECORD_ONLY=1` is the control that runs the step from a cwd outside the kit;
+- the smoke (B6): `person_attack_launch.sh <record.env> <GO> smoke` = NEW s42, plain twin then spy, at `SMOKE_TICKS` (300). Plain + spy so the twin hash can be compared; the ticket asked for "a stage-1 spy cell", and the twin is part of a valid cell.
+
+**Stage 2 (Q2 per-tick read)**, `subject_trace_{spy,run,launch}` (all NEW files):
+- `derive_subjects(cells)` is pure and reads only the stage-1 SEALED NEW spy cells: a subject is a victim of a NEW meat engagement with >= 10 hits, or of an R7 chain (no-decision run >= 5, asleep/lodged run >= 3, judged per victim), plus every attacker in those engagements or chains. Window: first hit - 100 to END + 100, END = the victim's death tick if it dies inside the engagement or chain, else the last HIT (not the last event); windows merged per subject. Attackers stay subjects for the whole padded window; a NEW victim inside the padding is a row of that attacker and never a subject. No extra-subject input (subjects come only from the cells).
+- Cells: for each seed with >= 1 subject, the NEW spy cell and the same-seed BASE cell, same ids, spy mode, 5000t. `subjects.json` (with the sha256 of every sealed cell it read) is written and hashed (`subjects.json.sha256`) before the first process. The launcher refuses to start unless sha256(stage-1 `SHA256SUMS`) equals its SEAL line (`seal-check`, first thing in the preflight) and `sha256sum -c` of the stage-1 set passes.
+- Rows: per tick in a window, BEFORE and AFTER the apply: movement mode; task work kind / action / reason / payload scalars; `navigation.target` (the goal tile), path length, `navigation.last_failure_reason`; readiness; hp; alive/state (ALIVE, DEAD, ABSENT: a dead or removed subject still gets a row); position; `lodged_in`; the strategic project/objective ids and the active objective's record; Chebyshev distance to each counterpart (the attackers of a victim, the victims of an attacker) and to the goal tile. The state has no single "goal" field: these are the places a goal lives.
+- Legality wrapper (`LegalityServiceV2.verify_attack_legality`): pass-through, the original result or exception goes through unchanged; a row (tick, target, result, reason, failure text, opportunity flag) is recorded only where the attacker is a subject and the tick is in its window. **Call sites (re-grepped in both frozen trees, every match):** at 87792e3e8 `engine/domain/combat_actions.py:56`, `combat.py:166, 268, 342, 444`, `tactical.py:423`, `tactical_flight_guard.py:71`, `tactical_hold.py:38`; at e72270894 the same sites with `tactical.py:434`. **One ATTACK action can give TWO legality calls** (`combat_actions.py:56`, then `combat.py:166` inside `resolve_attack`), so legality call counts are not attack counts. `combat_actions.py:56` passes a context, not the state: a call whose context has no tick is recorded with `in_window: null` and counts for the reach rule.
+- Non-perturbation: each stage-2 spy `final_hash` must equal the stage-1 sealed plain `final_hash` per (arm, seed) (`check`); any spy exception is stored, re-raised and fatal (exit 8, the cell is void); a cell with 0 subject rows is void; NEW s42 needs > 0 subject legality calls. Stage 2 gives no verdict.
+- Smoke (B6): `subject_trace_launch.sh <record.env> <GO> smoke` = NEW s42 plain + spy to t2000 (the t1901 chain); with the stage-1 cells not yet existing, the smoke record set points `SEALED` at a sealed O3 run whose seal matches (the `cd3a76430` run), and no sealed 2000t twin exists, so the smoke compares its own plain and spy hashes.
+- Same slot discipline as the O3 launcher: one process per 3G scope on cores 4-5, a watcher, TMPDIR on /data, preflight sha and tree checks, the disk floor, the seal LAST, `kitpy` for every kit python call, `RECORD_NOT_WRITTEN` when `runner.json` cannot be written.
+
+**Person-filter controls changed or retired in `test_person_attack_kit.py`** (each named, with why):
+- CHANGED `test_the_spy_records_nothing_for_an_attack_on_a_non_person_and_marks_a_mode_change_of_a_watched_id` -> `..._records_a_row_for_an_attack_on_a_non_person_...`: a non-person victim now gets a row.
+- RETIRED `test_a_person_attacker_arriving_as_int_one_or_str_one_is_rejected_as_o3_through_the_kits_own_call_path[1_0, 1_1]`: there is no person class; REPLACED by `test_the_o3_prime_label_is_identical_for_int_one_str_one_and_an_absent_person_flag` (int 1, "1", 0, "0", None).
+- RETIRED `test_the_raw_gate_predicate_accepts_an_int_one_which_is_why_the_kit_normalises_first`: the kit no longer calls the person-filtered gate predicate.
+- CHANGED `test_person_on_person_is_not_o3_and_a_non_person_meat_attacker_on_a_person_is_o3_with_the_real_gate_functions` -> `test_an_untied_group_attacker_is_not_o3_whoever_it_hits_and_a_tied_group_attacker_is_whoever_it_hits_...`: the label is the attacker's group only; rows now also exist for the wolf-on-goat hit; no `attacker_person` field.
+- CHANGED `test_the_spy_counts_every_hit_per_ledger_key_not_only_hits_on_people` -> `..._and_now_also_records_it_as_a_row`: the row list is no longer empty.
+- CHANGED `test_a_key_present_on_one_side_only_is_a_wiring_fail_even_when_the_o3_totals_agree`: the non-O3' key is a plant-eater's (`plant|0|1|hit`), because a wolf-on-goat key is O3' now.
+- CHANGED `test_the_declared_o3_groups_are_recorded_and_an_undeclared_group_is_listed`: a group the gate does not declare is O3' only if the tied groups include it (set in the test).
+- CHANGED `test_the_launcher_has_one_scope_site_and_no_parallel_process_start`: the scope call now also closes stdin (`< /dev/null`).
+- NEW: the per-group O3' sum over both flags (NEW and BASE species accessors), the stage-1 record-from-outside-the-kit control and its failed-write control, kitpy-everywhere, the stage-1 smoke order, `write_record`.
+All other controls are unchanged and pass. Stage 2 has its own file `test_subject_trace_kit.py`.
 
 ## Files (sha256 in the record set)
 | file | role |
@@ -20,7 +51,7 @@ TCK-20261121-MEAT-EATERS-IN-FRONTIER-LIVING-WORLD-ATTACK-PEOPLE-FORTY-TIMES-MORE
 | `person_attack_run.py` | runner module: `run_child` runs ONE process (the launcher calls it once per scope), `plan`, `twin_check`, `freeze_sha`; its own `main` (two arms side by side) is NOT used by the launcher |
 | `person_attack_launch.sh` | launcher: preflight, then the 12 processes SEQUENTIALLY (seed, arm, plain then spy), each in its OWN `systemd-run` 3G scope on cores 4-5 with its own watcher, freeze check and memory check; the summarizer, the tree-clean proof, the seal LAST; `LAUNCH_DRY_RUN=1` prints the 12 scope commands |
 | `person_attack_watch.sh`, `person_attack_tree_check.py` | the RSS watcher; the proof that a frozen tree is exactly `git ls-tree -r <sha>` (paths and blob hashes, no `data/runs`) |
-| `tests/tools/test_person_attack_kit.py` | the planted controls (55 tests, unit level, no world run) |
+| `tests/tools/test_person_attack_kit.py` | the planted controls (unit level, no world run; the stage-2 controls are in `tests/tools/test_subject_trace_kit.py`) |
 
 ## Hooks: the code the kit wraps or reads, with file:line at EACH sha
 Measured by importing and inspecting the real objects from each frozen tree (`hooks_probe.py`, outputs `hooks_87792e3e8.json` and `hooks_e72270894.json` in the record set's `probe-notes/`).

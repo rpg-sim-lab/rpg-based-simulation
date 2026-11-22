@@ -4,7 +4,7 @@
 #   smoke: NEW s42 plain then spy at SMOKE_TICKS (2000), the real-kernel smoke; cells: the four spy cells NEW s42, NEW s45, BASE s42, BASE s45 at TICKS (5000).
 # Lesson of TCK-20261122-PERSON-ATTACK-LAUNCHER-WRITES-NO-RUNNER-RECORD: EVERY kit python call goes through kitpy (cd $KIT and PYTHONPATH=$KIT); a record that could not be written makes the run non-COMPLETE with a non-zero RC.
 # LAUNCH_DRY_RUN=1 prints the scope commands and exits before the preflight. LAUNCH_RECORD_ONLY=1 runs only the runner.json step (the control that proves it works from a cwd outside the kit).
-# <record.env>: KIT, OUT_BASE (the run dir is $OUT_BASE/<smoke|cells>, must not exist), SEALED (the O3 cells dir), TREE_NEW, TREE_BASE, SHA_NEW, SHA_BASE, PY, FREEZE_SHA, WORLD, SEEDS, TICKS, SMOKE_TICKS, and KIT_SHA_<file> for the kit files.
+# <record.env>: KIT, OUT_BASE (the run dir is $OUT_BASE/<smoke|cells>, must not exist), SEALED (the stage-1 cells dir; its parent holds SHA256SUMS and the seal line, which must match before anything starts), TREE_NEW, TREE_BASE, SHA_NEW, SHA_BASE, PY, FREEZE_SHA, WORLD, SEEDS, TICKS, SMOKE_TICKS, and KIT_SHA_<file> for the kit files.
 set -u
 ENV_FILE=$1
 GO=$2
@@ -13,13 +13,15 @@ KIND=$3
 . "$ENV_FILE"
 OUT=$OUT_BASE/$KIND
 TICKS_USED=$TICKS; [ "$KIND" = smoke ] && TICKS_USED=$SMOKE_TICKS
-SEED_ARGS=(); for sd in $SEEDS; do SEED_ARGS+=(--seed "$sd"); done
+RUN_SEEDS=$SEEDS   # the seeds the cells run for: after the derivation, only those with at least one subject
+seed_args() { SEED_ARGS=(); for sd in $RUN_SEEDS; do SEED_ARGS+=(--seed "$sd"); done; }
+seed_args
 SMOKE_SEEDS=${SEEDS%% *}
 kitpy() { (cd "$KIT" && PYTHONPATH="$KIT" "$PY" "$@" < /dev/null); }   # the ONLY way a kit python call is made
 RUNPY=$KIT/tools/rpg_measure/subject_trace_run.py
 cell_list() {   # cell_list -> lines "arm seed mode"
   if [ "$KIND" = smoke ]; then echo "new $SMOKE_SEEDS plain"; echo "new $SMOKE_SEEDS spy"
-  else for arm in new base; do for sd in $SEEDS; do echo "$arm $sd spy"; done; done; fi
+  else for arm in new base; do for sd in $RUN_SEEDS; do echo "$arm $sd spy"; done; done; fi
 }
 scope_command() {   # scope_command <arm> <seed> <mode>: ONE process in its OWN scope (setsid -w waits for it)
   local tree=$TREE_NEW; [ "$1" = base ] && tree=$TREE_BASE
@@ -67,6 +69,7 @@ HEAVY_WORDS='tools\.rpg_measure|tools\.test_architecture\.rpg_gate_(harness|run|
 
 # --- PREFLIGHT ---
 [ -n "$GO" ] || abort "no go reference"
+kitpy "$RUNPY" seal-check --dir "$SEALED/.." >> "$LOG" 2>&1 || abort "the stage-1 seal does not match: sha256(SHA256SUMS) differs from its SEAL line (stage 2 refuses to start)"
 [ "$KIND" = smoke ] || [ "$KIND" = cells ] || abort "kind must be smoke or cells"
 for arm in NEW BASE; do
   tree=$(eval echo "\$TREE_$arm"); sha=$(eval echo "\$SHA_$arm")
@@ -89,8 +92,14 @@ heavy_running "$HEAVY_WORDS" && abort "another heavy measurement process is runn
 memcheck "the runner"
 disk_ok "the start" || abort "disk floor (2 GiB free on OUT and /) crossed before the start"
 mkdir -p "$OUT/cells"
-EXTRA_ARGS=(); [ -n "${EXTRA_SUBJECTS:-}" ] && EXTRA_ARGS=(--extra "$EXTRA_SUBJECTS")
-kitpy "$RUNPY" derive --sealed "$SEALED" --world "$WORLD" "${SEED_ARGS[@]}" "${EXTRA_ARGS[@]}" --out "$OUT/subjects.json" >> "$LOG" 2>&1 || abort "the subject list could not be derived from the sealed cells"
+kitpy "$RUNPY" derive --sealed "$SEALED" --world "$WORLD" "${SEED_ARGS[@]}" --out "$OUT/subjects.json" >> "$LOG" 2>&1 || abort "the subject list could not be derived from the sealed cells"
+echo "SUBJECTS sha256 $(sha256sum "$OUT/subjects.json" | cut -c1-64) (written and hashed before the first stage-2 process)" | tee "$OUT/subjects.json.sha256" >> "$LOG"
+if [ "$KIND" = cells ]; then
+  RUN_SEEDS=$(kitpy "$RUNPY" seeds --plan "$OUT/subjects.json") || abort "could not read the seeds with subjects"
+  [ -n "$RUN_SEEDS" ] || abort "no seed has a subject: nothing to run"
+  seed_args
+  echo "CELLS for seeds with a subject: $RUN_SEEDS (NEW and the same-seed BASE)" >> "$LOG"
+fi
 
 # --- the processes, ONE AT A TIME, each in its OWN scope with its own watcher, freeze and memory checks around every process ---
 export PYTHONDONTWRITEBYTECODE=1   # the children import from the frozen trees: no .pyc may land in them

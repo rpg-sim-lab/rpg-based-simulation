@@ -1,14 +1,16 @@
 """Planner, runner and cell checks for the subject trace (Q2). Subcommands (every one is meant to be called as ``cd $KIT && PYTHONPATH=$KIT python subject_trace_run.py <sub> ...``; nothing here imports the frozen tree):
 
-``derive``  subjects and windows from the SEALED O3 cells (``--sealed <cells dir>``, ``--seed`` once per seed, optional ``--extra <json>``) -> ``--out subjects.json`` with the sha256 of every sealed cell it read
+``derive``  subjects and windows from the stage-1 SEALED cells (``--sealed <cells dir>``, ``--seed`` once per seed) -> ``--out subjects.json`` with the sha256 of every sealed cell it read
+``seeds``   the seeds that have at least one subject (``--plan``), space separated
+``seal-check`` exit 0 only when sha256(stage-1 SHA256SUMS) equals its SEAL line (``--dir``)
 ``one``     ONE child process (the launcher puts it in its own scope): cwd = that arm's frozen tree, PYTHONPATH = that tree, recording OFF; moves the tree's ``data/runs`` out; writes ``<name>.exit.json``
 ``check``   the validity of every spy cell against the SEALED plain twins (hash equality, spy exceptions, reach) -> ``cell_validity.json``; evidence only, no verdict about the sim
 ``record``  ``runner.json`` from the exit files and the launcher's status; a failed write exits non-zero
 
-SUBJECTS (module ``derive_plan``): per seed, from the NEW spy cell's O3 rows grouped into engagements by ``person_attack_summary.build_engagements`` (one attacker on one victim, a gap over 50 ticks opens a new one):
-every victim of an engagement with at least 10 hits; every victim with an R7 chain (``hit_chains`` per victim: a no-decision run of 5 or more, an asleep/lodged run of 3 or more) with all engagements on it; every attacker of those
-engagements; and the explicit extra subjects (``{"seed": 42, "id": N, "windows": [[lo, hi]]}``). WINDOW of an engagement: from its first hit minus 100 ticks to the victim's death (``victim_killed``: the engagement's last
-tick) or, when the victim lived, to the engagement's end plus 100 ticks; a subject's windows are merged. COUNTERPARTS of a subject: the other side of every engagement it is in. BASE reads the same ticks (the same plan).
+SUBJECTS (``derive_subjects``, pure): from the stage-1 SEALED NEW spy cells only. A subject is a victim of a NEW meat engagement with at least 10 hits, or a victim of an R7 chain (``hit_chains`` per victim: a
+no-decision run of 5 or more, an asleep/lodged run of 3 or more), plus every attacker in those engagements or chains. WINDOW: first hit - 100 ticks to END + 100, END = the victim's death tick when it dies inside the
+engagement or chain, otherwise the last hit; a subject's windows are merged; an attacker stays a subject for the whole padded window (a NEW victim inside the padding is a row of that attacker, never a new subject).
+Cells run: for each seed with at least one subject, the NEW spy cell and the same-seed BASE cell, reading the same ids. ``seal-check`` refuses stage 2 unless sha256(stage-1 SHA256SUMS) equals its SEAL line.
 """
 from __future__ import annotations
 
@@ -62,59 +64,91 @@ def merge_windows(windows: List[List[int]]) -> List[List[int]]:
     return merged
 
 
-def engagement_window(engagement: Dict[str, Any]) -> List[int]:
-    """First hit minus 100 to the victim's death, or the engagement's end plus 100 when the victim lived."""
-    end = engagement["end_tick"] if engagement["outcome"] == "victim_killed" else engagement["end_tick"] + PAD
-    return [max(0, engagement["start_tick"] - PAD), end]
+def padded_window(start: int, end: int) -> List[int]:
+    """First hit minus 100 ticks to END plus 100 ticks (rpg-designer's amendment: death gets the padding too)."""
+    return [max(0, start - PAD), end + PAD]
 
 
-def derive_seed(spy_cell: Dict[str, Any], summary: Any, extra: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
-    """The subject list of one seed from its NEW spy cell (module docstring)."""
-    rows = [r for r in spy_cell["rows"] if r["in_o3_group"]]
-    engagements = summary.build_engagements(rows, spy_cell["mode_rows"], spy_cell["final_tick"], lambda tick: False)
-    chain_victims = set()
-    for victim_id in sorted({r["victim_id"] for r in rows}):   # every victim with a qualifying R7 chain, not only the single worst one
-        chains = summary.hit_chains([r for r in rows if r["victim_id"] == victim_id], spy_cell["mode_rows"], attack_rows=spy_cell.get("attack_rows"))
-        if chains["no_decision_run"]["run"] >= MIN_NO_DECISION_CHAIN or chains["asleep_or_lodged_run"]["run"] >= MIN_ASLEEP_CHAIN:
-            chain_victims.add(victim_id)
-    subjects: Dict[int, Dict[str, Any]] = {}
-
-    def add(subject_id: int, role: str, windows: List[List[int]], counterparts: List[int]) -> None:
-        entry = subjects.setdefault(subject_id, {"id": subject_id, "roles": [], "windows": [], "counterparts": []})
-        if role not in entry["roles"]:
-            entry["roles"].append(role)
-        entry["windows"] += windows
-        entry["counterparts"] = sorted(set(entry["counterparts"]) | set(counterparts))
-
-    for eng in engagements:
-        big, chain = eng["hits"] >= MIN_HITS, eng["victim_id"] in chain_victims
-        if not (big or chain):
-            continue
-        window = engagement_window(eng)
-        add(eng["victim_id"], "chain_victim" if chain else "victim", [window], [eng["attacker_id"]])
-        if big and chain:
-            add(eng["victim_id"], "victim", [window], [eng["attacker_id"]])
-        add(eng["attacker_id"], "attacker", [window], [eng["victim_id"]])
-    for item in extra:
-        add(int(item["id"]), "extra", item["windows"], [])
-    for entry in subjects.values():
-        entry["windows"] = merge_windows(entry["windows"])
-        entry["roles"] = sorted(entry["roles"])
-    return [subjects[k] for k in sorted(subjects)]
+def victim_death_tick(rows: List[Dict[str, Any]], victim_id: int, start: int, end: int) -> Optional[int]:
+    """The tick of the first row inside [start, end] in which the victim is not alive after the hit (from any attacker), or None."""
+    deaths = [r["tick"] for r in rows if r["victim_id"] == victim_id and not r["victim_alive_after"] and start <= r["tick"] <= end]
+    return min(deaths) if deaths else None
 
 
-def derive_plan(sealed: Path, world: str, seeds: List[int], extra: List[Dict[str, Any]], summary: Any) -> Dict[str, Any]:
+def last_hit_tick(rows: List[Dict[str, Any]], victim_id: int, attackers: List[int], start: int, end: int) -> int:
+    hits = [r["tick"] for r in rows if r["victim_id"] == victim_id and r["attacker_id"] in attackers and r["hit"] and start <= r["tick"] <= end]
+    return max(hits) if hits else end
+
+
+def derive_subjects(cells: Dict[int, Dict[str, Any]], summary: Any) -> Dict[str, List[Dict[str, Any]]]:
+    """PURE: ``cells`` = seed -> that seed's NEW spy cell (the stage-1 sealed document). Returns seed -> subjects, only from the cells:
+    a victim of a NEW meat engagement with at least 10 hits, or of an R7 chain (no-decision run >= 5 or asleep/lodged run >= 3, judged per victim), plus every attacker in those engagements or chains.
+    The window of an engagement or chain is its first hit - 100 to END + 100, END = the victim's death tick when it dies inside it, else the last hit; a subject's windows are merged."""
+    plans: Dict[str, List[Dict[str, Any]]] = {}
+    for seed, cell in sorted(cells.items()):
+        rows = [r for r in cell["rows"] if r["in_o3_group"]]
+        all_rows = cell["rows"]
+        subjects: Dict[int, Dict[str, Any]] = {}
+
+        def add(subject_id: int, role: str, window: List[int], counterparts: List[int]) -> None:
+            entry = subjects.setdefault(subject_id, {"id": subject_id, "roles": [], "windows": [], "counterparts": []})
+            if role not in entry["roles"]:
+                entry["roles"].append(role)
+            entry["windows"].append(window)
+            entry["counterparts"] = sorted(set(entry["counterparts"]) | set(counterparts))
+
+        for eng in summary.build_engagements(rows, cell["mode_rows"], cell["final_tick"], lambda tick: False):
+            if eng["hits"] < MIN_HITS:
+                continue
+            start, end = eng["start_tick"], eng["end_tick"]
+            death = victim_death_tick(all_rows, eng["victim_id"], start, end)
+            window = padded_window(start, death if death is not None else last_hit_tick(all_rows, eng["victim_id"], [eng["attacker_id"]], start, end))
+            add(eng["victim_id"], "victim", window, [eng["attacker_id"]])
+            add(eng["attacker_id"], "attacker", window, [eng["victim_id"]])
+        for victim_id in sorted({r["victim_id"] for r in rows}):                   # every victim with a qualifying R7 chain, not only the single worst one
+            chains = summary.hit_chains([r for r in rows if r["victim_id"] == victim_id], cell["mode_rows"], attack_rows=cell.get("attack_rows"))
+            for key, minimum in (("no_decision_run", MIN_NO_DECISION_CHAIN), ("asleep_or_lodged_run", MIN_ASLEEP_CHAIN)):
+                chain = chains[key]
+                if chain["run"] < minimum:
+                    continue
+                start, end = chain["start_tick"], chain["end_tick"]
+                death = victim_death_tick(all_rows, victim_id, start, end)
+                window = padded_window(start, death if death is not None else end)
+                add(victim_id, "chain_victim", window, chain["attackers"])
+                for attacker_id in chain["attackers"]:
+                    add(attacker_id, "attacker", window, [victim_id])
+        for entry in subjects.values():
+            entry["windows"] = merge_windows(entry["windows"])
+            entry["roles"] = sorted(entry["roles"])
+        plans[str(seed)] = [subjects[k] for k in sorted(subjects)]
+    return plans
+
+
+def derive_plan(sealed: Path, world: str, seeds: List[int], summary: Any) -> Dict[str, Any]:
+    """subjects.json: ``derive_subjects`` on the stage-1 SEALED NEW spy cells, with the sha256 of every sealed cell read (the spy cells and both arms' plain twins)."""
     derived_from: Dict[str, str] = {}
-    by_seed: Dict[str, List[Dict[str, Any]]] = {}
+    cells: Dict[int, Dict[str, Any]] = {}
     for seed in seeds:
         spy_path = sealed / f"{cell_name('new', world, seed, 'spy')}.json"
         derived_from[spy_path.name] = sha256_file(spy_path)
-        by_seed[str(seed)] = derive_seed(json.loads(spy_path.read_text(encoding="utf-8")), summary, [e for e in extra if int(e.get("seed", seed)) == seed])
+        cells[seed] = json.loads(spy_path.read_text(encoding="utf-8"))
         for arm in ("new", "base"):
             plain = sealed / f"{cell_name(arm, world, seed, 'plain')}.json"
             derived_from[plain.name] = sha256_file(plain)
-    body = {"derived_from": derived_from, "pad": PAD, "min_hits": MIN_HITS, "world": world, "subjects_by_seed": by_seed, "extra_input": extra}
+    by_seed = derive_subjects(cells, summary)
+    body = {"derived_from": derived_from, "pad": PAD, "min_hits": MIN_HITS, "world": world, "subjects_by_seed": by_seed, "seeds_with_subjects": [int(k) for k, v in by_seed.items() if v]}
     return {**body, "plan_sha256": hashlib.sha256(json.dumps(body, sort_keys=True).encode("utf-8")).hexdigest()}
+
+
+def seal_matches(stage1_out: Path) -> Dict[str, Any]:
+    """Stage 2 starts only if sha256(stage-1 SHA256SUMS) equals the SEAL line the stage-1 launcher wrote: {"ok", "computed", "recorded"}."""
+    sums, seal_log = stage1_out / "SHA256SUMS", stage1_out / "SHA256SUMS.seal.log"
+    if not sums.exists() or not seal_log.exists():
+        return {"ok": False, "computed": None, "recorded": None, "reason": "SHA256SUMS or its seal log is missing"}
+    lines = [ln.split() for ln in seal_log.read_text(encoding="utf-8").splitlines() if ln.startswith("SEAL ")]
+    recorded = lines[-1][1] if lines else None
+    computed = hashlib.sha256(sums.read_bytes()).hexdigest()
+    return {"ok": recorded is not None and computed == recorded, "computed": computed, "recorded": recorded}
 
 
 def check_cell(spy: Dict[str, Any], sealed_plain: Dict[str, Any], arm: str, seed: int) -> Dict[str, Any]:
@@ -197,7 +231,8 @@ def main(argv: List[str]) -> int:
     d.add_argument("--sealed", required=True, type=Path)
     d.add_argument("--world", required=True)
     d.add_argument("--seed", action="append", type=int, required=True)
-    d.add_argument("--extra", type=Path)
+    sub.add_parser("seeds").add_argument("--plan", required=True, type=Path)
+    sub.add_parser("seal-check").add_argument("--dir", required=True, type=Path)
     d.add_argument("--out", required=True, type=Path)
     o = sub.add_parser("one")
     for name in ("arm", "world", "mode", "tree", "out", "python", "plan"):
@@ -224,11 +259,17 @@ def main(argv: List[str]) -> int:
     r.add_argument("--freeze-final", required=True)
     args = ap.parse_args(argv)
     if args.cmd == "derive":
-        extra = json.loads(args.extra.read_text(encoding="utf-8")) if args.extra else []
-        plan = derive_plan(args.sealed, args.world, args.seed, extra, load_sibling("person_attack_summary"))
+        plan = derive_plan(args.sealed, args.world, args.seed, load_sibling("person_attack_summary"))
         args.out.write_text(json.dumps(plan, indent=1, sort_keys=True), encoding="utf-8")
         print(json.dumps({"plan_sha256": plan["plan_sha256"], "subjects": {s: [x["id"] for x in v] for s, v in plan["subjects_by_seed"].items()}}, sort_keys=True))
         return 0
+    if args.cmd == "seeds":
+        print(" ".join(str(x) for x in json.loads(args.plan.read_text(encoding="utf-8"))["seeds_with_subjects"]))
+        return 0
+    if args.cmd == "seal-check":
+        verdict = seal_matches(args.dir)
+        print(json.dumps(verdict, sort_keys=True))
+        return 0 if verdict["ok"] else 1
     if args.cmd == "one":
         item = {"arm": args.arm, "world": args.world, "seed": args.seed, "ticks": args.ticks, "mode": args.mode, "name": cell_name(args.arm, args.world, args.seed, args.mode)}
         result = run_child(args.python, Path(args.tree), Path(args.out), item, Path(args.plan))

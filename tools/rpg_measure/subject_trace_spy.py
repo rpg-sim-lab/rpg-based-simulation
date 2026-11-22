@@ -6,7 +6,7 @@ flags, same no-replay injection, recording OFF) with two pass-through wrappers; 
 PER-TICK ROWS. For every subject (``--plan`` file, written by ``subject_trace_run derive`` from the SEALED O3 cells) and every tick inside one of its windows, one row built from the prior state (BEFORE the apply)
 and the new state (AFTER it): movement mode; task work kind, action, reason and the payload's scalar fields (the goal the entity is executing); ``navigation.target`` (the goal tile), path length and
 ``navigation.last_failure_reason``; ``combat.readiness``, hp, alive; position; ``lodged_in``; the strategic current project and objective ids with the active objective's own record when it can be found;
-the Chebyshev distance (max of the axis distances) to each counterpart (the attackers of a victim, the victims of an attacker) and to the goal tile. A body that is absent from a state reads ``present: false``.
+the Chebyshev distance (max of the axis distances) to each counterpart (the attackers of a victim, the victims of an attacker) and to the goal tile. A body that is dead reads ``state: DEAD`` (``alive: false``), one that has been removed reads ``present: false, state: ABSENT``; the rows of a subject are never skipped after its death or removal.
 The state has no single "goal" field: the fields above are every place a goal or objective lives in the entity (task payload, navigation target, strategic objective); nothing is derived from them.
 
 LEGALITY WRAPPER. ``LegalityServiceV2.verify_attack_legality`` is wrapped by a pass-through: the ORIGINAL result object is returned unchanged; a row (tick, attacker, target, result, failure text, opportunity flag)
@@ -86,12 +86,12 @@ def objective_view(entity: Any) -> Dict[str, Any]:
 def snapshot(entity: Any) -> Dict[str, Any]:
     """Everything the read asks of one body at one moment (module docstring)."""
     if entity is None:
-        return {"present": False}
+        return {"present": False, "state": "ABSENT"}
     nav, combat, task = entity.navigation, entity.combat, entity.task
     payload = task.payload if isinstance(task.payload, dict) else {}
     mode = nav.movement_mode
     return {
-        "present": True, "mode": str(getattr(mode, "value", mode)), "work_kind": safe(task.work_kind), "action": safe(payload.get("action")), "reason": safe(payload.get("reason")),
+        "present": True, "state": "ALIVE" if combat.alive else "DEAD", "mode": str(getattr(mode, "value", mode)), "work_kind": safe(task.work_kind), "action": safe(payload.get("action")), "reason": safe(payload.get("reason")),
         "payload": {str(k): safe(v) for k, v in payload.items() if v is None or isinstance(v, (bool, int, float, str, tuple, list))},
         "goal_tile": safe(nav.target), "path_len": len(nav.path or []), "failure_reason": safe(nav.last_failure_reason), "readiness": combat.readiness, "hp": combat.hp, "alive": bool(combat.alive),
         "position": safe(nav.position), "lodged_in": safe(getattr(nav, "lodged_in", None)), "strategic": objective_view(entity),

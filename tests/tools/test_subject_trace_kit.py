@@ -2,6 +2,7 @@
 (0 rows, no legality call on NEW s42, a hash mismatch, a spy exception) and the launcher's record step from a cwd outside the kit. Each control was mutation-checked: disabling the check it guards makes it fail."""
 from __future__ import annotations
 
+import hashlib
 import json
 import os
 import subprocess
@@ -95,7 +96,6 @@ def test_a_tick_row_has_before_and_after_fields_and_chebyshev_distances_to_count
     assert got["before"]["goal_tile"] == [5.0, 1.0] and got["before"]["payload"]["target_position"] == [5.0, 1.0]
     assert (got["distance_before"], got["distance_after"]) == ({"8": 4.0}, {"8": 2.0})     # (0,0)-(3,4) = 4; (1,0)-(3,-1) = 2
     assert (got["goal_distance_before"], got["goal_distance_after"]) == (5.0, 4.0)
-    assert spy_module.snapshot(None) == {"present": False}
 
 
 # --------------------------------------------------------------------------------------------- the spy's own exception is fatal
@@ -112,17 +112,13 @@ def test_an_exception_in_the_recording_code_is_stored_and_reraised_even_when_the
 
 
 # --------------------------------------------------------------------------------------------- window bounds
-def test_the_window_runs_from_the_first_hit_minus_100_to_the_death_or_the_end_plus_100() -> None:
-    killed = {"start_tick": 1901, "end_tick": 2610, "outcome": "victim_killed"}
-    lived = {"start_tick": 3000, "end_tick": 3400, "outcome": "disengaged"}
-    early = {"start_tick": 40, "end_tick": 90, "outcome": "disengaged"}
-    assert run.engagement_window(killed) == [1801, 2610]          # death: no padding after it
-    assert run.engagement_window(lived) == [2900, 3500]           # the victim lived: end plus 100
-    assert run.engagement_window(early) == [0, 190]               # never below tick 0
+def test_the_window_runs_from_the_first_hit_minus_100_to_end_plus_100_and_clamps_at_zero() -> None:     # CHANGED (combined scope): death now gets the +100 padding too
+    assert run.padded_window(1901, 2610) == [1801, 2710]
+    assert run.padded_window(40, 90) == [0, 190]
     assert run.merge_windows([[10, 20], [21, 30], [50, 60], [55, 70]]) == [[10, 30], [50, 70]]
 
 
-# --------------------------------------------------------------------------------------------- subject derivation from a synthetic sealed cell
+# --------------------------------------------------------------------------------------------- subject derivation from a synthetic stage-1 cell
 def hits(attacker: int, victim: int, start: int, n: int, step: int = 5, **kw: Any) -> List[Dict[str, Any]]:
     return [row(start + i * step, attacker=attacker, victim=victim, **kw) for i in range(n)]
 
@@ -131,44 +127,114 @@ def sealed_cell(rows: List[Dict[str, Any]]) -> Dict[str, Any]:
     return {"rows": rows, "mode_rows": [], "final_tick": 5000, "attack_rows": []}
 
 
-def test_derivation_takes_the_victims_of_10_plus_hit_engagements_the_chain_victims_their_attackers_and_the_extra_input() -> None:
-    rows = hits(1, 100, 2000, 12)                                # attacker 1 -> victim 100, 12 hits: a >= 10 engagement
-    rows += hits(2, 200, 3000, 5, step=2)                        # attacker 2 -> victim 200, 5 hits in a row, no decision: an R7 chain (but < 10 hits)
-    rows += hits(3, 300, 4000, 2)                                # attacker 3 -> victim 300, 2 hits: nobody
-    plan = run.derive_seed(sealed_cell(rows), summary, [{"seed": 42, "id": 999, "windows": [[10, 20]]}])
-    by_id = {s["id"]: s for s in plan}
-    assert sorted(by_id) == [1, 2, 100, 200, 999]
-    assert by_id[100]["roles"] == ["chain_victim", "victim"] and by_id[100]["counterparts"] == [1] and by_id[100]["windows"] == [[1900, 2155]]
-    assert by_id[200]["roles"] == ["chain_victim"] and by_id[2]["roles"] == ["attacker"] and by_id[2]["counterparts"] == [200]
-    assert by_id[1]["roles"] == ["attacker"] and by_id[999]["roles"] == ["extra"] and by_id[999]["windows"] == [[10, 20]]
-    assert 3 not in by_id and 300 not in by_id
+def derive(rows: List[Dict[str, Any]]) -> Dict[int, Dict[str, Any]]:
+    return {s["id"]: s for s in run.derive_subjects({42: sealed_cell(rows)}, summary)["42"]}
 
 
-def test_the_hit_threshold_is_exactly_ten_hits() -> None:
-    ten = hits(1, 100, 2000, 10, step=40, victim_attacked_same_tick=True)                  # a decision on every hit: no chain, only the hit count decides
-    nine = hits(2, 200, 4000, 9, step=40, victim_attacked_same_tick=True)
-    ids = {s["id"] for s in run.derive_seed(sealed_cell(ten + nine), summary, [])}
-    assert ids == {1, 100}                                                                  # 10 hits in, 9 hits out
+DECIDING = {"victim_attacked_same_tick": True}      # a decision on every hit: no R7 chain, only the hit count decides
 
 
-def test_a_killed_victims_window_ends_at_its_death_in_the_derivation() -> None:
-    rows = hits(1, 100, 2000, 11)
-    rows[-1] = {**rows[-1], "victim_alive_after": False}
-    plan = run.derive_seed(sealed_cell(rows), summary, [])
-    assert [s["windows"] for s in plan if s["id"] == 100] == [[[1900, 2050]]]
+def test_derivation_a_nine_hit_engagement_is_out_and_a_ten_hit_one_is_in_with_its_attacker() -> None:
+    ids = derive(hits(1, 100, 2000, 10, step=40, **DECIDING) + hits(2, 200, 4000, 9, step=40, **DECIDING))
+    assert sorted(ids) == [1, 100] and ids[100]["roles"] == ["victim"] and ids[1]["roles"] == ["attacker"] and ids[100]["counterparts"] == [1] and ids[1]["counterparts"] == [100]
 
 
-def test_the_plan_records_the_sha256_of_every_sealed_cell_it_read_and_is_deterministic(tmp_path: Path) -> None:
+def test_derivation_takes_a_chain_victim_with_fewer_than_ten_hits_and_its_attackers() -> None:
+    rows = hits(2, 200, 3000, 5, step=2) + hits(3, 300, 4000, 2)             # five hits in a row with no decision: an R7 chain; two hits: nobody
+    got = derive(rows)
+    assert sorted(got) == [2, 200] and got[200]["roles"] == ["chain_victim"] and got[2]["roles"] == ["attacker"]
+    asleep = derive(hits(2, 200, 3000, 3, step=40, victim_asleep_before=True, **DECIDING))     # an asleep run of 3: a chain, whatever the decisions
+    assert sorted(asleep) == [2, 200]
+
+
+def test_derivation_window_ends_at_the_death_tick_plus_100_or_at_the_last_hit_plus_100() -> None:
+    lived = hits(1, 100, 2000, 10, step=40, **DECIDING) + [row(2390, attacker=1, victim=100, hit=False, **DECIDING)]     # a trailing MISS 30 ticks after the last hit: the engagement ends there, the last HIT does not
+    assert derive(lived)[100]["windows"] == [[1900, 2360 + 100]]                      # last hit at 2000 + 9 * 40 = 2360
+    killed = hits(1, 100, 2000, 11, step=40, **DECIDING)
+    killed[7] = {**killed[7], "victim_alive_after": False}                            # dies at 2280, later hits are rows of a dead body
+    assert derive(killed)[100]["windows"] == [[1900, 2280 + 100]]                     # END = the death tick, not the last hit
+    assert derive(killed)[1]["windows"] == [[1900, 2380]]                             # the attacker keeps the same padded window
+
+
+def test_a_new_victim_inside_the_padding_is_not_a_subject() -> None:
+    rows = hits(1, 100, 2000, 10, step=40, **DECIDING) + [row(2400, attacker=1, victim=400, **DECIDING)]       # attacker 1 hits another victim 40 ticks after the engagement: inside the padding
+    assert sorted(derive(rows)) == [1, 100]
+
+
+def test_derive_subjects_is_pure_and_reports_the_seeds_that_have_a_subject(tmp_path: Path) -> None:
+    cells = {42: sealed_cell(hits(1, 100, 2000, 10, step=40, **DECIDING)), 45: sealed_cell(hits(3, 300, 4000, 2))}
+    before = json.dumps(cells, sort_keys=True)
+    out = run.derive_subjects(cells, summary)
+    assert json.dumps(cells, sort_keys=True) == before and sorted(out) == ["42", "45"] and out["45"] == [] and [s["id"] for s in out["42"]] == [1, 100]
+
+
+def test_the_plan_records_the_sha256_of_every_sealed_cell_it_read_lists_the_seeds_with_subjects_and_is_deterministic(tmp_path: Path) -> None:
     cells = tmp_path / "cells"
     cells.mkdir()
-    (cells / "new__w__s42__spy.json").write_text(json.dumps(sealed_cell(hits(1, 100, 2000, 12))), encoding="utf-8")
+    (cells / "new__w__s42__spy.json").write_text(json.dumps(sealed_cell(hits(1, 100, 2000, 10, step=40, **DECIDING))), encoding="utf-8")
+    (cells / "new__w__s45__spy.json").write_text(json.dumps(sealed_cell([])), encoding="utf-8")
     for arm in ("new", "base"):
-        (cells / f"{arm}__w__s42__plain.json").write_text(json.dumps({"final_hash": arm}), encoding="utf-8")
-    first = run.derive_plan(cells, "w", [42], [], summary)
-    assert first == run.derive_plan(cells, "w", [42], [], summary)
-    assert set(first["derived_from"]) == {"new__w__s42__spy.json", "new__w__s42__plain.json", "base__w__s42__plain.json"} and all(len(v) == 64 for v in first["derived_from"].values())
+        for seed in (42, 45):
+            (cells / f"{arm}__w__s{seed}__plain.json").write_text(json.dumps({"final_hash": arm}), encoding="utf-8")
+    first = run.derive_plan(cells, "w", [42, 45], summary)
+    assert first == run.derive_plan(cells, "w", [42, 45], summary) and first["seeds_with_subjects"] == [42]
+    assert len(first["derived_from"]) == 6 and all(len(v) == 64 for v in first["derived_from"].values())
     (cells / "new__w__s42__plain.json").write_text(json.dumps({"final_hash": "changed"}), encoding="utf-8")
-    assert run.derive_plan(cells, "w", [42], [], summary)["plan_sha256"] != first["plan_sha256"]       # the sealed inputs are part of the plan's identity
+    assert run.derive_plan(cells, "w", [42, 45], summary)["plan_sha256"] != first["plan_sha256"]       # the sealed inputs are part of the plan's identity
+
+
+# --------------------------------------------------------------------------------------------- rows after death, the legality wrap, the stage-1 seal
+def test_a_subject_keeps_getting_rows_after_it_dies_and_after_it_is_removed() -> None:
+    spy = spy_module.SubjectSpy([subject(7, [[0, 100]])])
+    alive, dead = entity(7), entity(7, alive=False, hp=0)
+    spy.observe(state(5, alive), state(6, dead))                 # dies on this apply
+    spy.observe(state(6, dead), state(7, dead))                  # still in the world, dead
+    spy.observe(state(7, dead), state(8))                        # removed: absent
+    assert [(r["tick"], r["before"]["state"], r["after"]["state"]) for r in spy.rows] == [(6, "ALIVE", "DEAD"), (7, "DEAD", "DEAD"), (8, "DEAD", "ABSENT")]
+    assert spy.rows[0]["after"]["alive"] is False and spy_module.snapshot(None) == {"present": False, "state": "ABSENT"}
+
+
+@pytest.mark.parametrize("result", [(True, SimpleNamespace(name="OK", value="ok")), (False, SimpleNamespace(name="OUT_OF_RANGE", value="far"))], ids=["true", "false"])
+def test_the_legality_wrap_passes_true_and_false_through_unchanged(result: Any) -> None:
+    saved = FakeLegality.result
+    FakeLegality.result = result
+    spy = spy_module.SubjectSpy([subject(7, [[0, 10]])]).install(FakeApply, FakeLegality)
+    try:
+        assert FakeLegality.verify_attack_legality(entity(7), entity(8), state(5)) is result
+    finally:
+        spy.restore()
+        FakeLegality.result = saved
+    assert spy.legality_rows[0]["legal"] is result[0]
+
+
+def test_the_legality_wrap_passes_an_exception_of_the_original_through_unchanged_and_it_is_not_a_spy_exception() -> None:
+    class Exploding:
+        @staticmethod
+        def verify_attack_legality(attacker, target, state_or_context, is_opportunity_attack=False, *, night=None):
+            raise KeyError("the engine's own error")
+
+    spy = spy_module.SubjectSpy([subject(7, [[0, 10]])]).install(FakeApply, Exploding)
+    try:
+        with pytest.raises(KeyError, match="the engine's own error"):
+            Exploding.verify_attack_legality(entity(7), entity(8), state(5))
+    finally:
+        spy.restore()
+    assert spy.spy_exceptions == [] and spy.legality_rows == []
+
+
+def test_stage_2_refuses_to_start_when_the_stage_1_seal_does_not_match(tmp_path: Path) -> None:
+    stage1 = tmp_path / "stage1"
+    (stage1 / "cells").mkdir(parents=True)
+    (stage1 / "SHA256SUMS").write_text("abc  ./x\n", encoding="utf-8")
+    good = hashlib.sha256((stage1 / "SHA256SUMS").read_bytes()).hexdigest()
+    (stage1 / "SHA256SUMS.seal.log").write_text(f"SEAL {good} 10:00:00\n", encoding="utf-8")
+    assert run.seal_matches(stage1)["ok"] is True
+    (stage1 / "SHA256SUMS").write_text("abc  ./x\nextra  ./y\n", encoding="utf-8")      # a file added to the sealed set after the seal
+    assert run.seal_matches(stage1)["ok"] is False
+    env = launcher_env(tmp_path, SEALED=str(stage1 / "cells"))
+    done = subprocess.run(["bash", str(LAUNCH), str(env), "GO-1", "cells"], capture_output=True, text=True, cwd=tmp_path)
+    log = (tmp_path / "out" / "cells" / "launcher.log").read_text(encoding="utf-8")
+    assert done.returncode == 3 and "the stage-1 seal does not match" in log and "TREE" not in log        # aborted BEFORE any tree or process check
 
 
 # --------------------------------------------------------------------------------------------- the cell checks
