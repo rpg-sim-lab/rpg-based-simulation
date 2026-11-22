@@ -50,7 +50,20 @@ Read-only list from testing-planner, spot-checked by the ubuntu lead at 613a8365
    - The per-row thresholds keyed by id (the table at `rpg_gate_metrics.py` :99 "O3.attacks_on_people" and :102 "O6.kills_not_eaten") move with the rename.
    - The O3 rationale text ("three more bites on villagers…") names people and is reworded.
    - Whether the (2.0, 3.0) floor still fits a total over every victim and every group (the BASE trace cells hold meat about 15 and meat+plant+prepared about 155 hits a seed) is a rpg-designer question. Any change to the value is an owner ask, and a rename alone keeps it.
-7. Row count: A1/A2 add a row for every group, so the number of baseline rows grows. The owner's before/after table shows a per-world row count (old vs new) as well as the values.
+7. The 'none' group (owner #715 7074477873, "Yes, include 'none' (Recommended)"): the non-eating group (for example FLW's 6 undead) gets an O3.attacks_by_group row like any other group, because non-eaters can still attack. It gets no O6 row, because it has no meat. This flips the existing expectation at tests/unit/observability/test_rpg_gate_metrics.py:406 (today: no O3 row for 'none').
+8. Changed existing test expectations (testing-planner's read-only plan, 2026-11-22). Each goes in the owner's before/after packet under the standing rule:
+   - tests/unit/observability/test_rpg_gate_metrics.py:
+     - :160, people-on-people is not O3: flips;
+     - :164, the O6 id and rows;
+     - :197-202, rewritten as person-flag-insensitive (AC1);
+     - :213, the _tick0_persons patch dropped;
+     - :311, the O3 group set becomes every declared group with t0 > 0;
+     - :330, the error stays and its match text changes;
+     - :406, the 'none' row, now yes.
+   - tests/simulation_quality/rpg_gate/test_v8_fires.py:41: the _tick0_persons patch is removed.
+   - New tests for AC3 and AC4a.
+   The test edits ride the SAME branch and PR as the rpg_gate_metrics.py change, so the suite is never red between them (testing-planner's proposal).
+9. Row count: A1/A2 add a row for every group, so the number of baseline rows grows. The owner's before/after table shows a per-world row count (old vs new) as well as the values.
 
 ## Out of Scope
 - Removing `attacker_person`/`victim_person` from the run_ledger or death_ledger keys (A3, a later owner ask).
@@ -62,7 +75,7 @@ Read-only list from testing-planner, spot-checked by the ubuntu lead at 613a8365
 1. No gate row reads a person flag. A unit test shows that the same ledger with person flags int 1, str "1" or absent gives identical O3/O6 rows.
 2. O3 has one row per declared diet group with t0 population > 0, and an undeclared group raises an error.
 3. O6 has one row per meat-containing diet group and none for other groups.
-4. The before/after table is shown to the owner and the yes is recorded on #715 before merge. It lists the values and a per-world row count, old vs new, and marks each renamed row as a rename.
+4. The before/after table is shown to the owner and the yes is recorded on #715 before merge. It lists the values and a per-world row count, old vs new; marks each renamed row as a rename; shows the new 'none' O3 row; and lists every changed existing test expectation (scope 8).
 4a. The threshold table carries the new ids. No orphaned old-id entry remains, and a test fails on a row id that has no threshold.
 5. Docs and the parity ledger name the new definitions; a divergence entry is added if the gate's documented meaning changes.
 
