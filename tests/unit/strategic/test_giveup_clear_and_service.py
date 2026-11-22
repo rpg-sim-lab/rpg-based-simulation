@@ -145,3 +145,55 @@ def test_a_blocker_holder_keeps_its_own_tier_and_the_record_tier_is_the_last_urg
     both = replace(both, navigation=replace(both.navigation, giveup_records=(GiveUpRecord((90, 90), 3),)))
     rec = replace(V2EntityBuilder(1).build(), navigation=replace(V2EntityBuilder(1).build().navigation, giveup_records=(GiveUpRecord((90, 90), 3),)))
     assert _queue({1: rec, 2: both}, budget=1, sweep=1000) == (2, 1)
+
+
+# --- A'' generalised: the strategic pass's suppression clear carries its anchor (rpg-designer, F2 pairing re-run) ---------------------------------------------
+def _suppression_clear(**kw):
+    return NavigationUpdate(target_clear=True, target_clear_anchor=P, **kw)
+
+
+def test_the_pass_clear_for_anchor_p_beats_a_same_tick_walk_set_near_p():
+    t, nav = _applied_target(_suppression_clear(target_set=(20.0, 20.0), path_set=[(6.0, 6.0)]))
+    assert t is None and nav.path is None
+    assert _applied_target(_suppression_clear(target_set=(21.0, 19.0)))[0] is None  # an adjacent tile too
+
+
+def test_a_set_far_from_the_clear_anchor_stands():
+    assert _applied_target(_suppression_clear(target_set=(35.0, 20.0)))[0] == (35.0, 20.0)
+    assert _applied_target(_suppression_clear(target_set=(22.0, 20.0)))[0] == (22.0, 20.0)  # exactly Chebyshev 2
+
+
+def test_a_give_up_record_and_a_suppression_clear_in_one_update_are_both_honoured_each_for_its_own_anchor():
+    both = dict(giveup_record_add=GiveUpRecord(P, 10), clear_target=True, target_clear=True, target_clear_anchor=Q)
+    assert _applied_target(NavigationUpdate(target_set=(20.0, 21.0), **both))[0] is None  # near the record's anchor P
+    assert _applied_target(NavigationUpdate(target_set=(60.0, 59.0), **both))[0] is None  # near the clear's anchor Q
+    assert _applied_target(NavigationUpdate(target_set=(40.0, 40.0), **both))[0] == (40.0, 40.0)  # near neither
+
+
+def test_no_anchor_means_todays_precedence_the_set_beats_a_plain_clear():
+    assert _applied_target(NavigationUpdate(target_clear=True, target_set=(20.0, 20.0)))[0] == (20.0, 20.0)
+    assert not giveup_clear_beats_target((20.0, 20.0), None, None) and giveup_clear_beats_target((20.0, 20.0), None, P)
+
+
+def test_the_clear_anchor_is_a_typed_update_field_that_merges_and_counts_as_a_change():
+    assert NavigationUpdate().is_noop() and not NavigationUpdate(target_clear_anchor=P).is_noop()
+    merged = NavigationUpdate(target_set=(20.0, 20.0)).merge(_suppression_clear())
+    assert merged.target_clear_anchor == P and merged.target_set == (20.0, 20.0) and merged.target_clear is True
+    assert _applied_target(merged)[0] is None  # the merged update (walk first, the pass's clear after) loses its set
+
+
+def test_control_the_same_scene_without_the_rule_keeps_the_walk_set(monkeypatch):
+    monkeypatch.setattr(patches, "giveup_clear_beats_target", lambda *a, **k: False)
+    assert _applied_target(_suppression_clear(target_set=(20.0, 20.0)))[0] == (20.0, 20.0)
+
+
+def test_the_fused_pass_clears_a_suppressed_stored_target_and_names_the_anchor_that_refused_it():
+    from src.core.strategic import BlockerState
+    from src.strategy.destination_suppression import access_blocker_id, suppression_anchor
+    anchor = (20, 20)
+    e = V2EntityBuilder(1).kind("worker").location(10.0, 10.0).navigation(target=(20.0, 20.0)).build()
+    blocker = BlockerState(id=access_blocker_id(anchor), kind="access", subject=f"{anchor}", suppression_until_tick=500, giveup_count=1)
+    e = replace(e, strategic=replace(e.strategic, blockers={blocker.id: blocker}))
+    assert suppression_anchor(e, (21.0, 20.0), 5) == anchor and suppression_anchor(e, (40.0, 40.0), 5) is None
+    upd = _pass(e).entity_updates.get(1)
+    assert upd is not None and upd.navigation is not None and upd.navigation.target_clear is True and upd.navigation.target_clear_anchor == anchor

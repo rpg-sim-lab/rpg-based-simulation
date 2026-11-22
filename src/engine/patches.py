@@ -281,7 +281,7 @@ class NavigationPatch(ComponentPatch):
         new_nav = changes.get("navigation", entity.navigation)
         if self.navigation:
             u_nav = self.navigation
-            giveup_clear = giveup_clear_beats_target(u_nav.target_set, u_nav.giveup_record_add)  # F2 v2.2a A'': the give-up's clear beats a same-update set near ITS OWN anchor (the set, and the path built for it, are dropped)
+            giveup_clear = giveup_clear_beats_target(u_nav.target_set, u_nav.giveup_record_add, u_nav.target_clear_anchor)  # F2 v2.2a A'': a clear (the give-up's, or the strategic pass's suppression clear) beats a same-update set near ITS OWN anchor (the set, and the path built for it, are dropped)
             new_nav = replace(
                 new_nav,
                 target=None if giveup_clear else u_nav.target_set if u_nav.target_set is not None else (None if (u_nav.target_clear or u_nav.clear_target) else new_nav.target),

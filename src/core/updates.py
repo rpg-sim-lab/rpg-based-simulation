@@ -88,6 +88,7 @@ class NavigationUpdate:
     wayround_clear: bool = False  # 2.213: the way-round count ends (the give-up replan)
     giveup_record_add: Optional[GiveUpRecord] = None  # F2: the give-up's typed record, appended by the navigation patch (written by resolve_move only)
     giveup_records_clear: bool = False  # F2: the subject's strategic pass has consumed the held records (written by the strategic pass only; applied before an add of the same update)
+    target_clear_anchor: Optional[Tuple[int, int]] = None  # F2 v2.2a A'': the anchor tile of the suppression that made the strategic pass clear the stored target (written by the strategic pass only, with ``target_clear``); a transient update field, never stored
 
     def is_noop(self) -> bool:
         return (self.target_set is None and not self.target_clear and self.path_set is None and self.step_ready_tick_set is None and 
@@ -96,7 +97,7 @@ class NavigationUpdate:
                 self.wait_count_delta == 0 and self.oscillation_count_delta == 0 and 
                 self.last_position_set is None and self.region_id_set is None and self.lodged_in_set is None and not self.lodged_in_clear and self.last_moved_tick_set is None and
                 self.wayround_count_set is None and self.wayround_best_distance_set is None and self.wayround_anchor_set is None and
-                self.wayround_last_tick_set is None and not self.wayround_clear and self.giveup_record_add is None and not self.giveup_records_clear)
+                self.wayround_last_tick_set is None and not self.wayround_clear and self.giveup_record_add is None and not self.giveup_records_clear and self.target_clear_anchor is None)
 
     def merge(self, other: NavigationUpdate) -> NavigationUpdate:
         if not other or other.is_noop():
@@ -110,6 +111,7 @@ class NavigationUpdate:
         changes.update(other._lodging_changes())
         changes.update(other._wayround_changes())
         changes.update(other._giveup_changes())
+        if other.target_clear_anchor is not None: changes["target_clear_anchor"] = other.target_clear_anchor
         return replace(self, **changes)
 
     def _failure_changes(self) -> Dict[str, Any]:

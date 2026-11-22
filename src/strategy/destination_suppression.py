@@ -119,6 +119,13 @@ def destination_open(entity: EntityState, pos: Tuple[float, float], tick: int, s
     return destination_suppressed(entity, pos, tick, staged) is None
 
 
+def suppression_anchor(entity: EntityState, pos: Tuple[float, float], tick: int, staged: Optional[EntityUpdate] = None) -> Optional[Tuple[int, int]]:
+    """The anchor tile of the suppression that forbids ``pos`` for this subject at ``tick`` (what `destination_suppressed` found), or None when ``pos`` is open. The strategic pass's typed target clear carries it
+    (`NavigationUpdate.target_clear_anchor`), so the navigation patch can let that clear beat a same-update set near the same anchor."""
+    hit = destination_suppressed(entity, pos, tick, staged)
+    return None if hit is None else hit.anchor
+
+
 def propose_target(entity: EntityState, pos: Tuple[float, float], tick: int, staged: Optional[EntityUpdate] = None) -> Optional[Tuple[float, float]]:
     """THE proposal point of a place target (F2 v2.2 D2, owner scope #715 7062303482: every writer, combat and flight included, no exemption): ``pos`` when it may be a destination for this subject, None
     when `destination_suppressed` forbids it. A decision site writes ``NavigationUpdate(target_set=...)`` for a place only from a non-None return; what None means is per site class (rpg-designer v2.2a

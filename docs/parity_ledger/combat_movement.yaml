@@ -5094,7 +5094,10 @@
     goes through propose_target, with a per-class fallback when it refuses (flight: retreat point, half the
     distance, home, then the own-tile hold; combat positioning: the branch does not fire; stalemate-break:
     hold; objective: the typed idle; bridge: the next alternative and a typed target_clear of a suppressed
-    stored target; executor re-emission: the typed DestinationSuppressedEnd).'
+    stored target; executor re-emission: the typed DestinationSuppressedEnd). v2.2a A'': in the navigation
+    patch a clear that carries an anchor (the give-up record's, or the strategic pass's suppression clear
+    NavigationUpdate.target_clear_anchor) beats a same-update target_set within Chebyshev 1 of that anchor;
+    a set elsewhere stands.'
   status: verified
   priority: P1
   legacy_evidence: null
@@ -5105,7 +5108,8 @@
     src/engine/tactical_objective.py (ObjectiveDestinationSuppressed), src/systems/strategic_systems/intelligence.py
     (the consume hook and the bridge guards), src/content/blocker_settings.py, src/core/strategic.py (ProjectEnd.DESTINATION_GIVEN_UP),
     src/strategy/destination_suppression.py (propose_target, DestinationSuppressedEnd, reaffirm_move_update), src/engine/tactical*.py,
-    src/engine/tactical_destinations.py (retreat_destination candidates), src/engine/executor.py and worker_logic.py (the typed end).
+    src/engine/tactical_destinations.py (retreat_destination candidates), src/engine/executor.py and worker_logic.py (the typed end),
+    src/core/updates.py (NavigationUpdate.target_clear_anchor), src/core/giveup_records.py (giveup_clear_beats_target, near_anchor).
   proof_type: regression
   test_path: tests/unit/strategic/test_giveup_filing.py
   divergence_note: See docs/guidelines/intentional_divergences.md Section 2.220.

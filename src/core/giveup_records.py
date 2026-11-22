@@ -83,7 +83,11 @@ class HeldTargetAtAnchorCounts:
 
 
 
-def giveup_clear_beats_target(target_set: Optional[Tuple[float, float]], record: Optional[GiveUpRecord]) -> bool:
+def giveup_clear_beats_target(target_set: Optional[Tuple[float, float]], record: Optional[GiveUpRecord], clear_anchor: Optional[Tuple[int, int]] = None) -> bool:
     """The navigation patch's same-update rule (rpg-designer F2 v2.2a A''): True when ONE merged update carries a give-up record AND a ``target_set`` within `GIVEUP_NEAR_RADIUS` of THAT record's anchor, so
-    the give-up's clear wins over the set. A set elsewhere stands (a flee's retreat tile keeps its tick); no record, no rule. Pure geometry: no world read, no suppression policy."""
-    return target_set is not None and record is not None and near_anchor(target_set, record.anchor)
+    the give-up's clear wins over the set. Generalised (rpg-designer, F2 pairing re-run): the same holds for ONE update that carries the strategic pass's suppression clear with its ``clear_anchor`` (the anchor of the
+    suppression that made the pass clear the stored target): the clear wins over a same-update set within `GIVEUP_NEAR_RADIUS` of THAT anchor. A set elsewhere stands (a flee's retreat tile keeps its tick); no record and no
+    anchor, no rule. Each anchor decides only for itself. Pure geometry: no world read, no suppression policy."""
+    if target_set is None:
+        return False
+    return (record is not None and near_anchor(target_set, record.anchor)) or (clear_anchor is not None and near_anchor(target_set, clear_anchor))
