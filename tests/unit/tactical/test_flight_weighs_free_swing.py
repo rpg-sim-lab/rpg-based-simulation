@@ -102,6 +102,18 @@ def test_9_when_the_attack_is_illegal_for_another_reason_the_subject_holds_its_t
     assert up.task is None and up.navigation.target_set == HERE and up.navigation.movement_mode_set is MovementMode.RETREAT
 
 
+def test_9b_a_hit_merchant_strikes_back_at_the_wild_attacker_that_just_hit_it():
+    """CONFLICT-03: the wolf hit the merchant this tick, so the pair is permitted both ways (a recent hit). At full readiness and adjacent, the merchant answers with an ATTACK naming the
+    wolf (tactical_flight_guard.py: ATTACK when legal). Before the symmetric-permission fix it held its tile instead, refused FRIENDLY_FIRE_ILLEGAL."""
+    from src.core.enums import ReasonCode
+    from src.engine.legality import LegalityServiceV2
+
+    state, m = _scene(hp=15, damage=17, hostile=45)
+    assert LegalityServiceV2.verify_attack_legality(m, state.entities[45], state)[1] is ReasonCode.LEGAL
+    up = _decide(state, m)
+    assert _payload(up).get("action") == "ATTACK" and _payload(up).get("target_id") == 45
+
+
 def test_a_two_attacker_free_swing_credits_the_first_attacker_with_the_total():
     """Designer ruling (a): the felt blow after a multi-attacker free swing is the swing's total, credited to attackers[0]."""
     from src.engine.combat import CombatResolutionSystem
