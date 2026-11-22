@@ -8042,6 +8042,19 @@
   tags:
   - testing
 - type: ticket
+  path: agent-working/tickets/done/TCK-20261122-V3-TWO-WOLVES-STARVE-ONCE-992-LETS-THE-GOBLIN-STRIKE-BACK-GET-A-SCOPED-KNOWN-ENTRY.md
+  ticket_id: TCK-20261122-V3-TWO-WOLVES-STARVE-ONCE-992-LETS-THE-GOBLIN-STRIKE-BACK-GET-A-SCOPED-KNOWN-ENTRY
+  title: 'Gate V3 on two wolves that starve once #992 lands gets a scoped known entry
+    that expires on 2026-12-15'
+  tier: hotfix
+  ticket_type: chore
+  date: '2026-11-22'
+  related_code_areas:
+  - tools/test_architecture/rpg_gate_known.yaml
+  artifact_files: []
+  tags:
+  - testing
+- type: ticket
   path: agent-working/tickets/todos/TCK-20261122-A-FLEEING-SUBJECT-KEEPS-FLEEING-AND-AN-ATTACKED-ONE-WEIGHS-FIGHTING-BACK.md
   ticket_id: TCK-20261122-A-FLEEING-SUBJECT-KEEPS-FLEEING-AND-AN-ATTACKED-ONE-WEIGHS-FIGHTING-BACK
   title: 'World rules: a subject that decides to flee keeps fleeing while its threat
