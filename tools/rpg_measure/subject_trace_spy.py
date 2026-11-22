@@ -10,10 +10,10 @@ the Chebyshev distance (max of the axis distances) to each counterpart (the atta
 The state has no single "goal" field: the fields above are every place a goal or objective lives in the entity (task payload, navigation target, strategic objective); nothing is derived from them.
 
 LEGALITY WRAPPER. ``LegalityServiceV2.verify_attack_legality`` is wrapped by a pass-through: the ORIGINAL result object is returned unchanged; a row (tick, attacker, target, result, failure text, opportunity flag)
-is recorded only where the attacker is a subject and the tick is inside that subject's window (a call whose state has no tick is recorded with ``in_window: null``). The engine calls it from these sites (re-grepped in both frozen trees, every match, no truncation):
+is recorded only where the attacker is a subject and the call's TICK is inside that subject's window. The tick is the context's own ``tick`` when it has one, else ``world_time + offset`` (offset = state.tick - state.world_time of the apply wrapper's latest state); each row carries ``tick_source`` and the raw ``world_time``. A non-constant offset sets ``offset_drift`` and voids the cell; a call with neither tick nor world_time raises (the original call raises first when it needs the clock, and that passes through); a call before any offset exists is counted in ``legality_calls_unplaced`` and never meets reach. The engine calls it from these sites (re-grepped in both frozen trees, every match):
 at 87792e3e8 domain/combat_actions.py:56, combat.py:166, 268, 342, 444, tactical.py:423, tactical_flight_guard.py:71, tactical_hold.py:38; at e72270894 the same sites, with tactical.py at :434. The class-level wrapper sees every one of them.
-One ATTACK action can give TWO calls (combat_actions.py:56, then combat.py:166 inside resolve_attack), so legality call counts are not attack counts. combat_actions.py:56 passes a context, not the state: a call whose
-context has no tick is recorded with ``in_window: null`` and counts as in-window for the reach rule (``legality_calls_in_window`` counts every row whose ``in_window`` is not False).
+One ATTACK action can give TWO calls (combat_actions.py:56, then combat.py:166 inside resolve_attack), so legality call counts are not attack counts. combat_actions.py:56 passes a context, not the state, which has no ``tick``: its rows use the
+derived tick, and only rows with a known in-window tick meet the reach rule (``legality_calls_in_window``). Stage-1 ``attack_rows`` (read by the derivation) are attacks BY watched ids, not by every attacker.
 
 NON-PERTURBATION AND FATALITY. The spy's final hash must equal the SEALED plain twin's (checked by ``subject_trace_run check``). Any exception raised inside a wrapper's own recording code is stored AND re-raised:
 a kernel that swallows it still leaves ``spy_exceptions`` in the document, and the child exits 8 (fatal, the cell is void). The original verification's own exceptions are not the spy's: they pass through.
@@ -110,7 +110,10 @@ class SubjectSpy:
         self.rows: List[Dict[str, Any]] = []
         self.legality_rows: List[Dict[str, Any]] = []
         self.spy_exceptions: List[str] = []
+        self.unplaced_calls = 0
         self.apply_calls = 0
+        self.offset: Optional[float] = None   # state.tick - state.world_time of the apply wrapper's latest state
+        self.offsets_seen: List[float] = []   # every distinct offset seen; more than one is offset_drift (the cell is void)
         self._patched: List[tuple] = []
 
     # ---- install / restore
@@ -151,6 +154,11 @@ class SubjectSpy:
     def observe(self, prior: Any, state: Any) -> None:
         self.apply_calls += 1
         tick = state.tick
+        world_time = getattr(state, "world_time", None)
+        if world_time is not None:
+            self.offset = tick - world_time
+            if self.offset not in self.offsets_seen:
+                self.offsets_seen.append(self.offset)
         for subject_id, subject in self.subjects.items():
             if not in_windows(tick, subject["windows"]):
                 continue
@@ -164,23 +172,39 @@ class SubjectSpy:
             row["goal_distance_after"] = chebyshev(snap_after.get("position"), snap_after.get("goal_tile"))
             self.rows.append(row)
 
+    def legality_tick(self, state_or_context: Any) -> tuple:
+        """(tick, tick_source, raw world_time) of a legality call. The context's own ``tick`` when it has one; else ``world_time + offset`` (offset = state.tick - state.world_time of the apply wrapper's latest
+        state); no tick, no world_time: the call cannot be placed, which is a spy exception (the original call is what raises first when it needs the clock, and that error passes through)."""
+        world_time = getattr(state_or_context, "world_time", None)
+        tick = getattr(state_or_context, "tick", None)
+        if tick is not None:
+            return tick, "context", world_time
+        if world_time is None:
+            raise RuntimeError("a legality call whose context has neither tick nor world_time cannot be placed in a window")
+        if self.offset is None:
+            return None, "no_offset_yet", world_time
+        return world_time + self.offset, "world_time+offset", world_time
+
     def legality(self, attacker: Any, target: Any, state_or_context: Any, args: tuple, kwargs: dict, result: Any) -> None:
         subject = self.subjects.get(getattr(attacker, "id", None))
         if subject is None:
             return
-        tick = getattr(state_or_context, "tick", None)
-        in_window = None if tick is None else in_windows(tick, subject["windows"])
-        if in_window is False:
+        tick, source, world_time = self.legality_tick(state_or_context)
+        if tick is None:
+            self.unplaced_calls += 1                      # known subject, unknown tick: counted, never an in-window call
+            return
+        if not in_windows(tick, subject["windows"]):
             return
         legal, reason = result[0], result[1]
         self.legality_rows.append({
-            "tick": tick, "in_window": in_window, "attacker_id": attacker.id, "target_id": getattr(target, "id", None), "legal": bool(legal), "reason": safe(getattr(reason, "name", reason)),
-            "failure_text": None if legal else str(getattr(reason, "value", reason)), "opportunity": bool(kwargs.get("is_opportunity_attack", args[0] if args else False)),
+            "tick": tick, "tick_source": source, "world_time": safe(world_time), "in_window": True, "attacker_id": attacker.id, "target_id": getattr(target, "id", None), "legal": bool(legal),
+            "reason": safe(getattr(reason, "name", reason)), "failure_text": None if legal else str(getattr(reason, "value", reason)),
+            "opportunity": bool(kwargs.get("is_opportunity_attack", args[0] if args else False)),
         })
 
     def report(self) -> Dict[str, Any]:
-        in_window_calls = sum(1 for r in self.legality_rows if r["in_window"] is not False)
-        return {"rows": self.rows, "row_count": len(self.rows), "legality_rows": self.legality_rows, "legality_call_count": len(self.legality_rows), "legality_calls_in_window": in_window_calls,
+        return {"rows": self.rows, "row_count": len(self.rows), "legality_rows": self.legality_rows, "legality_call_count": len(self.legality_rows), "legality_calls_in_window": len(self.legality_rows),
+                "legality_calls_unplaced": self.unplaced_calls, "offsets_seen": self.offsets_seen, "offset_drift": len(self.offsets_seen) > 1,
                 "subject_ids": sorted(self.subjects), "apply_calls": self.apply_calls, "spy_exceptions": self.spy_exceptions}
 
 

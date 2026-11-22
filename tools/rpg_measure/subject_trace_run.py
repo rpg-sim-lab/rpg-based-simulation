@@ -27,6 +27,8 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 PAD = 100
+ENGAGEMENT_GAP = 50                       # the same gap as the engagements and ``hit_chains``
+DECISION_MODES = ("RETREAT", "PURSUE")   # the summarizer's own
 MIN_HITS = 10
 MIN_NO_DECISION_CHAIN, MIN_ASLEEP_CHAIN = 5, 3
 HASHSEED = "0"
@@ -80,6 +82,46 @@ def last_hit_tick(rows: List[Dict[str, Any]], victim_id: int, attackers: List[in
     return max(hits) if hits else end
 
 
+def chain_runs(hits: List[Dict[str, Any]]) -> Dict[str, List[Dict[str, Any]]]:
+    """PURE: EVERY qualifying R7 run of ONE victim's hits (``person_attack_summary.hit_states`` output, any order): every no-decision run of 5 or more and every asleep/lodged run of 3 or more, as MAXIMAL runs.
+    The reset rules are ``hit_chains``' own (a gap of more than 50 ticks between consecutive hits resets both; a decision between two hits restarts the no-decision run; a victim not asleep or lodged
+    ends the asleep run), so the longest run listed here equals what ``hit_chains`` reports. Each run: {run, start_tick, end_tick, attackers}."""
+    hits = sorted(hits, key=lambda h: h["tick"])
+    found: Dict[str, List[Dict[str, Any]]] = {"no_decision_run": [], "asleep_or_lodged_run": []}
+    starts: Dict[str, Optional[int]] = {"no_decision_run": None, "asleep_or_lodged_run": None}
+    minimum = {"no_decision_run": MIN_NO_DECISION_CHAIN, "asleep_or_lodged_run": MIN_ASLEEP_CHAIN}
+
+    def close(key: str, end: int) -> None:
+        start = starts[key]
+        if start is not None and end - start + 1 >= minimum[key]:
+            found[key].append({"run": end - start + 1, "start_tick": hits[start]["tick"], "end_tick": hits[end]["tick"], "attackers": sorted({h["attacker_id"] for h in hits[start:end + 1]})})
+        starts[key] = None
+
+    for i, hit in enumerate(hits):
+        asleep = hit["victim_state"] in ("asleep", "lodged")
+        if i == 0:
+            starts["no_decision_run"], starts["asleep_or_lodged_run"] = 0, 0 if asleep else None
+            continue
+        prev = hits[i - 1]
+        if hit["tick"] - prev["tick"] > ENGAGEMENT_GAP:                      # a gap resets both runs
+            close("no_decision_run", i - 1)
+            close("asleep_or_lodged_run", i - 1)
+            starts["no_decision_run"], starts["asleep_or_lodged_run"] = i, i if asleep else None
+            continue
+        if asleep:
+            if starts["asleep_or_lodged_run"] is None:
+                starts["asleep_or_lodged_run"] = i
+        else:
+            close("asleep_or_lodged_run", i - 1)
+        decided = prev["decision"] != "none" or hit["victim_mode_before"] in DECISION_MODES or any(prev["tick"] <= t <= hit["tick"] for t in hit["_decisions"])
+        if decided:
+            close("no_decision_run", i - 1)
+            starts["no_decision_run"] = i
+    close("no_decision_run", len(hits) - 1)
+    close("asleep_or_lodged_run", len(hits) - 1)
+    return found
+
+
 def derive_subjects(cells: Dict[int, Dict[str, Any]], summary: Any) -> Dict[str, List[Dict[str, Any]]]:
     """PURE: ``cells`` = seed -> that seed's NEW spy cell (the stage-1 sealed document). Returns seed -> subjects, only from the cells:
     a victim of a NEW meat engagement with at least 10 hits, or of an R7 chain (no-decision run >= 5 or asleep/lodged run >= 3, judged per victim), plus every attacker in those engagements or chains.
@@ -105,18 +147,16 @@ def derive_subjects(cells: Dict[int, Dict[str, Any]], summary: Any) -> Dict[str,
             window = padded_window(start, death if death is not None else last_hit_tick(all_rows, eng["victim_id"], [eng["attacker_id"]], start, end))
             add(eng["victim_id"], "victim", window, [eng["attacker_id"]])
             add(eng["attacker_id"], "attacker", window, [eng["victim_id"]])
-        for victim_id in sorted({r["victim_id"] for r in rows}):                   # every victim with a qualifying R7 chain, not only the single worst one
-            chains = summary.hit_chains([r for r in rows if r["victim_id"] == victim_id], cell["mode_rows"], attack_rows=cell.get("attack_rows"))
-            for key, minimum in (("no_decision_run", MIN_NO_DECISION_CHAIN), ("asleep_or_lodged_run", MIN_ASLEEP_CHAIN)):
-                chain = chains[key]
-                if chain["run"] < minimum:
-                    continue
-                start, end = chain["start_tick"], chain["end_tick"]
-                death = victim_death_tick(all_rows, victim_id, start, end)
-                window = padded_window(start, death if death is not None else end)
-                add(victim_id, "chain_victim", window, chain["attackers"])
-                for attacker_id in chain["attackers"]:
-                    add(attacker_id, "attacker", window, [victim_id])
+        for victim_id in sorted({r["victim_id"] for r in rows}):                   # EVERY qualifying chain of every victim (not only the worst one), each with its own window and attackers
+            victim_hits = summary.hit_states([r for r in rows if r["victim_id"] == victim_id], cell["mode_rows"], attack_rows=cell.get("attack_rows"))
+            for chains in chain_runs(victim_hits).values():
+                for chain in chains:
+                    start, end = chain["start_tick"], chain["end_tick"]
+                    death = victim_death_tick(all_rows, victim_id, start, end)
+                    window = padded_window(start, death if death is not None else end)
+                    add(victim_id, "chain_victim", window, chain["attackers"])
+                    for attacker_id in chain["attackers"]:
+                        add(attacker_id, "attacker", window, [victim_id])
         for entry in subjects.values():
             entry["windows"] = merge_windows(entry["windows"])
             entry["roles"] = sorted(entry["roles"])
@@ -160,6 +200,8 @@ def check_cell(spy: Dict[str, Any], sealed_plain: Dict[str, Any], arm: str, seed
         reasons.append("PERTURBATION: the spy's final hash differs from the sealed plain twin's")
     if spy.get("ticks") != sealed_plain.get("ticks"):
         reasons.append("TICKS differ from the sealed plain twin")
+    if spy.get("offset_drift"):
+        reasons.append("OFFSET_DRIFT: state.tick - state.world_time was not constant, so legality ticks derived from world_time are not reliable")
     if spy.get("row_count", 0) == 0:
         reasons.append("VOID: 0 subject rows in the windows")
     if arm == "new" and seed == 42 and spy.get("legality_calls_in_window", 0) == 0:

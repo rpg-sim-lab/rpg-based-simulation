@@ -63,11 +63,10 @@ def test_the_legality_wrapper_returns_the_original_result_object_and_records_onl
         FakeLegality.verify_attack_legality(entity(8), entity(7), state(150))               # the subject is the TARGET: not recorded
         FakeLegality.verify_attack_legality(entity(9), entity(8), state(150))               # not a subject: not recorded
         FakeLegality.verify_attack_legality(entity(7), entity(8), state(300))               # outside the window: not recorded
-        FakeLegality.verify_attack_legality(entity(7), entity(8), SimpleNamespace())        # no tick on the context: recorded with in_window null
     finally:
         spy.restore()
-    assert [(r["attacker_id"], r["target_id"], r["tick"], r["in_window"], r["opportunity"], r["legal"], r["reason"], r["failure_text"]) for r in spy.legality_rows] == [
-        (7, 8, 150, True, False, False, "OUT_OF_RANGE", "target out of range"), (7, 8, 150, True, True, False, "OUT_OF_RANGE", "target out of range"), (7, 8, None, None, False, False, "OUT_OF_RANGE", "target out of range")]
+    assert [(r["attacker_id"], r["target_id"], r["tick"], r["tick_source"], r["opportunity"], r["legal"], r["reason"], r["failure_text"]) for r in spy.legality_rows] == [
+        (7, 8, 150, "context", False, False, "OUT_OF_RANGE", "target out of range"), (7, 8, 150, "context", True, False, "OUT_OF_RANGE", "target out of range")]      # CHANGED (S1): no more in_window null row
     assert FakeLegality.verify_attack_legality.__func__ is original.__func__ if hasattr(FakeLegality.verify_attack_legality, "__func__") else FakeLegality.verify_attack_legality is original
 
 
@@ -81,6 +80,73 @@ def test_a_legal_result_is_recorded_without_a_failure_text() -> None:
         spy.restore()
         FakeLegality.result = (False, SimpleNamespace(name="OUT_OF_RANGE", value="target out of range"))
     assert spy.legality_rows[0]["legal"] is True and spy.legality_rows[0]["failure_text"] is None
+
+
+# --------------------------------------------------------------------------------------------- S1: the legality tick
+def clock_state(tick: int, world_time: int, *entities: Any) -> Any:
+    return SimpleNamespace(tick=tick, world_time=world_time, entities={e.id: e for e in entities})
+
+
+def test_a_context_without_a_tick_gets_world_time_plus_the_offset_and_an_out_of_window_call_is_dropped() -> None:     # NEW (S1)
+    spy = spy_module.SubjectSpy([subject(7, [[100, 110]])]).install(FakeApply, FakeLegality)
+    try:
+        spy.observe(clock_state(99, 89), clock_state(100, 90))                              # offset = tick - world_time = 10
+        FakeLegality.verify_attack_legality(entity(7), entity(8), SimpleNamespace(world_time=95))      # derived tick 105: in the window
+        FakeLegality.verify_attack_legality(entity(7), entity(8), SimpleNamespace(world_time=120))     # derived tick 130: dropped
+        FakeLegality.verify_attack_legality(entity(7), entity(8), SimpleNamespace(world_time=95, tick=108))      # the context's own tick wins
+    finally:
+        spy.restore()
+    assert [(r["tick"], r["tick_source"], r["world_time"]) for r in spy.legality_rows] == [(105, "world_time+offset", 95), (108, "context", 95)]
+    assert spy.report()["legality_calls_in_window"] == 2 and spy.report()["offset_drift"] is False
+
+
+def test_a_call_with_neither_tick_nor_world_time_raises_in_the_original_and_passes_through_or_is_a_spy_exception() -> None:     # NEW (S1)
+    class NeedsTheClock:
+        @staticmethod
+        def verify_attack_legality(attacker, target, state_or_context, is_opportunity_attack=False, *, night=None):
+            raise TypeError("verify_attack_legality: the state or context has no world_time")      # what the real engine does (legality.py:39)
+
+    spy = spy_module.SubjectSpy([subject(7, [[0, 10]])]).install(FakeApply, NeedsTheClock)
+    try:
+        with pytest.raises(TypeError, match="no world_time"):
+            NeedsTheClock.verify_attack_legality(entity(7), entity(8), SimpleNamespace())
+    finally:
+        spy.restore()
+    assert spy.spy_exceptions == [] and spy.legality_rows == []                       # the engine's own error passes through; it is not the spy's
+    lenient = spy_module.SubjectSpy([subject(7, [[0, 10]])]).install(FakeApply, FakeLegality)
+    try:
+        with pytest.raises(RuntimeError, match="neither tick nor world_time"):         # an original that does NOT raise leaves a call the spy cannot place: fatal
+            FakeLegality.verify_attack_legality(entity(7), entity(8), SimpleNamespace())
+    finally:
+        lenient.restore()
+    assert len(lenient.spy_exceptions) == 1
+
+
+def test_out_of_window_and_unplaced_calls_never_meet_reach() -> None:     # NEW (S1)
+    spy = spy_module.SubjectSpy([subject(7, [[100, 110]])]).install(FakeApply, FakeLegality)
+    try:
+        FakeLegality.verify_attack_legality(entity(7), entity(8), SimpleNamespace(world_time=5))          # no apply seen yet: no offset, unplaced
+        spy.observe(clock_state(99, 99), clock_state(100, 100))
+        FakeLegality.verify_attack_legality(entity(7), entity(8), SimpleNamespace(tick=500))               # out of window
+    finally:
+        spy.restore()
+    doc = spy.report()
+    assert (doc["legality_calls_in_window"], doc["legality_calls_unplaced"], doc["legality_call_count"]) == (0, 1, 0)
+    assert run.check_cell({**good_spy(), **doc, "row_count": 30}, PLAIN, "new", 42)["reasons"] == ["VOID: NEW s42 has no legality call by any subject in its window"]
+
+
+def test_a_non_constant_offset_is_drift_and_voids_the_cell() -> None:     # NEW (S1)
+    steady = spy_module.SubjectSpy([subject(7, [[0, 100]])])
+    steady.observe(clock_state(4, 3), clock_state(5, 4))
+    steady.observe(clock_state(5, 4), clock_state(6, 5))
+    assert steady.report()["offset_drift"] is False and steady.report()["offsets_seen"] == [1]
+    drifting = spy_module.SubjectSpy([subject(7, [[0, 100]])])
+    drifting.observe(clock_state(4, 3), clock_state(5, 4))
+    drifting.observe(clock_state(5, 4), clock_state(6, 4))             # world_time stalled: the offset moved
+    doc = drifting.report()
+    assert doc["offset_drift"] is True and doc["offsets_seen"] == [1, 2]
+    assert run.check_cell({**good_spy(), "offset_drift": True}, PLAIN, "new", 45)["reasons"][0].startswith("OFFSET_DRIFT")
+    assert run.check_cell({**good_spy(), "offset_drift": False}, PLAIN, "new", 45)["valid"] is True
 
 
 # --------------------------------------------------------------------------------------------- the per-tick rows
@@ -181,6 +247,48 @@ def test_the_plan_records_the_sha256_of_every_sealed_cell_it_read_lists_the_seed
     assert len(first["derived_from"]) == 6 and all(len(v) == 64 for v in first["derived_from"].values())
     (cells / "new__w__s42__plain.json").write_text(json.dumps({"final_hash": "changed"}), encoding="utf-8")
     assert run.derive_plan(cells, "w", [42, 45], summary)["plan_sha256"] != first["plan_sha256"]       # the sealed inputs are part of the plan's identity
+
+
+# --------------------------------------------------------------------------------------------- S2: every qualifying chain
+def states_of(rows: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    return summary.hit_states(rows, [])
+
+
+def test_two_chains_on_one_victim_give_both_windows_and_both_sets_of_wolves() -> None:     # NEW (S2)
+    rows = hits(1, 100, 1000, 5, step=5) + hits(2, 100, 3000, 6, step=5)               # 5 hits at t1000-1020 by wolf 1, 6 hits at t3000-3025 by wolf 2, no decisions
+    got = derive(rows)
+    assert got[100]["windows"] == [[900, 1120], [2900, 3125]] and got[100]["counterparts"] == [1, 2] and got[100]["roles"] == ["chain_victim"]
+    assert got[1]["windows"] == [[900, 1120]] and got[2]["windows"] == [[2900, 3125]]    # each wolf is a subject in ITS chain's window only
+
+
+def test_a_four_hit_run_gives_nothing_and_five_gives_one_chain() -> None:     # NEW (S2)
+    assert run.chain_runs(states_of(hits(1, 100, 1000, 4, step=5))) == {"no_decision_run": [], "asleep_or_lodged_run": []}
+    assert derive(hits(1, 100, 1000, 4, step=5)) == {}
+    five = run.chain_runs(states_of(hits(1, 100, 1000, 5, step=5)))["no_decision_run"]
+    assert [(c["run"], c["start_tick"], c["end_tick"], c["attackers"]) for c in five] == [(5, 1000, 1020, [1])]
+
+
+def test_a_gap_of_51_ticks_makes_two_chains_and_a_gap_of_50_makes_one() -> None:     # NEW (S2)
+    split = hits(1, 100, 1000, 5, step=5) + hits(1, 100, 1071, 5, step=5)               # last hit 1020, next 1071: gap 51
+    joined = hits(1, 100, 1000, 5, step=5) + hits(1, 100, 1070, 5, step=5)              # gap 50
+    assert [c["run"] for c in run.chain_runs(states_of(split))["no_decision_run"]] == [5, 5]
+    assert [c["run"] for c in run.chain_runs(states_of(joined))["no_decision_run"]] == [10]
+
+
+def test_the_chain_helpers_longest_run_agrees_with_hit_chains() -> None:     # NEW (S2)
+    fixtures = [
+        hits(1, 100, 1000, 5, step=5),
+        hits(1, 100, 1000, 5, step=5) + hits(2, 100, 3000, 7, step=5),
+        hits(1, 100, 1000, 6, step=5) + hits(1, 100, 1071, 5, step=5),
+        hits(1, 100, 1000, 3, step=5, victim_asleep_before=True) + hits(1, 100, 1100, 1, step=5) + hits(1, 100, 1130, 4, step=5, victim_asleep_before=True),
+        hits(1, 100, 1000, 8, step=5, victim_attacked_same_tick=False)[:4] + [row(1030, attacker=1, victim=100, victim_mode_after="RETREAT")] + hits(1, 100, 1040, 6, step=5),
+    ]
+    for rows in fixtures:
+        worst = summary.hit_chains(rows, [])
+        found = run.chain_runs(states_of(rows))
+        for key in ("no_decision_run", "asleep_or_lodged_run"):
+            longest = max((c["run"] for c in found[key]), default=0)
+            assert longest == (worst[key]["run"] if worst[key]["run"] >= (5 if key == "no_decision_run" else 3) else 0), (key, rows[0]["tick"], longest, worst[key])
 
 
 # --------------------------------------------------------------------------------------------- rows after death, the legality wrap, the stage-1 seal
@@ -327,3 +435,38 @@ def test_every_kit_python_call_in_the_launcher_goes_through_kitpy_and_a_failed_r
     assert stray == [], stray                              # the only bare interpreter uses: kitpy's own definition, the scope command (run under cd $KIT and PYTHONPATH), and the --python arguments
     assert text.count("kitpy ") >= 6 and '(cd "$KIT" && PYTHONPATH="$KIT" "$PY" "$@"' in text
     assert text.index("\nfinish_record\n") < text.index("RUN EXIT") < text.index("> SHA256SUMS")
+
+
+def stage1_dir(tmp_path: Path, after_run_line: Optional[str]) -> Path:
+    stage1 = tmp_path / "stage1"
+    (stage1 / "run" / "cells").mkdir(parents=True)
+    sums = stage1 / "run" / "SHA256SUMS"
+    sums.write_text("abc  ./x\n", encoding="utf-8")
+    (stage1 / "run" / "SHA256SUMS.seal.log").write_text(f"SEAL {hashlib.sha256(sums.read_bytes()).hexdigest()} 10:00:00\n", encoding="utf-8")
+    if after_run_line is not None:
+        (stage1 / "kit_sha256_after_run.txt").write_text(after_run_line + "\n", encoding="utf-8")
+    return stage1
+
+
+def test_stage_2_aborts_unless_the_stage_1_after_run_file_names_the_approved_spy_but_a_smoke_does_not_need_it(tmp_path: Path) -> None:     # NEW (choice 4)
+    spy_sha = "e920a5fe" + "0" * 56
+    for line in (None, "deadbeef" + "0" * 56 + "  tools/rpg_measure/person_attack_spy.py"):
+        base = tmp_path / ("a" if line is None else "b")
+        base.mkdir()
+        stage1 = stage1_dir(base, line)
+        env = launcher_env(base, SEALED=str(stage1 / "run" / "cells"), KIT_SHA_person_attack_spy_py=spy_sha)
+        done = subprocess.run(["bash", str(LAUNCH), str(env), "GO-1", "cells"], capture_output=True, text=True, cwd=base)
+        log = (base / "out" / "cells" / "launcher.log").read_text(encoding="utf-8")
+        assert done.returncode == 3 and "does not name the stage-1 spy e920a5fe" in log and "TREE" not in log
+    good = tmp_path / "c"
+    good.mkdir()
+    stage1 = stage1_dir(good, f"{spy_sha}  tools/rpg_measure/person_attack_spy.py")
+    env = launcher_env(good, SEALED=str(stage1 / "run" / "cells"), KIT_SHA_person_attack_spy_py=spy_sha)
+    subprocess.run(["bash", str(LAUNCH), str(env), "GO-1", "cells"], capture_output=True, text=True, cwd=good)
+    assert "does not name the stage-1 spy" not in (good / "out" / "cells" / "launcher.log").read_text(encoding="utf-8")        # past the assert: it stops later (the trees do not exist here)
+    smoke = tmp_path / "d"
+    smoke.mkdir()
+    stage1 = stage1_dir(smoke, None)
+    env = launcher_env(smoke, SEALED=str(stage1 / "run" / "cells"), KIT_SHA_person_attack_spy_py=spy_sha)
+    subprocess.run(["bash", str(LAUNCH), str(env), "GO-1", "smoke"], capture_output=True, text=True, cwd=smoke)
+    assert "does not name the stage-1 spy" not in (smoke / "out" / "smoke" / "launcher.log").read_text(encoding="utf-8")

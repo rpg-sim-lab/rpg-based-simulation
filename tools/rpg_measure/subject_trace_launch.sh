@@ -71,6 +71,10 @@ HEAVY_WORDS='tools\.rpg_measure|tools\.test_architecture\.rpg_gate_(harness|run|
 [ -n "$GO" ] || abort "no go reference"
 kitpy "$RUNPY" seal-check --dir "$SEALED/.." >> "$LOG" 2>&1 || abort "the stage-1 seal does not match: sha256(SHA256SUMS) differs from its SEAL line (stage 2 refuses to start)"
 [ "$KIND" = smoke ] || [ "$KIND" = cells ] || abort "kind must be smoke or cells"
+if [ "$KIND" != smoke ]; then   # the stage-1 cells must have been written by the approved stage-1 spy: its kit_sha256_after_run.txt (beside the stage-1 OUT) names that spy sha256
+  AFTER_RUN="$SEALED/../../kit_sha256_after_run.txt"
+  { [ -f "$AFTER_RUN" ] && command grep -q "^${KIT_SHA_person_attack_spy_py}  tools/rpg_measure/person_attack_spy.py" "$AFTER_RUN"; } || abort "kit_sha256_after_run.txt of the stage-1 run does not name the stage-1 spy ${KIT_SHA_person_attack_spy_py:0:8}: the cells are not from the approved spy (not judged)"
+fi
 for arm in NEW BASE; do
   tree=$(eval echo "\$TREE_$arm"); sha=$(eval echo "\$SHA_$arm")
   [ -d "$tree" ] || abort "tree $tree missing"
