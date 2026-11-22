@@ -72,6 +72,12 @@ The give-up clears the target, but nothing remembers that it was given up, so ta
 Parked: waits on TCK-20261030-STALEMATE-BREAK-OVERWRITES-A-PROJECT-MOVE-EVERY-TICK since 2026-11-19
 - 2026-11-19 RELABELLED P0 -> P1 (owner, #715 7003889137, "Relabel P1, keep W1"). It is a liveness bug: every subject in the 3 gate worlds re-picks a given-up target, but nobody dies of it. It keeps its M1 place at W1, intelligence.py package step K1: after split Group 1, stacked on F1 (TCK-20261030-STALEMATE-BREAK-OVERWRITES-A-PROJECT-MOVE-EVERY-TICK).
 
+### F2 v2.2a A'' + C disclosures (rpg-designer ruling on the v10.1 smoke, 2026-11-22; head 0bfa0f6bb)
+- `src/systems/strategic_systems/work_queue.py` joins the F2 file set (tier 6b: a subject with a pending give-up record). Tier 6b is urgent, so it can shrink the background sweep's (tier 7) share when the urgent tiers together are fewer than the budget.
+- The queue's per-tier served counts are NOT measured (the approved kit has no queue probe; not a bar).
+- The A'' rule (a give-up's clear beats a same-update target set near its own anchor, `NavigationPatch.apply`) acts on ONE merged update only: a record and a set applied as two separate patches do not trigger it. The same-update `path_set` is dropped with the set (the update already carries `clear_path`; designer accepted).
+- The fast path and the queue test the STORED record: a record staged this tick is consumed next tick.
+
 ## Test Summary
 
 ## Files Changed
