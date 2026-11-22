@@ -140,25 +140,70 @@ Designer rulings, 2026-11-23 (rpg-designer, relayed to rpg-planner):
 - Q2 ranking: expected ticks to coin, with the tie order and hunger budget above; danger through the
   HUNT belief, later `judge_power`.
 - Q3 payer: today's law (2.110): the giver's treasury, open only when it can pay now.
-Open for the designer (owner IDEAS, 2026-11-23, #715 7083481188, relayed by the leads; the owner
-calls them ideas for the designer to shape, not rulings):
-- Q4 admission layers at the SOURCE: whether this quest source (e.g. a human guild) admits this
-  body is decided in two layers.
-  - GROUP: how the source's people regard the taker's kind or faction. This maps to faction stance.
-  - INDIVIDUAL: how they regard this body. Ch07's trust appraisal, relationship dimensions and
-    reputation systems (§4) give a basis.
-  So a goblin that can take quests may still be refused at a human guild, unless its own standing
-  outweighs its group's. This is a SEPARATE gate from `can_take_quest` (capability, = keeps_coin);
-  the two must not merge. It is kind-neutral: no kind name in the rule, only stance and standing.
-- Q5 rank gating: a quest has a rank, and a taker qualifies by reputation and/or power, so a novice
-  can't take a high-rank quest. Simple logic now, behind ONE extensible function. Power goes
-  through Step B's `judge_power` seam, not a new comparison.
-- How Q4 and Q5 combine with the payer, danger and hunger gates (the order of the checks, and
-  whether a refusal is remembered) is also for the designer.
+Q4/Q5, owner IDEAS (#715 7083481188) as SHAPED by rpg-designer, 2026-11-23. PENDING the owner's yes
+on this shape before dispatch (the designer recommends yes):
+- Three judges, never merged, each its own function with a typed reason, none reading another's
+  inputs:
+  - CAPABILITY: can the body take quests at all. `can_take_quest(taker)` = keeps_coin (Q1).
+  - PERMISSION: does THIS source allow THIS taker. `source_admits` (Q4) and `quest_rank_qualifies`
+    (Q5); the source judges.
+  - PRUDENCE: should the taker attempt it. The danger gate (the taker's own power belief), and the
+    hunger budget.
+- Q4 `source_admits(source, taker, state) -> Admission{admitted, layer GROUP|INDIVIDUAL, reason}`:
+  - The source is the same giver as the 2.110 payer, the faction holding the posting building's
+    ground or the offering faction. One identity for pay and permission.
+  - GROUP: that faction's existing STANCE toward the taker's faction, bucketed ALLY / NEUTRAL /
+    WARY / HOSTILE. A factionless body reads NEUTRAL. No per-kind regard table.
+  - INDIVIDUAL: `known_standing(source, taker, state)`, one function. It reads public reputation
+    (§4) KNOWLEDGE-GATED (the TCK-20261003 defect class), plus the directed trust and sentiment of
+    the posting building's attendant, if any (ch07 §1-2). Nothing known gives UNKNOWN, which is
+    neutral.
+  - The combination is one table, with its thresholds in DATA:
+    - ALLY/NEUTRAL: admitted unless the standing <= BANNED;
+    - WARY: admitted only if the standing >= VOUCHED;
+    - HOSTILE: refused unless the standing >= CHAMPION.
+    `layer` names the deciding layer.
+  - Tests:
+    - hostile faction with UNKNOWN standing is refused (GROUP);
+    - the same with CHAMPION standing known to the source is admitted (INDIVIDUAL);
+    - the same standing unknown to the source is refused;
+    - neutral with a known grudge is refused;
+    - kind-swap with the same faction gives the same result; faction-swap with the same kind gives
+      a different result.
+- Q5 `quest_rank_qualifies(source, taker, quest, state) -> {qualifies, standing_rank, needed_rank,
+  basis}`:
+  - A quest carries a typed, durable int `rank` (template or quest data), with model, tests and
+    inspection.
+  - standing_rank = max(REPUTATION tier from known_standing and the completed-quest record,
+    OBSERVED-POWER tier from level or declared power as the source can observe it). Tiers are in
+    data. It qualifies iff standing_rank >= rank.
+  - judge_power is NOT used for rank. It is a pairwise belief (observer entity vs another body),
+    while rank is a threshold on the taker alone judged by a faction. judge_power stays the
+    prudence gate (the taker vs a kill or clear quest's target). The owner packet says so plainly,
+    since the leads' relay suggested power via judge_power.
+- CHECK ORDER (way-finding, deterministic; the first failure gives the one typed reason; every
+  gate's flag is kept for inspection):
+  1. can_take_quest;
+  2. the payer can pay now;
+  3. source_admits;
+  4. quest_rank_qualifies;
+  5. danger (kill/clear only);
+  6. the shared ranker (hunger budget and ticks to coin).
+  Gates 1-5 open or close the way; step 6 ranks the open ways.
+- REFUSAL MEMORY: none for way-finding gates (pure, recomputed each tick, like inn admission). A
+  refusal AT ARRIVAL (the state changed on the way) files a give-up on that source through the
+  EXISTING F2 give-up memory (anchored target, the same expiry), with the refusal's typed reason.
+  No new store. Test: refused at arrival → no re-target inside the window, and a re-target after it.
+- AC additions: AC8 (Q4 tests above), AC9 (Q5 rank tests: a novice fails a high rank, either tier
+  qualifies), AC10 (check order and first-failure reason), AC11 (the arrival refusal uses the F2
+  give-up window).
 
 Future owner questions, not in this scope:
 - whether a later intelligence property should widen or narrow takers (only the predicate changes);
 - a power gate for a dangerous explore target.
+- a kind-level regard layer beyond faction (Q4 uses faction stance only);
+- the guild judging power pairwise against the quest's target (the Q5 seam allows a new basis);
+- quest GIVERS who are entities (their own regard as the individual layer).
 Assumptions:
 - the existing guild generator is enough for "simpler logic" quest spawning;
 - dispatched only after #995 closes, so the earn_then_buy chain is stable.
