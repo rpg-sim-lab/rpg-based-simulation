@@ -15,7 +15,7 @@ tags: []
 The gate's O3 attack row and O6 uneaten-kill row split attackers and victims into people and non-people: redefine both by attacker diet group, over any living victim
 
 ## Status
-OPEN
+BLOCKED
 
 ## Tier
 standard
@@ -102,6 +102,13 @@ Read-only list from testing-planner, spot-checked by the ubuntu lead at 613a8365
 None. This is a read-only measure over the existing ledger keys, with no new durable field.
 
 ## Implementation Notes
+- 2026-11-22 PAUSED by owner direction #715 7074514233: "eating is just a small purpose of why combat (attack) happen, since there might be hostile, fighting for something else (loots, experience, or just instinct like guard or agressive)". The owner chose "Group by motive (Recommended)".
+  - rpg-designer redesigns the combat rows by the attacker's motive at attack time, and O6 stops treating uneaten kills as bad.
+  - The diet grouping (A1/A2 here) and O6's "not eaten = bad" framing are superseded pending that redesign.
+  - Still standing: no person class (7074277591), every group (7074345722) and 'none' counted (7074477873).
+  - The per-group feeding counter (owner answer 7074520394) is ON HOLD and is not to be built.
+  - Lane B's WIP on rpg-gate-o3-by-group is kept locally and not pushed.
+  - This ticket's scope is rewritten when the redesign returns to the owner with numbers.
 
 ## Test Summary
 
