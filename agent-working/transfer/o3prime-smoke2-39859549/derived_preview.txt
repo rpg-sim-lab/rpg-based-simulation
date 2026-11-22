@@ -1,0 +1,12 @@
+read-only preview of derive_subjects on the cd3a76430 sealed NEW spy cells (old person-only rows; a wiring test only)
+seed 42
+   30 ['chain_victim', 'victim'] windows [[1801, 2710]] counterparts [46, 47, 49]
+   46 ['attacker'] windows [[1801, 2710]] counterparts [30]
+   47 ['attacker'] windows [[1801, 2062]] counterparts [30]
+   49 ['attacker'] windows [[1801, 2062]] counterparts [30]
+seed 45
+   30 ['chain_victim', 'victim'] windows [[2896, 3572], [3635, 4055], [4670, 4954]] counterparts [45, 46, 47, 49]
+   45 ['attacker'] windows [[3646, 3904]] counterparts [30]
+   46 ['attacker'] windows [[3635, 4055]] counterparts [30]
+   47 ['attacker'] windows [[3196, 3450]] counterparts [30]
+   49 ['attacker'] windows [[2896, 3572], [4670, 4954]] counterparts [30]
