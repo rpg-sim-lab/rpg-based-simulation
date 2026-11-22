@@ -83,6 +83,22 @@ class HeldTargetAtAnchorCounts:
 
 
 
+def anchored_target(target_set: Optional[Tuple[float, float]], explicit_clear: bool, stored: Optional[Tuple[float, float]], record: Optional[GiveUpRecord], clear_anchor: Optional[Tuple[int, int]]) -> Tuple[Optional[Tuple[float, float]], bool]:
+    """The navigation patch's ONE anchor rule (rpg-designer, F2 v2.2a A'' and its pairing-run generalisation): the target a merged update leaves stored and whether the stored path goes with it. Two anchors may ride one update, each
+    decides only for itself: the give-up record's (``record``) and the strategic pass's (``clear_anchor``: set with a refusal clear, or alone when the pass files or extends a suppression). (1) a ``target_set`` within `GIVEUP_NEAR_RADIUS` of
+    an anchor is dropped; (2) with no set left, a STORED target within the radius of an anchor is cleared; (3) any other target, set or stored, stands. With no anchor this is today's precedence: the set wins, else an explicit clear
+    clears, else the stored target stays. Pure geometry on the update and the patched entity's own stored target: no other entity, no world, no suppression policy. Returns (target, drop_path)."""
+    anchors = tuple(a for a in ((record.anchor if record is not None else None), clear_anchor) if a is not None)
+    dropped = target_set is not None and any(near_anchor(target_set, a) for a in anchors)
+    kept = None if dropped else target_set
+    stored_near = kept is None and stored is not None and any(near_anchor(stored, a) for a in anchors)
+    if kept is not None:
+        return kept, False
+    if explicit_clear or stored_near:
+        return None, dropped or stored_near
+    return stored, dropped
+
+
 def giveup_clear_beats_target(target_set: Optional[Tuple[float, float]], record: Optional[GiveUpRecord], clear_anchor: Optional[Tuple[int, int]] = None) -> bool:
     """The navigation patch's same-update rule (rpg-designer F2 v2.2a A''): True when ONE merged update carries a give-up record AND a ``target_set`` within `GIVEUP_NEAR_RADIUS` of THAT record's anchor, so
     the give-up's clear wins over the set. Generalised (rpg-designer, F2 pairing re-run): the same holds for ONE update that carries the strategic pass's suppression clear with its ``clear_anchor`` (the anchor of the

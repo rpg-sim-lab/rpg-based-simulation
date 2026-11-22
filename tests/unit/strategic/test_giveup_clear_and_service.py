@@ -92,7 +92,7 @@ def test_a_set_at_exactly_chebyshev_two_stands_and_at_one_loses():
 
 def test_control_the_same_scene_without_the_rule_keeps_the_set(monkeypatch):
     """Failing control: with the rule switched off the same-tile set stands, so the test above fails on a build without it."""
-    monkeypatch.setattr(patches, "giveup_clear_beats_target", lambda *a, **k: False)
+    monkeypatch.setattr(patches, "anchored_target", lambda target_set, explicit, stored, record, anchor: (target_set if target_set is not None else (None if explicit else stored), False))
     assert _applied_target(_giveup(target_set=(20.0, 20.0)))[0] == (20.0, 20.0)
 
 
@@ -183,7 +183,7 @@ def test_the_clear_anchor_is_a_typed_update_field_that_merges_and_counts_as_a_ch
 
 
 def test_control_the_same_scene_without_the_rule_keeps_the_walk_set(monkeypatch):
-    monkeypatch.setattr(patches, "giveup_clear_beats_target", lambda *a, **k: False)
+    monkeypatch.setattr(patches, "anchored_target", lambda target_set, explicit, stored, record, anchor: (target_set if target_set is not None else (None if explicit else stored), False))
     assert _applied_target(_suppression_clear(target_set=(20.0, 20.0)))[0] == (20.0, 20.0)
 
 
@@ -197,3 +197,72 @@ def test_the_fused_pass_clears_a_suppressed_stored_target_and_names_the_anchor_t
     assert suppression_anchor(e, (21.0, 20.0), 5) == anchor and suppression_anchor(e, (40.0, 40.0), 5) is None
     upd = _pass(e).entity_updates.get(1)
     assert upd is not None and upd.navigation is not None and upd.navigation.target_clear is True and upd.navigation.target_clear_anchor == anchor
+
+
+# --- the filing anchor: the pass that files a suppression for P says so (target_clear_anchor WITHOUT target_clear) --------------------------------------------
+def _filing(**kw):
+    return NavigationUpdate(target_clear_anchor=P, **kw)
+
+
+def _applied_with_stored(nav_update, stored):
+    return _applied_target(nav_update, target=stored)
+
+
+def test_filing_1_a_walk_sets_p_on_a_tick_with_no_stored_target_and_p_is_filed_the_set_is_dropped():
+    e = V2EntityBuilder(1).kind("HERO").location(5.0, 5.0).build()
+    assert e.navigation.target is None
+    changes = {}
+    NavigationPatch(entity_id=1, navigation=_filing(target_set=(20.0, 20.0), path_set=[(6.0, 6.0)])).apply(e, changes)
+    nav = changes["navigation"]
+    assert nav.target is None and nav.path is None
+
+
+def test_filing_2_the_same_with_a_walk_to_a_far_tile_stands():
+    assert _applied_with_stored(_filing(target_set=(40.0, 40.0)), None)[0] == (40.0, 40.0)
+
+
+def test_filing_3_a_stored_far_target_and_a_filing_for_p_is_unchanged():
+    assert _applied_with_stored(_filing(), (40.0, 40.0))[0] == (40.0, 40.0)
+    assert _applied_with_stored(_filing(path_set=[(1.0, 1.0)]), (40.0, 40.0))[0] == (40.0, 40.0)
+
+
+def test_filing_4_a_stored_target_near_p_and_a_filing_for_p_with_no_set_is_cleared():
+    t, nav = _applied_with_stored(_filing(), (21.0, 20.0))
+    assert t is None and nav.path is None
+
+
+def test_filing_5_the_record_the_refusal_clear_and_the_filing_anchor_in_one_update_give_one_consistent_result():
+    upd = dict(giveup_record_add=GiveUpRecord(P, 10), clear_target=True, target_clear=True, target_clear_anchor=P)
+    assert _applied_with_stored(NavigationUpdate(target_set=(20.0, 21.0), **upd), (40.0, 40.0))[0] is None  # a set near P loses to all three at once
+    assert _applied_with_stored(NavigationUpdate(target_set=(40.0, 41.0), **upd), (21.0, 20.0))[0] == (40.0, 41.0)  # a far set stands even over a near stored target
+    assert _applied_with_stored(NavigationUpdate(**upd), (21.0, 20.0))[0] is None
+
+
+def test_filing_a_set_dropped_by_a_filing_leaves_a_far_stored_target_alone():
+    assert _applied_with_stored(_filing(target_set=(20.0, 20.0)), (40.0, 40.0))[0] == (40.0, 40.0)
+
+
+def test_filing_control_without_the_rule_the_near_set_stands_and_the_near_stored_target_stays(monkeypatch):
+    monkeypatch.setattr(patches, "anchored_target", lambda target_set, explicit, stored, record, anchor: (target_set if target_set is not None else (None if explicit else stored), False))
+    assert _applied_with_stored(_filing(target_set=(20.0, 20.0)), None)[0] == (20.0, 20.0)
+    assert _applied_with_stored(_filing(), (21.0, 20.0))[0] == (21.0, 20.0)
+
+
+def test_the_pass_that_files_a_suppression_carries_its_anchor_and_nothing_else_clears():
+    from src.core.strategic import BlockerState
+    from src.core.updates import StrategicUpdate
+    from src.strategy.destination_suppression import access_blocker_id, filed_suppression_anchor, navigation_with_filing_anchor
+    e = V2EntityBuilder(1).kind("worker").location(10.0, 10.0).build()
+    filed = BlockerState(id=access_blocker_id(P), kind="access", subject=f"{P}", suppression_until_tick=500, giveup_count=1)
+    staged = StrategicUpdate(blockers_add_or_update=[filed])
+    assert filed_suppression_anchor(e, staged, 5) == P
+    nav = navigation_with_filing_anchor(e, None, staged, 5)
+    assert nav.target_clear_anchor == P and nav.target_clear is False and nav.clear_target is False  # a bare clear would clear a far stored target: it is not emitted
+    assert filed_suppression_anchor(e, StrategicUpdate(), 5) is None and navigation_with_filing_anchor(e, None, StrategicUpdate(), 5) is None
+    expired = replace(filed, suppression_until_tick=5)
+    assert filed_suppression_anchor(e, StrategicUpdate(blockers_add_or_update=[expired]), 5) is None  # not suppressed past the tick
+    held = replace(e, strategic=replace(e.strategic, blockers={filed.id: filed}))
+    assert filed_suppression_anchor(held, staged, 5) is None  # unchanged stored suppression is not a filing
+    assert filed_suppression_anchor(held, StrategicUpdate(blockers_add_or_update=[replace(filed, suppression_until_tick=900)]), 5) == P  # extended
+    own = NavigationUpdate(target_clear=True, target_clear_anchor=Q)
+    assert navigation_with_filing_anchor(e, own, staged, 5) is own  # the refusal clear's anchor wins

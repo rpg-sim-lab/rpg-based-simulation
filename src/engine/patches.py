@@ -3,7 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Dict, Any, List, Optional, Self, TYPE_CHECKING
 
-from src.core.giveup_records import GIVEUP_RECORDS_CAP, GiveUpDropCounts, giveup_clear_beats_target
+from src.core.giveup_records import GIVEUP_RECORDS_CAP, GiveUpDropCounts, anchored_target
 
 if TYPE_CHECKING:
     from src.core.state import EntityState, IntentResult
@@ -281,12 +281,12 @@ class NavigationPatch(ComponentPatch):
         new_nav = changes.get("navigation", entity.navigation)
         if self.navigation:
             u_nav = self.navigation
-            giveup_clear = giveup_clear_beats_target(u_nav.target_set, u_nav.giveup_record_add, u_nav.target_clear_anchor)  # F2 v2.2a A'': a clear (the give-up's, or the strategic pass's suppression clear) beats a same-update set near ITS OWN anchor (the set, and the path built for it, are dropped)
+            final_target, drop_path = anchored_target(u_nav.target_set, bool(u_nav.target_clear or u_nav.clear_target), new_nav.target, u_nav.giveup_record_add, u_nav.target_clear_anchor)  # F2 v2.2a A'': an anchor (the give-up's, or the strategic pass's) drops a same-update set near it and clears a stored target near it (the path with it); anywhere else today's precedence
             new_nav = replace(
                 new_nav,
-                target=None if giveup_clear else u_nav.target_set if u_nav.target_set is not None else (None if (u_nav.target_clear or u_nav.clear_target) else new_nav.target),
+                target=final_target,
                 movement_mode=u_nav.movement_mode_set if u_nav.movement_mode_set is not None else new_nav.movement_mode,
-                path=None if giveup_clear else u_nav.path_set if u_nav.path_set is not None else (None if u_nav.clear_path else new_nav.path),
+                path=None if drop_path else u_nav.path_set if u_nav.path_set is not None else (None if u_nav.clear_path else new_nav.path),
                 moved_recently=u_nav.moved_recently_set if u_nav.moved_recently_set is not None else new_nav.moved_recently,
                 # last_failure_reason is the outcome of the LAST step: codes come from any action writer, ONLY a successful movement step clears it with the typed `failure_reason_clear`, and a bare None
                 # (a held step) leaves it as it was. A code set in the same update wins over the clear.

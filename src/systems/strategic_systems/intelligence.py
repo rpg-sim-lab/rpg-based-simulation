@@ -62,7 +62,7 @@ if TYPE_CHECKING:
     from src.engine.cadence import SystemCadence
 
 from src.core.state import EntityState, AuthoritativeState
-from src.strategy.destination_suppression import destination_open, regroup_to_town_update, suppression_anchor
+from src.strategy.destination_suppression import destination_open, navigation_with_filing_anchor, regroup_to_town_update, suppression_anchor
 from src.core.hold_mode import hold_reset_kwargs
 from src.core.enums import EntityRole
 from src.core.updates import (
@@ -574,7 +574,7 @@ class StrategicIntelligenceSystem:
                     prop_updates["last_routing_family"] = strat_up.last_routing_family_set
                 if strat_up is not None and strat_up.last_routing_tick_set is not None:
                     prop_updates["last_routing_tick"] = strat_up.last_routing_tick_set
-                final_upd = replace(ent_upd, identity=final_identity_upd, strategic=strat_up, property_updates=prop_updates)
+                final_upd = replace(ent_upd, identity=final_identity_upd, strategic=strat_up, property_updates=prop_updates, navigation=navigation_with_filing_anchor(entity, ent_upd.navigation, strat_up, state.tick))  # F2 v2.2a: the pass that files a suppression says so (the anchor, no clear)
                 refined_entity_updates[e_id] = final_upd
         
         if state.tick % 10 == 0:
