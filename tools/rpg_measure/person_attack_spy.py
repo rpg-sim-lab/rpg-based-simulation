@@ -38,10 +38,12 @@ Usage: python person_attack_spy.py <world> <seed> <ticks> <out.json> [--mode pla
 from __future__ import annotations
 
 import importlib.util
+import inspect
 import json
 import logging
 import os
 import sys
+import traceback
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional
 
@@ -72,11 +74,96 @@ class LoggingErrors(logging.Handler):
         self.rows.append({"logger": record.name, "level": record.levelname, "message": record.getMessage()[:300]})
 
 
+def jsonable(value: Any) -> Any:
+    """A JSON-safe copy of a small value (an enum by its VALUE, a tuple or list as a list, a mapping with string keys, anything else as its str)."""
+    if hasattr(value, "value") and isinstance(getattr(value, "value"), (str, int, float)):
+        return value.value
+    if value is None or isinstance(value, (bool, int, float, str)):
+        return value
+    if isinstance(value, (tuple, list)):
+        return [jsonable(v) for v in value]
+    if isinstance(value, dict):
+        return {str(k): jsonable(v) for k, v in value.items()}
+    return str(value)
+
+
+class MotiveReads:
+    """The raw inputs of an attack's MOTIVE, read on the PRIOR state only (rpg-designer's draft, relayed at rpg-planner-ubuntu's seat commit 6e79140c6, provisional). READ-ONLY: it calls the tree's own pure
+    functions on the prior state's bodies and writes nothing. ``relation(entity, other, source=None, ...)`` has DIFFERENT signatures per tree (87792e3e8: keyword-only ``night`` and ``tick``; e72270894: positional
+    only), so the call form is INTROSPECTED from the function, never guessed, ONLY here (``call_form``), and recorded on every row. ``source`` is never passed (the engine's attack path does not pass it: tactical.py:139,
+    candidate_selector.py:128; it is only a memo for callers testing many neighbours). The three values the motive class reads are ``relation_attacker_to_victim`` (the Relation VALUE),
+    ``attacked_me_recently_victim_on_attacker`` and the attacker's objective ``target_entity_id``; everything else recorded here is information.
+    FINAL draft (u24 draft, sha256 dbba986f, transit branch transfer-designer-motive-draft at commit 6daa51849, path agent-working/transfer/designer-motive-draft/rpg-designer-attack-motive-rows.md; sections 1-7 are byte-identical to 2d71a117 at c1a7ee1e1; section 7 governs the per-arm call): each arm reads its OWN engine's relation() with its own signature (``relation_form`` "night_tick" or
+    "plain" on every row), the form is chosen with ``inspect.signature`` and never by try/except TypeError, and ``source`` mirrors the engine's attack path (the entity's own ``source_identity``), recorded as ``relation_source``;
+    ``relation_source_default`` is True where it could not be resolved."""
+
+    def __init__(self, relation: Callable, attacked_me_recently: Callable, can_eat: Callable, is_night: Optional[Callable] = None, source_identity: Optional[Callable] = None) -> None:
+        params = inspect.signature(relation).parameters          # the form is chosen by the SIGNATURE, never by try/except TypeError: a TypeError inside relation() must surface
+        has_night, has_tick = "night" in params, "tick" in params
+        if has_night != has_tick:
+            raise ValueError(f"unsupported relation() signature (night={has_night}, tick={has_tick}): the kit knows 'night_tick' and 'plain'")
+        if has_night and is_night is None:
+            raise ValueError("this tree's relation() takes night= but no is_night was given")
+        self.relation_fn, self.attacked_me_recently, self.can_eat, self.is_night, self.source_identity = relation, attacked_me_recently, can_eat, is_night, source_identity
+        self.form = "night_tick" if has_night else "plain"
+        self.call_form = "relation(entity, other, source" + (", night=is_night(world_time), tick=tick" if has_night else "") + ")" if source_identity else "relation(entity, other" + (", night=is_night(world_time), tick=tick" if has_night else "") + ")"
+
+    def relation_value(self, entity: Any, other: Any, tick: Any, world_time: Any) -> tuple:
+        """(the Relation VALUE, the identity source passed or None). ``source`` mirrors the engine's attack path (tactical_avoid.py passes ``source_identity(entity)``, the entity's own); a tree that cannot give it is called with the default."""
+        source = self.source_identity(entity) if self.source_identity is not None else None
+        args = (entity, other) if source is None else (entity, other, source)
+        kwargs: Dict[str, Any] = {"night": bool(self.is_night(world_time)), "tick": tick} if self.form == "night_tick" else {}
+        return jsonable(self.relation_fn(*args, **kwargs)), (None if source is None else jsonable(source))
+
+    @staticmethod
+    def objective_inputs(entity: Any) -> Dict[str, Any]:
+        """The entity's ACTIVE objective: project id and kind, objective id, kind, target and target_entity_id (attribute reads; a tree without a field reads None)."""
+        strategic = getattr(entity, "strategic", None)
+        project_id = getattr(strategic, "current_project_id", None)
+        project = (getattr(strategic, "projects", None) or {}).get(project_id) if project_id is not None else None
+        objective_id = getattr(strategic, "current_objective_id", None)
+        if objective_id is None and project is not None:
+            objective_id = getattr(project, "active_objective_id", None)
+        objective = next((o for o in (getattr(project, "objectives", None) or []) if getattr(o, "id", None) == objective_id), None) if project is not None and objective_id is not None else None
+        return {"project_id": jsonable(project_id), "project_kind": jsonable(getattr(project, "kind", None)), "objective_id": jsonable(objective_id), "kind": jsonable(getattr(objective, "kind", None)),
+                "target": jsonable(getattr(objective, "target", None)), "target_entity_id": jsonable(getattr(objective, "target_entity_id", None))}
+
+    def inputs(self, prior: Any, attacker_id: int, victim_id: int) -> Dict[str, Any]:
+        """Everything the motive reads, both directions, from ``prior`` (the state BEFORE the attack's apply): ``prior.tick`` and ``prior.world_time`` date the reads."""
+        attacker, victim = prior.entities.get(attacker_id), prior.entities.get(victim_id)
+        if attacker is None or victim is None:
+            return {"prior_bodies_present": False}
+        tick, world_time = prior.tick, getattr(prior, "world_time", None)
+        payload = attacker.task.payload if isinstance(attacker.task.payload, dict) else {}
+        forward, forward_source = self.relation_value(attacker, victim, tick, world_time)
+        backward, backward_source = self.relation_value(victim, attacker, tick, world_time)
+        return {
+            "prior_bodies_present": True, "prior_tick": tick, "prior_world_time": world_time, "relation_call_form": self.call_form, "relation_form": self.form,
+            "relation_source": {"attacker_side": forward_source, "victim_side": backward_source}, "relation_source_default": forward_source is None or backward_source is None,
+            "relation_attacker_to_victim": forward, "relation_victim_to_attacker": backward,
+            "attacked_me_recently_victim_on_attacker": bool(self.attacked_me_recently(victim, attacker, tick)), "attacked_me_recently_attacker_on_victim": bool(self.attacked_me_recently(attacker, victim, tick)),
+            "attacker_can_eat_victim": bool(self.can_eat(attacker, victim)), "attacker_objective": self.objective_inputs(attacker), "task_action": jsonable(payload.get("action")), "task_reason": jsonable(payload.get("reason")),
+            "attacker_mode_before": str(getattr(attacker.navigation.movement_mode, "value", attacker.navigation.movement_mode)),
+        }
+
+    @classmethod
+    def from_tree(cls) -> "MotiveReads":
+        from src.engine import hostility
+        from src.engine.appraisal import can_eat
+        from src.engine.tactical_threat import attacked_me_recently
+
+        is_night = None
+        if "night" in inspect.signature(hostility.relation).parameters:
+            from src.core.calendar import is_night
+        return cls(hostility.relation, attacked_me_recently, can_eat, is_night, getattr(hostility, "source_identity", None))
+
+
 class TreeReads:
     """The tree's own definitions the recorder reads (imported from the tree on PYTHONPATH; injectable for unit tests with plain functions)."""
 
     def __init__(self, kind_group: Callable, is_person: Callable, species_of: Callable, is_wild_meat_eater: Callable, declared_diet: Callable, is_asleep: Callable, is_lodged: Callable, split_key: Callable,
-                 make_key: Callable, tied_groups: Optional[Any] = None) -> None:
+                 make_key: Callable, tied_groups: Optional[Any] = None, motive: Optional[MotiveReads] = None) -> None:
+        self.motive = motive  # the motive inputs reader (None in unit tests that do not give one: rows then carry motive_inputs null)
         self.kind_group, self.is_person, self.species_of = kind_group, is_person, species_of
         self.tied_groups = tuple(tied_groups) if tied_groups is not None else tuple(load_sibling("person_attack_summary").TIED_GROUPS)  # the O3' groups: the summarizer's own constant
         self.is_wild_meat_eater, self.declared_diet, self.is_asleep, self.is_lodged, self.split_key = is_wild_meat_eater, declared_diet, is_asleep, is_lodged, split_key
@@ -110,7 +197,7 @@ class TreeReads:
             payload = entity.task.payload
             return (payload.get("action") if isinstance(payload, dict) else None) in SLEEP_ACTIONS
 
-        return cls(kind_group, is_person, species_of, _is_wild_meat_eater, declared_diet, is_asleep, is_lodged, _split, _key)
+        return cls(kind_group, is_person, species_of, _is_wild_meat_eater, declared_diet, is_asleep, is_lodged, _split, _key, motive=MotiveReads.from_tree())
 
 
 def species_reader() -> Callable[[Any], str]:
@@ -142,6 +229,7 @@ class PersonAttackSpy:
         self.rows: List[Dict[str, Any]] = []
         self.mode_rows: List[Dict[str, Any]] = []
         self.attack_rows_truncated = False
+        self.motive_read_errors: List[str] = []
         self.attack_rows: List[Dict[str, Any]] = []  # every attack (any target, hit or miss) BY a watched id: a fight decision of that id
         self.watched: Dict[int, str] = {}
         self.apply_calls = 0
@@ -240,6 +328,13 @@ class PersonAttackSpy:
             key = self.reads.ledger_key(attacker_before, victim_after, "kill" if getattr(combat, "outcome_kind", None) == "KILL" else "hit")
             if hp_delta < 0:
                 self.key_counts[key] = self.key_counts.get(key, 0) + 1  # the ledger's own conditions (attacker_id set, hp_delta < 0, both bodies present): EVERY hit, on a person or not
+            motive_inputs = None
+            if self.reads.motive is not None:
+                try:
+                    motive_inputs = self.reads.motive.inputs(prior, attacker_id, victim_id)
+                except Exception:
+                    self.motive_read_errors.append(f"tick {state.tick} attacker {attacker_id} victim {victim_id}: {traceback.format_exc()[-400:]}")   # stored (the cell is void even if a caller swallows it) and re-raised: a TypeError must surface
+                    raise
             victim_before = prior.entities.get(victim_id, victim_after)
             attacker_after = state.entities.get(attacker_id, attacker_before)
             group = self.reads.split_key(key, 4)[0]
@@ -249,7 +344,7 @@ class PersonAttackSpy:
                 continue
             self.rows.append({
                 "tick": state.tick, "world_time": state.world_time, "attacker_id": attacker_id, "attacker_kind": attacker_before.kind, "attacker_species": self.reads.species_of(attacker_before),
-                "attacker_group": group, "attacker_diet": self.reads.declared_diet(attacker_before), "ledger_key": key, "in_o3_group": o3, "victim_id": victim_id,
+                "attacker_group": group, "attacker_diet": self.reads.declared_diet(attacker_before), "ledger_key": key, "in_o3_group": o3, "motive_inputs": motive_inputs, "victim_id": victim_id,
                 "victim_kind": victim_after.kind, "victim_species": self.reads.species_of(victim_after), "hit": hp_delta < 0, "hp_delta": hp_delta, "outcome_kind": getattr(combat, "outcome_kind", None),
                 "victim_alive_after": bool(victim_after.combat.alive), "victim_asleep_before": bool(self.reads.is_asleep(victim_before)), "victim_lodged_before": bool(self.reads.is_lodged(victim_before)),
                 "victim_mode_before": mode_name(victim_before), "victim_mode_after": mode_name(victim_after), "victim_attacked_same_tick": victim_id in attackers_this_tick,
@@ -310,7 +405,7 @@ class PersonAttackSpy:
         per_key_equal = not key_diffs  # a key on one side only is a diff (None vs n): never a 0-vs-n that could pass
         spy_by_key, ledger_by_key, by_rows = self.o3_from_keys(self.key_counts), self.o3_from_keys(ledger_keys), self.o3_from_rows()
         per_group_equal = spy_by_key == ledger_by_key == by_rows
-        counting_ok = per_key_equal and per_group_equal and not self.mode_breaches and not self.rows_truncated and not self.attack_rows_truncated
+        counting_ok = per_key_equal and per_group_equal and not self.mode_breaches and not self.rows_truncated and not self.attack_rows_truncated and not self.motive_read_errors
         ledger_live = self.ledger_payload_ticks.get("first_tick") is not None and self.ledger_payload_ticks.get("first_tick") == self.first_tick_seen and self.ledger_observe_calls == self.apply_calls
         wiring_ok = counting_ok and ledger_live
         declared = sorted(self.declared_o3_groups or [])
@@ -322,6 +417,7 @@ class PersonAttackSpy:
             "wiring": "OK" if wiring_ok else ("WIRING_MISMATCH" if ledger_live else "LEDGER_NOT_LIVE"),
             "ledger_evidence": {**self.ledger_evidence, "observe_calls": self.ledger_observe_calls, "apply_calls": self.apply_calls, "reasserts": self.ledger_reasserts, "payload_ticks": self.ledger_payload_ticks,
                                 "spy_first_tick": self.first_tick_seen, "spy_last_tick": self.last_tick_seen, "ledger_live_at_finish": ledger_live},
+            "motive_read_errors": self.motive_read_errors[:20], "motive_read_error_count": len(self.motive_read_errors), "motive_call_form": getattr(self.reads.motive, "call_form", None), "motive_relation_form": getattr(self.reads.motive, "form", None),
             "mode_breaches": self.mode_breaches[:50], "mode_breach_count": len(self.mode_breaches), "rows_truncated": self.rows_truncated, "attack_rows_truncated": self.attack_rows_truncated,
             "apply_calls": self.apply_calls, "rows": self.rows, "row_count": len(self.rows), "mode_rows": self.mode_rows, "attack_rows": self.attack_rows, "attack_row_count": len(self.attack_rows), "final_alive": self.final_alive,
             "control": self.control, "control_tick": self.control_tick, "control_applied_count": self.control_applied_count, "cell_valid": wiring_ok and self.control is None,

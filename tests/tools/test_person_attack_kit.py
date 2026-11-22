@@ -24,13 +24,22 @@ NIGHT = lambda world_time: world_time % 2400 >= 1800 or world_time % 2400 < 600 
 DAY_TICK, NIGHT_TICK = 1000, 2000
 
 
+def motive_inputs(relation: str = "PREDATION", defended: bool = False, objective_target: Any = None, can_eat: bool = True, **info: Any) -> Dict[str, Any]:
+    """The raw motive inputs of one attack row (the spy's ``MotiveReads.inputs`` shape); the three typed values are relation, defended and objective_target; ``info`` overrides the information-only fields."""
+    base = {"prior_bodies_present": True, "prior_tick": 0, "prior_world_time": 0, "relation_call_form": "relation(entity, other, night=is_night(world_time), tick=tick)", "relation_attacker_to_victim": relation,
+            "relation_victim_to_attacker": "NONE", "attacked_me_recently_victim_on_attacker": defended, "attacked_me_recently_attacker_on_victim": False, "attacker_can_eat_victim": can_eat,
+            "attacker_objective": {"project_id": None, "project_kind": None, "objective_id": None, "kind": None, "target": None, "target_entity_id": objective_target},
+            "task_action": "ATTACK", "task_reason": None, "attacker_mode_before": "PURSUE"}
+    return {**base, **info}
+
+
 def row(tick: int, attacker: int = 1, victim: int = 100, hit: bool = True, species: str = "wolf", diet: Optional[List[str]] = None, group: Optional[str] = None, o3: bool = True, **kw: Any) -> Dict[str, Any]:
     diet = ["meat"] if diet is None else diet
     base = {
         "tick": tick, "world_time": kw.pop("world_time", tick), "attacker_id": attacker, "attacker_kind": species, "attacker_species": species, "attacker_group": group or "+".join(diet) or "none",
         "attacker_diet": diet, "attacker_person": 0, "in_o3_group": o3, "victim_id": victim, "victim_kind": "human", "victim_species": "human", "hit": hit, "hp_delta": -1 if hit else 0,
         "outcome_kind": "SURVIVE", "victim_alive_after": True, "victim_asleep_before": False, "victim_lodged_before": False, "victim_mode_before": "WANDER", "victim_mode_after": "WANDER",
-        "victim_attacked_same_tick": False, "attacker_mode_after": "WANDER", "hit_attackers": [],
+        "victim_attacked_same_tick": False, "attacker_mode_after": "WANDER", "hit_attackers": [], "motive_inputs": motive_inputs(),
     }
     return {**base, **kw}
 
@@ -83,17 +92,21 @@ def test_the_real_night_instrument_is_loaded_from_a_calendar_file_by_path() -> N
 
 
 # --------------------------------------------------------------------------------------------- R1-R5 (one firing and one non-firing case each; >= 10 engagements so they apply)
-def spaced(n: int, attacker: int = 1, species: str = "wolf", world_time_of: Any = None, diet: Optional[List[str]] = None, group: Optional[str] = None, victims: bool = True) -> List[Dict[str, Any]]:
+def spaced(n: int, attacker: int = 1, species: str = "wolf", world_time_of: Any = None, diet: Optional[List[str]] = None, group: Optional[str] = None, victims: bool = True, **kw: Any) -> List[Dict[str, Any]]:
     """n engagements of one attacker on n distinct victims, 3000 ticks apart (so no rolling-window or pair rule fires), each at a night tick unless world_time_of says otherwise."""
-    return [row(i * 3000, attacker=attacker, victim=100 + (i if victims else 0), species=species, world_time=(world_time_of(i) if world_time_of else i * 3000 // 2400 * 2400 + NIGHT_TICK), diet=diet, group=group)
+    return [row(i * 3000, attacker=attacker, victim=100 + (i if victims else 0), species=species, world_time=(world_time_of(i) if world_time_of else i * 3000 // 2400 * 2400 + NIGHT_TICK), diet=diet, group=group, **kw)
             for i in range(n)]
 
 
-def test_R1_fires_when_a_meat_group_attacker_declares_no_meat_diet_and_passes_on_meat() -> None:
-    bad = rules(spaced(10, diet=["plant"], group="meat"))["R1"]   # the group says meat, the declared diet does not
-    assert (bad["result"], bad["attacker_ids"]) == ("FAIL", [1])
-    assert rules(spaced(10))["R1"]["result"] == "PASS"
-    assert rules(spaced(10, diet=["meat", "plant"], group="meat"))["R1"]["result"] == "FAIL"   # group and diet disagree: a metric-grouping finding
+def test_R1_is_motive_consistency_it_fires_on_an_unclassed_engagement_and_on_a_hunt_that_cannot_eat_and_passes_otherwise() -> None:     # CHANGED (M2): R1 was "labelling"; that check is now cell validity (label_defects)
+    unclassed = rules(spaced(10, motive_inputs=motive_inputs(relation="NONE")))["R1"]
+    assert (unclassed["result"], unclassed["attacker_ids"], len(unclassed["unclassed"])) == ("FAIL", [1], 10) and unclassed["unclassed_share"] == 1.0
+    cannot_eat = rules(spaced(10, motive_inputs=motive_inputs(relation="PREDATION", can_eat=False)))["R1"]
+    assert (cannot_eat["result"], len(cannot_eat["non_edible_hunt"])) == ("FAIL", 10)
+    assert rules(spaced(10))["R1"]["result"] == "PASS"                                                                       # HUNT that can eat
+    for ok in (motive_inputs(defended=True, can_eat=False), motive_inputs(relation="FACTION_HOSTILE", can_eat=False), motive_inputs(relation="NONE", objective_target=100)):
+        assert rules(spaced(1, victims=False, motive_inputs=ok))["R1"]["result"] == "PASS"      # DEFEND, HOSTILE and OBJECTIVE need no diet
+    assert rules(spaced(10, motive_inputs=None))["R1"]["result"] == "FAIL"                       # no inputs recorded: UNCLASSED (inputs_missing)
 
 
 def test_R2_fires_above_half_of_the_engagements_and_passes_at_exactly_half() -> None:
@@ -132,10 +145,10 @@ def test_R5_fires_below_90_percent_inside_the_period_passes_above_and_reports_pe
 
 
 def test_below_ten_engagements_the_share_rules_are_not_evaluated_and_the_other_rules_still_decide() -> None:
-    out = rules(spaced(5, diet=["plant"], group="meat"))
+    out = rules(spaced(5, motive_inputs=motive_inputs(relation="NONE")))
     assert (out["R2"]["applies"], out["R2"]["result"], out["R2"]["if_applied"]) == (False, "NOT_EVALUATED (n<10)", "FAIL")      # one attacker, 100% of 5 engagements
     assert (out["R5"]["applies"], out["R5"]["result"]) == (False, "NOT_EVALUATED (n<10)")
-    assert (out["R1"]["applies"], out["R1"]["result"]) == (True, "FAIL")        # held by construction, still checked and reported at any count
+    assert (out["R1"]["applies"], out["R1"]["result"]) == (True, "FAIL")        # R1 is judged in every seed at any count
     pair = [row(i * 3000, victim=100, world_time=2000 + (i * 3000) // 2400 * 2400) for i in range(5)]   # 5 engagements: R4 must fail even though n < 10
     assert (rules(pair)["R4"]["applies"], rules(pair)["R4"]["result"]) == (True, "FAIL")
     close = [row(i * 200, victim=100 + i, world_time=2000 + i * 200) for i in range(4)]                     # 4 engagements inside 2400 ticks: R3 must fail at n < 10
@@ -366,26 +379,24 @@ def other_group_rows() -> List[Dict[str, Any]]:
     return [row(60_000 + i * 200, attacker=88, victim=89, diet=["meat", "plant", "prepared"], world_time=62_000 + i * 200) for i in range(10)]
 
 
-def test_an_untied_o3_group_cannot_change_the_meat_verdict_and_is_reported_in_full_as_context_only() -> None:
+def test_other_groups_are_context_in_the_motive_tables_and_cannot_change_the_meat_verdict() -> None:     # REPLACES the untied-O3-group control (RETIRED: an untied group is never O3' any more; it is context in the motive tables)
+    other = [row(60_000 + i * 200, attacker=88, victim=89, diet=["meat", "plant", "prepared"], o3=False, world_time=62_000 + i * 200) for i in range(10)]
     alone = verdict_of(clean(), clean())
-    mixed = verdict_of(clean() + other_group_rows(), clean())
-    assert alone["verdict"] == mixed["verdict"] == "CLEARED" and alone["verdict_detail"]["misses"] == mixed["verdict_detail"]["misses"] == []
-    assert mixed["groups"]["meat"]["rules"]["R2"]["w"]["new"]["s42"] == alone["groups"]["meat"]["rules"]["R2"]["w"]["new"]["s42"]
-    context = mixed["groups"]["meat+plant+prepared"]["cells"]["new/w/s42"]
-    assert mixed["groups"]["meat+plant+prepared"]["tied"] is False and context["verdict"] is None and context["label"] == "context, no verdict" and context["engagements_count"] > 0
-    assert context["rules_as_context"]["R4"]["result"] in ("FAIL", "PASS") and context["per_attacker"] and context["per_pair"] and "verdict_detail" not in mixed["groups"]["meat+plant+prepared"]
-    assert mixed["tied_groups"] == ["meat"] and "meat+plant+prepared" not in alone["groups"]
+    mixed = verdict_of(clean() + other, clean())
+    assert alone["verdict"] == mixed["verdict"] == "CLEARED" and mixed["groups"]["meat"]["rules"]["R2"]["w"]["new"]["s42"] == alone["groups"]["meat"]["rules"]["R2"]["w"]["new"]["s42"]
+    cell = mixed["motive"]["cells"]["new/w/s42"]
+    assert set(cell) == {"meat", "meat+plant+prepared"} and cell["meat+plant+prepared"]["motives"]["HUNT"]["engagements"] >= 1 and mixed["tied_groups"] == ["meat"]
+    assert mixed["motive"]["by_arm"]["new"]["meat+plant+prepared"]["HUNT"]["hits"] == 10 and "meat+plant+prepared" not in mixed["groups"]
 
 
-def test_a_group_added_to_tied_groups_gets_its_own_verdict_and_its_r1_reads_the_exact_group(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_a_group_added_to_tied_groups_gets_its_own_verdict_and_a_stray_group_is_a_labelling_defect(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(summary, "TIED_GROUPS", ("meat", "meat+plant+prepared"))
     out = verdict_of(clean() + other_group_rows(), clean())
     other = out["groups"]["meat+plant+prepared"]
     assert other["tied"] is True and other["verdict_detail"]["headline"].startswith("BUG CANDIDATE") and out["verdict"].startswith("BUG CANDIDATE") and out["verdict_detail"]["by_group"]["meat"] == "CLEARED"
     assert {m["group"] for m in out["verdict_detail"]["misses"]} == {"meat+plant+prepared"} and other["rules"]["R1"]["w"]["new"]["s42"]["result"] == "PASS"
     stray = [row(i * 3000, attacker=5, victim=100 + i, diet=["meat", "plant"], group="meat+plant", world_time=2000) for i in range(10)]
-    r1 = rules_in_group(stray, "meat")
-    assert r1["R1"]["result"] == "FAIL" and r1["R1"]["attacker_ids"] == [5]      # a counted attacker that is not in that exact group fails R1
+    assert summary.label_defects(stray) != [] and summary.label_defects(clean()) == []      # CHANGED (M2): a counted attacker outside the tied group is a LABELLING defect (cell validity), not an R1 miss
 
 
 def rules_in_group(rows: List[Dict[str, Any]], group: str) -> Dict[str, Dict[str, Any]]:
@@ -941,3 +952,196 @@ def test_write_record_names_the_twin_equality_and_every_return_code_of_the_plan(
         (cells / f"{name}.json").write_text(json.dumps({"final_hash": hash_}), encoding="utf-8")
     record = run.write_record(tmp_path, "COMPLETE", "G", 300, ["w"], [42], "py", "F", "F", kind="smoke")
     assert record["twin_equal"] == {"new/w/s42": True} and list(record["returncodes"]) == ["new__w__s42__plain", "new__w__s42__spy"] and (tmp_path / "runner.json").exists()
+
+
+# --------------------------------------------------------------------------------------------- M1/M2: the attack MOTIVE (rpg-designer's final draft, u24 sha256 dbba986f, transit 6daa51849)
+import copy  # noqa: E402
+import enum  # noqa: E402
+
+
+def classed(**kw: Any) -> Dict[str, Any]:
+    return summary.engagement_motive(row(100, motive_inputs=motive_inputs(**kw)))
+
+
+def test_each_motive_class_fires_on_a_planted_row_and_unclassed_reports_its_inputs() -> None:     # NEW (M2)
+    assert classed(defended=True)["motive"] == "DEFEND"
+    assert classed(relation="NONE", objective_target=100)["motive"] == "OBJECTIVE"
+    assert classed(relation="PREDATION")["motive"] == "HUNT"
+    assert classed(relation="FACTION_HOSTILE")["motive"] == "HOSTILE"
+    unclassed = classed(relation="WARY")
+    assert unclassed["motive"] == "UNCLASSED" and unclassed["typed_inputs"] == {"relation_attacker_to_victim": "WARY", "attacked_me_recently_victim_on_attacker": False, "objective_target_is_victim": False}
+    assert summary.engagement_motive(row(100, motive_inputs=None))["motive"] == "UNCLASSED" and summary.engagement_motive(row(100, motive_inputs=None))["info"]["inputs_missing"] is True
+
+
+def test_the_motive_order_is_defend_then_objective_then_hunt_then_hostile() -> None:     # NEW (M2)
+    assert classed(defended=True, objective_target=100, relation="PREDATION")["motive"] == "DEFEND"
+    assert classed(objective_target=100, relation="PREDATION")["motive"] == "OBJECTIVE"
+    assert classed(objective_target=999, relation="PREDATION")["motive"] == "HUNT"            # an objective on someone else is not this victim's
+    assert classed(relation="FACTION_HOSTILE", objective_target=None)["motive"] == "HOSTILE"
+
+
+def test_a_prey_that_struck_first_gives_defend_and_one_that_only_struck_back_later_stays_hunt() -> None:     # NEW (M2)
+    first = [row(100, motive_inputs=motive_inputs(defended=True)), row(105, motive_inputs=motive_inputs(defended=True))]
+    later = [row(100, motive_inputs=motive_inputs(defended=False)), row(105, motive_inputs=motive_inputs(defended=True))]     # the victim only hits back on the second blow
+    assert [e["motive"] for e in engagements_of(first)] == ["DEFEND"] and [e["motive"] for e in engagements_of(later)] == ["HUNT"]
+
+
+def test_information_fields_never_change_the_class() -> None:     # NEW (M2): reason, objective kind, project kind, mode, the other direction, can_eat and the relation form are info only
+    for kwargs in ({"defended": True}, {"relation": "NONE", "objective_target": 100}, {"relation": "PREDATION"}, {"relation": "FACTION_HOSTILE"}, {"relation": "NONE"}):
+        base = classed(**kwargs)["motive"]
+        noisy = motive_inputs(**kwargs, task_reason="HOLD_BETWEEN_BLOWS", task_action="HOLD", attacker_mode_before="REGROUP", relation_victim_to_attacker="PREDATION", relation_form="plain", relation_source_default=True)
+        noisy["attacker_objective"] = {**noisy["attacker_objective"], "kind": "defeat_enemy", "project_kind": "resolve_blocker", "target": "x"}
+        assert summary.engagement_motive(row(100, motive_inputs={**noisy, "attacker_can_eat_victim": False}))["motive"] == base
+
+
+@pytest.mark.parametrize("make", [lambda: enum.Enum("Relation", {"PREDATION": "PREDATION"}, type=str).PREDATION, lambda: enum.Enum("Plain", {"PREDATION": "PREDATION"}).PREDATION], ids=["str-enum", "plain-enum"])
+def test_the_relation_enum_serialises_by_value(make: Any) -> None:     # NEW (M1)
+    member = make()
+    assert spy_module.jsonable(member) == "PREDATION" and json.dumps({"r": spy_module.jsonable(member)}) == '{"r": "PREDATION"}'
+    assert spy_module.jsonable({"k": (member, None)}) == {"k": ["PREDATION", None]}
+
+
+def relation_new(entity: Any, other: Any, source: Any = None, *, night: bool, tick: Optional[int]) -> str:
+    relation_new.calls.append((entity.id, other.id, source, night, tick))
+    return "PREDATION" if night else "NONE"
+
+
+def relation_base(entity: Any, other: Any, source: Any = None) -> str:
+    relation_base.calls.append((entity.id, other.id, source))
+    return "FACTION_HOSTILE"
+
+
+relation_new.calls = []   # type: ignore[attr-defined]
+relation_base.calls = []  # type: ignore[attr-defined]
+
+
+def motive_reads(relation: Any, source_identity: Any = lambda e: (f"f{e.id}", "src")) -> spy_module.MotiveReads:
+    return spy_module.MotiveReads(relation, lambda hostile, subject, tick: hostile.id == 2 and tick == 10, lambda eater, other: True, is_night=lambda world_time: world_time >= 1800, source_identity=source_identity)
+
+
+def with_ids(bodies: Dict[int, Any]) -> Dict[int, Any]:
+    for entity_id, entity in bodies.items():
+        entity.id = entity_id
+    return bodies
+
+
+def two_bodies_prior(tick: int, world_time: int) -> Any:
+    return SimpleNamespace(tick=tick, world_time=world_time, entities=with_ids({1: body("wolf", "meat", 0, ["meat"]), 2: body("human", "meat+plant+prepared", 1, ["meat"])}))
+
+
+def test_both_relation_call_forms_are_chosen_by_signature_and_each_arm_reads_its_own_function() -> None:     # NEW (M1)
+    relation_new.calls.clear()
+    relation_base.calls.clear()
+    new, base = motive_reads(relation_new), motive_reads(relation_base)
+    assert (new.form, base.form) == ("night_tick", "plain") and "night=is_night(world_time), tick=tick" in new.call_form and "night" not in base.call_form
+    got_new = new.inputs(two_bodies_prior(10, 1900), 1, 2)
+    got_base = base.inputs(two_bodies_prior(10, 1900), 1, 2)
+    assert relation_new.calls == [(1, 2, ("f1", "src"), True, 10), (2, 1, ("f2", "src"), True, 10)]       # night = is_night(prior.world_time), the prior tick, the entity's own source identity
+    assert relation_base.calls == [(1, 2, ("f1", "src")), (2, 1, ("f2", "src"))]                              # BASE: its plain form, no night, no tick
+    assert (got_new["relation_form"], got_base["relation_form"]) == ("night_tick", "plain") and got_new["relation_attacker_to_victim"] == "PREDATION" and got_base["relation_attacker_to_victim"] == "FACTION_HOSTILE"
+    assert got_new["relation_source"] == {"attacker_side": ["f1", "src"], "victim_side": ["f2", "src"]} and got_new["relation_source_default"] is False
+    assert got_new["attacked_me_recently_victim_on_attacker"] is True and got_new["attacked_me_recently_attacker_on_victim"] is False       # both directions, on the prior tick (10)
+
+
+def test_a_tree_that_cannot_give_a_source_is_called_with_the_default_and_says_so() -> None:     # NEW (M1)
+    relation_new.calls.clear()
+    got = motive_reads(relation_new, source_identity=None).inputs(two_bodies_prior(10, 0), 1, 2)
+    assert relation_new.calls[0][2] is None and got["relation_source_default"] is True and got["relation_source"] == {"attacker_side": None, "victim_side": None}
+
+
+def test_a_type_error_inside_relation_propagates_and_an_unsupported_signature_is_refused() -> None:     # NEW (designer condition: form by signature, never by try/except TypeError)
+    def exploding(entity: Any, other: Any, source: Any = None, *, night: bool, tick: Optional[int]) -> str:
+        raise TypeError("a real defect inside relation()")
+
+    reads_ = motive_reads(exploding)
+    with pytest.raises(TypeError, match="a real defect"):
+        reads_.inputs(two_bodies_prior(10, 0), 1, 2)
+    spy = fresh_spy()
+    spy.reads.motive = reads_
+    state = world_state(5, with_ids(two_bodies()))
+    with pytest.raises(TypeError, match="a real defect"):                      # through the spy: stored AND re-raised, so the cell is void even if a caller swallowed it
+        spy.observe(state, attack_update(1, 2), state)
+    assert len(spy.motive_read_errors) == 1
+    spy.finish(state)
+    assert spy.report()["wiring"] == "WIRING_MISMATCH" and spy.report()["motive_read_error_count"] == 1
+    with pytest.raises(ValueError, match="unsupported relation"):
+        spy_module.MotiveReads(lambda entity, other, source=None, *, night: None, lambda *a: None, lambda *a: None, is_night=lambda wt: False)
+
+
+def test_the_motive_inputs_are_read_on_the_prior_state_and_every_attack_row_carries_them_hit_or_miss() -> None:     # NEW (M1)
+    relation_new.calls.clear()
+    base = reads()
+    spy = fresh_spy()
+    spy.reads = spy_module.TreeReads(base.kind_group, base.is_person, base.species_of, base.is_wild_meat_eater, base.declared_diet, base.is_asleep, base.is_lodged, base.split_key, base.make_key, motive=motive_reads(relation_new))
+    prior, after = two_bodies_prior(10, 1900), world_state(11, with_ids(two_bodies()))
+    prior.entities[3] = with_ids({3: body("goat", "plant", 0, ["plant"])})[3]
+    spy.observe(prior, attack_update(1, 2), after)                      # a hit
+    spy.observe(prior, attack_update(1, 3, hp_delta=0), after)           # a miss: also a row with inputs
+    spy.finish(after)
+    assert [(r["victim_id"], r["hit"], r["motive_inputs"]["prior_tick"], r["motive_inputs"]["relation_attacker_to_victim"]) for r in spy.rows] == [(2, True, 10, "PREDATION"), (3, False, 10, "PREDATION")]
+    assert spy.report()["motive_call_form"].startswith("relation(entity, other, source") and spy.report()["motive_relation_form"] == "night_tick"
+
+
+def test_a_relation_call_leaves_the_state_the_entities_and_the_perception_gate_caches_unchanged() -> None:     # NEW (non-perturbation, designer: compare before and after)
+    from src.core.state import EntityState
+    from src.engine.behavior_consumers import get_perception_gate
+    from src.content_semantics.faction import get_faction_semantics_service
+
+    def snapshot(obj: Any) -> Dict[str, Any]:
+        return {k: (id(v), len(v) if hasattr(v, "__len__") else None, repr(v)[:200]) for k, v in sorted(vars(obj).items())}
+
+    wolf, human = EntityState(id=1, kind="wolf", init_position=(5.0, 5.0)), EntityState(id=2, kind="human", init_position=(6.0, 5.0))
+    prior = SimpleNamespace(tick=10, world_time=10, entities={1: wolf, 2: human})
+    reads_ = spy_module.MotiveReads.from_tree()
+    gate, factions = get_perception_gate(), get_faction_semantics_service()
+    warm = reads_.inputs(prior, 1, 2)          # the first call initialises the faction service lazily, exactly as the engine's own first call does; it is not a state change, so the comparison starts after it
+    before = (json.dumps([wolf.to_canonical_dict(), human.to_canonical_dict()], sort_keys=True, default=str), snapshot(gate), snapshot(factions), copy.deepcopy(prior.entities[1].combat))
+    first = reads_.inputs(prior, 1, 2)
+    second = reads_.inputs(prior, 1, 2)
+    after = (json.dumps([wolf.to_canonical_dict(), human.to_canonical_dict()], sort_keys=True, default=str), snapshot(gate), snapshot(factions), prior.entities[1].combat)
+    assert before == after and warm == first == second and set(prior.entities) == {1, 2} and prior.tick == 10
+    assert first["relation_form"] == "night_tick" and first["relation_attacker_to_victim"] in ("PREDATION", "NONE", "WARY", "THREATENING", "FACTION_HOSTILE")
+
+
+def test_the_recount_rule_flags_a_labelling_defect_and_makes_the_cell_invalid() -> None:     # NEW (M2: the old R1 labelling check, moved to cell validity)
+    assert summary.label_defects([row(1)]) == [] and summary.label_defects([row(1, o3=False, diet=["plant"])]) == []
+    for bad in (row(1, o3=False), row(1, diet=["meat", "plant"], group="meat+plant"), row(1, group="meat", diet=["plant"])):
+        assert len(summary.label_defects([bad])) == 1
+    good = cell("h", [row(1)])
+    broken = cell("h", [row(1, o3=False)])
+    assert summary.cell_validity(good["plain"], good["spy"])["valid"] is True
+    verdict = summary.cell_validity(broken["plain"], broken["spy"])
+    assert verdict["valid"] is False and any("labelling defect" in p for p in verdict["problems"])
+
+
+def test_the_summary_reports_motive_per_group_and_arm_splits_every_rule_by_motive_and_labels_the_forms() -> None:     # NEW (M2)
+    defend = [row(i * 3000, attacker=3, victim=200 + i, motive_inputs=motive_inputs(defended=True)) for i in range(5)]
+    hunt = clean()
+    other = [row(60_000 + i * 10, attacker=88, victim=89, diet=["plant"], o3=False, motive_inputs=motive_inputs(relation="NONE"), world_time=62_000) for i in range(2)]
+    new = cell("a", defend + [{**r, "tick": r["tick"] + 500_000, "world_time": r["world_time"] + 500_000} for r in hunt] + other, motive_relation_form="night_tick", motive_call_form="relation(entity, other, source, night=is_night(world_time), tick=tick)")
+    base = cell("b", clean(), motive_relation_form="plain", motive_call_form="relation(entity, other, source)")
+    out = summary.summarize({("new", "w", 42): new, ("base", "w", 42): base}, NIGHT)
+    table = out["motive"]["by_arm"]
+    assert table["new"]["meat"]["DEFEND"]["engagements"] == 5 and table["new"]["meat"]["HUNT"]["engagements"] == 10 and table["base"]["meat"]["HUNT"]["engagements"] == 10
+    assert table["new"]["plant"]["UNCLASSED"]["engagements"] == 1 and out["motive"]["cells"]["new/w/s42"]["plant"]["unclassed_share"] == 1.0
+    assert out["motive"]["forms_by_arm"] == {"new": ["night_tick"], "base": ["plain"]} and out["motive"]["label"] == "motive read by each arm's own engine"
+    assert out["motive"]["cell_meta"]["new/w/s42"]["relation_form"] == "night_tick" and out["motive"]["cell_meta"]["new/w/s42"]["source_default_share"] == 0.0
+    by_motive = out["groups"]["meat"]["rules_by_motive"]
+    assert set(by_motive) == {"DEFEND", "HUNT"} and set(by_motive["DEFEND"]) >= {"R1", "R2", "R3", "R4", "R5", "R7"} and "new_vs_base" in by_motive["HUNT"]["R6"]["w"]
+    stats = summary.motive_stats(engagements_of(defend + hunt))
+    assert stats["HUNT"]["eaten_share"] is None and stats["HUNT"]["edible_kill_share"] is None and stats["DEFEND"]["hits"] == 5 and set(stats) == set(summary.MOTIVES)
+
+
+def test_a_motive_read_error_alone_voids_an_otherwise_consistent_cell() -> None:     # NEW (M1)
+    def report(error: bool) -> Dict[str, Any]:
+        spy = fresh_spy()                                   # one spy at a time: they share the stand-in ledger
+        state = world_state(5, two_bodies())
+        spy.observe(state, attack_update(1, 2), state)
+        if error:
+            spy.motive_read_errors.append("tick 5: a read failed")
+        spy.finish(state)
+        return spy.report()
+
+    clean_doc, errored = report(False), report(True)
+    assert (clean_doc["wiring"], clean_doc["cell_valid"]) == ("OK", True)
+    assert (errored["wiring"], errored["cell_valid"], errored["per_key_counts_equal"], errored["per_group_counts_equal"]) == ("WIRING_MISMATCH", False, True, True)

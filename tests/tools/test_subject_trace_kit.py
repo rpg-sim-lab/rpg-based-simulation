@@ -82,6 +82,17 @@ def test_a_legal_result_is_recorded_without_a_failure_text() -> None:
     assert spy.legality_rows[0]["legal"] is True and spy.legality_rows[0]["failure_text"] is None
 
 
+# --------------------------------------------------------------------------------------------- the stage-2 motive reads per tick (final motive draft, section 4)
+def test_a_subject_row_carries_the_motive_reads_for_each_counterpart_on_the_prior_state() -> None:     # NEW (M1, stage 2)
+    class Reads:
+        def inputs(self, prior: Any, attacker_id: int, victim_id: int) -> Dict[str, Any]:
+            return {"prior_tick": prior.tick, "pair": [attacker_id, victim_id]}
+
+    spy = spy_module.SubjectSpy([subject(7, [[0, 100]], counterparts=[8, 9])], motive=Reads())
+    spy.observe(state(5, entity(7), entity(8)), state(6, entity(7), entity(8), entity(9)))      # 9 does not exist in the PRIOR state: no read for it
+    assert spy.rows[0]["motive_reads"] == {"8": {"prior_tick": 5, "pair": [7, 8]}}
+
+
 # --------------------------------------------------------------------------------------------- S1: the legality tick
 def clock_state(tick: int, world_time: int, *entities: Any) -> Any:
     return SimpleNamespace(tick=tick, world_time=world_time, entities={e.id: e for e in entities})

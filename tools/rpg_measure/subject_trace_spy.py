@@ -105,7 +105,8 @@ def in_windows(tick: int, windows: List[List[int]]) -> bool:
 class SubjectSpy:
     """Record-only wrappers; ``install(apply_path, legality)`` patches, ``restore()`` undoes. ``subjects`` is the plan's list for this seed: {id, roles, windows, counterparts}."""
 
-    def __init__(self, subjects: List[Dict[str, Any]]) -> None:
+    def __init__(self, subjects: List[Dict[str, Any]], motive: Any = None) -> None:
+        self.motive = motive   # a ``person_attack_spy.MotiveReads`` (None in unit tests): the stage-1 motive reads, repeated per tick for each subject and counterpart on the PRIOR state
         self.subjects = {int(s["id"]): s for s in subjects}
         self.rows: List[Dict[str, Any]] = []
         self.legality_rows: List[Dict[str, Any]] = []
@@ -168,6 +169,8 @@ class SubjectSpy:
             for other in subject["counterparts"]:
                 row["distance_before"][str(other)] = chebyshev(snap_before.get("position"), snapshot_position(prior, other))
                 row["distance_after"][str(other)] = chebyshev(snap_after.get("position"), snapshot_position(state, other))
+            if self.motive is not None:   # the same reads as stage 1 (relation both ways with the tree's own call form, attacked_me_recently both ways, the objective, the task reason), per counterpart, on the PRIOR state
+                row["motive_reads"] = {str(other): self.motive.inputs(prior, subject_id, other) for other in subject["counterparts"] if subject_id in prior.entities and other in prior.entities}
             row["goal_distance_before"] = chebyshev(snap_before.get("position"), snap_before.get("goal_tile"))
             row["goal_distance_after"] = chebyshev(snap_after.get("position"), snap_after.get("goal_tile"))
             self.rows.append(row)
@@ -257,7 +260,7 @@ def main(argv: List[str]) -> int:
         from src.engine.apply import ApplyPath
         from src.engine.legality import LegalityServiceV2
 
-        spy = SubjectSpy(plan["subjects_by_seed"][str(seed)]).install(ApplyPath, LegalityServiceV2)
+        spy = SubjectSpy(plan["subjects_by_seed"][str(seed)], load_sibling("person_attack_spy").MotiveReads.from_tree()).install(ApplyPath, LegalityServiceV2)
     fatal: Optional[str] = None
     try:
         final_state = run_ticks(kernel, ticks, spy)
