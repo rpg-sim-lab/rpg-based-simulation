@@ -256,6 +256,15 @@ class IdentityPatch(ComponentPatch):
                                           latest_intent_results=intents)
 
 
+
+def _target_and_path(u_nav: Any, stored_nav: Any) -> tuple:
+    """The stored target and path a navigation update leaves: the anchor rule (`anchored_target`: the give-up record's anchor and the update's `target_clear_anchors` drop a same-update set near them and clear a stored target near them, with the
+    path) and otherwise today's precedence (a set wins, else a clear clears, else the stored value stays)."""
+    target, drop_path = anchored_target(u_nav.target_set, bool(u_nav.target_clear or u_nav.clear_target), stored_nav.target, u_nav.giveup_record_add, u_nav.target_clear_anchors)
+    path = None if drop_path else u_nav.path_set if u_nav.path_set is not None else (None if u_nav.clear_path else stored_nav.path)
+    return target, path
+
+
 @dataclass(frozen=True, slots=True)
 class NavigationPatch(ComponentPatch):
     navigation: Optional[Any] = None # NavigationUpdate
@@ -281,12 +290,12 @@ class NavigationPatch(ComponentPatch):
         new_nav = changes.get("navigation", entity.navigation)
         if self.navigation:
             u_nav = self.navigation
-            final_target, drop_path = anchored_target(u_nav.target_set, bool(u_nav.target_clear or u_nav.clear_target), new_nav.target, u_nav.giveup_record_add, u_nav.target_clear_anchors)  # F2 v2.2a A'': an anchor (the give-up's, or the strategic pass's) drops a same-update set near it and clears a stored target near it (the path with it); anywhere else today's precedence
+            final_target, final_path = _target_and_path(u_nav, new_nav)  # F2 v2.2a A'': an anchor (the give-up's, or the strategic pass's) drops a same-update set near it and clears a stored target near it (the path with it); anywhere else today's precedence
             new_nav = replace(
                 new_nav,
                 target=final_target,
                 movement_mode=u_nav.movement_mode_set if u_nav.movement_mode_set is not None else new_nav.movement_mode,
-                path=None if drop_path else u_nav.path_set if u_nav.path_set is not None else (None if u_nav.clear_path else new_nav.path),
+                path=final_path,
                 moved_recently=u_nav.moved_recently_set if u_nav.moved_recently_set is not None else new_nav.moved_recently,
                 # last_failure_reason is the outcome of the LAST step: codes come from any action writer, ONLY a successful movement step clears it with the typed `failure_reason_clear`, and a bare None
                 # (a held step) leaves it as it was. A code set in the same update wins over the clear.
