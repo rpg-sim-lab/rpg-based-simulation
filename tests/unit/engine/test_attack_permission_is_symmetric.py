@@ -1,0 +1,255 @@
+"""CONFLICT-03 (decisions 44 and 47): permission to attack is a fact about the pair and holds both ways. A prey may strike its predator whether or not the predator's task names it
+that tick (a predator between blows carries no target); a pair where neither hunts the other, and no faction rates hostile, is refused both ways. Each case has a failing control: the
+old rule (the target's task had to name the attacker) refuses the same scenario."""
+from __future__ import annotations
+
+import pytest
+
+from src.content.repository import CatalogRepository
+from src.core.builder import V2EntityBuilder
+from src.core.enums import EntityRole, Faction
+from src.engine import behavior_consumers
+from src.engine.hostility import ATTACK_RELATIONS, Relation, attack_allowed, is_wild_creature, relation
+from src.engine.legality import LegalityServiceV2
+
+FACTION_OF = {"wolf": "wild_beast_pack", "orc": "orc_clan", "troll": "orc_clan", "small_plant_eater": "wild_fauna"}
+SEEDS = (11, 42, 97)
+# (predator kind, prey kind), found by properties (a hungry body whose diet feeds on the other and whose power band outranks the other's believed danger), not by role:
+# an orc hunts a wolf and a troll hunts a plant-eater. The reverse appraisals are WARY, never PREDATION, so the prey's strike is legal only through the pair rule.
+PAIRS = (("orc", "wolf"), ("troll", "small_plant_eater"))
+
+
+@pytest.fixture(scope="module", autouse=True)
+def _content():
+    repo = CatalogRepository("data/content")
+    repo.load_all()
+    behavior_consumers.configure_behavior_consumers(repo)
+    yield
+    behavior_consumers.reset_behavior_consumers()
+
+
+def _body(eid, kind, pos, hunger=0.0):
+    return (V2EntityBuilder(eid).kind(kind).location(*pos)
+            .identity(role=EntityRole.MONSTER, faction=Faction.MONSTER_HORDE, properties={"species_id": kind, "faction_id": FACTION_OF[kind]})
+            .combat(hp=100, max_hp=100, attack_range=1, readiness=100.0, alive=True).lifecycle(active=True).biological(hunger=hunger).build())
+
+
+def _pair(predator_kind, prey_kind, seed, predator_hunger=90.0):
+    """Predator and prey one tile apart, ids and tile from the seed; the predator carries no target (between blows)."""
+    base = 100 + seed
+    predator = _body(base, predator_kind, (10.0 + seed % 7, 10.0), predator_hunger)
+    prey = _body(base + 1, prey_kind, (11.0 + seed % 7, 10.0))
+    assert predator.task.payload.get("target_id") is None
+    return predator, prey
+
+
+def _old_rule(attacker, target, faction_verdict, *, night, tick):
+    """The rule before this change: the attacker hunts the target, or the TARGET's task names the attacker and it holds an attack relation to it."""
+    if is_wild_creature(attacker) or is_wild_creature(target):
+        faction_verdict = False
+    if faction_verdict or relation(attacker, target, night=night, tick=tick) is Relation.PREDATION:
+        return True
+    return target.task.payload.get("target_id") == attacker.id and relation(target, attacker, night=night, tick=tick) in ATTACK_RELATIONS
+
+
+@pytest.mark.parametrize("seed", SEEDS)
+@pytest.mark.parametrize("predator_kind,prey_kind", PAIRS)
+def test_b0_a_prey_may_strike_its_predator_between_the_predators_blows(predator_kind, prey_kind, seed):
+    predator, prey = _pair(predator_kind, prey_kind, seed)
+    assert relation(predator, prey, night=False, tick=None) is Relation.PREDATION  # the predator hunts the prey: the setup is the stage-2 trace's shape
+    assert attack_allowed(predator, prey, False, night=False, tick=None)
+    assert attack_allowed(prey, predator, False, night=False, tick=None)  # B0: the prey's strike is legal with the predator's payload None
+
+
+@pytest.mark.parametrize("seed", SEEDS)
+@pytest.mark.parametrize("predator_kind,prey_kind", PAIRS)
+def test_control_the_old_rule_refused_the_same_strike(predator_kind, prey_kind, seed):
+    predator, prey = _pair(predator_kind, prey_kind, seed)
+    assert not _old_rule(prey, predator, False, night=False, tick=None)
+    assert _old_rule(predator, prey, False, night=False, tick=None)  # and it allowed the hunter's own strike: the asymmetry the ticket names
+
+
+@pytest.mark.parametrize("seed", SEEDS)
+@pytest.mark.parametrize("predator_kind,prey_kind", PAIRS)
+def test_a_pair_where_neither_hunts_the_other_is_refused_both_ways(predator_kind, prey_kind, seed):
+    predator, prey = _pair(predator_kind, prey_kind, seed, predator_hunger=0.0)  # a fed body does not hunt
+    assert relation(predator, prey, night=False, tick=None) is not Relation.PREDATION
+    assert not attack_allowed(predator, prey, False, night=False, tick=None)
+    assert not attack_allowed(prey, predator, False, night=False, tick=None)
+    hungry, _ = _pair(predator_kind, prey_kind, seed)
+    assert attack_allowed(hungry, prey, False, night=False, tick=None)  # control: hunger alone is what flips the same pair to allowed
+
+
+@pytest.mark.parametrize("seed", SEEDS)
+@pytest.mark.parametrize("hunger", [0.0, 90.0])
+@pytest.mark.parametrize("predator_kind,prey_kind", PAIRS)
+def test_permission_is_symmetric_for_every_sampled_pair(predator_kind, prey_kind, hunger, seed):
+    a, b = _pair(predator_kind, prey_kind, seed, predator_hunger=hunger)
+    for verdict in (False,):
+        assert attack_allowed(a, b, verdict, night=False, tick=None) == attack_allowed(b, a, verdict, night=False, tick=None)
+
+
+def test_control_the_old_rule_was_not_symmetric_for_the_hungry_pair():
+    a, b = _pair("orc", "wolf", 42)
+    assert _old_rule(a, b, False, night=False, tick=None) != _old_rule(b, a, False, night=False, tick=None)
+
+
+@pytest.mark.parametrize("seed", SEEDS)
+def test_the_legality_entry_point_agrees_both_ways(seed):
+    """The real verification path (LegalityServiceV2.verify_attack_legality), not just attack_allowed: the prey's strike is not refused as FRIENDLY_FIRE_ILLEGAL."""
+    from src.core.enums import ReasonCode
+    from src.core.state import AuthoritativeState
+
+    predator, prey = _pair("orc", "wolf", seed)
+    state = AuthoritativeState(tick=5, seed=seed, entities={predator.id: predator, prey.id: prey})
+    assert LegalityServiceV2.verify_attack_legality(predator, prey, state, night=False)[1] is not ReasonCode.FRIENDLY_FIRE_ILLEGAL
+    assert LegalityServiceV2.verify_attack_legality(prey, predator, state, night=False)[1] is not ReasonCode.FRIENDLY_FIRE_ILLEGAL
+
+
+# ---- the real legality path, both ways: a recent hit permits, a task never does
+def _legal(attacker, target, seed):
+    from src.core.enums import ReasonCode
+    from src.core.state import AuthoritativeState
+
+    state = AuthoritativeState(tick=5, seed=seed, entities={attacker.id: attacker, target.id: target})
+    return LegalityServiceV2.verify_attack_legality(attacker, target, state, night=False)[1] is not ReasonCode.FRIENDLY_FIRE_ILLEGAL
+
+
+def _targeting(entity, other):
+    from dataclasses import replace
+
+    return replace(entity, task=replace(entity.task, payload={**entity.task.payload, "target_id": other.id}))
+
+
+@pytest.mark.parametrize("seed", SEEDS)
+@pytest.mark.parametrize("predator_kind,prey_kind", PAIRS)
+def test_a_fed_predator_that_targets_its_prey_with_no_hit_ever_is_refused_both_ways(predator_kind, prey_kind, seed):
+    """A task naming a target is not permission: an attempted attack always names its own target, so reading it would let every attempt permit itself."""
+    predator, prey = _pair(predator_kind, prey_kind, seed, predator_hunger=0.0)
+    predator = _targeting(predator, prey)
+    assert not _legal(predator, prey, seed) and not _legal(prey, predator, seed)
+
+
+@pytest.mark.parametrize("seed", SEEDS)
+@pytest.mark.parametrize("predator_kind,prey_kind", PAIRS)
+def test_a_fed_predator_that_targets_its_prey_with_a_hit_inside_the_window_lets_both_strike(predator_kind, prey_kind, seed):
+    predator, prey = _pair(predator_kind, prey_kind, seed, predator_hunger=0.0)
+    predator = _targeting(predator, prey)
+    prey = _hit_at(prey, predator, 100, ago=5)
+    assert _legal_at(predator, prey, seed) and _legal_at(prey, predator, seed)
+
+
+def _hit_at(victim, attacker, now, ago):
+    from dataclasses import replace
+
+    return replace(victim, combat=replace(victim.combat, last_hit_tick=now - ago, last_hit_attackers=(attacker.id,)))
+
+
+@pytest.mark.parametrize("seed", SEEDS)
+@pytest.mark.parametrize("payload_kind", ["ATTACK", "SKILL", "TRADE", "RECRUIT", "WATCH_HOSTILE"])
+@pytest.mark.parametrize("predator_kind,prey_kind", PAIRS)
+def test_an_attackers_own_task_naming_the_target_never_permits_the_attack(predator_kind, prey_kind, payload_kind, seed):
+    """The decisive case: a non-hunting, non-hostile pair where the ATTACKER carries its own task naming the target (an attack, or any non-combat payload with a target_id)
+    is still refused on the real verify_attack_legality path, both ways."""
+    from dataclasses import replace
+
+    fed, prey = _pair(predator_kind, prey_kind, seed, predator_hunger=0.0)
+    fed = replace(fed, task=replace(fed.task, payload={"action": payload_kind, "target_id": prey.id}))
+    assert not _legal_at(fed, prey, seed)  # the attacker's own task names the target: refused
+    prey = replace(prey, task=replace(prey.task, payload={"action": payload_kind, "target_id": fed.id}))
+    assert not _legal_at(prey, fed, seed)  # and the same from the other side
+
+
+@pytest.mark.parametrize("seed", SEEDS)
+@pytest.mark.parametrize("predator_kind,prey_kind", PAIRS)
+def test_the_same_fed_pair_after_the_predator_drops_the_target_is_refused_both_ways(predator_kind, prey_kind, seed):
+    predator, prey = _pair(predator_kind, prey_kind, seed, predator_hunger=0.0)
+    assert not _legal(predator, prey, seed) and not _legal(prey, predator, seed)
+
+
+@pytest.mark.parametrize("seed", SEEDS)
+@pytest.mark.parametrize("predator_kind,prey_kind", PAIRS)
+def test_a_hungry_predator_between_blows_may_be_struck_by_its_prey_on_the_real_legality_path(predator_kind, prey_kind, seed):
+    predator, prey = _pair(predator_kind, prey_kind, seed)
+    assert _legal(prey, predator, seed) and _legal(predator, prey, seed)
+
+
+@pytest.mark.parametrize("predator_kind,prey_kind", PAIRS)
+def test_b5_no_forced_reflex_the_prey_does_not_choose_its_predator_as_a_target(predator_kind, prey_kind):
+    """Permission is not choice: next to an idle, hunting predator the prey's own appraisal is WARY or THREATENING, never an attack relation, so its decision layer
+    emits no attack. Holds before and after the permission fix."""
+    from src.engine.hostility import perceived_hostile
+
+    predator, prey = _pair(predator_kind, prey_kind, 42)
+    assert not perceived_hostile(prey, predator, night=False, tick=None)
+
+
+# ---- a recent hit keeps the pair engaged while the attacker repositions between blows (tactical_threat.attacked_me_recently, both directions)
+NOW = 100
+
+
+def _hit(victim, attacker, ago):
+    from dataclasses import replace
+
+    return replace(victim, combat=replace(victim.combat, last_hit_tick=NOW - ago, last_hit_attackers=(attacker.id,)))
+
+
+def _legal_at(attacker, target, seed):
+    from src.core.enums import ReasonCode
+    from src.core.state import AuthoritativeState
+
+    state = AuthoritativeState(tick=NOW, seed=seed, entities={attacker.id: attacker, target.id: target})
+    return LegalityServiceV2.verify_attack_legality(attacker, target, state, night=False)[1] is not ReasonCode.FRIENDLY_FIRE_ILLEGAL
+
+
+def _repositioning_fed_pair(predator_kind, prey_kind, seed):
+    from dataclasses import replace
+
+    predator, prey = _pair(predator_kind, prey_kind, seed, predator_hunger=0.0)
+    predator = replace(predator, task=replace(predator.task, payload={"target_position": (0.0, 0.0), "reason": "REPOSITION"}))  # no target_id
+    return predator, prey
+
+
+@pytest.mark.parametrize("seed", SEEDS)
+@pytest.mark.parametrize("predator_kind,prey_kind", PAIRS)
+def test_a_fed_attacker_that_hit_5_ticks_ago_and_is_repositioning_is_still_engaged_both_ways(predator_kind, prey_kind, seed):
+    predator, prey = _repositioning_fed_pair(predator_kind, prey_kind, seed)
+    prey = _hit(prey, predator, ago=5)
+    assert _legal_at(predator, prey, seed) and _legal_at(prey, predator, seed)
+
+
+@pytest.mark.parametrize("seed", SEEDS)
+@pytest.mark.parametrize("predator_kind,prey_kind", PAIRS)
+def test_the_same_pair_11_ticks_after_the_last_hit_with_no_target_named_is_refused_both_ways(predator_kind, prey_kind, seed):
+    predator, prey = _repositioning_fed_pair(predator_kind, prey_kind, seed)
+    prey = _hit(prey, predator, ago=11)
+    assert not _legal_at(predator, prey, seed) and not _legal_at(prey, predator, seed)
+
+
+@pytest.mark.parametrize("seed", SEEDS)
+@pytest.mark.parametrize("predator_kind,prey_kind", PAIRS)
+def test_the_reverse_the_prey_hit_its_attacker_5_ticks_ago_keeps_the_pair_engaged_both_ways(predator_kind, prey_kind, seed):
+    predator, prey = _repositioning_fed_pair(predator_kind, prey_kind, seed)
+    predator = _hit(predator, prey, ago=5)
+    assert _legal_at(predator, prey, seed) and _legal_at(prey, predator, seed)
+
+
+@pytest.mark.parametrize("predator_kind,prey_kind", PAIRS)
+def test_control_without_a_recorded_hit_the_repositioning_fed_pair_is_refused(predator_kind, prey_kind):
+    """Failing control for the three above: the engagement comes from the hit record, not from the setup."""
+    predator, prey = _repositioning_fed_pair(predator_kind, prey_kind, 42)
+    assert not _legal_at(predator, prey, 42) and not _legal_at(prey, predator, 42)
+
+
+def test_the_recent_hit_window_is_imported_not_copied():
+    import ast
+    from pathlib import Path
+
+    from src.engine import hostility, tactical_threat
+
+    tree = ast.parse(Path(hostility.__file__).read_text(encoding="utf-8"))
+    assigned = {t.id for n in ast.walk(tree) if isinstance(n, ast.Assign) for t in n.targets if isinstance(t, ast.Name)}
+    assert "ATTACKED_RECENTLY_WINDOW_TICKS" not in assigned, "hostility must not define its own copy of the window"
+    assert not [n for n in ast.walk(tree) if isinstance(n, ast.Constant) and n.value == tactical_threat.ATTACKED_RECENTLY_WINDOW_TICKS and isinstance(n.value, int)
+                and not isinstance(n.value, bool)], "no literal copy of the window value in hostility.py"
+    assert hostility.attacked_me_recently is tactical_threat.attacked_me_recently

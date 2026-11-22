@@ -41,3 +41,13 @@ known:
       - {world: crowded_frontier, seed: 45, entity_id: 30}
       - {world: frontier_living_world, seed: 42, entity_id: 30}
     note: "Three starving bodies die with ways untried once the town heal stops hiding them (#991): FLW/45 human 5 t3472 untried BUY FORAGE HUNT_EAT_RAW INN_MEAL WORK_SHIFT; crowded_frontier/45 goblin 30 t3618 untried FORAGE INN_MEAL SCAVENGE; FLW/42 goblin 30 t2588 untried FORAGE INN_MEAL. Cause unread (the gate documents record no project, objective or wage). Expires on the earlier of the cause ticket's fix landing (then a gate re-run) or 2026-12-15. A fourth such row is not covered."
+  - match: "V3"
+    ticket: TCK-20261122-A-STARVING-PREDATOR-HAS-NO-FALLBACK-WAY-TO-EAT
+    owner: rpg-planner
+    added_on: "2026-11-22"
+    expires_on: "2026-12-15"
+    state: fail
+    cases:
+      - {world: frontier_living_world, seed: 42, entity_id: 47}
+      - {world: frontier_living_world, seed: 45, entity_id: 49}
+    note: "Two starving wolves die with every food step closed once #992 lets the goblin strike back: FLW/42 wolf 47 t3553 untried HUNT_EAT_RAW SCAVENGE; FLW/45 wolf 49 t3969 untried HUNT_EAT_RAW SCAVENGE (rpg-designer, #715 7081250432: exposed, pre-existing, not a #992 regression; root: a starving predator has no fallback food). Expires on the earlier of the cause ticket's fix landing (then a gate re-run) or 2026-12-15. A third such row is not covered."
