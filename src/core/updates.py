@@ -90,6 +90,14 @@ class NavigationUpdate:
     giveup_records_clear: bool = False  # F2: the subject's strategic pass has consumed the held records (written by the strategic pass only; applied before an add of the same update)
     target_clear_anchors: Tuple[Tuple[int, int], ...] = ()  # F2 v2.2a A'': the anchor tiles of suppressions, written by the strategic pass only: with ``target_clear`` when it refused the stored target at an anchor, and alone when it filed or extended a suppression; merged as the sorted, de-duplicated union; a transient update field, never stored or serialised
 
+    def __post_init__(self) -> None:
+        """The anchors are always the sorted, de-duplicated tuple, whoever built the update (so a merge, or a no-op merge, returns the normalised form)."""
+        anchors = self.target_clear_anchors
+        if anchors:
+            norm = tuple(sorted(set(anchors)))
+            if norm != anchors:
+                object.__setattr__(self, "target_clear_anchors", norm)
+
     def is_noop(self) -> bool:
         return (self.target_set is None and not self.target_clear and self.path_set is None and self.step_ready_tick_set is None and 
                 self.moved_recently_set is None and self.movement_mode_set is None and 

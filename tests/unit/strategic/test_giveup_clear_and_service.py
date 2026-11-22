@@ -290,10 +290,8 @@ def test_control_a_pass_that_files_nothing_carries_no_anchor():
 
 
 def test_a_refusal_anchor_a_and_a_filing_anchor_b_in_one_tick_a_same_tick_set_near_b_is_dropped():
-    both = NavigationUpdate(target_clear=True, target_clear_anchors=(P, Q))  # the refusal anchor P and the filing anchor Q, carried together
     assert _applied_target(NavigationUpdate(target_set=(60.0, 61.0), target_clear=True, target_clear_anchors=(P, Q)))[0] is None  # near Q
     assert _applied_target(NavigationUpdate(target_set=(20.0, 21.0), target_clear=True, target_clear_anchors=(P, Q)))[0] is None  # near P
-    assert both.target_clear_anchors == (P, Q)
 
 
 def test_two_filings_b_and_c_a_set_near_c_is_dropped_and_a_set_far_from_all_stands():
@@ -311,10 +309,19 @@ def test_merging_two_updates_with_different_anchors_gives_the_sorted_deduplicate
     assert a.merge(NavigationUpdate(target_set=(1.0, 1.0))).target_clear_anchors == tuple(sorted({P, Q}))  # an update with none leaves them
 
 
-def test_control_a_rule_that_looks_at_only_the_first_anchor_leaves_the_set_near_the_second(monkeypatch):
-    first_only = lambda target_set, explicit, stored, record, anchors: ((target_set, False) if target_set is not None and not (anchors and anchors[0] and abs(int(target_set[0]) - anchors[0][0]) <= 1 and abs(int(target_set[1]) - anchors[0][1]) <= 1) else (None, True))
-    monkeypatch.setattr(patches, "anchored_target", first_only)
-    assert _applied_with_stored(NavigationUpdate(target_set=(60.0, 61.0), target_clear_anchors=(P, Q)), None)[0] == (60.0, 61.0)  # the old single-anchor behaviour: the set near Q stands
+def test_control_a_rule_that_checks_only_the_first_anchor_leaves_the_set_near_the_second(monkeypatch):
+    """A REAL control: production apply with anchored_target replaced by a version that looks at clear_anchors[0] only. The set near the second anchor then stands, so the test above would fail on that build."""
+    real = anchored_target
+    monkeypatch.setattr(patches, "anchored_target", lambda target_set, explicit, stored, record, anchors: real(target_set, explicit, stored, record, tuple(anchors[:1])))
+    assert _applied_with_stored(NavigationUpdate(target_set=(60.0, 61.0), target_clear_anchors=(P, Q)), None)[0] == (60.0, 61.0)  # near Q (the second): stands under the broken rule
+    assert _applied_with_stored(NavigationUpdate(target_set=(20.0, 21.0), target_clear_anchors=(P, Q)), None)[0] is None  # near P (the first): still dropped
+
+
+def test_the_anchors_are_normalised_at_construction_so_a_no_op_merge_returns_the_sorted_pair():
+    a = NavigationUpdate(target_clear_anchors=(Q, P, P))
+    assert a.target_clear_anchors == tuple(sorted({P, Q}))
+    assert a.merge(NavigationUpdate()).target_clear_anchors == tuple(sorted({P, Q}))  # `other` is a no-op: self comes back, already normalised
+    assert a.merge(NavigationUpdate(target_set=(1.0, 1.0))).target_clear_anchors == tuple(sorted({P, Q}))
 
 
 def test_the_lowest_anchor_selection_is_gone_every_filing_is_carried():
