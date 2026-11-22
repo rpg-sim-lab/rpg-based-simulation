@@ -177,14 +177,14 @@ tactical pass has always chosen).
     fight, never in whether it may (decision layer, parked contextual engagement). Hostility for
     `contextual_intruder_groups`-classified relationships (real content: `data/content/social/perspectives.yaml`) resolves from
     real combat-engagement state, not a hardcoded assumption of non-intrusion. See DEV-016.
-    **Wild pairs (decision 47, 2.222):** the faction verdict is dropped, and permission is the same from both sides: an attack is legal when the
+    **Wild pairs (decision 47, 2.222):** the faction verdict is dropped, and permission is the same from both sides: an attack is legal when
     either party hit the other within `ATTACKED_RECENTLY_WINDOW_TICKS` (10 ticks, the typed hit record read through
     `tactical_threat.attacked_me_recently` in both directions) or *either* party appraises the other as PREDATION. No task is read: an attempted attack always names its
     own target, so a task read would let every attempt permit itself. A task never decides permission, so a prey may strike its predator between the predator's blows; whether it *chooses* to is the decision layer's. Limits: a fed
-    attacker whose blows come more than 10 ticks apart, with no target named in its task, can lose permission between blows; `attacked_me_recently` reads the
-    victim's last hit record, so in a pack only the last hitters count (an earlier fed pack member is covered only by its task, and hungry members by PREDATION);
+    attacker whose blows come more than 10 ticks apart loses permission between blows, whatever its task; `attacked_me_recently` reads the
+    victim's last hit record, so in a pack only the last hitters count (an earlier fed pack member is not covered unless it is hungry, which PREDATION covers);
     and a fed chaser that never hits has no permission (correct). A predator's PREDATION also depends on its hunger (appraisal `HUNT_HUNGER`), so a fed predator returns permission to
-    the engagement test alone.
+    the recent-hit test alone.
 *   **Species-hostility escalation preserves the law**: `is_hostile_compat` resolves through
     `RelationProjectionService.project_relation()`, whose species-hostility escalation step
     (`src/content_semantics/relation.py`, real content: `data/content/social/species_relations.yaml`)
