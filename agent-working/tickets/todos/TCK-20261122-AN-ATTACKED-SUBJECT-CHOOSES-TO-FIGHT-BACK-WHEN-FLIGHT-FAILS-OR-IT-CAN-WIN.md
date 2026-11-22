@@ -40,6 +40,7 @@ BLOCKED on TCK-20261122-A-PREY-MAY-NOT-STRIKE-ITS-PREDATOR-BETWEEN-THE-PREDATORS
    - B5 no forced reflex.
    B0 permission lives in the dependency ticket (PR #992).
    - B6 NO FIRST STRIKE, FULL TICK (lead-planner-u24, #715 7076325384): a prey beside an idle hunting predator emits NO attack action over a full scheduler tick and a 50-tick window, run through the real kernel. #992's B5 pins only the appraisal that feeds the decision.
+   - B7 NO STALE FEAR (rpg-designer, 2026-11-22, from #992's test_9): when no basis remains for either party to strike (no faction verdict, no PREDATION, no recent hit), the flight guard does not hold the subject; it may flee or carry on. Rule: the guard's free-swing fear (felt_lethal_attacker, src/engine/felt_swing.py:16-38) counts an attacker only if that attacker may legally strike the subject NOW, by the same attack_allowed as the subject's own strike, so guard and strike-back lapse together. This flips #992's test_9 (an 11-tick-old hit by a fed wolf), which is a further owner ask at that point.
 3. AGENCY-07 amendment evidence updated to SUPPORTED; Bible, divergence and parity.
 4. A re-trace for points 5 and 6 on top of Step A (R7 and R6), with its own S9.
 
