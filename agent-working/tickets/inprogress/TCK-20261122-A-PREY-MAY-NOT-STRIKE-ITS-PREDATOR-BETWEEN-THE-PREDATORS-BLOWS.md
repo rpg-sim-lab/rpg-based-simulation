@@ -77,7 +77,7 @@ None.
 - hostility.attack_allowed: faction verdict, or pair engaged (is_engaged_or_recently_fought: either task names the other, or attacked_me_recently both ways, window imported), or PREDATION either way. The target-task clause is gone.
 - AC2 (inspected): the one FRIENDLY_FIRE_ILLEGAL source is legality.py:309; its callers all go through verify_attack_legality; _attack_permitted and the combat_engaged context are symmetric; appraisal._coming_for reads the other's task only for THREATENING. No asymmetric or task-transient permission path remains.
 - Unit fixture vs world: wolf->goblin is WARY (not PREDATION) in the unit setup by the M0 power-band belief, though the stage-2 trace world showed PREDATION; test pairs are orc->wolf and troll->small_plant_eater. An appraisal-calibration question for the arena ticket.
-- OWNER ASK pending: tests/unit/engine/test_appraisal.py:175 (prey strike on an idle hunter) flips False -> True. Prepared in the working tree, NOT committed.
+- OWNER ASK pending: tests/unit/engine/test_appraisal.py:175 (prey strike on an idle hunter) flips False -> True. Prepared in the working tree, NOT committed. Until the owner yes lands the flip, that one existing test is red on the committed branch (expected). Parity entry is COMB-360 (COMB-359 is held by the unmerged rpg-stalemate-nav).
 
 ## Test Summary
 

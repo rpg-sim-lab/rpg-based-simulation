@@ -5045,7 +5045,7 @@
   proof_type: regression
   test_path: tests/unit/engine/test_wild_creature_regarded_by_appraisal.py
   divergence_note: See docs/guidelines/intentional_divergences.md Sections 2.216 (this change) and 2.107 (#536, the original).
-- id: COMB-359
+- id: COMB-360
   text: "TCK-20261122-A-PREY-MAY-NOT-STRIKE-ITS-PREDATOR-BETWEEN-THE-PREDATORS-BLOWS: attack permission is a property of the pair. For a wild pair (decision 47) an attack is legal when the pair is engaged (a task names the other, or either hit the other within ATTACKED_RECENTLY_WINDOW_TICKS) or either party appraises the other as PREDATION; the target's current task no longer decides it, so a prey may strike its predator between the predator's blows (CONFLICT-03, DEV-016 extended)."
   status: verified
   priority: P1
