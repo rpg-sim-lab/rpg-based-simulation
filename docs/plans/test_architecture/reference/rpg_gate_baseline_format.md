@@ -23,6 +23,8 @@ content (metric ids, groups, values), the config and the stop lines. The module 
 
 A run is compared with the LAST baseline and the FIRST baseline of the current milestone. Re-baselining every time would otherwise hide a slow drift.
 
+The first baseline of the milestone is the reference unless a baseline of that milestone carries `milestone_reference: true` (optional boolean, absent = false): then the highest-versioned marked one is. `rebaseline --milestone-reference` writes the field on the new baseline only, and refuses without `--owner-ruling-ref '#715 <comment id>'` and `--owner-ruling-date` (the ruling must be a comment on issue #715; a free-text or other-issue ref is refused, `baseline_change_policy.md` rule 10). The lint refuses a non-boolean marker, and a true marker whose baseline records no such ruling (version 1 at the top level, later versions in `rebaseline.owner_ruling`). A marker on a baseline of another milestone has no effect. The report's references line and `references[].reason` read `first of milestone` or `named by owner ruling <ref>`.
+
 ## Thresholds come from the reference
 
 The thresholds recorded in a baseline are the thresholds that baseline is judged with (TCK-20261019-RPG-GATE-DRIFT-JUDGED-ON-THE-REFERENCE-THRESHOLD; the designer's condition for the relative O2.population floor). For each reference (`last` and `milestone-first` separately) the report judges an outcome row's drift with that reference row's own `k` and `floor`, never the candidate's:

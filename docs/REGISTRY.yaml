@@ -7986,6 +7986,63 @@
   - content
   last_verified: '2026-10-09'
 - type: ticket
+  path: agent-working/tickets/done/TCK-20261122-TOWN-TILE-HEALING-IGNORES-STARVATION-SO-A-STARVING-BODY-IN-TOWN-NEVER-DIES.md
+  ticket_id: TCK-20261122-TOWN-TILE-HEALING-IGNORES-STARVATION-SO-A-STARVING-BODY-IN-TOWN-NEVER-DIES
+  title: Town-tile healing has no hunger check, so a starving body standing in town
+    regains every HP the starvation drain takes and never dies
+  tier: standard
+  ticket_type: bug
+  date: '2026-11-22'
+  related_code_areas:
+  - src/systems/town_resolution.py (Part A healing, PASSIVE_HEAL_AMT)
+  artifact_files:
+  - agent-working/stored_artifacts/TCK-20261122-TOWN-TILE-HEALING-IGNORES-STARVATION-SO-A-STARVING-BODY-IN-TOWN-NEVER-DIES/investigation.md
+  - agent-working/stored_artifacts/TCK-20261122-TOWN-TILE-HEALING-IGNORES-STARVATION-SO-A-STARVING-BODY-IN-TOWN-NEVER-DIES/plan.md
+  - agent-working/stored_artifacts/TCK-20261122-TOWN-TILE-HEALING-IGNORES-STARVATION-SO-A-STARVING-BODY-IN-TOWN-NEVER-DIES/test_plan.md
+  tags: []
+- type: ticket
+  path: agent-working/tickets/done/TCK-20261122-V3-THREE-STARVATIONS-UNDER-THE-TOWN-HEAL-FIX-GET-A-SCOPED-KNOWN-ENTRY.md
+  ticket_id: TCK-20261122-V3-THREE-STARVATIONS-UNDER-THE-TOWN-HEAL-FIX-GET-A-SCOPED-KNOWN-ENTRY
+  title: 'Gate V3 on three bodies that starve once #991''s town-heal fix lands gets
+    a scoped known entry that expires on 2026-12-15'
+  tier: hotfix
+  ticket_type: chore
+  date: '2026-11-22'
+  related_code_areas:
+  - tools/test_architecture/rpg_gate_known.yaml
+  artifact_files: []
+  tags:
+  - testing
+- type: ticket
+  path: agent-working/tickets/todos/TCK-20261122-THREE-STARVING-BODIES-DIE-WITH-WAYS-UNTRIED-ONCE-THE-TOWN-HEAL-STOPS-HIDING-THEM.md
+  ticket_id: TCK-20261122-THREE-STARVING-BODIES-DIE-WITH-WAYS-UNTRIED-ONCE-THE-TOWN-HEAL-STOPS-HIDING-THEM
+  title: 'Three bodies starve to death with ways untried (V3) once #991 stops the
+    illegal town heal: the cause is unread'
+  tier: standard
+  ticket_type: bug
+  date: '2026-11-22'
+  related_code_areas:
+  - src/ai/goals/opening_steps.py (earn_then_buy); the strategic objective lifecycle
+  artifact_files: []
+  tags: []
+- type: ticket
+  path: agent-working/tickets/done/TCK-20261121-RPG-GATE-A-BASELINE-CAN-BE-NAMED-ITS-MILESTONES-REFERENCE.md
+  ticket_id: TCK-20261121-RPG-GATE-A-BASELINE-CAN-BE-NAMED-ITS-MILESTONES-REFERENCE
+  title: 'A baseline can be named its milestone''s reference (`milestone_reference`),
+    set only by `rebaseline` citing an owner-ruling comment on #715, so a re-record
+    inside M1 does not leave the stale first baseline as the fixed reference'
+  tier: standard
+  ticket_type: feature
+  date: '2026-11-21'
+  related_code_areas:
+  - tools/test_architecture/rpg_gate_baseline.py
+  - tools/test_architecture/rpg_gate_report.py
+  artifact_files:
+  - agent-working/stored_artifacts/TCK-20261121-RPG-GATE-A-BASELINE-CAN-BE-NAMED-ITS-MILESTONES-REFERENCE/investigation.md
+  - agent-working/stored_artifacts/TCK-20261121-RPG-GATE-A-BASELINE-CAN-BE-NAMED-ITS-MILESTONES-REFERENCE/plan.md
+  - agent-working/stored_artifacts/TCK-20261121-RPG-GATE-A-BASELINE-CAN-BE-NAMED-ITS-MILESTONES-REFERENCE/test_plan.md
+  tags: []
+- type: ticket
   path: agent-working/tickets/done/TCK-20261121-RPG-GATE-METRICS-REJECT-A-NON-EATING-KIND-GROUP-AS-UNDECLARED.md
   ticket_id: TCK-20261121-RPG-GATE-METRICS-REJECT-A-NON-EATING-KIND-GROUP-AS-UNDECLARED
   title: 'The rpg gate marks crowded_frontier s42 and s44 `no-data` with `GateDataMissingError:
