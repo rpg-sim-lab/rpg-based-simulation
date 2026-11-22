@@ -241,7 +241,7 @@ class TestDispatchers:
         p = _pursuer()
         t = _entity(2, (10.0, 14.0), faction=Faction.MONSTER_HORDE)
         packet = SimpleNamespace(
-            packet_id="pk", work_id="w", work_class=WorkClass.CRITICAL, class_priority=0, local_priority=0,
+            packet_id="pk", work_id="w", work_class=WorkClass.CRITICAL, class_priority=0, local_priority=0, tick=1,
             work_kind="ENTITY_MOVE", payload=p.task.payload, subject=p, all_entities=_entities(p, t),
         )
         results = default_simulation_worker(packet)
