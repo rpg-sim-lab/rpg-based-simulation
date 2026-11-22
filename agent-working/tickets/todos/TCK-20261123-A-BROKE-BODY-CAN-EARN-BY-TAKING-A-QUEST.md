@@ -140,8 +140,8 @@ Designer rulings, 2026-11-23 (rpg-designer, relayed to rpg-planner):
 - Q2 ranking: expected ticks to coin, with the tie order and hunger budget above; danger through the
   HUNT belief, later `judge_power`.
 - Q3 payer: today's law (2.110): the giver's treasury, open only when it can pay now.
-Q4/Q5, owner IDEAS (#715 7083481188) as SHAPED by rpg-designer, 2026-11-23. PENDING the owner's yes
-on this shape before dispatch (the designer recommends yes):
+Q4/Q5, owner IDEAS (#715 7083481188) as SHAPED by rpg-designer, 2026-11-23. APPROVED by the owner
+("Approve (Recommended)", ask 7083514723, answer 7083528531):
 - Three judges, never merged, each its own function with a typed reason, none reading another's
   inputs:
   - CAPABILITY: can the body take quests at all. `can_take_quest(taker)` = keeps_coin (Q1).
