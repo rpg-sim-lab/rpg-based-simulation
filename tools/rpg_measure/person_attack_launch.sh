@@ -76,6 +76,9 @@ if [ "${LAUNCH_RECORD_ONLY:-}" = 1 ]; then   # the control: this step alone, fro
   finish_record; echo "STATUS=$STATUS RC=$RC" >> "$LOG"
   exit "$RC"
 fi
+pinned_elsewhere() {   # 0 when ANY other process is pinned to cpus 4-5 (perf's obs_cost_arm too): the check is the cpu claim, not a name (pinned_check.py skips this shell's ancestor chain and kernel threads)
+  kitpy "$KIT/tools/rpg_measure/pinned_check.py" --cpus 4-5 >> "$LOG" 2>&1; [ $? -ne 0 ]
+}
 HEAVY_WORDS='tools\.rpg_measure|tools\.test_architecture\.rpg_gate_(harness|run|report)|births_child|coin_boss_spy|births_cost_child|person_attack_(spy|run)'
 
 # --- PREFLIGHT ---
@@ -96,6 +99,7 @@ for f in person_attack_spy.py person_attack_summary.py person_attack_run.py pers
   [ "$(sha256sum "$KIT/tools/rpg_measure/$f" | cut -c1-64)" = "$want" ] || abort "$f sha256 differs from the record"
 done
 heavy_running "$HEAVY_WORDS" && abort "another heavy measurement process is running"
+pinned_elsewhere && abort "another process is pinned to cpus 4-5 (see PINNED lines above in the log)"
 memcheck "the runner"
 disk_ok "the start" || abort "disk floor (2 GiB free on OUT and /) crossed before the start"
 
@@ -108,6 +112,7 @@ while read -r arm w sd mode; do
   [ "$STATUS" = COMPLETE ] || continue
   N=$((N+1)); name="${arm}__${w}__s${sd}__${mode}"
   heavy_running "$HEAVY_WORDS" && abort "another heavy measurement process is running before $name"
+  pinned_elsewhere && abort "another process is pinned to cpus 4-5 before $name (see PINNED lines above in the log)"
   memcheck "$name"
   if ! disk_ok "$name"; then STATUS="STOPPED_DISK_FLOOR_BEFORE_$name"; RC=4; echo "STOP: disk floor crossed before $name (see disk_floor_stop.json)" >> "$LOG"; continue; fi
   scope_command "$arm" "$w" "$sd" "$mode"

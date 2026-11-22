@@ -86,7 +86,12 @@ def load_is_night(calendar_path: Path) -> Tuple[Callable[[int], bool], str]:
     spec = importlib.util.spec_from_file_location("_person_attack_new_calendar", calendar_path)
     module = importlib.util.module_from_spec(spec)
     sys.modules[spec.name] = module
-    spec.loader.exec_module(module)
+    previous = sys.dont_write_bytecode
+    sys.dont_write_bytecode = True   # a frozen tree is read-only evidence: whatever the caller's environment says, no .pyc may land in it (TCK-20261122-TRACE-KIT-CALENDAR-LOAD-WRITES-BYTECODE-INTO-A-FROZEN-TREE)
+    try:
+        spec.loader.exec_module(module)
+    finally:
+        sys.dont_write_bytecode = previous
     return module.is_night, hashlib.sha256(calendar_path.read_bytes()).hexdigest()
 
 

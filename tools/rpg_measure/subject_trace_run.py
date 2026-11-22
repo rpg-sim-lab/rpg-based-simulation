@@ -1,5 +1,8 @@
 """Planner, runner and cell checks for the subject trace (Q2). Subcommands (every one is meant to be called as ``cd $KIT && PYTHONPATH=$KIT python subject_trace_run.py <sub> ...``; nothing here imports the frozen tree):
 
+``plan``     (the #992 wolf-starvation read) hand-written subjects: ``--subject seed:id:lo:hi`` (once per subject; counterparts are rows, never subjects), ``--expect-death seed:id:tick:CAUSE`` (NEW arm), ``--world``, ``--out subjects.json``; the plan carries ``plan_sha256`` and ``way_reads: true``
+``plan-check`` exit 0 only when the plan's own plan_sha256 recomputes (and equals ``--sha`` when given)
+``summarize`` the side-by-side evidence tables per subject and arm (``--cells``, ``--plan``, ``--out``): NO verdict line
 ``derive``  subjects and windows from the stage-1 SEALED cells (``--sealed <cells dir>``, ``--seed`` once per seed) -> ``--out subjects.json`` with the sha256 of every sealed cell it read
 ``seeds``   the seeds that have at least one subject (``--plan``), space separated
 ``seal-check`` exit 0 only when sha256(stage-1 SHA256SUMS) equals its SEAL line (``--dir``)
@@ -35,6 +38,7 @@ HASHSEED = "0"
 RECORDING_OFF_ENV = {"SIM_OBS_MODE": "OFF", "RPG_OBS_MODE": "OFF"}
 CHILD = Path(__file__).resolve().with_name("subject_trace_spy.py")
 EXIT_NOT_RECORDED = 6
+WOLF_PLAN_KIND = "hand_written"
 
 
 def load_sibling(name: str) -> Any:
@@ -180,6 +184,72 @@ def derive_plan(sealed: Path, world: str, seeds: List[int], summary: Any) -> Dic
     return {**body, "plan_sha256": hashlib.sha256(json.dumps(body, sort_keys=True).encode("utf-8")).hexdigest()}
 
 
+def plan_sha(body: Dict[str, Any]) -> str:
+    return hashlib.sha256(json.dumps(body, sort_keys=True).encode("utf-8")).hexdigest()
+
+
+def parse_subject(text: str) -> Dict[str, int]:
+    """``seed:id:lo:hi`` -> {seed, id, lo, hi}; a malformed or empty window is a ValueError (a plan is never guessed)."""
+    parts = text.split(":")
+    if len(parts) != 4 or not all(part.lstrip("-").isdigit() for part in parts):
+        raise ValueError(f"--subject must be seed:id:lo:hi (four integers), not {text!r}")
+    seed, subject_id, lo, hi = (int(part) for part in parts)
+    if lo < 0 or hi < lo:
+        raise ValueError(f"--subject window {lo}-{hi} is empty or negative")
+    return {"seed": seed, "id": subject_id, "lo": lo, "hi": hi}
+
+
+def parse_expect(text: str) -> Dict[str, Any]:
+    """``seed:id:tick:CAUSE`` -> {seed, id, tick, cause}."""
+    parts = text.split(":")
+    if len(parts) != 4 or not all(part.isdigit() for part in parts[:3]) or not parts[3].isupper():
+        raise ValueError(f"--expect-death must be seed:id:tick:CAUSE, not {text!r}")
+    return {"seed": int(parts[0]), "id": int(parts[1]), "tick": int(parts[2]), "cause": parts[3]}
+
+
+def build_plan(world: str, subjects: List[Dict[str, int]], expect_deaths: List[Dict[str, Any]]) -> Dict[str, Any]:
+    """PURE: the hand-written plan in the ``derive`` schema (subjects_by_seed -> [{id, roles, windows, counterparts}]), plus the NEW-arm death expectations the check reads. Counterparts stay empty on purpose: a body the subject meets is a ROW of the subject
+    (the spy records it per tick), never a new subject. ``plan_sha256`` is the sha256 of the body, as in ``derive_plan``."""
+    by_seed: Dict[str, List[Dict[str, Any]]] = {}
+    for item in sorted(subjects, key=lambda x: (x["seed"], x["id"], x["lo"])):
+        group = by_seed.setdefault(str(item["seed"]), [])
+        entry = next((e for e in group if e["id"] == item["id"]), None)
+        if entry is None:
+            entry = {"id": item["id"], "roles": ["subject"], "windows": [], "counterparts": []}
+            group.append(entry)
+        entry["windows"] = merge_windows(entry["windows"] + [[item["lo"], item["hi"]]])
+    body = {"kind": WOLF_PLAN_KIND, "derived_from": {}, "pad": 0, "min_hits": MIN_HITS, "world": world, "way_reads": True, "subjects_by_seed": by_seed, "seeds_with_subjects": sorted(int(k) for k in by_seed),
+            "expect_deaths": sorted(expect_deaths, key=lambda e: (e["seed"], e["id"]))}
+    return {**body, "plan_sha256": plan_sha(body)}
+
+
+def plan_matches(plan: Dict[str, Any], expected: Optional[str] = None) -> Dict[str, Any]:
+    """{"ok", "computed", "recorded"}: the plan's own sha256 recomputes from its body, and equals ``expected`` when one is given."""
+    body = {k: v for k, v in plan.items() if k != "plan_sha256"}
+    computed = plan_sha(body)
+    recorded = plan.get("plan_sha256")
+    return {"ok": computed == recorded and (expected is None or computed == expected), "computed": computed, "recorded": recorded, "expected": expected}
+
+
+def death_reasons(spy: Dict[str, Any], arm: str, seed: int, expect_deaths: List[Dict[str, Any]]) -> List[str]:
+    """VOID reasons for the NEW arm only: every expected death must be in the run's OWN typed death record at the expected tick and cause. BASE alive is expected context and is never judged here."""
+    reasons: List[str] = []
+    if arm != "new":
+        return reasons
+    for expected in expect_deaths:
+        if expected["seed"] != seed:
+            continue
+        found = (spy.get("death_records") or {}).get(str(expected["id"]))
+        label = f"NEW s{seed} subject {expected['id']} expected {expected['cause']} at t{expected['tick']}"
+        if found is None:
+            reasons.append(f"VOID: {label}, but the run holds no death record for it")
+            continue
+        record = found.get("record") or {}
+        if record.get("cause") != expected["cause"] or record.get("tick") != expected["tick"]:
+            reasons.append(f"VOID: {label}, but the run's death record says {record.get('cause')} at t{record.get('tick')} (first seen at t{found.get('first_seen_tick')}, passive cause {found.get('passive_cause')} at t{found.get('passive_cause_tick')})")
+    return reasons
+
+
 def seal_matches(stage1_out: Path) -> Dict[str, Any]:
     """Stage 2 starts only if sha256(stage-1 SHA256SUMS) equals the SEAL line the stage-1 launcher wrote: {"ok", "computed", "recorded"}."""
     sums, seal_log = stage1_out / "SHA256SUMS", stage1_out / "SHA256SUMS.seal.log"
@@ -191,9 +261,13 @@ def seal_matches(stage1_out: Path) -> Dict[str, Any]:
     return {"ok": recorded is not None and computed == recorded, "computed": computed, "recorded": recorded}
 
 
-def check_cell(spy: Dict[str, Any], sealed_plain: Dict[str, Any], arm: str, seed: int) -> Dict[str, Any]:
-    """Validity of one spy cell against its SEALED plain twin. Evidence-only: a void cell says why; nothing here judges the simulation."""
+def check_cell(spy: Dict[str, Any], sealed_plain: Dict[str, Any], arm: str, seed: int, plan_sha256: Optional[str] = None, expect_deaths: Optional[List[Dict[str, Any]]] = None, new_s42_needs_a_legality_call: bool = True) -> Dict[str, Any]:
+    """Validity of one spy cell against its plain twin (SEALED in stage 2; the SAME run's in the #992 read). Evidence-only: a void cell says why; nothing here judges the simulation.
+    ``plan_sha256``: both documents must carry the plan's sha256. ``expect_deaths``: the NEW arm's expected deaths (``death_reasons``). ``new_s42_needs_a_legality_call``: the stage-2 rule; the #992 plan switches it off (its VOID list is the ticket's)."""
     reasons: List[str] = []
+    if plan_sha256 is not None and (spy.get("plan_sha256") != plan_sha256 or sealed_plain.get("plan_sha256") != plan_sha256):
+        reasons.append(f"PLAN_SHA256 mismatch: spy {spy.get('plan_sha256')}, plain {sealed_plain.get('plan_sha256')}, pinned {plan_sha256}")
+    reasons += death_reasons(spy, arm, seed, expect_deaths or [])
     if spy.get("spy_exceptions") or spy.get("fatal"):
         reasons.append("SPY_EXCEPTION (fatal)")
     if spy.get("final_hash") != sealed_plain.get("final_hash"):
@@ -204,14 +278,14 @@ def check_cell(spy: Dict[str, Any], sealed_plain: Dict[str, Any], arm: str, seed
         reasons.append("OFFSET_DRIFT: state.tick - state.world_time was not constant, so legality ticks derived from world_time are not reliable")
     if spy.get("row_count", 0) == 0:
         reasons.append("VOID: 0 subject rows in the windows")
-    if arm == "new" and seed == 42 and spy.get("legality_calls_in_window", 0) == 0:
+    if new_s42_needs_a_legality_call and arm == "new" and seed == 42 and spy.get("legality_calls_in_window", 0) == 0:
         reasons.append("VOID: NEW s42 has no legality call by any subject in its window")
     return {"arm": arm, "seed": seed, "valid": not reasons, "reasons": reasons, "row_count": spy.get("row_count"), "legality_calls_in_window": spy.get("legality_calls_in_window"),
             "final_hash_spy": spy.get("final_hash"), "final_hash_sealed_plain": sealed_plain.get("final_hash")}
 
 
 def child_env(tree: Path, out: Path) -> Dict[str, str]:
-    return {**os.environ, "PYTHONHASHSEED": HASHSEED, "PYTHONPATH": str(tree), "TMPDIR": str(out / "tmp"), **RECORDING_OFF_ENV}
+    return {**os.environ, "PYTHONDONTWRITEBYTECODE": "1", "PYTHONHASHSEED": HASHSEED, "PYTHONPATH": str(tree), "TMPDIR": str(out / "tmp"), **RECORDING_OFF_ENV}
 
 
 def run_child(python: str, tree: Path, out: Path, item: Dict[str, Any], plan: Path) -> Dict[str, Any]:
@@ -229,7 +303,7 @@ def run_child(python: str, tree: Path, out: Path, item: Dict[str, Any], plan: Pa
     return result
 
 
-def check_all(cells: Path, sealed: Path, world: str, items: List[Dict[str, Any]]) -> Dict[str, Any]:
+def check_all(cells: Path, sealed: Path, world: str, items: List[Dict[str, Any]], plan_sha256: Optional[str] = None, expect_deaths: Optional[List[Dict[str, Any]]] = None, legacy_rules: bool = True) -> Dict[str, Any]:
     results = {}
     for item in items:
         if item["mode"] != "spy":
@@ -239,7 +313,7 @@ def check_all(cells: Path, sealed: Path, world: str, items: List[Dict[str, Any]]
         if not spy_path.exists() or not plain_path.exists():
             results[key] = {"arm": item["arm"], "seed": item["seed"], "valid": False, "reasons": ["VOID: the spy cell or the sealed plain twin file is missing"]}
             continue
-        results[key] = check_cell(json.loads(spy_path.read_text(encoding="utf-8")), json.loads(plain_path.read_text(encoding="utf-8")), item["arm"], item["seed"])
+        results[key] = check_cell(json.loads(spy_path.read_text(encoding="utf-8")), json.loads(plain_path.read_text(encoding="utf-8")), item["arm"], item["seed"], plan_sha256, expect_deaths, legacy_rules)
     return {"cells": results, "all_valid": bool(results) and all(c["valid"] for c in results.values())}
 
 
@@ -258,9 +332,11 @@ def write_record(out: Path, status: str, go: str, items: List[Dict[str, Any]], f
 
 
 def items_for(kind: str, world: str, seeds: List[int], ticks: int) -> List[Dict[str, Any]]:
-    """cells: the four spy cells, NEW first; smoke: NEW s42 plain then spy at ``ticks``."""
+    """cells: the four spy cells, NEW first; smoke: NEW s42 plain then spy at ``ticks``; wolf: every (arm, seed) plain then spy."""
     if kind == "smoke":
         modes = [("new", seeds[0], "plain"), ("new", seeds[0], "spy")]
+    elif kind == "wolf":   # the #992 read: for each arm (NEW first) and seed, the plain run THEN its spy twin: 2 seeds x 2 arms x 2 = 8 processes
+        modes = [(arm, seed, mode) for arm in ("new", "base") for seed in seeds for mode in ("plain", "spy")]
     else:
         modes = [(arm, seed, "spy") for arm in ("new", "base") for seed in seeds]
     return [{"arm": arm, "world": world, "seed": seed, "ticks": ticks, "mode": mode, "name": cell_name(arm, world, seed, mode)} for arm, seed, mode in modes]
@@ -288,11 +364,26 @@ def main(argv: List[str]) -> int:
     c.add_argument("--seed", action="append", type=int, required=True)
     c.add_argument("--ticks", required=True, type=int)
     c.add_argument("--out", required=True, type=Path)
+    c.add_argument("--arm", action="append", choices=("new", "base"), help="judge only these arms (the smoke runs NEW only)")
+    c.add_argument("--plan", type=Path, help="the #992 read: pin the plan's sha256 and read its NEW-arm death expectations (``--sealed`` is then the run's own cells dir: the plain twin is the SAME run's)")
+    pl = sub.add_parser("plan")
+    pl.add_argument("--world", required=True)
+    pl.add_argument("--subject", action="append", required=True)
+    pl.add_argument("--expect-death", action="append", default=[])
+    pl.add_argument("--out", required=True, type=Path)
+    pc = sub.add_parser("plan-check")
+    pc.add_argument("--plan", required=True, type=Path)
+    pc.add_argument("--sha")
+    sm = sub.add_parser("summarize")
+    sm.add_argument("--cells", required=True, type=Path)
+    sm.add_argument("--plan", required=True, type=Path)
+    sm.add_argument("--world", required=True)
+    sm.add_argument("--out", required=True, type=Path)
     r = sub.add_parser("record")
     r.add_argument("--out", required=True, type=Path)
     r.add_argument("--status", required=True)
     r.add_argument("--go", required=True)
-    r.add_argument("--kind", required=True, choices=("cells", "smoke"))
+    r.add_argument("--kind", required=True, choices=("cells", "smoke", "wolf"))
     r.add_argument("--world", required=True)
     r.add_argument("--seed", action="append", type=int, required=True)
     r.add_argument("--ticks", required=True, type=int)
@@ -300,6 +391,23 @@ def main(argv: List[str]) -> int:
     r.add_argument("--freeze-expected", required=True)
     r.add_argument("--freeze-final", required=True)
     args = ap.parse_args(argv)
+    if args.cmd == "plan":
+        plan = build_plan(args.world, [parse_subject(x) for x in args.subject], [parse_expect(x) for x in args.expect_death])
+        args.out.write_text(json.dumps(plan, indent=1, sort_keys=True), encoding="utf-8")
+        print(json.dumps({"plan_sha256": plan["plan_sha256"], "subjects": {k: [x["id"] for x in v] for k, v in plan["subjects_by_seed"].items()}}, sort_keys=True))
+        return 0
+    if args.cmd == "plan-check":
+        verdict = plan_matches(json.loads(args.plan.read_text(encoding="utf-8")), args.sha)
+        print(json.dumps(verdict, sort_keys=True))
+        return 0 if verdict["ok"] else 1
+    if args.cmd == "summarize":
+        summary = load_sibling("subject_trace_summary")
+        document = summary.summarize(args.cells, json.loads(args.plan.read_text(encoding="utf-8")), args.world)
+        args.out.mkdir(parents=True, exist_ok=True)
+        (args.out / "summary.json").write_text(json.dumps(document, indent=1, sort_keys=True), encoding="utf-8")
+        (args.out / "summary.md").write_text(summary.render(document), encoding="utf-8")
+        print(json.dumps({"subjects": sorted(document["subjects"])}, sort_keys=True))
+        return 0
     if args.cmd == "derive":
         plan = derive_plan(args.sealed, args.world, args.seed, load_sibling("person_attack_summary"))
         args.out.write_text(json.dumps(plan, indent=1, sort_keys=True), encoding="utf-8")
@@ -318,8 +426,9 @@ def main(argv: List[str]) -> int:
         print(json.dumps(result, sort_keys=True))
         return result["returncode"]
     if args.cmd == "check":
-        items = items_for("cells", args.world, args.seed, args.ticks)
-        verdict = check_all(args.cells, args.sealed, args.world, items)
+        items = [i for i in items_for("cells", args.world, args.seed, args.ticks) if not args.arm or i["arm"] in args.arm]
+        plan = json.loads(args.plan.read_text(encoding="utf-8")) if args.plan else None
+        verdict = check_all(args.cells, args.sealed, args.world, items, plan["plan_sha256"] if plan else None, plan.get("expect_deaths") if plan else None, not (plan and plan.get("kind") == WOLF_PLAN_KIND))
         args.out.write_text(json.dumps(verdict, indent=1, sort_keys=True), encoding="utf-8")
         print(json.dumps({"all_valid": verdict["all_valid"]}))
         return 0 if verdict["all_valid"] else 1

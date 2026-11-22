@@ -15,6 +15,11 @@ at 87792e3e8 domain/combat_actions.py:56, combat.py:166, 268, 342, 444, tactical
 One ATTACK action can give TWO calls (combat_actions.py:56, then combat.py:166 inside resolve_attack), so legality call counts are not attack counts. combat_actions.py:56 passes a context, not the state, which has no ``tick``: its rows use the
 derived tick, and only rows with a known in-window tick meet the reach rule (``legality_calls_in_window``). Stage-1 ``attack_rows`` (read by the derivation) are attacks BY watched ids, not by every attacker.
 
+WAY READS (the #992 wolf-starvation read, ``WayReads``; each is a read of an existing pure function, on a SHALLOW COPY of the prior state so a cache the call writes (``world_indexes``, the spatial caches) lands on the copy and never on the state the kernel
+keeps): the biological need fields (hunger, sleep_debt, rest_pressure, last_meal_tick, last_sleep_tick, well_rested_until) of every snapshot; ``ways_in_reach`` and ``open_food_step_kinds`` (src/ai/goals/ways.py), ``opening_steps`` (the same step tests with
+each step's own reason string and target), the carcasses within the scavenge radius (id, tile, Manhattan distance, in-range, edible, own species); the typed hit record (``last_hit_*``) turned into ``hits_taken`` events; the typed death record. The kit note
+(wolf_starve_kit_note.md) says why each call is pure.
+
 NON-PERTURBATION AND FATALITY. The spy's final hash must equal the SEALED plain twin's (checked by ``subject_trace_run check``). Any exception raised inside a wrapper's own recording code is stored AND re-raised:
 a kernel that swallows it still leaves ``spy_exceptions`` in the document, and the child exits 8 (fatal, the cell is void). The original verification's own exceptions are not the spy's: they pass through.
 
@@ -23,6 +28,8 @@ Usage: python subject_trace_spy.py <world> <seed> <ticks> <out.json> --arm new|b
 """
 from __future__ import annotations
 
+import copy
+import enum
 import importlib.util
 import json
 import logging
@@ -66,6 +73,65 @@ def chebyshev(a: Any, b: Any) -> Optional[float]:
     return max(abs(float(a[0]) - float(b[0])), abs(float(a[1]) - float(b[1])))
 
 
+def kind_name(kind: Any) -> str:
+    """An enum member by its NAME (``OpeningStepKind.HUNT`` -> "HUNT", ``WayKind.HUNT_EAT_RAW`` -> "HUNT_EAT_RAW": the values of OpeningStepKind are lower case), anything else by ``str``."""
+    return kind.name if isinstance(kind, enum.Enum) else str(kind)
+
+
+def manhattan(a: Any, b: Any) -> Optional[float]:
+    if a is None or b is None:
+        return None
+    return abs(float(a[0]) - float(b[0])) + abs(float(a[1]) - float(b[1]))
+
+
+NEED_FIELDS = ("hunger", "sleep_debt", "rest_pressure", "last_meal_tick", "last_sleep_tick", "well_rested_until")
+
+
+def read_view(state: Any) -> Any:
+    """The state the pure reads run on: a SHALLOW COPY, so the cache attributes some reads write (``object.__setattr__(state, "world_indexes", ...)`` and the like) land on the copy, never on the state the kernel keeps.
+    Nothing is deep-copied: the entities and every dict are the real ones and are only read."""
+    return copy.copy(state)
+
+
+class WayReads:
+    """The food ways of one body at one moment (the #992 read). The functions are injected so a control can pass fakes; ``from_tree()`` binds the frozen tree's own."""
+
+    def __init__(self, ways_in_reach: Callable, open_food_step_kinds: Callable, opening_steps: Callable, way_in_range: Callable, can_eat_item: Callable, scavenge_radius: float = 20.0) -> None:
+        self.ways_in_reach, self.open_food_step_kinds, self.opening_steps = ways_in_reach, open_food_step_kinds, opening_steps
+        self.way_in_range, self.can_eat_item, self.scavenge_radius = way_in_range, can_eat_item, scavenge_radius
+
+    @classmethod
+    def from_tree(cls) -> "WayReads":
+        from src.ai.goals import opening_steps as steps_module
+        from src.ai.goals.ways import ways_in_reach
+        from src.engine.appraisal import can_eat_item
+        from src.engine.rpg_depth import LeashService
+
+        return cls(ways_in_reach, steps_module.open_food_step_kinds, steps_module.opening_steps, LeashService.way_in_range, can_eat_item, float(getattr(steps_module, "SCAVENGE_RADIUS", 20.0)))
+
+    def carcasses(self, view: Any, entity: Any) -> List[Dict[str, Any]]:
+        found = []
+        for corpse in view.corpses.values():
+            distance = manhattan(entity.navigation.position, corpse.position)
+            if distance is None or distance > self.scavenge_radius:
+                continue
+            dead = view.entities.get(corpse.original_entity_id)
+            found.append({"id": safe(corpse.id), "tile": safe(corpse.position), "distance": distance, "in_way_range": bool(self.way_in_range(entity, corpse.position)),
+                          "edible": any(stack.quantity > 0 and self.can_eat_item(entity, stack.item_id) for stack in corpse.items),
+                          "own_species": dead is not None and dead.kind == entity.kind})
+        return sorted(found, key=lambda c: (c["distance"], str(c["id"])))
+
+    def reads(self, state: Any, entity: Any) -> Dict[str, Any]:
+        view = read_view(state)
+        ways = [kind_name(w) for w in self.ways_in_reach(entity, view)]
+        open_kinds = sorted(kind_name(k) for k in self.open_food_step_kinds(entity, view))
+        steps = {}
+        for step in self.opening_steps(entity, view):
+            steps[kind_name(step.kind)] = {"available": bool(step.available), "reason": step.reason, "target_id": step.target_id, "target_entity_id": step.target_entity_id, "target_pos": safe(step.target_pos)}
+        food_steps = sorted(k for k, v in steps.items() if v["available"] and k in ("FORAGE", "SCAVENGE", "HUNT"))
+        return {"ways": ways, "open_food_steps": open_kinds, "steps": steps, "steps_consistent": food_steps == open_kinds, "carcasses": self.carcasses(view, entity), "scavenge_radius": self.scavenge_radius}
+
+
 def objective_view(entity: Any) -> Dict[str, Any]:
     """The strategic current project / objective ids and, when the project holds it, the active objective's own record (read by attribute, so a tree without a field reads None)."""
     strategic = getattr(entity, "strategic", None)
@@ -95,7 +161,20 @@ def snapshot(entity: Any) -> Dict[str, Any]:
         "payload": {str(k): safe(v) for k, v in payload.items() if v is None or isinstance(v, (bool, int, float, str, tuple, list))},
         "goal_tile": safe(nav.target), "path_len": len(nav.path or []), "failure_reason": safe(nav.last_failure_reason), "readiness": combat.readiness, "hp": combat.hp, "alive": bool(combat.alive),
         "position": safe(nav.position), "lodged_in": safe(getattr(nav, "lodged_in", None)), "strategic": objective_view(entity),
+        "kind": safe(getattr(entity, "kind", None)), "needs": {name: safe(getattr(getattr(entity, "biological", None), name, None)) for name in NEED_FIELDS},
+        "last_hit": {"tick": safe(getattr(combat, "last_hit_tick", None)), "attackers": safe(getattr(combat, "last_hit_attackers", ())), "damages": safe(getattr(combat, "last_hit_damages", ()))},
+        "death_record": death_record_view(entity), "leash": {"radius": safe(getattr(nav, "leash_radius", None)), "home": safe(getattr(nav, "home_position", None))},
     }
+
+
+def death_record_view(entity: Any) -> Optional[Dict[str, Any]]:
+    """The typed death record (cause, tick, last attacker, hazard kind) and the passive cause the lifecycle holds, or None while the body has neither."""
+    lifecycle = getattr(entity, "lifecycle", None)
+    record = getattr(lifecycle, "death_record", None)
+    passive = getattr(lifecycle, "passive_death_cause", None)
+    if record is None and passive is None:
+        return None
+    return {"record": record.to_dict() if hasattr(record, "to_dict") else safe(record), "passive_cause": safe(passive), "passive_cause_tick": safe(getattr(lifecycle, "passive_death_cause_tick", None))}
 
 
 def in_windows(tick: int, windows: List[List[int]]) -> bool:
@@ -105,7 +184,11 @@ def in_windows(tick: int, windows: List[List[int]]) -> bool:
 class SubjectSpy:
     """Record-only wrappers; ``install(apply_path, legality)`` patches, ``restore()`` undoes. ``subjects`` is the plan's list for this seed: {id, roles, windows, counterparts}."""
 
-    def __init__(self, subjects: List[Dict[str, Any]], motive: Any = None) -> None:
+    def __init__(self, subjects: List[Dict[str, Any]], motive: Any = None, ways: Optional[WayReads] = None) -> None:
+        self.ways = ways   # a ``WayReads`` (None in older unit tests): the way/step/carcass reads, per tick, on the PRIOR state
+        self.hits_taken: Dict[int, List[Dict[str, Any]]] = {}
+        self.death_records: Dict[int, Dict[str, Any]] = {}
+        self._legality_cursor = 0
         self.motive = motive   # a ``person_attack_spy.MotiveReads`` (None in unit tests): the stage-1 motive reads, repeated per tick for each subject and counterpart on the PRIOR state
         self.subjects = {int(s["id"]): s for s in subjects}
         self.rows: List[Dict[str, Any]] = []
@@ -160,6 +243,7 @@ class SubjectSpy:
             self.offset = tick - world_time
             if self.offset not in self.offsets_seen:
                 self.offsets_seen.append(self.offset)
+        fresh = self.legality_rows[self._legality_cursor:]   # the legality calls made since the previous apply: this tick's
         for subject_id, subject in self.subjects.items():
             if not in_windows(tick, subject["windows"]):
                 continue
@@ -173,7 +257,37 @@ class SubjectSpy:
                 row["motive_reads"] = {str(other): self.motive.inputs(prior, subject_id, other) for other in subject["counterparts"] if subject_id in prior.entities and other in prior.entities}
             row["goal_distance_before"] = chebyshev(snap_before.get("position"), snap_before.get("goal_tile"))
             row["goal_distance_after"] = chebyshev(snap_after.get("position"), snap_after.get("goal_tile"))
+            if self.ways is not None:
+                self.observe_wolf_reads(row, subject_id, prior, state, before, snap_before, snap_after, fresh)
             self.rows.append(row)
+        self._legality_cursor = len(self.legality_rows)
+
+    def observe_wolf_reads(self, row: Dict[str, Any], subject_id: int, prior: Any, state: Any, before: Any, snap_before: Dict[str, Any], snap_after: Dict[str, Any], fresh: List[Dict[str, Any]]) -> None:
+        """The #992 reads of one subject-tick (module docstring, WAY READS): the ways and steps the pull saw (PRIOR state), the hit just taken, the death record, and a compact row for every body the subject met this tick."""
+        row["ways"] = self.ways.reads(prior, before) if before is not None and snap_before.get("alive") else None
+        before_tick, after_tick = snap_before.get("last_hit", {}).get("tick"), snap_after.get("last_hit", {}).get("tick")
+        if after_tick is not None and after_tick != before_tick:
+            event = {"tick": state.tick, "hit_tick": after_tick, "attackers": snap_after["last_hit"]["attackers"], "damages": snap_after["last_hit"]["damages"], "hp_delta": (snap_before.get("hp") or 0) - (snap_after.get("hp") or 0)}
+            self.hits_taken.setdefault(subject_id, []).append(event)
+            row["hit_taken"] = event
+        if snap_after.get("death_record") is not None and subject_id not in self.death_records:
+            self.death_records[subject_id] = {"first_seen_tick": state.tick, **snap_after["death_record"]}
+        row["legality_this_tick"] = [{"target_id": r["target_id"], "legal": r["legal"], "reason": r["reason"]} for r in fresh if r["attacker_id"] == subject_id]
+        met = {r["target_id"] for r in row["legality_this_tick"]} | set((row.get("hit_taken") or {}).get("attackers") or ())
+        for step in ((row["ways"] or {}).get("steps") or {}).values():
+            met.add(step.get("target_entity_id"))
+        met.add((snap_after.get("strategic", {}).get("objective") or {}).get("target_entity_id"))
+        met.add(snap_after.get("payload", {}).get("target_id"))
+        row["counterparts"] = {str(other): self.counterpart_row(state, snap_after, other) for other in sorted(m for m in met if isinstance(m, int) and m != subject_id)}
+
+    @staticmethod
+    def counterpart_row(state: Any, subject_after: Dict[str, Any], other_id: int) -> Dict[str, Any]:
+        entity = state.entities.get(other_id)
+        if entity is None:
+            return {"present": False}
+        position = safe(entity.navigation.position)
+        return {"present": True, "alive": bool(entity.combat.alive), "hp": entity.combat.hp, "kind": safe(getattr(entity, "kind", None)), "position": position,
+                "chebyshev": chebyshev(subject_after.get("position"), position), "manhattan": manhattan(subject_after.get("position"), position)}
 
     def legality_tick(self, state_or_context: Any) -> tuple:
         """(tick, tick_source, raw world_time) of a legality call. The context's own ``tick`` when it has one; else ``world_time + offset`` (offset = state.tick - state.world_time of the apply wrapper's latest
@@ -208,7 +322,8 @@ class SubjectSpy:
     def report(self) -> Dict[str, Any]:
         return {"rows": self.rows, "row_count": len(self.rows), "legality_rows": self.legality_rows, "legality_call_count": len(self.legality_rows), "legality_calls_in_window": len(self.legality_rows),
                 "legality_calls_unplaced": self.unplaced_calls, "offsets_seen": self.offsets_seen, "offset_drift": len(self.offsets_seen) > 1,
-                "subject_ids": sorted(self.subjects), "apply_calls": self.apply_calls, "spy_exceptions": self.spy_exceptions}
+                "subject_ids": sorted(self.subjects), "apply_calls": self.apply_calls, "spy_exceptions": self.spy_exceptions,
+                "hits_taken": {str(k): v for k, v in self.hits_taken.items()}, "death_records": {str(k): v for k, v in self.death_records.items()}, "way_reads": self.ways is not None}
 
 
 def snapshot_position(state: Any, entity_id: int) -> Any:
@@ -230,6 +345,7 @@ def run_ticks(kernel: Any, ticks: int, spy: Optional[SubjectSpy]) -> Any:
 
 
 def main(argv: List[str]) -> int:
+    sys.dont_write_bytecode = True   # FIRST: this process imports the frozen tree, and whatever the environment says no .pyc may land in it
     from src.engine.checkpoint import CanonicalStateHasher
     from src.observability.config import ObservabilityConfig, ObservabilityMode
     from tools.test_architecture.rpg_gate_run import build_kernel
@@ -260,7 +376,7 @@ def main(argv: List[str]) -> int:
         from src.engine.apply import ApplyPath
         from src.engine.legality import LegalityServiceV2
 
-        spy = SubjectSpy(plan["subjects_by_seed"][str(seed)], load_sibling("person_attack_spy").MotiveReads.from_tree()).install(ApplyPath, LegalityServiceV2)
+        spy = SubjectSpy(plan["subjects_by_seed"][str(seed)], load_sibling("person_attack_spy").MotiveReads.from_tree(), WayReads.from_tree() if plan.get("way_reads") else None).install(ApplyPath, LegalityServiceV2)
     fatal: Optional[str] = None
     try:
         final_state = run_ticks(kernel, ticks, spy)

@@ -65,6 +65,9 @@ heavy_running() {   # the self-match-proof check: argv SHAPE (an interpreter the
   done < <(ps -ww -eo pid=,args=)
   return 1
 }
+pinned_elsewhere() {   # 0 when ANY other process is pinned to cpus 4-5 (perf's obs_cost_arm too): the check is the cpu claim, not a name; it skips this shell's ancestor chain and kernel threads (pinned_check.py)
+  kitpy "$KIT/tools/rpg_measure/pinned_check.py" --cpus 4-5 >> "$LOG" 2>&1; [ $? -ne 0 ]
+}
 HEAVY_WORDS='tools\.rpg_measure|tools\.test_architecture\.rpg_gate_(harness|run|report)|births_child|coin_boss_spy|births_cost_child|person_attack_(spy|run)|subject_trace_(spy|run)'
 
 # --- PREFLIGHT ---
@@ -93,6 +96,7 @@ done
 [ -d "$SEALED" ] || abort "the sealed O3 cells dir is missing"
 (cd "$SEALED/.." && sha256sum -c SHA256SUMS --quiet >> "$LOG" 2>&1) || abort "the sealed O3 run no longer matches its SHA256SUMS"
 heavy_running "$HEAVY_WORDS" && abort "another heavy measurement process is running"
+pinned_elsewhere && abort "another process is pinned to cpus 4-5 (see PINNED lines above in the log)"
 memcheck "the runner"
 disk_ok "the start" || abort "disk floor (2 GiB free on OUT and /) crossed before the start"
 mkdir -p "$OUT/cells"
@@ -113,15 +117,16 @@ while read -r arm sd mode; do
   [ "$STATUS" = COMPLETE ] || continue
   N=$((N+1)); name="${arm}__${WORLD}__s${sd}__${mode}"
   heavy_running "$HEAVY_WORDS" && abort "another heavy measurement process is running before $name"
+  pinned_elsewhere && abort "another process is pinned to cpus 4-5 before $name (see PINNED lines above in the log)"
   memcheck "$name"
   if ! disk_ok "$name"; then STATUS="STOPPED_DISK_FLOOR_BEFORE_$name"; RC=4; echo "STOP: disk floor crossed before $name (see disk_floor_stop.json)" >> "$LOG"; continue; fi
   scope_command "$arm" "$sd" "$mode"
   PAT='subject_trace_spy\.py' "$KIT/tools/rpg_measure/person_attack_watch.sh" "$OUT/watcher_$name.log" < /dev/null &
   WP=$!
-  echo "START $name $(date +%T)" >> "$LOG"
+  P0=$(date +%s); echo "START $name $(date +%T)" >> "$LOG"
   (cd "$KIT" && PYTHONPATH="$KIT" "${SCOPE_CMD[@]}" >> "$OUT/runner.out" 2>&1 < /dev/null)
   CRC=$?
-  echo "END $name rc=$CRC wall=$(( $(date +%s)-T0 ))s $(date +%T)" >> "$LOG"
+  echo "END $name rc=$CRC wall=$(( $(date +%s)-P0 ))s $(date +%T)" >> "$LOG"   # the process's OWN time (P0); the stop rules below use the run's start T0 on purpose
   wait "$WP" 2>/dev/null
   FREEZE_FINAL=$(/home/vboxuser/.local/bin/uv pip freeze --python "$PY" 2>/dev/null | sha256sum | cut -c1-64)
   if [ "$FREEZE_FINAL" != "$FREEZE_SHA" ]; then STATUS=VOID_INTERPRETER_CHANGED; RC=4; echo "FREEZE CHANGED after $name: STOP (void)" >> "$LOG"; fi
