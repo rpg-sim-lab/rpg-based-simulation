@@ -1,0 +1,21 @@
+{
+  "profile": "PROD_SMALL",
+  "mode": "2",
+  "start_time": 1795329066.3424706,
+  "chunks": [],
+  "status": "COMPLETED",
+  "signal_contract": {
+    "signal_contract": "LIVE",
+    "effective_source": "audit_zeroed",
+    "work_model": "WORK_MODEL_V1",
+    "work_model_status": "PROVISIONAL"
+  },
+  "audit_mode": true,
+  "signals_zeroed": true,
+  "end_time": 1795329445.9982338,
+  "metrics": {
+    "bytes_written": 0,
+    "chunks_persisted": 0,
+    "dropped_events": 0
+  }
+}

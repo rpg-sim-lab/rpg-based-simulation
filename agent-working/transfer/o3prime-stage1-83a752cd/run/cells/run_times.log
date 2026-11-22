@@ -1,0 +1,12 @@
+RUN new__frontier_living_world__s42__plain: 232.3s returncode 0
+RUN new__frontier_living_world__s42__spy: 252.6s returncode 0
+RUN base__frontier_living_world__s42__plain: 235.5s returncode 0
+RUN base__frontier_living_world__s42__spy: 248.5s returncode 0
+RUN new__frontier_living_world__s43__plain: 282.6s returncode 0
+RUN new__frontier_living_world__s43__spy: 293.1s returncode 0
+RUN base__frontier_living_world__s43__plain: 275.4s returncode 0
+RUN base__frontier_living_world__s43__spy: 273.1s returncode 0
+RUN new__frontier_living_world__s45__plain: 382.0s returncode 0
+RUN new__frontier_living_world__s45__spy: 537.6s returncode 0
+RUN base__frontier_living_world__s45__plain: 422.8s returncode 0
+RUN base__frontier_living_world__s45__spy: 432.8s returncode 0

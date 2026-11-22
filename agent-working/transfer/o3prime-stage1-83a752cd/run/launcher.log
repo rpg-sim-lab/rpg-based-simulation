@@ -1,0 +1,34 @@
+87792e3e8ec42dfd0015f745bbcc5077262bb17d: EQUAL
+TREE NEW 87792e3e8ec42dfd0015f745bbcc5077262bb17d (/data/vboxuser/o3-trace-trees/87792e3e8ec42dfd0015f745bbcc5077262bb17d): equal to git ls-tree (paths and blob hashes), no data/runs
+e722708947004c7f1eb427501b09f404c76c7cfe: EQUAL
+TREE BASE e722708947004c7f1eb427501b09f404c76c7cfe (/data/vboxuser/o3-trace-trees/e722708947004c7f1eb427501b09f404c76c7cfe): equal to git ls-tree (paths and blob hashes), no data/runs
+RUN START 12:55:57 go=7075026055 (sequential: one process per scope)
+START new__frontier_living_world__s42__plain 12:55:58
+END new__frontier_living_world__s42__plain rc=0 wall=232s 12:59:50
+START new__frontier_living_world__s42__spy 12:59:52
+END new__frontier_living_world__s42__spy rc=0 wall=252s 13:04:04
+START base__frontier_living_world__s42__plain 13:04:05
+END base__frontier_living_world__s42__plain rc=0 wall=236s 13:08:01
+START base__frontier_living_world__s42__spy 13:08:02
+END base__frontier_living_world__s42__spy rc=0 wall=248s 13:12:10
+START new__frontier_living_world__s43__plain 13:12:12
+END new__frontier_living_world__s43__plain rc=0 wall=283s 13:16:55
+START new__frontier_living_world__s43__spy 13:16:58
+END new__frontier_living_world__s43__spy rc=0 wall=293s 13:21:51
+START base__frontier_living_world__s43__plain 13:21:52
+END base__frontier_living_world__s43__plain rc=0 wall=276s 13:26:28
+START base__frontier_living_world__s43__spy 13:26:29
+END base__frontier_living_world__s43__spy rc=0 wall=273s 13:31:02
+START new__frontier_living_world__s45__plain 13:31:04
+END new__frontier_living_world__s45__plain rc=0 wall=382s 13:37:26
+START new__frontier_living_world__s45__spy 13:37:28
+END new__frontier_living_world__s45__spy rc=0 wall=537s 13:46:26
+START base__frontier_living_world__s45__plain 13:46:28
+END base__frontier_living_world__s45__plain rc=0 wall=423s 13:53:31
+START base__frontier_living_world__s45__spy 13:53:33
+END base__frontier_living_world__s45__spy rc=0 wall=433s 14:00:46
+RUN EXIT 0 status=COMPLETE 14:00:46 (wall 3889s)
+{"cells": {"base/frontier_living_world/s42": true, "base/frontier_living_world/s43": true, "base/frontier_living_world/s45": true, "new/frontier_living_world/s42": true, "new/frontier_living_world/s43": true, "new/frontier_living_world/s45": true}, "verdict": "BUG CANDIDATE, attributed"}
+SUMMARY EXIT 0 14:00:46
+TREE CLEAN: /data/vboxuser/o3-trace-trees/87792e3e8ec42dfd0015f745bbcc5077262bb17d has no data/runs
+TREE CLEAN: /data/vboxuser/o3-trace-trees/e722708947004c7f1eb427501b09f404c76c7cfe has no data/runs
