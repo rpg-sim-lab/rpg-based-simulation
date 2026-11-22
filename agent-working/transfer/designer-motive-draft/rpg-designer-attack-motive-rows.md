@@ -98,3 +98,17 @@ Reasons for this design:
   - Why: no measured value yet supports a different tolerance for DEFEND vs HUNT. Choosing different floors before data would be a guess, and a lookup by (id, motive) would need config and code changes for no evidenced gain.
   - Revisit only on evidence: if the trace or v3 numbers show a motive key whose baseline is so small that the id's floor would hide a real move (or so large that it fires on noise), that is a design change brought to the owner with the numbers. It is never a quiet config edit.
   - UNCLASSED gets no special floor either. Its count and share are always shown (§6.4).
+
+## 9. Motive order corrected before data (2026-11-22, from smoke-1 evidence; supersedes the order in §2)
+- New order (first match): DEFEND > HUNT > HOSTILE > OBJECTIVE > UNCLASSED. A separate key, NO_INPUTS, is never a motive.
+- Why (executed, smoke 1 of kit 39859549b, NEW s42 300t, 88 attack rows): 54 of the 88 attacks carry a `combat_engage` / `defeat_enemy` objective whose target_entity_id is the victim.
+  - That objective is the engine's ordinary vehicle for a hostile fight (scorers.py:213 targets the nearest hostile), not a quest.
+  - A hunger project's HUNT step also sets target_entity_id to the prey (opening_steps.py:134).
+  - So with OBJECTIVE before HUNT/HOSTILE, ordinary hunts and hostile fights would read as OBJECTIVE, hiding exactly the split the owner asked for.
+  - The motive is the engine's own BASIS for the fight (PREDATION, FACTION_HOSTILE). OBJECTIVE is left for a goal-directed fight with no such basis (a quest target that is neither prey nor hostile).
+- `objective_target_is_victim` stays a recorded typed input and is reported as a cross-tab per motive (how many hunts or hostile fights were goal-carried), as information.
+- NO_INPUTS: the first row has no motive inputs, or `prior_bodies_present` is False.
+  - It is counted and reported separately, never folded into UNCLASSED.
+  - In R1 such an engagement is not assessable, so it neither passes nor fails. At >= 10% of a cell's judged engagements, R1 reads NOT_CLEARED (held), mirroring R5's not-assessable rule; below 10%, R1 decides on the rest, and the share is shown.
+  - In the gate, NO_INPUTS is its own tracked key (with §6.4).
+- The classifier still reads only the three typed values (§6.3). Only their order changed.
